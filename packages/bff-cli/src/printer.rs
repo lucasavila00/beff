@@ -309,11 +309,8 @@ impl ToJson for OpenApi {
 
 fn param_to_js(name: &str, param: HandlerParameter, path_params: &[String]) -> Js {
     match param {
-        HandlerParameter::PathOrQuery {
-            schema,
-            required,
-            span,
-            ..
+        HandlerParameter::PathOrQueryOrBody {
+            schema, required, ..
         } => {
             let is_path_param = path_params.contains(&name.to_owned());
             let kind_name = if is_path_param {
@@ -336,14 +333,13 @@ fn param_to_js(name: &str, param: HandlerParameter, path_params: &[String]) -> J
                     "validator".into(),
                     Js::Decoder(format!("{kind_name} \"{name}\""), schema.clone()),
                 ),
-                ("coercer".into(), Js::Coercer(schema, span)),
+                ("coercer".into(), Js::Coercer(schema)),
             ])
         }
         HandlerParameter::HeaderOrCookie {
             kind,
             schema,
             required,
-            span,
             ..
         } => {
             let kind_name = match kind {
@@ -359,7 +355,7 @@ fn param_to_js(name: &str, param: HandlerParameter, path_params: &[String]) -> J
                     "validator".into(),
                     Js::Decoder(format!("{kind_name} \"{name}\""), schema.clone()),
                 ),
-                ("coercer".into(), Js::Coercer(schema, span)),
+                ("coercer".into(), Js::Coercer(schema)),
             ])
         }
         HandlerParameter::Context => {
@@ -449,9 +445,8 @@ fn js_to_expr(
             ident: None,
             function: decoder::from_schema(&schema, &name).into(),
         }),
-        Js::Coercer(schema, span) => {
-            let (func, errs) = coercer::from_schema(&schema, components, file_name, span);
-            errors.extend(errs);
+        Js::Coercer(schema) => {
+            let func = coercer::from_schema(&schema, components);
             Expr::Fn(FnExpr {
                 ident: None,
                 function: func.into(),

@@ -55,18 +55,16 @@ impl fmt::Display for HeaderOrCookie {
 
 #[derive(Debug, Clone)]
 pub enum HandlerParameter {
-    PathOrQuery {
+    PathOrQueryOrBody {
         schema: JsonSchema,
         required: bool,
         description: Option<String>,
-        span: Span,
     },
     HeaderOrCookie {
         kind: HeaderOrCookie,
         schema: JsonSchema,
         required: bool,
         description: Option<String>,
-        span: Span,
     },
     Context,
 }
@@ -287,7 +285,6 @@ impl<'a> ExtractExportDefaultVisitor<'a> {
                     schema: self.convert_to_json_schema(ty),
                     required,
                     description,
-                    span: lib_ty_name.span,
                 }
             }
             _ => panic!("not in lib: {}", name),
@@ -310,11 +307,10 @@ impl<'a> ExtractExportDefaultVisitor<'a> {
                 return HandlerParameter::Context;
             }
         }
-        HandlerParameter::PathOrQuery {
+        HandlerParameter::PathOrQueryOrBody {
             schema: self.convert_to_json_schema(ty),
             required,
             description,
-            span: tref.span,
         }
     }
     fn parse_parameter_type(
@@ -322,17 +318,15 @@ impl<'a> ExtractExportDefaultVisitor<'a> {
         ty: &TsType,
         required: bool,
         description: Option<String>,
-        span: &Span,
     ) -> HandlerParameter {
         match ty {
             TsType::TsTypeRef(tref) => {
                 self.parse_type_ref_parameter(tref, ty, required, description)
             }
-            _ => HandlerParameter::PathOrQuery {
+            _ => HandlerParameter::PathOrQueryOrBody {
                 schema: self.convert_to_json_schema(ty),
                 required,
                 description,
-                span: *span,
             },
         }
     }
@@ -390,12 +384,8 @@ impl<'a> ExtractExportDefaultVisitor<'a> {
                         Pat::Ident(BindingIdent { id, .. }) => {
                             let comments = self.current_file.comments.get_leading(id.span.lo);
                             let description = comments.and_then(parse_description_comment);
-                            let param = self.parse_parameter_type(
-                                &it.ty,
-                                !id.optional,
-                                description,
-                                &id.span,
-                            );
+                            let param =
+                                self.parse_parameter_type(&it.ty, !id.optional, description);
                             vec![(id.sym.to_string(), param)]
                         }
                         _ => self.error_param(
@@ -426,7 +416,6 @@ impl<'a> ExtractExportDefaultVisitor<'a> {
                     &type_ann.as_ref().unwrap().as_ref().type_ann,
                     !id.optional,
                     description,
-                    &id.span,
                 );
                 vec![(id.sym.to_string(), param)]
             }
@@ -682,7 +671,7 @@ fn to_operation_parameter(
     pattern: &str,
 ) -> Vec<ParameterObject> {
     match param {
-        HandlerParameter::PathOrQuery {
+        HandlerParameter::PathOrQueryOrBody {
             schema,
             required,
             description,

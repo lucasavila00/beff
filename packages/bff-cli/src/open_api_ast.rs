@@ -1,7 +1,5 @@
 use core::fmt;
 
-use swc_common::Span;
-
 #[derive(Debug, PartialEq, Eq, Clone)]
 pub enum Optionality<T> {
     Optional(T),
@@ -63,7 +61,7 @@ pub enum Js {
     Array(Vec<Js>),
     Object(Vec<(String, Js)>),
     Decoder(String, JsonSchema),
-    Coercer(JsonSchema, Span),
+    Coercer(JsonSchema),
 }
 
 #[derive(Debug, PartialEq, Clone)]

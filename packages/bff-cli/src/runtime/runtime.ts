@@ -1,12 +1,6 @@
 import { Hono, Context } from "hono";
 import { HTTPException } from "hono/http-exception";
-import {
-  getCookie,
-  getSignedCookie,
-  setCookie,
-  setSignedCookie,
-  deleteCookie,
-} from "hono/cookie";
+import { getCookie } from "hono/cookie";
 type MetaParam = {
   type: "path" | "query" | "cookie" | "header";
   name: string;
@@ -51,23 +45,6 @@ function coerce_boolean(input: unknown) {
     return input === "1";
   }
   return new CoercionFailure();
-}
-function coerce_array(input: unknown) {
-  return String(input).split(",");
-}
-function coerce_object(input: unknown) {
-  const kvs = String(input).split(",");
-  let obj: any = {};
-  let last_was_key: any = false;
-  for (const iterator of kvs) {
-    if (last_was_key) {
-      obj[last_was_key] = iterator;
-      last_was_key = false;
-    } else {
-      last_was_key = iterator;
-    }
-  }
-  return obj;
 }
 function coerce_bigint(_input: unknown) {
   throw new Error("not implemented");

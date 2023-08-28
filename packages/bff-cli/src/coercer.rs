@@ -1,12 +1,11 @@
-use crate::diag::{Diagnostic, DiagnosticMessage};
-use swc_common::{FileName, Span, DUMMY_SP};
+use swc_common::DUMMY_SP;
 use swc_ecma_ast::{
-    ArrayLit, BindingIdent, BlockStmt, CallExpr, Callee, Expr, ExprOrSpread, FnExpr, Function,
-    Ident, KeyValueProp, ObjectLit, Param, Pat, Prop, PropName, PropOrSpread, ReturnStmt, Stmt,
+    BindingIdent, BlockStmt, CallExpr, Callee, Expr, ExprOrSpread, FnExpr, Function, Ident, Param,
+    Pat, ReturnStmt, Stmt,
 };
 
 use crate::{
-    open_api_ast::{Definition, JsonSchema, Optionality},
+    open_api_ast::{Definition, JsonSchema},
     swc_builder::SwcBuilder,
 };
 
@@ -29,124 +28,11 @@ fn coerce_primitive(value: Expr, p: &str) -> Expr {
         type_args: None,
     })
 }
-fn coerce_array(values: Vec<Expr>) -> Expr {
-    Expr::Call(CallExpr {
-        span: DUMMY_SP,
-        callee: schema_ref_callee_coerce("array"),
-        args: values
-            .into_iter()
-            .map(|value| ExprOrSpread {
-                spread: None,
-                expr: value.into(),
-            })
-            .collect(),
-        type_args: None,
-    })
-}
 
-fn coerce_object(value: Expr, kvs: Vec<(String, Expr)>) -> Expr {
-    let args = vec![
-        ExprOrSpread {
-            spread: None,
-            expr: value.into(),
-        },
-        ExprOrSpread {
-            spread: None,
-            expr: Expr::Object(ObjectLit {
-                span: DUMMY_SP,
-                props: kvs
-                    .into_iter()
-                    .map(|(k, v)| {
-                        PropOrSpread::Prop(Box::new(Prop::KeyValue(KeyValueProp {
-                            key: PropName::Ident(Ident {
-                                span: DUMMY_SP,
-                                sym: k.into(),
-                                optional: false,
-                            }),
-                            value: Box::new(v),
-                        })))
-                    })
-                    .collect(),
-            })
-            .into(),
-        },
-    ];
-    Expr::Call(CallExpr {
-        span: DUMMY_SP,
-        callee: schema_ref_callee_coerce("object"),
-        args,
-        type_args: None,
-    })
-}
-
-fn coerce_tuple(value: Expr, items: Vec<Expr>, rest: Option<Expr>) -> Expr {
-    let mut props = vec![PropOrSpread::Prop(Box::new(Prop::KeyValue(KeyValueProp {
-        key: PropName::Ident(Ident {
-            span: DUMMY_SP,
-            sym: "fixed".into(),
-            optional: false,
-        }),
-        value: Expr::Array(ArrayLit {
-            span: DUMMY_SP,
-            elems: items
-                .into_iter()
-                .map(|it| {
-                    Some(ExprOrSpread {
-                        spread: None,
-                        expr: Box::new(it),
-                    })
-                })
-                .collect(),
-        })
-        .into(),
-    })))];
-    if let Some(rest) = rest {
-        props.push(PropOrSpread::Prop(Box::new(Prop::KeyValue(KeyValueProp {
-            key: PropName::Ident(Ident {
-                span: DUMMY_SP,
-                sym: "rest".into(),
-                optional: false,
-            }),
-            value: Box::new(rest),
-        }))));
-    }
-    let args = vec![
-        ExprOrSpread {
-            spread: None,
-            expr: value.into(),
-        },
-        ExprOrSpread {
-            spread: None,
-            expr: Expr::Object(ObjectLit {
-                span: DUMMY_SP,
-                props,
-            })
-            .into(),
-        },
-    ];
-    Expr::Call(CallExpr {
-        span: DUMMY_SP,
-        callee: schema_ref_callee_coerce("tuple"),
-        args,
-        type_args: None,
-    })
-}
 struct CoercerFnGenerator<'a> {
     components: &'a Vec<Definition>,
-    errors: Vec<Diagnostic>,
-    file_name: &'a FileName,
-    span: Span,
 }
 impl<'a> CoercerFnGenerator<'a> {
-    fn check_depth(&mut self, depth: usize) {
-        if depth > 0 {
-            self.errors.push(Diagnostic {
-                message: DiagnosticMessage::CoercerDepthExceeded,
-                file_name: self.file_name.clone(),
-                span: self.span,
-            });
-        }
-    }
     fn coerce_schema(&mut self, schema: &JsonSchema, value_ref: &Expr, depth: usize) -> Expr {
         match schema {
             JsonSchema::Null | JsonSchema::Const(_) | JsonSchema::Any => value_ref.clone(),
@@ -154,64 +40,8 @@ impl<'a> CoercerFnGenerator<'a> {
             JsonSchema::String => coerce_primitive(value_ref.clone(), "string"),
             JsonSchema::Number => coerce_primitive(value_ref.clone(), "number"),
             JsonSchema::Integer => coerce_primitive(value_ref.clone(), "bigint"),
-            JsonSchema::Array(values) => {
-                self.check_depth(depth);
-                coerce_array(vec![
-                    value_ref.clone(),
-                    Expr::Fn(FnExpr {
-                        ident: None,
-                        function: self.fn_coercer_from_schema(values, depth + 1).into(),
-                    }),
-                ])
-            }
-            JsonSchema::Object { values } => {
-                self.check_depth(depth);
-                coerce_object(
-                    value_ref.clone(),
-                    values
-                        .iter()
-                        .map(|(k, v)| {
-                            (
-                                k.clone(),
-                                match v {
-                                    Optionality::Optional(v) | Optionality::Required(v) => {
-                                        Expr::Fn(FnExpr {
-                                            ident: None,
-                                            function: self
-                                                .fn_coercer_from_schema(v, depth + 1)
-                                                .into(),
-                                        })
-                                    }
-                                },
-                            )
-                        })
-                        .collect(),
-                )
-            }
-
-            JsonSchema::Tuple {
-                prefix_items,
-                items,
-            } => {
-                self.check_depth(depth);
-                coerce_tuple(
-                    value_ref.clone(),
-                    prefix_items
-                        .iter()
-                        .map(|it| {
-                            Expr::Fn(FnExpr {
-                                ident: None,
-                                function: self.fn_coercer_from_schema(it, depth + 1).into(),
-                            })
-                        })
-                        .collect(),
-                    items.as_ref().map(|it| {
-                        Expr::Fn(FnExpr {
-                            ident: None,
-                            function: self.fn_coercer_from_schema(it, depth + 1).into(),
-                        })
-                    }),
-                )
+            JsonSchema::Array(_) | JsonSchema::Object { .. } | JsonSchema::Tuple { .. } => {
+                unreachable!("should be on request body, no coercion needed")
             }
 
             JsonSchema::Ref(schema_ref) => {
@@ -298,18 +128,6 @@ impl<'a> CoercerFnGenerator<'a> {
     }
 }
 #[must_use]
-pub fn from_schema(
-    schema: &JsonSchema,
-    components: &Vec<Definition>,
-    file_name: &FileName,
-    span: Span,
-) -> (Function, Vec<Diagnostic>) {
-    let mut gen = CoercerFnGenerator {
-        components,
-        errors: vec![],
-        file_name,
-        span,
-    };
-    let func = gen.fn_coercer_from_schema(schema, 0);
-    (func, gen.errors)
+pub fn from_schema(schema: &JsonSchema, components: &Vec<Definition>) -> Function {
+    CoercerFnGenerator { components }.fn_coercer_from_schema(schema, 0)
 }
