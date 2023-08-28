@@ -84,11 +84,11 @@ impl fmt::Display for MethodKind {
         match self {
             MethodKind::Get => write!(f, "get"),
             MethodKind::Post => write!(f, "post"),
-            MethodKind::Use => write!(f, "use"),
             MethodKind::Put => write!(f, "put"),
             MethodKind::Delete => write!(f, "delete"),
-            MethodKind::Patch => write!(f, "path"),
-            MethodKind::Options => write!(f, "post"),
+            MethodKind::Patch => write!(f, "patch"),
+            MethodKind::Options => write!(f, "options"),
+            MethodKind::Use => write!(f, "use"),
         }
     }
 }
@@ -220,6 +220,10 @@ impl<'a> ExtractExportDefaultVisitor<'a> {
                     let kind = match tag.sym.to_string().as_str() {
                         "GET" => MethodKind::Get,
                         "POST" => MethodKind::Post,
+                        "PUT" => MethodKind::Put,
+                        "DELETE" => MethodKind::Delete,
+                        "PATCH" => MethodKind::Patch,
+                        "OPTIONS" => MethodKind::Options,
                         "USE" => MethodKind::Use,
                         _ => panic!("unrecognized method"),
                     };

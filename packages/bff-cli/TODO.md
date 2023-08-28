@@ -1,10 +1,7 @@
-Change structure to export-decoder folder
-
 # Milestone X
 
 ## BFF Compiler
 
-- [ ] all http methods
 - [ ] coerce union, intersection
 - [ ] dependency injection
 - [ ] export decoders
@@ -12,9 +9,6 @@ Change structure to export-decoder folder
 ## BFF Runtime
 
 - [ ] all http methods
-- [ ] e2e for query params
-- [ ] e2e for cookie params
-- [ ] e2e for header params
 
 ## BFF Imports
 

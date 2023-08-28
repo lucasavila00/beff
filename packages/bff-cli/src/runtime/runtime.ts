@@ -9,7 +9,7 @@ type MetaParam = {
   coercer: any;
 };
 type HandlerMeta = {
-  method_kind: "get" | "post";
+  method_kind: "get" | "post" | "put" | "delete" | "patch" | "options";
   params: MetaParam[];
   pattern: string;
   return_validator: any;
@@ -206,15 +206,19 @@ export function registerRouter(options: {
     }
     const app = options.app;
     switch (meta.method_kind) {
+      case "get":
       case "post":
-      case "get": {
-        app[meta.method_kind](toHonoPattern(meta.pattern), async (c) =>
+      case "put":
+      case "delete":
+      case "patch":
+      case "options": {
+        app[meta.method_kind](toHonoPattern(meta.pattern), async (c: any) =>
           handleMethod(c, meta, handlerFunction)
         );
         break;
       }
       default: {
-        throw new Error("not implemented: " + meta.method_kind);
+        throw new Error("Method not recognized: " + meta.method_kind);
       }
     }
   }

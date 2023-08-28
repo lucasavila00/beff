@@ -210,182 +210,6 @@ export const meta = {
             }
         },
         {
-            "method_kind": "get",
-            "params": [
-                {
-                    "type": "path",
-                    "name": "name",
-                    "required": true,
-                    "validator": function(input) {
-                        let error_acc_0 = [];
-                        if (typeof input != "string") {
-                            error_acc_0.push({
-                                "kind": [
-                                    "NotTypeof",
-                                    "string"
-                                ],
-                                "path": [
-                                    'Path Parameter "name"'
-                                ]
-                            });
-                        }
-                        return error_acc_0;
-                    },
-                    "coercer": function(input) {
-                        return coerce_string(input);
-                    }
-                }
-            ],
-            "pattern": "/path-param/{name}",
-            "return_validator": function(input) {
-                let error_acc_0 = [];
-                if (typeof input != "string") {
-                    error_acc_0.push({
-                        "kind": [
-                            "NotTypeof",
-                            "string"
-                        ],
-                        "path": [
-                            "[GET] /path-param/{name}.response_body"
-                        ]
-                    });
-                }
-                return error_acc_0;
-            }
-        },
-        {
-            "method_kind": "get",
-            "params": [
-                {
-                    "type": "query",
-                    "name": "limit",
-                    "required": true,
-                    "validator": function(input) {
-                        let error_acc_0 = [];
-                        if (typeof input != "number") {
-                            error_acc_0.push({
-                                "kind": [
-                                    "NotTypeof",
-                                    "number"
-                                ],
-                                "path": [
-                                    'Query Parameter "limit"'
-                                ]
-                            });
-                        }
-                        return error_acc_0;
-                    },
-                    "coercer": function(input) {
-                        return coerce_number(input);
-                    }
-                }
-            ],
-            "pattern": "/query-param",
-            "return_validator": function(input) {
-                let error_acc_0 = [];
-                if (typeof input != "number") {
-                    error_acc_0.push({
-                        "kind": [
-                            "NotTypeof",
-                            "number"
-                        ],
-                        "path": [
-                            "[GET] /query-param.response_body"
-                        ]
-                    });
-                }
-                return error_acc_0;
-            }
-        },
-        {
-            "method_kind": "get",
-            "params": [
-                {
-                    "type": "header",
-                    "name": "user_agent",
-                    "required": true,
-                    "validator": function(input) {
-                        let error_acc_0 = [];
-                        if (typeof input != "string") {
-                            error_acc_0.push({
-                                "kind": [
-                                    "NotTypeof",
-                                    "string"
-                                ],
-                                "path": [
-                                    'Header Argument "user_agent"'
-                                ]
-                            });
-                        }
-                        return error_acc_0;
-                    },
-                    "coercer": function(input) {
-                        return coerce_string(input);
-                    }
-                }
-            ],
-            "pattern": "/header-param",
-            "return_validator": function(input) {
-                let error_acc_0 = [];
-                if (typeof input != "string") {
-                    error_acc_0.push({
-                        "kind": [
-                            "NotTypeof",
-                            "string"
-                        ],
-                        "path": [
-                            "[GET] /header-param.response_body"
-                        ]
-                    });
-                }
-                return error_acc_0;
-            }
-        },
-        {
-            "method_kind": "get",
-            "params": [
-                {
-                    "type": "cookie",
-                    "name": "ads_ids",
-                    "required": true,
-                    "validator": function(input) {
-                        let error_acc_0 = [];
-                        if (typeof input != "string") {
-                            error_acc_0.push({
-                                "kind": [
-                                    "NotTypeof",
-                                    "string"
-                                ],
-                                "path": [
-                                    'Cookie Argument "ads_ids"'
-                                ]
-                            });
-                        }
-                        return error_acc_0;
-                    },
-                    "coercer": function(input) {
-                        return coerce_string(input);
-                    }
-                }
-            ],
-            "pattern": "/cookie-param",
-            "return_validator": function(input) {
-                let error_acc_0 = [];
-                if (typeof input != "string") {
-                    error_acc_0.push({
-                        "kind": [
-                            "NotTypeof",
-                            "string"
-                        ],
-                        "path": [
-                            "[GET] /cookie-param.response_body"
-                        ]
-                    });
-                }
-                return error_acc_0;
-            }
-        },
-        {
             "method_kind": "post",
             "params": [],
             "pattern": "/hello",
@@ -406,33 +230,9 @@ export const meta = {
             }
         },
         {
-            "method_kind": "post",
-            "params": [
-                {
-                    "type": "path",
-                    "name": "name",
-                    "required": true,
-                    "validator": function(input) {
-                        let error_acc_0 = [];
-                        if (typeof input != "string") {
-                            error_acc_0.push({
-                                "kind": [
-                                    "NotTypeof",
-                                    "string"
-                                ],
-                                "path": [
-                                    'Path Parameter "name"'
-                                ]
-                            });
-                        }
-                        return error_acc_0;
-                    },
-                    "coercer": function(input) {
-                        return coerce_string(input);
-                    }
-                }
-            ],
-            "pattern": "/path-param/{name}",
+            "method_kind": "put",
+            "params": [],
+            "pattern": "/hello",
             "return_validator": function(input) {
                 let error_acc_0 = [];
                 if (typeof input != "string") {
@@ -442,7 +242,7 @@ export const meta = {
                             "string"
                         ],
                         "path": [
-                            "[POST] /path-param/{name}.response_body"
+                            "[PUT] /hello.response_body"
                         ]
                     });
                 }
@@ -450,42 +250,9 @@ export const meta = {
             }
         },
         {
-            "method_kind": "post",
-            "params": [
-                {
-                    "type": "body",
-                    "name": "data",
-                    "required": true,
-                    "validator": function(input) {
-                        let error_acc_0 = [];
-                        if (typeof input == "object" && input != null) {
-                            if (typeof input["a"] != "string") {
-                                error_acc_0.push({
-                                    "kind": [
-                                        "NotTypeof",
-                                        "string"
-                                    ],
-                                    "path": [
-                                        "Request Body",
-                                        "a"
-                                    ]
-                                });
-                            }
-                        } else {
-                            error_acc_0.push({
-                                "kind": [
-                                    "NotAnObject"
-                                ],
-                                "path": [
-                                    "Request Body"
-                                ]
-                            });
-                        }
-                        return error_acc_0;
-                    }
-                }
-            ],
-            "pattern": "/req-body",
+            "method_kind": "delete",
+            "params": [],
+            "pattern": "/hello",
             "return_validator": function(input) {
                 let error_acc_0 = [];
                 if (typeof input != "string") {
@@ -495,7 +262,47 @@ export const meta = {
                             "string"
                         ],
                         "path": [
-                            "[POST] /req-body.response_body"
+                            "[DELETE] /hello.response_body"
+                        ]
+                    });
+                }
+                return error_acc_0;
+            }
+        },
+        {
+            "method_kind": "patch",
+            "params": [],
+            "pattern": "/hello",
+            "return_validator": function(input) {
+                let error_acc_0 = [];
+                if (typeof input != "string") {
+                    error_acc_0.push({
+                        "kind": [
+                            "NotTypeof",
+                            "string"
+                        ],
+                        "path": [
+                            "[PATCH] /hello.response_body"
+                        ]
+                    });
+                }
+                return error_acc_0;
+            }
+        },
+        {
+            "method_kind": "options",
+            "params": [],
+            "pattern": "/hello",
+            "return_validator": function(input) {
+                let error_acc_0 = [];
+                if (typeof input != "string") {
+                    error_acc_0.push({
+                        "kind": [
+                            "NotTypeof",
+                            "string"
+                        ],
+                        "path": [
+                            "[OPTIONS] /hello.response_body"
                         ]
                     });
                 }
@@ -540,20 +347,9 @@ export const meta = {
                             }
                         }
                     }
-                }
-            },
-            "/path-param/{name}": {
-                "get": {
-                    "parameters": [
-                        {
-                            "name": "name",
-                            "in": "path",
-                            "required": true,
-                            "schema": {
-                                "type": "string"
-                            }
-                        }
-                    ],
+                },
+                "put": {
+                    "parameters": [],
                     "responses": {
                         "200": {
                             "description": "successful operation",
@@ -567,17 +363,8 @@ export const meta = {
                         }
                     }
                 },
-                "post": {
-                    "parameters": [
-                        {
-                            "name": "name",
-                            "in": "path",
-                            "required": true,
-                            "schema": {
-                                "type": "string"
-                            }
-                        }
-                    ],
+                "delete": {
+                    "parameters": [],
                     "responses": {
                         "200": {
                             "description": "successful operation",
@@ -590,46 +377,9 @@ export const meta = {
                             }
                         }
                     }
-                }
-            },
-            "/query-param": {
-                "get": {
-                    "parameters": [
-                        {
-                            "name": "limit",
-                            "in": "query",
-                            "required": true,
-                            "schema": {
-                                "type": "number"
-                            }
-                        }
-                    ],
-                    "responses": {
-                        "200": {
-                            "description": "successful operation",
-                            "content": {
-                                "application/json": {
-                                    "schema": {
-                                        "type": "number"
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-            },
-            "/header-param": {
-                "get": {
-                    "parameters": [
-                        {
-                            "name": "user_agent",
-                            "in": "header",
-                            "required": true,
-                            "schema": {
-                                "type": "string"
-                            }
-                        }
-                    ],
+                },
+                "patch": {
+                    "parameters": [],
                     "responses": {
                         "200": {
                             "description": "successful operation",
@@ -642,54 +392,8 @@ export const meta = {
                             }
                         }
                     }
-                }
-            },
-            "/cookie-param": {
-                "get": {
-                    "parameters": [
-                        {
-                            "name": "ads_ids",
-                            "in": "cookie",
-                            "required": true,
-                            "schema": {
-                                "type": "string"
-                            }
-                        }
-                    ],
-                    "responses": {
-                        "200": {
-                            "description": "successful operation",
-                            "content": {
-                                "application/json": {
-                                    "schema": {
-                                        "type": "string"
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-            },
-            "/req-body": {
-                "post": {
-                    "requestBody": {
-                        "required": true,
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "type": "object",
-                                    "required": [
-                                        "a"
-                                    ],
-                                    "properties": {
-                                        "a": {
-                                            "type": "string"
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                    },
+                },
+                "options": {
                     "parameters": [],
                     "responses": {
                         "200": {
