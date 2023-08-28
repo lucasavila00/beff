@@ -1,14 +1,13 @@
 import { Cookie, Header } from "./bff-generated";
-
+import { cors } from "hono/cors";
 export default {
+  ["USE/*"]: [cors()],
   ["GET/hello"]: async (): Promise<string> => {
     return "Hello!";
   },
-  [`GET/path-param/{name}`]:
-    // (deps: any, context: any) =>
-    async (name: string): Promise<string> => {
-      return name;
-    },
+  [`GET/path-param/{name}`]: async (name: string): Promise<string> => {
+    return name;
+  },
   ["GET/query-param"]: async (limit: number): Promise<number> => {
     return limit;
   },
@@ -18,8 +17,6 @@ export default {
   [`GET/cookie-param`]: async (ads_ids: Cookie<string>): Promise<string> => {
     return ads_ids;
   },
-
-  // POST
   [`POST/hello`]: async (): Promise<string> => {
     return "Hello!";
   },

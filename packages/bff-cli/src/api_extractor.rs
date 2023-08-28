@@ -66,7 +66,6 @@ pub enum HandlerParameter {
         required: bool,
         description: Option<String>,
     },
-    Context,
 }
 
 #[derive(Debug, Clone, Copy, Eq, PartialEq)]
@@ -360,9 +359,6 @@ impl<'a> ExtractExportDefaultVisitor<'a> {
             let name = i.sym.to_string();
             if name == "Header" || name == "Cookie" {
                 return self.parse_lib_param(i, &tref.type_params, required, description);
-            }
-            if name == "Context" {
-                return HandlerParameter::Context;
             }
         }
         HandlerParameter::PathOrQueryOrBody {
@@ -786,7 +782,6 @@ fn endpoint_to_operation_object(endpoint: FnHandler) -> OperationObject {
                 description,
                 schema,
             }),
-            HandlerParameter::Context => {}
         };
     }
     OperationObject {

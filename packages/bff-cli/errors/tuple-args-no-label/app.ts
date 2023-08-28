@@ -1,5 +1,3 @@
-import { GET } from "bff";
-
 type User = {
   name: string;
 };

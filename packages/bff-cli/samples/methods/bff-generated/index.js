@@ -156,19 +156,30 @@ export function registerRouter(options) {
     const handlersMeta = meta["handlersMeta"];
     for (const meta of handlersMeta) {
         const key = `${meta.method_kind.toUpperCase()}${meta.pattern}`;
-        const handlerFunction = options.router[key];
-        if (handlerFunction == null) {
+        const handlerData = options.router[key];
+        if (handlerData == null) {
             throw new Error("handler not found: " + key);
         }
         const app = options.app;
         switch (meta.method_kind) {
+            case "use": {
+                if (Array.isArray(handlerData)) {
+                    for (const h of handlerData) {
+                        app.use(meta.pattern, h);
+                    }
+                }
+                else {
+                    app.use(meta.pattern, handlerData);
+                }
+                break;
+            }
             case "get":
             case "post":
             case "put":
             case "delete":
             case "patch":
             case "options": {
-                app[meta.method_kind](toHonoPattern(meta.pattern), async (c) => handleMethod(c, meta, handlerFunction));
+                app[meta.method_kind](toHonoPattern(meta.pattern), async (c) => handleMethod(c, meta, handlerData));
                 break;
             }
             default: {
@@ -180,6 +191,67 @@ export function registerRouter(options) {
 export const todo = () => {
     throw new Error("TODO: not implemented");
 };
+export function buildFetchClient(fetcher, options) {
+    const client = {};
+    const handlersMeta = meta["handlersMeta"];
+    for (const meta of handlersMeta) {
+        const key = `${meta.method_kind.toUpperCase()}${meta.pattern}`;
+        client[key] = async (...params) => {
+            let url = options.baseUrl + meta.pattern;
+            const init = {
+                method: meta.method_kind.toUpperCase(),
+            };
+            let hasAddedQueryParams = false;
+            for (let index = 0; index < meta.params.length; index++) {
+                const metadata = meta.params[index];
+                const param = params[index];
+                switch (metadata.type) {
+                    case "path": {
+                        url = url.replace(`{${metadata.name}}`, param);
+                        break;
+                    }
+                    case "query": {
+                        if (!hasAddedQueryParams) {
+                            url += "?";
+                            hasAddedQueryParams = true;
+                        }
+                        url += `${metadata.name}=${param}&`;
+                        break;
+                    }
+                    case "header": {
+                        if (init.headers == null) {
+                            init.headers = {};
+                        }
+                        init.headers[metadata.name] = param;
+                        break;
+                    }
+                    case "cookie": {
+                        if (init.headers == null) {
+                            init.headers = {};
+                        }
+                        init.headers["cookie"] = `${metadata.name}=${param}`;
+                        break;
+                    }
+                    case "body": {
+                        init.body = JSON.stringify(param);
+                        break;
+                    }
+                    default: {
+                        throw new Error("not implemented: " + metadata.type);
+                    }
+                }
+            }
+            const resp = await fetcher(url, init);
+            if (resp.ok) {
+                return resp.json();
+            }
+            else {
+                throw new Error(await resp.text());
+            }
+        };
+    }
+    return client;
+}
 
 export const meta = {
     "handlersMeta": [

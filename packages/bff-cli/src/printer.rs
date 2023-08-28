@@ -389,12 +389,6 @@ fn param_to_js(name: &str, param: HandlerParameter, pattern: &ParsedPattern) -> 
                 ("coercer".into(), Js::Coercer(schema)),
             ])
         }
-        HandlerParameter::Context => {
-            Js::Object(vec![
-                //
-                ("type".into(), Js::String("context".to_string())),
-            ])
-        }
     }
 }
 

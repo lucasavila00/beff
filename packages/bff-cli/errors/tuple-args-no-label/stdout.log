@@ -1,14 +1,14 @@
 Error: 
-   ╭─[/app.ts:7:20]
+   ╭─[/app.ts:5:20]
    │
- 7 │ type Pagination = [number, number];
+ 5 │ type Pagination = [number, number];
    │                    ───┬──  
    │                       ╰──── RestParamMustBeLabelAnnotated
 ───╯
 Error: 
-   ╭─[/app.ts:7:28]
+   ╭─[/app.ts:5:28]
    │
- 7 │ type Pagination = [number, number];
+ 5 │ type Pagination = [number, number];
    │                            ───┬──  
    │                               ╰──── RestParamMustBeLabelAnnotated
 ───╯

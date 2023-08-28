@@ -9,7 +9,7 @@ type MetaParam = {
   coercer: any;
 };
 type HandlerMeta = {
-  method_kind: "get" | "post" | "put" | "delete" | "patch" | "options";
+  method_kind: "get" | "post" | "put" | "delete" | "patch" | "options" | "use";
   params: MetaParam[];
   pattern: string;
   return_validator: any;
@@ -200,12 +200,22 @@ export function registerRouter(options: {
   const handlersMeta: HandlerMeta[] = meta["handlersMeta"];
   for (const meta of handlersMeta) {
     const key = `${meta.method_kind.toUpperCase()}${meta.pattern}`;
-    const handlerFunction = options.router[key];
-    if (handlerFunction == null) {
+    const handlerData = options.router[key];
+    if (handlerData == null) {
       throw new Error("handler not found: " + key);
     }
     const app = options.app;
     switch (meta.method_kind) {
+      case "use": {
+        if (Array.isArray(handlerData)) {
+          for (const h of handlerData) {
+            app.use(meta.pattern, h);
+          }
+        } else {
+          app.use(meta.pattern, handlerData);
+        }
+        break;
+      }
       case "get":
       case "post":
       case "put":
@@ -213,7 +223,7 @@ export function registerRouter(options: {
       case "patch":
       case "options": {
         app[meta.method_kind](toHonoPattern(meta.pattern), async (c: any) =>
-          handleMethod(c, meta, handlerFunction)
+          handleMethod(c, meta, handlerData)
         );
         break;
       }
@@ -239,14 +249,87 @@ export const todo = <T>(): T => {
   throw new Error("TODO: not implemented");
 };
 
-export type NormalizeRouter<T> = T extends (
+type NormalizeRouterItem<T> = T extends (
   ...deps: any
 ) => (...args: infer I) => Promise<infer O>
   ? [I, O]
   : T extends (...args: infer I) => Promise<infer O>
   ? [I, O]
   : never;
+type SimpleHttpFunction<M extends [any[], any]> = (
+  ...args: M[0]
+) => Promise<M[1]>;
 
-export type SimpleHttpClient<M extends Record<string, [[...any[]], any]>> = {
-  [K in keyof M]: (...args: M[K][0]) => Promise<M[K][1]>;
+export type ClientFromRouter<R> = {
+  [K in keyof R]: SimpleHttpFunction<NormalizeRouterItem<R[K]>>;
 };
+type Response = any;
+type RequestInit = any;
+export function buildFetchClient(
+  fetcher: (url: string, info: RequestInit) => Response | Promise<Response>,
+  options: {
+    baseUrl: string;
+  }
+) {
+  const client: any = {};
+  const handlersMeta: HandlerMeta[] = meta["handlersMeta"];
+  for (const meta of handlersMeta) {
+    const key = `${meta.method_kind.toUpperCase()}${meta.pattern}`;
+
+    client[key] = async (...params: any) => {
+      let url = options.baseUrl + meta.pattern;
+      const init: RequestInit = {
+        method: meta.method_kind.toUpperCase(),
+      };
+      let hasAddedQueryParams = false;
+
+      for (let index = 0; index < meta.params.length; index++) {
+        const metadata = meta.params[index];
+        const param = params[index];
+        switch (metadata.type) {
+          case "path": {
+            url = url.replace(`{${metadata.name}}`, param);
+            break;
+          }
+          case "query": {
+            if (!hasAddedQueryParams) {
+              url += "?";
+              hasAddedQueryParams = true;
+            }
+            url += `${metadata.name}=${param}&`;
+            break;
+          }
+          case "header": {
+            if (init.headers == null) {
+              init.headers = {};
+            }
+            init.headers[metadata.name] = param;
+            break;
+          }
+          case "cookie": {
+            if (init.headers == null) {
+              init.headers = {};
+            }
+            init.headers["cookie"] = `${metadata.name}=${param}`;
+            break;
+          }
+          case "body": {
+            init.body = JSON.stringify(param);
+            break;
+          }
+          default: {
+            throw new Error("not implemented: " + metadata.type);
+          }
+        }
+      }
+
+      const resp = await fetcher(url, init);
+      if (resp.ok) {
+        return resp.json();
+      } else {
+        throw new Error(await resp.text());
+      }
+    };
+  }
+  return client;
+}
