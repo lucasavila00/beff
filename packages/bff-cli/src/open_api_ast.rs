@@ -137,6 +137,10 @@ pub struct ApiPath {
     pub pattern: String,
     pub get: Option<OperationObject>,
     pub post: Option<OperationObject>,
+    pub put: Option<OperationObject>,
+    pub delete: Option<OperationObject>,
+    pub patch: Option<OperationObject>,
+    pub options: Option<OperationObject>,
 }
 
 impl ApiPath {
@@ -146,6 +150,10 @@ impl ApiPath {
             pattern: pattern.into(),
             get: None,
             post: None,
+            put: None,
+            delete: None,
+            patch: None,
+            options: None,
         }
     }
 }

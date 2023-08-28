@@ -212,6 +212,7 @@ it("gets with cookie param", async () => {
       Cookie: "ads_ids=asd",
     },
   });
+
   const res = await app.request(req);
   expect(res.status).toMatchInlineSnapshot("200");
   expect(await res.json()).toMatchInlineSnapshot('"asd"');

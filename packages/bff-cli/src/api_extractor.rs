@@ -75,6 +75,10 @@ pub enum HandlerParameter {
 pub enum MethodKind {
     Get,
     Post,
+    Put,
+    Delete,
+    Patch,
+    Options,
     Use,
 }
 impl fmt::Display for MethodKind {
@@ -83,6 +87,10 @@ impl fmt::Display for MethodKind {
             MethodKind::Get => write!(f, "get"),
             MethodKind::Post => write!(f, "post"),
             MethodKind::Use => write!(f, "use"),
+            MethodKind::Put => write!(f, "put"),
+            MethodKind::Delete => write!(f, "delete"),
+            MethodKind::Patch => write!(f, "path"),
+            MethodKind::Options => write!(f, "post"),
         }
     }
 }
@@ -727,6 +735,10 @@ fn add_endpoint_to_path(path: &mut open_api_ast::ApiPath, endpoint: FnHandler) {
     match kind {
         MethodKind::Get => path.get = op,
         MethodKind::Post => path.post = op,
+        MethodKind::Put => path.put = op,
+        MethodKind::Delete => path.delete = op,
+        MethodKind::Patch => path.patch = op,
+        MethodKind::Options => path.options = op,
         MethodKind::Use => {}
     }
 }

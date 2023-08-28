@@ -1,5 +1,4 @@
-import { GET } from "bff";
-import { buildDecoders } from "./bff-generated";
+import { buildDecoders, GET } from "./bff-generated";
 
 type User = {
   name: string;

@@ -1,4 +1,4 @@
-import { GET, USE } from "bff";
+import { GET, USE } from "./bff-generated";
 import { Context as HonoContext } from "hono/context";
 import { cors } from "hono/cors";
 import { User } from "./types.js";

@@ -4,10 +4,12 @@ Change structure to export-decoder folder
 
 ## BFF Compiler
 
+- [ ] request body param
+
 - [ ] all http methods
 - [ ] coerce union, intersection
 - [ ] dependency injection
-- [?] export decoders
+- [ ] export decoders
 
 ## BFF Runtime
 

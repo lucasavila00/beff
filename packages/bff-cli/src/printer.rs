@@ -237,6 +237,18 @@ impl ToJsonKv for open_api_ast::ApiPath {
         if let Some(post) = self.post {
             v.push(("post".into(), post.to_json()));
         }
+        if let Some(put) = self.put {
+            v.push(("put".into(), put.to_json()));
+        }
+        if let Some(delete) = self.delete {
+            v.push(("delete".into(), delete.to_json()));
+        }
+        if let Some(patch) = self.patch {
+            v.push(("patch".into(), patch.to_json()));
+        }
+        if let Some(options) = self.options {
+            v.push(("options".into(), options.to_json()));
+        }
         if v.is_empty() {
             return vec![];
         }
