@@ -4,8 +4,6 @@ Change structure to export-decoder folder
 
 ## BFF Compiler
 
-- [ ] request body param open api
-
 - [ ] all http methods
 - [ ] coerce union, intersection
 - [ ] dependency injection

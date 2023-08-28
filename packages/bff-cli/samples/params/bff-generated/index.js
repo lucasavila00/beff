@@ -501,7 +501,10 @@ export const meta = {
     ],
     "schema": {
         "openapi": "3.1.0",
-        "info": {},
+        "info": {
+            "title": "No title",
+            "version": "0.0.0"
+        },
         "paths": {
             "/hello": {
                 "get": {
@@ -665,6 +668,24 @@ export const meta = {
             },
             "/req-body": {
                 "post": {
+                    "requestBody": {
+                        "required": true,
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "required": [
+                                        "a"
+                                    ],
+                                    "properties": {
+                                        "a": {
+                                            "type": "string"
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    },
                     "parameters": [],
                     "responses": {
                         "200": {

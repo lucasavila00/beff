@@ -288,7 +288,10 @@ export const meta = {
     ],
     "schema": {
         "openapi": "3.1.0",
-        "info": {},
+        "info": {
+            "title": "No title",
+            "version": "0.0.0"
+        },
         "paths": {
             "/user": {
                 "get": {

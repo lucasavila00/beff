@@ -18,7 +18,10 @@ it("docs json", async () => {
       "components": {
         "schemas": {},
       },
-      "info": {},
+      "info": {
+        "title": "No title",
+        "version": "0.0.0",
+      },
       "openapi": "3.1.0",
       "paths": {
         "/cookie-param": {
@@ -184,6 +187,24 @@ it("docs json", async () => {
         "/req-body": {
           "post": {
             "parameters": [],
+            "requestBody": {
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "properties": {
+                      "a": {
+                        "type": "string",
+                      },
+                    },
+                    "required": [
+                      "a",
+                    ],
+                    "type": "object",
+                  },
+                },
+              },
+              "required": true,
+            },
             "responses": {
               "200": {
                 "content": {

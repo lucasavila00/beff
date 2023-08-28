@@ -289,12 +289,14 @@ impl ToJson for open_api_ast::Info {
         if let Some(desc) = self.description {
             v.push(("description".into(), Json::String(desc)));
         }
-        if let Some(title) = self.title {
-            v.push(("title".into(), Json::String(title)));
-        }
-        if let Some(version) = self.version {
-            v.push(("version".into(), Json::String(version)));
-        }
+        v.push((
+            "title".into(),
+            Json::String(self.title.unwrap_or("No title".to_owned())),
+        ));
+        v.push((
+            "version".into(),
+            Json::String(self.version.unwrap_or("0.0.0".to_owned())),
+        ));
         Json::Object(v)
     }
 }
