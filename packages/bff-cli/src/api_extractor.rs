@@ -692,20 +692,21 @@ pub enum FunctionParameterIn {
     Body,
 }
 
-fn is_type_simple(it: &JsonSchema) -> bool {
+fn is_type_simple(it: &JsonSchema, components: &Vec<Definition>) -> bool {
     match it {
-        JsonSchema::Ref(_) => {
-            // TODO: should they resolve with more context?
-            false
+        JsonSchema::Ref(r) => {
+            let def = components.iter().find(|it| &it.name == r).unwrap();
+            is_type_simple(&def.schema, components)
         }
-        JsonSchema::AnyOf(vs) | JsonSchema::AllOf(vs) => vs.iter().all(is_type_simple),
+        JsonSchema::AnyOf(vs) => vs.iter().all(|it| is_type_simple(it, components)),
         JsonSchema::Null
         | JsonSchema::Boolean
         | JsonSchema::String
         | JsonSchema::Number
         | JsonSchema::Integer
         | JsonSchema::Const(_) => true,
-        JsonSchema::Any
+        JsonSchema::AllOf(_)
+        | JsonSchema::Any
         | JsonSchema::Object { .. }
         | JsonSchema::Array(_)
         | JsonSchema::Tuple { .. } => false,
@@ -716,12 +717,17 @@ pub fn operation_parameter_in_path_or_query_or_body(
     name: &str,
     pattern: &ParsedPattern,
     schema: &JsonSchema,
+    components: &Vec<Definition>,
 ) -> FunctionParameterIn {
     // if name is in pattern return path
     if pattern.path_params.contains(&name.to_string()) {
-        FunctionParameterIn::Path
+        if is_type_simple(schema, components) {
+            FunctionParameterIn::Path
+        } else {
+            panic!("not supported, should be simple param");
+        }
     } else {
-        if is_type_simple(schema) {
+        if is_type_simple(schema, components) {
             FunctionParameterIn::Query
         } else {
             FunctionParameterIn::Body
@@ -729,7 +735,10 @@ pub fn operation_parameter_in_path_or_query_or_body(
     }
 }
 
-fn endpoint_to_operation_object(endpoint: FnHandler) -> OperationObject {
+fn endpoint_to_operation_object(
+    endpoint: FnHandler,
+    components: &Vec<Definition>,
+) -> OperationObject {
     let mut parameters: Vec<ParameterObject> = vec![];
     let mut json_request_body: Option<JsonRequestBody> = None;
     for (key, param) in endpoint.parameters.into_iter() {
@@ -740,8 +749,12 @@ fn endpoint_to_operation_object(endpoint: FnHandler) -> OperationObject {
                 description,
                 ..
             } => {
-                match operation_parameter_in_path_or_query_or_body(&key, &endpoint.pattern, &schema)
-                {
+                match operation_parameter_in_path_or_query_or_body(
+                    &key,
+                    &endpoint.pattern,
+                    &schema,
+                    components,
+                ) {
                     FunctionParameterIn::Path => parameters.push(ParameterObject {
                         in_: ParameterIn::Path,
                         name: key,
@@ -793,11 +806,15 @@ fn endpoint_to_operation_object(endpoint: FnHandler) -> OperationObject {
     }
 }
 
-fn add_endpoint_to_path(path: &mut open_api_ast::ApiPath, endpoint: FnHandler) {
+fn add_endpoint_to_path(
+    path: &mut open_api_ast::ApiPath,
+    endpoint: FnHandler,
+    components: &Vec<Definition>,
+) {
     log::debug!("adding endpoint to path");
 
     let kind = endpoint.pattern.method_kind;
-    let op = Some(endpoint_to_operation_object(endpoint));
+    let op = Some(endpoint_to_operation_object(endpoint, components));
     match kind {
         MethodKind::Get => path.get = op,
         MethodKind::Post => path.post = op,
@@ -809,17 +826,20 @@ fn add_endpoint_to_path(path: &mut open_api_ast::ApiPath, endpoint: FnHandler) {
     }
 }
 
-fn endpoints_to_paths(endpoints: Vec<FnHandler>) -> Vec<open_api_ast::ApiPath> {
+fn endpoints_to_paths(
+    endpoints: Vec<FnHandler>,
+    components: &Vec<Definition>,
+) -> Vec<open_api_ast::ApiPath> {
     let mut acc: Vec<open_api_ast::ApiPath> = vec![];
     for endpoint in endpoints {
         let found = acc
             .iter_mut()
             .find(|x| x.pattern == endpoint.pattern.open_api_pattern);
         if let Some(path) = found {
-            add_endpoint_to_path(path, endpoint);
+            add_endpoint_to_path(path, endpoint, components);
         } else {
             let mut path = open_api_ast::ApiPath::from_pattern(&endpoint.pattern.open_api_pattern);
-            add_endpoint_to_path(&mut path, endpoint);
+            add_endpoint_to_path(&mut path, endpoint, components);
             acc.push(path);
         };
     }
@@ -830,6 +850,7 @@ pub struct ExtractResult {
     pub errors: Vec<Diagnostic>,
     pub open_api: OpenApi,
     pub handlers: Vec<FnHandler>,
+    pub components: Vec<Definition>,
 }
 
 pub fn extract_schema(
@@ -848,8 +869,8 @@ pub fn extract_schema(
     log::debug!("visited module");
     let open_api = OpenApi {
         info: visitor.info,
-        paths: endpoints_to_paths(visitor.handlers.clone()),
-        components: visitor.components,
+        paths: endpoints_to_paths(visitor.handlers.clone(), &visitor.components),
+        components: visitor.components.clone(),
     };
     log::debug!("extracted schema");
 
@@ -857,5 +878,6 @@ pub fn extract_schema(
         handlers: visitor.handlers,
         open_api,
         errors: visitor.errors,
+        components: visitor.components,
     }
 }

@@ -50,13 +50,14 @@ function coerce_bigint(_input: unknown) {
   throw new Error("not implemented");
   // return Object(input);
 }
-function coerce_union(_input: unknown, ..._cases: unknown[]) {
-  throw new Error("not implemented");
-  // return Object(input);
-}
-function coerce_intersection(_input: unknown, ..._cases: unknown[]) {
-  throw new Error("not implemented");
-  // return Object(input);
+function coerce_union(input: unknown, ...cases: unknown[]) {
+  for (const c of cases) {
+    const r = coerce(c, input);
+    if (!(r instanceof CoercionFailure)) {
+      return r;
+    }
+  }
+  return new CoercionFailure();
 }
 
 const template = `

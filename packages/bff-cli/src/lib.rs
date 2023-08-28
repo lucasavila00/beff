@@ -15,6 +15,7 @@ use anyhow::Context;
 use anyhow::Result;
 use api_extractor::FnHandler;
 use diag::Diagnostic;
+use open_api_ast::Definition;
 use std::collections::HashMap;
 use std::fmt::Debug;
 use std::path::PathBuf;
@@ -187,6 +188,7 @@ pub struct BundleResult {
     pub errors: Vec<Diagnostic>,
     pub open_api: OpenApi,
     pub handlers: Vec<FnHandler>,
+    pub components: Vec<Definition>,
 }
 
 pub struct Bundler {
@@ -278,6 +280,7 @@ impl Bundler {
                     entry_point: entry_point.to_string().into(),
                     handlers: extract_result.handlers,
                     entry_file_name: entry_point,
+                    components: extract_result.components,
                 })
             }
             None => Err(anyhow!("Could not find entry point: {:?}", entry_point)),

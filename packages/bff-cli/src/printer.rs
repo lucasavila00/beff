@@ -332,41 +332,49 @@ impl ToJson for OpenApi {
     }
 }
 
-fn param_to_js(name: &str, param: HandlerParameter, pattern: &ParsedPattern) -> Js {
+fn param_to_js(
+    name: &str,
+    param: HandlerParameter,
+    pattern: &ParsedPattern,
+    components: &Vec<Definition>,
+) -> Js {
     match param {
         HandlerParameter::PathOrQueryOrBody {
             schema, required, ..
-        } => match operation_parameter_in_path_or_query_or_body(&name, pattern, &schema) {
-            FunctionParameterIn::Path => Js::Object(vec![
-                ("type".into(), Js::String("path".into())),
-                ("name".into(), Js::String(name.to_string())),
-                ("required".into(), Js::Bool(required)),
-                (
-                    "validator".into(),
-                    Js::Decoder(format!("Path Parameter \"{name}\""), schema.clone()),
-                ),
-                ("coercer".into(), Js::Coercer(schema)),
-            ]),
-            FunctionParameterIn::Query => Js::Object(vec![
-                ("type".into(), Js::String("query".into())),
-                ("name".into(), Js::String(name.to_string())),
-                ("required".into(), Js::Bool(required)),
-                (
-                    "validator".into(),
-                    Js::Decoder(format!("Query Parameter \"{name}\""), schema.clone()),
-                ),
-                ("coercer".into(), Js::Coercer(schema)),
-            ]),
-            FunctionParameterIn::Body => Js::Object(vec![
-                ("type".into(), Js::String("body".into())),
-                ("name".into(), Js::String(name.to_string())),
-                ("required".into(), Js::Bool(required)),
-                (
-                    "validator".into(),
-                    Js::Decoder(format!("Request Body"), schema.clone()),
-                ),
-            ]),
-        },
+        } => {
+            match operation_parameter_in_path_or_query_or_body(&name, pattern, &schema, components)
+            {
+                FunctionParameterIn::Path => Js::Object(vec![
+                    ("type".into(), Js::String("path".into())),
+                    ("name".into(), Js::String(name.to_string())),
+                    ("required".into(), Js::Bool(required)),
+                    (
+                        "validator".into(),
+                        Js::Decoder(format!("Path Parameter \"{name}\""), schema.clone()),
+                    ),
+                    ("coercer".into(), Js::Coercer(schema)),
+                ]),
+                FunctionParameterIn::Query => Js::Object(vec![
+                    ("type".into(), Js::String("query".into())),
+                    ("name".into(), Js::String(name.to_string())),
+                    ("required".into(), Js::Bool(required)),
+                    (
+                        "validator".into(),
+                        Js::Decoder(format!("Query Parameter \"{name}\""), schema.clone()),
+                    ),
+                    ("coercer".into(), Js::Coercer(schema)),
+                ]),
+                FunctionParameterIn::Body => Js::Object(vec![
+                    ("type".into(), Js::String("body".into())),
+                    ("name".into(), Js::String(name.to_string())),
+                    ("required".into(), Js::Bool(required)),
+                    (
+                        "validator".into(),
+                        Js::Decoder(format!("Request Body"), schema.clone()),
+                    ),
+                ]),
+            }
+        }
         HandlerParameter::HeaderOrCookie {
             kind,
             schema,
@@ -392,42 +400,39 @@ fn param_to_js(name: &str, param: HandlerParameter, pattern: &ParsedPattern) -> 
     }
 }
 
-trait ToJs {
-    fn to_js(self) -> Js;
-}
-
-impl ToJs for Vec<FnHandler> {
-    fn to_js(self) -> Js {
-        Js::Array(
-            self.into_iter()
-                .map(|it| {
-                    let ptn = &it.pattern.open_api_pattern;
-                    let kind = it.pattern.method_kind.to_string().to_uppercase();
-                    let decoder_name = format!("[{kind}] {ptn}.response_body");
-                    Js::Object(vec![
-                        (
-                            "method_kind".into(),
-                            Js::String(it.pattern.method_kind.to_string()),
+fn handlers_to_js(items: Vec<FnHandler>, components: &Vec<Definition>) -> Js {
+    Js::Array(
+        items
+            .into_iter()
+            .map(|it| {
+                let ptn = &it.pattern.open_api_pattern;
+                let kind = it.pattern.method_kind.to_string().to_uppercase();
+                let decoder_name = format!("[{kind}] {ptn}.response_body");
+                Js::Object(vec![
+                    (
+                        "method_kind".into(),
+                        Js::String(it.pattern.method_kind.to_string()),
+                    ),
+                    (
+                        "params".into(),
+                        Js::Array(
+                            it.parameters
+                                .into_iter()
+                                .map(|(name, param)| {
+                                    param_to_js(&name, param, &it.pattern, components)
+                                })
+                                .collect(),
                         ),
-                        (
-                            "params".into(),
-                            Js::Array(
-                                it.parameters
-                                    .into_iter()
-                                    .map(|(name, param)| param_to_js(&name, param, &it.pattern))
-                                    .collect(),
-                            ),
-                        ),
-                        ("pattern".into(), Js::String(it.pattern.open_api_pattern)),
-                        (
-                            "return_validator".into(),
-                            Js::Decoder(decoder_name, it.return_type),
-                        ),
-                    ])
-                })
-                .collect(),
-        )
-    }
+                    ),
+                    ("pattern".into(), Js::String(it.pattern.open_api_pattern)),
+                    (
+                        "return_validator".into(),
+                        Js::Decoder(decoder_name, it.return_type),
+                    ),
+                ])
+            })
+            .collect(),
+    )
 }
 
 struct Builder;
@@ -541,7 +546,10 @@ impl ToModule for BundleResult {
                 &mut self.errors,
                 &self.entry_file_name,
                 Js::Object(vec![
-                    ("handlersMeta".into(), self.handlers.to_js()),
+                    (
+                        "handlersMeta".into(),
+                        handlers_to_js(self.handlers, &self.components),
+                    ),
                     ("schema".into(), self.open_api.to_json().to_js()),
                 ]),
                 &dfs,

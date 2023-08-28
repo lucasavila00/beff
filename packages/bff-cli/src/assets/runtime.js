@@ -29,13 +29,14 @@ function coerce_bigint(_input) {
     throw new Error("not implemented");
     // return Object(input);
 }
-function coerce_union(_input, ..._cases) {
-    throw new Error("not implemented");
-    // return Object(input);
-}
-function coerce_intersection(_input, ..._cases) {
-    throw new Error("not implemented");
-    // return Object(input);
+function coerce_union(input, ...cases) {
+    for (const c of cases) {
+        const r = coerce(c, input);
+        if (!(r instanceof CoercionFailure)) {
+            return r;
+        }
+    }
+    return new CoercionFailure();
 }
 const template = `
 <!DOCTYPE html>

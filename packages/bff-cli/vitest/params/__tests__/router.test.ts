@@ -10,7 +10,7 @@ import router from "../router";
 const app = new Hono();
 registerRouter({ app, router });
 
-const client: ClientFromRouter<typeof router> = buildFetchClient(
+const bff: ClientFromRouter<typeof router> = buildFetchClient(
   (url, info) => app.fetch(new Request(url, info)),
   {
     baseUrl: "http://localhost",
@@ -43,28 +43,28 @@ it("docs html", async () => {
 });
 
 it("get", async () => {
-  expect(await client["GET/hello"]()).toMatchInlineSnapshot('"Hello!"');
-  const n = await client["GET/query-param"](123);
+  expect(await bff["GET/hello"]()).toMatchInlineSnapshot('"Hello!"');
+  const n = await bff["GET/query-param"](123);
   expect(n).toMatchInlineSnapshot("123");
-  expect(
-    await client["GET/path-param/{name}"]("the-param")
-  ).toMatchInlineSnapshot('"the-param"');
-  expect(
-    await client["GET/header-param"]("the-user-agent")
-  ).toMatchInlineSnapshot('"the-user-agent"');
-  expect(await client["GET/cookie-param"]("the-cookie")).toMatchInlineSnapshot(
+  expect(await bff["GET/path-param/{name}"]("the-param")).toMatchInlineSnapshot(
+    '"the-param"'
+  );
+  expect(await bff["GET/header-param"]("the-user-agent")).toMatchInlineSnapshot(
+    '"the-user-agent"'
+  );
+  expect(await bff["GET/cookie-param"]("the-cookie")).toMatchInlineSnapshot(
     '"the-cookie"'
   );
 });
 
 it("post", async () => {
-  expect(await client["POST/hello"]()).toMatchInlineSnapshot('"Hello!"');
+  expect(await bff["POST/hello"]()).toMatchInlineSnapshot('"Hello!"');
   expect(
-    await client["POST/path-param/{name}"]("the-param")
+    await bff["POST/path-param/{name}"]("the-param")
   ).toMatchInlineSnapshot('"the-param"');
-  expect(
-    await client["POST/req-body"]({ a: "the-param" })
-  ).toMatchInlineSnapshot('"the-param"');
+  expect(await bff["POST/req-body"]({ a: "the-param" })).toMatchInlineSnapshot(
+    '"the-param"'
+  );
 });
 
 it("post with body and error", async () => {
@@ -81,10 +81,25 @@ it("post with body and error", async () => {
 
 it("post with body and error, client", async () => {
   try {
-    await client["POST/req-body"]({ a: 123 as any });
+    await bff["POST/req-body"]({ a: 123 as any });
   } catch (e) {
     expect(e.message).toMatchInlineSnapshot(
       '"Decoder error at Request Body.a: expected string."'
     );
   }
+});
+
+it("coerce", async () => {
+  expect(
+    await bff["GET/path-param-string/{name}"]("the-param")
+  ).toMatchInlineSnapshot('"the-param"');
+  expect(await bff["GET/path-param-number/{id}"](123)).toMatchInlineSnapshot(
+    "123"
+  );
+  expect(
+    await bff["GET/path-param-boolean/{flag}"](true)
+  ).toMatchInlineSnapshot("true");
+  expect(await bff["GET/path-param-union/{id}"](456)).toMatchInlineSnapshot(
+    '"456"'
+  );
 });
