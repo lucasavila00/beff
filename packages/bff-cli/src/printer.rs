@@ -6,7 +6,10 @@ use swc_ecma_ast::{
 };
 
 use crate::{
-    api_extractor::{parse_pattern_params, FnHandler, HandlerParameter, HeaderOrCookie},
+    api_extractor::{
+        operation_parameter_in_path_or_query_or_body, FnHandler, FunctionParameterIn,
+        HandlerParameter, HeaderOrCookie,
+    },
     coercer, decoder,
     diag::Diagnostic,
     open_api_ast::{self, Definition, Js, Json, JsonSchema, OpenApi},
@@ -190,7 +193,21 @@ impl ToJson for open_api_ast::ParameterObject {
         Json::Object(v)
     }
 }
-
+impl ToJson for open_api_ast::JsonRequestBody {
+    fn to_json(self) -> Json {
+        let mut v = vec![];
+        if let Some(desc) = self.description {
+            v.push(("description".into(), Json::String(desc)));
+        }
+        v.push(("required".into(), Json::Bool(self.required)));
+        let content = Json::Object(vec![(
+            "application/json".into(),
+            Json::Object(vec![("schema".into(), self.schema.to_json())]),
+        )]);
+        v.push(("content".into(), content));
+        Json::Object(v)
+    }
+}
 impl ToJson for open_api_ast::OperationObject {
     fn to_json(self) -> Json {
         let mut v = vec![];
@@ -199,6 +216,9 @@ impl ToJson for open_api_ast::OperationObject {
         }
         if let Some(desc) = self.description {
             v.push(("description".into(), Json::String(desc)));
+        }
+        if let Some(body) = self.json_request_body {
+            v.push(("requestBody".into(), body.to_json()));
         }
         v.push((
             "parameters".into(),
@@ -217,7 +237,10 @@ impl ToJson for open_api_ast::OperationObject {
                         "content".into(),
                         Json::Object(vec![(
                             "application/json".into(),
-                            Json::Object(vec![("schema".into(), self.json_response.to_json())]),
+                            Json::Object(vec![(
+                                "schema".into(),
+                                self.json_response_body.to_json(),
+                            )]),
                         )]),
                     ),
                 ]),
@@ -307,35 +330,41 @@ impl ToJson for OpenApi {
     }
 }
 
-fn param_to_js(name: &str, param: HandlerParameter, path_params: &[String]) -> Js {
+fn param_to_js(name: &str, param: HandlerParameter, pattern: &str) -> Js {
     match param {
         HandlerParameter::PathOrQueryOrBody {
             schema, required, ..
-        } => {
-            let is_path_param = path_params.contains(&name.to_owned());
-            let kind_name = if is_path_param {
-                "Path Argument"
-            } else {
-                "Query Argument"
-            };
-            Js::Object(vec![
-                (
-                    "type".into(),
-                    Js::String(if is_path_param {
-                        "path".into()
-                    } else {
-                        "query".into()
-                    }),
-                ),
+        } => match operation_parameter_in_path_or_query_or_body(&name, pattern, &schema) {
+            FunctionParameterIn::Path => Js::Object(vec![
+                ("type".into(), Js::String("path".into())),
                 ("name".into(), Js::String(name.to_string())),
                 ("required".into(), Js::Bool(required)),
                 (
                     "validator".into(),
-                    Js::Decoder(format!("{kind_name} \"{name}\""), schema.clone()),
+                    Js::Decoder(format!("Path Parameter \"{name}\""), schema.clone()),
                 ),
                 ("coercer".into(), Js::Coercer(schema)),
-            ])
-        }
+            ]),
+            FunctionParameterIn::Query => Js::Object(vec![
+                ("type".into(), Js::String("query".into())),
+                ("name".into(), Js::String(name.to_string())),
+                ("required".into(), Js::Bool(required)),
+                (
+                    "validator".into(),
+                    Js::Decoder(format!("Query Parameter \"{name}\""), schema.clone()),
+                ),
+                ("coercer".into(), Js::Coercer(schema)),
+            ]),
+            FunctionParameterIn::Body => Js::Object(vec![
+                ("type".into(), Js::String("body".into())),
+                ("name".into(), Js::String(name.to_string())),
+                ("required".into(), Js::Bool(required)),
+                (
+                    "validator".into(),
+                    Js::Decoder(format!("Request Body"), schema.clone()),
+                ),
+            ]),
+        },
         HandlerParameter::HeaderOrCookie {
             kind,
             schema,
@@ -376,7 +405,6 @@ impl ToJs for Vec<FnHandler> {
         Js::Array(
             self.into_iter()
                 .map(|it| {
-                    let path_params = parse_pattern_params(&it.pattern);
                     let ptn = &it.pattern;
                     let kind = it.method_kind.to_string().to_uppercase();
                     let decoder_name = format!("[{kind}] {ptn}.response_body");
@@ -387,7 +415,7 @@ impl ToJs for Vec<FnHandler> {
                             Js::Array(
                                 it.parameters
                                     .into_iter()
-                                    .map(|(name, param)| param_to_js(&name, param, &path_params))
+                                    .map(|(name, param)| param_to_js(&name, param, &it.pattern))
                                     .collect(),
                             ),
                         ),

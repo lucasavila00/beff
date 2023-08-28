@@ -1,5 +1,5 @@
 import { HTTPException } from "hono/http-exception";
-import { getCookie, } from "hono/cookie";
+import { getCookie } from "hono/cookie";
 function add_path_to_errors(errors, path) {
     return errors.map((e) => ({ ...e, path: [...path, ...e.path] }));
 }
@@ -24,24 +24,6 @@ function coerce_boolean(input) {
         return input === "1";
     }
     return new CoercionFailure();
-}
-function coerce_array(input) {
-    return String(input).split(",");
-}
-function coerce_object(input) {
-    const kvs = String(input).split(",");
-    let obj = {};
-    let last_was_key = false;
-    for (const iterator of kvs) {
-        if (last_was_key) {
-            obj[last_was_key] = iterator;
-            last_was_key = false;
-        }
-        else {
-            last_was_key = iterator;
-        }
-    }
-    return obj;
 }
 function coerce_bigint(_input) {
     throw new Error("not implemented");
@@ -132,7 +114,7 @@ const coerce = (coercer, value) => {
     return coercer(value);
 };
 const handleMethod = async (c, meta, handler) => {
-    const resolverParams = meta.params.map((p) => {
+    const resolverParamsPromise = meta.params.map(async (p) => {
         switch (p.type) {
             case "path": {
                 const value = c.req.param(p.name);
@@ -154,9 +136,14 @@ const handleMethod = async (c, meta, handler) => {
                 const coerced = coerce(p.coercer, value);
                 return decodeWithMessage(p.validator, coerced);
             }
+            case "body": {
+                const value = await c.req.json();
+                return decodeWithMessage(p.validator, value);
+            }
         }
         throw new Error("not implemented: " + p.type);
     });
+    const resolverParams = await Promise.all(resolverParamsPromise);
     const result = await handler(...resolverParams);
     return c.json(decodeNoMessage(meta.return_validator, result));
 };
@@ -175,8 +162,13 @@ export function registerRouter(options) {
         }
         const app = options.app;
         switch (meta.method_kind) {
+            case "post":
             case "get": {
-                app.get(toHonoPattern(meta.pattern), async (c) => handleMethod(c, meta, handlerFunction));
+                app[meta.method_kind](toHonoPattern(meta.pattern), async (c) => handleMethod(c, meta, handlerFunction));
+                break;
+            }
+            default: {
+                throw new Error("not implemented: " + meta.method_kind);
             }
         }
     }
@@ -229,7 +221,7 @@ export const meta = {
                                     "string"
                                 ],
                                 "path": [
-                                    'Path Argument "name"'
+                                    'Path Parameter "name"'
                                 ]
                             });
                         }
@@ -273,7 +265,7 @@ export const meta = {
                                     "number"
                                 ],
                                 "path": [
-                                    'Query Argument "limit"'
+                                    'Query Parameter "limit"'
                                 ]
                             });
                         }
@@ -388,6 +380,123 @@ export const meta = {
                 }
                 return error_acc_0;
             }
+        },
+        {
+            "method_kind": "post",
+            "params": [],
+            "pattern": "/hello",
+            "return_validator": function(input) {
+                let error_acc_0 = [];
+                if (typeof input != "string") {
+                    error_acc_0.push({
+                        "kind": [
+                            "NotTypeof",
+                            "string"
+                        ],
+                        "path": [
+                            "[POST] /hello.response_body"
+                        ]
+                    });
+                }
+                return error_acc_0;
+            }
+        },
+        {
+            "method_kind": "post",
+            "params": [
+                {
+                    "type": "path",
+                    "name": "name",
+                    "required": true,
+                    "validator": function(input) {
+                        let error_acc_0 = [];
+                        if (typeof input != "string") {
+                            error_acc_0.push({
+                                "kind": [
+                                    "NotTypeof",
+                                    "string"
+                                ],
+                                "path": [
+                                    'Path Parameter "name"'
+                                ]
+                            });
+                        }
+                        return error_acc_0;
+                    },
+                    "coercer": function(input) {
+                        return coerce_string(input);
+                    }
+                }
+            ],
+            "pattern": "/path-param/{name}",
+            "return_validator": function(input) {
+                let error_acc_0 = [];
+                if (typeof input != "string") {
+                    error_acc_0.push({
+                        "kind": [
+                            "NotTypeof",
+                            "string"
+                        ],
+                        "path": [
+                            "[POST] /path-param/{name}.response_body"
+                        ]
+                    });
+                }
+                return error_acc_0;
+            }
+        },
+        {
+            "method_kind": "post",
+            "params": [
+                {
+                    "type": "body",
+                    "name": "data",
+                    "required": true,
+                    "validator": function(input) {
+                        let error_acc_0 = [];
+                        if (typeof input == "object" && input != null) {
+                            if (typeof input["a"] != "string") {
+                                error_acc_0.push({
+                                    "kind": [
+                                        "NotTypeof",
+                                        "string"
+                                    ],
+                                    "path": [
+                                        "Request Body",
+                                        "a"
+                                    ]
+                                });
+                            }
+                        } else {
+                            error_acc_0.push({
+                                "kind": [
+                                    "NotAnObject"
+                                ],
+                                "path": [
+                                    "Request Body"
+                                ]
+                            });
+                        }
+                        return error_acc_0;
+                    }
+                }
+            ],
+            "pattern": "/req-body",
+            "return_validator": function(input) {
+                let error_acc_0 = [];
+                if (typeof input != "string") {
+                    error_acc_0.push({
+                        "kind": [
+                            "NotTypeof",
+                            "string"
+                        ],
+                        "path": [
+                            "[POST] /req-body.response_body"
+                        ]
+                    });
+                }
+                return error_acc_0;
+            }
         }
     ],
     "schema": {
@@ -409,10 +518,49 @@ export const meta = {
                             }
                         }
                     }
+                },
+                "post": {
+                    "parameters": [],
+                    "responses": {
+                        "200": {
+                            "description": "successful operation",
+                            "content": {
+                                "application/json": {
+                                    "schema": {
+                                        "type": "string"
+                                    }
+                                }
+                            }
+                        }
+                    }
                 }
             },
             "/path-param/{name}": {
                 "get": {
+                    "parameters": [
+                        {
+                            "name": "name",
+                            "in": "path",
+                            "required": true,
+                            "schema": {
+                                "type": "string"
+                            }
+                        }
+                    ],
+                    "responses": {
+                        "200": {
+                            "description": "successful operation",
+                            "content": {
+                                "application/json": {
+                                    "schema": {
+                                        "type": "string"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "post": {
                     "parameters": [
                         {
                             "name": "name",
@@ -501,6 +649,23 @@ export const meta = {
                             }
                         }
                     ],
+                    "responses": {
+                        "200": {
+                            "description": "successful operation",
+                            "content": {
+                                "application/json": {
+                                    "schema": {
+                                        "type": "string"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            },
+            "/req-body": {
+                "post": {
+                    "parameters": [],
                     "responses": {
                         "200": {
                             "description": "successful operation",

@@ -1,5 +1,5 @@
 import { HTTPException } from "hono/http-exception";
-import { getCookie, } from "hono/cookie";
+import { getCookie } from "hono/cookie";
 function add_path_to_errors(errors, path) {
     return errors.map((e) => ({ ...e, path: [...path, ...e.path] }));
 }
@@ -24,24 +24,6 @@ function coerce_boolean(input) {
         return input === "1";
     }
     return new CoercionFailure();
-}
-function coerce_array(input) {
-    return String(input).split(",");
-}
-function coerce_object(input) {
-    const kvs = String(input).split(",");
-    let obj = {};
-    let last_was_key = false;
-    for (const iterator of kvs) {
-        if (last_was_key) {
-            obj[last_was_key] = iterator;
-            last_was_key = false;
-        }
-        else {
-            last_was_key = iterator;
-        }
-    }
-    return obj;
 }
 function coerce_bigint(_input) {
     throw new Error("not implemented");
@@ -132,7 +114,7 @@ const coerce = (coercer, value) => {
     return coercer(value);
 };
 const handleMethod = async (c, meta, handler) => {
-    const resolverParams = meta.params.map((p) => {
+    const resolverParamsPromise = meta.params.map(async (p) => {
         switch (p.type) {
             case "path": {
                 const value = c.req.param(p.name);
@@ -154,9 +136,14 @@ const handleMethod = async (c, meta, handler) => {
                 const coerced = coerce(p.coercer, value);
                 return decodeWithMessage(p.validator, coerced);
             }
+            case "body": {
+                const value = await c.req.json();
+                return decodeWithMessage(p.validator, value);
+            }
         }
         throw new Error("not implemented: " + p.type);
     });
+    const resolverParams = await Promise.all(resolverParamsPromise);
     const result = await handler(...resolverParams);
     return c.json(decodeNoMessage(meta.return_validator, result));
 };
@@ -175,8 +162,13 @@ export function registerRouter(options) {
         }
         const app = options.app;
         switch (meta.method_kind) {
+            case "post":
             case "get": {
-                app.get(toHonoPattern(meta.pattern), async (c) => handleMethod(c, meta, handlerFunction));
+                app[meta.method_kind](toHonoPattern(meta.pattern), async (c) => handleMethod(c, meta, handlerFunction));
+                break;
+            }
+            default: {
+                throw new Error("not implemented: " + meta.method_kind);
             }
         }
     }
@@ -586,7 +578,7 @@ export const meta = {
                                     "string"
                                 ],
                                 "path": [
-                                    'Path Argument "id"'
+                                    'Path Parameter "id"'
                                 ]
                             });
                         }

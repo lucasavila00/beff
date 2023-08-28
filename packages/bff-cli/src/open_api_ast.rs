@@ -123,11 +123,19 @@ pub struct ParameterObject {
 }
 
 #[derive(Debug)]
+pub struct JsonRequestBody {
+    pub description: Option<String>,
+    pub schema: JsonSchema,
+    pub required: bool,
+}
+
+#[derive(Debug)]
 pub struct OperationObject {
     pub summary: Option<String>,
     pub description: Option<String>,
     pub parameters: Vec<ParameterObject>,
-    pub json_response: JsonSchema,
+    pub json_response_body: JsonSchema,
+    pub json_request_body: Option<JsonRequestBody>,
 }
 
 #[derive(Debug)]

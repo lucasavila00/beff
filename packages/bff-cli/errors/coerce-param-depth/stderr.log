@@ -1,1 +1,3 @@
-Error: Failed to write bundle
+thread 'main' panicked at packages/bff-cli/src/coercer.rs:44:17:
+internal error: entered unreachable code: should be on request body, no coercion needed
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace

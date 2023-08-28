@@ -14,7 +14,8 @@
     "noUnusedLocals": false,
     "noUnusedParameters": true,
     "baseUrl": "./",
-    "outDir": "./dist"
+    "outDir": "./dist",
+    "noFallthroughCasesInSwitch": true
   },
   "include": ["./runtime.ts"]
 }

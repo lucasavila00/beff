@@ -1,6 +1,6 @@
 use crate::diag::{Diagnostic, DiagnosticMessage};
 use crate::open_api_ast::{
-    Definition, JsonSchema, OpenApi, OperationObject, ParameterIn, ParameterObject,
+    Definition, JsonRequestBody, JsonSchema, OpenApi, OperationObject, ParameterIn, ParameterObject,
 };
 use crate::type_to_schema::TypeToSchema;
 use crate::{open_api_ast, ParsedModule};
@@ -639,7 +639,7 @@ impl<'a> Visit for ExtractExportDefaultVisitor<'a> {
 }
 
 #[must_use]
-pub fn parse_pattern_params(pattern: &str) -> Vec<String> {
+fn parse_pattern_params(pattern: &str) -> Vec<String> {
     // parse open api parameters from pattern
     let mut params = vec![];
     let chars = pattern.chars();
@@ -656,63 +656,109 @@ pub fn parse_pattern_params(pattern: &str) -> Vec<String> {
     params
 }
 
-fn operation_parameter_in_path_or_query(name: &str, pattern: &str) -> ParameterIn {
+pub enum FunctionParameterIn {
+    Path,
+    Query,
+    Body,
+}
+
+fn is_type_simple(it: &JsonSchema) -> bool {
+    match it {
+        JsonSchema::Ref(_) => {
+            // TODO: should they resolve with more context?
+            false
+        }
+        JsonSchema::AnyOf(vs) | JsonSchema::AllOf(vs) => vs.iter().all(is_type_simple),
+        JsonSchema::Null
+        | JsonSchema::Boolean
+        | JsonSchema::String
+        | JsonSchema::Number
+        | JsonSchema::Integer
+        | JsonSchema::Const(_) => true,
+        JsonSchema::Any
+        | JsonSchema::Object { .. }
+        | JsonSchema::Array(_)
+        | JsonSchema::Tuple { .. } => false,
+    }
+}
+
+pub fn operation_parameter_in_path_or_query_or_body(
+    name: &str,
+    pattern: &str,
+    schema: &JsonSchema,
+) -> FunctionParameterIn {
     // if name is in pattern return path
     let ptn_params = parse_pattern_params(pattern);
     if ptn_params.contains(&name.to_string()) {
-        ParameterIn::Path
+        FunctionParameterIn::Path
     } else {
-        ParameterIn::Query
-    }
-}
-fn to_operation_parameter(
-    key: String,
-    param: HandlerParameter,
-    pattern: &str,
-) -> Vec<ParameterObject> {
-    match param {
-        HandlerParameter::PathOrQueryOrBody {
-            schema,
-            required,
-            description,
-            ..
-        } => vec![ParameterObject {
-            in_: operation_parameter_in_path_or_query(&key, pattern),
-            name: key,
-            required,
-            description,
-            schema,
-        }],
-        HandlerParameter::HeaderOrCookie {
-            required,
-            description,
-            kind,
-            schema,
-            ..
-        } => vec![ParameterObject {
-            in_: match kind {
-                HeaderOrCookie::Header => ParameterIn::Header,
-                HeaderOrCookie::Cookie => ParameterIn::Cookie,
-            },
-            name: key,
-            required,
-            description,
-            schema,
-        }],
-        HandlerParameter::Context => vec![],
+        if is_type_simple(schema) {
+            FunctionParameterIn::Query
+        } else {
+            FunctionParameterIn::Body
+        }
     }
 }
 
 fn endpoint_to_operation_object(endpoint: FnHandler, pattern: &str) -> OperationObject {
+    let mut parameters: Vec<ParameterObject> = vec![];
+    let mut json_request_body: Option<JsonRequestBody> = None;
+    for (key, param) in endpoint.parameters.into_iter() {
+        match param {
+            HandlerParameter::PathOrQueryOrBody {
+                schema,
+                required,
+                description,
+                ..
+            } => match operation_parameter_in_path_or_query_or_body(&key, pattern, &schema) {
+                FunctionParameterIn::Path => parameters.push(ParameterObject {
+                    in_: ParameterIn::Path,
+                    name: key,
+                    required,
+                    description,
+                    schema,
+                }),
+                FunctionParameterIn::Query => parameters.push(ParameterObject {
+                    in_: ParameterIn::Query,
+                    name: key,
+                    required,
+                    description,
+                    schema,
+                }),
+                FunctionParameterIn::Body => {
+                    assert!(json_request_body.is_none());
+                    json_request_body = Some(JsonRequestBody {
+                        schema,
+                        description,
+                        required,
+                    });
+                }
+            },
+            HandlerParameter::HeaderOrCookie {
+                required,
+                description,
+                kind,
+                schema,
+                ..
+            } => parameters.push(ParameterObject {
+                in_: match kind {
+                    HeaderOrCookie::Header => ParameterIn::Header,
+                    HeaderOrCookie::Cookie => ParameterIn::Cookie,
+                },
+                name: key,
+                required,
+                description,
+                schema,
+            }),
+            HandlerParameter::Context => {}
+        };
+    }
     OperationObject {
         summary: endpoint.summary,
         description: endpoint.description,
-        parameters: endpoint
-            .parameters
-            .into_iter()
-            .flat_map(|(key, param)| to_operation_parameter(key, param, pattern))
-            .collect(),
-        json_response: endpoint.return_type,
+        parameters,
+        json_response_body: endpoint.return_type,
+        json_request_body,
     }
 }
 

@@ -2,7 +2,7 @@ import { Hono, Context } from "hono";
 import { HTTPException } from "hono/http-exception";
 import { getCookie } from "hono/cookie";
 type MetaParam = {
-  type: "path" | "query" | "cookie" | "header";
+  type: "path" | "query" | "cookie" | "header" | "body";
   name: string;
   required: boolean;
   validator: any;
@@ -151,7 +151,7 @@ const handleMethod = async (
   meta: HandlerMeta,
   handler: Function
 ) => {
-  const resolverParams: any[] = meta.params.map((p: MetaParam) => {
+  const resolverParamsPromise: any[] = meta.params.map(async (p: MetaParam) => {
     switch (p.type) {
       case "path": {
         const value = c.req.param(p.name);
@@ -173,9 +173,14 @@ const handleMethod = async (
         const coerced = coerce(p.coercer, value);
         return decodeWithMessage(p.validator, coerced);
       }
+      case "body": {
+        const value = await c.req.json();
+        return decodeWithMessage(p.validator, value);
+      }
     }
     throw new Error("not implemented: " + p.type);
   });
+  const resolverParams = await Promise.all(resolverParamsPromise);
   const result = await handler(...resolverParams);
   return c.json(decodeNoMessage(meta.return_validator, result));
 };
@@ -201,10 +206,15 @@ export function registerRouter(options: {
     }
     const app = options.app;
     switch (meta.method_kind) {
+      case "post":
       case "get": {
-        app.get(toHonoPattern(meta.pattern), async (c) =>
+        app[meta.method_kind](toHonoPattern(meta.pattern), async (c) =>
           handleMethod(c, meta, handlerFunction)
         );
+        break;
+      }
+      default: {
+        throw new Error("not implemented: " + meta.method_kind);
       }
     }
   }

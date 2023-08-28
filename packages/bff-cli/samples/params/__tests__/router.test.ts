@@ -89,9 +89,48 @@ it("docs json", async () => {
               },
             },
           },
+          "post": {
+            "parameters": [],
+            "responses": {
+              "200": {
+                "content": {
+                  "application/json": {
+                    "schema": {
+                      "type": "string",
+                    },
+                  },
+                },
+                "description": "successful operation",
+              },
+            },
+          },
         },
         "/path-param/{name}": {
           "get": {
+            "parameters": [
+              {
+                "in": "path",
+                "name": "name",
+                "required": true,
+                "schema": {
+                  "type": "string",
+                },
+              },
+            ],
+            "responses": {
+              "200": {
+                "content": {
+                  "application/json": {
+                    "schema": {
+                      "type": "string",
+                    },
+                  },
+                },
+                "description": "successful operation",
+              },
+            },
+          },
+          "post": {
             "parameters": [
               {
                 "in": "path",
@@ -134,6 +173,23 @@ it("docs json", async () => {
                   "application/json": {
                     "schema": {
                       "type": "number",
+                    },
+                  },
+                },
+                "description": "successful operation",
+              },
+            },
+          },
+        },
+        "/req-body": {
+          "post": {
+            "parameters": [],
+            "responses": {
+              "200": {
+                "content": {
+                  "application/json": {
+                    "schema": {
+                      "type": "string",
                     },
                   },
                 },
@@ -216,4 +272,47 @@ it("gets with cookie param", async () => {
   const res = await app.request(req);
   expect(res.status).toMatchInlineSnapshot("200");
   expect(await res.json()).toMatchInlineSnapshot('"asd"');
+});
+
+it("post hello", async () => {
+  const req = new Request("http://localhost/hello", {
+    method: "POST",
+  });
+  const res = await app.request(req);
+  expect(res.status).toMatchInlineSnapshot("200");
+  expect(Object.fromEntries(res.headers.entries())).toMatchInlineSnapshot(`
+    {
+      "content-type": "application/json; charset=UTF-8",
+    }
+  `);
+  expect(await res.json()).toMatchInlineSnapshot('"Hello!"');
+});
+
+it("post with path param", async () => {
+  const req = new Request("http://localhost/path-param/the-param", {
+    method: "POST",
+  });
+  const res = await app.request(req);
+  expect(res.status).toMatchInlineSnapshot("200");
+  expect(await res.json()).toMatchInlineSnapshot('"the-param"');
+});
+
+it("post with body", async () => {
+  const req = new Request("http://localhost/req-body", {
+    method: "POST",
+    body: JSON.stringify({ a: "the-param" }),
+  });
+  const res = await app.request(req);
+  expect(res.status).toMatchInlineSnapshot("200");
+  expect(await res.json()).toMatchInlineSnapshot('"the-param"');
+});
+
+it("post with body and error", async () => {
+  const req = new Request("http://localhost/req-body", {
+    method: "POST",
+    body: JSON.stringify({ a: 123 }),
+  });
+  const res = await app.request(req);
+  expect(res.status).toMatchInlineSnapshot('422');
+  expect(await res.text()).toMatchInlineSnapshot('"Decoder error at Request Body.a: expected string."');
 });
