@@ -14,16 +14,11 @@ type DecodersOfKV<T> = {
     [K in keyof T]: Decoder<T[K]>;
 };
 export declare const buildDecoders: <T>() => DecodersOfKV<T>;
-type MethodMaker = <Elem extends string, Template extends readonly Elem[]>(template: Template, ..._args: []) => string;
-export declare const GET: MethodMaker;
-export declare const POST: MethodMaker;
-export declare const PUT: MethodMaker;
-export declare const DELETE: MethodMaker;
-export declare const PATCH: MethodMaker;
-export declare const HEAD: MethodMaker;
-export declare const OPTIONS: MethodMaker;
-export declare const USE: MethodMaker;
 export type Header<T> = T;
 export type Cookie<T> = T;
 export declare const todo: <T>() => T;
+export type NormalizeRouter<T> = T extends (...deps: any) => (...args: infer I) => Promise<infer O> ? [I, O] : T extends (...args: infer I) => Promise<infer O> ? [I, O] : never;
+export type SimpleHttpClient<M extends Record<string, [[...any[]], any]>> = {
+    [K in keyof M]: (...args: M[K][0]) => Promise<M[K][1]>;
+};
 export {};

@@ -155,7 +155,7 @@ export function registerRouter(options) {
     registerDocs(options.app, meta, options.openApi?.servers ?? []);
     const handlersMeta = meta["handlersMeta"];
     for (const meta of handlersMeta) {
-        const key = `${meta.method_kind.toUpperCase()}(${meta.pattern})`;
+        const key = `${meta.method_kind.toUpperCase()}${meta.pattern}`;
         const handlerFunction = options.router[key];
         if (handlerFunction == null) {
             throw new Error("handler not found: " + key);
@@ -177,15 +177,9 @@ export function registerRouter(options) {
         }
     }
 }
-export const GET = (template) => `GET(${template.join(",")})`;
-export const POST = (template) => `POST(${template.join(",")})`;
-export const PUT = (template) => `PUT(${template.join(",")})`;
-export const DELETE = (template) => `DELETE(${template.join(",")})`;
-export const PATCH = (template) => `PATCH(${template.join(",")})`;
-export const HEAD = (template) => `HEAD(${template.join(",")})`;
-export const OPTIONS = (template) => `OPTIONS(${template.join(",")})`;
-export const USE = (template) => `USE(${template.join(",")})`;
-export const todo = () => null;
+export const todo = () => {
+    throw new Error("TODO: not implemented");
+};
 
 export const meta = {
     "handlersMeta": [

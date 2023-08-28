@@ -6,10 +6,6 @@
 - [ ] dependency injection
 - [ ] export decoders
 
-## BFF Runtime
-
-- [ ] all http methods
-
 ## BFF Imports
 
 - [ ] "alias" for hono exception

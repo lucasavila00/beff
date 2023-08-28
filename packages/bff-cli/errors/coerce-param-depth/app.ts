@@ -6,5 +6,5 @@ type A = {
 };
 
 export default {
-  [GET`/hello/{id}`]: async (id: A): Promise<string> => `Hello ${id}!`,
+  [`GET/hello/{id}`]: async (id: A): Promise<string> => `Hello ${id}!`,
 };

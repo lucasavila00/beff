@@ -5,13 +5,13 @@ namespace Y {
   export type B = [string, string];
 }
 export default {
-  [GET`/user`]: async (...q: string[]): Promise<string> => {
+  [`/user`]: async (...q: string[]): Promise<string> => {
     return todo();
   },
-  [GET`/user`]: async (...q: A<string>): Promise<string> => {
+  [`/user1`]: async (...q: A<string>): Promise<string> => {
     return todo();
   },
-  [GET`/user`]: async (...q: Y.B): Promise<string> => {
+  [`/user2`]: async (...q: Y.B): Promise<string> => {
     return todo();
   },
 };

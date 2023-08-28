@@ -199,7 +199,7 @@ export function registerRouter(options: {
   registerDocs(options.app, meta, options.openApi?.servers ?? []);
   const handlersMeta: HandlerMeta[] = meta["handlersMeta"];
   for (const meta of handlersMeta) {
-    const key = `${meta.method_kind.toUpperCase()}(${meta.pattern})`;
+    const key = `${meta.method_kind.toUpperCase()}${meta.pattern}`;
     const handlerFunction = options.router[key];
     if (handlerFunction == null) {
       throw new Error("handler not found: " + key);
@@ -232,23 +232,21 @@ type DecodersOfKV<T> = {
 };
 export declare const buildDecoders: <T>() => DecodersOfKV<T>;
 
-type MethodMaker = <Elem extends string, Template extends readonly Elem[]>(
-  template: Template,
-  ..._args: []
-) => string;
-
-export const GET: MethodMaker = (template) => `GET(${template.join(",")})`;
-export const POST: MethodMaker = (template) => `POST(${template.join(",")})`;
-export const PUT: MethodMaker = (template) => `PUT(${template.join(",")})`;
-export const DELETE: MethodMaker = (template) =>
-  `DELETE(${template.join(",")})`;
-export const PATCH: MethodMaker = (template) => `PATCH(${template.join(",")})`;
-export const HEAD: MethodMaker = (template) => `HEAD(${template.join(",")})`;
-export const OPTIONS: MethodMaker = (template) =>
-  `OPTIONS(${template.join(",")})`;
-export const USE: MethodMaker = (template) => `USE(${template.join(",")})`;
-
 export type Header<T> = T;
 export type Cookie<T> = T;
 
-export const todo = <T>(): T => null as any;
+export const todo = <T>(): T => {
+  throw new Error("TODO: not implemented");
+};
+
+export type NormalizeRouter<T> = T extends (
+  ...deps: any
+) => (...args: infer I) => Promise<infer O>
+  ? [I, O]
+  : T extends (...args: infer I) => Promise<infer O>
+  ? [I, O]
+  : never;
+
+export type SimpleHttpClient<M extends Record<string, [[...any[]], any]>> = {
+  [K in keyof M]: (...args: M[K][0]) => Promise<M[K][1]>;
+};

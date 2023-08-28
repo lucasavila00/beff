@@ -8,7 +8,7 @@ use swc_ecma_ast::{
 use crate::{
     api_extractor::{
         operation_parameter_in_path_or_query_or_body, FnHandler, FunctionParameterIn,
-        HandlerParameter, HeaderOrCookie,
+        HandlerParameter, HeaderOrCookie, ParsedPattern,
     },
     coercer, decoder,
     diag::Diagnostic,
@@ -332,7 +332,7 @@ impl ToJson for OpenApi {
     }
 }
 
-fn param_to_js(name: &str, param: HandlerParameter, pattern: &str) -> Js {
+fn param_to_js(name: &str, param: HandlerParameter, pattern: &ParsedPattern) -> Js {
     match param {
         HandlerParameter::PathOrQueryOrBody {
             schema, required, ..
@@ -407,11 +407,14 @@ impl ToJs for Vec<FnHandler> {
         Js::Array(
             self.into_iter()
                 .map(|it| {
-                    let ptn = &it.pattern;
-                    let kind = it.method_kind.to_string().to_uppercase();
+                    let ptn = &it.pattern.open_api_pattern;
+                    let kind = it.pattern.method_kind.to_string().to_uppercase();
                     let decoder_name = format!("[{kind}] {ptn}.response_body");
                     Js::Object(vec![
-                        ("method_kind".into(), Js::String(it.method_kind.to_string())),
+                        (
+                            "method_kind".into(),
+                            Js::String(it.pattern.method_kind.to_string()),
+                        ),
                         (
                             "params".into(),
                             Js::Array(
@@ -421,7 +424,7 @@ impl ToJs for Vec<FnHandler> {
                                     .collect(),
                             ),
                         ),
-                        ("pattern".into(), Js::String(it.pattern)),
+                        ("pattern".into(), Js::String(it.pattern.open_api_pattern)),
                         (
                             "return_validator".into(),
                             Js::Decoder(decoder_name, it.return_type),

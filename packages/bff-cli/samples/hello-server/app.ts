@@ -41,9 +41,9 @@ type User = {
  * @version 0.1.9
  */
 export default {
-  [GET`/data-types-kitchen-sink`]: async (): Promise<DataTypesKitchenSink> =>
+  [`GET/data-types-kitchen-sink`]: async (): Promise<DataTypesKitchenSink> =>
     todo(),
-  [GET`/anon-func`]: async function (): Promise<string> {
+  [`GET/anon-func`]: async function (): Promise<string> {
     return todo();
   },
   /**
@@ -51,7 +51,7 @@ export default {
    *
    * @summary Returns a list of users.
    */
-  [GET`/users`]: async (
+  [`GET/users`]: async (
     user_agent: Header<string>,
     ads_id: Cookie<string>
   ): Promise<string[]> => [],
@@ -61,7 +61,7 @@ export default {
    *
    * @summary Returns the user.
    */
-  [GET`/users/{id}`]: async (
+  [`GET/users/{id}`]: async (
     /**
      * The user id.
      */

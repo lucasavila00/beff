@@ -13,8 +13,8 @@ use swc_common::{collections::AHashMap, FileName};
 use swc_common::{BytePos, Span};
 use swc_ecma_ast::{
     ArrayPat, ArrowExpr, AssignPat, BindingIdent, ComputedPropName, ExportDefaultExpr, Expr,
-    FnExpr, Function, Ident, Invalid, KeyValueProp, ObjectPat, Pat, Prop, PropName, PropOrSpread,
-    RestPat, TaggedTpl, TsEntityName, TsTupleType, TsType, TsTypeParamDecl,
+    FnExpr, Function, Ident, Invalid, KeyValueProp, Lit, ObjectPat, Pat, Prop, PropName,
+    PropOrSpread, RestPat, Str, Tpl, TsEntityName, TsTupleType, TsType, TsTypeParamDecl,
     TsTypeParamInstantiation, TsTypeRef,
 };
 use swc_ecma_visit::Visit;
@@ -93,10 +93,39 @@ impl fmt::Display for MethodKind {
     }
 }
 
+impl MethodKind {
+    pub fn text_len(&self) -> usize {
+        return self.to_string().len();
+    }
+}
+
+#[derive(Debug, Clone)]
+pub struct ParsedPattern {
+    pub raw_span: Span,
+    pub open_api_pattern: String,
+    pub method_kind: MethodKind,
+    pub path_params: Vec<String>,
+}
+
+fn parse_pattern_params(pattern: &str) -> Vec<String> {
+    // parse open api parameters from pattern
+    let mut params = vec![];
+    let chars = pattern.chars();
+    let mut current = String::new();
+    for c in chars {
+        if c == '{' {
+            current = String::new();
+        } else if c == '}' {
+            params.push(current.clone());
+        } else {
+            current.push(c);
+        }
+    }
+    params
+}
 #[derive(Debug, Clone)]
 pub struct FnHandler {
-    pub method_kind: MethodKind,
-    pub pattern: String,
+    pub pattern: ParsedPattern,
     pub summary: Option<String>,
     pub description: Option<String>,
     pub parameters: Vec<(String, HandlerParameter)>,
@@ -205,32 +234,57 @@ fn parse_description_comment(comments: Vec<Comment>) -> Option<String> {
 }
 
 impl<'a> ExtractExportDefaultVisitor<'a> {
-    fn parse_key(key: &PropName) -> (MethodKind, String, Span) {
+    fn parse_prefix(key: &str) -> MethodKind {
+        if key.starts_with("GET") {
+            return MethodKind::Get;
+        }
+        if key.starts_with("POST") {
+            return MethodKind::Post;
+        }
+        if key.starts_with("PUT") {
+            return MethodKind::Put;
+        }
+        if key.starts_with("DELETE") {
+            return MethodKind::Delete;
+        }
+        if key.starts_with("PATCH") {
+            return MethodKind::Patch;
+        }
+        if key.starts_with("OPTIONS") {
+            return MethodKind::Options;
+        }
+        if key.starts_with("USE") {
+            return MethodKind::Use;
+        }
+        panic!("not supported")
+    }
+    fn parse_raw_pattern_str(key: &str, span: &Span) -> ParsedPattern {
+        let method_kind = Self::parse_prefix(key);
+        let prefix_len = method_kind.text_len();
+        let rest_of_key = &key[prefix_len..];
+        let path_params = parse_pattern_params(rest_of_key);
+        ParsedPattern {
+            raw_span: span.clone(),
+            open_api_pattern: rest_of_key.to_string(),
+            method_kind,
+            path_params,
+        }
+    }
+    fn parse_key(key: &PropName) -> ParsedPattern {
         match key {
             PropName::Computed(ComputedPropName { expr, .. }) => match &**expr {
-                Expr::TaggedTpl(TaggedTpl {
-                    tag,
-                    type_params,
-                    tpl,
+                Expr::Lit(Lit::Str(Str { span, value, .. })) => {
+                    Self::parse_raw_pattern_str(&value.to_string(), span)
+                }
+                Expr::Tpl(Tpl {
                     span,
-                    ..
+                    exprs,
+                    quasis,
                 }) => {
-                    assert!(type_params.is_none());
-                    let tag = tag.as_ident().unwrap();
-                    let kind = match tag.sym.to_string().as_str() {
-                        "GET" => MethodKind::Get,
-                        "POST" => MethodKind::Post,
-                        "PUT" => MethodKind::Put,
-                        "DELETE" => MethodKind::Delete,
-                        "PATCH" => MethodKind::Patch,
-                        "OPTIONS" => MethodKind::Options,
-                        "USE" => MethodKind::Use,
-                        _ => panic!("unrecognized method"),
-                    };
-                    assert!(tpl.exprs.is_empty());
-                    assert!(tpl.quasis.len() == 1);
-                    let first_quasis = tpl.quasis[0].raw.to_string();
-                    (kind, first_quasis, *span)
+                    assert!(exprs.is_empty());
+                    assert!(quasis.len() == 1);
+                    let first_quasis = quasis.first().unwrap();
+                    Self::parse_raw_pattern_str(&first_quasis.raw.to_string(), span)
                 }
                 _ => panic!("not TaggedTpl"),
             },
@@ -439,18 +493,15 @@ impl<'a> ExtractExportDefaultVisitor<'a> {
         }
     }
 
-    fn validate_pattern_was_consumed(&mut self, e: FnHandler, ptn_span: &Span) -> FnHandler {
-        // validate that pattern has required paths parameters
-        let path_params = parse_pattern_params(&e.pattern);
-
-        for path_param in path_params {
+    fn validate_pattern_was_consumed(&mut self, e: FnHandler) -> FnHandler {
+        for path_param in &e.pattern.path_params {
             // make sure some param exist for it
-            let found = e.parameters.iter().find(|(key, _)| key == &path_param);
+            let found = e.parameters.iter().find(|(key, _)| key == path_param);
             if found.is_none() {
                 self.errors.push(Diagnostic {
                     message: DiagnosticMessage::UnmatchedPathParameter(path_param.to_string()),
                     file_name: self.current_file.module.fm.name.clone(),
-                    span: *ptn_span,
+                    span: e.pattern.raw_span.clone(),
                 });
             }
         }
@@ -503,7 +554,7 @@ impl<'a> ExtractExportDefaultVisitor<'a> {
         } = &**function;
         self.validate_handler_func(*is_async, *is_generator, type_params);
 
-        let (method_kind, pattern, ptn_span) = Self::parse_key(key);
+        let pattern = Self::parse_key(key);
         let endpoint_comments = self.get_endpoint_comments(key);
 
         let e = FnHandler {
@@ -511,7 +562,6 @@ impl<'a> ExtractExportDefaultVisitor<'a> {
                 .iter()
                 .flat_map(|it| self.parse_arrow_parameter(&it.pat, parent_span))
                 .collect(),
-            method_kind,
             pattern,
             summary: endpoint_comments.summary,
             description: endpoint_comments.description,
@@ -520,7 +570,7 @@ impl<'a> ExtractExportDefaultVisitor<'a> {
             )),
         };
 
-        Ok(self.validate_pattern_was_consumed(e, &ptn_span))
+        Ok(self.validate_pattern_was_consumed(e))
     }
     fn method_from_arrow_expr(&mut self, key: &PropName, arrow: &ArrowExpr) -> Result<FnHandler> {
         let ArrowExpr {
@@ -534,7 +584,7 @@ impl<'a> ExtractExportDefaultVisitor<'a> {
         } = arrow;
         self.validate_handler_func(*is_async, *is_generator, type_params);
 
-        let (method_kind, pattern, ptn_span) = Self::parse_key(key);
+        let pattern = Self::parse_key(key);
         let endpoint_comments = self.get_endpoint_comments(key);
 
         let e = FnHandler {
@@ -542,7 +592,6 @@ impl<'a> ExtractExportDefaultVisitor<'a> {
                 .iter()
                 .flat_map(|it| self.parse_arrow_parameter(it, parent_span))
                 .collect(),
-            method_kind,
             pattern,
             summary: endpoint_comments.summary,
             description: endpoint_comments.description,
@@ -551,7 +600,7 @@ impl<'a> ExtractExportDefaultVisitor<'a> {
             )),
         };
 
-        Ok(self.validate_pattern_was_consumed(e, &ptn_span))
+        Ok(self.validate_pattern_was_consumed(e))
     }
     fn endpoint_from_prop(&mut self, prop: &Prop) -> Result<FnHandler> {
         if let Prop::KeyValue(KeyValueProp { key, value }) = prop {
@@ -561,10 +610,9 @@ impl<'a> ExtractExportDefaultVisitor<'a> {
             if let Expr::Fn(func) = &**value {
                 return self.method_from_func_expr(key, func);
             }
-            let (method_kind, pattern, _ptn_span) = Self::parse_key(key);
-            if method_kind == MethodKind::Use {
+            let pattern = Self::parse_key(key);
+            if pattern.method_kind == MethodKind::Use {
                 return Ok(FnHandler {
-                    method_kind,
                     pattern,
                     summary: None,
                     description: None,
@@ -642,24 +690,6 @@ impl<'a> Visit for ExtractExportDefaultVisitor<'a> {
     }
 }
 
-#[must_use]
-fn parse_pattern_params(pattern: &str) -> Vec<String> {
-    // parse open api parameters from pattern
-    let mut params = vec![];
-    let chars = pattern.chars();
-    let mut current = String::new();
-    for c in chars {
-        if c == '{' {
-            current = String::new();
-        } else if c == '}' {
-            params.push(current.clone());
-        } else {
-            current.push(c);
-        }
-    }
-    params
-}
-
 pub enum FunctionParameterIn {
     Path,
     Query,
@@ -688,12 +718,11 @@ fn is_type_simple(it: &JsonSchema) -> bool {
 
 pub fn operation_parameter_in_path_or_query_or_body(
     name: &str,
-    pattern: &str,
+    pattern: &ParsedPattern,
     schema: &JsonSchema,
 ) -> FunctionParameterIn {
     // if name is in pattern return path
-    let ptn_params = parse_pattern_params(pattern);
-    if ptn_params.contains(&name.to_string()) {
+    if pattern.path_params.contains(&name.to_string()) {
         FunctionParameterIn::Path
     } else {
         if is_type_simple(schema) {
@@ -704,7 +733,7 @@ pub fn operation_parameter_in_path_or_query_or_body(
     }
 }
 
-fn endpoint_to_operation_object(endpoint: FnHandler, pattern: &str) -> OperationObject {
+fn endpoint_to_operation_object(endpoint: FnHandler) -> OperationObject {
     let mut parameters: Vec<ParameterObject> = vec![];
     let mut json_request_body: Option<JsonRequestBody> = None;
     for (key, param) in endpoint.parameters.into_iter() {
@@ -714,30 +743,33 @@ fn endpoint_to_operation_object(endpoint: FnHandler, pattern: &str) -> Operation
                 required,
                 description,
                 ..
-            } => match operation_parameter_in_path_or_query_or_body(&key, pattern, &schema) {
-                FunctionParameterIn::Path => parameters.push(ParameterObject {
-                    in_: ParameterIn::Path,
-                    name: key,
-                    required,
-                    description,
-                    schema,
-                }),
-                FunctionParameterIn::Query => parameters.push(ParameterObject {
-                    in_: ParameterIn::Query,
-                    name: key,
-                    required,
-                    description,
-                    schema,
-                }),
-                FunctionParameterIn::Body => {
-                    assert!(json_request_body.is_none());
-                    json_request_body = Some(JsonRequestBody {
-                        schema,
-                        description,
+            } => {
+                match operation_parameter_in_path_or_query_or_body(&key, &endpoint.pattern, &schema)
+                {
+                    FunctionParameterIn::Path => parameters.push(ParameterObject {
+                        in_: ParameterIn::Path,
+                        name: key,
                         required,
-                    });
+                        description,
+                        schema,
+                    }),
+                    FunctionParameterIn::Query => parameters.push(ParameterObject {
+                        in_: ParameterIn::Query,
+                        name: key,
+                        required,
+                        description,
+                        schema,
+                    }),
+                    FunctionParameterIn::Body => {
+                        assert!(json_request_body.is_none());
+                        json_request_body = Some(JsonRequestBody {
+                            schema,
+                            description,
+                            required,
+                        });
+                    }
                 }
-            },
+            }
             HandlerParameter::HeaderOrCookie {
                 required,
                 description,
@@ -769,8 +801,8 @@ fn endpoint_to_operation_object(endpoint: FnHandler, pattern: &str) -> Operation
 fn add_endpoint_to_path(path: &mut open_api_ast::ApiPath, endpoint: FnHandler) {
     log::debug!("adding endpoint to path");
 
-    let kind = endpoint.method_kind;
-    let op = Some(endpoint_to_operation_object(endpoint, &path.pattern));
+    let kind = endpoint.pattern.method_kind;
+    let op = Some(endpoint_to_operation_object(endpoint));
     match kind {
         MethodKind::Get => path.get = op,
         MethodKind::Post => path.post = op,
@@ -785,11 +817,13 @@ fn add_endpoint_to_path(path: &mut open_api_ast::ApiPath, endpoint: FnHandler) {
 fn endpoints_to_paths(endpoints: Vec<FnHandler>) -> Vec<open_api_ast::ApiPath> {
     let mut acc: Vec<open_api_ast::ApiPath> = vec![];
     for endpoint in endpoints {
-        let found = acc.iter_mut().find(|x| x.pattern == endpoint.pattern);
+        let found = acc
+            .iter_mut()
+            .find(|x| x.pattern == endpoint.pattern.open_api_pattern);
         if let Some(path) = found {
             add_endpoint_to_path(path, endpoint);
         } else {
-            let mut path = open_api_ast::ApiPath::from_pattern(&endpoint.pattern);
+            let mut path = open_api_ast::ApiPath::from_pattern(&endpoint.pattern.open_api_pattern);
             add_endpoint_to_path(&mut path, endpoint);
             acc.push(path);
         };

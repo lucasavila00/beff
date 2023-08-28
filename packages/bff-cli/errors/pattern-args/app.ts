@@ -5,13 +5,13 @@ type User = {
 };
 
 export default {
-  [GET`/user`]: async ([limit, offset]: string[]): Promise<User[]> => {
+  [`GET/user`]: async ([limit, offset]: string[]): Promise<User[]> => {
     return todo();
   },
-  [GET`/user`]: async ({ limit, offset }: any): Promise<User[]> => {
+  [`GET/user1`]: async ({ limit, offset }: any): Promise<User[]> => {
     return todo();
   },
-  [GET`/user`]: async (a: string[] = []): Promise<User[]> => {
+  [`GET/user2`]: async (a: string[] = []): Promise<User[]> => {
     return todo();
   },
 };
