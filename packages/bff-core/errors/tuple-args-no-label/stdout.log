@@ -1,0 +1,14 @@
+Error: 
+   ╭─[/app.ts:7:20]
+   │
+ 7 │ type Pagination = [number, number];
+   │                    ───┬──  
+   │                       ╰──── RestParamMustBeLabelAnnotated
+───╯
+Error: 
+   ╭─[/app.ts:7:28]
+   │
+ 7 │ type Pagination = [number, number];
+   │                            ───┬──  
+   │                               ╰──── RestParamMustBeLabelAnnotated
+───╯

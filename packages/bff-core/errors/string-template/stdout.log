@@ -1,0 +1,7 @@
+Error: 
+   ╭─[/app.ts:4:6]
+   │
+ 4 │   a: `Hello ${string}!`;
+   │      ─────────┬────────  
+   │               ╰────────── CannotSerializeType
+───╯

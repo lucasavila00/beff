@@ -1,0 +1,4 @@
+Error: Could not get entrypoint from bffconfig.json
+
+Caused by:
+    EOF while parsing an object at line 1 column 1

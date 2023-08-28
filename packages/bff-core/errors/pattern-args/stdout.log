@@ -1,0 +1,21 @@
+Error: 
+   ╭─[/app.ts:8:24]
+   │
+ 8 │   [GET`/user`]: async ([limit, offset]: string[]): Promise<User[]> => {
+   │                        ────────────┬────────────  
+   │                                    ╰────────────── ParameterPatternNotSupported
+───╯
+Error: 
+    ╭─[/app.ts:11:24]
+    │
+ 11 │   [GET`/user`]: async ({ limit, offset }: any): Promise<User[]> => {
+    │                        ───────────┬──────────  
+    │                                   ╰──────────── ParameterPatternNotSupported
+────╯
+Error: 
+    ╭─[/app.ts:14:24]
+    │
+ 14 │   [GET`/user`]: async (a: string[] = []): Promise<User[]> => {
+    │                        ────────┬───────  
+    │                                ╰───────── ParameterPatternNotSupported
+────╯

@@ -1,0 +1,37 @@
+[package]
+edition = "2021"
+name = "swc-bff"
+version = "0.1.0"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+anyhow = "1.0.75"
+ariadne = "0.3.0"
+assert_cmd = "2.0.12"
+clap = {version = "4.4.0", features = ["derive"]}
+env_logger = "0.10.0"
+is-macro = "0.3.0"
+jsdoc = "0.106.15"
+log = "0.4.20"
+notify = {version = "6.1.1", features = ["serde"]}
+notify-debouncer-mini = "0.4.1"
+serde = {version = "1.0.186", features = ["derive"]}
+serde_json = "1.0.105"
+swc_atoms = "0.5.8"
+swc_bundler = "0.217.55"
+swc_common = "0.31.21"
+swc_core = "0.79.70"
+swc_ecma_ast = "0.107.7"
+swc_ecma_codegen = "0.142.17"
+swc_ecma_loader = {version = "0.43.23", features = [
+  "node",
+  "cache",
+]}
+swc_ecma_minifier = "0.185.4"
+swc_ecma_parser = "0.137.15"
+swc_ecma_transforms_base = "0.130.24"
+swc_ecma_utils = "0.121.0"
+swc_ecma_visit = "0.93.7"
+swc_error_reporters = "0.16.0"
+swc_node_comments = "0.18.21"

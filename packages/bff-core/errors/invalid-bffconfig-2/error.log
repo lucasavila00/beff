@@ -1,0 +1,4 @@
+Error: Could not get entrypoint from bffconfig.json
+
+Caused by:
+    missing field `router` at line 1 column 2

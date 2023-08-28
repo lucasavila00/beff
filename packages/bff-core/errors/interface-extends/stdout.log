@@ -1,0 +1,9 @@
+Error: 
+   ╭─[/app.ts:7:1]
+   │
+ 7 │ ╭─▶ interface B extends A {
+   ┆ ┆   
+ 9 │ ├─▶ }
+   │ │       
+   │ ╰─────── TsInterfaceExtendsNotSupported
+───╯
