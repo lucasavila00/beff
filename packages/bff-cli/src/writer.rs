@@ -7,7 +7,7 @@ use swc_ecma_ast::Module;
 use swc_ecma_codegen::Config;
 use swc_ecma_codegen::{text_writer::JsWriter, Emitter};
 
-fn meta_js_file_content(ast: &Module) -> Result<String> {
+fn meta_js_file_content(ast: &Module, no_shared_runtime: bool) -> Result<String> {
     let cm = Lrc::new(SourceMap::new(FilePathMapping::empty()));
 
     let code = {
@@ -29,6 +29,10 @@ fn meta_js_file_content(ast: &Module) -> Result<String> {
     let js_prefix = include_str!("./assets/runtime.js");
     let js_suffix = include_str!("./assets/runtime2.js");
 
+    if no_shared_runtime {
+        return Ok(code);
+    }
+
     Ok([js_prefix, &code, js_suffix].join("\n"))
 }
 
@@ -36,10 +40,10 @@ fn file_path(output_dir: &Path, file_name: &str) -> PathBuf {
     output_dir.join(file_name)
 }
 
-pub fn write_meta_js(output_dir: &Path, ast: &Module) -> Result<()> {
+pub fn write_meta_js(output_dir: &Path, ast: &Module, no_shared_runtime: bool) -> Result<()> {
     let path = file_path(output_dir, "index.js");
     log::debug!("writing output to {:?} ", path);
-    let content = meta_js_file_content(ast)?;
+    let content = meta_js_file_content(ast, no_shared_runtime)?;
     fs::write(path, content)?;
     Ok(())
 }
@@ -59,9 +63,13 @@ pub fn create_folder_of_not_exists(output_dir: &Path) -> Result<()> {
     Ok(())
 }
 
-pub fn write_bundled_module(output_dir: &Path, ast: &Module) -> Result<()> {
+pub fn write_bundled_module(
+    output_dir: &Path,
+    ast: &Module,
+    no_shared_runtime: bool,
+) -> Result<()> {
     create_folder_of_not_exists(output_dir)?;
-    write_meta_js(output_dir, ast)?;
+    write_meta_js(output_dir, ast, no_shared_runtime)?;
     write_meta_dts(output_dir, ast)?;
     Ok(())
 }

@@ -2,6 +2,9 @@
 
 ## BFF Compiler
 
+- [ ] --no-shared-runtime compiler option
+- [ ] split vitest and samples folder
+
 - [ ] coerce union, intersection
 - [ ] dependency injection
 - [ ] export decoders

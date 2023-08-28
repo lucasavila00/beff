@@ -27,6 +27,9 @@ struct Args {
 
     #[arg(long, short, action)]
     watch: bool,
+
+    #[arg(long, short, action)]
+    no_shared_runtime: bool,
 }
 
 impl Args {
@@ -39,12 +42,14 @@ impl Args {
                     ResolvedArgs {
                         project_json_path,
                         watch: self.watch,
+                        no_shared_runtime: self.no_shared_runtime,
                     }
                 } else {
                     let project_json_path = cwd.join(project_json_path);
                     ResolvedArgs {
                         project_json_path,
                         watch: self.watch,
+                        no_shared_runtime: self.no_shared_runtime,
                     }
                 }
             }
@@ -53,6 +58,7 @@ impl Args {
                 ResolvedArgs {
                     project_json_path,
                     watch: self.watch,
+                    no_shared_runtime: self.no_shared_runtime,
                 }
             }
         };
@@ -78,6 +84,7 @@ struct Project {
 struct ResolvedArgs {
     project_json_path: PathBuf,
     watch: bool,
+    no_shared_runtime: bool,
 }
 
 impl ResolvedArgs {
@@ -131,7 +138,7 @@ fn write_bundle(
     if res.errors.is_empty() {
         let (ast, write_errs) = res.to_module();
         if write_errs.is_empty() {
-            writer::write_bundled_module(&args.output_dir()?, &ast)?;
+            writer::write_bundled_module(&args.output_dir()?, &ast, args.no_shared_runtime)?;
             return Ok(());
         }
         print_errors(write_errs, bundler_files, project_root);
