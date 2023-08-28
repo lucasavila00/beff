@@ -1,0 +1,11 @@
+error: Unexpected eof
+ --> /home/lucas/fluff/bff/packages/bff-cli/errors/parse-error/app.ts:3:17
+  |
+3 | export default {
+  |                 ^
+
+Error: Could not bundle "/home/lucas/fluff/bff/packages/bff-cli/errors/parse-error/app.ts"
+
+Caused by:
+    0: Could not load file Real("/home/lucas/fluff/bff/packages/bff-cli/errors/parse-error/app.ts")
+    1: failed to parse module: Real("/home/lucas/fluff/bff/packages/bff-cli/errors/parse-error/app.ts")

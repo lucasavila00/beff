@@ -1,5 +1,0 @@
-Error: Could not bundle "/home/lucas/fluff/emd2/packages/swc-bff/errors/no-app/app.ts"
-
-Caused by:
-    0: Could not load file Real("/home/lucas/fluff/emd2/packages/swc-bff/errors/no-app/app.ts")
-    1: No such file or directory (os error 2)
