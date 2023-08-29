@@ -17,6 +17,8 @@ pub enum DiagnosticMessage {
     ParameterPatternNotSupported,
     CouldNotUnderstandRestParameter,
     RestParameterMustBeTuple,
+    CouldNotFindDefaultExport,
+    ComplexPathParameterNotSupported,
 }
 
 #[derive(Debug, Clone)]

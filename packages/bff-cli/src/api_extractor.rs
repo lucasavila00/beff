@@ -10,7 +10,7 @@ use jsdoc::ast::{SummaryTag, Tag, UnknownTag, VersionTag};
 use jsdoc::Input;
 use swc_common::comments::{Comment, CommentKind, Comments};
 use swc_common::{collections::AHashMap, FileName};
-use swc_common::{BytePos, Span};
+use swc_common::{BytePos, Span, DUMMY_SP};
 use swc_ecma_ast::{
     ArrayPat, ArrowExpr, AssignPat, BindingIdent, ComputedPropName, ExportDefaultExpr, Expr,
     FnExpr, Function, Ident, Invalid, KeyValueProp, Lit, ObjectPat, Pat, Prop, PropName,
@@ -19,7 +19,7 @@ use swc_ecma_ast::{
 };
 use swc_ecma_visit::Visit;
 
-fn extract_promise(typ: &TsType) -> &TsType {
+fn maybe_extract_promise(typ: &TsType) -> &TsType {
     if let TsType::TsTypeRef(refs) = typ {
         if let TsEntityName::Ident(i) = &refs.type_name {
             // if name is promise
@@ -36,7 +36,7 @@ fn extract_promise(typ: &TsType) -> &TsType {
             }
         }
     }
-    panic!("not supported")
+    return typ;
 }
 
 #[derive(Debug, Clone)]
@@ -529,11 +529,9 @@ impl<'a> ExtractExportDefaultVisitor<'a> {
     }
     fn validate_handler_func(
         &mut self,
-        is_async: bool,
         is_generator: bool,
         type_params: &Option<Box<TsTypeParamDecl>>,
     ) {
-        assert!(is_async);
         assert!(!is_generator);
         assert!(type_params.is_none());
     }
@@ -543,12 +541,11 @@ impl<'a> ExtractExportDefaultVisitor<'a> {
             params,
             span: parent_span,
             is_generator,
-            is_async,
             type_params,
             return_type,
             ..
         } = &**function;
-        self.validate_handler_func(*is_async, *is_generator, type_params);
+        self.validate_handler_func(*is_generator, type_params);
 
         let pattern = Self::parse_key(key);
         let endpoint_comments = self.get_endpoint_comments(key);
@@ -561,7 +558,7 @@ impl<'a> ExtractExportDefaultVisitor<'a> {
             pattern,
             summary: endpoint_comments.summary,
             description: endpoint_comments.description,
-            return_type: self.convert_to_json_schema(extract_promise(
+            return_type: self.convert_to_json_schema(maybe_extract_promise(
                 &return_type.as_ref().unwrap().as_ref().type_ann,
             )),
         };
@@ -571,14 +568,13 @@ impl<'a> ExtractExportDefaultVisitor<'a> {
     fn method_from_arrow_expr(&mut self, key: &PropName, arrow: &ArrowExpr) -> Result<FnHandler> {
         let ArrowExpr {
             params,
-            is_async,
             is_generator,
             type_params,
             return_type,
             span: parent_span,
             ..
         } = arrow;
-        self.validate_handler_func(*is_async, *is_generator, type_params);
+        self.validate_handler_func(*is_generator, type_params);
 
         let pattern = Self::parse_key(key);
         let endpoint_comments = self.get_endpoint_comments(key);
@@ -591,7 +587,7 @@ impl<'a> ExtractExportDefaultVisitor<'a> {
             pattern,
             summary: endpoint_comments.summary,
             description: endpoint_comments.description,
-            return_type: self.convert_to_json_schema(extract_promise(
+            return_type: self.convert_to_json_schema(maybe_extract_promise(
                 &return_type.as_ref().unwrap().as_ref().type_ann,
             )),
         };
@@ -690,6 +686,7 @@ pub enum FunctionParameterIn {
     Path,
     Query,
     Body,
+    InvalidComplexPathParameter,
 }
 
 fn is_type_simple(it: &JsonSchema, components: &Vec<Definition>) -> bool {
@@ -724,7 +721,7 @@ pub fn operation_parameter_in_path_or_query_or_body(
         if is_type_simple(schema, components) {
             FunctionParameterIn::Path
         } else {
-            panic!("not supported, should be simple param");
+            FunctionParameterIn::InvalidComplexPathParameter
         }
     } else {
         if is_type_simple(schema, components) {
@@ -735,115 +732,120 @@ pub fn operation_parameter_in_path_or_query_or_body(
     }
 }
 
-fn endpoint_to_operation_object(
-    endpoint: FnHandler,
-    components: &Vec<Definition>,
-) -> OperationObject {
-    let mut parameters: Vec<ParameterObject> = vec![];
-    let mut json_request_body: Option<JsonRequestBody> = None;
-    for (key, param) in endpoint.parameters.into_iter() {
-        match param {
-            HandlerParameter::PathOrQueryOrBody {
-                schema,
-                required,
-                description,
-                ..
-            } => {
-                match operation_parameter_in_path_or_query_or_body(
-                    &key,
-                    &endpoint.pattern,
-                    &schema,
-                    components,
-                ) {
-                    FunctionParameterIn::Path => parameters.push(ParameterObject {
-                        in_: ParameterIn::Path,
-                        name: key,
-                        required,
-                        description,
-                        schema,
-                    }),
-                    FunctionParameterIn::Query => parameters.push(ParameterObject {
-                        in_: ParameterIn::Query,
-                        name: key,
-                        required,
-                        description,
-                        schema,
-                    }),
-                    FunctionParameterIn::Body => {
-                        assert!(json_request_body.is_none());
-                        json_request_body = Some(JsonRequestBody {
-                            schema,
-                            description,
+struct EndpointToPath<'a> {
+    errors: Vec<Diagnostic>,
+    components: &'a Vec<Definition>,
+    current_file: &'a FileName,
+}
+
+impl<'a> EndpointToPath<'a> {
+    fn endpoint_to_operation_object(&mut self, endpoint: FnHandler) -> OperationObject {
+        let mut parameters: Vec<ParameterObject> = vec![];
+        let mut json_request_body: Option<JsonRequestBody> = None;
+        for (key, param) in endpoint.parameters.into_iter() {
+            match param {
+                HandlerParameter::PathOrQueryOrBody {
+                    schema,
+                    required,
+                    description,
+                    ..
+                } => {
+                    match operation_parameter_in_path_or_query_or_body(
+                        &key,
+                        &endpoint.pattern,
+                        &schema,
+                        self.components,
+                    ) {
+                        FunctionParameterIn::Path => parameters.push(ParameterObject {
+                            in_: ParameterIn::Path,
+                            name: key,
                             required,
-                        });
+                            description,
+                            schema,
+                        }),
+                        FunctionParameterIn::Query => parameters.push(ParameterObject {
+                            in_: ParameterIn::Query,
+                            name: key,
+                            required,
+                            description,
+                            schema,
+                        }),
+                        FunctionParameterIn::Body => {
+                            assert!(json_request_body.is_none());
+                            json_request_body = Some(JsonRequestBody {
+                                schema,
+                                description,
+                                required,
+                            });
+                        }
+                        FunctionParameterIn::InvalidComplexPathParameter => {
+                            self.errors.push(Diagnostic {
+                                message: DiagnosticMessage::ComplexPathParameterNotSupported,
+                                file_name: self.current_file.clone(),
+                                span: endpoint.pattern.raw_span.clone(),
+                            });
+                        }
                     }
                 }
-            }
-            HandlerParameter::HeaderOrCookie {
-                required,
-                description,
-                kind,
-                schema,
-                ..
-            } => parameters.push(ParameterObject {
-                in_: match kind {
-                    HeaderOrCookie::Header => ParameterIn::Header,
-                    HeaderOrCookie::Cookie => ParameterIn::Cookie,
-                },
-                name: key,
-                required,
-                description,
-                schema,
-            }),
-        };
+                HandlerParameter::HeaderOrCookie {
+                    required,
+                    description,
+                    kind,
+                    schema,
+                    ..
+                } => parameters.push(ParameterObject {
+                    in_: match kind {
+                        HeaderOrCookie::Header => ParameterIn::Header,
+                        HeaderOrCookie::Cookie => ParameterIn::Cookie,
+                    },
+                    name: key,
+                    required,
+                    description,
+                    schema,
+                }),
+            };
+        }
+        OperationObject {
+            summary: endpoint.summary,
+            description: endpoint.description,
+            parameters,
+            json_response_body: endpoint.return_type,
+            json_request_body,
+        }
     }
-    OperationObject {
-        summary: endpoint.summary,
-        description: endpoint.description,
-        parameters,
-        json_response_body: endpoint.return_type,
-        json_request_body,
-    }
-}
+    fn add_endpoint_to_path(&mut self, path: &mut open_api_ast::ApiPath, endpoint: FnHandler) {
+        log::debug!("adding endpoint to path");
 
-fn add_endpoint_to_path(
-    path: &mut open_api_ast::ApiPath,
-    endpoint: FnHandler,
-    components: &Vec<Definition>,
-) {
-    log::debug!("adding endpoint to path");
-
-    let kind = endpoint.pattern.method_kind;
-    let op = Some(endpoint_to_operation_object(endpoint, components));
-    match kind {
-        MethodKind::Get => path.get = op,
-        MethodKind::Post => path.post = op,
-        MethodKind::Put => path.put = op,
-        MethodKind::Delete => path.delete = op,
-        MethodKind::Patch => path.patch = op,
-        MethodKind::Options => path.options = op,
-        MethodKind::Use => {}
+        let kind = endpoint.pattern.method_kind;
+        let op = Some(self.endpoint_to_operation_object(endpoint));
+        match kind {
+            MethodKind::Get => path.get = op,
+            MethodKind::Post => path.post = op,
+            MethodKind::Put => path.put = op,
+            MethodKind::Delete => path.delete = op,
+            MethodKind::Patch => path.patch = op,
+            MethodKind::Options => path.options = op,
+            MethodKind::Use => {}
+        }
     }
-}
 
-fn endpoints_to_paths(
-    endpoints: Vec<FnHandler>,
-    components: &Vec<Definition>,
-) -> Vec<open_api_ast::ApiPath> {
-    let mut acc: Vec<open_api_ast::ApiPath> = vec![];
-    for endpoint in endpoints {
-        let found = acc
-            .iter_mut()
-            .find(|x| x.pattern == endpoint.pattern.open_api_pattern);
-        if let Some(path) = found {
-            add_endpoint_to_path(path, endpoint, components);
-        } else {
-            let mut path = open_api_ast::ApiPath::from_pattern(&endpoint.pattern.open_api_pattern);
-            add_endpoint_to_path(&mut path, endpoint, components);
-            acc.push(path);
-        };
+    fn endpoints_to_paths(&mut self, endpoints: Vec<FnHandler>) -> Vec<open_api_ast::ApiPath> {
+        let mut acc: Vec<open_api_ast::ApiPath> = vec![];
+        for endpoint in endpoints {
+            let found = acc
+                .iter_mut()
+                .find(|x| x.pattern == endpoint.pattern.open_api_pattern);
+            if let Some(path) = found {
+                self.add_endpoint_to_path(path, endpoint);
+            } else {
+                let mut path =
+                    open_api_ast::ApiPath::from_pattern(&endpoint.pattern.open_api_pattern);
+                self.add_endpoint_to_path(&mut path, endpoint);
+                acc.push(path);
+            };
+        }
+        acc
     }
-    acc
 }
 
 pub struct ExtractResult {
@@ -863,13 +865,24 @@ pub fn extract_schema(
     visitor.visit_module(&current_file.module.module);
 
     if !visitor.found_default_export {
-        panic!("todo add it to errors")
+        visitor.errors.push(Diagnostic {
+            message: DiagnosticMessage::CouldNotFindDefaultExport,
+            file_name: current_file.module.fm.name.clone(),
+            span: DUMMY_SP,
+        })
     }
 
     log::debug!("visited module");
+    let mut transformer = EndpointToPath {
+        errors: visitor.errors,
+        components: &visitor.components,
+        current_file: &current_file.module.fm.name,
+    };
+    let paths = transformer.endpoints_to_paths(visitor.handlers.clone());
+    log::debug!("transformed endpoints to paths");
     let open_api = OpenApi {
         info: visitor.info,
-        paths: endpoints_to_paths(visitor.handlers.clone(), &visitor.components),
+        paths: paths,
         components: visitor.components.clone(),
     };
     log::debug!("extracted schema");
@@ -877,7 +890,7 @@ pub fn extract_schema(
     ExtractResult {
         handlers: visitor.handlers,
         open_api,
-        errors: visitor.errors,
+        errors: transformer.errors,
         components: visitor.components,
     }
 }

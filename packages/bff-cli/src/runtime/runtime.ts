@@ -256,6 +256,8 @@ type NormalizeRouterItem<T> = T extends (
   ? [I, O]
   : T extends (...args: infer I) => Promise<infer O>
   ? [I, O]
+  : T extends (...args: infer I) => infer O
+  ? [I, O]
   : never;
 type SimpleHttpFunction<M extends [any[], any]> = (
   ...args: M[0]

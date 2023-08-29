@@ -1,5 +1,3 @@
-import { GET } from "bff";
-
 type B = { c: string };
 type A = {
   a: B;

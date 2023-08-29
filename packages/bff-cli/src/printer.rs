@@ -373,6 +373,9 @@ fn param_to_js(
                         Js::Decoder(format!("Request Body"), schema.clone()),
                     ),
                 ]),
+                FunctionParameterIn::InvalidComplexPathParameter => {
+                    unreachable!("will fail when extracting the json schema")
+                }
             }
         }
         HandlerParameter::HeaderOrCookie {
