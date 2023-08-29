@@ -39,7 +39,7 @@ fn test_failures() {
 #[test]
 fn test_samples() {
     let mut samples_folder = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
-    samples_folder.push("samples");
+    samples_folder.push("codegen-snaps");
 
     let samples = std::fs::read_dir(samples_folder).unwrap();
 

@@ -23,6 +23,7 @@
 - [ ] guards/context
 - [ ] export decoders
 
+- [ ] panic, todo, unwrap =>invalid-path-definition
 - [ ] todo!()
 - [ ] // todo
 
