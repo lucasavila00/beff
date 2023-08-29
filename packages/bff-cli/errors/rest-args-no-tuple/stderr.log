@@ -1,3 +1,22 @@
-thread 'main' panicked at packages/bff-cli/src/api_extractor.rs:260:9:
-not supported
-note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+Error: 
+   ╭─[/app.ts:6:24]
+   │
+ 6 │   [`GET/user`]: async (...q: string[]): Promise<string> => {
+   │                        ───────┬──────  
+   │                               ╰──────── RestParameterMustBeTuple
+───╯
+Error: 
+   ╭─[/app.ts:9:25]
+   │
+ 9 │   [`GET/user1`]: async (...q: A<string>): Promise<string> => {
+   │                         ───────┬───────  
+   │                                ╰───────── TsTypeParametersNotSupported
+───╯
+Error: 
+    ╭─[/app.ts:12:25]
+    │
+ 12 │   [`GET/user2`]: async (...q: Y.B): Promise<string> => {
+    │                         ────┬────  
+    │                             ╰────── TsQualifiedNameNotSupported
+────╯
+Error: Failed to bundle
