@@ -73,26 +73,34 @@ impl<'a> TypeToSchema<'a> {
     ) -> (String, Optionality<JsonSchema>) {
         match prop {
             TsTypeElement::TsPropertySignature(prop) => {
-                let key =
-                    match &*prop.key {
-                        Expr::Ident(ident) => ident.sym.to_string(),
-                        _ => {
-                            return (
-                                "error".into(),
-                                Optionality::Required(self.error(
-                                    &prop.span,
-                                    DiagnosticMessage::InternalErrorPleaseReport,
-                                )),
-                            )
-                        }
-                    };
-                let value = self.convert_ts_type(&prop.type_ann.as_ref().unwrap().type_ann);
-                let value = if prop.optional {
-                    Optionality::Optional(value)
-                } else {
-                    Optionality::Required(value)
+                let key = match &*prop.key {
+                    Expr::Ident(ident) => ident.sym.to_string(),
+                    _ => {
+                        return (
+                            "error".into(),
+                            Optionality::Required(
+                                self.error(&prop.span, DiagnosticMessage::PropKeyShouldBeIdent),
+                            ),
+                        )
+                    }
                 };
-                (key, value)
+                match &prop.type_ann.as_ref() {
+                    Some(val) => {
+                        let value = self.convert_ts_type(&val.type_ann);
+                        let value = if prop.optional {
+                            Optionality::Optional(value)
+                        } else {
+                            Optionality::Required(value)
+                        };
+                        (key, value)
+                    }
+                    None => (
+                        "error".into(),
+                        Optionality::Required(
+                            self.error(&prop.span, DiagnosticMessage::PropShouldHaveTypeAnnotation),
+                        ),
+                    ),
+                }
             }
             TsTypeElement::TsGetterSignature(TsGetterSignature { span, .. })
             | TsTypeElement::TsSetterSignature(TsSetterSignature { span, .. })
@@ -140,9 +148,16 @@ impl<'a> TypeToSchema<'a> {
         match i.sym.to_string().as_str() {
             "Date" => return JsonSchema::String,
             "Array" => {
-                let type_params = type_params.as_ref().unwrap();
-                let ty = self.convert_ts_type(&type_params.params[0]);
-                return JsonSchema::Array(ty.into());
+                let type_params = type_params.as_ref();
+                match type_params {
+                    Some(type_params) => {
+                        let ty = self.convert_ts_type(&type_params.params[0]);
+                        return JsonSchema::Array(ty.into());
+                    }
+                    None => {
+                        return JsonSchema::Array(JsonSchema::Any.into());
+                    }
+                }
             }
             _ => {}
         }
@@ -182,22 +197,38 @@ impl<'a> TypeToSchema<'a> {
             .imports
             .get(&(i.sym.clone(), i.span.ctxt))
             .map(|imported| {
-                let file = self.files.get(&imported.file_name).unwrap();
-                let exp = file.type_exports.get(&i.sym).unwrap();
-                let mut chd_file_converter = TypeToSchema::new(self.files, file);
-                match exp {
-                    TypeExport::TsType(alias) => {
-                        let ty = chd_file_converter.convert_ts_type(alias);
-                        self.errors.extend(chd_file_converter.errors);
-                        self.components.extend(chd_file_converter.components);
-                        self.insert_definition(i.sym.to_string(), ty)
+                let file = self.files.get(&imported.file_name);
+                match file {
+                    Some(file) => {
+                        let exp = file.type_exports.get(&i.sym);
+                        let mut chd_file_converter = TypeToSchema::new(self.files, file);
+                        match exp {
+                            Some(TypeExport::TsType(alias)) => {
+                                let ty = chd_file_converter.convert_ts_type(alias);
+                                self.errors.extend(chd_file_converter.errors);
+                                self.components.extend(chd_file_converter.components);
+                                self.insert_definition(i.sym.to_string(), ty)
+                            }
+                            Some(TypeExport::TsInterfaceDecl(int)) => {
+                                let ty = chd_file_converter.convert_ts_interface_decl(int);
+                                self.errors.extend(chd_file_converter.errors);
+                                self.components.extend(chd_file_converter.components);
+                                self.insert_definition(i.sym.to_string(), ty)
+                            }
+                            None => self.error(
+                                &i.span,
+                                DiagnosticMessage::CannotFindTypeExportWhenConvertingToSchema(
+                                    i.sym.to_string(),
+                                ),
+                            ),
+                        }
                     }
-                    TypeExport::TsInterfaceDecl(int) => {
-                        let ty = chd_file_converter.convert_ts_interface_decl(int);
-                        self.errors.extend(chd_file_converter.errors);
-                        self.components.extend(chd_file_converter.components);
-                        self.insert_definition(i.sym.to_string(), ty)
-                    }
+                    None => self.error(
+                        &i.span,
+                        DiagnosticMessage::CannotFindFileWhenConvertingToSchema(
+                            imported.file_name.to_string(),
+                        ),
+                    ),
                 }
             });
 
@@ -271,7 +302,6 @@ impl<'a> TypeToSchema<'a> {
                 for it in elem_types {
                     if let TsType::TsRestType(TsRestType { type_ann, .. }) = &*it.ty {
                         if items.is_some() {
-                            // TODO: test this  k: [number, ...string[], number];
                             return self.cannot_serialize_error(&it.span);
                         }
                         let ann = extract_items_from_array(self.convert_ts_type(type_ann));
@@ -312,7 +342,7 @@ impl<'a> TypeToSchema<'a> {
                 self.convert_ts_type(type_ann)
             }
             TsType::TsOptionalType(TsOptionalType { span, .. }) => {
-                self.error(span, DiagnosticMessage::InternalErrorPleaseReport)
+                self.error(span, DiagnosticMessage::OptionalTypeIsNotSupported)
             }
             TsType::TsRestType(_) => unreachable!("should have been handled by parent node"),
             TsType::TsThisType(TsThisType { span, .. })

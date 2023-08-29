@@ -2,9 +2,6 @@
 
 ## BFF Compiler
 
-- [ ] assert!()
-- [ ] unwrap()
-
 # Milestone NEXT
 
 ## BFF Compiler
@@ -17,6 +14,8 @@
 
 - [ ] message for errors
 
+- [ ] loader recovered errors?
+
 - [ ] namespace
 - [ ] qualified import type
 
@@ -24,9 +23,7 @@
 - [ ] export decoders
 
 - [ ] todo!()
-- [ ] panic!()
-- [ ] assert!()
-- [ ] unwrap()
+- [ ] // todo
 
 ## BFF Imports
 

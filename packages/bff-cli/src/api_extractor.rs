@@ -26,15 +26,16 @@ fn maybe_extract_promise(typ: &TsType) -> &TsType {
         if let TsEntityName::Ident(i) = &refs.type_name {
             // if name is promise
             if i.sym == *"Promise" {
-                let ts_type = refs
-                    .type_params
-                    .as_ref()
-                    .unwrap()
-                    .params
-                    .get(0)
-                    .unwrap()
-                    .as_ref();
-                return ts_type;
+                match refs.type_params.as_ref() {
+                    Some(inst) => {
+                        let ts_type = inst.params.get(0);
+                        match ts_type {
+                            Some(ts_type) => return ts_type,
+                            None => {}
+                        }
+                    }
+                    None => {}
+                }
             }
         }
     }
@@ -172,7 +173,12 @@ fn trim_description_comments(it: String) -> String {
         return it;
     }
 
-    while v.last().unwrap().is_ascii_whitespace() || v.last().unwrap() == &'*' {
+    while v
+        .last()
+        .expect("we just checked that it is not empty")
+        .is_ascii_whitespace()
+        || v.last().expect("we just checked that it is not empty") == &'*'
+    {
         v.pop();
     }
 
@@ -226,15 +232,31 @@ impl<'a> ExtractExportDefaultVisitor<'a> {
             }
         }
     }
-    fn parse_description_comment(&mut self, comments: Vec<Comment>) -> Option<String> {
-        assert!(comments.len() == 1);
-        let first = comments.into_iter().next().unwrap();
+    fn parse_description_comment(&mut self, comments: Vec<Comment>, span: &Span) -> Option<String> {
+        if comments.len() != 1 {
+            self.errors.push(Diagnostic {
+                message: DiagnosticMessage::CannotParseJsDoc,
+                file_name: self.current_file.module.fm.name.clone(),
+                span: *span,
+            });
+            return None;
+        }
+        let first = comments
+            .into_iter()
+            .next()
+            .expect("we just checked the length");
         if first.kind == CommentKind::Block {
             let s = first.text;
             let parsed = jsdoc::parse(Input::new(BytePos(0), BytePos(s.as_bytes().len() as _), &s));
             match parsed {
                 Ok((rest, parsed)) => {
-                    assert!(rest.is_empty());
+                    if !rest.is_empty() {
+                        self.errors.push(Diagnostic {
+                            message: DiagnosticMessage::CannotParseJsDoc,
+                            file_name: self.current_file.module.fm.name.clone(),
+                            span: first.span,
+                        });
+                    }
                     if !parsed.tags.is_empty() {
                         for tag in parsed.tags {
                             self.errors.push(Diagnostic {
@@ -319,9 +341,23 @@ impl<'a> ExtractExportDefaultVisitor<'a> {
                     exprs,
                     quasis,
                 }) => {
-                    assert!(exprs.is_empty());
-                    assert!(quasis.len() == 1);
-                    let first_quasis = quasis.first().unwrap();
+                    if !exprs.is_empty() {
+                        self.errors.push(Diagnostic {
+                            message: DiagnosticMessage::TemplateMustBeOfSingleString,
+                            file_name: self.current_file.module.fm.name.clone(),
+                            span: *span,
+                        });
+                        return Err(anyhow!("not single string"));
+                    }
+                    if quasis.len() != 1 {
+                        self.errors.push(Diagnostic {
+                            message: DiagnosticMessage::TemplateMustBeOfSingleString,
+                            file_name: self.current_file.module.fm.name.clone(),
+                            span: *span,
+                        });
+                        return Err(anyhow!("not single string"));
+                    }
+                    let first_quasis = quasis.first().expect("we just checked the length");
                     self.parse_raw_pattern_str(&first_quasis.raw.to_string(), span)
                 }
                 _ => {
@@ -348,11 +384,17 @@ impl<'a> ExtractExportDefaultVisitor<'a> {
         }
     }
 
-    fn extend_components(&mut self, defs: Vec<Definition>) {
+    fn extend_components(&mut self, defs: Vec<Definition>, span: &Span) {
         for d in defs {
             let found = self.components.iter_mut().find(|x| x.name == d.name);
             if let Some(found) = found {
-                assert!(found.schema == d.schema);
+                if found.schema != d.schema {
+                    self.errors.push(Diagnostic {
+                        message: DiagnosticMessage::TwoDifferentTypesWithTheSameName,
+                        file_name: self.current_file.module.fm.name.clone(),
+                        span: *span,
+                    });
+                }
             } else {
                 self.components.push(d);
             }
@@ -379,7 +421,7 @@ impl<'a> ExtractExportDefaultVisitor<'a> {
         }
         kvs.sort_by(|(ka, _), (kb, _)| ka.cmp(kb));
         let ext = kvs.into_iter().map(|(_k, v)| v).collect();
-        self.extend_components(ext);
+        self.extend_components(ext, span);
         self.errors.extend(to_schema.errors);
         res
     }
@@ -394,27 +436,40 @@ impl<'a> ExtractExportDefaultVisitor<'a> {
         let name = name.as_str();
         match name {
             "Header" | "Cookie" => {
-                let params = &params.as_ref().unwrap().params;
-                if params.len() != 1 {
-                    self.errors.push(Diagnostic {
-                        message: DiagnosticMessage::TooManyParamsOnLibType,
-                        file_name: self.current_file.module.fm.name.clone(),
-                        span: lib_ty_name.span,
-                    });
-                    return Err(anyhow!("Header/Cookie must have one type parameter"));
-                }
+                let params = &params.as_ref();
+                match params {
+                    None => {
+                        self.errors.push(Diagnostic {
+                            message: DiagnosticMessage::TooManyParamsOnLibType,
+                            file_name: self.current_file.module.fm.name.clone(),
+                            span: lib_ty_name.span,
+                        });
+                        return Err(anyhow!("Header/Cookie must have one type parameter"));
+                    }
+                    Some(params) => {
+                        let params = &params.params;
+                        if params.len() != 1 {
+                            self.errors.push(Diagnostic {
+                                message: DiagnosticMessage::TooManyParamsOnLibType,
+                                file_name: self.current_file.module.fm.name.clone(),
+                                span: lib_ty_name.span,
+                            });
+                            return Err(anyhow!("Header/Cookie must have one type parameter"));
+                        }
 
-                let ty = params[0].as_ref();
-                Ok(HandlerParameter::HeaderOrCookie {
-                    kind: if name == "Header" {
-                        HeaderOrCookie::Header
-                    } else {
-                        HeaderOrCookie::Cookie
-                    },
-                    schema: self.convert_to_json_schema(ty, &lib_ty_name.span),
-                    required,
-                    description,
-                })
+                        let ty = params[0].as_ref();
+                        Ok(HandlerParameter::HeaderOrCookie {
+                            kind: if name == "Header" {
+                                HeaderOrCookie::Header
+                            } else {
+                                HeaderOrCookie::Cookie
+                            },
+                            schema: self.convert_to_json_schema(ty, &lib_ty_name.span),
+                            required,
+                            description,
+                        })
+                    }
+                }
             }
             _ => unreachable!("not in lib: {} - should check before calling", name),
         }
@@ -502,7 +557,13 @@ impl<'a> ExtractExportDefaultVisitor<'a> {
                                 self.parse_arrow_param_from_type_expecting_tuple(alias, rest_span)
                             });
 
-                        alias_opt.unwrap()
+                        match alias_opt {
+                            Some(it) => it,
+                            None => self.error_param(
+                                rest_span,
+                                DiagnosticMessage::CouldNotResolveIdentifierOnPathParamTuple,
+                            ),
+                        }
                     }
                 }
             }
@@ -512,8 +573,8 @@ impl<'a> ExtractExportDefaultVisitor<'a> {
                     Some(pat) => match pat {
                         Pat::Ident(BindingIdent { id, .. }) => {
                             let comments = self.current_file.comments.get_leading(id.span.lo);
-                            let description =
-                                comments.and_then(|it| self.parse_description_comment(it));
+                            let description = comments
+                                .and_then(|it| self.parse_description_comment(it, &id.span));
                             let param = self.parse_parameter_type(
                                 &it.ty,
                                 !id.optional,
@@ -556,13 +617,10 @@ impl<'a> ExtractExportDefaultVisitor<'a> {
                 }
 
                 let comments = self.current_file.comments.get_leading(id.span.lo);
-                let description = comments.and_then(|it| self.parse_description_comment(it));
-                let param = self.parse_parameter_type(
-                    &type_ann.as_ref().unwrap().as_ref().type_ann,
-                    !id.optional,
-                    description,
-                    &id.span,
-                );
+                let description =
+                    comments.and_then(|it| self.parse_description_comment(it, &id.span));
+                let ty = self.assert_and_extract_type_from_ann(type_ann, &id.span);
+                let param = self.parse_parameter_type(&ty, !id.optional, description, &id.span);
                 match param {
                     Ok(param) => vec![(id.sym.to_string(), param)],
                     Err(_) => vec![],
@@ -654,6 +712,7 @@ impl<'a> ExtractExportDefaultVisitor<'a> {
         let pattern = self.parse_key(key)?;
         let endpoint_comments = self.get_endpoint_comments(key);
 
+        let return_type = self.assert_and_extract_type_from_ann(return_type, parent_span);
         let e = FnHandler {
             parameters: params
                 .iter()
@@ -662,16 +721,14 @@ impl<'a> ExtractExportDefaultVisitor<'a> {
             pattern,
             summary: endpoint_comments.summary,
             description: endpoint_comments.description,
-            return_type: self.convert_to_json_schema(
-                maybe_extract_promise(&return_type.as_ref().unwrap().as_ref().type_ann),
-                parent_span,
-            ),
+            return_type: self
+                .convert_to_json_schema(maybe_extract_promise(&return_type), parent_span),
         };
 
         Ok(self.validate_pattern_was_consumed(e))
     }
 
-    fn extract_return_type_for_function(
+    fn assert_and_extract_type_from_ann(
         &mut self,
         return_type: &Option<Box<TsTypeAnn>>,
         span: &Span,
@@ -707,7 +764,7 @@ impl<'a> ExtractExportDefaultVisitor<'a> {
         let pattern = self.parse_key(key)?;
         let endpoint_comments = self.get_endpoint_comments(key);
 
-        let ret_ty = self.extract_return_type_for_function(return_type, parent_span);
+        let ret_ty = self.assert_and_extract_type_from_ann(return_type, parent_span);
         let e = FnHandler {
             parameters: params
                 .iter()

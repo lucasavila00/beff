@@ -48,7 +48,7 @@ impl<'a> CoercerFnGenerator<'a> {
                     .components
                     .iter()
                     .find(|it| it.name == *schema_ref)
-                    .unwrap();
+                    .expect("should be resolved by this point");
                 self.coerce_schema(&ty.schema, value_ref, depth)
             }
 

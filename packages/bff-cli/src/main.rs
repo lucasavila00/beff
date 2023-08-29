@@ -134,7 +134,12 @@ fn write_bundle(
     bundler_files: &AHashMap<FileName, ParsedModule>,
     args: &ResolvedArgs,
 ) -> Result<()> {
-    let project_root = args.project_json_path.parent().unwrap().to_str().unwrap();
+    let project_root = args
+        .project_json_path
+        .parent()
+        .expect("folder should exist")
+        .to_str()
+        .expect("is valid utf8");
     if res.errors.is_empty() {
         let (ast, write_errs) = res.to_module();
         if write_errs.is_empty() {
@@ -157,7 +162,8 @@ struct BffWatcher<'a> {
 impl<'a> BffWatcher<'a> {
     fn watch(mut self) -> Result<()> {
         let (tx, rx) = std::sync::mpsc::channel();
-        let mut debouncer = new_debouncer(Duration::from_millis(50), tx).unwrap();
+        let mut debouncer = new_debouncer(Duration::from_millis(50), tx)
+            .expect("should be possible to create debouncer");
 
         for path in self.input_files {
             debouncer
