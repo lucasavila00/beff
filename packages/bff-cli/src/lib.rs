@@ -1,24 +1,18 @@
 #![warn(clippy::pedantic)]
-pub mod decoder;
+
 pub mod diag;
-pub mod printer;
 pub mod writer;
 
 use anyhow::anyhow;
 use anyhow::Context;
 use anyhow::Result;
-use bff_core::api_extractor::FnHandler;
-use bff_core::diag::Diagnostic;
-use bff_core::open_api_ast::Definition;
-use bff_core::open_api_ast::OpenApi;
 use bff_core::BffModuleData;
+use bff_core::BundleResult;
 use bff_core::ImportReference;
 use bff_core::ParsedModule;
 use bff_core::ParsedModuleLocals;
 use bff_core::TypeExport;
 use std::collections::HashMap;
-use std::fmt::Debug;
-use std::path::PathBuf;
 use swc_atoms::JsWord;
 use swc_bundler::{ModuleData, Resolve};
 use swc_common::errors::EmitterWriter;
@@ -147,16 +141,6 @@ impl<'a> Visit for ImportsVisitor<'a> {
             }
         }
     }
-}
-
-#[derive(Debug)]
-pub struct BundleResult {
-    pub entry_point: PathBuf,
-    pub entry_file_name: FileName,
-    pub errors: Vec<Diagnostic>,
-    pub open_api: OpenApi,
-    pub handlers: Vec<FnHandler>,
-    pub components: Vec<Definition>,
 }
 
 pub struct Bundler {

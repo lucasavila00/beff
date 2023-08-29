@@ -1,6 +1,6 @@
+use crate::open_api_ast::{Json, JsonSchema, Optionality};
 use crate::printer::ToExpr;
-use bff_core::open_api_ast::{Json, JsonSchema, Optionality};
-use bff_core::swc_builder::SwcBuilder;
+use crate::swc_builder::SwcBuilder;
 use swc_common::DUMMY_SP;
 use swc_ecma_ast::{
     op, AssignExpr, BinExpr, BindingIdent, BlockStmt, Bool, CallExpr, Callee, Decl, Expr,

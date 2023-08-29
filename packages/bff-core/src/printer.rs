@@ -5,15 +5,13 @@ use swc_ecma_ast::{
     PropName, PropOrSpread, Stmt, Str, VarDecl, VarDeclKind, VarDeclarator,
 };
 
-use bff_core::api_extractor::{
-    operation_parameter_in_path_or_query_or_body, FnHandler, FunctionParameterIn,
-    HandlerParameter, HeaderOrCookie, ParsedPattern,
+use crate::api_extractor::{
+    operation_parameter_in_path_or_query_or_body, FnHandler, FunctionParameterIn, HandlerParameter,
+    HeaderOrCookie, ParsedPattern,
 };
-use crate::{
-    decoder, BundleResult,
-};
-use bff_core::diag::Diagnostic;
-use bff_core::open_api_ast::{self, Definition, Js, Json, JsonSchema, OpenApi};
+use crate::diag::Diagnostic;
+use crate::open_api_ast::{self, Definition, Js, Json, JsonSchema, OpenApi};
+use crate::{decoder, BundleResult};
 
 pub trait ToExpr {
     fn to_expr(self) -> Expr;
@@ -474,7 +472,7 @@ fn js_to_expr(
             function: decoder::from_schema(&schema, &name).into(),
         }),
         Js::Coercer(schema) => {
-            let func = bff_core::coercer::from_schema(&schema, components);
+            let func = crate::coercer::from_schema(&schema, components);
             Expr::Fn(FnExpr {
                 ident: None,
                 function: func.into(),
