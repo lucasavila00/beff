@@ -152,10 +152,9 @@ export function registerRouter(options) {
     registerDocs(options.app, meta, options.openApi?.servers ?? []);
     const handlersMeta = meta["handlersMeta"];
     for (const meta of handlersMeta) {
-        const key = `${meta.method_kind.toUpperCase()}${meta.pattern}`;
-        const handlerData = options.router[key];
+        const handlerData = options.router[meta.pattern][meta.method_kind];
         if (handlerData == null) {
-            throw new Error("handler not found: " + key);
+            throw new Error("handler not found: " + meta.method_kind + "  " + meta.pattern);
         }
         const app = options.app;
         switch (meta.method_kind) {
@@ -192,8 +191,10 @@ export function buildFetchClient(fetcher, options) {
     const client = {};
     const handlersMeta = meta["handlersMeta"];
     for (const meta of handlersMeta) {
-        const key = `${meta.method_kind.toUpperCase()}${meta.pattern}`;
-        client[key] = async (...params) => {
+        if (client[meta.pattern] == null) {
+            client[meta.pattern] = {};
+        }
+        client[meta.pattern][meta.method_kind] = async (...params) => {
             let url = options.baseUrl + meta.pattern;
             const init = {
                 method: meta.method_kind.toUpperCase(),
