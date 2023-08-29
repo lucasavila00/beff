@@ -1,22 +1,22 @@
 Error: 
-   ╭─[/app.ts:6:24]
+   ╭─[/app.ts:7:17]
    │
- 6 │   [`GET/user`]: async (...q: string[]): Promise<string> => {
-   │                        ───────┬──────  
-   │                               ╰──────── RestParameterMustBeTuple
+ 7 │     get: async (...q: string[]): Promise<string> => {
+   │                 ───────┬──────  
+   │                        ╰──────── RestParameterMustBeTuple
 ───╯
 Error: 
-   ╭─[/app.ts:9:25]
-   │
- 9 │   [`GET/user1`]: async (...q: A<string>): Promise<string> => {
-   │                         ───────┬───────  
-   │                                ╰───────── TsTypeParametersNotSupported
-───╯
-Error: 
-    ╭─[/app.ts:12:25]
+    ╭─[/app.ts:12:17]
     │
- 12 │   [`GET/user2`]: async (...q: Y.B): Promise<string> => {
-    │                         ────┬────  
-    │                             ╰────── TsQualifiedNameNotSupported
+ 12 │     get: async (...q: A<string>): Promise<string> => {
+    │                 ───────┬───────  
+    │                        ╰───────── TsTypeParametersNotSupported
+────╯
+Error: 
+    ╭─[/app.ts:17:17]
+    │
+ 17 │     get: async (...q: Y.B): Promise<string> => {
+    │                 ────┬────  
+    │                     ╰────── TsQualifiedNameNotSupported
 ────╯
 Error: Failed to bundle

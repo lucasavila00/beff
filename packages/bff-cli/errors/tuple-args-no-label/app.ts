@@ -8,7 +8,9 @@ const runQuery = (q: Pagination): User[] => {
 };
 
 export default {
-  [`GET/user`]: async (...q: Pagination): Promise<User[]> => {
-    return runQuery(q);
+  [`/user`]: {
+    get: async (...q: Pagination): Promise<User[]> => {
+      return runQuery(q);
+    },
   },
 };

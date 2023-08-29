@@ -5,5 +5,5 @@ type A = {
 };
 
 export default {
-  [`GET/hello/{id}`]: async (id: string): Promise<A> => todo(),
+  [`/hello/{id}`]: { get: async (id: string): Promise<A> => todo() },
 };

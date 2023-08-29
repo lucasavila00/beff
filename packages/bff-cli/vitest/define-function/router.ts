@@ -1,15 +1,23 @@
 export default {
-  [`GET/hello1`]: async (): Promise<string> => {
-    return "Hello!";
+  [`/hello1`]: {
+    get: async (): Promise<string> => {
+      return "Hello!";
+    },
   },
-  [`GET/hello2`]: async function (): Promise<string> {
-    return "Hello!";
+  [`/hello2`]: {
+    get: async function (): Promise<string> {
+      return "Hello!";
+    },
   },
-  [`GET/hello3`]: function (): Promise<string> {
-    return Promise.resolve("Hello!");
+  [`/hello3`]: {
+    get: function (): Promise<string> {
+      return Promise.resolve("Hello!");
+    },
   },
-  [`GET/hello4`]: function (): string {
-    return "Hello!";
+  [`/hello4`]: {
+    get: function (): string {
+      return "Hello!";
+    },
   },
-  [`GET/hello5`]: (): string => "Hello!",
+  [`/hello5`]: { get: (): string => "Hello!" },
 };

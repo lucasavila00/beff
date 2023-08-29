@@ -17,9 +17,9 @@ const bff: ClientFromRouter<typeof router> = buildFetchClient(
   }
 );
 it("get", async () => {
-  expect(await bff["GET/hello1"]()).toMatchInlineSnapshot('"Hello!"');
-  expect(await bff["GET/hello2"]()).toMatchInlineSnapshot('"Hello!"');
-  expect(await bff["GET/hello3"]()).toMatchInlineSnapshot('"Hello!"');
-  expect(await bff["GET/hello4"]()).toMatchInlineSnapshot('"Hello!"');
-  expect(await bff["GET/hello5"]()).toMatchInlineSnapshot('"Hello!"');
+  expect(await bff["/hello1"].get()).toMatchInlineSnapshot('"Hello!"');
+  expect(await bff["/hello2"].get()).toMatchInlineSnapshot('"Hello!"');
+  expect(await bff["/hello3"].get()).toMatchInlineSnapshot('"Hello!"');
+  expect(await bff["/hello4"].get()).toMatchInlineSnapshot('"Hello!"');
+  expect(await bff["/hello5"].get()).toMatchInlineSnapshot('"Hello!"');
 });

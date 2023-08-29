@@ -406,13 +406,10 @@ fn handlers_to_js(items: Vec<FnHandler>, components: &Vec<Definition>) -> Js {
             .into_iter()
             .map(|it| {
                 let ptn = &it.pattern.open_api_pattern;
-                let kind = it.pattern.method_kind.to_string().to_uppercase();
+                let kind = it.method_kind.to_string().to_uppercase();
                 let decoder_name = format!("[{kind}] {ptn}.response_body");
                 Js::Object(vec![
-                    (
-                        "method_kind".into(),
-                        Js::String(it.pattern.method_kind.to_string()),
-                    ),
+                    ("method_kind".into(), Js::String(it.method_kind.to_string())),
                     (
                         "params".into(),
                         Js::Array(

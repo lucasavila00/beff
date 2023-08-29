@@ -9,12 +9,14 @@ export default {
    * @augments asd
    * @xxx yyy
    */
-  [`GET/hello/{id}`]: async (
-    /**
-     * @title abc
-     * @augments asd
-     * @xxx yyy
-     */
-    id: string
-  ): Promise<string> => id,
+  [`/hello/{id}`]: {
+    get: async (
+      /**
+       * @title abc
+       * @augments asd
+       * @xxx yyy
+       */
+      id: string
+    ): Promise<string> => id,
+  },
 };

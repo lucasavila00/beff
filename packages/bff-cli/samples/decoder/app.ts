@@ -22,5 +22,5 @@ type User = {
   i: { a: 1 } & { b: 2 };
 };
 export default {
-  [`GET/{id}`]: async (id: string): Promise<User> => todo(),
+  [`/{id}`]: { get: async (id: string): Promise<User> => todo() },
 };

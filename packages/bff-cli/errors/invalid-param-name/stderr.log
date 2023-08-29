@@ -1,8 +1,8 @@
 Error: 
    ╭─[/app.ts:4:4]
    │
- 4 │   [`GET/hello/{ida}`]: async (id: string): Promise<string> => `Hello ${id}!`,
-   │    ────────┬────────  
-   │            ╰────────── UnmatchedPathParameter("ida")
+ 4 │   [`/hello/{ida}`]: {
+   │    ───────┬──────  
+   │           ╰──────── UnmatchedPathParameter("ida")
 ───╯
 Error: Failed to bundle

@@ -1,8 +1,8 @@
 Error: 
-   ╭─[/app.ts:8:53]
+   ╭─[/app.ts:8:57]
    │
- 8 │   [`GET/hello/{id}`]: async (id: string): Promise<X.A> => todo(),
-   │                                                     ┬  
-   │                                                     ╰── TsQualifiedNameNotSupported
+ 8 │   [`/hello/{id}`]: { get: async (id: string): Promise<X.A> => todo() },
+   │                                                         ┬  
+   │                                                         ╰── TsQualifiedNameNotSupported
 ───╯
 Error: Failed to bundle

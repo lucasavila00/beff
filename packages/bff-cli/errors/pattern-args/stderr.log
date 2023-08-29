@@ -1,22 +1,22 @@
 Error: 
-   ╭─[/app.ts:8:24]
+   ╭─[/app.ts:9:17]
    │
- 8 │   [`GET/user`]: async ([limit, offset]: string[]): Promise<User[]> => {
-   │                        ────────────┬────────────  
-   │                                    ╰────────────── ParameterPatternNotSupported
+ 9 │     get: async ([limit, offset]: string[]): Promise<User[]> => {
+   │                 ────────────┬────────────  
+   │                             ╰────────────── ParameterPatternNotSupported
 ───╯
 Error: 
-    ╭─[/app.ts:11:25]
+    ╭─[/app.ts:14:17]
     │
- 11 │   [`GET/user1`]: async ({ limit, offset }: any): Promise<User[]> => {
-    │                         ───────────┬──────────  
-    │                                    ╰──────────── ParameterPatternNotSupported
+ 14 │     get: async ({ limit, offset }: any): Promise<User[]> => {
+    │                 ───────────┬──────────  
+    │                            ╰──────────── ParameterPatternNotSupported
 ────╯
 Error: 
-    ╭─[/app.ts:14:25]
+    ╭─[/app.ts:19:17]
     │
- 14 │   [`GET/user2`]: async (a: string[] = []): Promise<User[]> => {
-    │                         ────────┬───────  
-    │                                 ╰───────── ParameterPatternNotSupported
+ 19 │     get: async (a: string[] = []): Promise<User[]> => {
+    │                 ────────┬───────  
+    │                         ╰───────── ParameterPatternNotSupported
 ────╯
 Error: Failed to bundle

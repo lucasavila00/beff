@@ -913,8 +913,6 @@ export const meta = {
             },
             "/users": {
                 "get": {
-                    "summary": "Returns a list of users.",
-                    "description": "Optional extended description in CommonMark or HTML.",
                     "parameters": [
                         {
                             "name": "user_agent",
@@ -952,8 +950,6 @@ export const meta = {
             },
             "/users/{id}": {
                 "get": {
-                    "summary": "Returns the user.",
-                    "description": "Optional extended description in CommonMark or HTML...",
                     "parameters": [
                         {
                             "name": "id",

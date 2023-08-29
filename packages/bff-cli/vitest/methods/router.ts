@@ -1,20 +1,22 @@
 export default {
-  [`GET/hello`]: async (): Promise<string> => {
-    return "Hello!";
-  },
-  [`POST/hello`]: async (): Promise<string> => {
-    return "Hello!";
-  },
-  [`PUT/hello`]: async (): Promise<string> => {
-    return "Hello!";
-  },
-  [`DELETE/hello`]: async (): Promise<string> => {
-    return "Hello!";
-  },
-  [`PATCH/hello`]: async (): Promise<string> => {
-    return "Hello!";
-  },
-  [`OPTIONS/hello`]: async (): Promise<string> => {
-    return "Hello!";
+  [`/hello`]: {
+    get: async (): Promise<string> => {
+      return "Hello!";
+    },
+    post: async (): Promise<string> => {
+      return "Hello!";
+    },
+    put: async (): Promise<string> => {
+      return "Hello!";
+    },
+    delete: async (): Promise<string> => {
+      return "Hello!";
+    },
+    patch: async (): Promise<string> => {
+      return "Hello!";
+    },
+    options: async (): Promise<string> => {
+      return "Hello!";
+    },
   },
 };

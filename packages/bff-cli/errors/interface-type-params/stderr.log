@@ -1,8 +1,8 @@
 Error: 
-   ╭─[/app.ts:8:51]
+   ╭─[/app.ts:8:55]
    │
- 8 │   [`GET/hello/{id}`]: async (id: string): Promise<A<"string">> => todo(),
-   │                                                   ┬  
-   │                                                   ╰── CannotSerializeType
+ 8 │   [`/hello/{id}`]: { get: async (id: string): Promise<A<"string">> => todo() },
+   │                                                       ┬  
+   │                                                       ╰── CannotSerializeType
 ───╯
 Error: Failed to bundle

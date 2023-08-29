@@ -6,7 +6,7 @@
   "scripts": {
     "test": "npm run tsc && cargo test && vitest",
     "v": "vitest",
-    "do": "RUST_LOG=debug cargo run -- -p samples/params/bff.json",
+    "do": "RUST_LOG=debug cargo run -- -p vitest/params/bff.json",
     "watch": "RUST_LOG=debug cargo run -- -w -p samples/hello-server/bffconfig.json",
     "tsc": "tsc -p src/runtime/tsconfig.json && cp src/runtime/dist/runtime.js src/assets/runtime.js && cp src/runtime/dist/runtime.d.ts src/assets/runtime.d.ts"
   },

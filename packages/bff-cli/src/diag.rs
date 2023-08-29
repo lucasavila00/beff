@@ -44,6 +44,7 @@ pub enum DiagnosticMessage {
     TemplateMustBeOfSingleString,
     CannotFindFileWhenConvertingToSchema(String),
     CannotFindTypeExportWhenConvertingToSchema(String),
+    NotAnObjectWithMethodKind,
 }
 
 #[derive(Debug, Clone)]

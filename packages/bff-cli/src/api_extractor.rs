@@ -106,7 +106,6 @@ impl MethodKind {
 pub struct ParsedPattern {
     pub raw_span: Span,
     pub open_api_pattern: String,
-    pub method_kind: MethodKind,
     pub path_params: Vec<String>,
 }
 
@@ -133,6 +132,7 @@ pub struct FnHandler {
     pub description: Option<String>,
     pub parameters: Vec<(String, HandlerParameter)>,
     pub return_type: JsonSchema,
+    pub method_kind: MethodKind,
 }
 
 pub struct ExtractExportDefaultVisitor<'a> {
@@ -280,53 +280,11 @@ impl<'a> ExtractExportDefaultVisitor<'a> {
         None
     }
 
-    fn parse_prefix(&mut self, key: &str, parent_span: &Span) -> Result<MethodKind> {
-        if key.starts_with("GET") {
-            return Ok(MethodKind::Get);
-        }
-        if key.starts_with("POST") {
-            return Ok(MethodKind::Post);
-        }
-        if key.starts_with("PUT") {
-            return Ok(MethodKind::Put);
-        }
-        if key.starts_with("DELETE") {
-            return Ok(MethodKind::Delete);
-        }
-        if key.starts_with("PATCH") {
-            return Ok(MethodKind::Patch);
-        }
-        if key.starts_with("OPTIONS") {
-            return Ok(MethodKind::Options);
-        }
-        if key.starts_with("USE") {
-            return Ok(MethodKind::Use);
-        }
-        self.errors.push(Diagnostic {
-            message: DiagnosticMessage::InvalidPatternPrefix,
-            file_name: self.current_file.module.fm.name.clone(),
-            span: *parent_span,
-        });
-        Err(anyhow!("Invalid prefix"))
-    }
     fn parse_raw_pattern_str(&mut self, key: &str, span: &Span) -> Result<ParsedPattern> {
-        let method_kind = self.parse_prefix(key, span)?;
-        let prefix_len = method_kind.text_len();
-        let rest_of_key = &key[prefix_len..];
-        if !rest_of_key.starts_with("/") {
-            self.errors.push(Diagnostic {
-                message: DiagnosticMessage::InvalidPatternPrefix,
-                file_name: self.current_file.module.fm.name.clone(),
-                span: *span,
-            });
-
-            return Err(anyhow!("Invalid path"));
-        }
-        let path_params = parse_pattern_params(rest_of_key);
+        let path_params = parse_pattern_params(key);
         Ok(ParsedPattern {
             raw_span: span.clone(),
-            open_api_pattern: rest_of_key.to_string(),
-            method_kind,
+            open_api_pattern: key.to_string(),
             path_params,
         })
     }
@@ -697,7 +655,12 @@ impl<'a> ExtractExportDefaultVisitor<'a> {
 
         Ok(())
     }
-    fn method_from_func_expr(&mut self, key: &PropName, func: &FnExpr) -> Result<FnHandler> {
+    fn method_from_func_expr(
+        &mut self,
+        key: &PropName,
+        func: &FnExpr,
+        pattern: &ParsedPattern,
+    ) -> Result<FnHandler> {
         let FnExpr { function, .. } = func;
         let Function {
             params,
@@ -709,16 +672,16 @@ impl<'a> ExtractExportDefaultVisitor<'a> {
         } = &**function;
         self.validate_handler_func(*is_generator, type_params, parent_span)?;
 
-        let pattern = self.parse_key(key)?;
         let endpoint_comments = self.get_endpoint_comments(key);
 
         let return_type = self.assert_and_extract_type_from_ann(return_type, parent_span);
         let e = FnHandler {
+            method_kind: Self::parse_method_kind(key),
             parameters: params
                 .iter()
                 .flat_map(|it| self.parse_arrow_parameter(&it.pat, parent_span))
                 .collect(),
-            pattern,
+            pattern: pattern.clone(),
             summary: endpoint_comments.summary,
             description: endpoint_comments.description,
             return_type: self
@@ -750,7 +713,31 @@ impl<'a> ExtractExportDefaultVisitor<'a> {
         }
     }
 
-    fn method_from_arrow_expr(&mut self, key: &PropName, arrow: &ArrowExpr) -> Result<FnHandler> {
+    fn parse_method_kind(key: &PropName) -> MethodKind {
+        match key {
+            PropName::Ident(Ident { sym, .. }) => match sym.to_string().as_str() {
+                "get" => MethodKind::Get,
+                "post" => MethodKind::Post,
+                "put" => MethodKind::Put,
+                "delete" => MethodKind::Delete,
+                "patch" => MethodKind::Patch,
+                "options" => MethodKind::Options,
+                "use" => MethodKind::Use,
+                _ => todo!(),
+            },
+            PropName::Str(_) => todo!(),
+            PropName::Num(_) => todo!(),
+            PropName::Computed(_) => todo!(),
+            PropName::BigInt(_) => todo!(),
+        }
+    }
+
+    fn method_from_arrow_expr(
+        &mut self,
+        key: &PropName,
+        arrow: &ArrowExpr,
+        pattern: &ParsedPattern,
+    ) -> Result<FnHandler> {
         let ArrowExpr {
             params,
             is_generator,
@@ -761,16 +748,16 @@ impl<'a> ExtractExportDefaultVisitor<'a> {
         } = arrow;
         self.validate_handler_func(*is_generator, type_params, parent_span)?;
 
-        let pattern = self.parse_key(key)?;
         let endpoint_comments = self.get_endpoint_comments(key);
 
         let ret_ty = self.assert_and_extract_type_from_ann(return_type, parent_span);
         let e = FnHandler {
+            method_kind: Self::parse_method_kind(key),
             parameters: params
                 .iter()
                 .flat_map(|it| self.parse_arrow_parameter(it, parent_span))
                 .collect(),
-            pattern,
+            pattern: pattern.clone(),
             summary: endpoint_comments.summary,
             description: endpoint_comments.description,
             return_type: self.convert_to_json_schema(maybe_extract_promise(&ret_ty), parent_span),
@@ -798,32 +785,77 @@ impl<'a> ExtractExportDefaultVisitor<'a> {
             Prop::Method(MethodProp { key, .. }) => Self::get_prop_name_span(key),
         }
     }
-    fn endpoint_from_prop(&mut self, prop: &Prop) -> Result<FnHandler> {
+
+    fn endpoints_from_method_map(
+        &mut self,
+        prop: &Prop,
+        pattern: &ParsedPattern,
+    ) -> Vec<FnHandler> {
         if let Prop::KeyValue(KeyValueProp { key, value }) = prop {
-            if let Expr::Arrow(arr) = &**value {
-                return self.method_from_arrow_expr(key, arr);
-            }
-            if let Expr::Fn(func) = &**value {
-                return self.method_from_func_expr(key, func);
-            }
-            let pattern = self.parse_key(key)?;
-            if pattern.method_kind == MethodKind::Use {
-                return Ok(FnHandler {
-                    pattern,
+            let method_kind = Self::parse_method_kind(key);
+            if method_kind == MethodKind::Use {
+                return vec![FnHandler {
+                    pattern: pattern.clone(),
                     summary: None,
                     description: None,
                     parameters: vec![],
                     return_type: JsonSchema::Any,
-                });
+                    method_kind,
+                }];
+            }
+
+            if let Expr::Arrow(arr) = &**value {
+                match self.method_from_arrow_expr(key, arr, pattern) {
+                    Ok(it) => return vec![it],
+                    Err(_) => return vec![],
+                }
+            }
+
+            if let Expr::Fn(func) = &**value {
+                match self.method_from_func_expr(key, func, pattern) {
+                    Ok(it) => return vec![it],
+                    Err(_) => return vec![],
+                }
             }
         }
         let span = Self::get_prop_span(prop);
         self.errors.push(Diagnostic {
-            message: DiagnosticMessage::HandlerMustBeAKeyValuePairWithStringAndFunction,
+            message: DiagnosticMessage::NotAnObjectWithMethodKind,
             file_name: self.current_file.module.fm.name.clone(),
             span,
         });
-        Err(anyhow!("not a key value prop with arrow or function"))
+        vec![]
+    }
+
+    fn endpoints_from_prop(&mut self, prop: &Prop) -> Vec<FnHandler> {
+        if let Prop::KeyValue(KeyValueProp { key, value }) = prop {
+            let pattern = self.parse_key(key);
+            match pattern {
+                Ok(pattern) => {
+                    if let Expr::Object(obj) = &**value {
+                        return obj
+                            .props
+                            .iter()
+                            .flat_map(|it| match it {
+                                PropOrSpread::Spread(_) => todo!(),
+                                PropOrSpread::Prop(it) => {
+                                    self.endpoints_from_method_map(it, &pattern)
+                                }
+                            })
+                            .collect();
+                    }
+                }
+                Err(_) => todo!(),
+            }
+        }
+
+        let span = Self::get_prop_span(prop);
+        self.errors.push(Diagnostic {
+            message: DiagnosticMessage::NotAnObjectWithMethodKind,
+            file_name: self.current_file.module.fm.name.clone(),
+            span,
+        });
+        vec![]
     }
 
     #[allow(clippy::to_string_in_format_args)]
@@ -895,10 +927,8 @@ impl<'a> Visit for ExtractExportDefaultVisitor<'a> {
             for prop in &lit.props {
                 match prop {
                     PropOrSpread::Prop(prop) => {
-                        let method = self.endpoint_from_prop(prop);
-                        if let Ok(method) = method {
-                            self.handlers.push(method);
-                        }
+                        let method = self.endpoints_from_prop(prop);
+                        self.handlers.extend(method);
                     }
                     PropOrSpread::Spread(SpreadElement { dot3_token, .. }) => {
                         self.errors.push(Diagnostic {
@@ -1057,7 +1087,7 @@ impl<'a> EndpointToPath<'a> {
     fn add_endpoint_to_path(&mut self, path: &mut open_api_ast::ApiPath, endpoint: FnHandler) {
         log::debug!("adding endpoint to path");
 
-        let kind = endpoint.pattern.method_kind;
+        let kind = endpoint.method_kind;
         let op = Some(self.endpoint_to_operation_object(endpoint));
         match kind {
             MethodKind::Get => path.get = op,

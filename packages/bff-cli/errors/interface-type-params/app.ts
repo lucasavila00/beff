@@ -5,5 +5,5 @@ interface A<T> {
 }
 
 export default {
-  [`GET/hello/{id}`]: async (id: string): Promise<A<"string">> => todo(),
+  [`/hello/{id}`]: { get: async (id: string): Promise<A<"string">> => todo() },
 };

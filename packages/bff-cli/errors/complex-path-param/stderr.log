@@ -1,8 +1,8 @@
 Error: 
    ╭─[/app.ts:7:4]
    │
- 7 │   [`GET/hello/{id}`]: async (id: A): Promise<string> => `Hello ${id}!`,
-   │    ────────┬───────  
-   │            ╰───────── ComplexPathParameterNotSupported
+ 7 │   [`/hello/{id}`]: { get: async (id: A): Promise<string> => `Hello ${id}!` },
+   │    ──────┬──────  
+   │          ╰──────── ComplexPathParameterNotSupported
 ───╯
 Error: Failed to bundle

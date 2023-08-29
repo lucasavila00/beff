@@ -40,34 +40,41 @@ type User = {
  * @version 0.1.9
  */
 export default {
-  [`GET/data-types-kitchen-sink`]: async (): Promise<DataTypesKitchenSink> =>
-    todo(),
-  [`GET/anon-func`]: async function (): Promise<string> {
-    return todo();
+  [`/data-types-kitchen-sink`]: {
+    get: async (): Promise<DataTypesKitchenSink> => todo(),
+  },
+  [`/anon-func`]: {
+    get: async function (): Promise<string> {
+      return todo();
+    },
   },
   /**
    * Optional extended description in CommonMark or HTML.
    *
    * @summary Returns a list of users.
    */
-  [`GET/users`]: async (
-    user_agent: Header<string>,
-    ads_id: Cookie<string>
-  ): Promise<string[]> => [],
+  [`/users`]: {
+    get: async (
+      user_agent: Header<string>,
+      ads_id: Cookie<string>
+    ): Promise<string[]> => [],
+  },
 
   /**
    * Optional extended description in CommonMark or HTML...
    *
    * @summary Returns the user.
    */
-  [`GET/users/{id}`]: async (
-    /**
-     * The user id.
-     */
-    id: number
-  ): Promise<User> => ({
-    id,
-    name: "John Doe",
-    entities: [],
-  }),
+  [`/users/{id}`]: {
+    get: async (
+      /**
+       * The user id.
+       */
+      id: number
+    ): Promise<User> => ({
+      id,
+      name: "John Doe",
+      entities: [],
+    }),
+  },
 };
