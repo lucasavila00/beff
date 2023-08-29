@@ -328,7 +328,7 @@ impl<'a> ExtractExportDefaultVisitor<'a> {
         }
     }
 
-    fn convert_to_json_schema(&mut self, ty: &TsType) -> JsonSchema {
+    fn convert_to_json_schema(&mut self, ty: &TsType, span: &Span) -> JsonSchema {
         let mut to_schema = TypeToSchema::new(self.files, self.current_file);
         let res = to_schema.convert_ts_type(ty);
 
@@ -339,7 +339,11 @@ impl<'a> ExtractExportDefaultVisitor<'a> {
             // And we need the option to allow a type to refer to itself before it has been resolved.
             match v {
                 Some(s) => kvs.push((k, s)),
-                None => unreachable!("started resolving a type and did not finish it"),
+                None => self.errors.push(Diagnostic {
+                    message: DiagnosticMessage::CannotResolveTypeReferenceOnExtracting(k),
+                    file_name: self.current_file.module.fm.name.clone(),
+                    span: *span,
+                }),
             }
         }
         kvs.sort_by(|(ka, _), (kb, _)| ka.cmp(kb));
@@ -368,7 +372,7 @@ impl<'a> ExtractExportDefaultVisitor<'a> {
                     } else {
                         HeaderOrCookie::Cookie
                     },
-                    schema: self.convert_to_json_schema(ty),
+                    schema: self.convert_to_json_schema(ty, &lib_ty_name.span),
                     required,
                     description,
                 }
@@ -391,7 +395,7 @@ impl<'a> ExtractExportDefaultVisitor<'a> {
             }
         }
         HandlerParameter::PathOrQueryOrBody {
-            schema: self.convert_to_json_schema(ty),
+            schema: self.convert_to_json_schema(ty, &tref.span),
             required,
             description,
         }
@@ -401,13 +405,14 @@ impl<'a> ExtractExportDefaultVisitor<'a> {
         ty: &TsType,
         required: bool,
         description: Option<String>,
+        span: &Span,
     ) -> HandlerParameter {
         match ty {
             TsType::TsTypeRef(tref) => {
                 self.parse_type_ref_parameter(tref, ty, required, description)
             }
             _ => HandlerParameter::PathOrQueryOrBody {
-                schema: self.convert_to_json_schema(ty),
+                schema: self.convert_to_json_schema(ty, span),
                 required,
                 description,
             },
@@ -467,8 +472,12 @@ impl<'a> ExtractExportDefaultVisitor<'a> {
                         Pat::Ident(BindingIdent { id, .. }) => {
                             let comments = self.current_file.comments.get_leading(id.span.lo);
                             let description = comments.and_then(parse_description_comment);
-                            let param =
-                                self.parse_parameter_type(&it.ty, !id.optional, description);
+                            let param = self.parse_parameter_type(
+                                &it.ty,
+                                !id.optional,
+                                description,
+                                &id.span,
+                            );
                             vec![(id.sym.to_string(), param)]
                         }
                         _ => self.error_param(
@@ -499,6 +508,7 @@ impl<'a> ExtractExportDefaultVisitor<'a> {
                     &type_ann.as_ref().unwrap().as_ref().type_ann,
                     !id.optional,
                     description,
+                    &id.span,
                 );
                 vec![(id.sym.to_string(), param)]
             }
@@ -553,13 +563,14 @@ impl<'a> ExtractExportDefaultVisitor<'a> {
         is_generator: bool,
         type_params: &Option<Box<TsTypeParamDecl>>,
         span: &Span,
-    ) {
+    ) -> Result<()> {
         if is_generator {
             self.errors.push(Diagnostic {
                 message: DiagnosticMessage::HandlerCannotBeGenerator,
                 file_name: self.current_file.module.fm.name.clone(),
                 span: *span,
             });
+            return Err(anyhow!("cannot be generator"));
         }
         if type_params.is_some() {
             self.errors.push(Diagnostic {
@@ -567,7 +578,10 @@ impl<'a> ExtractExportDefaultVisitor<'a> {
                 file_name: self.current_file.module.fm.name.clone(),
                 span: *span,
             });
+            return Err(anyhow!("cannot have type params"));
         }
+
+        Ok(())
     }
     fn method_from_func_expr(&mut self, key: &PropName, func: &FnExpr) -> Result<FnHandler> {
         let FnExpr { function, .. } = func;
@@ -579,7 +593,7 @@ impl<'a> ExtractExportDefaultVisitor<'a> {
             return_type,
             ..
         } = &**function;
-        self.validate_handler_func(*is_generator, type_params, parent_span);
+        self.validate_handler_func(*is_generator, type_params, parent_span)?;
 
         let pattern = self.parse_key(key)?;
         let endpoint_comments = self.get_endpoint_comments(key);
@@ -592,9 +606,10 @@ impl<'a> ExtractExportDefaultVisitor<'a> {
             pattern,
             summary: endpoint_comments.summary,
             description: endpoint_comments.description,
-            return_type: self.convert_to_json_schema(maybe_extract_promise(
-                &return_type.as_ref().unwrap().as_ref().type_ann,
-            )),
+            return_type: self.convert_to_json_schema(
+                maybe_extract_promise(&return_type.as_ref().unwrap().as_ref().type_ann),
+                parent_span,
+            ),
         };
 
         Ok(self.validate_pattern_was_consumed(e))
@@ -631,7 +646,7 @@ impl<'a> ExtractExportDefaultVisitor<'a> {
             span: parent_span,
             ..
         } = arrow;
-        self.validate_handler_func(*is_generator, type_params, parent_span);
+        self.validate_handler_func(*is_generator, type_params, parent_span)?;
 
         let pattern = self.parse_key(key)?;
         let endpoint_comments = self.get_endpoint_comments(key);
@@ -645,7 +660,7 @@ impl<'a> ExtractExportDefaultVisitor<'a> {
             pattern,
             summary: endpoint_comments.summary,
             description: endpoint_comments.description,
-            return_type: self.convert_to_json_schema(maybe_extract_promise(&ret_ty)),
+            return_type: self.convert_to_json_schema(maybe_extract_promise(&ret_ty), parent_span),
         };
 
         Ok(self.validate_pattern_was_consumed(e))

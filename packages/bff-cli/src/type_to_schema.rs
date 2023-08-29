@@ -204,7 +204,10 @@ impl<'a> TypeToSchema<'a> {
         let r = alias_opt.or(interfaces_opt).or(imported_opt);
         match r {
             Some(ok) => ok,
-            None => self.error(&i.span, DiagnosticMessage::CannotResolveTypeReference),
+            None => self.error(
+                &i.span,
+                DiagnosticMessage::CannotResolveTypeReferenceOnConverting(i.sym.to_string()),
+            ),
         }
     }
 

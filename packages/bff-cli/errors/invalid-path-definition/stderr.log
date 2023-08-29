@@ -79,4 +79,11 @@ Error:
     │                        ──────────────────────┬─────────────────────  
     │                                              ╰─────────────────────── HandlerCannotHaveTypeParameters
 ────╯
+Error: 
+    ╭─[/app.ts:22:24]
+    │
+ 22 │   [`GET/hello5/{id}`]: async <T>(id: T): Promise<T> => id,
+    │                        ─────────────────┬────────────────  
+    │                                         ╰────────────────── HandlerCannotHaveTypeParameters
+────╯
 Error: Failed to bundle

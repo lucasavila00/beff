@@ -5,7 +5,8 @@ use crate::ParsedModule;
 
 #[derive(Debug, Clone)]
 pub enum DiagnosticMessage {
-    CannotResolveTypeReference,
+    CannotResolveTypeReferenceOnConverting(String),
+    CannotResolveTypeReferenceOnExtracting(String),
     HandlerCannotHaveTypeParameters,
     HandlerMustAnnotateReturnType,
     UnmatchedPathParameter(String),

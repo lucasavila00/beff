@@ -19,5 +19,5 @@ export default {
   },
   [`GET/hello3/{id}`]: <T>(id: string): string => id,
   [`GET/hello4/{id}`]: async <T>(id: string): Promise<string> => id,
-  // [`GET/hello3/{id}`]: async <T>(id: T): Promise<T> => id,
+  [`GET/hello5/{id}`]: async <T>(id: T): Promise<T> => id,
 };
