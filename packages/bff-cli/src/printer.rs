@@ -128,9 +128,6 @@ impl ToJson for JsonSchema {
                 "$ref".into(),
                 Json::String(format!("#/components/schemas/{reference}")),
             )]),
-            JsonSchema::Integer => {
-                Json::Object(vec![("type".into(), Json::String("integer".into()))])
-            }
             JsonSchema::Null => Json::Object(vec![("type".into(), Json::String("null".into()))]),
             JsonSchema::AnyOf(types) => {
                 let all_literals = types.iter().all(|it| matches!(it, JsonSchema::Const(_)));

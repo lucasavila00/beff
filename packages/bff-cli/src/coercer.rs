@@ -39,7 +39,6 @@ impl<'a> CoercerFnGenerator<'a> {
             JsonSchema::Boolean => coerce_primitive(value_ref.clone(), "boolean"),
             JsonSchema::String => coerce_primitive(value_ref.clone(), "string"),
             JsonSchema::Number => coerce_primitive(value_ref.clone(), "number"),
-            JsonSchema::Integer => coerce_primitive(value_ref.clone(), "bigint"),
             JsonSchema::Array(_) | JsonSchema::Object { .. } | JsonSchema::Tuple { .. } => {
                 unreachable!("should be on request body, no coercion needed")
             }

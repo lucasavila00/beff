@@ -353,7 +353,6 @@ impl DecoderFnGenerator {
                 Self::decode_with_typeof(value_ref, "boolean", err_storage, path)
             }
             JsonSchema::Number => Self::decode_with_typeof(value_ref, "number", err_storage, path),
-            JsonSchema::Integer => Self::decode_with_typeof(value_ref, "bigint", err_storage, path),
             JsonSchema::Any => vec![],
             JsonSchema::Object { values } => {
                 self.decode_object(values, value_ref, err_storage, path)

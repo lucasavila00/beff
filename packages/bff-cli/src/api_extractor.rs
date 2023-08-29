@@ -15,9 +15,9 @@ use swc_common::{BytePos, Span, DUMMY_SP};
 use swc_ecma_ast::{
     ArrayPat, ArrowExpr, AssignPat, AssignProp, BigInt, BindingIdent, ComputedPropName,
     ExportDefaultExpr, Expr, FnExpr, Function, GetterProp, Ident, Invalid, KeyValueProp, Lit,
-    MethodProp, Number, ObjectPat, Pat, Prop, PropName, PropOrSpread, RestPat, SetterProp, Str,
-    Tpl, TsEntityName, TsKeywordType, TsKeywordTypeKind, TsTupleType, TsType, TsTypeAnn,
-    TsTypeParamDecl, TsTypeParamInstantiation, TsTypeRef,
+    MethodProp, Number, ObjectPat, Pat, Prop, PropName, PropOrSpread, RestPat, SetterProp,
+    SpreadElement, Str, Tpl, TsEntityName, TsKeywordType, TsKeywordTypeKind, TsTupleType, TsType,
+    TsTypeAnn, TsTypeParamDecl, TsTypeParamInstantiation, TsTypeRef,
 };
 use swc_ecma_visit::Visit;
 
@@ -235,47 +235,61 @@ fn parse_description_comment(comments: Vec<Comment>) -> Option<String> {
 }
 
 impl<'a> ExtractExportDefaultVisitor<'a> {
-    fn parse_prefix(key: &str) -> MethodKind {
+    fn parse_prefix(&mut self, key: &str, parent_span: &Span) -> Result<MethodKind> {
         if key.starts_with("GET") {
-            return MethodKind::Get;
+            return Ok(MethodKind::Get);
         }
         if key.starts_with("POST") {
-            return MethodKind::Post;
+            return Ok(MethodKind::Post);
         }
         if key.starts_with("PUT") {
-            return MethodKind::Put;
+            return Ok(MethodKind::Put);
         }
         if key.starts_with("DELETE") {
-            return MethodKind::Delete;
+            return Ok(MethodKind::Delete);
         }
         if key.starts_with("PATCH") {
-            return MethodKind::Patch;
+            return Ok(MethodKind::Patch);
         }
         if key.starts_with("OPTIONS") {
-            return MethodKind::Options;
+            return Ok(MethodKind::Options);
         }
         if key.starts_with("USE") {
-            return MethodKind::Use;
+            return Ok(MethodKind::Use);
         }
-        panic!("not supported")
+        self.errors.push(Diagnostic {
+            message: DiagnosticMessage::InvalidPatternPrefix,
+            file_name: self.current_file.module.fm.name.clone(),
+            span: *parent_span,
+        });
+        Err(anyhow!("Invalid prefix"))
     }
-    fn parse_raw_pattern_str(key: &str, span: &Span) -> ParsedPattern {
-        let method_kind = Self::parse_prefix(key);
+    fn parse_raw_pattern_str(&mut self, key: &str, span: &Span) -> Result<ParsedPattern> {
+        let method_kind = self.parse_prefix(key, span)?;
         let prefix_len = method_kind.text_len();
         let rest_of_key = &key[prefix_len..];
+        if !rest_of_key.starts_with("/") {
+            self.errors.push(Diagnostic {
+                message: DiagnosticMessage::InvalidPatternPrefix,
+                file_name: self.current_file.module.fm.name.clone(),
+                span: *span,
+            });
+
+            return Err(anyhow!("Invalid path"));
+        }
         let path_params = parse_pattern_params(rest_of_key);
-        ParsedPattern {
+        Ok(ParsedPattern {
             raw_span: span.clone(),
             open_api_pattern: rest_of_key.to_string(),
             method_kind,
             path_params,
-        }
+        })
     }
     fn parse_key(&mut self, key: &PropName) -> Result<ParsedPattern> {
         match key {
             PropName::Computed(ComputedPropName { expr, .. }) => match &**expr {
                 Expr::Lit(Lit::Str(Str { span, value, .. })) => {
-                    Ok(Self::parse_raw_pattern_str(&value.to_string(), span))
+                    self.parse_raw_pattern_str(&value.to_string(), span)
                 }
                 Expr::Tpl(Tpl {
                     span,
@@ -285,10 +299,7 @@ impl<'a> ExtractExportDefaultVisitor<'a> {
                     assert!(exprs.is_empty());
                     assert!(quasis.len() == 1);
                     let first_quasis = quasis.first().unwrap();
-                    Ok(Self::parse_raw_pattern_str(
-                        &first_quasis.raw.to_string(),
-                        span,
-                    ))
+                    self.parse_raw_pattern_str(&first_quasis.raw.to_string(), span)
                 }
                 _ => panic!("not TaggedTpl"),
             },
@@ -741,7 +752,13 @@ impl<'a> Visit for ExtractExportDefaultVisitor<'a> {
                             self.handlers.push(method);
                         }
                     }
-                    PropOrSpread::Spread(_) => todo!(),
+                    PropOrSpread::Spread(SpreadElement { dot3_token, .. }) => {
+                        self.errors.push(Diagnostic {
+                            message: DiagnosticMessage::RestOnRouterDefaultExportNotSupportedYet,
+                            file_name: self.current_file.module.fm.name.clone(),
+                            span: *dot3_token,
+                        });
+                    }
                 }
             }
         }
@@ -769,7 +786,6 @@ fn is_type_simple(it: &JsonSchema, components: &Vec<Definition>) -> bool {
         | JsonSchema::Boolean
         | JsonSchema::String
         | JsonSchema::Number
-        | JsonSchema::Integer
         | JsonSchema::Const(_) => true,
         JsonSchema::AllOf(_)
         | JsonSchema::Any

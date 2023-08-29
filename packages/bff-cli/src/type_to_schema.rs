@@ -9,14 +9,14 @@ use crate::{
 use swc_common::Span;
 use swc_common::{collections::AHashMap, FileName};
 use swc_ecma_ast::{
-    Expr, Ident, TsArrayType, TsCallSignatureDecl, TsConditionalType, TsConstructSignatureDecl,
-    TsConstructorType, TsEntityName, TsFnOrConstructorType, TsFnType, TsGetterSignature,
-    TsImportType, TsIndexSignature, TsIndexedAccessType, TsInferType, TsInterfaceDecl,
-    TsIntersectionType, TsKeywordType, TsKeywordTypeKind, TsLit, TsLitType, TsMappedType,
-    TsMethodSignature, TsOptionalType, TsParenthesizedType, TsRestType, TsSetterSignature,
-    TsThisType, TsTplLitType, TsTupleType, TsType, TsTypeElement, TsTypeLit, TsTypeOperator,
-    TsTypeParamInstantiation, TsTypePredicate, TsTypeQuery, TsTypeRef, TsUnionOrIntersectionType,
-    TsUnionType,
+    BigInt, Expr, Ident, TsArrayType, TsCallSignatureDecl, TsConditionalType,
+    TsConstructSignatureDecl, TsConstructorType, TsEntityName, TsFnOrConstructorType, TsFnType,
+    TsGetterSignature, TsImportType, TsIndexSignature, TsIndexedAccessType, TsInferType,
+    TsInterfaceDecl, TsIntersectionType, TsKeywordType, TsKeywordTypeKind, TsLit, TsLitType,
+    TsMappedType, TsMethodSignature, TsOptionalType, TsParenthesizedType, TsRestType,
+    TsSetterSignature, TsThisType, TsTplLitType, TsTupleType, TsType, TsTypeElement, TsTypeLit,
+    TsTypeOperator, TsTypeParamInstantiation, TsTypePredicate, TsTypeQuery, TsTypeRef,
+    TsUnionOrIntersectionType, TsUnionType,
 };
 
 pub struct TypeToSchema<'a> {
@@ -57,14 +57,14 @@ impl<'a> TypeToSchema<'a> {
             TsKeywordTypeKind::TsAnyKeyword
             | TsKeywordTypeKind::TsUnknownKeyword
             | TsKeywordTypeKind::TsObjectKeyword => JsonSchema::Any,
-            TsKeywordTypeKind::TsNeverKeyword
+            TsKeywordTypeKind::TsBigIntKeyword
+            | TsKeywordTypeKind::TsNeverKeyword
             | TsKeywordTypeKind::TsSymbolKeyword
             | TsKeywordTypeKind::TsIntrinsicKeyword
             | TsKeywordTypeKind::TsVoidKeyword => self.cannot_serialize_error(span),
             TsKeywordTypeKind::TsNumberKeyword => JsonSchema::Number,
             TsKeywordTypeKind::TsBooleanKeyword => JsonSchema::Boolean,
             TsKeywordTypeKind::TsStringKeyword => JsonSchema::String,
-            TsKeywordTypeKind::TsBigIntKeyword => JsonSchema::Integer,
         }
     }
     fn convert_ts_type_element(
@@ -283,7 +283,7 @@ impl<'a> TypeToSchema<'a> {
                 TsLit::Number(n) => JsonSchema::Const(Json::Number(n.value)),
                 TsLit::Str(s) => JsonSchema::Const(Json::String(s.value.to_string().clone())),
                 TsLit::Bool(b) => JsonSchema::Const(Json::Bool(b.value)),
-                TsLit::BigInt(_) => todo!(),
+                TsLit::BigInt(BigInt { span, .. }) => self.cannot_serialize_error(span),
                 TsLit::Tpl(TsTplLitType {
                     span,
                     types,

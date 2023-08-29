@@ -41,19 +41,6 @@ function validate_DataTypesKitchenSink(input) {
                     ]
                 });
             }
-            if (typeof input["basic"]["d"] != "bigint") {
-                error_acc_0.push({
-                    "kind": [
-                        "NotTypeof",
-                        "bigint"
-                    ],
-                    "path": [
-                        "DataTypesKitchenSink",
-                        "basic",
-                        "d"
-                    ]
-                });
-            }
         } else {
             error_acc_0.push({
                 "kind": [
@@ -1019,8 +1006,7 @@ export const meta = {
                             "required": [
                                 "a",
                                 "b",
-                                "c",
-                                "d"
+                                "c"
                             ],
                             "properties": {
                                 "a": {
@@ -1031,9 +1017,6 @@ export const meta = {
                                 },
                                 "c": {
                                     "type": "boolean"
-                                },
-                                "d": {
-                                    "type": "integer"
                                 }
                             }
                         },

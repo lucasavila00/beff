@@ -70,7 +70,6 @@ pub enum JsonSchema {
     Boolean,
     String,
     Number,
-    Integer,
     Any,
     // Not(Box<JsonSchema>),
     Object {

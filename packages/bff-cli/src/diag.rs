@@ -22,6 +22,8 @@ pub enum DiagnosticMessage {
     ComplexPathParameterNotSupported,
     HandlerMustBeAKeyValuePairWithStringAndFunction,
     MustBeComputedKeyWithMethodAndPattern,
+    InvalidPatternPrefix,
+    RestOnRouterDefaultExportNotSupportedYet,
 }
 
 #[derive(Debug, Clone)]

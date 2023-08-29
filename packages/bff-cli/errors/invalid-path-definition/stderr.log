@@ -1,38 +1,59 @@
 Error: 
-   ╭─[/app.ts:2:23]
+   ╭─[/app.ts:3:23]
    │
- 2 │   [`GET/hello/{id}`]: async (id: string) => id,
+ 3 │   [`GET/hello/{id}`]: async (id: string) => id,
    │                       ────────────┬───────────  
    │                                   ╰───────────── HandlerMustAnnotateReturnType
 ───╯
 Error: 
-   ╭─[/app.ts:3:3]
+   ╭─[/app.ts:4:3]
    │
- 3 │   a: 1,
+ 4 │   a: 1,
    │   ┬  
    │   ╰── MustBeComputedKeyWithMethodAndPattern
 ───╯
 Error: 
-   ╭─[/app.ts:4:3]
+   ╭─[/app.ts:5:3]
    │
- 4 │   b() {
+ 5 │   b() {
    │   ┬  
    │   ╰── HandlerMustBeAKeyValuePairWithStringAndFunction
 ───╯
 Error: 
-   ╭─[/app.ts:7:3]
-   │
- 7 │ ╭─▶   get c() {
-   ┆ ┆   
- 9 │ ├─▶   },
-   │ │          
-   │ ╰────────── HandlerMustBeAKeyValuePairWithStringAndFunction
-───╯
-Error: 
-    ╭─[/app.ts:10:3]
+    ╭─[/app.ts:8:3]
     │
- 10 │   set c(v) {},
+  8 │ ╭─▶   get c() {
+    ┆ ┆   
+ 10 │ ├─▶   },
+    │ │          
+    │ ╰────────── HandlerMustBeAKeyValuePairWithStringAndFunction
+────╯
+Error: 
+    ╭─[/app.ts:11:3]
+    │
+ 11 │   set c(v) {},
     │   ─────┬─────  
     │        ╰─────── HandlerMustBeAKeyValuePairWithStringAndFunction
+────╯
+Error: 
+    ╭─[/app.ts:12:4]
+    │
+ 12 │   [`AAAAAAAAAAAAAAAAAAGETOOOO/hello/{id}`]: async (
+    │    ───────────────────┬──────────────────  
+    │                       ╰──────────────────── InvalidPatternPrefix
+────╯
+Error: 
+    ╭─[/app.ts:15:4]
+    │
+ 15 │   [`GETOOOO/hello/{id}`]: async (id: string): Promise<string> => id,
+    │    ──────────┬─────────  
+    │              ╰─────────── InvalidPatternPrefix
+────╯
+Error: 
+    ╭─[/app.ts:16:3]
+    │
+ 16 │   ...d,
+    │   ─┬─  
+    │    ╰─── RestOnRouterDefaultExportNotSupportedYet
 ────╯
 Error: Failed to bundle

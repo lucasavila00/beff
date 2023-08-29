@@ -12,7 +12,6 @@
 - [ ] do not allow patterns styles that code generator/runtime coercer does not support
 - [ ] require backend=hono config, or version
 
-- [ ] bigint proper support or remove
 - [ ] Date proper support or remove
 
 - [ ] message for errors

@@ -25,10 +25,6 @@ function coerce_boolean(input) {
     }
     return new CoercionFailure();
 }
-function coerce_bigint(_input) {
-    throw new Error("not implemented");
-    // return Object(input);
-}
 function coerce_union(input, ...cases) {
     for (const c of cases) {
         const r = coerce(c, input);

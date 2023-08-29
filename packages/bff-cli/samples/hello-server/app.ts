@@ -6,7 +6,6 @@ type DataTypesKitchenSink = {
     a: string;
     b: number;
     c: boolean;
-    d: bigint;
   };
   array1: string[];
   array2: Array<string>;
