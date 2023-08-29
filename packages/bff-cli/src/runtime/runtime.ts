@@ -266,14 +266,30 @@ export type ClientFromRouter<R> = {
   };
 };
 
-type Response = any;
-type RequestInit = any;
-export function buildFetchClient(
-  fetcher: (url: string, info: RequestInit) => Response | Promise<Response>,
-  options: {
-    baseUrl: string;
+export class BffRequest {
+  public method: "GET" | "POST" | "PUT" | "DELETE" | "PATCH" | "OPTIONS";
+  public url: string;
+  public headers: Record<string, string>;
+  public cookies: string[];
+  public requestBodyStringified?: string;
+  constructor(
+    method: "GET" | "POST" | "PUT" | "DELETE" | "PATCH" | "OPTIONS",
+    url: string,
+    headers: Record<string, string>,
+    cookies: string[],
+    requestBodyStringified?: string
+  ) {
+    this.method = method.toUpperCase() as any;
+    this.url = url;
+    this.headers = headers;
+    this.cookies = cookies;
+    this.requestBodyStringified = requestBodyStringified;
   }
-) {
+}
+
+export function buildStableClient<T>(
+  fetcher: (url: BffRequest) => Promise<any>
+): ClientFromRouter<T> {
   const client: any = {};
   const handlersMeta: HandlerMeta[] = meta["handlersMeta"];
   for (const meta of handlersMeta) {
@@ -282,10 +298,9 @@ export function buildFetchClient(
     }
 
     client[meta.pattern][meta.method_kind] = async (...params: any) => {
-      let url = options.baseUrl + meta.pattern;
-      const init: RequestInit = {
-        method: meta.method_kind.toUpperCase(),
-      };
+      let url = meta.pattern;
+      const method = meta.method_kind.toUpperCase() as any;
+      const init: Partial<BffRequest> = {};
       let hasAddedQueryParams = false;
 
       for (let index = 0; index < meta.params.length; index++) {
@@ -312,14 +327,14 @@ export function buildFetchClient(
             break;
           }
           case "cookie": {
-            if (init.headers == null) {
-              init.headers = {};
+            if (init.cookies == null) {
+              init.cookies = [];
             }
-            init.headers["cookie"] = `${metadata.name}=${param}`;
+            init.cookies.push(`${metadata.name}=${param}`);
             break;
           }
           case "body": {
-            init.body = JSON.stringify(param);
+            init.requestBodyStringified = JSON.stringify(param);
             break;
           }
           default: {
@@ -328,13 +343,40 @@ export function buildFetchClient(
         }
       }
 
-      const resp = await fetcher(url, init);
-      if (resp.ok) {
-        return resp.json();
-      } else {
-        throw new Error(await resp.text());
-      }
+      return await fetcher(
+        new BffRequest(
+          method,
+          url,
+          init.headers ?? {},
+          init.cookies ?? [],
+          init.requestBodyStringified
+        )
+      );
     };
   }
   return client;
 }
+
+declare class Request {
+  constructor(input: string, init?: any);
+}
+export const buildHonoTestClient = <T>(
+  app: Hono<any, any, any>
+): ClientFromRouter<T> =>
+  buildStableClient<T>(async (req) => {
+    const r = await app.fetch(
+      new Request("http://localhost" + req.url, {
+        method: req.method,
+        headers: {
+          ...req.headers,
+          "content-type": "application/json",
+          cookie: req.cookies.join(";"),
+        },
+        body: req.requestBodyStringified,
+      })
+    );
+    if (r.ok) {
+      return r.json();
+    }
+    throw await r.text();
+  });

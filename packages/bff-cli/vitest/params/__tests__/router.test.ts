@@ -1,21 +1,11 @@
 import { Hono } from "hono";
 import { it, expect } from "vitest";
-import {
-  registerRouter,
-  buildFetchClient,
-  ClientFromRouter,
-} from "../bff-generated";
+import { registerRouter, buildHonoTestClient } from "../bff-generated";
 import router from "../router";
 
 const app = new Hono();
 registerRouter({ app, router });
-
-const bff: ClientFromRouter<typeof router> = buildFetchClient(
-  (url, info) => app.fetch(new Request(url, info)),
-  {
-    baseUrl: "http://localhost",
-  }
-);
+const bff = buildHonoTestClient<typeof router>(app);
 
 it("docs json", async () => {
   const req = new Request("http://localhost/v3/openapi.json", {
@@ -83,7 +73,7 @@ it("post with body and error, client", async () => {
   try {
     await bff["/req-body"].post({ a: 123 as any });
   } catch (e) {
-    expect(e.message).toMatchInlineSnapshot(
+    expect(e).toMatchInlineSnapshot(
       '"Decoder error at Request Body.a: expected string."'
     );
   }

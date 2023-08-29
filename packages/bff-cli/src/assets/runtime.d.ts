@@ -24,9 +24,14 @@ export type ClientFromRouter<R> = {
         [M in keyof R[K]]: SimpleHttpFunction<NormalizeRouterItem<R[K][M]>>;
     };
 };
-type Response = any;
-type RequestInit = any;
-export declare function buildFetchClient(fetcher: (url: string, info: RequestInit) => Response | Promise<Response>, options: {
-    baseUrl: string;
-}): any;
+export declare class BffRequest {
+    method: "GET" | "POST" | "PUT" | "DELETE" | "PATCH" | "OPTIONS";
+    url: string;
+    headers: Record<string, string>;
+    cookies: string[];
+    requestBodyStringified?: string;
+    constructor(method: "GET" | "POST" | "PUT" | "DELETE" | "PATCH" | "OPTIONS", url: string, headers: Record<string, string>, cookies: string[], requestBodyStringified?: string);
+}
+export declare function buildStableClient<T>(fetcher: (url: BffRequest) => Promise<any>): ClientFromRouter<T>;
+export declare const buildHonoTestClient: <T>(app: Hono<any, any, any>) => ClientFromRouter<T>;
 export {};

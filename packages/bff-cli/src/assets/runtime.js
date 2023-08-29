@@ -187,7 +187,16 @@ export function registerRouter(options) {
 export const todo = () => {
     throw new Error("TODO: not implemented");
 };
-export function buildFetchClient(fetcher, options) {
+export class BffRequest {
+    constructor(method, url, headers, cookies, requestBodyStringified) {
+        this.method = method.toUpperCase();
+        this.url = url;
+        this.headers = headers;
+        this.cookies = cookies;
+        this.requestBodyStringified = requestBodyStringified;
+    }
+}
+export function buildStableClient(fetcher) {
     const client = {};
     const handlersMeta = meta["handlersMeta"];
     for (const meta of handlersMeta) {
@@ -195,10 +204,9 @@ export function buildFetchClient(fetcher, options) {
             client[meta.pattern] = {};
         }
         client[meta.pattern][meta.method_kind] = async (...params) => {
-            let url = options.baseUrl + meta.pattern;
-            const init = {
-                method: meta.method_kind.toUpperCase(),
-            };
+            let url = meta.pattern;
+            const method = meta.method_kind.toUpperCase();
+            const init = {};
             let hasAddedQueryParams = false;
             for (let index = 0; index < meta.params.length; index++) {
                 const metadata = meta.params[index];
@@ -224,14 +232,14 @@ export function buildFetchClient(fetcher, options) {
                         break;
                     }
                     case "cookie": {
-                        if (init.headers == null) {
-                            init.headers = {};
+                        if (init.cookies == null) {
+                            init.cookies = [];
                         }
-                        init.headers["cookie"] = `${metadata.name}=${param}`;
+                        init.cookies.push(`${metadata.name}=${param}`);
                         break;
                     }
                     case "body": {
-                        init.body = JSON.stringify(param);
+                        init.requestBodyStringified = JSON.stringify(param);
                         break;
                     }
                     default: {
@@ -239,14 +247,23 @@ export function buildFetchClient(fetcher, options) {
                     }
                 }
             }
-            const resp = await fetcher(url, init);
-            if (resp.ok) {
-                return resp.json();
-            }
-            else {
-                throw new Error(await resp.text());
-            }
+            return await fetcher(new BffRequest(method, url, init.headers ?? {}, init.cookies ?? [], init.requestBodyStringified));
         };
     }
     return client;
 }
+export const buildHonoTestClient = (app) => buildStableClient(async (req) => {
+    const r = await app.fetch(new Request("http://localhost" + req.url, {
+        method: req.method,
+        headers: {
+            ...req.headers,
+            "content-type": "application/json",
+            cookie: req.cookies.join(";"),
+        },
+        body: req.requestBodyStringified,
+    }));
+    if (r.ok) {
+        return r.json();
+    }
+    throw await r.text();
+});
