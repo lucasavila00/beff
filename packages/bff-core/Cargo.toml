@@ -1,0 +1,13 @@
+[package]
+name = "bff-core"
+version = "0.1.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+jsdoc = "0.108.0"
+swc_atoms = "0.5.9"
+swc_common = "0.32.0"
+swc_ecma_ast = "0.109.0"
+swc_node_comments = "0.19.0"

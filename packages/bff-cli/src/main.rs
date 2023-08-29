@@ -1,6 +1,12 @@
 use anyhow::anyhow;
 use anyhow::Context;
 use anyhow::Result;
+use bff_cli::diag::print_errors;
+use bff_cli::printer::ToModule;
+use bff_cli::writer;
+use bff_cli::BundleResult;
+use bff_cli::Bundler;
+use bff_cli::ParsedModule;
 use clap::Parser;
 use notify::RecursiveMode;
 use notify_debouncer_mini::new_debouncer;
@@ -10,12 +16,6 @@ use std::collections::HashMap;
 use std::time::Duration;
 use std::time::Instant;
 use std::{fs, path::PathBuf};
-use swc_bff::diag::print_errors;
-use swc_bff::printer::ToModule;
-use swc_bff::writer;
-use swc_bff::BundleResult;
-use swc_bff::Bundler;
-use swc_bff::ParsedModule;
 use swc_common::collections::AHashMap;
 use swc_common::FileName;
 

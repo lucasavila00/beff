@@ -1,11 +1,12 @@
-use crate::diag::{Diagnostic, DiagnosticMessage};
-use crate::open_api_ast::{
-    Definition, JsonRequestBody, JsonSchema, OpenApi, OperationObject, ParameterIn, ParameterObject,
-};
 use crate::type_to_schema::TypeToSchema;
-use crate::{open_api_ast, ParsedModule};
+use crate::ParsedModule;
 use anyhow::anyhow;
 use anyhow::Result;
+use bff_core::diag::{Diagnostic, DiagnosticMessage};
+use bff_core::open_api_ast::{
+    self, Definition, JsonRequestBody, JsonSchema, OpenApi, OperationObject, ParameterIn,
+    ParameterObject,
+};
 use core::fmt;
 use jsdoc::ast::{SummaryTag, Tag, UnknownTag, VersionTag};
 use jsdoc::Input;

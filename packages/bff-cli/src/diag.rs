@@ -1,58 +1,9 @@
 use ariadne::{Config, Label, Report, ReportKind, Source};
-use jsdoc::ast::{Tag, TagItem};
-use swc_common::{collections::AHashMap, FileName, Span};
+use bff_core::diag::Diagnostic;
+use swc_common::{collections::AHashMap, FileName};
 
 use crate::ParsedModule;
 
-#[derive(Debug, Clone)]
-pub enum DiagnosticMessage {
-    OptionalTypeIsNotSupported,
-    PropShouldHaveTypeAnnotation,
-    PropKeyShouldBeIdent,
-    UnknownJsDocTagOfTypeUnknown(String),
-    UnknownJsDocTag(Tag),
-    UnknownJsDocTagItem(TagItem),
-    CannotParseJsDoc,
-    CannotResolveTypeReferenceOnConverting(String),
-    CannotResolveTypeReferenceOnExtracting(String),
-    HandlerCannotHaveTypeParameters,
-    HandlerMustAnnotateReturnType,
-    UnmatchedPathParameter(String),
-    CoercerDepthExceeded,
-    CannotSerializeType,
-    TsQualifiedNameNotSupported,
-    CouldNotResolveIdentifierOnPathParamTuple,
-    TsInterfaceExtendsNotSupported,
-    TsTypeParametersNotSupported,
-    RestParamMustBeTypeAnnotated,
-    RestParamMustBeLabelAnnotated,
-    ParameterPatternNotSupported,
-    CouldNotUnderstandRestParameter,
-    RestParameterMustBeTuple,
-    CouldNotFindDefaultExport,
-    ComplexPathParameterNotSupported,
-    HandlerMustBeAKeyValuePairWithStringAndFunction,
-    MustBeComputedKey,
-    MustBeComputedKeyWithMethodAndPatternMustBeString,
-    InvalidPatternPrefix,
-    RestOnRouterDefaultExportNotSupportedYet,
-    HandlerCannotBeGenerator,
-    ParameterIdentMustHaveTypeAnnotation,
-    InferringTwoParamsAsRequestBody,
-    TooManyParamsOnLibType,
-    TwoDifferentTypesWithTheSameName,
-    TemplateMustBeOfSingleString,
-    CannotFindFileWhenConvertingToSchema(String),
-    CannotFindTypeExportWhenConvertingToSchema(String),
-    NotAnObjectWithMethodKind,
-}
-
-#[derive(Debug, Clone)]
-pub struct Diagnostic {
-    pub message: DiagnosticMessage,
-    pub file_name: FileName,
-    pub span: Span,
-}
 pub fn print_errors(
     errors: Vec<Diagnostic>,
     bundler_files: &AHashMap<FileName, ParsedModule>,

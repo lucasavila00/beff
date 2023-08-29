@@ -10,11 +10,10 @@ use crate::{
         operation_parameter_in_path_or_query_or_body, FnHandler, FunctionParameterIn,
         HandlerParameter, HeaderOrCookie, ParsedPattern,
     },
-    coercer, decoder,
-    diag::Diagnostic,
-    open_api_ast::{self, Definition, Js, Json, JsonSchema, OpenApi},
-    BundleResult,
+    coercer, decoder, BundleResult,
 };
+use bff_core::diag::Diagnostic;
+use bff_core::open_api_ast::{self, Definition, Js, Json, JsonSchema, OpenApi};
 
 pub trait ToExpr {
     fn to_expr(self) -> Expr;
