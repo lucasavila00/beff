@@ -1,10 +1,15 @@
 use ariadne::{Config, Label, Report, ReportKind, Source};
+use jsdoc::ast::{Tag, TagItem};
 use swc_common::{collections::AHashMap, FileName, Span};
 
 use crate::ParsedModule;
 
 #[derive(Debug, Clone)]
 pub enum DiagnosticMessage {
+    UnknownJsDocTagOfTypeUnknown(String),
+    UnknownJsDocTag(Tag),
+    UnknownJsDocTagItem(TagItem),
+    CannotParseJsDoc,
     CannotResolveTypeReferenceOnConverting(String),
     CannotResolveTypeReferenceOnExtracting(String),
     HandlerCannotHaveTypeParameters,
@@ -24,10 +29,14 @@ pub enum DiagnosticMessage {
     CouldNotFindDefaultExport,
     ComplexPathParameterNotSupported,
     HandlerMustBeAKeyValuePairWithStringAndFunction,
-    MustBeComputedKeyWithMethodAndPattern,
+    MustBeComputedKey,
+    MustBeComputedKeyWithMethodAndPatternMustBeString,
     InvalidPatternPrefix,
     RestOnRouterDefaultExportNotSupportedYet,
     HandlerCannotBeGenerator,
+    ParameterIdentMustHaveTypeAnnotation,
+    InferringTwoParamsAsRequestBody,
+    TooManyParamsOnLibType,
 }
 
 #[derive(Debug, Clone)]

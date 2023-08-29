@@ -2,8 +2,6 @@
 
 ## BFF Compiler
 
-- [ ] todo!()
-- [ ] panic!()
 - [ ] assert!()
 - [ ] unwrap()
 
@@ -24,6 +22,11 @@
 
 - [ ] dependency injection
 - [ ] export decoders
+
+- [ ] todo!()
+- [ ] panic!()
+- [ ] assert!()
+- [ ] unwrap()
 
 ## BFF Imports
 

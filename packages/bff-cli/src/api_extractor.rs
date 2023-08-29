@@ -6,7 +6,7 @@ use crate::type_to_schema::TypeToSchema;
 use crate::{open_api_ast, ParsedModule};
 use anyhow::anyhow;
 use anyhow::Result;
-use core::{fmt, panic};
+use core::fmt;
 use jsdoc::ast::{SummaryTag, Tag, UnknownTag, VersionTag};
 use jsdoc::Input;
 use swc_common::comments::{Comment, CommentKind, Comments};
@@ -61,6 +61,7 @@ pub enum HandlerParameter {
         schema: JsonSchema,
         required: bool,
         description: Option<String>,
+        span: Span,
     },
     HeaderOrCookie {
         kind: HeaderOrCookie,
@@ -182,59 +183,81 @@ struct EndpointComments {
     pub summary: Option<String>,
     pub description: Option<String>,
 }
-#[allow(clippy::to_string_in_format_args)]
-fn parse_endpoint_comments(acc: &mut EndpointComments, comments: Vec<Comment>) {
-    for c in comments {
-        if c.kind == CommentKind::Block {
-            let s = c.text;
+
+impl<'a> ExtractExportDefaultVisitor<'a> {
+    #[allow(clippy::to_string_in_format_args)]
+    fn parse_endpoint_comments(&mut self, acc: &mut EndpointComments, comments: Vec<Comment>) {
+        for c in comments {
+            if c.kind == CommentKind::Block {
+                let s = c.text;
+                let parsed =
+                    jsdoc::parse(Input::new(BytePos(0), BytePos(s.as_bytes().len() as _), &s));
+                match parsed {
+                    Ok((rest, parsed)) => {
+                        acc.description = Some(trim_description_comments(
+                            parsed.description.value.to_string(),
+                        ));
+                        if rest.len() > 0 {
+                            acc.description = Some(format!(
+                                "{}\n{}",
+                                acc.description.as_ref().unwrap_or(&String::new()),
+                                rest.to_string()
+                            ));
+                        }
+                        for tag_item in parsed.tags {
+                            match tag_item.tag {
+                                Tag::Summary(SummaryTag { text, .. }) => {
+                                    acc.summary = Some(text.value.to_string());
+                                }
+                                tag => self.errors.push(Diagnostic {
+                                    message: DiagnosticMessage::UnknownJsDocTag(tag.clone()),
+                                    file_name: self.current_file.module.fm.name.clone(),
+                                    span: tag_item.span,
+                                }),
+                            }
+                        }
+                    }
+                    Err(_) => self.errors.push(Diagnostic {
+                        message: DiagnosticMessage::CannotParseJsDoc,
+                        file_name: self.current_file.module.fm.name.clone(),
+                        span: c.span,
+                    }),
+                }
+            }
+        }
+    }
+    fn parse_description_comment(&mut self, comments: Vec<Comment>) -> Option<String> {
+        assert!(comments.len() == 1);
+        let first = comments.into_iter().next().unwrap();
+        if first.kind == CommentKind::Block {
+            let s = first.text;
             let parsed = jsdoc::parse(Input::new(BytePos(0), BytePos(s.as_bytes().len() as _), &s));
             match parsed {
                 Ok((rest, parsed)) => {
-                    acc.description = Some(trim_description_comments(
-                        parsed.description.value.to_string(),
-                    ));
-                    if rest.len() > 0 {
-                        acc.description = Some(format!(
-                            "{}\n{}",
-                            acc.description.as_ref().unwrap_or(&String::new()),
-                            rest.to_string()
-                        ));
-                    }
-                    for tag in parsed.tags {
-                        match tag.tag {
-                            Tag::Summary(SummaryTag { text, .. }) => {
-                                acc.summary = Some(text.value.to_string());
-                            }
-                            _ => panic!("Unknown tag {tag:?}"),
+                    assert!(rest.is_empty());
+                    if !parsed.tags.is_empty() {
+                        for tag in parsed.tags {
+                            self.errors.push(Diagnostic {
+                                message: DiagnosticMessage::UnknownJsDocTagItem(tag.clone()),
+                                file_name: self.current_file.module.fm.name.clone(),
+                                span: tag.span,
+                            })
                         }
                     }
+                    return Some(trim_description_comments(
+                        parsed.description.value.to_string(),
+                    ));
                 }
-                Err(_) => panic!("cannot parse jsdocs"),
+                Err(_) => self.errors.push(Diagnostic {
+                    message: DiagnosticMessage::CannotParseJsDoc,
+                    file_name: self.current_file.module.fm.name.clone(),
+                    span: first.span,
+                }),
             }
         }
+        None
     }
-}
-fn parse_description_comment(comments: Vec<Comment>) -> Option<String> {
-    assert!(comments.len() == 1);
-    let first = comments.into_iter().next().unwrap();
-    if first.kind == CommentKind::Block {
-        let s = first.text;
-        let parsed = jsdoc::parse(Input::new(BytePos(0), BytePos(s.as_bytes().len() as _), &s));
-        match parsed {
-            Ok((rest, parsed)) => {
-                assert!(rest.is_empty());
-                assert!(parsed.tags.is_empty());
-                return Some(trim_description_comments(
-                    parsed.description.value.to_string(),
-                ));
-            }
-            Err(_) => panic!("cannot parse jsdocs"),
-        }
-    }
-    None
-}
 
-impl<'a> ExtractExportDefaultVisitor<'a> {
     fn parse_prefix(&mut self, key: &str, parent_span: &Span) -> Result<MethodKind> {
         if key.starts_with("GET") {
             return Ok(MethodKind::Get);
@@ -287,7 +310,7 @@ impl<'a> ExtractExportDefaultVisitor<'a> {
     }
     fn parse_key(&mut self, key: &PropName) -> Result<ParsedPattern> {
         match key {
-            PropName::Computed(ComputedPropName { expr, .. }) => match &**expr {
+            PropName::Computed(ComputedPropName { expr, span, .. }) => match &**expr {
                 Expr::Lit(Lit::Str(Str { span, value, .. })) => {
                     self.parse_raw_pattern_str(&value.to_string(), span)
                 }
@@ -301,14 +324,22 @@ impl<'a> ExtractExportDefaultVisitor<'a> {
                     let first_quasis = quasis.first().unwrap();
                     self.parse_raw_pattern_str(&first_quasis.raw.to_string(), span)
                 }
-                _ => panic!("not TaggedTpl"),
+                _ => {
+                    self.errors.push(Diagnostic {
+                        message:
+                            DiagnosticMessage::MustBeComputedKeyWithMethodAndPatternMustBeString,
+                        file_name: self.current_file.module.fm.name.clone(),
+                        span: *span,
+                    });
+                    Err(anyhow!("not computed key"))
+                }
             },
             PropName::Ident(Ident { span, .. })
             | PropName::Str(Str { span, .. })
             | PropName::Num(Number { span, .. })
             | PropName::BigInt(BigInt { span, .. }) => {
                 self.errors.push(Diagnostic {
-                    message: DiagnosticMessage::MustBeComputedKeyWithMethodAndPattern,
+                    message: DiagnosticMessage::MustBeComputedKey,
                     file_name: self.current_file.module.fm.name.clone(),
                     span: *span,
                 });
@@ -358,15 +389,23 @@ impl<'a> ExtractExportDefaultVisitor<'a> {
         params: &Option<Box<TsTypeParamInstantiation>>,
         required: bool,
         description: Option<String>,
-    ) -> HandlerParameter {
+    ) -> Result<HandlerParameter> {
         let name = lib_ty_name.sym.to_string();
         let name = name.as_str();
         match name {
             "Header" | "Cookie" => {
                 let params = &params.as_ref().unwrap().params;
-                assert!(params.len() == 1);
+                if params.len() != 1 {
+                    self.errors.push(Diagnostic {
+                        message: DiagnosticMessage::TooManyParamsOnLibType,
+                        file_name: self.current_file.module.fm.name.clone(),
+                        span: lib_ty_name.span,
+                    });
+                    return Err(anyhow!("Header/Cookie must have one type parameter"));
+                }
+
                 let ty = params[0].as_ref();
-                HandlerParameter::HeaderOrCookie {
+                Ok(HandlerParameter::HeaderOrCookie {
                     kind: if name == "Header" {
                         HeaderOrCookie::Header
                     } else {
@@ -375,9 +414,9 @@ impl<'a> ExtractExportDefaultVisitor<'a> {
                     schema: self.convert_to_json_schema(ty, &lib_ty_name.span),
                     required,
                     description,
-                }
+                })
             }
-            _ => panic!("not in lib: {}", name),
+            _ => unreachable!("not in lib: {} - should check before calling", name),
         }
     }
 
@@ -387,18 +426,19 @@ impl<'a> ExtractExportDefaultVisitor<'a> {
         ty: &TsType,
         required: bool,
         description: Option<String>,
-    ) -> HandlerParameter {
+    ) -> Result<HandlerParameter> {
         if let TsEntityName::Ident(i) = &tref.type_name {
             let name = i.sym.to_string();
             if name == "Header" || name == "Cookie" {
                 return self.parse_lib_param(i, &tref.type_params, required, description);
             }
         }
-        HandlerParameter::PathOrQueryOrBody {
+        Ok(HandlerParameter::PathOrQueryOrBody {
             schema: self.convert_to_json_schema(ty, &tref.span),
             required,
             description,
-        }
+            span: tref.span,
+        })
     }
     fn parse_parameter_type(
         &mut self,
@@ -406,16 +446,17 @@ impl<'a> ExtractExportDefaultVisitor<'a> {
         required: bool,
         description: Option<String>,
         span: &Span,
-    ) -> HandlerParameter {
+    ) -> Result<HandlerParameter> {
         match ty {
             TsType::TsTypeRef(tref) => {
                 self.parse_type_ref_parameter(tref, ty, required, description)
             }
-            _ => HandlerParameter::PathOrQueryOrBody {
+            _ => Ok(HandlerParameter::PathOrQueryOrBody {
                 schema: self.convert_to_json_schema(ty, span),
                 required,
                 description,
-            },
+                span: *span,
+            }),
         }
     }
 
@@ -471,14 +512,18 @@ impl<'a> ExtractExportDefaultVisitor<'a> {
                     Some(pat) => match pat {
                         Pat::Ident(BindingIdent { id, .. }) => {
                             let comments = self.current_file.comments.get_leading(id.span.lo);
-                            let description = comments.and_then(parse_description_comment);
+                            let description =
+                                comments.and_then(|it| self.parse_description_comment(it));
                             let param = self.parse_parameter_type(
                                 &it.ty,
                                 !id.optional,
                                 description,
                                 &id.span,
                             );
-                            vec![(id.sym.to_string(), param)]
+                            match param {
+                                Ok(param) => vec![(id.sym.to_string(), param)],
+                                Err(_) => vec![],
+                            }
                         }
                         _ => self.error_param(
                             rest_span,
@@ -501,16 +546,27 @@ impl<'a> ExtractExportDefaultVisitor<'a> {
     ) -> Vec<(String, HandlerParameter)> {
         match param {
             Pat::Ident(BindingIdent { id, type_ann }) => {
-                assert!(type_ann.is_some());
+                if type_ann.is_none() {
+                    self.errors.push(Diagnostic {
+                        message: DiagnosticMessage::ParameterIdentMustHaveTypeAnnotation,
+                        file_name: self.current_file.module.fm.name.clone(),
+                        span: id.span,
+                    });
+                    return vec![];
+                }
+
                 let comments = self.current_file.comments.get_leading(id.span.lo);
-                let description = comments.and_then(parse_description_comment);
+                let description = comments.and_then(|it| self.parse_description_comment(it));
                 let param = self.parse_parameter_type(
                     &type_ann.as_ref().unwrap().as_ref().type_ann,
                     !id.optional,
                     description,
                     &id.span,
                 );
-                vec![(id.sym.to_string(), param)]
+                match param {
+                    Ok(param) => vec![(id.sym.to_string(), param)],
+                    Err(_) => vec![],
+                }
             }
             Pat::Rest(RestPat { span, type_ann, .. }) => match type_ann {
                 Some(it) => self.parse_arrow_param_from_type_expecting_tuple(&it.type_ann, span),
@@ -554,7 +610,7 @@ impl<'a> ExtractExportDefaultVisitor<'a> {
             description: None,
         };
         if let Some(comments) = comments {
-            parse_endpoint_comments(&mut endpoint_comments, comments);
+            self.parse_endpoint_comments(&mut endpoint_comments, comments);
         }
         endpoint_comments
     }
@@ -742,14 +798,29 @@ impl<'a> ExtractExportDefaultVisitor<'a> {
                                         "title" => {
                                             self.info.title = Some(extras.value.to_string());
                                         }
-                                        _ => todo!(),
+                                        tag => self.errors.push(Diagnostic {
+                                            message:
+                                                DiagnosticMessage::UnknownJsDocTagOfTypeUnknown(
+                                                    tag.to_string(),
+                                                ),
+                                            file_name: self.current_file.module.fm.name.clone(),
+                                            span: c.span,
+                                        }),
                                     }
                                 }
-                                _ => panic!("Unknown tag {tag:?}"),
+                                tag => self.errors.push(Diagnostic {
+                                    message: DiagnosticMessage::UnknownJsDocTag(tag.clone()),
+                                    file_name: self.current_file.module.fm.name.clone(),
+                                    span: c.span,
+                                }),
                             }
                         }
                     }
-                    Err(_) => panic!("cannot parse jsdocs"),
+                    Err(_) => self.errors.push(Diagnostic {
+                        message: DiagnosticMessage::CannotParseJsDoc,
+                        file_name: self.current_file.module.fm.name.clone(),
+                        span: c.span,
+                    }),
                 }
             }
         }
@@ -853,6 +924,7 @@ impl<'a> EndpointToPath<'a> {
                     schema,
                     required,
                     description,
+                    span,
                     ..
                 } => {
                     match operation_parameter_in_path_or_query_or_body(
@@ -876,7 +948,14 @@ impl<'a> EndpointToPath<'a> {
                             schema,
                         }),
                         FunctionParameterIn::Body => {
-                            assert!(json_request_body.is_none());
+                            if json_request_body.is_some() {
+                                self.errors.push(Diagnostic {
+                                    message: DiagnosticMessage::InferringTwoParamsAsRequestBody,
+                                    file_name: self.current_file.clone(),
+                                    span: span,
+                                });
+                            }
+
                             json_request_body = Some(JsonRequestBody {
                                 schema,
                                 description,

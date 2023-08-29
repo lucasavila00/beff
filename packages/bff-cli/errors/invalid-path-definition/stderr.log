@@ -10,7 +10,7 @@ Error:
    │
  4 │   a: 1,
    │   ┬  
-   │   ╰── MustBeComputedKeyWithMethodAndPattern
+   │   ╰── MustBeComputedKey
 ───╯
 Error: 
    ╭─[/app.ts:5:3]
