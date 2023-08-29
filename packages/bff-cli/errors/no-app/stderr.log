@@ -1,5 +1,4 @@
 Error: Could not bundle "/home/lucas/fluff/bff/packages/bff-cli/errors/no-app/app.ts"
 
 Caused by:
-    0: Could not load file Real("/home/lucas/fluff/bff/packages/bff-cli/errors/no-app/app.ts")
-    1: No such file or directory (os error 2)
+    No such file or directory (os error 2)

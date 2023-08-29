@@ -6,7 +6,7 @@ pub mod writer;
 use anyhow::anyhow;
 use anyhow::Context;
 use anyhow::Result;
-use bff_core::parse::Loader;
+use bff_core::parse::load_source_file;
 use bff_core::BffModuleData;
 use bff_core::BundleResult;
 use bff_core::ImportReference;
@@ -108,12 +108,12 @@ impl Bundler {
     }
     fn load_file(path: &FileName) -> Result<(BffModuleData, SwcComments)> {
         log::debug!("loading file: {:?}", path);
-
-        Loader {
-            cm: Lrc::new(SourceMap::default()),
-        }
-        .load(path)
-        .context(format!("Could not load file {:?}", &path))
+        let cm: Lrc<SourceMap> = Lrc::new(SourceMap::default());
+        let fm = match path {
+            FileName::Real(path) => cm.load_file(path)?,
+            _ => unreachable!(),
+        };
+        load_source_file(&fm).context(format!("Could not load file {:?}", &path))
     }
     /// # Errors
     ///
