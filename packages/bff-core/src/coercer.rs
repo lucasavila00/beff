@@ -1,5 +1,5 @@
-use bff_core::open_api_ast::{Definition, JsonSchema};
-use bff_core::swc_builder::SwcBuilder;
+use crate::open_api_ast::{Definition, JsonSchema};
+use crate::swc_builder::SwcBuilder;
 use swc_common::DUMMY_SP;
 use swc_ecma_ast::{
     BindingIdent, BlockStmt, CallExpr, Callee, Expr, ExprOrSpread, FnExpr, Function, Ident, Param,

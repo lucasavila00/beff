@@ -6,7 +6,7 @@ use bff_cli::printer::ToModule;
 use bff_cli::writer;
 use bff_cli::BundleResult;
 use bff_cli::Bundler;
-use bff_cli::ParsedModule;
+use bff_core::ParsedModule;
 use clap::Parser;
 use notify::RecursiveMode;
 use notify_debouncer_mini::new_debouncer;

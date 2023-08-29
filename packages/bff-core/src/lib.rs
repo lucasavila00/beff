@@ -1,12 +1,16 @@
+pub mod api_extractor;
+pub mod coercer;
 pub mod diag;
 pub mod open_api_ast;
 pub mod swc_builder;
+pub mod type_to_schema;
 
-use std::{collections::HashMap, rc::Rc};
+use std::{collections::HashMap, sync::Arc};
 
 use swc_atoms::JsWord;
 use swc_common::{FileName, SourceFile, SyntaxContext};
-use swc_ecma_ast::{Module, TsInterfaceDecl, TsType};
+use swc_ecma_ast::{Module, TsInterfaceDecl, TsType, TsTypeAliasDecl};
+use swc_ecma_visit::Visit;
 use swc_node_comments::SwcComments;
 
 pub enum TypeExport {
@@ -15,7 +19,7 @@ pub enum TypeExport {
 }
 
 pub struct BffModuleData {
-    pub fm: Rc<SourceFile>,
+    pub fm: Arc<SourceFile>,
     pub module: Module,
 }
 
@@ -35,4 +39,16 @@ pub struct ParsedModule {
 pub struct ParsedModuleLocals {
     pub type_aliases: HashMap<(JsWord, SyntaxContext), TsType>,
     pub interfaces: HashMap<(JsWord, SyntaxContext), TsInterfaceDecl>,
+}
+impl Visit for ParsedModuleLocals {
+    fn visit_ts_type_alias_decl(&mut self, n: &TsTypeAliasDecl) {
+        let TsTypeAliasDecl { id, type_ann, .. } = n;
+        self.type_aliases
+            .insert((id.sym.clone(), id.span.ctxt), *type_ann.clone());
+    }
+    fn visit_ts_interface_decl(&mut self, n: &TsInterfaceDecl) {
+        let TsInterfaceDecl { id, .. } = n;
+        self.interfaces
+            .insert((id.sym.clone(), id.span.ctxt), n.clone());
+    }
 }

@@ -1,7 +1,7 @@
+use crate::diag::{Diagnostic, DiagnosticMessage};
+use crate::open_api_ast::Json;
+use crate::open_api_ast::{Definition, JsonSchema, Optionality};
 use crate::{ParsedModule, TypeExport};
-use bff_core::diag::{Diagnostic, DiagnosticMessage};
-use bff_core::open_api_ast::Json;
-use bff_core::open_api_ast::{Definition, JsonSchema, Optionality};
 use std::collections::HashMap;
 use swc_common::Span;
 use swc_common::{collections::AHashMap, FileName};

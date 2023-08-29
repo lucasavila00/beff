@@ -1,19 +1,21 @@
 #![warn(clippy::pedantic)]
-pub mod api_extractor;
-pub mod coercer;
 pub mod decoder;
 pub mod diag;
 pub mod printer;
-pub mod type_to_schema;
 pub mod writer;
 
 use anyhow::anyhow;
 use anyhow::Context;
 use anyhow::Result;
-use api_extractor::FnHandler;
+use bff_core::api_extractor::FnHandler;
 use bff_core::diag::Diagnostic;
 use bff_core::open_api_ast::Definition;
 use bff_core::open_api_ast::OpenApi;
+use bff_core::BffModuleData;
+use bff_core::ImportReference;
+use bff_core::ParsedModule;
+use bff_core::ParsedModuleLocals;
+use bff_core::TypeExport;
 use std::collections::HashMap;
 use std::fmt::Debug;
 use std::path::PathBuf;
@@ -29,8 +31,7 @@ use swc_common::{
 use swc_ecma_ast::Decl;
 use swc_ecma_ast::ExportDecl;
 use swc_ecma_ast::{
-    EsVersion, ImportDecl, ImportNamedSpecifier, ImportSpecifier, TsInterfaceDecl, TsType,
-    TsTypeAliasDecl,
+    EsVersion, ImportDecl, ImportNamedSpecifier, ImportSpecifier, TsInterfaceDecl, TsTypeAliasDecl,
 };
 use swc_ecma_loader::resolvers::node::NodeModulesResolver;
 use swc_ecma_loader::TargetEnv;
@@ -88,13 +89,9 @@ impl Loader {
     }
 }
 
-#[derive(Debug)]
-pub struct ImportReference {
-    file_name: FileName,
-}
 pub struct ImportsVisitor<'a> {
-    imports: AHashMap<(JsWord, SyntaxContext), ImportReference>,
-    type_exports: AHashMap<JsWord, TypeExport>,
+    imports: HashMap<(JsWord, SyntaxContext), ImportReference>,
+    type_exports: HashMap<JsWord, TypeExport>,
     current_file: FileName,
     resolver: &'a NodeModulesResolver,
 }
@@ -152,36 +149,6 @@ impl<'a> Visit for ImportsVisitor<'a> {
     }
 }
 
-pub struct ParsedModuleLocals {
-    pub type_aliases: AHashMap<(JsWord, SyntaxContext), TsType>,
-    pub interfaces: AHashMap<(JsWord, SyntaxContext), TsInterfaceDecl>,
-}
-
-impl Visit for ParsedModuleLocals {
-    fn visit_ts_type_alias_decl(&mut self, n: &TsTypeAliasDecl) {
-        let TsTypeAliasDecl { id, type_ann, .. } = n;
-        self.type_aliases
-            .insert((id.sym.clone(), id.span.ctxt), *type_ann.clone());
-    }
-    fn visit_ts_interface_decl(&mut self, n: &TsInterfaceDecl) {
-        let TsInterfaceDecl { id, .. } = n;
-        self.interfaces
-            .insert((id.sym.clone(), id.span.ctxt), n.clone());
-    }
-}
-
-pub enum TypeExport {
-    TsType(TsType),
-    TsInterfaceDecl(TsInterfaceDecl),
-}
-pub struct ParsedModule {
-    pub locals: ParsedModuleLocals,
-    pub module: ModuleData,
-    pub imports: AHashMap<(JsWord, SyntaxContext), ImportReference>,
-    pub comments: SwcComments,
-    pub type_exports: AHashMap<JsWord, TypeExport>,
-}
-
 #[derive(Debug)]
 pub struct BundleResult {
     pub entry_point: PathBuf,
@@ -236,8 +203,8 @@ impl Bundler {
                 match module {
                     Ok((module, comments)) => {
                         let mut v = ImportsVisitor {
-                            imports: AHashMap::default(),
-                            type_exports: AHashMap::default(),
+                            imports: HashMap::new(),
+                            type_exports: HashMap::new(),
                             current_file: module.fm.name.clone(),
                             resolver: &r,
                         };
@@ -245,14 +212,17 @@ impl Bundler {
                         let imports = v.imports.values().collect::<Vec<_>>();
                         stack.extend(imports.iter().map(|x| x.file_name.clone()));
                         let mut locals = ParsedModuleLocals {
-                            type_aliases: AHashMap::default(),
-                            interfaces: AHashMap::default(),
+                            type_aliases: HashMap::new(),
+                            interfaces: HashMap::new(),
                         };
                         locals.visit_module(&module.module);
                         self.files.insert(
                             path,
                             ParsedModule {
-                                module,
+                                module: BffModuleData {
+                                    fm: module.fm.clone(),
+                                    module: module.module.clone(),
+                                },
                                 imports: v.imports,
                                 type_exports: v.type_exports,
                                 comments,
@@ -276,7 +246,7 @@ impl Bundler {
         let file = self.files.get(&entry_point);
         match file {
             Some(file) => {
-                let extract_result = api_extractor::extract_schema(&self.files, file);
+                let extract_result = bff_core::api_extractor::extract_schema(&self.files, file);
                 Ok(BundleResult {
                     open_api: extract_result.open_api,
                     errors: extract_result.errors,
