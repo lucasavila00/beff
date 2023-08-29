@@ -14,8 +14,8 @@ use swc_common::{BytePos, Span, DUMMY_SP};
 use swc_ecma_ast::{
     ArrayPat, ArrowExpr, AssignPat, BindingIdent, ComputedPropName, ExportDefaultExpr, Expr,
     FnExpr, Function, Ident, Invalid, KeyValueProp, Lit, ObjectPat, Pat, Prop, PropName,
-    PropOrSpread, RestPat, Str, Tpl, TsEntityName, TsTupleType, TsType, TsTypeParamDecl,
-    TsTypeParamInstantiation, TsTypeRef,
+    PropOrSpread, RestPat, Str, Tpl, TsEntityName, TsKeywordType, TsKeywordTypeKind, TsTupleType,
+    TsType, TsTypeAnn, TsTypeParamDecl, TsTypeParamInstantiation, TsTypeRef,
 };
 use swc_ecma_visit::Visit;
 
@@ -308,9 +308,12 @@ impl<'a> ExtractExportDefaultVisitor<'a> {
 
         let mut kvs = vec![];
         for (k, v) in to_schema.components {
+            // We store type in an Option to support self-recursion.
+            // When we encounter the type while transforming it we return string with the type name.
+            // And we need the option to allow a type to refer to itself before it has been resolved.
             match v {
                 Some(s) => kvs.push((k, s)),
-                None => panic!("should exist"),
+                None => unreachable!("started resolving a type and did not finish it"),
             }
         }
         kvs.sort_by(|(ka, _), (kb, _)| ka.cmp(kb));
@@ -565,6 +568,29 @@ impl<'a> ExtractExportDefaultVisitor<'a> {
 
         Ok(self.validate_pattern_was_consumed(e))
     }
+
+    fn extract_return_type_for_function(
+        &mut self,
+        return_type: &Option<Box<TsTypeAnn>>,
+        span: &Span,
+    ) -> TsType {
+        match return_type.as_ref() {
+            Some(t) => (*t.type_ann).clone(),
+            None => {
+                self.errors.push(Diagnostic {
+                    message: DiagnosticMessage::HandlerMustAnnotateReturnType,
+                    file_name: self.current_file.module.fm.name.clone(),
+                    span: *span,
+                });
+
+                TsType::TsKeywordType(TsKeywordType {
+                    span: DUMMY_SP,
+                    kind: TsKeywordTypeKind::TsAnyKeyword,
+                })
+            }
+        }
+    }
+
     fn method_from_arrow_expr(&mut self, key: &PropName, arrow: &ArrowExpr) -> Result<FnHandler> {
         let ArrowExpr {
             params,
@@ -579,6 +605,7 @@ impl<'a> ExtractExportDefaultVisitor<'a> {
         let pattern = Self::parse_key(key);
         let endpoint_comments = self.get_endpoint_comments(key);
 
+        let ret_ty = self.extract_return_type_for_function(return_type, parent_span);
         let e = FnHandler {
             parameters: params
                 .iter()
@@ -587,9 +614,7 @@ impl<'a> ExtractExportDefaultVisitor<'a> {
             pattern,
             summary: endpoint_comments.summary,
             description: endpoint_comments.description,
-            return_type: self.convert_to_json_schema(maybe_extract_promise(
-                &return_type.as_ref().unwrap().as_ref().type_ann,
-            )),
+            return_type: self.convert_to_json_schema(maybe_extract_promise(&ret_ty)),
         };
 
         Ok(self.validate_pattern_was_consumed(e))
@@ -692,7 +717,10 @@ pub enum FunctionParameterIn {
 fn is_type_simple(it: &JsonSchema, components: &Vec<Definition>) -> bool {
     match it {
         JsonSchema::Ref(r) => {
-            let def = components.iter().find(|it| &it.name == r).unwrap();
+            let def = components
+                .iter()
+                .find(|it| &it.name == r)
+                .expect("can always find ref in json schema at this point");
             is_type_simple(&def.schema, components)
         }
         JsonSchema::AnyOf(vs) => vs.iter().all(|it| is_type_simple(it, components)),

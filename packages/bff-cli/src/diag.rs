@@ -5,6 +5,7 @@ use crate::ParsedModule;
 
 #[derive(Debug, Clone)]
 pub enum DiagnosticMessage {
+    HandlerMustAnnotateReturnType,
     UnmatchedPathParameter(String),
     CoercerDepthExceeded,
     CannotSerializeType,

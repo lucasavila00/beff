@@ -1,0 +1,8 @@
+Error: 
+   ╭─[/app.ts:2:23]
+   │
+ 2 │   [`GET/hello/{id}`]: async (id: string) => id,
+   │                       ────────────┬───────────  
+   │                                   ╰───────────── HandlerMustAnnotateReturnType
+───╯
+Error: Failed to bundle
