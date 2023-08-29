@@ -2,7 +2,10 @@
 
 ## BFF Compiler
 
-- [ ] clippy (remove panics)
+- [ ] todo!()
+- [ ] panic!()
+- [ ] assert!()
+- [ ] unwrap()
 
 # Milestone NEXT
 

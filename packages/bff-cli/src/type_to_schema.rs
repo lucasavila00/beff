@@ -201,7 +201,11 @@ impl<'a> TypeToSchema<'a> {
                 }
             });
 
-        alias_opt.or(interfaces_opt).or(imported_opt).unwrap()
+        let r = alias_opt.or(interfaces_opt).or(imported_opt);
+        match r {
+            Some(ok) => ok,
+            None => self.error(&i.span, DiagnosticMessage::CannotResolveTypeReference),
+        }
     }
 
     fn union(&mut self, types: &[Box<TsType>]) -> JsonSchema {

@@ -56,4 +56,27 @@ Error:
     │   ─┬─  
     │    ╰─── RestOnRouterDefaultExportNotSupportedYet
 ────╯
+Error: 
+    ╭─[/app.ts:17:24]
+    │
+ 17 │ ╭─▶   [`GET/hello2/{id}`]: async function* (id: string): Promise<string> {
+    ┆ ┆   
+ 19 │ ├─▶   },
+    │ │          
+    │ ╰────────── HandlerCannotBeGenerator
+────╯
+Error: 
+    ╭─[/app.ts:20:24]
+    │
+ 20 │   [`GET/hello3/{id}`]: <T>(id: string): string => id,
+    │                        ──────────────┬──────────────  
+    │                                      ╰──────────────── HandlerCannotHaveTypeParameters
+────╯
+Error: 
+    ╭─[/app.ts:21:24]
+    │
+ 21 │   [`GET/hello4/{id}`]: async <T>(id: string): Promise<string> => id,
+    │                        ──────────────────────┬─────────────────────  
+    │                                              ╰─────────────────────── HandlerCannotHaveTypeParameters
+────╯
 Error: Failed to bundle

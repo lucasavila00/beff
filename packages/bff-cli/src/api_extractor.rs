@@ -532,20 +532,12 @@ impl<'a> ExtractExportDefaultVisitor<'a> {
         }
         e
     }
-    fn prop_name_name(key: &PropName) -> Span {
-        match key {
-            PropName::Ident(_) => todo!(),
-            PropName::Str(_) => todo!(),
-            PropName::Num(_) => todo!(),
-            PropName::Computed(ComputedPropName { span, .. }) => *span,
-            PropName::BigInt(_) => todo!(),
-        }
-    }
+
     fn get_endpoint_comments(&mut self, key: &PropName) -> EndpointComments {
         let comments = self
             .current_file
             .comments
-            .get_leading(Self::prop_name_name(key).lo);
+            .get_leading(Self::get_prop_name_span(key).lo);
 
         let mut endpoint_comments = EndpointComments {
             summary: None,
@@ -560,9 +552,22 @@ impl<'a> ExtractExportDefaultVisitor<'a> {
         &mut self,
         is_generator: bool,
         type_params: &Option<Box<TsTypeParamDecl>>,
+        span: &Span,
     ) {
-        assert!(!is_generator);
-        assert!(type_params.is_none());
+        if is_generator {
+            self.errors.push(Diagnostic {
+                message: DiagnosticMessage::HandlerCannotBeGenerator,
+                file_name: self.current_file.module.fm.name.clone(),
+                span: *span,
+            });
+        }
+        if type_params.is_some() {
+            self.errors.push(Diagnostic {
+                message: DiagnosticMessage::HandlerCannotHaveTypeParameters,
+                file_name: self.current_file.module.fm.name.clone(),
+                span: *span,
+            });
+        }
     }
     fn method_from_func_expr(&mut self, key: &PropName, func: &FnExpr) -> Result<FnHandler> {
         let FnExpr { function, .. } = func;
@@ -574,7 +579,7 @@ impl<'a> ExtractExportDefaultVisitor<'a> {
             return_type,
             ..
         } = &**function;
-        self.validate_handler_func(*is_generator, type_params);
+        self.validate_handler_func(*is_generator, type_params, parent_span);
 
         let pattern = self.parse_key(key)?;
         let endpoint_comments = self.get_endpoint_comments(key);
@@ -626,7 +631,7 @@ impl<'a> ExtractExportDefaultVisitor<'a> {
             span: parent_span,
             ..
         } = arrow;
-        self.validate_handler_func(*is_generator, type_params);
+        self.validate_handler_func(*is_generator, type_params, parent_span);
 
         let pattern = self.parse_key(key)?;
         let endpoint_comments = self.get_endpoint_comments(key);

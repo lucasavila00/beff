@@ -5,6 +5,8 @@ use crate::ParsedModule;
 
 #[derive(Debug, Clone)]
 pub enum DiagnosticMessage {
+    CannotResolveTypeReference,
+    HandlerCannotHaveTypeParameters,
     HandlerMustAnnotateReturnType,
     UnmatchedPathParameter(String),
     CoercerDepthExceeded,
@@ -24,6 +26,7 @@ pub enum DiagnosticMessage {
     MustBeComputedKeyWithMethodAndPattern,
     InvalidPatternPrefix,
     RestOnRouterDefaultExportNotSupportedYet,
+    HandlerCannotBeGenerator,
 }
 
 #[derive(Debug, Clone)]
