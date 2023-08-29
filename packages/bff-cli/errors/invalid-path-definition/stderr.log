@@ -1,0 +1,38 @@
+Error: 
+   ╭─[/app.ts:2:23]
+   │
+ 2 │   [`GET/hello/{id}`]: async (id: string) => id,
+   │                       ────────────┬───────────  
+   │                                   ╰───────────── HandlerMustAnnotateReturnType
+───╯
+Error: 
+   ╭─[/app.ts:3:3]
+   │
+ 3 │   a: 1,
+   │   ┬  
+   │   ╰── MustBeComputedKeyWithMethodAndPattern
+───╯
+Error: 
+   ╭─[/app.ts:4:3]
+   │
+ 4 │   b() {
+   │   ┬  
+   │   ╰── HandlerMustBeAKeyValuePairWithStringAndFunction
+───╯
+Error: 
+   ╭─[/app.ts:7:3]
+   │
+ 7 │ ╭─▶   get c() {
+   ┆ ┆   
+ 9 │ ├─▶   },
+   │ │          
+   │ ╰────────── HandlerMustBeAKeyValuePairWithStringAndFunction
+───╯
+Error: 
+    ╭─[/app.ts:10:3]
+    │
+ 10 │   set c(v) {},
+    │   ─────┬─────  
+    │        ╰─────── HandlerMustBeAKeyValuePairWithStringAndFunction
+────╯
+Error: Failed to bundle

@@ -4,6 +4,7 @@ use crate::open_api_ast::{
 };
 use crate::type_to_schema::TypeToSchema;
 use crate::{open_api_ast, ParsedModule};
+use anyhow::anyhow;
 use anyhow::Result;
 use core::{fmt, panic};
 use jsdoc::ast::{SummaryTag, Tag, UnknownTag, VersionTag};
@@ -12,10 +13,11 @@ use swc_common::comments::{Comment, CommentKind, Comments};
 use swc_common::{collections::AHashMap, FileName};
 use swc_common::{BytePos, Span, DUMMY_SP};
 use swc_ecma_ast::{
-    ArrayPat, ArrowExpr, AssignPat, BindingIdent, ComputedPropName, ExportDefaultExpr, Expr,
-    FnExpr, Function, Ident, Invalid, KeyValueProp, Lit, ObjectPat, Pat, Prop, PropName,
-    PropOrSpread, RestPat, Str, Tpl, TsEntityName, TsKeywordType, TsKeywordTypeKind, TsTupleType,
-    TsType, TsTypeAnn, TsTypeParamDecl, TsTypeParamInstantiation, TsTypeRef,
+    ArrayPat, ArrowExpr, AssignPat, AssignProp, BigInt, BindingIdent, ComputedPropName,
+    ExportDefaultExpr, Expr, FnExpr, Function, GetterProp, Ident, Invalid, KeyValueProp, Lit,
+    MethodProp, Number, ObjectPat, Pat, Prop, PropName, PropOrSpread, RestPat, SetterProp, Str,
+    Tpl, TsEntityName, TsKeywordType, TsKeywordTypeKind, TsTupleType, TsType, TsTypeAnn,
+    TsTypeParamDecl, TsTypeParamInstantiation, TsTypeRef,
 };
 use swc_ecma_visit::Visit;
 
@@ -269,11 +271,11 @@ impl<'a> ExtractExportDefaultVisitor<'a> {
             path_params,
         }
     }
-    fn parse_key(key: &PropName) -> ParsedPattern {
+    fn parse_key(&mut self, key: &PropName) -> Result<ParsedPattern> {
         match key {
             PropName::Computed(ComputedPropName { expr, .. }) => match &**expr {
                 Expr::Lit(Lit::Str(Str { span, value, .. })) => {
-                    Self::parse_raw_pattern_str(&value.to_string(), span)
+                    Ok(Self::parse_raw_pattern_str(&value.to_string(), span))
                 }
                 Expr::Tpl(Tpl {
                     span,
@@ -283,11 +285,24 @@ impl<'a> ExtractExportDefaultVisitor<'a> {
                     assert!(exprs.is_empty());
                     assert!(quasis.len() == 1);
                     let first_quasis = quasis.first().unwrap();
-                    Self::parse_raw_pattern_str(&first_quasis.raw.to_string(), span)
+                    Ok(Self::parse_raw_pattern_str(
+                        &first_quasis.raw.to_string(),
+                        span,
+                    ))
                 }
                 _ => panic!("not TaggedTpl"),
             },
-            _ => panic!("not computed key"),
+            PropName::Ident(Ident { span, .. })
+            | PropName::Str(Str { span, .. })
+            | PropName::Num(Number { span, .. })
+            | PropName::BigInt(BigInt { span, .. }) => {
+                self.errors.push(Diagnostic {
+                    message: DiagnosticMessage::MustBeComputedKeyWithMethodAndPattern,
+                    file_name: self.current_file.module.fm.name.clone(),
+                    span: *span,
+                });
+                Err(anyhow!("not computed key"))
+            }
         }
     }
 
@@ -550,7 +565,7 @@ impl<'a> ExtractExportDefaultVisitor<'a> {
         } = &**function;
         self.validate_handler_func(*is_generator, type_params);
 
-        let pattern = Self::parse_key(key);
+        let pattern = self.parse_key(key)?;
         let endpoint_comments = self.get_endpoint_comments(key);
 
         let e = FnHandler {
@@ -602,7 +617,7 @@ impl<'a> ExtractExportDefaultVisitor<'a> {
         } = arrow;
         self.validate_handler_func(*is_generator, type_params);
 
-        let pattern = Self::parse_key(key);
+        let pattern = self.parse_key(key)?;
         let endpoint_comments = self.get_endpoint_comments(key);
 
         let ret_ty = self.extract_return_type_for_function(return_type, parent_span);
@@ -619,6 +634,26 @@ impl<'a> ExtractExportDefaultVisitor<'a> {
 
         Ok(self.validate_pattern_was_consumed(e))
     }
+    fn get_prop_name_span(key: &PropName) -> Span {
+        let span = match key {
+            PropName::Computed(ComputedPropName { span, .. })
+            | PropName::Ident(Ident { span, .. })
+            | PropName::Str(Str { span, .. })
+            | PropName::Num(Number { span, .. })
+            | PropName::BigInt(BigInt { span, .. }) => span,
+        };
+        return *span;
+    }
+    fn get_prop_span(prop: &Prop) -> Span {
+        match &prop {
+            Prop::Shorthand(Ident { span, .. }) => *span,
+            Prop::KeyValue(KeyValueProp { key, .. }) => Self::get_prop_name_span(key),
+            Prop::Assign(AssignProp { ref key, .. }) => key.span,
+            Prop::Getter(GetterProp { span, .. }) => *span,
+            Prop::Setter(SetterProp { span, .. }) => *span,
+            Prop::Method(MethodProp { key, .. }) => Self::get_prop_name_span(key),
+        }
+    }
     fn endpoint_from_prop(&mut self, prop: &Prop) -> Result<FnHandler> {
         if let Prop::KeyValue(KeyValueProp { key, value }) = prop {
             if let Expr::Arrow(arr) = &**value {
@@ -627,7 +662,7 @@ impl<'a> ExtractExportDefaultVisitor<'a> {
             if let Expr::Fn(func) = &**value {
                 return self.method_from_func_expr(key, func);
             }
-            let pattern = Self::parse_key(key);
+            let pattern = self.parse_key(key)?;
             if pattern.method_kind == MethodKind::Use {
                 return Ok(FnHandler {
                     pattern,
@@ -638,7 +673,13 @@ impl<'a> ExtractExportDefaultVisitor<'a> {
                 });
             }
         }
-        panic!("not a key value prop with arrow or function")
+        let span = Self::get_prop_span(prop);
+        self.errors.push(Diagnostic {
+            message: DiagnosticMessage::HandlerMustBeAKeyValuePairWithStringAndFunction,
+            file_name: self.current_file.module.fm.name.clone(),
+            span,
+        });
+        Err(anyhow!("not a key value prop with arrow or function"))
     }
 
     #[allow(clippy::to_string_in_format_args)]

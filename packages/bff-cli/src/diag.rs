@@ -20,6 +20,8 @@ pub enum DiagnosticMessage {
     RestParameterMustBeTuple,
     CouldNotFindDefaultExport,
     ComplexPathParameterNotSupported,
+    HandlerMustBeAKeyValuePairWithStringAndFunction,
+    MustBeComputedKeyWithMethodAndPattern,
 }
 
 #[derive(Debug, Clone)]
