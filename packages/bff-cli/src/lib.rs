@@ -6,6 +6,7 @@ pub mod writer;
 use anyhow::anyhow;
 use anyhow::Context;
 use anyhow::Result;
+use bff_core::parse::Loader;
 use bff_core::BffModuleData;
 use bff_core::BundleResult;
 use bff_core::ImportReference;
@@ -14,74 +15,21 @@ use bff_core::ParsedModuleLocals;
 use bff_core::TypeExport;
 use std::collections::HashMap;
 use swc_atoms::JsWord;
-use swc_bundler::{ModuleData, Resolve};
-use swc_common::errors::EmitterWriter;
-use swc_common::errors::Handler;
+use swc_bundler::Resolve;
 use swc_common::{
     collections::{AHashMap, AHashSet},
     sync::Lrc,
-    FileName, Globals, Mark, SourceMap, SyntaxContext, GLOBALS,
+    FileName, Globals, SourceMap, SyntaxContext, GLOBALS,
 };
 use swc_ecma_ast::Decl;
 use swc_ecma_ast::ExportDecl;
 use swc_ecma_ast::{
-    EsVersion, ImportDecl, ImportNamedSpecifier, ImportSpecifier, TsInterfaceDecl, TsTypeAliasDecl,
+    ImportDecl, ImportNamedSpecifier, ImportSpecifier, TsInterfaceDecl, TsTypeAliasDecl,
 };
 use swc_ecma_loader::resolvers::node::NodeModulesResolver;
 use swc_ecma_loader::TargetEnv;
-use swc_ecma_parser::TsConfig;
-use swc_ecma_parser::{parse_file_as_module, Syntax};
-use swc_ecma_transforms_base::helpers::Helpers;
-use swc_ecma_transforms_base::resolver;
-use swc_ecma_visit::{FoldWith, Visit};
+use swc_ecma_visit::Visit;
 use swc_node_comments::SwcComments;
-
-pub struct Loader {
-    pub cm: Lrc<SourceMap>,
-}
-
-impl Loader {
-    fn load(&self, f: &FileName) -> Result<(ModuleData, SwcComments)> {
-        let fm = match f {
-            FileName::Real(path) => self.cm.load_file(path)?,
-            _ => unreachable!(),
-        };
-        let unresolved_mark = Mark::new();
-        let top_level_mark = Mark::new();
-        let comments: SwcComments = SwcComments::default();
-        // TODO: recovered errors?
-        let module = parse_file_as_module(
-            &fm,
-            Syntax::Typescript(TsConfig::default()),
-            EsVersion::latest(),
-            Some(&comments),
-            &mut vec![],
-        )
-        .map(|module| module.fold_with(&mut resolver(unresolved_mark, top_level_mark, true)))
-        .map_err(|err| {
-            let emt = EmitterWriter::new(
-                Box::new(std::io::stderr()),
-                Some(self.cm.clone()),
-                false,
-                true,
-            );
-            let handler = Handler::with_emitter(true, false, Box::new(emt));
-
-            err.into_diagnostic(&handler).emit();
-
-            anyhow!("failed to parse module: {:?}", f)
-        })?;
-
-        Ok((
-            ModuleData {
-                fm,
-                module,
-                helpers: Helpers::default(),
-            },
-            comments,
-        ))
-    }
-}
 
 pub struct ImportsVisitor<'a> {
     imports: HashMap<(JsWord, SyntaxContext), ImportReference>,
@@ -158,7 +106,7 @@ impl Bundler {
             files: AHashMap::default(),
         }
     }
-    fn load_file(path: &FileName) -> Result<(ModuleData, SwcComments)> {
+    fn load_file(path: &FileName) -> Result<(BffModuleData, SwcComments)> {
         log::debug!("loading file: {:?}", path);
 
         Loader {
@@ -203,10 +151,7 @@ impl Bundler {
                         self.files.insert(
                             path,
                             ParsedModule {
-                                module: BffModuleData {
-                                    fm: module.fm.clone(),
-                                    module: module.module.clone(),
-                                },
+                                module,
                                 imports: v.imports,
                                 type_exports: v.type_exports,
                                 comments,
