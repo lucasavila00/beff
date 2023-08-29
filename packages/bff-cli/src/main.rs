@@ -158,7 +158,6 @@ struct BffWatcher<'a> {
     entry_point: String,
     args: &'a ResolvedArgs,
     watched_files: HashMap<PathBuf, Instant>,
-    base_dir: PathBuf,
 }
 impl<'a> BffWatcher<'a> {
     fn watch(mut self) -> Result<()> {
@@ -184,10 +183,7 @@ impl<'a> BffWatcher<'a> {
 
                                 let mut bundler = Bundler::new();
                                 let res = bundler
-                                    .bundle(
-                                        &self.base_dir,
-                                        FileName::Real(self.entry_point.clone().into()),
-                                    )
+                                    .bundle(FileName::Real(self.entry_point.clone().into()))
                                     .and_then(|res| write_bundle(res, &bundler.files, self.args));
 
                                 match res {
@@ -241,14 +237,9 @@ fn main() -> Result<()> {
         .context("Could not get entrypoint from bffconfig.json")?;
     log::debug!("using entry_point: {:?}", entry_point);
 
-    let base_dir = args
-        .project_json_path
-        .parent()
-        .expect("folder should exist")
-        .to_path_buf();
     let mut bundler = Bundler::new();
     let res = bundler
-        .bundle(&base_dir, FileName::Real(entry_point.clone().into()))
+        .bundle(FileName::Real(entry_point.clone().into()))
         .context(format!("Could not bundle {:?}", &entry_point))?;
     let start = Instant::now();
     let res = write_bundle(res, &bundler.files, &args);
@@ -258,7 +249,6 @@ fn main() -> Result<()> {
             entry_point,
             args: &args,
             watched_files: HashMap::new(),
-            base_dir: base_dir.clone(),
         };
         w.watch()
     } else {
