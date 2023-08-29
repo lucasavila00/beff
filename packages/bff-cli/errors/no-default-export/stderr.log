@@ -1,1 +1,8 @@
+Error: 
+   ╭─[/app.ts:1:1]
+   │
+ 1 │ export const a = 1;
+   │ ──────────┬─────────  
+   │           ╰─────────── CouldNotFindDefaultExport
+───╯
 Error: Failed to bundle

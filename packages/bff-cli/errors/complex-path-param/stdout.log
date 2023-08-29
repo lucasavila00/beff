@@ -1,7 +1,0 @@
-Error: 
-   ╭─[/app.ts:9:4]
-   │
- 9 │   [`GET/hello/{id}`]: async (id: A): Promise<string> => `Hello ${id}!`,
-   │    ────────┬───────  
-   │            ╰───────── ComplexPathParameterNotSupported
-───╯

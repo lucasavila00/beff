@@ -1,7 +1,0 @@
-Error: 
-   ╭─[/app.ts:8:51]
-   │
- 8 │   [`GET/hello/{id}`]: async (id: string): Promise<A<"string">> => todo(),
-   │                                                   ┬  
-   │                                                   ╰── CannotSerializeType
-───╯

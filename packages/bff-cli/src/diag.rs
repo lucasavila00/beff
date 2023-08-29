@@ -37,15 +37,20 @@ pub fn print_errors(
         let src_id = &err.file_name.to_string();
         let src_id = &src_id.replace(project_root, "");
 
-        let lo = err.span.lo.0 as usize - 1;
+        let mut lo = err.span.lo.0 as usize;
+        let mut hi = err.span.hi.0 as usize;
+        if lo == 0 || hi == 0 {
+            hi = file.src.len()
+        } else {
+            lo = lo - 1;
+            hi = hi - 1;
+        }
+
         Report::build(ReportKind::Error, src_id, lo)
             .with_config(Config::default().with_color(false))
-            .with_label(
-                Label::new((src_id, lo..(err.span.hi.0 as usize - 1)))
-                    .with_message(format!("{:?}", err.message)),
-            )
+            .with_label(Label::new((src_id, lo..hi)).with_message(format!("{:?}", err.message)))
             .finish()
-            .print((src_id, Source::from(file.src.as_str())))
+            .eprint((src_id, Source::from(file.src.as_str())))
             .unwrap();
     }
 }

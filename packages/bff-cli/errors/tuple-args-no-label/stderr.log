@@ -1,1 +1,15 @@
+Error: 
+   ╭─[/app.ts:5:20]
+   │
+ 5 │ type Pagination = [number, number];
+   │                    ───┬──  
+   │                       ╰──── RestParamMustBeLabelAnnotated
+───╯
+Error: 
+   ╭─[/app.ts:5:28]
+   │
+ 5 │ type Pagination = [number, number];
+   │                            ───┬──  
+   │                               ╰──── RestParamMustBeLabelAnnotated
+───╯
 Error: Failed to bundle
