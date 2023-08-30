@@ -42,46 +42,30 @@ const resolveImportNoCache = (
 };
 const resolvedCache: Record<string, Record<string, string | undefined>> = {};
 const resolveImport = (file_name: string, mod: string): string | undefined => {
-  const cached = resolvedCache?.[file_name]?.[mod];
-  if (cached) {
-    return cached;
-  }
+  // const cached = resolvedCache?.[file_name]?.[mod];
+  // if (cached) {
+  //   return cached;
+  // }
 
   const result = resolveImportNoCache(file_name, mod);
-  if (result) {
-    resolvedCache[file_name] = resolvedCache[file_name] || {};
-    resolvedCache[file_name][mod] = result;
-  }
+  // if (result) {
+  //   resolvedCache[file_name] = resolvedCache[file_name] || {};
+  //   resolvedCache[file_name][mod] = result;
+  // }
   return result;
 };
 globalThis.resolve_import = resolveImport;
+globalThis.read_file_content = (file_name: string) => {
+  const source_file = fs.readFileSync(file_name, "utf-8");
+  return source_file;
+};
 export class Bundler {
   seenFiles: Set<string> = new Set();
   constructor() {
     wasm.init();
   }
 
-  private readFile(file_name: string): string {
-    console.log(`JS: Reading file ${file_name}`);
-    return fs.readFileSync(file_name, "utf-8");
-  }
-
-  private parseSourceFileRecursive(file_name: string) {
-    if (this.seenFiles.has(file_name)) {
-      return;
-    }
-    this.seenFiles.add(file_name);
-    const source_file = this.readFile(file_name);
-    wasm.parse_source_file(file_name, source_file);
-    const nextFiles: string[] = wasm.read_files_to_import();
-    wasm.clear_files_to_import();
-    for (const file of nextFiles) {
-      this.parseSourceFileRecursive(file);
-    }
-  }
-
   public bundle(file_name: string): string {
-    this.parseSourceFileRecursive(file_name);
     return wasm.bundle_to_string(file_name);
   }
 }

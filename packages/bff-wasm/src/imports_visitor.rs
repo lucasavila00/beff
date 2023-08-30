@@ -1,5 +1,6 @@
 use bff_core::{ImportReference, TypeExport};
 use std::collections::HashMap;
+use std::collections::HashSet;
 use swc_atoms::JsWord;
 use swc_common::{FileName, SyntaxContext};
 use swc_ecma_ast::Decl;
@@ -13,6 +14,8 @@ pub struct ImportsVisitor {
     pub imports: HashMap<(JsWord, SyntaxContext), ImportReference>,
     pub type_exports: HashMap<JsWord, TypeExport>,
     pub current_file: FileName,
+
+    pub known_imports: HashSet<(String, String)>,
 }
 
 impl ImportsVisitor {
@@ -21,6 +24,7 @@ impl ImportsVisitor {
             imports: HashMap::new(),
             type_exports: HashMap::new(),
             current_file,
+            known_imports: HashSet::new(),
         }
     }
 }
@@ -50,9 +54,22 @@ impl Visit for ImportsVisitor {
     fn visit_import_decl(&mut self, node: &ImportDecl) {
         let module_specifier = node.src.value.to_string();
 
+        if self
+            .known_imports
+            .contains(&(self.current_file.to_string(), module_specifier.clone()))
+        {
+            return;
+        }
+
         for x in &node.specifiers {
             match x {
                 ImportSpecifier::Named(ImportNamedSpecifier { local, .. }) => {
+                    if self
+                        .known_imports
+                        .contains(&(self.current_file.to_string(), module_specifier.clone()))
+                    {
+                        return;
+                    }
                     let k = (local.sym.clone(), local.span.ctxt);
 
                     let v = crate::resolve_import(
@@ -62,6 +79,8 @@ impl Visit for ImportsVisitor {
 
                     match v {
                         Some(v) => {
+                            self.known_imports
+                                .insert((self.current_file.to_string(), module_specifier.clone()));
                             self.imports.insert(
                                 k,
                                 ImportReference {
@@ -72,8 +91,10 @@ impl Visit for ImportsVisitor {
                         None => {}
                     }
                 }
-                ImportSpecifier::Default(_) => todo!(),
-                ImportSpecifier::Namespace(_) => todo!(),
+                ImportSpecifier::Default(_) => { //todo fix me
+                }
+                ImportSpecifier::Namespace(_) => { //todo fix me
+                }
             }
         }
     }

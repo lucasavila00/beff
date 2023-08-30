@@ -5,11 +5,13 @@ mod imports_visitor;
 mod utils;
 
 use std::collections::HashSet;
+use std::rc::Rc;
 use std::{cell::RefCell, collections::HashMap};
 
 use crate::imports_visitor::ImportsVisitor;
 use anyhow::anyhow;
 use anyhow::Result;
+use bff_core::api_extractor::FileManager;
 use bff_core::diag::Diagnostic;
 use bff_core::emit::emit_module;
 use bff_core::printer::ToModule;
@@ -21,7 +23,7 @@ use swc_ecma_visit::Visit;
 use wasm_bindgen::{prelude::wasm_bindgen, JsValue};
 
 struct Bundler {
-    pub files: HashMap<FileName, ParsedModule>,
+    pub files: HashMap<FileName, Rc<ParsedModule>>,
     pub import_stack: HashSet<String>,
     pub known_files: HashSet<String>,
 }
@@ -54,79 +56,103 @@ extern "C" {
     fn resolve_import(current_file: &str, specifier: &str) -> Option<String>;
 }
 
-fn parse_source_file_inner(file_name: &str, content: &str) -> Result<()> {
-    let cm: SourceMap = SourceMap::default();
-    let file_name = FileName::Real(file_name.into());
-    let source_file = cm.new_source_file(file_name, content.to_owned());
+#[wasm_bindgen]
+extern "C" {
+    fn read_file_content(file_name: &str) -> String;
+}
+// fn parse_source_file_inner(file_name: &str, content: &str) -> Result<()> {
 
-    GLOBALS.set(&SWC_GLOBALS, || {
-        BUNDLER.with(|b| {
-            let mut bundler = b.borrow_mut();
-            log::info!("RUST: Received file {source_file:?}");
-            let (module, comments) =
-                load_source_file(&source_file).expect("should be able to load source file");
-            let mut v = ImportsVisitor::from_file(module.fm.name.clone());
-            v.visit_module(&module.module);
+//     // });
 
-            let imports = v
-                .imports
-                .values()
-                .into_iter()
-                .map(|x| x.file_name.to_string())
-                .collect::<HashSet<String>>();
-            log::info!("RUST: Needs imports {imports:?}");
+//     Ok(())
+// }
 
-            let imports = imports
-                .into_iter()
-                .filter(|x| !bundler.known_files.contains(x))
-                .collect::<Vec<String>>();
+// #[wasm_bindgen]
+// pub fn parse_source_file(file_name: &str, content: &str) {
+//     parse_source_file_inner(file_name, content).unwrap();
+// }
 
-            bundler.import_stack.extend(imports);
-
-            let mut locals = ParsedModuleLocals::new();
-            locals.visit_module(&module.module);
-            let name = module.fm.name.clone();
-
-            bundler.files.insert(
-                name,
-                ParsedModule {
-                    module,
-                    imports: v.imports,
-                    type_exports: v.type_exports,
-                    comments,
-                    locals,
-                },
-            );
-        });
-    });
-
-    Ok(())
+struct LazyFileManager<'a> {
+    pub files: &'a mut HashMap<FileName, Rc<ParsedModule>>,
+    pub import_stack: HashSet<String>,
+    pub known_files: HashSet<String>,
 }
 
-#[wasm_bindgen]
-pub fn parse_source_file(file_name: &str, content: &str) {
-    parse_source_file_inner(file_name, content).unwrap();
+impl<'a> FileManager for LazyFileManager<'a> {
+    fn get_file(&mut self, name: &FileName) -> Option<Rc<ParsedModule>> {
+        if let Some(it) = self.files.get(name) {
+            return Some(it.clone());
+        }
+        let cm: SourceMap = SourceMap::default();
+        let file_name = FileName::Real(name.to_string().into());
+        let content = read_file_content(name.to_string().as_str());
+        let source_file = cm.new_source_file(file_name, content.to_owned());
+
+        log::info!("RUST: Received file {source_file:?}");
+        let (module, comments) =
+            load_source_file(&source_file).expect("should be able to load source file");
+        let mut v = ImportsVisitor::from_file(module.fm.name.clone());
+        v.visit_module(&module.module);
+
+        let imports = v
+            .imports
+            .values()
+            .into_iter()
+            .map(|x| x.file_name.to_string())
+            .collect::<HashSet<String>>();
+        log::info!("RUST: Needs imports {imports:?}");
+
+        let imports = imports
+            .into_iter()
+            .filter(|x| !self.known_files.contains(x))
+            .collect::<HashSet<String>>();
+
+        self.known_files.extend(imports.clone());
+
+        self.import_stack.extend(imports);
+
+        let mut locals = ParsedModuleLocals::new();
+        locals.visit_module(&module.module);
+        let name = module.fm.name.clone();
+
+        self.files.insert(
+            name.clone(),
+            Rc::new(ParsedModule {
+                module,
+                imports: v.imports,
+                type_exports: v.type_exports,
+                comments,
+                locals,
+            }),
+        );
+
+        // read_and_parse(name.to_string().as_str());
+        self.files.get(&name).cloned()
+    }
 }
 
 fn get_bundle_result(file_name: &str) -> Result<BundleResult> {
-    BUNDLER.with(|b| {
-        let b = b.borrow();
-        let entry_point = FileName::Real(file_name.into());
-        let file = b.files.get(&entry_point);
-        match file {
-            Some(file) => {
-                let extract_result = bff_core::api_extractor::extract_schema(&b.files, file);
-                Ok(BundleResult {
-                    open_api: extract_result.open_api,
-                    errors: extract_result.errors,
-                    entry_point: entry_point.to_string().into(),
-                    handlers: extract_result.handlers,
-                    entry_file_name: entry_point,
-                    components: extract_result.components,
-                })
-            }
-            None => Err(anyhow!("Could not find entry point: {:?}", entry_point)),
-        }
+    GLOBALS.set(&SWC_GLOBALS, || {
+        BUNDLER.with(|b| {
+            let mut b = b.borrow_mut();
+            let entry_point = FileName::Real(file_name.into());
+            let import_stack = b.import_stack.clone();
+            let known_files = b.known_files.clone();
+            let mut man = LazyFileManager {
+                files: &mut b.files,
+                import_stack: import_stack,
+                known_files: known_files,
+            };
+            let extract_result = bff_core::api_extractor::extract_schema(&mut man, &entry_point);
+            Ok(BundleResult {
+                open_api: extract_result.open_api,
+                errors: extract_result.errors,
+                entry_point: entry_point.to_string().into(),
+                handlers: extract_result.handlers,
+                entry_file_name: entry_point,
+                components: extract_result.components,
+            })
+        })
     })
 }
 fn print_errors(
