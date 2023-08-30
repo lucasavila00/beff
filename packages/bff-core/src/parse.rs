@@ -31,10 +31,8 @@ pub fn load_source_file(fm: &Rc<SourceFile>) -> Result<(BffModuleData, SwcCommen
     .map_err(|err| {
         let emt = EmitterWriter::new(Box::new(std::io::stderr()), None, false, true);
         let handler = Handler::with_emitter(true, false, Box::new(emt));
-
         err.into_diagnostic(&handler).emit();
-
-        anyhow!("failed to parse module: {:?}", fm)
+        anyhow!("Failed to parse or resolve module: {:?}", fm)
     })?;
 
     Ok((

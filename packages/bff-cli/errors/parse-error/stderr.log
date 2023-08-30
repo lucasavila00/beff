@@ -4,4 +4,4 @@ Error: Could not bundle "/home/lucas/fluff/bff/packages/bff-cli/errors/parse-err
 
 Caused by:
     0: Could not load file Real("/home/lucas/fluff/bff/packages/bff-cli/errors/parse-error/app.ts")
-    1: failed to parse module: SourceFile(/home/lucas/fluff/bff/packages/bff-cli/errors/parse-error/app.ts)
+    1: Failed to parse or resolve module: SourceFile(/home/lucas/fluff/bff/packages/bff-cli/errors/parse-error/app.ts)

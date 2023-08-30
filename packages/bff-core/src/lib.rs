@@ -23,6 +23,7 @@ pub enum TypeExport {
     TsInterfaceDecl(TsInterfaceDecl),
 }
 
+#[derive(Debug)]
 pub struct BffModuleData {
     pub fm: Arc<SourceFile>,
     pub module: Module,
@@ -44,6 +45,14 @@ pub struct ParsedModule {
 pub struct ParsedModuleLocals {
     pub type_aliases: HashMap<(JsWord, SyntaxContext), TsType>,
     pub interfaces: HashMap<(JsWord, SyntaxContext), TsInterfaceDecl>,
+}
+impl ParsedModuleLocals {
+    pub fn new() -> ParsedModuleLocals {
+        ParsedModuleLocals {
+            type_aliases: HashMap::new(),
+            interfaces: HashMap::new(),
+        }
+    }
 }
 impl Visit for ParsedModuleLocals {
     fn visit_ts_type_alias_decl(&mut self, n: &TsTypeAliasDecl) {
