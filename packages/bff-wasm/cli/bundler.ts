@@ -1,37 +1,11 @@
 import wasm from "../pkg/hello_wasm";
 import fs from "fs";
-import path from "path";
-import resolve from "enhanced-resolve";
 import { resolveModuleName } from "typescript";
-
-const isRelativeImport = (mod: string) => {
-  return mod.startsWith("./") || mod.startsWith("../") || mod.startsWith("/");
-};
-
-const myResolve = resolve.create.sync({
-  // or resolve.create.sync
-  extensions: [".ts", ".tsx", ".d.ts"],
-  // see more options below
-});
-
-const resolveRelativeImport = (
-  file_name: string,
-  mod: string
-): string | undefined => {
-  const result = myResolve(path.dirname(file_name), mod);
-  if (result) {
-    console.log(`JS: Resolved import to: ${result}`);
-    return result;
-  }
-  console.error(`JS: File could not be resolved: ${mod}`);
-  return undefined;
-};
 
 const resolveImportNoCache = (
   file_name: string,
   mod: string
 ): string | undefined => {
-  console.log(`JS: Resolving -import ? from '${mod}'- at ${file_name}`);
   // if (isRelativeImport(mod)) {
   //   return resolveRelativeImport(file_name, mod);
   // }
@@ -59,20 +33,24 @@ const resolveImportNoCache = (
     },
   };
   const r = resolveModuleName(mod, file_name, {}, host);
+  console.log(
+    `JS: Resolved -import ? from '${mod}'- at ${file_name} => ${r.resolvedModule?.resolvedFileName}`
+  );
   return r.resolvedModule?.resolvedFileName;
 
-  // console.log(`JS: File is not relative: ${mod}`);
   // return undefined;
 };
-const resolvedCache = new Map<string, string>();
+const resolvedCache: Record<string, Record<string, string | undefined>> = {};
 const resolveImport = (file_name: string, mod: string): string | undefined => {
-  const cacheKey = `${file_name}::${mod}`;
-  if (resolvedCache.has(cacheKey)) {
-    return resolvedCache.get(cacheKey);
+  const cached = resolvedCache?.[file_name]?.[mod];
+  if (cached) {
+    return cached;
   }
+
   const result = resolveImportNoCache(file_name, mod);
   if (result) {
-    resolvedCache.set(cacheKey, result);
+    resolvedCache[file_name] = resolvedCache[file_name] || {};
+    resolvedCache[file_name][mod] = result;
   }
   return result;
 };

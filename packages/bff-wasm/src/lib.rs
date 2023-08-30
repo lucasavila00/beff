@@ -4,6 +4,7 @@ extern crate lazy_static;
 mod imports_visitor;
 mod utils;
 
+use std::collections::HashSet;
 use std::{cell::RefCell, collections::HashMap};
 
 use crate::imports_visitor::ImportsVisitor;
@@ -21,14 +22,16 @@ use wasm_bindgen::{prelude::wasm_bindgen, JsValue};
 
 struct Bundler {
     pub files: HashMap<FileName, ParsedModule>,
-    pub stack: Vec<FileName>,
+    pub import_stack: HashSet<String>,
+    pub known_files: HashSet<String>,
 }
 
 impl Bundler {
     pub fn new() -> Bundler {
         Bundler {
             files: HashMap::new(),
-            stack: Vec::new(),
+            import_stack: HashSet::new(),
+            known_files: HashSet::new(),
         }
     }
 }
@@ -64,11 +67,21 @@ fn parse_source_file_inner(file_name: &str, content: &str) -> Result<()> {
                 load_source_file(&source_file).expect("should be able to load source file");
             let mut v = ImportsVisitor::from_file(module.fm.name.clone());
             v.visit_module(&module.module);
-            let imports = v.imports.values().collect::<Vec<_>>();
+
+            let imports = v
+                .imports
+                .values()
+                .into_iter()
+                .map(|x| x.file_name.to_string())
+                .collect::<HashSet<String>>();
             log::info!("RUST: Needs imports {imports:?}");
-            bundler
-                .stack
-                .extend(imports.iter().map(|x| x.file_name.clone()));
+
+            let imports = imports
+                .into_iter()
+                .filter(|x| !bundler.known_files.contains(x))
+                .collect::<Vec<String>>();
+
+            bundler.import_stack.extend(imports);
 
             let mut locals = ParsedModuleLocals::new();
             locals.visit_module(&module.module);
@@ -144,11 +157,11 @@ pub fn bundle_to_string(file_name: &str) -> String {
 
 fn read_files_to_import_inner() -> JsValue {
     BUNDLER.with(|b| {
-        let values = &b.borrow().stack;
+        let values = &b.borrow().import_stack;
         JsValue::from(
             values
                 .iter()
-                .map(|x| JsValue::from_str(&x.to_string().as_str()))
+                .map(|x| JsValue::from_str(&x))
                 .collect::<Array>(),
         )
     })
@@ -162,7 +175,7 @@ pub fn read_files_to_import() -> JsValue {
 fn clear_files_to_import_inner() {
     BUNDLER.with(|b| {
         let mut bundler = b.borrow_mut();
-        bundler.stack.clear();
+        bundler.import_stack.clear();
     })
 }
 #[wasm_bindgen]
