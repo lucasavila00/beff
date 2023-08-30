@@ -10,7 +10,7 @@ use anyhow::Result;
 use core::fmt;
 use jsdoc::ast::{SummaryTag, Tag, UnknownTag, VersionTag};
 use jsdoc::Input;
-use std::collections::HashMap;
+use std::rc::Rc;
 use swc_common::comments::{Comment, CommentKind, Comments};
 use swc_common::FileName;
 use swc_common::{BytePos, Span, DUMMY_SP};
@@ -137,20 +137,21 @@ pub struct FnHandler {
     pub method_kind: MethodKind,
 }
 
-pub struct ExtractExportDefaultVisitor<'a> {
-    files: &'a HashMap<FileName, ParsedModule>,
-    current_file: &'a ParsedModule,
+pub trait FileManager {
+    fn get_file(&mut self, name: &FileName) -> Option<Rc<ParsedModule>>;
+}
+
+pub struct ExtractExportDefaultVisitor<'a, R: FileManager> {
+    files: &'a mut R,
+    current_file: &'a FileName,
     handlers: Vec<FnHandler>,
     components: Vec<Definition>,
     found_default_export: bool,
     errors: Vec<Diagnostic>,
     info: open_api_ast::Info,
 }
-impl<'a> ExtractExportDefaultVisitor<'a> {
-    fn new(
-        files: &'a HashMap<FileName, ParsedModule>,
-        current_file: &'a ParsedModule,
-    ) -> ExtractExportDefaultVisitor<'a> {
+impl<'a, R: FileManager> ExtractExportDefaultVisitor<'a, R> {
+    fn new(files: &'a mut R, current_file: &'a FileName) -> ExtractExportDefaultVisitor<'a, R> {
         ExtractExportDefaultVisitor {
             files,
             current_file,
@@ -191,8 +192,17 @@ struct EndpointComments {
     pub summary: Option<String>,
     pub description: Option<String>,
 }
-
-impl<'a> ExtractExportDefaultVisitor<'a> {
+fn get_prop_name_span(key: &PropName) -> Span {
+    let span = match key {
+        PropName::Computed(ComputedPropName { span, .. })
+        | PropName::Ident(Ident { span, .. })
+        | PropName::Str(Str { span, .. })
+        | PropName::Num(Number { span, .. })
+        | PropName::BigInt(BigInt { span, .. }) => span,
+    };
+    return *span;
+}
+impl<'a, R: FileManager> ExtractExportDefaultVisitor<'a, R> {
     #[allow(clippy::to_string_in_format_args)]
     fn parse_endpoint_comments(&mut self, acc: &mut EndpointComments, comments: Vec<Comment>) {
         for c in comments {
@@ -219,7 +229,7 @@ impl<'a> ExtractExportDefaultVisitor<'a> {
                                 }
                                 tag => self.errors.push(Diagnostic {
                                     message: DiagnosticMessage::UnknownJsDocTag(tag.clone()),
-                                    file_name: self.current_file.module.fm.name.clone(),
+                                    file_name: self.current_file.clone(),
                                     span: tag_item.span,
                                 }),
                             }
@@ -227,7 +237,7 @@ impl<'a> ExtractExportDefaultVisitor<'a> {
                     }
                     Err(_) => self.errors.push(Diagnostic {
                         message: DiagnosticMessage::CannotParseJsDoc,
-                        file_name: self.current_file.module.fm.name.clone(),
+                        file_name: self.current_file.clone(),
                         span: c.span,
                     }),
                 }
@@ -238,7 +248,7 @@ impl<'a> ExtractExportDefaultVisitor<'a> {
         if comments.len() != 1 {
             self.errors.push(Diagnostic {
                 message: DiagnosticMessage::CannotParseJsDoc,
-                file_name: self.current_file.module.fm.name.clone(),
+                file_name: self.current_file.clone(),
                 span: *span,
             });
             return None;
@@ -255,7 +265,7 @@ impl<'a> ExtractExportDefaultVisitor<'a> {
                     if !rest.is_empty() {
                         self.errors.push(Diagnostic {
                             message: DiagnosticMessage::CannotParseJsDoc,
-                            file_name: self.current_file.module.fm.name.clone(),
+                            file_name: self.current_file.clone(),
                             span: first.span,
                         });
                     }
@@ -263,7 +273,7 @@ impl<'a> ExtractExportDefaultVisitor<'a> {
                         for tag in parsed.tags {
                             self.errors.push(Diagnostic {
                                 message: DiagnosticMessage::UnknownJsDocTagItem(tag.clone()),
-                                file_name: self.current_file.module.fm.name.clone(),
+                                file_name: self.current_file.clone(),
                                 span: tag.span,
                             })
                         }
@@ -274,7 +284,7 @@ impl<'a> ExtractExportDefaultVisitor<'a> {
                 }
                 Err(_) => self.errors.push(Diagnostic {
                     message: DiagnosticMessage::CannotParseJsDoc,
-                    file_name: self.current_file.module.fm.name.clone(),
+                    file_name: self.current_file.clone(),
                     span: first.span,
                 }),
             }
@@ -304,7 +314,7 @@ impl<'a> ExtractExportDefaultVisitor<'a> {
                     if !exprs.is_empty() {
                         self.errors.push(Diagnostic {
                             message: DiagnosticMessage::TemplateMustBeOfSingleString,
-                            file_name: self.current_file.module.fm.name.clone(),
+                            file_name: self.current_file.clone(),
                             span: *span,
                         });
                         return Err(anyhow!("not single string"));
@@ -312,7 +322,7 @@ impl<'a> ExtractExportDefaultVisitor<'a> {
                     if quasis.len() != 1 {
                         self.errors.push(Diagnostic {
                             message: DiagnosticMessage::TemplateMustBeOfSingleString,
-                            file_name: self.current_file.module.fm.name.clone(),
+                            file_name: self.current_file.clone(),
                             span: *span,
                         });
                         return Err(anyhow!("not single string"));
@@ -324,7 +334,7 @@ impl<'a> ExtractExportDefaultVisitor<'a> {
                     self.errors.push(Diagnostic {
                         message:
                             DiagnosticMessage::MustBeComputedKeyWithMethodAndPatternMustBeString,
-                        file_name: self.current_file.module.fm.name.clone(),
+                        file_name: self.current_file.clone(),
                         span: *span,
                     });
                     Err(anyhow!("not computed key"))
@@ -336,7 +346,7 @@ impl<'a> ExtractExportDefaultVisitor<'a> {
             | PropName::BigInt(BigInt { span, .. }) => {
                 self.errors.push(Diagnostic {
                     message: DiagnosticMessage::MustBeComputedKey,
-                    file_name: self.current_file.module.fm.name.clone(),
+                    file_name: self.current_file.clone(),
                     span: *span,
                 });
                 Err(anyhow!("not computed key"))
@@ -351,7 +361,7 @@ impl<'a> ExtractExportDefaultVisitor<'a> {
                 if found.schema != d.schema {
                     self.errors.push(Diagnostic {
                         message: DiagnosticMessage::TwoDifferentTypesWithTheSameName,
-                        file_name: self.current_file.module.fm.name.clone(),
+                        file_name: self.current_file.clone(),
                         span: *span,
                     });
                 }
@@ -374,16 +384,17 @@ impl<'a> ExtractExportDefaultVisitor<'a> {
                 Some(s) => kvs.push((k, s)),
                 None => self.errors.push(Diagnostic {
                     message: DiagnosticMessage::CannotResolveTypeReferenceOnExtracting(k),
-                    file_name: self.current_file.module.fm.name.clone(),
+                    file_name: self.current_file.clone(),
                     span: *span,
                 }),
             }
         }
         kvs.sort_by(|(ka, _), (kb, _)| ka.cmp(kb));
-        let ext = kvs.into_iter().map(|(_k, v)| v).collect();
-        self.extend_components(ext, span);
         self.errors.extend(to_schema.errors);
+        let ext: Vec<Definition> = kvs.into_iter().map(|(_k, v)| v).collect();
+        self.extend_components(ext, span);
         res
+        // todo!()
     }
     fn parse_lib_param(
         &mut self,
@@ -401,7 +412,7 @@ impl<'a> ExtractExportDefaultVisitor<'a> {
                     None => {
                         self.errors.push(Diagnostic {
                             message: DiagnosticMessage::TooManyParamsOnLibType,
-                            file_name: self.current_file.module.fm.name.clone(),
+                            file_name: self.current_file.clone(),
                             span: lib_ty_name.span,
                         });
                         return Err(anyhow!("Header/Cookie must have one type parameter"));
@@ -411,7 +422,7 @@ impl<'a> ExtractExportDefaultVisitor<'a> {
                         if params.len() != 1 {
                             self.errors.push(Diagnostic {
                                 message: DiagnosticMessage::TooManyParamsOnLibType,
-                                file_name: self.current_file.module.fm.name.clone(),
+                                file_name: self.current_file.clone(),
                                 span: lib_ty_name.span,
                             });
                             return Err(anyhow!("Header/Cookie must have one type parameter"));
@@ -482,12 +493,23 @@ impl<'a> ExtractExportDefaultVisitor<'a> {
     ) -> Vec<(String, HandlerParameter)> {
         let err = Diagnostic {
             message: msg,
-            file_name: self.current_file.module.fm.name.clone(),
+            file_name: self.current_file.clone(),
             span: *span,
         };
         self.errors.push(err);
         vec![]
     }
+    fn get_current_file(&mut self) -> Rc<ParsedModule> {
+        self.files
+            .get_file(&self.current_file)
+            .expect("should have been parsed")
+    }
+    fn visit_current_file(&mut self) {
+        let file = self.get_current_file();
+        let module = file.module.module.clone();
+        self.visit_module(&module)
+    }
+
     fn parse_arrow_param_from_type_expecting_tuple(
         &mut self,
         it: &TsType,
@@ -508,22 +530,19 @@ impl<'a> ExtractExportDefaultVisitor<'a> {
                         self.error_param(rest_span, DiagnosticMessage::TsQualifiedNameNotSupported)
                     }
                     TsEntityName::Ident(i) => {
-                        let alias_opt = self
-                            .current_file
+                        if let Some(alias) = self
+                            .get_current_file()
                             .locals
                             .type_aliases
                             .get(&(i.sym.clone(), i.span.ctxt))
-                            .map(|alias| {
-                                self.parse_arrow_param_from_type_expecting_tuple(alias, rest_span)
-                            });
-
-                        match alias_opt {
-                            Some(it) => it,
-                            None => self.error_param(
-                                rest_span,
-                                DiagnosticMessage::CouldNotResolveIdentifierOnPathParamTuple,
-                            ),
+                        {
+                            return self
+                                .parse_arrow_param_from_type_expecting_tuple(alias, rest_span);
                         }
+                        self.error_param(
+                            rest_span,
+                            DiagnosticMessage::CouldNotResolveIdentifierOnPathParamTuple,
+                        )
                     }
                 }
             }
@@ -532,7 +551,7 @@ impl<'a> ExtractExportDefaultVisitor<'a> {
                 .flat_map(|it| match &it.label {
                     Some(pat) => match pat {
                         Pat::Ident(BindingIdent { id, .. }) => {
-                            let comments = self.current_file.comments.get_leading(id.span.lo);
+                            let comments = self.get_current_file().comments.get_leading(id.span.lo);
                             let description = comments
                                 .and_then(|it| self.parse_description_comment(it, &id.span));
                             let param = self.parse_parameter_type(
@@ -570,13 +589,13 @@ impl<'a> ExtractExportDefaultVisitor<'a> {
                 if type_ann.is_none() {
                     self.errors.push(Diagnostic {
                         message: DiagnosticMessage::ParameterIdentMustHaveTypeAnnotation,
-                        file_name: self.current_file.module.fm.name.clone(),
+                        file_name: self.current_file.clone(),
                         span: id.span,
                     });
                     return vec![];
                 }
 
-                let comments = self.current_file.comments.get_leading(id.span.lo);
+                let comments = self.get_current_file().comments.get_leading(id.span.lo);
                 let description =
                     comments.and_then(|it| self.parse_description_comment(it, &id.span));
                 let ty = self.assert_and_extract_type_from_ann(type_ann, &id.span);
@@ -609,7 +628,7 @@ impl<'a> ExtractExportDefaultVisitor<'a> {
             if found.is_none() {
                 self.errors.push(Diagnostic {
                     message: DiagnosticMessage::UnmatchedPathParameter(path_param.to_string()),
-                    file_name: self.current_file.module.fm.name.clone(),
+                    file_name: self.current_file.clone(),
                     span: e.pattern.raw_span.clone(),
                 });
             }
@@ -619,9 +638,9 @@ impl<'a> ExtractExportDefaultVisitor<'a> {
 
     fn get_endpoint_comments(&mut self, key: &PropName) -> EndpointComments {
         let comments = self
-            .current_file
+            .get_current_file()
             .comments
-            .get_leading(Self::get_prop_name_span(key).lo);
+            .get_leading(get_prop_name_span(key).lo);
 
         let mut endpoint_comments = EndpointComments {
             summary: None,
@@ -641,7 +660,7 @@ impl<'a> ExtractExportDefaultVisitor<'a> {
         if is_generator {
             self.errors.push(Diagnostic {
                 message: DiagnosticMessage::HandlerCannotBeGenerator,
-                file_name: self.current_file.module.fm.name.clone(),
+                file_name: self.current_file.clone(),
                 span: *span,
             });
             return Err(anyhow!("cannot be generator"));
@@ -649,7 +668,7 @@ impl<'a> ExtractExportDefaultVisitor<'a> {
         if type_params.is_some() {
             self.errors.push(Diagnostic {
                 message: DiagnosticMessage::HandlerCannotHaveTypeParameters,
-                file_name: self.current_file.module.fm.name.clone(),
+                file_name: self.current_file.clone(),
                 span: *span,
             });
             return Err(anyhow!("cannot have type params"));
@@ -703,7 +722,7 @@ impl<'a> ExtractExportDefaultVisitor<'a> {
             None => {
                 self.errors.push(Diagnostic {
                     message: DiagnosticMessage::HandlerMustAnnotateReturnType,
-                    file_name: self.current_file.module.fm.name.clone(),
+                    file_name: self.current_file.clone(),
                     span: *span,
                 });
 
@@ -767,24 +786,15 @@ impl<'a> ExtractExportDefaultVisitor<'a> {
 
         Ok(self.validate_pattern_was_consumed(e))
     }
-    fn get_prop_name_span(key: &PropName) -> Span {
-        let span = match key {
-            PropName::Computed(ComputedPropName { span, .. })
-            | PropName::Ident(Ident { span, .. })
-            | PropName::Str(Str { span, .. })
-            | PropName::Num(Number { span, .. })
-            | PropName::BigInt(BigInt { span, .. }) => span,
-        };
-        return *span;
-    }
+
     fn get_prop_span(prop: &Prop) -> Span {
         match &prop {
             Prop::Shorthand(Ident { span, .. }) => *span,
-            Prop::KeyValue(KeyValueProp { key, .. }) => Self::get_prop_name_span(key),
+            Prop::KeyValue(KeyValueProp { key, .. }) => get_prop_name_span(key),
             Prop::Assign(AssignProp { ref key, .. }) => key.span,
             Prop::Getter(GetterProp { span, .. }) => *span,
             Prop::Setter(SetterProp { span, .. }) => *span,
-            Prop::Method(MethodProp { key, .. }) => Self::get_prop_name_span(key),
+            Prop::Method(MethodProp { key, .. }) => get_prop_name_span(key),
         }
     }
 
@@ -823,7 +833,7 @@ impl<'a> ExtractExportDefaultVisitor<'a> {
         let span = Self::get_prop_span(prop);
         self.errors.push(Diagnostic {
             message: DiagnosticMessage::NotAnObjectWithMethodKind,
-            file_name: self.current_file.module.fm.name.clone(),
+            file_name: self.current_file.clone(),
             span,
         });
         vec![]
@@ -854,7 +864,7 @@ impl<'a> ExtractExportDefaultVisitor<'a> {
         let span = Self::get_prop_span(prop);
         self.errors.push(Diagnostic {
             message: DiagnosticMessage::NotAnObjectWithMethodKind,
-            file_name: self.current_file.module.fm.name.clone(),
+            file_name: self.current_file.clone(),
             span,
         });
         vec![]
@@ -894,14 +904,14 @@ impl<'a> ExtractExportDefaultVisitor<'a> {
                                                 DiagnosticMessage::UnknownJsDocTagOfTypeUnknown(
                                                     tag.to_string(),
                                                 ),
-                                            file_name: self.current_file.module.fm.name.clone(),
+                                            file_name: self.current_file.clone(),
                                             span: c.span,
                                         }),
                                     }
                                 }
                                 tag => self.errors.push(Diagnostic {
                                     message: DiagnosticMessage::UnknownJsDocTag(tag.clone()),
-                                    file_name: self.current_file.module.fm.name.clone(),
+                                    file_name: self.current_file.clone(),
                                     span: c.span,
                                 }),
                             }
@@ -909,7 +919,7 @@ impl<'a> ExtractExportDefaultVisitor<'a> {
                     }
                     Err(_) => self.errors.push(Diagnostic {
                         message: DiagnosticMessage::CannotParseJsDoc,
-                        file_name: self.current_file.module.fm.name.clone(),
+                        file_name: self.current_file.clone(),
                         span: c.span,
                     }),
                 }
@@ -918,9 +928,9 @@ impl<'a> ExtractExportDefaultVisitor<'a> {
     }
 }
 
-impl<'a> Visit for ExtractExportDefaultVisitor<'a> {
+impl<'a, R: FileManager> Visit for ExtractExportDefaultVisitor<'a, R> {
     fn visit_export_default_expr(&mut self, n: &ExportDefaultExpr) {
-        let comments = self.current_file.comments.get_leading(n.span.lo);
+        let comments = self.get_current_file().comments.get_leading(n.span.lo);
         if let Some(comments) = comments {
             self.parse_export_default_comments(comments);
         }
@@ -935,7 +945,7 @@ impl<'a> Visit for ExtractExportDefaultVisitor<'a> {
                     PropOrSpread::Spread(SpreadElement { dot3_token, .. }) => {
                         self.errors.push(Diagnostic {
                             message: DiagnosticMessage::RestOnRouterDefaultExportNotSupportedYet,
-                            file_name: self.current_file.module.fm.name.clone(),
+                            file_name: self.current_file.clone(),
                             span: *dot3_token,
                         });
                     }
@@ -1126,17 +1136,19 @@ pub struct ExtractResult {
     pub components: Vec<Definition>,
 }
 
-pub fn extract_schema(
-    files: &HashMap<FileName, ParsedModule>,
-    current_file: &ParsedModule,
-) -> ExtractResult {
+pub fn extract_schema<R: FileManager>(files: &mut R, current_file: &FileName) -> ExtractResult {
     let mut visitor = ExtractExportDefaultVisitor::new(files, current_file);
-    visitor.visit_module(&current_file.module.module);
+
+    visitor.visit_current_file();
+    // let file = files
+    //     .get_file(current_file)
+    //     .expect("should have been parsed");
+    // visitor.visit_module(&file.module.module);
 
     if !visitor.found_default_export {
         visitor.errors.push(Diagnostic {
             message: DiagnosticMessage::CouldNotFindDefaultExport,
-            file_name: current_file.module.fm.name.clone(),
+            file_name: current_file.clone(),
             span: DUMMY_SP,
         })
     }
@@ -1144,7 +1156,7 @@ pub fn extract_schema(
     let mut transformer = EndpointToPath {
         errors: visitor.errors,
         components: &visitor.components,
-        current_file: &current_file.module.fm.name,
+        current_file: &current_file,
     };
     let paths = transformer.endpoints_to_paths(visitor.handlers.clone());
     let open_api = OpenApi {

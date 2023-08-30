@@ -56,8 +56,12 @@ const resolveImport = (file_name: string, mod: string): string | undefined => {
 };
 globalThis.resolve_import = resolveImport;
 globalThis.read_file_content = (file_name: string) => {
-  const source_file = fs.readFileSync(file_name, "utf-8");
-  return source_file;
+  try {
+    const source_file = fs.readFileSync(file_name, "utf-8");
+    return source_file;
+  } catch (e) {
+    return undefined;
+  }
 };
 export class Bundler {
   seenFiles: Set<string> = new Set();

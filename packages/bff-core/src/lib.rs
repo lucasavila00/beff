@@ -19,6 +19,7 @@ use swc_common::{FileName, SourceFile, SyntaxContext};
 use swc_ecma_ast::{Module, TsInterfaceDecl, TsType, TsTypeAliasDecl};
 use swc_ecma_visit::Visit;
 use swc_node_comments::SwcComments;
+#[derive(Debug, Clone)]
 pub enum TypeExport {
     TsType(TsType),
     TsInterfaceDecl(TsInterfaceDecl),
@@ -30,7 +31,7 @@ pub struct BffModuleData {
     pub module: Module,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct ImportReference {
     pub file_name: FileName,
 }

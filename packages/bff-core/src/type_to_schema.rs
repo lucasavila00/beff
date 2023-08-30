@@ -1,8 +1,10 @@
+use crate::api_extractor::FileManager;
 use crate::diag::{Diagnostic, DiagnosticMessage};
 use crate::open_api_ast::Json;
 use crate::open_api_ast::{Definition, JsonSchema, Optionality};
-use crate::{ParsedModule, TypeExport};
+use crate::{ImportReference, ParsedModule, TypeExport};
 use std::collections::HashMap;
+use std::rc::Rc;
 use swc_common::FileName;
 use swc_common::Span;
 use swc_ecma_ast::{
@@ -16,9 +18,9 @@ use swc_ecma_ast::{
     TsUnionOrIntersectionType, TsUnionType,
 };
 
-pub struct TypeToSchema<'a> {
-    pub files: &'a HashMap<FileName, ParsedModule>,
-    pub current_file: &'a ParsedModule,
+pub struct TypeToSchema<'a, R: FileManager> {
+    pub files: &'a mut R,
+    pub current_file: &'a FileName,
     pub components: HashMap<String, Option<Definition>>,
     pub errors: Vec<Diagnostic>,
 }
@@ -30,11 +32,8 @@ fn extract_items_from_array(it: JsonSchema) -> JsonSchema {
     }
 }
 
-impl<'a> TypeToSchema<'a> {
-    pub fn new(
-        files: &'a HashMap<FileName, ParsedModule>,
-        current_file: &'a ParsedModule,
-    ) -> TypeToSchema<'a> {
+impl<'a, R: FileManager> TypeToSchema<'a, R> {
+    pub fn new(files: &'a mut R, current_file: &'a FileName) -> TypeToSchema<'a, R> {
         TypeToSchema {
             files,
             current_file,
@@ -137,6 +136,12 @@ impl<'a> TypeToSchema<'a> {
         JsonSchema::Ref(name)
     }
 
+    fn get_current_file(&mut self) -> Rc<ParsedModule> {
+        self.files
+            .get_file(&self.current_file)
+            .expect("should have been parsed")
+    }
+
     pub fn get_type_ref(
         &mut self,
         i: &Ident,
@@ -169,74 +174,92 @@ impl<'a> TypeToSchema<'a> {
             self.insert_definition(i.sym.to_string(), JsonSchema::Any);
             return self.cannot_serialize_error(&i.span);
         }
-        let alias_opt = self
-            .current_file
+
+        if let Some(alias) = self
+            .get_current_file()
             .locals
             .type_aliases
             .get(&(i.sym.clone(), i.span.ctxt))
-            .map(|alias| {
-                let ty = self.convert_ts_type(alias);
-                self.insert_definition(i.sym.to_string(), ty)
-            });
+        {
+            let alias = alias.clone();
+            let ty = self.convert_ts_type(&alias);
+            return self.insert_definition(i.sym.to_string(), ty);
+        }
 
-        let interfaces_opt = self
-            .current_file
+        if let Some(int) = self
+            .get_current_file()
             .locals
             .interfaces
             .get(&(i.sym.clone(), i.span.ctxt))
-            .map(|int| {
-                let ty = self.convert_ts_interface_decl(int);
-                self.insert_definition(i.sym.to_string(), ty)
-            });
+        {
+            let int = int.clone();
+            let ty = self.convert_ts_interface_decl(&int);
+            return self.insert_definition(i.sym.to_string(), ty);
+        }
 
-        let imported_opt = self
-            .current_file
+        let mut found: Option<TypeExport> = None;
+        let mut found_imp: Option<ImportReference> = None;
+
+        if let Some(imported) = self
+            .get_current_file()
             .imports
             .get(&(i.sym.clone(), i.span.ctxt))
-            .map(|imported| {
-                let file = self.files.get(&imported.file_name);
-                match file {
-                    Some(file) => {
-                        let exp = file.type_exports.get(&i.sym);
-                        let mut chd_file_converter = TypeToSchema::new(self.files, file);
-                        match exp {
-                            Some(TypeExport::TsType(alias)) => {
-                                let ty = chd_file_converter.convert_ts_type(alias);
-                                self.errors.extend(chd_file_converter.errors);
-                                self.components.extend(chd_file_converter.components);
-                                self.insert_definition(i.sym.to_string(), ty)
-                            }
-                            Some(TypeExport::TsInterfaceDecl(int)) => {
-                                let ty = chd_file_converter.convert_ts_interface_decl(int);
-                                self.errors.extend(chd_file_converter.errors);
-                                self.components.extend(chd_file_converter.components);
-                                self.insert_definition(i.sym.to_string(), ty)
-                            }
-                            None => self.error(
+        {
+            let imported = imported.clone();
+            let file = self.files.get_file(&imported.file_name);
+            match file {
+                Some(file) => {
+                    let exp = file.type_exports.get(&i.sym);
+                    match exp {
+                        Some(f) => {
+                            found = Some(f.clone());
+                            found_imp = Some(imported);
+                        }
+                        None => {
+                            return self.error(
                                 &i.span,
                                 DiagnosticMessage::CannotFindTypeExportWhenConvertingToSchema(
                                     i.sym.to_string(),
                                 ),
-                            ),
+                            )
                         }
                     }
-                    None => self.error(
+                }
+                None => {
+                    return self.error(
                         &i.span,
                         DiagnosticMessage::CannotFindFileWhenConvertingToSchema(
                             imported.file_name.to_string(),
                         ),
-                    ),
+                    )
                 }
-            });
-
-        let r = alias_opt.or(interfaces_opt).or(imported_opt);
-        match r {
-            Some(ok) => ok,
-            None => self.error(
-                &i.span,
-                DiagnosticMessage::CannotResolveTypeReferenceOnConverting(i.sym.to_string()),
-            ),
+            }
         }
+        match found {
+            Some(TypeExport::TsType(alias)) => {
+                let imported = found_imp.expect("should exist");
+                let mut chd_file_converter = TypeToSchema::new(self.files, &imported.file_name);
+
+                let ty = chd_file_converter.convert_ts_type(&alias);
+                self.errors.extend(chd_file_converter.errors);
+                self.components.extend(chd_file_converter.components);
+                return self.insert_definition(i.sym.to_string(), ty);
+            }
+            Some(TypeExport::TsInterfaceDecl(int)) => {
+                let imported = found_imp.expect("should exist");
+                let mut chd_file_converter = TypeToSchema::new(self.files, &imported.file_name);
+                let ty = chd_file_converter.convert_ts_interface_decl(&int);
+                self.errors.extend(chd_file_converter.errors);
+                self.components.extend(chd_file_converter.components);
+                return self.insert_definition(i.sym.to_string(), ty);
+            }
+            None => {}
+        }
+
+        self.error(
+            &i.span,
+            DiagnosticMessage::CannotResolveTypeReferenceOnConverting(i.sym.to_string()),
+        )
     }
 
     fn union(&mut self, types: &[Box<TsType>]) -> JsonSchema {
@@ -253,7 +276,7 @@ impl<'a> TypeToSchema<'a> {
     fn error(&mut self, span: &Span, msg: DiagnosticMessage) -> JsonSchema {
         let err = Diagnostic {
             message: msg,
-            file_name: self.current_file.module.fm.name.clone(),
+            file_name: self.current_file.clone(),
             span: *span,
         };
         self.errors.push(err);

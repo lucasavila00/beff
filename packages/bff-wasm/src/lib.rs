@@ -16,15 +16,13 @@ use bff_core::diag::Diagnostic;
 use bff_core::emit::emit_module;
 use bff_core::printer::ToModule;
 use bff_core::{parse::load_source_file, BundleResult, ParsedModule, ParsedModuleLocals};
-use js_sys::Array;
 use log::Level;
 use swc_common::{FileName, Globals, SourceMap, GLOBALS};
 use swc_ecma_visit::Visit;
-use wasm_bindgen::{prelude::wasm_bindgen, JsValue};
+use wasm_bindgen::prelude::wasm_bindgen;
 
 struct Bundler {
     pub files: HashMap<FileName, Rc<ParsedModule>>,
-    pub import_stack: HashSet<String>,
     pub known_files: HashSet<String>,
 }
 
@@ -32,7 +30,6 @@ impl Bundler {
     pub fn new() -> Bundler {
         Bundler {
             files: HashMap::new(),
-            import_stack: HashSet::new(),
             known_files: HashSet::new(),
         }
     }
@@ -58,23 +55,11 @@ extern "C" {
 
 #[wasm_bindgen]
 extern "C" {
-    fn read_file_content(file_name: &str) -> String;
+    fn read_file_content(file_name: &str) -> Option<String>;
 }
-// fn parse_source_file_inner(file_name: &str, content: &str) -> Result<()> {
-
-//     // });
-
-//     Ok(())
-// }
-
-// #[wasm_bindgen]
-// pub fn parse_source_file(file_name: &str, content: &str) {
-//     parse_source_file_inner(file_name, content).unwrap();
-// }
 
 struct LazyFileManager<'a> {
     pub files: &'a mut HashMap<FileName, Rc<ParsedModule>>,
-    pub import_stack: HashSet<String>,
     pub known_files: HashSet<String>,
 }
 
@@ -85,7 +70,7 @@ impl<'a> FileManager for LazyFileManager<'a> {
         }
         let cm: SourceMap = SourceMap::default();
         let file_name = FileName::Real(name.to_string().into());
-        let content = read_file_content(name.to_string().as_str());
+        let content = read_file_content(name.to_string().as_str())?;
         let source_file = cm.new_source_file(file_name, content.to_owned());
 
         log::info!("RUST: Received file {source_file:?}");
@@ -98,36 +83,24 @@ impl<'a> FileManager for LazyFileManager<'a> {
             .imports
             .values()
             .into_iter()
-            .map(|x| x.file_name.to_string())
-            .collect::<HashSet<String>>();
-        log::info!("RUST: Needs imports {imports:?}");
+            .map(|x| x.file_name.to_string());
+        log::info!("RUST: Has imports {imports:?}");
 
-        let imports = imports
-            .into_iter()
-            .filter(|x| !self.known_files.contains(x))
-            .collect::<HashSet<String>>();
-
-        self.known_files.extend(imports.clone());
-
-        self.import_stack.extend(imports);
+        self.known_files.extend(imports);
 
         let mut locals = ParsedModuleLocals::new();
         locals.visit_module(&module.module);
         let name = module.fm.name.clone();
 
-        self.files.insert(
-            name.clone(),
-            Rc::new(ParsedModule {
-                module,
-                imports: v.imports,
-                type_exports: v.type_exports,
-                comments,
-                locals,
-            }),
-        );
-
-        // read_and_parse(name.to_string().as_str());
-        self.files.get(&name).cloned()
+        let f = Rc::new(ParsedModule {
+            module,
+            imports: v.imports,
+            type_exports: v.type_exports,
+            comments,
+            locals,
+        });
+        self.files.insert(name.clone(), f.clone());
+        Some(f)
     }
 }
 
@@ -136,11 +109,9 @@ fn get_bundle_result(file_name: &str) -> Result<BundleResult> {
         BUNDLER.with(|b| {
             let mut b = b.borrow_mut();
             let entry_point = FileName::Real(file_name.into());
-            let import_stack = b.import_stack.clone();
             let known_files = b.known_files.clone();
             let mut man = LazyFileManager {
                 files: &mut b.files,
-                import_stack: import_stack,
                 known_files: known_files,
             };
             let extract_result = bff_core::api_extractor::extract_schema(&mut man, &entry_point);
@@ -179,32 +150,4 @@ fn bundle_to_string_inner(file_name: &str) -> Result<String> {
 #[wasm_bindgen]
 pub fn bundle_to_string(file_name: &str) -> String {
     bundle_to_string_inner(file_name).unwrap()
-}
-
-fn read_files_to_import_inner() -> JsValue {
-    BUNDLER.with(|b| {
-        let values = &b.borrow().import_stack;
-        JsValue::from(
-            values
-                .iter()
-                .map(|x| JsValue::from_str(&x))
-                .collect::<Array>(),
-        )
-    })
-}
-
-#[wasm_bindgen]
-pub fn read_files_to_import() -> JsValue {
-    read_files_to_import_inner()
-}
-
-fn clear_files_to_import_inner() {
-    BUNDLER.with(|b| {
-        let mut bundler = b.borrow_mut();
-        bundler.import_stack.clear();
-    })
-}
-#[wasm_bindgen]
-pub fn clear_files_to_import() {
-    clear_files_to_import_inner()
 }

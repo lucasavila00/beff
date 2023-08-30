@@ -618,6 +618,21 @@ function validate_DataTypesKitchenSink(input) {
     }
     return error_acc_0;
 }
+function validate_A(input) {
+    let error_acc_0 = [];
+    if (typeof input != "string") {
+        error_acc_0.push({
+            "kind": [
+                "NotTypeof",
+                "string"
+            ],
+            "path": [
+                "A"
+            ]
+        });
+    }
+    return error_acc_0;
+}
 function validate_User(input) {
     let error_acc_0 = [];
     if (typeof input == "object" && input != null) {
@@ -705,6 +720,10 @@ function validate_UserEntity(input) {
                 ]
             });
         }
+        error_acc_0.push(...add_path_to_errors(validate_A(input["idA"]), [
+            "UserEntity",
+            "idA"
+        ]));
     } else {
         error_acc_0.push({
             "kind": [
@@ -1161,6 +1180,9 @@ export const meta = {
                         }
                     }
                 },
+                "A": {
+                    "type": "string"
+                },
                 "User": {
                     "type": "object",
                     "required": [
@@ -1189,11 +1211,15 @@ export const meta = {
                 "UserEntity": {
                     "type": "object",
                     "required": [
-                        "id"
+                        "id",
+                        "idA"
                     ],
                     "properties": {
                         "id": {
                             "type": "string"
+                        },
+                        "idA": {
+                            "$ref": "#/components/schemas/A"
                         }
                     }
                 }
