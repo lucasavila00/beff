@@ -10,8 +10,9 @@ use anyhow::Result;
 use core::fmt;
 use jsdoc::ast::{SummaryTag, Tag, UnknownTag, VersionTag};
 use jsdoc::Input;
+use std::collections::HashMap;
 use swc_common::comments::{Comment, CommentKind, Comments};
-use swc_common::{collections::AHashMap, FileName};
+use swc_common::FileName;
 use swc_common::{BytePos, Span, DUMMY_SP};
 use swc_ecma_ast::{
     ArrayPat, ArrowExpr, AssignPat, AssignProp, BigInt, BindingIdent, ComputedPropName,
@@ -137,7 +138,7 @@ pub struct FnHandler {
 }
 
 pub struct ExtractExportDefaultVisitor<'a> {
-    files: &'a AHashMap<FileName, ParsedModule>,
+    files: &'a HashMap<FileName, ParsedModule>,
     current_file: &'a ParsedModule,
     handlers: Vec<FnHandler>,
     components: Vec<Definition>,
@@ -147,7 +148,7 @@ pub struct ExtractExportDefaultVisitor<'a> {
 }
 impl<'a> ExtractExportDefaultVisitor<'a> {
     fn new(
-        files: &'a AHashMap<FileName, ParsedModule>,
+        files: &'a HashMap<FileName, ParsedModule>,
         current_file: &'a ParsedModule,
     ) -> ExtractExportDefaultVisitor<'a> {
         ExtractExportDefaultVisitor {
@@ -1086,8 +1087,6 @@ impl<'a> EndpointToPath<'a> {
         }
     }
     fn add_endpoint_to_path(&mut self, path: &mut open_api_ast::ApiPath, endpoint: FnHandler) {
-        log::debug!("adding endpoint to path");
-
         let kind = endpoint.method_kind;
         let op = Some(self.endpoint_to_operation_object(endpoint));
         match kind {
@@ -1128,11 +1127,9 @@ pub struct ExtractResult {
 }
 
 pub fn extract_schema(
-    files: &AHashMap<FileName, ParsedModule>,
+    files: &HashMap<FileName, ParsedModule>,
     current_file: &ParsedModule,
 ) -> ExtractResult {
-    log::debug!("start extract_schema schema");
-
     let mut visitor = ExtractExportDefaultVisitor::new(files, current_file);
     visitor.visit_module(&current_file.module.module);
 
@@ -1144,20 +1141,17 @@ pub fn extract_schema(
         })
     }
 
-    log::debug!("visited module");
     let mut transformer = EndpointToPath {
         errors: visitor.errors,
         components: &visitor.components,
         current_file: &current_file.module.fm.name,
     };
     let paths = transformer.endpoints_to_paths(visitor.handlers.clone());
-    log::debug!("transformed endpoints to paths");
     let open_api = OpenApi {
         info: visitor.info,
         paths: paths,
         components: visitor.components.clone(),
     };
-    log::debug!("extracted schema");
 
     ExtractResult {
         handlers: visitor.handlers,

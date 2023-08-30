@@ -6,14 +6,18 @@ mod utils;
 
 use std::{cell::RefCell, collections::HashMap};
 
+use crate::imports_visitor::ImportsVisitor;
+use anyhow::anyhow;
 use anyhow::Result;
-use bff_core::{parse::load_source_file, ParsedModule, ParsedModuleLocals};
+use bff_core::diag::Diagnostic;
+use bff_core::emit::emit_module;
+use bff_core::printer::ToModule;
+use bff_core::{parse::load_source_file, BundleResult, ParsedModule, ParsedModuleLocals};
+use js_sys::Array;
 use log::Level;
 use swc_common::{FileName, Globals, SourceMap, GLOBALS};
 use swc_ecma_visit::Visit;
-use wasm_bindgen::prelude::wasm_bindgen;
-
-use crate::imports_visitor::ImportsVisitor;
+use wasm_bindgen::{prelude::wasm_bindgen, JsValue};
 
 struct Bundler {
     pub files: HashMap<FileName, ParsedModule>,
@@ -55,13 +59,13 @@ fn parse_source_file_inner(file_name: &str, content: &str) -> Result<()> {
     GLOBALS.set(&SWC_GLOBALS, || {
         BUNDLER.with(|b| {
             let mut bundler = b.borrow_mut();
+            log::info!("RUST: Received file {source_file:?}");
             let (module, comments) =
                 load_source_file(&source_file).expect("should be able to load source file");
-            log::info!("{source_file:?}");
             let mut v = ImportsVisitor::from_file(module.fm.name.clone());
             v.visit_module(&module.module);
             let imports = v.imports.values().collect::<Vec<_>>();
-            log::info!("{imports:?}");
+            log::info!("RUST: Needs imports {imports:?}");
             bundler
                 .stack
                 .extend(imports.iter().map(|x| x.file_name.clone()));
@@ -89,4 +93,79 @@ fn parse_source_file_inner(file_name: &str, content: &str) -> Result<()> {
 #[wasm_bindgen]
 pub fn parse_source_file(file_name: &str, content: &str) {
     parse_source_file_inner(file_name, content).unwrap();
+}
+
+fn get_bundle_result(file_name: &str) -> Result<BundleResult> {
+    BUNDLER.with(|b| {
+        let b = b.borrow();
+        let entry_point = FileName::Real(file_name.into());
+        let file = b.files.get(&entry_point);
+        match file {
+            Some(file) => {
+                let extract_result = bff_core::api_extractor::extract_schema(&b.files, file);
+                Ok(BundleResult {
+                    open_api: extract_result.open_api,
+                    errors: extract_result.errors,
+                    entry_point: entry_point.to_string().into(),
+                    handlers: extract_result.handlers,
+                    entry_file_name: entry_point,
+                    components: extract_result.components,
+                })
+            }
+            None => Err(anyhow!("Could not find entry point: {:?}", entry_point)),
+        }
+    })
+}
+fn print_errors(
+    errors: Vec<Diagnostic>,
+    // bundler_files: &HashMap<FileName, ParsedModule>,
+    // project_root: &str,
+) {
+    log::info!("{errors:?}")
+}
+fn bundle_to_string_inner(file_name: &str) -> Result<String> {
+    let res = get_bundle_result(file_name)?;
+    if res.errors.is_empty() {
+        let (ast, write_errs) = res.to_module();
+        if write_errs.is_empty() {
+            return emit_module(&ast);
+        }
+        print_errors(write_errs);
+        return Err(anyhow!("Failed to write bundle"));
+    }
+    print_errors(res.errors);
+    Err(anyhow!("Failed to bundle"))
+}
+
+#[wasm_bindgen]
+pub fn bundle_to_string(file_name: &str) -> String {
+    bundle_to_string_inner(file_name).unwrap()
+}
+
+fn read_files_to_import_inner() -> JsValue {
+    BUNDLER.with(|b| {
+        let values = &b.borrow().stack;
+        JsValue::from(
+            values
+                .iter()
+                .map(|x| JsValue::from_str(&x.to_string().as_str()))
+                .collect::<Array>(),
+        )
+    })
+}
+
+#[wasm_bindgen]
+pub fn read_files_to_import() -> JsValue {
+    read_files_to_import_inner()
+}
+
+fn clear_files_to_import_inner() {
+    BUNDLER.with(|b| {
+        let mut bundler = b.borrow_mut();
+        bundler.stack.clear();
+    })
+}
+#[wasm_bindgen]
+pub fn clear_files_to_import() {
+    clear_files_to_import_inner()
 }

@@ -2,6 +2,7 @@ pub mod api_extractor;
 pub mod coercer;
 pub mod decoder;
 pub mod diag;
+pub mod emit;
 pub mod open_api_ast;
 pub mod parse;
 pub mod printer;

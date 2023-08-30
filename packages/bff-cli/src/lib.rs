@@ -17,9 +17,7 @@ use std::collections::HashMap;
 use swc_atoms::JsWord;
 use swc_bundler::Resolve;
 use swc_common::{
-    collections::{AHashMap, AHashSet},
-    sync::Lrc,
-    FileName, Globals, SourceMap, SyntaxContext, GLOBALS,
+    collections::AHashSet, sync::Lrc, FileName, Globals, SourceMap, SyntaxContext, GLOBALS,
 };
 use swc_ecma_ast::Decl;
 use swc_ecma_ast::ExportDecl;
@@ -92,7 +90,7 @@ impl<'a> Visit for ImportsVisitor<'a> {
 }
 
 pub struct Bundler {
-    pub files: AHashMap<FileName, ParsedModule>,
+    pub files: HashMap<FileName, ParsedModule>,
 }
 impl Default for Bundler {
     fn default() -> Self {
@@ -103,7 +101,7 @@ impl Bundler {
     #[must_use]
     pub fn new() -> Self {
         Bundler {
-            files: AHashMap::default(),
+            files: HashMap::new(),
         }
     }
     fn load_file(path: &FileName) -> Result<(BffModuleData, SwcComments)> {

@@ -16,7 +16,6 @@ use std::collections::HashMap;
 use std::time::Duration;
 use std::time::Instant;
 use std::{fs, path::PathBuf};
-use swc_common::collections::AHashMap;
 use swc_common::FileName;
 
 #[derive(Parser, Debug)]
@@ -131,7 +130,7 @@ impl ResolvedArgs {
 
 fn write_bundle(
     res: BundleResult,
-    bundler_files: &AHashMap<FileName, ParsedModule>,
+    bundler_files: &HashMap<FileName, ParsedModule>,
     args: &ResolvedArgs,
 ) -> Result<()> {
     let project_root = args

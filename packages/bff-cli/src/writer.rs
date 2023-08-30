@@ -1,31 +1,11 @@
 use anyhow::Result;
+use bff_core::emit::emit_module;
 use std::path::Path;
 use std::{fs, path::PathBuf};
-use swc_common::SourceMap;
-use swc_common::{sync::Lrc, FilePathMapping};
 use swc_ecma_ast::Module;
-use swc_ecma_codegen::Config;
-use swc_ecma_codegen::{text_writer::JsWriter, Emitter};
 
 fn meta_js_file_content(ast: &Module, no_shared_runtime: bool) -> Result<String> {
-    let cm = Lrc::new(SourceMap::new(FilePathMapping::empty()));
-
-    let code = {
-        let mut buf = vec![];
-
-        {
-            let mut emitter = Emitter {
-                cfg: Config::default(),
-                cm: cm.clone(),
-                comments: None,
-                wr: JsWriter::new(cm, "\n", &mut buf, None),
-            };
-
-            emitter.emit_module(ast)?;
-        }
-
-        String::from_utf8_lossy(&buf).to_string()
-    };
+    let code = emit_module(ast)?;
     let js_prefix = include_str!("./assets/runtime.js");
     let js_suffix = include_str!("./assets/runtime2.js");
 

@@ -1,12 +1,13 @@
 use ariadne::{Config, Label, Report, ReportKind, Source};
 use bff_core::diag::Diagnostic;
-use swc_common::{collections::AHashMap, FileName};
+use std::collections::HashMap;
+use swc_common::FileName;
 
 use crate::ParsedModule;
 
 pub fn print_errors(
     errors: Vec<Diagnostic>,
-    bundler_files: &AHashMap<FileName, ParsedModule>,
+    bundler_files: &HashMap<FileName, ParsedModule>,
     project_root: &str,
 ) {
     for err in errors {

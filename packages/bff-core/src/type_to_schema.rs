@@ -3,8 +3,8 @@ use crate::open_api_ast::Json;
 use crate::open_api_ast::{Definition, JsonSchema, Optionality};
 use crate::{ParsedModule, TypeExport};
 use std::collections::HashMap;
+use swc_common::FileName;
 use swc_common::Span;
-use swc_common::{collections::AHashMap, FileName};
 use swc_ecma_ast::{
     BigInt, Expr, Ident, TsArrayType, TsCallSignatureDecl, TsConditionalType,
     TsConstructSignatureDecl, TsConstructorType, TsEntityName, TsFnOrConstructorType, TsFnType,
@@ -17,7 +17,7 @@ use swc_ecma_ast::{
 };
 
 pub struct TypeToSchema<'a> {
-    pub files: &'a AHashMap<FileName, ParsedModule>,
+    pub files: &'a HashMap<FileName, ParsedModule>,
     pub current_file: &'a ParsedModule,
     pub components: HashMap<String, Option<Definition>>,
     pub errors: Vec<Diagnostic>,
@@ -32,7 +32,7 @@ fn extract_items_from_array(it: JsonSchema) -> JsonSchema {
 
 impl<'a> TypeToSchema<'a> {
     pub fn new(
-        files: &'a AHashMap<FileName, ParsedModule>,
+        files: &'a HashMap<FileName, ParsedModule>,
         current_file: &'a ParsedModule,
     ) -> TypeToSchema<'a> {
         TypeToSchema {
