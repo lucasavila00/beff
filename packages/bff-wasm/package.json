@@ -8,11 +8,11 @@
   },
   "scripts": {
     "build-rust": "wasm-pack build --dev --target nodejs",
-    "build-ts": "esbuild cli/commandeer.ts --bundle --outfile=dist/cli.js --platform=node --target=node14 --external:pnpapi --external:./pkg/hello_wasm.js --external:./pkg/hello_wasm_bg.js",
+    "build-ts": "esbuild cli/commandeer.ts --bundle --outfile=dist-cli/cli.js --platform=node --target=node14 --external:pnpapi --external:./pkg/hello_wasm.js --external:./pkg/hello_wasm_bg.js",
     "build": "npm run build-rust && npm run build-ts",
     "wasm-test": "wasm-pack test --node",
     "test": "npm run build && vitest",
-    "do": "npm run build && node npm-bin index.js -e /home/lucas/fluff/bff/packages/hello-wasm/fixtures/a/simple.ts"
+    "do": "npm run build && node npm-bin index.js -e /home/lucas/fluff/bff/packages/bff-wasm/fixtures/a/simple.ts"
   },
   "author": "",
   "license": "ISC",

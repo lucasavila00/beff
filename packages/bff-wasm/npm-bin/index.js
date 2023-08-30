@@ -1,2 +1,2 @@
-const { commanderExec } = require("../dist/cli.js");
+const { commanderExec } = require("../dist-cli/cli.js");
 commanderExec();
