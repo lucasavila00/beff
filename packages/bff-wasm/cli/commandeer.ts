@@ -1,14 +1,14 @@
 import { program } from "commander";
 import { Bundler } from "./bundler";
-import fs from "fs";
+import fs from "fs/promises";
 import path from "path";
-const readProjectJson = (projectPath: string) => {
-  const projectJson = JSON.parse(fs.readFileSync(projectPath, "utf-8"));
+const readProjectJson = async (projectPath: string) => {
+  const projectJson = JSON.parse(await fs.readFile(projectPath, "utf-8"));
   return projectJson;
 };
 
 const execProject = async (absoluteProjectPath: string) => {
-  const projectJson = readProjectJson(absoluteProjectPath);
+  const projectJson = await readProjectJson(absoluteProjectPath);
   const router = projectJson.router;
   const absoluteEntryPoint = path.join(
     path.dirname(absoluteProjectPath),
@@ -23,7 +23,7 @@ const execProject = async (absoluteProjectPath: string) => {
     projectJson.outputDir
   );
   const outputFile = `${absoluteOutDir}/index.js`;
-  fs.writeFileSync(outputFile, outString);
+  await fs.writeFile(outputFile, outString);
 };
 
 const getAbsolutePathOfProject = (p: string) => {

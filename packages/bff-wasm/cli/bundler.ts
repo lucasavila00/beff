@@ -1,5 +1,5 @@
 import wasm from "../pkg/hello_wasm";
-import fs from "fs";
+import fs from "fs/promises";
 import path from "path";
 import resolve from "enhanced-resolve";
 
@@ -34,7 +34,7 @@ const resolveRelativeImport = async (
   return undefined;
 };
 
-const resolveOneFile = async (
+const resolveOneFileNoCache = async (
   file_name: string,
   mod: string
 ): Promise<string | undefined> => {
@@ -46,7 +46,20 @@ const resolveOneFile = async (
   console.log(`JS: File is not relative: ${mod}`);
   return undefined;
 };
-// const resolvedCache = new Map<string, string>();
+
+const resolvedCache = new Map<string, string | undefined>();
+const resolveOneFile = async (
+  file_name: string,
+  mod: string
+): Promise<string | undefined> => {
+  const cacheKey = `${file_name}::${mod}`;
+  if (resolvedCache.has(cacheKey)) {
+    return resolvedCache.get(cacheKey);
+  }
+  const result = await resolveOneFileNoCache(file_name, mod);
+  resolvedCache.set(cacheKey, result);
+  return result;
+};
 type UnresolvedPacket = {
   references: { file_name: string; imported_mod: string }[];
 };
@@ -70,14 +83,14 @@ type ReadResultPacket = {
   next_files: string[];
 };
 export class Bundler {
-  seenFiles: Set<string> = new Set();
+  seenFiles = new Set<string>();
   constructor() {
     wasm.init();
   }
 
-  private readFile(file_name: string): string {
+  private async readFile(file_name: string): Promise<string> {
     console.log(`JS: Reading file ${file_name}`);
-    return fs.readFileSync(file_name, "utf-8");
+    return fs.readFile(file_name, "utf-8");
   }
 
   private async parseSourceFileRecursive(file_name: string) {
@@ -85,7 +98,7 @@ export class Bundler {
       return;
     }
     this.seenFiles.add(file_name);
-    const source_file = this.readFile(file_name);
+    const source_file = await this.readFile(file_name);
     const readResult: ReadResultPacket = await wasm.parse_source_file(
       file_name,
       source_file

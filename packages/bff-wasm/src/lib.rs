@@ -89,7 +89,7 @@ struct ResolvedPacket {
     pub resolved: Vec<Option<String>>,
 }
 
-async fn get_finalized_imports(
+async fn resolve_used_imports(
     imports: HashMap<(JsWord, SyntaxContext), UnresolvedImportReference>,
 ) -> Result<HashMap<(JsWord, SyntaxContext), ImportReference>> {
     let imports_set = imports
@@ -134,15 +134,17 @@ struct ReadResultPacket {
 }
 async fn parse_source_file_inner(file_name: &str, content: &str) -> Result<JsValue> {
     let (module, comments, t_exports, imports) = first_pass_parse(file_name, content);
-    let finalized_imports = get_finalized_imports(imports).await?;
+    let finalized_imports = resolve_used_imports(imports).await?;
 
-    let next_files = BUNDLER.with(|b| {
-        let b = b.borrow();
-        finalized_imports
+    let mut next_files: HashSet<String> = HashSet::new();
+    BUNDLER.with(|b| {
+        let bundler = b.borrow();
+        for it in finalized_imports
             .values()
-            .filter(|x| !b.files.contains_key(&x.file_name))
-            .map(|x| x.file_name.to_string())
-            .collect::<Vec<String>>()
+            .filter(|x| !bundler.files.contains_key(&x.file_name))
+        {
+            next_files.insert(it.file_name.to_string());
+        }
     });
     BUNDLER.with(|b| {
         let mut bundler = b.borrow_mut();
@@ -162,7 +164,9 @@ async fn parse_source_file_inner(file_name: &str, content: &str) -> Result<JsVal
         );
     });
 
-    let packed = ReadResultPacket { next_files };
+    let packed = ReadResultPacket {
+        next_files: next_files.into_iter().collect(),
+    };
 
     Ok(serde_wasm_bindgen::to_value(&packed).unwrap())
 }
