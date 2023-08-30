@@ -16,7 +16,10 @@
   },
   "author": "",
   "license": "ISC",
-  "dependencies": {},
+  "dependencies": {
+    "hono": "^3.5.6",
+    "typescript": "^5.2.2"
+  },
   "devDependencies": {
     "commander": "^11.0.0",
     "enhanced-resolve": "^5.15.0",

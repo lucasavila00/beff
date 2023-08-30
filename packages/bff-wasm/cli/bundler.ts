@@ -1,7 +1,9 @@
 import wasm from "../pkg/hello_wasm";
 import fs from "fs/promises";
+import fsSync from "fs";
 import path from "path";
 import resolve from "enhanced-resolve";
+import { resolveModuleName } from "typescript";
 
 const isRelativeImport = (mod: string) => {
   return mod.startsWith("./") || mod.startsWith("../") || mod.startsWith("/");
@@ -13,11 +15,11 @@ const log = (message: string) => {
 };
 const myResolve = resolve.create({
   // or resolve.create.sync
-  extensions: [".ts", ".tsx", ".d.ts"],
+  extensions: [".ts", ".tsx", ".mts", ".cts", ".d.ts"],
   // see more options below
 });
 
-const resolveRelativeImport = async (
+const resolveWithWebpackThing = async (
   file_name: string,
   mod: string
 ): Promise<string | undefined> => {
@@ -43,12 +45,45 @@ const resolveOneFileNoCache = async (
   mod: string
 ): Promise<string | undefined> => {
   log(`JS: Resolving -import ? from '${mod}'- at ${file_name}`);
-  if (isRelativeImport(mod)) {
-    return resolveRelativeImport(file_name, mod);
+  // if (isRelativeImport(mod)) {
+  //   // should never throw
+  //   return await resolveWithWebpackThing(file_name, mod);
+  // }
+  interface ModuleResolutionHost {
+    fileExists(fileName: string): boolean;
+    readFile(fileName: string): string | undefined;
+    trace?(s: string): void;
+    directoryExists?(directoryName: string): boolean;
+    /**
+     * Resolve a symbolic link.
+     * @see https://nodejs.org/api/fs.html#fs_fs_realpathsync_path_options
+     */
+    realpath?(path: string): string;
+    getCurrentDirectory?(): string;
+    getDirectories?(path: string): string[];
+    useCaseSensitiveFileNames?: boolean | (() => boolean) | undefined;
   }
+  const host: ModuleResolutionHost = {
+    fileExists: (file_name: string) => {
+      return fsSync.existsSync(file_name);
+    },
+    readFile: function (fileName: string): string | undefined {
+      return fsSync.readFileSync(fileName, "utf-8");
+    },
+  };
+  const r = resolveModuleName(mod, file_name, {}, host);
+  return r.resolvedModule?.resolvedFileName;
+  // console.log(r);
+  // // try {
+  // //   await resolveWithWebpackThing(file_name, mod);
+  // // } catch (e) {
+  // //   console.error(e);
+  // //   console.error(e?.message);
+  // //   console.error(e?.details);
+  // // }
 
-  log(`JS: File is not relative: ${mod}`);
-  return undefined;
+  // log(`JS: File is not relative: ${mod}`);
+  // return undefined;
 };
 
 const resolvedCache = new Map<string, string | undefined>();

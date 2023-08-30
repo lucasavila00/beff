@@ -1,4 +1,4 @@
-import { GET, Header, Cookie, todo } from "./bff-generated";
+import { Header, Cookie, todo } from "./bff-generated";
 import { UserEntity } from "./types";
 
 type DataTypesKitchenSink = {
