@@ -7,17 +7,25 @@ const isRelativeImport = (mod: string) => {
   return mod.startsWith("./") || mod.startsWith("../") || mod.startsWith("/");
 };
 
-const myResolve = resolve.create.sync({
+const myResolve = resolve.create({
   // or resolve.create.sync
   extensions: [".ts", ".tsx", ".d.ts"],
   // see more options below
 });
 
-const resolveRelativeImport = (
+const resolveRelativeImport = async (
   file_name: string,
   mod: string
-): string | undefined => {
-  const result = myResolve(path.dirname(file_name), mod);
+): Promise<string | undefined> => {
+  const result = await new Promise<string | undefined | false>((rs, rj) =>
+    myResolve(path.dirname(file_name), mod, (err, res) => {
+      if (err) {
+        rj(err);
+      } else {
+        rs(res);
+      }
+    })
+  );
   if (result) {
     console.log(`JS: Resolved import to: ${result}`);
     return result;
@@ -26,10 +34,10 @@ const resolveRelativeImport = (
   return undefined;
 };
 
-const resolveImportNoCache = (
+const resolveOneFile = async (
   file_name: string,
   mod: string
-): string | undefined => {
+): Promise<string | undefined> => {
   console.log(`JS: Resolving -import ? from '${mod}'- at ${file_name}`);
   if (isRelativeImport(mod)) {
     return resolveRelativeImport(file_name, mod);
@@ -38,19 +46,29 @@ const resolveImportNoCache = (
   console.log(`JS: File is not relative: ${mod}`);
   return undefined;
 };
-const resolvedCache = new Map<string, string>();
-const resolveImport = (file_name: string, mod: string): string | undefined => {
-  const cacheKey = `${file_name}::${mod}`;
-  if (resolvedCache.has(cacheKey)) {
-    return resolvedCache.get(cacheKey);
-  }
-  const result = resolveImportNoCache(file_name, mod);
-  if (result) {
-    resolvedCache.set(cacheKey, result);
-  }
-  return result;
+// const resolvedCache = new Map<string, string>();
+type UnresolvedPacket = {
+  references: { file_name: string; imported_mod: string }[];
 };
-globalThis.resolve_import = resolveImport;
+type ResolvedPacket = {
+  resolved: (string | undefined)[];
+};
+const resolveImports = async (
+  data: UnresolvedPacket
+): Promise<ResolvedPacket> => {
+  const resolved = await Promise.all(
+    data.references.map((ref) => {
+      return resolveOneFile(ref.file_name, ref.imported_mod);
+    })
+  );
+  return { resolved };
+};
+//@ts-ignore
+globalThis.resolve_imports = resolveImports;
+
+type ReadResultPacket = {
+  next_files: string[];
+};
 export class Bundler {
   seenFiles: Set<string> = new Set();
   constructor() {
@@ -62,22 +80,23 @@ export class Bundler {
     return fs.readFileSync(file_name, "utf-8");
   }
 
-  private parseSourceFileRecursive(file_name: string) {
+  private async parseSourceFileRecursive(file_name: string) {
     if (this.seenFiles.has(file_name)) {
       return;
     }
     this.seenFiles.add(file_name);
     const source_file = this.readFile(file_name);
-    wasm.parse_source_file(file_name, source_file);
-    const nextFiles: string[] = wasm.read_files_to_import();
-    wasm.clear_files_to_import();
-    for (const file of nextFiles) {
-      this.parseSourceFileRecursive(file);
-    }
+    const readResult: ReadResultPacket = await wasm.parse_source_file(
+      file_name,
+      source_file
+    );
+    await Promise.all(
+      readResult.next_files.map((file) => this.parseSourceFileRecursive(file))
+    );
   }
 
-  public bundle(file_name: string): string {
-    this.parseSourceFileRecursive(file_name);
+  public async bundle(file_name: string): Promise<string> {
+    await this.parseSourceFileRecursive(file_name);
     return wasm.bundle_to_string(file_name);
   }
 }

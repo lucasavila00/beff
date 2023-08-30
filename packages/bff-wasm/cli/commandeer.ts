@@ -7,7 +7,7 @@ const readProjectJson = (projectPath: string) => {
   return projectJson;
 };
 
-const execProject = (absoluteProjectPath: string) => {
+const execProject = async (absoluteProjectPath: string) => {
   const projectJson = readProjectJson(absoluteProjectPath);
   const router = projectJson.router;
   const absoluteEntryPoint = path.join(
@@ -16,7 +16,7 @@ const execProject = (absoluteProjectPath: string) => {
   );
 
   const bundler = new Bundler();
-  const outString = bundler.bundle(absoluteEntryPoint);
+  const outString = await bundler.bundle(absoluteEntryPoint);
 
   const absoluteOutDir = path.join(
     path.dirname(absoluteProjectPath),
@@ -30,7 +30,7 @@ const getAbsolutePathOfProject = (p: string) => {
   return p;
 };
 
-export const commanderExec = () => {
+export const commanderExec = async () => {
   program.requiredOption("-p, --project <string>");
   program.parse();
   const options = program.opts();

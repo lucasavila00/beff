@@ -12,7 +12,7 @@
     "build": "npm run build-rust && npm run build-ts",
     "wasm-test": "wasm-pack test --node",
     "test": "npm run build && vitest",
-    "do": "npm run build && node npm-bin index.js -e /home/lucas/fluff/bff/packages/bff-wasm/fixtures/a/simple.ts"
+    "do": "npm run build && node npm-bin index.js -p /home/lucas/fluff/bff/packages/bff-wasm/fixtures/codegen-snaps/hello-server/bff.json"
   },
   "author": "",
   "license": "ISC",
