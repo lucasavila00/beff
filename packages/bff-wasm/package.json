@@ -12,12 +12,11 @@
     "build": "npm run build-rust && npm run build-ts",
     "wasm-test": "wasm-pack test --node",
     "test": "npm run build && vitest",
-    "do": "npm run build && node npm-bin/index.js -p /home/lucas/fluff/bff/packages/bff-wasm/fixtures/codegen-snaps/hello-server/bff.json"
+    "do": "npm run build && node npm-bin index.js -p /home/lucas/fluff/bff/packages/bff-wasm/fixtures/codegen-snaps/hello-server/bff.json"
   },
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "hono": "^3.5.6",
     "typescript": "^5.2.2"
   },
   "devDependencies": {
