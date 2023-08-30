@@ -2,6 +2,7 @@ import wasm from "../pkg/hello_wasm";
 import fs from "fs";
 import path from "path";
 import resolve from "enhanced-resolve";
+import { resolveModuleName } from "typescript";
 
 const isRelativeImport = (mod: string) => {
   return mod.startsWith("./") || mod.startsWith("../") || mod.startsWith("/");
@@ -31,12 +32,37 @@ const resolveImportNoCache = (
   mod: string
 ): string | undefined => {
   console.log(`JS: Resolving -import ? from '${mod}'- at ${file_name}`);
-  if (isRelativeImport(mod)) {
-    return resolveRelativeImport(file_name, mod);
-  }
+  // if (isRelativeImport(mod)) {
+  //   return resolveRelativeImport(file_name, mod);
+  // }
 
-  console.log(`JS: File is not relative: ${mod}`);
-  return undefined;
+  interface ModuleResolutionHost {
+    fileExists(fileName: string): boolean;
+    readFile(fileName: string): string | undefined;
+    trace?(s: string): void;
+    directoryExists?(directoryName: string): boolean;
+    /**
+     * Resolve a symbolic link.
+     * @see https://nodejs.org/api/fs.html#fs_fs_realpathsync_path_options
+     */
+    realpath?(path: string): string;
+    getCurrentDirectory?(): string;
+    getDirectories?(path: string): string[];
+    useCaseSensitiveFileNames?: boolean | (() => boolean) | undefined;
+  }
+  const host: ModuleResolutionHost = {
+    fileExists: (file_name: string) => {
+      return fs.existsSync(file_name);
+    },
+    readFile: function (fileName: string): string | undefined {
+      return fs.readFileSync(fileName, "utf-8");
+    },
+  };
+  const r = resolveModuleName(mod, file_name, {}, host);
+  return r.resolvedModule?.resolvedFileName;
+
+  // console.log(`JS: File is not relative: ${mod}`);
+  // return undefined;
 };
 const resolvedCache = new Map<string, string>();
 const resolveImport = (file_name: string, mod: string): string | undefined => {
