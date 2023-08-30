@@ -15,7 +15,6 @@ use bff_core::BffModuleData;
 use bff_core::ImportReference;
 use bff_core::TypeExport;
 use bff_core::{parse::load_source_file, BundleResult, ParsedModule, ParsedModuleLocals};
-use log::Level;
 use serde::{Deserialize, Serialize};
 use std::collections::HashSet;
 use std::{cell::RefCell, collections::HashMap};
@@ -47,7 +46,6 @@ thread_local! {
 
 #[wasm_bindgen]
 pub fn init() {
-    console_log::init_with_level(Level::Debug).expect("should be able to log");
     utils::set_panic_hook();
 }
 
@@ -70,7 +68,6 @@ fn first_pass_parse(
     let source_file = cm.new_source_file(file_name, content.to_owned());
 
     GLOBALS.set(&SWC_GLOBALS, || {
-        log::info!("RUST: Received file {source_file:?}");
         let (module, comments) =
             load_source_file(&source_file).expect("should be able to load source file");
         let mut v = ImportsVisitor::from_file(module.fm.name.clone());
@@ -97,7 +94,6 @@ async fn resolve_used_imports(
         .map(|(_, v)| v.clone())
         .collect::<HashSet<UnresolvedImportReference>>();
     let data: Vec<UnresolvedImportReference> = imports_set.into_iter().collect();
-    log::info!("RUST: Needs imports {data:?}");
     let packed = UnresolvedPacket { references: data };
     let r = resolve_imports(serde_wasm_bindgen::to_value(&packed).unwrap()).await;
     let res_data: ResolvedPacket = serde_wasm_bindgen::from_value(r).unwrap();
@@ -202,7 +198,6 @@ fn print_errors(
     // bundler_files: &HashMap<FileName, ParsedModule>,
     // project_root: &str,
 ) {
-    log::info!("ERRR: {errors:?}")
 }
 fn bundle_to_string_inner(file_name: &str) -> Result<String> {
     let res = get_bundle_result(file_name)?;

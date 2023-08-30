@@ -4,7 +4,11 @@ const start = Date.now();
 commanderExec()
   .then(() => {
     const end = Date.now();
-    console.log(`npm-bin: ${end - start}ms`);
+    const d = new Date();
+
+    console.log(
+      `${d.getSeconds()}:${d.getMilliseconds()} - npm-bin: ${end - start}ms`
+    );
   })
   .catch((e) => {
     console.error(e);

@@ -7,6 +7,10 @@ const isRelativeImport = (mod: string) => {
   return mod.startsWith("./") || mod.startsWith("../") || mod.startsWith("/");
 };
 
+const log = (message: string) => {
+  const d = new Date();
+  console.log(`${d.getSeconds()}:${d.getMilliseconds()} - JS: ${message}`);
+};
 const myResolve = resolve.create({
   // or resolve.create.sync
   extensions: [".ts", ".tsx", ".d.ts"],
@@ -27,10 +31,10 @@ const resolveRelativeImport = async (
     })
   );
   if (result) {
-    console.log(`JS: Resolved import to: ${result}`);
+    log(`JS: Resolved import to: ${result}`);
     return result;
   }
-  console.error(`JS: File could not be resolved: ${mod}`);
+  log(`JS: File could not be resolved: ${mod}`);
   return undefined;
 };
 
@@ -38,12 +42,12 @@ const resolveOneFileNoCache = async (
   file_name: string,
   mod: string
 ): Promise<string | undefined> => {
-  console.log(`JS: Resolving -import ? from '${mod}'- at ${file_name}`);
+  log(`JS: Resolving -import ? from '${mod}'- at ${file_name}`);
   if (isRelativeImport(mod)) {
     return resolveRelativeImport(file_name, mod);
   }
 
-  console.log(`JS: File is not relative: ${mod}`);
+  log(`JS: File is not relative: ${mod}`);
   return undefined;
 };
 
@@ -89,7 +93,7 @@ export class Bundler {
   }
 
   private async readFile(file_name: string): Promise<string> {
-    console.log(`JS: Reading file ${file_name}`);
+    log(`JS: Reading file ${file_name}`);
     return fs.readFile(file_name, "utf-8");
   }
 
@@ -99,10 +103,12 @@ export class Bundler {
     }
     this.seenFiles.add(file_name);
     const source_file = await this.readFile(file_name);
+    log(`JS: Parsing file ${file_name}`);
     const readResult: ReadResultPacket = await wasm.parse_source_file(
       file_name,
       source_file
     );
+    log(`JS: Parsed file ${file_name}`);
     await Promise.all(
       readResult.next_files.map((file) => this.parseSourceFileRecursive(file))
     );
