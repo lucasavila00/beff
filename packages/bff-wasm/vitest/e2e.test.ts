@@ -19,6 +19,7 @@ it("codegen-snaps", async () => {
       "bff.json"
     );
     const command = `node ${bin} -p ${p}`;
+    console.log(command);
     const result = await execAsync(command);
     console.log(result.stdout.trim());
 

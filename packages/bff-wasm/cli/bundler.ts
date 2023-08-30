@@ -35,7 +35,7 @@ const resolveImportNoCache = (
     return resolveRelativeImport(file_name, mod);
   }
 
-  console.error(`JS: File is not relative: ${mod}`);
+  console.log(`JS: File is not relative: ${mod}`);
   return undefined;
 };
 const resolvedCache = new Map<string, string>();

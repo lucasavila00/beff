@@ -18,6 +18,6 @@ export const commanderExec = () => {
   const entryPoint = path.join(path.dirname(projectPath), router);
   const outString = bundler.bundle(entryPoint);
   const outputDir = path.join(path.dirname(projectPath), projectJson.outputDir);
-  const outputFile = `${outputDir}/router.ts`;
+  const outputFile = `${outputDir}/index.js`;
   fs.writeFileSync(outputFile, outString);
 };
