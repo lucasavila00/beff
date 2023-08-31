@@ -1,4 +1,4 @@
-use crate::diag::{Diagnostic, DiagnosticMessage};
+use crate::diag::{span_to_loc, Diagnostic, DiagnosticMessage};
 use crate::open_api_ast::{
     self, Definition, Info, JsonRequestBody, JsonSchema, OpenApi, OperationObject, ParameterIn,
     ParameterObject,
@@ -204,15 +204,24 @@ fn get_prop_name_span(key: &PropName) -> Span {
 }
 impl<'a, R: FileManager> ExtractExportDefaultVisitor<'a, R> {
     fn build_error(&self, span: &Span, msg: DiagnosticMessage) -> Diagnostic {
-        let file = self.files.get_existing_file(&self.current_file).unwrap();
-        let loc_lo = file.module.source_map.lookup_char_pos(span.lo);
-        let loc_hi = file.module.source_map.lookup_char_pos(span.hi);
-        Diagnostic {
-            message: msg,
-            file_name: self.current_file.to_string(),
-            span: *span,
-            loc_lo,
-            loc_hi,
+        let file = self.files.get_existing_file(&self.current_file);
+        match file {
+            Some(file) => {
+                let (loc_lo, loc_hi) =
+                    span_to_loc(span, &file.module.source_map, file.module.fm.end_pos);
+
+                Diagnostic::KnownFile {
+                    message: msg,
+                    file_name: self.current_file.to_string(),
+                    span: *span,
+                    loc_lo,
+                    loc_hi,
+                }
+            }
+            None => Diagnostic::UnknownFile {
+                message: msg,
+                current_file: self.current_file.to_string(),
+            },
         }
     }
     fn push_error(&mut self, span: &Span, msg: DiagnosticMessage) {
@@ -468,30 +477,31 @@ impl<'a, R: FileManager> ExtractExportDefaultVisitor<'a, R> {
         }
     }
 
-    fn error_param(
-        &mut self,
-        span: &Span,
-        msg: DiagnosticMessage,
-    ) -> Vec<(String, HandlerParameter)> {
-        self.push_error(span, msg);
-        vec![]
+    fn get_current_file(&mut self) -> Result<Rc<ParsedModule>> {
+        match self.files.get_or_fetch_file(&self.current_file) {
+            Some(it) => Ok(it),
+            None => {
+                self.errors.push(self.build_error(
+                    &DUMMY_SP,
+                    DiagnosticMessage::CannotFindFileWhenConvertingToSchema(
+                        self.current_file.to_string(),
+                    ),
+                ));
+                Err(anyhow!("cannot find file: {}", self.current_file))
+            }
+        }
     }
-    fn get_current_file(&mut self) -> Rc<ParsedModule> {
-        self.files
-            .get_or_fetch_file(&self.current_file)
-            .expect("should have been parsed")
-    }
-    fn visit_current_file(&mut self) {
-        let file = self.get_current_file();
+    fn visit_current_file(&mut self) -> Result<()> {
+        let file = self.get_current_file()?;
         let module = file.module.module.clone();
-        self.visit_module(&module)
+        Ok(self.visit_module(&module))
     }
 
     fn parse_arrow_param_from_type_expecting_tuple(
         &mut self,
         it: &TsType,
         rest_span: &Span,
-    ) -> Vec<(String, HandlerParameter)> {
+    ) -> Result<Vec<(String, HandlerParameter)>> {
         match it {
             TsType::TsTypeRef(TsTypeRef {
                 type_name,
@@ -499,16 +509,17 @@ impl<'a, R: FileManager> ExtractExportDefaultVisitor<'a, R> {
                 ..
             }) => {
                 if type_params.is_some() {
-                    return self
-                        .error_param(rest_span, DiagnosticMessage::TsTypeParametersNotSupported);
+                    self.push_error(rest_span, DiagnosticMessage::TsTypeParametersNotSupported);
+                    return Err(anyhow!("error param"));
                 }
                 match &type_name {
                     TsEntityName::TsQualifiedName(_) => {
-                        self.error_param(rest_span, DiagnosticMessage::TsQualifiedNameNotSupported)
+                        self.push_error(rest_span, DiagnosticMessage::TsQualifiedNameNotSupported);
+                        return Err(anyhow!("error param"));
                     }
                     TsEntityName::Ident(i) => {
                         if let Some(alias) = self
-                            .get_current_file()
+                            .get_current_file()?
                             .locals
                             .type_aliases
                             .get(&(i.sym.clone(), i.span.ctxt))
@@ -516,19 +527,21 @@ impl<'a, R: FileManager> ExtractExportDefaultVisitor<'a, R> {
                             return self
                                 .parse_arrow_param_from_type_expecting_tuple(alias, rest_span);
                         }
-                        self.error_param(
+                        self.push_error(
                             rest_span,
                             DiagnosticMessage::CouldNotResolveIdentifierOnPathParamTuple,
-                        )
+                        );
+                        return Err(anyhow!("error param"));
                     }
                 }
             }
             TsType::TsTupleType(TsTupleType { elem_types, .. }) => elem_types
                 .iter()
-                .flat_map(|it| match &it.label {
+                .map(|it| match &it.label {
                     Some(pat) => match pat {
                         Pat::Ident(BindingIdent { id, .. }) => {
-                            let comments = self.get_current_file().comments.get_leading(id.span.lo);
+                            let comments =
+                                self.get_current_file()?.comments.get_leading(id.span.lo);
                             let description = comments
                                 .and_then(|it| self.parse_description_comment(it, &id.span));
                             let param = self.parse_parameter_type(
@@ -536,23 +549,30 @@ impl<'a, R: FileManager> ExtractExportDefaultVisitor<'a, R> {
                                 !id.optional,
                                 description,
                                 &id.span,
-                            );
-                            match param {
-                                Ok(param) => vec![(id.sym.to_string(), param)],
-                                Err(_) => vec![],
-                            }
+                            )?;
+                            Ok((id.sym.to_string(), param))
                         }
-                        _ => self.error_param(
-                            rest_span,
-                            DiagnosticMessage::CouldNotUnderstandRestParameter,
-                        ),
+                        _ => {
+                            self.push_error(
+                                rest_span,
+                                DiagnosticMessage::CouldNotUnderstandRestParameter,
+                            );
+                            return Err(anyhow!("error param"));
+                        }
                     },
                     None => {
-                        self.error_param(&it.span, DiagnosticMessage::RestParamMustBeLabelAnnotated)
+                        self.push_error(
+                            rest_span,
+                            DiagnosticMessage::RestParamMustBeLabelAnnotated,
+                        );
+                        return Err(anyhow!("error param"));
                     }
                 })
                 .collect(),
-            _ => self.error_param(rest_span, DiagnosticMessage::RestParameterMustBeTuple),
+            _ => {
+                self.push_error(rest_span, DiagnosticMessage::RestParameterMustBeTuple);
+                return Err(anyhow!("error param"));
+            }
         }
     }
 
@@ -560,7 +580,7 @@ impl<'a, R: FileManager> ExtractExportDefaultVisitor<'a, R> {
         &mut self,
         param: &Pat,
         parent_span: &Span,
-    ) -> Vec<(String, HandlerParameter)> {
+    ) -> Result<Vec<(String, HandlerParameter)>> {
         match param {
             Pat::Ident(BindingIdent { id, type_ann }) => {
                 if type_ann.is_none() {
@@ -569,31 +589,33 @@ impl<'a, R: FileManager> ExtractExportDefaultVisitor<'a, R> {
                         DiagnosticMessage::ParameterIdentMustHaveTypeAnnotation,
                     );
 
-                    return vec![];
+                    return Err(anyhow!("error param"));
                 }
 
-                let comments = self.get_current_file().comments.get_leading(id.span.lo);
+                let comments = self.get_current_file()?.comments.get_leading(id.span.lo);
                 let description =
                     comments.and_then(|it| self.parse_description_comment(it, &id.span));
                 let ty = self.assert_and_extract_type_from_ann(type_ann, &id.span);
-                let param = self.parse_parameter_type(&ty, !id.optional, description, &id.span);
-                match param {
-                    Ok(param) => vec![(id.sym.to_string(), param)],
-                    Err(_) => vec![],
-                }
+                let param = self.parse_parameter_type(&ty, !id.optional, description, &id.span)?;
+                Ok(vec![(id.sym.to_string(), param)])
             }
             Pat::Rest(RestPat { span, type_ann, .. }) => match type_ann {
                 Some(it) => self.parse_arrow_param_from_type_expecting_tuple(&it.type_ann, span),
-                None => self.error_param(span, DiagnosticMessage::RestParamMustBeTypeAnnotated),
+                None => {
+                    self.push_error(span, DiagnosticMessage::RestParamMustBeTypeAnnotated);
+                    return Err(anyhow!("error param"));
+                }
             },
             Pat::Array(ArrayPat { span, .. })
             | Pat::Object(ObjectPat { span, .. })
             | Pat::Assign(AssignPat { span, .. })
             | Pat::Invalid(Invalid { span, .. }) => {
-                self.error_param(span, DiagnosticMessage::ParameterPatternNotSupported)
+                self.push_error(span, DiagnosticMessage::ParameterPatternNotSupported);
+                return Err(anyhow!("error param"));
             }
             Pat::Expr(_) => {
-                self.error_param(parent_span, DiagnosticMessage::ParameterPatternNotSupported)
+                self.push_error(parent_span, DiagnosticMessage::ParameterPatternNotSupported);
+                return Err(anyhow!("error param"));
             }
         }
     }
@@ -612,9 +634,9 @@ impl<'a, R: FileManager> ExtractExportDefaultVisitor<'a, R> {
         e
     }
 
-    fn get_endpoint_comments(&mut self, key: &PropName) -> EndpointComments {
+    fn get_endpoint_comments(&mut self, key: &PropName) -> Result<EndpointComments> {
         let comments = self
-            .get_current_file()
+            .get_current_file()?
             .comments
             .get_leading(get_prop_name_span(key).lo);
 
@@ -625,7 +647,7 @@ impl<'a, R: FileManager> ExtractExportDefaultVisitor<'a, R> {
         if let Some(comments) = comments {
             self.parse_endpoint_comments(&mut endpoint_comments, comments);
         }
-        endpoint_comments
+        Ok(endpoint_comments)
     }
     fn validate_handler_func(
         &mut self,
@@ -663,15 +685,17 @@ impl<'a, R: FileManager> ExtractExportDefaultVisitor<'a, R> {
         } = &**function;
         self.validate_handler_func(*is_generator, type_params, parent_span)?;
 
-        let endpoint_comments = self.get_endpoint_comments(key);
+        let endpoint_comments = self.get_endpoint_comments(key)?;
 
         let return_type = self.assert_and_extract_type_from_ann(return_type, parent_span);
+        let parameters = params
+            .iter()
+            .map(|it| self.parse_arrow_parameter(&it.pat, parent_span))
+            .collect::<Result<Vec<_>>>()?;
+        let parameters = parameters.into_iter().flatten().collect();
         let e = FnHandler {
-            method_kind: Self::parse_method_kind(key)?,
-            parameters: params
-                .iter()
-                .flat_map(|it| self.parse_arrow_parameter(&it.pat, parent_span))
-                .collect(),
+            method_kind: self.parse_method_kind(key)?,
+            parameters,
             pattern: pattern.clone(),
             summary: endpoint_comments.summary,
             description: endpoint_comments.description,
@@ -700,9 +724,9 @@ impl<'a, R: FileManager> ExtractExportDefaultVisitor<'a, R> {
         }
     }
 
-    fn parse_method_kind(key: &PropName) -> Result<MethodKind> {
+    fn parse_method_kind(&mut self, key: &PropName) -> Result<MethodKind> {
         match key {
-            PropName::Ident(Ident { sym, .. }) => match sym.to_string().as_str() {
+            PropName::Ident(Ident { sym, span, .. }) => match sym.to_string().as_str() {
                 "get" => Ok(MethodKind::Get),
                 "post" => Ok(MethodKind::Post),
                 "put" => Ok(MethodKind::Put),
@@ -710,12 +734,16 @@ impl<'a, R: FileManager> ExtractExportDefaultVisitor<'a, R> {
                 "patch" => Ok(MethodKind::Patch),
                 "options" => Ok(MethodKind::Options),
                 "use" => Ok(MethodKind::Use),
-                _ => Err(anyhow!("not a method")),
+                _ => {
+                    self.push_error(span, DiagnosticMessage::NotAnHttpMethod);
+                    Err(anyhow!("not a method"))
+                }
             },
-            PropName::Str(_) => todo!(),
-            PropName::Num(_) => todo!(),
-            PropName::Computed(_) => todo!(),
-            PropName::BigInt(_) => todo!(),
+            _ => {
+                let span = get_prop_name_span(key);
+                self.push_error(&span, DiagnosticMessage::NotAnHttpMethod);
+                Err(anyhow!("not a method"))
+            }
         }
     }
 
@@ -735,14 +763,17 @@ impl<'a, R: FileManager> ExtractExportDefaultVisitor<'a, R> {
         } = arrow;
         self.validate_handler_func(*is_generator, type_params, parent_span)?;
 
-        let endpoint_comments = self.get_endpoint_comments(key);
+        let endpoint_comments = self.get_endpoint_comments(key)?;
 
         let ret_ty = self.assert_and_extract_type_from_ann(return_type, parent_span);
         let e = FnHandler {
-            method_kind: Self::parse_method_kind(key)?,
+            method_kind: self.parse_method_kind(key)?,
             parameters: params
                 .iter()
-                .flat_map(|it| self.parse_arrow_parameter(it, parent_span))
+                .map(|it| self.parse_arrow_parameter(it, parent_span))
+                .collect::<Result<Vec<_>>>()?
+                .into_iter()
+                .flatten()
                 .collect(),
             pattern: pattern.clone(),
             summary: endpoint_comments.summary,
@@ -770,7 +801,7 @@ impl<'a, R: FileManager> ExtractExportDefaultVisitor<'a, R> {
         pattern: &ParsedPattern,
     ) -> Vec<FnHandler> {
         if let Prop::KeyValue(KeyValueProp { key, value }) = prop {
-            let method_kind = Self::parse_method_kind(key);
+            let method_kind = self.parse_method_kind(key);
             if let Ok(MethodKind::Use) = method_kind {
                 return vec![FnHandler {
                     pattern: pattern.clone(),
@@ -812,7 +843,14 @@ impl<'a, R: FileManager> ExtractExportDefaultVisitor<'a, R> {
                             .props
                             .iter()
                             .flat_map(|it| match it {
-                                PropOrSpread::Spread(_) => todo!(),
+                                PropOrSpread::Spread(it) => {
+                                    self.push_error(
+                                        &it.dot3_token,
+                                        DiagnosticMessage::PropSpreadIsNotSupported,
+                                    );
+
+                                    vec![]
+                                }
                                 PropOrSpread::Prop(it) => {
                                     self.endpoints_from_method_map(it, &pattern)
                                 }
@@ -820,7 +858,7 @@ impl<'a, R: FileManager> ExtractExportDefaultVisitor<'a, R> {
                             .collect();
                     }
                 }
-                Err(_) => todo!(),
+                Err(_) => return vec![],
             }
         }
 
@@ -883,26 +921,31 @@ impl<'a, R: FileManager> ExtractExportDefaultVisitor<'a, R> {
 
 impl<'a, R: FileManager> Visit for ExtractExportDefaultVisitor<'a, R> {
     fn visit_export_default_expr(&mut self, n: &ExportDefaultExpr) {
-        let comments = self.get_current_file().comments.get_leading(n.span.lo);
-        if let Some(comments) = comments {
-            self.parse_export_default_comments(comments);
-        }
-        if let Expr::Object(lit) = &*n.expr {
-            self.found_default_export = true;
-            for prop in &lit.props {
-                match prop {
-                    PropOrSpread::Prop(prop) => {
-                        let method = self.endpoints_from_prop(prop);
-                        self.handlers.extend(method);
-                    }
-                    PropOrSpread::Spread(SpreadElement { dot3_token, .. }) => {
-                        self.push_error(
-                            dot3_token,
-                            DiagnosticMessage::RestOnRouterDefaultExportNotSupportedYet,
-                        );
+        match self.get_current_file() {
+            Ok(file) => {
+                let comments = file.comments.get_leading(n.span.lo);
+                if let Some(comments) = comments {
+                    self.parse_export_default_comments(comments);
+                }
+                if let Expr::Object(lit) = &*n.expr {
+                    self.found_default_export = true;
+                    for prop in &lit.props {
+                        match prop {
+                            PropOrSpread::Prop(prop) => {
+                                let method = self.endpoints_from_prop(prop);
+                                self.handlers.extend(method);
+                            }
+                            PropOrSpread::Spread(SpreadElement { dot3_token, .. }) => {
+                                self.push_error(
+                                    dot3_token,
+                                    DiagnosticMessage::RestOnRouterDefaultExportNotSupportedYet,
+                                );
+                            }
+                        }
                     }
                 }
             }
+            Err(_) => {}
         }
     }
 }
@@ -968,17 +1011,29 @@ struct EndpointToPath<'a, R: FileManager> {
 
 impl<'a, R: FileManager> EndpointToPath<'a, R> {
     fn push_error(&mut self, span: &Span, msg: DiagnosticMessage) {
-        let file = self.files.get_or_fetch_file(&self.current_file).unwrap();
-        let loc_lo = file.module.source_map.lookup_char_pos(span.lo);
-        let loc_hi = file.module.source_map.lookup_char_pos(span.hi);
-        let err = Diagnostic {
-            message: msg,
-            file_name: self.current_file.to_string(),
-            span: *span,
-            loc_lo,
-            loc_hi,
-        };
-        self.errors.push(err);
+        let file = self.files.get_or_fetch_file(&self.current_file);
+        match file {
+            Some(file) => {
+                let (loc_lo, loc_hi) =
+                    span_to_loc(span, &file.module.source_map, file.module.fm.end_pos);
+
+                let err = Diagnostic::KnownFile {
+                    message: msg,
+                    file_name: self.current_file.to_string(),
+                    span: *span,
+                    loc_lo,
+                    loc_hi,
+                };
+                self.errors.push(err);
+            }
+            None => {
+                let err = Diagnostic::UnknownFile {
+                    message: msg,
+                    current_file: self.current_file.to_string(),
+                };
+                self.errors.push(err);
+            }
+        }
     }
 
     fn endpoint_to_operation_object(&mut self, endpoint: FnHandler) -> OperationObject {
@@ -1108,16 +1163,14 @@ fn visit_extract<R: FileManager>(
 ) -> (Vec<FnHandler>, Vec<Definition>, Vec<Diagnostic>, Info) {
     let mut visitor = ExtractExportDefaultVisitor::new(files, current_file);
 
-    visitor.visit_current_file();
+    // todo: consume the error?
+    let _ = visitor.visit_current_file();
 
     if !visitor.found_default_export {
-        // visitor.errors.push(Diagnostic {
-        //     message: DiagnosticMessage::CouldNotFindDefaultExport,
-        //     file_name: current_file.clone(),
-        //     span: DUMMY_SP,
-        //     loc: todo!(),
-        // })
-        todo!()
+        visitor.errors.push(Diagnostic::UnknownFile {
+            message: DiagnosticMessage::CouldNotFindDefaultExport,
+            current_file: current_file.to_string(),
+        })
     }
 
     (

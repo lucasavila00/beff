@@ -1,5 +1,5 @@
 use crate::api_extractor::FileManager;
-use crate::diag::{Diagnostic, DiagnosticMessage};
+use crate::diag::{span_to_loc, Diagnostic, DiagnosticMessage};
 use crate::open_api_ast::Json;
 use crate::open_api_ast::{Definition, JsonSchema, Optionality};
 use crate::{ImportReference, ParsedModule, TypeExport};
@@ -273,18 +273,31 @@ impl<'a, R: FileManager> TypeToSchema<'a, R> {
         self.error(span, DiagnosticMessage::CannotSerializeType)
     }
     fn error(&mut self, span: &Span, msg: DiagnosticMessage) -> JsonSchema {
-        let file = self.files.get_or_fetch_file(&self.current_file).unwrap();
-        let loc_lo = file.module.source_map.lookup_char_pos(span.lo);
-        let loc_hi = file.module.source_map.lookup_char_pos(span.hi);
-        let err = Diagnostic {
-            message: msg,
-            file_name: self.current_file.to_string(),
-            span: *span,
-            loc_hi,
-            loc_lo,
-        };
-        self.errors.push(err);
-        JsonSchema::Any
+        let file = self.files.get_or_fetch_file(&self.current_file);
+        match file {
+            Some(file) => {
+                let (loc_lo, loc_hi) =
+                    span_to_loc(span, &file.module.source_map, file.module.fm.end_pos);
+
+                let err = Diagnostic::KnownFile {
+                    message: msg,
+                    file_name: self.current_file.to_string(),
+                    span: *span,
+                    loc_hi,
+                    loc_lo,
+                };
+                self.errors.push(err);
+                JsonSchema::Any
+            }
+            None => {
+                let err = Diagnostic::UnknownFile {
+                    message: msg,
+                    current_file: self.current_file.to_string(),
+                };
+                self.errors.push(err);
+                JsonSchema::Any
+            }
+        }
     }
 
     pub fn convert_ts_type(&mut self, typ: &TsType) -> JsonSchema {
