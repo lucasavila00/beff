@@ -1,8 +1,10 @@
-Error: 
-   ╭─[/app.ts:4:6]
-   │
- 4 │   a: `Hello ${string}!`;
-   │      ─────────┬────────  
-   │               ╰────────── CannotSerializeType
-───╯
-Error: Failed to bundle
+Found 1 errors
+
+/home/lucas/fluff/bff/packages/bff-wasm/fixtures/errors/string-template/app.ts:4:6
+  2 |
+  3 | type A = {
+> 4 |   a: `Hello ${string}!`;
+    |      ^^^^^^^^^^^^^^^^^^ CannotSerializeType
+  5 | };
+  6 |
+  7 | export default {

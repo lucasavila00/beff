@@ -1,22 +1,28 @@
-Error: 
-   ╭─[/app.ts:9:17]
-   │
- 9 │     get: async ([limit, offset]: string[]): Promise<User[]> => {
-   │                 ────────────┬────────────  
-   │                             ╰────────────── ParameterPatternNotSupported
-───╯
-Error: 
-    ╭─[/app.ts:14:17]
-    │
- 14 │     get: async ({ limit, offset }: any): Promise<User[]> => {
-    │                 ───────────┬──────────  
-    │                            ╰──────────── ParameterPatternNotSupported
-────╯
-Error: 
-    ╭─[/app.ts:19:17]
-    │
- 19 │     get: async (a: string[] = []): Promise<User[]> => {
-    │                 ────────┬───────  
-    │                         ╰───────── ParameterPatternNotSupported
-────╯
-Error: Failed to bundle
+Found 3 errors
+
+/home/lucas/fluff/bff/packages/bff-wasm/fixtures/errors/pattern-args/app.ts:9:17
+   7 | export default {
+   8 |   [`/user`]: {
+>  9 |     get: async ([limit, offset]: string[]): Promise<User[]> => {
+     |                 ^^^^^^^^^^^^^^^^^^^^^^^^^ ParameterPatternNotSupported
+  10 |       return todo();
+  11 |     },
+  12 |   },
+
+/home/lucas/fluff/bff/packages/bff-wasm/fixtures/errors/pattern-args/app.ts:14:17
+  12 |   },
+  13 |   [`/user1`]: {
+> 14 |     get: async ({ limit, offset }: any): Promise<User[]> => {
+     |                 ^^^^^^^^^^^^^^^^^^^^^^ ParameterPatternNotSupported
+  15 |       return todo();
+  16 |     },
+  17 |   },
+
+/home/lucas/fluff/bff/packages/bff-wasm/fixtures/errors/pattern-args/app.ts:19:17
+  17 |   },
+  18 |   [`/user2`]: {
+> 19 |     get: async (a: string[] = []): Promise<User[]> => {
+     |                 ^^^^^^^^^^^^^^^^ ParameterPatternNotSupported
+  20 |       return todo();
+  21 |     },
+  22 |   },

@@ -1,8 +1,9 @@
-Error: 
-   ╭─[/app.ts:7:4]
-   │
- 7 │   [`/hello/{id}`]: { get: async (id: A): Promise<string> => `Hello ${id}!` },
-   │    ──────┬──────  
-   │          ╰──────── ComplexPathParameterNotSupported
-───╯
-Error: Failed to bundle
+Found 1 errors
+
+/home/lucas/fluff/bff/packages/bff-wasm/fixtures/errors/complex-path-param/app.ts:7:4
+  5 |
+  6 | export default {
+> 7 |   [`/hello/{id}`]: { get: async (id: A): Promise<string> => `Hello ${id}!` },
+    |    ^^^^^^^^^^^^^ ComplexPathParameterNotSupported
+  8 | };
+  9 |

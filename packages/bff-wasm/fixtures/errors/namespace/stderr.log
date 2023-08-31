@@ -1,8 +1,9 @@
-Error: 
-   ╭─[/app.ts:8:57]
-   │
- 8 │   [`/hello/{id}`]: { get: async (id: string): Promise<X.A> => todo() },
-   │                                                         ┬  
-   │                                                         ╰── TsQualifiedNameNotSupported
-───╯
-Error: Failed to bundle
+Found 1 errors
+
+/home/lucas/fluff/bff/packages/bff-wasm/fixtures/errors/namespace/app.ts:8:57
+   6 |
+   7 | export default {
+>  8 |   [`/hello/{id}`]: { get: async (id: string): Promise<X.A> => todo() },
+     |                                                         ^ TsQualifiedNameNotSupported
+   9 | };
+  10 |

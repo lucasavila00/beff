@@ -2,9 +2,15 @@
 
 ## BFF CLI
 
-- [ ] log level
-- [ ] print errors
 - [ ] tests of error printing
+
+  - [ ] invalid-jsdocs
+  - [ ] invalid-bffconfig
+  - [ ] invalid path def
+  - [ ] no app
+  - [ ] no default export
+  - [ ] nothing
+  - [ ] parse error
 
 - [ ] write runtime with file
 

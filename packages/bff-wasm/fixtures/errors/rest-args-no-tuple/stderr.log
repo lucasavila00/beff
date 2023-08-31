@@ -1,22 +1,28 @@
-Error: 
-   ╭─[/app.ts:7:17]
-   │
- 7 │     get: async (...q: string[]): Promise<string> => {
-   │                 ───────┬──────  
-   │                        ╰──────── RestParameterMustBeTuple
-───╯
-Error: 
-    ╭─[/app.ts:12:17]
-    │
- 12 │     get: async (...q: A<string>): Promise<string> => {
-    │                 ───────┬───────  
-    │                        ╰───────── TsTypeParametersNotSupported
-────╯
-Error: 
-    ╭─[/app.ts:17:17]
-    │
- 17 │     get: async (...q: Y.B): Promise<string> => {
-    │                 ────┬────  
-    │                     ╰────── TsQualifiedNameNotSupported
-────╯
-Error: Failed to bundle
+Found 3 errors
+
+/home/lucas/fluff/bff/packages/bff-wasm/fixtures/errors/rest-args-no-tuple/app.ts:7:17
+   5 | export default {
+   6 |   [`/user`]: {
+>  7 |     get: async (...q: string[]): Promise<string> => {
+     |                 ^^^^^^^^^^^^^^ RestParameterMustBeTuple
+   8 |       return todo();
+   9 |     },
+  10 |   },
+
+/home/lucas/fluff/bff/packages/bff-wasm/fixtures/errors/rest-args-no-tuple/app.ts:12:17
+  10 |   },
+  11 |   [`/user1`]: {
+> 12 |     get: async (...q: A<string>): Promise<string> => {
+     |                 ^^^^^^^^^^^^^^^ TsTypeParametersNotSupported
+  13 |       return todo();
+  14 |     },
+  15 |   },
+
+/home/lucas/fluff/bff/packages/bff-wasm/fixtures/errors/rest-args-no-tuple/app.ts:17:17
+  15 |   },
+  16 |   [`/user2`]: {
+> 17 |     get: async (...q: Y.B): Promise<string> => {
+     |                 ^^^^^^^^^ TsQualifiedNameNotSupported
+  18 |       return todo();
+  19 |     },
+  20 |   },

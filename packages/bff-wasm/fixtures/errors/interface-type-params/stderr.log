@@ -1,8 +1,9 @@
-Error: 
-   ╭─[/app.ts:8:55]
-   │
- 8 │   [`/hello/{id}`]: { get: async (id: string): Promise<A<"string">> => todo() },
-   │                                                       ┬  
-   │                                                       ╰── CannotSerializeType
-───╯
-Error: Failed to bundle
+Found 1 errors
+
+/home/lucas/fluff/bff/packages/bff-wasm/fixtures/errors/interface-type-params/app.ts:8:55
+   6 |
+   7 | export default {
+>  8 |   [`/hello/{id}`]: { get: async (id: string): Promise<A<"string">> => todo() },
+     |                                                       ^ CannotSerializeType
+   9 | };
+  10 |

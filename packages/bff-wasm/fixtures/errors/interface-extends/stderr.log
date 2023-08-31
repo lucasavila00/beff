@@ -1,10 +1,14 @@
-Error: 
-   ╭─[/app.ts:7:1]
-   │
- 7 │ ╭─▶ interface B extends A {
-   ┆ ┆   
- 9 │ ├─▶ }
-   │ │       
-   │ ╰─────── TsInterfaceExtendsNotSupported
-───╯
-Error: Failed to bundle
+Found 1 errors
+
+/home/lucas/fluff/bff/packages/bff-wasm/fixtures/errors/interface-extends/app.ts:7:1
+   5 | }
+   6 |
+>  7 | interface B extends A {
+     | ^^^^^^^^^^^^^^^^^^^^^^^
+>  8 |   b: string;
+     | ^^^^^^^^^^^^
+>  9 | }
+     | ^^ TsInterfaceExtendsNotSupported
+  10 |
+  11 | export default {
+  12 |   [`/hello/{id}`]: { get: async (id: string): Promise<B> => todo() },

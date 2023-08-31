@@ -1,15 +1,19 @@
-Error: 
-   ╭─[/app.ts:5:20]
-   │
- 5 │ type Pagination = [number, number];
-   │                    ───┬──  
-   │                       ╰──── RestParamMustBeLabelAnnotated
-───╯
-Error: 
-   ╭─[/app.ts:5:28]
-   │
- 5 │ type Pagination = [number, number];
-   │                            ───┬──  
-   │                               ╰──── RestParamMustBeLabelAnnotated
-───╯
-Error: Failed to bundle
+Found 2 errors
+
+/home/lucas/fluff/bff/packages/bff-wasm/fixtures/errors/tuple-args-no-label/app.ts:5:20
+  3 | };
+  4 |
+> 5 | type Pagination = [number, number];
+    |                    ^^^^^^ RestParamMustBeLabelAnnotated
+  6 | const runQuery = (q: Pagination): User[] => {
+  7 |   return [];
+  8 | };
+
+/home/lucas/fluff/bff/packages/bff-wasm/fixtures/errors/tuple-args-no-label/app.ts:5:28
+  3 | };
+  4 |
+> 5 | type Pagination = [number, number];
+    |                            ^^^^^^ RestParamMustBeLabelAnnotated
+  6 | const runQuery = (q: Pagination): User[] => {
+  7 |   return [];
+  8 | };

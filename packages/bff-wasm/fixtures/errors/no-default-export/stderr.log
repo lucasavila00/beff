@@ -1,8 +1,35 @@
-Error: 
-   ╭─[/app.ts:1:1]
-   │
- 1 │ export const a = 1;
-   │ ──────────┬─────────  
-   │           ╰─────────── CouldNotFindDefaultExport
-───╯
-Error: Failed to bundle
+panicked at /home/lucas/fluff/bff/packages/bff-core/src/api_extractor.rs:1120:9:
+not yet implemented
+
+Stack:
+
+Error
+    at /home/lucas/fluff/bff/packages/bff-wasm/pkg/hello_wasm.js:364:17
+    at logError (/home/lucas/fluff/bff/packages/bff-wasm/pkg/hello_wasm.js:205:18)
+    at module.exports.__wbg_new_abda76e883ba8a5f (/home/lucas/fluff/bff/packages/bff-wasm/pkg/hello_wasm.js:363:65)
+    at console_error_panic_hook::Error::new::h24a202ca2cd6f4e3 (wasm://wasm/02d240d2:wasm-function[16975]:0x8f34a9)
+    at console_error_panic_hook::hook_impl::hbd017b1cd15b0ccd (wasm://wasm/02d240d2:wasm-function[3228]:0x6e7e40)
+    at console_error_panic_hook::hook::h2d1bbfd1bba12fb3 (wasm://wasm/02d240d2:wasm-function[18181]:0x9046eb)
+    at core::ops::function::Fn::call::h060acb07aceb94e4 (wasm://wasm/02d240d2:wasm-function[15487]:0x8dc80d)
+    at std::panicking::rust_panic_with_hook::he4d11d009df2f45f (wasm://wasm/02d240d2:wasm-function[6610]:0x7d7a9d)
+    at std::panicking::begin_panic_handler::{{closure}}::hdd0d58f31e4d53df (wasm://wasm/02d240d2:wasm-function[8781]:0x83835d)
+    at std::sys_common::backtrace::__rust_end_short_backtrace::hd70f3cac19eb49f3 (wasm://wasm/02d240d2:wasm-function[20720]:0x91c48c)
+
+
+/home/lucas/fluff/bff/packages/bff-wasm/npm-bin/index.js:7
+  throw e;
+  ^
+
+RuntimeError: unreachable
+    at __rust_start_panic (wasm://wasm/02d240d2:wasm-function[20763]:0x91c586)
+    at rust_panic (wasm://wasm/02d240d2:wasm-function[20562]:0x91bd61)
+    at std::panicking::rust_panic_with_hook::he4d11d009df2f45f (wasm://wasm/02d240d2:wasm-function[6610]:0x7d7aca)
+    at std::panicking::begin_panic_handler::{{closure}}::hdd0d58f31e4d53df (wasm://wasm/02d240d2:wasm-function[8781]:0x83835d)
+    at std::sys_common::backtrace::__rust_end_short_backtrace::hd70f3cac19eb49f3 (wasm://wasm/02d240d2:wasm-function[20720]:0x91c48c)
+    at rust_begin_unwind (wasm://wasm/02d240d2:wasm-function[12410]:0x8a1af2)
+    at core::panicking::panic_fmt::h157d8e2782a50057 (wasm://wasm/02d240d2:wasm-function[18066]:0x902f32)
+    at core::panicking::panic::h84f3aeadc405be3e (wasm://wasm/02d240d2:wasm-function[15484]:0x8dc74a)
+    at bff_core::api_extractor::visit_extract::h89f94701a519170c (wasm://wasm/02d240d2:wasm-function[1190]:0x5b112c)
+    at bff_core::api_extractor::extract_schema::h210a7f507dde7f1f (wasm://wasm/02d240d2:wasm-function[605]:0x4d36e5)
+
+Node.js v18.16.0
