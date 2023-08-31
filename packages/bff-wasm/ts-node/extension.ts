@@ -2,8 +2,8 @@
 import * as vscode from "vscode";
 import * as path from "path";
 import * as fs from "fs";
-import { Bundler } from "../cli/bundler";
-import { readProjectJson } from "../cli/commandeer";
+import { Bundler } from "./bundler";
+import { readProjectJson } from "./project";
 
 let bundler: Bundler | null = null;
 export function activate(context: vscode.ExtensionContext) {

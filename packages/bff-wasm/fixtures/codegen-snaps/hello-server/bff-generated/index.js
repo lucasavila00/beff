@@ -886,6 +886,114 @@ export const meta = {
                 ]));
                 return error_acc_0;
             }
+        },
+        {
+            "method_kind": "get",
+            "params": [
+                {
+                    "type": "path",
+                    "name": "id",
+                    "required": true,
+                    "validator": function(input) {
+                        let error_acc_0 = [];
+                        if (typeof input != "string") {
+                            error_acc_0.push({
+                                "kind": [
+                                    "NotTypeof",
+                                    "string"
+                                ],
+                                "path": [
+                                    'Path Parameter "id"'
+                                ]
+                            });
+                        }
+                        return error_acc_0;
+                    },
+                    "coercer": function(input) {
+                        return coerce_string(input);
+                    }
+                }
+            ],
+            "pattern": "/users2/{id}",
+            "return_validator": function(input) {
+                let error_acc_0 = [];
+                if (typeof input != "string") {
+                    error_acc_0.push({
+                        "kind": [
+                            "NotTypeof",
+                            "string"
+                        ],
+                        "path": [
+                            "[GET] /users2/{id}.response_body"
+                        ]
+                    });
+                }
+                return error_acc_0;
+            }
+        },
+        {
+            "method_kind": "post",
+            "params": [
+                {
+                    "type": "path",
+                    "name": "id",
+                    "required": true,
+                    "validator": function(input) {
+                        let error_acc_0 = [];
+                        if (typeof input != "string") {
+                            error_acc_0.push({
+                                "kind": [
+                                    "NotTypeof",
+                                    "string"
+                                ],
+                                "path": [
+                                    'Path Parameter "id"'
+                                ]
+                            });
+                        }
+                        return error_acc_0;
+                    },
+                    "coercer": function(input) {
+                        return coerce_string(input);
+                    }
+                }
+            ],
+            "pattern": "/users2/{id}",
+            "return_validator": function(input) {
+                let error_acc_0 = [];
+                if (typeof input != "string") {
+                    error_acc_0.push({
+                        "kind": [
+                            "NotTypeof",
+                            "string"
+                        ],
+                        "path": [
+                            "[POST] /users2/{id}.response_body"
+                        ]
+                    });
+                }
+                return error_acc_0;
+            }
+        },
+        {
+            "method_kind": "get",
+            "params": [],
+            "pattern": "/users3",
+            "return_validator": function(input) {
+                let error_acc_0 = [];
+                if (typeof input != "string") {
+                    error_acc_0.push({
+                        "kind": [
+                            "NotTypeof",
+                            "string"
+                        ],
+                        "path": [
+                            "[GET] /users3.response_body"
+                        ]
+                    });
+                }
+                return error_acc_0;
+            }
         }
     ],
     "schema": {
@@ -987,6 +1095,73 @@ export const meta = {
                                 "application/json": {
                                     "schema": {
                                         "$ref": "#/components/schemas/User"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            },
+            "/users2/{id}": {
+                "get": {
+                    "parameters": [
+                        {
+                            "name": "id",
+                            "in": "path",
+                            "required": true,
+                            "schema": {
+                                "type": "string"
+                            }
+                        }
+                    ],
+                    "responses": {
+                        "200": {
+                            "description": "successful operation",
+                            "content": {
+                                "application/json": {
+                                    "schema": {
+                                        "type": "string"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "post": {
+                    "parameters": [
+                        {
+                            "name": "id",
+                            "in": "path",
+                            "required": true,
+                            "schema": {
+                                "type": "string"
+                            }
+                        }
+                    ],
+                    "responses": {
+                        "200": {
+                            "description": "successful operation",
+                            "content": {
+                                "application/json": {
+                                    "schema": {
+                                        "type": "string"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            },
+            "/users3": {
+                "get": {
+                    "parameters": [],
+                    "responses": {
+                        "200": {
+                            "description": "successful operation",
+                            "content": {
+                                "application/json": {
+                                    "schema": {
+                                        "type": "string"
                                     }
                                 }
                             }

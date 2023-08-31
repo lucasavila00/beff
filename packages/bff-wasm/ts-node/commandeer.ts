@@ -2,10 +2,7 @@ import { program } from "commander";
 import { Bundler } from "./bundler";
 import * as fs from "fs";
 import * as path from "path";
-export const readProjectJson = (projectPath: string) => {
-  const projectJson = JSON.parse(fs.readFileSync(projectPath, "utf-8"));
-  return projectJson;
-};
+import { readProjectJson } from "./project";
 
 export const commanderExec = () => {
   program.requiredOption("-p, --project <string>");
@@ -17,6 +14,9 @@ export const commanderExec = () => {
   const bundler = new Bundler();
   const entryPoint = path.join(path.dirname(projectPath), router);
   const outString = bundler.bundle(entryPoint);
+  if (outString == null) {
+    return;
+  }
   const outputDir = path.join(path.dirname(projectPath), projectJson.outputDir);
   const outputFile = `${outputDir}/index.js`;
   fs.writeFileSync(outputFile, outString);

@@ -1,12 +1,11 @@
-import { it, expect } from "vitest";
-import fs from "fs";
-import path from "path";
-import childProcess from "child_process";
-import util from "util";
+const fs = require("fs");
+const path = require("path");
+const childProcess = require("child_process");
+const util = require("util");
 
 const execAsync = util.promisify(childProcess.exec);
 
-it("codegen-snaps", async () => {
+const main = async () => {
   const subFolders = fs.readdirSync(
     path.join(__dirname, "../fixtures/codegen-snaps")
   );
@@ -29,4 +28,9 @@ it("codegen-snaps", async () => {
       throw new Error("stderr is not empty");
     }
   }
+};
+
+main().catch((e) => {
+  console.error(e);
+  process.exit(1);
 });

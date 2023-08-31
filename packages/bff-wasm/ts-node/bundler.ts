@@ -2,39 +2,43 @@ import * as wasm from "../pkg/hello_wasm";
 import * as fs from "fs";
 import { resolveModuleName } from "typescript";
 
+interface ModuleResolutionHost {
+  fileExists(fileName: string): boolean;
+  readFile(fileName: string): string | undefined;
+  trace?(s: string): void;
+  directoryExists?(directoryName: string): boolean;
+  /**
+   * Resolve a symbolic link.
+   * @see https://nodejs.org/api/fs.html#fs_fs_realpathsync_path_options
+   */
+  realpath?(path: string): string;
+  getCurrentDirectory?(): string;
+  getDirectories?(path: string): string[];
+  useCaseSensitiveFileNames?: boolean | (() => boolean) | undefined;
+}
+
+const host: ModuleResolutionHost = {
+  fileExists: (file_name: string) => {
+    return fs.existsSync(file_name);
+  },
+  readFile: function (fileName: string): string | undefined {
+    return fs.readFileSync(fileName, "utf-8");
+  },
+};
+
 const resolveImportNoCache = (
   file_name: string,
   mod: string
 ): string | undefined => {
-  interface ModuleResolutionHost {
-    fileExists(fileName: string): boolean;
-    readFile(fileName: string): string | undefined;
-    trace?(s: string): void;
-    directoryExists?(directoryName: string): boolean;
-    /**
-     * Resolve a symbolic link.
-     * @see https://nodejs.org/api/fs.html#fs_fs_realpathsync_path_options
-     */
-    realpath?(path: string): string;
-    getCurrentDirectory?(): string;
-    getDirectories?(path: string): string[];
-    useCaseSensitiveFileNames?: boolean | (() => boolean) | undefined;
-  }
-  const host: ModuleResolutionHost = {
-    fileExists: (file_name: string) => {
-      return fs.existsSync(file_name);
-    },
-    readFile: function (fileName: string): string | undefined {
-      return fs.readFileSync(fileName, "utf-8");
-    },
-  };
-  const r = resolveModuleName(mod, file_name, {}, host);
+  const resolved = resolveModuleName(mod, file_name, {}, host);
   console.log(
-    `JS: Resolved -import ? from '${mod}'- at ${file_name} => ${r.resolvedModule?.resolvedFileName}`
+    `JS: Resolved -import ? from '${mod}'- at ${file_name} => ${resolved.resolvedModule?.resolvedFileName}`
   );
-  return r.resolvedModule?.resolvedFileName;
+  return resolved.resolvedModule?.resolvedFileName;
 };
+
 const resolvedCache: Record<string, Record<string, string | undefined>> = {};
+
 const resolveImport = (file_name: string, mod: string): string | undefined => {
   const cached = resolvedCache?.[file_name]?.[mod];
   if (cached) {
@@ -48,7 +52,9 @@ const resolveImport = (file_name: string, mod: string): string | undefined => {
   }
   return result;
 };
+
 (globalThis as any).resolve_import = resolveImport;
+
 (globalThis as any).read_file_content = (file_name: string) => {
   try {
     const source_file = fs.readFileSync(file_name, "utf-8");
@@ -57,6 +63,7 @@ const resolveImport = (file_name: string, mod: string): string | undefined => {
     return undefined;
   }
 };
+
 type BundleDiagnosticItem = {
   message: string;
   file_name: string;
@@ -68,13 +75,13 @@ type BundleDiagnosticItem = {
 type BundleDiagnostic = {
   diagnostics: BundleDiagnosticItem[];
 };
+
 export class Bundler {
-  seenFiles: Set<string> = new Set();
   constructor() {
     wasm.init();
   }
 
-  public bundle(file_name: string): string {
+  public bundle(file_name: string): string | undefined {
     return wasm.bundle_to_string(file_name);
   }
 
