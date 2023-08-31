@@ -1,35 +1,309 @@
-panicked at /home/lucas/fluff/bff/packages/bff-core/src/api_extractor.rs:717:38:
-not yet implemented
+Found 33 errors
 
-Stack:
+/home/lucas/fluff/bff/packages/bff-wasm/fixtures/errors/invalid-path-definition/app.ts:4:5
+  2 | export default {
+  3 |   ["asd"]: {
+> 4 |     [`GET/hello/{id}`]: async (id: string) => id,
+    |     ^^^^^^^^^^^^^^^^^^ NotAnHttpMethod
+  5 |     a: 1,
+  6 |     b() {
+  7 |       return 1;
 
-Error
-    at /home/lucas/fluff/bff/packages/bff-wasm/pkg/hello_wasm.js:364:17
-    at logError (/home/lucas/fluff/bff/packages/bff-wasm/pkg/hello_wasm.js:205:18)
-    at module.exports.__wbg_new_abda76e883ba8a5f (/home/lucas/fluff/bff/packages/bff-wasm/pkg/hello_wasm.js:363:65)
-    at console_error_panic_hook::Error::new::h24a202ca2cd6f4e3 (wasm://wasm/02d24df2:wasm-function[16976]:0x8f37bf)
-    at console_error_panic_hook::hook_impl::hbd017b1cd15b0ccd (wasm://wasm/02d24df2:wasm-function[3229]:0x6e8156)
-    at console_error_panic_hook::hook::h2d1bbfd1bba12fb3 (wasm://wasm/02d24df2:wasm-function[18182]:0x904a01)
-    at core::ops::function::Fn::call::h060acb07aceb94e4 (wasm://wasm/02d24df2:wasm-function[15488]:0x8dcb23)
-    at std::panicking::rust_panic_with_hook::he4d11d009df2f45f (wasm://wasm/02d24df2:wasm-function[6611]:0x7d7db3)
-    at std::panicking::begin_panic_handler::{{closure}}::hdd0d58f31e4d53df (wasm://wasm/02d24df2:wasm-function[8782]:0x838673)
-    at std::sys_common::backtrace::__rust_end_short_backtrace::hd70f3cac19eb49f3 (wasm://wasm/02d24df2:wasm-function[20721]:0x91c7a2)
+/home/lucas/fluff/bff/packages/bff-wasm/fixtures/errors/invalid-path-definition/app.ts:4:25
+  2 | export default {
+  3 |   ["asd"]: {
+> 4 |     [`GET/hello/{id}`]: async (id: string) => id,
+    |                         ^^^^^^^^^^^^^^^^^^^^^^^^ HandlerMustAnnotateReturnType
+  5 |     a: 1,
+  6 |     b() {
+  7 |       return 1;
 
+/home/lucas/fluff/bff/packages/bff-wasm/fixtures/errors/invalid-path-definition/app.ts:4:5
+  2 | export default {
+  3 |   ["asd"]: {
+> 4 |     [`GET/hello/{id}`]: async (id: string) => id,
+    |     ^^^^^^^^^^^^^^^^^^ NotAnHttpMethod
+  5 |     a: 1,
+  6 |     b() {
+  7 |       return 1;
 
-/home/lucas/fluff/bff/packages/bff-wasm/npm-bin/index.js:7
-  throw e;
-  ^
+/home/lucas/fluff/bff/packages/bff-wasm/fixtures/errors/invalid-path-definition/app.ts:5:5
+  3 |   ["asd"]: {
+  4 |     [`GET/hello/{id}`]: async (id: string) => id,
+> 5 |     a: 1,
+    |     ^ NotAnHttpMethod
+  6 |     b() {
+  7 |       return 1;
+  8 |     },
 
-RuntimeError: unreachable
-    at __rust_start_panic (wasm://wasm/02d24df2:wasm-function[20764]:0x91c89c)
-    at rust_panic (wasm://wasm/02d24df2:wasm-function[20563]:0x91c077)
-    at std::panicking::rust_panic_with_hook::he4d11d009df2f45f (wasm://wasm/02d24df2:wasm-function[6611]:0x7d7de0)
-    at std::panicking::begin_panic_handler::{{closure}}::hdd0d58f31e4d53df (wasm://wasm/02d24df2:wasm-function[8782]:0x838673)
-    at std::sys_common::backtrace::__rust_end_short_backtrace::hd70f3cac19eb49f3 (wasm://wasm/02d24df2:wasm-function[20721]:0x91c7a2)
-    at rust_begin_unwind (wasm://wasm/02d24df2:wasm-function[12411]:0x8a1e08)
-    at core::panicking::panic_fmt::h157d8e2782a50057 (wasm://wasm/02d24df2:wasm-function[18067]:0x903248)
-    at core::panicking::panic::h84f3aeadc405be3e (wasm://wasm/02d24df2:wasm-function[15485]:0x8dca60)
-    at bff_core::api_extractor::ExtractExportDefaultVisitor<R>::parse_method_kind::h4dd8823c33011de8 (wasm://wasm/02d24df2:wasm-function[1345]:0x5d6668)
-    at bff_core::api_extractor::ExtractExportDefaultVisitor<R>::endpoints_from_method_map::h0a5b844d82ae96fc (wasm://wasm/02d24df2:wasm-function[569]:0x4bbdcd)
+/home/lucas/fluff/bff/packages/bff-wasm/fixtures/errors/invalid-path-definition/app.ts:5:5
+  3 |   ["asd"]: {
+  4 |     [`GET/hello/{id}`]: async (id: string) => id,
+> 5 |     a: 1,
+    |     ^ NotAnObjectWithMethodKind
+  6 |     b() {
+  7 |       return 1;
+  8 |     },
 
-Node.js v18.16.0
+/home/lucas/fluff/bff/packages/bff-wasm/fixtures/errors/invalid-path-definition/app.ts:6:5
+  4 |     [`GET/hello/{id}`]: async (id: string) => id,
+  5 |     a: 1,
+> 6 |     b() {
+    |     ^ NotAnObjectWithMethodKind
+  7 |       return 1;
+  8 |     },
+  9 |     get c() {
+
+/home/lucas/fluff/bff/packages/bff-wasm/fixtures/errors/invalid-path-definition/app.ts:9:5
+   7 |       return 1;
+   8 |     },
+>  9 |     get c() {
+     |     ^^^^^^^^^
+> 10 |       return 1;
+     | ^^^^^^^^^^^^^^^
+> 11 |     },
+     | ^^^^^^ NotAnObjectWithMethodKind
+  12 |     set c(v) {},
+  13 |     [`AAAAAAAAAAAAAAAAAAGETOOOO/hello/{id}`]: async (
+  14 |       id: string
+
+/home/lucas/fluff/bff/packages/bff-wasm/fixtures/errors/invalid-path-definition/app.ts:12:5
+  10 |       return 1;
+  11 |     },
+> 12 |     set c(v) {},
+     |     ^^^^^^^^^^^ NotAnObjectWithMethodKind
+  13 |     [`AAAAAAAAAAAAAAAAAAGETOOOO/hello/{id}`]: async (
+  14 |       id: string
+  15 |     ): Promise<string> => id,
+
+/home/lucas/fluff/bff/packages/bff-wasm/fixtures/errors/invalid-path-definition/app.ts:13:5
+  11 |     },
+  12 |     set c(v) {},
+> 13 |     [`AAAAAAAAAAAAAAAAAAGETOOOO/hello/{id}`]: async (
+     |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ NotAnHttpMethod
+  14 |       id: string
+  15 |     ): Promise<string> => id,
+  16 |     [`GETOOOO/hello/{id}`]: async (id: string): Promise<string> => id,
+
+/home/lucas/fluff/bff/packages/bff-wasm/fixtures/errors/invalid-path-definition/app.ts:13:5
+  11 |     },
+  12 |     set c(v) {},
+> 13 |     [`AAAAAAAAAAAAAAAAAAGETOOOO/hello/{id}`]: async (
+     |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ NotAnHttpMethod
+  14 |       id: string
+  15 |     ): Promise<string> => id,
+  16 |     [`GETOOOO/hello/{id}`]: async (id: string): Promise<string> => id,
+
+/home/lucas/fluff/bff/packages/bff-wasm/fixtures/errors/invalid-path-definition/app.ts:16:5
+  14 |       id: string
+  15 |     ): Promise<string> => id,
+> 16 |     [`GETOOOO/hello/{id}`]: async (id: string): Promise<string> => id,
+     |     ^^^^^^^^^^^^^^^^^^^^^^ NotAnHttpMethod
+  17 |     ...d,
+  18 |     [`GET/hello2/{id}`]: async function* (id: string): Promise<string> {
+  19 |       return id;
+
+/home/lucas/fluff/bff/packages/bff-wasm/fixtures/errors/invalid-path-definition/app.ts:16:5
+  14 |       id: string
+  15 |     ): Promise<string> => id,
+> 16 |     [`GETOOOO/hello/{id}`]: async (id: string): Promise<string> => id,
+     |     ^^^^^^^^^^^^^^^^^^^^^^ NotAnHttpMethod
+  17 |     ...d,
+  18 |     [`GET/hello2/{id}`]: async function* (id: string): Promise<string> {
+  19 |       return id;
+
+/home/lucas/fluff/bff/packages/bff-wasm/fixtures/errors/invalid-path-definition/app.ts:17:5
+  15 |     ): Promise<string> => id,
+  16 |     [`GETOOOO/hello/{id}`]: async (id: string): Promise<string> => id,
+> 17 |     ...d,
+     |     ^^^ PropSpreadIsNotSupported
+  18 |     [`GET/hello2/{id}`]: async function* (id: string): Promise<string> {
+  19 |       return id;
+  20 |     },
+
+/home/lucas/fluff/bff/packages/bff-wasm/fixtures/errors/invalid-path-definition/app.ts:18:5
+  16 |     [`GETOOOO/hello/{id}`]: async (id: string): Promise<string> => id,
+  17 |     ...d,
+> 18 |     [`GET/hello2/{id}`]: async function* (id: string): Promise<string> {
+     |     ^^^^^^^^^^^^^^^^^^^ NotAnHttpMethod
+  19 |       return id;
+  20 |     },
+  21 |     [`GET/hello3/{id}`]: <T>(id: string): string => id,
+
+/home/lucas/fluff/bff/packages/bff-wasm/fixtures/errors/invalid-path-definition/app.ts:18:26
+  16 |     [`GETOOOO/hello/{id}`]: async (id: string): Promise<string> => id,
+  17 |     ...d,
+> 18 |     [`GET/hello2/{id}`]: async function* (id: string): Promise<string> {
+     |                          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 19 |       return id;
+     | ^^^^^^^^^^^^^^^^
+> 20 |     },
+     | ^^^^^^ HandlerCannotBeGenerator
+  21 |     [`GET/hello3/{id}`]: <T>(id: string): string => id,
+  22 |     [`GET/hello4/{id}`]: async <T>(id: string): Promise<string> => id,
+  23 |     [`GET/hello5/{id}`]: async <T>(id: T): Promise<T> => id,
+
+/home/lucas/fluff/bff/packages/bff-wasm/fixtures/errors/invalid-path-definition/app.ts:21:5
+  19 |       return id;
+  20 |     },
+> 21 |     [`GET/hello3/{id}`]: <T>(id: string): string => id,
+     |     ^^^^^^^^^^^^^^^^^^^ NotAnHttpMethod
+  22 |     [`GET/hello4/{id}`]: async <T>(id: string): Promise<string> => id,
+  23 |     [`GET/hello5/{id}`]: async <T>(id: T): Promise<T> => id,
+  24 |   },
+
+/home/lucas/fluff/bff/packages/bff-wasm/fixtures/errors/invalid-path-definition/app.ts:21:26
+  19 |       return id;
+  20 |     },
+> 21 |     [`GET/hello3/{id}`]: <T>(id: string): string => id,
+     |                          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ HandlerCannotHaveTypeParameters
+  22 |     [`GET/hello4/{id}`]: async <T>(id: string): Promise<string> => id,
+  23 |     [`GET/hello5/{id}`]: async <T>(id: T): Promise<T> => id,
+  24 |   },
+
+/home/lucas/fluff/bff/packages/bff-wasm/fixtures/errors/invalid-path-definition/app.ts:22:5
+  20 |     },
+  21 |     [`GET/hello3/{id}`]: <T>(id: string): string => id,
+> 22 |     [`GET/hello4/{id}`]: async <T>(id: string): Promise<string> => id,
+     |     ^^^^^^^^^^^^^^^^^^^ NotAnHttpMethod
+  23 |     [`GET/hello5/{id}`]: async <T>(id: T): Promise<T> => id,
+  24 |   },
+  25 |   [`GET/hello/{id}`]: async (id: string) => id,
+
+/home/lucas/fluff/bff/packages/bff-wasm/fixtures/errors/invalid-path-definition/app.ts:22:26
+  20 |     },
+  21 |     [`GET/hello3/{id}`]: <T>(id: string): string => id,
+> 22 |     [`GET/hello4/{id}`]: async <T>(id: string): Promise<string> => id,
+     |                          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ HandlerCannotHaveTypeParameters
+  23 |     [`GET/hello5/{id}`]: async <T>(id: T): Promise<T> => id,
+  24 |   },
+  25 |   [`GET/hello/{id}`]: async (id: string) => id,
+
+/home/lucas/fluff/bff/packages/bff-wasm/fixtures/errors/invalid-path-definition/app.ts:23:5
+  21 |     [`GET/hello3/{id}`]: <T>(id: string): string => id,
+  22 |     [`GET/hello4/{id}`]: async <T>(id: string): Promise<string> => id,
+> 23 |     [`GET/hello5/{id}`]: async <T>(id: T): Promise<T> => id,
+     |     ^^^^^^^^^^^^^^^^^^^ NotAnHttpMethod
+  24 |   },
+  25 |   [`GET/hello/{id}`]: async (id: string) => id,
+  26 |   a: 1,
+
+/home/lucas/fluff/bff/packages/bff-wasm/fixtures/errors/invalid-path-definition/app.ts:23:26
+  21 |     [`GET/hello3/{id}`]: <T>(id: string): string => id,
+  22 |     [`GET/hello4/{id}`]: async <T>(id: string): Promise<string> => id,
+> 23 |     [`GET/hello5/{id}`]: async <T>(id: T): Promise<T> => id,
+     |                          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ HandlerCannotHaveTypeParameters
+  24 |   },
+  25 |   [`GET/hello/{id}`]: async (id: string) => id,
+  26 |   a: 1,
+
+/home/lucas/fluff/bff/packages/bff-wasm/fixtures/errors/invalid-path-definition/app.ts:25:3
+  23 |     [`GET/hello5/{id}`]: async <T>(id: T): Promise<T> => id,
+  24 |   },
+> 25 |   [`GET/hello/{id}`]: async (id: string) => id,
+     |   ^^^^^^^^^^^^^^^^^^ NotAnObjectWithMethodKind
+  26 |   a: 1,
+  27 |   b() {
+  28 |     return 1;
+
+/home/lucas/fluff/bff/packages/bff-wasm/fixtures/errors/invalid-path-definition/app.ts:26:3
+  24 |   },
+  25 |   [`GET/hello/{id}`]: async (id: string) => id,
+> 26 |   a: 1,
+     |   ^ MustBeComputedKey
+  27 |   b() {
+  28 |     return 1;
+  29 |   },
+
+/home/lucas/fluff/bff/packages/bff-wasm/fixtures/errors/invalid-path-definition/app.ts:27:3
+  25 |   [`GET/hello/{id}`]: async (id: string) => id,
+  26 |   a: 1,
+> 27 |   b() {
+     |   ^ NotAnObjectWithMethodKind
+  28 |     return 1;
+  29 |   },
+  30 |   get c() {
+
+/home/lucas/fluff/bff/packages/bff-wasm/fixtures/errors/invalid-path-definition/app.ts:30:3
+  28 |     return 1;
+  29 |   },
+> 30 |   get c() {
+     |   ^^^^^^^^^
+> 31 |     return 1;
+     | ^^^^^^^^^^^^^
+> 32 |   },
+     | ^^^^ NotAnObjectWithMethodKind
+  33 |   set c(v) {},
+  34 |   [`AAAAAAAAAAAAAAAAAAGETOOOO/hello/{id}`]: async (
+  35 |     id: string
+
+/home/lucas/fluff/bff/packages/bff-wasm/fixtures/errors/invalid-path-definition/app.ts:33:3
+  31 |     return 1;
+  32 |   },
+> 33 |   set c(v) {},
+     |   ^^^^^^^^^^^ NotAnObjectWithMethodKind
+  34 |   [`AAAAAAAAAAAAAAAAAAGETOOOO/hello/{id}`]: async (
+  35 |     id: string
+  36 |   ): Promise<string> => id,
+
+/home/lucas/fluff/bff/packages/bff-wasm/fixtures/errors/invalid-path-definition/app.ts:34:3
+  32 |   },
+  33 |   set c(v) {},
+> 34 |   [`AAAAAAAAAAAAAAAAAAGETOOOO/hello/{id}`]: async (
+     |   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ NotAnObjectWithMethodKind
+  35 |     id: string
+  36 |   ): Promise<string> => id,
+  37 |   [`GETOOOO/hello/{id}`]: async (id: string): Promise<string> => id,
+
+/home/lucas/fluff/bff/packages/bff-wasm/fixtures/errors/invalid-path-definition/app.ts:37:3
+  35 |     id: string
+  36 |   ): Promise<string> => id,
+> 37 |   [`GETOOOO/hello/{id}`]: async (id: string): Promise<string> => id,
+     |   ^^^^^^^^^^^^^^^^^^^^^^ NotAnObjectWithMethodKind
+  38 |   ...d,
+  39 |   [`GET/hello2/{id}`]: async function* (id: string): Promise<string> {
+  40 |     return id;
+
+/home/lucas/fluff/bff/packages/bff-wasm/fixtures/errors/invalid-path-definition/app.ts:38:3
+  36 |   ): Promise<string> => id,
+  37 |   [`GETOOOO/hello/{id}`]: async (id: string): Promise<string> => id,
+> 38 |   ...d,
+     |   ^^^ RestOnRouterDefaultExportNotSupportedYet
+  39 |   [`GET/hello2/{id}`]: async function* (id: string): Promise<string> {
+  40 |     return id;
+  41 |   },
+
+/home/lucas/fluff/bff/packages/bff-wasm/fixtures/errors/invalid-path-definition/app.ts:39:3
+  37 |   [`GETOOOO/hello/{id}`]: async (id: string): Promise<string> => id,
+  38 |   ...d,
+> 39 |   [`GET/hello2/{id}`]: async function* (id: string): Promise<string> {
+     |   ^^^^^^^^^^^^^^^^^^^ NotAnObjectWithMethodKind
+  40 |     return id;
+  41 |   },
+  42 |   [`GET/hello3/{id}`]: <T>(id: string): string => id,
+
+/home/lucas/fluff/bff/packages/bff-wasm/fixtures/errors/invalid-path-definition/app.ts:42:3
+  40 |     return id;
+  41 |   },
+> 42 |   [`GET/hello3/{id}`]: <T>(id: string): string => id,
+     |   ^^^^^^^^^^^^^^^^^^^ NotAnObjectWithMethodKind
+  43 |   [`GET/hello4/{id}`]: async <T>(id: string): Promise<string> => id,
+  44 |   [`GET/hello5/{id}`]: async <T>(id: T): Promise<T> => id,
+  45 | };
+
+/home/lucas/fluff/bff/packages/bff-wasm/fixtures/errors/invalid-path-definition/app.ts:43:3
+  41 |   },
+  42 |   [`GET/hello3/{id}`]: <T>(id: string): string => id,
+> 43 |   [`GET/hello4/{id}`]: async <T>(id: string): Promise<string> => id,
+     |   ^^^^^^^^^^^^^^^^^^^ NotAnObjectWithMethodKind
+  44 |   [`GET/hello5/{id}`]: async <T>(id: T): Promise<T> => id,
+  45 | };
+  46 |
+
+/home/lucas/fluff/bff/packages/bff-wasm/fixtures/errors/invalid-path-definition/app.ts:44:3
+  42 |   [`GET/hello3/{id}`]: <T>(id: string): string => id,
+  43 |   [`GET/hello4/{id}`]: async <T>(id: string): Promise<string> => id,
+> 44 |   [`GET/hello5/{id}`]: async <T>(id: T): Promise<T> => id,
+     |   ^^^^^^^^^^^^^^^^^^^ NotAnObjectWithMethodKind
+  45 | };
+  46 |
