@@ -1,6 +1,6 @@
 use crate::diag::{Diagnostic, DiagnosticMessage};
 use crate::open_api_ast::{
-    self, Definition, JsonRequestBody, JsonSchema, OpenApi, OperationObject, ParameterIn,
+    self, Definition, Info, JsonRequestBody, JsonSchema, OpenApi, OperationObject, ParameterIn,
     ParameterObject,
 };
 use crate::type_to_schema::TypeToSchema;
@@ -139,6 +139,7 @@ pub struct FnHandler {
 
 pub trait FileManager {
     fn get_file(&mut self, name: &FileName) -> Option<Rc<ParsedModule>>;
+    fn get_existing_file(&self, name: &FileName) -> Option<Rc<ParsedModule>>;
 }
 
 pub struct ExtractExportDefaultVisitor<'a, R: FileManager> {
@@ -203,6 +204,22 @@ fn get_prop_name_span(key: &PropName) -> Span {
     return *span;
 }
 impl<'a, R: FileManager> ExtractExportDefaultVisitor<'a, R> {
+    fn build_error(&self, span: &Span, msg: DiagnosticMessage) -> Diagnostic {
+        let file = self.files.get_existing_file(&self.current_file).unwrap();
+        let loc_lo = file.module.source_map.lookup_char_pos(span.lo);
+        let loc_hi = file.module.source_map.lookup_char_pos(span.hi);
+        Diagnostic {
+            message: msg,
+            file_name: self.current_file.clone(),
+            span: *span,
+            loc_lo,
+            loc_hi,
+        }
+    }
+    fn push_error(&mut self, span: &Span, msg: DiagnosticMessage) {
+        self.errors.push(self.build_error(span, msg));
+    }
+
     #[allow(clippy::to_string_in_format_args)]
     fn parse_endpoint_comments(&mut self, acc: &mut EndpointComments, comments: Vec<Comment>) {
         for c in comments {
@@ -227,30 +244,22 @@ impl<'a, R: FileManager> ExtractExportDefaultVisitor<'a, R> {
                                 Tag::Summary(SummaryTag { text, .. }) => {
                                     acc.summary = Some(text.value.to_string());
                                 }
-                                tag => self.errors.push(Diagnostic {
-                                    message: DiagnosticMessage::UnknownJsDocTag(tag.clone()),
-                                    file_name: self.current_file.clone(),
-                                    span: tag_item.span,
-                                }),
+                                tag => self.push_error(
+                                    &tag_item.span,
+                                    DiagnosticMessage::UnknownJsDocTag(tag.clone()),
+                                ),
                             }
                         }
                     }
-                    Err(_) => self.errors.push(Diagnostic {
-                        message: DiagnosticMessage::CannotParseJsDoc,
-                        file_name: self.current_file.clone(),
-                        span: c.span,
-                    }),
+                    Err(_) => self.push_error(&c.span, DiagnosticMessage::CannotParseJsDoc),
                 }
             }
         }
     }
     fn parse_description_comment(&mut self, comments: Vec<Comment>, span: &Span) -> Option<String> {
         if comments.len() != 1 {
-            self.errors.push(Diagnostic {
-                message: DiagnosticMessage::CannotParseJsDoc,
-                file_name: self.current_file.clone(),
-                span: *span,
-            });
+            self.push_error(span, DiagnosticMessage::CannotParseJsDoc);
+
             return None;
         }
         let first = comments
@@ -263,30 +272,18 @@ impl<'a, R: FileManager> ExtractExportDefaultVisitor<'a, R> {
             match parsed {
                 Ok((rest, parsed)) => {
                     if !rest.is_empty() {
-                        self.errors.push(Diagnostic {
-                            message: DiagnosticMessage::CannotParseJsDoc,
-                            file_name: self.current_file.clone(),
-                            span: first.span,
-                        });
+                        self.push_error(&first.span, DiagnosticMessage::CannotParseJsDoc);
                     }
                     if !parsed.tags.is_empty() {
                         for tag in parsed.tags {
-                            self.errors.push(Diagnostic {
-                                message: DiagnosticMessage::UnknownJsDocTagItem(tag.clone()),
-                                file_name: self.current_file.clone(),
-                                span: tag.span,
-                            })
+                            self.push_error(&tag.span, DiagnosticMessage::CannotParseJsDoc);
                         }
                     }
                     return Some(trim_description_comments(
                         parsed.description.value.to_string(),
                     ));
                 }
-                Err(_) => self.errors.push(Diagnostic {
-                    message: DiagnosticMessage::CannotParseJsDoc,
-                    file_name: self.current_file.clone(),
-                    span: first.span,
-                }),
+                Err(_) => self.push_error(&first.span, DiagnosticMessage::CannotParseJsDoc),
             }
         }
         None
@@ -312,31 +309,24 @@ impl<'a, R: FileManager> ExtractExportDefaultVisitor<'a, R> {
                     quasis,
                 }) => {
                     if !exprs.is_empty() {
-                        self.errors.push(Diagnostic {
-                            message: DiagnosticMessage::TemplateMustBeOfSingleString,
-                            file_name: self.current_file.clone(),
-                            span: *span,
-                        });
+                        self.push_error(span, DiagnosticMessage::TemplateMustBeOfSingleString);
+
                         return Err(anyhow!("not single string"));
                     }
                     if quasis.len() != 1 {
-                        self.errors.push(Diagnostic {
-                            message: DiagnosticMessage::TemplateMustBeOfSingleString,
-                            file_name: self.current_file.clone(),
-                            span: *span,
-                        });
+                        self.push_error(span, DiagnosticMessage::TemplateMustBeOfSingleString);
+
                         return Err(anyhow!("not single string"));
                     }
                     let first_quasis = quasis.first().expect("we just checked the length");
                     self.parse_raw_pattern_str(&first_quasis.raw.to_string(), span)
                 }
                 _ => {
-                    self.errors.push(Diagnostic {
-                        message:
-                            DiagnosticMessage::MustBeComputedKeyWithMethodAndPatternMustBeString,
-                        file_name: self.current_file.clone(),
-                        span: *span,
-                    });
+                    self.push_error(
+                        span,
+                        DiagnosticMessage::MustBeComputedKeyWithMethodAndPatternMustBeString,
+                    );
+
                     Err(anyhow!("not computed key"))
                 }
             },
@@ -344,11 +334,8 @@ impl<'a, R: FileManager> ExtractExportDefaultVisitor<'a, R> {
             | PropName::Str(Str { span, .. })
             | PropName::Num(Number { span, .. })
             | PropName::BigInt(BigInt { span, .. }) => {
-                self.errors.push(Diagnostic {
-                    message: DiagnosticMessage::MustBeComputedKey,
-                    file_name: self.current_file.clone(),
-                    span: *span,
-                });
+                self.push_error(span, DiagnosticMessage::MustBeComputedKey);
+
                 Err(anyhow!("not computed key"))
             }
         }
@@ -359,11 +346,7 @@ impl<'a, R: FileManager> ExtractExportDefaultVisitor<'a, R> {
             let found = self.components.iter_mut().find(|x| x.name == d.name);
             if let Some(found) = found {
                 if found.schema != d.schema {
-                    self.errors.push(Diagnostic {
-                        message: DiagnosticMessage::TwoDifferentTypesWithTheSameName,
-                        file_name: self.current_file.clone(),
-                        span: *span,
-                    });
+                    self.push_error(span, DiagnosticMessage::TwoDifferentTypesWithTheSameName);
                 }
             } else {
                 self.components.push(d);
@@ -374,6 +357,7 @@ impl<'a, R: FileManager> ExtractExportDefaultVisitor<'a, R> {
     fn convert_to_json_schema(&mut self, ty: &TsType, span: &Span) -> JsonSchema {
         let mut to_schema = TypeToSchema::new(self.files, self.current_file);
         let res = to_schema.convert_ts_type(ty);
+        self.errors.extend(to_schema.errors);
 
         let mut kvs = vec![];
         for (k, v) in to_schema.components {
@@ -382,15 +366,14 @@ impl<'a, R: FileManager> ExtractExportDefaultVisitor<'a, R> {
             // And we need the option to allow a type to refer to itself before it has been resolved.
             match v {
                 Some(s) => kvs.push((k, s)),
-                None => self.errors.push(Diagnostic {
-                    message: DiagnosticMessage::CannotResolveTypeReferenceOnExtracting(k),
-                    file_name: self.current_file.clone(),
-                    span: *span,
-                }),
+                None => self.push_error(
+                    span,
+                    DiagnosticMessage::CannotResolveTypeReferenceOnExtracting(k),
+                ),
             }
         }
+
         kvs.sort_by(|(ka, _), (kb, _)| ka.cmp(kb));
-        self.errors.extend(to_schema.errors);
         let ext: Vec<Definition> = kvs.into_iter().map(|(_k, v)| v).collect();
         self.extend_components(ext, span);
         res
@@ -410,21 +393,21 @@ impl<'a, R: FileManager> ExtractExportDefaultVisitor<'a, R> {
                 let params = &params.as_ref();
                 match params {
                     None => {
-                        self.errors.push(Diagnostic {
-                            message: DiagnosticMessage::TooManyParamsOnLibType,
-                            file_name: self.current_file.clone(),
-                            span: lib_ty_name.span,
-                        });
+                        self.push_error(
+                            &lib_ty_name.span,
+                            DiagnosticMessage::TooManyParamsOnLibType,
+                        );
+
                         return Err(anyhow!("Header/Cookie must have one type parameter"));
                     }
                     Some(params) => {
                         let params = &params.params;
                         if params.len() != 1 {
-                            self.errors.push(Diagnostic {
-                                message: DiagnosticMessage::TooManyParamsOnLibType,
-                                file_name: self.current_file.clone(),
-                                span: lib_ty_name.span,
-                            });
+                            self.push_error(
+                                &lib_ty_name.span,
+                                DiagnosticMessage::TooManyParamsOnLibType,
+                            );
+
                             return Err(anyhow!("Header/Cookie must have one type parameter"));
                         }
 
@@ -491,12 +474,7 @@ impl<'a, R: FileManager> ExtractExportDefaultVisitor<'a, R> {
         span: &Span,
         msg: DiagnosticMessage,
     ) -> Vec<(String, HandlerParameter)> {
-        let err = Diagnostic {
-            message: msg,
-            file_name: self.current_file.clone(),
-            span: *span,
-        };
-        self.errors.push(err);
+        self.push_error(span, msg);
         vec![]
     }
     fn get_current_file(&mut self) -> Rc<ParsedModule> {
@@ -587,11 +565,11 @@ impl<'a, R: FileManager> ExtractExportDefaultVisitor<'a, R> {
         match param {
             Pat::Ident(BindingIdent { id, type_ann }) => {
                 if type_ann.is_none() {
-                    self.errors.push(Diagnostic {
-                        message: DiagnosticMessage::ParameterIdentMustHaveTypeAnnotation,
-                        file_name: self.current_file.clone(),
-                        span: id.span,
-                    });
+                    self.push_error(
+                        &id.span,
+                        DiagnosticMessage::ParameterIdentMustHaveTypeAnnotation,
+                    );
+
                     return vec![];
                 }
 
@@ -626,11 +604,10 @@ impl<'a, R: FileManager> ExtractExportDefaultVisitor<'a, R> {
             // make sure some param exist for it
             let found = e.parameters.iter().find(|(key, _)| key == path_param);
             if found.is_none() {
-                self.errors.push(Diagnostic {
-                    message: DiagnosticMessage::UnmatchedPathParameter(path_param.to_string()),
-                    file_name: self.current_file.clone(),
-                    span: e.pattern.raw_span.clone(),
-                });
+                self.push_error(
+                    &e.pattern.raw_span.clone(),
+                    DiagnosticMessage::UnmatchedPathParameter(path_param.to_string()),
+                );
             }
         }
         e
@@ -658,19 +635,13 @@ impl<'a, R: FileManager> ExtractExportDefaultVisitor<'a, R> {
         span: &Span,
     ) -> Result<()> {
         if is_generator {
-            self.errors.push(Diagnostic {
-                message: DiagnosticMessage::HandlerCannotBeGenerator,
-                file_name: self.current_file.clone(),
-                span: *span,
-            });
+            self.push_error(span, DiagnosticMessage::HandlerCannotBeGenerator);
+
             return Err(anyhow!("cannot be generator"));
         }
         if type_params.is_some() {
-            self.errors.push(Diagnostic {
-                message: DiagnosticMessage::HandlerCannotHaveTypeParameters,
-                file_name: self.current_file.clone(),
-                span: *span,
-            });
+            self.push_error(span, DiagnosticMessage::HandlerCannotHaveTypeParameters);
+
             return Err(anyhow!("cannot have type params"));
         }
 
@@ -697,7 +668,7 @@ impl<'a, R: FileManager> ExtractExportDefaultVisitor<'a, R> {
 
         let return_type = self.assert_and_extract_type_from_ann(return_type, parent_span);
         let e = FnHandler {
-            method_kind: Self::parse_method_kind(key),
+            method_kind: Self::parse_method_kind(key)?,
             parameters: params
                 .iter()
                 .flat_map(|it| self.parse_arrow_parameter(&it.pat, parent_span))
@@ -720,11 +691,7 @@ impl<'a, R: FileManager> ExtractExportDefaultVisitor<'a, R> {
         match return_type.as_ref() {
             Some(t) => (*t.type_ann).clone(),
             None => {
-                self.errors.push(Diagnostic {
-                    message: DiagnosticMessage::HandlerMustAnnotateReturnType,
-                    file_name: self.current_file.clone(),
-                    span: *span,
-                });
+                self.push_error(span, DiagnosticMessage::HandlerMustAnnotateReturnType);
 
                 TsType::TsKeywordType(TsKeywordType {
                     span: DUMMY_SP,
@@ -734,17 +701,17 @@ impl<'a, R: FileManager> ExtractExportDefaultVisitor<'a, R> {
         }
     }
 
-    fn parse_method_kind(key: &PropName) -> MethodKind {
+    fn parse_method_kind(key: &PropName) -> Result<MethodKind> {
         match key {
             PropName::Ident(Ident { sym, .. }) => match sym.to_string().as_str() {
-                "get" => MethodKind::Get,
-                "post" => MethodKind::Post,
-                "put" => MethodKind::Put,
-                "delete" => MethodKind::Delete,
-                "patch" => MethodKind::Patch,
-                "options" => MethodKind::Options,
-                "use" => MethodKind::Use,
-                _ => todo!(),
+                "get" => Ok(MethodKind::Get),
+                "post" => Ok(MethodKind::Post),
+                "put" => Ok(MethodKind::Put),
+                "delete" => Ok(MethodKind::Delete),
+                "patch" => Ok(MethodKind::Patch),
+                "options" => Ok(MethodKind::Options),
+                "use" => Ok(MethodKind::Use),
+                _ => Err(anyhow!("not a method")),
             },
             PropName::Str(_) => todo!(),
             PropName::Num(_) => todo!(),
@@ -773,7 +740,7 @@ impl<'a, R: FileManager> ExtractExportDefaultVisitor<'a, R> {
 
         let ret_ty = self.assert_and_extract_type_from_ann(return_type, parent_span);
         let e = FnHandler {
-            method_kind: Self::parse_method_kind(key),
+            method_kind: Self::parse_method_kind(key)?,
             parameters: params
                 .iter()
                 .flat_map(|it| self.parse_arrow_parameter(it, parent_span))
@@ -805,14 +772,14 @@ impl<'a, R: FileManager> ExtractExportDefaultVisitor<'a, R> {
     ) -> Vec<FnHandler> {
         if let Prop::KeyValue(KeyValueProp { key, value }) = prop {
             let method_kind = Self::parse_method_kind(key);
-            if method_kind == MethodKind::Use {
+            if let Ok(MethodKind::Use) = method_kind {
                 return vec![FnHandler {
                     pattern: pattern.clone(),
                     summary: None,
                     description: None,
                     parameters: vec![],
                     return_type: JsonSchema::Any,
-                    method_kind,
+                    method_kind: MethodKind::Use,
                 }];
             }
 
@@ -831,11 +798,8 @@ impl<'a, R: FileManager> ExtractExportDefaultVisitor<'a, R> {
             }
         }
         let span = Self::get_prop_span(prop);
-        self.errors.push(Diagnostic {
-            message: DiagnosticMessage::NotAnObjectWithMethodKind,
-            file_name: self.current_file.clone(),
-            span,
-        });
+        self.push_error(&span, DiagnosticMessage::NotAnObjectWithMethodKind);
+
         vec![]
     }
 
@@ -862,11 +826,8 @@ impl<'a, R: FileManager> ExtractExportDefaultVisitor<'a, R> {
         }
 
         let span = Self::get_prop_span(prop);
-        self.errors.push(Diagnostic {
-            message: DiagnosticMessage::NotAnObjectWithMethodKind,
-            file_name: self.current_file.clone(),
-            span,
-        });
+        self.push_error(&span, DiagnosticMessage::NotAnObjectWithMethodKind);
+
         vec![]
     }
 
@@ -899,29 +860,22 @@ impl<'a, R: FileManager> ExtractExportDefaultVisitor<'a, R> {
                                         "title" => {
                                             self.info.title = Some(extras.value.to_string());
                                         }
-                                        tag => self.errors.push(Diagnostic {
-                                            message:
-                                                DiagnosticMessage::UnknownJsDocTagOfTypeUnknown(
-                                                    tag.to_string(),
-                                                ),
-                                            file_name: self.current_file.clone(),
-                                            span: c.span,
-                                        }),
+                                        tag => self.push_error(
+                                            &c.span,
+                                            DiagnosticMessage::UnknownJsDocTagOfTypeUnknown(
+                                                tag.to_string(),
+                                            ),
+                                        ),
                                     }
                                 }
-                                tag => self.errors.push(Diagnostic {
-                                    message: DiagnosticMessage::UnknownJsDocTag(tag.clone()),
-                                    file_name: self.current_file.clone(),
-                                    span: c.span,
-                                }),
+                                tag => self.push_error(
+                                    &c.span,
+                                    DiagnosticMessage::UnknownJsDocTag(tag.clone()),
+                                ),
                             }
                         }
                     }
-                    Err(_) => self.errors.push(Diagnostic {
-                        message: DiagnosticMessage::CannotParseJsDoc,
-                        file_name: self.current_file.clone(),
-                        span: c.span,
-                    }),
+                    Err(_) => self.push_error(&c.span, DiagnosticMessage::CannotParseJsDoc),
                 }
             }
         }
@@ -943,11 +897,10 @@ impl<'a, R: FileManager> Visit for ExtractExportDefaultVisitor<'a, R> {
                         self.handlers.extend(method);
                     }
                     PropOrSpread::Spread(SpreadElement { dot3_token, .. }) => {
-                        self.errors.push(Diagnostic {
-                            message: DiagnosticMessage::RestOnRouterDefaultExportNotSupportedYet,
-                            file_name: self.current_file.clone(),
-                            span: *dot3_token,
-                        });
+                        self.push_error(
+                            dot3_token,
+                            DiagnosticMessage::RestOnRouterDefaultExportNotSupportedYet,
+                        );
                     }
                 }
             }
@@ -1007,13 +960,28 @@ pub fn operation_parameter_in_path_or_query_or_body(
     }
 }
 
-struct EndpointToPath<'a> {
+struct EndpointToPath<'a, R: FileManager> {
+    files: &'a mut R,
     errors: Vec<Diagnostic>,
     components: &'a Vec<Definition>,
     current_file: &'a FileName,
 }
 
-impl<'a> EndpointToPath<'a> {
+impl<'a, R: FileManager> EndpointToPath<'a, R> {
+    fn push_error(&mut self, span: &Span, msg: DiagnosticMessage) {
+        let file = self.files.get_file(&self.current_file).unwrap();
+        let loc_lo = file.module.source_map.lookup_char_pos(span.lo);
+        let loc_hi = file.module.source_map.lookup_char_pos(span.hi);
+        let err = Diagnostic {
+            message: msg,
+            file_name: self.current_file.clone(),
+            span: *span,
+            loc_lo,
+            loc_hi,
+        };
+        self.errors.push(err);
+    }
+
     fn endpoint_to_operation_object(&mut self, endpoint: FnHandler) -> OperationObject {
         let mut parameters: Vec<ParameterObject> = vec![];
         let mut json_request_body: Option<JsonRequestBody> = None;
@@ -1048,11 +1016,10 @@ impl<'a> EndpointToPath<'a> {
                         }),
                         FunctionParameterIn::Body => {
                             if json_request_body.is_some() {
-                                self.errors.push(Diagnostic {
-                                    message: DiagnosticMessage::InferringTwoParamsAsRequestBody,
-                                    file_name: self.current_file.clone(),
-                                    span: span,
-                                });
+                                self.push_error(
+                                    &span,
+                                    DiagnosticMessage::InferringTwoParamsAsRequestBody,
+                                );
                             }
 
                             json_request_body = Some(JsonRequestBody {
@@ -1062,11 +1029,10 @@ impl<'a> EndpointToPath<'a> {
                             });
                         }
                         FunctionParameterIn::InvalidComplexPathParameter => {
-                            self.errors.push(Diagnostic {
-                                message: DiagnosticMessage::ComplexPathParameterNotSupported,
-                                file_name: self.current_file.clone(),
-                                span: endpoint.pattern.raw_span.clone(),
-                            });
+                            self.push_error(
+                                &endpoint.pattern.raw_span,
+                                DiagnosticMessage::ComplexPathParameterNotSupported,
+                            );
                         }
                     }
                 }
@@ -1136,39 +1102,52 @@ pub struct ExtractResult {
     pub components: Vec<Definition>,
 }
 
-pub fn extract_schema<R: FileManager>(files: &mut R, current_file: &FileName) -> ExtractResult {
+fn visit_extract<R: FileManager>(
+    files: &mut R,
+    current_file: &FileName,
+) -> (Vec<FnHandler>, Vec<Definition>, Vec<Diagnostic>, Info) {
     let mut visitor = ExtractExportDefaultVisitor::new(files, current_file);
 
     visitor.visit_current_file();
-    // let file = files
-    //     .get_file(current_file)
-    //     .expect("should have been parsed");
-    // visitor.visit_module(&file.module.module);
 
     if !visitor.found_default_export {
-        visitor.errors.push(Diagnostic {
-            message: DiagnosticMessage::CouldNotFindDefaultExport,
-            file_name: current_file.clone(),
-            span: DUMMY_SP,
-        })
+        // visitor.errors.push(Diagnostic {
+        //     message: DiagnosticMessage::CouldNotFindDefaultExport,
+        //     file_name: current_file.clone(),
+        //     span: DUMMY_SP,
+        //     loc: todo!(),
+        // })
+        todo!()
     }
 
+    (
+        visitor.handlers,
+        visitor.components,
+        visitor.errors,
+        visitor.info,
+    )
+}
+
+pub fn extract_schema<R: FileManager>(files: &mut R, current_file: &FileName) -> ExtractResult {
+    let (handlers, components, errors, info) = visit_extract(files, current_file);
+
     let mut transformer = EndpointToPath {
-        errors: visitor.errors,
-        components: &visitor.components,
+        errors: errors,
+        components: &components,
         current_file: &current_file,
+        files,
     };
-    let paths = transformer.endpoints_to_paths(visitor.handlers.clone());
+    let paths = transformer.endpoints_to_paths(handlers.clone());
     let open_api = OpenApi {
-        info: visitor.info,
+        info: info,
         paths: paths,
-        components: visitor.components.clone(),
+        components: components.clone(),
     };
 
     ExtractResult {
-        handlers: visitor.handlers,
+        handlers: handlers,
         open_api,
         errors: transformer.errors,
-        components: visitor.components,
+        components: components,
     }
 }

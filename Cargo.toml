@@ -1,2 +1,2 @@
 [workspace]
-members = ["packages/bff-cli", "packages/bff-core", "packages/bff-wasm"]
+members = ["packages/bff-core", "packages/bff-wasm"]

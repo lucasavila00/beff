@@ -15,7 +15,7 @@ use crate::diag::Diagnostic;
 use crate::open_api_ast::Definition;
 use open_api_ast::OpenApi;
 use swc_atoms::JsWord;
-use swc_common::{FileName, SourceFile, SyntaxContext};
+use swc_common::{FileName, SourceFile, SourceMap, SyntaxContext};
 use swc_ecma_ast::{Module, TsInterfaceDecl, TsType, TsTypeAliasDecl};
 use swc_ecma_visit::Visit;
 use swc_node_comments::SwcComments;
@@ -25,9 +25,9 @@ pub enum TypeExport {
     TsInterfaceDecl(TsInterfaceDecl),
 }
 
-#[derive(Debug)]
 pub struct BffModuleData {
     pub fm: Arc<SourceFile>,
+    pub source_map: Arc<SourceMap>,
     pub module: Module,
 }
 

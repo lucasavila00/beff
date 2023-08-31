@@ -274,10 +274,15 @@ impl<'a, R: FileManager> TypeToSchema<'a, R> {
         self.error(span, DiagnosticMessage::CannotSerializeType)
     }
     fn error(&mut self, span: &Span, msg: DiagnosticMessage) -> JsonSchema {
+        let file = self.files.get_file(&self.current_file).unwrap();
+        let loc_lo = file.module.source_map.lookup_char_pos(span.lo);
+        let loc_hi = file.module.source_map.lookup_char_pos(span.hi);
         let err = Diagnostic {
             message: msg,
             file_name: self.current_file.clone(),
             span: *span,
+            loc_hi,
+            loc_lo,
         };
         self.errors.push(err);
         JsonSchema::Any

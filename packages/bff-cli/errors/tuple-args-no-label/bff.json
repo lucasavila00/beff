@@ -1,4 +1,0 @@
-{
-    "router": "./app.ts",
-    "outputDir": "./bff-generated"
-}

@@ -22,7 +22,6 @@ export function activate(context: vscode.ExtensionContext) {
 
   updateDiagnostics(entryPoint, collection);
 
-  // monitor file changes
   const watcher = vscode.workspace.createFileSystemWatcher(
     new vscode.RelativePattern(workspacePath, "**/*.ts")
   );
