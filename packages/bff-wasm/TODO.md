@@ -2,7 +2,7 @@
 
 ## BFF CLI
 
-- [ ] hof runtime
+- [ ] easier mechanism to test error diags
 
 ## BFF EXT
 
@@ -14,6 +14,7 @@
 - [ ] do not allow patterns styles that code generator/runtime coercer does not support
 - [ ] require backend=hono config, or version
 - [ ] remove "use" from client
+- [ ] remove "\*" from client
 
 - [ ] Date proper support or remove
 
@@ -33,6 +34,7 @@
 
 - [ ] message for errors
 - [ ] clap descriptions of params
+- [ ] snapshots of both esm and cjs generation
 
 ## BFF Imports
 

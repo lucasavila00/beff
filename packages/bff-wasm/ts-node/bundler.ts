@@ -3,6 +3,7 @@ import * as fs from "fs";
 import { resolveModuleName } from "typescript";
 import { codeFrameColumns } from "@babel/code-frame";
 import * as chalk from "chalk";
+import { ProjectModule } from "./project";
 interface ModuleResolutionHost {
   fileExists(fileName: string): boolean;
   readFile(fileName: string): string | undefined;
@@ -140,17 +141,19 @@ type BundleDiagnostic = {
 };
 
 export class Bundler {
-  constructor(verbose: boolean) {
+  moduleType: ProjectModule;
+  constructor(verbose: boolean, moduleType: ProjectModule) {
+    this.moduleType = moduleType;
     (globalThis as any).verbose = verbose;
     wasm.init(verbose);
   }
 
   public bundle(file_name: string): string | undefined {
-    return wasm.bundle_to_string(file_name);
+    return wasm.bundle_to_string(file_name, this.moduleType);
   }
 
   public diagnostics(file_name: string): BundleDiagnostic | null {
-    return wasm.bundle_to_diagnostics(file_name);
+    return wasm.bundle_to_diagnostics(file_name, this.moduleType);
   }
 
   public updateFileContent(file_name: string, content: string) {

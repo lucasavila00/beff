@@ -1,4 +1,4 @@
-Found 1 errors
+Found 2 errors
 
 /home/lucas/fluff/bff/packages/bff-wasm/fixtures/errors/interface-extends/app.ts:7:1
    5 | }
@@ -12,3 +12,11 @@ Found 1 errors
   10 |
   11 | export default {
   12 |   [`/hello/{id}`]: { get: async (id: string): Promise<B> => todo() },
+
+/home/lucas/fluff/bff/packages/bff-wasm/fixtures/errors/interface-extends/app.ts:12:4
+  10 |
+  11 | export default {
+> 12 |   [`/hello/{id}`]: { get: async (id: string): Promise<B> => todo() },
+     |    ^^^^^^^^^^^^^ ContextParameterMustBeFirst
+  13 | };
+  14 |

@@ -5,7 +5,9 @@ import * as fs from "fs";
 import { Bundler } from "./bundler";
 import { ProjectJson } from "./project";
 
-const readProjectJson = (projectPath: string): Pick<ProjectJson, "router"> => {
+const readProjectJson = (
+  projectPath: string
+): Pick<ProjectJson, "router" | "module"> => {
   const projectJson = JSON.parse(fs.readFileSync(projectPath, "utf-8"));
   if (!projectJson.router) {
     throw new Error("router not found in project.json");
@@ -13,13 +15,12 @@ const readProjectJson = (projectPath: string): Pick<ProjectJson, "router"> => {
 
   return {
     router: String(projectJson.router),
+    module: projectJson.module,
   };
 };
 
 let bundler: Bundler | null = null;
 export function activate(context: vscode.ExtensionContext) {
-  bundler = new Bundler(true);
-
   const workspacePath = vscode.workspace.workspaceFolders?.[0].uri.fsPath;
   if (!workspacePath) {
     throw new Error("No workspace folder found");
@@ -28,6 +29,7 @@ export function activate(context: vscode.ExtensionContext) {
 
   const projectPath = path.join(workspacePath, "bff.json");
   const projectJson = readProjectJson(projectPath);
+  bundler = new Bundler(true, projectJson.module ?? "esm");
   const router = projectJson.router;
   const entryPoint = path.join(path.dirname(projectPath), router);
 

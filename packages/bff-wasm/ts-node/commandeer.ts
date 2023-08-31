@@ -36,6 +36,7 @@ const readProjectJson = (projectPath: string): ProjectJson => {
   return {
     router: String(projectJson.router),
     outputDir: String(projectJson.outputDir),
+    module: projectJson.module,
   };
 };
 

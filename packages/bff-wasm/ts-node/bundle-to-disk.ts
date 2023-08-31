@@ -1,21 +1,33 @@
 import * as fs from "fs";
 import * as path from "path";
 import { Bundler } from "./bundler";
-import { ProjectJson } from "./project";
+import { ProjectJson, ProjectModule } from "./project";
 
-const RUNTIME_JS = fs.readFileSync(
-  path.join(__dirname, "../runtime/dist/runtime.js"),
+const RUNTIME_JS_ESM = fs.readFileSync(
+  path.join(__dirname, "../runtime/dist/esm/runtime.js"),
   "utf-8"
 );
-const RUNTIME_DTS = fs.readFileSync(
-  path.join(__dirname, "../runtime/dist/runtime.d.ts"),
+const RUNTIME_JS_CJS = fs.readFileSync(
+  path.join(__dirname, "../runtime/dist/cjs/runtime.js"),
   "utf-8"
 );
-const finalizeFile = (wasmCode: string, skipSharedRuntime: boolean) => {
+const RUNTIME_DTS_ESM = fs.readFileSync(
+  path.join(__dirname, "../runtime/dist/esm/runtime.d.ts"),
+  "utf-8"
+);
+const RUNTIME_DTS_CJS = fs.readFileSync(
+  path.join(__dirname, "../runtime/dist/cjs/runtime.d.ts"),
+  "utf-8"
+);
+const finalizeFile = (
+  wasmCode: string,
+  skipSharedRuntime: boolean,
+  mod: ProjectModule
+) => {
   if (skipSharedRuntime) {
     return wasmCode;
   }
-  return [RUNTIME_JS, wasmCode].join("\n");
+  return [mod == "esm" ? RUNTIME_JS_ESM : RUNTIME_JS_CJS, wasmCode].join("\n");
 };
 
 export const execProject = (
@@ -24,7 +36,8 @@ export const execProject = (
   verbose: boolean,
   skipSharedRuntime: boolean
 ) => {
-  const bundler = new Bundler(verbose);
+  const mod = projectJson.module ?? "esm";
+  const bundler = new Bundler(verbose, mod);
   const entryPoint = path.join(path.dirname(projectPath), projectJson.router);
   const outString = bundler.bundle(entryPoint);
   if (outString == null) {
@@ -36,11 +49,14 @@ export const execProject = (
   }
 
   const outputFile = path.join(outputDir, "index.js");
-  const finalFile = finalizeFile(outString, skipSharedRuntime);
+  const finalFile = finalizeFile(outString, skipSharedRuntime, mod);
   fs.writeFileSync(outputFile, finalFile);
 
   if (!skipSharedRuntime) {
     const outputDts = path.join(outputDir, "index.d.ts");
-    fs.writeFileSync(outputDts, RUNTIME_DTS);
+    fs.writeFileSync(
+      outputDts,
+      mod === "esm" ? RUNTIME_DTS_ESM : RUNTIME_DTS_CJS
+    );
   }
 };

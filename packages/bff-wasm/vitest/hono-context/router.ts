@@ -13,7 +13,6 @@ export default {
     },
   },
   ["/posts"]: {
-    get: (c: Context) => async (): Promise<{ posts: any[]; ok: boolean }> =>
-      todo(),
+    get: async (c: Context): Promise<{ posts: any[]; ok: boolean }> => todo(),
   },
 };

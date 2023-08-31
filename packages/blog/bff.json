@@ -1,4 +1,5 @@
 {
     "router": "./src/router.ts",
-    "outputDir": "./src/gen/"
+    "outputDir": "./src/gen/",
+    "module": "cjs"
 }

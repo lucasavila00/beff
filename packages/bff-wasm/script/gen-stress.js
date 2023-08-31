@@ -1,5 +1,5 @@
 const row = (s) =>
-  `["/a${s}/{id}"]: { get: async (id: string): Promise<string> => todo(),post: async (id: string): Promise<string> => todo(), },`;
+  `["/a${s}/{id}"]: { get: async (c:Ctx, id: string): Promise<string> => todo(),post: async (c:Ctx, id: string): Promise<string> => todo(), },`;
 
 const N = 1000;
 

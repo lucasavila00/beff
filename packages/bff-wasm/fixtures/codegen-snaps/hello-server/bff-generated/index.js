@@ -774,6 +774,9 @@ export const meta = {
             "method_kind": "get",
             "params": [
                 {
+                    "type": "context"
+                },
+                {
                     "type": "header",
                     "name": "user_agent",
                     "required": true,
@@ -855,6 +858,9 @@ export const meta = {
             "method_kind": "get",
             "params": [
                 {
+                    "type": "context"
+                },
+                {
                     "type": "path",
                     "name": "id",
                     "required": true,
@@ -890,6 +896,9 @@ export const meta = {
         {
             "method_kind": "get",
             "params": [
+                {
+                    "type": "context"
+                },
                 {
                     "type": "path",
                     "name": "id",
@@ -934,6 +943,9 @@ export const meta = {
         {
             "method_kind": "post",
             "params": [
+                {
+                    "type": "context"
+                },
                 {
                     "type": "path",
                     "name": "id",
@@ -989,6 +1001,46 @@ export const meta = {
                         ],
                         "path": [
                             "[GET] /users3.response_body"
+                        ]
+                    });
+                }
+                return error_acc_0;
+            }
+        },
+        {
+            "method_kind": "get",
+            "params": [],
+            "pattern": "/users4",
+            "return_validator": function(input) {
+                let error_acc_0 = [];
+                if (typeof input != "string") {
+                    error_acc_0.push({
+                        "kind": [
+                            "NotTypeof",
+                            "string"
+                        ],
+                        "path": [
+                            "[GET] /users4.response_body"
+                        ]
+                    });
+                }
+                return error_acc_0;
+            }
+        },
+        {
+            "method_kind": "post",
+            "params": [],
+            "pattern": "/users4",
+            "return_validator": function(input) {
+                let error_acc_0 = [];
+                if (typeof input != "string") {
+                    error_acc_0.push({
+                        "kind": [
+                            "NotTypeof",
+                            "string"
+                        ],
+                        "path": [
+                            "[POST] /users4.response_body"
                         ]
                     });
                 }
@@ -1154,6 +1206,38 @@ export const meta = {
             },
             "/users3": {
                 "get": {
+                    "parameters": [],
+                    "responses": {
+                        "200": {
+                            "description": "successful operation",
+                            "content": {
+                                "application/json": {
+                                    "schema": {
+                                        "type": "string"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            },
+            "/users4": {
+                "get": {
+                    "parameters": [],
+                    "responses": {
+                        "200": {
+                            "description": "successful operation",
+                            "content": {
+                                "application/json": {
+                                    "schema": {
+                                        "type": "string"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "post": {
                     "parameters": [],
                     "responses": {
                         "200": {

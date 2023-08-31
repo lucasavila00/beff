@@ -35,6 +35,8 @@ type User = {
   entities: UserEntity[];
   optional_prop?: string;
 };
+type Ctx = any;
+
 /**
  * Optional multiline or single-line description in [CommonMark](http://commonmark.org/help/) or HTML.
  *
@@ -57,6 +59,7 @@ export default {
    */
   [`/users`]: {
     get: async (
+      c: Ctx,
       user_agent: Header<string>,
       ads_id: Cookie<string>
     ): Promise<string[]> => [],
@@ -69,6 +72,7 @@ export default {
    */
   [`/users/{id}`]: {
     get: async (
+      c: Ctx,
       /**
        * The user id.
        */
@@ -80,8 +84,8 @@ export default {
     }),
   },
   ["/users2/{id}"]: {
-    get: async (id: string): Promise<string> => todo(),
-    post: async (id: string): Promise<string> => todo(),
+    get: async (c: Ctx, id: string): Promise<string> => todo(),
+    post: async (c: Ctx, id: string): Promise<string> => todo(),
   },
   ["/users3"]: {
     get: async (): Promise<string> => todo(),

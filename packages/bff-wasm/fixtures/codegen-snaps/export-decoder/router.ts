@@ -5,10 +5,10 @@ type User = {
 };
 
 export const { User } = buildDecoders<{ User: User }>();
-
+type Ctx = any;
 export default {
   [`/{name}`]: {
-    get: async (name: string): Promise<User> => {
+    get: async (c: Ctx, name: string): Promise<User> => {
       return User.parse({ name });
     },
   },

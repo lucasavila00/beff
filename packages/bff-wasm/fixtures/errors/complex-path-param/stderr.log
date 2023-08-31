@@ -1,4 +1,12 @@
-Found 1 errors
+Found 2 errors
+
+/home/lucas/fluff/bff/packages/bff-wasm/fixtures/errors/complex-path-param/app.ts:7:4
+  5 |
+  6 | export default {
+> 7 |   [`/hello/{id}`]: { get: async (id: A): Promise<string> => `Hello ${id}!` },
+    |    ^^^^^^^^^^^^^ ContextParameterMustBeFirst
+  8 | };
+  9 |
 
 /home/lucas/fluff/bff/packages/bff-wasm/fixtures/errors/complex-path-param/app.ts:7:4
   5 |

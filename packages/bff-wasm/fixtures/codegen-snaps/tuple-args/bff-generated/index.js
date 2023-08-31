@@ -31,6 +31,9 @@ export const meta = {
             "method_kind": "get",
             "params": [
                 {
+                    "type": "context"
+                },
+                {
                     "type": "query",
                     "name": "limit",
                     "required": true,

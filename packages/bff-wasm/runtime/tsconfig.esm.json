@@ -2,7 +2,7 @@
   "compilerOptions": {
     "target": "ES2021",
     "lib": ["ES2021"],
-    "module": "CommonJS",
+    "module": "ESNext",
     "moduleResolution": "node",
     "sourceMap": false,
     "composite": false,
@@ -14,7 +14,7 @@
     "noUnusedLocals": false,
     "noUnusedParameters": true,
     "baseUrl": "./",
-    "outDir": "./dist/cjs",
+    "outDir": "./dist/esm",
     "noFallthroughCasesInSwitch": true
   },
   "include": ["./runtime.ts"]

@@ -1,4 +1,4 @@
-Found 10 errors
+Found 11 errors
 
 /home/lucas/fluff/bff/packages/bff-wasm/fixtures/errors/cannot-serialize/app.ts:12:6
   10 | const f = 1;
@@ -89,3 +89,11 @@ Found 10 errors
   22 | };
   23 |
   24 | export default {
+
+/home/lucas/fluff/bff/packages/bff-wasm/fixtures/errors/cannot-serialize/app.ts:25:4
+  23 |
+  24 | export default {
+> 25 |   [`/hello/{id}`]: { get: async (id: string): Promise<A> => todo() },
+     |    ^^^^^^^^^^^^^ ContextParameterMustBeFirst
+  26 | };
+  27 |

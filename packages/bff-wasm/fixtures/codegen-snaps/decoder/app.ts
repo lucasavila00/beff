@@ -3,7 +3,7 @@ type ChildUser = {
   id: string;
   user: User;
 };
-
+type Ctx = any;
 type User = {
   a: string;
   b: number;
@@ -22,5 +22,5 @@ type User = {
   i: { a: 1 } & { b: 2 };
 };
 export default {
-  [`/{id}`]: { get: async (id: string): Promise<User> => todo() },
+  [`/{id}`]: { get: async (ctx: Ctx, id: string): Promise<User> => todo() },
 };

@@ -1,4 +1,4 @@
-Found 5 errors
+Found 6 errors
 
 /home/lucas/fluff/bff/packages/bff-wasm/fixtures/errors/invalid-jsdocs/app.ts:1:1
 > 1 | /**
@@ -170,3 +170,12 @@ Found 5 errors
 > 22 | };
      | ^^^^ CannotParseJsDoc
   23 |
+
+/home/lucas/fluff/bff/packages/bff-wasm/fixtures/errors/invalid-jsdocs/app.ts:12:4
+  10 |    * @xxx yyy
+  11 |    */
+> 12 |   [`/hello/{id}`]: {
+     |    ^^^^^^^^^^^^^ ContextParameterMustBeFirst
+  13 |     get: async (
+  14 |       /**
+  15 |        * @title abc

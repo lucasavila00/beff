@@ -1,9 +1,9 @@
 use swc_common::DUMMY_SP;
 use swc_ecma_ast::{
-    op, ArrayLit, AssignExpr, BindingIdent, Bool, Decl, Expr, ExprOrSpread, ExprStmt, FnDecl,
-    FnExpr, Ident, KeyValueProp, Lit, MemberExpr, MemberProp, Module, ModuleItem, Null, Number,
-    ObjectLit, Pat, PatOrExpr, Prop, PropName, PropOrSpread, Stmt, Str, VarDecl, VarDeclKind,
-    VarDeclarator,
+    op, ArrayLit, AssignExpr, BindingIdent, Bool, Decl, ExportDecl, Expr, ExprOrSpread, ExprStmt,
+    FnDecl, FnExpr, Ident, KeyValueProp, Lit, MemberExpr, MemberProp, Module, ModuleItem, Null,
+    Number, ObjectLit, Pat, PatOrExpr, Prop, PropName, PropOrSpread, Stmt, Str, VarDecl,
+    VarDeclKind, VarDeclarator,
 };
 
 use crate::api_extractor::{
@@ -490,6 +490,33 @@ impl Builder {
             .into(),
         )))
     }
+
+    fn export_const_decl(name: &str, init: Expr) -> ModuleItem {
+        ModuleItem::ModuleDecl(swc_ecma_ast::ModuleDecl::ExportDecl(ExportDecl {
+            span: DUMMY_SP,
+            decl: Decl::Var(
+                VarDecl {
+                    span: DUMMY_SP,
+                    kind: VarDeclKind::Const,
+                    declare: false,
+                    decls: vec![VarDeclarator {
+                        span: DUMMY_SP,
+                        name: Pat::Ident(BindingIdent {
+                            id: Ident {
+                                span: DUMMY_SP,
+                                sym: name.into(),
+                                optional: false,
+                            },
+                            type_ann: None,
+                        }),
+                        init: Some(Box::new(init)),
+                        definite: false,
+                    }],
+                }
+                .into(),
+            ),
+        }))
+    }
 }
 
 fn js_to_expr(
@@ -544,12 +571,19 @@ fn js_to_expr(
         }),
     }
 }
+
+#[derive(PartialEq, Eq, Copy, Clone, Debug)]
+pub enum ModuleType {
+    Esm,
+    Cjs,
+}
+
 pub trait ToModule {
-    fn to_module(self) -> (Module, Vec<Diagnostic>);
+    fn to_module(self, mod_type: ModuleType) -> (Module, Vec<Diagnostic>);
 }
 
 impl ToModule for ExtractResult {
-    fn to_module(mut self) -> (Module, Vec<Diagnostic>) {
+    fn to_module(mut self, mod_type: ModuleType) -> (Module, Vec<Diagnostic>) {
         let mut body = vec![];
         for comp in &self.open_api.components {
             let name = format!("validate_{}", comp.name);
@@ -566,24 +600,27 @@ impl ToModule for ExtractResult {
             body.push(module_item);
         }
         let dfs = self.open_api.components.clone();
-        let meta = Builder::const_decl(
-            "meta",
-            js_to_expr(
-                &mut self.errors,
-                &self.entry_file_name,
-                Js::Object(vec![
-                    (
-                        "handlersMeta".into(),
-                        handlers_to_js(self.handlers, &self.components),
-                    ),
-                    ("schema".into(), self.open_api.to_json().to_js()),
-                ]),
-                &dfs,
-            ),
+        let meta_expr = js_to_expr(
+            &mut self.errors,
+            &self.entry_file_name,
+            Js::Object(vec![
+                (
+                    "handlersMeta".into(),
+                    handlers_to_js(self.handlers, &self.components),
+                ),
+                ("schema".into(), self.open_api.to_json().to_js()),
+            ]),
+            &dfs,
         );
-        body.push(meta);
-        let exports_meta = Builder::exports_cjs("meta".into());
-        body.push(exports_meta);
+        if mod_type == ModuleType::Esm {
+            let meta = Builder::export_const_decl("meta", meta_expr);
+            body.push(meta);
+        } else {
+            let meta = Builder::const_decl("meta", meta_expr);
+            body.push(meta);
+            let exports_meta = Builder::exports_cjs("meta".into());
+            body.push(exports_meta);
+        }
         (
             Module {
                 span: DUMMY_SP,
