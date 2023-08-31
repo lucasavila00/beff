@@ -7,6 +7,10 @@ const RUNTIME_JS = fs.readFileSync(
   path.join(__dirname, "../runtime/dist/runtime.js"),
   "utf-8"
 );
+const RUNTIME_DTS = fs.readFileSync(
+  path.join(__dirname, "../runtime/dist/runtime.d.ts"),
+  "utf-8"
+);
 const finalizeFile = (wasmCode: string, skipSharedRuntime: boolean) => {
   if (skipSharedRuntime) {
     return wasmCode;
@@ -30,7 +34,13 @@ export const execProject = (
   if (!fs.existsSync(outputDir)) {
     fs.mkdirSync(outputDir);
   }
+
   const outputFile = path.join(outputDir, "index.js");
   const finalFile = finalizeFile(outString, skipSharedRuntime);
   fs.writeFileSync(outputFile, finalFile);
+
+  if (!skipSharedRuntime) {
+    const outputDts = path.join(outputDir, "index.d.ts");
+    fs.writeFileSync(outputDts, RUNTIME_DTS);
+  }
 };

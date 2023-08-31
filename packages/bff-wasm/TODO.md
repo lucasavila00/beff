@@ -2,9 +2,6 @@
 
 ## BFF CLI
 
-- [ ] write runtime
-- [ ] vitest of runtime
-
 ## BFF EXT
 
 # Milestone NEXT

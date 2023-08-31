@@ -5,18 +5,14 @@ import * as fs from "fs";
 import { Bundler } from "./bundler";
 import { ProjectJson } from "./project";
 
-const readProjectJson = (projectPath: string): ProjectJson => {
+const readProjectJson = (projectPath: string): Pick<ProjectJson, "router"> => {
   const projectJson = JSON.parse(fs.readFileSync(projectPath, "utf-8"));
   if (!projectJson.router) {
     throw new Error("router not found in project.json");
   }
-  if (!projectJson.outputDir) {
-    throw new Error("outputDir not found in project.json");
-  }
 
   return {
     router: String(projectJson.router),
-    outputDir: String(projectJson.outputDir),
   };
 };
 
