@@ -6,12 +6,12 @@ use swc_ecma_ast::{
 };
 
 use crate::api_extractor::{
-    operation_parameter_in_path_or_query_or_body, FnHandler, FunctionParameterIn, HandlerParameter,
-    HeaderOrCookie, ParsedPattern,
+    operation_parameter_in_path_or_query_or_body, ExtractResult, FnHandler, FunctionParameterIn,
+    HandlerParameter, HeaderOrCookie, ParsedPattern,
 };
+use crate::decoder;
 use crate::diag::Diagnostic;
 use crate::open_api_ast::{self, Definition, Js, Json, JsonSchema, OpenApi};
-use crate::{decoder, BundleResult};
 
 pub trait ToExpr {
     fn to_expr(self) -> Expr;
@@ -516,7 +516,7 @@ pub trait ToModule {
     fn to_module(self) -> (Module, Vec<Diagnostic>);
 }
 
-impl ToModule for BundleResult {
+impl ToModule for ExtractResult {
     fn to_module(mut self) -> (Module, Vec<Diagnostic>) {
         let mut body = vec![];
         for comp in &self.open_api.components {

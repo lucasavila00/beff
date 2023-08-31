@@ -1,7 +1,14 @@
+use anyhow::Result;
+use bff_core::parse::load_source_file;
+use bff_core::ParsedModule;
+use bff_core::ParsedModuleLocals;
 use bff_core::{ImportReference, TypeExport};
 use std::collections::HashMap;
 use std::collections::HashSet;
+use std::rc::Rc;
+use std::sync::Arc;
 use swc_atoms::JsWord;
+use swc_common::SourceMap;
 use swc_common::{FileName, SyntaxContext};
 use swc_ecma_ast::Decl;
 use swc_ecma_ast::ExportDecl;
@@ -9,7 +16,6 @@ use swc_ecma_ast::{
     ImportDecl, ImportNamedSpecifier, ImportSpecifier, TsInterfaceDecl, TsTypeAliasDecl,
 };
 use swc_ecma_visit::Visit;
-
 pub struct ImportsVisitor {
     pub imports: HashMap<(JsWord, SyntaxContext), ImportReference>,
     pub type_exports: HashMap<JsWord, TypeExport>,
@@ -98,4 +104,35 @@ impl Visit for ImportsVisitor {
             }
         }
     }
+}
+
+pub fn parse_file_content(
+    file_name: FileName,
+    content: &str,
+) -> Result<(Rc<ParsedModule>, HashSet<String>)> {
+    log::info!("RUST: Parsing file {file_name:?}");
+    let cm: SourceMap = SourceMap::default();
+    let source_file = cm.new_source_file(file_name, content.to_owned());
+    let (module, comments) = load_source_file(&source_file, &Arc::new(cm))?;
+    let mut v = ImportsVisitor::from_file(module.fm.name.clone());
+    v.visit_module(&module.module);
+
+    let imports: HashSet<String> = v
+        .imports
+        .values()
+        .into_iter()
+        .map(|x| x.file_name.to_string())
+        .collect();
+
+    let mut locals = ParsedModuleLocals::new();
+    locals.visit_module(&module.module);
+
+    let f = Rc::new(ParsedModule {
+        module,
+        imports: v.imports,
+        type_exports: v.type_exports,
+        comments,
+        locals,
+    });
+    return Ok((f, imports));
 }

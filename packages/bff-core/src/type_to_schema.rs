@@ -138,7 +138,7 @@ impl<'a, R: FileManager> TypeToSchema<'a, R> {
 
     fn get_current_file(&mut self) -> Rc<ParsedModule> {
         self.files
-            .get_file(&self.current_file)
+            .get_or_fetch_file(&self.current_file)
             .expect("should have been parsed")
     }
 
@@ -206,7 +206,7 @@ impl<'a, R: FileManager> TypeToSchema<'a, R> {
             .get(&(i.sym.clone(), i.span.ctxt))
         {
             let imported = imported.clone();
-            let file = self.files.get_file(&imported.file_name);
+            let file = self.files.get_or_fetch_file(&imported.file_name);
             match file {
                 Some(file) => {
                     let exp = file.type_exports.get(&i.sym);
@@ -274,7 +274,7 @@ impl<'a, R: FileManager> TypeToSchema<'a, R> {
         self.error(span, DiagnosticMessage::CannotSerializeType)
     }
     fn error(&mut self, span: &Span, msg: DiagnosticMessage) -> JsonSchema {
-        let file = self.files.get_file(&self.current_file).unwrap();
+        let file = self.files.get_or_fetch_file(&self.current_file).unwrap();
         let loc_lo = file.module.source_map.lookup_char_pos(span.lo);
         let loc_hi = file.module.source_map.lookup_char_pos(span.hi);
         let err = Diagnostic {

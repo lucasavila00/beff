@@ -8,12 +8,7 @@ pub mod parse;
 pub mod printer;
 pub mod swc_builder;
 pub mod type_to_schema;
-use std::{collections::HashMap, path::PathBuf, sync::Arc};
-
-use crate::api_extractor::FnHandler;
-use crate::diag::Diagnostic;
-use crate::open_api_ast::Definition;
-use open_api_ast::OpenApi;
+use std::{collections::HashMap, sync::Arc};
 use swc_atoms::JsWord;
 use swc_common::{FileName, SourceFile, SourceMap, SyntaxContext};
 use swc_ecma_ast::{Module, TsInterfaceDecl, TsType, TsTypeAliasDecl};
@@ -67,14 +62,4 @@ impl Visit for ParsedModuleLocals {
         self.interfaces
             .insert((id.sym.clone(), id.span.ctxt), n.clone());
     }
-}
-
-#[derive(Debug)]
-pub struct BundleResult {
-    pub entry_point: PathBuf,
-    pub entry_file_name: FileName,
-    pub errors: Vec<Diagnostic>,
-    pub open_api: OpenApi,
-    pub handlers: Vec<FnHandler>,
-    pub components: Vec<Definition>,
 }

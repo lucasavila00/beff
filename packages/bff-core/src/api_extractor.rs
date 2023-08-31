@@ -138,7 +138,7 @@ pub struct FnHandler {
 }
 
 pub trait FileManager {
-    fn get_file(&mut self, name: &FileName) -> Option<Rc<ParsedModule>>;
+    fn get_or_fetch_file(&mut self, name: &FileName) -> Option<Rc<ParsedModule>>;
     fn get_existing_file(&self, name: &FileName) -> Option<Rc<ParsedModule>>;
 }
 
@@ -479,7 +479,7 @@ impl<'a, R: FileManager> ExtractExportDefaultVisitor<'a, R> {
     }
     fn get_current_file(&mut self) -> Rc<ParsedModule> {
         self.files
-            .get_file(&self.current_file)
+            .get_or_fetch_file(&self.current_file)
             .expect("should have been parsed")
     }
     fn visit_current_file(&mut self) {
@@ -969,7 +969,7 @@ struct EndpointToPath<'a, R: FileManager> {
 
 impl<'a, R: FileManager> EndpointToPath<'a, R> {
     fn push_error(&mut self, span: &Span, msg: DiagnosticMessage) {
-        let file = self.files.get_file(&self.current_file).unwrap();
+        let file = self.files.get_or_fetch_file(&self.current_file).unwrap();
         let loc_lo = file.module.source_map.lookup_char_pos(span.lo);
         let loc_hi = file.module.source_map.lookup_char_pos(span.hi);
         let err = Diagnostic {
@@ -1100,6 +1100,7 @@ pub struct ExtractResult {
     pub open_api: OpenApi,
     pub handlers: Vec<FnHandler>,
     pub components: Vec<Definition>,
+    pub entry_file_name: FileName,
 }
 
 fn visit_extract<R: FileManager>(
@@ -1128,13 +1129,13 @@ fn visit_extract<R: FileManager>(
     )
 }
 
-pub fn extract_schema<R: FileManager>(files: &mut R, current_file: &FileName) -> ExtractResult {
-    let (handlers, components, errors, info) = visit_extract(files, current_file);
+pub fn extract_schema<R: FileManager>(files: &mut R, entry_file_name: &FileName) -> ExtractResult {
+    let (handlers, components, errors, info) = visit_extract(files, entry_file_name);
 
     let mut transformer = EndpointToPath {
         errors: errors,
         components: &components,
-        current_file: &current_file,
+        current_file: &entry_file_name,
         files,
     };
     let paths = transformer.endpoints_to_paths(handlers.clone());
@@ -1149,5 +1150,6 @@ pub fn extract_schema<R: FileManager>(files: &mut R, current_file: &FileName) ->
         open_api,
         errors: transformer.errors,
         components: components,
+        entry_file_name: entry_file_name.clone(),
     }
 }
