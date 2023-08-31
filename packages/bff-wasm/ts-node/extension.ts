@@ -3,7 +3,22 @@ import * as vscode from "vscode";
 import * as path from "path";
 import * as fs from "fs";
 import { Bundler } from "./bundler";
-import { readProjectJson } from "./project";
+import { ProjectJson } from "./project";
+
+const readProjectJson = (projectPath: string): ProjectJson => {
+  const projectJson = JSON.parse(fs.readFileSync(projectPath, "utf-8"));
+  if (!projectJson.router) {
+    throw new Error("router not found in project.json");
+  }
+  if (!projectJson.outputDir) {
+    throw new Error("outputDir not found in project.json");
+  }
+
+  return {
+    router: String(projectJson.router),
+    outputDir: String(projectJson.outputDir),
+  };
+};
 
 let bundler: Bundler | null = null;
 export function activate(context: vscode.ExtensionContext) {
