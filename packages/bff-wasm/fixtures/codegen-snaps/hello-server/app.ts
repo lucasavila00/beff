@@ -1,4 +1,4 @@
-import { GET, Header, Cookie, todo } from "./bff-generated";
+import { Header, Cookie, todo } from "./bff-generated";
 import { UserEntity } from "./types";
 
 type DataTypesKitchenSink = {
@@ -76,5 +76,12 @@ export default {
       name: "John Doe",
       entities: [],
     }),
+  },
+  ["/users2/{id}"]: {
+    get: async (id: string): Promise<string> => todo(),
+    post: async (id: string): Promise<string> => todo(),
+  },
+  ["/users3"]: {
+    get: async (): Promise<string> => todo(),
   },
 };

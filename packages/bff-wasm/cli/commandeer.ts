@@ -1,8 +1,8 @@
 import { program } from "commander";
 import { Bundler } from "./bundler";
-import fs from "fs";
-import path from "path";
-const readProjectJson = (projectPath: string) => {
+import * as fs from "fs";
+import * as path from "path";
+export const readProjectJson = (projectPath: string) => {
   const projectJson = JSON.parse(fs.readFileSync(projectPath, "utf-8"));
   return projectJson;
 };

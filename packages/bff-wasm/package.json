@@ -2,14 +2,24 @@
   "name": "hello-wasm",
   "version": "1.0.0",
   "description": "",
-  "main": "index.js",
   "directories": {
     "test": "tests"
   },
+  "engines": {
+    "vscode": "^1.73.0"
+  },
+  "categories": [
+    "Other"
+  ],
+  "activationEvents": [
+    "*"
+  ],
+  "main": "./dist-ext/extension.js",
   "scripts": {
     "build-rust": "wasm-pack build --dev --target nodejs",
     "build-ts": "esbuild cli/commandeer.ts --bundle --outfile=dist-cli/cli.js --platform=node --target=node14 --external:pnpapi --external:./pkg/hello_wasm.js --external:./pkg/hello_wasm_bg.js",
-    "build": "npm run build-rust && npm run build-ts",
+    "build-ext": "esbuild vscode-ext/extension.ts --bundle --outfile=dist-ext/extension.js --platform=node --target=node14 --external:pnpapi --external:vscode --external:./pkg/hello_wasm.js --external:./pkg/hello_wasm_bg.js",
+    "build": "npm run build-rust && npm run build-ts && npm run build-ext",
     "wasm-test": "wasm-pack test --node",
     "test": "npm run build && vitest",
     "do": "npm run build && node npm-bin index.js -p /home/lucas/fluff/bff/packages/bff-wasm/fixtures/codegen-snaps/hello-server/bff.json"
@@ -20,6 +30,7 @@
     "typescript": "^5.2.2"
   },
   "devDependencies": {
+    "@types/vscode": "^1.81.0",
     "commander": "^11.0.0",
     "enhanced-resolve": "^5.15.0",
     "esbuild": "^0.19.2",

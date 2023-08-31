@@ -1,15 +1,11 @@
-import wasm from "../pkg/hello_wasm";
-import fs from "fs";
+import * as wasm from "../pkg/hello_wasm";
+import * as fs from "fs";
 import { resolveModuleName } from "typescript";
 
 const resolveImportNoCache = (
   file_name: string,
   mod: string
 ): string | undefined => {
-  // if (isRelativeImport(mod)) {
-  //   return resolveRelativeImport(file_name, mod);
-  // }
-
   interface ModuleResolutionHost {
     fileExists(fileName: string): boolean;
     readFile(fileName: string): string | undefined;
@@ -37,31 +33,40 @@ const resolveImportNoCache = (
     `JS: Resolved -import ? from '${mod}'- at ${file_name} => ${r.resolvedModule?.resolvedFileName}`
   );
   return r.resolvedModule?.resolvedFileName;
-
-  // return undefined;
 };
 const resolvedCache: Record<string, Record<string, string | undefined>> = {};
 const resolveImport = (file_name: string, mod: string): string | undefined => {
-  // const cached = resolvedCache?.[file_name]?.[mod];
-  // if (cached) {
-  //   return cached;
-  // }
+  const cached = resolvedCache?.[file_name]?.[mod];
+  if (cached) {
+    return cached;
+  }
 
   const result = resolveImportNoCache(file_name, mod);
-  // if (result) {
-  //   resolvedCache[file_name] = resolvedCache[file_name] || {};
-  //   resolvedCache[file_name][mod] = result;
-  // }
+  if (result) {
+    resolvedCache[file_name] = resolvedCache[file_name] || {};
+    resolvedCache[file_name][mod] = result;
+  }
   return result;
 };
-globalThis.resolve_import = resolveImport;
-globalThis.read_file_content = (file_name: string) => {
+(globalThis as any).resolve_import = resolveImport;
+(globalThis as any).read_file_content = (file_name: string) => {
   try {
     const source_file = fs.readFileSync(file_name, "utf-8");
     return source_file;
   } catch (e) {
     return undefined;
   }
+};
+type BundleDiagnosticItem = {
+  message: string;
+  file_name: string;
+  line_lo: number;
+  col_lo: number;
+  line_hi: number;
+  col_hi: number;
+};
+type BundleDiagnostic = {
+  diagnostics: BundleDiagnosticItem[];
 };
 export class Bundler {
   seenFiles: Set<string> = new Set();
@@ -71,5 +76,13 @@ export class Bundler {
 
   public bundle(file_name: string): string {
     return wasm.bundle_to_string(file_name);
+  }
+
+  public diagnostics(file_name: string): BundleDiagnostic | null {
+    return wasm.bundle_to_diagnostics(file_name);
+  }
+
+  public updateFileContent(file_name: string, content: string) {
+    return wasm.update_file_content(file_name, content);
   }
 }

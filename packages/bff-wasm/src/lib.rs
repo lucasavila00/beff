@@ -6,6 +6,7 @@ mod utils;
 
 use std::collections::HashSet;
 use std::rc::Rc;
+use std::sync::Arc;
 use std::{cell::RefCell, collections::HashMap};
 
 use crate::imports_visitor::ImportsVisitor;
@@ -17,10 +18,11 @@ use bff_core::emit::emit_module;
 use bff_core::printer::ToModule;
 use bff_core::{parse::load_source_file, BundleResult, ParsedModule, ParsedModuleLocals};
 use log::Level;
+use serde::{Deserialize, Serialize};
 use swc_common::{FileName, Globals, SourceMap, GLOBALS};
 use swc_ecma_visit::Visit;
 use wasm_bindgen::prelude::wasm_bindgen;
-
+use wasm_bindgen::JsValue;
 struct Bundler {
     pub files: HashMap<FileName, Rc<ParsedModule>>,
     pub known_files: HashSet<String>,
@@ -63,44 +65,58 @@ struct LazyFileManager<'a> {
     pub known_files: HashSet<String>,
 }
 
+fn parse_file_content(
+    file_name: FileName,
+    content: &str,
+) -> Result<(Rc<ParsedModule>, HashSet<String>)> {
+    log::info!("RUST: Parsing file {file_name:?}");
+    let cm: SourceMap = SourceMap::default();
+    let source_file = cm.new_source_file(file_name, content.to_owned());
+    let (module, comments) = load_source_file(&source_file, &Arc::new(cm))?;
+    let mut v = ImportsVisitor::from_file(module.fm.name.clone());
+    v.visit_module(&module.module);
+
+    let imports: HashSet<String> = v
+        .imports
+        .values()
+        .into_iter()
+        .map(|x| x.file_name.to_string())
+        .collect();
+
+    let mut locals = ParsedModuleLocals::new();
+    locals.visit_module(&module.module);
+
+    let f = Rc::new(ParsedModule {
+        module,
+        imports: v.imports,
+        type_exports: v.type_exports,
+        comments,
+        locals,
+    });
+    return Ok((f, imports));
+}
+
 impl<'a> FileManager for LazyFileManager<'a> {
     fn get_file(&mut self, name: &FileName) -> Option<Rc<ParsedModule>> {
         if let Some(it) = self.files.get(name) {
             return Some(it.clone());
         }
-        let cm: SourceMap = SourceMap::default();
-        let file_name = FileName::Real(name.to_string().into());
         let content = read_file_content(name.to_string().as_str())?;
-        let source_file = cm.new_source_file(file_name, content.to_owned());
+        let file_name = FileName::Real(name.to_string().into());
 
-        log::info!("RUST: Received file {source_file:?}");
-        let (module, comments) =
-            load_source_file(&source_file).expect("should be able to load source file");
-        let mut v = ImportsVisitor::from_file(module.fm.name.clone());
-        v.visit_module(&module.module);
+        let res = parse_file_content(file_name, &content);
+        match res {
+            Ok((f, imports)) => {
+                self.known_files.extend(imports);
+                self.files.insert(name.clone(), f.clone());
+                Some(f)
+            }
+            Err(_) => None,
+        }
+    }
 
-        let imports = v
-            .imports
-            .values()
-            .into_iter()
-            .map(|x| x.file_name.to_string());
-        log::info!("RUST: Has imports {imports:?}");
-
-        self.known_files.extend(imports);
-
-        let mut locals = ParsedModuleLocals::new();
-        locals.visit_module(&module.module);
-        let name = module.fm.name.clone();
-
-        let f = Rc::new(ParsedModule {
-            module,
-            imports: v.imports,
-            type_exports: v.type_exports,
-            comments,
-            locals,
-        });
-        self.files.insert(name.clone(), f.clone());
-        Some(f)
+    fn get_existing_file(&self, name: &FileName) -> Option<Rc<ParsedModule>> {
+        self.files.get(name).map(|opt| opt.clone())
     }
 }
 
@@ -148,6 +164,77 @@ fn bundle_to_string_inner(file_name: &str) -> Result<String> {
 }
 
 #[wasm_bindgen]
-pub fn bundle_to_string(file_name: &str) -> String {
-    bundle_to_string_inner(file_name).unwrap()
+pub fn bundle_to_string(file_name: &str) -> Option<String> {
+    match bundle_to_string_inner(file_name) {
+        Ok(s) => Some(s),
+        Err(_) => None,
+    }
+}
+
+#[derive(Serialize, Deserialize)]
+struct BundleDiagnosticItem {
+    message: String,
+    file_name: String,
+
+    line_lo: usize,
+    col_lo: usize,
+    line_hi: usize,
+    col_hi: usize,
+}
+#[derive(Serialize, Deserialize)]
+struct BundleDiagnostic {
+    diagnostics: Vec<BundleDiagnosticItem>,
+}
+
+fn to_bundle_diag(x: Diagnostic) -> BundleDiagnosticItem {
+    BundleDiagnosticItem {
+        message: format!("{:?}", x.message),
+        file_name: x.file_name.to_string(),
+        col_hi: x.loc_hi.col.0,
+        col_lo: x.loc_lo.col.0,
+        line_hi: x.loc_hi.line,
+        line_lo: x.loc_lo.line,
+    }
+}
+
+fn bundle_to_diagnostics_inner(file_name: &str) -> Result<BundleDiagnostic> {
+    let res = get_bundle_result(file_name)?;
+    if res.errors.is_empty() {
+        let (_ast, write_errs) = res.to_module();
+
+        return Ok(BundleDiagnostic {
+            diagnostics: write_errs.into_iter().map(to_bundle_diag).collect(),
+        });
+    }
+    return Ok(BundleDiagnostic {
+        diagnostics: res.errors.into_iter().map(to_bundle_diag).collect(),
+    });
+}
+
+#[wasm_bindgen]
+pub fn bundle_to_diagnostics(file_name: &str) -> JsValue {
+    let v = bundle_to_diagnostics_inner(file_name);
+    match v {
+        Ok(v) => serde_wasm_bindgen::to_value(&v).unwrap(),
+        Err(_) => JsValue::null(),
+    }
+}
+
+fn update_file_content_inner(file_name: &str, content: &str) {
+    let file_name = FileName::Real(file_name.to_string().into());
+    let res = GLOBALS.set(&SWC_GLOBALS, || {
+        parse_file_content(file_name.clone(), &content)
+    });
+    match res {
+        Ok((f, imports)) => BUNDLER.with(|b| {
+            let mut b = b.borrow_mut();
+            b.known_files.extend(imports);
+            b.files.insert(file_name, f);
+        }),
+        Err(_) => {}
+    }
+}
+#[wasm_bindgen]
+pub fn update_file_content(file_name: &str, content: &str) {
+    update_file_content_inner(file_name, content)
 }
