@@ -1,6 +1,14 @@
 # Milestone X
 
-## BFF Compiler
+## BFF CLI
+
+- [ ] log level
+- [ ] print errors
+- [ ] tests of error printing
+
+- [ ] write runtime with file
+
+## BFF EXT
 
 # Milestone NEXT
 

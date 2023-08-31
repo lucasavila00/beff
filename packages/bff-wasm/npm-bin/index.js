@@ -8,7 +8,9 @@ try {
 } finally {
   const end = Date.now();
   const d = new Date();
-  console.log(
-    `${d.getSeconds()}:${d.getMilliseconds()} - npm-bin: ${end - start}ms`
-  );
+  if (globalThis.verbose) {
+    console.log(
+      `${d.getSeconds()}:${d.getMilliseconds()} - npm-bin: ${end - start}ms`
+    );
+  }
 }

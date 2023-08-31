@@ -44,8 +44,9 @@ thread_local! {
 }
 
 #[wasm_bindgen]
-pub fn init() {
-    console_log::init_with_level(Level::Debug).expect("should be able to log");
+pub fn init(verbose: bool) {
+    let log_level = if verbose { Level::Debug } else { Level::Info };
+    console_log::init_with_level(log_level).expect("should be able to log");
     utils::set_panic_hook();
 }
 
@@ -57,6 +58,11 @@ extern "C" {
 #[wasm_bindgen]
 extern "C" {
     fn read_file_content(file_name: &str) -> Option<String>;
+}
+
+#[wasm_bindgen]
+extern "C" {
+    fn emit_diagnostic(diag: JsValue);
 }
 
 #[wasm_bindgen]
@@ -119,12 +125,10 @@ fn run_extraction(file_name: &str) -> ExtractResult {
         })
     })
 }
-fn print_errors(
-    errors: Vec<Diagnostic>,
-    // bundler_files: &HashMap<FileName, ParsedModule>,
-    // project_root: &str,
-) {
-    log::info!("{errors:?}")
+fn print_errors(errors: Vec<Diagnostic>) {
+    let v = WasmDiagnostic::from_diagnostics(errors);
+    let v = serde_wasm_bindgen::to_value(&v).unwrap();
+    emit_diagnostic(v)
 }
 fn bundle_to_string_inner(file_name: &str) -> Result<String> {
     let res = run_extraction(file_name);

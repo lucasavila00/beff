@@ -7,7 +7,7 @@ import { readProjectJson } from "./project";
 
 let bundler: Bundler | null = null;
 export function activate(context: vscode.ExtensionContext) {
-  bundler = new Bundler();
+  bundler = new Bundler(false);
 
   const workspacePath = vscode.workspace.workspaceFolders?.[0].uri.fsPath;
   if (!workspacePath) {

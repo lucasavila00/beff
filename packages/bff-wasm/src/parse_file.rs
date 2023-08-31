@@ -105,7 +105,7 @@ pub fn parse_file_content(
     file_name: &str,
     content: &str,
 ) -> Result<(Rc<ParsedModule>, HashSet<String>)> {
-    log::info!("RUST: Parsing file {file_name:?}");
+    log::debug!("RUST: Parsing file {file_name:?}");
     let cm: SourceMap = SourceMap::default();
     let source_file = cm.new_source_file(FileName::Real(file_name.into()), content.to_owned());
     let (module, comments) = load_source_file(&source_file, &Arc::new(cm))?;
