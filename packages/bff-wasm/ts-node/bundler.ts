@@ -62,14 +62,27 @@ const emitDiagnostics = (diag: BundleDiagnostic) => {
     if (fsCache[fileName]) {
       return fsCache[fileName];
     }
-    const rawLines = fs.readFileSync(fileName, "utf-8");
-    fsCache[fileName] = rawLines;
-    return rawLines;
+    try {
+      const rawLines = fs.readFileSync(fileName, "utf-8");
+      fsCache[fileName] = rawLines;
+      return rawLines;
+    } catch (e) {
+      return undefined;
+    }
   };
   console.error(chalk.red(`Found ${diag.diagnostics.length} errors`));
   console.error("");
 
-  diag.diagnostics.forEach((diag) => {
+  diag.diagnostics.forEach((data) => {
+    if (data.UnknownFile) {
+      const diag = data.UnknownFile;
+      console.error(chalk.red(`${diag.current_file}`));
+      console.error(diag.message);
+      console.error("");
+      return;
+    }
+    const diag = data.KnownFile;
+
     const location = {
       start: { line: diag.line_lo, column: diag.col_lo + 1 },
       end: { line: diag.line_hi, column: diag.col_hi + 1 },
@@ -107,7 +120,7 @@ const emitDiagnostics = (diag: BundleDiagnostic) => {
   }
 };
 
-type BundleDiagnosticItem = {
+type KnownFile = {
   message: string;
   file_name: string;
   line_lo: number;
@@ -115,6 +128,13 @@ type BundleDiagnosticItem = {
   line_hi: number;
   col_hi: number;
 };
+type UnknownFile = {
+  message: string;
+  current_file: string;
+};
+type BundleDiagnosticItem =
+  | { KnownFile: KnownFile; UnknownFile?: never }
+  | { UnknownFile: UnknownFile; KnownFile?: never };
 type BundleDiagnostic = {
   diagnostics: BundleDiagnosticItem[];
 };

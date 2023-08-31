@@ -1,35 +1,4 @@
-panicked at /home/lucas/fluff/bff/packages/bff-core/src/api_extractor.rs:1131:9:
-not yet implemented
+Found 1 errors
 
-Stack:
-
-Error
-    at /home/lucas/fluff/bff/packages/bff-wasm/pkg/hello_wasm.js:364:17
-    at logError (/home/lucas/fluff/bff/packages/bff-wasm/pkg/hello_wasm.js:205:18)
-    at module.exports.__wbg_new_abda76e883ba8a5f (/home/lucas/fluff/bff/packages/bff-wasm/pkg/hello_wasm.js:363:65)
-    at console_error_panic_hook::Error::new::h24a202ca2cd6f4e3 (wasm://wasm/02d2517a:wasm-function[16976]:0x8f38e1)
-    at console_error_panic_hook::hook_impl::hbd017b1cd15b0ccd (wasm://wasm/02d2517a:wasm-function[3229]:0x6e8242)
-    at console_error_panic_hook::hook::h2d1bbfd1bba12fb3 (wasm://wasm/02d2517a:wasm-function[18182]:0x904b23)
-    at core::ops::function::Fn::call::h060acb07aceb94e4 (wasm://wasm/02d2517a:wasm-function[15488]:0x8dcc45)
-    at std::panicking::rust_panic_with_hook::he4d11d009df2f45f (wasm://wasm/02d2517a:wasm-function[6611]:0x7d7ed5)
-    at std::panicking::begin_panic_handler::{{closure}}::hdd0d58f31e4d53df (wasm://wasm/02d2517a:wasm-function[8782]:0x838795)
-    at std::sys_common::backtrace::__rust_end_short_backtrace::hd70f3cac19eb49f3 (wasm://wasm/02d2517a:wasm-function[20721]:0x91c8c4)
-
-
-/home/lucas/fluff/bff/packages/bff-wasm/npm-bin/index.js:7
-  throw e;
-  ^
-
-RuntimeError: unreachable
-    at __rust_start_panic (wasm://wasm/02d2517a:wasm-function[20764]:0x91c9be)
-    at rust_panic (wasm://wasm/02d2517a:wasm-function[20563]:0x91c199)
-    at std::panicking::rust_panic_with_hook::he4d11d009df2f45f (wasm://wasm/02d2517a:wasm-function[6611]:0x7d7f02)
-    at std::panicking::begin_panic_handler::{{closure}}::hdd0d58f31e4d53df (wasm://wasm/02d2517a:wasm-function[8782]:0x838795)
-    at std::sys_common::backtrace::__rust_end_short_backtrace::hd70f3cac19eb49f3 (wasm://wasm/02d2517a:wasm-function[20721]:0x91c8c4)
-    at rust_begin_unwind (wasm://wasm/02d2517a:wasm-function[12411]:0x8a1f2a)
-    at core::panicking::panic_fmt::h157d8e2782a50057 (wasm://wasm/02d2517a:wasm-function[18067]:0x90336a)
-    at core::panicking::panic::h84f3aeadc405be3e (wasm://wasm/02d2517a:wasm-function[15485]:0x8dcb82)
-    at bff_core::api_extractor::visit_extract::h89f94701a519170c (wasm://wasm/02d2517a:wasm-function[1190]:0x5b1193)
-    at bff_core::api_extractor::extract_schema::h210a7f507dde7f1f (wasm://wasm/02d2517a:wasm-function[605]:0x4d36e8)
-
-Node.js v18.16.0
+/home/lucas/fluff/bff/packages/bff-wasm/fixtures/errors/no-default-export/app.ts
+CouldNotFindDefaultExport

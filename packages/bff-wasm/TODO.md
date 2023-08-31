@@ -2,13 +2,6 @@
 
 ## BFF CLI
 
-- [ ] tests of error printing
-
-  - [ ] invalid path def
-  - [ ] no app
-  - [ ] no default export
-  - [ ] parse error
-
 - [ ] write runtime
 - [ ] vitest of runtime
 
@@ -37,6 +30,7 @@
 - [ ] panic, todo, unwrap =>invalid-path-definition
 - [ ] todo!()
 - [ ] // todo
+- [ ] tests of error printing - tuple args no label
 
 - [ ] message for errors
 - [ ] clap descriptions of params

@@ -2,14 +2,20 @@ use bff_core::diag::Diagnostic;
 use serde::{Deserialize, Serialize};
 
 #[derive(Serialize, Deserialize)]
-pub struct WasmDiagnosticItem {
-    message: String,
-    file_name: String,
+pub enum WasmDiagnosticItem {
+    KnownFile {
+        message: String,
+        file_name: String,
 
-    line_lo: usize,
-    col_lo: usize,
-    line_hi: usize,
-    col_hi: usize,
+        line_lo: usize,
+        col_lo: usize,
+        line_hi: usize,
+        col_hi: usize,
+    },
+    UnknownFile {
+        message: String,
+        current_file: String,
+    },
 }
 #[derive(Serialize, Deserialize)]
 pub struct WasmDiagnostic {
@@ -25,12 +31,27 @@ impl WasmDiagnostic {
 }
 
 fn diag_to_wasm(diag: Diagnostic) -> WasmDiagnosticItem {
-    WasmDiagnosticItem {
-        message: format!("{:?}", diag.message),
-        file_name: diag.file_name.to_string(),
-        col_hi: diag.loc_hi.col.0,
-        col_lo: diag.loc_lo.col.0,
-        line_hi: diag.loc_hi.line,
-        line_lo: diag.loc_lo.line,
+    match diag {
+        Diagnostic::KnownFile {
+            message,
+            file_name,
+            loc_lo,
+            loc_hi,
+            ..
+        } => WasmDiagnosticItem::KnownFile {
+            message: format!("{:?}", message),
+            file_name: file_name.to_string(),
+            col_hi: loc_hi.col.0,
+            col_lo: loc_lo.col.0,
+            line_hi: loc_hi.line,
+            line_lo: loc_lo.line,
+        },
+        Diagnostic::UnknownFile {
+            message,
+            current_file,
+        } => WasmDiagnosticItem::UnknownFile {
+            message: format!("{:?}", message),
+            current_file: current_file.to_string(),
+        },
     }
 }
