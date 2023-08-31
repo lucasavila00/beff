@@ -13,7 +13,7 @@ const oneCodegenSnap = async (subFolder) => {
     subFolder,
     "bff.json"
   );
-  const command = `node ${bin} -p ${p}`;
+  const command = `node ${bin} --skip-shared-runtime -p ${p}`;
   console.log(command);
   const result = await execAsync(command);
   console.log(result.stdout.trim());

@@ -1,10 +1,7 @@
 {
-  "name": "hello-wasm",
+  "name": "bff-vscode",
   "version": "1.0.0",
   "description": "",
-  "directories": {
-    "test": "tests"
-  },
   "engines": {
     "vscode": "^1.73.0"
   },
@@ -22,8 +19,8 @@
     "build": "npm run build-rust && npm run build-cli && npm run build-ext",
     "test": "node script/e2e.js && vitest",
     "pretest": "npm run build",
-    "do": "npm run build && node npm-bin/index.js -v -p /home/lucas/fluff/bff/packages/bff-wasm/fixtures/errors/cannot-serialize/bff.json",
-    "ts-check": "tsc --noEmit"
+    "do": "npm run build && node npm-bin/index.js --skip-shared-runtime -v -p /home/lucas/fluff/bff/packages/bff-wasm/fixtures/errors/cannot-serialize/bff.json",
+    "ts": "tsc --noEmit"
   },
   "author": "",
   "license": "ISC",
@@ -37,7 +34,6 @@
     "@types/node": "^20.5.7",
     "@types/vscode": "^1.81.0",
     "commander": "^11.0.0",
-    "enhanced-resolve": "^5.15.0",
     "esbuild": "^0.19.2",
     "hono": "^3.5.6",
     "vitest": "^0.34.3"

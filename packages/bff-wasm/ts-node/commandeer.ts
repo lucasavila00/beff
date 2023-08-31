@@ -1,9 +1,9 @@
 import { program } from "commander";
-import { Bundler } from "./bundler";
 import * as fs from "fs";
 import * as path from "path";
 import { ProjectJson } from "./project";
 import * as chalk from "chalk";
+import { execProject } from "./bundle-to-disk";
 
 const bail = (msg: string) => {
   console.error(chalk.red(msg));
@@ -39,25 +39,6 @@ const readProjectJson = (projectPath: string): ProjectJson => {
   };
 };
 
-const execProject = (
-  projectPath: string,
-  projectJson: ProjectJson,
-  verbose: boolean
-) => {
-  const bundler = new Bundler(verbose);
-  const entryPoint = path.join(path.dirname(projectPath), projectJson.router);
-  const outString = bundler.bundle(entryPoint);
-  if (outString == null) {
-    process.exit(1);
-  }
-  const outputDir = path.join(path.dirname(projectPath), projectJson.outputDir);
-  if (!fs.existsSync(outputDir)) {
-    fs.mkdirSync(outputDir);
-  }
-  const outputFile = path.join(outputDir, "index.js");
-  fs.writeFileSync(outputFile, outString);
-};
-
 const getProjectPath = (projectPath: string | undefined): string => {
   if (projectPath == null) {
     return path.join(process.cwd(), "bff.json");
@@ -72,12 +53,18 @@ export const commanderExec = () => {
   const start = Date.now();
   program.option("-p, --project <string>");
   program.option("-v, --verbose");
+  program.option("--skip-shared-runtime");
   program.parse();
   const options = program.opts();
   const projectPath = getProjectPath(options.project);
   const projectJson = readProjectJson(projectPath);
 
-  execProject(projectPath, projectJson, options.verbose ?? false);
+  execProject(
+    projectPath,
+    projectJson,
+    options.verbose ?? false,
+    options.skipSharedRuntime ?? false
+  );
 
   const end = Date.now();
   const duration = end - start;
