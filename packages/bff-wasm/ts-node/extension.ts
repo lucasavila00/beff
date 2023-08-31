@@ -62,7 +62,25 @@ function updateDiagnostics(
 ): void {
   collection.clear();
   const diags = bundler?.diagnostics(entryPoint);
-  (diags?.diagnostics ?? []).forEach((diag) => {
+  (diags?.diagnostics ?? []).forEach((data) => {
+    if (data.UnknownFile) {
+      const diag = data.UnknownFile;
+      const documentUri = vscode.Uri.file(diag.current_file);
+      collection.set(documentUri, [
+        {
+          code: "",
+          message: diag.message,
+          range: new vscode.Range(
+            new vscode.Position(0, 0),
+            new vscode.Position(0, 0)
+          ),
+          severity: vscode.DiagnosticSeverity.Error,
+          source: "",
+        },
+      ]);
+      return;
+    }
+    const diag = data.KnownFile;
     const documentUri = vscode.Uri.file(diag.file_name);
     collection.set(documentUri, [
       {
