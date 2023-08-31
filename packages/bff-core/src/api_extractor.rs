@@ -71,6 +71,7 @@ pub enum HandlerParameter {
         required: bool,
         description: Option<String>,
     },
+    Context,
 }
 
 #[derive(Debug, Clone, Copy, Eq, PartialEq)]
@@ -126,6 +127,7 @@ fn parse_pattern_params(pattern: &str) -> Vec<String> {
     }
     params
 }
+
 #[derive(Debug, Clone)]
 pub struct FnHandler {
     pub pattern: ParsedPattern,
@@ -446,6 +448,9 @@ impl<'a, R: FileManager> ExtractExportDefaultVisitor<'a, R> {
     ) -> Result<HandlerParameter> {
         if let TsEntityName::Ident(i) = &tref.type_name {
             let name = i.sym.to_string();
+            if name == "Ctx" || name == "Context" {
+                return Ok(HandlerParameter::Context);
+            }
             if name == "Header" || name == "Cookie" {
                 return self.parse_lib_param(i, &tref.type_params, required, description);
             }
@@ -1039,6 +1044,30 @@ impl<'a, R: FileManager> EndpointToPath<'a, R> {
     fn endpoint_to_operation_object(&mut self, endpoint: FnHandler) -> OperationObject {
         let mut parameters: Vec<ParameterObject> = vec![];
         let mut json_request_body: Option<JsonRequestBody> = None;
+
+        if let Some((first_param, rest_param)) = endpoint.parameters.split_first() {
+            match first_param.1 {
+                HandlerParameter::Context => {}
+                _ => {
+                    self.push_error(
+                        &endpoint.pattern.raw_span,
+                        DiagnosticMessage::ContextParameterMustBeFirst,
+                    );
+                }
+            }
+            for (_, param) in rest_param {
+                match param {
+                    HandlerParameter::Context => {
+                        self.push_error(
+                            &endpoint.pattern.raw_span,
+                            DiagnosticMessage::ContextInvalidAtThisPosition,
+                        );
+                    }
+                    _ => {}
+                }
+            }
+        }
+
         for (key, param) in endpoint.parameters.into_iter() {
             match param {
                 HandlerParameter::PathOrQueryOrBody {
@@ -1106,6 +1135,7 @@ impl<'a, R: FileManager> EndpointToPath<'a, R> {
                     description,
                     schema,
                 }),
+                HandlerParameter::Context => {}
             };
         }
         OperationObject {

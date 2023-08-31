@@ -1,0 +1,4 @@
+{
+    "router": "./src/router.ts",
+    "outputDir": "./src/gen/"
+}

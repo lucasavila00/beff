@@ -5,6 +5,9 @@ use swc_common::{BytePos, Loc, SourceMap, Span};
 
 #[derive(Debug, Clone)]
 pub enum DiagnosticMessage {
+    ContextInvalidAtThisPosition,
+    ContextParameterMustBeFirst,
+    InvalidHofParam,
     PropSpreadIsNotSupported,
     OptionalTypeIsNotSupported,
     PropShouldHaveTypeAnnotation,

@@ -204,7 +204,6 @@ impl<'a, R: FileManager> TypeToSchema<'a, R> {
             .imports
             .get(&(i.sym.clone(), i.span.ctxt))
         {
-            let imported = imported.clone();
             let file = self.files.get_or_fetch_file(&imported.file_name);
             match file {
                 Some(file) => {
@@ -212,7 +211,7 @@ impl<'a, R: FileManager> TypeToSchema<'a, R> {
                     match exp {
                         Some(f) => {
                             found = Some(f.clone());
-                            found_imp = Some(imported);
+                            found_imp = Some(imported.clone());
                         }
                         None => {
                             return self.error(

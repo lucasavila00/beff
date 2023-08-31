@@ -2,7 +2,7 @@ import { Hono, Context } from "hono";
 import { HTTPException } from "hono/http-exception";
 import { getCookie } from "hono/cookie";
 type MetaParam = {
-  type: "path" | "query" | "cookie" | "header" | "body";
+  type: "path" | "query" | "cookie" | "header" | "body" | "context";
   name: string;
   required: boolean;
   validator: any;
@@ -174,6 +174,9 @@ const handleMethod = async (
         const value = await c.req.json();
         return decodeWithMessage(p.validator, value);
       }
+      case "context": {
+        return c;
+      }
     }
     throw new Error("not implemented: " + p.type);
   });
@@ -248,16 +251,19 @@ export const todo = <T>(): T => {
 };
 
 export type NormalizeRouterItem<T> = T extends (
-  ...deps: any
-) => (...args: infer I) => Promise<infer O>
-  ? [I, O]
-  : T extends (...args: infer I) => Promise<infer O>
+  ...args: infer I
+) => Promise<infer O>
   ? [I, O]
   : T extends (...args: infer I) => infer O
   ? [I, O]
   : never;
+type RemoveFirstOfTuple<T extends any[]> = T["length"] extends 0
+  ? []
+  : T extends [any, ...infer U]
+  ? U
+  : T;
 export type SimpleHttpFunction<M extends [any[], any]> = (
-  ...args: M[0]
+  ...args: RemoveFirstOfTuple<M[0]>
 ) => Promise<M[1]>;
 
 export type ClientFromRouter<R> = {
@@ -301,10 +307,14 @@ export function buildStableClient<T>(
       let url = meta.pattern;
       const method = meta.method_kind.toUpperCase() as any;
       const init: Partial<BffRequest> = {};
+      init.headers = {};
+      init.headers["content-type"] = "application/json";
       let hasAddedQueryParams = false;
 
-      for (let index = 0; index < meta.params.length; index++) {
-        const metadata = meta.params[index];
+      const clientParams = meta.params.filter((it) => it.type != "context");
+
+      for (let index = 0; index < clientParams.length; index++) {
+        const metadata = clientParams[index];
         const param = params[index];
         switch (metadata.type) {
           case "path": {
@@ -320,9 +330,6 @@ export function buildStableClient<T>(
             break;
           }
           case "header": {
-            if (init.headers == null) {
-              init.headers = {};
-            }
             init.headers[metadata.name] = param;
             break;
           }
@@ -335,6 +342,10 @@ export function buildStableClient<T>(
           }
           case "body": {
             init.requestBodyStringified = JSON.stringify(param);
+            break;
+          }
+          case "context": {
+            // not a client parameter
             break;
           }
           default: {
@@ -361,7 +372,9 @@ declare class Request {
   constructor(input: string, init?: any);
 }
 export const buildHonoTestClient = <T>(
-  app: Hono<any, any, any>
+  app: Hono<any, any, any>,
+  env: any,
+  executionContext?: any
 ): ClientFromRouter<T> =>
   buildStableClient<T>(async (req) => {
     const r = await app.fetch(
@@ -373,7 +386,9 @@ export const buildHonoTestClient = <T>(
           cookie: req.cookies.join(";"),
         },
         body: req.requestBodyStringified,
-      })
+      }),
+      env,
+      executionContext
     );
     if (r.ok) {
       return r.json();

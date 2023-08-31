@@ -27,6 +27,8 @@ type DataTypesKitchenSink = {
   str_template: `ab`;
 };
 
+type Cb = (err: Error | null, result?: string) => void;
+
 type User = {
   id: number;
   name: string;
@@ -83,5 +85,9 @@ export default {
   },
   ["/users3"]: {
     get: async (): Promise<string> => todo(),
+  },
+  ["/users4"]: {
+    get: async (): Promise<string> => todo(),
+    post: async (): Promise<string> => todo(),
   },
 };

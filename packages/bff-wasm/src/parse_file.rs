@@ -21,7 +21,7 @@ pub struct ImportsVisitor {
     pub type_exports: HashMap<JsWord, TypeExport>,
     pub current_file: FileName,
 
-    pub known_imports: HashSet<(String, String)>,
+    pub known_imports: HashMap<String, Option<String>>,
 }
 
 impl ImportsVisitor {
@@ -30,7 +30,15 @@ impl ImportsVisitor {
             imports: HashMap::new(),
             type_exports: HashMap::new(),
             current_file,
-            known_imports: HashSet::new(),
+            known_imports: HashMap::new(),
+        }
+    }
+    pub fn resolve_import(&self, module_specifier: &str) -> Option<String> {
+        match self.known_imports.get(module_specifier) {
+            Some(it) => it.clone(),
+            None => {
+                crate::resolve_import(&self.current_file.to_string().as_str(), &module_specifier)
+            }
         }
     }
 }
@@ -60,33 +68,15 @@ impl Visit for ImportsVisitor {
     fn visit_import_decl(&mut self, node: &ImportDecl) {
         let module_specifier = node.src.value.to_string();
 
-        if self
-            .known_imports
-            .contains(&(self.current_file.to_string(), module_specifier.clone()))
-        {
-            return;
-        }
-
         for x in &node.specifiers {
             match x {
                 ImportSpecifier::Named(ImportNamedSpecifier { local, .. }) => {
-                    if self
-                        .known_imports
-                        .contains(&(self.current_file.to_string(), module_specifier.clone()))
-                    {
-                        return;
-                    }
                     let k = (local.sym.clone(), local.span.ctxt);
-
-                    let v = crate::resolve_import(
-                        &self.current_file.to_string().as_str(),
-                        &module_specifier,
-                    );
-
+                    let v = self.resolve_import(&module_specifier);
+                    self.known_imports
+                        .insert(module_specifier.clone(), v.clone());
                     match v {
                         Some(v) => {
-                            self.known_imports
-                                .insert((self.current_file.to_string(), module_specifier.clone()));
                             self.imports.insert(k, ImportReference { file_name: v });
                         }
                         None => {}

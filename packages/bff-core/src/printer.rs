@@ -1,8 +1,9 @@
 use swc_common::DUMMY_SP;
 use swc_ecma_ast::{
-    ArrayLit, BindingIdent, Bool, Decl, ExportDecl, Expr, ExprOrSpread, FnDecl, FnExpr, Ident,
-    KeyValueProp, Lit, Module, ModuleDecl, ModuleItem, Null, Number, ObjectLit, Pat, Prop,
-    PropName, PropOrSpread, Stmt, Str, VarDecl, VarDeclKind, VarDeclarator,
+    op, ArrayLit, AssignExpr, BindingIdent, Bool, Decl, Expr, ExprOrSpread, ExprStmt, FnDecl,
+    FnExpr, Ident, KeyValueProp, Lit, MemberExpr, MemberProp, Module, ModuleItem, Null, Number,
+    ObjectLit, Pat, PatOrExpr, Prop, PropName, PropOrSpread, Stmt, Str, VarDecl, VarDeclKind,
+    VarDeclarator,
 };
 
 use crate::api_extractor::{
@@ -394,6 +395,9 @@ fn param_to_js(
                 ("coercer".into(), Js::Coercer(schema)),
             ])
         }
+        HandlerParameter::Context => {
+            Js::Object(vec![("type".into(), Js::String("context".into()))])
+        }
     }
 }
 
@@ -432,31 +436,59 @@ fn handlers_to_js(items: Vec<FnHandler>, components: &Vec<Definition>) -> Js {
 struct Builder;
 
 impl Builder {
-    fn export_decl(name: &str, init: Expr) -> ModuleItem {
-        ModuleItem::ModuleDecl(ModuleDecl::ExportDecl(ExportDecl {
+    fn exports_cjs(name: &str) -> ModuleItem {
+        let prop_left = Expr::Member(MemberExpr {
             span: DUMMY_SP,
-            decl: Decl::Var(
-                VarDecl {
+            obj: Expr::Ident(Ident {
+                span: DUMMY_SP,
+                sym: "exports".into(),
+                optional: false,
+            })
+            .into(),
+            prop: MemberProp::Ident(Ident {
+                span: DUMMY_SP,
+                sym: "meta".into(),
+                optional: false,
+            }),
+        });
+        ModuleItem::Stmt(Stmt::Expr(ExprStmt {
+            span: DUMMY_SP,
+            expr: Expr::Assign(AssignExpr {
+                span: DUMMY_SP,
+                op: op!("="),
+                left: PatOrExpr::Expr(prop_left.into()),
+                right: Expr::Ident(Ident {
                     span: DUMMY_SP,
-                    kind: VarDeclKind::Const,
-                    declare: false,
-                    decls: vec![VarDeclarator {
-                        span: DUMMY_SP,
-                        name: Pat::Ident(BindingIdent {
-                            id: Ident {
-                                span: DUMMY_SP,
-                                sym: name.into(),
-                                optional: false,
-                            },
-                            type_ann: None,
-                        }),
-                        init: Some(Box::new(init)),
-                        definite: false,
-                    }],
-                }
+                    sym: name.into(),
+                    optional: false,
+                })
                 .into(),
-            ),
+            })
+            .into(),
         }))
+    }
+    fn const_decl(name: &str, init: Expr) -> ModuleItem {
+        ModuleItem::Stmt(Stmt::Decl(Decl::Var(
+            VarDecl {
+                span: DUMMY_SP,
+                kind: VarDeclKind::Const,
+                declare: false,
+                decls: vec![VarDeclarator {
+                    span: DUMMY_SP,
+                    name: Pat::Ident(BindingIdent {
+                        id: Ident {
+                            span: DUMMY_SP,
+                            sym: name.into(),
+                            optional: false,
+                        },
+                        type_ann: None,
+                    }),
+                    init: Some(Box::new(init)),
+                    definite: false,
+                }],
+            }
+            .into(),
+        )))
     }
 }
 
@@ -534,7 +566,7 @@ impl ToModule for ExtractResult {
             body.push(module_item);
         }
         let dfs = self.open_api.components.clone();
-        let meta = Builder::export_decl(
+        let meta = Builder::const_decl(
             "meta",
             js_to_expr(
                 &mut self.errors,
@@ -550,6 +582,8 @@ impl ToModule for ExtractResult {
             ),
         );
         body.push(meta);
+        let exports_meta = Builder::exports_cjs("meta".into());
+        body.push(exports_meta);
         (
             Module {
                 span: DUMMY_SP,

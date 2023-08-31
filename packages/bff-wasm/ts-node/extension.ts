@@ -18,7 +18,7 @@ const readProjectJson = (projectPath: string): Pick<ProjectJson, "router"> => {
 
 let bundler: Bundler | null = null;
 export function activate(context: vscode.ExtensionContext) {
-  bundler = new Bundler(false);
+  bundler = new Bundler(true);
 
   const workspacePath = vscode.workspace.workspaceFolders?.[0].uri.fsPath;
   if (!workspacePath) {
@@ -40,15 +40,25 @@ export function activate(context: vscode.ExtensionContext) {
   watcher.onDidChange((e) => {
     console.log("File changed: ", e.fsPath);
     const newContent = fs.readFileSync(e.fsPath, "utf-8");
-    bundler?.updateFileContent(e.fsPath, newContent);
-    updateDiagnostics(entryPoint, collection);
+    try {
+      bundler?.updateFileContent(e.fsPath, newContent);
+      updateDiagnostics(entryPoint, collection);
+    } catch (e) {
+      console.error(e);
+      process.exit(1);
+    }
   });
 
   vscode.workspace.onDidChangeTextDocument((e) => {
     console.log("File changed: ", e.document.uri.fsPath);
     const newContent = e.document.getText();
-    bundler?.updateFileContent(e.document.uri.fsPath, newContent);
-    updateDiagnostics(entryPoint, collection);
+    try {
+      bundler?.updateFileContent(e.document.uri.fsPath, newContent);
+      updateDiagnostics(entryPoint, collection);
+    } catch (e) {
+      console.error(e);
+      process.exit(1);
+    }
   });
 }
 
