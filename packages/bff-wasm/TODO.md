@@ -4,7 +4,6 @@
 
 - [ ] tests of error printing
 
-  - [ ] invalid-jsdocs
   - [ ] invalid path def
   - [ ] no app
   - [ ] no default export

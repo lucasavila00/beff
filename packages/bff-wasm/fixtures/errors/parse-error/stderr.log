@@ -7,13 +7,13 @@ Error
     at /home/lucas/fluff/bff/packages/bff-wasm/pkg/hello_wasm.js:364:17
     at logError (/home/lucas/fluff/bff/packages/bff-wasm/pkg/hello_wasm.js:205:18)
     at module.exports.__wbg_new_abda76e883ba8a5f (/home/lucas/fluff/bff/packages/bff-wasm/pkg/hello_wasm.js:363:65)
-    at console_error_panic_hook::Error::new::h24a202ca2cd6f4e3 (wasm://wasm/02d240d2:wasm-function[16975]:0x8f34a9)
-    at console_error_panic_hook::hook_impl::hbd017b1cd15b0ccd (wasm://wasm/02d240d2:wasm-function[3228]:0x6e7e40)
-    at console_error_panic_hook::hook::h2d1bbfd1bba12fb3 (wasm://wasm/02d240d2:wasm-function[18181]:0x9046eb)
-    at core::ops::function::Fn::call::h060acb07aceb94e4 (wasm://wasm/02d240d2:wasm-function[15487]:0x8dc80d)
-    at std::panicking::rust_panic_with_hook::he4d11d009df2f45f (wasm://wasm/02d240d2:wasm-function[6610]:0x7d7a9d)
-    at std::panicking::begin_panic_handler::{{closure}}::hdd0d58f31e4d53df (wasm://wasm/02d240d2:wasm-function[8781]:0x83838d)
-    at std::sys_common::backtrace::__rust_end_short_backtrace::hd70f3cac19eb49f3 (wasm://wasm/02d240d2:wasm-function[20720]:0x91c48c)
+    at console_error_panic_hook::Error::new::h24a202ca2cd6f4e3 (wasm://wasm/02d24df2:wasm-function[16976]:0x8f37bf)
+    at console_error_panic_hook::hook_impl::hbd017b1cd15b0ccd (wasm://wasm/02d24df2:wasm-function[3229]:0x6e8156)
+    at console_error_panic_hook::hook::h2d1bbfd1bba12fb3 (wasm://wasm/02d24df2:wasm-function[18182]:0x904a01)
+    at core::ops::function::Fn::call::h060acb07aceb94e4 (wasm://wasm/02d24df2:wasm-function[15488]:0x8dcb23)
+    at std::panicking::rust_panic_with_hook::he4d11d009df2f45f (wasm://wasm/02d24df2:wasm-function[6611]:0x7d7db3)
+    at std::panicking::begin_panic_handler::{{closure}}::hdd0d58f31e4d53df (wasm://wasm/02d24df2:wasm-function[8782]:0x8386a3)
+    at std::sys_common::backtrace::__rust_end_short_backtrace::hd70f3cac19eb49f3 (wasm://wasm/02d24df2:wasm-function[20721]:0x91c7a2)
 
 
 /home/lucas/fluff/bff/packages/bff-wasm/npm-bin/index.js:7
@@ -21,15 +21,15 @@ Error
   ^
 
 RuntimeError: unreachable
-    at __rust_start_panic (wasm://wasm/02d240d2:wasm-function[20763]:0x91c586)
-    at rust_panic (wasm://wasm/02d240d2:wasm-function[20562]:0x91bd61)
-    at std::panicking::rust_panic_with_hook::he4d11d009df2f45f (wasm://wasm/02d240d2:wasm-function[6610]:0x7d7aca)
-    at std::panicking::begin_panic_handler::{{closure}}::hdd0d58f31e4d53df (wasm://wasm/02d240d2:wasm-function[8781]:0x83838d)
-    at std::sys_common::backtrace::__rust_end_short_backtrace::hd70f3cac19eb49f3 (wasm://wasm/02d240d2:wasm-function[20720]:0x91c48c)
-    at rust_begin_unwind (wasm://wasm/02d240d2:wasm-function[12410]:0x8a1af2)
-    at core::panicking::panic_fmt::h157d8e2782a50057 (wasm://wasm/02d240d2:wasm-function[18066]:0x902f32)
-    at core::option::expect_failed::h471ebba33e8fa52e (wasm://wasm/02d240d2:wasm-function[14274]:0x8c7ce2)
-    at core::option::Option<T>::expect::ha3496933faca35e6 (wasm://wasm/02d240d2:wasm-function[10354]:0x86d3a3)
-    at bff_core::api_extractor::ExtractExportDefaultVisitor<R>::get_current_file::h84bb77e0005d3d2b (wasm://wasm/02d240d2:wasm-function[11133]:0x883186)
+    at __rust_start_panic (wasm://wasm/02d24df2:wasm-function[20764]:0x91c89c)
+    at rust_panic (wasm://wasm/02d24df2:wasm-function[20563]:0x91c077)
+    at std::panicking::rust_panic_with_hook::he4d11d009df2f45f (wasm://wasm/02d24df2:wasm-function[6611]:0x7d7de0)
+    at std::panicking::begin_panic_handler::{{closure}}::hdd0d58f31e4d53df (wasm://wasm/02d24df2:wasm-function[8782]:0x8386a3)
+    at std::sys_common::backtrace::__rust_end_short_backtrace::hd70f3cac19eb49f3 (wasm://wasm/02d24df2:wasm-function[20721]:0x91c7a2)
+    at rust_begin_unwind (wasm://wasm/02d24df2:wasm-function[12411]:0x8a1e08)
+    at core::panicking::panic_fmt::h157d8e2782a50057 (wasm://wasm/02d24df2:wasm-function[18067]:0x903248)
+    at core::option::expect_failed::h471ebba33e8fa52e (wasm://wasm/02d24df2:wasm-function[14275]:0x8c7ff8)
+    at core::option::Option<T>::expect::ha3496933faca35e6 (wasm://wasm/02d24df2:wasm-function[10355]:0x86d6b9)
+    at bff_core::api_extractor::ExtractExportDefaultVisitor<R>::get_current_file::h84bb77e0005d3d2b (wasm://wasm/02d24df2:wasm-function[11134]:0x88349c)
 
 Node.js v18.16.0

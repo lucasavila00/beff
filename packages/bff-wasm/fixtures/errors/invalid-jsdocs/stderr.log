@@ -1,35 +1,172 @@
-panicked at /home/lucas/.cargo/registry/src/index.crates.io-6f17d22bba15001f/swc_common-0.32.0/src/source_map.rs:1096:17:
-position 0 does not resolve to a source location
+Found 5 errors
 
-Stack:
+/home/lucas/fluff/bff/packages/bff-wasm/fixtures/errors/invalid-jsdocs/app.ts:1:1
+> 1 | /**
+    | ^^^
+> 2 |  * @title abc
+    | ^^^^^^^^^^^^^
+> 3 |  * @augments asd
+    | ^^^^^^^^^^^^^
+> 4 |  * @xxx yyy
+    | ^^^^^^^^^^^^^
+> 5 |  */
+    | ^^^^ UnknownJsDocTag(Augments(AugmentsTag { span: Span { lo: BytePos(0), hi: BytePos(8), ctxt: #0 }, class: NamePath { span: Span { lo: BytePos(0), hi: BytePos(13), ctxt: #0 }, components: [Text { span: Span { lo: BytePos(0), hi: BytePos(3), ctxt: #0 }, value: Atom('asd' type=inline) }] } }))
+  6 | export default {
+  7 |   /**
+  8 |    * @title abc
 
-Error
-    at /home/lucas/fluff/bff/packages/bff-wasm/pkg/hello_wasm.js:364:17
-    at logError (/home/lucas/fluff/bff/packages/bff-wasm/pkg/hello_wasm.js:205:18)
-    at module.exports.__wbg_new_abda76e883ba8a5f (/home/lucas/fluff/bff/packages/bff-wasm/pkg/hello_wasm.js:363:65)
-    at console_error_panic_hook::Error::new::h24a202ca2cd6f4e3 (wasm://wasm/02d240d2:wasm-function[16975]:0x8f34a9)
-    at console_error_panic_hook::hook_impl::hbd017b1cd15b0ccd (wasm://wasm/02d240d2:wasm-function[3228]:0x6e7e40)
-    at console_error_panic_hook::hook::h2d1bbfd1bba12fb3 (wasm://wasm/02d240d2:wasm-function[18181]:0x9046eb)
-    at core::ops::function::Fn::call::h060acb07aceb94e4 (wasm://wasm/02d240d2:wasm-function[15487]:0x8dc80d)
-    at std::panicking::rust_panic_with_hook::he4d11d009df2f45f (wasm://wasm/02d240d2:wasm-function[6610]:0x7d7a9d)
-    at std::panicking::begin_panic_handler::{{closure}}::hdd0d58f31e4d53df (wasm://wasm/02d240d2:wasm-function[8781]:0x83838d)
-    at std::sys_common::backtrace::__rust_end_short_backtrace::hd70f3cac19eb49f3 (wasm://wasm/02d240d2:wasm-function[20720]:0x91c48c)
+/home/lucas/fluff/bff/packages/bff-wasm/fixtures/errors/invalid-jsdocs/app.ts:1:1
+> 1 | /**
+    | ^^^
+> 2 |  * @title abc
+    | ^^^^^^^^^^^^^
+> 3 |  * @augments asd
+    | ^^^^^^^^^^^^^
+> 4 |  * @xxx yyy
+    | ^^^^^^^^^^^^^
+> 5 |  */
+    | ^^^^ UnknownJsDocTagOfTypeUnknown("xxx")
+  6 | export default {
+  7 |   /**
+  8 |    * @title abc
 
+/home/lucas/fluff/bff/packages/bff-wasm/fixtures/errors/invalid-jsdocs/app.ts:1:1
+>  1 | /**
+     | ^^^
+>  2 |  * @title abc
+     | ^^^^^^^^^^^^^
+>  3 |  * @augments asd
+     | ^^^^^^^^^^^^^
+>  4 |  * @xxx yyy
+     | ^^^^^^^^^^^^^
+>  5 |  */
+     | ^^^^^^^^^^^^^
+>  6 | export default {
+     | ^^^^^^^^^^^^^
+>  7 |   /**
+     | ^^^^^^^^^^^^^
+>  8 |    * @title abc
+     | ^^^^^^^^^^^^^
+>  9 |    * @augments asd
+     | ^^^^^^^^^^^^^
+> 10 |    * @xxx yyy
+     | ^^^^^^^^^^^^^
+> 11 |    */
+     | ^^^^^^^^^^^^^
+> 12 |   [`/hello/{id}`]: {
+     | ^^^^^^^^^^^^^
+> 13 |     get: async (
+     | ^^^^^^^^^^^^^
+> 14 |       /**
+     | ^^^^^^^^^^^^^
+> 15 |        * @title abc
+     | ^^^^^^^^^^^^^
+> 16 |        * @augments asd
+     | ^^^^^^^^^^^^^
+> 17 |        * @xxx yyy
+     | ^^^^^^^^^^^^^
+> 18 |        */
+     | ^^^^^^^^^^^^^
+> 19 |       id: string
+     | ^^^^^^^^^^^^^
+> 20 |     ): Promise<string> => id,
+     | ^^^^^^^^^^^^^
+> 21 |   },
+     | ^^^^^^^^^^^^^
+> 22 | };
+     | ^^^^ CannotParseJsDoc
+  23 |
 
-/home/lucas/fluff/bff/packages/bff-wasm/npm-bin/index.js:7
-  throw e;
-  ^
+/home/lucas/fluff/bff/packages/bff-wasm/fixtures/errors/invalid-jsdocs/app.ts:1:1
+>  1 | /**
+     | ^^^
+>  2 |  * @title abc
+     | ^^^^^^^^^^^^^
+>  3 |  * @augments asd
+     | ^^^^^^^^^^^^^
+>  4 |  * @xxx yyy
+     | ^^^^^^^^^^^^^
+>  5 |  */
+     | ^^^^^^^^^^^^^
+>  6 | export default {
+     | ^^^^^^^^^^^^^
+>  7 |   /**
+     | ^^^^^^^^^^^^^
+>  8 |    * @title abc
+     | ^^^^^^^^^^^^^
+>  9 |    * @augments asd
+     | ^^^^^^^^^^^^^
+> 10 |    * @xxx yyy
+     | ^^^^^^^^^^^^^
+> 11 |    */
+     | ^^^^^^^^^^^^^
+> 12 |   [`/hello/{id}`]: {
+     | ^^^^^^^^^^^^^
+> 13 |     get: async (
+     | ^^^^^^^^^^^^^
+> 14 |       /**
+     | ^^^^^^^^^^^^^
+> 15 |        * @title abc
+     | ^^^^^^^^^^^^^
+> 16 |        * @augments asd
+     | ^^^^^^^^^^^^^
+> 17 |        * @xxx yyy
+     | ^^^^^^^^^^^^^
+> 18 |        */
+     | ^^^^^^^^^^^^^
+> 19 |       id: string
+     | ^^^^^^^^^^^^^
+> 20 |     ): Promise<string> => id,
+     | ^^^^^^^^^^^^^
+> 21 |   },
+     | ^^^^^^^^^^^^^
+> 22 | };
+     | ^^^^ CannotParseJsDoc
+  23 |
 
-RuntimeError: unreachable
-    at __rust_start_panic (wasm://wasm/02d240d2:wasm-function[20763]:0x91c586)
-    at rust_panic (wasm://wasm/02d240d2:wasm-function[20562]:0x91bd61)
-    at std::panicking::rust_panic_with_hook::he4d11d009df2f45f (wasm://wasm/02d240d2:wasm-function[6610]:0x7d7aca)
-    at std::panicking::begin_panic_handler::{{closure}}::hdd0d58f31e4d53df (wasm://wasm/02d240d2:wasm-function[8781]:0x83838d)
-    at std::sys_common::backtrace::__rust_end_short_backtrace::hd70f3cac19eb49f3 (wasm://wasm/02d240d2:wasm-function[20720]:0x91c48c)
-    at rust_begin_unwind (wasm://wasm/02d240d2:wasm-function[12410]:0x8a1af2)
-    at core::panicking::panic_fmt::h157d8e2782a50057 (wasm://wasm/02d240d2:wasm-function[18066]:0x902f32)
-    at swc_common::source_map::SourceMap::lookup_source_file::h13f191a6397de364 (wasm://wasm/02d240d2:wasm-function[2657]:0x6aa0b3)
-    at swc_common::source_map::SourceMap::lookup_char_pos::h9c3daf70cfdf358a (wasm://wasm/02d240d2:wasm-function[13920]:0x8c10bc)
-    at bff_core::api_extractor::ExtractExportDefaultVisitor<R>::build_error::ha2d72cfeb4238dc2 (wasm://wasm/02d240d2:wasm-function[1467]:0x5f174c)
-
-Node.js v18.16.0
+/home/lucas/fluff/bff/packages/bff-wasm/fixtures/errors/invalid-jsdocs/app.ts:1:1
+>  1 | /**
+     | ^^^
+>  2 |  * @title abc
+     | ^^^^^^^^^^^^^
+>  3 |  * @augments asd
+     | ^^^^^^^^^^^^^
+>  4 |  * @xxx yyy
+     | ^^^^^^^^^^^^^
+>  5 |  */
+     | ^^^^^^^^^^^^^
+>  6 | export default {
+     | ^^^^^^^^^^^^^
+>  7 |   /**
+     | ^^^^^^^^^^^^^
+>  8 |    * @title abc
+     | ^^^^^^^^^^^^^
+>  9 |    * @augments asd
+     | ^^^^^^^^^^^^^
+> 10 |    * @xxx yyy
+     | ^^^^^^^^^^^^^
+> 11 |    */
+     | ^^^^^^^^^^^^^
+> 12 |   [`/hello/{id}`]: {
+     | ^^^^^^^^^^^^^
+> 13 |     get: async (
+     | ^^^^^^^^^^^^^
+> 14 |       /**
+     | ^^^^^^^^^^^^^
+> 15 |        * @title abc
+     | ^^^^^^^^^^^^^
+> 16 |        * @augments asd
+     | ^^^^^^^^^^^^^
+> 17 |        * @xxx yyy
+     | ^^^^^^^^^^^^^
+> 18 |        */
+     | ^^^^^^^^^^^^^
+> 19 |       id: string
+     | ^^^^^^^^^^^^^
+> 20 |     ): Promise<string> => id,
+     | ^^^^^^^^^^^^^
+> 21 |   },
+     | ^^^^^^^^^^^^^
+> 22 | };
+     | ^^^^ CannotParseJsDoc
+  23 |
