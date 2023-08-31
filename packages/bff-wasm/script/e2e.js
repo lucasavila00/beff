@@ -24,13 +24,6 @@ const oneCodegenSnap = async (subFolder) => {
     throw new Error("stderr is not empty");
   }
 };
-const codegenSnaps = async () => {
-  const subFolders = fs.readdirSync(
-    path.join(__dirname, "../fixtures/codegen-snaps")
-  );
-
-  await Promise.all(subFolders.map(oneCodegenSnap));
-};
 
 const oneFailure = async (subFolder) => {
   const bin = path.join(__dirname, "../npm-bin/index.js");
@@ -60,13 +53,41 @@ const oneFailure = async (subFolder) => {
     );
   }
 };
+const oneVitest = async (subFolder) => {
+  const bin = path.join(__dirname, "../npm-bin/index.js");
+  const p = path.join(__dirname, "../vitest", subFolder, "bff.json");
+  const command = `node ${bin} -p ${p}`;
+  console.log(command);
+  const result = await execAsync(command);
+  console.log(result.stdout.trim());
+
+  const stderr = result.stderr.trim();
+  if (stderr) {
+    console.error(stderr);
+    throw new Error("stderr is not empty");
+  }
+};
+
+const vitest = async () => {
+  const subFolders = fs.readdirSync(path.join(__dirname, "../vitest"));
+  const folders = subFolders.filter((f) => f !== ".gitignore");
+  await Promise.all(folders.map(oneVitest));
+};
+
 const failures = async () => {
   const subFolders = fs.readdirSync(path.join(__dirname, "../fixtures/errors"));
   await Promise.all(subFolders.map(oneFailure));
 };
 
+const codegenSnaps = async () => {
+  const subFolders = fs.readdirSync(
+    path.join(__dirname, "../fixtures/codegen-snaps")
+  );
+
+  await Promise.all(subFolders.map(oneCodegenSnap));
+};
 const main = async () => {
-  await Promise.all([codegenSnaps(), failures()]);
+  await Promise.all([codegenSnaps(), failures(), vitest()]);
 };
 
 main().catch((e) => {
