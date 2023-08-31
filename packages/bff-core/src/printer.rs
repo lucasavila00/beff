@@ -1,4 +1,4 @@
-use swc_common::{FileName, DUMMY_SP};
+use swc_common::DUMMY_SP;
 use swc_ecma_ast::{
     ArrayLit, BindingIdent, Bool, Decl, ExportDecl, Expr, ExprOrSpread, FnDecl, FnExpr, Ident,
     KeyValueProp, Lit, Module, ModuleDecl, ModuleItem, Null, Number, ObjectLit, Pat, Prop,
@@ -462,7 +462,7 @@ impl Builder {
 
 fn js_to_expr(
     errors: &mut Vec<Diagnostic>,
-    file_name: &FileName,
+    file_name: &str,
     it: Js,
     components: &Vec<Definition>,
 ) -> Expr {

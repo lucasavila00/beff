@@ -12,7 +12,6 @@ use jsdoc::ast::{SummaryTag, Tag, UnknownTag, VersionTag};
 use jsdoc::Input;
 use std::rc::Rc;
 use swc_common::comments::{Comment, CommentKind, Comments};
-use swc_common::FileName;
 use swc_common::{BytePos, Span, DUMMY_SP};
 use swc_ecma_ast::{
     ArrayPat, ArrowExpr, AssignPat, AssignProp, BigInt, BindingIdent, ComputedPropName,
@@ -138,13 +137,13 @@ pub struct FnHandler {
 }
 
 pub trait FileManager {
-    fn get_or_fetch_file(&mut self, name: &FileName) -> Option<Rc<ParsedModule>>;
-    fn get_existing_file(&self, name: &FileName) -> Option<Rc<ParsedModule>>;
+    fn get_or_fetch_file(&mut self, name: &str) -> Option<Rc<ParsedModule>>;
+    fn get_existing_file(&self, name: &str) -> Option<Rc<ParsedModule>>;
 }
 
 pub struct ExtractExportDefaultVisitor<'a, R: FileManager> {
     files: &'a mut R,
-    current_file: &'a FileName,
+    current_file: &'a str,
     handlers: Vec<FnHandler>,
     components: Vec<Definition>,
     found_default_export: bool,
@@ -152,7 +151,7 @@ pub struct ExtractExportDefaultVisitor<'a, R: FileManager> {
     info: open_api_ast::Info,
 }
 impl<'a, R: FileManager> ExtractExportDefaultVisitor<'a, R> {
-    fn new(files: &'a mut R, current_file: &'a FileName) -> ExtractExportDefaultVisitor<'a, R> {
+    fn new(files: &'a mut R, current_file: &'a str) -> ExtractExportDefaultVisitor<'a, R> {
         ExtractExportDefaultVisitor {
             files,
             current_file,
@@ -210,7 +209,7 @@ impl<'a, R: FileManager> ExtractExportDefaultVisitor<'a, R> {
         let loc_hi = file.module.source_map.lookup_char_pos(span.hi);
         Diagnostic {
             message: msg,
-            file_name: self.current_file.clone(),
+            file_name: self.current_file.to_string(),
             span: *span,
             loc_lo,
             loc_hi,
@@ -964,7 +963,7 @@ struct EndpointToPath<'a, R: FileManager> {
     files: &'a mut R,
     errors: Vec<Diagnostic>,
     components: &'a Vec<Definition>,
-    current_file: &'a FileName,
+    current_file: &'a str,
 }
 
 impl<'a, R: FileManager> EndpointToPath<'a, R> {
@@ -974,7 +973,7 @@ impl<'a, R: FileManager> EndpointToPath<'a, R> {
         let loc_hi = file.module.source_map.lookup_char_pos(span.hi);
         let err = Diagnostic {
             message: msg,
-            file_name: self.current_file.clone(),
+            file_name: self.current_file.to_string(),
             span: *span,
             loc_lo,
             loc_hi,
@@ -1100,12 +1099,12 @@ pub struct ExtractResult {
     pub open_api: OpenApi,
     pub handlers: Vec<FnHandler>,
     pub components: Vec<Definition>,
-    pub entry_file_name: FileName,
+    pub entry_file_name: String,
 }
 
 fn visit_extract<R: FileManager>(
     files: &mut R,
-    current_file: &FileName,
+    current_file: &str,
 ) -> (Vec<FnHandler>, Vec<Definition>, Vec<Diagnostic>, Info) {
     let mut visitor = ExtractExportDefaultVisitor::new(files, current_file);
 
@@ -1129,7 +1128,7 @@ fn visit_extract<R: FileManager>(
     )
 }
 
-pub fn extract_schema<R: FileManager>(files: &mut R, entry_file_name: &FileName) -> ExtractResult {
+pub fn extract_schema<R: FileManager>(files: &mut R, entry_file_name: &str) -> ExtractResult {
     let (handlers, components, errors, info) = visit_extract(files, entry_file_name);
 
     let mut transformer = EndpointToPath {
@@ -1150,6 +1149,6 @@ pub fn extract_schema<R: FileManager>(files: &mut R, entry_file_name: &FileName)
         open_api,
         errors: transformer.errors,
         components: components,
-        entry_file_name: entry_file_name.clone(),
+        entry_file_name: entry_file_name.to_string(),
     }
 }

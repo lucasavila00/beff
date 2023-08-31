@@ -87,12 +87,7 @@ impl Visit for ImportsVisitor {
                         Some(v) => {
                             self.known_imports
                                 .insert((self.current_file.to_string(), module_specifier.clone()));
-                            self.imports.insert(
-                                k,
-                                ImportReference {
-                                    file_name: FileName::Real(v.into()),
-                                },
-                            );
+                            self.imports.insert(k, ImportReference { file_name: v });
                         }
                         None => {}
                     }
@@ -107,12 +102,12 @@ impl Visit for ImportsVisitor {
 }
 
 pub fn parse_file_content(
-    file_name: FileName,
+    file_name: &str,
     content: &str,
 ) -> Result<(Rc<ParsedModule>, HashSet<String>)> {
     log::info!("RUST: Parsing file {file_name:?}");
     let cm: SourceMap = SourceMap::default();
-    let source_file = cm.new_source_file(file_name, content.to_owned());
+    let source_file = cm.new_source_file(FileName::Real(file_name.into()), content.to_owned());
     let (module, comments) = load_source_file(&source_file, &Arc::new(cm))?;
     let mut v = ImportsVisitor::from_file(module.fm.name.clone());
     v.visit_module(&module.module);

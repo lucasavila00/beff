@@ -17,13 +17,13 @@ use parse_file::parse_file_content;
 use std::collections::HashSet;
 use std::rc::Rc;
 use std::{cell::RefCell, collections::HashMap};
-use swc_common::{FileName, Globals, GLOBALS};
+use swc_common::{Globals, GLOBALS};
 use wasm_bindgen::prelude::wasm_bindgen;
 use wasm_bindgen::JsValue;
 use wasm_diag::WasmDiagnostic;
 
 struct Bundler {
-    pub files: HashMap<FileName, Rc<ParsedModule>>,
+    pub files: HashMap<String, Rc<ParsedModule>>,
     pub known_files: HashSet<String>,
 }
 
@@ -78,30 +78,29 @@ pub fn update_file_content(file_name: &str, content: &str) {
 }
 
 struct LazyFileManager<'a> {
-    pub files: &'a mut HashMap<FileName, Rc<ParsedModule>>,
+    pub files: &'a mut HashMap<String, Rc<ParsedModule>>,
     pub known_files: HashSet<String>,
 }
 
 impl<'a> FileManager for LazyFileManager<'a> {
-    fn get_or_fetch_file(&mut self, name: &FileName) -> Option<Rc<ParsedModule>> {
-        if let Some(it) = self.files.get(name) {
+    fn get_or_fetch_file(&mut self, file_name: &str) -> Option<Rc<ParsedModule>> {
+        if let Some(it) = self.files.get(file_name) {
             return Some(it.clone());
         }
-        let content = read_file_content(name.to_string().as_str())?;
-        let file_name = FileName::Real(name.to_string().into());
+        let content = read_file_content(file_name.to_string().as_str())?;
 
         let res = parse_file_content(file_name, &content);
         match res {
             Ok((f, imports)) => {
                 self.known_files.extend(imports);
-                self.files.insert(name.clone(), f.clone());
+                self.files.insert(file_name.to_string(), f.clone());
                 Some(f)
             }
             Err(_) => None,
         }
     }
 
-    fn get_existing_file(&self, name: &FileName) -> Option<Rc<ParsedModule>> {
+    fn get_existing_file(&self, name: &str) -> Option<Rc<ParsedModule>> {
         self.files.get(name).map(|opt| opt.clone())
     }
 }
@@ -110,7 +109,7 @@ fn run_extraction(file_name: &str) -> ExtractResult {
     GLOBALS.set(&SWC_GLOBALS, || {
         BUNDLER.with(|b| {
             let mut b = b.borrow_mut();
-            let entry_point = FileName::Real(file_name.into());
+            let entry_point: String = file_name.to_string();
             let known_files = b.known_files.clone();
             let mut man = LazyFileManager {
                 files: &mut b.files,
@@ -151,15 +150,12 @@ fn bundle_to_diagnostics_inner(file_name: &str) -> WasmDiagnostic {
 }
 
 fn update_file_content_inner(file_name: &str, content: &str) {
-    let file_name = FileName::Real(file_name.to_string().into());
-    let res = GLOBALS.set(&SWC_GLOBALS, || {
-        parse_file_content(file_name.clone(), &content)
-    });
+    let res = GLOBALS.set(&SWC_GLOBALS, || parse_file_content(file_name, content));
     match res {
         Ok((f, imports)) => BUNDLER.with(|b| {
             let mut b = b.borrow_mut();
             b.known_files.extend(imports);
-            b.files.insert(file_name, f);
+            b.files.insert(file_name.to_string(), f);
         }),
         Err(_) => {}
     }

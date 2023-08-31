@@ -10,7 +10,7 @@ pub mod swc_builder;
 pub mod type_to_schema;
 use std::{collections::HashMap, sync::Arc};
 use swc_atoms::JsWord;
-use swc_common::{FileName, SourceFile, SourceMap, SyntaxContext};
+use swc_common::{SourceFile, SourceMap, SyntaxContext};
 use swc_ecma_ast::{Module, TsInterfaceDecl, TsType, TsTypeAliasDecl};
 use swc_ecma_visit::Visit;
 use swc_node_comments::SwcComments;
@@ -28,7 +28,7 @@ pub struct BffModuleData {
 
 #[derive(Debug, Clone)]
 pub struct ImportReference {
-    pub file_name: FileName,
+    pub file_name: String,
 }
 
 pub struct ParsedModule {

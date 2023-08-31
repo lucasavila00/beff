@@ -5,7 +5,6 @@ use crate::open_api_ast::{Definition, JsonSchema, Optionality};
 use crate::{ImportReference, ParsedModule, TypeExport};
 use std::collections::HashMap;
 use std::rc::Rc;
-use swc_common::FileName;
 use swc_common::Span;
 use swc_ecma_ast::{
     BigInt, Expr, Ident, TsArrayType, TsCallSignatureDecl, TsConditionalType,
@@ -20,7 +19,7 @@ use swc_ecma_ast::{
 
 pub struct TypeToSchema<'a, R: FileManager> {
     pub files: &'a mut R,
-    pub current_file: &'a FileName,
+    pub current_file: &'a str,
     pub components: HashMap<String, Option<Definition>>,
     pub errors: Vec<Diagnostic>,
 }
@@ -33,7 +32,7 @@ fn extract_items_from_array(it: JsonSchema) -> JsonSchema {
 }
 
 impl<'a, R: FileManager> TypeToSchema<'a, R> {
-    pub fn new(files: &'a mut R, current_file: &'a FileName) -> TypeToSchema<'a, R> {
+    pub fn new(files: &'a mut R, current_file: &'a str) -> TypeToSchema<'a, R> {
         TypeToSchema {
             files,
             current_file,
@@ -279,7 +278,7 @@ impl<'a, R: FileManager> TypeToSchema<'a, R> {
         let loc_hi = file.module.source_map.lookup_char_pos(span.hi);
         let err = Diagnostic {
             message: msg,
-            file_name: self.current_file.clone(),
+            file_name: self.current_file.to_string(),
             span: *span,
             loc_hi,
             loc_lo,

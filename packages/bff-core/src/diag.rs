@@ -1,5 +1,5 @@
 use jsdoc::ast::{Tag, TagItem};
-use swc_common::{FileName, Loc, Span};
+use swc_common::{Loc, Span};
 
 #[derive(Debug, Clone)]
 pub enum DiagnosticMessage {
@@ -47,7 +47,7 @@ pub enum DiagnosticMessage {
 #[derive(Debug, Clone)]
 pub struct Diagnostic {
     pub message: DiagnosticMessage,
-    pub file_name: FileName,
+    pub file_name: String,
     pub span: Span,
     pub loc_lo: Loc,
     pub loc_hi: Loc,
