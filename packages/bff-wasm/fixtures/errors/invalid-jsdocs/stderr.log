@@ -58,25 +58,27 @@ Error: CannotParseJsDoc
       | ^^^^^^^^^^^^^
  > 13 |     get: async (
       | ^^^^^^^^^^^^^
- > 14 |       /**
+ > 14 |       c: Ctx,
       | ^^^^^^^^^^^^^
- > 15 |        * @title abc
+ > 15 |       /**
       | ^^^^^^^^^^^^^
- > 16 |        * @augments asd
+ > 16 |        * @title abc
       | ^^^^^^^^^^^^^
- > 17 |        * @xxx yyy
+ > 17 |        * @augments asd
       | ^^^^^^^^^^^^^
- > 18 |        */
+ > 18 |        * @xxx yyy
       | ^^^^^^^^^^^^^
- > 19 |       id: string
+ > 19 |        */
       | ^^^^^^^^^^^^^
- > 20 |     ): Promise<string> => id,
+ > 20 |       id: string
       | ^^^^^^^^^^^^^
- > 21 |   },
+ > 21 |     ): Promise<string> => id,
       | ^^^^^^^^^^^^^
- > 22 | };
+ > 22 |   },
+      | ^^^^^^^^^^^^^
+ > 23 | };
       | ^^^^ CannotParseJsDoc
-   23 |
+   24 |
 
 Error: CannotParseJsDoc
  /home/lucas/fluff/bff/packages/bff-wasm/fixtures/errors/invalid-jsdocs/app.ts:1:1
@@ -106,25 +108,27 @@ Error: CannotParseJsDoc
       | ^^^^^^^^^^^^^
  > 13 |     get: async (
       | ^^^^^^^^^^^^^
- > 14 |       /**
+ > 14 |       c: Ctx,
       | ^^^^^^^^^^^^^
- > 15 |        * @title abc
+ > 15 |       /**
       | ^^^^^^^^^^^^^
- > 16 |        * @augments asd
+ > 16 |        * @title abc
       | ^^^^^^^^^^^^^
- > 17 |        * @xxx yyy
+ > 17 |        * @augments asd
       | ^^^^^^^^^^^^^
- > 18 |        */
+ > 18 |        * @xxx yyy
       | ^^^^^^^^^^^^^
- > 19 |       id: string
+ > 19 |        */
       | ^^^^^^^^^^^^^
- > 20 |     ): Promise<string> => id,
+ > 20 |       id: string
       | ^^^^^^^^^^^^^
- > 21 |   },
+ > 21 |     ): Promise<string> => id,
       | ^^^^^^^^^^^^^
- > 22 | };
+ > 22 |   },
+      | ^^^^^^^^^^^^^
+ > 23 | };
       | ^^^^ CannotParseJsDoc
-   23 |
+   24 |
 
 Error: CannotParseJsDoc
  /home/lucas/fluff/bff/packages/bff-wasm/fixtures/errors/invalid-jsdocs/app.ts:1:1
@@ -154,34 +158,26 @@ Error: CannotParseJsDoc
       | ^^^^^^^^^^^^^
  > 13 |     get: async (
       | ^^^^^^^^^^^^^
- > 14 |       /**
+ > 14 |       c: Ctx,
       | ^^^^^^^^^^^^^
- > 15 |        * @title abc
+ > 15 |       /**
       | ^^^^^^^^^^^^^
- > 16 |        * @augments asd
+ > 16 |        * @title abc
       | ^^^^^^^^^^^^^
- > 17 |        * @xxx yyy
+ > 17 |        * @augments asd
       | ^^^^^^^^^^^^^
- > 18 |        */
+ > 18 |        * @xxx yyy
       | ^^^^^^^^^^^^^
- > 19 |       id: string
+ > 19 |        */
       | ^^^^^^^^^^^^^
- > 20 |     ): Promise<string> => id,
+ > 20 |       id: string
       | ^^^^^^^^^^^^^
- > 21 |   },
+ > 21 |     ): Promise<string> => id,
       | ^^^^^^^^^^^^^
- > 22 | };
+ > 22 |   },
+      | ^^^^^^^^^^^^^
+ > 23 | };
       | ^^^^ CannotParseJsDoc
-   23 |
+   24 |
 
-Error: ContextParameterMustBeFirst
- /home/lucas/fluff/bff/packages/bff-wasm/fixtures/errors/invalid-jsdocs/app.ts:12:4
-   10 |    * @xxx yyy
-   11 |    */
- > 12 |   [`/hello/{id}`]: {
-      |    ^^^^^^^^^^^^^ ContextParameterMustBeFirst
-   13 |     get: async (
-   14 |       /**
-   15 |        * @title abc
-
-Found 6 errors
+Found 5 errors

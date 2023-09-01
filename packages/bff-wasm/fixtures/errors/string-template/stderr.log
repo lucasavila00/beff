@@ -1,9 +1,9 @@
 Error: Exposing a type that cannot be converted to JSON schema
- /home/lucas/fluff/bff/packages/bff-wasm/fixtures/errors/string-template/app.ts:8:55
+ /home/lucas/fluff/bff/packages/bff-wasm/fixtures/errors/string-template/app.ts:8:63
     6 |
     7 | export default {
- >  8 |   [`/hello/{id}`]: { get: async (id: string): Promise<A> => todo() },
-      |                                                       ^ A cannot be converted to JSON schema
+ >  8 |   [`/hello/{id}`]: { get: async (c: Ctx, id: string): Promise<A> => todo() },
+      |                                                               ^ A cannot be converted to JSON schema
     9 | };
    10 |
 
@@ -17,13 +17,4 @@ Error: Exposing a type that cannot be converted to JSON schema
        6 |
        7 | export default {
 
-Error: ContextParameterMustBeFirst
- /home/lucas/fluff/bff/packages/bff-wasm/fixtures/errors/string-template/app.ts:8:4
-    6 |
-    7 | export default {
- >  8 |   [`/hello/{id}`]: { get: async (id: string): Promise<A> => todo() },
-      |    ^^^^^^^^^^^^^ ContextParameterMustBeFirst
-    9 | };
-   10 |
-
-Found 2 errors
+Found 1 error

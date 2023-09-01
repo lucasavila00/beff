@@ -5,5 +5,5 @@ namespace X {
 }
 
 export default {
-  [`/hello/{id}`]: { get: async (id: string): Promise<X.A> => todo() },
+  [`/hello/{id}`]: { get: async (c: Ctx, id: string): Promise<X.A> => todo() },
 };

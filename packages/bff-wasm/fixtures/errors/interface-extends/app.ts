@@ -9,5 +9,5 @@ interface B extends A {
 }
 
 export default {
-  [`/hello/{id}`]: { get: async (id: string): Promise<B> => todo() },
+  [`/hello/{id}`]: { get: async (c: Ctx, id: string): Promise<B> => todo() },
 };

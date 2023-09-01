@@ -1,24 +1,24 @@
-Error: TsInterfaceExtendsNotSupported
- /home/lucas/fluff/bff/packages/bff-wasm/fixtures/errors/interface-extends/app.ts:7:1
-    5 | }
-    6 |
- >  7 | interface B extends A {
-      | ^^^^^^^^^^^^^^^^^^^^^^^
- >  8 |   b: string;
-      | ^^^^^^^^^^^^
- >  9 | }
-      | ^^ TsInterfaceExtendsNotSupported
+Error: Exposing a type that cannot be converted to JSON schema
+ /home/lucas/fluff/bff/packages/bff-wasm/fixtures/errors/interface-extends/app.ts:12:63
    10 |
    11 | export default {
-   12 |   [`/hello/{id}`]: { get: async (id: string): Promise<B> => todo() },
-
-Error: ContextParameterMustBeFirst
- /home/lucas/fluff/bff/packages/bff-wasm/fixtures/errors/interface-extends/app.ts:12:4
-   10 |
-   11 | export default {
- > 12 |   [`/hello/{id}`]: { get: async (id: string): Promise<B> => todo() },
-      |    ^^^^^^^^^^^^^ ContextParameterMustBeFirst
+ > 12 |   [`/hello/{id}`]: { get: async (c: Ctx, id: string): Promise<B> => todo() },
+      |                                                               ^ B cannot be converted to JSON schema
    13 | };
    14 |
 
-Found 2 errors
+    Caused by:
+     /home/lucas/fluff/bff/packages/bff-wasm/fixtures/errors/interface-extends/app.ts:7:1
+        5 | }
+        6 |
+     >  7 | interface B extends A {
+          | ^^^^^^^^^^^^^^^^^^^^^^^
+     >  8 |   b: string;
+          | ^^^^^^^^^^^^
+     >  9 | }
+          | ^^ Interface extends are not supported on schemas
+       10 |
+       11 | export default {
+       12 |   [`/hello/{id}`]: { get: async (c: Ctx, id: string): Promise<B> => todo() },
+
+Found 1 error

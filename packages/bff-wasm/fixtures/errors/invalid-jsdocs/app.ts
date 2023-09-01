@@ -11,6 +11,7 @@ export default {
    */
   [`/hello/{id}`]: {
     get: async (
+      c: Ctx,
       /**
        * @title abc
        * @augments asd

@@ -1,19 +1,10 @@
 Error: TsQualifiedNameNotSupported
- /home/lucas/fluff/bff/packages/bff-wasm/fixtures/errors/namespace/app.ts:8:57
+ /home/lucas/fluff/bff/packages/bff-wasm/fixtures/errors/namespace/app.ts:8:65
     6 |
     7 | export default {
- >  8 |   [`/hello/{id}`]: { get: async (id: string): Promise<X.A> => todo() },
-      |                                                         ^ TsQualifiedNameNotSupported
+ >  8 |   [`/hello/{id}`]: { get: async (c: Ctx, id: string): Promise<X.A> => todo() },
+      |                                                                 ^ TsQualifiedNameNotSupported
     9 | };
    10 |
 
-Error: ContextParameterMustBeFirst
- /home/lucas/fluff/bff/packages/bff-wasm/fixtures/errors/namespace/app.ts:8:4
-    6 |
-    7 | export default {
- >  8 |   [`/hello/{id}`]: { get: async (id: string): Promise<X.A> => todo() },
-      |    ^^^^^^^^^^^^^ ContextParameterMustBeFirst
-    9 | };
-   10 |
-
-Found 2 errors
+Found 1 error
