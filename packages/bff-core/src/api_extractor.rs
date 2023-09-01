@@ -133,7 +133,6 @@ fn parse_pattern_params(pattern: &str) -> Vec<String> {
 
 #[derive(Debug, Clone)]
 pub struct FnHandler {
-    pub pattern: ParsedPattern,
     pub summary: Option<String>,
     pub description: Option<String>,
     pub parameters: Vec<(String, HandlerParameter)>,
@@ -149,7 +148,7 @@ pub trait FileManager {
 pub struct ExtractExportDefaultVisitor<'a, R: FileManager> {
     files: &'a mut R,
     current_file: &'a str,
-    handlers: Vec<FnHandler>,
+    handlers: Vec<PathHandlerMap>,
     components: Vec<Definition>,
     found_default_export: bool,
     errors: Vec<Diagnostic>,
@@ -661,20 +660,6 @@ impl<'a, R: FileManager> ExtractExportDefaultVisitor<'a, R> {
         }
     }
 
-    fn validate_pattern_was_consumed(&mut self, e: FnHandler) -> FnHandler {
-        for path_param in &e.pattern.path_params {
-            // make sure some param exist for it
-            let found = e.parameters.iter().find(|(key, _)| key == path_param);
-            if found.is_none() {
-                self.push_error(
-                    &e.pattern.raw_span.clone(),
-                    DiagnosticInfoMessage::UnmatchedPathParameter(path_param.to_string()),
-                );
-            }
-        }
-        e
-    }
-
     fn get_endpoint_comments(&mut self, key: &PropName) -> Result<EndpointComments> {
         let comments = self
             .get_current_file()?
@@ -709,12 +694,7 @@ impl<'a, R: FileManager> ExtractExportDefaultVisitor<'a, R> {
 
         Ok(())
     }
-    fn method_from_func_expr(
-        &mut self,
-        key: &PropName,
-        func: &FnExpr,
-        pattern: &ParsedPattern,
-    ) -> Result<FnHandler> {
+    fn method_from_func_expr(&mut self, key: &PropName, func: &FnExpr) -> Result<FnHandler> {
         let FnExpr { function, .. } = func;
         let Function {
             params,
@@ -737,14 +717,13 @@ impl<'a, R: FileManager> ExtractExportDefaultVisitor<'a, R> {
         let e = FnHandler {
             method_kind: self.parse_method_kind(key)?,
             parameters,
-            pattern: pattern.clone(),
             summary: endpoint_comments.summary,
             description: endpoint_comments.description,
             return_type: self
                 .convert_to_json_schema(maybe_extract_promise(&return_type), parent_span),
         };
 
-        Ok(self.validate_pattern_was_consumed(e))
+        Ok(e)
     }
 
     fn assert_and_extract_type_from_ann(
@@ -788,12 +767,7 @@ impl<'a, R: FileManager> ExtractExportDefaultVisitor<'a, R> {
         }
     }
 
-    fn method_from_arrow_expr(
-        &mut self,
-        key: &PropName,
-        arrow: &ArrowExpr,
-        pattern: &ParsedPattern,
-    ) -> Result<FnHandler> {
+    fn method_from_arrow_expr(&mut self, key: &PropName, arrow: &ArrowExpr) -> Result<FnHandler> {
         let ArrowExpr {
             params,
             is_generator,
@@ -816,13 +790,12 @@ impl<'a, R: FileManager> ExtractExportDefaultVisitor<'a, R> {
                 .into_iter()
                 .flatten()
                 .collect(),
-            pattern: pattern.clone(),
             summary: endpoint_comments.summary,
             description: endpoint_comments.description,
             return_type: self.convert_to_json_schema(maybe_extract_promise(&ret_ty), parent_span),
         };
 
-        Ok(self.validate_pattern_was_consumed(e))
+        Ok(e)
     }
 
     fn get_prop_span(prop: &Prop) -> Span {
@@ -836,16 +809,11 @@ impl<'a, R: FileManager> ExtractExportDefaultVisitor<'a, R> {
         }
     }
 
-    fn endpoints_from_method_map(
-        &mut self,
-        prop: &Prop,
-        pattern: &ParsedPattern,
-    ) -> Vec<FnHandler> {
+    fn endpoints_from_method_map(&mut self, prop: &Prop) -> Vec<FnHandler> {
         if let Prop::KeyValue(KeyValueProp { key, value }) = prop {
             let method_kind = self.parse_method_kind(key);
             if let Ok(MethodKind::Use) = method_kind {
                 return vec![FnHandler {
-                    pattern: pattern.clone(),
                     summary: None,
                     description: None,
                     parameters: vec![],
@@ -855,14 +823,14 @@ impl<'a, R: FileManager> ExtractExportDefaultVisitor<'a, R> {
             }
 
             if let Expr::Arrow(arr) = &**value {
-                match self.method_from_arrow_expr(key, arr, pattern) {
+                match self.method_from_arrow_expr(key, arr) {
                     Ok(it) => return vec![it],
                     Err(_) => return vec![],
                 }
             }
 
             if let Expr::Fn(func) = &**value {
-                match self.method_from_func_expr(key, func, pattern) {
+                match self.method_from_func_expr(key, func) {
                     Ok(it) => return vec![it],
                     Err(_) => return vec![],
                 }
@@ -874,39 +842,55 @@ impl<'a, R: FileManager> ExtractExportDefaultVisitor<'a, R> {
         vec![]
     }
 
-    fn endpoints_from_prop(&mut self, prop: &Prop) -> Vec<FnHandler> {
+    fn validate_pattern_was_consumed(
+        &mut self,
+        e: FnHandler,
+        pattern: &ParsedPattern,
+    ) -> FnHandler {
+        for path_param in &pattern.path_params {
+            // make sure some param exist for it
+            let found = e.parameters.iter().find(|(key, _)| key == path_param);
+            if found.is_none() {
+                self.push_error(
+                    &pattern.raw_span.clone(),
+                    DiagnosticInfoMessage::UnmatchedPathParameter(path_param.to_string()),
+                );
+            }
+        }
+        e
+    }
+    fn endpoints_from_prop(&mut self, prop: &Prop) -> Result<PathHandlerMap> {
         if let Prop::KeyValue(KeyValueProp { key, value }) = prop {
-            let pattern = self.parse_key(key);
-            match pattern {
-                Ok(pattern) => {
-                    if let Expr::Object(obj) = &**value {
-                        return obj
-                            .props
-                            .iter()
-                            .flat_map(|it| match it {
-                                PropOrSpread::Spread(it) => {
-                                    self.push_error(
-                                        &it.dot3_token,
-                                        DiagnosticInfoMessage::PropSpreadIsNotSupported,
-                                    );
+            let pattern = self.parse_key(key)?;
+            if let Expr::Object(obj) = &**value {
+                let handlers = obj
+                    .props
+                    .iter()
+                    .flat_map(|it| match it {
+                        PropOrSpread::Spread(it) => {
+                            self.push_error(
+                                &it.dot3_token,
+                                DiagnosticInfoMessage::PropSpreadIsNotSupported,
+                            );
 
-                                    vec![]
-                                }
-                                PropOrSpread::Prop(it) => {
-                                    self.endpoints_from_method_map(it, &pattern)
-                                }
-                            })
-                            .collect();
-                    }
-                }
-                Err(_) => return vec![],
+                            vec![]
+                        }
+                        PropOrSpread::Prop(it) => self
+                            .endpoints_from_method_map(it)
+                            .into_iter()
+                            .map(|it| self.validate_pattern_was_consumed(it, &pattern))
+                            .collect(),
+                    })
+                    .collect();
+
+                return Ok(PathHandlerMap { pattern, handlers });
             }
         }
 
         let span = Self::get_prop_span(prop);
         self.push_error(&span, DiagnosticInfoMessage::NotAnObjectWithMethodKind);
 
-        vec![]
+        Err(anyhow!("not an object"))
     }
 
     #[allow(clippy::to_string_in_format_args)]
@@ -979,7 +963,9 @@ impl<'a, R: FileManager> Visit for ExtractExportDefaultVisitor<'a, R> {
                         match prop {
                             PropOrSpread::Prop(prop) => {
                                 let method = self.endpoints_from_prop(prop);
-                                self.handlers.extend(method);
+                                if let Ok(method) = method {
+                                    self.handlers.push(method)
+                                };
                             }
                             PropOrSpread::Spread(SpreadElement { dot3_token, .. }) => {
                                 self.push_error(
@@ -1086,7 +1072,11 @@ impl<'a, R: FileManager> EndpointToPath<'a, R> {
         }
     }
 
-    fn endpoint_to_operation_object(&mut self, endpoint: FnHandler) -> OperationObject {
+    fn endpoint_to_operation_object(
+        &mut self,
+        endpoint: &FnHandler,
+        pattern: &ParsedPattern,
+    ) -> OperationObject {
         let mut parameters: Vec<ParameterObject> = vec![];
         let mut json_request_body: Option<JsonRequestBody> = None;
 
@@ -1116,7 +1106,7 @@ impl<'a, R: FileManager> EndpointToPath<'a, R> {
             }
         }
 
-        for (key, param) in endpoint.parameters.into_iter() {
+        for (key, param) in endpoint.parameters.iter() {
             match param {
                 HandlerParameter::PathOrQueryOrBody {
                     schema,
@@ -1127,23 +1117,23 @@ impl<'a, R: FileManager> EndpointToPath<'a, R> {
                 } => {
                     match operation_parameter_in_path_or_query_or_body(
                         &key,
-                        &endpoint.pattern,
+                        &pattern,
                         &schema,
                         self.components,
                     ) {
                         FunctionParameterIn::Path => parameters.push(ParameterObject {
                             in_: ParameterIn::Path,
-                            name: key,
-                            required,
-                            description,
-                            schema,
+                            name: key.clone(),
+                            required: required.clone(),
+                            description: description.clone(),
+                            schema: schema.clone(),
                         }),
                         FunctionParameterIn::Query => parameters.push(ParameterObject {
                             in_: ParameterIn::Query,
-                            name: key,
-                            required,
-                            description,
-                            schema,
+                            name: key.clone(),
+                            required: required.clone(),
+                            description: description.clone(),
+                            schema: schema.clone(),
                         }),
                         FunctionParameterIn::Body => {
                             if json_request_body.is_some() {
@@ -1155,9 +1145,9 @@ impl<'a, R: FileManager> EndpointToPath<'a, R> {
                             }
 
                             json_request_body = Some(JsonRequestBody {
-                                schema,
-                                description,
-                                required,
+                                schema: schema.clone(),
+                                description: description.clone(),
+                                required: required.clone(),
                             });
                         }
                         FunctionParameterIn::InvalidComplexPathParameter => {
@@ -1180,67 +1170,66 @@ impl<'a, R: FileManager> EndpointToPath<'a, R> {
                         HeaderOrCookie::Header => ParameterIn::Header,
                         HeaderOrCookie::Cookie => ParameterIn::Cookie,
                     },
-                    name: key,
-                    required,
-                    description,
-                    schema,
+                    name: key.clone(),
+                    required: required.clone(),
+                    description: description.clone(),
+                    schema: schema.clone(),
                 }),
                 HandlerParameter::Context(_) => {}
             };
         }
         OperationObject {
-            summary: endpoint.summary,
-            description: endpoint.description,
+            summary: endpoint.summary.clone(),
+            description: endpoint.description.clone(),
             parameters,
-            json_response_body: endpoint.return_type,
+            json_response_body: endpoint.return_type.clone(),
             json_request_body,
         }
     }
-    fn add_endpoint_to_path(&mut self, path: &mut open_api_ast::ApiPath, endpoint: FnHandler) {
-        let kind = endpoint.method_kind;
-        let op = Some(self.endpoint_to_operation_object(endpoint));
-        match kind {
-            MethodKind::Get => path.get = op,
-            MethodKind::Post => path.post = op,
-            MethodKind::Put => path.put = op,
-            MethodKind::Delete => path.delete = op,
-            MethodKind::Patch => path.patch = op,
-            MethodKind::Options => path.options = op,
-            MethodKind::Use => {}
-        }
-    }
 
-    fn endpoints_to_paths(&mut self, endpoints: Vec<FnHandler>) -> Vec<open_api_ast::ApiPath> {
-        let mut acc: Vec<open_api_ast::ApiPath> = vec![];
-        for endpoint in endpoints {
-            let found = acc
-                .iter_mut()
-                .find(|x| x.pattern == endpoint.pattern.open_api_pattern);
-            if let Some(path) = found {
-                self.add_endpoint_to_path(path, endpoint);
-            } else {
-                let mut path =
-                    open_api_ast::ApiPath::from_pattern(&endpoint.pattern.open_api_pattern);
-                self.add_endpoint_to_path(&mut path, endpoint);
-                acc.push(path);
-            };
-        }
-        acc
+    fn endpoints_to_paths(
+        &mut self,
+        endpoints: &Vec<PathHandlerMap>,
+    ) -> Vec<open_api_ast::ApiPath> {
+        endpoints
+            .iter()
+            .map(|it| {
+                let mut path = open_api_ast::ApiPath::from_pattern(&it.pattern.open_api_pattern);
+                for endpoint in &it.handlers {
+                    let kind = endpoint.method_kind;
+                    let op = Some(self.endpoint_to_operation_object(endpoint, &it.pattern));
+                    match kind {
+                        MethodKind::Get => path.get = op,
+                        MethodKind::Post => path.post = op,
+                        MethodKind::Put => path.put = op,
+                        MethodKind::Delete => path.delete = op,
+                        MethodKind::Patch => path.patch = op,
+                        MethodKind::Options => path.options = op,
+                        MethodKind::Use => {}
+                    }
+                }
+                path
+            })
+            .collect()
     }
 }
 
+pub struct PathHandlerMap {
+    pub pattern: ParsedPattern,
+    pub handlers: Vec<FnHandler>,
+}
 pub struct ExtractResult {
     pub errors: Vec<Diagnostic>,
     pub open_api: OpenApi,
-    pub handlers: Vec<FnHandler>,
     pub components: Vec<Definition>,
     pub entry_file_name: String,
+    pub handlers: Vec<PathHandlerMap>,
 }
 
 fn visit_extract<R: FileManager>(
     files: &mut R,
     current_file: &str,
-) -> (Vec<FnHandler>, Vec<Definition>, Vec<Diagnostic>, Info) {
+) -> (Vec<PathHandlerMap>, Vec<Definition>, Vec<Diagnostic>, Info) {
     let mut visitor = ExtractExportDefaultVisitor::new(files, current_file);
 
     // todo: consume the error?
@@ -1273,7 +1262,7 @@ pub fn extract_schema<R: FileManager>(files: &mut R, entry_file_name: &str) -> E
         current_file: &entry_file_name,
         files,
     };
-    let paths = transformer.endpoints_to_paths(handlers.clone());
+    let paths = transformer.endpoints_to_paths(&handlers);
     let open_api = OpenApi {
         info: info,
         paths: paths,

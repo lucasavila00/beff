@@ -34,7 +34,10 @@ const oneFailure = async (subFolder) => {
     await execAsync(command);
     throw "should fail";
   } catch (e) {
-    if (e == "should fail") throw e;
+    if (e == "should fail") {
+      console.error(`should fail ${subFolder}`);
+      throw e;
+    }
 
     const stderr = e.stderr.trim();
     const stdout = e.stdout.trim();

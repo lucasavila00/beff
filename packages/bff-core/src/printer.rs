@@ -6,8 +6,8 @@ use swc_ecma_ast::{
 };
 
 use crate::api_extractor::{
-    operation_parameter_in_path_or_query_or_body, ExtractResult, FnHandler, FunctionParameterIn,
-    HandlerParameter, HeaderOrCookie, ParsedPattern,
+    operation_parameter_in_path_or_query_or_body, ExtractResult, FunctionParameterIn,
+    HandlerParameter, HeaderOrCookie, ParsedPattern, PathHandlerMap,
 };
 use crate::decoder;
 use crate::diag::Diagnostic;
@@ -400,33 +400,45 @@ fn param_to_js(
     }
 }
 
-fn handlers_to_js(items: Vec<FnHandler>, components: &Vec<Definition>) -> Js {
+fn handlers_to_js(items: Vec<PathHandlerMap>, components: &Vec<Definition>) -> Js {
     Js::Array(
         items
             .into_iter()
-            .map(|it| {
-                let ptn = &it.pattern.open_api_pattern;
-                let kind = it.method_kind.to_string().to_uppercase();
-                let decoder_name = format!("[{kind}] {ptn}.response_body");
-                Js::Object(vec![
-                    ("method_kind".into(), Js::String(it.method_kind.to_string())),
-                    (
-                        "params".into(),
-                        Js::Array(
-                            it.parameters
-                                .into_iter()
-                                .map(|(name, param)| {
-                                    param_to_js(&name, param, &it.pattern, components)
-                                })
-                                .collect(),
-                        ),
-                    ),
-                    ("pattern".into(), Js::String(it.pattern.open_api_pattern)),
-                    (
-                        "return_validator".into(),
-                        Js::Decoder(decoder_name, it.return_type),
-                    ),
-                ])
+            .flat_map(|it| {
+                it.handlers
+                    .into_iter()
+                    .map(|handler| {
+                        let ptn = &it.pattern.open_api_pattern;
+                        let kind = handler.method_kind.to_string().to_uppercase();
+                        let decoder_name = format!("[{kind}] {ptn}.response_body");
+                        Js::Object(vec![
+                            (
+                                "method_kind".into(),
+                                Js::String(handler.method_kind.to_string()),
+                            ),
+                            (
+                                "params".into(),
+                                Js::Array(
+                                    handler
+                                        .parameters
+                                        .into_iter()
+                                        .map(|(name, param)| {
+                                            param_to_js(&name, param, &it.pattern, components)
+                                        })
+                                        .collect(),
+                                ),
+                            ),
+                            (
+                                "pattern".into(),
+                                Js::String(it.pattern.open_api_pattern.clone()),
+                            ),
+                            (
+                                "return_validator".into(),
+                                Js::Decoder(decoder_name, handler.return_type),
+                            ),
+                        ])
+                    })
+                    .collect::<Vec<_>>()
             })
             .collect(),
     )
@@ -435,37 +447,6 @@ fn handlers_to_js(items: Vec<FnHandler>, components: &Vec<Definition>) -> Js {
 struct Builder;
 
 impl Builder {
-    // fn exports_cjs(name: &str) -> ModuleItem {
-    //     let prop_left = Expr::Member(MemberExpr {
-    //         span: DUMMY_SP,
-    //         obj: Expr::Ident(Ident {
-    //             span: DUMMY_SP,
-    //             sym: "exports".into(),
-    //             optional: false,
-    //         })
-    //         .into(),
-    //         prop: MemberProp::Ident(Ident {
-    //             span: DUMMY_SP,
-    //             sym: "meta".into(),
-    //             optional: false,
-    //         }),
-    //     });
-    //     ModuleItem::Stmt(Stmt::Expr(ExprStmt {
-    //         span: DUMMY_SP,
-    //         expr: Expr::Assign(AssignExpr {
-    //             span: DUMMY_SP,
-    //             op: op!("="),
-    //             left: PatOrExpr::Expr(prop_left.into()),
-    //             right: Expr::Ident(Ident {
-    //                 span: DUMMY_SP,
-    //                 sym: name.into(),
-    //                 optional: false,
-    //             })
-    //             .into(),
-    //         })
-    //         .into(),
-    //     }))
-    // }
     fn const_decl(name: &str, init: Expr) -> ModuleItem {
         ModuleItem::Stmt(Stmt::Decl(Decl::Var(
             VarDecl {
@@ -489,33 +470,6 @@ impl Builder {
             .into(),
         )))
     }
-
-    // fn export_const_decl(name: &str, init: Expr) -> ModuleItem {
-    //     ModuleItem::ModuleDecl(swc_ecma_ast::ModuleDecl::ExportDecl(ExportDecl {
-    //         span: DUMMY_SP,
-    //         decl: Decl::Var(
-    //             VarDecl {
-    //                 span: DUMMY_SP,
-    //                 kind: VarDeclKind::Const,
-    //                 declare: false,
-    //                 decls: vec![VarDeclarator {
-    //                     span: DUMMY_SP,
-    //                     name: Pat::Ident(BindingIdent {
-    //                         id: Ident {
-    //                             span: DUMMY_SP,
-    //                             sym: name.into(),
-    //                             optional: false,
-    //                         },
-    //                         type_ann: None,
-    //                     }),
-    //                     init: Some(Box::new(init)),
-    //                     definite: false,
-    //                 }],
-    //             }
-    //             .into(),
-    //         ),
-    //     }))
-    // }
 }
 
 fn js_to_expr(
