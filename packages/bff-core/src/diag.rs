@@ -1,4 +1,4 @@
-use std::sync::Arc;
+use std::{rc::Rc, sync::Arc};
 
 use swc_common::{BytePos, Loc, SourceMap, Span};
 
@@ -137,13 +137,13 @@ impl DiagnosticParentMessage {
 pub enum DiagnosticInformation {
     KnownFile {
         message: DiagnosticInfoMessage,
-        file_name: String,
+        file_name: Rc<String>,
         loc_lo: Loc,
         loc_hi: Loc,
     },
     UnknownFile {
         message: DiagnosticInfoMessage,
-        current_file: String,
+        current_file: Rc<String>,
     },
 }
 

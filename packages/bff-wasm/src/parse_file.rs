@@ -21,7 +21,7 @@ pub struct ImportsVisitor {
     pub type_exports: HashMap<JsWord, TypeExport>,
     pub current_file: FileName,
 
-    pub known_imports: HashMap<String, Option<String>>,
+    pub known_imports: HashMap<String, Option<Rc<String>>>,
 }
 
 impl ImportsVisitor {
@@ -33,11 +33,12 @@ impl ImportsVisitor {
             known_imports: HashMap::new(),
         }
     }
-    pub fn resolve_import(&self, module_specifier: &str) -> Option<String> {
+    pub fn resolve_import(&self, module_specifier: &str) -> Option<Rc<String>> {
         match self.known_imports.get(module_specifier) {
             Some(it) => it.clone(),
             None => {
                 crate::resolve_import(&self.current_file.to_string().as_str(), &module_specifier)
+                    .map(Rc::new)
             }
         }
     }

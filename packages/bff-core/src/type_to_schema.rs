@@ -21,7 +21,7 @@ use swc_ecma_ast::{
 
 pub struct TypeToSchema<'a, R: FileManager> {
     pub files: &'a mut R,
-    pub current_file: &'a str,
+    pub current_file: Rc<String>,
     pub components: HashMap<String, Option<Definition>>,
     pub ref_stack: Vec<DiagnosticInformation>,
 }
@@ -36,7 +36,7 @@ fn extract_items_from_array(it: JsonSchema) -> JsonSchema {
 type Res<T> = Result<T, Diagnostic>;
 
 impl<'a, R: FileManager> TypeToSchema<'a, R> {
-    pub fn new(files: &'a mut R, current_file: &'a str) -> TypeToSchema<'a, R> {
+    pub fn new(files: &'a mut R, current_file: Rc<String>) -> TypeToSchema<'a, R> {
         TypeToSchema {
             files,
             current_file,
@@ -244,7 +244,7 @@ impl<'a, R: FileManager> TypeToSchema<'a, R> {
         match found {
             Some(TypeExport::TsType(alias)) => {
                 let imported = found_imp.expect("should exist");
-                let mut chd_file_converter = TypeToSchema::new(self.files, &imported.file_name);
+                let mut chd_file_converter = TypeToSchema::new(self.files, imported.file_name);
 
                 let ty = chd_file_converter.convert_ts_type(&alias)?;
                 self.components.extend(chd_file_converter.components);
@@ -252,7 +252,7 @@ impl<'a, R: FileManager> TypeToSchema<'a, R> {
             }
             Some(TypeExport::TsInterfaceDecl(int)) => {
                 let imported = found_imp.expect("should exist");
-                let mut chd_file_converter = TypeToSchema::new(self.files, &imported.file_name);
+                let mut chd_file_converter = TypeToSchema::new(self.files, imported.file_name);
                 let ty = chd_file_converter.convert_ts_interface_decl(&int)?;
                 self.components.extend(chd_file_converter.components);
                 return self.insert_definition(i.sym.to_string(), ty);
@@ -314,14 +314,14 @@ impl<'a, R: FileManager> TypeToSchema<'a, R> {
 
                 DiagnosticInformation::KnownFile {
                     message: msg,
-                    file_name: self.current_file.to_string(),
+                    file_name: self.current_file.clone(),
                     loc_hi,
                     loc_lo,
                 }
             }
             None => DiagnosticInformation::UnknownFile {
                 message: msg,
-                current_file: self.current_file.to_string(),
+                current_file: self.current_file.clone(),
             },
         }
     }
@@ -337,7 +337,7 @@ impl<'a, R: FileManager> TypeToSchema<'a, R> {
                     span_to_loc(&i.span, &file.module.source_map, file.module.fm.end_pos);
 
                 DiagnosticInformation::KnownFile {
-                    file_name: self.current_file.to_string(),
+                    file_name: self.current_file.clone(),
                     loc_hi,
                     loc_lo,
                     message: DiagnosticInfoMessage::ThisRefersToSomethingThatCannotBeSerialized(

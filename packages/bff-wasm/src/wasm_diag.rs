@@ -28,7 +28,7 @@ impl WasmDiagnosticInformation {
                 loc_hi,
             } => WasmDiagnosticInformation::KnownFile {
                 message: message.to_string(),
-                file_name: file_name,
+                file_name: file_name.to_string(),
                 line_lo: loc_lo.line,
                 col_lo: loc_lo.col.0,
                 line_hi: loc_hi.line,
@@ -39,7 +39,7 @@ impl WasmDiagnosticInformation {
                 current_file,
             } => WasmDiagnosticInformation::UnknownFile {
                 message: message.to_string(),
-                current_file: current_file,
+                current_file: current_file.to_string(),
             },
         }
     }

@@ -122,7 +122,7 @@ fn run_extraction(file_name: &str) -> ExtractResult {
                 files: &mut b.files,
                 known_files,
             };
-            api_extractor::extract_schema(&mut man, &entry_point)
+            api_extractor::extract_schema(&mut man, Rc::new(entry_point))
         })
     })
 }

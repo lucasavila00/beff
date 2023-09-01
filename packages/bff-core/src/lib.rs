@@ -8,7 +8,7 @@ pub mod parse;
 pub mod printer;
 pub mod swc_builder;
 pub mod type_to_schema;
-use std::{collections::HashMap, sync::Arc};
+use std::{collections::HashMap, rc::Rc, sync::Arc};
 use swc_atoms::JsWord;
 use swc_common::{SourceFile, SourceMap, SyntaxContext};
 use swc_ecma_ast::{Module, TsInterfaceDecl, TsType, TsTypeAliasDecl};
@@ -28,7 +28,7 @@ pub struct BffModuleData {
 
 #[derive(Debug, Clone)]
 pub struct ImportReference {
-    pub file_name: String,
+    pub file_name: Rc<String>,
 }
 
 pub struct ParsedModule {
