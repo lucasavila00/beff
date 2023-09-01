@@ -1,5 +1,4 @@
-Found 1 errors
-
+Error
 /home/lucas/fluff/bff/packages/bff-wasm/fixtures/errors/tuple-args-no-label/app.ts:12:17
   10 | export default {
   11 |   [`/user`]: {
@@ -8,3 +7,5 @@ Found 1 errors
   13 |       return runQuery(q);
   14 |     },
   15 |   },
+
+Found 1 error

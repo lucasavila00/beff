@@ -1,8 +1,8 @@
-use bff_core::diag::Diagnostic;
+use bff_core::diag::{Diagnostic, DiagnosticInformation};
 use serde::{Deserialize, Serialize};
 
 #[derive(Serialize, Deserialize)]
-pub enum WasmDiagnosticItem {
+pub enum WasmDiagnosticInformation {
     KnownFile {
         message: String,
         file_name: String,
@@ -16,6 +16,40 @@ pub enum WasmDiagnosticItem {
         message: String,
         current_file: String,
     },
+}
+
+impl WasmDiagnosticInformation {
+    pub fn from_diagnostic_info(info: DiagnosticInformation) -> WasmDiagnosticInformation {
+        match info {
+            DiagnosticInformation::KnownFile {
+                message,
+                file_name,
+                loc_lo,
+                loc_hi,
+            } => WasmDiagnosticInformation::KnownFile {
+                message: message.to_string(),
+                file_name: file_name,
+                line_lo: loc_lo.line,
+                col_lo: loc_lo.col.0,
+                line_hi: loc_hi.line,
+                col_hi: loc_hi.col.0,
+            },
+            DiagnosticInformation::UnknownFile {
+                message,
+                current_file,
+            } => WasmDiagnosticInformation::UnknownFile {
+                message: message.to_string(),
+                current_file: current_file,
+            },
+        }
+    }
+}
+
+#[derive(Serialize, Deserialize)]
+pub struct WasmDiagnosticItem {
+    cause: WasmDiagnosticInformation,
+    related_information: Option<Vec<WasmDiagnosticInformation>>,
+    message: String,
 }
 #[derive(Serialize, Deserialize)]
 pub struct WasmDiagnostic {
@@ -31,27 +65,16 @@ impl WasmDiagnostic {
 }
 
 fn diag_to_wasm(diag: Diagnostic) -> WasmDiagnosticItem {
-    match diag {
-        Diagnostic::KnownFile {
-            message,
-            file_name,
-            loc_lo,
-            loc_hi,
-            ..
-        } => WasmDiagnosticItem::KnownFile {
-            message: format!("{:?}", message),
-            file_name: file_name.to_string(),
-            col_hi: loc_hi.col.0,
-            col_lo: loc_lo.col.0,
-            line_hi: loc_hi.line,
-            line_lo: loc_lo.line,
+    WasmDiagnosticItem {
+        cause: WasmDiagnosticInformation::from_diagnostic_info(diag.cause),
+        related_information: match diag.related_information {
+            Some(it) => Some(
+                it.into_iter()
+                    .map(WasmDiagnosticInformation::from_diagnostic_info)
+                    .collect(),
+            ),
+            None => None,
         },
-        Diagnostic::UnknownFile {
-            message,
-            current_file,
-        } => WasmDiagnosticItem::UnknownFile {
-            message: format!("{:?}", message),
-            current_file: current_file.to_string(),
-        },
+        message: diag.message.to_string(),
     }
 }

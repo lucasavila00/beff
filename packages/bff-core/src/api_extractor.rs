@@ -1,4 +1,4 @@
-use crate::diag::{span_to_loc, Diagnostic, DiagnosticMessage};
+use crate::diag::{span_to_loc, Diagnostic, DiagnosticInfoMessage, DiagnosticInformation};
 use crate::open_api_ast::{
     self, Definition, Info, JsonRequestBody, JsonSchema, OpenApi, OperationObject, ParameterIn,
     ParameterObject,
@@ -205,29 +205,28 @@ fn get_prop_name_span(key: &PropName) -> Span {
     return *span;
 }
 impl<'a, R: FileManager> ExtractExportDefaultVisitor<'a, R> {
-    fn build_error(&self, span: &Span, msg: DiagnosticMessage) -> Diagnostic {
+    fn build_error(&self, span: &Span, msg: DiagnosticInfoMessage) -> DiagnosticInformation {
         let file = self.files.get_existing_file(&self.current_file);
         match file {
             Some(file) => {
                 let (loc_lo, loc_hi) =
                     span_to_loc(span, &file.module.source_map, file.module.fm.end_pos);
 
-                Diagnostic::KnownFile {
+                DiagnosticInformation::KnownFile {
                     message: msg,
                     file_name: self.current_file.to_string(),
-                    span: *span,
                     loc_lo,
                     loc_hi,
                 }
             }
-            None => Diagnostic::UnknownFile {
+            None => DiagnosticInformation::UnknownFile {
                 message: msg,
                 current_file: self.current_file.to_string(),
             },
         }
     }
-    fn push_error(&mut self, span: &Span, msg: DiagnosticMessage) {
-        self.errors.push(self.build_error(span, msg));
+    fn push_error(&mut self, span: &Span, msg: DiagnosticInfoMessage) {
+        self.errors.push(self.build_error(span, msg).to_diag());
     }
 
     #[allow(clippy::to_string_in_format_args)]
@@ -256,19 +255,19 @@ impl<'a, R: FileManager> ExtractExportDefaultVisitor<'a, R> {
                                 }
                                 tag => self.push_error(
                                     &tag_item.span,
-                                    DiagnosticMessage::UnknownJsDocTag(tag.clone()),
+                                    DiagnosticInfoMessage::UnknownJsDocTag(tag.clone()),
                                 ),
                             }
                         }
                     }
-                    Err(_) => self.push_error(&c.span, DiagnosticMessage::CannotParseJsDoc),
+                    Err(_) => self.push_error(&c.span, DiagnosticInfoMessage::CannotParseJsDoc),
                 }
             }
         }
     }
     fn parse_description_comment(&mut self, comments: Vec<Comment>, span: &Span) -> Option<String> {
         if comments.len() != 1 {
-            self.push_error(span, DiagnosticMessage::CannotParseJsDoc);
+            self.push_error(span, DiagnosticInfoMessage::CannotParseJsDoc);
 
             return None;
         }
@@ -282,18 +281,18 @@ impl<'a, R: FileManager> ExtractExportDefaultVisitor<'a, R> {
             match parsed {
                 Ok((rest, parsed)) => {
                     if !rest.is_empty() {
-                        self.push_error(&first.span, DiagnosticMessage::CannotParseJsDoc);
+                        self.push_error(&first.span, DiagnosticInfoMessage::CannotParseJsDoc);
                     }
                     if !parsed.tags.is_empty() {
                         for tag in parsed.tags {
-                            self.push_error(&tag.span, DiagnosticMessage::CannotParseJsDoc);
+                            self.push_error(&tag.span, DiagnosticInfoMessage::CannotParseJsDoc);
                         }
                     }
                     return Some(trim_description_comments(
                         parsed.description.value.to_string(),
                     ));
                 }
-                Err(_) => self.push_error(&first.span, DiagnosticMessage::CannotParseJsDoc),
+                Err(_) => self.push_error(&first.span, DiagnosticInfoMessage::CannotParseJsDoc),
             }
         }
         None
@@ -319,12 +318,12 @@ impl<'a, R: FileManager> ExtractExportDefaultVisitor<'a, R> {
                     quasis,
                 }) => {
                     if !exprs.is_empty() {
-                        self.push_error(span, DiagnosticMessage::TemplateMustBeOfSingleString);
+                        self.push_error(span, DiagnosticInfoMessage::TemplateMustBeOfSingleString);
 
                         return Err(anyhow!("not single string"));
                     }
                     if quasis.len() != 1 {
-                        self.push_error(span, DiagnosticMessage::TemplateMustBeOfSingleString);
+                        self.push_error(span, DiagnosticInfoMessage::TemplateMustBeOfSingleString);
 
                         return Err(anyhow!("not single string"));
                     }
@@ -334,7 +333,7 @@ impl<'a, R: FileManager> ExtractExportDefaultVisitor<'a, R> {
                 _ => {
                     self.push_error(
                         span,
-                        DiagnosticMessage::MustBeComputedKeyWithMethodAndPatternMustBeString,
+                        DiagnosticInfoMessage::MustBeComputedKeyWithMethodAndPatternMustBeString,
                     );
 
                     Err(anyhow!("not computed key"))
@@ -344,7 +343,7 @@ impl<'a, R: FileManager> ExtractExportDefaultVisitor<'a, R> {
             | PropName::Str(Str { span, .. })
             | PropName::Num(Number { span, .. })
             | PropName::BigInt(BigInt { span, .. }) => {
-                self.push_error(span, DiagnosticMessage::MustBeComputedKey);
+                self.push_error(span, DiagnosticInfoMessage::MustBeComputedKey);
 
                 Err(anyhow!("not computed key"))
             }
@@ -356,7 +355,10 @@ impl<'a, R: FileManager> ExtractExportDefaultVisitor<'a, R> {
             let found = self.components.iter_mut().find(|x| x.name == d.name);
             if let Some(found) = found {
                 if found.schema != d.schema {
-                    self.push_error(span, DiagnosticMessage::TwoDifferentTypesWithTheSameName);
+                    self.push_error(
+                        span,
+                        DiagnosticInfoMessage::TwoDifferentTypesWithTheSameName,
+                    );
                 }
             } else {
                 self.components.push(d);
@@ -378,7 +380,7 @@ impl<'a, R: FileManager> ExtractExportDefaultVisitor<'a, R> {
                 Some(s) => kvs.push((k, s)),
                 None => self.push_error(
                     span,
-                    DiagnosticMessage::CannotResolveTypeReferenceOnExtracting(k),
+                    DiagnosticInfoMessage::CannotResolveTypeReferenceOnExtracting(k),
                 ),
             }
         }
@@ -405,7 +407,7 @@ impl<'a, R: FileManager> ExtractExportDefaultVisitor<'a, R> {
                     None => {
                         self.push_error(
                             &lib_ty_name.span,
-                            DiagnosticMessage::TooManyParamsOnLibType,
+                            DiagnosticInfoMessage::TooManyParamsOnLibType,
                         );
 
                         return Err(anyhow!("Header/Cookie must have one type parameter"));
@@ -415,7 +417,7 @@ impl<'a, R: FileManager> ExtractExportDefaultVisitor<'a, R> {
                         if params.len() != 1 {
                             self.push_error(
                                 &lib_ty_name.span,
-                                DiagnosticMessage::TooManyParamsOnLibType,
+                                DiagnosticInfoMessage::TooManyParamsOnLibType,
                             );
 
                             return Err(anyhow!("Header/Cookie must have one type parameter"));
@@ -486,12 +488,15 @@ impl<'a, R: FileManager> ExtractExportDefaultVisitor<'a, R> {
         match self.files.get_or_fetch_file(&self.current_file) {
             Some(it) => Ok(it),
             None => {
-                self.errors.push(self.build_error(
-                    &DUMMY_SP,
-                    DiagnosticMessage::CannotFindFileWhenConvertingToSchema(
-                        self.current_file.to_string(),
-                    ),
-                ));
+                self.errors.push(
+                    self.build_error(
+                        &DUMMY_SP,
+                        DiagnosticInfoMessage::CannotFindFileWhenConvertingToSchema(
+                            self.current_file.to_string(),
+                        ),
+                    )
+                    .to_diag(),
+                );
                 Err(anyhow!("cannot find file: {}", self.current_file))
             }
         }
@@ -514,12 +519,18 @@ impl<'a, R: FileManager> ExtractExportDefaultVisitor<'a, R> {
                 ..
             }) => {
                 if type_params.is_some() {
-                    self.push_error(rest_span, DiagnosticMessage::TsTypeParametersNotSupported);
+                    self.push_error(
+                        rest_span,
+                        DiagnosticInfoMessage::TsTypeParametersNotSupported,
+                    );
                     return Err(anyhow!("error param"));
                 }
                 match &type_name {
                     TsEntityName::TsQualifiedName(_) => {
-                        self.push_error(rest_span, DiagnosticMessage::TsQualifiedNameNotSupported);
+                        self.push_error(
+                            rest_span,
+                            DiagnosticInfoMessage::TsQualifiedNameNotSupported,
+                        );
                         return Err(anyhow!("error param"));
                     }
                     TsEntityName::Ident(i) => {
@@ -534,7 +545,7 @@ impl<'a, R: FileManager> ExtractExportDefaultVisitor<'a, R> {
                         }
                         self.push_error(
                             rest_span,
-                            DiagnosticMessage::CouldNotResolveIdentifierOnPathParamTuple,
+                            DiagnosticInfoMessage::CouldNotResolveIdentifierOnPathParamTuple,
                         );
                         return Err(anyhow!("error param"));
                     }
@@ -560,7 +571,7 @@ impl<'a, R: FileManager> ExtractExportDefaultVisitor<'a, R> {
                         _ => {
                             self.push_error(
                                 rest_span,
-                                DiagnosticMessage::CouldNotUnderstandRestParameter,
+                                DiagnosticInfoMessage::CouldNotUnderstandRestParameter,
                             );
                             return Err(anyhow!("error param"));
                         }
@@ -568,14 +579,14 @@ impl<'a, R: FileManager> ExtractExportDefaultVisitor<'a, R> {
                     None => {
                         self.push_error(
                             rest_span,
-                            DiagnosticMessage::RestParamMustBeLabelAnnotated,
+                            DiagnosticInfoMessage::RestParamMustBeLabelAnnotated,
                         );
                         return Err(anyhow!("error param"));
                     }
                 })
                 .collect(),
             _ => {
-                self.push_error(rest_span, DiagnosticMessage::RestParameterMustBeTuple);
+                self.push_error(rest_span, DiagnosticInfoMessage::RestParameterMustBeTuple);
                 return Err(anyhow!("error param"));
             }
         }
@@ -591,7 +602,7 @@ impl<'a, R: FileManager> ExtractExportDefaultVisitor<'a, R> {
                 if type_ann.is_none() {
                     self.push_error(
                         &id.span,
-                        DiagnosticMessage::ParameterIdentMustHaveTypeAnnotation,
+                        DiagnosticInfoMessage::ParameterIdentMustHaveTypeAnnotation,
                     );
 
                     return Err(anyhow!("error param"));
@@ -607,7 +618,7 @@ impl<'a, R: FileManager> ExtractExportDefaultVisitor<'a, R> {
             Pat::Rest(RestPat { span, type_ann, .. }) => match type_ann {
                 Some(it) => self.parse_arrow_param_from_type_expecting_tuple(&it.type_ann, span),
                 None => {
-                    self.push_error(span, DiagnosticMessage::RestParamMustBeTypeAnnotated);
+                    self.push_error(span, DiagnosticInfoMessage::RestParamMustBeTypeAnnotated);
                     return Err(anyhow!("error param"));
                 }
             },
@@ -615,11 +626,14 @@ impl<'a, R: FileManager> ExtractExportDefaultVisitor<'a, R> {
             | Pat::Object(ObjectPat { span, .. })
             | Pat::Assign(AssignPat { span, .. })
             | Pat::Invalid(Invalid { span, .. }) => {
-                self.push_error(span, DiagnosticMessage::ParameterPatternNotSupported);
+                self.push_error(span, DiagnosticInfoMessage::ParameterPatternNotSupported);
                 return Err(anyhow!("error param"));
             }
             Pat::Expr(_) => {
-                self.push_error(parent_span, DiagnosticMessage::ParameterPatternNotSupported);
+                self.push_error(
+                    parent_span,
+                    DiagnosticInfoMessage::ParameterPatternNotSupported,
+                );
                 return Err(anyhow!("error param"));
             }
         }
@@ -632,7 +646,7 @@ impl<'a, R: FileManager> ExtractExportDefaultVisitor<'a, R> {
             if found.is_none() {
                 self.push_error(
                     &e.pattern.raw_span.clone(),
-                    DiagnosticMessage::UnmatchedPathParameter(path_param.to_string()),
+                    DiagnosticInfoMessage::UnmatchedPathParameter(path_param.to_string()),
                 );
             }
         }
@@ -661,12 +675,12 @@ impl<'a, R: FileManager> ExtractExportDefaultVisitor<'a, R> {
         span: &Span,
     ) -> Result<()> {
         if is_generator {
-            self.push_error(span, DiagnosticMessage::HandlerCannotBeGenerator);
+            self.push_error(span, DiagnosticInfoMessage::HandlerCannotBeGenerator);
 
             return Err(anyhow!("cannot be generator"));
         }
         if type_params.is_some() {
-            self.push_error(span, DiagnosticMessage::HandlerCannotHaveTypeParameters);
+            self.push_error(span, DiagnosticInfoMessage::HandlerCannotHaveTypeParameters);
 
             return Err(anyhow!("cannot have type params"));
         }
@@ -719,7 +733,7 @@ impl<'a, R: FileManager> ExtractExportDefaultVisitor<'a, R> {
         match return_type.as_ref() {
             Some(t) => (*t.type_ann).clone(),
             None => {
-                self.push_error(span, DiagnosticMessage::HandlerMustAnnotateReturnType);
+                self.push_error(span, DiagnosticInfoMessage::HandlerMustAnnotateReturnType);
 
                 TsType::TsKeywordType(TsKeywordType {
                     span: DUMMY_SP,
@@ -740,13 +754,13 @@ impl<'a, R: FileManager> ExtractExportDefaultVisitor<'a, R> {
                 "options" => Ok(MethodKind::Options),
                 "use" => Ok(MethodKind::Use),
                 _ => {
-                    self.push_error(span, DiagnosticMessage::NotAnHttpMethod);
+                    self.push_error(span, DiagnosticInfoMessage::NotAnHttpMethod);
                     Err(anyhow!("not a method"))
                 }
             },
             _ => {
                 let span = get_prop_name_span(key);
-                self.push_error(&span, DiagnosticMessage::NotAnHttpMethod);
+                self.push_error(&span, DiagnosticInfoMessage::NotAnHttpMethod);
                 Err(anyhow!("not a method"))
             }
         }
@@ -833,7 +847,7 @@ impl<'a, R: FileManager> ExtractExportDefaultVisitor<'a, R> {
             }
         }
         let span = Self::get_prop_span(prop);
-        self.push_error(&span, DiagnosticMessage::NotAnObjectWithMethodKind);
+        self.push_error(&span, DiagnosticInfoMessage::NotAnObjectWithMethodKind);
 
         vec![]
     }
@@ -851,7 +865,7 @@ impl<'a, R: FileManager> ExtractExportDefaultVisitor<'a, R> {
                                 PropOrSpread::Spread(it) => {
                                     self.push_error(
                                         &it.dot3_token,
-                                        DiagnosticMessage::PropSpreadIsNotSupported,
+                                        DiagnosticInfoMessage::PropSpreadIsNotSupported,
                                     );
 
                                     vec![]
@@ -868,7 +882,7 @@ impl<'a, R: FileManager> ExtractExportDefaultVisitor<'a, R> {
         }
 
         let span = Self::get_prop_span(prop);
-        self.push_error(&span, DiagnosticMessage::NotAnObjectWithMethodKind);
+        self.push_error(&span, DiagnosticInfoMessage::NotAnObjectWithMethodKind);
 
         vec![]
     }
@@ -904,7 +918,7 @@ impl<'a, R: FileManager> ExtractExportDefaultVisitor<'a, R> {
                                         }
                                         tag => self.push_error(
                                             &c.span,
-                                            DiagnosticMessage::UnknownJsDocTagOfTypeUnknown(
+                                            DiagnosticInfoMessage::UnknownJsDocTagOfTypeUnknown(
                                                 tag.to_string(),
                                             ),
                                         ),
@@ -912,12 +926,12 @@ impl<'a, R: FileManager> ExtractExportDefaultVisitor<'a, R> {
                                 }
                                 tag => self.push_error(
                                     &c.span,
-                                    DiagnosticMessage::UnknownJsDocTag(tag.clone()),
+                                    DiagnosticInfoMessage::UnknownJsDocTag(tag.clone()),
                                 ),
                             }
                         }
                     }
-                    Err(_) => self.push_error(&c.span, DiagnosticMessage::CannotParseJsDoc),
+                    Err(_) => self.push_error(&c.span, DiagnosticInfoMessage::CannotParseJsDoc),
                 }
             }
         }
@@ -943,7 +957,7 @@ impl<'a, R: FileManager> Visit for ExtractExportDefaultVisitor<'a, R> {
                             PropOrSpread::Spread(SpreadElement { dot3_token, .. }) => {
                                 self.push_error(
                                     dot3_token,
-                                    DiagnosticMessage::RestOnRouterDefaultExportNotSupportedYet,
+                                    DiagnosticInfoMessage::RestOnRouterDefaultExportNotSupportedYet,
                                 );
                             }
                         }
@@ -1015,28 +1029,27 @@ struct EndpointToPath<'a, R: FileManager> {
 }
 
 impl<'a, R: FileManager> EndpointToPath<'a, R> {
-    fn push_error(&mut self, span: &Span, msg: DiagnosticMessage) {
+    fn push_error(&mut self, span: &Span, msg: DiagnosticInfoMessage) {
         let file = self.files.get_or_fetch_file(&self.current_file);
         match file {
             Some(file) => {
                 let (loc_lo, loc_hi) =
                     span_to_loc(span, &file.module.source_map, file.module.fm.end_pos);
 
-                let err = Diagnostic::KnownFile {
+                let err = DiagnosticInformation::KnownFile {
                     message: msg,
                     file_name: self.current_file.to_string(),
-                    span: *span,
                     loc_lo,
                     loc_hi,
                 };
-                self.errors.push(err);
+                self.errors.push(err.to_diag());
             }
             None => {
-                let err = Diagnostic::UnknownFile {
+                let err = DiagnosticInformation::UnknownFile {
                     message: msg,
                     current_file: self.current_file.to_string(),
                 };
-                self.errors.push(err);
+                self.errors.push(err.to_diag());
             }
         }
     }
@@ -1051,7 +1064,7 @@ impl<'a, R: FileManager> EndpointToPath<'a, R> {
                 _ => {
                     self.push_error(
                         &endpoint.pattern.raw_span,
-                        DiagnosticMessage::ContextParameterMustBeFirst,
+                        DiagnosticInfoMessage::ContextParameterMustBeFirst,
                     );
                 }
             }
@@ -1060,7 +1073,7 @@ impl<'a, R: FileManager> EndpointToPath<'a, R> {
                     HandlerParameter::Context => {
                         self.push_error(
                             &endpoint.pattern.raw_span,
-                            DiagnosticMessage::ContextInvalidAtThisPosition,
+                            DiagnosticInfoMessage::ContextInvalidAtThisPosition,
                         );
                     }
                     _ => {}
@@ -1101,7 +1114,7 @@ impl<'a, R: FileManager> EndpointToPath<'a, R> {
                             if json_request_body.is_some() {
                                 self.push_error(
                                     &span,
-                                    DiagnosticMessage::InferringTwoParamsAsRequestBody,
+                                    DiagnosticInfoMessage::InferringTwoParamsAsRequestBody,
                                 );
                             }
 
@@ -1114,7 +1127,7 @@ impl<'a, R: FileManager> EndpointToPath<'a, R> {
                         FunctionParameterIn::InvalidComplexPathParameter => {
                             self.push_error(
                                 &endpoint.pattern.raw_span,
-                                DiagnosticMessage::ComplexPathParameterNotSupported,
+                                DiagnosticInfoMessage::ComplexPathParameterNotSupported,
                             );
                         }
                     }
@@ -1197,10 +1210,13 @@ fn visit_extract<R: FileManager>(
     let _ = visitor.visit_current_file();
 
     if !visitor.found_default_export {
-        visitor.errors.push(Diagnostic::UnknownFile {
-            message: DiagnosticMessage::CouldNotFindDefaultExport,
-            current_file: current_file.to_string(),
-        })
+        visitor.errors.push(
+            DiagnosticInformation::UnknownFile {
+                message: DiagnosticInfoMessage::CouldNotFindDefaultExport,
+                current_file: current_file.to_string(),
+            }
+            .to_diag(),
+        )
     }
 
     (

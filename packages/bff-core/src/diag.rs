@@ -4,7 +4,7 @@ use jsdoc::ast::{Tag, TagItem};
 use swc_common::{BytePos, Loc, SourceMap, Span};
 
 #[derive(Debug, Clone)]
-pub enum DiagnosticMessage {
+pub enum DiagnosticInfoMessage {
     ContextInvalidAtThisPosition,
     ContextParameterMustBeFirst,
     InvalidHofParam,
@@ -22,7 +22,7 @@ pub enum DiagnosticMessage {
     HandlerMustAnnotateReturnType,
     UnmatchedPathParameter(String),
     CoercerDepthExceeded,
-    CannotSerializeType,
+    CannotConvertTypeToSchema,
     TsQualifiedNameNotSupported,
     CouldNotResolveIdentifierOnPathParamTuple,
     TsInterfaceExtendsNotSupported,
@@ -49,20 +49,72 @@ pub enum DiagnosticMessage {
     CannotFindTypeExportWhenConvertingToSchema(String),
     NotAnObjectWithMethodKind,
     NotAnHttpMethod,
+    ThisRefersToSomethingThatCannotBeSerialized(String),
+    NoMessageConvertedFromDiagInfo,
 }
-
-pub enum Diagnostic {
+impl DiagnosticInfoMessage {
+    pub fn to_string(self) -> String {
+        match self {
+            DiagnosticInfoMessage::CannotConvertTypeToSchema => {
+                format!("Type cannot be converted to JSON schema")
+            }
+            DiagnosticInfoMessage::ThisRefersToSomethingThatCannotBeSerialized(this) => {
+                format!("{this} cannot be converted to JSON schema")
+            }
+            _ => format!("{:?}", self),
+        }
+    }
+}
+#[derive(Debug, Clone)]
+pub enum DiagnosticMessage {
+    NoMessage,
+    CannotConvertToSchema,
+}
+impl DiagnosticMessage {
+    pub fn to_string(self) -> String {
+        match self {
+            DiagnosticMessage::CannotConvertToSchema => {
+                format!("Using a type that cannot be converted to JSON schema")
+            }
+            DiagnosticMessage::NoMessage => format!(""),
+        }
+    }
+}
+#[derive(Clone)]
+pub enum DiagnosticInformation {
     KnownFile {
-        message: DiagnosticMessage,
+        message: DiagnosticInfoMessage,
         file_name: String,
-        span: Span,
         loc_lo: Loc,
         loc_hi: Loc,
     },
     UnknownFile {
-        message: DiagnosticMessage,
+        message: DiagnosticInfoMessage,
         current_file: String,
     },
+}
+
+impl DiagnosticInformation {
+    pub fn to_diag(self) -> Diagnostic {
+        match self {
+            DiagnosticInformation::KnownFile { .. } => Diagnostic {
+                message: DiagnosticMessage::NoMessage,
+                cause: self,
+                related_information: None,
+            },
+            DiagnosticInformation::UnknownFile { .. } => Diagnostic {
+                cause: self,
+                related_information: None,
+                message: DiagnosticMessage::NoMessage,
+            },
+        }
+    }
+}
+
+pub struct Diagnostic {
+    pub message: DiagnosticMessage,
+    pub cause: DiagnosticInformation,
+    pub related_information: Option<Vec<DiagnosticInformation>>,
 }
 
 pub fn span_to_loc(span: &Span, source_map: &Arc<SourceMap>, curr_file_end: BytePos) -> (Loc, Loc) {

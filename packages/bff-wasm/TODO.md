@@ -2,16 +2,11 @@
 
 ## BFF CLI
 
-- [ ] easier mechanism to test error diags
-
 ## BFF EXT
 
 # Milestone NEXT
 
 ## BFF Compiler
-
-- [ ] remove "use" from client
-- [ ] remove "\*" from client
 
 - [ ] panic, todo, unwrap =>invalid-path-definition
 - [ ] todo!()

@@ -1,14 +1,23 @@
-Found 2 errors
+Error: Using a type that cannot be converted to JSON schema
+/home/lucas/fluff/bff/packages/bff-wasm/fixtures/errors/string-template/app.ts:8:55
+   6 |
+   7 | export default {
+>  8 |   [`/hello/{id}`]: { get: async (id: string): Promise<A> => todo() },
+     |                                                       ^ A cannot be converted to JSON schema
+   9 | };
+  10 |
 
-/home/lucas/fluff/bff/packages/bff-wasm/fixtures/errors/string-template/app.ts:4:6
-  2 |
-  3 | type A = {
-> 4 |   a: `Hello ${string}!`;
-    |      ^^^^^^^^^^^^^^^^^^ CannotSerializeType
-  5 | };
-  6 |
-  7 | export default {
+    Caused by:
+    /home/lucas/fluff/bff/packages/bff-wasm/fixtures/errors/string-template/app.ts:4:6
+      2 |
+      3 | type A = {
+    > 4 |   a: `Hello ${string}!`;
+        |      ^^^^^^^^^^^^^^^^^^ Type cannot be converted to JSON schema
+      5 | };
+      6 |
+      7 | export default {
 
+Error
 /home/lucas/fluff/bff/packages/bff-wasm/fixtures/errors/string-template/app.ts:8:4
    6 |
    7 | export default {
@@ -16,3 +25,5 @@ Found 2 errors
      |    ^^^^^^^^^^^^^ ContextParameterMustBeFirst
    9 | };
   10 |
+
+Found 2 errors

@@ -56,57 +56,86 @@ const resolveImport = (file_name: string, mod: string): string | undefined => {
   }
   return result;
 };
-const emitDiagnostics = (diag: BundleDiagnostic) => {
-  let fsCache: Record<string, string> = {};
 
-  const getRawLines = (fileName: string): string | undefined => {
-    if (fsCache[fileName]) {
-      return fsCache[fileName];
-    }
-    try {
-      const rawLines = fs.readFileSync(fileName, "utf-8");
-      fsCache[fileName] = rawLines;
-      return rawLines;
-    } catch (e) {
-      return undefined;
-    }
-  };
-  console.error(chalk.red(`Found ${diag.diagnostics.length} errors`));
-  console.error("");
+let fsCache: Record<string, string> = {};
 
-  diag.diagnostics.forEach((data) => {
-    if (data.UnknownFile) {
-      const diag = data.UnknownFile;
-      console.error(chalk.red(`${diag.current_file}`));
-      console.error(diag.message);
-      console.error("");
-      return;
-    }
-    const diag = data.KnownFile;
+const getRawLines = (fileName: string): string | undefined => {
+  if (fsCache[fileName]) {
+    return fsCache[fileName];
+  }
+  try {
+    const rawLines = fs.readFileSync(fileName, "utf-8");
+    fsCache[fileName] = rawLines;
+    return rawLines;
+  } catch (e) {
+    return undefined;
+  }
+};
 
-    const location = {
-      start: { line: diag.line_lo, column: diag.col_lo + 1 },
-      end: { line: diag.line_hi, column: diag.col_hi + 1 },
-    };
-
-    const rawLines = getRawLines(diag.file_name);
-    if (rawLines == null) {
-      throw new Error(
-        `File not found while reporting error: ${diag.file_name}`
-      );
-    }
-    const result = codeFrameColumns(rawLines, location, {
-      message: diag.message,
-      highlightCode: true,
-    });
-
-    const line = diag.line_lo;
-    const col = diag.col_lo + 1;
-
-    console.error(chalk.red(`${diag.file_name}:${line}:${col}`));
-    console.error(result);
+const emitDiagnosticInfo = (
+  data: WasmDiagnosticInformation,
+  padding: string
+) => {
+  if (data.UnknownFile) {
+    const diag = data.UnknownFile;
+    console.error(padding + chalk.red(`${diag.current_file}`));
+    console.error(padding + diag.message);
     console.error("");
+    return;
+  }
+  const diag = data.KnownFile;
+  const line = diag.line_lo;
+  const col = diag.col_lo + 1;
+  const location = {
+    start: { line: diag.line_lo, column: diag.col_lo + 1 },
+    end: { line: diag.line_hi, column: diag.col_hi + 1 },
+  };
+
+  const rawLines = getRawLines(diag.file_name);
+  if (rawLines == null) {
+    console.error(`File not found while reporting error: ${diag.file_name}`);
+    return;
+  }
+  const result = codeFrameColumns(rawLines, location, {
+    message: diag.message,
+    highlightCode: true,
   });
+
+  const resultWithPadding = result
+
+    .split("\n")
+    .map((line) => padding + line)
+    .join("\n");
+
+  console.error(padding + `${diag.file_name}:${line}:${col}`);
+  console.error(resultWithPadding);
+  console.error("");
+};
+
+const emitDiagnosticItem = (data: WasmDiagnosticItem) => {
+  if ((data.message ?? "").length > 0) {
+    console.error(chalk.red.bold("Error: " + data.message));
+  } else {
+    console.error(chalk.red.bold("Error"));
+  }
+  console.log("");
+  emitDiagnosticInfo(data.cause, "");
+
+  let inf = data.related_information ?? [];
+  if (inf.length == 0) {
+    return;
+  }
+  console.error(chalk.yellow("    Caused by:"));
+  inf.forEach((data) => {
+    emitDiagnosticInfo(data, " ".repeat(4));
+  });
+};
+const emitDiagnostics = (diag: WasmDiagnostic) => {
+  diag.diagnostics.forEach((data) => {
+    emitDiagnosticItem(data);
+  });
+  const ers = diag.diagnostics.length === 1 ? "error" : "errors";
+  console.error(chalk.yellow(`Found ${diag.diagnostics.length} ${ers}`));
 };
 
 (globalThis as any).resolve_import = resolveImport;
@@ -120,10 +149,10 @@ const emitDiagnostics = (diag: BundleDiagnostic) => {
     return undefined;
   }
 };
-
 type KnownFile = {
   message: string;
   file_name: string;
+
   line_lo: number;
   col_lo: number;
   line_hi: number;
@@ -133,11 +162,17 @@ type UnknownFile = {
   message: string;
   current_file: string;
 };
-type BundleDiagnosticItem =
+type WasmDiagnosticInformation =
   | { KnownFile: KnownFile; UnknownFile?: never }
   | { UnknownFile: UnknownFile; KnownFile?: never };
-type BundleDiagnostic = {
-  diagnostics: BundleDiagnosticItem[];
+
+type WasmDiagnosticItem = {
+  cause: WasmDiagnosticInformation;
+  related_information: WasmDiagnosticInformation[] | undefined;
+  message: string;
+};
+type WasmDiagnostic = {
+  diagnostics: WasmDiagnosticItem[];
 };
 
 export class Bundler {
@@ -152,7 +187,7 @@ export class Bundler {
     return wasm.bundle_to_string(file_name, this.moduleType);
   }
 
-  public diagnostics(file_name: string): BundleDiagnostic | null {
+  public diagnostics(file_name: string): WasmDiagnostic | null {
     return wasm.bundle_to_diagnostics(file_name, this.moduleType);
   }
 

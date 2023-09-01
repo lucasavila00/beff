@@ -15,7 +15,9 @@ const readProjectJson = (projectPath: string): ProjectJson => {
   try {
     file = fs.readFileSync(projectPath, "utf-8");
   } catch (e) {
-    throw bail(`Failed to read bff.json: ${e}`);
+    throw bail(
+      `Failed to read JSON configuration file at ${projectPath}: ${e}`
+    );
   }
 
   let projectJson: any;

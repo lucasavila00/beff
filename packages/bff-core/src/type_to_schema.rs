@@ -1,5 +1,7 @@
 use crate::api_extractor::FileManager;
-use crate::diag::{span_to_loc, Diagnostic, DiagnosticMessage};
+use crate::diag::{
+    span_to_loc, Diagnostic, DiagnosticInfoMessage, DiagnosticInformation, DiagnosticMessage,
+};
 use crate::open_api_ast::Json;
 use crate::open_api_ast::{Definition, JsonSchema, Optionality};
 use crate::{ImportReference, ParsedModule, TypeExport};
@@ -22,6 +24,7 @@ pub struct TypeToSchema<'a, R: FileManager> {
     pub current_file: &'a str,
     pub components: HashMap<String, Option<Definition>>,
     pub errors: Vec<Diagnostic>,
+    pub ref_stack: Vec<DiagnosticInformation>,
 }
 
 fn extract_items_from_array(it: JsonSchema) -> JsonSchema {
@@ -38,6 +41,7 @@ impl<'a, R: FileManager> TypeToSchema<'a, R> {
             current_file,
             components: HashMap::new(),
             errors: vec![],
+            ref_stack: vec![],
         }
     }
     fn ts_keyword_type_kind_to_json_schema(
@@ -74,7 +78,7 @@ impl<'a, R: FileManager> TypeToSchema<'a, R> {
                         return (
                             "error".into(),
                             Optionality::Required(
-                                self.error(&prop.span, DiagnosticMessage::PropKeyShouldBeIdent),
+                                self.error(&prop.span, DiagnosticInfoMessage::PropKeyShouldBeIdent),
                             ),
                         )
                     }
@@ -91,9 +95,10 @@ impl<'a, R: FileManager> TypeToSchema<'a, R> {
                     }
                     None => (
                         "error".into(),
-                        Optionality::Required(
-                            self.error(&prop.span, DiagnosticMessage::PropShouldHaveTypeAnnotation),
-                        ),
+                        Optionality::Required(self.error(
+                            &prop.span,
+                            DiagnosticInfoMessage::PropShouldHaveTypeAnnotation,
+                        )),
                     ),
                 }
             }
@@ -111,7 +116,10 @@ impl<'a, R: FileManager> TypeToSchema<'a, R> {
 
     fn convert_ts_interface_decl(&mut self, typ: &TsInterfaceDecl) -> JsonSchema {
         if !typ.extends.is_empty() {
-            return self.error(&typ.span, DiagnosticMessage::TsInterfaceExtendsNotSupported);
+            return self.error(
+                &typ.span,
+                DiagnosticInfoMessage::TsInterfaceExtendsNotSupported,
+            );
         }
 
         JsonSchema::Object {
@@ -216,7 +224,7 @@ impl<'a, R: FileManager> TypeToSchema<'a, R> {
                         None => {
                             return self.error(
                                 &i.span,
-                                DiagnosticMessage::CannotFindTypeExportWhenConvertingToSchema(
+                                DiagnosticInfoMessage::CannotFindTypeExportWhenConvertingToSchema(
                                     i.sym.to_string(),
                                 ),
                             )
@@ -226,7 +234,7 @@ impl<'a, R: FileManager> TypeToSchema<'a, R> {
                 None => {
                     return self.error(
                         &i.span,
-                        DiagnosticMessage::CannotFindFileWhenConvertingToSchema(
+                        DiagnosticInfoMessage::CannotFindFileWhenConvertingToSchema(
                             imported.file_name.to_string(),
                         ),
                     )
@@ -256,7 +264,7 @@ impl<'a, R: FileManager> TypeToSchema<'a, R> {
 
         self.error(
             &i.span,
-            DiagnosticMessage::CannotResolveTypeReferenceOnConverting(i.sym.to_string()),
+            DiagnosticInfoMessage::CannotResolveTypeReferenceOnConverting(i.sym.to_string()),
         )
     }
 
@@ -269,36 +277,66 @@ impl<'a, R: FileManager> TypeToSchema<'a, R> {
     }
 
     fn cannot_serialize_error(&mut self, span: &Span) -> JsonSchema {
-        self.error(span, DiagnosticMessage::CannotSerializeType)
+        let cause = self.create_error(span, DiagnosticInfoMessage::CannotConvertTypeToSchema);
+
+        match self.ref_stack.split_first() {
+            Some((head, tail)) => {
+                let mut related_information = tail.to_vec();
+                related_information.push(cause);
+                self.errors.push(Diagnostic {
+                    cause: head.clone(),
+                    related_information: Some(related_information),
+                    message: DiagnosticMessage::CannotConvertToSchema,
+                })
+            }
+            None => self.errors.push(cause.to_diag()),
+        }
+
+        JsonSchema::Any
     }
-    fn error(&mut self, span: &Span, msg: DiagnosticMessage) -> JsonSchema {
+
+    fn create_error(&mut self, span: &Span, msg: DiagnosticInfoMessage) -> DiagnosticInformation {
         let file = self.files.get_or_fetch_file(&self.current_file);
         match file {
             Some(file) => {
                 let (loc_lo, loc_hi) =
                     span_to_loc(span, &file.module.source_map, file.module.fm.end_pos);
 
-                let err = Diagnostic::KnownFile {
+                DiagnosticInformation::KnownFile {
                     message: msg,
                     file_name: self.current_file.to_string(),
-                    span: *span,
                     loc_hi,
                     loc_lo,
-                };
-                self.errors.push(err);
-                JsonSchema::Any
+                }
             }
-            None => {
-                let err = Diagnostic::UnknownFile {
-                    message: msg,
-                    current_file: self.current_file.to_string(),
-                };
-                self.errors.push(err);
-                JsonSchema::Any
-            }
+            None => DiagnosticInformation::UnknownFile {
+                message: msg,
+                current_file: self.current_file.to_string(),
+            },
         }
     }
+    fn error(&mut self, span: &Span, msg: DiagnosticInfoMessage) -> JsonSchema {
+        let err = self.create_error(span, msg);
+        self.errors.push(err.to_diag());
+        JsonSchema::Any
+    }
+    pub fn get_current_reference(&mut self, i: &Ident) -> Option<DiagnosticInformation> {
+        self.files
+            .get_or_fetch_file(&self.current_file)
+            .map(|file| {
+                let (loc_lo, loc_hi) =
+                    span_to_loc(&i.span, &file.module.source_map, file.module.fm.end_pos);
 
+                DiagnosticInformation::KnownFile {
+                    file_name: self.current_file.to_string(),
+                    loc_hi,
+                    loc_lo,
+                    message: DiagnosticInfoMessage::ThisRefersToSomethingThatCannotBeSerialized(
+                        i.sym.to_string(),
+                    ),
+                }
+            })
+    }
     pub fn convert_ts_type(&mut self, typ: &TsType) -> JsonSchema {
         match typ {
             TsType::TsKeywordType(TsKeywordType { kind, span, .. }) => {
@@ -311,9 +349,20 @@ impl<'a, R: FileManager> TypeToSchema<'a, R> {
             }) => match &type_name {
                 TsEntityName::TsQualifiedName(data) => self.error(
                     &data.right.span,
-                    DiagnosticMessage::TsQualifiedNameNotSupported,
+                    DiagnosticInfoMessage::TsQualifiedNameNotSupported,
                 ),
-                TsEntityName::Ident(i) => self.get_type_ref(i, type_params),
+                TsEntityName::Ident(i) => {
+                    let current_ref = self.get_current_reference(i);
+                    let did_push = current_ref.is_some();
+                    if let Some(current_ref) = current_ref {
+                        self.ref_stack.push(current_ref);
+                    }
+                    let v = self.get_type_ref(i, type_params);
+                    if did_push {
+                        self.ref_stack.pop();
+                    }
+                    v
+                }
             },
             TsType::TsTypeLit(TsTypeLit { members, .. }) => JsonSchema::Object {
                 values: members
@@ -378,7 +427,7 @@ impl<'a, R: FileManager> TypeToSchema<'a, R> {
                 self.convert_ts_type(type_ann)
             }
             TsType::TsOptionalType(TsOptionalType { span, .. }) => {
-                self.error(span, DiagnosticMessage::OptionalTypeIsNotSupported)
+                self.error(span, DiagnosticInfoMessage::OptionalTypeIsNotSupported)
             }
             TsType::TsRestType(_) => unreachable!("should have been handled by parent node"),
             TsType::TsThisType(TsThisType { span, .. })

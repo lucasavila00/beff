@@ -1,5 +1,4 @@
-Found 33 errors
-
+Error
 /home/lucas/fluff/bff/packages/bff-wasm/fixtures/errors/invalid-path-definition/app.ts:4:5
   2 | export default {
   3 |   ["asd"]: {
@@ -9,6 +8,7 @@ Found 33 errors
   6 |     b() {
   7 |       return 1;
 
+Error
 /home/lucas/fluff/bff/packages/bff-wasm/fixtures/errors/invalid-path-definition/app.ts:4:25
   2 | export default {
   3 |   ["asd"]: {
@@ -18,6 +18,7 @@ Found 33 errors
   6 |     b() {
   7 |       return 1;
 
+Error
 /home/lucas/fluff/bff/packages/bff-wasm/fixtures/errors/invalid-path-definition/app.ts:4:5
   2 | export default {
   3 |   ["asd"]: {
@@ -27,6 +28,7 @@ Found 33 errors
   6 |     b() {
   7 |       return 1;
 
+Error
 /home/lucas/fluff/bff/packages/bff-wasm/fixtures/errors/invalid-path-definition/app.ts:5:5
   3 |   ["asd"]: {
   4 |     [`GET/hello/{id}`]: async (id: string) => id,
@@ -36,6 +38,7 @@ Found 33 errors
   7 |       return 1;
   8 |     },
 
+Error
 /home/lucas/fluff/bff/packages/bff-wasm/fixtures/errors/invalid-path-definition/app.ts:5:5
   3 |   ["asd"]: {
   4 |     [`GET/hello/{id}`]: async (id: string) => id,
@@ -45,6 +48,7 @@ Found 33 errors
   7 |       return 1;
   8 |     },
 
+Error
 /home/lucas/fluff/bff/packages/bff-wasm/fixtures/errors/invalid-path-definition/app.ts:6:5
   4 |     [`GET/hello/{id}`]: async (id: string) => id,
   5 |     a: 1,
@@ -54,6 +58,7 @@ Found 33 errors
   8 |     },
   9 |     get c() {
 
+Error
 /home/lucas/fluff/bff/packages/bff-wasm/fixtures/errors/invalid-path-definition/app.ts:9:5
    7 |       return 1;
    8 |     },
@@ -67,6 +72,7 @@ Found 33 errors
   13 |     [`AAAAAAAAAAAAAAAAAAGETOOOO/hello/{id}`]: async (
   14 |       id: string
 
+Error
 /home/lucas/fluff/bff/packages/bff-wasm/fixtures/errors/invalid-path-definition/app.ts:12:5
   10 |       return 1;
   11 |     },
@@ -76,6 +82,7 @@ Found 33 errors
   14 |       id: string
   15 |     ): Promise<string> => id,
 
+Error
 /home/lucas/fluff/bff/packages/bff-wasm/fixtures/errors/invalid-path-definition/app.ts:13:5
   11 |     },
   12 |     set c(v) {},
@@ -85,6 +92,7 @@ Found 33 errors
   15 |     ): Promise<string> => id,
   16 |     [`GETOOOO/hello/{id}`]: async (id: string): Promise<string> => id,
 
+Error
 /home/lucas/fluff/bff/packages/bff-wasm/fixtures/errors/invalid-path-definition/app.ts:13:5
   11 |     },
   12 |     set c(v) {},
@@ -94,6 +102,7 @@ Found 33 errors
   15 |     ): Promise<string> => id,
   16 |     [`GETOOOO/hello/{id}`]: async (id: string): Promise<string> => id,
 
+Error
 /home/lucas/fluff/bff/packages/bff-wasm/fixtures/errors/invalid-path-definition/app.ts:16:5
   14 |       id: string
   15 |     ): Promise<string> => id,
@@ -103,6 +112,7 @@ Found 33 errors
   18 |     [`GET/hello2/{id}`]: async function* (id: string): Promise<string> {
   19 |       return id;
 
+Error
 /home/lucas/fluff/bff/packages/bff-wasm/fixtures/errors/invalid-path-definition/app.ts:16:5
   14 |       id: string
   15 |     ): Promise<string> => id,
@@ -112,6 +122,7 @@ Found 33 errors
   18 |     [`GET/hello2/{id}`]: async function* (id: string): Promise<string> {
   19 |       return id;
 
+Error
 /home/lucas/fluff/bff/packages/bff-wasm/fixtures/errors/invalid-path-definition/app.ts:17:5
   15 |     ): Promise<string> => id,
   16 |     [`GETOOOO/hello/{id}`]: async (id: string): Promise<string> => id,
@@ -121,6 +132,7 @@ Found 33 errors
   19 |       return id;
   20 |     },
 
+Error
 /home/lucas/fluff/bff/packages/bff-wasm/fixtures/errors/invalid-path-definition/app.ts:18:5
   16 |     [`GETOOOO/hello/{id}`]: async (id: string): Promise<string> => id,
   17 |     ...d,
@@ -130,6 +142,7 @@ Found 33 errors
   20 |     },
   21 |     [`GET/hello3/{id}`]: <T>(id: string): string => id,
 
+Error
 /home/lucas/fluff/bff/packages/bff-wasm/fixtures/errors/invalid-path-definition/app.ts:18:26
   16 |     [`GETOOOO/hello/{id}`]: async (id: string): Promise<string> => id,
   17 |     ...d,
@@ -143,6 +156,7 @@ Found 33 errors
   22 |     [`GET/hello4/{id}`]: async <T>(id: string): Promise<string> => id,
   23 |     [`GET/hello5/{id}`]: async <T>(id: T): Promise<T> => id,
 
+Error
 /home/lucas/fluff/bff/packages/bff-wasm/fixtures/errors/invalid-path-definition/app.ts:21:5
   19 |       return id;
   20 |     },
@@ -152,6 +166,7 @@ Found 33 errors
   23 |     [`GET/hello5/{id}`]: async <T>(id: T): Promise<T> => id,
   24 |   },
 
+Error
 /home/lucas/fluff/bff/packages/bff-wasm/fixtures/errors/invalid-path-definition/app.ts:21:26
   19 |       return id;
   20 |     },
@@ -161,6 +176,7 @@ Found 33 errors
   23 |     [`GET/hello5/{id}`]: async <T>(id: T): Promise<T> => id,
   24 |   },
 
+Error
 /home/lucas/fluff/bff/packages/bff-wasm/fixtures/errors/invalid-path-definition/app.ts:22:5
   20 |     },
   21 |     [`GET/hello3/{id}`]: <T>(id: string): string => id,
@@ -170,6 +186,7 @@ Found 33 errors
   24 |   },
   25 |   [`GET/hello/{id}`]: async (id: string) => id,
 
+Error
 /home/lucas/fluff/bff/packages/bff-wasm/fixtures/errors/invalid-path-definition/app.ts:22:26
   20 |     },
   21 |     [`GET/hello3/{id}`]: <T>(id: string): string => id,
@@ -179,6 +196,7 @@ Found 33 errors
   24 |   },
   25 |   [`GET/hello/{id}`]: async (id: string) => id,
 
+Error
 /home/lucas/fluff/bff/packages/bff-wasm/fixtures/errors/invalid-path-definition/app.ts:23:5
   21 |     [`GET/hello3/{id}`]: <T>(id: string): string => id,
   22 |     [`GET/hello4/{id}`]: async <T>(id: string): Promise<string> => id,
@@ -188,6 +206,7 @@ Found 33 errors
   25 |   [`GET/hello/{id}`]: async (id: string) => id,
   26 |   a: 1,
 
+Error
 /home/lucas/fluff/bff/packages/bff-wasm/fixtures/errors/invalid-path-definition/app.ts:23:26
   21 |     [`GET/hello3/{id}`]: <T>(id: string): string => id,
   22 |     [`GET/hello4/{id}`]: async <T>(id: string): Promise<string> => id,
@@ -197,6 +216,7 @@ Found 33 errors
   25 |   [`GET/hello/{id}`]: async (id: string) => id,
   26 |   a: 1,
 
+Error
 /home/lucas/fluff/bff/packages/bff-wasm/fixtures/errors/invalid-path-definition/app.ts:25:3
   23 |     [`GET/hello5/{id}`]: async <T>(id: T): Promise<T> => id,
   24 |   },
@@ -206,6 +226,7 @@ Found 33 errors
   27 |   b() {
   28 |     return 1;
 
+Error
 /home/lucas/fluff/bff/packages/bff-wasm/fixtures/errors/invalid-path-definition/app.ts:26:3
   24 |   },
   25 |   [`GET/hello/{id}`]: async (id: string) => id,
@@ -215,6 +236,7 @@ Found 33 errors
   28 |     return 1;
   29 |   },
 
+Error
 /home/lucas/fluff/bff/packages/bff-wasm/fixtures/errors/invalid-path-definition/app.ts:27:3
   25 |   [`GET/hello/{id}`]: async (id: string) => id,
   26 |   a: 1,
@@ -224,6 +246,7 @@ Found 33 errors
   29 |   },
   30 |   get c() {
 
+Error
 /home/lucas/fluff/bff/packages/bff-wasm/fixtures/errors/invalid-path-definition/app.ts:30:3
   28 |     return 1;
   29 |   },
@@ -237,6 +260,7 @@ Found 33 errors
   34 |   [`AAAAAAAAAAAAAAAAAAGETOOOO/hello/{id}`]: async (
   35 |     id: string
 
+Error
 /home/lucas/fluff/bff/packages/bff-wasm/fixtures/errors/invalid-path-definition/app.ts:33:3
   31 |     return 1;
   32 |   },
@@ -246,6 +270,7 @@ Found 33 errors
   35 |     id: string
   36 |   ): Promise<string> => id,
 
+Error
 /home/lucas/fluff/bff/packages/bff-wasm/fixtures/errors/invalid-path-definition/app.ts:34:3
   32 |   },
   33 |   set c(v) {},
@@ -255,6 +280,7 @@ Found 33 errors
   36 |   ): Promise<string> => id,
   37 |   [`GETOOOO/hello/{id}`]: async (id: string): Promise<string> => id,
 
+Error
 /home/lucas/fluff/bff/packages/bff-wasm/fixtures/errors/invalid-path-definition/app.ts:37:3
   35 |     id: string
   36 |   ): Promise<string> => id,
@@ -264,6 +290,7 @@ Found 33 errors
   39 |   [`GET/hello2/{id}`]: async function* (id: string): Promise<string> {
   40 |     return id;
 
+Error
 /home/lucas/fluff/bff/packages/bff-wasm/fixtures/errors/invalid-path-definition/app.ts:38:3
   36 |   ): Promise<string> => id,
   37 |   [`GETOOOO/hello/{id}`]: async (id: string): Promise<string> => id,
@@ -273,6 +300,7 @@ Found 33 errors
   40 |     return id;
   41 |   },
 
+Error
 /home/lucas/fluff/bff/packages/bff-wasm/fixtures/errors/invalid-path-definition/app.ts:39:3
   37 |   [`GETOOOO/hello/{id}`]: async (id: string): Promise<string> => id,
   38 |   ...d,
@@ -282,6 +310,7 @@ Found 33 errors
   41 |   },
   42 |   [`GET/hello3/{id}`]: <T>(id: string): string => id,
 
+Error
 /home/lucas/fluff/bff/packages/bff-wasm/fixtures/errors/invalid-path-definition/app.ts:42:3
   40 |     return id;
   41 |   },
@@ -291,6 +320,7 @@ Found 33 errors
   44 |   [`GET/hello5/{id}`]: async <T>(id: T): Promise<T> => id,
   45 | };
 
+Error
 /home/lucas/fluff/bff/packages/bff-wasm/fixtures/errors/invalid-path-definition/app.ts:43:3
   41 |   },
   42 |   [`GET/hello3/{id}`]: <T>(id: string): string => id,
@@ -300,6 +330,7 @@ Found 33 errors
   45 | };
   46 |
 
+Error
 /home/lucas/fluff/bff/packages/bff-wasm/fixtures/errors/invalid-path-definition/app.ts:44:3
   42 |   [`GET/hello3/{id}`]: <T>(id: string): string => id,
   43 |   [`GET/hello4/{id}`]: async <T>(id: string): Promise<string> => id,
@@ -307,3 +338,5 @@ Found 33 errors
      |   ^^^^^^^^^^^^^^^^^^^ NotAnObjectWithMethodKind
   45 | };
   46 |
+
+Found 33 errors

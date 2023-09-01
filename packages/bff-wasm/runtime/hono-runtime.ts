@@ -1,7 +1,6 @@
 import type { Context, Hono } from "hono";
 import {
   BffHTTPException,
-  buildStableClient,
   coerce,
   decodeNoMessage,
   decodeWithMessage,
@@ -10,7 +9,8 @@ import {
 import { HandlerMeta, MetaParam, OpenApiServer } from "./types";
 import { getCookie } from "hono/cookie";
 import { HTTPException } from "hono/http-exception";
-import { ClientFromRouter } from "./client";
+import { ClientFromRouter } from "./client-def";
+import { buildStableClient } from "./client-impl";
 
 const toHonoPattern = (pattern: string): string => {
   // replace {id} with :id

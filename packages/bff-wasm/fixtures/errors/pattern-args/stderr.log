@@ -1,5 +1,4 @@
-Found 3 errors
-
+Error
 /home/lucas/fluff/bff/packages/bff-wasm/fixtures/errors/pattern-args/app.ts:9:17
    7 | export default {
    8 |   [`/user`]: {
@@ -9,6 +8,7 @@ Found 3 errors
   11 |     },
   12 |   },
 
+Error
 /home/lucas/fluff/bff/packages/bff-wasm/fixtures/errors/pattern-args/app.ts:14:17
   12 |   },
   13 |   [`/user1`]: {
@@ -18,6 +18,7 @@ Found 3 errors
   16 |     },
   17 |   },
 
+Error
 /home/lucas/fluff/bff/packages/bff-wasm/fixtures/errors/pattern-args/app.ts:19:17
   17 |   },
   18 |   [`/user2`]: {
@@ -26,3 +27,5 @@ Found 3 errors
   20 |       return todo();
   21 |     },
   22 |   },
+
+Found 3 errors

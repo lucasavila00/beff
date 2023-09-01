@@ -974,6 +974,12 @@ var decodeNoMessage = (validator, value) => {
 var coerce = (coercer, value) => {
   return coercer(value);
 };
+
+// runtime/hono-runtime.ts
+var import_cookie = require("hono/cookie");
+var import_http_exception = require("hono/http-exception");
+
+// runtime/client-impl.ts
 var BffRequest = class {
   method;
   url;
@@ -1057,8 +1063,6 @@ function buildStableClient(fetcher) {
 }
 
 // runtime/hono-runtime.ts
-var import_cookie = require("hono/cookie");
-var import_http_exception = require("hono/http-exception");
 var toHonoPattern = (pattern) => {
   return pattern.replace(/\{(\w+)\}/g, ":$1");
 };

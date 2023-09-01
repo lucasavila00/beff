@@ -1,7 +1,5 @@
 import { Hono } from "hono";
 
-type OpenApiServer = any;
-
 export type NormalizeRouterItem<T> = T extends (
   ...args: infer I
 ) => Promise<infer O>
@@ -26,6 +24,8 @@ export type ClientFromRouter<R> = {
   };
 };
 
+type OpenApiServer = any;
+
 export declare function registerRouter(options: {
   app: Hono<any, any, any>;
   router: any;
@@ -33,6 +33,7 @@ export declare function registerRouter(options: {
     servers: OpenApiServer[];
   };
 }): void;
+
 export declare const buildHonoTestClient: <T>(
   app: Hono<any, any, any>,
   env?: any,

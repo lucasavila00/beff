@@ -1,5 +1,4 @@
-Found 2 errors
-
+Error
 /home/lucas/fluff/bff/packages/bff-wasm/fixtures/errors/invalid-param-name/app.ts:4:4
   2 |
   3 | export default {
@@ -9,6 +8,7 @@ Found 2 errors
   6 |   },
   7 | };
 
+Error
 /home/lucas/fluff/bff/packages/bff-wasm/fixtures/errors/invalid-param-name/app.ts:4:4
   2 |
   3 | export default {
@@ -17,3 +17,5 @@ Found 2 errors
   5 |     get: async (id: string): Promise<string> => `Hello ${id}!`,
   6 |   },
   7 | };
+
+Found 2 errors

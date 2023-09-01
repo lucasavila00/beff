@@ -1,7 +1,9 @@
-Found 2 errors
-
+Error
 /home/lucas/fluff/bff/packages/bff-wasm/fixtures/errors/no-app/app.ts
 CannotFindFileWhenConvertingToSchema("/home/lucas/fluff/bff/packages/bff-wasm/fixtures/errors/no-app/app.ts")
 
+Error
 /home/lucas/fluff/bff/packages/bff-wasm/fixtures/errors/no-app/app.ts
 CouldNotFindDefaultExport
+
+Found 2 errors
