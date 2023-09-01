@@ -1,64 +1,64 @@
-Error: NotAnHttpMethod
+Error: Not an HTTP method
  /home/lucas/fluff/bff/packages/bff-wasm/fixtures/errors/invalid-path-definition/app.ts:4:5
    2 | export default {
    3 |   ["asd"]: {
  > 4 |     [`GET/hello/{id}`]: async (id: string) => id,
-     |     ^^^^^^^^^^^^^^^^^^ NotAnHttpMethod
+     |     ^^^^^^^^^^^^^^^^^^ Not an HTTP method
    5 |     a: 1,
    6 |     b() {
    7 |       return 1;
 
-Error: HandlerMustAnnotateReturnType
+Error: Handler must annotate return type
  /home/lucas/fluff/bff/packages/bff-wasm/fixtures/errors/invalid-path-definition/app.ts:4:25
    2 | export default {
    3 |   ["asd"]: {
  > 4 |     [`GET/hello/{id}`]: async (id: string) => id,
-     |                         ^^^^^^^^^^^^^^^^^^^^^^^^ HandlerMustAnnotateReturnType
+     |                         ^^^^^^^^^^^^^^^^^^^^^^^^ Handler must annotate return type
    5 |     a: 1,
    6 |     b() {
    7 |       return 1;
 
-Error: NotAnHttpMethod
+Error: Not an HTTP method
  /home/lucas/fluff/bff/packages/bff-wasm/fixtures/errors/invalid-path-definition/app.ts:4:5
    2 | export default {
    3 |   ["asd"]: {
  > 4 |     [`GET/hello/{id}`]: async (id: string) => id,
-     |     ^^^^^^^^^^^^^^^^^^ NotAnHttpMethod
+     |     ^^^^^^^^^^^^^^^^^^ Not an HTTP method
    5 |     a: 1,
    6 |     b() {
    7 |       return 1;
 
-Error: NotAnHttpMethod
+Error: Not an HTTP method
  /home/lucas/fluff/bff/packages/bff-wasm/fixtures/errors/invalid-path-definition/app.ts:5:5
    3 |   ["asd"]: {
    4 |     [`GET/hello/{id}`]: async (id: string) => id,
  > 5 |     a: 1,
-     |     ^ NotAnHttpMethod
+     |     ^ Not an HTTP method
    6 |     b() {
    7 |       return 1;
    8 |     },
 
-Error: NotAnObjectWithMethodKind
+Error: Not an object with method kind
  /home/lucas/fluff/bff/packages/bff-wasm/fixtures/errors/invalid-path-definition/app.ts:5:5
    3 |   ["asd"]: {
    4 |     [`GET/hello/{id}`]: async (id: string) => id,
  > 5 |     a: 1,
-     |     ^ NotAnObjectWithMethodKind
+     |     ^ Not an object with method kind
    6 |     b() {
    7 |       return 1;
    8 |     },
 
-Error: NotAnObjectWithMethodKind
+Error: Not an object with method kind
  /home/lucas/fluff/bff/packages/bff-wasm/fixtures/errors/invalid-path-definition/app.ts:6:5
    4 |     [`GET/hello/{id}`]: async (id: string) => id,
    5 |     a: 1,
  > 6 |     b() {
-     |     ^ NotAnObjectWithMethodKind
+     |     ^ Not an object with method kind
    7 |       return 1;
    8 |     },
    9 |     get c() {
 
-Error: NotAnObjectWithMethodKind
+Error: Not an object with method kind
  /home/lucas/fluff/bff/packages/bff-wasm/fixtures/errors/invalid-path-definition/app.ts:9:5
     7 |       return 1;
     8 |     },
@@ -67,82 +67,82 @@ Error: NotAnObjectWithMethodKind
  > 10 |       return 1;
       | ^^^^^^^^^^^^^^^
  > 11 |     },
-      | ^^^^^^ NotAnObjectWithMethodKind
+      | ^^^^^^ Not an object with method kind
    12 |     set c(v) {},
    13 |     [`AAAAAAAAAAAAAAAAAAGETOOOO/hello/{id}`]: async (
    14 |       id: string
 
-Error: NotAnObjectWithMethodKind
+Error: Not an object with method kind
  /home/lucas/fluff/bff/packages/bff-wasm/fixtures/errors/invalid-path-definition/app.ts:12:5
    10 |       return 1;
    11 |     },
  > 12 |     set c(v) {},
-      |     ^^^^^^^^^^^ NotAnObjectWithMethodKind
+      |     ^^^^^^^^^^^ Not an object with method kind
    13 |     [`AAAAAAAAAAAAAAAAAAGETOOOO/hello/{id}`]: async (
    14 |       id: string
    15 |     ): Promise<string> => id,
 
-Error: NotAnHttpMethod
+Error: Not an HTTP method
  /home/lucas/fluff/bff/packages/bff-wasm/fixtures/errors/invalid-path-definition/app.ts:13:5
    11 |     },
    12 |     set c(v) {},
  > 13 |     [`AAAAAAAAAAAAAAAAAAGETOOOO/hello/{id}`]: async (
-      |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ NotAnHttpMethod
+      |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ Not an HTTP method
    14 |       id: string
    15 |     ): Promise<string> => id,
    16 |     [`GETOOOO/hello/{id}`]: async (id: string): Promise<string> => id,
 
-Error: NotAnHttpMethod
+Error: Not an HTTP method
  /home/lucas/fluff/bff/packages/bff-wasm/fixtures/errors/invalid-path-definition/app.ts:13:5
    11 |     },
    12 |     set c(v) {},
  > 13 |     [`AAAAAAAAAAAAAAAAAAGETOOOO/hello/{id}`]: async (
-      |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ NotAnHttpMethod
+      |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ Not an HTTP method
    14 |       id: string
    15 |     ): Promise<string> => id,
    16 |     [`GETOOOO/hello/{id}`]: async (id: string): Promise<string> => id,
 
-Error: NotAnHttpMethod
+Error: Not an HTTP method
  /home/lucas/fluff/bff/packages/bff-wasm/fixtures/errors/invalid-path-definition/app.ts:16:5
    14 |       id: string
    15 |     ): Promise<string> => id,
  > 16 |     [`GETOOOO/hello/{id}`]: async (id: string): Promise<string> => id,
-      |     ^^^^^^^^^^^^^^^^^^^^^^ NotAnHttpMethod
+      |     ^^^^^^^^^^^^^^^^^^^^^^ Not an HTTP method
    17 |     ...d,
    18 |     [`GET/hello2/{id}`]: async function* (id: string): Promise<string> {
    19 |       return id;
 
-Error: NotAnHttpMethod
+Error: Not an HTTP method
  /home/lucas/fluff/bff/packages/bff-wasm/fixtures/errors/invalid-path-definition/app.ts:16:5
    14 |       id: string
    15 |     ): Promise<string> => id,
  > 16 |     [`GETOOOO/hello/{id}`]: async (id: string): Promise<string> => id,
-      |     ^^^^^^^^^^^^^^^^^^^^^^ NotAnHttpMethod
+      |     ^^^^^^^^^^^^^^^^^^^^^^ Not an HTTP method
    17 |     ...d,
    18 |     [`GET/hello2/{id}`]: async function* (id: string): Promise<string> {
    19 |       return id;
 
-Error: PropSpreadIsNotSupported
+Error: Spread props are not supported on method maps
  /home/lucas/fluff/bff/packages/bff-wasm/fixtures/errors/invalid-path-definition/app.ts:17:5
    15 |     ): Promise<string> => id,
    16 |     [`GETOOOO/hello/{id}`]: async (id: string): Promise<string> => id,
  > 17 |     ...d,
-      |     ^^^ PropSpreadIsNotSupported
+      |     ^^^ Spread props are not supported on method maps
    18 |     [`GET/hello2/{id}`]: async function* (id: string): Promise<string> {
    19 |       return id;
    20 |     },
 
-Error: NotAnHttpMethod
+Error: Not an HTTP method
  /home/lucas/fluff/bff/packages/bff-wasm/fixtures/errors/invalid-path-definition/app.ts:18:5
    16 |     [`GETOOOO/hello/{id}`]: async (id: string): Promise<string> => id,
    17 |     ...d,
  > 18 |     [`GET/hello2/{id}`]: async function* (id: string): Promise<string> {
-      |     ^^^^^^^^^^^^^^^^^^^ NotAnHttpMethod
+      |     ^^^^^^^^^^^^^^^^^^^ Not an HTTP method
    19 |       return id;
    20 |     },
    21 |     [`GET/hello3/{id}`]: <T>(id: string): string => id,
 
-Error: HandlerCannotBeGenerator
+Error: Handler cannot be a generator
  /home/lucas/fluff/bff/packages/bff-wasm/fixtures/errors/invalid-path-definition/app.ts:18:26
    16 |     [`GETOOOO/hello/{id}`]: async (id: string): Promise<string> => id,
    17 |     ...d,
@@ -151,102 +151,102 @@ Error: HandlerCannotBeGenerator
  > 19 |       return id;
       | ^^^^^^^^^^^^^^^^
  > 20 |     },
-      | ^^^^^^ HandlerCannotBeGenerator
+      | ^^^^^^ Handler cannot be a generator
    21 |     [`GET/hello3/{id}`]: <T>(id: string): string => id,
    22 |     [`GET/hello4/{id}`]: async <T>(id: string): Promise<string> => id,
    23 |     [`GET/hello5/{id}`]: async <T>(id: T): Promise<T> => id,
 
-Error: NotAnHttpMethod
+Error: Not an HTTP method
  /home/lucas/fluff/bff/packages/bff-wasm/fixtures/errors/invalid-path-definition/app.ts:21:5
    19 |       return id;
    20 |     },
  > 21 |     [`GET/hello3/{id}`]: <T>(id: string): string => id,
-      |     ^^^^^^^^^^^^^^^^^^^ NotAnHttpMethod
+      |     ^^^^^^^^^^^^^^^^^^^ Not an HTTP method
    22 |     [`GET/hello4/{id}`]: async <T>(id: string): Promise<string> => id,
    23 |     [`GET/hello5/{id}`]: async <T>(id: T): Promise<T> => id,
    24 |   },
 
-Error: HandlerCannotHaveTypeParameters
+Error: Handler cannot have type parameters
  /home/lucas/fluff/bff/packages/bff-wasm/fixtures/errors/invalid-path-definition/app.ts:21:26
    19 |       return id;
    20 |     },
  > 21 |     [`GET/hello3/{id}`]: <T>(id: string): string => id,
-      |                          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ HandlerCannotHaveTypeParameters
+      |                          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ Handler cannot have type parameters
    22 |     [`GET/hello4/{id}`]: async <T>(id: string): Promise<string> => id,
    23 |     [`GET/hello5/{id}`]: async <T>(id: T): Promise<T> => id,
    24 |   },
 
-Error: NotAnHttpMethod
+Error: Not an HTTP method
  /home/lucas/fluff/bff/packages/bff-wasm/fixtures/errors/invalid-path-definition/app.ts:22:5
    20 |     },
    21 |     [`GET/hello3/{id}`]: <T>(id: string): string => id,
  > 22 |     [`GET/hello4/{id}`]: async <T>(id: string): Promise<string> => id,
-      |     ^^^^^^^^^^^^^^^^^^^ NotAnHttpMethod
+      |     ^^^^^^^^^^^^^^^^^^^ Not an HTTP method
    23 |     [`GET/hello5/{id}`]: async <T>(id: T): Promise<T> => id,
    24 |   },
    25 |   [`GET/hello/{id}`]: async (id: string) => id,
 
-Error: HandlerCannotHaveTypeParameters
+Error: Handler cannot have type parameters
  /home/lucas/fluff/bff/packages/bff-wasm/fixtures/errors/invalid-path-definition/app.ts:22:26
    20 |     },
    21 |     [`GET/hello3/{id}`]: <T>(id: string): string => id,
  > 22 |     [`GET/hello4/{id}`]: async <T>(id: string): Promise<string> => id,
-      |                          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ HandlerCannotHaveTypeParameters
+      |                          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ Handler cannot have type parameters
    23 |     [`GET/hello5/{id}`]: async <T>(id: T): Promise<T> => id,
    24 |   },
    25 |   [`GET/hello/{id}`]: async (id: string) => id,
 
-Error: NotAnHttpMethod
+Error: Not an HTTP method
  /home/lucas/fluff/bff/packages/bff-wasm/fixtures/errors/invalid-path-definition/app.ts:23:5
    21 |     [`GET/hello3/{id}`]: <T>(id: string): string => id,
    22 |     [`GET/hello4/{id}`]: async <T>(id: string): Promise<string> => id,
  > 23 |     [`GET/hello5/{id}`]: async <T>(id: T): Promise<T> => id,
-      |     ^^^^^^^^^^^^^^^^^^^ NotAnHttpMethod
+      |     ^^^^^^^^^^^^^^^^^^^ Not an HTTP method
    24 |   },
    25 |   [`GET/hello/{id}`]: async (id: string) => id,
    26 |   a: 1,
 
-Error: HandlerCannotHaveTypeParameters
+Error: Handler cannot have type parameters
  /home/lucas/fluff/bff/packages/bff-wasm/fixtures/errors/invalid-path-definition/app.ts:23:26
    21 |     [`GET/hello3/{id}`]: <T>(id: string): string => id,
    22 |     [`GET/hello4/{id}`]: async <T>(id: string): Promise<string> => id,
  > 23 |     [`GET/hello5/{id}`]: async <T>(id: T): Promise<T> => id,
-      |                          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ HandlerCannotHaveTypeParameters
+      |                          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ Handler cannot have type parameters
    24 |   },
    25 |   [`GET/hello/{id}`]: async (id: string) => id,
    26 |   a: 1,
 
-Error: NotAnObjectWithMethodKind
+Error: Not an object with method kind
  /home/lucas/fluff/bff/packages/bff-wasm/fixtures/errors/invalid-path-definition/app.ts:25:3
    23 |     [`GET/hello5/{id}`]: async <T>(id: T): Promise<T> => id,
    24 |   },
  > 25 |   [`GET/hello/{id}`]: async (id: string) => id,
-      |   ^^^^^^^^^^^^^^^^^^ NotAnObjectWithMethodKind
+      |   ^^^^^^^^^^^^^^^^^^ Not an object with method kind
    26 |   a: 1,
    27 |   b() {
    28 |     return 1;
 
-Error: MustBeComputedKey
+Error: Pattern must be a computed key
  /home/lucas/fluff/bff/packages/bff-wasm/fixtures/errors/invalid-path-definition/app.ts:26:3
    24 |   },
    25 |   [`GET/hello/{id}`]: async (id: string) => id,
  > 26 |   a: 1,
-      |   ^ MustBeComputedKey
+      |   ^ Pattern must be a computed key
    27 |   b() {
    28 |     return 1;
    29 |   },
 
-Error: NotAnObjectWithMethodKind
+Error: Not an object with method kind
  /home/lucas/fluff/bff/packages/bff-wasm/fixtures/errors/invalid-path-definition/app.ts:27:3
    25 |   [`GET/hello/{id}`]: async (id: string) => id,
    26 |   a: 1,
  > 27 |   b() {
-      |   ^ NotAnObjectWithMethodKind
+      |   ^ Not an object with method kind
    28 |     return 1;
    29 |   },
    30 |   get c() {
 
-Error: NotAnObjectWithMethodKind
+Error: Not an object with method kind
  /home/lucas/fluff/bff/packages/bff-wasm/fixtures/errors/invalid-path-definition/app.ts:30:3
    28 |     return 1;
    29 |   },
@@ -255,87 +255,87 @@ Error: NotAnObjectWithMethodKind
  > 31 |     return 1;
       | ^^^^^^^^^^^^^
  > 32 |   },
-      | ^^^^ NotAnObjectWithMethodKind
+      | ^^^^ Not an object with method kind
    33 |   set c(v) {},
    34 |   [`AAAAAAAAAAAAAAAAAAGETOOOO/hello/{id}`]: async (
    35 |     id: string
 
-Error: NotAnObjectWithMethodKind
+Error: Not an object with method kind
  /home/lucas/fluff/bff/packages/bff-wasm/fixtures/errors/invalid-path-definition/app.ts:33:3
    31 |     return 1;
    32 |   },
  > 33 |   set c(v) {},
-      |   ^^^^^^^^^^^ NotAnObjectWithMethodKind
+      |   ^^^^^^^^^^^ Not an object with method kind
    34 |   [`AAAAAAAAAAAAAAAAAAGETOOOO/hello/{id}`]: async (
    35 |     id: string
    36 |   ): Promise<string> => id,
 
-Error: NotAnObjectWithMethodKind
+Error: Not an object with method kind
  /home/lucas/fluff/bff/packages/bff-wasm/fixtures/errors/invalid-path-definition/app.ts:34:3
    32 |   },
    33 |   set c(v) {},
  > 34 |   [`AAAAAAAAAAAAAAAAAAGETOOOO/hello/{id}`]: async (
-      |   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ NotAnObjectWithMethodKind
+      |   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ Not an object with method kind
    35 |     id: string
    36 |   ): Promise<string> => id,
    37 |   [`GETOOOO/hello/{id}`]: async (id: string): Promise<string> => id,
 
-Error: NotAnObjectWithMethodKind
+Error: Not an object with method kind
  /home/lucas/fluff/bff/packages/bff-wasm/fixtures/errors/invalid-path-definition/app.ts:37:3
    35 |     id: string
    36 |   ): Promise<string> => id,
  > 37 |   [`GETOOOO/hello/{id}`]: async (id: string): Promise<string> => id,
-      |   ^^^^^^^^^^^^^^^^^^^^^^ NotAnObjectWithMethodKind
+      |   ^^^^^^^^^^^^^^^^^^^^^^ Not an object with method kind
    38 |   ...d,
    39 |   [`GET/hello2/{id}`]: async function* (id: string): Promise<string> {
    40 |     return id;
 
-Error: RestOnRouterDefaultExportNotSupportedYet
+Error: Rest on router default export is not supported yet
  /home/lucas/fluff/bff/packages/bff-wasm/fixtures/errors/invalid-path-definition/app.ts:38:3
    36 |   ): Promise<string> => id,
    37 |   [`GETOOOO/hello/{id}`]: async (id: string): Promise<string> => id,
  > 38 |   ...d,
-      |   ^^^ RestOnRouterDefaultExportNotSupportedYet
+      |   ^^^ Rest on router default export is not supported yet
    39 |   [`GET/hello2/{id}`]: async function* (id: string): Promise<string> {
    40 |     return id;
    41 |   },
 
-Error: NotAnObjectWithMethodKind
+Error: Not an object with method kind
  /home/lucas/fluff/bff/packages/bff-wasm/fixtures/errors/invalid-path-definition/app.ts:39:3
    37 |   [`GETOOOO/hello/{id}`]: async (id: string): Promise<string> => id,
    38 |   ...d,
  > 39 |   [`GET/hello2/{id}`]: async function* (id: string): Promise<string> {
-      |   ^^^^^^^^^^^^^^^^^^^ NotAnObjectWithMethodKind
+      |   ^^^^^^^^^^^^^^^^^^^ Not an object with method kind
    40 |     return id;
    41 |   },
    42 |   [`GET/hello3/{id}`]: <T>(id: string): string => id,
 
-Error: NotAnObjectWithMethodKind
+Error: Not an object with method kind
  /home/lucas/fluff/bff/packages/bff-wasm/fixtures/errors/invalid-path-definition/app.ts:42:3
    40 |     return id;
    41 |   },
  > 42 |   [`GET/hello3/{id}`]: <T>(id: string): string => id,
-      |   ^^^^^^^^^^^^^^^^^^^ NotAnObjectWithMethodKind
+      |   ^^^^^^^^^^^^^^^^^^^ Not an object with method kind
    43 |   [`GET/hello4/{id}`]: async <T>(id: string): Promise<string> => id,
    44 |   [`GET/hello5/{id}`]: async <T>(id: T): Promise<T> => id,
    45 | };
 
-Error: NotAnObjectWithMethodKind
+Error: Not an object with method kind
  /home/lucas/fluff/bff/packages/bff-wasm/fixtures/errors/invalid-path-definition/app.ts:43:3
    41 |   },
    42 |   [`GET/hello3/{id}`]: <T>(id: string): string => id,
  > 43 |   [`GET/hello4/{id}`]: async <T>(id: string): Promise<string> => id,
-      |   ^^^^^^^^^^^^^^^^^^^ NotAnObjectWithMethodKind
+      |   ^^^^^^^^^^^^^^^^^^^ Not an object with method kind
    44 |   [`GET/hello5/{id}`]: async <T>(id: T): Promise<T> => id,
    45 | };
    46 |
 
-Error: NotAnObjectWithMethodKind
+Error: Not an object with method kind
  /home/lucas/fluff/bff/packages/bff-wasm/fixtures/errors/invalid-path-definition/app.ts:44:3
    42 |   [`GET/hello3/{id}`]: <T>(id: string): string => id,
    43 |   [`GET/hello4/{id}`]: async <T>(id: string): Promise<string> => id,
  > 44 |   [`GET/hello5/{id}`]: async <T>(id: T): Promise<T> => id,
-      |   ^^^^^^^^^^^^^^^^^^^ NotAnObjectWithMethodKind
+      |   ^^^^^^^^^^^^^^^^^^^ Not an object with method kind
    45 | };
    46 |
 

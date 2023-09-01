@@ -22,7 +22,6 @@ pub fn load_source_file(
     let unresolved_mark = Mark::new();
     let top_level_mark = Mark::new();
     let comments: SwcComments = SwcComments::default();
-    // TODO: recovered errors?
     let module = parse_file_as_module(
         &fm,
         Syntax::Typescript(TsConfig::default()),

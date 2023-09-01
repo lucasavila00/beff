@@ -305,7 +305,7 @@ impl<'a, R: FileManager> ExtractExportDefaultVisitor<'a, R> {
                 }
                 Err(_) => self.push_error(
                     &first.span,
-                    DiagnosticInfoMessage::DescriptionCouldNotBeParsed,
+                    DiagnosticInfoMessage::JsDocsDescriptionCouldNotBeParsed,
                 ),
             }
         }
@@ -357,7 +357,7 @@ impl<'a, R: FileManager> ExtractExportDefaultVisitor<'a, R> {
             | PropName::Str(Str { span, .. })
             | PropName::Num(Number { span, .. })
             | PropName::BigInt(BigInt { span, .. }) => {
-                self.push_error(span, DiagnosticInfoMessage::MustBeComputedKey);
+                self.push_error(span, DiagnosticInfoMessage::PatternMustBeComputedKey);
 
                 Err(anyhow!("not computed key"))
             }
@@ -409,8 +409,6 @@ impl<'a, R: FileManager> ExtractExportDefaultVisitor<'a, R> {
                 JsonSchema::Any
             }
         }
-
-        // todo!()
     }
     fn parse_lib_param(
         &mut self,
@@ -543,7 +541,7 @@ impl<'a, R: FileManager> ExtractExportDefaultVisitor<'a, R> {
                 if type_params.is_some() {
                     self.push_error(
                         rest_span,
-                        DiagnosticInfoMessage::TsTypeParametersNotSupported,
+                        DiagnosticInfoMessage::TsTypeParametersNotSupportedOnTuple,
                     );
                     return Err(anyhow!("error param"));
                 }
@@ -874,15 +872,15 @@ impl<'a, R: FileManager> ExtractExportDefaultVisitor<'a, R> {
                         PropOrSpread::Spread(it) => {
                             self.push_error(
                                 &it.dot3_token,
-                                DiagnosticInfoMessage::PropSpreadIsNotSupported,
+                                DiagnosticInfoMessage::PropSpreadIsNotSupportedOnMethodMap,
                             );
 
                             vec![]
                         }
-                        PropOrSpread::Prop(it) => self
-                            .endpoints_from_method_map(it)
+                        PropOrSpread::Prop(prop) => self
+                            .endpoints_from_method_map(prop)
                             .into_iter()
-                            .map(|it| self.validate_pattern_was_consumed(it, &pattern))
+                            .map(|handler| self.validate_pattern_was_consumed(handler, &pattern))
                             .collect(),
                     })
                     .collect();
@@ -1236,7 +1234,6 @@ fn visit_extract<R: FileManager>(
 ) -> (Vec<PathHandlerMap>, Vec<Definition>, Vec<Diagnostic>, Info) {
     let mut visitor = ExtractExportDefaultVisitor::new(files, current_file.clone());
 
-    // todo: consume the error?
     let _ = visitor.visit_current_file();
 
     if !visitor.found_default_export {

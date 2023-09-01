@@ -1,9 +1,9 @@
-Error: RestParamMustBeLabelAnnotated
+Error: There is a parameter without name
  /home/lucas/fluff/bff/packages/bff-wasm/fixtures/errors/tuple-args-no-label/app.ts:12:17
    10 | export default {
    11 |   [`/user`]: {
  > 12 |     get: async (...q: Pagination): Promise<User[]> => {
-      |                 ^^^^^^^^^^^^^^^^ RestParamMustBeLabelAnnotated
+      |                 ^^^^^^^^^^^^^^^^ There is a parameter without name
    13 |       return runQuery(q);
    14 |     },
    15 |   },

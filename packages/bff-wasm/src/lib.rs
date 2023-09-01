@@ -77,7 +77,7 @@ pub fn bundle_to_string(file_name: &str, module_type: &str) -> Option<String> {
 #[wasm_bindgen]
 pub fn bundle_to_diagnostics(file_name: &str, module_type: &str) -> JsValue {
     let v = bundle_to_diagnostics_inner(file_name, module_type);
-    serde_wasm_bindgen::to_value(&v).unwrap()
+    serde_wasm_bindgen::to_value(&v).expect("should be able to serialize")
 }
 #[wasm_bindgen]
 pub fn update_file_content(file_name: &str, content: &str) {
@@ -128,7 +128,7 @@ fn run_extraction(file_name: &str) -> ExtractResult {
 }
 fn print_errors(errors: Vec<Diagnostic>) {
     let v = WasmDiagnostic::from_diagnostics(errors);
-    let v = serde_wasm_bindgen::to_value(&v).unwrap();
+    let v = serde_wasm_bindgen::to_value(&v).expect("should be able to serialize");
     emit_diagnostic(v)
 }
 

@@ -7,7 +7,7 @@ pub enum DiagnosticInfoMessage {
     CannotParseJsDocExportDefault,
     JsDocDescriptionRestIsNotEmpty,
     JsDocsParameterDescriptionHasTags,
-    DescriptionCouldNotBeParsed,
+    JsDocsDescriptionCouldNotBeParsed,
     KeywordNonSerializableToJsonSchema,
     PropertyNonSerializableToJsonSchema,
     BigIntNonSerializableToJsonSchema,
@@ -17,15 +17,13 @@ pub enum DiagnosticInfoMessage {
     CannotUnderstandTsIndexedAccessType,
     ContextInvalidAtThisPosition,
     ContextParameterMustBeFirst,
-    InvalidHofParam,
-    PropSpreadIsNotSupported,
+    PropSpreadIsNotSupportedOnMethodMap,
     OptionalTypeIsNotSupported,
     PropShouldHaveTypeAnnotation,
     PropKeyShouldBeIdent,
     UnknownJsDocTagOfTypeUnknown(String),
     UnknownJsDocTagOnEndpoint(String),
     UnknownJsDocTagOnRouter(String),
-    UnknownJsDocTagItem,
     CannotParseJsDocEndpoint,
     TooManyCommentsJsDoc,
     CannotResolveTypeReferenceOnConverting(String),
@@ -33,11 +31,10 @@ pub enum DiagnosticInfoMessage {
     HandlerCannotHaveTypeParameters,
     HandlerMustAnnotateReturnType,
     UnmatchedPathParameter(String),
-    CoercerDepthExceeded,
     TsQualifiedNameNotSupported,
     CouldNotResolveIdentifierOnPathParamTuple,
     TsInterfaceExtendsNotSupported,
-    TsTypeParametersNotSupported,
+    TsTypeParametersNotSupportedOnTuple,
     RestParamMustBeTypeAnnotated,
     RestParamMustBeLabelAnnotated,
     ParameterPatternNotSupported,
@@ -45,10 +42,8 @@ pub enum DiagnosticInfoMessage {
     RestParameterMustBeTuple,
     CouldNotFindDefaultExport,
     ComplexPathParameterNotSupported,
-    HandlerMustBeAKeyValuePairWithStringAndFunction,
-    MustBeComputedKey,
+    PatternMustBeComputedKey,
     MustBeComputedKeyWithMethodAndPatternMustBeString,
-    InvalidPatternPrefix,
     RestOnRouterDefaultExportNotSupportedYet,
     HandlerCannotBeGenerator,
     ParameterIdentMustHaveTypeAnnotation,
@@ -61,7 +56,6 @@ pub enum DiagnosticInfoMessage {
     NotAnObjectWithMethodKind,
     NotAnHttpMethod,
     ThisRefersToSomethingThatCannotBeSerialized(String),
-    NoMessageConvertedFromDiagInfo,
     TypeParameterApplicationNotSupported,
 }
 impl DiagnosticInfoMessage {
@@ -107,7 +101,111 @@ impl DiagnosticInfoMessage {
             DiagnosticInfoMessage::UnmatchedPathParameter(param) => {
                 format!("Path parameter `{param}` is not being used in the function parameters")
             }
-            _ => format!("{:?}", self),
+            DiagnosticInfoMessage::RestParamMustBeLabelAnnotated => {
+                format!("There is a parameter without name")
+            }
+            DiagnosticInfoMessage::CannotParseJsDocExportDefault => {
+                format!("Failed to parse Js Docs of the default export")
+            }
+            DiagnosticInfoMessage::JsDocDescriptionRestIsNotEmpty => {
+                format!("Failed to parse Js Docs descriptions, rest is not empty")
+            }
+            DiagnosticInfoMessage::JsDocsDescriptionCouldNotBeParsed => {
+                format!("Failed to parse Js Docs descriptions")
+            }
+            DiagnosticInfoMessage::PropSpreadIsNotSupportedOnMethodMap => {
+                format!("Spread props are not supported on method maps")
+            }
+            DiagnosticInfoMessage::OptionalTypeIsNotSupported => {
+                format!("Optional types are not supported at this position")
+            }
+            DiagnosticInfoMessage::PropShouldHaveTypeAnnotation => {
+                format!("Property should have a type annotation")
+            }
+            DiagnosticInfoMessage::PropKeyShouldBeIdent => {
+                format!("Property name should be an identifier")
+            }
+            DiagnosticInfoMessage::CannotParseJsDocEndpoint => {
+                format!("Failed to parse Js Docs of the endpoint")
+            }
+            DiagnosticInfoMessage::TooManyCommentsJsDoc => {
+                format!("Failed to parse Js Docs. Only one comment is allowed")
+            }
+            DiagnosticInfoMessage::CannotResolveTypeReferenceOnConverting(name) => {
+                format!("Failed to resolve type reference '{name}' when converting to schema")
+            }
+            DiagnosticInfoMessage::CannotResolveTypeReferenceOnExtracting(name) => {
+                format!("Failed to resolve type reference '{name}' when extracting")
+            }
+            DiagnosticInfoMessage::HandlerCannotHaveTypeParameters => {
+                format!("Handler cannot have type parameters")
+            }
+            DiagnosticInfoMessage::HandlerMustAnnotateReturnType => {
+                format!("Handler must annotate return type")
+            }
+            DiagnosticInfoMessage::TsQualifiedNameNotSupported => {
+                format!("Qualified type names (ex: A.b) are not supported yet")
+            }
+            DiagnosticInfoMessage::CouldNotResolveIdentifierOnPathParamTuple => {
+                format!("Could not resolve identifier on path parameter tuple")
+            }
+            DiagnosticInfoMessage::TsTypeParametersNotSupportedOnTuple => {
+                format!("Type parameters are not supported on tuples")
+            }
+            DiagnosticInfoMessage::RestParamMustBeTypeAnnotated => {
+                format!("Rest parameter must be type annotated")
+            }
+            DiagnosticInfoMessage::ParameterPatternNotSupported => {
+                format!("Parameter pattern is not supported")
+            }
+            DiagnosticInfoMessage::CouldNotUnderstandRestParameter => {
+                format!("Could not understand rest parameter")
+            }
+            DiagnosticInfoMessage::RestParameterMustBeTuple => {
+                format!("Rest parameter must be a tuple")
+            }
+            DiagnosticInfoMessage::CouldNotFindDefaultExport => {
+                format!("Could not find default export")
+            }
+            DiagnosticInfoMessage::PatternMustBeComputedKey => {
+                format!("Pattern must be a computed key")
+            }
+            DiagnosticInfoMessage::MustBeComputedKeyWithMethodAndPatternMustBeString => {
+                format!("Pattern cannot be identified through a tuple")
+            }
+            DiagnosticInfoMessage::RestOnRouterDefaultExportNotSupportedYet => {
+                format!("Rest on router default export is not supported yet")
+            }
+            DiagnosticInfoMessage::HandlerCannotBeGenerator => {
+                format!("Handler cannot be a generator")
+            }
+            DiagnosticInfoMessage::ParameterIdentMustHaveTypeAnnotation => {
+                format!("Parameter identifier must have a type annotation")
+            }
+            DiagnosticInfoMessage::InferringTwoParamsAsRequestBody => {
+                format!("Inferring two parameters as request body")
+            }
+            DiagnosticInfoMessage::TooManyParamsOnLibType => {
+                format!("Too many parameters on lib type")
+            }
+            DiagnosticInfoMessage::TwoDifferentTypesWithTheSameName => {
+                format!("Two different types with the same name")
+            }
+            DiagnosticInfoMessage::TemplateMustBeOfSingleString => {
+                format!("Template must be of a single string")
+            }
+            DiagnosticInfoMessage::CannotFindFileWhenConvertingToSchema(f) => {
+                format!("Cannot find file '{f}' when converting to schema")
+            }
+            DiagnosticInfoMessage::CannotFindTypeExportWhenConvertingToSchema(exp) => {
+                format!("Cannot find type export '{exp}' when converting to schema")
+            }
+            DiagnosticInfoMessage::NotAnObjectWithMethodKind => {
+                format!("Not an object with method kind")
+            }
+            DiagnosticInfoMessage::NotAnHttpMethod => {
+                format!("Not an HTTP method")
+            }
         }
     }
 }
