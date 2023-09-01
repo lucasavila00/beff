@@ -17,8 +17,8 @@ use swc_ecma_ast::{
 };
 use swc_ecma_visit::Visit;
 pub struct ImportsVisitor {
-    pub imports: HashMap<(JsWord, SyntaxContext), ImportReference>,
-    pub type_exports: HashMap<JsWord, TypeExport>,
+    pub imports: HashMap<(JsWord, SyntaxContext), Rc<ImportReference>>,
+    pub type_exports: HashMap<JsWord, Rc<TypeExport>>,
     pub current_file: FileName,
 
     pub known_imports: HashMap<String, Option<Rc<String>>>,
@@ -49,13 +49,17 @@ impl Visit for ImportsVisitor {
         match &n.decl {
             Decl::TsInterface(n) => {
                 let TsInterfaceDecl { id, .. } = &**n;
-                self.type_exports
-                    .insert(id.sym.clone(), TypeExport::TsInterfaceDecl(*n.clone()));
+                self.type_exports.insert(
+                    id.sym.clone(),
+                    Rc::new(TypeExport::TsInterfaceDecl(Rc::new(*n.clone()))),
+                );
             }
             Decl::TsTypeAlias(a) => {
                 let TsTypeAliasDecl { id, type_ann, .. } = &**a;
-                self.type_exports
-                    .insert(id.sym.clone(), TypeExport::TsType(*type_ann.clone()));
+                self.type_exports.insert(
+                    id.sym.clone(),
+                    Rc::new(TypeExport::TsType(Rc::new(*type_ann.clone()))),
+                );
             }
             Decl::Using(_)
             | Decl::Class(_)
@@ -78,7 +82,8 @@ impl Visit for ImportsVisitor {
                         .insert(module_specifier.clone(), v.clone());
                     match v {
                         Some(v) => {
-                            self.imports.insert(k, ImportReference { file_name: v });
+                            self.imports
+                                .insert(k, Rc::new(ImportReference { file_name: v }));
                         }
                         None => {}
                     }

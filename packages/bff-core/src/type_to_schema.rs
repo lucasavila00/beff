@@ -4,7 +4,8 @@ use crate::diag::{
 };
 use crate::open_api_ast::Json;
 use crate::open_api_ast::{Definition, JsonSchema, Optionality};
-use crate::{ImportReference, ParsedModule, TypeExport};
+use crate::type_resolve::{ResolvedType, TypeResolver};
+use crate::TypeExport;
 use std::collections::HashMap;
 use std::rc::Rc;
 use swc_common::Span;
@@ -129,6 +130,30 @@ impl<'a, R: FileManager> TypeToSchema<'a, R> {
         })
     }
 
+    pub fn get_type_ref_of_user_identifier(&mut self, i: &Ident) -> Res<JsonSchema> {
+        match TypeResolver::new(self.files, &self.current_file).resolve_local_type(i) {
+            Some(ResolvedType::TsType(alias)) => self.convert_ts_type(&alias),
+            Some(ResolvedType::TsInterfaceDecl(int)) => self.convert_ts_interface_decl(&int),
+            Some(ResolvedType::Imported {
+                exported,
+                from_file,
+            }) => {
+                let store_current_file = self.current_file.clone();
+                self.current_file = from_file.file_name.clone();
+                let ty = match exported.as_ref() {
+                    TypeExport::TsType(alias) => self.convert_ts_type(&alias)?,
+                    TypeExport::TsInterfaceDecl(int) => self.convert_ts_interface_decl(&int)?,
+                };
+                self.current_file = store_current_file;
+                Ok(ty)
+            }
+            None => self.error(
+                &i.span,
+                DiagnosticInfoMessage::CannotResolveTypeReferenceOnConverting(i.sym.to_string()),
+            ),
+        }
+    }
+
     pub fn insert_definition(&mut self, name: String, schema: JsonSchema) -> Res<JsonSchema> {
         self.components.insert(
             name.clone(),
@@ -138,12 +163,6 @@ impl<'a, R: FileManager> TypeToSchema<'a, R> {
             }),
         );
         Ok(JsonSchema::Ref(name))
-    }
-
-    fn get_current_file(&mut self) -> Rc<ParsedModule> {
-        self.files
-            .get_or_fetch_file(&self.current_file)
-            .expect("should have been parsed")
     }
 
     pub fn get_type_ref(
@@ -181,85 +200,14 @@ impl<'a, R: FileManager> TypeToSchema<'a, R> {
             );
         }
 
-        if let Some(alias) = self
-            .get_current_file()
-            .locals
-            .type_aliases
-            .get(&(i.sym.clone(), i.span.ctxt))
-        {
-            let alias = alias.clone();
-            let ty = self.convert_ts_type(&alias)?;
-            return self.insert_definition(i.sym.to_string(), ty);
-        }
-
-        if let Some(int) = self
-            .get_current_file()
-            .locals
-            .interfaces
-            .get(&(i.sym.clone(), i.span.ctxt))
-        {
-            let int = int.clone();
-            let ty = self.convert_ts_interface_decl(&int)?;
-            return self.insert_definition(i.sym.to_string(), ty);
-        }
-
-        let mut found: Option<(TypeExport, ImportReference)> = None;
-
-        if let Some(imported) = self
-            .get_current_file()
-            .imports
-            .get(&(i.sym.clone(), i.span.ctxt))
-        {
-            let file = self.files.get_or_fetch_file(&imported.file_name);
-            match file {
-                Some(file) => {
-                    let exp = file.type_exports.get(&i.sym);
-                    match exp {
-                        Some(f) => {
-                            found = Some((f.clone(), imported.clone()));
-                        }
-                        None => {
-                            return self.error(
-                                &i.span,
-                                DiagnosticInfoMessage::CannotFindTypeExportWhenConvertingToSchema(
-                                    i.sym.to_string(),
-                                ),
-                            )
-                        }
-                    }
-                }
-                None => {
-                    return self.error(
-                        &i.span,
-                        DiagnosticInfoMessage::CannotFindFileWhenConvertingToSchema(
-                            imported.file_name.to_string(),
-                        ),
-                    )
-                }
+        let ty = self.get_type_ref_of_user_identifier(i);
+        match ty {
+            Ok(ty) => self.insert_definition(i.sym.to_string(), ty),
+            Err(e) => {
+                self.insert_definition(i.sym.to_string(), JsonSchema::Any)?;
+                Err(e)
             }
         }
-        match found {
-            Some((TypeExport::TsType(alias), imported)) => {
-                let store_current_file = self.current_file.clone();
-                self.current_file = imported.file_name.clone();
-                let ty = self.convert_ts_type(&alias)?;
-                self.current_file = store_current_file;
-                return self.insert_definition(i.sym.to_string(), ty);
-            }
-            Some((TypeExport::TsInterfaceDecl(int), imported)) => {
-                let store_current_file = self.current_file.clone();
-                self.current_file = imported.file_name.clone();
-                let ty = self.convert_ts_interface_decl(&int)?;
-                self.current_file = store_current_file;
-                return self.insert_definition(i.sym.to_string(), ty);
-            }
-            None => {}
-        }
-
-        self.error(
-            &i.span,
-            DiagnosticInfoMessage::CannotResolveTypeReferenceOnConverting(i.sym.to_string()),
-        )
     }
 
     fn union(&mut self, types: &[Box<TsType>]) -> Res<JsonSchema> {

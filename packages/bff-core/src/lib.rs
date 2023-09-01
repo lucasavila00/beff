@@ -7,6 +7,7 @@ pub mod open_api_ast;
 pub mod parse;
 pub mod printer;
 pub mod swc_builder;
+pub mod type_resolve;
 pub mod type_to_schema;
 use std::{collections::HashMap, rc::Rc, sync::Arc};
 use swc_atoms::JsWord;
@@ -16,8 +17,8 @@ use swc_ecma_visit::Visit;
 use swc_node_comments::SwcComments;
 #[derive(Debug, Clone)]
 pub enum TypeExport {
-    TsType(TsType),
-    TsInterfaceDecl(TsInterfaceDecl),
+    TsType(Rc<TsType>),
+    TsInterfaceDecl(Rc<TsInterfaceDecl>),
 }
 
 pub struct BffModuleData {
@@ -34,14 +35,14 @@ pub struct ImportReference {
 pub struct ParsedModule {
     pub locals: ParsedModuleLocals,
     pub module: BffModuleData,
-    pub imports: HashMap<(JsWord, SyntaxContext), ImportReference>,
+    pub imports: HashMap<(JsWord, SyntaxContext), Rc<ImportReference>>,
     pub comments: SwcComments,
-    pub type_exports: HashMap<JsWord, TypeExport>,
+    pub type_exports: HashMap<JsWord, Rc<TypeExport>>,
 }
 
 pub struct ParsedModuleLocals {
-    pub type_aliases: HashMap<(JsWord, SyntaxContext), TsType>,
-    pub interfaces: HashMap<(JsWord, SyntaxContext), TsInterfaceDecl>,
+    pub type_aliases: HashMap<(JsWord, SyntaxContext), Rc<TsType>>,
+    pub interfaces: HashMap<(JsWord, SyntaxContext), Rc<TsInterfaceDecl>>,
 }
 impl ParsedModuleLocals {
     pub fn new() -> ParsedModuleLocals {
@@ -55,11 +56,11 @@ impl Visit for ParsedModuleLocals {
     fn visit_ts_type_alias_decl(&mut self, n: &TsTypeAliasDecl) {
         let TsTypeAliasDecl { id, type_ann, .. } = n;
         self.type_aliases
-            .insert((id.sym.clone(), id.span.ctxt), *type_ann.clone());
+            .insert((id.sym.clone(), id.span.ctxt), Rc::new(*type_ann.clone()));
     }
     fn visit_ts_interface_decl(&mut self, n: &TsInterfaceDecl) {
         let TsInterfaceDecl { id, .. } = n;
         self.interfaces
-            .insert((id.sym.clone(), id.span.ctxt), n.clone());
+            .insert((id.sym.clone(), id.span.ctxt), Rc::new(n.clone()));
     }
 }

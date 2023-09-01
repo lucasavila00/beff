@@ -4,8 +4,6 @@
 
 - [ ] 422 in schema
 
-- [ ] assert header etc is imported from lib
-
 - [ ] export decoders
 - [ ] string formats (uuid, email)
 
@@ -26,6 +24,8 @@
 - [ ] do not allow patterns that hono does not support
 - [ ] do not allow patterns styles that code generator/runtime coercer does not support
 - [ ] require backend=hono config, or version
+
+- [ ] assert header etc is imported from lib
 
 - [ ] namespace
 - [ ] qualified import type
