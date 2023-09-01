@@ -7,7 +7,7 @@ export default {
   /**
    * @title abc
    * @augments asd
-   * @xxx yyy
+   * @xxx zzzz
    */
   [`/hello/{id}`]: {
     get: async (
@@ -15,7 +15,7 @@ export default {
       /**
        * @title abc
        * @augments asd
-       * @xxx yyy
+       * @xxx asasasasas
        */
       id: string
     ): Promise<string> => id,
