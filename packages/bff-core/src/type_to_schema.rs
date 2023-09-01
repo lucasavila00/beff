@@ -204,8 +204,7 @@ impl<'a, R: FileManager> TypeToSchema<'a, R> {
             return self.insert_definition(i.sym.to_string(), ty);
         }
 
-        let mut found: Option<TypeExport> = None;
-        let mut found_imp: Option<ImportReference> = None;
+        let mut found: Option<(TypeExport, ImportReference)> = None;
 
         if let Some(imported) = self
             .get_current_file()
@@ -218,8 +217,7 @@ impl<'a, R: FileManager> TypeToSchema<'a, R> {
                     let exp = file.type_exports.get(&i.sym);
                     match exp {
                         Some(f) => {
-                            found = Some(f.clone());
-                            found_imp = Some(imported.clone());
+                            found = Some((f.clone(), imported.clone()));
                         }
                         None => {
                             return self.error(
@@ -242,19 +240,18 @@ impl<'a, R: FileManager> TypeToSchema<'a, R> {
             }
         }
         match found {
-            Some(TypeExport::TsType(alias)) => {
-                let imported = found_imp.expect("should exist");
-                let mut chd_file_converter = TypeToSchema::new(self.files, imported.file_name);
-
-                let ty = chd_file_converter.convert_ts_type(&alias)?;
-                self.components.extend(chd_file_converter.components);
+            Some((TypeExport::TsType(alias), imported)) => {
+                let store_current_file = self.current_file.clone();
+                self.current_file = imported.file_name.clone();
+                let ty = self.convert_ts_type(&alias)?;
+                self.current_file = store_current_file;
                 return self.insert_definition(i.sym.to_string(), ty);
             }
-            Some(TypeExport::TsInterfaceDecl(int)) => {
-                let imported = found_imp.expect("should exist");
-                let mut chd_file_converter = TypeToSchema::new(self.files, imported.file_name);
-                let ty = chd_file_converter.convert_ts_interface_decl(&int)?;
-                self.components.extend(chd_file_converter.components);
+            Some((TypeExport::TsInterfaceDecl(int), imported)) => {
+                let store_current_file = self.current_file.clone();
+                self.current_file = imported.file_name.clone();
+                let ty = self.convert_ts_interface_decl(&int)?;
+                self.current_file = store_current_file;
                 return self.insert_definition(i.sym.to_string(), ty);
             }
             None => {}
