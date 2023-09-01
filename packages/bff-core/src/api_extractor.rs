@@ -256,21 +256,25 @@ impl<'a, R: FileManager> ExtractExportDefaultVisitor<'a, R> {
                                 Tag::Summary(SummaryTag { text, .. }) => {
                                     acc.summary = Some(text.value.to_string());
                                 }
-                                tag => self.push_error(
+                                _tag => self.push_error(
                                     &tag_item.span,
-                                    DiagnosticInfoMessage::UnknownJsDocTag(tag.clone()),
+                                    DiagnosticInfoMessage::UnknownJsDocTagOnEndpoint(
+                                        tag_item.tag_name.value.to_string(),
+                                    ),
                                 ),
                             }
                         }
                     }
-                    Err(_) => self.push_error(&c.span, DiagnosticInfoMessage::CannotParseJsDoc),
+                    Err(_) => {
+                        self.push_error(&c.span, DiagnosticInfoMessage::CannotParseJsDocEndpoint)
+                    }
                 }
             }
         }
     }
     fn parse_description_comment(&mut self, comments: Vec<Comment>, span: &Span) -> Option<String> {
         if comments.len() != 1 {
-            self.push_error(span, DiagnosticInfoMessage::CannotParseJsDoc);
+            self.push_error(span, DiagnosticInfoMessage::TooManyCommentsJsDoc);
 
             return None;
         }
@@ -284,18 +288,25 @@ impl<'a, R: FileManager> ExtractExportDefaultVisitor<'a, R> {
             match parsed {
                 Ok((rest, parsed)) => {
                     if !rest.is_empty() {
-                        self.push_error(&first.span, DiagnosticInfoMessage::CannotParseJsDoc);
+                        self.push_error(
+                            &first.span,
+                            DiagnosticInfoMessage::JsDocDescriptionRestIsNotEmpty,
+                        );
                     }
                     if !parsed.tags.is_empty() {
-                        for tag in parsed.tags {
-                            self.push_error(&tag.span, DiagnosticInfoMessage::CannotParseJsDoc);
-                        }
+                        self.push_error(
+                            &first.span,
+                            DiagnosticInfoMessage::JsDocsParameterDescriptionHasTags,
+                        );
                     }
                     return Some(trim_description_comments(
                         parsed.description.value.to_string(),
                     ));
                 }
-                Err(_) => self.push_error(&first.span, DiagnosticInfoMessage::CannotParseJsDoc),
+                Err(_) => self.push_error(
+                    &first.span,
+                    DiagnosticInfoMessage::DescriptionCouldNotBeParsed,
+                ),
             }
         }
         None
@@ -917,13 +928,13 @@ impl<'a, R: FileManager> ExtractExportDefaultVisitor<'a, R> {
                                 rest.to_string()
                             ));
                         }
-                        for tag in parsed.tags {
-                            match tag.tag {
+                        for tag_item in parsed.tags {
+                            match tag_item.tag {
                                 Tag::Version(VersionTag { value, .. }) => {
                                     self.info.version = Some(value.value.to_string());
                                 }
                                 Tag::Unknown(UnknownTag { extras, .. }) => {
-                                    match &*tag.tag_name.value {
+                                    match &*tag_item.tag_name.value {
                                         "title" => {
                                             self.info.title = Some(extras.value.to_string());
                                         }
@@ -935,14 +946,19 @@ impl<'a, R: FileManager> ExtractExportDefaultVisitor<'a, R> {
                                         ),
                                     }
                                 }
-                                tag => self.push_error(
+                                _v => self.push_error(
                                     &c.span,
-                                    DiagnosticInfoMessage::UnknownJsDocTag(tag.clone()),
+                                    DiagnosticInfoMessage::UnknownJsDocTagOnRouter(
+                                        tag_item.tag_name.value.to_string(),
+                                    ),
                                 ),
                             }
                         }
                     }
-                    Err(_) => self.push_error(&c.span, DiagnosticInfoMessage::CannotParseJsDoc),
+                    Err(_) => self.push_error(
+                        &c.span,
+                        DiagnosticInfoMessage::CannotParseJsDocExportDefault,
+                    ),
                 }
             }
         }

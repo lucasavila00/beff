@@ -1,10 +1,19 @@
 use std::sync::Arc;
 
-use jsdoc::ast::{Tag, TagItem};
 use swc_common::{BytePos, Loc, SourceMap, Span};
 
 #[derive(Debug, Clone)]
 pub enum DiagnosticInfoMessage {
+    CannotParseJsDocExportDefault,
+    JsDocDescriptionRestIsNotEmpty,
+    JsDocsParameterDescriptionHasTags,
+    DescriptionCouldNotBeParsed,
+    KeywordNonSerializableToJsonSchema,
+    PropertyNonSerializableToJsonSchema,
+    BigIntNonSerializableToJsonSchema,
+    TemplateNonSerializableToJsonSchema,
+    DuplicatedRestNonSerializableToJsonSchema,
+    TypeConstructNonSerializableToJsonSchema,
     CannotUnderstandTsIndexedAccessType,
     ContextInvalidAtThisPosition,
     ContextParameterMustBeFirst,
@@ -14,16 +23,17 @@ pub enum DiagnosticInfoMessage {
     PropShouldHaveTypeAnnotation,
     PropKeyShouldBeIdent,
     UnknownJsDocTagOfTypeUnknown(String),
-    UnknownJsDocTag(Tag),
-    UnknownJsDocTagItem(TagItem),
-    CannotParseJsDoc,
+    UnknownJsDocTagOnEndpoint(String),
+    UnknownJsDocTagOnRouter(String),
+    UnknownJsDocTagItem,
+    CannotParseJsDocEndpoint,
+    TooManyCommentsJsDoc,
     CannotResolveTypeReferenceOnConverting(String),
     CannotResolveTypeReferenceOnExtracting(String),
     HandlerCannotHaveTypeParameters,
     HandlerMustAnnotateReturnType,
     UnmatchedPathParameter(String),
     CoercerDepthExceeded,
-    CannotConvertTypeToSchema,
     TsQualifiedNameNotSupported,
     CouldNotResolveIdentifierOnPathParamTuple,
     TsInterfaceExtendsNotSupported,
@@ -52,11 +62,17 @@ pub enum DiagnosticInfoMessage {
     NotAnHttpMethod,
     ThisRefersToSomethingThatCannotBeSerialized(String),
     NoMessageConvertedFromDiagInfo,
+    TypeParameterApplicationNotSupported,
 }
 impl DiagnosticInfoMessage {
     pub fn to_string(self) -> String {
         match self {
-            DiagnosticInfoMessage::CannotConvertTypeToSchema => {
+            DiagnosticInfoMessage::KeywordNonSerializableToJsonSchema
+            | DiagnosticInfoMessage::PropertyNonSerializableToJsonSchema
+            | DiagnosticInfoMessage::BigIntNonSerializableToJsonSchema
+            | DiagnosticInfoMessage::TemplateNonSerializableToJsonSchema
+            | DiagnosticInfoMessage::DuplicatedRestNonSerializableToJsonSchema
+            | DiagnosticInfoMessage::TypeConstructNonSerializableToJsonSchema => {
                 format!("Type cannot be converted to JSON schema")
             }
             DiagnosticInfoMessage::ThisRefersToSomethingThatCannotBeSerialized(this) => {
@@ -77,6 +93,17 @@ impl DiagnosticInfoMessage {
             DiagnosticInfoMessage::TsInterfaceExtendsNotSupported => {
                 format!("Interface extends are not supported on schemas")
             }
+            DiagnosticInfoMessage::TypeParameterApplicationNotSupported => {
+                format!("Type parameter application is not supported on schemas")
+            }
+            DiagnosticInfoMessage::UnknownJsDocTagOfTypeUnknown(tag)
+            | DiagnosticInfoMessage::UnknownJsDocTagOnRouter(tag)
+            | DiagnosticInfoMessage::UnknownJsDocTagOnEndpoint(tag) => {
+                format!("Jsdoc tag '{tag}' cannot be converted to OpenAPI")
+            }
+            DiagnosticInfoMessage::JsDocsParameterDescriptionHasTags => {
+                format!("Jsdoc parameter description cannot have tags")
+            }
             _ => format!("{:?}", self),
         }
     }
@@ -88,6 +115,7 @@ pub enum DiagnosticParentMessage {
     InvalidContextPosition,
 }
 impl DiagnosticParentMessage {
+    // TODO: link to docs for each
     pub fn to_string(self) -> String {
         match self {
             DiagnosticParentMessage::CannotConvertToSchema => {

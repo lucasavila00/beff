@@ -60,7 +60,10 @@ impl<'a, R: FileManager> TypeToSchema<'a, R> {
             | TsKeywordTypeKind::TsNeverKeyword
             | TsKeywordTypeKind::TsSymbolKeyword
             | TsKeywordTypeKind::TsIntrinsicKeyword
-            | TsKeywordTypeKind::TsVoidKeyword => self.cannot_serialize_error(span, None),
+            | TsKeywordTypeKind::TsVoidKeyword => self.cannot_serialize_error(
+                span,
+                DiagnosticInfoMessage::KeywordNonSerializableToJsonSchema,
+            ),
             TsKeywordTypeKind::TsNumberKeyword => Ok(JsonSchema::Number),
             TsKeywordTypeKind::TsBooleanKeyword => Ok(JsonSchema::Boolean),
             TsKeywordTypeKind::TsStringKeyword => Ok(JsonSchema::String),
@@ -100,7 +103,10 @@ impl<'a, R: FileManager> TypeToSchema<'a, R> {
             | TsTypeElement::TsIndexSignature(TsIndexSignature { span, .. })
             | TsTypeElement::TsCallSignatureDecl(TsCallSignatureDecl { span, .. })
             | TsTypeElement::TsConstructSignatureDecl(TsConstructSignatureDecl { span, .. }) => {
-                self.cannot_serialize_error(span, None)
+                self.cannot_serialize_error(
+                    span,
+                    DiagnosticInfoMessage::PropertyNonSerializableToJsonSchema,
+                )
             }
         }
     }
@@ -109,7 +115,7 @@ impl<'a, R: FileManager> TypeToSchema<'a, R> {
         if !typ.extends.is_empty() {
             return self.cannot_serialize_error(
                 &typ.span,
-                Some(DiagnosticInfoMessage::TsInterfaceExtendsNotSupported),
+                DiagnosticInfoMessage::TsInterfaceExtendsNotSupported,
             );
         }
 
@@ -170,7 +176,10 @@ impl<'a, R: FileManager> TypeToSchema<'a, R> {
 
         if type_params.is_some() {
             self.insert_definition(i.sym.to_string(), JsonSchema::Any)?;
-            return self.cannot_serialize_error(&i.span, None);
+            return self.cannot_serialize_error(
+                &i.span,
+                DiagnosticInfoMessage::TypeParameterApplicationNotSupported,
+            );
         }
 
         if let Some(alias) = self
@@ -275,15 +284,8 @@ impl<'a, R: FileManager> TypeToSchema<'a, R> {
         ))
     }
 
-    fn cannot_serialize_error<T>(
-        &mut self,
-        span: &Span,
-        msg: Option<DiagnosticInfoMessage>,
-    ) -> Res<T> {
-        let cause = self.create_error(
-            span,
-            msg.unwrap_or(DiagnosticInfoMessage::CannotConvertTypeToSchema),
-        );
+    fn cannot_serialize_error<T>(&mut self, span: &Span, msg: DiagnosticInfoMessage) -> Res<T> {
+        let cause = self.create_error(span, msg);
 
         match self.ref_stack.split_first() {
             Some((head, tail)) => {
@@ -394,7 +396,10 @@ impl<'a, R: FileManager> TypeToSchema<'a, R> {
                 for it in elem_types {
                     if let TsType::TsRestType(TsRestType { type_ann, .. }) = &*it.ty {
                         if items.is_some() {
-                            return self.cannot_serialize_error(&it.span, None);
+                            return self.cannot_serialize_error(
+                                &it.span,
+                                DiagnosticInfoMessage::DuplicatedRestNonSerializableToJsonSchema,
+                            );
                         }
                         let ann = extract_items_from_array(self.convert_ts_type(type_ann)?);
                         items = Some(ann.into());
@@ -412,14 +417,20 @@ impl<'a, R: FileManager> TypeToSchema<'a, R> {
                 TsLit::Number(n) => Ok(JsonSchema::Const(Json::Number(n.value))),
                 TsLit::Str(s) => Ok(JsonSchema::Const(Json::String(s.value.to_string().clone()))),
                 TsLit::Bool(b) => Ok(JsonSchema::Const(Json::Bool(b.value))),
-                TsLit::BigInt(BigInt { span, .. }) => self.cannot_serialize_error(span, None),
+                TsLit::BigInt(BigInt { span, .. }) => self.cannot_serialize_error(
+                    span,
+                    DiagnosticInfoMessage::BigIntNonSerializableToJsonSchema,
+                ),
                 TsLit::Tpl(TsTplLitType {
                     span,
                     types,
                     quasis,
                 }) => {
                     if !types.is_empty() || quasis.len() != 1 {
-                        return self.cannot_serialize_error(span, None);
+                        return self.cannot_serialize_error(
+                            span,
+                            DiagnosticInfoMessage::TemplateNonSerializableToJsonSchema,
+                        );
                     }
 
                     Ok(JsonSchema::Const(Json::String(
@@ -448,9 +459,10 @@ impl<'a, R: FileManager> TypeToSchema<'a, R> {
             | TsType::TsMappedType(TsMappedType { span, .. })
             | TsType::TsTypePredicate(TsTypePredicate { span, .. })
             | TsType::TsImportType(TsImportType { span, .. })
-            | TsType::TsTypeQuery(TsTypeQuery { span, .. }) => {
-                self.cannot_serialize_error(span, None)
-            }
+            | TsType::TsTypeQuery(TsTypeQuery { span, .. }) => self.cannot_serialize_error(
+                span,
+                DiagnosticInfoMessage::TypeConstructNonSerializableToJsonSchema,
+            ),
             TsType::TsIndexedAccessType(TsIndexedAccessType { span, .. }) => self.error(
                 span,
                 DiagnosticInfoMessage::CannotUnderstandTsIndexedAccessType,
