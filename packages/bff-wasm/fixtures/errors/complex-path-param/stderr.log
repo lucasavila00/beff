@@ -1,19 +1,11 @@
-Error: ContextParameterMustBeFirst
- /home/lucas/fluff/bff/packages/bff-wasm/fixtures/errors/complex-path-param/app.ts:7:4
-   5 |
-   6 | export default {
- > 7 |   [`/hello/{id}`]: { get: async (id: A): Promise<string> => `Hello ${id}!` },
-     |    ^^^^^^^^^^^^^ ContextParameterMustBeFirst
-   8 | };
-   9 |
+Error: Complex path parameter
+ /home/lucas/fluff/bff/packages/bff-wasm/fixtures/errors/complex-path-param/app.ts:9:31
+    7 | export default {
+    8 |   [`/hello/{id}`]: {
+ >  9 |     get: async (ctx: Ctx, id: A): Promise<string> => `Hello ${id}!`,
+      |                               ^ This type is too complex for a path parameter
+   10 |   },
+   11 | };
+   12 |
 
-Error: ComplexPathParameterNotSupported
- /home/lucas/fluff/bff/packages/bff-wasm/fixtures/errors/complex-path-param/app.ts:7:4
-   5 |
-   6 | export default {
- > 7 |   [`/hello/{id}`]: { get: async (id: A): Promise<string> => `Hello ${id}!` },
-     |    ^^^^^^^^^^^^^ ComplexPathParameterNotSupported
-   8 | };
-   9 |
-
-Found 2 errors
+Found 1 error

@@ -49,7 +49,7 @@ impl WasmDiagnosticInformation {
 pub struct WasmDiagnosticItem {
     cause: WasmDiagnosticInformation,
     related_information: Option<Vec<WasmDiagnosticInformation>>,
-    message: String,
+    message: Option<String>,
 }
 #[derive(Serialize, Deserialize)]
 pub struct WasmDiagnostic {
@@ -75,6 +75,6 @@ fn diag_to_wasm(diag: Diagnostic) -> WasmDiagnosticItem {
             ),
             None => None,
         },
-        message: diag.message.to_string(),
+        message: diag.message.map(|it| it.to_string()),
     }
 }

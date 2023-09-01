@@ -128,8 +128,8 @@ const emitDiagnosticItem = (data: WasmDiagnosticItem) => {
   if (inf.length == 0) {
     return;
   }
-  console.error(chalk.yellow("    Caused by:"));
   inf.forEach((data) => {
+    console.error(chalk.yellow(" ".repeat(4) + "Caused by:"));
     emitDiagnosticInfo(data, " ".repeat(5));
   });
 };
@@ -173,7 +173,7 @@ type WasmDiagnosticInformation =
 type WasmDiagnosticItem = {
   cause: WasmDiagnosticInformation;
   related_information: WasmDiagnosticInformation[] | undefined;
-  message: string;
+  message?: string;
 };
 type WasmDiagnostic = {
   diagnostics: WasmDiagnosticItem[];

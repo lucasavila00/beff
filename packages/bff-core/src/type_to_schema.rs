@@ -1,6 +1,6 @@
 use crate::api_extractor::FileManager;
 use crate::diag::{
-    span_to_loc, Diagnostic, DiagnosticInfoMessage, DiagnosticInformation, DiagnosticMessage,
+    span_to_loc, Diagnostic, DiagnosticInfoMessage, DiagnosticInformation, DiagnosticParentMessage,
 };
 use crate::open_api_ast::Json;
 use crate::open_api_ast::{Definition, JsonSchema, Optionality};
@@ -285,11 +285,11 @@ impl<'a, R: FileManager> TypeToSchema<'a, R> {
                 Err(Diagnostic {
                     cause: head.clone(),
                     related_information: Some(related_information),
-                    message: DiagnosticMessage::CannotConvertToSchema,
+                    message: Some(DiagnosticParentMessage::CannotConvertToSchema),
                 })
             }
             None => Err(Diagnostic {
-                message: DiagnosticMessage::CannotConvertToSchema,
+                message: Some(DiagnosticParentMessage::CannotConvertToSchema),
                 cause,
                 related_information: None,
             }),
@@ -318,7 +318,7 @@ impl<'a, R: FileManager> TypeToSchema<'a, R> {
     }
     fn error<T>(&mut self, span: &Span, msg: DiagnosticInfoMessage) -> Res<T> {
         let err = self.create_error(span, msg);
-        Err(err.to_diag())
+        Err(err.to_diag(None))
     }
     pub fn get_current_reference(&mut self, i: &Ident) -> Option<DiagnosticInformation> {
         self.files

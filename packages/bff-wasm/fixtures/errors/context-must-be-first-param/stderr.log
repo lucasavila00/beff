@@ -1,0 +1,21 @@
+Error: ContextParameterMustBeFirst
+ /home/lucas/fluff/bff/packages/bff-wasm/fixtures/errors/context-must-be-first-param/app.ts:7:4
+    5 |
+    6 | export default {
+ >  7 |   [`/hello/{id}`]: {
+      |    ^^^^^^^^^^^^^ ContextParameterMustBeFirst
+    8 |     get: async (id: string, c: Ctx): Promise<string> => todo(),
+    9 |   },
+   10 | };
+
+Error: ContextInvalidAtThisPosition
+ /home/lucas/fluff/bff/packages/bff-wasm/fixtures/errors/context-must-be-first-param/app.ts:7:4
+    5 |
+    6 | export default {
+ >  7 |   [`/hello/{id}`]: {
+      |    ^^^^^^^^^^^^^ ContextInvalidAtThisPosition
+    8 |     get: async (id: string, c: Ctx): Promise<string> => todo(),
+    9 |   },
+   10 | };
+
+Found 2 errors

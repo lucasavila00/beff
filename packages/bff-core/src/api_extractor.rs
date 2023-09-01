@@ -1,4 +1,6 @@
-use crate::diag::{span_to_loc, Diagnostic, DiagnosticInfoMessage, DiagnosticInformation};
+use crate::diag::{
+    span_to_loc, Diagnostic, DiagnosticInfoMessage, DiagnosticInformation, DiagnosticParentMessage,
+};
 use crate::open_api_ast::{
     self, Definition, Info, JsonRequestBody, JsonSchema, OpenApi, OperationObject, ParameterIn,
     ParameterObject,
@@ -226,7 +228,7 @@ impl<'a, R: FileManager> ExtractExportDefaultVisitor<'a, R> {
         }
     }
     fn push_error(&mut self, span: &Span, msg: DiagnosticInfoMessage) {
-        self.errors.push(self.build_error(span, msg).to_diag());
+        self.errors.push(self.build_error(span, msg).to_diag(None));
     }
 
     #[allow(clippy::to_string_in_format_args)]
@@ -502,7 +504,7 @@ impl<'a, R: FileManager> ExtractExportDefaultVisitor<'a, R> {
                             self.current_file.to_string(),
                         ),
                     )
-                    .to_diag(),
+                    .to_diag(None),
                 );
                 Err(anyhow!("cannot find file: {}", self.current_file))
             }
@@ -1036,7 +1038,12 @@ struct EndpointToPath<'a, R: FileManager> {
 }
 
 impl<'a, R: FileManager> EndpointToPath<'a, R> {
-    fn push_error(&mut self, span: &Span, msg: DiagnosticInfoMessage) {
+    fn push_error(
+        &mut self,
+        span: &Span,
+        info_msg: DiagnosticInfoMessage,
+        parent_msg: Option<DiagnosticParentMessage>,
+    ) {
         let file = self.files.get_or_fetch_file(&self.current_file);
         match file {
             Some(file) => {
@@ -1044,19 +1051,19 @@ impl<'a, R: FileManager> EndpointToPath<'a, R> {
                     span_to_loc(span, &file.module.source_map, file.module.fm.end_pos);
 
                 let err = DiagnosticInformation::KnownFile {
-                    message: msg,
+                    message: info_msg,
                     file_name: self.current_file.to_string(),
                     loc_lo,
                     loc_hi,
                 };
-                self.errors.push(err.to_diag());
+                self.errors.push(err.to_diag(parent_msg));
             }
             None => {
                 let err = DiagnosticInformation::UnknownFile {
-                    message: msg,
+                    message: info_msg,
                     current_file: self.current_file.to_string(),
                 };
-                self.errors.push(err.to_diag());
+                self.errors.push(err.to_diag(parent_msg));
             }
         }
     }
@@ -1072,6 +1079,7 @@ impl<'a, R: FileManager> EndpointToPath<'a, R> {
                     self.push_error(
                         &endpoint.pattern.raw_span,
                         DiagnosticInfoMessage::ContextParameterMustBeFirst,
+                        None,
                     );
                 }
             }
@@ -1081,6 +1089,7 @@ impl<'a, R: FileManager> EndpointToPath<'a, R> {
                         self.push_error(
                             &endpoint.pattern.raw_span,
                             DiagnosticInfoMessage::ContextInvalidAtThisPosition,
+                            None,
                         );
                     }
                     _ => {}
@@ -1122,6 +1131,7 @@ impl<'a, R: FileManager> EndpointToPath<'a, R> {
                                 self.push_error(
                                     &span,
                                     DiagnosticInfoMessage::InferringTwoParamsAsRequestBody,
+                                    None,
                                 );
                             }
 
@@ -1133,8 +1143,9 @@ impl<'a, R: FileManager> EndpointToPath<'a, R> {
                         }
                         FunctionParameterIn::InvalidComplexPathParameter => {
                             self.push_error(
-                                &endpoint.pattern.raw_span,
+                                &span,
                                 DiagnosticInfoMessage::ComplexPathParameterNotSupported,
+                                Some(DiagnosticParentMessage::ComplexPathParam),
                             );
                         }
                     }
@@ -1222,7 +1233,7 @@ fn visit_extract<R: FileManager>(
                 message: DiagnosticInfoMessage::CouldNotFindDefaultExport,
                 current_file: current_file.to_string(),
             }
-            .to_diag(),
+            .to_diag(None),
         )
     }
 

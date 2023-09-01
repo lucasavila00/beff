@@ -17,6 +17,7 @@ Error: Exposing a type that cannot be converted to JSON schema
        15 | export default {
        16 |   [`/hello/{id}`]: { get: async (c: Ctx, id: string): Promise<A3> => todo() },
 
+    Caused by:
      /home/lucas/fluff/bff/packages/bff-wasm/fixtures/errors/cannot-serialize-chain/app.ts:10:6
         8 | };
         9 | type A2 = {
@@ -26,6 +27,7 @@ Error: Exposing a type that cannot be converted to JSON schema
        12 | type A3 = {
        13 |   a: A2;
 
+    Caused by:
      /home/lucas/fluff/bff/packages/bff-wasm/fixtures/errors/cannot-serialize-chain/app.ts:7:6
         5 |
         6 | type A = {

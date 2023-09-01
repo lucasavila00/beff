@@ -65,22 +65,27 @@ impl DiagnosticInfoMessage {
             DiagnosticInfoMessage::CannotUnderstandTsIndexedAccessType => {
                 format!("Indexed access types are not supported on schemas")
             }
+            DiagnosticInfoMessage::ComplexPathParameterNotSupported => {
+                format!("This type is too complex for a path parameter")
+            }
             _ => format!("{:?}", self),
         }
     }
 }
 #[derive(Debug, Clone)]
-pub enum DiagnosticMessage {
-    NoMessage,
+pub enum DiagnosticParentMessage {
     CannotConvertToSchema,
+    ComplexPathParam,
 }
-impl DiagnosticMessage {
+impl DiagnosticParentMessage {
     pub fn to_string(self) -> String {
         match self {
-            DiagnosticMessage::CannotConvertToSchema => {
+            DiagnosticParentMessage::CannotConvertToSchema => {
                 format!("Exposing a type that cannot be converted to JSON schema")
             }
-            DiagnosticMessage::NoMessage => format!(""),
+            DiagnosticParentMessage::ComplexPathParam => {
+                format!("Complex path parameter")
+            }
         }
     }
 }
@@ -99,24 +104,24 @@ pub enum DiagnosticInformation {
 }
 
 impl DiagnosticInformation {
-    pub fn to_diag(self) -> Diagnostic {
+    pub fn to_diag(self, message: Option<DiagnosticParentMessage>) -> Diagnostic {
         match self {
             DiagnosticInformation::KnownFile { .. } => Diagnostic {
-                message: DiagnosticMessage::NoMessage,
+                message,
                 cause: self,
                 related_information: None,
             },
             DiagnosticInformation::UnknownFile { .. } => Diagnostic {
                 cause: self,
                 related_information: None,
-                message: DiagnosticMessage::NoMessage,
+                message,
             },
         }
     }
 }
 
 pub struct Diagnostic {
-    pub message: DiagnosticMessage,
+    pub message: Option<DiagnosticParentMessage>,
     pub cause: DiagnosticInformation,
     pub related_information: Option<Vec<DiagnosticInformation>>,
 }
