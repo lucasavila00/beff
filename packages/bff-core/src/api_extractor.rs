@@ -68,12 +68,13 @@ pub enum HandlerParameter {
         span: Span,
     },
     HeaderOrCookie {
+        span: Span,
         kind: HeaderOrCookie,
         schema: JsonSchema,
         required: bool,
         description: Option<String>,
     },
-    Context,
+    Context(Span),
 }
 
 #[derive(Debug, Clone, Copy, Eq, PartialEq)]
@@ -439,6 +440,7 @@ impl<'a, R: FileManager> ExtractExportDefaultVisitor<'a, R> {
                             } else {
                                 HeaderOrCookie::Cookie
                             },
+                            span: lib_ty_name.span,
                             schema: self.convert_to_json_schema(ty, &lib_ty_name.span),
                             required,
                             description,
@@ -460,7 +462,7 @@ impl<'a, R: FileManager> ExtractExportDefaultVisitor<'a, R> {
         if let TsEntityName::Ident(i) = &tref.type_name {
             let name = i.sym.to_string();
             if name == "Ctx" || name == "Context" {
-                return Ok(HandlerParameter::Context);
+                return Ok(HandlerParameter::Context(i.span));
             }
             if name == "Header" || name == "Cookie" {
                 return self.parse_lib_param(i, &tref.type_params, required, description);
@@ -1074,22 +1076,23 @@ impl<'a, R: FileManager> EndpointToPath<'a, R> {
 
         if let Some((first_param, rest_param)) = endpoint.parameters.split_first() {
             match first_param.1 {
-                HandlerParameter::Context => {}
-                _ => {
+                HandlerParameter::Context(_) => {}
+                HandlerParameter::PathOrQueryOrBody { span, .. }
+                | HandlerParameter::HeaderOrCookie { span, .. } => {
                     self.push_error(
-                        &endpoint.pattern.raw_span,
+                        &span,
                         DiagnosticInfoMessage::ContextParameterMustBeFirst,
-                        None,
+                        Some(DiagnosticParentMessage::InvalidContextPosition),
                     );
                 }
             }
             for (_, param) in rest_param {
                 match param {
-                    HandlerParameter::Context => {
+                    HandlerParameter::Context(span) => {
                         self.push_error(
-                            &endpoint.pattern.raw_span,
+                            &span,
                             DiagnosticInfoMessage::ContextInvalidAtThisPosition,
-                            None,
+                            Some(DiagnosticParentMessage::InvalidContextPosition),
                         );
                     }
                     _ => {}
@@ -1166,7 +1169,7 @@ impl<'a, R: FileManager> EndpointToPath<'a, R> {
                     description,
                     schema,
                 }),
-                HandlerParameter::Context => {}
+                HandlerParameter::Context(_) => {}
             };
         }
         OperationObject {

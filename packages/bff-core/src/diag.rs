@@ -68,6 +68,15 @@ impl DiagnosticInfoMessage {
             DiagnosticInfoMessage::ComplexPathParameterNotSupported => {
                 format!("This type is too complex for a path parameter")
             }
+            DiagnosticInfoMessage::ContextInvalidAtThisPosition => {
+                format!("Context can only be used as the first parameter")
+            }
+            DiagnosticInfoMessage::ContextParameterMustBeFirst => {
+                format!("This cannot be the first parameter, Context must be the first parameter")
+            }
+            DiagnosticInfoMessage::TsInterfaceExtendsNotSupported => {
+                format!("Interface extends are not supported on schemas")
+            }
             _ => format!("{:?}", self),
         }
     }
@@ -76,6 +85,7 @@ impl DiagnosticInfoMessage {
 pub enum DiagnosticParentMessage {
     CannotConvertToSchema,
     ComplexPathParam,
+    InvalidContextPosition,
 }
 impl DiagnosticParentMessage {
     pub fn to_string(self) -> String {
@@ -85,6 +95,9 @@ impl DiagnosticParentMessage {
             }
             DiagnosticParentMessage::ComplexPathParam => {
                 format!("Complex path parameter")
+            }
+            DiagnosticParentMessage::InvalidContextPosition => {
+                format!("Invalid context usage")
             }
         }
     }
