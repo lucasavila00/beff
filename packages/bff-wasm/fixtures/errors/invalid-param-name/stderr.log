@@ -1,9 +1,9 @@
-Error: Path parameter 'ida' is not being used in the function parameters
+Error: Path parameter `ida` is not being used in the function parameters
  /home/lucas/fluff/bff/packages/bff-wasm/fixtures/errors/invalid-param-name/app.ts:5:10
    3 | export default {
    4 |   [`/hello/{ida}`]: {
  > 5 |     get: async (c: Ctx, id: string): Promise<string> => `Hello ${id}!`,
-     |          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ Path parameter 'ida' is not being used in the function parameters
+     |          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ Path parameter `ida` is not being used in the function parameters
    6 |   },
    7 | };
    8 |
