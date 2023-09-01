@@ -10,11 +10,18 @@
 
 ## BFF Compiler
 
+- [ ] remove "use" from client
+- [ ] remove "\*" from client
+
+- [ ] panic, todo, unwrap =>invalid-path-definition
+- [ ] todo!()
+- [ ] // todo
+- [ ] tests of error printing - tuple args no label
+
+- [ ] if it uses \*, then it can just use use
 - [ ] do not allow patterns that hono does not support
 - [ ] do not allow patterns styles that code generator/runtime coercer does not support
 - [ ] require backend=hono config, or version
-- [ ] remove "use" from client
-- [ ] remove "\*" from client
 
 - [ ] Date proper support or remove
 
@@ -26,11 +33,6 @@
 - [ ] dependency injection
 - [ ] guards/context
 - [ ] export decoders
-
-- [ ] panic, todo, unwrap =>invalid-path-definition
-- [ ] todo!()
-- [ ] // todo
-- [ ] tests of error printing - tuple args no label
 
 - [ ] message for errors
 - [ ] clap descriptions of params

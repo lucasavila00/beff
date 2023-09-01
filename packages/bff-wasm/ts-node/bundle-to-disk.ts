@@ -4,21 +4,55 @@ import { Bundler } from "./bundler";
 import { ProjectJson, ProjectModule } from "./project";
 
 const RUNTIME_JS_ESM = fs.readFileSync(
-  path.join(__dirname, "../runtime/dist/esm/runtime.js"),
+  path.join(__dirname, "../runtime/dist/hono-esm.js"),
   "utf-8"
 );
 const RUNTIME_JS_CJS = fs.readFileSync(
-  path.join(__dirname, "../runtime/dist/cjs/runtime.js"),
+  path.join(__dirname, "../runtime/dist/hono-cjs.js"),
   "utf-8"
 );
-const RUNTIME_DTS_ESM = fs.readFileSync(
-  path.join(__dirname, "../runtime/dist/esm/runtime.d.ts"),
+const RUNTIME_DTS = fs.readFileSync(
+  path.join(__dirname, "../runtime/hono-runtime.d.ts"),
   "utf-8"
 );
-const RUNTIME_DTS_CJS = fs.readFileSync(
-  path.join(__dirname, "../runtime/dist/cjs/runtime.d.ts"),
-  "utf-8"
-);
+
+const decodersCode = `
+class CoercionFailure {}
+function add_path_to_errors(errors, path) {
+  return errors.map((e) => ({ ...e, path: [...path, ...e.path] }));
+}
+function coerce_string(input) {
+  return input;
+}
+const isNumeric = (num) =>
+  (typeof num === "number" || (typeof num === "string" && num.trim() !== "")) &&
+  !isNaN(num );
+function coerce_number(input) {
+  if (isNumeric(input)) {
+    return Number(input);
+  }
+  return new CoercionFailure();
+}
+function coerce_boolean(input) {
+  if (input === "true" || input === "false") {
+    return input === "true";
+  }
+  if (input === "1" || input === "0") {
+    return input === "1";
+  }
+  return new CoercionFailure();
+}
+function coerce_union(input, ...cases) {
+  for (const c of cases) {
+    const r = coerce(c, input);
+    if (!(r instanceof CoercionFailure)) {
+      return r;
+    }
+  }
+  return new CoercionFailure();
+}
+
+`;
 const finalizeFile = (
   wasmCode: string,
   skipSharedRuntime: boolean,
@@ -27,7 +61,11 @@ const finalizeFile = (
   if (skipSharedRuntime) {
     return wasmCode;
   }
-  return [mod == "esm" ? RUNTIME_JS_ESM : RUNTIME_JS_CJS, wasmCode].join("\n");
+  return [
+    decodersCode,
+    wasmCode,
+    mod == "esm" ? RUNTIME_JS_ESM : RUNTIME_JS_CJS,
+  ].join("\n");
 };
 
 export const execProject = (
@@ -54,9 +92,6 @@ export const execProject = (
 
   if (!skipSharedRuntime) {
     const outputDts = path.join(outputDir, "index.d.ts");
-    fs.writeFileSync(
-      outputDts,
-      mod === "esm" ? RUNTIME_DTS_ESM : RUNTIME_DTS_CJS
-    );
+    fs.writeFileSync(outputDts, RUNTIME_DTS);
   }
 };

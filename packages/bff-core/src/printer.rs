@@ -1,9 +1,8 @@
 use swc_common::DUMMY_SP;
 use swc_ecma_ast::{
-    op, ArrayLit, AssignExpr, BindingIdent, Bool, Decl, ExportDecl, Expr, ExprOrSpread, ExprStmt,
-    FnDecl, FnExpr, Ident, KeyValueProp, Lit, MemberExpr, MemberProp, Module, ModuleItem, Null,
-    Number, ObjectLit, Pat, PatOrExpr, Prop, PropName, PropOrSpread, Stmt, Str, VarDecl,
-    VarDeclKind, VarDeclarator,
+    ArrayLit, BindingIdent, Bool, Decl, Expr, ExprOrSpread, FnDecl, FnExpr, Ident, KeyValueProp,
+    Lit, Module, ModuleItem, Null, Number, ObjectLit, Pat, Prop, PropName, PropOrSpread, Stmt, Str,
+    VarDecl, VarDeclKind, VarDeclarator,
 };
 
 use crate::api_extractor::{
@@ -436,37 +435,37 @@ fn handlers_to_js(items: Vec<FnHandler>, components: &Vec<Definition>) -> Js {
 struct Builder;
 
 impl Builder {
-    fn exports_cjs(name: &str) -> ModuleItem {
-        let prop_left = Expr::Member(MemberExpr {
-            span: DUMMY_SP,
-            obj: Expr::Ident(Ident {
-                span: DUMMY_SP,
-                sym: "exports".into(),
-                optional: false,
-            })
-            .into(),
-            prop: MemberProp::Ident(Ident {
-                span: DUMMY_SP,
-                sym: "meta".into(),
-                optional: false,
-            }),
-        });
-        ModuleItem::Stmt(Stmt::Expr(ExprStmt {
-            span: DUMMY_SP,
-            expr: Expr::Assign(AssignExpr {
-                span: DUMMY_SP,
-                op: op!("="),
-                left: PatOrExpr::Expr(prop_left.into()),
-                right: Expr::Ident(Ident {
-                    span: DUMMY_SP,
-                    sym: name.into(),
-                    optional: false,
-                })
-                .into(),
-            })
-            .into(),
-        }))
-    }
+    // fn exports_cjs(name: &str) -> ModuleItem {
+    //     let prop_left = Expr::Member(MemberExpr {
+    //         span: DUMMY_SP,
+    //         obj: Expr::Ident(Ident {
+    //             span: DUMMY_SP,
+    //             sym: "exports".into(),
+    //             optional: false,
+    //         })
+    //         .into(),
+    //         prop: MemberProp::Ident(Ident {
+    //             span: DUMMY_SP,
+    //             sym: "meta".into(),
+    //             optional: false,
+    //         }),
+    //     });
+    //     ModuleItem::Stmt(Stmt::Expr(ExprStmt {
+    //         span: DUMMY_SP,
+    //         expr: Expr::Assign(AssignExpr {
+    //             span: DUMMY_SP,
+    //             op: op!("="),
+    //             left: PatOrExpr::Expr(prop_left.into()),
+    //             right: Expr::Ident(Ident {
+    //                 span: DUMMY_SP,
+    //                 sym: name.into(),
+    //                 optional: false,
+    //             })
+    //             .into(),
+    //         })
+    //         .into(),
+    //     }))
+    // }
     fn const_decl(name: &str, init: Expr) -> ModuleItem {
         ModuleItem::Stmt(Stmt::Decl(Decl::Var(
             VarDecl {
@@ -491,32 +490,32 @@ impl Builder {
         )))
     }
 
-    fn export_const_decl(name: &str, init: Expr) -> ModuleItem {
-        ModuleItem::ModuleDecl(swc_ecma_ast::ModuleDecl::ExportDecl(ExportDecl {
-            span: DUMMY_SP,
-            decl: Decl::Var(
-                VarDecl {
-                    span: DUMMY_SP,
-                    kind: VarDeclKind::Const,
-                    declare: false,
-                    decls: vec![VarDeclarator {
-                        span: DUMMY_SP,
-                        name: Pat::Ident(BindingIdent {
-                            id: Ident {
-                                span: DUMMY_SP,
-                                sym: name.into(),
-                                optional: false,
-                            },
-                            type_ann: None,
-                        }),
-                        init: Some(Box::new(init)),
-                        definite: false,
-                    }],
-                }
-                .into(),
-            ),
-        }))
-    }
+    // fn export_const_decl(name: &str, init: Expr) -> ModuleItem {
+    //     ModuleItem::ModuleDecl(swc_ecma_ast::ModuleDecl::ExportDecl(ExportDecl {
+    //         span: DUMMY_SP,
+    //         decl: Decl::Var(
+    //             VarDecl {
+    //                 span: DUMMY_SP,
+    //                 kind: VarDeclKind::Const,
+    //                 declare: false,
+    //                 decls: vec![VarDeclarator {
+    //                     span: DUMMY_SP,
+    //                     name: Pat::Ident(BindingIdent {
+    //                         id: Ident {
+    //                             span: DUMMY_SP,
+    //                             sym: name.into(),
+    //                             optional: false,
+    //                         },
+    //                         type_ann: None,
+    //                     }),
+    //                     init: Some(Box::new(init)),
+    //                     definite: false,
+    //                 }],
+    //             }
+    //             .into(),
+    //         ),
+    //     }))
+    // }
 }
 
 fn js_to_expr(
@@ -583,7 +582,7 @@ pub trait ToModule {
 }
 
 impl ToModule for ExtractResult {
-    fn to_module(mut self, mod_type: ModuleType) -> (Module, Vec<Diagnostic>) {
+    fn to_module(mut self, _mod_type: ModuleType) -> (Module, Vec<Diagnostic>) {
         let mut body = vec![];
         for comp in &self.open_api.components {
             let name = format!("validate_{}", comp.name);
@@ -612,15 +611,9 @@ impl ToModule for ExtractResult {
             ]),
             &dfs,
         );
-        if mod_type == ModuleType::Esm {
-            let meta = Builder::export_const_decl("meta", meta_expr);
-            body.push(meta);
-        } else {
-            let meta = Builder::const_decl("meta", meta_expr);
-            body.push(meta);
-            let exports_meta = Builder::exports_cjs("meta".into());
-            body.push(exports_meta);
-        }
+        let meta = Builder::const_decl("meta", meta_expr);
+        body.push(meta);
+
         (
             Module {
                 span: DUMMY_SP,

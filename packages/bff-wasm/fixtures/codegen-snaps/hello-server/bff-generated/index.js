@@ -736,7 +736,7 @@ function validate_UserEntity(input) {
     }
     return error_acc_0;
 }
-export const meta = {
+const meta = {
     "handlersMeta": [
         {
             "method_kind": "get",
