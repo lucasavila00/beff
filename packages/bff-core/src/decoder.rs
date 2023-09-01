@@ -1,3 +1,5 @@
+use std::rc::Rc;
+
 use crate::open_api_ast::{Json, JsonSchema, Optionality};
 use crate::printer::ToExpr;
 use crate::swc_builder::SwcBuilder;
@@ -65,7 +67,7 @@ impl DecodeError {
 
 #[derive(Clone)]
 enum DecodePath {
-    Ident(String),
+    Ident(Rc<String>),
     ArrayItem,
     TupleItem(usize),
 }
@@ -79,7 +81,7 @@ impl ReportedError {
         Json::Array(
             it.iter()
                 .map(|it| match it {
-                    DecodePath::Ident(id) => Json::String(id.clone()),
+                    DecodePath::Ident(id) => Json::String(id.to_string()),
                     DecodePath::ArrayItem => Json::String("[]".into()),
                     DecodePath::TupleItem(idx) => Json::String(format!("[{idx}]")),
                 })
@@ -119,7 +121,7 @@ impl DecoderFnGenerator {
             .flat_map(|(k, o)| {
                 let value_ref_item = SwcBuilder::member_expr_computed_key(value_ref, k);
                 let mut new_path = path.to_vec();
-                new_path.push(DecodePath::Ident(k.clone()));
+                new_path.push(DecodePath::Ident(Rc::new(k.to_owned())));
                 match o {
                     Optionality::Optional(t) => vec![SwcBuilder::if_(
                         SwcBuilder::is_not_null(&value_ref_item),
@@ -519,7 +521,7 @@ impl DecoderFnGenerator {
             schema,
             &input,
             &tmp_id,
-            &[DecodePath::Ident(name_to_report_err.into())],
+            &[DecodePath::Ident(Rc::new(name_to_report_err.to_owned()))],
         );
         stmts.extend(dec_stmts);
 
