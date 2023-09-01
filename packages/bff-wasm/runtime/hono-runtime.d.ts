@@ -32,6 +32,7 @@ export declare function registerRouter(options: {
   openApi?: {
     servers: OpenApiServer[];
   };
+  context?: Object;
 }): void;
 
 export declare const buildHonoTestClient: <T>(

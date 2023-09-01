@@ -104,6 +104,9 @@ impl DiagnosticInfoMessage {
             DiagnosticInfoMessage::JsDocsParameterDescriptionHasTags => {
                 format!("Jsdoc parameter description cannot have tags")
             }
+            DiagnosticInfoMessage::UnmatchedPathParameter(param) => {
+                format!("Path parameter `{param}` is not being used in the function parameters")
+            }
             _ => format!("{:?}", self),
         }
     }

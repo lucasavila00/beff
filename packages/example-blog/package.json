@@ -9,6 +9,7 @@
   },
   "license": "MIT",
   "dependencies": {
+    "bff": "workspace:^1.0.0",
     "hono": "^3.3.4"
   },
   "devDependencies": {

@@ -1070,27 +1070,27 @@ var handleMethod = async (c, meta2, handler) => {
   const resolverParamsPromise = meta2.params.map(async (p) => {
     switch (p.type) {
       case "path": {
-        const value = c.req.param(p.name);
+        const value = c.hono.req.param(p.name);
         const coerced = coerce(p.coercer, value);
         return decodeWithMessage(p.validator, coerced);
       }
       case "query": {
-        const value = c.req.query(p.name);
+        const value = c.hono.req.query(p.name);
         const coerced = coerce(p.coercer, value);
         return decodeWithMessage(p.validator, coerced);
       }
       case "cookie": {
-        const value = (0, import_cookie.getCookie)(c, p.name);
+        const value = (0, import_cookie.getCookie)(c.hono, p.name);
         const coerced = coerce(p.coercer, value);
         return decodeWithMessage(p.validator, coerced);
       }
       case "header": {
-        const value = c.req.header(p.name);
+        const value = c.hono.req.header(p.name);
         const coerced = coerce(p.coercer, value);
         return decodeWithMessage(p.validator, coerced);
       }
       case "body": {
-        const value = await c.req.json();
+        const value = await c.hono.req.json();
         return decodeWithMessage(p.validator, value);
       }
       case "context": {
@@ -1101,7 +1101,7 @@ var handleMethod = async (c, meta2, handler) => {
   });
   const resolverParams = await Promise.all(resolverParamsPromise);
   const result = await handler(...resolverParams);
-  return c.json(decodeNoMessage(meta2.return_validator, result));
+  return c.hono.json(decodeNoMessage(meta2.return_validator, result));
 };
 var registerDocs = (app, metadata, servers) => {
   app.get(
@@ -1144,7 +1144,7 @@ function registerRouter(options) {
       case "options": {
         app[meta2.method_kind](toHonoPattern(meta2.pattern), async (c) => {
           try {
-            return await handleMethod(c, meta2, handlerData);
+            return await handleMethod({ hono: c }, meta2, handlerData);
           } catch (e) {
             if (e instanceof BffHTTPException) {
               throw new import_http_exception.HTTPException(e.status, {

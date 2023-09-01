@@ -1,6 +1,6 @@
 import * as wasm from "../pkg/hello_wasm";
 import * as fs from "fs";
-import { resolveModuleName } from "typescript";
+import { resolveModuleName } from "./tsc-slim/out";
 import { codeFrameColumns } from "@babel/code-frame";
 import * as chalk from "chalk";
 import { ProjectModule } from "./project";

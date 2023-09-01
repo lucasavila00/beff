@@ -1,6 +1,6 @@
-import { Cookie, Header } from "./bff-generated";
+import { Cookie, Header, Ctx } from "bff";
 import { cors } from "hono/cors";
-type Ctx = any;
+
 export default {
   ["/*"]: {
     use: [cors()],

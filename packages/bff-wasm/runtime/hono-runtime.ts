@@ -11,6 +11,7 @@ import { getCookie } from "hono/cookie";
 import { HTTPException } from "hono/http-exception";
 import { ClientFromRouter } from "./client-def";
 import { buildStableClient } from "./client-impl";
+import type { Ctx } from "bff";
 
 const toHonoPattern = (pattern: string): string => {
   // replace {id} with :id
@@ -18,35 +19,31 @@ const toHonoPattern = (pattern: string): string => {
 };
 declare const meta: any;
 
-const handleMethod = async (
-  c: Context<any, any>,
-  meta: HandlerMeta,
-  handler: Function
-) => {
+const handleMethod = async (c: Ctx, meta: HandlerMeta, handler: Function) => {
   const resolverParamsPromise: any[] = meta.params.map(async (p: MetaParam) => {
     switch (p.type) {
       case "path": {
-        const value = c.req.param(p.name);
+        const value = c.hono.req.param(p.name);
         const coerced = coerce(p.coercer, value);
         return decodeWithMessage(p.validator, coerced);
       }
       case "query": {
-        const value = c.req.query(p.name);
+        const value = c.hono.req.query(p.name);
         const coerced = coerce(p.coercer, value);
         return decodeWithMessage(p.validator, coerced);
       }
       case "cookie": {
-        const value = getCookie(c, p.name);
+        const value = getCookie(c.hono, p.name);
         const coerced = coerce(p.coercer, value);
         return decodeWithMessage(p.validator, coerced);
       }
       case "header": {
-        const value = c.req.header(p.name);
+        const value = c.hono.req.header(p.name);
         const coerced = coerce(p.coercer, value);
         return decodeWithMessage(p.validator, coerced);
       }
       case "body": {
-        const value = await c.req.json();
+        const value = await c.hono.req.json();
         return decodeWithMessage(p.validator, value);
       }
       case "context": {
@@ -57,7 +54,7 @@ const handleMethod = async (
   });
   const resolverParams = await Promise.all(resolverParamsPromise);
   const result = await handler(...resolverParams);
-  return c.json(decodeNoMessage(meta.return_validator, result));
+  return c.hono.json(decodeNoMessage(meta.return_validator, result));
 };
 const registerDocs = (
   app: Hono<any, any, any>,
@@ -78,6 +75,7 @@ export function registerRouter(options: {
   app: Hono<any, any, any>;
   router: any;
   openApi?: { servers: OpenApiServer[] };
+  context: any;
 }) {
   registerDocs(options.app, meta, options.openApi?.servers ?? []);
   const handlersMeta: HandlerMeta[] = meta["handlersMeta"];
@@ -108,7 +106,7 @@ export function registerRouter(options: {
       case "options": {
         app[meta.method_kind](toHonoPattern(meta.pattern), async (c: any) => {
           try {
-            return await handleMethod(c, meta, handlerData);
+            return await handleMethod({ hono: c }, meta, handlerData);
           } catch (e) {
             if (e instanceof BffHTTPException) {
               throw new HTTPException(e.status, {

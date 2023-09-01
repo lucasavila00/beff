@@ -1,22 +1,21 @@
-# Milestone X
-
-## BFF CLI
-
-## BFF EXT
-
 # Milestone NEXT
 
-## BFF Compiler
+## BFF Lib
 
-- [ ] panic, todo, unwrap =>invalid-path-definition
+## BFF Core
+
+- [ ] panic, todo, unwrap
 - [ ] todo!()
 - [ ] // todo
 - [ ] tests of error printing - tuple args no label
+- [ ] message for errors
 
 - [ ] if it uses \*, then it can just use use
 - [ ] do not allow patterns that hono does not support
 - [ ] do not allow patterns styles that code generator/runtime coercer does not support
 - [ ] require backend=hono config, or version
+
+- [ ] 422 in schema
 
 - [ ] Date proper support or remove
 
@@ -25,14 +24,16 @@
 - [ ] namespace
 - [ ] qualified import type
 
-- [ ] dependency injection
-- [ ] guards/context
 - [ ] export decoders
+- [ ] string formats (uuid, email)
 
-- [ ] message for errors
 - [ ] clap descriptions of params
 - [ ] snapshots of both esm and cjs generation
 
-## BFF Imports
+## BFF CLI
 
-- [ ] "alias" for hono exception
+- [ ] watch mode
+
+## BFF EXT
+
+- [ ] diags

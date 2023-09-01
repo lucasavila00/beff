@@ -138,6 +138,7 @@ pub struct FnHandler {
     pub parameters: Vec<(String, HandlerParameter)>,
     pub return_type: JsonSchema,
     pub method_kind: MethodKind,
+    pub span: Span,
 }
 
 pub trait FileManager {
@@ -721,6 +722,7 @@ impl<'a, R: FileManager> ExtractExportDefaultVisitor<'a, R> {
             description: endpoint_comments.description,
             return_type: self
                 .convert_to_json_schema(maybe_extract_promise(&return_type), parent_span),
+            span: *parent_span,
         };
 
         Ok(e)
@@ -793,6 +795,7 @@ impl<'a, R: FileManager> ExtractExportDefaultVisitor<'a, R> {
             summary: endpoint_comments.summary,
             description: endpoint_comments.description,
             return_type: self.convert_to_json_schema(maybe_extract_promise(&ret_ty), parent_span),
+            span: *parent_span,
         };
 
         Ok(e)
@@ -819,6 +822,7 @@ impl<'a, R: FileManager> ExtractExportDefaultVisitor<'a, R> {
                     parameters: vec![],
                     return_type: JsonSchema::Any,
                     method_kind: MethodKind::Use,
+                    span: Self::get_prop_span(prop),
                 }];
             }
 
@@ -852,7 +856,7 @@ impl<'a, R: FileManager> ExtractExportDefaultVisitor<'a, R> {
             let found = e.parameters.iter().find(|(key, _)| key == path_param);
             if found.is_none() {
                 self.push_error(
-                    &pattern.raw_span.clone(),
+                    &e.span,
                     DiagnosticInfoMessage::UnmatchedPathParameter(path_param.to_string()),
                 );
             }
