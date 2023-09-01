@@ -5,6 +5,7 @@ use swc_common::{BytePos, Loc, SourceMap, Span};
 
 #[derive(Debug, Clone)]
 pub enum DiagnosticInfoMessage {
+    CannotUnderstandTsIndexedAccessType,
     ContextInvalidAtThisPosition,
     ContextParameterMustBeFirst,
     InvalidHofParam,
@@ -61,6 +62,9 @@ impl DiagnosticInfoMessage {
             DiagnosticInfoMessage::ThisRefersToSomethingThatCannotBeSerialized(this) => {
                 format!("{this} cannot be converted to JSON schema")
             }
+            DiagnosticInfoMessage::CannotUnderstandTsIndexedAccessType => {
+                format!("Indexed access types are not supported on schemas")
+            }
             _ => format!("{:?}", self),
         }
     }
@@ -74,7 +78,7 @@ impl DiagnosticMessage {
     pub fn to_string(self) -> String {
         match self {
             DiagnosticMessage::CannotConvertToSchema => {
-                format!("Using a type that cannot be converted to JSON schema")
+                format!("Exposing a type that cannot be converted to JSON schema")
             }
             DiagnosticMessage::NoMessage => format!(""),
         }

@@ -1,5 +1,5 @@
 Error
-/home/lucas/fluff/bff/packages/bff-wasm/fixtures/errors/no-default-export/app.ts
-CouldNotFindDefaultExport
+ /home/lucas/fluff/bff/packages/bff-wasm/fixtures/errors/no-default-export/app.ts
+ CouldNotFindDefaultExport
 
 Found 1 error

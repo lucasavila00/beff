@@ -1,187 +1,187 @@
-Error
-/home/lucas/fluff/bff/packages/bff-wasm/fixtures/errors/invalid-jsdocs/app.ts:1:1
-> 1 | /**
-    | ^^^
-> 2 |  * @title abc
-    | ^^^^^^^^^^^^^
-> 3 |  * @augments asd
-    | ^^^^^^^^^^^^^
-> 4 |  * @xxx yyy
-    | ^^^^^^^^^^^^^
-> 5 |  */
-    | ^^^^ UnknownJsDocTag(Augments(AugmentsTag { span: Span { lo: BytePos(0), hi: BytePos(8), ctxt: #0 }, class: NamePath { span: Span { lo: BytePos(0), hi: BytePos(13), ctxt: #0 }, components: [Text { span: Span { lo: BytePos(0), hi: BytePos(3), ctxt: #0 }, value: Atom('asd' type=inline) }] } }))
-  6 | export default {
-  7 |   /**
-  8 |    * @title abc
-
-Error
-/home/lucas/fluff/bff/packages/bff-wasm/fixtures/errors/invalid-jsdocs/app.ts:1:1
-> 1 | /**
-    | ^^^
-> 2 |  * @title abc
-    | ^^^^^^^^^^^^^
-> 3 |  * @augments asd
-    | ^^^^^^^^^^^^^
-> 4 |  * @xxx yyy
-    | ^^^^^^^^^^^^^
-> 5 |  */
-    | ^^^^ UnknownJsDocTagOfTypeUnknown("xxx")
-  6 | export default {
-  7 |   /**
-  8 |    * @title abc
-
-Error
-/home/lucas/fluff/bff/packages/bff-wasm/fixtures/errors/invalid-jsdocs/app.ts:1:1
->  1 | /**
+Error: UnknownJsDocTag(Augments(AugmentsTag { span: Span { lo: BytePos(0), hi: BytePos(8), ctxt: #0 }, class: NamePath { span: Span { lo: BytePos(0), hi: BytePos(13), ctxt: #0 }, components: [Text { span: Span { lo: BytePos(0), hi: BytePos(3), ctxt: #0 }, value: Atom('asd' type=inline) }] } }))
+ /home/lucas/fluff/bff/packages/bff-wasm/fixtures/errors/invalid-jsdocs/app.ts:1:1
+ > 1 | /**
      | ^^^
->  2 |  * @title abc
+ > 2 |  * @title abc
      | ^^^^^^^^^^^^^
->  3 |  * @augments asd
+ > 3 |  * @augments asd
      | ^^^^^^^^^^^^^
->  4 |  * @xxx yyy
+ > 4 |  * @xxx yyy
      | ^^^^^^^^^^^^^
->  5 |  */
-     | ^^^^^^^^^^^^^
->  6 | export default {
-     | ^^^^^^^^^^^^^
->  7 |   /**
-     | ^^^^^^^^^^^^^
->  8 |    * @title abc
-     | ^^^^^^^^^^^^^
->  9 |    * @augments asd
-     | ^^^^^^^^^^^^^
-> 10 |    * @xxx yyy
-     | ^^^^^^^^^^^^^
-> 11 |    */
-     | ^^^^^^^^^^^^^
-> 12 |   [`/hello/{id}`]: {
-     | ^^^^^^^^^^^^^
-> 13 |     get: async (
-     | ^^^^^^^^^^^^^
-> 14 |       /**
-     | ^^^^^^^^^^^^^
-> 15 |        * @title abc
-     | ^^^^^^^^^^^^^
-> 16 |        * @augments asd
-     | ^^^^^^^^^^^^^
-> 17 |        * @xxx yyy
-     | ^^^^^^^^^^^^^
-> 18 |        */
-     | ^^^^^^^^^^^^^
-> 19 |       id: string
-     | ^^^^^^^^^^^^^
-> 20 |     ): Promise<string> => id,
-     | ^^^^^^^^^^^^^
-> 21 |   },
-     | ^^^^^^^^^^^^^
-> 22 | };
-     | ^^^^ CannotParseJsDoc
-  23 |
+ > 5 |  */
+     | ^^^^ UnknownJsDocTag(Augments(AugmentsTag { span: Span { lo: BytePos(0), hi: BytePos(8), ctxt: #0 }, class: NamePath { span: Span { lo: BytePos(0), hi: BytePos(13), ctxt: #0 }, components: [Text { span: Span { lo: BytePos(0), hi: BytePos(3), ctxt: #0 }, value: Atom('asd' type=inline) }] } }))
+   6 | export default {
+   7 |   /**
+   8 |    * @title abc
 
-Error
-/home/lucas/fluff/bff/packages/bff-wasm/fixtures/errors/invalid-jsdocs/app.ts:1:1
->  1 | /**
+Error: UnknownJsDocTagOfTypeUnknown("xxx")
+ /home/lucas/fluff/bff/packages/bff-wasm/fixtures/errors/invalid-jsdocs/app.ts:1:1
+ > 1 | /**
      | ^^^
->  2 |  * @title abc
+ > 2 |  * @title abc
      | ^^^^^^^^^^^^^
->  3 |  * @augments asd
+ > 3 |  * @augments asd
      | ^^^^^^^^^^^^^
->  4 |  * @xxx yyy
+ > 4 |  * @xxx yyy
      | ^^^^^^^^^^^^^
->  5 |  */
-     | ^^^^^^^^^^^^^
->  6 | export default {
-     | ^^^^^^^^^^^^^
->  7 |   /**
-     | ^^^^^^^^^^^^^
->  8 |    * @title abc
-     | ^^^^^^^^^^^^^
->  9 |    * @augments asd
-     | ^^^^^^^^^^^^^
-> 10 |    * @xxx yyy
-     | ^^^^^^^^^^^^^
-> 11 |    */
-     | ^^^^^^^^^^^^^
-> 12 |   [`/hello/{id}`]: {
-     | ^^^^^^^^^^^^^
-> 13 |     get: async (
-     | ^^^^^^^^^^^^^
-> 14 |       /**
-     | ^^^^^^^^^^^^^
-> 15 |        * @title abc
-     | ^^^^^^^^^^^^^
-> 16 |        * @augments asd
-     | ^^^^^^^^^^^^^
-> 17 |        * @xxx yyy
-     | ^^^^^^^^^^^^^
-> 18 |        */
-     | ^^^^^^^^^^^^^
-> 19 |       id: string
-     | ^^^^^^^^^^^^^
-> 20 |     ): Promise<string> => id,
-     | ^^^^^^^^^^^^^
-> 21 |   },
-     | ^^^^^^^^^^^^^
-> 22 | };
-     | ^^^^ CannotParseJsDoc
-  23 |
+ > 5 |  */
+     | ^^^^ UnknownJsDocTagOfTypeUnknown("xxx")
+   6 | export default {
+   7 |   /**
+   8 |    * @title abc
 
-Error
-/home/lucas/fluff/bff/packages/bff-wasm/fixtures/errors/invalid-jsdocs/app.ts:1:1
->  1 | /**
-     | ^^^
->  2 |  * @title abc
-     | ^^^^^^^^^^^^^
->  3 |  * @augments asd
-     | ^^^^^^^^^^^^^
->  4 |  * @xxx yyy
-     | ^^^^^^^^^^^^^
->  5 |  */
-     | ^^^^^^^^^^^^^
->  6 | export default {
-     | ^^^^^^^^^^^^^
->  7 |   /**
-     | ^^^^^^^^^^^^^
->  8 |    * @title abc
-     | ^^^^^^^^^^^^^
->  9 |    * @augments asd
-     | ^^^^^^^^^^^^^
-> 10 |    * @xxx yyy
-     | ^^^^^^^^^^^^^
-> 11 |    */
-     | ^^^^^^^^^^^^^
-> 12 |   [`/hello/{id}`]: {
-     | ^^^^^^^^^^^^^
-> 13 |     get: async (
-     | ^^^^^^^^^^^^^
-> 14 |       /**
-     | ^^^^^^^^^^^^^
-> 15 |        * @title abc
-     | ^^^^^^^^^^^^^
-> 16 |        * @augments asd
-     | ^^^^^^^^^^^^^
-> 17 |        * @xxx yyy
-     | ^^^^^^^^^^^^^
-> 18 |        */
-     | ^^^^^^^^^^^^^
-> 19 |       id: string
-     | ^^^^^^^^^^^^^
-> 20 |     ): Promise<string> => id,
-     | ^^^^^^^^^^^^^
-> 21 |   },
-     | ^^^^^^^^^^^^^
-> 22 | };
-     | ^^^^ CannotParseJsDoc
-  23 |
+Error: CannotParseJsDoc
+ /home/lucas/fluff/bff/packages/bff-wasm/fixtures/errors/invalid-jsdocs/app.ts:1:1
+ >  1 | /**
+      | ^^^
+ >  2 |  * @title abc
+      | ^^^^^^^^^^^^^
+ >  3 |  * @augments asd
+      | ^^^^^^^^^^^^^
+ >  4 |  * @xxx yyy
+      | ^^^^^^^^^^^^^
+ >  5 |  */
+      | ^^^^^^^^^^^^^
+ >  6 | export default {
+      | ^^^^^^^^^^^^^
+ >  7 |   /**
+      | ^^^^^^^^^^^^^
+ >  8 |    * @title abc
+      | ^^^^^^^^^^^^^
+ >  9 |    * @augments asd
+      | ^^^^^^^^^^^^^
+ > 10 |    * @xxx yyy
+      | ^^^^^^^^^^^^^
+ > 11 |    */
+      | ^^^^^^^^^^^^^
+ > 12 |   [`/hello/{id}`]: {
+      | ^^^^^^^^^^^^^
+ > 13 |     get: async (
+      | ^^^^^^^^^^^^^
+ > 14 |       /**
+      | ^^^^^^^^^^^^^
+ > 15 |        * @title abc
+      | ^^^^^^^^^^^^^
+ > 16 |        * @augments asd
+      | ^^^^^^^^^^^^^
+ > 17 |        * @xxx yyy
+      | ^^^^^^^^^^^^^
+ > 18 |        */
+      | ^^^^^^^^^^^^^
+ > 19 |       id: string
+      | ^^^^^^^^^^^^^
+ > 20 |     ): Promise<string> => id,
+      | ^^^^^^^^^^^^^
+ > 21 |   },
+      | ^^^^^^^^^^^^^
+ > 22 | };
+      | ^^^^ CannotParseJsDoc
+   23 |
 
-Error
-/home/lucas/fluff/bff/packages/bff-wasm/fixtures/errors/invalid-jsdocs/app.ts:12:4
-  10 |    * @xxx yyy
-  11 |    */
-> 12 |   [`/hello/{id}`]: {
-     |    ^^^^^^^^^^^^^ ContextParameterMustBeFirst
-  13 |     get: async (
-  14 |       /**
-  15 |        * @title abc
+Error: CannotParseJsDoc
+ /home/lucas/fluff/bff/packages/bff-wasm/fixtures/errors/invalid-jsdocs/app.ts:1:1
+ >  1 | /**
+      | ^^^
+ >  2 |  * @title abc
+      | ^^^^^^^^^^^^^
+ >  3 |  * @augments asd
+      | ^^^^^^^^^^^^^
+ >  4 |  * @xxx yyy
+      | ^^^^^^^^^^^^^
+ >  5 |  */
+      | ^^^^^^^^^^^^^
+ >  6 | export default {
+      | ^^^^^^^^^^^^^
+ >  7 |   /**
+      | ^^^^^^^^^^^^^
+ >  8 |    * @title abc
+      | ^^^^^^^^^^^^^
+ >  9 |    * @augments asd
+      | ^^^^^^^^^^^^^
+ > 10 |    * @xxx yyy
+      | ^^^^^^^^^^^^^
+ > 11 |    */
+      | ^^^^^^^^^^^^^
+ > 12 |   [`/hello/{id}`]: {
+      | ^^^^^^^^^^^^^
+ > 13 |     get: async (
+      | ^^^^^^^^^^^^^
+ > 14 |       /**
+      | ^^^^^^^^^^^^^
+ > 15 |        * @title abc
+      | ^^^^^^^^^^^^^
+ > 16 |        * @augments asd
+      | ^^^^^^^^^^^^^
+ > 17 |        * @xxx yyy
+      | ^^^^^^^^^^^^^
+ > 18 |        */
+      | ^^^^^^^^^^^^^
+ > 19 |       id: string
+      | ^^^^^^^^^^^^^
+ > 20 |     ): Promise<string> => id,
+      | ^^^^^^^^^^^^^
+ > 21 |   },
+      | ^^^^^^^^^^^^^
+ > 22 | };
+      | ^^^^ CannotParseJsDoc
+   23 |
+
+Error: CannotParseJsDoc
+ /home/lucas/fluff/bff/packages/bff-wasm/fixtures/errors/invalid-jsdocs/app.ts:1:1
+ >  1 | /**
+      | ^^^
+ >  2 |  * @title abc
+      | ^^^^^^^^^^^^^
+ >  3 |  * @augments asd
+      | ^^^^^^^^^^^^^
+ >  4 |  * @xxx yyy
+      | ^^^^^^^^^^^^^
+ >  5 |  */
+      | ^^^^^^^^^^^^^
+ >  6 | export default {
+      | ^^^^^^^^^^^^^
+ >  7 |   /**
+      | ^^^^^^^^^^^^^
+ >  8 |    * @title abc
+      | ^^^^^^^^^^^^^
+ >  9 |    * @augments asd
+      | ^^^^^^^^^^^^^
+ > 10 |    * @xxx yyy
+      | ^^^^^^^^^^^^^
+ > 11 |    */
+      | ^^^^^^^^^^^^^
+ > 12 |   [`/hello/{id}`]: {
+      | ^^^^^^^^^^^^^
+ > 13 |     get: async (
+      | ^^^^^^^^^^^^^
+ > 14 |       /**
+      | ^^^^^^^^^^^^^
+ > 15 |        * @title abc
+      | ^^^^^^^^^^^^^
+ > 16 |        * @augments asd
+      | ^^^^^^^^^^^^^
+ > 17 |        * @xxx yyy
+      | ^^^^^^^^^^^^^
+ > 18 |        */
+      | ^^^^^^^^^^^^^
+ > 19 |       id: string
+      | ^^^^^^^^^^^^^
+ > 20 |     ): Promise<string> => id,
+      | ^^^^^^^^^^^^^
+ > 21 |   },
+      | ^^^^^^^^^^^^^
+ > 22 | };
+      | ^^^^ CannotParseJsDoc
+   23 |
+
+Error: ContextParameterMustBeFirst
+ /home/lucas/fluff/bff/packages/bff-wasm/fixtures/errors/invalid-jsdocs/app.ts:12:4
+   10 |    * @xxx yyy
+   11 |    */
+ > 12 |   [`/hello/{id}`]: {
+      |    ^^^^^^^^^^^^^ ContextParameterMustBeFirst
+   13 |     get: async (
+   14 |       /**
+   15 |        * @title abc
 
 Found 6 errors

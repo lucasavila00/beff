@@ -369,26 +369,33 @@ impl<'a, R: FileManager> ExtractExportDefaultVisitor<'a, R> {
     fn convert_to_json_schema(&mut self, ty: &TsType, span: &Span) -> JsonSchema {
         let mut to_schema = TypeToSchema::new(self.files, self.current_file);
         let res = to_schema.convert_ts_type(ty);
-        self.errors.extend(to_schema.errors);
+        match res {
+            Ok(res) => {
+                let mut kvs = vec![];
+                for (k, v) in to_schema.components {
+                    // We store type in an Option to support self-recursion.
+                    // When we encounter the type while transforming it we return string with the type name.
+                    // And we need the option to allow a type to refer to itself before it has been resolved.
+                    match v {
+                        Some(s) => kvs.push((k, s)),
+                        None => self.push_error(
+                            span,
+                            DiagnosticInfoMessage::CannotResolveTypeReferenceOnExtracting(k),
+                        ),
+                    }
+                }
 
-        let mut kvs = vec![];
-        for (k, v) in to_schema.components {
-            // We store type in an Option to support self-recursion.
-            // When we encounter the type while transforming it we return string with the type name.
-            // And we need the option to allow a type to refer to itself before it has been resolved.
-            match v {
-                Some(s) => kvs.push((k, s)),
-                None => self.push_error(
-                    span,
-                    DiagnosticInfoMessage::CannotResolveTypeReferenceOnExtracting(k),
-                ),
+                kvs.sort_by(|(ka, _), (kb, _)| ka.cmp(kb));
+                let ext: Vec<Definition> = kvs.into_iter().map(|(_k, v)| v).collect();
+                self.extend_components(ext, span);
+                res
+            }
+            Err(diag) => {
+                self.errors.push(diag);
+                JsonSchema::Any
             }
         }
 
-        kvs.sort_by(|(ka, _), (kb, _)| ka.cmp(kb));
-        let ext: Vec<Definition> = kvs.into_iter().map(|(_k, v)| v).collect();
-        self.extend_components(ext, span);
-        res
         // todo!()
     }
     fn parse_lib_param(

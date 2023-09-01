@@ -1,28 +1,28 @@
-Error: Using a type that cannot be converted to JSON schema
-/home/lucas/fluff/bff/packages/bff-wasm/fixtures/errors/interface-type-params/app.ts:8:55
-   6 |
-   7 | export default {
->  8 |   [`/hello/{id}`]: { get: async (id: string): Promise<A<"string">> => todo() },
-     |                                                       ^ A cannot be converted to JSON schema
-   9 | };
-  10 |
+Error: Exposing a type that cannot be converted to JSON schema
+ /home/lucas/fluff/bff/packages/bff-wasm/fixtures/errors/interface-type-params/app.ts:8:55
+    6 |
+    7 | export default {
+ >  8 |   [`/hello/{id}`]: { get: async (id: string): Promise<A<"string">> => todo() },
+      |                                                       ^ A cannot be converted to JSON schema
+    9 | };
+   10 |
 
     Caused by:
-    /home/lucas/fluff/bff/packages/bff-wasm/fixtures/errors/interface-type-params/app.ts:8:55
-       6 |
-       7 | export default {
-    >  8 |   [`/hello/{id}`]: { get: async (id: string): Promise<A<"string">> => todo() },
-         |                                                       ^ Type cannot be converted to JSON schema
-       9 | };
-      10 |
+     /home/lucas/fluff/bff/packages/bff-wasm/fixtures/errors/interface-type-params/app.ts:8:55
+        6 |
+        7 | export default {
+     >  8 |   [`/hello/{id}`]: { get: async (id: string): Promise<A<"string">> => todo() },
+          |                                                       ^ Type cannot be converted to JSON schema
+        9 | };
+       10 |
 
-Error
-/home/lucas/fluff/bff/packages/bff-wasm/fixtures/errors/interface-type-params/app.ts:8:4
-   6 |
-   7 | export default {
->  8 |   [`/hello/{id}`]: { get: async (id: string): Promise<A<"string">> => todo() },
-     |    ^^^^^^^^^^^^^ ContextParameterMustBeFirst
-   9 | };
-  10 |
+Error: ContextParameterMustBeFirst
+ /home/lucas/fluff/bff/packages/bff-wasm/fixtures/errors/interface-type-params/app.ts:8:4
+    6 |
+    7 | export default {
+ >  8 |   [`/hello/{id}`]: { get: async (id: string): Promise<A<"string">> => todo() },
+      |    ^^^^^^^^^^^^^ ContextParameterMustBeFirst
+    9 | };
+   10 |
 
 Found 2 errors

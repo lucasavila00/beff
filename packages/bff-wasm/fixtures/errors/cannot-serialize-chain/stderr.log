@@ -1,0 +1,38 @@
+Error: Exposing a type that cannot be converted to JSON schema
+ /home/lucas/fluff/bff/packages/bff-wasm/fixtures/errors/cannot-serialize-chain/app.ts:16:63
+   14 | };
+   15 | export default {
+ > 16 |   [`/hello/{id}`]: { get: async (c: Ctx, id: string): Promise<A3> => todo() },
+      |                                                               ^^ A3 cannot be converted to JSON schema
+   17 | };
+   18 |
+
+    Caused by:
+     /home/lucas/fluff/bff/packages/bff-wasm/fixtures/errors/cannot-serialize-chain/app.ts:13:6
+       11 | };
+       12 | type A3 = {
+     > 13 |   a: A2;
+          |      ^^ A2 cannot be converted to JSON schema
+       14 | };
+       15 | export default {
+       16 |   [`/hello/{id}`]: { get: async (c: Ctx, id: string): Promise<A3> => todo() },
+
+     /home/lucas/fluff/bff/packages/bff-wasm/fixtures/errors/cannot-serialize-chain/app.ts:10:6
+        8 | };
+        9 | type A2 = {
+     > 10 |   a: A;
+          |      ^ A cannot be converted to JSON schema
+       11 | };
+       12 | type A3 = {
+       13 |   a: A2;
+
+     /home/lucas/fluff/bff/packages/bff-wasm/fixtures/errors/cannot-serialize-chain/app.ts:7:6
+        5 |
+        6 | type A = {
+     >  7 |   a: () => void;
+          |      ^^^^^^^^^^ Type cannot be converted to JSON schema
+        8 | };
+        9 | type A2 = {
+       10 |   a: A;
+
+Found 1 error

@@ -1,236 +1,140 @@
-Error: Using a type that cannot be converted to JSON schema
-/home/lucas/fluff/bff/packages/bff-wasm/fixtures/errors/cannot-serialize/app.ts:25:55
-  23 |
-  24 | export default {
-> 25 |   [`/hello/{id}`]: { get: async (id: string): Promise<A> => todo() },
-     |                                                       ^ A cannot be converted to JSON schema
-  26 | };
-  27 |
+Error: Exposing a type that cannot be converted to JSON schema
+ /home/lucas/fluff/bff/packages/bff-wasm/fixtures/errors/cannot-serialize/app.ts:15:41
+   13 | const f = 1;
+   14 | export default {
+ > 15 |   [`/hello1`]: { get: async (): Promise<Newable> => todo() },
+      |                                         ^^^^^^^ Newable cannot be converted to JSON schema
+   16 |   [`/hello2`]: { get: async (): Promise<B> => todo() },
+   17 |   [`/hello3`]: { get: async (): Promise<D> => todo() },
+   18 |   [`/hello4`]: { get: async (): Promise<E> => todo() },
 
     Caused by:
-    /home/lucas/fluff/bff/packages/bff-wasm/fixtures/errors/cannot-serialize/app.ts:12:6
-      10 | const f = 1;
-      11 | type A = {
-    > 12 |   a: () => void;
-         |      ^^^^^^^^^^ Type cannot be converted to JSON schema
-      13 |   b: B;
-      14 |   c: Newable;
-      15 |   d: D;
+     /home/lucas/fluff/bff/packages/bff-wasm/fixtures/errors/cannot-serialize/app.ts:5:21
+       3 | };
+       4 | interface Newable {
+     > 5 |   errorConstructor: new (...args: any) => Error;
+         |                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^ Type cannot be converted to JSON schema
+       6 | }
+       7 | interface B {
+       8 |   b: this;
 
-Error: Using a type that cannot be converted to JSON schema
-/home/lucas/fluff/bff/packages/bff-wasm/fixtures/errors/cannot-serialize/app.ts:25:55
-  23 |
-  24 | export default {
-> 25 |   [`/hello/{id}`]: { get: async (id: string): Promise<A> => todo() },
-     |                                                       ^ A cannot be converted to JSON schema
-  26 | };
-  27 |
-
-    Caused by:
-    /home/lucas/fluff/bff/packages/bff-wasm/fixtures/errors/cannot-serialize/app.ts:13:6
-      11 | type A = {
-      12 |   a: () => void;
-    > 13 |   b: B;
-         |      ^ B cannot be converted to JSON schema
-      14 |   c: Newable;
-      15 |   d: D;
-      16 |   e: E;
-
-    /home/lucas/fluff/bff/packages/bff-wasm/fixtures/errors/cannot-serialize/app.ts:6:6
-      4 | }
-      5 | interface B {
-    > 6 |   b: this;
-        |      ^^^^ Type cannot be converted to JSON schema
-      7 | }
-      8 | type D = true extends true ? true : true;
-      9 | type E = true extends infer A ? true : A;
-
-Error: Using a type that cannot be converted to JSON schema
-/home/lucas/fluff/bff/packages/bff-wasm/fixtures/errors/cannot-serialize/app.ts:25:55
-  23 |
-  24 | export default {
-> 25 |   [`/hello/{id}`]: { get: async (id: string): Promise<A> => todo() },
-     |                                                       ^ A cannot be converted to JSON schema
-  26 | };
-  27 |
+Error: Exposing a type that cannot be converted to JSON schema
+ /home/lucas/fluff/bff/packages/bff-wasm/fixtures/errors/cannot-serialize/app.ts:16:41
+   14 | export default {
+   15 |   [`/hello1`]: { get: async (): Promise<Newable> => todo() },
+ > 16 |   [`/hello2`]: { get: async (): Promise<B> => todo() },
+      |                                         ^ B cannot be converted to JSON schema
+   17 |   [`/hello3`]: { get: async (): Promise<D> => todo() },
+   18 |   [`/hello4`]: { get: async (): Promise<E> => todo() },
+   19 |   [`/hello5`]: { get: async (): Promise<() => void> => todo() },
 
     Caused by:
-    /home/lucas/fluff/bff/packages/bff-wasm/fixtures/errors/cannot-serialize/app.ts:14:6
-      12 |   a: () => void;
-      13 |   b: B;
-    > 14 |   c: Newable;
-         |      ^^^^^^^ Newable cannot be converted to JSON schema
-      15 |   d: D;
-      16 |   e: E;
-      17 |   f: typeof f;
+     /home/lucas/fluff/bff/packages/bff-wasm/fixtures/errors/cannot-serialize/app.ts:8:6
+        6 | }
+        7 | interface B {
+     >  8 |   b: this;
+          |      ^^^^ Type cannot be converted to JSON schema
+        9 | }
+       10 | type D = true extends true ? true : true;
+       11 | type E = true extends infer X ? X : never;
 
-    /home/lucas/fluff/bff/packages/bff-wasm/fixtures/errors/cannot-serialize/app.ts:3:21
-      1 | import { GET, todo } from "bff";
-      2 | interface Newable {
-    > 3 |   errorConstructor: new (...args: any) => Error; // <- put here whatever Base Class you want
-        |                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^ Type cannot be converted to JSON schema
-      4 | }
-      5 | interface B {
-      6 |   b: this;
-
-Error: Using a type that cannot be converted to JSON schema
-/home/lucas/fluff/bff/packages/bff-wasm/fixtures/errors/cannot-serialize/app.ts:25:55
-  23 |
-  24 | export default {
-> 25 |   [`/hello/{id}`]: { get: async (id: string): Promise<A> => todo() },
-     |                                                       ^ A cannot be converted to JSON schema
-  26 | };
-  27 |
+Error: Exposing a type that cannot be converted to JSON schema
+ /home/lucas/fluff/bff/packages/bff-wasm/fixtures/errors/cannot-serialize/app.ts:17:41
+   15 |   [`/hello1`]: { get: async (): Promise<Newable> => todo() },
+   16 |   [`/hello2`]: { get: async (): Promise<B> => todo() },
+ > 17 |   [`/hello3`]: { get: async (): Promise<D> => todo() },
+      |                                         ^ D cannot be converted to JSON schema
+   18 |   [`/hello4`]: { get: async (): Promise<E> => todo() },
+   19 |   [`/hello5`]: { get: async (): Promise<() => void> => todo() },
+   20 |   [`/hello6`]: { get: async (): Promise<typeof f> => todo() },
 
     Caused by:
-    /home/lucas/fluff/bff/packages/bff-wasm/fixtures/errors/cannot-serialize/app.ts:15:6
-      13 |   b: B;
-      14 |   c: Newable;
-    > 15 |   d: D;
-         |      ^ D cannot be converted to JSON schema
-      16 |   e: E;
-      17 |   f: typeof f;
-      18 |   g: B["b"];
+     /home/lucas/fluff/bff/packages/bff-wasm/fixtures/errors/cannot-serialize/app.ts:10:10
+        8 |   b: this;
+        9 | }
+     > 10 | type D = true extends true ? true : true;
+          |          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ Type cannot be converted to JSON schema
+       11 | type E = true extends infer X ? X : never;
+       12 |
+       13 | const f = 1;
 
-    /home/lucas/fluff/bff/packages/bff-wasm/fixtures/errors/cannot-serialize/app.ts:8:10
-       6 |   b: this;
-       7 | }
-    >  8 | type D = true extends true ? true : true;
-         |          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ Type cannot be converted to JSON schema
-       9 | type E = true extends infer A ? true : A;
-      10 | const f = 1;
-      11 | type A = {
-
-Error: Using a type that cannot be converted to JSON schema
-/home/lucas/fluff/bff/packages/bff-wasm/fixtures/errors/cannot-serialize/app.ts:25:55
-  23 |
-  24 | export default {
-> 25 |   [`/hello/{id}`]: { get: async (id: string): Promise<A> => todo() },
-     |                                                       ^ A cannot be converted to JSON schema
-  26 | };
-  27 |
+Error: Exposing a type that cannot be converted to JSON schema
+ /home/lucas/fluff/bff/packages/bff-wasm/fixtures/errors/cannot-serialize/app.ts:18:41
+   16 |   [`/hello2`]: { get: async (): Promise<B> => todo() },
+   17 |   [`/hello3`]: { get: async (): Promise<D> => todo() },
+ > 18 |   [`/hello4`]: { get: async (): Promise<E> => todo() },
+      |                                         ^ E cannot be converted to JSON schema
+   19 |   [`/hello5`]: { get: async (): Promise<() => void> => todo() },
+   20 |   [`/hello6`]: { get: async (): Promise<typeof f> => todo() },
+   21 |   [`/hello7`]: { get: async (): Promise<B["b"]> => todo() },
 
     Caused by:
-    /home/lucas/fluff/bff/packages/bff-wasm/fixtures/errors/cannot-serialize/app.ts:16:6
-      14 |   c: Newable;
-      15 |   d: D;
-    > 16 |   e: E;
-         |      ^ E cannot be converted to JSON schema
-      17 |   f: typeof f;
-      18 |   g: B["b"];
-      19 |   h: never;
+     /home/lucas/fluff/bff/packages/bff-wasm/fixtures/errors/cannot-serialize/app.ts:11:10
+        9 | }
+       10 | type D = true extends true ? true : true;
+     > 11 | type E = true extends infer X ? X : never;
+          |          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ Type cannot be converted to JSON schema
+       12 |
+       13 | const f = 1;
+       14 | export default {
 
-    /home/lucas/fluff/bff/packages/bff-wasm/fixtures/errors/cannot-serialize/app.ts:9:10
-       7 | }
-       8 | type D = true extends true ? true : true;
-    >  9 | type E = true extends infer A ? true : A;
-         |          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ Type cannot be converted to JSON schema
-      10 | const f = 1;
-      11 | type A = {
-      12 |   a: () => void;
+Error: Exposing a type that cannot be converted to JSON schema
+ /home/lucas/fluff/bff/packages/bff-wasm/fixtures/errors/cannot-serialize/app.ts:19:41
+   17 |   [`/hello3`]: { get: async (): Promise<D> => todo() },
+   18 |   [`/hello4`]: { get: async (): Promise<E> => todo() },
+ > 19 |   [`/hello5`]: { get: async (): Promise<() => void> => todo() },
+      |                                         ^^^^^^^^^^ Type cannot be converted to JSON schema
+   20 |   [`/hello6`]: { get: async (): Promise<typeof f> => todo() },
+   21 |   [`/hello7`]: { get: async (): Promise<B["b"]> => todo() },
+   22 |   [`/hello8`]: { get: async (): Promise<never> => todo() },
 
-Error: Using a type that cannot be converted to JSON schema
-/home/lucas/fluff/bff/packages/bff-wasm/fixtures/errors/cannot-serialize/app.ts:25:55
-  23 |
-  24 | export default {
-> 25 |   [`/hello/{id}`]: { get: async (id: string): Promise<A> => todo() },
-     |                                                       ^ A cannot be converted to JSON schema
-  26 | };
-  27 |
+Error: Exposing a type that cannot be converted to JSON schema
+ /home/lucas/fluff/bff/packages/bff-wasm/fixtures/errors/cannot-serialize/app.ts:20:41
+   18 |   [`/hello4`]: { get: async (): Promise<E> => todo() },
+   19 |   [`/hello5`]: { get: async (): Promise<() => void> => todo() },
+ > 20 |   [`/hello6`]: { get: async (): Promise<typeof f> => todo() },
+      |                                         ^^^^^^^^ Type cannot be converted to JSON schema
+   21 |   [`/hello7`]: { get: async (): Promise<B["b"]> => todo() },
+   22 |   [`/hello8`]: { get: async (): Promise<never> => todo() },
+   23 |   [`/hello9`]: { get: async (): Promise<symbol> => todo() },
 
-    Caused by:
-    /home/lucas/fluff/bff/packages/bff-wasm/fixtures/errors/cannot-serialize/app.ts:17:6
-      15 |   d: D;
-      16 |   e: E;
-    > 17 |   f: typeof f;
-         |      ^^^^^^^^ Type cannot be converted to JSON schema
-      18 |   g: B["b"];
-      19 |   h: never;
-      20 |   i: symbol;
+Error: Indexed access types are not supported on schemas
+ /home/lucas/fluff/bff/packages/bff-wasm/fixtures/errors/cannot-serialize/app.ts:21:41
+   19 |   [`/hello5`]: { get: async (): Promise<() => void> => todo() },
+   20 |   [`/hello6`]: { get: async (): Promise<typeof f> => todo() },
+ > 21 |   [`/hello7`]: { get: async (): Promise<B["b"]> => todo() },
+      |                                         ^^^^^^ Indexed access types are not supported on schemas
+   22 |   [`/hello8`]: { get: async (): Promise<never> => todo() },
+   23 |   [`/hello9`]: { get: async (): Promise<symbol> => todo() },
+   24 |   [`/hello10`]: { get: async (): Promise<void> => todo() },
 
-Error: Using a type that cannot be converted to JSON schema
-/home/lucas/fluff/bff/packages/bff-wasm/fixtures/errors/cannot-serialize/app.ts:25:55
-  23 |
-  24 | export default {
-> 25 |   [`/hello/{id}`]: { get: async (id: string): Promise<A> => todo() },
-     |                                                       ^ A cannot be converted to JSON schema
-  26 | };
-  27 |
+Error: Exposing a type that cannot be converted to JSON schema
+ /home/lucas/fluff/bff/packages/bff-wasm/fixtures/errors/cannot-serialize/app.ts:22:41
+   20 |   [`/hello6`]: { get: async (): Promise<typeof f> => todo() },
+   21 |   [`/hello7`]: { get: async (): Promise<B["b"]> => todo() },
+ > 22 |   [`/hello8`]: { get: async (): Promise<never> => todo() },
+      |                                         ^^^^^ Type cannot be converted to JSON schema
+   23 |   [`/hello9`]: { get: async (): Promise<symbol> => todo() },
+   24 |   [`/hello10`]: { get: async (): Promise<void> => todo() },
+   25 | };
 
-    Caused by:
-    /home/lucas/fluff/bff/packages/bff-wasm/fixtures/errors/cannot-serialize/app.ts:18:6
-      16 |   e: E;
-      17 |   f: typeof f;
-    > 18 |   g: B["b"];
-         |      ^^^^^^ Type cannot be converted to JSON schema
-      19 |   h: never;
-      20 |   i: symbol;
-      21 |   j: void;
+Error: Exposing a type that cannot be converted to JSON schema
+ /home/lucas/fluff/bff/packages/bff-wasm/fixtures/errors/cannot-serialize/app.ts:23:41
+   21 |   [`/hello7`]: { get: async (): Promise<B["b"]> => todo() },
+   22 |   [`/hello8`]: { get: async (): Promise<never> => todo() },
+ > 23 |   [`/hello9`]: { get: async (): Promise<symbol> => todo() },
+      |                                         ^^^^^^ Type cannot be converted to JSON schema
+   24 |   [`/hello10`]: { get: async (): Promise<void> => todo() },
+   25 | };
+   26 |
 
-Error: Using a type that cannot be converted to JSON schema
-/home/lucas/fluff/bff/packages/bff-wasm/fixtures/errors/cannot-serialize/app.ts:25:55
-  23 |
-  24 | export default {
-> 25 |   [`/hello/{id}`]: { get: async (id: string): Promise<A> => todo() },
-     |                                                       ^ A cannot be converted to JSON schema
-  26 | };
-  27 |
+Error: Exposing a type that cannot be converted to JSON schema
+ /home/lucas/fluff/bff/packages/bff-wasm/fixtures/errors/cannot-serialize/app.ts:24:42
+   22 |   [`/hello8`]: { get: async (): Promise<never> => todo() },
+   23 |   [`/hello9`]: { get: async (): Promise<symbol> => todo() },
+ > 24 |   [`/hello10`]: { get: async (): Promise<void> => todo() },
+      |                                          ^^^^ Type cannot be converted to JSON schema
+   25 | };
+   26 |
 
-    Caused by:
-    /home/lucas/fluff/bff/packages/bff-wasm/fixtures/errors/cannot-serialize/app.ts:19:6
-      17 |   f: typeof f;
-      18 |   g: B["b"];
-    > 19 |   h: never;
-         |      ^^^^^ Type cannot be converted to JSON schema
-      20 |   i: symbol;
-      21 |   j: void;
-      22 | };
-
-Error: Using a type that cannot be converted to JSON schema
-/home/lucas/fluff/bff/packages/bff-wasm/fixtures/errors/cannot-serialize/app.ts:25:55
-  23 |
-  24 | export default {
-> 25 |   [`/hello/{id}`]: { get: async (id: string): Promise<A> => todo() },
-     |                                                       ^ A cannot be converted to JSON schema
-  26 | };
-  27 |
-
-    Caused by:
-    /home/lucas/fluff/bff/packages/bff-wasm/fixtures/errors/cannot-serialize/app.ts:20:6
-      18 |   g: B["b"];
-      19 |   h: never;
-    > 20 |   i: symbol;
-         |      ^^^^^^ Type cannot be converted to JSON schema
-      21 |   j: void;
-      22 | };
-      23 |
-
-Error: Using a type that cannot be converted to JSON schema
-/home/lucas/fluff/bff/packages/bff-wasm/fixtures/errors/cannot-serialize/app.ts:25:55
-  23 |
-  24 | export default {
-> 25 |   [`/hello/{id}`]: { get: async (id: string): Promise<A> => todo() },
-     |                                                       ^ A cannot be converted to JSON schema
-  26 | };
-  27 |
-
-    Caused by:
-    /home/lucas/fluff/bff/packages/bff-wasm/fixtures/errors/cannot-serialize/app.ts:21:6
-      19 |   h: never;
-      20 |   i: symbol;
-    > 21 |   j: void;
-         |      ^^^^ Type cannot be converted to JSON schema
-      22 | };
-      23 |
-      24 | export default {
-
-Error
-/home/lucas/fluff/bff/packages/bff-wasm/fixtures/errors/cannot-serialize/app.ts:25:4
-  23 |
-  24 | export default {
-> 25 |   [`/hello/{id}`]: { get: async (id: string): Promise<A> => todo() },
-     |    ^^^^^^^^^^^^^ ContextParameterMustBeFirst
-  26 | };
-  27 |
-
-Found 11 errors
+Found 10 errors

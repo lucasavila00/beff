@@ -1,21 +1,21 @@
-Error
-/home/lucas/fluff/bff/packages/bff-wasm/fixtures/errors/invalid-param-name/app.ts:4:4
-  2 |
-  3 | export default {
-> 4 |   [`/hello/{ida}`]: {
-    |    ^^^^^^^^^^^^^^ UnmatchedPathParameter("ida")
-  5 |     get: async (id: string): Promise<string> => `Hello ${id}!`,
-  6 |   },
-  7 | };
+Error: UnmatchedPathParameter("ida")
+ /home/lucas/fluff/bff/packages/bff-wasm/fixtures/errors/invalid-param-name/app.ts:4:4
+   2 |
+   3 | export default {
+ > 4 |   [`/hello/{ida}`]: {
+     |    ^^^^^^^^^^^^^^ UnmatchedPathParameter("ida")
+   5 |     get: async (id: string): Promise<string> => `Hello ${id}!`,
+   6 |   },
+   7 | };
 
-Error
-/home/lucas/fluff/bff/packages/bff-wasm/fixtures/errors/invalid-param-name/app.ts:4:4
-  2 |
-  3 | export default {
-> 4 |   [`/hello/{ida}`]: {
-    |    ^^^^^^^^^^^^^^ ContextParameterMustBeFirst
-  5 |     get: async (id: string): Promise<string> => `Hello ${id}!`,
-  6 |   },
-  7 | };
+Error: ContextParameterMustBeFirst
+ /home/lucas/fluff/bff/packages/bff-wasm/fixtures/errors/invalid-param-name/app.ts:4:4
+   2 |
+   3 | export default {
+ > 4 |   [`/hello/{ida}`]: {
+     |    ^^^^^^^^^^^^^^ ContextParameterMustBeFirst
+   5 |     get: async (id: string): Promise<string> => `Hello ${id}!`,
+   6 |   },
+   7 | };
 
 Found 2 errors

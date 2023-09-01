@@ -116,10 +116,13 @@ const emitDiagnosticItem = (data: WasmDiagnosticItem) => {
   if ((data.message ?? "").length > 0) {
     console.error(chalk.red.bold("Error: " + data.message));
   } else {
-    console.error(chalk.red.bold("Error"));
+    if (data.cause.UnknownFile) {
+      console.error(chalk.red.bold("Error"));
+    } else {
+      console.error(chalk.red.bold("Error: " + data.cause.KnownFile.message));
+    }
   }
-  console.log("");
-  emitDiagnosticInfo(data.cause, "");
+  emitDiagnosticInfo(data.cause, " ".repeat(1));
 
   let inf = data.related_information ?? [];
   if (inf.length == 0) {
@@ -127,12 +130,13 @@ const emitDiagnosticItem = (data: WasmDiagnosticItem) => {
   }
   console.error(chalk.yellow("    Caused by:"));
   inf.forEach((data) => {
-    emitDiagnosticInfo(data, " ".repeat(4));
+    emitDiagnosticInfo(data, " ".repeat(5));
   });
 };
 const emitDiagnostics = (diag: WasmDiagnostic) => {
   diag.diagnostics.forEach((data) => {
     emitDiagnosticItem(data);
+    console.log("");
   });
   const ers = diag.diagnostics.length === 1 ? "error" : "errors";
   console.error(chalk.yellow(`Found ${diag.diagnostics.length} ${ers}`));

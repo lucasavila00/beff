@@ -23,7 +23,6 @@ pub struct TypeToSchema<'a, R: FileManager> {
     pub files: &'a mut R,
     pub current_file: &'a str,
     pub components: HashMap<String, Option<Definition>>,
-    pub errors: Vec<Diagnostic>,
     pub ref_stack: Vec<DiagnosticInformation>,
 }
 
@@ -34,13 +33,14 @@ fn extract_items_from_array(it: JsonSchema) -> JsonSchema {
     }
 }
 
+type Res<T> = Result<T, Diagnostic>;
+
 impl<'a, R: FileManager> TypeToSchema<'a, R> {
     pub fn new(files: &'a mut R, current_file: &'a str) -> TypeToSchema<'a, R> {
         TypeToSchema {
             files,
             current_file,
             components: HashMap::new(),
-            errors: vec![],
             ref_stack: vec![],
         }
     }
@@ -48,57 +48,49 @@ impl<'a, R: FileManager> TypeToSchema<'a, R> {
         &mut self,
         kind: TsKeywordTypeKind,
         span: &Span,
-    ) -> JsonSchema {
+    ) -> Res<JsonSchema> {
         match kind {
             TsKeywordTypeKind::TsUndefinedKeyword | TsKeywordTypeKind::TsNullKeyword => {
-                JsonSchema::Null
+                Ok(JsonSchema::Null)
             }
             TsKeywordTypeKind::TsAnyKeyword
             | TsKeywordTypeKind::TsUnknownKeyword
-            | TsKeywordTypeKind::TsObjectKeyword => JsonSchema::Any,
+            | TsKeywordTypeKind::TsObjectKeyword => Ok(JsonSchema::Any),
             TsKeywordTypeKind::TsBigIntKeyword
             | TsKeywordTypeKind::TsNeverKeyword
             | TsKeywordTypeKind::TsSymbolKeyword
             | TsKeywordTypeKind::TsIntrinsicKeyword
             | TsKeywordTypeKind::TsVoidKeyword => self.cannot_serialize_error(span),
-            TsKeywordTypeKind::TsNumberKeyword => JsonSchema::Number,
-            TsKeywordTypeKind::TsBooleanKeyword => JsonSchema::Boolean,
-            TsKeywordTypeKind::TsStringKeyword => JsonSchema::String,
+            TsKeywordTypeKind::TsNumberKeyword => Ok(JsonSchema::Number),
+            TsKeywordTypeKind::TsBooleanKeyword => Ok(JsonSchema::Boolean),
+            TsKeywordTypeKind::TsStringKeyword => Ok(JsonSchema::String),
         }
     }
     fn convert_ts_type_element(
         &mut self,
         prop: &TsTypeElement,
-    ) -> (String, Optionality<JsonSchema>) {
+    ) -> Res<(String, Optionality<JsonSchema>)> {
         match prop {
             TsTypeElement::TsPropertySignature(prop) => {
                 let key = match &*prop.key {
                     Expr::Ident(ident) => ident.sym.to_string(),
                     _ => {
-                        return (
-                            "error".into(),
-                            Optionality::Required(
-                                self.error(&prop.span, DiagnosticInfoMessage::PropKeyShouldBeIdent),
-                            ),
-                        )
+                        return self.error(&prop.span, DiagnosticInfoMessage::PropKeyShouldBeIdent)
                     }
                 };
                 match &prop.type_ann.as_ref() {
                     Some(val) => {
-                        let value = self.convert_ts_type(&val.type_ann);
+                        let value = self.convert_ts_type(&val.type_ann)?;
                         let value = if prop.optional {
                             Optionality::Optional(value)
                         } else {
                             Optionality::Required(value)
                         };
-                        (key, value)
+                        Ok((key, value))
                     }
-                    None => (
-                        "error".into(),
-                        Optionality::Required(self.error(
-                            &prop.span,
-                            DiagnosticInfoMessage::PropShouldHaveTypeAnnotation,
-                        )),
+                    None => self.error(
+                        &prop.span,
+                        DiagnosticInfoMessage::PropShouldHaveTypeAnnotation,
                     ),
                 }
             }
@@ -107,14 +99,13 @@ impl<'a, R: FileManager> TypeToSchema<'a, R> {
             | TsTypeElement::TsMethodSignature(TsMethodSignature { span, .. })
             | TsTypeElement::TsIndexSignature(TsIndexSignature { span, .. })
             | TsTypeElement::TsCallSignatureDecl(TsCallSignatureDecl { span, .. })
-            | TsTypeElement::TsConstructSignatureDecl(TsConstructSignatureDecl { span, .. }) => (
-                "error".into(),
-                Optionality::Required(self.cannot_serialize_error(span)),
-            ),
+            | TsTypeElement::TsConstructSignatureDecl(TsConstructSignatureDecl { span, .. }) => {
+                self.cannot_serialize_error(span)
+            }
         }
     }
 
-    fn convert_ts_interface_decl(&mut self, typ: &TsInterfaceDecl) -> JsonSchema {
+    fn convert_ts_interface_decl(&mut self, typ: &TsInterfaceDecl) -> Res<JsonSchema> {
         if !typ.extends.is_empty() {
             return self.error(
                 &typ.span,
@@ -122,17 +113,17 @@ impl<'a, R: FileManager> TypeToSchema<'a, R> {
             );
         }
 
-        JsonSchema::Object {
+        Ok(JsonSchema::Object {
             values: typ
                 .body
                 .body
                 .iter()
                 .map(|x| self.convert_ts_type_element(x))
-                .collect(),
-        }
+                .collect::<Res<_>>()?,
+        })
     }
 
-    pub fn insert_definition(&mut self, name: String, schema: JsonSchema) -> JsonSchema {
+    pub fn insert_definition(&mut self, name: String, schema: JsonSchema) -> Res<JsonSchema> {
         self.components.insert(
             name.clone(),
             Some(Definition {
@@ -140,7 +131,7 @@ impl<'a, R: FileManager> TypeToSchema<'a, R> {
                 schema,
             }),
         );
-        JsonSchema::Ref(name)
+        Ok(JsonSchema::Ref(name))
     }
 
     fn get_current_file(&mut self) -> Rc<ParsedModule> {
@@ -153,18 +144,18 @@ impl<'a, R: FileManager> TypeToSchema<'a, R> {
         &mut self,
         i: &Ident,
         type_params: &Option<Box<TsTypeParamInstantiation>>,
-    ) -> JsonSchema {
+    ) -> Res<JsonSchema> {
         match i.sym.to_string().as_str() {
-            "Date" => return JsonSchema::String,
+            "Date" => return Ok(JsonSchema::String),
             "Array" => {
                 let type_params = type_params.as_ref();
                 match type_params {
                     Some(type_params) => {
-                        let ty = self.convert_ts_type(&type_params.params[0]);
-                        return JsonSchema::Array(ty.into());
+                        let ty = self.convert_ts_type(&type_params.params[0])?;
+                        return Ok(JsonSchema::Array(ty.into()));
                     }
                     None => {
-                        return JsonSchema::Array(JsonSchema::Any.into());
+                        return Ok(JsonSchema::Array(JsonSchema::Any.into()));
                     }
                 }
             }
@@ -173,12 +164,12 @@ impl<'a, R: FileManager> TypeToSchema<'a, R> {
 
         let found = self.components.get(&(i.sym.to_string()));
         if let Some(_found) = found {
-            return JsonSchema::Ref(i.sym.to_string());
+            return Ok(JsonSchema::Ref(i.sym.to_string()));
         }
         self.components.insert(i.sym.to_string(), None);
 
         if type_params.is_some() {
-            self.insert_definition(i.sym.to_string(), JsonSchema::Any);
+            self.insert_definition(i.sym.to_string(), JsonSchema::Any)?;
             return self.cannot_serialize_error(&i.span);
         }
 
@@ -189,7 +180,7 @@ impl<'a, R: FileManager> TypeToSchema<'a, R> {
             .get(&(i.sym.clone(), i.span.ctxt))
         {
             let alias = alias.clone();
-            let ty = self.convert_ts_type(&alias);
+            let ty = self.convert_ts_type(&alias)?;
             return self.insert_definition(i.sym.to_string(), ty);
         }
 
@@ -200,7 +191,7 @@ impl<'a, R: FileManager> TypeToSchema<'a, R> {
             .get(&(i.sym.clone(), i.span.ctxt))
         {
             let int = int.clone();
-            let ty = self.convert_ts_interface_decl(&int);
+            let ty = self.convert_ts_interface_decl(&int)?;
             return self.insert_definition(i.sym.to_string(), ty);
         }
 
@@ -246,16 +237,14 @@ impl<'a, R: FileManager> TypeToSchema<'a, R> {
                 let imported = found_imp.expect("should exist");
                 let mut chd_file_converter = TypeToSchema::new(self.files, &imported.file_name);
 
-                let ty = chd_file_converter.convert_ts_type(&alias);
-                self.errors.extend(chd_file_converter.errors);
+                let ty = chd_file_converter.convert_ts_type(&alias)?;
                 self.components.extend(chd_file_converter.components);
                 return self.insert_definition(i.sym.to_string(), ty);
             }
             Some(TypeExport::TsInterfaceDecl(int)) => {
                 let imported = found_imp.expect("should exist");
                 let mut chd_file_converter = TypeToSchema::new(self.files, &imported.file_name);
-                let ty = chd_file_converter.convert_ts_interface_decl(&int);
-                self.errors.extend(chd_file_converter.errors);
+                let ty = chd_file_converter.convert_ts_interface_decl(&int)?;
                 self.components.extend(chd_file_converter.components);
                 return self.insert_definition(i.sym.to_string(), ty);
             }
@@ -268,31 +257,43 @@ impl<'a, R: FileManager> TypeToSchema<'a, R> {
         )
     }
 
-    fn union(&mut self, types: &[Box<TsType>]) -> JsonSchema {
-        JsonSchema::AnyOf(types.iter().map(|it| self.convert_ts_type(it)).collect())
+    fn union(&mut self, types: &[Box<TsType>]) -> Res<JsonSchema> {
+        Ok(JsonSchema::AnyOf(
+            types
+                .iter()
+                .map(|it| self.convert_ts_type(it))
+                .collect::<Res<_>>()?,
+        ))
     }
 
-    fn intersection(&mut self, types: &[Box<TsType>]) -> JsonSchema {
-        JsonSchema::AllOf(types.iter().map(|it| self.convert_ts_type(it)).collect())
+    fn intersection(&mut self, types: &[Box<TsType>]) -> Res<JsonSchema> {
+        Ok(JsonSchema::AllOf(
+            types
+                .iter()
+                .map(|it| self.convert_ts_type(it))
+                .collect::<Res<_>>()?,
+        ))
     }
 
-    fn cannot_serialize_error(&mut self, span: &Span) -> JsonSchema {
+    fn cannot_serialize_error<T>(&mut self, span: &Span) -> Res<T> {
         let cause = self.create_error(span, DiagnosticInfoMessage::CannotConvertTypeToSchema);
 
         match self.ref_stack.split_first() {
             Some((head, tail)) => {
                 let mut related_information = tail.to_vec();
                 related_information.push(cause);
-                self.errors.push(Diagnostic {
+                Err(Diagnostic {
                     cause: head.clone(),
                     related_information: Some(related_information),
                     message: DiagnosticMessage::CannotConvertToSchema,
                 })
             }
-            None => self.errors.push(cause.to_diag()),
+            None => Err(Diagnostic {
+                message: DiagnosticMessage::CannotConvertToSchema,
+                cause,
+                related_information: None,
+            }),
         }
-
-        JsonSchema::Any
     }
 
     fn create_error(&mut self, span: &Span, msg: DiagnosticInfoMessage) -> DiagnosticInformation {
@@ -315,10 +316,9 @@ impl<'a, R: FileManager> TypeToSchema<'a, R> {
             },
         }
     }
-    fn error(&mut self, span: &Span, msg: DiagnosticInfoMessage) -> JsonSchema {
+    fn error<T>(&mut self, span: &Span, msg: DiagnosticInfoMessage) -> Res<T> {
         let err = self.create_error(span, msg);
-        self.errors.push(err.to_diag());
-        JsonSchema::Any
+        Err(err.to_diag())
     }
     pub fn get_current_reference(&mut self, i: &Ident) -> Option<DiagnosticInformation> {
         self.files
@@ -337,7 +337,7 @@ impl<'a, R: FileManager> TypeToSchema<'a, R> {
                 }
             })
     }
-    pub fn convert_ts_type(&mut self, typ: &TsType) -> JsonSchema {
+    pub fn convert_ts_type(&mut self, typ: &TsType) -> Res<JsonSchema> {
         match typ {
             TsType::TsKeywordType(TsKeywordType { kind, span, .. }) => {
                 self.ts_keyword_type_kind_to_json_schema(*kind, span)
@@ -364,14 +364,14 @@ impl<'a, R: FileManager> TypeToSchema<'a, R> {
                     v
                 }
             },
-            TsType::TsTypeLit(TsTypeLit { members, .. }) => JsonSchema::Object {
+            TsType::TsTypeLit(TsTypeLit { members, .. }) => Ok(JsonSchema::Object {
                 values: members
                     .iter()
                     .map(|prop| self.convert_ts_type_element(prop))
-                    .collect(),
-            },
+                    .collect::<Res<_>>()?,
+            }),
             TsType::TsArrayType(TsArrayType { elem_type, .. }) => {
-                JsonSchema::Array(self.convert_ts_type(elem_type).into())
+                Ok(JsonSchema::Array(self.convert_ts_type(elem_type)?.into()))
             }
             TsType::TsUnionOrIntersectionType(it) => match &it {
                 TsUnionOrIntersectionType::TsUnionType(TsUnionType { types, .. }) => {
@@ -389,22 +389,22 @@ impl<'a, R: FileManager> TypeToSchema<'a, R> {
                         if items.is_some() {
                             return self.cannot_serialize_error(&it.span);
                         }
-                        let ann = extract_items_from_array(self.convert_ts_type(type_ann));
+                        let ann = extract_items_from_array(self.convert_ts_type(type_ann)?);
                         items = Some(ann.into());
                     } else {
-                        let ty_schema = self.convert_ts_type(&it.ty);
+                        let ty_schema = self.convert_ts_type(&it.ty)?;
                         prefix_items.push(ty_schema);
                     }
                 }
-                JsonSchema::Tuple {
+                Ok(JsonSchema::Tuple {
                     prefix_items,
                     items,
-                }
+                })
             }
             TsType::TsLitType(TsLitType { lit, .. }) => match lit {
-                TsLit::Number(n) => JsonSchema::Const(Json::Number(n.value)),
-                TsLit::Str(s) => JsonSchema::Const(Json::String(s.value.to_string().clone())),
-                TsLit::Bool(b) => JsonSchema::Const(Json::Bool(b.value)),
+                TsLit::Number(n) => Ok(JsonSchema::Const(Json::Number(n.value))),
+                TsLit::Str(s) => Ok(JsonSchema::Const(Json::String(s.value.to_string().clone()))),
+                TsLit::Bool(b) => Ok(JsonSchema::Const(Json::Bool(b.value))),
                 TsLit::BigInt(BigInt { span, .. }) => self.cannot_serialize_error(span),
                 TsLit::Tpl(TsTplLitType {
                     span,
@@ -415,12 +415,12 @@ impl<'a, R: FileManager> TypeToSchema<'a, R> {
                         return self.cannot_serialize_error(span);
                     }
 
-                    JsonSchema::Const(Json::String(
+                    Ok(JsonSchema::Const(Json::String(
                         quasis
                             .iter()
                             .map(|it| it.raw.to_string())
                             .collect::<String>(),
-                    ))
+                    )))
                 }
             },
             TsType::TsParenthesizedType(TsParenthesizedType { type_ann, .. }) => {
@@ -438,11 +438,14 @@ impl<'a, R: FileManager> TypeToSchema<'a, R> {
             | TsType::TsConditionalType(TsConditionalType { span, .. })
             | TsType::TsInferType(TsInferType { span, .. })
             | TsType::TsTypeOperator(TsTypeOperator { span, .. })
-            | TsType::TsIndexedAccessType(TsIndexedAccessType { span, .. })
             | TsType::TsMappedType(TsMappedType { span, .. })
             | TsType::TsTypePredicate(TsTypePredicate { span, .. })
             | TsType::TsImportType(TsImportType { span, .. })
             | TsType::TsTypeQuery(TsTypeQuery { span, .. }) => self.cannot_serialize_error(span),
+            TsType::TsIndexedAccessType(TsIndexedAccessType { span, .. }) => self.error(
+                span,
+                DiagnosticInfoMessage::CannotUnderstandTsIndexedAccessType,
+            ),
         }
     }
 }
