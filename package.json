@@ -4,9 +4,11 @@
   "description": "",
   "main": "index.js",
   "scripts": {
+    "ts": "pnpm run -r ts",
     "build": "pnpm run -r build",
     "test": "pnpm run -r test",
-    "all": "pnpm run build && pnpm run test"
+    "bff": "pnpm run -r bff",
+    "all": "pnpm run ts && pnpm run build && pnpm run bff && pnpm run test"
   },
   "keywords": [],
   "author": "",

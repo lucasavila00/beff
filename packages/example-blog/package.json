@@ -5,11 +5,12 @@
     "dev": "wrangler dev src/index.ts",
     "deploy": "wrangler publish src/index.ts",
     "test": "jest --verbose",
-    "bff": "node ../bff-wasm/npm-bin/index.js  -p bff.json"
+    "bff": "node ../bff-wasm/npm-bin/index.js -p bff.json"
   },
   "license": "MIT",
   "dependencies": {
     "bff": "workspace:^1.0.0",
+    "bff-hono": "workspace:^1.0.0",
     "hono": "^3.3.4"
   },
   "devDependencies": {

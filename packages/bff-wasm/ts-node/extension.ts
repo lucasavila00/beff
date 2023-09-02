@@ -29,7 +29,7 @@ export function activate(context: vscode.ExtensionContext) {
 
   const projectPath = path.join(workspacePath, "bff.json");
   const projectJson = readProjectJson(projectPath);
-  bundler = new Bundler(true, projectJson.module ?? "esm");
+  bundler = new Bundler(true);
   const router = projectJson.router;
   const entryPoint = path.join(path.dirname(projectPath), router);
 

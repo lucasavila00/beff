@@ -132,8 +132,8 @@ export function registerRouter(options: {
 export const buildHonoTestClient = <T>(
   meta: HandlerMeta[],
   app: Hono<any, any, any>,
-  executionContext?: any,
-  env?: any
+  env?: any,
+  executionContext?: any
 ): ClientFromRouter<T> =>
   buildStableClient<T>(meta, async (req) => {
     const r = await app.fetch(
