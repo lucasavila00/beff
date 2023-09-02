@@ -142,6 +142,16 @@ impl<'a, R: FileManager> TypeToSchema<'a, R> {
             TypeExport::TsType(alias) => self.convert_ts_type(&alias)?,
             TypeExport::TsInterfaceDecl(int) => self.convert_ts_interface_decl(&int)?,
             TypeExport::StarOfOtherFile(_) => todo!(),
+            TypeExport::SomethingOfOtherFile(word, from_file) => {
+                let file = self
+                    .files
+                    .get_or_fetch_file(&from_file)
+                    .and_then(|file| file.type_exports.get(word).map(|it| it.clone()));
+                match file {
+                    Some(exported) => self.convert_resolved_export(exported.as_ref(), from_file)?,
+                    None => todo!(),
+                }
+            }
         };
         self.current_file = store_current_file;
         Ok(ty)
@@ -345,6 +355,7 @@ impl<'a, R: FileManager> TypeToSchema<'a, R> {
                     TypeExport::StarOfOtherFile(other_file) => {
                         self.get_qualified_type_from_file(other_file, &q.right.sym)
                     }
+                    TypeExport::SomethingOfOtherFile(_, _) => todo!(),
                 }
             }
             TsEntityName::Ident(i) => {

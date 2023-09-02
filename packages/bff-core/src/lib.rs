@@ -20,6 +20,7 @@ pub enum TypeExport {
     TsType(Rc<TsType>),
     TsInterfaceDecl(Rc<TsInterfaceDecl>),
     StarOfOtherFile(Rc<ImportReference>),
+    SomethingOfOtherFile(JsWord, Rc<String>),
 }
 
 pub struct BffModuleData {

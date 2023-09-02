@@ -105,8 +105,30 @@ impl Visit for ImportsVisitor {
     }
 
     fn visit_named_export(&mut self, n: &NamedExport) {
-        match n.src {
-            Some(_) => todo!(),
+        match &n.src {
+            Some(src) => {
+                //
+                for s in &n.specifiers {
+                    match s {
+                        ExportSpecifier::Namespace(_) => todo!(),
+                        ExportSpecifier::Default(_) => todo!(),
+                        ExportSpecifier::Named(ExportNamedSpecifier { orig, exported, .. }) => {
+                            assert!(exported.is_none());
+                            let file_name = self.resolve_import(&src.value).unwrap();
+                            match orig {
+                                ModuleExportName::Ident(id) => self.type_exports.insert(
+                                    id.sym.clone(),
+                                    Rc::new(TypeExport::SomethingOfOtherFile(
+                                        id.sym.clone(),
+                                        file_name.clone(),
+                                    )),
+                                ),
+                                ModuleExportName::Str(_) => todo!(),
+                            };
+                        }
+                    }
+                }
+            }
             None => {
                 for s in &n.specifiers {
                     match s {
