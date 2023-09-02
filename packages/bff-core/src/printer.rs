@@ -1,5 +1,5 @@
 use anyhow::Result;
-use serde::{Serialize, Deserialize};
+use serde::{Deserialize, Serialize};
 use swc_common::DUMMY_SP;
 use swc_ecma_ast::{
     ArrayLit, BindingIdent, Bool, Decl, Expr, ExprOrSpread, FnDecl, FnExpr, Ident, KeyValueProp,
@@ -127,6 +127,10 @@ impl ToJson for JsonSchema {
                 "$ref".into(),
                 Json::String(format!("#/components/schemas/{reference}")),
             )]),
+            JsonSchema::ResponseRef(reference) => Json::Object(vec![(
+                "$ref".into(),
+                Json::String(format!("#/components/responses/{reference}")),
+            )]),
             JsonSchema::Null => Json::Object(vec![("type".into(), Json::String("null".into()))]),
             JsonSchema::AnyOf(types) => {
                 let all_literals = types.iter().all(|it| matches!(it, JsonSchema::Const(_)));
@@ -204,28 +208,13 @@ impl ToJson for open_api_ast::JsonRequestBody {
         Json::Object(v)
     }
 }
-fn error_response_schema() -> JsonSchema {
-    JsonSchema::Object {
-        values: vec![("message".to_string(), JsonSchema::String.required())],
-    }
-}
 
-fn error_response(code: &str, description: &str) -> (String, Json) {
+fn error_response_ref(code: &str, reference: &str) -> (String, Json) {
     (
         code.into(),
-        Json::Object(vec![
-            ("description".into(), Json::String(description.into())),
-            (
-                "content".into(),
-                Json::Object(vec![(
-                    "application/json".into(),
-                    Json::Object(vec![("schema".into(), error_response_schema().to_json())]),
-                )]),
-            ),
-        ]),
+        JsonSchema::ResponseRef(reference.to_owned()).to_json(),
     )
 }
-
 impl ToJson for open_api_ast::OperationObject {
     fn to_json(self) -> Json {
         let mut v = vec![];
@@ -264,8 +253,8 @@ impl ToJson for open_api_ast::OperationObject {
                         ),
                     ]),
                 ),
-                error_response("422", "There was an error in the passed parameters"),
-                error_response("default", "Unexpected Error"),
+                error_response_ref("422", "DecodeError"),
+                error_response_ref("default", "UnexpectedError"),
             ]),
         ));
 
@@ -322,6 +311,29 @@ impl ToJson for open_api_ast::Info {
         Json::Object(v)
     }
 }
+
+fn error_response_schema() -> JsonSchema {
+    JsonSchema::Object {
+        values: vec![("message".to_string(), JsonSchema::String.required())],
+    }
+}
+
+fn error_response(code: &str, description: &str) -> (String, Json) {
+    (
+        code.into(),
+        Json::Object(vec![
+            ("description".into(), Json::String(description.into())),
+            (
+                "content".into(),
+                Json::Object(vec![(
+                    "application/json".into(),
+                    Json::Object(vec![("schema".into(), error_response_schema().to_json())]),
+                )]),
+            ),
+        ]),
+    )
+}
+
 impl ToJson for OpenApi {
     fn to_json(self) -> Json {
         let v = vec![
@@ -339,15 +351,24 @@ impl ToJson for OpenApi {
             ),
             (
                 "components".into(),
-                Json::Object(vec![(
-                    "schemas".into(),
-                    Json::Object(
-                        self.components
-                            .into_iter()
-                            .flat_map(ToJsonKv::to_json_kv)
-                            .collect(),
+                Json::Object(vec![
+                    (
+                        "schemas".into(),
+                        Json::Object(
+                            self.components
+                                .into_iter()
+                                .flat_map(ToJsonKv::to_json_kv)
+                                .collect(),
+                        ),
                     ),
-                )]),
+                    (
+                        "responses".into(),
+                        Json::Object(vec![
+                            error_response("DecodeError", "Invalid parameters or request body"),
+                            error_response("UnexpectedError", "Unexpected Error"),
+                        ]),
+                    ),
+                ]),
             ),
         ];
         Json::Object(v)
@@ -472,35 +493,31 @@ fn handlers_to_js(items: Vec<PathHandlerMap>, components: &Vec<Definition>) -> J
     )
 }
 
-struct Builder;
-
-impl Builder {
-    fn const_decl(name: &str, init: Expr) -> ModuleItem {
-        ModuleItem::Stmt(Stmt::Decl(Decl::Var(
-            VarDecl {
+fn const_decl(name: &str, init: Expr) -> ModuleItem {
+    ModuleItem::Stmt(Stmt::Decl(Decl::Var(
+        VarDecl {
+            span: DUMMY_SP,
+            kind: VarDeclKind::Const,
+            declare: false,
+            decls: vec![VarDeclarator {
                 span: DUMMY_SP,
-                kind: VarDeclKind::Const,
-                declare: false,
-                decls: vec![VarDeclarator {
-                    span: DUMMY_SP,
-                    name: Pat::Ident(BindingIdent {
-                        id: Ident {
-                            span: DUMMY_SP,
-                            sym: name.into(),
-                            optional: false,
-                        },
-                        type_ann: None,
-                    }),
-                    init: Some(Box::new(init)),
-                    definite: false,
-                }],
-            }
-            .into(),
-        )))
-    }
+                name: Pat::Ident(BindingIdent {
+                    id: Ident {
+                        span: DUMMY_SP,
+                        sym: name.into(),
+                        optional: false,
+                    },
+                    type_ann: None,
+                }),
+                init: Some(Box::new(init)),
+                definite: false,
+            }],
+        }
+        .into(),
+    )))
 }
 
-fn js_to_expr(file_name: &str, it: Js, components: &Vec<Definition>) -> Expr {
+fn js_to_expr(it: Js, components: &Vec<Definition>) -> Expr {
     match it {
         Js::Decoder(name, schema) => Expr::Fn(FnExpr {
             ident: None,
@@ -524,7 +541,7 @@ fn js_to_expr(file_name: &str, it: Js, components: &Vec<Definition>) -> Expr {
                 .map(|it| {
                     Some(ExprOrSpread {
                         spread: None,
-                        expr: Box::new(js_to_expr(file_name, it, components)),
+                        expr: Box::new(js_to_expr(it, components)),
                     })
                 })
                 .collect(),
@@ -540,7 +557,7 @@ fn js_to_expr(file_name: &str, it: Js, components: &Vec<Definition>) -> Expr {
                             value: key.into(),
                             raw: None,
                         }),
-                        value: Box::new(js_to_expr(file_name, value, components)),
+                        value: Box::new(js_to_expr(value, components)),
                     })))
                 })
                 .collect(),
@@ -561,28 +578,26 @@ pub trait ToWritableModules {
 impl ToWritableModules for ExtractResult {
     fn to_module(self) -> Result<WritableModules> {
         let mut body = vec![];
+
         for comp in &self.open_api.components {
             let name = format!("validate_{}", comp.name);
-            let decoder = decoder::from_schema(&comp.schema, &comp.name);
-            let module_item = ModuleItem::Stmt(Stmt::Decl(Decl::Fn(FnDecl {
+            let decoder_fn = decoder::from_schema(&comp.schema, &comp.name);
+            let decoder_fn_decl = ModuleItem::Stmt(Stmt::Decl(Decl::Fn(FnDecl {
                 ident: Ident {
                     span: DUMMY_SP,
                     sym: name.into(),
                     optional: false,
                 },
                 declare: false,
-                function: decoder.into(),
+                function: decoder_fn.into(),
             })));
-            body.push(module_item);
+            body.push(decoder_fn_decl);
         }
-        let dfs = self.open_api.components.clone();
-        let meta_expr = js_to_expr(
-            &self.entry_file_name.0,
-            handlers_to_js(self.handlers, &self.components),
-            &dfs,
-        );
-        let meta = Builder::const_decl("meta", meta_expr);
-        body.push(meta);
+
+        let components = &self.open_api.components;
+
+        let meta_expr = js_to_expr(handlers_to_js(self.handlers, &components), &components);
+        body.push(const_decl("meta", meta_expr));
 
         let module = Module {
             span: DUMMY_SP,

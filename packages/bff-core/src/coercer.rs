@@ -91,6 +91,7 @@ impl<'a> CoercerFnGenerator<'a> {
                 .collect(),
                 type_args: None,
             }),
+            JsonSchema::ResponseRef(_) => unreachable!("will not coerce an error schema"),
         }
     }
     fn fn_coercer_from_schema(&mut self, schema: &JsonSchema, depth: usize) -> Function {

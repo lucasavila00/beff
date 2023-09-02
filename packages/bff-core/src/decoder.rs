@@ -367,6 +367,7 @@ impl DecoderFnGenerator {
                 items,
             } => self.decode_tuple(prefix_items, items, value_ref, err_storage, path),
             JsonSchema::AllOf(els) => self.decode_all_of(els, value_ref, err_storage, path),
+            JsonSchema::ResponseRef(_) => unreachable!("will not decode error schema"),
         }
     }
 

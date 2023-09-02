@@ -103,6 +103,7 @@ pub enum JsonSchema {
         items: Option<Box<JsonSchema>>,
     },
     Ref(String),
+    ResponseRef(String),
     AnyOf(Vec<JsonSchema>),
     AllOf(Vec<JsonSchema>),
     Const(Json),

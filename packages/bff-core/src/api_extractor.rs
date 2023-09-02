@@ -995,7 +995,7 @@ pub enum FunctionParameterIn {
 
 fn is_type_simple(it: &JsonSchema, components: &Vec<Definition>) -> bool {
     match it {
-        JsonSchema::Ref(r) => {
+        JsonSchema::ResponseRef(r) | JsonSchema::Ref(r) => {
             let def = components
                 .iter()
                 .find(|it| &it.name == r)
@@ -1225,7 +1225,6 @@ pub struct PathHandlerMap {
 pub struct ExtractResult {
     pub errors: Vec<Diagnostic>,
     pub open_api: OpenApi,
-    pub components: Vec<Definition>,
     pub entry_file_name: BffFileName,
     pub handlers: Vec<PathHandlerMap>,
 }
@@ -1263,23 +1262,23 @@ pub fn extract_schema<R: FileManager>(
     let (handlers, components, errors, info) = visit_extract(files, entry_file_name.clone());
 
     let mut transformer = EndpointToPath {
-        errors: errors,
+        errors,
         components: &components,
         current_file: entry_file_name.clone(),
         files,
     };
     let paths = transformer.endpoints_to_paths(&handlers);
+    let errors = transformer.errors;
     let open_api = OpenApi {
-        info: info,
-        paths: paths,
-        components: components.clone(),
+        info,
+        components,
+        paths,
     };
 
     ExtractResult {
-        handlers: handlers,
+        handlers,
         open_api,
-        errors: transformer.errors,
-        components: components,
-        entry_file_name: entry_file_name,
+        entry_file_name,
+        errors,
     }
 }

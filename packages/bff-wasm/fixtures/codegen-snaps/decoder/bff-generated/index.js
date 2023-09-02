@@ -458,6 +458,44 @@ const meta = [
 
 const schema =  {
   "components": {
+    "responses": {
+      "DecodeError": {
+        "content": {
+          "application/json": {
+            "schema": {
+              "properties": {
+                "message": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "message"
+              ],
+              "type": "object"
+            }
+          }
+        },
+        "description": "Invalid parameters or request body"
+      },
+      "UnexpectedError": {
+        "content": {
+          "application/json": {
+            "schema": {
+              "properties": {
+                "message": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "message"
+              ],
+              "type": "object"
+            }
+          }
+        },
+        "description": "Unexpected Error"
+      }
+    },
     "schemas": {
       "ChildUser": {
         "properties": {
@@ -626,40 +664,10 @@ const schema =  {
             "description": "Successful Operation"
           },
           "422": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "properties": {
-                    "message": {
-                      "type": "string"
-                    }
-                  },
-                  "required": [
-                    "message"
-                  ],
-                  "type": "object"
-                }
-              }
-            },
-            "description": "There was an error in the passed parameters"
+            "$ref": "#/components/responses/DecodeError"
           },
           "default": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "properties": {
-                    "message": {
-                      "type": "string"
-                    }
-                  },
-                  "required": [
-                    "message"
-                  ],
-                  "type": "object"
-                }
-              }
-            },
-            "description": "Unexpected Error"
+            "$ref": "#/components/responses/UnexpectedError"
           }
         }
       }
