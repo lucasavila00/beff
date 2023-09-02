@@ -16,7 +16,7 @@ type Decoders<T> = {
     parse: (input: any) => T[K];
   };
 };
-export declare const buildDecoders: <T>() => Decoders<T>;
+export declare const buildParsers: <T>() => Decoders<T>;
 `;
 
 const decodersCode = `
@@ -59,11 +59,11 @@ function coerce(coercer, value) {
 }
 `;
 
-const buildDecoders = `
-function buildDecoders() {
+const buildParsers = `
+function buildParsers() {
   let decoders ={};
-  Object.keys(buildDecodersInput).forEach(k => {
-    let v = buildDecodersInput[k];
+  Object.keys(buildParsersInput).forEach(k => {
+    let v = buildParsersInput[k];
     decoders[k] = {
       parse: (input) => {
         const validation_result = v(input);
@@ -83,7 +83,7 @@ const finalizeFile = (wasmCode: WritableModules, mod: ProjectModule) => {
   const expr = [
     "meta",
     "schema",
-    wasmCode.had_build_decoders_call ? "buildDecoders" : "",
+    wasmCode.had_build_decoders_call ? "buildParsers" : "",
   ]
     .filter((it) => it.length > 0)
     .join(", ");
@@ -92,7 +92,7 @@ const finalizeFile = (wasmCode: WritableModules, mod: ProjectModule) => {
   return [
     decodersCode,
     wasmCode.js_server_data,
-    wasmCode.had_build_decoders_call ? buildDecoders : "",
+    wasmCode.had_build_decoders_call ? buildParsers : "",
     schema,
     exports,
   ].join("\n");

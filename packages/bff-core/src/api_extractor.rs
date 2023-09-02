@@ -1011,7 +1011,7 @@ impl<'a, R: FileManager> Visit for ExtractExportDefaultVisitor<'a, R> {
             Callee::Import(_) => {}
             Callee::Expr(ref expr) => match &**expr {
                 Expr::Ident(Ident { sym, .. }) => {
-                    if sym.to_string() == "buildDecoders" {
+                    if sym.to_string() == "buildParsers" {
                         match self.built_decoders {
                             Some(_) => panic!("two calls"),
                             None => {

@@ -616,7 +616,7 @@ impl ToWritableModules for ExtractResult {
             if !it.is_empty() {
                 let build_decoders_expr = build_decoders_expr(it);
                 js_server_data.push(const_decl(
-                    "buildDecodersInput",
+                    "buildParsersInput",
                     js_to_expr(build_decoders_expr, &components),
                 ));
                 had_build_decoders_call = true;

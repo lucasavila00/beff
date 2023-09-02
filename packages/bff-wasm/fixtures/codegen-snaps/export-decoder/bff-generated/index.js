@@ -105,7 +105,7 @@ const meta = [
         }
     }
 ];
-const buildDecodersInput = {
+const buildParsersInput = {
     "User": function(input) {
         let error_acc_0 = [];
         error_acc_0.push(...add_path_to_errors(validate_User(input), [
@@ -116,10 +116,10 @@ const buildDecodersInput = {
 };
 
 
-function buildDecoders() {
+function buildParsers() {
   let decoders ={};
-  Object.keys(buildDecodersInput).forEach(k => {
-    let v = buildDecodersInput[k];
+  Object.keys(buildParsersInput).forEach(k => {
+    let v = buildParsersInput[k];
     decoders[k] = {
       parse: (input) => {
         const validation_result = v(input);
@@ -228,4 +228,4 @@ const schema =  {
     }
   }
 } ;
-export  { meta, schema, buildDecoders };
+export  { meta, schema, buildParsers };

@@ -10,4 +10,4 @@ type Decoders<T> = {
     parse: (input: any) => T[K];
   };
 };
-export declare const buildDecoders: <T>() => Decoders<T>;
+export declare const buildParsers: <T>() => Decoders<T>;

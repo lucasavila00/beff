@@ -1,10 +1,10 @@
-import { buildDecoders } from "./bff-generated";
+import { buildParsers } from "./bff-generated";
 
 type User = {
   name: string;
 };
 
-export const { User } = buildDecoders<{ User: User }>();
+export const { User } = buildParsers<{ User: User }>();
 type Ctx = any;
 export default {
   [`/{name}`]: {
