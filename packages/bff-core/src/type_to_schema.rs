@@ -340,7 +340,7 @@ impl<'a, R: FileManager> TypeToSchema<'a, R> {
             Some(exported) => {
                 let name = match &*exported {
                     TypeExport::TsType { name, .. } => name.to_string(),
-                    TypeExport::TsInterfaceDecl(_) => todo!(), // right.to_string()
+                    TypeExport::TsInterfaceDecl(it) => it.id.sym.to_string(),
                     TypeExport::StarOfOtherFile(_) => right.to_string(),
                     TypeExport::SomethingOfOtherFile(that, _) => that.to_string(),
                 };
@@ -375,6 +375,20 @@ impl<'a, R: FileManager> TypeToSchema<'a, R> {
                 match TypeResolver::new(self.files, &self.current_file).resolve_namespace_type(i)? {
                     ResolvedNamespaceType::Star { from_file } => {
                         self.get_qualified_type_from_file(&from_file, &q.right.sym)
+                    }
+                    ResolvedNamespaceType::TsNamespace(ref it) => {
+                        match it.type_exports.get(&q.right.sym, self.files) {
+                            Some(res) => Ok((
+                                res,
+                                ImportReference::Named {
+                                    orig: Rc::new(q.right.sym.clone()),
+                                    file_name: self.current_file.clone(),
+                                }
+                                .into(),
+                                q.right.sym.to_string(),
+                            )),
+                            None => todo!(),
+                        }
                     }
                 }
             }

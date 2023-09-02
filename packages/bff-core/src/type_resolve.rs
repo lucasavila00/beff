@@ -4,7 +4,7 @@ use swc_ecma_ast::{Ident, TsInterfaceDecl, TsType};
 
 use crate::{
     api_extractor::FileManager, diag::Diagnostic, BffFileName, ImportReference, ParsedModule,
-    TypeExport,
+    ParsedTsNamespace, TypeExport,
 };
 
 pub struct TypeResolver<'a, R: FileManager> {
@@ -23,6 +23,7 @@ pub enum ResolvedLocalType {
 
 pub enum ResolvedNamespaceType {
     Star { from_file: Rc<ImportReference> },
+    TsNamespace(Rc<ParsedTsNamespace>),
 }
 type Res<T> = Result<T, Diagnostic>;
 
@@ -71,6 +72,9 @@ impl<'a, R: FileManager> TypeResolver<'a, R> {
                 }
                 ImportReference::Default { .. } => panic!(),
             }
+        }
+        if let Some(ns) = self.get_current_file().locals.ts_namespaces.get(k) {
+            return Ok(ResolvedNamespaceType::TsNamespace(ns.clone()));
         }
         panic!()
     }

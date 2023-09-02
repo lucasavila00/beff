@@ -10,11 +10,12 @@ use anyhow::Result;
 use bff_core::api_extractor::{self, ExtractResult, FileManager};
 use bff_core::diag::Diagnostic;
 use bff_core::emit::emit_module;
+use bff_core::parse_file_content;
 use bff_core::printer::ToModule;
 use bff_core::BffFileName;
 use bff_core::ParsedModule;
 use log::Level;
-use parse_file::parse_file_content;
+use parse_file::WasmImportsResolver;
 use std::collections::HashSet;
 use std::rc::Rc;
 use std::{cell::RefCell, collections::HashMap};
@@ -96,7 +97,8 @@ impl<'a> FileManager for LazyFileManager<'a> {
         }
         let content = read_file_content(file_name.to_string().as_str())?;
 
-        let res = parse_file_content(file_name, &content);
+        let mut resolver = WasmImportsResolver::new(file_name.clone());
+        let res = parse_file_content(&mut resolver, file_name, &content);
         match res {
             Ok((f, imports)) => {
                 self.known_files.extend(imports);
@@ -147,7 +149,10 @@ fn bundle_to_diagnostics_inner(file_name: &str) -> WasmDiagnostic {
 
 fn update_file_content_inner(file_name: &str, content: &str) {
     let file_name = BffFileName::new(file_name.to_string());
-    let res = GLOBALS.set(&SWC_GLOBALS, || parse_file_content(&file_name, content));
+    let res = GLOBALS.set(&SWC_GLOBALS, || {
+        let mut resolver = WasmImportsResolver::new(file_name.clone());
+        parse_file_content(&mut resolver, &file_name, content)
+    });
     match res {
         Ok((f, imports)) => BUNDLER.with(|b| {
             let mut b = b.borrow_mut();
