@@ -542,7 +542,7 @@ impl ToModule for ExtractResult {
         }
         let dfs = self.open_api.components.clone();
         let meta_expr = js_to_expr(
-            &self.entry_file_name,
+            &self.entry_file_name.0,
             Js::Object(vec![
                 (
                     "handlersMeta".into(),

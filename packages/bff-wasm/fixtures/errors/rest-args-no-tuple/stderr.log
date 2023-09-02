@@ -7,28 +7,28 @@ Error
     at /home/lucas/fluff/bff/packages/bff-wasm/pkg/hello_wasm.js:364:17
     at logError (/home/lucas/fluff/bff/packages/bff-wasm/pkg/hello_wasm.js:205:18)
     at module.exports.__wbg_new_abda76e883ba8a5f (/home/lucas/fluff/bff/packages/bff-wasm/pkg/hello_wasm.js:363:65)
-    at console_error_panic_hook::Error::new::h24a202ca2cd6f4e3 (wasm://wasm/02d3db7e:wasm-function[16904]:0x8f920e)
-    at console_error_panic_hook::hook_impl::hbd017b1cd15b0ccd (wasm://wasm/02d3db7e:wasm-function[3287]:0x6f24f3)
-    at console_error_panic_hook::hook::h2d1bbfd1bba12fb3 (wasm://wasm/02d3db7e:wasm-function[18146]:0x90ac27)
-    at core::ops::function::Fn::call::h060acb07aceb94e4 (wasm://wasm/02d3db7e:wasm-function[15407]:0x8e230f)
-    at std::panicking::rust_panic_with_hook::he4d11d009df2f45f (wasm://wasm/02d3db7e:wasm-function[6638]:0x7e0b56)
-    at std::panicking::begin_panic_handler::{{closure}}::hdd0d58f31e4d53df (wasm://wasm/02d3db7e:wasm-function[8750]:0x83eac3)
-    at std::sys_common::backtrace::__rust_end_short_backtrace::hd70f3cac19eb49f3 (wasm://wasm/02d3db7e:wasm-function[20627]:0x922540)
+    at console_error_panic_hook::Error::new::h24a202ca2cd6f4e3 (wasm://wasm/02d44d26:wasm-function[16928]:0x8fa2da)
+    at console_error_panic_hook::hook_impl::hbd017b1cd15b0ccd (wasm://wasm/02d44d26:wasm-function[3289]:0x6f2a13)
+    at console_error_panic_hook::hook::h2d1bbfd1bba12fb3 (wasm://wasm/02d44d26:wasm-function[18170]:0x90bd0f)
+    at core::ops::function::Fn::call::h060acb07aceb94e4 (wasm://wasm/02d44d26:wasm-function[15434]:0x8e3491)
+    at std::panicking::rust_panic_with_hook::he4d11d009df2f45f (wasm://wasm/02d44d26:wasm-function[6642]:0x7e137d)
+    at std::panicking::begin_panic_handler::{{closure}}::hdd0d58f31e4d53df (wasm://wasm/02d44d26:wasm-function[8754]:0x83f349)
+    at std::sys_common::backtrace::__rust_end_short_backtrace::hd70f3cac19eb49f3 (wasm://wasm/02d44d26:wasm-function[20663]:0x923811)
 
 
-wasm://wasm/02d3db7e:1
+wasm://wasm/02d44d26:1
 
 
 RuntimeError: unreachable
-    at __rust_start_panic (wasm://wasm/02d3db7e:wasm-function[20669]:0x922636)
-    at rust_panic (wasm://wasm/02d3db7e:wasm-function[20461]:0x921dbd)
-    at std::panicking::rust_panic_with_hook::he4d11d009df2f45f (wasm://wasm/02d3db7e:wasm-function[6638]:0x7e0b83)
-    at std::panicking::begin_panic_handler::{{closure}}::hdd0d58f31e4d53df (wasm://wasm/02d3db7e:wasm-function[8750]:0x83eac3)
-    at std::sys_common::backtrace::__rust_end_short_backtrace::hd70f3cac19eb49f3 (wasm://wasm/02d3db7e:wasm-function[20627]:0x922540)
-    at rust_begin_unwind (wasm://wasm/02d3db7e:wasm-function[12410]:0x8a8fa5)
-    at core::panicking::panic_fmt::h157d8e2782a50057 (wasm://wasm/02d3db7e:wasm-function[18025]:0x909337)
-    at core::panicking::panic::h84f3aeadc405be3e (wasm://wasm/02d3db7e:wasm-function[15404]:0x8e224c)
-    at bff_core::api_extractor::ExtractExportDefaultVisitor<R>::parse_arrow_param_from_type_expecting_tuple::h4cf0e859b443d186 (wasm://wasm/02d3db7e:wasm-function[1742]:0x62800f)
-    at bff_core::api_extractor::ExtractExportDefaultVisitor<R>::parse_arrow_parameter::h68b52671a8e28e5b (wasm://wasm/02d3db7e:wasm-function[475]:0x472ab4)
+    at __rust_start_panic (wasm://wasm/02d44d26:wasm-function[20705]:0x923907)
+    at rust_panic (wasm://wasm/02d44d26:wasm-function[20496]:0x923083)
+    at std::panicking::rust_panic_with_hook::he4d11d009df2f45f (wasm://wasm/02d44d26:wasm-function[6642]:0x7e13aa)
+    at std::panicking::begin_panic_handler::{{closure}}::hdd0d58f31e4d53df (wasm://wasm/02d44d26:wasm-function[8754]:0x83f349)
+    at std::sys_common::backtrace::__rust_end_short_backtrace::hd70f3cac19eb49f3 (wasm://wasm/02d44d26:wasm-function[20663]:0x923811)
+    at rust_begin_unwind (wasm://wasm/02d44d26:wasm-function[12429]:0x8a9eb0)
+    at core::panicking::panic_fmt::h157d8e2782a50057 (wasm://wasm/02d44d26:wasm-function[18051]:0x90a487)
+    at core::panicking::panic::h84f3aeadc405be3e (wasm://wasm/02d44d26:wasm-function[15431]:0x8e33ce)
+    at bff_core::api_extractor::ExtractExportDefaultVisitor<R>::parse_arrow_param_from_type_expecting_tuple::h4cf0e859b443d186 (wasm://wasm/02d44d26:wasm-function[1745]:0x62891e)
+    at bff_core::api_extractor::ExtractExportDefaultVisitor<R>::parse_arrow_parameter::h68b52671a8e28e5b (wasm://wasm/02d44d26:wasm-function[475]:0x472bec)
 
 Node.js v18.16.0

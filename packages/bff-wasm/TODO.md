@@ -5,11 +5,16 @@
 - [ ] qualified import type
 
 ```ts
-export { variable1 as name1, variable2 as name2 };
 export * from "module-name";
+// - [ ] make ImportReference enum
+
 export * as name1 from "module-name";
-export { name1, name2 } from "module-name";
-export { import1 as name1, import2 as name2 } from "module-name";
+export { import1 as name1 } from "module-name";
+
+// import 2, everything with 2
+// export { variable1 as name1, variable2 as name2 };
+// export { import1 as name1, import2 as name2 } from "module-name";
+// export { name1, name2 } from "module-name";
 ```
 
 - [ ] namespace

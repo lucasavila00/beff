@@ -1,8 +1,10 @@
 use anyhow::Result;
 use bff_core::parse::load_source_file;
+use bff_core::BffFileName;
 use bff_core::ImportReferenceType;
 use bff_core::ParsedModule;
 use bff_core::ParsedModuleLocals;
+use bff_core::TypeExportsModule;
 use bff_core::{ImportReference, TypeExport};
 use std::collections::HashMap;
 use std::collections::HashSet;
@@ -12,6 +14,7 @@ use swc_atoms::JsWord;
 use swc_common::SourceMap;
 use swc_common::{FileName, SyntaxContext};
 use swc_ecma_ast::Decl;
+use swc_ecma_ast::ExportAll;
 use swc_ecma_ast::ExportDecl;
 use swc_ecma_ast::ExportNamedSpecifier;
 use swc_ecma_ast::ExportSpecifier;
@@ -27,9 +30,9 @@ use swc_ecma_visit::Visit;
 
 struct ImportsVisitor {
     imports: HashMap<(JsWord, SyntaxContext), Rc<ImportReference>>,
-    type_exports: HashMap<JsWord, Rc<TypeExport>>,
+    type_exports: TypeExportsModule,
     current_file: FileName,
-    known_imports: HashMap<String, Option<Rc<String>>>,
+    resolutions_cache: HashMap<String, Option<BffFileName>>,
     unresolved_exports: Vec<(JsWord, SyntaxContext)>,
 }
 
@@ -37,18 +40,18 @@ impl ImportsVisitor {
     pub fn from_file(current_file: FileName) -> ImportsVisitor {
         ImportsVisitor {
             imports: HashMap::new(),
-            type_exports: HashMap::new(),
+            type_exports: TypeExportsModule::new(),
             current_file,
-            known_imports: HashMap::new(),
+            resolutions_cache: HashMap::new(),
             unresolved_exports: Vec::new(),
         }
     }
-    fn resolve_import(&self, module_specifier: &str) -> Option<Rc<String>> {
-        match self.known_imports.get(module_specifier) {
+    fn resolve_import(&self, module_specifier: &str) -> Option<BffFileName> {
+        match self.resolutions_cache.get(module_specifier) {
             Some(it) => it.clone(),
             None => {
                 crate::resolve_import(&self.current_file.to_string().as_str(), &module_specifier)
-                    .map(Rc::new)
+                    .map(BffFileName::new)
             }
         }
     }
@@ -61,7 +64,7 @@ impl ImportsVisitor {
     ) {
         let k = (local.sym.clone(), local.span.ctxt);
         let v = self.resolve_import(&module_specifier);
-        self.known_imports
+        self.resolutions_cache
             .insert(module_specifier.to_string(), v.clone());
         match v {
             Some(v) => {
@@ -148,7 +151,10 @@ impl Visit for ImportsVisitor {
             }
         }
     }
-
+    fn visit_export_all(&mut self, n: &ExportAll) {
+        let file_name = self.resolve_import(&n.src.value).unwrap();
+        self.type_exports.extend(file_name);
+    }
     fn visit_import_decl(&mut self, node: &ImportDecl) {
         let module_specifier = node.src.value.to_string();
 
@@ -187,21 +193,24 @@ impl Visit for ImportsVisitor {
 }
 
 pub fn parse_file_content(
-    file_name: &str,
+    file_name: &BffFileName,
     content: &str,
-) -> Result<(Rc<ParsedModule>, HashSet<String>)> {
+) -> Result<(Rc<ParsedModule>, HashSet<BffFileName>)> {
     log::debug!("RUST: Parsing file {file_name:?}");
     let cm: SourceMap = SourceMap::default();
-    let source_file = cm.new_source_file(FileName::Real(file_name.into()), content.to_owned());
+    let source_file = cm.new_source_file(
+        FileName::Real(file_name.to_string().into()),
+        content.to_owned(),
+    );
     let (module, comments) = load_source_file(&source_file, &Arc::new(cm))?;
     let mut v = ImportsVisitor::from_file(module.fm.name.clone());
     v.visit_module(&module.module);
 
-    let imports: HashSet<String> = v
+    let imports: HashSet<BffFileName> = v
         .imports
         .values()
         .into_iter()
-        .map(|x| x.file_name.to_string())
+        .map(|x| x.file_name.clone())
         .collect();
 
     let mut locals = ParsedModuleLocals::new();

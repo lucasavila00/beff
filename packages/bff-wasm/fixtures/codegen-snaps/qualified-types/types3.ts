@@ -1,3 +1,1 @@
-export interface UserEntity {
-  id: string;
-}
+export * from "./types4";

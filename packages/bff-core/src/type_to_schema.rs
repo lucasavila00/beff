@@ -5,7 +5,7 @@ use crate::diag::{
 use crate::open_api_ast::Json;
 use crate::open_api_ast::{Definition, JsonSchema, Optionality};
 use crate::type_resolve::{ResolvedLocalType, ResolvedNamespaceType, TypeResolver};
-use crate::{ImportReference, TypeExport};
+use crate::{BffFileName, ImportReference, TypeExport};
 use std::collections::HashMap;
 use std::rc::Rc;
 use swc_atoms::JsWord;
@@ -23,7 +23,7 @@ use swc_ecma_ast::{
 
 pub struct TypeToSchema<'a, R: FileManager> {
     pub files: &'a mut R,
-    pub current_file: Rc<String>,
+    pub current_file: BffFileName,
     pub components: HashMap<String, Option<Definition>>,
     pub ref_stack: Vec<DiagnosticInformation>,
 }
@@ -38,7 +38,7 @@ fn extract_items_from_array(it: JsonSchema) -> JsonSchema {
 type Res<T> = Result<T, Diagnostic>;
 
 impl<'a, R: FileManager> TypeToSchema<'a, R> {
-    pub fn new(files: &'a mut R, current_file: Rc<String>) -> TypeToSchema<'a, R> {
+    pub fn new(files: &'a mut R, current_file: BffFileName) -> TypeToSchema<'a, R> {
         TypeToSchema {
             files,
             current_file,
@@ -134,7 +134,7 @@ impl<'a, R: FileManager> TypeToSchema<'a, R> {
     pub fn convert_resolved_export(
         &mut self,
         exported: &TypeExport,
-        from_file: &Rc<String>,
+        from_file: &BffFileName,
     ) -> Res<JsonSchema> {
         let store_current_file = self.current_file.clone();
         self.current_file = from_file.clone();
@@ -146,7 +146,7 @@ impl<'a, R: FileManager> TypeToSchema<'a, R> {
                 let file = self
                     .files
                     .get_or_fetch_file(&from_file)
-                    .and_then(|file| file.type_exports.get(word).map(|it| it.clone()));
+                    .and_then(|file| file.type_exports.get(word, self.files).map(|it| it.clone()));
                 match file {
                     Some(exported) => self.convert_resolved_export(exported.as_ref(), from_file)?,
                     None => todo!(),
@@ -277,7 +277,7 @@ impl<'a, R: FileManager> TypeToSchema<'a, R> {
                     loc_lo,
                 }
             }
-            None => DiagnosticInformation::UnknownFile {
+            None => DiagnosticInformation::UnfoundFile {
                 message: msg,
                 current_file: self.current_file.clone(),
             },
@@ -330,7 +330,12 @@ impl<'a, R: FileManager> TypeToSchema<'a, R> {
         let exported = self
             .files
             .get_or_fetch_file(&from_file.file_name)
-            .and_then(|module| module.type_exports.get(right).map(|it| it.clone()));
+            .and_then(|module| {
+                module
+                    .type_exports
+                    .get(right, self.files)
+                    .map(|it| it.clone())
+            });
         match exported {
             Some(exported) => Ok((exported, from_file.clone())),
             None => panic!(),

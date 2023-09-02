@@ -11,6 +11,7 @@ use bff_core::api_extractor::{self, ExtractResult, FileManager};
 use bff_core::diag::Diagnostic;
 use bff_core::emit::emit_module;
 use bff_core::printer::ToModule;
+use bff_core::BffFileName;
 use bff_core::ParsedModule;
 use log::Level;
 use parse_file::parse_file_content;
@@ -23,8 +24,8 @@ use wasm_bindgen::JsValue;
 use wasm_diag::WasmDiagnostic;
 
 struct Bundler {
-    pub files: HashMap<String, Rc<ParsedModule>>,
-    pub known_files: HashSet<String>,
+    pub files: HashMap<BffFileName, Rc<ParsedModule>>,
+    pub known_files: HashSet<BffFileName>,
 }
 
 impl Bundler {
@@ -84,12 +85,12 @@ pub fn update_file_content(file_name: &str, content: &str) {
 }
 
 struct LazyFileManager<'a> {
-    pub files: &'a mut HashMap<String, Rc<ParsedModule>>,
-    pub known_files: HashSet<String>,
+    pub files: &'a mut HashMap<BffFileName, Rc<ParsedModule>>,
+    pub known_files: HashSet<BffFileName>,
 }
 
 impl<'a> FileManager for LazyFileManager<'a> {
-    fn get_or_fetch_file(&mut self, file_name: &str) -> Option<Rc<ParsedModule>> {
+    fn get_or_fetch_file(&mut self, file_name: &BffFileName) -> Option<Rc<ParsedModule>> {
         if let Some(it) = self.files.get(file_name) {
             return Some(it.clone());
         }
@@ -99,14 +100,14 @@ impl<'a> FileManager for LazyFileManager<'a> {
         match res {
             Ok((f, imports)) => {
                 self.known_files.extend(imports);
-                self.files.insert(file_name.to_string(), f.clone());
+                self.files.insert(file_name.clone(), f.clone());
                 Some(f)
             }
             Err(_) => None,
         }
     }
 
-    fn get_existing_file(&self, name: &str) -> Option<Rc<ParsedModule>> {
+    fn get_existing_file(&self, name: &BffFileName) -> Option<Rc<ParsedModule>> {
         self.files.get(name).map(|opt| opt.clone())
     }
 }
@@ -121,7 +122,7 @@ fn run_extraction(file_name: &str) -> ExtractResult {
                 files: &mut b.files,
                 known_files,
             };
-            api_extractor::extract_schema(&mut man, Rc::new(entry_point))
+            api_extractor::extract_schema(&mut man, BffFileName::new(entry_point))
         })
     })
 }
@@ -145,12 +146,13 @@ fn bundle_to_diagnostics_inner(file_name: &str) -> WasmDiagnostic {
 }
 
 fn update_file_content_inner(file_name: &str, content: &str) {
-    let res = GLOBALS.set(&SWC_GLOBALS, || parse_file_content(file_name, content));
+    let file_name = BffFileName::new(file_name.to_string());
+    let res = GLOBALS.set(&SWC_GLOBALS, || parse_file_content(&file_name, content));
     match res {
         Ok((f, imports)) => BUNDLER.with(|b| {
             let mut b = b.borrow_mut();
             b.known_files.extend(imports);
-            b.files.insert(file_name.to_string(), f);
+            b.files.insert(file_name, f);
         }),
         Err(_) => {}
     }

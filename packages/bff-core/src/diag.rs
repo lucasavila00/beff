@@ -1,6 +1,8 @@
-use std::{rc::Rc, sync::Arc};
+use std::sync::Arc;
 
 use swc_common::{BytePos, Loc, SourceMap, Span};
+
+use crate::BffFileName;
 
 #[derive(Debug, Clone)]
 pub enum DiagnosticInfoMessage {
@@ -50,7 +52,7 @@ pub enum DiagnosticInfoMessage {
     TooManyParamsOnLibType,
     TwoDifferentTypesWithTheSameName,
     TemplateMustBeOfSingleString,
-    CannotFindFileWhenConvertingToSchema(String),
+    CannotFindFileWhenConvertingToSchema(BffFileName),
     CannotFindTypeExportWhenConvertingToSchema(String),
     NotAnObjectWithMethodKind,
     NotAnHttpMethod,
@@ -191,7 +193,8 @@ impl DiagnosticInfoMessage {
                 format!("Template must be of a single string")
             }
             DiagnosticInfoMessage::CannotFindFileWhenConvertingToSchema(f) => {
-                format!("Cannot find file '{f}' when converting to schema")
+                let name = f.0;
+                format!("Cannot find file '{name}' when converting to schema")
             }
             DiagnosticInfoMessage::CannotFindTypeExportWhenConvertingToSchema(exp) => {
                 format!("Cannot find type export '{exp}' when converting to schema")
@@ -231,13 +234,13 @@ impl DiagnosticParentMessage {
 pub enum DiagnosticInformation {
     KnownFile {
         message: DiagnosticInfoMessage,
-        file_name: Rc<String>,
+        file_name: BffFileName,
         loc_lo: Loc,
         loc_hi: Loc,
     },
-    UnknownFile {
+    UnfoundFile {
         message: DiagnosticInfoMessage,
-        current_file: Rc<String>,
+        current_file: BffFileName,
     },
 }
 
@@ -249,7 +252,7 @@ impl DiagnosticInformation {
                 cause: self,
                 related_information: None,
             },
-            DiagnosticInformation::UnknownFile { .. } => Diagnostic {
+            DiagnosticInformation::UnfoundFile { .. } => Diagnostic {
                 cause: self,
                 related_information: None,
                 message,

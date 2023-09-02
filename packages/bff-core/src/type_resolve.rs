@@ -3,13 +3,13 @@ use std::rc::Rc;
 use swc_ecma_ast::{Ident, TsInterfaceDecl, TsType};
 
 use crate::{
-    api_extractor::FileManager, diag::Diagnostic, ImportReference, ImportReferenceType,
-    ParsedModule, TypeExport,
+    api_extractor::FileManager, diag::Diagnostic, BffFileName, ImportReference,
+    ImportReferenceType, ParsedModule, TypeExport,
 };
 
 pub struct TypeResolver<'a, R: FileManager> {
     pub files: &'a mut R,
-    pub current_file: Rc<String>,
+    pub current_file: BffFileName,
 }
 
 pub enum ResolvedLocalType {
@@ -27,7 +27,7 @@ pub enum ResolvedNamespaceType {
 type Res<T> = Result<T, Diagnostic>;
 
 impl<'a, R: FileManager> TypeResolver<'a, R> {
-    pub fn new(files: &'a mut R, current_file: &Rc<String>) -> TypeResolver<'a, R> {
+    pub fn new(files: &'a mut R, current_file: &BffFileName) -> TypeResolver<'a, R> {
         TypeResolver {
             files,
             current_file: current_file.clone(),
@@ -43,7 +43,7 @@ impl<'a, R: FileManager> TypeResolver<'a, R> {
 
         if let Some(imported) = self.get_current_file().imports.get(k) {
             match imported.import_type {
-                ImportReferenceType::Named => panic!("cannot be used like that"),
+                ImportReferenceType::Named { .. } => panic!("cannot be used like that"),
                 ImportReferenceType::Star => {
                     return Ok(ResolvedNamespaceType::Star {
                         from_file: imported.clone(),
@@ -63,11 +63,14 @@ impl<'a, R: FileManager> TypeResolver<'a, R> {
             return Ok(ResolvedLocalType::TsInterfaceDecl(intf.clone()));
         }
         if let Some(imported) = self.get_current_file().imports.get(k) {
-            match imported.import_type {
-                ImportReferenceType::Named => {
+            match &imported.import_type {
+                ImportReferenceType::Named { orig } => {
                     let file = self.files.get_or_fetch_file(&imported.file_name);
-                    let exported =
-                        file.and_then(|file| file.type_exports.get(&i.sym).map(|it| it.clone()));
+                    let exported = file.and_then(|file| {
+                        file.type_exports
+                            .get(&orig, self.files)
+                            .map(|it| it.clone())
+                    });
                     match exported {
                         Some(exported) => {
                             return Ok(ResolvedLocalType::NamedImport {

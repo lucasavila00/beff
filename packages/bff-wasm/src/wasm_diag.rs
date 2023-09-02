@@ -34,7 +34,7 @@ impl WasmDiagnosticInformation {
                 line_hi: loc_hi.line,
                 col_hi: loc_hi.col.0,
             },
-            DiagnosticInformation::UnknownFile {
+            DiagnosticInformation::UnfoundFile {
                 message,
                 current_file,
             } => WasmDiagnosticInformation::UnknownFile {

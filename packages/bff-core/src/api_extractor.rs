@@ -6,7 +6,7 @@ use crate::open_api_ast::{
     ParameterObject,
 };
 use crate::type_to_schema::TypeToSchema;
-use crate::ParsedModule;
+use crate::{BffFileName, ParsedModule};
 use anyhow::anyhow;
 use anyhow::Result;
 use core::fmt;
@@ -142,13 +142,13 @@ pub struct FnHandler {
 }
 
 pub trait FileManager {
-    fn get_or_fetch_file(&mut self, name: &str) -> Option<Rc<ParsedModule>>;
-    fn get_existing_file(&self, name: &str) -> Option<Rc<ParsedModule>>;
+    fn get_or_fetch_file(&mut self, name: &BffFileName) -> Option<Rc<ParsedModule>>;
+    fn get_existing_file(&self, name: &BffFileName) -> Option<Rc<ParsedModule>>;
 }
 
 pub struct ExtractExportDefaultVisitor<'a, R: FileManager> {
     files: &'a mut R,
-    current_file: Rc<String>,
+    current_file: BffFileName,
     handlers: Vec<PathHandlerMap>,
     components: Vec<Definition>,
     found_default_export: bool,
@@ -156,7 +156,7 @@ pub struct ExtractExportDefaultVisitor<'a, R: FileManager> {
     info: open_api_ast::Info,
 }
 impl<'a, R: FileManager> ExtractExportDefaultVisitor<'a, R> {
-    fn new(files: &'a mut R, current_file: Rc<String>) -> ExtractExportDefaultVisitor<'a, R> {
+    fn new(files: &'a mut R, current_file: BffFileName) -> ExtractExportDefaultVisitor<'a, R> {
         ExtractExportDefaultVisitor {
             files,
             current_file,
@@ -222,7 +222,7 @@ impl<'a, R: FileManager> ExtractExportDefaultVisitor<'a, R> {
                     loc_hi,
                 }
             }
-            None => DiagnosticInformation::UnknownFile {
+            None => DiagnosticInformation::UnfoundFile {
                 message: msg,
                 current_file: self.current_file.clone(),
             },
@@ -512,12 +512,12 @@ impl<'a, R: FileManager> ExtractExportDefaultVisitor<'a, R> {
                     self.build_error(
                         &DUMMY_SP,
                         DiagnosticInfoMessage::CannotFindFileWhenConvertingToSchema(
-                            self.current_file.to_string(),
+                            self.current_file.clone(),
                         ),
                     )
                     .to_diag(None),
                 );
-                Err(anyhow!("cannot find file: {}", self.current_file))
+                Err(anyhow!("cannot find file: {}", self.current_file.0))
             }
         }
     }
@@ -1042,7 +1042,7 @@ struct EndpointToPath<'a, R: FileManager> {
     files: &'a mut R,
     errors: Vec<Diagnostic>,
     components: &'a Vec<Definition>,
-    current_file: Rc<String>,
+    current_file: BffFileName,
 }
 
 impl<'a, R: FileManager> EndpointToPath<'a, R> {
@@ -1067,7 +1067,7 @@ impl<'a, R: FileManager> EndpointToPath<'a, R> {
                 self.errors.push(err.to_diag(parent_msg));
             }
             None => {
-                let err = DiagnosticInformation::UnknownFile {
+                let err = DiagnosticInformation::UnfoundFile {
                     message: info_msg,
                     current_file: self.current_file.clone(),
                 };
@@ -1226,13 +1226,13 @@ pub struct ExtractResult {
     pub errors: Vec<Diagnostic>,
     pub open_api: OpenApi,
     pub components: Vec<Definition>,
-    pub entry_file_name: Rc<String>,
+    pub entry_file_name: BffFileName,
     pub handlers: Vec<PathHandlerMap>,
 }
 
 fn visit_extract<R: FileManager>(
     files: &mut R,
-    current_file: Rc<String>,
+    current_file: BffFileName,
 ) -> (Vec<PathHandlerMap>, Vec<Definition>, Vec<Diagnostic>, Info) {
     let mut visitor = ExtractExportDefaultVisitor::new(files, current_file.clone());
 
@@ -1240,7 +1240,7 @@ fn visit_extract<R: FileManager>(
 
     if !visitor.found_default_export {
         visitor.errors.push(
-            DiagnosticInformation::UnknownFile {
+            DiagnosticInformation::UnfoundFile {
                 message: DiagnosticInfoMessage::CouldNotFindDefaultExport,
                 current_file: current_file.clone(),
             }
@@ -1256,7 +1256,10 @@ fn visit_extract<R: FileManager>(
     )
 }
 
-pub fn extract_schema<R: FileManager>(files: &mut R, entry_file_name: Rc<String>) -> ExtractResult {
+pub fn extract_schema<R: FileManager>(
+    files: &mut R,
+    entry_file_name: BffFileName,
+) -> ExtractResult {
     let (handlers, components, errors, info) = visit_extract(files, entry_file_name.clone());
 
     let mut transformer = EndpointToPath {
