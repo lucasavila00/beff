@@ -1,0 +1,14 @@
+{
+  "name": "bff",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "build": "pnpm run -r build",
+    "test": "pnpm run -r test",
+    "all": "pnpm run build && pnpm run test"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC"
+}
