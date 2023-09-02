@@ -152,6 +152,7 @@ impl<'a, R: FileManager> TypeToSchema<'a, R> {
                     None => todo!(),
                 }
             }
+            TypeExport::TsNamespaceDecl(_) => todo!(),
         };
         self.current_file = store_current_file;
         Ok(ty)
@@ -343,6 +344,7 @@ impl<'a, R: FileManager> TypeToSchema<'a, R> {
                     TypeExport::TsInterfaceDecl(it) => it.id.sym.to_string(),
                     TypeExport::StarOfOtherFile(_) => right.to_string(),
                     TypeExport::SomethingOfOtherFile(that, _) => that.to_string(),
+                    TypeExport::TsNamespaceDecl(_) => todo!(),
                 };
                 Ok((exported, from_file.clone(), name))
             }
@@ -369,6 +371,7 @@ impl<'a, R: FileManager> TypeToSchema<'a, R> {
                         self.get_qualified_type_from_file(other_file, &q.right.sym)
                     }
                     TypeExport::SomethingOfOtherFile(_, _) => todo!(),
+                    TypeExport::TsNamespaceDecl(_) => todo!(),
                 }
             }
             TsEntityName::Ident(i) => {

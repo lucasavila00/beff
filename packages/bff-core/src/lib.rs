@@ -45,6 +45,7 @@ pub enum TypeExport {
     TsInterfaceDecl(Rc<TsInterfaceDecl>),
     StarOfOtherFile(Rc<ImportReference>),
     SomethingOfOtherFile(JsWord, BffFileName),
+    TsNamespaceDecl(Rc<ParsedTsNamespace>),
 }
 
 pub struct BffModuleData {
@@ -91,7 +92,7 @@ impl ImportReference {
         }
     }
 }
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct TypeExportsModule {
     named: HashMap<JsWord, Rc<TypeExport>>,
     extends: Vec<BffFileName>,
@@ -133,7 +134,7 @@ pub struct ParsedModule {
     pub type_exports: TypeExportsModule,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct ParsedTsNamespace {
     pub type_exports: TypeExportsModule,
 }
@@ -287,12 +288,25 @@ impl<'a, R: ImportResolver> Visit for ImportsVisitor<'a, R> {
                     }),
                 );
             }
-            Decl::Using(_)
-            | Decl::Class(_)
-            | Decl::Fn(_)
-            | Decl::TsEnum(_)
-            | Decl::TsModule(_)
-            | Decl::Var(_) => {}
+            Decl::TsModule(d) => {
+                let TsModuleDecl { id, body, .. } = &**d;
+
+                let name = match id {
+                    TsModuleName::Ident(id) => id.sym.clone(),
+                    TsModuleName::Str(_) => todo!(),
+                };
+
+                let mut visitor =
+                    ImportsVisitor::from_file(self.current_file.clone(), self.resolver);
+                if let Some(body) = &body {
+                    visitor.visit_ts_namespace_body(&body);
+                }
+                let type_exports = visitor.type_exports;
+                let ns = Rc::new(ParsedTsNamespace { type_exports });
+                self.type_exports
+                    .insert(name.clone(), Rc::new(TypeExport::TsNamespaceDecl(ns)));
+            }
+            Decl::Using(_) | Decl::Class(_) | Decl::Fn(_) | Decl::TsEnum(_) | Decl::Var(_) => {}
         }
     }
 

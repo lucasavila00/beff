@@ -49,6 +49,21 @@ function validate_A(input) {
     }
     return error_acc_0;
 }
+function validate_B(input) {
+    let error_acc_0 = [];
+    if (typeof input != "number") {
+        error_acc_0.push({
+            "kind": [
+                "NotTypeof",
+                "number"
+            ],
+            "path": [
+                "B"
+            ]
+        });
+    }
+    return error_acc_0;
+}
 const meta = {
     "handlersMeta": [
         {
@@ -89,6 +104,22 @@ const meta = {
                 ]));
                 return error_acc_0;
             }
+        },
+        {
+            "method_kind": "get",
+            "params": [
+                {
+                    "type": "context"
+                }
+            ],
+            "pattern": "/hello2",
+            "return_validator": function(input) {
+                let error_acc_0 = [];
+                error_acc_0.push(...add_path_to_errors(validate_B(input), [
+                    "[GET] /hello2.response_body"
+                ]));
+                return error_acc_0;
+            }
         }
     ],
     "schema": {
@@ -123,6 +154,23 @@ const meta = {
                         }
                     }
                 }
+            },
+            "/hello2": {
+                "get": {
+                    "parameters": [],
+                    "responses": {
+                        "200": {
+                            "description": "successful operation",
+                            "content": {
+                                "application/json": {
+                                    "schema": {
+                                        "$ref": "#/components/schemas/B"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
             }
         },
         "components": {
@@ -131,6 +179,9 @@ const meta = {
                     "type": "object",
                     "required": [],
                     "properties": {}
+                },
+                "B": {
+                    "type": "number"
                 }
             }
         }

@@ -66,6 +66,9 @@ impl<'a, R: FileManager> TypeResolver<'a, R> {
                             TypeExport::TsType { .. } => todo!(),
                             TypeExport::TsInterfaceDecl(_) => todo!(),
                             TypeExport::SomethingOfOtherFile(_, _) => todo!(),
+                            TypeExport::TsNamespaceDecl(ns) => {
+                                return Ok(ResolvedNamespaceType::TsNamespace(ns.clone()))
+                            }
                         },
                         None => todo!(),
                     }

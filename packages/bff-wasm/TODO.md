@@ -2,8 +2,6 @@
 
 ## BFF Core
 
-- [ ] export the namespace
-
 - [ ] 422 in schema
 
 - [ ] export decoders
@@ -34,3 +32,8 @@
 - [ ] assert header etc is imported from lib
 
 - [ ] future tuple args
+
+```
+const x = ["a", "b", "c"] as const;
+type X = (typeof x)[number]
+```
