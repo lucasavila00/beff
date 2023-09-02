@@ -169,11 +169,47 @@ const meta = {
                     "parameters": [],
                     "responses": {
                         "200": {
-                            "description": "successful operation",
+                            "description": "Successful Operation",
                             "content": {
                                 "application/json": {
                                     "schema": {
                                         "$ref": "#/components/schemas/UserEntityOriginal"
+                                    }
+                                }
+                            }
+                        },
+                        "422": {
+                            "description": "There was an error in the passed parameters",
+                            "content": {
+                                "application/json": {
+                                    "schema": {
+                                        "type": "object",
+                                        "required": [
+                                            "message"
+                                        ],
+                                        "properties": {
+                                            "message": {
+                                                "type": "string"
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        },
+                        "default": {
+                            "description": "Unexpected Error",
+                            "content": {
+                                "application/json": {
+                                    "schema": {
+                                        "type": "object",
+                                        "required": [
+                                            "message"
+                                        ],
+                                        "properties": {
+                                            "message": {
+                                                "type": "string"
+                                            }
+                                        }
                                     }
                                 }
                             }
@@ -184,11 +220,47 @@ const meta = {
                     "parameters": [],
                     "responses": {
                         "200": {
-                            "description": "successful operation",
+                            "description": "Successful Operation",
                             "content": {
                                 "application/json": {
                                     "schema": {
                                         "$ref": "#/components/schemas/Abc123"
+                                    }
+                                }
+                            }
+                        },
+                        "422": {
+                            "description": "There was an error in the passed parameters",
+                            "content": {
+                                "application/json": {
+                                    "schema": {
+                                        "type": "object",
+                                        "required": [
+                                            "message"
+                                        ],
+                                        "properties": {
+                                            "message": {
+                                                "type": "string"
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        },
+                        "default": {
+                            "description": "Unexpected Error",
+                            "content": {
+                                "application/json": {
+                                    "schema": {
+                                        "type": "object",
+                                        "required": [
+                                            "message"
+                                        ],
+                                        "properties": {
+                                            "message": {
+                                                "type": "string"
+                                            }
+                                        }
                                     }
                                 }
                             }
@@ -199,11 +271,47 @@ const meta = {
                     "parameters": [],
                     "responses": {
                         "200": {
-                            "description": "successful operation",
+                            "description": "Successful Operation",
                             "content": {
                                 "application/json": {
                                     "schema": {
                                         "$ref": "#/components/schemas/Def"
+                                    }
+                                }
+                            }
+                        },
+                        "422": {
+                            "description": "There was an error in the passed parameters",
+                            "content": {
+                                "application/json": {
+                                    "schema": {
+                                        "type": "object",
+                                        "required": [
+                                            "message"
+                                        ],
+                                        "properties": {
+                                            "message": {
+                                                "type": "string"
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        },
+                        "default": {
+                            "description": "Unexpected Error",
+                            "content": {
+                                "application/json": {
+                                    "schema": {
+                                        "type": "object",
+                                        "required": [
+                                            "message"
+                                        ],
+                                        "properties": {
+                                            "message": {
+                                                "type": "string"
+                                            }
+                                        }
                                     }
                                 }
                             }
@@ -214,11 +322,47 @@ const meta = {
                     "parameters": [],
                     "responses": {
                         "200": {
-                            "description": "successful operation",
+                            "description": "Successful Operation",
                             "content": {
                                 "application/json": {
                                     "schema": {
                                         "$ref": "#/components/schemas/XYZ"
+                                    }
+                                }
+                            }
+                        },
+                        "422": {
+                            "description": "There was an error in the passed parameters",
+                            "content": {
+                                "application/json": {
+                                    "schema": {
+                                        "type": "object",
+                                        "required": [
+                                            "message"
+                                        ],
+                                        "properties": {
+                                            "message": {
+                                                "type": "string"
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        },
+                        "default": {
+                            "description": "Unexpected Error",
+                            "content": {
+                                "application/json": {
+                                    "schema": {
+                                        "type": "object",
+                                        "required": [
+                                            "message"
+                                        ],
+                                        "properties": {
+                                            "message": {
+                                                "type": "string"
+                                            }
+                                        }
                                     }
                                 }
                             }

@@ -88,11 +88,47 @@ const meta = {
                     ],
                     "responses": {
                         "200": {
-                            "description": "successful operation",
+                            "description": "Successful Operation",
                             "content": {
                                 "application/json": {
                                     "schema": {
                                         "$ref": "#/components/schemas/User"
+                                    }
+                                }
+                            }
+                        },
+                        "422": {
+                            "description": "There was an error in the passed parameters",
+                            "content": {
+                                "application/json": {
+                                    "schema": {
+                                        "type": "object",
+                                        "required": [
+                                            "message"
+                                        ],
+                                        "properties": {
+                                            "message": {
+                                                "type": "string"
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        },
+                        "default": {
+                            "description": "Unexpected Error",
+                            "content": {
+                                "application/json": {
+                                    "schema": {
+                                        "type": "object",
+                                        "required": [
+                                            "message"
+                                        ],
+                                        "properties": {
+                                            "message": {
+                                                "type": "string"
+                                            }
+                                        }
                                     }
                                 }
                             }

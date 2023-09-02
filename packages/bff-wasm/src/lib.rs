@@ -9,9 +9,8 @@ use anyhow::anyhow;
 use anyhow::Result;
 use bff_core::api_extractor::{self, ExtractResult, FileManager};
 use bff_core::diag::Diagnostic;
-use bff_core::emit::emit_module;
 use bff_core::parse_file_content;
-use bff_core::printer::ToModule;
+use bff_core::printer::ToWritableModules;
 use bff_core::BffFileName;
 use bff_core::ParsedModule;
 use log::Level;
@@ -137,7 +136,7 @@ fn print_errors(errors: Vec<Diagnostic>) {
 fn bundle_to_string_inner(file_name: &str) -> Result<String> {
     let res = run_extraction(file_name);
     if res.errors.is_empty() {
-        return emit_module(&res.to_module());
+        return Ok(res.to_module()?.js_server_data);
     }
     print_errors(res.errors);
     Err(anyhow!("Failed to bundle"))

@@ -87,9 +87,9 @@ impl<'a, R: FileManager> TypeToSchema<'a, R> {
                     Some(val) => {
                         let value = self.convert_ts_type(&val.type_ann)?;
                         let value = if prop.optional {
-                            Optionality::Optional(value)
+                            value.optional()
                         } else {
-                            Optionality::Required(value)
+                            value.required()
                         };
                         Ok((key, value))
                     }

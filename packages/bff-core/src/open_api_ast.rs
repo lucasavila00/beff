@@ -86,6 +86,15 @@ pub enum JsonSchema {
     Const(Json),
 }
 
+impl JsonSchema {
+    pub fn required(self) -> Optionality<JsonSchema> {
+        Optionality::Required(self)
+    }
+    pub fn optional(self) -> Optionality<JsonSchema> {
+        Optionality::Optional(self)
+    }
+}
+
 #[derive(Debug)]
 pub struct Info {
     pub title: Option<String>,

@@ -1,3 +1,4 @@
+use anyhow::Result;
 use swc_common::DUMMY_SP;
 use swc_ecma_ast::{
     ArrayLit, BindingIdent, Bool, Decl, Expr, ExprOrSpread, FnDecl, FnExpr, Ident, KeyValueProp,
@@ -10,6 +11,7 @@ use crate::api_extractor::{
     HandlerParameter, HeaderOrCookie, ParsedPattern, PathHandlerMap,
 };
 use crate::decoder;
+use crate::emit::emit_module;
 use crate::open_api_ast::{self, Definition, Js, Json, JsonSchema, OpenApi};
 
 pub trait ToExpr {
@@ -201,6 +203,28 @@ impl ToJson for open_api_ast::JsonRequestBody {
         Json::Object(v)
     }
 }
+fn error_response_schema() -> JsonSchema {
+    JsonSchema::Object {
+        values: vec![("message".to_string(), JsonSchema::String.required())],
+    }
+}
+
+fn error_response(code: &str, description: &str) -> (String, Json) {
+    (
+        code.into(),
+        Json::Object(vec![
+            ("description".into(), Json::String(description.into())),
+            (
+                "content".into(),
+                Json::Object(vec![(
+                    "application/json".into(),
+                    Json::Object(vec![("schema".into(), error_response_schema().to_json())]),
+                )]),
+            ),
+        ]),
+    )
+}
+
 impl ToJson for open_api_ast::OperationObject {
     fn to_json(self) -> Json {
         let mut v = vec![];
@@ -219,25 +243,29 @@ impl ToJson for open_api_ast::OperationObject {
         ));
         v.push((
             "responses".into(),
-            Json::Object(vec![(
-                "200".into(),
-                Json::Object(vec![
-                    (
-                        "description".into(),
-                        Json::String("successful operation".into()),
-                    ),
-                    (
-                        "content".into(),
-                        Json::Object(vec![(
-                            "application/json".into(),
+            Json::Object(vec![
+                (
+                    "200".into(),
+                    Json::Object(vec![
+                        (
+                            "description".into(),
+                            Json::String("Successful Operation".into()),
+                        ),
+                        (
+                            "content".into(),
                             Json::Object(vec![(
-                                "schema".into(),
-                                self.json_response_body.to_json(),
+                                "application/json".into(),
+                                Json::Object(vec![(
+                                    "schema".into(),
+                                    self.json_response_body.to_json(),
+                                )]),
                             )]),
-                        )]),
-                    ),
-                ]),
-            )]),
+                        ),
+                    ]),
+                ),
+                error_response("422", "There was an error in the passed parameters"),
+                error_response("default", "Unexpected Error"),
+            ]),
         ));
 
         Json::Object(v)
@@ -519,12 +547,22 @@ fn js_to_expr(file_name: &str, it: Js, components: &Vec<Definition>) -> Expr {
     }
 }
 
-pub trait ToModule {
-    fn to_module(self) -> Module;
+pub struct WritableModules {
+    pub js_server_data: String,
+}
+impl WritableModules {
+    pub fn new(module: String) -> WritableModules {
+        WritableModules {
+            js_server_data: module,
+        }
+    }
+}
+pub trait ToWritableModules {
+    fn to_module(self) -> Result<WritableModules>;
 }
 
-impl ToModule for ExtractResult {
-    fn to_module(self) -> Module {
+impl ToWritableModules for ExtractResult {
+    fn to_module(self) -> Result<WritableModules> {
         let mut body = vec![];
         for comp in &self.open_api.components {
             let name = format!("validate_{}", comp.name);
@@ -555,10 +593,11 @@ impl ToModule for ExtractResult {
         let meta = Builder::const_decl("meta", meta_expr);
         body.push(meta);
 
-        Module {
+        let module = Module {
             span: DUMMY_SP,
             body,
             shebang: None,
-        }
+        };
+        Ok(WritableModules::new(emit_module(&module)?))
     }
 }
