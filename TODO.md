@@ -2,10 +2,9 @@
 
 ## BFF Core
 
-- [ ] export decoders
-- [ ] string formats (uuid, email)
+- [ ] decoder error message must be available in the generated code => how to avoid duplicating it in the runtime?
 
-- [ ] remove hono runtime from export, build it as separate package
+- [ ] string formats (uuid, email)
 
 - [ ] clap descriptions of params
 - [ ] snapshots of both esm and cjs generation

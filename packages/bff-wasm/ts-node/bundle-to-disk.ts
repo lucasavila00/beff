@@ -4,7 +4,7 @@ import { Bundler, WritableModules } from "./bundler";
 import { ProjectJson, ProjectModule } from "./project";
 
 const RUNTIME_DTS = `
-import {JSONSchema7, HandlerMeta} from "bff-types";
+import {JSONSchema7, HandlerMeta, DecodeError} from "bff-types";
 export declare const meta: HandlerMeta[];
 export declare const schema: JSONSchema7;
 
@@ -12,6 +12,11 @@ export declare const schema: JSONSchema7;
 type Decoders<T> = {
   [K in keyof T]: {
     parse: (input: any) => T[K];
+    safeParse: (
+      input: any
+    ) =>
+      | { success: true; data: T[K] }
+      | { success: false; errors: DecodeError[] };
   };
 };
 export declare const buildParsers: <T>() => Decoders<T>;
@@ -62,16 +67,23 @@ function buildParsers() {
   let decoders ={};
   Object.keys(buildParsersInput).forEach(k => {
     let v = buildParsersInput[k];
-    decoders[k] = {
-      parse: (input) => {
-        const validation_result = v(input);
-        if (validation_result.length === 0) {
-          return input;
-        }
-        // TODO: throw a pretty error message
-        throw validation_result
+    const safeParse = (input) => {
+      const validation_result = v(input);
+      if (validation_result.length === 0) {
+        return { success: true, data: input };
       }
+      return { success: false, errors: validation_result };
     }
+    const parse = (input) => {
+      const safe = safeParse(input);
+      if (safe.success) {
+        return safe.data;
+      }
+      throw new Error(JSON.stringify(safe.errors));
+    };
+    decoders[k] = {
+      parse, safeParse
+    };
   });
   return decoders;
 }

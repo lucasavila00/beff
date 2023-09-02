@@ -130,16 +130,23 @@ function buildParsers() {
   let decoders ={};
   Object.keys(buildParsersInput).forEach(k => {
     let v = buildParsersInput[k];
-    decoders[k] = {
-      parse: (input) => {
-        const validation_result = v(input);
-        if (validation_result.length === 0) {
-          return input;
-        }
-        // TODO: throw a pretty error message
-        throw validation_result
+    const safeParse = (input) => {
+      const validation_result = v(input);
+      if (validation_result.length === 0) {
+        return { success: true, data: input };
       }
+      return { success: false, errors: validation_result };
     }
+    const parse = (input) => {
+      const safe = safeParse(input);
+      if (safe.success) {
+        return safe.data;
+      }
+      throw new Error(JSON.stringify(safe.errors));
+    };
+    decoders[k] = {
+      parse, safeParse
+    };
   });
   return decoders;
 }
