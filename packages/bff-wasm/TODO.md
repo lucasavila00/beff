@@ -5,7 +5,6 @@
 - [ ] qualified import type
 
 ```ts
-export * as name1 from "module-name";
 export { import1 as name1 } from "module-name";
 
 // import 2, everything with 2

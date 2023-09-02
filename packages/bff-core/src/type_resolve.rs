@@ -72,7 +72,7 @@ impl<'a, R: FileManager> TypeResolver<'a, R> {
                 ImportReference::Default { .. } => panic!(),
             }
         }
-        todo!()
+        panic!()
     }
     pub fn resolve_local_type(&mut self, i: &Ident) -> Res<ResolvedLocalType> {
         let k = &(i.sym.clone(), i.span.ctxt);
@@ -101,10 +101,10 @@ impl<'a, R: FileManager> TypeResolver<'a, R> {
                         None => todo!(),
                     }
                 }
-                ImportReference::Star { .. } => panic!("cannot be used like that"),
-                ImportReference::Default { .. } => panic!("cannot be used like that"),
+                ImportReference::Star { .. } => panic!(),
+                ImportReference::Default { .. } => panic!(),
             }
         }
-        todo!()
+        panic!()
     }
 }

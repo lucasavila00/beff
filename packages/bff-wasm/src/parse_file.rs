@@ -134,6 +134,7 @@ impl Visit for ImportsVisitor {
                 //
                 for s in &n.specifiers {
                     match s {
+                        ExportSpecifier::Default(_) => todo!(),
                         ExportSpecifier::Namespace(ExportNamespaceSpecifier { name, .. }) => {
                             match name {
                                 ModuleExportName::Ident(id) => {
@@ -151,18 +152,25 @@ impl Visit for ImportsVisitor {
                                 ModuleExportName::Str(_) => todo!(),
                             }
                         }
-                        ExportSpecifier::Default(_) => todo!(),
                         ExportSpecifier::Named(ExportNamedSpecifier { orig, exported, .. }) => {
-                            assert!(exported.is_none());
-                            let file_name = self.resolve_import(&src.value).unwrap();
                             match orig {
-                                ModuleExportName::Ident(id) => self.type_exports.insert(
-                                    id.sym.clone(),
-                                    Rc::new(TypeExport::SomethingOfOtherFile(
-                                        id.sym.clone(),
-                                        file_name.clone(),
-                                    )),
-                                ),
+                                ModuleExportName::Ident(id) => {
+                                    let name = match exported {
+                                        Some(it) => match it {
+                                            ModuleExportName::Ident(ex) => ex.sym.clone(),
+                                            ModuleExportName::Str(_) => todo!(),
+                                        },
+                                        None => id.sym.clone(),
+                                    };
+                                    let file_name = self.resolve_import(&src.value).unwrap();
+                                    self.type_exports.insert(
+                                        name,
+                                        Rc::new(TypeExport::SomethingOfOtherFile(
+                                            id.sym.clone(),
+                                            file_name.clone(),
+                                        )),
+                                    )
+                                }
                                 ModuleExportName::Str(_) => todo!(),
                             };
                         }

@@ -1,3 +1,3 @@
-export interface UserEntity {
+export interface UserEntityOriginal {
   id: string;
 }
