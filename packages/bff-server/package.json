@@ -1,5 +1,5 @@
 {
-  "name": "bff-runtime",
+  "name": "bff-server",
   "version": "1.0.0",
   "description": "",
   "main": "dist/index.js",
@@ -10,7 +10,7 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "bff": "workspace:^1.0.0",
+    "bff-types": "workspace:^1.0.0",
     "typescript": "^5.2.2"
   }
 }

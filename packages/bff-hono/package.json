@@ -12,8 +12,11 @@
   "dependencies": {
     "bff": "workspace:^1.0.0",
     "bff-client": "workspace:^1.0.0",
-    "bff-runtime": "workspace:^1.0.0",
-    "hono": "^3.5.6",
+    "bff-server": "workspace:^1.0.0",
+    "bff-types": "workspace:^1.0.0",
+    "hono": "^3.5.6"
+  },
+  "devDependencies": {
     "typescript": "^5.2.2"
   }
 }

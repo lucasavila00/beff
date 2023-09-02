@@ -1,4 +1,4 @@
-import { DecodeError, DecodeErrorKind } from "bff";
+import { DecodeError, DecodeErrorKind } from "bff-types";
 
 export const template = `
 <!DOCTYPE html>

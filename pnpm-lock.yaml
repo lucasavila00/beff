@@ -2,35 +2,51 @@ lockfileVersion: 5.4
 
 importers:
 
+  .:
+    specifiers: {}
+
+  packages/bff:
+    specifiers:
+      hono: ^3.5.6
+    dependencies:
+      hono: 3.5.6
+
   packages/bff-client:
     specifiers:
       bff: workspace:^1.0.0
+      bff-types: workspace:^1.0.0
       typescript: ^5.2.2
     dependencies:
       bff: link:../bff
+      bff-types: link:../bff-types
       typescript: 5.2.2
 
   packages/bff-hono:
     specifiers:
       bff: workspace:^1.0.0
       bff-client: workspace:^1.0.0
-      bff-runtime: workspace:^1.0.0
+      bff-server: workspace:^1.0.0
+      bff-types: workspace:^1.0.0
       hono: ^3.5.6
       typescript: ^5.2.2
     dependencies:
       bff: link:../bff
       bff-client: link:../bff-client
-      bff-runtime: link:../bff-runtime
+      bff-server: link:../bff-server
+      bff-types: link:../bff-types
       hono: 3.5.6
       typescript: 5.2.2
 
-  packages/bff-runtime:
+  packages/bff-server:
     specifiers:
-      bff: workspace:^1.0.0
+      bff-types: workspace:^1.0.0
       typescript: ^5.2.2
     dependencies:
-      bff: link:../bff
+      bff-types: link:../bff-types
       typescript: 5.2.2
+
+  packages/bff-types:
+    specifiers: {}
 
   packages/bff-wasm:
     specifiers:
@@ -40,6 +56,7 @@ importers:
       '@types/vscode': ^1.81.0
       bff: workspace:^1.0.0
       bff-hono: workspace:^1.0.0
+      bff-types: workspace:^1.0.0
       chalk: ^4.1.2
       commander: ^11.0.0
       esbuild: ^0.19.2
@@ -47,14 +64,15 @@ importers:
       typescript: ^5.2.2
       vitest: ^0.34.3
     dependencies:
-      bff: link:../bff
-      bff-hono: link:../bff-hono
+      bff-types: link:../bff-types
       chalk: 4.1.2
     devDependencies:
       '@babel/code-frame': 7.22.13
       '@types/babel__code-frame': 7.0.3
       '@types/node': 20.5.8
       '@types/vscode': 1.81.0
+      bff: link:../bff
+      bff-hono: link:../bff-hono
       commander: 11.0.0
       esbuild: 0.19.2
       hono: 3.5.6

@@ -26,15 +26,16 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
+    "bff-types": "workspace:^1.0.0",
     "chalk": "^4.1.2"
   },
   "devDependencies": {
-    "bff": "workspace:^1.0.0",
-    "bff-hono": "workspace:^1.0.0",
     "@babel/code-frame": "^7.22.13",
     "@types/babel__code-frame": "^7.0.3",
     "@types/node": "^20.5.7",
     "@types/vscode": "^1.81.0",
+    "bff": "workspace:^1.0.0",
+    "bff-hono": "workspace:^1.0.0",
     "commander": "^11.0.0",
     "esbuild": "^0.19.2",
     "hono": "^3.5.6",

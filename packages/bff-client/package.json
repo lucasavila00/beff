@@ -10,7 +10,9 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "bff": "workspace:^1.0.0",
+    "bff-types": "workspace:^1.0.0"
+  },
+  "devDependencies": {
     "typescript": "^5.2.2"
   }
 }

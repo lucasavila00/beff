@@ -2,8 +2,6 @@
 
 ## BFF Core
 
-- [ ] fix skipped tests
-
 - [ ] 422 in schema
 
   - [ ] Reusing Responses
@@ -41,3 +39,5 @@
 const x = ["a", "b", "c"] as const;
 type X = (typeof x)[number]
 ```
+
+- [ ] fix skipped tests => eslint to catch these?
