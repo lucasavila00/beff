@@ -5,7 +5,8 @@ type User = {
   age: number;
 };
 
-export const { User } = buildParsers<{ User: User }>();
+export const { User, Users } = buildParsers<{ User: User; Users: User[] }>();
+
 type Ctx = any;
 export default {
   [`/{name}`]: {

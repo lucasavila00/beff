@@ -1,5 +1,7 @@
 use core::fmt;
 
+use swc_ecma_ast::Expr;
+
 #[derive(Debug, PartialEq, Eq, Clone)]
 pub enum Optionality<T> {
     Optional(T),
@@ -87,9 +89,24 @@ pub enum Js {
         schema: JsonSchema,
     },
     Coercer(JsonSchema),
+    Expr(Expr),
+}
+
+fn resolve_schema(schema: JsonSchema, components: &Vec<Definition>) -> JsonSchema {
+    match schema {
+        JsonSchema::Ref(name) => match components.iter().find(|it| it.name == name) {
+            Some(def) => resolve_schema(def.schema.clone(), components),
+            None => panic!(),
+        },
+        _ => schema,
+    }
 }
 
 impl Js {
+    pub fn coercer(schema: JsonSchema, components: &Vec<Definition>) -> Self {
+        Self::Coercer(resolve_schema(schema, components))
+    }
+
     pub fn named_decoder(name: String, schema: JsonSchema) -> Self {
         Self::Decoder {
             name_on_errors: Some(name),

@@ -44,7 +44,8 @@ function validate_A(input) {
             "error_kind": "NotAnObject",
             "path": [
                 "A"
-            ]
+            ],
+            "received": input
         });
     }
     return error_acc_0;
@@ -54,10 +55,11 @@ function validate_B(input) {
     if (typeof input != "number") {
         error_acc_0.push({
             "error_kind": "NotTypeof",
-            "expected_type": "number",
             "path": [
                 "B"
-            ]
+            ],
+            "received": input,
+            "expected_type": "number"
         });
     }
     return error_acc_0;
@@ -78,10 +80,11 @@ const meta = [
                     if (typeof input != "string") {
                         error_acc_0.push({
                             "error_kind": "NotTypeof",
-                            "expected_type": "string",
                             "path": [
                                 'Path Parameter "id"'
-                            ]
+                            ],
+                            "received": input,
+                            "expected_type": "string"
                         });
                     }
                     return error_acc_0;

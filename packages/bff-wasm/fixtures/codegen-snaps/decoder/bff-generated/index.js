@@ -43,11 +43,12 @@ function validate_ChildUser(input) {
         if (typeof input["id"] != "string") {
             error_acc_0.push({
                 "error_kind": "NotTypeof",
-                "expected_type": "string",
                 "path": [
                     "ChildUser",
                     "id"
-                ]
+                ],
+                "received": input["id"],
+                "expected_type": "string"
             });
         }
         error_acc_0.push(...add_path_to_errors(validate_User(input["user"]), [
@@ -59,7 +60,8 @@ function validate_ChildUser(input) {
             "error_kind": "NotAnObject",
             "path": [
                 "ChildUser"
-            ]
+            ],
+            "received": input
         });
     }
     return error_acc_0;
@@ -70,31 +72,34 @@ function validate_User(input) {
         if (typeof input["a"] != "string") {
             error_acc_0.push({
                 "error_kind": "NotTypeof",
-                "expected_type": "string",
                 "path": [
                     "User",
                     "a"
-                ]
+                ],
+                "received": input["a"],
+                "expected_type": "string"
             });
         }
         if (typeof input["b"] != "number") {
             error_acc_0.push({
                 "error_kind": "NotTypeof",
-                "expected_type": "number",
                 "path": [
                     "User",
                     "b"
-                ]
+                ],
+                "received": input["b"],
+                "expected_type": "number"
             });
         }
         if (typeof input["c"] != "boolean") {
             error_acc_0.push({
                 "error_kind": "NotTypeof",
-                "expected_type": "boolean",
                 "path": [
                     "User",
                     "c"
-                ]
+                ],
+                "received": input["c"],
+                "expected_type": "boolean"
             });
         }
         if (Array.isArray(input["c2"])) {
@@ -102,12 +107,13 @@ function validate_User(input) {
                 if (typeof array_item_1 != "boolean") {
                     error_acc_0.push({
                         "error_kind": "NotTypeof",
-                        "expected_type": "boolean",
                         "path": [
                             "User",
                             "c2",
                             "[]"
-                        ]
+                        ],
+                        "received": array_item_1,
+                        "expected_type": "boolean"
                     });
                 }
             }
@@ -117,7 +123,8 @@ function validate_User(input) {
                 "path": [
                     "User",
                     "c2"
-                ]
+                ],
+                "received": input["c2"]
             });
         }
         if (Array.isArray(input["d"])) {
@@ -134,7 +141,8 @@ function validate_User(input) {
                 "path": [
                     "User",
                     "d"
-                ]
+                ],
+                "received": input["d"]
             });
         }
         if (input["childUser"] != null) {
@@ -162,7 +170,8 @@ function validate_User(input) {
                     "path": [
                         "User",
                         "thisUser2"
-                    ]
+                    ],
+                    "received": input["thisUser2"]
                 });
             }
         }
@@ -171,11 +180,12 @@ function validate_User(input) {
         if (typeof input["union"] != "string") {
             error_acc_4.push({
                 "error_kind": "NotTypeof",
-                "expected_type": "string",
                 "path": [
                     "User",
                     "union"
-                ]
+                ],
+                "received": input["union"],
+                "expected_type": "string"
             });
         }
         is_ok_3 = is_ok_3 || error_acc_4.length === 0;
@@ -183,11 +193,12 @@ function validate_User(input) {
         if (typeof input["union"] != "number") {
             error_acc_5.push({
                 "error_kind": "NotTypeof",
-                "expected_type": "number",
                 "path": [
                     "User",
                     "union"
-                ]
+                ],
+                "received": input["union"],
+                "expected_type": "number"
             });
         }
         is_ok_3 = is_ok_3 || error_acc_5.length === 0;
@@ -197,7 +208,8 @@ function validate_User(input) {
                 "path": [
                     "User",
                     "union"
-                ]
+                ],
+                "received": input["union"]
             });
         }
         let is_ok_6 = false;
@@ -216,7 +228,8 @@ function validate_User(input) {
                 "path": [
                     "User",
                     "unionWithNull"
-                ]
+                ],
+                "received": input["unionWithNull"]
             });
         }
         is_ok_6 = is_ok_6 || error_acc_7.length === 0;
@@ -224,11 +237,12 @@ function validate_User(input) {
         if (typeof input["unionWithNull"] != "number") {
             error_acc_9.push({
                 "error_kind": "NotTypeof",
-                "expected_type": "number",
                 "path": [
                     "User",
                     "unionWithNull"
-                ]
+                ],
+                "received": input["unionWithNull"],
+                "expected_type": "number"
             });
         }
         is_ok_6 = is_ok_6 || error_acc_9.length === 0;
@@ -236,11 +250,12 @@ function validate_User(input) {
         if (input["unionWithNull"] != null) {
             error_acc_10.push({
                 "error_kind": "NotEq",
-                "expected_value": null,
                 "path": [
                     "User",
                     "unionWithNull"
-                ]
+                ],
+                "received": input["unionWithNull"],
+                "expected_value": null
             });
         }
         is_ok_6 = is_ok_6 || error_acc_10.length === 0;
@@ -250,18 +265,20 @@ function validate_User(input) {
                 "path": [
                     "User",
                     "unionWithNull"
-                ]
+                ],
+                "received": input["unionWithNull"]
             });
         }
         if (input["f"] != null) {}
         if (input["g"] != "a") {
             error_acc_0.push({
                 "error_kind": "NotEq",
-                "expected_value": "a",
                 "path": [
                     "User",
                     "g"
-                ]
+                ],
+                "received": input["g"],
+                "expected_value": "a"
             });
         }
         let is_ok_11 = false;
@@ -269,11 +286,12 @@ function validate_User(input) {
         if (input["h"] != "a") {
             error_acc_12.push({
                 "error_kind": "NotEq",
-                "expected_value": "a",
                 "path": [
                     "User",
                     "h"
-                ]
+                ],
+                "received": input["h"],
+                "expected_value": "a"
             });
         }
         is_ok_11 = is_ok_11 || error_acc_12.length === 0;
@@ -281,11 +299,12 @@ function validate_User(input) {
         if (input["h"] != "b") {
             error_acc_13.push({
                 "error_kind": "NotEq",
-                "expected_value": "b",
                 "path": [
                     "User",
                     "h"
-                ]
+                ],
+                "received": input["h"],
+                "expected_value": "b"
             });
         }
         is_ok_11 = is_ok_11 || error_acc_13.length === 0;
@@ -293,11 +312,12 @@ function validate_User(input) {
         if (input["h"] != "c") {
             error_acc_14.push({
                 "error_kind": "NotEq",
-                "expected_value": "c",
                 "path": [
                     "User",
                     "h"
-                ]
+                ],
+                "received": input["h"],
+                "expected_value": "c"
             });
         }
         is_ok_11 = is_ok_11 || error_acc_14.length === 0;
@@ -307,19 +327,21 @@ function validate_User(input) {
                 "path": [
                     "User",
                     "h"
-                ]
+                ],
+                "received": input["h"]
             });
         }
         if (typeof input["i"] == "object" && input["i"] != null) {
             if (input["i"]["a"] != 1) {
                 error_acc_0.push({
                     "error_kind": "NotEq",
-                    "expected_value": 1,
                     "path": [
                         "User",
                         "i",
                         "a"
-                    ]
+                    ],
+                    "received": input["i"]["a"],
+                    "expected_value": 1
                 });
             }
         } else {
@@ -328,19 +350,21 @@ function validate_User(input) {
                 "path": [
                     "User",
                     "i"
-                ]
+                ],
+                "received": input["i"]
             });
         }
         if (typeof input["i"] == "object" && input["i"] != null) {
             if (input["i"]["b"] != 2) {
                 error_acc_0.push({
                     "error_kind": "NotEq",
-                    "expected_value": 2,
                     "path": [
                         "User",
                         "i",
                         "b"
-                    ]
+                    ],
+                    "received": input["i"]["b"],
+                    "expected_value": 2
                 });
             }
         } else {
@@ -349,7 +373,8 @@ function validate_User(input) {
                 "path": [
                     "User",
                     "i"
-                ]
+                ],
+                "received": input["i"]
             });
         }
     } else {
@@ -357,7 +382,8 @@ function validate_User(input) {
             "error_kind": "NotAnObject",
             "path": [
                 "User"
-            ]
+            ],
+            "received": input
         });
     }
     return error_acc_0;
@@ -378,10 +404,11 @@ const meta = [
                     if (typeof input != "string") {
                         error_acc_0.push({
                             "error_kind": "NotTypeof",
-                            "expected_type": "string",
                             "path": [
                                 'Path Parameter "id"'
-                            ]
+                            ],
+                            "received": input,
+                            "expected_type": "string"
                         });
                     }
                     return error_acc_0;

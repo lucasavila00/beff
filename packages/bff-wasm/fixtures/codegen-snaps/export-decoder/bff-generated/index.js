@@ -43,11 +43,12 @@ function validate_User(input) {
         if (typeof input["name"] != "string") {
             error_acc_0.push({
                 "error_kind": "NotTypeof",
-                "expected_type": "string",
                 "path": [
                     "User",
                     "name"
-                ]
+                ],
+                "received": input["name"],
+                "expected_type": "string"
             });
         }
     } else {
@@ -55,7 +56,8 @@ function validate_User(input) {
             "error_kind": "NotAnObject",
             "path": [
                 "User"
-            ]
+            ],
+            "received": input
         });
     }
     return error_acc_0;
@@ -76,10 +78,11 @@ const meta = [
                     if (typeof input != "string") {
                         error_acc_0.push({
                             "error_kind": "NotTypeof",
-                            "expected_type": "string",
                             "path": [
                                 'Path Parameter "name"'
-                            ]
+                            ],
+                            "received": input,
+                            "expected_type": "string"
                         });
                     }
                     return error_acc_0;

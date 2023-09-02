@@ -1,7 +1,7 @@
 use std::rc::Rc;
 
-use crate::open_api_ast::{Json, JsonSchema, Optionality};
-use crate::printer::ToExpr;
+use crate::open_api_ast::{Js, Json, JsonSchema, Optionality};
+use crate::printer::{js_to_expr, ToExpr};
 use crate::swc_builder::SwcBuilder;
 use swc_common::DUMMY_SP;
 use swc_ecma_ast::{
@@ -10,12 +10,12 @@ use swc_ecma_ast::{
     PatOrExpr, ReturnStmt, Stmt,
 };
 
-fn store_error(storage: &str, err: ReportedError) -> Stmt {
+fn store_error(storage: &str, err: ReportedError, received: Expr) -> Stmt {
     SwcBuilder::store_error_vec(
         storage,
         vec![ExprOrSpread {
             spread: None,
-            expr: err.convert_to_json().to_expr().into(),
+            expr: js_to_expr(err.convert_to_js(received)).into(),
         }],
     )
 }
@@ -52,28 +52,41 @@ enum DecodeError {
     InvalidUnion,
 }
 
-fn decode_error_variant(tag: &str, path: Json) -> Json {
-    Json::Object(vec![
-        ("error_kind".into(), Json::String(tag.to_owned())),
-        ("path".into(), path),
-    ])
+fn decode_error_variant(
+    tag: &str,
+    path: Js,
+    received: Expr,
+    rest: Option<Vec<(String, Js)>>,
+) -> Js {
+    Js::Object(
+        vec![
+            ("error_kind".into(), Js::String(tag.to_owned())),
+            ("path".into(), path),
+            ("received".into(), Js::Expr(received)),
+        ]
+        .into_iter()
+        .chain(rest.unwrap_or(vec![]))
+        .collect(),
+    )
 }
 impl DecodeError {
-    fn convert_to_json(self, path: Json) -> Json {
+    fn convert_to_js(self, path: Js, received: Expr) -> Js {
         match self {
-            DecodeError::NotAnObject => decode_error_variant("NotAnObject", path),
-            DecodeError::NotAnArray => decode_error_variant("NotAnArray", path),
-            DecodeError::NotTypeof(t) => Json::Object(vec![
-                ("error_kind".into(), Json::String("NotTypeof".to_owned())),
-                ("expected_type".into(), Json::String(t.to_owned())),
-                ("path".into(), path),
-            ]),
-            DecodeError::NotEq(e) => Json::Object(vec![
-                ("error_kind".into(), Json::String("NotEq".to_owned())),
-                ("expected_value".into(), e),
-                ("path".into(), path),
-            ]),
-            DecodeError::InvalidUnion => decode_error_variant("InvalidUnion", path),
+            DecodeError::NotAnObject => decode_error_variant("NotAnObject", path, received, None),
+            DecodeError::NotAnArray => decode_error_variant("NotAnArray", path, received, None),
+            DecodeError::NotTypeof(t) => decode_error_variant(
+                "NotTypeof",
+                path,
+                received,
+                Some(vec![("expected_type".into(), Js::String(t.to_owned()))]),
+            ),
+            DecodeError::NotEq(e) => decode_error_variant(
+                "NotEq",
+                path,
+                received,
+                Some(vec![("expected_value".into(), e.to_js())]),
+            ),
+            DecodeError::InvalidUnion => decode_error_variant("InvalidUnion", path, received, None),
         }
     }
 }
@@ -101,8 +114,9 @@ impl ReportedError {
                 .collect(),
         )
     }
-    fn convert_to_json(self) -> Json {
-        self.kind.convert_to_json(Self::print_path(&self.path))
+    fn convert_to_js(self, received: Expr) -> Js {
+        self.kind
+            .convert_to_js(Self::print_path(&self.path).to_js(), received)
     }
 }
 fn schema_ref_callee_validate(schema_ref: &String) -> Callee {
@@ -168,6 +182,7 @@ impl DecoderFnGenerator {
                         kind: DecodeError::NotAnObject,
                         path: path.to_vec(),
                     },
+                    value_ref.clone(),
                 )],
             },
         )]
@@ -232,6 +247,7 @@ impl DecoderFnGenerator {
                         kind: DecodeError::NotAnArray,
                         path: path.to_vec(),
                     },
+                    value_ref.clone(),
                 )],
             },
         )]
@@ -271,6 +287,7 @@ impl DecoderFnGenerator {
                         kind: DecodeError::NotAnArray,
                         path: path.to_vec(),
                     },
+                    value_ref.clone(),
                 )],
             },
         )]
@@ -317,6 +334,7 @@ impl DecoderFnGenerator {
                         kind: DecodeError::NotTypeof(t.into()),
                         path: path.to_vec(),
                     },
+                    value_ref.clone(),
                 )],
             },
         );
@@ -339,6 +357,7 @@ impl DecoderFnGenerator {
                         kind: DecodeError::NotEq(t),
                         path: path.to_vec(),
                     },
+                    value_ref.clone(),
                 )],
             },
         );
@@ -496,6 +515,7 @@ impl DecoderFnGenerator {
                 kind: DecodeError::InvalidUnion,
                 path: path.to_vec(),
             },
+            value_ref.clone(),
         );
 
         let if_st = SwcBuilder::if_(

@@ -395,7 +395,7 @@ fn param_to_js(
                         "validator".into(),
                         Js::named_decoder(format!("Path Parameter \"{name}\""), schema.clone()),
                     ),
-                    ("coercer".into(), Js::Coercer(schema)),
+                    ("coercer".into(), Js::coercer(schema, components)),
                 ]),
                 FunctionParameterIn::Query => Js::Object(vec![
                     ("type".into(), Js::String("query".into())),
@@ -405,7 +405,7 @@ fn param_to_js(
                         "validator".into(),
                         Js::named_decoder(format!("Query Parameter \"{name}\""), schema.clone()),
                     ),
-                    ("coercer".into(), Js::Coercer(schema)),
+                    ("coercer".into(), Js::coercer(schema, components)),
                 ]),
                 FunctionParameterIn::Body => Js::Object(vec![
                     ("type".into(), Js::String("body".into())),
@@ -440,7 +440,7 @@ fn param_to_js(
                     "validator".into(),
                     Js::named_decoder(format!("{kind_name} \"{name}\""), schema.clone()),
                 ),
-                ("coercer".into(), Js::Coercer(schema)),
+                ("coercer".into(), Js::coercer(schema, components)),
             ])
         }
         HandlerParameter::Context(_) => {
@@ -517,7 +517,7 @@ fn const_decl(name: &str, init: Expr) -> ModuleItem {
     )))
 }
 
-fn js_to_expr(it: Js, components: &Vec<Definition>) -> Expr {
+pub fn js_to_expr(it: Js) -> Expr {
     match it {
         Js::Decoder {
             name_on_errors,
@@ -527,7 +527,7 @@ fn js_to_expr(it: Js, components: &Vec<Definition>) -> Expr {
             function: decoder::from_schema(&schema, &name_on_errors).into(),
         }),
         Js::Coercer(schema) => {
-            let func = crate::coercer::from_schema(&schema, components);
+            let func = crate::coercer::from_schema(&schema);
             Expr::Fn(FnExpr {
                 ident: None,
                 function: func.into(),
@@ -544,7 +544,7 @@ fn js_to_expr(it: Js, components: &Vec<Definition>) -> Expr {
                 .map(|it| {
                     Some(ExprOrSpread {
                         spread: None,
-                        expr: Box::new(js_to_expr(it, components)),
+                        expr: Box::new(js_to_expr(it)),
                     })
                 })
                 .collect(),
@@ -560,11 +560,12 @@ fn js_to_expr(it: Js, components: &Vec<Definition>) -> Expr {
                             value: key.into(),
                             raw: None,
                         }),
-                        value: Box::new(js_to_expr(value, components)),
+                        value: Box::new(js_to_expr(value)),
                     })))
                 })
                 .collect(),
         }),
+        Js::Expr(expr) => expr,
     }
 }
 
@@ -610,13 +611,13 @@ impl ToWritableModules for ExtractResult {
 
         let components = &self.open_api.components;
 
-        let meta_expr = js_to_expr(handlers_to_js(self.handlers, &components), &components);
+        let meta_expr = js_to_expr(handlers_to_js(self.handlers, &components));
         js_server_data.push(const_decl("meta", meta_expr));
 
         let build_decoders_expr = build_decoders_expr(&self.built_decoders.unwrap_or(vec![]));
         js_server_data.push(const_decl(
             "buildParsersInput",
-            js_to_expr(build_decoders_expr, &components),
+            js_to_expr(build_decoders_expr),
         ));
 
         Ok(WritableModules {

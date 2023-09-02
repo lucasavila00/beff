@@ -44,34 +44,37 @@ function validate_DataTypesKitchenSink(input) {
             if (typeof input["basic"]["a"] != "string") {
                 error_acc_0.push({
                     "error_kind": "NotTypeof",
-                    "expected_type": "string",
                     "path": [
                         "DataTypesKitchenSink",
                         "basic",
                         "a"
-                    ]
+                    ],
+                    "received": input["basic"]["a"],
+                    "expected_type": "string"
                 });
             }
             if (typeof input["basic"]["b"] != "number") {
                 error_acc_0.push({
                     "error_kind": "NotTypeof",
-                    "expected_type": "number",
                     "path": [
                         "DataTypesKitchenSink",
                         "basic",
                         "b"
-                    ]
+                    ],
+                    "received": input["basic"]["b"],
+                    "expected_type": "number"
                 });
             }
             if (typeof input["basic"]["c"] != "boolean") {
                 error_acc_0.push({
                     "error_kind": "NotTypeof",
-                    "expected_type": "boolean",
                     "path": [
                         "DataTypesKitchenSink",
                         "basic",
                         "c"
-                    ]
+                    ],
+                    "received": input["basic"]["c"],
+                    "expected_type": "boolean"
                 });
             }
         } else {
@@ -80,7 +83,8 @@ function validate_DataTypesKitchenSink(input) {
                 "path": [
                     "DataTypesKitchenSink",
                     "basic"
-                ]
+                ],
+                "received": input["basic"]
             });
         }
         if (Array.isArray(input["array1"])) {
@@ -88,12 +92,13 @@ function validate_DataTypesKitchenSink(input) {
                 if (typeof array_item_1 != "string") {
                     error_acc_0.push({
                         "error_kind": "NotTypeof",
-                        "expected_type": "string",
                         "path": [
                             "DataTypesKitchenSink",
                             "array1",
                             "[]"
-                        ]
+                        ],
+                        "received": array_item_1,
+                        "expected_type": "string"
                     });
                 }
             }
@@ -103,7 +108,8 @@ function validate_DataTypesKitchenSink(input) {
                 "path": [
                     "DataTypesKitchenSink",
                     "array1"
-                ]
+                ],
+                "received": input["array1"]
             });
         }
         if (Array.isArray(input["array2"])) {
@@ -111,12 +117,13 @@ function validate_DataTypesKitchenSink(input) {
                 if (typeof array_item_2 != "string") {
                     error_acc_0.push({
                         "error_kind": "NotTypeof",
-                        "expected_type": "string",
                         "path": [
                             "DataTypesKitchenSink",
                             "array2",
                             "[]"
-                        ]
+                        ],
+                        "received": array_item_2,
+                        "expected_type": "string"
                     });
                 }
             }
@@ -126,19 +133,21 @@ function validate_DataTypesKitchenSink(input) {
                 "path": [
                     "DataTypesKitchenSink",
                     "array2"
-                ]
+                ],
+                "received": input["array2"]
             });
         }
         if (Array.isArray(input["tuple1"])) {
             if (typeof input["tuple1"][0] != "string") {
                 error_acc_0.push({
                     "error_kind": "NotTypeof",
-                    "expected_type": "string",
                     "path": [
                         "DataTypesKitchenSink",
                         "tuple1",
                         "[0]"
-                    ]
+                    ],
+                    "received": input["tuple1"][0],
+                    "expected_type": "string"
                 });
             }
         } else {
@@ -147,30 +156,33 @@ function validate_DataTypesKitchenSink(input) {
                 "path": [
                     "DataTypesKitchenSink",
                     "tuple1"
-                ]
+                ],
+                "received": input["tuple1"]
             });
         }
         if (Array.isArray(input["tuple2"])) {
             if (typeof input["tuple2"][0] != "string") {
                 error_acc_0.push({
                     "error_kind": "NotTypeof",
-                    "expected_type": "string",
                     "path": [
                         "DataTypesKitchenSink",
                         "tuple2",
                         "[0]"
-                    ]
+                    ],
+                    "received": input["tuple2"][0],
+                    "expected_type": "string"
                 });
             }
             if (typeof input["tuple2"][1] != "string") {
                 error_acc_0.push({
                     "error_kind": "NotTypeof",
-                    "expected_type": "string",
                     "path": [
                         "DataTypesKitchenSink",
                         "tuple2",
                         "[1]"
-                    ]
+                    ],
+                    "received": input["tuple2"][1],
+                    "expected_type": "string"
                 });
             }
         } else {
@@ -179,30 +191,33 @@ function validate_DataTypesKitchenSink(input) {
                 "path": [
                     "DataTypesKitchenSink",
                     "tuple2"
-                ]
+                ],
+                "received": input["tuple2"]
             });
         }
         if (Array.isArray(input["tuple_rest"])) {
             if (typeof input["tuple_rest"][0] != "string") {
                 error_acc_0.push({
                     "error_kind": "NotTypeof",
-                    "expected_type": "string",
                     "path": [
                         "DataTypesKitchenSink",
                         "tuple_rest",
                         "[0]"
-                    ]
+                    ],
+                    "received": input["tuple_rest"][0],
+                    "expected_type": "string"
                 });
             }
             if (typeof input["tuple_rest"][1] != "string") {
                 error_acc_0.push({
                     "error_kind": "NotTypeof",
-                    "expected_type": "string",
                     "path": [
                         "DataTypesKitchenSink",
                         "tuple_rest",
                         "[1]"
-                    ]
+                    ],
+                    "received": input["tuple_rest"][1],
+                    "expected_type": "string"
                 });
             }
             if (Array.isArray(input["tuple_rest"].slice(2))) {
@@ -210,13 +225,14 @@ function validate_DataTypesKitchenSink(input) {
                     if (typeof array_item_3 != "number") {
                         error_acc_0.push({
                             "error_kind": "NotTypeof",
-                            "expected_type": "number",
                             "path": [
                                 "DataTypesKitchenSink",
                                 "tuple_rest",
                                 "[]",
                                 "[]"
-                            ]
+                            ],
+                            "received": array_item_3,
+                            "expected_type": "number"
                         });
                     }
                 }
@@ -227,7 +243,8 @@ function validate_DataTypesKitchenSink(input) {
                         "DataTypesKitchenSink",
                         "tuple_rest",
                         "[]"
-                    ]
+                    ],
+                    "received": input["tuple_rest"].slice(2)
                 });
             }
         } else {
@@ -236,7 +253,8 @@ function validate_DataTypesKitchenSink(input) {
                 "path": [
                     "DataTypesKitchenSink",
                     "tuple_rest"
-                ]
+                ],
+                "received": input["tuple_rest"]
             });
         }
         let is_ok_4 = false;
@@ -244,11 +262,12 @@ function validate_DataTypesKitchenSink(input) {
         if (typeof input["nullable"] != "string") {
             error_acc_5.push({
                 "error_kind": "NotTypeof",
-                "expected_type": "string",
                 "path": [
                     "DataTypesKitchenSink",
                     "nullable"
-                ]
+                ],
+                "received": input["nullable"],
+                "expected_type": "string"
             });
         }
         is_ok_4 = is_ok_4 || error_acc_5.length === 0;
@@ -256,11 +275,12 @@ function validate_DataTypesKitchenSink(input) {
         if (input["nullable"] != null) {
             error_acc_6.push({
                 "error_kind": "NotEq",
-                "expected_value": null,
                 "path": [
                     "DataTypesKitchenSink",
                     "nullable"
-                ]
+                ],
+                "received": input["nullable"],
+                "expected_value": null
             });
         }
         is_ok_4 = is_ok_4 || error_acc_6.length === 0;
@@ -270,7 +290,8 @@ function validate_DataTypesKitchenSink(input) {
                 "path": [
                     "DataTypesKitchenSink",
                     "nullable"
-                ]
+                ],
+                "received": input["nullable"]
             });
         }
         let is_ok_7 = false;
@@ -278,11 +299,12 @@ function validate_DataTypesKitchenSink(input) {
         if (typeof input["many_nullable"] != "number") {
             error_acc_8.push({
                 "error_kind": "NotTypeof",
-                "expected_type": "number",
                 "path": [
                     "DataTypesKitchenSink",
                     "many_nullable"
-                ]
+                ],
+                "received": input["many_nullable"],
+                "expected_type": "number"
             });
         }
         is_ok_7 = is_ok_7 || error_acc_8.length === 0;
@@ -290,11 +312,12 @@ function validate_DataTypesKitchenSink(input) {
         if (typeof input["many_nullable"] != "string") {
             error_acc_9.push({
                 "error_kind": "NotTypeof",
-                "expected_type": "string",
                 "path": [
                     "DataTypesKitchenSink",
                     "many_nullable"
-                ]
+                ],
+                "received": input["many_nullable"],
+                "expected_type": "string"
             });
         }
         is_ok_7 = is_ok_7 || error_acc_9.length === 0;
@@ -302,11 +325,12 @@ function validate_DataTypesKitchenSink(input) {
         if (input["many_nullable"] != null) {
             error_acc_10.push({
                 "error_kind": "NotEq",
-                "expected_value": null,
                 "path": [
                     "DataTypesKitchenSink",
                     "many_nullable"
-                ]
+                ],
+                "received": input["many_nullable"],
+                "expected_value": null
             });
         }
         is_ok_7 = is_ok_7 || error_acc_10.length === 0;
@@ -316,18 +340,20 @@ function validate_DataTypesKitchenSink(input) {
                 "path": [
                     "DataTypesKitchenSink",
                     "many_nullable"
-                ]
+                ],
+                "received": input["many_nullable"]
             });
         }
         if (input["optional_prop"] != null) {
             if (typeof input["optional_prop"] != "string") {
                 error_acc_0.push({
                     "error_kind": "NotTypeof",
-                    "expected_type": "string",
                     "path": [
                         "DataTypesKitchenSink",
                         "optional_prop"
-                    ]
+                    ],
+                    "received": input["optional_prop"],
+                    "expected_type": "string"
                 });
             }
         }
@@ -336,11 +362,12 @@ function validate_DataTypesKitchenSink(input) {
         if (typeof input["union_with_undefined"] != "string") {
             error_acc_12.push({
                 "error_kind": "NotTypeof",
-                "expected_type": "string",
                 "path": [
                     "DataTypesKitchenSink",
                     "union_with_undefined"
-                ]
+                ],
+                "received": input["union_with_undefined"],
+                "expected_type": "string"
             });
         }
         is_ok_11 = is_ok_11 || error_acc_12.length === 0;
@@ -348,11 +375,12 @@ function validate_DataTypesKitchenSink(input) {
         if (input["union_with_undefined"] != null) {
             error_acc_13.push({
                 "error_kind": "NotEq",
-                "expected_value": null,
                 "path": [
                     "DataTypesKitchenSink",
                     "union_with_undefined"
-                ]
+                ],
+                "received": input["union_with_undefined"],
+                "expected_value": null
             });
         }
         is_ok_11 = is_ok_11 || error_acc_13.length === 0;
@@ -362,7 +390,8 @@ function validate_DataTypesKitchenSink(input) {
                 "path": [
                     "DataTypesKitchenSink",
                     "union_with_undefined"
-                ]
+                ],
+                "received": input["union_with_undefined"]
             });
         }
         let is_ok_14 = false;
@@ -370,11 +399,12 @@ function validate_DataTypesKitchenSink(input) {
         if (typeof input["union_of_many"] != "string") {
             error_acc_15.push({
                 "error_kind": "NotTypeof",
-                "expected_type": "string",
                 "path": [
                     "DataTypesKitchenSink",
                     "union_of_many"
-                ]
+                ],
+                "received": input["union_of_many"],
+                "expected_type": "string"
             });
         }
         is_ok_14 = is_ok_14 || error_acc_15.length === 0;
@@ -382,11 +412,12 @@ function validate_DataTypesKitchenSink(input) {
         if (typeof input["union_of_many"] != "number") {
             error_acc_16.push({
                 "error_kind": "NotTypeof",
-                "expected_type": "number",
                 "path": [
                     "DataTypesKitchenSink",
                     "union_of_many"
-                ]
+                ],
+                "received": input["union_of_many"],
+                "expected_type": "number"
             });
         }
         is_ok_14 = is_ok_14 || error_acc_16.length === 0;
@@ -394,11 +425,12 @@ function validate_DataTypesKitchenSink(input) {
         if (typeof input["union_of_many"] != "boolean") {
             error_acc_17.push({
                 "error_kind": "NotTypeof",
-                "expected_type": "boolean",
                 "path": [
                     "DataTypesKitchenSink",
                     "union_of_many"
-                ]
+                ],
+                "received": input["union_of_many"],
+                "expected_type": "boolean"
             });
         }
         is_ok_14 = is_ok_14 || error_acc_17.length === 0;
@@ -408,41 +440,45 @@ function validate_DataTypesKitchenSink(input) {
                 "path": [
                     "DataTypesKitchenSink",
                     "union_of_many"
-                ]
+                ],
+                "received": input["union_of_many"]
             });
         }
         if (typeof input["literals"] == "object" && input["literals"] != null) {
             if (input["literals"]["a"] != "a") {
                 error_acc_0.push({
                     "error_kind": "NotEq",
-                    "expected_value": "a",
                     "path": [
                         "DataTypesKitchenSink",
                         "literals",
                         "a"
-                    ]
+                    ],
+                    "received": input["literals"]["a"],
+                    "expected_value": "a"
                 });
             }
             if (input["literals"]["b"] != 1) {
                 error_acc_0.push({
                     "error_kind": "NotEq",
-                    "expected_value": 1,
                     "path": [
                         "DataTypesKitchenSink",
                         "literals",
                         "b"
-                    ]
+                    ],
+                    "received": input["literals"]["b"],
+                    "expected_value": 1
                 });
             }
             if (input["literals"]["c"] != true) {
                 error_acc_0.push({
                     "error_kind": "NotEq",
-                    "expected_value": true,
                     "path": [
                         "DataTypesKitchenSink",
                         "literals",
                         "c"
-                    ]
+                    ],
+                    "received": input["literals"]["c"],
+                    "expected_value": true
                 });
             }
         } else {
@@ -451,7 +487,8 @@ function validate_DataTypesKitchenSink(input) {
                 "path": [
                     "DataTypesKitchenSink",
                     "literals"
-                ]
+                ],
+                "received": input["literals"]
             });
         }
         let is_ok_18 = false;
@@ -459,11 +496,12 @@ function validate_DataTypesKitchenSink(input) {
         if (input["enum"] != "a") {
             error_acc_19.push({
                 "error_kind": "NotEq",
-                "expected_value": "a",
                 "path": [
                     "DataTypesKitchenSink",
                     "enum"
-                ]
+                ],
+                "received": input["enum"],
+                "expected_value": "a"
             });
         }
         is_ok_18 = is_ok_18 || error_acc_19.length === 0;
@@ -471,11 +509,12 @@ function validate_DataTypesKitchenSink(input) {
         if (input["enum"] != "b") {
             error_acc_20.push({
                 "error_kind": "NotEq",
-                "expected_value": "b",
                 "path": [
                     "DataTypesKitchenSink",
                     "enum"
-                ]
+                ],
+                "received": input["enum"],
+                "expected_value": "b"
             });
         }
         is_ok_18 = is_ok_18 || error_acc_20.length === 0;
@@ -483,11 +522,12 @@ function validate_DataTypesKitchenSink(input) {
         if (input["enum"] != "c") {
             error_acc_21.push({
                 "error_kind": "NotEq",
-                "expected_value": "c",
                 "path": [
                     "DataTypesKitchenSink",
                     "enum"
-                ]
+                ],
+                "received": input["enum"],
+                "expected_value": "c"
             });
         }
         is_ok_18 = is_ok_18 || error_acc_21.length === 0;
@@ -497,41 +537,45 @@ function validate_DataTypesKitchenSink(input) {
                 "path": [
                     "DataTypesKitchenSink",
                     "enum"
-                ]
+                ],
+                "received": input["enum"]
             });
         }
         if (Array.isArray(input["tuple_lit"])) {
             if (input["tuple_lit"][0] != "a") {
                 error_acc_0.push({
                     "error_kind": "NotEq",
-                    "expected_value": "a",
                     "path": [
                         "DataTypesKitchenSink",
                         "tuple_lit",
                         "[0]"
-                    ]
+                    ],
+                    "received": input["tuple_lit"][0],
+                    "expected_value": "a"
                 });
             }
             if (input["tuple_lit"][1] != 1) {
                 error_acc_0.push({
                     "error_kind": "NotEq",
-                    "expected_value": 1,
                     "path": [
                         "DataTypesKitchenSink",
                         "tuple_lit",
                         "[1]"
-                    ]
+                    ],
+                    "received": input["tuple_lit"][1],
+                    "expected_value": 1
                 });
             }
             if (input["tuple_lit"][2] != true) {
                 error_acc_0.push({
                     "error_kind": "NotEq",
-                    "expected_value": true,
                     "path": [
                         "DataTypesKitchenSink",
                         "tuple_lit",
                         "[2]"
-                    ]
+                    ],
+                    "received": input["tuple_lit"][2],
+                    "expected_value": true
                 });
             }
         } else {
@@ -540,17 +584,19 @@ function validate_DataTypesKitchenSink(input) {
                 "path": [
                     "DataTypesKitchenSink",
                     "tuple_lit"
-                ]
+                ],
+                "received": input["tuple_lit"]
             });
         }
         if (input["str_template"] != "ab") {
             error_acc_0.push({
                 "error_kind": "NotEq",
-                "expected_value": "ab",
                 "path": [
                     "DataTypesKitchenSink",
                     "str_template"
-                ]
+                ],
+                "received": input["str_template"],
+                "expected_value": "ab"
             });
         }
     } else {
@@ -558,7 +604,8 @@ function validate_DataTypesKitchenSink(input) {
             "error_kind": "NotAnObject",
             "path": [
                 "DataTypesKitchenSink"
-            ]
+            ],
+            "received": input
         });
     }
     return error_acc_0;
@@ -568,10 +615,11 @@ function validate_A(input) {
     if (typeof input != "string") {
         error_acc_0.push({
             "error_kind": "NotTypeof",
-            "expected_type": "string",
             "path": [
                 "A"
-            ]
+            ],
+            "received": input,
+            "expected_type": "string"
         });
     }
     return error_acc_0;
@@ -582,21 +630,23 @@ function validate_User(input) {
         if (typeof input["id"] != "number") {
             error_acc_0.push({
                 "error_kind": "NotTypeof",
-                "expected_type": "number",
                 "path": [
                     "User",
                     "id"
-                ]
+                ],
+                "received": input["id"],
+                "expected_type": "number"
             });
         }
         if (typeof input["name"] != "string") {
             error_acc_0.push({
                 "error_kind": "NotTypeof",
-                "expected_type": "string",
                 "path": [
                     "User",
                     "name"
-                ]
+                ],
+                "received": input["name"],
+                "expected_type": "string"
             });
         }
         if (Array.isArray(input["entities"])) {
@@ -613,18 +663,20 @@ function validate_User(input) {
                 "path": [
                     "User",
                     "entities"
-                ]
+                ],
+                "received": input["entities"]
             });
         }
         if (input["optional_prop"] != null) {
             if (typeof input["optional_prop"] != "string") {
                 error_acc_0.push({
                     "error_kind": "NotTypeof",
-                    "expected_type": "string",
                     "path": [
                         "User",
                         "optional_prop"
-                    ]
+                    ],
+                    "received": input["optional_prop"],
+                    "expected_type": "string"
                 });
             }
         }
@@ -633,7 +685,8 @@ function validate_User(input) {
             "error_kind": "NotAnObject",
             "path": [
                 "User"
-            ]
+            ],
+            "received": input
         });
     }
     return error_acc_0;
@@ -644,11 +697,12 @@ function validate_UserEntity(input) {
         if (typeof input["id"] != "string") {
             error_acc_0.push({
                 "error_kind": "NotTypeof",
-                "expected_type": "string",
                 "path": [
                     "UserEntity",
                     "id"
-                ]
+                ],
+                "received": input["id"],
+                "expected_type": "string"
             });
         }
         error_acc_0.push(...add_path_to_errors(validate_A(input["idA"]), [
@@ -660,7 +714,8 @@ function validate_UserEntity(input) {
             "error_kind": "NotAnObject",
             "path": [
                 "UserEntity"
-            ]
+            ],
+            "received": input
         });
     }
     return error_acc_0;
@@ -687,10 +742,11 @@ const meta = [
             if (typeof input != "string") {
                 error_acc_0.push({
                     "error_kind": "NotTypeof",
-                    "expected_type": "string",
                     "path": [
                         "[GET] /anon-func.response_body"
-                    ]
+                    ],
+                    "received": input,
+                    "expected_type": "string"
                 });
             }
             return error_acc_0;
@@ -711,10 +767,11 @@ const meta = [
                     if (typeof input != "string") {
                         error_acc_0.push({
                             "error_kind": "NotTypeof",
-                            "expected_type": "string",
                             "path": [
                                 'Header Argument "user_agent"'
-                            ]
+                            ],
+                            "received": input,
+                            "expected_type": "string"
                         });
                     }
                     return error_acc_0;
@@ -732,10 +789,11 @@ const meta = [
                     if (typeof input != "string") {
                         error_acc_0.push({
                             "error_kind": "NotTypeof",
-                            "expected_type": "string",
                             "path": [
                                 'Cookie Argument "ads_id"'
-                            ]
+                            ],
+                            "received": input,
+                            "expected_type": "string"
                         });
                     }
                     return error_acc_0;
@@ -753,11 +811,12 @@ const meta = [
                     if (typeof array_item_1 != "string") {
                         error_acc_0.push({
                             "error_kind": "NotTypeof",
-                            "expected_type": "string",
                             "path": [
                                 "[GET] /users.response_body",
                                 "[]"
-                            ]
+                            ],
+                            "received": array_item_1,
+                            "expected_type": "string"
                         });
                     }
                 }
@@ -766,7 +825,8 @@ const meta = [
                     "error_kind": "NotAnArray",
                     "path": [
                         "[GET] /users.response_body"
-                    ]
+                    ],
+                    "received": input
                 });
             }
             return error_acc_0;
@@ -787,10 +847,11 @@ const meta = [
                     if (typeof input != "number") {
                         error_acc_0.push({
                             "error_kind": "NotTypeof",
-                            "expected_type": "number",
                             "path": [
                                 'Path Parameter "id"'
-                            ]
+                            ],
+                            "received": input,
+                            "expected_type": "number"
                         });
                     }
                     return error_acc_0;
@@ -824,10 +885,11 @@ const meta = [
                     if (typeof input != "string") {
                         error_acc_0.push({
                             "error_kind": "NotTypeof",
-                            "expected_type": "string",
                             "path": [
                                 'Path Parameter "id"'
-                            ]
+                            ],
+                            "received": input,
+                            "expected_type": "string"
                         });
                     }
                     return error_acc_0;
@@ -843,10 +905,11 @@ const meta = [
             if (typeof input != "string") {
                 error_acc_0.push({
                     "error_kind": "NotTypeof",
-                    "expected_type": "string",
                     "path": [
                         "[GET] /users2/{id}.response_body"
-                    ]
+                    ],
+                    "received": input,
+                    "expected_type": "string"
                 });
             }
             return error_acc_0;
@@ -867,10 +930,11 @@ const meta = [
                     if (typeof input != "string") {
                         error_acc_0.push({
                             "error_kind": "NotTypeof",
-                            "expected_type": "string",
                             "path": [
                                 'Path Parameter "id"'
-                            ]
+                            ],
+                            "received": input,
+                            "expected_type": "string"
                         });
                     }
                     return error_acc_0;
@@ -886,10 +950,11 @@ const meta = [
             if (typeof input != "string") {
                 error_acc_0.push({
                     "error_kind": "NotTypeof",
-                    "expected_type": "string",
                     "path": [
                         "[POST] /users2/{id}.response_body"
-                    ]
+                    ],
+                    "received": input,
+                    "expected_type": "string"
                 });
             }
             return error_acc_0;
@@ -904,10 +969,11 @@ const meta = [
             if (typeof input != "string") {
                 error_acc_0.push({
                     "error_kind": "NotTypeof",
-                    "expected_type": "string",
                     "path": [
                         "[GET] /users3.response_body"
-                    ]
+                    ],
+                    "received": input,
+                    "expected_type": "string"
                 });
             }
             return error_acc_0;
@@ -922,10 +988,11 @@ const meta = [
             if (typeof input != "string") {
                 error_acc_0.push({
                     "error_kind": "NotTypeof",
-                    "expected_type": "string",
                     "path": [
                         "[GET] /users4.response_body"
-                    ]
+                    ],
+                    "received": input,
+                    "expected_type": "string"
                 });
             }
             return error_acc_0;
@@ -940,10 +1007,11 @@ const meta = [
             if (typeof input != "string") {
                 error_acc_0.push({
                     "error_kind": "NotTypeof",
-                    "expected_type": "string",
                     "path": [
                         "[POST] /users4.response_body"
-                    ]
+                    ],
+                    "received": input,
+                    "expected_type": "string"
                 });
             }
             return error_acc_0;

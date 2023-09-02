@@ -1,4 +1,4 @@
-use crate::open_api_ast::{Definition, JsonSchema};
+use crate::open_api_ast::JsonSchema;
 use crate::swc_builder::SwcBuilder;
 use swc_common::DUMMY_SP;
 use swc_ecma_ast::{
@@ -26,10 +26,8 @@ fn coerce_primitive(value: Expr, p: &str) -> Expr {
     })
 }
 
-struct CoercerFnGenerator<'a> {
-    components: &'a Vec<Definition>,
-}
-impl<'a> CoercerFnGenerator<'a> {
+struct CoercerFnGenerator {}
+impl CoercerFnGenerator {
     fn coerce_schema(&mut self, schema: &JsonSchema, value_ref: &Expr, depth: usize) -> Expr {
         match schema {
             JsonSchema::Null | JsonSchema::Const(_) | JsonSchema::Any => value_ref.clone(),
@@ -40,14 +38,10 @@ impl<'a> CoercerFnGenerator<'a> {
                 unreachable!("should be on request body, no coercion needed")
             }
 
-            JsonSchema::Ref(schema_ref) => {
-                let ty = self
-                    .components
-                    .iter()
-                    .find(|it| it.name == *schema_ref)
-                    .expect("should be resolved by this point");
-                self.coerce_schema(&ty.schema, value_ref, depth)
+            JsonSchema::Ref(_schema_ref) => {
+                unreachable!("should have been resolved to a definition by now")
             }
+            JsonSchema::ResponseRef(_) => unreachable!("will not coerce an error schema"),
 
             JsonSchema::AnyOf(vs) => Expr::Call(CallExpr {
                 span: DUMMY_SP,
@@ -91,7 +85,6 @@ impl<'a> CoercerFnGenerator<'a> {
                 .collect(),
                 type_args: None,
             }),
-            JsonSchema::ResponseRef(_) => unreachable!("will not coerce an error schema"),
         }
     }
     fn fn_coercer_from_schema(&mut self, schema: &JsonSchema, depth: usize) -> Function {
@@ -125,6 +118,6 @@ impl<'a> CoercerFnGenerator<'a> {
     }
 }
 #[must_use]
-pub fn from_schema(schema: &JsonSchema, components: &Vec<Definition>) -> Function {
-    CoercerFnGenerator { components }.fn_coercer_from_schema(schema, 0)
+pub fn from_schema(schema: &JsonSchema) -> Function {
+    CoercerFnGenerator {}.fn_coercer_from_schema(schema, 0)
 }

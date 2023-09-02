@@ -43,31 +43,34 @@ function validate_Post(input) {
         if (typeof input["id"] != "string") {
             error_acc_0.push({
                 "error_kind": "NotTypeof",
-                "expected_type": "string",
                 "path": [
                     "Post",
                     "id"
-                ]
+                ],
+                "received": input["id"],
+                "expected_type": "string"
             });
         }
         if (typeof input["title"] != "string") {
             error_acc_0.push({
                 "error_kind": "NotTypeof",
-                "expected_type": "string",
                 "path": [
                     "Post",
                     "title"
-                ]
+                ],
+                "received": input["title"],
+                "expected_type": "string"
             });
         }
         if (typeof input["body"] != "string") {
             error_acc_0.push({
                 "error_kind": "NotTypeof",
-                "expected_type": "string",
                 "path": [
                     "Post",
                     "body"
-                ]
+                ],
+                "received": input["body"],
+                "expected_type": "string"
             });
         }
     } else {
@@ -75,7 +78,8 @@ function validate_Post(input) {
             "error_kind": "NotAnObject",
             "path": [
                 "Post"
-            ]
+            ],
+            "received": input
         });
     }
     return error_acc_0;
@@ -86,21 +90,23 @@ function validate_Param(input) {
         if (typeof input["title"] != "string") {
             error_acc_0.push({
                 "error_kind": "NotTypeof",
-                "expected_type": "string",
                 "path": [
                     "Param",
                     "title"
-                ]
+                ],
+                "received": input["title"],
+                "expected_type": "string"
             });
         }
         if (typeof input["body"] != "string") {
             error_acc_0.push({
                 "error_kind": "NotTypeof",
-                "expected_type": "string",
                 "path": [
                     "Param",
                     "body"
-                ]
+                ],
+                "received": input["body"],
+                "expected_type": "string"
             });
         }
     } else {
@@ -108,7 +114,8 @@ function validate_Param(input) {
             "error_kind": "NotAnObject",
             "path": [
                 "Param"
-            ]
+            ],
+            "received": input
         });
     }
     return error_acc_0;
@@ -142,11 +149,12 @@ const meta = [
                 if (typeof input["message"] != "string") {
                     error_acc_0.push({
                         "error_kind": "NotTypeof",
-                        "expected_type": "string",
                         "path": [
                             "[GET] /.response_body",
                             "message"
-                        ]
+                        ],
+                        "received": input["message"],
+                        "expected_type": "string"
                     });
                 }
             } else {
@@ -154,7 +162,8 @@ const meta = [
                     "error_kind": "NotAnObject",
                     "path": [
                         "[GET] /.response_body"
-                    ]
+                    ],
+                    "received": input
                 });
             }
             return error_acc_0;
@@ -185,17 +194,19 @@ const meta = [
                         "path": [
                             "[GET] /posts.response_body",
                             "posts"
-                        ]
+                        ],
+                        "received": input["posts"]
                     });
                 }
                 if (typeof input["ok"] != "boolean") {
                     error_acc_0.push({
                         "error_kind": "NotTypeof",
-                        "expected_type": "boolean",
                         "path": [
                             "[GET] /posts.response_body",
                             "ok"
-                        ]
+                        ],
+                        "received": input["ok"],
+                        "expected_type": "boolean"
                     });
                 }
             } else {
@@ -203,7 +214,8 @@ const meta = [
                     "error_kind": "NotAnObject",
                     "path": [
                         "[GET] /posts.response_body"
-                    ]
+                    ],
+                    "received": input
                 });
             }
             return error_acc_0;
@@ -237,11 +249,12 @@ const meta = [
                 if (input["ok"] != true) {
                     error_acc_2.push({
                         "error_kind": "NotEq",
-                        "expected_value": true,
                         "path": [
                             "[POST] /posts.response_body",
                             "ok"
-                        ]
+                        ],
+                        "received": input["ok"],
+                        "expected_value": true
                     });
                 }
                 error_acc_2.push(...add_path_to_errors(validate_Post(input["post"]), [
@@ -253,7 +266,8 @@ const meta = [
                     "error_kind": "NotAnObject",
                     "path": [
                         "[POST] /posts.response_body"
-                    ]
+                    ],
+                    "received": input
                 });
             }
             is_ok_1 = is_ok_1 || error_acc_2.length === 0;
@@ -262,21 +276,23 @@ const meta = [
                 if (input["ok"] != false) {
                     error_acc_3.push({
                         "error_kind": "NotEq",
-                        "expected_value": false,
                         "path": [
                             "[POST] /posts.response_body",
                             "ok"
-                        ]
+                        ],
+                        "received": input["ok"],
+                        "expected_value": false
                     });
                 }
                 if (typeof input["error"] != "string") {
                     error_acc_3.push({
                         "error_kind": "NotTypeof",
-                        "expected_type": "string",
                         "path": [
                             "[POST] /posts.response_body",
                             "error"
-                        ]
+                        ],
+                        "received": input["error"],
+                        "expected_type": "string"
                     });
                 }
             } else {
@@ -284,7 +300,8 @@ const meta = [
                     "error_kind": "NotAnObject",
                     "path": [
                         "[POST] /posts.response_body"
-                    ]
+                    ],
+                    "received": input
                 });
             }
             is_ok_1 = is_ok_1 || error_acc_3.length === 0;
@@ -293,7 +310,8 @@ const meta = [
                     "error_kind": "InvalidUnion",
                     "path": [
                         "[POST] /posts.response_body"
-                    ]
+                    ],
+                    "received": input
                 });
             }
             return error_acc_0;
@@ -314,10 +332,11 @@ const meta = [
                     if (typeof input != "string") {
                         error_acc_0.push({
                             "error_kind": "NotTypeof",
-                            "expected_type": "string",
                             "path": [
                                 'Path Parameter "id"'
-                            ]
+                            ],
+                            "received": input,
+                            "expected_type": "string"
                         });
                     }
                     return error_acc_0;
@@ -336,11 +355,12 @@ const meta = [
                 if (input["ok"] != true) {
                     error_acc_2.push({
                         "error_kind": "NotEq",
-                        "expected_value": true,
                         "path": [
                             "[GET] /posts/{id}.response_body",
                             "ok"
-                        ]
+                        ],
+                        "received": input["ok"],
+                        "expected_value": true
                     });
                 }
                 error_acc_2.push(...add_path_to_errors(validate_Post(input["post"]), [
@@ -352,7 +372,8 @@ const meta = [
                     "error_kind": "NotAnObject",
                     "path": [
                         "[GET] /posts/{id}.response_body"
-                    ]
+                    ],
+                    "received": input
                 });
             }
             is_ok_1 = is_ok_1 || error_acc_2.length === 0;
@@ -361,21 +382,23 @@ const meta = [
                 if (input["ok"] != false) {
                     error_acc_3.push({
                         "error_kind": "NotEq",
-                        "expected_value": false,
                         "path": [
                             "[GET] /posts/{id}.response_body",
                             "ok"
-                        ]
+                        ],
+                        "received": input["ok"],
+                        "expected_value": false
                     });
                 }
                 if (typeof input["error"] != "string") {
                     error_acc_3.push({
                         "error_kind": "NotTypeof",
-                        "expected_type": "string",
                         "path": [
                             "[GET] /posts/{id}.response_body",
                             "error"
-                        ]
+                        ],
+                        "received": input["error"],
+                        "expected_type": "string"
                     });
                 }
             } else {
@@ -383,7 +406,8 @@ const meta = [
                     "error_kind": "NotAnObject",
                     "path": [
                         "[GET] /posts/{id}.response_body"
-                    ]
+                    ],
+                    "received": input
                 });
             }
             is_ok_1 = is_ok_1 || error_acc_3.length === 0;
@@ -392,7 +416,8 @@ const meta = [
                     "error_kind": "InvalidUnion",
                     "path": [
                         "[GET] /posts/{id}.response_body"
-                    ]
+                    ],
+                    "received": input
                 });
             }
             return error_acc_0;
@@ -413,10 +438,11 @@ const meta = [
                     if (typeof input != "string") {
                         error_acc_0.push({
                             "error_kind": "NotTypeof",
-                            "expected_type": "string",
                             "path": [
                                 'Path Parameter "id"'
-                            ]
+                            ],
+                            "received": input,
+                            "expected_type": "string"
                         });
                     }
                     return error_acc_0;
@@ -445,11 +471,12 @@ const meta = [
                 if (typeof input["ok"] != "boolean") {
                     error_acc_0.push({
                         "error_kind": "NotTypeof",
-                        "expected_type": "boolean",
                         "path": [
                             "[PUT] /posts/{id}.response_body",
                             "ok"
-                        ]
+                        ],
+                        "received": input["ok"],
+                        "expected_type": "boolean"
                     });
                 }
             } else {
@@ -457,7 +484,8 @@ const meta = [
                     "error_kind": "NotAnObject",
                     "path": [
                         "[PUT] /posts/{id}.response_body"
-                    ]
+                    ],
+                    "received": input
                 });
             }
             return error_acc_0;
@@ -478,10 +506,11 @@ const meta = [
                     if (typeof input != "string") {
                         error_acc_0.push({
                             "error_kind": "NotTypeof",
-                            "expected_type": "string",
                             "path": [
                                 'Path Parameter "id"'
-                            ]
+                            ],
+                            "received": input,
+                            "expected_type": "string"
                         });
                     }
                     return error_acc_0;
@@ -498,11 +527,12 @@ const meta = [
                 if (typeof input["ok"] != "boolean") {
                     error_acc_0.push({
                         "error_kind": "NotTypeof",
-                        "expected_type": "boolean",
                         "path": [
                             "[DELETE] /posts/{id}.response_body",
                             "ok"
-                        ]
+                        ],
+                        "received": input["ok"],
+                        "expected_type": "boolean"
                     });
                 }
             } else {
@@ -510,7 +540,8 @@ const meta = [
                     "error_kind": "NotAnObject",
                     "path": [
                         "[DELETE] /posts/{id}.response_body"
-                    ]
+                    ],
+                    "received": input
                 });
             }
             return error_acc_0;

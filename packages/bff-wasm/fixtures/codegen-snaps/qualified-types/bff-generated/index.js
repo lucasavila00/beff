@@ -43,11 +43,12 @@ function validate_UserEntityOriginal(input) {
         if (typeof input["id"] != "string") {
             error_acc_0.push({
                 "error_kind": "NotTypeof",
-                "expected_type": "string",
                 "path": [
                     "UserEntityOriginal",
                     "id"
-                ]
+                ],
+                "received": input["id"],
+                "expected_type": "string"
             });
         }
     } else {
@@ -55,7 +56,8 @@ function validate_UserEntityOriginal(input) {
             "error_kind": "NotAnObject",
             "path": [
                 "UserEntityOriginal"
-            ]
+            ],
+            "received": input
         });
     }
     return error_acc_0;
@@ -66,11 +68,12 @@ function validate_Abc123(input) {
         if (typeof input["a"] != "string") {
             error_acc_0.push({
                 "error_kind": "NotTypeof",
-                "expected_type": "string",
                 "path": [
                     "Abc123",
                     "a"
-                ]
+                ],
+                "received": input["a"],
+                "expected_type": "string"
             });
         }
     } else {
@@ -78,7 +81,8 @@ function validate_Abc123(input) {
             "error_kind": "NotAnObject",
             "path": [
                 "Abc123"
-            ]
+            ],
+            "received": input
         });
     }
     return error_acc_0;
@@ -89,11 +93,12 @@ function validate_Def(input) {
         if (typeof input["a"] != "string") {
             error_acc_0.push({
                 "error_kind": "NotTypeof",
-                "expected_type": "string",
                 "path": [
                     "Def",
                     "a"
-                ]
+                ],
+                "received": input["a"],
+                "expected_type": "string"
             });
         }
     } else {
@@ -101,7 +106,8 @@ function validate_Def(input) {
             "error_kind": "NotAnObject",
             "path": [
                 "Def"
-            ]
+            ],
+            "received": input
         });
     }
     return error_acc_0;
@@ -112,11 +118,12 @@ function validate_XYZ(input) {
         if (typeof input["a"] != "number") {
             error_acc_0.push({
                 "error_kind": "NotTypeof",
-                "expected_type": "number",
                 "path": [
                     "XYZ",
                     "a"
-                ]
+                ],
+                "received": input["a"],
+                "expected_type": "number"
             });
         }
     } else {
@@ -124,7 +131,8 @@ function validate_XYZ(input) {
             "error_kind": "NotAnObject",
             "path": [
                 "XYZ"
-            ]
+            ],
+            "received": input
         });
     }
     return error_acc_0;

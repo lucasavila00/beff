@@ -1,5 +1,5 @@
 import { it, expect } from "vitest";
-import { User } from "../router";
+import { User, Users } from "../router";
 
 it("works", () => {
   expect(User.parse({ name: "name", age: 123 })).toMatchInlineSnapshot(`
@@ -19,6 +19,7 @@ it("works", () => {
             "User",
             "name",
           ],
+          "received": 123,
         },
         {
           "error_kind": "NotTypeof",
@@ -27,9 +28,59 @@ it("works", () => {
             "User",
             "age",
           ],
+          "received": undefined,
         },
       ],
       "success": false,
     }
   `);
+
+  expect(Users.safeParse([{ name: 123 }, { age: "def" }]))
+    .toMatchInlineSnapshot(`
+      {
+        "errors": [
+          {
+            "error_kind": "NotTypeof",
+            "expected_type": "string",
+            "path": [
+              "[]",
+              "User",
+              "name",
+            ],
+            "received": 123,
+          },
+          {
+            "error_kind": "NotTypeof",
+            "expected_type": "number",
+            "path": [
+              "[]",
+              "User",
+              "age",
+            ],
+            "received": undefined,
+          },
+          {
+            "error_kind": "NotTypeof",
+            "expected_type": "string",
+            "path": [
+              "[]",
+              "User",
+              "name",
+            ],
+            "received": undefined,
+          },
+          {
+            "error_kind": "NotTypeof",
+            "expected_type": "number",
+            "path": [
+              "[]",
+              "User",
+              "age",
+            ],
+            "received": "def",
+          },
+        ],
+        "success": false,
+      }
+    `);
 });

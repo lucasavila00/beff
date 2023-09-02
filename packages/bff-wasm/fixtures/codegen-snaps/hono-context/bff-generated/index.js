@@ -57,11 +57,12 @@ const meta = [
                 if (typeof input["message"] != "string") {
                     error_acc_0.push({
                         "error_kind": "NotTypeof",
-                        "expected_type": "string",
                         "path": [
                             "[GET] /.response_body",
                             "message"
-                        ]
+                        ],
+                        "received": input["message"],
+                        "expected_type": "string"
                     });
                 }
             } else {
@@ -69,7 +70,8 @@ const meta = [
                     "error_kind": "NotAnObject",
                     "path": [
                         "[GET] /.response_body"
-                    ]
+                    ],
+                    "received": input
                 });
             }
             return error_acc_0;
@@ -94,17 +96,19 @@ const meta = [
                         "path": [
                             "[GET] /posts.response_body",
                             "posts"
-                        ]
+                        ],
+                        "received": input["posts"]
                     });
                 }
                 if (typeof input["ok"] != "boolean") {
                     error_acc_0.push({
                         "error_kind": "NotTypeof",
-                        "expected_type": "boolean",
                         "path": [
                             "[GET] /posts.response_body",
                             "ok"
-                        ]
+                        ],
+                        "received": input["ok"],
+                        "expected_type": "boolean"
                     });
                 }
             } else {
@@ -112,7 +116,8 @@ const meta = [
                     "error_kind": "NotAnObject",
                     "path": [
                         "[GET] /posts.response_body"
-                    ]
+                    ],
+                    "received": input
                 });
             }
             return error_acc_0;
