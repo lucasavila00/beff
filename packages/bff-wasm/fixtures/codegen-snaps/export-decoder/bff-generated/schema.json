@@ -41,12 +41,16 @@
     "schemas": {
       "User": {
         "properties": {
+          "age": {
+            "type": "number"
+          },
           "name": {
             "type": "string"
           }
         },
         "required": [
-          "name"
+          "name",
+          "age"
         ],
         "type": "object"
       }

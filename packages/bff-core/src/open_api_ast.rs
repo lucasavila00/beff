@@ -240,5 +240,5 @@ pub struct Definition {
 pub struct OpenApi {
     pub info: Info,
     pub paths: Vec<ApiPath>,
-    pub components: Vec<Definition>,
+    pub components: Vec<String>,
 }

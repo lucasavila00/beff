@@ -51,11 +51,47 @@ function validate_User(input) {
                 "expected_type": "string"
             });
         }
+        if (typeof input["age"] != "number") {
+            error_acc_0.push({
+                "error_kind": "NotTypeof",
+                "path": [
+                    "User",
+                    "age"
+                ],
+                "received": input["age"],
+                "expected_type": "number"
+            });
+        }
     } else {
         error_acc_0.push({
             "error_kind": "NotAnObject",
             "path": [
                 "User"
+            ],
+            "received": input
+        });
+    }
+    return error_acc_0;
+}
+function validate_OnlyInDecoders(input) {
+    let error_acc_0 = [];
+    if (typeof input == "object" && input != null) {
+        if (typeof input["a"] != "string") {
+            error_acc_0.push({
+                "error_kind": "NotTypeof",
+                "path": [
+                    "OnlyInDecoders",
+                    "a"
+                ],
+                "received": input["a"],
+                "expected_type": "string"
+            });
+        }
+    } else {
+        error_acc_0.push({
+            "error_kind": "NotAnObject",
+            "path": [
+                "OnlyInDecoders"
             ],
             "received": input
         });
@@ -106,6 +142,29 @@ const buildParsersInput = {
     "User": function(input) {
         let error_acc_0 = [];
         error_acc_0.push(...add_path_to_errors(validate_User(input), []));
+        return error_acc_0;
+    },
+    "Users": function(input) {
+        let error_acc_0 = [];
+        if (Array.isArray(input)) {
+            for(let index = 0; index < input.length; index++){
+                const array_item_1 = input[index];
+                error_acc_0.push(...add_path_to_errors(validate_User(array_item_1), [
+                    "[" + index + "]"
+                ]));
+            }
+        } else {
+            error_acc_0.push({
+                "error_kind": "NotAnArray",
+                "path": [],
+                "received": input
+            });
+        }
+        return error_acc_0;
+    },
+    "OnlyInDecodersRenamed": function(input) {
+        let error_acc_0 = [];
+        error_acc_0.push(...add_path_to_errors(validate_OnlyInDecoders(input), []));
         return error_acc_0;
     }
 };
@@ -179,12 +238,16 @@ const schema =  {
     "schemas": {
       "User": {
         "properties": {
+          "age": {
+            "type": "number"
+          },
           "name": {
             "type": "string"
           }
         },
         "required": [
-          "name"
+          "name",
+          "age"
         ],
         "type": "object"
       }

@@ -12,6 +12,7 @@ use anyhow::Result;
 use core::fmt;
 use jsdoc::ast::{SummaryTag, Tag, UnknownTag, VersionTag};
 use jsdoc::Input;
+use std::collections::HashSet;
 use std::rc::Rc;
 use swc_common::comments::{Comment, CommentKind, Comments};
 use swc_common::{BytePos, Span, DUMMY_SP};
@@ -157,6 +158,7 @@ pub struct ExtractExportDefaultVisitor<'a, R: FileManager> {
     current_file: BffFileName,
     handlers: Vec<PathHandlerMap>,
     components: Vec<Definition>,
+    public_definitions: HashSet<String>,
     found_default_export: bool,
     errors: Vec<Diagnostic>,
     info: open_api_ast::Info,
@@ -177,6 +179,7 @@ impl<'a, R: FileManager> ExtractExportDefaultVisitor<'a, R> {
                 version: None,
             },
             built_decoders: None,
+            public_definitions: HashSet::new(),
         }
     }
 }
@@ -388,7 +391,7 @@ impl<'a, R: FileManager> ExtractExportDefaultVisitor<'a, R> {
         }
     }
 
-    fn convert_to_json_schema(&mut self, ty: &TsType, span: &Span) -> JsonSchema {
+    fn convert_to_json_schema(&mut self, ty: &TsType, span: &Span, is_public: bool) -> JsonSchema {
         let mut to_schema = TypeToSchema::new(self.files, self.current_file.clone());
         let res = to_schema.convert_ts_type(ty);
         match res {
@@ -399,7 +402,13 @@ impl<'a, R: FileManager> ExtractExportDefaultVisitor<'a, R> {
                     // When we encounter the type while transforming it we return string with the type name.
                     // And we need the option to allow a type to refer to itself before it has been resolved.
                     match v {
-                        Some(s) => kvs.push((k, s)),
+                        Some(s) => {
+                            if is_public {
+                                self.public_definitions.insert(k.clone());
+                            }
+
+                            kvs.push((k, s))
+                        }
                         None => self.push_error(
                             span,
                             DiagnosticInfoMessage::CannotResolveTypeReferenceOnExtracting(k),
@@ -410,6 +419,7 @@ impl<'a, R: FileManager> ExtractExportDefaultVisitor<'a, R> {
                 kvs.sort_by(|(ka, _), (kb, _)| ka.cmp(kb));
                 let ext: Vec<Definition> = kvs.into_iter().map(|(_k, v)| v).collect();
                 self.extend_components(ext, span);
+
                 res
             }
             Err(diag) => {
@@ -458,7 +468,7 @@ impl<'a, R: FileManager> ExtractExportDefaultVisitor<'a, R> {
                                 HeaderOrCookie::Cookie
                             },
                             span: lib_ty_name.span,
-                            schema: self.convert_to_json_schema(ty, &lib_ty_name.span),
+                            schema: self.convert_to_json_schema(ty, &lib_ty_name.span, true),
                             required,
                             description,
                         })
@@ -486,7 +496,7 @@ impl<'a, R: FileManager> ExtractExportDefaultVisitor<'a, R> {
             }
         }
         Ok(HandlerParameter::PathOrQueryOrBody {
-            schema: self.convert_to_json_schema(ty, &tref.span),
+            schema: self.convert_to_json_schema(ty, &tref.span, true),
             required,
             description,
             span: tref.span,
@@ -504,7 +514,7 @@ impl<'a, R: FileManager> ExtractExportDefaultVisitor<'a, R> {
                 self.parse_type_ref_parameter(tref, ty, required, description)
             }
             _ => Ok(HandlerParameter::PathOrQueryOrBody {
-                schema: self.convert_to_json_schema(ty, span),
+                schema: self.convert_to_json_schema(ty, span, true),
                 required,
                 description,
                 span: *span,
@@ -728,8 +738,11 @@ impl<'a, R: FileManager> ExtractExportDefaultVisitor<'a, R> {
             parameters,
             summary: endpoint_comments.summary,
             description: endpoint_comments.description,
-            return_type: self
-                .convert_to_json_schema(maybe_extract_promise(&return_type), parent_span),
+            return_type: self.convert_to_json_schema(
+                maybe_extract_promise(&return_type),
+                parent_span,
+                true,
+            ),
             span: *parent_span,
         };
 
@@ -802,7 +815,11 @@ impl<'a, R: FileManager> ExtractExportDefaultVisitor<'a, R> {
                 .collect(),
             summary: endpoint_comments.summary,
             description: endpoint_comments.description,
-            return_type: self.convert_to_json_schema(maybe_extract_promise(&ret_ty), parent_span),
+            return_type: self.convert_to_json_schema(
+                maybe_extract_promise(&ret_ty),
+                parent_span,
+                true,
+            ),
             span: *parent_span,
         };
 
@@ -966,6 +983,7 @@ impl<'a, R: FileManager> ExtractExportDefaultVisitor<'a, R> {
                 key,
                 type_ann,
                 type_params,
+                span,
                 ..
             }) => {
                 assert!(type_params.is_none());
@@ -973,12 +991,13 @@ impl<'a, R: FileManager> ExtractExportDefaultVisitor<'a, R> {
                     Expr::Ident(ident) => ident.sym.to_string(),
                     _ => todo!(),
                 };
-                let mut to_schema = TypeToSchema::new(self.files, self.current_file.clone());
                 BuiltDecoder {
                     exported_name: key,
-                    schema: to_schema
-                        .convert_ts_type(&type_ann.as_ref().unwrap().type_ann)
-                        .unwrap(),
+                    schema: self.convert_to_json_schema(
+                        &type_ann.as_ref().unwrap().type_ann,
+                        span,
+                        false,
+                    ),
                 }
             }
             _ => todo!(),
@@ -1306,6 +1325,7 @@ pub struct ExtractResult {
     pub entry_file_name: BffFileName,
     pub handlers: Vec<PathHandlerMap>,
     pub built_decoders: Option<Vec<BuiltDecoder>>,
+    pub components: Vec<Definition>,
 }
 
 fn visit_extract<R: FileManager>(
@@ -1317,6 +1337,7 @@ fn visit_extract<R: FileManager>(
     Vec<Diagnostic>,
     Info,
     Option<Vec<BuiltDecoder>>,
+    HashSet<String>,
 ) {
     let mut visitor = ExtractExportDefaultVisitor::new(files, current_file.clone());
 
@@ -1338,6 +1359,7 @@ fn visit_extract<R: FileManager>(
         visitor.errors,
         visitor.info,
         visitor.built_decoders,
+        visitor.public_definitions,
     )
 }
 
@@ -1345,7 +1367,7 @@ pub fn extract_schema<R: FileManager>(
     files: &mut R,
     entry_file_name: BffFileName,
 ) -> ExtractResult {
-    let (handlers, components, errors, info, built_decoders) =
+    let (handlers, components, errors, info, built_decoders, public_definitions) =
         visit_extract(files, entry_file_name.clone());
 
     let mut transformer = EndpointToPath {
@@ -1358,7 +1380,7 @@ pub fn extract_schema<R: FileManager>(
     let errors = transformer.errors;
     let open_api = OpenApi {
         info,
-        components,
+        components: public_definitions.into_iter().collect(),
         paths,
     };
 
@@ -1368,5 +1390,6 @@ pub fn extract_schema<R: FileManager>(
         entry_file_name,
         errors,
         built_decoders,
+        components,
     }
 }

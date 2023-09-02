@@ -334,45 +334,44 @@ fn error_response(code: &str, description: &str) -> (String, Json) {
     )
 }
 
-impl ToJson for OpenApi {
-    fn to_json(self) -> Json {
-        let v = vec![
-            //
-            ("openapi".into(), Json::String("3.1.0".into())),
-            ("info".into(), self.info.to_json()),
-            (
-                "paths".into(),
-                Json::Object(
-                    self.paths
-                        .into_iter()
-                        .flat_map(ToJsonKv::to_json_kv)
-                        .collect(),
+fn open_api_to_json(it: OpenApi, components: &Vec<Definition>) -> Json {
+    let v = vec![
+        //
+        ("openapi".into(), Json::String("3.1.0".into())),
+        ("info".into(), it.info.to_json()),
+        (
+            "paths".into(),
+            Json::Object(
+                it.paths
+                    .into_iter()
+                    .flat_map(ToJsonKv::to_json_kv)
+                    .collect(),
+            ),
+        ),
+        (
+            "components".into(),
+            Json::Object(vec![
+                (
+                    "schemas".into(),
+                    Json::Object(
+                        it.components
+                            .into_iter()
+                            .map(|name| components.iter().find(|it| it.name == name).unwrap())
+                            .flat_map(|it| ToJsonKv::to_json_kv(it.clone()))
+                            .collect(),
+                    ),
                 ),
-            ),
-            (
-                "components".into(),
-                Json::Object(vec![
-                    (
-                        "schemas".into(),
-                        Json::Object(
-                            self.components
-                                .into_iter()
-                                .flat_map(ToJsonKv::to_json_kv)
-                                .collect(),
-                        ),
-                    ),
-                    (
-                        "responses".into(),
-                        Json::Object(vec![
-                            error_response("DecodeError", "Invalid parameters or request body"),
-                            error_response("UnexpectedError", "Unexpected Error"),
-                        ]),
-                    ),
-                ]),
-            ),
-        ];
-        Json::Object(v)
-    }
+                (
+                    "responses".into(),
+                    Json::Object(vec![
+                        error_response("DecodeError", "Invalid parameters or request body"),
+                        error_response("UnexpectedError", "Unexpected Error"),
+                    ]),
+                ),
+            ]),
+        ),
+    ];
+    Json::Object(v)
 }
 
 fn param_to_js(
@@ -596,7 +595,7 @@ impl ToWritableModules for ExtractResult {
     fn to_module(self) -> Result<WritableModules> {
         let mut js_server_data = vec![];
 
-        for comp in &self.open_api.components {
+        for comp in &self.components {
             let name = format!("validate_{}", comp.name);
             let decoder_fn = decoder::from_schema(&comp.schema, &Some(comp.name.clone()));
             let decoder_fn_decl = ModuleItem::Stmt(Stmt::Decl(Decl::Fn(FnDecl {
@@ -611,7 +610,7 @@ impl ToWritableModules for ExtractResult {
             js_server_data.push(decoder_fn_decl);
         }
 
-        let components = &self.open_api.components;
+        let components = &self.components;
 
         let meta_expr = handlers_to_js(self.handlers, &components).to_expr();
         js_server_data.push(const_decl("meta", meta_expr));
@@ -624,7 +623,7 @@ impl ToWritableModules for ExtractResult {
 
         Ok(WritableModules {
             js_server_data: emit_module(js_server_data)?,
-            json_schema: self.open_api.to_json().to_string(),
+            json_schema: open_api_to_json(self.open_api, &self.components).to_string(),
         })
     }
 }
