@@ -50,6 +50,7 @@ enum DecodeError {
     NotTypeof(String),
     NotEq(Json),
     InvalidUnion,
+    StringFormatCheckFailed { name_of_type: String },
 }
 
 fn decode_error_variant(
@@ -87,6 +88,15 @@ impl DecodeError {
                 Some(vec![("expected_value".into(), e.to_js())]),
             ),
             DecodeError::InvalidUnion => decode_error_variant("InvalidUnion", path, received, None),
+            DecodeError::StringFormatCheckFailed { name_of_type } => decode_error_variant(
+                "StringFormatCheckFailed",
+                path,
+                received,
+                Some(vec![(
+                    "expected_type".into(),
+                    Js::String(name_of_type.to_owned()),
+                )]),
+            ),
         }
     }
 }
@@ -393,6 +403,31 @@ impl DecoderFnGenerator {
         );
         vec![check]
     }
+    fn decode_runtime_registered_string(
+        &mut self,
+        name_of_type: &String,
+        value_ref: &Expr,
+        err_storage: &str,
+        path: &[DecodePath],
+    ) -> Vec<Stmt> {
+        let check = SwcBuilder::if_(
+            SwcBuilder::check_runtime_registered_string(name_of_type, value_ref.clone()),
+            BlockStmt {
+                span: DUMMY_SP,
+                stmts: vec![store_error(
+                    err_storage,
+                    ReportedError {
+                        kind: DecodeError::StringFormatCheckFailed {
+                            name_of_type: name_of_type.to_owned(),
+                        },
+                        path: path.to_vec(),
+                    },
+                    value_ref.clone(),
+                )],
+            },
+        );
+        vec![check]
+    }
 
     fn convert_to_decoder(
         &mut self,
@@ -425,7 +460,10 @@ impl DecoderFnGenerator {
                 items,
             } => self.decode_tuple(prefix_items, items, value_ref, err_storage, path),
             JsonSchema::AllOf(els) => self.decode_all_of(els, value_ref, err_storage, path),
-            JsonSchema::ResponseRef(_) => unreachable!("will not decode error schema"),
+            JsonSchema::OpenApiResponseRef(_) => unreachable!("will not decode error schema"),
+            JsonSchema::StringWithFormat(it) => {
+                self.decode_runtime_registered_string(it, value_ref, err_storage, path)
+            }
         }
     }
 

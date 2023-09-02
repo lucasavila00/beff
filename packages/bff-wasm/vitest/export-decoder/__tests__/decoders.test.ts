@@ -1,10 +1,38 @@
 import { it, expect } from "vitest";
-import { NotPublicRenamed, User, Users } from "../router";
+import { NotPublicRenamed, User, Users, StartsWithA } from "../router";
 import { schema } from "../bff-generated";
 
-it("works", () => {
+it("custom types", () => {
+  expect(StartsWithA.safeParse("AA")).toMatchInlineSnapshot(`
+    {
+      "data": "AA",
+      "success": true,
+    }
+  `);
+  expect(StartsWithA.safeParse("BB")).toMatchInlineSnapshot(`
+    {
+      "errors": [
+        {
+          "error_kind": "StringFormatCheckFailed",
+          "expected_type": "StartsWithA",
+          "path": [
+            "StartsWithA",
+          ],
+          "received": "BB",
+        },
+      ],
+      "success": false,
+    }
+  `);
+});
+
+it("regular types", () => {
   expect(schema.components.schemas).toMatchInlineSnapshot(`
     {
+      "StartsWithA": {
+        "format": "StartsWithA",
+        "type": "string",
+      },
       "User": {
         "properties": {
           "age": {

@@ -132,6 +132,34 @@ impl SwcBuilder {
         })
     }
 
+    pub fn check_runtime_registered_string(type_name: &String, value: Expr) -> Expr {
+        let check_custom_string_format = Expr::Ident(Ident {
+            span: DUMMY_SP,
+            sym: "isCustomFormatInvalid".into(),
+            optional: false,
+        });
+        Expr::Call(CallExpr {
+            span: DUMMY_SP,
+            callee: Callee::Expr(check_custom_string_format.into()),
+            args: vec![
+                ExprOrSpread {
+                    spread: None,
+                    expr: Expr::Lit(Lit::Str(Str {
+                        span: DUMMY_SP,
+                        value: type_name.to_string().into(),
+                        raw: None,
+                    }))
+                    .into(),
+                },
+                ExprOrSpread {
+                    spread: None,
+                    expr: value.into(),
+                },
+            ],
+            type_args: None,
+        })
+    }
+
     #[must_use]
     pub fn store_error_vec(storage: &str, args: Vec<ExprOrSpread>) -> Stmt {
         let error_storage_expr = Expr::Ident(Ident {

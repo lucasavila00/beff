@@ -1,18 +1,23 @@
-import { buildParsers } from "./bff-generated";
+import { buildParsers, registerStringFormat } from "./bff-generated";
+import { StringFormat, Formats } from "bff-types";
 
-type OnlyInDecoders = {
+type NotPublic = {
   a: string;
 };
-
 type User = {
   name: string;
   age: number;
 };
 
-export const { User, Users, OnlyInDecodersRenamed } = buildParsers<{
+type StartsWithA = StringFormat<"StartsWithA">;
+registerStringFormat<StartsWithA>("StartsWithA", (it) => it.startsWith("A"));
+
+export const { StartsWithA, User, Users, NotPublicRenamed } = buildParsers<{
   User: User;
   Users: User[];
-  OnlyInDecodersRenamed: OnlyInDecoders;
+  NotPublicRenamed: NotPublic;
+  StartsWithA: StartsWithA;
+  Password: Formats.Password;
 }>();
 
 type Ctx = any;
@@ -20,6 +25,15 @@ export default {
   [`/{name}`]: {
     get: async (c: Ctx, name: string): Promise<User> => {
       return User.parse({ name, age: 123 });
+    },
+  },
+  ["/check-uuid/{uuid}"]: {
+    get: async (
+      c: Ctx,
+      uuid: string,
+      p: Formats.Password
+    ): Promise<StartsWithA> => {
+      return StartsWithA.parse(uuid);
     },
   },
 };

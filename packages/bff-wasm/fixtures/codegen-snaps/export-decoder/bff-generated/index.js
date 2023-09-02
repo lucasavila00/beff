@@ -41,6 +41,17 @@ function registerStringFormat(name, predicate) {
   stringPredicates[name] = predicate;
 }
 
+// a hint to UIs to mask the input
+registerStringFormat("password", () => true);
+
+function isCustomFormatInvalid(key, value) {
+  const predicate = stringPredicates[key];
+  if (predicate == null) {
+    throw new Error("unknown string format: " + key);
+  }
+  return !predicate(value);
+}
+
 function validate_User(input) {
     let error_acc_0 = [];
     if (typeof input == "object" && input != null) {
@@ -77,14 +88,14 @@ function validate_User(input) {
     }
     return error_acc_0;
 }
-function validate_OnlyInDecoders(input) {
+function validate_NotPublic(input) {
     let error_acc_0 = [];
     if (typeof input == "object" && input != null) {
         if (typeof input["a"] != "string") {
             error_acc_0.push({
                 "error_kind": "NotTypeof",
                 "path": [
-                    "OnlyInDecoders",
+                    "NotPublic",
                     "a"
                 ],
                 "received": input["a"],
@@ -95,9 +106,37 @@ function validate_OnlyInDecoders(input) {
         error_acc_0.push({
             "error_kind": "NotAnObject",
             "path": [
-                "OnlyInDecoders"
+                "NotPublic"
             ],
             "received": input
+        });
+    }
+    return error_acc_0;
+}
+function validate_StartsWithA(input) {
+    let error_acc_0 = [];
+    if (isCustomFormatInvalid("StartsWithA", input)) {
+        error_acc_0.push({
+            "error_kind": "StringFormatCheckFailed",
+            "path": [
+                "StartsWithA"
+            ],
+            "received": input,
+            "expected_type": "StartsWithA"
+        });
+    }
+    return error_acc_0;
+}
+function validate_Password(input) {
+    let error_acc_0 = [];
+    if (isCustomFormatInvalid("password", input)) {
+        error_acc_0.push({
+            "error_kind": "StringFormatCheckFailed",
+            "path": [
+                "Password"
+            ],
+            "received": input,
+            "expected_type": "password"
         });
     }
     return error_acc_0;
@@ -140,6 +179,59 @@ const meta = [
             ]));
             return error_acc_0;
         }
+    },
+    {
+        "method_kind": "get",
+        "params": [
+            {
+                "type": "context"
+            },
+            {
+                "type": "path",
+                "name": "uuid",
+                "required": true,
+                "validator": function(input) {
+                    let error_acc_0 = [];
+                    if (typeof input != "string") {
+                        error_acc_0.push({
+                            "error_kind": "NotTypeof",
+                            "path": [
+                                'Path Parameter "uuid"'
+                            ],
+                            "received": input,
+                            "expected_type": "string"
+                        });
+                    }
+                    return error_acc_0;
+                },
+                "coercer": function(input) {
+                    return coerce_string(input);
+                }
+            },
+            {
+                "type": "query",
+                "name": "p",
+                "required": true,
+                "validator": function(input) {
+                    let error_acc_0 = [];
+                    error_acc_0.push(...add_path_to_errors(validate_Password(input), [
+                        'Query Parameter "p"'
+                    ]));
+                    return error_acc_0;
+                },
+                "coercer": function(input) {
+                    return coerce_string(input);
+                }
+            }
+        ],
+        "pattern": "/check-uuid/{uuid}",
+        "return_validator": function(input) {
+            let error_acc_0 = [];
+            error_acc_0.push(...add_path_to_errors(validate_StartsWithA(input), [
+                "[GET] /check-uuid/{uuid}.response_body"
+            ]));
+            return error_acc_0;
+        }
     }
 ];
 const buildParsersInput = {
@@ -166,9 +258,19 @@ const buildParsersInput = {
         }
         return error_acc_0;
     },
-    "OnlyInDecodersRenamed": function(input) {
+    "NotPublicRenamed": function(input) {
         let error_acc_0 = [];
-        error_acc_0.push(...add_path_to_errors(validate_OnlyInDecoders(input), []));
+        error_acc_0.push(...add_path_to_errors(validate_NotPublic(input), []));
+        return error_acc_0;
+    },
+    "StartsWithA": function(input) {
+        let error_acc_0 = [];
+        error_acc_0.push(...add_path_to_errors(validate_StartsWithA(input), []));
+        return error_acc_0;
+    },
+    "Password": function(input) {
+        let error_acc_0 = [];
+        error_acc_0.push(...add_path_to_errors(validate_Password(input), []));
         return error_acc_0;
     }
 };
@@ -245,6 +347,14 @@ const schema =  {
       }
     },
     "schemas": {
+      "Password": {
+        "format": "password",
+        "type": "string"
+      },
+      "StartsWithA": {
+        "format": "StartsWithA",
+        "type": "string"
+      },
       "User": {
         "properties": {
           "age": {
@@ -268,6 +378,46 @@ const schema =  {
   },
   "openapi": "3.1.0",
   "paths": {
+    "/check-uuid/{uuid}": {
+      "get": {
+        "parameters": [
+          {
+            "in": "path",
+            "name": "uuid",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "p",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/Password"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StartsWithA"
+                }
+              }
+            },
+            "description": "Successful Operation"
+          },
+          "422": {
+            "$ref": "#/components/responses/DecodeError"
+          },
+          "default": {
+            "$ref": "#/components/responses/UnexpectedError"
+          }
+        }
+      }
+    },
     "/{name}": {
       "get": {
         "parameters": [

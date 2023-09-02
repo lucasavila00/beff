@@ -39,6 +39,14 @@
       }
     },
     "schemas": {
+      "Password": {
+        "format": "password",
+        "type": "string"
+      },
+      "StartsWithA": {
+        "format": "StartsWithA",
+        "type": "string"
+      },
       "User": {
         "properties": {
           "age": {
@@ -62,6 +70,46 @@
   },
   "openapi": "3.1.0",
   "paths": {
+    "/check-uuid/{uuid}": {
+      "get": {
+        "parameters": [
+          {
+            "in": "path",
+            "name": "uuid",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "p",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/Password"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StartsWithA"
+                }
+              }
+            },
+            "description": "Successful Operation"
+          },
+          "422": {
+            "$ref": "#/components/responses/DecodeError"
+          },
+          "default": {
+            "$ref": "#/components/responses/UnexpectedError"
+          }
+        }
+      }
+    },
     "/{name}": {
       "get": {
         "parameters": [

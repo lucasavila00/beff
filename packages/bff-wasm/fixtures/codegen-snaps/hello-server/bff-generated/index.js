@@ -41,6 +41,17 @@ function registerStringFormat(name, predicate) {
   stringPredicates[name] = predicate;
 }
 
+// a hint to UIs to mask the input
+registerStringFormat("password", () => true);
+
+function isCustomFormatInvalid(key, value) {
+  const predicate = stringPredicates[key];
+  if (predicate == null) {
+    throw new Error("unknown string format: " + key);
+  }
+  return !predicate(value);
+}
+
 function validate_DataTypesKitchenSink(input) {
     let error_acc_0 = [];
     if (typeof input == "object" && input != null) {

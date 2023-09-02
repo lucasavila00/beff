@@ -1092,7 +1092,7 @@ pub enum FunctionParameterIn {
 
 fn is_type_simple(it: &JsonSchema, components: &Vec<Definition>) -> bool {
     match it {
-        JsonSchema::ResponseRef(r) | JsonSchema::Ref(r) => {
+        JsonSchema::OpenApiResponseRef(r) | JsonSchema::Ref(r) => {
             let def = components
                 .iter()
                 .find(|it| &it.name == r)
@@ -1104,6 +1104,7 @@ fn is_type_simple(it: &JsonSchema, components: &Vec<Definition>) -> bool {
         | JsonSchema::Boolean
         | JsonSchema::String
         | JsonSchema::Number
+        | JsonSchema::StringWithFormat(_)
         | JsonSchema::Const(_) => true,
         JsonSchema::AllOf(_)
         | JsonSchema::Any

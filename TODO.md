@@ -2,12 +2,13 @@
 
 ## BFF Core
 
-- [ ] string formats (uuid, email)
 - [ ] assert header etc is imported from lib
 
 - [ ] todo!, unwrap, panic
 
 - [ ] fix skipped tests
+
+- [ ] coercion of alias
 
 ## BFF CLI
 
@@ -25,6 +26,7 @@
 - [ ] only allow simple openapi patterns, no explode
 - [ ] disallow `/{param}asd/`
 - [ ] remove tuple args broken code
+- [ ] check string format was registered
 
 <!--  -->
 <!--  -->

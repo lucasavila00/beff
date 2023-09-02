@@ -33,16 +33,15 @@ impl CoercerFnGenerator {
             JsonSchema::Null | JsonSchema::Const(_) | JsonSchema::Any => value_ref.clone(),
             JsonSchema::Boolean => coerce_primitive(value_ref.clone(), "boolean"),
             JsonSchema::String => coerce_primitive(value_ref.clone(), "string"),
+            JsonSchema::StringWithFormat(_) => coerce_primitive(value_ref.clone(), "string"),
             JsonSchema::Number => coerce_primitive(value_ref.clone(), "number"),
             JsonSchema::Array(_) | JsonSchema::Object { .. } | JsonSchema::Tuple { .. } => {
                 unreachable!("should be on request body, no coercion needed")
             }
-
             JsonSchema::Ref(_schema_ref) => {
                 unreachable!("should have been resolved to a definition by now")
             }
-            JsonSchema::ResponseRef(_) => unreachable!("will not coerce an error schema"),
-
+            JsonSchema::OpenApiResponseRef(_) => unreachable!("will not coerce an error schema"),
             JsonSchema::AnyOf(vs) => Expr::Call(CallExpr {
                 span: DUMMY_SP,
                 callee: schema_ref_callee_coerce("union"),

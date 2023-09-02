@@ -82,6 +82,10 @@ impl ToJson for JsonSchema {
             JsonSchema::String => {
                 Json::Object(vec![("type".into(), Json::String("string".into()))])
             }
+            JsonSchema::StringWithFormat(format) => Json::Object(vec![
+                ("type".into(), Json::String("string".into())),
+                ("format".into(), Json::String(format.into())),
+            ]),
             JsonSchema::Object { values } => {
                 Json::Object(vec![
                     //
@@ -127,7 +131,7 @@ impl ToJson for JsonSchema {
                 "$ref".into(),
                 Json::String(format!("#/components/schemas/{reference}")),
             )]),
-            JsonSchema::ResponseRef(reference) => Json::Object(vec![(
+            JsonSchema::OpenApiResponseRef(reference) => Json::Object(vec![(
                 "$ref".into(),
                 Json::String(format!("#/components/responses/{reference}")),
             )]),
@@ -212,7 +216,7 @@ impl ToJson for open_api_ast::JsonRequestBody {
 fn error_response_ref(code: &str, reference: &str) -> (String, Json) {
     (
         code.into(),
-        JsonSchema::ResponseRef(reference.to_owned()).to_json(),
+        JsonSchema::OpenApiResponseRef(reference.to_owned()).to_json(),
     )
 }
 impl ToJson for open_api_ast::OperationObject {

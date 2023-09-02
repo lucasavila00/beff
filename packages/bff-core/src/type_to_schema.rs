@@ -11,7 +11,7 @@ use std::rc::Rc;
 use swc_atoms::JsWord;
 use swc_common::Span;
 use swc_ecma_ast::{
-    BigInt, Expr, Ident, TsArrayType, TsCallSignatureDecl, TsConditionalType,
+    BigInt, Expr, Ident, Str, TsArrayType, TsCallSignatureDecl, TsConditionalType,
     TsConstructSignatureDecl, TsConstructorType, TsEntityName, TsFnOrConstructorType, TsFnType,
     TsGetterSignature, TsImportType, TsIndexSignature, TsIndexedAccessType, TsInferType,
     TsInterfaceDecl, TsIntersectionType, TsKeywordType, TsKeywordTypeKind, TsLit, TsLitType,
@@ -180,6 +180,29 @@ impl<'a, R: FileManager> TypeToSchema<'a, R> {
         Ok(JsonSchema::Ref(name))
     }
 
+    pub fn get_string_with_format(
+        &mut self,
+        type_params: &Option<Box<TsTypeParamInstantiation>>,
+    ) -> Res<JsonSchema> {
+        let r = type_params.as_ref().and_then(|it| it.params.split_first());
+
+        match r {
+            Some((head, rest)) => {
+                assert!(rest.is_empty());
+                match &**head {
+                    TsType::TsLitType(TsLitType { lit, .. }) => match lit {
+                        TsLit::Str(Str { value, .. }) => {
+                            Ok(JsonSchema::StringWithFormat(value.to_string()))
+                        }
+                        _ => todo!(),
+                    },
+                    _ => todo!(),
+                }
+            }
+            None => panic!(),
+        }
+    }
+
     pub fn get_type_ref(
         &mut self,
         i: &Ident,
@@ -190,6 +213,7 @@ impl<'a, R: FileManager> TypeToSchema<'a, R> {
                 let type_params = type_params.as_ref();
                 match type_params {
                     Some(type_params) => {
+                        // todo: [0] can crash, use split first
                         let ty = self.convert_ts_type(&type_params.params[0])?;
                         return Ok(JsonSchema::Array(ty.into()));
                     }
@@ -198,6 +222,7 @@ impl<'a, R: FileManager> TypeToSchema<'a, R> {
                     }
                 }
             }
+            "StringFormat" => return self.get_string_with_format(type_params),
             _ => {}
         }
 
