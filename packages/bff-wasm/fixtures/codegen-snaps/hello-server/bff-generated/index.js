@@ -1026,6 +1026,11 @@ const meta = [
 const buildParsersInput = {};
 
 
+class BffParseError {
+  constructor(errors) {
+    this.errors = errors;
+  }
+}
 function buildParsers() {
   let decoders ={};
   Object.keys(buildParsersInput).forEach(k => {
@@ -1042,7 +1047,7 @@ function buildParsers() {
       if (safe.success) {
         return safe.data;
       }
-      throw new Error(JSON.stringify(safe.errors));
+      throw new BffParseError(safe.errors)
     };
     decoders[k] = {
       parse, safeParse

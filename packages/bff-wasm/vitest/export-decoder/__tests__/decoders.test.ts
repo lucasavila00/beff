@@ -1,11 +1,55 @@
 import { it, expect } from "vitest";
-import { User, Users } from "../router";
+import { NotPublicRenamed, User, Users } from "../router";
+import { schema } from "../bff-generated";
 
 it("works", () => {
+  expect(schema.components.schemas).toMatchInlineSnapshot(`
+    {
+      "User": {
+        "properties": {
+          "age": {
+            "type": "number",
+          },
+          "name": {
+            "type": "string",
+          },
+        },
+        "required": [
+          "name",
+          "age",
+        ],
+        "type": "object",
+      },
+    }
+  `);
   expect(User.parse({ name: "name", age: 123 })).toMatchInlineSnapshot(`
     {
       "age": 123,
       "name": "name",
+    }
+  `);
+  expect(() => User.parse({ name: 123 })).toThrowErrorMatchingInlineSnapshot(`
+    BffParseError {
+      "errors": [
+        {
+          "error_kind": "NotTypeof",
+          "expected_type": "string",
+          "path": [
+            "User",
+            "name",
+          ],
+          "received": 123,
+        },
+        {
+          "error_kind": "NotTypeof",
+          "expected_type": "number",
+          "path": [
+            "User",
+            "age",
+          ],
+          "received": undefined,
+        },
+      ],
     }
   `);
 
@@ -27,6 +71,22 @@ it("works", () => {
           "path": [
             "User",
             "age",
+          ],
+          "received": undefined,
+        },
+      ],
+      "success": false,
+    }
+  `);
+  expect(NotPublicRenamed.safeParse({ name: 123 })).toMatchInlineSnapshot(`
+    {
+      "errors": [
+        {
+          "error_kind": "NotTypeof",
+          "expected_type": "string",
+          "path": [
+            "NotPublic",
+            "a",
           ],
           "received": undefined,
         },

@@ -1,11 +1,18 @@
 import { buildParsers } from "./bff-generated";
 
+type NotPublic = {
+  a: string;
+};
 type User = {
   name: string;
   age: number;
 };
 
-export const { User, Users } = buildParsers<{ User: User; Users: User[] }>();
+export const { User, Users, NotPublicRenamed } = buildParsers<{
+  User: User;
+  Users: User[];
+  NotPublicRenamed: NotPublic;
+}>();
 
 type Ctx = any;
 export default {

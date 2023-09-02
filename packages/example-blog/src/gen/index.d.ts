@@ -1,7 +1,7 @@
 
-import {JSONSchema7, HandlerMeta, DecodeError} from "bff-types";
+import { HandlerMeta, DecodeError} from "bff-types";
 export declare const meta: HandlerMeta[];
-export declare const schema: JSONSchema7;
+export declare const schema: any;
 
 
 type Decoders<T> = {

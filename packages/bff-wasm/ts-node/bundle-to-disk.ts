@@ -4,9 +4,9 @@ import { Bundler, WritableModules } from "./bundler";
 import { ProjectJson, ProjectModule } from "./project";
 
 const RUNTIME_DTS = `
-import {JSONSchema7, HandlerMeta, DecodeError} from "bff-types";
+import { HandlerMeta, DecodeError} from "bff-types";
 export declare const meta: HandlerMeta[];
-export declare const schema: JSONSchema7;
+export declare const schema: any;
 
 
 type Decoders<T> = {
@@ -63,6 +63,11 @@ function coerce(coercer, value) {
 `;
 
 const buildParsers = `
+class BffParseError {
+  constructor(errors) {
+    this.errors = errors;
+  }
+}
 function buildParsers() {
   let decoders ={};
   Object.keys(buildParsersInput).forEach(k => {
@@ -79,7 +84,7 @@ function buildParsers() {
       if (safe.success) {
         return safe.data;
       }
-      throw new Error(JSON.stringify(safe.errors));
+      throw new BffParseError(safe.errors)
     };
     decoders[k] = {
       parse, safeParse
@@ -127,6 +132,6 @@ export const execProject = (
 
   const outputDts = path.join(outputDir, "index.d.ts");
   fs.writeFileSync(outputDts, [RUNTIME_DTS].join("\n"));
-  const outputSchemaJson = path.join(outputDir, "schema.json");
+  const outputSchemaJson = path.join(outputDir, "openapi.json");
   fs.writeFileSync(outputSchemaJson, outResult.json_schema);
 };

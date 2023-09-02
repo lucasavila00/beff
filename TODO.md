@@ -2,8 +2,6 @@
 
 ## BFF Core
 
-- [ ] decoder error message must be available in the generated code => how to avoid duplicating it in the runtime?
-
 - [ ] string formats (uuid, email)
 
 - [ ] clap descriptions of params
