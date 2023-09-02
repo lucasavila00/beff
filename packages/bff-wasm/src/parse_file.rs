@@ -1,5 +1,6 @@
 use anyhow::Result;
 use bff_core::parse::load_source_file;
+use bff_core::ImportReferenceType;
 use bff_core::ParsedModule;
 use bff_core::ParsedModuleLocals;
 use bff_core::{ImportReference, TypeExport};
@@ -12,16 +13,18 @@ use swc_common::SourceMap;
 use swc_common::{FileName, SyntaxContext};
 use swc_ecma_ast::Decl;
 use swc_ecma_ast::ExportDecl;
+use swc_ecma_ast::Ident;
+use swc_ecma_ast::ImportDefaultSpecifier;
+use swc_ecma_ast::ImportStarAsSpecifier;
 use swc_ecma_ast::{
     ImportDecl, ImportNamedSpecifier, ImportSpecifier, TsInterfaceDecl, TsTypeAliasDecl,
 };
 use swc_ecma_visit::Visit;
 pub struct ImportsVisitor {
-    pub imports: HashMap<(JsWord, SyntaxContext), Rc<ImportReference>>,
-    pub type_exports: HashMap<JsWord, Rc<TypeExport>>,
-    pub current_file: FileName,
-
-    pub known_imports: HashMap<String, Option<Rc<String>>>,
+    imports: HashMap<(JsWord, SyntaxContext), Rc<ImportReference>>,
+    type_exports: HashMap<JsWord, Rc<TypeExport>>,
+    current_file: FileName,
+    known_imports: HashMap<String, Option<Rc<String>>>,
 }
 
 impl ImportsVisitor {
@@ -33,13 +36,37 @@ impl ImportsVisitor {
             known_imports: HashMap::new(),
         }
     }
-    pub fn resolve_import(&self, module_specifier: &str) -> Option<Rc<String>> {
+    fn resolve_import(&self, module_specifier: &str) -> Option<Rc<String>> {
         match self.known_imports.get(module_specifier) {
             Some(it) => it.clone(),
             None => {
                 crate::resolve_import(&self.current_file.to_string().as_str(), &module_specifier)
                     .map(Rc::new)
             }
+        }
+    }
+
+    fn insert_import(
+        &mut self,
+        local: &Ident,
+        module_specifier: &str,
+        import_type: ImportReferenceType,
+    ) {
+        let k = (local.sym.clone(), local.span.ctxt);
+        let v = self.resolve_import(&module_specifier);
+        self.known_imports
+            .insert(module_specifier.to_string(), v.clone());
+        match v {
+            Some(v) => {
+                self.imports.insert(
+                    k,
+                    Rc::new(ImportReference {
+                        file_name: v,
+                        import_type,
+                    }),
+                );
+            }
+            None => {}
         }
     }
 }
@@ -76,21 +103,13 @@ impl Visit for ImportsVisitor {
         for x in &node.specifiers {
             match x {
                 ImportSpecifier::Named(ImportNamedSpecifier { local, .. }) => {
-                    let k = (local.sym.clone(), local.span.ctxt);
-                    let v = self.resolve_import(&module_specifier);
-                    self.known_imports
-                        .insert(module_specifier.clone(), v.clone());
-                    match v {
-                        Some(v) => {
-                            self.imports
-                                .insert(k, Rc::new(ImportReference { file_name: v }));
-                        }
-                        None => {}
-                    }
+                    self.insert_import(local, &module_specifier, ImportReferenceType::Named)
                 }
-                ImportSpecifier::Default(_) => { //todo fix me
+                ImportSpecifier::Namespace(ImportStarAsSpecifier { local, .. }) => {
+                    self.insert_import(local, &module_specifier, ImportReferenceType::Star)
                 }
-                ImportSpecifier::Namespace(_) => { //todo fix me
+                ImportSpecifier::Default(ImportDefaultSpecifier { local, .. }) => {
+                    self.insert_import(local, &module_specifier, ImportReferenceType::Default)
                 }
             }
         }

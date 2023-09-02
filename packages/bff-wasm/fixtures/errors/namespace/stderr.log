@@ -1,10 +1,34 @@
-Error: Qualified type names (ex: A.b) are not supported yet
- /home/lucas/fluff/bff/packages/bff-wasm/fixtures/errors/namespace/app.ts:8:65
-    6 |
-    7 | export default {
- >  8 |   [`/hello/{id}`]: { get: async (c: Ctx, id: string): Promise<X.A> => todo() },
-      |                                                                 ^ Qualified type names (ex: A.b) are not supported yet
-    9 | };
-   10 |
+panicked at /home/lucas/fluff/bff/packages/bff-core/src/type_resolve.rs:55:9:
+not yet implemented
 
-Found 1 error
+Stack:
+
+Error
+    at /home/lucas/fluff/bff/packages/bff-wasm/pkg/hello_wasm.js:364:17
+    at logError (/home/lucas/fluff/bff/packages/bff-wasm/pkg/hello_wasm.js:205:18)
+    at module.exports.__wbg_new_abda76e883ba8a5f (/home/lucas/fluff/bff/packages/bff-wasm/pkg/hello_wasm.js:363:65)
+    at console_error_panic_hook::Error::new::h24a202ca2cd6f4e3 (wasm://wasm/02d356d6:wasm-function[16908]:0x8f73a0)
+    at console_error_panic_hook::hook_impl::hbd017b1cd15b0ccd (wasm://wasm/02d356d6:wasm-function[3284]:0x6f0888)
+    at console_error_panic_hook::hook::h2d1bbfd1bba12fb3 (wasm://wasm/02d356d6:wasm-function[18149]:0x908d82)
+    at core::ops::function::Fn::call::h060acb07aceb94e4 (wasm://wasm/02d356d6:wasm-function[15404]:0x8e02f7)
+    at std::panicking::rust_panic_with_hook::he4d11d009df2f45f (wasm://wasm/02d356d6:wasm-function[6631]:0x7de9bb)
+    at std::panicking::begin_panic_handler::{{closure}}::hdd0d58f31e4d53df (wasm://wasm/02d356d6:wasm-function[8743]:0x83c945)
+    at std::sys_common::backtrace::__rust_end_short_backtrace::hd70f3cac19eb49f3 (wasm://wasm/02d356d6:wasm-function[20629]:0x920668)
+
+
+wasm://wasm/02d356d6:1
+
+
+RuntimeError: unreachable
+    at __rust_start_panic (wasm://wasm/02d356d6:wasm-function[20671]:0x92075e)
+    at rust_panic (wasm://wasm/02d356d6:wasm-function[20463]:0x91fee5)
+    at std::panicking::rust_panic_with_hook::he4d11d009df2f45f (wasm://wasm/02d356d6:wasm-function[6631]:0x7de9e8)
+    at std::panicking::begin_panic_handler::{{closure}}::hdd0d58f31e4d53df (wasm://wasm/02d356d6:wasm-function[8743]:0x83c945)
+    at std::sys_common::backtrace::__rust_end_short_backtrace::hd70f3cac19eb49f3 (wasm://wasm/02d356d6:wasm-function[20629]:0x920668)
+    at rust_begin_unwind (wasm://wasm/02d356d6:wasm-function[12405]:0x8a6f02)
+    at core::panicking::panic_fmt::h157d8e2782a50057 (wasm://wasm/02d356d6:wasm-function[18028]:0x907491)
+    at core::panicking::panic::h84f3aeadc405be3e (wasm://wasm/02d356d6:wasm-function[15401]:0x8e0234)
+    at bff_core::type_resolve::TypeResolver<R>::resolve_namespace_type::h85b5eb46ae13476c (wasm://wasm/02d356d6:wasm-function[1630]:0x611f7c)
+    at bff_core::type_to_schema::TypeToSchema<R>::convert_ts_type_qual::hb1f1b3413a124348 (wasm://wasm/02d356d6:wasm-function[578]:0x4bd852)
+
+Node.js v18.16.0

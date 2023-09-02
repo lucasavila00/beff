@@ -4,7 +4,7 @@ use crate::diag::{
 };
 use crate::open_api_ast::Json;
 use crate::open_api_ast::{Definition, JsonSchema, Optionality};
-use crate::type_resolve::{ResolvedType, TypeResolver};
+use crate::type_resolve::{ResolvedLocalType, ResolvedNamespaceType, TypeResolver};
 use crate::TypeExport;
 use std::collections::HashMap;
 use std::rc::Rc;
@@ -14,9 +14,9 @@ use swc_ecma_ast::{
     TsConstructSignatureDecl, TsConstructorType, TsEntityName, TsFnOrConstructorType, TsFnType,
     TsGetterSignature, TsImportType, TsIndexSignature, TsIndexedAccessType, TsInferType,
     TsInterfaceDecl, TsIntersectionType, TsKeywordType, TsKeywordTypeKind, TsLit, TsLitType,
-    TsMappedType, TsMethodSignature, TsOptionalType, TsParenthesizedType, TsRestType,
-    TsSetterSignature, TsThisType, TsTplLitType, TsTupleType, TsType, TsTypeElement, TsTypeLit,
-    TsTypeOperator, TsTypeParamInstantiation, TsTypePredicate, TsTypeQuery, TsTypeRef,
+    TsMappedType, TsMethodSignature, TsOptionalType, TsParenthesizedType, TsQualifiedName,
+    TsRestType, TsSetterSignature, TsThisType, TsTplLitType, TsTupleType, TsType, TsTypeElement,
+    TsTypeLit, TsTypeOperator, TsTypeParamInstantiation, TsTypePredicate, TsTypeQuery, TsTypeRef,
     TsUnionOrIntersectionType, TsUnionType,
 };
 
@@ -130,27 +130,29 @@ impl<'a, R: FileManager> TypeToSchema<'a, R> {
         })
     }
 
+    pub fn convert_resolved_export(
+        &mut self,
+        exported: &TypeExport,
+        from_file: &Rc<String>,
+    ) -> Res<JsonSchema> {
+        let store_current_file = self.current_file.clone();
+        self.current_file = from_file.clone();
+        let ty = match exported {
+            TypeExport::TsType(alias) => self.convert_ts_type(&alias)?,
+            TypeExport::TsInterfaceDecl(int) => self.convert_ts_interface_decl(&int)?,
+        };
+        self.current_file = store_current_file;
+        Ok(ty)
+    }
+
     pub fn get_type_ref_of_user_identifier(&mut self, i: &Ident) -> Res<JsonSchema> {
-        match TypeResolver::new(self.files, &self.current_file).resolve_local_type(i) {
-            Some(ResolvedType::TsType(alias)) => self.convert_ts_type(&alias),
-            Some(ResolvedType::TsInterfaceDecl(int)) => self.convert_ts_interface_decl(&int),
-            Some(ResolvedType::Imported {
+        match TypeResolver::new(self.files, &self.current_file).resolve_local_type(i)? {
+            ResolvedLocalType::TsType(alias) => self.convert_ts_type(&alias),
+            ResolvedLocalType::TsInterfaceDecl(int) => self.convert_ts_interface_decl(&int),
+            ResolvedLocalType::NamedImport {
                 exported,
                 from_file,
-            }) => {
-                let store_current_file = self.current_file.clone();
-                self.current_file = from_file.file_name.clone();
-                let ty = match exported.as_ref() {
-                    TypeExport::TsType(alias) => self.convert_ts_type(&alias)?,
-                    TypeExport::TsInterfaceDecl(int) => self.convert_ts_interface_decl(&int)?,
-                };
-                self.current_file = store_current_file;
-                Ok(ty)
-            }
-            None => self.error(
-                &i.span,
-                DiagnosticInfoMessage::CannotResolveTypeReferenceOnConverting(i.sym.to_string()),
-            ),
+            } => return self.convert_resolved_export(exported.as_ref(), &from_file.file_name),
         }
     }
 
@@ -273,7 +275,7 @@ impl<'a, R: FileManager> TypeToSchema<'a, R> {
         let err = self.create_error(span, msg);
         Err(err.to_diag(None))
     }
-    pub fn get_current_reference(&mut self, i: &Ident) -> Option<DiagnosticInformation> {
+    pub fn get_identifier_diag_info(&mut self, i: &Ident) -> Option<DiagnosticInformation> {
         self.files
             .get_or_fetch_file(&self.current_file)
             .map(|file| {
@@ -290,6 +292,62 @@ impl<'a, R: FileManager> TypeToSchema<'a, R> {
                 }
             })
     }
+
+    pub fn convert_ts_type_ident(
+        &mut self,
+        i: &Ident,
+        type_params: &Option<Box<TsTypeParamInstantiation>>,
+    ) -> Res<JsonSchema> {
+        let current_ref = self.get_identifier_diag_info(i);
+        let did_push = current_ref.is_some();
+        if let Some(current_ref) = current_ref {
+            self.ref_stack.push(current_ref);
+        }
+        let v = self.get_type_ref(i, type_params);
+        if did_push {
+            self.ref_stack.pop();
+        }
+        v
+    }
+
+    pub fn convert_ts_type_qual(&mut self, q: &TsQualifiedName) -> Res<JsonSchema> {
+        match &q.left {
+            TsEntityName::TsQualifiedName(_) => todo!(),
+            TsEntityName::Ident(i) => {
+                let current_ref = self.get_identifier_diag_info(i);
+                let did_push = current_ref.is_some();
+                if let Some(current_ref) = current_ref {
+                    self.ref_stack.push(current_ref);
+                }
+                let v = match TypeResolver::new(self.files, &self.current_file)
+                    .resolve_namespace_type(i)?
+                {
+                    ResolvedNamespaceType::Star { from_file } => {
+                        let exported =
+                            self.files
+                                .get_or_fetch_file(&from_file.file_name)
+                                .and_then(|module| {
+                                    module.type_exports.get(&q.right.sym).map(|it| it.clone())
+                                });
+                        match exported {
+                            Some(exported) => {
+                                let ty = self.convert_resolved_export(
+                                    exported.as_ref(),
+                                    &from_file.file_name,
+                                )?;
+                                self.insert_definition(q.right.sym.to_string(), ty)
+                            }
+                            None => todo!(),
+                        }
+                    }
+                };
+                if did_push {
+                    self.ref_stack.pop();
+                }
+                v
+            }
+        }
+    }
     pub fn convert_ts_type(&mut self, typ: &TsType) -> Res<JsonSchema> {
         match typ {
             TsType::TsKeywordType(TsKeywordType { kind, span, .. }) => {
@@ -300,18 +358,10 @@ impl<'a, R: FileManager> TypeToSchema<'a, R> {
                 type_params,
                 ..
             }) => match &type_name {
-                TsEntityName::TsQualifiedName(data) => todo!(),
-                TsEntityName::Ident(i) => {
-                    let current_ref = self.get_current_reference(i);
-                    let did_push = current_ref.is_some();
-                    if let Some(current_ref) = current_ref {
-                        self.ref_stack.push(current_ref);
-                    }
-                    let v = self.get_type_ref(i, type_params);
-                    if did_push {
-                        self.ref_stack.pop();
-                    }
-                    v
+                TsEntityName::Ident(i) => self.convert_ts_type_ident(i, type_params),
+                TsEntityName::TsQualifiedName(q) => {
+                    assert!(type_params.is_none());
+                    self.convert_ts_type_qual(q)
                 }
             },
             TsType::TsTypeLit(TsTypeLit { members, .. }) => Ok(JsonSchema::Object {

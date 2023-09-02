@@ -28,8 +28,16 @@ pub struct BffModuleData {
 }
 
 #[derive(Debug, Clone)]
+pub enum ImportReferenceType {
+    Named,
+    Star,
+    Default,
+}
+
+#[derive(Debug, Clone)]
 pub struct ImportReference {
     pub file_name: Rc<String>,
+    pub import_type: ImportReferenceType,
 }
 
 pub struct ParsedModule {

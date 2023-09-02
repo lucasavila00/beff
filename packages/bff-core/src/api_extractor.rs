@@ -554,21 +554,22 @@ impl<'a, R: FileManager> ExtractExportDefaultVisitor<'a, R> {
                         // return Err(anyhow!("error param"));
                         todo!()
                     }
-                    TsEntityName::Ident(i) => {
-                        if let Some(alias) = self
-                            .get_current_file()?
-                            .locals
-                            .type_aliases
-                            .get(&(i.sym.clone(), i.span.ctxt))
-                        {
-                            return self
-                                .parse_arrow_param_from_type_expecting_tuple(alias, rest_span);
-                        }
-                        self.push_error(
-                            rest_span,
-                            DiagnosticInfoMessage::CouldNotResolveIdentifierOnPathParamTuple,
-                        );
-                        return Err(anyhow!("error param"));
+                    TsEntityName::Ident(_) => {
+                        todo!()
+                        // if let Some(alias) = self
+                        //     .get_current_file()?
+                        //     .locals
+                        //     .type_aliases
+                        //     .get(&(i.sym.clone(), i.span.ctxt))
+                        // {
+                        //     return self
+                        //         .parse_arrow_param_from_type_expecting_tuple(alias, rest_span);
+                        // }
+                        // self.push_error(
+                        //     rest_span,
+                        //     DiagnosticInfoMessage::CouldNotResolveIdentifierOnPathParamTuple,
+                        // );
+                        // return Err(anyhow!("error param"));
                     }
                 }
             }
