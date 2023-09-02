@@ -7,10 +7,8 @@ const RUNTIME_DTS = `
 import {JSONSchema7, HandlerMeta} from "bff-types";
 export declare const meta: HandlerMeta[];
 export declare const schema: JSONSchema7;
-`;
 
-const BUILD_DECODERS_DTS = `
-import {JSONSchema7, HandlerMeta} from "bff-types";
+
 type Decoders<T> = {
   [K in keyof T]: {
     parse: (input: any) => T[K];
@@ -80,19 +78,15 @@ function buildParsers() {
 `;
 const finalizeFile = (wasmCode: WritableModules, mod: ProjectModule) => {
   const exportCode = mod === "esm" ? "export " : "module.exports = ";
-  const expr = [
-    "meta",
-    "schema",
-    wasmCode.had_build_decoders_call ? "buildParsers" : "",
-  ]
+  const exportedItems = ["meta", "schema", "buildParsers"]
     .filter((it) => it.length > 0)
     .join(", ");
-  const exports = [exportCode, `{ ${expr} };`].join(" ");
+  const exports = [exportCode, `{ ${exportedItems} };`].join(" ");
   const schema = ["const schema = ", wasmCode.json_schema, ";"].join(" ");
   return [
     decodersCode,
     wasmCode.js_server_data,
-    wasmCode.had_build_decoders_call ? buildParsers : "",
+    buildParsers,
     schema,
     exports,
   ].join("\n");
@@ -120,13 +114,7 @@ export const execProject = (
   fs.writeFileSync(outputFile, finalFile);
 
   const outputDts = path.join(outputDir, "index.d.ts");
-  fs.writeFileSync(
-    outputDts,
-    [
-      RUNTIME_DTS,
-      outResult.had_build_decoders_call ? BUILD_DECODERS_DTS : "",
-    ].join("\n")
-  );
+  fs.writeFileSync(outputDts, [RUNTIME_DTS].join("\n"));
   const outputSchemaJson = path.join(outputDir, "schema.json");
   fs.writeFileSync(outputSchemaJson, outResult.json_schema);
 };

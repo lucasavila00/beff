@@ -569,7 +569,6 @@ fn js_to_expr(it: Js, components: &Vec<Definition>) -> Expr {
 pub struct WritableModules {
     pub js_server_data: String,
     pub json_schema: String,
-    pub had_build_decoders_call: bool,
 }
 
 pub trait ToWritableModules {
@@ -611,22 +610,15 @@ impl ToWritableModules for ExtractResult {
         let meta_expr = js_to_expr(handlers_to_js(self.handlers, &components), &components);
         js_server_data.push(const_decl("meta", meta_expr));
 
-        let mut had_build_decoders_call = false;
-        if let Some(ref it) = self.built_decoders {
-            if !it.is_empty() {
-                let build_decoders_expr = build_decoders_expr(it);
-                js_server_data.push(const_decl(
-                    "buildParsersInput",
-                    js_to_expr(build_decoders_expr, &components),
-                ));
-                had_build_decoders_call = true;
-            }
-        }
+        let build_decoders_expr = build_decoders_expr(&self.built_decoders.unwrap_or(vec![]));
+        js_server_data.push(const_decl(
+            "buildParsersInput",
+            js_to_expr(build_decoders_expr, &components),
+        ));
 
         Ok(WritableModules {
             js_server_data: emit_module(js_server_data)?,
             json_schema: self.open_api.to_json().to_string(),
-            had_build_decoders_call,
         })
     }
 }

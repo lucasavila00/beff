@@ -195,7 +195,26 @@ const meta = [
         }
     }
 ];
+const buildParsersInput = {};
 
+
+function buildParsers() {
+  let decoders ={};
+  Object.keys(buildParsersInput).forEach(k => {
+    let v = buildParsersInput[k];
+    decoders[k] = {
+      parse: (input) => {
+        const validation_result = v(input);
+        if (validation_result.length === 0) {
+          return input;
+        }
+        // TODO: throw a pretty error message
+        throw validation_result
+      }
+    }
+  });
+  return decoders;
+}
 
 const schema =  {
   "components": {
@@ -378,4 +397,4 @@ const schema =  {
     }
   }
 } ;
-export  { meta, schema };
+export  { meta, schema, buildParsers };
