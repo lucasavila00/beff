@@ -89,7 +89,9 @@ const meta = [
             let error_acc_0 = [];
             if (typeof input == "object" && input != null) {
                 if (Array.isArray(input["posts"])) {
-                    for (const array_item_1 of input["posts"]){}
+                    for(let index = 0; index < input["posts"].length; index++){
+                        const array_item_1 = input["posts"][index];
+                    }
                 } else {
                     error_acc_0.push({
                         "error_kind": "NotAnArray",

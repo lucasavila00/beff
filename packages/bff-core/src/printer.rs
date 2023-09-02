@@ -517,55 +517,57 @@ fn const_decl(name: &str, init: Expr) -> ModuleItem {
     )))
 }
 
-pub fn js_to_expr(it: Js) -> Expr {
-    match it {
-        Js::Decoder {
-            name_on_errors,
-            schema,
-        } => Expr::Fn(FnExpr {
-            ident: None,
-            function: decoder::from_schema(&schema, &name_on_errors).into(),
-        }),
-        Js::Coercer(schema) => {
-            let func = crate::coercer::from_schema(&schema);
-            Expr::Fn(FnExpr {
+impl ToExpr for Js {
+    fn to_expr(self) -> Expr {
+        match self {
+            Js::Decoder {
+                name_on_errors,
+                schema,
+            } => Expr::Fn(FnExpr {
                 ident: None,
-                function: func.into(),
-            })
-        }
-        Js::Null => Json::Null.to_expr(),
-        Js::Bool(it) => Json::Bool(it).to_expr(),
-        Js::Number(it) => Json::Number(it).to_expr(),
-        Js::String(it) => Json::String(it).to_expr(),
-        Js::Array(els) => Expr::Array(ArrayLit {
-            span: DUMMY_SP,
-            elems: els
-                .into_iter()
-                .map(|it| {
-                    Some(ExprOrSpread {
-                        spread: None,
-                        expr: Box::new(js_to_expr(it)),
+                function: decoder::from_schema(&schema, &name_on_errors).into(),
+            }),
+            Js::Coercer(schema) => {
+                let func = crate::coercer::from_schema(&schema);
+                Expr::Fn(FnExpr {
+                    ident: None,
+                    function: func.into(),
+                })
+            }
+            Js::Null => Json::Null.to_expr(),
+            Js::Bool(it) => Json::Bool(it).to_expr(),
+            Js::Number(it) => Json::Number(it).to_expr(),
+            Js::String(it) => Json::String(it).to_expr(),
+            Js::Array(els) => Expr::Array(ArrayLit {
+                span: DUMMY_SP,
+                elems: els
+                    .into_iter()
+                    .map(|it| {
+                        Some(ExprOrSpread {
+                            spread: None,
+                            expr: Box::new(it.to_expr()),
+                        })
                     })
-                })
-                .collect(),
-        }),
-        Js::Object(kvs) => Expr::Object(ObjectLit {
-            span: DUMMY_SP,
-            props: kvs
-                .into_iter()
-                .map(|(key, value)| {
-                    PropOrSpread::Prop(Box::new(Prop::KeyValue(KeyValueProp {
-                        key: PropName::Str(Str {
-                            span: DUMMY_SP,
-                            value: key.into(),
-                            raw: None,
-                        }),
-                        value: Box::new(js_to_expr(value)),
-                    })))
-                })
-                .collect(),
-        }),
-        Js::Expr(expr) => expr,
+                    .collect(),
+            }),
+            Js::Object(kvs) => Expr::Object(ObjectLit {
+                span: DUMMY_SP,
+                props: kvs
+                    .into_iter()
+                    .map(|(key, value)| {
+                        PropOrSpread::Prop(Box::new(Prop::KeyValue(KeyValueProp {
+                            key: PropName::Str(Str {
+                                span: DUMMY_SP,
+                                value: key.into(),
+                                raw: None,
+                            }),
+                            value: Box::new(value.to_expr()),
+                        })))
+                    })
+                    .collect(),
+            }),
+            Js::Expr(expr) => expr,
+        }
     }
 }
 
@@ -611,13 +613,13 @@ impl ToWritableModules for ExtractResult {
 
         let components = &self.open_api.components;
 
-        let meta_expr = js_to_expr(handlers_to_js(self.handlers, &components));
+        let meta_expr = handlers_to_js(self.handlers, &components).to_expr();
         js_server_data.push(const_decl("meta", meta_expr));
 
         let build_decoders_expr = build_decoders_expr(&self.built_decoders.unwrap_or(vec![]));
         js_server_data.push(const_decl(
             "buildParsersInput",
-            js_to_expr(build_decoders_expr),
+            (build_decoders_expr).to_expr(),
         ));
 
         Ok(WritableModules {

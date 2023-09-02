@@ -88,14 +88,15 @@ function validate_DataTypesKitchenSink(input) {
             });
         }
         if (Array.isArray(input["array1"])) {
-            for (const array_item_1 of input["array1"]){
+            for(let index = 0; index < input["array1"].length; index++){
+                const array_item_1 = input["array1"][index];
                 if (typeof array_item_1 != "string") {
                     error_acc_0.push({
                         "error_kind": "NotTypeof",
                         "path": [
                             "DataTypesKitchenSink",
                             "array1",
-                            "[]"
+                            "[" + index + "]"
                         ],
                         "received": array_item_1,
                         "expected_type": "string"
@@ -113,14 +114,15 @@ function validate_DataTypesKitchenSink(input) {
             });
         }
         if (Array.isArray(input["array2"])) {
-            for (const array_item_2 of input["array2"]){
+            for(let index = 0; index < input["array2"].length; index++){
+                const array_item_2 = input["array2"][index];
                 if (typeof array_item_2 != "string") {
                     error_acc_0.push({
                         "error_kind": "NotTypeof",
                         "path": [
                             "DataTypesKitchenSink",
                             "array2",
-                            "[]"
+                            "[" + index + "]"
                         ],
                         "received": array_item_2,
                         "expected_type": "string"
@@ -221,15 +223,16 @@ function validate_DataTypesKitchenSink(input) {
                 });
             }
             if (Array.isArray(input["tuple_rest"].slice(2))) {
-                for (const array_item_3 of input["tuple_rest"].slice(2)){
+                for(let index = 0; index < input["tuple_rest"].slice(2).length; index++){
+                    const array_item_3 = input["tuple_rest"].slice(2)[index];
                     if (typeof array_item_3 != "number") {
                         error_acc_0.push({
                             "error_kind": "NotTypeof",
                             "path": [
                                 "DataTypesKitchenSink",
                                 "tuple_rest",
-                                "[]",
-                                "[]"
+                                "[" + index + "]",
+                                "[" + index + "]"
                             ],
                             "received": array_item_3,
                             "expected_type": "number"
@@ -242,7 +245,7 @@ function validate_DataTypesKitchenSink(input) {
                     "path": [
                         "DataTypesKitchenSink",
                         "tuple_rest",
-                        "[]"
+                        "[" + index + "]"
                     ],
                     "received": input["tuple_rest"].slice(2)
                 });
@@ -650,11 +653,12 @@ function validate_User(input) {
             });
         }
         if (Array.isArray(input["entities"])) {
-            for (const array_item_1 of input["entities"]){
+            for(let index = 0; index < input["entities"].length; index++){
+                const array_item_1 = input["entities"][index];
                 error_acc_0.push(...add_path_to_errors(validate_UserEntity(array_item_1), [
                     "User",
                     "entities",
-                    "[]"
+                    "[" + index + "]"
                 ]));
             }
         } else {
@@ -807,13 +811,14 @@ const meta = [
         "return_validator": function(input) {
             let error_acc_0 = [];
             if (Array.isArray(input)) {
-                for (const array_item_1 of input){
+                for(let index = 0; index < input.length; index++){
+                    const array_item_1 = input[index];
                     if (typeof array_item_1 != "string") {
                         error_acc_0.push({
                             "error_kind": "NotTypeof",
                             "path": [
                                 "[GET] /users.response_body",
-                                "[]"
+                                "[" + index + "]"
                             ],
                             "received": array_item_1,
                             "expected_type": "string"

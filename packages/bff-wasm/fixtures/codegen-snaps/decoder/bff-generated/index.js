@@ -103,14 +103,15 @@ function validate_User(input) {
             });
         }
         if (Array.isArray(input["c2"])) {
-            for (const array_item_1 of input["c2"]){
+            for(let index = 0; index < input["c2"].length; index++){
+                const array_item_1 = input["c2"][index];
                 if (typeof array_item_1 != "boolean") {
                     error_acc_0.push({
                         "error_kind": "NotTypeof",
                         "path": [
                             "User",
                             "c2",
-                            "[]"
+                            "[" + index + "]"
                         ],
                         "received": array_item_1,
                         "expected_type": "boolean"
@@ -128,11 +129,12 @@ function validate_User(input) {
             });
         }
         if (Array.isArray(input["d"])) {
-            for (const array_item_2 of input["d"]){
+            for(let index = 0; index < input["d"].length; index++){
+                const array_item_2 = input["d"][index];
                 error_acc_0.push(...add_path_to_errors(validate_User(array_item_2), [
                     "User",
                     "d",
-                    "[]"
+                    "[" + index + "]"
                 ]));
             }
         } else {
@@ -215,11 +217,12 @@ function validate_User(input) {
         let is_ok_6 = false;
         let error_acc_7 = [];
         if (Array.isArray(input["unionWithNull"])) {
-            for (const array_item_8 of input["unionWithNull"]){
+            for(let index = 0; index < input["unionWithNull"].length; index++){
+                const array_item_8 = input["unionWithNull"][index];
                 error_acc_7.push(...add_path_to_errors(validate_ChildUser(array_item_8), [
                     "User",
                     "unionWithNull",
-                    "[]"
+                    "[" + index + "]"
                 ]));
             }
         } else {

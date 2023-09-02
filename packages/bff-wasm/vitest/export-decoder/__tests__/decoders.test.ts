@@ -43,7 +43,7 @@ it("works", () => {
             "error_kind": "NotTypeof",
             "expected_type": "string",
             "path": [
-              "[]",
+              "[0]",
               "User",
               "name",
             ],
@@ -53,7 +53,7 @@ it("works", () => {
             "error_kind": "NotTypeof",
             "expected_type": "number",
             "path": [
-              "[]",
+              "[0]",
               "User",
               "age",
             ],
@@ -63,7 +63,7 @@ it("works", () => {
             "error_kind": "NotTypeof",
             "expected_type": "string",
             "path": [
-              "[]",
+              "[1]",
               "User",
               "name",
             ],
@@ -73,7 +73,7 @@ it("works", () => {
             "error_kind": "NotTypeof",
             "expected_type": "number",
             "path": [
-              "[]",
+              "[1]",
               "User",
               "age",
             ],

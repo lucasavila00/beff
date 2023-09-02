@@ -1,8 +1,9 @@
 use swc_common::DUMMY_SP;
 use swc_ecma_ast::{
     op, ArrayLit, BinExpr, BindingIdent, BlockStmt, CallExpr, Callee, ComputedPropName, Decl, Expr,
-    ExprOrSpread, ExprStmt, ForHead, ForOfStmt, Ident, IfStmt, Lit, MemberExpr, MemberProp, Null,
-    Number, ParenExpr, Pat, Stmt, Str, UnaryExpr, UnaryOp, VarDecl, VarDeclKind, VarDeclarator,
+    ExprOrSpread, ExprStmt, ForStmt, Ident, IfStmt, Lit, MemberExpr, MemberProp, Null, Number,
+    ParenExpr, Pat, Stmt, Str, UnaryExpr, UnaryOp, UpdateExpr, VarDecl, VarDeclKind, VarDeclOrExpr,
+    VarDeclarator,
 };
 
 pub struct SwcBuilder;
@@ -231,6 +232,18 @@ impl SwcBuilder {
             }),
         })
     }
+
+    pub fn member_expr_computed(value_ref: &Expr, k: Expr) -> Expr {
+        Expr::Member(MemberExpr {
+            span: DUMMY_SP,
+            obj: Box::new(value_ref.clone()),
+            prop: MemberProp::Computed(ComputedPropName {
+                span: DUMMY_SP,
+                expr: k.into(),
+            }),
+        })
+    }
+
     #[must_use]
     pub fn member_expr_computed_key(value_ref: &Expr, k: &str) -> Expr {
         Expr::Member(MemberExpr {
@@ -261,35 +274,103 @@ impl SwcBuilder {
     }
 
     #[must_use]
-    pub fn for_of(var_id: &str, container: &Expr, stmts: Vec<Stmt>) -> Stmt {
-        Stmt::ForOf(ForOfStmt {
+    pub fn for_of_indexed(var_id: &str, container: &Expr, stmts: Vec<Stmt>) -> Stmt {
+        Stmt::For(ForStmt {
             span: DUMMY_SP,
-            is_await: false,
-            left: ForHead::VarDecl(
+            init: Some(VarDeclOrExpr::VarDecl(
                 VarDecl {
                     span: DUMMY_SP,
-                    kind: VarDeclKind::Const,
+                    kind: VarDeclKind::Let,
                     declare: false,
                     decls: vec![VarDeclarator {
                         span: DUMMY_SP,
                         name: Pat::Ident(
                             Ident {
                                 span: DUMMY_SP,
-                                sym: var_id.into(),
+                                sym: "index".into(),
                                 optional: false,
                             }
                             .into(),
                         ),
-                        init: None,
+                        init: Some(Box::new(Expr::Lit(Lit::Num(Number {
+                            span: DUMMY_SP,
+                            value: 0.0,
+                            raw: None,
+                        })))),
                         definite: false,
                     }],
                 }
                 .into(),
+            )),
+            test: Some(
+                Expr::Bin(BinExpr {
+                    span: DUMMY_SP,
+                    op: op!("<"),
+                    left: Expr::Ident(Ident {
+                        span: DUMMY_SP,
+                        sym: "index".into(),
+                        optional: false,
+                    })
+                    .into(),
+                    right: Expr::Member(MemberExpr {
+                        span: DUMMY_SP,
+                        obj: Box::new(container.clone()),
+                        prop: MemberProp::Ident(Ident {
+                            span: DUMMY_SP,
+                            sym: "length".into(),
+                            optional: false,
+                        }),
+                    })
+                    .into(),
+                })
+                .into(),
             ),
-            right: container.clone().into(),
+            update: Some(
+                Expr::Update(UpdateExpr {
+                    span: DUMMY_SP,
+                    op: op!("++"),
+                    prefix: false,
+                    arg: Box::new(Expr::Ident(Ident {
+                        span: DUMMY_SP,
+                        sym: "index".into(),
+                        optional: false,
+                    })),
+                })
+                .into(),
+            ),
             body: Stmt::Block(BlockStmt {
                 span: DUMMY_SP,
-                stmts,
+                stmts: vec![Stmt::Decl(Decl::Var(
+                    VarDecl {
+                        span: DUMMY_SP,
+                        kind: VarDeclKind::Const,
+                        declare: false,
+                        decls: vec![VarDeclarator {
+                            span: DUMMY_SP,
+                            name: Pat::Ident(
+                                Ident {
+                                    span: DUMMY_SP,
+                                    sym: var_id.into(),
+                                    optional: false,
+                                }
+                                .into(),
+                            ),
+                            init: Some(Box::new(Self::member_expr_computed(
+                                container,
+                                Expr::Ident(Ident {
+                                    span: DUMMY_SP,
+                                    sym: "index".into(),
+                                    optional: false,
+                                }),
+                            ))),
+                            definite: false,
+                        }],
+                    }
+                    .into(),
+                ))]
+                .into_iter()
+                .chain(stmts)
+                .collect(),
             })
             .into(),
         })

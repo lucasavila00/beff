@@ -1,13 +1,13 @@
 use std::rc::Rc;
 
 use crate::open_api_ast::{Js, Json, JsonSchema, Optionality};
-use crate::printer::{js_to_expr, ToExpr};
+use crate::printer::ToExpr;
 use crate::swc_builder::SwcBuilder;
 use swc_common::DUMMY_SP;
 use swc_ecma_ast::{
-    op, AssignExpr, BinExpr, BindingIdent, BlockStmt, Bool, CallExpr, Callee, Decl, Expr,
+    op, AssignExpr, BinExpr, BinaryOp, BindingIdent, BlockStmt, Bool, CallExpr, Callee, Decl, Expr,
     ExprOrSpread, ExprStmt, Function, Ident, Lit, MemberExpr, MemberProp, Number, Param, Pat,
-    PatOrExpr, ReturnStmt, Stmt,
+    PatOrExpr, ReturnStmt, Stmt, Str,
 };
 
 fn store_error(storage: &str, err: ReportedError, received: Expr) -> Stmt {
@@ -15,7 +15,7 @@ fn store_error(storage: &str, err: ReportedError, received: Expr) -> Stmt {
         storage,
         vec![ExprOrSpread {
             spread: None,
-            expr: js_to_expr(err.convert_to_js(received)).into(),
+            expr: err.convert_to_js(received).to_expr().into(),
         }],
     )
 }
@@ -102,21 +102,51 @@ struct ReportedError {
     path: Vec<DecodePath>,
 }
 
+fn decode_array_item() -> Js {
+    let first_add = Expr::Bin(BinExpr {
+        span: DUMMY_SP,
+        op: BinaryOp::Add,
+        left: Expr::Lit(Lit::Str(Str {
+            span: DUMMY_SP,
+            value: "[".into(),
+            raw: None,
+        }))
+        .into(),
+        right: Expr::Ident(Ident {
+            span: DUMMY_SP,
+            sym: "index".into(),
+            optional: false,
+        })
+        .into(),
+    });
+    Js::Expr(Expr::Bin(BinExpr {
+        span: DUMMY_SP,
+        op: BinaryOp::Add,
+        left: first_add.into(),
+        right: Expr::Lit(Lit::Str(Str {
+            span: DUMMY_SP,
+            value: "]".into(),
+            raw: None,
+        }))
+        .into(),
+    }))
+}
+
 impl ReportedError {
-    pub fn print_path(it: &[DecodePath]) -> Json {
-        Json::Array(
+    pub fn print_path(it: &[DecodePath]) -> Js {
+        Js::Array(
             it.iter()
                 .map(|it| match it {
-                    DecodePath::Ident(id) => Json::String(id.to_string()),
-                    DecodePath::ArrayItem => Json::String("[]".into()),
-                    DecodePath::TupleItem(idx) => Json::String(format!("[{idx}]")),
+                    DecodePath::Ident(id) => Js::String(id.to_string()),
+                    DecodePath::ArrayItem => decode_array_item(),
+                    DecodePath::TupleItem(idx) => Js::String(format!("[{idx}]")),
                 })
                 .collect(),
         )
     }
     fn convert_to_js(self, received: Expr) -> Js {
         self.kind
-            .convert_to_js(Self::print_path(&self.path).to_js(), received)
+            .convert_to_js(Self::print_path(&self.path), received)
     }
 }
 fn schema_ref_callee_validate(schema_ref: &String) -> Callee {
@@ -267,7 +297,7 @@ impl DecoderFnGenerator {
         };
         let mut new_path = path.to_vec();
         new_path.push(DecodePath::ArrayItem);
-        let then_items_check = vec![SwcBuilder::for_of(
+        let then_items_check = vec![SwcBuilder::for_of_indexed(
             &id,
             value_ref,
             self.convert_to_decoder(el, &Expr::Ident(array_item_id), err_storage, &new_path),
