@@ -28,12 +28,17 @@ use swc_ecma_ast::{
 };
 use swc_ecma_visit::Visit;
 
+struct UnresolvedExport {
+    name: JsWord,
+    span: SyntaxContext,
+    renamed: JsWord,
+}
 struct ImportsVisitor {
     imports: HashMap<(JsWord, SyntaxContext), Rc<ImportReference>>,
     type_exports: TypeExportsModule,
     current_file: FileName,
     resolutions_cache: HashMap<String, Option<BffFileName>>,
-    unresolved_exports: Vec<(JsWord, SyntaxContext)>,
+    unresolved_exports: Vec<UnresolvedExport>,
 }
 
 impl ImportsVisitor {
@@ -186,10 +191,20 @@ impl Visit for ImportsVisitor {
                         ExportSpecifier::Namespace(_) => todo!(),
                         ExportSpecifier::Default(_) => todo!(),
                         ExportSpecifier::Named(ExportNamedSpecifier { orig, exported, .. }) => {
-                            assert!(exported.is_none());
                             match orig {
                                 ModuleExportName::Ident(id) => {
-                                    self.unresolved_exports.push((id.sym.clone(), id.span.ctxt));
+                                    let renamed = match exported {
+                                        Some(it) => match it {
+                                            ModuleExportName::Ident(id) => id.sym.clone(),
+                                            ModuleExportName::Str(_) => todo!(),
+                                        },
+                                        None => id.sym.clone(),
+                                    };
+                                    self.unresolved_exports.push(UnresolvedExport {
+                                        name: id.sym.clone(),
+                                        span: id.span.ctxt,
+                                        renamed,
+                                    });
                                 }
                                 ModuleExportName::Str(_) => todo!(),
                             }
@@ -255,27 +270,31 @@ pub fn parse_file_content(
     locals.visit_module(&module.module);
 
     let mut type_exports = v.type_exports;
-    for k in v.unresolved_exports {
+    for unresolved in v.unresolved_exports {
+        let renamed = unresolved.renamed;
+        let k = (unresolved.name, unresolved.span);
         if let Some(alias) = locals.type_aliases.get(&k) {
-            let (name, _) = k;
             type_exports.insert(
-                name.clone(),
+                renamed.clone(),
                 Rc::new(TypeExport::TsType {
                     ty: alias.clone(),
-                    name,
+                    name: k.0,
                 }),
             );
             continue;
         }
         if let Some(intf) = locals.interfaces.get(&k) {
-            type_exports.insert(k.0, Rc::new(TypeExport::TsInterfaceDecl(intf.clone())));
+            type_exports.insert(renamed, Rc::new(TypeExport::TsInterfaceDecl(intf.clone())));
             continue;
         }
         if let Some(import) = v.imports.get(&k) {
             match &**import {
                 ImportReference::Named { .. } => todo!(),
                 ImportReference::Star { .. } => {
-                    type_exports.insert(k.0, Rc::new(TypeExport::StarOfOtherFile(import.clone())));
+                    type_exports.insert(
+                        renamed,
+                        Rc::new(TypeExport::StarOfOtherFile(import.clone())),
+                    );
 
                     continue;
                 }
