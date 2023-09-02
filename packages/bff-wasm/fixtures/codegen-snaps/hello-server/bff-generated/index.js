@@ -36,6 +36,10 @@ function coerce_union(input, ...cases) {
 function coerce(coercer, value) {
   return coercer(value);
 }
+const stringPredicates = {}
+function registerStringFormat(name, predicate) {
+  stringPredicates[name] = predicate;
+}
 
 function validate_DataTypesKitchenSink(input) {
     let error_acc_0 = [];
@@ -1585,4 +1589,4 @@ const schema =  {
     }
   }
 } ;
-export  { meta, schema, buildParsers };
+export  { meta, schema, buildParsers, registerStringFormat };

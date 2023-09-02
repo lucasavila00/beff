@@ -1,3 +1,7 @@
+export type Header<T> = T;
+export type Cookie<T> = T;
+export type StringFormat<Tag extends string> = string & { __customType: Tag };
+
 export type MetaParam = {
   type: "path" | "query" | "cookie" | "header" | "body" | "context";
   name: string;

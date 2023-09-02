@@ -1,5 +1,5 @@
 
-import { HandlerMeta, DecodeError} from "bff-types";
+import { HandlerMeta, DecodeError,StringFormat} from "bff-types";
 export declare const meta: HandlerMeta[];
 export declare const schema: any;
 
@@ -15,3 +15,13 @@ type Decoders<T> = {
   };
 };
 export declare const buildParsers: <T>() => Decoders<T>;
+
+
+
+export type TagOfFormat<T extends StringFormat<string>> =
+  T extends StringFormat<infer Tag> ? Tag : never;
+export declare function registerStringFormat<T extends StringFormat<string>>(
+  name: TagOfFormat<T>,
+  isValid: (it: string) => boolean
+): void;
+

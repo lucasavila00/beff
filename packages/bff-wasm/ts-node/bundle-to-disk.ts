@@ -4,7 +4,7 @@ import { Bundler, WritableModules } from "./bundler";
 import { ProjectJson, ProjectModule } from "./project";
 
 const RUNTIME_DTS = `
-import { HandlerMeta, DecodeError} from "bff-types";
+import { HandlerMeta, DecodeError,StringFormat} from "bff-types";
 export declare const meta: HandlerMeta[];
 export declare const schema: any;
 
@@ -20,6 +20,16 @@ type Decoders<T> = {
   };
 };
 export declare const buildParsers: <T>() => Decoders<T>;
+
+
+
+export type TagOfFormat<T extends StringFormat<string>> =
+  T extends StringFormat<infer Tag> ? Tag : never;
+export declare function registerStringFormat<T extends StringFormat<string>>(
+  name: TagOfFormat<T>,
+  isValid: (it: string) => boolean
+): void;
+
 `;
 
 const decodersCode = `
@@ -60,6 +70,10 @@ function coerce_union(input, ...cases) {
 function coerce(coercer, value) {
   return coercer(value);
 }
+const stringPredicates = {}
+function registerStringFormat(name, predicate) {
+  stringPredicates[name] = predicate;
+}
 `;
 
 const buildParsers = `
@@ -95,7 +109,12 @@ function buildParsers() {
 `;
 const finalizeFile = (wasmCode: WritableModules, mod: ProjectModule) => {
   const exportCode = mod === "esm" ? "export " : "module.exports = ";
-  const exportedItems = ["meta", "schema", "buildParsers"]
+  const exportedItems = [
+    "meta",
+    "schema",
+    "buildParsers",
+    "registerStringFormat",
+  ]
     .filter((it) => it.length > 0)
     .join(", ");
   const exports = [exportCode, `{ ${exportedItems} };`].join(" ");

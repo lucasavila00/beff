@@ -36,6 +36,10 @@ function coerce_union(input, ...cases) {
 function coerce(coercer, value) {
   return coercer(value);
 }
+const stringPredicates = {}
+function registerStringFormat(name, predicate) {
+  stringPredicates[name] = predicate;
+}
 
 const meta = [
     {
@@ -276,4 +280,4 @@ const schema =  {
     }
   }
 } ;
-export  { meta, schema, buildParsers };
+export  { meta, schema, buildParsers, registerStringFormat };

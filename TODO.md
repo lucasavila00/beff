@@ -3,15 +3,17 @@
 ## BFF Core
 
 - [ ] string formats (uuid, email)
-
-- [ ] clap descriptions of params
-- [ ] snapshots of both esm and cjs generation
+- [ ] assert header etc is imported from lib
 
 - [ ] todo!, unwrap, panic
+
+- [ ] fix skipped tests
 
 ## BFF CLI
 
 - [ ] watch mode
+- [ ] clap descriptions of params
+- [ ] snapshots of both esm and cjs generation
 
 ## BFF EXT
 
@@ -19,18 +21,41 @@
 
 ## BFF Core
 
-- [ ] if it uses \*, then it can just use use
-- [ ] do not allow patterns that hono does not support
-- [ ] do not allow patterns styles that code generator/runtime coercer does not support
-- [ ] require backend=hono config, or version
+- [ ] if it uses `*`, then it can just use use
+- [ ] only allow simple openapi patterns, no explode
+- [ ] disallow `/{param}asd/`
+- [ ] remove tuple args broken code
 
-- [ ] assert header etc is imported from lib
+<!--  -->
+<!--  -->
+<!--  -->
+<!--  -->
+<!--  -->
+<!--  -->
+<!--  -->
+<!--  -->
+<!--  -->
+<!--  -->
+<!--  -->
+<!--  -->
+<!--  -->
+<!--  -->
+<!--  -->
+<!--  -->
+<!--  -->
+<!--  -->
+
+<!--  -->
+
+## next
 
 - [ ] future tuple args
+
+- [ ] typeof
 
 ```
 const x = ["a", "b", "c"] as const;
 type X = (typeof x)[number]
 ```
 
-- [ ] fix skipped tests => eslint to catch these?
+- [ ] eslint to catch skipped tests

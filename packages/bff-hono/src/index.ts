@@ -9,7 +9,9 @@ import {
 import { getCookie } from "hono/cookie";
 import { HTTPException } from "hono/http-exception";
 import { buildStableClient, ClientFromRouter } from "bff-client";
-import type { Ctx } from "bff";
+
+import type { Context as HonoContext, Env } from "hono";
+export type Ctx<T = {}, E extends Env = any> = T & { hono: HonoContext<E> };
 
 const coerce = (coercer: any, value: any): any => {
   return coercer(value);
