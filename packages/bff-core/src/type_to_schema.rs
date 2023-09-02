@@ -139,7 +139,7 @@ impl<'a, R: FileManager> TypeToSchema<'a, R> {
         let store_current_file = self.current_file.clone();
         self.current_file = from_file.clone();
         let ty = match exported {
-            TypeExport::TsType(alias) => self.convert_ts_type(&alias)?,
+            TypeExport::TsType { ty: alias, .. } => self.convert_ts_type(&alias)?,
             TypeExport::TsInterfaceDecl(int) => self.convert_ts_interface_decl(&int)?,
             TypeExport::StarOfOtherFile(_) => todo!(),
             TypeExport::SomethingOfOtherFile(word, from_file) => {
@@ -326,7 +326,7 @@ impl<'a, R: FileManager> TypeToSchema<'a, R> {
         &mut self,
         from_file: &Rc<ImportReference>,
         right: &JsWord,
-    ) -> Res<(Rc<TypeExport>, Rc<ImportReference>)> {
+    ) -> Res<(Rc<TypeExport>, Rc<ImportReference>, String)> {
         let exported = self
             .files
             .get_or_fetch_file(&from_file.file_name())
@@ -337,7 +337,15 @@ impl<'a, R: FileManager> TypeToSchema<'a, R> {
                     .map(|it| it.clone())
             });
         match exported {
-            Some(exported) => Ok((exported, from_file.clone())),
+            Some(exported) => {
+                let name = match &*exported {
+                    TypeExport::TsType { name, .. } => name.to_string(),
+                    TypeExport::TsInterfaceDecl(_) => todo!(), // right.to_string()
+                    TypeExport::StarOfOtherFile(_) => right.to_string(),
+                    TypeExport::SomethingOfOtherFile(that, _) => that.to_string(),
+                };
+                Ok((exported, from_file.clone(), name))
+            }
             None => panic!(),
         }
     }
@@ -345,7 +353,7 @@ impl<'a, R: FileManager> TypeToSchema<'a, R> {
     pub fn get_qualified_type(
         &mut self,
         q: &TsQualifiedName,
-    ) -> Res<(Rc<TypeExport>, Rc<ImportReference>)> {
+    ) -> Res<(Rc<TypeExport>, Rc<ImportReference>, String)> {
         let current_ref = self.get_identifier_diag_info(&q.right);
         let did_push = current_ref.is_some();
         if let Some(current_ref) = current_ref {
@@ -353,9 +361,9 @@ impl<'a, R: FileManager> TypeToSchema<'a, R> {
         }
         let v = match &q.left {
             TsEntityName::TsQualifiedName(q2) => {
-                let (exported, _from_file) = self.get_qualified_type(q2)?;
+                let (exported, _from_file, _name) = self.get_qualified_type(q2)?;
                 match &*exported {
-                    TypeExport::TsType(_) => todo!(),
+                    TypeExport::TsType { .. } => todo!(),
                     TypeExport::TsInterfaceDecl(_) => todo!(),
                     TypeExport::StarOfOtherFile(other_file) => {
                         self.get_qualified_type_from_file(other_file, &q.right.sym)
@@ -378,9 +386,9 @@ impl<'a, R: FileManager> TypeToSchema<'a, R> {
     }
 
     pub fn convert_ts_type_qual(&mut self, q: &TsQualifiedName) -> Res<JsonSchema> {
-        let (exported, from_file) = self.get_qualified_type(q)?;
+        let (exported, from_file, name) = self.get_qualified_type(q)?;
         let ty = self.convert_resolved_export(exported.as_ref(), &from_file.file_name())?;
-        self.insert_definition(q.right.sym.to_string(), ty)
+        self.insert_definition(name, ty)
     }
     pub fn convert_ts_type(&mut self, typ: &TsType) -> Res<JsonSchema> {
         match typ {

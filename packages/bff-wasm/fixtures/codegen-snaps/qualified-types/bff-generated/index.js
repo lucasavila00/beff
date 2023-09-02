@@ -1,4 +1,4 @@
-function validate_UserEntity(input) {
+function validate_UserEntityOriginal(input) {
     let error_acc_0 = [];
     if (typeof input == "object" && input != null) {
         if (typeof input["id"] != "string") {
@@ -8,7 +8,7 @@ function validate_UserEntity(input) {
                     "string"
                 ],
                 "path": [
-                    "UserEntity",
+                    "UserEntityOriginal",
                     "id"
                 ]
             });
@@ -19,7 +19,7 @@ function validate_UserEntity(input) {
                 "NotAnObject"
             ],
             "path": [
-                "UserEntity"
+                "UserEntityOriginal"
             ]
         });
     }
@@ -114,7 +114,7 @@ const meta = {
             "pattern": "/abc",
             "return_validator": function(input) {
                 let error_acc_0 = [];
-                error_acc_0.push(...add_path_to_errors(validate_UserEntity(input), [
+                error_acc_0.push(...add_path_to_errors(validate_UserEntityOriginal(input), [
                     "[GET] /abc.response_body"
                 ]));
                 return error_acc_0;
@@ -173,7 +173,7 @@ const meta = {
                             "content": {
                                 "application/json": {
                                     "schema": {
-                                        "$ref": "#/components/schemas/UserEntity"
+                                        "$ref": "#/components/schemas/UserEntityOriginal"
                                     }
                                 }
                             }
@@ -229,7 +229,7 @@ const meta = {
         },
         "components": {
             "schemas": {
-                "UserEntity": {
+                "UserEntityOriginal": {
                     "type": "object",
                     "required": [
                         "id"

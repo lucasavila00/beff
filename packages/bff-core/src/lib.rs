@@ -18,7 +18,7 @@ use swc_ecma_visit::Visit;
 use swc_node_comments::SwcComments;
 #[derive(Debug, Clone)]
 pub enum TypeExport {
-    TsType(Rc<TsType>),
+    TsType { ty: Rc<TsType>, name: JsWord },
     TsInterfaceDecl(Rc<TsInterfaceDecl>),
     StarOfOtherFile(Rc<ImportReference>),
     SomethingOfOtherFile(JsWord, BffFileName),

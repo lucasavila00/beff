@@ -7,28 +7,28 @@ Error
     at /home/lucas/fluff/bff/packages/bff-wasm/pkg/hello_wasm.js:364:17
     at logError (/home/lucas/fluff/bff/packages/bff-wasm/pkg/hello_wasm.js:205:18)
     at module.exports.__wbg_new_abda76e883ba8a5f (/home/lucas/fluff/bff/packages/bff-wasm/pkg/hello_wasm.js:363:65)
-    at console_error_panic_hook::Error::new::h24a202ca2cd6f4e3 (wasm://wasm/02d48c16:wasm-function[16934]:0x8fafde)
-    at console_error_panic_hook::hook_impl::hbd017b1cd15b0ccd (wasm://wasm/02d48c16:wasm-function[3291]:0x6f33a9)
-    at console_error_panic_hook::hook::h2d1bbfd1bba12fb3 (wasm://wasm/02d48c16:wasm-function[18176]:0x90ca13)
-    at core::ops::function::Fn::call::h060acb07aceb94e4 (wasm://wasm/02d48c16:wasm-function[15440]:0x8e4195)
-    at std::panicking::rust_panic_with_hook::he4d11d009df2f45f (wasm://wasm/02d48c16:wasm-function[6645]:0x7e1e08)
-    at std::panicking::begin_panic_handler::{{closure}}::hdd0d58f31e4d53df (wasm://wasm/02d48c16:wasm-function[8759]:0x83ff6c)
-    at std::sys_common::backtrace::__rust_end_short_backtrace::hd70f3cac19eb49f3 (wasm://wasm/02d48c16:wasm-function[20671]:0x924534)
+    at console_error_panic_hook::Error::new::h24a202ca2cd6f4e3 (wasm://wasm/02d4fb66:wasm-function[16947]:0x8fc3e6)
+    at console_error_panic_hook::hook_impl::hbd017b1cd15b0ccd (wasm://wasm/02d4fb66:wasm-function[3296]:0x6f44b9)
+    at console_error_panic_hook::hook::h2d1bbfd1bba12fb3 (wasm://wasm/02d4fb66:wasm-function[18189]:0x90de1b)
+    at core::ops::function::Fn::call::h060acb07aceb94e4 (wasm://wasm/02d4fb66:wasm-function[15453]:0x8e559d)
+    at std::panicking::rust_panic_with_hook::he4d11d009df2f45f (wasm://wasm/02d4fb66:wasm-function[6649]:0x7e2e79)
+    at std::panicking::begin_panic_handler::{{closure}}::hdd0d58f31e4d53df (wasm://wasm/02d4fb66:wasm-function[8763]:0x840ff3)
+    at std::sys_common::backtrace::__rust_end_short_backtrace::hd70f3cac19eb49f3 (wasm://wasm/02d4fb66:wasm-function[20688]:0x9259ac)
 
 
-wasm://wasm/02d48c16:1
+wasm://wasm/02d4fb66:1
 
 
 RuntimeError: unreachable
-    at __rust_start_panic (wasm://wasm/02d48c16:wasm-function[20713]:0x92462a)
-    at rust_panic (wasm://wasm/02d48c16:wasm-function[20504]:0x923da6)
-    at std::panicking::rust_panic_with_hook::he4d11d009df2f45f (wasm://wasm/02d48c16:wasm-function[6645]:0x7e1e35)
-    at std::panicking::begin_panic_handler::{{closure}}::hdd0d58f31e4d53df (wasm://wasm/02d48c16:wasm-function[8759]:0x83ff6c)
-    at std::sys_common::backtrace::__rust_end_short_backtrace::hd70f3cac19eb49f3 (wasm://wasm/02d48c16:wasm-function[20671]:0x924534)
-    at rust_begin_unwind (wasm://wasm/02d48c16:wasm-function[12436]:0x8aabf9)
-    at core::panicking::panic_fmt::h157d8e2782a50057 (wasm://wasm/02d48c16:wasm-function[18057]:0x90b18b)
-    at core::panicking::panic::h84f3aeadc405be3e (wasm://wasm/02d48c16:wasm-function[15437]:0x8e40d2)
-    at bff_core::type_resolve::TypeResolver<R>::resolve_namespace_type::h85b5eb46ae13476c (wasm://wasm/02d48c16:wasm-function[1189]:0x5b0131)
-    at bff_core::type_to_schema::TypeToSchema<R>::get_qualified_type::h83195cd71c090644 (wasm://wasm/02d48c16:wasm-function[610]:0x4d2b6c)
+    at __rust_start_panic (wasm://wasm/02d4fb66:wasm-function[20731]:0x925aa6)
+    at rust_panic (wasm://wasm/02d4fb66:wasm-function[20521]:0x92521e)
+    at std::panicking::rust_panic_with_hook::he4d11d009df2f45f (wasm://wasm/02d4fb66:wasm-function[6649]:0x7e2ea6)
+    at std::panicking::begin_panic_handler::{{closure}}::hdd0d58f31e4d53df (wasm://wasm/02d4fb66:wasm-function[8763]:0x840ff3)
+    at std::sys_common::backtrace::__rust_end_short_backtrace::hd70f3cac19eb49f3 (wasm://wasm/02d4fb66:wasm-function[20688]:0x9259ac)
+    at rust_begin_unwind (wasm://wasm/02d4fb66:wasm-function[12446]:0x8abf07)
+    at core::panicking::panic_fmt::h157d8e2782a50057 (wasm://wasm/02d4fb66:wasm-function[18070]:0x90c593)
+    at core::panicking::panic::h84f3aeadc405be3e (wasm://wasm/02d4fb66:wasm-function[15450]:0x8e54da)
+    at bff_core::type_resolve::TypeResolver<R>::resolve_namespace_type::h85b5eb46ae13476c (wasm://wasm/02d4fb66:wasm-function[1191]:0x5b0e45)
+    at bff_core::type_to_schema::TypeToSchema<R>::get_qualified_type::ha19451129ace056f (wasm://wasm/02d4fb66:wasm-function[579]:0x4bef5e)
 
 Node.js v18.16.0

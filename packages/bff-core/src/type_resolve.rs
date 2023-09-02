@@ -62,7 +62,7 @@ impl<'a, R: FileManager> TypeResolver<'a, R> {
                                     from_file: reference.clone(),
                                 })
                             }
-                            TypeExport::TsType(_) => todo!(),
+                            TypeExport::TsType { .. } => todo!(),
                             TypeExport::TsInterfaceDecl(_) => todo!(),
                             TypeExport::SomethingOfOtherFile(_, _) => todo!(),
                         },

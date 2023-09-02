@@ -116,7 +116,10 @@ impl Visit for ImportsVisitor {
                 let TsTypeAliasDecl { id, type_ann, .. } = &**a;
                 self.type_exports.insert(
                     id.sym.clone(),
-                    Rc::new(TypeExport::TsType(Rc::new(*type_ann.clone()))),
+                    Rc::new(TypeExport::TsType {
+                        ty: Rc::new(*type_ann.clone()),
+                        name: id.sym.clone(),
+                    }),
                 );
             }
             Decl::Using(_)
@@ -254,7 +257,14 @@ pub fn parse_file_content(
     let mut type_exports = v.type_exports;
     for k in v.unresolved_exports {
         if let Some(alias) = locals.type_aliases.get(&k) {
-            type_exports.insert(k.0, Rc::new(TypeExport::TsType(alias.clone())));
+            let (name, _) = k;
+            type_exports.insert(
+                name.clone(),
+                Rc::new(TypeExport::TsType {
+                    ty: alias.clone(),
+                    name,
+                }),
+            );
             continue;
         }
         if let Some(intf) = locals.interfaces.get(&k) {
