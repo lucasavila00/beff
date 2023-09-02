@@ -82,8 +82,26 @@ pub enum Js {
     String(String),
     Array(Vec<Js>),
     Object(Vec<(String, Js)>),
-    Decoder(String, JsonSchema),
+    Decoder {
+        name_on_errors: Option<String>,
+        schema: JsonSchema,
+    },
     Coercer(JsonSchema),
+}
+
+impl Js {
+    pub fn named_decoder(name: String, schema: JsonSchema) -> Self {
+        Self::Decoder {
+            name_on_errors: Some(name),
+            schema,
+        }
+    }
+    pub fn anon_decoder(schema: JsonSchema) -> Self {
+        Self::Decoder {
+            name_on_errors: None,
+            schema,
+        }
+    }
 }
 
 #[derive(Debug, PartialEq, Clone)]

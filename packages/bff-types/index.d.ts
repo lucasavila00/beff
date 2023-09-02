@@ -12,11 +12,20 @@ export type HandlerMeta = {
   return_validator: any;
 };
 
-export type DecodeErrorKind = ["NotTypeof", string];
-export type DecodeError = {
-  kind: DecodeErrorKind;
+export type ErrorVariant<T> = {
+  error_kind: T;
   path: string[];
 };
+export type DecodeError =
+  | ErrorVariant<"NotAnObject">
+  | ErrorVariant<"NotAnArray">
+  | ErrorVariant<"InvalidUnion">
+  | (ErrorVariant<"NotTypeof"> & {
+      expected_type: string;
+    })
+  | (ErrorVariant<"NotEq"> & {
+      expected_value: unknown;
+    });
 export type OpenApiServer = any;
 // This was extracted from https://github.com/DefinitelyTyped/DefinitelyTyped/blob/master/types/json-schema/index.d.ts
 //==================================================================================================

@@ -41,9 +41,7 @@ function validate_A(input) {
     let error_acc_0 = [];
     if (typeof input == "object" && input != null) {} else {
         error_acc_0.push({
-            "kind": [
-                "NotAnObject"
-            ],
+            "error_kind": "NotAnObject",
             "path": [
                 "A"
             ]
@@ -55,10 +53,8 @@ function validate_B(input) {
     let error_acc_0 = [];
     if (typeof input != "number") {
         error_acc_0.push({
-            "kind": [
-                "NotTypeof",
-                "number"
-            ],
+            "error_kind": "NotTypeof",
+            "expected_type": "number",
             "path": [
                 "B"
             ]
@@ -81,10 +77,8 @@ const meta = [
                     let error_acc_0 = [];
                     if (typeof input != "string") {
                         error_acc_0.push({
-                            "kind": [
-                                "NotTypeof",
-                                "string"
-                            ],
+                            "error_kind": "NotTypeof",
+                            "expected_type": "string",
                             "path": [
                                 'Path Parameter "id"'
                             ]

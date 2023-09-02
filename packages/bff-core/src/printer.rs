@@ -393,7 +393,7 @@ fn param_to_js(
                     ("required".into(), Js::Bool(required)),
                     (
                         "validator".into(),
-                        Js::Decoder(format!("Path Parameter \"{name}\""), schema.clone()),
+                        Js::named_decoder(format!("Path Parameter \"{name}\""), schema.clone()),
                     ),
                     ("coercer".into(), Js::Coercer(schema)),
                 ]),
@@ -403,7 +403,7 @@ fn param_to_js(
                     ("required".into(), Js::Bool(required)),
                     (
                         "validator".into(),
-                        Js::Decoder(format!("Query Parameter \"{name}\""), schema.clone()),
+                        Js::named_decoder(format!("Query Parameter \"{name}\""), schema.clone()),
                     ),
                     ("coercer".into(), Js::Coercer(schema)),
                 ]),
@@ -413,7 +413,7 @@ fn param_to_js(
                     ("required".into(), Js::Bool(required)),
                     (
                         "validator".into(),
-                        Js::Decoder(format!("Request Body"), schema.clone()),
+                        Js::named_decoder(format!("Request Body"), schema.clone()),
                     ),
                 ]),
                 FunctionParameterIn::InvalidComplexPathParameter => {
@@ -438,7 +438,7 @@ fn param_to_js(
                 ("required".into(), Js::Bool(required)),
                 (
                     "validator".into(),
-                    Js::Decoder(format!("{kind_name} \"{name}\""), schema.clone()),
+                    Js::named_decoder(format!("{kind_name} \"{name}\""), schema.clone()),
                 ),
                 ("coercer".into(), Js::Coercer(schema)),
             ])
@@ -483,7 +483,7 @@ fn handlers_to_js(items: Vec<PathHandlerMap>, components: &Vec<Definition>) -> J
                             ),
                             (
                                 "return_validator".into(),
-                                Js::Decoder(decoder_name, handler.return_type),
+                                Js::named_decoder(decoder_name, handler.return_type),
                             ),
                         ])
                     })
@@ -519,9 +519,12 @@ fn const_decl(name: &str, init: Expr) -> ModuleItem {
 
 fn js_to_expr(it: Js, components: &Vec<Definition>) -> Expr {
     match it {
-        Js::Decoder(name, schema) => Expr::Fn(FnExpr {
+        Js::Decoder {
+            name_on_errors,
+            schema,
+        } => Expr::Fn(FnExpr {
             ident: None,
-            function: decoder::from_schema(&schema, &name).into(),
+            function: decoder::from_schema(&schema, &name_on_errors).into(),
         }),
         Js::Coercer(schema) => {
             let func = crate::coercer::from_schema(&schema, components);
@@ -580,7 +583,7 @@ fn build_decoders_expr(decs: &Vec<BuiltDecoder>) -> Js {
             .map(|it| {
                 (
                     it.exported_name.clone(),
-                    Js::Decoder(it.exported_name.clone(), it.schema.clone()),
+                    Js::anon_decoder(it.schema.clone()),
                 )
             })
             .collect(),
@@ -592,7 +595,7 @@ impl ToWritableModules for ExtractResult {
 
         for comp in &self.open_api.components {
             let name = format!("validate_{}", comp.name);
-            let decoder_fn = decoder::from_schema(&comp.schema, &comp.name);
+            let decoder_fn = decoder::from_schema(&comp.schema, &Some(comp.name.clone()));
             let decoder_fn_decl = ModuleItem::Stmt(Stmt::Decl(Decl::Fn(FnDecl {
                 ident: Ident {
                     span: DUMMY_SP,

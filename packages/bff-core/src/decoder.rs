@@ -51,16 +51,29 @@ enum DecodeError {
     NotEq(Json),
     InvalidUnion,
 }
+
+fn decode_error_variant(tag: &str, path: Json) -> Json {
+    Json::Object(vec![
+        ("error_kind".into(), Json::String(tag.to_owned())),
+        ("path".into(), path),
+    ])
+}
 impl DecodeError {
-    fn convert_to_json(self) -> Json {
+    fn convert_to_json(self, path: Json) -> Json {
         match self {
-            DecodeError::NotAnObject => Json::Array(vec![Json::String("NotAnObject".into())]),
-            DecodeError::NotAnArray => Json::Array(vec![Json::String("NotAnArray".into())]),
-            DecodeError::NotTypeof(t) => {
-                Json::Array(vec![Json::String("NotTypeof".into()), Json::String(t)])
-            }
-            DecodeError::NotEq(e) => Json::Array(vec![Json::String("NotEq".into()), e]),
-            DecodeError::InvalidUnion => Json::Array(vec![Json::String("InvalidUnion".into())]),
+            DecodeError::NotAnObject => decode_error_variant("NotAnObject", path),
+            DecodeError::NotAnArray => decode_error_variant("NotAnArray", path),
+            DecodeError::NotTypeof(t) => Json::Object(vec![
+                ("error_kind".into(), Json::String("NotTypeof".to_owned())),
+                ("expected_type".into(), Json::String(t.to_owned())),
+                ("path".into(), path),
+            ]),
+            DecodeError::NotEq(e) => Json::Object(vec![
+                ("error_kind".into(), Json::String("NotEq".to_owned())),
+                ("expected_value".into(), e),
+                ("path".into(), path),
+            ]),
+            DecodeError::InvalidUnion => decode_error_variant("InvalidUnion", path),
         }
     }
 }
@@ -89,11 +102,7 @@ impl ReportedError {
         )
     }
     fn convert_to_json(self) -> Json {
-        let expr_json = self.kind.convert_to_json();
-        Json::Object(vec![
-            ("kind".into(), expr_json),
-            ("path".into(), Self::print_path(&self.path)),
-        ])
+        self.kind.convert_to_json(Self::print_path(&self.path))
     }
 }
 fn schema_ref_callee_validate(schema_ref: &String) -> Callee {
@@ -509,7 +518,7 @@ impl DecoderFnGenerator {
     fn fn_decoder_from_schema(
         &mut self,
         schema: &JsonSchema,
-        name_to_report_err: &str,
+        name_to_report_err: &Option<String>,
     ) -> Function {
         let input = SwcBuilder::input_expr();
 
@@ -518,12 +527,13 @@ impl DecoderFnGenerator {
         let err_storage = SwcBuilder::error_storage_stmt(&tmp_id);
         stmts.push(err_storage);
 
-        let dec_stmts = self.convert_to_decoder(
-            schema,
-            &input,
-            &tmp_id,
-            &[DecodePath::Ident(Rc::new(name_to_report_err.to_owned()))],
-        );
+        let path = match name_to_report_err {
+            Some(name_to_report_err) => {
+                vec![DecodePath::Ident(Rc::new(name_to_report_err.to_owned()))]
+            }
+            None => vec![],
+        };
+        let dec_stmts = self.convert_to_decoder(schema, &input, &tmp_id, &path);
         stmts.extend(dec_stmts);
 
         stmts.push(Stmt::Return(ReturnStmt {
@@ -558,6 +568,6 @@ impl DecoderFnGenerator {
     }
 }
 #[must_use]
-pub fn from_schema(schema: &JsonSchema, name_to_report_err: &str) -> Function {
+pub fn from_schema(schema: &JsonSchema, name_to_report_err: &Option<String>) -> Function {
     DecoderFnGenerator { increasing_id: 0 }.fn_decoder_from_schema(schema, name_to_report_err)
 }

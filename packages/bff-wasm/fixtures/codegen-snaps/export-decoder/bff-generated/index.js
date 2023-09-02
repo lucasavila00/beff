@@ -42,10 +42,8 @@ function validate_User(input) {
     if (typeof input == "object" && input != null) {
         if (typeof input["name"] != "string") {
             error_acc_0.push({
-                "kind": [
-                    "NotTypeof",
-                    "string"
-                ],
+                "error_kind": "NotTypeof",
+                "expected_type": "string",
                 "path": [
                     "User",
                     "name"
@@ -54,9 +52,7 @@ function validate_User(input) {
         }
     } else {
         error_acc_0.push({
-            "kind": [
-                "NotAnObject"
-            ],
+            "error_kind": "NotAnObject",
             "path": [
                 "User"
             ]
@@ -79,10 +75,8 @@ const meta = [
                     let error_acc_0 = [];
                     if (typeof input != "string") {
                         error_acc_0.push({
-                            "kind": [
-                                "NotTypeof",
-                                "string"
-                            ],
+                            "error_kind": "NotTypeof",
+                            "expected_type": "string",
                             "path": [
                                 'Path Parameter "name"'
                             ]
@@ -108,9 +102,7 @@ const meta = [
 const buildParsersInput = {
     "User": function(input) {
         let error_acc_0 = [];
-        error_acc_0.push(...add_path_to_errors(validate_User(input), [
-            "User"
-        ]));
+        error_acc_0.push(...add_path_to_errors(validate_User(input), []));
         return error_acc_0;
     }
 };

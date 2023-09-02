@@ -56,10 +56,8 @@ const meta = [
             if (typeof input == "object" && input != null) {
                 if (typeof input["message"] != "string") {
                     error_acc_0.push({
-                        "kind": [
-                            "NotTypeof",
-                            "string"
-                        ],
+                        "error_kind": "NotTypeof",
+                        "expected_type": "string",
                         "path": [
                             "[GET] /.response_body",
                             "message"
@@ -68,9 +66,7 @@ const meta = [
                 }
             } else {
                 error_acc_0.push({
-                    "kind": [
-                        "NotAnObject"
-                    ],
+                    "error_kind": "NotAnObject",
                     "path": [
                         "[GET] /.response_body"
                     ]
@@ -94,9 +90,7 @@ const meta = [
                     for (const array_item_1 of input["posts"]){}
                 } else {
                     error_acc_0.push({
-                        "kind": [
-                            "NotAnArray"
-                        ],
+                        "error_kind": "NotAnArray",
                         "path": [
                             "[GET] /posts.response_body",
                             "posts"
@@ -105,10 +99,8 @@ const meta = [
                 }
                 if (typeof input["ok"] != "boolean") {
                     error_acc_0.push({
-                        "kind": [
-                            "NotTypeof",
-                            "boolean"
-                        ],
+                        "error_kind": "NotTypeof",
+                        "expected_type": "boolean",
                         "path": [
                             "[GET] /posts.response_body",
                             "ok"
@@ -117,9 +109,7 @@ const meta = [
                 }
             } else {
                 error_acc_0.push({
-                    "kind": [
-                        "NotAnObject"
-                    ],
+                    "error_kind": "NotAnObject",
                     "path": [
                         "[GET] /posts.response_body"
                     ]

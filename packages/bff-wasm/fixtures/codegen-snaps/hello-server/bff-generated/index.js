@@ -43,10 +43,8 @@ function validate_DataTypesKitchenSink(input) {
         if (typeof input["basic"] == "object" && input["basic"] != null) {
             if (typeof input["basic"]["a"] != "string") {
                 error_acc_0.push({
-                    "kind": [
-                        "NotTypeof",
-                        "string"
-                    ],
+                    "error_kind": "NotTypeof",
+                    "expected_type": "string",
                     "path": [
                         "DataTypesKitchenSink",
                         "basic",
@@ -56,10 +54,8 @@ function validate_DataTypesKitchenSink(input) {
             }
             if (typeof input["basic"]["b"] != "number") {
                 error_acc_0.push({
-                    "kind": [
-                        "NotTypeof",
-                        "number"
-                    ],
+                    "error_kind": "NotTypeof",
+                    "expected_type": "number",
                     "path": [
                         "DataTypesKitchenSink",
                         "basic",
@@ -69,10 +65,8 @@ function validate_DataTypesKitchenSink(input) {
             }
             if (typeof input["basic"]["c"] != "boolean") {
                 error_acc_0.push({
-                    "kind": [
-                        "NotTypeof",
-                        "boolean"
-                    ],
+                    "error_kind": "NotTypeof",
+                    "expected_type": "boolean",
                     "path": [
                         "DataTypesKitchenSink",
                         "basic",
@@ -82,9 +76,7 @@ function validate_DataTypesKitchenSink(input) {
             }
         } else {
             error_acc_0.push({
-                "kind": [
-                    "NotAnObject"
-                ],
+                "error_kind": "NotAnObject",
                 "path": [
                     "DataTypesKitchenSink",
                     "basic"
@@ -95,10 +87,8 @@ function validate_DataTypesKitchenSink(input) {
             for (const array_item_1 of input["array1"]){
                 if (typeof array_item_1 != "string") {
                     error_acc_0.push({
-                        "kind": [
-                            "NotTypeof",
-                            "string"
-                        ],
+                        "error_kind": "NotTypeof",
+                        "expected_type": "string",
                         "path": [
                             "DataTypesKitchenSink",
                             "array1",
@@ -109,9 +99,7 @@ function validate_DataTypesKitchenSink(input) {
             }
         } else {
             error_acc_0.push({
-                "kind": [
-                    "NotAnArray"
-                ],
+                "error_kind": "NotAnArray",
                 "path": [
                     "DataTypesKitchenSink",
                     "array1"
@@ -122,10 +110,8 @@ function validate_DataTypesKitchenSink(input) {
             for (const array_item_2 of input["array2"]){
                 if (typeof array_item_2 != "string") {
                     error_acc_0.push({
-                        "kind": [
-                            "NotTypeof",
-                            "string"
-                        ],
+                        "error_kind": "NotTypeof",
+                        "expected_type": "string",
                         "path": [
                             "DataTypesKitchenSink",
                             "array2",
@@ -136,9 +122,7 @@ function validate_DataTypesKitchenSink(input) {
             }
         } else {
             error_acc_0.push({
-                "kind": [
-                    "NotAnArray"
-                ],
+                "error_kind": "NotAnArray",
                 "path": [
                     "DataTypesKitchenSink",
                     "array2"
@@ -148,10 +132,8 @@ function validate_DataTypesKitchenSink(input) {
         if (Array.isArray(input["tuple1"])) {
             if (typeof input["tuple1"][0] != "string") {
                 error_acc_0.push({
-                    "kind": [
-                        "NotTypeof",
-                        "string"
-                    ],
+                    "error_kind": "NotTypeof",
+                    "expected_type": "string",
                     "path": [
                         "DataTypesKitchenSink",
                         "tuple1",
@@ -161,9 +143,7 @@ function validate_DataTypesKitchenSink(input) {
             }
         } else {
             error_acc_0.push({
-                "kind": [
-                    "NotAnArray"
-                ],
+                "error_kind": "NotAnArray",
                 "path": [
                     "DataTypesKitchenSink",
                     "tuple1"
@@ -173,10 +153,8 @@ function validate_DataTypesKitchenSink(input) {
         if (Array.isArray(input["tuple2"])) {
             if (typeof input["tuple2"][0] != "string") {
                 error_acc_0.push({
-                    "kind": [
-                        "NotTypeof",
-                        "string"
-                    ],
+                    "error_kind": "NotTypeof",
+                    "expected_type": "string",
                     "path": [
                         "DataTypesKitchenSink",
                         "tuple2",
@@ -186,10 +164,8 @@ function validate_DataTypesKitchenSink(input) {
             }
             if (typeof input["tuple2"][1] != "string") {
                 error_acc_0.push({
-                    "kind": [
-                        "NotTypeof",
-                        "string"
-                    ],
+                    "error_kind": "NotTypeof",
+                    "expected_type": "string",
                     "path": [
                         "DataTypesKitchenSink",
                         "tuple2",
@@ -199,9 +175,7 @@ function validate_DataTypesKitchenSink(input) {
             }
         } else {
             error_acc_0.push({
-                "kind": [
-                    "NotAnArray"
-                ],
+                "error_kind": "NotAnArray",
                 "path": [
                     "DataTypesKitchenSink",
                     "tuple2"
@@ -211,10 +185,8 @@ function validate_DataTypesKitchenSink(input) {
         if (Array.isArray(input["tuple_rest"])) {
             if (typeof input["tuple_rest"][0] != "string") {
                 error_acc_0.push({
-                    "kind": [
-                        "NotTypeof",
-                        "string"
-                    ],
+                    "error_kind": "NotTypeof",
+                    "expected_type": "string",
                     "path": [
                         "DataTypesKitchenSink",
                         "tuple_rest",
@@ -224,10 +196,8 @@ function validate_DataTypesKitchenSink(input) {
             }
             if (typeof input["tuple_rest"][1] != "string") {
                 error_acc_0.push({
-                    "kind": [
-                        "NotTypeof",
-                        "string"
-                    ],
+                    "error_kind": "NotTypeof",
+                    "expected_type": "string",
                     "path": [
                         "DataTypesKitchenSink",
                         "tuple_rest",
@@ -239,10 +209,8 @@ function validate_DataTypesKitchenSink(input) {
                 for (const array_item_3 of input["tuple_rest"].slice(2)){
                     if (typeof array_item_3 != "number") {
                         error_acc_0.push({
-                            "kind": [
-                                "NotTypeof",
-                                "number"
-                            ],
+                            "error_kind": "NotTypeof",
+                            "expected_type": "number",
                             "path": [
                                 "DataTypesKitchenSink",
                                 "tuple_rest",
@@ -254,9 +222,7 @@ function validate_DataTypesKitchenSink(input) {
                 }
             } else {
                 error_acc_0.push({
-                    "kind": [
-                        "NotAnArray"
-                    ],
+                    "error_kind": "NotAnArray",
                     "path": [
                         "DataTypesKitchenSink",
                         "tuple_rest",
@@ -266,9 +232,7 @@ function validate_DataTypesKitchenSink(input) {
             }
         } else {
             error_acc_0.push({
-                "kind": [
-                    "NotAnArray"
-                ],
+                "error_kind": "NotAnArray",
                 "path": [
                     "DataTypesKitchenSink",
                     "tuple_rest"
@@ -279,10 +243,8 @@ function validate_DataTypesKitchenSink(input) {
         let error_acc_5 = [];
         if (typeof input["nullable"] != "string") {
             error_acc_5.push({
-                "kind": [
-                    "NotTypeof",
-                    "string"
-                ],
+                "error_kind": "NotTypeof",
+                "expected_type": "string",
                 "path": [
                     "DataTypesKitchenSink",
                     "nullable"
@@ -293,10 +255,8 @@ function validate_DataTypesKitchenSink(input) {
         let error_acc_6 = [];
         if (input["nullable"] != null) {
             error_acc_6.push({
-                "kind": [
-                    "NotEq",
-                    null
-                ],
+                "error_kind": "NotEq",
+                "expected_value": null,
                 "path": [
                     "DataTypesKitchenSink",
                     "nullable"
@@ -306,9 +266,7 @@ function validate_DataTypesKitchenSink(input) {
         is_ok_4 = is_ok_4 || error_acc_6.length === 0;
         if (!(is_ok_4)) {
             error_acc_0.push({
-                "kind": [
-                    "InvalidUnion"
-                ],
+                "error_kind": "InvalidUnion",
                 "path": [
                     "DataTypesKitchenSink",
                     "nullable"
@@ -319,10 +277,8 @@ function validate_DataTypesKitchenSink(input) {
         let error_acc_8 = [];
         if (typeof input["many_nullable"] != "number") {
             error_acc_8.push({
-                "kind": [
-                    "NotTypeof",
-                    "number"
-                ],
+                "error_kind": "NotTypeof",
+                "expected_type": "number",
                 "path": [
                     "DataTypesKitchenSink",
                     "many_nullable"
@@ -333,10 +289,8 @@ function validate_DataTypesKitchenSink(input) {
         let error_acc_9 = [];
         if (typeof input["many_nullable"] != "string") {
             error_acc_9.push({
-                "kind": [
-                    "NotTypeof",
-                    "string"
-                ],
+                "error_kind": "NotTypeof",
+                "expected_type": "string",
                 "path": [
                     "DataTypesKitchenSink",
                     "many_nullable"
@@ -347,10 +301,8 @@ function validate_DataTypesKitchenSink(input) {
         let error_acc_10 = [];
         if (input["many_nullable"] != null) {
             error_acc_10.push({
-                "kind": [
-                    "NotEq",
-                    null
-                ],
+                "error_kind": "NotEq",
+                "expected_value": null,
                 "path": [
                     "DataTypesKitchenSink",
                     "many_nullable"
@@ -360,9 +312,7 @@ function validate_DataTypesKitchenSink(input) {
         is_ok_7 = is_ok_7 || error_acc_10.length === 0;
         if (!(is_ok_7)) {
             error_acc_0.push({
-                "kind": [
-                    "InvalidUnion"
-                ],
+                "error_kind": "InvalidUnion",
                 "path": [
                     "DataTypesKitchenSink",
                     "many_nullable"
@@ -372,10 +322,8 @@ function validate_DataTypesKitchenSink(input) {
         if (input["optional_prop"] != null) {
             if (typeof input["optional_prop"] != "string") {
                 error_acc_0.push({
-                    "kind": [
-                        "NotTypeof",
-                        "string"
-                    ],
+                    "error_kind": "NotTypeof",
+                    "expected_type": "string",
                     "path": [
                         "DataTypesKitchenSink",
                         "optional_prop"
@@ -387,10 +335,8 @@ function validate_DataTypesKitchenSink(input) {
         let error_acc_12 = [];
         if (typeof input["union_with_undefined"] != "string") {
             error_acc_12.push({
-                "kind": [
-                    "NotTypeof",
-                    "string"
-                ],
+                "error_kind": "NotTypeof",
+                "expected_type": "string",
                 "path": [
                     "DataTypesKitchenSink",
                     "union_with_undefined"
@@ -401,10 +347,8 @@ function validate_DataTypesKitchenSink(input) {
         let error_acc_13 = [];
         if (input["union_with_undefined"] != null) {
             error_acc_13.push({
-                "kind": [
-                    "NotEq",
-                    null
-                ],
+                "error_kind": "NotEq",
+                "expected_value": null,
                 "path": [
                     "DataTypesKitchenSink",
                     "union_with_undefined"
@@ -414,9 +358,7 @@ function validate_DataTypesKitchenSink(input) {
         is_ok_11 = is_ok_11 || error_acc_13.length === 0;
         if (!(is_ok_11)) {
             error_acc_0.push({
-                "kind": [
-                    "InvalidUnion"
-                ],
+                "error_kind": "InvalidUnion",
                 "path": [
                     "DataTypesKitchenSink",
                     "union_with_undefined"
@@ -427,10 +369,8 @@ function validate_DataTypesKitchenSink(input) {
         let error_acc_15 = [];
         if (typeof input["union_of_many"] != "string") {
             error_acc_15.push({
-                "kind": [
-                    "NotTypeof",
-                    "string"
-                ],
+                "error_kind": "NotTypeof",
+                "expected_type": "string",
                 "path": [
                     "DataTypesKitchenSink",
                     "union_of_many"
@@ -441,10 +381,8 @@ function validate_DataTypesKitchenSink(input) {
         let error_acc_16 = [];
         if (typeof input["union_of_many"] != "number") {
             error_acc_16.push({
-                "kind": [
-                    "NotTypeof",
-                    "number"
-                ],
+                "error_kind": "NotTypeof",
+                "expected_type": "number",
                 "path": [
                     "DataTypesKitchenSink",
                     "union_of_many"
@@ -455,10 +393,8 @@ function validate_DataTypesKitchenSink(input) {
         let error_acc_17 = [];
         if (typeof input["union_of_many"] != "boolean") {
             error_acc_17.push({
-                "kind": [
-                    "NotTypeof",
-                    "boolean"
-                ],
+                "error_kind": "NotTypeof",
+                "expected_type": "boolean",
                 "path": [
                     "DataTypesKitchenSink",
                     "union_of_many"
@@ -468,9 +404,7 @@ function validate_DataTypesKitchenSink(input) {
         is_ok_14 = is_ok_14 || error_acc_17.length === 0;
         if (!(is_ok_14)) {
             error_acc_0.push({
-                "kind": [
-                    "InvalidUnion"
-                ],
+                "error_kind": "InvalidUnion",
                 "path": [
                     "DataTypesKitchenSink",
                     "union_of_many"
@@ -480,10 +414,8 @@ function validate_DataTypesKitchenSink(input) {
         if (typeof input["literals"] == "object" && input["literals"] != null) {
             if (input["literals"]["a"] != "a") {
                 error_acc_0.push({
-                    "kind": [
-                        "NotEq",
-                        "a"
-                    ],
+                    "error_kind": "NotEq",
+                    "expected_value": "a",
                     "path": [
                         "DataTypesKitchenSink",
                         "literals",
@@ -493,10 +425,8 @@ function validate_DataTypesKitchenSink(input) {
             }
             if (input["literals"]["b"] != 1) {
                 error_acc_0.push({
-                    "kind": [
-                        "NotEq",
-                        1
-                    ],
+                    "error_kind": "NotEq",
+                    "expected_value": 1,
                     "path": [
                         "DataTypesKitchenSink",
                         "literals",
@@ -506,10 +436,8 @@ function validate_DataTypesKitchenSink(input) {
             }
             if (input["literals"]["c"] != true) {
                 error_acc_0.push({
-                    "kind": [
-                        "NotEq",
-                        true
-                    ],
+                    "error_kind": "NotEq",
+                    "expected_value": true,
                     "path": [
                         "DataTypesKitchenSink",
                         "literals",
@@ -519,9 +447,7 @@ function validate_DataTypesKitchenSink(input) {
             }
         } else {
             error_acc_0.push({
-                "kind": [
-                    "NotAnObject"
-                ],
+                "error_kind": "NotAnObject",
                 "path": [
                     "DataTypesKitchenSink",
                     "literals"
@@ -532,10 +458,8 @@ function validate_DataTypesKitchenSink(input) {
         let error_acc_19 = [];
         if (input["enum"] != "a") {
             error_acc_19.push({
-                "kind": [
-                    "NotEq",
-                    "a"
-                ],
+                "error_kind": "NotEq",
+                "expected_value": "a",
                 "path": [
                     "DataTypesKitchenSink",
                     "enum"
@@ -546,10 +470,8 @@ function validate_DataTypesKitchenSink(input) {
         let error_acc_20 = [];
         if (input["enum"] != "b") {
             error_acc_20.push({
-                "kind": [
-                    "NotEq",
-                    "b"
-                ],
+                "error_kind": "NotEq",
+                "expected_value": "b",
                 "path": [
                     "DataTypesKitchenSink",
                     "enum"
@@ -560,10 +482,8 @@ function validate_DataTypesKitchenSink(input) {
         let error_acc_21 = [];
         if (input["enum"] != "c") {
             error_acc_21.push({
-                "kind": [
-                    "NotEq",
-                    "c"
-                ],
+                "error_kind": "NotEq",
+                "expected_value": "c",
                 "path": [
                     "DataTypesKitchenSink",
                     "enum"
@@ -573,9 +493,7 @@ function validate_DataTypesKitchenSink(input) {
         is_ok_18 = is_ok_18 || error_acc_21.length === 0;
         if (!(is_ok_18)) {
             error_acc_0.push({
-                "kind": [
-                    "InvalidUnion"
-                ],
+                "error_kind": "InvalidUnion",
                 "path": [
                     "DataTypesKitchenSink",
                     "enum"
@@ -585,10 +503,8 @@ function validate_DataTypesKitchenSink(input) {
         if (Array.isArray(input["tuple_lit"])) {
             if (input["tuple_lit"][0] != "a") {
                 error_acc_0.push({
-                    "kind": [
-                        "NotEq",
-                        "a"
-                    ],
+                    "error_kind": "NotEq",
+                    "expected_value": "a",
                     "path": [
                         "DataTypesKitchenSink",
                         "tuple_lit",
@@ -598,10 +514,8 @@ function validate_DataTypesKitchenSink(input) {
             }
             if (input["tuple_lit"][1] != 1) {
                 error_acc_0.push({
-                    "kind": [
-                        "NotEq",
-                        1
-                    ],
+                    "error_kind": "NotEq",
+                    "expected_value": 1,
                     "path": [
                         "DataTypesKitchenSink",
                         "tuple_lit",
@@ -611,10 +525,8 @@ function validate_DataTypesKitchenSink(input) {
             }
             if (input["tuple_lit"][2] != true) {
                 error_acc_0.push({
-                    "kind": [
-                        "NotEq",
-                        true
-                    ],
+                    "error_kind": "NotEq",
+                    "expected_value": true,
                     "path": [
                         "DataTypesKitchenSink",
                         "tuple_lit",
@@ -624,9 +536,7 @@ function validate_DataTypesKitchenSink(input) {
             }
         } else {
             error_acc_0.push({
-                "kind": [
-                    "NotAnArray"
-                ],
+                "error_kind": "NotAnArray",
                 "path": [
                     "DataTypesKitchenSink",
                     "tuple_lit"
@@ -635,10 +545,8 @@ function validate_DataTypesKitchenSink(input) {
         }
         if (input["str_template"] != "ab") {
             error_acc_0.push({
-                "kind": [
-                    "NotEq",
-                    "ab"
-                ],
+                "error_kind": "NotEq",
+                "expected_value": "ab",
                 "path": [
                     "DataTypesKitchenSink",
                     "str_template"
@@ -647,9 +555,7 @@ function validate_DataTypesKitchenSink(input) {
         }
     } else {
         error_acc_0.push({
-            "kind": [
-                "NotAnObject"
-            ],
+            "error_kind": "NotAnObject",
             "path": [
                 "DataTypesKitchenSink"
             ]
@@ -661,10 +567,8 @@ function validate_A(input) {
     let error_acc_0 = [];
     if (typeof input != "string") {
         error_acc_0.push({
-            "kind": [
-                "NotTypeof",
-                "string"
-            ],
+            "error_kind": "NotTypeof",
+            "expected_type": "string",
             "path": [
                 "A"
             ]
@@ -677,10 +581,8 @@ function validate_User(input) {
     if (typeof input == "object" && input != null) {
         if (typeof input["id"] != "number") {
             error_acc_0.push({
-                "kind": [
-                    "NotTypeof",
-                    "number"
-                ],
+                "error_kind": "NotTypeof",
+                "expected_type": "number",
                 "path": [
                     "User",
                     "id"
@@ -689,10 +591,8 @@ function validate_User(input) {
         }
         if (typeof input["name"] != "string") {
             error_acc_0.push({
-                "kind": [
-                    "NotTypeof",
-                    "string"
-                ],
+                "error_kind": "NotTypeof",
+                "expected_type": "string",
                 "path": [
                     "User",
                     "name"
@@ -709,9 +609,7 @@ function validate_User(input) {
             }
         } else {
             error_acc_0.push({
-                "kind": [
-                    "NotAnArray"
-                ],
+                "error_kind": "NotAnArray",
                 "path": [
                     "User",
                     "entities"
@@ -721,10 +619,8 @@ function validate_User(input) {
         if (input["optional_prop"] != null) {
             if (typeof input["optional_prop"] != "string") {
                 error_acc_0.push({
-                    "kind": [
-                        "NotTypeof",
-                        "string"
-                    ],
+                    "error_kind": "NotTypeof",
+                    "expected_type": "string",
                     "path": [
                         "User",
                         "optional_prop"
@@ -734,9 +630,7 @@ function validate_User(input) {
         }
     } else {
         error_acc_0.push({
-            "kind": [
-                "NotAnObject"
-            ],
+            "error_kind": "NotAnObject",
             "path": [
                 "User"
             ]
@@ -749,10 +643,8 @@ function validate_UserEntity(input) {
     if (typeof input == "object" && input != null) {
         if (typeof input["id"] != "string") {
             error_acc_0.push({
-                "kind": [
-                    "NotTypeof",
-                    "string"
-                ],
+                "error_kind": "NotTypeof",
+                "expected_type": "string",
                 "path": [
                     "UserEntity",
                     "id"
@@ -765,9 +657,7 @@ function validate_UserEntity(input) {
         ]));
     } else {
         error_acc_0.push({
-            "kind": [
-                "NotAnObject"
-            ],
+            "error_kind": "NotAnObject",
             "path": [
                 "UserEntity"
             ]
@@ -796,10 +686,8 @@ const meta = [
             let error_acc_0 = [];
             if (typeof input != "string") {
                 error_acc_0.push({
-                    "kind": [
-                        "NotTypeof",
-                        "string"
-                    ],
+                    "error_kind": "NotTypeof",
+                    "expected_type": "string",
                     "path": [
                         "[GET] /anon-func.response_body"
                     ]
@@ -822,10 +710,8 @@ const meta = [
                     let error_acc_0 = [];
                     if (typeof input != "string") {
                         error_acc_0.push({
-                            "kind": [
-                                "NotTypeof",
-                                "string"
-                            ],
+                            "error_kind": "NotTypeof",
+                            "expected_type": "string",
                             "path": [
                                 'Header Argument "user_agent"'
                             ]
@@ -845,10 +731,8 @@ const meta = [
                     let error_acc_0 = [];
                     if (typeof input != "string") {
                         error_acc_0.push({
-                            "kind": [
-                                "NotTypeof",
-                                "string"
-                            ],
+                            "error_kind": "NotTypeof",
+                            "expected_type": "string",
                             "path": [
                                 'Cookie Argument "ads_id"'
                             ]
@@ -868,10 +752,8 @@ const meta = [
                 for (const array_item_1 of input){
                     if (typeof array_item_1 != "string") {
                         error_acc_0.push({
-                            "kind": [
-                                "NotTypeof",
-                                "string"
-                            ],
+                            "error_kind": "NotTypeof",
+                            "expected_type": "string",
                             "path": [
                                 "[GET] /users.response_body",
                                 "[]"
@@ -881,9 +763,7 @@ const meta = [
                 }
             } else {
                 error_acc_0.push({
-                    "kind": [
-                        "NotAnArray"
-                    ],
+                    "error_kind": "NotAnArray",
                     "path": [
                         "[GET] /users.response_body"
                     ]
@@ -906,10 +786,8 @@ const meta = [
                     let error_acc_0 = [];
                     if (typeof input != "number") {
                         error_acc_0.push({
-                            "kind": [
-                                "NotTypeof",
-                                "number"
-                            ],
+                            "error_kind": "NotTypeof",
+                            "expected_type": "number",
                             "path": [
                                 'Path Parameter "id"'
                             ]
@@ -945,10 +823,8 @@ const meta = [
                     let error_acc_0 = [];
                     if (typeof input != "string") {
                         error_acc_0.push({
-                            "kind": [
-                                "NotTypeof",
-                                "string"
-                            ],
+                            "error_kind": "NotTypeof",
+                            "expected_type": "string",
                             "path": [
                                 'Path Parameter "id"'
                             ]
@@ -966,10 +842,8 @@ const meta = [
             let error_acc_0 = [];
             if (typeof input != "string") {
                 error_acc_0.push({
-                    "kind": [
-                        "NotTypeof",
-                        "string"
-                    ],
+                    "error_kind": "NotTypeof",
+                    "expected_type": "string",
                     "path": [
                         "[GET] /users2/{id}.response_body"
                     ]
@@ -992,10 +866,8 @@ const meta = [
                     let error_acc_0 = [];
                     if (typeof input != "string") {
                         error_acc_0.push({
-                            "kind": [
-                                "NotTypeof",
-                                "string"
-                            ],
+                            "error_kind": "NotTypeof",
+                            "expected_type": "string",
                             "path": [
                                 'Path Parameter "id"'
                             ]
@@ -1013,10 +885,8 @@ const meta = [
             let error_acc_0 = [];
             if (typeof input != "string") {
                 error_acc_0.push({
-                    "kind": [
-                        "NotTypeof",
-                        "string"
-                    ],
+                    "error_kind": "NotTypeof",
+                    "expected_type": "string",
                     "path": [
                         "[POST] /users2/{id}.response_body"
                     ]
@@ -1033,10 +903,8 @@ const meta = [
             let error_acc_0 = [];
             if (typeof input != "string") {
                 error_acc_0.push({
-                    "kind": [
-                        "NotTypeof",
-                        "string"
-                    ],
+                    "error_kind": "NotTypeof",
+                    "expected_type": "string",
                     "path": [
                         "[GET] /users3.response_body"
                     ]
@@ -1053,10 +921,8 @@ const meta = [
             let error_acc_0 = [];
             if (typeof input != "string") {
                 error_acc_0.push({
-                    "kind": [
-                        "NotTypeof",
-                        "string"
-                    ],
+                    "error_kind": "NotTypeof",
+                    "expected_type": "string",
                     "path": [
                         "[GET] /users4.response_body"
                     ]
@@ -1073,10 +939,8 @@ const meta = [
             let error_acc_0 = [];
             if (typeof input != "string") {
                 error_acc_0.push({
-                    "kind": [
-                        "NotTypeof",
-                        "string"
-                    ],
+                    "error_kind": "NotTypeof",
+                    "expected_type": "string",
                     "path": [
                         "[POST] /users4.response_body"
                     ]

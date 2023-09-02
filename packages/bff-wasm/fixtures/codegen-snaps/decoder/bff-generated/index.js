@@ -42,10 +42,8 @@ function validate_ChildUser(input) {
     if (typeof input == "object" && input != null) {
         if (typeof input["id"] != "string") {
             error_acc_0.push({
-                "kind": [
-                    "NotTypeof",
-                    "string"
-                ],
+                "error_kind": "NotTypeof",
+                "expected_type": "string",
                 "path": [
                     "ChildUser",
                     "id"
@@ -58,9 +56,7 @@ function validate_ChildUser(input) {
         ]));
     } else {
         error_acc_0.push({
-            "kind": [
-                "NotAnObject"
-            ],
+            "error_kind": "NotAnObject",
             "path": [
                 "ChildUser"
             ]
@@ -73,10 +69,8 @@ function validate_User(input) {
     if (typeof input == "object" && input != null) {
         if (typeof input["a"] != "string") {
             error_acc_0.push({
-                "kind": [
-                    "NotTypeof",
-                    "string"
-                ],
+                "error_kind": "NotTypeof",
+                "expected_type": "string",
                 "path": [
                     "User",
                     "a"
@@ -85,10 +79,8 @@ function validate_User(input) {
         }
         if (typeof input["b"] != "number") {
             error_acc_0.push({
-                "kind": [
-                    "NotTypeof",
-                    "number"
-                ],
+                "error_kind": "NotTypeof",
+                "expected_type": "number",
                 "path": [
                     "User",
                     "b"
@@ -97,10 +89,8 @@ function validate_User(input) {
         }
         if (typeof input["c"] != "boolean") {
             error_acc_0.push({
-                "kind": [
-                    "NotTypeof",
-                    "boolean"
-                ],
+                "error_kind": "NotTypeof",
+                "expected_type": "boolean",
                 "path": [
                     "User",
                     "c"
@@ -111,10 +101,8 @@ function validate_User(input) {
             for (const array_item_1 of input["c2"]){
                 if (typeof array_item_1 != "boolean") {
                     error_acc_0.push({
-                        "kind": [
-                            "NotTypeof",
-                            "boolean"
-                        ],
+                        "error_kind": "NotTypeof",
+                        "expected_type": "boolean",
                         "path": [
                             "User",
                             "c2",
@@ -125,9 +113,7 @@ function validate_User(input) {
             }
         } else {
             error_acc_0.push({
-                "kind": [
-                    "NotAnArray"
-                ],
+                "error_kind": "NotAnArray",
                 "path": [
                     "User",
                     "c2"
@@ -144,9 +130,7 @@ function validate_User(input) {
             }
         } else {
             error_acc_0.push({
-                "kind": [
-                    "NotAnArray"
-                ],
+                "error_kind": "NotAnArray",
                 "path": [
                     "User",
                     "d"
@@ -174,9 +158,7 @@ function validate_User(input) {
                 ]));
             } else {
                 error_acc_0.push({
-                    "kind": [
-                        "NotAnObject"
-                    ],
+                    "error_kind": "NotAnObject",
                     "path": [
                         "User",
                         "thisUser2"
@@ -188,10 +170,8 @@ function validate_User(input) {
         let error_acc_4 = [];
         if (typeof input["union"] != "string") {
             error_acc_4.push({
-                "kind": [
-                    "NotTypeof",
-                    "string"
-                ],
+                "error_kind": "NotTypeof",
+                "expected_type": "string",
                 "path": [
                     "User",
                     "union"
@@ -202,10 +182,8 @@ function validate_User(input) {
         let error_acc_5 = [];
         if (typeof input["union"] != "number") {
             error_acc_5.push({
-                "kind": [
-                    "NotTypeof",
-                    "number"
-                ],
+                "error_kind": "NotTypeof",
+                "expected_type": "number",
                 "path": [
                     "User",
                     "union"
@@ -215,9 +193,7 @@ function validate_User(input) {
         is_ok_3 = is_ok_3 || error_acc_5.length === 0;
         if (!(is_ok_3)) {
             error_acc_0.push({
-                "kind": [
-                    "InvalidUnion"
-                ],
+                "error_kind": "InvalidUnion",
                 "path": [
                     "User",
                     "union"
@@ -236,9 +212,7 @@ function validate_User(input) {
             }
         } else {
             error_acc_7.push({
-                "kind": [
-                    "NotAnArray"
-                ],
+                "error_kind": "NotAnArray",
                 "path": [
                     "User",
                     "unionWithNull"
@@ -249,10 +223,8 @@ function validate_User(input) {
         let error_acc_9 = [];
         if (typeof input["unionWithNull"] != "number") {
             error_acc_9.push({
-                "kind": [
-                    "NotTypeof",
-                    "number"
-                ],
+                "error_kind": "NotTypeof",
+                "expected_type": "number",
                 "path": [
                     "User",
                     "unionWithNull"
@@ -263,10 +235,8 @@ function validate_User(input) {
         let error_acc_10 = [];
         if (input["unionWithNull"] != null) {
             error_acc_10.push({
-                "kind": [
-                    "NotEq",
-                    null
-                ],
+                "error_kind": "NotEq",
+                "expected_value": null,
                 "path": [
                     "User",
                     "unionWithNull"
@@ -276,9 +246,7 @@ function validate_User(input) {
         is_ok_6 = is_ok_6 || error_acc_10.length === 0;
         if (!(is_ok_6)) {
             error_acc_0.push({
-                "kind": [
-                    "InvalidUnion"
-                ],
+                "error_kind": "InvalidUnion",
                 "path": [
                     "User",
                     "unionWithNull"
@@ -288,10 +256,8 @@ function validate_User(input) {
         if (input["f"] != null) {}
         if (input["g"] != "a") {
             error_acc_0.push({
-                "kind": [
-                    "NotEq",
-                    "a"
-                ],
+                "error_kind": "NotEq",
+                "expected_value": "a",
                 "path": [
                     "User",
                     "g"
@@ -302,10 +268,8 @@ function validate_User(input) {
         let error_acc_12 = [];
         if (input["h"] != "a") {
             error_acc_12.push({
-                "kind": [
-                    "NotEq",
-                    "a"
-                ],
+                "error_kind": "NotEq",
+                "expected_value": "a",
                 "path": [
                     "User",
                     "h"
@@ -316,10 +280,8 @@ function validate_User(input) {
         let error_acc_13 = [];
         if (input["h"] != "b") {
             error_acc_13.push({
-                "kind": [
-                    "NotEq",
-                    "b"
-                ],
+                "error_kind": "NotEq",
+                "expected_value": "b",
                 "path": [
                     "User",
                     "h"
@@ -330,10 +292,8 @@ function validate_User(input) {
         let error_acc_14 = [];
         if (input["h"] != "c") {
             error_acc_14.push({
-                "kind": [
-                    "NotEq",
-                    "c"
-                ],
+                "error_kind": "NotEq",
+                "expected_value": "c",
                 "path": [
                     "User",
                     "h"
@@ -343,9 +303,7 @@ function validate_User(input) {
         is_ok_11 = is_ok_11 || error_acc_14.length === 0;
         if (!(is_ok_11)) {
             error_acc_0.push({
-                "kind": [
-                    "InvalidUnion"
-                ],
+                "error_kind": "InvalidUnion",
                 "path": [
                     "User",
                     "h"
@@ -355,10 +313,8 @@ function validate_User(input) {
         if (typeof input["i"] == "object" && input["i"] != null) {
             if (input["i"]["a"] != 1) {
                 error_acc_0.push({
-                    "kind": [
-                        "NotEq",
-                        1
-                    ],
+                    "error_kind": "NotEq",
+                    "expected_value": 1,
                     "path": [
                         "User",
                         "i",
@@ -368,9 +324,7 @@ function validate_User(input) {
             }
         } else {
             error_acc_0.push({
-                "kind": [
-                    "NotAnObject"
-                ],
+                "error_kind": "NotAnObject",
                 "path": [
                     "User",
                     "i"
@@ -380,10 +334,8 @@ function validate_User(input) {
         if (typeof input["i"] == "object" && input["i"] != null) {
             if (input["i"]["b"] != 2) {
                 error_acc_0.push({
-                    "kind": [
-                        "NotEq",
-                        2
-                    ],
+                    "error_kind": "NotEq",
+                    "expected_value": 2,
                     "path": [
                         "User",
                         "i",
@@ -393,9 +345,7 @@ function validate_User(input) {
             }
         } else {
             error_acc_0.push({
-                "kind": [
-                    "NotAnObject"
-                ],
+                "error_kind": "NotAnObject",
                 "path": [
                     "User",
                     "i"
@@ -404,9 +354,7 @@ function validate_User(input) {
         }
     } else {
         error_acc_0.push({
-            "kind": [
-                "NotAnObject"
-            ],
+            "error_kind": "NotAnObject",
             "path": [
                 "User"
             ]
@@ -429,10 +377,8 @@ const meta = [
                     let error_acc_0 = [];
                     if (typeof input != "string") {
                         error_acc_0.push({
-                            "kind": [
-                                "NotTypeof",
-                                "string"
-                            ],
+                            "error_kind": "NotTypeof",
+                            "expected_type": "string",
                             "path": [
                                 'Path Parameter "id"'
                             ]

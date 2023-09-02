@@ -11,6 +11,7 @@ const bff = buildHonoTestClient<typeof router>(meta, app);
 it("get", async () => {
   expect(await bff["/{name}"].get("name")).toMatchInlineSnapshot(`
     {
+      "age": 123,
       "name": "name",
     }
   `);

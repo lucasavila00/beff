@@ -42,10 +42,8 @@ function validate_Post(input) {
     if (typeof input == "object" && input != null) {
         if (typeof input["id"] != "string") {
             error_acc_0.push({
-                "kind": [
-                    "NotTypeof",
-                    "string"
-                ],
+                "error_kind": "NotTypeof",
+                "expected_type": "string",
                 "path": [
                     "Post",
                     "id"
@@ -54,10 +52,8 @@ function validate_Post(input) {
         }
         if (typeof input["title"] != "string") {
             error_acc_0.push({
-                "kind": [
-                    "NotTypeof",
-                    "string"
-                ],
+                "error_kind": "NotTypeof",
+                "expected_type": "string",
                 "path": [
                     "Post",
                     "title"
@@ -66,10 +62,8 @@ function validate_Post(input) {
         }
         if (typeof input["body"] != "string") {
             error_acc_0.push({
-                "kind": [
-                    "NotTypeof",
-                    "string"
-                ],
+                "error_kind": "NotTypeof",
+                "expected_type": "string",
                 "path": [
                     "Post",
                     "body"
@@ -78,9 +72,7 @@ function validate_Post(input) {
         }
     } else {
         error_acc_0.push({
-            "kind": [
-                "NotAnObject"
-            ],
+            "error_kind": "NotAnObject",
             "path": [
                 "Post"
             ]
@@ -93,10 +85,8 @@ function validate_Param(input) {
     if (typeof input == "object" && input != null) {
         if (typeof input["title"] != "string") {
             error_acc_0.push({
-                "kind": [
-                    "NotTypeof",
-                    "string"
-                ],
+                "error_kind": "NotTypeof",
+                "expected_type": "string",
                 "path": [
                     "Param",
                     "title"
@@ -105,10 +95,8 @@ function validate_Param(input) {
         }
         if (typeof input["body"] != "string") {
             error_acc_0.push({
-                "kind": [
-                    "NotTypeof",
-                    "string"
-                ],
+                "error_kind": "NotTypeof",
+                "expected_type": "string",
                 "path": [
                     "Param",
                     "body"
@@ -117,9 +105,7 @@ function validate_Param(input) {
         }
     } else {
         error_acc_0.push({
-            "kind": [
-                "NotAnObject"
-            ],
+            "error_kind": "NotAnObject",
             "path": [
                 "Param"
             ]
@@ -155,10 +141,8 @@ const meta = [
             if (typeof input == "object" && input != null) {
                 if (typeof input["message"] != "string") {
                     error_acc_0.push({
-                        "kind": [
-                            "NotTypeof",
-                            "string"
-                        ],
+                        "error_kind": "NotTypeof",
+                        "expected_type": "string",
                         "path": [
                             "[GET] /.response_body",
                             "message"
@@ -167,9 +151,7 @@ const meta = [
                 }
             } else {
                 error_acc_0.push({
-                    "kind": [
-                        "NotAnObject"
-                    ],
+                    "error_kind": "NotAnObject",
                     "path": [
                         "[GET] /.response_body"
                     ]
@@ -199,9 +181,7 @@ const meta = [
                     }
                 } else {
                     error_acc_0.push({
-                        "kind": [
-                            "NotAnArray"
-                        ],
+                        "error_kind": "NotAnArray",
                         "path": [
                             "[GET] /posts.response_body",
                             "posts"
@@ -210,10 +190,8 @@ const meta = [
                 }
                 if (typeof input["ok"] != "boolean") {
                     error_acc_0.push({
-                        "kind": [
-                            "NotTypeof",
-                            "boolean"
-                        ],
+                        "error_kind": "NotTypeof",
+                        "expected_type": "boolean",
                         "path": [
                             "[GET] /posts.response_body",
                             "ok"
@@ -222,9 +200,7 @@ const meta = [
                 }
             } else {
                 error_acc_0.push({
-                    "kind": [
-                        "NotAnObject"
-                    ],
+                    "error_kind": "NotAnObject",
                     "path": [
                         "[GET] /posts.response_body"
                     ]
@@ -260,10 +236,8 @@ const meta = [
             if (typeof input == "object" && input != null) {
                 if (input["ok"] != true) {
                     error_acc_2.push({
-                        "kind": [
-                            "NotEq",
-                            true
-                        ],
+                        "error_kind": "NotEq",
+                        "expected_value": true,
                         "path": [
                             "[POST] /posts.response_body",
                             "ok"
@@ -276,9 +250,7 @@ const meta = [
                 ]));
             } else {
                 error_acc_2.push({
-                    "kind": [
-                        "NotAnObject"
-                    ],
+                    "error_kind": "NotAnObject",
                     "path": [
                         "[POST] /posts.response_body"
                     ]
@@ -289,10 +261,8 @@ const meta = [
             if (typeof input == "object" && input != null) {
                 if (input["ok"] != false) {
                     error_acc_3.push({
-                        "kind": [
-                            "NotEq",
-                            false
-                        ],
+                        "error_kind": "NotEq",
+                        "expected_value": false,
                         "path": [
                             "[POST] /posts.response_body",
                             "ok"
@@ -301,10 +271,8 @@ const meta = [
                 }
                 if (typeof input["error"] != "string") {
                     error_acc_3.push({
-                        "kind": [
-                            "NotTypeof",
-                            "string"
-                        ],
+                        "error_kind": "NotTypeof",
+                        "expected_type": "string",
                         "path": [
                             "[POST] /posts.response_body",
                             "error"
@@ -313,9 +281,7 @@ const meta = [
                 }
             } else {
                 error_acc_3.push({
-                    "kind": [
-                        "NotAnObject"
-                    ],
+                    "error_kind": "NotAnObject",
                     "path": [
                         "[POST] /posts.response_body"
                     ]
@@ -324,9 +290,7 @@ const meta = [
             is_ok_1 = is_ok_1 || error_acc_3.length === 0;
             if (!(is_ok_1)) {
                 error_acc_0.push({
-                    "kind": [
-                        "InvalidUnion"
-                    ],
+                    "error_kind": "InvalidUnion",
                     "path": [
                         "[POST] /posts.response_body"
                     ]
@@ -349,10 +313,8 @@ const meta = [
                     let error_acc_0 = [];
                     if (typeof input != "string") {
                         error_acc_0.push({
-                            "kind": [
-                                "NotTypeof",
-                                "string"
-                            ],
+                            "error_kind": "NotTypeof",
+                            "expected_type": "string",
                             "path": [
                                 'Path Parameter "id"'
                             ]
@@ -373,10 +335,8 @@ const meta = [
             if (typeof input == "object" && input != null) {
                 if (input["ok"] != true) {
                     error_acc_2.push({
-                        "kind": [
-                            "NotEq",
-                            true
-                        ],
+                        "error_kind": "NotEq",
+                        "expected_value": true,
                         "path": [
                             "[GET] /posts/{id}.response_body",
                             "ok"
@@ -389,9 +349,7 @@ const meta = [
                 ]));
             } else {
                 error_acc_2.push({
-                    "kind": [
-                        "NotAnObject"
-                    ],
+                    "error_kind": "NotAnObject",
                     "path": [
                         "[GET] /posts/{id}.response_body"
                     ]
@@ -402,10 +360,8 @@ const meta = [
             if (typeof input == "object" && input != null) {
                 if (input["ok"] != false) {
                     error_acc_3.push({
-                        "kind": [
-                            "NotEq",
-                            false
-                        ],
+                        "error_kind": "NotEq",
+                        "expected_value": false,
                         "path": [
                             "[GET] /posts/{id}.response_body",
                             "ok"
@@ -414,10 +370,8 @@ const meta = [
                 }
                 if (typeof input["error"] != "string") {
                     error_acc_3.push({
-                        "kind": [
-                            "NotTypeof",
-                            "string"
-                        ],
+                        "error_kind": "NotTypeof",
+                        "expected_type": "string",
                         "path": [
                             "[GET] /posts/{id}.response_body",
                             "error"
@@ -426,9 +380,7 @@ const meta = [
                 }
             } else {
                 error_acc_3.push({
-                    "kind": [
-                        "NotAnObject"
-                    ],
+                    "error_kind": "NotAnObject",
                     "path": [
                         "[GET] /posts/{id}.response_body"
                     ]
@@ -437,9 +389,7 @@ const meta = [
             is_ok_1 = is_ok_1 || error_acc_3.length === 0;
             if (!(is_ok_1)) {
                 error_acc_0.push({
-                    "kind": [
-                        "InvalidUnion"
-                    ],
+                    "error_kind": "InvalidUnion",
                     "path": [
                         "[GET] /posts/{id}.response_body"
                     ]
@@ -462,10 +412,8 @@ const meta = [
                     let error_acc_0 = [];
                     if (typeof input != "string") {
                         error_acc_0.push({
-                            "kind": [
-                                "NotTypeof",
-                                "string"
-                            ],
+                            "error_kind": "NotTypeof",
+                            "expected_type": "string",
                             "path": [
                                 'Path Parameter "id"'
                             ]
@@ -496,10 +444,8 @@ const meta = [
             if (typeof input == "object" && input != null) {
                 if (typeof input["ok"] != "boolean") {
                     error_acc_0.push({
-                        "kind": [
-                            "NotTypeof",
-                            "boolean"
-                        ],
+                        "error_kind": "NotTypeof",
+                        "expected_type": "boolean",
                         "path": [
                             "[PUT] /posts/{id}.response_body",
                             "ok"
@@ -508,9 +454,7 @@ const meta = [
                 }
             } else {
                 error_acc_0.push({
-                    "kind": [
-                        "NotAnObject"
-                    ],
+                    "error_kind": "NotAnObject",
                     "path": [
                         "[PUT] /posts/{id}.response_body"
                     ]
@@ -533,10 +477,8 @@ const meta = [
                     let error_acc_0 = [];
                     if (typeof input != "string") {
                         error_acc_0.push({
-                            "kind": [
-                                "NotTypeof",
-                                "string"
-                            ],
+                            "error_kind": "NotTypeof",
+                            "expected_type": "string",
                             "path": [
                                 'Path Parameter "id"'
                             ]
@@ -555,10 +497,8 @@ const meta = [
             if (typeof input == "object" && input != null) {
                 if (typeof input["ok"] != "boolean") {
                     error_acc_0.push({
-                        "kind": [
-                            "NotTypeof",
-                            "boolean"
-                        ],
+                        "error_kind": "NotTypeof",
+                        "expected_type": "boolean",
                         "path": [
                             "[DELETE] /posts/{id}.response_body",
                             "ok"
@@ -567,9 +507,7 @@ const meta = [
                 }
             } else {
                 error_acc_0.push({
-                    "kind": [
-                        "NotAnObject"
-                    ],
+                    "error_kind": "NotAnObject",
                     "path": [
                         "[DELETE] /posts/{id}.response_body"
                     ]

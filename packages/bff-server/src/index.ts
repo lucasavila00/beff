@@ -1,4 +1,4 @@
-import { DecodeError, DecodeErrorKind } from "bff-types";
+import { DecodeError } from "bff-types";
 
 export const template = `
 <!DOCTYPE html>
@@ -36,22 +36,8 @@ export const template = `
 </html>
 `;
 
-const printKind = (kind: DecodeErrorKind): string => {
-  switch (kind[0]) {
-    case "NotTypeof": {
-      return `expected ${kind[1]}`;
-    }
-    default: {
-      return "unknown";
-    }
-  }
-};
 const printValidationErrors = (errors: DecodeError[]): string => {
-  return errors
-    .map((e) => {
-      return `Decoder error at ${e.path.join(".")}: ${printKind(e.kind)}.`;
-    })
-    .join("\n");
+  return JSON.stringify(errors, null, 2);
 };
 
 export class BffHTTPException {
