@@ -5,3 +5,4 @@ type Abc = {
   a: string;
 };
 export { Abc };
+export default 1;

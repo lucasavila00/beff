@@ -154,9 +154,27 @@ impl Visit for ImportsVisitor {
 
         for x in &node.specifiers {
             match x {
-                ImportSpecifier::Named(ImportNamedSpecifier { local, .. }) => {
-                    self.insert_import(local, &module_specifier, ImportReferenceType::Named)
-                }
+                ImportSpecifier::Named(ImportNamedSpecifier {
+                    local, imported, ..
+                }) => match imported {
+                    Some(imported) => match imported {
+                        ModuleExportName::Ident(renamed) => self.insert_import(
+                            local,
+                            &module_specifier,
+                            ImportReferenceType::Named {
+                                orig: Rc::new(renamed.sym.clone()),
+                            },
+                        ),
+                        ModuleExportName::Str(_) => todo!(),
+                    },
+                    None => self.insert_import(
+                        local,
+                        &module_specifier,
+                        ImportReferenceType::Named {
+                            orig: Rc::new(local.sym.clone()),
+                        },
+                    ),
+                },
                 ImportSpecifier::Namespace(ImportStarAsSpecifier { local, .. }) => {
                     self.insert_import(local, &module_specifier, ImportReferenceType::Star)
                 }
@@ -201,7 +219,7 @@ pub fn parse_file_content(
         }
         if let Some(import) = v.imports.get(&k) {
             match import.import_type {
-                ImportReferenceType::Named => todo!(),
+                ImportReferenceType::Named { .. } => todo!(),
                 ImportReferenceType::Star => {
                     type_exports.insert(k.0, Rc::new(TypeExport::StarOfOtherFile(import.clone())));
 
