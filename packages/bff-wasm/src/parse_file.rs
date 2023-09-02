@@ -1,7 +1,6 @@
 use anyhow::Result;
 use bff_core::parse::load_source_file;
 use bff_core::BffFileName;
-use bff_core::ImportReferenceType;
 use bff_core::ParsedModule;
 use bff_core::ParsedModuleLocals;
 use bff_core::TypeExportsModule;
@@ -17,6 +16,7 @@ use swc_ecma_ast::Decl;
 use swc_ecma_ast::ExportAll;
 use swc_ecma_ast::ExportDecl;
 use swc_ecma_ast::ExportNamedSpecifier;
+use swc_ecma_ast::ExportNamespaceSpecifier;
 use swc_ecma_ast::ExportSpecifier;
 use swc_ecma_ast::Ident;
 use swc_ecma_ast::ImportDefaultSpecifier;
@@ -56,12 +56,7 @@ impl ImportsVisitor {
         }
     }
 
-    fn insert_import(
-        &mut self,
-        local: &Ident,
-        module_specifier: &str,
-        import_type: ImportReferenceType,
-    ) {
+    fn insert_import_named(&mut self, local: &Ident, module_specifier: &str, orig: &JsWord) {
         let k = (local.sym.clone(), local.span.ctxt);
         let v = self.resolve_import(&module_specifier);
         self.resolutions_cache
@@ -70,11 +65,37 @@ impl ImportsVisitor {
             Some(v) => {
                 self.imports.insert(
                     k,
-                    Rc::new(ImportReference {
+                    Rc::new(ImportReference::Named {
+                        orig: Rc::new(orig.clone()),
                         file_name: v,
-                        import_type,
                     }),
                 );
+            }
+            None => {}
+        }
+    }
+    fn insert_import_default(&mut self, local: &Ident, module_specifier: &str) {
+        let k = (local.sym.clone(), local.span.ctxt);
+        let v = self.resolve_import(&module_specifier);
+        self.resolutions_cache
+            .insert(module_specifier.to_string(), v.clone());
+        match v {
+            Some(v) => {
+                self.imports
+                    .insert(k, Rc::new(ImportReference::Default { file_name: v }));
+            }
+            None => {}
+        }
+    }
+    fn insert_import_star(&mut self, local: &Ident, module_specifier: &str) {
+        let k = (local.sym.clone(), local.span.ctxt);
+        let v = self.resolve_import(&module_specifier);
+        self.resolutions_cache
+            .insert(module_specifier.to_string(), v.clone());
+        match v {
+            Some(v) => {
+                self.imports
+                    .insert(k, Rc::new(ImportReference::Star { file_name: v }));
             }
             None => {}
         }
@@ -113,7 +134,23 @@ impl Visit for ImportsVisitor {
                 //
                 for s in &n.specifiers {
                     match s {
-                        ExportSpecifier::Namespace(_) => todo!(),
+                        ExportSpecifier::Namespace(ExportNamespaceSpecifier { name, .. }) => {
+                            match name {
+                                ModuleExportName::Ident(id) => {
+                                    let file_name = self.resolve_import(&src.value).unwrap();
+                                    self.type_exports.insert(
+                                        id.sym.clone(),
+                                        Rc::new(TypeExport::StarOfOtherFile(
+                                            ImportReference::Star {
+                                                file_name: file_name.clone(),
+                                            }
+                                            .into(),
+                                        )),
+                                    )
+                                }
+                                ModuleExportName::Str(_) => todo!(),
+                            }
+                        }
                         ExportSpecifier::Default(_) => todo!(),
                         ExportSpecifier::Named(ExportNamedSpecifier { orig, exported, .. }) => {
                             assert!(exported.is_none());
@@ -164,28 +201,18 @@ impl Visit for ImportsVisitor {
                     local, imported, ..
                 }) => match imported {
                     Some(imported) => match imported {
-                        ModuleExportName::Ident(renamed) => self.insert_import(
-                            local,
-                            &module_specifier,
-                            ImportReferenceType::Named {
-                                orig: Rc::new(renamed.sym.clone()),
-                            },
-                        ),
+                        ModuleExportName::Ident(renamed) => {
+                            self.insert_import_named(local, &module_specifier, &renamed.sym)
+                        }
                         ModuleExportName::Str(_) => todo!(),
                     },
-                    None => self.insert_import(
-                        local,
-                        &module_specifier,
-                        ImportReferenceType::Named {
-                            orig: Rc::new(local.sym.clone()),
-                        },
-                    ),
+                    None => self.insert_import_named(local, &module_specifier, &local.sym),
                 },
                 ImportSpecifier::Namespace(ImportStarAsSpecifier { local, .. }) => {
-                    self.insert_import(local, &module_specifier, ImportReferenceType::Star)
+                    self.insert_import_star(local, &module_specifier)
                 }
                 ImportSpecifier::Default(ImportDefaultSpecifier { local, .. }) => {
-                    self.insert_import(local, &module_specifier, ImportReferenceType::Default)
+                    self.insert_import_default(local, &module_specifier)
                 }
             }
         }
@@ -210,7 +237,7 @@ pub fn parse_file_content(
         .imports
         .values()
         .into_iter()
-        .map(|x| x.file_name.clone())
+        .map(|x| x.file_name().clone())
         .collect();
 
     let mut locals = ParsedModuleLocals::new();
@@ -227,14 +254,14 @@ pub fn parse_file_content(
             continue;
         }
         if let Some(import) = v.imports.get(&k) {
-            match import.import_type {
-                ImportReferenceType::Named { .. } => todo!(),
-                ImportReferenceType::Star => {
+            match &**import {
+                ImportReference::Named { .. } => todo!(),
+                ImportReference::Star { .. } => {
                     type_exports.insert(k.0, Rc::new(TypeExport::StarOfOtherFile(import.clone())));
 
                     continue;
                 }
-                ImportReferenceType::Default => todo!(),
+                ImportReference::Default { .. } => todo!(),
             }
         }
 

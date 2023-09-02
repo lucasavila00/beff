@@ -79,6 +79,33 @@ function validate_Def(input) {
     }
     return error_acc_0;
 }
+function validate_XYZ(input) {
+    let error_acc_0 = [];
+    if (typeof input == "object" && input != null) {
+        if (typeof input["a"] != "number") {
+            error_acc_0.push({
+                "kind": [
+                    "NotTypeof",
+                    "number"
+                ],
+                "path": [
+                    "XYZ",
+                    "a"
+                ]
+            });
+        }
+    } else {
+        error_acc_0.push({
+            "kind": [
+                "NotAnObject"
+            ],
+            "path": [
+                "XYZ"
+            ]
+        });
+    }
+    return error_acc_0;
+}
 const meta = {
     "handlersMeta": [
         {
@@ -113,6 +140,18 @@ const meta = {
                 let error_acc_0 = [];
                 error_acc_0.push(...add_path_to_errors(validate_Def(input), [
                     "[PUT] /abc.response_body"
+                ]));
+                return error_acc_0;
+            }
+        },
+        {
+            "method_kind": "delete",
+            "params": [],
+            "pattern": "/abc",
+            "return_validator": function(input) {
+                let error_acc_0 = [];
+                error_acc_0.push(...add_path_to_errors(validate_XYZ(input), [
+                    "[DELETE] /abc.response_body"
                 ]));
                 return error_acc_0;
             }
@@ -170,6 +209,21 @@ const meta = {
                             }
                         }
                     }
+                },
+                "delete": {
+                    "parameters": [],
+                    "responses": {
+                        "200": {
+                            "description": "successful operation",
+                            "content": {
+                                "application/json": {
+                                    "schema": {
+                                        "$ref": "#/components/schemas/XYZ"
+                                    }
+                                }
+                            }
+                        }
+                    }
                 }
             }
         },
@@ -205,6 +259,17 @@ const meta = {
                     "properties": {
                         "a": {
                             "type": "string"
+                        }
+                    }
+                },
+                "XYZ": {
+                    "type": "object",
+                    "required": [
+                        "a"
+                    ],
+                    "properties": {
+                        "a": {
+                            "type": "number"
                         }
                     }
                 }

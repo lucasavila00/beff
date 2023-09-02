@@ -164,7 +164,7 @@ impl<'a, R: FileManager> TypeToSchema<'a, R> {
             ResolvedLocalType::NamedImport {
                 exported,
                 from_file,
-            } => return self.convert_resolved_export(exported.as_ref(), &from_file.file_name),
+            } => return self.convert_resolved_export(exported.as_ref(), &from_file.file_name()),
         }
     }
 
@@ -329,7 +329,7 @@ impl<'a, R: FileManager> TypeToSchema<'a, R> {
     ) -> Res<(Rc<TypeExport>, Rc<ImportReference>)> {
         let exported = self
             .files
-            .get_or_fetch_file(&from_file.file_name)
+            .get_or_fetch_file(&from_file.file_name())
             .and_then(|module| {
                 module
                     .type_exports
@@ -379,7 +379,7 @@ impl<'a, R: FileManager> TypeToSchema<'a, R> {
 
     pub fn convert_ts_type_qual(&mut self, q: &TsQualifiedName) -> Res<JsonSchema> {
         let (exported, from_file) = self.get_qualified_type(q)?;
-        let ty = self.convert_resolved_export(exported.as_ref(), &from_file.file_name)?;
+        let ty = self.convert_resolved_export(exported.as_ref(), &from_file.file_name())?;
         self.insert_definition(q.right.sym.to_string(), ty)
     }
     pub fn convert_ts_type(&mut self, typ: &TsType) -> Res<JsonSchema> {

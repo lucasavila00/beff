@@ -30,13 +30,6 @@ pub struct BffModuleData {
     pub module: Module,
 }
 
-#[derive(Debug, Clone)]
-pub enum ImportReferenceType {
-    Named { orig: Rc<JsWord> },
-    Star,
-    Default,
-}
-
 #[derive(Debug, Clone, Eq, PartialEq, Hash)]
 pub struct BffFileName(Rc<String>);
 
@@ -53,9 +46,27 @@ impl BffFileName {
 }
 
 #[derive(Debug, Clone)]
-pub struct ImportReference {
-    pub file_name: BffFileName,
-    pub import_type: ImportReferenceType,
+pub enum ImportReference {
+    Named {
+        orig: Rc<JsWord>,
+        file_name: BffFileName,
+    },
+    Star {
+        file_name: BffFileName,
+    },
+    Default {
+        file_name: BffFileName,
+    },
+}
+
+impl ImportReference {
+    pub fn file_name(&self) -> &BffFileName {
+        match self {
+            ImportReference::Named { file_name, .. } => file_name,
+            ImportReference::Star { file_name, .. } => file_name,
+            ImportReference::Default { file_name, .. } => file_name,
+        }
+    }
 }
 pub struct TypeExportsModule {
     named: HashMap<JsWord, Rc<TypeExport>>,

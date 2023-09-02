@@ -3,8 +3,8 @@ use std::rc::Rc;
 use swc_ecma_ast::{Ident, TsInterfaceDecl, TsType};
 
 use crate::{
-    api_extractor::FileManager, diag::Diagnostic, BffFileName, ImportReference,
-    ImportReferenceType, ParsedModule, TypeExport,
+    api_extractor::FileManager, diag::Diagnostic, BffFileName, ImportReference, ParsedModule,
+    TypeExport,
 };
 
 pub struct TypeResolver<'a, R: FileManager> {
@@ -42,14 +42,34 @@ impl<'a, R: FileManager> TypeResolver<'a, R> {
         let k = &(i.sym.clone(), i.span.ctxt);
 
         if let Some(imported) = self.get_current_file().imports.get(k) {
-            match imported.import_type {
-                ImportReferenceType::Named { .. } => panic!("cannot be used like that"),
-                ImportReferenceType::Star => {
+            match &**imported {
+                ImportReference::Star { .. } => {
                     return Ok(ResolvedNamespaceType::Star {
                         from_file: imported.clone(),
                     })
                 }
-                ImportReferenceType::Default => panic!("cannot be used like that"),
+                ImportReference::Named { orig, file_name } => {
+                    let file = self.files.get_or_fetch_file(&file_name);
+                    let exported = file.and_then(|file| {
+                        file.type_exports
+                            .get(&orig, self.files)
+                            .map(|it| it.clone())
+                    });
+                    match exported {
+                        Some(export) => match &*export {
+                            TypeExport::StarOfOtherFile(reference) => {
+                                return Ok(ResolvedNamespaceType::Star {
+                                    from_file: reference.clone(),
+                                })
+                            }
+                            TypeExport::TsType(_) => todo!(),
+                            TypeExport::TsInterfaceDecl(_) => todo!(),
+                            TypeExport::SomethingOfOtherFile(_, _) => todo!(),
+                        },
+                        None => todo!(),
+                    }
+                }
+                ImportReference::Default { .. } => panic!(),
             }
         }
         todo!()
@@ -63,9 +83,9 @@ impl<'a, R: FileManager> TypeResolver<'a, R> {
             return Ok(ResolvedLocalType::TsInterfaceDecl(intf.clone()));
         }
         if let Some(imported) = self.get_current_file().imports.get(k) {
-            match &imported.import_type {
-                ImportReferenceType::Named { orig } => {
-                    let file = self.files.get_or_fetch_file(&imported.file_name);
+            match &**imported {
+                ImportReference::Named { orig, file_name } => {
+                    let file = self.files.get_or_fetch_file(&file_name);
                     let exported = file.and_then(|file| {
                         file.type_exports
                             .get(&orig, self.files)
@@ -81,8 +101,8 @@ impl<'a, R: FileManager> TypeResolver<'a, R> {
                         None => todo!(),
                     }
                 }
-                ImportReferenceType::Star => panic!("cannot be used like that"),
-                ImportReferenceType::Default => panic!("cannot be used like that"),
+                ImportReference::Star { .. } => panic!("cannot be used like that"),
+                ImportReference::Default { .. } => panic!("cannot be used like that"),
             }
         }
         todo!()

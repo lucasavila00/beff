@@ -5,9 +5,6 @@
 - [ ] qualified import type
 
 ```ts
-export * from "module-name";
-// - [ ] make ImportReference enum
-
 export * as name1 from "module-name";
 export { import1 as name1 } from "module-name";
 

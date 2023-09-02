@@ -1,5 +1,7 @@
 import _2, * as T from "./types";
 import _, { Abc as Def } from "./types";
+import { TYX } from "./t3";
+// import { TYX as LOL } from "./t3";
 
 const todo = () => {
   throw new Error("TODO");
@@ -9,5 +11,6 @@ export default {
     get: async (): Promise<T.X.UserEntity> => todo(),
     post: async (): Promise<T.Abc> => todo(),
     put: async (): Promise<Def> => todo(),
+    delete: async (): Promise<TYX.XYZ> => todo(),
   },
 };
