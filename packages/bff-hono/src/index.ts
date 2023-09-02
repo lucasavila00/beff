@@ -1,23 +1,24 @@
-import type { Context, Hono } from "hono";
+import type { Hono } from "hono";
+import { HandlerMeta, MetaParam, OpenApiServer } from "bff";
 import {
   BffHTTPException,
-  coerce,
   decodeNoMessage,
   decodeWithMessage,
   template,
-} from "./runtime";
-import { HandlerMeta, MetaParam, OpenApiServer } from "./types";
+} from "bff-runtime";
 import { getCookie } from "hono/cookie";
 import { HTTPException } from "hono/http-exception";
-import { ClientFromRouter } from "./client-def";
-import { buildStableClient } from "./client-impl";
+import { buildStableClient, ClientFromRouter } from "bff-client";
 import type { Ctx } from "bff";
+
+export const coerce = (coercer: any, value: any): any => {
+  return coercer(value);
+};
 
 const toHonoPattern = (pattern: string): string => {
   // replace {id} with :id
   return pattern.replace(/\{(\w+)\}/g, ":$1");
 };
-declare const meta: any;
 
 const handleMethod = async (c: Ctx, meta: HandlerMeta, handler: Function) => {
   const resolverParamsPromise: any[] = meta.params.map(async (p: MetaParam) => {
@@ -70,15 +71,18 @@ const registerDocs = (
 
   app.get("/docs", (c) => c.html(template));
 };
-
+const isBffHTTPException = (it: unknown): it is BffHTTPException =>
+  (it as any)?.__isBffHTTPException ?? false;
 export function registerRouter(options: {
   app: Hono<any, any, any>;
   router: any;
   openApi?: { servers: OpenApiServer[] };
-  context: any;
+  context?: any;
+  schema: any;
+  meta: HandlerMeta[];
 }) {
-  registerDocs(options.app, meta, options.openApi?.servers ?? []);
-  const handlersMeta: HandlerMeta[] = meta["handlersMeta"];
+  registerDocs(options.app, options.schema, options.openApi?.servers ?? []);
+  const handlersMeta: HandlerMeta[] = options.meta;
   for (const meta of handlersMeta) {
     const handlerData = options.router[meta.pattern][meta.method_kind];
     if (handlerData == null) {
@@ -108,7 +112,7 @@ export function registerRouter(options: {
           try {
             return await handleMethod({ hono: c }, meta, handlerData);
           } catch (e) {
-            if (e instanceof BffHTTPException) {
+            if (isBffHTTPException(e)) {
               throw new HTTPException(e.status, {
                 message: e.message,
               });
@@ -126,11 +130,12 @@ export function registerRouter(options: {
 }
 
 export const buildHonoTestClient = <T>(
+  meta: HandlerMeta[],
   app: Hono<any, any, any>,
-  env?: any,
-  executionContext?: any
+  executionContext?: any,
+  env?: any
 ): ClientFromRouter<T> =>
-  buildStableClient<T>(async (req) => {
+  buildStableClient<T>(meta, async (req) => {
     const r = await app.fetch(
       //@ts-ignore
       new Request("http://localhost" + req.url, {

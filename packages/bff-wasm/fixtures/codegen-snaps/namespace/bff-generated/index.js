@@ -33,7 +33,9 @@ function coerce_union(input, ...cases) {
   }
   return new CoercionFailure();
 }
-
+function coerce(coercer, value) {
+  return coercer(value);
+}
 
 function validate_A(input) {
     let error_acc_0 = [];

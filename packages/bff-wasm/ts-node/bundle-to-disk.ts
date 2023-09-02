@@ -231,7 +231,9 @@ function coerce_union(input, ...cases) {
   }
   return new CoercionFailure();
 }
-
+function coerce(coercer, value) {
+  return coercer(value);
+}
 `;
 const finalizeFile = (wasmCode: WritableModules, mod: ProjectModule) => {
   const exportCode = mod === "esm" ? "export " : "module.exports = ";

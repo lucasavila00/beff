@@ -1,5 +1,28 @@
-import { ClientFromRouter } from "./client-def";
-import type { HandlerMeta } from "./types";
+import type { HandlerMeta } from "bff";
+export type NormalizeRouterItem<T> = T extends (
+  ...args: infer I
+) => Promise<infer O>
+  ? [I, O]
+  : T extends (...args: infer I) => infer O
+  ? [I, O]
+  : never;
+type RemoveFirstOfTuple<T extends any[]> = T["length"] extends 0
+  ? []
+  : T extends [any, ...infer U]
+  ? U
+  : T;
+export type SimpleHttpFunction<M extends [any[], any]> = (
+  ...args: RemoveFirstOfTuple<M[0]>
+) => Promise<M[1]>;
+
+export type ClientFromRouter<R> = {
+  [K in keyof R as K extends `${string}*${string}` ? never : K]: {
+    [M in keyof R[K] as M extends `use` ? never : M]: SimpleHttpFunction<
+      NormalizeRouterItem<R[K][M]>
+    >;
+  };
+};
+
 export class BffRequest {
   public method: "GET" | "POST" | "PUT" | "DELETE" | "PATCH" | "OPTIONS";
   public url: string;
@@ -21,12 +44,11 @@ export class BffRequest {
   }
 }
 
-declare const meta: any;
 export function buildStableClient<T>(
+  handlersMeta: HandlerMeta[],
   fetcher: (url: BffRequest) => Promise<any>
 ): ClientFromRouter<T> {
   const client: any = {};
-  const handlersMeta: HandlerMeta[] = meta["handlersMeta"];
   for (const meta of handlersMeta) {
     if (client[meta.pattern] == null) {
       client[meta.pattern] = {};

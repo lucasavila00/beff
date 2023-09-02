@@ -2,6 +2,36 @@ lockfileVersion: 5.4
 
 importers:
 
+  packages/bff-client:
+    specifiers:
+      bff: workspace:^1.0.0
+      typescript: ^5.2.2
+    dependencies:
+      bff: link:../bff
+      typescript: 5.2.2
+
+  packages/bff-hono:
+    specifiers:
+      bff: workspace:^1.0.0
+      bff-client: workspace:^1.0.0
+      bff-runtime: workspace:^1.0.0
+      hono: ^3.5.6
+      typescript: ^5.2.2
+    dependencies:
+      bff: link:../bff
+      bff-client: link:../bff-client
+      bff-runtime: link:../bff-runtime
+      hono: 3.5.6
+      typescript: 5.2.2
+
+  packages/bff-runtime:
+    specifiers:
+      bff: workspace:^1.0.0
+      typescript: ^5.2.2
+    dependencies:
+      bff: link:../bff
+      typescript: 5.2.2
+
   packages/bff-wasm:
     specifiers:
       '@babel/code-frame': ^7.22.13
@@ -9,6 +39,7 @@ importers:
       '@types/node': ^20.5.7
       '@types/vscode': ^1.81.0
       bff: workspace:^1.0.0
+      bff-hono: workspace:^1.0.0
       chalk: ^4.1.2
       commander: ^11.0.0
       esbuild: ^0.19.2
@@ -17,6 +48,7 @@ importers:
       vitest: ^0.34.3
     dependencies:
       bff: link:../bff
+      bff-hono: link:../bff-hono
       chalk: 4.1.2
     devDependencies:
       '@babel/code-frame': 7.22.13
@@ -5088,7 +5120,6 @@ packages:
     resolution: {integrity: sha512-mI4WrpHsbCIcwT9cF4FZvr80QUeKvsUsUvKDoR+X/7XHQH98xYD8YHZg7ANtz2GtZt/CBq2QJ0thkGJMHfqc1w==}
     engines: {node: '>=14.17'}
     hasBin: true
-    dev: true
 
   /ufo/1.3.0:
     resolution: {integrity: sha512-bRn3CsoojyNStCZe0BG0Mt4Nr/4KF+rhFlnNXybgqt5pXHNFRlqinSoQaTrGyzE4X8aHplSb+TorH+COin9Yxw==}

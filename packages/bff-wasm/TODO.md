@@ -2,6 +2,8 @@
 
 ## BFF Core
 
+- [ ] fix skipped tests
+
 - [ ] 422 in schema
 
   - [ ] Reusing Responses

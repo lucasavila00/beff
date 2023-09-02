@@ -1,0 +1,19 @@
+{
+  "name": "bff-hono",
+  "version": "1.0.0",
+  "description": "",
+  "main": "dist/index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "bff": "workspace:^1.0.0",
+    "bff-client": "workspace:^1.0.0",
+    "bff-runtime": "workspace:^1.0.0",
+    "hono": "^3.5.6",
+    "typescript": "^5.2.2"
+  }
+}

@@ -1,10 +1,11 @@
 import { Hono } from "hono";
 import { it, expect } from "vitest";
-import { registerRouter } from "../bff-generated";
+import { registerRouter } from "bff-hono";
 import router from "../router";
+import { meta, schema } from "../bff-generated";
 
 const app = new Hono();
-registerRouter({ app, router });
+registerRouter({ app, router, meta, schema });
 
 it("docs json", async () => {
   const req = new Request("http://localhost/v3/openapi.json", {

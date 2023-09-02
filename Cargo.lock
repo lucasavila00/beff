@@ -63,6 +63,8 @@ dependencies = [
  "env_logger",
  "jsdoc",
  "log",
+ "serde",
+ "serde_json",
  "swc_atoms",
  "swc_common",
  "swc_ecma_ast",
