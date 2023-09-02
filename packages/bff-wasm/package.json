@@ -19,7 +19,7 @@
     "build-ext": "esbuild ts-node/extension.ts --bundle --outfile=dist-ext/extension.js --platform=node --target=node14 --external:pnpapi --external:vscode --external:./pkg/hello_wasm.js --external:./pkg/hello_wasm_bg.js",
     "build": "npm run build-rust && npm run build-cli && npm run build-ext",
     "test": "node script/e2e.js && vitest --run",
-    "do": "npm run build && node npm-bin/index.js -v -p /home/lucas/fluff/bff/packages/bff-wasm/fixtures/codegen-snaps/hello-server/bff.json",
+    "do": "npm run build && node npm-bin/index.js -v -p /home/lucas/fluff/bff/packages/bff-wasm/vitest/export-decoder/bff.json",
     "stress": "npm run build-rust-release && time node npm-bin/index.js -v -p /home/lucas/fluff/bff/packages/example-blog/bff.json",
     "ts": "tsc --noEmit"
   },

@@ -181,6 +181,7 @@ type WasmDiagnostic = {
 export type WritableModules = {
   js_server_data: string;
   json_schema: string;
+  had_build_decoders_call: boolean;
 };
 export class Bundler {
   constructor(verbose: boolean) {

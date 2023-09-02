@@ -3,12 +3,12 @@ use serde::{Deserialize, Serialize};
 use swc_common::DUMMY_SP;
 use swc_ecma_ast::{
     ArrayLit, BindingIdent, Bool, Decl, Expr, ExprOrSpread, FnDecl, FnExpr, Ident, KeyValueProp,
-    Lit, Module, ModuleItem, Null, Number, ObjectLit, Pat, Prop, PropName, PropOrSpread, Stmt, Str,
+    Lit, ModuleItem, Null, Number, ObjectLit, Pat, Prop, PropName, PropOrSpread, Stmt, Str,
     VarDecl, VarDeclKind, VarDeclarator,
 };
 
 use crate::api_extractor::{
-    operation_parameter_in_path_or_query_or_body, ExtractResult, FunctionParameterIn,
+    operation_parameter_in_path_or_query_or_body, BuiltDecoder, ExtractResult, FunctionParameterIn,
     HandlerParameter, HeaderOrCookie, ParsedPattern, PathHandlerMap,
 };
 use crate::decoder;
@@ -569,15 +569,27 @@ fn js_to_expr(it: Js, components: &Vec<Definition>) -> Expr {
 pub struct WritableModules {
     pub js_server_data: String,
     pub json_schema: String,
+    pub had_build_decoders_call: bool,
 }
 
 pub trait ToWritableModules {
     fn to_module(self) -> Result<WritableModules>;
 }
-
+fn build_decoders_expr(decs: &Vec<BuiltDecoder>) -> Js {
+    Js::Object(
+        decs.iter()
+            .map(|it| {
+                (
+                    it.exported_name.clone(),
+                    Js::Decoder(it.exported_name.clone(), it.schema.clone()),
+                )
+            })
+            .collect(),
+    )
+}
 impl ToWritableModules for ExtractResult {
     fn to_module(self) -> Result<WritableModules> {
-        let mut body = vec![];
+        let mut js_server_data = vec![];
 
         for comp in &self.open_api.components {
             let name = format!("validate_{}", comp.name);
@@ -591,22 +603,30 @@ impl ToWritableModules for ExtractResult {
                 declare: false,
                 function: decoder_fn.into(),
             })));
-            body.push(decoder_fn_decl);
+            js_server_data.push(decoder_fn_decl);
         }
 
         let components = &self.open_api.components;
 
         let meta_expr = js_to_expr(handlers_to_js(self.handlers, &components), &components);
-        body.push(const_decl("meta", meta_expr));
+        js_server_data.push(const_decl("meta", meta_expr));
 
-        let module = Module {
-            span: DUMMY_SP,
-            body,
-            shebang: None,
-        };
+        let mut had_build_decoders_call = false;
+        if let Some(ref it) = self.built_decoders {
+            if !it.is_empty() {
+                let build_decoders_expr = build_decoders_expr(it);
+                js_server_data.push(const_decl(
+                    "buildDecodersInput",
+                    js_to_expr(build_decoders_expr, &components),
+                ));
+                had_build_decoders_call = true;
+            }
+        }
+
         Ok(WritableModules {
-            js_server_data: emit_module(&module)?,
+            js_server_data: emit_module(js_server_data)?,
             json_schema: self.open_api.to_json().to_string(),
+            had_build_decoders_call,
         })
     }
 }

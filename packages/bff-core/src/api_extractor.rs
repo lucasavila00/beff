@@ -16,11 +16,12 @@ use std::rc::Rc;
 use swc_common::comments::{Comment, CommentKind, Comments};
 use swc_common::{BytePos, Span, DUMMY_SP};
 use swc_ecma_ast::{
-    ArrayPat, ArrowExpr, AssignPat, AssignProp, BigInt, BindingIdent, ComputedPropName,
-    ExportDefaultExpr, Expr, FnExpr, Function, GetterProp, Ident, Invalid, KeyValueProp, Lit,
-    MethodProp, Number, ObjectPat, Pat, Prop, PropName, PropOrSpread, RestPat, SetterProp,
-    SpreadElement, Str, Tpl, TsEntityName, TsKeywordType, TsKeywordTypeKind, TsTupleType, TsType,
-    TsTypeAnn, TsTypeParamDecl, TsTypeParamInstantiation, TsTypeRef,
+    ArrayPat, ArrowExpr, AssignPat, AssignProp, BigInt, BindingIdent, CallExpr, Callee,
+    ComputedPropName, ExportDefaultExpr, Expr, FnExpr, Function, GetterProp, Ident, Invalid,
+    KeyValueProp, Lit, MethodProp, Number, ObjectPat, Pat, Prop, PropName, PropOrSpread, RestPat,
+    SetterProp, SpreadElement, Str, Tpl, TsEntityName, TsKeywordType, TsKeywordTypeKind,
+    TsPropertySignature, TsTupleType, TsType, TsTypeAnn, TsTypeElement, TsTypeLit, TsTypeParamDecl,
+    TsTypeParamInstantiation, TsTypeRef,
 };
 use swc_ecma_visit::Visit;
 
@@ -146,6 +147,11 @@ pub trait FileManager {
     fn get_existing_file(&self, name: &BffFileName) -> Option<Rc<ParsedModule>>;
 }
 
+pub struct BuiltDecoder {
+    pub exported_name: String,
+    pub schema: JsonSchema,
+}
+
 pub struct ExtractExportDefaultVisitor<'a, R: FileManager> {
     files: &'a mut R,
     current_file: BffFileName,
@@ -154,6 +160,7 @@ pub struct ExtractExportDefaultVisitor<'a, R: FileManager> {
     found_default_export: bool,
     errors: Vec<Diagnostic>,
     info: open_api_ast::Info,
+    built_decoders: Option<Vec<BuiltDecoder>>,
 }
 impl<'a, R: FileManager> ExtractExportDefaultVisitor<'a, R> {
     fn new(files: &'a mut R, current_file: BffFileName) -> ExtractExportDefaultVisitor<'a, R> {
@@ -169,6 +176,7 @@ impl<'a, R: FileManager> ExtractExportDefaultVisitor<'a, R> {
                 description: None,
                 version: None,
             },
+            built_decoders: None,
         }
     }
 }
@@ -951,9 +959,79 @@ impl<'a, R: FileManager> ExtractExportDefaultVisitor<'a, R> {
             }
         }
     }
+
+    fn extract_one_built_decoder(&mut self, prop: &TsTypeElement) -> BuiltDecoder {
+        match prop {
+            TsTypeElement::TsPropertySignature(TsPropertySignature {
+                key,
+                type_ann,
+                type_params,
+                ..
+            }) => {
+                assert!(type_params.is_none());
+                let key = match &**key {
+                    Expr::Ident(ident) => ident.sym.to_string(),
+                    _ => todo!(),
+                };
+                let mut to_schema = TypeToSchema::new(self.files, self.current_file.clone());
+                BuiltDecoder {
+                    exported_name: key,
+                    schema: to_schema
+                        .convert_ts_type(&type_ann.as_ref().unwrap().type_ann)
+                        .unwrap(),
+                }
+            }
+            _ => todo!(),
+        }
+    }
+    fn extract_built_decoders_from_call(
+        &mut self,
+        params: &TsTypeParamInstantiation,
+    ) -> Vec<BuiltDecoder> {
+        match params.params.split_first() {
+            Some((head, tail)) => {
+                assert!(tail.is_empty());
+                match &**head {
+                    TsType::TsTypeLit(TsTypeLit { members, .. }) => members
+                        .iter()
+                        .map(|prop| self.extract_one_built_decoder(prop))
+                        .collect(),
+                    _ => todo!(),
+                }
+            }
+            None => todo!(),
+        }
+    }
 }
 
 impl<'a, R: FileManager> Visit for ExtractExportDefaultVisitor<'a, R> {
+    fn visit_call_expr(&mut self, n: &CallExpr) {
+        match n.callee {
+            Callee::Super(_) => {}
+            Callee::Import(_) => {}
+            Callee::Expr(ref expr) => match &**expr {
+                Expr::Ident(Ident { sym, .. }) => {
+                    if sym.to_string() == "buildDecoders" {
+                        match self.built_decoders {
+                            Some(_) => panic!("two calls"),
+                            None => {
+                                assert!(n.args.is_empty());
+                                match n.type_args {
+                                    Some(ref params) => {
+                                        self.built_decoders = Some(
+                                            self.extract_built_decoders_from_call(params.as_ref()),
+                                        );
+                                    }
+                                    None => panic!(),
+                                }
+                            }
+                        }
+                    }
+                }
+                _ => {}
+            },
+        }
+    }
     fn visit_export_default_expr(&mut self, n: &ExportDefaultExpr) {
         match self.get_current_file() {
             Ok(file) => {
@@ -1227,12 +1305,19 @@ pub struct ExtractResult {
     pub open_api: OpenApi,
     pub entry_file_name: BffFileName,
     pub handlers: Vec<PathHandlerMap>,
+    pub built_decoders: Option<Vec<BuiltDecoder>>,
 }
 
 fn visit_extract<R: FileManager>(
     files: &mut R,
     current_file: BffFileName,
-) -> (Vec<PathHandlerMap>, Vec<Definition>, Vec<Diagnostic>, Info) {
+) -> (
+    Vec<PathHandlerMap>,
+    Vec<Definition>,
+    Vec<Diagnostic>,
+    Info,
+    Option<Vec<BuiltDecoder>>,
+) {
     let mut visitor = ExtractExportDefaultVisitor::new(files, current_file.clone());
 
     let _ = visitor.visit_current_file();
@@ -1252,6 +1337,7 @@ fn visit_extract<R: FileManager>(
         visitor.components,
         visitor.errors,
         visitor.info,
+        visitor.built_decoders,
     )
 }
 
@@ -1259,7 +1345,8 @@ pub fn extract_schema<R: FileManager>(
     files: &mut R,
     entry_file_name: BffFileName,
 ) -> ExtractResult {
-    let (handlers, components, errors, info) = visit_extract(files, entry_file_name.clone());
+    let (handlers, components, errors, info, built_decoders) =
+        visit_extract(files, entry_file_name.clone());
 
     let mut transformer = EndpointToPath {
         errors,
@@ -1280,5 +1367,6 @@ pub fn extract_schema<R: FileManager>(
         open_api,
         entry_file_name,
         errors,
+        built_decoders,
     }
 }

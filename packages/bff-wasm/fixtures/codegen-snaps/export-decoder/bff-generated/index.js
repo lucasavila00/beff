@@ -105,6 +105,34 @@ const meta = [
         }
     }
 ];
+const buildDecodersInput = {
+    "User": function(input) {
+        let error_acc_0 = [];
+        error_acc_0.push(...add_path_to_errors(validate_User(input), [
+            "User"
+        ]));
+        return error_acc_0;
+    }
+};
+
+
+function buildDecoders() {
+  let decoders ={};
+  Object.keys(buildDecodersInput).forEach(k => {
+    let v = buildDecodersInput[k];
+    decoders[k] = {
+      parse: (input) => {
+        const validation_result = v(input);
+        if (validation_result.length === 0) {
+          return input;
+        }
+        // TODO: throw a pretty error message
+        throw validation_result
+      }
+    }
+  });
+  return decoders;
+}
 
 const schema =  {
   "components": {
@@ -200,4 +228,4 @@ const schema =  {
     }
   }
 } ;
-export  { meta, schema };
+export  { meta, schema, buildDecoders };

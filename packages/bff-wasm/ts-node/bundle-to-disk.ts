@@ -9,6 +9,16 @@ export declare const meta: HandlerMeta[];
 export declare const schema: JSONSchema7;
 `;
 
+const BUILD_DECODERS_DTS = `
+import {JSONSchema7, HandlerMeta} from "bff-types";
+type Decoders<T> = {
+  [K in keyof T]: {
+    parse: (input: any) => T[K];
+  };
+};
+export declare const buildDecoders: <T>() => Decoders<T>;
+`;
+
 const decodersCode = `
 class CoercionFailure {}
 function add_path_to_errors(errors, path) {
@@ -48,11 +58,44 @@ function coerce(coercer, value) {
   return coercer(value);
 }
 `;
+
+const buildDecoders = `
+function buildDecoders() {
+  let decoders ={};
+  Object.keys(buildDecodersInput).forEach(k => {
+    let v = buildDecodersInput[k];
+    decoders[k] = {
+      parse: (input) => {
+        const validation_result = v(input);
+        if (validation_result.length === 0) {
+          return input;
+        }
+        // TODO: throw a pretty error message
+        throw validation_result
+      }
+    }
+  });
+  return decoders;
+}
+`;
 const finalizeFile = (wasmCode: WritableModules, mod: ProjectModule) => {
   const exportCode = mod === "esm" ? "export " : "module.exports = ";
-  const exports = [exportCode, "{ meta, schema };"].join(" ");
+  const expr = [
+    "meta",
+    "schema",
+    wasmCode.had_build_decoders_call ? "buildDecoders" : "",
+  ]
+    .filter((it) => it.length > 0)
+    .join(", ");
+  const exports = [exportCode, `{ ${expr} };`].join(" ");
   const schema = ["const schema = ", wasmCode.json_schema, ";"].join(" ");
-  return [decodersCode, wasmCode.js_server_data, schema, exports].join("\n");
+  return [
+    decodersCode,
+    wasmCode.js_server_data,
+    wasmCode.had_build_decoders_call ? buildDecoders : "",
+    schema,
+    exports,
+  ].join("\n");
 };
 
 export const execProject = (
@@ -77,7 +120,13 @@ export const execProject = (
   fs.writeFileSync(outputFile, finalFile);
 
   const outputDts = path.join(outputDir, "index.d.ts");
-  fs.writeFileSync(outputDts, RUNTIME_DTS);
+  fs.writeFileSync(
+    outputDts,
+    [
+      RUNTIME_DTS,
+      outResult.had_build_decoders_call ? BUILD_DECODERS_DTS : "",
+    ].join("\n")
+  );
   const outputSchemaJson = path.join(outputDir, "schema.json");
   fs.writeFileSync(outputSchemaJson, outResult.json_schema);
 };

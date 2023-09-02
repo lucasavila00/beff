@@ -230,7 +230,7 @@ impl DiagnosticParentMessage {
         }
     }
 }
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub enum DiagnosticInformation {
     KnownFile {
         message: DiagnosticInfoMessage,
@@ -261,6 +261,7 @@ impl DiagnosticInformation {
     }
 }
 
+#[derive(Debug)]
 pub struct Diagnostic {
     pub message: Option<DiagnosticParentMessage>,
     pub cause: DiagnosticInformation,
