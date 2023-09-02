@@ -19,6 +19,7 @@ use swc_node_comments::SwcComments;
 pub enum TypeExport {
     TsType(Rc<TsType>),
     TsInterfaceDecl(Rc<TsInterfaceDecl>),
+    StarOfOtherFile(Rc<ImportReference>),
 }
 
 pub struct BffModuleData {

@@ -23,7 +23,7 @@
     "build": "npm run build-runtime && npm run build-rust && npm run build-cli && npm run build-ext",
     "test": "node script/e2e.js && vitest",
     "pretest": "npm run build",
-    "do": "npm run build && node npm-bin/index.js -v -p /home/lucas/fluff/bff/packages/example-blog/bff.json",
+    "do": "npm run build && node npm-bin/index.js -v -p /home/lucas/fluff/bff/packages/bff-wasm/fixtures/codegen-snaps/qualified-import/bff.json",
     "stress": "npm run build-rust-release && time node npm-bin/index.js -v -p /home/lucas/fluff/bff/packages/example-blog/bff.json",
     "ts": "tsc --noEmit"
   },

@@ -1,31 +1,34 @@
-Error: Rest parameter must be a tuple
- /home/lucas/fluff/bff/packages/bff-wasm/fixtures/errors/rest-args-no-tuple/app.ts:7:17
-    5 | export default {
-    6 |   [`/user`]: {
- >  7 |     get: async (...q: string[]): Promise<string> => {
-      |                 ^^^^^^^^^^^^^^ Rest parameter must be a tuple
-    8 |       return todo();
-    9 |     },
-   10 |   },
+panicked at /home/lucas/fluff/bff/packages/bff-core/src/api_extractor.rs:555:25:
+not yet implemented
 
-Error: Type parameters are not supported on tuples
- /home/lucas/fluff/bff/packages/bff-wasm/fixtures/errors/rest-args-no-tuple/app.ts:12:17
-   10 |   },
-   11 |   [`/user1`]: {
- > 12 |     get: async (...q: A<string>): Promise<string> => {
-      |                 ^^^^^^^^^^^^^^^ Type parameters are not supported on tuples
-   13 |       return todo();
-   14 |     },
-   15 |   },
+Stack:
 
-Error: Qualified type names (ex: A.b) are not supported yet
- /home/lucas/fluff/bff/packages/bff-wasm/fixtures/errors/rest-args-no-tuple/app.ts:17:17
-   15 |   },
-   16 |   [`/user2`]: {
- > 17 |     get: async (...q: Y.B): Promise<string> => {
-      |                 ^^^^^^^^^ Qualified type names (ex: A.b) are not supported yet
-   18 |       return todo();
-   19 |     },
-   20 |   },
+Error
+    at /home/lucas/fluff/bff/packages/bff-wasm/pkg/hello_wasm.js:364:17
+    at logError (/home/lucas/fluff/bff/packages/bff-wasm/pkg/hello_wasm.js:205:18)
+    at module.exports.__wbg_new_abda76e883ba8a5f (/home/lucas/fluff/bff/packages/bff-wasm/pkg/hello_wasm.js:363:65)
+    at console_error_panic_hook::Error::new::h24a202ca2cd6f4e3 (wasm://wasm/02d3773a:wasm-function[16895]:0x8f7d2f)
+    at console_error_panic_hook::hook_impl::hbd017b1cd15b0ccd (wasm://wasm/02d3773a:wasm-function[3286]:0x6f15cf)
+    at console_error_panic_hook::hook::h2d1bbfd1bba12fb3 (wasm://wasm/02d3773a:wasm-function[18136]:0x909711)
+    at core::ops::function::Fn::call::h060acb07aceb94e4 (wasm://wasm/02d3773a:wasm-function[15399]:0x8e0e6e)
+    at std::panicking::rust_panic_with_hook::he4d11d009df2f45f (wasm://wasm/02d3773a:wasm-function[6635]:0x7df994)
+    at std::panicking::begin_panic_handler::{{closure}}::hdd0d58f31e4d53df (wasm://wasm/02d3773a:wasm-function[8744]:0x83d6ba)
+    at std::sys_common::backtrace::__rust_end_short_backtrace::hd70f3cac19eb49f3 (wasm://wasm/02d3773a:wasm-function[20616]:0x920ff7)
 
-Found 3 errors
+
+wasm://wasm/02d3773a:1
+
+
+RuntimeError: unreachable
+    at __rust_start_panic (wasm://wasm/02d3773a:wasm-function[20658]:0x9210ed)
+    at rust_panic (wasm://wasm/02d3773a:wasm-function[20450]:0x920874)
+    at std::panicking::rust_panic_with_hook::he4d11d009df2f45f (wasm://wasm/02d3773a:wasm-function[6635]:0x7df9c1)
+    at std::panicking::begin_panic_handler::{{closure}}::hdd0d58f31e4d53df (wasm://wasm/02d3773a:wasm-function[8744]:0x83d6ba)
+    at std::sys_common::backtrace::__rust_end_short_backtrace::hd70f3cac19eb49f3 (wasm://wasm/02d3773a:wasm-function[20616]:0x920ff7)
+    at rust_begin_unwind (wasm://wasm/02d3773a:wasm-function[12403]:0x8a7b49)
+    at core::panicking::panic_fmt::h157d8e2782a50057 (wasm://wasm/02d3773a:wasm-function[18015]:0x907e20)
+    at core::panicking::panic::h84f3aeadc405be3e (wasm://wasm/02d3773a:wasm-function[15396]:0x8e0dab)
+    at bff_core::api_extractor::ExtractExportDefaultVisitor<R>::parse_arrow_param_from_type_expecting_tuple::h4cf0e859b443d186 (wasm://wasm/02d3773a:wasm-function[1741]:0x627030)
+    at bff_core::api_extractor::ExtractExportDefaultVisitor<R>::parse_arrow_parameter::h68b52671a8e28e5b (wasm://wasm/02d3773a:wasm-function[475]:0x472ac7)
+
+Node.js v18.16.0

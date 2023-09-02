@@ -5,9 +5,10 @@ use crate::diag::{
 use crate::open_api_ast::Json;
 use crate::open_api_ast::{Definition, JsonSchema, Optionality};
 use crate::type_resolve::{ResolvedLocalType, ResolvedNamespaceType, TypeResolver};
-use crate::TypeExport;
+use crate::{ImportReference, TypeExport};
 use std::collections::HashMap;
 use std::rc::Rc;
+use swc_atoms::JsWord;
 use swc_common::Span;
 use swc_ecma_ast::{
     BigInt, Expr, Ident, TsArrayType, TsCallSignatureDecl, TsConditionalType,
@@ -140,6 +141,7 @@ impl<'a, R: FileManager> TypeToSchema<'a, R> {
         let ty = match exported {
             TypeExport::TsType(alias) => self.convert_ts_type(&alias)?,
             TypeExport::TsInterfaceDecl(int) => self.convert_ts_interface_decl(&int)?,
+            TypeExport::StarOfOtherFile(_) => todo!(),
         };
         self.current_file = store_current_file;
         Ok(ty)
@@ -310,43 +312,59 @@ impl<'a, R: FileManager> TypeToSchema<'a, R> {
         v
     }
 
-    pub fn convert_ts_type_qual(&mut self, q: &TsQualifiedName) -> Res<JsonSchema> {
-        match &q.left {
-            TsEntityName::TsQualifiedName(_) => todo!(),
-            TsEntityName::Ident(i) => {
-                let current_ref = self.get_identifier_diag_info(i);
-                let did_push = current_ref.is_some();
-                if let Some(current_ref) = current_ref {
-                    self.ref_stack.push(current_ref);
-                }
-                let v = match TypeResolver::new(self.files, &self.current_file)
-                    .resolve_namespace_type(i)?
-                {
-                    ResolvedNamespaceType::Star { from_file } => {
-                        let exported =
-                            self.files
-                                .get_or_fetch_file(&from_file.file_name)
-                                .and_then(|module| {
-                                    module.type_exports.get(&q.right.sym).map(|it| it.clone())
-                                });
-                        match exported {
-                            Some(exported) => {
-                                let ty = self.convert_resolved_export(
-                                    exported.as_ref(),
-                                    &from_file.file_name,
-                                )?;
-                                self.insert_definition(q.right.sym.to_string(), ty)
-                            }
-                            None => todo!(),
-                        }
-                    }
-                };
-                if did_push {
-                    self.ref_stack.pop();
-                }
-                v
-            }
+    pub fn get_qualified_type_from_file(
+        &mut self,
+        from_file: &Rc<ImportReference>,
+        right: &JsWord,
+    ) -> Res<(Rc<TypeExport>, Rc<ImportReference>)> {
+        let exported = self
+            .files
+            .get_or_fetch_file(&from_file.file_name)
+            .and_then(|module| module.type_exports.get(right).map(|it| it.clone()));
+        match exported {
+            Some(exported) => Ok((exported, from_file.clone())),
+            None => panic!(),
         }
+    }
+
+    pub fn get_qualified_type(
+        &mut self,
+        q: &TsQualifiedName,
+    ) -> Res<(Rc<TypeExport>, Rc<ImportReference>)> {
+        let current_ref = self.get_identifier_diag_info(&q.right);
+        let did_push = current_ref.is_some();
+        if let Some(current_ref) = current_ref {
+            self.ref_stack.push(current_ref);
+        }
+        let v = match &q.left {
+            TsEntityName::TsQualifiedName(q2) => {
+                let (exported, _from_file) = self.get_qualified_type(q2)?;
+                match &*exported {
+                    TypeExport::TsType(_) => todo!(),
+                    TypeExport::TsInterfaceDecl(_) => todo!(),
+                    TypeExport::StarOfOtherFile(other_file) => {
+                        self.get_qualified_type_from_file(other_file, &q.right.sym)
+                    }
+                }
+            }
+            TsEntityName::Ident(i) => {
+                match TypeResolver::new(self.files, &self.current_file).resolve_namespace_type(i)? {
+                    ResolvedNamespaceType::Star { from_file } => {
+                        self.get_qualified_type_from_file(&from_file, &q.right.sym)
+                    }
+                }
+            }
+        };
+        if did_push {
+            self.ref_stack.pop();
+        }
+        v
+    }
+
+    pub fn convert_ts_type_qual(&mut self, q: &TsQualifiedName) -> Res<JsonSchema> {
+        let (exported, from_file) = self.get_qualified_type(q)?;
+        let ty = self.convert_resolved_export(exported.as_ref(), &from_file.file_name)?;
+        self.insert_definition(q.right.sym.to_string(), ty)
     }
     pub fn convert_ts_type(&mut self, typ: &TsType) -> Res<JsonSchema> {
         match typ {
