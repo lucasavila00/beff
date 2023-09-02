@@ -10,7 +10,6 @@ use anyhow::Result;
 use bff_core::api_extractor::{self, ExtractResult, FileManager};
 use bff_core::diag::Diagnostic;
 use bff_core::emit::emit_module;
-use bff_core::printer::ModuleType;
 use bff_core::printer::ToModule;
 use bff_core::ParsedModule;
 use log::Level;
@@ -67,16 +66,16 @@ extern "C" {
 }
 
 #[wasm_bindgen]
-pub fn bundle_to_string(file_name: &str, module_type: &str) -> Option<String> {
-    match bundle_to_string_inner(file_name, module_type) {
+pub fn bundle_to_string(file_name: &str) -> Option<String> {
+    match bundle_to_string_inner(file_name) {
         Ok(s) => Some(s),
         Err(_) => None,
     }
 }
 
 #[wasm_bindgen]
-pub fn bundle_to_diagnostics(file_name: &str, module_type: &str) -> JsValue {
-    let v = bundle_to_diagnostics_inner(file_name, module_type);
+pub fn bundle_to_diagnostics(file_name: &str) -> JsValue {
+    let v = bundle_to_diagnostics_inner(file_name);
     serde_wasm_bindgen::to_value(&v).expect("should be able to serialize")
 }
 #[wasm_bindgen]
@@ -132,35 +131,17 @@ fn print_errors(errors: Vec<Diagnostic>) {
     emit_diagnostic(v)
 }
 
-fn parse_module_type(module_type: &str) -> ModuleType {
-    match module_type {
-        "esm" => ModuleType::Esm,
-        "cjs" => ModuleType::Cjs,
-        _ => ModuleType::Esm,
-    }
-}
-
-fn bundle_to_string_inner(file_name: &str, module_type: &str) -> Result<String> {
+fn bundle_to_string_inner(file_name: &str) -> Result<String> {
     let res = run_extraction(file_name);
     if res.errors.is_empty() {
-        let (ast, write_errs) = res.to_module(parse_module_type(module_type));
-        if write_errs.is_empty() {
-            return emit_module(&ast);
-        }
-        print_errors(write_errs);
-        return Err(anyhow!("Failed to write bundle"));
+        return emit_module(&res.to_module());
     }
     print_errors(res.errors);
     Err(anyhow!("Failed to bundle"))
 }
 
-fn bundle_to_diagnostics_inner(file_name: &str, module_type: &str) -> WasmDiagnostic {
-    let res = run_extraction(file_name);
-    if res.errors.is_empty() {
-        let (_ast, write_errs) = res.to_module(parse_module_type(module_type));
-        return WasmDiagnostic::from_diagnostics(write_errs);
-    }
-    return WasmDiagnostic::from_diagnostics(res.errors);
+fn bundle_to_diagnostics_inner(file_name: &str) -> WasmDiagnostic {
+    WasmDiagnostic::from_diagnostics(run_extraction(file_name).errors)
 }
 
 fn update_file_content_inner(file_name: &str, content: &str) {

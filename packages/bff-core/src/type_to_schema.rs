@@ -300,10 +300,7 @@ impl<'a, R: FileManager> TypeToSchema<'a, R> {
                 type_params,
                 ..
             }) => match &type_name {
-                TsEntityName::TsQualifiedName(data) => self.error(
-                    &data.right.span,
-                    DiagnosticInfoMessage::TsQualifiedNameNotSupported,
-                ),
+                TsEntityName::TsQualifiedName(data) => todo!(),
                 TsEntityName::Ident(i) => {
                     let current_ref = self.get_current_reference(i);
                     let did_push = current_ref.is_some();

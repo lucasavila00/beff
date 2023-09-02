@@ -2,6 +2,9 @@
 
 ## BFF Core
 
+- [ ] qualified import type
+- [ ] namespace
+
 - [ ] 422 in schema
 
 - [ ] export decoders
@@ -26,6 +29,3 @@
 - [ ] require backend=hono config, or version
 
 - [ ] assert header etc is imported from lib
-
-- [ ] namespace
-- [ ] qualified import type

@@ -180,19 +180,17 @@ type WasmDiagnostic = {
 };
 
 export class Bundler {
-  moduleType: ProjectModule;
-  constructor(verbose: boolean, moduleType: ProjectModule) {
-    this.moduleType = moduleType;
+  constructor(verbose: boolean) {
     (globalThis as any).verbose = verbose;
     wasm.init(verbose);
   }
 
   public bundle(file_name: string): string | undefined {
-    return wasm.bundle_to_string(file_name, this.moduleType);
+    return wasm.bundle_to_string(file_name);
   }
 
   public diagnostics(file_name: string): WasmDiagnostic | null {
-    return wasm.bundle_to_diagnostics(file_name, this.moduleType);
+    return wasm.bundle_to_diagnostics(file_name);
   }
 
   public updateFileContent(file_name: string, content: string) {

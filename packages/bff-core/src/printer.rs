@@ -10,7 +10,6 @@ use crate::api_extractor::{
     HandlerParameter, HeaderOrCookie, ParsedPattern, PathHandlerMap,
 };
 use crate::decoder;
-use crate::diag::Diagnostic;
 use crate::open_api_ast::{self, Definition, Js, Json, JsonSchema, OpenApi};
 
 pub trait ToExpr {
@@ -472,12 +471,7 @@ impl Builder {
     }
 }
 
-fn js_to_expr(
-    errors: &mut Vec<Diagnostic>,
-    file_name: &str,
-    it: Js,
-    components: &Vec<Definition>,
-) -> Expr {
+fn js_to_expr(file_name: &str, it: Js, components: &Vec<Definition>) -> Expr {
     match it {
         Js::Decoder(name, schema) => Expr::Fn(FnExpr {
             ident: None,
@@ -501,7 +495,7 @@ fn js_to_expr(
                 .map(|it| {
                     Some(ExprOrSpread {
                         spread: None,
-                        expr: Box::new(js_to_expr(errors, file_name, it, components)),
+                        expr: Box::new(js_to_expr(file_name, it, components)),
                     })
                 })
                 .collect(),
@@ -517,7 +511,7 @@ fn js_to_expr(
                             value: key.into(),
                             raw: None,
                         }),
-                        value: Box::new(js_to_expr(errors, file_name, value, components)),
+                        value: Box::new(js_to_expr(file_name, value, components)),
                     })))
                 })
                 .collect(),
@@ -525,18 +519,12 @@ fn js_to_expr(
     }
 }
 
-#[derive(PartialEq, Eq, Copy, Clone, Debug)]
-pub enum ModuleType {
-    Esm,
-    Cjs,
-}
-
 pub trait ToModule {
-    fn to_module(self, mod_type: ModuleType) -> (Module, Vec<Diagnostic>);
+    fn to_module(self) -> Module;
 }
 
 impl ToModule for ExtractResult {
-    fn to_module(mut self, _mod_type: ModuleType) -> (Module, Vec<Diagnostic>) {
+    fn to_module(self) -> Module {
         let mut body = vec![];
         for comp in &self.open_api.components {
             let name = format!("validate_{}", comp.name);
@@ -554,7 +542,6 @@ impl ToModule for ExtractResult {
         }
         let dfs = self.open_api.components.clone();
         let meta_expr = js_to_expr(
-            &mut self.errors,
             &self.entry_file_name,
             Js::Object(vec![
                 (
@@ -568,13 +555,10 @@ impl ToModule for ExtractResult {
         let meta = Builder::const_decl("meta", meta_expr);
         body.push(meta);
 
-        (
-            Module {
-                span: DUMMY_SP,
-                body,
-                shebang: None,
-            },
-            self.errors,
-        )
+        Module {
+            span: DUMMY_SP,
+            body,
+            shebang: None,
+        }
     }
 }

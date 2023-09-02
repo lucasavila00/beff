@@ -31,7 +31,6 @@ pub enum DiagnosticInfoMessage {
     HandlerCannotHaveTypeParameters,
     HandlerMustAnnotateReturnType,
     UnmatchedPathParameter(String),
-    TsQualifiedNameNotSupported,
     CouldNotResolveIdentifierOnPathParamTuple,
     TsInterfaceExtendsNotSupported,
     TsTypeParametersNotSupportedOnTuple,
@@ -142,9 +141,6 @@ impl DiagnosticInfoMessage {
             }
             DiagnosticInfoMessage::HandlerMustAnnotateReturnType => {
                 format!("Handler must annotate return type")
-            }
-            DiagnosticInfoMessage::TsQualifiedNameNotSupported => {
-                format!("Qualified type names (ex: A.b) are not supported yet")
             }
             DiagnosticInfoMessage::CouldNotResolveIdentifierOnPathParamTuple => {
                 format!("Could not resolve identifier on path parameter tuple")

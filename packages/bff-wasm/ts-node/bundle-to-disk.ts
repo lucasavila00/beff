@@ -75,7 +75,7 @@ export const execProject = (
   skipSharedRuntime: boolean
 ) => {
   const mod = projectJson.module ?? "esm";
-  const bundler = new Bundler(verbose, mod);
+  const bundler = new Bundler(verbose);
   const entryPoint = path.join(path.dirname(projectPath), projectJson.router);
   const outString = bundler.bundle(entryPoint);
   if (outString == null) {

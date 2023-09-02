@@ -547,11 +547,12 @@ impl<'a, R: FileManager> ExtractExportDefaultVisitor<'a, R> {
                 }
                 match &type_name {
                     TsEntityName::TsQualifiedName(_) => {
-                        self.push_error(
-                            rest_span,
-                            DiagnosticInfoMessage::TsQualifiedNameNotSupported,
-                        );
-                        return Err(anyhow!("error param"));
+                        // self.push_error(
+                        //     rest_span,
+                        //     DiagnosticInfoMessage::TsQualifiedNameNotSupported,
+                        // );
+                        // return Err(anyhow!("error param"));
+                        todo!()
                     }
                     TsEntityName::Ident(i) => {
                         if let Some(alias) = self

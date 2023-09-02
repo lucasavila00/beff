@@ -1,7 +1,6 @@
 import { cors } from "hono/cors";
 import * as model from "./model";
 import { Bindings } from "./bindings";
-import { Param, Post } from "./model";
 import { prettyJSON } from "hono/pretty-json";
 import { Ctx as BffCtx } from "bff";
 
@@ -15,14 +14,16 @@ export default {
     },
   },
   ["/posts"]: {
-    get: async (c: Ctx): Promise<{ posts: Post[]; ok: boolean }> => {
+    get: async (c: Ctx): Promise<{ posts: model.Post[]; ok: boolean }> => {
       const posts = await model.getPosts(c.hono.env.BLOG_EXAMPLE);
       return { posts: posts, ok: true };
     },
     post: async (
       c: Ctx,
-      param: Param
-    ): Promise<{ ok: true; post: Post } | { ok: false; error: string }> => {
+      param: model.Param
+    ): Promise<
+      { ok: true; post: model.Post } | { ok: false; error: string }
+    > => {
       const newPost = await model.createPost(c.hono.env.BLOG_EXAMPLE, param);
       if (!newPost) {
         return { error: "Can not create new post", ok: false };
@@ -34,14 +35,20 @@ export default {
     get: async (
       c: Ctx,
       id: string
-    ): Promise<{ ok: true; post: Post } | { ok: false; error: string }> => {
+    ): Promise<
+      { ok: true; post: model.Post } | { ok: false; error: string }
+    > => {
       const post = await model.getPost(c.hono.env.BLOG_EXAMPLE, id);
       if (!post) {
         return { error: "Not Found", ok: false };
       }
       return { post: post, ok: true };
     },
-    put: async (c: Ctx, id: string, param: Param): Promise<{ ok: boolean }> => {
+    put: async (
+      c: Ctx,
+      id: string,
+      param: model.Param
+    ): Promise<{ ok: boolean }> => {
       const post = await model.getPost(c.hono.env.BLOG_EXAMPLE, id);
       if (!post) {
         return { ok: false };
