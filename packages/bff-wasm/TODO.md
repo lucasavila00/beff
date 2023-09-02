@@ -4,6 +4,8 @@
 
 - [ ] 422 in schema
 
+  - [ ] Reusing Responses
+
 - [ ] export decoders
 - [ ] string formats (uuid, email)
 

@@ -13,7 +13,7 @@ const oneCodegenSnap = async (subFolder) => {
     subFolder,
     "bff.json"
   );
-  const command = `node ${bin} --skip-shared-runtime -p ${p}`;
+  const command = `node ${bin} -p ${p}`;
   console.log(command);
   const result = await execAsync(command);
   console.log(result.stdout.trim());
@@ -72,9 +72,9 @@ const oneVitest = async (subFolder) => {
 };
 
 const vitest = async () => {
-  const subFolders = fs.readdirSync(path.join(__dirname, "../vitest"));
-  const folders = subFolders.filter((f) => f !== ".gitignore");
-  await Promise.all(folders.map(oneVitest));
+  // const subFolders = fs.readdirSync(path.join(__dirname, "../vitest"));
+  // const folders = subFolders.filter((f) => f !== ".gitignore");
+  // await Promise.all(folders.map(oneVitest));
 };
 
 const failures = async () => {

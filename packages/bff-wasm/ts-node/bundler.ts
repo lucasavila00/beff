@@ -178,14 +178,17 @@ type WasmDiagnosticItem = {
 type WasmDiagnostic = {
   diagnostics: WasmDiagnosticItem[];
 };
-
+export type WritableModules = {
+  js_server_data: string;
+  json_schema: string;
+};
 export class Bundler {
   constructor(verbose: boolean) {
     (globalThis as any).verbose = verbose;
     wasm.init(verbose);
   }
 
-  public bundle(file_name: string): string | undefined {
+  public bundle(file_name: string): WritableModules | undefined {
     return wasm.bundle_to_string(file_name);
   }
 

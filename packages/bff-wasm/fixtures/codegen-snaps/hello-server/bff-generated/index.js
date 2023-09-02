@@ -1,3 +1,40 @@
+
+class CoercionFailure {}
+function add_path_to_errors(errors, path) {
+  return errors.map((e) => ({ ...e, path: [...path, ...e.path] }));
+}
+function coerce_string(input) {
+  return input;
+}
+const isNumeric = (num) =>
+  (typeof num === "number" || (typeof num === "string" && num.trim() !== "")) &&
+  !isNaN(num );
+function coerce_number(input) {
+  if (isNumeric(input)) {
+    return Number(input);
+  }
+  return new CoercionFailure();
+}
+function coerce_boolean(input) {
+  if (input === "true" || input === "false") {
+    return input === "true";
+  }
+  if (input === "1" || input === "0") {
+    return input === "1";
+  }
+  return new CoercionFailure();
+}
+function coerce_union(input, ...cases) {
+  for (const c of cases) {
+    const r = coerce(c, input);
+    if (!(r instanceof CoercionFailure)) {
+      return r;
+    }
+  }
+  return new CoercionFailure();
+}
+
+
 function validate_DataTypesKitchenSink(input) {
     let error_acc_0 = [];
     if (typeof input == "object" && input != null) {
@@ -736,1077 +773,1077 @@ function validate_UserEntity(input) {
     }
     return error_acc_0;
 }
-const meta = {
-    "handlersMeta": [
-        {
-            "method_kind": "get",
-            "params": [],
-            "pattern": "/data-types-kitchen-sink",
-            "return_validator": function(input) {
-                let error_acc_0 = [];
-                error_acc_0.push(...add_path_to_errors(validate_DataTypesKitchenSink(input), [
-                    "[GET] /data-types-kitchen-sink.response_body"
-                ]));
-                return error_acc_0;
-            }
-        },
-        {
-            "method_kind": "get",
-            "params": [],
-            "pattern": "/anon-func",
-            "return_validator": function(input) {
-                let error_acc_0 = [];
-                if (typeof input != "string") {
-                    error_acc_0.push({
-                        "kind": [
-                            "NotTypeof",
-                            "string"
-                        ],
-                        "path": [
-                            "[GET] /anon-func.response_body"
-                        ]
-                    });
-                }
-                return error_acc_0;
-            }
-        },
-        {
-            "method_kind": "get",
-            "params": [
-                {
-                    "type": "context"
-                },
-                {
-                    "type": "header",
-                    "name": "user_agent",
-                    "required": true,
-                    "validator": function(input) {
-                        let error_acc_0 = [];
-                        if (typeof input != "string") {
-                            error_acc_0.push({
-                                "kind": [
-                                    "NotTypeof",
-                                    "string"
-                                ],
-                                "path": [
-                                    'Header Argument "user_agent"'
-                                ]
-                            });
-                        }
-                        return error_acc_0;
-                    },
-                    "coercer": function(input) {
-                        return coerce_string(input);
-                    }
-                },
-                {
-                    "type": "cookie",
-                    "name": "ads_id",
-                    "required": true,
-                    "validator": function(input) {
-                        let error_acc_0 = [];
-                        if (typeof input != "string") {
-                            error_acc_0.push({
-                                "kind": [
-                                    "NotTypeof",
-                                    "string"
-                                ],
-                                "path": [
-                                    'Cookie Argument "ads_id"'
-                                ]
-                            });
-                        }
-                        return error_acc_0;
-                    },
-                    "coercer": function(input) {
-                        return coerce_string(input);
-                    }
-                }
-            ],
-            "pattern": "/users",
-            "return_validator": function(input) {
-                let error_acc_0 = [];
-                if (Array.isArray(input)) {
-                    for (const array_item_1 of input){
-                        if (typeof array_item_1 != "string") {
-                            error_acc_0.push({
-                                "kind": [
-                                    "NotTypeof",
-                                    "string"
-                                ],
-                                "path": [
-                                    "[GET] /users.response_body",
-                                    "[]"
-                                ]
-                            });
-                        }
-                    }
-                } else {
-                    error_acc_0.push({
-                        "kind": [
-                            "NotAnArray"
-                        ],
-                        "path": [
-                            "[GET] /users.response_body"
-                        ]
-                    });
-                }
-                return error_acc_0;
-            }
-        },
-        {
-            "method_kind": "get",
-            "params": [
-                {
-                    "type": "context"
-                },
-                {
-                    "type": "path",
-                    "name": "id",
-                    "required": true,
-                    "validator": function(input) {
-                        let error_acc_0 = [];
-                        if (typeof input != "number") {
-                            error_acc_0.push({
-                                "kind": [
-                                    "NotTypeof",
-                                    "number"
-                                ],
-                                "path": [
-                                    'Path Parameter "id"'
-                                ]
-                            });
-                        }
-                        return error_acc_0;
-                    },
-                    "coercer": function(input) {
-                        return coerce_number(input);
-                    }
-                }
-            ],
-            "pattern": "/users/{id}",
-            "return_validator": function(input) {
-                let error_acc_0 = [];
-                error_acc_0.push(...add_path_to_errors(validate_User(input), [
-                    "[GET] /users/{id}.response_body"
-                ]));
-                return error_acc_0;
-            }
-        },
-        {
-            "method_kind": "get",
-            "params": [
-                {
-                    "type": "context"
-                },
-                {
-                    "type": "path",
-                    "name": "id",
-                    "required": true,
-                    "validator": function(input) {
-                        let error_acc_0 = [];
-                        if (typeof input != "string") {
-                            error_acc_0.push({
-                                "kind": [
-                                    "NotTypeof",
-                                    "string"
-                                ],
-                                "path": [
-                                    'Path Parameter "id"'
-                                ]
-                            });
-                        }
-                        return error_acc_0;
-                    },
-                    "coercer": function(input) {
-                        return coerce_string(input);
-                    }
-                }
-            ],
-            "pattern": "/users2/{id}",
-            "return_validator": function(input) {
-                let error_acc_0 = [];
-                if (typeof input != "string") {
-                    error_acc_0.push({
-                        "kind": [
-                            "NotTypeof",
-                            "string"
-                        ],
-                        "path": [
-                            "[GET] /users2/{id}.response_body"
-                        ]
-                    });
-                }
-                return error_acc_0;
-            }
-        },
-        {
-            "method_kind": "post",
-            "params": [
-                {
-                    "type": "context"
-                },
-                {
-                    "type": "path",
-                    "name": "id",
-                    "required": true,
-                    "validator": function(input) {
-                        let error_acc_0 = [];
-                        if (typeof input != "string") {
-                            error_acc_0.push({
-                                "kind": [
-                                    "NotTypeof",
-                                    "string"
-                                ],
-                                "path": [
-                                    'Path Parameter "id"'
-                                ]
-                            });
-                        }
-                        return error_acc_0;
-                    },
-                    "coercer": function(input) {
-                        return coerce_string(input);
-                    }
-                }
-            ],
-            "pattern": "/users2/{id}",
-            "return_validator": function(input) {
-                let error_acc_0 = [];
-                if (typeof input != "string") {
-                    error_acc_0.push({
-                        "kind": [
-                            "NotTypeof",
-                            "string"
-                        ],
-                        "path": [
-                            "[POST] /users2/{id}.response_body"
-                        ]
-                    });
-                }
-                return error_acc_0;
-            }
-        },
-        {
-            "method_kind": "get",
-            "params": [],
-            "pattern": "/users3",
-            "return_validator": function(input) {
-                let error_acc_0 = [];
-                if (typeof input != "string") {
-                    error_acc_0.push({
-                        "kind": [
-                            "NotTypeof",
-                            "string"
-                        ],
-                        "path": [
-                            "[GET] /users3.response_body"
-                        ]
-                    });
-                }
-                return error_acc_0;
-            }
-        },
-        {
-            "method_kind": "get",
-            "params": [],
-            "pattern": "/users4",
-            "return_validator": function(input) {
-                let error_acc_0 = [];
-                if (typeof input != "string") {
-                    error_acc_0.push({
-                        "kind": [
-                            "NotTypeof",
-                            "string"
-                        ],
-                        "path": [
-                            "[GET] /users4.response_body"
-                        ]
-                    });
-                }
-                return error_acc_0;
-            }
-        },
-        {
-            "method_kind": "post",
-            "params": [],
-            "pattern": "/users4",
-            "return_validator": function(input) {
-                let error_acc_0 = [];
-                if (typeof input != "string") {
-                    error_acc_0.push({
-                        "kind": [
-                            "NotTypeof",
-                            "string"
-                        ],
-                        "path": [
-                            "[POST] /users4.response_body"
-                        ]
-                    });
-                }
-                return error_acc_0;
-            }
+const meta = [
+    {
+        "method_kind": "get",
+        "params": [],
+        "pattern": "/data-types-kitchen-sink",
+        "return_validator": function(input) {
+            let error_acc_0 = [];
+            error_acc_0.push(...add_path_to_errors(validate_DataTypesKitchenSink(input), [
+                "[GET] /data-types-kitchen-sink.response_body"
+            ]));
+            return error_acc_0;
         }
-    ],
-    "schema": {
-        "openapi": "3.1.0",
-        "info": {
-            "description": "Optional multiline or single-line description in [CommonMark](http://commonmark.org/help/) or HTML.",
-            "title": "Sample API",
-            "version": "0.1.9"
-        },
-        "paths": {
-            "/data-types-kitchen-sink": {
-                "get": {
-                    "parameters": [],
-                    "responses": {
-                        "200": {
-                            "description": "Successful Operation",
-                            "content": {
-                                "application/json": {
-                                    "schema": {
-                                        "$ref": "#/components/schemas/DataTypesKitchenSink"
-                                    }
-                                }
-                            }
-                        },
-                        "422": {
-                            "description": "There was an error in the passed parameters",
-                            "content": {
-                                "application/json": {
-                                    "schema": {
-                                        "type": "object",
-                                        "required": [
-                                            "message"
-                                        ],
-                                        "properties": {
-                                            "message": {
-                                                "type": "string"
-                                            }
-                                        }
-                                    }
-                                }
-                            }
-                        },
-                        "default": {
-                            "description": "Unexpected Error",
-                            "content": {
-                                "application/json": {
-                                    "schema": {
-                                        "type": "object",
-                                        "required": [
-                                            "message"
-                                        ],
-                                        "properties": {
-                                            "message": {
-                                                "type": "string"
-                                            }
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-            },
-            "/anon-func": {
-                "get": {
-                    "parameters": [],
-                    "responses": {
-                        "200": {
-                            "description": "Successful Operation",
-                            "content": {
-                                "application/json": {
-                                    "schema": {
-                                        "type": "string"
-                                    }
-                                }
-                            }
-                        },
-                        "422": {
-                            "description": "There was an error in the passed parameters",
-                            "content": {
-                                "application/json": {
-                                    "schema": {
-                                        "type": "object",
-                                        "required": [
-                                            "message"
-                                        ],
-                                        "properties": {
-                                            "message": {
-                                                "type": "string"
-                                            }
-                                        }
-                                    }
-                                }
-                            }
-                        },
-                        "default": {
-                            "description": "Unexpected Error",
-                            "content": {
-                                "application/json": {
-                                    "schema": {
-                                        "type": "object",
-                                        "required": [
-                                            "message"
-                                        ],
-                                        "properties": {
-                                            "message": {
-                                                "type": "string"
-                                            }
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-            },
-            "/users": {
-                "get": {
-                    "parameters": [
-                        {
-                            "name": "user_agent",
-                            "in": "header",
-                            "required": true,
-                            "schema": {
-                                "type": "string"
-                            }
-                        },
-                        {
-                            "name": "ads_id",
-                            "in": "cookie",
-                            "required": true,
-                            "schema": {
-                                "type": "string"
-                            }
-                        }
+    },
+    {
+        "method_kind": "get",
+        "params": [],
+        "pattern": "/anon-func",
+        "return_validator": function(input) {
+            let error_acc_0 = [];
+            if (typeof input != "string") {
+                error_acc_0.push({
+                    "kind": [
+                        "NotTypeof",
+                        "string"
                     ],
-                    "responses": {
-                        "200": {
-                            "description": "Successful Operation",
-                            "content": {
-                                "application/json": {
-                                    "schema": {
-                                        "type": "array",
-                                        "items": {
-                                            "type": "string"
-                                        }
-                                    }
-                                }
-                            }
-                        },
-                        "422": {
-                            "description": "There was an error in the passed parameters",
-                            "content": {
-                                "application/json": {
-                                    "schema": {
-                                        "type": "object",
-                                        "required": [
-                                            "message"
-                                        ],
-                                        "properties": {
-                                            "message": {
-                                                "type": "string"
-                                            }
-                                        }
-                                    }
-                                }
-                            }
-                        },
-                        "default": {
-                            "description": "Unexpected Error",
-                            "content": {
-                                "application/json": {
-                                    "schema": {
-                                        "type": "object",
-                                        "required": [
-                                            "message"
-                                        ],
-                                        "properties": {
-                                            "message": {
-                                                "type": "string"
-                                            }
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
+                    "path": [
+                        "[GET] /anon-func.response_body"
+                    ]
+                });
+            }
+            return error_acc_0;
+        }
+    },
+    {
+        "method_kind": "get",
+        "params": [
+            {
+                "type": "context"
             },
-            "/users/{id}": {
-                "get": {
-                    "parameters": [
-                        {
-                            "name": "id",
-                            "in": "path",
-                            "description": "The user id.",
-                            "required": true,
-                            "schema": {
-                                "type": "number"
-                            }
-                        }
-                    ],
-                    "responses": {
-                        "200": {
-                            "description": "Successful Operation",
-                            "content": {
-                                "application/json": {
-                                    "schema": {
-                                        "$ref": "#/components/schemas/User"
-                                    }
-                                }
-                            }
-                        },
-                        "422": {
-                            "description": "There was an error in the passed parameters",
-                            "content": {
-                                "application/json": {
-                                    "schema": {
-                                        "type": "object",
-                                        "required": [
-                                            "message"
-                                        ],
-                                        "properties": {
-                                            "message": {
-                                                "type": "string"
-                                            }
-                                        }
-                                    }
-                                }
-                            }
-                        },
-                        "default": {
-                            "description": "Unexpected Error",
-                            "content": {
-                                "application/json": {
-                                    "schema": {
-                                        "type": "object",
-                                        "required": [
-                                            "message"
-                                        ],
-                                        "properties": {
-                                            "message": {
-                                                "type": "string"
-                                            }
-                                        }
-                                    }
-                                }
-                            }
-                        }
+            {
+                "type": "header",
+                "name": "user_agent",
+                "required": true,
+                "validator": function(input) {
+                    let error_acc_0 = [];
+                    if (typeof input != "string") {
+                        error_acc_0.push({
+                            "kind": [
+                                "NotTypeof",
+                                "string"
+                            ],
+                            "path": [
+                                'Header Argument "user_agent"'
+                            ]
+                        });
                     }
-                }
-            },
-            "/users2/{id}": {
-                "get": {
-                    "parameters": [
-                        {
-                            "name": "id",
-                            "in": "path",
-                            "required": true,
-                            "schema": {
-                                "type": "string"
-                            }
-                        }
-                    ],
-                    "responses": {
-                        "200": {
-                            "description": "Successful Operation",
-                            "content": {
-                                "application/json": {
-                                    "schema": {
-                                        "type": "string"
-                                    }
-                                }
-                            }
-                        },
-                        "422": {
-                            "description": "There was an error in the passed parameters",
-                            "content": {
-                                "application/json": {
-                                    "schema": {
-                                        "type": "object",
-                                        "required": [
-                                            "message"
-                                        ],
-                                        "properties": {
-                                            "message": {
-                                                "type": "string"
-                                            }
-                                        }
-                                    }
-                                }
-                            }
-                        },
-                        "default": {
-                            "description": "Unexpected Error",
-                            "content": {
-                                "application/json": {
-                                    "schema": {
-                                        "type": "object",
-                                        "required": [
-                                            "message"
-                                        ],
-                                        "properties": {
-                                            "message": {
-                                                "type": "string"
-                                            }
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                    }
+                    return error_acc_0;
                 },
-                "post": {
-                    "parameters": [
-                        {
-                            "name": "id",
-                            "in": "path",
-                            "required": true,
-                            "schema": {
-                                "type": "string"
-                            }
-                        }
-                    ],
-                    "responses": {
-                        "200": {
-                            "description": "Successful Operation",
-                            "content": {
-                                "application/json": {
-                                    "schema": {
-                                        "type": "string"
-                                    }
-                                }
-                            }
-                        },
-                        "422": {
-                            "description": "There was an error in the passed parameters",
-                            "content": {
-                                "application/json": {
-                                    "schema": {
-                                        "type": "object",
-                                        "required": [
-                                            "message"
-                                        ],
-                                        "properties": {
-                                            "message": {
-                                                "type": "string"
-                                            }
-                                        }
-                                    }
-                                }
-                            }
-                        },
-                        "default": {
-                            "description": "Unexpected Error",
-                            "content": {
-                                "application/json": {
-                                    "schema": {
-                                        "type": "object",
-                                        "required": [
-                                            "message"
-                                        ],
-                                        "properties": {
-                                            "message": {
-                                                "type": "string"
-                                            }
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                    }
+                "coercer": function(input) {
+                    return coerce_string(input);
                 }
             },
-            "/users3": {
-                "get": {
-                    "parameters": [],
-                    "responses": {
-                        "200": {
-                            "description": "Successful Operation",
-                            "content": {
-                                "application/json": {
-                                    "schema": {
-                                        "type": "string"
-                                    }
-                                }
-                            }
-                        },
-                        "422": {
-                            "description": "There was an error in the passed parameters",
-                            "content": {
-                                "application/json": {
-                                    "schema": {
-                                        "type": "object",
-                                        "required": [
-                                            "message"
-                                        ],
-                                        "properties": {
-                                            "message": {
-                                                "type": "string"
-                                            }
-                                        }
-                                    }
-                                }
-                            }
-                        },
-                        "default": {
-                            "description": "Unexpected Error",
-                            "content": {
-                                "application/json": {
-                                    "schema": {
-                                        "type": "object",
-                                        "required": [
-                                            "message"
-                                        ],
-                                        "properties": {
-                                            "message": {
-                                                "type": "string"
-                                            }
-                                        }
-                                    }
-                                }
-                            }
-                        }
+            {
+                "type": "cookie",
+                "name": "ads_id",
+                "required": true,
+                "validator": function(input) {
+                    let error_acc_0 = [];
+                    if (typeof input != "string") {
+                        error_acc_0.push({
+                            "kind": [
+                                "NotTypeof",
+                                "string"
+                            ],
+                            "path": [
+                                'Cookie Argument "ads_id"'
+                            ]
+                        });
                     }
-                }
-            },
-            "/users4": {
-                "get": {
-                    "parameters": [],
-                    "responses": {
-                        "200": {
-                            "description": "Successful Operation",
-                            "content": {
-                                "application/json": {
-                                    "schema": {
-                                        "type": "string"
-                                    }
-                                }
-                            }
-                        },
-                        "422": {
-                            "description": "There was an error in the passed parameters",
-                            "content": {
-                                "application/json": {
-                                    "schema": {
-                                        "type": "object",
-                                        "required": [
-                                            "message"
-                                        ],
-                                        "properties": {
-                                            "message": {
-                                                "type": "string"
-                                            }
-                                        }
-                                    }
-                                }
-                            }
-                        },
-                        "default": {
-                            "description": "Unexpected Error",
-                            "content": {
-                                "application/json": {
-                                    "schema": {
-                                        "type": "object",
-                                        "required": [
-                                            "message"
-                                        ],
-                                        "properties": {
-                                            "message": {
-                                                "type": "string"
-                                            }
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                    }
+                    return error_acc_0;
                 },
-                "post": {
-                    "parameters": [],
-                    "responses": {
-                        "200": {
-                            "description": "Successful Operation",
-                            "content": {
-                                "application/json": {
-                                    "schema": {
-                                        "type": "string"
-                                    }
-                                }
-                            }
-                        },
-                        "422": {
-                            "description": "There was an error in the passed parameters",
-                            "content": {
-                                "application/json": {
-                                    "schema": {
-                                        "type": "object",
-                                        "required": [
-                                            "message"
-                                        ],
-                                        "properties": {
-                                            "message": {
-                                                "type": "string"
-                                            }
-                                        }
-                                    }
-                                }
-                            }
-                        },
-                        "default": {
-                            "description": "Unexpected Error",
-                            "content": {
-                                "application/json": {
-                                    "schema": {
-                                        "type": "object",
-                                        "required": [
-                                            "message"
-                                        ],
-                                        "properties": {
-                                            "message": {
-                                                "type": "string"
-                                            }
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                    }
+                "coercer": function(input) {
+                    return coerce_string(input);
                 }
             }
-        },
-        "components": {
-            "schemas": {
-                "DataTypesKitchenSink": {
-                    "type": "object",
-                    "required": [
-                        "basic",
-                        "array1",
-                        "array2",
-                        "tuple1",
-                        "tuple2",
-                        "tuple_rest",
-                        "nullable",
-                        "many_nullable",
-                        "union_with_undefined",
-                        "union_of_many",
-                        "literals",
-                        "enum",
-                        "tuple_lit",
-                        "str_template"
-                    ],
-                    "properties": {
-                        "basic": {
-                            "type": "object",
-                            "required": [
-                                "a",
-                                "b",
-                                "c"
+        ],
+        "pattern": "/users",
+        "return_validator": function(input) {
+            let error_acc_0 = [];
+            if (Array.isArray(input)) {
+                for (const array_item_1 of input){
+                    if (typeof array_item_1 != "string") {
+                        error_acc_0.push({
+                            "kind": [
+                                "NotTypeof",
+                                "string"
                             ],
-                            "properties": {
-                                "a": {
-                                    "type": "string"
-                                },
-                                "b": {
-                                    "type": "number"
-                                },
-                                "c": {
-                                    "type": "boolean"
-                                }
-                            }
-                        },
-                        "array1": {
-                            "type": "array",
-                            "items": {
-                                "type": "string"
-                            }
-                        },
-                        "array2": {
-                            "type": "array",
-                            "items": {
-                                "type": "string"
-                            }
-                        },
-                        "tuple1": {
-                            "type": "array",
-                            "prefixItems": [
-                                {
-                                    "type": "string"
-                                }
-                            ],
-                            "minItems": 1,
-                            "maxItems": 1
-                        },
-                        "tuple2": {
-                            "type": "array",
-                            "prefixItems": [
-                                {
-                                    "type": "string"
-                                },
-                                {
-                                    "type": "string"
-                                }
-                            ],
-                            "minItems": 2,
-                            "maxItems": 2
-                        },
-                        "tuple_rest": {
-                            "type": "array",
-                            "prefixItems": [
-                                {
-                                    "type": "string"
-                                },
-                                {
-                                    "type": "string"
-                                }
-                            ],
-                            "items": {
-                                "type": "number"
-                            }
-                        },
-                        "nullable": {
-                            "anyOf": [
-                                {
-                                    "type": "string"
-                                },
-                                {
-                                    "type": "null"
-                                }
+                            "path": [
+                                "[GET] /users.response_body",
+                                "[]"
                             ]
-                        },
-                        "many_nullable": {
-                            "anyOf": [
-                                {
-                                    "type": "number"
-                                },
-                                {
-                                    "type": "string"
-                                },
-                                {
-                                    "type": "null"
-                                }
-                            ]
-                        },
-                        "optional_prop": {
-                            "type": "string"
-                        },
-                        "union_with_undefined": {
-                            "anyOf": [
-                                {
-                                    "type": "string"
-                                },
-                                {
-                                    "type": "null"
-                                }
-                            ]
-                        },
-                        "union_of_many": {
-                            "anyOf": [
-                                {
-                                    "type": "string"
-                                },
-                                {
-                                    "type": "number"
-                                },
-                                {
-                                    "type": "boolean"
-                                }
-                            ]
-                        },
-                        "literals": {
-                            "type": "object",
-                            "required": [
-                                "a",
-                                "b",
-                                "c"
-                            ],
-                            "properties": {
-                                "a": {
-                                    "const": "a"
-                                },
-                                "b": {
-                                    "const": 1
-                                },
-                                "c": {
-                                    "const": true
-                                }
-                            }
-                        },
-                        "enum": {
-                            "enum": [
-                                "a",
-                                "b",
-                                "c"
-                            ]
-                        },
-                        "tuple_lit": {
-                            "type": "array",
-                            "prefixItems": [
-                                {
-                                    "const": "a"
-                                },
-                                {
-                                    "const": 1
-                                },
-                                {
-                                    "const": true
-                                }
-                            ],
-                            "minItems": 3,
-                            "maxItems": 3
-                        },
-                        "str_template": {
-                            "const": "ab"
-                        }
-                    }
-                },
-                "A": {
-                    "type": "string"
-                },
-                "User": {
-                    "type": "object",
-                    "required": [
-                        "id",
-                        "name",
-                        "entities"
-                    ],
-                    "properties": {
-                        "id": {
-                            "type": "number"
-                        },
-                        "name": {
-                            "type": "string"
-                        },
-                        "entities": {
-                            "type": "array",
-                            "items": {
-                                "$ref": "#/components/schemas/UserEntity"
-                            }
-                        },
-                        "optional_prop": {
-                            "type": "string"
-                        }
-                    }
-                },
-                "UserEntity": {
-                    "type": "object",
-                    "required": [
-                        "id",
-                        "idA"
-                    ],
-                    "properties": {
-                        "id": {
-                            "type": "string"
-                        },
-                        "idA": {
-                            "$ref": "#/components/schemas/A"
-                        }
+                        });
                     }
                 }
+            } else {
+                error_acc_0.push({
+                    "kind": [
+                        "NotAnArray"
+                    ],
+                    "path": [
+                        "[GET] /users.response_body"
+                    ]
+                });
             }
+            return error_acc_0;
+        }
+    },
+    {
+        "method_kind": "get",
+        "params": [
+            {
+                "type": "context"
+            },
+            {
+                "type": "path",
+                "name": "id",
+                "required": true,
+                "validator": function(input) {
+                    let error_acc_0 = [];
+                    if (typeof input != "number") {
+                        error_acc_0.push({
+                            "kind": [
+                                "NotTypeof",
+                                "number"
+                            ],
+                            "path": [
+                                'Path Parameter "id"'
+                            ]
+                        });
+                    }
+                    return error_acc_0;
+                },
+                "coercer": function(input) {
+                    return coerce_number(input);
+                }
+            }
+        ],
+        "pattern": "/users/{id}",
+        "return_validator": function(input) {
+            let error_acc_0 = [];
+            error_acc_0.push(...add_path_to_errors(validate_User(input), [
+                "[GET] /users/{id}.response_body"
+            ]));
+            return error_acc_0;
+        }
+    },
+    {
+        "method_kind": "get",
+        "params": [
+            {
+                "type": "context"
+            },
+            {
+                "type": "path",
+                "name": "id",
+                "required": true,
+                "validator": function(input) {
+                    let error_acc_0 = [];
+                    if (typeof input != "string") {
+                        error_acc_0.push({
+                            "kind": [
+                                "NotTypeof",
+                                "string"
+                            ],
+                            "path": [
+                                'Path Parameter "id"'
+                            ]
+                        });
+                    }
+                    return error_acc_0;
+                },
+                "coercer": function(input) {
+                    return coerce_string(input);
+                }
+            }
+        ],
+        "pattern": "/users2/{id}",
+        "return_validator": function(input) {
+            let error_acc_0 = [];
+            if (typeof input != "string") {
+                error_acc_0.push({
+                    "kind": [
+                        "NotTypeof",
+                        "string"
+                    ],
+                    "path": [
+                        "[GET] /users2/{id}.response_body"
+                    ]
+                });
+            }
+            return error_acc_0;
+        }
+    },
+    {
+        "method_kind": "post",
+        "params": [
+            {
+                "type": "context"
+            },
+            {
+                "type": "path",
+                "name": "id",
+                "required": true,
+                "validator": function(input) {
+                    let error_acc_0 = [];
+                    if (typeof input != "string") {
+                        error_acc_0.push({
+                            "kind": [
+                                "NotTypeof",
+                                "string"
+                            ],
+                            "path": [
+                                'Path Parameter "id"'
+                            ]
+                        });
+                    }
+                    return error_acc_0;
+                },
+                "coercer": function(input) {
+                    return coerce_string(input);
+                }
+            }
+        ],
+        "pattern": "/users2/{id}",
+        "return_validator": function(input) {
+            let error_acc_0 = [];
+            if (typeof input != "string") {
+                error_acc_0.push({
+                    "kind": [
+                        "NotTypeof",
+                        "string"
+                    ],
+                    "path": [
+                        "[POST] /users2/{id}.response_body"
+                    ]
+                });
+            }
+            return error_acc_0;
+        }
+    },
+    {
+        "method_kind": "get",
+        "params": [],
+        "pattern": "/users3",
+        "return_validator": function(input) {
+            let error_acc_0 = [];
+            if (typeof input != "string") {
+                error_acc_0.push({
+                    "kind": [
+                        "NotTypeof",
+                        "string"
+                    ],
+                    "path": [
+                        "[GET] /users3.response_body"
+                    ]
+                });
+            }
+            return error_acc_0;
+        }
+    },
+    {
+        "method_kind": "get",
+        "params": [],
+        "pattern": "/users4",
+        "return_validator": function(input) {
+            let error_acc_0 = [];
+            if (typeof input != "string") {
+                error_acc_0.push({
+                    "kind": [
+                        "NotTypeof",
+                        "string"
+                    ],
+                    "path": [
+                        "[GET] /users4.response_body"
+                    ]
+                });
+            }
+            return error_acc_0;
+        }
+    },
+    {
+        "method_kind": "post",
+        "params": [],
+        "pattern": "/users4",
+        "return_validator": function(input) {
+            let error_acc_0 = [];
+            if (typeof input != "string") {
+                error_acc_0.push({
+                    "kind": [
+                        "NotTypeof",
+                        "string"
+                    ],
+                    "path": [
+                        "[POST] /users4.response_body"
+                    ]
+                });
+            }
+            return error_acc_0;
         }
     }
-};
+];
+
+const schema =  {
+  "components": {
+    "schemas": {
+      "A": {
+        "type": "string"
+      },
+      "DataTypesKitchenSink": {
+        "properties": {
+          "array1": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "array2": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "basic": {
+            "properties": {
+              "a": {
+                "type": "string"
+              },
+              "b": {
+                "type": "number"
+              },
+              "c": {
+                "type": "boolean"
+              }
+            },
+            "required": [
+              "a",
+              "b",
+              "c"
+            ],
+            "type": "object"
+          },
+          "enum": {
+            "enum": [
+              "a",
+              "b",
+              "c"
+            ]
+          },
+          "literals": {
+            "properties": {
+              "a": {
+                "const": "a"
+              },
+              "b": {
+                "const": 1.0
+              },
+              "c": {
+                "const": true
+              }
+            },
+            "required": [
+              "a",
+              "b",
+              "c"
+            ],
+            "type": "object"
+          },
+          "many_nullable": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "nullable": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "optional_prop": {
+            "type": "string"
+          },
+          "str_template": {
+            "const": "ab"
+          },
+          "tuple1": {
+            "maxItems": 1.0,
+            "minItems": 1.0,
+            "prefixItems": [
+              {
+                "type": "string"
+              }
+            ],
+            "type": "array"
+          },
+          "tuple2": {
+            "maxItems": 2.0,
+            "minItems": 2.0,
+            "prefixItems": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "string"
+              }
+            ],
+            "type": "array"
+          },
+          "tuple_lit": {
+            "maxItems": 3.0,
+            "minItems": 3.0,
+            "prefixItems": [
+              {
+                "const": "a"
+              },
+              {
+                "const": 1.0
+              },
+              {
+                "const": true
+              }
+            ],
+            "type": "array"
+          },
+          "tuple_rest": {
+            "items": {
+              "type": "number"
+            },
+            "prefixItems": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "string"
+              }
+            ],
+            "type": "array"
+          },
+          "union_of_many": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "number"
+              },
+              {
+                "type": "boolean"
+              }
+            ]
+          },
+          "union_with_undefined": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "basic",
+          "array1",
+          "array2",
+          "tuple1",
+          "tuple2",
+          "tuple_rest",
+          "nullable",
+          "many_nullable",
+          "union_with_undefined",
+          "union_of_many",
+          "literals",
+          "enum",
+          "tuple_lit",
+          "str_template"
+        ],
+        "type": "object"
+      },
+      "User": {
+        "properties": {
+          "entities": {
+            "items": {
+              "$ref": "#/components/schemas/UserEntity"
+            },
+            "type": "array"
+          },
+          "id": {
+            "type": "number"
+          },
+          "name": {
+            "type": "string"
+          },
+          "optional_prop": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "entities"
+        ],
+        "type": "object"
+      },
+      "UserEntity": {
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "idA": {
+            "$ref": "#/components/schemas/A"
+          }
+        },
+        "required": [
+          "id",
+          "idA"
+        ],
+        "type": "object"
+      }
+    }
+  },
+  "info": {
+    "description": "Optional multiline or single-line description in [CommonMark](http://commonmark.org/help/) or HTML.",
+    "title": "Sample API",
+    "version": "0.1.9"
+  },
+  "openapi": "3.1.0",
+  "paths": {
+    "/anon-func": {
+      "get": {
+        "parameters": [],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "description": "Successful Operation"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "message": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "message"
+                  ],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "There was an error in the passed parameters"
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "message": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "message"
+                  ],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Unexpected Error"
+          }
+        }
+      }
+    },
+    "/data-types-kitchen-sink": {
+      "get": {
+        "parameters": [],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DataTypesKitchenSink"
+                }
+              }
+            },
+            "description": "Successful Operation"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "message": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "message"
+                  ],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "There was an error in the passed parameters"
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "message": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "message"
+                  ],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Unexpected Error"
+          }
+        }
+      }
+    },
+    "/users": {
+      "get": {
+        "parameters": [
+          {
+            "in": "header",
+            "name": "user_agent",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "cookie",
+            "name": "ads_id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "type": "string"
+                  },
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Operation"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "message": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "message"
+                  ],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "There was an error in the passed parameters"
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "message": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "message"
+                  ],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Unexpected Error"
+          }
+        }
+      }
+    },
+    "/users/{id}": {
+      "get": {
+        "parameters": [
+          {
+            "description": "The user id.",
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "number"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/User"
+                }
+              }
+            },
+            "description": "Successful Operation"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "message": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "message"
+                  ],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "There was an error in the passed parameters"
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "message": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "message"
+                  ],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Unexpected Error"
+          }
+        }
+      }
+    },
+    "/users2/{id}": {
+      "get": {
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "description": "Successful Operation"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "message": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "message"
+                  ],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "There was an error in the passed parameters"
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "message": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "message"
+                  ],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Unexpected Error"
+          }
+        }
+      },
+      "post": {
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "description": "Successful Operation"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "message": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "message"
+                  ],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "There was an error in the passed parameters"
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "message": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "message"
+                  ],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Unexpected Error"
+          }
+        }
+      }
+    },
+    "/users3": {
+      "get": {
+        "parameters": [],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "description": "Successful Operation"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "message": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "message"
+                  ],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "There was an error in the passed parameters"
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "message": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "message"
+                  ],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Unexpected Error"
+          }
+        }
+      }
+    },
+    "/users4": {
+      "get": {
+        "parameters": [],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "description": "Successful Operation"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "message": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "message"
+                  ],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "There was an error in the passed parameters"
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "message": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "message"
+                  ],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Unexpected Error"
+          }
+        }
+      },
+      "post": {
+        "parameters": [],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "description": "Successful Operation"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "message": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "message"
+                  ],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "There was an error in the passed parameters"
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "message": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "message"
+                  ],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Unexpected Error"
+          }
+        }
+      }
+    }
+  }
+} ;
+export  { meta, schema };

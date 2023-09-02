@@ -1,0 +1,761 @@
+{
+  "components": {
+    "schemas": {
+      "A": {
+        "type": "string"
+      },
+      "DataTypesKitchenSink": {
+        "properties": {
+          "array1": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "array2": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "basic": {
+            "properties": {
+              "a": {
+                "type": "string"
+              },
+              "b": {
+                "type": "number"
+              },
+              "c": {
+                "type": "boolean"
+              }
+            },
+            "required": [
+              "a",
+              "b",
+              "c"
+            ],
+            "type": "object"
+          },
+          "enum": {
+            "enum": [
+              "a",
+              "b",
+              "c"
+            ]
+          },
+          "literals": {
+            "properties": {
+              "a": {
+                "const": "a"
+              },
+              "b": {
+                "const": 1.0
+              },
+              "c": {
+                "const": true
+              }
+            },
+            "required": [
+              "a",
+              "b",
+              "c"
+            ],
+            "type": "object"
+          },
+          "many_nullable": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "nullable": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "optional_prop": {
+            "type": "string"
+          },
+          "str_template": {
+            "const": "ab"
+          },
+          "tuple1": {
+            "maxItems": 1.0,
+            "minItems": 1.0,
+            "prefixItems": [
+              {
+                "type": "string"
+              }
+            ],
+            "type": "array"
+          },
+          "tuple2": {
+            "maxItems": 2.0,
+            "minItems": 2.0,
+            "prefixItems": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "string"
+              }
+            ],
+            "type": "array"
+          },
+          "tuple_lit": {
+            "maxItems": 3.0,
+            "minItems": 3.0,
+            "prefixItems": [
+              {
+                "const": "a"
+              },
+              {
+                "const": 1.0
+              },
+              {
+                "const": true
+              }
+            ],
+            "type": "array"
+          },
+          "tuple_rest": {
+            "items": {
+              "type": "number"
+            },
+            "prefixItems": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "string"
+              }
+            ],
+            "type": "array"
+          },
+          "union_of_many": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "number"
+              },
+              {
+                "type": "boolean"
+              }
+            ]
+          },
+          "union_with_undefined": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "basic",
+          "array1",
+          "array2",
+          "tuple1",
+          "tuple2",
+          "tuple_rest",
+          "nullable",
+          "many_nullable",
+          "union_with_undefined",
+          "union_of_many",
+          "literals",
+          "enum",
+          "tuple_lit",
+          "str_template"
+        ],
+        "type": "object"
+      },
+      "User": {
+        "properties": {
+          "entities": {
+            "items": {
+              "$ref": "#/components/schemas/UserEntity"
+            },
+            "type": "array"
+          },
+          "id": {
+            "type": "number"
+          },
+          "name": {
+            "type": "string"
+          },
+          "optional_prop": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "entities"
+        ],
+        "type": "object"
+      },
+      "UserEntity": {
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "idA": {
+            "$ref": "#/components/schemas/A"
+          }
+        },
+        "required": [
+          "id",
+          "idA"
+        ],
+        "type": "object"
+      }
+    }
+  },
+  "info": {
+    "description": "Optional multiline or single-line description in [CommonMark](http://commonmark.org/help/) or HTML.",
+    "title": "Sample API",
+    "version": "0.1.9"
+  },
+  "openapi": "3.1.0",
+  "paths": {
+    "/anon-func": {
+      "get": {
+        "parameters": [],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "description": "Successful Operation"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "message": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "message"
+                  ],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "There was an error in the passed parameters"
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "message": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "message"
+                  ],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Unexpected Error"
+          }
+        }
+      }
+    },
+    "/data-types-kitchen-sink": {
+      "get": {
+        "parameters": [],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DataTypesKitchenSink"
+                }
+              }
+            },
+            "description": "Successful Operation"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "message": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "message"
+                  ],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "There was an error in the passed parameters"
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "message": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "message"
+                  ],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Unexpected Error"
+          }
+        }
+      }
+    },
+    "/users": {
+      "get": {
+        "parameters": [
+          {
+            "in": "header",
+            "name": "user_agent",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "cookie",
+            "name": "ads_id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "type": "string"
+                  },
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Operation"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "message": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "message"
+                  ],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "There was an error in the passed parameters"
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "message": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "message"
+                  ],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Unexpected Error"
+          }
+        }
+      }
+    },
+    "/users/{id}": {
+      "get": {
+        "parameters": [
+          {
+            "description": "The user id.",
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "number"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/User"
+                }
+              }
+            },
+            "description": "Successful Operation"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "message": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "message"
+                  ],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "There was an error in the passed parameters"
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "message": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "message"
+                  ],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Unexpected Error"
+          }
+        }
+      }
+    },
+    "/users2/{id}": {
+      "get": {
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "description": "Successful Operation"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "message": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "message"
+                  ],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "There was an error in the passed parameters"
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "message": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "message"
+                  ],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Unexpected Error"
+          }
+        }
+      },
+      "post": {
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "description": "Successful Operation"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "message": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "message"
+                  ],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "There was an error in the passed parameters"
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "message": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "message"
+                  ],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Unexpected Error"
+          }
+        }
+      }
+    },
+    "/users3": {
+      "get": {
+        "parameters": [],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "description": "Successful Operation"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "message": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "message"
+                  ],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "There was an error in the passed parameters"
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "message": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "message"
+                  ],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Unexpected Error"
+          }
+        }
+      }
+    },
+    "/users4": {
+      "get": {
+        "parameters": [],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "description": "Successful Operation"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "message": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "message"
+                  ],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "There was an error in the passed parameters"
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "message": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "message"
+                  ],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Unexpected Error"
+          }
+        }
+      },
+      "post": {
+        "parameters": [],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "description": "Successful Operation"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "message": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "message"
+                  ],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "There was an error in the passed parameters"
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "message": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "message"
+                  ],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Unexpected Error"
+          }
+        }
+      }
+    }
+  }
+}

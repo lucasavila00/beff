@@ -11,6 +11,7 @@ use bff_core::api_extractor::{self, ExtractResult, FileManager};
 use bff_core::diag::Diagnostic;
 use bff_core::parse_file_content;
 use bff_core::printer::ToWritableModules;
+use bff_core::printer::WritableModules;
 use bff_core::BffFileName;
 use bff_core::ParsedModule;
 use log::Level;
@@ -67,17 +68,17 @@ extern "C" {
 }
 
 #[wasm_bindgen]
-pub fn bundle_to_string(file_name: &str) -> Option<String> {
+pub fn bundle_to_string(file_name: &str) -> JsValue {
     match bundle_to_string_inner(file_name) {
-        Ok(s) => Some(s),
-        Err(_) => None,
+        Ok(s) => serde_wasm_bindgen::to_value(&s).expect("should be able to serialize bundle"),
+        Err(_) => JsValue::null(),
     }
 }
 
 #[wasm_bindgen]
 pub fn bundle_to_diagnostics(file_name: &str) -> JsValue {
     let v = bundle_to_diagnostics_inner(file_name);
-    serde_wasm_bindgen::to_value(&v).expect("should be able to serialize")
+    serde_wasm_bindgen::to_value(&v).expect("should be able to serialize diagnostics")
 }
 #[wasm_bindgen]
 pub fn update_file_content(file_name: &str, content: &str) {
@@ -133,10 +134,10 @@ fn print_errors(errors: Vec<Diagnostic>) {
     emit_diagnostic(v)
 }
 
-fn bundle_to_string_inner(file_name: &str) -> Result<String> {
+fn bundle_to_string_inner(file_name: &str) -> Result<WritableModules> {
     let res = run_extraction(file_name);
     if res.errors.is_empty() {
-        return Ok(res.to_module()?.js_server_data);
+        return Ok(res.to_module()?);
     }
     print_errors(res.errors);
     Err(anyhow!("Failed to bundle"))

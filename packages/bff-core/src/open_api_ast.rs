@@ -50,6 +50,28 @@ impl Json {
             ),
         }
     }
+
+    fn to_serde(&self) -> serde_json::Value {
+        match self {
+            Json::Null => serde_json::Value::Null,
+            Json::Bool(b) => serde_json::Value::Bool(*b),
+            Json::Number(n) => serde_json::Value::Number(serde_json::Number::from_f64(*n).unwrap()),
+            Json::String(s) => serde_json::Value::String(s.clone()),
+            Json::Array(arr) => {
+                serde_json::Value::Array(arr.iter().map(|it| it.to_serde()).collect::<Vec<_>>())
+            }
+            Json::Object(obj) => serde_json::Value::Object(
+                obj.iter()
+                    .map(|(k, v)| (k.clone(), v.to_serde()))
+                    .collect::<serde_json::Map<_, _>>(),
+            ),
+        }
+    }
+
+    pub fn to_string(&self) -> String {
+        serde_json::to_string_pretty(&self.to_serde())
+            .expect("should be possible to serialize json")
+    }
 }
 
 #[derive(Debug, Clone, PartialEq)]

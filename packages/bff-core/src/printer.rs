@@ -1,4 +1,5 @@
 use anyhow::Result;
+use serde::{Serialize, Deserialize};
 use swc_common::DUMMY_SP;
 use swc_ecma_ast::{
     ArrayLit, BindingIdent, Bool, Decl, Expr, ExprOrSpread, FnDecl, FnExpr, Ident, KeyValueProp,
@@ -547,16 +548,12 @@ fn js_to_expr(file_name: &str, it: Js, components: &Vec<Definition>) -> Expr {
     }
 }
 
+#[derive(Serialize, Deserialize)]
 pub struct WritableModules {
     pub js_server_data: String,
+    pub json_schema: String,
 }
-impl WritableModules {
-    pub fn new(module: String) -> WritableModules {
-        WritableModules {
-            js_server_data: module,
-        }
-    }
-}
+
 pub trait ToWritableModules {
     fn to_module(self) -> Result<WritableModules>;
 }
@@ -581,13 +578,7 @@ impl ToWritableModules for ExtractResult {
         let dfs = self.open_api.components.clone();
         let meta_expr = js_to_expr(
             &self.entry_file_name.0,
-            Js::Object(vec![
-                (
-                    "handlersMeta".into(),
-                    handlers_to_js(self.handlers, &self.components),
-                ),
-                ("schema".into(), self.open_api.to_json().to_js()),
-            ]),
+            handlers_to_js(self.handlers, &self.components),
             &dfs,
         );
         let meta = Builder::const_decl("meta", meta_expr);
@@ -598,6 +589,9 @@ impl ToWritableModules for ExtractResult {
             body,
             shebang: None,
         };
-        Ok(WritableModules::new(emit_module(&module)?))
+        Ok(WritableModules {
+            js_server_data: emit_module(&module)?,
+            json_schema: self.open_api.to_json().to_string(),
+        })
     }
 }

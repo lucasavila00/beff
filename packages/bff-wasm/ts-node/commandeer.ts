@@ -56,18 +56,12 @@ export const commanderExec = () => {
   const start = Date.now();
   program.option("-p, --project <string>");
   program.option("-v, --verbose");
-  program.option("--skip-shared-runtime");
   program.parse();
   const options = program.opts();
   const projectPath = getProjectPath(options.project);
   const projectJson = readProjectJson(projectPath);
 
-  execProject(
-    projectPath,
-    projectJson,
-    options.verbose ?? false,
-    options.skipSharedRuntime ?? false
-  );
+  execProject(projectPath, projectJson, options.verbose ?? false);
 
   const end = Date.now();
   const duration = end - start;
