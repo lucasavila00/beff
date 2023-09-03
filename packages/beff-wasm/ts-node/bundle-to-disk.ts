@@ -185,6 +185,11 @@ export const execProject = (
   const parserEntryPoint = projectJson.parser
     ? path.join(path.dirname(projectPath), projectJson.parser)
     : undefined;
+
+  if (verbose) {
+    console.log(`JS: Router entry point ${routerEntryPoint}`);
+    console.log(`JS: Parser entry point ${parserEntryPoint}`);
+  }
   const outResult = bundler.bundle(routerEntryPoint, parserEntryPoint);
   if (outResult == null) {
     process.exit(1);

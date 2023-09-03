@@ -36,8 +36,14 @@ const readProjectJson = (projectPath: string): ProjectJson => {
   }
 
   return {
-    router: String(projectJson.router),
-    parser: String(projectJson.parser),
+    router:
+      projectJson.router == null
+        ? projectJson.router
+        : String(projectJson.router),
+    parser:
+      projectJson.parser == null
+        ? projectJson.parser
+        : String(projectJson.parser),
     outputDir: String(projectJson.outputDir),
     module: projectJson.module,
   };

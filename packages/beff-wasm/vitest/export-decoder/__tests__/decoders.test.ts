@@ -29,10 +29,6 @@ it("custom types", () => {
 it("regular types", () => {
   expect(schema.components.schemas).toMatchInlineSnapshot(`
     {
-      "StartsWithA": {
-        "format": "StartsWithA",
-        "type": "string",
-      },
       "User": {
         "properties": {
           "age": {
