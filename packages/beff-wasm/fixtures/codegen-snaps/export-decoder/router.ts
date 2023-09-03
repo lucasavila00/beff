@@ -1,24 +1,5 @@
-import { buildParsers, registerStringFormat } from "./bff-generated";
-import { StringFormat, Formats } from "@beff/cli";
-
-type NotPublic = {
-  a: string;
-};
-type User = {
-  name: string;
-  age: number;
-};
-
-type StartsWithA = StringFormat<"StartsWithA">;
-registerStringFormat<StartsWithA>("StartsWithA", (it) => it.startsWith("A"));
-
-export const { StartsWithA, User, Users, NotPublicRenamed } = buildParsers<{
-  User: User;
-  Users: User[];
-  NotPublicRenamed: NotPublic;
-  StartsWithA: StartsWithA;
-  Password: Formats.Password;
-}>();
+import { Formats } from "@beff/cli";
+import { StartsWithA, User } from "./parser";
 
 type Ctx = any;
 export default {

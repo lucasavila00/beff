@@ -56,16 +56,27 @@ function User(input) {
     }
     return error_acc_0;
 }
-function Password(input) {
+function NotPublic(input) {
     let error_acc_0 = [];
-    if (isCustomFormatInvalid("password", input)) {
+    if (typeof input == "object" && input != null) {
+        if (typeof input["a"] != "string") {
+            error_acc_0.push({
+                "error_kind": "NotTypeof",
+                "path": [
+                    "NotPublic",
+                    "a"
+                ],
+                "received": input["a"],
+                "expected_type": "string"
+            });
+        }
+    } else {
         error_acc_0.push({
-            "error_kind": "StringFormatCheckFailed",
+            "error_kind": "NotAnObject",
             "path": [
-                "Password"
+                "NotPublic"
             ],
-            "received": input,
-            "expected_type": "password"
+            "received": input
         });
     }
     return error_acc_0;
@@ -84,10 +95,25 @@ function StartsWithA(input) {
     }
     return error_acc_0;
 }
+function Password(input) {
+    let error_acc_0 = [];
+    if (isCustomFormatInvalid("password", input)) {
+        error_acc_0.push({
+            "error_kind": "StringFormatCheckFailed",
+            "path": [
+                "Password"
+            ],
+            "received": input,
+            "expected_type": "password"
+        });
+    }
+    return error_acc_0;
+}
 const validators = {
     User: User,
-    Password: Password,
-    StartsWithA: StartsWithA
+    NotPublic: NotPublic,
+    StartsWithA: StartsWithA,
+    Password: Password
 };
 
 export  { validators, isCustomFormatInvalid, registerStringFormat, add_path_to_errors };
