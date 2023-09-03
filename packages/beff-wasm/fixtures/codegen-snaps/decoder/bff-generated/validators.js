@@ -1,4 +1,5 @@
 
+
 function add_path_to_errors(errors, path) {
   return errors.map((e) => ({ ...e, path: [...path, ...e.path] }));
 }
@@ -379,4 +380,4 @@ const validators = {
     User: User
 };
 
-export  { validators, isCustomFormatInvalid, registerStringFormat, add_path_to_errors };
+export default { validators, isCustomFormatInvalid, registerStringFormat, add_path_to_errors };

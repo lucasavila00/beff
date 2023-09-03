@@ -1,4 +1,5 @@
 
+
 function add_path_to_errors(errors, path) {
   return errors.map((e) => ({ ...e, path: [...path, ...e.path] }));
 }
@@ -56,6 +57,34 @@ function User(input) {
     }
     return error_acc_0;
 }
+function Password(input) {
+    let error_acc_0 = [];
+    if (isCustomFormatInvalid("password", input)) {
+        error_acc_0.push({
+            "error_kind": "StringFormatCheckFailed",
+            "path": [
+                "Password"
+            ],
+            "received": input,
+            "expected_type": "password"
+        });
+    }
+    return error_acc_0;
+}
+function StartsWithA(input) {
+    let error_acc_0 = [];
+    if (isCustomFormatInvalid("StartsWithA", input)) {
+        error_acc_0.push({
+            "error_kind": "StringFormatCheckFailed",
+            "path": [
+                "StartsWithA"
+            ],
+            "received": input,
+            "expected_type": "StartsWithA"
+        });
+    }
+    return error_acc_0;
+}
 function NotPublic(input) {
     let error_acc_0 = [];
     if (typeof input == "object" && input != null) {
@@ -81,39 +110,11 @@ function NotPublic(input) {
     }
     return error_acc_0;
 }
-function StartsWithA(input) {
-    let error_acc_0 = [];
-    if (isCustomFormatInvalid("StartsWithA", input)) {
-        error_acc_0.push({
-            "error_kind": "StringFormatCheckFailed",
-            "path": [
-                "StartsWithA"
-            ],
-            "received": input,
-            "expected_type": "StartsWithA"
-        });
-    }
-    return error_acc_0;
-}
-function Password(input) {
-    let error_acc_0 = [];
-    if (isCustomFormatInvalid("password", input)) {
-        error_acc_0.push({
-            "error_kind": "StringFormatCheckFailed",
-            "path": [
-                "Password"
-            ],
-            "received": input,
-            "expected_type": "password"
-        });
-    }
-    return error_acc_0;
-}
 const validators = {
     User: User,
-    NotPublic: NotPublic,
+    Password: Password,
     StartsWithA: StartsWithA,
-    Password: Password
+    NotPublic: NotPublic
 };
 
-export  { validators, isCustomFormatInvalid, registerStringFormat, add_path_to_errors };
+export default { validators, isCustomFormatInvalid, registerStringFormat, add_path_to_errors };

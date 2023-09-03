@@ -1,4 +1,4 @@
-use anyhow::Result;
+use anyhow::{anyhow, Result};
 use serde::{Deserialize, Serialize};
 use swc_common::DUMMY_SP;
 use swc_ecma_ast::{
@@ -689,18 +689,41 @@ fn build_decoders_expr(decs: &[BuiltDecoder]) -> Js {
             .collect(),
     )
 }
+
+fn merge_validator(
+    router: Option<&Vec<Validator>>,
+    parser: Option<&Vec<Validator>>,
+) -> Result<Vec<Validator>> {
+    let mut acc = vec![];
+    if let Some(router) = router {
+        acc.extend(router.iter().cloned());
+    }
+    if let Some(parser) = parser {
+        for d in parser {
+            let found = acc.iter_mut().find(|x| x.name == d.name);
+            if let Some(found) = found {
+                if found.schema != d.schema {
+                    // TODO: emit proper diag here?
+                    // or merge before?
+                    return Err(anyhow!("Two different types with the same name"));
+                }
+            } else {
+                acc.push(d.clone());
+            }
+        }
+    }
+    Ok(acc)
+}
 impl ToWritableModules for ExtractResult {
     fn to_module(self) -> Result<WritableModules> {
         let mut stmt_validators = vec![];
 
         let mut validator_names = vec![];
 
-        let validators = self
-            .parser
-            .as_ref()
-            .map(|it| it.validators.clone())
-            .or(self.router.as_ref().map(|it| it.validators.clone()))
-            .unwrap_or(vec![]);
+        let validators = merge_validator(
+            self.router.as_ref().map(|it| &it.validators),
+            self.parser.as_ref().map(|it| &it.validators),
+        )?;
 
         for comp in &validators {
             validator_names.push(comp.name.clone());

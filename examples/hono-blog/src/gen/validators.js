@@ -1,4 +1,9 @@
 
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+    
+
 function add_path_to_errors(errors, path) {
   return errors.map((e) => ({ ...e, path: [...path, ...e.path] }));
 }
@@ -108,4 +113,4 @@ const validators = {
     Param: Param
 };
 
-module.exports =  { validators, isCustomFormatInvalid, registerStringFormat, add_path_to_errors };
+exports.default = { validators, isCustomFormatInvalid, registerStringFormat, add_path_to_errors };

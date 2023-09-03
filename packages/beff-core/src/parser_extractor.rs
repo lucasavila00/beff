@@ -9,9 +9,10 @@ use anyhow::anyhow;
 use anyhow::Result;
 use swc_common::{Span, DUMMY_SP};
 use swc_ecma_ast::{
-    CallExpr, Callee, Expr, Ident, TsCallSignatureDecl, TsConstructSignatureDecl,
-    TsGetterSignature, TsIndexSignature, TsMethodSignature, TsPropertySignature, TsSetterSignature,
-    TsType, TsTypeElement, TsTypeLit, TsTypeParamInstantiation,
+    CallExpr, Callee, Expr, Ident, MemberExpr, MemberProp, TsCallSignatureDecl,
+    TsConstructSignatureDecl, TsGetterSignature, TsIndexSignature, TsMethodSignature,
+    TsPropertySignature, TsSetterSignature, TsType, TsTypeElement, TsTypeLit,
+    TsTypeParamInstantiation,
 };
 use swc_ecma_visit::Visit;
 
@@ -237,6 +238,32 @@ impl<'a, R: FileManager> Visit for ExtractParserVisitor<'a, R> {
                                 }
                             }
                         }
+                    }
+                }
+
+                if let Expr::Member(MemberExpr { prop, .. }) = &**expr {
+                    match prop {
+                        MemberProp::Ident(Ident { sym, span, .. }) => {
+                            if sym == "buildParsers" {
+                                match self.built_decoders {
+                                    Some(_) => self.push_error(
+                                        span,
+                                        DiagnosticInfoMessage::TwoCallsToBuildParsers,
+                                    ),
+                                    None => {
+                                        if let Some(ref params) = n.type_args {
+                                            if let Ok(x) = self
+                                                .extract_built_decoders_from_call(params.as_ref())
+                                            {
+                                                self.built_decoders = Some(x)
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                        MemberProp::PrivateName(_) => todo!(),
+                        MemberProp::Computed(_) => todo!(),
                     }
                 }
             }

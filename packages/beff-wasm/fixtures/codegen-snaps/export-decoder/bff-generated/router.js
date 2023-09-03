@@ -1,4 +1,5 @@
-import { validators, add_path_to_errors, registerStringFormat, isCustomFormatInvalid } from "./validators.js";
+
+import vals from "./validators.js"; const { validators, add_path_to_errors, registerStringFormat, isCustomFormatInvalid } = vals;
 
 class CoercionFailure {}
 function coerce_string(input) {
@@ -275,4 +276,4 @@ const schema =  {
     }
   }
 } ;
-export { meta, schema };
+export default { meta, schema };

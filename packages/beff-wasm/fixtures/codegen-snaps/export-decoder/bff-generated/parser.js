@@ -1,4 +1,5 @@
-import { validators, add_path_to_errors, registerStringFormat, isCustomFormatInvalid } from "./validators.js";
+
+import vals from "./validators.js"; const { validators, add_path_to_errors, registerStringFormat, isCustomFormatInvalid } = vals;
 const buildParsersInput = {
     "User": function(input) {
         let error_acc_0 = [];
@@ -71,4 +72,4 @@ function buildParsers() {
   return decoders;
 }
 
-export  { buildParsers, registerStringFormat };
+export default { buildParsers, registerStringFormat };

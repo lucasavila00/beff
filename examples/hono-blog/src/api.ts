@@ -1,6 +1,6 @@
 import { buildHonoApp } from "@beff/hono";
 import router from "./router";
-import * as generated from "./gen/router";
+import generated from "./gen/router";
 
 export const api = buildHonoApp({
   generated,

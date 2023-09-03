@@ -1,14 +1,15 @@
 {
-  "name": "bff",
+  "name": "beff",
   "version": "1.0.0",
   "description": "",
   "main": "index.js",
   "scripts": {
     "ts": "pnpm run -r ts",
     "build": "pnpm run -r build",
+    "build2": "pnpm run -r build2",
     "test": "pnpm run -r test",
-    "bff": "pnpm run -r bff",
-    "all": "pnpm run ts && pnpm run build && pnpm run bff && pnpm run test"
+    "beff": "pnpm run -r beff",
+    "all": "pnpm run ts && pnpm run build && pnpm run beff && pnpm run build2 && pnpm run test"
   },
   "keywords": [],
   "author": "",

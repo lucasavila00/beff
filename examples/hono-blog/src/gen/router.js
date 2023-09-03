@@ -1,4 +1,9 @@
-const { validators, add_path_to_errors, registerStringFormat, isCustomFormatInvalid } = require('./validators.js');
+
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+    
+const { validators, add_path_to_errors, registerStringFormat, isCustomFormatInvalid } = require('./validators.js').default;
 
 class CoercionFailure {}
 function coerce_string(input) {
@@ -830,4 +835,4 @@ const schema =  {
     }
   }
 } ;
-module.exports = { meta, schema };
+exports.default = { meta, schema };

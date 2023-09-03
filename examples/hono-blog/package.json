@@ -5,7 +5,7 @@
     "dev": "wrangler dev src/index.ts",
     "deploy": "wrangler publish src/index.ts",
     "test": "jest --verbose",
-    "bff": "node ../../packages/beff-wasm/npm-bin/index.js -p bff.json"
+    "beff": "node ../../packages/beff-wasm/npm-bin/index.js -p bff.json"
   },
   "license": "MIT",
   "dependencies": {

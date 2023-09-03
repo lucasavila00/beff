@@ -4,7 +4,7 @@ import { Bundler, WritableModules } from "./bundler";
 import { ProjectJson, ProjectModule } from "./project";
 
 const PARSER_DTS = `
-import { DecodeError,StringFormat} from "@beff/cli";
+import { DecodeError, StringFormat } from "@beff/cli";
 
 export type BeffParser<T> = {
   parse: (input: any) => T;
@@ -15,24 +15,28 @@ export type BeffParser<T> = {
 type Parsers<T> = {
   [K in keyof T]: BeffParser<T[K]>;
 };
-export declare const buildParsers: <T>() => Parsers<T>;
 
 export type TagOfFormat<T extends StringFormat<string>> =
   T extends StringFormat<infer Tag> ? Tag : never;
-export declare function registerStringFormat<T extends StringFormat<string>>(
-  name: TagOfFormat<T>,
-  isValid: (it: string) => boolean
-): void;
+
+declare const _exports: {
+  registerStringFormat: <T extends StringFormat<string>>(
+    name: TagOfFormat<T>,
+    isValid: (it: string) => boolean
+  ) => void;
+  buildParsers: <T>() => Parsers<T>;
+};
+export default _exports;
 `;
 const ROUTER_DTS = `
-import { HandlerMetaServer} from "@beff/cli";
-export declare const meta: HandlerMetaServer[];
-export declare const schema: any;
+import { HandlerMetaServer } from "@beff/cli";
+declare const _exports: { meta: HandlerMetaServer[],schema: any };
+export default _exports;
 `;
 const CLIENT_DTS = `
-import { HandlerMetaClient} from "@beff/cli";
-export declare const meta: HandlerMetaClient[];
-
+import { HandlerMetaClient } from "@beff/cli";
+declare const _exports: { meta: HandlerMetaClient[] };
+export default _exports;
 `;
 const coercerCode = `
 class CoercionFailure {}
@@ -120,20 +124,33 @@ function isCustomFormatInvalid(key, value) {
   return !predicate(value);
 }
 `;
+const esmTag = (mod: ProjectModule) => {
+  if (mod === "cjs") {
+    return `
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+    `;
+  }
+  return "";
+};
+
+const exportCode = (mod: ProjectModule) =>
+  mod === "esm" ? "export default" : "exports.default =";
 
 const finalizeValidatorsCode = (
   wasmCode: WritableModules,
   mod: ProjectModule
 ) => {
-  const exportCode = mod === "esm" ? "export " : "module.exports = ";
   const exportedItems = [
     "validators",
     "isCustomFormatInvalid",
     "registerStringFormat",
     "add_path_to_errors",
   ].join(", ");
-  const exports = [exportCode, `{ ${exportedItems} };`].join(" ");
+  const exports = [exportCode(mod), `{ ${exportedItems} };`].join(" ");
   return [
+    esmTag(mod),
     `
 function add_path_to_errors(errors, path) {
   return errors.map((e) => ({ ...e, path: [...path, ...e.path] }));
@@ -148,15 +165,15 @@ function add_path_to_errors(errors, path) {
 const importValidators = (mod: ProjectModule) => {
   const i = `validators, add_path_to_errors, registerStringFormat, isCustomFormatInvalid`;
   return mod === "esm"
-    ? `import { ${i} } from "./validators.js";`
-    : `const { ${i} } = require('./validators.js');`;
+    ? `import vals from "./validators.js"; const { ${i} } = vals;`
+    : `const { ${i} } = require('./validators.js').default;`;
 };
 const finalizeRouterFile = (wasmCode: WritableModules, mod: ProjectModule) => {
-  const exportCode = mod === "esm" ? "export" : "module.exports =";
   const schema = ["const schema = ", wasmCode.json_schema, ";"].join(" ");
   const exportedItems = ["meta", "schema"].join(", ");
-  const exports = [exportCode, `{ ${exportedItems} };`].join(" ");
+  const exports = [exportCode(mod), `{ ${exportedItems} };`].join(" ");
   return [
+    esmTag(mod),
     importValidators(mod),
     coercerCode,
     wasmCode.js_server_meta,
@@ -165,17 +182,16 @@ const finalizeRouterFile = (wasmCode: WritableModules, mod: ProjectModule) => {
   ].join("\n");
 };
 const finalizeClientFile = (wasmCode: WritableModules, mod: ProjectModule) => {
-  const exportCode = mod === "esm" ? "export" : "module.exports =";
   const exportedItems = ["meta"].join(", ");
-  const exports = [exportCode, `{ ${exportedItems} };`].join(" ");
-  return [wasmCode.js_client_meta, exports].join("\n");
+  const exports = [exportCode(mod), `{ ${exportedItems} };`].join(" ");
+  return [esmTag(mod), wasmCode.js_client_meta, exports].join("\n");
 };
 
 const finalizeParserFile = (wasmCode: WritableModules, mod: ProjectModule) => {
-  const exportCode = mod === "esm" ? "export " : "module.exports = ";
   const exportedItems = ["buildParsers", "registerStringFormat"].join(", ");
-  const exports = [exportCode, `{ ${exportedItems} };`].join(" ");
+  const exports = [exportCode(mod), `{ ${exportedItems} };`].join(" ");
   return [
+    esmTag(mod),
     importValidators(mod),
     wasmCode.js_built_parsers,
     buildParsers,

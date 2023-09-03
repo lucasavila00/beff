@@ -1,3 +1,4 @@
+
 const meta = [
     {
         "method_kind": "use",
@@ -20,4 +21,4 @@ const meta = [
     }
 ];
 
-export { meta };
+export default { meta };

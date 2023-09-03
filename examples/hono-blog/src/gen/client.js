@@ -1,3 +1,8 @@
+
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+    
 const meta = [
     {
         "method_kind": "use",
@@ -86,4 +91,4 @@ const meta = [
     }
 ];
 
-module.exports = { meta };
+exports.default = { meta };

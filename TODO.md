@@ -4,6 +4,7 @@
 
 ## BFF EXT
 
+- [ ] public generated code should export default
 - [ ] organize code, fix it
 - [ ] big parent error message
 

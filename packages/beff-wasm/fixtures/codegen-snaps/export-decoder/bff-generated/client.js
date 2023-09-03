@@ -1,3 +1,4 @@
+
 const meta = [
     {
         "method_kind": "get",
@@ -34,4 +35,4 @@ const meta = [
     }
 ];
 
-export { meta };
+export default { meta };

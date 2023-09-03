@@ -1,8 +1,7 @@
-import { Hono } from "hono";
 import { it, expect } from "vitest";
 import { buildHonoApp } from "@beff/hono";
 import router from "../router";
-import * as generated from "../bff-generated/router";
+import generated from "../bff-generated/router";
 
 const app = buildHonoApp({ router, generated });
 
