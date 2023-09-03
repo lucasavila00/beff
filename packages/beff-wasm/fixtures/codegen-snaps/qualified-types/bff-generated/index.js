@@ -154,12 +154,19 @@ function validate_XYZ(input) {
 }
 function validate_SomeType(input) {
     let error_acc_0 = [];
+    error_acc_0.push(...add_path_to_errors(validate_SomeType2(input), [
+        "SomeType"
+    ]));
+    return error_acc_0;
+}
+function validate_SomeType2(input) {
+    let error_acc_0 = [];
     if (typeof input == "object" && input != null) {
         if (typeof input["id"] != "string") {
             error_acc_0.push({
                 "error_kind": "NotTypeof",
                 "path": [
-                    "SomeType",
+                    "SomeType2",
                     "id"
                 ],
                 "received": input["id"],
@@ -170,7 +177,7 @@ function validate_SomeType(input) {
         error_acc_0.push({
             "error_kind": "NotAnObject",
             "path": [
-                "SomeType"
+                "SomeType2"
             ],
             "received": input
         });
@@ -336,6 +343,9 @@ const schema =  {
         "type": "object"
       },
       "SomeType": {
+        "$ref": "#/components/schemas/SomeType2"
+      },
+      "SomeType2": {
         "properties": {
           "id": {
             "type": "string"

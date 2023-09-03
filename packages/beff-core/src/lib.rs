@@ -137,6 +137,7 @@ pub struct ParsedModule {
 
 #[derive(Debug, Clone)]
 pub struct ParsedTsNamespace {
+    pub name: String,
     pub type_exports: TypeExportsModule,
 }
 #[derive(Debug)]
@@ -182,7 +183,10 @@ impl<'a, R: ImportResolver> Visit for ParserOfModuleLocals<'a, R> {
                     ImportsVisitor::from_file(self.current_file.clone(), self.resolver);
                 visitor.visit_ts_namespace_body(it);
                 let type_exports = visitor.type_exports;
-                let ns = Rc::new(ParsedTsNamespace { type_exports });
+                let ns = Rc::new(ParsedTsNamespace {
+                    type_exports,
+                    name: id.sym.to_string(),
+                });
 
                 self.content
                     .ts_namespaces
@@ -288,7 +292,10 @@ impl<'a, R: ImportResolver> Visit for ImportsVisitor<'a, R> {
                         visitor.visit_ts_namespace_body(&body);
                     }
                     let type_exports = visitor.type_exports;
-                    let ns = Rc::new(ParsedTsNamespace { type_exports });
+                    let ns = Rc::new(ParsedTsNamespace {
+                        type_exports,
+                        name: name.to_string(),
+                    });
                     self.type_exports
                         .insert(name.clone(), Rc::new(TypeExport::TsNamespaceDecl(ns)));
                 }

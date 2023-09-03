@@ -363,7 +363,7 @@ impl<'a, R: FileManager> TypeToSchema<'a, R> {
                     TypeExport::TsInterfaceDecl(it) => it.id.sym.to_string(),
                     TypeExport::StarOfOtherFile(_) => right.to_string(),
                     TypeExport::SomethingOfOtherFile(that, _) => that.to_string(),
-                    TypeExport::TsNamespaceDecl(_) => todo!(),
+                    TypeExport::TsNamespaceDecl(it) => it.name.to_owned(),
                 };
                 Ok((exported, from_file.clone(), name))
             }

@@ -62,6 +62,9 @@
         "type": "object"
       },
       "SomeType": {
+        "$ref": "#/components/schemas/SomeType2"
+      },
+      "SomeType2": {
         "properties": {
           "id": {
             "type": "string"
