@@ -3,5 +3,5 @@ const todo = () => {
   throw new Error("TODO");
 };
 export default {
-  [`/abc`]: { get: async (): Promise<T1.Param> => todo() },
+  [`/abc`]: { get: async (): Promise<{ a: T1.Param }> => todo() },
 };

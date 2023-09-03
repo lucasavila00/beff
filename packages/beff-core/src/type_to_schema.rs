@@ -131,7 +131,7 @@ impl<'a, R: FileManager> TypeToSchema<'a, R> {
         })
     }
 
-    pub fn convert_type_export(
+    fn convert_type_export(
         &mut self,
         exported: &TypeExport,
         from_file: &BffFileName,
@@ -169,7 +169,7 @@ impl<'a, R: FileManager> TypeToSchema<'a, R> {
         Ok(ty)
     }
 
-    pub fn get_type_ref_of_user_identifier(&mut self, i: &Ident) -> Res<JsonSchema> {
+    fn get_type_ref_of_user_identifier(&mut self, i: &Ident) -> Res<JsonSchema> {
         match TypeResolver::new(self.files, &self.current_file).resolve_local_type(i)? {
             ResolvedLocalType::TsType(alias) => self.convert_ts_type(&alias),
             ResolvedLocalType::TsInterfaceDecl(int) => self.convert_ts_interface_decl(&int),
@@ -182,7 +182,7 @@ impl<'a, R: FileManager> TypeToSchema<'a, R> {
         }
     }
 
-    pub fn insert_definition(&mut self, name: String, schema: JsonSchema) -> Res<JsonSchema> {
+    fn insert_definition(&mut self, name: String, schema: JsonSchema) -> Res<JsonSchema> {
         self.components.insert(
             name.clone(),
             Some(Definition {
@@ -193,7 +193,7 @@ impl<'a, R: FileManager> TypeToSchema<'a, R> {
         Ok(JsonSchema::Ref(name))
     }
 
-    pub fn get_string_with_format(
+    fn get_string_with_format(
         &mut self,
         type_params: &Option<Box<TsTypeParamInstantiation>>,
         span: &Span,
@@ -218,7 +218,7 @@ impl<'a, R: FileManager> TypeToSchema<'a, R> {
         )
     }
 
-    pub fn get_type_ref(
+    fn get_type_ref(
         &mut self,
         i: &Ident,
         type_params: &Option<Box<TsTypeParamInstantiation>>,
@@ -323,7 +323,7 @@ impl<'a, R: FileManager> TypeToSchema<'a, R> {
         let err = self.create_error(span, msg);
         Err(err.to_diag(None))
     }
-    pub fn get_identifier_diag_info(&mut self, i: &Ident) -> Option<DiagnosticInformation> {
+    fn get_identifier_diag_info(&mut self, i: &Ident) -> Option<DiagnosticInformation> {
         self.files
             .get_or_fetch_file(&self.current_file)
             .map(|file| {
@@ -341,24 +341,7 @@ impl<'a, R: FileManager> TypeToSchema<'a, R> {
             })
     }
 
-    pub fn convert_ts_type_ident(
-        &mut self,
-        i: &Ident,
-        type_params: &Option<Box<TsTypeParamInstantiation>>,
-    ) -> Res<JsonSchema> {
-        let current_ref = self.get_identifier_diag_info(i);
-        let did_push = current_ref.is_some();
-        if let Some(current_ref) = current_ref {
-            self.ref_stack.push(current_ref);
-        }
-        let v = self.get_type_ref(i, type_params);
-        if did_push {
-            self.ref_stack.pop();
-        }
-        v
-    }
-
-    pub fn get_qualified_type_from_file(
+    fn get_qualified_type_from_file(
         &mut self,
         from_file: &Rc<ImportReference>,
         right: &JsWord,
@@ -388,16 +371,11 @@ impl<'a, R: FileManager> TypeToSchema<'a, R> {
         }
     }
 
-    pub fn get_qualified_type(
+    fn get_qualified_type(
         &mut self,
         q: &TsQualifiedName,
     ) -> Res<(Rc<TypeExport>, Rc<ImportReference>, String)> {
-        let current_ref = self.get_identifier_diag_info(&q.right);
-        let did_push = current_ref.is_some();
-        if let Some(current_ref) = current_ref {
-            self.ref_stack.push(current_ref);
-        }
-        let v = match &q.left {
+        match &q.left {
             TsEntityName::TsQualifiedName(q2) => {
                 let (exported, _from_file, _name) = self.get_qualified_type(q2)?;
                 match &*exported {
@@ -431,14 +409,10 @@ impl<'a, R: FileManager> TypeToSchema<'a, R> {
                     }
                 }
             }
-        };
-        if did_push {
-            self.ref_stack.pop();
         }
-        v
     }
 
-    pub fn convert_ts_type_qual(&mut self, q: &TsQualifiedName) -> Res<JsonSchema> {
+    fn convert_ts_type_qual_cached(&mut self, q: &TsQualifiedName) -> Res<JsonSchema> {
         let found = self.components.get(&(q.right.sym.to_string()));
         if let Some(_found) = found {
             return Ok(JsonSchema::Ref(q.right.sym.to_string()));
@@ -448,6 +422,34 @@ impl<'a, R: FileManager> TypeToSchema<'a, R> {
         let ty =
             self.convert_type_export(exported.as_ref(), &from_file.file_name(), &q.right.span)?;
         self.insert_definition(name, ty)
+    }
+    fn convert_ts_type_qual(&mut self, q: &TsQualifiedName) -> Res<JsonSchema> {
+        let current_ref = self.get_identifier_diag_info(&q.right);
+        let did_push = current_ref.is_some();
+        if let Some(current_ref) = current_ref {
+            self.ref_stack.push(current_ref);
+        }
+        let v = self.convert_ts_type_qual_cached(q);
+        if did_push {
+            self.ref_stack.pop();
+        }
+        v
+    }
+    fn convert_ts_type_ident(
+        &mut self,
+        i: &Ident,
+        type_params: &Option<Box<TsTypeParamInstantiation>>,
+    ) -> Res<JsonSchema> {
+        let current_ref = self.get_identifier_diag_info(i);
+        let did_push = current_ref.is_some();
+        if let Some(current_ref) = current_ref {
+            self.ref_stack.push(current_ref);
+        }
+        let v = self.get_type_ref(i, type_params);
+        if did_push {
+            self.ref_stack.pop();
+        }
+        v
     }
     pub fn convert_ts_type(&mut self, typ: &TsType) -> Res<JsonSchema> {
         match typ {
