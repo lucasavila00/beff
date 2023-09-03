@@ -3,7 +3,6 @@ export interface Post {
   title: string;
   body: string;
 }
-
 export type Param = {
   title: string;
   body: string;

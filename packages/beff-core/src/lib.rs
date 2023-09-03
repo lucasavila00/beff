@@ -445,7 +445,14 @@ pub fn parse_file_content<R: ImportResolver>(
         }
         if let Some(import) = v.imports.get(&k) {
             match &**import {
-                ImportReference::Named { .. } => todo!(),
+                ImportReference::Named { orig, file_name } => {
+                    let it = Rc::new(TypeExport::SomethingOfOtherFile(
+                        orig.as_ref().clone(),
+                        file_name.clone(),
+                    ));
+                    type_exports.insert(renamed, it);
+                    continue;
+                }
                 ImportReference::Star { .. } => {
                     type_exports.insert(
                         renamed,

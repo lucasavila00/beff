@@ -12,4 +12,7 @@ export default {
     put: async (): Promise<Def> => todo(),
     delete: async (): Promise<LOL.XYZ> => todo(),
   },
+  ["/def"]: {
+    get: async (): Promise<T.X.SomeNamespaceRenamed.SomeType> => todo(),
+  },
 };

@@ -371,22 +371,58 @@ impl<'a, R: FileManager> TypeToSchema<'a, R> {
         }
     }
 
+    fn get_qualified_type_export(
+        &mut self,
+        exported: Rc<TypeExport>,
+        right: &Ident,
+        from_file: &BffFileName,
+    ) -> Res<(Rc<TypeExport>, Rc<ImportReference>, String)> {
+        match &*exported {
+            TypeExport::TsType { .. } => todo!(),
+            TypeExport::TsInterfaceDecl(_) => todo!(),
+            TypeExport::StarOfOtherFile(other_file) => {
+                self.get_qualified_type_from_file(other_file, &right.sym, &right.span)
+            }
+            TypeExport::SomethingOfOtherFile(word, from_file) => {
+                let exported = self.files.get_or_fetch_file(&from_file).and_then(|module| {
+                    module
+                        .type_exports
+                        .get(&word, self.files)
+                        .map(|it| it.clone())
+                });
+
+                match exported {
+                    Some(exported) => {
+                        self.get_qualified_type_export(exported, right, &from_file.clone())
+                    }
+                    None => todo!(),
+                }
+            }
+            TypeExport::TsNamespaceDecl(it) => {
+                let exported = it.type_exports.get(&right.sym, self.files);
+                match exported {
+                    Some(exported) => Ok((
+                        exported,
+                        ImportReference::Named {
+                            orig: Rc::new(right.sym.clone()),
+                            file_name: from_file.clone(),
+                        }
+                        .into(),
+                        right.sym.to_string(),
+                    )),
+                    None => todo!(),
+                }
+            }
+        }
+    }
     fn get_qualified_type(
         &mut self,
         q: &TsQualifiedName,
     ) -> Res<(Rc<TypeExport>, Rc<ImportReference>, String)> {
         match &q.left {
             TsEntityName::TsQualifiedName(q2) => {
-                let (exported, _from_file, _name) = self.get_qualified_type(q2)?;
-                match &*exported {
-                    TypeExport::TsType { .. } => todo!(),
-                    TypeExport::TsInterfaceDecl(_) => todo!(),
-                    TypeExport::StarOfOtherFile(other_file) => {
-                        self.get_qualified_type_from_file(other_file, &q.right.sym, &q.right.span)
-                    }
-                    TypeExport::SomethingOfOtherFile(_, _) => todo!(),
-                    TypeExport::TsNamespaceDecl(_) => todo!(),
-                }
+                let (exported, from_file, _name) = self.get_qualified_type(q2)?;
+                self.get_qualified_type_export(exported, &q.right, &from_file.file_name())
             }
             TsEntityName::Ident(i) => {
                 match TypeResolver::new(self.files, &self.current_file).resolve_namespace_type(i)? {
