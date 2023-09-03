@@ -1,5 +1,5 @@
 Error: Parameter pattern is not supported
- /home/lucas/fluff/bff/packages/beff-wasm/fixtures/future/tuple-args-no-label/app.ts:12:17
+ /future/tuple-args-no-label/app.ts:12:17
    10 | export default {
    11 |   [`/user`]: {
  > 12 |     get: async (...q: Pagination): Promise<User[]> => {

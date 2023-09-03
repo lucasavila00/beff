@@ -1,1 +1,1 @@
-Failed to read JSON configuration file at /home/lucas/fluff/bff/packages/beff-wasm/fixtures/errors/nothing/bff.json: Error: ENOENT: no such file or directory, open '/home/lucas/fluff/bff/packages/beff-wasm/fixtures/errors/nothing/bff.json'
+Failed to read JSON configuration file at /errors/nothing/bff.json: Error: ENOENT: no such file or directory, open '/errors/nothing/bff.json'

@@ -1,5 +1,5 @@
 Error: Unknown error: CannotResolveNamespaceType
- /home/lucas/fluff/bff/packages/beff-wasm/fixtures/future/nested-namespace/app.ts:14:47
+ /future/nested-namespace/app.ts:14:47
    12 |
    13 | export default {
  > 14 |   [`/hello2`]: { get: async (c: Ctx): Promise<X.Y.W.A> => todo() },

@@ -1,9 +1,9 @@
 Error
- /home/lucas/fluff/bff/packages/beff-wasm/fixtures/errors/no-app/app.ts
- Cannot find file '/home/lucas/fluff/bff/packages/beff-wasm/fixtures/errors/no-app/app.ts' when converting to schema
+ /errors/no-app/app.ts
+ Cannot find file '/errors/no-app/app.ts' when converting to schema
 
 Error
- /home/lucas/fluff/bff/packages/beff-wasm/fixtures/errors/no-app/app.ts
+ /errors/no-app/app.ts
  Could not find default export
 
 Found 2 errors

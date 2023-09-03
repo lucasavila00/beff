@@ -5,6 +5,12 @@ const childProcess = require("child_process");
 const util = require("util");
 
 const execAsync = util.promisify(childProcess.exec);
+
+const removePathFromLog = (content) => {
+  const p = path.join(__dirname, "../fixtures");
+  return content.replaceAll(p, "");
+};
+
 const oneCodegenSnap = async (subFolder) => {
   const bin = path.join(__dirname, "../npm-bin/index.js");
   const p = path.join(
@@ -47,12 +53,12 @@ const oneFuture = async (subFolder) => {
     }
     fs.writeFileSync(
       path.join(__dirname, "../fixtures/future", subFolder, "stderr.log"),
-      stderr
+      removePathFromLog(stderr)
     );
 
     fs.writeFileSync(
       path.join(__dirname, "../fixtures/future", subFolder, "stdout.log"),
-      stdout
+      removePathFromLog(stdout)
     );
   }
 };
@@ -78,12 +84,12 @@ const oneFailure = async (subFolder) => {
     }
     fs.writeFileSync(
       path.join(__dirname, "../fixtures/errors", subFolder, "stderr.log"),
-      stderr
+      removePathFromLog(stderr)
     );
 
     fs.writeFileSync(
       path.join(__dirname, "../fixtures/errors", subFolder, "stdout.log"),
-      stdout
+      removePathFromLog(stdout)
     );
   }
 };

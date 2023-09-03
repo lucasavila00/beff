@@ -1,5 +1,5 @@
 Error: Parameter pattern is not supported
- /home/lucas/fluff/bff/packages/beff-wasm/fixtures/errors/pattern-args/app.ts:9:17
+ /errors/pattern-args/app.ts:9:17
     7 | export default {
     8 |   [`/user`]: {
  >  9 |     get: async ([limit, offset]: string[]): Promise<User[]> => {
@@ -9,7 +9,7 @@ Error: Parameter pattern is not supported
    12 |   },
 
 Error: Parameter pattern is not supported
- /home/lucas/fluff/bff/packages/beff-wasm/fixtures/errors/pattern-args/app.ts:14:17
+ /errors/pattern-args/app.ts:14:17
    12 |   },
    13 |   [`/user1`]: {
  > 14 |     get: async ({ limit, offset }: any): Promise<User[]> => {
@@ -19,7 +19,7 @@ Error: Parameter pattern is not supported
    17 |   },
 
 Error: Parameter pattern is not supported
- /home/lucas/fluff/bff/packages/beff-wasm/fixtures/errors/pattern-args/app.ts:19:17
+ /errors/pattern-args/app.ts:19:17
    17 |   },
    18 |   [`/user2`]: {
  > 19 |     get: async (a: string[] = []): Promise<User[]> => {

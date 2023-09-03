@@ -1,5 +1,5 @@
 Error: Jsdoc tag 'augments' cannot be converted to OpenAPI
- /home/lucas/fluff/bff/packages/beff-wasm/fixtures/errors/invalid-jsdocs/app.ts:1:1
+ /errors/invalid-jsdocs/app.ts:1:1
  > 1 | /**
      | ^^^
  > 2 |  * @title abc
@@ -15,7 +15,7 @@ Error: Jsdoc tag 'augments' cannot be converted to OpenAPI
    8 |    * @title abc
 
 Error: Jsdoc tag 'xxx' cannot be converted to OpenAPI
- /home/lucas/fluff/bff/packages/beff-wasm/fixtures/errors/invalid-jsdocs/app.ts:1:1
+ /errors/invalid-jsdocs/app.ts:1:1
  > 1 | /**
      | ^^^
  > 2 |  * @title abc
@@ -31,7 +31,7 @@ Error: Jsdoc tag 'xxx' cannot be converted to OpenAPI
    8 |    * @title abc
 
 Error: Jsdoc parameter description cannot have tags
- /home/lucas/fluff/bff/packages/beff-wasm/fixtures/errors/invalid-jsdocs/app.ts:15:7
+ /errors/invalid-jsdocs/app.ts:15:7
    13 |     get: async (
    14 |       c: Ctx,
  > 15 |       /**

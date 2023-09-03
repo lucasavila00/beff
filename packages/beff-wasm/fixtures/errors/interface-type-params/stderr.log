@@ -1,5 +1,5 @@
 Error: Exposing a type that cannot be converted to JSON schema
- /home/lucas/fluff/bff/packages/beff-wasm/fixtures/errors/interface-type-params/app.ts:9:46
+ /errors/interface-type-params/app.ts:9:46
     7 | export default {
     8 |   [`/hello/{id}`]: {
  >  9 |     get: async (c: Ctx, id: string): Promise<A<"string">> => todo(),
@@ -9,7 +9,7 @@ Error: Exposing a type that cannot be converted to JSON schema
    12 |
 
     Caused by:
-     /home/lucas/fluff/bff/packages/beff-wasm/fixtures/errors/interface-type-params/app.ts:9:46
+     /errors/interface-type-params/app.ts:9:46
         7 | export default {
         8 |   [`/hello/{id}`]: {
      >  9 |     get: async (c: Ctx, id: string): Promise<A<"string">> => todo(),
