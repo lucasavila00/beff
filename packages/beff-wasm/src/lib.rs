@@ -1,7 +1,7 @@
 #[macro_use]
 extern crate lazy_static;
 
-mod parse_file;
+mod module_resolver;
 mod utils;
 mod wasm_diag;
 
@@ -9,13 +9,13 @@ use anyhow::anyhow;
 use anyhow::Result;
 use beff_core::api_extractor::{self, ExtractResult, FileManager};
 use beff_core::diag::Diagnostic;
-use beff_core::parse_file_content;
-use beff_core::printer::ToWritableModules;
-use beff_core::printer::WritableModules;
+use beff_core::import_resolver::parse_and_bind;
+use beff_core::print::printer::ToWritableModules;
+use beff_core::print::printer::WritableModules;
 use beff_core::BffFileName;
 use beff_core::ParsedModule;
 use log::Level;
-use parse_file::WasmImportsResolver;
+use module_resolver::WasmModuleResolver;
 use std::rc::Rc;
 use std::{cell::RefCell, collections::HashMap};
 use swc_common::{Globals, GLOBALS};
@@ -93,8 +93,8 @@ impl<'a> FileManager for LazyFileManager<'a> {
         }
         let content = read_file_content(file_name.to_string().as_str())?;
 
-        let mut resolver = WasmImportsResolver::new(file_name.clone());
-        let res = parse_file_content(&mut resolver, file_name, &content);
+        let mut resolver = WasmModuleResolver::new(file_name.clone());
+        let res = parse_and_bind(&mut resolver, file_name, &content);
         match res {
             Ok((f, _imports)) => {
                 self.files.insert(file_name.clone(), f.clone());
@@ -143,8 +143,8 @@ fn bundle_to_diagnostics_inner(file_name: &str) -> WasmDiagnostic {
 fn update_file_content_inner(file_name: &str, content: &str) {
     let file_name = BffFileName::new(file_name.to_string());
     let res = GLOBALS.set(&SWC_GLOBALS, || {
-        let mut resolver = WasmImportsResolver::new(file_name.clone());
-        parse_file_content(&mut resolver, &file_name, content)
+        let mut resolver = WasmModuleResolver::new(file_name.clone());
+        parse_and_bind(&mut resolver, &file_name, content)
     });
     if let Ok((f, _imports)) = res {
         BUNDLER.with(|b| {

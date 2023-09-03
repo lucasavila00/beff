@@ -10,7 +10,8 @@
 - [ ] check string format was registered
 - [ ] add many lazy string formats
 - [ ] assert header etc is imported from lib
-- [ ] clippy, assert!
+- [ ] disallow GET body?
+- [ ] error messages
 
 ## BFF CLI
 

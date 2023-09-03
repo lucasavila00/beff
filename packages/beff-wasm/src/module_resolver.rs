@@ -1,22 +1,21 @@
-use beff_core::BffFileName;
-use beff_core::ImportResolver;
+use beff_core::{import_resolver::FsModuleResolver, BffFileName};
 use std::collections::HashMap;
 
-pub struct WasmImportsResolver {
+pub struct WasmModuleResolver {
     resolutions_cache: HashMap<(BffFileName, String), Option<BffFileName>>,
     current_file: BffFileName,
 }
 
-impl WasmImportsResolver {
-    pub fn new(current_file: BffFileName) -> WasmImportsResolver {
-        WasmImportsResolver {
+impl WasmModuleResolver {
+    pub fn new(current_file: BffFileName) -> WasmModuleResolver {
+        WasmModuleResolver {
             resolutions_cache: HashMap::new(),
             current_file,
         }
     }
 }
 
-impl ImportResolver for WasmImportsResolver {
+impl FsModuleResolver for WasmModuleResolver {
     fn resolve_import(&mut self, module_specifier: &str) -> Option<BffFileName> {
         let module_specifier = module_specifier.to_owned();
         match self

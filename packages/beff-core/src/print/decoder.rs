@@ -1,7 +1,7 @@
 use std::rc::Rc;
 
 use crate::open_api_ast::{Js, Json, JsonSchema, Optionality};
-use crate::printer::ToExpr;
+use crate::print::printer::ToExpr;
 use crate::swc_builder::SwcBuilder;
 use swc_common::DUMMY_SP;
 use swc_ecma_ast::{

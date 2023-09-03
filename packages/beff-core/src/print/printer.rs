@@ -11,9 +11,9 @@ use crate::api_extractor::{
     operation_parameter_in_path_or_query_or_body, BuiltDecoder, ExtractResult, FunctionParameterIn,
     HandlerParameter, ParsedPattern, PathHandlerMap,
 };
-use crate::decoder;
 use crate::emit::emit_module;
 use crate::open_api_ast::{self, Definition, Js, Json, JsonSchema, OpenApi};
+use crate::print::decoder;
 
 pub trait ToExpr {
     fn to_expr(self) -> Expr;
@@ -532,7 +532,7 @@ impl ToExpr for Js {
                 function: decoder::from_schema(&schema, &name_on_errors).into(),
             }),
             Js::Coercer(schema) => {
-                let func = crate::coercer::from_schema(&schema);
+                let func = crate::print::coercer::from_schema(&schema);
                 Expr::Fn(FnExpr {
                     ident: None,
                     function: func.into(),
