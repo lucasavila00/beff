@@ -1,10 +1,8 @@
-import { Hono } from "hono";
-import { Bindings } from "./bindings";
 import { buildHonoApp } from "@beff/hono";
 import router from "./router";
 import * as generated from "./gen/router";
 
-const app = buildHonoApp({
+export const api = buildHonoApp({
   generated,
   router,
   openApi: {
@@ -15,4 +13,3 @@ const app = buildHonoApp({
     ],
   },
 });
-export { app as api };
