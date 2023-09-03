@@ -1,5 +1,5 @@
 {
-  "name": "bff-client",
+  "name": "@beff/client",
   "version": "1.0.0",
   "description": "",
   "main": "dist/index.js",
@@ -10,7 +10,7 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "bff-types": "workspace:^1.0.0"
+    "@beff/cli": "workspace:^1.0.0"
   },
   "devDependencies": {
     "typescript": "^5.2.2"

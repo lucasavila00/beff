@@ -1,5 +1,5 @@
 import { Hono } from "hono";
-import { registerRouter } from "bff-hono";
+import { registerRouter } from "@beff/hono";
 import router from "./router";
 import { handle } from "hono/cloudflare-pages";
 import { meta, schema } from "./bff-generated";

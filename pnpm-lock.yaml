@@ -5,39 +5,39 @@ importers:
   .:
     specifiers: {}
 
+  packages/bff-cli:
+    specifiers: {}
+
   packages/bff-client:
     specifiers:
-      bff-types: workspace:^1.0.0
+      '@beff/cli': workspace:^1.0.0
       typescript: ^5.2.2
     dependencies:
-      bff-types: link:../bff-types
+      '@beff/cli': link:../bff-cli
     devDependencies:
       typescript: 5.2.2
 
   packages/bff-hono:
     specifiers:
-      bff-client: workspace:^1.0.0
-      bff-types: workspace:^1.0.0
+      '@beff/cli': workspace:^1.0.0
+      '@beff/client': workspace:^1.0.0
       hono: ^3.5.6
       typescript: ^5.2.2
     dependencies:
-      bff-client: link:../bff-client
-      bff-types: link:../bff-types
+      '@beff/cli': link:../bff-cli
+      '@beff/client': link:../bff-client
       hono: 3.5.6
     devDependencies:
       typescript: 5.2.2
 
-  packages/bff-types:
-    specifiers: {}
-
   packages/bff-wasm:
     specifiers:
       '@babel/code-frame': ^7.22.13
+      '@beff/cli': workspace:^1.0.0
+      '@beff/hono': workspace:^1.0.0
       '@types/babel__code-frame': ^7.0.3
       '@types/node': ^20.5.7
       '@types/vscode': ^1.81.0
-      bff-hono: workspace:^1.0.0
-      bff-types: workspace:^1.0.0
       chalk: ^4.1.2
       commander: ^11.0.0
       esbuild: ^0.19.2
@@ -45,14 +45,14 @@ importers:
       typescript: ^5.2.2
       vitest: ^0.34.3
     dependencies:
-      bff-types: link:../bff-types
+      '@beff/cli': link:../bff-cli
       chalk: 4.1.2
     devDependencies:
       '@babel/code-frame': 7.22.13
+      '@beff/hono': link:../bff-hono
       '@types/babel__code-frame': 7.0.3
       '@types/node': 20.5.8
       '@types/vscode': 1.81.0
-      bff-hono: link:../bff-hono
       commander: 11.0.0
       esbuild: 0.19.2
       hono: 3.5.6
@@ -61,9 +61,9 @@ importers:
 
   packages/example-blog:
     specifiers:
+      '@beff/hono': workspace:^1.0.0
       '@cloudflare/workers-types': ^4.20230215.0
       '@types/jest': ^29.4.0
-      bff-hono: workspace:^1.0.0
       esbuild: ^0.15.1
       esbuild-jest: ^0.5.0
       hono: ^3.3.4
@@ -73,7 +73,7 @@ importers:
       typescript: ^4.6.4
       wrangler: ^2.15.0
     dependencies:
-      bff-hono: link:../bff-hono
+      '@beff/hono': link:../bff-hono
       hono: 3.5.6
     devDependencies:
       '@cloudflare/workers-types': 4.20230821.0

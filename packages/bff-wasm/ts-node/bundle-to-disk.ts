@@ -4,7 +4,7 @@ import { Bundler, WritableModules } from "./bundler";
 import { ProjectJson, ProjectModule } from "./project";
 
 const RUNTIME_DTS = `
-import { HandlerMeta, DecodeError,StringFormat} from "bff-types";
+import { HandlerMeta, DecodeError,StringFormat} from "@beff/cli";
 export declare const meta: HandlerMeta[];
 export declare const schema: any;
 

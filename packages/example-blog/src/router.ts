@@ -2,7 +2,7 @@ import { cors } from "hono/cors";
 import * as model from "./model";
 import { Bindings } from "./bindings";
 import { prettyJSON } from "hono/pretty-json";
-import { Ctx as BffCtx } from "bff-hono";
+import { Ctx as BffCtx } from "@beff/hono";
 
 type Ctx = BffCtx<{}, { Bindings: Bindings }>;
 export default {

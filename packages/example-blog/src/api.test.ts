@@ -1,6 +1,6 @@
 import type { Post } from "./model";
 import { api as app } from "./api";
-import { buildHonoTestClient } from "bff-hono";
+import { buildHonoTestClient } from "@beff/hono";
 import { meta } from "./gen";
 import type router from "./router";
 

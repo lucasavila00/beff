@@ -1,7 +1,7 @@
 import type { Hono } from "hono";
-import { DecodeError, HandlerMeta, MetaParam, OpenApiServer } from "bff-types";
+import { DecodeError, HandlerMeta, MetaParam, OpenApiServer } from "@beff/cli";
 import { getCookie } from "hono/cookie";
-import { buildStableClient, ClientFromRouter } from "bff-client";
+import { buildStableClient, ClientFromRouter } from "@beff/client";
 
 export const template = `
 <!DOCTYPE html>

@@ -1,5 +1,5 @@
-import { Cookie, Header } from "bff-types";
-import { Ctx } from "bff-hono";
+import { Cookie, Header } from "@beff/cli";
+import { Ctx } from "@beff/hono";
 import { cors } from "hono/cors";
 
 type N1 = number;

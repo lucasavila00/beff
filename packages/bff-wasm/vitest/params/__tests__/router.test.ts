@@ -1,6 +1,6 @@
 import { Hono } from "hono";
 import { it, expect } from "vitest";
-import { registerRouter, buildHonoTestClient } from "bff-hono";
+import { registerRouter, buildHonoTestClient } from "@beff/hono";
 import router from "../router";
 import { meta, schema } from "../bff-generated";
 
@@ -79,7 +79,7 @@ it("post with body and error, client", async () => {
     await bff["/req-body"].post({ a: 123 as any });
   } catch (e) {
     expect(e).toMatchInlineSnapshot(
-      '[HTTPException: Error #1: Expected string ~ Path: requestBody.a ~ Received: 123]'
+      "[HTTPException: Error #1: Expected string ~ Path: requestBody.a ~ Received: 123]"
     );
   }
 });

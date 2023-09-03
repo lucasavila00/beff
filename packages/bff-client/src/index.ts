@@ -1,4 +1,4 @@
-import type { HandlerMeta } from "bff-types";
+import type { HandlerMeta } from "@beff/cli";
 export type NormalizeRouterItem<T> = T extends (
   ...args: infer I
 ) => Promise<infer O>

@@ -1,5 +1,5 @@
 {
-  "name": "bff-hono",
+  "name": "@beff/hono",
   "version": "1.0.0",
   "description": "",
   "main": "dist/index.js",
@@ -10,8 +10,8 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "bff-client": "workspace:^1.0.0",
-    "bff-types": "workspace:^1.0.0",
+    "@beff/client": "workspace:^1.0.0",
+    "@beff/cli": "workspace:^1.0.0",
     "hono": "^3.5.6"
   },
   "devDependencies": {

@@ -1,6 +1,6 @@
 import { Hono } from "hono";
 import { Bindings } from "./bindings";
-import { registerRouter } from "bff-hono";
+import { registerRouter } from "@beff/hono";
 import router from "./router";
 import { meta, schema } from "./gen";
 

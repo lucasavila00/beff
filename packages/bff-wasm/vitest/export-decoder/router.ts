@@ -1,5 +1,5 @@
 import { buildParsers, registerStringFormat } from "./bff-generated";
-import { StringFormat, Formats } from "bff-types";
+import { StringFormat, Formats } from "@beff/cli";
 
 type NotPublic = {
   a: string;
