@@ -5,11 +5,9 @@ import generated from "./gen/router";
 export const api = buildHonoApp({
   generated,
   router,
-  openApi: {
-    servers: [
-      {
-        url: "/api",
-      },
-    ],
-  },
+  servers: [
+    {
+      url: "/api",
+    },
+  ],
 });

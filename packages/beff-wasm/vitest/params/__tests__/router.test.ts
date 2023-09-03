@@ -1,4 +1,3 @@
-import { Hono } from "hono";
 import { it, expect } from "vitest";
 import { buildHonoApp, buildHonoTestClient } from "@beff/hono";
 import router from "../router";

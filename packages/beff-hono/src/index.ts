@@ -4,10 +4,11 @@ import {
   HandlerMetaClient,
   HandlerMetaServer,
   MetaParamServer,
+  OpenAPIDocument,
   OpenApiServer,
-} from "../../beff-cli";
+} from "@beff/cli";
 import { getCookie } from "hono/cookie";
-import { buildStableClient, ClientFromRouter } from "../../beff-client/dist";
+import { buildStableClient, ClientFromRouter } from "@beff/client";
 
 const template = (baseUrl: string) => `
 <!DOCTYPE html>
@@ -190,28 +191,29 @@ const handleMethod = async (
   const result = await handler(...resolverParams);
   return c.hono.json(decodeNoMessage(meta.return_validator, result));
 };
-const registerDocs = (app: Hono<any, any, any>, schema: any, servers: any) => {
-  app.get("/v3/openapi.json", (req) =>
-    req.json({
-      ...schema,
-      servers,
-    })
-  );
 
-  app.get("/docs", (c) => c.html(template(servers?.[0]?.url ?? "")));
+const registerDocs = (app: Hono<any, any, any>, schema: any) => {
+  app.get("/v3/openapi.json", (req) => req.json(schema));
+  app.get("/docs", (c) => c.html(template(c.req.url.replace("/docs", ""))));
 };
 
 export function buildHonoApp(options: {
   router: any;
-  openApi?: { servers: OpenApiServer[] };
+  servers?: OpenApiServer[];
+  transformOpenApiDocument?: (it: OpenAPIDocument) => OpenAPIDocument;
   generated: {
     schema: any;
     meta: HandlerMetaServer[];
   };
-  context?: any;
+  context?: Object;
 }): Hono<Env, any, any> {
   const app = new Hono({ strict: false });
-  registerDocs(app, options.generated.schema, options.openApi?.servers ?? []);
+  let schema = { ...options.generated.schema, servers: options.servers ?? [] };
+  const transformOpenApiDocument = options.transformOpenApiDocument;
+  if (transformOpenApiDocument != null) {
+    schema = transformOpenApiDocument(schema);
+  }
+  registerDocs(app, schema);
   const handlersMeta: HandlerMetaServer[] = options.generated.meta;
   for (const meta of handlersMeta) {
     const handlerData = options.router[meta.pattern][meta.method_kind];
@@ -239,7 +241,11 @@ export function buildHonoApp(options: {
       case "options": {
         app[meta.method_kind](toHonoPattern(meta.pattern), async (c: any) => {
           try {
-            return await handleMethod({ hono: c }, meta, handlerData);
+            return await handleMethod(
+              { hono: c, ...(options.context ?? {}) },
+              meta,
+              handlerData
+            );
           } catch (e) {
             if (isBffHttpException(e)) {
               return c.json(

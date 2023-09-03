@@ -1,4 +1,4 @@
 
-import { HandlerMetaServer } from "@beff/cli";
-declare const _exports: { meta: HandlerMetaServer[],schema: any };
+import { HandlerMetaServer, OpenAPIDocument } from "@beff/cli";
+declare const _exports: { meta: HandlerMetaServer[], schema: OpenAPIDocument };
 export default _exports;

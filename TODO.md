@@ -1,10 +1,7 @@
 ## BFF Lib
 
-- [ ] simplify hono runtime api
-
 ## BFF EXT
 
-- [ ] public generated code should export default
 - [ ] organize code, fix it
 - [ ] big parent error message
 
@@ -18,6 +15,7 @@
 - [ ] assert header etc is imported from lib
 - [ ] disallow GET body?
 - [ ] error messages
+- [ ] remove cookie parameters for now
 
 ## BFF CLI
 
