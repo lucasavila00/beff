@@ -142,7 +142,9 @@ impl<'a, R: FileManager> TypeToSchema<'a, R> {
         let ty = match exported {
             TypeExport::TsType { ty: alias, .. } => self.convert_ts_type(&alias)?,
             TypeExport::TsInterfaceDecl(int) => self.convert_ts_interface_decl(&int)?,
-            TypeExport::StarOfOtherFile(_) => todo!(),
+            TypeExport::StarOfOtherFile(_) => {
+                return self.error(span, DiagnosticInfoMessage::CannotUseStarAsType)
+            }
             TypeExport::SomethingOfOtherFile(word, from_file) => {
                 let file = self
                     .files
@@ -366,14 +368,20 @@ impl<'a, R: FileManager> TypeToSchema<'a, R> {
         }
     }
 
-    fn get_qualified_type_export(
+    fn recursively_get_qualified_type_export(
         &mut self,
         exported: Rc<TypeExport>,
         right: &Ident,
     ) -> Res<(Rc<TypeExport>, Rc<ImportReference>, String)> {
         match &*exported {
-            TypeExport::TsType { .. } => todo!(),
-            TypeExport::TsInterfaceDecl(_) => todo!(),
+            TypeExport::TsType { .. } => self.error(
+                &right.span,
+                DiagnosticInfoMessage::CannotUseTsTypeAsQualified,
+            ),
+            TypeExport::TsInterfaceDecl(_) => self.error(
+                &right.span,
+                DiagnosticInfoMessage::CannotUseTsInterfaceAsQualified,
+            ),
             TypeExport::StarOfOtherFile(other_file) => {
                 self.get_qualified_type_from_file(other_file, &right.sym, &right.span)
             }
@@ -386,20 +394,23 @@ impl<'a, R: FileManager> TypeToSchema<'a, R> {
                 });
 
                 match exported {
-                    Some(exported) => self.get_qualified_type_export(exported, right),
-                    None => todo!(),
+                    Some(exported) => self.recursively_get_qualified_type_export(exported, right),
+                    None => self.error(
+                        &right.span,
+                        DiagnosticInfoMessage::CannotGetQualifiedTypeFromFile,
+                    ),
                 }
             }
         }
     }
-    fn get_qualified_type(
+    fn __convert_ts_type_qual_inner(
         &mut self,
         q: &TsQualifiedName,
     ) -> Res<(Rc<TypeExport>, Rc<ImportReference>, String)> {
         match &q.left {
             TsEntityName::TsQualifiedName(q2) => {
-                let (exported, _from_file, _name) = self.get_qualified_type(q2)?;
-                self.get_qualified_type_export(exported, &q.right)
+                let (exported, _from_file, _name) = self.__convert_ts_type_qual_inner(q2)?;
+                self.recursively_get_qualified_type_export(exported, &q.right)
             }
             TsEntityName::Ident(i) => {
                 let ns =
@@ -409,13 +420,13 @@ impl<'a, R: FileManager> TypeToSchema<'a, R> {
         }
     }
 
-    fn convert_ts_type_qual_cached(&mut self, q: &TsQualifiedName) -> Res<JsonSchema> {
+    fn __convert_ts_type_qual_caching(&mut self, q: &TsQualifiedName) -> Res<JsonSchema> {
         let found = self.components.get(&(q.right.sym.to_string()));
         if let Some(_found) = found {
             return Ok(JsonSchema::Ref(q.right.sym.to_string()));
         }
 
-        let (exported, from_file, name) = self.get_qualified_type(q)?;
+        let (exported, from_file, name) = self.__convert_ts_type_qual_inner(q)?;
         let ty =
             self.convert_type_export(exported.as_ref(), &from_file.file_name(), &q.right.span)?;
         self.insert_definition(name, ty)
@@ -426,7 +437,7 @@ impl<'a, R: FileManager> TypeToSchema<'a, R> {
         if let Some(current_ref) = current_ref {
             self.ref_stack.push(current_ref);
         }
-        let v = self.convert_ts_type_qual_cached(q);
+        let v = self.__convert_ts_type_qual_caching(q);
         if did_push {
             self.ref_stack.pop();
         }

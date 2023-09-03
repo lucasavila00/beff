@@ -40,12 +40,48 @@ impl<'a, R: FileManager> TypeResolver<'a, R> {
             .get_or_fetch_file(&self.current_file)
             .expect("should have been parsed")
     }
+    fn resolve_export(&mut self, i: &Ident, export: &Rc<TypeExport>) -> Res<ResolvedNamespaceType> {
+        match &**export {
+            TypeExport::StarOfOtherFile(reference) => {
+                return Ok(ResolvedNamespaceType {
+                    from_file: reference.clone(),
+                })
+            }
+            TypeExport::TsType { .. } => {
+                return Err(self.make_err(
+                    &i.span,
+                    DiagnosticInfoMessage::ShouldNotResolveTsTypeAsNamespace,
+                ))
+            }
+            TypeExport::TsInterfaceDecl(_) => {
+                return Err(self.make_err(
+                    &i.span,
+                    DiagnosticInfoMessage::ShouldNotResolveTsInterfaceDeclAsNamespace,
+                ))
+            }
+            TypeExport::SomethingOfOtherFile(orig, file_name) => {
+                let file = self.files.get_or_fetch_file(&file_name);
+                let exported = file.and_then(|file| {
+                    file.type_exports
+                        .get(&orig, self.files)
+                        .map(|it| it.clone())
+                });
+                if let Some(export) = exported {
+                    return self.resolve_export(i, &export);
+                }
+                return Err(
+                    self.make_err(&i.span, DiagnosticInfoMessage::CannotResolveNamespaceType)
+                );
+            }
+        }
+    }
     pub fn resolve_namespace_type(&mut self, i: &Ident) -> Res<ResolvedNamespaceType> {
         let k = &(i.sym.clone(), i.span.ctxt);
 
         if let Some(imported) = self.get_current_file().imports.get(k) {
             match &**imported {
-                ImportReference::Default { .. } | ImportReference::Star { .. } => {
+                ImportReference::Default { .. } => {}
+                ImportReference::Star { .. } => {
                     return Ok(ResolvedNamespaceType {
                         from_file: imported.clone(),
                     })
@@ -58,24 +94,7 @@ impl<'a, R: FileManager> TypeResolver<'a, R> {
                             .map(|it| it.clone())
                     });
                     if let Some(export) = exported {
-                        match &*export {
-                            TypeExport::StarOfOtherFile(reference) => {
-                                return Ok(ResolvedNamespaceType {
-                                    from_file: reference.clone(),
-                                })
-                            }
-                            TypeExport::TsType { .. } => {
-                                return Err(self.make_err(
-                                    &i.span,
-                                    DiagnosticInfoMessage::ShouldNotResolveTsTypeAsNamespace,
-                                ))
-                            }
-                            TypeExport::TsInterfaceDecl(_) => return Err(self.make_err(
-                                &i.span,
-                                DiagnosticInfoMessage::ShouldNotResolveTsInterfaceDeclAsNamespace,
-                            )),
-                            TypeExport::SomethingOfOtherFile(_, _) => todo!(),
-                        }
+                        return self.resolve_export(i, &export);
                     }
                 }
             }

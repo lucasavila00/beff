@@ -6,6 +6,9 @@ use crate::BffFileName;
 
 #[derive(Debug, Clone)]
 pub enum DiagnosticInfoMessage {
+    CannotUseStarAsType,
+    CannotUseTsTypeAsQualified,
+    CannotUseTsInterfaceAsQualified,
     DecoderMustHaveTypeAnnotation,
     CannotGetQualifiedTypeFromFile,
     TwoCallsToBuildParsers,

@@ -266,7 +266,7 @@ impl<'a, R: ImportResolver> Visit for ImportsVisitor<'a, R> {
                 //
                 for s in &n.specifiers {
                     match s {
-                        ExportSpecifier::Default(_) => todo!(),
+                        ExportSpecifier::Default(_) => {}
                         ExportSpecifier::Namespace(ExportNamespaceSpecifier { name, .. }) => {
                             if let ModuleExportName::Ident(id) = name {
                                 if let Some(file_name) = self.resolve_import(&src.value) {
@@ -306,8 +306,10 @@ impl<'a, R: ImportResolver> Visit for ImportsVisitor<'a, R> {
             None => {
                 for s in &n.specifiers {
                     match s {
-                        ExportSpecifier::Namespace(_) => todo!(),
-                        ExportSpecifier::Default(_) => todo!(),
+                        ExportSpecifier::Default(_) => {}
+                        ExportSpecifier::Namespace(_) => {
+                            unreachable!("cannot be namespace without source")
+                        }
                         ExportSpecifier::Named(ExportNamedSpecifier { orig, exported, .. }) => {
                             if let ModuleExportName::Ident(id) = orig {
                                 let renamed = match exported {
@@ -422,7 +424,9 @@ pub fn parse_file_content<R: ImportResolver>(
 
                     continue;
                 }
-                ImportReference::Default { .. } => todo!(),
+                ImportReference::Default { .. } => {
+                    continue;
+                }
             }
         }
 
