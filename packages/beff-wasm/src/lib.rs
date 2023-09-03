@@ -105,7 +105,7 @@ impl<'a> FileManager for LazyFileManager<'a> {
     }
 
     fn get_existing_file(&self, name: &BffFileName) -> Option<Rc<ParsedModule>> {
-        self.files.get(name).map(|opt| opt.clone())
+        self.files.get(name).cloned()
     }
 }
 
@@ -130,7 +130,7 @@ fn print_errors(errors: Vec<Diagnostic>) {
 fn bundle_to_string_inner(file_name: &str) -> Result<WritableModules> {
     let res = run_extraction(file_name);
     if res.errors.is_empty() {
-        return Ok(res.to_module()?);
+        return res.to_module();
     }
     print_errors(res.errors);
     Err(anyhow!("Failed to bundle"))

@@ -67,14 +67,9 @@ impl WasmDiagnostic {
 fn diag_to_wasm(diag: Diagnostic) -> WasmDiagnosticItem {
     WasmDiagnosticItem {
         cause: WasmDiagnosticInformation::from_diagnostic_info(diag.cause),
-        related_information: match diag.related_information {
-            Some(it) => Some(
-                it.into_iter()
+        related_information: diag.related_information.map(|it| it.into_iter()
                     .map(WasmDiagnosticInformation::from_diagnostic_info)
-                    .collect(),
-            ),
-            None => None,
-        },
+                    .collect()),
         message: diag.parent_big_message.map(|it| it.to_string()),
     }
 }
