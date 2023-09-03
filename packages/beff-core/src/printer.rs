@@ -360,7 +360,12 @@ fn open_api_to_json(it: OpenApi, components: &Vec<Definition>) -> Json {
                     Json::Object(
                         it.components
                             .into_iter()
-                            .map(|name| components.iter().find(|it| it.name == name).unwrap())
+                            .map(|name| {
+                                components
+                                    .iter()
+                                    .find(|it| it.name == name)
+                                    .expect("everything should be resolved by now")
+                            })
                             .flat_map(|it| ToJsonKv::to_json_kv(it.clone()))
                             .collect(),
                     ),

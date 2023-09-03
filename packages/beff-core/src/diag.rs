@@ -6,6 +6,12 @@ use crate::BffFileName;
 
 #[derive(Debug, Clone)]
 pub enum DiagnosticInfoMessage {
+    DecoderMustHaveTypeAnnotation,
+    CannotGetQualifiedTypeFromFile,
+    TwoCallsToBuildParsers,
+    CannotSerializeNamespace,
+    CannotResolveSomethingOfOtherFile,
+    InvalidUsageOfStringFormatTypeParameter,
     CannotResolveNamespaceType,
     ShouldNotResolveTsInterfaceDeclAsNamespace,
     ShouldNotResolveTsTypeAsNamespace,

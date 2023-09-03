@@ -57,7 +57,10 @@ impl Json {
         match self {
             Json::Null => serde_json::Value::Null,
             Json::Bool(b) => serde_json::Value::Bool(*b),
-            Json::Number(n) => serde_json::Value::Number(serde_json::Number::from_f64(*n).unwrap()),
+            Json::Number(n) => serde_json::Value::Number(
+                serde_json::Number::from_f64(*n)
+                    .expect("should be possible to convert f64 to json number"),
+            ),
             Json::String(s) => serde_json::Value::String(s.clone()),
             Json::Array(arr) => {
                 serde_json::Value::Array(arr.iter().map(|it| it.to_serde()).collect::<Vec<_>>())
@@ -96,7 +99,7 @@ fn resolve_schema(schema: JsonSchema, components: &Vec<Definition>) -> JsonSchem
     match schema {
         JsonSchema::Ref(name) => match components.iter().find(|it| it.name == name) {
             Some(def) => resolve_schema(def.schema.clone(), components),
-            None => panic!(),
+            None => unreachable!("everything should be resolved when printing"),
         },
         _ => schema,
     }

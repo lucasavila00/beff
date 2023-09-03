@@ -131,10 +131,11 @@ impl<'a, R: FileManager> TypeToSchema<'a, R> {
         })
     }
 
-    pub fn convert_resolved_export(
+    pub fn convert_type_export(
         &mut self,
         exported: &TypeExport,
         from_file: &BffFileName,
+        span: &Span,
     ) -> Res<JsonSchema> {
         let store_current_file = self.current_file.clone();
         self.current_file = from_file.clone();
@@ -148,11 +149,21 @@ impl<'a, R: FileManager> TypeToSchema<'a, R> {
                     .get_or_fetch_file(&from_file)
                     .and_then(|file| file.type_exports.get(word, self.files).map(|it| it.clone()));
                 match file {
-                    Some(exported) => self.convert_resolved_export(exported.as_ref(), from_file)?,
-                    None => todo!(),
+                    Some(exported) => {
+                        self.convert_type_export(exported.as_ref(), from_file, span)?
+                    }
+                    None => {
+                        return self.error(
+                            span,
+                            DiagnosticInfoMessage::CannotResolveSomethingOfOtherFile,
+                        )
+                    }
                 }
             }
-            TypeExport::TsNamespaceDecl(_) => todo!(),
+            TypeExport::TsNamespaceDecl(_) => {
+                return self
+                    .cannot_serialize_error(span, DiagnosticInfoMessage::CannotSerializeNamespace)
+            }
         };
         self.current_file = store_current_file;
         Ok(ty)
@@ -165,7 +176,9 @@ impl<'a, R: FileManager> TypeToSchema<'a, R> {
             ResolvedLocalType::NamedImport {
                 exported,
                 from_file,
-            } => return self.convert_resolved_export(exported.as_ref(), &from_file.file_name()),
+            } => {
+                return self.convert_type_export(exported.as_ref(), &from_file.file_name(), &i.span)
+            }
         }
     }
 
@@ -183,24 +196,26 @@ impl<'a, R: FileManager> TypeToSchema<'a, R> {
     pub fn get_string_with_format(
         &mut self,
         type_params: &Option<Box<TsTypeParamInstantiation>>,
+        span: &Span,
     ) -> Res<JsonSchema> {
         let r = type_params.as_ref().and_then(|it| it.params.split_first());
 
-        match r {
-            Some((head, rest)) => {
-                assert!(rest.is_empty());
-                match &**head {
-                    TsType::TsLitType(TsLitType { lit, .. }) => match lit {
-                        TsLit::Str(Str { value, .. }) => {
-                            Ok(JsonSchema::StringWithFormat(value.to_string()))
-                        }
-                        _ => todo!(),
-                    },
-                    _ => todo!(),
-                }
+        if let Some((head, rest)) = r {
+            assert!(rest.is_empty());
+            match &**head {
+                TsType::TsLitType(TsLitType { lit, .. }) => match lit {
+                    TsLit::Str(Str { value, .. }) => {
+                        return Ok(JsonSchema::StringWithFormat(value.to_string()))
+                    }
+                    _ => {}
+                },
+                _ => {}
             }
-            None => panic!(),
         }
+        self.error(
+            span,
+            DiagnosticInfoMessage::InvalidUsageOfStringFormatTypeParameter,
+        )
     }
 
     pub fn get_type_ref(
@@ -210,19 +225,14 @@ impl<'a, R: FileManager> TypeToSchema<'a, R> {
     ) -> Res<JsonSchema> {
         match i.sym.to_string().as_str() {
             "Array" => {
-                let type_params = type_params.as_ref();
-                match type_params {
-                    Some(type_params) => {
-                        // todo: [0] can crash, use split first
-                        let ty = self.convert_ts_type(&type_params.params[0])?;
-                        return Ok(JsonSchema::Array(ty.into()));
-                    }
-                    None => {
-                        return Ok(JsonSchema::Array(JsonSchema::Any.into()));
-                    }
+                let type_params = type_params.as_ref().and_then(|it| it.params.split_first());
+                if let Some((ty, [])) = type_params {
+                    let ty = self.convert_ts_type(&ty)?;
+                    return Ok(JsonSchema::Array(ty.into()));
                 }
+                return Ok(JsonSchema::Array(JsonSchema::Any.into()));
             }
-            "StringFormat" => return self.get_string_with_format(type_params),
+            "StringFormat" => return self.get_string_with_format(type_params, &i.span),
             _ => {}
         }
 
@@ -352,6 +362,7 @@ impl<'a, R: FileManager> TypeToSchema<'a, R> {
         &mut self,
         from_file: &Rc<ImportReference>,
         right: &JsWord,
+        span: &Span,
     ) -> Res<(Rc<TypeExport>, Rc<ImportReference>, String)> {
         let exported = self
             .files
@@ -373,7 +384,7 @@ impl<'a, R: FileManager> TypeToSchema<'a, R> {
                 };
                 Ok((exported, from_file.clone(), name))
             }
-            None => panic!(),
+            None => self.error(span, DiagnosticInfoMessage::CannotGetQualifiedTypeFromFile),
         }
     }
 
@@ -393,7 +404,7 @@ impl<'a, R: FileManager> TypeToSchema<'a, R> {
                     TypeExport::TsType { .. } => todo!(),
                     TypeExport::TsInterfaceDecl(_) => todo!(),
                     TypeExport::StarOfOtherFile(other_file) => {
-                        self.get_qualified_type_from_file(other_file, &q.right.sym)
+                        self.get_qualified_type_from_file(other_file, &q.right.sym, &q.right.span)
                     }
                     TypeExport::SomethingOfOtherFile(_, _) => todo!(),
                     TypeExport::TsNamespaceDecl(_) => todo!(),
@@ -402,7 +413,7 @@ impl<'a, R: FileManager> TypeToSchema<'a, R> {
             TsEntityName::Ident(i) => {
                 match TypeResolver::new(self.files, &self.current_file).resolve_namespace_type(i)? {
                     ResolvedNamespaceType::Star { from_file } => {
-                        self.get_qualified_type_from_file(&from_file, &q.right.sym)
+                        self.get_qualified_type_from_file(&from_file, &q.right.sym, &q.right.span)
                     }
                     ResolvedNamespaceType::TsNamespace(ref it) => {
                         match it.type_exports.get(&q.right.sym, self.files) {
@@ -429,7 +440,8 @@ impl<'a, R: FileManager> TypeToSchema<'a, R> {
 
     pub fn convert_ts_type_qual(&mut self, q: &TsQualifiedName) -> Res<JsonSchema> {
         let (exported, from_file, name) = self.get_qualified_type(q)?;
-        let ty = self.convert_resolved_export(exported.as_ref(), &from_file.file_name())?;
+        let ty =
+            self.convert_type_export(exported.as_ref(), &from_file.file_name(), &q.right.span)?;
         self.insert_definition(name, ty)
     }
     pub fn convert_ts_type(&mut self, typ: &TsType) -> Res<JsonSchema> {

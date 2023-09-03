@@ -9,6 +9,7 @@ pub mod printer;
 pub mod swc_builder;
 pub mod type_resolve;
 pub mod type_to_schema;
+use anyhow::anyhow;
 use anyhow::Result;
 use api_extractor::FileManager;
 use std::collections::HashMap;
@@ -175,22 +176,18 @@ impl<'a, R: ImportResolver> Visit for ParserOfModuleLocals<'a, R> {
     }
     fn visit_ts_module_decl(&mut self, n: &TsModuleDecl) {
         let TsModuleDecl { id, .. } = n;
-        match id {
-            TsModuleName::Ident(id) => match n.body {
-                Some(ref it) => {
-                    let mut visitor =
-                        ImportsVisitor::from_file(self.current_file.clone(), self.resolver);
-                    visitor.visit_ts_namespace_body(it);
-                    let type_exports = visitor.type_exports;
-                    let ns = Rc::new(ParsedTsNamespace { type_exports });
+        if let TsModuleName::Ident(id) = id {
+            if let Some(ref it) = n.body {
+                let mut visitor =
+                    ImportsVisitor::from_file(self.current_file.clone(), self.resolver);
+                visitor.visit_ts_namespace_body(it);
+                let type_exports = visitor.type_exports;
+                let ns = Rc::new(ParsedTsNamespace { type_exports });
 
-                    self.content
-                        .ts_namespaces
-                        .insert((id.sym.clone(), id.span.ctxt), ns);
-                }
-                None => {}
-            },
-            TsModuleName::Str(_) => {}
+                self.content
+                    .ts_namespaces
+                    .insert((id.sym.clone(), id.span.ctxt), ns);
+            }
         }
     }
 }
@@ -229,41 +226,32 @@ impl<'a, R: ImportResolver> ImportsVisitor<'a, R> {
         let k = (local.sym.clone(), local.span.ctxt);
         let v = self.resolve_import(&module_specifier);
 
-        match v {
-            Some(v) => {
-                self.imports.insert(
-                    k,
-                    Rc::new(ImportReference::Named {
-                        orig: Rc::new(orig.clone()),
-                        file_name: v,
-                    }),
-                );
-            }
-            None => {}
+        if let Some(v) = v {
+            self.imports.insert(
+                k,
+                Rc::new(ImportReference::Named {
+                    orig: Rc::new(orig.clone()),
+                    file_name: v,
+                }),
+            );
         }
     }
     fn insert_import_default(&mut self, local: &Ident, module_specifier: &str) {
         let k = (local.sym.clone(), local.span.ctxt);
         let v = self.resolve_import(&module_specifier);
 
-        match v {
-            Some(v) => {
-                self.imports
-                    .insert(k, Rc::new(ImportReference::Default { file_name: v }));
-            }
-            None => {}
+        if let Some(v) = v {
+            self.imports
+                .insert(k, Rc::new(ImportReference::Default { file_name: v }));
         }
     }
     fn insert_import_star(&mut self, local: &Ident, module_specifier: &str) {
         let k = (local.sym.clone(), local.span.ctxt);
         let v = self.resolve_import(&module_specifier);
 
-        match v {
-            Some(v) => {
-                self.imports
-                    .insert(k, Rc::new(ImportReference::Star { file_name: v }));
-            }
-            None => {}
+        if let Some(v) = v {
+            self.imports
+                .insert(k, Rc::new(ImportReference::Star { file_name: v }));
         }
     }
 }
@@ -291,21 +279,18 @@ impl<'a, R: ImportResolver> Visit for ImportsVisitor<'a, R> {
             Decl::TsModule(d) => {
                 let TsModuleDecl { id, body, .. } = &**d;
 
-                match id {
-                    TsModuleName::Ident(id) => {
-                        let name = id.sym.clone();
+                if let TsModuleName::Ident(id) = id {
+                    let name = id.sym.clone();
 
-                        let mut visitor =
-                            ImportsVisitor::from_file(self.current_file.clone(), self.resolver);
-                        if let Some(body) = &body {
-                            visitor.visit_ts_namespace_body(&body);
-                        }
-                        let type_exports = visitor.type_exports;
-                        let ns = Rc::new(ParsedTsNamespace { type_exports });
-                        self.type_exports
-                            .insert(name.clone(), Rc::new(TypeExport::TsNamespaceDecl(ns)));
+                    let mut visitor =
+                        ImportsVisitor::from_file(self.current_file.clone(), self.resolver);
+                    if let Some(body) = &body {
+                        visitor.visit_ts_namespace_body(&body);
                     }
-                    TsModuleName::Str(_) => {}
+                    let type_exports = visitor.type_exports;
+                    let ns = Rc::new(ParsedTsNamespace { type_exports });
+                    self.type_exports
+                        .insert(name.clone(), Rc::new(TypeExport::TsNamespaceDecl(ns)));
                 }
             }
             Decl::Using(_) | Decl::Class(_) | Decl::Fn(_) | Decl::TsEnum(_) | Decl::Var(_) => {}
@@ -320,9 +305,8 @@ impl<'a, R: ImportResolver> Visit for ImportsVisitor<'a, R> {
                     match s {
                         ExportSpecifier::Default(_) => todo!(),
                         ExportSpecifier::Namespace(ExportNamespaceSpecifier { name, .. }) => {
-                            match name {
-                                ModuleExportName::Ident(id) => {
-                                    let file_name = self.resolve_import(&src.value).unwrap();
+                            if let ModuleExportName::Ident(id) = name {
+                                if let Some(file_name) = self.resolve_import(&src.value) {
                                     self.type_exports.insert(
                                         id.sym.clone(),
                                         Rc::new(TypeExport::StarOfOtherFile(
@@ -333,20 +317,16 @@ impl<'a, R: ImportResolver> Visit for ImportsVisitor<'a, R> {
                                         )),
                                     )
                                 }
-                                ModuleExportName::Str(_) => {}
                             }
                         }
                         ExportSpecifier::Named(ExportNamedSpecifier { orig, exported, .. }) => {
-                            match orig {
-                                ModuleExportName::Ident(id) => {
-                                    let name = match exported {
-                                        Some(it) => match it {
-                                            ModuleExportName::Ident(ex) => ex.sym.clone(),
-                                            ModuleExportName::Str(_) => todo!(),
-                                        },
-                                        None => id.sym.clone(),
-                                    };
-                                    let file_name = self.resolve_import(&src.value).unwrap();
+                            if let ModuleExportName::Ident(id) = orig {
+                                let name = match exported {
+                                    Some(ModuleExportName::Ident(ex)) => ex.sym.clone(),
+                                    Some(ModuleExportName::Str(st)) => st.value.clone(),
+                                    None => id.sym.clone(),
+                                };
+                                if let Some(file_name) = self.resolve_import(&src.value) {
                                     self.type_exports.insert(
                                         name,
                                         Rc::new(TypeExport::SomethingOfOtherFile(
@@ -355,8 +335,7 @@ impl<'a, R: ImportResolver> Visit for ImportsVisitor<'a, R> {
                                         )),
                                     )
                                 }
-                                ModuleExportName::Str(_) => {}
-                            };
+                            }
                         }
                     }
                 }
@@ -367,22 +346,17 @@ impl<'a, R: ImportResolver> Visit for ImportsVisitor<'a, R> {
                         ExportSpecifier::Namespace(_) => todo!(),
                         ExportSpecifier::Default(_) => todo!(),
                         ExportSpecifier::Named(ExportNamedSpecifier { orig, exported, .. }) => {
-                            match orig {
-                                ModuleExportName::Ident(id) => {
-                                    let renamed = match exported {
-                                        Some(it) => match it {
-                                            ModuleExportName::Ident(id) => id.sym.clone(),
-                                            ModuleExportName::Str(_) => todo!(),
-                                        },
-                                        None => id.sym.clone(),
-                                    };
-                                    self.unresolved_exports.push(UnresolvedExport {
-                                        name: id.sym.clone(),
-                                        span: id.span.ctxt,
-                                        renamed,
-                                    });
-                                }
-                                ModuleExportName::Str(_) => {}
+                            if let ModuleExportName::Ident(id) = orig {
+                                let renamed = match exported {
+                                    Some(ModuleExportName::Ident(ex)) => ex.sym.clone(),
+                                    Some(ModuleExportName::Str(st)) => st.value.clone(),
+                                    None => id.sym.clone(),
+                                };
+                                self.unresolved_exports.push(UnresolvedExport {
+                                    name: id.sym.clone(),
+                                    span: id.span.ctxt,
+                                    renamed,
+                                });
                             }
                         }
                     }
@@ -391,8 +365,9 @@ impl<'a, R: ImportResolver> Visit for ImportsVisitor<'a, R> {
         }
     }
     fn visit_export_all(&mut self, n: &ExportAll) {
-        let file_name = self.resolve_import(&n.src.value).unwrap();
-        self.type_exports.extend(file_name);
+        if let Some(file_name) = self.resolve_import(&n.src.value) {
+            self.type_exports.extend(file_name);
+        }
     }
     fn visit_import_decl(&mut self, node: &ImportDecl) {
         let module_specifier = node.src.value.to_string();
@@ -406,7 +381,7 @@ impl<'a, R: ImportResolver> Visit for ImportsVisitor<'a, R> {
                         ModuleExportName::Ident(renamed) => {
                             self.insert_import_named(local, &module_specifier, &renamed.sym)
                         }
-                        ModuleExportName::Str(_) => todo!(),
+                        ModuleExportName::Str(_) => {}
                     },
                     None => self.insert_import_named(local, &module_specifier, &local.sym),
                 },
@@ -453,7 +428,7 @@ pub fn parse_file_content<R: ImportResolver>(
     let mut type_exports = v.type_exports;
     for unresolved in v.unresolved_exports {
         let renamed = unresolved.renamed;
-        let k = (unresolved.name, unresolved.span);
+        let k = (unresolved.name.clone(), unresolved.span);
         if let Some(alias) = locals.content.type_aliases.get(&k) {
             type_exports.insert(
                 renamed.clone(),
@@ -483,7 +458,11 @@ pub fn parse_file_content<R: ImportResolver>(
             }
         }
 
-        panic!()
+        return Err(anyhow!(
+            "Could not resolve export {name:?} in file {file_name:?}",
+            name = &unresolved.name,
+            file_name = file_name
+        ));
     }
 
     let f = Rc::new(ParsedModule {

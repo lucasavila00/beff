@@ -438,35 +438,24 @@ impl<'a, R: FileManager> ExtractExportDefaultVisitor<'a, R> {
         let name = name.as_str();
         match name {
             "Header" | "Cookie" => {
-                let params = &params.as_ref();
+                let params = &params.as_ref().and_then(|it| it.params.split_first());
                 match params {
-                    None => {
+                    Some((ty, [])) => Ok(HandlerParameter::HeaderOrCookie {
+                        kind: if name == "Header" {
+                            HeaderOrCookie::Header
+                        } else {
+                            HeaderOrCookie::Cookie
+                        },
+                        span: lib_ty_name.span,
+                        schema: self.convert_to_json_schema(ty, &lib_ty_name.span, true),
+                        required,
+                        description,
+                    }),
+                    _ => {
                         return self.error(
                             &lib_ty_name.span,
                             DiagnosticInfoMessage::TooManyParamsOnLibType,
                         );
-                    }
-                    Some(params) => {
-                        let params = &params.params;
-                        if params.len() != 1 {
-                            return self.error(
-                                &lib_ty_name.span,
-                                DiagnosticInfoMessage::TooManyParamsOnLibType,
-                            );
-                        }
-
-                        let ty = params[0].as_ref();
-                        Ok(HandlerParameter::HeaderOrCookie {
-                            kind: if name == "Header" {
-                                HeaderOrCookie::Header
-                            } else {
-                                HeaderOrCookie::Cookie
-                            },
-                            span: lib_ty_name.span,
-                            schema: self.convert_to_json_schema(ty, &lib_ty_name.span, true),
-                            required,
-                            description,
-                        })
                     }
                 }
             }
@@ -888,14 +877,13 @@ impl<'a, R: FileManager> ExtractExportDefaultVisitor<'a, R> {
                         return self.error(&span, DiagnosticInfoMessage::InvalidDecoderKey);
                     }
                 };
-                Ok(BuiltDecoder {
-                    exported_name: key,
-                    schema: self.convert_to_json_schema(
-                        &type_ann.as_ref().unwrap().type_ann,
-                        span,
-                        false,
-                    ),
-                })
+                match type_ann.as_ref().map(|it| &it.type_ann) {
+                    Some(ann) => Ok(BuiltDecoder {
+                        exported_name: key,
+                        schema: self.convert_to_json_schema(&ann, span, false),
+                    }),
+                    None => self.error(&span, DiagnosticInfoMessage::DecoderMustHaveTypeAnnotation),
+                }
             }
             TsTypeElement::TsGetterSignature(TsGetterSignature { span, .. })
             | TsTypeElement::TsSetterSignature(TsSetterSignature { span, .. })
@@ -944,23 +932,22 @@ impl<'a, R: FileManager> Visit for ExtractExportDefaultVisitor<'a, R> {
             Callee::Super(_) => {}
             Callee::Import(_) => {}
             Callee::Expr(ref expr) => match &**expr {
-                Expr::Ident(Ident { sym, .. }) => {
+                Expr::Ident(Ident { sym, span, .. }) => {
                     if sym.to_string() == "buildParsers" {
                         match self.built_decoders {
-                            Some(_) => panic!("two calls"),
-                            None => {
-                                assert!(n.args.is_empty());
-                                match n.type_args {
-                                    Some(ref params) => {
-                                        match self.extract_built_decoders_from_call(params.as_ref())
-                                        {
-                                            Ok(x) => self.built_decoders = Some(x),
-                                            Err(_) => {}
-                                        }
+                            Some(_) => self
+                                .push_error(&span, DiagnosticInfoMessage::TwoCallsToBuildParsers),
+                            None => match n.type_args {
+                                Some(ref params) => {
+                                    match self.extract_built_decoders_from_call(params.as_ref()) {
+                                        Ok(x) => self.built_decoders = Some(x),
+                                        Err(_) => {}
                                     }
-                                    None => panic!(),
                                 }
-                            }
+                                None => {
+                                    // TS will catch the issue
+                                }
+                            },
                         }
                     }
                 }

@@ -46,7 +46,7 @@ impl<'a, R: FileManager> TypeResolver<'a, R> {
 
         if let Some(imported) = self.get_current_file().imports.get(k) {
             match &**imported {
-                ImportReference::Star { .. } => {
+                ImportReference::Default { .. } | ImportReference::Star { .. } => {
                     return Ok(ResolvedNamespaceType::Star {
                         from_file: imported.clone(),
                     })
@@ -58,8 +58,8 @@ impl<'a, R: FileManager> TypeResolver<'a, R> {
                             .get(&orig, self.files)
                             .map(|it| it.clone())
                     });
-                    match exported {
-                        Some(export) => match &*export {
+                    if let Some(export) = exported {
+                        match &*export {
                             TypeExport::StarOfOtherFile(reference) => {
                                 return Ok(ResolvedNamespaceType::Star {
                                     from_file: reference.clone(),
@@ -79,11 +79,9 @@ impl<'a, R: FileManager> TypeResolver<'a, R> {
                             TypeExport::TsNamespaceDecl(ns) => {
                                 return Ok(ResolvedNamespaceType::TsNamespace(ns.clone()))
                             }
-                        },
-                        None => {}
+                        }
                     }
                 }
-                ImportReference::Default { .. } => panic!(),
             }
         }
         if let Some(ns) = self.get_current_file().locals.ts_namespaces.get(k) {
@@ -140,8 +138,8 @@ impl<'a, R: FileManager> TypeResolver<'a, R> {
                         None => {}
                     }
                 }
-                ImportReference::Star { .. } => panic!(),
-                ImportReference::Default { .. } => panic!(),
+                ImportReference::Star { .. } => {}
+                ImportReference::Default { .. } => {}
             }
         }
 
