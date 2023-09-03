@@ -2,6 +2,8 @@
 
 ## BFF Core
 
+- [ ] no context when reporting errors on qualified import
+
 ## BFF EXT
 
 - [ ] big parent error message

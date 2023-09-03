@@ -181,6 +181,7 @@ impl ToJson for JsonSchema {
                 Json::Object(v)
             }
             JsonSchema::Const(val) => Json::Object(vec![("const".into(), val)]),
+            JsonSchema::Error => unreachable!("should not call print if schema had error"),
         }
     }
 }

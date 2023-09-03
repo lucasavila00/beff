@@ -1,11 +1,3 @@
-const PREFIX = "v1:post:";
-
-declare global {
-  interface Crypto {
-    randomUUID(): string;
-  }
-}
-
 export interface Post {
   id: string;
   title: string;
@@ -16,6 +8,14 @@ export type Param = {
   title: string;
   body: string;
 };
+
+const PREFIX = "v1:post:";
+
+declare global {
+  interface Crypto {
+    randomUUID(): string;
+  }
+}
 
 const generateID = (key: string) => {
   return `${PREFIX}${key}`;

@@ -146,6 +146,7 @@ pub enum JsonSchema {
     AnyOf(Vec<JsonSchema>),
     AllOf(Vec<JsonSchema>),
     Const(Json),
+    Error,
 }
 
 impl JsonSchema {

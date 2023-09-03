@@ -1,0 +1,10 @@
+Error: Exposing a type that cannot be converted to JSON schema
+ /home/lucas/fluff/bff/packages/beff-wasm/fixtures/errors/qualified-context/t2.ts:4:7
+   2 |   title: string;
+   3 |   body: string;
+ > 4 |   cb: () => void;
+     |       ^^^^^^^^^^ Type cannot be converted to JSON schema
+   5 | };
+   6 |
+
+Found 1 error

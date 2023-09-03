@@ -464,6 +464,7 @@ impl DecoderFnGenerator {
             JsonSchema::StringWithFormat(it) => {
                 self.decode_runtime_registered_string(it, value_ref, err_storage, path)
             }
+            JsonSchema::Error => unreachable!("should not print if schema had error"),
         }
     }
 

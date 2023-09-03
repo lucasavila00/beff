@@ -6,7 +6,6 @@ import { Ctx as BffCtx } from "@beff/hono";
 
 type Ctx = BffCtx<{}, { Bindings: Bindings }>;
 
-type Callback = (ctx: Ctx, ...args: any[]) => Promise<any>;
 export default {
   ["*"]: { use: [prettyJSON()] },
   ["/posts/*"]: { use: [cors()] },

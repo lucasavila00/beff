@@ -22,6 +22,7 @@ const readProjectJson = (
 let crashed: any = false;
 
 let bundler: Bundler | null = null;
+
 export function activate(context: vscode.ExtensionContext) {
   const workspacePath = vscode.workspace.workspaceFolders?.[0].uri.fsPath;
   if (!workspacePath) {

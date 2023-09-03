@@ -243,7 +243,7 @@ impl<'a, R: FileManager> TypeToSchema<'a, R> {
         self.components.insert(i.sym.to_string(), None);
 
         if type_params.is_some() {
-            self.insert_definition(i.sym.to_string(), JsonSchema::Any)?;
+            self.insert_definition(i.sym.to_string(), JsonSchema::Error)?;
             return self.cannot_serialize_error(
                 &i.span,
                 DiagnosticInfoMessage::TypeParameterApplicationNotSupported,
@@ -254,7 +254,7 @@ impl<'a, R: FileManager> TypeToSchema<'a, R> {
         match ty {
             Ok(ty) => self.insert_definition(i.sym.to_string(), ty),
             Err(e) => {
-                self.insert_definition(i.sym.to_string(), JsonSchema::Any)?;
+                self.insert_definition(i.sym.to_string(), JsonSchema::Error)?;
                 Err(e)
             }
         }
@@ -439,6 +439,11 @@ impl<'a, R: FileManager> TypeToSchema<'a, R> {
     }
 
     pub fn convert_ts_type_qual(&mut self, q: &TsQualifiedName) -> Res<JsonSchema> {
+        let found = self.components.get(&(q.right.sym.to_string()));
+        if let Some(_found) = found {
+            return Ok(JsonSchema::Ref(q.right.sym.to_string()));
+        }
+
         let (exported, from_file, name) = self.get_qualified_type(q)?;
         let ty =
             self.convert_type_export(exported.as_ref(), &from_file.file_name(), &q.right.span)?;
