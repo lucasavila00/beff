@@ -1,4 +1,4 @@
-import { Ctx } from "bff";
+import { Ctx } from "@beff/hono";
 import { Y } from "./t2";
 const todo = () => {
   throw new Error("TODO");

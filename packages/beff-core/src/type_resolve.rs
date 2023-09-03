@@ -42,6 +42,7 @@ impl<'a, R: FileManager> TypeResolver<'a, R> {
             .expect("should have been parsed")
     }
     pub fn resolve_namespace_type(&mut self, i: &Ident) -> Res<ResolvedNamespaceType> {
+        log::debug!("resolving namespace type: {:?}", i.sym);
         let k = &(i.sym.clone(), i.span.ctxt);
 
         if let Some(imported) = self.get_current_file().imports.get(k) {
@@ -87,6 +88,7 @@ impl<'a, R: FileManager> TypeResolver<'a, R> {
         if let Some(ns) = self.get_current_file().locals.ts_namespaces.get(k) {
             return Ok(ResolvedNamespaceType::TsNamespace(ns.clone()));
         }
+
         return Err(self.make_err(&i.span, DiagnosticInfoMessage::CannotResolveNamespaceType));
     }
 
