@@ -199,7 +199,7 @@ impl<'a, R: ImportResolver> ImportsVisitor<'a, R> {
 
     fn insert_import_named(&mut self, local: &Ident, module_specifier: &str, orig: &JsWord) {
         let k = (local.sym.clone(), local.span.ctxt);
-        let v = self.resolve_import(&module_specifier);
+        let v = self.resolve_import(module_specifier);
 
         if let Some(v) = v {
             self.imports.insert(
@@ -213,7 +213,7 @@ impl<'a, R: ImportResolver> ImportsVisitor<'a, R> {
     }
     fn insert_import_default(&mut self, local: &Ident, module_specifier: &str) {
         let k = (local.sym.clone(), local.span.ctxt);
-        let v = self.resolve_import(&module_specifier);
+        let v = self.resolve_import(module_specifier);
 
         if let Some(v) = v {
             self.imports
@@ -222,7 +222,7 @@ impl<'a, R: ImportResolver> ImportsVisitor<'a, R> {
     }
     fn insert_import_star(&mut self, local: &Ident, module_specifier: &str) {
         let k = (local.sym.clone(), local.span.ctxt);
-        let v = self.resolve_import(&module_specifier);
+        let v = self.resolve_import(module_specifier);
 
         if let Some(v) = v {
             self.imports
@@ -379,7 +379,6 @@ pub fn parse_file_content<R: ImportResolver>(
     let imports: HashSet<BffFileName> = v
         .imports
         .values()
-        .into_iter()
         .map(|x| x.file_name().clone())
         .collect();
 
@@ -444,5 +443,5 @@ pub fn parse_file_content<R: ImportResolver>(
         comments,
         locals: locals.content,
     });
-    return Ok((f, imports));
+    Ok((f, imports))
 }

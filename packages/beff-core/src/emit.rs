@@ -30,5 +30,5 @@ pub fn emit_module(body: Vec<ModuleItem>) -> Result<String> {
         String::from_utf8_lossy(&buf).to_string()
     };
 
-    return Ok(code);
+    Ok(code)
 }

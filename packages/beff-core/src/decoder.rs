@@ -66,7 +66,7 @@ fn decode_error_variant(
             ("received".into(), Js::Expr(received)),
         ]
         .into_iter()
-        .chain(rest.unwrap_or(vec![]))
+        .chain(rest.unwrap_or_default())
         .collect(),
     )
 }

@@ -84,7 +84,7 @@ impl ToJson for JsonSchema {
             }
             JsonSchema::StringWithFormat(format) => Json::Object(vec![
                 ("type".into(), Json::String("string".into())),
-                ("format".into(), Json::String(format.into())),
+                ("format".into(), Json::String(format)),
             ]),
             JsonSchema::Object { values } => {
                 Json::Object(vec![
@@ -394,7 +394,7 @@ fn param_to_js(
         HandlerParameter::PathOrQueryOrBody {
             schema, required, ..
         } => {
-            match operation_parameter_in_path_or_query_or_body(&name, pattern, &schema, components)
+            match operation_parameter_in_path_or_query_or_body(name, pattern, &schema, components)
             {
                 FunctionParameterIn::Path => Js::Object(vec![
                     ("type".into(), Js::String("path".into())),
@@ -402,7 +402,7 @@ fn param_to_js(
                     ("required".into(), Js::Bool(required)),
                     (
                         "validator".into(),
-                        Js::named_decoder(format!("{name}"), schema.clone()),
+                        Js::named_decoder(name.to_string(), schema.clone()),
                     ),
                     ("coercer".into(), Js::coercer(schema, components)),
                 ]),
@@ -412,7 +412,7 @@ fn param_to_js(
                     ("required".into(), Js::Bool(required)),
                     (
                         "validator".into(),
-                        Js::named_decoder(format!("{name}"), schema.clone()),
+                        Js::named_decoder(name.to_string(), schema.clone()),
                     ),
                     ("coercer".into(), Js::coercer(schema, components)),
                 ]),
@@ -422,7 +422,7 @@ fn param_to_js(
                     ("required".into(), Js::Bool(required)),
                     (
                         "validator".into(),
-                        Js::named_decoder(format!("requestBody"), schema.clone()),
+                        Js::named_decoder("requestBody".to_string(), schema.clone()),
                     ),
                 ]),
                 FunctionParameterIn::InvalidComplexPathParameter => {
@@ -443,7 +443,7 @@ fn param_to_js(
                 ("required".into(), Js::Bool(required)),
                 (
                     "validator".into(),
-                    Js::named_decoder(format!("{name}"), schema.clone()),
+                    Js::named_decoder(name.to_string(), schema.clone()),
                 ),
                 ("coercer".into(), Js::coercer(schema, components)),
             ])
@@ -618,10 +618,10 @@ impl ToWritableModules for ExtractResult {
 
         let components = &self.components;
 
-        let meta_expr = handlers_to_js(self.handlers, &components).to_expr();
+        let meta_expr = handlers_to_js(self.handlers, components).to_expr();
         js_server_data.push(const_decl("meta", meta_expr));
 
-        let build_decoders_expr = build_decoders_expr(&self.built_decoders.unwrap_or(vec![]));
+        let build_decoders_expr = build_decoders_expr(&self.built_decoders.unwrap_or_default());
         js_server_data.push(const_decl(
             "buildParsersInput",
             (build_decoders_expr).to_expr(),

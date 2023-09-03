@@ -43,35 +43,34 @@ impl<'a, R: FileManager> TypeResolver<'a, R> {
     fn resolve_export(&mut self, i: &Ident, export: &Rc<TypeExport>) -> Res<ResolvedNamespaceType> {
         match &**export {
             TypeExport::StarOfOtherFile(reference) => {
-                return Ok(ResolvedNamespaceType {
+                Ok(ResolvedNamespaceType {
                     from_file: reference.clone(),
                 })
             }
             TypeExport::TsType { .. } => {
-                return Err(self.make_err(
+                Err(self.make_err(
                     &i.span,
                     DiagnosticInfoMessage::ShouldNotResolveTsTypeAsNamespace,
                 ))
             }
             TypeExport::TsInterfaceDecl(_) => {
-                return Err(self.make_err(
+                Err(self.make_err(
                     &i.span,
                     DiagnosticInfoMessage::ShouldNotResolveTsInterfaceDeclAsNamespace,
                 ))
             }
             TypeExport::SomethingOfOtherFile(orig, file_name) => {
-                let file = self.files.get_or_fetch_file(&file_name);
+                let file = self.files.get_or_fetch_file(file_name);
                 let exported = file.and_then(|file| {
                     file.type_exports
-                        .get(&orig, self.files)
-                        .map(|it| it.clone())
+                        .get(orig, self.files)
                 });
                 if let Some(export) = exported {
                     return self.resolve_export(i, &export);
                 }
-                return Err(
+                Err(
                     self.make_err(&i.span, DiagnosticInfoMessage::CannotResolveNamespaceType)
-                );
+                )
             }
         }
     }
@@ -87,11 +86,10 @@ impl<'a, R: FileManager> TypeResolver<'a, R> {
                     })
                 }
                 ImportReference::Named { orig, file_name } => {
-                    let file = self.files.get_or_fetch_file(&file_name);
+                    let file = self.files.get_or_fetch_file(file_name);
                     let exported = file.and_then(|file| {
                         file.type_exports
-                            .get(&orig, self.files)
-                            .map(|it| it.clone())
+                            .get(orig, self.files)
                     });
                     if let Some(export) = exported {
                         return self.resolve_export(i, &export);
@@ -100,7 +98,7 @@ impl<'a, R: FileManager> TypeResolver<'a, R> {
             }
         }
 
-        return Err(self.make_err(&i.span, DiagnosticInfoMessage::CannotResolveNamespaceType));
+        Err(self.make_err(&i.span, DiagnosticInfoMessage::CannotResolveNamespaceType))
     }
 
     fn make_err(&mut self, span: &Span, info_msg: DiagnosticInfoMessage) -> Diagnostic {
@@ -135,11 +133,10 @@ impl<'a, R: FileManager> TypeResolver<'a, R> {
         if let Some(imported) = self.get_current_file().imports.get(k) {
             match &**imported {
                 ImportReference::Named { orig, file_name } => {
-                    let file = self.files.get_or_fetch_file(&file_name);
+                    let file = self.files.get_or_fetch_file(file_name);
                     let exported = file.and_then(|file| {
                         file.type_exports
-                            .get(&orig, self.files)
-                            .map(|it| it.clone())
+                            .get(orig, self.files)
                     });
                     match exported {
                         Some(exported) => {

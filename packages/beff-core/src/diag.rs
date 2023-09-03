@@ -82,7 +82,7 @@ impl DiagnosticInfoMessage {
     pub fn to_string(self) -> String {
         match self {
             DiagnosticInfoMessage::CannotResolveLocalType => {
-                format!("Cannot resolve local type")
+                "Cannot resolve local type".to_string()
             }
             DiagnosticInfoMessage::KeywordNonSerializableToJsonSchema
             | DiagnosticInfoMessage::PropertyNonSerializableToJsonSchema
@@ -90,28 +90,28 @@ impl DiagnosticInfoMessage {
             | DiagnosticInfoMessage::TemplateNonSerializableToJsonSchema
             | DiagnosticInfoMessage::DuplicatedRestNonSerializableToJsonSchema
             | DiagnosticInfoMessage::TypeConstructNonSerializableToJsonSchema => {
-                format!("Type cannot be converted to JSON schema")
+                "Type cannot be converted to JSON schema".to_string()
             }
             DiagnosticInfoMessage::ThisRefersToSomethingThatCannotBeSerialized(this) => {
                 format!("{this} cannot be converted to JSON schema")
             }
             DiagnosticInfoMessage::CannotUnderstandTsIndexedAccessType => {
-                format!("Indexed access types are not supported on schemas")
+                "Indexed access types are not supported on schemas".to_string()
             }
             DiagnosticInfoMessage::ComplexPathParameterNotSupported => {
-                format!("This type is too complex for a path parameter")
+                "This type is too complex for a path parameter".to_string()
             }
             DiagnosticInfoMessage::ContextInvalidAtThisPosition => {
-                format!("Context can only be used as the first parameter")
+                "Context can only be used as the first parameter".to_string()
             }
             DiagnosticInfoMessage::ContextParameterMustBeFirst => {
-                format!("This cannot be the first parameter, Context must be the first parameter")
+                "This cannot be the first parameter, Context must be the first parameter".to_string()
             }
             DiagnosticInfoMessage::TsInterfaceExtendsNotSupported => {
-                format!("Interface extends are not supported on schemas")
+                "Interface extends are not supported on schemas".to_string()
             }
             DiagnosticInfoMessage::TypeParameterApplicationNotSupported => {
-                format!("Type parameter application is not supported on schemas")
+                "Type parameter application is not supported on schemas".to_string()
             }
             DiagnosticInfoMessage::UnknownJsDocTagOfTypeUnknown(tag)
             | DiagnosticInfoMessage::UnknownJsDocTagOnRouter(tag)
@@ -119,40 +119,40 @@ impl DiagnosticInfoMessage {
                 format!("Jsdoc tag '{tag}' cannot be converted to OpenAPI")
             }
             DiagnosticInfoMessage::JsDocsParameterDescriptionHasTags => {
-                format!("Jsdoc parameter description cannot have tags")
+                "Jsdoc parameter description cannot have tags".to_string()
             }
             DiagnosticInfoMessage::UnmatchedPathParameter(param) => {
                 format!("Path parameter `{param}` is not being used in the function parameters")
             }
             DiagnosticInfoMessage::RestParamMustBeLabelAnnotated => {
-                format!("There is a parameter without name")
+                "There is a parameter without name".to_string()
             }
             DiagnosticInfoMessage::CannotParseJsDocExportDefault => {
-                format!("Failed to parse Js Docs of the default export")
+                "Failed to parse Js Docs of the default export".to_string()
             }
             DiagnosticInfoMessage::JsDocDescriptionRestIsNotEmpty => {
-                format!("Failed to parse Js Docs descriptions, rest is not empty")
+                "Failed to parse Js Docs descriptions, rest is not empty".to_string()
             }
             DiagnosticInfoMessage::JsDocsDescriptionCouldNotBeParsed => {
-                format!("Failed to parse Js Docs descriptions")
+                "Failed to parse Js Docs descriptions".to_string()
             }
             DiagnosticInfoMessage::PropSpreadIsNotSupportedOnMethodMap => {
-                format!("Spread props are not supported on method maps")
+                "Spread props are not supported on method maps".to_string()
             }
             DiagnosticInfoMessage::OptionalTypeIsNotSupported => {
-                format!("Optional types are not supported at this position")
+                "Optional types are not supported at this position".to_string()
             }
             DiagnosticInfoMessage::PropShouldHaveTypeAnnotation => {
-                format!("Property should have a type annotation")
+                "Property should have a type annotation".to_string()
             }
             DiagnosticInfoMessage::PropKeyShouldBeIdent => {
-                format!("Property name should be an identifier")
+                "Property name should be an identifier".to_string()
             }
             DiagnosticInfoMessage::CannotParseJsDocEndpoint => {
-                format!("Failed to parse Js Docs of the endpoint")
+                "Failed to parse Js Docs of the endpoint".to_string()
             }
             DiagnosticInfoMessage::TooManyCommentsJsDoc => {
-                format!("Failed to parse Js Docs. Only one comment is allowed")
+                "Failed to parse Js Docs. Only one comment is allowed".to_string()
             }
             DiagnosticInfoMessage::CannotResolveTypeReferenceOnConverting(name) => {
                 format!("Failed to resolve type reference '{name}' when converting to schema")
@@ -161,58 +161,58 @@ impl DiagnosticInfoMessage {
                 format!("Failed to resolve type reference '{name}' when extracting")
             }
             DiagnosticInfoMessage::HandlerCannotHaveTypeParameters => {
-                format!("Handler cannot have type parameters")
+                "Handler cannot have type parameters".to_string()
             }
             DiagnosticInfoMessage::HandlerMustAnnotateReturnType => {
-                format!("Handler must annotate return type")
+                "Handler must annotate return type".to_string()
             }
             DiagnosticInfoMessage::CouldNotResolveIdentifierOnPathParamTuple => {
-                format!("Could not resolve identifier on path parameter tuple")
+                "Could not resolve identifier on path parameter tuple".to_string()
             }
             DiagnosticInfoMessage::TsTypeParametersNotSupportedOnTuple => {
-                format!("Type parameters are not supported on tuples")
+                "Type parameters are not supported on tuples".to_string()
             }
             DiagnosticInfoMessage::RestParamMustBeTypeAnnotated => {
-                format!("Rest parameter must be type annotated")
+                "Rest parameter must be type annotated".to_string()
             }
             DiagnosticInfoMessage::ParameterPatternNotSupported => {
-                format!("Parameter pattern is not supported")
+                "Parameter pattern is not supported".to_string()
             }
             DiagnosticInfoMessage::CouldNotUnderstandRestParameter => {
-                format!("Could not understand rest parameter")
+                "Could not understand rest parameter".to_string()
             }
             DiagnosticInfoMessage::RestParameterMustBeTuple => {
-                format!("Rest parameter must be a tuple")
+                "Rest parameter must be a tuple".to_string()
             }
             DiagnosticInfoMessage::CouldNotFindDefaultExport => {
-                format!("Could not find default export")
+                "Could not find default export".to_string()
             }
             DiagnosticInfoMessage::PatternMustBeComputedKey => {
-                format!("Pattern must be a computed key")
+                "Pattern must be a computed key".to_string()
             }
             DiagnosticInfoMessage::MustBeComputedKeyWithMethodAndPatternMustBeString => {
-                format!("Pattern cannot be identified through a tuple")
+                "Pattern cannot be identified through a tuple".to_string()
             }
             DiagnosticInfoMessage::RestOnRouterDefaultExportNotSupportedYet => {
-                format!("Rest on router default export is not supported yet")
+                "Rest on router default export is not supported yet".to_string()
             }
             DiagnosticInfoMessage::HandlerCannotBeGenerator => {
-                format!("Handler cannot be a generator")
+                "Handler cannot be a generator".to_string()
             }
             DiagnosticInfoMessage::ParameterIdentMustHaveTypeAnnotation => {
-                format!("Parameter identifier must have a type annotation")
+                "Parameter identifier must have a type annotation".to_string()
             }
             DiagnosticInfoMessage::InferringTwoParamsAsRequestBody => {
-                format!("Inferring two parameters as request body")
+                "Inferring two parameters as request body".to_string()
             }
             DiagnosticInfoMessage::TooManyParamsOnLibType => {
-                format!("Too many parameters on lib type")
+                "Too many parameters on lib type".to_string()
             }
             DiagnosticInfoMessage::TwoDifferentTypesWithTheSameName => {
-                format!("Two different types with the same name")
+                "Two different types with the same name".to_string()
             }
             DiagnosticInfoMessage::TemplateMustBeOfSingleString => {
-                format!("Template must be of a single string")
+                "Template must be of a single string".to_string()
             }
             DiagnosticInfoMessage::CannotFindFileWhenConvertingToSchema(f) => {
                 let name = f.0;
@@ -222,10 +222,10 @@ impl DiagnosticInfoMessage {
                 format!("Cannot find type export '{exp}' when converting to schema")
             }
             DiagnosticInfoMessage::NotAnObjectWithMethodKind => {
-                format!("Not an object with method kind")
+                "Not an object with method kind".to_string()
             }
             DiagnosticInfoMessage::NotAnHttpMethod => {
-                format!("Not an HTTP method")
+                "Not an HTTP method".to_string()
             }
             e => {
                 format!("Unknown error: {e:?}")
@@ -244,13 +244,13 @@ impl DiagnosticParentMessage {
     pub fn to_string(self) -> String {
         match self {
             DiagnosticParentMessage::CannotConvertToSchema => {
-                format!("Exposing a type that cannot be converted to JSON schema")
+                "Exposing a type that cannot be converted to JSON schema".to_string()
             }
             DiagnosticParentMessage::ComplexPathParam => {
-                format!("Complex path parameter")
+                "Complex path parameter".to_string()
             }
             DiagnosticParentMessage::InvalidContextPosition => {
-                format!("Invalid context usage")
+                "Invalid context usage".to_string()
             }
         }
     }

@@ -45,7 +45,7 @@ fn maybe_extract_promise(typ: &TsType) -> &TsType {
             }
         }
     }
-    return typ;
+    typ
 }
 
 #[derive(Debug, Clone)]
@@ -106,7 +106,7 @@ impl fmt::Display for MethodKind {
 
 impl MethodKind {
     pub fn text_len(&self) -> usize {
-        return self.to_string().len();
+        self.to_string().len()
     }
 }
 
@@ -217,7 +217,7 @@ fn get_prop_name_span(key: &PropName) -> Span {
         | PropName::Num(Number { span, .. })
         | PropName::BigInt(BigInt { span, .. }) => span,
     };
-    return *span;
+    *span
 }
 impl<'a, R: FileManager> ExtractExportDefaultVisitor<'a, R> {
     fn build_error(&self, span: &Span, msg: DiagnosticInfoMessage) -> DiagnosticInformation {
@@ -333,7 +333,7 @@ impl<'a, R: FileManager> ExtractExportDefaultVisitor<'a, R> {
     fn parse_raw_pattern_str(&mut self, key: &str, span: &Span) -> Result<ParsedPattern> {
         let path_params = parse_pattern_params(key);
         Ok(ParsedPattern {
-            raw_span: span.clone(),
+            raw_span: *span,
             open_api_pattern: key.to_string(),
             path_params,
         })
@@ -342,7 +342,7 @@ impl<'a, R: FileManager> ExtractExportDefaultVisitor<'a, R> {
         match key {
             PropName::Computed(ComputedPropName { expr, span, .. }) => match &**expr {
                 Expr::Lit(Lit::Str(Str { span, value, .. })) => {
-                    self.parse_raw_pattern_str(&value.to_string(), span)
+                    self.parse_raw_pattern_str(value.as_ref(), span)
                 }
                 Expr::Tpl(Tpl {
                     span,
@@ -358,7 +358,7 @@ impl<'a, R: FileManager> ExtractExportDefaultVisitor<'a, R> {
                             .error(span, DiagnosticInfoMessage::TemplateMustBeOfSingleString);
                     }
                     let first_quasis = quasis.first().expect("we just checked the length");
-                    self.parse_raw_pattern_str(&first_quasis.raw.to_string(), span)
+                    self.parse_raw_pattern_str(first_quasis.raw.as_ref(), span)
                 }
                 _ => self.error(
                     span,
@@ -452,10 +452,10 @@ impl<'a, R: FileManager> ExtractExportDefaultVisitor<'a, R> {
                         description,
                     }),
                     _ => {
-                        return self.error(
+                        self.error(
                             &lib_ty_name.span,
                             DiagnosticInfoMessage::TooManyParamsOnLibType,
-                        );
+                        )
                     }
                 }
             }
@@ -526,7 +526,8 @@ impl<'a, R: FileManager> ExtractExportDefaultVisitor<'a, R> {
     fn visit_current_file(&mut self) -> Result<()> {
         let file = self.get_current_file()?;
         let module = file.module.module.clone();
-        Ok(self.visit_module(&module))
+        self.visit_module(&module);
+        Ok(())
     }
 
     fn parse_arrow_parameter(
@@ -555,13 +556,13 @@ impl<'a, R: FileManager> ExtractExportDefaultVisitor<'a, R> {
             | Pat::Object(ObjectPat { span, .. })
             | Pat::Assign(AssignPat { span, .. })
             | Pat::Invalid(Invalid { span, .. }) => {
-                return self.error(span, DiagnosticInfoMessage::ParameterPatternNotSupported);
+                self.error(span, DiagnosticInfoMessage::ParameterPatternNotSupported)
             }
             Pat::Expr(_) => {
-                return self.error(
+                self.error(
                     parent_span,
                     DiagnosticInfoMessage::ParameterPatternNotSupported,
-                );
+                )
             }
         }
     }
@@ -661,12 +662,12 @@ impl<'a, R: FileManager> ExtractExportDefaultVisitor<'a, R> {
                 "options" => Ok(MethodKind::Options),
                 "use" => Ok(MethodKind::Use),
                 _ => {
-                    return self.error(span, DiagnosticInfoMessage::NotAnHttpMethod);
+                    self.error(span, DiagnosticInfoMessage::NotAnHttpMethod)
                 }
             },
             _ => {
                 let span = get_prop_name_span(key);
-                return self.error(&span, DiagnosticInfoMessage::NotAnHttpMethod);
+                self.error(&span, DiagnosticInfoMessage::NotAnHttpMethod)
             }
         }
     }
@@ -868,21 +869,21 @@ impl<'a, R: FileManager> ExtractExportDefaultVisitor<'a, R> {
                 ..
             }) => {
                 if type_params.is_some() {
-                    return self.error(&span, DiagnosticInfoMessage::GenericDecoderIsNotSupported);
+                    return self.error(span, DiagnosticInfoMessage::GenericDecoderIsNotSupported);
                 }
 
                 let key = match &**key {
                     Expr::Ident(ident) => ident.sym.to_string(),
                     _ => {
-                        return self.error(&span, DiagnosticInfoMessage::InvalidDecoderKey);
+                        return self.error(span, DiagnosticInfoMessage::InvalidDecoderKey);
                     }
                 };
                 match type_ann.as_ref().map(|it| &it.type_ann) {
                     Some(ann) => Ok(BuiltDecoder {
                         exported_name: key,
-                        schema: self.convert_to_json_schema(&ann, span, false),
+                        schema: self.convert_to_json_schema(ann, span, false),
                     }),
-                    None => self.error(&span, DiagnosticInfoMessage::DecoderMustHaveTypeAnnotation),
+                    None => self.error(span, DiagnosticInfoMessage::DecoderMustHaveTypeAnnotation),
                 }
             }
             TsTypeElement::TsGetterSignature(TsGetterSignature { span, .. })
@@ -891,7 +892,7 @@ impl<'a, R: FileManager> ExtractExportDefaultVisitor<'a, R> {
             | TsTypeElement::TsIndexSignature(TsIndexSignature { span, .. })
             | TsTypeElement::TsCallSignatureDecl(TsCallSignatureDecl { span, .. })
             | TsTypeElement::TsConstructSignatureDecl(TsConstructSignatureDecl { span, .. }) => {
-                self.error(&span, DiagnosticInfoMessage::InvalidDecoderProperty)
+                self.error(span, DiagnosticInfoMessage::InvalidDecoderProperty)
             }
         }
     }
@@ -933,10 +934,10 @@ impl<'a, R: FileManager> Visit for ExtractExportDefaultVisitor<'a, R> {
             Callee::Import(_) => {}
             Callee::Expr(ref expr) => match &**expr {
                 Expr::Ident(Ident { sym, span, .. }) => {
-                    if sym.to_string() == "buildParsers" {
+                    if sym == "buildParsers" {
                         match self.built_decoders {
                             Some(_) => self
-                                .push_error(&span, DiagnosticInfoMessage::TwoCallsToBuildParsers),
+                                .push_error(span, DiagnosticInfoMessage::TwoCallsToBuildParsers),
                             None => match n.type_args {
                                 Some(ref params) => {
                                     match self.extract_built_decoders_from_call(params.as_ref()) {
@@ -1032,12 +1033,10 @@ pub fn operation_parameter_in_path_or_query_or_body(
         } else {
             FunctionParameterIn::InvalidComplexPathParameter
         }
+    } else if is_type_simple(schema, components) {
+        FunctionParameterIn::Query
     } else {
-        if is_type_simple(schema, components) {
-            FunctionParameterIn::Query
-        } else {
-            FunctionParameterIn::Body
-        }
+        FunctionParameterIn::Body
     }
 }
 
@@ -1103,7 +1102,7 @@ impl<'a, R: FileManager> EndpointToPath<'a, R> {
                 match param {
                     HandlerParameter::Context(span) => {
                         self.push_error(
-                            &span,
+                            span,
                             DiagnosticInfoMessage::ContextInvalidAtThisPosition,
                             Some(DiagnosticParentMessage::InvalidContextPosition),
                         );
@@ -1123,29 +1122,29 @@ impl<'a, R: FileManager> EndpointToPath<'a, R> {
                     ..
                 } => {
                     match operation_parameter_in_path_or_query_or_body(
-                        &key,
-                        &pattern,
-                        &schema,
+                        key,
+                        pattern,
+                        schema,
                         self.components,
                     ) {
                         FunctionParameterIn::Path => parameters.push(ParameterObject {
                             in_: ParameterIn::Path,
                             name: key.clone(),
-                            required: required.clone(),
+                            required: *required,
                             description: description.clone(),
                             schema: schema.clone(),
                         }),
                         FunctionParameterIn::Query => parameters.push(ParameterObject {
                             in_: ParameterIn::Query,
                             name: key.clone(),
-                            required: required.clone(),
+                            required: *required,
                             description: description.clone(),
                             schema: schema.clone(),
                         }),
                         FunctionParameterIn::Body => {
                             if json_request_body.is_some() {
                                 self.push_error(
-                                    &span,
+                                    span,
                                     DiagnosticInfoMessage::InferringTwoParamsAsRequestBody,
                                     None,
                                 );
@@ -1154,12 +1153,12 @@ impl<'a, R: FileManager> EndpointToPath<'a, R> {
                             json_request_body = Some(JsonRequestBody {
                                 schema: schema.clone(),
                                 description: description.clone(),
-                                required: required.clone(),
+                                required: *required,
                             });
                         }
                         FunctionParameterIn::InvalidComplexPathParameter => {
                             self.push_error(
-                                &span,
+                                span,
                                 DiagnosticInfoMessage::ComplexPathParameterNotSupported,
                                 Some(DiagnosticParentMessage::ComplexPathParam),
                             );
@@ -1178,7 +1177,7 @@ impl<'a, R: FileManager> EndpointToPath<'a, R> {
                         HeaderOrCookie::Cookie => ParameterIn::Cookie,
                     },
                     name: key.clone(),
-                    required: required.clone(),
+                    required: *required,
                     description: description.clone(),
                     schema: schema.clone(),
                 }),

@@ -140,16 +140,16 @@ impl<'a, R: FileManager> TypeToSchema<'a, R> {
         let store_current_file = self.current_file.clone();
         self.current_file = from_file.clone();
         let ty = match exported {
-            TypeExport::TsType { ty: alias, .. } => self.convert_ts_type(&alias)?,
-            TypeExport::TsInterfaceDecl(int) => self.convert_ts_interface_decl(&int)?,
+            TypeExport::TsType { ty: alias, .. } => self.convert_ts_type(alias)?,
+            TypeExport::TsInterfaceDecl(int) => self.convert_ts_interface_decl(int)?,
             TypeExport::StarOfOtherFile(_) => {
                 return self.error(span, DiagnosticInfoMessage::CannotUseStarAsType)
             }
             TypeExport::SomethingOfOtherFile(word, from_file) => {
                 let file = self
                     .files
-                    .get_or_fetch_file(&from_file)
-                    .and_then(|file| file.type_exports.get(word, self.files).map(|it| it.clone()));
+                    .get_or_fetch_file(from_file)
+                    .and_then(|file| file.type_exports.get(word, self.files));
                 match file {
                     Some(exported) => {
                         self.convert_type_export(exported.as_ref(), from_file, span)?
@@ -175,7 +175,7 @@ impl<'a, R: FileManager> TypeToSchema<'a, R> {
                 exported,
                 from_file,
             } => {
-                return self.convert_type_export(exported.as_ref(), &from_file.file_name(), &i.span)
+                return self.convert_type_export(exported.as_ref(), from_file.file_name(), &i.span)
             }
         }
     }
@@ -225,7 +225,7 @@ impl<'a, R: FileManager> TypeToSchema<'a, R> {
             "Array" => {
                 let type_params = type_params.as_ref().and_then(|it| it.params.split_first());
                 if let Some((ty, [])) = type_params {
-                    let ty = self.convert_ts_type(&ty)?;
+                    let ty = self.convert_ts_type(ty)?;
                     return Ok(JsonSchema::Array(ty.into()));
                 }
                 return Ok(JsonSchema::Array(JsonSchema::Any.into()));
@@ -347,12 +347,11 @@ impl<'a, R: FileManager> TypeToSchema<'a, R> {
     ) -> Res<(Rc<TypeExport>, Rc<ImportReference>, String)> {
         let exported = self
             .files
-            .get_or_fetch_file(&from_file.file_name())
+            .get_or_fetch_file(from_file.file_name())
             .and_then(|module| {
                 module
                     .type_exports
                     .get(right, self.files)
-                    .map(|it| it.clone())
             });
         match exported {
             Some(exported) => {
@@ -386,11 +385,10 @@ impl<'a, R: FileManager> TypeToSchema<'a, R> {
                 self.get_qualified_type_from_file(other_file, &right.sym, &right.span)
             }
             TypeExport::SomethingOfOtherFile(word, from_file) => {
-                let exported = self.files.get_or_fetch_file(&from_file).and_then(|module| {
+                let exported = self.files.get_or_fetch_file(from_file).and_then(|module| {
                     module
                         .type_exports
-                        .get(&word, self.files)
-                        .map(|it| it.clone())
+                        .get(word, self.files)
                 });
 
                 match exported {
@@ -428,7 +426,7 @@ impl<'a, R: FileManager> TypeToSchema<'a, R> {
 
         let (exported, from_file, name) = self.__convert_ts_type_qual_inner(q)?;
         let ty =
-            self.convert_type_export(exported.as_ref(), &from_file.file_name(), &q.right.span)?;
+            self.convert_type_export(exported.as_ref(), from_file.file_name(), &q.right.span)?;
         self.insert_definition(name, ty)
     }
     fn convert_ts_type_qual(&mut self, q: &TsQualifiedName) -> Res<JsonSchema> {
