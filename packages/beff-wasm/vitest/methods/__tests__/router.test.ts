@@ -2,7 +2,7 @@ import { Hono } from "hono";
 import { it, expect } from "vitest";
 import { registerRouter } from "@beff/hono";
 import router from "../router";
-import { meta, schema } from "../bff-generated";
+import { meta, schema } from "../bff-generated/router";
 
 const app = new Hono();
 registerRouter({ app, router, meta, schema });
