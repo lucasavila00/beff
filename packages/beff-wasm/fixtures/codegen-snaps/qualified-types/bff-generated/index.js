@@ -152,6 +152,20 @@ function validate_XYZ(input) {
     }
     return error_acc_0;
 }
+function validate_AAAAA(input) {
+    let error_acc_0 = [];
+    if (input != 123) {
+        error_acc_0.push({
+            "error_kind": "NotEq",
+            "path": [
+                "AAAAA"
+            ],
+            "received": input,
+            "expected_value": 123
+        });
+    }
+    return error_acc_0;
+}
 const meta = [
     {
         "method_kind": "get",
@@ -209,6 +223,18 @@ const meta = [
             let error_acc_0 = [];
             error_acc_0.push(...add_path_to_errors(validate_UserEntityOriginal(input), [
                 "[GET] /def.response_body"
+            ]));
+            return error_acc_0;
+        }
+    },
+    {
+        "method_kind": "post",
+        "params": [],
+        "pattern": "/def",
+        "return_validator": function(input) {
+            let error_acc_0 = [];
+            error_acc_0.push(...add_path_to_errors(validate_AAAAA(input), [
+                "[POST] /def.response_body"
             ]));
             return error_acc_0;
         }
@@ -288,6 +314,9 @@ const schema =  {
       }
     },
     "schemas": {
+      "AAAAA": {
+        "const": 123.0
+      },
       "Abc123": {
         "properties": {
           "a": {
@@ -435,6 +464,27 @@ const schema =  {
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/UserEntityOriginal"
+                }
+              }
+            },
+            "description": "Successful Operation"
+          },
+          "422": {
+            "$ref": "#/components/responses/DecodeError"
+          },
+          "500": {
+            "$ref": "#/components/responses/UnexpectedError"
+          }
+        }
+      },
+      "post": {
+        "parameters": [],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AAAAA"
                 }
               }
             },

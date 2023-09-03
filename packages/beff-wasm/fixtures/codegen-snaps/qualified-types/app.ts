@@ -14,5 +14,6 @@ export default {
   },
   ["/def"]: {
     get: async (): Promise<T.X.UserEntity> => todo(),
+    post: async (): Promise<LOL.AAAAA> => todo(),
   },
 };

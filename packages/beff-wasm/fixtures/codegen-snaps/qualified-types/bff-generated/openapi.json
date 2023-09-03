@@ -39,6 +39,9 @@
       }
     },
     "schemas": {
+      "AAAAA": {
+        "const": 123.0
+      },
       "Abc123": {
         "properties": {
           "a": {
@@ -186,6 +189,27 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/UserEntityOriginal"
+                }
+              }
+            },
+            "description": "Successful Operation"
+          },
+          "422": {
+            "$ref": "#/components/responses/DecodeError"
+          },
+          "500": {
+            "$ref": "#/components/responses/UnexpectedError"
+          }
+        }
+      },
+      "post": {
+        "parameters": [],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AAAAA"
                 }
               }
             },
