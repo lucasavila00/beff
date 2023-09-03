@@ -9,7 +9,7 @@ import {
 import { getCookie } from "hono/cookie";
 import { buildStableClient, ClientFromRouter } from "../../beff-client/dist";
 
-const template = `
+const template = (baseUrl: string) => `
 <!DOCTYPE html>
 <html lang="en">
   <head>
@@ -31,7 +31,7 @@ const template = `
   <script>
     window.onload = () => {
       window.ui = SwaggerUIBundle({
-        url: '/api/v3/openapi.json',
+        url: '${baseUrl}/v3/openapi.json',
         dom_id: '#swagger-ui',
         presets: [
           SwaggerUIBundle.presets.apis,
@@ -193,12 +193,12 @@ const handleMethod = async (
 const registerDocs = (app: Hono<any, any, any>, schema: any, servers: any) => {
   app.get("/v3/openapi.json", (req) =>
     req.json({
-      schema,
+      ...schema,
       servers,
     })
   );
 
-  app.get("/docs", (c) => c.html(template));
+  app.get("/docs", (c) => c.html(template(servers?.[0]?.url ?? "")));
 };
 
 export function buildHonoApp(options: {

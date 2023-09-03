@@ -18,179 +18,177 @@ it("docs json", async () => {
   `);
   expect(await res.json()).toMatchInlineSnapshot(`
     {
-      "schema": {
-        "components": {
-          "responses": {
-            "DecodeError": {
-              "content": {
-                "application/json": {
-                  "schema": {
-                    "properties": {
-                      "message": {
-                        "type": "string",
-                      },
+      "components": {
+        "responses": {
+          "DecodeError": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "message": {
+                      "type": "string",
                     },
-                    "required": [
-                      "message",
-                    ],
-                    "type": "object",
                   },
+                  "required": [
+                    "message",
+                  ],
+                  "type": "object",
                 },
               },
-              "description": "Invalid parameters or request body",
             },
-            "UnexpectedError": {
-              "content": {
-                "application/json": {
-                  "schema": {
-                    "properties": {
-                      "message": {
-                        "type": "string",
-                      },
+            "description": "Invalid parameters or request body",
+          },
+          "UnexpectedError": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "message": {
+                      "type": "string",
                     },
-                    "required": [
-                      "message",
-                    ],
-                    "type": "object",
                   },
+                  "required": [
+                    "message",
+                  ],
+                  "type": "object",
                 },
               },
-              "description": "Unexpected Error",
+            },
+            "description": "Unexpected Error",
+          },
+        },
+        "schemas": {},
+      },
+      "info": {
+        "title": "No title",
+        "version": "0.0.0",
+      },
+      "openapi": "3.1.0",
+      "paths": {
+        "/hello": {
+          "delete": {
+            "parameters": [],
+            "responses": {
+              "200": {
+                "content": {
+                  "application/json": {
+                    "schema": {
+                      "type": "string",
+                    },
+                  },
+                },
+                "description": "Successful Operation",
+              },
+              "422": {
+                "$ref": "#/components/responses/DecodeError",
+              },
+              "500": {
+                "$ref": "#/components/responses/UnexpectedError",
+              },
             },
           },
-          "schemas": {},
-        },
-        "info": {
-          "title": "No title",
-          "version": "0.0.0",
-        },
-        "openapi": "3.1.0",
-        "paths": {
-          "/hello": {
-            "delete": {
-              "parameters": [],
-              "responses": {
-                "200": {
-                  "content": {
-                    "application/json": {
-                      "schema": {
-                        "type": "string",
-                      },
+          "get": {
+            "parameters": [],
+            "responses": {
+              "200": {
+                "content": {
+                  "application/json": {
+                    "schema": {
+                      "type": "string",
                     },
                   },
-                  "description": "Successful Operation",
                 },
-                "422": {
-                  "$ref": "#/components/responses/DecodeError",
-                },
-                "500": {
-                  "$ref": "#/components/responses/UnexpectedError",
-                },
+                "description": "Successful Operation",
+              },
+              "422": {
+                "$ref": "#/components/responses/DecodeError",
+              },
+              "500": {
+                "$ref": "#/components/responses/UnexpectedError",
               },
             },
-            "get": {
-              "parameters": [],
-              "responses": {
-                "200": {
-                  "content": {
-                    "application/json": {
-                      "schema": {
-                        "type": "string",
-                      },
+          },
+          "options": {
+            "parameters": [],
+            "responses": {
+              "200": {
+                "content": {
+                  "application/json": {
+                    "schema": {
+                      "type": "string",
                     },
                   },
-                  "description": "Successful Operation",
                 },
-                "422": {
-                  "$ref": "#/components/responses/DecodeError",
-                },
-                "500": {
-                  "$ref": "#/components/responses/UnexpectedError",
-                },
+                "description": "Successful Operation",
+              },
+              "422": {
+                "$ref": "#/components/responses/DecodeError",
+              },
+              "500": {
+                "$ref": "#/components/responses/UnexpectedError",
               },
             },
-            "options": {
-              "parameters": [],
-              "responses": {
-                "200": {
-                  "content": {
-                    "application/json": {
-                      "schema": {
-                        "type": "string",
-                      },
+          },
+          "patch": {
+            "parameters": [],
+            "responses": {
+              "200": {
+                "content": {
+                  "application/json": {
+                    "schema": {
+                      "type": "string",
                     },
                   },
-                  "description": "Successful Operation",
                 },
-                "422": {
-                  "$ref": "#/components/responses/DecodeError",
-                },
-                "500": {
-                  "$ref": "#/components/responses/UnexpectedError",
-                },
+                "description": "Successful Operation",
+              },
+              "422": {
+                "$ref": "#/components/responses/DecodeError",
+              },
+              "500": {
+                "$ref": "#/components/responses/UnexpectedError",
               },
             },
-            "patch": {
-              "parameters": [],
-              "responses": {
-                "200": {
-                  "content": {
-                    "application/json": {
-                      "schema": {
-                        "type": "string",
-                      },
+          },
+          "post": {
+            "parameters": [],
+            "responses": {
+              "200": {
+                "content": {
+                  "application/json": {
+                    "schema": {
+                      "type": "string",
                     },
                   },
-                  "description": "Successful Operation",
                 },
-                "422": {
-                  "$ref": "#/components/responses/DecodeError",
-                },
-                "500": {
-                  "$ref": "#/components/responses/UnexpectedError",
-                },
+                "description": "Successful Operation",
+              },
+              "422": {
+                "$ref": "#/components/responses/DecodeError",
+              },
+              "500": {
+                "$ref": "#/components/responses/UnexpectedError",
               },
             },
-            "post": {
-              "parameters": [],
-              "responses": {
-                "200": {
-                  "content": {
-                    "application/json": {
-                      "schema": {
-                        "type": "string",
-                      },
+          },
+          "put": {
+            "parameters": [],
+            "responses": {
+              "200": {
+                "content": {
+                  "application/json": {
+                    "schema": {
+                      "type": "string",
                     },
                   },
-                  "description": "Successful Operation",
                 },
-                "422": {
-                  "$ref": "#/components/responses/DecodeError",
-                },
-                "500": {
-                  "$ref": "#/components/responses/UnexpectedError",
-                },
+                "description": "Successful Operation",
               },
-            },
-            "put": {
-              "parameters": [],
-              "responses": {
-                "200": {
-                  "content": {
-                    "application/json": {
-                      "schema": {
-                        "type": "string",
-                      },
-                    },
-                  },
-                  "description": "Successful Operation",
-                },
-                "422": {
-                  "$ref": "#/components/responses/DecodeError",
-                },
-                "500": {
-                  "$ref": "#/components/responses/UnexpectedError",
-                },
+              "422": {
+                "$ref": "#/components/responses/DecodeError",
+              },
+              "500": {
+                "$ref": "#/components/responses/UnexpectedError",
               },
             },
           },

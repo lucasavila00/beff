@@ -3,6 +3,8 @@
   "version": "0.0.1",
   "scripts": {
     "dev": "wrangler dev src/index.ts",
+    "kv": "wrangler kv:namespace create BLOG_EXAMPLE --preview",
+    "kv2": "wrangler kv:namespace create BLOG_EXAMPLE",
     "deploy": "wrangler publish src/index.ts",
     "test": "jest --verbose",
     "beff": "node ../../packages/beff-wasm/npm-bin/index.js -p bff.json"
