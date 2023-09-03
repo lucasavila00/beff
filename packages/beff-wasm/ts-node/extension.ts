@@ -2,7 +2,7 @@
 import * as vscode from "vscode";
 import * as path from "path";
 import * as fs from "fs";
-import { Bundler } from "./bundler";
+import { Bundler, WasmDiagnosticInformation } from "./bundler";
 import { ProjectJson } from "./project";
 
 const readProjectJson = (
@@ -18,6 +18,8 @@ const readProjectJson = (
     module: projectJson.module,
   };
 };
+
+let crashed: any = false;
 
 let bundler: Bundler | null = null;
 export function activate(context: vscode.ExtensionContext) {
@@ -39,81 +41,159 @@ export function activate(context: vscode.ExtensionContext) {
     new vscode.RelativePattern(workspacePath, "**/*.ts")
   );
 
+  const observingExtensions = [".ts", ".tsx", ".d.ts", ".cts", ".mts"];
+  const crashPopup = () =>
+    vscode.window.showErrorMessage(
+      `BFF WASM CRASHED. Please reload VSCode. ${crashed}`
+    );
   watcher.onDidChange((e) => {
-    console.log("File changed: ", e.fsPath);
+    if (crashed) {
+      crashPopup();
+      return;
+    }
+    console.log("File changed1: ", e.fsPath);
+    if (!observingExtensions.includes(path.extname(e.fsPath))) {
+      return;
+    }
+
     const newContent = fs.readFileSync(e.fsPath, "utf-8");
     try {
       bundler?.updateFileContent(e.fsPath, newContent);
       updateDiagnostics(entryPoint, collection);
     } catch (e) {
-      console.error(e);
-      process.exit(1);
+      if (!crashed) {
+        crashed = e;
+      }
+      crashPopup();
     }
   });
 
   vscode.workspace.onDidChangeTextDocument((e) => {
-    console.log("File changed: ", e.document.uri.fsPath);
+    if (crashed) {
+      crashPopup();
+      return;
+    }
+    console.log("File changed2: ", e.document.uri.fsPath);
+    if (!observingExtensions.includes(path.extname(e.document.uri.fsPath))) {
+      return;
+    }
     const newContent = e.document.getText();
     try {
       bundler?.updateFileContent(e.document.uri.fsPath, newContent);
       updateDiagnostics(entryPoint, collection);
     } catch (e) {
-      console.error(e);
-      process.exit(1);
+      if (!crashed) {
+        crashed = e;
+      }
+      crashPopup();
     }
   });
 }
+
+const getFileNameFromDiag = (diag: WasmDiagnosticInformation) => {
+  if (diag.KnownFile) {
+    return diag.KnownFile.file_name;
+  }
+  return diag.UnknownFile.current_file;
+};
+
+const relatedInformation = (
+  cause: WasmDiagnosticInformation
+): vscode.DiagnosticRelatedInformation => {
+  if (cause.KnownFile) {
+    const diag = cause.KnownFile;
+    return {
+      message: diag.message,
+      location: new vscode.Location(
+        vscode.Uri.file(diag.file_name),
+        new vscode.Range(
+          new vscode.Position(diag.line_lo - 1, diag.col_lo),
+          new vscode.Position(diag.line_hi - 1, diag.col_hi)
+        )
+      ),
+    };
+  } else {
+    const diag = cause.UnknownFile;
+    return {
+      message: diag.message,
+      location: new vscode.Location(
+        vscode.Uri.file(diag.current_file),
+        new vscode.Range(new vscode.Position(0, 0), new vscode.Position(0, 0))
+      ),
+    };
+  }
+};
 
 function updateDiagnostics(
   entryPoint: string,
   collection: vscode.DiagnosticCollection
 ): void {
-  throw new Error("...");
-  // collection.clear();
-  // const diags = bundler?.diagnostics(entryPoint);
-  // (diags?.diagnostics ?? []).forEach((data) => {
-  //   if (data.UnknownFile) {
-  //     const diag = data.UnknownFile;
-  //     const documentUri = vscode.Uri.file(diag.current_file);
-  //     collection.set(documentUri, [
-  //       {
-  //         code: "",
-  //         message: diag.message,
-  //         range: new vscode.Range(
-  //           new vscode.Position(0, 0),
-  //           new vscode.Position(0, 0)
-  //         ),
-  //         severity: vscode.DiagnosticSeverity.Error,
-  //         source: "",
-  //       },
-  //     ]);
-  //     return;
-  //   }
-  //   const diag = data.KnownFile;
-  //   const documentUri = vscode.Uri.file(diag.file_name);
-  //   collection.set(documentUri, [
-  //     {
-  //       code: "",
-  //       message: diag.message,
-  //       range: new vscode.Range(
-  //         new vscode.Position(diag.line_lo - 1, diag.col_lo),
-  //         new vscode.Position(diag.line_hi - 1, diag.col_hi)
-  //       ),
-  //       severity: vscode.DiagnosticSeverity.Error,
-  //       source: "",
-  //       relatedInformation: [
-  //         //   new vscode.DiagnosticRelatedInformation(
-  //         //     new vscode.Location(
-  //         //         documentUri,
-  //         //       new vscode.Range(
-  //         //         new vscode.Position(1, 8),
-  //         //         new vscode.Position(1, 9)
-  //         //       )
-  //         //     ),
-  //         //     "first assignment to `x`"
-  //         //   ),
-  //       ],
-  //     },
-  //   ]);
-  // });
+  collection.clear();
+  const diags = bundler?.diagnostics(entryPoint);
+  let acc: Record<string, vscode.Diagnostic[]> = {};
+
+  const pushDiag = (k: string, v: vscode.Diagnostic) => {
+    if (acc[k] == null) {
+      acc[k] = [];
+    }
+    acc[k].push(v);
+  };
+
+  (diags?.diagnostics ?? []).forEach((data) => {
+    console.log(data);
+    const cause = data.cause;
+    if (cause.KnownFile) {
+      const diag = cause.KnownFile;
+      pushDiag(getFileNameFromDiag(cause), {
+        message: diag.message,
+        range: new vscode.Range(
+          new vscode.Position(diag.line_lo - 1, diag.col_lo),
+          new vscode.Position(diag.line_hi - 1, diag.col_hi)
+        ),
+        severity: vscode.DiagnosticSeverity.Error,
+        relatedInformation: (data.related_information ?? []).map(
+          relatedInformation
+        ),
+      });
+    } else {
+      const diag = cause.UnknownFile;
+      pushDiag(diag.current_file, {
+        message: diag.message,
+        range: new vscode.Range(
+          new vscode.Position(0, 0),
+          new vscode.Position(0, 0)
+        ),
+        severity: vscode.DiagnosticSeverity.Error,
+      });
+    }
+
+    data.related_information?.forEach((related) => {
+      if (related.KnownFile) {
+        const diag = related.KnownFile;
+        pushDiag(getFileNameFromDiag(related), {
+          message: diag.message,
+          range: new vscode.Range(
+            new vscode.Position(diag.line_lo - 1, diag.col_lo),
+            new vscode.Position(diag.line_hi - 1, diag.col_hi)
+          ),
+          severity: vscode.DiagnosticSeverity.Warning,
+        });
+      } else {
+        const diag = related.UnknownFile;
+        pushDiag(diag.current_file, {
+          message: diag.message,
+          range: new vscode.Range(
+            new vscode.Position(0, 0),
+            new vscode.Position(0, 0)
+          ),
+          severity: vscode.DiagnosticSeverity.Warning,
+        });
+      }
+    });
+  });
+
+  Object.keys(acc).forEach((k) => {
+    const documentUri = vscode.Uri.file(k);
+    collection.set(documentUri, acc[k]);
+  });
 }

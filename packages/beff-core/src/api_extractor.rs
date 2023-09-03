@@ -20,9 +20,10 @@ use swc_ecma_ast::{
     ArrayPat, ArrowExpr, AssignPat, AssignProp, BigInt, BindingIdent, CallExpr, Callee,
     ComputedPropName, ExportDefaultExpr, Expr, FnExpr, Function, GetterProp, Ident, Invalid,
     KeyValueProp, Lit, MethodProp, Number, ObjectPat, Pat, Prop, PropName, PropOrSpread, RestPat,
-    SetterProp, SpreadElement, Str, Tpl, TsEntityName, TsKeywordType, TsKeywordTypeKind,
-    TsPropertySignature, TsType, TsTypeAnn, TsTypeElement, TsTypeLit, TsTypeParamDecl,
-    TsTypeParamInstantiation, TsTypeRef,
+    SetterProp, SpreadElement, Str, Tpl, TsCallSignatureDecl, TsConstructSignatureDecl,
+    TsEntityName, TsGetterSignature, TsIndexSignature, TsKeywordType, TsKeywordTypeKind,
+    TsMethodSignature, TsPropertySignature, TsSetterSignature, TsType, TsTypeAnn, TsTypeElement,
+    TsTypeLit, TsTypeParamDecl, TsTypeParamInstantiation, TsTypeRef,
 };
 use swc_ecma_visit::Visit;
 
@@ -243,6 +244,12 @@ impl<'a, R: FileManager> ExtractExportDefaultVisitor<'a, R> {
         self.errors.push(self.build_error(span, msg).to_diag(None));
     }
 
+    fn error<T>(&mut self, span: &Span, msg: DiagnosticInfoMessage) -> Result<T> {
+        let e = anyhow!("{:?}", &msg);
+        self.errors.push(self.build_error(span, msg).to_diag(None));
+        Err(e)
+    }
+
     #[allow(clippy::to_string_in_format_args)]
     fn parse_endpoint_comments(&mut self, acc: &mut EndpointComments, comments: Vec<Comment>) {
         for c in comments {
@@ -343,34 +350,26 @@ impl<'a, R: FileManager> ExtractExportDefaultVisitor<'a, R> {
                     quasis,
                 }) => {
                     if !exprs.is_empty() {
-                        self.push_error(span, DiagnosticInfoMessage::TemplateMustBeOfSingleString);
-
-                        return Err(anyhow!("not single string"));
+                        return self
+                            .error(span, DiagnosticInfoMessage::TemplateMustBeOfSingleString);
                     }
                     if quasis.len() != 1 {
-                        self.push_error(span, DiagnosticInfoMessage::TemplateMustBeOfSingleString);
-
-                        return Err(anyhow!("not single string"));
+                        return self
+                            .error(span, DiagnosticInfoMessage::TemplateMustBeOfSingleString);
                     }
                     let first_quasis = quasis.first().expect("we just checked the length");
                     self.parse_raw_pattern_str(&first_quasis.raw.to_string(), span)
                 }
-                _ => {
-                    self.push_error(
-                        span,
-                        DiagnosticInfoMessage::MustBeComputedKeyWithMethodAndPatternMustBeString,
-                    );
-
-                    Err(anyhow!("not computed key"))
-                }
+                _ => self.error(
+                    span,
+                    DiagnosticInfoMessage::MustBeComputedKeyWithMethodAndPatternMustBeString,
+                ),
             },
             PropName::Ident(Ident { span, .. })
             | PropName::Str(Str { span, .. })
             | PropName::Num(Number { span, .. })
             | PropName::BigInt(BigInt { span, .. }) => {
-                self.push_error(span, DiagnosticInfoMessage::PatternMustBeComputedKey);
-
-                Err(anyhow!("not computed key"))
+                self.error(span, DiagnosticInfoMessage::PatternMustBeComputedKey)
             }
         }
     }
@@ -442,22 +441,18 @@ impl<'a, R: FileManager> ExtractExportDefaultVisitor<'a, R> {
                 let params = &params.as_ref();
                 match params {
                     None => {
-                        self.push_error(
+                        return self.error(
                             &lib_ty_name.span,
                             DiagnosticInfoMessage::TooManyParamsOnLibType,
                         );
-
-                        return Err(anyhow!("Header/Cookie must have one type parameter"));
                     }
                     Some(params) => {
                         let params = &params.params;
                         if params.len() != 1 {
-                            self.push_error(
+                            return self.error(
                                 &lib_ty_name.span,
                                 DiagnosticInfoMessage::TooManyParamsOnLibType,
                             );
-
-                            return Err(anyhow!("Header/Cookie must have one type parameter"));
                         }
 
                         let ty = params[0].as_ref();
@@ -553,12 +548,10 @@ impl<'a, R: FileManager> ExtractExportDefaultVisitor<'a, R> {
         match param {
             Pat::Ident(BindingIdent { id, type_ann }) => {
                 if type_ann.is_none() {
-                    self.push_error(
+                    return self.error(
                         &id.span,
                         DiagnosticInfoMessage::ParameterIdentMustHaveTypeAnnotation,
                     );
-
-                    return Err(anyhow!("error param"));
                 }
 
                 let comments = self.get_current_file()?.comments.get_leading(id.span.lo);
@@ -573,15 +566,13 @@ impl<'a, R: FileManager> ExtractExportDefaultVisitor<'a, R> {
             | Pat::Object(ObjectPat { span, .. })
             | Pat::Assign(AssignPat { span, .. })
             | Pat::Invalid(Invalid { span, .. }) => {
-                self.push_error(span, DiagnosticInfoMessage::ParameterPatternNotSupported);
-                return Err(anyhow!("error param"));
+                return self.error(span, DiagnosticInfoMessage::ParameterPatternNotSupported);
             }
             Pat::Expr(_) => {
-                self.push_error(
+                return self.error(
                     parent_span,
                     DiagnosticInfoMessage::ParameterPatternNotSupported,
                 );
-                return Err(anyhow!("error param"));
             }
         }
     }
@@ -608,14 +599,10 @@ impl<'a, R: FileManager> ExtractExportDefaultVisitor<'a, R> {
         span: &Span,
     ) -> Result<()> {
         if is_generator {
-            self.push_error(span, DiagnosticInfoMessage::HandlerCannotBeGenerator);
-
-            return Err(anyhow!("cannot be generator"));
+            return self.error(span, DiagnosticInfoMessage::HandlerCannotBeGenerator);
         }
         if type_params.is_some() {
-            self.push_error(span, DiagnosticInfoMessage::HandlerCannotHaveTypeParameters);
-
-            return Err(anyhow!("cannot have type params"));
+            return self.error(span, DiagnosticInfoMessage::HandlerCannotHaveTypeParameters);
         }
 
         Ok(())
@@ -685,14 +672,12 @@ impl<'a, R: FileManager> ExtractExportDefaultVisitor<'a, R> {
                 "options" => Ok(MethodKind::Options),
                 "use" => Ok(MethodKind::Use),
                 _ => {
-                    self.push_error(span, DiagnosticInfoMessage::NotAnHttpMethod);
-                    Err(anyhow!("not a method"))
+                    return self.error(span, DiagnosticInfoMessage::NotAnHttpMethod);
                 }
             },
             _ => {
                 let span = get_prop_name_span(key);
-                self.push_error(&span, DiagnosticInfoMessage::NotAnHttpMethod);
-                Err(anyhow!("not a method"))
+                return self.error(&span, DiagnosticInfoMessage::NotAnHttpMethod);
             }
         }
     }
@@ -884,7 +869,7 @@ impl<'a, R: FileManager> ExtractExportDefaultVisitor<'a, R> {
         }
     }
 
-    fn extract_one_built_decoder(&mut self, prop: &TsTypeElement) -> BuiltDecoder {
+    fn extract_one_built_decoder(&mut self, prop: &TsTypeElement) -> Result<BuiltDecoder> {
         match prop {
             TsTypeElement::TsPropertySignature(TsPropertySignature {
                 key,
@@ -893,39 +878,62 @@ impl<'a, R: FileManager> ExtractExportDefaultVisitor<'a, R> {
                 span,
                 ..
             }) => {
-                assert!(type_params.is_none());
+                if type_params.is_some() {
+                    return self.error(&span, DiagnosticInfoMessage::GenericDecoderIsNotSupported);
+                }
+
                 let key = match &**key {
                     Expr::Ident(ident) => ident.sym.to_string(),
-                    _ => todo!(),
+                    _ => {
+                        return self.error(&span, DiagnosticInfoMessage::InvalidDecoderKey);
+                    }
                 };
-                BuiltDecoder {
+                Ok(BuiltDecoder {
                     exported_name: key,
                     schema: self.convert_to_json_schema(
                         &type_ann.as_ref().unwrap().type_ann,
                         span,
                         false,
                     ),
-                }
+                })
             }
-            _ => todo!(),
+            TsTypeElement::TsGetterSignature(TsGetterSignature { span, .. })
+            | TsTypeElement::TsSetterSignature(TsSetterSignature { span, .. })
+            | TsTypeElement::TsMethodSignature(TsMethodSignature { span, .. })
+            | TsTypeElement::TsIndexSignature(TsIndexSignature { span, .. })
+            | TsTypeElement::TsCallSignatureDecl(TsCallSignatureDecl { span, .. })
+            | TsTypeElement::TsConstructSignatureDecl(TsConstructSignatureDecl { span, .. }) => {
+                self.error(&span, DiagnosticInfoMessage::InvalidDecoderProperty)
+            }
         }
     }
     fn extract_built_decoders_from_call(
         &mut self,
         params: &TsTypeParamInstantiation,
-    ) -> Vec<BuiltDecoder> {
+    ) -> Result<Vec<BuiltDecoder>> {
         match params.params.split_first() {
             Some((head, tail)) => {
-                assert!(tail.is_empty());
+                if !tail.is_empty() {
+                    return self.error(
+                        &params.span,
+                        DiagnosticInfoMessage::TooManyTypeParamsOnDecoder,
+                    );
+                }
                 match &**head {
                     TsType::TsTypeLit(TsTypeLit { members, .. }) => members
                         .iter()
                         .map(|prop| self.extract_one_built_decoder(prop))
                         .collect(),
-                    _ => todo!(),
+                    _ => self.error(
+                        &params.span,
+                        DiagnosticInfoMessage::DecoderShouldBeObjectWithTypesAndNames,
+                    ),
                 }
             }
-            None => todo!(),
+            None => self.error(
+                &params.span,
+                DiagnosticInfoMessage::TooFewTypeParamsOnDecoder,
+            ),
         }
     }
 }
@@ -944,9 +952,11 @@ impl<'a, R: FileManager> Visit for ExtractExportDefaultVisitor<'a, R> {
                                 assert!(n.args.is_empty());
                                 match n.type_args {
                                     Some(ref params) => {
-                                        self.built_decoders = Some(
-                                            self.extract_built_decoders_from_call(params.as_ref()),
-                                        );
+                                        match self.extract_built_decoders_from_call(params.as_ref())
+                                        {
+                                            Ok(x) => self.built_decoders = Some(x),
+                                            Err(_) => {}
+                                        }
                                     }
                                     None => panic!(),
                                 }

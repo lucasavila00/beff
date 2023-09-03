@@ -1,10 +1,12 @@
 use std::rc::Rc;
 
+use swc_common::Span;
 use swc_ecma_ast::{Ident, TsInterfaceDecl, TsType};
 
 use crate::{
-    api_extractor::FileManager, diag::Diagnostic, BffFileName, ImportReference, ParsedModule,
-    ParsedTsNamespace, TypeExport,
+    api_extractor::FileManager,
+    diag::{span_to_loc, Diagnostic, DiagnosticInfoMessage, DiagnosticInformation},
+    BffFileName, ImportReference, ParsedModule, ParsedTsNamespace, TypeExport,
 };
 
 pub struct TypeResolver<'a, R: FileManager> {
@@ -63,14 +65,22 @@ impl<'a, R: FileManager> TypeResolver<'a, R> {
                                     from_file: reference.clone(),
                                 })
                             }
-                            TypeExport::TsType { .. } => todo!(),
-                            TypeExport::TsInterfaceDecl(_) => todo!(),
+                            TypeExport::TsType { .. } => {
+                                return Err(self.make_err(
+                                    &i.span,
+                                    DiagnosticInfoMessage::ShouldNotResolveTsTypeAsNamespace,
+                                ))
+                            }
+                            TypeExport::TsInterfaceDecl(_) => return Err(self.make_err(
+                                &i.span,
+                                DiagnosticInfoMessage::ShouldNotResolveTsInterfaceDeclAsNamespace,
+                            )),
                             TypeExport::SomethingOfOtherFile(_, _) => todo!(),
                             TypeExport::TsNamespaceDecl(ns) => {
                                 return Ok(ResolvedNamespaceType::TsNamespace(ns.clone()))
                             }
                         },
-                        None => todo!(),
+                        None => {}
                     }
                 }
                 ImportReference::Default { .. } => panic!(),
@@ -79,7 +89,29 @@ impl<'a, R: FileManager> TypeResolver<'a, R> {
         if let Some(ns) = self.get_current_file().locals.ts_namespaces.get(k) {
             return Ok(ResolvedNamespaceType::TsNamespace(ns.clone()));
         }
-        panic!()
+        return Err(self.make_err(&i.span, DiagnosticInfoMessage::CannotResolveNamespaceType));
+    }
+
+    fn make_err(&mut self, span: &Span, info_msg: DiagnosticInfoMessage) -> Diagnostic {
+        let file = self.files.get_or_fetch_file(&self.current_file);
+        match file {
+            Some(file) => {
+                let (loc_lo, loc_hi) =
+                    span_to_loc(span, &file.module.source_map, file.module.fm.end_pos);
+
+                DiagnosticInformation::KnownFile {
+                    message: info_msg,
+                    file_name: self.current_file.clone(),
+                    loc_lo,
+                    loc_hi,
+                }
+            }
+            None => DiagnosticInformation::UnfoundFile {
+                message: info_msg,
+                current_file: self.current_file.clone(),
+            },
+        }
+        .to_diag(None)
     }
     pub fn resolve_local_type(&mut self, i: &Ident) -> Res<ResolvedLocalType> {
         let k = &(i.sym.clone(), i.span.ctxt);
@@ -105,13 +137,14 @@ impl<'a, R: FileManager> TypeResolver<'a, R> {
                                 from_file: imported.clone(),
                             });
                         }
-                        None => todo!(),
+                        None => {}
                     }
                 }
                 ImportReference::Star { .. } => panic!(),
                 ImportReference::Default { .. } => panic!(),
             }
         }
-        panic!()
+
+        Err(self.make_err(&i.span, DiagnosticInfoMessage::CannotResolveLocalType))
     }
 }

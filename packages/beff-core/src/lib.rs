@@ -188,9 +188,9 @@ impl<'a, R: ImportResolver> Visit for ParserOfModuleLocals<'a, R> {
                         .ts_namespaces
                         .insert((id.sym.clone(), id.span.ctxt), ns);
                 }
-                None => todo!(),
+                None => {}
             },
-            TsModuleName::Str(_) => todo!(),
+            TsModuleName::Str(_) => {}
         }
     }
 }
@@ -291,20 +291,22 @@ impl<'a, R: ImportResolver> Visit for ImportsVisitor<'a, R> {
             Decl::TsModule(d) => {
                 let TsModuleDecl { id, body, .. } = &**d;
 
-                let name = match id {
-                    TsModuleName::Ident(id) => id.sym.clone(),
-                    TsModuleName::Str(_) => todo!(),
-                };
+                match id {
+                    TsModuleName::Ident(id) => {
+                        let name = id.sym.clone();
 
-                let mut visitor =
-                    ImportsVisitor::from_file(self.current_file.clone(), self.resolver);
-                if let Some(body) = &body {
-                    visitor.visit_ts_namespace_body(&body);
+                        let mut visitor =
+                            ImportsVisitor::from_file(self.current_file.clone(), self.resolver);
+                        if let Some(body) = &body {
+                            visitor.visit_ts_namespace_body(&body);
+                        }
+                        let type_exports = visitor.type_exports;
+                        let ns = Rc::new(ParsedTsNamespace { type_exports });
+                        self.type_exports
+                            .insert(name.clone(), Rc::new(TypeExport::TsNamespaceDecl(ns)));
+                    }
+                    TsModuleName::Str(_) => {}
                 }
-                let type_exports = visitor.type_exports;
-                let ns = Rc::new(ParsedTsNamespace { type_exports });
-                self.type_exports
-                    .insert(name.clone(), Rc::new(TypeExport::TsNamespaceDecl(ns)));
             }
             Decl::Using(_) | Decl::Class(_) | Decl::Fn(_) | Decl::TsEnum(_) | Decl::Var(_) => {}
         }
@@ -331,7 +333,7 @@ impl<'a, R: ImportResolver> Visit for ImportsVisitor<'a, R> {
                                         )),
                                     )
                                 }
-                                ModuleExportName::Str(_) => todo!(),
+                                ModuleExportName::Str(_) => {}
                             }
                         }
                         ExportSpecifier::Named(ExportNamedSpecifier { orig, exported, .. }) => {
@@ -353,7 +355,7 @@ impl<'a, R: ImportResolver> Visit for ImportsVisitor<'a, R> {
                                         )),
                                     )
                                 }
-                                ModuleExportName::Str(_) => todo!(),
+                                ModuleExportName::Str(_) => {}
                             };
                         }
                     }
@@ -380,7 +382,7 @@ impl<'a, R: ImportResolver> Visit for ImportsVisitor<'a, R> {
                                         renamed,
                                     });
                                 }
-                                ModuleExportName::Str(_) => todo!(),
+                                ModuleExportName::Str(_) => {}
                             }
                         }
                     }

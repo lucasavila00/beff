@@ -278,11 +278,11 @@ impl<'a, R: FileManager> TypeToSchema<'a, R> {
                 Err(Diagnostic {
                     cause: head.clone(),
                     related_information: Some(related_information),
-                    message: Some(DiagnosticParentMessage::CannotConvertToSchema),
+                    parent_big_message: Some(DiagnosticParentMessage::CannotConvertToSchema),
                 })
             }
             None => Err(Diagnostic {
-                message: Some(DiagnosticParentMessage::CannotConvertToSchema),
+                parent_big_message: Some(DiagnosticParentMessage::CannotConvertToSchema),
                 cause,
                 related_information: None,
             }),

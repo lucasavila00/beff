@@ -1,5 +1,5 @@
 {
-  "name": "bff-vscode",
+  "name": "beff-vscode",
   "version": "1.0.0",
   "description": "",
   "engines": {
@@ -15,8 +15,8 @@
   "scripts": {
     "build-rust-release": "wasm-pack build --release --target nodejs",
     "build-rust": "wasm-pack build --dev --target nodejs",
-    "build-cli": "esbuild ts-node/commandeer.ts --bundle --outfile=dist-cli/cli.js --platform=node --target=node14 --external:pnpapi --external:./pkg/hello_wasm.js --external:./pkg/hello_wasm_bg.js",
-    "build-ext": "esbuild ts-node/extension.ts --bundle --outfile=dist-ext/extension.js --platform=node --target=node14 --external:pnpapi --external:vscode --external:./pkg/hello_wasm.js --external:./pkg/hello_wasm_bg.js",
+    "build-cli": "esbuild ts-node/commandeer.ts --bundle --outfile=dist-cli/cli.js --platform=node --target=node14 --external:pnpapi --external:./pkg/beff_wasm.js --external:./pkg/beff_wasm_bg.js",
+    "build-ext": "esbuild ts-node/extension.ts --bundle --outfile=dist-ext/extension.js --platform=node --target=node14 --external:pnpapi --external:vscode --external:./pkg/beff_wasm.js --external:./pkg/beff_wasm_bg.js",
     "build": "npm run build-rust && npm run build-cli && npm run build-ext",
     "test": "node script/e2e.js && vitest --run --update",
     "do": "npm run build && node npm-bin/index.js -v -p /home/lucas/fluff/bff/packages/bff-wasm/vitest/export-decoder/bff.json",

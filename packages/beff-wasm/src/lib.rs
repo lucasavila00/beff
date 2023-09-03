@@ -16,7 +16,6 @@ use beff_core::BffFileName;
 use beff_core::ParsedModule;
 use log::Level;
 use parse_file::WasmImportsResolver;
-use std::collections::HashSet;
 use std::rc::Rc;
 use std::{cell::RefCell, collections::HashMap};
 use swc_common::{Globals, GLOBALS};
@@ -26,14 +25,12 @@ use wasm_diag::WasmDiagnostic;
 
 struct Bundler {
     pub files: HashMap<BffFileName, Rc<ParsedModule>>,
-    pub known_files: HashSet<BffFileName>,
 }
 
 impl Bundler {
     pub fn new() -> Bundler {
         Bundler {
             files: HashMap::new(),
-            known_files: HashSet::new(),
         }
     }
 }
@@ -87,7 +84,6 @@ pub fn update_file_content(file_name: &str, content: &str) {
 
 struct LazyFileManager<'a> {
     pub files: &'a mut HashMap<BffFileName, Rc<ParsedModule>>,
-    pub known_files: HashSet<BffFileName>,
 }
 
 impl<'a> FileManager for LazyFileManager<'a> {
@@ -100,8 +96,7 @@ impl<'a> FileManager for LazyFileManager<'a> {
         let mut resolver = WasmImportsResolver::new(file_name.clone());
         let res = parse_file_content(&mut resolver, file_name, &content);
         match res {
-            Ok((f, imports)) => {
-                self.known_files.extend(imports);
+            Ok((f, _imports)) => {
                 self.files.insert(file_name.clone(), f.clone());
                 Some(f)
             }
@@ -119,10 +114,8 @@ fn run_extraction(file_name: &str) -> ExtractResult {
         BUNDLER.with(|b| {
             let mut b = b.borrow_mut();
             let entry_point: String = file_name.to_string();
-            let known_files = b.known_files.clone();
             let mut man = LazyFileManager {
                 files: &mut b.files,
-                known_files,
             };
             api_extractor::extract_schema(&mut man, BffFileName::new(entry_point))
         })
@@ -154,9 +147,8 @@ fn update_file_content_inner(file_name: &str, content: &str) {
         parse_file_content(&mut resolver, &file_name, content)
     });
     match res {
-        Ok((f, imports)) => BUNDLER.with(|b| {
+        Ok((f, _imports)) => BUNDLER.with(|b| {
             let mut b = b.borrow_mut();
-            b.known_files.extend(imports);
             b.files.insert(file_name, f);
         }),
         Err(_) => {}

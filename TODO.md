@@ -2,15 +2,9 @@
 
 ## BFF Core
 
-## BFF CLI
-
-- [ ] watch mode
-- [ ] clap descriptions of params
-- [ ] snapshots of both esm and cjs generation
-
 ## BFF EXT
 
-- [ ] diags
+- [ ] big parent error message
 
 ## BFF Core
 
@@ -50,6 +44,10 @@
 <!--  -->
 <!--  -->
 <!--  -->
+
+## BFF CLI
+
+- [ ] watch mode
 
 ## next
 

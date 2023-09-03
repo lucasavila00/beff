@@ -6,6 +6,15 @@ use crate::BffFileName;
 
 #[derive(Debug, Clone)]
 pub enum DiagnosticInfoMessage {
+    CannotResolveNamespaceType,
+    ShouldNotResolveTsInterfaceDeclAsNamespace,
+    ShouldNotResolveTsTypeAsNamespace,
+    DecoderShouldBeObjectWithTypesAndNames,
+    TooManyTypeParamsOnDecoder,
+    TooFewTypeParamsOnDecoder,
+    GenericDecoderIsNotSupported,
+    InvalidDecoderKey,
+    InvalidDecoderProperty,
     CannotParseJsDocExportDefault,
     JsDocDescriptionRestIsNotEmpty,
     JsDocsParameterDescriptionHasTags,
@@ -58,10 +67,14 @@ pub enum DiagnosticInfoMessage {
     NotAnHttpMethod,
     ThisRefersToSomethingThatCannotBeSerialized(String),
     TypeParameterApplicationNotSupported,
+    CannotResolveLocalType,
 }
 impl DiagnosticInfoMessage {
     pub fn to_string(self) -> String {
         match self {
+            DiagnosticInfoMessage::CannotResolveLocalType => {
+                format!("Cannot resolve local type")
+            }
             DiagnosticInfoMessage::KeywordNonSerializableToJsonSchema
             | DiagnosticInfoMessage::PropertyNonSerializableToJsonSchema
             | DiagnosticInfoMessage::BigIntNonSerializableToJsonSchema
@@ -205,6 +218,9 @@ impl DiagnosticInfoMessage {
             DiagnosticInfoMessage::NotAnHttpMethod => {
                 format!("Not an HTTP method")
             }
+            e => {
+                format!("Unknown error: {e:?}")
+            }
         }
     }
 }
@@ -248,14 +264,14 @@ impl DiagnosticInformation {
     pub fn to_diag(self, message: Option<DiagnosticParentMessage>) -> Diagnostic {
         match self {
             DiagnosticInformation::KnownFile { .. } => Diagnostic {
-                message,
+                parent_big_message: message,
                 cause: self,
                 related_information: None,
             },
             DiagnosticInformation::UnfoundFile { .. } => Diagnostic {
                 cause: self,
                 related_information: None,
-                message,
+                parent_big_message: message,
             },
         }
     }
@@ -263,7 +279,7 @@ impl DiagnosticInformation {
 
 #[derive(Debug)]
 pub struct Diagnostic {
-    pub message: Option<DiagnosticParentMessage>,
+    pub parent_big_message: Option<DiagnosticParentMessage>,
     pub cause: DiagnosticInformation,
     pub related_information: Option<Vec<DiagnosticInformation>>,
 }

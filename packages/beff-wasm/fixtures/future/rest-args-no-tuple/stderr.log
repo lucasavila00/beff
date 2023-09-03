@@ -4,9 +4,9 @@ not yet implemented
 Stack:
 
 Error
-    at /home/lucas/fluff/bff/packages/bff-wasm/pkg/hello_wasm.js:364:17
-    at logError (/home/lucas/fluff/bff/packages/bff-wasm/pkg/hello_wasm.js:205:18)
-    at module.exports.__wbg_new_abda76e883ba8a5f (/home/lucas/fluff/bff/packages/bff-wasm/pkg/hello_wasm.js:363:65)
+    at /home/lucas/fluff/bff/packages/bff-wasm/pkg/beff_wasm.js:364:17
+    at logError (/home/lucas/fluff/bff/packages/bff-wasm/pkg/beff_wasm.js:205:18)
+    at module.exports.__wbg_new_abda76e883ba8a5f (/home/lucas/fluff/bff/packages/bff-wasm/pkg/beff_wasm.js:363:65)
     at console_error_panic_hook::Error::new::h24a202ca2cd6f4e3 (wasm://wasm/02d48e5e:wasm-function[16934]:0x8fb070)
     at console_error_panic_hook::hook_impl::hbd017b1cd15b0ccd (wasm://wasm/02d48e5e:wasm-function[3291]:0x6f343b)
     at console_error_panic_hook::hook::h2d1bbfd1bba12fb3 (wasm://wasm/02d48e5e:wasm-function[18176]:0x90caa5)

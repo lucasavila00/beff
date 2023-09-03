@@ -75,6 +75,6 @@ fn diag_to_wasm(diag: Diagnostic) -> WasmDiagnosticItem {
             ),
             None => None,
         },
-        message: diag.message.map(|it| it.to_string()),
+        message: diag.parent_big_message.map(|it| it.to_string()),
     }
 }

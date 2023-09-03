@@ -1,4 +1,4 @@
-import * as wasm from "../pkg/hello_wasm";
+import * as wasm from "../pkg/beff_wasm";
 import * as fs from "fs";
 import { resolveModuleName } from "./tsc-slim/out";
 import { codeFrameColumns } from "@babel/code-frame";
@@ -58,7 +58,6 @@ const resolveImport = (file_name: string, mod: string): string | undefined => {
 };
 
 let fsCache: Record<string, string> = {};
-
 const getRawLines = (fileName: string): string | undefined => {
   if (fsCache[fileName]) {
     return fsCache[fileName];
@@ -71,7 +70,6 @@ const getRawLines = (fileName: string): string | undefined => {
     return undefined;
   }
 };
-
 const emitDiagnosticInfo = (
   data: WasmDiagnosticInformation,
   padding: string
@@ -166,7 +164,7 @@ type UnknownFile = {
   message: string;
   current_file: string;
 };
-type WasmDiagnosticInformation =
+export type WasmDiagnosticInformation =
   | { KnownFile: KnownFile; UnknownFile?: never }
   | { UnknownFile: UnknownFile; KnownFile?: never };
 

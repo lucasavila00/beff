@@ -63,6 +63,8 @@ export const commanderExec = () => {
 
   execProject(projectPath, projectJson, options.verbose ?? false);
 
+  // if watch mode, start watching the files that are imported by the entry point
+
   const end = Date.now();
   const duration = end - start;
   console.log(chalk.green(`Finished in ${duration}ms`));
