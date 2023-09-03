@@ -12,6 +12,7 @@ pub mod type_to_schema;
 use anyhow::anyhow;
 use anyhow::Result;
 use api_extractor::FileManager;
+use core::fmt;
 use std::collections::HashMap;
 use std::collections::HashSet;
 use std::rc::Rc;
@@ -57,15 +58,17 @@ pub struct BffModuleData {
 #[derive(Debug, Clone, Eq, PartialEq, Hash)]
 pub struct BffFileName(Rc<String>);
 
+impl fmt::Display for BffFileName {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "{}", self.0)
+    }
+}
 impl BffFileName {
     pub fn new(s: String) -> BffFileName {
         BffFileName(Rc::new(s))
     }
     pub fn as_str(&self) -> &str {
         self.0.as_str()
-    }
-    pub fn to_string(&self) -> String {
-        self.0.to_string()
     }
 }
 
@@ -97,6 +100,11 @@ pub struct TypeExportsModule {
     named: HashMap<JsWord, Rc<TypeExport>>,
     extends: Vec<BffFileName>,
 }
+impl Default for TypeExportsModule {
+    fn default() -> Self {
+        Self::new()
+    }
+}
 impl TypeExportsModule {
     pub fn new() -> TypeExportsModule {
         TypeExportsModule {
@@ -104,6 +112,7 @@ impl TypeExportsModule {
             extends: Vec::new(),
         }
     }
+
     pub fn insert(&mut self, name: JsWord, export: Rc<TypeExport>) {
         self.named.insert(name, export);
     }
@@ -148,6 +157,11 @@ impl ParsedModuleLocals {
     }
 }
 
+impl Default for ParsedModuleLocals {
+    fn default() -> Self {
+        Self::new()
+    }
+}
 pub struct ParserOfModuleLocals {
     content: ParsedModuleLocals,
 }
@@ -372,15 +386,11 @@ pub fn parse_file_content<R: ImportResolver>(
         FileName::Real(file_name.to_string().into()),
         content.to_owned(),
     );
-    let (module, comments) = load_source_file(&source_file, &Arc::new(cm))?;
+    let (module, comments) = load_source_file(&source_file, cm)?;
     let mut v = ImportsVisitor::from_file(BffFileName::new(module.fm.name.to_string()), resolver);
     v.visit_module(&module.module);
 
-    let imports: HashSet<BffFileName> = v
-        .imports
-        .values()
-        .map(|x| x.file_name().clone())
-        .collect();
+    let imports: HashSet<BffFileName> = v.imports.values().map(|x| x.file_name().clone()).collect();
 
     let mut locals = ParserOfModuleLocals {
         content: ParsedModuleLocals::new(),

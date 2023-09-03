@@ -339,7 +339,7 @@ fn error_response(code: &str, description: &str) -> (String, Json) {
     )
 }
 
-fn open_api_to_json(it: OpenApi, components: &Vec<Definition>) -> Json {
+fn open_api_to_json(it: OpenApi, components: &[Definition]) -> Json {
     let v = vec![
         //
         ("openapi".into(), Json::String("3.1.0".into())),
@@ -394,8 +394,7 @@ fn param_to_js(
         HandlerParameter::PathOrQueryOrBody {
             schema, required, ..
         } => {
-            match operation_parameter_in_path_or_query_or_body(name, pattern, &schema, components)
-            {
+            match operation_parameter_in_path_or_query_or_body(name, pattern, &schema, components) {
                 FunctionParameterIn::Path => Js::Object(vec![
                     ("type".into(), Js::String("path".into())),
                     ("name".into(), Js::String(name.to_string())),
@@ -585,7 +584,7 @@ pub struct WritableModules {
 pub trait ToWritableModules {
     fn to_module(self) -> Result<WritableModules>;
 }
-fn build_decoders_expr(decs: &Vec<BuiltDecoder>) -> Js {
+fn build_decoders_expr(decs: &[BuiltDecoder]) -> Js {
     Js::Object(
         decs.iter()
             .map(|it| {

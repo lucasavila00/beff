@@ -146,11 +146,10 @@ fn update_file_content_inner(file_name: &str, content: &str) {
         let mut resolver = WasmImportsResolver::new(file_name.clone());
         parse_file_content(&mut resolver, &file_name, content)
     });
-    match res {
-        Ok((f, _imports)) => BUNDLER.with(|b| {
+    if let Ok((f, _imports)) = res {
+        BUNDLER.with(|b| {
             let mut b = b.borrow_mut();
             b.files.insert(file_name, f);
-        }),
-        Err(_) => {}
+        })
     }
 }

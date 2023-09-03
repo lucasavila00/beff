@@ -26,7 +26,7 @@ pub enum ResolvedLocalType {
 pub struct ResolvedNamespaceType {
     pub from_file: Rc<ImportReference>,
 }
-type Res<T> = Result<T, Diagnostic>;
+type Res<T> = Result<T, Box<Diagnostic>>;
 
 impl<'a, R: FileManager> TypeResolver<'a, R> {
     pub fn new(files: &'a mut R, current_file: &BffFileName) -> TypeResolver<'a, R> {
@@ -42,35 +42,30 @@ impl<'a, R: FileManager> TypeResolver<'a, R> {
     }
     fn resolve_export(&mut self, i: &Ident, export: &Rc<TypeExport>) -> Res<ResolvedNamespaceType> {
         match &**export {
-            TypeExport::StarOfOtherFile(reference) => {
-                Ok(ResolvedNamespaceType {
-                    from_file: reference.clone(),
-                })
-            }
-            TypeExport::TsType { .. } => {
-                Err(self.make_err(
+            TypeExport::StarOfOtherFile(reference) => Ok(ResolvedNamespaceType {
+                from_file: reference.clone(),
+            }),
+            TypeExport::TsType { .. } => Err(self
+                .make_err(
                     &i.span,
                     DiagnosticInfoMessage::ShouldNotResolveTsTypeAsNamespace,
-                ))
-            }
-            TypeExport::TsInterfaceDecl(_) => {
-                Err(self.make_err(
+                )
+                .into()),
+            TypeExport::TsInterfaceDecl(_) => Err(self
+                .make_err(
                     &i.span,
                     DiagnosticInfoMessage::ShouldNotResolveTsInterfaceDeclAsNamespace,
-                ))
-            }
+                )
+                .into()),
             TypeExport::SomethingOfOtherFile(orig, file_name) => {
                 let file = self.files.get_or_fetch_file(file_name);
-                let exported = file.and_then(|file| {
-                    file.type_exports
-                        .get(orig, self.files)
-                });
+                let exported = file.and_then(|file| file.type_exports.get(orig, self.files));
                 if let Some(export) = exported {
                     return self.resolve_export(i, &export);
                 }
-                Err(
-                    self.make_err(&i.span, DiagnosticInfoMessage::CannotResolveNamespaceType)
-                )
+                Err(self
+                    .make_err(&i.span, DiagnosticInfoMessage::CannotResolveNamespaceType)
+                    .into())
             }
         }
     }
@@ -87,10 +82,7 @@ impl<'a, R: FileManager> TypeResolver<'a, R> {
                 }
                 ImportReference::Named { orig, file_name } => {
                     let file = self.files.get_or_fetch_file(file_name);
-                    let exported = file.and_then(|file| {
-                        file.type_exports
-                            .get(orig, self.files)
-                    });
+                    let exported = file.and_then(|file| file.type_exports.get(orig, self.files));
                     if let Some(export) = exported {
                         return self.resolve_export(i, &export);
                     }
@@ -98,7 +90,9 @@ impl<'a, R: FileManager> TypeResolver<'a, R> {
             }
         }
 
-        Err(self.make_err(&i.span, DiagnosticInfoMessage::CannotResolveNamespaceType))
+        Err(self
+            .make_err(&i.span, DiagnosticInfoMessage::CannotResolveNamespaceType)
+            .into())
     }
 
     fn make_err(&mut self, span: &Span, info_msg: DiagnosticInfoMessage) -> Diagnostic {
@@ -134,18 +128,12 @@ impl<'a, R: FileManager> TypeResolver<'a, R> {
             match &**imported {
                 ImportReference::Named { orig, file_name } => {
                     let file = self.files.get_or_fetch_file(file_name);
-                    let exported = file.and_then(|file| {
-                        file.type_exports
-                            .get(orig, self.files)
-                    });
-                    match exported {
-                        Some(exported) => {
-                            return Ok(ResolvedLocalType::NamedImport {
-                                exported: exported.clone(),
-                                from_file: imported.clone(),
-                            });
-                        }
-                        None => {}
+                    let exported = file.and_then(|file| file.type_exports.get(orig, self.files));
+                    if let Some(exported) = exported {
+                        return Ok(ResolvedLocalType::NamedImport {
+                            exported: exported.clone(),
+                            from_file: imported.clone(),
+                        });
                     }
                 }
                 ImportReference::Star { .. } => {}
@@ -153,6 +141,8 @@ impl<'a, R: FileManager> TypeResolver<'a, R> {
             }
         }
 
-        Err(self.make_err(&i.span, DiagnosticInfoMessage::CannotResolveLocalType))
+        Err(self
+            .make_err(&i.span, DiagnosticInfoMessage::CannotResolveLocalType)
+            .into())
     }
 }

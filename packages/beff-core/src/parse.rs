@@ -15,9 +15,11 @@ use anyhow::anyhow;
 use swc_ecma_transforms_base::resolver;
 
 use swc_ecma_visit::FoldWith;
+
+#[allow(clippy::arc_with_non_send_sync)]
 pub fn load_source_file(
     fm: &Rc<SourceFile>,
-    cm: &Arc<SourceMap>,
+    cm: SourceMap,
 ) -> Result<(BffModuleData, SwcComments)> {
     let unresolved_mark = Mark::new();
     let top_level_mark = Mark::new();
@@ -41,7 +43,7 @@ pub fn load_source_file(
         BffModuleData {
             fm: Arc::new(fm.as_ref().clone()),
             module,
-            source_map: cm.clone(),
+            source_map: Arc::new(cm),
         },
         comments,
     ))

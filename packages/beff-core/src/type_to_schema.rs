@@ -35,7 +35,7 @@ fn extract_items_from_array(it: JsonSchema) -> JsonSchema {
     }
 }
 
-type Res<T> = Result<T, Diagnostic>;
+type Res<T> = Result<T, Box<Diagnostic>>;
 
 impl<'a, R: FileManager> TypeToSchema<'a, R> {
     pub fn new(files: &'a mut R, current_file: BffFileName) -> TypeToSchema<'a, R> {
@@ -199,15 +199,14 @@ impl<'a, R: FileManager> TypeToSchema<'a, R> {
         let r = type_params.as_ref().and_then(|it| it.params.split_first());
 
         if let Some((head, rest)) = r {
-            assert!(rest.is_empty());
-            match &**head {
-                TsType::TsLitType(TsLitType { lit, .. }) => match lit {
-                    TsLit::Str(Str { value, .. }) => {
-                        return Ok(JsonSchema::StringWithFormat(value.to_string()))
-                    }
-                    _ => {}
-                },
-                _ => {}
+            if rest.is_empty() {
+                if let TsType::TsLitType(TsLitType {
+                    lit: TsLit::Str(Str { value, .. }),
+                    ..
+                }) = &**head
+                {
+                    return Ok(JsonSchema::StringWithFormat(value.to_string()));
+                }
             }
         }
         self.error(
@@ -287,13 +286,15 @@ impl<'a, R: FileManager> TypeToSchema<'a, R> {
                     cause: head.clone(),
                     related_information: Some(related_information),
                     parent_big_message: Some(DiagnosticParentMessage::CannotConvertToSchema),
-                })
+                }
+                .into())
             }
             None => Err(Diagnostic {
                 parent_big_message: Some(DiagnosticParentMessage::CannotConvertToSchema),
                 cause,
                 related_information: None,
-            }),
+            }
+            .into()),
         }
     }
 
@@ -319,7 +320,7 @@ impl<'a, R: FileManager> TypeToSchema<'a, R> {
     }
     fn error<T>(&mut self, span: &Span, msg: DiagnosticInfoMessage) -> Res<T> {
         let err = self.create_error(span, msg);
-        Err(err.to_diag(None))
+        Err(err.to_diag(None).into())
     }
     fn get_identifier_diag_info(&mut self, i: &Ident) -> Option<DiagnosticInformation> {
         self.files
@@ -348,11 +349,7 @@ impl<'a, R: FileManager> TypeToSchema<'a, R> {
         let exported = self
             .files
             .get_or_fetch_file(from_file.file_name())
-            .and_then(|module| {
-                module
-                    .type_exports
-                    .get(right, self.files)
-            });
+            .and_then(|module| module.type_exports.get(right, self.files));
         match exported {
             Some(exported) => {
                 let name = match &*exported {
@@ -385,11 +382,10 @@ impl<'a, R: FileManager> TypeToSchema<'a, R> {
                 self.get_qualified_type_from_file(other_file, &right.sym, &right.span)
             }
             TypeExport::SomethingOfOtherFile(word, from_file) => {
-                let exported = self.files.get_or_fetch_file(from_file).and_then(|module| {
-                    module
-                        .type_exports
-                        .get(word, self.files)
-                });
+                let exported = self
+                    .files
+                    .get_or_fetch_file(from_file)
+                    .and_then(|module| module.type_exports.get(word, self.files));
 
                 match exported {
                     Some(exported) => self.recursively_get_qualified_type_export(exported, right),
@@ -469,7 +465,13 @@ impl<'a, R: FileManager> TypeToSchema<'a, R> {
             }) => match &type_name {
                 TsEntityName::Ident(i) => self.convert_ts_type_ident(i, type_params),
                 TsEntityName::TsQualifiedName(q) => {
-                    assert!(type_params.is_none());
+                    if type_params.is_some() {
+                        return self.error(
+                            &q.right.span,
+                            DiagnosticInfoMessage::CannotUseQualifiedTypeWithTypeParameters,
+                        );
+                    }
+
                     self.convert_ts_type_qual(q)
                 }
             },

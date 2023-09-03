@@ -1,3 +1,4 @@
+use core::fmt;
 use std::sync::Arc;
 
 use swc_common::{BytePos, Loc, SourceMap, Span};
@@ -6,6 +7,7 @@ use crate::BffFileName;
 
 #[derive(Debug, Clone)]
 pub enum DiagnosticInfoMessage {
+    CannotUseQualifiedTypeWithTypeParameters,
     CannotUseStarAsType,
     CannotUseTsTypeAsQualified,
     CannotUseTsInterfaceAsQualified,
@@ -78,6 +80,8 @@ pub enum DiagnosticInfoMessage {
     TypeParameterApplicationNotSupported,
     CannotResolveLocalType,
 }
+
+#[allow(clippy::inherent_to_string)]
 impl DiagnosticInfoMessage {
     pub fn to_string(self) -> String {
         match self {
@@ -105,7 +109,8 @@ impl DiagnosticInfoMessage {
                 "Context can only be used as the first parameter".to_string()
             }
             DiagnosticInfoMessage::ContextParameterMustBeFirst => {
-                "This cannot be the first parameter, Context must be the first parameter".to_string()
+                "This cannot be the first parameter, Context must be the first parameter"
+                    .to_string()
             }
             DiagnosticInfoMessage::TsInterfaceExtendsNotSupported => {
                 "Interface extends are not supported on schemas".to_string()
@@ -224,9 +229,7 @@ impl DiagnosticInfoMessage {
             DiagnosticInfoMessage::NotAnObjectWithMethodKind => {
                 "Not an object with method kind".to_string()
             }
-            DiagnosticInfoMessage::NotAnHttpMethod => {
-                "Not an HTTP method".to_string()
-            }
+            DiagnosticInfoMessage::NotAnHttpMethod => "Not an HTTP method".to_string(),
             e => {
                 format!("Unknown error: {e:?}")
             }
@@ -239,22 +242,23 @@ pub enum DiagnosticParentMessage {
     ComplexPathParam,
     InvalidContextPosition,
 }
-impl DiagnosticParentMessage {
-    // TODO: link to docs for each
-    pub fn to_string(self) -> String {
+
+impl fmt::Display for DiagnosticParentMessage {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match self {
             DiagnosticParentMessage::CannotConvertToSchema => {
-                "Exposing a type that cannot be converted to JSON schema".to_string()
+                write!(f, "Exposing a type that cannot be converted to JSON schema")
             }
             DiagnosticParentMessage::ComplexPathParam => {
-                "Complex path parameter".to_string()
+                write!(f, "Complex path parameter")
             }
             DiagnosticParentMessage::InvalidContextPosition => {
-                "Invalid context usage".to_string()
+                write!(f, "Invalid context usage")
             }
         }
     }
 }
+
 #[derive(Clone, Debug)]
 pub enum DiagnosticInformation {
     KnownFile {

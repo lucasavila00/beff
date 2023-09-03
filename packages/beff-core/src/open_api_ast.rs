@@ -72,13 +72,18 @@ impl Json {
             ),
         }
     }
-
-    pub fn to_string(&self) -> String {
-        serde_json::to_string_pretty(&self.to_serde())
-            .expect("should be possible to serialize json")
-    }
 }
 
+impl fmt::Display for Json {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(
+            f,
+            "{}",
+            serde_json::to_string_pretty(&self.to_serde())
+                .expect("should be possible to serialize json")
+        )
+    }
+}
 #[derive(Debug, Clone, PartialEq)]
 pub enum Js {
     Null,

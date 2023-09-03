@@ -10,7 +10,7 @@
 - [ ] check string format was registered
 - [ ] add many lazy string formats
 - [ ] assert header etc is imported from lib
-- [ ] clippy
+- [ ] clippy, assert!
 
 ## BFF CLI
 

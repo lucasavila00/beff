@@ -32,15 +32,11 @@ fn maybe_extract_promise(typ: &TsType) -> &TsType {
         if let TsEntityName::Ident(i) = &refs.type_name {
             // if name is promise
             if i.sym == *"Promise" {
-                match refs.type_params.as_ref() {
-                    Some(inst) => {
-                        let ts_type = inst.params.get(0);
-                        match ts_type {
-                            Some(ts_type) => return ts_type,
-                            None => {}
-                        }
+                if let Some(inst) = refs.type_params.as_ref() {
+                    let ts_type = inst.params.get(0);
+                    if let Some(ts_type) = ts_type {
+                        return ts_type;
                     }
-                    None => {}
                 }
             }
         }
@@ -422,7 +418,7 @@ impl<'a, R: FileManager> ExtractExportDefaultVisitor<'a, R> {
                 res
             }
             Err(diag) => {
-                self.errors.push(diag);
+                self.errors.push(*diag);
                 JsonSchema::Error
             }
         }
@@ -451,12 +447,10 @@ impl<'a, R: FileManager> ExtractExportDefaultVisitor<'a, R> {
                         required,
                         description,
                     }),
-                    _ => {
-                        self.error(
-                            &lib_ty_name.span,
-                            DiagnosticInfoMessage::TooManyParamsOnLibType,
-                        )
-                    }
+                    _ => self.error(
+                        &lib_ty_name.span,
+                        DiagnosticInfoMessage::TooManyParamsOnLibType,
+                    ),
                 }
             }
             _ => unreachable!("not in lib: {} - should check before calling", name),
@@ -558,12 +552,10 @@ impl<'a, R: FileManager> ExtractExportDefaultVisitor<'a, R> {
             | Pat::Invalid(Invalid { span, .. }) => {
                 self.error(span, DiagnosticInfoMessage::ParameterPatternNotSupported)
             }
-            Pat::Expr(_) => {
-                self.error(
-                    parent_span,
-                    DiagnosticInfoMessage::ParameterPatternNotSupported,
-                )
-            }
+            Pat::Expr(_) => self.error(
+                parent_span,
+                DiagnosticInfoMessage::ParameterPatternNotSupported,
+            ),
         }
     }
 
@@ -661,9 +653,7 @@ impl<'a, R: FileManager> ExtractExportDefaultVisitor<'a, R> {
                 "patch" => Ok(MethodKind::Patch),
                 "options" => Ok(MethodKind::Options),
                 "use" => Ok(MethodKind::Use),
-                _ => {
-                    self.error(span, DiagnosticInfoMessage::NotAnHttpMethod)
-                }
+                _ => self.error(span, DiagnosticInfoMessage::NotAnHttpMethod),
             },
             _ => {
                 let span = get_prop_name_span(key);
@@ -932,58 +922,53 @@ impl<'a, R: FileManager> Visit for ExtractExportDefaultVisitor<'a, R> {
         match n.callee {
             Callee::Super(_) => {}
             Callee::Import(_) => {}
-            Callee::Expr(ref expr) => match &**expr {
-                Expr::Ident(Ident { sym, span, .. }) => {
+            Callee::Expr(ref expr) => {
+                if let Expr::Ident(Ident { sym, span, .. }) = &**expr {
                     if sym == "buildParsers" {
                         match self.built_decoders {
-                            Some(_) => self
-                                .push_error(span, DiagnosticInfoMessage::TwoCallsToBuildParsers),
-                            None => match n.type_args {
-                                Some(ref params) => {
-                                    match self.extract_built_decoders_from_call(params.as_ref()) {
-                                        Ok(x) => self.built_decoders = Some(x),
-                                        Err(_) => {}
+                            Some(_) => {
+                                self.push_error(span, DiagnosticInfoMessage::TwoCallsToBuildParsers)
+                            }
+                            None => {
+                                if let Some(ref params) = n.type_args {
+                                    if let Ok(x) =
+                                        self.extract_built_decoders_from_call(params.as_ref())
+                                    {
+                                        self.built_decoders = Some(x)
                                     }
                                 }
-                                None => {
-                                    // TS will catch the issue
-                                }
-                            },
-                        }
-                    }
-                }
-                _ => {}
-            },
-        }
-    }
-    fn visit_export_default_expr(&mut self, n: &ExportDefaultExpr) {
-        match self.get_current_file() {
-            Ok(file) => {
-                let comments = file.comments.get_leading(n.span.lo);
-                if let Some(comments) = comments {
-                    self.parse_export_default_comments(comments);
-                }
-                if let Expr::Object(lit) = &*n.expr {
-                    self.found_default_export = true;
-                    for prop in &lit.props {
-                        match prop {
-                            PropOrSpread::Prop(prop) => {
-                                let method = self.endpoints_from_prop(prop);
-                                if let Ok(method) = method {
-                                    self.handlers.push(method)
-                                };
-                            }
-                            PropOrSpread::Spread(SpreadElement { dot3_token, .. }) => {
-                                self.push_error(
-                                    dot3_token,
-                                    DiagnosticInfoMessage::RestOnRouterDefaultExportNotSupportedYet,
-                                );
                             }
                         }
                     }
                 }
             }
-            Err(_) => {}
+        }
+    }
+    fn visit_export_default_expr(&mut self, n: &ExportDefaultExpr) {
+        if let Ok(file) = self.get_current_file() {
+            let comments = file.comments.get_leading(n.span.lo);
+            if let Some(comments) = comments {
+                self.parse_export_default_comments(comments);
+            }
+            if let Expr::Object(lit) = &*n.expr {
+                self.found_default_export = true;
+                for prop in &lit.props {
+                    match prop {
+                        PropOrSpread::Prop(prop) => {
+                            let method = self.endpoints_from_prop(prop);
+                            if let Ok(method) = method {
+                                self.handlers.push(method)
+                            };
+                        }
+                        PropOrSpread::Spread(SpreadElement { dot3_token, .. }) => {
+                            self.push_error(
+                                dot3_token,
+                                DiagnosticInfoMessage::RestOnRouterDefaultExportNotSupportedYet,
+                            );
+                        }
+                    }
+                }
+            }
         }
     }
 }
@@ -1099,15 +1084,12 @@ impl<'a, R: FileManager> EndpointToPath<'a, R> {
                 }
             }
             for (_, param) in rest_param {
-                match param {
-                    HandlerParameter::Context(span) => {
-                        self.push_error(
-                            span,
-                            DiagnosticInfoMessage::ContextInvalidAtThisPosition,
-                            Some(DiagnosticParentMessage::InvalidContextPosition),
-                        );
-                    }
-                    _ => {}
+                if let HandlerParameter::Context(span) = param {
+                    self.push_error(
+                        span,
+                        DiagnosticInfoMessage::ContextInvalidAtThisPosition,
+                        Some(DiagnosticParentMessage::InvalidContextPosition),
+                    );
                 }
             }
         }
@@ -1193,10 +1175,7 @@ impl<'a, R: FileManager> EndpointToPath<'a, R> {
         }
     }
 
-    fn endpoints_to_paths(
-        &mut self,
-        endpoints: &Vec<PathHandlerMap>,
-    ) -> Vec<open_api_ast::ApiPath> {
+    fn endpoints_to_paths(&mut self, endpoints: &[PathHandlerMap]) -> Vec<open_api_ast::ApiPath> {
         endpoints
             .iter()
             .map(|it| {
@@ -1233,17 +1212,15 @@ pub struct ExtractResult {
     pub components: Vec<Definition>,
 }
 
-fn visit_extract<R: FileManager>(
-    files: &mut R,
-    current_file: BffFileName,
-) -> (
+type VisitExtractResult = (
     Vec<PathHandlerMap>,
     Vec<Definition>,
     Vec<Diagnostic>,
     Info,
     Option<Vec<BuiltDecoder>>,
     HashSet<String>,
-) {
+);
+fn visit_extract<R: FileManager>(files: &mut R, current_file: BffFileName) -> VisitExtractResult {
     let mut visitor = ExtractExportDefaultVisitor::new(files, current_file.clone());
 
     let _ = visitor.visit_current_file();
