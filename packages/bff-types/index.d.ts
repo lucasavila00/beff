@@ -23,11 +23,15 @@ export type HandlerMeta = {
 export type ErrorVariant<T> = {
   error_kind: T;
   path: string[];
+  received: unknown;
 };
 export type DecodeError =
   | ErrorVariant<"NotAnObject">
   | ErrorVariant<"NotAnArray">
   | ErrorVariant<"InvalidUnion">
+  | (ErrorVariant<"StringFormatCheckFailed"> & {
+      expected_type: string;
+    })
   | (ErrorVariant<"NotTypeof"> & {
       expected_type: string;
     })

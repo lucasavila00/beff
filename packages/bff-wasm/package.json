@@ -34,7 +34,6 @@
     "@types/babel__code-frame": "^7.0.3",
     "@types/node": "^20.5.7",
     "@types/vscode": "^1.81.0",
-    "bff": "workspace:^1.0.0",
     "bff-hono": "workspace:^1.0.0",
     "commander": "^11.0.0",
     "esbuild": "^0.19.2",

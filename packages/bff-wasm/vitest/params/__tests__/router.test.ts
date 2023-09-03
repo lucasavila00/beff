@@ -58,24 +58,28 @@ it("post", async () => {
   );
 });
 
-it.skip("post with body and error", async () => {
+it("post with body and error", async () => {
   const req = new Request("http://localhost/req-body", {
     method: "POST",
     body: JSON.stringify({ a: 123 }),
   });
   const res = await app.request(req);
   expect(res.status).toMatchInlineSnapshot("422");
-  expect(await res.text()).toMatchInlineSnapshot(
-    '"Decoder error at Request Body.a: expected string."'
+  expect(await res.json()).toMatchInlineSnapshot(
+    `
+    {
+      "message": "Error #1: Expected string ~ Path: requestBody.a ~ Received: 123",
+    }
+  `
   );
 });
 
-it.skip("post with body and error, client", async () => {
+it("post with body and error, client", async () => {
   try {
     await bff["/req-body"].post({ a: 123 as any });
   } catch (e) {
     expect(e).toMatchInlineSnapshot(
-      '"Decoder error at Request Body.a: expected string."'
+      '[HTTPException: Error #1: Expected string ~ Path: requestBody.a ~ Received: 123]'
     );
   }
 });

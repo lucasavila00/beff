@@ -9,7 +9,7 @@ use swc_ecma_ast::{
 
 use crate::api_extractor::{
     operation_parameter_in_path_or_query_or_body, BuiltDecoder, ExtractResult, FunctionParameterIn,
-    HandlerParameter, HeaderOrCookie, ParsedPattern, PathHandlerMap,
+    HandlerParameter, ParsedPattern, PathHandlerMap,
 };
 use crate::decoder;
 use crate::emit::emit_module;
@@ -258,7 +258,7 @@ impl ToJson for open_api_ast::OperationObject {
                     ]),
                 ),
                 error_response_ref("422", "DecodeError"),
-                error_response_ref("default", "UnexpectedError"),
+                error_response_ref("500", "UnexpectedError"),
             ]),
         ));
 
@@ -396,7 +396,7 @@ fn param_to_js(
                     ("required".into(), Js::Bool(required)),
                     (
                         "validator".into(),
-                        Js::named_decoder(format!("Path Parameter \"{name}\""), schema.clone()),
+                        Js::named_decoder(format!("{name}"), schema.clone()),
                     ),
                     ("coercer".into(), Js::coercer(schema, components)),
                 ]),
@@ -406,7 +406,7 @@ fn param_to_js(
                     ("required".into(), Js::Bool(required)),
                     (
                         "validator".into(),
-                        Js::named_decoder(format!("Query Parameter \"{name}\""), schema.clone()),
+                        Js::named_decoder(format!("{name}"), schema.clone()),
                     ),
                     ("coercer".into(), Js::coercer(schema, components)),
                 ]),
@@ -416,7 +416,7 @@ fn param_to_js(
                     ("required".into(), Js::Bool(required)),
                     (
                         "validator".into(),
-                        Js::named_decoder(format!("Request Body"), schema.clone()),
+                        Js::named_decoder(format!("requestBody"), schema.clone()),
                     ),
                 ]),
                 FunctionParameterIn::InvalidComplexPathParameter => {
@@ -430,10 +430,6 @@ fn param_to_js(
             required,
             ..
         } => {
-            let kind_name = match kind {
-                HeaderOrCookie::Header => "Header Argument",
-                HeaderOrCookie::Cookie => "Cookie Argument",
-            };
             Js::Object(vec![
                 //
                 ("type".into(), Js::String(kind.to_string())),
@@ -441,7 +437,7 @@ fn param_to_js(
                 ("required".into(), Js::Bool(required)),
                 (
                     "validator".into(),
-                    Js::named_decoder(format!("{kind_name} \"{name}\""), schema.clone()),
+                    Js::named_decoder(format!("{name}"), schema.clone()),
                 ),
                 ("coercer".into(), Js::coercer(schema, components)),
             ])

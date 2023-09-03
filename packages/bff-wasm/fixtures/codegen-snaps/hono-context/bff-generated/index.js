@@ -247,7 +247,7 @@ const schema =  {
           "422": {
             "$ref": "#/components/responses/DecodeError"
           },
-          "default": {
+          "500": {
             "$ref": "#/components/responses/UnexpectedError"
           }
         }
@@ -283,7 +283,7 @@ const schema =  {
           "422": {
             "$ref": "#/components/responses/DecodeError"
           },
-          "default": {
+          "500": {
             "$ref": "#/components/responses/UnexpectedError"
           }
         }

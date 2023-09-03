@@ -787,7 +787,7 @@ const meta = [
                         error_acc_0.push({
                             "error_kind": "NotTypeof",
                             "path": [
-                                'Header Argument "user_agent"'
+                                "user_agent"
                             ],
                             "received": input,
                             "expected_type": "string"
@@ -809,7 +809,7 @@ const meta = [
                         error_acc_0.push({
                             "error_kind": "NotTypeof",
                             "path": [
-                                'Cookie Argument "ads_id"'
+                                "ads_id"
                             ],
                             "received": input,
                             "expected_type": "string"
@@ -868,7 +868,7 @@ const meta = [
                         error_acc_0.push({
                             "error_kind": "NotTypeof",
                             "path": [
-                                'Path Parameter "id"'
+                                "id"
                             ],
                             "received": input,
                             "expected_type": "number"
@@ -906,7 +906,7 @@ const meta = [
                         error_acc_0.push({
                             "error_kind": "NotTypeof",
                             "path": [
-                                'Path Parameter "id"'
+                                "id"
                             ],
                             "received": input,
                             "expected_type": "string"
@@ -951,7 +951,7 @@ const meta = [
                         error_acc_0.push({
                             "error_kind": "NotTypeof",
                             "path": [
-                                'Path Parameter "id"'
+                                "id"
                             ],
                             "received": input,
                             "expected_type": "string"
@@ -1364,7 +1364,7 @@ const schema =  {
           "422": {
             "$ref": "#/components/responses/DecodeError"
           },
-          "default": {
+          "500": {
             "$ref": "#/components/responses/UnexpectedError"
           }
         }
@@ -1387,7 +1387,7 @@ const schema =  {
           "422": {
             "$ref": "#/components/responses/DecodeError"
           },
-          "default": {
+          "500": {
             "$ref": "#/components/responses/UnexpectedError"
           }
         }
@@ -1430,7 +1430,7 @@ const schema =  {
           "422": {
             "$ref": "#/components/responses/DecodeError"
           },
-          "default": {
+          "500": {
             "$ref": "#/components/responses/UnexpectedError"
           }
         }
@@ -1463,7 +1463,7 @@ const schema =  {
           "422": {
             "$ref": "#/components/responses/DecodeError"
           },
-          "default": {
+          "500": {
             "$ref": "#/components/responses/UnexpectedError"
           }
         }
@@ -1495,7 +1495,7 @@ const schema =  {
           "422": {
             "$ref": "#/components/responses/DecodeError"
           },
-          "default": {
+          "500": {
             "$ref": "#/components/responses/UnexpectedError"
           }
         }
@@ -1525,7 +1525,7 @@ const schema =  {
           "422": {
             "$ref": "#/components/responses/DecodeError"
           },
-          "default": {
+          "500": {
             "$ref": "#/components/responses/UnexpectedError"
           }
         }
@@ -1548,7 +1548,7 @@ const schema =  {
           "422": {
             "$ref": "#/components/responses/DecodeError"
           },
-          "default": {
+          "500": {
             "$ref": "#/components/responses/UnexpectedError"
           }
         }
@@ -1571,7 +1571,7 @@ const schema =  {
           "422": {
             "$ref": "#/components/responses/DecodeError"
           },
-          "default": {
+          "500": {
             "$ref": "#/components/responses/UnexpectedError"
           }
         }
@@ -1592,7 +1592,7 @@ const schema =  {
           "422": {
             "$ref": "#/components/responses/DecodeError"
           },
-          "default": {
+          "500": {
             "$ref": "#/components/responses/UnexpectedError"
           }
         }

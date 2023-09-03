@@ -2,12 +2,7 @@
 
 ## BFF Core
 
-- [ ] assert header etc is imported from lib
-
-- [ ] todo!, unwrap, panic
-
 - [ ] fix skipped tests
-
 - [ ] coercion of alias
 
 ## BFF CLI
@@ -25,8 +20,10 @@
 - [ ] if it uses `*`, then it can just use use
 - [ ] only allow simple openapi patterns, no explode
 - [ ] disallow `/{param}asd/`
-- [ ] remove tuple args broken code
 - [ ] check string format was registered
+- [ ] add many lazy string formats
+- [ ] assert header etc is imported from lib
+- [ ] todo!, unwrap, panic
 
 <!--  -->
 <!--  -->

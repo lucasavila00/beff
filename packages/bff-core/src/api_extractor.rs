@@ -21,7 +21,7 @@ use swc_ecma_ast::{
     ComputedPropName, ExportDefaultExpr, Expr, FnExpr, Function, GetterProp, Ident, Invalid,
     KeyValueProp, Lit, MethodProp, Number, ObjectPat, Pat, Prop, PropName, PropOrSpread, RestPat,
     SetterProp, SpreadElement, Str, Tpl, TsEntityName, TsKeywordType, TsKeywordTypeKind,
-    TsPropertySignature, TsTupleType, TsType, TsTypeAnn, TsTypeElement, TsTypeLit, TsTypeParamDecl,
+    TsPropertySignature, TsType, TsTypeAnn, TsTypeElement, TsTypeLit, TsTypeParamDecl,
     TsTypeParamInstantiation, TsTypeRef,
 };
 use swc_ecma_visit::Visit;
@@ -545,93 +545,6 @@ impl<'a, R: FileManager> ExtractExportDefaultVisitor<'a, R> {
         Ok(self.visit_module(&module))
     }
 
-    fn parse_arrow_param_from_type_expecting_tuple(
-        &mut self,
-        it: &TsType,
-        rest_span: &Span,
-    ) -> Result<Vec<(String, HandlerParameter)>> {
-        match it {
-            TsType::TsTypeRef(TsTypeRef {
-                type_name,
-                type_params,
-                ..
-            }) => {
-                if type_params.is_some() {
-                    self.push_error(
-                        rest_span,
-                        DiagnosticInfoMessage::TsTypeParametersNotSupportedOnTuple,
-                    );
-                    return Err(anyhow!("error param"));
-                }
-                match &type_name {
-                    TsEntityName::TsQualifiedName(_) => {
-                        // self.push_error(
-                        //     rest_span,
-                        //     DiagnosticInfoMessage::TsQualifiedNameNotSupported,
-                        // );
-                        // return Err(anyhow!("error param"));
-                        todo!()
-                    }
-                    TsEntityName::Ident(_) => {
-                        todo!()
-                        // if let Some(alias) = self
-                        //     .get_current_file()?
-                        //     .locals
-                        //     .type_aliases
-                        //     .get(&(i.sym.clone(), i.span.ctxt))
-                        // {
-                        //     return self
-                        //         .parse_arrow_param_from_type_expecting_tuple(alias, rest_span);
-                        // }
-                        // self.push_error(
-                        //     rest_span,
-                        //     DiagnosticInfoMessage::CouldNotResolveIdentifierOnPathParamTuple,
-                        // );
-                        // return Err(anyhow!("error param"));
-                    }
-                }
-            }
-            TsType::TsTupleType(TsTupleType { elem_types, .. }) => elem_types
-                .iter()
-                .map(|it| match &it.label {
-                    Some(pat) => match pat {
-                        Pat::Ident(BindingIdent { id, .. }) => {
-                            let comments =
-                                self.get_current_file()?.comments.get_leading(id.span.lo);
-                            let description = comments
-                                .and_then(|it| self.parse_description_comment(it, &id.span));
-                            let param = self.parse_parameter_type(
-                                &it.ty,
-                                !id.optional,
-                                description,
-                                &id.span,
-                            )?;
-                            Ok((id.sym.to_string(), param))
-                        }
-                        _ => {
-                            self.push_error(
-                                rest_span,
-                                DiagnosticInfoMessage::CouldNotUnderstandRestParameter,
-                            );
-                            return Err(anyhow!("error param"));
-                        }
-                    },
-                    None => {
-                        self.push_error(
-                            rest_span,
-                            DiagnosticInfoMessage::RestParamMustBeLabelAnnotated,
-                        );
-                        return Err(anyhow!("error param"));
-                    }
-                })
-                .collect(),
-            _ => {
-                self.push_error(rest_span, DiagnosticInfoMessage::RestParameterMustBeTuple);
-                return Err(anyhow!("error param"));
-            }
-        }
-    }
-
     fn parse_arrow_parameter(
         &mut self,
         param: &Pat,
@@ -655,14 +568,8 @@ impl<'a, R: FileManager> ExtractExportDefaultVisitor<'a, R> {
                 let param = self.parse_parameter_type(&ty, !id.optional, description, &id.span)?;
                 Ok(vec![(id.sym.to_string(), param)])
             }
-            Pat::Rest(RestPat { span, type_ann, .. }) => match type_ann {
-                Some(it) => self.parse_arrow_param_from_type_expecting_tuple(&it.type_ann, span),
-                None => {
-                    self.push_error(span, DiagnosticInfoMessage::RestParamMustBeTypeAnnotated);
-                    return Err(anyhow!("error param"));
-                }
-            },
-            Pat::Array(ArrayPat { span, .. })
+            Pat::Rest(RestPat { span, .. })
+            | Pat::Array(ArrayPat { span, .. })
             | Pat::Object(ObjectPat { span, .. })
             | Pat::Assign(AssignPat { span, .. })
             | Pat::Invalid(Invalid { span, .. }) => {

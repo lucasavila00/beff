@@ -104,7 +104,7 @@
           "422": {
             "$ref": "#/components/responses/DecodeError"
           },
-          "default": {
+          "500": {
             "$ref": "#/components/responses/UnexpectedError"
           }
         }
@@ -136,7 +136,7 @@
           "422": {
             "$ref": "#/components/responses/DecodeError"
           },
-          "default": {
+          "500": {
             "$ref": "#/components/responses/UnexpectedError"
           }
         }

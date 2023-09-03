@@ -423,7 +423,7 @@ const meta = [
                         error_acc_0.push({
                             "error_kind": "NotTypeof",
                             "path": [
-                                'Path Parameter "id"'
+                                "id"
                             ],
                             "received": input,
                             "expected_type": "string"
@@ -689,7 +689,7 @@ const schema =  {
           "422": {
             "$ref": "#/components/responses/DecodeError"
           },
-          "default": {
+          "500": {
             "$ref": "#/components/responses/UnexpectedError"
           }
         }

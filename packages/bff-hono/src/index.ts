@@ -1,15 +1,43 @@
 import type { Hono } from "hono";
-import { HandlerMeta, MetaParam, OpenApiServer } from "bff-types";
-import {
-  BffHTTPException,
-  decodeNoMessage,
-  decodeWithMessage,
-  template,
-} from "bff-server";
+import { DecodeError, HandlerMeta, MetaParam, OpenApiServer } from "bff-types";
 import { getCookie } from "hono/cookie";
-import { HTTPException } from "hono/http-exception";
 import { buildStableClient, ClientFromRouter } from "bff-client";
 
+export const template = `
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta
+      name="description"
+      content="SwaggerUI"
+    />
+    <title>SwaggerUI</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/normalize/8.0.1/normalize.min.css" />
+    <link rel="stylesheet" href="https://unpkg.com/swagger-ui-dist@5.0.0/swagger-ui.css" />
+
+  </head>
+  <body>
+  <div id="swagger-ui"></div>
+  <script src="https://unpkg.com/swagger-ui-dist@5.0.0/swagger-ui-bundle.js" crossorigin></script>
+  <script src="https://unpkg.com/swagger-ui-dist@5.0.0/swagger-ui-standalone-preset.js" crossorigin></script>
+  <script>
+    window.onload = () => {
+      window.ui = SwaggerUIBundle({
+        url: '/api/v3/openapi.json',
+        dom_id: '#swagger-ui',
+        presets: [
+          SwaggerUIBundle.presets.apis,
+          SwaggerUIStandalonePreset
+        ],
+        layout: "StandaloneLayout",
+      });
+    };
+  </script>
+  </body>
+</html>
+`;
 import type { Context as HonoContext, Env } from "hono";
 export type Ctx<T = {}, E extends Env = any> = T & { hono: HonoContext<E> };
 
@@ -20,6 +48,97 @@ const coerce = (coercer: any, value: any): any => {
 const toHonoPattern = (pattern: string): string => {
   // replace {id} with :id
   return pattern.replace(/\{(\w+)\}/g, ":$1");
+};
+
+export class BffHTTPException extends Error {
+  isBffHttpException: true;
+  status: number;
+  constructor(status: number, message: string) {
+    super(message);
+    this.name = "HTTPException";
+    this.isBffHttpException = true;
+    this.status = status;
+  }
+}
+export const isBffHttpException = (e: any): e is BffHTTPException => {
+  return e?.isBffHttpException;
+};
+
+const prettyPrintErrorMessage = (it: DecodeError): string => {
+  switch (it.error_kind) {
+    case "NotTypeof": {
+      return `Expected ${it.expected_type}`;
+    }
+    case "NotEq": {
+      return `Expected ${prettyPrintValue(it.expected_value)}`;
+    }
+    case "StringFormatCheckFailed": {
+      return `Expected ${it.expected_type}`;
+    }
+    default: {
+      return it.error_kind;
+    }
+  }
+};
+
+const prettyPrintValue = (it: unknown): string => {
+  if (typeof it === "string") {
+    return `"${it}"`;
+  }
+  if (typeof it === "number") {
+    return `${it}`;
+  }
+  if (typeof it === "boolean") {
+    return `${it}`;
+  }
+  if (it === null) {
+    return "null";
+  }
+  if (Array.isArray(it)) {
+    return `Array`;
+  }
+  if (typeof it === "object") {
+    return `Object`;
+  }
+  return JSON.stringify(it);
+};
+const prettyPrintError = (it: DecodeError): string => {
+  return [
+    prettyPrintErrorMessage(it),
+    `Path: ${it.path.join(".")}`,
+    `Received: ${prettyPrintValue(it.received)}`,
+  ].join(" ~ ");
+};
+const MAX_ERRORS = 5;
+
+const printAndJoin = (errors: DecodeError[]): string => {
+  return errors
+    .map((it, idx) => `Error #${idx + 1}: ` + prettyPrintError(it))
+    .join(" | ");
+};
+const prettyPrintErrors = (errors: DecodeError[]): string => {
+  if (errors.length > MAX_ERRORS) {
+    const split = errors.slice(0, MAX_ERRORS);
+    const omitted = errors.length - MAX_ERRORS;
+    return printAndJoin(split) + `... ${omitted} more`;
+  }
+  return printAndJoin(errors);
+};
+
+const decodeWithMessage = (validator: any, value: any) => {
+  const errors = validator(value);
+  if (errors.length > 0) {
+    throw new BffHTTPException(422, prettyPrintErrors(errors));
+  }
+  return value;
+};
+const decodeNoMessage = (validator: any, value: any) => {
+  const errors = validator(value);
+
+  if (errors.length > 0) {
+    throw new BffHTTPException(500, "Internal error");
+  }
+  return value;
 };
 
 const handleMethod = async (c: Ctx, meta: HandlerMeta, handler: Function) => {
@@ -73,8 +192,7 @@ const registerDocs = (
 
   app.get("/docs", (c) => c.html(template));
 };
-const isBffHTTPException = (it: unknown): it is BffHTTPException =>
-  (it as any)?.__isBffHTTPException ?? false;
+
 export function registerRouter(options: {
   app: Hono<any, any, any>;
   router: any;
@@ -114,10 +232,13 @@ export function registerRouter(options: {
           try {
             return await handleMethod({ hono: c }, meta, handlerData);
           } catch (e) {
-            if (isBffHTTPException(e)) {
-              throw new HTTPException(e.status, {
-                message: e.message,
-              });
+            if (isBffHttpException(e)) {
+              return c.json(
+                {
+                  message: e.message,
+                },
+                e.status
+              );
             }
             throw e;
           }
@@ -155,5 +276,14 @@ export const buildHonoTestClient = <T>(
     if (r.ok) {
       return r.json();
     }
-    throw await r.text();
+    const text = await r.text();
+    try {
+      const json = JSON.parse(text);
+      throw new BffHTTPException(r.status, json.message);
+    } catch (e) {
+      if (isBffHttpException(e)) {
+        throw e;
+      }
+      throw new BffHTTPException(r.status, text);
+    }
   });

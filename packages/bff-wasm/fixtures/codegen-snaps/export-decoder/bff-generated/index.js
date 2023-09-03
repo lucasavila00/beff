@@ -158,7 +158,7 @@ const meta = [
                         error_acc_0.push({
                             "error_kind": "NotTypeof",
                             "path": [
-                                'Path Parameter "name"'
+                                "name"
                             ],
                             "received": input,
                             "expected_type": "string"
@@ -196,7 +196,7 @@ const meta = [
                         error_acc_0.push({
                             "error_kind": "NotTypeof",
                             "path": [
-                                'Path Parameter "uuid"'
+                                "uuid"
                             ],
                             "received": input,
                             "expected_type": "string"
@@ -215,7 +215,7 @@ const meta = [
                 "validator": function(input) {
                     let error_acc_0 = [];
                     error_acc_0.push(...add_path_to_errors(validate_Password(input), [
-                        'Query Parameter "p"'
+                        "p"
                     ]));
                     return error_acc_0;
                 },
@@ -412,7 +412,7 @@ const schema =  {
           "422": {
             "$ref": "#/components/responses/DecodeError"
           },
-          "default": {
+          "500": {
             "$ref": "#/components/responses/UnexpectedError"
           }
         }
@@ -444,7 +444,7 @@ const schema =  {
           "422": {
             "$ref": "#/components/responses/DecodeError"
           },
-          "default": {
+          "500": {
             "$ref": "#/components/responses/UnexpectedError"
           }
         }
