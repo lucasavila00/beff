@@ -4,7 +4,7 @@ use crate::diag::{
 };
 use crate::open_api_ast::Json;
 use crate::open_api_ast::{Definition, JsonSchema, Optionality};
-use crate::type_resolve::{ResolvedLocalType, ResolvedNamespaceType, TypeResolver};
+use crate::type_resolve::{ResolvedLocalType, TypeResolver};
 use crate::{BffFileName, ImportReference, TypeExport};
 use std::collections::HashMap;
 use std::rc::Rc;
@@ -159,10 +159,6 @@ impl<'a, R: FileManager> TypeToSchema<'a, R> {
                         )
                     }
                 }
-            }
-            TypeExport::TsNamespaceDecl(_) => {
-                return self
-                    .cannot_serialize_error(span, DiagnosticInfoMessage::CannotSerializeNamespace)
             }
         };
         self.current_file = store_current_file;
@@ -363,7 +359,6 @@ impl<'a, R: FileManager> TypeToSchema<'a, R> {
                     TypeExport::TsInterfaceDecl(it) => it.id.sym.to_string(),
                     TypeExport::StarOfOtherFile(_) => right.to_string(),
                     TypeExport::SomethingOfOtherFile(that, _) => that.to_string(),
-                    TypeExport::TsNamespaceDecl(it) => it.name.to_owned(),
                 };
                 Ok((exported, from_file.clone(), name))
             }
@@ -375,7 +370,6 @@ impl<'a, R: FileManager> TypeToSchema<'a, R> {
         &mut self,
         exported: Rc<TypeExport>,
         right: &Ident,
-        from_file: &BffFileName,
     ) -> Res<(Rc<TypeExport>, Rc<ImportReference>, String)> {
         match &*exported {
             TypeExport::TsType { .. } => todo!(),
@@ -392,24 +386,7 @@ impl<'a, R: FileManager> TypeToSchema<'a, R> {
                 });
 
                 match exported {
-                    Some(exported) => {
-                        self.get_qualified_type_export(exported, right, &from_file.clone())
-                    }
-                    None => todo!(),
-                }
-            }
-            TypeExport::TsNamespaceDecl(it) => {
-                let exported = it.type_exports.get(&right.sym, self.files);
-                match exported {
-                    Some(exported) => Ok((
-                        exported,
-                        ImportReference::Named {
-                            orig: Rc::new(right.sym.clone()),
-                            file_name: from_file.clone(),
-                        }
-                        .into(),
-                        right.sym.to_string(),
-                    )),
+                    Some(exported) => self.get_qualified_type_export(exported, right),
                     None => todo!(),
                 }
             }
@@ -421,29 +398,13 @@ impl<'a, R: FileManager> TypeToSchema<'a, R> {
     ) -> Res<(Rc<TypeExport>, Rc<ImportReference>, String)> {
         match &q.left {
             TsEntityName::TsQualifiedName(q2) => {
-                let (exported, from_file, _name) = self.get_qualified_type(q2)?;
-                self.get_qualified_type_export(exported, &q.right, &from_file.file_name())
+                let (exported, _from_file, _name) = self.get_qualified_type(q2)?;
+                self.get_qualified_type_export(exported, &q.right)
             }
             TsEntityName::Ident(i) => {
-                match TypeResolver::new(self.files, &self.current_file).resolve_namespace_type(i)? {
-                    ResolvedNamespaceType::Star { from_file } => {
-                        self.get_qualified_type_from_file(&from_file, &q.right.sym, &q.right.span)
-                    }
-                    ResolvedNamespaceType::TsNamespace(ref it) => {
-                        match it.type_exports.get(&q.right.sym, self.files) {
-                            Some(res) => Ok((
-                                res,
-                                ImportReference::Named {
-                                    orig: Rc::new(q.right.sym.clone()),
-                                    file_name: self.current_file.clone(),
-                                }
-                                .into(),
-                                q.right.sym.to_string(),
-                            )),
-                            None => todo!(),
-                        }
-                    }
-                }
+                let ns =
+                    TypeResolver::new(self.files, &self.current_file).resolve_namespace_type(i)?;
+                self.get_qualified_type_from_file(&ns.from_file, &q.right.sym, &q.right.span)
             }
         }
     }

@@ -1,0 +1,11 @@
+Error: Unknown error: CannotResolveNamespaceType
+ /home/lucas/fluff/bff/packages/beff-wasm/fixtures/errors/nested-namespace-2/app.ts:16:34
+   14 | export default {
+   15 |   [`/hello2`]: {
+ > 16 |     get: async (c: Ctx): Promise<SomeNamespace2.SomeType2> => todo(),
+      |                                  ^^^^^^^^^^^^^^ Unknown error: CannotResolveNamespaceType
+   17 |   },
+   18 | };
+   19 |
+
+Found 1 error

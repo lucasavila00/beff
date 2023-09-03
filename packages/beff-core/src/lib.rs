@@ -34,7 +34,7 @@ use swc_ecma_ast::NamedExport;
 use swc_ecma_ast::{
     ImportDecl, ImportNamedSpecifier, ImportSpecifier, TsInterfaceDecl, TsTypeAliasDecl,
 };
-use swc_ecma_ast::{Module, TsModuleDecl, TsModuleName, TsType};
+use swc_ecma_ast::{Module, TsType};
 use swc_ecma_visit::Visit;
 use swc_node_comments::SwcComments;
 
@@ -46,7 +46,6 @@ pub enum TypeExport {
     TsInterfaceDecl(Rc<TsInterfaceDecl>),
     StarOfOtherFile(Rc<ImportReference>),
     SomethingOfOtherFile(JsWord, BffFileName),
-    TsNamespaceDecl(Rc<ParsedTsNamespace>),
 }
 
 pub struct BffModuleData {
@@ -135,34 +134,25 @@ pub struct ParsedModule {
     pub type_exports: TypeExportsModule,
 }
 
-#[derive(Debug, Clone)]
-pub struct ParsedTsNamespace {
-    pub name: String,
-    pub type_exports: TypeExportsModule,
-}
 #[derive(Debug)]
 pub struct ParsedModuleLocals {
     pub type_aliases: HashMap<(JsWord, SyntaxContext), Rc<TsType>>,
     pub interfaces: HashMap<(JsWord, SyntaxContext), Rc<TsInterfaceDecl>>,
-    pub ts_namespaces: HashMap<(JsWord, SyntaxContext), Rc<ParsedTsNamespace>>,
 }
 impl ParsedModuleLocals {
     pub fn new() -> ParsedModuleLocals {
         ParsedModuleLocals {
             type_aliases: HashMap::new(),
             interfaces: HashMap::new(),
-            ts_namespaces: HashMap::new(),
         }
     }
 }
 
-pub struct ParserOfModuleLocals<'a, R: ImportResolver> {
+pub struct ParserOfModuleLocals {
     content: ParsedModuleLocals,
-    resolver: &'a mut R,
-    current_file: BffFileName,
 }
 
-impl<'a, R: ImportResolver> Visit for ParserOfModuleLocals<'a, R> {
+impl Visit for ParserOfModuleLocals {
     fn visit_ts_type_alias_decl(&mut self, n: &TsTypeAliasDecl) {
         let TsTypeAliasDecl { id, type_ann, .. } = n;
         self.content
@@ -174,25 +164,6 @@ impl<'a, R: ImportResolver> Visit for ParserOfModuleLocals<'a, R> {
         self.content
             .interfaces
             .insert((id.sym.clone(), id.span.ctxt), Rc::new(n.clone()));
-    }
-    fn visit_ts_module_decl(&mut self, n: &TsModuleDecl) {
-        let TsModuleDecl { id, .. } = n;
-        if let TsModuleName::Ident(id) = id {
-            if let Some(ref it) = n.body {
-                let mut visitor =
-                    ImportsVisitor::from_file(self.current_file.clone(), self.resolver);
-                visitor.visit_ts_namespace_body(it);
-                let type_exports = visitor.type_exports;
-                let ns = Rc::new(ParsedTsNamespace {
-                    type_exports,
-                    name: id.sym.to_string(),
-                });
-
-                self.content
-                    .ts_namespaces
-                    .insert((id.sym.clone(), id.span.ctxt), ns);
-            }
-        }
     }
 }
 
@@ -280,27 +251,12 @@ impl<'a, R: ImportResolver> Visit for ImportsVisitor<'a, R> {
                     }),
                 );
             }
-            Decl::TsModule(d) => {
-                let TsModuleDecl { id, body, .. } = &**d;
-
-                if let TsModuleName::Ident(id) = id {
-                    let name = id.sym.clone();
-
-                    let mut visitor =
-                        ImportsVisitor::from_file(self.current_file.clone(), self.resolver);
-                    if let Some(body) = &body {
-                        visitor.visit_ts_namespace_body(&body);
-                    }
-                    let type_exports = visitor.type_exports;
-                    let ns = Rc::new(ParsedTsNamespace {
-                        type_exports,
-                        name: name.to_string(),
-                    });
-                    self.type_exports
-                        .insert(name.clone(), Rc::new(TypeExport::TsNamespaceDecl(ns)));
-                }
-            }
-            Decl::Using(_) | Decl::Class(_) | Decl::Fn(_) | Decl::TsEnum(_) | Decl::Var(_) => {}
+            Decl::TsModule(_)
+            | Decl::Using(_)
+            | Decl::Class(_)
+            | Decl::Fn(_)
+            | Decl::TsEnum(_)
+            | Decl::Var(_) => {}
         }
     }
 
@@ -427,8 +383,6 @@ pub fn parse_file_content<R: ImportResolver>(
 
     let mut locals = ParserOfModuleLocals {
         content: ParsedModuleLocals::new(),
-        resolver: v.resolver,
-        current_file: file_name.clone(),
     };
     locals.visit_module(&module.module);
 

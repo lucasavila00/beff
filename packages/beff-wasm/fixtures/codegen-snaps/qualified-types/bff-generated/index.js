@@ -152,38 +152,6 @@ function validate_XYZ(input) {
     }
     return error_acc_0;
 }
-function validate_SomeType(input) {
-    let error_acc_0 = [];
-    error_acc_0.push(...add_path_to_errors(validate_SomeType2(input), [
-        "SomeType"
-    ]));
-    return error_acc_0;
-}
-function validate_SomeType2(input) {
-    let error_acc_0 = [];
-    if (typeof input == "object" && input != null) {
-        if (typeof input["id"] != "string") {
-            error_acc_0.push({
-                "error_kind": "NotTypeof",
-                "path": [
-                    "SomeType2",
-                    "id"
-                ],
-                "received": input["id"],
-                "expected_type": "string"
-            });
-        }
-    } else {
-        error_acc_0.push({
-            "error_kind": "NotAnObject",
-            "path": [
-                "SomeType2"
-            ],
-            "received": input
-        });
-    }
-    return error_acc_0;
-}
 const meta = [
     {
         "method_kind": "get",
@@ -239,7 +207,7 @@ const meta = [
         "pattern": "/def",
         "return_validator": function(input) {
             let error_acc_0 = [];
-            error_acc_0.push(...add_path_to_errors(validate_SomeType(input), [
+            error_acc_0.push(...add_path_to_errors(validate_UserEntityOriginal(input), [
                 "[GET] /def.response_body"
             ]));
             return error_acc_0;
@@ -339,20 +307,6 @@ const schema =  {
         },
         "required": [
           "a"
-        ],
-        "type": "object"
-      },
-      "SomeType": {
-        "$ref": "#/components/schemas/SomeType2"
-      },
-      "SomeType2": {
-        "properties": {
-          "id": {
-            "type": "string"
-          }
-        },
-        "required": [
-          "id"
         ],
         "type": "object"
       },
@@ -480,7 +434,7 @@ const schema =  {
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/SomeType"
+                  "$ref": "#/components/schemas/UserEntityOriginal"
                 }
               }
             },

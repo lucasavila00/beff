@@ -6,7 +6,7 @@ use swc_ecma_ast::{Ident, TsInterfaceDecl, TsType};
 use crate::{
     api_extractor::FileManager,
     diag::{span_to_loc, Diagnostic, DiagnosticInfoMessage, DiagnosticInformation},
-    BffFileName, ImportReference, ParsedModule, ParsedTsNamespace, TypeExport,
+    BffFileName, ImportReference, ParsedModule, TypeExport,
 };
 
 pub struct TypeResolver<'a, R: FileManager> {
@@ -23,9 +23,8 @@ pub enum ResolvedLocalType {
     },
 }
 
-pub enum ResolvedNamespaceType {
-    Star { from_file: Rc<ImportReference> },
-    TsNamespace(Rc<ParsedTsNamespace>),
+pub struct ResolvedNamespaceType {
+    pub from_file: Rc<ImportReference>,
 }
 type Res<T> = Result<T, Diagnostic>;
 
@@ -42,13 +41,12 @@ impl<'a, R: FileManager> TypeResolver<'a, R> {
             .expect("should have been parsed")
     }
     pub fn resolve_namespace_type(&mut self, i: &Ident) -> Res<ResolvedNamespaceType> {
-        log::debug!("resolving namespace type: {:?}", i.sym);
         let k = &(i.sym.clone(), i.span.ctxt);
 
         if let Some(imported) = self.get_current_file().imports.get(k) {
             match &**imported {
                 ImportReference::Default { .. } | ImportReference::Star { .. } => {
-                    return Ok(ResolvedNamespaceType::Star {
+                    return Ok(ResolvedNamespaceType {
                         from_file: imported.clone(),
                     })
                 }
@@ -62,7 +60,7 @@ impl<'a, R: FileManager> TypeResolver<'a, R> {
                     if let Some(export) = exported {
                         match &*export {
                             TypeExport::StarOfOtherFile(reference) => {
-                                return Ok(ResolvedNamespaceType::Star {
+                                return Ok(ResolvedNamespaceType {
                                     from_file: reference.clone(),
                                 })
                             }
@@ -77,16 +75,10 @@ impl<'a, R: FileManager> TypeResolver<'a, R> {
                                 DiagnosticInfoMessage::ShouldNotResolveTsInterfaceDeclAsNamespace,
                             )),
                             TypeExport::SomethingOfOtherFile(_, _) => todo!(),
-                            TypeExport::TsNamespaceDecl(ns) => {
-                                return Ok(ResolvedNamespaceType::TsNamespace(ns.clone()))
-                            }
                         }
                     }
                 }
             }
-        }
-        if let Some(ns) = self.get_current_file().locals.ts_namespaces.get(k) {
-            return Ok(ResolvedNamespaceType::TsNamespace(ns.clone()));
         }
 
         return Err(self.make_err(&i.span, DiagnosticInfoMessage::CannotResolveNamespaceType));

@@ -1,4 +1,1 @@
-export {
-  UserEntityOriginal as UserEntity,
-  SomeNamespace as SomeNamespaceRenamed,
-} from "./types3";
+export { UserEntityOriginal as UserEntity } from "./types3";

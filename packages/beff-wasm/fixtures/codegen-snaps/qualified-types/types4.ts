@@ -1,2 +1,2 @@
-import { UserEntityOriginal, SomeNamespace } from "./types5";
-export { UserEntityOriginal, SomeNamespace };
+import { UserEntityOriginal } from "./types5";
+export { UserEntityOriginal };

@@ -13,6 +13,6 @@ export default {
     delete: async (): Promise<LOL.XYZ> => todo(),
   },
   ["/def"]: {
-    get: async (): Promise<T.X.SomeNamespaceRenamed.SomeType> => todo(),
+    get: async (): Promise<T.X.UserEntity> => todo(),
   },
 };
