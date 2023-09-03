@@ -1,0 +1,5 @@
+Error
+ /home/lucas/fluff/bff/packages/beff-wasm/fixtures/errors/no-default-export/app.ts
+ Could not find default export
+
+Found 1 error

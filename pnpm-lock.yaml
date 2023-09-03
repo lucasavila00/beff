@@ -5,32 +5,59 @@ importers:
   .:
     specifiers: {}
 
-  packages/bff-cli:
+  examples/example-blog:
+    specifiers:
+      '@beff/hono': workspace:^1.0.0
+      '@cloudflare/workers-types': ^4.20230215.0
+      '@types/jest': ^29.4.0
+      esbuild: ^0.15.1
+      esbuild-jest: ^0.5.0
+      hono: ^3.3.4
+      jest: ^29.1.2
+      jest-environment-miniflare: ^2.6.0
+      miniflare: ^2.4.0
+      typescript: ^4.6.4
+      wrangler: ^2.15.0
+    dependencies:
+      '@beff/hono': link:../../packages/beff-hono
+      hono: 3.5.6
+    devDependencies:
+      '@cloudflare/workers-types': 4.20230821.0
+      '@types/jest': 29.5.4
+      esbuild: 0.15.18
+      esbuild-jest: 0.5.0_esbuild@0.15.18
+      jest: 29.6.4
+      jest-environment-miniflare: 2.14.1_jest@29.6.4
+      miniflare: 2.14.1
+      typescript: 4.9.5
+      wrangler: 2.20.1
+
+  packages/beff-cli:
     specifiers: {}
 
-  packages/bff-client:
+  packages/beff-client:
     specifiers:
       '@beff/cli': workspace:^1.0.0
       typescript: ^5.2.2
     dependencies:
-      '@beff/cli': link:../bff-cli
+      '@beff/cli': link:../beff-cli
     devDependencies:
       typescript: 5.2.2
 
-  packages/bff-hono:
+  packages/beff-hono:
     specifiers:
       '@beff/cli': workspace:^1.0.0
       '@beff/client': workspace:^1.0.0
       hono: ^3.5.6
       typescript: ^5.2.2
     dependencies:
-      '@beff/cli': link:../bff-cli
-      '@beff/client': link:../bff-client
+      '@beff/cli': link:../beff-cli
+      '@beff/client': link:../beff-client
       hono: 3.5.6
     devDependencies:
       typescript: 5.2.2
 
-  packages/bff-wasm:
+  packages/beff-wasm:
     specifiers:
       '@babel/code-frame': ^7.22.13
       '@beff/cli': workspace:^1.0.0
@@ -45,11 +72,11 @@ importers:
       typescript: ^5.2.2
       vitest: ^0.34.3
     dependencies:
-      '@beff/cli': link:../bff-cli
+      '@beff/cli': link:../beff-cli
       chalk: 4.1.2
     devDependencies:
       '@babel/code-frame': 7.22.13
-      '@beff/hono': link:../bff-hono
+      '@beff/hono': link:../beff-hono
       '@types/babel__code-frame': 7.0.3
       '@types/node': 20.5.8
       '@types/vscode': 1.81.0
@@ -58,33 +85,6 @@ importers:
       hono: 3.5.6
       typescript: 5.2.2
       vitest: 0.34.3
-
-  packages/example-blog:
-    specifiers:
-      '@beff/hono': workspace:^1.0.0
-      '@cloudflare/workers-types': ^4.20230215.0
-      '@types/jest': ^29.4.0
-      esbuild: ^0.15.1
-      esbuild-jest: ^0.5.0
-      hono: ^3.3.4
-      jest: ^29.1.2
-      jest-environment-miniflare: ^2.6.0
-      miniflare: ^2.4.0
-      typescript: ^4.6.4
-      wrangler: ^2.15.0
-    dependencies:
-      '@beff/hono': link:../bff-hono
-      hono: 3.5.6
-    devDependencies:
-      '@cloudflare/workers-types': 4.20230821.0
-      '@types/jest': 29.5.4
-      esbuild: 0.15.18
-      esbuild-jest: 0.5.0_esbuild@0.15.18
-      jest: 29.6.4
-      jest-environment-miniflare: 2.14.1_jest@29.6.4
-      miniflare: 2.14.1
-      typescript: 4.9.5
-      wrangler: 2.20.1
 
 packages:
 

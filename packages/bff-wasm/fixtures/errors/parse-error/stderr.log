@@ -1,9 +1,0 @@
-Error
- /home/lucas/fluff/bff/packages/bff-wasm/fixtures/errors/parse-error/app.ts
- Cannot find file '/home/lucas/fluff/bff/packages/bff-wasm/fixtures/errors/parse-error/app.ts' when converting to schema
-
-Error
- /home/lucas/fluff/bff/packages/bff-wasm/fixtures/errors/parse-error/app.ts
- Could not find default export
-
-Found 2 errors

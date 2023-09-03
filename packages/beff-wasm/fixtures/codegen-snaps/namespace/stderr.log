@@ -1,0 +1,34 @@
+panicked at /home/lucas/fluff/bff/packages/bff-core/src/type_resolve.rs:75:9:
+explicit panic
+
+Stack:
+
+Error
+    at /home/lucas/fluff/bff/packages/bff-wasm/pkg/hello_wasm.js:364:17
+    at logError (/home/lucas/fluff/bff/packages/bff-wasm/pkg/hello_wasm.js:205:18)
+    at module.exports.__wbg_new_abda76e883ba8a5f (/home/lucas/fluff/bff/packages/bff-wasm/pkg/hello_wasm.js:363:65)
+    at console_error_panic_hook::Error::new::h24a202ca2cd6f4e3 (wasm://wasm/02d52e8a:wasm-function[16948]:0x8fd0ba)
+    at console_error_panic_hook::hook_impl::hbd017b1cd15b0ccd (wasm://wasm/02d52e8a:wasm-function[3296]:0x6f4d20)
+    at console_error_panic_hook::hook::h2d1bbfd1bba12fb3 (wasm://wasm/02d52e8a:wasm-function[18193]:0x90eb8b)
+    at core::ops::function::Fn::call::h060acb07aceb94e4 (wasm://wasm/02d52e8a:wasm-function[15454]:0x8e6271)
+    at std::panicking::rust_panic_with_hook::he4d11d009df2f45f (wasm://wasm/02d52e8a:wasm-function[6652]:0x7e3b1a)
+    at std::panicking::begin_panic_handler::{{closure}}::hdd0d58f31e4d53df (wasm://wasm/02d52e8a:wasm-function[8769]:0x841e9a)
+    at std::sys_common::backtrace::__rust_end_short_backtrace::hd70f3cac19eb49f3 (wasm://wasm/02d52e8a:wasm-function[20689]:0x9266d3)
+
+
+wasm://wasm/02d52e8a:1
+
+
+RuntimeError: unreachable
+    at __rust_start_panic (wasm://wasm/02d52e8a:wasm-function[20731]:0x9267c9)
+    at rust_panic (wasm://wasm/02d52e8a:wasm-function[20522]:0x925f45)
+    at std::panicking::rust_panic_with_hook::he4d11d009df2f45f (wasm://wasm/02d52e8a:wasm-function[6652]:0x7e3b47)
+    at std::panicking::begin_panic_handler::{{closure}}::hdd0d58f31e4d53df (wasm://wasm/02d52e8a:wasm-function[8769]:0x841e9a)
+    at std::sys_common::backtrace::__rust_end_short_backtrace::hd70f3cac19eb49f3 (wasm://wasm/02d52e8a:wasm-function[20689]:0x9266d3)
+    at rust_begin_unwind (wasm://wasm/02d52e8a:wasm-function[12449]:0x8acc8e)
+    at core::panicking::panic_fmt::h157d8e2782a50057 (wasm://wasm/02d52e8a:wasm-function[18071]:0x90d267)
+    at core::panicking::panic::h84f3aeadc405be3e (wasm://wasm/02d52e8a:wasm-function[15451]:0x8e61ae)
+    at beff_core::type_resolve::TypeResolver<R>::resolve_namespace_type::h85b5eb46ae13476c (wasm://wasm/02d52e8a:wasm-function[1192]:0x5b1792)
+    at beff_core::type_to_schema::TypeToSchema<R>::get_qualified_type::ha19451129ace056f (wasm://wasm/02d52e8a:wasm-function[579]:0x4bf398)
+
+Node.js v18.16.0

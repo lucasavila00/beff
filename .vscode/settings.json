@@ -1,3 +1,10 @@
 {
-  "cSpell.words": ["bindgen", "codegen", "Hono", "Unfound", "Unserializeable"]
+  "cSpell.words": [
+    "beff",
+    "bindgen",
+    "codegen",
+    "Hono",
+    "Unfound",
+    "Unserializeable"
+  ]
 }

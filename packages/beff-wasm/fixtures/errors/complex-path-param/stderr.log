@@ -1,0 +1,11 @@
+Error: Complex path parameter
+ /home/lucas/fluff/bff/packages/beff-wasm/fixtures/errors/complex-path-param/app.ts:9:31
+    7 | export default {
+    8 |   [`/hello/{id}`]: {
+ >  9 |     get: async (ctx: Ctx, id: A): Promise<string> => `Hello ${id}!`,
+      |                               ^ This type is too complex for a path parameter
+   10 |   },
+   11 | };
+   12 |
+
+Found 1 error
