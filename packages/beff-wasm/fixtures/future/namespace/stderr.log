@@ -1,5 +1,5 @@
 Error: Unknown error: CannotResolveNamespaceType
- /home/lucas/fluff/bff/packages/beff-wasm/fixtures/errors/namespace/app.ts:11:63
+ /home/lucas/fluff/bff/packages/beff-wasm/fixtures/future/namespace/app.ts:11:63
     9 |
    10 | export default {
  > 11 |   [`/hello/{id}`]: { get: async (c: Ctx, id: string): Promise<X.A> => todo() },
@@ -9,7 +9,7 @@ Error: Unknown error: CannotResolveNamespaceType
    14 |
 
 Error: Unknown error: CannotResolveNamespaceType
- /home/lucas/fluff/bff/packages/beff-wasm/fixtures/errors/namespace/app.ts:12:47
+ /home/lucas/fluff/bff/packages/beff-wasm/fixtures/future/namespace/app.ts:12:47
    10 | export default {
    11 |   [`/hello/{id}`]: { get: async (c: Ctx, id: string): Promise<X.A> => todo() },
  > 12 |   [`/hello2`]: { get: async (c: Ctx): Promise<Y.B> => todo() },

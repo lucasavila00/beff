@@ -1,0 +1,11 @@
+Error: Parameter pattern is not supported
+ /home/lucas/fluff/bff/packages/beff-wasm/fixtures/future/tuple-args/app.ts:13:25
+   11 | export default {
+   12 |   [`/user`]: {
+ > 13 |     get: async (c: Ctx, ...q: Pagination): Promise<User[]> => {
+      |                         ^^^^^^^^^^^^^^^^ Parameter pattern is not supported
+   14 |       return runQuery(q);
+   15 |     },
+   16 |   },
+
+Found 1 error

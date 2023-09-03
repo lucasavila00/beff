@@ -16,6 +16,7 @@
 ## BFF CLI
 
 - [ ] watch mode
+- [ ] resolver tsconfig
 
 <!--  -->
 <!--  -->
