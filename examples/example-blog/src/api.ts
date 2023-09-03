@@ -2,7 +2,7 @@ import { Hono } from "hono";
 import { Bindings } from "./bindings";
 import { registerRouter } from "@beff/hono";
 import router from "./router";
-import { meta, schema } from "./gen";
+import { meta, schema } from "./gen/router";
 
 const api = new Hono<{ Bindings: Bindings }>();
 registerRouter({

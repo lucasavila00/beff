@@ -56,7 +56,7 @@ const meta = [
                     error_acc_0.push({
                         "error_kind": "NotTypeof",
                         "path": [
-                            "[GET] /.response_body",
+                            "responseBody",
                             "message"
                         ],
                         "received": input["message"],
@@ -67,7 +67,7 @@ const meta = [
                 error_acc_0.push({
                     "error_kind": "NotAnObject",
                     "path": [
-                        "[GET] /.response_body"
+                        "responseBody"
                     ],
                     "received": input
                 });
@@ -94,7 +94,7 @@ const meta = [
                     error_acc_0.push({
                         "error_kind": "NotAnArray",
                         "path": [
-                            "[GET] /posts.response_body",
+                            "responseBody",
                             "posts"
                         ],
                         "received": input["posts"]
@@ -104,7 +104,7 @@ const meta = [
                     error_acc_0.push({
                         "error_kind": "NotTypeof",
                         "path": [
-                            "[GET] /posts.response_body",
+                            "responseBody",
                             "ok"
                         ],
                         "received": input["ok"],
@@ -115,7 +115,7 @@ const meta = [
                 error_acc_0.push({
                     "error_kind": "NotAnObject",
                     "path": [
-                        "[GET] /posts.response_body"
+                        "responseBody"
                     ],
                     "received": input
                 });

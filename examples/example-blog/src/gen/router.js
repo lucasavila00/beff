@@ -65,7 +65,7 @@ const meta = [
                     error_acc_0.push({
                         "error_kind": "NotTypeof",
                         "path": [
-                            "[GET] /.response_body",
+                            "responseBody",
                             "message"
                         ],
                         "received": input["message"],
@@ -76,7 +76,7 @@ const meta = [
                 error_acc_0.push({
                     "error_kind": "NotAnObject",
                     "path": [
-                        "[GET] /.response_body"
+                        "responseBody"
                     ],
                     "received": input
                 });
@@ -99,7 +99,7 @@ const meta = [
                     for(let index = 0; index < input["posts"].length; index++){
                         const array_item_1 = input["posts"][index];
                         error_acc_0.push(...add_path_to_errors(validators.Post(array_item_1), [
-                            "[GET] /posts.response_body",
+                            "responseBody",
                             "posts",
                             "[" + index + "]"
                         ]));
@@ -108,7 +108,7 @@ const meta = [
                     error_acc_0.push({
                         "error_kind": "NotAnArray",
                         "path": [
-                            "[GET] /posts.response_body",
+                            "responseBody",
                             "posts"
                         ],
                         "received": input["posts"]
@@ -118,7 +118,7 @@ const meta = [
                     error_acc_0.push({
                         "error_kind": "NotTypeof",
                         "path": [
-                            "[GET] /posts.response_body",
+                            "responseBody",
                             "ok"
                         ],
                         "received": input["ok"],
@@ -129,7 +129,7 @@ const meta = [
                 error_acc_0.push({
                     "error_kind": "NotAnObject",
                     "path": [
-                        "[GET] /posts.response_body"
+                        "responseBody"
                     ],
                     "received": input
                 });
@@ -166,7 +166,7 @@ const meta = [
                     error_acc_2.push({
                         "error_kind": "NotEq",
                         "path": [
-                            "[POST] /posts.response_body",
+                            "responseBody",
                             "ok"
                         ],
                         "received": input["ok"],
@@ -174,14 +174,14 @@ const meta = [
                     });
                 }
                 error_acc_2.push(...add_path_to_errors(validators.Post(input["post"]), [
-                    "[POST] /posts.response_body",
+                    "responseBody",
                     "post"
                 ]));
             } else {
                 error_acc_2.push({
                     "error_kind": "NotAnObject",
                     "path": [
-                        "[POST] /posts.response_body"
+                        "responseBody"
                     ],
                     "received": input
                 });
@@ -193,7 +193,7 @@ const meta = [
                     error_acc_3.push({
                         "error_kind": "NotEq",
                         "path": [
-                            "[POST] /posts.response_body",
+                            "responseBody",
                             "ok"
                         ],
                         "received": input["ok"],
@@ -204,7 +204,7 @@ const meta = [
                     error_acc_3.push({
                         "error_kind": "NotTypeof",
                         "path": [
-                            "[POST] /posts.response_body",
+                            "responseBody",
                             "error"
                         ],
                         "received": input["error"],
@@ -215,7 +215,7 @@ const meta = [
                 error_acc_3.push({
                     "error_kind": "NotAnObject",
                     "path": [
-                        "[POST] /posts.response_body"
+                        "responseBody"
                     ],
                     "received": input
                 });
@@ -225,7 +225,7 @@ const meta = [
                 error_acc_0.push({
                     "error_kind": "InvalidUnion",
                     "path": [
-                        "[POST] /posts.response_body"
+                        "responseBody"
                     ],
                     "received": input
                 });
@@ -272,7 +272,7 @@ const meta = [
                     error_acc_2.push({
                         "error_kind": "NotEq",
                         "path": [
-                            "[GET] /posts/{id}.response_body",
+                            "responseBody",
                             "ok"
                         ],
                         "received": input["ok"],
@@ -280,14 +280,14 @@ const meta = [
                     });
                 }
                 error_acc_2.push(...add_path_to_errors(validators.Post(input["post"]), [
-                    "[GET] /posts/{id}.response_body",
+                    "responseBody",
                     "post"
                 ]));
             } else {
                 error_acc_2.push({
                     "error_kind": "NotAnObject",
                     "path": [
-                        "[GET] /posts/{id}.response_body"
+                        "responseBody"
                     ],
                     "received": input
                 });
@@ -299,7 +299,7 @@ const meta = [
                     error_acc_3.push({
                         "error_kind": "NotEq",
                         "path": [
-                            "[GET] /posts/{id}.response_body",
+                            "responseBody",
                             "ok"
                         ],
                         "received": input["ok"],
@@ -310,7 +310,7 @@ const meta = [
                     error_acc_3.push({
                         "error_kind": "NotTypeof",
                         "path": [
-                            "[GET] /posts/{id}.response_body",
+                            "responseBody",
                             "error"
                         ],
                         "received": input["error"],
@@ -321,7 +321,7 @@ const meta = [
                 error_acc_3.push({
                     "error_kind": "NotAnObject",
                     "path": [
-                        "[GET] /posts/{id}.response_body"
+                        "responseBody"
                     ],
                     "received": input
                 });
@@ -331,7 +331,7 @@ const meta = [
                 error_acc_0.push({
                     "error_kind": "InvalidUnion",
                     "path": [
-                        "[GET] /posts/{id}.response_body"
+                        "responseBody"
                     ],
                     "received": input
                 });
@@ -388,7 +388,7 @@ const meta = [
                     error_acc_0.push({
                         "error_kind": "NotTypeof",
                         "path": [
-                            "[PUT] /posts/{id}.response_body",
+                            "responseBody",
                             "ok"
                         ],
                         "received": input["ok"],
@@ -399,7 +399,7 @@ const meta = [
                 error_acc_0.push({
                     "error_kind": "NotAnObject",
                     "path": [
-                        "[PUT] /posts/{id}.response_body"
+                        "responseBody"
                     ],
                     "received": input
                 });
@@ -444,7 +444,7 @@ const meta = [
                     error_acc_0.push({
                         "error_kind": "NotTypeof",
                         "path": [
-                            "[DELETE] /posts/{id}.response_body",
+                            "responseBody",
                             "ok"
                         ],
                         "received": input["ok"],
@@ -455,7 +455,7 @@ const meta = [
                 error_acc_0.push({
                     "error_kind": "NotAnObject",
                     "path": [
-                        "[DELETE] /posts/{id}.response_body"
+                        "responseBody"
                     ],
                     "received": input
                 });

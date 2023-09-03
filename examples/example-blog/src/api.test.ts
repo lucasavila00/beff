@@ -1,7 +1,7 @@
 import type { Post } from "./model";
 import { api as app } from "./api";
 import { buildHonoTestClient } from "@beff/hono";
-import { meta } from "./gen";
+import { meta } from "./gen/client";
 import type router from "./router";
 
 const env = getMiniflareBindings();

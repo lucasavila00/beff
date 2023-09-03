@@ -1085,6 +1085,7 @@ impl<'a, R: FileManager> EndpointToPath<'a, R> {
     }
 }
 
+#[derive(Clone)]
 pub struct PathHandlerMap {
     pub pattern: ParsedPattern,
     pub handlers: Vec<FnHandler>,

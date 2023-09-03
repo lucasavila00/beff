@@ -43,7 +43,7 @@ const meta = [
         "return_validator": function(input) {
             let error_acc_0 = [];
             error_acc_0.push(...add_path_to_errors(validators.UserEntityOriginal(input), [
-                "[GET] /abc.response_body"
+                "responseBody"
             ]));
             return error_acc_0;
         }
@@ -55,7 +55,7 @@ const meta = [
         "return_validator": function(input) {
             let error_acc_0 = [];
             error_acc_0.push(...add_path_to_errors(validators.Abc123(input), [
-                "[POST] /abc.response_body"
+                "responseBody"
             ]));
             return error_acc_0;
         }
@@ -67,7 +67,7 @@ const meta = [
         "return_validator": function(input) {
             let error_acc_0 = [];
             error_acc_0.push(...add_path_to_errors(validators.Def(input), [
-                "[PUT] /abc.response_body"
+                "responseBody"
             ]));
             return error_acc_0;
         }
@@ -79,7 +79,7 @@ const meta = [
         "return_validator": function(input) {
             let error_acc_0 = [];
             error_acc_0.push(...add_path_to_errors(validators.XYZ(input), [
-                "[DELETE] /abc.response_body"
+                "responseBody"
             ]));
             return error_acc_0;
         }
@@ -91,7 +91,7 @@ const meta = [
         "return_validator": function(input) {
             let error_acc_0 = [];
             error_acc_0.push(...add_path_to_errors(validators.UserEntityOriginal(input), [
-                "[GET] /def.response_body"
+                "responseBody"
             ]));
             return error_acc_0;
         }
@@ -103,7 +103,7 @@ const meta = [
         "return_validator": function(input) {
             let error_acc_0 = [];
             error_acc_0.push(...add_path_to_errors(validators.AAAAA(input), [
-                "[POST] /def.response_body"
+                "responseBody"
             ]));
             return error_acc_0;
         }

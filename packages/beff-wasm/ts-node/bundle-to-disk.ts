@@ -26,9 +26,14 @@ export declare function registerStringFormat<T extends StringFormat<string>>(
 ): void;
 `;
 const ROUTER_DTS = `
-import { HandlerMeta} from "@beff/cli";
-export declare const meta: HandlerMeta[];
+import { HandlerMetaServer} from "@beff/cli";
+export declare const meta: HandlerMetaServer[];
 export declare const schema: any;
+`;
+const CLIENT_DTS = `
+import { HandlerMetaClient} from "@beff/cli";
+export declare const meta: HandlerMetaClient[];
+
 `;
 const coercerCode = `
 class CoercionFailure {}
@@ -160,6 +165,13 @@ const finalizeRouterFile = (wasmCode: WritableModules, mod: ProjectModule) => {
     exports,
   ].join("\n");
 };
+const finalizeClientFile = (wasmCode: WritableModules, mod: ProjectModule) => {
+  const exportCode = mod === "esm" ? "export" : "module.exports =";
+  const exportedItems = ["meta"].join(", ");
+  const exports = [exportCode, `{ ${exportedItems} };`].join(" ");
+  return [wasmCode.js_client_meta, exports].join("\n");
+};
+
 const finalizeParserFile = (wasmCode: WritableModules, mod: ProjectModule) => {
   const exportCode = mod === "esm" ? "export " : "module.exports = ";
   const exportedItems = ["buildParsers", "registerStringFormat"].join(", ");
@@ -209,7 +221,6 @@ export const execProject = (
       path.join(outputDir, "router.js"),
       finalizeRouterFile(outResult, mod)
     );
-
     fs.writeFileSync(
       path.join(outputDir, "router.d.ts"),
       [ROUTER_DTS].join("\n")
@@ -217,6 +228,15 @@ export const execProject = (
     fs.writeFileSync(
       path.join(outputDir, "openapi.json"),
       outResult.json_schema ?? ""
+    );
+
+    fs.writeFileSync(
+      path.join(outputDir, "client.js"),
+      finalizeClientFile(outResult, mod)
+    );
+    fs.writeFileSync(
+      path.join(outputDir, "client.d.ts"),
+      [CLIENT_DTS].join("\n")
     );
   }
 

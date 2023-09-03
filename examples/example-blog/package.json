@@ -9,6 +9,7 @@
   },
   "license": "MIT",
   "dependencies": {
+    "@beff/cli": "workspace:^1.0.0",
     "@beff/hono": "workspace:^1.0.0",
     "hono": "^3.3.4"
   },

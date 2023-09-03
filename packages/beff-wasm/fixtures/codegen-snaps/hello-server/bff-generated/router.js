@@ -43,7 +43,7 @@ const meta = [
         "return_validator": function(input) {
             let error_acc_0 = [];
             error_acc_0.push(...add_path_to_errors(validators.DataTypesKitchenSink(input), [
-                "[GET] /data-types-kitchen-sink.response_body"
+                "responseBody"
             ]));
             return error_acc_0;
         }
@@ -58,7 +58,7 @@ const meta = [
                 error_acc_0.push({
                     "error_kind": "NotTypeof",
                     "path": [
-                        "[GET] /anon-func.response_body"
+                        "responseBody"
                     ],
                     "received": input,
                     "expected_type": "string"
@@ -128,7 +128,7 @@ const meta = [
                         error_acc_0.push({
                             "error_kind": "NotTypeof",
                             "path": [
-                                "[GET] /users.response_body",
+                                "responseBody",
                                 "[" + index + "]"
                             ],
                             "received": array_item_1,
@@ -140,7 +140,7 @@ const meta = [
                 error_acc_0.push({
                     "error_kind": "NotAnArray",
                     "path": [
-                        "[GET] /users.response_body"
+                        "responseBody"
                     ],
                     "received": input
                 });
@@ -181,7 +181,7 @@ const meta = [
         "return_validator": function(input) {
             let error_acc_0 = [];
             error_acc_0.push(...add_path_to_errors(validators.User(input), [
-                "[GET] /users/{id}.response_body"
+                "responseBody"
             ]));
             return error_acc_0;
         }
@@ -222,7 +222,7 @@ const meta = [
                 error_acc_0.push({
                     "error_kind": "NotTypeof",
                     "path": [
-                        "[GET] /users2/{id}.response_body"
+                        "responseBody"
                     ],
                     "received": input,
                     "expected_type": "string"
@@ -267,7 +267,7 @@ const meta = [
                 error_acc_0.push({
                     "error_kind": "NotTypeof",
                     "path": [
-                        "[POST] /users2/{id}.response_body"
+                        "responseBody"
                     ],
                     "received": input,
                     "expected_type": "string"
@@ -286,7 +286,7 @@ const meta = [
                 error_acc_0.push({
                     "error_kind": "NotTypeof",
                     "path": [
-                        "[GET] /users3.response_body"
+                        "responseBody"
                     ],
                     "received": input,
                     "expected_type": "string"
@@ -305,7 +305,7 @@ const meta = [
                 error_acc_0.push({
                     "error_kind": "NotTypeof",
                     "path": [
-                        "[GET] /users4.response_body"
+                        "responseBody"
                     ],
                     "received": input,
                     "expected_type": "string"
@@ -324,7 +324,7 @@ const meta = [
                 error_acc_0.push({
                     "error_kind": "NotTypeof",
                     "path": [
-                        "[POST] /users4.response_body"
+                        "responseBody"
                     ],
                     "received": input,
                     "expected_type": "string"

@@ -1,4 +1,4 @@
-import type { HandlerMeta } from "../../beff-cli";
+import type { HandlerMetaClient } from "@beff/cli";
 export type NormalizeRouterItem<T> = T extends (
   ...args: infer I
 ) => Promise<infer O>
@@ -45,7 +45,7 @@ export class BffRequest {
 }
 
 export function buildStableClient<T>(
-  handlersMeta: HandlerMeta[],
+  handlersMeta: HandlerMetaClient[],
   fetcher: (url: BffRequest) => Promise<any>
 ): ClientFromRouter<T> {
   const client: any = {};

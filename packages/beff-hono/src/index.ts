@@ -1,14 +1,15 @@
 import type { Hono } from "hono";
 import {
   DecodeError,
-  HandlerMeta,
-  MetaParam,
+  HandlerMetaClient,
+  HandlerMetaServer,
+  MetaParamServer,
   OpenApiServer,
 } from "../../beff-cli";
 import { getCookie } from "hono/cookie";
 import { buildStableClient, ClientFromRouter } from "../../beff-client/dist";
 
-export const template = `
+const template = `
 <!DOCTYPE html>
 <html lang="en">
   <head>
@@ -146,39 +147,45 @@ const decodeNoMessage = (validator: any, value: any) => {
   return value;
 };
 
-const handleMethod = async (c: Ctx, meta: HandlerMeta, handler: Function) => {
-  const resolverParamsPromise: any[] = meta.params.map(async (p: MetaParam) => {
-    switch (p.type) {
-      case "path": {
-        const value = c.hono.req.param(p.name);
-        const coerced = coerce(p.coercer, value);
-        return decodeWithMessage(p.validator, coerced);
+const handleMethod = async (
+  c: Ctx,
+  meta: HandlerMetaServer,
+  handler: Function
+) => {
+  const resolverParamsPromise: any[] = meta.params.map(
+    async (p: MetaParamServer) => {
+      switch (p.type) {
+        case "path": {
+          const value = c.hono.req.param(p.name);
+          const coerced = coerce(p.coercer, value);
+          return decodeWithMessage(p.validator, coerced);
+        }
+        case "query": {
+          const value = c.hono.req.query(p.name);
+          const coerced = coerce(p.coercer, value);
+          return decodeWithMessage(p.validator, coerced);
+        }
+        case "cookie": {
+          const value = getCookie(c.hono, p.name);
+          const coerced = coerce(p.coercer, value);
+          return decodeWithMessage(p.validator, coerced);
+        }
+        case "header": {
+          const value = c.hono.req.header(p.name);
+          const coerced = coerce(p.coercer, value);
+          return decodeWithMessage(p.validator, coerced);
+        }
+        case "body": {
+          const value = await c.hono.req.json();
+          return decodeWithMessage(p.validator, value);
+        }
+        case "context": {
+          return c;
+        }
       }
-      case "query": {
-        const value = c.hono.req.query(p.name);
-        const coerced = coerce(p.coercer, value);
-        return decodeWithMessage(p.validator, coerced);
-      }
-      case "cookie": {
-        const value = getCookie(c.hono, p.name);
-        const coerced = coerce(p.coercer, value);
-        return decodeWithMessage(p.validator, coerced);
-      }
-      case "header": {
-        const value = c.hono.req.header(p.name);
-        const coerced = coerce(p.coercer, value);
-        return decodeWithMessage(p.validator, coerced);
-      }
-      case "body": {
-        const value = await c.hono.req.json();
-        return decodeWithMessage(p.validator, value);
-      }
-      case "context": {
-        return c;
-      }
+      throw new Error("not implemented: " + p.type);
     }
-    throw new Error("not implemented: " + p.type);
-  });
+  );
   const resolverParams = await Promise.all(resolverParamsPromise);
   const result = await handler(...resolverParams);
   return c.hono.json(decodeNoMessage(meta.return_validator, result));
@@ -204,10 +211,10 @@ export function registerRouter(options: {
   openApi?: { servers: OpenApiServer[] };
   context?: any;
   schema: any;
-  meta: HandlerMeta[];
+  meta: HandlerMetaServer[];
 }) {
   registerDocs(options.app, options.schema, options.openApi?.servers ?? []);
-  const handlersMeta: HandlerMeta[] = options.meta;
+  const handlersMeta: HandlerMetaServer[] = options.meta;
   for (const meta of handlersMeta) {
     const handlerData = options.router[meta.pattern][meta.method_kind];
     if (handlerData == null) {
@@ -258,7 +265,7 @@ export function registerRouter(options: {
 }
 
 export const buildHonoTestClient = <T>(
-  meta: HandlerMeta[],
+  meta: HandlerMetaClient[],
   app: Hono<any, any, any>,
   env?: any,
   executionContext?: any

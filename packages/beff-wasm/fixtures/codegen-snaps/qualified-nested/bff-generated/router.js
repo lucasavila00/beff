@@ -43,7 +43,7 @@ const meta = [
         "return_validator": function(input) {
             let error_acc_0 = [];
             error_acc_0.push(...add_path_to_errors(validators.User(input), [
-                "[GET] /a.response_body"
+                "responseBody"
             ]));
             return error_acc_0;
         }

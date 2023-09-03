@@ -5,18 +5,25 @@ export type StringFormat<Tag extends string> = string & { __customType: Tag };
 export * as Formats from "./formats";
 
 // TODO: validator and coercer are server specific, move these types to server, duplicate in client
-export type MetaParam = {
+
+export type MetaParamClient = {
   type: "path" | "query" | "cookie" | "header" | "body" | "context";
   name: string;
   required: boolean;
+};
+
+export type MetaParamServer = MetaParamClient & {
   validator: any;
   coercer: any;
 };
-export type HandlerMeta = {
+export type HandlerMetaClient = {
   method_kind: "get" | "post" | "put" | "delete" | "patch" | "options" | "use";
-  params: MetaParam[];
+  params: MetaParamClient[];
   pattern: string;
+};
+export type HandlerMetaServer = HandlerMetaClient & {
   return_validator: any;
+  params: MetaParamServer[];
 };
 
 export type ErrorVariant<T> = {
