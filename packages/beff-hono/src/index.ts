@@ -1,4 +1,4 @@
-import type { Hono } from "hono";
+import { Hono } from "hono";
 import {
   DecodeError,
   HandlerMetaClient,
@@ -190,14 +190,10 @@ const handleMethod = async (
   const result = await handler(...resolverParams);
   return c.hono.json(decodeNoMessage(meta.return_validator, result));
 };
-const registerDocs = (
-  app: Hono<any, any, any>,
-  metadata: any,
-  servers: any
-) => {
+const registerDocs = (app: Hono<any, any, any>, schema: any, servers: any) => {
   app.get("/v3/openapi.json", (req) =>
     req.json({
-      ...metadata["schema"],
+      schema,
       servers,
     })
   );
@@ -205,16 +201,18 @@ const registerDocs = (
   app.get("/docs", (c) => c.html(template));
 };
 
-export function registerRouter(options: {
-  app: Hono<any, any, any>;
+export function buildHonoApp(options: {
   router: any;
   openApi?: { servers: OpenApiServer[] };
+  generated: {
+    schema: any;
+    meta: HandlerMetaServer[];
+  };
   context?: any;
-  schema: any;
-  meta: HandlerMetaServer[];
-}) {
-  registerDocs(options.app, options.schema, options.openApi?.servers ?? []);
-  const handlersMeta: HandlerMetaServer[] = options.meta;
+}): Hono<Env, any, any> {
+  const app = new Hono({ strict: false });
+  registerDocs(app, options.generated.schema, options.openApi?.servers ?? []);
+  const handlersMeta: HandlerMetaServer[] = options.generated.meta;
   for (const meta of handlersMeta) {
     const handlerData = options.router[meta.pattern][meta.method_kind];
     if (handlerData == null) {
@@ -222,7 +220,6 @@ export function registerRouter(options: {
         "handler not found: " + meta.method_kind + "  " + meta.pattern
       );
     }
-    const app = options.app;
     switch (meta.method_kind) {
       case "use": {
         if (Array.isArray(handlerData)) {
@@ -262,15 +259,18 @@ export function registerRouter(options: {
       }
     }
   }
+  return app;
 }
 
 export const buildHonoTestClient = <T>(
-  meta: HandlerMetaClient[],
+  generated: {
+    meta: HandlerMetaClient[];
+  },
   app: Hono<any, any, any>,
   env?: any,
   executionContext?: any
 ): ClientFromRouter<T> =>
-  buildStableClient<T>(meta, async (req) => {
+  buildStableClient<T>(generated, async (req) => {
     const r = await app.fetch(
       //@ts-ignore
       new Request("http://localhost" + req.url, {

@@ -1,14 +1,11 @@
 import { Hono } from "hono";
 import { Bindings } from "./bindings";
-import { registerRouter } from "@beff/hono";
+import { buildHonoApp } from "@beff/hono";
 import router from "./router";
-import { meta, schema } from "./gen/router";
+import * as generated from "./gen/router";
 
-const api = new Hono<{ Bindings: Bindings }>();
-registerRouter({
-  meta,
-  schema,
-  app: api,
+const app = buildHonoApp({
+  generated,
   router,
   openApi: {
     servers: [
@@ -18,4 +15,4 @@ registerRouter({
     ],
   },
 });
-export { api };
+export { app as api };

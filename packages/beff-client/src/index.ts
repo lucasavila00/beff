@@ -45,11 +45,11 @@ export class BffRequest {
 }
 
 export function buildStableClient<T>(
-  handlersMeta: HandlerMetaClient[],
+  generated: { meta: HandlerMetaClient[] },
   fetcher: (url: BffRequest) => Promise<any>
 ): ClientFromRouter<T> {
   const client: any = {};
-  for (const meta of handlersMeta) {
+  for (const meta of generated.meta) {
     if (client[meta.pattern] == null) {
       client[meta.pattern] = {};
     }

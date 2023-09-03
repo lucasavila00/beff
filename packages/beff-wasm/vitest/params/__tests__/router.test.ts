@@ -1,12 +1,12 @@
 import { Hono } from "hono";
 import { it, expect } from "vitest";
-import { registerRouter, buildHonoTestClient } from "@beff/hono";
+import { buildHonoApp, buildHonoTestClient } from "@beff/hono";
 import router from "../router";
-import { meta, schema } from "../bff-generated/router";
+import * as generated from "../bff-generated/router";
+import * as generatedClient from "../bff-generated/client";
 
-const app = new Hono();
-registerRouter({ app, router, meta, schema });
-const bff = buildHonoTestClient<typeof router>(meta, app);
+const app = buildHonoApp({ router, generated });
+const beff = buildHonoTestClient<typeof router>(generatedClient, app);
 
 it("docs json", async () => {
   const req = new Request("http://localhost/v3/openapi.json", {
@@ -34,28 +34,28 @@ it("docs html", async () => {
 });
 
 it("get", async () => {
-  expect(await bff["/hello"].get()).toMatchInlineSnapshot('"Hello!"');
-  const n = await bff["/query-param"].get(123);
+  expect(await beff["/hello"].get()).toMatchInlineSnapshot('"Hello!"');
+  const n = await beff["/query-param"].get(123);
   expect(n).toMatchInlineSnapshot("123");
   expect(
-    await bff["/path-param/{name}"].get("the-param")
+    await beff["/path-param/{name}"].get("the-param")
   ).toMatchInlineSnapshot('"the-param"');
   expect(
-    await bff["/header-param"].get("the-user-agent")
+    await beff["/header-param"].get("the-user-agent")
   ).toMatchInlineSnapshot('"the-user-agent"');
-  expect(await bff["/cookie-param"].get("the-cookie")).toMatchInlineSnapshot(
+  expect(await beff["/cookie-param"].get("the-cookie")).toMatchInlineSnapshot(
     '"the-cookie"'
   );
 });
 
 it("post", async () => {
-  expect(await bff["/hello"].post()).toMatchInlineSnapshot('"Hello!"');
+  expect(await beff["/hello"].post()).toMatchInlineSnapshot('"Hello!"');
   expect(
-    await bff["/path-param/{name}"].post("the-param")
+    await beff["/path-param/{name}"].post("the-param")
   ).toMatchInlineSnapshot('"the-param"');
-  expect(await bff["/req-body"].post({ a: "the-param" })).toMatchInlineSnapshot(
-    '"the-param"'
-  );
+  expect(
+    await beff["/req-body"].post({ a: "the-param" })
+  ).toMatchInlineSnapshot('"the-param"');
 });
 
 it("post with body and error", async () => {
@@ -76,7 +76,7 @@ it("post with body and error", async () => {
 
 it("post with body and error, client", async () => {
   try {
-    await bff["/req-body"].post({ a: 123 as any });
+    await beff["/req-body"].post({ a: 123 as any });
   } catch (e) {
     expect(e).toMatchInlineSnapshot(
       "[HTTPException: Error #1: Expected string ~ Path: requestBody.a ~ Received: 123]"
@@ -86,15 +86,15 @@ it("post with body and error, client", async () => {
 
 it("coerce", async () => {
   expect(
-    await bff["/path-param-string/{name}"].get("the-param")
+    await beff["/path-param-string/{name}"].get("the-param")
   ).toMatchInlineSnapshot('"the-param"');
-  expect(await bff["/path-param-number/{id}"].get(123)).toMatchInlineSnapshot(
+  expect(await beff["/path-param-number/{id}"].get(123)).toMatchInlineSnapshot(
     "123"
   );
   expect(
-    await bff["/path-param-boolean/{flag}"].get(true)
+    await beff["/path-param-boolean/{flag}"].get(true)
   ).toMatchInlineSnapshot("true");
-  expect(await bff["/path-param-union/{id}"].get(456)).toMatchInlineSnapshot(
+  expect(await beff["/path-param-union/{id}"].get(456)).toMatchInlineSnapshot(
     '"456"'
   );
 });

@@ -1,12 +1,12 @@
 import type { Post } from "./model";
 import { api as app } from "./api";
 import { buildHonoTestClient } from "@beff/hono";
-import { meta } from "./gen/client";
+import * as generatedClient from "./gen/client";
 import type router from "./router";
 
 const env = getMiniflareBindings();
 
-const client = buildHonoTestClient<typeof router>(meta, app, env);
+const client = buildHonoTestClient<typeof router>(generatedClient, app, env);
 
 describe("Root", () => {
   it("GET /", async () => {
