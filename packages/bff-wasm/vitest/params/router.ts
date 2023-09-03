@@ -1,5 +1,9 @@
-import { Cookie, Header, Ctx } from "bff";
+import { Cookie, Header } from "bff-types";
+import { Ctx } from "bff-hono";
 import { cors } from "hono/cors";
+
+type N1 = number;
+type N2 = N1;
 
 export default {
   ["/*"]: {
@@ -22,7 +26,7 @@ export default {
     },
   },
   ["/query-param"]: {
-    get: async (c: Ctx, limit: number): Promise<number> => {
+    get: async (c: Ctx, limit: N2): Promise<number> => {
       return limit;
     },
   },

@@ -50,7 +50,7 @@ const toHonoPattern = (pattern: string): string => {
   return pattern.replace(/\{(\w+)\}/g, ":$1");
 };
 
-export class BffHTTPException extends Error {
+class BffHTTPException extends Error {
   isBffHttpException: true;
   status: number;
   constructor(status: number, message: string) {
