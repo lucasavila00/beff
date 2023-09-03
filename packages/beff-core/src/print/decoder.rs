@@ -160,12 +160,21 @@ impl ReportedError {
     }
 }
 fn schema_ref_callee_validate(schema_ref: &String) -> Callee {
-    let decoder_ref_fn = Ident {
+    let decoder_ref_fn = Expr::Member(MemberExpr {
         span: DUMMY_SP,
-        sym: format!("validate_{schema_ref}").into(),
-        optional: false,
-    };
-    Callee::Expr(Expr::Ident(decoder_ref_fn).into())
+        obj: Expr::Ident(Ident {
+            span: DUMMY_SP,
+            sym: "validators".into(),
+            optional: false,
+        })
+        .into(),
+        prop: MemberProp::Ident(Ident {
+            span: DUMMY_SP,
+            sym: schema_ref.clone().into(),
+            optional: false,
+        }),
+    });
+    Callee::Expr(decoder_ref_fn.into())
 }
 struct DecoderFnGenerator {
     increasing_id: usize,

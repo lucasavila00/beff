@@ -19,7 +19,7 @@ pub enum WasmDiagnosticInformation {
 }
 
 impl WasmDiagnosticInformation {
-    pub fn from_diagnostic_info(info: DiagnosticInformation) -> WasmDiagnosticInformation {
+    pub fn from_diagnostic_info(info: &DiagnosticInformation) -> WasmDiagnosticInformation {
         match info {
             DiagnosticInformation::KnownFile {
                 message,
@@ -27,7 +27,7 @@ impl WasmDiagnosticInformation {
                 loc_lo,
                 loc_hi,
             } => WasmDiagnosticInformation::KnownFile {
-                message: message.to_string(),
+                message: message.clone().to_string(),
                 file_name: file_name.to_string(),
                 line_lo: loc_lo.line,
                 col_lo: loc_lo.col.0,
@@ -38,7 +38,7 @@ impl WasmDiagnosticInformation {
                 message,
                 current_file,
             } => WasmDiagnosticInformation::UnknownFile {
-                message: message.to_string(),
+                message: message.clone().to_string(),
                 current_file: current_file.to_string(),
             },
         }
@@ -57,19 +57,21 @@ pub struct WasmDiagnostic {
 }
 
 impl WasmDiagnostic {
-    pub fn from_diagnostics(diagnostics: Vec<Diagnostic>) -> WasmDiagnostic {
+    pub fn from_diagnostics(diagnostics: Vec<&Diagnostic>) -> WasmDiagnostic {
         WasmDiagnostic {
             diagnostics: diagnostics.into_iter().map(diag_to_wasm).collect(),
         }
     }
 }
 
-fn diag_to_wasm(diag: Diagnostic) -> WasmDiagnosticItem {
+fn diag_to_wasm(diag: &Diagnostic) -> WasmDiagnosticItem {
     WasmDiagnosticItem {
-        cause: WasmDiagnosticInformation::from_diagnostic_info(diag.cause),
-        related_information: diag.related_information.map(|it| it.into_iter()
-                    .map(WasmDiagnosticInformation::from_diagnostic_info)
-                    .collect()),
-        message: diag.parent_big_message.map(|it| it.to_string()),
+        cause: WasmDiagnosticInformation::from_diagnostic_info(&diag.cause),
+        related_information: diag.related_information.as_ref().map(|it| {
+            it.iter()
+                .map(WasmDiagnosticInformation::from_diagnostic_info)
+                .collect()
+        }),
+        message: diag.parent_big_message.as_ref().map(|it| it.to_string()),
     }
 }

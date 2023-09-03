@@ -8,12 +8,14 @@ use swc_ecma_ast::{
 };
 
 use crate::api_extractor::{
-    operation_parameter_in_path_or_query_or_body, BuiltDecoder, ExtractResult, FunctionParameterIn,
-    HandlerParameter, ParsedPattern, PathHandlerMap,
+    operation_parameter_in_path_or_query_or_body, FunctionParameterIn, HandlerParameter,
+    ParsedPattern, PathHandlerMap,
 };
 use crate::emit::emit_module;
-use crate::open_api_ast::{self, Definition, Js, Json, JsonSchema, OpenApi};
+use crate::open_api_ast::{self, Js, Json, JsonSchema, OpenApi, Validator};
+use crate::parser_extractor::BuiltDecoder;
 use crate::print::decoder;
+use crate::ExtractResult;
 
 pub trait ToExpr {
     fn to_expr(self) -> Expr;
@@ -294,7 +296,7 @@ impl ToJsonKv for open_api_ast::ApiPath {
         vec![(self.pattern.clone(), Json::Object(v))]
     }
 }
-impl ToJsonKv for open_api_ast::Definition {
+impl ToJsonKv for open_api_ast::Validator {
     fn to_json_kv(self) -> Vec<(String, Json)> {
         vec![(self.name.clone(), self.schema.to_json())]
     }
@@ -339,7 +341,7 @@ fn error_response(code: &str, description: &str) -> (String, Json) {
     )
 }
 
-fn open_api_to_json(it: OpenApi, components: &[Definition]) -> Json {
+fn open_api_to_json(it: OpenApi, components: &[Validator]) -> Json {
     let v = vec![
         //
         ("openapi".into(), Json::String("3.1.0".into())),
@@ -388,7 +390,7 @@ fn param_to_js(
     name: &str,
     param: HandlerParameter,
     pattern: &ParsedPattern,
-    components: &Vec<Definition>,
+    components: &Vec<Validator>,
 ) -> Js {
     match param {
         HandlerParameter::PathOrQueryOrBody {
@@ -453,7 +455,7 @@ fn param_to_js(
     }
 }
 
-fn handlers_to_js(items: Vec<PathHandlerMap>, components: &Vec<Definition>) -> Js {
+fn handlers_to_js(items: Vec<PathHandlerMap>, components: &Vec<Validator>) -> Js {
     Js::Array(
         items
             .into_iter()
@@ -577,8 +579,10 @@ impl ToExpr for Js {
 
 #[derive(Serialize, Deserialize)]
 pub struct WritableModules {
-    pub js_server_data: String,
-    pub json_schema: String,
+    pub js_validators: String,
+    pub js_server_meta: Option<String>,
+    pub js_built_parsers: Option<String>,
+    pub json_schema: Option<String>,
 }
 
 pub trait ToWritableModules {
@@ -598,37 +602,81 @@ fn build_decoders_expr(decs: &[BuiltDecoder]) -> Js {
 }
 impl ToWritableModules for ExtractResult {
     fn to_module(self) -> Result<WritableModules> {
-        let mut js_server_data = vec![];
+        let mut stmt_validators = vec![];
 
-        for comp in &self.components {
-            let name = format!("validate_{}", comp.name);
+        let mut validator_names = vec![];
+
+        let validators = self
+            .parser
+            .as_ref()
+            .map(|it| it.validators.clone())
+            .or(self.router.as_ref().map(|it| it.validators.clone()))
+            .unwrap_or(vec![]);
+
+        for comp in &validators {
+            validator_names.push(comp.name.clone());
             let decoder_fn = decoder::from_schema(&comp.schema, &Some(comp.name.clone()));
             let decoder_fn_decl = ModuleItem::Stmt(Stmt::Decl(Decl::Fn(FnDecl {
                 ident: Ident {
                     span: DUMMY_SP,
-                    sym: name.into(),
+                    sym: comp.name.clone().into(),
                     optional: false,
                 },
                 declare: false,
                 function: decoder_fn.into(),
             })));
-            js_server_data.push(decoder_fn_decl);
+            stmt_validators.push(decoder_fn_decl);
         }
 
-        let components = &self.components;
-
-        let meta_expr = handlers_to_js(self.handlers, components).to_expr();
-        js_server_data.push(const_decl("meta", meta_expr));
-
-        let build_decoders_expr = build_decoders_expr(&self.built_decoders.unwrap_or_default());
-        js_server_data.push(const_decl(
-            "buildParsersInput",
-            (build_decoders_expr).to_expr(),
+        stmt_validators.push(const_decl(
+            "validators",
+            Expr::Object(ObjectLit {
+                span: DUMMY_SP,
+                props: validator_names
+                    .into_iter()
+                    .map(|it| {
+                        PropOrSpread::Prop(Box::new(Prop::KeyValue(KeyValueProp {
+                            key: PropName::Ident(Ident {
+                                span: DUMMY_SP,
+                                sym: it.clone().into(),
+                                optional: false,
+                            }),
+                            value: Expr::Ident(Ident {
+                                span: DUMMY_SP,
+                                sym: it.into(),
+                                optional: false,
+                            })
+                            .into(),
+                        })))
+                    })
+                    .collect(),
+            }),
         ));
 
+        let js_validators = emit_module(stmt_validators)?;
+        let mut json_schema = None;
+        let mut js_built_parsers = None;
+        let mut js_server_meta = None;
+
+        if let Some(router) = self.router {
+            let meta_expr = handlers_to_js(router.handlers, &validators).to_expr();
+            let js_server_data = vec![const_decl("meta", meta_expr)];
+
+            js_server_meta = Some(emit_module(js_server_data)?);
+            json_schema = Some(open_api_to_json(router.open_api, &validators).to_string());
+        }
+        if let Some(parser) = self.parser {
+            let build_decoders_expr =
+                build_decoders_expr(&parser.built_decoders.unwrap_or_default());
+            let built_st = const_decl("buildParsersInput", (build_decoders_expr).to_expr());
+            js_built_parsers = Some(emit_module(vec![built_st])?);
+        }
+
         Ok(WritableModules {
-            js_server_data: emit_module(js_server_data)?,
-            json_schema: open_api_to_json(self.open_api, &self.components).to_string(),
+            js_validators,
+            js_server_meta,
+            js_built_parsers,
+            json_schema,
         })
     }
 }

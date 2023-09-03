@@ -1,11 +1,10 @@
-use crate::api_extractor::FileManager;
 use crate::diag::{
     span_to_loc, Diagnostic, DiagnosticInfoMessage, DiagnosticInformation, DiagnosticParentMessage,
 };
 use crate::open_api_ast::Json;
-use crate::open_api_ast::{Definition, JsonSchema, Optionality};
+use crate::open_api_ast::{JsonSchema, Optionality, Validator};
 use crate::type_resolve::{ResolvedLocalType, TypeResolver};
-use crate::{BffFileName, ImportReference, TypeExport};
+use crate::{BffFileName, FileManager, ImportReference, TypeExport};
 use std::collections::HashMap;
 use std::rc::Rc;
 use swc_atoms::JsWord;
@@ -24,7 +23,7 @@ use swc_ecma_ast::{
 pub struct TypeToSchema<'a, R: FileManager> {
     pub files: &'a mut R,
     pub current_file: BffFileName,
-    pub components: HashMap<String, Option<Definition>>,
+    pub components: HashMap<String, Option<Validator>>,
     pub ref_stack: Vec<DiagnosticInformation>,
 }
 
@@ -183,7 +182,7 @@ impl<'a, R: FileManager> TypeToSchema<'a, R> {
     fn insert_definition(&mut self, name: String, schema: JsonSchema) -> Res<JsonSchema> {
         self.components.insert(
             name.clone(),
-            Some(Definition {
+            Some(Validator {
                 name: name.clone(),
                 schema,
             }),

@@ -28,8 +28,8 @@ const readProjectJson = (projectPath: string): ProjectJson => {
     throw bail(`Failed to parse bff.json: ${e}`);
   }
 
-  if (!projectJson.router) {
-    throw bail(`Field "router" not found in bff.json`);
+  if (!projectJson.router && !projectJson.parser) {
+    throw bail(`Field "router" or "parser" not found in bff.json`);
   }
   if (!projectJson.outputDir) {
     throw bail(`Field "outputDir" not found in bff.json`);
@@ -37,6 +37,7 @@ const readProjectJson = (projectPath: string): ProjectJson => {
 
   return {
     router: String(projectJson.router),
+    parser: String(projectJson.parser),
     outputDir: String(projectJson.outputDir),
     module: projectJson.module,
   };

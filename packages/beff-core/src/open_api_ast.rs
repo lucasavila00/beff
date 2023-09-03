@@ -100,7 +100,7 @@ pub enum Js {
     Expr(Expr),
 }
 
-fn resolve_schema(schema: JsonSchema, components: &Vec<Definition>) -> JsonSchema {
+fn resolve_schema(schema: JsonSchema, components: &Vec<Validator>) -> JsonSchema {
     match schema {
         JsonSchema::Ref(name) => match components.iter().find(|it| it.name == name) {
             Some(def) => resolve_schema(def.schema.clone(), components),
@@ -111,7 +111,7 @@ fn resolve_schema(schema: JsonSchema, components: &Vec<Definition>) -> JsonSchem
 }
 
 impl Js {
-    pub fn coercer(schema: JsonSchema, components: &Vec<Definition>) -> Self {
+    pub fn coercer(schema: JsonSchema, components: &Vec<Validator>) -> Self {
         Self::Coercer(resolve_schema(schema, components))
     }
 
@@ -241,7 +241,7 @@ impl ApiPath {
 }
 
 #[derive(Debug, Clone)]
-pub struct Definition {
+pub struct Validator {
     pub name: String,
     pub schema: JsonSchema,
 }

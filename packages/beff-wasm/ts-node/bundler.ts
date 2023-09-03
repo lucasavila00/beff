@@ -177,8 +177,10 @@ type WasmDiagnostic = {
   diagnostics: WasmDiagnosticItem[];
 };
 export type WritableModules = {
-  js_server_data: string;
-  json_schema: string;
+  js_validators: string;
+  js_server_meta: string | undefined;
+  json_schema: string | undefined;
+  js_built_parsers: string | undefined;
 };
 export class Bundler {
   constructor(verbose: boolean) {
@@ -186,12 +188,24 @@ export class Bundler {
     wasm.init(verbose);
   }
 
-  public bundle(file_name: string): WritableModules | undefined {
-    return wasm.bundle_to_string(file_name);
+  public bundle(
+    router_entrypoint: string | undefined,
+    parser_entrypoint: string | undefined
+  ): WritableModules | undefined {
+    return wasm.bundle_to_string(
+      router_entrypoint ?? "",
+      parser_entrypoint ?? ""
+    );
   }
 
-  public diagnostics(file_name: string): WasmDiagnostic | null {
-    return wasm.bundle_to_diagnostics(file_name);
+  public diagnostics(
+    router_entrypoint: string | undefined,
+    parser_entrypoint: string | undefined
+  ): WasmDiagnostic | null {
+    return wasm.bundle_to_diagnostics(
+      router_entrypoint ?? "",
+      parser_entrypoint ?? ""
+    );
   }
 
   public updateFileContent(file_name: string, content: string) {

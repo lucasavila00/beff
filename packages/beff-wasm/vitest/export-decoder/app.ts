@@ -2,7 +2,7 @@ import { Hono } from "hono";
 import { registerRouter } from "@beff/hono";
 import router from "./router";
 import { handle } from "hono/cloudflare-pages";
-import { meta, schema } from "./bff-generated";
+import { meta, schema } from "./bff-generated/router";
 
 export const app = new Hono().basePath("/api");
 

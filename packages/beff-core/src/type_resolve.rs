@@ -4,9 +4,8 @@ use swc_common::Span;
 use swc_ecma_ast::{Ident, TsInterfaceDecl, TsType};
 
 use crate::{
-    api_extractor::FileManager,
     diag::{span_to_loc, Diagnostic, DiagnosticInfoMessage, DiagnosticInformation},
-    BffFileName, ImportReference, ParsedModule, TypeExport,
+    BffFileName, FileManager, ImportReference, ParsedModule, TypeExport,
 };
 
 pub struct TypeResolver<'a, R: FileManager> {

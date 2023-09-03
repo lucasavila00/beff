@@ -2,11 +2,11 @@ use crate::diag::{
     span_to_loc, Diagnostic, DiagnosticInfoMessage, DiagnosticInformation, DiagnosticParentMessage,
 };
 use crate::open_api_ast::{
-    self, Definition, Info, JsonRequestBody, JsonSchema, OpenApi, OperationObject, ParameterIn,
-    ParameterObject,
+    self, Info, JsonRequestBody, JsonSchema, OpenApi, OperationObject, ParameterIn,
+    ParameterObject, Validator,
 };
 use crate::type_to_schema::TypeToSchema;
-use crate::{BffFileName, ParsedModule};
+use crate::{BffFileName, FileManager, ParsedModule};
 use anyhow::anyhow;
 use anyhow::Result;
 use core::fmt;
@@ -17,13 +17,11 @@ use std::rc::Rc;
 use swc_common::comments::{Comment, CommentKind, Comments};
 use swc_common::{BytePos, Span, DUMMY_SP};
 use swc_ecma_ast::{
-    ArrayPat, ArrowExpr, AssignPat, AssignProp, BigInt, BindingIdent, CallExpr, Callee,
-    ComputedPropName, ExportDefaultExpr, Expr, FnExpr, Function, GetterProp, Ident, Invalid,
-    KeyValueProp, Lit, MethodProp, Number, ObjectPat, Pat, Prop, PropName, PropOrSpread, RestPat,
-    SetterProp, SpreadElement, Str, Tpl, TsCallSignatureDecl, TsConstructSignatureDecl,
-    TsEntityName, TsGetterSignature, TsIndexSignature, TsKeywordType, TsKeywordTypeKind,
-    TsMethodSignature, TsPropertySignature, TsSetterSignature, TsType, TsTypeAnn, TsTypeElement,
-    TsTypeLit, TsTypeParamDecl, TsTypeParamInstantiation, TsTypeRef,
+    ArrayPat, ArrowExpr, AssignPat, AssignProp, BigInt, BindingIdent, ComputedPropName,
+    ExportDefaultExpr, Expr, FnExpr, Function, GetterProp, Ident, Invalid, KeyValueProp, Lit,
+    MethodProp, Number, ObjectPat, Pat, Prop, PropName, PropOrSpread, RestPat, SetterProp,
+    SpreadElement, Str, Tpl, TsEntityName, TsKeywordType, TsKeywordTypeKind, TsType, TsTypeAnn,
+    TsTypeParamDecl, TsTypeParamInstantiation, TsTypeRef,
 };
 use swc_ecma_visit::Visit;
 
@@ -140,26 +138,16 @@ pub struct FnHandler {
     pub span: Span,
 }
 
-pub trait FileManager {
-    fn get_or_fetch_file(&mut self, name: &BffFileName) -> Option<Rc<ParsedModule>>;
-    fn get_existing_file(&self, name: &BffFileName) -> Option<Rc<ParsedModule>>;
-}
-
-pub struct BuiltDecoder {
-    pub exported_name: String,
-    pub schema: JsonSchema,
-}
-
-pub struct ExtractExportDefaultVisitor<'a, R: FileManager> {
+struct ExtractExportDefaultVisitor<'a, R: FileManager> {
     files: &'a mut R,
     current_file: BffFileName,
     handlers: Vec<PathHandlerMap>,
-    components: Vec<Definition>,
+    components: Vec<Validator>,
     public_definitions: HashSet<String>,
     found_default_export: bool,
     errors: Vec<Diagnostic>,
     info: open_api_ast::Info,
-    built_decoders: Option<Vec<BuiltDecoder>>,
+    // built_decoders: Option<Vec<BuiltDecoder>>,
 }
 impl<'a, R: FileManager> ExtractExportDefaultVisitor<'a, R> {
     fn new(files: &'a mut R, current_file: BffFileName) -> ExtractExportDefaultVisitor<'a, R> {
@@ -175,7 +163,7 @@ impl<'a, R: FileManager> ExtractExportDefaultVisitor<'a, R> {
                 description: None,
                 version: None,
             },
-            built_decoders: None,
+            // built_decoders: None,
             public_definitions: HashSet::new(),
         }
     }
@@ -370,7 +358,7 @@ impl<'a, R: FileManager> ExtractExportDefaultVisitor<'a, R> {
         }
     }
 
-    fn extend_components(&mut self, defs: Vec<Definition>, span: &Span) {
+    fn extend_components(&mut self, defs: Vec<Validator>, span: &Span) {
         for d in defs {
             let found = self.components.iter_mut().find(|x| x.name == d.name);
             if let Some(found) = found {
@@ -386,7 +374,7 @@ impl<'a, R: FileManager> ExtractExportDefaultVisitor<'a, R> {
         }
     }
 
-    fn convert_to_json_schema(&mut self, ty: &TsType, span: &Span, is_public: bool) -> JsonSchema {
+    fn convert_to_json_schema(&mut self, ty: &TsType, span: &Span) -> JsonSchema {
         let mut to_schema = TypeToSchema::new(self.files, self.current_file.clone());
         let res = to_schema.convert_ts_type(ty);
         match res {
@@ -398,9 +386,7 @@ impl<'a, R: FileManager> ExtractExportDefaultVisitor<'a, R> {
                     // And we need the option to allow a type to refer to itself before it has been resolved.
                     match v {
                         Some(s) => {
-                            if is_public {
-                                self.public_definitions.insert(k.clone());
-                            }
+                            self.public_definitions.insert(k.clone());
 
                             kvs.push((k, s))
                         }
@@ -412,7 +398,7 @@ impl<'a, R: FileManager> ExtractExportDefaultVisitor<'a, R> {
                 }
 
                 kvs.sort_by(|(ka, _), (kb, _)| ka.cmp(kb));
-                let ext: Vec<Definition> = kvs.into_iter().map(|(_k, v)| v).collect();
+                let ext: Vec<Validator> = kvs.into_iter().map(|(_k, v)| v).collect();
                 self.extend_components(ext, span);
 
                 res
@@ -443,7 +429,7 @@ impl<'a, R: FileManager> ExtractExportDefaultVisitor<'a, R> {
                             HeaderOrCookie::Cookie
                         },
                         span: lib_ty_name.span,
-                        schema: self.convert_to_json_schema(ty, &lib_ty_name.span, true),
+                        schema: self.convert_to_json_schema(ty, &lib_ty_name.span),
                         required,
                         description,
                     }),
@@ -474,7 +460,7 @@ impl<'a, R: FileManager> ExtractExportDefaultVisitor<'a, R> {
             }
         }
         Ok(HandlerParameter::PathOrQueryOrBody {
-            schema: self.convert_to_json_schema(ty, &tref.span, true),
+            schema: self.convert_to_json_schema(ty, &tref.span),
             required,
             description,
             span: tref.span,
@@ -492,7 +478,7 @@ impl<'a, R: FileManager> ExtractExportDefaultVisitor<'a, R> {
                 self.parse_type_ref_parameter(tref, ty, required, description)
             }
             _ => Ok(HandlerParameter::PathOrQueryOrBody {
-                schema: self.convert_to_json_schema(ty, span, true),
+                schema: self.convert_to_json_schema(ty, span),
                 required,
                 description,
                 span: *span,
@@ -614,11 +600,8 @@ impl<'a, R: FileManager> ExtractExportDefaultVisitor<'a, R> {
             parameters,
             summary: endpoint_comments.summary,
             description: endpoint_comments.description,
-            return_type: self.convert_to_json_schema(
-                maybe_extract_promise(&return_type),
-                parent_span,
-                true,
-            ),
+            return_type: self
+                .convert_to_json_schema(maybe_extract_promise(&return_type), parent_span),
             span: *parent_span,
         };
 
@@ -687,11 +670,7 @@ impl<'a, R: FileManager> ExtractExportDefaultVisitor<'a, R> {
                 .collect(),
             summary: endpoint_comments.summary,
             description: endpoint_comments.description,
-            return_type: self.convert_to_json_schema(
-                maybe_extract_promise(&ret_ty),
-                parent_span,
-                true,
-            ),
+            return_type: self.convert_to_json_schema(maybe_extract_promise(&ret_ty), parent_span),
             span: *parent_span,
         };
 
@@ -848,102 +827,9 @@ impl<'a, R: FileManager> ExtractExportDefaultVisitor<'a, R> {
             }
         }
     }
-
-    fn extract_one_built_decoder(&mut self, prop: &TsTypeElement) -> Result<BuiltDecoder> {
-        match prop {
-            TsTypeElement::TsPropertySignature(TsPropertySignature {
-                key,
-                type_ann,
-                type_params,
-                span,
-                ..
-            }) => {
-                if type_params.is_some() {
-                    return self.error(span, DiagnosticInfoMessage::GenericDecoderIsNotSupported);
-                }
-
-                let key = match &**key {
-                    Expr::Ident(ident) => ident.sym.to_string(),
-                    _ => {
-                        return self.error(span, DiagnosticInfoMessage::InvalidDecoderKey);
-                    }
-                };
-                match type_ann.as_ref().map(|it| &it.type_ann) {
-                    Some(ann) => Ok(BuiltDecoder {
-                        exported_name: key,
-                        schema: self.convert_to_json_schema(ann, span, false),
-                    }),
-                    None => self.error(span, DiagnosticInfoMessage::DecoderMustHaveTypeAnnotation),
-                }
-            }
-            TsTypeElement::TsGetterSignature(TsGetterSignature { span, .. })
-            | TsTypeElement::TsSetterSignature(TsSetterSignature { span, .. })
-            | TsTypeElement::TsMethodSignature(TsMethodSignature { span, .. })
-            | TsTypeElement::TsIndexSignature(TsIndexSignature { span, .. })
-            | TsTypeElement::TsCallSignatureDecl(TsCallSignatureDecl { span, .. })
-            | TsTypeElement::TsConstructSignatureDecl(TsConstructSignatureDecl { span, .. }) => {
-                self.error(span, DiagnosticInfoMessage::InvalidDecoderProperty)
-            }
-        }
-    }
-    fn extract_built_decoders_from_call(
-        &mut self,
-        params: &TsTypeParamInstantiation,
-    ) -> Result<Vec<BuiltDecoder>> {
-        match params.params.split_first() {
-            Some((head, tail)) => {
-                if !tail.is_empty() {
-                    return self.error(
-                        &params.span,
-                        DiagnosticInfoMessage::TooManyTypeParamsOnDecoder,
-                    );
-                }
-                match &**head {
-                    TsType::TsTypeLit(TsTypeLit { members, .. }) => members
-                        .iter()
-                        .map(|prop| self.extract_one_built_decoder(prop))
-                        .collect(),
-                    _ => self.error(
-                        &params.span,
-                        DiagnosticInfoMessage::DecoderShouldBeObjectWithTypesAndNames,
-                    ),
-                }
-            }
-            None => self.error(
-                &params.span,
-                DiagnosticInfoMessage::TooFewTypeParamsOnDecoder,
-            ),
-        }
-    }
 }
 
 impl<'a, R: FileManager> Visit for ExtractExportDefaultVisitor<'a, R> {
-    fn visit_call_expr(&mut self, n: &CallExpr) {
-        match n.callee {
-            Callee::Super(_) => {}
-            Callee::Import(_) => {}
-            Callee::Expr(ref expr) => {
-                if let Expr::Ident(Ident { sym, span, .. }) = &**expr {
-                    if sym == "buildParsers" {
-                        match self.built_decoders {
-                            Some(_) => {
-                                self.push_error(span, DiagnosticInfoMessage::TwoCallsToBuildParsers)
-                            }
-                            None => {
-                                if let Some(ref params) = n.type_args {
-                                    if let Ok(x) =
-                                        self.extract_built_decoders_from_call(params.as_ref())
-                                    {
-                                        self.built_decoders = Some(x)
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-        }
-    }
     fn visit_export_default_expr(&mut self, n: &ExportDefaultExpr) {
         if let Ok(file) = self.get_current_file() {
             let comments = file.comments.get_leading(n.span.lo);
@@ -980,7 +866,7 @@ pub enum FunctionParameterIn {
     InvalidComplexPathParameter,
 }
 
-fn is_type_simple(it: &JsonSchema, components: &Vec<Definition>) -> bool {
+fn is_type_simple(it: &JsonSchema, components: &Vec<Validator>) -> bool {
     match it {
         JsonSchema::OpenApiResponseRef(r) | JsonSchema::Ref(r) => {
             let def = components
@@ -1009,7 +895,7 @@ pub fn operation_parameter_in_path_or_query_or_body(
     name: &str,
     pattern: &ParsedPattern,
     schema: &JsonSchema,
-    components: &Vec<Definition>,
+    components: &Vec<Validator>,
 ) -> FunctionParameterIn {
     // if name is in pattern return path
     if pattern.path_params.contains(&name.to_string()) {
@@ -1028,7 +914,7 @@ pub fn operation_parameter_in_path_or_query_or_body(
 struct EndpointToPath<'a, R: FileManager> {
     files: &'a mut R,
     errors: Vec<Diagnostic>,
-    components: &'a Vec<Definition>,
+    components: &'a Vec<Validator>,
     current_file: BffFileName,
 }
 
@@ -1203,28 +1089,27 @@ pub struct PathHandlerMap {
     pub pattern: ParsedPattern,
     pub handlers: Vec<FnHandler>,
 }
-pub struct ExtractResult {
+
+pub struct RouterExtractResult {
     pub errors: Vec<Diagnostic>,
     pub open_api: OpenApi,
     pub entry_file_name: BffFileName,
     pub handlers: Vec<PathHandlerMap>,
-    pub built_decoders: Option<Vec<BuiltDecoder>>,
-    pub components: Vec<Definition>,
+    // pub built_decoders: Option<Vec<BuiltDecoder>>,
+    pub validators: Vec<Validator>,
 }
 
 type VisitExtractResult = (
     Vec<PathHandlerMap>,
-    Vec<Definition>,
+    Vec<Validator>,
     Vec<Diagnostic>,
     Info,
-    Option<Vec<BuiltDecoder>>,
+    // Option<Vec<BuiltDecoder>>,
     HashSet<String>,
 );
 fn visit_extract<R: FileManager>(files: &mut R, current_file: BffFileName) -> VisitExtractResult {
     let mut visitor = ExtractExportDefaultVisitor::new(files, current_file.clone());
-
     let _ = visitor.visit_current_file();
-
     if !visitor.found_default_export {
         visitor.errors.push(
             DiagnosticInformation::UnfoundFile {
@@ -1240,7 +1125,7 @@ fn visit_extract<R: FileManager>(files: &mut R, current_file: BffFileName) -> Vi
         visitor.components,
         visitor.errors,
         visitor.info,
-        visitor.built_decoders,
+        // visitor.built_decoders,
         visitor.public_definitions,
     )
 }
@@ -1248,8 +1133,8 @@ fn visit_extract<R: FileManager>(files: &mut R, current_file: BffFileName) -> Vi
 pub fn extract_schema<R: FileManager>(
     files: &mut R,
     entry_file_name: BffFileName,
-) -> ExtractResult {
-    let (handlers, components, errors, info, built_decoders, public_definitions) =
+) -> RouterExtractResult {
+    let (handlers, components, errors, info, public_definitions) =
         visit_extract(files, entry_file_name.clone());
 
     let mut transformer = EndpointToPath {
@@ -1266,12 +1151,11 @@ pub fn extract_schema<R: FileManager>(
         paths,
     };
 
-    ExtractResult {
+    RouterExtractResult {
         handlers,
         open_api,
         entry_file_name,
         errors,
-        built_decoders,
-        components,
+        validators: components,
     }
 }

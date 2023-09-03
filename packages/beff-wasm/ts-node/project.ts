@@ -1,5 +1,6 @@
 export type ProjectJson = {
-  router: string;
+  router?: string;
+  parser?: string;
   outputDir: string;
   module: ProjectModule | undefined;
 };

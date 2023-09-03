@@ -3,11 +3,8 @@ import * as path from "path";
 import { Bundler, WritableModules } from "./bundler";
 import { ProjectJson, ProjectModule } from "./project";
 
-const RUNTIME_DTS = `
-import { HandlerMeta, DecodeError,StringFormat} from "@beff/cli";
-export declare const meta: HandlerMeta[];
-export declare const schema: any;
-
+const PARSER_DTS = `
+import { DecodeError,StringFormat} from "@beff/cli";
 
 type Decoders<T> = {
   [K in keyof T]: {
@@ -21,22 +18,20 @@ type Decoders<T> = {
 };
 export declare const buildParsers: <T>() => Decoders<T>;
 
-
-
 export type TagOfFormat<T extends StringFormat<string>> =
   T extends StringFormat<infer Tag> ? Tag : never;
 export declare function registerStringFormat<T extends StringFormat<string>>(
   name: TagOfFormat<T>,
   isValid: (it: string) => boolean
 ): void;
-
 `;
-
-const decodersCode = `
+const ROUTER_DTS = `
+import { HandlerMeta} from "@beff/cli";
+export declare const meta: HandlerMeta[];
+export declare const schema: any;
+`;
+const coercerCode = `
 class CoercionFailure {}
-function add_path_to_errors(errors, path) {
-  return errors.map((e) => ({ ...e, path: [...path, ...e.path] }));
-}
 function coerce_string(input) {
   return input;
 }
@@ -69,21 +64,6 @@ function coerce_union(input, ...cases) {
 }
 function coerce(coercer, value) {
   return coercer(value);
-}
-const stringPredicates = {}
-function registerStringFormat(name, predicate) {
-  stringPredicates[name] = predicate;
-}
-
-// a hint to UIs to mask the input
-registerStringFormat("password", () => true);
-
-function isCustomFormatInvalid(key, value) {
-  const predicate = stringPredicates[key];
-  if (predicate == null) {
-    throw new Error("unknown string format: " + key);
-  }
-  return !predicate(value);
 }
 `;
 
@@ -118,23 +98,76 @@ function buildParsers() {
   return decoders;
 }
 `;
-const finalizeFile = (wasmCode: WritableModules, mod: ProjectModule) => {
+
+const customFormatsCode = `
+const stringPredicates = {}
+function registerStringFormat(name, predicate) {
+  stringPredicates[name] = predicate;
+}
+
+// a hint to UIs to mask the input
+registerStringFormat("password", () => true);
+
+function isCustomFormatInvalid(key, value) {
+  const predicate = stringPredicates[key];
+  if (predicate == null) {
+    throw new Error("unknown string format: " + key);
+  }
+  return !predicate(value);
+}
+`;
+
+const finalizeValidatorsCode = (
+  wasmCode: WritableModules,
+  mod: ProjectModule
+) => {
   const exportCode = mod === "esm" ? "export " : "module.exports = ";
   const exportedItems = [
-    "meta",
-    "schema",
-    "buildParsers",
+    "validators",
+    "isCustomFormatInvalid",
     "registerStringFormat",
-  ]
-    .filter((it) => it.length > 0)
-    .join(", ");
+    "add_path_to_errors",
+  ].join(", ");
   const exports = [exportCode, `{ ${exportedItems} };`].join(" ");
-  const schema = ["const schema = ", wasmCode.json_schema, ";"].join(" ");
   return [
-    decodersCode,
-    wasmCode.js_server_data,
-    buildParsers,
+    `
+function add_path_to_errors(errors, path) {
+  return errors.map((e) => ({ ...e, path: [...path, ...e.path] }));
+}
+    `,
+    customFormatsCode,
+    wasmCode.js_validators,
+    exports,
+  ].join("\n");
+};
+
+const importValidators = (mod: ProjectModule) => {
+  const i = `validators, add_path_to_errors, registerStringFormat, isCustomFormatInvalid`;
+  return mod === "esm"
+    ? `import { ${i} } from "./validators.js";`
+    : `const { ${i} } = require('./validators.js');`;
+};
+const finalizeRouterFile = (wasmCode: WritableModules, mod: ProjectModule) => {
+  const exportCode = mod === "esm" ? "export" : "module.exports =";
+  const schema = ["const schema = ", wasmCode.json_schema, ";"].join(" ");
+  const exportedItems = ["meta", "schema"].join(", ");
+  const exports = [exportCode, `{ ${exportedItems} };`].join(" ");
+  return [
+    importValidators(mod),
+    coercerCode,
+    wasmCode.js_server_meta,
     schema,
+    exports,
+  ].join("\n");
+};
+const finalizeParserFile = (wasmCode: WritableModules, mod: ProjectModule) => {
+  const exportCode = mod === "esm" ? "export " : "module.exports = ";
+  const exportedItems = ["buildParsers", "registerStringFormat"].join(", ");
+  const exports = [exportCode, `{ ${exportedItems} };`].join(" ");
+  return [
+    importValidators(mod),
+    wasmCode.js_built_parsers,
+    buildParsers,
     exports,
   ].join("\n");
 };
@@ -146,8 +179,13 @@ export const execProject = (
 ) => {
   const mod = projectJson.module ?? "esm";
   const bundler = new Bundler(verbose);
-  const entryPoint = path.join(path.dirname(projectPath), projectJson.router);
-  const outResult = bundler.bundle(entryPoint);
+  const routerEntryPoint = projectJson.router
+    ? path.join(path.dirname(projectPath), projectJson.router)
+    : undefined;
+  const parserEntryPoint = projectJson.parser
+    ? path.join(path.dirname(projectPath), projectJson.parser)
+    : undefined;
+  const outResult = bundler.bundle(routerEntryPoint, parserEntryPoint);
   if (outResult == null) {
     process.exit(1);
   }
@@ -156,12 +194,35 @@ export const execProject = (
     fs.mkdirSync(outputDir);
   }
 
-  const outputFile = path.join(outputDir, "index.js");
-  const finalFile = finalizeFile(outResult, mod);
-  fs.writeFileSync(outputFile, finalFile);
+  fs.writeFileSync(
+    path.join(outputDir, "validators.js"),
+    finalizeValidatorsCode(outResult, mod)
+  );
 
-  const outputDts = path.join(outputDir, "index.d.ts");
-  fs.writeFileSync(outputDts, [RUNTIME_DTS].join("\n"));
-  const outputSchemaJson = path.join(outputDir, "openapi.json");
-  fs.writeFileSync(outputSchemaJson, outResult.json_schema);
+  if (projectJson.router) {
+    fs.writeFileSync(
+      path.join(outputDir, "router.js"),
+      finalizeRouterFile(outResult, mod)
+    );
+
+    fs.writeFileSync(
+      path.join(outputDir, "router.d.ts"),
+      [ROUTER_DTS].join("\n")
+    );
+    fs.writeFileSync(
+      path.join(outputDir, "openapi.json"),
+      outResult.json_schema ?? ""
+    );
+  }
+
+  if (projectJson.parser) {
+    fs.writeFileSync(
+      path.join(outputDir, "parser.js"),
+      finalizeParserFile(outResult, mod)
+    );
+    fs.writeFileSync(
+      path.join(outputDir, "parser.d.ts"),
+      [PARSER_DTS].join("\n")
+    );
+  }
 };

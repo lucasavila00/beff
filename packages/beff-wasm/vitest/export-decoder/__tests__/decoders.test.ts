@@ -1,6 +1,6 @@
 import { it, expect } from "vitest";
-import { NotPublicRenamed, User, Users, StartsWithA } from "../router";
-import { schema } from "../bff-generated";
+import { NotPublicRenamed, User, Users, StartsWithA } from "../parser";
+import { schema } from "../bff-generated/router";
 
 it("custom types", () => {
   expect(StartsWithA.safeParse("AA")).toMatchInlineSnapshot(`

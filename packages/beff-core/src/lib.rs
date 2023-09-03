@@ -4,12 +4,17 @@ pub mod emit;
 pub mod import_resolver;
 pub mod open_api_ast;
 pub mod parse;
+pub mod parser_extractor;
 pub mod print;
 pub mod swc_builder;
 pub mod type_resolve;
 pub mod type_to_schema;
-use api_extractor::FileManager;
+use api_extractor::extract_schema;
+use api_extractor::RouterExtractResult;
 use core::fmt;
+use diag::Diagnostic;
+use parser_extractor::extract_parser;
+use parser_extractor::ParserExtractResult;
 use std::collections::HashMap;
 use std::rc::Rc;
 use std::sync::Arc;
@@ -166,4 +171,51 @@ pub struct UnresolvedExport {
     pub name: JsWord,
     pub span: SyntaxContext,
     pub renamed: JsWord,
+}
+pub struct EntryPoints {
+    pub router_entry_point: Option<BffFileName>,
+    pub parser_entry_point: Option<BffFileName>,
+}
+pub trait FileManager {
+    fn get_or_fetch_file(&mut self, name: &BffFileName) -> Option<Rc<ParsedModule>>;
+    fn get_existing_file(&self, name: &BffFileName) -> Option<Rc<ParsedModule>>;
+}
+
+pub struct ExtractResult {
+    pub router: Option<RouterExtractResult>,
+    pub parser: Option<ParserExtractResult>,
+}
+
+impl ExtractResult {
+    pub fn is_empty(&self) -> bool {
+        self.router.is_none() && self.parser.is_none()
+    }
+    pub fn errors(&self) -> Vec<&Diagnostic> {
+        self.router
+            .as_ref()
+            .map(|it| it.errors.iter().map(|it| it).collect())
+            .unwrap_or(vec![])
+            .into_iter()
+            .chain(
+                self.parser
+                    .as_ref()
+                    .map(|it| it.errors.iter().map(|it| it).collect())
+                    .unwrap_or(vec![]),
+            )
+            .collect()
+    }
+}
+
+pub fn extract<R: FileManager>(files: &mut R, entry: EntryPoints) -> ExtractResult {
+    let mut router = None;
+    let mut parser = None;
+
+    if let Some(entry) = entry.router_entry_point {
+        router = Some(extract_schema(files, entry));
+    }
+    if let Some(entry) = entry.parser_entry_point {
+        parser = Some(extract_parser(files, entry));
+    }
+
+    ExtractResult { router, parser }
 }
