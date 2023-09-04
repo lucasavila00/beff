@@ -3,7 +3,7 @@ const meta = [
     {
         "method_kind": "use",
         "params": [],
-        "pattern": "/greeting"
+        "pattern": "/*"
     },
     {
         "method_kind": "get",
@@ -18,6 +18,25 @@ const meta = [
             }
         ],
         "pattern": "/greeting"
+    },
+    {
+        "method_kind": "get",
+        "params": [
+            {
+                "type": "context"
+            },
+            {
+                "type": "query",
+                "name": "a",
+                "required": true
+            },
+            {
+                "type": "query",
+                "name": "b",
+                "required": true
+            }
+        ],
+        "pattern": "/sum"
     }
 ];
 

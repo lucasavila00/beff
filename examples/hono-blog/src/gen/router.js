@@ -5,7 +5,12 @@ Object.defineProperty(exports, "__esModule", {
     
 const { validators, add_path_to_errors, registerStringFormat, isCustomFormatInvalid } = require('./validators.js').default;
 
-class CoercionFailure {}
+class CoercionFailure {
+  constructor(original) {
+    this.__isCoercionFailure = true;
+    this.original = original
+  }
+}
 function coerce_string(input) {
   return input;
 }
@@ -16,7 +21,7 @@ function coerce_number(input) {
   if (isNumeric(input)) {
     return Number(input);
   }
-  return new CoercionFailure();
+  return new CoercionFailure(input);
 }
 function coerce_boolean(input) {
   if (input === "true" || input === "false") {
@@ -25,7 +30,7 @@ function coerce_boolean(input) {
   if (input === "1" || input === "0") {
     return input === "1";
   }
-  return new CoercionFailure();
+  return new CoercionFailure(input);
 }
 function coerce_union(input, ...cases) {
   for (const c of cases) {
@@ -34,7 +39,7 @@ function coerce_union(input, ...cases) {
       return r;
     }
   }
-  return new CoercionFailure();
+  return new CoercionFailure(input);
 }
 function coerce(coercer, value) {
   return coercer(value);

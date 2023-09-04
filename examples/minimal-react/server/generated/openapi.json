@@ -85,6 +85,54 @@
           }
         }
       }
+    },
+    "/sum": {
+      "get": {
+        "parameters": [
+          {
+            "in": "query",
+            "name": "a",
+            "required": true,
+            "schema": {
+              "type": "number"
+            }
+          },
+          {
+            "in": "query",
+            "name": "b",
+            "required": true,
+            "schema": {
+              "type": "number"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "result": {
+                      "type": "number"
+                    }
+                  },
+                  "required": [
+                    "result"
+                  ],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Successful Operation"
+          },
+          "422": {
+            "$ref": "#/components/responses/DecodeError"
+          },
+          "500": {
+            "$ref": "#/components/responses/UnexpectedError"
+          }
+        }
+      }
     }
   }
 }
