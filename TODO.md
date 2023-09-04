@@ -1,5 +1,15 @@
 ## BFF Core
 
+remove the need for this hack
+
+```
+const prettyPrintValue = (it: unknown): string => {
+  if (isCoercionFailure(it)) {
+    return prettyPrintValue(it.original);
+  }
+
+```
+
 ## BFF Lib
 
 - [ ] logger plugin, integrated into app

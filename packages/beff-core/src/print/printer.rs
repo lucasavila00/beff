@@ -82,14 +82,14 @@ impl ToJson for JsonSchema {
     fn to_json(self) -> Json {
         match self {
             JsonSchema::String => {
-                Json::Object(vec![("type".into(), Json::String("string".into()))])
+                Json::object(vec![("type".into(), Json::String("string".into()))])
             }
-            JsonSchema::StringWithFormat(format) => Json::Object(vec![
+            JsonSchema::StringWithFormat(format) => Json::object(vec![
                 ("type".into(), Json::String("string".into())),
                 ("format".into(), Json::String(format)),
             ]),
             JsonSchema::Object { values } => {
-                Json::Object(vec![
+                Json::object(vec![
                     //
                     ("type".into(), Json::String("object".into())),
                     (
@@ -116,28 +116,28 @@ impl ToJson for JsonSchema {
                 ])
             }
             JsonSchema::Array(typ) => {
-                Json::Object(vec![
+                Json::object(vec![
                     //
                     ("type".into(), Json::String("array".into())),
                     ("items".into(), (*typ).to_json()),
                 ])
             }
             JsonSchema::Boolean => {
-                Json::Object(vec![("type".into(), Json::String("boolean".into()))])
+                Json::object(vec![("type".into(), Json::String("boolean".into()))])
             }
             JsonSchema::Number => {
-                Json::Object(vec![("type".into(), Json::String("number".into()))])
+                Json::object(vec![("type".into(), Json::String("number".into()))])
             }
-            JsonSchema::Any => Json::Object(vec![]),
-            JsonSchema::Ref(reference) => Json::Object(vec![(
+            JsonSchema::Any => Json::object(vec![]),
+            JsonSchema::Ref(reference) => Json::object(vec![(
                 "$ref".into(),
                 Json::String(format!("#/components/schemas/{reference}")),
             )]),
-            JsonSchema::OpenApiResponseRef(reference) => Json::Object(vec![(
+            JsonSchema::OpenApiResponseRef(reference) => Json::object(vec![(
                 "$ref".into(),
                 Json::String(format!("#/components/responses/{reference}")),
             )]),
-            JsonSchema::Null => Json::Object(vec![("type".into(), Json::String("null".into()))]),
+            JsonSchema::Null => Json::object(vec![("type".into(), Json::String("null".into()))]),
             JsonSchema::AnyOf(types) => {
                 let all_literals = types.iter().all(|it| matches!(it, JsonSchema::Const(_)));
                 if all_literals {
@@ -148,13 +148,13 @@ impl ToJson for JsonSchema {
                             _ => unreachable!("should have been caught by all_literals check"),
                         })
                         .collect();
-                    Json::Object(vec![("enum".into(), Json::Array(vs))])
+                    Json::object(vec![("enum".into(), Json::Array(vs))])
                 } else {
                     let vs = types.into_iter().map(ToJson::to_json).collect();
-                    Json::Object(vec![("anyOf".into(), Json::Array(vs))])
+                    Json::object(vec![("anyOf".into(), Json::Array(vs))])
                 }
             }
-            JsonSchema::AllOf(types) => Json::Object(vec![(
+            JsonSchema::AllOf(types) => Json::object(vec![(
                 "allOf".into(),
                 Json::Array(types.into_iter().map(ToJson::to_json).collect()),
             )]),
@@ -180,9 +180,9 @@ impl ToJson for JsonSchema {
                     v.push(("minItems".into(), Json::Number(len_f)));
                     v.push(("maxItems".into(), Json::Number(len_f)));
                 }
-                Json::Object(v)
+                Json::object(v)
             }
-            JsonSchema::Const(val) => Json::Object(vec![("const".into(), val)]),
+            JsonSchema::Const(val) => Json::object(vec![("const".into(), val)]),
             JsonSchema::Error => unreachable!("should not call print if schema had error"),
         }
     }
@@ -214,7 +214,7 @@ impl ToJson for open_api_ast::ParameterObject {
         }
         v.push(("required".into(), Json::Bool(self.required)));
         v.push(("schema".into(), self.schema.to_json()));
-        Json::Object(v)
+        Json::object(v)
     }
 }
 impl ToJson for open_api_ast::JsonRequestBody {
@@ -224,12 +224,12 @@ impl ToJson for open_api_ast::JsonRequestBody {
             v.push(("description".into(), Json::String(clear_description(desc))));
         }
         v.push(("required".into(), Json::Bool(self.required)));
-        let content = Json::Object(vec![(
+        let content = Json::object(vec![(
             "application/json".into(),
-            Json::Object(vec![("schema".into(), self.schema.to_json())]),
+            Json::object(vec![("schema".into(), self.schema.to_json())]),
         )]);
         v.push(("content".into(), content));
-        Json::Object(v)
+        Json::object(v)
     }
 }
 
@@ -257,19 +257,19 @@ impl ToJson for open_api_ast::OperationObject {
         ));
         v.push((
             "responses".into(),
-            Json::Object(vec![
+            Json::object(vec![
                 (
                     "200".into(),
-                    Json::Object(vec![
+                    Json::object(vec![
                         (
                             "description".into(),
                             Json::String("Successful Operation".into()),
                         ),
                         (
                             "content".into(),
-                            Json::Object(vec![(
+                            Json::object(vec![(
                                 "application/json".into(),
-                                Json::Object(vec![(
+                                Json::object(vec![(
                                     "schema".into(),
                                     self.json_response_body.to_json(),
                                 )]),
@@ -282,7 +282,7 @@ impl ToJson for open_api_ast::OperationObject {
             ]),
         ));
 
-        Json::Object(v)
+        Json::object(v)
     }
 }
 
@@ -310,7 +310,7 @@ impl ToJsonKv for open_api_ast::ApiPath {
         if v.is_empty() {
             return vec![];
         }
-        vec![(self.pattern.clone(), Json::Object(v))]
+        vec![(self.pattern.clone(), Json::object(v))]
     }
 }
 impl ToJsonKv for open_api_ast::Validator {
@@ -333,7 +333,7 @@ impl ToJson for open_api_ast::Info {
             "version".into(),
             Json::String(self.version.unwrap_or("0.0.0".to_owned())),
         ));
-        Json::Object(v)
+        Json::object(v)
     }
 }
 
@@ -346,13 +346,13 @@ fn error_response_schema() -> JsonSchema {
 fn error_response(code: &str, description: &str) -> (String, Json) {
     (
         code.into(),
-        Json::Object(vec![
+        Json::object(vec![
             ("description".into(), Json::String(description.into())),
             (
                 "content".into(),
-                Json::Object(vec![(
+                Json::object(vec![(
                     "application/json".into(),
-                    Json::Object(vec![("schema".into(), error_response_schema().to_json())]),
+                    Json::object(vec![("schema".into(), error_response_schema().to_json())]),
                 )]),
             ),
         ]),
@@ -366,7 +366,7 @@ fn open_api_to_json(it: OpenApi, components: &[Validator]) -> Json {
         ("info".into(), it.info.to_json()),
         (
             "paths".into(),
-            Json::Object(
+            Json::object(
                 it.paths
                     .into_iter()
                     .flat_map(ToJsonKv::to_json_kv)
@@ -375,10 +375,10 @@ fn open_api_to_json(it: OpenApi, components: &[Validator]) -> Json {
         ),
         (
             "components".into(),
-            Json::Object(vec![
+            Json::object(vec![
                 (
                     "schemas".into(),
-                    Json::Object(
+                    Json::object(
                         it.components
                             .into_iter()
                             .map(|name| {
@@ -393,7 +393,7 @@ fn open_api_to_json(it: OpenApi, components: &[Validator]) -> Json {
                 ),
                 (
                     "responses".into(),
-                    Json::Object(vec![
+                    Json::object(vec![
                         error_response("DecodeError", "Invalid parameters or request body"),
                         error_response("UnexpectedError", "Unexpected Error"),
                     ]),
@@ -401,7 +401,7 @@ fn open_api_to_json(it: OpenApi, components: &[Validator]) -> Json {
             ]),
         ),
     ];
-    Json::Object(v)
+    Json::object(v)
 }
 
 fn param_to_server_js(
@@ -415,7 +415,7 @@ fn param_to_server_js(
             schema, required, ..
         } => {
             match operation_parameter_in_path_or_query_or_body(name, pattern, &schema, components) {
-                FunctionParameterIn::Path => Js::Object(vec![
+                FunctionParameterIn::Path => Js::object(vec![
                     ("type".into(), Js::String("path".into())),
                     ("name".into(), Js::String(name.to_string())),
                     ("required".into(), Js::Bool(required)),
@@ -425,7 +425,7 @@ fn param_to_server_js(
                     ),
                     ("coercer".into(), Js::coercer(schema, components)),
                 ]),
-                FunctionParameterIn::Query => Js::Object(vec![
+                FunctionParameterIn::Query => Js::object(vec![
                     ("type".into(), Js::String("query".into())),
                     ("name".into(), Js::String(name.to_string())),
                     ("required".into(), Js::Bool(required)),
@@ -435,7 +435,7 @@ fn param_to_server_js(
                     ),
                     ("coercer".into(), Js::coercer(schema, components)),
                 ]),
-                FunctionParameterIn::Body => Js::Object(vec![
+                FunctionParameterIn::Body => Js::object(vec![
                     ("type".into(), Js::String("body".into())),
                     ("name".into(), Js::String(name.to_string())),
                     ("required".into(), Js::Bool(required)),
@@ -452,7 +452,7 @@ fn param_to_server_js(
         HandlerParameter::Header {
             schema, required, ..
         } => {
-            Js::Object(vec![
+            Js::object(vec![
                 //
                 ("type".into(), Js::String("header".to_string())),
                 ("name".into(), Js::String(name.to_string())),
@@ -465,7 +465,7 @@ fn param_to_server_js(
             ])
         }
         HandlerParameter::Context(_) => {
-            Js::Object(vec![("type".into(), Js::String("context".into()))])
+            Js::object(vec![("type".into(), Js::String("context".into()))])
         }
     }
 }
@@ -481,17 +481,17 @@ fn param_to_client_js(
             schema, required, ..
         } => {
             match operation_parameter_in_path_or_query_or_body(name, pattern, &schema, components) {
-                FunctionParameterIn::Path => Js::Object(vec![
+                FunctionParameterIn::Path => Js::object(vec![
                     ("type".into(), Js::String("path".into())),
                     ("name".into(), Js::String(name.to_string())),
                     ("required".into(), Js::Bool(required)),
                 ]),
-                FunctionParameterIn::Query => Js::Object(vec![
+                FunctionParameterIn::Query => Js::object(vec![
                     ("type".into(), Js::String("query".into())),
                     ("name".into(), Js::String(name.to_string())),
                     ("required".into(), Js::Bool(required)),
                 ]),
-                FunctionParameterIn::Body => Js::Object(vec![
+                FunctionParameterIn::Body => Js::object(vec![
                     ("type".into(), Js::String("body".into())),
                     ("name".into(), Js::String(name.to_string())),
                     ("required".into(), Js::Bool(required)),
@@ -502,7 +502,7 @@ fn param_to_client_js(
             }
         }
         HandlerParameter::Header { required, .. } => {
-            Js::Object(vec![
+            Js::object(vec![
                 //
                 ("type".into(), Js::String("header".to_string())),
                 ("name".into(), Js::String(name.to_string())),
@@ -510,7 +510,7 @@ fn param_to_client_js(
             ])
         }
         HandlerParameter::Context(_) => {
-            Js::Object(vec![("type".into(), Js::String("context".into()))])
+            Js::object(vec![("type".into(), Js::String("context".into()))])
         }
     }
 }
@@ -523,7 +523,7 @@ fn handlers_to_server_js(items: Vec<PathHandlerMap>, components: &Vec<Validator>
                     .into_iter()
                     .map(|handler| {
                         let decoder_name = format!("responseBody");
-                        Js::Object(vec![
+                        Js::object(vec![
                             (
                                 "method_kind".into(),
                                 Js::String(handler.method_kind.to_string()),
@@ -569,7 +569,7 @@ fn handlers_to_client_js(items: Vec<PathHandlerMap>, components: &Vec<Validator>
                 it.handlers
                     .into_iter()
                     .map(|handler| {
-                        Js::Object(vec![
+                        Js::object(vec![
                             (
                                 "method_kind".into(),
                                 Js::String(handler.method_kind.to_string()),

@@ -1,5 +1,6 @@
 use core::fmt;
 
+use indexmap::IndexMap;
 use swc_ecma_ast::Expr;
 
 #[derive(Debug, PartialEq, Eq, Clone)]
@@ -33,7 +34,7 @@ pub enum Json {
     Number(f64),
     String(String),
     Array(Vec<Json>),
-    Object(Vec<(String, Json)>),
+    Object(IndexMap<String, Json>),
 }
 
 impl Json {
@@ -45,12 +46,12 @@ impl Json {
             Json::Number(n) => Js::Number(n),
             Json::String(s) => Js::String(s),
             Json::Array(arr) => Js::Array(arr.into_iter().map(Json::to_js).collect()),
-            Json::Object(obj) => Js::Object(
-                obj.into_iter()
-                    .map(|(k, v)| (k, v.to_js()))
-                    .collect::<Vec<_>>(),
-            ),
+            Json::Object(obj) => Js::Object(obj.into_iter().map(|(k, v)| (k, v.to_js())).collect()),
         }
+    }
+
+    pub fn object(vs: Vec<(String, Json)>) -> Self {
+        Self::Object(vs.into_iter().collect())
     }
 
     fn to_serde(&self) -> serde_json::Value {
@@ -69,6 +70,21 @@ impl Json {
                 obj.iter()
                     .map(|(k, v)| (k.clone(), v.to_serde()))
                     .collect::<serde_json::Map<_, _>>(),
+            ),
+        }
+    }
+
+    fn from_serde(it: &serde_json::Value) -> Json {
+        match it {
+            serde_json::Value::Null => Json::Null,
+            serde_json::Value::Bool(v) => Json::Bool(*v),
+            serde_json::Value::Number(v) => Json::Number(v.as_f64().unwrap()),
+            serde_json::Value::String(st) => Json::String(st.clone()),
+            serde_json::Value::Array(vs) => Json::Array(vs.iter().map(Json::from_serde).collect()),
+            serde_json::Value::Object(vs) => Json::Object(
+                vs.iter()
+                    .map(|(k, v)| (k.clone(), Json::from_serde(v)))
+                    .collect(),
             ),
         }
     }
@@ -91,7 +107,7 @@ pub enum Js {
     Number(f64),
     String(String),
     Array(Vec<Js>),
-    Object(Vec<(String, Js)>),
+    Object(IndexMap<String, Js>),
     Decoder {
         name_on_errors: Option<String>,
         schema: JsonSchema,
@@ -112,6 +128,10 @@ fn resolve_schema(schema: JsonSchema, components: &Vec<Validator>) -> JsonSchema
 }
 
 impl Js {
+    pub fn object(vs: Vec<(String, Js)>) -> Self {
+        Self::Object(vs.into_iter().collect())
+    }
+
     pub fn coercer(schema: JsonSchema, components: &Vec<Validator>) -> Self {
         Self::Coercer(resolve_schema(schema, components))
     }
@@ -140,9 +160,9 @@ pub enum JsonSchema {
     StringWithFormat(String),
     Number,
     Any,
-    // Not(Box<JsonSchema>),
     Object {
         values: Vec<(String, Optionality<JsonSchema>)>,
+        // values: IndexMap<String, Optionality<JsonSchema>>,
     },
     Array(Box<JsonSchema>),
     Tuple {
