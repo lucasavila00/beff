@@ -33,30 +33,29 @@ export type ClientFromRouter<R> = {
 //   };
 // };
 
-type BffMethod = "GET" | "POST" | "PUT" | "DELETE" | "PATCH" | "OPTIONS";
+type HTTPMethod = "GET" | "POST" | "PUT" | "DELETE" | "PATCH" | "OPTIONS";
+
+type ClientRequestParams = { meta: HandlerMetaClient; params: unknown[] };
 export class BffRequest {
-  public method: BffMethod;
-  public url: string;
+  public method: HTTPMethod;
+  public path: string;
   public headers: Record<string, string>;
   public requestBodyStringified?: string;
   constructor(
-    method: BffMethod,
-    url: string,
+    method: HTTPMethod,
+    path: string,
     headers: Record<string, string>,
     requestBodyStringified?: string
   ) {
     this.method = method.toUpperCase() as any;
-    this.url = url;
+    this.path = path;
     this.headers = headers;
     this.requestBodyStringified = requestBodyStringified;
   }
 
-  static build = (
-    baseUrl: string | undefined,
-    meta: HandlerMetaClient,
-    params: unknown[]
-  ): BffRequest => {
-    let url = baseUrl ? baseUrl + meta.pattern : meta.pattern;
+  static build = (reqParams: ClientRequestParams): BffRequest => {
+    const { meta, params } = reqParams;
+    let path = meta.pattern;
     const method = meta.method_kind.toUpperCase() as any;
     const init: Partial<BffRequest> = {};
     init.headers = {};
@@ -70,15 +69,15 @@ export class BffRequest {
       const param = params[index];
       switch (metadata.type) {
         case "path": {
-          url = url.replace(`{${metadata.name}}`, String(param));
+          path = path.replace(`{${metadata.name}}`, String(param));
           break;
         }
         case "query": {
           if (!hasAddedQueryParams) {
-            url += "?";
+            path += "?";
             hasAddedQueryParams = true;
           }
-          url += `${metadata.name}=${param}&`;
+          path += `${metadata.name}=${param}&`;
           break;
         }
         case "header": {
@@ -99,37 +98,148 @@ export class BffRequest {
       }
     }
 
-    const rq = new BffRequest(
+    return new BffRequest(
       method,
-      url,
+      path,
       init.headers ?? {},
       init.requestBodyStringified
     );
-    return rq;
   };
 
-  toRequest() {
-    return new Request(this.url, {
+  toRequestInit(): RequestInit {
+    return {
       method: this.method,
       headers: this.headers,
       body: this.requestBodyStringified,
-    });
+    };
   }
 }
 
+export interface ClientPlugin {
+  onRequestInit?: OnRequestInitHook;
+  onFetch?: OnFetchHook;
+  onResponse?: OnResponseHook;
+}
+
+export type OnRequestInitHook = (
+  payload: ClientOnRequestInitPayload
+) => Promise<void> | void;
+export type OnFetchHook = (
+  payload: ClientOnFetchHookPayload
+) => Promise<void> | void;
+export type OnResponseHook = (
+  payload: ClientOnResponseHookPayload
+) => Promise<void> | void;
+
+export interface ClientOnRequestInitPayload {
+  path: string;
+  method: HTTPMethod;
+  requestParams: ClientRequestParams;
+  requestInit: RequestInit;
+  endResponse(response: Response): void;
+}
+
+export interface ClientOnFetchHookPayload {
+  url: string;
+  init: RequestInit;
+  fetchFn: typeof fetch;
+  setFetchFn(fetchFn: typeof fetch): void;
+}
+
+export interface ClientOnResponseHookPayload {
+  path: string;
+  method: HTTPMethod;
+  requestParams: ClientRequestParams;
+  requestInit: RequestInit;
+  response: Response;
+}
 export function buildClient<T>(options: {
   generated: { meta: HandlerMetaClient[] };
   fetchFn?: typeof fetch;
   baseUrl?: string;
+  plugins?: ClientPlugin[];
 }): ClientFromRouter<T> {
-  const { generated, fetchFn = fetch, baseUrl } = options;
+  const { generated, fetchFn = fetch, baseUrl = "", plugins = [] } = options;
+
+  const endpoint = baseUrl;
+
+  const onRequestInitHooks: OnRequestInitHook[] = [];
+  const onFetchHooks: OnFetchHook[] = [];
+  const onResponseHooks: OnResponseHook[] = [];
+  for (const plugin of plugins) {
+    if (plugin.onRequestInit) {
+      onRequestInitHooks.push(plugin.onRequestInit);
+    }
+    if (plugin.onFetch) {
+      onFetchHooks.push(plugin.onFetch);
+    }
+    if (plugin.onResponse) {
+      onResponseHooks.push(plugin.onResponse);
+    }
+  }
+
   const client: any = {};
   for (const meta of generated.meta) {
     if (client[meta.pattern] == null) {
       client[meta.pattern] = {};
     }
-    client[meta.pattern][meta.method_kind] = async (...params: any) =>
-      fetchFn(BffRequest.build(baseUrl, meta, params).toRequest());
+    client[meta.pattern][meta.method_kind] = async (...params: any) => {
+      const requestParams = { meta, params };
+      const bffReq = BffRequest.build(requestParams);
+      const requestInit = bffReq.toRequestInit();
+      const path = bffReq.path;
+      const method = bffReq.method;
+
+      let response: Response | undefined = undefined;
+      for (const onRequestParamsHook of onRequestInitHooks) {
+        await onRequestParamsHook({
+          path,
+          method,
+          requestParams,
+          requestInit,
+          endResponse(res) {
+            response = res;
+          },
+        });
+      }
+      if (response) {
+        return response;
+      }
+
+      let finalUrl = path;
+      if (endpoint && !path.startsWith("http")) {
+        finalUrl = `${endpoint}${path}`;
+      }
+
+      let currentFetchFn = fetchFn;
+
+      for (const onFetchHook of onFetchHooks) {
+        await onFetchHook({
+          url: finalUrl,
+          init: requestInit as RequestInit,
+          fetchFn: currentFetchFn,
+          setFetchFn(newFetchFn) {
+            currentFetchFn = newFetchFn;
+          },
+        });
+      }
+
+      const responseFetched = await currentFetchFn(
+        new Request(finalUrl, requestInit)
+      );
+
+      for (const onResponseHook of onResponseHooks) {
+        await onResponseHook({
+          path,
+          method,
+          requestParams,
+          requestInit,
+          response: responseFetched,
+        });
+      }
+
+      return responseFetched;
+    };
   }
   return client;
 }
