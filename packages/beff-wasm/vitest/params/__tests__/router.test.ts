@@ -5,7 +5,10 @@ import generated from "../bff-generated/router";
 import generatedClient from "../bff-generated/client";
 
 const app = buildHonoApp({ router, generated });
-const beff = buildHonoTestClient<typeof router>(generatedClient, app);
+const beff = buildHonoTestClient<typeof router>({
+  generated: generatedClient,
+  app,
+});
 
 it("docs json", async () => {
   const req = new Request("http://localhost/v3/openapi.json", {

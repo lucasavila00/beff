@@ -10,7 +10,8 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "@beff/cli": "workspace:^1.0.0"
+    "@beff/cli": "workspace:^1.0.0",
+    "@whatwg-node/fetch": "^0.9.12"
   },
   "devDependencies": {
     "typescript": "^5.2.2"

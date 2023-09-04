@@ -6,7 +6,10 @@ import generated from "../bff-generated/router";
 import clientGenerated from "../bff-generated/client";
 
 const app = buildHonoApp({ router, generated });
-const bff = buildHonoTestClient<typeof router>(clientGenerated, app);
+const bff = buildHonoTestClient<typeof router>({
+  generated: clientGenerated,
+  app,
+});
 
 it("get", async () => {
   expect(await bff["/hello1"].get()).toMatchInlineSnapshot('"Hello!"');

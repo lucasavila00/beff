@@ -7,8 +7,7 @@ import {
   OpenAPIDocument,
   OpenApiServer,
 } from "@beff/cli";
-import { getCookie } from "hono/cookie";
-import { buildStableClient, ClientFromRouter } from "@beff/client";
+import { ClientFromRouter, buildClient } from "@beff/client";
 
 const template = (baseUrl: string) => `
 <!DOCTYPE html>
@@ -263,39 +262,32 @@ export function buildHonoApp(options: {
   return app;
 }
 
-export const buildHonoTestClient = <T>(
+export const buildHonoTestClient = <T>(options: {
   generated: {
     meta: HandlerMetaClient[];
-  },
-  app: Hono<any, any, any>,
-  env?: any,
-  executionContext?: any
-): ClientFromRouter<T> =>
-  buildStableClient<T>(generated, async (req) => {
-    const r = await app.fetch(
-      //@ts-ignore
-      new Request("http://localhost" + req.url, {
-        method: req.method,
-        headers: {
-          ...req.headers,
-          "content-type": "application/json",
-        },
-        body: req.requestBodyStringified,
-      }),
-      env,
-      executionContext
-    );
-    if (r.ok) {
-      return r.json();
-    }
-    const text = await r.text();
-    try {
-      const json = JSON.parse(text);
-      throw new BffHTTPException(r.status, json.message);
-    } catch (e) {
-      if (isBffHttpException(e)) {
-        throw e;
+  };
+  app: Hono<any, any, any>;
+  env?: any;
+  executionContext?: any;
+  baseUrl?: string;
+}): ClientFromRouter<T> => {
+  const { baseUrl, generated, app, env, executionContext } = options;
+  return buildClient<T>({
+    baseUrl: baseUrl ?? "http://localhost",
+    generated: generated,
+    fetchFn: async (req) => {
+      const r = await app.fetch(req as any, env, executionContext);
+      if (r.ok) {
+        return r.json();
       }
-      throw new BffHTTPException(r.status, text);
-    }
+      const text = await r.text();
+      let json: any;
+      try {
+        json = JSON.parse(text);
+      } catch (e) {
+        throw new BffHTTPException(r.status, text);
+      }
+      throw new BffHTTPException(r.status, json.message);
+    },
   });
+};

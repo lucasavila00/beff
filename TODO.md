@@ -1,5 +1,10 @@
 ## BFF Core
 
+forms, html apps
+
+form urlencoded
+form data
+
 ## BFF Lib
 
 - [ ] client with plugin api

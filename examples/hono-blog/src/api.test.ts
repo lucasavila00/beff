@@ -6,7 +6,11 @@ import type router from "./router";
 
 const env = getMiniflareBindings();
 
-const client = buildHonoTestClient<typeof router>(generatedClient, app, env);
+const client = buildHonoTestClient<typeof router>({
+  generated: generatedClient,
+  app,
+  env,
+});
 
 describe("Root", () => {
   it("GET /", async () => {

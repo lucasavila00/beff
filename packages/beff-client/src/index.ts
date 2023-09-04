@@ -1,4 +1,5 @@
 import type { HandlerMetaClient } from "@beff/cli";
+import { fetch, Request } from "@whatwg-node/fetch";
 export type NormalizeRouterItem<T> = T extends (
   ...args: infer I
 ) => Promise<infer O>
@@ -11,17 +12,26 @@ type RemoveFirstOfTuple<T extends any[]> = T["length"] extends 0
   : T extends [any, ...infer U]
   ? U
   : T;
-export type SimpleHttpFunction<M extends [any[], any]> = (
-  ...args: RemoveFirstOfTuple<M[0]>
-) => Promise<M[1]>;
 
 export type ClientFromRouter<R> = {
   [K in keyof R as K extends `${string}*${string}` ? never : K]: {
-    [M in keyof R[K] as M extends `use` ? never : M]: SimpleHttpFunction<
-      NormalizeRouterItem<R[K][M]>
-    >;
+    [M in keyof R[K] as M extends `use` ? never : M]: (
+      ...args: RemoveFirstOfTuple<NormalizeRouterItem<R[K][M]>[0]>
+    ) => Promise<NormalizeRouterItem<R[K][M]>[1]>;
   };
 };
+
+// export type SimpleHttpFunction<M extends [any[], any]> = (
+//   ...args: RemoveFirstOfTuple<M[0]>
+// ) => Promise<M[1]>;
+
+// export type ClientFromRouter<R> = {
+//   [K in keyof R as K extends `${string}*${string}` ? never : K]: {
+//     [M in keyof R[K] as M extends `use` ? never : M]: SimpleHttpFunction<
+//       NormalizeRouterItem<R[K][M]>
+//     >;
+//   };
+// };
 
 type BffMethod = "GET" | "POST" | "PUT" | "DELETE" | "PATCH" | "OPTIONS";
 export class BffRequest {
@@ -40,71 +50,86 @@ export class BffRequest {
     this.headers = headers;
     this.requestBodyStringified = requestBodyStringified;
   }
+
+  static build = (
+    baseUrl: string | undefined,
+    meta: HandlerMetaClient,
+    params: unknown[]
+  ): BffRequest => {
+    let url = baseUrl ? baseUrl + meta.pattern : meta.pattern;
+    const method = meta.method_kind.toUpperCase() as any;
+    const init: Partial<BffRequest> = {};
+    init.headers = {};
+    init.headers["content-type"] = "application/json";
+    let hasAddedQueryParams = false;
+
+    const clientParams = meta.params.filter((it) => it.type != "context");
+
+    for (let index = 0; index < clientParams.length; index++) {
+      const metadata = clientParams[index];
+      const param = params[index];
+      switch (metadata.type) {
+        case "path": {
+          url = url.replace(`{${metadata.name}}`, String(param));
+          break;
+        }
+        case "query": {
+          if (!hasAddedQueryParams) {
+            url += "?";
+            hasAddedQueryParams = true;
+          }
+          url += `${metadata.name}=${param}&`;
+          break;
+        }
+        case "header": {
+          init.headers[metadata.name] = String(param);
+          break;
+        }
+        case "body": {
+          init.requestBodyStringified = JSON.stringify(param);
+          break;
+        }
+        case "context": {
+          // not a client parameter
+          break;
+        }
+        default: {
+          throw new Error("Unknown type: " + metadata.type);
+        }
+      }
+    }
+
+    const rq = new BffRequest(
+      method,
+      url,
+      init.headers ?? {},
+      init.requestBodyStringified
+    );
+    return rq;
+  };
+
+  toRequest() {
+    return new Request(this.url, {
+      method: this.method,
+      headers: this.headers,
+      body: this.requestBodyStringified,
+    });
+  }
 }
 
-export function buildStableClient<T>(
-  generated: { meta: HandlerMetaClient[] },
-  fetcher: (url: BffRequest) => Promise<any>
-): ClientFromRouter<T> {
+export function buildClient<T>(options: {
+  generated: { meta: HandlerMetaClient[] };
+  fetchFn?: typeof fetch;
+  baseUrl?: string;
+}): ClientFromRouter<T> {
+  const { generated, fetchFn = fetch, baseUrl } = options;
   const client: any = {};
   for (const meta of generated.meta) {
     if (client[meta.pattern] == null) {
       client[meta.pattern] = {};
     }
-
-    client[meta.pattern][meta.method_kind] = async (...params: any) => {
-      let url = meta.pattern;
-      const method = meta.method_kind.toUpperCase() as any;
-      const init: Partial<BffRequest> = {};
-      init.headers = {};
-      init.headers["content-type"] = "application/json";
-      let hasAddedQueryParams = false;
-
-      const clientParams = meta.params.filter((it) => it.type != "context");
-
-      for (let index = 0; index < clientParams.length; index++) {
-        const metadata = clientParams[index];
-        const param = params[index];
-        switch (metadata.type) {
-          case "path": {
-            url = url.replace(`{${metadata.name}}`, param);
-            break;
-          }
-          case "query": {
-            if (!hasAddedQueryParams) {
-              url += "?";
-              hasAddedQueryParams = true;
-            }
-            url += `${metadata.name}=${param}&`;
-            break;
-          }
-          case "header": {
-            init.headers[metadata.name] = param;
-            break;
-          }
-          case "body": {
-            init.requestBodyStringified = JSON.stringify(param);
-            break;
-          }
-          case "context": {
-            // not a client parameter
-            break;
-          }
-          default: {
-            throw new Error("not implemented: " + metadata.type);
-          }
-        }
-      }
-
-      return await fetcher(
-        new BffRequest(
-          method,
-          url,
-          init.headers ?? {},
-          init.requestBodyStringified
-        )
-      );
-    };
+    client[meta.pattern][meta.method_kind] = async (...params: any) =>
+      fetchFn(BffRequest.build(baseUrl, meta, params).toRequest());
   }
   return client;
 }
