@@ -88,7 +88,7 @@ impl ToJson for JsonSchema {
                 ("type".into(), Json::String("string".into())),
                 ("format".into(), Json::String(format)),
             ]),
-            JsonSchema::Object { values } => {
+            JsonSchema::Object(values) => {
                 Json::object(vec![
                     //
                     ("type".into(), Json::String("object".into())),
@@ -338,9 +338,7 @@ impl ToJson for open_api_ast::Info {
 }
 
 fn error_response_schema() -> JsonSchema {
-    JsonSchema::Object {
-        values: vec![("message".to_string(), JsonSchema::String.required())],
-    }
+    JsonSchema::object(vec![("message".to_string(), JsonSchema::String.required())])
 }
 
 fn error_response(code: &str, description: &str) -> (String, Json) {

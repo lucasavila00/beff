@@ -3,6 +3,7 @@ use std::rc::Rc;
 use crate::open_api_ast::{Js, Json, JsonSchema, Optionality};
 use crate::print::printer::ToExpr;
 use crate::swc_builder::SwcBuilder;
+use indexmap::IndexMap;
 use swc_common::DUMMY_SP;
 use swc_ecma_ast::{
     op, AssignExpr, BinExpr, BinaryOp, BindingIdent, BlockStmt, Bool, CallExpr, Callee, Decl, Expr,
@@ -183,7 +184,7 @@ struct DecoderFnGenerator {
 impl DecoderFnGenerator {
     fn decode_object(
         &mut self,
-        els: &[(String, Optionality<JsonSchema>)],
+        els: &IndexMap<String, Optionality<JsonSchema>>,
         value_ref: &Expr,
         err_storage: &str,
         path: &[DecodePath],
@@ -456,9 +457,7 @@ impl DecoderFnGenerator {
             }
             JsonSchema::Number => Self::decode_with_typeof(value_ref, "number", err_storage, path),
             JsonSchema::Any => vec![],
-            JsonSchema::Object { values } => {
-                self.decode_object(values, value_ref, err_storage, path)
-            }
+            JsonSchema::Object(values) => self.decode_object(values, value_ref, err_storage, path),
             JsonSchema::Array(el) => self.decode_array(el, value_ref, err_storage, path),
             JsonSchema::AnyOf(els) => self.decode_any_of(els, value_ref, err_storage, path),
             JsonSchema::Const(the_const) => {

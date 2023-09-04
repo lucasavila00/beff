@@ -120,14 +120,13 @@ impl<'a, R: FileManager> TypeToSchema<'a, R> {
             );
         }
 
-        Ok(JsonSchema::Object {
-            values: typ
-                .body
+        Ok(JsonSchema::object(
+            typ.body
                 .body
                 .iter()
                 .map(|x| self.convert_ts_type_element(x))
                 .collect::<Res<_>>()?,
-        })
+        ))
     }
 
     fn convert_type_export(
@@ -474,12 +473,12 @@ impl<'a, R: FileManager> TypeToSchema<'a, R> {
                     self.convert_ts_type_qual(q)
                 }
             },
-            TsType::TsTypeLit(TsTypeLit { members, .. }) => Ok(JsonSchema::Object {
-                values: members
+            TsType::TsTypeLit(TsTypeLit { members, .. }) => Ok(JsonSchema::object(
+                members
                     .iter()
                     .map(|prop| self.convert_ts_type_element(prop))
                     .collect::<Res<_>>()?,
-            }),
+            )),
             TsType::TsArrayType(TsArrayType { elem_type, .. }) => {
                 Ok(JsonSchema::Array(self.convert_ts_type(elem_type)?.into()))
             }

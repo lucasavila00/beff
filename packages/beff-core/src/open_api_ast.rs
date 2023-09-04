@@ -54,7 +54,7 @@ impl Json {
         Self::Object(vs.into_iter().collect())
     }
 
-    fn to_serde(&self) -> serde_json::Value {
+    pub fn to_serde(&self) -> serde_json::Value {
         match self {
             Json::Null => serde_json::Value::Null,
             Json::Bool(b) => serde_json::Value::Bool(*b),
@@ -74,7 +74,7 @@ impl Json {
         }
     }
 
-    fn from_serde(it: &serde_json::Value) -> Json {
+    pub fn from_serde(it: &serde_json::Value) -> Json {
         match it {
             serde_json::Value::Null => Json::Null,
             serde_json::Value::Bool(v) => Json::Bool(*v),
@@ -160,10 +160,7 @@ pub enum JsonSchema {
     StringWithFormat(String),
     Number,
     Any,
-    Object {
-        values: Vec<(String, Optionality<JsonSchema>)>,
-        // values: IndexMap<String, Optionality<JsonSchema>>,
-    },
+    Object(IndexMap<String, Optionality<JsonSchema>>),
     Array(Box<JsonSchema>),
     Tuple {
         prefix_items: Vec<JsonSchema>,
@@ -178,6 +175,9 @@ pub enum JsonSchema {
 }
 
 impl JsonSchema {
+    pub fn object(vs: Vec<(String, Optionality<JsonSchema>)>) -> Self {
+        Self::Object(vs.into_iter().collect())
+    }
     pub fn required(self) -> Optionality<JsonSchema> {
         Optionality::Required(self)
     }
