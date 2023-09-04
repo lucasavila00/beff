@@ -1,13 +1,8 @@
 ## BFF Core
 
-forms, html apps
-
-form urlencoded
-form data
-
 ## BFF Lib
 
-- [ ] client with plugin api
+- [ ] logger plugin, integrated into app
 
 ## BFF EXT
 
@@ -24,7 +19,6 @@ form data
 - [ ] assert header etc is imported from lib
 - [ ] disallow GET body?
 - [ ] error messages
-- [ ] remove cookie parameters for now
 
 ## BFF CLI
 
@@ -67,6 +61,11 @@ form data
 <!--  -->
 
 ## next
+
+forms, html apps
+
+form urlencoded
+form data
 
 - [ ] openapi auth
 

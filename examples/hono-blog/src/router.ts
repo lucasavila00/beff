@@ -7,14 +7,14 @@ import { Ctx as BffCtx } from "@beff/hono";
 type Ctx = BffCtx<{}, { Bindings: Bindings }>;
 
 export default {
-  ["*"]: { use: [prettyJSON()] },
-  ["/posts/*"]: { use: [cors()] },
-  ["/"]: {
+  "*": { use: [prettyJSON()] },
+  "/posts/*": { use: [cors()] },
+  "/": {
     get: async (): Promise<{ message: string }> => {
       return { message: "Hello" };
     },
   },
-  ["/posts"]: {
+  "/posts": {
     get: async (c: Ctx): Promise<{ posts: model.Post[]; ok: boolean }> => {
       const posts = await model.getPosts(c.hono.env.BLOG_EXAMPLE);
       return { posts: posts, ok: true };
@@ -32,7 +32,7 @@ export default {
       return { post: newPost, ok: true };
     },
   },
-  ["/posts/{id}"]: {
+  "/posts/{id}": {
     get: async (
       c: Ctx,
       id: string

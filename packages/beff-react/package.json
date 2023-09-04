@@ -1,0 +1,18 @@
+{
+  "name": "@beff/react",
+  "version": "1.0.0",
+  "description": "",
+  "main": "dist/index.js",
+  "scripts": {
+    "build": "tsc"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "@beff/client": "workspace:^1.0.0",
+    "@tanstack/react-query": "^4.33.0",
+    "react": "^18.2.0",
+    "typescript": "^5.2.2"
+  }
+}

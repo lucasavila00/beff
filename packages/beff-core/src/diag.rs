@@ -63,7 +63,7 @@ pub enum DiagnosticInfoMessage {
     RestParameterMustBeTuple,
     CouldNotFindDefaultExport,
     ComplexPathParameterNotSupported,
-    PatternMustBeComputedKey,
+    PatternMustBeComputedKeyOrString,
     MustBeComputedKeyWithMethodAndPatternMustBeString,
     RestOnRouterDefaultExportNotSupportedYet,
     HandlerCannotBeGenerator,
@@ -191,9 +191,6 @@ impl DiagnosticInfoMessage {
             }
             DiagnosticInfoMessage::CouldNotFindDefaultExport => {
                 "Could not find default export".to_string()
-            }
-            DiagnosticInfoMessage::PatternMustBeComputedKey => {
-                "Pattern must be a computed key".to_string()
             }
             DiagnosticInfoMessage::MustBeComputedKeyWithMethodAndPatternMustBeString => {
                 "Pattern cannot be identified through a tuple".to_string()

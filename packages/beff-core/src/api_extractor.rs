@@ -334,12 +334,15 @@ impl<'a, R: FileManager> ExtractExportDefaultVisitor<'a, R> {
                     DiagnosticInfoMessage::MustBeComputedKeyWithMethodAndPatternMustBeString,
                 ),
             },
-            PropName::Ident(Ident { span, .. })
-            | PropName::Str(Str { span, .. })
-            | PropName::Num(Number { span, .. })
-            | PropName::BigInt(BigInt { span, .. }) => {
-                self.error(span, DiagnosticInfoMessage::PatternMustBeComputedKey)
+            PropName::Str(Str { span, value, .. }) => {
+                self.parse_raw_pattern_str(&value.to_string(), span)
             }
+            PropName::Ident(Ident { span, .. })
+            | PropName::Num(Number { span, .. })
+            | PropName::BigInt(BigInt { span, .. }) => self.error(
+                span,
+                DiagnosticInfoMessage::PatternMustBeComputedKeyOrString,
+            ),
         }
     }
 

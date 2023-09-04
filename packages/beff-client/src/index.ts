@@ -13,18 +13,10 @@ type RemoveFirstOfTuple<T extends any[]> = T["length"] extends 0
   ? U
   : T;
 
-export type ClientFromRouter<R> = {
-  [K in keyof R as K extends `${string}*${string}` ? never : K]: {
-    [M in keyof R[K] as M extends `use` ? never : M]: (
-      ...args: RemoveFirstOfTuple<NormalizeRouterItem<R[K][M]>[0]>
-    ) => Promise<NormalizeRouterItem<R[K][M]>[1]>;
-  };
-};
-
+// inlining SimpleHttpFunction crates better hovered tooltip types
 // export type SimpleHttpFunction<M extends [any[], any]> = (
 //   ...args: RemoveFirstOfTuple<M[0]>
 // ) => Promise<M[1]>;
-
 // export type ClientFromRouter<R> = {
 //   [K in keyof R as K extends `${string}*${string}` ? never : K]: {
 //     [M in keyof R[K] as M extends `use` ? never : M]: SimpleHttpFunction<
@@ -32,6 +24,13 @@ export type ClientFromRouter<R> = {
 //     >;
 //   };
 // };
+export type ClientFromRouter<R> = {
+  [K in keyof R as K extends `${string}*${string}` ? never : K]: {
+    [M in keyof R[K] as M extends `use` ? never : M]: (
+      ...args: RemoveFirstOfTuple<NormalizeRouterItem<R[K][M]>[0]>
+    ) => Promise<NormalizeRouterItem<R[K][M]>[1]>;
+  };
+};
 
 type HTTPMethod = "GET" | "POST" | "PUT" | "DELETE" | "PATCH" | "OPTIONS";
 
@@ -86,10 +85,6 @@ export class BffRequest {
         }
         case "body": {
           init.requestBodyStringified = JSON.stringify(param);
-          break;
-        }
-        case "context": {
-          // not a client parameter
           break;
         }
         default: {
@@ -153,12 +148,15 @@ export interface ClientOnResponseHookPayload {
   requestInit: RequestInit;
   response: Response;
 }
-export function buildClient<T>(options: {
+export type BuildClientOptions = {
   generated: { meta: HandlerMetaClient[] };
   fetchFn?: typeof fetch;
   baseUrl?: string;
   plugins?: ClientPlugin[];
-}): ClientFromRouter<T> {
+};
+export function buildClient<T>(
+  options: BuildClientOptions
+): ClientFromRouter<T> {
   const { generated, fetchFn = fetch, baseUrl = "", plugins = [] } = options;
 
   const endpoint = baseUrl;
@@ -243,3 +241,14 @@ export function buildClient<T>(options: {
   }
   return client;
 }
+export const loggerPlugin: ClientPlugin = {
+  onRequestInit: async (payload) => {
+    console.log("Requesting", payload);
+  },
+  onResponse: async (payload) => {
+    console.log("Response", payload);
+  },
+  onFetch: async (payload) => {
+    console.log("Fetch", payload);
+  },
+};

@@ -16,7 +16,7 @@ type HelloResponse = {
  */
 export default {
   // comments on the pattern are ignored
-  [`/`]: {
+  "/": {
     /**
      * This is an example route. Adding a comment here adds it to its description.
      * We can also add a summary.
@@ -24,7 +24,7 @@ export default {
      */
     get: async (c: Ctx): Promise<string> => "ok",
   },
-  [`/hello/{name}`]: {
+  "/hello/{name}": {
     /**
      * This is an example route. Adding a comment here adds it to its description.
      * Summaries ate not mandatory.
