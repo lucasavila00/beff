@@ -42,9 +42,6 @@ it("get", async () => {
   expect(
     await beff["/header-param"].get("the-user-agent")
   ).toMatchInlineSnapshot('"the-user-agent"');
-  expect(await beff["/cookie-param"].get("the-cookie")).toMatchInlineSnapshot(
-    '"the-cookie"'
-  );
 });
 
 it("post", async () => {

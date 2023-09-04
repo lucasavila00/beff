@@ -43,20 +43,6 @@ fn maybe_extract_promise(typ: &TsType) -> &TsType {
 }
 
 #[derive(Debug, Clone)]
-pub enum HeaderOrCookie {
-    Header,
-    Cookie,
-}
-impl fmt::Display for HeaderOrCookie {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        match self {
-            HeaderOrCookie::Header => write!(f, "header"),
-            HeaderOrCookie::Cookie => write!(f, "cookie"),
-        }
-    }
-}
-
-#[derive(Debug, Clone)]
 pub enum HandlerParameter {
     PathOrQueryOrBody {
         schema: JsonSchema,
@@ -64,9 +50,8 @@ pub enum HandlerParameter {
         description: Option<String>,
         span: Span,
     },
-    HeaderOrCookie {
+    Header {
         span: Span,
-        kind: HeaderOrCookie,
         schema: JsonSchema,
         required: bool,
         description: Option<String>,
@@ -409,37 +394,25 @@ impl<'a, R: FileManager> ExtractExportDefaultVisitor<'a, R> {
             }
         }
     }
-    fn parse_lib_param(
+    fn parse_header_param(
         &mut self,
         lib_ty_name: &Ident,
         params: &Option<Box<TsTypeParamInstantiation>>,
         required: bool,
         description: Option<String>,
     ) -> Result<HandlerParameter> {
-        let name = lib_ty_name.sym.to_string();
-        let name = name.as_str();
-        match name {
-            "Header" | "Cookie" => {
-                let params = &params.as_ref().and_then(|it| it.params.split_first());
-                match params {
-                    Some((ty, [])) => Ok(HandlerParameter::HeaderOrCookie {
-                        kind: if name == "Header" {
-                            HeaderOrCookie::Header
-                        } else {
-                            HeaderOrCookie::Cookie
-                        },
-                        span: lib_ty_name.span,
-                        schema: self.convert_to_json_schema(ty, &lib_ty_name.span),
-                        required,
-                        description,
-                    }),
-                    _ => self.error(
-                        &lib_ty_name.span,
-                        DiagnosticInfoMessage::TooManyParamsOnLibType,
-                    ),
-                }
-            }
-            _ => unreachable!("not in lib: {} - should check before calling", name),
+        let params = &params.as_ref().and_then(|it| it.params.split_first());
+        match params {
+            Some((ty, [])) => Ok(HandlerParameter::Header {
+                span: lib_ty_name.span,
+                schema: self.convert_to_json_schema(ty, &lib_ty_name.span),
+                required,
+                description,
+            }),
+            _ => self.error(
+                &lib_ty_name.span,
+                DiagnosticInfoMessage::TooManyParamsOnLibType,
+            ),
         }
     }
 
@@ -455,8 +428,8 @@ impl<'a, R: FileManager> ExtractExportDefaultVisitor<'a, R> {
             if name == "Ctx" || name == "Context" {
                 return Ok(HandlerParameter::Context(i.span));
             }
-            if name == "Header" || name == "Cookie" {
-                return self.parse_lib_param(i, &tref.type_params, required, description);
+            if name == "Header" {
+                return self.parse_header_param(i, &tref.type_params, required, description);
             }
         }
         Ok(HandlerParameter::PathOrQueryOrBody {
@@ -961,7 +934,7 @@ impl<'a, R: FileManager> EndpointToPath<'a, R> {
             match first_param.1 {
                 HandlerParameter::Context(_) => {}
                 HandlerParameter::PathOrQueryOrBody { span, .. }
-                | HandlerParameter::HeaderOrCookie { span, .. } => {
+                | HandlerParameter::Header { span, .. } => {
                     self.push_error(
                         &span,
                         DiagnosticInfoMessage::ContextParameterMustBeFirst,
@@ -1033,17 +1006,13 @@ impl<'a, R: FileManager> EndpointToPath<'a, R> {
                         }
                     }
                 }
-                HandlerParameter::HeaderOrCookie {
+                HandlerParameter::Header {
                     required,
                     description,
-                    kind,
                     schema,
                     ..
                 } => parameters.push(ParameterObject {
-                    in_: match kind {
-                        HeaderOrCookie::Header => ParameterIn::Header,
-                        HeaderOrCookie::Cookie => ParameterIn::Cookie,
-                    },
+                    in_: ParameterIn::Header,
                     name: key.clone(),
                     required: *required,
                     description: description.clone(),

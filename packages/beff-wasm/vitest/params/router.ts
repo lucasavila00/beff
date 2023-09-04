@@ -1,4 +1,4 @@
-import { Cookie, Header } from "@beff/cli";
+import { Header } from "@beff/cli";
 import { Ctx } from "@beff/hono";
 import { cors } from "hono/cors";
 
@@ -33,11 +33,6 @@ export default {
   ["/header-param"]: {
     get: async (c: Ctx, user_agent: Header<string>): Promise<string> => {
       return user_agent;
-    },
-  },
-  ["/cookie-param"]: {
-    get: async (c: Ctx, ads_ids: Cookie<string>): Promise<string> => {
-      return ads_ids;
     },
   },
   ["/req-body"]: {

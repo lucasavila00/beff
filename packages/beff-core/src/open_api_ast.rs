@@ -175,7 +175,6 @@ pub enum ParameterIn {
     Query,
     Header,
     Path,
-    Cookie,
 }
 
 impl fmt::Display for ParameterIn {
@@ -184,7 +183,6 @@ impl fmt::Display for ParameterIn {
             ParameterIn::Query => write!(f, "query"),
             ParameterIn::Header => write!(f, "header"),
             ParameterIn::Path => write!(f, "path"),
-            ParameterIn::Cookie => write!(f, "cookie"),
         }
     }
 }

@@ -95,28 +95,6 @@ const meta = [
                 "coercer": function(input) {
                     return coerce_string(input);
                 }
-            },
-            {
-                "type": "cookie",
-                "name": "ads_id",
-                "required": true,
-                "validator": function(input) {
-                    let error_acc_0 = [];
-                    if (typeof input != "string") {
-                        error_acc_0.push({
-                            "error_kind": "NotTypeof",
-                            "path": [
-                                "ads_id"
-                            ],
-                            "received": input,
-                            "expected_type": "string"
-                        });
-                    }
-                    return error_acc_0;
-                },
-                "coercer": function(input) {
-                    return coerce_string(input);
-                }
             }
         ],
         "pattern": "/users",
@@ -664,14 +642,6 @@ const schema =  {
           {
             "in": "header",
             "name": "user_agent",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          },
-          {
-            "in": "cookie",
-            "name": "ads_id",
             "required": true,
             "schema": {
               "type": "string"

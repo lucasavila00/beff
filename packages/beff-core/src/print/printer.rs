@@ -187,13 +187,30 @@ impl ToJson for JsonSchema {
         }
     }
 }
+
+fn clear_description(it: String) -> String {
+    // split by newlines
+    // remove leading spaces and *
+    // trim
+
+    let lines = it.split('\n').collect::<Vec<_>>();
+
+    let remove_from_start: &[_] = &[' ', '*'];
+    lines
+        .into_iter()
+        .map(|it| it.trim_start_matches(remove_from_start))
+        .map(|it| it.trim())
+        .collect::<Vec<_>>()
+        .join("\n")
+}
+
 impl ToJson for open_api_ast::ParameterObject {
     fn to_json(self) -> Json {
         let mut v = vec![];
         v.push(("name".into(), Json::String(self.name)));
         v.push(("in".into(), Json::String(self.in_.to_string())));
         if let Some(desc) = self.description {
-            v.push(("description".into(), Json::String(desc)));
+            v.push(("description".into(), Json::String(clear_description(desc))));
         }
         v.push(("required".into(), Json::Bool(self.required)));
         v.push(("schema".into(), self.schema.to_json()));
@@ -204,7 +221,7 @@ impl ToJson for open_api_ast::JsonRequestBody {
     fn to_json(self) -> Json {
         let mut v = vec![];
         if let Some(desc) = self.description {
-            v.push(("description".into(), Json::String(desc)));
+            v.push(("description".into(), Json::String(clear_description(desc))));
         }
         v.push(("required".into(), Json::Bool(self.required)));
         let content = Json::Object(vec![(
@@ -229,7 +246,7 @@ impl ToJson for open_api_ast::OperationObject {
             v.push(("summary".into(), Json::String(summary)));
         }
         if let Some(desc) = self.description {
-            v.push(("description".into(), Json::String(desc)));
+            v.push(("description".into(), Json::String(clear_description(desc))));
         }
         if let Some(body) = self.json_request_body {
             v.push(("requestBody".into(), body.to_json()));
@@ -301,11 +318,12 @@ impl ToJsonKv for open_api_ast::Validator {
         vec![(self.name.clone(), self.schema.to_json())]
     }
 }
+
 impl ToJson for open_api_ast::Info {
     fn to_json(self) -> Json {
         let mut v = vec![];
         if let Some(desc) = self.description {
-            v.push(("description".into(), Json::String(desc)));
+            v.push(("description".into(), Json::String(clear_description(desc))));
         }
         v.push((
             "title".into(),
@@ -431,15 +449,12 @@ fn param_to_server_js(
                 }
             }
         }
-        HandlerParameter::HeaderOrCookie {
-            kind,
-            schema,
-            required,
-            ..
+        HandlerParameter::Header {
+            schema, required, ..
         } => {
             Js::Object(vec![
                 //
-                ("type".into(), Js::String(kind.to_string())),
+                ("type".into(), Js::String("header".to_string())),
                 ("name".into(), Js::String(name.to_string())),
                 ("required".into(), Js::Bool(required)),
                 (
@@ -486,10 +501,10 @@ fn param_to_client_js(
                 }
             }
         }
-        HandlerParameter::HeaderOrCookie { kind, required, .. } => {
+        HandlerParameter::Header { required, .. } => {
             Js::Object(vec![
                 //
-                ("type".into(), Js::String(kind.to_string())),
+                ("type".into(), Js::String("header".to_string())),
                 ("name".into(), Js::String(name.to_string())),
                 ("required".into(), Js::Bool(required)),
             ])

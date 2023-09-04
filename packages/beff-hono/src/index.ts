@@ -166,11 +166,6 @@ const handleMethod = async (
           const coerced = coerce(p.coercer, value);
           return decodeWithMessage(p.validator, coerced);
         }
-        case "cookie": {
-          const value = getCookie(c.hono, p.name);
-          const coerced = coerce(p.coercer, value);
-          return decodeWithMessage(p.validator, coerced);
-        }
         case "header": {
           const value = c.hono.req.header(p.name);
           const coerced = coerce(p.coercer, value);
@@ -284,7 +279,6 @@ export const buildHonoTestClient = <T>(
         headers: {
           ...req.headers,
           "content-type": "application/json",
-          cookie: req.cookies.join(";"),
         },
         body: req.requestBodyStringified,
       }),

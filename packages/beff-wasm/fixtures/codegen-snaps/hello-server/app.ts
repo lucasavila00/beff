@@ -1,4 +1,4 @@
-import { Header, Cookie, todo } from "./bff-generated";
+import { Header } from "@beff/cli";
 import { UserEntity } from "./types";
 
 type DataTypesKitchenSink = {
@@ -58,11 +58,7 @@ export default {
    * @summary Returns a list of users.
    */
   [`/users`]: {
-    get: async (
-      c: Ctx,
-      user_agent: Header<string>,
-      ads_id: Cookie<string>
-    ): Promise<string[]> => [],
+    get: async (c: Ctx, user_agent: Header<string>): Promise<string[]> => [],
   },
 
   /**

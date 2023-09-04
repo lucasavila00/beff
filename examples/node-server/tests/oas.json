@@ -53,13 +53,15 @@
     }
   },
   "info": {
-    "title": "No title",
-    "version": "0.0.0"
+    "description": "This is an example API router. Adding a comment here adds it to its description.\n\nTitle and version are mandatory on the OpenAPI specification!\nComments here are added to the description of the API, too.\n",
+    "title": "Example API",
+    "version": "1.0.0"
   },
   "openapi": "3.1.0",
   "paths": {
     "/": {
       "get": {
+        "description": "This is an example route. Adding a comment here adds it to its description.\nWe can also add a summary.",
         "parameters": [],
         "responses": {
           "200": {
@@ -78,13 +80,16 @@
           "500": {
             "$ref": "#/components/responses/UnexpectedError"
           }
-        }
+        },
+        "summary": "Example route"
       }
     },
     "/hello/{name}": {
       "get": {
+        "description": "This is an example route. Adding a comment here adds it to its description.\nSummaries ate not mandatory.",
         "parameters": [
           {
+            "description": "This is an example path parameter. Adding a comment here adds it to its description.",
             "in": "path",
             "name": "name",
             "required": true,
@@ -93,6 +98,56 @@
             }
           }
         ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HelloResponse"
+                }
+              }
+            },
+            "description": "Successful Operation"
+          },
+          "422": {
+            "$ref": "#/components/responses/DecodeError"
+          },
+          "500": {
+            "$ref": "#/components/responses/UnexpectedError"
+          }
+        }
+      },
+      "post": {
+        "parameters": [
+          {
+            "in": "path",
+            "name": "name",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "description": "This is an example query parameter. Adding a comment here adds it to its description.",
+            "in": "query",
+            "name": "limit",
+            "required": true,
+            "schema": {
+              "type": "number"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/HelloResponse"
+              }
+            }
+          },
+          "description": "This is an example request body parameter. Adding a comment here adds it to its description.",
+          "required": true
+        },
         "responses": {
           "200": {
             "content": {

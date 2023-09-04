@@ -1,5 +1,4 @@
 export type Header<T> = T;
-export type Cookie<T> = T;
 export type StringFormat<Tag extends string> = string & { __customType: Tag };
 
 export * as Formats from "./formats";
@@ -7,7 +6,7 @@ export * as Formats from "./formats";
 // TODO: validator and coercer are server specific, move these types to server, duplicate in client
 
 export type MetaParamClient = {
-  type: "path" | "query" | "cookie" | "header" | "body" | "context";
+  type: "path" | "query" | "header" | "body" | "context";
   name: string;
   required: boolean;
 };

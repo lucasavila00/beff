@@ -23,23 +23,21 @@ export type ClientFromRouter<R> = {
   };
 };
 
+type BffMethod = "GET" | "POST" | "PUT" | "DELETE" | "PATCH" | "OPTIONS";
 export class BffRequest {
-  public method: "GET" | "POST" | "PUT" | "DELETE" | "PATCH" | "OPTIONS";
+  public method: BffMethod;
   public url: string;
   public headers: Record<string, string>;
-  public cookies: string[];
   public requestBodyStringified?: string;
   constructor(
-    method: "GET" | "POST" | "PUT" | "DELETE" | "PATCH" | "OPTIONS",
+    method: BffMethod,
     url: string,
     headers: Record<string, string>,
-    cookies: string[],
     requestBodyStringified?: string
   ) {
     this.method = method.toUpperCase() as any;
     this.url = url;
     this.headers = headers;
-    this.cookies = cookies;
     this.requestBodyStringified = requestBodyStringified;
   }
 }
@@ -84,13 +82,6 @@ export function buildStableClient<T>(
             init.headers[metadata.name] = param;
             break;
           }
-          case "cookie": {
-            if (init.cookies == null) {
-              init.cookies = [];
-            }
-            init.cookies.push(`${metadata.name}=${param}`);
-            break;
-          }
           case "body": {
             init.requestBodyStringified = JSON.stringify(param);
             break;
@@ -110,7 +101,6 @@ export function buildStableClient<T>(
           method,
           url,
           init.headers ?? {},
-          init.cookies ?? [],
           init.requestBodyStringified
         )
       );

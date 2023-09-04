@@ -1,4 +1,8 @@
+## BFF Core
+
 ## BFF Lib
+
+- [ ] client with plugin api
 
 ## BFF EXT
 
@@ -58,6 +62,8 @@
 <!--  -->
 
 ## next
+
+- [ ] openapi auth
 
 ## BFF Core
 

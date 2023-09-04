@@ -330,14 +330,6 @@
             "schema": {
               "type": "string"
             }
-          },
-          {
-            "in": "cookie",
-            "name": "ads_id",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
           }
         ],
         "responses": {

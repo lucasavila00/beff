@@ -20,11 +20,6 @@ const meta = [
                 "type": "header",
                 "name": "user_agent",
                 "required": true
-            },
-            {
-                "type": "cookie",
-                "name": "ads_id",
-                "required": true
             }
         ],
         "pattern": "/users"
