@@ -275,19 +275,7 @@ export const buildHonoTestClient = <T>(options: {
   return buildClient<T>({
     baseUrl: baseUrl ?? "http://localhost",
     generated: generated,
-    fetchFn: async (req) => {
-      const r = await app.fetch(req as any, env, executionContext);
-      if (r.ok) {
-        return r.json();
-      }
-      const text = await r.text();
-      let json: any;
-      try {
-        json = JSON.parse(text);
-      } catch (e) {
-        throw new BffHTTPException(r.status, text);
-      }
-      throw new BffHTTPException(r.status, json.message);
-    },
+    fetchFn: async (req: any) =>
+      await app.fetch(req as any, env, executionContext),
   });
 };

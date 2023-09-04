@@ -1,5 +1,5 @@
 import type { HandlerMetaClient } from "@beff/cli";
-import { fetch, Request } from "@whatwg-node/fetch";
+// import { fetch, Request } from "@whatwg-node/fetch";
 export type NormalizeRouterItem<T> = T extends (
   ...args: infer I
 ) => Promise<infer O>
@@ -110,71 +110,88 @@ export class BffRequest {
   }
 }
 
-export interface ClientPlugin {
-  onRequestInit?: OnRequestInitHook;
-  onFetch?: OnFetchHook;
-  onResponse?: OnResponseHook;
-}
+// export interface ClientPlugin {
+//   onRequestInit?: OnRequestInitHook;
+//   onFetch?: OnFetchHook;
+//   onResponse?: OnResponseHook;
+// }
 
-export type OnRequestInitHook = (
-  payload: ClientOnRequestInitPayload
-) => Promise<void> | void;
-export type OnFetchHook = (
-  payload: ClientOnFetchHookPayload
-) => Promise<void> | void;
-export type OnResponseHook = (
-  payload: ClientOnResponseHookPayload
-) => Promise<void> | void;
+// export type OnRequestInitHook = (
+//   payload: ClientOnRequestInitPayload
+// ) => Promise<void> | void;
+// export type OnFetchHook = (
+//   payload: ClientOnFetchHookPayload
+// ) => Promise<void> | void;
+// export type OnResponseHook = (
+//   payload: ClientOnResponseHookPayload
+// ) => Promise<void> | void;
 
-export interface ClientOnRequestInitPayload {
-  path: string;
-  method: HTTPMethod;
-  requestParams: ClientRequestParams;
-  requestInit: RequestInit;
-  endResponse(response: Response): void;
-}
+// export interface ClientOnRequestInitPayload {
+//   path: string;
+//   method: HTTPMethod;
+//   requestParams: ClientRequestParams;
+//   requestInit: RequestInit;
+//   // endResponse(response: Response): void;
+// }
 
-export interface ClientOnFetchHookPayload {
-  url: string;
-  init: RequestInit;
-  fetchFn: typeof fetch;
-  setFetchFn(fetchFn: typeof fetch): void;
-}
+// export interface ClientOnFetchHookPayload {
+//   url: string;
+//   init: RequestInit;
+//   fetchFn: typeof fetch;
+//   setFetchFn(fetchFn: typeof fetch): void;
+// }
 
-export interface ClientOnResponseHookPayload {
-  path: string;
-  method: HTTPMethod;
-  requestParams: ClientRequestParams;
-  requestInit: RequestInit;
-  response: Response;
-}
+// export interface ClientOnResponseHookPayload {
+//   path: string;
+//   method: HTTPMethod;
+//   requestParams: ClientRequestParams;
+//   requestInit: RequestInit;
+//   response: Response;
+// }
 export type BuildClientOptions = {
   generated: { meta: HandlerMetaClient[] };
   fetchFn?: typeof fetch;
   baseUrl?: string;
-  plugins?: ClientPlugin[];
+  // plugins?: ClientPlugin[];
 };
+
+class BffHTTPException extends Error {
+  isBffHttpException: true;
+  status: number;
+  constructor(status: number, message: string) {
+    super(message);
+    this.name = "HTTPException";
+    this.isBffHttpException = true;
+    this.status = status;
+  }
+}
+
 export function buildClient<T>(
   options: BuildClientOptions
 ): ClientFromRouter<T> {
-  const { generated, fetchFn = fetch, baseUrl = "", plugins = [] } = options;
+  const {
+    generated,
+    fetchFn = fetch,
+    baseUrl = "",
+    //  plugins = []
+  } = options;
 
   const endpoint = baseUrl;
 
-  const onRequestInitHooks: OnRequestInitHook[] = [];
-  const onFetchHooks: OnFetchHook[] = [];
-  const onResponseHooks: OnResponseHook[] = [];
-  for (const plugin of plugins) {
-    if (plugin.onRequestInit) {
-      onRequestInitHooks.push(plugin.onRequestInit);
-    }
-    if (plugin.onFetch) {
-      onFetchHooks.push(plugin.onFetch);
-    }
-    if (plugin.onResponse) {
-      onResponseHooks.push(plugin.onResponse);
-    }
-  }
+  // const onRequestInitHooks: OnRequestInitHook[] = [];
+  // const onFetchHooks: OnFetchHook[] = [];
+  // const onResponseHooks: OnResponseHook[] = [];
+  // for (const plugin of plugins) {
+  //   if (plugin.onRequestInit) {
+  //     onRequestInitHooks.push(plugin.onRequestInit);
+  //   }
+  //   if (plugin.onFetch) {
+  //     onFetchHooks.push(plugin.onFetch);
+  //   }
+  //   if (plugin.onResponse) {
+  //     onResponseHooks.push(plugin.onResponse);
+  //   }
+  // }
 
   const client: any = {};
   for (const meta of generated.meta) {
@@ -186,23 +203,23 @@ export function buildClient<T>(
       const bffReq = BffRequest.build(requestParams);
       const requestInit = bffReq.toRequestInit();
       const path = bffReq.path;
-      const method = bffReq.method;
+      // const method = bffReq.method;
 
-      let response: Response | undefined = undefined;
-      for (const onRequestParamsHook of onRequestInitHooks) {
-        await onRequestParamsHook({
-          path,
-          method,
-          requestParams,
-          requestInit,
-          endResponse(res) {
-            response = res;
-          },
-        });
-      }
-      if (response) {
-        return response;
-      }
+      // let response: Response | undefined = undefined;
+      // for (const onRequestParamsHook of onRequestInitHooks) {
+      //   await onRequestParamsHook({
+      //     path,
+      //     method,
+      //     requestParams,
+      //     requestInit,
+      //     // endResponse(res) {
+      //     //   response = res;
+      //     // },
+      //   });
+      // }
+      // if (response) {
+      //   return response;
+      // }
 
       let finalUrl = path;
       if (endpoint && !path.startsWith("http")) {
@@ -211,44 +228,52 @@ export function buildClient<T>(
 
       let currentFetchFn = fetchFn;
 
-      for (const onFetchHook of onFetchHooks) {
-        await onFetchHook({
-          url: finalUrl,
-          init: requestInit as RequestInit,
-          fetchFn: currentFetchFn,
-          setFetchFn(newFetchFn) {
-            currentFetchFn = newFetchFn;
-          },
-        });
+      // for (const onFetchHook of onFetchHooks) {
+      //   await onFetchHook({
+      //     url: finalUrl,
+      //     init: requestInit as RequestInit,
+      //     fetchFn: currentFetchFn,
+      //     setFetchFn(newFetchFn) {
+      //       currentFetchFn = newFetchFn;
+      //     },
+      //   });
+      // }
+
+      const r = await currentFetchFn(new Request(finalUrl, requestInit));
+
+      // for (const onResponseHook of onResponseHooks) {
+      //   await onResponseHook({
+      //     path,
+      //     method,
+      //     requestParams,
+      //     requestInit,
+      //     response: responseFetched,
+      //   });
+      // }
+
+      if (r.ok) {
+        return r.json();
       }
-
-      const responseFetched = await currentFetchFn(
-        new Request(finalUrl, requestInit)
-      );
-
-      for (const onResponseHook of onResponseHooks) {
-        await onResponseHook({
-          path,
-          method,
-          requestParams,
-          requestInit,
-          response: responseFetched,
-        });
+      const text = await r.text();
+      let json: any;
+      try {
+        json = JSON.parse(text);
+      } catch (e) {
+        throw new BffHTTPException(r.status, text);
       }
-
-      return responseFetched;
+      throw new BffHTTPException(r.status, json.message);
     };
   }
   return client;
 }
-export const loggerPlugin: ClientPlugin = {
-  onRequestInit: async (payload) => {
-    console.log("Requesting", payload);
-  },
-  onResponse: async (payload) => {
-    console.log("Response", payload);
-  },
-  onFetch: async (payload) => {
-    console.log("Fetch", payload);
-  },
-};
+// export const loggerPlugin: ClientPlugin = {
+//   onRequestInit: async (payload) => {
+//     console.log("Requesting", payload);
+//   },
+//   onResponse: async (payload) => {
+//     console.log("Response", payload);
+//   },
+//   onFetch: async (payload) => {
+//     console.log("Fetch", payload);
+//   },
+// };

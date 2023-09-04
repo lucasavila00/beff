@@ -14,7 +14,7 @@ import {
 
 export type QueryHookResult<T> = {
   useQuery: (
-    options: Omit<UseQueryOptions<T>, "queryKey" | "queryFn">
+    options?: Omit<UseQueryOptions<T>, "queryKey" | "queryFn">
   ) => UseQueryResult<T>;
 };
 
@@ -24,7 +24,7 @@ export type GetHook<T> = T extends (...args: infer A) => Promise<infer R>
 
 export type MutationHookResult<T> = {
   useMutation: (
-    options: Omit<UseMutationOptions<T>, "queryKey" | "queryFn">
+    options?: Omit<UseMutationOptions<T>, "queryKey" | "queryFn">
   ) => UseMutationResult<T>;
 };
 export type NonGetHook<T> = T extends (...args: infer A) => Promise<infer R>
@@ -55,23 +55,23 @@ export const buildReactQueryClient = <T>(
     const fetcher = (httpClient as any)[meta.pattern][meta.method_kind];
 
     if (meta.method_kind == "get") {
-      queryClient[meta.pattern][meta.method_kind] = (...params: any[]) => {
+      queryClient[meta.pattern][meta.method_kind] = (...params: any[]) => ({
         useQuery: (options: any) =>
           useQuery({
-            ...options,
+            ...(options ?? {}),
             queryFn: () => fetcher(params),
             queryKey: [meta.pattern, meta.method_kind, ...params],
-          });
-      };
+          }),
+      });
     } else {
-      queryClient[meta.pattern][meta.method_kind] = (...params: any[]) => {
+      queryClient[meta.pattern][meta.method_kind] = (...params: any[]) => ({
         useMutation: (options: any) =>
           useMutation({
-            ...options,
+            ...(options ?? {}),
             queryFn: () => fetcher(params),
             queryKey: [meta.pattern, meta.method_kind, ...params],
-          });
-      };
+          }),
+      });
     }
   }
   return queryClient;
