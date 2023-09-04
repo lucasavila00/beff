@@ -1,7 +1,7 @@
 use std::rc::Rc;
 
+use crate::ast::json_schema::JsonSchema;
 use crate::diag::{span_to_loc, Diagnostic, DiagnosticInfoMessage, DiagnosticInformation};
-use crate::open_api_ast::JsonSchema;
 use crate::type_to_schema::TypeToSchema;
 use crate::ParsedModule;
 use crate::{open_api_ast::Validator, BffFileName, FileManager};

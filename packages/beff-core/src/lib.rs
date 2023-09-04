@@ -1,4 +1,5 @@
 pub mod api_extractor;
+pub mod ast;
 pub mod diag;
 pub mod emit;
 pub mod import_resolver;

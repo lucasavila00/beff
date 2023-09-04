@@ -1,5 +1,4 @@
-use crate::open_api_ast::JsonSchema;
-use crate::swc_builder::SwcBuilder;
+use crate::{swc_builder::SwcBuilder, ast::json_schema::JsonSchema};
 use swc_common::DUMMY_SP;
 use swc_ecma_ast::{
     BindingIdent, BlockStmt, CallExpr, Callee, Expr, ExprOrSpread, FnExpr, Function, Ident, Param,

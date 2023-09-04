@@ -1,9 +1,9 @@
+use crate::ast::json_schema::JsonSchema;
 use crate::diag::{
     span_to_loc, Diagnostic, DiagnosticInfoMessage, DiagnosticInformation, DiagnosticParentMessage,
 };
 use crate::open_api_ast::{
-    self, Info, JsonRequestBody, JsonSchema, OpenApi, OperationObject, ParameterIn,
-    ParameterObject, Validator,
+    self, Info, JsonRequestBody, OpenApi, OperationObject, ParameterIn, ParameterObject, Validator,
 };
 use crate::type_to_schema::TypeToSchema;
 use crate::{BffFileName, FileManager, ParsedModule};

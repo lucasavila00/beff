@@ -2,340 +2,24 @@ use anyhow::{anyhow, Result};
 use serde::{Deserialize, Serialize};
 use swc_common::DUMMY_SP;
 use swc_ecma_ast::{
-    ArrayLit, BindingIdent, Bool, Decl, Expr, ExprOrSpread, FnDecl, FnExpr, Ident, KeyValueProp,
-    Lit, ModuleItem, Null, Number, ObjectLit, Pat, Prop, PropName, PropOrSpread, Stmt, Str,
-    VarDecl, VarDeclKind, VarDeclarator,
+    BindingIdent, Decl, Expr, FnDecl, Ident, KeyValueProp, ModuleItem, ObjectLit, Pat, Prop,
+    PropName, PropOrSpread, Stmt, VarDecl, VarDeclKind, VarDeclarator,
 };
 
 use crate::api_extractor::{
     operation_parameter_in_path_or_query_or_body, FunctionParameterIn, HandlerParameter,
     ParsedPattern, PathHandlerMap,
 };
+use crate::ast::js::Js;
+use crate::ast::json::{Json, ToJson, ToJsonKv};
+use crate::ast::json_schema::JsonSchema;
 use crate::emit::emit_module;
-use crate::open_api_ast::{self, Js, Json, JsonSchema, OpenApi, Validator};
+use crate::open_api_ast::{build_coercer, OpenApi, Validator};
 use crate::parser_extractor::BuiltDecoder;
 use crate::print::decoder;
 use crate::ExtractResult;
 
-pub trait ToExpr {
-    fn to_expr(self) -> Expr;
-}
-impl ToExpr for Json {
-    fn to_expr(self) -> Expr {
-        match self {
-            Json::Null => Expr::Lit(Lit::Null(Null { span: DUMMY_SP })),
-            Json::Bool(v) => Expr::Lit(Lit::Bool(Bool {
-                span: DUMMY_SP,
-                value: v,
-            })),
-            Json::Number(n) => Expr::Lit(Lit::Num(Number {
-                span: DUMMY_SP,
-                value: n,
-                raw: None,
-            })),
-            Json::String(v) => Expr::Lit(Lit::Str(Str {
-                span: DUMMY_SP,
-                value: v.into(),
-                raw: None,
-            })),
-            Json::Array(els) => Expr::Array(ArrayLit {
-                span: DUMMY_SP,
-                elems: els
-                    .into_iter()
-                    .map(|it| {
-                        Some(ExprOrSpread {
-                            spread: None,
-                            expr: Box::new(it.to_expr()),
-                        })
-                    })
-                    .collect(),
-            }),
-            Json::Object(kvs) => Expr::Object(ObjectLit {
-                span: DUMMY_SP,
-                props: kvs
-                    .into_iter()
-                    .map(|(key, value)| {
-                        PropOrSpread::Prop(Box::new(Prop::KeyValue(KeyValueProp {
-                            key: PropName::Str(Str {
-                                span: DUMMY_SP,
-                                value: key.into(),
-                                raw: None,
-                            }),
-                            value: Box::new(value.to_expr()),
-                        })))
-                    })
-                    .collect(),
-            }),
-        }
-    }
-}
-
-trait ToJson {
-    fn to_json(self) -> Json;
-}
-trait ToJsonKv {
-    fn to_json_kv(self) -> Vec<(String, Json)>;
-}
-
-impl ToJson for JsonSchema {
-    #[allow(clippy::cast_precision_loss)]
-    fn to_json(self) -> Json {
-        match self {
-            JsonSchema::String => {
-                Json::object(vec![("type".into(), Json::String("string".into()))])
-            }
-            JsonSchema::StringWithFormat(format) => Json::object(vec![
-                ("type".into(), Json::String("string".into())),
-                ("format".into(), Json::String(format)),
-            ]),
-            JsonSchema::Object(values) => {
-                Json::object(vec![
-                    //
-                    ("type".into(), Json::String("object".into())),
-                    (
-                        "required".into(),
-                        //
-                        Json::Array(
-                            values
-                                .iter()
-                                .filter(|(_k, v)| v.is_required())
-                                .map(|(k, _v)| Json::String(k.clone()))
-                                .collect(),
-                        ),
-                    ),
-                    (
-                        "properties".into(),
-                        //
-                        Json::Object(
-                            values
-                                .into_iter()
-                                .map(|(k, v)| (k, v.inner_move().to_json()))
-                                .collect(),
-                        ),
-                    ),
-                ])
-            }
-            JsonSchema::Array(typ) => {
-                Json::object(vec![
-                    //
-                    ("type".into(), Json::String("array".into())),
-                    ("items".into(), (*typ).to_json()),
-                ])
-            }
-            JsonSchema::Boolean => {
-                Json::object(vec![("type".into(), Json::String("boolean".into()))])
-            }
-            JsonSchema::Number => {
-                Json::object(vec![("type".into(), Json::String("number".into()))])
-            }
-            JsonSchema::Any => Json::object(vec![]),
-            JsonSchema::Ref(reference) => Json::object(vec![(
-                "$ref".into(),
-                Json::String(format!("#/components/schemas/{reference}")),
-            )]),
-            JsonSchema::OpenApiResponseRef(reference) => Json::object(vec![(
-                "$ref".into(),
-                Json::String(format!("#/components/responses/{reference}")),
-            )]),
-            JsonSchema::Null => Json::object(vec![("type".into(), Json::String("null".into()))]),
-            JsonSchema::AnyOf(types) => {
-                let all_literals = types.iter().all(|it| matches!(it, JsonSchema::Const(_)));
-                if all_literals {
-                    let vs = types
-                        .into_iter()
-                        .map(|it| match it {
-                            JsonSchema::Const(e) => e,
-                            _ => unreachable!("should have been caught by all_literals check"),
-                        })
-                        .collect();
-                    Json::object(vec![("enum".into(), Json::Array(vs))])
-                } else {
-                    let vs = types.into_iter().map(ToJson::to_json).collect();
-                    Json::object(vec![("anyOf".into(), Json::Array(vs))])
-                }
-            }
-            JsonSchema::AllOf(types) => Json::object(vec![(
-                "allOf".into(),
-                Json::Array(types.into_iter().map(ToJson::to_json).collect()),
-            )]),
-
-            JsonSchema::Tuple {
-                prefix_items,
-                items,
-            } => {
-                let mut v = vec![
-                    //
-                    ("type".into(), Json::String("array".into())),
-                ];
-                let len_f = prefix_items.len() as f64;
-                if !prefix_items.is_empty() {
-                    v.push((
-                        "prefixItems".into(),
-                        Json::Array(prefix_items.into_iter().map(ToJson::to_json).collect()),
-                    ));
-                }
-                if let Some(ty) = items {
-                    v.push(("items".into(), ty.to_json()));
-                } else {
-                    v.push(("minItems".into(), Json::Number(len_f)));
-                    v.push(("maxItems".into(), Json::Number(len_f)));
-                }
-                Json::object(v)
-            }
-            JsonSchema::Const(val) => Json::object(vec![("const".into(), val)]),
-            JsonSchema::Error => unreachable!("should not call print if schema had error"),
-        }
-    }
-}
-
-fn clear_description(it: String) -> String {
-    // split by newlines
-    // remove leading spaces and *
-    // trim
-
-    let lines = it.split('\n').collect::<Vec<_>>();
-
-    let remove_from_start: &[_] = &[' ', '*'];
-    lines
-        .into_iter()
-        .map(|it| it.trim_start_matches(remove_from_start))
-        .map(|it| it.trim())
-        .collect::<Vec<_>>()
-        .join("\n")
-}
-
-impl ToJson for open_api_ast::ParameterObject {
-    fn to_json(self) -> Json {
-        let mut v = vec![];
-        v.push(("name".into(), Json::String(self.name)));
-        v.push(("in".into(), Json::String(self.in_.to_string())));
-        if let Some(desc) = self.description {
-            v.push(("description".into(), Json::String(clear_description(desc))));
-        }
-        v.push(("required".into(), Json::Bool(self.required)));
-        v.push(("schema".into(), self.schema.to_json()));
-        Json::object(v)
-    }
-}
-impl ToJson for open_api_ast::JsonRequestBody {
-    fn to_json(self) -> Json {
-        let mut v = vec![];
-        if let Some(desc) = self.description {
-            v.push(("description".into(), Json::String(clear_description(desc))));
-        }
-        v.push(("required".into(), Json::Bool(self.required)));
-        let content = Json::object(vec![(
-            "application/json".into(),
-            Json::object(vec![("schema".into(), self.schema.to_json())]),
-        )]);
-        v.push(("content".into(), content));
-        Json::object(v)
-    }
-}
-
-fn error_response_ref(code: &str, reference: &str) -> (String, Json) {
-    (
-        code.into(),
-        JsonSchema::OpenApiResponseRef(reference.to_owned()).to_json(),
-    )
-}
-impl ToJson for open_api_ast::OperationObject {
-    fn to_json(self) -> Json {
-        let mut v = vec![];
-        if let Some(summary) = self.summary {
-            v.push(("summary".into(), Json::String(summary)));
-        }
-        if let Some(desc) = self.description {
-            v.push(("description".into(), Json::String(clear_description(desc))));
-        }
-        if let Some(body) = self.json_request_body {
-            v.push(("requestBody".into(), body.to_json()));
-        }
-        v.push((
-            "parameters".into(),
-            Json::Array(self.parameters.into_iter().map(ToJson::to_json).collect()),
-        ));
-        v.push((
-            "responses".into(),
-            Json::object(vec![
-                (
-                    "200".into(),
-                    Json::object(vec![
-                        (
-                            "description".into(),
-                            Json::String("Successful Operation".into()),
-                        ),
-                        (
-                            "content".into(),
-                            Json::object(vec![(
-                                "application/json".into(),
-                                Json::object(vec![(
-                                    "schema".into(),
-                                    self.json_response_body.to_json(),
-                                )]),
-                            )]),
-                        ),
-                    ]),
-                ),
-                error_response_ref("422", "DecodeError"),
-                error_response_ref("500", "UnexpectedError"),
-            ]),
-        ));
-
-        Json::object(v)
-    }
-}
-
-impl ToJsonKv for open_api_ast::ApiPath {
-    fn to_json_kv(self) -> Vec<(String, Json)> {
-        let mut v = vec![];
-        if let Some(get) = self.get {
-            v.push(("get".into(), get.to_json()));
-        }
-        if let Some(post) = self.post {
-            v.push(("post".into(), post.to_json()));
-        }
-        if let Some(put) = self.put {
-            v.push(("put".into(), put.to_json()));
-        }
-        if let Some(delete) = self.delete {
-            v.push(("delete".into(), delete.to_json()));
-        }
-        if let Some(patch) = self.patch {
-            v.push(("patch".into(), patch.to_json()));
-        }
-        if let Some(options) = self.options {
-            v.push(("options".into(), options.to_json()));
-        }
-        if v.is_empty() {
-            return vec![];
-        }
-        vec![(self.pattern.clone(), Json::object(v))]
-    }
-}
-impl ToJsonKv for open_api_ast::Validator {
-    fn to_json_kv(self) -> Vec<(String, Json)> {
-        vec![(self.name.clone(), self.schema.to_json())]
-    }
-}
-
-impl ToJson for open_api_ast::Info {
-    fn to_json(self) -> Json {
-        let mut v = vec![];
-        if let Some(desc) = self.description {
-            v.push(("description".into(), Json::String(clear_description(desc))));
-        }
-        v.push((
-            "title".into(),
-            Json::String(self.title.unwrap_or("No title".to_owned())),
-        ));
-        v.push((
-            "version".into(),
-            Json::String(self.version.unwrap_or("0.0.0".to_owned())),
-        ));
-        Json::object(v)
-    }
-}
+use super::expr::ToExpr;
 
 fn error_response_schema() -> JsonSchema {
     JsonSchema::object(vec![("message".to_string(), JsonSchema::String.required())])
@@ -421,7 +105,7 @@ fn param_to_server_js(
                         "validator".into(),
                         Js::named_decoder(name.to_string(), schema.clone(), required),
                     ),
-                    ("coercer".into(), Js::coercer(schema, components)),
+                    ("coercer".into(), build_coercer(schema, components)),
                 ]),
                 FunctionParameterIn::Query => Js::object(vec![
                     ("type".into(), Js::String("query".into())),
@@ -431,7 +115,7 @@ fn param_to_server_js(
                         "validator".into(),
                         Js::named_decoder(name.to_string(), schema.clone(), required),
                     ),
-                    ("coercer".into(), Js::coercer(schema, components)),
+                    ("coercer".into(), build_coercer(schema, components)),
                 ]),
                 FunctionParameterIn::Body => Js::object(vec![
                     ("type".into(), Js::String("body".into())),
@@ -459,7 +143,7 @@ fn param_to_server_js(
                     "validator".into(),
                     Js::named_decoder(name.to_string(), schema.clone(), required),
                 ),
-                ("coercer".into(), Js::coercer(schema, components)),
+                ("coercer".into(), build_coercer(schema, components)),
             ])
         }
         HandlerParameter::Context(_) => {
@@ -622,61 +306,6 @@ fn const_decl(name: &str, init: Expr) -> ModuleItem {
         }
         .into(),
     )))
-}
-
-impl ToExpr for Js {
-    fn to_expr(self) -> Expr {
-        match self {
-            Js::Decoder {
-                name_on_errors,
-                schema,
-                required,
-            } => Expr::Fn(FnExpr {
-                ident: None,
-                function: decoder::from_schema(&schema, &name_on_errors, required).into(),
-            }),
-            Js::Coercer(schema) => {
-                let func = crate::print::coercer::from_schema(&schema);
-                Expr::Fn(FnExpr {
-                    ident: None,
-                    function: func.into(),
-                })
-            }
-            Js::Null => Json::Null.to_expr(),
-            Js::Bool(it) => Json::Bool(it).to_expr(),
-            Js::Number(it) => Json::Number(it).to_expr(),
-            Js::String(it) => Json::String(it).to_expr(),
-            Js::Array(els) => Expr::Array(ArrayLit {
-                span: DUMMY_SP,
-                elems: els
-                    .into_iter()
-                    .map(|it| {
-                        Some(ExprOrSpread {
-                            spread: None,
-                            expr: Box::new(it.to_expr()),
-                        })
-                    })
-                    .collect(),
-            }),
-            Js::Object(kvs) => Expr::Object(ObjectLit {
-                span: DUMMY_SP,
-                props: kvs
-                    .into_iter()
-                    .map(|(key, value)| {
-                        PropOrSpread::Prop(Box::new(Prop::KeyValue(KeyValueProp {
-                            key: PropName::Str(Str {
-                                span: DUMMY_SP,
-                                value: key.into(),
-                                raw: None,
-                            }),
-                            value: Box::new(value.to_expr()),
-                        })))
-                    })
-                    .collect(),
-            }),
-            Js::Expr(expr) => expr,
-        }
-    }
 }
 
 #[derive(Serialize, Deserialize)]

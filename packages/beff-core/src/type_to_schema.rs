@@ -1,8 +1,9 @@
+use crate::ast::json::Json;
+use crate::ast::json_schema::{JsonSchema, Optionality};
 use crate::diag::{
     span_to_loc, Diagnostic, DiagnosticInfoMessage, DiagnosticInformation, DiagnosticParentMessage,
 };
-use crate::open_api_ast::Json;
-use crate::open_api_ast::{JsonSchema, Optionality, Validator};
+use crate::open_api_ast::Validator;
 use crate::type_resolve::{ResolvedLocalType, TypeResolver};
 use crate::{BffFileName, FileManager, ImportReference, TypeExport};
 use std::collections::HashMap;

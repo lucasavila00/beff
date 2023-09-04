@@ -1,8 +1,13 @@
 use std::rc::Rc;
 
-use crate::open_api_ast::{Js, Json, JsonSchema, Optionality};
-use crate::print::printer::ToExpr;
-use crate::swc_builder::SwcBuilder;
+use crate::{
+    ast::{
+        js::{Js, ToJs},
+        json::Json,
+        json_schema::{JsonSchema, Optionality},
+    },
+    swc_builder::SwcBuilder,
+};
 use indexmap::IndexMap;
 use swc_common::DUMMY_SP;
 use swc_ecma_ast::{
@@ -10,6 +15,8 @@ use swc_ecma_ast::{
     ExprOrSpread, ExprStmt, Function, Ident, Lit, MemberExpr, MemberProp, Number, Param, Pat,
     PatOrExpr, ReturnStmt, Stmt, Str,
 };
+
+use super::expr::ToExpr;
 
 fn store_error(storage: &str, err: ReportedError, received: Expr) -> Stmt {
     SwcBuilder::store_error_vec(
