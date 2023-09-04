@@ -39,6 +39,54 @@ function coerce(coercer, value) {
 const meta = [
     {
         "method_kind": "get",
+        "params": [
+            {
+                "type": "context"
+            },
+            {
+                "type": "query",
+                "name": "limit",
+                "required": false,
+                "validator": function(input) {
+                    let error_acc_0 = [];
+                    if (input == null) {
+                        return error_acc_0;
+                    }
+                    if (typeof input != "number") {
+                        error_acc_0.push({
+                            "error_kind": "NotTypeof",
+                            "path": [
+                                "limit"
+                            ],
+                            "received": input,
+                            "expected_type": "number"
+                        });
+                    }
+                    return error_acc_0;
+                },
+                "coercer": function(input) {
+                    return coerce_number(input);
+                }
+            }
+        ],
+        "pattern": "/optional-query-param",
+        "return_validator": function(input) {
+            let error_acc_0 = [];
+            if (typeof input != "number") {
+                error_acc_0.push({
+                    "error_kind": "NotTypeof",
+                    "path": [
+                        "responseBody"
+                    ],
+                    "received": input,
+                    "expected_type": "number"
+                });
+            }
+            return error_acc_0;
+        }
+    },
+    {
+        "method_kind": "get",
         "params": [],
         "pattern": "/data-types-kitchen-sink",
         "return_validator": function(input) {
@@ -622,6 +670,38 @@ const schema =  {
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/DataTypesKitchenSink"
+                }
+              }
+            },
+            "description": "Successful Operation"
+          },
+          "422": {
+            "$ref": "#/components/responses/DecodeError"
+          },
+          "500": {
+            "$ref": "#/components/responses/UnexpectedError"
+          }
+        }
+      }
+    },
+    "/optional-query-param": {
+      "get": {
+        "parameters": [
+          {
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "type": "number"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "number"
                 }
               }
             },

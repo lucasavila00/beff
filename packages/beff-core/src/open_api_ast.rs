@@ -95,6 +95,7 @@ pub enum Js {
     Decoder {
         name_on_errors: Option<String>,
         schema: JsonSchema,
+        required: bool,
     },
     Coercer(JsonSchema),
     Expr(Expr),
@@ -115,16 +116,18 @@ impl Js {
         Self::Coercer(resolve_schema(schema, components))
     }
 
-    pub fn named_decoder(name: String, schema: JsonSchema) -> Self {
+    pub fn named_decoder(name: String, schema: JsonSchema, required: bool) -> Self {
         Self::Decoder {
             name_on_errors: Some(name),
             schema,
+            required,
         }
     }
-    pub fn anon_decoder(schema: JsonSchema) -> Self {
+    pub fn anon_decoder(schema: JsonSchema, required: bool) -> Self {
         Self::Decoder {
             name_on_errors: None,
             schema,
+            required,
         }
     }
 }

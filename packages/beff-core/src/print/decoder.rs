@@ -617,13 +617,32 @@ impl DecoderFnGenerator {
         &mut self,
         schema: &JsonSchema,
         name_to_report_err: &Option<String>,
+        required: bool,
     ) -> Function {
         let input = SwcBuilder::input_expr();
 
         let tmp_id = self.new_err_acc_id();
         let mut stmts = vec![];
+
         let err_storage = SwcBuilder::error_storage_stmt(&tmp_id);
         stmts.push(err_storage);
+        if !required {
+            let if_null = SwcBuilder::if_(
+                SwcBuilder::is_null(&input),
+                BlockStmt {
+                    span: DUMMY_SP,
+                    stmts: vec![Stmt::Return(ReturnStmt {
+                        span: DUMMY_SP,
+                        arg: Some(Box::new(Expr::Ident(Ident {
+                            span: DUMMY_SP,
+                            sym: tmp_id.clone().into(),
+                            optional: false,
+                        }))),
+                    })],
+                },
+            );
+            stmts.push(if_null);
+        }
 
         let path = match name_to_report_err {
             Some(name_to_report_err) => {
@@ -666,6 +685,14 @@ impl DecoderFnGenerator {
     }
 }
 #[must_use]
-pub fn from_schema(schema: &JsonSchema, name_to_report_err: &Option<String>) -> Function {
-    DecoderFnGenerator { increasing_id: 0 }.fn_decoder_from_schema(schema, name_to_report_err)
+pub fn from_schema(
+    schema: &JsonSchema,
+    name_to_report_err: &Option<String>,
+    required: bool,
+) -> Function {
+    DecoderFnGenerator { increasing_id: 0 }.fn_decoder_from_schema(
+        schema,
+        name_to_report_err,
+        required,
+    )
 }

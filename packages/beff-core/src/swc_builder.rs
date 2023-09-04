@@ -213,6 +213,15 @@ impl SwcBuilder {
         })
     }
     #[must_use]
+    pub fn is_null(t: &Expr) -> Expr {
+        Expr::Bin(BinExpr {
+            span: DUMMY_SP,
+            op: op!("=="),
+            left: Box::new(t.clone()),
+            right: Expr::Lit(Lit::Null(Null { span: DUMMY_SP })).into(),
+        })
+    }
+    #[must_use]
     pub fn declare_var(name: &str, init: Expr) -> VarDecl {
         VarDecl {
             span: DUMMY_SP,

@@ -75,8 +75,10 @@ export class BffRequest {
           if (!hasAddedQueryParams) {
             path += "?";
             hasAddedQueryParams = true;
+            path += `${metadata.name}=${param}`;
+          } else {
+            path += `&${metadata.name}=${param}`;
           }
-          path += `${metadata.name}=${param}&`;
           break;
         }
         case "header": {

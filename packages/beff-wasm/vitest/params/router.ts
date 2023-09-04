@@ -26,7 +26,7 @@ export default {
     },
   },
   ["/query-param"]: {
-    get: async (c: Ctx, limit: N2): Promise<number> => {
+    get: async (c: Ctx, limit: N2, optional?: string): Promise<number> => {
       return limit;
     },
   },

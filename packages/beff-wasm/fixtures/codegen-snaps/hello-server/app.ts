@@ -44,6 +44,9 @@ type Ctx = any;
  * @version 0.1.9
  */
 export default {
+  "/optional-query-param": {
+    get: async (c: Ctx, limit?: number): Promise<number> => todo(),
+  },
   [`/data-types-kitchen-sink`]: {
     get: async (): Promise<DataTypesKitchenSink> => todo(),
   },

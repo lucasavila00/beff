@@ -2,6 +2,20 @@
 const meta = [
     {
         "method_kind": "get",
+        "params": [
+            {
+                "type": "context"
+            },
+            {
+                "type": "query",
+                "name": "limit",
+                "required": false
+            }
+        ],
+        "pattern": "/optional-query-param"
+    },
+    {
+        "method_kind": "get",
         "params": [],
         "pattern": "/data-types-kitchen-sink"
     },

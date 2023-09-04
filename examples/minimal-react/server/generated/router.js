@@ -58,6 +58,9 @@ const meta = [
                 "required": false,
                 "validator": function(input) {
                     let error_acc_0 = [];
+                    if (input == null) {
+                        return error_acc_0;
+                    }
                     if (typeof input != "string") {
                         error_acc_0.push({
                             "error_kind": "NotTypeof",
