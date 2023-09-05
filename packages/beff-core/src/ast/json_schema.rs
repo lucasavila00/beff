@@ -52,6 +52,30 @@ pub enum JsonSchema {
     Error,
 }
 
+struct UnionMerger(BTreeSet<JsonSchema>);
+
+impl UnionMerger {
+    fn new() -> Self {
+        Self(BTreeSet::new())
+    }
+    fn consume(&mut self, vs: Vec<JsonSchema>) {
+        for it in vs.into_iter() {
+            match it {
+                JsonSchema::AnyOf(vs) => self.consume(vs.into_iter().collect()),
+                _ => {
+                    self.0.insert(it);
+                }
+            }
+        }
+    }
+
+    pub fn schema(vs: Vec<JsonSchema>) -> JsonSchema {
+        let mut acc = Self::new();
+        acc.consume(vs);
+        JsonSchema::AnyOf(acc.0)
+    }
+}
+
 impl JsonSchema {
     pub fn object(vs: Vec<(String, Optionality<JsonSchema>)>) -> Self {
         Self::Object(vs.into_iter().collect())
@@ -61,6 +85,13 @@ impl JsonSchema {
     }
     pub fn optional(self) -> Optionality<JsonSchema> {
         Optionality::Optional(self)
+    }
+
+    pub fn any_of(vs: Vec<JsonSchema>) -> Self {
+        UnionMerger::schema(vs)
+    }
+    pub fn all_of(vs: Vec<JsonSchema>) -> Self {
+        Self::AllOf(BTreeSet::from_iter(vs))
     }
 
     fn parse_string(vs: &BTreeMap<String, Json>) -> Result<Self> {
@@ -145,6 +176,35 @@ impl JsonSchema {
             Json::Object(vs) => {
                 if let Some(cons) = vs.get("const") {
                     return Ok(JsonSchema::Const(cons.clone()));
+                }
+                if let Some(enu) = vs.get("enum") {
+                    let enu = match enu {
+                        Json::Array(vs) => {
+                            vs.iter().map(|it| JsonSchema::Const(it.clone())).collect()
+                        }
+                        _ => return Err(anyhow!("enum must be an array")),
+                    };
+                    return Ok(JsonSchema::any_of(enu));
+                }
+                if let Some(any_of) = vs.get("anyOf") {
+                    let any_of = match any_of {
+                        Json::Array(vs) => vs
+                            .iter()
+                            .map(|it| JsonSchema::from_json(it))
+                            .collect::<Result<Vec<_>>>()?,
+                        _ => return Err(anyhow!("any of must be an array")),
+                    };
+                    return Ok(JsonSchema::any_of(any_of));
+                }
+                if let Some(all_of) = vs.get("allOf") {
+                    let all_of = match all_of {
+                        Json::Array(vs) => vs
+                            .iter()
+                            .map(|it| JsonSchema::from_json(it))
+                            .collect::<Result<Vec<_>>>()?,
+                        _ => return Err(anyhow!("all of must be an array")),
+                    };
+                    return Ok(JsonSchema::all_of(all_of));
                 }
 
                 if let Some(reference) = vs.get("$ref") {

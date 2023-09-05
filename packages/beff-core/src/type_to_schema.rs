@@ -6,7 +6,7 @@ use crate::diag::{
 use crate::open_api_ast::Validator;
 use crate::type_resolve::{ResolvedLocalType, TypeResolver};
 use crate::{BffFileName, FileManager, ImportReference, TypeExport};
-use std::collections::{BTreeSet, HashMap};
+use std::collections::HashMap;
 use std::rc::Rc;
 use swc_atoms::JsWord;
 use swc_common::Span;
@@ -261,7 +261,7 @@ impl<'a, R: FileManager> TypeToSchema<'a, R> {
             .iter()
             .map(|it| self.convert_ts_type(it))
             .collect::<Res<_>>()?;
-        Ok(JsonSchema::AnyOf(BTreeSet::from_iter(vs)))
+        Ok(JsonSchema::any_of(vs))
     }
 
     fn intersection(&mut self, types: &[Box<TsType>]) -> Res<JsonSchema> {
@@ -270,7 +270,7 @@ impl<'a, R: FileManager> TypeToSchema<'a, R> {
             .map(|it| self.convert_ts_type(it))
             .collect::<Res<_>>()?;
 
-        Ok(JsonSchema::AllOf(BTreeSet::from_iter(vs)))
+        Ok(JsonSchema::all_of(vs))
     }
 
     fn cannot_serialize_error<T>(&mut self, span: &Span, msg: DiagnosticInfoMessage) -> Res<T> {

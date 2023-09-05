@@ -1,0 +1,12 @@
+{
+  "name": "beff-core",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "cargo test"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC"
+}

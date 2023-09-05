@@ -1,5 +1,5 @@
 import { Formats } from "@beff/cli";
-import { StartsWithA, User } from "./parser";
+import { StartsWithA, UnionNested as UnionNestedNamed, User } from "./parser";
 
 type Ctx = any;
 export default {
@@ -15,6 +15,16 @@ export default {
       p: Formats.Password
     ): Promise<StartsWithA> => {
       return StartsWithA.parse(uuid);
+    },
+  },
+  [`/UnionNested`]: {
+    get: async (c: Ctx): Promise<UnionNestedNamed> => {
+      throw new Error();
+    },
+  },
+  [`/UnionNestedInline`]: {
+    get: async (c: Ctx): Promise<(1 | 2) | ((2 | 3) | (4 | 5) | (5 | 6))> => {
+      throw new Error();
     },
   },
 };

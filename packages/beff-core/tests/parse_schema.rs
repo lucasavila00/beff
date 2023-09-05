@@ -1,5 +1,6 @@
 #[cfg(test)]
 mod tests {
+
     use beff_core::ast::{
         json::{Json, ToJson},
         json_schema::JsonSchema,
@@ -61,8 +62,14 @@ mod tests {
             },
             JsonSchema::Ref("abc".into()),
             JsonSchema::OpenApiResponseRef("def".into()),
-            // JsonSchema:: AnyOf(Vec<JsonSchema>),
-            // JsonSchema:: AllOf(Vec<JsonSchema>),
+            JsonSchema::any_of(vec![]),
+            JsonSchema::any_of(vec![JsonSchema::String, JsonSchema::Number]),
+            JsonSchema::any_of(vec![
+                JsonSchema::Const(Json::Bool(false)),
+                JsonSchema::Const(Json::Bool(true)),
+            ]),
+            JsonSchema::all_of(vec![]),
+            JsonSchema::all_of(vec![JsonSchema::String, JsonSchema::Number]),
             JsonSchema::Const(Json::String("abc".into())),
             JsonSchema::Const(Json::parse_int(123)),
         ];

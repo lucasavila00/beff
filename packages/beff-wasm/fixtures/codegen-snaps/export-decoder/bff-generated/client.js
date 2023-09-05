@@ -32,6 +32,24 @@ const meta = [
             }
         ],
         "pattern": "/check-uuid/{uuid}"
+    },
+    {
+        "method_kind": "get",
+        "params": [
+            {
+                "type": "context"
+            }
+        ],
+        "pattern": "/UnionNested"
+    },
+    {
+        "method_kind": "get",
+        "params": [
+            {
+                "type": "context"
+            }
+        ],
+        "pattern": "/UnionNestedInline"
     }
 ];
 

@@ -39,6 +39,30 @@
       }
     },
     "schemas": {
+      "A": {
+        "enum": [
+          1,
+          2
+        ]
+      },
+      "B": {
+        "enum": [
+          2,
+          3
+        ]
+      },
+      "D": {
+        "enum": [
+          4,
+          5
+        ]
+      },
+      "E": {
+        "enum": [
+          5,
+          6
+        ]
+      },
       "Password": {
         "format": "password",
         "type": "string"
@@ -46,6 +70,22 @@
       "StartsWithA": {
         "format": "StartsWithA",
         "type": "string"
+      },
+      "UnionNestedNamed": {
+        "anyOf": [
+          {
+            "$ref": "#/components/schemas/A"
+          },
+          {
+            "$ref": "#/components/schemas/B"
+          },
+          {
+            "$ref": "#/components/schemas/D"
+          },
+          {
+            "$ref": "#/components/schemas/E"
+          }
+        ]
       },
       "User": {
         "properties": {
@@ -70,6 +110,59 @@
   },
   "openapi": "3.1.0",
   "paths": {
+    "/UnionNested": {
+      "get": {
+        "parameters": [],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UnionNestedNamed"
+                }
+              }
+            },
+            "description": "Successful Operation"
+          },
+          "422": {
+            "$ref": "#/components/responses/DecodeError"
+          },
+          "500": {
+            "$ref": "#/components/responses/UnexpectedError"
+          }
+        }
+      }
+    },
+    "/UnionNestedInline": {
+      "get": {
+        "parameters": [],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "enum": [
+                    1,
+                    2,
+                    3,
+                    4,
+                    5,
+                    6
+                  ]
+                }
+              }
+            },
+            "description": "Successful Operation"
+          },
+          "422": {
+            "$ref": "#/components/responses/DecodeError"
+          },
+          "500": {
+            "$ref": "#/components/responses/UnexpectedError"
+          }
+        }
+      }
+    },
     "/check-uuid/{uuid}": {
       "get": {
         "parameters": [

@@ -38,6 +38,35 @@ const buildParsersInput = {
             });
         }
         return error_acc_0;
+    },
+    "float": function(input) {
+        let error_acc_0 = [];
+        if (input != 123.456) {
+            error_acc_0.push({
+                "error_kind": "NotEq",
+                "expected_value": 123.456,
+                "path": [],
+                "received": input
+            });
+        }
+        return error_acc_0;
+    },
+    "int": function(input) {
+        let error_acc_0 = [];
+        if (input != 123) {
+            error_acc_0.push({
+                "error_kind": "NotEq",
+                "expected_value": 123,
+                "path": [],
+                "received": input
+            });
+        }
+        return error_acc_0;
+    },
+    "union": function(input) {
+        let error_acc_0 = [];
+        error_acc_0.push(...add_path_to_errors(validators.UnionNested(input), []));
+        return error_acc_0;
     }
 };
 
