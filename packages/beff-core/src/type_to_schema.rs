@@ -6,7 +6,7 @@ use crate::diag::{
 use crate::open_api_ast::Validator;
 use crate::type_resolve::{ResolvedLocalType, TypeResolver};
 use crate::{BffFileName, FileManager, ImportReference, TypeExport};
-use std::collections::HashMap;
+use std::collections::{BTreeSet, HashMap};
 use std::rc::Rc;
 use swc_atoms::JsWord;
 use swc_common::Span;
@@ -257,21 +257,20 @@ impl<'a, R: FileManager> TypeToSchema<'a, R> {
     }
 
     fn union(&mut self, types: &[Box<TsType>]) -> Res<JsonSchema> {
-        Ok(JsonSchema::AnyOf(
-            types
-                .iter()
-                .map(|it| self.convert_ts_type(it))
-                .collect::<Res<_>>()?,
-        ))
+        let vs: Vec<JsonSchema> = types
+            .iter()
+            .map(|it| self.convert_ts_type(it))
+            .collect::<Res<_>>()?;
+        Ok(JsonSchema::AnyOf(BTreeSet::from_iter(vs)))
     }
 
     fn intersection(&mut self, types: &[Box<TsType>]) -> Res<JsonSchema> {
-        Ok(JsonSchema::AllOf(
-            types
-                .iter()
-                .map(|it| self.convert_ts_type(it))
-                .collect::<Res<_>>()?,
-        ))
+        let vs: Vec<JsonSchema> = types
+            .iter()
+            .map(|it| self.convert_ts_type(it))
+            .collect::<Res<_>>()?;
+
+        Ok(JsonSchema::AllOf(BTreeSet::from_iter(vs)))
     }
 
     fn cannot_serialize_error<T>(&mut self, span: &Span, msg: DiagnosticInfoMessage) -> Res<T> {
@@ -515,7 +514,7 @@ impl<'a, R: FileManager> TypeToSchema<'a, R> {
                 })
             }
             TsType::TsLitType(TsLitType { lit, .. }) => match lit {
-                TsLit::Number(n) => Ok(JsonSchema::Const(Json::Number(n.value))),
+                TsLit::Number(n) => Ok(JsonSchema::Const(Json::parse_f64(n.value))),
                 TsLit::Str(s) => Ok(JsonSchema::Const(Json::String(s.value.to_string().clone()))),
                 TsLit::Bool(b) => Ok(JsonSchema::Const(Json::Bool(b.value))),
                 TsLit::BigInt(BigInt { span, .. }) => self.cannot_serialize_error(

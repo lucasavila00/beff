@@ -104,23 +104,23 @@
           "many_nullable": {
             "anyOf": [
               {
-                "type": "number"
+                "type": "null"
               },
               {
                 "type": "string"
               },
               {
-                "type": "null"
+                "type": "number"
               }
             ]
           },
           "nullable": {
             "anyOf": [
               {
-                "type": "string"
+                "type": "null"
               },
               {
-                "type": "null"
+                "type": "string"
               }
             ]
           },
@@ -131,8 +131,8 @@
             "const": "ab"
           },
           "tuple1": {
-            "maxItems": 1.0,
-            "minItems": 1.0,
+            "maxItems": 1,
+            "minItems": 1,
             "prefixItems": [
               {
                 "type": "string"
@@ -141,8 +141,8 @@
             "type": "array"
           },
           "tuple2": {
-            "maxItems": 2.0,
-            "minItems": 2.0,
+            "maxItems": 2,
+            "minItems": 2,
             "prefixItems": [
               {
                 "type": "string"
@@ -154,8 +154,8 @@
             "type": "array"
           },
           "tuple_lit": {
-            "maxItems": 3.0,
-            "minItems": 3.0,
+            "maxItems": 3,
+            "minItems": 3,
             "prefixItems": [
               {
                 "const": "a"
@@ -186,42 +186,42 @@
           "union_of_many": {
             "anyOf": [
               {
+                "type": "boolean"
+              },
+              {
                 "type": "string"
               },
               {
                 "type": "number"
-              },
-              {
-                "type": "boolean"
               }
             ]
           },
           "union_with_undefined": {
             "anyOf": [
               {
-                "type": "string"
+                "type": "null"
               },
               {
-                "type": "null"
+                "type": "string"
               }
             ]
           }
         },
         "required": [
-          "basic",
           "array1",
           "array2",
+          "basic",
+          "enum",
+          "literals",
+          "many_nullable",
+          "nullable",
+          "str_template",
           "tuple1",
           "tuple2",
-          "tuple_rest",
-          "nullable",
-          "many_nullable",
-          "union_with_undefined",
-          "union_of_many",
-          "literals",
-          "enum",
           "tuple_lit",
-          "str_template"
+          "tuple_rest",
+          "union_of_many",
+          "union_with_undefined"
         ],
         "type": "object"
       },
@@ -244,9 +244,9 @@
           }
         },
         "required": [
+          "entities",
           "id",
-          "name",
-          "entities"
+          "name"
         ],
         "type": "object"
       },

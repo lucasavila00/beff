@@ -1,6 +1,21 @@
 
 import vals from "./validators.js"; const { validators, add_path_to_errors, registerStringFormat, isCustomFormatInvalid } = vals;
 const buildParsersInput = {
+    "NotPublicRenamed": function(input) {
+        let error_acc_0 = [];
+        error_acc_0.push(...add_path_to_errors(validators.NotPublic(input), []));
+        return error_acc_0;
+    },
+    "Password": function(input) {
+        let error_acc_0 = [];
+        error_acc_0.push(...add_path_to_errors(validators.Password(input), []));
+        return error_acc_0;
+    },
+    "StartsWithA": function(input) {
+        let error_acc_0 = [];
+        error_acc_0.push(...add_path_to_errors(validators.StartsWithA(input), []));
+        return error_acc_0;
+    },
     "User": function(input) {
         let error_acc_0 = [];
         error_acc_0.push(...add_path_to_errors(validators.User(input), []));
@@ -22,21 +37,6 @@ const buildParsersInput = {
                 "received": input
             });
         }
-        return error_acc_0;
-    },
-    "NotPublicRenamed": function(input) {
-        let error_acc_0 = [];
-        error_acc_0.push(...add_path_to_errors(validators.NotPublic(input), []));
-        return error_acc_0;
-    },
-    "StartsWithA": function(input) {
-        let error_acc_0 = [];
-        error_acc_0.push(...add_path_to_errors(validators.StartsWithA(input), []));
-        return error_acc_0;
-    },
-    "Password": function(input) {
-        let error_acc_0 = [];
-        error_acc_0.push(...add_path_to_errors(validators.Password(input), []));
         return error_acc_0;
     }
 };

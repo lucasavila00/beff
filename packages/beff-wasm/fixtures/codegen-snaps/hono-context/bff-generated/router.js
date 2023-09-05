@@ -61,12 +61,12 @@ const meta = [
                 if (typeof input["message"] != "string") {
                     error_acc_0.push({
                         "error_kind": "NotTypeof",
+                        "expected_type": "string",
                         "path": [
                             "responseBody",
                             "message"
                         ],
-                        "received": input["message"],
-                        "expected_type": "string"
+                        "received": input["message"]
                     });
                 }
             } else {
@@ -92,6 +92,17 @@ const meta = [
         "return_validator": function(input) {
             let error_acc_0 = [];
             if (typeof input == "object" && input != null) {
+                if (typeof input["ok"] != "boolean") {
+                    error_acc_0.push({
+                        "error_kind": "NotTypeof",
+                        "expected_type": "boolean",
+                        "path": [
+                            "responseBody",
+                            "ok"
+                        ],
+                        "received": input["ok"]
+                    });
+                }
                 if (Array.isArray(input["posts"])) {
                     for(let index = 0; index < input["posts"].length; index++){
                         const array_item_1 = input["posts"][index];
@@ -104,17 +115,6 @@ const meta = [
                             "posts"
                         ],
                         "received": input["posts"]
-                    });
-                }
-                if (typeof input["ok"] != "boolean") {
-                    error_acc_0.push({
-                        "error_kind": "NotTypeof",
-                        "path": [
-                            "responseBody",
-                            "ok"
-                        ],
-                        "received": input["ok"],
-                        "expected_type": "boolean"
                     });
                 }
             } else {
@@ -228,8 +228,8 @@ const schema =  {
                     }
                   },
                   "required": [
-                    "posts",
-                    "ok"
+                    "ok",
+                    "posts"
                   ],
                   "type": "object"
                 }

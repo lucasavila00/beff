@@ -27,12 +27,12 @@ function UserEntityOriginal(input) {
         if (typeof input["id"] != "string") {
             error_acc_0.push({
                 "error_kind": "NotTypeof",
+                "expected_type": "string",
                 "path": [
                     "UserEntityOriginal",
                     "id"
                 ],
-                "received": input["id"],
-                "expected_type": "string"
+                "received": input["id"]
             });
         }
     } else {
@@ -52,12 +52,12 @@ function Abc123(input) {
         if (typeof input["a"] != "string") {
             error_acc_0.push({
                 "error_kind": "NotTypeof",
+                "expected_type": "string",
                 "path": [
                     "Abc123",
                     "a"
                 ],
-                "received": input["a"],
-                "expected_type": "string"
+                "received": input["a"]
             });
         }
     } else {
@@ -77,12 +77,12 @@ function Def(input) {
         if (typeof input["a"] != "string") {
             error_acc_0.push({
                 "error_kind": "NotTypeof",
+                "expected_type": "string",
                 "path": [
                     "Def",
                     "a"
                 ],
-                "received": input["a"],
-                "expected_type": "string"
+                "received": input["a"]
             });
         }
     } else {
@@ -102,12 +102,12 @@ function XYZ(input) {
         if (typeof input["a"] != "number") {
             error_acc_0.push({
                 "error_kind": "NotTypeof",
+                "expected_type": "number",
                 "path": [
                     "XYZ",
                     "a"
                 ],
-                "received": input["a"],
-                "expected_type": "number"
+                "received": input["a"]
             });
         }
     } else {
@@ -126,11 +126,11 @@ function AAAAA(input) {
     if (input != 123) {
         error_acc_0.push({
             "error_kind": "NotEq",
+            "expected_value": 123,
             "path": [
                 "AAAAA"
             ],
-            "received": input,
-            "expected_value": 123
+            "received": input
         });
     }
     return error_acc_0;

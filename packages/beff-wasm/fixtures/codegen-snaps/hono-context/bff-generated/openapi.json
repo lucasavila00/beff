@@ -95,8 +95,8 @@
                     }
                   },
                   "required": [
-                    "posts",
-                    "ok"
+                    "ok",
+                    "posts"
                   ],
                   "type": "object"
                 }

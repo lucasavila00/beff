@@ -1,18 +1,67 @@
 use core::fmt;
+use std::collections::BTreeMap;
 
-use indexmap::IndexMap;
+#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord)]
+pub struct N {
+    integral: i64,
+    fractional: Option<i64>,
+}
 
-#[derive(Debug, Clone, PartialEq)]
+impl N {
+    pub fn to_f64(&self) -> f64 {
+        self.integral as f64 + self.fractional.unwrap_or(0) as f64 / 1_000_000_000.0
+    }
+
+    pub fn to_serde(&self) -> serde_json::Value {
+        let v = if let Some(fractional) = self.fractional {
+            serde_json::Number::from_f64(self.integral as f64 + fractional as f64 / 1_000_000_000.0)
+                .expect("should be possible to convert f64 to json number")
+        } else {
+            serde_json::Number::from(self.integral)
+        };
+        serde_json::Value::Number(v)
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord)]
 pub enum Json {
     Null,
     Bool(bool),
-    Number(f64),
+    Number(N),
     String(String),
     Array(Vec<Json>),
-    Object(IndexMap<String, Json>),
+    Object(BTreeMap<String, Json>),
 }
 
 impl Json {
+    pub fn parse_f64(it: f64) -> Self {
+        if it.fract() == 0.0 {
+            return Self::parse_int(it.trunc() as i64);
+        }
+        Self::Number(N {
+            integral: it.trunc() as i64,
+            fractional: Some((it.fract() * 1_000_000_000.0) as i64),
+        })
+    }
+    pub fn parse_int(it: i64) -> Self {
+        Self::Number(N {
+            integral: it,
+            fractional: None,
+        })
+    }
+
+    pub fn number_serde(it: &serde_json::Number) -> Self {
+        if let Some(it) = it.as_f64() {
+            Self::parse_f64(it)
+        } else if let Some(it) = it.as_u64() {
+            Self::parse_int(it as i64)
+        } else if let Some(it) = it.as_i64() {
+            Self::parse_int(it as i64)
+        } else {
+            panic!("should be possible to convert serde_json::Number to Json::Number")
+        }
+    }
+
     #[must_use]
 
     pub fn object(vs: Vec<(String, Json)>) -> Self {
@@ -23,10 +72,7 @@ impl Json {
         match self {
             Json::Null => serde_json::Value::Null,
             Json::Bool(b) => serde_json::Value::Bool(*b),
-            Json::Number(n) => serde_json::Value::Number(
-                serde_json::Number::from_f64(*n)
-                    .expect("should be possible to convert f64 to json number"),
-            ),
+            Json::Number(n) => n.to_serde(),
             Json::String(s) => serde_json::Value::String(s.clone()),
             Json::Array(arr) => {
                 serde_json::Value::Array(arr.iter().map(|it| it.to_serde()).collect::<Vec<_>>())
@@ -43,7 +89,7 @@ impl Json {
         match it {
             serde_json::Value::Null => Json::Null,
             serde_json::Value::Bool(v) => Json::Bool(*v),
-            serde_json::Value::Number(v) => Json::Number(v.as_f64().unwrap()),
+            serde_json::Value::Number(v) => Json::number_serde(v),
             serde_json::Value::String(st) => Json::String(st.clone()),
             serde_json::Value::Array(vs) => Json::Array(vs.iter().map(Json::from_serde).collect()),
             serde_json::Value::Object(vs) => Json::Object(

@@ -7,9 +7,9 @@ const meta = [
                 "type": "context"
             },
             {
-                "type": "path",
                 "name": "id",
-                "required": true
+                "required": true,
+                "type": "path"
             }
         ],
         "pattern": "/{id}"

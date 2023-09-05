@@ -145,16 +145,16 @@
           "unionWithNull": {
             "anyOf": [
               {
-                "items": {
-                  "$ref": "#/components/schemas/ChildUser"
-                },
-                "type": "array"
+                "type": "null"
               },
               {
                 "type": "number"
               },
               {
-                "type": "null"
+                "items": {
+                  "$ref": "#/components/schemas/ChildUser"
+                },
+                "type": "array"
               }
             ]
           }
@@ -165,12 +165,12 @@
           "c",
           "c2",
           "d",
-          "union",
-          "unionWithNull",
           "e",
           "g",
           "h",
-          "i"
+          "i",
+          "union",
+          "unionWithNull"
         ],
         "type": "object"
       }

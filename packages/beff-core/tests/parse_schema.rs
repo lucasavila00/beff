@@ -64,7 +64,7 @@ mod tests {
             // JsonSchema:: AnyOf(Vec<JsonSchema>),
             // JsonSchema:: AllOf(Vec<JsonSchema>),
             JsonSchema::Const(Json::String("abc".into())),
-            JsonSchema::Const(Json::Number(123.0)),
+            JsonSchema::Const(Json::parse_int(123)),
         ];
         for schema in schemas {
             let json = schema.clone().to_json();

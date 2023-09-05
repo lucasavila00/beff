@@ -7,9 +7,9 @@ const meta = [
                 "type": "context"
             },
             {
-                "type": "query",
                 "name": "limit",
-                "required": false
+                "required": false,
+                "type": "query"
             }
         ],
         "pattern": "/optional-query-param"
@@ -31,9 +31,9 @@ const meta = [
                 "type": "context"
             },
             {
-                "type": "header",
                 "name": "user_agent",
-                "required": true
+                "required": true,
+                "type": "header"
             }
         ],
         "pattern": "/users"
@@ -45,9 +45,9 @@ const meta = [
                 "type": "context"
             },
             {
-                "type": "path",
                 "name": "id",
-                "required": true
+                "required": true,
+                "type": "path"
             }
         ],
         "pattern": "/users/{id}"
@@ -59,9 +59,9 @@ const meta = [
                 "type": "context"
             },
             {
-                "type": "path",
                 "name": "id",
-                "required": true
+                "required": true,
+                "type": "path"
             }
         ],
         "pattern": "/users2/{id}"
@@ -73,9 +73,9 @@ const meta = [
                 "type": "context"
             },
             {
-                "type": "path",
                 "name": "id",
-                "required": true
+                "required": true,
+                "type": "path"
             }
         ],
         "pattern": "/users2/{id}"

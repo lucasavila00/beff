@@ -49,8 +49,8 @@
           }
         },
         "required": [
-          "title",
-          "body"
+          "body",
+          "title"
         ],
         "type": "object"
       },
@@ -67,9 +67,9 @@
           }
         },
         "required": [
+          "body",
           "id",
-          "title",
-          "body"
+          "title"
         ],
         "type": "object"
       }
@@ -132,8 +132,8 @@
                     }
                   },
                   "required": [
-                    "posts",
-                    "ok"
+                    "ok",
+                    "posts"
                   ],
                   "type": "object"
                 }
@@ -169,6 +169,21 @@
                   "anyOf": [
                     {
                       "properties": {
+                        "error": {
+                          "type": "string"
+                        },
+                        "ok": {
+                          "const": false
+                        }
+                      },
+                      "required": [
+                        "error",
+                        "ok"
+                      ],
+                      "type": "object"
+                    },
+                    {
+                      "properties": {
                         "ok": {
                           "const": true
                         },
@@ -179,21 +194,6 @@
                       "required": [
                         "ok",
                         "post"
-                      ],
-                      "type": "object"
-                    },
-                    {
-                      "properties": {
-                        "error": {
-                          "type": "string"
-                        },
-                        "ok": {
-                          "const": false
-                        }
-                      },
-                      "required": [
-                        "ok",
-                        "error"
                       ],
                       "type": "object"
                     }
@@ -270,6 +270,21 @@
                   "anyOf": [
                     {
                       "properties": {
+                        "error": {
+                          "type": "string"
+                        },
+                        "ok": {
+                          "const": false
+                        }
+                      },
+                      "required": [
+                        "error",
+                        "ok"
+                      ],
+                      "type": "object"
+                    },
+                    {
+                      "properties": {
                         "ok": {
                           "const": true
                         },
@@ -280,21 +295,6 @@
                       "required": [
                         "ok",
                         "post"
-                      ],
-                      "type": "object"
-                    },
-                    {
-                      "properties": {
-                        "error": {
-                          "type": "string"
-                        },
-                        "ok": {
-                          "const": false
-                        }
-                      },
-                      "required": [
-                        "ok",
-                        "error"
                       ],
                       "type": "object"
                     }

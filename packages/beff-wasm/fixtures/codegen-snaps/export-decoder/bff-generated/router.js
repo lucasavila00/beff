@@ -49,25 +49,25 @@ const meta = [
                 "type": "context"
             },
             {
-                "type": "path",
+                "coercer": function(input) {
+                    return coerce_string(input);
+                },
                 "name": "name",
                 "required": true,
+                "type": "path",
                 "validator": function(input) {
                     let error_acc_0 = [];
                     if (typeof input != "string") {
                         error_acc_0.push({
                             "error_kind": "NotTypeof",
+                            "expected_type": "string",
                             "path": [
                                 "name"
                             ],
-                            "received": input,
-                            "expected_type": "string"
+                            "received": input
                         });
                     }
                     return error_acc_0;
-                },
-                "coercer": function(input) {
-                    return coerce_string(input);
                 }
             }
         ],
@@ -87,40 +87,40 @@ const meta = [
                 "type": "context"
             },
             {
-                "type": "path",
+                "coercer": function(input) {
+                    return coerce_string(input);
+                },
                 "name": "uuid",
                 "required": true,
+                "type": "path",
                 "validator": function(input) {
                     let error_acc_0 = [];
                     if (typeof input != "string") {
                         error_acc_0.push({
                             "error_kind": "NotTypeof",
+                            "expected_type": "string",
                             "path": [
                                 "uuid"
                             ],
-                            "received": input,
-                            "expected_type": "string"
+                            "received": input
                         });
                     }
                     return error_acc_0;
-                },
-                "coercer": function(input) {
-                    return coerce_string(input);
                 }
             },
             {
-                "type": "query",
+                "coercer": function(input) {
+                    return coerce_string(input);
+                },
                 "name": "p",
                 "required": true,
+                "type": "query",
                 "validator": function(input) {
                     let error_acc_0 = [];
                     error_acc_0.push(...add_path_to_errors(validators.Password(input), [
                         "p"
                     ]));
                     return error_acc_0;
-                },
-                "coercer": function(input) {
-                    return coerce_string(input);
                 }
             }
         ],
@@ -194,8 +194,8 @@ const schema =  {
           }
         },
         "required": [
-          "name",
-          "age"
+          "age",
+          "name"
         ],
         "type": "object"
       }

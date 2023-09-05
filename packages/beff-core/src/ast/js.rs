@@ -1,16 +1,19 @@
-use indexmap::IndexMap;
+use std::collections::BTreeMap;
+
 use swc_ecma_ast::Expr;
 
 use crate::ast::{json::Json, json_schema::JsonSchema};
+
+use super::json::N;
 
 #[derive(Debug, Clone, PartialEq)]
 pub enum Js {
     Null,
     Bool(bool),
-    Number(f64),
+    Number(N),
     String(String),
     Array(Vec<Js>),
-    Object(IndexMap<String, Js>),
+    Object(BTreeMap<String, Js>),
     Decoder {
         name_on_errors: Option<String>,
         schema: JsonSchema,

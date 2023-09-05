@@ -27,12 +27,12 @@ function User(input) {
         if (typeof input["id"] != "string") {
             error_acc_0.push({
                 "error_kind": "NotTypeof",
+                "expected_type": "string",
                 "path": [
                     "User",
                     "id"
                 ],
-                "received": input["id"],
-                "expected_type": "string"
+                "received": input["id"]
             });
         }
     } else {

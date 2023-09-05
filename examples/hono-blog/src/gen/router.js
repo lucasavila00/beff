@@ -74,12 +74,12 @@ const meta = [
                 if (typeof input["message"] != "string") {
                     error_acc_0.push({
                         "error_kind": "NotTypeof",
+                        "expected_type": "string",
                         "path": [
                             "responseBody",
                             "message"
                         ],
-                        "received": input["message"],
-                        "expected_type": "string"
+                        "received": input["message"]
                     });
                 }
             } else {
@@ -105,6 +105,17 @@ const meta = [
         "return_validator": function(input) {
             let error_acc_0 = [];
             if (typeof input == "object" && input != null) {
+                if (typeof input["ok"] != "boolean") {
+                    error_acc_0.push({
+                        "error_kind": "NotTypeof",
+                        "expected_type": "boolean",
+                        "path": [
+                            "responseBody",
+                            "ok"
+                        ],
+                        "received": input["ok"]
+                    });
+                }
                 if (Array.isArray(input["posts"])) {
                     for(let index = 0; index < input["posts"].length; index++){
                         const array_item_1 = input["posts"][index];
@@ -122,17 +133,6 @@ const meta = [
                             "posts"
                         ],
                         "received": input["posts"]
-                    });
-                }
-                if (typeof input["ok"] != "boolean") {
-                    error_acc_0.push({
-                        "error_kind": "NotTypeof",
-                        "path": [
-                            "responseBody",
-                            "ok"
-                        ],
-                        "received": input["ok"],
-                        "expected_type": "boolean"
                     });
                 }
             } else {
@@ -154,9 +154,9 @@ const meta = [
                 "type": "context"
             },
             {
-                "type": "body",
                 "name": "param",
                 "required": true,
+                "type": "body",
                 "validator": function(input) {
                     let error_acc_0 = [];
                     error_acc_0.push(...add_path_to_errors(validators.Param(input), [
@@ -172,21 +172,28 @@ const meta = [
             let is_ok_1 = false;
             let error_acc_2 = [];
             if (typeof input == "object" && input != null) {
-                if (input["ok"] != true) {
+                if (typeof input["error"] != "string") {
+                    error_acc_2.push({
+                        "error_kind": "NotTypeof",
+                        "expected_type": "string",
+                        "path": [
+                            "responseBody",
+                            "error"
+                        ],
+                        "received": input["error"]
+                    });
+                }
+                if (input["ok"] != false) {
                     error_acc_2.push({
                         "error_kind": "NotEq",
+                        "expected_value": false,
                         "path": [
                             "responseBody",
                             "ok"
                         ],
-                        "received": input["ok"],
-                        "expected_value": true
+                        "received": input["ok"]
                     });
                 }
-                error_acc_2.push(...add_path_to_errors(validators.Post(input["post"]), [
-                    "responseBody",
-                    "post"
-                ]));
             } else {
                 error_acc_2.push({
                     "error_kind": "NotAnObject",
@@ -199,28 +206,21 @@ const meta = [
             is_ok_1 = is_ok_1 || error_acc_2.length === 0;
             let error_acc_3 = [];
             if (typeof input == "object" && input != null) {
-                if (input["ok"] != false) {
+                if (input["ok"] != true) {
                     error_acc_3.push({
                         "error_kind": "NotEq",
+                        "expected_value": true,
                         "path": [
                             "responseBody",
                             "ok"
                         ],
-                        "received": input["ok"],
-                        "expected_value": false
+                        "received": input["ok"]
                     });
                 }
-                if (typeof input["error"] != "string") {
-                    error_acc_3.push({
-                        "error_kind": "NotTypeof",
-                        "path": [
-                            "responseBody",
-                            "error"
-                        ],
-                        "received": input["error"],
-                        "expected_type": "string"
-                    });
-                }
+                error_acc_3.push(...add_path_to_errors(validators.Post(input["post"]), [
+                    "responseBody",
+                    "post"
+                ]));
             } else {
                 error_acc_3.push({
                     "error_kind": "NotAnObject",
@@ -250,25 +250,25 @@ const meta = [
                 "type": "context"
             },
             {
-                "type": "path",
+                "coercer": function(input) {
+                    return coerce_string(input);
+                },
                 "name": "id",
                 "required": true,
+                "type": "path",
                 "validator": function(input) {
                     let error_acc_0 = [];
                     if (typeof input != "string") {
                         error_acc_0.push({
                             "error_kind": "NotTypeof",
+                            "expected_type": "string",
                             "path": [
                                 "id"
                             ],
-                            "received": input,
-                            "expected_type": "string"
+                            "received": input
                         });
                     }
                     return error_acc_0;
-                },
-                "coercer": function(input) {
-                    return coerce_string(input);
                 }
             }
         ],
@@ -278,21 +278,28 @@ const meta = [
             let is_ok_1 = false;
             let error_acc_2 = [];
             if (typeof input == "object" && input != null) {
-                if (input["ok"] != true) {
+                if (typeof input["error"] != "string") {
+                    error_acc_2.push({
+                        "error_kind": "NotTypeof",
+                        "expected_type": "string",
+                        "path": [
+                            "responseBody",
+                            "error"
+                        ],
+                        "received": input["error"]
+                    });
+                }
+                if (input["ok"] != false) {
                     error_acc_2.push({
                         "error_kind": "NotEq",
+                        "expected_value": false,
                         "path": [
                             "responseBody",
                             "ok"
                         ],
-                        "received": input["ok"],
-                        "expected_value": true
+                        "received": input["ok"]
                     });
                 }
-                error_acc_2.push(...add_path_to_errors(validators.Post(input["post"]), [
-                    "responseBody",
-                    "post"
-                ]));
             } else {
                 error_acc_2.push({
                     "error_kind": "NotAnObject",
@@ -305,28 +312,21 @@ const meta = [
             is_ok_1 = is_ok_1 || error_acc_2.length === 0;
             let error_acc_3 = [];
             if (typeof input == "object" && input != null) {
-                if (input["ok"] != false) {
+                if (input["ok"] != true) {
                     error_acc_3.push({
                         "error_kind": "NotEq",
+                        "expected_value": true,
                         "path": [
                             "responseBody",
                             "ok"
                         ],
-                        "received": input["ok"],
-                        "expected_value": false
+                        "received": input["ok"]
                     });
                 }
-                if (typeof input["error"] != "string") {
-                    error_acc_3.push({
-                        "error_kind": "NotTypeof",
-                        "path": [
-                            "responseBody",
-                            "error"
-                        ],
-                        "received": input["error"],
-                        "expected_type": "string"
-                    });
-                }
+                error_acc_3.push(...add_path_to_errors(validators.Post(input["post"]), [
+                    "responseBody",
+                    "post"
+                ]));
             } else {
                 error_acc_3.push({
                     "error_kind": "NotAnObject",
@@ -356,31 +356,31 @@ const meta = [
                 "type": "context"
             },
             {
-                "type": "path",
+                "coercer": function(input) {
+                    return coerce_string(input);
+                },
                 "name": "id",
                 "required": true,
+                "type": "path",
                 "validator": function(input) {
                     let error_acc_0 = [];
                     if (typeof input != "string") {
                         error_acc_0.push({
                             "error_kind": "NotTypeof",
+                            "expected_type": "string",
                             "path": [
                                 "id"
                             ],
-                            "received": input,
-                            "expected_type": "string"
+                            "received": input
                         });
                     }
                     return error_acc_0;
-                },
-                "coercer": function(input) {
-                    return coerce_string(input);
                 }
             },
             {
-                "type": "body",
                 "name": "param",
                 "required": true,
+                "type": "body",
                 "validator": function(input) {
                     let error_acc_0 = [];
                     error_acc_0.push(...add_path_to_errors(validators.Param(input), [
@@ -397,12 +397,12 @@ const meta = [
                 if (typeof input["ok"] != "boolean") {
                     error_acc_0.push({
                         "error_kind": "NotTypeof",
+                        "expected_type": "boolean",
                         "path": [
                             "responseBody",
                             "ok"
                         ],
-                        "received": input["ok"],
-                        "expected_type": "boolean"
+                        "received": input["ok"]
                     });
                 }
             } else {
@@ -424,25 +424,25 @@ const meta = [
                 "type": "context"
             },
             {
-                "type": "path",
+                "coercer": function(input) {
+                    return coerce_string(input);
+                },
                 "name": "id",
                 "required": true,
+                "type": "path",
                 "validator": function(input) {
                     let error_acc_0 = [];
                     if (typeof input != "string") {
                         error_acc_0.push({
                             "error_kind": "NotTypeof",
+                            "expected_type": "string",
                             "path": [
                                 "id"
                             ],
-                            "received": input,
-                            "expected_type": "string"
+                            "received": input
                         });
                     }
                     return error_acc_0;
-                },
-                "coercer": function(input) {
-                    return coerce_string(input);
                 }
             }
         ],
@@ -453,12 +453,12 @@ const meta = [
                 if (typeof input["ok"] != "boolean") {
                     error_acc_0.push({
                         "error_kind": "NotTypeof",
+                        "expected_type": "boolean",
                         "path": [
                             "responseBody",
                             "ok"
                         ],
-                        "received": input["ok"],
-                        "expected_type": "boolean"
+                        "received": input["ok"]
                     });
                 }
             } else {
@@ -526,8 +526,8 @@ const schema =  {
           }
         },
         "required": [
-          "title",
-          "body"
+          "body",
+          "title"
         ],
         "type": "object"
       },
@@ -544,9 +544,9 @@ const schema =  {
           }
         },
         "required": [
+          "body",
           "id",
-          "title",
-          "body"
+          "title"
         ],
         "type": "object"
       }
@@ -609,8 +609,8 @@ const schema =  {
                     }
                   },
                   "required": [
-                    "posts",
-                    "ok"
+                    "ok",
+                    "posts"
                   ],
                   "type": "object"
                 }
@@ -646,6 +646,21 @@ const schema =  {
                   "anyOf": [
                     {
                       "properties": {
+                        "error": {
+                          "type": "string"
+                        },
+                        "ok": {
+                          "const": false
+                        }
+                      },
+                      "required": [
+                        "error",
+                        "ok"
+                      ],
+                      "type": "object"
+                    },
+                    {
+                      "properties": {
                         "ok": {
                           "const": true
                         },
@@ -656,21 +671,6 @@ const schema =  {
                       "required": [
                         "ok",
                         "post"
-                      ],
-                      "type": "object"
-                    },
-                    {
-                      "properties": {
-                        "error": {
-                          "type": "string"
-                        },
-                        "ok": {
-                          "const": false
-                        }
-                      },
-                      "required": [
-                        "ok",
-                        "error"
                       ],
                       "type": "object"
                     }
@@ -747,6 +747,21 @@ const schema =  {
                   "anyOf": [
                     {
                       "properties": {
+                        "error": {
+                          "type": "string"
+                        },
+                        "ok": {
+                          "const": false
+                        }
+                      },
+                      "required": [
+                        "error",
+                        "ok"
+                      ],
+                      "type": "object"
+                    },
+                    {
+                      "properties": {
                         "ok": {
                           "const": true
                         },
@@ -757,21 +772,6 @@ const schema =  {
                       "required": [
                         "ok",
                         "post"
-                      ],
-                      "type": "object"
-                    },
-                    {
-                      "properties": {
-                        "error": {
-                          "type": "string"
-                        },
-                        "ok": {
-                          "const": false
-                        }
-                      },
-                      "required": [
-                        "ok",
-                        "error"
                       ],
                       "type": "object"
                     }

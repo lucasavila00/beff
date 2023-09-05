@@ -7,9 +7,9 @@ const meta = [
                 "type": "context"
             },
             {
-                "type": "path",
                 "name": "name",
-                "required": true
+                "required": true,
+                "type": "path"
             }
         ],
         "pattern": "/{name}"
@@ -21,14 +21,14 @@ const meta = [
                 "type": "context"
             },
             {
-                "type": "path",
                 "name": "uuid",
-                "required": true
+                "required": true,
+                "type": "path"
             },
             {
-                "type": "query",
                 "name": "p",
-                "required": true
+                "required": true,
+                "type": "query"
             }
         ],
         "pattern": "/check-uuid/{uuid}"

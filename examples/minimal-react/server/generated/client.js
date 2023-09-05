@@ -12,9 +12,9 @@ const meta = [
                 "type": "context"
             },
             {
-                "type": "query",
                 "name": "name",
-                "required": false
+                "required": false,
+                "type": "query"
             }
         ],
         "pattern": "/greeting"
@@ -26,14 +26,14 @@ const meta = [
                 "type": "context"
             },
             {
-                "type": "query",
                 "name": "a",
-                "required": true
+                "required": true,
+                "type": "query"
             },
             {
-                "type": "query",
                 "name": "b",
-                "required": true
+                "required": true,
+                "type": "query"
             }
         ],
         "pattern": "/sum"

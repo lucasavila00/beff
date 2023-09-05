@@ -58,9 +58,12 @@ const meta = [
                 "type": "context"
             },
             {
-                "type": "query",
+                "coercer": function(input) {
+                    return coerce_string(input);
+                },
                 "name": "name",
                 "required": false,
+                "type": "query",
                 "validator": function(input) {
                     let error_acc_0 = [];
                     if (input == null) {
@@ -69,17 +72,14 @@ const meta = [
                     if (typeof input != "string") {
                         error_acc_0.push({
                             "error_kind": "NotTypeof",
+                            "expected_type": "string",
                             "path": [
                                 "name"
                             ],
-                            "received": input,
-                            "expected_type": "string"
+                            "received": input
                         });
                     }
                     return error_acc_0;
-                },
-                "coercer": function(input) {
-                    return coerce_string(input);
                 }
             }
         ],
@@ -90,12 +90,12 @@ const meta = [
                 if (typeof input["text"] != "string") {
                     error_acc_0.push({
                         "error_kind": "NotTypeof",
+                        "expected_type": "string",
                         "path": [
                             "responseBody",
                             "text"
                         ],
-                        "received": input["text"],
-                        "expected_type": "string"
+                        "received": input["text"]
                     });
                 }
             } else {
@@ -117,47 +117,47 @@ const meta = [
                 "type": "context"
             },
             {
-                "type": "query",
+                "coercer": function(input) {
+                    return coerce_number(input);
+                },
                 "name": "a",
                 "required": true,
+                "type": "query",
                 "validator": function(input) {
                     let error_acc_0 = [];
                     if (typeof input != "number") {
                         error_acc_0.push({
                             "error_kind": "NotTypeof",
+                            "expected_type": "number",
                             "path": [
                                 "a"
                             ],
-                            "received": input,
-                            "expected_type": "number"
+                            "received": input
                         });
                     }
                     return error_acc_0;
-                },
-                "coercer": function(input) {
-                    return coerce_number(input);
                 }
             },
             {
-                "type": "query",
+                "coercer": function(input) {
+                    return coerce_number(input);
+                },
                 "name": "b",
                 "required": true,
+                "type": "query",
                 "validator": function(input) {
                     let error_acc_0 = [];
                     if (typeof input != "number") {
                         error_acc_0.push({
                             "error_kind": "NotTypeof",
+                            "expected_type": "number",
                             "path": [
                                 "b"
                             ],
-                            "received": input,
-                            "expected_type": "number"
+                            "received": input
                         });
                     }
                     return error_acc_0;
-                },
-                "coercer": function(input) {
-                    return coerce_number(input);
                 }
             }
         ],
@@ -168,12 +168,12 @@ const meta = [
                 if (typeof input["result"] != "number") {
                     error_acc_0.push({
                         "error_kind": "NotTypeof",
+                        "expected_type": "number",
                         "path": [
                             "responseBody",
                             "result"
                         ],
-                        "received": input["result"],
-                        "expected_type": "number"
+                        "received": input["result"]
                     });
                 }
             } else {

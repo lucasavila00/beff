@@ -27,12 +27,12 @@ function ChildUser(input) {
         if (typeof input["id"] != "string") {
             error_acc_0.push({
                 "error_kind": "NotTypeof",
+                "expected_type": "string",
                 "path": [
                     "ChildUser",
                     "id"
                 ],
-                "received": input["id"],
-                "expected_type": "string"
+                "received": input["id"]
             });
         }
         error_acc_0.push(...add_path_to_errors(validators.User(input["user"]), [
@@ -56,34 +56,34 @@ function User(input) {
         if (typeof input["a"] != "string") {
             error_acc_0.push({
                 "error_kind": "NotTypeof",
+                "expected_type": "string",
                 "path": [
                     "User",
                     "a"
                 ],
-                "received": input["a"],
-                "expected_type": "string"
+                "received": input["a"]
             });
         }
         if (typeof input["b"] != "number") {
             error_acc_0.push({
                 "error_kind": "NotTypeof",
+                "expected_type": "number",
                 "path": [
                     "User",
                     "b"
                 ],
-                "received": input["b"],
-                "expected_type": "number"
+                "received": input["b"]
             });
         }
         if (typeof input["c"] != "boolean") {
             error_acc_0.push({
                 "error_kind": "NotTypeof",
+                "expected_type": "boolean",
                 "path": [
                     "User",
                     "c"
                 ],
-                "received": input["c"],
-                "expected_type": "boolean"
+                "received": input["c"]
             });
         }
         if (Array.isArray(input["c2"])) {
@@ -92,13 +92,13 @@ function User(input) {
                 if (typeof array_item_1 != "boolean") {
                     error_acc_0.push({
                         "error_kind": "NotTypeof",
+                        "expected_type": "boolean",
                         "path": [
                             "User",
                             "c2",
                             "[" + index + "]"
                         ],
-                        "received": array_item_1,
-                        "expected_type": "boolean"
+                        "received": array_item_1
                     });
                 }
             }
@@ -111,6 +111,12 @@ function User(input) {
                 ],
                 "received": input["c2"]
             });
+        }
+        if (input["childUser"] != null) {
+            error_acc_0.push(...add_path_to_errors(validators.ChildUser(input["childUser"]), [
+                "User",
+                "childUser"
+            ]));
         }
         if (Array.isArray(input["d"])) {
             for(let index = 0; index < input["d"].length; index++){
@@ -131,11 +137,113 @@ function User(input) {
                 "received": input["d"]
             });
         }
-        if (input["childUser"] != null) {
-            error_acc_0.push(...add_path_to_errors(validators.ChildUser(input["childUser"]), [
-                "User",
-                "childUser"
-            ]));
+        if (input["f"] != null) {}
+        if (input["g"] != "a") {
+            error_acc_0.push({
+                "error_kind": "NotEq",
+                "expected_value": "a",
+                "path": [
+                    "User",
+                    "g"
+                ],
+                "received": input["g"]
+            });
+        }
+        let is_ok_3 = false;
+        let error_acc_4 = [];
+        if (input["h"] != "a") {
+            error_acc_4.push({
+                "error_kind": "NotEq",
+                "expected_value": "a",
+                "path": [
+                    "User",
+                    "h"
+                ],
+                "received": input["h"]
+            });
+        }
+        is_ok_3 = is_ok_3 || error_acc_4.length === 0;
+        let error_acc_5 = [];
+        if (input["h"] != "b") {
+            error_acc_5.push({
+                "error_kind": "NotEq",
+                "expected_value": "b",
+                "path": [
+                    "User",
+                    "h"
+                ],
+                "received": input["h"]
+            });
+        }
+        is_ok_3 = is_ok_3 || error_acc_5.length === 0;
+        let error_acc_6 = [];
+        if (input["h"] != "c") {
+            error_acc_6.push({
+                "error_kind": "NotEq",
+                "expected_value": "c",
+                "path": [
+                    "User",
+                    "h"
+                ],
+                "received": input["h"]
+            });
+        }
+        is_ok_3 = is_ok_3 || error_acc_6.length === 0;
+        if (!(is_ok_3)) {
+            error_acc_0.push({
+                "error_kind": "InvalidUnion",
+                "path": [
+                    "User",
+                    "h"
+                ],
+                "received": input["h"]
+            });
+        }
+        if (typeof input["i"] == "object" && input["i"] != null) {
+            if (input["i"]["a"] != 1) {
+                error_acc_0.push({
+                    "error_kind": "NotEq",
+                    "expected_value": 1,
+                    "path": [
+                        "User",
+                        "i",
+                        "a"
+                    ],
+                    "received": input["i"]["a"]
+                });
+            }
+        } else {
+            error_acc_0.push({
+                "error_kind": "NotAnObject",
+                "path": [
+                    "User",
+                    "i"
+                ],
+                "received": input["i"]
+            });
+        }
+        if (typeof input["i"] == "object" && input["i"] != null) {
+            if (input["i"]["b"] != 2) {
+                error_acc_0.push({
+                    "error_kind": "NotEq",
+                    "expected_value": 2,
+                    "path": [
+                        "User",
+                        "i",
+                        "b"
+                    ],
+                    "received": input["i"]["b"]
+                });
+            }
+        } else {
+            error_acc_0.push({
+                "error_kind": "NotAnObject",
+                "path": [
+                    "User",
+                    "i"
+                ],
+                "received": input["i"]
+            });
         }
         if (input["thisUser"] != null) {
             error_acc_0.push(...add_path_to_errors(validators.User(input["thisUser"]), [
@@ -161,34 +269,34 @@ function User(input) {
                 });
             }
         }
-        let is_ok_3 = false;
-        let error_acc_4 = [];
+        let is_ok_7 = false;
+        let error_acc_8 = [];
         if (typeof input["union"] != "string") {
-            error_acc_4.push({
+            error_acc_8.push({
                 "error_kind": "NotTypeof",
+                "expected_type": "string",
                 "path": [
                     "User",
                     "union"
                 ],
-                "received": input["union"],
-                "expected_type": "string"
+                "received": input["union"]
             });
         }
-        is_ok_3 = is_ok_3 || error_acc_4.length === 0;
-        let error_acc_5 = [];
+        is_ok_7 = is_ok_7 || error_acc_8.length === 0;
+        let error_acc_9 = [];
         if (typeof input["union"] != "number") {
-            error_acc_5.push({
+            error_acc_9.push({
                 "error_kind": "NotTypeof",
+                "expected_type": "number",
                 "path": [
                     "User",
                     "union"
                 ],
-                "received": input["union"],
-                "expected_type": "number"
+                "received": input["union"]
             });
         }
-        is_ok_3 = is_ok_3 || error_acc_5.length === 0;
-        if (!(is_ok_3)) {
+        is_ok_7 = is_ok_7 || error_acc_9.length === 0;
+        if (!(is_ok_7)) {
             error_acc_0.push({
                 "error_kind": "InvalidUnion",
                 "path": [
@@ -198,19 +306,45 @@ function User(input) {
                 "received": input["union"]
             });
         }
-        let is_ok_6 = false;
-        let error_acc_7 = [];
+        let is_ok_10 = false;
+        let error_acc_11 = [];
+        if (input["unionWithNull"] != null) {
+            error_acc_11.push({
+                "error_kind": "NotEq",
+                "expected_value": null,
+                "path": [
+                    "User",
+                    "unionWithNull"
+                ],
+                "received": input["unionWithNull"]
+            });
+        }
+        is_ok_10 = is_ok_10 || error_acc_11.length === 0;
+        let error_acc_12 = [];
+        if (typeof input["unionWithNull"] != "number") {
+            error_acc_12.push({
+                "error_kind": "NotTypeof",
+                "expected_type": "number",
+                "path": [
+                    "User",
+                    "unionWithNull"
+                ],
+                "received": input["unionWithNull"]
+            });
+        }
+        is_ok_10 = is_ok_10 || error_acc_12.length === 0;
+        let error_acc_13 = [];
         if (Array.isArray(input["unionWithNull"])) {
             for(let index = 0; index < input["unionWithNull"].length; index++){
-                const array_item_8 = input["unionWithNull"][index];
-                error_acc_7.push(...add_path_to_errors(validators.ChildUser(array_item_8), [
+                const array_item_14 = input["unionWithNull"][index];
+                error_acc_13.push(...add_path_to_errors(validators.ChildUser(array_item_14), [
                     "User",
                     "unionWithNull",
                     "[" + index + "]"
                 ]));
             }
         } else {
-            error_acc_7.push({
+            error_acc_13.push({
                 "error_kind": "NotAnArray",
                 "path": [
                     "User",
@@ -219,34 +353,8 @@ function User(input) {
                 "received": input["unionWithNull"]
             });
         }
-        is_ok_6 = is_ok_6 || error_acc_7.length === 0;
-        let error_acc_9 = [];
-        if (typeof input["unionWithNull"] != "number") {
-            error_acc_9.push({
-                "error_kind": "NotTypeof",
-                "path": [
-                    "User",
-                    "unionWithNull"
-                ],
-                "received": input["unionWithNull"],
-                "expected_type": "number"
-            });
-        }
-        is_ok_6 = is_ok_6 || error_acc_9.length === 0;
-        let error_acc_10 = [];
-        if (input["unionWithNull"] != null) {
-            error_acc_10.push({
-                "error_kind": "NotEq",
-                "path": [
-                    "User",
-                    "unionWithNull"
-                ],
-                "received": input["unionWithNull"],
-                "expected_value": null
-            });
-        }
-        is_ok_6 = is_ok_6 || error_acc_10.length === 0;
-        if (!(is_ok_6)) {
+        is_ok_10 = is_ok_10 || error_acc_13.length === 0;
+        if (!(is_ok_10)) {
             error_acc_0.push({
                 "error_kind": "InvalidUnion",
                 "path": [
@@ -254,114 +362,6 @@ function User(input) {
                     "unionWithNull"
                 ],
                 "received": input["unionWithNull"]
-            });
-        }
-        if (input["f"] != null) {}
-        if (input["g"] != "a") {
-            error_acc_0.push({
-                "error_kind": "NotEq",
-                "path": [
-                    "User",
-                    "g"
-                ],
-                "received": input["g"],
-                "expected_value": "a"
-            });
-        }
-        let is_ok_11 = false;
-        let error_acc_12 = [];
-        if (input["h"] != "a") {
-            error_acc_12.push({
-                "error_kind": "NotEq",
-                "path": [
-                    "User",
-                    "h"
-                ],
-                "received": input["h"],
-                "expected_value": "a"
-            });
-        }
-        is_ok_11 = is_ok_11 || error_acc_12.length === 0;
-        let error_acc_13 = [];
-        if (input["h"] != "b") {
-            error_acc_13.push({
-                "error_kind": "NotEq",
-                "path": [
-                    "User",
-                    "h"
-                ],
-                "received": input["h"],
-                "expected_value": "b"
-            });
-        }
-        is_ok_11 = is_ok_11 || error_acc_13.length === 0;
-        let error_acc_14 = [];
-        if (input["h"] != "c") {
-            error_acc_14.push({
-                "error_kind": "NotEq",
-                "path": [
-                    "User",
-                    "h"
-                ],
-                "received": input["h"],
-                "expected_value": "c"
-            });
-        }
-        is_ok_11 = is_ok_11 || error_acc_14.length === 0;
-        if (!(is_ok_11)) {
-            error_acc_0.push({
-                "error_kind": "InvalidUnion",
-                "path": [
-                    "User",
-                    "h"
-                ],
-                "received": input["h"]
-            });
-        }
-        if (typeof input["i"] == "object" && input["i"] != null) {
-            if (input["i"]["a"] != 1) {
-                error_acc_0.push({
-                    "error_kind": "NotEq",
-                    "path": [
-                        "User",
-                        "i",
-                        "a"
-                    ],
-                    "received": input["i"]["a"],
-                    "expected_value": 1
-                });
-            }
-        } else {
-            error_acc_0.push({
-                "error_kind": "NotAnObject",
-                "path": [
-                    "User",
-                    "i"
-                ],
-                "received": input["i"]
-            });
-        }
-        if (typeof input["i"] == "object" && input["i"] != null) {
-            if (input["i"]["b"] != 2) {
-                error_acc_0.push({
-                    "error_kind": "NotEq",
-                    "path": [
-                        "User",
-                        "i",
-                        "b"
-                    ],
-                    "received": input["i"]["b"],
-                    "expected_value": 2
-                });
-            }
-        } else {
-            error_acc_0.push({
-                "error_kind": "NotAnObject",
-                "path": [
-                    "User",
-                    "i"
-                ],
-                "received": input["i"]
             });
         }
     } else {

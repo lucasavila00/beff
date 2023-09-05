@@ -43,8 +43,8 @@ it("regular types", () => {
           },
         },
         "required": [
-          "name",
           "age",
+          "name",
         ],
         "type": "object",
       },
@@ -61,21 +61,21 @@ it("regular types", () => {
       "errors": [
         {
           "error_kind": "NotTypeof",
-          "expected_type": "string",
-          "path": [
-            "User",
-            "name",
-          ],
-          "received": 123,
-        },
-        {
-          "error_kind": "NotTypeof",
           "expected_type": "number",
           "path": [
             "User",
             "age",
           ],
           "received": undefined,
+        },
+        {
+          "error_kind": "NotTypeof",
+          "expected_type": "string",
+          "path": [
+            "User",
+            "name",
+          ],
+          "received": 123,
         },
       ],
     }
@@ -86,21 +86,21 @@ it("regular types", () => {
       "errors": [
         {
           "error_kind": "NotTypeof",
-          "expected_type": "string",
-          "path": [
-            "User",
-            "name",
-          ],
-          "received": 123,
-        },
-        {
-          "error_kind": "NotTypeof",
           "expected_type": "number",
           "path": [
             "User",
             "age",
           ],
           "received": undefined,
+        },
+        {
+          "error_kind": "NotTypeof",
+          "expected_type": "string",
+          "path": [
+            "User",
+            "name",
+          ],
+          "received": 123,
         },
       ],
       "success": false,
@@ -129,6 +129,16 @@ it("regular types", () => {
         "errors": [
           {
             "error_kind": "NotTypeof",
+            "expected_type": "number",
+            "path": [
+              "[0]",
+              "User",
+              "age",
+            ],
+            "received": undefined,
+          },
+          {
+            "error_kind": "NotTypeof",
             "expected_type": "string",
             "path": [
               "[0]",
@@ -141,11 +151,11 @@ it("regular types", () => {
             "error_kind": "NotTypeof",
             "expected_type": "number",
             "path": [
-              "[0]",
+              "[1]",
               "User",
               "age",
             ],
-            "received": undefined,
+            "received": "def",
           },
           {
             "error_kind": "NotTypeof",
@@ -156,16 +166,6 @@ it("regular types", () => {
               "name",
             ],
             "received": undefined,
-          },
-          {
-            "error_kind": "NotTypeof",
-            "expected_type": "number",
-            "path": [
-              "[1]",
-              "User",
-              "age",
-            ],
-            "received": "def",
           },
         ],
         "success": false,

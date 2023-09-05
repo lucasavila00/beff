@@ -49,9 +49,12 @@ const meta = [
                 "type": "context"
             },
             {
-                "type": "query",
+                "coercer": function(input) {
+                    return coerce_number(input);
+                },
                 "name": "limit",
                 "required": false,
+                "type": "query",
                 "validator": function(input) {
                     let error_acc_0 = [];
                     if (input == null) {
@@ -60,17 +63,14 @@ const meta = [
                     if (typeof input != "number") {
                         error_acc_0.push({
                             "error_kind": "NotTypeof",
+                            "expected_type": "number",
                             "path": [
                                 "limit"
                             ],
-                            "received": input,
-                            "expected_type": "number"
+                            "received": input
                         });
                     }
                     return error_acc_0;
-                },
-                "coercer": function(input) {
-                    return coerce_number(input);
                 }
             }
         ],
@@ -80,11 +80,11 @@ const meta = [
             if (typeof input != "number") {
                 error_acc_0.push({
                     "error_kind": "NotTypeof",
+                    "expected_type": "number",
                     "path": [
                         "responseBody"
                     ],
-                    "received": input,
-                    "expected_type": "number"
+                    "received": input
                 });
             }
             return error_acc_0;
@@ -111,11 +111,11 @@ const meta = [
             if (typeof input != "string") {
                 error_acc_0.push({
                     "error_kind": "NotTypeof",
+                    "expected_type": "string",
                     "path": [
                         "responseBody"
                     ],
-                    "received": input,
-                    "expected_type": "string"
+                    "received": input
                 });
             }
             return error_acc_0;
@@ -128,25 +128,25 @@ const meta = [
                 "type": "context"
             },
             {
-                "type": "header",
+                "coercer": function(input) {
+                    return coerce_string(input);
+                },
                 "name": "user_agent",
                 "required": true,
+                "type": "header",
                 "validator": function(input) {
                     let error_acc_0 = [];
                     if (typeof input != "string") {
                         error_acc_0.push({
                             "error_kind": "NotTypeof",
+                            "expected_type": "string",
                             "path": [
                                 "user_agent"
                             ],
-                            "received": input,
-                            "expected_type": "string"
+                            "received": input
                         });
                     }
                     return error_acc_0;
-                },
-                "coercer": function(input) {
-                    return coerce_string(input);
                 }
             }
         ],
@@ -159,12 +159,12 @@ const meta = [
                     if (typeof array_item_1 != "string") {
                         error_acc_0.push({
                             "error_kind": "NotTypeof",
+                            "expected_type": "string",
                             "path": [
                                 "responseBody",
                                 "[" + index + "]"
                             ],
-                            "received": array_item_1,
-                            "expected_type": "string"
+                            "received": array_item_1
                         });
                     }
                 }
@@ -187,25 +187,25 @@ const meta = [
                 "type": "context"
             },
             {
-                "type": "path",
+                "coercer": function(input) {
+                    return coerce_number(input);
+                },
                 "name": "id",
                 "required": true,
+                "type": "path",
                 "validator": function(input) {
                     let error_acc_0 = [];
                     if (typeof input != "number") {
                         error_acc_0.push({
                             "error_kind": "NotTypeof",
+                            "expected_type": "number",
                             "path": [
                                 "id"
                             ],
-                            "received": input,
-                            "expected_type": "number"
+                            "received": input
                         });
                     }
                     return error_acc_0;
-                },
-                "coercer": function(input) {
-                    return coerce_number(input);
                 }
             }
         ],
@@ -225,25 +225,25 @@ const meta = [
                 "type": "context"
             },
             {
-                "type": "path",
+                "coercer": function(input) {
+                    return coerce_string(input);
+                },
                 "name": "id",
                 "required": true,
+                "type": "path",
                 "validator": function(input) {
                     let error_acc_0 = [];
                     if (typeof input != "string") {
                         error_acc_0.push({
                             "error_kind": "NotTypeof",
+                            "expected_type": "string",
                             "path": [
                                 "id"
                             ],
-                            "received": input,
-                            "expected_type": "string"
+                            "received": input
                         });
                     }
                     return error_acc_0;
-                },
-                "coercer": function(input) {
-                    return coerce_string(input);
                 }
             }
         ],
@@ -253,11 +253,11 @@ const meta = [
             if (typeof input != "string") {
                 error_acc_0.push({
                     "error_kind": "NotTypeof",
+                    "expected_type": "string",
                     "path": [
                         "responseBody"
                     ],
-                    "received": input,
-                    "expected_type": "string"
+                    "received": input
                 });
             }
             return error_acc_0;
@@ -270,25 +270,25 @@ const meta = [
                 "type": "context"
             },
             {
-                "type": "path",
+                "coercer": function(input) {
+                    return coerce_string(input);
+                },
                 "name": "id",
                 "required": true,
+                "type": "path",
                 "validator": function(input) {
                     let error_acc_0 = [];
                     if (typeof input != "string") {
                         error_acc_0.push({
                             "error_kind": "NotTypeof",
+                            "expected_type": "string",
                             "path": [
                                 "id"
                             ],
-                            "received": input,
-                            "expected_type": "string"
+                            "received": input
                         });
                     }
                     return error_acc_0;
-                },
-                "coercer": function(input) {
-                    return coerce_string(input);
                 }
             }
         ],
@@ -298,11 +298,11 @@ const meta = [
             if (typeof input != "string") {
                 error_acc_0.push({
                     "error_kind": "NotTypeof",
+                    "expected_type": "string",
                     "path": [
                         "responseBody"
                     ],
-                    "received": input,
-                    "expected_type": "string"
+                    "received": input
                 });
             }
             return error_acc_0;
@@ -317,11 +317,11 @@ const meta = [
             if (typeof input != "string") {
                 error_acc_0.push({
                     "error_kind": "NotTypeof",
+                    "expected_type": "string",
                     "path": [
                         "responseBody"
                     ],
-                    "received": input,
-                    "expected_type": "string"
+                    "received": input
                 });
             }
             return error_acc_0;
@@ -336,11 +336,11 @@ const meta = [
             if (typeof input != "string") {
                 error_acc_0.push({
                     "error_kind": "NotTypeof",
+                    "expected_type": "string",
                     "path": [
                         "responseBody"
                     ],
-                    "received": input,
-                    "expected_type": "string"
+                    "received": input
                 });
             }
             return error_acc_0;
@@ -355,11 +355,11 @@ const meta = [
             if (typeof input != "string") {
                 error_acc_0.push({
                     "error_kind": "NotTypeof",
+                    "expected_type": "string",
                     "path": [
                         "responseBody"
                     ],
-                    "received": input,
-                    "expected_type": "string"
+                    "received": input
                 });
             }
             return error_acc_0;
@@ -473,23 +473,23 @@ const schema =  {
           "many_nullable": {
             "anyOf": [
               {
-                "type": "number"
+                "type": "null"
               },
               {
                 "type": "string"
               },
               {
-                "type": "null"
+                "type": "number"
               }
             ]
           },
           "nullable": {
             "anyOf": [
               {
-                "type": "string"
+                "type": "null"
               },
               {
-                "type": "null"
+                "type": "string"
               }
             ]
           },
@@ -500,8 +500,8 @@ const schema =  {
             "const": "ab"
           },
           "tuple1": {
-            "maxItems": 1.0,
-            "minItems": 1.0,
+            "maxItems": 1,
+            "minItems": 1,
             "prefixItems": [
               {
                 "type": "string"
@@ -510,8 +510,8 @@ const schema =  {
             "type": "array"
           },
           "tuple2": {
-            "maxItems": 2.0,
-            "minItems": 2.0,
+            "maxItems": 2,
+            "minItems": 2,
             "prefixItems": [
               {
                 "type": "string"
@@ -523,8 +523,8 @@ const schema =  {
             "type": "array"
           },
           "tuple_lit": {
-            "maxItems": 3.0,
-            "minItems": 3.0,
+            "maxItems": 3,
+            "minItems": 3,
             "prefixItems": [
               {
                 "const": "a"
@@ -555,42 +555,42 @@ const schema =  {
           "union_of_many": {
             "anyOf": [
               {
+                "type": "boolean"
+              },
+              {
                 "type": "string"
               },
               {
                 "type": "number"
-              },
-              {
-                "type": "boolean"
               }
             ]
           },
           "union_with_undefined": {
             "anyOf": [
               {
-                "type": "string"
+                "type": "null"
               },
               {
-                "type": "null"
+                "type": "string"
               }
             ]
           }
         },
         "required": [
-          "basic",
           "array1",
           "array2",
+          "basic",
+          "enum",
+          "literals",
+          "many_nullable",
+          "nullable",
+          "str_template",
           "tuple1",
           "tuple2",
-          "tuple_rest",
-          "nullable",
-          "many_nullable",
-          "union_with_undefined",
-          "union_of_many",
-          "literals",
-          "enum",
           "tuple_lit",
-          "str_template"
+          "tuple_rest",
+          "union_of_many",
+          "union_with_undefined"
         ],
         "type": "object"
       },
@@ -613,9 +613,9 @@ const schema =  {
           }
         },
         "required": [
+          "entities",
           "id",
-          "name",
-          "entities"
+          "name"
         ],
         "type": "object"
       },

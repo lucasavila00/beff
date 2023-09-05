@@ -28,37 +28,37 @@ function isCustomFormatInvalid(key, value) {
 function Post(input) {
     let error_acc_0 = [];
     if (typeof input == "object" && input != null) {
+        if (typeof input["body"] != "string") {
+            error_acc_0.push({
+                "error_kind": "NotTypeof",
+                "expected_type": "string",
+                "path": [
+                    "Post",
+                    "body"
+                ],
+                "received": input["body"]
+            });
+        }
         if (typeof input["id"] != "string") {
             error_acc_0.push({
                 "error_kind": "NotTypeof",
+                "expected_type": "string",
                 "path": [
                     "Post",
                     "id"
                 ],
-                "received": input["id"],
-                "expected_type": "string"
+                "received": input["id"]
             });
         }
         if (typeof input["title"] != "string") {
             error_acc_0.push({
                 "error_kind": "NotTypeof",
+                "expected_type": "string",
                 "path": [
                     "Post",
                     "title"
                 ],
-                "received": input["title"],
-                "expected_type": "string"
-            });
-        }
-        if (typeof input["body"] != "string") {
-            error_acc_0.push({
-                "error_kind": "NotTypeof",
-                "path": [
-                    "Post",
-                    "body"
-                ],
-                "received": input["body"],
-                "expected_type": "string"
+                "received": input["title"]
             });
         }
     } else {
@@ -75,26 +75,26 @@ function Post(input) {
 function Param(input) {
     let error_acc_0 = [];
     if (typeof input == "object" && input != null) {
-        if (typeof input["title"] != "string") {
-            error_acc_0.push({
-                "error_kind": "NotTypeof",
-                "path": [
-                    "Param",
-                    "title"
-                ],
-                "received": input["title"],
-                "expected_type": "string"
-            });
-        }
         if (typeof input["body"] != "string") {
             error_acc_0.push({
                 "error_kind": "NotTypeof",
+                "expected_type": "string",
                 "path": [
                     "Param",
                     "body"
                 ],
-                "received": input["body"],
-                "expected_type": "string"
+                "received": input["body"]
+            });
+        }
+        if (typeof input["title"] != "string") {
+            error_acc_0.push({
+                "error_kind": "NotTypeof",
+                "expected_type": "string",
+                "path": [
+                    "Param",
+                    "title"
+                ],
+                "received": input["title"]
             });
         }
     } else {

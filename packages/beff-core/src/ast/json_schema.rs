@@ -1,9 +1,11 @@
+use std::collections::BTreeMap;
+use std::collections::BTreeSet;
+
 use crate::ast::json::{Json, ToJson};
 use anyhow::anyhow;
 use anyhow::Result;
-use indexmap::IndexMap;
 
-#[derive(Debug, PartialEq, Eq, Clone)]
+#[derive(Debug, PartialEq, Eq, Clone, PartialOrd, Ord)]
 pub enum Optionality<T> {
     Optional(T),
     Required(T),
@@ -28,7 +30,31 @@ impl<T> Optionality<T> {
     }
 }
 
-#[derive(Debug, PartialEq, Clone)]
+// #[derive(Debug, PartialEq, Clone)]
+// pub struct JsonSchemaSet {
+//     schemas: Vec<JsonSchema>,
+// }
+// impl JsonSchemaSet {
+//     pub fn new(schemas: Vec<JsonSchema>) -> Self {
+//         // deduplicate without sorting
+//         let mut set = vec![];
+//         for schema in schemas {
+//             if set.iter().any(|it| it == &schema) {
+//                 continue;
+//             }
+//             set.push(schema);
+//         }
+
+//         Self { schemas: set }
+//     }
+//     pub fn iter(&self) -> impl Iterator<Item = &JsonSchema> {
+//         self.schemas.iter()
+//     }
+//     pub fn into_iter(self) -> impl Iterator<Item = JsonSchema> {
+//         self.schemas.into_iter()
+//     }
+// }
+#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord)]
 pub enum JsonSchema {
     Null,
     Boolean,
@@ -36,7 +62,7 @@ pub enum JsonSchema {
     StringWithFormat(String),
     Number,
     Any,
-    Object(IndexMap<String, Optionality<JsonSchema>>),
+    Object(BTreeMap<String, Optionality<JsonSchema>>),
     Array(Box<JsonSchema>),
     Tuple {
         prefix_items: Vec<JsonSchema>,
@@ -44,8 +70,8 @@ pub enum JsonSchema {
     },
     Ref(String),
     OpenApiResponseRef(String),
-    AnyOf(Vec<JsonSchema>),
-    AllOf(Vec<JsonSchema>),
+    AnyOf(BTreeSet<JsonSchema>),
+    AllOf(BTreeSet<JsonSchema>),
     Const(Json),
     Error,
 }
@@ -61,13 +87,13 @@ impl JsonSchema {
         Optionality::Optional(self)
     }
 
-    fn parse_string(vs: &IndexMap<String, Json>) -> Result<Self> {
+    fn parse_string(vs: &BTreeMap<String, Json>) -> Result<Self> {
         match vs.get("format") {
             Some(Json::String(format)) => Ok(JsonSchema::StringWithFormat(format.clone())),
             _ => Ok(JsonSchema::String),
         }
     }
-    fn parse_object(vs: &IndexMap<String, Json>) -> Result<Self> {
+    fn parse_object(vs: &BTreeMap<String, Json>) -> Result<Self> {
         let props = vs
             .get("properties")
             .ok_or(anyhow!("object must have properties field"))?;
@@ -104,7 +130,7 @@ impl JsonSchema {
         Ok(JsonSchema::object(props))
     }
 
-    fn parse_array(vs: &IndexMap<String, Json>) -> Result<Self> {
+    fn parse_array(vs: &BTreeMap<String, Json>) -> Result<Self> {
         // if it has prefixItems or minItems or maxItems it is tuple
 
         let has_extra_props = vs.iter().any(|(k, _v)| k != "type" && k != "items");
@@ -276,7 +302,7 @@ impl ToJson for JsonSchema {
                     //
                     ("type".into(), Json::String("array".into())),
                 ];
-                let len_f = prefix_items.len() as f64;
+                let len_f = prefix_items.len();
                 if !prefix_items.is_empty() {
                     v.push((
                         "prefixItems".into(),
@@ -286,8 +312,8 @@ impl ToJson for JsonSchema {
                 if let Some(ty) = items {
                     v.push(("items".into(), ty.to_json()));
                 } else {
-                    v.push(("minItems".into(), Json::Number(len_f)));
-                    v.push(("maxItems".into(), Json::Number(len_f)));
+                    v.push(("minItems".into(), Json::parse_int(len_f as i64)));
+                    v.push(("maxItems".into(), Json::parse_int(len_f as i64)));
                 }
                 Json::object(v)
             }

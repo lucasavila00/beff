@@ -35,9 +35,9 @@ const meta = [
                 "type": "context"
             },
             {
-                "type": "body",
                 "name": "param",
-                "required": true
+                "required": true,
+                "type": "body"
             }
         ],
         "pattern": "/posts"
@@ -49,9 +49,9 @@ const meta = [
                 "type": "context"
             },
             {
-                "type": "path",
                 "name": "id",
-                "required": true
+                "required": true,
+                "type": "path"
             }
         ],
         "pattern": "/posts/{id}"
@@ -63,14 +63,14 @@ const meta = [
                 "type": "context"
             },
             {
-                "type": "path",
                 "name": "id",
-                "required": true
+                "required": true,
+                "type": "path"
             },
             {
-                "type": "body",
                 "name": "param",
-                "required": true
+                "required": true,
+                "type": "body"
             }
         ],
         "pattern": "/posts/{id}"
@@ -82,9 +82,9 @@ const meta = [
                 "type": "context"
             },
             {
-                "type": "path",
                 "name": "id",
-                "required": true
+                "required": true,
+                "type": "path"
             }
         ],
         "pattern": "/posts/{id}"

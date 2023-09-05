@@ -1,4 +1,7 @@
-use std::rc::Rc;
+use std::{
+    collections::{BTreeMap, BTreeSet},
+    rc::Rc,
+};
 
 use crate::{
     ast::{
@@ -8,7 +11,6 @@ use crate::{
     },
     swc_builder::SwcBuilder,
 };
-use indexmap::IndexMap;
 use swc_common::DUMMY_SP;
 use swc_ecma_ast::{
     op, AssignExpr, BinExpr, BinaryOp, BindingIdent, BlockStmt, Bool, CallExpr, Callee, Decl, Expr,
@@ -191,7 +193,7 @@ struct DecoderFnGenerator {
 impl DecoderFnGenerator {
     fn decode_object(
         &mut self,
-        els: &IndexMap<String, Optionality<JsonSchema>>,
+        els: &BTreeMap<String, Optionality<JsonSchema>>,
         value_ref: &Expr,
         err_storage: &str,
         path: &[DecodePath],
@@ -500,7 +502,7 @@ impl DecoderFnGenerator {
     }
     fn decode_all_of(
         &mut self,
-        els: &[JsonSchema],
+        els: &BTreeSet<JsonSchema>,
         value_ref: &Expr,
         parent_err_storage: &str,
         path: &[DecodePath],
@@ -512,7 +514,7 @@ impl DecoderFnGenerator {
 
     fn decode_any_of(
         &mut self,
-        els: &Vec<JsonSchema>,
+        els: &BTreeSet<JsonSchema>,
         value_ref: &Expr,
         parent_err_storage: &str,
         path: &[DecodePath],

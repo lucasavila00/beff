@@ -21,7 +21,7 @@ impl ToExpr for Json {
             })),
             Json::Number(n) => Expr::Lit(Lit::Num(Number {
                 span: DUMMY_SP,
-                value: n,
+                value: n.to_f64(),
                 raw: None,
             })),
             Json::String(v) => Expr::Lit(Lit::Str(Str {

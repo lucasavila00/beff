@@ -49,25 +49,25 @@ const meta = [
                 "type": "context"
             },
             {
-                "type": "path",
+                "coercer": function(input) {
+                    return coerce_string(input);
+                },
                 "name": "id",
                 "required": true,
+                "type": "path",
                 "validator": function(input) {
                     let error_acc_0 = [];
                     if (typeof input != "string") {
                         error_acc_0.push({
                             "error_kind": "NotTypeof",
+                            "expected_type": "string",
                             "path": [
                                 "id"
                             ],
-                            "received": input,
-                            "expected_type": "string"
+                            "received": input
                         });
                     }
                     return error_acc_0;
-                },
-                "coercer": function(input) {
-                    return coerce_string(input);
                 }
             }
         ],
@@ -229,16 +229,16 @@ const schema =  {
           "unionWithNull": {
             "anyOf": [
               {
-                "items": {
-                  "$ref": "#/components/schemas/ChildUser"
-                },
-                "type": "array"
+                "type": "null"
               },
               {
                 "type": "number"
               },
               {
-                "type": "null"
+                "items": {
+                  "$ref": "#/components/schemas/ChildUser"
+                },
+                "type": "array"
               }
             ]
           }
@@ -249,12 +249,12 @@ const schema =  {
           "c",
           "c2",
           "d",
-          "union",
-          "unionWithNull",
           "e",
           "g",
           "h",
-          "i"
+          "i",
+          "union",
+          "unionWithNull"
         ],
         "type": "object"
       }

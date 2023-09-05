@@ -24,26 +24,26 @@ function isCustomFormatInvalid(key, value) {
 function User(input) {
     let error_acc_0 = [];
     if (typeof input == "object" && input != null) {
-        if (typeof input["name"] != "string") {
-            error_acc_0.push({
-                "error_kind": "NotTypeof",
-                "path": [
-                    "User",
-                    "name"
-                ],
-                "received": input["name"],
-                "expected_type": "string"
-            });
-        }
         if (typeof input["age"] != "number") {
             error_acc_0.push({
                 "error_kind": "NotTypeof",
+                "expected_type": "number",
                 "path": [
                     "User",
                     "age"
                 ],
-                "received": input["age"],
-                "expected_type": "number"
+                "received": input["age"]
+            });
+        }
+        if (typeof input["name"] != "string") {
+            error_acc_0.push({
+                "error_kind": "NotTypeof",
+                "expected_type": "string",
+                "path": [
+                    "User",
+                    "name"
+                ],
+                "received": input["name"]
             });
         }
     } else {
@@ -62,11 +62,11 @@ function Password(input) {
     if (isCustomFormatInvalid("password", input)) {
         error_acc_0.push({
             "error_kind": "StringFormatCheckFailed",
+            "expected_type": "password",
             "path": [
                 "Password"
             ],
-            "received": input,
-            "expected_type": "password"
+            "received": input
         });
     }
     return error_acc_0;
@@ -76,11 +76,11 @@ function StartsWithA(input) {
     if (isCustomFormatInvalid("StartsWithA", input)) {
         error_acc_0.push({
             "error_kind": "StringFormatCheckFailed",
+            "expected_type": "StartsWithA",
             "path": [
                 "StartsWithA"
             ],
-            "received": input,
-            "expected_type": "StartsWithA"
+            "received": input
         });
     }
     return error_acc_0;
@@ -91,12 +91,12 @@ function NotPublic(input) {
         if (typeof input["a"] != "string") {
             error_acc_0.push({
                 "error_kind": "NotTypeof",
+                "expected_type": "string",
                 "path": [
                     "NotPublic",
                     "a"
                 ],
-                "received": input["a"],
-                "expected_type": "string"
+                "received": input["a"]
             });
         }
     } else {
