@@ -5,6 +5,7 @@ use crate::{ast::json_schema::JsonSchema, open_api_ast::Validator};
 
 use self::semtype::{SemType, SemTypeBuilder, SemTypeOps};
 use self::subtype::StringLitOrFormat;
+pub mod bdd;
 pub mod semtype;
 pub mod subtype;
 use anyhow::anyhow;
