@@ -1,6 +1,7 @@
-use indexmap::IndexMap;
-
 use crate::ast::json::{Json, ToJson};
+use anyhow::anyhow;
+use anyhow::Result;
+use indexmap::IndexMap;
 
 #[derive(Debug, PartialEq, Eq, Clone)]
 pub enum Optionality<T> {
@@ -60,14 +61,127 @@ impl JsonSchema {
         Optionality::Optional(self)
     }
 
-    pub fn from_json(it: &Json) -> Self {
+    fn parse_string(vs: &IndexMap<String, Json>) -> Result<Self> {
+        match vs.get("format") {
+            Some(Json::String(format)) => Ok(JsonSchema::StringWithFormat(format.clone())),
+            _ => Ok(JsonSchema::String),
+        }
+    }
+    fn parse_object(vs: &IndexMap<String, Json>) -> Result<Self> {
+        let props = vs
+            .get("properties")
+            .ok_or(anyhow!("object must have properties field"))?;
+        let props = match props {
+            Json::Object(props) => props,
+            _ => return Err(anyhow!("properties must be an object")),
+        };
+
+        let required = vs
+            .get("required")
+            .ok_or(anyhow!("object must have required field"))?;
+
+        let required = match required {
+            Json::Array(required) => required
+                .iter()
+                .map(|it| match it {
+                    Json::String(s) => Ok(s.clone()),
+                    _ => Err(anyhow!("required must be an array of strings")),
+                })
+                .collect::<Result<Vec<_>>>()?,
+            _ => return Err(anyhow!("required must be an array")),
+        };
+
+        let props = props
+            .into_iter()
+            .map(|(k, v)| {
+                JsonSchema::from_json(v).map(|v| match required.iter().find(|it| *it == k) {
+                    Some(_) => (k.clone(), v.required()),
+                    None => (k.clone(), v.optional()),
+                })
+            })
+            .collect::<Result<_>>()?;
+
+        Ok(JsonSchema::object(props))
+    }
+
+    fn parse_array(vs: &IndexMap<String, Json>) -> Result<Self> {
+        // if it has prefixItems or minItems or maxItems it is tuple
+
+        let has_extra_props = vs.iter().any(|(k, _v)| k != "type" && k != "items");
+
+        if has_extra_props {
+            let prefix_items = match vs.get("prefixItems") {
+                Some(its) => match its {
+                    Json::Array(vs) => vs
+                        .iter()
+                        .map(|it| JsonSchema::from_json(it))
+                        .collect::<Result<Vec<_>>>()?,
+                    _ => return Err(anyhow!("prefix_items must be an array")),
+                },
+                _ => vec![],
+            };
+
+            let items = match vs.get("items") {
+                Some(it) => Some(Box::new(JsonSchema::from_json(it)?)),
+                None => None,
+            };
+
+            Ok(JsonSchema::Tuple {
+                prefix_items,
+                items,
+            })
+        } else {
+            let typ = vs
+                .get("items")
+                .ok_or(anyhow!("array must have items field"))?;
+            return Ok(JsonSchema::Array(JsonSchema::from_json(typ)?.into()));
+        }
+    }
+
+    pub fn from_json(it: &Json) -> Result<Self> {
         match it {
-            Json::Null => todo!(),
-            Json::Bool(_) => todo!(),
-            Json::Number(_) => todo!(),
-            Json::String(_) => todo!(),
-            Json::Array(_) => todo!(),
-            Json::Object(_) => todo!(),
+            Json::Object(vs) => {
+                if let Some(cons) = vs.get("const") {
+                    return Ok(JsonSchema::Const(cons.clone()));
+                }
+
+                if let Some(reference) = vs.get("$ref") {
+                    let reference = match reference {
+                        Json::String(st) => st.clone(),
+                        _ => return Err(anyhow!("reference must be a string")),
+                    };
+                    let schemas_prefix = "#/components/schemas/";
+                    if reference.starts_with(schemas_prefix) {
+                        return Ok(JsonSchema::Ref(reference.replace(schemas_prefix, "")));
+                    }
+                    let responses_prefix = "#/components/responses/";
+                    if reference.starts_with(responses_prefix) {
+                        return Ok(JsonSchema::OpenApiResponseRef(
+                            reference.replace(responses_prefix, ""),
+                        ));
+                    }
+
+                    return Err(anyhow!("invalid reference {reference:?}"));
+                }
+
+                let typ = vs.get("type");
+                match typ {
+                    Some(typ) => match typ {
+                        Json::String(typ) => match typ.as_str() {
+                            "null" => Ok(JsonSchema::Null),
+                            "string" => Self::parse_string(vs),
+                            "boolean" => Ok(JsonSchema::Boolean),
+                            "number" => Ok(JsonSchema::Number),
+                            "object" => Self::parse_object(vs),
+                            "array" => Self::parse_array(vs),
+                            _ => Err(anyhow!("unknown type: {}", typ)),
+                        },
+                        _ => Err(anyhow!("type must be a string")),
+                    },
+                    None => Ok(JsonSchema::Any),
+                }
+            }
+            _ => Err(anyhow!("JsonSchema must be an object")),
         }
     }
 }
