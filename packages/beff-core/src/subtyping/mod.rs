@@ -1,6 +1,7 @@
 use std::rc::Rc;
 
 use crate::ast::json::Json;
+use crate::ast::json_schema::Optionality;
 use crate::{ast::json_schema::JsonSchema, open_api_ast::Validator};
 
 use self::semtype::{SemType, SemTypeBuilder, SemTypeOps};
@@ -54,7 +55,15 @@ impl<'a> ToSemTypeConverter<'a> {
             JsonSchema::StringWithFormat(s) => {
                 Ok(SemTypeBuilder::string_const(StringLitOrFormat::Format(s.clone())).into())
             }
-            JsonSchema::Object(_) => todo!(),
+            JsonSchema::Object(vs) => Ok(SemTypeBuilder::mapping_definition(
+                vs.iter()
+                    .map(|(k, v)| match v {
+                        Optionality::Optional(v) => todo!(),
+                        Optionality::Required(v) => self.to_sem_type(v).map(|v| (k.clone(), v)),
+                    })
+                    .collect::<Result<_>>()?,
+            )
+            .into()),
             JsonSchema::Array(_) => todo!(),
             JsonSchema::Tuple {
                 prefix_items,

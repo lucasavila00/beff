@@ -1,10 +1,12 @@
-use std::{cmp::Ordering, rc::Rc};
+use std::{cmp::Ordering, collections::BTreeMap, rc::Rc};
 
 use super::semtype::{SemType, SemTypeOps};
 
+type MappingAtomic = BTreeMap<String, Rc<SemType>>;
 #[derive(PartialEq, Eq, Hash, Debug, Ord, PartialOrd)]
 pub enum Atom {
     Function(Rc<SemType>, Rc<SemType>),
+    Mapping(Rc<MappingAtomic>),
     List(Rc<SemType>),
 }
 
@@ -255,59 +257,140 @@ fn and(atom: Rc<Atom>, next: Option<Rc<Conjunction>>) -> Option<Rc<Conjunction>>
     Some(Rc::new(Conjunction { atom, next }))
 }
 
-fn function_theta(t0: &Rc<SemType>, t1: &Rc<SemType>, pos: &Option<Rc<Conjunction>>) -> bool {
-    match pos {
-        None => t0.is_empty() || t1.is_empty(),
-        Some(pos) => {
-            if let Atom::Function(s0, s1) = &*pos.atom {
-                return (t0.is_subtype(s0) || function_theta(&s0.diff(&t0), s1, &pos.next))
-                    && (t1.is_subtype(&s1.complement())
-                        || function_theta(s0, &s1.intersect(&t1), &pos.next));
-            }
-            panic!("pos is not a function")
-        }
-    }
-}
+// type BddPredicate function(TypeCheckContext tc, Conjunction? pos, Conjunction? neg) returns boolean;
 
-fn function_bdd_is_empty(
+type BddPredicate = fn(pos: &Option<Rc<Conjunction>>, neg: &Option<Rc<Conjunction>>) -> bool;
+
+// A Bdd represents a disjunction of conjunctions of atoms, where each atom is either positive or
+// negative (negated). Each path from the root to a leaf that is true represents one of the conjunctions
+// We walk the tree, accumulating the positive and negative conjunctions for a path as we go.
+// When we get to a leaf that is true, we apply the predicate to the accumulated conjunctions.
+fn bdd_every(
     bdd: &Rc<Bdd>,
-    s: Rc<SemType>,
     pos: &Option<Rc<Conjunction>>,
     neg: &Option<Rc<Conjunction>>,
+    predicate: BddPredicate,
 ) -> bool {
     match &**bdd {
         Bdd::False => true,
-        Bdd::True => match neg {
-            None => false,
-            Some(neg) => {
-                if let Atom::Function(t0, t1) = &*neg.atom {
-                    return (t0.is_subtype(&s) && function_theta(t0, &t1.complement(), &pos))
-                        || function_bdd_is_empty(&Bdd::True.into(), s, pos, &neg.next);
-                }
-                panic!("neg is not a function")
-            }
-        },
+        Bdd::True => predicate(pos, neg),
         Bdd::Node {
             atom,
             left,
             middle,
             right,
         } => {
-            if let Atom::Function(sd, _sr) = &**atom {
-                return function_bdd_is_empty(
-                    left,
-                    s.union(sd),
-                    &and(atom.clone(), pos.clone()),
-                    neg,
-                ) && function_bdd_is_empty(middle, s.clone(), pos, neg)
-                    && function_bdd_is_empty(right, s, pos, &and(atom.clone(), neg.clone()));
-            }
-            panic!("atom is not a function");
+            bdd_every(left, &and(atom.clone(), pos.clone()), neg, predicate)
+                && bdd_every(middle, pos, neg, predicate)
+                && bdd_every(right, pos, &and(atom.clone(), neg.clone()), predicate)
         }
     }
+    // if b is boolean {
+    //     return !b || predicate(tc, pos, neg);
+    // }
+    // else {
+    //     return bddEvery(tc, b.left, and(b.atom, pos), neg, predicate)
+    //       && bddEvery(tc, b.middle, pos, neg, predicate)
+    //       && bddEvery(tc, b.right, pos, and(b.atom, neg), predicate);
+    // }
+}
+fn intersect_mapping(m1: Rc<MappingAtomic>, m2: Rc<MappingAtomic>) -> Option<Rc<MappingAtomic>> {
+    todo!()
+}
+fn mapping_inhabited(pos: Rc<MappingAtomic>, neg_list: &Option<Rc<Conjunction>>) -> bool {
+    // if negList is () {
+    //     return true;
+    // }
+    // else {
+    //     MappingAtomicType neg = tc.mappingDefs[negList.atom];
+
+    //     MappingPairing pairing;
+
+    //     if pos.names != neg.names {
+    //         // If this negative type has required fields that the positive one does not allow
+    //         // or vice-versa, then this negative type has no effect,
+    //         // so we can move on to the next one
+
+    //         // Deal the easy case of two closed records fast.
+    //         if isNever(pos.rest) && isNever(neg.rest) {
+    //             return mappingInhabited(tc, pos, negList.next);
+    //         }
+    //         pairing = new (pos, neg);
+    //         foreach var {type1: posType, type2: negType} in pairing {
+    //             if isNever(posType) || isNever(negType) {
+    //                 return mappingInhabited(tc, pos, negList.next);
+    //             }
+    //         }
+    //         pairing.reset();
+    //     }
+    //     else {
+    //         pairing = new (pos, neg);
+    //     }
+
+    //     if !isEmpty(tc, diff(pos.rest, neg.rest)) {
+    //         return true;
+    //     }
+    //     foreach var {name, type1: posType, type2: negType} in pairing {
+    //         SemType d = diff(posType, negType);
+    //         if !isEmpty(tc, d) {
+    //             TempMappingSubtype mt;
+    //             int? i = pairing.index1(name);
+    //             if i is () {
+    //                 // the posType came from the rest type
+    //                 mt = insertField(pos, name, d);
+    //             }
+    //             else {
+    //                 SemType[] posTypes = shallowCopyTypes(pos.types);
+    //                 posTypes[i] = d;
+    //                 mt = { types: posTypes, names: pos.names, rest: pos.rest };
+    //             }
+    //             if mappingInhabited(tc, mt, negList.next) {
+    //                 return true;
+    //             }
+    //         }
+    //     }
+    //     return false;
+    // }
+    todo!()
 }
 
-pub fn function_is_empty(bdd: &Rc<Bdd>) -> bool {
-    // todo: memoization to handle recursive function
-    return function_bdd_is_empty(bdd, SemType::new_never().into(), &None, &None);
+fn mapping_formula_is_empty(
+    pos_list: &Option<Rc<Conjunction>>,
+    neg_list: &Option<Rc<Conjunction>>,
+) -> bool {
+    let mut combined: Rc<MappingAtomic> = Rc::new(BTreeMap::new());
+    match pos_list {
+        None => {}
+        Some(pos_atom) => {
+            match pos_atom.atom.as_ref() {
+                Atom::Mapping(a) => combined = a.clone(),
+                _ => unreachable!(),
+            };
+            let mut p = pos_atom.next.clone();
+            while let Some(some_p) = p {
+                let p_atom = match &*some_p.atom {
+                    Atom::Mapping(a) => a,
+                    _ => unreachable!(),
+                };
+                let m = intersect_mapping(combined.clone(), p_atom.clone());
+                match m {
+                    None => return true,
+                    Some(m) => combined = m,
+                }
+                p = some_p.next.clone();
+            }
+            for t in combined.values() {
+                if t.is_empty() {
+                    return true;
+                }
+            }
+        }
+    }
+
+    return !mapping_inhabited(combined, neg_list);
+}
+pub fn mapping_is_empty(bdd: &Rc<Bdd>) -> bool {
+    // todo: memoization
+
+    bdd_every(bdd, &None, &None, mapping_formula_is_empty)
 }

@@ -3,6 +3,20 @@ mod tests {
     use beff_core::ast::{json::Json, json_schema::JsonSchema};
 
     #[test]
+    fn mappings() {
+        let definitions = vec![];
+
+        let t1 = JsonSchema::object(vec![(
+            "a".into(),
+            JsonSchema::Const(Json::String("abc".into())).required(),
+        )]);
+        let t2 = JsonSchema::object(vec![("a".into(), JsonSchema::String.required())]);
+        let res = t1.is_sub_type(&t2, &definitions).unwrap();
+        assert!(res);
+        let res = t2.is_sub_type(&t1, &definitions).unwrap();
+        assert!(!res);
+    }
+    #[test]
     fn it_works() {
         let definitions = vec![];
 

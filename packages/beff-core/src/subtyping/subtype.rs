@@ -2,6 +2,8 @@ use std::rc::Rc;
 
 use crate::ast::json::N;
 
+use super::bdd::{mapping_is_empty, Bdd, BddOps};
+
 pub type BasicTypeCode = u32;
 pub type BasicTypeBitSet = u32;
 pub type NumberRepresentation = N;
@@ -13,6 +15,7 @@ pub enum SubTypeTag {
     Number = 1 << 0x2,
     String = 1 << 0x3,
     Null = 1 << 0x4,
+    Mapping = 1 << 0x5,
 }
 
 impl SubTypeTag {
@@ -74,6 +77,7 @@ pub enum ProperSubtype {
         allowed: bool,
         values: Vec<StringLitOrFormat>,
     },
+    Mapping(Rc<Bdd>),
 }
 
 fn vec_union<K: PartialEq + Clone + Ord>(v1: &Vec<K>, v2: &Vec<K>) -> Vec<K> {
@@ -107,6 +111,7 @@ impl ProperSubtypeOps for Rc<ProperSubtype> {
             ProperSubtype::Number { .. } => false,
             // Empty string sets don't use subtype representation.
             ProperSubtype::String { .. } => false,
+            ProperSubtype::Mapping(bdd) => mapping_is_empty(bdd),
         }
     }
 
@@ -148,6 +153,9 @@ impl ProperSubtypeOps for Rc<ProperSubtype> {
                 (true, false) => SubType::string_subtype(true, vec_diff(v1, v2)).into(),
                 (false, true) => SubType::string_subtype(true, vec_diff(v2, v1)).into(),
             },
+            (ProperSubtype::Mapping(b1), ProperSubtype::Mapping(b2)) => {
+                SubType::Proper(ProperSubtype::Mapping(b1.intersect(b2)).into()).into()
+            }
             _ => panic!(),
         }
     }
@@ -190,6 +198,9 @@ impl ProperSubtypeOps for Rc<ProperSubtype> {
                 (true, false) => SubType::string_subtype(false, vec_diff(v2, v1)).into(),
                 (false, true) => SubType::string_subtype(false, vec_diff(v1, v2)).into(),
             },
+            (ProperSubtype::Mapping(b1), ProperSubtype::Mapping(b2)) => {
+                SubType::Proper(ProperSubtype::Mapping(b1.union(b2)).into()).into()
+            }
             _ => panic!(),
         }
     }
@@ -201,6 +212,9 @@ impl ProperSubtypeOps for Rc<ProperSubtype> {
                     return SubType::False(SubTypeTag::Boolean).into();
                 }
                 return SubType::Proper(self.clone()).into();
+            }
+            (ProperSubtype::Mapping(b1), ProperSubtype::Mapping(b2)) => {
+                SubType::Proper(ProperSubtype::Mapping(b1.diff(b2)).into()).into()
             }
             _ => self.intersect(&t2.complement()),
         }
@@ -219,6 +233,7 @@ impl ProperSubtypeOps for Rc<ProperSubtype> {
                 values: values.clone(),
             }
             .into(),
+            ProperSubtype::Mapping(bdd) => ProperSubtype::Mapping(bdd.complement()).into(),
         }
     }
 }
@@ -229,6 +244,7 @@ impl ProperSubtype {
             ProperSubtype::Boolean(_) => SubTypeTag::Boolean,
             ProperSubtype::Number { .. } => SubTypeTag::Number,
             ProperSubtype::String { .. } => SubTypeTag::String,
+            ProperSubtype::Mapping(_) => SubTypeTag::Mapping,
         }
     }
     pub fn to_code(&self) -> BasicTypeCode {

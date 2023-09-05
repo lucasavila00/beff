@@ -1,8 +1,11 @@
-use super::subtype::{
-    BasicTypeBitSet, BasicTypeCode, NumberRepresentation, ProperSubtype, ProperSubtypeOps,
-    StringLitOrFormat, SubType, SubTypeTag,
+use super::{
+    bdd::{Atom, Bdd},
+    subtype::{
+        BasicTypeBitSet, BasicTypeCode, NumberRepresentation, ProperSubtype, ProperSubtypeOps,
+        StringLitOrFormat, SubType, SubTypeTag,
+    },
 };
-use std::rc::Rc;
+use std::{collections::BTreeMap, rc::Rc};
 
 struct SubTypePairIterator {
     i1: usize,
@@ -287,7 +290,12 @@ impl SemTypeBuilder {
             .into()],
         );
     }
-
+    pub fn mapping_definition(vs: BTreeMap<String, Rc<SemType>>) -> SemType {
+        return SemType::new_complex(
+            0x0,
+            vec![ProperSubtype::Mapping(Bdd::from_atom(Atom::Mapping(vs.into())).into()).into()],
+        );
+    }
     pub fn boolean_const(value: bool) -> SemType {
         return SemType::new_complex(0x0, vec![ProperSubtype::Boolean(value).into()]);
     }
