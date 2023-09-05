@@ -4,18 +4,22 @@ use std::{
     rc::Rc,
 };
 
-use crate::subtyping::semtype::SemTypeBuilder;
+use crate::subtyping::semtype::SemTypeContext;
 
 use super::semtype::{BddMemoEmptyRef, MemoEmpty, SemType, SemTypeOps};
 
 pub type MappingAtomic = BTreeMap<String, Rc<SemType>>;
+
+#[derive(Debug, Clone)]
+pub struct ListAtomic {
+    pub prefix_items: Vec<Rc<SemType>>,
+    pub items: Rc<SemType>,
+}
+
 #[derive(PartialEq, Eq, Hash, Debug, Ord, PartialOrd)]
 pub enum Atom {
     Mapping(usize),
-    List {
-        prefix_items: Vec<usize>,
-        items: usize,
-    },
+    List(usize),
 }
 
 fn atom_cmp(a: &Atom, b: &Atom) -> Ordering {
@@ -271,7 +275,7 @@ fn and(atom: Rc<Atom>, next: Option<Rc<Conjunction>>) -> Option<Rc<Conjunction>>
 type BddPredicate = fn(
     pos: &Option<Rc<Conjunction>>,
     neg: &Option<Rc<Conjunction>>,
-    builder: &mut SemTypeBuilder,
+    builder: &mut SemTypeContext,
 ) -> bool;
 
 // A Bdd represents a disjunction of conjunctions of atoms, where each atom is either positive or
@@ -283,7 +287,7 @@ fn bdd_every(
     pos: &Option<Rc<Conjunction>>,
     neg: &Option<Rc<Conjunction>>,
     predicate: BddPredicate,
-    builder: &mut SemTypeBuilder,
+    builder: &mut SemTypeContext,
 ) -> bool {
     match &**bdd {
         Bdd::False => true,
@@ -320,11 +324,11 @@ fn intersect_mapping(m1: Rc<MappingAtomic>, m2: Rc<MappingAtomic>) -> Option<Rc<
         let type1 = m1
             .get(*name)
             .map(|it| it.clone())
-            .unwrap_or_else(|| Rc::new(SemTypeBuilder::unknown()));
+            .unwrap_or_else(|| Rc::new(SemTypeContext::unknown()));
         let type2 = m2
             .get(*name)
             .map(|it| it.clone())
-            .unwrap_or_else(|| Rc::new(SemTypeBuilder::unknown()));
+            .unwrap_or_else(|| Rc::new(SemTypeContext::unknown()));
         let t = type1.intersect(&type2);
         if t.is_never() {
             return None;
@@ -337,7 +341,7 @@ fn intersect_mapping(m1: Rc<MappingAtomic>, m2: Rc<MappingAtomic>) -> Option<Rc<
 fn mapping_inhabited(
     pos: Rc<MappingAtomic>,
     neg_list: &Option<Rc<Conjunction>>,
-    builder: &mut SemTypeBuilder,
+    builder: &mut SemTypeContext,
 ) -> bool {
     match neg_list {
         None => true,
@@ -356,11 +360,11 @@ fn mapping_inhabited(
                 let pos_type = pos
                     .get(**name)
                     .map(|it| it.clone())
-                    .unwrap_or_else(|| Rc::new(SemTypeBuilder::unknown()));
+                    .unwrap_or_else(|| Rc::new(SemTypeContext::unknown()));
                 let neg_type = neg
                     .get(**name)
                     .map(|it| it.clone())
-                    .unwrap_or_else(|| Rc::new(SemTypeBuilder::unknown()));
+                    .unwrap_or_else(|| Rc::new(SemTypeContext::unknown()));
                 if pos_type.is_never() || neg_type.is_never() {
                     return mapping_inhabited(pos, &neg_list.next, builder);
                 }
@@ -369,11 +373,11 @@ fn mapping_inhabited(
                 let pos_type = pos
                     .get(*name)
                     .map(|it| it.clone())
-                    .unwrap_or_else(|| Rc::new(SemTypeBuilder::unknown()));
+                    .unwrap_or_else(|| Rc::new(SemTypeContext::unknown()));
                 let neg_type = neg
                     .get(*name)
                     .map(|it| it.clone())
-                    .unwrap_or_else(|| Rc::new(SemTypeBuilder::unknown()));
+                    .unwrap_or_else(|| Rc::new(SemTypeContext::unknown()));
 
                 let d = pos_type.diff(&neg_type);
                 if !d.is_empty(builder) {
@@ -393,7 +397,7 @@ fn mapping_inhabited(
 fn mapping_formula_is_empty(
     pos_list: &Option<Rc<Conjunction>>,
     neg_list: &Option<Rc<Conjunction>>,
-    builder: &mut SemTypeBuilder,
+    builder: &mut SemTypeContext,
 ) -> bool {
     let mut combined: Rc<MappingAtomic> = Rc::new(BTreeMap::new());
     match pos_list {
@@ -425,7 +429,7 @@ fn mapping_formula_is_empty(
     }
     return !mapping_inhabited(combined, neg_list, builder);
 }
-pub fn mapping_is_empty(bdd: &Rc<Bdd>, builder: &mut SemTypeBuilder) -> bool {
+pub fn mapping_is_empty(bdd: &Rc<Bdd>, builder: &mut SemTypeContext) -> bool {
     match builder.mapping_memo.get(&bdd) {
         Some(mm) => match &mm.0 {
             MemoEmpty::True => return true,
@@ -448,14 +452,151 @@ pub fn mapping_is_empty(bdd: &Rc<Bdd>, builder: &mut SemTypeBuilder) -> bool {
     is_empty
 }
 
-fn list_formula_is_empty(
-    pos_list: &Option<Rc<Conjunction>>,
-    neg_list: &Option<Rc<Conjunction>>,
-    builder: &mut SemTypeBuilder,
+// This function returns true if there is a list shape v such that
+// is in the type described by `members` and `rest`, and
+// for each tuple t in `neg`, v is not in t.
+// `neg` represents a set of negated list types.
+// Precondition is that each of `members` is not empty.
+// This is formula Phi' in section 7.3.1 of Alain Frisch's PhD thesis,
+// generalized to tuples of arbitrary length.
+fn list_inhabited(
+    prefix_items: &mut Vec<Rc<SemType>>,
+    items: &Rc<SemType>,
+    neg: &Option<Rc<Conjunction>>,
+    builder: &mut SemTypeContext,
 ) -> bool {
-    todo!()
+    match neg {
+        None => return true,
+        Some(neg) => {
+            let mut len = prefix_items.len();
+            let nt = match &*neg.atom {
+                Atom::List(a) => builder.get_list_atomic(*a),
+                _ => unreachable!(),
+            };
+            let neg_len = nt.prefix_items.len();
+            if len < neg_len {
+                if items.is_never() {
+                    return list_inhabited(prefix_items, items, &neg.next, builder);
+                }
+                for _i in len..neg_len {
+                    prefix_items.push(items.clone());
+                }
+                len = neg_len;
+            } else if neg_len < len && nt.items.is_never() {
+                return list_inhabited(prefix_items, items, &neg.next, builder);
+            }
+
+            // now we have nt.members.length() <= len
+
+            // This is the heart of the algorithm.
+            // For [v0, v1] not to be in [t0,t1], there are two possibilities
+            // (1) v0 is not in t0, or
+            // (2) v1 is not in t1
+            // Case (1)
+            // For v0 to be in s0 but not t0, d0 must not be empty.
+            // We must then find a [v0,v1] satisfying the remaining negated tuples,
+            // such that v0 is in d0.
+            // SemType d0 = diff(s[0], t[0]);
+            // if !isEmpty(tc, d0) && tupleInhabited(tc, [d0, s[1]], neg.rest) {
+            //     return true;
+            // }
+            // Case (2)
+            // For v1 to be in s1 but not t1, d1 must not be empty.
+            // We must then find a [v0,v1] satisfying the remaining negated tuples,
+            // such that v1 is in d1.
+            // SemType d1 = diff(s[1], t[1]);
+            // return !isEmpty(tc, d1) &&  tupleInhabited(tc, [s[0], d1], neg.rest);
+            // We can generalize this to tuples of arbitrary length.
+
+            for i in 0..len {
+                // let ntm = i < neg_len ? nt.prefix_items[i] : nt.items;
+                let ntm = if i < neg_len {
+                    nt.prefix_items[i].clone()
+                } else {
+                    nt.items.clone()
+                };
+                let d = prefix_items[i].diff(&ntm);
+                if !d.is_empty(builder) {
+                    let mut s = prefix_items.clone();
+                    s[i] = d;
+                    if list_inhabited(&mut s, items, &neg.next, builder) {
+                        return true;
+                    }
+                }
+            }
+
+            let diff = items.diff(&nt.items);
+            if !diff.is_empty(builder) {
+                return true;
+            }
+
+            // This is correct for length 0, because we know that the length of the
+            // negative is 0, and [] - [] is empty.
+            return false;
+        }
+    }
 }
-pub fn list_is_empty(bdd: &Rc<Bdd>, builder: &mut SemTypeBuilder) -> bool {
+fn list_formula_is_empty(
+    pos: &Option<Rc<Conjunction>>,
+    neg: &Option<Rc<Conjunction>>,
+    builder: &mut SemTypeContext,
+) -> bool {
+    let mut prefix_items = vec![];
+    let mut items = Rc::new(SemTypeContext::unknown());
+    match pos {
+        None => {}
+        Some(pos_atom) => {
+            // combine all the positive tuples using intersection
+            let lt = match pos_atom.atom.as_ref() {
+                Atom::List(a) => builder.get_list_atomic(*a).clone(),
+                _ => unreachable!(),
+            };
+            prefix_items = lt.prefix_items.clone();
+            items = lt.items.clone();
+
+            let mut p = pos_atom.next.clone();
+
+            while let Some(ref some_p) = p {
+                let d = &some_p.atom;
+                let lt = match d.as_ref() {
+                    Atom::List(a) => builder.get_list_atomic(*a).clone(),
+                    _ => unreachable!(),
+                };
+                let new_len = std::cmp::max(prefix_items.len(), lt.prefix_items.len());
+                if prefix_items.len() < new_len {
+                    if lt.items.is_never() {
+                        return true;
+                    }
+                    for _i in prefix_items.len()..new_len {
+                        prefix_items.push(lt.items.clone());
+                    }
+                }
+                for i in 0..lt.prefix_items.len() {
+                    prefix_items[i] = prefix_items[i].intersect(&lt.prefix_items[i]);
+                }
+                if lt.prefix_items.len() < new_len {
+                    if lt.items.is_never() {
+                        return true;
+                    }
+                    for i in lt.prefix_items.len()..new_len {
+                        prefix_items[i] = prefix_items[i].intersect(&lt.items);
+                    }
+                }
+                items = items.intersect(&lt.items);
+                p = some_p.next.clone();
+            }
+
+            for m in prefix_items.iter() {
+                if m.is_empty(builder) {
+                    return true;
+                }
+            }
+        }
+    }
+
+    return !list_inhabited(&mut prefix_items, &items, neg, builder);
+}
+pub fn list_is_empty(bdd: &Rc<Bdd>, builder: &mut SemTypeContext) -> bool {
     match builder.list_memo.get(&bdd) {
         Some(mm) => match &mm.0 {
             MemoEmpty::True => return true,

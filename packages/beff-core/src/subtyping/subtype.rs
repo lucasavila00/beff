@@ -3,8 +3,8 @@ use std::rc::Rc;
 use crate::ast::json::N;
 
 use super::{
-    bdd::{mapping_is_empty, Bdd, BddOps},
-    semtype::SemTypeBuilder,
+    bdd::{list_is_empty, mapping_is_empty, Bdd, BddOps},
+    semtype::SemTypeContext,
 };
 
 pub type BasicTypeCode = u32;
@@ -20,6 +20,7 @@ pub enum SubTypeTag {
     Null = 1 << 0x4,
     Mapping = 1 << 0x5,
     Void = 1 << 0x6,
+    List = 1 << 0x7,
 }
 
 impl SubTypeTag {
@@ -55,7 +56,7 @@ impl SubType {
         SubType::Proper(ProperSubtype::String { allowed, values }.into())
     }
 
-    pub fn is_empty(&self, builder: &mut SemTypeBuilder) -> bool {
+    pub fn is_empty(&self, builder: &mut SemTypeContext) -> bool {
         match self {
             SubType::Proper(p) => p.is_empty(builder),
             SubType::False(_) => todo!(),
@@ -82,6 +83,7 @@ pub enum ProperSubtype {
         values: Vec<StringLitOrFormat>,
     },
     Mapping(Rc<Bdd>),
+    List(Rc<Bdd>),
 }
 
 fn vec_union<K: PartialEq + Clone + Ord>(v1: &Vec<K>, v2: &Vec<K>) -> Vec<K> {
@@ -100,7 +102,7 @@ fn vec_diff<K: PartialEq + Clone + Ord>(v1: &Vec<K>, v2: &Vec<K>) -> Vec<K> {
 }
 
 pub trait ProperSubtypeOps {
-    fn is_empty(&self, builder: &mut SemTypeBuilder) -> bool;
+    fn is_empty(&self, builder: &mut SemTypeContext) -> bool;
     fn intersect(&self, t2: &Rc<ProperSubtype>) -> Rc<SubType>;
     fn union(&self, t2: &Rc<ProperSubtype>) -> Rc<SubType>;
     fn diff(&self, t2: &Rc<ProperSubtype>) -> Rc<SubType>;
@@ -108,7 +110,7 @@ pub trait ProperSubtypeOps {
 }
 
 impl ProperSubtypeOps for Rc<ProperSubtype> {
-    fn is_empty(&self, builder: &mut SemTypeBuilder) -> bool {
+    fn is_empty(&self, builder: &mut SemTypeContext) -> bool {
         match &**self {
             ProperSubtype::Boolean(_) => false,
             // Empty number sets don't use subtype representation.
@@ -116,6 +118,7 @@ impl ProperSubtypeOps for Rc<ProperSubtype> {
             // Empty string sets don't use subtype representation.
             ProperSubtype::String { .. } => false,
             ProperSubtype::Mapping(bdd) => mapping_is_empty(bdd, builder),
+            ProperSubtype::List(bdd) => list_is_empty(bdd, builder),
         }
     }
 
@@ -159,6 +162,9 @@ impl ProperSubtypeOps for Rc<ProperSubtype> {
             },
             (ProperSubtype::Mapping(b1), ProperSubtype::Mapping(b2)) => {
                 SubType::Proper(ProperSubtype::Mapping(b1.intersect(b2)).into()).into()
+            }
+            (ProperSubtype::List(b1), ProperSubtype::List(b2)) => {
+                SubType::Proper(ProperSubtype::List(b1.intersect(b2)).into()).into()
             }
             _ => panic!(),
         }
@@ -205,6 +211,9 @@ impl ProperSubtypeOps for Rc<ProperSubtype> {
             (ProperSubtype::Mapping(b1), ProperSubtype::Mapping(b2)) => {
                 SubType::Proper(ProperSubtype::Mapping(b1.union(b2)).into()).into()
             }
+            (ProperSubtype::List(b1), ProperSubtype::List(b2)) => {
+                SubType::Proper(ProperSubtype::List(b1.union(b2)).into()).into()
+            }
             _ => panic!(),
         }
     }
@@ -219,6 +228,9 @@ impl ProperSubtypeOps for Rc<ProperSubtype> {
             }
             (ProperSubtype::Mapping(b1), ProperSubtype::Mapping(b2)) => {
                 SubType::Proper(ProperSubtype::Mapping(b1.diff(b2)).into()).into()
+            }
+            (ProperSubtype::List(b1), ProperSubtype::List(b2)) => {
+                SubType::Proper(ProperSubtype::List(b1.diff(b2)).into()).into()
             }
             _ => self.intersect(&t2.complement()),
         }
@@ -238,6 +250,7 @@ impl ProperSubtypeOps for Rc<ProperSubtype> {
             }
             .into(),
             ProperSubtype::Mapping(bdd) => ProperSubtype::Mapping(bdd.complement()).into(),
+            ProperSubtype::List(bdd) => ProperSubtype::List(bdd.complement()).into(),
         }
     }
 }
@@ -249,6 +262,7 @@ impl ProperSubtype {
             ProperSubtype::Number { .. } => SubTypeTag::Number,
             ProperSubtype::String { .. } => SubTypeTag::String,
             ProperSubtype::Mapping(_) => SubTypeTag::Mapping,
+            ProperSubtype::List(_) => SubTypeTag::List,
         }
     }
     pub fn to_code(&self) -> BasicTypeCode {

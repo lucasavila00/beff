@@ -5,7 +5,7 @@ use crate::ast::json_schema::Optionality;
 use crate::{ast::json_schema::JsonSchema, open_api_ast::Validator};
 
 use self::bdd::MappingAtomic;
-use self::semtype::{SemType, SemTypeBuilder, SemTypeOps};
+use self::semtype::{SemType, SemTypeContext, SemTypeOps};
 use self::subtype::StringLitOrFormat;
 pub mod bdd;
 pub mod semtype;
@@ -34,7 +34,7 @@ impl<'a> ToSemTypeConverter<'a> {
     fn to_sem_type(
         &self,
         schema: &JsonSchema,
-        builder: &mut SemTypeBuilder,
+        builder: &mut SemTypeContext,
     ) -> Result<Rc<SemType>> {
         match schema {
             JsonSchema::Ref(name) => {
@@ -42,7 +42,7 @@ impl<'a> ToSemTypeConverter<'a> {
                 if let JsonSchema::Object(vs) = schema {
                     match builder.json_schema_ref_memo.get(name) {
                         Some(idx) => {
-                            let ty = Rc::new(SemTypeBuilder::mapping_definition_from_idx(*idx));
+                            let ty = Rc::new(SemTypeContext::mapping_definition_from_idx(*idx));
                             return Ok(ty);
                         }
                         None => {
@@ -54,14 +54,14 @@ impl<'a> ToSemTypeConverter<'a> {
                                 .map(|(k, v)| match v {
                                     Optionality::Optional(v) => self
                                         .to_sem_type(v, builder)
-                                        .map(|v| (k.clone(), SemTypeBuilder::optional(v))),
+                                        .map(|v| (k.clone(), SemTypeContext::optional(v))),
                                     Optionality::Required(v) => {
                                         self.to_sem_type(v, builder).map(|v| (k.clone(), v))
                                     }
                                 })
                                 .collect::<Result<_>>()?;
                             builder.mapping_definitions[idx] = Some(Rc::new(vs));
-                            let ty = Rc::new(SemTypeBuilder::mapping_definition_from_idx(idx));
+                            let ty = Rc::new(SemTypeContext::mapping_definition_from_idx(idx));
                             return Ok(ty);
                         }
                     }
@@ -70,26 +70,26 @@ impl<'a> ToSemTypeConverter<'a> {
                 Ok(ty)
             }
             JsonSchema::AnyOf(vs) => {
-                let mut acc = Rc::new(SemTypeBuilder::never());
+                let mut acc = Rc::new(SemTypeContext::never());
                 for v in vs {
                     acc = acc.union(&self.to_sem_type(v, builder)?);
                 }
                 Ok(acc)
             }
             JsonSchema::AllOf(vs) => {
-                let mut acc = Rc::new(SemTypeBuilder::never());
+                let mut acc = Rc::new(SemTypeContext::never());
                 for v in vs {
                     acc = acc.intersect(&self.to_sem_type(v, builder)?);
                 }
                 Ok(acc)
             }
-            JsonSchema::Null => Ok(SemTypeBuilder::null().into()),
-            JsonSchema::Boolean => Ok(SemTypeBuilder::boolean().into()),
-            JsonSchema::String => Ok(SemTypeBuilder::string().into()),
-            JsonSchema::Number => Ok(SemTypeBuilder::number().into()),
-            JsonSchema::Any => Ok(SemTypeBuilder::unknown().into()),
+            JsonSchema::Null => Ok(SemTypeContext::null().into()),
+            JsonSchema::Boolean => Ok(SemTypeContext::boolean().into()),
+            JsonSchema::String => Ok(SemTypeContext::string().into()),
+            JsonSchema::Number => Ok(SemTypeContext::number().into()),
+            JsonSchema::Any => Ok(SemTypeContext::unknown().into()),
             JsonSchema::StringWithFormat(s) => {
-                Ok(SemTypeBuilder::string_const(StringLitOrFormat::Format(s.clone())).into())
+                Ok(SemTypeContext::string_const(StringLitOrFormat::Format(s.clone())).into())
             }
             JsonSchema::Object(vs) => {
                 let vs = vs
@@ -97,7 +97,7 @@ impl<'a> ToSemTypeConverter<'a> {
                     .map(|(k, v)| match v {
                         Optionality::Optional(v) => self
                             .to_sem_type(v, builder)
-                            .map(|v| (k.clone(), SemTypeBuilder::optional(v))),
+                            .map(|v| (k.clone(), SemTypeContext::optional(v))),
                         Optionality::Required(v) => {
                             self.to_sem_type(v, builder).map(|v| (k.clone(), v))
                         }
@@ -105,18 +105,31 @@ impl<'a> ToSemTypeConverter<'a> {
                     .collect::<Result<_>>()?;
                 Ok(builder.mapping_definition(vs).into())
             }
-            JsonSchema::Array(_) => todo!(),
+            JsonSchema::Array(items) => {
+                let items = self.to_sem_type(items, builder)?;
+                Ok(builder.array(items).into())
+            }
             JsonSchema::Tuple {
                 prefix_items,
                 items,
-            } => todo!(),
+            } => {
+                let items = match items {
+                    Some(items) => Some(self.to_sem_type(items, builder)?),
+                    None => None,
+                };
+                let prefix_items = prefix_items
+                    .iter()
+                    .map(|v| self.to_sem_type(v, builder))
+                    .collect::<Result<_>>()?;
+                Ok(builder.tuple(prefix_items, items).into())
+            }
             JsonSchema::Const(cons) => match cons {
-                Json::Null => Ok(SemTypeBuilder::null().into()),
-                Json::Bool(b) => Ok(SemTypeBuilder::boolean_const(*b).into()),
+                Json::Null => Ok(SemTypeContext::null().into()),
+                Json::Bool(b) => Ok(SemTypeContext::boolean_const(*b).into()),
                 Json::String(s) => {
-                    Ok(SemTypeBuilder::string_const(StringLitOrFormat::Lit(s.clone())).into())
+                    Ok(SemTypeContext::string_const(StringLitOrFormat::Lit(s.clone())).into())
                 }
-                Json::Number(n) => Ok(SemTypeBuilder::number_const(n.clone()).into()),
+                Json::Number(n) => Ok(SemTypeContext::number_const(n.clone()).into()),
                 Json::Array(_) => unreachable!("array cannot be used as a type const"),
                 Json::Object(_) => unreachable!("object cannot be used as a type const"),
             },
@@ -132,7 +145,7 @@ trait ToSemType {
     fn to_sub_type(
         &self,
         validators: &Vec<Validator>,
-        builder: &mut SemTypeBuilder,
+        builder: &mut SemTypeContext,
     ) -> Result<Rc<SemType>>;
 }
 
@@ -140,7 +153,7 @@ impl ToSemType for JsonSchema {
     fn to_sub_type(
         &self,
         validators: &Vec<Validator>,
-        builder: &mut SemTypeBuilder,
+        builder: &mut SemTypeContext,
     ) -> Result<Rc<SemType>> {
         ToSemTypeConverter::new(validators).to_sem_type(self, builder)
     }
@@ -150,7 +163,7 @@ pub fn is_sub_type(
     a: &JsonSchema,
     b: &JsonSchema,
     validators: &Vec<Validator>,
-    builder: &mut SemTypeBuilder,
+    builder: &mut SemTypeContext,
 ) -> Result<bool> {
     let a = a.to_sub_type(validators, builder)?;
     let b = b.to_sub_type(validators, builder)?;

@@ -1,7 +1,5 @@
-use swc_common::util::map::Map;
-
 use super::{
-    bdd::{Atom, Bdd, MappingAtomic},
+    bdd::{Atom, Bdd, ListAtomic, MappingAtomic},
     subtype::{
         BasicTypeBitSet, BasicTypeCode, NumberRepresentation, ProperSubtype, ProperSubtypeOps,
         StringLitOrFormat, SubType, SubTypeTag,
@@ -80,17 +78,17 @@ pub struct ComplexSemType {
 pub type SemType = ComplexSemType;
 
 pub trait SemTypeOps {
-    fn is_empty(&self, builder: &mut SemTypeBuilder) -> bool;
+    fn is_empty(&self, builder: &mut SemTypeContext) -> bool;
     fn intersect(&self, t2: &Rc<SemType>) -> Rc<SemType>;
     fn union(&self, t2: &Rc<SemType>) -> Rc<SemType>;
     fn diff(&self, t2: &Rc<SemType>) -> Rc<SemType>;
     fn complement(&self) -> Rc<SemType>;
-    fn is_subtype(&self, t2: &Rc<SemType>, builder: &mut SemTypeBuilder) -> bool;
-    fn is_same_type(&self, t2: &Rc<SemType>, builder: &mut SemTypeBuilder) -> bool;
+    fn is_subtype(&self, t2: &Rc<SemType>, builder: &mut SemTypeContext) -> bool;
+    fn is_same_type(&self, t2: &Rc<SemType>, builder: &mut SemTypeContext) -> bool;
 }
 
 impl SemTypeOps for Rc<SemType> {
-    fn is_empty(&self, builder: &mut SemTypeBuilder) -> bool {
+    fn is_empty(&self, builder: &mut SemTypeContext) -> bool {
         if self.all != 0 {
             // includes all of one or more basic types
             return false;
@@ -220,14 +218,14 @@ impl SemTypeOps for Rc<SemType> {
     }
 
     fn complement(&self) -> Rc<SemType> {
-        Rc::new(SemTypeBuilder::never()).diff(self)
+        Rc::new(SemTypeContext::never()).diff(self)
     }
 
-    fn is_subtype(&self, t2: &Rc<SemType>, builder: &mut SemTypeBuilder) -> bool {
+    fn is_subtype(&self, t2: &Rc<SemType>, builder: &mut SemTypeContext) -> bool {
         self.diff(t2).is_empty(builder)
     }
 
-    fn is_same_type(&self, t2: &Rc<SemType>, builder: &mut SemTypeBuilder) -> bool {
+    fn is_same_type(&self, t2: &Rc<SemType>, builder: &mut SemTypeContext) -> bool {
         self.is_subtype(t2, builder) && t2.is_subtype(self, builder)
     }
 }
@@ -293,15 +291,16 @@ impl MemoEmpty {
 #[derive(Clone, Copy, Debug)]
 pub struct BddMemoEmptyRef(pub MemoEmpty);
 
-pub struct SemTypeBuilder {
+pub struct SemTypeContext {
     pub mapping_definitions: Vec<Option<Rc<MappingAtomic>>>,
     pub mapping_memo: BTreeMap<Bdd, BddMemoEmptyRef>,
 
-    // pub mapping_definitions: Vec<Option<Rc<MappingAtomic>>>,
+    pub list_definitions: Vec<Option<Rc<ListAtomic>>>,
     pub list_memo: BTreeMap<Bdd, BddMemoEmptyRef>,
+
     pub json_schema_ref_memo: BTreeMap<String, usize>,
 }
-impl SemTypeBuilder {
+impl SemTypeContext {
     pub fn get_mapping_atomic(&self, idx: usize) -> Rc<MappingAtomic> {
         self.mapping_definitions
             .get(idx)
@@ -310,9 +309,18 @@ impl SemTypeBuilder {
             .expect("should exist")
             .clone()
     }
+    pub fn get_list_atomic(&self, idx: usize) -> Rc<ListAtomic> {
+        self.list_definitions
+            .get(idx)
+            .expect("should exist")
+            .as_ref()
+            .expect("should exist")
+            .clone()
+    }
 
-    pub fn new() -> SemTypeBuilder {
-        SemTypeBuilder {
+    pub fn new() -> SemTypeContext {
+        SemTypeContext {
+            list_definitions: vec![],
             mapping_definitions: vec![],
             mapping_memo: BTreeMap::new(),
             list_memo: BTreeMap::new(),
@@ -351,6 +359,33 @@ impl SemTypeBuilder {
         self.mapping_definitions.push(Some(vs.clone().into()));
 
         return Self::mapping_definition_from_idx(idx);
+    }
+    pub fn list_definition_from_idx(idx: usize) -> SemType {
+        return SemType::new_complex(
+            0x0,
+            vec![ProperSubtype::List(Bdd::from_atom(Atom::List(idx)).into()).into()],
+        );
+    }
+    pub fn list_definition(&mut self, vs: ListAtomic) -> SemType {
+        let idx = self.list_definitions.len();
+        self.list_definitions.push(Some(vs.clone().into()));
+
+        return Self::list_definition_from_idx(idx);
+    }
+    pub fn array(&mut self, v: Rc<SemType>) -> SemType {
+        let atom = ListAtomic {
+            prefix_items: vec![],
+            items: v,
+        };
+        return self.list_definition(atom);
+    }
+    pub fn tuple(&mut self, prefix_items: Vec<Rc<SemType>>, items: Option<Rc<SemType>>) -> SemType {
+        let atom = ListAtomic {
+            prefix_items,
+            // todo: should be unknown?
+            items: items.unwrap_or(Self::never().into()),
+        };
+        return self.list_definition(atom);
     }
     pub fn boolean_const(value: bool) -> SemType {
         return SemType::new_complex(0x0, vec![ProperSubtype::Boolean(value).into()]);

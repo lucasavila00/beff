@@ -161,6 +161,31 @@ mod tests {
         assert!(!res);
     }
     #[test]
+    fn array2() {
+        let definitions = vec![];
+
+        let t1 = JsonSchema::Array(JsonSchema::Const(Json::String("abc".into())).into());
+        let t2 = JsonSchema::Array(JsonSchema::String.into());
+
+        let res = t1.is_sub_type(&t2, &definitions).unwrap();
+        assert!(res);
+        let res = t2.is_sub_type(&t1, &definitions).unwrap();
+        assert!(!res);
+    }
+
+    #[test]
+    fn array() {
+        let definitions = vec![];
+
+        let t1 = JsonSchema::Array(JsonSchema::String.into());
+        let t2 = JsonSchema::Array(JsonSchema::String.into());
+
+        let res = t1.is_sub_type(&t2, &definitions).unwrap();
+        assert!(res);
+        let res = t2.is_sub_type(&t1, &definitions).unwrap();
+        assert!(res);
+    }
+    #[test]
     fn it_works() {
         let definitions = vec![];
 

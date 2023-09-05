@@ -4,7 +4,7 @@ use std::collections::BTreeSet;
 use crate::ast::json::{Json, ToJson};
 use crate::open_api_ast::Validator;
 use crate::subtyping::is_sub_type;
-use crate::subtyping::semtype::SemTypeBuilder;
+use crate::subtyping::semtype::SemTypeContext;
 use anyhow::anyhow;
 use anyhow::Result;
 
@@ -251,7 +251,7 @@ impl JsonSchema {
     }
 
     pub fn is_sub_type(&self, b: &JsonSchema, validators: &Vec<Validator>) -> Result<bool> {
-        let mut builder = SemTypeBuilder::new();
+        let mut builder = SemTypeContext::new();
         return is_sub_type(self, b, validators, &mut builder);
     }
 }
