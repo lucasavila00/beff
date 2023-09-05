@@ -30,30 +30,6 @@ impl<T> Optionality<T> {
     }
 }
 
-// #[derive(Debug, PartialEq, Clone)]
-// pub struct JsonSchemaSet {
-//     schemas: Vec<JsonSchema>,
-// }
-// impl JsonSchemaSet {
-//     pub fn new(schemas: Vec<JsonSchema>) -> Self {
-//         // deduplicate without sorting
-//         let mut set = vec![];
-//         for schema in schemas {
-//             if set.iter().any(|it| it == &schema) {
-//                 continue;
-//             }
-//             set.push(schema);
-//         }
-
-//         Self { schemas: set }
-//     }
-//     pub fn iter(&self) -> impl Iterator<Item = &JsonSchema> {
-//         self.schemas.iter()
-//     }
-//     pub fn into_iter(self) -> impl Iterator<Item = JsonSchema> {
-//         self.schemas.into_iter()
-//     }
-// }
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord)]
 pub enum JsonSchema {
     Null,

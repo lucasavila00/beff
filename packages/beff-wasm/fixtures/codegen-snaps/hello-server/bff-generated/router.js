@@ -457,7 +457,7 @@ const schema =  {
                 "const": "a"
               },
               "b": {
-                "const": 1.0
+                "const": 1
               },
               "c": {
                 "const": true
@@ -530,7 +530,7 @@ const schema =  {
                 "const": "a"
               },
               {
-                "const": 1.0
+                "const": 1
               },
               {
                 "const": true

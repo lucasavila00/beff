@@ -97,7 +97,7 @@
               {
                 "properties": {
                   "a": {
-                    "const": 1.0
+                    "const": 1
                   }
                 },
                 "required": [
@@ -108,7 +108,7 @@
               {
                 "properties": {
                   "b": {
-                    "const": 2.0
+                    "const": 2
                   }
                 },
                 "required": [

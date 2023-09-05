@@ -181,7 +181,7 @@ const schema =  {
               {
                 "properties": {
                   "a": {
-                    "const": 1.0
+                    "const": 1
                   }
                 },
                 "required": [
@@ -192,7 +192,7 @@ const schema =  {
               {
                 "properties": {
                   "b": {
-                    "const": 2.0
+                    "const": 2
                   }
                 },
                 "required": [

@@ -158,7 +158,7 @@ const schema =  {
     },
     "schemas": {
       "AAAAA": {
-        "const": 123.0
+        "const": 123
       },
       "Abc123": {
         "properties": {
