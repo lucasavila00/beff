@@ -1,26 +1,5 @@
 ## BFF Core
 
-remove the need for this hack
-
-```
-const prettyPrintValue = (it: unknown): string => {
-  if (isCoercionFailure(it)) {
-    return prettyPrintValue(it.original);
-  }
-
-```
-
-## BFF Lib
-
-- [ ] logger plugin, integrated into app
-
-## BFF EXT
-
-- [ ] organize code, fix it
-- [ ] big parent error message
-
-## BFF Core
-
 - [ ] if it uses `*`, then it can just use use
 - [ ] only allow simple openapi patterns, no explode
 - [ ] disallow `/{param}asd/`
@@ -51,6 +30,59 @@ const prettyPrintValue = (it: unknown): string => {
 <!--  -->
 <!--  -->
 <!--  -->
+<!--  -->
+<!--  -->
+<!--  -->
+<!--  -->
+<!--  -->
+<!--  -->
+<!--  -->
+<!--  -->
+<!--  -->
+<!--  -->
+<!--  -->
+<!--  -->
+<!--  -->
+<!--  -->
+<!--  -->
+<!--  -->
+<!--  -->
+<!--  -->
+<!--  -->
+<!--  -->
+<!--  -->
+<!--  -->
+<!--  -->
+<!--  -->
+<!--  -->
+<!--  -->
+<!--  -->
+<!--  -->
+<!--  -->
+<!--  -->
+<!--  -->
+<!--  -->
+
+## BFF EXT
+
+- [ ] big parent error message
+
+## BFF Core
+
+remove the need for this hack
+
+```
+const prettyPrintValue = (it: unknown): string => {
+  if (isCoercionFailure(it)) {
+    return prettyPrintValue(it.original);
+  }
+
+```
+
+## BFF Lib
+
+- [ ] logger plugin, integrated into app
+
 <!--  -->
 <!--  -->
 <!--  -->

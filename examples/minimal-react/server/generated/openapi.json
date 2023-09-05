@@ -38,7 +38,19 @@
         "description": "Unexpected Error"
       }
     },
-    "schemas": {}
+    "schemas": {
+      "A": {
+        "properties": {
+          "a": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "a"
+        ],
+        "type": "object"
+      }
+    }
   },
   "info": {
     "title": "No title",
@@ -64,11 +76,15 @@
               "application/json": {
                 "schema": {
                   "properties": {
+                    "a": {
+                      "$ref": "#/components/schemas/A"
+                    },
                     "text": {
                       "type": "string"
                     }
                   },
                   "required": [
+                    "a",
                     "text"
                   ],
                   "type": "object"

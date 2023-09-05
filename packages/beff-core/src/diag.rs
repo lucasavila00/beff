@@ -97,7 +97,7 @@ impl DiagnosticInfoMessage {
                 "Type cannot be converted to JSON schema".to_string()
             }
             DiagnosticInfoMessage::ThisRefersToSomethingThatCannotBeSerialized(this) => {
-                format!("{this} cannot be converted to JSON schema")
+                format!("`{this}` cannot be converted to JSON schema")
             }
             DiagnosticInfoMessage::CannotUnderstandTsIndexedAccessType => {
                 "Indexed access types are not supported on schemas".to_string()

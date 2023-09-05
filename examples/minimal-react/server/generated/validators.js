@@ -21,6 +21,33 @@ function isCustomFormatInvalid(key, value) {
   return !predicate(value);
 }
 
-const validators = {};
+function A(input) {
+    let error_acc_0 = [];
+    if (typeof input == "object" && input != null) {
+        if (typeof input["a"] != "string") {
+            error_acc_0.push({
+                "error_kind": "NotTypeof",
+                "expected_type": "string",
+                "path": [
+                    "A",
+                    "a"
+                ],
+                "received": input["a"]
+            });
+        }
+    } else {
+        error_acc_0.push({
+            "error_kind": "NotAnObject",
+            "path": [
+                "A"
+            ],
+            "received": input
+        });
+    }
+    return error_acc_0;
+}
+const validators = {
+    A: A
+};
 
 export default { validators, isCustomFormatInvalid, registerStringFormat, add_path_to_errors };

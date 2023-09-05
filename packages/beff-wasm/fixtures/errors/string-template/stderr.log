@@ -3,7 +3,7 @@ Error: Exposing a type that cannot be converted to JSON schema
     6 |
     7 | export default {
  >  8 |   [`/hello/{id}`]: { get: async (c: Ctx, id: string): Promise<A> => todo() },
-      |                                                               ^ A cannot be converted to JSON schema
+      |                                                               ^ `A` cannot be converted to JSON schema
     9 | };
    10 |
 

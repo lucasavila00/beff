@@ -1,5 +1,10 @@
 import { Ctx } from "@beff/hono";
 import { cors } from "hono/cors";
+
+type A = {
+  a: string;
+};
+
 export default {
   "/*": {
     use: [cors()],

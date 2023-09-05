@@ -87,6 +87,10 @@ const meta = [
         "return_validator": function(input) {
             let error_acc_0 = [];
             if (typeof input == "object" && input != null) {
+                error_acc_0.push(...add_path_to_errors(validators.A(input["a"]), [
+                    "responseBody",
+                    "a"
+                ]));
                 if (typeof input["text"] != "string") {
                     error_acc_0.push({
                         "error_kind": "NotTypeof",
@@ -230,7 +234,19 @@ const schema =  {
         "description": "Unexpected Error"
       }
     },
-    "schemas": {}
+    "schemas": {
+      "A": {
+        "properties": {
+          "a": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "a"
+        ],
+        "type": "object"
+      }
+    }
   },
   "info": {
     "title": "No title",
@@ -256,11 +272,15 @@ const schema =  {
               "application/json": {
                 "schema": {
                   "properties": {
+                    "a": {
+                      "$ref": "#/components/schemas/A"
+                    },
                     "text": {
                       "type": "string"
                     }
                   },
                   "required": [
+                    "a",
                     "text"
                   ],
                   "type": "object"
