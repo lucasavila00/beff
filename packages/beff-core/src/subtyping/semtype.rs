@@ -1,5 +1,7 @@
+use swc_common::util::map::Map;
+
 use super::{
-    bdd::{Atom, Bdd},
+    bdd::{Atom, Bdd, MappingAtomic},
     subtype::{
         BasicTypeBitSet, BasicTypeCode, NumberRepresentation, ProperSubtype, ProperSubtypeOps,
         StringLitOrFormat, SubType, SubTypeTag,
@@ -78,23 +80,23 @@ pub struct ComplexSemType {
 pub type SemType = ComplexSemType;
 
 pub trait SemTypeOps {
-    fn is_empty(&self) -> bool;
+    fn is_empty(&self, builder: &mut SemTypeBuilder) -> bool;
     fn intersect(&self, t2: &Rc<SemType>) -> Rc<SemType>;
     fn union(&self, t2: &Rc<SemType>) -> Rc<SemType>;
     fn diff(&self, t2: &Rc<SemType>) -> Rc<SemType>;
     fn complement(&self) -> Rc<SemType>;
-    fn is_subtype(&self, t2: &Rc<SemType>) -> bool;
-    fn is_same_type(&self, t2: &Rc<SemType>) -> bool;
+    fn is_subtype(&self, t2: &Rc<SemType>, builder: &mut SemTypeBuilder) -> bool;
+    fn is_same_type(&self, t2: &Rc<SemType>, builder: &mut SemTypeBuilder) -> bool;
 }
 
 impl SemTypeOps for Rc<SemType> {
-    fn is_empty(&self) -> bool {
+    fn is_empty(&self, builder: &mut SemTypeBuilder) -> bool {
         if self.all != 0 {
             // includes all of one or more basic types
             return false;
         }
         for st in self.subtype_data.iter() {
-            if !st.is_empty() {
+            if !st.is_empty(builder) {
                 return false;
             }
         }
@@ -221,12 +223,12 @@ impl SemTypeOps for Rc<SemType> {
         Rc::new(SemTypeBuilder::never()).diff(self)
     }
 
-    fn is_subtype(&self, t2: &Rc<SemType>) -> bool {
-        self.diff(t2).is_empty()
+    fn is_subtype(&self, t2: &Rc<SemType>, builder: &mut SemTypeBuilder) -> bool {
+        self.diff(t2).is_empty(builder)
     }
 
-    fn is_same_type(&self, t2: &Rc<SemType>) -> bool {
-        self.is_subtype(t2) && t2.is_subtype(self)
+    fn is_same_type(&self, t2: &Rc<SemType>, builder: &mut SemTypeBuilder) -> bool {
+        self.is_subtype(t2, builder) && t2.is_subtype(self, builder)
     }
 }
 
@@ -270,8 +272,52 @@ impl SemType {
         }
     }
 }
-pub struct SemTypeBuilder {}
+
+#[derive(Debug, Clone, Copy)]
+pub enum MemoEmpty {
+    True,
+    False,
+    // Loop,
+    // Cyclic,
+    // Provisional,
+    Undefined,
+}
+
+impl MemoEmpty {
+    pub fn from_bool(b: bool) -> MemoEmpty {
+        if b {
+            MemoEmpty::True
+        } else {
+            MemoEmpty::False
+        }
+    }
+}
+
+#[derive(Clone, Copy, Debug)]
+pub struct BddMemoEmptyRef(pub MemoEmpty);
+
+pub struct SemTypeBuilder {
+    pub mapping_definitions: Vec<Rc<MappingAtomic>>,
+
+    pub mapping_memo: BTreeMap<Bdd, BddMemoEmptyRef>,
+
+    pub json_schema_ref_memo: BTreeMap<String, Option<Rc<SemType>>>,
+}
 impl SemTypeBuilder {
+    pub fn get_mapping_atomic(&self, idx: usize) -> Rc<MappingAtomic> {
+        self.mapping_definitions
+            .get(idx)
+            .expect("should exist")
+            .clone()
+    }
+
+    pub fn new() -> SemTypeBuilder {
+        SemTypeBuilder {
+            mapping_definitions: vec![],
+            mapping_memo: BTreeMap::new(),
+            json_schema_ref_memo: BTreeMap::new(),
+        }
+    }
     pub fn number_const(value: NumberRepresentation) -> SemType {
         return SemType::new_complex(
             0x0,
@@ -293,10 +339,13 @@ impl SemTypeBuilder {
             .into()],
         );
     }
-    pub fn mapping_definition(vs: BTreeMap<String, Rc<SemType>>) -> SemType {
+    pub fn mapping_definition(&mut self, vs: MappingAtomic) -> SemType {
+        let idx = self.mapping_definitions.len();
+        self.mapping_definitions.push(vs.clone().into());
+
         return SemType::new_complex(
             0x0,
-            vec![ProperSubtype::Mapping(Bdd::from_atom(Atom::Mapping(vs.into())).into()).into()],
+            vec![ProperSubtype::Mapping(Bdd::from_atom(Atom::Mapping(idx)).into()).into()],
         );
     }
     pub fn boolean_const(value: bool) -> SemType {

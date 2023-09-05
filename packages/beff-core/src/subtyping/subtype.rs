@@ -2,7 +2,10 @@ use std::rc::Rc;
 
 use crate::ast::json::N;
 
-use super::bdd::{mapping_is_empty, Bdd, BddOps};
+use super::{
+    bdd::{mapping_is_empty, Bdd, BddOps},
+    semtype::SemTypeBuilder,
+};
 
 pub type BasicTypeCode = u32;
 pub type BasicTypeBitSet = u32;
@@ -52,9 +55,9 @@ impl SubType {
         SubType::Proper(ProperSubtype::String { allowed, values }.into())
     }
 
-    pub fn is_empty(&self) -> bool {
+    pub fn is_empty(&self, builder: &mut SemTypeBuilder) -> bool {
         match self {
-            SubType::Proper(p) => p.is_empty(),
+            SubType::Proper(p) => p.is_empty(builder),
             SubType::False(_) => todo!(),
             SubType::True(_) => todo!(),
         }
@@ -97,7 +100,7 @@ fn vec_diff<K: PartialEq + Clone + Ord>(v1: &Vec<K>, v2: &Vec<K>) -> Vec<K> {
 }
 
 pub trait ProperSubtypeOps {
-    fn is_empty(&self) -> bool;
+    fn is_empty(&self, builder: &mut SemTypeBuilder) -> bool;
     fn intersect(&self, t2: &Rc<ProperSubtype>) -> Rc<SubType>;
     fn union(&self, t2: &Rc<ProperSubtype>) -> Rc<SubType>;
     fn diff(&self, t2: &Rc<ProperSubtype>) -> Rc<SubType>;
@@ -105,14 +108,14 @@ pub trait ProperSubtypeOps {
 }
 
 impl ProperSubtypeOps for Rc<ProperSubtype> {
-    fn is_empty(&self) -> bool {
+    fn is_empty(&self, builder: &mut SemTypeBuilder) -> bool {
         match &**self {
             ProperSubtype::Boolean(_) => false,
             // Empty number sets don't use subtype representation.
             ProperSubtype::Number { .. } => false,
             // Empty string sets don't use subtype representation.
             ProperSubtype::String { .. } => false,
-            ProperSubtype::Mapping(bdd) => mapping_is_empty(bdd),
+            ProperSubtype::Mapping(bdd) => mapping_is_empty(bdd, builder),
         }
     }
 

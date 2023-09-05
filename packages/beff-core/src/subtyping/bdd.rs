@@ -6,21 +6,21 @@ use std::{
 
 use crate::subtyping::semtype::SemTypeBuilder;
 
-use super::semtype::{SemType, SemTypeOps};
+use super::semtype::{BddMemoEmptyRef, MemoEmpty, SemType, SemTypeOps};
 
-type MappingAtomic = BTreeMap<String, Rc<SemType>>;
+pub type MappingAtomic = BTreeMap<String, Rc<SemType>>;
 #[derive(PartialEq, Eq, Hash, Debug, Ord, PartialOrd)]
 pub enum Atom {
-    Function(Rc<SemType>, Rc<SemType>),
-    Mapping(Rc<MappingAtomic>),
-    List(Rc<SemType>),
+    // Function(Rc<SemType>, Rc<SemType>),
+    Mapping(usize),
+    // List(Rc<SemType>),
 }
 
 fn atom_cmp(a: &Atom, b: &Atom) -> Ordering {
     a.cmp(b)
 }
 
-#[derive(PartialEq, Eq, Hash, Debug, Ord, PartialOrd)]
+#[derive(PartialEq, Eq, Hash, Debug, Ord, PartialOrd, Clone)]
 pub enum Bdd {
     True,
     False,
@@ -266,7 +266,11 @@ fn and(atom: Rc<Atom>, next: Option<Rc<Conjunction>>) -> Option<Rc<Conjunction>>
 
 // type BddPredicate function(TypeCheckContext tc, Conjunction? pos, Conjunction? neg) returns boolean;
 
-type BddPredicate = fn(pos: &Option<Rc<Conjunction>>, neg: &Option<Rc<Conjunction>>) -> bool;
+type BddPredicate = fn(
+    pos: &Option<Rc<Conjunction>>,
+    neg: &Option<Rc<Conjunction>>,
+    builder: &mut SemTypeBuilder,
+) -> bool;
 
 // A Bdd represents a disjunction of conjunctions of atoms, where each atom is either positive or
 // negative (negated). Each path from the root to a leaf that is true represents one of the conjunctions
@@ -277,19 +281,31 @@ fn bdd_every(
     pos: &Option<Rc<Conjunction>>,
     neg: &Option<Rc<Conjunction>>,
     predicate: BddPredicate,
+    builder: &mut SemTypeBuilder,
 ) -> bool {
     match &**bdd {
         Bdd::False => true,
-        Bdd::True => predicate(pos, neg),
+        Bdd::True => predicate(pos, neg, builder),
         Bdd::Node {
             atom,
             left,
             middle,
             right,
         } => {
-            bdd_every(left, &and(atom.clone(), pos.clone()), neg, predicate)
-                && bdd_every(middle, pos, neg, predicate)
-                && bdd_every(right, pos, &and(atom.clone(), neg.clone()), predicate)
+            bdd_every(
+                left,
+                &and(atom.clone(), pos.clone()),
+                neg,
+                predicate,
+                builder,
+            ) && bdd_every(middle, pos, neg, predicate, builder)
+                && bdd_every(
+                    right,
+                    pos,
+                    &and(atom.clone(), neg.clone()),
+                    predicate,
+                    builder,
+                )
         }
     }
 }
@@ -316,12 +332,16 @@ fn intersect_mapping(m1: Rc<MappingAtomic>, m2: Rc<MappingAtomic>) -> Option<Rc<
     return Some(Rc::new(MappingAtomic::from_iter(acc)));
 }
 
-fn mapping_inhabited(pos: Rc<MappingAtomic>, neg_list: &Option<Rc<Conjunction>>) -> bool {
+fn mapping_inhabited(
+    pos: Rc<MappingAtomic>,
+    neg_list: &Option<Rc<Conjunction>>,
+    builder: &mut SemTypeBuilder,
+) -> bool {
     match neg_list {
         None => true,
         Some(neg_list) => {
             let neg = match &*neg_list.atom {
-                Atom::Mapping(a) => a,
+                Atom::Mapping(a) => builder.get_mapping_atomic(*a),
                 _ => unreachable!(),
             };
 
@@ -340,7 +360,7 @@ fn mapping_inhabited(pos: Rc<MappingAtomic>, neg_list: &Option<Rc<Conjunction>>)
                     .map(|it| it.clone())
                     .unwrap_or_else(|| Rc::new(SemTypeBuilder::any()));
                 if pos_type.is_never() || neg_type.is_never() {
-                    return mapping_inhabited(pos, &neg_list.next);
+                    return mapping_inhabited(pos, &neg_list.next, builder);
                 }
             }
             for name in all_names {
@@ -354,10 +374,10 @@ fn mapping_inhabited(pos: Rc<MappingAtomic>, neg_list: &Option<Rc<Conjunction>>)
                     .unwrap_or_else(|| Rc::new(SemTypeBuilder::any()));
 
                 let d = pos_type.diff(&neg_type);
-                if !d.is_empty() {
+                if !d.is_empty(builder) {
                     let mut mt = pos.as_ref().clone();
                     mt.insert(name.to_string(), d);
-                    if mapping_inhabited(Rc::new(mt), &neg_list.next) {
+                    if mapping_inhabited(Rc::new(mt), &neg_list.next, builder) {
                         return true;
                     }
                 }
@@ -371,19 +391,20 @@ fn mapping_inhabited(pos: Rc<MappingAtomic>, neg_list: &Option<Rc<Conjunction>>)
 fn mapping_formula_is_empty(
     pos_list: &Option<Rc<Conjunction>>,
     neg_list: &Option<Rc<Conjunction>>,
+    builder: &mut SemTypeBuilder,
 ) -> bool {
     let mut combined: Rc<MappingAtomic> = Rc::new(BTreeMap::new());
     match pos_list {
         None => {}
         Some(pos_atom) => {
             match pos_atom.atom.as_ref() {
-                Atom::Mapping(a) => combined = a.clone(),
+                Atom::Mapping(a) => combined = builder.get_mapping_atomic(*a).clone(),
                 _ => unreachable!(),
             };
             let mut p = pos_atom.next.clone();
             while let Some(some_p) = p {
                 let p_atom = match &*some_p.atom {
-                    Atom::Mapping(a) => a,
+                    Atom::Mapping(a) => builder.get_mapping_atomic(*a),
                     _ => unreachable!(),
                 };
                 let m = intersect_mapping(combined.clone(), p_atom.clone());
@@ -394,16 +415,46 @@ fn mapping_formula_is_empty(
                 p = some_p.next.clone();
             }
             for t in combined.values() {
-                if t.is_empty() {
+                if t.is_empty(builder) {
                     return true;
                 }
             }
         }
     }
-    return !mapping_inhabited(combined, neg_list);
+    return !mapping_inhabited(combined, neg_list, builder);
 }
-pub fn mapping_is_empty(bdd: &Rc<Bdd>) -> bool {
+pub fn mapping_is_empty(bdd: &Rc<Bdd>, builder: &mut SemTypeBuilder) -> bool {
+    // dbg!(&builder.mapping_memo);
     // todo: memoization
 
-    bdd_every(bdd, &None, &None, mapping_formula_is_empty)
+    match builder.mapping_memo.get(&bdd) {
+        Some(mm) => match &mm.0 {
+            // MemoEmpty::Cyclic => {
+            //     // todo ??
+            //     return true;
+            // }
+            MemoEmpty::True => return true,
+            MemoEmpty::False => return false,
+            // MemoEmpty::Provisional |
+            // MemoEmpty::Loop => {
+            //     // mm.0 = MemoEmpty::Loop;
+            //     return true;
+            // }
+            MemoEmpty::Undefined => {
+                // we got a loop
+                return true;
+            }
+        },
+        None => {
+            builder
+                .mapping_memo
+                .insert((**bdd).clone(), BddMemoEmptyRef(MemoEmpty::Undefined));
+        }
+    }
+
+    // m.0 = MemoEmpty::Provisional;
+
+    let is_empty = bdd_every(bdd, &None, &None, mapping_formula_is_empty, builder);
+    builder.mapping_memo.get_mut(&bdd).unwrap().0 = MemoEmpty::from_bool(is_empty);
+    is_empty
 }

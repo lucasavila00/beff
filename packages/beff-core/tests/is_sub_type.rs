@@ -1,6 +1,38 @@
 #[cfg(test)]
 mod tests {
-    use beff_core::ast::{json::Json, json_schema::JsonSchema};
+    use beff_core::{
+        ast::{json::Json, json_schema::JsonSchema},
+        open_api_ast::Validator,
+    };
+
+    #[test]
+    fn mappings4() {
+        let definitions = vec![Validator {
+            name: "User".into(),
+            schema: JsonSchema::object(vec![
+                ("id".into(), JsonSchema::String.required()),
+                (
+                    "bestFriend".into(),
+                    JsonSchema::Ref("User".into()).optional(),
+                ),
+            ]),
+        }];
+
+        let t1 = JsonSchema::object(vec![
+            ("a".into(), JsonSchema::String.required()),
+            ("b".into(), JsonSchema::Ref("User".into()).required()),
+        ]);
+        let t2 = JsonSchema::object(vec![
+            ("a".into(), JsonSchema::String.required()),
+            ("b".into(), JsonSchema::Ref("User".into()).optional()),
+        ]);
+
+        let res = t1.is_sub_type(&t2, &definitions).unwrap();
+        assert!(res);
+        let res = t2.is_sub_type(&t1, &definitions).unwrap();
+        assert!(!res);
+    }
+
     #[test]
     fn mappings3() {
         let definitions = vec![];
