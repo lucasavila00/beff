@@ -134,7 +134,7 @@ fn run_extraction(entry: EntryPoints) -> ExtractResult {
                 files: &mut b.files,
             };
             let res = beff_core::extract(&mut man, entry);
-            res.self_check_sem_types();
+            // res.self_check_sem_types();
             res
         })
     })

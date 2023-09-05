@@ -14,11 +14,11 @@ use anyhow::anyhow;
 use anyhow::Result;
 
 struct ToSemTypeConverter<'a> {
-    validators: &'a Vec<Validator>,
+    validators: &'a [&'a Validator],
 }
 
 impl<'a> ToSemTypeConverter<'a> {
-    fn new(validators: &'a Vec<Validator>) -> Self {
+    fn new(validators: &'a [&'a Validator]) -> Self {
         Self { validators }
     }
 
@@ -144,7 +144,7 @@ impl<'a> ToSemTypeConverter<'a> {
 trait ToSemType {
     fn to_sub_type(
         &self,
-        validators: &Vec<Validator>,
+        validators: &[&Validator],
         builder: &mut SemTypeContext,
     ) -> Result<Rc<SemType>>;
 }
@@ -152,7 +152,7 @@ trait ToSemType {
 impl ToSemType for JsonSchema {
     fn to_sub_type(
         &self,
-        validators: &Vec<Validator>,
+        validators: &[&Validator],
         builder: &mut SemTypeContext,
     ) -> Result<Rc<SemType>> {
         ToSemTypeConverter::new(validators).to_sem_type(self, builder)
@@ -162,7 +162,7 @@ impl ToSemType for JsonSchema {
 pub fn is_sub_type(
     a: &JsonSchema,
     b: &JsonSchema,
-    validators: &Vec<Validator>,
+    validators: &[&Validator],
     builder: &mut SemTypeContext,
 ) -> Result<bool> {
     let a = a.to_sub_type(validators, builder)?;

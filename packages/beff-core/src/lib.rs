@@ -224,12 +224,8 @@ impl ExtractResult {
 
     pub fn self_check_sem_types(&self) {
         let definitions = self.validators();
-        let cloned_definitions = definitions.iter().map(|it| (*it).clone()).collect();
         for def in &definitions {
-            let res = def
-                .schema
-                .is_sub_type(&def.schema, &cloned_definitions)
-                .unwrap();
+            let res = def.schema.is_sub_type(&def.schema, &definitions).unwrap();
             assert!(res);
         }
     }

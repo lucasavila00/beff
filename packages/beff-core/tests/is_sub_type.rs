@@ -24,9 +24,13 @@ mod tests {
             ("bestFriend".into(), JsonSchema::Null.required()),
         ]);
 
-        let res = t1.is_sub_type(&t2, &definitions).unwrap();
+        let res = t1
+            .is_sub_type(&t2, &definitions.iter().collect::<Vec<&Validator>>())
+            .unwrap();
         assert!(res);
-        let res = t2.is_sub_type(&t1, &definitions).unwrap();
+        let res = t2
+            .is_sub_type(&t1, &definitions.iter().collect::<Vec<&Validator>>())
+            .unwrap();
         assert!(!res);
     }
     #[test]
@@ -51,9 +55,13 @@ mod tests {
             ),
         ]);
 
-        let res = t1.is_sub_type(&t2, &definitions).unwrap();
+        let res = t1
+            .is_sub_type(&t2, &definitions.iter().collect::<Vec<&Validator>>())
+            .unwrap();
         assert!(res);
-        let res = t2.is_sub_type(&t1, &definitions).unwrap();
+        let res = t2
+            .is_sub_type(&t1, &definitions.iter().collect::<Vec<&Validator>>())
+            .unwrap();
         assert!(res);
     }
     #[test]
@@ -78,9 +86,13 @@ mod tests {
             ),
         ]);
 
-        let res = t1.is_sub_type(&t2, &definitions).unwrap();
+        let res = t1
+            .is_sub_type(&t2, &definitions.iter().collect::<Vec<&Validator>>())
+            .unwrap();
         assert!(!res);
-        let res = t2.is_sub_type(&t1, &definitions).unwrap();
+        let res = t2
+            .is_sub_type(&t1, &definitions.iter().collect::<Vec<&Validator>>())
+            .unwrap();
         assert!(!res);
     }
 
@@ -106,9 +118,13 @@ mod tests {
             ("b".into(), JsonSchema::Ref("User".into()).optional()),
         ]);
 
-        let res = t1.is_sub_type(&t2, &definitions).unwrap();
+        let res = t1
+            .is_sub_type(&t2, &definitions.iter().collect::<Vec<&Validator>>())
+            .unwrap();
         assert!(res);
-        let res = t2.is_sub_type(&t1, &definitions).unwrap();
+        let res = t2
+            .is_sub_type(&t1, &definitions.iter().collect::<Vec<&Validator>>())
+            .unwrap();
         assert!(!res);
     }
 
