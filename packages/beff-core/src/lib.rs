@@ -7,6 +7,7 @@ pub mod open_api_ast;
 pub mod parse;
 pub mod parser_extractor;
 pub mod print;
+pub mod subtyping;
 pub mod swc_builder;
 pub mod type_resolve;
 pub mod type_to_schema;

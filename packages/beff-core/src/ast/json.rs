@@ -1,7 +1,7 @@
 use core::fmt;
 use std::collections::BTreeMap;
 
-#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord)]
+#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct N {
     integral: i64,
     fractional: Option<i64>,
