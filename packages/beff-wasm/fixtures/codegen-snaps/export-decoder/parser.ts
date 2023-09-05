@@ -30,3 +30,14 @@ export const { StartsWithA, User, Users, NotPublicRenamed } =
     int: 123;
     union: UnionNested;
   }>();
+
+type T1 = { a: string };
+type T2 = { a?: string };
+
+type X = T1 extends T2 ? true : false;
+type X2 = "abc" extends string ? true : false;
+
+// const a = (): T2 => {
+//   const b: T1 = null as any;
+//   return b;
+// };

@@ -1,4 +1,10 @@
-use std::{cmp::Ordering, collections::BTreeMap, rc::Rc};
+use std::{
+    cmp::Ordering,
+    collections::{BTreeMap, BTreeSet},
+    rc::Rc,
+};
+
+use crate::subtyping::semtype::SemTypeBuilder;
 
 use super::semtype::{SemType, SemTypeOps};
 
@@ -249,6 +255,7 @@ impl BddOps for Rc<Bdd> {
     }
 }
 
+#[derive(Debug)]
 struct Conjunction {
     atom: Rc<Atom>,
     next: Option<Rc<Conjunction>>,
@@ -285,73 +292,80 @@ fn bdd_every(
                 && bdd_every(right, pos, &and(atom.clone(), neg.clone()), predicate)
         }
     }
-    // if b is boolean {
-    //     return !b || predicate(tc, pos, neg);
-    // }
-    // else {
-    //     return bddEvery(tc, b.left, and(b.atom, pos), neg, predicate)
-    //       && bddEvery(tc, b.middle, pos, neg, predicate)
-    //       && bddEvery(tc, b.right, pos, and(b.atom, neg), predicate);
-    // }
 }
 fn intersect_mapping(m1: Rc<MappingAtomic>, m2: Rc<MappingAtomic>) -> Option<Rc<MappingAtomic>> {
-    todo!()
+    let m1_names = BTreeSet::from_iter(m1.keys());
+    let m2_names = BTreeSet::from_iter(m2.keys());
+    let all_names = m1_names.union(&m2_names).collect::<BTreeSet<_>>();
+    let mut acc = vec![];
+    for name in all_names {
+        let type1 = m1
+            .get(*name)
+            .map(|it| it.clone())
+            .unwrap_or_else(|| Rc::new(SemTypeBuilder::any()));
+        let type2 = m2
+            .get(*name)
+            .map(|it| it.clone())
+            .unwrap_or_else(|| Rc::new(SemTypeBuilder::any()));
+        let t = type1.intersect(&type2);
+        if t.is_never() {
+            return None;
+        }
+        acc.push((name.to_string(), t))
+    }
+    return Some(Rc::new(MappingAtomic::from_iter(acc)));
 }
+
 fn mapping_inhabited(pos: Rc<MappingAtomic>, neg_list: &Option<Rc<Conjunction>>) -> bool {
-    // if negList is () {
-    //     return true;
-    // }
-    // else {
-    //     MappingAtomicType neg = tc.mappingDefs[negList.atom];
+    match neg_list {
+        None => true,
+        Some(neg_list) => {
+            let neg = match &*neg_list.atom {
+                Atom::Mapping(a) => a,
+                _ => unreachable!(),
+            };
 
-    //     MappingPairing pairing;
+            let pos_names = BTreeSet::from_iter(pos.keys());
+            let neg_names = BTreeSet::from_iter(neg.keys());
 
-    //     if pos.names != neg.names {
-    //         // If this negative type has required fields that the positive one does not allow
-    //         // or vice-versa, then this negative type has no effect,
-    //         // so we can move on to the next one
+            let all_names = pos_names.union(&neg_names).collect::<BTreeSet<_>>();
 
-    //         // Deal the easy case of two closed records fast.
-    //         if isNever(pos.rest) && isNever(neg.rest) {
-    //             return mappingInhabited(tc, pos, negList.next);
-    //         }
-    //         pairing = new (pos, neg);
-    //         foreach var {type1: posType, type2: negType} in pairing {
-    //             if isNever(posType) || isNever(negType) {
-    //                 return mappingInhabited(tc, pos, negList.next);
-    //             }
-    //         }
-    //         pairing.reset();
-    //     }
-    //     else {
-    //         pairing = new (pos, neg);
-    //     }
+            for name in all_names.iter() {
+                let pos_type = pos
+                    .get(**name)
+                    .map(|it| it.clone())
+                    .unwrap_or_else(|| Rc::new(SemTypeBuilder::any()));
+                let neg_type = neg
+                    .get(**name)
+                    .map(|it| it.clone())
+                    .unwrap_or_else(|| Rc::new(SemTypeBuilder::any()));
+                if pos_type.is_never() || neg_type.is_never() {
+                    return mapping_inhabited(pos, &neg_list.next);
+                }
+            }
+            for name in all_names {
+                let pos_type = pos
+                    .get(*name)
+                    .map(|it| it.clone())
+                    .unwrap_or_else(|| Rc::new(SemTypeBuilder::any()));
+                let neg_type = neg
+                    .get(*name)
+                    .map(|it| it.clone())
+                    .unwrap_or_else(|| Rc::new(SemTypeBuilder::any()));
 
-    //     if !isEmpty(tc, diff(pos.rest, neg.rest)) {
-    //         return true;
-    //     }
-    //     foreach var {name, type1: posType, type2: negType} in pairing {
-    //         SemType d = diff(posType, negType);
-    //         if !isEmpty(tc, d) {
-    //             TempMappingSubtype mt;
-    //             int? i = pairing.index1(name);
-    //             if i is () {
-    //                 // the posType came from the rest type
-    //                 mt = insertField(pos, name, d);
-    //             }
-    //             else {
-    //                 SemType[] posTypes = shallowCopyTypes(pos.types);
-    //                 posTypes[i] = d;
-    //                 mt = { types: posTypes, names: pos.names, rest: pos.rest };
-    //             }
-    //             if mappingInhabited(tc, mt, negList.next) {
-    //                 return true;
-    //             }
-    //         }
-    //     }
-    //     return false;
-    // }
-    todo!()
+                let d = pos_type.diff(&neg_type);
+                if !d.is_empty() {
+                    let mut mt = pos.as_ref().clone();
+                    mt.insert(name.to_string(), d);
+                    if mapping_inhabited(Rc::new(mt), &neg_list.next) {
+                        return true;
+                    }
+                }
+            }
+
+            return false;
+        }
+    }
 }
 
 fn mapping_formula_is_empty(
@@ -386,7 +400,6 @@ fn mapping_formula_is_empty(
             }
         }
     }
-
     return !mapping_inhabited(combined, neg_list);
 }
 pub fn mapping_is_empty(bdd: &Rc<Bdd>) -> bool {

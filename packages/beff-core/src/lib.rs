@@ -9,7 +9,7 @@ pub mod parser_extractor;
 pub mod print;
 pub mod subtyping;
 pub mod swc_builder;
-pub mod type_resolve;
+pub mod type_reference;
 pub mod type_to_schema;
 use api_extractor::extract_schema;
 use api_extractor::RouterExtractResult;

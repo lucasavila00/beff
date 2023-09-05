@@ -1,7 +1,39 @@
 #[cfg(test)]
 mod tests {
     use beff_core::ast::{json::Json, json_schema::JsonSchema};
+    // #[test]
+    // fn mappings3() {
+    //     let definitions = vec![];
 
+    //     let t1 = JsonSchema::object(vec![("a".into(), JsonSchema::String.required())]);
+    //     let t2 = JsonSchema::object(vec![("a".into(), JsonSchema::String.optional())]);
+
+    //     let res = t1.is_sub_type(&t2, &definitions).unwrap();
+    //     assert!(res);
+    //     let res = t2.is_sub_type(&t1, &definitions).unwrap();
+    //     assert!(!res);
+    // }
+    #[test]
+    fn mappings2() {
+        let definitions = vec![];
+
+        let t1 = JsonSchema::object(vec![
+            (
+                "a".into(),
+                JsonSchema::Const(Json::String("abc".into())).required(),
+            ),
+            (
+                "b".into(),
+                JsonSchema::Const(Json::String("def".into())).required(),
+            ),
+        ]);
+        let t2 = JsonSchema::object(vec![("a".into(), JsonSchema::String.required())]);
+
+        let res = t1.is_sub_type(&t2, &definitions).unwrap();
+        assert!(res);
+        let res = t2.is_sub_type(&t1, &definitions).unwrap();
+        assert!(!res);
+    }
     #[test]
     fn mappings() {
         let definitions = vec![];
@@ -11,6 +43,7 @@ mod tests {
             JsonSchema::Const(Json::String("abc".into())).required(),
         )]);
         let t2 = JsonSchema::object(vec![("a".into(), JsonSchema::String.required())]);
+
         let res = t1.is_sub_type(&t2, &definitions).unwrap();
         assert!(res);
         let res = t2.is_sub_type(&t1, &definitions).unwrap();

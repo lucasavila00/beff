@@ -4,7 +4,7 @@ use crate::diag::{
     span_to_loc, Diagnostic, DiagnosticInfoMessage, DiagnosticInformation, DiagnosticParentMessage,
 };
 use crate::open_api_ast::Validator;
-use crate::type_resolve::{ResolvedLocalType, TypeResolver};
+use crate::type_reference::{ResolvedLocalType, TypeResolver};
 use crate::{BffFileName, FileManager, ImportReference, TypeExport};
 use std::collections::HashMap;
 use std::rc::Rc;
