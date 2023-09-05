@@ -16,6 +16,7 @@ pub enum SubTypeTag {
     String = 1 << 0x3,
     Null = 1 << 0x4,
     Mapping = 1 << 0x5,
+    Void = 1 << 0x6,
 }
 
 impl SubTypeTag {

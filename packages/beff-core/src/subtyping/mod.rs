@@ -58,7 +58,9 @@ impl<'a> ToSemTypeConverter<'a> {
             JsonSchema::Object(vs) => Ok(SemTypeBuilder::mapping_definition(
                 vs.iter()
                     .map(|(k, v)| match v {
-                        Optionality::Optional(v) => todo!(),
+                        Optionality::Optional(v) => self
+                            .to_sem_type(v)
+                            .map(|v| (k.clone(), SemTypeBuilder::optional(v))),
                         Optionality::Required(v) => self.to_sem_type(v).map(|v| (k.clone(), v)),
                     })
                     .collect::<Result<_>>()?,

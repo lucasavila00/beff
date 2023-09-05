@@ -314,6 +314,13 @@ impl SemTypeBuilder {
     pub fn null() -> SemType {
         return SemType::new_basic(SubTypeTag::Null.code());
     }
+    pub fn void() -> SemType {
+        return SemType::new_basic(SubTypeTag::Void.code());
+    }
+    pub fn optional(it: Rc<SemType>) -> Rc<SemType> {
+        let t2 = Self::void();
+        return Rc::new(it).union(&Rc::new(t2));
+    }
 
     pub fn never() -> SemType {
         return SemType::new_never();
