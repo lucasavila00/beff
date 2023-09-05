@@ -15,6 +15,7 @@ use api_extractor::extract_schema;
 use api_extractor::RouterExtractResult;
 use core::fmt;
 use diag::Diagnostic;
+use open_api_ast::Validator;
 use parser_extractor::extract_parser;
 use parser_extractor::ParserExtractResult;
 use std::collections::HashMap;
@@ -205,6 +206,32 @@ impl ExtractResult {
                     .unwrap_or(vec![]),
             )
             .collect()
+    }
+    pub fn validators(&self) -> Vec<&Validator> {
+        self.router
+            .as_ref()
+            .map(|it| it.validators.iter().map(|it| it).collect())
+            .unwrap_or(vec![])
+            .into_iter()
+            .chain(
+                self.parser
+                    .as_ref()
+                    .map(|it| it.validators.iter().map(|it| it).collect())
+                    .unwrap_or(vec![]),
+            )
+            .collect()
+    }
+
+    pub fn self_check_sem_types(&self) {
+        let definitions = self.validators();
+        let cloned_definitions = definitions.iter().map(|it| (*it).clone()).collect();
+        for def in &definitions {
+            let res = def
+                .schema
+                .is_sub_type(&def.schema, &cloned_definitions)
+                .unwrap();
+            assert!(res);
+        }
     }
 }
 

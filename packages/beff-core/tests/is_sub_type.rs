@@ -186,6 +186,21 @@ mod tests {
         assert!(res);
     }
     #[test]
+    fn array_and_tuple() {
+        let definitions = vec![];
+
+        let t1 = JsonSchema::Tuple {
+            prefix_items: vec![JsonSchema::String.into()],
+            items: None,
+        };
+        let t2 = JsonSchema::Array(JsonSchema::String.into());
+
+        let res = t1.is_sub_type(&t2, &definitions).unwrap();
+        assert!(res);
+        let res = t2.is_sub_type(&t1, &definitions).unwrap();
+        assert!(!res);
+    }
+    #[test]
     fn it_works() {
         let definitions = vec![];
 
