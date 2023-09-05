@@ -8,4 +8,14 @@ Error: Complex path parameter
    11 | };
    12 |
 
-Found 1 error
+Error: Path parameter `id` is not being used in the function parameters
+ /errors/complex-path-param/app.ts:8:4
+    6 |
+    7 | export default {
+ >  8 |   [`/hello/{id}`]: {
+      |    ^^^^^^^^^^^^^ Path parameter `id` is not being used in the function parameters
+    9 |     get: async (ctx: Ctx, id: A): Promise<string> => `Hello ${id}!`,
+   10 |   },
+   11 | };
+
+Found 2 errors

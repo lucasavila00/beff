@@ -1,21 +1,25 @@
 use core::fmt;
+use std::collections::BTreeMap;
 
-use crate::ast::{
-    js::Js,
-    json::{Json, ToJson, ToJsonKv},
-    json_schema::JsonSchema,
+use crate::{
+    ast::{
+        js::Js,
+        json::{Json, ToJson, ToJsonKv},
+        json_schema::JsonSchema,
+    },
+    diag::{Diagnostic, DiagnosticInfoMessage, DiagnosticInformation},
+    BffFileName,
 };
+use anyhow::Result;
+use swc_common::Loc;
+
 fn clear_description(it: String) -> String {
-    // split by newlines
-    // remove leading spaces and *
-    // trim
-
     let lines = it.split('\n').collect::<Vec<_>>();
-
     let remove_from_start: &[_] = &[' ', '*'];
     lines
         .into_iter()
         .map(|it| it.trim_start_matches(remove_from_start))
+        .map(|it| it.trim_end_matches(remove_from_start))
         .map(|it| it.trim())
         .collect::<Vec<_>>()
         .join("\n")
@@ -122,6 +126,7 @@ impl ToJson for JsonRequestBody {
 
 #[derive(Debug)]
 pub struct OperationObject {
+    pub method_prop_span: (Loc, Loc),
     pub summary: Option<String>,
     pub description: Option<String>,
     pub parameters: Vec<ParameterObject>,
@@ -182,28 +187,112 @@ impl ToJson for OperationObject {
     }
 }
 
-#[derive(Debug)]
-pub struct ApiPath {
-    pub pattern: String,
-    pub get: Option<OperationObject>,
-    pub post: Option<OperationObject>,
-    pub put: Option<OperationObject>,
-    pub delete: Option<OperationObject>,
-    pub patch: Option<OperationObject>,
-    pub options: Option<OperationObject>,
+#[derive(Debug, Clone, Copy, Eq, PartialEq, PartialOrd, Ord)]
+pub enum HTTPMethod {
+    Get,
+    Post,
+    Put,
+    Delete,
+    Patch,
+    Options,
 }
 
+impl fmt::Display for HTTPMethod {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        match self {
+            HTTPMethod::Get => write!(f, "get"),
+            HTTPMethod::Post => write!(f, "post"),
+            HTTPMethod::Put => write!(f, "put"),
+            HTTPMethod::Delete => write!(f, "delete"),
+            HTTPMethod::Patch => write!(f, "patch"),
+            HTTPMethod::Options => write!(f, "options"),
+        }
+    }
+}
+
+#[derive(Debug)]
+pub struct ApiPath {
+    pub parsed_pattern: ParsedPattern,
+    pub methods: BTreeMap<HTTPMethod, OperationObject>,
+}
+
+fn parse_pattern_params(pattern: &str) -> Vec<String> {
+    // parse open api parameters from pattern
+    let mut params = vec![];
+    let chars = pattern.chars();
+    let mut current = String::new();
+    for c in chars {
+        if c == '{' {
+            current = String::new();
+        } else if c == '}' {
+            params.push(current.clone());
+        } else {
+            current.push(c);
+        }
+    }
+    params
+}
+#[derive(Debug, Clone)]
+pub struct ParsedPattern {
+    pub file_name: BffFileName,
+    pub loc_lo: Loc,
+    pub loc_hi: Loc,
+
+    pub open_api_pattern: String,
+    pub path_params: Vec<String>,
+}
 impl ApiPath {
+    pub fn parse_raw_pattern_str(
+        key: &str,
+        file_name: BffFileName,
+        locs: (Loc, Loc),
+    ) -> Result<ParsedPattern> {
+        let path_params = parse_pattern_params(key);
+        Ok(ParsedPattern {
+            open_api_pattern: key.to_string(),
+            path_params,
+            file_name,
+            loc_lo: locs.0,
+            loc_hi: locs.1,
+        })
+    }
+
+    fn make_error(&self, message: DiagnosticInfoMessage) -> Diagnostic {
+        DiagnosticInformation::KnownFile {
+            message,
+            file_name: self.parsed_pattern.file_name.clone(),
+            loc_lo: self.parsed_pattern.loc_lo.clone(),
+            loc_hi: self.parsed_pattern.loc_hi.clone(),
+        }
+        .to_diag(None)
+    }
+
+    fn validate_pattern_was_consumed(&self) -> Vec<Diagnostic> {
+        let mut acc = vec![];
+
+        for (_k, v) in &self.methods {
+            for path_param in &self.parsed_pattern.path_params {
+                let found = v.parameters.iter().find(|it| it.name == *path_param);
+                if found.is_none() {
+                    acc.push(
+                        self.make_error(DiagnosticInfoMessage::UnmatchedPathParameter(
+                            path_param.to_string(),
+                        )),
+                    );
+                }
+            }
+        }
+        acc
+    }
+    pub fn validate(&self) -> Vec<Diagnostic> {
+        self.validate_pattern_was_consumed()
+    }
+
     #[must_use]
-    pub fn from_pattern(pattern: &str) -> Self {
+    pub fn from_pattern(parsed_pattern: ParsedPattern) -> Self {
         Self {
-            pattern: pattern.into(),
-            get: None,
-            post: None,
-            put: None,
-            delete: None,
-            patch: None,
-            options: None,
+            parsed_pattern,
+            methods: BTreeMap::new(),
         }
     }
 }
@@ -211,28 +300,18 @@ impl ApiPath {
 impl ToJsonKv for ApiPath {
     fn to_json_kv(self) -> Vec<(String, Json)> {
         let mut v = vec![];
-        if let Some(get) = self.get {
-            v.push(("get".into(), get.to_json()));
+
+        for (method, operation) in self.methods {
+            v.push((method.to_string(), operation.to_json()));
         }
-        if let Some(post) = self.post {
-            v.push(("post".into(), post.to_json()));
-        }
-        if let Some(put) = self.put {
-            v.push(("put".into(), put.to_json()));
-        }
-        if let Some(delete) = self.delete {
-            v.push(("delete".into(), delete.to_json()));
-        }
-        if let Some(patch) = self.patch {
-            v.push(("patch".into(), patch.to_json()));
-        }
-        if let Some(options) = self.options {
-            v.push(("options".into(), options.to_json()));
-        }
+
         if v.is_empty() {
             return vec![];
         }
-        vec![(self.pattern.clone(), Json::object(v))]
+        vec![(
+            self.parsed_pattern.open_api_pattern.clone(),
+            Json::object(v),
+        )]
     }
 }
 #[derive(Debug, Clone)]

@@ -53,7 +53,7 @@
     }
   },
   "info": {
-    "description": "This is an example API router. Adding a comment here adds it to its description.\n\nTitle and version are mandatory on the OpenAPI specification!\nComments here are added to the description of the API, too.\n",
+    "description": "This is an example API router. Adding a comment here adds it to its description.\n\nTitle and version are mandatory on the OpenAPI specification!\n\n\nComments here are added to the description of the API, too.\n",
     "title": "Example API",
     "version": "1.0.0"
   },
@@ -61,7 +61,7 @@
   "paths": {
     "/": {
       "get": {
-        "description": "This is an example route. Adding a comment here adds it to its description.\nWe can also add a summary.",
+        "description": "This is an example route. Adding a comment here adds it to its description.\nWe can also add a summary.\n",
         "parameters": [],
         "responses": {
           "200": {

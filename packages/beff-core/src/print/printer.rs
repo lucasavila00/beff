@@ -8,13 +8,13 @@ use swc_ecma_ast::{
 
 use crate::api_extractor::{
     operation_parameter_in_path_or_query_or_body, FunctionParameterIn, HandlerParameter,
-    ParsedPattern, PathHandlerMap,
+    PathHandlerMap,
 };
 use crate::ast::js::Js;
 use crate::ast::json::{Json, ToJson, ToJsonKv};
 use crate::ast::json_schema::JsonSchema;
 use crate::emit::emit_module;
-use crate::open_api_ast::{build_coercer, OpenApi, Validator};
+use crate::open_api_ast::{build_coercer, OpenApi, ParsedPattern, Validator};
 use crate::parser_extractor::BuiltDecoder;
 use crate::print::decoder;
 use crate::ExtractResult;

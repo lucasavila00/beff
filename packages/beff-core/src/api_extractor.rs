@@ -3,7 +3,8 @@ use crate::diag::{
     span_to_loc, Diagnostic, DiagnosticInfoMessage, DiagnosticInformation, DiagnosticParentMessage,
 };
 use crate::open_api_ast::{
-    self, Info, JsonRequestBody, OpenApi, OperationObject, ParameterIn, ParameterObject, Validator,
+    self, ApiPath, HTTPMethod, Info, JsonRequestBody, OpenApi, OperationObject, ParameterIn,
+    ParameterObject, ParsedPattern, Validator,
 };
 use crate::type_to_schema::TypeToSchema;
 use crate::{BffFileName, FileManager, ParsedModule};
@@ -15,7 +16,7 @@ use jsdoc::Input;
 use std::collections::HashSet;
 use std::rc::Rc;
 use swc_common::comments::{Comment, CommentKind, Comments};
-use swc_common::{BytePos, Span, DUMMY_SP};
+use swc_common::{BytePos, Loc, Span, DUMMY_SP};
 use swc_ecma_ast::{
     ArrayPat, ArrowExpr, AssignPat, AssignProp, BigInt, BindingIdent, ComputedPropName,
     ExportDefaultExpr, Expr, FnExpr, Function, GetterProp, Ident, Invalid, KeyValueProp, Lit,
@@ -61,56 +62,55 @@ pub enum HandlerParameter {
 
 #[derive(Debug, Clone, Copy, Eq, PartialEq)]
 pub enum MethodKind {
-    Get,
-    Post,
-    Put,
-    Delete,
-    Patch,
-    Options,
-    Use,
+    Get(Span),
+    Post(Span),
+    Put(Span),
+    Delete(Span),
+    Patch(Span),
+    Options(Span),
+    Use(Span),
 }
 impl fmt::Display for MethodKind {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match self {
-            MethodKind::Get => write!(f, "get"),
-            MethodKind::Post => write!(f, "post"),
-            MethodKind::Put => write!(f, "put"),
-            MethodKind::Delete => write!(f, "delete"),
-            MethodKind::Patch => write!(f, "patch"),
-            MethodKind::Options => write!(f, "options"),
-            MethodKind::Use => write!(f, "use"),
+            MethodKind::Get(_) => write!(f, "get"),
+            MethodKind::Post(_) => write!(f, "post"),
+            MethodKind::Put(_) => write!(f, "put"),
+            MethodKind::Delete(_) => write!(f, "delete"),
+            MethodKind::Patch(_) => write!(f, "patch"),
+            MethodKind::Options(_) => write!(f, "options"),
+            MethodKind::Use(_) => write!(f, "use"),
         }
     }
 }
 
 impl MethodKind {
+    pub fn span(&self) -> &Span {
+        match self {
+            MethodKind::Get(span)
+            | MethodKind::Post(span)
+            | MethodKind::Put(span)
+            | MethodKind::Delete(span)
+            | MethodKind::Patch(span)
+            | MethodKind::Options(span)
+            | MethodKind::Use(span) => span,
+        }
+    }
+
     pub fn text_len(&self) -> usize {
         self.to_string().len()
     }
-}
-
-#[derive(Debug, Clone)]
-pub struct ParsedPattern {
-    pub raw_span: Span,
-    pub open_api_pattern: String,
-    pub path_params: Vec<String>,
-}
-
-fn parse_pattern_params(pattern: &str) -> Vec<String> {
-    // parse open api parameters from pattern
-    let mut params = vec![];
-    let chars = pattern.chars();
-    let mut current = String::new();
-    for c in chars {
-        if c == '{' {
-            current = String::new();
-        } else if c == '}' {
-            params.push(current.clone());
-        } else {
-            current.push(c);
+    pub fn to_http_method(&self) -> Option<HTTPMethod> {
+        match self {
+            MethodKind::Get(_) => Some(HTTPMethod::Get),
+            MethodKind::Post(_) => Some(HTTPMethod::Post),
+            MethodKind::Put(_) => Some(HTTPMethod::Put),
+            MethodKind::Delete(_) => Some(HTTPMethod::Delete),
+            MethodKind::Patch(_) => Some(HTTPMethod::Patch),
+            MethodKind::Options(_) => Some(HTTPMethod::Options),
+            MethodKind::Use(_) => None,
         }
     }
-    params
 }
 
 #[derive(Debug, Clone)]
@@ -152,26 +152,6 @@ impl<'a, R: FileManager> ExtractExportDefaultVisitor<'a, R> {
             public_definitions: HashSet::new(),
         }
     }
-}
-
-fn trim_description_comments(it: String) -> String {
-    // remove all spaces and * from end of string
-    let mut v: Vec<char> = it.chars().collect();
-
-    if v.is_empty() {
-        return it;
-    }
-
-    while v
-        .last()
-        .expect("we just checked that it is not empty")
-        .is_ascii_whitespace()
-        || v.last().expect("we just checked that it is not empty") == &'*'
-    {
-        v.pop();
-    }
-
-    v.into_iter().collect()
 }
 
 struct EndpointComments {
@@ -228,9 +208,7 @@ impl<'a, R: FileManager> ExtractExportDefaultVisitor<'a, R> {
                     jsdoc::parse(Input::new(BytePos(0), BytePos(s.as_bytes().len() as _), &s));
                 match parsed {
                     Ok((rest, parsed)) => {
-                        acc.description = Some(trim_description_comments(
-                            parsed.description.value.to_string(),
-                        ));
+                        acc.description = Some(parsed.description.value.to_string());
                         if rest.len() > 0 {
                             acc.description = Some(format!(
                                 "{}\n{}",
@@ -286,9 +264,7 @@ impl<'a, R: FileManager> ExtractExportDefaultVisitor<'a, R> {
                             DiagnosticInfoMessage::JsDocsParameterDescriptionHasTags,
                         );
                     }
-                    return Some(trim_description_comments(
-                        parsed.description.value.to_string(),
-                    ));
+                    return Some(parsed.description.value.to_string());
                 }
                 Err(_) => self.push_error(
                     &first.span,
@@ -299,19 +275,24 @@ impl<'a, R: FileManager> ExtractExportDefaultVisitor<'a, R> {
         None
     }
 
-    fn parse_raw_pattern_str(&mut self, key: &str, span: &Span) -> Result<ParsedPattern> {
-        let path_params = parse_pattern_params(key);
-        Ok(ParsedPattern {
-            raw_span: *span,
-            open_api_pattern: key.to_string(),
-            path_params,
-        })
+    fn get_locs(&mut self, span: &Span) -> Result<(Loc, Loc)> {
+        let file = self.files.get_existing_file(&self.current_file);
+        match file {
+            Some(file) => Ok(span_to_loc(
+                span,
+                &file.module.source_map,
+                file.module.fm.end_pos,
+            )),
+            None => Err(anyhow!("unreachable no file for pattern")),
+        }
     }
+
     fn parse_key(&mut self, key: &PropName) -> Result<ParsedPattern> {
         match key {
             PropName::Computed(ComputedPropName { expr, span, .. }) => match &**expr {
                 Expr::Lit(Lit::Str(Str { span, value, .. })) => {
-                    self.parse_raw_pattern_str(value.as_ref(), span)
+                    let locs = self.get_locs(span)?;
+                    ApiPath::parse_raw_pattern_str(value.as_ref(), self.current_file.clone(), locs)
                 }
                 Expr::Tpl(Tpl {
                     span,
@@ -327,7 +308,12 @@ impl<'a, R: FileManager> ExtractExportDefaultVisitor<'a, R> {
                             .error(span, DiagnosticInfoMessage::TemplateMustBeOfSingleString);
                     }
                     let first_quasis = quasis.first().expect("we just checked the length");
-                    self.parse_raw_pattern_str(first_quasis.raw.as_ref(), span)
+                    let locs = self.get_locs(span)?;
+                    ApiPath::parse_raw_pattern_str(
+                        first_quasis.raw.as_ref(),
+                        self.current_file.clone(),
+                        locs,
+                    )
                 }
                 _ => self.error(
                     span,
@@ -335,7 +321,8 @@ impl<'a, R: FileManager> ExtractExportDefaultVisitor<'a, R> {
                 ),
             },
             PropName::Str(Str { span, value, .. }) => {
-                self.parse_raw_pattern_str(&value.to_string(), span)
+                let locs = self.get_locs(span)?;
+                ApiPath::parse_raw_pattern_str(&value.to_string(), self.current_file.clone(), locs)
             }
             PropName::Ident(Ident { span, .. })
             | PropName::Num(Number { span, .. })
@@ -605,13 +592,13 @@ impl<'a, R: FileManager> ExtractExportDefaultVisitor<'a, R> {
     fn parse_method_kind(&mut self, key: &PropName) -> Result<MethodKind> {
         match key {
             PropName::Ident(Ident { sym, span, .. }) => match sym.to_string().as_str() {
-                "get" => Ok(MethodKind::Get),
-                "post" => Ok(MethodKind::Post),
-                "put" => Ok(MethodKind::Put),
-                "delete" => Ok(MethodKind::Delete),
-                "patch" => Ok(MethodKind::Patch),
-                "options" => Ok(MethodKind::Options),
-                "use" => Ok(MethodKind::Use),
+                "get" => Ok(MethodKind::Get(span.clone())),
+                "post" => Ok(MethodKind::Post(span.clone())),
+                "put" => Ok(MethodKind::Put(span.clone())),
+                "delete" => Ok(MethodKind::Delete(span.clone())),
+                "patch" => Ok(MethodKind::Patch(span.clone())),
+                "options" => Ok(MethodKind::Options(span.clone())),
+                "use" => Ok(MethodKind::Use(span.clone())),
                 _ => self.error(span, DiagnosticInfoMessage::NotAnHttpMethod),
             },
             _ => {
@@ -667,13 +654,13 @@ impl<'a, R: FileManager> ExtractExportDefaultVisitor<'a, R> {
     fn endpoints_from_method_map(&mut self, prop: &Prop) -> Vec<FnHandler> {
         if let Prop::KeyValue(KeyValueProp { key, value }) = prop {
             let method_kind = self.parse_method_kind(key);
-            if let Ok(MethodKind::Use) = method_kind {
+            if let Ok(MethodKind::Use(span)) = method_kind {
                 return vec![FnHandler {
                     summary: None,
                     description: None,
                     parameters: vec![],
                     return_type: JsonSchema::Any,
-                    method_kind: MethodKind::Use,
+                    method_kind: MethodKind::Use(span.clone()),
                     span: Self::get_prop_span(prop),
                 }];
             }
@@ -698,23 +685,6 @@ impl<'a, R: FileManager> ExtractExportDefaultVisitor<'a, R> {
         vec![]
     }
 
-    fn validate_pattern_was_consumed(
-        &mut self,
-        e: FnHandler,
-        pattern: &ParsedPattern,
-    ) -> FnHandler {
-        for path_param in &pattern.path_params {
-            // make sure some param exist for it
-            let found = e.parameters.iter().find(|(key, _)| key == path_param);
-            if found.is_none() {
-                self.push_error(
-                    &e.span,
-                    DiagnosticInfoMessage::UnmatchedPathParameter(path_param.to_string()),
-                );
-            }
-        }
-        e
-    }
     fn endpoints_from_prop(&mut self, prop: &Prop) -> Result<PathHandlerMap> {
         if let Prop::KeyValue(KeyValueProp { key, value }) = prop {
             let pattern = self.parse_key(key)?;
@@ -731,11 +701,7 @@ impl<'a, R: FileManager> ExtractExportDefaultVisitor<'a, R> {
 
                             vec![]
                         }
-                        PropOrSpread::Prop(prop) => self
-                            .endpoints_from_method_map(prop)
-                            .into_iter()
-                            .map(|handler| self.validate_pattern_was_consumed(handler, &pattern))
-                            .collect(),
+                        PropOrSpread::Prop(prop) => self.endpoints_from_method_map(prop),
                     })
                     .collect();
 
@@ -758,9 +724,7 @@ impl<'a, R: FileManager> ExtractExportDefaultVisitor<'a, R> {
                     jsdoc::parse(Input::new(BytePos(0), BytePos(s.as_bytes().len() as _), &s));
                 match parsed {
                     Ok((rest, parsed)) => {
-                        self.info.description = Some(trim_description_comments(
-                            parsed.description.value.to_string(),
-                        ));
+                        self.info.description = Some(parsed.description.value.to_string());
                         if rest.len() > 0 {
                             self.info.description = Some(format!(
                                 "{}\n{}",
@@ -925,11 +889,22 @@ impl<'a, R: FileManager> EndpointToPath<'a, R> {
         }
     }
 
+    fn get_locs(&mut self, span: &Span) -> Result<(Loc, Loc)> {
+        let file = self.files.get_existing_file(&self.current_file);
+        match file {
+            Some(file) => Ok(span_to_loc(
+                span,
+                &file.module.source_map,
+                file.module.fm.end_pos,
+            )),
+            None => Err(anyhow!("unreachable no file for pattern")),
+        }
+    }
     fn endpoint_to_operation_object(
         &mut self,
         endpoint: &FnHandler,
         pattern: &ParsedPattern,
-    ) -> OperationObject {
+    ) -> Result<OperationObject> {
         let mut parameters: Vec<ParameterObject> = vec![];
         let mut json_request_body: Option<JsonRequestBody> = None;
 
@@ -1024,33 +999,33 @@ impl<'a, R: FileManager> EndpointToPath<'a, R> {
                 HandlerParameter::Context(_) => {}
             };
         }
-        OperationObject {
+
+        let locs = self.get_locs(endpoint.method_kind.span())?;
+
+        Ok(OperationObject {
             summary: endpoint.summary.clone(),
             description: endpoint.description.clone(),
             parameters,
             json_response_body: endpoint.return_type.clone(),
             json_request_body,
-        }
+            method_prop_span: locs,
+        })
     }
 
     fn endpoints_to_paths(&mut self, endpoints: &[PathHandlerMap]) -> Vec<open_api_ast::ApiPath> {
         endpoints
             .iter()
             .map(|it| {
-                let mut path = open_api_ast::ApiPath::from_pattern(&it.pattern.open_api_pattern);
+                let mut path = open_api_ast::ApiPath::from_pattern(it.pattern.clone());
                 for endpoint in &it.handlers {
-                    let kind = endpoint.method_kind;
-                    let op = Some(self.endpoint_to_operation_object(endpoint, &it.pattern));
-                    match kind {
-                        MethodKind::Get => path.get = op,
-                        MethodKind::Post => path.post = op,
-                        MethodKind::Put => path.put = op,
-                        MethodKind::Delete => path.delete = op,
-                        MethodKind::Patch => path.patch = op,
-                        MethodKind::Options => path.options = op,
-                        MethodKind::Use => {}
+                    if let Some(m) = endpoint.method_kind.to_http_method() {
+                        let op = self.endpoint_to_operation_object(endpoint, &it.pattern);
+                        if let Ok(op) = op {
+                            path.methods.insert(m, op);
+                        }
                     }
                 }
+                self.errors.extend(path.validate());
                 path
             })
             .collect()
@@ -1068,7 +1043,6 @@ pub struct RouterExtractResult {
     pub open_api: OpenApi,
     pub entry_file_name: BffFileName,
     pub handlers: Vec<PathHandlerMap>,
-    // pub built_decoders: Option<Vec<BuiltDecoder>>,
     pub validators: Vec<Validator>,
 }
 
@@ -1077,7 +1051,6 @@ type VisitExtractResult = (
     Vec<Validator>,
     Vec<Diagnostic>,
     Info,
-    // Option<Vec<BuiltDecoder>>,
     HashSet<String>,
 );
 fn visit_extract<R: FileManager>(files: &mut R, current_file: BffFileName) -> VisitExtractResult {
@@ -1098,7 +1071,6 @@ fn visit_extract<R: FileManager>(files: &mut R, current_file: BffFileName) -> Vi
         visitor.components,
         visitor.errors,
         visitor.info,
-        // visitor.built_decoders,
         visitor.public_definitions,
     )
 }
