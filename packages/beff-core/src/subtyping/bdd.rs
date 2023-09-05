@@ -424,22 +424,14 @@ fn mapping_formula_is_empty(
     return !mapping_inhabited(combined, neg_list, builder);
 }
 pub fn mapping_is_empty(bdd: &Rc<Bdd>, builder: &mut SemTypeBuilder) -> bool {
-    // dbg!(&builder.mapping_memo);
-    // todo: memoization
+    dbg!(&builder.mapping_definitions);
+    dbg!(&bdd);
 
     match builder.mapping_memo.get(&bdd) {
         Some(mm) => match &mm.0 {
-            // MemoEmpty::Cyclic => {
-            //     // todo ??
-            //     return true;
-            // }
             MemoEmpty::True => return true,
             MemoEmpty::False => return false,
-            // MemoEmpty::Provisional |
-            // MemoEmpty::Loop => {
-            //     // mm.0 = MemoEmpty::Loop;
-            //     return true;
-            // }
+
             MemoEmpty::Undefined => {
                 // we got a loop
                 return true;
@@ -451,8 +443,6 @@ pub fn mapping_is_empty(bdd: &Rc<Bdd>, builder: &mut SemTypeBuilder) -> bool {
                 .insert((**bdd).clone(), BddMemoEmptyRef(MemoEmpty::Undefined));
         }
     }
-
-    // m.0 = MemoEmpty::Provisional;
 
     let is_empty = bdd_every(bdd, &None, &None, mapping_formula_is_empty, builder);
     builder.mapping_memo.get_mut(&bdd).unwrap().0 = MemoEmpty::from_bool(is_empty);

@@ -277,9 +277,6 @@ impl SemType {
 pub enum MemoEmpty {
     True,
     False,
-    // Loop,
-    // Cyclic,
-    // Provisional,
     Undefined,
 }
 
@@ -297,16 +294,17 @@ impl MemoEmpty {
 pub struct BddMemoEmptyRef(pub MemoEmpty);
 
 pub struct SemTypeBuilder {
-    pub mapping_definitions: Vec<Rc<MappingAtomic>>,
+    pub mapping_definitions: Vec<Option<Rc<MappingAtomic>>>,
 
     pub mapping_memo: BTreeMap<Bdd, BddMemoEmptyRef>,
-
-    pub json_schema_ref_memo: BTreeMap<String, Option<Rc<SemType>>>,
+    pub json_schema_ref_memo: BTreeMap<String, usize>,
 }
 impl SemTypeBuilder {
     pub fn get_mapping_atomic(&self, idx: usize) -> Rc<MappingAtomic> {
         self.mapping_definitions
             .get(idx)
+            .expect("should exist")
+            .as_ref()
             .expect("should exist")
             .clone()
     }
@@ -339,14 +337,17 @@ impl SemTypeBuilder {
             .into()],
         );
     }
-    pub fn mapping_definition(&mut self, vs: MappingAtomic) -> SemType {
-        let idx = self.mapping_definitions.len();
-        self.mapping_definitions.push(vs.clone().into());
-
+    pub fn mapping_definition_from_idx(idx: usize) -> SemType {
         return SemType::new_complex(
             0x0,
             vec![ProperSubtype::Mapping(Bdd::from_atom(Atom::Mapping(idx)).into()).into()],
         );
+    }
+    pub fn mapping_definition(&mut self, vs: MappingAtomic) -> SemType {
+        let idx = self.mapping_definitions.len();
+        self.mapping_definitions.push(Some(vs.clone().into()));
+
+        return Self::mapping_definition_from_idx(idx);
     }
     pub fn boolean_const(value: bool) -> SemType {
         return SemType::new_complex(0x0, vec![ProperSubtype::Boolean(value).into()]);

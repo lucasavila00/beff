@@ -4,6 +4,7 @@ use crate::ast::json::Json;
 use crate::ast::json_schema::Optionality;
 use crate::{ast::json_schema::JsonSchema, open_api_ast::Validator};
 
+use self::bdd::MappingAtomic;
 use self::semtype::{SemType, SemTypeBuilder, SemTypeOps};
 use self::subtype::StringLitOrFormat;
 pub mod bdd;
@@ -37,24 +38,51 @@ impl<'a> ToSemTypeConverter<'a> {
     ) -> Result<Rc<SemType>> {
         match schema {
             JsonSchema::Ref(name) => {
-                match builder.json_schema_ref_memo.get(name) {
-                    Some(it) => match it {
-                        Some(it) => return Ok(it.clone()),
-                        None => {
-                            // recursive type
-                            // TODO: report error
-                            return Ok(SemTypeBuilder::any().into());
-                        }
-                    },
-                    None => {
-                        builder.json_schema_ref_memo.insert(name.clone(), None);
-                    }
-                }
                 let schema = self.get_reference(name)?;
+                if let JsonSchema::Object(vs) = schema {
+                    match builder.json_schema_ref_memo.get(name) {
+                        Some(idx) => {
+                            let ty = Rc::new(SemTypeBuilder::mapping_definition_from_idx(*idx));
+                            return Ok(ty);
+                        }
+                        None => {
+                            let idx = builder.mapping_definitions.len();
+                            builder.json_schema_ref_memo.insert(name.to_string(), idx);
+                            builder.mapping_definitions.push(None);
+                            let vs: MappingAtomic = vs
+                                .iter()
+                                .map(|(k, v)| match v {
+                                    Optionality::Optional(v) => self
+                                        .to_sem_type(v, builder)
+                                        .map(|v| (k.clone(), SemTypeBuilder::optional(v))),
+                                    Optionality::Required(v) => {
+                                        self.to_sem_type(v, builder).map(|v| (k.clone(), v))
+                                    }
+                                })
+                                .collect::<Result<_>>()?;
+                            builder.mapping_definitions[idx] = Some(Rc::new(vs));
+                            let ty = Rc::new(SemTypeBuilder::mapping_definition_from_idx(idx));
+                            return Ok(ty);
+                        }
+                    }
+                };
+                // match builder.json_schema_ref_memo.get(name) {
+                //     Some(it) => match it {
+                //         Some(it) => return Ok(it.clone()),
+                //         None => {
+                //             // recursive type
+                //             // TODO: report error
+                //             return Ok(SemTypeBuilder::any().into());
+                //         }
+                //     },
+                //     None => {
+                //         builder.json_schema_ref_memo.insert(name.clone(), None);
+                //     }
+                // }
                 let ty = self.to_sem_type(schema, builder)?;
-                builder
-                    .json_schema_ref_memo
-                    .insert(name.clone(), Some(ty.clone()));
+                // builder
+                //     .json_schema_ref_memo
+                //     .insert(name.clone(), Some(ty.clone()));
                 Ok(ty)
             }
             JsonSchema::AnyOf(vs) => {

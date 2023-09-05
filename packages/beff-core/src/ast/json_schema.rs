@@ -250,9 +250,9 @@ impl JsonSchema {
         }
     }
 
-    pub fn is_sub_type(&self, other: &JsonSchema, validators: &Vec<Validator>) -> Result<bool> {
+    pub fn is_sub_type(&self, b: &JsonSchema, validators: &Vec<Validator>) -> Result<bool> {
         let mut builder = SemTypeBuilder::new();
-        return is_sub_type(self, other, validators, &mut builder);
+        return is_sub_type(self, b, validators, &mut builder);
     }
 }
 

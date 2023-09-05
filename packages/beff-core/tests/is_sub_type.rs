@@ -6,6 +6,58 @@ mod tests {
     };
 
     #[test]
+    fn ref2() {
+        let definitions = vec![Validator {
+            name: "User".into(),
+            schema: JsonSchema::object(vec![
+                ("id".into(), JsonSchema::String.required()),
+                (
+                    "bestFriend".into(),
+                    JsonSchema::Ref("User".into()).required(),
+                ),
+            ]),
+        }];
+
+        let t1 = JsonSchema::Ref("User".into());
+        let t2 = JsonSchema::object(vec![
+            ("id".into(), JsonSchema::String.required()),
+            ("bestFriend".into(), JsonSchema::Null.required()),
+        ]);
+
+        let res = t1.is_sub_type(&t2, &definitions).unwrap();
+        assert!(res);
+        let res = t2.is_sub_type(&t1, &definitions).unwrap();
+        assert!(!res);
+    }
+    #[test]
+    fn ref1() {
+        let definitions = vec![Validator {
+            name: "User".into(),
+            schema: JsonSchema::object(vec![
+                ("id".into(), JsonSchema::String.required()),
+                (
+                    "bestFriend".into(),
+                    JsonSchema::Ref("User".into()).optional(),
+                ),
+            ]),
+        }];
+
+        let t1 = JsonSchema::Ref("User".into());
+        let t2 = JsonSchema::object(vec![
+            ("id".into(), JsonSchema::String.required()),
+            (
+                "bestFriend".into(),
+                JsonSchema::Ref("User".into()).optional(),
+            ),
+        ]);
+
+        let res = t1.is_sub_type(&t2, &definitions).unwrap();
+        assert!(res);
+        let res = t2.is_sub_type(&t1, &definitions).unwrap();
+        assert!(res);
+    }
+
+    #[test]
     fn mappings4() {
         let definitions = vec![Validator {
             name: "User".into(),
