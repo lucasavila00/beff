@@ -264,7 +264,7 @@ impl SemType {
             subtype_data: vec![],
         }
     }
-    pub fn new_any() -> SemType {
+    pub fn new_unknown() -> SemType {
         SemType {
             // todo
             all: 1 << 1 | 1 << 2 | 1 << 3 | 1 << 4 | 1 << 5 | 1 << 6 | 1 << 7 | 1 << 8,
@@ -295,8 +295,10 @@ pub struct BddMemoEmptyRef(pub MemoEmpty);
 
 pub struct SemTypeBuilder {
     pub mapping_definitions: Vec<Option<Rc<MappingAtomic>>>,
-
     pub mapping_memo: BTreeMap<Bdd, BddMemoEmptyRef>,
+
+    // pub mapping_definitions: Vec<Option<Rc<MappingAtomic>>>,
+    pub list_memo: BTreeMap<Bdd, BddMemoEmptyRef>,
     pub json_schema_ref_memo: BTreeMap<String, usize>,
 }
 impl SemTypeBuilder {
@@ -313,6 +315,7 @@ impl SemTypeBuilder {
         SemTypeBuilder {
             mapping_definitions: vec![],
             mapping_memo: BTreeMap::new(),
+            list_memo: BTreeMap::new(),
             json_schema_ref_memo: BTreeMap::new(),
         }
     }
@@ -375,7 +378,7 @@ impl SemTypeBuilder {
     pub fn never() -> SemType {
         return SemType::new_never();
     }
-    pub fn any() -> SemType {
-        return SemType::new_any();
+    pub fn unknown() -> SemType {
+        return SemType::new_unknown();
     }
 }

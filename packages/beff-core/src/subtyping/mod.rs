@@ -66,23 +66,7 @@ impl<'a> ToSemTypeConverter<'a> {
                         }
                     }
                 };
-                // match builder.json_schema_ref_memo.get(name) {
-                //     Some(it) => match it {
-                //         Some(it) => return Ok(it.clone()),
-                //         None => {
-                //             // recursive type
-                //             // TODO: report error
-                //             return Ok(SemTypeBuilder::any().into());
-                //         }
-                //     },
-                //     None => {
-                //         builder.json_schema_ref_memo.insert(name.clone(), None);
-                //     }
-                // }
                 let ty = self.to_sem_type(schema, builder)?;
-                // builder
-                //     .json_schema_ref_memo
-                //     .insert(name.clone(), Some(ty.clone()));
                 Ok(ty)
             }
             JsonSchema::AnyOf(vs) => {
@@ -103,7 +87,7 @@ impl<'a> ToSemTypeConverter<'a> {
             JsonSchema::Boolean => Ok(SemTypeBuilder::boolean().into()),
             JsonSchema::String => Ok(SemTypeBuilder::string().into()),
             JsonSchema::Number => Ok(SemTypeBuilder::number().into()),
-            JsonSchema::Any => Ok(SemTypeBuilder::any().into()),
+            JsonSchema::Any => Ok(SemTypeBuilder::unknown().into()),
             JsonSchema::StringWithFormat(s) => {
                 Ok(SemTypeBuilder::string_const(StringLitOrFormat::Format(s.clone())).into())
             }

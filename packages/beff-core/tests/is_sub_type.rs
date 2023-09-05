@@ -56,6 +56,33 @@ mod tests {
         let res = t2.is_sub_type(&t1, &definitions).unwrap();
         assert!(res);
     }
+    #[test]
+    fn ref3() {
+        let definitions = vec![Validator {
+            name: "User".into(),
+            schema: JsonSchema::object(vec![
+                ("id".into(), JsonSchema::String.required()),
+                (
+                    "bestFriend".into(),
+                    JsonSchema::Ref("User".into()).optional(),
+                ),
+            ]),
+        }];
+
+        let t1 = JsonSchema::Ref("User".into());
+        let t2 = JsonSchema::object(vec![
+            ("id".into(), JsonSchema::Number.required()),
+            (
+                "bestFriend".into(),
+                JsonSchema::Ref("User".into()).optional(),
+            ),
+        ]);
+
+        let res = t1.is_sub_type(&t2, &definitions).unwrap();
+        assert!(!res);
+        let res = t2.is_sub_type(&t1, &definitions).unwrap();
+        assert!(!res);
+    }
 
     #[test]
     fn mappings4() {

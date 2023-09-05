@@ -11,9 +11,11 @@ use super::semtype::{BddMemoEmptyRef, MemoEmpty, SemType, SemTypeOps};
 pub type MappingAtomic = BTreeMap<String, Rc<SemType>>;
 #[derive(PartialEq, Eq, Hash, Debug, Ord, PartialOrd)]
 pub enum Atom {
-    // Function(Rc<SemType>, Rc<SemType>),
     Mapping(usize),
-    // List(Rc<SemType>),
+    List {
+        prefix_items: Vec<usize>,
+        items: usize,
+    },
 }
 
 fn atom_cmp(a: &Atom, b: &Atom) -> Ordering {
@@ -318,11 +320,11 @@ fn intersect_mapping(m1: Rc<MappingAtomic>, m2: Rc<MappingAtomic>) -> Option<Rc<
         let type1 = m1
             .get(*name)
             .map(|it| it.clone())
-            .unwrap_or_else(|| Rc::new(SemTypeBuilder::any()));
+            .unwrap_or_else(|| Rc::new(SemTypeBuilder::unknown()));
         let type2 = m2
             .get(*name)
             .map(|it| it.clone())
-            .unwrap_or_else(|| Rc::new(SemTypeBuilder::any()));
+            .unwrap_or_else(|| Rc::new(SemTypeBuilder::unknown()));
         let t = type1.intersect(&type2);
         if t.is_never() {
             return None;
@@ -354,11 +356,11 @@ fn mapping_inhabited(
                 let pos_type = pos
                     .get(**name)
                     .map(|it| it.clone())
-                    .unwrap_or_else(|| Rc::new(SemTypeBuilder::any()));
+                    .unwrap_or_else(|| Rc::new(SemTypeBuilder::unknown()));
                 let neg_type = neg
                     .get(**name)
                     .map(|it| it.clone())
-                    .unwrap_or_else(|| Rc::new(SemTypeBuilder::any()));
+                    .unwrap_or_else(|| Rc::new(SemTypeBuilder::unknown()));
                 if pos_type.is_never() || neg_type.is_never() {
                     return mapping_inhabited(pos, &neg_list.next, builder);
                 }
@@ -367,11 +369,11 @@ fn mapping_inhabited(
                 let pos_type = pos
                     .get(*name)
                     .map(|it| it.clone())
-                    .unwrap_or_else(|| Rc::new(SemTypeBuilder::any()));
+                    .unwrap_or_else(|| Rc::new(SemTypeBuilder::unknown()));
                 let neg_type = neg
                     .get(*name)
                     .map(|it| it.clone())
-                    .unwrap_or_else(|| Rc::new(SemTypeBuilder::any()));
+                    .unwrap_or_else(|| Rc::new(SemTypeBuilder::unknown()));
 
                 let d = pos_type.diff(&neg_type);
                 if !d.is_empty(builder) {
@@ -424,9 +426,6 @@ fn mapping_formula_is_empty(
     return !mapping_inhabited(combined, neg_list, builder);
 }
 pub fn mapping_is_empty(bdd: &Rc<Bdd>, builder: &mut SemTypeBuilder) -> bool {
-    dbg!(&builder.mapping_definitions);
-    dbg!(&bdd);
-
     match builder.mapping_memo.get(&bdd) {
         Some(mm) => match &mm.0 {
             MemoEmpty::True => return true,
@@ -446,5 +445,34 @@ pub fn mapping_is_empty(bdd: &Rc<Bdd>, builder: &mut SemTypeBuilder) -> bool {
 
     let is_empty = bdd_every(bdd, &None, &None, mapping_formula_is_empty, builder);
     builder.mapping_memo.get_mut(&bdd).unwrap().0 = MemoEmpty::from_bool(is_empty);
+    is_empty
+}
+
+fn list_formula_is_empty(
+    pos_list: &Option<Rc<Conjunction>>,
+    neg_list: &Option<Rc<Conjunction>>,
+    builder: &mut SemTypeBuilder,
+) -> bool {
+    todo!()
+}
+pub fn list_is_empty(bdd: &Rc<Bdd>, builder: &mut SemTypeBuilder) -> bool {
+    match builder.list_memo.get(&bdd) {
+        Some(mm) => match &mm.0 {
+            MemoEmpty::True => return true,
+            MemoEmpty::False => return false,
+            MemoEmpty::Undefined => {
+                // we got a loop
+                return true;
+            }
+        },
+        None => {
+            builder
+                .list_memo
+                .insert((**bdd).clone(), BddMemoEmptyRef(MemoEmpty::Undefined));
+        }
+    }
+
+    let is_empty = bdd_every(bdd, &None, &None, list_formula_is_empty, builder);
+    builder.list_memo.get_mut(&bdd).unwrap().0 = MemoEmpty::from_bool(is_empty);
     is_empty
 }
