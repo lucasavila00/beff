@@ -261,6 +261,33 @@ impl fmt::Display for DiagnosticParentMessage {
 }
 
 #[derive(Clone, Debug)]
+pub struct FullLocation {
+    pub file_name: BffFileName,
+    pub loc_lo: Loc,
+    pub loc_hi: Loc,
+}
+
+#[derive(Clone, Debug)]
+pub struct UnknownLocation {
+    pub current_file: BffFileName,
+}
+
+#[derive(Clone, Debug)]
+pub enum Location {
+    Full(FullLocation),
+    Unknown(UnknownLocation),
+}
+
+// impl FullLocation {
+//     // pub fn build(file: Option<Rc<ParsedModule>>, span: &Span) {}
+
+//     pub fn to_diag_info(self, message: DiagnosticInfoMessage) -> DiagnosticInformation {
+//         // DiagnosticInformation::KnownFile { message, loc: self }
+//         todo!()
+//     }
+// }
+
+#[derive(Clone, Debug)]
 pub enum DiagnosticInformation {
     KnownFile {
         message: DiagnosticInfoMessage,

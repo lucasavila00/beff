@@ -54,7 +54,66 @@ pub enum JsonSchema {
     Const(Json),
     Error,
 }
-
+// pub trait VisitSchema {
+//     fn visit(&mut self, schema: &JsonSchema) {
+//         match schema {
+//             JsonSchema::Null => self.visit_null(),
+//             JsonSchema::Boolean => self.visit_boolean(),
+//             JsonSchema::String => self.visit_string(),
+//             JsonSchema::StringWithFormat(f) => self.visit_string_with_format(f),
+//             JsonSchema::Number => self.visit_number(),
+//             JsonSchema::Any => self.visit_any(),
+//             JsonSchema::Object(vs) => self.visit_object(vs),
+//             JsonSchema::Array(ty) => self.visit_array(ty),
+//             JsonSchema::Tuple {
+//                 prefix_items,
+//                 items,
+//             } => self.visit_tuple(prefix_items, items),
+//             JsonSchema::Ref(r) => self.visit_ref(r),
+//             JsonSchema::OpenApiResponseRef(r) => self.visit_open_api_response_ref(r),
+//             JsonSchema::AnyOf(vs) => self.visit_any_of(vs),
+//             JsonSchema::AllOf(vs) => self.visit_all_of(vs),
+//             JsonSchema::Const(c) => self.visit_const(c),
+//             JsonSchema::Error => self.visit_error(),
+//         }
+//     }
+//     fn visit_null(&mut self) {}
+//     fn visit_boolean(&mut self) {}
+//     fn visit_string(&mut self) {}
+//     fn visit_string_with_format(&mut self, _format: &str) {}
+//     fn visit_number(&mut self) {}
+//     fn visit_any(&mut self) {}
+//     fn visit_ref(&mut self, _reference: &str) {}
+//     fn visit_open_api_response_ref(&mut self, _reference: &str) {}
+//     fn visit_const(&mut self, _val: &Json) {}
+//     fn visit_error(&mut self) {}
+//     fn visit_object(&mut self, props: &BTreeMap<String, Optionality<JsonSchema>>) {
+//         for (_k, v) in props.iter() {
+//             self.visit(v.inner())
+//         }
+//     }
+//     fn visit_array(&mut self, typ: &JsonSchema) {
+//         self.visit(typ)
+//     }
+//     fn visit_tuple(&mut self, prefix_items: &[JsonSchema], items: &Option<Box<JsonSchema>>) {
+//         if let Some(items) = items {
+//             self.visit(items)
+//         }
+//         for it in prefix_items {
+//             self.visit(it)
+//         }
+//     }
+//     fn visit_any_of(&mut self, types: &BTreeSet<JsonSchema>) {
+//         for it in types {
+//             self.visit(it)
+//         }
+//     }
+//     fn visit_all_of(&mut self, types: &BTreeSet<JsonSchema>) {
+//         for it in types {
+//             self.visit(it)
+//         }
+//     }
+// }
 struct UnionMerger(BTreeSet<JsonSchema>);
 
 impl UnionMerger {

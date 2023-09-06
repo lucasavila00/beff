@@ -415,13 +415,13 @@ impl ToWritableModules for ExtractResult {
         let mut js_client_meta = None;
 
         if let Some(router) = self.router {
-            let meta_expr = handlers_to_server_js(router.handlers.clone(), &validators).to_expr();
+            let meta_expr = handlers_to_server_js(router.routes.clone(), &validators).to_expr();
             let js_server_data = vec![const_decl("meta", meta_expr)];
 
             js_server_meta = Some(emit_module(js_server_data)?);
             json_schema = Some(open_api_to_json(router.open_api, &validators).to_string());
 
-            let meta_expr = handlers_to_client_js(router.handlers, &validators).to_expr();
+            let meta_expr = handlers_to_client_js(router.routes, &validators).to_expr();
             let js_client_data = vec![const_decl("meta", meta_expr)];
             js_client_meta = Some(emit_module(js_client_data)?);
         }

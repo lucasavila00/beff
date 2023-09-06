@@ -1,11 +1,34 @@
-Error: Unknown error: StarPatternMustBeUsedWithUse
- /errors/star-pattern/router.ts:3:5
-   1 | export default {
-   2 |   [`/hello/*`]: {
- > 3 |     get: async (): Promise<string> => {
-     |     ^^^ Unknown error: StarPatternMustBeUsedWithUse
-   4 |       return "test";
-   5 |     },
-   6 |   },
+panicked at packages/beff-core/src/lib.rs:344:25:
+string format `StartsWithA` is not registered
 
-Found 1 error
+Stack:
+
+Error
+    at /home/lucas/fluff/bff/packages/beff-wasm/pkg/beff_wasm.js:358:17
+    at logError (/home/lucas/fluff/bff/packages/beff-wasm/pkg/beff_wasm.js:205:18)
+    at module.exports.__wbg_new_abda76e883ba8a5f (/home/lucas/fluff/bff/packages/beff-wasm/pkg/beff_wasm.js:357:65)
+    at console_error_panic_hook::Error::new::h24a202ca2cd6f4e3 (wasm://wasm/03491526:wasm-function[20630]:0xa4ec07)
+    at console_error_panic_hook::hook_impl::hbd017b1cd15b0ccd (wasm://wasm/03491526:wasm-function[4211]:0x7cd99c)
+    at console_error_panic_hook::hook::h2d1bbfd1bba12fb3 (wasm://wasm/03491526:wasm-function[21994]:0xa621ae)
+    at core::ops::function::Fn::call::h06c46a00921264ee (wasm://wasm/03491526:wasm-function[18837]:0xa3356b)
+    at std::panicking::rust_panic_with_hook::he4d11d009df2f45f (wasm://wasm/03491526:wasm-function[8410]:0x8f995b)
+    at std::panicking::begin_panic_handler::{{closure}}::hdd0d58f31e4d53df (wasm://wasm/03491526:wasm-function[11147]:0x973dfc)
+    at std::sys_common::backtrace::__rust_end_short_backtrace::hd70f3cac19eb49f3 (wasm://wasm/03491526:wasm-function[24874]:0xa7dac6)
+
+
+wasm://wasm/03491526:1
+
+
+RuntimeError: unreachable
+    at __rust_start_panic (wasm://wasm/03491526:wasm-function[24917]:0xa7dbc0)
+    at rust_panic (wasm://wasm/03491526:wasm-function[24639]:0xa7d029)
+    at std::panicking::rust_panic_with_hook::he4d11d009df2f45f (wasm://wasm/03491526:wasm-function[8410]:0x8f9988)
+    at std::panicking::begin_panic_handler::{{closure}}::hdd0d58f31e4d53df (wasm://wasm/03491526:wasm-function[11147]:0x973dfc)
+    at std::sys_common::backtrace::__rust_end_short_backtrace::hd70f3cac19eb49f3 (wasm://wasm/03491526:wasm-function[24874]:0xa7dac6)
+    at rust_begin_unwind (wasm://wasm/03491526:wasm-function[15561]:0x9f4eb7)
+    at core::panicking::panic_fmt::h157d8e2782a50057 (wasm://wasm/03491526:wasm-function[21874]:0xa608ef)
+    at beff_core::ExtractResult::sell_check_registered_strings::hebc2dcd63e108bcb (wasm://wasm/03491526:wasm-function[1088]:0x5bec86)
+    at beff_core::extract::hc355a70a8ddbef46 (wasm://wasm/03491526:wasm-function[601]:0x4dfab7)
+    at beff_wasm::run_extraction::{{closure}}::{{closure}}::hbccdd2145148b54e (wasm://wasm/03491526:wasm-function[7325]:0x8bd5c3)
+
+Node.js v18.16.0

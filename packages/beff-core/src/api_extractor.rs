@@ -1090,7 +1090,7 @@ pub struct RouterExtractResult {
     pub errors: Vec<Diagnostic>,
     pub open_api: OpenApi,
     pub entry_file_name: BffFileName,
-    pub handlers: Vec<PathHandlerMap>,
+    pub routes: Vec<PathHandlerMap>,
     pub validators: Vec<Validator>,
 }
 
@@ -1145,7 +1145,7 @@ pub fn extract_schema<R: FileManager>(
     };
 
     RouterExtractResult {
-        handlers,
+        routes: handlers,
         open_api,
         entry_file_name,
         errors,

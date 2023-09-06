@@ -12,6 +12,7 @@ pub mod swc_builder;
 pub mod type_reference;
 pub mod type_to_schema;
 use api_extractor::extract_schema;
+use api_extractor::HandlerParameter;
 use api_extractor::RouterExtractResult;
 use ast::json_schema::JsonSchema;
 use core::fmt;
@@ -19,6 +20,7 @@ use diag::Diagnostic;
 use open_api_ast::Validator;
 use parser_extractor::extract_parser;
 use parser_extractor::ParserExtractResult;
+use std::collections::BTreeSet;
 use std::collections::HashMap;
 use std::rc::Rc;
 use std::sync::Arc;
@@ -234,24 +236,112 @@ impl ExtractResult {
         }
     }
 
-    pub fn sell_check_registered_strings(&mut self) {
-        let definitions = self.validators();
-        for def in &definitions {
-            if let JsonSchema::StringWithFormat(fmt) = &def.schema {
-                match fmt.as_str() {
-                    "password" => {}
-                    name => match &self.parser {
-                        Some(p) => {
-                            let is_registered =
-                                p.registered_string_formats.contains(&name.to_string());
-                            if !is_registered {
-                                // self.extra_errors.push()
+    pub fn all_schemas(&self) -> Vec<&JsonSchema> {
+        let mut acc: Vec<&JsonSchema> = self.validators().iter().map(|it| &it.schema).collect();
+
+        if let Some(router) = &self.router {
+            for r in &router.routes {
+                for h in &r.handlers {
+                    for (_k, p) in &h.parameters {
+                        match p {
+                            HandlerParameter::PathOrQueryOrBody { schema, .. } => {
+                                acc.push(schema);
                             }
+                            api_extractor::HandlerParameter::Header { schema, .. } => {
+                                acc.push(schema);
+                            }
+                            api_extractor::HandlerParameter::Context(_) => {}
                         }
-                        None => panic!(),
-                    },
+                    }
+                    acc.push(&h.return_type);
                 }
             }
+        }
+
+        acc
+    }
+
+    fn collect_used_str_with_fmt(
+        &self,
+        ty: &JsonSchema,
+        collect_to: &mut BTreeSet<String>,
+        seen: &mut BTreeSet<JsonSchema>,
+    ) {
+        if seen.contains(ty) {
+            return;
+        }
+        seen.insert(ty.clone());
+
+        match ty {
+            JsonSchema::StringWithFormat(v) => {
+                collect_to.insert(v.to_string());
+            }
+            JsonSchema::Object(vs) => {
+                for v in vs.values() {
+                    self.collect_used_str_with_fmt(v.inner(), collect_to, seen);
+                }
+            }
+            JsonSchema::Array(vs) => {
+                self.collect_used_str_with_fmt(vs, collect_to, seen);
+            }
+            JsonSchema::Tuple {
+                prefix_items,
+                items,
+            } => {
+                if let Some(vs) = items {
+                    self.collect_used_str_with_fmt(vs, collect_to, seen);
+                }
+                for v in prefix_items {
+                    self.collect_used_str_with_fmt(v, collect_to, seen);
+                }
+            }
+            JsonSchema::Ref(n) => {
+                let validators = self.validators();
+                let schema = validators.iter().find(|it| it.name == *n);
+                if let Some(schema) = schema {
+                    self.collect_used_str_with_fmt(&schema.schema, collect_to, seen);
+                }
+            }
+            JsonSchema::AnyOf(vs) => {
+                for v in vs {
+                    self.collect_used_str_with_fmt(v, collect_to, seen);
+                }
+            }
+            JsonSchema::AllOf(vs) => {
+                for v in vs {
+                    self.collect_used_str_with_fmt(v, collect_to, seen);
+                }
+            }
+            JsonSchema::Null
+            | JsonSchema::Boolean
+            | JsonSchema::String
+            | JsonSchema::Number
+            | JsonSchema::Any
+            | JsonSchema::OpenApiResponseRef(_)
+            | JsonSchema::Const(_)
+            | JsonSchema::Error => {}
+        }
+    }
+
+    pub fn sell_check_registered_strings(&mut self) {
+        let definitions = self.all_schemas();
+        let mut used_str_with_fmt = BTreeSet::new();
+        let mut seen = BTreeSet::new();
+        for def in &definitions {
+            self.collect_used_str_with_fmt(def, &mut used_str_with_fmt, &mut seen);
+        }
+        if used_str_with_fmt.is_empty() {
+            return;
+        }
+        match &self.parser {
+            Some(parser) => {
+                for s in &used_str_with_fmt {
+                    if !parser.registered_string_formats.contains(s) {
+                        panic!("string format `{}` is not registered", s);
+                    }
+                }
+            }
+            None => panic!("has to have parser"),
         }
     }
 }

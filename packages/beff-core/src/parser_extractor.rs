@@ -1,7 +1,9 @@
 use std::rc::Rc;
 
 use crate::ast::json_schema::JsonSchema;
-use crate::diag::{span_to_loc, Diagnostic, DiagnosticInfoMessage, DiagnosticInformation};
+use crate::diag::{
+    span_to_loc, Diagnostic, DiagnosticInfoMessage, DiagnosticInformation, FullLocation,
+};
 use crate::type_to_schema::TypeToSchema;
 use crate::ParsedModule;
 use crate::{open_api_ast::Validator, BffFileName, FileManager};
@@ -45,7 +47,7 @@ impl<'a, R: FileManager> ExtractParserVisitor<'a, R> {
             validators: vec![],
             errors: vec![],
             built_decoders: None,
-            registered_string_formats: vec![],
+            registered_string_formats: vec!["password".to_string()],
         }
     }
 }
@@ -57,13 +59,12 @@ impl<'a, R: FileManager> ExtractParserVisitor<'a, R> {
             Some(file) => {
                 let (loc_lo, loc_hi) =
                     span_to_loc(span, &file.module.source_map, file.module.fm.end_pos);
-
-                DiagnosticInformation::KnownFile {
-                    message: msg,
+                FullLocation {
                     file_name: self.current_file.clone(),
                     loc_lo,
                     loc_hi,
                 }
+                .to_diag_info(msg)
             }
             None => DiagnosticInformation::UnfoundFile {
                 message: msg,
