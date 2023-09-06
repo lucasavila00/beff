@@ -1,9 +1,9 @@
+use anyhow::{anyhow, Result};
 use core::fmt;
-use std::sync::Arc;
-
+use std::{rc::Rc, sync::Arc};
 use swc_common::{BytePos, Loc, SourceMap, Span};
 
-use crate::BffFileName;
+use crate::{BffFileName, ParsedModule};
 
 #[derive(Debug, Clone)]
 pub enum DiagnosticInfoMessage {
@@ -267,6 +267,18 @@ pub struct FullLocation {
     pub loc_hi: Loc,
 }
 
+impl FullLocation {
+    pub fn to_diag(self, message: DiagnosticInfoMessage) -> Diagnostic {
+        self.to_info(message).to_diag(None)
+    }
+    pub fn to_info(self, message: DiagnosticInfoMessage) -> DiagnosticInformation {
+        DiagnosticInformation {
+            message,
+            loc: Location::Full(self),
+        }
+    }
+}
+
 #[derive(Clone, Debug)]
 pub struct UnknownLocation {
     pub current_file: BffFileName,
@@ -278,42 +290,65 @@ pub enum Location {
     Unknown(UnknownLocation),
 }
 
-// impl FullLocation {
-//     // pub fn build(file: Option<Rc<ParsedModule>>, span: &Span) {}
+impl Location {
+    pub fn build(
+        file: Option<Rc<ParsedModule>>,
+        span: &Span,
+        current_file: &BffFileName,
+    ) -> Location {
+        match file {
+            Some(file) => {
+                let (loc_lo, loc_hi) =
+                    span_to_loc(span, &file.module.source_map, file.module.fm.end_pos);
+                Location::Full(FullLocation {
+                    file_name: file.module.bff_fname.clone(),
+                    loc_lo,
+                    loc_hi,
+                })
+            }
+            None => Location::Unknown(UnknownLocation {
+                current_file: current_file.clone(),
+            }),
+        }
+    }
 
-//     pub fn to_diag_info(self, message: DiagnosticInfoMessage) -> DiagnosticInformation {
-//         // DiagnosticInformation::KnownFile { message, loc: self }
-//         todo!()
-//     }
-// }
+    pub fn to_info(self, message: DiagnosticInfoMessage) -> DiagnosticInformation {
+        DiagnosticInformation { message, loc: self }
+    }
+
+    pub fn expect_full(self) -> FullLocation {
+        match self {
+            Location::Full(loc) => loc,
+            Location::Unknown(_) => panic!("Expected full location"),
+        }
+    }
+
+    pub fn unknown(current_file: &BffFileName) -> Location {
+        Location::Unknown(UnknownLocation {
+            current_file: current_file.clone(),
+        })
+    }
+
+    pub fn result_full(self) -> Result<FullLocation> {
+        match self {
+            Location::Full(loc) => Ok(loc),
+            Location::Unknown(loc) => Err(anyhow!("Expected full location, got {:?}", loc)),
+        }
+    }
+}
 
 #[derive(Clone, Debug)]
-pub enum DiagnosticInformation {
-    KnownFile {
-        message: DiagnosticInfoMessage,
-        file_name: BffFileName,
-        loc_lo: Loc,
-        loc_hi: Loc,
-    },
-    UnfoundFile {
-        message: DiagnosticInfoMessage,
-        current_file: BffFileName,
-    },
+pub struct DiagnosticInformation {
+    pub message: DiagnosticInfoMessage,
+    pub loc: Location,
 }
 
 impl DiagnosticInformation {
-    pub fn to_diag(self, message: Option<DiagnosticParentMessage>) -> Diagnostic {
-        match self {
-            DiagnosticInformation::KnownFile { .. } => Diagnostic {
-                parent_big_message: message,
-                cause: self,
-                related_information: None,
-            },
-            DiagnosticInformation::UnfoundFile { .. } => Diagnostic {
-                cause: self,
-                related_information: None,
-                parent_big_message: message,
-            },
+    pub fn to_diag(self, parent_big_message: Option<DiagnosticParentMessage>) -> Diagnostic {
+        Diagnostic {
+            parent_big_message,
+            cause: self,
+            related_information: None,
         }
     }
 }
@@ -325,7 +360,7 @@ pub struct Diagnostic {
     pub related_information: Option<Vec<DiagnosticInformation>>,
 }
 
-pub fn span_to_loc(span: &Span, source_map: &Arc<SourceMap>, curr_file_end: BytePos) -> (Loc, Loc) {
+fn span_to_loc(span: &Span, source_map: &Arc<SourceMap>, curr_file_end: BytePos) -> (Loc, Loc) {
     if span.lo.0 == 0 || span.hi.0 == 0 {
         let lo = source_map.lookup_char_pos(BytePos(1));
         let hi = source_map.lookup_char_pos(curr_file_end);

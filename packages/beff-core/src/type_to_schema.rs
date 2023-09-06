@@ -1,7 +1,7 @@
 use crate::ast::json::Json;
 use crate::ast::json_schema::{JsonSchema, Optionality};
 use crate::diag::{
-    span_to_loc, Diagnostic, DiagnosticInfoMessage, DiagnosticInformation, DiagnosticParentMessage,
+    Diagnostic, DiagnosticInfoMessage, DiagnosticInformation, DiagnosticParentMessage, Location,
 };
 use crate::open_api_ast::Validator;
 use crate::type_reference::{ResolvedLocalType, TypeResolver};
@@ -298,23 +298,7 @@ impl<'a, R: FileManager> TypeToSchema<'a, R> {
 
     fn create_error(&mut self, span: &Span, msg: DiagnosticInfoMessage) -> DiagnosticInformation {
         let file = self.files.get_or_fetch_file(&self.current_file);
-        match file {
-            Some(file) => {
-                let (loc_lo, loc_hi) =
-                    span_to_loc(span, &file.module.source_map, file.module.fm.end_pos);
-
-                DiagnosticInformation::KnownFile {
-                    message: msg,
-                    file_name: self.current_file.clone(),
-                    loc_hi,
-                    loc_lo,
-                }
-            }
-            None => DiagnosticInformation::UnfoundFile {
-                message: msg,
-                current_file: self.current_file.clone(),
-            },
-        }
+        Location::build(file, span, &self.current_file).to_info(msg)
     }
     fn error<T>(&mut self, span: &Span, msg: DiagnosticInfoMessage) -> Res<T> {
         let err = self.create_error(span, msg);
@@ -324,17 +308,10 @@ impl<'a, R: FileManager> TypeToSchema<'a, R> {
         self.files
             .get_or_fetch_file(&self.current_file)
             .map(|file| {
-                let (loc_lo, loc_hi) =
-                    span_to_loc(&i.span, &file.module.source_map, file.module.fm.end_pos);
-
-                DiagnosticInformation::KnownFile {
-                    file_name: self.current_file.clone(),
-                    loc_hi,
-                    loc_lo,
-                    message: DiagnosticInfoMessage::ThisRefersToSomethingThatCannotBeSerialized(
-                        i.sym.to_string(),
-                    ),
-                }
+                let msg = DiagnosticInfoMessage::ThisRefersToSomethingThatCannotBeSerialized(
+                    i.sym.to_string(),
+                );
+                Location::build(Some(file), &i.span, &self.current_file).to_info(msg)
             })
     }
 

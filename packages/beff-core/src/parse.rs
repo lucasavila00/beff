@@ -7,7 +7,7 @@ use swc_common::{Mark, SourceFile, SourceMap};
 use swc_ecma_ast::EsVersion;
 use swc_node_comments::SwcComments;
 
-use crate::BffModuleData;
+use crate::{BffFileName, BffModuleData};
 use swc_ecma_parser::TsConfig;
 use swc_ecma_parser::{parse_file_as_module, Syntax};
 
@@ -17,7 +17,11 @@ use swc_ecma_transforms_base::resolver;
 use swc_ecma_visit::FoldWith;
 
 #[allow(clippy::arc_with_non_send_sync)]
-pub fn parse_with_swc(fm: &Rc<SourceFile>, cm: SourceMap) -> Result<(BffModuleData, SwcComments)> {
+pub fn parse_with_swc(
+    fm: &Rc<SourceFile>,
+    cm: SourceMap,
+    bff_fname: &BffFileName,
+) -> Result<(BffModuleData, SwcComments)> {
     let unresolved_mark = Mark::new();
     let top_level_mark = Mark::new();
     let comments: SwcComments = SwcComments::default();
@@ -41,6 +45,7 @@ pub fn parse_with_swc(fm: &Rc<SourceFile>, cm: SourceMap) -> Result<(BffModuleDa
             fm: Arc::new(fm.as_ref().clone()),
             module,
             source_map: Arc::new(cm),
+            bff_fname: bff_fname.clone(),
         },
         comments,
     ))

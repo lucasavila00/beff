@@ -7,10 +7,8 @@ use crate::{
         json::{Json, ToJson, ToJsonKv},
         json_schema::JsonSchema,
     },
-    diag::{Diagnostic, DiagnosticInfoMessage, DiagnosticInformation},
-    BffFileName,
+    diag::{Diagnostic, DiagnosticInfoMessage, FullLocation},
 };
-use swc_common::Loc;
 
 fn clear_description(it: String) -> String {
     let lines = it.split('\n').collect::<Vec<_>>();
@@ -125,7 +123,7 @@ impl ToJson for JsonRequestBody {
 
 #[derive(Debug)]
 pub struct OperationObject {
-    pub method_prop_span: (Loc, Loc),
+    pub method_prop_span: FullLocation,
     pub summary: Option<String>,
     pub description: Option<String>,
     pub parameters: Vec<ParameterObject>,
@@ -233,19 +231,13 @@ fn parse_pattern_params(pattern: &str) -> Vec<String> {
 }
 #[derive(Debug, Clone)]
 pub struct ParsedPattern {
-    pub file_name: BffFileName,
-    pub loc_lo: Loc,
-    pub loc_hi: Loc,
+    pub loc: FullLocation,
 
     pub open_api_pattern: String,
     pub path_params: Vec<String>,
 }
 impl ApiPath {
-    fn validate_pattern(
-        key: &str,
-        file_name: &BffFileName,
-        locs: &(Loc, Loc),
-    ) -> Option<Diagnostic> {
+    fn validate_pattern(key: &str, locs: &FullLocation) -> Option<Diagnostic> {
         // only allow simple openapi patterns, no explode
         // disallow `/{param}asd/`
         let blocks = key.split('/').collect::<Vec<_>>();
@@ -257,26 +249,18 @@ impl ApiPath {
                 let is_at_start = block.starts_with('{');
 
                 if !is_at_start {
-                    let err = DiagnosticInformation::KnownFile {
-                        message: DiagnosticInfoMessage::OpenBlockMustStartPattern,
-                        file_name: file_name.clone(),
-                        loc_lo: locs.0.clone(),
-                        loc_hi: locs.1.clone(),
-                    }
-                    .to_diag(None);
+                    let err = locs
+                        .clone()
+                        .to_diag(DiagnosticInfoMessage::OpenBlockMustStartPattern);
                     return Some(err);
                 }
 
                 let is_at_end = block.ends_with('}');
 
                 if !is_at_end {
-                    let err = DiagnosticInformation::KnownFile {
-                        message: DiagnosticInfoMessage::CloseBlockMustEndPattern,
-                        file_name: file_name.clone(),
-                        loc_lo: locs.0.clone(),
-                        loc_hi: locs.1.clone(),
-                    }
-                    .to_diag(None);
+                    let err = locs
+                        .clone()
+                        .to_diag(DiagnosticInfoMessage::CloseBlockMustEndPattern);
                     return Some(err);
                 }
 
@@ -285,13 +269,9 @@ impl ApiPath {
                     content.chars().all(|c| c.is_alphanumeric() || c == '_');
 
                 if !is_valid_js_identifier {
-                    let err = DiagnosticInformation::KnownFile {
-                        message: DiagnosticInfoMessage::InvalidIdentifierInPatternNoExplodeAllowed,
-                        file_name: file_name.clone(),
-                        loc_lo: locs.0.clone(),
-                        loc_hi: locs.1.clone(),
-                    }
-                    .to_diag(None);
+                    let err = locs
+                        .clone()
+                        .to_diag(DiagnosticInfoMessage::InvalidIdentifierInPatternNoExplodeAllowed);
                     return Some(err);
                 }
             }
@@ -301,18 +281,15 @@ impl ApiPath {
     }
     pub fn parse_raw_pattern_str(
         key: &str,
-        file_name: BffFileName,
-        locs: (Loc, Loc),
+        locs: FullLocation,
     ) -> Result<ParsedPattern, Diagnostic> {
         let path_params = parse_pattern_params(key);
-        match Self::validate_pattern(key, &file_name, &locs) {
+        match Self::validate_pattern(key, &locs) {
             Some(d) => Err(d),
             None => Ok(ParsedPattern {
                 open_api_pattern: key.to_string(),
                 path_params,
-                file_name,
-                loc_lo: locs.0,
-                loc_hi: locs.1,
+                loc: locs,
             }),
         }
     }
@@ -324,15 +301,9 @@ impl ApiPath {
             for path_param in &self.parsed_pattern.path_params {
                 let found = v.parameters.iter().find(|it| it.name == *path_param);
                 if found.is_none() {
-                    let err = DiagnosticInformation::KnownFile {
-                        message: DiagnosticInfoMessage::UnmatchedPathParameter(
-                            path_param.to_string(),
-                        ),
-                        file_name: self.parsed_pattern.file_name.clone(),
-                        loc_lo: v.method_prop_span.0.clone(),
-                        loc_hi: v.method_prop_span.1.clone(),
-                    }
-                    .to_diag(None);
+                    let err = v.method_prop_span.clone().to_diag(
+                        DiagnosticInfoMessage::UnmatchedPathParameter(path_param.to_string()),
+                    );
                     acc.push(err);
                 }
             }

@@ -1,4 +1,4 @@
-use beff_core::diag::{Diagnostic, DiagnosticInformation};
+use beff_core::diag::{Diagnostic, DiagnosticInformation, Location};
 use serde::{Deserialize, Serialize};
 
 #[derive(Serialize, Deserialize)]
@@ -20,26 +20,18 @@ pub enum WasmDiagnosticInformation {
 
 impl WasmDiagnosticInformation {
     pub fn from_diagnostic_info(info: &DiagnosticInformation) -> WasmDiagnosticInformation {
-        match info {
-            DiagnosticInformation::KnownFile {
-                message,
-                file_name,
-                loc_lo,
-                loc_hi,
-            } => WasmDiagnosticInformation::KnownFile {
-                message: message.clone().to_string(),
-                file_name: file_name.to_string(),
-                line_lo: loc_lo.line,
-                col_lo: loc_lo.col.0,
-                line_hi: loc_hi.line,
-                col_hi: loc_hi.col.0,
+        match info.loc {
+            Location::Full(ref f) => WasmDiagnosticInformation::KnownFile {
+                message: info.message.clone().to_string(),
+                file_name: f.file_name.to_string(),
+                line_lo: f.loc_lo.line,
+                col_lo: f.loc_lo.col.0,
+                line_hi: f.loc_hi.line,
+                col_hi: f.loc_hi.col.0,
             },
-            DiagnosticInformation::UnfoundFile {
-                message,
-                current_file,
-            } => WasmDiagnosticInformation::UnknownFile {
-                message: message.clone().to_string(),
-                current_file: current_file.to_string(),
+            Location::Unknown(ref u) => WasmDiagnosticInformation::UnknownFile {
+                message: info.message.clone().to_string(),
+                current_file: u.current_file.to_string(),
             },
         }
     }

@@ -1,6 +1,7 @@
 use crate::ast::json_schema::JsonSchema;
 use crate::diag::{
-    span_to_loc, Diagnostic, DiagnosticInfoMessage, DiagnosticInformation, DiagnosticParentMessage,
+    Diagnostic, DiagnosticInfoMessage, DiagnosticInformation, DiagnosticParentMessage,
+    FullLocation, Location,
 };
 use crate::open_api_ast::{
     self, ApiPath, HTTPMethod, Info, JsonRequestBody, OpenApi, OperationObject, ParameterIn,
@@ -16,7 +17,7 @@ use jsdoc::Input;
 use std::collections::HashSet;
 use std::rc::Rc;
 use swc_common::comments::{Comment, CommentKind, Comments};
-use swc_common::{BytePos, Loc, Span, DUMMY_SP};
+use swc_common::{BytePos, Span, DUMMY_SP};
 use swc_ecma_ast::{
     ArrayPat, ArrowExpr, AssignPat, AssignProp, BigInt, BindingIdent, ComputedPropName,
     ExportDefaultExpr, Expr, FnExpr, Function, GetterProp, Ident, Invalid, KeyValueProp, Lit,
@@ -171,23 +172,7 @@ fn get_prop_name_span(key: &PropName) -> Span {
 impl<'a, R: FileManager> ExtractExportDefaultVisitor<'a, R> {
     fn build_error(&self, span: &Span, msg: DiagnosticInfoMessage) -> DiagnosticInformation {
         let file = self.files.get_existing_file(&self.current_file);
-        match file {
-            Some(file) => {
-                let (loc_lo, loc_hi) =
-                    span_to_loc(span, &file.module.source_map, file.module.fm.end_pos);
-
-                DiagnosticInformation::KnownFile {
-                    message: msg,
-                    file_name: self.current_file.clone(),
-                    loc_lo,
-                    loc_hi,
-                }
-            }
-            None => DiagnosticInformation::UnfoundFile {
-                message: msg,
-                current_file: self.current_file.clone(),
-            },
-        }
+        Location::build(file, span, &self.current_file).to_info(msg)
     }
     fn push_error(&mut self, span: &Span, msg: DiagnosticInfoMessage) {
         self.errors.push(self.build_error(span, msg).to_diag(None));
@@ -275,16 +260,9 @@ impl<'a, R: FileManager> ExtractExportDefaultVisitor<'a, R> {
         None
     }
 
-    fn get_locs(&mut self, span: &Span) -> Result<(Loc, Loc)> {
+    fn get_locs(&mut self, span: &Span) -> Result<FullLocation> {
         let file = self.files.get_existing_file(&self.current_file);
-        match file {
-            Some(file) => Ok(span_to_loc(
-                span,
-                &file.module.source_map,
-                file.module.fm.end_pos,
-            )),
-            None => Err(anyhow!("unreachable no file for pattern")),
-        }
+        Location::build(file, span, &self.current_file).result_full()
     }
 
     fn parse_key(&mut self, key: &PropName) -> Result<ParsedPattern> {
@@ -292,11 +270,7 @@ impl<'a, R: FileManager> ExtractExportDefaultVisitor<'a, R> {
             PropName::Computed(ComputedPropName { expr, span, .. }) => match &**expr {
                 Expr::Lit(Lit::Str(Str { span, value, .. })) => {
                     let locs = self.get_locs(span)?;
-                    let p = ApiPath::parse_raw_pattern_str(
-                        value.as_ref(),
-                        self.current_file.clone(),
-                        locs,
-                    );
+                    let p = ApiPath::parse_raw_pattern_str(value.as_ref(), locs);
                     match p {
                         Ok(v) => Ok(v),
                         Err(e) => {
@@ -320,11 +294,7 @@ impl<'a, R: FileManager> ExtractExportDefaultVisitor<'a, R> {
                     }
                     let first_quasis = quasis.first().expect("we just checked the length");
                     let locs = self.get_locs(span)?;
-                    let p = ApiPath::parse_raw_pattern_str(
-                        first_quasis.raw.as_ref(),
-                        self.current_file.clone(),
-                        locs,
-                    );
+                    let p = ApiPath::parse_raw_pattern_str(first_quasis.raw.as_ref(), locs);
                     match p {
                         Ok(v) => Ok(v),
                         Err(e) => {
@@ -340,11 +310,7 @@ impl<'a, R: FileManager> ExtractExportDefaultVisitor<'a, R> {
             },
             PropName::Str(Str { span, value, .. }) => {
                 let locs = self.get_locs(span)?;
-                let p = ApiPath::parse_raw_pattern_str(
-                    &value.to_string(),
-                    self.current_file.clone(),
-                    locs,
-                );
+                let p = ApiPath::parse_raw_pattern_str(&value.to_string(), locs);
                 match p {
                     Ok(v) => Ok(v),
                     Err(e) => {
@@ -895,40 +861,15 @@ impl<'a, R: FileManager> EndpointToPath<'a, R> {
         parent_msg: Option<DiagnosticParentMessage>,
     ) {
         let file = self.files.get_or_fetch_file(&self.current_file);
-        match file {
-            Some(file) => {
-                let (loc_lo, loc_hi) =
-                    span_to_loc(span, &file.module.source_map, file.module.fm.end_pos);
-
-                let err = DiagnosticInformation::KnownFile {
-                    message: info_msg,
-                    file_name: self.current_file.clone(),
-                    loc_lo,
-                    loc_hi,
-                };
-                self.errors.push(err.to_diag(parent_msg));
-            }
-            None => {
-                let err = DiagnosticInformation::UnfoundFile {
-                    message: info_msg,
-                    current_file: self.current_file.clone(),
-                };
-                self.errors.push(err.to_diag(parent_msg));
-            }
-        }
+        let err = Location::build(file, span, &self.current_file).to_info(info_msg);
+        self.errors.push(err.to_diag(parent_msg));
     }
 
-    fn get_locs(&mut self, span: &Span) -> Result<(Loc, Loc)> {
+    fn get_locs(&mut self, span: &Span) -> Result<FullLocation> {
         let file = self.files.get_existing_file(&self.current_file);
-        match file {
-            Some(file) => Ok(span_to_loc(
-                span,
-                &file.module.source_map,
-                file.module.fm.end_pos,
-            )),
-            None => Err(anyhow!("unreachable no file for pattern")),
-        }
+        Location::build(file, span, &self.current_file).result_full()
     }
+
     fn endpoint_to_operation_object(
         &mut self,
         endpoint: &FnHandler,
@@ -1106,11 +1047,9 @@ fn visit_extract<R: FileManager>(files: &mut R, current_file: BffFileName) -> Vi
     let _ = visitor.visit_current_file();
     if !visitor.found_default_export {
         visitor.errors.push(
-            DiagnosticInformation::UnfoundFile {
-                message: DiagnosticInfoMessage::CouldNotFindDefaultExport,
-                current_file: current_file.clone(),
-            }
-            .to_diag(None),
+            Location::unknown(&current_file)
+                .to_info(DiagnosticInfoMessage::CouldNotFindDefaultExport)
+                .to_diag(None),
         )
     }
 

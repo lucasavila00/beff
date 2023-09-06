@@ -42,6 +42,7 @@ pub enum TypeExport {
 }
 
 pub struct BffModuleData {
+    pub bff_fname: BffFileName,
     pub fm: Arc<SourceFile>,
     pub source_map: Arc<SourceMap>,
     pub module: Module,

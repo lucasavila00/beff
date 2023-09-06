@@ -4,7 +4,7 @@ use swc_common::Span;
 use swc_ecma_ast::{Ident, TsInterfaceDecl, TsType};
 
 use crate::{
-    diag::{span_to_loc, Diagnostic, DiagnosticInfoMessage, DiagnosticInformation},
+    diag::{Diagnostic, DiagnosticInfoMessage, Location},
     BffFileName, FileManager, ImportReference, ParsedModule, TypeExport,
 };
 
@@ -96,24 +96,9 @@ impl<'a, R: FileManager> TypeResolver<'a, R> {
 
     fn make_err(&mut self, span: &Span, info_msg: DiagnosticInfoMessage) -> Diagnostic {
         let file = self.files.get_or_fetch_file(&self.current_file);
-        match file {
-            Some(file) => {
-                let (loc_lo, loc_hi) =
-                    span_to_loc(span, &file.module.source_map, file.module.fm.end_pos);
-
-                DiagnosticInformation::KnownFile {
-                    message: info_msg,
-                    file_name: self.current_file.clone(),
-                    loc_lo,
-                    loc_hi,
-                }
-            }
-            None => DiagnosticInformation::UnfoundFile {
-                message: info_msg,
-                current_file: self.current_file.clone(),
-            },
-        }
-        .to_diag(None)
+        Location::build(file, span, &self.current_file)
+            .to_info(info_msg)
+            .to_diag(None)
     }
     pub fn resolve_local_type(&mut self, i: &Ident) -> Res<ResolvedLocalType> {
         let k = &(i.sym.clone(), i.span.ctxt);
