@@ -13,6 +13,7 @@ pub mod type_reference;
 pub mod type_to_schema;
 use api_extractor::extract_schema;
 use api_extractor::RouterExtractResult;
+use ast::json_schema::JsonSchema;
 use core::fmt;
 use diag::Diagnostic;
 use open_api_ast::Validator;
@@ -187,6 +188,7 @@ pub trait FileManager {
 pub struct ExtractResult {
     pub router: Option<RouterExtractResult>,
     pub parser: Option<ParserExtractResult>,
+    pub extra_errors: Vec<Diagnostic>,
 }
 
 impl ExtractResult {
@@ -205,6 +207,8 @@ impl ExtractResult {
                     .map(|it| it.errors.iter().map(|it| it).collect())
                     .unwrap_or(vec![]),
             )
+            .into_iter()
+            .chain(self.extra_errors.iter())
             .collect()
     }
     pub fn validators(&self) -> Vec<&Validator> {
@@ -229,6 +233,27 @@ impl ExtractResult {
             assert!(res);
         }
     }
+
+    pub fn sell_check_registered_strings(&mut self) {
+        let definitions = self.validators();
+        for def in &definitions {
+            if let JsonSchema::StringWithFormat(fmt) = &def.schema {
+                match fmt.as_str() {
+                    "password" => {}
+                    name => match &self.parser {
+                        Some(p) => {
+                            let is_registered =
+                                p.registered_string_formats.contains(&name.to_string());
+                            if !is_registered {
+                                // self.extra_errors.push()
+                            }
+                        }
+                        None => panic!(),
+                    },
+                }
+            }
+        }
+    }
 }
 
 pub fn extract<R: FileManager>(files: &mut R, entry: EntryPoints) -> ExtractResult {
@@ -242,5 +267,12 @@ pub fn extract<R: FileManager>(files: &mut R, entry: EntryPoints) -> ExtractResu
         parser = Some(extract_parser(files, entry));
     }
 
-    ExtractResult { router, parser }
+    let mut e = ExtractResult {
+        router,
+        parser,
+        extra_errors: vec![],
+    };
+    e.self_check_sem_types();
+    e.sell_check_registered_strings();
+    e
 }

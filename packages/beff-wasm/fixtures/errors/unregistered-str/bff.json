@@ -1,0 +1,4 @@
+{
+    "parser": "./parser.ts",
+    "outputDir": "./bff-generated"
+}

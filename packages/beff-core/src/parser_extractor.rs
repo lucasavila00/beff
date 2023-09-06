@@ -9,7 +9,7 @@ use anyhow::anyhow;
 use anyhow::Result;
 use swc_common::{Span, DUMMY_SP};
 use swc_ecma_ast::{
-    CallExpr, Callee, Expr, Ident, MemberExpr, MemberProp, TsCallSignatureDecl,
+    CallExpr, Callee, Expr, Ident, Lit, MemberExpr, MemberProp, TsCallSignatureDecl,
     TsConstructSignatureDecl, TsGetterSignature, TsIndexSignature, TsMethodSignature,
     TsPropertySignature, TsSetterSignature, TsType, TsTypeElement, TsTypeLit,
     TsTypeParamInstantiation,
@@ -26,6 +26,7 @@ pub struct ParserExtractResult {
     pub entry_file_name: BffFileName,
     pub validators: Vec<Validator>,
     pub built_decoders: Option<Vec<BuiltDecoder>>,
+    pub registered_string_formats: Vec<String>,
 }
 
 struct ExtractParserVisitor<'a, R: FileManager> {
@@ -34,6 +35,7 @@ struct ExtractParserVisitor<'a, R: FileManager> {
     validators: Vec<Validator>,
     errors: Vec<Diagnostic>,
     built_decoders: Option<Vec<BuiltDecoder>>,
+    registered_string_formats: Vec<String>,
 }
 impl<'a, R: FileManager> ExtractParserVisitor<'a, R> {
     fn new(files: &'a mut R, current_file: BffFileName) -> ExtractParserVisitor<'a, R> {
@@ -43,6 +45,7 @@ impl<'a, R: FileManager> ExtractParserVisitor<'a, R> {
             validators: vec![],
             errors: vec![],
             built_decoders: None,
+            registered_string_formats: vec![],
         }
     }
 }
@@ -214,6 +217,41 @@ impl<'a, R: FileManager> ExtractParserVisitor<'a, R> {
             ),
         }
     }
+
+    pub fn extract_special_calls(&mut self, id: &Ident, n: &CallExpr) {
+        let Ident { sym, span, .. } = id;
+        if sym == "buildParsers" {
+            match self.built_decoders {
+                Some(_) => self.push_error(span, DiagnosticInfoMessage::TwoCallsToBuildParsers),
+                None => {
+                    if let Some(ref params) = n.type_args {
+                        if let Ok(x) = self.extract_built_decoders_from_call(params.as_ref()) {
+                            self.built_decoders = Some(x)
+                        }
+                    }
+                }
+            }
+        }
+
+        if sym == "registerStringFormat" {
+            match n.args.split_first() {
+                Some((head, tail)) => {
+                    assert!(tail.len() == 1);
+                    assert!(head.spread.is_none());
+
+                    if let Expr::Lit(lit) = &*head.expr {
+                        match lit {
+                            Lit::Str(str) => {
+                                self.registered_string_formats.push(str.value.to_string())
+                            }
+                            _ => panic!(),
+                        }
+                    }
+                }
+                None => panic!(),
+            }
+        }
+    }
 }
 
 impl<'a, R: FileManager> Visit for ExtractParserVisitor<'a, R> {
@@ -222,71 +260,50 @@ impl<'a, R: FileManager> Visit for ExtractParserVisitor<'a, R> {
             Callee::Super(_) => {}
             Callee::Import(_) => {}
             Callee::Expr(ref expr) => {
-                if let Expr::Ident(Ident { sym, span, .. }) = &**expr {
-                    if sym == "buildParsers" {
-                        match self.built_decoders {
-                            Some(_) => {
-                                self.push_error(span, DiagnosticInfoMessage::TwoCallsToBuildParsers)
-                            }
-                            None => {
-                                if let Some(ref params) = n.type_args {
-                                    if let Ok(x) =
-                                        self.extract_built_decoders_from_call(params.as_ref())
-                                    {
-                                        self.built_decoders = Some(x)
-                                    }
-                                }
-                            }
-                        }
-                    }
+                if let Expr::Ident(id) = &**expr {
+                    self.extract_special_calls(id, n)
                 }
 
                 if let Expr::Member(MemberExpr { prop, .. }) = &**expr {
                     match prop {
-                        MemberProp::Ident(Ident { sym, span, .. }) => {
-                            if sym == "buildParsers" {
-                                match self.built_decoders {
-                                    Some(_) => self.push_error(
-                                        span,
-                                        DiagnosticInfoMessage::TwoCallsToBuildParsers,
-                                    ),
-                                    None => {
-                                        if let Some(ref params) = n.type_args {
-                                            if let Ok(x) = self
-                                                .extract_built_decoders_from_call(params.as_ref())
-                                            {
-                                                self.built_decoders = Some(x)
-                                            }
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                        MemberProp::PrivateName(_) => todo!(),
-                        MemberProp::Computed(_) => todo!(),
+                        MemberProp::Ident(id) => self.extract_special_calls(id, n),
+                        MemberProp::PrivateName(_) => {}
+                        MemberProp::Computed(_) => {}
                     }
                 }
             }
         }
     }
 }
-type VisitExtractResult = (Vec<Diagnostic>, Vec<Validator>, Option<Vec<BuiltDecoder>>);
+type VisitExtractResult = (
+    Vec<Diagnostic>,
+    Vec<Validator>,
+    Option<Vec<BuiltDecoder>>,
+    Vec<String>,
+);
 fn visit_extract<R: FileManager>(files: &mut R, current_file: BffFileName) -> VisitExtractResult {
     let mut visitor = ExtractParserVisitor::new(files, current_file.clone());
     let _ = visitor.visit_current_file();
-    (visitor.errors, visitor.validators, visitor.built_decoders)
+    (
+        visitor.errors,
+        visitor.validators,
+        visitor.built_decoders,
+        visitor.registered_string_formats,
+    )
 }
 
 pub fn extract_parser<R: FileManager>(
     files: &mut R,
     entry_file_name: BffFileName,
 ) -> ParserExtractResult {
-    let (errors, validators, built_decoders) = visit_extract(files, entry_file_name.clone());
+    let (errors, validators, built_decoders, registered_string_formats) =
+        visit_extract(files, entry_file_name.clone());
 
     ParserExtractResult {
         errors,
         entry_file_name,
         validators,
         built_decoders,
+        registered_string_formats,
     }
 }

@@ -9,6 +9,8 @@
 - [ ] watch mode
 - [ ] resolver tsconfig
 
+- [ ] todo!, unwrap
+
 <!--  -->
 <!--  -->
 <!--  -->
@@ -96,6 +98,8 @@ const prettyPrintValue = (it: unknown): string => {
 <!--  -->
 <!--  -->
 <!--  -->
+
+FastMJPG is currently in a public alpha state. It is feature complete, and all known bugs have been fixed, though more issues are expected to be discovered as it is used by more people. It is not recommended for use in critical production environments at this time.
 
 ## next
 
