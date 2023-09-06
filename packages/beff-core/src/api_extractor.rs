@@ -292,7 +292,18 @@ impl<'a, R: FileManager> ExtractExportDefaultVisitor<'a, R> {
             PropName::Computed(ComputedPropName { expr, span, .. }) => match &**expr {
                 Expr::Lit(Lit::Str(Str { span, value, .. })) => {
                     let locs = self.get_locs(span)?;
-                    ApiPath::parse_raw_pattern_str(value.as_ref(), self.current_file.clone(), locs)
+                    let p = ApiPath::parse_raw_pattern_str(
+                        value.as_ref(),
+                        self.current_file.clone(),
+                        locs,
+                    );
+                    match p {
+                        Ok(v) => Ok(v),
+                        Err(e) => {
+                            self.errors.push(e);
+                            Err(anyhow!("failed to parse pattern"))
+                        }
+                    }
                 }
                 Expr::Tpl(Tpl {
                     span,
@@ -309,11 +320,18 @@ impl<'a, R: FileManager> ExtractExportDefaultVisitor<'a, R> {
                     }
                     let first_quasis = quasis.first().expect("we just checked the length");
                     let locs = self.get_locs(span)?;
-                    ApiPath::parse_raw_pattern_str(
+                    let p = ApiPath::parse_raw_pattern_str(
                         first_quasis.raw.as_ref(),
                         self.current_file.clone(),
                         locs,
-                    )
+                    );
+                    match p {
+                        Ok(v) => Ok(v),
+                        Err(e) => {
+                            self.errors.push(e);
+                            Err(anyhow!("failed to parse pattern"))
+                        }
+                    }
                 }
                 _ => self.error(
                     span,
@@ -322,7 +340,18 @@ impl<'a, R: FileManager> ExtractExportDefaultVisitor<'a, R> {
             },
             PropName::Str(Str { span, value, .. }) => {
                 let locs = self.get_locs(span)?;
-                ApiPath::parse_raw_pattern_str(&value.to_string(), self.current_file.clone(), locs)
+                let p = ApiPath::parse_raw_pattern_str(
+                    &value.to_string(),
+                    self.current_file.clone(),
+                    locs,
+                );
+                match p {
+                    Ok(v) => Ok(v),
+                    Err(e) => {
+                        self.errors.push(e);
+                        Err(anyhow!("failed to parse pattern"))
+                    }
+                }
             }
             PropName::Ident(Ident { span, .. })
             | PropName::Num(Number { span, .. })

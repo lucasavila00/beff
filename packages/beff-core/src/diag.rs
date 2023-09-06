@@ -7,6 +7,9 @@ use crate::BffFileName;
 
 #[derive(Debug, Clone)]
 pub enum DiagnosticInfoMessage {
+    InvalidIdentifierInPatternNoExplodeAllowed,
+    CloseBlockMustEndPattern,
+    OpenBlockMustStartPattern,
     StarPatternMustBeUsedWithUse,
     CannotUseQualifiedTypeWithTypeParameters,
     CannotUseStarAsType,

@@ -1,15 +1,10 @@
 ## BFF Core
 
-- [ ] if it uses `*`, then it can just use use
-- [ ] only allow simple openapi patterns, no explode
-- [ ] disallow `/{param}asd/`
 - [ ] check string format was registered
 - [ ] add many lazy string formats
 - [ ] assert header etc is imported from lib
 - [ ] disallow GET body?
 - [ ] error messages
-
-## BFF CLI
 
 - [ ] watch mode
 - [ ] resolver tsconfig

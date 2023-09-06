@@ -10,7 +10,6 @@ use crate::{
     diag::{Diagnostic, DiagnosticInfoMessage, DiagnosticInformation},
     BffFileName,
 };
-use anyhow::Result;
 use swc_common::Loc;
 
 fn clear_description(it: String) -> String {
@@ -242,19 +241,80 @@ pub struct ParsedPattern {
     pub path_params: Vec<String>,
 }
 impl ApiPath {
+    fn validate_pattern(
+        key: &str,
+        file_name: &BffFileName,
+        locs: &(Loc, Loc),
+    ) -> Option<Diagnostic> {
+        // only allow simple openapi patterns, no explode
+        // disallow `/{param}asd/`
+        let blocks = key.split('/').collect::<Vec<_>>();
+
+        for block in blocks {
+            // if block contains '{' or '}' assert these are at the start and end
+            let contains_block_delim = block.contains('{') || block.contains('}');
+            if contains_block_delim {
+                let is_at_start = block.starts_with('{');
+
+                if !is_at_start {
+                    let err = DiagnosticInformation::KnownFile {
+                        message: DiagnosticInfoMessage::OpenBlockMustStartPattern,
+                        file_name: file_name.clone(),
+                        loc_lo: locs.0.clone(),
+                        loc_hi: locs.1.clone(),
+                    }
+                    .to_diag(None);
+                    return Some(err);
+                }
+
+                let is_at_end = block.ends_with('}');
+
+                if !is_at_end {
+                    let err = DiagnosticInformation::KnownFile {
+                        message: DiagnosticInfoMessage::CloseBlockMustEndPattern,
+                        file_name: file_name.clone(),
+                        loc_lo: locs.0.clone(),
+                        loc_hi: locs.1.clone(),
+                    }
+                    .to_diag(None);
+                    return Some(err);
+                }
+
+                let content = block.trim_start_matches('{').trim_end_matches('}');
+                let is_valid_js_identifier =
+                    content.chars().all(|c| c.is_alphanumeric() || c == '_');
+
+                if !is_valid_js_identifier {
+                    let err = DiagnosticInformation::KnownFile {
+                        message: DiagnosticInfoMessage::InvalidIdentifierInPatternNoExplodeAllowed,
+                        file_name: file_name.clone(),
+                        loc_lo: locs.0.clone(),
+                        loc_hi: locs.1.clone(),
+                    }
+                    .to_diag(None);
+                    return Some(err);
+                }
+            }
+        }
+
+        None
+    }
     pub fn parse_raw_pattern_str(
         key: &str,
         file_name: BffFileName,
         locs: (Loc, Loc),
-    ) -> Result<ParsedPattern> {
+    ) -> Result<ParsedPattern, Diagnostic> {
         let path_params = parse_pattern_params(key);
-        Ok(ParsedPattern {
-            open_api_pattern: key.to_string(),
-            path_params,
-            file_name,
-            loc_lo: locs.0,
-            loc_hi: locs.1,
-        })
+        match Self::validate_pattern(key, &file_name, &locs) {
+            Some(d) => Err(d),
+            None => Ok(ParsedPattern {
+                open_api_pattern: key.to_string(),
+                path_params,
+                file_name,
+                loc_lo: locs.0,
+                loc_hi: locs.1,
+            }),
+        }
     }
 
     fn validate_pattern_was_consumed(&self) -> Vec<Diagnostic> {
@@ -281,9 +341,7 @@ impl ApiPath {
     }
 
     pub fn validate(&self) -> Vec<Diagnostic> {
-        self.validate_pattern_was_consumed()
-            .into_iter()
-            .collect()
+        self.validate_pattern_was_consumed().into_iter().collect()
     }
 
     #[must_use]
