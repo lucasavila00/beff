@@ -25,7 +25,7 @@ impl<'a> ToSemTypeConverter<'a> {
     fn get_reference(&self, name: &str) -> Result<&JsonSchema> {
         for validator in self.validators {
             if validator.name == name {
-                return Ok(&validator.schema);
+                return Ok(&validator.schema.value);
             }
         }
         return Err(anyhow!("reference not found: {}", name));

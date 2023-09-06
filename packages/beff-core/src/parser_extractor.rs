@@ -93,7 +93,7 @@ impl<'a, R: FileManager> ExtractParserVisitor<'a, R> {
         for d in defs {
             let found = self.validators.iter_mut().find(|x| x.name == d.name);
             if let Some(found) = found {
-                if found.schema != d.schema {
+                if found.schema.value != d.schema.value {
                     self.push_error(
                         span,
                         DiagnosticInfoMessage::TwoDifferentTypesWithTheSameName,

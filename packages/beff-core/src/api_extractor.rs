@@ -1,7 +1,7 @@
 use crate::ast::json_schema::JsonSchema;
 use crate::diag::{
     Diagnostic, DiagnosticInfoMessage, DiagnosticInformation, DiagnosticParentMessage,
-    FullLocation, Location,
+    FullLocation, Located, Location,
 };
 use crate::open_api_ast::{
     self, ApiPath, HTTPMethod, Info, JsonRequestBody, OpenApi, OperationObject, ParameterIn,
@@ -47,14 +47,14 @@ fn maybe_extract_promise(typ: &TsType) -> &TsType {
 #[derive(Debug, Clone)]
 pub enum HandlerParameter {
     PathOrQueryOrBody {
-        schema: JsonSchema,
+        schema: Located<JsonSchema>,
         required: bool,
         description: Option<String>,
         span: Span,
     },
     Header {
         span: Span,
-        schema: JsonSchema,
+        schema: Located<JsonSchema>,
         required: bool,
         description: Option<String>,
     },
@@ -119,7 +119,7 @@ pub struct FnHandler {
     pub summary: Option<String>,
     pub description: Option<String>,
     pub parameters: Vec<(String, HandlerParameter)>,
-    pub return_type: JsonSchema,
+    pub return_type: Located<JsonSchema>,
     pub method_kind: MethodKind,
     pub span: Span,
 }
@@ -260,7 +260,7 @@ impl<'a, R: FileManager> ExtractExportDefaultVisitor<'a, R> {
         None
     }
 
-    fn get_locs(&mut self, span: &Span) -> Result<FullLocation> {
+    fn get_full_location(&mut self, span: &Span) -> Result<FullLocation> {
         let file = self.files.get_existing_file(&self.current_file);
         Location::build(file, span, &self.current_file).result_full()
     }
@@ -269,7 +269,7 @@ impl<'a, R: FileManager> ExtractExportDefaultVisitor<'a, R> {
         match key {
             PropName::Computed(ComputedPropName { expr, span, .. }) => match &**expr {
                 Expr::Lit(Lit::Str(Str { span, value, .. })) => {
-                    let locs = self.get_locs(span)?;
+                    let locs = self.get_full_location(span)?;
                     let p = ApiPath::parse_raw_pattern_str(value.as_ref(), locs);
                     match p {
                         Ok(v) => Ok(v),
@@ -293,7 +293,7 @@ impl<'a, R: FileManager> ExtractExportDefaultVisitor<'a, R> {
                             .error(span, DiagnosticInfoMessage::TemplateMustBeOfSingleString);
                     }
                     let first_quasis = quasis.first().expect("we just checked the length");
-                    let locs = self.get_locs(span)?;
+                    let locs = self.get_full_location(span)?;
                     let p = ApiPath::parse_raw_pattern_str(first_quasis.raw.as_ref(), locs);
                     match p {
                         Ok(v) => Ok(v),
@@ -309,7 +309,7 @@ impl<'a, R: FileManager> ExtractExportDefaultVisitor<'a, R> {
                 ),
             },
             PropName::Str(Str { span, value, .. }) => {
-                let locs = self.get_locs(span)?;
+                let locs = self.get_full_location(span)?;
                 let p = ApiPath::parse_raw_pattern_str(&value.to_string(), locs);
                 match p {
                     Ok(v) => Ok(v),
@@ -332,7 +332,7 @@ impl<'a, R: FileManager> ExtractExportDefaultVisitor<'a, R> {
         for d in defs {
             let found = self.components.iter_mut().find(|x| x.name == d.name);
             if let Some(found) = found {
-                if found.schema != d.schema {
+                if found.schema.value != d.schema.value {
                     self.push_error(
                         span,
                         DiagnosticInfoMessage::TwoDifferentTypesWithTheSameName,
@@ -344,7 +344,7 @@ impl<'a, R: FileManager> ExtractExportDefaultVisitor<'a, R> {
         }
     }
 
-    fn convert_to_json_schema(&mut self, ty: &TsType, span: &Span) -> JsonSchema {
+    fn convert_to_json_schema(&mut self, ty: &TsType, span: &Span) -> Located<JsonSchema> {
         let mut to_schema = TypeToSchema::new(self.files, self.current_file.clone());
         let res = to_schema.convert_ts_type(ty);
         match res {
@@ -378,6 +378,7 @@ impl<'a, R: FileManager> ExtractExportDefaultVisitor<'a, R> {
                 JsonSchema::Error
             }
         }
+        .located(self.get_full_location(span).unwrap())
     }
     fn parse_header_param(
         &mut self,
@@ -654,7 +655,7 @@ impl<'a, R: FileManager> ExtractExportDefaultVisitor<'a, R> {
                     summary: None,
                     description: None,
                     parameters: vec![],
-                    return_type: JsonSchema::Any,
+                    return_type: JsonSchema::Any.located(self.get_full_location(&span).unwrap()),
                     method_kind: MethodKind::Use(span.clone()),
                     span: Self::get_prop_span(prop),
                 }];
@@ -808,7 +809,7 @@ fn is_type_simple(it: &JsonSchema, components: &Vec<Validator>) -> bool {
                 .iter()
                 .find(|it| &it.name == r)
                 .expect("can always find ref in json schema at this point");
-            is_type_simple(&def.schema, components)
+            is_type_simple(&def.schema.value, components)
         }
         JsonSchema::AnyOf(vs) => vs.iter().all(|it| is_type_simple(it, components)),
         JsonSchema::Null
@@ -913,7 +914,7 @@ impl<'a, R: FileManager> EndpointToPath<'a, R> {
                     match operation_parameter_in_path_or_query_or_body(
                         key,
                         pattern,
-                        schema,
+                        &schema.value,
                         self.components,
                     ) {
                         FunctionParameterIn::Path => parameters.push(ParameterObject {

@@ -96,16 +96,21 @@ fn param_to_server_js(
         HandlerParameter::PathOrQueryOrBody {
             schema, required, ..
         } => {
-            match operation_parameter_in_path_or_query_or_body(name, pattern, &schema, components) {
+            match operation_parameter_in_path_or_query_or_body(
+                name,
+                pattern,
+                &schema.value,
+                components,
+            ) {
                 FunctionParameterIn::Path => Js::object(vec![
                     ("type".into(), Js::String("path".into())),
                     ("name".into(), Js::String(name.to_string())),
                     ("required".into(), Js::Bool(required)),
                     (
                         "validator".into(),
-                        Js::named_decoder(name.to_string(), schema.clone(), required),
+                        Js::named_decoder(name.to_string(), schema.value.clone(), required),
                     ),
-                    ("coercer".into(), build_coercer(schema, components)),
+                    ("coercer".into(), build_coercer(schema.value, components)),
                 ]),
                 FunctionParameterIn::Query => Js::object(vec![
                     ("type".into(), Js::String("query".into())),
@@ -113,9 +118,9 @@ fn param_to_server_js(
                     ("required".into(), Js::Bool(required)),
                     (
                         "validator".into(),
-                        Js::named_decoder(name.to_string(), schema.clone(), required),
+                        Js::named_decoder(name.to_string(), schema.value.clone(), required),
                     ),
-                    ("coercer".into(), build_coercer(schema, components)),
+                    ("coercer".into(), build_coercer(schema.value, components)),
                 ]),
                 FunctionParameterIn::Body => Js::object(vec![
                     ("type".into(), Js::String("body".into())),
@@ -123,7 +128,11 @@ fn param_to_server_js(
                     ("required".into(), Js::Bool(required)),
                     (
                         "validator".into(),
-                        Js::named_decoder("requestBody".to_string(), schema.clone(), required),
+                        Js::named_decoder(
+                            "requestBody".to_string(),
+                            schema.value.clone(),
+                            required,
+                        ),
                     ),
                 ]),
                 FunctionParameterIn::InvalidComplexPathParameter => {
@@ -141,9 +150,9 @@ fn param_to_server_js(
                 ("required".into(), Js::Bool(required)),
                 (
                     "validator".into(),
-                    Js::named_decoder(name.to_string(), schema.clone(), required),
+                    Js::named_decoder(name.to_string(), schema.value.clone(), required),
                 ),
-                ("coercer".into(), build_coercer(schema, components)),
+                ("coercer".into(), build_coercer(schema.value, components)),
             ])
         }
         HandlerParameter::Context(_) => {
@@ -162,7 +171,12 @@ fn param_to_client_js(
         HandlerParameter::PathOrQueryOrBody {
             schema, required, ..
         } => {
-            match operation_parameter_in_path_or_query_or_body(name, pattern, &schema, components) {
+            match operation_parameter_in_path_or_query_or_body(
+                name,
+                pattern,
+                &schema.value,
+                components,
+            ) {
                 FunctionParameterIn::Path => Js::object(vec![
                     ("type".into(), Js::String("path".into())),
                     ("name".into(), Js::String(name.to_string())),
@@ -233,7 +247,7 @@ fn handlers_to_server_js(items: Vec<PathHandlerMap>, components: &Vec<Validator>
                             ),
                             (
                                 "return_validator".into(),
-                                Js::named_decoder(decoder_name, handler.return_type, true),
+                                Js::named_decoder(decoder_name, handler.return_type.value, true),
                             ),
                         ])
                     })
@@ -345,7 +359,7 @@ fn merge_validator(
         for d in parser {
             let found = acc.iter_mut().find(|x| x.name == d.name);
             if let Some(found) = found {
-                if found.schema != d.schema {
+                if found.schema.value != d.schema.value {
                     // TODO: emit proper diag here?
                     // or merge before?
                     return Err(anyhow!("Two different types with the same name"));
@@ -370,7 +384,8 @@ impl ToWritableModules for ExtractResult {
 
         for comp in &validators {
             validator_names.push(comp.name.clone());
-            let decoder_fn = decoder::from_schema(&comp.schema, &Some(comp.name.clone()), true);
+            let decoder_fn =
+                decoder::from_schema(&comp.schema.value, &Some(comp.name.clone()), true);
             let decoder_fn_decl = ModuleItem::Stmt(Stmt::Decl(Decl::Fn(FnDecl {
                 ident: Ident {
                     span: DUMMY_SP,

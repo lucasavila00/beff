@@ -7,7 +7,7 @@ use crate::{
         json::{Json, ToJson, ToJsonKv},
         json_schema::JsonSchema,
     },
-    diag::{Diagnostic, DiagnosticInfoMessage, FullLocation},
+    diag::{Diagnostic, DiagnosticInfoMessage, FullLocation, Located},
 };
 
 fn clear_description(it: String) -> String {
@@ -24,7 +24,7 @@ fn clear_description(it: String) -> String {
 fn resolve_schema(schema: JsonSchema, components: &Vec<Validator>) -> JsonSchema {
     match schema {
         JsonSchema::Ref(name) => match components.iter().find(|it| it.name == name) {
-            Some(def) => resolve_schema(def.schema.clone(), components),
+            Some(def) => resolve_schema(def.schema.value.clone(), components),
             None => unreachable!("everything should be resolved when printing"),
         },
         _ => schema,
@@ -82,7 +82,7 @@ pub struct ParameterObject {
     pub in_: ParameterIn,
     pub description: Option<String>,
     pub required: bool,
-    pub schema: JsonSchema,
+    pub schema: Located<JsonSchema>,
 }
 impl ToJson for ParameterObject {
     fn to_json(self) -> Json {
@@ -93,7 +93,7 @@ impl ToJson for ParameterObject {
             v.push(("description".into(), Json::String(clear_description(desc))));
         }
         v.push(("required".into(), Json::Bool(self.required)));
-        v.push(("schema".into(), self.schema.to_json()));
+        v.push(("schema".into(), self.schema.value.to_json()));
         Json::object(v)
     }
 }
@@ -101,7 +101,7 @@ impl ToJson for ParameterObject {
 #[derive(Debug)]
 pub struct JsonRequestBody {
     pub description: Option<String>,
-    pub schema: JsonSchema,
+    pub schema: Located<JsonSchema>,
     pub required: bool,
 }
 
@@ -114,7 +114,7 @@ impl ToJson for JsonRequestBody {
         v.push(("required".into(), Json::Bool(self.required)));
         let content = Json::object(vec![(
             "application/json".into(),
-            Json::object(vec![("schema".into(), self.schema.to_json())]),
+            Json::object(vec![("schema".into(), self.schema.value.to_json())]),
         )]);
         v.push(("content".into(), content));
         Json::object(v)
@@ -127,7 +127,7 @@ pub struct OperationObject {
     pub summary: Option<String>,
     pub description: Option<String>,
     pub parameters: Vec<ParameterObject>,
-    pub json_response_body: JsonSchema,
+    pub json_response_body: Located<JsonSchema>,
     pub json_request_body: Option<JsonRequestBody>,
 }
 fn error_response_ref(code: &str, reference: &str) -> (String, Json) {
@@ -169,7 +169,7 @@ impl ToJson for OperationObject {
                                 "application/json".into(),
                                 Json::object(vec![(
                                     "schema".into(),
-                                    self.json_response_body.to_json(),
+                                    self.json_response_body.value.to_json(),
                                 )]),
                             )]),
                         ),
@@ -344,11 +344,11 @@ impl ToJsonKv for ApiPath {
 #[derive(Debug, Clone)]
 pub struct Validator {
     pub name: String,
-    pub schema: JsonSchema,
+    pub schema: Located<JsonSchema>,
 }
 impl ToJsonKv for Validator {
     fn to_json_kv(self) -> Vec<(String, Json)> {
-        vec![(self.name.clone(), self.schema.to_json())]
+        vec![(self.name.clone(), self.schema.value.to_json())]
     }
 }
 

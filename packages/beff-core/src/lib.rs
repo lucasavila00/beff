@@ -17,6 +17,7 @@ use api_extractor::RouterExtractResult;
 use ast::json_schema::JsonSchema;
 use core::fmt;
 use diag::Diagnostic;
+use diag::Located;
 use open_api_ast::Validator;
 use parser_extractor::extract_parser;
 use parser_extractor::ParserExtractResult;
@@ -32,6 +33,8 @@ use swc_ecma_ast::{Module, TsType};
 use swc_ecma_ast::{TsInterfaceDecl, TsTypeAliasDecl};
 use swc_ecma_visit::Visit;
 use swc_node_comments::SwcComments;
+
+use crate::diag::DiagnosticInfoMessage;
 
 #[derive(Debug, Clone)]
 pub enum TypeExport {
@@ -232,13 +235,18 @@ impl ExtractResult {
     pub fn self_check_sem_types(&self) {
         let definitions = self.validators();
         for def in &definitions {
-            let res = def.schema.is_sub_type(&def.schema, &definitions).unwrap();
+            let res = def
+                .schema
+                .value
+                .is_sub_type(&def.schema.value, &definitions)
+                .unwrap();
             assert!(res);
         }
     }
 
-    pub fn all_schemas(&self) -> Vec<&JsonSchema> {
-        let mut acc: Vec<&JsonSchema> = self.validators().iter().map(|it| &it.schema).collect();
+    pub fn all_schemas(&self) -> Vec<&Located<JsonSchema>> {
+        let mut acc: Vec<&Located<JsonSchema>> =
+            self.validators().iter().map(|it| &it.schema).collect();
 
         if let Some(router) = &self.router {
             for r in &router.routes {
@@ -246,10 +254,10 @@ impl ExtractResult {
                     for (_k, p) in &h.parameters {
                         match p {
                             HandlerParameter::PathOrQueryOrBody { schema, .. } => {
-                                acc.push(schema);
+                                acc.push(&schema);
                             }
                             api_extractor::HandlerParameter::Header { schema, .. } => {
-                                acc.push(schema);
+                                acc.push(&schema);
                             }
                             api_extractor::HandlerParameter::Context(_) => {}
                         }
@@ -300,7 +308,7 @@ impl ExtractResult {
                 let validators = self.validators();
                 let schema = validators.iter().find(|it| it.name == *n);
                 if let Some(schema) = schema {
-                    self.collect_used_str_with_fmt(&schema.schema, collect_to, seen);
+                    self.collect_used_str_with_fmt(&schema.schema.value, collect_to, seen);
                 }
             }
             JsonSchema::AnyOf(vs) => {
@@ -324,25 +332,28 @@ impl ExtractResult {
         }
     }
 
-    pub fn sell_check_registered_strings(&mut self) {
+    pub fn self_check_registered_strings(&self, extra_errors: &mut Vec<Diagnostic>) {
         let definitions = self.all_schemas();
-        let mut used_str_with_fmt = BTreeSet::new();
         let mut seen = BTreeSet::new();
         for def in &definitions {
-            self.collect_used_str_with_fmt(def, &mut used_str_with_fmt, &mut seen);
-        }
-        if used_str_with_fmt.is_empty() {
-            return;
-        }
-        match &self.parser {
-            Some(parser) => {
-                for s in &used_str_with_fmt {
-                    if !parser.registered_string_formats.contains(s) {
-                        panic!("string format `{}` is not registered", s);
+            let mut used_str_with_fmt = BTreeSet::new();
+            self.collect_used_str_with_fmt(&def.value, &mut used_str_with_fmt, &mut seen);
+
+            if used_str_with_fmt.is_empty() {
+                continue;
+            }
+            match &self.parser {
+                Some(parser) => {
+                    for s in &used_str_with_fmt {
+                        if !parser.registered_string_formats.contains(s) {
+                            extra_errors.push(def.loc.clone().to_diag(
+                                DiagnosticInfoMessage::StringFormatNotRegistered(s.clone()),
+                            ));
+                        }
                     }
                 }
+                None => panic!("has to have parser"),
             }
-            None => panic!("has to have parser"),
         }
     }
 }
@@ -364,6 +375,10 @@ pub fn extract<R: FileManager>(files: &mut R, entry: EntryPoints) -> ExtractResu
         extra_errors: vec![],
     };
     e.self_check_sem_types();
-    e.sell_check_registered_strings();
+
+    let mut extra_errors = vec![];
+    e.self_check_registered_strings(&mut extra_errors);
+
+    e.extra_errors.extend(extra_errors);
     e
 }
