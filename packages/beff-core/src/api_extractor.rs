@@ -1000,26 +1000,45 @@ impl<'a, R: FileManager> EndpointToPath<'a, R> {
             };
         }
 
-        let locs = self.get_locs(endpoint.method_kind.span())?;
-
         Ok(OperationObject {
             summary: endpoint.summary.clone(),
             description: endpoint.description.clone(),
             parameters,
             json_response_body: endpoint.return_type.clone(),
             json_request_body,
-            method_prop_span: locs,
+            method_prop_span: self.get_locs(endpoint.method_kind.span())?,
         })
     }
 
     fn endpoints_to_paths(&mut self, endpoints: &[PathHandlerMap]) -> Vec<open_api_ast::ApiPath> {
         endpoints
             .iter()
-            .map(|it| {
-                let mut path = open_api_ast::ApiPath::from_pattern(it.pattern.clone());
-                for endpoint in &it.handlers {
+            .map(|handler_map| {
+                let contains_star = handler_map.pattern.open_api_pattern.contains('*');
+                if contains_star {
+                    for endpoint in &handler_map.handlers {
+                        match endpoint.method_kind {
+                            MethodKind::Use(_) => {}
+                            MethodKind::Get(span)
+                            | MethodKind::Post(span)
+                            | MethodKind::Put(span)
+                            | MethodKind::Patch(span)
+                            | MethodKind::Delete(span)
+                            | MethodKind::Options(span) => {
+                                self.push_error(
+                                    &span,
+                                    DiagnosticInfoMessage::StarPatternMustBeUsedWithUse,
+                                    None,
+                                );
+                            }
+                        }
+                    }
+                }
+
+                let mut path = open_api_ast::ApiPath::from_pattern(handler_map.pattern.clone());
+                for endpoint in &handler_map.handlers {
                     if let Some(m) = endpoint.method_kind.to_http_method() {
-                        let op = self.endpoint_to_operation_object(endpoint, &it.pattern);
+                        let op = self.endpoint_to_operation_object(endpoint, &handler_map.pattern);
                         if let Ok(op) = op {
                             path.methods.insert(m, op);
                         }

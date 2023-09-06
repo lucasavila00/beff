@@ -257,16 +257,6 @@ impl ApiPath {
         })
     }
 
-    fn make_error(&self, message: DiagnosticInfoMessage) -> Diagnostic {
-        DiagnosticInformation::KnownFile {
-            message,
-            file_name: self.parsed_pattern.file_name.clone(),
-            loc_lo: self.parsed_pattern.loc_lo.clone(),
-            loc_hi: self.parsed_pattern.loc_hi.clone(),
-        }
-        .to_diag(None)
-    }
-
     fn validate_pattern_was_consumed(&self) -> Vec<Diagnostic> {
         let mut acc = vec![];
 
@@ -274,18 +264,26 @@ impl ApiPath {
             for path_param in &self.parsed_pattern.path_params {
                 let found = v.parameters.iter().find(|it| it.name == *path_param);
                 if found.is_none() {
-                    acc.push(
-                        self.make_error(DiagnosticInfoMessage::UnmatchedPathParameter(
+                    let err = DiagnosticInformation::KnownFile {
+                        message: DiagnosticInfoMessage::UnmatchedPathParameter(
                             path_param.to_string(),
-                        )),
-                    );
+                        ),
+                        file_name: self.parsed_pattern.file_name.clone(),
+                        loc_lo: v.method_prop_span.0.clone(),
+                        loc_hi: v.method_prop_span.1.clone(),
+                    }
+                    .to_diag(None);
+                    acc.push(err);
                 }
             }
         }
         acc
     }
+
     pub fn validate(&self) -> Vec<Diagnostic> {
         self.validate_pattern_was_consumed()
+            .into_iter()
+            .collect()
     }
 
     #[must_use]
