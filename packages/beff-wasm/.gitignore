@@ -6,3 +6,4 @@ pkg/
 wasm-pack.log
 dist-cli/
 dist-ext/
+pkg-web/
