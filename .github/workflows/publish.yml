@@ -20,14 +20,8 @@ jobs:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
         run: |
           pnpm install
-          npm run build
-          pnpm install
-          cd packages/flue-ts
-          npm run dist $GITHUB_REF_NAME
-          cd dist/
-          npm publish
-          # cd ..
-          # cd packages/zod-data-classes
-          # npm run dist $GITHUB_REF_NAME
-          # cd dist/
-          # npm publish
+          pnpm all
+          (cd packages/beff-cli && pnpm publish)
+          (cd packages/beff-client && pnpm publish)
+          (cd packages/beff-hono && pnpm publish)
+          (cd packages/beff-react && pnpm publish)
