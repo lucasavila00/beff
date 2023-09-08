@@ -17,5 +17,5 @@ jobs:
       - name: Tests
         run: |
           pnpm install
-          cargo install wasm-pack
+          curl https://rustwasm.github.io/wasm-pack/installer/init.sh -sSf | sh
           pnpm all
