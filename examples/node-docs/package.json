@@ -10,8 +10,8 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "@beff/cli": "workspace:^1.0.0",
-    "@beff/hono": "workspace:^1.0.0",
+    "@beff/cli": "workspace:^0.0.0",
+    "@beff/hono": "workspace:^0.0.0",
     "@hono/node-server": "^1.1.1",
     "esbuild": "^0.19.2"
   }

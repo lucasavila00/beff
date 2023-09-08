@@ -18,7 +18,7 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "@beff/cli": "workspace:^1.0.0"
+    "@beff/cli": "workspace:^0.0.0"
   },
   "devDependencies": {
     "typescript": "^5.2.2"
