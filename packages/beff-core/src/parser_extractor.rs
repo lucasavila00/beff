@@ -9,7 +9,7 @@ use anyhow::anyhow;
 use anyhow::Result;
 use swc_common::{Span, DUMMY_SP};
 use swc_ecma_ast::{
-    CallExpr, Callee, Expr, Ident, Lit, MemberExpr, MemberProp, TsCallSignatureDecl,
+    CallExpr, Callee, Expr, Ident, MemberExpr, MemberProp, TsCallSignatureDecl,
     TsConstructSignatureDecl, TsGetterSignature, TsIndexSignature, TsMethodSignature,
     TsPropertySignature, TsSetterSignature, TsType, TsTypeElement, TsTypeLit,
     TsTypeParamInstantiation,
@@ -26,7 +26,6 @@ pub struct ParserExtractResult {
     pub entry_file_name: BffFileName,
     pub validators: Vec<Validator>,
     pub built_decoders: Option<Vec<BuiltDecoder>>,
-    pub registered_string_formats: Vec<String>,
 }
 
 struct ExtractParserVisitor<'a, R: FileManager> {
@@ -35,7 +34,6 @@ struct ExtractParserVisitor<'a, R: FileManager> {
     validators: Vec<Validator>,
     errors: Vec<Diagnostic>,
     built_decoders: Option<Vec<BuiltDecoder>>,
-    registered_string_formats: Vec<String>,
 }
 impl<'a, R: FileManager> ExtractParserVisitor<'a, R> {
     fn new(files: &'a mut R, current_file: BffFileName) -> ExtractParserVisitor<'a, R> {
@@ -45,7 +43,6 @@ impl<'a, R: FileManager> ExtractParserVisitor<'a, R> {
             validators: vec![],
             errors: vec![],
             built_decoders: None,
-            registered_string_formats: vec!["password".to_string()],
         }
     }
 }
@@ -216,25 +213,6 @@ impl<'a, R: FileManager> ExtractParserVisitor<'a, R> {
                 }
             }
         }
-
-        if sym == "registerStringFormat" {
-            match n.args.split_first() {
-                Some((head, tail)) => {
-                    assert!(tail.len() == 1);
-                    assert!(head.spread.is_none());
-
-                    if let Expr::Lit(lit) = &*head.expr {
-                        match lit {
-                            Lit::Str(str) => {
-                                self.registered_string_formats.push(str.value.to_string())
-                            }
-                            _ => panic!(),
-                        }
-                    }
-                }
-                None => panic!(),
-            }
-        }
     }
 }
 
@@ -259,35 +237,23 @@ impl<'a, R: FileManager> Visit for ExtractParserVisitor<'a, R> {
         }
     }
 }
-type VisitExtractResult = (
-    Vec<Diagnostic>,
-    Vec<Validator>,
-    Option<Vec<BuiltDecoder>>,
-    Vec<String>,
-);
+type VisitExtractResult = (Vec<Diagnostic>, Vec<Validator>, Option<Vec<BuiltDecoder>>);
 fn visit_extract<R: FileManager>(files: &mut R, current_file: BffFileName) -> VisitExtractResult {
     let mut visitor = ExtractParserVisitor::new(files, current_file.clone());
     let _ = visitor.visit_current_file();
-    (
-        visitor.errors,
-        visitor.validators,
-        visitor.built_decoders,
-        visitor.registered_string_formats,
-    )
+    (visitor.errors, visitor.validators, visitor.built_decoders)
 }
 
 pub fn extract_parser<R: FileManager>(
     files: &mut R,
     entry_file_name: BffFileName,
 ) -> ParserExtractResult {
-    let (errors, validators, built_decoders, registered_string_formats) =
-        visit_extract(files, entry_file_name.clone());
+    let (errors, validators, built_decoders) = visit_extract(files, entry_file_name.clone());
 
     ParserExtractResult {
         errors,
         entry_file_name,
         validators,
         built_decoders,
-        registered_string_formats,
     }
 }

@@ -1,11 +1,5 @@
 ## BFF Core
 
-- [ ] check string format was registered
-- [ ] add many lazy string formats
-- [ ] assert header etc is imported from lib
-- [ ] disallow GET body?
-- [ ] error messages
-
 - [ ] watch mode
 - [ ] resolver tsconfig
 
@@ -66,6 +60,8 @@
 
 ## BFF Core
 
+- [ ] error messages
+
 remove the need for this hack
 
 ```
@@ -122,3 +118,4 @@ type X = (typeof x)[number]
 ```
 
 - [ ] eslint to catch skipped tests
+- [ ] assert header etc is imported from lib

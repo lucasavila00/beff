@@ -12,16 +12,12 @@ pub mod swc_builder;
 pub mod type_reference;
 pub mod type_to_schema;
 use api_extractor::extract_schema;
-use api_extractor::HandlerParameter;
 use api_extractor::RouterExtractResult;
-use ast::json_schema::JsonSchema;
 use core::fmt;
 use diag::Diagnostic;
-use diag::Located;
 use open_api_ast::Validator;
 use parser_extractor::extract_parser;
 use parser_extractor::ParserExtractResult;
-use std::collections::BTreeSet;
 use std::collections::HashMap;
 use std::rc::Rc;
 use std::sync::Arc;
@@ -33,8 +29,6 @@ use swc_ecma_ast::{Module, TsType};
 use swc_ecma_ast::{TsInterfaceDecl, TsTypeAliasDecl};
 use swc_ecma_visit::Visit;
 use swc_node_comments::SwcComments;
-
-use crate::diag::DiagnosticInfoMessage;
 
 #[derive(Debug, Clone)]
 pub enum TypeExport {
@@ -194,7 +188,6 @@ pub trait FileManager {
 pub struct ExtractResult {
     pub router: Option<RouterExtractResult>,
     pub parser: Option<ParserExtractResult>,
-    pub extra_errors: Vec<Diagnostic>,
 }
 
 impl ExtractResult {
@@ -214,7 +207,6 @@ impl ExtractResult {
                     .unwrap_or(vec![]),
             )
             .into_iter()
-            .chain(self.extra_errors.iter())
             .collect()
     }
     pub fn validators(&self) -> Vec<&Validator> {
@@ -243,121 +235,7 @@ impl ExtractResult {
             assert!(res);
         }
     }
-
-    pub fn all_schemas(&self) -> Vec<&Located<JsonSchema>> {
-        let mut acc: Vec<&Located<JsonSchema>> =
-            self.validators().iter().map(|it| &it.schema).collect();
-
-        if let Some(router) = &self.router {
-            for r in &router.routes {
-                for h in &r.handlers {
-                    for (_k, p) in &h.parameters {
-                        match p {
-                            HandlerParameter::PathOrQueryOrBody { schema, .. } => {
-                                acc.push(&schema);
-                            }
-                            api_extractor::HandlerParameter::Header { schema, .. } => {
-                                acc.push(&schema);
-                            }
-                            api_extractor::HandlerParameter::Context(_) => {}
-                        }
-                    }
-                    acc.push(&h.return_type);
-                }
-            }
-        }
-
-        acc
-    }
-
-    fn collect_used_str_with_fmt(
-        &self,
-        ty: &JsonSchema,
-        collect_to: &mut BTreeSet<String>,
-        seen: &mut BTreeSet<JsonSchema>,
-    ) {
-        if seen.contains(ty) {
-            return;
-        }
-        seen.insert(ty.clone());
-
-        match ty {
-            JsonSchema::StringWithFormat(v) => {
-                collect_to.insert(v.to_string());
-            }
-            JsonSchema::Object(vs) => {
-                for v in vs.values() {
-                    self.collect_used_str_with_fmt(v.inner(), collect_to, seen);
-                }
-            }
-            JsonSchema::Array(vs) => {
-                self.collect_used_str_with_fmt(vs, collect_to, seen);
-            }
-            JsonSchema::Tuple {
-                prefix_items,
-                items,
-            } => {
-                if let Some(vs) = items {
-                    self.collect_used_str_with_fmt(vs, collect_to, seen);
-                }
-                for v in prefix_items {
-                    self.collect_used_str_with_fmt(v, collect_to, seen);
-                }
-            }
-            JsonSchema::Ref(n) => {
-                let validators = self.validators();
-                let schema = validators.iter().find(|it| it.name == *n);
-                if let Some(schema) = schema {
-                    self.collect_used_str_with_fmt(&schema.schema.value, collect_to, seen);
-                }
-            }
-            JsonSchema::AnyOf(vs) => {
-                for v in vs {
-                    self.collect_used_str_with_fmt(v, collect_to, seen);
-                }
-            }
-            JsonSchema::AllOf(vs) => {
-                for v in vs {
-                    self.collect_used_str_with_fmt(v, collect_to, seen);
-                }
-            }
-            JsonSchema::Null
-            | JsonSchema::Boolean
-            | JsonSchema::String
-            | JsonSchema::Number
-            | JsonSchema::Any
-            | JsonSchema::OpenApiResponseRef(_)
-            | JsonSchema::Const(_)
-            | JsonSchema::Error => {}
-        }
-    }
-
-    pub fn self_check_registered_strings(&self, extra_errors: &mut Vec<Diagnostic>) {
-        let definitions = self.all_schemas();
-        let mut seen = BTreeSet::new();
-        for def in &definitions {
-            let mut used_str_with_fmt = BTreeSet::new();
-            self.collect_used_str_with_fmt(&def.value, &mut used_str_with_fmt, &mut seen);
-
-            if used_str_with_fmt.is_empty() {
-                continue;
-            }
-            match &self.parser {
-                Some(parser) => {
-                    for s in &used_str_with_fmt {
-                        if !parser.registered_string_formats.contains(s) {
-                            extra_errors.push(def.loc.clone().to_diag(
-                                DiagnosticInfoMessage::StringFormatNotRegistered(s.clone()),
-                            ));
-                        }
-                    }
-                }
-                None => panic!("has to have parser"),
-            }
-        }
-    }
 }
-
 pub fn extract<R: FileManager>(files: &mut R, entry: EntryPoints) -> ExtractResult {
     let mut router = None;
     let mut parser = None;
@@ -369,16 +247,8 @@ pub fn extract<R: FileManager>(files: &mut R, entry: EntryPoints) -> ExtractResu
         parser = Some(extract_parser(files, entry));
     }
 
-    let mut e = ExtractResult {
-        router,
-        parser,
-        extra_errors: vec![],
-    };
+    let e = ExtractResult { router, parser };
     e.self_check_sem_types();
 
-    let mut extra_errors = vec![];
-    e.self_check_registered_strings(&mut extra_errors);
-
-    e.extra_errors.extend(extra_errors);
     e
 }

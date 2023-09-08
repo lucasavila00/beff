@@ -1,6 +1,13 @@
-import { Formats } from "@beff/cli";
-import { StartsWithA, UnionNested as UnionNestedNamed, User } from "./parser";
+import {
+  registerStringFormat,
+  StartsWithA,
+  UnionNested as UnionNestedNamed,
+  User,
+  StringFormat,
+} from "./parser";
 
+export type Password = StringFormat<"password">;
+registerStringFormat("password", () => true);
 type Ctx = any;
 export default {
   [`/{name}`]: {
@@ -9,11 +16,7 @@ export default {
     },
   },
   ["/check-uuid/{uuid}"]: {
-    get: async (
-      c: Ctx,
-      uuid: string,
-      p: Formats.Password
-    ): Promise<StartsWithA> => {
+    get: async (c: Ctx, uuid: string, p: Password): Promise<StartsWithA> => {
       return StartsWithA.parse(uuid);
     },
   },

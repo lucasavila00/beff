@@ -1,5 +1,5 @@
 import parser from "./bff-generated/parser";
-import { StringFormat, Formats } from "@beff/cli";
+import { StringFormat } from "@beff/cli";
 
 export type NotPublic = {
   a: string;
@@ -18,6 +18,8 @@ type B = 2 | 3;
 type D = 4 | 5;
 type E = 5 | 6;
 export type UnionNested = A | (B | (D | E));
+export type Password = StringFormat<"password">;
+parser.registerStringFormat("password", () => true);
 
 export const { StartsWithA, User, Users, NotPublicRenamed } =
   parser.buildParsers<{
@@ -25,7 +27,7 @@ export const { StartsWithA, User, Users, NotPublicRenamed } =
     Users: User[];
     NotPublicRenamed: NotPublic;
     StartsWithA: StartsWithA;
-    Password: Formats.Password;
+    Password: Password;
     float: 123.456;
     int: 123;
     union: UnionNested;

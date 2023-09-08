@@ -7,7 +7,6 @@ use crate::{BffFileName, ParsedModule};
 
 #[derive(Debug, Clone)]
 pub enum DiagnosticInfoMessage {
-    StringFormatNotRegistered(String),
     InvalidIdentifierInPatternNoExplodeAllowed,
     CloseBlockMustEndPattern,
     OpenBlockMustStartPattern,

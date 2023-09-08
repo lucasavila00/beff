@@ -15,7 +15,6 @@ function registerStringFormat(name, predicate) {
 }
 
 // a hint to UIs to mask the input
-registerStringFormat("password", () => true);
 
 function isCustomFormatInvalid(key, value) {
   const predicate = stringPredicates[key];
