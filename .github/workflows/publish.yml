@@ -22,6 +22,6 @@ jobs:
           pnpm install
           pnpm all
           (cd packages/beff-cli && pnpm publish)
-          (cd packages/beff-client && pnpm publish)
-          (cd packages/beff-hono && pnpm publish)
-          (cd packages/beff-react && pnpm publish)
+          # (cd packages/beff-client && pnpm publish)
+          # (cd packages/beff-hono && pnpm publish)
+          # (cd packages/beff-react && pnpm publish)
