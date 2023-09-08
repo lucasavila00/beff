@@ -1,0 +1,33 @@
+name: Publish Package to npmjs
+on:
+  release:
+    types: [created]
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      # Setup .npmrc file to publish to npm
+      - uses: pnpm/action-setup@v2
+        with:
+          version: 7
+      - uses: actions/setup-node@v3
+        with:
+          node-version: "18.x"
+          registry-url: "https://registry.npmjs.org"
+      - name: Publish
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+        run: |
+          pnpm install
+          npm run build
+          pnpm install
+          cd packages/flue-ts
+          npm run dist $GITHUB_REF_NAME
+          cd dist/
+          npm publish
+          # cd ..
+          # cd packages/zod-data-classes
+          # npm run dist $GITHUB_REF_NAME
+          # cd dist/
+          # npm publish
