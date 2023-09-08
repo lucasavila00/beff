@@ -1,6 +1,6 @@
 {
   "name": "@beff/react",
-  "version": "1.0.0",
+  "version": "0.0.0",
   "description": "",
   "main": "dist/cjs/index.js",
   "scripts": {
