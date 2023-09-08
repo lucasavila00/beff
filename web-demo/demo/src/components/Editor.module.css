@@ -1,4 +1,10 @@
 .Editor {
-  width: 50vw;
+  width: 60vw;
   height: 100vh;
+}
+
+.Docs {
+  width: 40vw;
+  height: 100vh;
+  overflow: scroll;
 }
