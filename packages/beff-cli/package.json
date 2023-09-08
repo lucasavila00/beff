@@ -2,9 +2,14 @@
   "name": "@beff/cli",
   "version": "0.0.0",
   "description": "",
+  "bin": {
+    "beff": "./bin/index.js"
+  },
   "main": "index.js",
   "typings": "index.d.ts",
-  "scripts": {},
+  "scripts": {
+    "build2": "cp -r ../beff-wasm/dist-cli/. ./dist-cli && cp -r ../beff-wasm/npm-bin/. ./bin/ && cp -r ../beff-wasm/pkg/. ./pkg/"
+  },
   "keywords": [],
   "author": "",
   "license": "ISC"
