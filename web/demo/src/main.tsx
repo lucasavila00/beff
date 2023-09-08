@@ -1,11 +1,12 @@
-import React from 'react';
-import ReactDOM from 'react-dom';
-import { Editor } from './components/Editor';
-import './userWorker';
+import React from "react";
+import { createRoot } from "react-dom/client";
+import { Editor } from "./components/Editor";
+import "./userWorker";
 
-ReactDOM.render(
-	<React.StrictMode>
-		<Editor />
-	</React.StrictMode>,
-	document.getElementById('root')
+const container = document.getElementById("root");
+const root = createRoot(container!);
+root.render(
+  <React.StrictMode>
+    <Editor />
+  </React.StrictMode>
 );
