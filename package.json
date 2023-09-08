@@ -9,7 +9,7 @@
     "build2": "pnpm run -r build2",
     "test": "pnpm run -r test",
     "beff": "pnpm run -r beff",
-    "all": "&& pnpm run build0 && pnpm run ts && pnpm run build && pnpm run beff && pnpm run build2 && pnpm run test"
+    "all": "pnpm run build0 && pnpm run ts && pnpm run build && pnpm run beff && pnpm run build2 && pnpm run test"
   },
   "keywords": [],
   "author": "",
