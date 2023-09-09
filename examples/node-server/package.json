@@ -1,6 +1,6 @@
 {
   "name": "node-server",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "description": "",
   "main": "index.js",
   "scripts": {
@@ -13,8 +13,8 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "@beff/cli": "workspace:^0.0.5",
-    "@beff/hono": "workspace:^0.0.5",
+    "@beff/cli": "workspace:^0.0.6",
+    "@beff/hono": "workspace:^0.0.6",
     "@hono/node-server": "^1.1.1",
     "esbuild": "^0.19.2",
     "vitest": "^0.34.3"

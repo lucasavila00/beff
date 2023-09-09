@@ -1,7 +1,7 @@
 {
   "name": "beff-vscode",
   "publisher": "beff",
-  "version": "0.0.5",
+  "version": "0.0.6",
   "description": "",
   "engines": {
     "vscode": "^1.73.0"
@@ -15,8 +15,8 @@
   "main": "./dist-ext/extension.js",
   "scripts": {
     "build-rust-release": "wasm-pack build --release --target nodejs",
-    "build-rust": "wasm-pack build --dev --target nodejs",
-    "build-rust-web": "wasm-pack build --dev --target bundler --out-dir ../../web-demo/demo/src/pkg --out-name index",
+    "build-rust": "wasm-pack build --release --target nodejs",
+    "build-rust-web": "wasm-pack build --release --target bundler --out-dir ../../web-demo/demo/src/pkg --out-name index",
     "build-cli": "esbuild ts-node/commandeer.ts --bundle --outfile=dist-cli/cli.js --platform=node --target=node14 --external:pnpapi --external:./pkg/beff_wasm.js --external:./pkg/beff_wasm_bg.js",
     "build-ext": "esbuild ts-node/extension.ts --bundle --outfile=dist-ext/extension.js --platform=node --target=node14 --external:pnpapi --external:vscode --external:./pkg/beff_wasm.js --external:./pkg/beff_wasm_bg.js",
     "build0": "npm run build-rust && npm run build-rust-web && npm run build-cli && npm run build-ext",
@@ -31,9 +31,9 @@
   "dependencies": {},
   "devDependencies": {
     "chalk": "^4.1.2",
-    "@beff/cli": "workspace:^0.0.5",
+    "@beff/cli": "workspace:^0.0.6",
     "@babel/code-frame": "^7.22.13",
-    "@beff/hono": "workspace:^0.0.5",
+    "@beff/hono": "workspace:^0.0.6",
     "@types/babel__code-frame": "^7.0.3",
     "@types/node": "^20.5.7",
     "@types/vscode": "^1.73.0",

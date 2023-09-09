@@ -1,6 +1,6 @@
 {
   "name": "@beff/react",
-  "version": "0.0.5",
+  "version": "0.0.6",
   "description": "",
   "main": "dist/cjs/index.js",
   "scripts": {
@@ -18,7 +18,7 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "@beff/client": "workspace:^0.0.5",
+    "@beff/client": "workspace:^0.0.6",
     "@tanstack/react-query": "^4.33.0",
     "react": "^18.2.0",
     "typescript": "^5.2.2"
