@@ -13,12 +13,13 @@ importers:
 
   examples/minimal-react:
     specifiers:
-      '@beff/cli': workspace:^0.0.4
-      '@beff/hono': workspace:^0.0.4
-      '@beff/react': workspace:^0.0.4
+      '@beff/cli': workspace:^0.0.5
+      '@beff/hono': workspace:^0.0.5
+      '@beff/react': workspace:^0.0.5
       '@hono/node-server': ^1.1.1
       '@playwright/test': ^1.26.1
       '@tanstack/react-query': ^4.33.0
+      '@types/node': ^20.5.7
       '@types/react': ^18.2.21
       '@types/react-dom': ^18.2.7
       '@vitejs/plugin-react': ^4.0.4
@@ -37,13 +38,14 @@ importers:
       '@beff/react': link:../../packages/beff-react
       '@hono/node-server': 1.1.1
       '@tanstack/react-query': 4.33.0_biqbaboplfbrettd7655fr4n2y
+      '@types/node': 20.5.8
       '@vitejs/plugin-react': 4.0.4_vite@4.4.9
       hono: 3.5.7
       react: 18.2.0
       react-dom: 18.2.0_react@18.2.0
       tsx: 3.12.8
       typescript: 5.2.2
-      vite: 4.4.9
+      vite: 4.4.9_@types+node@20.5.8
     devDependencies:
       '@playwright/test': 1.37.1
       '@types/react': 18.2.21
@@ -54,8 +56,8 @@ importers:
 
   examples/node-docs:
     specifiers:
-      '@beff/cli': workspace:^0.0.4
-      '@beff/hono': workspace:^0.0.4
+      '@beff/cli': workspace:^0.0.5
+      '@beff/hono': workspace:^0.0.5
       '@hono/node-server': ^1.1.1
       esbuild: ^0.19.2
     dependencies:
@@ -66,8 +68,8 @@ importers:
 
   examples/node-server:
     specifiers:
-      '@beff/cli': workspace:^0.0.4
-      '@beff/hono': workspace:^0.0.4
+      '@beff/cli': workspace:^0.0.5
+      '@beff/hono': workspace:^0.0.5
       '@hono/node-server': ^1.1.1
       esbuild: ^0.19.2
       vitest: ^0.34.3
@@ -80,7 +82,7 @@ importers:
 
   examples/standalone-parser:
     specifiers:
-      '@beff/cli': workspace:^0.0.4
+      '@beff/cli': workspace:^0.0.5
       vitest: ^0.34.3
     dependencies:
       '@beff/cli': link:../../packages/beff-cli
@@ -91,7 +93,7 @@ importers:
 
   packages/beff-client:
     specifiers:
-      '@beff/cli': workspace:^0.0.4
+      '@beff/cli': workspace:^0.0.5
       typescript: ^5.2.2
     dependencies:
       '@beff/cli': link:../beff-cli
@@ -103,8 +105,8 @@ importers:
 
   packages/beff-hono:
     specifiers:
-      '@beff/cli': workspace:^0.0.4
-      '@beff/client': workspace:^0.0.4
+      '@beff/cli': workspace:^0.0.5
+      '@beff/client': workspace:^0.0.5
       hono: ^3.5.6
       typescript: ^5.2.2
       vitest: ^0.34.3
@@ -118,7 +120,7 @@ importers:
 
   packages/beff-react:
     specifiers:
-      '@beff/client': workspace:^0.0.4
+      '@beff/client': workspace:^0.0.5
       '@tanstack/react-query': ^4.33.0
       react: ^18.2.0
       typescript: ^5.2.2
@@ -131,8 +133,8 @@ importers:
   packages/beff-wasm:
     specifiers:
       '@babel/code-frame': ^7.22.13
-      '@beff/cli': workspace:^0.0.4
-      '@beff/hono': workspace:^0.0.4
+      '@beff/cli': workspace:^0.0.5
+      '@beff/hono': workspace:^0.0.5
       '@types/babel__code-frame': ^7.0.3
       '@types/node': ^20.5.7
       '@types/vscode': ^1.73.0
@@ -1200,7 +1202,7 @@ packages:
       '@babel/plugin-transform-react-jsx-self': 7.22.5_@babel+core@7.22.11
       '@babel/plugin-transform-react-jsx-source': 7.22.5_@babel+core@7.22.11
       react-refresh: 0.14.0
-      vite: 4.4.9
+      vite: 4.4.9_@types+node@20.5.8
     transitivePeerDependencies:
       - supports-color
     dev: false
@@ -4788,41 +4790,6 @@ packages:
       - sugarss
       - supports-color
       - terser
-
-  /vite/4.4.9:
-    resolution: {integrity: sha512-2mbUn2LlUmNASWwSCNSJ/EG2HuSRTnVNaydp6vMCm5VIqJsjMfbIWtbH2kDuwUVW5mMUKKZvGPX/rqeqVvv1XA==}
-    engines: {node: ^14.18.0 || >=16.0.0}
-    hasBin: true
-    peerDependencies:
-      '@types/node': '>= 14'
-      less: '*'
-      lightningcss: ^1.21.0
-      sass: '*'
-      stylus: '*'
-      sugarss: '*'
-      terser: ^5.4.0
-    peerDependenciesMeta:
-      '@types/node':
-        optional: true
-      less:
-        optional: true
-      lightningcss:
-        optional: true
-      sass:
-        optional: true
-      stylus:
-        optional: true
-      sugarss:
-        optional: true
-      terser:
-        optional: true
-    dependencies:
-      esbuild: 0.18.20
-      postcss: 8.4.29
-      rollup: 3.28.1
-    optionalDependencies:
-      fsevents: 2.3.3
-    dev: false
 
   /vite/4.4.9_@types+node@20.5.8:
     resolution: {integrity: sha512-2mbUn2LlUmNASWwSCNSJ/EG2HuSRTnVNaydp6vMCm5VIqJsjMfbIWtbH2kDuwUVW5mMUKKZvGPX/rqeqVvv1XA==}

@@ -1,6 +1,6 @@
 {
   "name": "@beff/cli",
-  "version": "0.0.4",
+  "version": "0.0.5",
   "description": "",
   "bin": {
     "beff": "./bin/index.js"
@@ -8,7 +8,7 @@
   "main": "index.js",
   "typings": "index.d.ts",
   "scripts": {
-    "build": "cp -r ../beff-wasm/dist-cli/. ./dist-cli && cp -r ../beff-wasm/npm-bin/. ./bin/ && cp -r ../beff-wasm/pkg/. ./pkg/"
+    "build": "cp -r ../beff-wasm/dist-cli/. ./dist-cli && cp -r ../beff-wasm/npm-bin/. ./bin/ && cp -r ../beff-wasm/pkg/. ./pkg/ && rm pkg/.gitignore"
   },
   "keywords": [],
   "author": "",

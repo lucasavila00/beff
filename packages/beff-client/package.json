@@ -1,6 +1,6 @@
 {
   "name": "@beff/client",
-  "version": "0.0.4",
+  "version": "0.0.5",
   "description": "",
   "main": "dist/cjs/index.js",
   "scripts": {
@@ -18,7 +18,7 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "@beff/cli": "workspace:^0.0.4"
+    "@beff/cli": "workspace:^0.0.5"
   },
   "devDependencies": {
     "typescript": "^5.2.2"
