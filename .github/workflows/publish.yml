@@ -11,6 +11,7 @@ jobs:
       - uses: pnpm/action-setup@v2
         with:
           version: 7
+      - uses: actions-rust-lang/setup-rust-toolchain@v1
       - uses: actions/setup-node@v3
         with:
           node-version: "18.x"
@@ -21,6 +22,7 @@ jobs:
           VSCE_PAT: ${{ secrets.VSCODE_TOKEN }}
         run: |
           pnpm install
+          curl https://rustwasm.github.io/wasm-pack/installer/init.sh -sSf | sh
           pnpm all
           (cd packages/beff-cli && pnpm publish)
           (cd packages/beff-client && pnpm publish)
