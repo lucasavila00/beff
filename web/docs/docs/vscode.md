@@ -11,3 +11,7 @@ ext install beff.beff-vscode
 ```
 
 [Or install from VSCode Marketplace](https://marketplace.visualstudio.com/items?itemName=beff.beff-vscode)
+
+### Configuration
+
+TODO configuring path to bff.json

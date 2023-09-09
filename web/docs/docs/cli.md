@@ -351,7 +351,9 @@ Simple types are strings, numbers and booleans, and literals of these - also, un
 
 Array, object and tuples are complex and cannot be coerced.
 
-When path, query and header parameters are not strings, but are simple, they'll be coerced before being validated. That means that even though a path or query parameter is always serialized as a string in the URL, you can receive them as other types.
+When path, query and header parameters are not strings, but are simple, they'll be coerced before being validated. That means that even though a path or query parameter is always serialized as a string in the URL, you can safely use them as other types.
+
+Coercion only works on valid inputs. Coercing `abc` to number will not work. After coercion, data is still [validated](/docs/cli#validation).
 
 #### Example
 

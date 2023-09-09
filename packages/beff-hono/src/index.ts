@@ -8,7 +8,11 @@ import {
   OpenApiServer,
 } from "@beff/cli";
 import { ClientFromRouter, buildClient } from "@beff/client";
+import type { Context as HonoContext, Env } from "hono";
 
+export type Ctx<C = {}, E extends Env = any> = C & {
+  hono: HonoContext<E>;
+};
 const swaggerTemplate = (baseUrl: string) => `
 <!DOCTYPE html>
 <html lang="en">
@@ -70,8 +74,6 @@ const redocTemplate = (baseUrl: string) => `
   </body>
 </html>
 `;
-import type { Context as HonoContext, Env } from "hono";
-export type Ctx<T = {}, E extends Env = any> = T & { hono: HonoContext<E> };
 
 const coerce = (coercer: any, value: any): any => {
   return coercer(value);
