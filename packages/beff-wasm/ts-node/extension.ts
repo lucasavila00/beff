@@ -148,14 +148,14 @@ function updateDiagnostics(
     if (acc[k] == null) {
       acc[k] = [];
     }
-    acc[k].push(v);
+    acc[k].push({ ...v, source: "beff" });
   };
   (diags?.diagnostics ?? []).forEach((data) => {
     const cause = data.cause;
     if (cause.KnownFile) {
       const diag = cause.KnownFile;
       pushDiag(getFileNameFromDiag(cause), {
-        message: diag.message,
+        message: (data.message ? data.message + " - " : "") + diag.message,
         range: new vscode.Range(
           new vscode.Position(diag.line_lo - 1, diag.col_lo),
           new vscode.Position(diag.line_hi - 1, diag.col_hi)
@@ -168,7 +168,7 @@ function updateDiagnostics(
     } else {
       const diag = cause.UnknownFile;
       pushDiag(diag.current_file, {
-        message: diag.message,
+        message: (data.message ? data.message + " - " : "") + diag.message,
         range: new vscode.Range(
           new vscode.Position(0, 0),
           new vscode.Position(0, 0)

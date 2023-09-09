@@ -162,7 +162,6 @@ export const Editor: FC = () => {
       let m = editor?.getModel();
       if (m != null) {
         monaco.editor.setModelMarkers(m, "beff", []);
-        // console.log("clear");
       }
     }
     setSchema((old) => res?.json_schema ?? old);
@@ -183,7 +182,6 @@ export const Editor: FC = () => {
           let m = e.getModel();
 
           if (m != null) {
-            // console.log("set");
             monaco.editor.setModelMarkers(
               m,
               "beff",
