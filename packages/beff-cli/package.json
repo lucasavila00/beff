@@ -8,7 +8,7 @@
   "main": "index.js",
   "typings": "index.d.ts",
   "scripts": {
-    "build2": "cp -r ../beff-wasm/dist-cli/. ./dist-cli && cp -r ../beff-wasm/npm-bin/. ./bin/ && cp -r ../beff-wasm/pkg/. ./pkg/"
+    "build": "cp -r ../beff-wasm/dist-cli/. ./dist-cli && cp -r ../beff-wasm/npm-bin/. ./bin/ && cp -r ../beff-wasm/pkg/. ./pkg/"
   },
   "keywords": [],
   "author": "",
