@@ -33,7 +33,9 @@ npx beff -p beff.json
 | router    | Relative path to the router entrypoint. [Learn more](/docs/cli#router) |
 | parser    | Relative path to the parser entrypoint. [Learn more](/docs/cli#parser) |
 | outputDir | Relative path to the folder where generated files will be output       |
-| module    | One of `cjs` or `esm`, defaults to `esm`                               |
+| module    | One of `cjs` or `esm`, defaults to `esm` \*                            |
+
+\* Module controls how the generated files will import themselves. `cjs` stands for CommonJs, `esm` stands for ES Modules. `esm` will likely work out of the box. If you have bundling issues, try changing it to `cjs`.
 
 ### Example
 
@@ -277,6 +279,12 @@ export default {
 };
 ```
 
+:::info
+
+Beff also supports JSON Schema String Formats. [Learn more about `StringFormat`](/docs/cli#stringformat)
+
+:::
+
 #### Invalid Example
 
 We hope to add to support for some of the currently invalid types. Stay tuned.
@@ -310,6 +318,8 @@ export default {
 ```
 
 ### Validation
+
+Beff generates a very efficient, dependency-free, OpenAPI and JSON Schema compatible validator. You can use the validators stand alone. [Learn more about parsers.](/docs/cli#parser)
 
 #### Inputs
 
@@ -426,16 +436,67 @@ Header parameters must be of type string, number or boolean. You can use union o
 
 ## Parser
 
-TODO
+Beff supports using the generated validators imperatively. Configure `beff.json` to have a parser entrypoint, and use `builderParsers` to generate type-safe and efficient parsers.
 
-## Exports
+You don't need a router entrypoint to use a parser entrypoint.
 
-TODO
+### Example
 
-### Header
+```json title="/beff.json"
+{
+  "parser": "./parser.ts",
+  "outputDir": "./generated"
+}
+```
 
-TODO
+```ts title="/parser.ts"
+// Notice you need to import from the generated file
+// It's not an issue if it doesn't exist yet.
+import parser from "./bff-generated/parser";
+
+export type User = {
+  name: string;
+  age: number;
+};
+export const {
+  // it is convenient to export the type and parser with the same name
+  User,
+} = parser.buildParsers<{
+  User: User;
+}>();
+
+const data = User.parse({ name: "Name", age: 123 });
+const safe = User.safeParse({ name: "Name", age: 123 });
+```
+
+:::caution
+
+`builderParsers` can only be called once. The compiler will emit an error if it is called more than once.
+
+:::
 
 ### StringFormat
 
-TODO
+JSON Schema and OpenAPI support defining a `format` for a string. For instance, `uuid-v4` or `email`.
+
+Use `StringFormat` to create a type that represents a string with format. Notice you need to register the validator for that string format.
+
+#### Example
+
+```ts title="/parser.ts"
+import { StringFormat } from "@beff/cli";
+// Notice you need to import from the generated file
+// It's not an issue if it doesn't exist yet.
+import parser from "./bff-generated/parser";
+
+export type StartsWithA = StringFormat<"StartsWithA">;
+parser.registerStringFormat<StartsWithA>("StartsWithA", (it) =>
+  it.startsWith("A")
+);
+```
+
+:::caution
+
+To make it easier to use validators from NPM libraries, Beff does not check at compile time that custom string formats were properly registered. An attempt to validate a string format that was not registered will fail at execution time.
+
+:::
