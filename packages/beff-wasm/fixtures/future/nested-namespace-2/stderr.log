@@ -1,9 +1,9 @@
-Error: Unknown error: CannotResolveNamespaceType
+Error: Cannot resolve namespace type
  /future/nested-namespace-2/app.ts:16:34
    14 | export default {
    15 |   [`/hello2`]: {
  > 16 |     get: async (c: Ctx): Promise<SomeNamespace2.SomeType2> => todo(),
-      |                                  ^^^^^^^^^^^^^^ Unknown error: CannotResolveNamespaceType
+      |                                  ^^^^^^^^^^^^^^ Cannot resolve namespace type
    17 |   },
    18 | };
    19 |

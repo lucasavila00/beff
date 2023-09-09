@@ -126,7 +126,10 @@ impl<'a, R: FileManager> TypeResolver<'a, R> {
         }
 
         Err(self
-            .make_err(&i.span, DiagnosticInfoMessage::CannotResolveLocalType)
+            .make_err(
+                &i.span,
+                DiagnosticInfoMessage::CannotResolveLocalType(i.sym.to_string()),
+            )
             .into())
     }
 }

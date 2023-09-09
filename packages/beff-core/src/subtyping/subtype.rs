@@ -55,14 +55,6 @@ impl SubType {
         }
         SubType::Proper(ProperSubtype::String { allowed, values }.into())
     }
-
-    pub fn is_empty(&self, builder: &mut SemTypeContext) -> bool {
-        match self {
-            SubType::Proper(p) => p.is_empty(builder),
-            SubType::False(_) => todo!(),
-            SubType::True(_) => todo!(),
-        }
-    }
 }
 
 #[derive(PartialEq, Eq, Hash, Debug, Ord, PartialOrd, Clone)]

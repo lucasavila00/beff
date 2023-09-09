@@ -7,6 +7,7 @@ use crate::{BffFileName, ParsedModule};
 
 #[derive(Debug, Clone)]
 pub enum DiagnosticInfoMessage {
+    CannotGetFullLocation,
     InvalidIdentifierInPatternNoExplodeAllowed,
     CloseBlockMustEndPattern,
     OpenBlockMustStartPattern,
@@ -18,7 +19,6 @@ pub enum DiagnosticInfoMessage {
     DecoderMustHaveTypeAnnotation,
     CannotGetQualifiedTypeFromFile,
     TwoCallsToBuildParsers,
-    CannotSerializeNamespace,
     CannotResolveSomethingOfOtherFile,
     InvalidUsageOfStringFormatTypeParameter,
     CannotResolveNamespaceType,
@@ -81,15 +81,15 @@ pub enum DiagnosticInfoMessage {
     NotAnHttpMethod,
     ThisRefersToSomethingThatCannotBeSerialized(String),
     TypeParameterApplicationNotSupported,
-    CannotResolveLocalType,
+    CannotResolveLocalType(String),
 }
 
 #[allow(clippy::inherent_to_string)]
 impl DiagnosticInfoMessage {
     pub fn to_string(self) -> String {
         match self {
-            DiagnosticInfoMessage::CannotResolveLocalType => {
-                "Cannot resolve local type".to_string()
+            DiagnosticInfoMessage::CannotResolveLocalType(name) => {
+                format!("Cannot find type '{name}'")
             }
             DiagnosticInfoMessage::KeywordNonSerializableToJsonSchema
             | DiagnosticInfoMessage::PropertyNonSerializableToJsonSchema
@@ -227,8 +227,71 @@ impl DiagnosticInfoMessage {
                 "Not an object with method kind".to_string()
             }
             DiagnosticInfoMessage::NotAnHttpMethod => "Not an HTTP method".to_string(),
-            e => {
-                format!("Unknown error: {e:?}")
+            DiagnosticInfoMessage::CannotGetFullLocation => {
+                "Cannot get full location of the error".to_string()
+            }
+            DiagnosticInfoMessage::InvalidIdentifierInPatternNoExplodeAllowed => {
+                "Invalid identifier in pattern, no explode allowed".to_string()
+            }
+            DiagnosticInfoMessage::CloseBlockMustEndPattern => {
+                "Close block must end pattern".to_string()
+            }
+            DiagnosticInfoMessage::OpenBlockMustStartPattern => {
+                "Open block must start pattern".to_string()
+            }
+            DiagnosticInfoMessage::StarPatternMustBeUsedWithUse => {
+                "Star pattern must be used with use".to_string()
+            }
+            DiagnosticInfoMessage::CannotUseQualifiedTypeWithTypeParameters => {
+                "Cannot use qualified type with type parameters".to_string()
+            }
+            DiagnosticInfoMessage::CannotUseStarAsType => "Cannot use star as type".to_string(),
+            DiagnosticInfoMessage::CannotUseTsTypeAsQualified => {
+                "Cannot use TS type as qualified".to_string()
+            }
+            DiagnosticInfoMessage::CannotUseTsInterfaceAsQualified => {
+                "Cannot use TS interface as qualified".to_string()
+            }
+            DiagnosticInfoMessage::DecoderMustHaveTypeAnnotation => {
+                "Decoder must have type annotation".to_string()
+            }
+            DiagnosticInfoMessage::CannotGetQualifiedTypeFromFile => {
+                "Cannot get qualified type from file".to_string()
+            }
+            DiagnosticInfoMessage::TwoCallsToBuildParsers => {
+                "Two calls to build parsers".to_string()
+            }
+            DiagnosticInfoMessage::CannotResolveSomethingOfOtherFile => {
+                "Cannot resolve something of other file".to_string()
+            }
+            DiagnosticInfoMessage::InvalidUsageOfStringFormatTypeParameter => {
+                "Invalid usage of string format type parameter".to_string()
+            }
+            DiagnosticInfoMessage::CannotResolveNamespaceType => {
+                "Cannot resolve namespace type".to_string()
+            }
+            DiagnosticInfoMessage::ShouldNotResolveTsInterfaceDeclAsNamespace => {
+                "Should not resolve TS interface declaration as namespace".to_string()
+            }
+            DiagnosticInfoMessage::ShouldNotResolveTsTypeAsNamespace => {
+                "Should not resolve TS type as namespace".to_string()
+            }
+            DiagnosticInfoMessage::DecoderShouldBeObjectWithTypesAndNames => {
+                "Decoder should be object with types and names".to_string()
+            }
+            DiagnosticInfoMessage::TooManyTypeParamsOnDecoder => {
+                "Too many type parameters on decoder".to_string()
+            }
+            DiagnosticInfoMessage::TooFewTypeParamsOnDecoder => {
+                "Too few type parameters on decoder".to_string()
+            }
+            DiagnosticInfoMessage::GenericDecoderIsNotSupported => {
+                "Generic decoder is not supported".to_string()
+            }
+            DiagnosticInfoMessage::InvalidDecoderKey => "Invalid decoder key".to_string(),
+            DiagnosticInfoMessage::InvalidDecoderProperty => "Invalid decoder property".to_string(),
+            DiagnosticInfoMessage::PatternMustBeComputedKeyOrString => {
+                "Pattern must be computed key or string".to_string()
             }
         }
     }

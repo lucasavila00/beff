@@ -1,28 +1,28 @@
-Error: Unknown error: CloseBlockMustEndPattern
+Error: Close block must end pattern
  /errors/invalid-patterns/router.ts:2:4
    1 | export default {
  > 2 |   [`/hello/{a}b`]: {
-     |    ^^^^^^^^^^^^^ Unknown error: CloseBlockMustEndPattern
+     |    ^^^^^^^^^^^^^ Close block must end pattern
    3 |     get: async (): Promise<string> => {
    4 |       return "test";
    5 |     },
 
-Error: Unknown error: OpenBlockMustStartPattern
+Error: Open block must start pattern
  /errors/invalid-patterns/router.ts:7:4
     5 |     },
     6 |   },
  >  7 |   [`/hello/b{a}`]: {
-      |    ^^^^^^^^^^^^^ Unknown error: OpenBlockMustStartPattern
+      |    ^^^^^^^^^^^^^ Open block must start pattern
     8 |     get: async (): Promise<string> => {
     9 |       return "test";
    10 |     },
 
-Error: Unknown error: InvalidIdentifierInPatternNoExplodeAllowed
+Error: Invalid identifier in pattern, no explode allowed
  /errors/invalid-patterns/router.ts:12:4
    10 |     },
    11 |   },
  > 12 |   [`/hello/{a*}`]: {
-      |    ^^^^^^^^^^^^^ Unknown error: InvalidIdentifierInPatternNoExplodeAllowed
+      |    ^^^^^^^^^^^^^ Invalid identifier in pattern, no explode allowed
    13 |     get: async (): Promise<string> => {
    14 |       return "test";
    15 |     },

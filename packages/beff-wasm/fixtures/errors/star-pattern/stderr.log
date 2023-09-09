@@ -1,9 +1,9 @@
-Error: Unknown error: StarPatternMustBeUsedWithUse
+Error: Star pattern must be used with use
  /errors/star-pattern/router.ts:3:5
    1 | export default {
    2 |   [`/hello/*`]: {
  > 3 |     get: async (): Promise<string> => {
-     |     ^^^ Unknown error: StarPatternMustBeUsedWithUse
+     |     ^^^ Star pattern must be used with use
    4 |       return "test";
    5 |     },
    6 |   },

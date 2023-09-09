@@ -216,12 +216,12 @@ Error: Not an object with method kind
    27 |   b() {
    28 |     return 1;
 
-Error: Unknown error: PatternMustBeComputedKeyOrString
+Error: Pattern must be computed key or string
  /errors/invalid-path-definition/app.ts:26:3
    24 |   },
    25 |   [`GET/hello/{id}`]: async (id: string) => id,
  > 26 |   a: 1,
-      |   ^ Unknown error: PatternMustBeComputedKeyOrString
+      |   ^ Pattern must be computed key or string
    27 |   b() {
    28 |     return 1;
    29 |   },

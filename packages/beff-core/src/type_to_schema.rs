@@ -219,7 +219,10 @@ impl<'a, R: FileManager> TypeToSchema<'a, R> {
         let file = self.files.get_existing_file(&self.current_file);
         match Location::build(file, span, &self.current_file).result_full() {
             Ok(ok) => Ok(ok),
-            Err(_) => todo!(),
+            Err(_) => Err(self
+                .create_error(span, DiagnosticInfoMessage::CannotGetFullLocation)
+                .to_diag(None)
+                .into()),
         }
     }
     fn get_type_ref(

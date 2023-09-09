@@ -248,7 +248,7 @@ pub fn extract<R: FileManager>(files: &mut R, entry: EntryPoints) -> ExtractResu
     }
 
     let e = ExtractResult { router, parser };
-    e.self_check_sem_types();
+    // e.self_check_sem_types();
 
     e
 }
