@@ -1,26 +1,41 @@
-import { GET, todo } from "bff";
-type ChildUser = {
-  id: string;
-  user: User;
+type AllTypes = {
+  null: null;
+  undefined: undefined;
+  any: any;
+  unknown: unknown;
+  allStrings: string;
+  allNumbers: number;
+  allBooleans: boolean;
+  arrayOfStrings: string[];
+  typeReference: User;
+  interface: Post;
+  optionalType?: number[];
+  tuple: [string, string];
+  tupleWithRest: [string, string, ...number[]];
+  stringLiteral: "a";
+  numberLiteral: 123;
+  booleanLiteral: true;
+  unionOfTypes: string | number;
+  unionOfLiterals: "a" | "b" | "c";
+  unionWithNull: User[] | number | null;
+  intersection: { a: 1 } & { b: 2 };
 };
-type Ctx = any;
+
+// recursive types can be serialized and validated
 type User = {
-  a: string;
-  b: number;
-  c: boolean;
-  c2: boolean[];
-  d: User[];
-  childUser?: ChildUser;
-  thisUser?: User;
-  thisUser2?: { user: User };
-  union: string | number;
-  unionWithNull: ChildUser[] | number | null;
-  e: any;
-  f?: any;
-  g: "a";
-  h: "a" | "b" | "c";
-  i: { a: 1 } & { b: 2 };
+  id: string;
+  friends: User[];
 };
+
+interface Post {
+  id: string;
+  content: string;
+}
+
 export default {
-  [`/{id}`]: { get: async (ctx: Ctx, id: string): Promise<User> => todo() },
+  "/all-types": {
+    get: (): AllTypes => {
+      throw new Error("Not implemented");
+    },
+  },
 };

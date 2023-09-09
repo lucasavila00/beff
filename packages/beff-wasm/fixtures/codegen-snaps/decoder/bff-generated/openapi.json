@@ -39,60 +39,31 @@
       }
     },
     "schemas": {
-      "ChildUser": {
+      "AllTypes": {
         "properties": {
-          "id": {
-            "type": "string"
-          },
-          "user": {
-            "$ref": "#/components/schemas/User"
-          }
-        },
-        "required": [
-          "id",
-          "user"
-        ],
-        "type": "object"
-      },
-      "User": {
-        "properties": {
-          "a": {
-            "type": "string"
-          },
-          "b": {
-            "type": "number"
-          },
-          "c": {
+          "allBooleans": {
             "type": "boolean"
           },
-          "c2": {
+          "allNumbers": {
+            "type": "number"
+          },
+          "allStrings": {
+            "type": "string"
+          },
+          "any": {},
+          "arrayOfStrings": {
             "items": {
-              "type": "boolean"
+              "type": "string"
             },
             "type": "array"
           },
-          "childUser": {
-            "$ref": "#/components/schemas/ChildUser"
+          "booleanLiteral": {
+            "const": true
           },
-          "d": {
-            "items": {
-              "$ref": "#/components/schemas/User"
-            },
-            "type": "array"
+          "interface": {
+            "$ref": "#/components/schemas/Post"
           },
-          "e": {},
-          "f": {},
-          "g": {
-            "const": "a"
-          },
-          "h": {
-            "enum": [
-              "a",
-              "b",
-              "c"
-            ]
-          },
-          "i": {
+          "intersection": {
             "allOf": [
               {
                 "properties": {
@@ -118,21 +89,62 @@
               }
             ]
           },
-          "thisUser": {
+          "null": {
+            "type": "null"
+          },
+          "numberLiteral": {
+            "const": 123
+          },
+          "optionalType": {
+            "items": {
+              "type": "number"
+            },
+            "type": "array"
+          },
+          "stringLiteral": {
+            "const": "a"
+          },
+          "tuple": {
+            "maxItems": 2,
+            "minItems": 2,
+            "prefixItems": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "string"
+              }
+            ],
+            "type": "array"
+          },
+          "tupleWithRest": {
+            "items": {
+              "type": "number"
+            },
+            "prefixItems": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "string"
+              }
+            ],
+            "type": "array"
+          },
+          "typeReference": {
             "$ref": "#/components/schemas/User"
           },
-          "thisUser2": {
-            "properties": {
-              "user": {
-                "$ref": "#/components/schemas/User"
-              }
-            },
-            "required": [
-              "user"
-            ],
-            "type": "object"
+          "undefined": {
+            "type": "null"
           },
-          "union": {
+          "unionOfLiterals": {
+            "enum": [
+              "a",
+              "b",
+              "c"
+            ]
+          },
+          "unionOfTypes": {
             "anyOf": [
               {
                 "type": "string"
@@ -152,25 +164,67 @@
               },
               {
                 "items": {
-                  "$ref": "#/components/schemas/ChildUser"
+                  "$ref": "#/components/schemas/User"
                 },
                 "type": "array"
               }
             ]
+          },
+          "unknown": {}
+        },
+        "required": [
+          "allBooleans",
+          "allNumbers",
+          "allStrings",
+          "any",
+          "arrayOfStrings",
+          "booleanLiteral",
+          "interface",
+          "intersection",
+          "null",
+          "numberLiteral",
+          "stringLiteral",
+          "tuple",
+          "tupleWithRest",
+          "typeReference",
+          "undefined",
+          "unionOfLiterals",
+          "unionOfTypes",
+          "unionWithNull",
+          "unknown"
+        ],
+        "type": "object"
+      },
+      "Post": {
+        "properties": {
+          "content": {
+            "type": "string"
+          },
+          "id": {
+            "type": "string"
           }
         },
         "required": [
-          "a",
-          "b",
-          "c",
-          "c2",
-          "d",
-          "e",
-          "g",
-          "h",
-          "i",
-          "union",
-          "unionWithNull"
+          "content",
+          "id"
+        ],
+        "type": "object"
+      },
+      "User": {
+        "properties": {
+          "friends": {
+            "items": {
+              "$ref": "#/components/schemas/User"
+            },
+            "type": "array"
+          },
+          "id": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "friends",
+          "id"
         ],
         "type": "object"
       }
@@ -182,24 +236,15 @@
   },
   "openapi": "3.1.0",
   "paths": {
-    "/{id}": {
+    "/all-types": {
       "get": {
-        "parameters": [
-          {
-            "in": "path",
-            "name": "id",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
+        "parameters": [],
         "responses": {
           "200": {
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/User"
+                  "$ref": "#/components/schemas/AllTypes"
                 }
               }
             },

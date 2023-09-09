@@ -4,9 +4,7 @@ sidebar_position: 2
 
 # @beff/cli
 
-The CLI executable is used to generate the support code for the parser or router.
-
-The CLI package also contains some useful Typescript definitions.
+Use the CLI to generate the code needed to run routers and parsers. The CLI package also contains some useful Typescript definitions.
 
 ## Installation
 
@@ -145,36 +143,286 @@ Query parameters must be of type string, number or boolean. You can use union of
 
 :::
 
+### Request Body
+
+Complex parameters, those that contain arrays, objects or tuples, are the request body. [Learn more about coercion, simple and complex types.](/docs/cli#coercion)
+
+Beff will verify that the data is of the annotated type at execution time. [Learn more about validation.](/docs/cli#validation)
+
+#### Example
+
+```ts title="/router.ts"
+import { Ctx } from "@beff/hono";
+// highlight-start
+type CreateCommentData = {
+  title: string;
+  content: string;
+};
+// highlight-end
+export default {
+  "/comments": {
+    // highlight-start
+    post: (c: Ctx, data: CreateCommentData) => {
+      // highlight-end
+      return c.database.insert(data);
+    },
+  },
+};
+```
+
+:::caution
+
+Request bodies are not limited to simple types but are limited to JSON serializable types. [Learn more about JSON serialization.](/docs/cli#serialization)
+
+:::
+
+### Response Body
+
+A function can be annotated as returning a `Promise` or a plain type. The annotation is used as the HTTP endpoint response body.
+
+A function that has no return type annotations will not generate automatic documentation. **It is recommended to always annotate return types.**
+
+Beff will verify that the data is of the annotated type at execution time. [Learn more about validation.](/docs/cli#validation)
+
+#### Example
+
+```ts title="/router.ts"
+type Post = {
+  id: string;
+  title: string;
+  content: string;
+};
+
+type Comment = {
+  id: string;
+  content: string;
+};
+export default {
+  "/posts": {
+    // highlight-start
+    get: async (): Promise<Post[]> => {
+      // highlight-end
+      return [];
+    },
+  },
+  "/comments": {
+    // highlight-start
+    get: (): Comment[] => {
+      // highlight-end
+      return [];
+    },
+  },
+};
+```
+
+:::caution
+
+Response bodies are not limited to simple types but are limited to JSON serializable types. [Learn more about JSON serialization.](/docs/cli#serialization)
+
+:::
+
+:::danger
+
+Automatic documentation for response bodies will not be generated unless types have been annotated. Type-Safe clients are able to infer un-annotated return types, though.
+
+:::
+
+### Serialization
+
+Beff will check that types which are part of your schema must be JSON Serializable. If you include a type that is not on the schema, the compiler will report an error.
+
+#### Valid Example
+
+```ts title="/router.ts"
+type AllTypes = {
+  null: null;
+  undefined: undefined;
+  any: any;
+  unknown: unknown;
+  allStrings: string;
+  allNumbers: number;
+  allBooleans: boolean;
+  arrayOfStrings: string[];
+  typeReference: User;
+  interface: Post;
+  optionalType?: number[];
+  tuple: [string, string];
+  tupleWithRest: [string, string, ...number[]];
+  stringLiteral: "a";
+  numberLiteral: 123;
+  booleanLiteral: true;
+  unionOfTypes: string | number;
+  unionOfLiterals: "a" | "b" | "c";
+  unionWithNull: User[] | number | null;
+  intersection: { a: 1 } & { b: 2 };
+};
+
+// recursive types can be serialized and validated
+type User = {
+  id: string;
+  friends: User[];
+};
+
+interface Post {
+  id: string;
+  content: string;
+}
+
+export default {
+  "/all-types": {
+    get: (): AllTypes => {
+      throw new Error("Not implemented");
+    },
+  },
+};
+```
+
+#### Invalid Example
+
+We hope to add to support for some of the currently invalid types. Stay tuned.
+
+```ts title="/router.ts"
+const todo = () => {
+  throw new Error("Not implemented");
+};
+interface Newable {
+  errorConstructor: new (...args: any) => Error;
+}
+interface B {
+  b: this;
+}
+type D = true extends true ? true : true;
+type E = true extends infer X ? X : never;
+
+const f = 1;
+export default {
+  [`/bad1`]: { get: (): Newable => todo() },
+  [`/bad2`]: { get: (): B => todo() },
+  [`/bad3`]: { get: (): D => todo() },
+  [`/bad4`]: { get: (): E => todo() },
+  [`/bad5`]: { get: (): (() => void) => todo() },
+  [`/bad6`]: { get: (): typeof f => todo() },
+  [`/bad7`]: { get: (): B["b"] => todo() },
+  [`/bad8`]: { get: (): never => todo() },
+  [`/bad9`]: { get: (): symbol => todo() },
+  [`/bad10`]: { get: (): void => todo() },
+};
+```
+
+### Validation
+
+#### Inputs
+
+Inputs to your functions are always validated. If the types are invalid, a response with the reason why is sent back to the user.
+
+##### Example on invalid input
+
+```json title="422"
+{
+  "message": "Error #1: Expected string ~ Path: requestBody.a ~ Received: 123"
+}
+```
+
+#### Outputs
+
+Response bodies that are annotated will be validated. If types are invalid, a response without the reason why is sent back to the user. You can use the runtime error catching abilities to monitor or change such errors. [Learn more.](/docs/hono)
+
+##### Example on invalid response
+
+```json title="500"
+{
+  "message": "Unknown error"
+}
+```
+
+### Coercion
+
+Simple types are strings, numbers and booleans, and literals of these - also, union of these.
+
+Array, object and tuples are complex and cannot be coerced.
+
+When path, query and header parameters are not strings, but are simple, they'll be coerced before being validated. That means that even though a path or query parameter is always serialized as a string in the URL, you can receive them as other types.
+
+#### Example
+
+```ts title="/router.ts"
+import { Ctx } from "@beff/hono";
+export default {
+  "/posts": {
+    // highlight-start
+    get: (c: Ctx, offset: number, limit: number) => {
+      // highlight-end
+      return [];
+    },
+  },
+};
+```
+
+### Middleware (use)
+
+Middlewares can be used to control the request on a lower level. You can pass an array of middlewares to the `use` handler.
+
+Path maps that only have `use` handlers can use wildcards (`*`) in their path patterns.
+
+#### Example
+
+```ts title="/router.ts"
+import { Ctx } from "@beff/hono";
+import { cors } from "hono/cors";
+import { prettyJSON } from "hono/pretty-json";
+export default {
+  // highlight-start
+  // wildcard is only valid if the map only has "use"
+  "/*": {
+    use: [cors()],
+  },
+  // highlight-end
+  "/posts": {
+    // highlight-start
+    // use is also valid on a regular path pattern
+    use: [prettyJSON()],
+    // highlight-end
+    get: (c: Ctx, offset: number, limit: number) => {
+      return [];
+    },
+  },
+};
+```
+
+:::info
+
+`use` handlers are removed from automatic generated clients.
+
+:::
+
 ### Header Parameters
 
-TODO
+Header parameters are defined by using the `Header` type exported from `@beff/cli`. The type argument on `Header` defines the coerced type of the header. [Learn more about coercion.](/docs/cli#coercion)
+
+#### Example
+
+```ts title="/router.ts"
+import { Ctx } from "@beff/hono";
+// highlight-start
+import { Header } from "@beff/cli";
+// highlight-end
+
+export default {
+  "/posts": {
+    // highlight-start
+    get: (c: Ctx, authentication: Header<string>, count: Header<number>) => {
+      // highlight-end
+      return [];
+    },
+  },
+};
+```
+
 :::caution
 
 Header parameters must be of type string, number or boolean. You can use union of booleans, strings, numbers and literals of strings and numbers. [Learn more about coercion.](/docs/cli#coercion)
 
 :::
-
-### Request Body
-
-TODO
-
-### Response Body
-
-TODO
-
-### Validation and error messages
-
-TODO
-
-### Throwing errors
-
-TODO
-
-### Coercion
-
-TODO
-
-### Middleware (use)
 
 ## Parser
 
