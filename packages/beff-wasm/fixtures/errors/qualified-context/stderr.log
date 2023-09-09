@@ -11,7 +11,7 @@ Error: Exposing a type that cannot be converted to JSON schema
      /errors/qualified-context/t2.ts:2:7
        1 | export type Param = {
      > 2 |   cb: () => void;
-         |       ^^^^^^^^^^ Type cannot be converted to JSON schema
+         |       ^^^^^^^^^^ This cannot be converted to JSON schema
        3 | };
        4 |
 

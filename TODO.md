@@ -1,4 +1,4 @@
-## BFF Core
+## BFF Wasm
 
 - [ ] resolver tsconfig
 - [ ] watch mode
@@ -6,10 +6,6 @@
 ## BFF EXT
 
 - [ ] big parent error message
-
-## BFF Core
-
-- [ ] error messages
 
 ## BFF Web
 

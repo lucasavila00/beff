@@ -17,9 +17,9 @@ pub enum DiagnosticInfoMessage {
     CannotUseTsTypeAsQualified,
     CannotUseTsInterfaceAsQualified,
     DecoderMustHaveTypeAnnotation,
-    CannotGetQualifiedTypeFromFile,
+    CannotGetQualifiedTypeFromFile(String),
     TwoCallsToBuildParsers,
-    CannotResolveSomethingOfOtherFile,
+    CannotResolveSomethingOfOtherFile(String),
     InvalidUsageOfStringFormatTypeParameter,
     CannotResolveNamespaceType,
     ShouldNotResolveTsInterfaceDeclAsNamespace,
@@ -60,7 +60,6 @@ pub enum DiagnosticInfoMessage {
     TsInterfaceExtendsNotSupported,
     TsTypeParametersNotSupportedOnTuple,
     RestParamMustBeTypeAnnotated,
-    RestParamMustBeLabelAnnotated,
     ParameterPatternNotSupported,
     CouldNotUnderstandRestParameter,
     RestParameterMustBeTuple,
@@ -97,29 +96,28 @@ impl DiagnosticInfoMessage {
             | DiagnosticInfoMessage::TemplateNonSerializableToJsonSchema
             | DiagnosticInfoMessage::DuplicatedRestNonSerializableToJsonSchema
             | DiagnosticInfoMessage::TypeConstructNonSerializableToJsonSchema => {
-                "Type cannot be converted to JSON schema".to_string()
+                "This cannot be converted to JSON schema".to_string()
             }
             DiagnosticInfoMessage::ThisRefersToSomethingThatCannotBeSerialized(this) => {
                 format!("`{this}` cannot be converted to JSON schema")
             }
             DiagnosticInfoMessage::CannotUnderstandTsIndexedAccessType => {
-                "Indexed access types are not supported on schemas".to_string()
+                "Indexed access types are not supported".to_string()
             }
             DiagnosticInfoMessage::ComplexPathParameterNotSupported => {
                 "This type is too complex for a path parameter".to_string()
             }
             DiagnosticInfoMessage::ContextInvalidAtThisPosition => {
-                "Context can only be used as the first parameter".to_string()
+                "Context usage is not valid at this position.".to_string()
             }
             DiagnosticInfoMessage::ContextParameterMustBeFirst => {
-                "This cannot be the first parameter, Context must be the first parameter"
-                    .to_string()
+                "Context must be the first parameter".to_string()
             }
             DiagnosticInfoMessage::TsInterfaceExtendsNotSupported => {
-                "Interface extends are not supported on schemas".to_string()
+                "Interface extends are not supported".to_string()
             }
             DiagnosticInfoMessage::TypeParameterApplicationNotSupported => {
-                "Type parameter application is not supported on schemas".to_string()
+                "Type parameter application is not supported".to_string()
             }
             DiagnosticInfoMessage::UnknownJsDocTagOfTypeUnknown(tag)
             | DiagnosticInfoMessage::UnknownJsDocTagOnRouter(tag)
@@ -131,9 +129,6 @@ impl DiagnosticInfoMessage {
             }
             DiagnosticInfoMessage::UnmatchedPathParameter(param) => {
                 format!("Path parameter `{param}` is not being used in the function parameters")
-            }
-            DiagnosticInfoMessage::RestParamMustBeLabelAnnotated => {
-                "There is a parameter without name".to_string()
             }
             DiagnosticInfoMessage::CannotParseJsDocExportDefault => {
                 "Failed to parse Js Docs of the default export".to_string()
@@ -193,10 +188,10 @@ impl DiagnosticInfoMessage {
                 "Could not find default export".to_string()
             }
             DiagnosticInfoMessage::MustBeComputedKeyWithMethodAndPatternMustBeString => {
-                "Pattern cannot be identified through a tuple".to_string()
+                "Must be computed key with method and pattern must be string".to_string()
             }
             DiagnosticInfoMessage::RestOnRouterDefaultExportNotSupportedYet => {
-                "Rest on router default export is not supported yet".to_string()
+                "Rest on router default export is not supported".to_string()
             }
             DiagnosticInfoMessage::HandlerCannotBeGenerator => {
                 "Handler cannot be a generator".to_string()
@@ -231,38 +226,38 @@ impl DiagnosticInfoMessage {
                 "Cannot get full location of the error".to_string()
             }
             DiagnosticInfoMessage::InvalidIdentifierInPatternNoExplodeAllowed => {
-                "Invalid identifier in pattern, no explode allowed".to_string()
+                "Invalid pattern content".to_string()
             }
             DiagnosticInfoMessage::CloseBlockMustEndPattern => {
-                "Close block must end pattern".to_string()
+                "Pattern must end with '}'".to_string()
             }
             DiagnosticInfoMessage::OpenBlockMustStartPattern => {
-                "Open block must start pattern".to_string()
+                "Pattern must start with '{'".to_string()
             }
             DiagnosticInfoMessage::StarPatternMustBeUsedWithUse => {
-                "Star pattern must be used with use".to_string()
+                "* patterns can contain only `use` handlers".to_string()
             }
             DiagnosticInfoMessage::CannotUseQualifiedTypeWithTypeParameters => {
                 "Cannot use qualified type with type parameters".to_string()
             }
             DiagnosticInfoMessage::CannotUseStarAsType => "Cannot use star as type".to_string(),
             DiagnosticInfoMessage::CannotUseTsTypeAsQualified => {
-                "Cannot use TS type as qualified".to_string()
+                "I cannot understand this type".to_string()
             }
             DiagnosticInfoMessage::CannotUseTsInterfaceAsQualified => {
-                "Cannot use TS interface as qualified".to_string()
+                "I cannot understand this interface".to_string()
             }
             DiagnosticInfoMessage::DecoderMustHaveTypeAnnotation => {
                 "Decoder must have type annotation".to_string()
             }
-            DiagnosticInfoMessage::CannotGetQualifiedTypeFromFile => {
-                "Cannot get qualified type from file".to_string()
+            DiagnosticInfoMessage::CannotGetQualifiedTypeFromFile(name) => {
+                format!("Cannot find type '{name}'")
             }
             DiagnosticInfoMessage::TwoCallsToBuildParsers => {
-                "Two calls to build parsers".to_string()
+                "buildParser can only be called once".to_string()
             }
-            DiagnosticInfoMessage::CannotResolveSomethingOfOtherFile => {
-                "Cannot resolve something of other file".to_string()
+            DiagnosticInfoMessage::CannotResolveSomethingOfOtherFile(name) => {
+                format!("Cannot find type '{name}'")
             }
             DiagnosticInfoMessage::InvalidUsageOfStringFormatTypeParameter => {
                 "Invalid usage of string format type parameter".to_string()

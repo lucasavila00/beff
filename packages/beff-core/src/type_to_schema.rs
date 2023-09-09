@@ -146,18 +146,20 @@ impl<'a, R: FileManager> TypeToSchema<'a, R> {
                 return self.error(span, DiagnosticInfoMessage::CannotUseStarAsType)
             }
             TypeExport::SomethingOfOtherFile(word, from_file) => {
-                let file = self
+                let exported = self
                     .files
                     .get_or_fetch_file(from_file)
                     .and_then(|file| file.type_exports.get(word, self.files));
-                match file {
+                match exported {
                     Some(exported) => {
                         self.convert_type_export(exported.as_ref(), from_file, span)?
                     }
                     None => {
                         return self.error(
                             span,
-                            DiagnosticInfoMessage::CannotResolveSomethingOfOtherFile,
+                            DiagnosticInfoMessage::CannotResolveSomethingOfOtherFile(
+                                word.to_string(),
+                            ),
                         )
                     }
                 }
@@ -351,7 +353,10 @@ impl<'a, R: FileManager> TypeToSchema<'a, R> {
                 };
                 Ok((exported, from_file.clone(), name))
             }
-            None => self.error(span, DiagnosticInfoMessage::CannotGetQualifiedTypeFromFile),
+            None => self.error(
+                span,
+                DiagnosticInfoMessage::CannotGetQualifiedTypeFromFile(right.to_string()),
+            ),
         }
     }
 
@@ -382,7 +387,9 @@ impl<'a, R: FileManager> TypeToSchema<'a, R> {
                     Some(exported) => self.recursively_get_qualified_type_export(exported, right),
                     None => self.error(
                         &right.span,
-                        DiagnosticInfoMessage::CannotGetQualifiedTypeFromFile,
+                        DiagnosticInfoMessage::CannotGetQualifiedTypeFromFile(
+                            right.sym.to_string(),
+                        ),
                     ),
                 }
             }

@@ -33,7 +33,7 @@ Error: Exposing a type that cannot be converted to JSON schema
         7 |
         8 | type A = {
      >  9 |   a: () => void;
-          |      ^^^^^^^^^^ Type cannot be converted to JSON schema
+          |      ^^^^^^^^^^ This cannot be converted to JSON schema
        10 | };
        11 | type A2 = {
        12 |   a: A;
@@ -59,7 +59,7 @@ Error: Exposing a type that cannot be converted to JSON schema
     Caused by:
      /errors/cannot-serialize-chain/types2.ts:1:18
      > 1 | export type B2 = () => void;
-         |                  ^^^^^^^^^^ Type cannot be converted to JSON schema
+         |                  ^^^^^^^^^^ This cannot be converted to JSON schema
        2 |
 
 Found 2 errors

@@ -280,12 +280,12 @@ Error: Not an object with method kind
    39 |   [`GET/hello2/{id}`]: async function* (id: string): Promise<string> {
    40 |     return id;
 
-Error: Rest on router default export is not supported yet
+Error: Rest on router default export is not supported
  /errors/invalid-path-definition/app.ts:38:3
    36 |   ): Promise<string> => id,
    37 |   [`GETOOOO/hello/{id}`]: async (id: string): Promise<string> => id,
  > 38 |   ...d,
-      |   ^^^ Rest on router default export is not supported yet
+      |   ^^^ Rest on router default export is not supported
    39 |   [`GET/hello2/{id}`]: async function* (id: string): Promise<string> {
    40 |     return id;
    41 |   },

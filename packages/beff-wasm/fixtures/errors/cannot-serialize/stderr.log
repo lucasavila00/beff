@@ -13,7 +13,7 @@ Error: Exposing a type that cannot be converted to JSON schema
        3 | };
        4 | interface Newable {
      > 5 |   errorConstructor: new (...args: any) => Error;
-         |                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^ Type cannot be converted to JSON schema
+         |                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^ This cannot be converted to JSON schema
        6 | }
        7 | interface B {
        8 |   b: this;
@@ -33,7 +33,7 @@ Error: Exposing a type that cannot be converted to JSON schema
         6 | }
         7 | interface B {
      >  8 |   b: this;
-          |      ^^^^ Type cannot be converted to JSON schema
+          |      ^^^^ This cannot be converted to JSON schema
         9 | }
        10 | type D = true extends true ? true : true;
        11 | type E = true extends infer X ? X : never;
@@ -53,7 +53,7 @@ Error: Exposing a type that cannot be converted to JSON schema
         8 |   b: this;
         9 | }
      > 10 | type D = true extends true ? true : true;
-          |          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ Type cannot be converted to JSON schema
+          |          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ This cannot be converted to JSON schema
        11 | type E = true extends infer X ? X : never;
        12 |
        13 | const f = 1;
@@ -73,7 +73,7 @@ Error: Exposing a type that cannot be converted to JSON schema
         9 | }
        10 | type D = true extends true ? true : true;
      > 11 | type E = true extends infer X ? X : never;
-          |          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ Type cannot be converted to JSON schema
+          |          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ This cannot be converted to JSON schema
        12 |
        13 | const f = 1;
        14 | export default {
@@ -83,7 +83,7 @@ Error: Exposing a type that cannot be converted to JSON schema
    17 |   [`/bad3`]: { get: (): D => todo() },
    18 |   [`/bad4`]: { get: (): E => todo() },
  > 19 |   [`/bad5`]: { get: (): (() => void) => todo() },
-      |                          ^^^^^^^^^^ Type cannot be converted to JSON schema
+      |                          ^^^^^^^^^^ This cannot be converted to JSON schema
    20 |   [`/bad6`]: { get: (): typeof f => todo() },
    21 |   [`/bad7`]: { get: (): B["b"] => todo() },
    22 |   [`/bad8`]: { get: (): never => todo() },
@@ -93,17 +93,17 @@ Error: Exposing a type that cannot be converted to JSON schema
    18 |   [`/bad4`]: { get: (): E => todo() },
    19 |   [`/bad5`]: { get: (): (() => void) => todo() },
  > 20 |   [`/bad6`]: { get: (): typeof f => todo() },
-      |                         ^^^^^^^^ Type cannot be converted to JSON schema
+      |                         ^^^^^^^^ This cannot be converted to JSON schema
    21 |   [`/bad7`]: { get: (): B["b"] => todo() },
    22 |   [`/bad8`]: { get: (): never => todo() },
    23 |   [`/bad9`]: { get: (): symbol => todo() },
 
-Error: Indexed access types are not supported on schemas
+Error: Indexed access types are not supported
  /errors/cannot-serialize/app.ts:21:25
    19 |   [`/bad5`]: { get: (): (() => void) => todo() },
    20 |   [`/bad6`]: { get: (): typeof f => todo() },
  > 21 |   [`/bad7`]: { get: (): B["b"] => todo() },
-      |                         ^^^^^^ Indexed access types are not supported on schemas
+      |                         ^^^^^^ Indexed access types are not supported
    22 |   [`/bad8`]: { get: (): never => todo() },
    23 |   [`/bad9`]: { get: (): symbol => todo() },
    24 |   [`/bad10`]: { get: (): void => todo() },
@@ -113,7 +113,7 @@ Error: Exposing a type that cannot be converted to JSON schema
    20 |   [`/bad6`]: { get: (): typeof f => todo() },
    21 |   [`/bad7`]: { get: (): B["b"] => todo() },
  > 22 |   [`/bad8`]: { get: (): never => todo() },
-      |                         ^^^^^ Type cannot be converted to JSON schema
+      |                         ^^^^^ This cannot be converted to JSON schema
    23 |   [`/bad9`]: { get: (): symbol => todo() },
    24 |   [`/bad10`]: { get: (): void => todo() },
    25 | };
@@ -123,7 +123,7 @@ Error: Exposing a type that cannot be converted to JSON schema
    21 |   [`/bad7`]: { get: (): B["b"] => todo() },
    22 |   [`/bad8`]: { get: (): never => todo() },
  > 23 |   [`/bad9`]: { get: (): symbol => todo() },
-      |                         ^^^^^^ Type cannot be converted to JSON schema
+      |                         ^^^^^^ This cannot be converted to JSON schema
    24 |   [`/bad10`]: { get: (): void => todo() },
    25 | };
    26 |
@@ -133,7 +133,7 @@ Error: Exposing a type that cannot be converted to JSON schema
    22 |   [`/bad8`]: { get: (): never => todo() },
    23 |   [`/bad9`]: { get: (): symbol => todo() },
  > 24 |   [`/bad10`]: { get: (): void => todo() },
-      |                          ^^^^ Type cannot be converted to JSON schema
+      |                          ^^^^ This cannot be converted to JSON schema
    25 | };
    26 |
 

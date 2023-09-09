@@ -16,7 +16,7 @@ Error: Exposing a type that cannot be converted to JSON schema
      >  8 |   b: string;
           | ^^^^^^^^^^^^
      >  9 | }
-          | ^^ Interface extends are not supported on schemas
+          | ^^ Interface extends are not supported
        10 |
        11 | export default {
        12 |   [`/hello/{id}`]: { get: async (c: Ctx, id: string): Promise<B> => todo() },
