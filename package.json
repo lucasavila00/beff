@@ -18,5 +18,8 @@
   "license": "ISC",
   "dependencies": {
     "docsify-cli": "^4.4.4"
+  },
+  "devDependencies": {
+    "@changesets/cli": "^2.26.2"
   }
 }
