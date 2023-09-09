@@ -18,6 +18,7 @@ npm install @beff/cli
 | ------------ | -------------------------------------- | --------- |
 | -p --project | Path to the beff.json file             | beff.json |
 | -v --verbose | Print debug information to the console | false     |
+| -w --watch   | Monitors files for changes             | false     |
 | -h --help    | Prints a list of all commands          |           |
 
 ### Example

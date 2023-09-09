@@ -204,12 +204,13 @@ const finalizeParserFile = (wasmCode: WritableModules, mod: ProjectModule) => {
 };
 
 export const execProject = (
+  bundler: Bundler,
   projectPath: string,
   projectJson: ProjectJson,
   verbose: boolean
-) => {
+): "ok" | "failed" => {
   const mod = projectJson.module ?? "esm";
-  const bundler = new Bundler(verbose);
+
   const routerEntryPoint = projectJson.router
     ? path.join(path.dirname(projectPath), projectJson.router)
     : undefined;
@@ -223,7 +224,7 @@ export const execProject = (
   }
   const outResult = bundler.bundle(routerEntryPoint, parserEntryPoint);
   if (outResult == null) {
-    process.exit(1);
+    return "failed";
   }
   const outputDir = path.join(path.dirname(projectPath), projectJson.outputDir);
   if (!fs.existsSync(outputDir)) {
@@ -269,4 +270,5 @@ export const execProject = (
       [PARSER_DTS].join("\n")
     );
   }
+  return "ok";
 };

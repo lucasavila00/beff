@@ -1,8 +1,3 @@
-## BFF Wasm
-
-- [ ] watch mode
-- [ ] ts slim
-
 ## BFF EXT
 
 - [ ] big parent error message
@@ -67,6 +62,10 @@
 <!--  -->
 <!--  -->
 <!--  -->
+
+## BFF Wasm
+
+- [ ] ts slim
 
 ## BFF Core
 

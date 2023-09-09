@@ -184,7 +184,15 @@ const emitDiagnostics = (diag: WasmDiagnostic) => {
 
 (globalThis as any).resolve_import = resolveImport;
 (globalThis as any).emit_diagnostic = emitDiagnostics;
+
+(globalThis as any).known_files = [];
+
+export const getKnownFiles = (): string[] => {
+  return (globalThis as any).known_files;
+};
+
 (globalThis as any).read_file_content = (file_name: string) => {
+  (globalThis as any).known_files.push(file_name);
   try {
     const source_file = fs.readFileSync(file_name, "utf-8");
     return source_file;
