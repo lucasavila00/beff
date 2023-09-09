@@ -8,16 +8,6 @@ Error: Not an HTTP method
    6 |     b() {
    7 |       return 1;
 
-Error: Handler must annotate return type
- /errors/invalid-path-definition/app.ts:4:25
-   2 | export default {
-   3 |   ["asd"]: {
- > 4 |     [`GET/hello/{id}`]: async (id: string) => id,
-     |                         ^^^^^^^^^^^^^^^^^^^^^^^^ Handler must annotate return type
-   5 |     a: 1,
-   6 |     b() {
-   7 |       return 1;
-
 Error: Not an HTTP method
  /errors/invalid-path-definition/app.ts:4:5
    2 | export default {
@@ -339,4 +329,4 @@ Error: Not an object with method kind
    45 | };
    46 |
 
-Found 33 errors
+Found 32 errors

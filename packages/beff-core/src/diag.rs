@@ -55,7 +55,6 @@ pub enum DiagnosticInfoMessage {
     CannotResolveTypeReferenceOnConverting(String),
     CannotResolveTypeReferenceOnExtracting(String),
     HandlerCannotHaveTypeParameters,
-    HandlerMustAnnotateReturnType,
     UnmatchedPathParameter(String),
     CouldNotResolveIdentifierOnPathParamTuple,
     TsInterfaceExtendsNotSupported,
@@ -171,9 +170,6 @@ impl DiagnosticInfoMessage {
             }
             DiagnosticInfoMessage::HandlerCannotHaveTypeParameters => {
                 "Handler cannot have type parameters".to_string()
-            }
-            DiagnosticInfoMessage::HandlerMustAnnotateReturnType => {
-                "Handler must annotate return type".to_string()
             }
             DiagnosticInfoMessage::CouldNotResolveIdentifierOnPathParamTuple => {
                 "Could not resolve identifier on path parameter tuple".to_string()

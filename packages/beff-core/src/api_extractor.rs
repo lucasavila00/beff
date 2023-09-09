@@ -570,18 +570,14 @@ impl<'a, R: FileManager> ExtractExportDefaultVisitor<'a, R> {
     fn assert_and_extract_type_from_ann(
         &mut self,
         return_type: &Option<Box<TsTypeAnn>>,
-        span: &Span,
+        _span: &Span,
     ) -> TsType {
         match return_type.as_ref() {
             Some(t) => (*t.type_ann).clone(),
-            None => {
-                self.push_error(span, DiagnosticInfoMessage::HandlerMustAnnotateReturnType);
-
-                TsType::TsKeywordType(TsKeywordType {
-                    span: DUMMY_SP,
-                    kind: TsKeywordTypeKind::TsAnyKeyword,
-                })
-            }
+            None => TsType::TsKeywordType(TsKeywordType {
+                span: DUMMY_SP,
+                kind: TsKeywordTypeKind::TsAnyKeyword,
+            }),
         }
     }
 
