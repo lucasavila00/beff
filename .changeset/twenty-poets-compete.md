@@ -8,3 +8,4 @@
 
 Simplify build
 Add redoc OpenApi renderer
+Remove requirement for handler return type annotation

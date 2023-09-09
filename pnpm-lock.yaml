@@ -14,6 +14,7 @@ importers:
   examples/minimal-react:
     specifiers:
       '@beff/cli': workspace:^0.0.6
+      '@beff/client': workspace:^0.0.6
       '@beff/hono': workspace:^0.0.6
       '@beff/react': workspace:^0.0.6
       '@hono/node-server': ^1.1.1
@@ -34,6 +35,7 @@ importers:
       wait-port: ^1.0.1
     dependencies:
       '@beff/cli': link:../../packages/beff-cli
+      '@beff/client': link:../../packages/beff-client
       '@beff/hono': link:../../packages/beff-hono
       '@beff/react': link:../../packages/beff-react
       '@hono/node-server': 1.1.1
@@ -60,11 +62,13 @@ importers:
       '@beff/hono': workspace:^0.0.6
       '@hono/node-server': ^1.1.1
       esbuild: ^0.19.2
+      vitest: ^0.34.3
     dependencies:
       '@beff/cli': link:../../packages/beff-cli
       '@beff/hono': link:../../packages/beff-hono
       '@hono/node-server': 1.1.1
       esbuild: 0.19.2
+      vitest: 0.34.3
 
   examples/node-server:
     specifiers:

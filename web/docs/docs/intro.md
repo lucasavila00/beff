@@ -10,6 +10,21 @@ sidebar_position: 1
 
 - Node 18+
 
+## Runtime support
+
+- Node 18+
+- Cloudflare Workers
+- Cloudflare Pages
+- Deno
+- Bun
+- Fastly Compute@Edge
+- Lagon
+- Vercel
+- Netlify
+- AWS Lambda
+- AWS Lambda
+- [and more](https://hono.dev/getting-started/others)
+
 ## Installation
 
 `npm install @beff/cli`
@@ -49,12 +64,6 @@ export default {
   },
 };
 ```
-
-:::note
-
-Type annotations are always required in the router. Beff makes it worth it, though. We'll get to it later.
-
-:::
 
 Create a file `index.ts` with:
 
@@ -131,9 +140,9 @@ You will see the alternative automatic documentation (provided by [ReDoc](https:
 
 ## Example upgrade
 
-Now modify the `router.ts` to receive a body of a put request.
+Now modify the `router.ts` to receive a body of a `put` request.
 
-Declare the body using standard typescript types.
+Declare the body using standard Typescript types.
 
 ```ts title="/router.ts"
 import { Ctx } from "@beff/hono";
@@ -163,4 +172,183 @@ export default {
     // highlight-end
   },
 };
+```
+
+### Interactive API docs upgrade
+
+Now go to [http://127.0.0.1:8000/docs](http://127.0.0.1:8000/docs).
+
+- The interactive API documentation will be automatically updated, including the new body:
+
+![Swagger UI](_media/second_example_docs.png)
+
+- Click on the button "Try it out", it allows you to fill the parameters and directly interact with the API:
+
+![Swagger UI interaction](_media/second_example_try.png)
+
+- Then click on the "Execute" button, the user interface will communicate with your API, send the parameters, get the results and show them on the screen:
+
+![Swagger UI interaction](_media/second_example_exec.png)
+
+### Alternative API docs upgrade
+
+And now, go to [http://127.0.0.1:8000/redoc](http://127.0.0.1:8000/redoc).
+
+- The alternative documentation will also reflect the new query parameter and body:
+
+![ReDoc](_media/second_example_redoc.png)
+
+### Recap
+
+In summary, you declare **once** the types of parameters, body, etc. as function parameters.
+
+You do that with standard Typescript types.
+
+You don't have to learn a new syntax, the methods or classes of a specific library, etc.
+
+Just standard **Typescript**.
+
+For example, for a `number`:
+
+```ts
+item_id: number;
+```
+
+or for a more complex `Item` model:
+
+```ts
+item: Item;
+```
+
+...and with that single declaration you get:
+
+- Editor support, including:
+  - Completion.
+  - Type checks.
+- Validation of data:
+  - Automatic and clear errors when the data is invalid.
+  - Validation even for deeply nested JSON objects.
+- Automatic interactive API documentation, including 2 alternative user interfaces:
+  - Swagger UI.
+  - ReDoc.
+
+## Type-Safe Client Generation
+
+### Fetch Client
+
+Read more on TODO
+
+#### Install it
+
+```bash
+npm i @beff/client
+```
+
+#### Use it
+
+```ts
+import { buildClient } from "@beff/client";
+// The client file contains only the minimal amount of data required.
+import generated from "../../../generated/client";
+const fetchClient = buildClient<AppRouter>({
+  generated,
+  baseUrl: "http://localhost:2022",
+});
+
+fetchClient["/"].get().then((result) => {
+  console.log(result.Hello);
+});
+```
+
+### React Query Client
+
+Read more on TODO
+
+#### Install it
+
+```bash
+npm i @beff/react
+```
+
+#### Use it
+
+```ts
+import { buildReactQueryClient } from "@beff/react";
+// The client file contains only the minimal amount of data required.
+import generated from "../../../generated/client";
+
+export const beff = buildReactQueryClient<AppRouter>({
+  generated,
+  baseUrl: "http://localhost:2022",
+});
+```
+
+```ts
+import React from "react";
+import { beff } from "./utils/beff";
+
+export function Show() {
+  const result = beff["/"].get().useQuery();
+  return <div>{result.data?.Hello}</div>;
+}
+```
+
+### Hono Test Client
+
+Install `vitest`
+
+```bash
+npm i vitest
+```
+
+#### Create it
+
+Create a file `router.test.ts` with:
+
+```ts title="/router.test.ts"
+import { test, expect } from "vitest";
+import { buildHonoTestClient, buildHonoApp } from "@beff/hono";
+import router from "./router";
+import generated from "./generated/router";
+
+const app = buildHonoApp({
+  router,
+  generated,
+});
+
+const client = buildHonoTestClient<typeof router>({ app, generated });
+
+test("get /", async () => {
+  const result = await client["/"].get();
+  expect(result).toMatchInlineSnapshot(`
+    {
+      "Hello": "World",
+    }
+  `);
+});
+test("get /items/{item_id}", async () => {
+  const result = await client["/items/{item_id}"].get(
+    "the item id",
+    "query param"
+  );
+  expect(result).toMatchInlineSnapshot(`
+    {
+      "item_id": "the item id",
+      "q": "query param",
+    }
+  `);
+});
+```
+
+#### Run it
+
+```bash
+npx vitest
+
+ ✓ router.test.ts (2)
+   ✓ get /
+   ✓ get /items/{item_id}
+
+ Test Files  1 passed (1)
+      Tests  2 passed (2)
 ```

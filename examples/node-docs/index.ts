@@ -3,7 +3,7 @@ import { buildHonoApp } from "@beff/hono";
 import router from "./router";
 import generated from "./generated/router";
 
-const app = buildHonoApp({
+export const app = buildHonoApp({
   router,
   generated,
 });
