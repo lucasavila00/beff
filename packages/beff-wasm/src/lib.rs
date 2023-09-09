@@ -149,6 +149,9 @@ fn bundle_to_string_inner(entry: EntryPoints) -> Result<WritableModules> {
     let res = run_extraction(entry);
     let errs = res.errors();
     if errs.is_empty() {
+        // let v = WasmDiagnostic::from_diagnostics(vec![]);
+        // let v = serde_wasm_bindgen::to_value(&v).expect("should be able to serialize");
+        // emit_diagnostic(v);
         return res.to_module();
     }
     print_errors(errs);

@@ -222,39 +222,43 @@ impl<'a, R: FileManager> ExtractExportDefaultVisitor<'a, R> {
             }
         }
     }
-    fn parse_description_comment(&mut self, comments: Vec<Comment>, span: &Span) -> Option<String> {
-        if comments.len() != 1 {
-            self.push_error(span, DiagnosticInfoMessage::TooManyCommentsJsDoc);
-
-            return None;
-        }
-        let first = comments
+    fn parse_description_comment(
+        &mut self,
+        comments: Vec<Comment>,
+        _span: &Span,
+    ) -> Option<String> {
+        let comments = comments
             .into_iter()
-            .next()
-            .expect("we just checked the length");
-        if first.kind == CommentKind::Block {
-            let s = first.text;
-            let parsed = jsdoc::parse(Input::new(BytePos(0), BytePos(s.as_bytes().len() as _), &s));
-            match parsed {
-                Ok((rest, parsed)) => {
-                    if !rest.is_empty() {
-                        self.push_error(
-                            &first.span,
-                            DiagnosticInfoMessage::JsDocDescriptionRestIsNotEmpty,
-                        );
+            .filter(|it| it.kind == CommentKind::Block)
+            .collect::<Vec<_>>();
+
+        let first = comments.into_iter().next();
+        if let Some(first) = first {
+            if first.kind == CommentKind::Block {
+                let s = first.text;
+                let parsed =
+                    jsdoc::parse(Input::new(BytePos(0), BytePos(s.as_bytes().len() as _), &s));
+                match parsed {
+                    Ok((rest, parsed)) => {
+                        if !rest.is_empty() {
+                            self.push_error(
+                                &first.span,
+                                DiagnosticInfoMessage::JsDocDescriptionRestIsNotEmpty,
+                            );
+                        }
+                        if !parsed.tags.is_empty() {
+                            self.push_error(
+                                &first.span,
+                                DiagnosticInfoMessage::JsDocsParameterDescriptionHasTags,
+                            );
+                        }
+                        return Some(parsed.description.value.to_string());
                     }
-                    if !parsed.tags.is_empty() {
-                        self.push_error(
-                            &first.span,
-                            DiagnosticInfoMessage::JsDocsParameterDescriptionHasTags,
-                        );
-                    }
-                    return Some(parsed.description.value.to_string());
+                    Err(_) => self.push_error(
+                        &first.span,
+                        DiagnosticInfoMessage::JsDocsDescriptionCouldNotBeParsed,
+                    ),
                 }
-                Err(_) => self.push_error(
-                    &first.span,
-                    DiagnosticInfoMessage::JsDocsDescriptionCouldNotBeParsed,
-                ),
             }
         }
         None

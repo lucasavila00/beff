@@ -6,7 +6,7 @@ sidebar_position: 1
 
 > The power of TRpc and Zod, the simplicity of FastAPI. Powered by a compiler à la Tailwind.
 
-### [Playground](/demo)
+### [Playground](/play)
 
 ## Development Environment Requirements
 
@@ -242,8 +242,6 @@ item: Item;
 
 ### Fetch Client
 
-Read more on TODO
-
 #### Install it
 
 ```bash
@@ -266,9 +264,9 @@ fetchClient["/"].get().then((result) => {
 });
 ```
 
-### React Query Client
+Learn more on the [@beff/client docs](/docs/client).
 
-Read more on TODO
+### React Query Client
 
 #### Install it
 
@@ -298,6 +296,8 @@ export function Show() {
   return <div>{result.data?.Hello}</div>;
 }
 ```
+
+Learn more on the [@beff/react docs](/docs/react).
 
 ### Hono Test Client
 
@@ -358,3 +358,5 @@ npx vitest
  Test Files  1 passed (1)
       Tests  2 passed (2)
 ```
+
+Learn more on the [@beff/hono docs](/docs/hono).

@@ -1,8 +1,6 @@
 export type Header<T> = T;
 export type StringFormat<Tag extends string> = string & { __customType: Tag };
 
-// TODO: validator and coercer are server specific, move these types to server, duplicate in client
-
 export type MetaParamClient = {
   type: "path" | "query" | "header" | "body" | "context";
   name: string;

@@ -76,7 +76,7 @@ const config = {
             position: "left",
             label: "Docs",
           },
-          { to: "/demo", label: "Playground", position: "left" },
+          { to: "/play", label: "Playground", position: "left" },
           {
             href: "https://github.com/facebook/docusaurus",
             label: "GitHub",

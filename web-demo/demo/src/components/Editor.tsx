@@ -5,21 +5,42 @@ import * as wasm from "../pkg";
 import SwaggerUI from "swagger-ui-react";
 import "swagger-ui-react/swagger-ui.css";
 
-const router1 = `type RootResponse = { Hello: string };
-type ItemsResponse = { item_id: string; q?: string };
-
+const router1 = `/**
+* @title My API
+* @version 1.0.0
+* This is a sample server. Try changing me.
+*/
 export default {
-  "/": {
-    get: async (): Promise<RootResponse> => {
-      return { Hello: "World" };
-    },
-  },
-  "/items/{item_id}": {
-    get: (c: Ctx, item_id: string, q?: string): ItemsResponse => {
-      return { item_id, q };
-    },
-  },
+ "/": {
+   /**
+    * @summary This is the summary or description of the endpoint
+    * You can add its description here.
+    */
+   get: (c: Ctx, query_parameter: number) => {
+     return { Hello: "World" };
+   },
+   post: (c: Ctx, requestBody: { a: string }) => {
+     return { ok: true };
+   },
+ },
+ "/items/{item_id}": {
+   get: (
+     c: Ctx,
+     /**
+      * This is a description of a parameter.
+      */
+     item_id: string,
+     q?: string
+   ) => {
+     return { item_id, q };
+   },
+ },
 };
+
+
+
+
+
 
 
 
@@ -137,22 +158,32 @@ export const Editor: FC = () => {
       "router.ts",
       ""
     );
+    if (res != null) {
+      let m = editor?.getModel();
+      if (m != null) {
+        monaco.editor.setModelMarkers(m, "beff", []);
+        // console.log("clear");
+      }
+    }
     setSchema((old) => res?.json_schema ?? old);
   };
   useEffect(() => {
     if (monacoEl) {
       setEditor((editor) => {
         if (editor) return editor;
-        wasm.init(true);
+        wasm.init(false);
 
         const e = monaco.editor.create(monacoEl.current!, {
           value: router1,
           language: "typescript",
+          minimap: { enabled: false },
         });
         (globalThis as any).emit_diagnostic = (it: WasmDiagnostic) => {
+          console.log(it);
           let m = e.getModel();
 
           if (m != null) {
+            // console.log("set");
             monaco.editor.setModelMarkers(
               m,
               "beff",
