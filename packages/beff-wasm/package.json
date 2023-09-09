@@ -24,14 +24,13 @@
     "do": "npm run build0 && node npm-bin/index.js -v -p /home/lucas/fluff/bff/packages/beff-wasm/vitest/export-decoder/bff.json",
     "stress": "npm run build-rust-release && time node npm-bin/index.js -v -p /home/lucas/fluff/bff/packages/example-blog/bff.json",
     "ts": "tsc --noEmit",
-    "publish": "vsce publish"
+    "publish": "pnpm vsce publish --no-dependencies"
   },
   "author": "",
   "license": "ISC",
-  "dependencies": {
-    "chalk": "^4.1.2"
-  },
+  "dependencies": {},
   "devDependencies": {
+    "chalk": "^4.1.2",
     "@beff/cli": "workspace:^0.0.0",
     "@babel/code-frame": "^7.22.13",
     "@beff/hono": "workspace:^0.0.0",
