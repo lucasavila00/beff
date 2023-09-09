@@ -166,7 +166,7 @@ impl ProperSubtypeOps for Rc<ProperSubtype> {
             (ProperSubtype::List(b1), ProperSubtype::List(b2)) => {
                 SubType::Proper(ProperSubtype::List(b1.intersect(b2)).into()).into()
             }
-            _ => panic!(),
+            _ => unreachable!("intersect should not compare types of different tags"),
         }
     }
 
@@ -214,7 +214,7 @@ impl ProperSubtypeOps for Rc<ProperSubtype> {
             (ProperSubtype::List(b1), ProperSubtype::List(b2)) => {
                 SubType::Proper(ProperSubtype::List(b1.union(b2)).into()).into()
             }
-            _ => panic!(),
+            _ => unreachable!("union should not compare types of different tags"),
         }
     }
 

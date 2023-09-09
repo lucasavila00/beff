@@ -2,7 +2,7 @@
 	"name": "browser-esm-vite-react",
 	"scripts": {
 		"dev": "vite",
-		"build3": "vite build",
+		"build3": "vite build && cp -r dist/. ../../web/docs/static/playground/",
 		"serve": "vite preview",
 		"simpleserver": "node ../node_modules/yaserver/bin/yaserver --root ./dist --port 9999"
 	},

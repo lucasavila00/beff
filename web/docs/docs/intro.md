@@ -6,6 +6,8 @@ sidebar_position: 1
 
 > The power of TRpc and Zod, the simplicity of FastAPI. Powered by a compiler à la Tailwind.
 
+### [Playground](/demo)
+
 ## Development Environment Requirements
 
 - Node 18+
@@ -27,11 +29,15 @@ sidebar_position: 1
 
 ## Installation
 
-`npm install @beff/cli`
+```bash
+npm install @beff/cli
+```
 
 You will also need to install a runtime.
 
-`npm install @beff/hono @hono/node-server`
+```bash
+npm install @beff/hono @hono/node-server
+```
 
 ## Example
 

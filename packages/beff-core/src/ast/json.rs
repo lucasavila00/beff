@@ -58,7 +58,7 @@ impl Json {
         } else if let Some(it) = it.as_i64() {
             Self::parse_int(it as i64)
         } else {
-            panic!("should be possible to convert serde_json::Number to Json::Number")
+            unreachable!("should be possible to convert serde_json::Number to Json::Number")
         }
     }
 

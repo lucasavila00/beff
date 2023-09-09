@@ -321,13 +321,6 @@ impl Location {
         DiagnosticInformation { message, loc: self }
     }
 
-    pub fn expect_full(self) -> FullLocation {
-        match self {
-            Location::Full(loc) => loc,
-            Location::Unknown(_) => panic!("Expected full location"),
-        }
-    }
-
     pub fn unknown(current_file: &BffFileName) -> Location {
         Location::Unknown(UnknownLocation {
             current_file: current_file.clone(),
