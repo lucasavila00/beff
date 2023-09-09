@@ -18,6 +18,7 @@ jobs:
       - name: Publish
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+          VSCE_PAT: ${{ secrets.VSCODE_TOKEN }}
         run: |
           pnpm install
           pnpm all
@@ -25,3 +26,4 @@ jobs:
           (cd packages/beff-client && pnpm publish)
           (cd packages/beff-hono && pnpm publish)
           (cd packages/beff-react && pnpm publish)
+          (cd packages/beff-wasm && npm run publish)
