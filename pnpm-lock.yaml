@@ -10,9 +10,9 @@ importers:
 
   examples/minimal-react:
     specifiers:
-      '@beff/cli': workspace:^0.0.0
-      '@beff/hono': workspace:^0.0.0
-      '@beff/react': workspace:^0.0.0
+      '@beff/cli': workspace:^0.0.3
+      '@beff/hono': workspace:^0.0.3
+      '@beff/react': workspace:^0.0.3
       '@hono/node-server': ^1.1.1
       '@playwright/test': ^1.26.1
       '@tanstack/react-query': ^4.33.0
@@ -51,8 +51,8 @@ importers:
 
   examples/node-docs:
     specifiers:
-      '@beff/cli': workspace:^0.0.0
-      '@beff/hono': workspace:^0.0.0
+      '@beff/cli': workspace:^0.0.3
+      '@beff/hono': workspace:^0.0.3
       '@hono/node-server': ^1.1.1
       esbuild: ^0.19.2
     dependencies:
@@ -63,8 +63,8 @@ importers:
 
   examples/node-server:
     specifiers:
-      '@beff/cli': workspace:^0.0.0
-      '@beff/hono': workspace:^0.0.0
+      '@beff/cli': workspace:^0.0.3
+      '@beff/hono': workspace:^0.0.3
       '@hono/node-server': ^1.1.1
       esbuild: ^0.19.2
       vitest: ^0.34.3
@@ -77,7 +77,7 @@ importers:
 
   examples/standalone-parser:
     specifiers:
-      '@beff/cli': workspace:^0.0.0
+      '@beff/cli': workspace:^0.0.3
       vitest: ^0.34.3
     dependencies:
       '@beff/cli': link:../../packages/beff-cli
@@ -88,7 +88,7 @@ importers:
 
   packages/beff-client:
     specifiers:
-      '@beff/cli': workspace:^0.0.0
+      '@beff/cli': workspace:^0.0.3
       typescript: ^5.2.2
     dependencies:
       '@beff/cli': link:../beff-cli
@@ -100,8 +100,8 @@ importers:
 
   packages/beff-hono:
     specifiers:
-      '@beff/cli': workspace:^0.0.0
-      '@beff/client': workspace:^0.0.0
+      '@beff/cli': workspace:^0.0.3
+      '@beff/client': workspace:^0.0.3
       hono: ^3.5.6
       typescript: ^5.2.2
       vitest: ^0.34.3
@@ -115,7 +115,7 @@ importers:
 
   packages/beff-react:
     specifiers:
-      '@beff/client': workspace:^0.0.0
+      '@beff/client': workspace:^0.0.3
       '@tanstack/react-query': ^4.33.0
       react: ^18.2.0
       typescript: ^5.2.2
@@ -128,11 +128,11 @@ importers:
   packages/beff-wasm:
     specifiers:
       '@babel/code-frame': ^7.22.13
-      '@beff/cli': workspace:^0.0.0
-      '@beff/hono': workspace:^0.0.0
+      '@beff/cli': workspace:^0.0.3
+      '@beff/hono': workspace:^0.0.3
       '@types/babel__code-frame': ^7.0.3
       '@types/node': ^20.5.7
-      '@types/vscode': ^1.81.0
+      '@types/vscode': ^1.73.0
       '@vscode/vsce': ^2.21.0
       chalk: ^4.1.2
       commander: ^11.0.0

@@ -11,7 +11,7 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "@beff/cli": "workspace:^0.0.0",
+    "@beff/cli": "workspace:^0.0.3",
     "vitest": "^0.34.3"
   }
 }
