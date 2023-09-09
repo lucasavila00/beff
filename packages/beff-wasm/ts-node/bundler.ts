@@ -1,9 +1,16 @@
 import * as wasm from "../pkg/beff_wasm";
 import * as fs from "fs";
-import { resolveModuleName } from "./tsc-slim/out";
+import * as path from "path";
+// import { resolveModuleName } from "./tsc-slim/out";
+import {
+  resolveModuleName,
+  sys as tsSys,
+  findConfigFile,
+  readConfigFile,
+  parseJsonConfigFileContent,
+} from "typescript";
 import { codeFrameColumns } from "@babel/code-frame";
 import * as chalk from "chalk";
-import { ProjectModule } from "./project";
 interface ModuleResolutionHost {
   fileExists(fileName: string): boolean;
   readFile(fileName: string): string | undefined;
@@ -28,11 +35,46 @@ const host: ModuleResolutionHost = {
   },
 };
 
+let compilerOptionsCache: any = null;
+const resolveCompilerOptions = () => {
+  if (compilerOptionsCache) {
+    return compilerOptionsCache;
+  }
+
+  // Find tsconfig.json file
+  const tsconfigPath = findConfigFile(
+    process.cwd(),
+    tsSys.fileExists,
+    "tsconfig.json"
+  );
+
+  if (!tsconfigPath) {
+    return {};
+  }
+
+  // Read tsconfig.json file
+  const tsconfigFile = readConfigFile(tsconfigPath, tsSys.readFile);
+
+  // Resolve extends
+  const parsedTsconfig = parseJsonConfigFileContent(
+    tsconfigFile.config,
+    tsSys,
+    path.dirname(tsconfigPath)
+  );
+
+  compilerOptionsCache = parsedTsconfig.options;
+  return compilerOptionsCache;
+};
 const resolveImportNoCache = (
   file_name: string,
   mod: string
 ): string | undefined => {
-  const resolved = resolveModuleName(mod, file_name, {}, host);
+  const resolved = resolveModuleName(
+    mod,
+    file_name,
+    resolveCompilerOptions(),
+    host
+  );
   if ((globalThis as any).verbose) {
     console.log(
       `JS: Resolved -import ? from '${mod}'- at ${file_name} => ${resolved.resolvedModule?.resolvedFileName}`

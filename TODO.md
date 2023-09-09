@@ -1,7 +1,7 @@
 ## BFF Wasm
 
-- [ ] resolver tsconfig
 - [ ] watch mode
+- [ ] ts slim
 
 ## BFF EXT
 
