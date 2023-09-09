@@ -25,11 +25,7 @@ export default function Play(): JSX.Element {
     return () => window.removeEventListener("resize", resize);
   }, []);
   return (
-    <Layout
-      title={`Hello from ${siteConfig.title}`}
-      description="Description will go into a meta tag in <head />"
-      noFooter
-    >
+    <Layout title="Playground" noFooter>
       <div
         style={{
           width: "100%",

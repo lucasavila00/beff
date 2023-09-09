@@ -8,34 +8,79 @@ type FeatureItem = {
   description: JSX.Element;
 };
 
+// these were generated with color #33925D
 const FeatureList: FeatureItem[] = [
   {
     title: "Easy to Use",
-    Svg: require("@site/static/img/undraw_docusaurus_mountain.svg").default,
+    Svg: require("@site/static/img/undraw_joyride.svg").default,
     description: (
       <>
-        Docusaurus was designed from the ground up to be easily installed and
-        used to get your website up and running quickly.
+        Beff is designed to be easy to learn and use. It was inspired by{" "}
+        <a href="https://fastapi.tiangolo.com/" target="__blank">
+          FastAPI
+        </a>{" "}
+        and it is as intuitive as possible. You can write your API in a few
+        minutes. It is based on familiar concepts like OpenAPI, JSON Schema, and
+        Typescript.
       </>
     ),
   },
   {
     title: "Focus on What Matters",
-    Svg: require("@site/static/img/undraw_docusaurus_tree.svg").default,
+    Svg: require("@site/static/img/undraw_maker.svg").default,
     description: (
       <>
-        Docusaurus lets you focus on your docs, and we&apos;ll do the chores. Go
-        ahead and move your docs into the <code>docs</code> directory.
+        Focus on your code. Write familiar Typescript types. Beff will take care
+        of the rest. Automatic OpenAPI documentation, automatic validator
+        generation, automatic client generation, and more.
       </>
     ),
   },
   {
-    title: "Powered by React",
-    Svg: require("@site/static/img/undraw_docusaurus_react.svg").default,
+    title: "Automatic OpenAPI Documentation",
+    Svg: require("@site/static/img/undraw_online_reading.svg").default,
     description: (
       <>
-        Extend or customize your website layout by reusing React. Docusaurus can
-        be extended while reusing the same header and footer.
+        OpenAPI for API creation, including declarations of path operations,
+        parameters, body requests, security, etc. Automatic data model
+        documentation with JSON Schema (as OpenAPI itself is based on JSON
+        Schema).
+      </>
+    ),
+  },
+  {
+    title: "Automatic Validator Generation",
+    Svg: require("@site/static/img/undraw_check_boxes.svg").default,
+    description: (
+      <>
+        Beff is able to generate schema and validators for many Typescript
+        types. It outputs efficient generated code with zero runtime
+        dependencies. You can also use the validators stand alone, even without
+        a router.
+      </>
+    ),
+  },
+  {
+    title: "Type-Safe Client Generation",
+    Svg: require("@site/static/img/undraw_security_on.svg").default,
+    description: (
+      <>
+        Generate type-safe Typescript clients for your API, with Fetch or React
+        Query. Generate clients for 50+ programming languages with{" "}
+        <a href="https://openapi-generator.tech/" target="__blank">
+          OpenAPI Generator
+        </a>
+      </>
+    ),
+  },
+  {
+    title: "Powered by Hono",
+    Svg: require("@site/static/img/undraw_camping.svg").default,
+    description: (
+      <>
+        Extend or customize your API with Hono. Deploy to Cloudflare Workers,
+        Deno, NodeJS, and more. Hono is a fast, type-safe, and extensible
+        runtime that powers Beff.
       </>
     ),
   },

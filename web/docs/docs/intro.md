@@ -2,7 +2,7 @@
 sidebar_position: 1
 ---
 
-# Beff
+# 🪄 Beff
 
 > The power of TRpc and Zod, the simplicity of FastAPI. Powered by a compiler à la Tailwind.
 
