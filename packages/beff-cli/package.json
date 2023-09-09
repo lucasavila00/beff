@@ -7,9 +7,6 @@
   },
   "main": "index.js",
   "typings": "index.d.ts",
-  "scripts": {
-    "build": "cp -r ../beff-wasm/dist-cli/. ./dist-cli && cp -r ../beff-wasm/npm-bin/. ./bin/ && cp -r ../beff-wasm/pkg/. ./pkg/ && rm pkg/.gitignore"
-  },
   "keywords": [],
   "author": "",
   "license": "ISC"

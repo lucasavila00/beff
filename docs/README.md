@@ -75,7 +75,7 @@ console.log(`Check docs at at http://localhost:3040/docs`);
 ### Compile it
 
 ```bash
-npx beff -p beff.json
+npx beff -p beff.json && npx esbuild index.ts --bundle --platform=node --target=node16 --outdir=dist
 ```
 
 ?> You can also add a task in your package.json `"beff": "beff -p beff.json"` and use it with `npm run beff`.
@@ -83,7 +83,6 @@ npx beff -p beff.json
 ### Run it
 
 ```bash
-npx esbuild index.ts --bundle --platform=node --target=node16 --outdir=dist
 node dist/index.js
 ```
 

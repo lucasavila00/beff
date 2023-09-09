@@ -4,7 +4,8 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "beff": "node ../../packages/beff-wasm/npm-bin/index.js -p beff.json"
+    "beff": "beff -p beff.json",
+    "build": "npx beff -p beff.json && npx esbuild index.ts --bundle --platform=node --target=node16 --outdir=dist"
   },
   "keywords": [],
   "author": "",

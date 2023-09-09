@@ -11,8 +11,10 @@ const removePathFromLog = (content) => {
   return content.replaceAll(p, "");
 };
 
+const binPath = "../../beff-cli/bin/index.js";
+
 const oneCodegenSnap = async (subFolder) => {
-  const bin = path.join(__dirname, "../npm-bin/index.js");
+  const bin = path.join(__dirname, binPath);
   const p = path.join(
     __dirname,
     "../fixtures/codegen-snaps",
@@ -32,7 +34,7 @@ const oneCodegenSnap = async (subFolder) => {
 };
 
 const oneFuture = async (subFolder) => {
-  const bin = path.join(__dirname, "../npm-bin/index.js");
+  const bin = path.join(__dirname, binPath);
   const p = path.join(__dirname, "../fixtures/future", subFolder, "bff.json");
   const command = `node ${bin} -p ${p}`;
   console.log(command);
@@ -63,7 +65,7 @@ const oneFuture = async (subFolder) => {
   }
 };
 const oneFailure = async (subFolder) => {
-  const bin = path.join(__dirname, "../npm-bin/index.js");
+  const bin = path.join(__dirname, binPath);
   const p = path.join(__dirname, "../fixtures/errors", subFolder, "bff.json");
   const command = `node ${bin} -p ${p}`;
   console.log(command);
@@ -94,7 +96,7 @@ const oneFailure = async (subFolder) => {
   }
 };
 const oneVitest = async (subFolder) => {
-  const bin = path.join(__dirname, "../npm-bin/index.js");
+  const bin = path.join(__dirname, binPath);
   const p = path.join(__dirname, "../vitest", subFolder, "bff.json");
   const command = `node ${bin} -p ${p}`;
   console.log(command);

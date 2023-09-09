@@ -4,6 +4,8 @@
     "bindgen",
     "codegen",
     "Hono",
+    "openapi",
+    "redoc",
     "Unfound",
     "Unserializeable"
   ]

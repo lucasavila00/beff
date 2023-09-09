@@ -9,7 +9,7 @@ import {
 } from "@beff/cli";
 import { ClientFromRouter, buildClient } from "@beff/client";
 
-const template = (baseUrl: string) => `
+const swaggerTemplate = (baseUrl: string) => `
 <!DOCTYPE html>
 <html lang="en">
   <head>
@@ -41,6 +41,32 @@ const template = (baseUrl: string) => `
       });
     };
   </script>
+  </body>
+</html>
+`;
+const redocTemplate = (baseUrl: string) => `
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Redoc</title>
+    <!-- needed for adaptive design -->
+    <meta charset="utf-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link href="https://fonts.googleapis.com/css?family=Montserrat:300,400,700|Roboto:300,400,700" rel="stylesheet">
+
+    <!--
+    Redoc doesn't change outer page styles
+    -->
+    <style>
+      body {
+        margin: 0;
+        padding: 0;
+      }
+    </style>
+  </head>
+  <body>
+    <redoc spec-url='${baseUrl}/v3/openapi.json'></redoc>
+    <script src="https://cdn.redoc.ly/redoc/latest/bundles/redoc.standalone.js"> </script>
   </body>
 </html>
 `;
@@ -204,7 +230,12 @@ const handleMethod = async (
 
 const registerDocs = (app: Hono<any, any, any>, schema: any) => {
   app.get("/v3/openapi.json", (req) => req.json(schema));
-  app.get("/docs", (c) => c.html(template(c.req.url.replace("/docs", ""))));
+  app.get("/docs", (c) =>
+    c.html(swaggerTemplate(c.req.url.replace("/docs", "")))
+  );
+  app.get("/redoc", (c) =>
+    c.html(redocTemplate(c.req.url.replace("/redoc", "")))
+  );
 };
 
 export function buildHonoApp(options: {

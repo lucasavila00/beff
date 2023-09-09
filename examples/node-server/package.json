@@ -4,7 +4,7 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "beff": "node ../../packages/beff-wasm/npm-bin/index.js -p beff.json",
+    "beff": "beff -p beff.json",
     "build2": "esbuild src/app.ts --bundle --platform=node --target=node16 --outdir=dist",
     "start": "npm run beff && npm run build2 && node dist/app.js",
     "test": "vitest --run --update"

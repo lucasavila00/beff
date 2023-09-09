@@ -4,7 +4,7 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "beff": "node ../../packages/beff-wasm/npm-bin/index.js -p beff.json",
+    "beff": "beff -p beff.json",
     "test": "vitest --run --update"
   },
   "keywords": [],
