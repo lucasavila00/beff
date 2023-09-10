@@ -35,7 +35,7 @@ export default function Play(): JSX.Element {
       >
         {width != 0 && height != 0 && (
           <iframe
-            src="/playground"
+            src="/beff/playground"
             style={{
               height,
               width,
