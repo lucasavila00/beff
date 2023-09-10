@@ -1,17 +1,12 @@
 import type {
-  CompilerOptions,
-  ModuleResolutionHost,
-  ModuleResolutionCache,
-  ResolvedProjectReference,
-  ResolutionMode,
-  ResolvedModuleWithFailedLookupLocations,
+  resolveModuleName,
+  sys,
+  findConfigFile,
+  readConfigFile,
+  parseJsonConfigFileContent,
 } from "typescript";
-export declare function resolveModuleName(
-  moduleName: string,
-  containingFile: string,
-  compilerOptions: CompilerOptions,
-  host: ModuleResolutionHost,
-  cache?: ModuleResolutionCache,
-  redirectedReference?: ResolvedProjectReference,
-  resolutionMode?: ResolutionMode
-): ResolvedModuleWithFailedLookupLocations;
+export declare const resolveModuleName: resolveModuleName;
+export declare const sys: sys;
+export declare const findConfigFile: findConfigFile;
+export declare const readConfigFile: readConfigFile;
+export declare const parseJsonConfigFileContent: parseJsonConfigFileContent;
