@@ -6,3 +6,4 @@ node_modules
 *.vsix
 coverage/*
 target/
+.pnpm-store/
