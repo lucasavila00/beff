@@ -4,13 +4,13 @@ on:
     types: [created]
 jobs:
   build:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
     steps:
       - uses: actions/checkout@v3
       # Setup .npmrc file to publish to npm
       - uses: pnpm/action-setup@v2
         with:
-          version: 7
+          version: 8
       - uses: actions-rust-lang/setup-rust-toolchain@v1
       - uses: actions/setup-node@v3
         with:
