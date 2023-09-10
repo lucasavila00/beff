@@ -1,1 +1,2 @@
 packages/beff-wasm/fixtures/codegen-snaps/** linguist-vendored
+packages/beff-wasm/ts-node/tsc-slim/** linguist-vendored
