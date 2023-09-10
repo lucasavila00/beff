@@ -1,4 +1,4 @@
-use crate::{swc_builder::SwcBuilder, ast::json_schema::JsonSchema};
+use crate::{ast::json_schema::JsonSchema, swc_builder::SwcBuilder};
 use swc_common::DUMMY_SP;
 use swc_ecma_ast::{
     BindingIdent, BlockStmt, CallExpr, Callee, Expr, ExprOrSpread, FnExpr, Function, Ident, Param,
@@ -25,11 +25,31 @@ fn coerce_primitive(value: Expr, p: &str) -> Expr {
     })
 }
 
+fn coercion_noop(value: Expr) -> Expr {
+    let decoder_ref_fn = Ident {
+        span: DUMMY_SP,
+        sym: format!("CoercionNoop").into(),
+        optional: false,
+    };
+    let callee = Callee::Expr(Expr::Ident(decoder_ref_fn).into());
+    Expr::Call(CallExpr {
+        span: DUMMY_SP,
+        callee: callee,
+        args: vec![ExprOrSpread {
+            spread: None,
+            expr: value.into(),
+        }],
+        type_args: None,
+    })
+}
+
 struct CoercerFnGenerator {}
 impl CoercerFnGenerator {
     fn coerce_schema(&mut self, schema: &JsonSchema, value_ref: &Expr, depth: usize) -> Expr {
         match schema {
-            JsonSchema::Null | JsonSchema::Const(_) | JsonSchema::Any => value_ref.clone(),
+            JsonSchema::Null | JsonSchema::Const(_) | JsonSchema::Any => {
+                coercion_noop(value_ref.clone())
+            }
             JsonSchema::Boolean => coerce_primitive(value_ref.clone(), "boolean"),
             JsonSchema::String => coerce_primitive(value_ref.clone(), "string"),
             JsonSchema::StringWithFormat(_) => coerce_primitive(value_ref.clone(), "string"),
@@ -90,7 +110,7 @@ impl CoercerFnGenerator {
         let input = SwcBuilder::input_expr();
         let stmts = vec![Stmt::Return(ReturnStmt {
             span: DUMMY_SP,
-            arg: Some(Box::new(self.coerce_schema(schema, &input, depth))),
+            arg: Some(self.coerce_schema(schema, &input, depth).into()),
         })];
 
         Function {

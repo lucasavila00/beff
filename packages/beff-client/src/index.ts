@@ -72,17 +72,25 @@ export class BffRequest {
           break;
         }
         case "query": {
-          if (!hasAddedQueryParams) {
-            path += "?";
-            hasAddedQueryParams = true;
-            path += `${metadata.name}=${param}`;
+          if (!metadata.required && param == null) {
+            // skip optional query params
           } else {
-            path += `&${metadata.name}=${param}`;
+            if (!hasAddedQueryParams) {
+              path += "?";
+              hasAddedQueryParams = true;
+              path += `${metadata.name}=${param}`;
+            } else {
+              path += `&${metadata.name}=${param}`;
+            }
           }
           break;
         }
         case "header": {
-          init.headers[metadata.name] = String(param);
+          if (!metadata.required && param == null) {
+            // skip optional headers
+          } else {
+            init.headers[metadata.name] = String(param);
+          }
           break;
         }
         case "body": {

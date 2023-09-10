@@ -39,44 +39,63 @@ declare const _exports: { meta: HandlerMetaClient[] };
 export default _exports;
 `;
 const coercerCode = `
-class CoercionFailure {
-  constructor(original) {
-    this.__isCoercionFailure = true;
-    this.original = original
+
+function CoercionOk(data) {
+  return {
+    ok: true,
+    data,
   }
 }
+
+function CoercionNoop(data) {
+  return {
+    ok: false,
+    data,
+  }
+}
+  
+
 function coerce_string(input) {
-  return input;
+  if (typeof input === "string") {
+    return CoercionOk(input)
+  }
+  return CoercionNoop(input);
 }
 const isNumeric = (num) =>
   (typeof num === "number" || (typeof num === "string" && num.trim() !== "")) &&
   !isNaN(num );
 function coerce_number(input) {
-  if (isNumeric(input)) {
-    return Number(input);
+  if (input == null) {
+    return CoercionNoop(input);
   }
-  return new CoercionFailure(input);
+  if (isNumeric(input)) {
+    return CoercionOk(Number(input));
+  }
+  return CoercionNoop(input);
 }
 function coerce_boolean(input) {
+  if (input == null) {
+    return CoercionNoop(input);
+  }
   if (input === "true" || input === "false") {
-    return input === "true";
+    return CoercionOk(input === "true");
   }
   if (input === "1" || input === "0") {
-    return input === "1";
+    return CoercionOk(input === "1");
   }
-  return new CoercionFailure(input);
+  return CoercionNoop(input);
 }
 function coerce_union(input, ...cases) {
+  if (input == null) {
+    return CoercionNoop(input);
+  }
   for (const c of cases) {
-    const r = coerce(c, input);
-    if (!(r instanceof CoercionFailure)) {
+    const r = c(input);
+    if (r.ok) {
       return r;
     }
   }
-  return new CoercionFailure(input);
-}
-function coerce(coercer, value) {
-  return coercer(value);
+  return CoercionNoop(input);
 }
 `;
 

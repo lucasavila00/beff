@@ -76,7 +76,7 @@ const redocTemplate = (baseUrl: string) => `
 `;
 
 const coerce = (coercer: any, value: any): any => {
-  return coercer(value);
+  return coercer(value).data;
 };
 
 const toHonoPattern = (pattern: string): string => {
@@ -115,23 +115,7 @@ const prettyPrintErrorMessage = (it: DecodeError): string => {
   }
 };
 
-type CoercionFailure = {
-  __isCoercionFailure: true;
-  original: unknown;
-};
-
-const isCoercionFailure = (it: unknown): it is CoercionFailure => {
-  return (
-    typeof it === "object" &&
-    it != null &&
-    "__isCoercionFailure" in it &&
-    Boolean(it?.__isCoercionFailure)
-  );
-};
 const prettyPrintValue = (it: unknown): string => {
-  if (isCoercionFailure(it)) {
-    return prettyPrintValue(it.original);
-  }
   if (typeof it === "string") {
     return `"${it}"`;
   }

@@ -60,5 +60,13 @@ export default {
       return id;
     },
   },
+  "/with-default": {
+    get: async (c: Ctx, page: number = 1) => {
+      return page;
+    },
+    post: async (c: Ctx, page: number | undefined = 1) => {
+      return page;
+    },
+  },
 };
 type ValidIds = 123 | 456;

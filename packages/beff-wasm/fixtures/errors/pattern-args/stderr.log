@@ -18,12 +18,12 @@ Error: Parameter pattern is not supported
    16 |     },
    17 |   },
 
-Error: Parameter pattern is not supported
+Error: Invalid context usage
  /errors/pattern-args/app.ts:19:17
    17 |   },
    18 |   [`/user2`]: {
  > 19 |     get: async (a: string[] = []): Promise<User[]> => {
-      |                 ^^^^^^^^^^^^^^^^ Parameter pattern is not supported
+      |                 ^^^^^^^^^^^ Context must be the first parameter
    20 |       return todo();
    21 |     },
    22 |   },
