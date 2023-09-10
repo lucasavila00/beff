@@ -4,7 +4,11 @@ clone typescript repo and create a file with
 
 ```
 // src/compiler/mod2.ts
+export { parseJsonConfigFileContent } from "./commandLineParser";
+export { readConfigFile } from "./commandLineParser";
 export { resolveModuleName } from "./moduleNameResolver";
+export { findConfigFile } from "./program";
+export { sys } from "./sys";
 ```
 
 then
