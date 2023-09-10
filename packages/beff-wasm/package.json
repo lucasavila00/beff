@@ -1,7 +1,7 @@
 {
   "name": "beff-vscode",
   "publisher": "beff",
-  "version": "0.0.6",
+  "version": "0.0.7",
   "description": "",
   "engines": {
     "vscode": "^1.73.0"
@@ -40,8 +40,8 @@
   },
   "devDependencies": {
     "@babel/code-frame": "^7.22.13",
-    "@beff/cli": "workspace:^0.0.6",
-    "@beff/hono": "workspace:^0.0.6",
+    "@beff/cli": "workspace:^0.0.7",
+    "@beff/hono": "workspace:^0.0.7",
     "@types/babel__code-frame": "^7.0.3",
     "@types/node": "^20.5.7",
     "@types/vscode": "^1.73.0",

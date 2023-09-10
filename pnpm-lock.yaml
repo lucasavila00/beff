@@ -13,10 +13,10 @@ importers:
 
   examples/minimal-react:
     specifiers:
-      '@beff/cli': workspace:^0.0.6
-      '@beff/client': workspace:^0.0.6
-      '@beff/hono': workspace:^0.0.6
-      '@beff/react': workspace:^0.0.6
+      '@beff/cli': workspace:^0.0.7
+      '@beff/client': workspace:^0.0.7
+      '@beff/hono': workspace:^0.0.7
+      '@beff/react': workspace:^0.0.7
       '@hono/node-server': ^1.1.1
       '@playwright/test': ^1.26.1
       '@tanstack/react-query': ^4.33.0
@@ -58,8 +58,8 @@ importers:
 
   examples/node-docs:
     specifiers:
-      '@beff/cli': workspace:^0.0.6
-      '@beff/hono': workspace:^0.0.6
+      '@beff/cli': workspace:^0.0.7
+      '@beff/hono': workspace:^0.0.7
       '@hono/node-server': ^1.1.1
       esbuild: ^0.19.2
       vitest: ^0.34.3
@@ -72,8 +72,8 @@ importers:
 
   examples/node-server:
     specifiers:
-      '@beff/cli': workspace:^0.0.6
-      '@beff/hono': workspace:^0.0.6
+      '@beff/cli': workspace:^0.0.7
+      '@beff/hono': workspace:^0.0.7
       '@hono/node-server': ^1.1.1
       esbuild: ^0.19.2
       vitest: ^0.34.3
@@ -86,7 +86,7 @@ importers:
 
   examples/standalone-parser:
     specifiers:
-      '@beff/cli': workspace:^0.0.6
+      '@beff/cli': workspace:^0.0.7
       vitest: ^0.34.3
     dependencies:
       '@beff/cli': link:../../packages/beff-cli
@@ -97,7 +97,7 @@ importers:
 
   packages/beff-client:
     specifiers:
-      '@beff/cli': workspace:^0.0.6
+      '@beff/cli': workspace:^0.0.7
       typescript: ^5.2.2
     dependencies:
       '@beff/cli': link:../beff-cli
@@ -109,8 +109,8 @@ importers:
 
   packages/beff-hono:
     specifiers:
-      '@beff/cli': workspace:^0.0.6
-      '@beff/client': workspace:^0.0.6
+      '@beff/cli': workspace:^0.0.7
+      '@beff/client': workspace:^0.0.7
       hono: ^3.5.6
       typescript: ^5.2.2
       vitest: ^0.34.3
@@ -124,7 +124,7 @@ importers:
 
   packages/beff-react:
     specifiers:
-      '@beff/client': workspace:^0.0.6
+      '@beff/client': workspace:^0.0.7
       '@tanstack/react-query': ^4.33.0
       react: ^18.2.0
       typescript: ^5.2.2
@@ -137,8 +137,8 @@ importers:
   packages/beff-wasm:
     specifiers:
       '@babel/code-frame': ^7.22.13
-      '@beff/cli': workspace:^0.0.6
-      '@beff/hono': workspace:^0.0.6
+      '@beff/cli': workspace:^0.0.7
+      '@beff/hono': workspace:^0.0.7
       '@types/babel__code-frame': ^7.0.3
       '@types/node': ^20.5.7
       '@types/vscode': ^1.73.0
