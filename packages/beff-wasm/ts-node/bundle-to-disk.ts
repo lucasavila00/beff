@@ -118,8 +118,6 @@ function registerStringFormat(name, predicate) {
   stringPredicates[name] = predicate;
 }
 
-// a hint to UIs to mask the input
-
 function isCustomFormatInvalid(key, value) {
   const predicate = stringPredicates[key];
   if (predicate == null) {

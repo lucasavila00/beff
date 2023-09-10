@@ -18,7 +18,6 @@ importers:
       '@beff/hono': workspace:^0.0.7
       '@beff/react': workspace:^0.0.7
       '@hono/node-server': ^1.1.1
-      '@playwright/test': ^1.26.1
       '@tanstack/react-query': ^4.33.0
       '@types/node': ^20.5.7
       '@types/react': ^18.2.21
@@ -49,26 +48,11 @@ importers:
       typescript: 5.2.2
       vite: 4.4.9_@types+node@20.5.8
     devDependencies:
-      '@playwright/test': 1.37.1
       '@types/react': 18.2.21
       '@types/react-dom': 18.2.7
       npm-run-all: 4.1.5
       start-server-and-test: 1.15.4
       wait-port: 1.0.4
-
-  examples/node-docs:
-    specifiers:
-      '@beff/cli': workspace:^0.0.7
-      '@beff/hono': workspace:^0.0.7
-      '@hono/node-server': ^1.1.1
-      esbuild: ^0.19.2
-      vitest: ^0.34.3
-    dependencies:
-      '@beff/cli': link:../../packages/beff-cli
-      '@beff/hono': link:../../packages/beff-hono
-      '@hono/node-server': 1.1.1
-      esbuild: 0.19.2
-      vitest: 0.34.3
 
   examples/node-server:
     specifiers:
@@ -165,6 +149,20 @@ importers:
       esbuild: 0.19.2
       hono: 3.5.6
       typescript: 5.2.2
+      vitest: 0.34.3
+
+  tests/node-docs:
+    specifiers:
+      '@beff/cli': workspace:^0.0.7
+      '@beff/hono': workspace:^0.0.7
+      '@hono/node-server': ^1.1.1
+      esbuild: ^0.19.2
+      vitest: ^0.34.3
+    dependencies:
+      '@beff/cli': link:../../packages/beff-cli
+      '@beff/hono': link:../../packages/beff-hono
+      '@hono/node-server': 1.1.1
+      esbuild: 0.19.2
       vitest: 0.34.3
 
   web/docs:
@@ -3468,17 +3466,6 @@ packages:
       '@nodelib/fs.scandir': 2.1.5
       fastq: 1.15.0
 
-  /@playwright/test/1.37.1:
-    resolution: {integrity: sha512-bq9zTli3vWJo8S3LwB91U0qDNQDpEXnw7knhxLM0nwDvexQAwx9tO8iKDZSqqneVq+URd/WIoz+BALMqUTgdSg==}
-    engines: {node: '>=16'}
-    hasBin: true
-    dependencies:
-      '@types/node': 20.5.8
-      playwright-core: 1.37.1
-    optionalDependencies:
-      fsevents: 2.3.2
-    dev: true
-
   /@polka/url/1.0.0-next.23:
     resolution: {integrity: sha512-C16M+IYz0rgRhWZdCmK+h58JMv8vijAA61gmz2rspCSwKwzBebpdcsiUmwrtJRdphuY30i6BSLEOP8ppbNLyLg==}
     dev: false
@@ -6481,14 +6468,6 @@ packages:
   /fs.realpath/1.0.0:
     resolution: {integrity: sha512-OO0pH2lK6a0hZnAdau5ItzHPI6pUlvI7jMVnxUQRtw4owF2wk8lOSabtGDCTP4Ggrg2MbGnWO9X8K1t4+fGMDw==}
 
-  /fsevents/2.3.2:
-    resolution: {integrity: sha512-xiqMQR4xAeHTuB9uWm+fFRcIOgKBMiOBP+eXiyT7jsgVCq1bkVygt00oASowB7EdtpOHaaPgKt812P9ab+DDKA==}
-    engines: {node: ^8.16.0 || ^10.6.0 || >=11.0.0}
-    os: [darwin]
-    requiresBuild: true
-    dev: true
-    optional: true
-
   /fsevents/2.3.3:
     resolution: {integrity: sha512-5xoDfX+fL7faATnagmWPpbFtwh/R77WmMMqqHGS65C3vvB0YHrgF+B1YmZ3441tMj5n63k0212XNoJwzlhffQw==}
     engines: {node: ^8.16.0 || ^10.6.0 || >=11.0.0}
@@ -8600,12 +8579,6 @@ packages:
     dependencies:
       find-up: 3.0.0
     dev: false
-
-  /playwright-core/1.37.1:
-    resolution: {integrity: sha512-17EuQxlSIYCmEMwzMqusJ2ztDgJePjrbttaefgdsiqeLWidjYz9BxXaTaZWxH1J95SHGk6tjE+dwgWILJoUZfA==}
-    engines: {node: '>=16'}
-    hasBin: true
-    dev: true
 
   /postcss-calc/8.2.4_postcss@8.4.29:
     resolution: {integrity: sha512-SmWMSJmB8MRnnULldx0lQIyhSNvuDl9HfrZkaqqE/WHAhToYsAvDq+yAsA/kIyINDszOp3Rh0GFoNuH5Ypsm3Q==}

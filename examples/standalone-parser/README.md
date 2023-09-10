@@ -4,10 +4,10 @@ Requires node 18+
 
 ## Running
 
-Replace `@beff/cli` and `@beff/hono` versions on package.json, then:
+Replace `@beff/cli` version on package.json, then:
 
 ```
 npm install
 npm run beff
-npm start
+npm run test
 ```
