@@ -12,6 +12,18 @@
   "activationEvents": [
     "*"
   ],
+  "contributes": {
+    "configuration": {
+      "title": "Beff",
+      "properties": {
+        "beff.configPath": {
+          "type": "string",
+          "default": "beff.json",
+          "description": "Path to the Beff config file"
+        }
+      }
+    }
+  },
   "main": "./dist-ext/extension.js",
   "scripts": {
     "build": "node script/build.js",
