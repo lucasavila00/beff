@@ -85,17 +85,17 @@ const toHonoPattern = (pattern: string): string => {
 };
 
 class BffHTTPException extends Error {
-  isBffHttpException: true;
+  isBeffHttpException: true;
   status: number;
   constructor(status: number, message: string) {
     super(message);
     this.name = "HTTPException";
-    this.isBffHttpException = true;
+    this.isBeffHttpException = true;
     this.status = status;
   }
 }
-export const isBffHttpException = (e: any): e is BffHTTPException => {
-  return e?.isBffHttpException;
+export const isBeffHttpException = (e: any): e is BffHTTPException => {
+  return e?.isBeffHttpException;
 };
 
 const prettyPrintErrorMessage = (it: DecodeError): string => {
@@ -290,7 +290,7 @@ export function buildHonoApp(options: {
               handlerData
             );
           } catch (e) {
-            if (isBffHttpException(e)) {
+            if (isBeffHttpException(e)) {
               return c.json(
                 {
                   message: e.message,

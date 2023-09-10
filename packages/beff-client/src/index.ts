@@ -158,12 +158,12 @@ export type BuildClientOptions = {
 };
 
 class BffHTTPException extends Error {
-  isBffHttpException: true;
+  isBeffHttpException: true;
   status: number;
   constructor(status: number, message: string) {
     super(message);
     this.name = "HTTPException";
-    this.isBffHttpException = true;
+    this.isBeffHttpException = true;
     this.status = status;
   }
 }
