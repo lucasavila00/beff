@@ -61,6 +61,36 @@ pub enum HandlerParameter {
     Context(Span),
 }
 
+impl HandlerParameter {
+    pub fn make_optional(self: HandlerParameter) -> HandlerParameter {
+        match self {
+            HandlerParameter::PathOrQueryOrBody {
+                schema,
+                description,
+                span,
+                ..
+            } => HandlerParameter::PathOrQueryOrBody {
+                schema,
+                required: false,
+                description,
+                span,
+            },
+            HandlerParameter::Header {
+                span,
+                schema,
+                description,
+                ..
+            } => HandlerParameter::Header {
+                span,
+                schema,
+                required: false,
+                description,
+            },
+            HandlerParameter::Context(_) => self,
+        }
+    }
+}
+
 #[derive(Debug, Clone, Copy, Eq, PartialEq)]
 pub enum MethodKind {
     Get(Span),
@@ -477,7 +507,7 @@ impl<'a, R: FileManager> ExtractExportDefaultVisitor<'a, R> {
         &mut self,
         param: &Pat,
         parent_span: &Span,
-    ) -> Result<Vec<(String, HandlerParameter)>> {
+    ) -> Result<(String, HandlerParameter)> {
         match param {
             Pat::Ident(BindingIdent { id, type_ann }) => {
                 if type_ann.is_none() {
@@ -492,12 +522,15 @@ impl<'a, R: FileManager> ExtractExportDefaultVisitor<'a, R> {
                     comments.and_then(|it| self.parse_description_comment(it, &id.span));
                 let ty = self.assert_and_extract_type_from_ann(type_ann, &id.span);
                 let param = self.parse_parameter_type(&ty, !id.optional, description, &id.span)?;
-                Ok(vec![(id.sym.to_string(), param)])
+                Ok((id.sym.to_string(), param))
+            }
+            Pat::Assign(AssignPat { span, left, .. }) => {
+                let (name, ty) = self.parse_arrow_parameter(left, span)?;
+                Ok((name, ty.make_optional()))
             }
             Pat::Rest(RestPat { span, .. })
             | Pat::Array(ArrayPat { span, .. })
             | Pat::Object(ObjectPat { span, .. })
-            | Pat::Assign(AssignPat { span, .. })
             | Pat::Invalid(Invalid { span, .. }) => {
                 self.error(span, DiagnosticInfoMessage::ParameterPatternNotSupported)
             }
@@ -557,7 +590,6 @@ impl<'a, R: FileManager> ExtractExportDefaultVisitor<'a, R> {
             .iter()
             .map(|it| self.parse_arrow_parameter(&it.pat, parent_span))
             .collect::<Result<Vec<_>>>()?;
-        let parameters = parameters.into_iter().flatten().collect();
         let e = FnHandler {
             method_kind: self.parse_method_kind(key)?,
             parameters,
@@ -625,7 +657,6 @@ impl<'a, R: FileManager> ExtractExportDefaultVisitor<'a, R> {
                 .map(|it| self.parse_arrow_parameter(it, parent_span))
                 .collect::<Result<Vec<_>>>()?
                 .into_iter()
-                .flatten()
                 .collect(),
             summary: endpoint_comments.summary,
             description: endpoint_comments.description,

@@ -1,5 +1,11 @@
 # beff-vscode
 
+## 0.0.8
+
+### Patch Changes
+
+- Support for optional parameters
+
 ## 0.0.7
 
 ### Patch Changes

@@ -1,5 +1,13 @@
 # @beff/react
 
+## 0.0.8
+
+### Patch Changes
+
+- Support for optional parameters
+- Updated dependencies
+  - @beff/client@0.0.8
+
 ## 0.0.7
 
 ### Patch Changes

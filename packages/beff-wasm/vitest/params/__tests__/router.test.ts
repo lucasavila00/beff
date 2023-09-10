@@ -97,3 +97,11 @@ it("coerce", async () => {
     '"456"'
   );
 });
+
+it("default param", async () => {
+  expect(await beff["/with-default"].get()).toMatchInlineSnapshot("1");
+  expect(await beff["/with-default"].post()).toMatchInlineSnapshot("1");
+
+  expect(await beff["/with-default"].get(5)).toMatchInlineSnapshot("5");
+  expect(await beff["/with-default"].post(5)).toMatchInlineSnapshot("5");
+});
