@@ -1,9 +1,5 @@
 import { Ctx } from "@beff/hono";
 
-type HelloResponse = {
-  message: string;
-};
-
 /**
  * This is an example API router. Adding a comment here adds it to its description.
  *
@@ -22,37 +18,41 @@ export default {
      * We can also add a summary.
      * @summary Example route
      */
-    get: async (c: Ctx): Promise<string> => "ok",
+    get: (): string => {
+      return "ok";
+    },
   },
   "/hello/{name}": {
     /**
      * This is an example route. Adding a comment here adds it to its description.
      * Summaries ate not mandatory.
      */
-    get: async (
+    get: (
       c: Ctx,
       /**
        * This is an example path parameter. Adding a comment here adds it to its description.
        */
       name: string
-    ): Promise<HelloResponse> => {
+    ) => {
       return {
         message: `Hello ${name}!`,
       };
     },
-    post: async (
+    post: (
       c: Ctx,
       name: string,
       /**
        * This is an example request body parameter. Adding a comment here adds it to its description.
        */
-      body: HelloResponse,
+      body: {
+        message: string;
+      },
       /**
        * This is an example query parameter. Adding a comment here adds it to its description.
        */
       limit: number
-    ): Promise<HelloResponse> => {
-      return body;
+    ) => {
+      return body.message.slice(0, limit);
     },
   },
 };

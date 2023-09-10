@@ -10,4 +10,5 @@ serve(
   })
 );
 
-console.log(`Server running at http://localhost:3000/docs`);
+console.log(`Server running at http://localhost:3000/`);
+console.log(`Serving docs at http://localhost:3000/docs`);

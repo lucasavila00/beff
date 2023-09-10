@@ -5,9 +5,8 @@
   "main": "index.js",
   "scripts": {
     "beff": "beff -p beff.json",
-    "build2": "esbuild src/app.ts --bundle --platform=node --target=node16 --outdir=dist",
-    "start": "npm run beff && npm run build2 && node dist/app.js",
-    "test": "vitest --run --update"
+    "build-app": "esbuild src/index.ts --bundle --platform=node --target=node16 --outdir=dist",
+    "start": "npm run beff && npm run build-app && node dist/index.js"
   },
   "keywords": [],
   "author": "",
