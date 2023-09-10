@@ -254,6 +254,8 @@ npm i @beff/client
 import { buildClient } from "@beff/client";
 // The client file contains only the minimal amount of data required.
 import generated from "../../../generated/client";
+import type { AppRouter } from "../../../server";
+
 const fetchClient = buildClient<AppRouter>({
   generated,
   baseUrl: "http://localhost:2022",
@@ -280,6 +282,7 @@ npm i @beff/react
 import { buildReactQueryClient } from "@beff/react";
 // The client file contains only the minimal amount of data required.
 import generated from "../../../generated/client";
+import type { AppRouter } from "../../../server";
 
 export const beff = buildReactQueryClient<AppRouter>({
   generated,

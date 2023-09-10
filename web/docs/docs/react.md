@@ -30,6 +30,7 @@ Creates a Type-Safe and OpenAPI compatible client based on your router, already 
 import { buildReactQueryClient } from "@beff/react";
 // The client file contains only the minimal amount of data required.
 import generated from "../../../generated/client";
+import type { AppRouter } from "../../../server";
 
 export const beff = buildReactQueryClient<AppRouter>({
   generated,
