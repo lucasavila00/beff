@@ -14,4 +14,8 @@ ext install beff.beff-vscode
 
 ### Configuration
 
-TODO configuring path to bff.json
+| Option          | Default   | Description                  |
+| --------------- | --------- | ---------------------------- |
+| beff.configPath | beff.json | Path to the Beff config file |
+
+![Vscode settings](_media/vscode_settings.png)
