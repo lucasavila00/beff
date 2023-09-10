@@ -79,6 +79,11 @@ const config = {
           },
           { to: "/play", label: "Playground", position: "left" },
           {
+            href: "https://github.com/lucasavila00/beff/tree/main/examples",
+            label: "Examples",
+            position: "right",
+          },
+          {
             href: "https://github.com/lucasavila00/beff",
             label: "GitHub",
             position: "right",
