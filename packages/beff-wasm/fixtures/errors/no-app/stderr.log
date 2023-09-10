@@ -1,3 +1,19 @@
+Error: ENOENT: no such file or directory, open '/errors/no-app/app.ts'
+    at Object.openSync (node:fs:601:3)
+    at Object.readFileSync (node:fs:469:35)
+    at Bundler.globalThis.read_file_content (/home/lucas/fluff/bff/packages/beff-cli/dist-cli/cli.js:200011:33)
+    at /home/lucas/fluff/bff/packages/beff-cli/pkg/beff_wasm.js:267:17
+    at logError (/home/lucas/fluff/bff/packages/beff-cli/pkg/beff_wasm.js:205:18)
+    at module.exports.__wbg_readfilecontent_4b96f905fd7d8625 (/home/lucas/fluff/bff/packages/beff-cli/pkg/beff_wasm.js:266:77)
+    at beff_wasm::read_file_content::h8d2a8e970a057f71 (wasm://wasm/03189766:wasm-function[9946]:0x8eb3cc)
+    at <beff_wasm::LazyFileManager as beff_core::FileManager>::get_or_fetch_file::ha25a8a5e9971f931 (wasm://wasm/03189766:wasm-function[1291]:0x5efcf7)
+    at beff_core::api_extractor::ExtractExportDefaultVisitor<R>::get_current_file::h27fa4dcf357fa4b3 (wasm://wasm/03189766:wasm-function[2412]:0x6cbb6e)
+    at beff_core::api_extractor::ExtractExportDefaultVisitor<R>::visit_current_file::h99846d0fa836c803 (wasm://wasm/03189766:wasm-function[3886]:0x77a6f7) {
+  errno: -2,
+  syscall: 'open',
+  code: 'ENOENT',
+  path: '/errors/no-app/app.ts'
+}
 Error
  /errors/no-app/app.ts
  Cannot find file '/errors/no-app/app.ts' when converting to schema

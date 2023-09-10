@@ -4,7 +4,7 @@ import * as path from "path";
 import { ProjectJson } from "./project";
 import * as chalk from "chalk";
 import { execProject } from "./bundle-to-disk";
-import { Bundler, getKnownFiles } from "./bundler";
+import { Bundler } from "./bundler";
 import chokidar from "chokidar";
 const bail = (msg: string) => {
   console.error(chalk.red(msg));
@@ -60,6 +60,7 @@ const getProjectPath = (projectPath: string | undefined): string => {
   return path.join(process.cwd(), projectPath);
 };
 
+const watching: Record<string, boolean> = {};
 export const commanderExec = () => {
   const start = Date.now();
   program.option("-p, --project <string>");
@@ -73,15 +74,10 @@ export const commanderExec = () => {
   const bundler = new Bundler(verbose);
 
   const exec = () => execProject(bundler, projectPath, projectJson, verbose);
-  const res = exec();
 
   // if watch mode, start watching the files that are imported by the entry point
   if (options.watch) {
-    const knownFiles = getKnownFiles();
-    const filesToWatch = knownFiles.filter((f) => f !== projectPath);
-    console.log(chalk.green(`Watching ${filesToWatch.length} files`));
-
-    chokidar.watch(filesToWatch).on("change", (path) => {
+    const updateFile = (path: string) => {
       console.log(chalk.green(`File changed: ${path}`));
       try {
         const newContent = fs.readFileSync(path, "utf-8");
@@ -90,8 +86,17 @@ export const commanderExec = () => {
       } catch (e) {
         console.error(e);
       }
+    };
+    bundler.onFileRead((path) => {
+      if (watching[path]) {
+        return;
+      }
+      watching[path] = true;
+      chokidar.watch(path).on("change", updateFile);
     });
+    exec();
   } else {
+    const res = exec();
     if (res == "failed") {
       process.exit(1);
     }

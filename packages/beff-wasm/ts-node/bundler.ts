@@ -185,21 +185,6 @@ const emitDiagnostics = (diag: WasmDiagnostic) => {
 (globalThis as any).resolve_import = resolveImport;
 (globalThis as any).emit_diagnostic = emitDiagnostics;
 
-(globalThis as any).known_files = [];
-
-export const getKnownFiles = (): string[] => {
-  return (globalThis as any).known_files;
-};
-
-(globalThis as any).read_file_content = (file_name: string) => {
-  (globalThis as any).known_files.push(file_name);
-  try {
-    const source_file = fs.readFileSync(file_name, "utf-8");
-    return source_file;
-  } catch (e) {
-    return undefined;
-  }
-};
 type KnownFile = {
   message: string;
   file_name: string;
@@ -233,9 +218,29 @@ export type WritableModules = {
   js_built_parsers: string | undefined;
 };
 export class Bundler {
+  cbs: ((path: string) => void)[];
   constructor(verbose: boolean) {
     (globalThis as any).verbose = verbose;
     wasm.init(verbose);
+
+    this.cbs = [];
+
+    (globalThis as any).read_file_content = (file_name: string) => {
+      try {
+        const source_file = fs.readFileSync(file_name, "utf-8");
+        for (const cb of this.cbs) {
+          cb(file_name);
+        }
+        return source_file;
+      } catch (e) {
+        console.error(e);
+        return undefined;
+      }
+    };
+  }
+
+  public onFileRead(cb: (path: string) => void) {
+    this.cbs.push(cb);
   }
 
   public bundle(
