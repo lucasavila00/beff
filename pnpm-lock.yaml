@@ -19,16 +19,16 @@ importers:
   examples/minimal-react:
     dependencies:
       '@beff/cli':
-        specifier: workspace:^0.0.7
+        specifier: workspace:^0.0.8
         version: link:../../packages/beff-cli
       '@beff/client':
-        specifier: workspace:^0.0.7
+        specifier: workspace:^0.0.8
         version: link:../../packages/beff-client
       '@beff/hono':
-        specifier: workspace:^0.0.7
+        specifier: workspace:^0.0.8
         version: link:../../packages/beff-hono
       '@beff/react':
-        specifier: workspace:^0.0.7
+        specifier: workspace:^0.0.8
         version: link:../../packages/beff-react
       '@hono/node-server':
         specifier: ^1.1.1
@@ -80,10 +80,10 @@ importers:
   examples/node-server:
     dependencies:
       '@beff/cli':
-        specifier: workspace:^0.0.7
+        specifier: workspace:^0.0.8
         version: link:../../packages/beff-cli
       '@beff/hono':
-        specifier: workspace:^0.0.7
+        specifier: workspace:^0.0.8
         version: link:../../packages/beff-hono
       '@hono/node-server':
         specifier: ^1.1.1
@@ -98,7 +98,7 @@ importers:
   examples/standalone-parser:
     dependencies:
       '@beff/cli':
-        specifier: workspace:^0.0.7
+        specifier: workspace:^0.0.8
         version: link:../../packages/beff-cli
       vitest:
         specifier: ^0.34.3
@@ -109,7 +109,7 @@ importers:
   packages/beff-client:
     dependencies:
       '@beff/cli':
-        specifier: workspace:^0.0.7
+        specifier: workspace:^0.0.8
         version: link:../beff-cli
     devDependencies:
       typescript:
@@ -121,10 +121,10 @@ importers:
   packages/beff-hono:
     dependencies:
       '@beff/cli':
-        specifier: workspace:^0.0.7
+        specifier: workspace:^0.0.8
         version: link:../beff-cli
       '@beff/client':
-        specifier: workspace:^0.0.7
+        specifier: workspace:^0.0.8
         version: link:../beff-client
       hono:
         specifier: ^3.5.6
@@ -140,7 +140,7 @@ importers:
   packages/beff-react:
     dependencies:
       '@beff/client':
-        specifier: workspace:^0.0.7
+        specifier: workspace:^0.0.8
         version: link:../beff-client
       '@tanstack/react-query':
         specifier: ^4.33.0
@@ -162,10 +162,10 @@ importers:
         specifier: ^7.22.13
         version: 7.22.13
       '@beff/cli':
-        specifier: workspace:^0.0.7
+        specifier: workspace:^0.0.8
         version: link:../beff-cli
       '@beff/hono':
-        specifier: workspace:^0.0.7
+        specifier: workspace:^0.0.8
         version: link:../beff-hono
       '@types/babel__code-frame':
         specifier: ^7.0.3
@@ -201,10 +201,10 @@ importers:
   tests/node-docs:
     dependencies:
       '@beff/cli':
-        specifier: workspace:^0.0.7
+        specifier: workspace:^0.0.8
         version: link:../../packages/beff-cli
       '@beff/hono':
-        specifier: workspace:^0.0.7
+        specifier: workspace:^0.0.8
         version: link:../../packages/beff-hono
       '@hono/node-server':
         specifier: ^1.1.1

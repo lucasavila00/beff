@@ -1,5 +1,15 @@
 # @examples/minimal-react
 
+## 10.38.5
+
+### Patch Changes
+
+- Updated dependencies
+  - @beff/client@0.0.8
+  - @beff/hono@0.0.8
+  - @beff/cli@0.0.8
+  - @beff/react@0.0.8
+
 ## 10.38.4
 
 ### Patch Changes
