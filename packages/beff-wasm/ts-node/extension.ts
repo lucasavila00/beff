@@ -52,12 +52,16 @@ const crashChecked = (cb: () => void) => {
 const VERBOSE = false;
 
 export function activate(context: vscode.ExtensionContext) {
+  const beffPath = String(
+    vscode.workspace.getConfiguration("beff").get("configPath") ?? "beff.json"
+  );
+
   const workspacePath = vscode.workspace.workspaceFolders?.[0].uri.fsPath;
   if (!workspacePath) {
     throw new Error("No workspace folder found");
   }
   const collection = vscode.languages.createDiagnosticCollection("test");
-  const projectPath = path.join(workspacePath, "beff.json");
+  const projectPath = path.join(workspacePath, beffPath);
   const projectJson = readProjectJson(projectPath);
 
   bundler = new Bundler(VERBOSE);
