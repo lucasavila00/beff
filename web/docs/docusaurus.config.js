@@ -43,8 +43,7 @@ const config = {
           sidebarPath: require.resolve("./sidebars.js"),
           // Please change this to your repo.
           // Remove this to remove the "edit this page" links.
-          editUrl:
-            "https://github.com/facebook/docusaurus/tree/main/packages/create-docusaurus/templates/shared/",
+          editUrl: "https://github.com/lucasavila00/beff/tree/main/web/docs/",
         },
         // blog: {
         //   showReadingTime: true,
@@ -64,7 +63,7 @@ const config = {
     /** @type {import('@docusaurus/preset-classic').ThemeConfig} */
     ({
       // Replace with your project's social card
-      image: "img/docusaurus-social-card.jpg",
+      // image: "img/docusaurus-social-card.jpg",
       navbar: {
         title: "Beff",
         logo: {
@@ -80,7 +79,7 @@ const config = {
           },
           { to: "/play", label: "Playground", position: "left" },
           {
-            href: "https://github.com/facebook/docusaurus",
+            href: "https://github.com/lucasavila00/beff",
             label: "GitHub",
             position: "right",
           },
