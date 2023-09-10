@@ -8,7 +8,7 @@ import {
   findConfigFile,
   readConfigFile,
   parseJsonConfigFileContent,
-} from "typescript";
+} from "./tsc-slim/out";
 import { codeFrameColumns } from "@babel/code-frame";
 import * as chalk from "chalk";
 interface ModuleResolutionHost {
