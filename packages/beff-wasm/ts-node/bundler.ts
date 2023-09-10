@@ -233,7 +233,9 @@ export class Bundler {
         }
         return source_file;
       } catch (e) {
-        console.error(e);
+        if (verbose) {
+          console.error(e);
+        }
         return undefined;
       }
     };
