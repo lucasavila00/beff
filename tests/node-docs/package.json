@@ -6,7 +6,8 @@
   "scripts": {
     "beff": "beff -p beff.json",
     "w": "beff -p beff.json -w",
-    "build2": "npx beff -p beff.json && npx esbuild index.ts --bundle --platform=node --target=node16 --outdir=dist"
+    "build2": "npx beff -p beff.json && npx esbuild index.ts --bundle --platform=node --target=node16 --outdir=dist",
+    "test": "vitest --run --update"
   },
   "keywords": [],
   "author": "",
