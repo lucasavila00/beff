@@ -67,7 +67,7 @@ export default {
 
 ### Context
 
-The first parameter of the handler function **must be** a type called `Ctx` or `Context`. The definition of context varies according to the selected runtime. Check the documentation of the runtime for the definition of context.
+The first parameter of the handler function **must be** a type called `Ctx` or `Context`. The definition of context varies according to the selected runtime. Check the documentation of the runtime for the definition of context. [Learn more about @beff/hono Context](/docs/hono#ctx)
 
 If the function receives no arguments, `Ctx` can be omitted. Otherwise, it must be defined. The compiler will report an error if this is not the case.
 
@@ -152,6 +152,8 @@ Complex parameters, those that contain arrays, objects or tuples, are the reques
 
 Beff will verify that the data is of the annotated type at execution time. [Learn more about validation.](/docs/cli#validation)
 
+The compiler will report an error if there is more than one request body.
+
 #### Example
 
 ```ts title="/router.ts"
@@ -232,7 +234,7 @@ Automatic documentation for response bodies will not be generated unless types h
 
 ### Serialization
 
-Beff will check that types which are part of your schema must be JSON Serializable. If you include a type that is not on the schema, the compiler will report an error.
+Beff will check that types which are part of your schema must be JSON Serializable. If your schema includes a type that is not JSON Serializable, the compiler will report an error.
 
 #### Valid Example
 
@@ -324,7 +326,7 @@ Beff generates a very efficient, dependency-free, OpenAPI and JSON Schema compat
 
 #### Inputs
 
-Inputs to your functions are always validated. If the types are invalid, a response with the reason why is sent back to the user.
+Inputs to your functions are always validated. If the types are invalid, a response with the reason is sent back to the user.
 
 ##### Example on invalid input
 
@@ -336,7 +338,7 @@ Inputs to your functions are always validated. If the types are invalid, a respo
 
 #### Outputs
 
-Response bodies that are annotated will be validated. If types are invalid, a response without the reason why is sent back to the user. You can use the runtime error catching abilities to monitor or change such errors. [Learn more.](/docs/hono)
+Response bodies that are annotated will be validated. If types are invalid, a response without the reason is sent back to the user. You can use the runtime error catching abilities to monitor or change such errors. [Learn more.](/docs/hono#isbeffhttpexception)
 
 ##### Example on invalid response
 
