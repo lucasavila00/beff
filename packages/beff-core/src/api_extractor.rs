@@ -1016,7 +1016,7 @@ impl<'a, R: FileManager> EndpointToPath<'a, R> {
         endpoints
             .iter()
             .map(|handler_map| {
-                let contains_star = handler_map.pattern.open_api_pattern.contains('*');
+                let contains_star = handler_map.pattern.raw.contains('*');
                 if contains_star {
                     for endpoint in &handler_map.handlers {
                         match endpoint.method_kind {

@@ -141,7 +141,7 @@ impl<'a> ToSemTypeConverter<'a> {
     }
 }
 
-trait ToSemType {
+pub trait ToSemType {
     fn to_sub_type(
         &self,
         validators: &[&Validator],
@@ -157,15 +157,4 @@ impl ToSemType for JsonSchema {
     ) -> Result<Rc<SemType>> {
         ToSemTypeConverter::new(validators).to_sem_type(self, builder)
     }
-}
-
-pub fn is_sub_type(
-    a: &JsonSchema,
-    b: &JsonSchema,
-    validators: &[&Validator],
-    builder: &mut SemTypeContext,
-) -> Result<bool> {
-    let a = a.to_sub_type(validators, builder)?;
-    let b = b.to_sub_type(validators, builder)?;
-    return Ok(a.is_subtype(&b, builder));
 }

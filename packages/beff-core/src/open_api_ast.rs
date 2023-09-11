@@ -1,6 +1,3 @@
-use core::fmt;
-use std::collections::BTreeMap;
-
 use crate::{
     ast::{
         js::Js,
@@ -9,6 +6,8 @@ use crate::{
     },
     diag::{Diagnostic, DiagnosticInfoMessage, FullLocation, Located},
 };
+use core::fmt;
+use std::collections::BTreeMap;
 
 fn clear_description(it: String) -> String {
     let lines = it.split('\n').collect::<Vec<_>>();
@@ -35,7 +34,7 @@ pub fn build_coercer(schema: JsonSchema, components: &Vec<Validator>) -> Js {
     Js::Coercer(resolve_schema(schema, components))
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Info {
     pub title: Option<String>,
     pub description: Option<String>,
@@ -232,8 +231,7 @@ fn parse_pattern_params(pattern: &str) -> Vec<String> {
 #[derive(Debug, Clone)]
 pub struct ParsedPattern {
     pub loc: FullLocation,
-
-    pub open_api_pattern: String,
+    pub raw: String,
     pub path_params: Vec<String>,
 }
 impl ApiPath {
@@ -287,7 +285,7 @@ impl ApiPath {
         match Self::validate_pattern(key, &locs) {
             Some(d) => Err(d),
             None => Ok(ParsedPattern {
-                open_api_pattern: key.to_string(),
+                raw: key.to_string(),
                 path_params,
                 loc: locs,
             }),
@@ -335,10 +333,7 @@ impl ToJsonKv for ApiPath {
         if v.is_empty() {
             return vec![];
         }
-        vec![(
-            self.parsed_pattern.open_api_pattern.clone(),
-            Json::object(v),
-        )]
+        vec![(self.parsed_pattern.raw.clone(), Json::object(v))]
     }
 }
 #[derive(Debug, Clone)]

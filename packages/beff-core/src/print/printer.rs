@@ -241,10 +241,7 @@ fn handlers_to_server_js(items: Vec<PathHandlerMap>, components: &Vec<Validator>
                                         .collect(),
                                 ),
                             ),
-                            (
-                                "pattern".into(),
-                                Js::String(it.pattern.open_api_pattern.clone()),
-                            ),
+                            ("pattern".into(), Js::String(it.pattern.raw.clone())),
                             (
                                 "return_validator".into(),
                                 Js::named_decoder(decoder_name, handler.return_type.value, true),
@@ -287,10 +284,7 @@ fn handlers_to_client_js(items: Vec<PathHandlerMap>, components: &Vec<Validator>
                                         .collect(),
                                 ),
                             ),
-                            (
-                                "pattern".into(),
-                                Js::String(it.pattern.open_api_pattern.clone()),
-                            ),
+                            ("pattern".into(), Js::String(it.pattern.raw.clone())),
                         ])
                     })
                     .collect::<Vec<_>>()

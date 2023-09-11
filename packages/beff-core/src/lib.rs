@@ -7,6 +7,7 @@ pub mod open_api_ast;
 pub mod parse;
 pub mod parser_extractor;
 pub mod print;
+pub mod schema_changes;
 pub mod subtyping;
 pub mod swc_builder;
 pub mod type_reference;
@@ -223,18 +224,6 @@ impl ExtractResult {
             )
             .collect()
     }
-
-    pub fn self_check_sem_types(&self) {
-        let definitions = self.validators();
-        for def in &definitions {
-            let res = def
-                .schema
-                .value
-                .is_sub_type(&def.schema.value, &definitions)
-                .unwrap();
-            assert!(res);
-        }
-    }
 }
 pub fn extract<R: FileManager>(files: &mut R, entry: EntryPoints) -> ExtractResult {
     let mut router = None;
@@ -247,8 +236,5 @@ pub fn extract<R: FileManager>(files: &mut R, entry: EntryPoints) -> ExtractResu
         parser = Some(extract_parser(files, entry));
     }
 
-    let e = ExtractResult { router, parser };
-    // e.self_check_sem_types();
-
-    e
+    ExtractResult { router, parser }
 }
