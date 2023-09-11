@@ -1,45 +1,15 @@
 #[cfg(test)]
 mod tests {
-    use std::rc::Rc;
 
     use beff_core::{
         ast::{json::Json, json_schema::JsonSchema},
-        diag::FullLocation,
         open_api_ast::Validator,
         subtyping::{
             semtype::{SemTypeContext, SemTypeOps},
             ToSemType,
         },
-        BffFileName,
     };
-    use swc_common::{BytePos, CharPos, FileName, Loc, SourceFile};
 
-    fn loc() -> FullLocation {
-        let f = SourceFile::new(
-            FileName::Real("test".into()),
-            false,
-            FileName::Real("test".into()),
-            "test".into(),
-            BytePos(1),
-        );
-        let loc = FullLocation {
-            file_name: BffFileName::new("test".into()),
-            loc_lo: Loc {
-                file: Rc::new(f.clone()),
-                line: 0,
-                col: CharPos(0),
-                col_display: 0,
-            },
-            loc_hi: Loc {
-                file: Rc::new(f),
-                line: 0,
-                col: CharPos(0),
-                col_display: 0,
-            },
-        };
-
-        loc
-    }
     pub fn is_sub_type(
         a: &JsonSchema,
         b: &JsonSchema,
@@ -72,8 +42,7 @@ mod tests {
                     "bestFriend".into(),
                     JsonSchema::Ref("User".into()).required(),
                 ),
-            ])
-            .located(loc()),
+            ]),
         }];
 
         let t1 = JsonSchema::Ref("User".into());
@@ -107,8 +76,7 @@ mod tests {
                     "bestFriend".into(),
                     JsonSchema::Ref("User".into()).optional(),
                 ),
-            ])
-            .located(loc()),
+            ]),
         }];
 
         let t1 = JsonSchema::Ref("User".into());
@@ -145,8 +113,7 @@ mod tests {
                     "bestFriend".into(),
                     JsonSchema::Ref("User".into()).optional(),
                 ),
-            ])
-            .located(loc()),
+            ]),
         }];
 
         let t1 = JsonSchema::Ref("User".into());
@@ -184,8 +151,7 @@ mod tests {
                     "bestFriend".into(),
                     JsonSchema::Ref("User".into()).optional(),
                 ),
-            ])
-            .located(loc()),
+            ]),
         }];
 
         let t1 = JsonSchema::object(vec![

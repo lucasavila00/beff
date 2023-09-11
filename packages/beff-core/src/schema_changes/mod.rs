@@ -68,12 +68,12 @@ fn is_op_safe_to_change(
     let mut acc = vec![];
 
     let a_response = SchemaReference {
-        schema: &from.json_response_body.value,
+        schema: &from.json_response_body,
         validators: from_validators,
         required: true,
     };
     let b_response = SchemaReference {
-        schema: &to.json_response_body.value,
+        schema: &to.json_response_body,
         validators: to_validators,
         required: true,
     };
@@ -90,12 +90,12 @@ fn is_op_safe_to_change(
         match to_param {
             Some(to_param) => {
                 let from_param_ref = SchemaReference {
-                    schema: &from_param.schema.value,
+                    schema: &from_param.schema,
                     validators: from_validators,
                     required: from_param.required,
                 };
                 let to_param_ref = SchemaReference {
-                    schema: &to_param.schema.value,
+                    schema: &to_param.schema,
                     validators: to_validators,
                     required: to_param.required,
                 };
@@ -120,12 +120,12 @@ fn is_op_safe_to_change(
 
     if let (Some(f), Some(t)) = (&from.json_request_body, &to.json_request_body) {
         let from_req_body = SchemaReference {
-            schema: &f.schema.value,
+            schema: &f.schema,
             validators: from_validators,
             required: f.required,
         };
         let to_req_body = SchemaReference {
-            schema: &t.schema.value,
+            schema: &t.schema,
             validators: to_validators,
             required: t.required,
         };

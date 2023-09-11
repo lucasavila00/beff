@@ -58,7 +58,7 @@ mod tests {
                 summary: None,
                 description: None,
                 parameters: vec![],
-                json_response_body: JsonSchema::Const(Json::String("abc".into())).located(loc()),
+                json_response_body: JsonSchema::Const(Json::String("abc".into())),
                 json_request_body: None,
             },
         );
@@ -84,7 +84,7 @@ mod tests {
                 summary: None,
                 description: None,
                 parameters: vec![],
-                json_response_body: JsonSchema::String.located(loc()),
+                json_response_body: JsonSchema::String,
                 json_request_body: None,
             },
         );

@@ -331,9 +331,6 @@ impl FullLocation {
             loc: Location::Full(self),
         }
     }
-    pub fn located<T>(self, value: T) -> Located<T> {
-        Located { value, loc: self }
-    }
 }
 
 #[derive(Clone, Debug)]
@@ -345,12 +342,6 @@ pub struct UnknownLocation {
 pub enum Location {
     Full(FullLocation),
     Unknown(UnknownLocation),
-}
-
-#[derive(Debug, Clone)]
-pub struct Located<T> {
-    pub value: T,
-    pub loc: FullLocation,
 }
 
 impl Location {

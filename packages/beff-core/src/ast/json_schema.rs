@@ -2,8 +2,6 @@ use std::collections::BTreeMap;
 use std::collections::BTreeSet;
 
 use crate::ast::json::{Json, ToJson};
-use crate::diag::FullLocation;
-use crate::diag::Located;
 use anyhow::anyhow;
 use anyhow::Result;
 
@@ -79,9 +77,6 @@ impl UnionMerger {
 }
 
 impl JsonSchema {
-    pub fn located(self, loc: FullLocation) -> Located<JsonSchema> {
-        Located { value: self, loc }
-    }
     pub fn object(vs: Vec<(String, Optionality<JsonSchema>)>) -> Self {
         Self::Object(vs.into_iter().collect())
     }

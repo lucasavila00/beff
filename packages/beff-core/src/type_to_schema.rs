@@ -1,8 +1,7 @@
 use crate::ast::json::Json;
 use crate::ast::json_schema::{JsonSchema, Optionality};
 use crate::diag::{
-    Diagnostic, DiagnosticInfoMessage, DiagnosticInformation, DiagnosticParentMessage,
-    FullLocation, Located, Location,
+    Diagnostic, DiagnosticInfoMessage, DiagnosticInformation, DiagnosticParentMessage, Location,
 };
 use crate::open_api_ast::Validator;
 use crate::type_reference::{ResolvedLocalType, TypeResolver};
@@ -182,7 +181,7 @@ impl<'a, R: FileManager> TypeToSchema<'a, R> {
         }
     }
 
-    fn insert_definition(&mut self, name: String, schema: Located<JsonSchema>) -> Res<JsonSchema> {
+    fn insert_definition(&mut self, name: String, schema: JsonSchema) -> Res<JsonSchema> {
         self.components.insert(
             name.clone(),
             Some(Validator {
@@ -217,16 +216,6 @@ impl<'a, R: FileManager> TypeToSchema<'a, R> {
         )
     }
 
-    fn get_full_location(&mut self, span: &Span) -> Res<FullLocation> {
-        let file = self.files.get_existing_file(&self.current_file);
-        match Location::build(file, span, &self.current_file).result_full() {
-            Ok(ok) => Ok(ok),
-            Err(_) => Err(self
-                .create_error(span, DiagnosticInfoMessage::CannotGetFullLocation)
-                .to_diag(None)
-                .into()),
-        }
-    }
     fn get_type_ref(
         &mut self,
         i: &Ident,
@@ -252,8 +241,7 @@ impl<'a, R: FileManager> TypeToSchema<'a, R> {
         self.components.insert(i.sym.to_string(), None);
 
         if type_params.is_some() {
-            let loc = self.get_full_location(&i.span)?;
-            self.insert_definition(i.sym.to_string(), JsonSchema::Error.located(loc))?;
+            self.insert_definition(i.sym.to_string(), JsonSchema::Error)?;
             return self.cannot_serialize_error(
                 &i.span,
                 DiagnosticInfoMessage::TypeParameterApplicationNotSupported,
@@ -262,13 +250,9 @@ impl<'a, R: FileManager> TypeToSchema<'a, R> {
 
         let ty = self.get_type_ref_of_user_identifier(i);
         match ty {
-            Ok(ty) => {
-                let loc = self.get_full_location(&i.span)?;
-                self.insert_definition(i.sym.to_string(), ty.located(loc))
-            }
+            Ok(ty) => self.insert_definition(i.sym.to_string(), ty),
             Err(e) => {
-                let loc = self.get_full_location(&i.span)?;
-                self.insert_definition(i.sym.to_string(), JsonSchema::Error.located(loc))?;
+                self.insert_definition(i.sym.to_string(), JsonSchema::Error)?;
                 Err(e)
             }
         }
@@ -421,8 +405,7 @@ impl<'a, R: FileManager> TypeToSchema<'a, R> {
         let (exported, from_file, name) = self.__convert_ts_type_qual_inner(q)?;
         let ty =
             self.convert_type_export(exported.as_ref(), from_file.file_name(), &q.right.span)?;
-        let loc = self.get_full_location(&q.right.span)?;
-        self.insert_definition(name, ty.located(loc))
+        self.insert_definition(name, ty)
     }
     fn convert_ts_type_qual(&mut self, q: &TsQualifiedName) -> Res<JsonSchema> {
         let current_ref = self.get_identifier_diag_info(&q.right);
