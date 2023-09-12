@@ -142,6 +142,7 @@ impl<'a> ToSemTypeConverter<'a> {
             }
             JsonSchema::StNever => todo!(),
             JsonSchema::StUnknown => todo!(),
+            JsonSchema::StNot(_) => todo!(),
         }
     }
 }

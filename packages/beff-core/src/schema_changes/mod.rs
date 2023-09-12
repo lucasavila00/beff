@@ -188,7 +188,7 @@ fn diff_to_js(diff: &Mater, base: Option<&Mater>) -> Js {
         Mater::StringWithFormat(_) => todo!(),
         Mater::StringLiteral(st) => Js::String(st.clone()),
         Mater::NumberLiteral(n) => Js::Number(n.clone()),
-        Mater::BooleanLiteral(_) => todo!(),
+        Mater::BooleanLiteral(b) => Js::Bool(*b),
         Mater::Array {
             items,
             prefix_items,

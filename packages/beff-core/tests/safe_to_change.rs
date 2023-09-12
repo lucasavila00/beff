@@ -330,6 +330,7 @@ mod tests {
         let errors = test_safe(from, to);
         assert!(!errors.is_empty());
         insta::assert_snapshot!(print_errors(from, to, &errors));
+        todo!()
     }
     #[test]
     fn fail7() {
@@ -396,6 +397,91 @@ mod tests {
                 get: (c:Ctx, a: "a") => {
                     return "world";
                 }
+            }
+        }
+        "#;
+        let errors = test_safe(from, to);
+        assert!(!errors.is_empty());
+        insta::assert_snapshot!(print_errors(from, to, &errors));
+    }
+
+    #[test]
+    fn ok_from_any() {
+        let from = r#"
+        export default {
+            "/hello": {
+                get: () => todo()
+            }
+        }
+        "#;
+
+        let to = r#"
+        export default {
+            "/hello": {
+                get: (): 2 => todo()
+            }
+        }
+        "#;
+        let errors = test_safe(from, to);
+        assert!(errors.is_empty());
+    }
+    #[test]
+    fn ok_to_any() {
+        let from = r#"
+        export default {
+            "/hello": {
+                get: ():1 => todo()
+            }
+        }
+        "#;
+
+        let to = r#"
+        export default {
+            "/hello": {
+                get: () => todo()
+            }
+        }
+        "#;
+        let errors = test_safe(from, to);
+        assert!(errors.is_empty());
+    }
+
+    #[test]
+    fn fail_disc_union() {
+        let from = r#"
+        export default {
+            "/hello": {
+                get: ():  {ok:false, data: number} => todo()
+            }
+        }
+        "#;
+
+        let to = r#"
+        export default {
+            "/hello": {
+                get: (): {ok:false, data: boolean} => todo()
+            }
+        }
+        "#;
+        let errors = test_safe(from, to);
+        assert!(!errors.is_empty());
+        insta::assert_snapshot!(print_errors(from, to, &errors));
+    }
+
+    #[test]
+    fn fail_disc_union2() {
+        let from = r#"
+        export default {
+            "/hello": {
+                get: (): {ok: true, data: string} | {ok:false, data: number} => todo()
+            }
+        }
+        "#;
+
+        let to = r#"
+        export default {
+            "/hello": {
+                get: (): {ok: true, data: string} | {ok:false, data: boolean} => todo()
             }
         }
         "#;

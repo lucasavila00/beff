@@ -484,6 +484,7 @@ impl DecoderFnGenerator {
             JsonSchema::Error => unreachable!("should not print if schema had error"),
             JsonSchema::StNever => todo!(),
             JsonSchema::StUnknown => todo!(),
+            JsonSchema::StNot(_) => todo!(),
         }
     }
 

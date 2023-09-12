@@ -5,6 +5,7 @@ use crate::ast::json::{Json, ToJson};
 use anyhow::anyhow;
 use anyhow::Result;
 use swc_common::DUMMY_SP;
+use swc_ecma_ast::Bool;
 use swc_ecma_ast::Ident;
 use swc_ecma_ast::Str;
 use swc_ecma_ast::TsArrayType;
@@ -74,6 +75,7 @@ pub enum JsonSchema {
     // semantic types
     StNever,
     StUnknown,
+    StNot(Box<JsonSchema>),
 }
 
 struct UnionMerger(BTreeSet<JsonSchema>);
@@ -112,10 +114,16 @@ impl JsonSchema {
     }
 
     pub fn any_of(vs: Vec<JsonSchema>) -> Self {
-        UnionMerger::schema(vs)
+        match vs.len() {
+            1 => vs.into_iter().next().expect("we just checked len"),
+            _ => UnionMerger::schema(vs),
+        }
     }
     pub fn all_of(vs: Vec<JsonSchema>) -> Self {
-        Self::AllOf(BTreeSet::from_iter(vs))
+        match vs.len() {
+            1 => vs.into_iter().next().expect("we just checked len"),
+            _ => Self::AllOf(BTreeSet::from_iter(vs)),
+        }
     }
 
     fn parse_string(vs: &BTreeMap<String, Json>) -> Result<Self> {
@@ -381,6 +389,7 @@ impl ToJson for JsonSchema {
             JsonSchema::Error => unreachable!("should not call print if schema had error"),
             JsonSchema::StNever => todo!(),
             JsonSchema::StUnknown => todo!(),
+            JsonSchema::StNot(_) => todo!(),
         }
     }
 }
@@ -389,12 +398,18 @@ impl JsonSchema {
     pub fn to_ts_type(&self) -> TsType {
         match self {
             JsonSchema::Null => todo!(),
-            JsonSchema::Boolean => todo!(),
+            JsonSchema::Boolean => TsType::TsKeywordType(TsKeywordType {
+                span: DUMMY_SP,
+                kind: TsKeywordTypeKind::TsBooleanKeyword,
+            }),
             JsonSchema::String => TsType::TsKeywordType(TsKeywordType {
                 span: DUMMY_SP,
                 kind: TsKeywordTypeKind::TsStringKeyword,
             }),
-            JsonSchema::Number => todo!(),
+            JsonSchema::Number => TsType::TsKeywordType(TsKeywordType {
+                span: DUMMY_SP,
+                kind: TsKeywordTypeKind::TsNumberKeyword,
+            }),
             JsonSchema::Any => todo!(),
             JsonSchema::Error => todo!(),
             JsonSchema::StringWithFormat(_) => todo!(),
@@ -486,7 +501,13 @@ impl JsonSchema {
             ),
             JsonSchema::Const(v) => match v {
                 Json::Null => todo!(),
-                Json::Bool(_) => todo!(),
+                Json::Bool(b) => TsType::TsLitType(TsLitType {
+                    span: DUMMY_SP,
+                    lit: TsLit::Bool(Bool {
+                        span: DUMMY_SP,
+                        value: *b,
+                    }),
+                }),
                 Json::Number(n) => TsType::TsLitType(TsLitType {
                     span: DUMMY_SP,
                     lit: TsLit::Number(swc_ecma_ast::Number {
@@ -511,6 +532,7 @@ impl JsonSchema {
                 kind: TsKeywordTypeKind::TsNeverKeyword,
             }),
             JsonSchema::StUnknown => todo!(),
+            JsonSchema::StNot(_) => todo!(),
         }
     }
 }

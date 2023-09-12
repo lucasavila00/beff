@@ -1,0 +1,53 @@
+---
+source: packages/beff-core/tests/safe_to_change.rs
+expression: "print_errors(from, to, &errors)"
+---
+from:
+
+        export default {
+            "/hello": {
+                get: (): {ok: true, data: string} | {ok:false, data: number} => todo()
+            }
+        }
+        
+to:
+
+        export default {
+            "/hello": {
+                get: (): {ok: true, data: string} | {ok:false, data: boolean} => todo()
+            }
+        }
+        
+
+# Error at GET /hello:
+
+Response body is not compatible.
+
+```ts
+type Old = {
+    "data": string;
+    "ok": true;
+} | {
+    "data": number;
+    "ok": false;
+};
+```
+
+```ts
+type New = {
+    "data": boolean;
+    "ok": false;
+} | {
+    "data": string;
+    "ok": true;
+};
+```
+
+Previous clients will not support this potential response:
+
+```js
+{
+    "data": true,
+    "ok": true
+};
+```

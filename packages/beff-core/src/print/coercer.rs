@@ -106,6 +106,7 @@ impl CoercerFnGenerator {
             JsonSchema::Error => unreachable!("should not call print if schema had error"),
             JsonSchema::StNever => todo!(),
             JsonSchema::StUnknown => todo!(),
+            JsonSchema::StNot(_) => todo!(),
         }
     }
     fn fn_coercer_from_schema(&mut self, schema: &JsonSchema, depth: usize) -> Function {
