@@ -1,95 +1,25 @@
 ---
 source: packages/beff-core/tests/safe_to_change.rs
-expression: "format!(\"//from\\n{}\\n//to\\n{}\\n{:#?}\", from, to, & errors)"
+expression: print_errors(&errors)
 ---
-//from
+# Error at GET /hello:
 
-        type A = string;
-        type AObject = {p: A, arr: AObject[]};
-        export default {
-            "/hello": {
-                get: (): AObject => impl()
-            }
-        }
-        
-//to
+Response body might be changed to:
 
-        type B = string;
-        type BObject = {p2: B, arr: BObject[]};
-        export default {
-            "/hello": {
-                get: (): BObject => impl()
-            }
-        }
-        
-[
-    OpenApiBreakingChange {
-        change: ResponseBodyBreakingChange(
-            IsNotSubtype {
-                sub_type: Ref(
-                    "BObject",
-                ),
-                super_type: Ref(
-                    "AObject",
-                ),
-                sub_type_mater: Object(
-                    {
-                        "arr": Array {
-                            items: Object(
-                                {
-                                    "arr": Array {
-                                        items: Recursive,
-                                        prefix_items: [],
-                                    },
-                                    "p2": String,
-                                },
-                            ),
-                            prefix_items: [],
-                        },
-                        "p2": String,
-                    },
-                ),
-                super_type_mater: Object(
-                    {
-                        "arr": Array {
-                            items: Object(
-                                {
-                                    "arr": Array {
-                                        items: Recursive,
-                                        prefix_items: [],
-                                    },
-                                    "p": String,
-                                },
-                            ),
-                            prefix_items: [],
-                        },
-                        "p": String,
-                    },
-                ),
-                diff: Object(
-                    {
-                        "arr": Array {
-                            items: Object(
-                                {
-                                    "arr": Array {
-                                        items: Recursive,
-                                        prefix_items: [],
-                                    },
-                                    "p": Bool,
-                                    "p2": String,
-                                },
-                            ),
-                            prefix_items: [],
-                        },
-                        "p": Bool,
-                        "p2": String,
-                    },
-                ),
-            },
-        ),
-        path: "/hello",
-        method: Some(
-            Get,
-        ),
-    },
-]
+```json
+
+{
+  "arr": [
+    {
+      "arr": [
+        "~recursive~"
+      ],
+      "p": true,
+      "p2": "abc"
+    }
+  ],
+  "p": true,
+  "p2": "abc"
+}
+
+```

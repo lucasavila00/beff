@@ -1,5 +1,5 @@
 use crate::{
-    ast::json_schema::JsonSchema,
+    ast::{json::Json, json_schema::JsonSchema},
     open_api_ast::{HTTPMethod, OpenApi, OperationObject, Validator},
     subtyping::{
         semtype::{Mater, SemTypeContext, SemTypeOps},
@@ -25,6 +25,54 @@ pub enum BreakingChange {
 }
 
 #[derive(Debug)]
+pub enum MdReport {
+    Heading(String),
+    Text(String),
+    Json(Json),
+}
+
+impl MdReport {
+    pub fn print(&self) -> String {
+        match self {
+            MdReport::Heading(s) => format!("# {}", s),
+            MdReport::Text(s) => s.clone(),
+            MdReport::Json(j) => {
+                let code = j.to_string();
+                format!("```json\n\n{}\n\n```", code)
+            }
+        }
+    }
+}
+
+type Md = Vec<MdReport>;
+
+impl BreakingChange {
+    pub fn print_report(&self) -> Md {
+        match self {
+            BreakingChange::PathRemoved => vec![MdReport::Text("Path removed".to_string())],
+            // BreakingChange::MethodRemoved(_) => todo!(),
+            BreakingChange::ResponseBodyBreakingChange(err) => {
+                let msg = format!("Response body might be changed to:");
+                let v = err.print_report();
+                vec![MdReport::Text(msg)].into_iter().chain(v).collect()
+            }
+            BreakingChange::ParamBreakingChange { param_name, err } => {
+                let msg = format!(
+                    "Param `{}` might be called with now unsupported value:",
+                    param_name
+                );
+                let v = err.print_report();
+                vec![MdReport::Text(msg)].into_iter().chain(v).collect()
+            }
+            // BreakingChange::RequiredParamAdded { param_name } => todo!(),
+            // BreakingChange::RequestBodyBreakingChange(_) => todo!(),
+            // BreakingChange::AddedNonOptionalRequestBody => todo!(),
+            _ => todo!(),
+        }
+    }
+}
+
+#[derive(Debug)]
 
 struct SchemaReference<'a> {
     schema: &'a JsonSchema,
@@ -34,39 +82,48 @@ struct SchemaReference<'a> {
 
 #[derive(Debug)]
 pub struct IsNotSubtype {
-    sub_type: JsonSchema,
-    super_type: JsonSchema,
+    // sub_type: JsonSchema,
+    // super_type: JsonSchema,
 
-    sub_type_mater: Mater,
-    super_type_mater: Mater,
+    // sub_type_mater: Mater,
+    // super_type_mater: Mater,
     diff: Mater,
 }
 
+impl IsNotSubtype {
+    pub fn print_report(&self) -> Md {
+        let v = self.diff.to_json();
+        vec![MdReport::Json(v)]
+    }
+}
+
+#[derive(Debug)]
 enum SubTypeCheckResult {
     IsSubtype,
     IsNotSubtype(IsNotSubtype),
 }
 
 impl<'a> SchemaReference<'a> {
-    fn is_sub_type(&self, sup: &SchemaReference) -> Result<SubTypeCheckResult> {
+    fn is_sub_type(&self, supe: &SchemaReference) -> Result<SubTypeCheckResult> {
         let sub = self;
         let mut builder = SemTypeContext::new();
         let mut sub_st = sub.schema.to_sub_type(sub.validators, &mut builder)?;
         if !sub.required {
             sub_st = SemTypeContext::optional(sub_st);
         }
-        let mut sup_st = sup.schema.to_sub_type(sup.validators, &mut builder)?;
-        if !sup.required {
-            sup_st = SemTypeContext::optional(sup_st);
+        let mut supe_st = supe.schema.to_sub_type(supe.validators, &mut builder)?;
+        if !supe.required {
+            supe_st = SemTypeContext::optional(supe_st);
         }
-        match sub_st.is_subtype(&sup_st, &mut builder) {
+
+        match sub_st.is_subtype(&supe_st, &mut builder) {
             true => Ok(SubTypeCheckResult::IsSubtype),
             false => Ok(SubTypeCheckResult::IsNotSubtype(IsNotSubtype {
-                sub_type: sub.schema.clone(),
-                super_type: sup.schema.clone(),
-                sub_type_mater: builder.materialize(&sub_st),
-                super_type_mater: builder.materialize(&sup_st),
-                diff: builder.materialize(&sub_st.diff(&sup_st)),
+                // sub_type: sub.schema.clone(),
+                // super_type: sup.schema.clone(),
+                // sub_type_mater: builder.materialize(&sub_st),
+                // super_type_mater: builder.materialize(&sup_st),
+                diff: builder.materialize(&sub_st.diff(&supe_st)),
             })),
         }
     }
@@ -90,6 +147,7 @@ fn is_op_safe_to_change(
         validators: to_validators,
         required: true,
     };
+
     if let SubTypeCheckResult::IsNotSubtype(i) =
         // the new response must extend the previous one
         to_response.is_sub_type(&from_response)?
@@ -173,6 +231,22 @@ pub struct OpenApiBreakingChange {
     change: BreakingChange,
     path: String,
     method: Option<HTTPMethod>,
+}
+
+impl OpenApiBreakingChange {
+    pub fn print_report(&self) -> Md {
+        let m = match self.method {
+            Some(method) => method.to_string().to_uppercase() + " ",
+            None => "".to_owned(),
+        };
+        let path = format!("{}{}", m, self.path,);
+
+        let error_desc = self.change.print_report();
+        vec![MdReport::Heading(format!("Error at {path}:"))]
+            .into_iter()
+            .chain(error_desc)
+            .collect()
+    }
 }
 
 impl BreakingChange {

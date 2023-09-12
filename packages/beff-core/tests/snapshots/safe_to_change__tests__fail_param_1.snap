@@ -1,65 +1,13 @@
 ---
 source: packages/beff-core/tests/safe_to_change.rs
-expression: "format!(\"//from\\n{}\\n//to\\n{}\\n{:#?}\", from, to, & errors)"
+expression: print_errors(&errors)
 ---
-//from
+# Error at GET /hello:
 
-        export default {
-            "/hello": {
-                get: (c:Ctx, a: "a"|"b")  => {
-                    return "world";
-                }
-            }
-        }
-        
-//to
+Param `a` might be called with now unsupported value:
 
-        export default {
-            "/hello": {
-                get: (c:Ctx, a: "a") => {
-                    return "world";
-                }
-            }
-        }
-        
-[
-    OpenApiBreakingChange {
-        change: ParamBreakingChange {
-            param_name: "a",
-            err: IsNotSubtype {
-                sub_type: AnyOf(
-                    {
-                        Const(
-                            String(
-                                "a",
-                            ),
-                        ),
-                        Const(
-                            String(
-                                "b",
-                            ),
-                        ),
-                    },
-                ),
-                super_type: Const(
-                    String(
-                        "a",
-                    ),
-                ),
-                sub_type_mater: StringLiteral(
-                    "a",
-                ),
-                super_type_mater: StringLiteral(
-                    "a",
-                ),
-                diff: StringLiteral(
-                    "b",
-                ),
-            },
-        },
-        path: "/hello",
-        method: Some(
-            Get,
-        ),
-    },
-]
+```json
+
+"b"
+
+```

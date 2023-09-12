@@ -1,99 +1,15 @@
 ---
 source: packages/beff-core/tests/safe_to_change.rs
-expression: "format!(\"//from\\n{}\\n//to\\n{}\\n{:#?}\", from, to, & errors)"
+expression: print_errors(&errors)
 ---
-//from
+# Error at GET /hello:
 
-        export default {
-            "/hello": {
-                get: (): ["a"|"b"] => todo()
-            }
-        }
-        
-//to
+Response body might be changed to:
 
-        export default {
-            "/hello": {
-                get: (): ["a"|"b"|"c"] => todo()
-            }
-        }
-        
+```json
+
 [
-    OpenApiBreakingChange {
-        change: ResponseBodyBreakingChange(
-            IsNotSubtype {
-                sub_type: Tuple {
-                    prefix_items: [
-                        AnyOf(
-                            {
-                                Const(
-                                    String(
-                                        "a",
-                                    ),
-                                ),
-                                Const(
-                                    String(
-                                        "b",
-                                    ),
-                                ),
-                                Const(
-                                    String(
-                                        "c",
-                                    ),
-                                ),
-                            },
-                        ),
-                    ],
-                    items: None,
-                },
-                super_type: Tuple {
-                    prefix_items: [
-                        AnyOf(
-                            {
-                                Const(
-                                    String(
-                                        "a",
-                                    ),
-                                ),
-                                Const(
-                                    String(
-                                        "b",
-                                    ),
-                                ),
-                            },
-                        ),
-                    ],
-                    items: None,
-                },
-                sub_type_mater: Array {
-                    items: Never,
-                    prefix_items: [
-                        StringLiteral(
-                            "a",
-                        ),
-                    ],
-                },
-                super_type_mater: Array {
-                    items: Never,
-                    prefix_items: [
-                        StringLiteral(
-                            "a",
-                        ),
-                    ],
-                },
-                diff: Array {
-                    items: Never,
-                    prefix_items: [
-                        StringLiteral(
-                            "c",
-                        ),
-                    ],
-                },
-            },
-        ),
-        path: "/hello",
-        method: Some(
-            Get,
-        ),
-    },
+  "c"
 ]
+
+```

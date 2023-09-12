@@ -1,74 +1,13 @@
 ---
 source: packages/beff-core/tests/safe_to_change.rs
-expression: "format!(\"//from\\n{}\\n//to\\n{}\\n{:#?}\", from, to, & errors)"
+expression: print_errors(&errors)
 ---
-//from
+# Error at GET /hello:
 
-        export default {
-            "/hello": {
-                get: (): "a"|"b" => todo()
-            }
-        }
-        
-//to
+Response body might be changed to:
 
-        export default {
-            "/hello": {
-                get: (): "a"|"b"|"c" => todo()
-            }
-        }
-        
-[
-    OpenApiBreakingChange {
-        change: ResponseBodyBreakingChange(
-            IsNotSubtype {
-                sub_type: AnyOf(
-                    {
-                        Const(
-                            String(
-                                "a",
-                            ),
-                        ),
-                        Const(
-                            String(
-                                "b",
-                            ),
-                        ),
-                        Const(
-                            String(
-                                "c",
-                            ),
-                        ),
-                    },
-                ),
-                super_type: AnyOf(
-                    {
-                        Const(
-                            String(
-                                "a",
-                            ),
-                        ),
-                        Const(
-                            String(
-                                "b",
-                            ),
-                        ),
-                    },
-                ),
-                sub_type_mater: StringLiteral(
-                    "a",
-                ),
-                super_type_mater: StringLiteral(
-                    "a",
-                ),
-                diff: StringLiteral(
-                    "c",
-                ),
-            },
-        ),
-        path: "/hello",
-        method: Some(
-            Get,
-        ),
-    },
-]
+```json
+
+"c"
+
+```

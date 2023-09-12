@@ -8,6 +8,22 @@ Response body might be changed to:
 
 ```json
 
-"Izr1mn6edP0HLrWu"
+{
+  "a": "~never~",
+  "p": "c"
+}
+
+```
+
+# Error at POST /hello:
+
+Response body might be changed to:
+
+```json
+
+{
+  "a": "~never~",
+  "p": "c"
+}
 
 ```

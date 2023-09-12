@@ -5,7 +5,7 @@ mod tests {
     use beff_core::{
         import_resolver::{parse_and_bind, FsModuleResolver},
         open_api_ast::{OpenApi, Validator},
-        schema_changes::{is_safe_to_change_to, OpenApiBreakingChange},
+        schema_changes::{is_safe_to_change_to, MdReport, OpenApiBreakingChange},
         BffFileName, EntryPoints, FileManager, ParsedModule,
     };
     use swc_common::{Globals, GLOBALS};
@@ -61,6 +61,17 @@ mod tests {
         )
         .unwrap();
         errors
+    }
+
+    fn print_errors(errors: &[OpenApiBreakingChange]) -> String {
+        errors
+            .iter()
+            .flat_map(|it| it.print_report())
+            .collect::<Vec<MdReport>>()
+            .into_iter()
+            .map(|it| it.print())
+            .collect::<Vec<String>>()
+            .join("\n\n")
     }
     #[test]
     fn ok1() {
@@ -182,7 +193,7 @@ mod tests {
         "#;
         let errors = test_safe(from, to);
         assert!(!errors.is_empty());
-        insta::assert_snapshot!(format!("//from\n{}\n//to\n{}\n{:#?}", from, to, &errors));
+        insta::assert_snapshot!(print_errors(&errors));
     }
 
     #[test]
@@ -208,7 +219,7 @@ mod tests {
         "#;
         let errors = test_safe(from, to);
         assert!(!errors.is_empty());
-        insta::assert_snapshot!(format!("//from\n{}\n//to\n{}\n{:#?}", from, to, &errors));
+        insta::assert_snapshot!(print_errors(&errors));
     }
 
     #[test]
@@ -230,7 +241,7 @@ mod tests {
         "#;
         let errors = test_safe(from, to);
         assert!(!errors.is_empty());
-        insta::assert_snapshot!(format!("//from\n{}\n//to\n{}\n{:#?}", from, to, &errors));
+        insta::assert_snapshot!(print_errors(&errors));
     }
     #[test]
     fn fail3() {
@@ -251,7 +262,7 @@ mod tests {
         "#;
         let errors = test_safe(from, to);
         assert!(!errors.is_empty());
-        insta::assert_snapshot!(format!("//from\n{}\n//to\n{}\n{:#?}", from, to, &errors));
+        insta::assert_snapshot!(print_errors(&errors));
     }
     #[test]
     fn fail4() {
@@ -272,7 +283,7 @@ mod tests {
         "#;
         let errors = test_safe(from, to);
         assert!(!errors.is_empty());
-        insta::assert_snapshot!(format!("//from\n{}\n//to\n{}\n{:#?}", from, to, &errors));
+        insta::assert_snapshot!(print_errors(&errors));
     }
     #[test]
     fn fail5() {
@@ -293,29 +304,53 @@ mod tests {
         "#;
         let errors = test_safe(from, to);
         assert!(!errors.is_empty());
-        insta::assert_snapshot!(format!("//from\n{}\n//to\n{}\n{:#?}", from, to, &errors));
+        insta::assert_snapshot!(print_errors(&errors));
     }
-    // #[test]
-    // fn fail6() {
-    //     let from = r#"
-    //     export default {
-    //         "/hello": {
-    //             get: (): {p:"a"|"b"}&{a:1} => todo()
-    //         }
-    //     }
-    //     "#;
+    #[test]
+    fn fail6() {
+        let from = r#"
+        export default {
+            "/hello": {
+                get: (): ({p:"a"|"b"}&{a:1}) => todo(),
+                post: (): ({p:"a"|"b",a:1}) => todo()
+            }
+        }
+        "#;
 
-    //     let to = r#"
-    //     export default {
-    //         "/hello": {
-    //             get: (): {p:"a"|"b"|"c"}&{a:1} => todo()
-    //         }
-    //     }
-    //     "#;
-    //     let errors = test_safe(from, to);
-    //     assert!(!errors.is_empty());
-    //     insta::assert_snapshot!(format!("//from\n{}\n//to\n{}\n{:#?}", from, to, &errors));
-    // }
+        let to = r#"
+        export default {
+            "/hello": {
+                get: (): ({p:"a"|"b"|"c"}&{a:1}) => todo(),
+                post: (): ({p:"a"|"b"|"c",a:1}) => todo()
+            }
+        }
+        "#;
+        let errors = test_safe(from, to);
+        assert!(!errors.is_empty());
+        insta::assert_snapshot!(print_errors(&errors));
+    }
+    #[test]
+    fn fail7() {
+        let from = r#"
+        export default {
+            "/hello": {
+                get: (): 1 => todo()
+            }
+        }
+        "#;
+
+        let to = r#"
+        export default {
+            "/hello": {
+                get: (): 2 => todo()
+            }
+        }
+        "#;
+        let errors = test_safe(from, to);
+        assert!(!errors.is_empty());
+        insta::assert_snapshot!(print_errors(&errors));
+    }
+
     #[test]
     fn ok_nothing() {
         let from = r#"
@@ -364,6 +399,6 @@ mod tests {
         "#;
         let errors = test_safe(from, to);
         assert!(!errors.is_empty());
-        insta::assert_snapshot!(format!("//from\n{}\n//to\n{}\n{:#?}", from, to, &errors));
+        insta::assert_snapshot!(print_errors(&errors));
     }
 }

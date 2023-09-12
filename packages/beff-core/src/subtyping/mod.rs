@@ -77,9 +77,10 @@ impl<'a> ToSemTypeConverter<'a> {
                 Ok(acc)
             }
             JsonSchema::AllOf(vs) => {
-                let mut acc = Rc::new(SemTypeContext::never());
+                let mut acc = Rc::new(SemTypeContext::unknown());
                 for v in vs {
-                    acc = acc.intersect(&self.to_sem_type(v, builder)?);
+                    let ty = self.to_sem_type(v, builder)?;
+                    acc = acc.intersect(&ty);
                 }
                 Ok(acc)
             }

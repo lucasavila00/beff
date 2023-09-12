@@ -1,4 +1,4 @@
-use crate::ast::json::N;
+use crate::ast::json::{Json, N};
 
 use super::{
     bdd::{Atom, Bdd, ListAtomic, MappingAtomic},
@@ -866,4 +866,46 @@ pub enum Mater {
         prefix_items: Vec<Mater>,
     },
     Object(BTreeMap<String, Mater>),
+}
+
+impl Mater {
+    pub fn is_never(&self) -> bool {
+        matches!(self, Mater::Never)
+    }
+    pub fn to_json(&self) -> Json {
+        match self {
+            Mater::Never => Json::String("~never~".into()),
+            Mater::Unknown => todo!(),
+            Mater::Void => todo!(),
+            Mater::Recursive => Json::String("~recursive~".into()),
+            Mater::Null => todo!(),
+            Mater::Bool => Json::Bool(true),
+            Mater::Number => todo!(),
+            Mater::String => Json::String("abc".into()),
+            Mater::StringWithFormat(_) => todo!(),
+            Mater::StringLiteral(st) => Json::String(st.clone()),
+            Mater::NumberLiteral(n) => Json::Number(n.clone()),
+            Mater::BooleanLiteral(_) => todo!(),
+            Mater::Array {
+                items,
+                prefix_items,
+            } => {
+                let mut acc = vec![];
+                for item in prefix_items.iter() {
+                    acc.push(item.to_json());
+                }
+                if !items.is_never() {
+                    acc.push(items.to_json());
+                }
+                Json::Array(acc)
+            }
+            Mater::Object(vs) => {
+                let mut acc = BTreeMap::new();
+                for (k, v) in vs.iter() {
+                    acc.insert(k.clone(), v.to_json());
+                }
+                Json::Object(acc)
+            }
+        }
+    }
 }
