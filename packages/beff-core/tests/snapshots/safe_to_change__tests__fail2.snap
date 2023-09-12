@@ -24,11 +24,11 @@ to:
 Response body is not compatible.
 
 ```ts
-type New = "a" | "b" | "c";
+type Old = "a" | "b";
 ```
 
 ```ts
-type Old = "a" | "b";
+type New = "a" | "b" | "c";
 ```
 
 Previous clients will not support this potential response:

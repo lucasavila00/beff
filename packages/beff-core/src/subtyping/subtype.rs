@@ -21,6 +21,7 @@ pub enum SubTypeTag {
     Mapping = 1 << 0x5,
     Void = 1 << 0x6,
     List = 1 << 0x7,
+    Any = 1 << 0x15,
 }
 
 impl SubTypeTag {
@@ -29,14 +30,16 @@ impl SubTypeTag {
     }
 
     pub fn all() -> Vec<SubTypeTag> {
+        // Order matters for decision at materialization time
         vec![
+            SubTypeTag::Null,
+            SubTypeTag::Void,
+            SubTypeTag::String,
             SubTypeTag::Boolean,
             SubTypeTag::Number,
-            SubTypeTag::String,
-            SubTypeTag::Null,
             SubTypeTag::Mapping,
-            SubTypeTag::Void,
             SubTypeTag::List,
+            SubTypeTag::Any,
         ]
     }
 }

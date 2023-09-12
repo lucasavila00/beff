@@ -8,8 +8,10 @@ use self::bdd::MappingAtomic;
 use self::semtype::{SemType, SemTypeContext, SemTypeOps};
 use self::subtype::StringLitOrFormat;
 pub mod bdd;
+pub mod meterialize;
 pub mod semtype;
 pub mod subtype;
+pub mod to_schema;
 use anyhow::anyhow;
 use anyhow::Result;
 
@@ -88,7 +90,7 @@ impl<'a> ToSemTypeConverter<'a> {
             JsonSchema::Boolean => Ok(SemTypeContext::boolean().into()),
             JsonSchema::String => Ok(SemTypeContext::string().into()),
             JsonSchema::Number => Ok(SemTypeContext::number().into()),
-            JsonSchema::Any => Ok(SemTypeContext::unknown().into()),
+            JsonSchema::Any => Ok(SemTypeContext::any().into()),
             JsonSchema::StringWithFormat(s) => {
                 Ok(SemTypeContext::string_const(StringLitOrFormat::Format(s.clone())).into())
             }
@@ -138,6 +140,8 @@ impl<'a> ToSemTypeConverter<'a> {
             JsonSchema::OpenApiResponseRef(_) => {
                 unreachable!("should not be part of semantic types")
             }
+            JsonSchema::StNever => todo!(),
+            JsonSchema::StUnknown => todo!(),
         }
     }
 }

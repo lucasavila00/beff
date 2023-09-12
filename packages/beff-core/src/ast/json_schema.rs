@@ -71,6 +71,9 @@ pub enum JsonSchema {
     AnyOf(BTreeSet<JsonSchema>),
     AllOf(BTreeSet<JsonSchema>),
     Const(Json),
+    // semantic types
+    StNever,
+    StUnknown,
 }
 
 struct UnionMerger(BTreeSet<JsonSchema>);
@@ -376,6 +379,8 @@ impl ToJson for JsonSchema {
             }
             JsonSchema::Const(val) => Json::object(vec![("const".into(), val)]),
             JsonSchema::Error => unreachable!("should not call print if schema had error"),
+            JsonSchema::StNever => todo!(),
+            JsonSchema::StUnknown => todo!(),
         }
     }
 }
@@ -501,6 +506,11 @@ impl JsonSchema {
                 Json::Array(_) => todo!(),
                 Json::Object(_) => todo!(),
             },
+            JsonSchema::StNever => TsType::TsKeywordType(TsKeywordType {
+                span: DUMMY_SP,
+                kind: TsKeywordTypeKind::TsNeverKeyword,
+            }),
+            JsonSchema::StUnknown => todo!(),
         }
     }
 }

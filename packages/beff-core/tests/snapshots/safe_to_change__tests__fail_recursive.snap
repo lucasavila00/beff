@@ -28,27 +28,25 @@ to:
 Response body is not compatible.
 
 ```ts
-type New = BObject;
+type Old = {
+    "arr": Old[];
+    "p": string;
+};
 ```
 
 ```ts
-type Old = AObject;
+type New = {
+    "arr": New[];
+    "p2": string;
+};
 ```
 
 Previous clients will not support this potential response:
 
 ```js
 {
-    "arr": [
-        {
-            "arr": [
-                recursion()
-            ],
-            "p": true,
-            "p2": "abc"
-        }
-    ],
-    "p": true,
+    "arr": [],
+    "p": null,
     "p2": "abc"
 };
 ```

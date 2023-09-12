@@ -24,14 +24,14 @@ to:
 Response body is not compatible.
 
 ```ts
-type New = {
-    "p": "a" | "b" | "c";
+type Old = {
+    "p": "a" | "b";
 };
 ```
 
 ```ts
-type Old = {
-    "p": "a" | "b";
+type New = {
+    "p": "a" | "b" | "c";
 };
 ```
 

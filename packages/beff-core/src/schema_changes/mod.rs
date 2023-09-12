@@ -1,19 +1,21 @@
+use std::collections::BTreeMap;
+
 use crate::{
-    ast::{
-        js::{Js, ToJsBorrow},
-        json::Json,
-        json_schema::JsonSchema,
-    },
+    ast::{js::Js, json::Json, json_schema::JsonSchema},
     emit::emit_module,
     open_api_ast::{HTTPMethod, OpenApi, OperationObject, Validator},
     subtyping::{
-        semtype::{Mater, SemTypeContext, SemTypeOps},
+        meterialize::{Mater, MaterializationContext},
+        semtype::{SemTypeContext, SemTypeOps},
+        to_schema::to_validators,
         ToSemType,
     },
 };
 use anyhow::Result;
 use swc_common::DUMMY_SP;
-use swc_ecma_ast::{Decl, Ident, ModuleItem, Stmt, TsType, TsTypeAliasDecl};
+use swc_ecma_ast::{
+    CallExpr, Callee, Decl, Expr, Ident, ModuleItem, Stmt, TsType, TsTypeAliasDecl,
+};
 
 #[derive(Debug)]
 pub enum BreakingChange {
@@ -37,7 +39,7 @@ pub enum MdReport {
     Text(String),
     Json(Json),
     Js(Js),
-    TsType(String, TsType),
+    TsTypes(Vec<(String, TsType)>),
 }
 
 impl MdReport {
@@ -53,22 +55,28 @@ impl MdReport {
                 let code = js.clone().to_string();
                 format!("```js\n{}```", code)
             }
-            MdReport::TsType(name, ty) => {
-                let code = emit_module(vec![ModuleItem::Stmt(Stmt::Decl(Decl::TsTypeAlias(
-                    Box::new(TsTypeAliasDecl {
-                        span: DUMMY_SP,
-                        declare: false,
-                        id: Ident {
-                            span: DUMMY_SP,
-                            sym: name.clone().into(),
-                            optional: false,
-                        },
-                        type_params: None,
-                        type_ann: Box::new(ty.clone()),
-                    }),
-                )))])
-                .unwrap();
-                format!("```ts\n{}```", code)
+            MdReport::TsTypes(vs) => {
+                let codes = vs
+                    .iter()
+                    .map(|(name, ty)| {
+                        emit_module(vec![ModuleItem::Stmt(Stmt::Decl(Decl::TsTypeAlias(
+                            Box::new(TsTypeAliasDecl {
+                                span: DUMMY_SP,
+                                declare: false,
+                                id: Ident {
+                                    span: DUMMY_SP,
+                                    sym: name.clone().into(),
+                                    optional: false,
+                                },
+                                type_params: None,
+                                type_ann: Box::new(ty.clone()),
+                            }),
+                        )))])
+                        .unwrap()
+                    })
+                    .collect::<Vec<String>>()
+                    .join("\n");
+                format!("```ts\n{}```", codes)
             }
         }
     }
@@ -76,34 +84,52 @@ impl MdReport {
 
 type Md = Vec<MdReport>;
 
+fn print_validators(validators: &[&Validator]) -> Md {
+    vec![MdReport::TsTypes(
+        validators
+            .iter()
+            .map(|it| (it.name.clone(), it.schema.to_ts_type()))
+            .collect(),
+    )]
+}
+
 impl BreakingChange {
     pub fn print_report(&self) -> Md {
         match self {
             BreakingChange::PathRemoved => vec![MdReport::Text("Path removed".to_string())],
             // BreakingChange::MethodRemoved(_) => todo!(),
             BreakingChange::ResponseBodyBreakingChange(err) => {
+                let v = diff_to_js(&err.diff, Some(&err.sub_type_mater));
                 vec![MdReport::Text("Response body is not compatible.".into())]
                     .into_iter()
-                    .chain(err.print_report(
-                        format!("Previous clients will not support this potential response:"),
-                        "New",
-                        "Old",
-                    ))
+                    .chain(print_validators(&err.super_type.iter().collect::<Vec<_>>()))
+                    .chain(print_validators(&err.sub_type.iter().collect::<Vec<_>>()))
+                    .chain(vec![
+                        MdReport::Text(format!(
+                            "Previous clients will not support this potential response:"
+                        )),
+                        MdReport::Js(v),
+                    ])
                     .collect()
             }
-            BreakingChange::ParamBreakingChange { param_name, err } => vec![MdReport::Text(
-                format!("Param `{}` is not compatible.", param_name),
-            )]
-            .into_iter()
-            .chain(err.print_report(
-                format!(
-                    "Param `{}` might be called with now unsupported value:",
+            BreakingChange::ParamBreakingChange { param_name, err } => {
+                let v = diff_to_js(&err.diff, Some(&err.super_type_mater));
+                vec![MdReport::Text(format!(
+                    "Param `{}` is not compatible.",
                     param_name
-                ),
-                "Old",
-                "New",
-            ))
-            .collect(),
+                ))]
+                .into_iter()
+                .chain(print_validators(&err.sub_type.iter().collect::<Vec<_>>()))
+                .chain(print_validators(&err.super_type.iter().collect::<Vec<_>>()))
+                .chain(vec![
+                    MdReport::Text(format!(
+                        "Param `{}` might be called with now unsupported value:",
+                        param_name
+                    )),
+                    MdReport::Js(v),
+                ])
+                .collect()
+            }
             // BreakingChange::RequiredParamAdded { param_name } => todo!(),
             // BreakingChange::RequestBodyBreakingChange(_) => todo!(),
             // BreakingChange::AddedNonOptionalRequestBody => todo!(),
@@ -118,27 +144,91 @@ struct SchemaReference<'a> {
     schema: &'a JsonSchema,
     validators: &'a [&'a Validator],
     required: bool,
+    name: String,
 }
 
 #[derive(Debug)]
 pub struct IsNotSubtype {
-    sub_type: JsonSchema,
-    super_type: JsonSchema,
+    sub_type: Vec<Validator>,
+    super_type: Vec<Validator>,
 
-    // sub_type_mater: Mater,
-    // super_type_mater: Mater,
+    sub_type_mater: Mater,
+    super_type_mater: Mater,
     diff: Mater,
 }
+fn call_expr(name: &str) -> Expr {
+    Expr::Call(CallExpr {
+        span: DUMMY_SP,
+        callee: Callee::Expr(
+            Expr::Ident(Ident {
+                span: DUMMY_SP,
+                sym: name.into(),
+                optional: false,
+            })
+            .into(),
+        ),
+        args: vec![],
+        type_args: None,
+    })
+}
 
-impl IsNotSubtype {
-    pub fn print_report(&self, diff_msg: String, sub_name: &str, supe_name: &str) -> Md {
-        let v = self.diff.to_js_borrow();
-        vec![
-            MdReport::TsType(sub_name.to_string(), self.sub_type.to_ts_type()),
-            MdReport::TsType(supe_name.to_string(), self.super_type.to_ts_type()),
-            MdReport::Text(diff_msg),
-            MdReport::Js(v),
-        ]
+fn diff_to_js(diff: &Mater, base: Option<&Mater>) -> Js {
+    match diff {
+        Mater::Never => match base {
+            Some(v) => diff_to_js(v, None),
+            None => Js::Expr(call_expr("never")),
+        },
+        Mater::Unknown => todo!(),
+        Mater::Void => todo!(),
+        Mater::Recursive => Js::Expr(call_expr("recursion")),
+        Mater::Null => Js::Null,
+        Mater::Boolean => Js::Bool(true),
+        Mater::Number => todo!(),
+        Mater::String => Js::String("abc".into()),
+        Mater::StringWithFormat(_) => todo!(),
+        Mater::StringLiteral(st) => Js::String(st.clone()),
+        Mater::NumberLiteral(n) => Js::Number(n.clone()),
+        Mater::BooleanLiteral(_) => todo!(),
+        Mater::Array {
+            items,
+            prefix_items,
+        } => {
+            let mut acc = vec![];
+            for (idx, item) in prefix_items.iter().enumerate() {
+                let base = match base {
+                    Some(Mater::Array { prefix_items, .. }) => prefix_items.get(idx),
+                    _ => None,
+                };
+
+                acc.push(diff_to_js(item, base));
+            }
+            if !items.is_never() {
+                let base = match base {
+                    Some(Mater::Array { items, .. }) => Some(items.as_ref()),
+                    _ => None,
+                };
+                match items.as_ref() {
+                    Mater::Recursive => {
+                        // ignore recursion in array
+                    }
+                    _ => {
+                        acc.push(diff_to_js(items, base));
+                    }
+                }
+            }
+            Js::Array(acc)
+        }
+        Mater::Object(vs) => {
+            let mut acc = BTreeMap::new();
+            for (k, v) in vs.iter() {
+                let base = match base {
+                    Some(Mater::Object(base)) => base.get(k),
+                    _ => None,
+                };
+                acc.insert(k.clone(), diff_to_js(v, base));
+            }
+            Js::Object(acc)
+        }
     }
 }
 
@@ -151,7 +241,9 @@ enum SubTypeCheckResult {
 impl<'a> SchemaReference<'a> {
     fn is_sub_type(&self, supe: &SchemaReference) -> Result<SubTypeCheckResult> {
         let sub = self;
+
         let mut builder = SemTypeContext::new();
+
         let mut sub_st = sub.schema.to_sub_type(sub.validators, &mut builder)?;
         if !sub.required {
             sub_st = SemTypeContext::optional(sub_st);
@@ -163,13 +255,17 @@ impl<'a> SchemaReference<'a> {
 
         match sub_st.is_subtype(&supe_st, &mut builder) {
             true => Ok(SubTypeCheckResult::IsSubtype),
-            false => Ok(SubTypeCheckResult::IsNotSubtype(IsNotSubtype {
-                sub_type: sub.schema.clone(),
-                super_type: supe.schema.clone(),
-                // sub_type_mater: builder.materialize(&sub_st),
-                // super_type_mater: builder.materialize(&sup_st),
-                diff: builder.materialize(&sub_st.diff(&supe_st)),
-            })),
+            false => {
+                let mut mater = MaterializationContext::new(&builder);
+
+                Ok(SubTypeCheckResult::IsNotSubtype(IsNotSubtype {
+                    sub_type: to_validators(&builder, &sub_st, &sub.name),
+                    super_type: to_validators(&builder, &supe_st, &supe.name),
+                    sub_type_mater: mater.materialize(&sub_st),
+                    super_type_mater: mater.materialize(&supe_st),
+                    diff: mater.materialize(&sub_st.diff(&supe_st)),
+                }))
+            }
         }
     }
 }
@@ -186,11 +282,13 @@ fn is_op_safe_to_change(
         schema: &from.json_response_body,
         validators: from_validators,
         required: true,
+        name: "Old".to_string(),
     };
     let to_response = SchemaReference {
         schema: &to.json_response_body,
         validators: to_validators,
         required: true,
+        name: "New".to_string(),
     };
 
     if let SubTypeCheckResult::IsNotSubtype(i) =
@@ -222,11 +320,13 @@ fn is_op_safe_to_change(
                     schema: &from_param.schema,
                     validators: from_validators,
                     required: from_param.required,
+                    name: "Old".to_string(),
                 };
                 let to_param_ref = SchemaReference {
                     schema: &to_param.schema,
                     validators: to_validators,
                     required: to_param.required,
+                    name: "New".to_string(),
                 };
                 if let SubTypeCheckResult::IsNotSubtype(err) =
                     // the previous param must extend the new one
@@ -254,11 +354,13 @@ fn is_op_safe_to_change(
             schema: &f.schema,
             validators: from_validators,
             required: f.required,
+            name: "Old".to_string(),
         };
         let to_req_body = SchemaReference {
             schema: &t.schema,
             validators: to_validators,
             required: t.required,
+            name: "New".to_string(),
         };
         if let SubTypeCheckResult::IsNotSubtype(i) =
             // the previous param must extend the new one

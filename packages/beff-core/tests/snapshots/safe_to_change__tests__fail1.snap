@@ -28,11 +28,11 @@ to:
 Response body is not compatible.
 
 ```ts
-type New = string;
+type Old = "world";
 ```
 
 ```ts
-type Old = "world";
+type New = string;
 ```
 
 Previous clients will not support this potential response:

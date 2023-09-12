@@ -26,18 +26,16 @@ to:
 Response body is not compatible.
 
 ```ts
-type New = {
+type Old = {
     "a": 1;
-} & {
-    "p": "a" | "b" | "c";
+    "p": "a" | "b";
 };
 ```
 
 ```ts
-type Old = {
+type New = {
     "a": 1;
-} & {
-    "p": "a" | "b";
+    "p": "a" | "b" | "c";
 };
 ```
 
@@ -45,7 +43,7 @@ Previous clients will not support this potential response:
 
 ```js
 {
-    "a": never(),
+    "a": 1,
     "p": "c"
 };
 ```
@@ -55,16 +53,16 @@ Previous clients will not support this potential response:
 Response body is not compatible.
 
 ```ts
-type New = {
+type Old = {
     "a": 1;
-    "p": "a" | "b" | "c";
+    "p": "a" | "b";
 };
 ```
 
 ```ts
-type Old = {
+type New = {
     "a": 1;
-    "p": "a" | "b";
+    "p": "a" | "b" | "c";
 };
 ```
 
@@ -72,7 +70,7 @@ Previous clients will not support this potential response:
 
 ```js
 {
-    "a": never(),
+    "a": 1,
     "p": "c"
 };
 ```
