@@ -10,7 +10,6 @@ use crate::UnresolvedExport;
 use anyhow::anyhow;
 use anyhow::Result;
 use std::collections::HashMap;
-use std::collections::HashSet;
 use std::rc::Rc;
 use swc_atoms::JsWord;
 use swc_common::SourceMap;
@@ -223,7 +222,7 @@ pub fn parse_and_bind<R: FsModuleResolver>(
     resolver: &mut R,
     file_name: &BffFileName,
     content: &str,
-) -> Result<(Rc<ParsedModule>, HashSet<BffFileName>)> {
+) -> Result<Rc<ParsedModule>> {
     log::debug!("RUST: Parsing file {file_name:?}");
     let cm: SourceMap = SourceMap::default();
     let source_file = cm.new_source_file(
@@ -233,8 +232,6 @@ pub fn parse_and_bind<R: FsModuleResolver>(
     let (module, comments) = parse_with_swc(&source_file, cm, &file_name)?;
     let mut v = ImportsVisitor::from_file(BffFileName::new(module.fm.name.to_string()), resolver);
     v.visit_module(&module.module);
-
-    let imports: HashSet<BffFileName> = v.imports.values().map(|x| x.file_name().clone()).collect();
 
     let mut locals = ParserOfModuleLocals {
         content: ParsedModuleLocals::new(),
@@ -297,5 +294,5 @@ pub fn parse_and_bind<R: FsModuleResolver>(
         comments,
         locals: locals.content,
     });
-    Ok((f, imports))
+    Ok(f)
 }

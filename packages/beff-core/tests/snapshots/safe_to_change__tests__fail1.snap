@@ -1,0 +1,41 @@
+---
+source: packages/beff-core/tests/safe_to_change.rs
+expression: "format!(\"//from\\n{}\\n//to\\n{}\\n{:#?}\", from, to, & errors)"
+---
+//from
+
+        export default {
+            "/hello": {
+                get: (): "world" => {
+                    return "world";
+                }
+            }
+        }
+        
+//to
+
+        export default {
+            "/hello": {
+                get: (): string => {
+                    return "world";
+                }
+            }
+        }
+        
+[
+    OpenApiBreakingChange {
+        change: ResponseBodyBreakingChange {
+            super_type: StringLiteral(
+                "world",
+            ),
+            sub_type: String,
+            diff: StringLiteral(
+                "Izr1mn6edP0HLrWu",
+            ),
+        },
+        path: "/hello",
+        method: Some(
+            Get,
+        ),
+    },
+]

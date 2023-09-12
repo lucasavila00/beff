@@ -1,0 +1,62 @@
+---
+source: packages/beff-core/tests/safe_to_change.rs
+expression: "format!(\"//from\\n{}\\n//to\\n{}\\n{:#?}\", from, to, & errors)"
+---
+//from
+
+        type A = string;
+        type AObject = {p: A, arr: AObject[]};
+        export default {
+            "/hello": {
+                get: (): AObject => impl()
+            }
+        }
+        
+//to
+
+        type B = string;
+        type BObject = {p2: B, arr: BObject[]};
+        export default {
+            "/hello": {
+                get: (): BObject => impl()
+            }
+        }
+        
+[
+    OpenApiBreakingChange {
+        change: ResponseBodyBreakingChange {
+            super_type: Object(
+                {
+                    "arr": Array {
+                        items: Recursive,
+                        prefix_items: [],
+                    },
+                    "p": String,
+                },
+            ),
+            sub_type: Object(
+                {
+                    "arr": Array {
+                        items: Recursive,
+                        prefix_items: [],
+                    },
+                    "p2": String,
+                },
+            ),
+            diff: Object(
+                {
+                    "arr": Array {
+                        items: Recursive,
+                        prefix_items: [],
+                    },
+                    "p": Bool,
+                    "p2": String,
+                },
+            ),
+        },
+        path: "/hello",
+        method: Some(
+            Get,
+        ),
+    },
+]

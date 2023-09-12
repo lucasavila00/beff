@@ -79,7 +79,7 @@ mod tests {
             let from_str = serde_json::from_str::<serde_json::Value>(&str).unwrap();
             let from_serde = Json::from_serde(&from_str);
             let from_json = JsonSchema::from_json(&from_serde).unwrap();
-            assert!(schema == from_json, "{:?} != {:?}", schema, from_json);
+            assert_eq!(schema, from_json,);
         }
     }
 }

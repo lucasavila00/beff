@@ -205,17 +205,17 @@ mod tests {
         let validators = vec![];
         let mut ctx = SemTypeContext::new();
 
-        let before = JsonSchema::Object(BTreeMap::from_iter(vec![(
-            "b".into(),
-            JsonSchema::Boolean.required(),
-        )]))
+        let before = JsonSchema::Object(BTreeMap::from_iter(vec![
+            ("a".into(), JsonSchema::String.required()),
+            ("b".into(), JsonSchema::Boolean.required()),
+        ]))
         .to_sub_type(&validators, &mut ctx)
         .unwrap();
 
-        let after = JsonSchema::Object(BTreeMap::from_iter(vec![(
-            "b".into(),
-            JsonSchema::Boolean.optional(),
-        )]))
+        let after = JsonSchema::Object(BTreeMap::from_iter(vec![
+            ("a".into(), JsonSchema::String.required()),
+            ("b".into(), JsonSchema::Boolean.optional()),
+        ]))
         .to_sub_type(&validators, &mut ctx)
         .unwrap();
 
@@ -223,7 +223,10 @@ mod tests {
         let t2 = after.diff(&before);
         assert_eq!(
             ctx.materialize(&t2),
-            Mater::Object(BTreeMap::from_iter(vec![("b".into(), Mater::Void),]))
+            Mater::Object(BTreeMap::from_iter(vec![
+                ("a".into(), Mater::Never),
+                ("b".into(), Mater::Void),
+            ]))
         );
     }
     #[test]

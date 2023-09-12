@@ -293,6 +293,11 @@ impl MemoEmpty {
 #[derive(Clone, Copy, Debug)]
 pub struct BddMemoEmptyRef(pub MemoEmpty);
 
+pub enum MaterMemo {
+    Mater(Mater),
+    Undefined,
+}
+
 pub struct SemTypeContext {
     pub mapping_definitions: Vec<Option<Rc<MappingAtomic>>>,
     pub mapping_memo: BTreeMap<Bdd, BddMemoEmptyRef>,
@@ -301,6 +306,8 @@ pub struct SemTypeContext {
     pub list_memo: BTreeMap<Bdd, BddMemoEmptyRef>,
 
     pub json_schema_ref_memo: BTreeMap<String, usize>,
+
+    pub materialize_memo: BTreeMap<Rc<SemType>, MaterMemo>,
 }
 impl SemTypeContext {
     pub fn get_mapping_atomic(&self, idx: usize) -> Rc<MappingAtomic> {
@@ -327,6 +334,7 @@ impl SemTypeContext {
             mapping_memo: BTreeMap::new(),
             list_memo: BTreeMap::new(),
             json_schema_ref_memo: BTreeMap::new(),
+            materialize_memo: BTreeMap::new(),
         }
     }
     pub fn number_const(value: NumberRepresentation) -> SemType {
@@ -632,7 +640,7 @@ impl SemTypeContext {
                         .get(k)
                         .map(|it: &Rc<ComplexSemType>| it.clone())
                         .unwrap_or_else(|| Rc::new(Self::never()));
-                    let ty = v.intersect(&v2);
+                    let ty = v.union(&v2);
                     acc.insert(k.clone(), ty);
                 }
                 for (k, v) in b.iter() {
@@ -640,7 +648,7 @@ impl SemTypeContext {
                         .get(k)
                         .map(|it: &Rc<ComplexSemType>| it.clone())
                         .unwrap_or_else(|| Rc::new(Self::never()));
-                    let ty = v.intersect(&v2);
+                    let ty = v.union(&v2);
                     acc.insert(k.clone(), ty);
                 }
                 MappingAcc::Values(acc.into_iter().collect())
@@ -708,7 +716,7 @@ impl SemTypeContext {
         let mt = MappingAcc::Values(mt.iter().map(|(k, v)| (k.clone(), v.clone())).collect());
         self.materialize_mapping_node_vec(&mt, left, middle, right)
     }
-    fn materialize_mapping(&self, bdd: &Rc<Bdd>) -> Mater {
+    fn materialize_mapping(&mut self, bdd: &Rc<Bdd>) -> Mater {
         match bdd.as_ref() {
             Bdd::True => todo!(),
             Bdd::False => Mater::Never,
@@ -734,7 +742,7 @@ impl SemTypeContext {
         }
     }
 
-    fn materialize_list(&self, bdd: &Rc<Bdd>) -> Mater {
+    fn materialize_list(&mut self, bdd: &Rc<Bdd>) -> Mater {
         match bdd.as_ref() {
             Bdd::True => todo!(),
             Bdd::False => Mater::Never,
@@ -760,7 +768,21 @@ impl SemTypeContext {
         }
     }
 
-    pub fn materialize(&self, ty: &SemType) -> Mater {
+    pub fn materialize(&mut self, ty: &Rc<SemType>) -> Mater {
+        if let Some(mater) = self.materialize_memo.get(ty) {
+            match mater {
+                MaterMemo::Mater(mater) => return mater.clone(),
+                MaterMemo::Undefined => return Mater::Recursive,
+            }
+        }
+        self.materialize_memo
+            .insert(ty.clone(), MaterMemo::Undefined);
+        let mater = self.materialize_no_cache(ty);
+        self.materialize_memo
+            .insert(ty.clone(), MaterMemo::Mater(mater.clone()));
+        mater
+    }
+    fn materialize_no_cache(&mut self, ty: &SemType) -> Mater {
         if ty.all == 0 && ty.subtype_data.is_empty() {
             return Mater::Never;
         }
@@ -783,14 +805,18 @@ impl SemTypeContext {
             match s.as_ref() {
                 ProperSubtype::Boolean(v) => return Mater::BooleanLiteral(*v),
                 ProperSubtype::Number { allowed, values } => {
-                    assert!(allowed, "cannot materialize negative type");
+                    if !allowed {
+                        return Mater::NumberLiteral(N::parse_int(4773992856));
+                    }
                     match values.split_first() {
                         Some((h, _t)) => return Mater::NumberLiteral(h.clone()),
                         None => unreachable!("number values cannot be empty"),
                     }
                 }
                 ProperSubtype::String { allowed, values } => {
-                    assert!(allowed, "cannot materialize negative type");
+                    if !allowed {
+                        return Mater::StringLiteral("Izr1mn6edP0HLrWu".into());
+                    }
                     match values.split_first() {
                         Some((h, _t)) => match h {
                             StringLitOrFormat::Lit(st) => return Mater::StringLiteral(st.clone()),
@@ -810,15 +836,19 @@ impl SemTypeContext {
     }
 }
 
-#[derive(PartialEq, Eq, Debug)]
+#[derive(PartialEq, Eq, Debug, Clone)]
 pub enum Mater {
+    // special
+    Never,
+    Unknown,
+    Void,
+    Recursive,
+
+    // json
     Null,
     Bool,
     Number,
     String,
-    Never,
-    Unknown,
-    Void,
     StringWithFormat(String),
     StringLiteral(String),
     NumberLiteral(N),

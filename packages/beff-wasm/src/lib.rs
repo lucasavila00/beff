@@ -113,7 +113,7 @@ impl<'a> FileManager for LazyFileManager<'a> {
         let mut resolver = WasmModuleResolver::new(file_name.clone());
         let res = parse_and_bind(&mut resolver, file_name, &content);
         match res {
-            Ok((f, _imports)) => {
+            Ok(f) => {
                 self.files.insert(file_name.clone(), f.clone());
                 Some(f)
             }
@@ -168,7 +168,7 @@ fn update_file_content_inner(file_name: &str, content: &str) {
         let mut resolver = WasmModuleResolver::new(file_name.clone());
         parse_and_bind(&mut resolver, &file_name, content)
     });
-    if let Ok((f, _imports)) = res {
+    if let Ok(f) = res {
         BUNDLER.with(|b| {
             let mut b = b.borrow_mut();
             b.files.insert(file_name, f);

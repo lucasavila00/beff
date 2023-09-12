@@ -1,113 +1,299 @@
 #[cfg(test)]
 mod tests {
-    use std::{collections::BTreeMap, rc::Rc};
+    use std::rc::Rc;
 
     use beff_core::{
-        ast::{json::Json, json_schema::JsonSchema},
-        diag::FullLocation,
-        open_api_ast::{
-            ApiPath, HTTPMethod, Info, OpenApi, OperationObject, ParsedPattern, Validator,
-        },
-        schema_changes::is_safe_to_change_to,
-        BffFileName,
+        import_resolver::{parse_and_bind, FsModuleResolver},
+        open_api_ast::{OpenApi, Validator},
+        schema_changes::{is_safe_to_change_to, OpenApiBreakingChange},
+        BffFileName, EntryPoints, FileManager, ParsedModule,
     };
-    use swc_common::{BytePos, CharPos, FileName, Loc, SourceFile};
+    use swc_common::{Globals, GLOBALS};
 
-    fn loc() -> FullLocation {
-        let f = SourceFile::new(
-            FileName::Real("test".into()),
-            false,
-            FileName::Real("test".into()),
-            "test".into(),
-            BytePos(1),
-        );
-        let loc = FullLocation {
-            file_name: BffFileName::new("test".into()),
-            loc_lo: Loc {
-                file: Rc::new(f.clone()),
-                line: 0,
-                col: CharPos(0),
-                col_display: 0,
-            },
-            loc_hi: Loc {
-                file: Rc::new(f),
-                line: 0,
-                col: CharPos(0),
-                col_display: 0,
-            },
+    struct TestFileManager {
+        pub f: Rc<ParsedModule>,
+    }
+
+    impl FileManager for TestFileManager {
+        fn get_or_fetch_file(&mut self, _name: &BffFileName) -> Option<Rc<ParsedModule>> {
+            Some(self.f.clone())
+        }
+
+        fn get_existing_file(&self, _name: &BffFileName) -> Option<Rc<ParsedModule>> {
+            Some(self.f.clone())
+        }
+    }
+
+    struct TestResolver {}
+    impl FsModuleResolver for TestResolver {
+        fn resolve_import(&mut self, _module_specifier: &str) -> Option<BffFileName> {
+            None
+        }
+    }
+    fn parse_str(content: &str) -> Rc<ParsedModule> {
+        let mut resolver = TestResolver {};
+        let file_name = BffFileName::new("file.ts".into());
+        GLOBALS.set(&Globals::new(), || {
+            let res = parse_and_bind(&mut resolver, &file_name, &content);
+            res.unwrap()
+        })
+    }
+    fn parse_api(it: &str) -> (OpenApi, Vec<Validator>) {
+        let f = parse_str(it);
+        let mut man = TestFileManager { f };
+        let entry = EntryPoints {
+            router_entry_point: Some(BffFileName::new("file.ts".into())),
+            parser_entry_point: None,
         };
+        let res = beff_core::extract(&mut man, entry);
+        let res = res.router.unwrap();
+        (res.open_api, res.validators)
+    }
 
-        loc
+    fn test_safe(from: &str, to: &str) -> Vec<OpenApiBreakingChange> {
+        let (from_api, from_vals) = parse_api(from);
+        let (to_api, to_vals) = parse_api(to);
+        dbg!("parsed...");
+        let errors = is_safe_to_change_to(
+            &from_api,
+            &to_api,
+            &from_vals.iter().collect::<Vec<_>>(),
+            &to_vals.iter().collect::<Vec<_>>(),
+        )
+        .unwrap();
+        errors
+    }
+    #[test]
+    fn ok1() {
+        let from = r#"
+        type A = string;
+        export default {
+            "/hello": {
+                get: (): A => impl()
+            }
+        }
+        "#;
+
+        let to = r#"
+        type B = string;
+        export default {
+            "/hello": {
+                get: (): B => impl()
+            }
+        }
+        "#;
+        let errors = test_safe(from, to);
+        assert!(errors.is_empty());
     }
 
     #[test]
-    fn return_check() {
-        let definitions = vec![];
+    fn ok2() {
+        let from = r#"
+        type A = string;
+        type AObject = {p: A};
+        export default {
+            "/hello": {
+                get: (): AObject => impl()
+            }
+        }
+        "#;
 
-        let info = Info {
-            title: None,
-            description: None,
-            version: None,
-        };
-
-        let mut s1_methods: BTreeMap<HTTPMethod, OperationObject> = BTreeMap::new();
-        s1_methods.insert(
-            HTTPMethod::Get,
-            OperationObject {
-                method_prop_span: loc(),
-                summary: None,
-                description: None,
-                parameters: vec![],
-                json_response_body: JsonSchema::Const(Json::String("abc".into())),
-                json_request_body: None,
-            },
-        );
-
-        let s1 = OpenApi {
-            info: info.clone(),
-            paths: vec![ApiPath {
-                parsed_pattern: ParsedPattern {
-                    loc: loc(),
-                    raw: "/".into(),
-                    path_params: vec![],
-                },
-                methods: s1_methods,
-            }],
-            components: vec![],
-        };
-
-        let mut s2_methods = BTreeMap::new();
-        s2_methods.insert(
-            HTTPMethod::Get,
-            OperationObject {
-                method_prop_span: loc(),
-                summary: None,
-                description: None,
-                parameters: vec![],
-                json_response_body: JsonSchema::String,
-                json_request_body: None,
-            },
-        );
-        let s2 = OpenApi {
-            info,
-            paths: vec![ApiPath {
-                parsed_pattern: ParsedPattern {
-                    loc: loc(),
-                    raw: "/".into(),
-                    path_params: vec![],
-                },
-                methods: s2_methods,
-            }],
-            components: vec![],
-        };
-
-        let v1 = definitions.iter().collect::<Vec<&Validator>>();
-
-        let errors = is_safe_to_change_to(&s1, &s2, &v1, &v1).unwrap();
+        let to = r#"
+        type B = string;
+        type BObject = {p: B};
+        export default {
+            "/hello": {
+                get: (): BObject => impl()
+            }
+        }
+        "#;
+        let errors = test_safe(from, to);
         assert!(errors.is_empty());
+    }
 
-        let errors = is_safe_to_change_to(&s2, &s1, &v1, &v1).unwrap();
-        dbg!(&errors);
-        assert!(!errors.is_empty())
+    #[test]
+    fn ok3() {
+        let from = r#"
+        type A = string;
+        type AObject = {p: A, arr: AObject[]};
+        export default {
+            "/hello": {
+                get: (): AObject => impl()
+            }
+        }
+        "#;
+
+        let to = r#"
+        type B = string;
+        type BObject = {p: B, arr: BObject[]};
+        export default {
+            "/hello": {
+                get: (): BObject => impl()
+            }
+        }
+        "#;
+        let errors = test_safe(from, to);
+        assert!(errors.is_empty());
+    }
+    #[test]
+    fn ok4() {
+        let from = r#"
+        type A = string;
+        type AObject = {p: A, arr: AObject[]};
+        export default {
+            "/hello": {
+                get: (): AObject => impl()
+            }
+        }
+        "#;
+
+        let to = r#"
+        type B = string;
+        type BObject = {p: B, p2:B, arr: BObject[]};
+        export default {
+            "/hello": {
+                get: (): BObject => impl()
+            }
+        }
+        "#;
+        let errors = test_safe(from, to);
+        assert!(errors.is_empty());
+    }
+
+    #[test]
+    fn fail_recursive() {
+        let from = r#"
+        type A = string;
+        type AObject = {p: A, arr: AObject[]};
+        export default {
+            "/hello": {
+                get: (): AObject => impl()
+            }
+        }
+        "#;
+
+        let to = r#"
+        type B = string;
+        type BObject = {p2: B, arr: BObject[]};
+        export default {
+            "/hello": {
+                get: (): BObject => impl()
+            }
+        }
+        "#;
+        let errors = test_safe(from, to);
+        assert!(!errors.is_empty());
+        insta::assert_snapshot!(format!("//from\n{}\n//to\n{}\n{:#?}", from, to, &errors));
+    }
+
+    #[test]
+    fn fail1() {
+        let from = r#"
+        export default {
+            "/hello": {
+                get: (): "world" => {
+                    return "world";
+                }
+            }
+        }
+        "#;
+
+        let to = r#"
+        export default {
+            "/hello": {
+                get: (): string => {
+                    return "world";
+                }
+            }
+        }
+        "#;
+        let errors = test_safe(from, to);
+        assert!(!errors.is_empty());
+        insta::assert_snapshot!(format!("//from\n{}\n//to\n{}\n{:#?}", from, to, &errors));
+    }
+
+    #[test]
+    fn fail2() {
+        let from = r#"
+        export default {
+            "/hello": {
+                get: (): "a"|"b" => todo()
+            }
+        }
+        "#;
+
+        let to = r#"
+        export default {
+            "/hello": {
+                get: (): "a"|"b"|"c" => todo()
+            }
+        }
+        "#;
+        let errors = test_safe(from, to);
+        assert!(!errors.is_empty());
+        insta::assert_snapshot!(format!("//from\n{}\n//to\n{}\n{:#?}", from, to, &errors));
+    }
+    #[test]
+    fn fail3() {
+        let from = r#"
+        export default {
+            "/hello": {
+                get: (): ("a"|"b")[] => todo()
+            }
+        }
+        "#;
+
+        let to = r#"
+        export default {
+            "/hello": {
+                get: (): ("a"|"b"|"c")[] => todo()
+            }
+        }
+        "#;
+        let errors = test_safe(from, to);
+        assert!(!errors.is_empty());
+        insta::assert_snapshot!(format!("//from\n{}\n//to\n{}\n{:#?}", from, to, &errors));
+    }
+    #[test]
+    fn fail4() {
+        let from = r#"
+        export default {
+            "/hello": {
+                get: (): ["a"|"b"] => todo()
+            }
+        }
+        "#;
+
+        let to = r#"
+        export default {
+            "/hello": {
+                get: (): ["a"|"b"|"c"] => todo()
+            }
+        }
+        "#;
+        let errors = test_safe(from, to);
+        assert!(!errors.is_empty());
+        insta::assert_snapshot!(format!("//from\n{}\n//to\n{}\n{:#?}", from, to, &errors));
+    }
+    #[test]
+    fn fail5() {
+        let from = r#"
+        export default {
+            "/hello": {
+                get: (): {p:"a"|"b"} => todo()
+            }
+        }
+        "#;
+
+        let to = r#"
+        export default {
+            "/hello": {
+                get: (): {p:"a"|"b"|"c"} => todo()
+            }
+        }
+        "#;
+        let errors = test_safe(from, to);
+        assert!(!errors.is_empty());
+        insta::assert_snapshot!(format!("//from\n{}\n//to\n{}\n{:#?}", from, to, &errors));
     }
 }
