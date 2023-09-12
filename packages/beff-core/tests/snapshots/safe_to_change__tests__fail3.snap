@@ -20,26 +20,65 @@ expression: "format!(\"//from\\n{}\\n//to\\n{}\\n{:#?}\", from, to, & errors)"
         
 [
     OpenApiBreakingChange {
-        change: ResponseBodyBreakingChange {
-            super_type: Array {
-                items: StringLiteral(
-                    "a",
+        change: ResponseBodyBreakingChange(
+            IsNotSubtype {
+                sub_type: Array(
+                    AnyOf(
+                        {
+                            Const(
+                                String(
+                                    "a",
+                                ),
+                            ),
+                            Const(
+                                String(
+                                    "b",
+                                ),
+                            ),
+                            Const(
+                                String(
+                                    "c",
+                                ),
+                            ),
+                        },
+                    ),
                 ),
-                prefix_items: [],
-            },
-            sub_type: Array {
-                items: StringLiteral(
-                    "a",
+                super_type: Array(
+                    AnyOf(
+                        {
+                            Const(
+                                String(
+                                    "a",
+                                ),
+                            ),
+                            Const(
+                                String(
+                                    "b",
+                                ),
+                            ),
+                        },
+                    ),
                 ),
-                prefix_items: [],
+                sub_type_mater: Array {
+                    items: StringLiteral(
+                        "a",
+                    ),
+                    prefix_items: [],
+                },
+                super_type_mater: Array {
+                    items: StringLiteral(
+                        "a",
+                    ),
+                    prefix_items: [],
+                },
+                diff: Array {
+                    items: StringLiteral(
+                        "c",
+                    ),
+                    prefix_items: [],
+                },
             },
-            diff: Array {
-                items: StringLiteral(
-                    "c",
-                ),
-                prefix_items: [],
-            },
-        },
+        ),
         path: "/hello",
         method: Some(
             Get,

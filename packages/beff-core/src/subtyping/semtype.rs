@@ -295,7 +295,7 @@ pub struct BddMemoEmptyRef(pub MemoEmpty);
 
 pub enum MaterMemo {
     Mater(Mater),
-    Undefined,
+    Undefined(usize),
 }
 
 pub struct SemTypeContext {
@@ -772,11 +772,19 @@ impl SemTypeContext {
         if let Some(mater) = self.materialize_memo.get(ty) {
             match mater {
                 MaterMemo::Mater(mater) => return mater.clone(),
-                MaterMemo::Undefined => return Mater::Recursive,
+                MaterMemo::Undefined(d) => {
+                    if *d > 0 {
+                        return Mater::Recursive;
+                    } else {
+                        self.materialize_memo
+                            .insert(ty.clone(), MaterMemo::Undefined(d + 1));
+                    }
+                }
             }
+        } else {
+            self.materialize_memo
+                .insert(ty.clone(), MaterMemo::Undefined(0));
         }
-        self.materialize_memo
-            .insert(ty.clone(), MaterMemo::Undefined);
         let mater = self.materialize_no_cache(ty);
         self.materialize_memo
             .insert(ty.clone(), MaterMemo::Mater(mater.clone()));

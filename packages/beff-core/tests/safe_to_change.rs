@@ -53,7 +53,6 @@ mod tests {
     fn test_safe(from: &str, to: &str) -> Vec<OpenApiBreakingChange> {
         let (from_api, from_vals) = parse_api(from);
         let (to_api, to_vals) = parse_api(to);
-        dbg!("parsed...");
         let errors = is_safe_to_change_to(
             &from_api,
             &to_api,
@@ -289,6 +288,77 @@ mod tests {
         export default {
             "/hello": {
                 get: (): {p:"a"|"b"|"c"} => todo()
+            }
+        }
+        "#;
+        let errors = test_safe(from, to);
+        assert!(!errors.is_empty());
+        insta::assert_snapshot!(format!("//from\n{}\n//to\n{}\n{:#?}", from, to, &errors));
+    }
+    // #[test]
+    // fn fail6() {
+    //     let from = r#"
+    //     export default {
+    //         "/hello": {
+    //             get: (): {p:"a"|"b"}&{a:1} => todo()
+    //         }
+    //     }
+    //     "#;
+
+    //     let to = r#"
+    //     export default {
+    //         "/hello": {
+    //             get: (): {p:"a"|"b"|"c"}&{a:1} => todo()
+    //         }
+    //     }
+    //     "#;
+    //     let errors = test_safe(from, to);
+    //     assert!(!errors.is_empty());
+    //     insta::assert_snapshot!(format!("//from\n{}\n//to\n{}\n{:#?}", from, to, &errors));
+    // }
+    #[test]
+    fn ok_nothing() {
+        let from = r#"
+        export default {
+            "/hello": {
+                get: ()  => {
+                    return "world";
+                }
+            }
+        }
+        "#;
+
+        let to = r#"
+        export default {
+            "/hello": {
+                get: () => {
+                    return "world";
+                }
+            }
+        }
+        "#;
+        let errors = test_safe(from, to);
+        assert!(errors.is_empty());
+    }
+
+    #[test]
+    fn fail_param_1() {
+        let from = r#"
+        export default {
+            "/hello": {
+                get: (c:Ctx, a: "a"|"b")  => {
+                    return "world";
+                }
+            }
+        }
+        "#;
+
+        let to = r#"
+        export default {
+            "/hello": {
+                get: (c:Ctx, a: "a") => {
+                    return "world";
+                }
             }
         }
         "#;

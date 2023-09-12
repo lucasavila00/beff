@@ -24,15 +24,23 @@ expression: "format!(\"//from\\n{}\\n//to\\n{}\\n{:#?}\", from, to, & errors)"
         
 [
     OpenApiBreakingChange {
-        change: ResponseBodyBreakingChange {
-            super_type: StringLiteral(
-                "world",
-            ),
-            sub_type: String,
-            diff: StringLiteral(
-                "Izr1mn6edP0HLrWu",
-            ),
-        },
+        change: ResponseBodyBreakingChange(
+            IsNotSubtype {
+                sub_type: String,
+                super_type: Const(
+                    String(
+                        "world",
+                    ),
+                ),
+                sub_type_mater: String,
+                super_type_mater: StringLiteral(
+                    "world",
+                ),
+                diff: StringLiteral(
+                    "Izr1mn6edP0HLrWu",
+                ),
+            },
+        ),
         path: "/hello",
         method: Some(
             Get,

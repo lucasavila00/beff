@@ -24,36 +24,69 @@ expression: "format!(\"//from\\n{}\\n//to\\n{}\\n{:#?}\", from, to, & errors)"
         
 [
     OpenApiBreakingChange {
-        change: ResponseBodyBreakingChange {
-            super_type: Object(
-                {
-                    "arr": Array {
-                        items: Recursive,
-                        prefix_items: [],
+        change: ResponseBodyBreakingChange(
+            IsNotSubtype {
+                sub_type: Ref(
+                    "BObject",
+                ),
+                super_type: Ref(
+                    "AObject",
+                ),
+                sub_type_mater: Object(
+                    {
+                        "arr": Array {
+                            items: Object(
+                                {
+                                    "arr": Array {
+                                        items: Recursive,
+                                        prefix_items: [],
+                                    },
+                                    "p2": String,
+                                },
+                            ),
+                            prefix_items: [],
+                        },
+                        "p2": String,
                     },
-                    "p": String,
-                },
-            ),
-            sub_type: Object(
-                {
-                    "arr": Array {
-                        items: Recursive,
-                        prefix_items: [],
+                ),
+                super_type_mater: Object(
+                    {
+                        "arr": Array {
+                            items: Object(
+                                {
+                                    "arr": Array {
+                                        items: Recursive,
+                                        prefix_items: [],
+                                    },
+                                    "p": String,
+                                },
+                            ),
+                            prefix_items: [],
+                        },
+                        "p": String,
                     },
-                    "p2": String,
-                },
-            ),
-            diff: Object(
-                {
-                    "arr": Array {
-                        items: Recursive,
-                        prefix_items: [],
+                ),
+                diff: Object(
+                    {
+                        "arr": Array {
+                            items: Object(
+                                {
+                                    "arr": Array {
+                                        items: Recursive,
+                                        prefix_items: [],
+                                    },
+                                    "p": Bool,
+                                    "p2": String,
+                                },
+                            ),
+                            prefix_items: [],
+                        },
+                        "p": Bool,
+                        "p2": String,
                     },
-                    "p": Bool,
-                    "p2": String,
-                },
-            ),
-        },
+                ),
+            },
+        ),
         path: "/hello",
         method: Some(
             Get,

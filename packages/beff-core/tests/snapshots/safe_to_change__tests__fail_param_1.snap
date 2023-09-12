@@ -6,7 +6,9 @@ expression: "format!(\"//from\\n{}\\n//to\\n{}\\n{:#?}\", from, to, & errors)"
 
         export default {
             "/hello": {
-                get: (): "a"|"b" => todo()
+                get: (c:Ctx, a: "a"|"b")  => {
+                    return "world";
+                }
             }
         }
         
@@ -14,14 +16,17 @@ expression: "format!(\"//from\\n{}\\n//to\\n{}\\n{:#?}\", from, to, & errors)"
 
         export default {
             "/hello": {
-                get: (): "a"|"b"|"c" => todo()
+                get: (c:Ctx, a: "a") => {
+                    return "world";
+                }
             }
         }
         
 [
     OpenApiBreakingChange {
-        change: ResponseBodyBreakingChange(
-            IsNotSubtype {
+        change: ParamBreakingChange {
+            param_name: "a",
+            err: IsNotSubtype {
                 sub_type: AnyOf(
                     {
                         Const(
@@ -34,26 +39,12 @@ expression: "format!(\"//from\\n{}\\n//to\\n{}\\n{:#?}\", from, to, & errors)"
                                 "b",
                             ),
                         ),
-                        Const(
-                            String(
-                                "c",
-                            ),
-                        ),
                     },
                 ),
-                super_type: AnyOf(
-                    {
-                        Const(
-                            String(
-                                "a",
-                            ),
-                        ),
-                        Const(
-                            String(
-                                "b",
-                            ),
-                        ),
-                    },
+                super_type: Const(
+                    String(
+                        "a",
+                    ),
                 ),
                 sub_type_mater: StringLiteral(
                     "a",
@@ -62,10 +53,10 @@ expression: "format!(\"//from\\n{}\\n//to\\n{}\\n{:#?}\", from, to, & errors)"
                     "a",
                 ),
                 diff: StringLiteral(
-                    "c",
+                    "b",
                 ),
             },
-        ),
+        },
         path: "/hello",
         method: Some(
             Get,

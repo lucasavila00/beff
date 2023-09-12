@@ -12,19 +12,16 @@ use anyhow::Result;
 pub enum BreakingChange {
     PathRemoved,
     MethodRemoved(HTTPMethod),
-    ResponseBodyBreakingChange {
-        super_type: Mater,
-        sub_type: Mater,
-        diff: Mater,
+    ResponseBodyBreakingChange(IsNotSubtype),
+    ParamBreakingChange {
+        param_name: String,
+        err: IsNotSubtype,
     },
-    // ParamBreakingChange {
-    //     param_name: String,
-    // },
-    // RequiredParamAdded {
-    //     param_name: String,
-    // },
-    // RequestBodyBreakingChange,
-    // AddedNonOptionalRequestBody,
+    RequiredParamAdded {
+        param_name: String,
+    },
+    RequestBodyBreakingChange(IsNotSubtype),
+    AddedNonOptionalRequestBody,
 }
 
 #[derive(Debug)]
@@ -35,18 +32,23 @@ struct SchemaReference<'a> {
     required: bool,
 }
 
+#[derive(Debug)]
+pub struct IsNotSubtype {
+    sub_type: JsonSchema,
+    super_type: JsonSchema,
+
+    sub_type_mater: Mater,
+    super_type_mater: Mater,
+    diff: Mater,
+}
+
 enum SubTypeCheckResult {
     IsSubtype,
-    IsNotSubtype {
-        sub_type: Mater,
-        super_type: Mater,
-        diff: Mater,
-    },
+    IsNotSubtype(IsNotSubtype),
 }
 
 impl<'a> SchemaReference<'a> {
     fn is_sub_type(&self, sup: &SchemaReference) -> Result<SubTypeCheckResult> {
-        dbg!("SchemaReference::is_sub_type");
         let sub = self;
         let mut builder = SemTypeContext::new();
         let mut sub_st = sub.schema.to_sub_type(sub.validators, &mut builder)?;
@@ -57,14 +59,15 @@ impl<'a> SchemaReference<'a> {
         if !sup.required {
             sup_st = SemTypeContext::optional(sup_st);
         }
-        dbg!("created sts");
         match sub_st.is_subtype(&sup_st, &mut builder) {
             true => Ok(SubTypeCheckResult::IsSubtype),
-            false => Ok(SubTypeCheckResult::IsNotSubtype {
-                sub_type: builder.materialize(&sub_st),
-                super_type: builder.materialize(&sup_st),
+            false => Ok(SubTypeCheckResult::IsNotSubtype(IsNotSubtype {
+                sub_type: sub.schema.clone(),
+                super_type: sup.schema.clone(),
+                sub_type_mater: builder.materialize(&sub_st),
+                super_type_mater: builder.materialize(&sup_st),
                 diff: builder.materialize(&sub_st.diff(&sup_st)),
-            }),
+            })),
         }
     }
 }
@@ -87,91 +90,80 @@ fn is_op_safe_to_change(
         validators: to_validators,
         required: true,
     };
-    if let SubTypeCheckResult::IsNotSubtype {
-        super_type,
-        sub_type,
-        diff,
-    } =
+    if let SubTypeCheckResult::IsNotSubtype(i) =
         // the new response must extend the previous one
         to_response.is_sub_type(&from_response)?
     {
-        acc.push(BreakingChange::ResponseBodyBreakingChange {
-            super_type,
-            sub_type,
-            diff,
-        })
+        acc.push(BreakingChange::ResponseBodyBreakingChange(i))
     }
 
-    // let adding_params = to
-    //     .parameters
-    //     .iter()
-    //     .filter(|it| !from.parameters.iter().any(|it2| it2.name == it.name))
-    //     .collect::<Vec<_>>();
+    let adding_params = to
+        .parameters
+        .iter()
+        .filter(|it| !from.parameters.iter().any(|it2| it2.name == it.name))
+        .collect::<Vec<_>>();
 
-    // for param in adding_params {
-    //     if param.required {
-    //         acc.push(
-    //             BreakingChange::RequiredParamAdded {
-    //                 param_name: param.name.to_string(),
-    //             }
-    //             .wrap(),
-    //         )
-    //     }
-    // }
+    for param in adding_params {
+        if param.required {
+            acc.push(BreakingChange::RequiredParamAdded {
+                param_name: param.name.to_string(),
+            })
+        }
+    }
 
-    // for from_param in &from.parameters {
-    //     let to_param = to.parameters.iter().find(|it| it.name == from_param.name);
-    //     match to_param {
-    //         Some(to_param) => {
-    //             let from_param_ref = SchemaReference {
-    //                 schema: &from_param.schema,
-    //                 validators: from_validators,
-    //                 required: from_param.required,
-    //             };
-    //             let to_param_ref = SchemaReference {
-    //                 schema: &to_param.schema,
-    //                 validators: to_validators,
-    //                 required: to_param.required,
-    //             };
-    //             let param_ok = schema_is_sub_type(&to_param_ref, &from_param_ref)?;
+    for from_param in &from.parameters {
+        let to_param = to.parameters.iter().find(|it| it.name == from_param.name);
+        match to_param {
+            Some(to_param) => {
+                let from_param_ref = SchemaReference {
+                    schema: &from_param.schema,
+                    validators: from_validators,
+                    required: from_param.required,
+                };
+                let to_param_ref = SchemaReference {
+                    schema: &to_param.schema,
+                    validators: to_validators,
+                    required: to_param.required,
+                };
+                if let SubTypeCheckResult::IsNotSubtype(err) =
+                    // the previous param must extend the new one
+                    from_param_ref.is_sub_type(&to_param_ref)?
+                {
+                    acc.push(BreakingChange::ParamBreakingChange {
+                        param_name: from_param.name.to_string(),
+                        err,
+                    })
+                }
+            }
+            None => {
+                // it is ok to remove a parameter
+            }
+        }
+    }
 
-    //             if !param_ok {
-    //                 acc.push(
-    //                     BreakingChange::ParamBreakingChange {
-    //                         param_name: from_param.name.clone(),
-    //                     }
-    //                     .wrap(),
-    //                 )
-    //             }
-    //         }
-    //         None => {
-    //             // it is ok to remove a parameter
-    //         }
-    //     }
-    // }
-
-    // if let (None, Some(t)) = (&from.json_request_body, &to.json_request_body) {
-    //     if t.required {
-    //         acc.push(BreakingChange::AddedNonOptionalRequestBody.wrap())
-    //     }
-    // }
-    // if let (Some(f), Some(t)) = (&from.json_request_body, &to.json_request_body) {
-    //     let from_req_body = SchemaReference {
-    //         schema: &f.schema,
-    //         validators: from_validators,
-    //         required: f.required,
-    //     };
-    //     let to_req_body = SchemaReference {
-    //         schema: &t.schema,
-    //         validators: to_validators,
-    //         required: t.required,
-    //     };
-    //     let req_body_ok = schema_is_sub_type(&to_req_body, &from_req_body)?;
-
-    //     if !req_body_ok {
-    //         acc.push(BreakingChange::RequestBodyBreakingChange.wrap())
-    //     }
-    // }
+    if let (None, Some(t)) = (&from.json_request_body, &to.json_request_body) {
+        if t.required {
+            acc.push(BreakingChange::AddedNonOptionalRequestBody)
+        }
+    }
+    if let (Some(f), Some(t)) = (&from.json_request_body, &to.json_request_body) {
+        let from_req_body = SchemaReference {
+            schema: &f.schema,
+            validators: from_validators,
+            required: f.required,
+        };
+        let to_req_body = SchemaReference {
+            schema: &t.schema,
+            validators: to_validators,
+            required: t.required,
+        };
+        if let SubTypeCheckResult::IsNotSubtype(i) =
+            // the previous param must extend the new one
+            from_req_body.is_sub_type(&to_req_body)?
+        {
+            acc.push(BreakingChange::RequestBodyBreakingChange(i))
+        }
+    }
 
     Ok(acc)
 }
