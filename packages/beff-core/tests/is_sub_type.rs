@@ -15,11 +15,11 @@ mod tests {
         b: &JsonSchema,
         a_validators: &[&Validator],
         b_validators: &[&Validator],
-        builder: &mut SemTypeContext,
+        ctx: &mut SemTypeContext,
     ) -> bool {
-        let a = a.to_sub_type(a_validators, builder).unwrap();
-        let b = b.to_sub_type(b_validators, builder).unwrap();
-        return a.is_subtype(&b, builder);
+        let a = a.to_sub_type(a_validators, ctx).unwrap();
+        let b = b.to_sub_type(b_validators, ctx).unwrap();
+        return a.is_subtype(&b, ctx);
     }
 
     fn schema_is_sub_type(
@@ -28,8 +28,8 @@ mod tests {
         a_validators: &[&Validator],
         b_validators: &[&Validator],
     ) -> bool {
-        let mut builder = SemTypeContext::new();
-        return is_sub_type(a, b, a_validators, b_validators, &mut builder);
+        let mut ctx = SemTypeContext::new();
+        return is_sub_type(a, b, a_validators, b_validators, &mut ctx);
     }
 
     #[test]

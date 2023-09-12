@@ -27,6 +27,18 @@ impl SubTypeTag {
     pub fn code(&self) -> BasicTypeCode {
         *self as u32
     }
+
+    pub fn all() -> Vec<SubTypeTag> {
+        vec![
+            SubTypeTag::Boolean,
+            SubTypeTag::Number,
+            SubTypeTag::String,
+            SubTypeTag::Null,
+            SubTypeTag::Mapping,
+            SubTypeTag::Void,
+            SubTypeTag::List,
+        ]
+    }
 }
 
 #[derive(Debug)]

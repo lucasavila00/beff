@@ -145,7 +145,7 @@ pub trait ToSemType {
     fn to_sub_type(
         &self,
         validators: &[&Validator],
-        builder: &mut SemTypeContext,
+        ctx: &mut SemTypeContext,
     ) -> Result<Rc<SemType>>;
 }
 
@@ -153,8 +153,8 @@ impl ToSemType for JsonSchema {
     fn to_sub_type(
         &self,
         validators: &[&Validator],
-        builder: &mut SemTypeContext,
+        ctx: &mut SemTypeContext,
     ) -> Result<Rc<SemType>> {
-        ToSemTypeConverter::new(validators).to_sem_type(self, builder)
+        ToSemTypeConverter::new(validators).to_sem_type(self, ctx)
     }
 }

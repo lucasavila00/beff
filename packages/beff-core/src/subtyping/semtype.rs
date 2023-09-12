@@ -1,3 +1,5 @@
+use crate::ast::json::N;
+
 use super::{
     bdd::{Atom, Bdd, ListAtomic, MappingAtomic},
     subtype::{
@@ -78,13 +80,13 @@ pub struct ComplexSemType {
 pub type SemType = ComplexSemType;
 
 pub trait SemTypeOps {
-    fn is_empty(&self, builder: &mut SemTypeContext) -> bool;
+    fn is_empty(&self, ctx: &mut SemTypeContext) -> bool;
     fn intersect(&self, t2: &Rc<SemType>) -> Rc<SemType>;
     fn union(&self, t2: &Rc<SemType>) -> Rc<SemType>;
     fn diff(&self, t2: &Rc<SemType>) -> Rc<SemType>;
     fn complement(&self) -> Rc<SemType>;
-    fn is_subtype(&self, t2: &Rc<SemType>, builder: &mut SemTypeContext) -> bool;
-    fn is_same_type(&self, t2: &Rc<SemType>, builder: &mut SemTypeContext) -> bool;
+    fn is_subtype(&self, t2: &Rc<SemType>, ctx: &mut SemTypeContext) -> bool;
+    fn is_same_type(&self, t2: &Rc<SemType>, ctx: &mut SemTypeContext) -> bool;
 }
 
 impl SemTypeOps for Rc<SemType> {
@@ -180,8 +182,8 @@ impl SemTypeOps for Rc<SemType> {
 
     fn diff(&self, t2: &Rc<SemType>) -> Rc<SemType> {
         let t1 = self;
-        let mut all = t1.all & !(t2.all | t2.some_as_bitset());
 
+        let mut all = t1.all & !(t2.all | t2.some_as_bitset());
         let mut some = (t1.all | t1.some_as_bitset()) & !(t2.all);
         some &= !all;
         if some == 0 {
@@ -218,15 +220,15 @@ impl SemTypeOps for Rc<SemType> {
     }
 
     fn complement(&self) -> Rc<SemType> {
-        Rc::new(SemTypeContext::never()).diff(self)
+        Rc::new(SemTypeContext::unknown()).diff(self)
     }
 
-    fn is_subtype(&self, t2: &Rc<SemType>, builder: &mut SemTypeContext) -> bool {
-        self.diff(t2).is_empty(builder)
+    fn is_subtype(&self, t2: &Rc<SemType>, ctx: &mut SemTypeContext) -> bool {
+        self.diff(t2).is_empty(ctx)
     }
 
-    fn is_same_type(&self, t2: &Rc<SemType>, builder: &mut SemTypeContext) -> bool {
-        self.is_subtype(t2, builder) && t2.is_subtype(self, builder)
+    fn is_same_type(&self, t2: &Rc<SemType>, ctx: &mut SemTypeContext) -> bool {
+        self.is_subtype(t2, ctx) && t2.is_subtype(self, ctx)
     }
 }
 
@@ -409,11 +411,157 @@ impl SemTypeContext {
         let t2 = Self::void();
         return Rc::new(it).union(&Rc::new(t2));
     }
-
     pub fn never() -> SemType {
         return SemType::new_never();
     }
     pub fn unknown() -> SemType {
         return SemType::new_unknown();
     }
+
+    fn materialize_mapping(&self, _bdd: &Rc<Bdd>) -> MaterializationJson {
+        todo!()
+    }
+
+    fn materialize_list_bdd(&self, bdd: &Rc<Bdd>) -> Rc<SemType> {
+        match bdd.as_ref() {
+            Bdd::True => Self::unknown().into(),
+            Bdd::False => Self::never().into(),
+            Bdd::Node {
+                atom,
+                left,
+                middle,
+                right,
+            } => self.list_positive_items(atom, left, middle, right),
+        }
+    }
+
+    fn acc_bdd(&self) -> Rc<SemType> {
+        let mut acc = Rc::new(SemType::new_never());
+
+        let left_mater = self.materialize_list_bdd(left);
+        let ty = left_mater.intersect(&items_ty);
+        acc = acc.union(&ty);
+
+        let middle_meter = self.materialize_list_bdd(middle);
+        acc = acc.union(&middle_meter);
+
+        let right_mater = self.materialize_list_bdd(right);
+        let not_items_ty = items_ty.complement();
+        let ty = not_items_ty.intersect(&right_mater);
+        acc = acc.union(&ty);
+
+        acc
+    }
+    fn list_positive_items(
+        &self,
+        atom: &Rc<Atom>,
+        left: &Rc<Bdd>,
+        middle: &Rc<Bdd>,
+        right: &Rc<Bdd>,
+    ) -> Rc<SemType> {
+        let lt = match atom.as_ref() {
+            Atom::List(a) => self.get_list_atomic(*a).clone(),
+            _ => unreachable!(),
+        };
+        assert!(lt.prefix_items.is_empty(), "not implemented if not empty");
+
+        let items_ty = &lt.items;
+        let mut acc = Rc::new(SemType::new_never());
+
+        let left_mater = self.materialize_list_bdd(left);
+        let ty = left_mater.intersect(&items_ty);
+        acc = acc.union(&ty);
+
+        let middle_meter = self.materialize_list_bdd(middle);
+        acc = acc.union(&middle_meter);
+
+        let right_mater = self.materialize_list_bdd(right);
+        let not_items_ty = items_ty.complement();
+        let ty = not_items_ty.intersect(&right_mater);
+        acc = acc.union(&ty);
+
+        acc
+    }
+
+    fn materialize_list(&self, bdd: &Rc<Bdd>) -> MaterializationJson {
+        match bdd.as_ref() {
+            Bdd::True => MaterializationJson::Array(vec![MaterializationJson::Top]),
+            Bdd::False => MaterializationJson::Array(vec![MaterializationJson::Bot]),
+            Bdd::Node {
+                atom,
+                left,
+                middle,
+                right,
+            } => {
+                let ty = self.list_positive_items(atom, left, middle, right);
+                return MaterializationJson::Array(vec![self.materialize(&ty)]);
+            }
+        }
+    }
+
+    pub fn materialize(&self, ty: &SemType) -> MaterializationJson {
+        if ty.all == 0 && ty.subtype_data.is_empty() {
+            return MaterializationJson::Bot;
+        }
+
+        for t in SubTypeTag::all() {
+            if (ty.all & t.code()) != 0 {
+                match t {
+                    SubTypeTag::Null => return MaterializationJson::Null,
+                    SubTypeTag::Boolean => return MaterializationJson::Bool(true),
+                    SubTypeTag::Number => return MaterializationJson::Number(N::parse_int(0)),
+                    SubTypeTag::String => return MaterializationJson::String("abc".into()),
+                    SubTypeTag::Void => return MaterializationJson::Void,
+                    SubTypeTag::Mapping => unreachable!("we do not allow creation of all mappings"),
+                    SubTypeTag::List => unreachable!("we do not allow creation of all arrays"),
+                }
+            }
+        }
+
+        for s in &ty.subtype_data {
+            match s.as_ref() {
+                ProperSubtype::Boolean(v) => return MaterializationJson::Bool(*v),
+                ProperSubtype::Number { allowed, values } => {
+                    assert!(allowed, "cannot materialize negative type");
+                    match values.split_first() {
+                        Some((h, _t)) => return MaterializationJson::Number(h.clone()),
+                        None => unreachable!("number values cannot be empty"),
+                    }
+                }
+                ProperSubtype::String { allowed, values } => {
+                    assert!(allowed, "cannot materialize negative type");
+                    match values.split_first() {
+                        Some((h, _t)) => match h {
+                            StringLitOrFormat::Lit(st) => {
+                                return MaterializationJson::String(st.clone())
+                            }
+                            StringLitOrFormat::Format(fmt) => {
+                                return MaterializationJson::StringWithFormat(fmt.clone())
+                            }
+                        },
+                        None => unreachable!("string values cannot be empty"),
+                    }
+                }
+                ProperSubtype::Mapping(bdd) => return self.materialize_mapping(bdd),
+                ProperSubtype::List(bdd) => return self.materialize_list(bdd),
+            }
+        }
+
+        unreachable!("should have been materialized")
+    }
+}
+
+#[derive(PartialEq, Eq, Debug)]
+pub enum MaterializationJson {
+    Null,
+    Bool(bool),
+    Number(N),
+    String(String),
+    Array(Vec<MaterializationJson>),
+    Object(BTreeMap<String, MaterializationJson>),
+    // extra
+    Bot,
+    Top,
+    Void,
+    StringWithFormat(String),
 }

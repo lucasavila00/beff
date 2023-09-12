@@ -14,7 +14,9 @@ pub enum BreakingChange {
     MethodRemoved(HTTPMethod),
     ResponseBodyBreakingChange,
     ParamBreakingChange { param_name: String },
+    RequiredParamAdded { param_name: String },
     RequestBodyBreakingChange,
+    AddedNonOptionalRequestBody,
 }
 
 impl BreakingChange {
@@ -38,25 +40,18 @@ struct SchemaReference<'a> {
     validators: &'a [&'a Validator],
     required: bool,
 }
-fn is_sub_type(
-    a: &SchemaReference,
-    b: &SchemaReference,
-    builder: &mut SemTypeContext,
-) -> Result<bool> {
-    let mut a_st = a.schema.to_sub_type(a.validators, builder)?;
-    if !a.required {
-        a_st = SemTypeContext::optional(a_st);
-    }
-    let mut b_st = b.schema.to_sub_type(b.validators, builder)?;
-    if !b.required {
-        b_st = SemTypeContext::optional(b_st);
-    }
-    return Ok(a_st.is_subtype(&b_st, builder));
-}
 
 fn schema_is_sub_type(a: &SchemaReference, b: &SchemaReference) -> Result<bool> {
     let mut builder = SemTypeContext::new();
-    return is_sub_type(a, b, &mut builder);
+    let mut a_st = a.schema.to_sub_type(a.validators, &mut builder)?;
+    if !a.required {
+        a_st = SemTypeContext::optional(a_st);
+    }
+    let mut b_st = b.schema.to_sub_type(b.validators, &mut builder)?;
+    if !b.required {
+        b_st = SemTypeContext::optional(b_st);
+    }
+    return Ok(a_st.is_subtype(&b_st, &mut builder));
 }
 
 fn is_op_safe_to_change(
@@ -83,7 +78,22 @@ fn is_op_safe_to_change(
         acc.push(BreakingChange::ResponseBodyBreakingChange.wrap())
     }
 
-    // TODO: check for additions of parameters, must be optional
+    let adding_params = to
+        .parameters
+        .iter()
+        .filter(|it| !from.parameters.iter().any(|it2| it2.name == it.name))
+        .collect::<Vec<_>>();
+
+    for param in adding_params {
+        if param.required {
+            acc.push(
+                BreakingChange::RequiredParamAdded {
+                    param_name: param.name.to_string(),
+                }
+                .wrap(),
+            )
+        }
+    }
 
     for from_param in &from.parameters {
         let to_param = to.parameters.iter().find(|it| it.name == from_param.name);
@@ -116,8 +126,11 @@ fn is_op_safe_to_change(
         }
     }
 
-    // TODO: check for additions of request body, must be optional
-
+    if let (None, Some(t)) = (&from.json_request_body, &to.json_request_body) {
+        if t.required {
+            acc.push(BreakingChange::AddedNonOptionalRequestBody.wrap())
+        }
+    }
     if let (Some(f), Some(t)) = (&from.json_request_body, &to.json_request_body) {
         let from_req_body = SchemaReference {
             schema: &f.schema,

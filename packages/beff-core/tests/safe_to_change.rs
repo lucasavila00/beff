@@ -41,7 +41,7 @@ mod tests {
     }
 
     #[test]
-    fn empty() {
+    fn return_check() {
         let definitions = vec![];
 
         let info = Info {
