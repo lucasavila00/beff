@@ -330,7 +330,6 @@ mod tests {
         let errors = test_safe(from, to);
         assert!(!errors.is_empty());
         insta::assert_snapshot!(print_errors(from, to, &errors));
-        todo!()
     }
     #[test]
     fn fail7() {
@@ -397,6 +396,52 @@ mod tests {
                 get: (c:Ctx, a: "a") => {
                     return "world";
                 }
+            }
+        }
+        "#;
+        let errors = test_safe(from, to);
+        assert!(!errors.is_empty());
+        insta::assert_snapshot!(print_errors(from, to, &errors));
+    }
+    #[test]
+    fn fail_param_2() {
+        let from = r#"
+        type A = "a"|"b";
+        export default {
+            "/hello": {
+                get: (c:Ctx, a: A):A => impl()
+            }
+        }
+        "#;
+
+        let to = r#"
+        type A = "a";
+        export default {
+            "/hello": {
+                get: (c:Ctx, a: A):A => impl()
+            }
+        }
+        "#;
+        let errors = test_safe(from, to);
+        assert!(!errors.is_empty());
+        insta::assert_snapshot!(print_errors(from, to, &errors));
+    }
+    #[test]
+    fn fail_body_1() {
+        let from = r#"
+        type A = "a";
+        export default {
+            "/hello": {
+                get: (c:Ctx, a: A):A => impl()
+            }
+        }
+        "#;
+
+        let to = r#"
+        type A = "a"|"b";
+        export default {
+            "/hello": {
+                get: (c:Ctx, a: A):A => impl()
             }
         }
         "#;
@@ -482,6 +527,27 @@ mod tests {
         export default {
             "/hello": {
                 get: (): {ok: true, data: string} | {ok:false, data: boolean} => todo()
+            }
+        }
+        "#;
+        let errors = test_safe(from, to);
+        assert!(!errors.is_empty());
+        insta::assert_snapshot!(print_errors(from, to, &errors));
+    }
+    #[test]
+    fn fail_disc_union3() {
+        let from = r#"
+        export default {
+            "/hello": {
+                get: (): {ok: true, data: string} | {ok:false, data: number} => todo()
+            }
+        }
+        "#;
+
+        let to = r#"
+        export default {
+            "/hello": {
+                get: (): {ok: true, data: string} | {data: number} => todo()
             }
         }
         "#;

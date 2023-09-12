@@ -23,6 +23,7 @@ use swc_ecma_ast::TsType;
 use swc_ecma_ast::TsTypeAnn;
 use swc_ecma_ast::TsTypeElement;
 use swc_ecma_ast::TsTypeLit;
+use swc_ecma_ast::TsTypeParamInstantiation;
 use swc_ecma_ast::TsTypeRef;
 use swc_ecma_ast::TsUnionOrIntersectionType;
 use swc_ecma_ast::TsUnionType;
@@ -437,9 +438,18 @@ impl JsonSchema {
             }),
             JsonSchema::Array(ty) => {
                 let ty = ty.to_ts_type();
-                TsType::TsArrayType(TsArrayType {
+                TsType::TsTypeRef(TsTypeRef {
                     span: DUMMY_SP,
-                    elem_type: Box::new(ty),
+                    type_name: Ident {
+                        span: DUMMY_SP,
+                        sym: "Array".into(),
+                        optional: false,
+                    }
+                    .into(),
+                    type_params: Some(Box::new(TsTypeParamInstantiation {
+                        span: DUMMY_SP,
+                        params: vec![ty.into()],
+                    })),
                 })
             }
             JsonSchema::Tuple {
@@ -493,6 +503,16 @@ impl JsonSchema {
                     types: vs.iter().map(|it| Box::new(it.to_ts_type())).collect(),
                 }),
             ),
+            // TsType::TsParenthesizedType(TsParenthesizedType {
+            //     span: DUMMY_SP,
+            //     type_ann: TsType::TsUnionOrIntersectionType(
+            //         TsUnionOrIntersectionType::TsUnionType(TsUnionType {
+            //             span: DUMMY_SP,
+            //             types: vs.iter().map(|it| Box::new(it.to_ts_type())).collect(),
+            //         }),
+            //     )
+            //     .into(),
+            // }),
             JsonSchema::AllOf(vs) => TsType::TsUnionOrIntersectionType(
                 TsUnionOrIntersectionType::TsIntersectionType(TsIntersectionType {
                     span: DUMMY_SP,
@@ -532,7 +552,26 @@ impl JsonSchema {
                 kind: TsKeywordTypeKind::TsNeverKeyword,
             }),
             JsonSchema::StUnknown => todo!(),
-            JsonSchema::StNot(_) => todo!(),
+            JsonSchema::StNot(v) => TsType::TsTypeRef(TsTypeRef {
+                span: DUMMY_SP,
+                type_name: Ident {
+                    span: DUMMY_SP,
+                    sym: "Exclude".into(),
+                    optional: false,
+                }
+                .into(),
+                type_params: Some(Box::new(TsTypeParamInstantiation {
+                    span: DUMMY_SP,
+                    params: vec![
+                        TsType::TsKeywordType(TsKeywordType {
+                            span: DUMMY_SP,
+                            kind: TsKeywordTypeKind::TsUnknownKeyword,
+                        })
+                        .into(),
+                        v.to_ts_type().into(),
+                    ],
+                })),
+            }),
         }
     }
 }

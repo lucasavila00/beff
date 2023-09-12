@@ -29,14 +29,14 @@ Response body is not compatible.
 
 ```ts
 type Old = {
-    "arr": Old[];
+    "arr": Array<Old>;
     "p": string;
 };
 ```
 
 ```ts
 type New = {
-    "arr": New[];
+    "arr": Array<New>;
     "p2": string;
 };
 ```

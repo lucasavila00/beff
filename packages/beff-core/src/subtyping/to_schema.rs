@@ -5,7 +5,7 @@ use std::{
 
 use crate::{
     ast::{
-        json::Json,
+        json::{Json, N},
         json_schema::{JsonSchema, Optionality},
     },
     open_api_ast::Validator,
@@ -270,8 +270,7 @@ impl<'a> SchemerContext<'a> {
                 }
                 ProperSubtype::Number { allowed, values } => {
                     if !allowed {
-                        todo!()
-                        //     return Mater::NumberLiteral(N::parse_int(4773992856));
+                        return JsonSchema::Const(Json::Number(N::parse_int(4773992856)));
                     }
                     for h in values {
                         acc.insert(JsonSchema::Const(Json::Number(h.clone())));
@@ -279,8 +278,7 @@ impl<'a> SchemerContext<'a> {
                 }
                 ProperSubtype::String { allowed, values } => {
                     if !allowed {
-                        todo!()
-                        // return Mater::StringLiteral("Izr1mn6edP0HLrWu".into());
+                        return JsonSchema::Const(Json::String("Izr1mn6edP0HLrWu".into()));
                     }
                     for h in values {
                         match h {
@@ -343,7 +341,6 @@ enum SimplifiedAllOf {
 }
 
 fn simplify_all_of(vs: BTreeSet<JsonSchema>) -> SimplifiedAllOf {
-    dbg!(&vs);
     let mut acc: Vec<(String, Optionality<JsonSchema>)> = vec![];
     for v in &vs {
         match v {
@@ -362,7 +359,6 @@ fn simplify_all_of(vs: BTreeSet<JsonSchema>) -> SimplifiedAllOf {
             }
             JsonSchema::AllOf(vs2) => {
                 let s = simplify_all_of(vs2.clone());
-                dbg!(&s);
                 match s {
                     SimplifiedAllOf::Orig(_) => {
                         return SimplifiedAllOf::Orig(vs);
@@ -400,11 +396,11 @@ fn simplify_schema(it: JsonSchema) -> JsonSchema {
             SimplifiedAllOf::Obj(vs) => JsonSchema::object(vs),
         },
         JsonSchema::AnyOf(vs) => {
-            let mut acc = BTreeSet::new();
+            let mut acc = vec![];
             for v in vs {
-                acc.insert(simplify_schema(v));
+                acc.push(simplify_schema(v));
             }
-            JsonSchema::AnyOf(acc)
+            JsonSchema::any_of(acc)
         }
         JsonSchema::StNot(n) => {
             let n = simplify_schema(*n);
@@ -452,21 +448,18 @@ pub fn to_validators(ctx: &SemTypeContext, ty: &Rc<SemType>, name: &str) -> Vec<
     let mut schemer = SchemerContext::new(ctx);
     let out = schemer.to_schema(ty, Some(name));
     let out = simplify_schema(out);
-    let vs: Vec<Validator> = schemer
+    let vs = schemer
         .validators
         .into_iter()
-        .filter(|it| schemer.recursive_validators.contains(&it.name))
-        .chain(vec![Validator {
+        .filter(|it| schemer.recursive_validators.contains(&it.name));
+
+    if schemer.recursive_validators.contains(name) {
+        vs.collect()
+    } else {
+        vs.chain(vec![Validator {
             name: name.into(),
             schema: out,
         }])
-        .collect();
-
-    let mut dedup: BTreeMap<String, Validator> = BTreeMap::new();
-
-    for v in vs.into_iter() {
-        dedup.insert(v.name.clone(), v);
+        .collect()
     }
-
-    dedup.into_iter().map(|it| it.1).collect()
 }

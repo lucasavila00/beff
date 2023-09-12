@@ -4,17 +4,19 @@ expression: "print_errors(from, to, &errors)"
 ---
 from:
 
+        type A = "a";
         export default {
             "/hello": {
-                get: (): ("a"|"b")[] => todo()
+                get: (c:Ctx, a: A):A => impl()
             }
         }
         
 to:
 
+        type A = "a"|"b";
         export default {
             "/hello": {
-                get: (): ("a"|"b"|"c")[] => todo()
+                get: (c:Ctx, a: A):A => impl()
             }
         }
         
@@ -24,17 +26,15 @@ to:
 Response body is not compatible.
 
 ```ts
-type Old = Array<"a" | "b">;
+type Old = "a";
 ```
 
 ```ts
-type New = Array<"a" | "b" | "c">;
+type New = "a" | "b";
 ```
 
 Previous clients will not support this potential response:
 
 ```js
-[
-    "c"
-];
+"b";
 ```
