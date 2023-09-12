@@ -63,15 +63,17 @@ mod tests {
         errors
     }
 
-    fn print_errors(errors: &[OpenApiBreakingChange]) -> String {
-        errors
+    fn print_errors(from: &str, to: &str, errors: &[OpenApiBreakingChange]) -> String {
+        let errs = errors
             .iter()
             .flat_map(|it| it.print_report())
             .collect::<Vec<MdReport>>()
             .into_iter()
             .map(|it| it.print())
             .collect::<Vec<String>>()
-            .join("\n\n")
+            .join("\n\n");
+
+        format!("from:\n{}\nto:\n{}\n\n{}", from, to, errs)
     }
     #[test]
     fn ok1() {
@@ -193,7 +195,7 @@ mod tests {
         "#;
         let errors = test_safe(from, to);
         assert!(!errors.is_empty());
-        insta::assert_snapshot!(print_errors(&errors));
+        insta::assert_snapshot!(print_errors(from, to, &errors));
     }
 
     #[test]
@@ -219,7 +221,7 @@ mod tests {
         "#;
         let errors = test_safe(from, to);
         assert!(!errors.is_empty());
-        insta::assert_snapshot!(print_errors(&errors));
+        insta::assert_snapshot!(print_errors(from, to, &errors));
     }
 
     #[test]
@@ -241,7 +243,7 @@ mod tests {
         "#;
         let errors = test_safe(from, to);
         assert!(!errors.is_empty());
-        insta::assert_snapshot!(print_errors(&errors));
+        insta::assert_snapshot!(print_errors(from, to, &errors));
     }
     #[test]
     fn fail3() {
@@ -262,7 +264,7 @@ mod tests {
         "#;
         let errors = test_safe(from, to);
         assert!(!errors.is_empty());
-        insta::assert_snapshot!(print_errors(&errors));
+        insta::assert_snapshot!(print_errors(from, to, &errors));
     }
     #[test]
     fn fail4() {
@@ -283,7 +285,7 @@ mod tests {
         "#;
         let errors = test_safe(from, to);
         assert!(!errors.is_empty());
-        insta::assert_snapshot!(print_errors(&errors));
+        insta::assert_snapshot!(print_errors(from, to, &errors));
     }
     #[test]
     fn fail5() {
@@ -304,7 +306,7 @@ mod tests {
         "#;
         let errors = test_safe(from, to);
         assert!(!errors.is_empty());
-        insta::assert_snapshot!(print_errors(&errors));
+        insta::assert_snapshot!(print_errors(from, to, &errors));
     }
     #[test]
     fn fail6() {
@@ -327,7 +329,7 @@ mod tests {
         "#;
         let errors = test_safe(from, to);
         assert!(!errors.is_empty());
-        insta::assert_snapshot!(print_errors(&errors));
+        insta::assert_snapshot!(print_errors(from, to, &errors));
     }
     #[test]
     fn fail7() {
@@ -348,7 +350,7 @@ mod tests {
         "#;
         let errors = test_safe(from, to);
         assert!(!errors.is_empty());
-        insta::assert_snapshot!(print_errors(&errors));
+        insta::assert_snapshot!(print_errors(from, to, &errors));
     }
 
     #[test]
@@ -399,6 +401,6 @@ mod tests {
         "#;
         let errors = test_safe(from, to);
         assert!(!errors.is_empty());
-        insta::assert_snapshot!(print_errors(&errors));
+        insta::assert_snapshot!(print_errors(from, to, &errors));
     }
 }

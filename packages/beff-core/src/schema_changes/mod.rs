@@ -1,5 +1,10 @@
 use crate::{
-    ast::{json::Json, json_schema::JsonSchema},
+    ast::{
+        js::{Js, ToJsBorrow},
+        json::Json,
+        json_schema::JsonSchema,
+    },
+    emit::emit_module,
     open_api_ast::{HTTPMethod, OpenApi, OperationObject, Validator},
     subtyping::{
         semtype::{Mater, SemTypeContext, SemTypeOps},
@@ -7,6 +12,8 @@ use crate::{
     },
 };
 use anyhow::Result;
+use swc_common::DUMMY_SP;
+use swc_ecma_ast::{Decl, Ident, ModuleItem, Stmt, TsType, TsTypeAliasDecl};
 
 #[derive(Debug)]
 pub enum BreakingChange {
@@ -29,6 +36,8 @@ pub enum MdReport {
     Heading(String),
     Text(String),
     Json(Json),
+    Js(Js),
+    TsType(String, TsType),
 }
 
 impl MdReport {
@@ -38,7 +47,28 @@ impl MdReport {
             MdReport::Text(s) => s.clone(),
             MdReport::Json(j) => {
                 let code = j.to_string();
-                format!("```json\n\n{}\n\n```", code)
+                format!("```json\n{}\n```", code)
+            }
+            MdReport::Js(js) => {
+                let code = js.clone().to_string();
+                format!("```js\n{}```", code)
+            }
+            MdReport::TsType(name, ty) => {
+                let code = emit_module(vec![ModuleItem::Stmt(Stmt::Decl(Decl::TsTypeAlias(
+                    Box::new(TsTypeAliasDecl {
+                        span: DUMMY_SP,
+                        declare: false,
+                        id: Ident {
+                            span: DUMMY_SP,
+                            sym: name.clone().into(),
+                            optional: false,
+                        },
+                        type_params: None,
+                        type_ann: Box::new(ty.clone()),
+                    }),
+                )))])
+                .unwrap();
+                format!("```ts\n{}```", code)
             }
         }
     }
@@ -52,18 +82,28 @@ impl BreakingChange {
             BreakingChange::PathRemoved => vec![MdReport::Text("Path removed".to_string())],
             // BreakingChange::MethodRemoved(_) => todo!(),
             BreakingChange::ResponseBodyBreakingChange(err) => {
-                let msg = format!("Response body might be changed to:");
-                let v = err.print_report();
-                vec![MdReport::Text(msg)].into_iter().chain(v).collect()
+                vec![MdReport::Text("Response body is not compatible.".into())]
+                    .into_iter()
+                    .chain(err.print_report(
+                        format!("Previous clients will not support this potential response:"),
+                        "New",
+                        "Old",
+                    ))
+                    .collect()
             }
-            BreakingChange::ParamBreakingChange { param_name, err } => {
-                let msg = format!(
+            BreakingChange::ParamBreakingChange { param_name, err } => vec![MdReport::Text(
+                format!("Param `{}` is not compatible.", param_name),
+            )]
+            .into_iter()
+            .chain(err.print_report(
+                format!(
                     "Param `{}` might be called with now unsupported value:",
                     param_name
-                );
-                let v = err.print_report();
-                vec![MdReport::Text(msg)].into_iter().chain(v).collect()
-            }
+                ),
+                "Old",
+                "New",
+            ))
+            .collect(),
             // BreakingChange::RequiredParamAdded { param_name } => todo!(),
             // BreakingChange::RequestBodyBreakingChange(_) => todo!(),
             // BreakingChange::AddedNonOptionalRequestBody => todo!(),
@@ -82,8 +122,8 @@ struct SchemaReference<'a> {
 
 #[derive(Debug)]
 pub struct IsNotSubtype {
-    // sub_type: JsonSchema,
-    // super_type: JsonSchema,
+    sub_type: JsonSchema,
+    super_type: JsonSchema,
 
     // sub_type_mater: Mater,
     // super_type_mater: Mater,
@@ -91,9 +131,14 @@ pub struct IsNotSubtype {
 }
 
 impl IsNotSubtype {
-    pub fn print_report(&self) -> Md {
-        let v = self.diff.to_json();
-        vec![MdReport::Json(v)]
+    pub fn print_report(&self, diff_msg: String, sub_name: &str, supe_name: &str) -> Md {
+        let v = self.diff.to_js_borrow();
+        vec![
+            MdReport::TsType(sub_name.to_string(), self.sub_type.to_ts_type()),
+            MdReport::TsType(supe_name.to_string(), self.super_type.to_ts_type()),
+            MdReport::Text(diff_msg),
+            MdReport::Js(v),
+        ]
     }
 }
 
@@ -119,8 +164,8 @@ impl<'a> SchemaReference<'a> {
         match sub_st.is_subtype(&supe_st, &mut builder) {
             true => Ok(SubTypeCheckResult::IsSubtype),
             false => Ok(SubTypeCheckResult::IsNotSubtype(IsNotSubtype {
-                // sub_type: sub.schema.clone(),
-                // super_type: sup.schema.clone(),
+                sub_type: sub.schema.clone(),
+                super_type: supe.schema.clone(),
                 // sub_type_mater: builder.materialize(&sub_st),
                 // super_type_mater: builder.materialize(&sup_st),
                 diff: builder.materialize(&sub_st.diff(&supe_st)),

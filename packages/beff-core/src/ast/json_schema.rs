@@ -4,6 +4,27 @@ use std::collections::BTreeSet;
 use crate::ast::json::{Json, ToJson};
 use anyhow::anyhow;
 use anyhow::Result;
+use swc_common::DUMMY_SP;
+use swc_ecma_ast::Ident;
+use swc_ecma_ast::Str;
+use swc_ecma_ast::TsArrayType;
+use swc_ecma_ast::TsEntityName;
+use swc_ecma_ast::TsIntersectionType;
+use swc_ecma_ast::TsKeywordType;
+use swc_ecma_ast::TsKeywordTypeKind;
+use swc_ecma_ast::TsLit;
+use swc_ecma_ast::TsLitType;
+use swc_ecma_ast::TsPropertySignature;
+use swc_ecma_ast::TsRestType;
+use swc_ecma_ast::TsTupleElement;
+use swc_ecma_ast::TsTupleType;
+use swc_ecma_ast::TsType;
+use swc_ecma_ast::TsTypeAnn;
+use swc_ecma_ast::TsTypeElement;
+use swc_ecma_ast::TsTypeLit;
+use swc_ecma_ast::TsTypeRef;
+use swc_ecma_ast::TsUnionOrIntersectionType;
+use swc_ecma_ast::TsUnionType;
 
 #[derive(Debug, PartialEq, Eq, Clone, PartialOrd, Ord)]
 pub enum Optionality<T> {
@@ -355,6 +376,131 @@ impl ToJson for JsonSchema {
             }
             JsonSchema::Const(val) => Json::object(vec![("const".into(), val)]),
             JsonSchema::Error => unreachable!("should not call print if schema had error"),
+        }
+    }
+}
+
+impl JsonSchema {
+    pub fn to_ts_type(&self) -> TsType {
+        match self {
+            JsonSchema::Null => todo!(),
+            JsonSchema::Boolean => todo!(),
+            JsonSchema::String => TsType::TsKeywordType(TsKeywordType {
+                span: DUMMY_SP,
+                kind: TsKeywordTypeKind::TsStringKeyword,
+            }),
+            JsonSchema::Number => todo!(),
+            JsonSchema::Any => todo!(),
+            JsonSchema::Error => todo!(),
+            JsonSchema::StringWithFormat(_) => todo!(),
+            JsonSchema::Object(vs) => TsType::TsTypeLit(TsTypeLit {
+                span: DUMMY_SP,
+                members: vs
+                    .iter()
+                    .map(|(k, v)| {
+                        TsTypeElement::TsPropertySignature(TsPropertySignature {
+                            span: DUMMY_SP,
+                            readonly: false,
+                            key: k.clone().into(),
+                            computed: false,
+                            optional: !v.is_required(),
+                            init: None,
+                            params: vec![],
+                            type_ann: Some(Box::new(TsTypeAnn {
+                                span: DUMMY_SP,
+                                type_ann: v.inner().to_ts_type().into(),
+                            })),
+                            type_params: None,
+                        })
+                    })
+                    .collect(),
+            }),
+            JsonSchema::Array(ty) => {
+                let ty = ty.to_ts_type();
+                TsType::TsArrayType(TsArrayType {
+                    span: DUMMY_SP,
+                    elem_type: Box::new(ty),
+                })
+            }
+            JsonSchema::Tuple {
+                prefix_items,
+                items,
+            } => {
+                let mut elem_types: Vec<TsTupleElement> = vec![];
+                for it in prefix_items {
+                    let ty = it.to_ts_type();
+                    let ty = TsTupleElement {
+                        span: DUMMY_SP,
+                        label: None,
+                        ty: ty.into(),
+                    };
+                    elem_types.push(ty);
+                }
+                if let Some(items) = items {
+                    let ty = items.to_ts_type();
+                    let ty = TsType::TsRestType(TsRestType {
+                        span: DUMMY_SP,
+                        type_ann: Box::new(TsType::TsArrayType(TsArrayType {
+                            span: DUMMY_SP,
+                            elem_type: Box::new(ty),
+                        })),
+                    });
+                    let ty = TsTupleElement {
+                        span: DUMMY_SP,
+                        label: None,
+                        ty: ty.into(),
+                    };
+                    elem_types.push(ty);
+                }
+                TsType::TsTupleType(TsTupleType {
+                    span: DUMMY_SP,
+                    elem_types,
+                })
+            }
+            JsonSchema::Ref(name) => TsType::TsTypeRef(TsTypeRef {
+                span: DUMMY_SP,
+                type_name: TsEntityName::Ident(Ident {
+                    span: DUMMY_SP,
+                    sym: name.clone().into(),
+                    optional: false,
+                }),
+                type_params: None,
+            }),
+            JsonSchema::OpenApiResponseRef(_) => todo!(),
+            JsonSchema::AnyOf(vs) => TsType::TsUnionOrIntersectionType(
+                TsUnionOrIntersectionType::TsUnionType(TsUnionType {
+                    span: DUMMY_SP,
+                    types: vs.iter().map(|it| Box::new(it.to_ts_type())).collect(),
+                }),
+            ),
+            JsonSchema::AllOf(vs) => TsType::TsUnionOrIntersectionType(
+                TsUnionOrIntersectionType::TsIntersectionType(TsIntersectionType {
+                    span: DUMMY_SP,
+                    types: vs.iter().map(|it| Box::new(it.to_ts_type())).collect(),
+                }),
+            ),
+            JsonSchema::Const(v) => match v {
+                Json::Null => todo!(),
+                Json::Bool(_) => todo!(),
+                Json::Number(n) => TsType::TsLitType(TsLitType {
+                    span: DUMMY_SP,
+                    lit: TsLit::Number(swc_ecma_ast::Number {
+                        span: DUMMY_SP,
+                        value: n.to_f64(),
+                        raw: None,
+                    }),
+                }),
+                Json::String(v) => TsType::TsLitType(TsLitType {
+                    span: DUMMY_SP,
+                    lit: TsLit::Str(Str {
+                        span: DUMMY_SP,
+                        value: v.clone().into(),
+                        raw: None,
+                    }),
+                }),
+                Json::Array(_) => todo!(),
+                Json::Object(_) => todo!(),
+            },
         }
     }
 }

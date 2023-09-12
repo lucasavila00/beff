@@ -1,15 +1,40 @@
 ---
 source: packages/beff-core/tests/safe_to_change.rs
-expression: print_errors(&errors)
+expression: "print_errors(from, to, &errors)"
 ---
+from:
+
+        export default {
+            "/hello": {
+                get: (): ["a"|"b"] => todo()
+            }
+        }
+        
+to:
+
+        export default {
+            "/hello": {
+                get: (): ["a"|"b"|"c"] => todo()
+            }
+        }
+        
+
 # Error at GET /hello:
 
-Response body might be changed to:
+Response body is not compatible.
 
-```json
+```ts
+type New = ["a" | "b" | "c"];
+```
 
+```ts
+type Old = ["a" | "b"];
+```
+
+Previous clients will not support this potential response:
+
+```js
 [
-  "c"
-]
-
+    "c"
+];
 ```

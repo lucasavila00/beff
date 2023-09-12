@@ -1,25 +1,54 @@
 ---
 source: packages/beff-core/tests/safe_to_change.rs
-expression: print_errors(&errors)
+expression: "print_errors(from, to, &errors)"
 ---
+from:
+
+        type A = string;
+        type AObject = {p: A, arr: AObject[]};
+        export default {
+            "/hello": {
+                get: (): AObject => impl()
+            }
+        }
+        
+to:
+
+        type B = string;
+        type BObject = {p2: B, arr: BObject[]};
+        export default {
+            "/hello": {
+                get: (): BObject => impl()
+            }
+        }
+        
+
 # Error at GET /hello:
 
-Response body might be changed to:
+Response body is not compatible.
 
-```json
+```ts
+type New = BObject;
+```
 
+```ts
+type Old = AObject;
+```
+
+Previous clients will not support this potential response:
+
+```js
 {
-  "arr": [
-    {
-      "arr": [
-        "~recursive~"
-      ],
-      "p": true,
-      "p2": "abc"
-    }
-  ],
-  "p": true,
-  "p2": "abc"
-}
-
+    "arr": [
+        {
+            "arr": [
+                recursion()
+            ],
+            "p": true,
+            "p2": "abc"
+        }
+    ],
+    "p": true,
+    "p2": "abc"
+};
 ```
