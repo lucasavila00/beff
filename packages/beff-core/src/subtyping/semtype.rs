@@ -417,12 +417,40 @@ impl SemTypeContext {
     pub fn unknown() -> SemType {
         return SemType::new_unknown();
     }
+}
 
-    fn materialize_mapping(&self, _bdd: &Rc<Bdd>) -> MaterializationJson {
-        todo!()
+#[derive(Debug, Clone)]
+enum TupleAcc {
+    Values(Vec<Rc<SemType>>),
+    Unknown,
+    Never,
+}
+impl SemTypeContext {
+    fn materialize_list_items(
+        &self,
+        items_ty: &Rc<SemType>,
+        left: &Rc<Bdd>,
+        middle: &Rc<Bdd>,
+        right: &Rc<Bdd>,
+    ) -> Rc<SemType> {
+        let mut acc = Rc::new(SemType::new_never());
+
+        let left_mater = self.materialize_list_bdd_items(left);
+        let ty = left_mater.intersect(&items_ty);
+        acc = acc.union(&ty);
+
+        let middle_meter = self.materialize_list_bdd_items(middle);
+        acc = acc.union(&middle_meter);
+
+        let right_mater = self.materialize_list_bdd_items(right);
+        let not_items_ty = items_ty.complement();
+        let ty = not_items_ty.intersect(&right_mater);
+        acc = acc.union(&ty);
+
+        acc
     }
 
-    fn materialize_list_bdd(&self, bdd: &Rc<Bdd>) -> Rc<SemType> {
+    fn materialize_list_bdd_items(&self, bdd: &Rc<Bdd>) -> Rc<SemType> {
         match bdd.as_ref() {
             Bdd::True => Self::unknown().into(),
             Bdd::False => Self::never().into(),
@@ -431,28 +459,11 @@ impl SemTypeContext {
                 left,
                 middle,
                 right,
-            } => self.list_positive_items(atom, left, middle, right),
+            } => self.materialize_list_node_items(atom, left, middle, right),
         }
     }
 
-    fn acc_bdd(&self) -> Rc<SemType> {
-        let mut acc = Rc::new(SemType::new_never());
-
-        let left_mater = self.materialize_list_bdd(left);
-        let ty = left_mater.intersect(&items_ty);
-        acc = acc.union(&ty);
-
-        let middle_meter = self.materialize_list_bdd(middle);
-        acc = acc.union(&middle_meter);
-
-        let right_mater = self.materialize_list_bdd(right);
-        let not_items_ty = items_ty.complement();
-        let ty = not_items_ty.intersect(&right_mater);
-        acc = acc.union(&ty);
-
-        acc
-    }
-    fn list_positive_items(
+    fn materialize_list_node_items(
         &self,
         atom: &Rc<Atom>,
         left: &Rc<Bdd>,
@@ -463,55 +474,305 @@ impl SemTypeContext {
             Atom::List(a) => self.get_list_atomic(*a).clone(),
             _ => unreachable!(),
         };
-        assert!(lt.prefix_items.is_empty(), "not implemented if not empty");
-
         let items_ty = &lt.items;
-        let mut acc = Rc::new(SemType::new_never());
+        self.materialize_list_items(items_ty, left, middle, right)
+    }
 
-        let left_mater = self.materialize_list_bdd(left);
-        let ty = left_mater.intersect(&items_ty);
-        acc = acc.union(&ty);
+    fn materialize_list_bdd_prefixes(&self, bdd: &Rc<Bdd>) -> TupleAcc {
+        match bdd.as_ref() {
+            Bdd::True => TupleAcc::Unknown,
+            Bdd::False => TupleAcc::Never,
+            Bdd::Node {
+                atom,
+                left,
+                middle,
+                right,
+            } => self.materialize_list_node_prefixes(atom, left, middle, right),
+        }
+    }
+    fn union_list_prefixes(&self, a: &TupleAcc, b: &TupleAcc) -> TupleAcc {
+        match (a, b) {
+            (TupleAcc::Never, other) | (other, TupleAcc::Never) => other.clone(),
+            (TupleAcc::Unknown, _) | (_, TupleAcc::Unknown) => TupleAcc::Unknown,
+            (TupleAcc::Values(a), TupleAcc::Values(b)) => {
+                let max_len = std::cmp::max(a.len(), b.len());
+                let mut acc = vec![];
+                for i in 0..max_len {
+                    let a_ty = a
+                        .get(i)
+                        .map(|it| it.clone())
+                        .unwrap_or(Self::never().into());
+                    let b_ty = b
+                        .get(i)
+                        .map(|it| it.clone())
+                        .unwrap_or(Self::never().into());
+                    let ty = a_ty.union(&b_ty);
+                    acc.push(ty);
+                }
 
-        let middle_meter = self.materialize_list_bdd(middle);
-        acc = acc.union(&middle_meter);
+                TupleAcc::Values(acc)
+            }
+        }
+    }
 
-        let right_mater = self.materialize_list_bdd(right);
-        let not_items_ty = items_ty.complement();
-        let ty = not_items_ty.intersect(&right_mater);
-        acc = acc.union(&ty);
+    fn intersect_list_prefixes(&self, a: &TupleAcc, b: &TupleAcc) -> TupleAcc {
+        match (a, b) {
+            (TupleAcc::Never, _) | (_, TupleAcc::Never) => TupleAcc::Never,
+            (TupleAcc::Unknown, other) | (other, TupleAcc::Unknown) => other.clone(),
+            (TupleAcc::Values(a), TupleAcc::Values(b)) => {
+                let max_len = std::cmp::max(a.len(), b.len());
+                let mut acc = vec![];
+                for i in 0..max_len {
+                    let a_ty = a
+                        .get(i)
+                        .map(|it| it.clone())
+                        .unwrap_or(Self::unknown().into());
+                    let b_ty = b
+                        .get(i)
+                        .map(|it| it.clone())
+                        .unwrap_or(Self::unknown().into());
+                    let ty = a_ty.intersect(&b_ty);
+                    acc.push(ty);
+                }
+
+                TupleAcc::Values(acc)
+            }
+        }
+    }
+
+    fn complement_list_prefixes(&self, a: &TupleAcc) -> TupleAcc {
+        match a {
+            TupleAcc::Values(vs) => TupleAcc::Values(vs.iter().map(|x| x.complement()).collect()),
+            TupleAcc::Unknown => TupleAcc::Never,
+            TupleAcc::Never => TupleAcc::Unknown,
+        }
+    }
+    fn materialize_list_prefixes(
+        &self,
+        items_ty: &TupleAcc,
+        left: &Rc<Bdd>,
+        middle: &Rc<Bdd>,
+        right: &Rc<Bdd>,
+    ) -> TupleAcc {
+        let mut acc = TupleAcc::Never;
+
+        let left_mater = self.materialize_list_bdd_prefixes(left);
+        let ty = self.intersect_list_prefixes(&left_mater, items_ty);
+        acc = self.union_list_prefixes(&acc, &ty);
+
+        let middle_meter = self.materialize_list_bdd_prefixes(middle);
+        acc = self.union_list_prefixes(&acc, &middle_meter);
+
+        let right_mater = self.materialize_list_bdd_prefixes(right);
+        let not_items_ty = self.complement_list_prefixes(items_ty);
+        let ty = self.intersect_list_prefixes(&not_items_ty, &right_mater);
+        acc = self.union_list_prefixes(&acc, &ty);
 
         acc
     }
 
-    fn materialize_list(&self, bdd: &Rc<Bdd>) -> MaterializationJson {
+    fn materialize_list_node_prefixes(
+        &self,
+        atom: &Rc<Atom>,
+        left: &Rc<Bdd>,
+        middle: &Rc<Bdd>,
+        right: &Rc<Bdd>,
+    ) -> TupleAcc {
+        let lt = match atom.as_ref() {
+            Atom::List(a) => self.get_list_atomic(*a).clone(),
+            _ => unreachable!(),
+        };
+        let prefix_items = &lt.prefix_items;
+        self.materialize_list_prefixes(&TupleAcc::Values(prefix_items.clone()), left, middle, right)
+    }
+}
+
+#[derive(Clone)]
+enum MappingAcc {
+    Values(Vec<(String, Rc<SemType>)>),
+    Unknown,
+    Never,
+}
+
+impl SemTypeContext {
+    fn intersect_mapping(&self, a: &MappingAcc, b: &MappingAcc) -> MappingAcc {
+        match (a, b) {
+            (MappingAcc::Never, _) | (_, MappingAcc::Never) => MappingAcc::Never,
+            (MappingAcc::Unknown, other) | (other, MappingAcc::Unknown) => other.clone(),
+            (MappingAcc::Values(a), MappingAcc::Values(b)) => {
+                let mut acc = BTreeMap::new();
+                for (k, v) in a.iter() {
+                    let v2 = acc
+                        .get(k)
+                        .map(|it: &Rc<ComplexSemType>| it.clone())
+                        .unwrap_or_else(|| Rc::new(Self::unknown()));
+                    let ty = v.intersect(&v2);
+                    acc.insert(k.clone(), ty);
+                }
+                for (k, v) in b.iter() {
+                    let v2 = acc
+                        .get(k)
+                        .map(|it: &Rc<ComplexSemType>| it.clone())
+                        .unwrap_or_else(|| Rc::new(Self::unknown()));
+                    let ty = v.intersect(&v2);
+                    acc.insert(k.clone(), ty);
+                }
+                MappingAcc::Values(acc.into_iter().collect())
+            }
+        }
+    }
+    fn union_mapping(&self, a: &MappingAcc, b: &MappingAcc) -> MappingAcc {
+        match (a, b) {
+            (MappingAcc::Never, other) | (other, MappingAcc::Never) => other.clone(),
+            (MappingAcc::Unknown, _) | (_, MappingAcc::Unknown) => MappingAcc::Unknown,
+            (MappingAcc::Values(a), MappingAcc::Values(b)) => {
+                let mut acc = BTreeMap::new();
+                for (k, v) in a.iter() {
+                    let v2 = acc
+                        .get(k)
+                        .map(|it: &Rc<ComplexSemType>| it.clone())
+                        .unwrap_or_else(|| Rc::new(Self::never()));
+                    let ty = v.intersect(&v2);
+                    acc.insert(k.clone(), ty);
+                }
+                for (k, v) in b.iter() {
+                    let v2 = acc
+                        .get(k)
+                        .map(|it: &Rc<ComplexSemType>| it.clone())
+                        .unwrap_or_else(|| Rc::new(Self::never()));
+                    let ty = v.intersect(&v2);
+                    acc.insert(k.clone(), ty);
+                }
+                MappingAcc::Values(acc.into_iter().collect())
+            }
+        }
+    }
+    fn complement_mapping(&self, a: &MappingAcc) -> MappingAcc {
+        match a {
+            MappingAcc::Values(vs) => MappingAcc::Values(
+                vs.iter()
+                    .map(|(k, v)| (k.clone(), v.complement()))
+                    .collect::<Vec<_>>(),
+            ),
+            MappingAcc::Unknown => MappingAcc::Never,
+            MappingAcc::Never => MappingAcc::Unknown,
+        }
+    }
+    fn materialize_mapping_bdd(&self, bdd: &Rc<Bdd>) -> MappingAcc {
         match bdd.as_ref() {
-            Bdd::True => MaterializationJson::Array(vec![MaterializationJson::Top]),
-            Bdd::False => MaterializationJson::Array(vec![MaterializationJson::Bot]),
+            Bdd::True => MappingAcc::Unknown,
+            Bdd::False => MappingAcc::Never,
+            Bdd::Node {
+                atom,
+                left,
+                middle,
+                right,
+            } => self.materialize_mapping_node(atom, left, middle, right),
+        }
+    }
+    fn materialize_mapping_node_vec(
+        &self,
+        items_ty: &MappingAcc,
+        left: &Rc<Bdd>,
+        middle: &Rc<Bdd>,
+        right: &Rc<Bdd>,
+    ) -> MappingAcc {
+        let mut acc = MappingAcc::Never;
+
+        let left_mater = self.materialize_mapping_bdd(left);
+        let ty = self.intersect_mapping(&left_mater, items_ty);
+        acc = self.union_mapping(&acc, &ty);
+
+        let middle_meter = self.materialize_mapping_bdd(middle);
+        acc = self.union_mapping(&acc, &middle_meter);
+
+        let right_mater = self.materialize_mapping_bdd(right);
+        let not_items_ty = self.complement_mapping(items_ty);
+        let ty = self.intersect_mapping(&not_items_ty, &right_mater);
+        acc = self.union_mapping(&acc, &ty);
+
+        acc
+    }
+
+    fn materialize_mapping_node(
+        &self,
+        atom: &Rc<Atom>,
+        left: &Rc<Bdd>,
+        middle: &Rc<Bdd>,
+        right: &Rc<Bdd>,
+    ) -> MappingAcc {
+        let mt = match atom.as_ref() {
+            Atom::Mapping(a) => self.get_mapping_atomic(*a).clone(),
+            _ => unreachable!(),
+        };
+        let mt = MappingAcc::Values(mt.iter().map(|(k, v)| (k.clone(), v.clone())).collect());
+        self.materialize_mapping_node_vec(&mt, left, middle, right)
+    }
+    fn materialize_mapping(&self, bdd: &Rc<Bdd>) -> Mater {
+        match bdd.as_ref() {
+            Bdd::True => todo!(),
+            Bdd::False => Mater::Never,
             Bdd::Node {
                 atom,
                 left,
                 middle,
                 right,
             } => {
-                let ty = self.list_positive_items(atom, left, middle, right);
-                return MaterializationJson::Array(vec![self.materialize(&ty)]);
+                let acc = self.materialize_mapping_node(atom, left, middle, right);
+                match acc {
+                    MappingAcc::Values(acc) => {
+                        let acc: Vec<(String, Mater)> = acc
+                            .into_iter()
+                            .map(|(k, v)| (k, self.materialize(&v)))
+                            .collect();
+                        Mater::Object(BTreeMap::from_iter(acc))
+                    }
+                    MappingAcc::Unknown => todo!(),
+                    MappingAcc::Never => Mater::Never,
+                }
             }
         }
     }
 
-    pub fn materialize(&self, ty: &SemType) -> MaterializationJson {
+    fn materialize_list(&self, bdd: &Rc<Bdd>) -> Mater {
+        match bdd.as_ref() {
+            Bdd::True => todo!(),
+            Bdd::False => Mater::Never,
+            Bdd::Node {
+                atom,
+                left,
+                middle,
+                right,
+            } => {
+                let ty = self.materialize_list_node_items(atom, left, middle, right);
+                let prefixes = self.materialize_list_node_prefixes(atom, left, middle, right);
+                match prefixes {
+                    TupleAcc::Values(vs) => Mater::Array {
+                        items: self.materialize(&ty).into(),
+                        prefix_items: vs.iter().map(|x| self.materialize(x)).collect(),
+                    },
+                    TupleAcc::Unknown => {
+                        todo!()
+                    }
+                    TupleAcc::Never => Mater::Never,
+                }
+            }
+        }
+    }
+
+    pub fn materialize(&self, ty: &SemType) -> Mater {
         if ty.all == 0 && ty.subtype_data.is_empty() {
-            return MaterializationJson::Bot;
+            return Mater::Never;
         }
 
         for t in SubTypeTag::all() {
             if (ty.all & t.code()) != 0 {
                 match t {
-                    SubTypeTag::Null => return MaterializationJson::Null,
-                    SubTypeTag::Boolean => return MaterializationJson::Bool(true),
-                    SubTypeTag::Number => return MaterializationJson::Number(N::parse_int(0)),
-                    SubTypeTag::String => return MaterializationJson::String("abc".into()),
-                    SubTypeTag::Void => return MaterializationJson::Void,
+                    SubTypeTag::Null => return Mater::Null,
+                    SubTypeTag::Boolean => return Mater::Bool,
+                    SubTypeTag::Number => return Mater::Number,
+                    SubTypeTag::String => return Mater::String,
+                    SubTypeTag::Void => return Mater::Void,
                     SubTypeTag::Mapping => unreachable!("we do not allow creation of all mappings"),
                     SubTypeTag::List => unreachable!("we do not allow creation of all arrays"),
                 }
@@ -520,11 +781,11 @@ impl SemTypeContext {
 
         for s in &ty.subtype_data {
             match s.as_ref() {
-                ProperSubtype::Boolean(v) => return MaterializationJson::Bool(*v),
+                ProperSubtype::Boolean(v) => return Mater::BooleanLiteral(*v),
                 ProperSubtype::Number { allowed, values } => {
                     assert!(allowed, "cannot materialize negative type");
                     match values.split_first() {
-                        Some((h, _t)) => return MaterializationJson::Number(h.clone()),
+                        Some((h, _t)) => return Mater::NumberLiteral(h.clone()),
                         None => unreachable!("number values cannot be empty"),
                     }
                 }
@@ -532,11 +793,9 @@ impl SemTypeContext {
                     assert!(allowed, "cannot materialize negative type");
                     match values.split_first() {
                         Some((h, _t)) => match h {
-                            StringLitOrFormat::Lit(st) => {
-                                return MaterializationJson::String(st.clone())
-                            }
+                            StringLitOrFormat::Lit(st) => return Mater::StringLiteral(st.clone()),
                             StringLitOrFormat::Format(fmt) => {
-                                return MaterializationJson::StringWithFormat(fmt.clone())
+                                return Mater::StringWithFormat(fmt.clone())
                             }
                         },
                         None => unreachable!("string values cannot be empty"),
@@ -552,16 +811,21 @@ impl SemTypeContext {
 }
 
 #[derive(PartialEq, Eq, Debug)]
-pub enum MaterializationJson {
+pub enum Mater {
     Null,
-    Bool(bool),
-    Number(N),
-    String(String),
-    Array(Vec<MaterializationJson>),
-    Object(BTreeMap<String, MaterializationJson>),
-    // extra
-    Bot,
-    Top,
+    Bool,
+    Number,
+    String,
+    Never,
+    Unknown,
     Void,
     StringWithFormat(String),
+    StringLiteral(String),
+    NumberLiteral(N),
+    BooleanLiteral(bool),
+    Array {
+        items: Box<Mater>,
+        prefix_items: Vec<Mater>,
+    },
+    Object(BTreeMap<String, Mater>),
 }

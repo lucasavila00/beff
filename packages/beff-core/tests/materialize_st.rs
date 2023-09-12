@@ -1,10 +1,12 @@
 #[cfg(test)]
 mod tests {
 
+    use std::collections::BTreeMap;
+
     use beff_core::{
         ast::{json::Json, json_schema::JsonSchema},
         subtyping::{
-            semtype::{MaterializationJson, SemTypeContext, SemTypeOps},
+            semtype::{Mater, SemTypeContext, SemTypeOps},
             ToSemType,
         },
     };
@@ -15,30 +17,24 @@ mod tests {
 
         let mut ctx = SemTypeContext::new();
         let t = JsonSchema::Null.to_sub_type(&validators, &mut ctx).unwrap();
-        assert_eq!(ctx.materialize(&t), MaterializationJson::Null);
+        assert_eq!(ctx.materialize(&t), Mater::Null);
 
         let t = JsonSchema::String
             .to_sub_type(&validators, &mut ctx)
             .unwrap();
-        assert_eq!(
-            ctx.materialize(&t),
-            MaterializationJson::String("abc".into())
-        );
+        assert_eq!(ctx.materialize(&t), Mater::String);
 
         let t = JsonSchema::Const(Json::String("def".into()))
             .to_sub_type(&validators, &mut ctx)
             .unwrap();
-        assert_eq!(
-            ctx.materialize(&t),
-            MaterializationJson::String("def".into())
-        );
+        assert_eq!(ctx.materialize(&t), Mater::StringLiteral("def".into()));
 
         let t = JsonSchema::StringWithFormat("password".into())
             .to_sub_type(&validators, &mut ctx)
             .unwrap();
         assert_eq!(
             ctx.materialize(&t),
-            MaterializationJson::StringWithFormat("password".into())
+            Mater::StringWithFormat("password".into())
         );
 
         let t = JsonSchema::Array(JsonSchema::String.into())
@@ -47,7 +43,10 @@ mod tests {
 
         assert_eq!(
             ctx.materialize(&t),
-            MaterializationJson::Array(vec![MaterializationJson::String("abc".into())])
+            Mater::Array {
+                items: Box::new(Mater::String),
+                prefix_items: vec![]
+            }
         );
     }
 
@@ -64,10 +63,7 @@ mod tests {
 
         assert!(is_empty);
 
-        assert_eq!(
-            ctx.materialize(&t2),
-            MaterializationJson::Array(vec![MaterializationJson::Bot])
-        );
+        assert_eq!(ctx.materialize(&t2), Mater::Never);
     }
     #[test]
     fn diff_lists2() {
@@ -85,7 +81,10 @@ mod tests {
 
         assert_eq!(
             ctx.materialize(&t2),
-            MaterializationJson::Array(vec![MaterializationJson::String("abc".into())])
+            Mater::Array {
+                items: Mater::String.into(),
+                prefix_items: vec![]
+            }
         );
     }
     #[test]
@@ -114,10 +113,119 @@ mod tests {
 
         assert_eq!(
             ctx.materialize(&t2),
-            MaterializationJson::Array(vec![MaterializationJson::String("b".into())])
+            Mater::Array {
+                items: Mater::StringLiteral("b".into()).into(),
+                prefix_items: vec![]
+            }
         );
     }
 
+    #[test]
+    fn diff_tuple() {
+        let validators = vec![];
+        let mut ctx = SemTypeContext::new();
+
+        let t0 = JsonSchema::Tuple {
+            items: None,
+            prefix_items: vec![JsonSchema::String.into()],
+        }
+        .to_sub_type(&validators, &mut ctx)
+        .unwrap();
+
+        let t1 = JsonSchema::Tuple {
+            items: None,
+            prefix_items: vec![JsonSchema::Boolean.into()],
+        }
+        .to_sub_type(&validators, &mut ctx)
+        .unwrap();
+        let t2 = t0.diff(&t1);
+
+        assert_eq!(
+            ctx.materialize(&t2),
+            Mater::Array {
+                items: Mater::Never.into(),
+                prefix_items: vec![Mater::String]
+            }
+        );
+    }
+
+    #[test]
+    fn tuple() {
+        let validators = vec![];
+        let mut ctx = SemTypeContext::new();
+
+        let t0 = JsonSchema::Tuple {
+            items: Some(Box::new(JsonSchema::Boolean)),
+            prefix_items: vec![JsonSchema::String.into()],
+        }
+        .to_sub_type(&validators, &mut ctx)
+        .unwrap();
+
+        assert_eq!(
+            ctx.materialize(&t0),
+            Mater::Array {
+                items: Mater::Bool.into(),
+                prefix_items: vec![Mater::String,]
+            }
+        );
+    }
+    #[test]
+    fn mapping() {
+        let validators = vec![];
+        let mut ctx = SemTypeContext::new();
+
+        let t0 = JsonSchema::Object(BTreeMap::new())
+            .to_sub_type(&validators, &mut ctx)
+            .unwrap();
+
+        assert_eq!(ctx.materialize(&t0), Mater::Object(BTreeMap::new()));
+    }
+    #[test]
+    fn mapping2() {
+        let validators = vec![];
+        let mut ctx = SemTypeContext::new();
+
+        let t0 = JsonSchema::Object(BTreeMap::from_iter(vec![
+            ("a".into(), JsonSchema::String.required()),
+            ("b".into(), JsonSchema::Boolean.optional()),
+        ]))
+        .to_sub_type(&validators, &mut ctx)
+        .unwrap();
+
+        assert_eq!(
+            ctx.materialize(&t0),
+            Mater::Object(BTreeMap::from_iter(vec![
+                ("a".into(), Mater::String),
+                ("b".into(), Mater::Bool),
+            ]))
+        );
+    }
+    #[test]
+    fn mapping_diff() {
+        let validators = vec![];
+        let mut ctx = SemTypeContext::new();
+
+        let before = JsonSchema::Object(BTreeMap::from_iter(vec![(
+            "b".into(),
+            JsonSchema::Boolean.required(),
+        )]))
+        .to_sub_type(&validators, &mut ctx)
+        .unwrap();
+
+        let after = JsonSchema::Object(BTreeMap::from_iter(vec![(
+            "b".into(),
+            JsonSchema::Boolean.optional(),
+        )]))
+        .to_sub_type(&validators, &mut ctx)
+        .unwrap();
+
+        assert!(!after.is_subtype(&before, &mut ctx));
+        let t2 = after.diff(&before);
+        assert_eq!(
+            ctx.materialize(&t2),
+            Mater::Object(BTreeMap::from_iter(vec![("b".into(), Mater::Void),]))
+        );
+    }
     #[test]
     fn intersect_to_never() {
         let validators = vec![];
@@ -130,19 +238,6 @@ mod tests {
             .unwrap()
             .intersect(&t);
 
-        assert_eq!(ctx.materialize(&t2), MaterializationJson::Bot);
+        assert_eq!(ctx.materialize(&t2), Mater::Never);
     }
-    // #[test]
-
-    // fn diff_test() {
-    //     let validators = vec![];
-    //     let mut ctx = SemTypeContext::new();
-
-    //     let t = JsonSchema::String
-    //         .to_sub_type(&validators, &mut ctx)
-    //         .unwrap();
-
-    //     dbg!(&t);
-    //     dbg!(&t.complement());
-    // }
 }
