@@ -28,11 +28,11 @@ type Old = 1;
 ```
 
 ```ts
-type New = null | boolean | string | number | Object | Array;
+type New = (null | boolean | string | number | Object | Array);
 ```
 
 ```ts
-type Diff = null | boolean | string | Object | Array | Not<1>;
+type Diff = (null | boolean | string | Object | Array | Not<1>);
 ```
 
 Previous clients will not support this potential response:

@@ -28,7 +28,7 @@ to:
 Param `a` is not compatible.
 
 ```ts
-type Old = "a" | "b";
+type Old = ("a" | "b");
 ```
 
 ```ts

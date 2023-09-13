@@ -28,29 +28,22 @@ Response body is not compatible.
 ```ts
 type Old = {
     "a": 1;
-} & {
-    "p": "a" | "b";
+    "p": ("a" | "b");
 };
 ```
 
 ```ts
 type New = {
     "a": 1;
-} & {
-    "p": "a" | "b" | "c";
+    "p": ("a" | "b" | "c");
 };
 ```
 
 ```ts
 type Diff = {
-    "a": 1;
-} & {
-    "p": "a" | "b" | "c";
-} & Not<{
-    "a": 1;
-}> | Not<{
-    "p": "a" | "b";
-}>;
+    "a": never;
+    "p": "c";
+};
 ```
 
 Previous clients will not support this potential response:
@@ -69,25 +62,22 @@ Response body is not compatible.
 ```ts
 type Old = {
     "a": 1;
-    "p": "a" | "b";
+    "p": ("a" | "b");
 };
 ```
 
 ```ts
 type New = {
     "a": 1;
-    "p": "a" | "b" | "c";
+    "p": ("a" | "b" | "c");
 };
 ```
 
 ```ts
 type Diff = {
-    "a": 1;
-    "p": "a" | "b" | "c";
-} & Not<{
-    "a": 1;
-    "p": "a" | "b";
-}>;
+    "a": never;
+    "p": "c";
+};
 ```
 
 Previous clients will not support this potential response:

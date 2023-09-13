@@ -264,7 +264,7 @@ impl<'a> SemTypeResolverContext<'a> {
             } => self.materialize_mapping_node(atom, left, middle, right),
         }
     }
-    fn materialize_mapping_node_vec(
+    fn materialize_mapping_node_acc(
         &self,
         items_ty: &MappingAcc,
         left: &Rc<Bdd>,
@@ -300,7 +300,7 @@ impl<'a> SemTypeResolverContext<'a> {
             _ => unreachable!(),
         };
         let mt = MappingAcc::Values(mt.iter().map(|(k, v)| (k.clone(), v.clone())).collect());
-        self.materialize_mapping_node_vec(&mt, left, middle, right)
+        self.materialize_mapping_node_acc(&mt, left, middle, right)
     }
 }
 pub struct MaterializationContext<'a> {

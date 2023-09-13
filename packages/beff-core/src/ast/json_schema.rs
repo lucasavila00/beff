@@ -15,6 +15,7 @@ use swc_ecma_ast::TsKeywordType;
 use swc_ecma_ast::TsKeywordTypeKind;
 use swc_ecma_ast::TsLit;
 use swc_ecma_ast::TsLitType;
+use swc_ecma_ast::TsParenthesizedType;
 use swc_ecma_ast::TsPropertySignature;
 use swc_ecma_ast::TsRestType;
 use swc_ecma_ast::TsTupleElement;
@@ -514,28 +515,44 @@ impl JsonSchema {
                 type_params: None,
             }),
             JsonSchema::OpenApiResponseRef(_) => todo!(),
-            JsonSchema::AnyOf(vs) => TsType::TsUnionOrIntersectionType(
-                TsUnionOrIntersectionType::TsUnionType(TsUnionType {
+            JsonSchema::AnyOf(vs) =>
+            // TsType::TsUnionOrIntersectionType(
+            //     TsUnionOrIntersectionType::TsUnionType(TsUnionType {
+            //         span: DUMMY_SP,
+            //         types: vs.iter().map(|it| Box::new(it.to_ts_type())).collect(),
+            //     }),
+            // ),
+            {
+                TsType::TsParenthesizedType(TsParenthesizedType {
                     span: DUMMY_SP,
-                    types: vs.iter().map(|it| Box::new(it.to_ts_type())).collect(),
-                }),
-            ),
-            // TsType::TsParenthesizedType(TsParenthesizedType {
-            //     span: DUMMY_SP,
-            //     type_ann: TsType::TsUnionOrIntersectionType(
-            //         TsUnionOrIntersectionType::TsUnionType(TsUnionType {
-            //             span: DUMMY_SP,
-            //             types: vs.iter().map(|it| Box::new(it.to_ts_type())).collect(),
-            //         }),
-            //     )
-            //     .into(),
-            // }),
-            JsonSchema::AllOf(vs) => TsType::TsUnionOrIntersectionType(
-                TsUnionOrIntersectionType::TsIntersectionType(TsIntersectionType {
+                    type_ann: TsType::TsUnionOrIntersectionType(
+                        TsUnionOrIntersectionType::TsUnionType(TsUnionType {
+                            span: DUMMY_SP,
+                            types: vs.iter().map(|it| Box::new(it.to_ts_type())).collect(),
+                        }),
+                    )
+                    .into(),
+                })
+            }
+            JsonSchema::AllOf(vs) =>
+            // TsType::TsUnionOrIntersectionType(
+            //     TsUnionOrIntersectionType::TsIntersectionType(TsIntersectionType {
+            //         span: DUMMY_SP,
+            //         types: vs.iter().map(|it| Box::new(it.to_ts_type())).collect(),
+            //     }),
+            // ),
+            {
+                TsType::TsParenthesizedType(TsParenthesizedType {
                     span: DUMMY_SP,
-                    types: vs.iter().map(|it| Box::new(it.to_ts_type())).collect(),
-                }),
-            ),
+                    type_ann: TsType::TsUnionOrIntersectionType(
+                        TsUnionOrIntersectionType::TsIntersectionType(TsIntersectionType {
+                            span: DUMMY_SP,
+                            types: vs.iter().map(|it| Box::new(it.to_ts_type())).collect(),
+                        }),
+                    )
+                    .into(),
+                })
+            }
             JsonSchema::Const(v) => match v {
                 Json::Null => todo!(),
                 Json::Bool(b) => TsType::TsLitType(TsLitType {

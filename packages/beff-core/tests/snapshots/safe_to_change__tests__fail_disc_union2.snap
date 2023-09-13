@@ -24,48 +24,33 @@ to:
 Response body is not compatible.
 
 ```ts
-type Old = {
+type Old = ({
     "data": string;
     "ok": true;
 } | {
     "data": number;
     "ok": false;
-};
+});
 ```
 
 ```ts
-type New = {
+type New = ({
     "data": boolean;
     "ok": false;
 } | {
     "data": string;
     "ok": true;
-};
+});
 ```
 
 ```ts
-type Diff = {
+type Diff = ({
     "data": boolean;
-    "ok": false;
-} & Not<{
-    "data": string;
-    "ok": true;
-}> & Not<{
-    "data": number;
-    "ok": false;
-}> | {
-    "data": string;
-    "ok": true;
-} & Not<{
-    "data": string;
-    "ok": true;
-}> & Not<{
-    "data": number;
-    "ok": false;
-}> & Not<{
-    "data": boolean;
-    "ok": false;
-}>;
+    "ok": never;
+} | {
+    "data": never;
+    "ok": never;
+});
 ```
 
 Previous clients will not support this potential response:

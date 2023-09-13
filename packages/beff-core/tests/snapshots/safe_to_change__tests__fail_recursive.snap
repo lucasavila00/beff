@@ -42,29 +42,27 @@ type New = {
 ```
 
 ```ts
-type t_1 = Array<{
-    "arr": t_1;
+type t_2 = {
+    "arr": Array<t_2>;
     "p2": string;
-}>;
+};
 
-type t_6 = Array<{
-    "arr": t_6;
+type t_6 = {
+    "arr": Array<t_6>;
     "p": string;
-}>;
+};
 
 type Diff = {
-    "arr": Array<{
-        "arr": t_1;
+    "arr": (Array<{
+        "arr": Array<t_2>;
         "p2": string;
-    }>;
-    "p2": string;
-} & Not<{
-    "arr": Array<{
-        "arr": t_6;
+    }> & Not<Array<{
+        "arr": Array<t_6>;
         "p": string;
-    }>;
-    "p": string;
-}>;
+    }>>);
+    "p"?: (null | boolean | number | Object | Array);
+    "p2": string;
+};
 ```
 
 Previous clients will not support this potential response:

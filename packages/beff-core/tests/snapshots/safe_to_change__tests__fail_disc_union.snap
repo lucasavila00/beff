@@ -40,11 +40,8 @@ type New = {
 ```ts
 type Diff = {
     "data": boolean;
-    "ok": false;
-} & Not<{
-    "data": number;
-    "ok": false;
-}>;
+    "ok": never;
+};
 ```
 
 Previous clients will not support this potential response:
