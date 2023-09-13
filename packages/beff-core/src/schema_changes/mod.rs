@@ -179,7 +179,7 @@ fn diff_to_js(diff: &Mater) -> Js {
     match diff {
         Mater::Never => Js::Expr(call_expr("never")),
         Mater::Unknown => todo!(),
-        Mater::Void => todo!(),
+        Mater::Void => Js::Expr(call_expr("void")),
         Mater::Recursive => Js::Expr(call_expr("recursion")),
         Mater::Null => Js::Null,
         Mater::Boolean => Js::Bool(true),

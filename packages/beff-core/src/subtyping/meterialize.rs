@@ -13,7 +13,45 @@ use super::{
 pub struct SemTypeResolverContext<'a>(pub &'a mut SemTypeContext);
 
 impl<'a> SemTypeResolverContext<'a> {
-    fn intersect_mapping_atomics(it: Vec<Rc<MappingAtomic>>) -> Rc<MappingAtomic> {
+    fn intersect_list_atomics(&mut self, it: Vec<Rc<ListAtomic>>) -> Rc<ListAtomic> {
+        let items = it
+            .iter()
+            .map(|it| it.items.clone())
+            .fold(Rc::new(SemType::new_unknown()), |acc, it| {
+                acc.intersect(&it)
+            });
+
+        let mut prefix_items: Vec<Rc<SemType>> = vec![];
+        let max_len = it.iter().map(|it| it.prefix_items.len()).max().unwrap_or(0);
+        for i in 0..max_len {
+            let mut acc = Rc::new(SemType::new_unknown());
+
+            for atom in &it {
+                if i < atom.prefix_items.len() {
+                    acc = acc.intersect(&atom.prefix_items[i]);
+                }
+            }
+
+            prefix_items.push(acc);
+        }
+
+        Rc::new(ListAtomic {
+            items,
+            prefix_items,
+        })
+    }
+
+    fn intersect_mapping_atomics(&mut self, it: Vec<Rc<MappingAtomic>>) -> Rc<MappingAtomic> {
+        // for atom in it {
+        //     let mp = self.0.mapping_definition(atom.clone());
+        //     let st = Rc::new(mp);
+
+        //     let is_empty = st.is_empty(&mut self.0);
+        //     if !is_empty {
+        //         return atom;
+        //     }
+        // }
+        // todo!()
         let mut acc: MappingAtomic = BTreeMap::new();
 
         for atom in it {
@@ -71,7 +109,7 @@ impl<'a> SemTypeResolverContext<'a> {
                     .into_iter()
                     .chain(self.to_schema_mapping_node_bdd_vec(atom, left, middle, right));
 
-                acc.push(Self::intersect_mapping_atomics(ty.collect()));
+                acc.push(self.intersect_mapping_atomics(ty.collect()));
             }
         };
 
@@ -100,7 +138,7 @@ impl<'a> SemTypeResolverContext<'a> {
                     .into_iter()
                     .chain(self.to_schema_mapping_node_bdd_vec(atom, left, middle, right));
 
-                acc.push(Self::intersect_mapping_atomics(ty.collect()));
+                acc.push(self.intersect_mapping_atomics(ty.collect()));
             }
         }
         return acc;
@@ -116,34 +154,6 @@ impl<'a> SemTypeResolverContext<'a> {
                 right,
             } => self.to_schema_mapping_node_bdd_vec(atom, left, middle, right),
         }
-    }
-
-    fn intersect_list_atomics(it: Vec<Rc<ListAtomic>>) -> Rc<ListAtomic> {
-        let items = it
-            .iter()
-            .map(|it| it.items.clone())
-            .fold(Rc::new(SemType::new_unknown()), |acc, it| {
-                acc.intersect(&it)
-            });
-
-        let mut prefix_items: Vec<Rc<SemType>> = vec![];
-        let max_len = it.iter().map(|it| it.prefix_items.len()).max().unwrap_or(0);
-        for i in 0..max_len {
-            let mut acc = Rc::new(SemType::new_unknown());
-
-            for atom in &it {
-                if i < atom.prefix_items.len() {
-                    acc = acc.intersect(&atom.prefix_items[i]);
-                }
-            }
-
-            prefix_items.push(acc);
-        }
-
-        Rc::new(ListAtomic {
-            items,
-            prefix_items,
-        })
     }
 
     fn list_atomic_complement(it: Rc<ListAtomic>) -> Rc<ListAtomic> {
@@ -186,7 +196,7 @@ impl<'a> SemTypeResolverContext<'a> {
                     .into_iter()
                     .chain(self.to_schema_list_node_bdd_vec(atom, left, middle, right));
 
-                acc.push(Self::intersect_list_atomics(ty.collect()));
+                acc.push(self.intersect_list_atomics(ty.collect()));
             }
         };
 
@@ -215,7 +225,7 @@ impl<'a> SemTypeResolverContext<'a> {
                     .into_iter()
                     .chain(self.to_schema_list_node_bdd_vec(atom, left, middle, right));
 
-                acc.push(Self::intersect_list_atomics(ty.collect()));
+                acc.push(self.intersect_list_atomics(ty.collect()));
             }
         }
         return acc;
@@ -295,25 +305,22 @@ impl<'a> MaterializationContext<'a> {
     fn materialize_mapping(&mut self, bdd: &Rc<Bdd>) -> Mater {
         let vs = self.ctx.to_schema_mapping_bdd_vec(bdd);
         for v in vs {
-            dbg!(&v);
-            let mp = self.ctx.0.mapping_definition(v.clone());
-            let st = Rc::new(mp);
-            dbg!(&st);
-            // if !st.is_empty(&mut self.ctx.0) {
+            let is_never = v.iter().all(|it| it.1.is_never());
+            if is_never {
+                continue;
+            }
             return self.mapping_atom_mater(&v);
-            // }
         }
         return Mater::Never;
-        // todo!()
     }
     fn materialize_list(&mut self, bdd: &Rc<Bdd>) -> Mater {
         let vs = self.ctx.to_schema_list_bdd_vec(bdd);
         for v in vs {
-            let lp = self.ctx.0.list_definition(v.clone());
-            let st = Rc::new(lp);
-            // if !st.is_empty(&mut self.ctx.0) {
+            let is_never = v.items.is_never() && v.prefix_items.iter().all(|it| it.is_never());
+            if is_never {
+                continue;
+            }
             return self.list_atom_mater(&v);
-            // }
         }
         return Mater::Never;
         // todo!()
@@ -336,7 +343,7 @@ impl<'a> MaterializationContext<'a> {
             .insert(ty.clone(), MaterMemo::Mater(mater.clone()));
         mater
     }
-    fn materialize_no_cache(&mut self, ty: &SemType) -> Mater {
+    fn materialize_no_cache(&mut self, ty: &Rc<SemType>) -> Mater {
         if ty.all == 0 && ty.subtype_data.is_empty() {
             return Mater::Never;
         }
