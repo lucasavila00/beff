@@ -434,7 +434,6 @@ impl<'a> MaterializationContext<'a> {
                     SubTypeTag::Void => return Mater::Void,
                     SubTypeTag::Mapping => unreachable!("we do not allow creation of all mappings"),
                     SubTypeTag::List => unreachable!("we do not allow creation of all arrays"),
-                    SubTypeTag::Any => todo!(),
                 }
             }
         }

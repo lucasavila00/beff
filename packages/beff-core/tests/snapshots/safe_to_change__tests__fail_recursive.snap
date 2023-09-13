@@ -42,24 +42,8 @@ type New = {
 ```
 
 ```ts
-type t_2 = {
-    "arr": Array<t_2>;
-    "p2": string;
-};
-
-type t_6 = {
-    "arr": Array<t_6>;
-    "p": string;
-};
-
 type Diff = {
-    "arr": (Array<{
-        "arr": Array<t_2>;
-        "p2": string;
-    }> & Not<Array<{
-        "arr": Array<t_6>;
-        "p": string;
-    }>>);
+    "arr": Array<Diff>;
     "p"?: (null | boolean | number | Object | Array);
     "p2": string;
 };

@@ -21,7 +21,6 @@ pub enum SubTypeTag {
     Mapping = 1 << 0x5,
     Void = 1 << 0x6,
     List = 1 << 0x7,
-    Any = 1 << 0x15,
 }
 
 pub const VAL: u32 = 1 << 1 | 1 << 2 | 1 << 3 | 1 << 4 | 1 << 5 | 1 << 6 | 1 << 7;
@@ -41,7 +40,6 @@ impl SubTypeTag {
             SubTypeTag::Number,
             SubTypeTag::Mapping,
             SubTypeTag::List,
-            SubTypeTag::Any,
         ]
     }
 }

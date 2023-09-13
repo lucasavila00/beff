@@ -32,7 +32,7 @@ type New = Array<("a" | "b" | "c")>;
 ```
 
 ```ts
-type Diff = (Array<("a" | "b" | "c")> & Not<Array<("a" | "b")>>);
+type Diff = Array<"c">;
 ```
 
 Previous clients will not support this potential response:

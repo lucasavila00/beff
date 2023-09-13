@@ -222,12 +222,6 @@ impl SemTypeOps for Rc<SemType> {
     }
 
     fn is_subtype(&self, t2: &Rc<SemType>, ctx: &mut SemTypeContext) -> bool {
-        if self.has_any() {
-            return true;
-        }
-        if t2.has_any() {
-            return true;
-        }
         self.diff(t2).is_empty(ctx)
     }
 
@@ -237,9 +231,6 @@ impl SemTypeOps for Rc<SemType> {
 }
 
 impl SemType {
-    pub fn has_any(&self) -> bool {
-        (self.all & SubTypeTag::Any.code()) != 0
-    }
     pub fn has_void(&self) -> bool {
         (self.all & SubTypeTag::Void.code()) != 0
     }
@@ -426,8 +417,5 @@ impl SemTypeContext {
     }
     pub fn unknown() -> SemType {
         return SemType::new_unknown();
-    }
-    pub fn any() -> SemType {
-        return SemType::new_basic(SubTypeTag::Any.code());
     }
 }
