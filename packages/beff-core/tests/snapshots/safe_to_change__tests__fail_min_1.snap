@@ -45,26 +45,6 @@ type Diff = (["a2", {
 
 Previous clients will not support this potential response:
 
-```js
-[
-    "a2",
-    {
-        "a": undefined
-    }
-];
-```
-
-diff:
-
-```js
-[
-    never(),
-    {
-        "a": undefined
-    }
-];
-```
-
 evidence:
 
 ```js

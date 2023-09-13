@@ -55,22 +55,6 @@ type Diff = ({
 
 Previous clients will not support this potential response:
 
-```js
-{
-    "a": 1,
-    "p": "c"
-};
-```
-
-diff:
-
-```js
-{
-    "a": never(),
-    "p": "c"
-};
-```
-
 evidence:
 
 ```js
@@ -109,22 +93,6 @@ type Diff = ({
 ```
 
 Previous clients will not support this potential response:
-
-```js
-{
-    "a": 1,
-    "p": "c"
-};
-```
-
-diff:
-
-```js
-{
-    "a": never(),
-    "p": "c"
-};
-```
 
 evidence:
 

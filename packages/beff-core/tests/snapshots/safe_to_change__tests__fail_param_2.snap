@@ -38,7 +38,3 @@ type Diff = "b";
 ```
 
 Param `a` might be called with now unsupported value:
-
-```js
-"b";
-```

@@ -45,20 +45,6 @@ type Diff = ({
 
 Previous clients will not support this potential response:
 
-```js
-{
-    "a": 123
-};
-```
-
-diff:
-
-```js
-{
-    "a": 123
-};
-```
-
 evidence:
 
 ```js

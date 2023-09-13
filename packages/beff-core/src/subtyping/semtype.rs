@@ -1,8 +1,11 @@
+use crate::subtyping::evidence::Evidence;
+
 use super::{
     bdd::{Atom, Bdd, ListAtomic, MappingAtomic},
+    evidence::{EvidenceResult, ProperSubtypeEvidenceResult},
     subtype::{
-        BasicTypeBitSet, BasicTypeCode, NumberRepresentation, ProperSubtype, ProperSubtypeEvidence,
-        ProperSubtypeEvidenceResult, ProperSubtypeOps, StringLitOrFormat, SubType, SubTypeTag, VAL,
+        BasicTypeBitSet, BasicTypeCode, NumberRepresentation, ProperSubtype, ProperSubtypeOps,
+        StringLitOrFormat, SubType, SubTypeTag, VAL,
     },
 };
 use std::{collections::BTreeMap, rc::Rc};
@@ -76,16 +79,10 @@ pub struct ComplexSemType {
 }
 
 pub type SemType = ComplexSemType;
-#[derive(PartialEq, Eq, Hash, Debug, Ord, PartialOrd)]
-pub enum Evidence {
-    All(SubTypeTag),
-    Proper(ProperSubtypeEvidence),
-    IsEmpty,
-}
 
 pub trait SemTypeOps {
     fn is_empty(&self, ctx: &mut SemTypeContext) -> bool;
-    fn is_empty_evidence(&self, ctx: &mut SemTypeContext) -> Evidence;
+    fn is_empty_evidence(&self, ctx: &mut SemTypeContext) -> EvidenceResult;
     fn intersect(&self, t2: &Rc<SemType>) -> Rc<SemType>;
     fn union(&self, t2: &Rc<SemType>) -> Rc<SemType>;
     fn diff(&self, t2: &Rc<SemType>) -> Rc<SemType>;
@@ -95,11 +92,11 @@ pub trait SemTypeOps {
 }
 
 impl SemTypeOps for Rc<SemType> {
-    fn is_empty_evidence(&self, builder: &mut SemTypeContext) -> Evidence {
+    fn is_empty_evidence(&self, builder: &mut SemTypeContext) -> EvidenceResult {
         if self.all != 0 {
             for i in SubTypeTag::all() {
                 if (self.all & i.code()) != 0 {
-                    return Evidence::All(i);
+                    return Evidence::All(i).to_result();
                 }
             }
             panic!()
@@ -107,13 +104,15 @@ impl SemTypeOps for Rc<SemType> {
         for st in self.subtype_data.iter() {
             match st.is_empty_evidence(builder) {
                 ProperSubtypeEvidenceResult::IsEmpty => {}
-                ProperSubtypeEvidenceResult::Evidence(st) => return Evidence::Proper(st),
+                ProperSubtypeEvidenceResult::Evidence(st) => {
+                    return Evidence::Proper(st).to_result()
+                }
             }
         }
-        return Evidence::IsEmpty;
+        return EvidenceResult::IsEmpty;
     }
     fn is_empty(&self, builder: &mut SemTypeContext) -> bool {
-        matches!(self.is_empty_evidence(builder), Evidence::IsEmpty)
+        matches!(self.is_empty_evidence(builder), EvidenceResult::IsEmpty)
     }
 
     fn intersect(&self, t2: &Rc<SemType>) -> Rc<SemType> {

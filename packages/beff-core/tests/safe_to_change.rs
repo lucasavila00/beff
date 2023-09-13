@@ -705,6 +705,27 @@ mod tests {
         insta::assert_snapshot!(print_errors(from, to, &errors));
     }
     #[test]
+    fn fail_disc_union_arr7() {
+        let from = r#"
+        export default {
+            "/hello": {
+                get: (): ["a1",] |["a2", {a:string[]}] => todo()
+            }
+        }
+        "#;
+
+        let to = r#"
+        export default {
+            "/hello": {
+                get: (): ["a1",]|["a2", {a?:string[]}] => todo()
+            }
+        }
+        "#;
+        let errors = test_safe(from, to);
+        assert!(!errors.is_empty());
+        insta::assert_snapshot!(print_errors(from, to, &errors));
+    }
+    #[test]
     fn fail_min_1() {
         let from = r#"
         export default {

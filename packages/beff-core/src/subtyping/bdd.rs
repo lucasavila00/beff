@@ -4,11 +4,13 @@ use std::{
     rc::Rc,
 };
 
-use crate::subtyping::{semtype::SemTypeContext, subtype::ProperSubtypeEvidence};
+use crate::subtyping::semtype::SemTypeContext;
 
 use super::{
+    evidence::{
+        EvidenceResult, MappingEvidence, ProperSubtypeEvidence, ProperSubtypeEvidenceResult,
+    },
     semtype::{BddMemoEmptyRef, MemoEmpty, SemType, SemTypeOps},
-    subtype::ProperSubtypeEvidenceResult,
 };
 
 pub type MappingAtomic = BTreeMap<String, Rc<SemType>>;
@@ -420,6 +422,7 @@ fn mapping_formula_is_empty(
     builder: &mut SemTypeContext,
 ) -> ProperSubtypeEvidenceResult {
     let mut combined: Rc<MappingAtomic> = Rc::new(BTreeMap::new());
+    let mut combined_evidence: MappingEvidence = BTreeMap::new();
     match pos_list {
         None => {}
         Some(pos_atom) => {
@@ -440,9 +443,12 @@ fn mapping_formula_is_empty(
                 }
                 p = some_p.next.clone();
             }
-            for t in combined.values() {
-                if t.is_empty(builder) {
-                    return ProperSubtypeEvidenceResult::IsEmpty;
+            for (k, t) in combined.iter() {
+                match t.is_empty_evidence(builder) {
+                    EvidenceResult::Evidence(e) => {
+                        combined_evidence.insert(k.clone(), Rc::new(e));
+                    }
+                    EvidenceResult::IsEmpty => return ProperSubtypeEvidenceResult::IsEmpty,
                 }
             }
         }
@@ -451,7 +457,7 @@ fn mapping_formula_is_empty(
     if is_empty {
         return ProperSubtypeEvidenceResult::IsEmpty;
     }
-    return ProperSubtypeEvidence::Mapping(combined).to_result();
+    return ProperSubtypeEvidence::Mapping(combined_evidence.into()).to_result();
 }
 pub fn mapping_is_empty(
     bdd: &Rc<Bdd>,

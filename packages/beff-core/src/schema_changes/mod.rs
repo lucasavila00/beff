@@ -9,8 +9,9 @@ use crate::{
     emit::emit_module,
     open_api_ast::{HTTPMethod, OpenApi, OperationObject, Validator},
     subtyping::{
+        evidence::EvidenceResult,
         meterialize::{Mater, MaterializationContext},
-        semtype::{Evidence, SemTypeContext, SemTypeOps},
+        semtype::{SemTypeContext, SemTypeOps},
         to_schema::to_validators,
         ToSemType,
     },
@@ -103,7 +104,7 @@ impl BreakingChange {
             BreakingChange::PathRemoved => vec![MdReport::Text("Path removed".to_string())],
             // BreakingChange::MethodRemoved(_) => todo!(),
             BreakingChange::ResponseBodyBreakingChange(err) => {
-                let v = diff_to_js(&err.diff, Some(&err.evidence_mater));
+                // let v = diff_to_js(&err.diff, Some(&err.evidence_mater));
                 vec![MdReport::Text("Response body is not compatible.".into())]
                     .into_iter()
                     .chain(print_validators(&err.super_type.iter().collect::<Vec<_>>()))
@@ -113,16 +114,16 @@ impl BreakingChange {
                         MdReport::Text(format!(
                             "Previous clients will not support this potential response:"
                         )),
-                        MdReport::Js(v),
-                        MdReport::Text(format!("diff:")),
-                        MdReport::Js(diff_to_js(&err.diff, None)),
+                        // MdReport::Js(v),
+                        // MdReport::Text(format!("diff:")),
+                        // MdReport::Js(diff_to_js(&err.diff, None)),
                         MdReport::Text(format!("evidence:")),
                         MdReport::Js(diff_to_js(&err.evidence_mater, None)),
                     ])
                     .collect()
             }
             BreakingChange::ParamBreakingChange { param_name, err } => {
-                let v = diff_to_js(&err.diff, Some(&err.evidence_mater));
+                // let v = diff_to_js(&err.diff, Some(&err.evidence_mater));
                 vec![MdReport::Text(format!(
                     "Param `{}` is not compatible.",
                     param_name
@@ -136,7 +137,7 @@ impl BreakingChange {
                         "Param `{}` might be called with now unsupported value:",
                         param_name
                     )),
-                    MdReport::Js(v),
+                    // MdReport::Js(v),
                 ])
                 .collect()
             }
@@ -163,10 +164,6 @@ pub struct IsNotSubtype {
     super_type: Vec<Validator>,
     diff_type: Vec<Validator>,
 
-    // sub_type_mater: Mater,
-    // super_type_mater: Mater,
-    diff: Mater,
-    // evidence: Evidence,
     evidence_mater: Mater,
 }
 fn call_expr(name: &str) -> Expr {
@@ -269,10 +266,8 @@ impl<'a> SchemaReference<'a> {
             supe_st = SemTypeContext::optional(supe_st);
         }
         match sub_st.diff(&supe_st).is_empty_evidence(&mut builder) {
-            Evidence::IsEmpty => Ok(SubTypeCheckResult::IsSubtype),
-            // Evidence::All(_) => todo!(),
-            // Evidence::Proper(_) => todo!(),
-            evidence => {
+            EvidenceResult::IsEmpty => Ok(SubTypeCheckResult::IsSubtype),
+            EvidenceResult::Evidence(evidence) => {
                 let sub_type = to_validators(&mut builder, &sub_st, &sub.name);
                 let super_type = to_validators(&mut builder, &supe_st, &supe.name);
                 let diff = sub_st.diff(&supe_st);
@@ -283,9 +278,6 @@ impl<'a> SchemaReference<'a> {
                     super_type,
                     diff_type,
                     evidence_mater: mater.materialize_ev(&evidence),
-                    // sub_type_mater: mater.materialize(&sub_st),
-                    // super_type_mater: mater.materialize(&supe_st),
-                    diff: mater.materialize(&diff),
                 }))
             }
         }

@@ -7,8 +7,8 @@ use crate::{
 
 use super::{
     bdd::{Atom, Bdd, ListAtomic, MappingAtomic},
-    semtype::{Evidence, SemType, SemTypeContext, SemTypeOps},
-    subtype::ProperSubtypeEvidence,
+    evidence::{Evidence, MappingEvidence, ProperSubtypeEvidence},
+    semtype::{SemType, SemTypeContext, SemTypeOps},
 };
 
 pub struct SemTypeResolverContext<'a>(pub &'a mut SemTypeContext);
@@ -144,7 +144,7 @@ impl<'a> SemTypeResolverContext<'a> {
         }
         return acc;
     }
-    pub fn to_schema_mapping_bdd_vec(&mut self, bdd: &Rc<Bdd>) -> Vec<Rc<MappingAtomic>> {
+    fn to_schema_mapping_bdd_vec(&mut self, bdd: &Rc<Bdd>) -> Vec<Rc<MappingAtomic>> {
         match bdd.as_ref() {
             Bdd::True => todo!(),
             Bdd::False => todo!(),
@@ -231,7 +231,7 @@ impl<'a> SemTypeResolverContext<'a> {
         }
         return acc;
     }
-    pub fn to_schema_list_bdd_vec(&mut self, bdd: &Rc<Bdd>) -> Vec<Rc<ListAtomic>> {
+    fn to_schema_list_bdd_vec(&mut self, bdd: &Rc<Bdd>) -> Vec<Rc<ListAtomic>> {
         match bdd.as_ref() {
             Bdd::True => {
                 // vec![Rc::new(ListAtomic {
@@ -338,7 +338,21 @@ impl<'a> MaterializationContext<'a> {
             SubTypeTag::List => unreachable!("we do not allow creation of all arrays"),
         }
     }
+    fn mapping_evidence_mater(&mut self, mt: &Rc<MappingEvidence>) -> Mater {
+        let mut acc: Vec<(String, Mater)> = vec![];
 
+        for (k, v) in mt.iter() {
+            let ty = self.materialize_ev(v);
+            acc.push((k.clone(), ty));
+            // let ty = if v.has_void() {
+            //     schema.optional()
+            // } else {
+            //     schema.required()
+            // };
+        }
+
+        Mater::Object(BTreeMap::from_iter(acc))
+    }
     pub fn materialize_ev(&mut self, ty: &Evidence) -> Mater {
         match ty {
             Evidence::All(t) => Self::materialize_tag(t),
@@ -368,12 +382,11 @@ impl<'a> MaterializationContext<'a> {
                     }
                 }
                 ProperSubtypeEvidence::List(lt) => self.list_atom_mater(lt),
-                ProperSubtypeEvidence::Mapping(mt) => self.mapping_atom_mater(mt),
+                ProperSubtypeEvidence::Mapping(mt) => self.mapping_evidence_mater(mt),
             },
-            Evidence::IsEmpty => panic!(),
         }
     }
-    pub fn materialize(&mut self, ty: &Rc<SemType>) -> Mater {
+    fn materialize(&mut self, ty: &Rc<SemType>) -> Mater {
         if let Some(mater) = self.materialize_memo.get(ty) {
             match mater {
                 MaterMemo::Mater(mater) => return mater.clone(),

@@ -37,22 +37,6 @@ type Diff = ((["a1", number] & (Not<["a1", number]> & Not<["a2", string]>)) | ((
 
 Previous clients will not support this potential response:
 
-```js
-[
-    "a3",
-    "abc"
-];
-```
-
-diff:
-
-```js
-[
-    "a3",
-    never()
-];
-```
-
 evidence:
 
 ```js

@@ -69,31 +69,13 @@ type Diff = ({
 
 Previous clients will not support this potential response:
 
-```js
-{
-    "arr": [],
-    "p": null,
-    "p2": "abc"
-};
-```
-
-diff:
-
-```js
-{
-    "arr": [],
-    "p": null,
-    "p2": "abc"
-};
-```
-
 evidence:
 
 ```js
 {
     "arr": [
         {
-            "arr": recursion(),
+            "arr": [],
             "p2": "abc"
         }
     ],

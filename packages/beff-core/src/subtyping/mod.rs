@@ -8,6 +8,7 @@ use self::bdd::MappingAtomic;
 use self::semtype::{SemType, SemTypeContext, SemTypeOps};
 use self::subtype::StringLitOrFormat;
 pub mod bdd;
+pub mod evidence;
 pub mod meterialize;
 pub mod semtype;
 pub mod subtype;

@@ -70,22 +70,6 @@ type Diff = (({
 
 Previous clients will not support this potential response:
 
-```js
-{
-    "data": true,
-    "ok": false
-};
-```
-
-diff:
-
-```js
-{
-    "data": true,
-    "ok": never()
-};
-```
-
 evidence:
 
 ```js

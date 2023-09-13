@@ -37,16 +37,6 @@ type Diff = (null | boolean | string | Object | Array | Not<1>);
 
 Previous clients will not support this potential response:
 
-```js
-null;
-```
-
-diff:
-
-```js
-null;
-```
-
 evidence:
 
 ```js

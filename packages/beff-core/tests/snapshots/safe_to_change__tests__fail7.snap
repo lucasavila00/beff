@@ -37,16 +37,6 @@ type Diff = 2;
 
 Previous clients will not support this potential response:
 
-```js
-2;
-```
-
-diff:
-
-```js
-2;
-```
-
 evidence:
 
 ```js

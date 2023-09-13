@@ -59,24 +59,6 @@ type Diff = ((["a1", {
 
 Previous clients will not support this potential response:
 
-```js
-[
-    "a2",
-    {
-        "a": true
-    }
-];
-```
-
-diff:
-
-```js
-[
-    never(),
-    never()
-];
-```
-
 evidence:
 
 ```js
