@@ -104,6 +104,7 @@ impl BreakingChange {
                     .into_iter()
                     .chain(print_validators(&err.super_type.iter().collect::<Vec<_>>()))
                     .chain(print_validators(&err.sub_type.iter().collect::<Vec<_>>()))
+                    .chain(print_validators(&err.diff_type.iter().collect::<Vec<_>>()))
                     .chain(vec![
                         MdReport::Text(format!(
                             "Previous clients will not support this potential response:"
@@ -121,6 +122,7 @@ impl BreakingChange {
                 .into_iter()
                 .chain(print_validators(&err.sub_type.iter().collect::<Vec<_>>()))
                 .chain(print_validators(&err.super_type.iter().collect::<Vec<_>>()))
+                .chain(print_validators(&err.diff_type.iter().collect::<Vec<_>>()))
                 .chain(vec![
                     MdReport::Text(format!(
                         "Param `{}` might be called with now unsupported value:",
@@ -151,6 +153,7 @@ struct SchemaReference<'a> {
 pub struct IsNotSubtype {
     sub_type: Vec<Validator>,
     super_type: Vec<Validator>,
+    diff_type: Vec<Validator>,
 
     sub_type_mater: Mater,
     super_type_mater: Mater,
@@ -261,6 +264,11 @@ impl<'a> SchemaReference<'a> {
                 Ok(SubTypeCheckResult::IsNotSubtype(IsNotSubtype {
                     sub_type: to_validators(&builder, &sub_st, &sub.name),
                     super_type: to_validators(&builder, &supe_st, &supe.name),
+                    diff_type: to_validators(
+                        &builder,
+                        &diff,
+                        "Diff"
+                    ),
                     sub_type_mater: mater.materialize(&sub_st),
                     super_type_mater: mater.materialize(&supe_st),
                     diff: mater.materialize(&diff),

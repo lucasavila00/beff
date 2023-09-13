@@ -107,6 +107,8 @@ impl CoercerFnGenerator {
             JsonSchema::StNever => todo!(),
             JsonSchema::StUnknown => todo!(),
             JsonSchema::StNot(_) => todo!(),
+            JsonSchema::AnyObject => todo!(),
+            JsonSchema::AnyArrayLike => todo!(),
         }
     }
     fn fn_coercer_from_schema(&mut self, schema: &JsonSchema, depth: usize) -> Function {

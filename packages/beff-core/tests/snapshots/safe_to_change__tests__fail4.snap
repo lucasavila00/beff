@@ -31,6 +31,10 @@ type Old = ["a" | "b"];
 type New = ["a" | "b" | "c"];
 ```
 
+```ts
+type Diff = ["a" | "b" | "c"] & Not<["a" | "b"]>;
+```
+
 Previous clients will not support this potential response:
 
 ```js

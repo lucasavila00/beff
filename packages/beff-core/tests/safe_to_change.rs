@@ -471,7 +471,7 @@ mod tests {
         assert!(errors.is_empty());
     }
     #[test]
-    fn ok_to_any() {
+    fn fail_to_any() {
         let from = r#"
         export default {
             "/hello": {
@@ -488,7 +488,8 @@ mod tests {
         }
         "#;
         let errors = test_safe(from, to);
-        assert!(errors.is_empty());
+        assert!(!errors.is_empty());
+        insta::assert_snapshot!(print_errors(from, to, &errors));
     }
 
     #[test]

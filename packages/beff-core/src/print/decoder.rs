@@ -485,6 +485,8 @@ impl DecoderFnGenerator {
             JsonSchema::StNever => todo!(),
             JsonSchema::StUnknown => todo!(),
             JsonSchema::StNot(_) => todo!(),
+            JsonSchema::AnyObject => todo!(),
+            JsonSchema::AnyArrayLike => todo!(),
         }
     }
 

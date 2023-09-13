@@ -6,7 +6,7 @@ from:
 
         export default {
             "/hello": {
-                get: (): {p:"a"|"b"} => todo()
+                get: ():1 => todo()
             }
         }
         
@@ -14,7 +14,7 @@ to:
 
         export default {
             "/hello": {
-                get: (): {p:"a"|"b"|"c"} => todo()
+                get: () => todo()
             }
         }
         
@@ -24,29 +24,19 @@ to:
 Response body is not compatible.
 
 ```ts
-type Old = {
-    "p": "a" | "b";
-};
+type Old = 1;
 ```
 
 ```ts
-type New = {
-    "p": "a" | "b" | "c";
-};
+type New = null | boolean | string | number | Object | Array;
 ```
 
 ```ts
-type Diff = {
-    "p": "a" | "b" | "c";
-} & Not<{
-    "p": "a" | "b";
-}>;
+type Diff = null | boolean | string | Object | Array | Not<1>;
 ```
 
 Previous clients will not support this potential response:
 
 ```js
-{
-    "p": "c"
-};
+null;
 ```

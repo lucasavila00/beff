@@ -857,6 +857,8 @@ fn is_type_simple(it: &JsonSchema, components: &Vec<Validator>) -> bool {
         JsonSchema::StNever => todo!(),
         JsonSchema::StUnknown => todo!(),
         JsonSchema::StNot(_) => todo!(),
+        JsonSchema::AnyObject => todo!(),
+        JsonSchema::AnyArrayLike => todo!(),
     }
 }
 

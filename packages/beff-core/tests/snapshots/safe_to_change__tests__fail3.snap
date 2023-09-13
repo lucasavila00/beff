@@ -31,6 +31,10 @@ type Old = Array<"a" | "b">;
 type New = Array<"a" | "b" | "c">;
 ```
 
+```ts
+type Diff = Array<"a" | "b" | "c"> & Not<Array<"a" | "b">>;
+```
+
 Previous clients will not support this potential response:
 
 ```js

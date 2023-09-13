@@ -90,7 +90,7 @@ impl<'a> ToSemTypeConverter<'a> {
             JsonSchema::Boolean => Ok(SemTypeContext::boolean().into()),
             JsonSchema::String => Ok(SemTypeContext::string().into()),
             JsonSchema::Number => Ok(SemTypeContext::number().into()),
-            JsonSchema::Any => Ok(SemTypeContext::any().into()),
+            JsonSchema::Any => Ok(SemTypeContext::unknown().into()),
             JsonSchema::StringWithFormat(s) => {
                 Ok(SemTypeContext::string_const(StringLitOrFormat::Format(s.clone())).into())
             }
@@ -143,6 +143,8 @@ impl<'a> ToSemTypeConverter<'a> {
             JsonSchema::StNever => todo!(),
             JsonSchema::StUnknown => todo!(),
             JsonSchema::StNot(_) => todo!(),
+            JsonSchema::AnyObject => todo!(),
+            JsonSchema::AnyArrayLike => todo!(),
         }
     }
 }

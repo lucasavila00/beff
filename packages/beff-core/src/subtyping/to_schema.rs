@@ -5,7 +5,7 @@ use std::{
 
 use crate::{
     ast::{
-        json::{Json, N},
+        json::Json,
         json_schema::{JsonSchema, Optionality},
     },
     open_api_ast::Validator,
@@ -241,6 +241,14 @@ impl<'a> SchemerContext<'a> {
         }
     }
 
+    fn maybe_not(it: JsonSchema, add_not: bool) -> JsonSchema {
+        if add_not {
+            JsonSchema::StNot(Box::new(it))
+        } else {
+            it
+        }
+    }
+
     fn to_schema_no_cache(&mut self, ty: &SemType) -> JsonSchema {
         if ty.all == 0 && ty.subtype_data.is_empty() {
             return JsonSchema::StNever;
@@ -251,14 +259,28 @@ impl<'a> SchemerContext<'a> {
         for t in SubTypeTag::all() {
             if (ty.all & t.code()) != 0 {
                 match t {
-                    SubTypeTag::Null => acc.insert(JsonSchema::Null),
-                    SubTypeTag::Boolean => acc.insert(JsonSchema::Boolean),
-                    SubTypeTag::Number => acc.insert(JsonSchema::Number),
-                    SubTypeTag::String => acc.insert(JsonSchema::String),
-                    SubTypeTag::Void => todo!(),
-                    SubTypeTag::Mapping => unreachable!("we do not allow creation of all mappings"),
-                    SubTypeTag::List => unreachable!("we do not allow creation of all arrays"),
-                    SubTypeTag::Any => todo!(),
+                    SubTypeTag::Null => {
+                        acc.insert(JsonSchema::Null);
+                    }
+                    SubTypeTag::Boolean => {
+                        acc.insert(JsonSchema::Boolean);
+                    }
+                    SubTypeTag::Number => {
+                        acc.insert(JsonSchema::Number);
+                    }
+                    SubTypeTag::String => {
+                        acc.insert(JsonSchema::String);
+                    }
+                    SubTypeTag::Void => {
+                        // noop
+                    }
+                    SubTypeTag::Mapping => {
+                        acc.insert(JsonSchema::AnyObject);
+                    }
+                    SubTypeTag::List => {
+                        acc.insert(JsonSchema::AnyArrayLike);
+                    }
+                    SubTypeTag::Any => unreachable!("we do not allow creation of any"),
                 };
             }
         }
@@ -269,24 +291,27 @@ impl<'a> SchemerContext<'a> {
                     acc.insert(JsonSchema::Const(Json::Bool(*v)));
                 }
                 ProperSubtype::Number { allowed, values } => {
-                    if !allowed {
-                        return JsonSchema::Const(Json::Number(N::parse_int(4773992856)));
-                    }
                     for h in values {
-                        acc.insert(JsonSchema::Const(Json::Number(h.clone())));
+                        acc.insert(Self::maybe_not(
+                            JsonSchema::Const(Json::Number(h.clone())),
+                            !allowed,
+                        ));
                     }
                 }
                 ProperSubtype::String { allowed, values } => {
-                    if !allowed {
-                        return JsonSchema::Const(Json::String("Izr1mn6edP0HLrWu".into()));
-                    }
                     for h in values {
                         match h {
                             StringLitOrFormat::Lit(st) => {
-                                acc.insert(JsonSchema::Const(Json::String(st.clone())));
+                                acc.insert(Self::maybe_not(
+                                    JsonSchema::Const(Json::String(st.clone())),
+                                    !allowed,
+                                ));
                             }
                             StringLitOrFormat::Format(fmt) => {
-                                acc.insert(JsonSchema::StringWithFormat(fmt.clone()));
+                                acc.insert(Self::maybe_not(
+                                    JsonSchema::StringWithFormat(fmt.clone()),
+                                    !allowed,
+                                ));
                             }
                         }
                     }
@@ -334,120 +359,9 @@ impl<'a> SchemerContext<'a> {
     }
 }
 
-#[derive(Debug)]
-enum SimplifiedAllOf {
-    Orig(BTreeSet<JsonSchema>),
-    Obj(Vec<(String, Optionality<JsonSchema>)>),
-}
-
-fn simplify_all_of(vs: BTreeSet<JsonSchema>) -> SimplifiedAllOf {
-    let mut acc: Vec<(String, Optionality<JsonSchema>)> = vec![];
-    for v in &vs {
-        match v {
-            JsonSchema::Object(vs) => {
-                for (k, v) in vs {
-                    let is_optional = !v.is_required();
-                    let v2 = v.inner().clone();
-                    let v = simplify_schema(v2);
-                    let s = if is_optional {
-                        v.optional()
-                    } else {
-                        v.required()
-                    };
-                    acc.push((k.clone(), s));
-                }
-            }
-            JsonSchema::AllOf(vs2) => {
-                let s = simplify_all_of(vs2.clone());
-                match s {
-                    SimplifiedAllOf::Orig(_) => {
-                        return SimplifiedAllOf::Orig(vs);
-                    }
-                    SimplifiedAllOf::Obj(vs2) => {
-                        for (k, v) in vs2 {
-                            acc.push((k, v));
-                        }
-                    }
-                }
-            }
-            _ => return SimplifiedAllOf::Orig(vs),
-        }
-    }
-    SimplifiedAllOf::Obj(acc)
-}
-
-fn simplify_schema(it: JsonSchema) -> JsonSchema {
-    match it {
-        JsonSchema::Null
-        | JsonSchema::Boolean
-        | JsonSchema::String
-        | JsonSchema::Number
-        | JsonSchema::Any
-        | JsonSchema::Error
-        | JsonSchema::StNever
-        | JsonSchema::StUnknown
-        | JsonSchema::StringWithFormat(_)
-        | JsonSchema::Ref(_)
-        | JsonSchema::OpenApiResponseRef(_)
-        | JsonSchema::Const(_) => it,
-
-        JsonSchema::AllOf(vs) => match simplify_all_of(vs) {
-            SimplifiedAllOf::Orig(s) => JsonSchema::AllOf(s),
-            SimplifiedAllOf::Obj(vs) => JsonSchema::object(vs),
-        },
-        JsonSchema::AnyOf(vs) => {
-            let mut acc = vec![];
-            for v in vs {
-                acc.push(simplify_schema(v));
-            }
-            JsonSchema::any_of(acc)
-        }
-        JsonSchema::StNot(n) => {
-            let n = simplify_schema(*n);
-            JsonSchema::StNot(Box::new(n))
-        }
-        JsonSchema::Object(vs) => {
-            let mut acc: BTreeMap<String, Optionality<JsonSchema>> = BTreeMap::new();
-            for (k, v) in vs {
-                let is_optional = !v.is_required();
-                let v = simplify_schema(v.inner_move());
-                let s = if is_optional {
-                    v.optional()
-                } else {
-                    v.required()
-                };
-                acc.insert(k, s);
-            }
-            JsonSchema::Object(acc)
-        }
-        JsonSchema::Array(v) => {
-            let v = simplify_schema(*v);
-            JsonSchema::Array(Box::new(v))
-        }
-        JsonSchema::Tuple {
-            prefix_items,
-            items,
-        } => {
-            let items = match items {
-                Some(items) => Some(Box::new(simplify_schema(*items))),
-                None => None,
-            };
-            let prefix_items = prefix_items
-                .into_iter()
-                .map(|it| simplify_schema(it))
-                .collect();
-            JsonSchema::Tuple {
-                prefix_items,
-                items,
-            }
-        }
-    }
-}
-
 pub fn to_validators(ctx: &SemTypeContext, ty: &Rc<SemType>, name: &str) -> Vec<Validator> {
     let mut schemer = SchemerContext::new(ctx);
     let out = schemer.to_schema(ty, Some(name));
-    let out = simplify_schema(out);
     let vs = schemer
         .validators
         .into_iter()

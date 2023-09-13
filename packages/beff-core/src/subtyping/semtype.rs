@@ -2,7 +2,7 @@ use super::{
     bdd::{Atom, Bdd, ListAtomic, MappingAtomic},
     subtype::{
         BasicTypeBitSet, BasicTypeCode, NumberRepresentation, ProperSubtype, ProperSubtypeOps,
-        StringLitOrFormat, SubType, SubTypeTag,
+        StringLitOrFormat, SubType, SubTypeTag, VAL,
     },
 };
 use std::{collections::BTreeMap, rc::Rc};
@@ -277,8 +277,7 @@ impl SemType {
     }
     pub fn new_unknown() -> SemType {
         SemType {
-            // todo
-            all: 1 << 1 | 1 << 2 | 1 << 3 | 1 << 4 | 1 << 5 | 1 << 6 | 1 << 7 | 1 << 8,
+            all: VAL,
             subtype_data: vec![],
         }
     }

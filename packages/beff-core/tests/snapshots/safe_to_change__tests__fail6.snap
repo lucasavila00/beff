@@ -28,6 +28,7 @@ Response body is not compatible.
 ```ts
 type Old = {
     "a": 1;
+} & {
     "p": "a" | "b";
 };
 ```
@@ -35,8 +36,21 @@ type Old = {
 ```ts
 type New = {
     "a": 1;
+} & {
     "p": "a" | "b" | "c";
 };
+```
+
+```ts
+type Diff = {
+    "a": 1;
+} & {
+    "p": "a" | "b" | "c";
+} & Not<{
+    "a": 1;
+}> | Not<{
+    "p": "a" | "b";
+}>;
 ```
 
 Previous clients will not support this potential response:
@@ -64,6 +78,16 @@ type New = {
     "a": 1;
     "p": "a" | "b" | "c";
 };
+```
+
+```ts
+type Diff = {
+    "a": 1;
+    "p": "a" | "b" | "c";
+} & Not<{
+    "a": 1;
+    "p": "a" | "b";
+}>;
 ```
 
 Previous clients will not support this potential response:

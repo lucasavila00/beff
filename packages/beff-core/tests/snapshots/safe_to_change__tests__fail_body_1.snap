@@ -33,6 +33,10 @@ type Old = "a";
 type New = "a" | "b";
 ```
 
+```ts
+type Diff = "b";
+```
+
 Previous clients will not support this potential response:
 
 ```js

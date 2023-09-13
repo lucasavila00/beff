@@ -73,6 +73,8 @@ pub enum JsonSchema {
     AnyOf(BTreeSet<JsonSchema>),
     AllOf(BTreeSet<JsonSchema>),
     Const(Json),
+    AnyObject,
+    AnyArrayLike,
     // semantic types
     StNever,
     StUnknown,
@@ -391,6 +393,8 @@ impl ToJson for JsonSchema {
             JsonSchema::StNever => todo!(),
             JsonSchema::StUnknown => todo!(),
             JsonSchema::StNot(_) => todo!(),
+            JsonSchema::AnyObject => todo!(),
+            JsonSchema::AnyArrayLike => todo!(),
         }
     }
 }
@@ -398,7 +402,10 @@ impl ToJson for JsonSchema {
 impl JsonSchema {
     pub fn to_ts_type(&self) -> TsType {
         match self {
-            JsonSchema::Null => todo!(),
+            JsonSchema::Null => TsType::TsKeywordType(TsKeywordType {
+                span: DUMMY_SP,
+                kind: TsKeywordTypeKind::TsNullKeyword,
+            }),
             JsonSchema::Boolean => TsType::TsKeywordType(TsKeywordType {
                 span: DUMMY_SP,
                 kind: TsKeywordTypeKind::TsBooleanKeyword,
@@ -556,21 +563,41 @@ impl JsonSchema {
                 span: DUMMY_SP,
                 type_name: Ident {
                     span: DUMMY_SP,
-                    sym: "Exclude".into(),
+                    sym: "Not".into(),
                     optional: false,
                 }
                 .into(),
                 type_params: Some(Box::new(TsTypeParamInstantiation {
                     span: DUMMY_SP,
                     params: vec![
-                        TsType::TsKeywordType(TsKeywordType {
-                            span: DUMMY_SP,
-                            kind: TsKeywordTypeKind::TsUnknownKeyword,
-                        })
-                        .into(),
+                        // TsType::TsKeywordType(TsKeywordType {
+                        //     span: DUMMY_SP,
+                        //     kind: TsKeywordTypeKind::TsUnknownKeyword,
+                        // })
+                        // .into(),
                         v.to_ts_type().into(),
                     ],
                 })),
+            }),
+            JsonSchema::AnyObject => TsType::TsTypeRef(TsTypeRef {
+                span: DUMMY_SP,
+                type_name: Ident {
+                    span: DUMMY_SP,
+                    sym: "Object".into(),
+                    optional: false,
+                }
+                .into(),
+                type_params: None,
+            }),
+            JsonSchema::AnyArrayLike => TsType::TsTypeRef(TsTypeRef {
+                span: DUMMY_SP,
+                type_name: Ident {
+                    span: DUMMY_SP,
+                    sym: "Array".into(),
+                    optional: false,
+                }
+                .into(),
+                type_params: None,
             }),
         }
     }

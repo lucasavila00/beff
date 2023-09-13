@@ -43,6 +43,31 @@ type New = {
 };
 ```
 
+```ts
+type Diff = {
+    "data": boolean;
+    "ok": false;
+} & Not<{
+    "data": string;
+    "ok": true;
+}> & Not<{
+    "data": number;
+    "ok": false;
+}> | {
+    "data": string;
+    "ok": true;
+} & Not<{
+    "data": string;
+    "ok": true;
+}> & Not<{
+    "data": number;
+    "ok": false;
+}> & Not<{
+    "data": boolean;
+    "ok": false;
+}>;
+```
+
 Previous clients will not support this potential response:
 
 ```js
