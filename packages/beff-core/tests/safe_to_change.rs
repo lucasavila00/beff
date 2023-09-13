@@ -556,4 +556,26 @@ mod tests {
         assert!(!errors.is_empty());
         insta::assert_snapshot!(print_errors(from, to, &errors));
     }
+
+    #[test]
+    fn fail_disc_union_arr() {
+        let from = r#"
+        export default {
+            "/hello": {
+                get: (): ["a1", number]|["a2", string] => todo()
+            }
+        }
+        "#;
+
+        let to = r#"
+        export default {
+            "/hello": {
+                get: (): ["a1", number]|["a2", boolean] => todo()
+            }
+        }
+        "#;
+        let errors = test_safe(from, to);
+        assert!(!errors.is_empty());
+        insta::assert_snapshot!(print_errors(from, to, &errors));
+    }
 }

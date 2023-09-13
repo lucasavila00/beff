@@ -99,7 +99,7 @@ impl BreakingChange {
             BreakingChange::PathRemoved => vec![MdReport::Text("Path removed".to_string())],
             // BreakingChange::MethodRemoved(_) => todo!(),
             BreakingChange::ResponseBodyBreakingChange(err) => {
-                let v = diff_to_js(&err.diff, Some(&err.sub_type_mater));
+                let v = diff_to_js(&err.diff);
                 vec![MdReport::Text("Response body is not compatible.".into())]
                     .into_iter()
                     .chain(print_validators(&err.super_type.iter().collect::<Vec<_>>()))
@@ -114,7 +114,7 @@ impl BreakingChange {
                     .collect()
             }
             BreakingChange::ParamBreakingChange { param_name, err } => {
-                let v = diff_to_js(&err.diff, Some(&err.super_type_mater));
+                let v = diff_to_js(&err.diff);
                 vec![MdReport::Text(format!(
                     "Param `{}` is not compatible.",
                     param_name
@@ -175,12 +175,9 @@ fn call_expr(name: &str) -> Expr {
     })
 }
 
-fn diff_to_js(diff: &Mater, base: Option<&Mater>) -> Js {
+fn diff_to_js(diff: &Mater) -> Js {
     match diff {
-        Mater::Never => match base {
-            Some(v) => diff_to_js(v, None),
-            None => Js::Expr(call_expr("never")),
-        },
+        Mater::Never => Js::Expr(call_expr("never")),
         Mater::Unknown => todo!(),
         Mater::Void => todo!(),
         Mater::Recursive => Js::Expr(call_expr("recursion")),
@@ -197,25 +194,16 @@ fn diff_to_js(diff: &Mater, base: Option<&Mater>) -> Js {
             prefix_items,
         } => {
             let mut acc = vec![];
-            for (idx, item) in prefix_items.iter().enumerate() {
-                let base = match base {
-                    Some(Mater::Array { prefix_items, .. }) => prefix_items.get(idx),
-                    _ => None,
-                };
-
-                acc.push(diff_to_js(item, base));
+            for item in prefix_items.iter() {
+                acc.push(diff_to_js(item));
             }
             if !items.is_never() {
-                let base = match base {
-                    Some(Mater::Array { items, .. }) => Some(items.as_ref()),
-                    _ => None,
-                };
                 match items.as_ref() {
                     Mater::Recursive => {
                         // ignore recursion in array
                     }
                     _ => {
-                        acc.push(diff_to_js(items, base));
+                        acc.push(diff_to_js(items));
                     }
                 }
             }
@@ -224,11 +212,7 @@ fn diff_to_js(diff: &Mater, base: Option<&Mater>) -> Js {
         Mater::Object(vs) => {
             let mut acc = BTreeMap::new();
             for (k, v) in vs.iter() {
-                let base = match base {
-                    Some(Mater::Object(base)) => base.get(k),
-                    _ => None,
-                };
-                acc.insert(k.clone(), diff_to_js(v, base));
+                acc.insert(k.clone(), diff_to_js(v));
             }
             Js::Object(acc)
         }
@@ -259,16 +243,15 @@ impl<'a> SchemaReference<'a> {
         match sub_st.is_subtype(&supe_st, &mut builder) {
             true => Ok(SubTypeCheckResult::IsSubtype),
             false => {
-                let mut mater = MaterializationContext::new(&builder);
+                let sub_type = to_validators(&builder, &sub_st, &sub.name);
+                let super_type = to_validators(&builder, &supe_st, &supe.name);
                 let diff = sub_st.diff(&supe_st);
+                let diff_type = to_validators(&builder, &diff, "Diff");
+                let mut mater = MaterializationContext::new(&mut builder);
                 Ok(SubTypeCheckResult::IsNotSubtype(IsNotSubtype {
-                    sub_type: to_validators(&builder, &sub_st, &sub.name),
-                    super_type: to_validators(&builder, &supe_st, &supe.name),
-                    diff_type: to_validators(
-                        &builder,
-                        &diff,
-                        "Diff"
-                    ),
+                    sub_type,
+                    super_type,
+                    diff_type,
                     sub_type_mater: mater.materialize(&sub_st),
                     super_type_mater: mater.materialize(&supe_st),
                     diff: mater.materialize(&diff),

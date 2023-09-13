@@ -106,7 +106,7 @@ impl<'a> ToSemTypeConverter<'a> {
                         }
                     })
                     .collect::<Result<_>>()?;
-                Ok(builder.mapping_definition(vs).into())
+                Ok(builder.mapping_definition(Rc::new(vs)).into())
             }
             JsonSchema::Array(items) => {
                 let items = self.to_sem_type(items, builder)?;

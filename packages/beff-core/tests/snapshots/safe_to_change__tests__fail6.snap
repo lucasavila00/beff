@@ -50,7 +50,7 @@ Previous clients will not support this potential response:
 
 ```js
 {
-    "a": 1,
+    "a": never(),
     "p": "c"
 };
 ```
@@ -84,7 +84,7 @@ Previous clients will not support this potential response:
 
 ```js
 {
-    "a": 1,
+    "a": never(),
     "p": "c"
 };
 ```

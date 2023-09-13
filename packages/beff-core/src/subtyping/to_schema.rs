@@ -252,28 +252,6 @@ impl<'a> SchemerContext<'a> {
         return JsonSchema::any_of(vs);
     }
 
-    fn list_atom_schema(&mut self, mt: &Rc<ListAtomic>) -> JsonSchema {
-        if mt.prefix_items.is_empty() {
-            return JsonSchema::Array(Box::new(self.to_schema(&mt.items, None)));
-        }
-
-        let prefix_items = mt
-            .prefix_items
-            .iter()
-            .map(|it| self.to_schema(it, None))
-            .collect();
-
-        let items = if mt.items.is_never() {
-            None
-        } else {
-            Some(Box::new(self.to_schema(&mt.items, None)))
-        };
-        return JsonSchema::Tuple {
-            prefix_items,
-            items,
-        };
-    }
-
     // fn to_schema_list_node(
     //     &mut self,
     //     atom: &Rc<Atom>,
@@ -352,6 +330,28 @@ impl<'a> SchemerContext<'a> {
     //         } => self.to_schema_list_node(atom, left, middle, right),
     //     }
     // }
+
+    fn list_atom_schema(&mut self, mt: &Rc<ListAtomic>) -> JsonSchema {
+        if mt.prefix_items.is_empty() {
+            return JsonSchema::Array(Box::new(self.to_schema(&mt.items, None)));
+        }
+
+        let prefix_items = mt
+            .prefix_items
+            .iter()
+            .map(|it| self.to_schema(it, None))
+            .collect();
+
+        let items = if mt.items.is_never() {
+            None
+        } else {
+            Some(Box::new(self.to_schema(&mt.items, None)))
+        };
+        return JsonSchema::Tuple {
+            prefix_items,
+            items,
+        };
+    }
     fn intersect_list_atomics(it: Vec<Rc<ListAtomic>>) -> Rc<ListAtomic> {
         let items = it
             .iter()

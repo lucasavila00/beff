@@ -357,7 +357,7 @@ impl SemTypeContext {
             vec![ProperSubtype::Mapping(Bdd::from_atom(Atom::Mapping(idx)).into()).into()],
         );
     }
-    pub fn mapping_definition(&mut self, vs: MappingAtomic) -> SemType {
+    pub fn mapping_definition(&mut self, vs: Rc<MappingAtomic>) -> SemType {
         let idx = self.mapping_definitions.len();
         self.mapping_definitions.push(Some(vs.clone().into()));
 
@@ -369,7 +369,7 @@ impl SemTypeContext {
             vec![ProperSubtype::List(Bdd::from_atom(Atom::List(idx)).into()).into()],
         );
     }
-    pub fn list_definition(&mut self, vs: ListAtomic) -> SemType {
+    pub fn list_definition(&mut self, vs: Rc<ListAtomic>) -> SemType {
         let idx = self.list_definitions.len();
         self.list_definitions.push(Some(vs.clone().into()));
 
@@ -380,7 +380,7 @@ impl SemTypeContext {
             prefix_items: vec![],
             items: v,
         };
-        return self.list_definition(atom);
+        return self.list_definition(Rc::new(atom));
     }
     pub fn tuple(&mut self, prefix_items: Vec<Rc<SemType>>, items: Option<Rc<SemType>>) -> SemType {
         let atom = ListAtomic {
@@ -388,7 +388,7 @@ impl SemTypeContext {
             // todo: should be unknown?
             items: items.unwrap_or(Self::never().into()),
         };
-        return self.list_definition(atom);
+        return self.list_definition(Rc::new(atom));
     }
     pub fn boolean_const(value: bool) -> SemType {
         return SemType::new_complex(0x0, vec![ProperSubtype::Boolean(value).into()]);

@@ -58,6 +58,6 @@ Previous clients will not support this potential response:
 ```js
 {
     "data": true,
-    "ok": true
+    "ok": never()
 };
 ```

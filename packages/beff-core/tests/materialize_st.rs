@@ -11,34 +11,42 @@ mod tests {
             ToSemType,
         },
     };
+    #[test]
+    fn materialization0() {
+        let validators = vec![];
 
+        let mut ctx = SemTypeContext::new();
+        let t = JsonSchema::Null.to_sub_type(&validators, &mut ctx).unwrap();
+        let mut mat = MaterializationContext::new(&mut ctx);
+        assert_eq!(mat.materialize(&t), Mater::Null);
+    }
     #[test]
     fn materialization1() {
         let validators = vec![];
 
         let mut ctx = SemTypeContext::new();
         let t = JsonSchema::Null.to_sub_type(&validators, &mut ctx).unwrap();
-        let mut mat = MaterializationContext::new(&ctx);
+        let mut mat = MaterializationContext::new(&mut ctx);
         assert_eq!(mat.materialize(&t), Mater::Null);
 
         let t = JsonSchema::String
             .to_sub_type(&validators, &mut ctx)
             .unwrap();
-        let mut mat = MaterializationContext::new(&ctx);
+        let mut mat = MaterializationContext::new(&mut ctx);
 
         assert_eq!(mat.materialize(&t), Mater::String);
 
         let t = JsonSchema::Const(Json::String("def".into()))
             .to_sub_type(&validators, &mut ctx)
             .unwrap();
-        let mut mat = MaterializationContext::new(&ctx);
+        let mut mat = MaterializationContext::new(&mut ctx);
 
         assert_eq!(mat.materialize(&t), Mater::StringLiteral("def".into()));
 
         let t = JsonSchema::StringWithFormat("password".into())
             .to_sub_type(&validators, &mut ctx)
             .unwrap();
-        let mut mat = MaterializationContext::new(&ctx);
+        let mut mat = MaterializationContext::new(&mut ctx);
 
         assert_eq!(
             mat.materialize(&t),
@@ -48,7 +56,7 @@ mod tests {
         let t = JsonSchema::Array(JsonSchema::String.into())
             .to_sub_type(&validators, &mut ctx)
             .unwrap();
-        let mut mat = MaterializationContext::new(&ctx);
+        let mut mat = MaterializationContext::new(&mut ctx);
 
         assert_eq!(
             mat.materialize(&t),
@@ -72,7 +80,13 @@ mod tests {
 
         assert!(is_empty);
         let mut mat = MaterializationContext::new(&mut ctx);
-        assert_eq!(mat.materialize(&t2), Mater::Never);
+        assert_eq!(
+            mat.materialize(&t2),
+            Mater::Array {
+                items: Mater::Never.into(),
+                prefix_items: vec![]
+            }
+        );
     }
     #[test]
     fn diff_lists2() {
@@ -241,6 +255,7 @@ mod tests {
 
         assert_eq!(
             mat.materialize(&t2),
+            // Mater::Never,
             Mater::Object(BTreeMap::from_iter(vec![
                 ("a".into(), Mater::Never),
                 ("b".into(), Mater::Void),

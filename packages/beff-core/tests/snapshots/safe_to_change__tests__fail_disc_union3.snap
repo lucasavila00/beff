@@ -56,7 +56,7 @@ Previous clients will not support this potential response:
 
 ```js
 {
-    "data": "abc",
-    "ok": null
+    "data": never(),
+    "ok": never()
 };
 ```
