@@ -66,6 +66,13 @@ type Diff = (({
 }>));
 ```
 
+```ts
+type Evidence = {
+    "data": number;
+    "ok": string;
+};
+```
+
 Previous clients will not support this potential response:
 
 evidence:

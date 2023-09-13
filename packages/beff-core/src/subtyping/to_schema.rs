@@ -9,10 +9,12 @@ use crate::{
         json_schema::{JsonSchema, Optionality},
     },
     open_api_ast::Validator,
+    subtyping::evidence::ProperSubtypeEvidence,
 };
 
 use super::{
     bdd::{Atom, Bdd, ListAtomic, MappingAtomic},
+    evidence::Evidence,
     semtype::{SemType, SemTypeContext, SemTypeOps},
     subtype::{ProperSubtype, StringLitOrFormat, SubTypeTag},
 };
@@ -494,14 +496,6 @@ impl<'a> SchemerContext<'a> {
         }
     }
 
-    fn maybe_not(it: JsonSchema, add_not: bool) -> JsonSchema {
-        if add_not {
-            JsonSchema::StNot(Box::new(it))
-        } else {
-            it
-        }
-    }
-
     fn to_schema_no_cache(&mut self, ty: &SemType) -> JsonSchema {
         if ty.all == 0 && ty.subtype_data.is_empty() {
             return JsonSchema::StNever;
@@ -544,7 +538,7 @@ impl<'a> SchemerContext<'a> {
                 }
                 ProperSubtype::Number { allowed, values } => {
                     for h in values {
-                        acc.insert(Self::maybe_not(
+                        acc.insert(maybe_not(
                             JsonSchema::Const(Json::Number(h.clone())),
                             !allowed,
                         ));
@@ -554,13 +548,13 @@ impl<'a> SchemerContext<'a> {
                     for h in values {
                         match h {
                             StringLitOrFormat::Lit(st) => {
-                                acc.insert(Self::maybe_not(
+                                acc.insert(maybe_not(
                                     JsonSchema::Const(Json::String(st.clone())),
                                     !allowed,
                                 ));
                             }
                             StringLitOrFormat::Format(fmt) => {
-                                acc.insert(Self::maybe_not(
+                                acc.insert(maybe_not(
                                     JsonSchema::StringWithFormat(fmt.clone()),
                                     !allowed,
                                 ));
@@ -628,4 +622,90 @@ pub fn to_validators(ctx: &mut SemTypeContext, ty: &Rc<SemType>, name: &str) -> 
         }])
         .collect()
     }
+}
+fn maybe_not(it: JsonSchema, add_not: bool) -> JsonSchema {
+    if add_not {
+        JsonSchema::StNot(Box::new(it))
+    } else {
+        it
+    }
+}
+fn evidence_to_schema(ty: &Evidence) -> JsonSchema {
+    match ty {
+        Evidence::All(t) => match t {
+            SubTypeTag::Boolean => JsonSchema::Boolean,
+            SubTypeTag::Number => JsonSchema::Number,
+            SubTypeTag::String => JsonSchema::String,
+            SubTypeTag::Null => JsonSchema::Null,
+            SubTypeTag::Mapping => JsonSchema::AnyObject,
+            SubTypeTag::Void => JsonSchema::Ref("$void$".into()),
+            SubTypeTag::List => JsonSchema::AnyArrayLike,
+        },
+        Evidence::Proper(p) => match p {
+            ProperSubtypeEvidence::Boolean(b) => JsonSchema::Const(Json::Bool(*b)),
+            ProperSubtypeEvidence::Number { allowed, values } => {
+                let v = JsonSchema::AnyOf(
+                    values
+                        .iter()
+                        .map(|it| JsonSchema::Const(Json::Number(it.clone())))
+                        .collect(),
+                );
+                maybe_not(v, !allowed)
+            }
+            ProperSubtypeEvidence::String { allowed, values } => {
+                let v = JsonSchema::AnyOf(
+                    values
+                        .iter()
+                        .map(|it| match it {
+                            StringLitOrFormat::Lit(lit) => {
+                                JsonSchema::Const(Json::String(lit.clone()))
+                            }
+                            StringLitOrFormat::Format(fmt) => {
+                                JsonSchema::StringWithFormat(fmt.clone())
+                            }
+                        })
+                        .collect(),
+                );
+                maybe_not(v, !allowed)
+            }
+            ProperSubtypeEvidence::List(ev) => {
+                if ev.prefix_items.is_empty() {
+                    match &ev.items {
+                        Some(e) => JsonSchema::Array(Box::new(evidence_to_schema(&e))),
+                        None => JsonSchema::AnyArrayLike,
+                    }
+                } else {
+                    JsonSchema::Tuple {
+                        prefix_items: ev
+                            .prefix_items
+                            .iter()
+                            .map(|it| evidence_to_schema(it))
+                            .collect(),
+                        items: ev.items.as_ref().map(|it| Box::new(evidence_to_schema(it))),
+                    }
+                }
+            }
+            ProperSubtypeEvidence::Mapping(vs) => JsonSchema::object(
+                vs.iter()
+                    .map(|(k, v)| match v.as_ref() {
+                        Evidence::All(SubTypeTag::Void) => {
+                            (k.clone(), evidence_to_schema(v).optional())
+                        }
+                        _ => (k.clone(), evidence_to_schema(v).required()),
+                    })
+                    .collect(),
+            ),
+        },
+    }
+}
+pub fn to_validators_evidence(
+    _ctx: &mut SemTypeContext,
+    ty: &Evidence,
+    name: &str,
+) -> Vec<Validator> {
+    let schema = evidence_to_schema(ty);
+    vec![Validator {
+        name: name.to_string(),
+        schema,
+    }]
 }

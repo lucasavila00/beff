@@ -35,6 +35,10 @@ type New = number;
 type Diff = Not<555>;
 ```
 
+```ts
+type Evidence = Not<(555)>;
+```
+
 Previous clients will not support this potential response:
 
 evidence:

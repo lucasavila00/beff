@@ -47,6 +47,13 @@ type Diff = ({
 }>);
 ```
 
+```ts
+type Evidence = {
+    "a": string;
+    "b"?: $void$;
+};
+```
+
 Previous clients will not support this potential response:
 
 evidence:

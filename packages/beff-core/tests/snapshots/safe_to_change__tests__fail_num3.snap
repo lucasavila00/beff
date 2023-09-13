@@ -35,6 +35,10 @@ type New = Array<number>;
 type Diff = (Array<number> & Not<Array<555>>);
 ```
 
+```ts
+type Evidence = Array<Not<(555)>>;
+```
+
 Previous clients will not support this potential response:
 
 evidence:

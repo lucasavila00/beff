@@ -39,6 +39,10 @@ type New = string;
 type Diff = Not<"world">;
 ```
 
+```ts
+type Evidence = Not<("world")>;
+```
+
 Previous clients will not support this potential response:
 
 evidence:

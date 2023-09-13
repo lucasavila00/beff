@@ -67,6 +67,14 @@ type Diff = ({
 }>);
 ```
 
+```ts
+type Evidence = {
+    "arr": Array;
+    "p": boolean;
+    "p2": string;
+};
+```
+
 Previous clients will not support this potential response:
 
 evidence:

@@ -35,6 +35,10 @@ type New = (["a1", number] | ["a3", string]);
 type Diff = ((["a1", number] & (Not<["a1", number]> & Not<["a2", string]>)) | ((["a3", string] & (Not<["a1", number]> & Not<["a2", string]>)) & Not<["a1", number]>));
 ```
 
+```ts
+type Evidence = [("a3"), string];
+```
+
 Previous clients will not support this potential response:
 
 evidence:

@@ -12,7 +12,7 @@ use crate::{
         evidence::EvidenceResult,
         meterialize::{Mater, MaterializationContext},
         semtype::{SemTypeContext, SemTypeOps},
-        to_schema::to_validators,
+        to_schema::{to_validators, to_validators_evidence},
         ToSemType,
     },
 };
@@ -110,6 +110,9 @@ impl BreakingChange {
                     .chain(print_validators(&err.super_type.iter().collect::<Vec<_>>()))
                     .chain(print_validators(&err.sub_type.iter().collect::<Vec<_>>()))
                     .chain(print_validators(&err.diff_type.iter().collect::<Vec<_>>()))
+                    .chain(print_validators(
+                        &err.evidence_type.iter().collect::<Vec<_>>(),
+                    ))
                     .chain(vec![
                         MdReport::Text(format!(
                             "Previous clients will not support this potential response:"
@@ -132,12 +135,16 @@ impl BreakingChange {
                 .chain(print_validators(&err.sub_type.iter().collect::<Vec<_>>()))
                 .chain(print_validators(&err.super_type.iter().collect::<Vec<_>>()))
                 .chain(print_validators(&err.diff_type.iter().collect::<Vec<_>>()))
+                .chain(print_validators(
+                    &err.evidence_type.iter().collect::<Vec<_>>(),
+                ))
                 .chain(vec![
                     MdReport::Text(format!(
                         "Param `{}` might be called with now unsupported value:",
                         param_name
                     )),
-                    // MdReport::Js(v),
+                    MdReport::Text(format!("evidence:")),
+                    MdReport::Js(diff_to_js(&err.evidence_mater, None)),
                 ])
                 .collect()
             }
@@ -164,6 +171,7 @@ pub struct IsNotSubtype {
     super_type: Vec<Validator>,
     diff_type: Vec<Validator>,
 
+    evidence_type: Vec<Validator>,
     evidence_mater: Mater,
 }
 fn call_expr(name: &str) -> Expr {
@@ -272,12 +280,14 @@ impl<'a> SchemaReference<'a> {
                 let super_type = to_validators(&mut builder, &supe_st, &supe.name);
                 let diff = sub_st.diff(&supe_st);
                 let diff_type = to_validators(&mut builder, &diff, "Diff");
+                let evidence_type = to_validators_evidence(&mut builder, &evidence, "Evidence");
                 let mut mater = MaterializationContext::new();
                 Ok(SubTypeCheckResult::IsNotSubtype(IsNotSubtype {
                     sub_type,
                     super_type,
                     diff_type,
-                    evidence_mater: mater.materialize_ev(&dbg!(evidence)),
+                    evidence_type,
+                    evidence_mater: mater.materialize_ev(&evidence),
                 }))
             }
         }

@@ -47,6 +47,13 @@ type Diff = ({
 }>);
 ```
 
+```ts
+type Evidence = {
+    "data": boolean;
+    "ok": false;
+};
+```
+
 Previous clients will not support this potential response:
 
 evidence:

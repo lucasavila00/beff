@@ -35,6 +35,10 @@ type New = [("a" | "b" | "c")];
 type Diff = ([("a" | "b" | "c")] & Not<[("a" | "b")]>);
 ```
 
+```ts
+type Evidence = [("c")];
+```
+
 Previous clients will not support this potential response:
 
 evidence:

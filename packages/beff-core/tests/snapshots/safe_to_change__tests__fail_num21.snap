@@ -35,6 +35,10 @@ type New = [number, number];
 type Diff = ([number, number] & Not<[555, 555]>);
 ```
 
+```ts
+type Evidence = [Not<(555)>, number];
+```
+
 Previous clients will not support this potential response:
 
 evidence:

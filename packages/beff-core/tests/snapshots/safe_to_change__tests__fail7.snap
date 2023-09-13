@@ -35,6 +35,10 @@ type New = 2;
 type Diff = 2;
 ```
 
+```ts
+type Evidence = (2);
+```
+
 Previous clients will not support this potential response:
 
 evidence:

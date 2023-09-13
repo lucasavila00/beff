@@ -43,6 +43,12 @@ type Diff = ({
 }>);
 ```
 
+```ts
+type Evidence = {
+    "a": number;
+};
+```
+
 Previous clients will not support this potential response:
 
 evidence:

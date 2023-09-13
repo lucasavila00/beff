@@ -37,6 +37,10 @@ type New = ("a" | "b");
 type Diff = "b";
 ```
 
+```ts
+type Evidence = ("b");
+```
+
 Previous clients will not support this potential response:
 
 evidence:

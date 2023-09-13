@@ -57,6 +57,12 @@ type Diff = ((["a1", {
     }]>));
 ```
 
+```ts
+type Evidence = [("a2"), {
+        "a": boolean;
+    }];
+```
+
 Previous clients will not support this potential response:
 
 evidence:

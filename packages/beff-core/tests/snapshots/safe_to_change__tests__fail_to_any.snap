@@ -35,6 +35,10 @@ type New = (null | boolean | string | number | Object | Array);
 type Diff = (null | boolean | string | Object | Array | Not<1>);
 ```
 
+```ts
+type Evidence = string;
+```
+
 Previous clients will not support this potential response:
 
 evidence:
