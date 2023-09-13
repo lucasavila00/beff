@@ -630,7 +630,6 @@ fn list_formula_is_empty(
         prefix_items,
         items,
     });
-    dbg!(&ls);
     return ProperSubtypeEvidence::List(ls).to_result();
 }
 pub fn list_is_empty(bdd: &Rc<Bdd>, builder: &mut SemTypeContext) -> ProperSubtypeEvidenceResult {

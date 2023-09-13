@@ -56,15 +56,15 @@ impl<'a> SemTypeResolverContext<'a> {
         let mut acc: MappingAtomic = BTreeMap::new();
 
         for atom in it {
-            for (k, v) in atom.iter() {
+            for (k, atom_v) in atom.iter() {
                 let old_v = acc
                     .get(k)
                     .map(|it| it.clone())
                     .unwrap_or_else(|| Rc::new(SemType::new_unknown()));
 
-                let v = old_v.intersect(v);
+                let new_v = old_v.intersect(atom_v);
 
-                acc.insert(k.clone(), v);
+                acc.insert(k.clone(), new_v);
             }
         }
 
@@ -327,17 +327,21 @@ impl<'a> MaterializationContext<'a> {
         // todo!()
     }
 
+    fn materialize_tag(t: &SubTypeTag) -> Mater {
+        match t {
+            SubTypeTag::Null => return Mater::Null,
+            SubTypeTag::Boolean => return Mater::Boolean,
+            SubTypeTag::Number => return Mater::Number,
+            SubTypeTag::String => return Mater::String,
+            SubTypeTag::Void => return Mater::Void,
+            SubTypeTag::Mapping => unreachable!("we do not allow creation of all mappings"),
+            SubTypeTag::List => unreachable!("we do not allow creation of all arrays"),
+        }
+    }
+
     pub fn materialize_ev(&mut self, ty: &Evidence) -> Mater {
         match ty {
-            Evidence::All(t) => match t {
-                SubTypeTag::Null => return Mater::Null,
-                SubTypeTag::Boolean => return Mater::Boolean,
-                SubTypeTag::Number => return Mater::Number,
-                SubTypeTag::String => return Mater::String,
-                SubTypeTag::Void => return Mater::Void,
-                SubTypeTag::Mapping => unreachable!("we do not allow creation of all mappings"),
-                SubTypeTag::List => unreachable!("we do not allow creation of all arrays"),
-            },
+            Evidence::All(t) => Self::materialize_tag(t),
             Evidence::Proper(s) => match s {
                 ProperSubtypeEvidence::Boolean(v) => return Mater::BooleanLiteral(*v),
                 ProperSubtypeEvidence::Number { allowed, values } => {
@@ -382,6 +386,8 @@ impl<'a> MaterializationContext<'a> {
                 .insert(ty.clone(), MaterMemo::Undefined);
         }
         let mater = self.materialize_no_cache(ty);
+        dbg!(&ty, &mater);
+
         self.materialize_memo
             .insert(ty.clone(), MaterMemo::Mater(mater.clone()));
         mater
@@ -390,7 +396,11 @@ impl<'a> MaterializationContext<'a> {
         if ty.all == 0 && ty.subtype_data.is_empty() {
             return Mater::Never;
         }
-
+        for t in SubTypeTag::all() {
+            if (ty.all & t.code()) != 0 {
+                return Self::materialize_tag(&t);
+            }
+        }
         for s in &ty.subtype_data {
             match s.as_ref() {
                 ProperSubtype::String { allowed, values } => {
@@ -419,20 +429,6 @@ impl<'a> MaterializationContext<'a> {
                 ProperSubtype::Boolean(v) => return Mater::BooleanLiteral(*v),
                 ProperSubtype::Mapping(bdd) => return self.materialize_mapping(bdd),
                 ProperSubtype::List(bdd) => return self.materialize_list(bdd),
-            }
-        }
-
-        for t in SubTypeTag::all() {
-            if (ty.all & t.code()) != 0 {
-                match t {
-                    SubTypeTag::Null => return Mater::Null,
-                    SubTypeTag::Boolean => return Mater::Boolean,
-                    SubTypeTag::Number => return Mater::Number,
-                    SubTypeTag::String => return Mater::String,
-                    SubTypeTag::Void => return Mater::Void,
-                    SubTypeTag::Mapping => unreachable!("we do not allow creation of all mappings"),
-                    SubTypeTag::List => unreachable!("we do not allow creation of all arrays"),
-                }
             }
         }
 

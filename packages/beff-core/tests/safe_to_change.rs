@@ -704,4 +704,88 @@ mod tests {
         assert!(!errors.is_empty());
         insta::assert_snapshot!(print_errors(from, to, &errors));
     }
+    #[test]
+    fn fail_min_1() {
+        let from = r#"
+        export default {
+            "/hello": {
+                get: (): ["a2", {a:string[]}] => todo()
+            }
+        }
+        "#;
+
+        let to = r#"
+        export default {
+            "/hello": {
+                get: (): ["a2", {a?:string[]}] => todo()
+            }
+        }
+        "#;
+        let errors = test_safe(from, to);
+        assert!(!errors.is_empty());
+        insta::assert_snapshot!(print_errors(from, to, &errors));
+    }
+    #[test]
+    fn fail_min_2() {
+        let from = r#"
+        export default {
+            "/hello": {
+                get: (): {a:string[]} => todo()
+            }
+        }
+        "#;
+
+        let to = r#"
+        export default {
+            "/hello": {
+                get: ():  {a?:string[]} => todo()
+            }
+        }
+        "#;
+        let errors = test_safe(from, to);
+        assert!(!errors.is_empty());
+        insta::assert_snapshot!(print_errors(from, to, &errors));
+    }
+    #[test]
+    fn fail_min_21() {
+        let from = r#"
+        export default {
+            "/hello": {
+                get: (): {a:string[]} => todo()
+            }
+        }
+        "#;
+
+        let to = r#"
+        export default {
+            "/hello": {
+                get: ():  {a:number|(string[])} => todo()
+            }
+        }
+        "#;
+        let errors = test_safe(from, to);
+        assert!(!errors.is_empty());
+        insta::assert_snapshot!(print_errors(from, to, &errors));
+    }
+    #[test]
+    fn fail_min_3() {
+        let from = r#"
+        export default {
+            "/hello": {
+                get: (): {a:string} => todo()
+            }
+        }
+        "#;
+
+        let to = r#"
+        export default {
+            "/hello": {
+                get: ():  {a?:string} => todo()
+            }
+        }
+        "#;
+        let errors = test_safe(from, to);
+        assert!(!errors.is_empty());
+        insta::assert_snapshot!(print_errors(from, to, &errors));
+    }
 }
