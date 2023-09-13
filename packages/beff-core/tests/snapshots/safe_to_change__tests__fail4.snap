@@ -32,7 +32,7 @@ type New = [("a" | "b" | "c")];
 ```
 
 ```ts
-type Diff = ["c"];
+type Diff = ([("a" | "b" | "c")] & Not<[("a" | "b")]>);
 ```
 
 Previous clients will not support this potential response:
@@ -40,5 +40,21 @@ Previous clients will not support this potential response:
 ```js
 [
     "c"
+];
+```
+
+diff:
+
+```js
+[
+    "c"
+];
+```
+
+evidence:
+
+```js
+[
+    "a"
 ];
 ```

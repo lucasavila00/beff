@@ -36,9 +36,11 @@ type New = {
 ```
 
 ```ts
-type Diff = {
-    "p": "c";
-};
+type Diff = ({
+    "p": ("a" | "b" | "c");
+} & Not<{
+    "p": ("a" | "b");
+}>);
 ```
 
 Previous clients will not support this potential response:
@@ -46,5 +48,21 @@ Previous clients will not support this potential response:
 ```js
 {
     "p": "c"
+};
+```
+
+diff:
+
+```js
+{
+    "p": "c"
+};
+```
+
+evidence:
+
+```js
+{
+    "p": "a"
 };
 ```

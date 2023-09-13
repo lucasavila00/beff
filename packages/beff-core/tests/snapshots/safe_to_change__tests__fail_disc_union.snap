@@ -38,10 +38,13 @@ type New = {
 ```
 
 ```ts
-type Diff = {
+type Diff = ({
     "data": boolean;
-    "ok": never;
-};
+    "ok": false;
+} & Not<{
+    "data": number;
+    "ok": false;
+}>);
 ```
 
 Previous clients will not support this potential response:
@@ -49,6 +52,24 @@ Previous clients will not support this potential response:
 ```js
 {
     "data": true,
+    "ok": false
+};
+```
+
+diff:
+
+```js
+{
+    "data": true,
     "ok": never()
+};
+```
+
+evidence:
+
+```js
+{
+    "data": true,
+    "ok": false
 };
 ```

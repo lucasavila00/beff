@@ -43,20 +43,51 @@ type New = ({
 ```
 
 ```ts
-type Diff = ({
-    "data": never;
-    "ok"?: (null | string | number | Object | Array);
-} | {
-    "data": never;
-    "ok": never;
-});
+type Diff = (({
+    "data": string;
+    "ok": true;
+} & (Not<{
+    "data": string;
+    "ok": true;
+}> & Not<{
+    "data": number;
+    "ok": false;
+}>)) | (({
+    "data": number;
+} & (Not<{
+    "data": string;
+    "ok": true;
+}> & Not<{
+    "data": number;
+    "ok": false;
+}>)) & Not<{
+    "data": string;
+    "ok": true;
+}>));
 ```
 
 Previous clients will not support this potential response:
 
 ```js
 {
+    "data": 123,
+    "ok": null
+};
+```
+
+diff:
+
+```js
+{
     "data": never(),
     "ok": null
+};
+```
+
+evidence:
+
+```js
+{
+    "data": 123
 };
 ```

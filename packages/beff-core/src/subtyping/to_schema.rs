@@ -295,13 +295,93 @@ impl<'a> SchemerContext<'a> {
         JsonSchema::Object(BTreeMap::from_iter(acc))
     }
 
+    // fn to_schema_mapping(&mut self, bdd: &Rc<Bdd>) -> JsonSchema {
+    //     let vs = self.ctx.to_schema_mapping_bdd_vec(bdd);
+    //     let vs = vs
+    //         .into_iter()
+    //         .map(|it| self.mapping_atom_schema(&it))
+    //         .collect();
+    //     return JsonSchema::any_of(vs);
+    // }
+
+    fn to_schema_mapping_node(
+        &mut self,
+        atom: &Rc<Atom>,
+        left: &Rc<Bdd>,
+        middle: &Rc<Bdd>,
+        right: &Rc<Bdd>,
+    ) -> JsonSchema {
+        let mt = match atom.as_ref() {
+            Atom::Mapping(a) => self.ctx.0.get_mapping_atomic(*a).clone(),
+            _ => unreachable!(),
+        };
+
+        let explained_sts = self.mapping_atom_schema(&mt);
+
+        let mut acc = vec![];
+
+        match left.as_ref() {
+            Bdd::True => {
+                acc.push(explained_sts.clone());
+            }
+            Bdd::False => {
+                // noop
+            }
+            Bdd::Node {
+                atom,
+                left,
+                middle,
+                right,
+            } => {
+                let ty = vec![explained_sts.clone()]
+                    .into_iter()
+                    .chain(vec![self.to_schema_mapping_node(atom, left, middle, right)]);
+                acc.push(JsonSchema::all_of(ty.collect()));
+            }
+        };
+
+        match middle.as_ref() {
+            Bdd::False => {
+                // noop
+            }
+            Bdd::True | Bdd::Node { .. } => {
+                acc.push(self.to_schema_mapping(middle));
+            }
+        }
+        match right.as_ref() {
+            Bdd::True => {
+                acc.push(JsonSchema::StNot(Box::new(explained_sts)));
+            }
+            Bdd::False => {
+                // noop
+            }
+            Bdd::Node {
+                atom,
+                left,
+                middle,
+                right,
+            } => {
+                let ty = JsonSchema::all_of(vec![
+                    JsonSchema::StNot(Box::new(explained_sts)),
+                    self.to_schema_mapping_node(atom, left, middle, right),
+                ]);
+                acc.push(ty)
+            }
+        }
+        return JsonSchema::any_of(acc);
+    }
+
     fn to_schema_mapping(&mut self, bdd: &Rc<Bdd>) -> JsonSchema {
-        let vs = self.ctx.to_schema_mapping_bdd_vec(bdd);
-        let vs = vs
-            .into_iter()
-            .map(|it| self.mapping_atom_schema(&it))
-            .collect();
-        return JsonSchema::any_of(vs);
+        match bdd.as_ref() {
+            Bdd::True => todo!(),
+            Bdd::False => todo!(),
+            Bdd::Node {
+                atom,
+                left,
+                middle,
+                right,
+            } => self.to_schema_mapping_node(atom, left, middle, right),
+        }
     }
 
     fn list_atom_schema(&mut self, mt: &Rc<ListAtomic>) -> JsonSchema {
@@ -326,13 +406,92 @@ impl<'a> SchemerContext<'a> {
         };
     }
 
+    // fn to_schema_list(&mut self, bdd: &Rc<Bdd>) -> JsonSchema {
+    //     let vs = self.ctx.to_schema_list_bdd_vec(bdd);
+    //     let vs = vs
+    //         .into_iter()
+    //         .map(|it| self.list_atom_schema(&it))
+    //         .collect();
+    //     return JsonSchema::any_of(vs);
+    // }
+
+    fn to_schema_list_node(
+        &mut self,
+        atom: &Rc<Atom>,
+        left: &Rc<Bdd>,
+        middle: &Rc<Bdd>,
+        right: &Rc<Bdd>,
+    ) -> JsonSchema {
+        let lt = match atom.as_ref() {
+            Atom::List(a) => self.ctx.0.get_list_atomic(*a).clone(),
+            _ => unreachable!(),
+        };
+
+        let explained_sts = self.list_atom_schema(&lt);
+
+        let mut acc = vec![];
+
+        match left.as_ref() {
+            Bdd::True => {
+                acc.push(explained_sts.clone());
+            }
+            Bdd::False => {
+                // noop
+            }
+            Bdd::Node {
+                atom,
+                left,
+                middle,
+                right,
+            } => {
+                let ty = vec![explained_sts.clone()]
+                    .into_iter()
+                    .chain(vec![self.to_schema_list_node(atom, left, middle, right)]);
+                acc.push(JsonSchema::all_of(ty.collect()));
+            }
+        };
+
+        match middle.as_ref() {
+            Bdd::False => {
+                // noop
+            }
+            Bdd::True | Bdd::Node { .. } => {
+                acc.push(self.to_schema_list(middle));
+            }
+        }
+        match right.as_ref() {
+            Bdd::True => {
+                acc.push(JsonSchema::StNot(Box::new(explained_sts)));
+            }
+            Bdd::False => {
+                // noop
+            }
+            Bdd::Node {
+                atom,
+                left,
+                middle,
+                right,
+            } => {
+                let ty = JsonSchema::all_of(vec![
+                    JsonSchema::StNot(Box::new(explained_sts)),
+                    self.to_schema_list_node(atom, left, middle, right),
+                ]);
+                acc.push(ty)
+            }
+        }
+        return JsonSchema::any_of(acc);
+    }
     fn to_schema_list(&mut self, bdd: &Rc<Bdd>) -> JsonSchema {
-        let vs = self.ctx.to_schema_list_bdd_vec(bdd);
-        let vs = vs
-            .into_iter()
-            .map(|it| self.list_atom_schema(&it))
-            .collect();
-        return JsonSchema::any_of(vs);
+        match bdd.as_ref() {
+            Bdd::True => todo!(),
+            Bdd::False => todo!(),
+            Bdd::Node {
+                atom,
+                left,
+                middle,
+                right,
+            } => self.to_schema_list_node(atom, left, middle, right),
+        }
     }
 
     fn maybe_not(it: JsonSchema, add_not: bool) -> JsonSchema {

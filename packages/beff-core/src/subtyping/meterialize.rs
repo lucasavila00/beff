@@ -7,7 +7,8 @@ use crate::{
 
 use super::{
     bdd::{Atom, Bdd, ListAtomic, MappingAtomic},
-    semtype::{SemType, SemTypeContext, SemTypeOps},
+    semtype::{Evidence, SemType, SemTypeContext, SemTypeOps},
+    subtype::ProperSubtypeEvidence,
 };
 
 pub struct SemTypeResolverContext<'a>(pub &'a mut SemTypeContext);
@@ -326,6 +327,48 @@ impl<'a> MaterializationContext<'a> {
         // todo!()
     }
 
+    pub fn materialize_ev(&mut self, ty: &Evidence) -> Mater {
+        match ty {
+            Evidence::All(t) => match t {
+                SubTypeTag::Null => return Mater::Null,
+                SubTypeTag::Boolean => return Mater::Boolean,
+                SubTypeTag::Number => return Mater::Number,
+                SubTypeTag::String => return Mater::String,
+                SubTypeTag::Void => return Mater::Void,
+                SubTypeTag::Mapping => unreachable!("we do not allow creation of all mappings"),
+                SubTypeTag::List => unreachable!("we do not allow creation of all arrays"),
+            },
+            Evidence::Proper(s) => match s {
+                ProperSubtypeEvidence::Boolean(v) => return Mater::BooleanLiteral(*v),
+                ProperSubtypeEvidence::Number { allowed, values } => {
+                    if !allowed {
+                        return Mater::NumberLiteral(N::parse_int(4773992856));
+                    }
+                    match values.split_first() {
+                        Some((h, _t)) => return Mater::NumberLiteral(h.clone()),
+                        None => unreachable!("number values cannot be empty"),
+                    }
+                }
+                ProperSubtypeEvidence::String { allowed, values } => {
+                    if !allowed {
+                        return Mater::StringLiteral("Izr1mn6edP0HLrWu".into());
+                    }
+                    match values.split_first() {
+                        Some((h, _t)) => match h {
+                            StringLitOrFormat::Lit(st) => return Mater::StringLiteral(st.clone()),
+                            StringLitOrFormat::Format(fmt) => {
+                                return Mater::StringWithFormat(fmt.clone())
+                            }
+                        },
+                        None => unreachable!("string values cannot be empty"),
+                    }
+                }
+                ProperSubtypeEvidence::List(lt) => self.list_atom_mater(lt),
+                ProperSubtypeEvidence::Mapping(mt) => self.mapping_atom_mater(mt),
+            },
+            Evidence::IsEmpty => panic!(),
+        }
+    }
     pub fn materialize(&mut self, ty: &Rc<SemType>) -> Mater {
         if let Some(mater) = self.materialize_memo.get(ty) {
             match mater {

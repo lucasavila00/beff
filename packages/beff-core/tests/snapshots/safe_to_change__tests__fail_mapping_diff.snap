@@ -38,17 +38,38 @@ type New = {
 ```
 
 ```ts
-type Diff = {
-    "a": never;
-    "b"?: ();
-};
+type Diff = ({
+    "a": string;
+    "b"?: boolean;
+} & Not<{
+    "a": string;
+    "b": boolean;
+}>);
 ```
 
 Previous clients will not support this potential response:
 
 ```js
 {
+    "a": "abc",
+    "b": undefined
+};
+```
+
+diff:
+
+```js
+{
     "a": never(),
-    "b": void()
+    "b": undefined
+};
+```
+
+evidence:
+
+```js
+{
+    "a": "abc",
+    "b": undefined
 };
 ```

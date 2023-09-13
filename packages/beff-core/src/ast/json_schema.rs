@@ -523,16 +523,22 @@ impl JsonSchema {
             //     }),
             // ),
             {
-                TsType::TsParenthesizedType(TsParenthesizedType {
-                    span: DUMMY_SP,
-                    type_ann: TsType::TsUnionOrIntersectionType(
-                        TsUnionOrIntersectionType::TsUnionType(TsUnionType {
-                            span: DUMMY_SP,
-                            types: vs.iter().map(|it| Box::new(it.to_ts_type())).collect(),
-                        }),
-                    )
-                    .into(),
-                })
+                match vs.len() {
+                    0 => TsType::TsKeywordType(TsKeywordType {
+                        span: DUMMY_SP,
+                        kind: TsKeywordTypeKind::TsVoidKeyword,
+                    }),
+                    _ => TsType::TsParenthesizedType(TsParenthesizedType {
+                        span: DUMMY_SP,
+                        type_ann: TsType::TsUnionOrIntersectionType(
+                            TsUnionOrIntersectionType::TsUnionType(TsUnionType {
+                                span: DUMMY_SP,
+                                types: vs.iter().map(|it| Box::new(it.to_ts_type())).collect(),
+                            }),
+                        )
+                        .into(),
+                    }),
+                }
             }
             JsonSchema::AllOf(vs) =>
             // TsType::TsUnionOrIntersectionType(
@@ -542,16 +548,22 @@ impl JsonSchema {
             //     }),
             // ),
             {
-                TsType::TsParenthesizedType(TsParenthesizedType {
-                    span: DUMMY_SP,
-                    type_ann: TsType::TsUnionOrIntersectionType(
-                        TsUnionOrIntersectionType::TsIntersectionType(TsIntersectionType {
-                            span: DUMMY_SP,
-                            types: vs.iter().map(|it| Box::new(it.to_ts_type())).collect(),
-                        }),
-                    )
-                    .into(),
-                })
+                match vs.len() {
+                    0 => TsType::TsKeywordType(TsKeywordType {
+                        span: DUMMY_SP,
+                        kind: TsKeywordTypeKind::TsVoidKeyword,
+                    }),
+                    _ => TsType::TsParenthesizedType(TsParenthesizedType {
+                        span: DUMMY_SP,
+                        type_ann: TsType::TsUnionOrIntersectionType(
+                            TsUnionOrIntersectionType::TsIntersectionType(TsIntersectionType {
+                                span: DUMMY_SP,
+                                types: vs.iter().map(|it| Box::new(it.to_ts_type())).collect(),
+                            }),
+                        )
+                        .into(),
+                    }),
+                }
             }
             JsonSchema::Const(v) => match v {
                 Json::Null => todo!(),

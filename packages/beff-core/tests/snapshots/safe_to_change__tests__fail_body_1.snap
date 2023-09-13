@@ -42,3 +42,15 @@ Previous clients will not support this potential response:
 ```js
 "b";
 ```
+
+diff:
+
+```js
+"b";
+```
+
+evidence:
+
+```js
+"b";
+```

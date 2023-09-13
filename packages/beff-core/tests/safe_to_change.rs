@@ -599,4 +599,109 @@ mod tests {
         assert!(!errors.is_empty());
         insta::assert_snapshot!(print_errors(from, to, &errors));
     }
+    #[test]
+    fn fail_disc_union_arr2() {
+        let from = r#"
+        export default {
+            "/hello": {
+                get: (): ["a1", number]|["a2", "asd"] => todo()
+            }
+        }
+        "#;
+
+        let to = r#"
+        export default {
+            "/hello": {
+                get: (): ["a1", number]|["a2", string] => todo()
+            }
+        }
+        "#;
+        let errors = test_safe(from, to);
+        assert!(!errors.is_empty());
+        insta::assert_snapshot!(print_errors(from, to, &errors));
+    }
+    #[test]
+    fn fail_disc_union_arr3() {
+        let from = r#"
+        export default {
+            "/hello": {
+                get: (): ["a1", {a:number}]|["a2", {a:string}] => todo()
+            }
+        }
+        "#;
+
+        let to = r#"
+        export default {
+            "/hello": {
+                get: (): ["a1", {a:number}]|["a2", {a:boolean}] => todo()
+            }
+        }
+        "#;
+        let errors = test_safe(from, to);
+        assert!(!errors.is_empty());
+        insta::assert_snapshot!(print_errors(from, to, &errors));
+    }
+    #[test]
+    fn fail_disc_union_arr4() {
+        let from = r#"
+        export default {
+            "/hello": {
+                get: (): ["a1", number]|["a2", string] => todo()
+            }
+        }
+        "#;
+
+        let to = r#"
+        export default {
+            "/hello": {
+                get: (): ["a1", number]|["a3", string] => todo()
+            }
+        }
+        "#;
+        let errors = test_safe(from, to);
+        assert!(!errors.is_empty());
+        insta::assert_snapshot!(print_errors(from, to, &errors));
+    }
+    #[test]
+    fn fail_disc_union_arr5() {
+        let from = r#"
+        export default {
+            "/hello": {
+                get: (): ["a1", {a:number}]|["a2", {a:string}] => todo()
+            }
+        }
+        "#;
+
+        let to = r#"
+        export default {
+            "/hello": {
+                get: (): ["a1", {a:number}]|["a2", {a?:string}] => todo()
+            }
+        }
+        "#;
+        let errors = test_safe(from, to);
+        assert!(!errors.is_empty());
+        insta::assert_snapshot!(print_errors(from, to, &errors));
+    }
+    #[test]
+    fn fail_disc_union_arr6() {
+        let from = r#"
+        export default {
+            "/hello": {
+                get: (): ["a1", {a:number[]}]|["a2", {a:string[]}] => todo()
+            }
+        }
+        "#;
+
+        let to = r#"
+        export default {
+            "/hello": {
+                get: (): ["a1", {a:number[]}]|["a2", {a?:string[]}] => todo()
+            }
+        }
+        "#;
+        let errors = test_safe(from, to);
+        assert!(!errors.is_empty());
+        insta::assert_snapshot!(print_errors(from, to, &errors));
+    }
 }

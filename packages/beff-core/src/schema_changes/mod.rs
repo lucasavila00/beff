@@ -1,12 +1,16 @@
 use std::collections::BTreeMap;
 
 use crate::{
-    ast::{js::Js, json::Json, json_schema::JsonSchema},
+    ast::{
+        js::Js,
+        json::{Json, N},
+        json_schema::JsonSchema,
+    },
     emit::emit_module,
     open_api_ast::{HTTPMethod, OpenApi, OperationObject, Validator},
     subtyping::{
         meterialize::{Mater, MaterializationContext},
-        semtype::{SemTypeContext, SemTypeOps},
+        semtype::{Evidence, SemTypeContext, SemTypeOps},
         to_schema::to_validators,
         ToSemType,
     },
@@ -99,7 +103,7 @@ impl BreakingChange {
             BreakingChange::PathRemoved => vec![MdReport::Text("Path removed".to_string())],
             // BreakingChange::MethodRemoved(_) => todo!(),
             BreakingChange::ResponseBodyBreakingChange(err) => {
-                let v = diff_to_js(&err.diff);
+                let v = diff_to_js(&err.diff, Some(&err.evidence_mater));
                 vec![MdReport::Text("Response body is not compatible.".into())]
                     .into_iter()
                     .chain(print_validators(&err.super_type.iter().collect::<Vec<_>>()))
@@ -110,11 +114,15 @@ impl BreakingChange {
                             "Previous clients will not support this potential response:"
                         )),
                         MdReport::Js(v),
+                        MdReport::Text(format!("diff:")),
+                        MdReport::Js(diff_to_js(&err.diff, None)),
+                        MdReport::Text(format!("evidence:")),
+                        MdReport::Js(diff_to_js(&err.evidence_mater, None)),
                     ])
                     .collect()
             }
             BreakingChange::ParamBreakingChange { param_name, err } => {
-                let v = diff_to_js(&err.diff);
+                let v = diff_to_js(&err.diff, Some(&err.evidence_mater));
                 vec![MdReport::Text(format!(
                     "Param `{}` is not compatible.",
                     param_name
@@ -158,6 +166,8 @@ pub struct IsNotSubtype {
     // sub_type_mater: Mater,
     // super_type_mater: Mater,
     diff: Mater,
+    // evidence: Evidence,
+    evidence_mater: Mater,
 }
 fn call_expr(name: &str) -> Expr {
     Expr::Call(CallExpr {
@@ -175,15 +185,22 @@ fn call_expr(name: &str) -> Expr {
     })
 }
 
-fn diff_to_js(diff: &Mater) -> Js {
+fn diff_to_js(diff: &Mater, base: Option<&Mater>) -> Js {
     match diff {
-        Mater::Never => Js::Expr(call_expr("never")),
+        Mater::Never => match base {
+            Some(v) => diff_to_js(v, None),
+            None => Js::Expr(call_expr("never")),
+        },
         Mater::Unknown => todo!(),
-        Mater::Void => Js::Expr(call_expr("void")),
+        Mater::Void => Js::Expr(Expr::Ident(Ident {
+            span: DUMMY_SP,
+            sym: "undefined".into(),
+            optional: false,
+        })),
         Mater::Recursive => Js::Expr(call_expr("recursion")),
         Mater::Null => Js::Null,
         Mater::Boolean => Js::Bool(true),
-        Mater::Number => todo!(),
+        Mater::Number => Js::Number(N::parse_int(123)),
         Mater::String => Js::String("abc".into()),
         Mater::StringWithFormat(_) => todo!(),
         Mater::StringLiteral(st) => Js::String(st.clone()),
@@ -194,16 +211,24 @@ fn diff_to_js(diff: &Mater) -> Js {
             prefix_items,
         } => {
             let mut acc = vec![];
-            for item in prefix_items.iter() {
-                acc.push(diff_to_js(item));
+            for (idx, item) in prefix_items.iter().enumerate() {
+                let base = match base {
+                    Some(Mater::Array { prefix_items, .. }) => prefix_items.get(idx),
+                    _ => None,
+                };
+                acc.push(diff_to_js(item, base));
             }
             if !items.is_never() {
+                let base = match base {
+                    Some(Mater::Array { items, .. }) => Some(items.as_ref()),
+                    _ => None,
+                };
                 match items.as_ref() {
                     Mater::Recursive => {
                         // ignore recursion in array
                     }
                     _ => {
-                        acc.push(diff_to_js(items));
+                        acc.push(diff_to_js(items, base));
                     }
                 }
             }
@@ -212,7 +237,11 @@ fn diff_to_js(diff: &Mater) -> Js {
         Mater::Object(vs) => {
             let mut acc = BTreeMap::new();
             for (k, v) in vs.iter() {
-                acc.insert(k.clone(), diff_to_js(v));
+                let base = match base {
+                    Some(Mater::Object(base)) => base.get(k),
+                    _ => None,
+                };
+                acc.insert(k.clone(), diff_to_js(v, base));
             }
             Js::Object(acc)
         }
@@ -239,10 +268,11 @@ impl<'a> SchemaReference<'a> {
         if !supe.required {
             supe_st = SemTypeContext::optional(supe_st);
         }
-
-        match sub_st.is_subtype(&supe_st, &mut builder) {
-            true => Ok(SubTypeCheckResult::IsSubtype),
-            false => {
+        match sub_st.diff(&supe_st).is_empty_evidence(&mut builder) {
+            Evidence::IsEmpty => Ok(SubTypeCheckResult::IsSubtype),
+            // Evidence::All(_) => todo!(),
+            // Evidence::Proper(_) => todo!(),
+            evidence => {
                 let sub_type = to_validators(&mut builder, &sub_st, &sub.name);
                 let super_type = to_validators(&mut builder, &supe_st, &supe.name);
                 let diff = sub_st.diff(&supe_st);
@@ -252,6 +282,7 @@ impl<'a> SchemaReference<'a> {
                     sub_type,
                     super_type,
                     diff_type,
+                    evidence_mater: mater.materialize_ev(&evidence),
                     // sub_type_mater: mater.materialize(&sub_st),
                     // super_type_mater: mater.materialize(&supe_st),
                     diff: mater.materialize(&diff),

@@ -1,8 +1,8 @@
 use super::{
     bdd::{Atom, Bdd, ListAtomic, MappingAtomic},
     subtype::{
-        BasicTypeBitSet, BasicTypeCode, NumberRepresentation, ProperSubtype, ProperSubtypeOps,
-        StringLitOrFormat, SubType, SubTypeTag, VAL,
+        BasicTypeBitSet, BasicTypeCode, NumberRepresentation, ProperSubtype, ProperSubtypeEvidence,
+        ProperSubtypeEvidenceResult, ProperSubtypeOps, StringLitOrFormat, SubType, SubTypeTag, VAL,
     },
 };
 use std::{collections::BTreeMap, rc::Rc};
@@ -76,9 +76,16 @@ pub struct ComplexSemType {
 }
 
 pub type SemType = ComplexSemType;
+#[derive(PartialEq, Eq, Hash, Debug, Ord, PartialOrd)]
+pub enum Evidence {
+    All(SubTypeTag),
+    Proper(ProperSubtypeEvidence),
+    IsEmpty,
+}
 
 pub trait SemTypeOps {
     fn is_empty(&self, ctx: &mut SemTypeContext) -> bool;
+    fn is_empty_evidence(&self, ctx: &mut SemTypeContext) -> Evidence;
     fn intersect(&self, t2: &Rc<SemType>) -> Rc<SemType>;
     fn union(&self, t2: &Rc<SemType>) -> Rc<SemType>;
     fn diff(&self, t2: &Rc<SemType>) -> Rc<SemType>;
@@ -88,17 +95,25 @@ pub trait SemTypeOps {
 }
 
 impl SemTypeOps for Rc<SemType> {
-    fn is_empty(&self, builder: &mut SemTypeContext) -> bool {
+    fn is_empty_evidence(&self, builder: &mut SemTypeContext) -> Evidence {
         if self.all != 0 {
-            // includes all of one or more basic types
-            return false;
+            for i in SubTypeTag::all() {
+                if (self.all & i.code()) != 0 {
+                    return Evidence::All(i);
+                }
+            }
+            panic!()
         }
         for st in self.subtype_data.iter() {
-            if !st.is_empty(builder) {
-                return false;
+            match st.is_empty_evidence(builder) {
+                ProperSubtypeEvidenceResult::IsEmpty => {}
+                ProperSubtypeEvidenceResult::Evidence(st) => return Evidence::Proper(st),
             }
         }
-        return true;
+        return Evidence::IsEmpty;
+    }
+    fn is_empty(&self, builder: &mut SemTypeContext) -> bool {
+        matches!(self.is_empty_evidence(builder), Evidence::IsEmpty)
     }
 
     fn intersect(&self, t2: &Rc<SemType>) -> Rc<SemType> {
@@ -274,24 +289,23 @@ impl SemType {
     }
 }
 
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone)]
 pub enum MemoEmpty {
     True,
-    False,
+    False(ProperSubtypeEvidenceResult),
     Undefined,
 }
 
 impl MemoEmpty {
-    pub fn from_bool(b: bool) -> MemoEmpty {
-        if b {
-            MemoEmpty::True
-        } else {
-            MemoEmpty::False
+    pub fn from_bool(b: &ProperSubtypeEvidenceResult) -> MemoEmpty {
+        match b {
+            ProperSubtypeEvidenceResult::IsEmpty => MemoEmpty::True,
+            ProperSubtypeEvidenceResult::Evidence(_) => MemoEmpty::False(b.clone()),
         }
     }
 }
 
-#[derive(Clone, Copy, Debug)]
+#[derive(Clone, Debug)]
 pub struct BddMemoEmptyRef(pub MemoEmpty);
 
 pub struct SemTypeContext {

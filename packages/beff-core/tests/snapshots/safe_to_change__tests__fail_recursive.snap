@@ -42,11 +42,29 @@ type New = {
 ```
 
 ```ts
-type Diff = {
-    "arr": Array<Diff>;
-    "p"?: (null | boolean | number | Object | Array);
+type t_1 = Array<{
+    "arr": t_1;
     "p2": string;
-};
+}>;
+
+type t_6 = Array<{
+    "arr": t_6;
+    "p": string;
+}>;
+
+type Diff = ({
+    "arr": Array<{
+        "arr": t_1;
+        "p2": string;
+    }>;
+    "p2": string;
+} & Not<{
+    "arr": Array<{
+        "arr": t_6;
+        "p": string;
+    }>;
+    "p": string;
+}>);
 ```
 
 Previous clients will not support this potential response:
@@ -55,6 +73,30 @@ Previous clients will not support this potential response:
 {
     "arr": [],
     "p": null,
+    "p2": "abc"
+};
+```
+
+diff:
+
+```js
+{
+    "arr": [],
+    "p": null,
+    "p2": "abc"
+};
+```
+
+evidence:
+
+```js
+{
+    "arr": [
+        {
+            "arr": recursion(),
+            "p2": "abc"
+        }
+    ],
     "p2": "abc"
 };
 ```
