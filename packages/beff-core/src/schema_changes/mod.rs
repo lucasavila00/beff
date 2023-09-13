@@ -155,8 +155,8 @@ pub struct IsNotSubtype {
     super_type: Vec<Validator>,
     diff_type: Vec<Validator>,
 
-    sub_type_mater: Mater,
-    super_type_mater: Mater,
+    // sub_type_mater: Mater,
+    // super_type_mater: Mater,
     diff: Mater,
 }
 fn call_expr(name: &str) -> Expr {
@@ -252,8 +252,8 @@ impl<'a> SchemaReference<'a> {
                     sub_type,
                     super_type,
                     diff_type,
-                    sub_type_mater: mater.materialize(&sub_st),
-                    super_type_mater: mater.materialize(&supe_st),
+                    // sub_type_mater: mater.materialize(&sub_st),
+                    // super_type_mater: mater.materialize(&supe_st),
                     diff: mater.materialize(&diff),
                 }))
             }

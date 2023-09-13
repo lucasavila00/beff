@@ -251,6 +251,8 @@ mod tests {
         assert!(!after.is_subtype(&before, &mut ctx));
         let t2 = after.diff(&before);
 
+        assert!(!t2.is_empty(&mut ctx));
+
         let mut mat = MaterializationContext::new(&mut ctx);
 
         assert_eq!(

@@ -10,24 +10,6 @@ use super::{
     semtype::{SemType, SemTypeContext, SemTypeOps},
 };
 
-#[derive(Debug, Clone)]
-pub enum TupleAcc {
-    Values(Vec<Rc<SemType>>),
-    Unknown,
-    Never,
-}
-#[derive(Clone)]
-pub enum MappingAcc {
-    Values(Vec<(String, Rc<SemType>)>),
-    Unknown,
-    Never,
-}
-
-pub enum MaterMemo {
-    Mater(Mater),
-    Undefined,
-}
-
 pub struct SemTypeResolverContext<'a>(pub &'a mut SemTypeContext);
 
 impl<'a> SemTypeResolverContext<'a> {
@@ -262,6 +244,12 @@ impl<'a> SemTypeResolverContext<'a> {
         }
     }
 }
+
+pub enum MaterMemo {
+    Mater(Mater),
+    Undefined,
+}
+
 pub struct MaterializationContext<'a> {
     ctx: SemTypeResolverContext<'a>,
 

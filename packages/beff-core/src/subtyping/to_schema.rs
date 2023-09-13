@@ -12,9 +12,8 @@ use crate::{
 };
 
 use super::{
-    bdd::{Bdd, ListAtomic, MappingAtomic},
-    meterialize::SemTypeResolverContext,
-    semtype::{SemType, SemTypeContext},
+    bdd::{Atom, Bdd, ListAtomic, MappingAtomic},
+    semtype::{SemType, SemTypeContext, SemTypeOps},
     subtype::{ProperSubtype, StringLitOrFormat, SubTypeTag},
 };
 
@@ -22,6 +21,242 @@ pub enum SchemaMemo {
     Schema(JsonSchema),
     Undefined(String),
 }
+
+pub struct SemTypeResolverContext<'a>(pub &'a mut SemTypeContext);
+
+impl<'a> SemTypeResolverContext<'a> {
+    fn intersect_mapping_atomics(it: Vec<Rc<MappingAtomic>>) -> Rc<MappingAtomic> {
+        let mut acc: MappingAtomic = BTreeMap::new();
+
+        for atom in it {
+            for (k, v) in atom.iter() {
+                let old_v = acc
+                    .get(k)
+                    .map(|it| it.clone())
+                    .unwrap_or_else(|| Rc::new(SemType::new_unknown()));
+
+                let v = old_v.intersect(v);
+
+                acc.insert(k.clone(), v);
+            }
+        }
+
+        Rc::new(acc)
+    }
+
+    fn mapping_atomic_complement(it: Rc<MappingAtomic>) -> Rc<MappingAtomic> {
+        let acc = it
+            .iter()
+            .map(|(k, v)| (k.clone(), v.complement()))
+            .collect();
+        Rc::new(acc)
+    }
+
+    fn to_schema_mapping_node_bdd_vec(
+        &mut self,
+        atom: &Rc<Atom>,
+        left: &Rc<Bdd>,
+        middle: &Rc<Bdd>,
+        right: &Rc<Bdd>,
+    ) -> Vec<Rc<MappingAtomic>> {
+        let mt = match atom.as_ref() {
+            Atom::Mapping(a) => self.0.get_mapping_atomic(*a).clone(),
+            _ => unreachable!(),
+        };
+
+        let mut acc: Vec<Rc<MappingAtomic>> = vec![];
+
+        match left.as_ref() {
+            Bdd::True => {
+                acc.push(mt.clone());
+            }
+            Bdd::False => {
+                // noop
+            }
+            Bdd::Node {
+                atom,
+                left,
+                middle,
+                right,
+            } => {
+                let ty = vec![mt.clone()]
+                    .into_iter()
+                    .chain(self.to_schema_mapping_node_bdd_vec(atom, left, middle, right));
+
+                acc.push(Self::intersect_mapping_atomics(ty.collect()));
+            }
+        };
+
+        match middle.as_ref() {
+            Bdd::False => {
+                // noop
+            }
+            Bdd::True | Bdd::Node { .. } => {
+                acc.extend(self.to_schema_mapping_bdd_vec(middle));
+            }
+        }
+        match right.as_ref() {
+            Bdd::True => {
+                acc.push(Self::mapping_atomic_complement(mt.clone()));
+            }
+            Bdd::False => {
+                // noop
+            }
+            Bdd::Node {
+                atom,
+                left,
+                middle,
+                right,
+            } => {
+                let ty = vec![Self::mapping_atomic_complement(mt.clone())]
+                    .into_iter()
+                    .chain(self.to_schema_mapping_node_bdd_vec(atom, left, middle, right));
+
+                acc.push(Self::intersect_mapping_atomics(ty.collect()));
+            }
+        }
+        return acc;
+    }
+    pub fn to_schema_mapping_bdd_vec(&mut self, bdd: &Rc<Bdd>) -> Vec<Rc<MappingAtomic>> {
+        match bdd.as_ref() {
+            Bdd::True => todo!(),
+            Bdd::False => todo!(),
+            Bdd::Node {
+                atom,
+                left,
+                middle,
+                right,
+            } => self.to_schema_mapping_node_bdd_vec(atom, left, middle, right),
+        }
+    }
+
+    fn intersect_list_atomics(it: Vec<Rc<ListAtomic>>) -> Rc<ListAtomic> {
+        let items = it
+            .iter()
+            .map(|it| it.items.clone())
+            .fold(Rc::new(SemType::new_unknown()), |acc, it| {
+                acc.intersect(&it)
+            });
+
+        let mut prefix_items: Vec<Rc<SemType>> = vec![];
+        let max_len = it.iter().map(|it| it.prefix_items.len()).max().unwrap_or(0);
+        for i in 0..max_len {
+            let mut acc = Rc::new(SemType::new_unknown());
+
+            for atom in &it {
+                if i < atom.prefix_items.len() {
+                    acc = acc.intersect(&atom.prefix_items[i]);
+                }
+            }
+
+            prefix_items.push(acc);
+        }
+
+        Rc::new(ListAtomic {
+            items,
+            prefix_items,
+        })
+    }
+
+    fn list_atomic_complement(it: Rc<ListAtomic>) -> Rc<ListAtomic> {
+        let items = it.items.complement();
+        let prefix_items = it.prefix_items.iter().map(|it| it.complement()).collect();
+        Rc::new(ListAtomic {
+            items,
+            prefix_items,
+        })
+    }
+
+    fn to_schema_list_node_bdd_vec(
+        &mut self,
+        atom: &Rc<Atom>,
+        left: &Rc<Bdd>,
+        middle: &Rc<Bdd>,
+        right: &Rc<Bdd>,
+    ) -> Vec<Rc<ListAtomic>> {
+        let mt = match atom.as_ref() {
+            Atom::List(a) => self.0.get_list_atomic(*a).clone(),
+            _ => unreachable!(),
+        };
+
+        let mut acc: Vec<Rc<ListAtomic>> = vec![];
+
+        match left.as_ref() {
+            Bdd::True => {
+                acc.push(mt.clone());
+            }
+            Bdd::False => {
+                // noop
+            }
+            Bdd::Node {
+                atom,
+                left,
+                middle,
+                right,
+            } => {
+                let ty = vec![mt.clone()]
+                    .into_iter()
+                    .chain(self.to_schema_list_node_bdd_vec(atom, left, middle, right));
+
+                acc.push(Self::intersect_list_atomics(ty.collect()));
+            }
+        };
+
+        match middle.as_ref() {
+            Bdd::False => {
+                // noop
+            }
+            Bdd::True | Bdd::Node { .. } => {
+                acc.extend(self.to_schema_list_bdd_vec(middle));
+            }
+        }
+        match right.as_ref() {
+            Bdd::True => {
+                acc.push(Self::list_atomic_complement(mt.clone()));
+            }
+            Bdd::False => {
+                // noop
+            }
+            Bdd::Node {
+                atom,
+                left,
+                middle,
+                right,
+            } => {
+                let ty = vec![Self::list_atomic_complement(mt.clone())]
+                    .into_iter()
+                    .chain(self.to_schema_list_node_bdd_vec(atom, left, middle, right));
+
+                acc.push(Self::intersect_list_atomics(ty.collect()));
+            }
+        }
+        return acc;
+    }
+    pub fn to_schema_list_bdd_vec(&mut self, bdd: &Rc<Bdd>) -> Vec<Rc<ListAtomic>> {
+        match bdd.as_ref() {
+            Bdd::True => {
+                // vec![Rc::new(ListAtomic {
+                //     prefix_items: vec![],
+                //     items: Rc::new(SemType::new_unknown()),
+                // })]
+                todo!()
+            }
+            Bdd::False => {
+                vec![Rc::new(ListAtomic {
+                    prefix_items: vec![],
+                    items: Rc::new(SemType::new_never()),
+                })]
+            }
+            Bdd::Node {
+                atom,
+                left,
+                middle,
+                right,
+            } => self.to_schema_list_node_bdd_vec(atom, left, middle, right),
+        }
+    }
+}
+
 struct SchemerContext<'a> {
     ctx: SemTypeResolverContext<'a>,
 
