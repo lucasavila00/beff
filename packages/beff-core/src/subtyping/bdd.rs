@@ -485,8 +485,7 @@ pub fn mapping_is_empty(
     is_empty
 }
 enum ListInhabited {
-    YesNoEvidence,
-    Yes(Evidence),
+    Yes(Option<Rc<Evidence>>, Vec<Rc<SemType>>),
     No,
 }
 // This function returns true if there is a list shape v such that
@@ -503,7 +502,7 @@ fn list_inhabited(
     builder: &mut SemTypeContext,
 ) -> ListInhabited {
     match neg {
-        None => return ListInhabited::YesNoEvidence,
+        None => return ListInhabited::Yes(None, prefix_items.clone()),
         Some(neg) => {
             let mut len = prefix_items.len();
             let nt = match &*neg.atom {
@@ -546,7 +545,6 @@ fn list_inhabited(
             // We can generalize this to tuples of arbitrary length.
 
             for i in 0..len {
-                // let ntm = i < neg_len ? nt.prefix_items[i] : nt.items;
                 let ntm = if i < neg_len {
                     nt.prefix_items[i].clone()
                 } else {
@@ -556,22 +554,21 @@ fn list_inhabited(
                 if !d.is_empty(builder) {
                     let mut s = prefix_items.clone();
                     s[i] = d;
-                    match list_inhabited(&mut s, items, &neg.next, builder) {
-                        ListInhabited::Yes(e) => return ListInhabited::Yes(e),
-                        ListInhabited::YesNoEvidence => return ListInhabited::YesNoEvidence,
-                        ListInhabited::No => {}
+                    if let ListInhabited::Yes(a, b) =
+                        list_inhabited(&mut s, items, &neg.next, builder)
+                    {
+                        return ListInhabited::Yes(a, b);
                     }
                 }
             }
 
             let diff = items.diff(&nt.items);
             match diff.is_empty_evidence(builder) {
-                EvidenceResult::Evidence(e) => return ListInhabited::Yes(e),
+                EvidenceResult::Evidence(e) => {
+                    return ListInhabited::Yes(Some(e.into()), prefix_items.clone())
+                }
                 EvidenceResult::IsEmpty => {}
             }
-            // if !diff.is_empty(builder) {
-            //     return ListInhabited::Yes;
-            // }
 
             // This is correct for length 0, because we know that the length of the
             // negative is 0, and [] - [] is empty.
@@ -644,20 +641,21 @@ fn list_formula_is_empty(
         }
     }
     match list_inhabited(&mut prefix_items, &items, neg, builder) {
-        ListInhabited::Yes(e) => {
+        ListInhabited::Yes(e, prefix) => {
+            let prefix2 = prefix
+                .into_iter()
+                .map(|it| match it.is_empty_evidence(builder) {
+                    EvidenceResult::Evidence(e) => Rc::new(e),
+                    EvidenceResult::IsEmpty => panic!(),
+                })
+                .collect::<Vec<_>>();
             let list_evidence = ListEvidence {
-                prefix_items: prefix_items_evidence,
-                items: Some(Rc::new(e)),
+                prefix_items: prefix2,
+                items: e,
             };
             return ProperSubtypeEvidence::List(Rc::new(list_evidence)).to_result();
         }
-        ListInhabited::YesNoEvidence => {
-            let list_evidence = ListEvidence {
-                prefix_items: prefix_items_evidence,
-                items: None,
-            };
-            return ProperSubtypeEvidence::List(Rc::new(list_evidence)).to_result();
-        }
+
         ListInhabited::No => return ProperSubtypeEvidenceResult::IsEmpty,
     }
 }
