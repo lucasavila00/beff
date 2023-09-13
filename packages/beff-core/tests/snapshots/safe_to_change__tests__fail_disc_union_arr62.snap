@@ -6,7 +6,7 @@ from:
 
         export default {
             "/hello": {
-                get: (): ["a1", {a:number[]}]|["a2", {a:string[]}] => todo()
+                get: (): ["a2", {a:string[]}]|["a1", {a:number[]}] => todo()
             }
         }
         
@@ -14,7 +14,7 @@ to:
 
         export default {
             "/hello": {
-                get: (): ["a1", {a:number[]}]|["a2", {a?:string[]}] => todo()
+                get: (): ["a2", {a?:string[]}]|["a1", {a:number[]}] => todo()
             }
         }
         

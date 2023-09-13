@@ -334,7 +334,7 @@ fn bdd_every(
                 builder,
             );
 
-            and_evidence(a, and_evidence(b, c))
+            and_evidence(c, and_evidence(b, a))
         }
     }
 }
@@ -502,7 +502,7 @@ fn list_inhabited(
     builder: &mut SemTypeContext,
 ) -> ListInhabited {
     match neg {
-        None => return ListInhabited::Yes(None, prefix_items.clone()),
+        None => return ListInhabited::Yes(None, vec![]),
         Some(neg) => {
             let mut len = prefix_items.len();
             let nt = match &*neg.atom {
@@ -554,20 +554,17 @@ fn list_inhabited(
                 if !d.is_empty(builder) {
                     let mut s = prefix_items.clone();
                     s[i] = d;
-                    if let ListInhabited::Yes(a, b) =
+                    if let ListInhabited::Yes(a, _b) =
                         list_inhabited(&mut s, items, &neg.next, builder)
                     {
-                        return ListInhabited::Yes(a, b);
+                        return ListInhabited::Yes(a, s.clone());
                     }
                 }
             }
 
             let diff = items.diff(&nt.items);
-            match diff.is_empty_evidence(builder) {
-                EvidenceResult::Evidence(e) => {
-                    return ListInhabited::Yes(Some(e.into()), prefix_items.clone())
-                }
-                EvidenceResult::IsEmpty => {}
+            if let EvidenceResult::Evidence(e) = diff.is_empty_evidence(builder) {
+                return ListInhabited::Yes(Some(e.into()), prefix_items.clone());
             }
 
             // This is correct for length 0, because we know that the length of the
@@ -584,8 +581,6 @@ fn list_formula_is_empty(
 ) -> ProperSubtypeEvidenceResult {
     let mut prefix_items = vec![];
     let mut items = Rc::new(SemTypeContext::unknown());
-
-    let mut prefix_items_evidence = vec![];
 
     match pos {
         None => {}
@@ -631,11 +626,8 @@ fn list_formula_is_empty(
             }
 
             for m in prefix_items.iter() {
-                match m.is_empty_evidence(builder) {
-                    EvidenceResult::Evidence(e) => {
-                        prefix_items_evidence.push(Rc::new(e));
-                    }
-                    EvidenceResult::IsEmpty => return ProperSubtypeEvidenceResult::IsEmpty,
+                if let EvidenceResult::IsEmpty = m.is_empty_evidence(builder) {
+                    return ProperSubtypeEvidenceResult::IsEmpty;
                 }
             }
         }
