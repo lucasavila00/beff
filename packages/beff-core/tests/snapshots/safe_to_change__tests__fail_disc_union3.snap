@@ -72,6 +72,7 @@ evidence:
 
 ```js
 {
-    "data": 123
+    "data": 123,
+    "ok": "abc"
 };
 ```

@@ -34,11 +34,11 @@ impl SubTypeTag {
     pub fn all() -> Vec<SubTypeTag> {
         // Order matters for decision at materialization time
         vec![
-            SubTypeTag::Null,
-            SubTypeTag::Void,
             SubTypeTag::String,
             SubTypeTag::Boolean,
             SubTypeTag::Number,
+            SubTypeTag::Void,
+            SubTypeTag::Null,
             SubTypeTag::Mapping,
             SubTypeTag::List,
         ]

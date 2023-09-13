@@ -8,8 +8,7 @@ use crate::subtyping::semtype::SemTypeContext;
 
 use super::{
     evidence::{
-        Evidence, EvidenceResult, ListEvidence, MappingEvidence, ProperSubtypeEvidence,
-        ProperSubtypeEvidenceResult,
+        Evidence, EvidenceResult, ListEvidence, ProperSubtypeEvidence, ProperSubtypeEvidenceResult,
     },
     semtype::{BddMemoEmptyRef, MemoEmpty, SemType, SemTypeOps},
 };
@@ -360,13 +359,18 @@ fn intersect_mapping(m1: Rc<MappingAtomic>, m2: Rc<MappingAtomic>) -> Option<Rc<
     return Some(Rc::new(MappingAtomic::from_iter(acc)));
 }
 
+enum MappingInhabited {
+    Yes(Rc<MappingAtomic>),
+    No,
+}
+
 fn mapping_inhabited(
     pos: Rc<MappingAtomic>,
     neg_list: &Option<Rc<Conjunction>>,
     builder: &mut SemTypeContext,
-) -> bool {
+) -> MappingInhabited {
     match neg_list {
-        None => true,
+        None => MappingInhabited::Yes(pos.clone()),
         Some(neg_list) => {
             let neg = match &*neg_list.atom {
                 Atom::Mapping(a) => builder.get_mapping_atomic(*a),
@@ -405,13 +409,15 @@ fn mapping_inhabited(
                 if !d.is_empty(builder) {
                     let mut mt = pos.as_ref().clone();
                     mt.insert(name.to_string(), d);
-                    if mapping_inhabited(Rc::new(mt), &neg_list.next, builder) {
-                        return true;
+                    if let MappingInhabited::Yes(a) =
+                        mapping_inhabited(Rc::new(mt), &neg_list.next, builder)
+                    {
+                        return MappingInhabited::Yes(a);
                     }
                 }
             }
 
-            return false;
+            return MappingInhabited::No;
         }
     }
 }
@@ -422,7 +428,6 @@ fn mapping_formula_is_empty(
     builder: &mut SemTypeContext,
 ) -> ProperSubtypeEvidenceResult {
     let mut combined: Rc<MappingAtomic> = Rc::new(BTreeMap::new());
-    let mut combined_evidence: MappingEvidence = BTreeMap::new();
     match pos_list {
         None => {}
         Some(pos_atom) => {
@@ -443,21 +448,27 @@ fn mapping_formula_is_empty(
                 }
                 p = some_p.next.clone();
             }
-            for (k, t) in combined.iter() {
-                match t.is_empty_evidence(builder) {
-                    EvidenceResult::Evidence(e) => {
-                        combined_evidence.insert(k.clone(), Rc::new(e));
-                    }
-                    EvidenceResult::IsEmpty => return ProperSubtypeEvidenceResult::IsEmpty,
+            for t in combined.values() {
+                if let EvidenceResult::IsEmpty = t.is_empty_evidence(builder) {
+                    return ProperSubtypeEvidenceResult::IsEmpty;
                 }
             }
         }
     }
-    let is_empty = !mapping_inhabited(combined.clone(), neg_list, builder);
-    if is_empty {
-        return ProperSubtypeEvidenceResult::IsEmpty;
-    }
-    return ProperSubtypeEvidence::Mapping(combined_evidence.into()).to_result();
+    match mapping_inhabited(combined.clone(), neg_list, builder) {
+        MappingInhabited::No => return ProperSubtypeEvidenceResult::IsEmpty,
+        MappingInhabited::Yes(ev) => {
+            let ev2 = ev
+                .iter()
+                .map(|(k, it)| match it.is_empty_evidence(builder) {
+                    EvidenceResult::Evidence(e) => (k.clone(), Rc::new(e)),
+                    EvidenceResult::IsEmpty => panic!(),
+                })
+                .collect::<Vec<_>>();
+
+            return ProperSubtypeEvidence::Mapping(BTreeMap::from_iter(ev2).into()).to_result();
+        }
+    };
 }
 pub fn mapping_is_empty(
     bdd: &Rc<Bdd>,

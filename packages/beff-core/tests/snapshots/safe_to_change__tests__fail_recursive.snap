@@ -74,6 +74,7 @@ evidence:
 ```js
 {
     "arr": [],
+    "p": true,
     "p2": "abc"
 };
 ```
