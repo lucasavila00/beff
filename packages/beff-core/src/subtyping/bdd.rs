@@ -8,7 +8,8 @@ use crate::subtyping::semtype::SemTypeContext;
 
 use super::{
     evidence::{
-        EvidenceResult, MappingEvidence, ProperSubtypeEvidence, ProperSubtypeEvidenceResult,
+        Evidence, EvidenceResult, ListEvidence, MappingEvidence, ProperSubtypeEvidence,
+        ProperSubtypeEvidenceResult,
     },
     semtype::{BddMemoEmptyRef, MemoEmpty, SemType, SemTypeOps},
 };
@@ -483,7 +484,11 @@ pub fn mapping_is_empty(
     builder.mapping_memo.get_mut(&bdd).unwrap().0 = MemoEmpty::from_bool(&is_empty);
     is_empty
 }
-
+enum ListInhabited {
+    YesNoEvidence,
+    Yes(Evidence),
+    No,
+}
 // This function returns true if there is a list shape v such that
 // is in the type described by `members` and `rest`, and
 // for each tuple t in `neg`, v is not in t.
@@ -496,9 +501,9 @@ fn list_inhabited(
     items: &Rc<SemType>,
     neg: &Option<Rc<Conjunction>>,
     builder: &mut SemTypeContext,
-) -> bool {
+) -> ListInhabited {
     match neg {
-        None => return true,
+        None => return ListInhabited::YesNoEvidence,
         Some(neg) => {
             let mut len = prefix_items.len();
             let nt = match &*neg.atom {
@@ -551,20 +556,26 @@ fn list_inhabited(
                 if !d.is_empty(builder) {
                     let mut s = prefix_items.clone();
                     s[i] = d;
-                    if list_inhabited(&mut s, items, &neg.next, builder) {
-                        return true;
+                    match list_inhabited(&mut s, items, &neg.next, builder) {
+                        ListInhabited::Yes(e) => return ListInhabited::Yes(e),
+                        ListInhabited::YesNoEvidence => return ListInhabited::YesNoEvidence,
+                        ListInhabited::No => {}
                     }
                 }
             }
 
             let diff = items.diff(&nt.items);
-            if !diff.is_empty(builder) {
-                return true;
+            match diff.is_empty_evidence(builder) {
+                EvidenceResult::Evidence(e) => return ListInhabited::Yes(e),
+                EvidenceResult::IsEmpty => {}
             }
+            // if !diff.is_empty(builder) {
+            //     return ListInhabited::Yes;
+            // }
 
             // This is correct for length 0, because we know that the length of the
             // negative is 0, and [] - [] is empty.
-            return false;
+            return ListInhabited::No;
         }
     }
 }
@@ -576,6 +587,9 @@ fn list_formula_is_empty(
 ) -> ProperSubtypeEvidenceResult {
     let mut prefix_items = vec![];
     let mut items = Rc::new(SemTypeContext::unknown());
+
+    let mut prefix_items_evidence = vec![];
+
     match pos {
         None => {}
         Some(pos_atom) => {
@@ -620,23 +634,32 @@ fn list_formula_is_empty(
             }
 
             for m in prefix_items.iter() {
-                if m.is_empty(builder) {
-                    return ProperSubtypeEvidenceResult::IsEmpty;
+                match m.is_empty_evidence(builder) {
+                    EvidenceResult::Evidence(e) => {
+                        prefix_items_evidence.push(Rc::new(e));
+                    }
+                    EvidenceResult::IsEmpty => return ProperSubtypeEvidenceResult::IsEmpty,
                 }
             }
         }
     }
-
-    let is_empty = !list_inhabited(&mut prefix_items, &items, neg, builder);
-    if is_empty {
-        return ProperSubtypeEvidenceResult::IsEmpty;
+    match list_inhabited(&mut prefix_items, &items, neg, builder) {
+        ListInhabited::Yes(e) => {
+            let list_evidence = ListEvidence {
+                prefix_items: prefix_items_evidence,
+                items: Some(Rc::new(e)),
+            };
+            return ProperSubtypeEvidence::List(Rc::new(list_evidence)).to_result();
+        }
+        ListInhabited::YesNoEvidence => {
+            let list_evidence = ListEvidence {
+                prefix_items: prefix_items_evidence,
+                items: None,
+            };
+            return ProperSubtypeEvidence::List(Rc::new(list_evidence)).to_result();
+        }
+        ListInhabited::No => return ProperSubtypeEvidenceResult::IsEmpty,
     }
-
-    let ls = Rc::new(ListAtomic {
-        prefix_items,
-        items,
-    });
-    return ProperSubtypeEvidence::List(ls).to_result();
 }
 pub fn list_is_empty(bdd: &Rc<Bdd>, builder: &mut SemTypeContext) -> ProperSubtypeEvidenceResult {
     match builder.list_memo.get(&bdd) {

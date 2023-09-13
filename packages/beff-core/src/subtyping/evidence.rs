@@ -1,9 +1,6 @@
 use std::{collections::BTreeMap, rc::Rc};
 
-use super::{
-    bdd::ListAtomic,
-    subtype::{NumberRepresentation, StringLitOrFormat, SubTypeTag},
-};
+use super::subtype::{NumberRepresentation, StringLitOrFormat, SubTypeTag};
 
 #[derive(PartialEq, Eq, Hash, Debug, Ord, PartialOrd, Clone)]
 pub enum ProperSubtypeEvidence {
@@ -16,14 +13,14 @@ pub enum ProperSubtypeEvidence {
         allowed: bool,
         values: Vec<StringLitOrFormat>,
     },
-    List(Rc<ListAtomic>),
+    List(Rc<ListEvidence>),
     Mapping(Rc<MappingEvidence>),
 }
 pub type MappingEvidence = BTreeMap<String, Rc<Evidence>>;
 #[derive(PartialEq, Eq, Hash, Debug, Ord, PartialOrd, Clone)]
 pub struct ListEvidence {
     pub prefix_items: Vec<Rc<Evidence>>,
-    pub items: Rc<Evidence>,
+    pub items: Option<Rc<Evidence>>,
 }
 
 impl ProperSubtypeEvidence {
