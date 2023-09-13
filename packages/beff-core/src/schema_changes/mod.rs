@@ -243,10 +243,10 @@ impl<'a> SchemaReference<'a> {
         match sub_st.is_subtype(&supe_st, &mut builder) {
             true => Ok(SubTypeCheckResult::IsSubtype),
             false => {
-                let sub_type = to_validators(&builder, &sub_st, &sub.name);
-                let super_type = to_validators(&builder, &supe_st, &supe.name);
+                let sub_type = to_validators(&mut builder, &sub_st, &sub.name);
+                let super_type = to_validators(&mut builder, &supe_st, &supe.name);
                 let diff = sub_st.diff(&supe_st);
-                let diff_type = to_validators(&builder, &diff, "Diff");
+                let diff_type = to_validators(&mut builder, &diff, "Diff");
                 let mut mater = MaterializationContext::new(&mut builder);
                 Ok(SubTypeCheckResult::IsNotSubtype(IsNotSubtype {
                     sub_type,
