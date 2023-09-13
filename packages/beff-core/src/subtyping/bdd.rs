@@ -316,26 +316,25 @@ fn bdd_every(
             left,
             middle,
             right,
-        } => {
-            let a = bdd_every(
-                left,
-                &and(atom.clone(), pos.clone()),
-                neg,
-                predicate,
-                builder,
-            );
-
-            let b = bdd_every(middle, pos, neg, predicate, builder);
-            let c = bdd_every(
+        } => and_evidence(
+            bdd_every(
                 right,
                 pos,
                 &and(atom.clone(), neg.clone()),
                 predicate,
                 builder,
-            );
-
-            and_evidence(c, and_evidence(b, a))
-        }
+            ),
+            and_evidence(
+                bdd_every(middle, pos, neg, predicate, builder),
+                bdd_every(
+                    left,
+                    &and(atom.clone(), pos.clone()),
+                    neg,
+                    predicate,
+                    builder,
+                ),
+            ),
+        ),
     }
 }
 fn intersect_mapping(m1: Rc<MappingAtomic>, m2: Rc<MappingAtomic>) -> Option<Rc<MappingAtomic>> {

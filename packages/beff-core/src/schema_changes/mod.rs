@@ -277,7 +277,7 @@ impl<'a> SchemaReference<'a> {
                     sub_type,
                     super_type,
                     diff_type,
-                    evidence_mater: mater.materialize_ev(&evidence),
+                    evidence_mater: mater.materialize_ev(&dbg!(evidence)),
                 }))
             }
         }
