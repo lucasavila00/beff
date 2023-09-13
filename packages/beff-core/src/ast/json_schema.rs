@@ -53,6 +53,15 @@ impl<T> Optionality<T> {
     }
 }
 
+impl Optionality<JsonSchema> {
+    pub fn negated(self) -> Optionality<JsonSchema> {
+        match self {
+            Optionality::Optional(it) => JsonSchema::StNot(it.into()).optional(),
+            Optionality::Required(it) => JsonSchema::StNot(it.into()).required(),
+        }
+    }
+}
+
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord)]
 pub enum JsonSchema {
     Null,
@@ -109,6 +118,7 @@ impl JsonSchema {
     pub fn object(vs: Vec<(String, Optionality<JsonSchema>)>) -> Self {
         Self::Object(vs.into_iter().collect())
     }
+
     pub fn required(self) -> Optionality<JsonSchema> {
         Optionality::Required(self)
     }

@@ -393,33 +393,8 @@ impl<'a> MaterializationContext<'a> {
             return Mater::Never;
         }
 
-        for t in SubTypeTag::all() {
-            if (ty.all & t.code()) != 0 {
-                match t {
-                    SubTypeTag::Null => return Mater::Null,
-                    SubTypeTag::Boolean => return Mater::Boolean,
-                    SubTypeTag::Number => return Mater::Number,
-                    SubTypeTag::String => return Mater::String,
-                    SubTypeTag::Void => return Mater::Void,
-                    SubTypeTag::Mapping => unreachable!("we do not allow creation of all mappings"),
-                    SubTypeTag::List => unreachable!("we do not allow creation of all arrays"),
-                    SubTypeTag::Any => todo!(),
-                }
-            }
-        }
-
         for s in &ty.subtype_data {
             match s.as_ref() {
-                ProperSubtype::Boolean(v) => return Mater::BooleanLiteral(*v),
-                ProperSubtype::Number { allowed, values } => {
-                    if !allowed {
-                        return Mater::NumberLiteral(N::parse_int(4773992856));
-                    }
-                    match values.split_first() {
-                        Some((h, _t)) => return Mater::NumberLiteral(h.clone()),
-                        None => unreachable!("number values cannot be empty"),
-                    }
-                }
                 ProperSubtype::String { allowed, values } => {
                     if !allowed {
                         return Mater::StringLiteral("Izr1mn6edP0HLrWu".into());
@@ -434,8 +409,33 @@ impl<'a> MaterializationContext<'a> {
                         None => unreachable!("string values cannot be empty"),
                     }
                 }
+                ProperSubtype::Number { allowed, values } => {
+                    if !allowed {
+                        return Mater::NumberLiteral(N::parse_int(4773992856));
+                    }
+                    match values.split_first() {
+                        Some((h, _t)) => return Mater::NumberLiteral(h.clone()),
+                        None => unreachable!("number values cannot be empty"),
+                    }
+                }
+                ProperSubtype::Boolean(v) => return Mater::BooleanLiteral(*v),
                 ProperSubtype::Mapping(bdd) => return self.materialize_mapping(bdd),
                 ProperSubtype::List(bdd) => return self.materialize_list(bdd),
+            }
+        }
+
+        for t in SubTypeTag::all() {
+            if (ty.all & t.code()) != 0 {
+                match t {
+                    SubTypeTag::Null => return Mater::Null,
+                    SubTypeTag::Boolean => return Mater::Boolean,
+                    SubTypeTag::Number => return Mater::Number,
+                    SubTypeTag::String => return Mater::String,
+                    SubTypeTag::Void => return Mater::Void,
+                    SubTypeTag::Mapping => unreachable!("we do not allow creation of all mappings"),
+                    SubTypeTag::List => unreachable!("we do not allow creation of all arrays"),
+                    SubTypeTag::Any => todo!(),
+                }
             }
         }
 

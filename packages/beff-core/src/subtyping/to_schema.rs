@@ -91,7 +91,7 @@ impl<'a> SchemerContext<'a> {
                 let ty = vec![explained_sts.clone()]
                     .into_iter()
                     .chain(vec![self.to_schema_mapping_node(atom, left, middle, right)]);
-                acc.push(JsonSchema::AllOf(BTreeSet::from_iter(ty)));
+                acc.push(JsonSchema::all_of(ty.collect()));
             }
         };
 
@@ -116,10 +116,10 @@ impl<'a> SchemerContext<'a> {
                 middle,
                 right,
             } => {
-                let ty = JsonSchema::AllOf(BTreeSet::from_iter(vec![
+                let ty = JsonSchema::all_of(vec![
                     JsonSchema::StNot(Box::new(explained_sts)),
                     self.to_schema_mapping_node(atom, left, middle, right),
-                ]));
+                ]);
                 acc.push(ty)
             }
         }
