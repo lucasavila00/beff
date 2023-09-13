@@ -638,7 +638,7 @@ fn evidence_to_schema(ty: &Evidence) -> JsonSchema {
             SubTypeTag::String => JsonSchema::String,
             SubTypeTag::Null => JsonSchema::Null,
             SubTypeTag::Mapping => JsonSchema::AnyObject,
-            SubTypeTag::Void => JsonSchema::Ref("$void$".into()),
+            SubTypeTag::Void => JsonSchema::Ref("undefined".into()),
             SubTypeTag::List => JsonSchema::AnyArrayLike,
         },
         Evidence::Proper(p) => match p {
@@ -687,12 +687,7 @@ fn evidence_to_schema(ty: &Evidence) -> JsonSchema {
             }
             ProperSubtypeEvidence::Mapping(vs) => JsonSchema::object(
                 vs.iter()
-                    .map(|(k, v)| match v.as_ref() {
-                        Evidence::All(SubTypeTag::Void) => {
-                            (k.clone(), evidence_to_schema(v).optional())
-                        }
-                        _ => (k.clone(), evidence_to_schema(v).required()),
-                    })
+                    .map(|(k, v)| (k.clone(), evidence_to_schema(v).required()))
                     .collect(),
             ),
         },

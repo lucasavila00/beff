@@ -45,7 +45,7 @@ type Diff = (["a2", {
 
 ```ts
 type Evidence = [("a2"), {
-        "a"?: $void$;
+        "a": undefined;
     }];
 ```
 

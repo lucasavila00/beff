@@ -50,7 +50,7 @@ type Diff = ({
 ```ts
 type Evidence = {
     "a": string;
-    "b"?: $void$;
+    "b": undefined;
 };
 ```
 
