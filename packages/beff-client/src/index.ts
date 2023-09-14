@@ -26,7 +26,11 @@ type RemoveFirstOfTuple<T extends any[]> = T["length"] extends 0
 // };
 export type ClientFromRouter<R> = {
   [K in keyof R as K extends `${string}*${string}` ? never : K]: {
-    [M in keyof R[K] as M extends `use` ? never : M]: (
+    [M in keyof R[K] as M extends `use`
+      ? never
+      : M extends string
+      ? Lowercase<M>
+      : never]: (
       ...args: RemoveFirstOfTuple<NormalizeRouterItem<R[K][M]>[0]>
     ) => Promise<NormalizeRouterItem<R[K][M]>[1]>;
   };
@@ -208,7 +212,9 @@ export function buildClient<T>(
     if (client[meta.pattern] == null) {
       client[meta.pattern] = {};
     }
-    client[meta.pattern][meta.method_kind] = async (...params: any) => {
+    client[meta.pattern][meta.method_kind.toLowerCase()] = async (
+      ...params: any
+    ) => {
       const requestParams = { meta, params };
       const bffReq = BffRequest.build(requestParams);
       const requestInit = bffReq.toRequestInit();

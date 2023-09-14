@@ -302,12 +302,12 @@ impl ApiPath {
     fn validate_pattern_was_consumed(&self, method_prop_span: &FullLocation) -> Vec<Diagnostic> {
         let mut acc = vec![];
 
-        for (_k, v) in &self.methods {
+        for (k, v) in &self.methods {
             for path_param in &self.parsed_pattern.path_params {
                 let found = v.parameters.iter().find(|it| it.name == *path_param);
                 if found.is_none() {
                     let err = method_prop_span.clone().to_diag(
-                        DiagnosticInfoMessage::UnmatchedPathParameter(path_param.to_string()),
+                        DiagnosticInfoMessage::UnmatchedPathParameter(path_param.to_string(), *k),
                     );
                     acc.push(err);
                 }
@@ -472,6 +472,13 @@ impl OpenApiParser {
                                 "path" => parameters.push(ParameterObject {
                                     name,
                                     in_: ParameterIn::Path,
+                                    description: None,
+                                    required,
+                                    schema,
+                                }),
+                                "header" => parameters.push(ParameterObject {
+                                    name,
+                                    in_: ParameterIn::Header,
                                     description: None,
                                     required,
                                     schema,

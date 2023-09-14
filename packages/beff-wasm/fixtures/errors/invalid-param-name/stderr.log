@@ -1,11 +1,11 @@
-Error: Path parameter `ida` is not being used in the function parameters
- /errors/invalid-param-name/app.ts:5:5
+Error: Path parameter `ida` is not being used in the function parameters of method `GET`
+ /errors/invalid-param-name/app.ts:4:3
+   2 |
    3 | export default {
-   4 |   [`/hello/{ida}`]: {
- > 5 |     get: async (c: Ctx, id: string): Promise<string> => `Hello ${id}!`,
-     |     ^^^ Path parameter `ida` is not being used in the function parameters
+ > 4 |   [`/hello/{ida}`]: {
+     |   ^^^^^^^^^^^^^^^^ Path parameter `ida` is not being used in the function parameters of method `GET`
+   5 |     get: async (c: Ctx, id: string): Promise<string> => `Hello ${id}!`,
    6 |   },
    7 | };
-   8 |
 
 Found 1 error

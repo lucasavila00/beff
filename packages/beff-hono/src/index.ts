@@ -224,8 +224,20 @@ const registerDocs = (app: Hono<any, any, any>, schema: any) => {
   );
 };
 
+const lowerCaseRouter = (it: Record<string, Record<string, any>>) => {
+  const lowerCaseRouter: Record<string, Record<string, any>> = {};
+  for (const path in it) {
+    const methodsAcc: any = {};
+    for (const method in it[path]) {
+      methodsAcc[method.toLowerCase()] = it[path][method];
+    }
+    lowerCaseRouter[path] = methodsAcc;
+  }
+  return lowerCaseRouter;
+};
+
 export function buildHonoApp(options: {
-  router: any;
+  router: Record<string, Record<string, any>>;
   servers?: OpenApiServer[];
   transformOpenApiDocument?: (it: OpenAPIDocument) => OpenAPIDocument;
   generated: {
@@ -243,7 +255,8 @@ export function buildHonoApp(options: {
   registerDocs(app, schema);
   const handlersMeta: HandlerMetaServer[] = options.generated.meta;
   for (const meta of handlersMeta) {
-    const handlerData = options.router[meta.pattern][meta.method_kind];
+    const routers = lowerCaseRouter(options.router);
+    const handlerData = routers[meta.pattern][meta.method_kind.toLowerCase()];
     if (handlerData == null) {
       throw new Error(
         "handler not found: " + meta.method_kind + "  " + meta.pattern

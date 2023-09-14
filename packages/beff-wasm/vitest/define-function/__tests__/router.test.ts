@@ -20,7 +20,7 @@ it("get", async () => {
 
   expect(await router["/hello1"].get()).toMatchInlineSnapshot('"Hello!"');
   expect(await router["/hello2"].get()).toMatchInlineSnapshot('"Hello!"');
-  expect(await router["/hello3"].get()).toMatchInlineSnapshot('"Hello!"');
-  expect(await router["/hello4"].get()).toMatchInlineSnapshot('"Hello!"');
-  expect(await router["/hello5"].get()).toMatchInlineSnapshot('"Hello!"');
+  expect(await router["/hello3"].geT()).toMatchInlineSnapshot('"Hello!"');
+  expect(await router["/hello4"].GeT()).toMatchInlineSnapshot('"Hello!"');
+  expect(await router["/hello5"].GET()).toMatchInlineSnapshot('"Hello!"');
 });
