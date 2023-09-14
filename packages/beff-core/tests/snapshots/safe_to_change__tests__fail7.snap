@@ -31,7 +31,7 @@ type Old = 1;
 type New = 2;
 ```
 
-Previous clients will not support this response:
+Old clients will not support this response:
 
 ```json
 2

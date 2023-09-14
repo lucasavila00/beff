@@ -31,7 +31,7 @@ type Old = [555, 555];
 type New = [number, number];
 ```
 
-Previous clients will not support this response:
+Old clients will not support this response:
 
 ```json
 [

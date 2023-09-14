@@ -31,7 +31,7 @@ type Old = Array<555>;
 type New = Array<number>;
 ```
 
-Previous clients will not support this response:
+Old clients will not support this response:
 
 ```json
 [

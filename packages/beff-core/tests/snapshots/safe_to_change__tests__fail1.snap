@@ -35,7 +35,7 @@ type Old = "world";
 type New = string;
 ```
 
-Previous clients will not support this response:
+Old clients will not support this response:
 
 ```json
 "Izr1mn6edP0HLrWu"

@@ -31,7 +31,7 @@ type Old = (["a1", number] | ["a2", string]);
 type New = (["a1", number] | ["a2", boolean]);
 ```
 
-Previous clients will not support this response:
+Old clients will not support this response:
 
 ```json
 [

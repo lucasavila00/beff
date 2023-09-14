@@ -167,7 +167,7 @@ impl BreakingChange {
                     //     &err.evidence_type.iter().collect::<Vec<_>>(),
                     // ))
                     .chain(vec![
-                        MdReport::Text(format!("Previous clients will not support this response:")),
+                        MdReport::Text(format!("Old clients will not support this response:")),
                         MdReport::Json(evidence_to_json(&err.evidence)),
                     ])
                     .collect()

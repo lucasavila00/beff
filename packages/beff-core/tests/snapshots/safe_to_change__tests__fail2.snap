@@ -31,7 +31,7 @@ type Old = ("a" | "b");
 type New = ("a" | "b" | "c");
 ```
 
-Previous clients will not support this response:
+Old clients will not support this response:
 
 ```json
 "c"

@@ -43,7 +43,7 @@ type New = ({
 });
 ```
 
-Previous clients will not support this response:
+Old clients will not support this response:
 
 ```json
 {

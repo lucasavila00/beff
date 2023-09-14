@@ -33,7 +33,7 @@ type Old = "a";
 type New = ("a" | "b");
 ```
 
-Previous clients will not support this response:
+Old clients will not support this response:
 
 ```json
 "b"
