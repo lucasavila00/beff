@@ -3,15 +3,15 @@ mod tests {
     use std::rc::Rc;
 
     use beff_core::{
-        emit::emit_module,
+        ast::json::Json,
         import_resolver::{parse_and_bind, FsModuleResolver},
-        open_api_ast::{OpenApi, Validator},
+        open_api_ast::{OpenApi, OpenApiParser, Validator},
         print::printer::open_api_to_json,
         schema_changes::{is_safe_to_change_to, MdReport, OpenApiBreakingChange},
         BffFileName, EntryPoints, FileManager, ParsedModule,
     };
+    use similar_asserts::assert_eq;
     use swc_common::{Globals, GLOBALS};
-
     struct TestFileManager {
         pub f: Rc<ParsedModule>,
     }
@@ -84,17 +84,22 @@ mod tests {
         let from = r#"
         type A = string;
         export default {
-            "/hello": {
-                get: (): A => impl(),
-                post: (): ["a1", {a:number[]}]|["a2", {b:boolean[]}] => impl(),
-                put: (): ["a1", {a:number}]|["a2", {a?:string}] => impl()
+            "/hello/{n}": {
+                get: (c:Ctx,n:string, a: 1, b: {c:2}, z: Header<string>): A => impl(),
+                post: (c:Ctx,n:string,): ["a1", {a:number[]}]|["a2", {b:boolean[]}] => impl(),
+                put: (c:Ctx,n:string,): ["a1", {a:number}]|["a2", {a?:string}] => impl()
             }
         }
         "#;
         let (from_api, from_vals) = parse_api(from);
-        let json = open_api_to_json(from_api, &from_vals).to_string();
-        // let printed = print_api_as_ts(&from_api, &from_vals.iter().collect::<Vec<_>>());
-        // insta::assert_snapshot!(printed);
+        let str = open_api_to_json(from_api, &from_vals).to_string();
+        let from_str = serde_json::from_str::<serde_json::Value>(&str).unwrap();
+        let from_serde = Json::from_serde(&from_str);
+        let mut parser = OpenApiParser::new();
+        parser.process(&from_serde).unwrap();
+        let str2 = open_api_to_json(parser.api, &parser.components).to_string();
+
+        assert_eq!(str, str2);
     }
     #[test]
     fn ok1() {

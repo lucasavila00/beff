@@ -1,9 +1,3 @@
-use swc_common::DUMMY_SP;
-use swc_ecma_ast::{
-    BindingIdent, Decl, Ident, ModuleItem, Stmt, TsFnOrConstructorType, TsFnParam, TsFnType,
-    TsPropertySignature, TsType, TsTypeAliasDecl, TsTypeAnn, TsTypeElement, TsTypeLit,
-};
-
 use crate::{
     ast::{
         js::Js,
@@ -12,6 +6,7 @@ use crate::{
     },
     diag::{Diagnostic, DiagnosticInfoMessage, FullLocation},
 };
+use anyhow::Result;
 use core::fmt;
 use std::collections::BTreeMap;
 
@@ -128,7 +123,6 @@ impl ToJson for JsonRequestBody {
 
 #[derive(Debug)]
 pub struct OperationObject {
-    pub method_prop_span: FullLocation,
     pub summary: Option<String>,
     pub description: Option<String>,
     pub parameters: Vec<ParameterObject>,
@@ -199,6 +193,19 @@ pub enum HTTPMethod {
     Options,
 }
 
+impl HTTPMethod {
+    pub fn all() -> Vec<HTTPMethod> {
+        vec![
+            HTTPMethod::Get,
+            HTTPMethod::Post,
+            HTTPMethod::Put,
+            HTTPMethod::Delete,
+            HTTPMethod::Patch,
+            HTTPMethod::Options,
+        ]
+    }
+}
+
 impl fmt::Display for HTTPMethod {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match self {
@@ -236,12 +243,12 @@ fn parse_pattern_params(pattern: &str) -> Vec<String> {
 }
 #[derive(Debug, Clone)]
 pub struct ParsedPattern {
-    pub loc: FullLocation,
+    pub loc: Option<FullLocation>,
     pub raw: String,
     pub path_params: Vec<String>,
 }
 impl ApiPath {
-    fn validate_pattern(key: &str, locs: &FullLocation) -> Option<Diagnostic> {
+    fn validate_pattern(key: &str) -> Option<DiagnosticInfoMessage> {
         // only allow simple openapi patterns, no explode
         // disallow `/{param}asd/`
         let blocks = key.split('/').collect::<Vec<_>>();
@@ -253,18 +260,14 @@ impl ApiPath {
                 let is_at_start = block.starts_with('{');
 
                 if !is_at_start {
-                    let err = locs
-                        .clone()
-                        .to_diag(DiagnosticInfoMessage::OpenBlockMustStartPattern);
+                    let err = DiagnosticInfoMessage::OpenBlockMustStartPattern;
                     return Some(err);
                 }
 
                 let is_at_end = block.ends_with('}');
 
                 if !is_at_end {
-                    let err = locs
-                        .clone()
-                        .to_diag(DiagnosticInfoMessage::CloseBlockMustEndPattern);
+                    let err = DiagnosticInfoMessage::CloseBlockMustEndPattern;
                     return Some(err);
                 }
 
@@ -273,9 +276,7 @@ impl ApiPath {
                     content.chars().all(|c| c.is_alphanumeric() || c == '_');
 
                 if !is_valid_js_identifier {
-                    let err = locs
-                        .clone()
-                        .to_diag(DiagnosticInfoMessage::InvalidIdentifierInPatternNoExplodeAllowed);
+                    let err = DiagnosticInfoMessage::InvalidIdentifierInPatternNoExplodeAllowed;
                     return Some(err);
                 }
             }
@@ -285,10 +286,10 @@ impl ApiPath {
     }
     pub fn parse_raw_pattern_str(
         key: &str,
-        locs: FullLocation,
-    ) -> Result<ParsedPattern, Diagnostic> {
+        locs: Option<FullLocation>,
+    ) -> Result<ParsedPattern, DiagnosticInfoMessage> {
         let path_params = parse_pattern_params(key);
-        match Self::validate_pattern(key, &locs) {
+        match Self::validate_pattern(key) {
             Some(d) => Err(d),
             None => Ok(ParsedPattern {
                 raw: key.to_string(),
@@ -298,14 +299,14 @@ impl ApiPath {
         }
     }
 
-    fn validate_pattern_was_consumed(&self) -> Vec<Diagnostic> {
+    fn validate_pattern_was_consumed(&self, method_prop_span: &FullLocation) -> Vec<Diagnostic> {
         let mut acc = vec![];
 
         for (_k, v) in &self.methods {
             for path_param in &self.parsed_pattern.path_params {
                 let found = v.parameters.iter().find(|it| it.name == *path_param);
                 if found.is_none() {
-                    let err = v.method_prop_span.clone().to_diag(
+                    let err = method_prop_span.clone().to_diag(
                         DiagnosticInfoMessage::UnmatchedPathParameter(path_param.to_string()),
                     );
                     acc.push(err);
@@ -315,8 +316,10 @@ impl ApiPath {
         acc
     }
 
-    pub fn validate(&self) -> Vec<Diagnostic> {
-        self.validate_pattern_was_consumed().into_iter().collect()
+    pub fn validate(&self, method_prop_span: &FullLocation) -> Vec<Diagnostic> {
+        self.validate_pattern_was_consumed(method_prop_span)
+            .into_iter()
+            .collect()
     }
 
     #[must_use]
@@ -360,186 +363,232 @@ pub struct OpenApi {
     pub components: Vec<String>,
 }
 
-// #[derive(Debug)]
-// struct TsApiMethod {
-//     parameters: Vec<TsValidator>,
-//     response: TsType,
-// }
-// impl TsApiMethod {
-//     pub fn to_ts_type(self) -> TsType {
-//         TsType::TsFnOrConstructorType(TsFnOrConstructorType::TsFnType(TsFnType {
-//             span: DUMMY_SP,
-//             params: self
-//                 .parameters
-//                 .into_iter()
-//                 .map(|it| {
-//                     TsFnParam::Ident(BindingIdent {
-//                         id: Ident {
-//                             span: DUMMY_SP,
-//                             sym: it.name.into(),
-//                             optional: false,
-//                         },
-//                         type_ann: Some(Box::new(TsTypeAnn {
-//                             span: DUMMY_SP,
-//                             type_ann: Box::new(it.typ),
-//                         })),
-//                     })
-//                 })
-//                 .collect(),
-//             type_params: None,
-//             type_ann: Box::new(TsTypeAnn {
-//                 span: DUMMY_SP,
-//                 type_ann: Box::new(self.response),
-//             }),
-//         }))
-//     }
-// }
-// #[derive(Debug)]
-// struct TsApiPath {
-//     path: String,
-//     methods: BTreeMap<HTTPMethod, TsApiMethod>,
-// }
+pub struct OpenApiParser {
+    pub api: OpenApi,
+    pub components: Vec<Validator>,
+}
 
-// #[derive(Debug)]
-// struct TsValidator {
-//     name: String,
-//     typ: TsType,
-// }
+impl OpenApiParser {
+    pub fn new() -> OpenApiParser {
+        OpenApiParser {
+            api: OpenApi {
+                info: Info {
+                    title: None,
+                    description: None,
+                    version: None,
+                },
+                paths: vec![],
+                components: vec![],
+            },
+            components: vec![],
+        }
+    }
 
-// #[derive(Debug)]
-// pub struct TsOpenApi {
-//     paths: Vec<TsApiPath>,
-//     components: Vec<TsValidator>,
-// }
+    fn parse_schemas(&mut self, components: &Json) -> Result<()> {
+        match components {
+            Json::Object(vs) => {
+                for (name, schema) in vs {
+                    let schema = JsonSchema::from_json(schema)?;
+                    self.components.push(Validator {
+                        name: name.clone(),
+                        schema,
+                    });
+                }
+            }
+            _ => panic!(),
+        }
+        Ok(())
+    }
 
-// impl TsOpenApi {
-//     pub fn to_ts_module(self) -> Vec<ModuleItem> {
-//         let mut acc = vec![];
+    fn parse_op_object(it: &Json) -> Result<OperationObject> {
+        match it {
+            Json::Object(vs) => {
+                let json_response_body = vs
+                    .get("responses")
+                    .and_then(|it| match it {
+                        Json::Object(v) => v.get("200"),
+                        _ => None,
+                    })
+                    .and_then(|it| match it {
+                        Json::Object(v) => v.get("content"),
+                        _ => None,
+                    })
+                    .and_then(|it| match it {
+                        Json::Object(v) => v.get("application/json"),
+                        _ => None,
+                    })
+                    .and_then(|it| match it {
+                        Json::Object(v) => v.get("schema"),
+                        _ => None,
+                    })
+                    .unwrap();
 
-//         for comp in self.components {
-//             let st = ModuleItem::Stmt(Stmt::Decl(Decl::TsTypeAlias(Box::new(TsTypeAliasDecl {
-//                 span: DUMMY_SP,
-//                 declare: false,
-//                 id: Ident {
-//                     span: DUMMY_SP,
-//                     sym: comp.name.into(),
-//                     optional: false,
-//                 },
-//                 type_params: None,
-//                 type_ann: Box::new(comp.typ),
-//             }))));
-//             acc.push(st);
-//         }
+                let json_parameters = vs
+                    .get("parameters")
+                    .and_then(|it| match it {
+                        Json::Array(v) => Some(v.clone()),
+                        _ => None,
+                    })
+                    .unwrap_or(vec![]);
 
-//         let router_typ = TsType::TsTypeLit(TsTypeLit {
-//             span: DUMMY_SP,
-//             members: self
-//                 .paths
-//                 .into_iter()
-//                 .map(|it| {
-//                     TsTypeElement::TsPropertySignature(TsPropertySignature {
-//                         span: DUMMY_SP,
-//                         readonly: false,
-//                         key: it.path.into(),
-//                         computed: false,
-//                         optional: false,
-//                         init: None,
-//                         params: vec![],
-//                         type_ann: Some(Box::new(TsTypeAnn {
-//                             span: DUMMY_SP,
-//                             type_ann: Box::new(print_methods(it.methods)),
-//                         })),
-//                         type_params: None,
-//                     })
-//                 })
-//                 .collect(),
-//         });
+                let mut parameters = vec![];
 
-//         let st = ModuleItem::Stmt(Stmt::Decl(Decl::TsTypeAlias(Box::new(TsTypeAliasDecl {
-//             span: DUMMY_SP,
-//             declare: false,
-//             id: Ident {
-//                 span: DUMMY_SP,
-//                 sym: "$Router".into(),
-//                 optional: false,
-//             },
-//             type_params: None,
-//             type_ann: Box::new(router_typ),
-//         }))));
-//         acc.push(st);
+                for p in json_parameters {
+                    match p {
+                        Json::Object(vs) => {
+                            let in_ = vs
+                                .get("in")
+                                .and_then(|it| match it {
+                                    Json::String(st) => Some(st.clone()),
+                                    _ => None,
+                                })
+                                .unwrap();
+                            let name = vs
+                                .get("name")
+                                .and_then(|it| match it {
+                                    Json::String(st) => Some(st.clone()),
+                                    _ => None,
+                                })
+                                .unwrap();
+                            let required = vs
+                                .get("required")
+                                .and_then(|it| match it {
+                                    Json::Bool(st) => Some(st.clone()),
+                                    _ => None,
+                                })
+                                .unwrap();
+                            let schema = vs
+                                .get("schema")
+                                .map(|it| JsonSchema::from_json(it).unwrap())
+                                .unwrap();
+                            match in_.as_str() {
+                                "query" => parameters.push(ParameterObject {
+                                    name,
+                                    in_: ParameterIn::Query,
+                                    description: None,
+                                    required,
+                                    schema,
+                                }),
+                                "path" => parameters.push(ParameterObject {
+                                    name,
+                                    in_: ParameterIn::Path,
+                                    description: None,
+                                    required,
+                                    schema,
+                                }),
+                                _ => panic!(),
+                            }
+                        }
+                        _ => panic!(),
+                    }
+                }
 
-//         acc
-//     }
-// }
+                let json_request_body_schema = vs
+                    .get("requestBody")
+                    .and_then(|it| match it {
+                        Json::Object(v) => v.get("content"),
+                        _ => None,
+                    })
+                    .and_then(|it| match it {
+                        Json::Object(v) => v.get("application/json"),
+                        _ => None,
+                    })
+                    .and_then(|it| match it {
+                        Json::Object(v) => v.get("schema"),
+                        _ => None,
+                    })
+                    .map(|it| JsonSchema::from_json(it).unwrap());
 
-// fn print_methods(methods: BTreeMap<HTTPMethod, TsApiMethod>) -> TsType {
-//     TsType::TsTypeLit(TsTypeLit {
-//         span: DUMMY_SP,
-//         members: methods
-//             .into_iter()
-//             .map(|(k, v)| {
-//                 TsTypeElement::TsPropertySignature(TsPropertySignature {
-//                     span: DUMMY_SP,
-//                     readonly: false,
-//                     key: k.to_string().into(),
-//                     computed: false,
-//                     optional: false,
-//                     init: None,
-//                     params: vec![],
-//                     type_ann: Some(Box::new(TsTypeAnn {
-//                         span: DUMMY_SP,
-//                         type_ann: Box::new(v.to_ts_type()),
-//                     })),
-//                     type_params: None,
-//                 })
-//             })
-//             .collect(),
-//     })
-// }
+                let json_request_body = match json_request_body_schema {
+                    Some(schema) => {
+                        let required = vs
+                            .get("requestBody")
+                            .and_then(|it| match it {
+                                Json::Object(v) => v.get("required"),
+                                _ => None,
+                            })
+                            .and_then(|it| match it {
+                                Json::Bool(v) => Some(*v),
+                                _ => None,
+                            })
+                            .unwrap();
 
-// fn build_ts_validator(validator: &Validator) -> TsValidator {
-//     TsValidator {
-//         name: validator.name.clone(),
-//         typ: validator.schema.to_ts_type(),
-//     }
-// }
+                        Some(JsonRequestBody {
+                            description: None,
+                            schema,
+                            required,
+                        })
+                    }
+                    None => None,
+                };
 
-// fn build_ts_api_method(operation: &OperationObject) -> TsApiMethod {
-//     TsApiMethod {
-//         parameters: operation
-//             .parameters
-//             .iter()
-//             .map(|it| {
-//                 //
-//                 TsValidator {
-//                     name: it.name.clone(),
-//                     typ: it.schema.to_ts_type(),
-//                 }
-//             })
-//             .collect(),
-//         response: operation.json_response_body.to_ts_type(),
-//     }
-// }
+                return Ok(OperationObject {
+                    summary: None,
+                    description: None,
+                    parameters,
+                    json_response_body: JsonSchema::from_json(json_response_body)?,
+                    json_request_body,
+                });
+            }
+            _ => panic!(),
+        }
+    }
+    fn parse_op_object_map(it: &Json) -> Result<Vec<(HTTPMethod, OperationObject)>> {
+        let mut acc = vec![];
+        match it {
+            Json::Object(vs) => {
+                for method in HTTPMethod::all() {
+                    let op_obj = vs.get(&method.to_string());
+                    if let Some(op_obj) = op_obj {
+                        let op_obj = Self::parse_op_object(op_obj)?;
+                        acc.push((method, op_obj));
+                    }
+                }
+            }
+            _ => panic!(),
+        }
 
-// impl OpenApi {
-//     pub fn to_ts_open_api(&self, validators: &[&Validator]) -> TsOpenApi {
-//         let mut components = vec![];
-//         for validator in validators {
-//             if self.components.contains(&validator.name) {
-//                 components.push(build_ts_validator(validator));
-//             }
-//         }
-//         let mut paths = vec![];
-//         for path in &self.paths {
-//             let mut methods = BTreeMap::new();
-//             for (method, operation) in &path.methods {
-//                 methods.insert(*method, build_ts_api_method(operation));
-//             }
-//             paths.push(TsApiPath {
-//                 path: path.parsed_pattern.raw.clone(),
-//                 methods,
-//             });
-//         }
-//         TsOpenApi { paths, components }
-//     }
-// }
+        Ok(acc)
+    }
+
+    fn parse_paths(&mut self, components: &Json) -> Result<()> {
+        match components {
+            Json::Object(vs) => {
+                for (name, op_obj) in vs {
+                    let acc = Self::parse_op_object_map(op_obj)?;
+                    let api_path = ApiPath {
+                        parsed_pattern: ApiPath::parse_raw_pattern_str(&name, None).unwrap(),
+                        methods: BTreeMap::from_iter(acc),
+                    };
+                    self.api.paths.push(api_path);
+                }
+            }
+            _ => panic!(),
+        }
+        Ok(())
+    }
+    pub fn process(&mut self, it: &Json) -> Result<()> {
+        match it {
+            Json::Null => todo!(),
+            Json::Bool(_) => todo!(),
+            Json::Number(_) => todo!(),
+            Json::String(_) => todo!(),
+            Json::Array(_) => todo!(),
+            Json::Object(vs) => {
+                let schemas = vs.get("components").and_then(|it| match it {
+                    Json::Object(v) => v.get("schemas"),
+                    _ => None,
+                });
+                if let Some(schemas) = schemas {
+                    self.parse_schemas(schemas)?;
+                }
+                if let Some(paths) = vs.get("paths") {
+                    self.parse_paths(paths)?;
+                }
+            }
+        }
+
+        self.api.components = self.components.iter().map(|it| it.name.clone()).collect();
+        Ok(())
+    }
+}

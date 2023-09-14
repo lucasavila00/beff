@@ -49,10 +49,13 @@ impl Js {
     pub fn to_string(self) -> String {
         let expr = self.to_expr();
 
-        emit_module(vec![ModuleItem::Stmt(Stmt::Expr(ExprStmt {
-            span: DUMMY_SP,
-            expr: Box::new(expr),
-        }))])
+        emit_module(
+            vec![ModuleItem::Stmt(Stmt::Expr(ExprStmt {
+                span: DUMMY_SP,
+                expr: Box::new(expr),
+            }))],
+            "\n",
+        )
         .unwrap()
     }
 }

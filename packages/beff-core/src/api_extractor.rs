@@ -304,11 +304,11 @@ impl<'a, R: FileManager> ExtractExportDefaultVisitor<'a, R> {
             PropName::Computed(ComputedPropName { expr, span, .. }) => match &**expr {
                 Expr::Lit(Lit::Str(Str { span, value, .. })) => {
                     let locs = self.get_full_location(span)?;
-                    let p = ApiPath::parse_raw_pattern_str(value.as_ref(), locs);
+                    let p = ApiPath::parse_raw_pattern_str(value.as_ref(), Some(locs.clone()));
                     match p {
                         Ok(v) => Ok(v),
                         Err(e) => {
-                            self.errors.push(e);
+                            self.errors.push(locs.to_diag(e));
                             Err(anyhow!("failed to parse pattern"))
                         }
                     }
@@ -328,11 +328,14 @@ impl<'a, R: FileManager> ExtractExportDefaultVisitor<'a, R> {
                     }
                     let first_quasis = quasis.first().expect("we just checked the length");
                     let locs = self.get_full_location(span)?;
-                    let p = ApiPath::parse_raw_pattern_str(first_quasis.raw.as_ref(), locs);
+                    let p = ApiPath::parse_raw_pattern_str(
+                        first_quasis.raw.as_ref(),
+                        Some(locs.clone()),
+                    );
                     match p {
                         Ok(v) => Ok(v),
                         Err(e) => {
-                            self.errors.push(e);
+                            self.errors.push(locs.to_diag(e));
                             Err(anyhow!("failed to parse pattern"))
                         }
                     }
@@ -344,11 +347,11 @@ impl<'a, R: FileManager> ExtractExportDefaultVisitor<'a, R> {
             },
             PropName::Str(Str { span, value, .. }) => {
                 let locs = self.get_full_location(span)?;
-                let p = ApiPath::parse_raw_pattern_str(&value.to_string(), locs);
+                let p = ApiPath::parse_raw_pattern_str(&value.to_string(), Some(locs.clone()));
                 match p {
                     Ok(v) => Ok(v),
                     Err(e) => {
-                        self.errors.push(e);
+                        self.errors.push(locs.to_diag(e));
                         Err(anyhow!("failed to parse pattern"))
                     }
                 }
@@ -735,7 +738,11 @@ impl<'a, R: FileManager> ExtractExportDefaultVisitor<'a, R> {
                     })
                     .collect();
 
-                return Ok(PathHandlerMap { pattern, handlers });
+                return Ok(PathHandlerMap {
+                    pattern,
+                    handlers,
+                    loc: self.get_full_location(&Self::get_prop_span(prop))?,
+                });
             }
         }
 
@@ -905,11 +912,6 @@ impl<'a, R: FileManager> EndpointToPath<'a, R> {
         self.errors.push(err.to_diag(parent_msg));
     }
 
-    fn get_locs(&mut self, span: &Span) -> Result<FullLocation> {
-        let file = self.files.get_existing_file(&self.current_file);
-        Location::build(file, span, &self.current_file).result_full()
-    }
-
     fn endpoint_to_operation_object(
         &mut self,
         endpoint: &FnHandler,
@@ -1016,7 +1018,6 @@ impl<'a, R: FileManager> EndpointToPath<'a, R> {
             parameters,
             json_response_body: endpoint.return_type.clone(),
             json_request_body,
-            method_prop_span: self.get_locs(endpoint.method_kind.span())?,
         })
     }
 
@@ -1054,7 +1055,7 @@ impl<'a, R: FileManager> EndpointToPath<'a, R> {
                         }
                     }
                 }
-                self.errors.extend(path.validate());
+                self.errors.extend(path.validate(&handler_map.loc));
                 path
             })
             .collect()
@@ -1063,6 +1064,7 @@ impl<'a, R: FileManager> EndpointToPath<'a, R> {
 
 #[derive(Clone)]
 pub struct PathHandlerMap {
+    pub loc: FullLocation,
     pub pattern: ParsedPattern,
     pub handlers: Vec<FnHandler>,
 }
