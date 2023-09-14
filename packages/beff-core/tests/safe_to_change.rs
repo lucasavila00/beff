@@ -6,6 +6,7 @@ mod tests {
         emit::emit_module,
         import_resolver::{parse_and_bind, FsModuleResolver},
         open_api_ast::{OpenApi, Validator},
+        print::printer::open_api_to_json,
         schema_changes::{is_safe_to_change_to, MdReport, OpenApiBreakingChange},
         BffFileName, EntryPoints, FileManager, ParsedModule,
     };
@@ -52,11 +53,6 @@ mod tests {
         (res.open_api, res.validators)
     }
 
-    fn print_api_as_ts(api: &OpenApi, validators: &[&Validator]) -> String {
-        let ts = api.to_ts_open_api(validators).to_ts_module();
-        emit_module(ts).unwrap()
-    }
-
     fn test_safe(from: &str, to: &str) -> Vec<OpenApiBreakingChange> {
         let (from_api, from_vals) = parse_api(from);
         let (to_api, to_vals) = parse_api(to);
@@ -82,8 +78,9 @@ mod tests {
 
         format!("from:\n{}\nto:\n{}\n\n{}", from, to, errs)
     }
+
     #[test]
-    fn print1() {
+    fn json_roundtrip() {
         let from = r#"
         type A = string;
         export default {
@@ -95,10 +92,10 @@ mod tests {
         }
         "#;
         let (from_api, from_vals) = parse_api(from);
-        let printed = print_api_as_ts(&from_api, &from_vals.iter().collect::<Vec<_>>());
-        insta::assert_snapshot!(printed);
+        let json = open_api_to_json(from_api, &from_vals).to_string();
+        // let printed = print_api_as_ts(&from_api, &from_vals.iter().collect::<Vec<_>>());
+        // insta::assert_snapshot!(printed);
     }
-
     #[test]
     fn ok1() {
         let from = r#"

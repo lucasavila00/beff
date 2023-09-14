@@ -40,8 +40,7 @@ fn error_response(code: &str, description: &str) -> (String, Json) {
         ]),
     )
 }
-
-fn open_api_to_json(it: OpenApi, components: &[Validator]) -> Json {
+pub fn open_api_to_json(it: OpenApi, components: &[Validator]) -> Json {
     let v = vec![
         //
         ("openapi".into(), Json::String("3.1.0".into())),

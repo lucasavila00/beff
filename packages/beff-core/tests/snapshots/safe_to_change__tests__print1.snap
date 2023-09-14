@@ -3,19 +3,19 @@ source: packages/beff-core/tests/safe_to_change.rs
 expression: printed
 ---
 type A = string;
-export default {
+type $Router = {
     "/hello": {
-        "get": (): A =>impl(),
-        "post": (): (["a1", {
+        "get": () => A;
+        "post": () => (["a1", {
                 "a": Array<number>;
             }] | ["a2", {
                 "b": Array<boolean>;
-            }]) =>impl(),
-        "put": (): (["a1", {
+            }]);
+        "put": () => (["a1", {
                 "a": number;
             }] | ["a2", {
                 "a"?: string;
-            }]) =>impl()
-    }
+            }]);
+    };
 };
 
