@@ -35,23 +35,7 @@ type New = {
 };
 ```
 
-```ts
-type Diff = ({
-    "a": number;
-} & Not<{
-    "a": 555;
-}>);
-```
-
-```ts
-type Evidence = {
-    "a": Not<(555)>;
-};
-```
-
-Previous clients will not support this potential response:
-
-evidence:
+Previous clients will not support this response:
 
 ```json
 {

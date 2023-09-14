@@ -35,23 +35,7 @@ type New = {
 };
 ```
 
-```ts
-type Diff = ({
-    "a": (number | Array<string>);
-} & Not<{
-    "a": Array<string>;
-}>);
-```
-
-```ts
-type Evidence = {
-    "a": number;
-};
-```
-
-Previous clients will not support this potential response:
-
-evidence:
+Previous clients will not support this response:
 
 ```json
 {

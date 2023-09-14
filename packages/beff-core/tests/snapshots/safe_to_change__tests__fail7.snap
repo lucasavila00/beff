@@ -31,17 +31,7 @@ type Old = 1;
 type New = 2;
 ```
 
-```ts
-type Diff = 2;
-```
-
-```ts
-type Evidence = (2);
-```
-
-Previous clients will not support this potential response:
-
-evidence:
+Previous clients will not support this response:
 
 ```json
 2

@@ -33,17 +33,7 @@ type Old = ("a" | "b");
 type New = "a";
 ```
 
-```ts
-type Diff = "b";
-```
-
-```ts
-type Evidence = ("b");
-```
-
 Param `a` might be called with now unsupported value:
-
-evidence:
 
 ```json
 "b"

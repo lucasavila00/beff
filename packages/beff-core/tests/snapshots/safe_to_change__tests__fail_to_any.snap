@@ -31,17 +31,7 @@ type Old = 1;
 type New = (null | boolean | string | number | Object | Array);
 ```
 
-```ts
-type Diff = (null | boolean | string | Object | Array | Not<1>);
-```
-
-```ts
-type Evidence = string;
-```
-
-Previous clients will not support this potential response:
-
-evidence:
+Previous clients will not support this response:
 
 ```json
 "abc"

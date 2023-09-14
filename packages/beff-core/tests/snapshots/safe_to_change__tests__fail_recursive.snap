@@ -41,43 +41,7 @@ type New = {
 };
 ```
 
-```ts
-type t_1 = Array<{
-    "arr": t_1;
-    "p2": string;
-}>;
-
-type t_6 = Array<{
-    "arr": t_6;
-    "p": string;
-}>;
-
-type Diff = ({
-    "arr": Array<{
-        "arr": t_1;
-        "p2": string;
-    }>;
-    "p2": string;
-} & Not<{
-    "arr": Array<{
-        "arr": t_6;
-        "p": string;
-    }>;
-    "p": string;
-}>);
-```
-
-```ts
-type Evidence = {
-    "arr": Array;
-    "p": boolean;
-    "p2": string;
-};
-```
-
-Previous clients will not support this potential response:
-
-evidence:
+Previous clients will not support this response:
 
 ```json
 {

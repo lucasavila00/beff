@@ -41,28 +41,7 @@ type New = ({
 });
 ```
 
-```ts
-type Diff = ({
-    "a": 1;
-} & ({
-    "p": ("a" | "b" | "c");
-} & (Not<{
-    "a": 1;
-}> | Not<{
-    "p": ("a" | "b");
-}>)));
-```
-
-```ts
-type Evidence = {
-    "a": (1);
-    "p": ("c");
-};
-```
-
-Previous clients will not support this potential response:
-
-evidence:
+Previous clients will not support this response:
 
 ```json
 {
@@ -89,26 +68,7 @@ type New = {
 };
 ```
 
-```ts
-type Diff = ({
-    "a": 1;
-    "p": ("a" | "b" | "c");
-} & Not<{
-    "a": 1;
-    "p": ("a" | "b");
-}>);
-```
-
-```ts
-type Evidence = {
-    "a": (1);
-    "p": ("c");
-};
-```
-
-Previous clients will not support this potential response:
-
-evidence:
+Previous clients will not support this response:
 
 ```json
 {

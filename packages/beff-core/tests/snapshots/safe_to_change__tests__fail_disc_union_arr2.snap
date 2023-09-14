@@ -31,17 +31,7 @@ type Old = (["a1", number] | ["a2", "asd"]);
 type New = (["a1", number] | ["a2", string]);
 ```
 
-```ts
-type Diff = ((["a1", number] & (Not<["a1", number]> & Not<["a2", "asd"]>)) | ((["a2", string] & (Not<["a1", number]> & Not<["a2", "asd"]>)) & Not<["a1", number]>));
-```
-
-```ts
-type Evidence = [("a2"), Not<("asd")>];
-```
-
-Previous clients will not support this potential response:
-
-evidence:
+Previous clients will not support this response:
 
 ```json
 [

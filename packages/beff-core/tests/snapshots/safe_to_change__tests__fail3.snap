@@ -31,17 +31,7 @@ type Old = Array<("a" | "b")>;
 type New = Array<("a" | "b" | "c")>;
 ```
 
-```ts
-type Diff = (Array<("a" | "b" | "c")> & Not<Array<("a" | "b")>>);
-```
-
-```ts
-type Evidence = Array<("c")>;
-```
-
-Previous clients will not support this potential response:
-
-evidence:
+Previous clients will not support this response:
 
 ```json
 [

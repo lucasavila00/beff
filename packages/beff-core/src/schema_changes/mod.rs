@@ -10,7 +10,7 @@ use crate::{
         evidence::{Evidence, EvidenceResult, ProperSubtypeEvidence},
         semtype::{SemTypeContext, SemTypeOps},
         subtype::{StringLitOrFormat, SubTypeTag},
-        to_schema::{to_validators, to_validators_evidence},
+        to_schema::to_validators,
         ToSemType,
     },
 };
@@ -162,18 +162,12 @@ impl BreakingChange {
                     .into_iter()
                     .chain(print_validators(&err.super_type.iter().collect::<Vec<_>>()))
                     .chain(print_validators(&err.sub_type.iter().collect::<Vec<_>>()))
-                    .chain(print_validators(&err.diff_type.iter().collect::<Vec<_>>()))
-                    .chain(print_validators(
-                        &err.evidence_type.iter().collect::<Vec<_>>(),
-                    ))
+                    // .chain(print_validators(&err.diff_type.iter().collect::<Vec<_>>()))
+                    // .chain(print_validators(
+                    //     &err.evidence_type.iter().collect::<Vec<_>>(),
+                    // ))
                     .chain(vec![
-                        MdReport::Text(format!(
-                            "Previous clients will not support this potential response:"
-                        )),
-                        // MdReport::Js(v),
-                        // MdReport::Text(format!("diff:")),
-                        // MdReport::Js(diff_to_js(&err.diff, None)),
-                        MdReport::Text(format!("evidence:")),
+                        MdReport::Text(format!("Previous clients will not support this response:")),
                         MdReport::Json(evidence_to_json(&err.evidence)),
                     ])
                     .collect()
@@ -187,16 +181,15 @@ impl BreakingChange {
                 .into_iter()
                 .chain(print_validators(&err.sub_type.iter().collect::<Vec<_>>()))
                 .chain(print_validators(&err.super_type.iter().collect::<Vec<_>>()))
-                .chain(print_validators(&err.diff_type.iter().collect::<Vec<_>>()))
-                .chain(print_validators(
-                    &err.evidence_type.iter().collect::<Vec<_>>(),
-                ))
+                // .chain(print_validators(&err.diff_type.iter().collect::<Vec<_>>()))
+                // .chain(print_validators(
+                //     &err.evidence_type.iter().collect::<Vec<_>>(),
+                // ))
                 .chain(vec![
                     MdReport::Text(format!(
                         "Param `{}` might be called with now unsupported value:",
                         param_name
                     )),
-                    MdReport::Text(format!("evidence:")),
                     MdReport::Json(evidence_to_json(&err.evidence)),
                 ])
                 .collect()
@@ -222,9 +215,6 @@ struct SchemaReference<'a> {
 pub struct IsNotSubtype {
     sub_type: Vec<Validator>,
     super_type: Vec<Validator>,
-    diff_type: Vec<Validator>,
-
-    evidence_type: Vec<Validator>,
     evidence: Evidence,
 }
 
@@ -253,14 +243,9 @@ impl<'a> SchemaReference<'a> {
             EvidenceResult::Evidence(evidence) => {
                 let sub_type = to_validators(&mut builder, &sub_st, &sub.name);
                 let super_type = to_validators(&mut builder, &supe_st, &supe.name);
-                let diff = sub_st.diff(&supe_st);
-                let diff_type = to_validators(&mut builder, &diff, "Diff");
-                let evidence_type = to_validators_evidence(&mut builder, &evidence, "Evidence");
                 Ok(SubTypeCheckResult::IsNotSubtype(IsNotSubtype {
                     sub_type,
                     super_type,
-                    diff_type,
-                    evidence_type,
                     evidence,
                 }))
             }

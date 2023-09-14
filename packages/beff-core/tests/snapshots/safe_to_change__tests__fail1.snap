@@ -35,17 +35,7 @@ type Old = "world";
 type New = string;
 ```
 
-```ts
-type Diff = Not<"world">;
-```
-
-```ts
-type Evidence = Not<("world")>;
-```
-
-Previous clients will not support this potential response:
-
-evidence:
+Previous clients will not support this response:
 
 ```json
 "Izr1mn6edP0HLrWu"

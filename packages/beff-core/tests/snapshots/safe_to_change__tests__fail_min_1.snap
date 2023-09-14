@@ -35,23 +35,7 @@ type New = ["a2", {
     }];
 ```
 
-```ts
-type Diff = (["a2", {
-        "a"?: Array<string>;
-    }] & Not<["a2", {
-        "a": Array<string>;
-    }]>);
-```
-
-```ts
-type Evidence = [("a2"), {
-        "a": undefined;
-    }];
-```
-
-Previous clients will not support this potential response:
-
-evidence:
+Previous clients will not support this response:
 
 ```json
 [

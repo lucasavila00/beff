@@ -33,17 +33,7 @@ type Old = "a";
 type New = ("a" | "b");
 ```
 
-```ts
-type Diff = "b";
-```
-
-```ts
-type Evidence = ("b");
-```
-
-Previous clients will not support this potential response:
-
-evidence:
+Previous clients will not support this response:
 
 ```json
 "b"

@@ -39,33 +39,7 @@ type New = (["a1", {
     }]);
 ```
 
-```ts
-type Diff = ((["a1", {
-        "a": Array<number>;
-    }] & (Not<["a1", {
-        "a": Array<number>;
-    }]> & Not<["a2", {
-        "a": Array<string>;
-    }]>)) | ((["a2", {
-        "a"?: Array<string>;
-    }] & (Not<["a1", {
-        "a": Array<number>;
-    }]> & Not<["a2", {
-        "a": Array<string>;
-    }]>)) & Not<["a1", {
-        "a": Array<number>;
-    }]>));
-```
-
-```ts
-type Evidence = [("a2"), {
-        "a": undefined;
-    }];
-```
-
-Previous clients will not support this potential response:
-
-evidence:
+Previous clients will not support this response:
 
 ```json
 [

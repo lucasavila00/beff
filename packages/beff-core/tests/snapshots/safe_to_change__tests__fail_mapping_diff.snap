@@ -37,26 +37,7 @@ type New = {
 };
 ```
 
-```ts
-type Diff = ({
-    "a": string;
-    "b"?: boolean;
-} & Not<{
-    "a": string;
-    "b": boolean;
-}>);
-```
-
-```ts
-type Evidence = {
-    "a": string;
-    "b": undefined;
-};
-```
-
-Previous clients will not support this potential response:
-
-evidence:
+Previous clients will not support this response:
 
 ```json
 {

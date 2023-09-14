@@ -31,17 +31,7 @@ type Old = [555];
 type New = [number];
 ```
 
-```ts
-type Diff = ([number] & Not<[555]>);
-```
-
-```ts
-type Evidence = [Not<(555)>];
-```
-
-Previous clients will not support this potential response:
-
-evidence:
+Previous clients will not support this response:
 
 ```json
 [

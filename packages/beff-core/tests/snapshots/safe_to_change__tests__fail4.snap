@@ -31,17 +31,7 @@ type Old = [("a" | "b")];
 type New = [("a" | "b" | "c")];
 ```
 
-```ts
-type Diff = ([("a" | "b" | "c")] & Not<[("a" | "b")]>);
-```
-
-```ts
-type Evidence = [("c")];
-```
-
-Previous clients will not support this potential response:
-
-evidence:
+Previous clients will not support this response:
 
 ```json
 [
