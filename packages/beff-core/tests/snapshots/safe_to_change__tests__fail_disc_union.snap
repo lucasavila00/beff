@@ -58,9 +58,9 @@ Previous clients will not support this potential response:
 
 evidence:
 
-```js
+```json
 {
-    "data": true,
-    "ok": false
-};
+  "data": true,
+  "ok": false
+}
 ```

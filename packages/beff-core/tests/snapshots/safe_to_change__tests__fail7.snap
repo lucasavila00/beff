@@ -43,6 +43,6 @@ Previous clients will not support this potential response:
 
 evidence:
 
-```js
-2;
+```json
+2
 ```

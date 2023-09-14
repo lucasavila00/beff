@@ -1,5 +1,3 @@
-use std::collections::BTreeMap;
-
 use crate::{
     ast::{
         js::Js,
@@ -9,18 +7,16 @@ use crate::{
     emit::emit_module,
     open_api_ast::{HTTPMethod, OpenApi, OperationObject, Validator},
     subtyping::{
-        evidence::EvidenceResult,
-        meterialize::{Mater, MaterializationContext},
+        evidence::{Evidence, EvidenceResult, ProperSubtypeEvidence},
         semtype::{SemTypeContext, SemTypeOps},
+        subtype::{StringLitOrFormat, SubTypeTag},
         to_schema::{to_validators, to_validators_evidence},
         ToSemType,
     },
 };
 use anyhow::Result;
 use swc_common::DUMMY_SP;
-use swc_ecma_ast::{
-    CallExpr, Callee, Decl, Expr, Ident, ModuleItem, Stmt, TsType, TsTypeAliasDecl,
-};
+use swc_ecma_ast::{Decl, Ident, ModuleItem, Stmt, TsType, TsTypeAliasDecl};
 
 #[derive(Debug)]
 pub enum BreakingChange {
@@ -98,6 +94,63 @@ fn print_validators(validators: &[&Validator]) -> Md {
     )]
 }
 
+fn evidence_to_json(it: &Evidence) -> Json {
+    match it {
+        Evidence::All(t) => match t {
+            SubTypeTag::Boolean => Json::Bool(true),
+            SubTypeTag::Number => Json::Number(N::parse_int(123)),
+            SubTypeTag::String => Json::String("abc".into()),
+            SubTypeTag::Null => Json::Null,
+            SubTypeTag::Mapping => Json::object(vec![]),
+            SubTypeTag::Void => todo!(),
+            SubTypeTag::List => Json::Array(vec![]),
+        },
+        Evidence::Proper(p) => match p {
+            ProperSubtypeEvidence::Boolean(b) => Json::Bool(*b),
+            ProperSubtypeEvidence::Number { allowed, values } => {
+                if !allowed {
+                    return Json::Number(N::parse_int(4773992856));
+                }
+                match values.split_first() {
+                    Some((h, _t)) => return Json::Number(h.clone()),
+                    None => unreachable!("number values cannot be empty"),
+                }
+            }
+            ProperSubtypeEvidence::String { allowed, values } => {
+                if !allowed {
+                    return Json::String("Izr1mn6edP0HLrWu".into());
+                }
+                match values.split_first() {
+                    Some((h, _t)) => match h {
+                        StringLitOrFormat::Lit(st) => return Json::String(st.clone()),
+                        StringLitOrFormat::Format(fmt) => {
+                            return Json::String("$$".to_owned() + fmt.as_str())
+                        }
+                    },
+                    None => unreachable!("string values cannot be empty"),
+                }
+            }
+            ProperSubtypeEvidence::List(ev) => {
+                let mut acc = vec![];
+                for v in &ev.prefix_items {
+                    acc.push(evidence_to_json(v))
+                }
+                if let Some(v) = &ev.items {
+                    acc.push(evidence_to_json(v))
+                }
+
+                Json::Array(acc)
+            }
+            ProperSubtypeEvidence::Mapping(vs) => Json::Object(
+                vs.iter()
+                    .filter(|(_, v)| !matches!(v.as_ref(), Evidence::All(SubTypeTag::Void)))
+                    .map(|(k, v)| (k.clone(), evidence_to_json(v)))
+                    .collect(),
+            ),
+        },
+    }
+}
+
 impl BreakingChange {
     pub fn print_report(&self) -> Md {
         match self {
@@ -121,7 +174,7 @@ impl BreakingChange {
                         // MdReport::Text(format!("diff:")),
                         // MdReport::Js(diff_to_js(&err.diff, None)),
                         MdReport::Text(format!("evidence:")),
-                        MdReport::Js(diff_to_js(&err.evidence_mater, None)),
+                        MdReport::Json(evidence_to_json(&err.evidence)),
                     ])
                     .collect()
             }
@@ -144,7 +197,7 @@ impl BreakingChange {
                         param_name
                     )),
                     MdReport::Text(format!("evidence:")),
-                    MdReport::Js(diff_to_js(&err.evidence_mater, None)),
+                    MdReport::Json(evidence_to_json(&err.evidence)),
                 ])
                 .collect()
             }
@@ -172,85 +225,7 @@ pub struct IsNotSubtype {
     diff_type: Vec<Validator>,
 
     evidence_type: Vec<Validator>,
-    evidence_mater: Mater,
-}
-fn call_expr(name: &str) -> Expr {
-    Expr::Call(CallExpr {
-        span: DUMMY_SP,
-        callee: Callee::Expr(
-            Expr::Ident(Ident {
-                span: DUMMY_SP,
-                sym: name.into(),
-                optional: false,
-            })
-            .into(),
-        ),
-        args: vec![],
-        type_args: None,
-    })
-}
-
-fn diff_to_js(diff: &Mater, base: Option<&Mater>) -> Js {
-    match diff {
-        Mater::Never => match base {
-            Some(v) => diff_to_js(v, None),
-            None => Js::Expr(call_expr("never")),
-        },
-        Mater::Unknown => todo!(),
-        Mater::Void => Js::Expr(Expr::Ident(Ident {
-            span: DUMMY_SP,
-            sym: "undefined".into(),
-            optional: false,
-        })),
-        Mater::Recursive => Js::Expr(call_expr("recursion")),
-        Mater::Null => Js::Null,
-        Mater::Boolean => Js::Bool(true),
-        Mater::Number => Js::Number(N::parse_int(123)),
-        Mater::String => Js::String("abc".into()),
-        Mater::StringWithFormat(_) => todo!(),
-        Mater::StringLiteral(st) => Js::String(st.clone()),
-        Mater::NumberLiteral(n) => Js::Number(n.clone()),
-        Mater::BooleanLiteral(b) => Js::Bool(*b),
-        Mater::Array {
-            items,
-            prefix_items,
-        } => {
-            let mut acc = vec![];
-            for (idx, item) in prefix_items.iter().enumerate() {
-                let base = match base {
-                    Some(Mater::Array { prefix_items, .. }) => prefix_items.get(idx),
-                    _ => None,
-                };
-                acc.push(diff_to_js(item, base));
-            }
-            if !items.is_never() {
-                let base = match base {
-                    Some(Mater::Array { items, .. }) => Some(items.as_ref()),
-                    _ => None,
-                };
-                match items.as_ref() {
-                    Mater::Recursive => {
-                        // ignore recursion in array
-                    }
-                    _ => {
-                        acc.push(diff_to_js(items, base));
-                    }
-                }
-            }
-            Js::Array(acc)
-        }
-        Mater::Object(vs) => {
-            let mut acc = BTreeMap::new();
-            for (k, v) in vs.iter() {
-                let base = match base {
-                    Some(Mater::Object(base)) => base.get(k),
-                    _ => None,
-                };
-                acc.insert(k.clone(), diff_to_js(v, base));
-            }
-            Js::Object(acc)
-        }
-    }
+    evidence: Evidence,
 }
 
 #[derive(Debug)]
@@ -281,13 +256,12 @@ impl<'a> SchemaReference<'a> {
                 let diff = sub_st.diff(&supe_st);
                 let diff_type = to_validators(&mut builder, &diff, "Diff");
                 let evidence_type = to_validators_evidence(&mut builder, &evidence, "Evidence");
-                let mut mater = MaterializationContext::new();
                 Ok(SubTypeCheckResult::IsNotSubtype(IsNotSubtype {
                     sub_type,
                     super_type,
                     diff_type,
                     evidence_type,
-                    evidence_mater: mater.materialize_ev(&evidence),
+                    evidence,
                 }))
             }
         }

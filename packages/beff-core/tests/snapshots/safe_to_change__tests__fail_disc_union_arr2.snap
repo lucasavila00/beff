@@ -43,9 +43,9 @@ Previous clients will not support this potential response:
 
 evidence:
 
-```js
+```json
 [
-    "a2",
-    "Izr1mn6edP0HLrWu"
-];
+  "a2",
+  "Izr1mn6edP0HLrWu"
+]
 ```

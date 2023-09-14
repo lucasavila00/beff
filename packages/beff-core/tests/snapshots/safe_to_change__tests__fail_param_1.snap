@@ -47,6 +47,6 @@ Param `a` might be called with now unsupported value:
 
 evidence:
 
-```js
-"b";
+```json
+"b"
 ```

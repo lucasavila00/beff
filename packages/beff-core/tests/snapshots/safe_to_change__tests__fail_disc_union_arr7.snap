@@ -55,11 +55,9 @@ Previous clients will not support this potential response:
 
 evidence:
 
-```js
+```json
 [
-    "a2",
-    {
-        "a": undefined
-    }
-];
+  "a2",
+  {}
+]
 ```

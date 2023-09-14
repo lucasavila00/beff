@@ -79,10 +79,10 @@ Previous clients will not support this potential response:
 
 evidence:
 
-```js
+```json
 {
-    "arr": [],
-    "p": true,
-    "p2": "abc"
-};
+  "arr": [],
+  "p": true,
+  "p2": "abc"
+}
 ```

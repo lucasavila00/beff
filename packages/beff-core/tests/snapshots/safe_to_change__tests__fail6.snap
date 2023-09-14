@@ -64,11 +64,11 @@ Previous clients will not support this potential response:
 
 evidence:
 
-```js
+```json
 {
-    "a": 1,
-    "p": "c"
-};
+  "a": 1,
+  "p": "c"
+}
 ```
 
 # Error at POST /hello:
@@ -110,9 +110,9 @@ Previous clients will not support this potential response:
 
 evidence:
 
-```js
+```json
 {
-    "a": 1,
-    "p": "c"
-};
+  "a": 1,
+  "p": "c"
+}
 ```

@@ -53,8 +53,8 @@ Previous clients will not support this potential response:
 
 evidence:
 
-```js
+```json
 {
-    "p": "c"
-};
+  "p": "c"
+}
 ```

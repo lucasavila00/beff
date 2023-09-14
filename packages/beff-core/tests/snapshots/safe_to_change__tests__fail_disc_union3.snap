@@ -77,9 +77,9 @@ Previous clients will not support this potential response:
 
 evidence:
 
-```js
+```json
 {
-    "data": 123,
-    "ok": "abc"
-};
+  "data": 123,
+  "ok": "abc"
+}
 ```

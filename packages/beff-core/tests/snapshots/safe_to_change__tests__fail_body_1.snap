@@ -45,6 +45,6 @@ Previous clients will not support this potential response:
 
 evidence:
 
-```js
-"b";
+```json
+"b"
 ```
