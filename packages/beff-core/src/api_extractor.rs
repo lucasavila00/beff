@@ -618,7 +618,10 @@ impl<'a, R: FileManager> ExtractExportDefaultVisitor<'a, R> {
 
     fn parse_method_kind(&mut self, key: &PropName) -> Result<MethodKind> {
         match key {
-            PropName::Ident(Ident { sym, span, .. }) => match sym.to_string().as_str() {
+            PropName::Str(Str {
+                span, value: sym, ..
+            })
+            | PropName::Ident(Ident { sym, span, .. }) => match sym.to_string().as_str() {
                 "get" => Ok(MethodKind::Get(span.clone())),
                 "post" => Ok(MethodKind::Post(span.clone())),
                 "put" => Ok(MethodKind::Put(span.clone())),
@@ -628,6 +631,7 @@ impl<'a, R: FileManager> ExtractExportDefaultVisitor<'a, R> {
                 "use" => Ok(MethodKind::Use(span.clone())),
                 _ => self.error(span, DiagnosticInfoMessage::NotAnHttpMethod),
             },
+
             _ => {
                 let span = get_prop_name_span(key);
                 self.error(&span, DiagnosticInfoMessage::NotAnHttpMethod)

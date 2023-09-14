@@ -512,7 +512,7 @@ fn list_inhabited(
     builder: &mut SemTypeContext,
 ) -> ListInhabited {
     match neg {
-        None => return ListInhabited::Yes(None, vec![]),
+        None => return ListInhabited::Yes(None, prefix_items.clone()),
         Some(neg) => {
             let mut len = prefix_items.len();
             let nt = match &*neg.atom {

@@ -11,7 +11,7 @@ use std::rc::Rc;
 use swc_atoms::JsWord;
 use swc_common::Span;
 use swc_ecma_ast::{
-    BigInt, Expr, Ident, Str, TsArrayType, TsCallSignatureDecl, TsConditionalType,
+    BigInt, Expr, Ident, Lit, Str, TsArrayType, TsCallSignatureDecl, TsConditionalType,
     TsConstructSignatureDecl, TsConstructorType, TsEntityName, TsFnOrConstructorType, TsFnType,
     TsGetterSignature, TsImportType, TsIndexSignature, TsIndexedAccessType, TsInferType,
     TsInterfaceDecl, TsIntersectionType, TsKeywordType, TsKeywordTypeKind, TsLit, TsLitType,
@@ -79,6 +79,7 @@ impl<'a, R: FileManager> TypeToSchema<'a, R> {
             TsTypeElement::TsPropertySignature(prop) => {
                 let key = match &*prop.key {
                     Expr::Ident(ident) => ident.sym.to_string(),
+                    Expr::Lit(Lit::Str(st)) => st.value.to_string(),
                     _ => {
                         return self.error(&prop.span, DiagnosticInfoMessage::PropKeyShouldBeIdent)
                     }

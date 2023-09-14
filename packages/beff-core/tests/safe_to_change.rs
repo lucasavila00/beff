@@ -3,6 +3,7 @@ mod tests {
     use std::rc::Rc;
 
     use beff_core::{
+        emit::emit_module,
         import_resolver::{parse_and_bind, FsModuleResolver},
         open_api_ast::{OpenApi, Validator},
         schema_changes::{is_safe_to_change_to, MdReport, OpenApiBreakingChange},
@@ -47,7 +48,13 @@ mod tests {
         };
         let res = beff_core::extract(&mut man, entry);
         let res = res.router.unwrap();
+        assert!(res.errors.is_empty(), "{:?}", res.errors);
         (res.open_api, res.validators)
+    }
+
+    fn print_api_as_ts(api: &OpenApi, validators: &[&Validator]) -> String {
+        let ts = api.to_ts_open_api(validators).to_ts_module();
+        emit_module(ts).unwrap()
     }
 
     fn test_safe(from: &str, to: &str) -> Vec<OpenApiBreakingChange> {
@@ -75,6 +82,23 @@ mod tests {
 
         format!("from:\n{}\nto:\n{}\n\n{}", from, to, errs)
     }
+    #[test]
+    fn print1() {
+        let from = r#"
+        type A = string;
+        export default {
+            "/hello": {
+                get: (): A => impl(),
+                post: (): ["a1", {a:number[]}]|["a2", {b:boolean[]}] => impl(),
+                put: (): ["a1", {a:number}]|["a2", {a?:string}] => impl()
+            }
+        }
+        "#;
+        let (from_api, from_vals) = parse_api(from);
+        let printed = print_api_as_ts(&from_api, &from_vals.iter().collect::<Vec<_>>());
+        insta::assert_snapshot!(printed);
+    }
+
     #[test]
     fn ok1() {
         let from = r#"
@@ -972,6 +996,70 @@ mod tests {
         export default {
             "/hello": {
                 get: (): {a?: number} => todo()
+            }
+        }
+        "#;
+        let errors = test_safe(from, to);
+        assert!(!errors.is_empty());
+        insta::assert_snapshot!(print_errors(from, to, &errors));
+    }
+
+    #[test]
+    fn fail_disc_union_arr63() {
+        let from = r#"
+        export default {
+            "/hello": {
+                get: (): ["a1", {a:number[]}]|["a2", {a:boolean[]}] => todo()
+            }
+        }
+        "#;
+
+        let to = r#"
+        export default {
+            "/hello": {
+                get: (): ["a1", {a:number[]}]|["a2", {b:boolean[]}] => todo()
+            }
+        }
+        "#;
+        let errors = test_safe(from, to);
+        assert!(!errors.is_empty());
+        insta::assert_snapshot!(print_errors(from, to, &errors));
+    }
+    #[test]
+    fn fail_disc_union_arr64() {
+        let from = r#"
+        export default {
+            "/hello": {
+                get: (): false[] => todo()
+            }
+        }
+        "#;
+
+        let to = r#"
+        export default {
+            "/hello": {
+                get: (): boolean[] => todo()
+            }
+        }
+        "#;
+        let errors = test_safe(from, to);
+        assert!(!errors.is_empty());
+        insta::assert_snapshot!(print_errors(from, to, &errors));
+    }
+    #[test]
+    fn fail_disc_union_arr631() {
+        let from = r#"
+        export default {
+            "/hello": {
+                get: (): ["a1", {a:['a3',number]}]|["a2", {a:boolean[]}] => todo()
+            }
+        }
+        "#;
+
+        let to = r#"
+        export default {
+            "/hello": {
+                get: (): ["a1", {a:['a4',number]}]|["a2", {a:boolean[]}] => todo()
             }
         }
         "#;

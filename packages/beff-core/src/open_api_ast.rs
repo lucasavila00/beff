@@ -1,3 +1,10 @@
+use swc_common::DUMMY_SP;
+use swc_ecma_ast::{
+    ArrowExpr, BindingIdent, BlockStmtOrExpr, CallExpr, Decl, ExportDefaultExpr, Expr, Ident,
+    KeyValueProp, ModuleDecl, ModuleItem, ObjectLit, Pat, Prop, PropName, PropOrSpread, Stmt, Str,
+    TsType, TsTypeAliasDecl, TsTypeAnn,
+};
+
 use crate::{
     ast::{
         js::Js,
@@ -352,4 +359,208 @@ pub struct OpenApi {
     pub info: Info,
     pub paths: Vec<ApiPath>,
     pub components: Vec<String>,
+}
+
+#[derive(Debug)]
+struct TsApiMethod {
+    parameters: Vec<TsValidator>,
+    response: TsType,
+}
+
+impl TsApiMethod {
+    pub fn to_expr(self) -> Expr {
+        let impl_call_expr = Expr::Call(CallExpr {
+            span: DUMMY_SP,
+            callee: swc_ecma_ast::Callee::Expr(
+                Expr::Ident(Ident {
+                    span: DUMMY_SP,
+                    sym: "impl".into(),
+                    optional: false,
+                })
+                .into(),
+            ),
+            args: vec![],
+            type_args: None,
+        });
+        Expr::Arrow(ArrowExpr {
+            span: DUMMY_SP,
+            params: self
+                .parameters
+                .into_iter()
+                .map(|it| {
+                    Pat::Ident(BindingIdent {
+                        id: Ident {
+                            span: DUMMY_SP,
+                            sym: it.name.into(),
+                            optional: false,
+                        },
+                        type_ann: Some(Box::new(TsTypeAnn {
+                            span: DUMMY_SP,
+                            type_ann: Box::new(it.typ),
+                        })),
+                    })
+                })
+                .collect(),
+            body: Box::new(BlockStmtOrExpr::Expr(impl_call_expr.into())),
+            is_async: false,
+            is_generator: false,
+            type_params: None,
+            return_type: Some(Box::new(TsTypeAnn {
+                span: DUMMY_SP,
+                type_ann: Box::new(self.response),
+            })),
+        })
+        // Expr::Fn(FnExpr {
+        //     ident: None,
+        //     function: Function {
+
+        //         decorators: vec![],
+        //         span: DUMMY_SP,
+        //         body: None,
+        //         is_generator: false,
+        //         is_async: false,
+        //         type_params: None,
+        //         return_type: Some(Box::new(TsTypeAnn {
+        //             span: DUMMY_SP,
+        //             type_ann: Box::new(self.response),
+        //         })),
+        //     }
+        //     .into(),
+        // })
+    }
+}
+#[derive(Debug)]
+struct TsApiPath {
+    path: String,
+    methods: BTreeMap<HTTPMethod, TsApiMethod>,
+}
+
+#[derive(Debug)]
+struct TsValidator {
+    name: String,
+    typ: TsType,
+}
+
+#[derive(Debug)]
+pub struct TsOpenApi {
+    paths: Vec<TsApiPath>,
+    components: Vec<TsValidator>,
+}
+
+fn print_api_path_methods_object(it: BTreeMap<HTTPMethod, TsApiMethod>) -> Expr {
+    let obj_expr = Expr::Object(ObjectLit {
+        span: DUMMY_SP,
+        props: it
+            .into_iter()
+            .map(|(k, v)| {
+                PropOrSpread::Prop(
+                    Prop::KeyValue(KeyValueProp {
+                        key: PropName::Str(Str {
+                            span: DUMMY_SP,
+                            value: k.to_string().into(),
+                            raw: None,
+                        }),
+                        value: v.to_expr().into(),
+                    })
+                    .into(),
+                )
+            })
+            .collect(),
+    });
+
+    obj_expr
+}
+
+impl TsOpenApi {
+    pub fn to_ts_module(self) -> Vec<ModuleItem> {
+        let mut acc = vec![];
+
+        for comp in self.components {
+            let st = ModuleItem::Stmt(Stmt::Decl(Decl::TsTypeAlias(Box::new(TsTypeAliasDecl {
+                span: DUMMY_SP,
+                declare: false,
+                id: Ident {
+                    span: DUMMY_SP,
+                    sym: comp.name.into(),
+                    optional: false,
+                },
+                type_params: None,
+                type_ann: Box::new(comp.typ),
+            }))));
+            acc.push(st);
+        }
+
+        let obj_expr = Expr::Object(ObjectLit {
+            span: DUMMY_SP,
+            props: self
+                .paths
+                .into_iter()
+                .map(|it| {
+                    PropOrSpread::Prop(
+                        Prop::KeyValue(KeyValueProp {
+                            key: PropName::Str(Str {
+                                span: DUMMY_SP,
+                                value: it.path.into(),
+                                raw: None,
+                            }),
+                            value: print_api_path_methods_object(it.methods).into(),
+                        })
+                        .into(),
+                    )
+                })
+                .collect(),
+        });
+
+        let exp_def = ModuleItem::ModuleDecl(ModuleDecl::ExportDefaultExpr(ExportDefaultExpr {
+            span: DUMMY_SP,
+            expr: obj_expr.into(),
+        }));
+        acc.push(exp_def);
+        acc
+    }
+}
+
+fn build_ts_validator(validator: &Validator) -> TsValidator {
+    TsValidator {
+        name: validator.name.clone(),
+        typ: validator.schema.to_ts_type(),
+    }
+}
+
+fn build_ts_api_method(operation: &OperationObject) -> TsApiMethod {
+    TsApiMethod {
+        parameters: operation
+            .parameters
+            .iter()
+            .map(|it| {
+                //
+                TsValidator {
+                    name: it.name.clone(),
+                    typ: it.schema.to_ts_type(),
+                }
+            })
+            .collect(),
+        response: operation.json_response_body.to_ts_type(),
+    }
+}
+
+impl OpenApi {
+    pub fn to_ts_open_api(&self, validators: &[&Validator]) -> TsOpenApi {
+        let mut components = vec![];
+        for validator in validators {
+            components.push(build_ts_validator(validator));
+        }
+        let mut paths = vec![];
+        for path in &self.paths {
+            let mut methods = BTreeMap::new();
+            for (method, operation) in &path.methods {
+                methods.insert(*method, build_ts_api_method(operation));
+            }
+            paths.push(TsApiPath {
+                path: path.parsed_pattern.raw.clone(),
+                methods,
+            });
+        }
+        TsOpenApi { paths, components }
+    }
 }
