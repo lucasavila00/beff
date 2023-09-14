@@ -24,17 +24,11 @@ to:
 Response body is not compatible.
 
 ```ts
-type Old = {
-    "a": string;
-    "b": boolean;
-};
+type Old = { "a": string; "b": boolean };
 ```
 
 ```ts
-type New = {
-    "a": string;
-    "b"?: boolean;
-};
+type New = { "a": string; "b"?: boolean };
 ```
 
 Old clients will not support this response:

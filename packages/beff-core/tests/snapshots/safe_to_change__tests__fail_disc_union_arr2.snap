@@ -24,11 +24,11 @@ to:
 Response body is not compatible.
 
 ```ts
-type Old = (["a1", number] | ["a2", "asd"]);
+type Old = ["a1", number] | ["a2", "asd"];
 ```
 
 ```ts
-type New = (["a1", number] | ["a2", string]);
+type New = ["a1", number] | ["a2", string];
 ```
 
 Old clients will not support this response:

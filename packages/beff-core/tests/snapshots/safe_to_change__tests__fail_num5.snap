@@ -24,15 +24,11 @@ to:
 Response body is not compatible.
 
 ```ts
-type Old = {
-    "a"?: 555;
-};
+type Old = { "a"?: 555 };
 ```
 
 ```ts
-type New = {
-    "a"?: number;
-};
+type New = { "a"?: number };
 ```
 
 Old clients will not support this response:

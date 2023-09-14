@@ -24,19 +24,11 @@ to:
 Response body is not compatible.
 
 ```ts
-type Old = (["a1", {
-        "a": Array<number>;
-    }] | ["a2", {
-        "a": Array<string>;
-    }]);
+type Old = ["a1", { "a": Array<number> }] | ["a2", { "a": Array<string> }];
 ```
 
 ```ts
-type New = (["a1", {
-        "a": Array<number>;
-    }] | ["a2", {
-        "a"?: Array<string>;
-    }]);
+type New = ["a1", { "a": Array<number> }] | ["a2", { "a"?: Array<string> }];
 ```
 
 Old clients will not support this response:

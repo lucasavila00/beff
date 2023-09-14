@@ -28,7 +28,7 @@ type Old = 1;
 ```
 
 ```ts
-type New = (null | boolean | string | number | Object | Array);
+type New = null | boolean | string | number | Object | Array;
 ```
 
 Old clients will not support this response:

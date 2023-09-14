@@ -1,3 +1,5 @@
+use std::path::PathBuf;
+
 use crate::{
     ast::{
         js::Js,
@@ -15,9 +17,12 @@ use crate::{
     },
 };
 use anyhow::Result;
+use dprint_plugin_typescript::{
+    configuration::{ConfigurationBuilder, QuoteStyle},
+    *,
+};
 use swc_common::DUMMY_SP;
 use swc_ecma_ast::{Decl, Ident, ModuleItem, Stmt, TsType, TsTypeAliasDecl};
-
 #[derive(Debug)]
 pub enum BreakingChange {
     PathRemoved,
@@ -80,7 +85,15 @@ impl MdReport {
                     })
                     .collect::<Vec<String>>()
                     .join("\n");
-                format!("```ts\n{}```", codes)
+
+                let config = ConfigurationBuilder::new()
+                    .line_width(80)
+                    .quote_style(QuoteStyle::PreferDouble)
+                    .build();
+                let result = format_text(&PathBuf::from("f.ts"), &codes, &config)
+                    .expect("Could not parse...")
+                    .unwrap();
+                format!("```ts\n{}```", result)
             }
         }
     }

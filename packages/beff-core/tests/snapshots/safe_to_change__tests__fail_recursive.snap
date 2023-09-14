@@ -28,17 +28,11 @@ to:
 Response body is not compatible.
 
 ```ts
-type Old = {
-    "arr": Array<Old>;
-    "p": string;
-};
+type Old = { "arr": Array<Old>; "p": string };
 ```
 
 ```ts
-type New = {
-    "arr": Array<New>;
-    "p2": string;
-};
+type New = { "arr": Array<New>; "p2": string };
 ```
 
 Old clients will not support this response:

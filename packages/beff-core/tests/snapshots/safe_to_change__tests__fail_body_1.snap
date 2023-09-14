@@ -30,7 +30,7 @@ type Old = "a";
 ```
 
 ```ts
-type New = ("a" | "b");
+type New = "a" | "b";
 ```
 
 Old clients will not support this response:
