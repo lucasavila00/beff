@@ -1,0 +1,39 @@
+[package]
+authors = ["Lucas Avila <lucaxx@gmail.com>"]
+edition = "2018"
+name = "diff-wasm"
+version = "0.1.0"
+
+[lib]
+crate-type = ["cdylib", "rlib"]
+
+[features]
+default = ["console_error_panic_hook"]
+
+[dependencies]
+wasm-bindgen = "0.2.84"
+
+# The `console_error_panic_hook` crate provides better debugging of panics by
+# logging them with `console.error`. This is great for development, but requires
+# all the `std::fmt` and `std::panicking` infrastructure, so isn't great for
+# code size when deploying.
+anyhow = "1.0.75"
+beff-core = {version = "0.1.0", path = "../../packages/beff-core"}
+console_error_panic_hook = {version = "0.1.7", optional = true}
+console_log = "1.0.0"
+js-sys = "0.3.64"
+lazy_static = "1.4.0"
+log = "0.4.20"
+serde = {version = "1.0", features = ["derive"]}
+serde-wasm-bindgen = "0.4"
+swc_atoms = "0.5.9"
+swc_common = "0.32.0"
+swc_ecma_ast = "0.109.0"
+swc_ecma_visit = "0.95.0"
+serde_json = "1.0.107"
+[dev-dependencies]
+wasm-bindgen-test = "0.3.34"
+
+[profile.release]
+# Tell `rustc` to optimize for small code size.
+opt-level = "s"

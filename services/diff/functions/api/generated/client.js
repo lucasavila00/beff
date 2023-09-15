@@ -7,11 +7,7 @@ const meta = [
     },
     {
         "method_kind": "get",
-        "params": [
-            {
-                "type": "context"
-            }
-        ],
+        "params": [],
         "pattern": "/hello"
     }
 ];

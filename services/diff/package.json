@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "dev:client": "vite",
-    "build5": "vite build",
+    "build:client": "vite build",
     "ts": "tsc --noEmit",
     "lint": "eslint . --ext ts,tsx --report-unused-disable-directives --max-warnings 0",
     "preview": "vite preview",
@@ -13,7 +13,8 @@
     "dev:server": "wrangler pages dev --kv PUBLIC_JWK_CACHE_KV --compatibility-date=2023-01-01 ./dist",
     "dev:beff": "beff -p beff.json -w",
     "dev": "run-p dev:*",
-    "beff": "beff -p beff.json"
+    "beff": "beff -p beff.json",
+    "wasm": "wasm-pack build --dev --target bundler --out-dir functions/pkg --out-name index && rm functions/pkg/index_bg.wasm.d.ts"
   },
   "dependencies": {
     "@beff/cli": "workspace:^",
@@ -24,7 +25,9 @@
     "firebase-auth-cloudflare-workers": "^1.0.1",
     "hono": "^3.6.0",
     "react": "^18.2.0",
-    "react-dom": "^18.2.0"
+    "react-dom": "^18.2.0",
+    "vite-plugin-top-level-await": "^1.3.1",
+    "vite-plugin-wasm": "^3.2.2"
   },
   "devDependencies": {
     "@types/react": "^18.2.15",

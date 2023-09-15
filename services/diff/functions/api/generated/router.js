@@ -72,11 +72,7 @@ const meta = [
     },
     {
         "method_kind": "get",
-        "params": [
-            {
-                "type": "context"
-            }
-        ],
+        "params": [],
         "pattern": "/hello",
         "return_validator": function(input) {
             let error_acc_0 = [];
