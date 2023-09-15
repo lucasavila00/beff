@@ -52,6 +52,7 @@ const readProjectJson = (projectPath: string): ProjectJson => {
 
 const getProjectPath = (projectPath: string | undefined): string => {
   if (projectPath == null) {
+    //TODO: beff.json
     return path.join(process.cwd(), "bff.json");
   }
   if (projectPath.startsWith("/")) {

@@ -345,7 +345,10 @@ impl<'a, R: FileManager> ExtractExportDefaultVisitor<'a, R> {
                     DiagnosticInfoMessage::MustBeComputedKeyWithMethodAndPatternMustBeString,
                 ),
             },
-            PropName::Str(Str { span, value, .. }) => {
+            PropName::Ident(Ident {
+                span, sym: value, ..
+            })
+            | PropName::Str(Str { span, value, .. }) => {
                 let locs = self.get_full_location(span)?;
                 let p = ApiPath::parse_raw_pattern_str(&value.to_string(), Some(locs.clone()));
                 match p {
@@ -356,12 +359,12 @@ impl<'a, R: FileManager> ExtractExportDefaultVisitor<'a, R> {
                     }
                 }
             }
-            PropName::Ident(Ident { span, .. })
-            | PropName::Num(Number { span, .. })
-            | PropName::BigInt(BigInt { span, .. }) => self.error(
-                span,
-                DiagnosticInfoMessage::PatternMustBeComputedKeyOrString,
-            ),
+
+            PropName::Num(Number { span, .. }) | PropName::BigInt(BigInt { span, .. }) => self
+                .error(
+                    span,
+                    DiagnosticInfoMessage::PatternMustBeComputedKeyOrString,
+                ),
         }
     }
 
