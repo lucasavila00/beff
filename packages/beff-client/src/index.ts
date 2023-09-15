@@ -26,11 +26,7 @@ type RemoveFirstOfTuple<T extends any[]> = T["length"] extends 0
 // };
 export type ClientFromRouter<R> = {
   [K in keyof R as K extends `${string}*${string}` ? never : K]: {
-    [M in keyof R[K] as M extends `use`
-      ? never
-      : M extends string
-      ? Lowercase<M>
-      : never]: (
+    [M in keyof R[K] as M extends `use` ? never : M]: (
       ...args: RemoveFirstOfTuple<NormalizeRouterItem<R[K][M]>[0]>
     ) => Promise<NormalizeRouterItem<R[K][M]>[1]>;
   };

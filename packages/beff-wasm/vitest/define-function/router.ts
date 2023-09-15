@@ -10,14 +10,14 @@ export default {
     },
   },
   [`/hello3`]: {
-    geT: function (): Promise<string> {
+    get: function (): Promise<string> {
       return Promise.resolve("Hello!");
     },
   },
   [`/hello4`]: {
-    GeT: function (): string {
+    get: function (): string {
       return "Hello!";
     },
   },
-  [`/hello5`]: { GET: (): string => "Hello!" },
+  [`/hello5`]: { get: (): string => "Hello!" },
 };

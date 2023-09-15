@@ -6,9 +6,18 @@ const meta = [
         "pattern": "/*"
     },
     {
-        "method_kind": "get",
-        "params": [],
-        "pattern": "/hello"
+        "method_kind": "post",
+        "params": [
+            {
+                "type": "context"
+            },
+            {
+                "name": "data",
+                "required": true,
+                "type": "body"
+            }
+        ],
+        "pattern": "/compare_schemas"
     }
 ];
 

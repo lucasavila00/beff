@@ -2,7 +2,6 @@ use std::path::PathBuf;
 
 use crate::{
     ast::{
-        js::Js,
         json::{Json, N},
         json_schema::JsonSchema,
     },
@@ -44,8 +43,42 @@ pub enum MdReport {
     Heading(String),
     Text(String),
     Json(Json),
-    Js(Js),
     TsTypes(Vec<(String, TsType)>),
+}
+
+pub fn print_ts_types(vs: Vec<(String, TsType)>) -> String {
+    let codes = vs
+        .iter()
+        .map(|(name, ty)| {
+            emit_module(
+                vec![ModuleItem::Stmt(Stmt::Decl(Decl::TsTypeAlias(Box::new(
+                    TsTypeAliasDecl {
+                        span: DUMMY_SP,
+                        declare: false,
+                        id: Ident {
+                            span: DUMMY_SP,
+                            sym: name.clone().into(),
+                            optional: false,
+                        },
+                        type_params: None,
+                        type_ann: Box::new(ty.clone()),
+                    },
+                ))))],
+                "",
+            )
+            .unwrap()
+        })
+        .collect::<Vec<String>>()
+        .join("\n");
+
+    let config = ConfigurationBuilder::new()
+        .line_width(80)
+        .quote_style(QuoteStyle::PreferDouble)
+        .build();
+    let result = format_text(&PathBuf::from("f.ts"), &codes, &config)
+        .expect("Could not parse...")
+        .unwrap();
+    result
 }
 
 impl MdReport {
@@ -57,10 +90,10 @@ impl MdReport {
                 let code = j.to_string();
                 format!("```json\n{}\n```", code)
             }
-            MdReport::Js(js) => {
-                let code = js.clone().to_string();
-                format!("```js\n{}```", code)
-            }
+            // MdReport::Js(js) => {
+            //     let code = js.clone().to_string();
+            //     format!("```js\n{}```", code)
+            // }
             MdReport::TsTypes(vs) => {
                 let codes = vs
                     .iter()

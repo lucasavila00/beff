@@ -23,6 +23,7 @@
     "@hono/firebase-auth": "^1.3.0",
     "@tanstack/react-query": "^4.33.0",
     "firebase-auth-cloudflare-workers": "^1.0.1",
+    "highlight.js": "^11.8.0",
     "hono": "^3.6.0",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",

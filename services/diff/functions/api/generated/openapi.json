@@ -38,7 +38,72 @@
         "description": "Unexpected Error"
       }
     },
-    "schemas": {}
+    "schemas": {
+      "MdResponse": {
+        "anyOf": [
+          {
+            "properties": {
+              "_tag": {
+                "const": "Heading"
+              },
+              "data": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "_tag",
+              "data"
+            ],
+            "type": "object"
+          },
+          {
+            "properties": {
+              "_tag": {
+                "const": "Json"
+              },
+              "data": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "_tag",
+              "data"
+            ],
+            "type": "object"
+          },
+          {
+            "properties": {
+              "_tag": {
+                "const": "Text"
+              },
+              "data": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "_tag",
+              "data"
+            ],
+            "type": "object"
+          },
+          {
+            "properties": {
+              "_tag": {
+                "const": "TsTypes"
+              },
+              "data": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "_tag",
+              "data"
+            ],
+            "type": "object"
+          }
+        ]
+      }
+    }
   },
   "info": {
     "title": "No title",
@@ -46,14 +111,41 @@
   },
   "openapi": "3.1.0",
   "paths": {
-    "/hello": {
-      "get": {
+    "/compare_schemas": {
+      "post": {
         "parameters": [],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "properties": {
+                  "from": {
+                    "type": "string"
+                  },
+                  "to": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "from",
+                  "to"
+                ],
+                "type": "object"
+              }
+            }
+          },
+          "required": true
+        },
         "responses": {
           "200": {
             "content": {
               "application/json": {
-                "schema": {}
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/MdResponse"
+                  },
+                  "type": "array"
+                }
               }
             },
             "description": "Successful Operation"

@@ -71,11 +71,73 @@ const meta = [
         }
     },
     {
-        "method_kind": "get",
-        "params": [],
-        "pattern": "/hello",
+        "method_kind": "post",
+        "params": [
+            {
+                "type": "context"
+            },
+            {
+                "name": "data",
+                "required": true,
+                "type": "body",
+                "validator": function(input) {
+                    let error_acc_0 = [];
+                    if (typeof input == "object" && input != null) {
+                        if (typeof input["from"] != "string") {
+                            error_acc_0.push({
+                                "error_kind": "NotTypeof",
+                                "expected_type": "string",
+                                "path": [
+                                    "requestBody",
+                                    "from"
+                                ],
+                                "received": input["from"]
+                            });
+                        }
+                        if (typeof input["to"] != "string") {
+                            error_acc_0.push({
+                                "error_kind": "NotTypeof",
+                                "expected_type": "string",
+                                "path": [
+                                    "requestBody",
+                                    "to"
+                                ],
+                                "received": input["to"]
+                            });
+                        }
+                    } else {
+                        error_acc_0.push({
+                            "error_kind": "NotAnObject",
+                            "path": [
+                                "requestBody"
+                            ],
+                            "received": input
+                        });
+                    }
+                    return error_acc_0;
+                }
+            }
+        ],
+        "pattern": "/compare_schemas",
         "return_validator": function(input) {
             let error_acc_0 = [];
+            if (Array.isArray(input)) {
+                for(let index = 0; index < input.length; index++){
+                    const array_item_1 = input[index];
+                    error_acc_0.push(...add_path_to_errors(validators.MdResponse(array_item_1), [
+                        "responseBody",
+                        "[" + index + "]"
+                    ]));
+                }
+            } else {
+                error_acc_0.push({
+                    "error_kind": "NotAnArray",
+                    "path": [
+                        "responseBody"
+                    ],
+                    "received": input
+                });
+            }
             return error_acc_0;
         }
     }
@@ -121,7 +183,72 @@ const schema =  {
         "description": "Unexpected Error"
       }
     },
-    "schemas": {}
+    "schemas": {
+      "MdResponse": {
+        "anyOf": [
+          {
+            "properties": {
+              "_tag": {
+                "const": "Heading"
+              },
+              "data": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "_tag",
+              "data"
+            ],
+            "type": "object"
+          },
+          {
+            "properties": {
+              "_tag": {
+                "const": "Json"
+              },
+              "data": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "_tag",
+              "data"
+            ],
+            "type": "object"
+          },
+          {
+            "properties": {
+              "_tag": {
+                "const": "Text"
+              },
+              "data": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "_tag",
+              "data"
+            ],
+            "type": "object"
+          },
+          {
+            "properties": {
+              "_tag": {
+                "const": "TsTypes"
+              },
+              "data": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "_tag",
+              "data"
+            ],
+            "type": "object"
+          }
+        ]
+      }
+    }
   },
   "info": {
     "title": "No title",
@@ -129,14 +256,41 @@ const schema =  {
   },
   "openapi": "3.1.0",
   "paths": {
-    "/hello": {
-      "get": {
+    "/compare_schemas": {
+      "post": {
         "parameters": [],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "properties": {
+                  "from": {
+                    "type": "string"
+                  },
+                  "to": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "from",
+                  "to"
+                ],
+                "type": "object"
+              }
+            }
+          },
+          "required": true
+        },
         "responses": {
           "200": {
             "content": {
               "application/json": {
-                "schema": {}
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/MdResponse"
+                  },
+                  "type": "array"
+                }
               }
             },
             "description": "Successful Operation"

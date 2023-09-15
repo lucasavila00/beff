@@ -627,18 +627,16 @@ impl<'a, R: FileManager> ExtractExportDefaultVisitor<'a, R> {
             PropName::Str(Str {
                 span, value: sym, ..
             })
-            | PropName::Ident(Ident { sym, span, .. }) => {
-                match sym.to_string().to_lowercase().as_str() {
-                    "get" => Ok(MethodKind::Get(span.clone())),
-                    "post" => Ok(MethodKind::Post(span.clone())),
-                    "put" => Ok(MethodKind::Put(span.clone())),
-                    "delete" => Ok(MethodKind::Delete(span.clone())),
-                    "patch" => Ok(MethodKind::Patch(span.clone())),
-                    "options" => Ok(MethodKind::Options(span.clone())),
-                    "use" => Ok(MethodKind::Use(span.clone())),
-                    _ => self.error(span, DiagnosticInfoMessage::NotAnHttpMethod),
-                }
-            }
+            | PropName::Ident(Ident { sym, span, .. }) => match sym.to_string().as_str() {
+                "get" => Ok(MethodKind::Get(span.clone())),
+                "post" => Ok(MethodKind::Post(span.clone())),
+                "put" => Ok(MethodKind::Put(span.clone())),
+                "delete" => Ok(MethodKind::Delete(span.clone())),
+                "patch" => Ok(MethodKind::Patch(span.clone())),
+                "options" => Ok(MethodKind::Options(span.clone())),
+                "use" => Ok(MethodKind::Use(span.clone())),
+                _ => self.error(span, DiagnosticInfoMessage::NotAnHttpMethod),
+            },
 
             _ => {
                 let span = get_prop_name_span(key);
