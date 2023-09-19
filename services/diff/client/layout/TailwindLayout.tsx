@@ -1,44 +1,38 @@
-import { Fragment, useState } from "react";
 import { Dialog, Transition } from "@headlessui/react";
+import { ArrowLeftIcon, ArrowsRightLeftIcon } from "@heroicons/react/20/solid";
+
 import {
+  BugAntIcon,
   Bars3Icon,
-  CalendarIcon,
-  ChartPieIcon,
-  DocumentDuplicateIcon,
-  FolderIcon,
   HomeIcon,
-  UsersIcon,
   XMarkIcon,
+  CogIcon,
 } from "@heroicons/react/24/outline";
-import { Outlet } from "react-router-dom";
+import { Fragment, useState } from "react";
+import { NavLink, Outlet } from "react-router-dom";
 import { twMerge } from "tailwind-merge";
+import { useCurrentSchema } from "../utils/current-schema";
 const navigation = [
-  { name: "Dashboard", href: "#", icon: HomeIcon, current: true },
-  { name: "Team", href: "#", icon: UsersIcon, current: false },
-  { name: "Projects", href: "#", icon: FolderIcon, current: false },
-  { name: "Calendar", href: "#", icon: CalendarIcon, current: false },
-  { name: "Documents", href: "#", icon: DocumentDuplicateIcon, current: false },
-  { name: "Reports", href: "#", icon: ChartPieIcon, current: false },
+  { name: "Versions", to: "/", icon: HomeIcon },
+  { name: "Branches", to: "/branches", icon: BugAntIcon },
+  { name: "Settings", to: "/settings", icon: CogIcon },
+  // { name: "Team", href: "#", icon: UsersIcon, current: false },
+  // { name: "Projects", href: "#", icon: FolderIcon, current: false },
+  // { name: "Calendar", href: "#", icon: CalendarIcon, current: false },
+  // { name: "Documents", href: "#", icon: DocumentDuplicateIcon, current: false },
+  // { name: "Reports", href: "#", icon: ChartPieIcon, current: false },
 ];
-const teams = [
-  { id: 1, name: "Heroicons", href: "#", initial: "H", current: false },
-  { id: 2, name: "Tailwind Labs", href: "#", initial: "T", current: false },
-  { id: 3, name: "Workcation", href: "#", initial: "W", current: false },
-];
+// const teams = [
+//   // { id: 1, name: "Heroicons", href: "#", initial: "H", current: false },
+//   // { id: 2, name: "Tailwind Labs", href: "#", initial: "T", current: false },
+//   // { id: 3, name: "Workcation", href: "#", initial: "W", current: false },
+// ];
 
-export default function Example() {
+export default function MainLayout() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
-
+  const currentSchema = useCurrentSchema();
   return (
     <>
-      {/*
-        This example requires updating your template:
-
-        ```
-        <html class="h-full bg-gray-50">
-        <body class="h-full">
-        ```
-      */}
       <div className="h-full">
         <Transition.Root show={sidebarOpen} as={Fragment}>
           <Dialog
@@ -105,33 +99,43 @@ export default function Example() {
                       <ul role="list" className="flex flex-1 flex-col gap-y-7">
                         <li>
                           <ul role="list" className="-mx-2 space-y-1">
-                            {navigation.map((item) => (
-                              <li key={item.name}>
-                                <a
-                                  href={item.href}
-                                  className={twMerge(
-                                    item.current
-                                      ? "bg-gray-50 text-indigo-600"
-                                      : "text-gray-700 hover:text-indigo-600 hover:bg-gray-50",
-                                    "group flex gap-x-3 rounded-md p-2 text-sm leading-6 font-semibold"
-                                  )}
-                                >
-                                  <item.icon
-                                    className={twMerge(
-                                      item.current
-                                        ? "text-indigo-600"
-                                        : "text-gray-400 group-hover:text-indigo-600",
-                                      "h-6 w-6 shrink-0"
-                                    )}
-                                    aria-hidden="true"
-                                  />
-                                  {item.name}
-                                </a>
-                              </li>
-                            ))}
+                            {navigation.map((item) => {
+                              return (
+                                <li key={item.name}>
+                                  <NavLink
+                                    to={item.to}
+                                    className={({ isActive }) =>
+                                      twMerge(
+                                        isActive
+                                          ? "bg-gray-50 text-indigo-600"
+                                          : "text-gray-700 hover:text-indigo-600 hover:bg-gray-50",
+                                        "group flex gap-x-3 rounded-md p-2 text-sm leading-6 font-semibold"
+                                      )
+                                    }
+                                  >
+                                    {({ isActive }) => {
+                                      return (
+                                        <>
+                                          <item.icon
+                                            className={twMerge(
+                                              isActive
+                                                ? "text-indigo-600"
+                                                : "text-gray-400 group-hover:text-indigo-600",
+                                              "h-6 w-6 shrink-0"
+                                            )}
+                                            aria-hidden="true"
+                                          />
+                                          {item.name}
+                                        </>
+                                      );
+                                    }}
+                                  </NavLink>
+                                </li>
+                              );
+                            })}
                           </ul>
                         </li>
-                        <li>
+                        {/* <li>
                           <div className="text-xs font-semibold leading-6 text-gray-400">
                             Your teams
                           </div>
@@ -162,7 +166,7 @@ export default function Example() {
                               </li>
                             ))}
                           </ul>
-                        </li>
+                        </li> */}
                       </ul>
                     </nav>
                   </div>
@@ -189,31 +193,39 @@ export default function Example() {
                   <ul role="list" className="-mx-2 space-y-1">
                     {navigation.map((item) => (
                       <li key={item.name}>
-                        <a
-                          href={item.href}
-                          className={twMerge(
-                            item.current
-                              ? "bg-gray-50 text-indigo-600"
-                              : "text-gray-700 hover:text-indigo-600 hover:bg-gray-50",
-                            "group flex gap-x-3 rounded-md p-2 text-sm leading-6 font-semibold"
-                          )}
+                        <NavLink
+                          to={item.to}
+                          className={({ isActive }) =>
+                            twMerge(
+                              isActive
+                                ? "bg-gray-50 text-indigo-600"
+                                : "text-gray-700 hover:text-indigo-600 hover:bg-gray-50",
+                              "group flex gap-x-3 rounded-md p-2 text-sm leading-6 font-semibold"
+                            )
+                          }
                         >
-                          <item.icon
-                            className={twMerge(
-                              item.current
-                                ? "text-indigo-600"
-                                : "text-gray-400 group-hover:text-indigo-600",
-                              "h-6 w-6 shrink-0"
-                            )}
-                            aria-hidden="true"
-                          />
-                          {item.name}
-                        </a>
+                          {({ isActive }) => {
+                            return (
+                              <>
+                                <item.icon
+                                  className={twMerge(
+                                    isActive
+                                      ? "text-indigo-600"
+                                      : "text-gray-400 group-hover:text-indigo-600",
+                                    "h-6 w-6 shrink-0"
+                                  )}
+                                  aria-hidden="true"
+                                />
+                                {item.name}
+                              </>
+                            );
+                          }}
+                        </NavLink>
                       </li>
                     ))}
                   </ul>
                 </li>
-                <li>
+                {/* <li>
                   <div className="text-xs font-semibold leading-6 text-gray-400">
                     Your teams
                   </div>
@@ -244,20 +256,15 @@ export default function Example() {
                       </li>
                     ))}
                   </ul>
-                </li>
+                </li> */}
                 <li className="-mx-6 mt-auto">
-                  <a
-                    href="#"
+                  <NavLink
+                    to="/schemas"
                     className="flex items-center gap-x-4 px-6 py-3 text-sm font-semibold leading-6 text-gray-900 hover:bg-gray-50"
                   >
-                    <img
-                      className="h-8 w-8 rounded-full bg-gray-50"
-                      src="https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?ixlib=rb-1.2.1&ixid=eyJhcHBfaWQiOjEyMDd9&auto=format&fit=facearea&facepad=2&w=256&h=256&q=80"
-                      alt=""
-                    />
-                    <span className="sr-only">Your profile</span>
-                    <span aria-hidden="true">Tom Cook</span>
-                  </a>
+                    <ArrowsRightLeftIcon className="h-6 w-6 bg-gray-50" />
+                    <span aria-hidden="true">{currentSchema.title}</span>
+                  </NavLink>
                 </li>
               </ul>
             </nav>

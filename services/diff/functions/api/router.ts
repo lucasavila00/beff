@@ -1,27 +1,26 @@
 import { Ctx } from "@beff/hono";
 import { cors } from "hono/cors";
 import { compare_schemas, MdResponse } from "./compare-schemas";
-// import {
-//   VerifyFirebaseAuthConfig,
-//   verifyFirebaseAuth,
-//   getFirebaseToken,
-// } from "@hono/firebase-auth";
-// import { WorkersKVStoreSingle } from "firebase-auth-cloudflare-workers";
-// const FIREBASE_AUTH_EMULATOR_HOST = "127.0.0.1:9099";
-// const PUBLIC_JWK_CACHE_KEY = "public-jwk-cache-key";
+import { ISO8061 } from "./parser";
+const todo = <T>(): T => {
+  throw new Error("TODO");
+};
 
-// const config: VerifyFirebaseAuthConfig = {
-//   // specify your firebase project ID.
-//   projectId: "your-project-id",
-//   // this is optional. but required in this mode.
-//   keyStoreInitializer: (c) =>
-//     WorkersKVStoreSingle.getOrInitialize(
-//       PUBLIC_JWK_CACHE_KEY,
-//       c.env.PUBLIC_JWK_CACHE_KV
-//     ),
+type SchemaVersion = {
+  version: string;
+  date: ISO8061;
+};
+type SchemaOverview = {
+  id: string;
+  title: string;
+  openApiSchemaUrl: string;
+  lastVersion: string;
+  lastVersionDateTime: ISO8061;
+};
 
-//   firebaseEmulatorHost: FIREBASE_AUTH_EMULATOR_HOST,
-// };
+type SchemaDetails = SchemaOverview & {
+  versions: SchemaVersion[];
+};
 
 export default {
   "/*": {
@@ -30,6 +29,38 @@ export default {
       // verifyFirebaseAuth(config)
     ],
   },
+  "/schema": {
+    get: async (): Promise<SchemaOverview[]> => {
+      return [
+        {
+          id: "a",
+          openApiSchemaUrl: "https://example.com/a/schema.json",
+          title: "schema a",
+          lastVersion: "1.0.0",
+          lastVersionDateTime: ISO8061.parse("2021-01-01T00:00:00Z"),
+        },
+        {
+          id: "b",
+          openApiSchemaUrl: "https://example.com/b/schema.json",
+          title: "b schema",
+          lastVersion: "1.0.0",
+          lastVersionDateTime: ISO8061.parse("2021-01-01T00:00:00Z"),
+        },
+      ];
+    },
+  },
+  "/schema/{id}": {
+    get: async (_c: Ctx, id: string): Promise<SchemaDetails> => {
+      return {
+        id,
+        openApiSchemaUrl: "https://example.com/a/schema.json",
+        title: "schema a",
+        lastVersion: "1.0.0",
+        lastVersionDateTime: ISO8061.parse("2021-01-01T00:00:00Z"),
+        versions: [],
+      };
+    },
+  },
   "/compare_schemas": {
     post: async (
       _c: Ctx,
@@ -37,7 +68,7 @@ export default {
         from: string;
         to: string;
       }
-    ): Promise<Array<MdResponse>> => {
+    ): Promise<MdResponse[]> => {
       const { from, to } = data;
       return compare_schemas(from, to);
     },

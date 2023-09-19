@@ -1,4 +1,5 @@
 {
     "router": "./functions/api/router.ts",
+    "parser": "./functions/api/parser.ts",
     "outputDir": "./functions/api/generated"
 }
