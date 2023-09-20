@@ -1,15 +1,17 @@
-import { ThemeChanger } from "@/components/theme-changer";
-import {
-  Flex,
-  Text,
-  Button,
-  ThemePanel,
-  Blockquote,
-  Box,
-  Card,
-  IconButton,
-} from "@radix-ui/themes";
-import { MagnifyingGlassIcon } from "@radix-ui/react-icons";
+import { Flex, Text, Button, Blockquote, Box } from "@radix-ui/themes";
+import { CaretDownIcon } from "@radix-ui/react-icons";
+import { UserButton } from "@/components/user-button";
+import { getServerSession } from "next-auth";
+import { authOptions } from "./api/auth/[...nextauth]/route";
+
+const ConnectedUserButton = async () => {
+  const session = await getServerSession(authOptions);
+
+  if (session == null) {
+    return <></>;
+  }
+  return <UserButton session={session} />;
+};
 const NavBar = () => {
   const height = "8";
   return (
@@ -28,16 +30,13 @@ const NavBar = () => {
           </Text>
         </Box>
         <Flex gap="4">
-          {/* <Button variant="ghost">Edit profile</Button>
-          <Button variant="ghost">Edit profile</Button>
-          <Button variant="ghost">Edit profile</Button>
-          <Button variant="ghost">Edit profile</Button>
-          <Button variant="ghost">Edit profile</Button> */}
+          <Button variant="ghost">
+            D1 Northwind
+            <CaretDownIcon width="16" height="16" />
+          </Button>
         </Flex>
         <Box pr="2">
-          <IconButton>
-            <MagnifyingGlassIcon width="18" height="18" />
-          </IconButton>
+          <ConnectedUserButton />
         </Box>
       </Flex>
       <Box height={height} />
@@ -49,15 +48,12 @@ export default function Home() {
   return (
     <>
       <NavBar />
-
       <Flex direction="column" gap="2">
         <Text>Hello from Radix Themes :)</Text>
-        <Button>Lets go</Button>
         <Blockquote>
           Perfect typography is certainly the most elusive of all arts.
           Sculpture in stone alone comes near it in obstinacy.
         </Blockquote>
-        <ThemeChanger />
       </Flex>
     </>
   );
