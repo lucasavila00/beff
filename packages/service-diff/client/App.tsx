@@ -5,7 +5,7 @@ import { Suspense, lazy } from "react";
 import Loader from "./common/Loader";
 import Schemas from "./pages/Schemas/Schemas";
 import SchemaDetails from "./pages/Schemas/Details";
-const MdReport = lazy(() => import("./MdReport"));
+// const MdReport = lazy(() => import("./MdReport"));
 
 const DefaultLayout = lazy(() => import("./layout/TailwindLayout"));
 
@@ -31,9 +31,9 @@ function App() {
 
       <Routes>
         <Route path="/auth" element={<SignIn />} />
-        <Route path="/schemas" element={<Schemas />} />
+        <Route index element={<Schemas />} />
         <Route element={<DefaultLayout />}>
-          <Route index element={<>index...</>} />
+          {/* <Route index element={<>index...</>} /> */}
           {routes.map(({ path, component: Component }) => (
             <Route
               path={path}

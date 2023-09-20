@@ -1,5 +1,5 @@
 import { Dialog, Transition } from "@headlessui/react";
-import { ArrowLeftIcon, ArrowsRightLeftIcon } from "@heroicons/react/20/solid";
+import { ArrowsRightLeftIcon } from "@heroicons/react/20/solid";
 
 import {
   BugAntIcon,

@@ -198,17 +198,17 @@ importers:
         specifier: ^0.34.3
         version: 0.34.3
 
-  services/diff:
+  packages/service-diff:
     dependencies:
       '@beff/cli':
         specifier: workspace:^
-        version: link:../../packages/beff-cli
+        version: link:../beff-cli
       '@beff/hono':
         specifier: workspace:^
-        version: link:../../packages/beff-hono
+        version: link:../beff-hono
       '@beff/react':
         specifier: workspace:^
-        version: link:../../packages/beff-react
+        version: link:../beff-react
       '@headlessui/react':
         specifier: ^1.7.17
         version: 1.7.17(react-dom@18.2.0)(react@18.2.0)
@@ -301,25 +301,7 @@ importers:
         specifier: ^3.8.0
         version: 3.8.0
 
-  tests/node-docs:
-    dependencies:
-      '@beff/cli':
-        specifier: workspace:^0.0.8
-        version: link:../../packages/beff-cli
-      '@beff/hono':
-        specifier: workspace:^0.0.8
-        version: link:../../packages/beff-hono
-      '@hono/node-server':
-        specifier: ^1.1.1
-        version: 1.1.1
-      esbuild:
-        specifier: ^0.19.2
-        version: 0.19.2
-      vitest:
-        specifier: ^0.34.3
-        version: 0.34.3
-
-  web/docs:
+  packages/web-docs:
     dependencies:
       '@docusaurus/core':
         specifier: 2.4.1
@@ -352,6 +334,24 @@ importers:
       typescript:
         specifier: ^4.7.4
         version: 4.9.5
+
+  tests/node-docs:
+    dependencies:
+      '@beff/cli':
+        specifier: workspace:^0.0.8
+        version: link:../../packages/beff-cli
+      '@beff/hono':
+        specifier: workspace:^0.0.8
+        version: link:../../packages/beff-hono
+      '@hono/node-server':
+        specifier: ^1.1.1
+        version: 1.1.1
+      esbuild:
+        specifier: ^0.19.2
+        version: 0.19.2
+      vitest:
+        specifier: ^0.34.3
+        version: 0.34.3
 
 packages:
 
@@ -884,6 +884,7 @@ packages:
 
   /@babel/plugin-proposal-object-rest-spread@7.12.1(@babel/core@7.12.9):
     resolution: {integrity: sha512-s6SowJIjzlhx8o7lsFx5zmY4At6CTtDvgNQDdPzkBQucle58A6b/TTeEBYtyDgmcXjUTM+vE8YOGHZzzbc/ioA==}
+    deprecated: This proposal has been merged to the ECMAScript standard and thus this plugin is no longer maintained. Please use @babel/plugin-transform-object-rest-spread instead.
     peerDependencies:
       '@babel/core': ^7.0.0-0
     dependencies:

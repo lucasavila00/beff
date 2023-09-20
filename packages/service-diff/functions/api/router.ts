@@ -2,9 +2,9 @@ import { Ctx } from "@beff/hono";
 import { cors } from "hono/cors";
 import { compare_schemas, MdResponse } from "./compare-schemas";
 import { ISO8061 } from "./parser";
-const todo = <T>(): T => {
-  throw new Error("TODO");
-};
+// const todo = <T>(): T => {
+//   throw new Error("TODO");
+// };
 
 type SchemaVersion = {
   version: string;
