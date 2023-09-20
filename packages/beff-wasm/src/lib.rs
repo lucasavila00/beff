@@ -3,7 +3,6 @@ extern crate lazy_static;
 
 mod module_resolver;
 mod utils;
-mod wasm_diag;
 
 use anyhow::anyhow;
 use anyhow::Result;
@@ -11,6 +10,7 @@ use beff_core::diag::Diagnostic;
 use beff_core::import_resolver::parse_and_bind;
 use beff_core::print::printer::ToWritableModules;
 use beff_core::print::printer::WritableModules;
+use beff_core::wasm_diag::WasmDiagnostic;
 use beff_core::BffFileName;
 use beff_core::EntryPoints;
 use beff_core::ExtractResult;
@@ -23,7 +23,6 @@ use std::{cell::RefCell, collections::HashMap};
 use swc_common::{Globals, GLOBALS};
 use wasm_bindgen::prelude::wasm_bindgen;
 use wasm_bindgen::JsValue;
-use wasm_diag::WasmDiagnostic;
 
 struct Bundler {
     pub files: HashMap<BffFileName, Rc<ParsedModule>>,

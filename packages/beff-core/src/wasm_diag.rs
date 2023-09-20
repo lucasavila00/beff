@@ -1,4 +1,4 @@
-use beff_core::diag::{Diagnostic, DiagnosticInformation, Location};
+use crate::diag::{Diagnostic, DiagnosticInformation, Location};
 use serde::{Deserialize, Serialize};
 
 #[derive(Serialize, Deserialize)]

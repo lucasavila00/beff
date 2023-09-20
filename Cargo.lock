@@ -71,7 +71,29 @@ dependencies = [
 ]
 
 [[package]]
-name = "beff-wasm"
+name = "beff-demo"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "beff-core",
+ "console_error_panic_hook",
+ "console_log",
+ "js-sys",
+ "lazy_static",
+ "log",
+ "serde",
+ "serde-wasm-bindgen",
+ "serde_json",
+ "swc_atoms",
+ "swc_common",
+ "swc_ecma_ast",
+ "swc_ecma_visit",
+ "wasm-bindgen",
+ "wasm-bindgen-test",
+]
+
+[[package]]
+name = "beff_wasm"
 version = "0.1.0"
 dependencies = [
  "anyhow",

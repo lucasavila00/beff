@@ -12,6 +12,8 @@ pub mod subtyping;
 pub mod swc_builder;
 pub mod type_reference;
 pub mod type_to_schema;
+pub mod wasm_diag;
+
 use api_extractor::extract_schema;
 use api_extractor::RouterExtractResult;
 use core::fmt;
