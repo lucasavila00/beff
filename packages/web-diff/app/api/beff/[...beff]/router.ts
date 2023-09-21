@@ -43,6 +43,8 @@ const appOctokit = new Octokit({
 type NewProjectResponse = {
   id: string;
 };
+type InstallationStatus = "installed" | "unknown";
+
 /* eslint-disable import/no-anonymous-default-export */
 export default {
   "/repos": {
@@ -59,18 +61,16 @@ export default {
       return getVisibleRepos(account.access_token);
     },
   },
-  "/isAppInstalled": {
-    get: async (_c: Ctx, fullName: string): Promise<boolean> => {
-      // TODO: check current user can access the full name
-
+  "/installation/status": {
+    get: async (_c: Ctx, fullName: string): Promise<InstallationStatus> => {
       try {
         const install = await appOctokit.rest.apps.getRepoInstallation({
           owner: fullName.split("/")[0],
           repo: fullName.split("/")[1],
         });
-        return install.status === 200;
+        return install.status === 200 ? "installed" : "unknown";
       } catch (e) {
-        return false;
+        return "unknown";
       }
     },
   },

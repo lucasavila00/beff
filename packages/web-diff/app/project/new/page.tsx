@@ -38,9 +38,10 @@ const AppInstalledMessage: FC<{
 const NewProject: FC<{
   searchParams: { fullName: string };
 }> = async ({ searchParams }) => {
-  const isAppInstalled = await beffServerClient["/isAppInstalled"].get(
+  const installationStatus = await beffServerClient["/installation/status"].get(
     searchParams.fullName
   );
+  const isAppInstalled = installationStatus === "installed";
 
   return (
     <BreadCrumbs
