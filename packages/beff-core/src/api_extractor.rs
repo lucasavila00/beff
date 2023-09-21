@@ -21,9 +21,9 @@ use swc_common::{BytePos, Span, DUMMY_SP};
 use swc_ecma_ast::{
     ArrayPat, ArrowExpr, AssignPat, AssignProp, BigInt, BindingIdent, ComputedPropName,
     ExportDefaultExpr, Expr, FnExpr, Function, GetterProp, Ident, Invalid, KeyValueProp, Lit,
-    MethodProp, Number, ObjectPat, Pat, Prop, PropName, PropOrSpread, RestPat, SetterProp,
-    SpreadElement, Str, Tpl, TsEntityName, TsKeywordType, TsKeywordTypeKind, TsType, TsTypeAnn,
-    TsTypeParamDecl, TsTypeParamInstantiation, TsTypeRef,
+    MethodProp, Number, ObjectLit, ObjectPat, Pat, Prop, PropName, PropOrSpread, RestPat,
+    SetterProp, SpreadElement, Str, Tpl, TsEntityName, TsKeywordType, TsKeywordTypeKind, TsType,
+    TsTypeAnn, TsTypeParamDecl, TsTypeParamInstantiation, TsTypeRef,
 };
 use swc_ecma_visit::Visit;
 
@@ -160,9 +160,11 @@ struct ExtractExportDefaultVisitor<'a, R: FileManager> {
     handlers: Vec<PathHandlerMap>,
     components: Vec<Validator>,
     public_definitions: HashSet<String>,
-    found_default_export: bool,
+    // found_default_export: bool,
     errors: Vec<Diagnostic>,
     info: open_api_ast::Info,
+
+    export_default: Option<Box<Expr>>,
     // built_decoders: Option<Vec<BuiltDecoder>>,
 }
 impl<'a, R: FileManager> ExtractExportDefaultVisitor<'a, R> {
@@ -172,7 +174,7 @@ impl<'a, R: FileManager> ExtractExportDefaultVisitor<'a, R> {
             current_file,
             handlers: vec![],
             components: vec![],
-            found_default_export: false,
+            export_default: None,
             errors: vec![],
             info: open_api_ast::Info {
                 title: None,
@@ -181,6 +183,22 @@ impl<'a, R: FileManager> ExtractExportDefaultVisitor<'a, R> {
             },
             // built_decoders: None,
             public_definitions: HashSet::new(),
+        }
+    }
+
+    fn check_export_default(&mut self, current_file: &BffFileName) {
+        match self.export_default.clone() {
+            Some(expr) => match expr.as_ref() {
+                Expr::Object(lit) => {
+                    self.parse_endpoints_object(lit);
+                }
+                _ => todo!(),
+            },
+            None => self.errors.push(
+                Location::unknown(&current_file)
+                    .to_info(DiagnosticInfoMessage::CouldNotFindDefaultExport)
+                    .to_diag(None),
+            ),
         }
     }
 }
@@ -807,6 +825,25 @@ impl<'a, R: FileManager> ExtractExportDefaultVisitor<'a, R> {
             }
         }
     }
+
+    fn parse_endpoints_object(&mut self, lit: &ObjectLit) {
+        for prop in &lit.props {
+            match prop {
+                PropOrSpread::Prop(prop) => {
+                    let method = self.endpoints_from_prop(prop);
+                    if let Ok(method) = method {
+                        self.handlers.push(method)
+                    };
+                }
+                PropOrSpread::Spread(SpreadElement { dot3_token, .. }) => {
+                    self.push_error(
+                        dot3_token,
+                        DiagnosticInfoMessage::RestOnRouterDefaultExportNotSupportedYet,
+                    );
+                }
+            }
+        }
+    }
 }
 
 impl<'a, R: FileManager> Visit for ExtractExportDefaultVisitor<'a, R> {
@@ -816,25 +853,7 @@ impl<'a, R: FileManager> Visit for ExtractExportDefaultVisitor<'a, R> {
             if let Some(comments) = comments {
                 self.parse_export_default_comments(comments);
             }
-            if let Expr::Object(lit) = &*n.expr {
-                self.found_default_export = true;
-                for prop in &lit.props {
-                    match prop {
-                        PropOrSpread::Prop(prop) => {
-                            let method = self.endpoints_from_prop(prop);
-                            if let Ok(method) = method {
-                                self.handlers.push(method)
-                            };
-                        }
-                        PropOrSpread::Spread(SpreadElement { dot3_token, .. }) => {
-                            self.push_error(
-                                dot3_token,
-                                DiagnosticInfoMessage::RestOnRouterDefaultExportNotSupportedYet,
-                            );
-                        }
-                    }
-                }
-            }
+            self.export_default = Some(n.expr.clone());
         }
     }
 }
@@ -1090,13 +1109,7 @@ type VisitExtractResult = (
 fn visit_extract<R: FileManager>(files: &mut R, current_file: BffFileName) -> VisitExtractResult {
     let mut visitor = ExtractExportDefaultVisitor::new(files, current_file.clone());
     let _ = visitor.visit_current_file();
-    if !visitor.found_default_export {
-        visitor.errors.push(
-            Location::unknown(&current_file)
-                .to_info(DiagnosticInfoMessage::CouldNotFindDefaultExport)
-                .to_diag(None),
-        )
-    }
+    visitor.check_export_default(&current_file);
 
     (
         visitor.handlers,
