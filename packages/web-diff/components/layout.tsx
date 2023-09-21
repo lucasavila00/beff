@@ -2,10 +2,8 @@ import { FC } from "react";
 import { Flex, Text, Box, Link, Heading, Button } from "@radix-ui/themes";
 import { UserButton } from "@/components/user-button";
 import { Session } from "next-auth";
-import { Octokit } from "octokit";
-import { GithubRepoData } from "./repos-dropdown";
 import NextLink from "next/link";
-import { MagnifyingGlassIcon, DiscIcon } from "@radix-ui/react-icons";
+import { DiscIcon } from "@radix-ui/react-icons";
 import { twMerge } from "tailwind-merge";
 const ConnectedUserButton: FC<{ session: Session | null }> = async ({
   session,
@@ -16,36 +14,6 @@ const ConnectedUserButton: FC<{ session: Session | null }> = async ({
   const name = session.user?.name ?? "";
   const image = session.user?.image ?? "";
   return <UserButton name={name} image={image} />;
-};
-
-export const getVisibleRepos = async (
-  session: Session | null
-): Promise<GithubRepoData[]> => {
-  if ((session as any)?.accessToken == null) {
-    return [];
-  }
-  const token = (session as any)?.accessToken;
-
-  const octokit = new Octokit({
-    auth: token,
-  });
-
-  // list installations
-
-  const visibleRepos = await octokit.rest.repos.listForAuthenticatedUser({});
-
-  //   console.log(visibleRepos.data[0]);
-
-  const reposData = visibleRepos.data.map((it) => ({
-    name: it.name,
-    id: it.id,
-    node_id: it.node_id,
-    full_name: it.full_name,
-    owner_login: it.owner.login,
-    private: it.private,
-  }));
-
-  return reposData;
 };
 
 const SideBarLink: FC<{
@@ -88,7 +56,7 @@ export const Layout: FC<{
           <Flex direction="column" align="start">
             <Flex className="h-20" px="6" align="center" width="100%">
               <NextLink href="/">
-                <Heading color="grass">Beff Diff</Heading>
+                <Heading>Beff Diff</Heading>
               </NextLink>
             </Flex>
             <Flex px="6" direction="column" gap="1" width="100%">

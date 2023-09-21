@@ -5,6 +5,7 @@ import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import { Theme } from "@radix-ui/themes";
 import { Providers } from "./providers";
+import { ReactQueryProvider } from "@/components/query-client-provider";
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -34,7 +35,7 @@ export default function RootLayout({
             grayColor="gray"
             radius="full"
           >
-            {children}
+            <ReactQueryProvider>{children}</ReactQueryProvider>
           </Theme>
         </Providers>
       </body>
