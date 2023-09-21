@@ -5,6 +5,7 @@ import { authOptions } from "./api/auth/[...nextauth]/route";
 import Image from "next/image";
 import wfy from "@/components/undraw/waiting_for_you.svg";
 import { NewProjectButton } from "@/components/new-project";
+import { BreadCrumbs } from "@/components/breadcrumbs";
 
 // const RepositoriesByOwner: FC<{
 //   ownerName: string;
@@ -100,26 +101,13 @@ const CreateFirstProject = () => {
   );
 };
 export default async function Home() {
-  const session = await getServerSession(authOptions);
-  // console.log(session);
-  // const repos = await getVisibleRepos(session);
-
-  // const groupedByOwner = repos.reduce((acc, it) => {
-  //   const owner = it.owner_login;
-  //   if (acc[owner] == null) {
-  //     acc[owner] = [];
-  //   }
-  //   acc[owner].push(it);
-  //   return acc;
-  // }, {} as Record<string, typeof repos>);
-
   return (
     <>
-      <Layout session={session}>
+      <BreadCrumbs crumbs={[]}>
         <Box className="mx-auto max-w-4xl" pt="8">
           <CreateFirstProject />
         </Box>
-      </Layout>
+      </BreadCrumbs>
     </>
   );
 }

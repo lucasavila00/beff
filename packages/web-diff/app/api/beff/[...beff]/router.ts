@@ -17,11 +17,7 @@ const getVisibleRepos = async (token: string): Promise<GithubRepoData[]> => {
     auth: token,
   });
 
-  // list installations
-
   const visibleRepos = await octokit.rest.repos.listForAuthenticatedUser({});
-
-  //   console.log(visibleRepos.data[0]);
 
   const reposData = visibleRepos.data.map((it) => ({
     name: it.name,
@@ -40,12 +36,12 @@ export default {
   "/repos": {
     get: async (_c: Ctx): Promise<GithubRepoData[]> => {
       const session = await getServerSession(authOptions);
-      const account = await prisma.account.findFirstOrThrow({
+      const account = await prisma.account.findFirst({
         where: {
           userId: (session as any)?.user_id,
         },
       });
-      if (account.access_token == null) {
+      if (account?.access_token == null) {
         return [];
       }
       return getVisibleRepos(account.access_token);

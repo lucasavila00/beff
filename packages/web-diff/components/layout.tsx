@@ -5,6 +5,7 @@ import { Session } from "next-auth";
 import NextLink from "next/link";
 import { DiscIcon } from "@radix-ui/react-icons";
 import { twMerge } from "tailwind-merge";
+import { BreadCrumbs } from "./breadcrumbs";
 const ConnectedUserButton: FC<{ session: Session | null }> = async ({
   session,
 }) => {
@@ -79,20 +80,7 @@ export const Layout: FC<{
             minWidth: 600,
           }}
         >
-          <Flex
-            className="border-b dark:bg-gray-2 border-gray-5 h-20"
-            align="center"
-            pl="6"
-          >
-            <Text weight="bold">
-              <Link asChild color="gray">
-                <NextLink href="/">Home</NextLink>
-              </Link>
-            </Text>
-          </Flex>
-          <Box grow="1" className="dark:bg-gray-2">
-            {children}
-          </Box>
+          {children}
         </Flex>
       </Flex>
     </>
