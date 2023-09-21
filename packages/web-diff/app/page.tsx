@@ -1,51 +1,8 @@
-import { Layout } from "@/components/layout";
 import { Box, Card, Flex, Heading, Table } from "@radix-ui/themes";
-import { getServerSession } from "next-auth";
-import { authOptions } from "./api/auth/[...nextauth]/route";
 import Image from "next/image";
 import wfy from "@/components/undraw/waiting_for_you.svg";
 import { NewProjectButton } from "@/components/new-project";
 import { BreadCrumbs } from "@/components/breadcrumbs";
-
-// const RepositoriesByOwner: FC<{
-//   ownerName: string;
-//   repositories: GithubRepoData[];
-// }> = ({ ownerName, repositories }) => {
-//   return (
-//     <>
-//       <Box mb="6">
-//         <Heading>{ownerName}</Heading>
-//       </Box>
-//       <Table.Root>
-//         <Table.Header>
-//           <Table.Row>
-//             <Table.ColumnHeaderCell>Repository</Table.ColumnHeaderCell>
-//             <Table.ColumnHeaderCell>Private</Table.ColumnHeaderCell>
-//           </Table.Row>
-//         </Table.Header>
-
-//         <Table.Body>
-//           {repositories.map((it) => (
-//             <Table.Row key={it.node_id}>
-//               <Table.RowHeaderCell>
-//                 <RadixLink asChild>
-//                   <Link href={`/repo/${it.node_id}`}>{it.name}</Link>
-//                 </RadixLink>
-//               </Table.RowHeaderCell>
-//               <Table.Cell>
-//                 <Avatar
-//                   color={it.private ? "red" : "gray"}
-//                   fallback={it.private ? "Y" : "N"}
-//                   size="1"
-//                 />
-//               </Table.Cell>
-//             </Table.Row>
-//           ))}
-//         </Table.Body>
-//       </Table.Root>
-//     </>
-//   );
-// };
 
 const ProjectTable = () => {
   return (

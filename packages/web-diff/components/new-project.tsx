@@ -31,7 +31,7 @@ const ProjectList: FC<{
   }
 
   const fuse = new Fuse(query.data ?? [], {
-    keys: ["full_name"],
+    keys: ["fullName"],
   });
 
   const filtered =
@@ -40,14 +40,12 @@ const ProjectList: FC<{
   return (
     <Flex direction="column" p="2">
       {filtered.map((it) => (
-        <Box key={it.node_id}>
+        <Box key={it.nodeId}>
           <Link size="1" asChild>
             <NextLink
-              href={`/project/new?full_name=${encodeURIComponent(
-                it.full_name
-              )}`}
+              href={`/project/new?fullName=${encodeURIComponent(it.fullName)}`}
             >
-              {it.full_name}
+              {it.fullName}
             </NextLink>
           </Link>
         </Box>

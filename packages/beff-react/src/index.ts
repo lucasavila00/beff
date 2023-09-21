@@ -83,8 +83,8 @@ export const buildReactQueryClient = <T>(
         useMutation: (options: any) =>
           useMutation({
             ...(options ?? {}),
-            queryFn: async () => await fetcher(...params),
-            queryKey: [meta.pattern, meta.method_kind, ...params],
+            mutationFn: async () => await fetcher(...params),
+            mutationKey: [meta.pattern, meta.method_kind, ...params],
           }),
       });
     }

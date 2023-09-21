@@ -1,5 +1,5 @@
 import router from "./router";
-import { buildHonoApp } from "@beff/hono";
+import { buildHonoApp, buildHonoTestClient } from "@beff/hono";
 import generated from "./generated/router";
 import { Hono } from "hono";
 
@@ -18,6 +18,11 @@ const app = new Hono().basePath("/api/beff");
 app.route("/", routerApp);
 
 const handler = (request: Request) => app.fetch(request);
+
+export const beffServerClient = buildHonoTestClient<typeof router>({
+  generated,
+  app: routerApp,
+});
 
 export {
   handler as GET,
