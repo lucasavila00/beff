@@ -19,10 +19,23 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en" suppressHydrationWarning>
-      <body className={inter.className}>
+    <html
+      lang="en"
+      suppressHydrationWarning
+      style={{
+        height: "100%",
+      }}
+    >
+      <body className={[inter.className, "h-full"].join(" ")}>
         <Providers>
-          <Theme>{children}</Theme>
+          <Theme
+            className="h-full"
+            accentColor="grass"
+            grayColor="gray"
+            radius="full"
+          >
+            {children}
+          </Theme>
         </Providers>
       </body>
     </html>

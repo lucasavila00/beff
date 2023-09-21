@@ -7,11 +7,7 @@ export default async function Repo({ params }: { params: { id: string } }) {
   //   const params = useParams();
   //   const title = searchParams.get("title");
   return (
-    <Layout
-      session={session}
-      repos={[]}
-      currentRepoName={String("router.query.title")}
-    >
+    <Layout session={session}>
       <pre>{JSON.stringify(params, null, 2)}</pre>
     </Layout>
   );

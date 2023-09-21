@@ -1,7 +1,12 @@
 import NextAuth, { NextAuthOptions } from "next-auth";
 import GithubProvider from "next-auth/providers/github";
+import { PrismaAdapter } from "@auth/prisma-adapter";
+import { PrismaClient } from "@prisma/client";
+
+export const prisma = new PrismaClient();
 
 export const authOptions: NextAuthOptions = {
+  adapter: PrismaAdapter(prisma),
   providers: [
     GithubProvider({
       clientId: process.env.GITHUB_ID!,
@@ -15,25 +20,20 @@ export const authOptions: NextAuthOptions = {
     }),
   ],
   callbacks: {
-    async jwt({ token, account }) {
-      // Persist the OAuth access_token to the token right after signin
-      if (account) {
-        // console.log({ account });
-        token.providerData = {
-          provider: account.provider,
-          accessToken: account.access_token,
-          providerAccountId: account.providerAccountId,
-          token_type: account.token_type,
-          scope: account.scope,
-        };
-      }
-      return token;
-    },
-    async session({ session, token, user }) {
+    // async jwt({ token, account, user }) {
+    //   // Persist the OAuth access_token to the token right after signin
+    //   console.log({ user, account, token });
+    //   token.user_id = user?.id;
+    //   return token;
+    // },
+    async session({ session, token }) {
       // Send properties to the client, like an access_token from a provider.
-      (session as any).accessToken = (token as any).providerData.accessToken;
+      (session as any).user_id = token.sub;
       return session;
     },
+  },
+  session: {
+    strategy: "jwt",
   },
 };
 

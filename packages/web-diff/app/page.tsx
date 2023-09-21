@@ -4,6 +4,8 @@ import {
   Blockquote,
   Box,
   Button,
+  Card,
+  Flex,
   Heading,
   Link as RadixLink,
   Table,
@@ -14,6 +16,9 @@ import { authOptions } from "./api/auth/[...nextauth]/route";
 import { FC } from "react";
 import { GithubRepoData } from "@/components/repos-dropdown";
 import Link from "next/link";
+import Image from "next/image";
+import wfy from "@/components/undraw/waiting_for_you.svg";
+import { NewProjectButton } from "@/components/new-project";
 
 const RepositoriesByOwner: FC<{
   ownerName: string;
@@ -55,34 +60,79 @@ const RepositoriesByOwner: FC<{
   );
 };
 
+const ProjectTable = () => {
+  return (
+    <>
+      <Flex justify="between">
+        <Heading color="gray" mb="6">
+          Projects
+        </Heading>
+        <NewProjectButton />
+      </Flex>
+      <Table.Root variant="surface">
+        <Table.Header>
+          <Table.Row>
+            <Table.ColumnHeaderCell>Full name</Table.ColumnHeaderCell>
+            <Table.ColumnHeaderCell>Email</Table.ColumnHeaderCell>
+            <Table.ColumnHeaderCell>Group</Table.ColumnHeaderCell>
+          </Table.Row>
+        </Table.Header>
+
+        <Table.Body>
+          <Table.Row>
+            <Table.RowHeaderCell>Danilo Sousa</Table.RowHeaderCell>
+            <Table.Cell>danilo@example.com</Table.Cell>
+            <Table.Cell>Developer</Table.Cell>
+          </Table.Row>
+
+          <Table.Row>
+            <Table.RowHeaderCell>Zahra Ambessa</Table.RowHeaderCell>
+            <Table.Cell>zahra@example.com</Table.Cell>
+            <Table.Cell>Admin</Table.Cell>
+          </Table.Row>
+
+          <Table.Row>
+            <Table.RowHeaderCell>Jasper Eriksson</Table.RowHeaderCell>
+            <Table.Cell>jasper@example.com</Table.Cell>
+            <Table.Cell>Developer</Table.Cell>
+          </Table.Row>
+        </Table.Body>
+      </Table.Root>
+    </>
+  );
+};
+
+const CreateFirstProject = () => {
+  return (
+    <Card className="!bg-gray-1 dark:!bg-gray-3">
+      <Flex p="4" align="center" direction="column">
+        <Image className="w-56 h-56 mb-4" src={wfy} alt="" />
+        <Heading mb="4">Create your first project</Heading>
+        <NewProjectButton />
+      </Flex>
+    </Card>
+  );
+};
 export default async function Home() {
   const session = await getServerSession(authOptions);
-  const repos = await getVisibleRepos(session);
+  // console.log(session);
+  // const repos = await getVisibleRepos(session);
 
-  const groupedByOwner = repos.reduce((acc, it) => {
-    const owner = it.owner_login;
-    if (acc[owner] == null) {
-      acc[owner] = [];
-    }
-    acc[owner].push(it);
-    return acc;
-  }, {} as Record<string, typeof repos>);
+  // const groupedByOwner = repos.reduce((acc, it) => {
+  //   const owner = it.owner_login;
+  //   if (acc[owner] == null) {
+  //     acc[owner] = [];
+  //   }
+  //   acc[owner].push(it);
+  //   return acc;
+  // }, {} as Record<string, typeof repos>);
 
   return (
     <>
-      <Layout currentRepoName={null} session={session} repos={repos}>
-        <>
-          <Box className="mx-auto max-w-4xl">
-            {Object.entries(groupedByOwner).map(([ownerName, repositories]) => (
-              <Box key={ownerName} className="mb-24">
-                <RepositoriesByOwner
-                  ownerName={ownerName}
-                  repositories={repositories}
-                />
-              </Box>
-            ))}
-          </Box>
-        </>
+      <Layout session={session}>
+        <Box className="mx-auto max-w-4xl" pt="8">
+          <CreateFirstProject />
+        </Box>
       </Layout>
     </>
   );

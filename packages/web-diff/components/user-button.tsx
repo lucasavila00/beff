@@ -1,6 +1,13 @@
 "use client";
 import { FC, useEffect, useState } from "react";
-import { Text, Avatar, DropdownMenu, IconButton } from "@radix-ui/themes";
+import {
+  Text,
+  Avatar,
+  DropdownMenu,
+  IconButton,
+  Button,
+  Inset,
+} from "@radix-ui/themes";
 import { useRouter } from "next/navigation";
 import { useTheme } from "next-themes";
 import { SettingsDialog } from "./settings-dialog";
@@ -40,12 +47,21 @@ export const UserButton: FC<{ image: string; name: string }> = async ({
   return (
     <DropdownMenu.Root>
       <DropdownMenu.Trigger>
-        <IconButton radius="full">
-          <Avatar size="2" src={image} fallback={name} />
-        </IconButton>
+        <Button variant="surface" size="3">
+          <Avatar ml="-2" mr="-1" size="2" src={image} fallback={name} />
+          <Text size="1" className="truncate">
+            {name}
+          </Text>
+        </Button>
       </DropdownMenu.Trigger>
       <DropdownMenu.Content>
-        <DropdownMenu.Label>{name}</DropdownMenu.Label>
+        <DropdownMenu.Sub>
+          <DropdownMenu.SubTrigger>Theme</DropdownMenu.SubTrigger>
+          <DropdownMenu.SubContent>
+            <ThemeChanger />
+          </DropdownMenu.SubContent>
+        </DropdownMenu.Sub>
+
         <SettingsDialog>
           <DropdownMenu.Item
             onSelect={(ev) => {
@@ -55,17 +71,10 @@ export const UserButton: FC<{ image: string; name: string }> = async ({
             Settings
           </DropdownMenu.Item>
         </SettingsDialog>
+        <DropdownMenu.Separator />
         <DropdownMenu.Item onSelect={() => router.push("/api/auth/signout")}>
           Logout
         </DropdownMenu.Item>
-
-        <DropdownMenu.Separator />
-        <DropdownMenu.Sub>
-          <DropdownMenu.SubTrigger>Color</DropdownMenu.SubTrigger>
-          <DropdownMenu.SubContent>
-            <ThemeChanger />
-          </DropdownMenu.SubContent>
-        </DropdownMenu.Sub>
       </DropdownMenu.Content>
     </DropdownMenu.Root>
   );
