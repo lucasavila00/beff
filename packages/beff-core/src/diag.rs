@@ -3,7 +3,7 @@ use core::fmt;
 use std::{rc::Rc, sync::Arc};
 use swc_common::{BytePos, Loc, SourceMap, Span};
 
-use crate::{BffFileName, ParsedModule};
+use crate::{open_api_ast::HTTPMethod, BffFileName, ParsedModule};
 
 #[derive(Debug, Clone)]
 pub enum DiagnosticInfoMessage {
@@ -55,7 +55,7 @@ pub enum DiagnosticInfoMessage {
     CannotResolveTypeReferenceOnConverting(String),
     CannotResolveTypeReferenceOnExtracting(String),
     HandlerCannotHaveTypeParameters,
-    UnmatchedPathParameter(String),
+    UnmatchedPathParameter(String, HTTPMethod),
     CouldNotResolveIdentifierOnPathParamTuple,
     TsInterfaceExtendsNotSupported,
     TsTypeParametersNotSupportedOnTuple,
@@ -67,7 +67,6 @@ pub enum DiagnosticInfoMessage {
     ComplexPathParameterNotSupported,
     PatternMustBeComputedKeyOrString,
     MustBeComputedKeyWithMethodAndPatternMustBeString,
-    RestOnRouterDefaultExportNotSupportedYet,
     HandlerCannotBeGenerator,
     ParameterIdentMustHaveTypeAnnotation,
     InferringTwoParamsAsRequestBody,
@@ -81,6 +80,7 @@ pub enum DiagnosticInfoMessage {
     ThisRefersToSomethingThatCannotBeSerialized(String),
     TypeParameterApplicationNotSupported,
     CannotResolveLocalType(String),
+    CannotResolveLocalExpr(String),
 }
 
 #[allow(clippy::inherent_to_string)]
@@ -89,6 +89,9 @@ impl DiagnosticInfoMessage {
         match self {
             DiagnosticInfoMessage::CannotResolveLocalType(name) => {
                 format!("Cannot find type '{name}'")
+            }
+            DiagnosticInfoMessage::CannotResolveLocalExpr(name) => {
+                format!("Cannot find name '{name}'")
             }
             DiagnosticInfoMessage::KeywordNonSerializableToJsonSchema
             | DiagnosticInfoMessage::PropertyNonSerializableToJsonSchema
@@ -127,8 +130,9 @@ impl DiagnosticInfoMessage {
             DiagnosticInfoMessage::JsDocsParameterDescriptionHasTags => {
                 "Jsdoc parameter description cannot have tags".to_string()
             }
-            DiagnosticInfoMessage::UnmatchedPathParameter(param) => {
-                format!("Path parameter `{param}` is not being used in the function parameters")
+            DiagnosticInfoMessage::UnmatchedPathParameter(param, method) => {
+                let method = method.to_string().to_uppercase();
+                format!("Path parameter `{param}` is not being used in the function parameters of method `{method}`")
             }
             DiagnosticInfoMessage::CannotParseJsDocExportDefault => {
                 "Failed to parse Js Docs of the default export".to_string()
@@ -189,9 +193,6 @@ impl DiagnosticInfoMessage {
             }
             DiagnosticInfoMessage::MustBeComputedKeyWithMethodAndPatternMustBeString => {
                 "Must be computed key with method and pattern must be string".to_string()
-            }
-            DiagnosticInfoMessage::RestOnRouterDefaultExportNotSupportedYet => {
-                "Rest on router default export is not supported".to_string()
             }
             DiagnosticInfoMessage::HandlerCannotBeGenerator => {
                 "Handler cannot be a generator".to_string()
@@ -331,9 +332,6 @@ impl FullLocation {
             loc: Location::Full(self),
         }
     }
-    pub fn located<T>(self, value: T) -> Located<T> {
-        Located { value, loc: self }
-    }
 }
 
 #[derive(Clone, Debug)]
@@ -345,12 +343,6 @@ pub struct UnknownLocation {
 pub enum Location {
     Full(FullLocation),
     Unknown(UnknownLocation),
-}
-
-#[derive(Debug, Clone)]
-pub struct Located<T> {
-    pub value: T,
-    pub loc: FullLocation,
 }
 
 impl Location {

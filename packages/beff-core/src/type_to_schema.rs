@@ -1,18 +1,17 @@
 use crate::ast::json::Json;
 use crate::ast::json_schema::{JsonSchema, Optionality};
 use crate::diag::{
-    Diagnostic, DiagnosticInfoMessage, DiagnosticInformation, DiagnosticParentMessage,
-    FullLocation, Located, Location,
+    Diagnostic, DiagnosticInfoMessage, DiagnosticInformation, DiagnosticParentMessage, Location,
 };
 use crate::open_api_ast::Validator;
 use crate::type_reference::{ResolvedLocalType, TypeResolver};
-use crate::{BffFileName, FileManager, ImportReference, TypeExport};
+use crate::{BffFileName, FileManager, ImportReference, TypescriptExport};
 use std::collections::HashMap;
 use std::rc::Rc;
 use swc_atoms::JsWord;
 use swc_common::Span;
 use swc_ecma_ast::{
-    BigInt, Expr, Ident, Str, TsArrayType, TsCallSignatureDecl, TsConditionalType,
+    BigInt, Expr, Ident, Lit, Str, TsArrayType, TsCallSignatureDecl, TsConditionalType,
     TsConstructSignatureDecl, TsConstructorType, TsEntityName, TsFnOrConstructorType, TsFnType,
     TsGetterSignature, TsImportType, TsIndexSignature, TsIndexedAccessType, TsInferType,
     TsInterfaceDecl, TsIntersectionType, TsKeywordType, TsKeywordTypeKind, TsLit, TsLitType,
@@ -80,6 +79,7 @@ impl<'a, R: FileManager> TypeToSchema<'a, R> {
             TsTypeElement::TsPropertySignature(prop) => {
                 let key = match &*prop.key {
                     Expr::Ident(ident) => ident.sym.to_string(),
+                    Expr::Lit(Lit::Str(st)) => st.value.to_string(),
                     _ => {
                         return self.error(&prop.span, DiagnosticInfoMessage::PropKeyShouldBeIdent)
                     }
@@ -133,19 +133,19 @@ impl<'a, R: FileManager> TypeToSchema<'a, R> {
 
     fn convert_type_export(
         &mut self,
-        exported: &TypeExport,
+        exported: &TypescriptExport,
         from_file: &BffFileName,
         span: &Span,
     ) -> Res<JsonSchema> {
         let store_current_file = self.current_file.clone();
         self.current_file = from_file.clone();
         let ty = match exported {
-            TypeExport::TsType { ty: alias, .. } => self.convert_ts_type(alias)?,
-            TypeExport::TsInterfaceDecl(int) => self.convert_ts_interface_decl(int)?,
-            TypeExport::StarOfOtherFile(_) => {
+            TypescriptExport::TsType { ty: alias, .. } => self.convert_ts_type(alias)?,
+            TypescriptExport::TsInterfaceDecl(int) => self.convert_ts_interface_decl(int)?,
+            TypescriptExport::StarOfOtherFile(_) => {
                 return self.error(span, DiagnosticInfoMessage::CannotUseStarAsType)
             }
-            TypeExport::SomethingOfOtherFile(word, from_file) => {
+            TypescriptExport::SomethingOfOtherFile(word, from_file) => {
                 let exported = self
                     .files
                     .get_or_fetch_file(from_file)
@@ -164,6 +164,7 @@ impl<'a, R: FileManager> TypeToSchema<'a, R> {
                     }
                 }
             }
+            TypescriptExport::ValueExpr { .. } => todo!(),
         };
         self.current_file = store_current_file;
         Ok(ty)
@@ -182,7 +183,7 @@ impl<'a, R: FileManager> TypeToSchema<'a, R> {
         }
     }
 
-    fn insert_definition(&mut self, name: String, schema: Located<JsonSchema>) -> Res<JsonSchema> {
+    fn insert_definition(&mut self, name: String, schema: JsonSchema) -> Res<JsonSchema> {
         self.components.insert(
             name.clone(),
             Some(Validator {
@@ -217,16 +218,6 @@ impl<'a, R: FileManager> TypeToSchema<'a, R> {
         )
     }
 
-    fn get_full_location(&mut self, span: &Span) -> Res<FullLocation> {
-        let file = self.files.get_existing_file(&self.current_file);
-        match Location::build(file, span, &self.current_file).result_full() {
-            Ok(ok) => Ok(ok),
-            Err(_) => Err(self
-                .create_error(span, DiagnosticInfoMessage::CannotGetFullLocation)
-                .to_diag(None)
-                .into()),
-        }
-    }
     fn get_type_ref(
         &mut self,
         i: &Ident,
@@ -252,8 +243,7 @@ impl<'a, R: FileManager> TypeToSchema<'a, R> {
         self.components.insert(i.sym.to_string(), None);
 
         if type_params.is_some() {
-            let loc = self.get_full_location(&i.span)?;
-            self.insert_definition(i.sym.to_string(), JsonSchema::Error.located(loc))?;
+            self.insert_definition(i.sym.to_string(), JsonSchema::Error)?;
             return self.cannot_serialize_error(
                 &i.span,
                 DiagnosticInfoMessage::TypeParameterApplicationNotSupported,
@@ -262,13 +252,9 @@ impl<'a, R: FileManager> TypeToSchema<'a, R> {
 
         let ty = self.get_type_ref_of_user_identifier(i);
         match ty {
-            Ok(ty) => {
-                let loc = self.get_full_location(&i.span)?;
-                self.insert_definition(i.sym.to_string(), ty.located(loc))
-            }
+            Ok(ty) => self.insert_definition(i.sym.to_string(), ty),
             Err(e) => {
-                let loc = self.get_full_location(&i.span)?;
-                self.insert_definition(i.sym.to_string(), JsonSchema::Error.located(loc))?;
+                self.insert_definition(i.sym.to_string(), JsonSchema::Error)?;
                 Err(e)
             }
         }
@@ -338,7 +324,7 @@ impl<'a, R: FileManager> TypeToSchema<'a, R> {
         from_file: &Rc<ImportReference>,
         right: &JsWord,
         span: &Span,
-    ) -> Res<(Rc<TypeExport>, Rc<ImportReference>, String)> {
+    ) -> Res<(Rc<TypescriptExport>, Rc<ImportReference>, String)> {
         let exported = self
             .files
             .get_or_fetch_file(from_file.file_name())
@@ -346,10 +332,11 @@ impl<'a, R: FileManager> TypeToSchema<'a, R> {
         match exported {
             Some(exported) => {
                 let name = match &*exported {
-                    TypeExport::TsType { name, .. } => name.to_string(),
-                    TypeExport::TsInterfaceDecl(it) => it.id.sym.to_string(),
-                    TypeExport::StarOfOtherFile(_) => right.to_string(),
-                    TypeExport::SomethingOfOtherFile(that, _) => that.to_string(),
+                    TypescriptExport::TsType { name, .. } => name.to_string(),
+                    TypescriptExport::TsInterfaceDecl(it) => it.id.sym.to_string(),
+                    TypescriptExport::StarOfOtherFile(_) => right.to_string(),
+                    TypescriptExport::SomethingOfOtherFile(that, _) => that.to_string(),
+                    TypescriptExport::ValueExpr { .. } => todo!(),
                 };
                 Ok((exported, from_file.clone(), name))
             }
@@ -362,22 +349,22 @@ impl<'a, R: FileManager> TypeToSchema<'a, R> {
 
     fn recursively_get_qualified_type_export(
         &mut self,
-        exported: Rc<TypeExport>,
+        exported: Rc<TypescriptExport>,
         right: &Ident,
-    ) -> Res<(Rc<TypeExport>, Rc<ImportReference>, String)> {
+    ) -> Res<(Rc<TypescriptExport>, Rc<ImportReference>, String)> {
         match &*exported {
-            TypeExport::TsType { .. } => self.error(
+            TypescriptExport::TsType { .. } => self.error(
                 &right.span,
                 DiagnosticInfoMessage::CannotUseTsTypeAsQualified,
             ),
-            TypeExport::TsInterfaceDecl(_) => self.error(
+            TypescriptExport::TsInterfaceDecl(_) => self.error(
                 &right.span,
                 DiagnosticInfoMessage::CannotUseTsInterfaceAsQualified,
             ),
-            TypeExport::StarOfOtherFile(other_file) => {
+            TypescriptExport::StarOfOtherFile(other_file) => {
                 self.get_qualified_type_from_file(other_file, &right.sym, &right.span)
             }
-            TypeExport::SomethingOfOtherFile(word, from_file) => {
+            TypescriptExport::SomethingOfOtherFile(word, from_file) => {
                 let exported = self
                     .files
                     .get_or_fetch_file(from_file)
@@ -393,12 +380,13 @@ impl<'a, R: FileManager> TypeToSchema<'a, R> {
                     ),
                 }
             }
+            TypescriptExport::ValueExpr { .. } => todo!(),
         }
     }
     fn __convert_ts_type_qual_inner(
         &mut self,
         q: &TsQualifiedName,
-    ) -> Res<(Rc<TypeExport>, Rc<ImportReference>, String)> {
+    ) -> Res<(Rc<TypescriptExport>, Rc<ImportReference>, String)> {
         match &q.left {
             TsEntityName::TsQualifiedName(q2) => {
                 let (exported, _from_file, _name) = self.__convert_ts_type_qual_inner(q2)?;
@@ -421,8 +409,7 @@ impl<'a, R: FileManager> TypeToSchema<'a, R> {
         let (exported, from_file, name) = self.__convert_ts_type_qual_inner(q)?;
         let ty =
             self.convert_type_export(exported.as_ref(), from_file.file_name(), &q.right.span)?;
-        let loc = self.get_full_location(&q.right.span)?;
-        self.insert_definition(name, ty.located(loc))
+        self.insert_definition(name, ty)
     }
     fn convert_ts_type_qual(&mut self, q: &TsQualifiedName) -> Res<JsonSchema> {
         let current_ref = self.get_identifier_diag_info(&q.right);

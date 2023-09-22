@@ -1,8 +1,11 @@
+use crate::subtyping::evidence::Evidence;
+
 use super::{
     bdd::{Atom, Bdd, ListAtomic, MappingAtomic},
+    evidence::{EvidenceResult, ProperSubtypeEvidenceResult},
     subtype::{
         BasicTypeBitSet, BasicTypeCode, NumberRepresentation, ProperSubtype, ProperSubtypeOps,
-        StringLitOrFormat, SubType, SubTypeTag,
+        StringLitOrFormat, SubType, SubTypeTag, VAL,
     },
 };
 use std::{collections::BTreeMap, rc::Rc};
@@ -70,35 +73,46 @@ impl Iterator for SubTypePairIterator {
 
 #[derive(PartialEq, Eq, Hash, Debug, Ord, PartialOrd)]
 pub struct ComplexSemType {
-    all: BasicTypeBitSet,
+    pub all: BasicTypeBitSet,
     // some: BasicTypeBitSet,
-    subtype_data: Vec<Rc<ProperSubtype>>,
+    pub subtype_data: Vec<Rc<ProperSubtype>>,
 }
 
 pub type SemType = ComplexSemType;
 
 pub trait SemTypeOps {
-    fn is_empty(&self, builder: &mut SemTypeContext) -> bool;
+    fn is_empty(&self, ctx: &mut SemTypeContext) -> bool;
+    fn is_empty_evidence(&self, ctx: &mut SemTypeContext) -> EvidenceResult;
     fn intersect(&self, t2: &Rc<SemType>) -> Rc<SemType>;
     fn union(&self, t2: &Rc<SemType>) -> Rc<SemType>;
     fn diff(&self, t2: &Rc<SemType>) -> Rc<SemType>;
     fn complement(&self) -> Rc<SemType>;
-    fn is_subtype(&self, t2: &Rc<SemType>, builder: &mut SemTypeContext) -> bool;
-    fn is_same_type(&self, t2: &Rc<SemType>, builder: &mut SemTypeContext) -> bool;
+    fn is_subtype(&self, t2: &Rc<SemType>, ctx: &mut SemTypeContext) -> bool;
+    fn is_same_type(&self, t2: &Rc<SemType>, ctx: &mut SemTypeContext) -> bool;
 }
 
 impl SemTypeOps for Rc<SemType> {
-    fn is_empty(&self, builder: &mut SemTypeContext) -> bool {
+    fn is_empty_evidence(&self, builder: &mut SemTypeContext) -> EvidenceResult {
         if self.all != 0 {
-            // includes all of one or more basic types
-            return false;
+            for i in SubTypeTag::all() {
+                if (self.all & i.code()) != 0 {
+                    return Evidence::All(i).to_result();
+                }
+            }
+            panic!()
         }
         for st in self.subtype_data.iter() {
-            if !st.is_empty(builder) {
-                return false;
+            match st.is_empty_evidence(builder) {
+                ProperSubtypeEvidenceResult::IsEmpty => {}
+                ProperSubtypeEvidenceResult::Evidence(st) => {
+                    return Evidence::Proper(st).to_result()
+                }
             }
         }
-        return true;
+        return EvidenceResult::IsEmpty;
+    }
+    fn is_empty(&self, builder: &mut SemTypeContext) -> bool {
+        matches!(self.is_empty_evidence(builder), EvidenceResult::IsEmpty)
     }
 
     fn intersect(&self, t2: &Rc<SemType>) -> Rc<SemType> {
@@ -180,8 +194,8 @@ impl SemTypeOps for Rc<SemType> {
 
     fn diff(&self, t2: &Rc<SemType>) -> Rc<SemType> {
         let t1 = self;
-        let mut all = t1.all & !(t2.all | t2.some_as_bitset());
 
+        let mut all = t1.all & !(t2.all | t2.some_as_bitset());
         let mut some = (t1.all | t1.some_as_bitset()) & !(t2.all);
         some &= !all;
         if some == 0 {
@@ -218,19 +232,23 @@ impl SemTypeOps for Rc<SemType> {
     }
 
     fn complement(&self) -> Rc<SemType> {
-        Rc::new(SemTypeContext::never()).diff(self)
+        Rc::new(SemTypeContext::unknown()).diff(self)
     }
 
-    fn is_subtype(&self, t2: &Rc<SemType>, builder: &mut SemTypeContext) -> bool {
-        self.diff(t2).is_empty(builder)
+    fn is_subtype(&self, t2: &Rc<SemType>, ctx: &mut SemTypeContext) -> bool {
+        self.diff(t2).is_empty(ctx)
     }
 
-    fn is_same_type(&self, t2: &Rc<SemType>, builder: &mut SemTypeContext) -> bool {
-        self.is_subtype(t2, builder) && t2.is_subtype(self, builder)
+    fn is_same_type(&self, t2: &Rc<SemType>, ctx: &mut SemTypeContext) -> bool {
+        self.is_subtype(t2, ctx) && t2.is_subtype(self, ctx)
     }
 }
 
 impl SemType {
+    pub fn has_void(&self) -> bool {
+        (self.all & SubTypeTag::Void.code()) != 0
+    }
+
     pub fn is_never(&self) -> bool {
         self.all == 0 && self.subtype_data.is_empty()
     }
@@ -264,31 +282,29 @@ impl SemType {
     }
     pub fn new_unknown() -> SemType {
         SemType {
-            // todo
-            all: 1 << 1 | 1 << 2 | 1 << 3 | 1 << 4 | 1 << 5 | 1 << 6 | 1 << 7 | 1 << 8,
+            all: VAL,
             subtype_data: vec![],
         }
     }
 }
 
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone)]
 pub enum MemoEmpty {
     True,
-    False,
+    False(ProperSubtypeEvidenceResult),
     Undefined,
 }
 
 impl MemoEmpty {
-    pub fn from_bool(b: bool) -> MemoEmpty {
-        if b {
-            MemoEmpty::True
-        } else {
-            MemoEmpty::False
+    pub fn from_bool(b: &ProperSubtypeEvidenceResult) -> MemoEmpty {
+        match b {
+            ProperSubtypeEvidenceResult::IsEmpty => MemoEmpty::True,
+            ProperSubtypeEvidenceResult::Evidence(_) => MemoEmpty::False(b.clone()),
         }
     }
 }
 
-#[derive(Clone, Copy, Debug)]
+#[derive(Clone, Debug)]
 pub struct BddMemoEmptyRef(pub MemoEmpty);
 
 pub struct SemTypeContext {
@@ -354,7 +370,7 @@ impl SemTypeContext {
             vec![ProperSubtype::Mapping(Bdd::from_atom(Atom::Mapping(idx)).into()).into()],
         );
     }
-    pub fn mapping_definition(&mut self, vs: MappingAtomic) -> SemType {
+    pub fn mapping_definition(&mut self, vs: Rc<MappingAtomic>) -> SemType {
         let idx = self.mapping_definitions.len();
         self.mapping_definitions.push(Some(vs.clone().into()));
 
@@ -366,7 +382,7 @@ impl SemTypeContext {
             vec![ProperSubtype::List(Bdd::from_atom(Atom::List(idx)).into()).into()],
         );
     }
-    pub fn list_definition(&mut self, vs: ListAtomic) -> SemType {
+    pub fn list_definition(&mut self, vs: Rc<ListAtomic>) -> SemType {
         let idx = self.list_definitions.len();
         self.list_definitions.push(Some(vs.clone().into()));
 
@@ -377,7 +393,7 @@ impl SemTypeContext {
             prefix_items: vec![],
             items: v,
         };
-        return self.list_definition(atom);
+        return self.list_definition(Rc::new(atom));
     }
     pub fn tuple(&mut self, prefix_items: Vec<Rc<SemType>>, items: Option<Rc<SemType>>) -> SemType {
         let atom = ListAtomic {
@@ -385,7 +401,7 @@ impl SemTypeContext {
             // todo: should be unknown?
             items: items.unwrap_or(Self::never().into()),
         };
-        return self.list_definition(atom);
+        return self.list_definition(Rc::new(atom));
     }
     pub fn boolean_const(value: bool) -> SemType {
         return SemType::new_complex(0x0, vec![ProperSubtype::Boolean(value).into()]);
@@ -409,7 +425,6 @@ impl SemTypeContext {
         let t2 = Self::void();
         return Rc::new(it).union(&Rc::new(t2));
     }
-
     pub fn never() -> SemType {
         return SemType::new_never();
     }

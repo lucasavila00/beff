@@ -1,14 +1,14 @@
-use core::fmt;
-use std::collections::BTreeMap;
-
 use crate::{
     ast::{
         js::Js,
         json::{Json, ToJson, ToJsonKv},
         json_schema::JsonSchema,
     },
-    diag::{Diagnostic, DiagnosticInfoMessage, FullLocation, Located},
+    diag::{Diagnostic, DiagnosticInfoMessage, FullLocation},
 };
+use anyhow::Result;
+use core::fmt;
+use std::collections::BTreeMap;
 
 fn clear_description(it: String) -> String {
     let lines = it.split('\n').collect::<Vec<_>>();
@@ -24,7 +24,7 @@ fn clear_description(it: String) -> String {
 fn resolve_schema(schema: JsonSchema, components: &Vec<Validator>) -> JsonSchema {
     match schema {
         JsonSchema::Ref(name) => match components.iter().find(|it| it.name == name) {
-            Some(def) => resolve_schema(def.schema.value.clone(), components),
+            Some(def) => resolve_schema(def.schema.clone(), components),
             None => unreachable!("everything should be resolved when printing"),
         },
         _ => schema,
@@ -35,7 +35,7 @@ pub fn build_coercer(schema: JsonSchema, components: &Vec<Validator>) -> Js {
     Js::Coercer(resolve_schema(schema, components))
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Info {
     pub title: Option<String>,
     pub description: Option<String>,
@@ -82,7 +82,7 @@ pub struct ParameterObject {
     pub in_: ParameterIn,
     pub description: Option<String>,
     pub required: bool,
-    pub schema: Located<JsonSchema>,
+    pub schema: JsonSchema,
 }
 impl ToJson for ParameterObject {
     fn to_json(self) -> Json {
@@ -93,7 +93,7 @@ impl ToJson for ParameterObject {
             v.push(("description".into(), Json::String(clear_description(desc))));
         }
         v.push(("required".into(), Json::Bool(self.required)));
-        v.push(("schema".into(), self.schema.value.to_json()));
+        v.push(("schema".into(), self.schema.to_json()));
         Json::object(v)
     }
 }
@@ -101,7 +101,7 @@ impl ToJson for ParameterObject {
 #[derive(Debug)]
 pub struct JsonRequestBody {
     pub description: Option<String>,
-    pub schema: Located<JsonSchema>,
+    pub schema: JsonSchema,
     pub required: bool,
 }
 
@@ -114,7 +114,7 @@ impl ToJson for JsonRequestBody {
         v.push(("required".into(), Json::Bool(self.required)));
         let content = Json::object(vec![(
             "application/json".into(),
-            Json::object(vec![("schema".into(), self.schema.value.to_json())]),
+            Json::object(vec![("schema".into(), self.schema.to_json())]),
         )]);
         v.push(("content".into(), content));
         Json::object(v)
@@ -123,11 +123,10 @@ impl ToJson for JsonRequestBody {
 
 #[derive(Debug)]
 pub struct OperationObject {
-    pub method_prop_span: FullLocation,
     pub summary: Option<String>,
     pub description: Option<String>,
     pub parameters: Vec<ParameterObject>,
-    pub json_response_body: Located<JsonSchema>,
+    pub json_response_body: JsonSchema,
     pub json_request_body: Option<JsonRequestBody>,
 }
 fn error_response_ref(code: &str, reference: &str) -> (String, Json) {
@@ -169,7 +168,7 @@ impl ToJson for OperationObject {
                                 "application/json".into(),
                                 Json::object(vec![(
                                     "schema".into(),
-                                    self.json_response_body.value.to_json(),
+                                    self.json_response_body.to_json(),
                                 )]),
                             )]),
                         ),
@@ -192,6 +191,19 @@ pub enum HTTPMethod {
     Delete,
     Patch,
     Options,
+}
+
+impl HTTPMethod {
+    pub fn all() -> Vec<HTTPMethod> {
+        vec![
+            HTTPMethod::Get,
+            HTTPMethod::Post,
+            HTTPMethod::Put,
+            HTTPMethod::Delete,
+            HTTPMethod::Patch,
+            HTTPMethod::Options,
+        ]
+    }
 }
 
 impl fmt::Display for HTTPMethod {
@@ -231,13 +243,12 @@ fn parse_pattern_params(pattern: &str) -> Vec<String> {
 }
 #[derive(Debug, Clone)]
 pub struct ParsedPattern {
-    pub loc: FullLocation,
-
-    pub open_api_pattern: String,
+    pub loc: Option<FullLocation>,
+    pub raw: String,
     pub path_params: Vec<String>,
 }
 impl ApiPath {
-    fn validate_pattern(key: &str, locs: &FullLocation) -> Option<Diagnostic> {
+    fn validate_pattern(key: &str) -> Option<DiagnosticInfoMessage> {
         // only allow simple openapi patterns, no explode
         // disallow `/{param}asd/`
         let blocks = key.split('/').collect::<Vec<_>>();
@@ -249,18 +260,14 @@ impl ApiPath {
                 let is_at_start = block.starts_with('{');
 
                 if !is_at_start {
-                    let err = locs
-                        .clone()
-                        .to_diag(DiagnosticInfoMessage::OpenBlockMustStartPattern);
+                    let err = DiagnosticInfoMessage::OpenBlockMustStartPattern;
                     return Some(err);
                 }
 
                 let is_at_end = block.ends_with('}');
 
                 if !is_at_end {
-                    let err = locs
-                        .clone()
-                        .to_diag(DiagnosticInfoMessage::CloseBlockMustEndPattern);
+                    let err = DiagnosticInfoMessage::CloseBlockMustEndPattern;
                     return Some(err);
                 }
 
@@ -269,9 +276,7 @@ impl ApiPath {
                     content.chars().all(|c| c.is_alphanumeric() || c == '_');
 
                 if !is_valid_js_identifier {
-                    let err = locs
-                        .clone()
-                        .to_diag(DiagnosticInfoMessage::InvalidIdentifierInPatternNoExplodeAllowed);
+                    let err = DiagnosticInfoMessage::InvalidIdentifierInPatternNoExplodeAllowed;
                     return Some(err);
                 }
             }
@@ -281,28 +286,28 @@ impl ApiPath {
     }
     pub fn parse_raw_pattern_str(
         key: &str,
-        locs: FullLocation,
-    ) -> Result<ParsedPattern, Diagnostic> {
+        locs: Option<FullLocation>,
+    ) -> Result<ParsedPattern, DiagnosticInfoMessage> {
         let path_params = parse_pattern_params(key);
-        match Self::validate_pattern(key, &locs) {
+        match Self::validate_pattern(key) {
             Some(d) => Err(d),
             None => Ok(ParsedPattern {
-                open_api_pattern: key.to_string(),
+                raw: key.to_string(),
                 path_params,
                 loc: locs,
             }),
         }
     }
 
-    fn validate_pattern_was_consumed(&self) -> Vec<Diagnostic> {
+    fn validate_pattern_was_consumed(&self, method_prop_span: &FullLocation) -> Vec<Diagnostic> {
         let mut acc = vec![];
 
-        for (_k, v) in &self.methods {
+        for (k, v) in &self.methods {
             for path_param in &self.parsed_pattern.path_params {
                 let found = v.parameters.iter().find(|it| it.name == *path_param);
                 if found.is_none() {
-                    let err = v.method_prop_span.clone().to_diag(
-                        DiagnosticInfoMessage::UnmatchedPathParameter(path_param.to_string()),
+                    let err = method_prop_span.clone().to_diag(
+                        DiagnosticInfoMessage::UnmatchedPathParameter(path_param.to_string(), *k),
                     );
                     acc.push(err);
                 }
@@ -311,8 +316,10 @@ impl ApiPath {
         acc
     }
 
-    pub fn validate(&self) -> Vec<Diagnostic> {
-        self.validate_pattern_was_consumed().into_iter().collect()
+    pub fn validate(&self, method_prop_span: &FullLocation) -> Vec<Diagnostic> {
+        self.validate_pattern_was_consumed(method_prop_span)
+            .into_iter()
+            .collect()
     }
 
     #[must_use]
@@ -335,20 +342,17 @@ impl ToJsonKv for ApiPath {
         if v.is_empty() {
             return vec![];
         }
-        vec![(
-            self.parsed_pattern.open_api_pattern.clone(),
-            Json::object(v),
-        )]
+        vec![(self.parsed_pattern.raw.clone(), Json::object(v))]
     }
 }
 #[derive(Debug, Clone)]
 pub struct Validator {
     pub name: String,
-    pub schema: Located<JsonSchema>,
+    pub schema: JsonSchema,
 }
 impl ToJsonKv for Validator {
     fn to_json_kv(self) -> Vec<(String, Json)> {
-        vec![(self.name.clone(), self.schema.value.to_json())]
+        vec![(self.name.clone(), self.schema.to_json())]
     }
 }
 
@@ -357,4 +361,241 @@ pub struct OpenApi {
     pub info: Info,
     pub paths: Vec<ApiPath>,
     pub components: Vec<String>,
+}
+
+pub struct OpenApiParser {
+    pub api: OpenApi,
+    pub components: Vec<Validator>,
+}
+
+impl OpenApiParser {
+    pub fn new() -> OpenApiParser {
+        OpenApiParser {
+            api: OpenApi {
+                info: Info {
+                    title: None,
+                    description: None,
+                    version: None,
+                },
+                paths: vec![],
+                components: vec![],
+            },
+            components: vec![],
+        }
+    }
+
+    fn parse_schemas(&mut self, components: &Json) -> Result<()> {
+        match components {
+            Json::Object(vs) => {
+                for (name, schema) in vs {
+                    let schema = JsonSchema::from_json(schema)?;
+                    self.components.push(Validator {
+                        name: name.clone(),
+                        schema,
+                    });
+                }
+            }
+            _ => panic!(),
+        }
+        Ok(())
+    }
+
+    fn parse_op_object(it: &Json) -> Result<OperationObject> {
+        match it {
+            Json::Object(vs) => {
+                let json_response_body = vs
+                    .get("responses")
+                    .and_then(|it| match it {
+                        Json::Object(v) => v.get("200"),
+                        _ => None,
+                    })
+                    .and_then(|it| match it {
+                        Json::Object(v) => v.get("content"),
+                        _ => None,
+                    })
+                    .and_then(|it| match it {
+                        Json::Object(v) => v.get("application/json"),
+                        _ => None,
+                    })
+                    .and_then(|it| match it {
+                        Json::Object(v) => v.get("schema"),
+                        _ => None,
+                    })
+                    .unwrap();
+
+                let json_parameters = vs
+                    .get("parameters")
+                    .and_then(|it| match it {
+                        Json::Array(v) => Some(v.clone()),
+                        _ => None,
+                    })
+                    .unwrap_or(vec![]);
+
+                let mut parameters = vec![];
+
+                for p in json_parameters {
+                    match p {
+                        Json::Object(vs) => {
+                            let in_ = vs
+                                .get("in")
+                                .and_then(|it| match it {
+                                    Json::String(st) => Some(st.clone()),
+                                    _ => None,
+                                })
+                                .unwrap();
+                            let name = vs
+                                .get("name")
+                                .and_then(|it| match it {
+                                    Json::String(st) => Some(st.clone()),
+                                    _ => None,
+                                })
+                                .unwrap();
+                            let required = vs
+                                .get("required")
+                                .and_then(|it| match it {
+                                    Json::Bool(st) => Some(st.clone()),
+                                    _ => None,
+                                })
+                                .unwrap();
+                            let schema = vs
+                                .get("schema")
+                                .map(|it| JsonSchema::from_json(it).unwrap())
+                                .unwrap();
+                            match in_.as_str() {
+                                "query" => parameters.push(ParameterObject {
+                                    name,
+                                    in_: ParameterIn::Query,
+                                    description: None,
+                                    required,
+                                    schema,
+                                }),
+                                "path" => parameters.push(ParameterObject {
+                                    name,
+                                    in_: ParameterIn::Path,
+                                    description: None,
+                                    required,
+                                    schema,
+                                }),
+                                "header" => parameters.push(ParameterObject {
+                                    name,
+                                    in_: ParameterIn::Header,
+                                    description: None,
+                                    required,
+                                    schema,
+                                }),
+                                _ => panic!(),
+                            }
+                        }
+                        _ => panic!(),
+                    }
+                }
+
+                let json_request_body_schema = vs
+                    .get("requestBody")
+                    .and_then(|it| match it {
+                        Json::Object(v) => v.get("content"),
+                        _ => None,
+                    })
+                    .and_then(|it| match it {
+                        Json::Object(v) => v.get("application/json"),
+                        _ => None,
+                    })
+                    .and_then(|it| match it {
+                        Json::Object(v) => v.get("schema"),
+                        _ => None,
+                    })
+                    .map(|it| JsonSchema::from_json(it).unwrap());
+
+                let json_request_body = match json_request_body_schema {
+                    Some(schema) => {
+                        let required = vs
+                            .get("requestBody")
+                            .and_then(|it| match it {
+                                Json::Object(v) => v.get("required"),
+                                _ => None,
+                            })
+                            .and_then(|it| match it {
+                                Json::Bool(v) => Some(*v),
+                                _ => None,
+                            })
+                            .unwrap();
+
+                        Some(JsonRequestBody {
+                            description: None,
+                            schema,
+                            required,
+                        })
+                    }
+                    None => None,
+                };
+
+                return Ok(OperationObject {
+                    summary: None,
+                    description: None,
+                    parameters,
+                    json_response_body: JsonSchema::from_json(json_response_body)?,
+                    json_request_body,
+                });
+            }
+            _ => panic!(),
+        }
+    }
+    fn parse_op_object_map(it: &Json) -> Result<Vec<(HTTPMethod, OperationObject)>> {
+        let mut acc = vec![];
+        match it {
+            Json::Object(vs) => {
+                for method in HTTPMethod::all() {
+                    let op_obj = vs.get(&method.to_string());
+                    if let Some(op_obj) = op_obj {
+                        let op_obj = Self::parse_op_object(op_obj)?;
+                        acc.push((method, op_obj));
+                    }
+                }
+            }
+            _ => panic!(),
+        }
+
+        Ok(acc)
+    }
+
+    fn parse_paths(&mut self, components: &Json) -> Result<()> {
+        match components {
+            Json::Object(vs) => {
+                for (name, op_obj) in vs {
+                    let acc = Self::parse_op_object_map(op_obj)?;
+                    let api_path = ApiPath {
+                        parsed_pattern: ApiPath::parse_raw_pattern_str(&name, None).unwrap(),
+                        methods: BTreeMap::from_iter(acc),
+                    };
+                    self.api.paths.push(api_path);
+                }
+            }
+            _ => panic!(),
+        }
+        Ok(())
+    }
+    pub fn process(&mut self, it: &Json) -> Result<()> {
+        match it {
+            Json::Null => todo!(),
+            Json::Bool(_) => todo!(),
+            Json::Number(_) => todo!(),
+            Json::String(_) => todo!(),
+            Json::Array(_) => todo!(),
+            Json::Object(vs) => {
+                let schemas = vs.get("components").and_then(|it| match it {
+                    Json::Object(v) => v.get("schemas"),
+                    _ => None,
+                });
+                if let Some(schemas) = schemas {
+                    self.parse_schemas(schemas)?;
+                }
+                if let Some(paths) = vs.get("paths") {
+                    self.parse_paths(paths)?;
+                }
+            }
+        }
+
+        self.api.components = self.components.iter().map(|it| it.name.clone()).collect();
+        Ok(())
+    }
 }

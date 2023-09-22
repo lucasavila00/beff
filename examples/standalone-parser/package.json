@@ -12,6 +12,6 @@
   "license": "ISC",
   "dependencies": {
     "@beff/cli": "workspace:^0.0.8",
-    "vitest": "^0.34.3"
+    "vitest": "^0.34.4"
   }
 }

@@ -1,0 +1,21 @@
+---
+source: packages/beff-core/tests/safe_to_change.rs
+expression: printed
+---
+type A = string;
+type $Router = {
+    "/hello": {
+        "get": () => A;
+        "post": () => (["a1", {
+                "a": Array<number>;
+            }] | ["a2", {
+                "b": Array<boolean>;
+            }]);
+        "put": () => (["a1", {
+                "a": number;
+            }] | ["a2", {
+                "a"?: string;
+            }]);
+    };
+};
+

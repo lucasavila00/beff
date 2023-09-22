@@ -2,13 +2,32 @@ use std::collections::BTreeMap;
 use std::collections::BTreeSet;
 
 use crate::ast::json::{Json, ToJson};
-use crate::diag::FullLocation;
-use crate::diag::Located;
-use crate::open_api_ast::Validator;
-use crate::subtyping::is_sub_type;
-use crate::subtyping::semtype::SemTypeContext;
 use anyhow::anyhow;
 use anyhow::Result;
+use swc_common::DUMMY_SP;
+use swc_ecma_ast::Bool;
+use swc_ecma_ast::Ident;
+use swc_ecma_ast::Str;
+use swc_ecma_ast::TsArrayType;
+use swc_ecma_ast::TsEntityName;
+use swc_ecma_ast::TsIntersectionType;
+use swc_ecma_ast::TsKeywordType;
+use swc_ecma_ast::TsKeywordTypeKind;
+use swc_ecma_ast::TsLit;
+use swc_ecma_ast::TsLitType;
+use swc_ecma_ast::TsParenthesizedType;
+use swc_ecma_ast::TsPropertySignature;
+use swc_ecma_ast::TsRestType;
+use swc_ecma_ast::TsTupleElement;
+use swc_ecma_ast::TsTupleType;
+use swc_ecma_ast::TsType;
+use swc_ecma_ast::TsTypeAnn;
+use swc_ecma_ast::TsTypeElement;
+use swc_ecma_ast::TsTypeLit;
+use swc_ecma_ast::TsTypeParamInstantiation;
+use swc_ecma_ast::TsTypeRef;
+use swc_ecma_ast::TsUnionOrIntersectionType;
+use swc_ecma_ast::TsUnionType;
 
 #[derive(Debug, PartialEq, Eq, Clone, PartialOrd, Ord)]
 pub enum Optionality<T> {
@@ -35,6 +54,15 @@ impl<T> Optionality<T> {
     }
 }
 
+impl Optionality<JsonSchema> {
+    pub fn negated(self) -> Optionality<JsonSchema> {
+        match self {
+            Optionality::Optional(it) => JsonSchema::StNot(it.into()).optional(),
+            Optionality::Required(it) => JsonSchema::StNot(it.into()).required(),
+        }
+    }
+}
+
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord)]
 pub enum JsonSchema {
     Null,
@@ -55,6 +83,12 @@ pub enum JsonSchema {
     AnyOf(BTreeSet<JsonSchema>),
     AllOf(BTreeSet<JsonSchema>),
     Const(Json),
+    AnyObject,
+    AnyArrayLike,
+    // semantic types
+    StNever,
+    StUnknown,
+    StNot(Box<JsonSchema>),
 }
 
 struct UnionMerger(BTreeSet<JsonSchema>);
@@ -82,12 +116,10 @@ impl UnionMerger {
 }
 
 impl JsonSchema {
-    pub fn located(self, loc: FullLocation) -> Located<JsonSchema> {
-        Located { value: self, loc }
-    }
     pub fn object(vs: Vec<(String, Optionality<JsonSchema>)>) -> Self {
         Self::Object(vs.into_iter().collect())
     }
+
     pub fn required(self) -> Optionality<JsonSchema> {
         Optionality::Required(self)
     }
@@ -96,10 +128,16 @@ impl JsonSchema {
     }
 
     pub fn any_of(vs: Vec<JsonSchema>) -> Self {
-        UnionMerger::schema(vs)
+        match vs.len() {
+            1 => vs.into_iter().next().expect("we just checked len"),
+            _ => UnionMerger::schema(vs),
+        }
     }
     pub fn all_of(vs: Vec<JsonSchema>) -> Self {
-        Self::AllOf(BTreeSet::from_iter(vs))
+        match vs.len() {
+            1 => vs.into_iter().next().expect("we just checked len"),
+            _ => Self::AllOf(BTreeSet::from_iter(vs)),
+        }
     }
 
     fn parse_string(vs: &BTreeMap<String, Json>) -> Result<Self> {
@@ -254,11 +292,6 @@ impl JsonSchema {
             _ => Err(anyhow!("JsonSchema must be an object")),
         }
     }
-
-    pub fn is_sub_type(&self, b: &JsonSchema, validators: &[&Validator]) -> Result<bool> {
-        let mut builder = SemTypeContext::new();
-        return is_sub_type(self, b, validators, &mut builder);
-    }
 }
 
 impl ToJson for JsonSchema {
@@ -368,6 +401,243 @@ impl ToJson for JsonSchema {
             }
             JsonSchema::Const(val) => Json::object(vec![("const".into(), val)]),
             JsonSchema::Error => unreachable!("should not call print if schema had error"),
+            JsonSchema::StNever => todo!(),
+            JsonSchema::StUnknown => todo!(),
+            JsonSchema::StNot(_) => todo!(),
+            JsonSchema::AnyObject => todo!(),
+            JsonSchema::AnyArrayLike => todo!(),
+        }
+    }
+}
+
+impl JsonSchema {
+    pub fn to_ts_type(&self) -> TsType {
+        match self {
+            JsonSchema::Null => TsType::TsKeywordType(TsKeywordType {
+                span: DUMMY_SP,
+                kind: TsKeywordTypeKind::TsNullKeyword,
+            }),
+            JsonSchema::Boolean => TsType::TsKeywordType(TsKeywordType {
+                span: DUMMY_SP,
+                kind: TsKeywordTypeKind::TsBooleanKeyword,
+            }),
+            JsonSchema::String => TsType::TsKeywordType(TsKeywordType {
+                span: DUMMY_SP,
+                kind: TsKeywordTypeKind::TsStringKeyword,
+            }),
+            JsonSchema::Number => TsType::TsKeywordType(TsKeywordType {
+                span: DUMMY_SP,
+                kind: TsKeywordTypeKind::TsNumberKeyword,
+            }),
+            JsonSchema::Any => todo!(),
+            JsonSchema::Error => todo!(),
+            JsonSchema::StringWithFormat(_) => todo!(),
+            JsonSchema::Object(vs) => TsType::TsTypeLit(TsTypeLit {
+                span: DUMMY_SP,
+                members: vs
+                    .iter()
+                    .map(|(k, v)| {
+                        TsTypeElement::TsPropertySignature(TsPropertySignature {
+                            span: DUMMY_SP,
+                            readonly: false,
+                            key: k.clone().into(),
+                            computed: false,
+                            optional: !v.is_required(),
+                            init: None,
+                            params: vec![],
+                            type_ann: Some(Box::new(TsTypeAnn {
+                                span: DUMMY_SP,
+                                type_ann: v.inner().to_ts_type().into(),
+                            })),
+                            type_params: None,
+                        })
+                    })
+                    .collect(),
+            }),
+            JsonSchema::Array(ty) => {
+                let ty = ty.to_ts_type();
+                TsType::TsTypeRef(TsTypeRef {
+                    span: DUMMY_SP,
+                    type_name: Ident {
+                        span: DUMMY_SP,
+                        sym: "Array".into(),
+                        optional: false,
+                    }
+                    .into(),
+                    type_params: Some(Box::new(TsTypeParamInstantiation {
+                        span: DUMMY_SP,
+                        params: vec![ty.into()],
+                    })),
+                })
+            }
+            JsonSchema::Tuple {
+                prefix_items,
+                items,
+            } => {
+                let mut elem_types: Vec<TsTupleElement> = vec![];
+                for it in prefix_items {
+                    let ty = it.to_ts_type();
+                    let ty = TsTupleElement {
+                        span: DUMMY_SP,
+                        label: None,
+                        ty: ty.into(),
+                    };
+                    elem_types.push(ty);
+                }
+                if let Some(items) = items {
+                    let ty = items.to_ts_type();
+                    let ty = TsType::TsRestType(TsRestType {
+                        span: DUMMY_SP,
+                        type_ann: Box::new(TsType::TsArrayType(TsArrayType {
+                            span: DUMMY_SP,
+                            elem_type: Box::new(ty),
+                        })),
+                    });
+                    let ty = TsTupleElement {
+                        span: DUMMY_SP,
+                        label: None,
+                        ty: ty.into(),
+                    };
+                    elem_types.push(ty);
+                }
+                TsType::TsTupleType(TsTupleType {
+                    span: DUMMY_SP,
+                    elem_types,
+                })
+            }
+            JsonSchema::Ref(name) => TsType::TsTypeRef(TsTypeRef {
+                span: DUMMY_SP,
+                type_name: TsEntityName::Ident(Ident {
+                    span: DUMMY_SP,
+                    sym: name.clone().into(),
+                    optional: false,
+                }),
+                type_params: None,
+            }),
+            JsonSchema::OpenApiResponseRef(_) => todo!(),
+            JsonSchema::AnyOf(vs) =>
+            // TsType::TsUnionOrIntersectionType(
+            //     TsUnionOrIntersectionType::TsUnionType(TsUnionType {
+            //         span: DUMMY_SP,
+            //         types: vs.iter().map(|it| Box::new(it.to_ts_type())).collect(),
+            //     }),
+            // ),
+            {
+                match vs.len() {
+                    0 => TsType::TsKeywordType(TsKeywordType {
+                        span: DUMMY_SP,
+                        kind: TsKeywordTypeKind::TsVoidKeyword,
+                    }),
+                    _ => TsType::TsParenthesizedType(TsParenthesizedType {
+                        span: DUMMY_SP,
+                        type_ann: TsType::TsUnionOrIntersectionType(
+                            TsUnionOrIntersectionType::TsUnionType(TsUnionType {
+                                span: DUMMY_SP,
+                                types: vs.iter().map(|it| Box::new(it.to_ts_type())).collect(),
+                            }),
+                        )
+                        .into(),
+                    }),
+                }
+            }
+            JsonSchema::AllOf(vs) =>
+            // TsType::TsUnionOrIntersectionType(
+            //     TsUnionOrIntersectionType::TsIntersectionType(TsIntersectionType {
+            //         span: DUMMY_SP,
+            //         types: vs.iter().map(|it| Box::new(it.to_ts_type())).collect(),
+            //     }),
+            // ),
+            {
+                match vs.len() {
+                    0 => TsType::TsKeywordType(TsKeywordType {
+                        span: DUMMY_SP,
+                        kind: TsKeywordTypeKind::TsVoidKeyword,
+                    }),
+                    _ => TsType::TsParenthesizedType(TsParenthesizedType {
+                        span: DUMMY_SP,
+                        type_ann: TsType::TsUnionOrIntersectionType(
+                            TsUnionOrIntersectionType::TsIntersectionType(TsIntersectionType {
+                                span: DUMMY_SP,
+                                types: vs.iter().map(|it| Box::new(it.to_ts_type())).collect(),
+                            }),
+                        )
+                        .into(),
+                    }),
+                }
+            }
+            JsonSchema::Const(v) => match v {
+                Json::Null => todo!(),
+                Json::Bool(b) => TsType::TsLitType(TsLitType {
+                    span: DUMMY_SP,
+                    lit: TsLit::Bool(Bool {
+                        span: DUMMY_SP,
+                        value: *b,
+                    }),
+                }),
+                Json::Number(n) => TsType::TsLitType(TsLitType {
+                    span: DUMMY_SP,
+                    lit: TsLit::Number(swc_ecma_ast::Number {
+                        span: DUMMY_SP,
+                        value: n.to_f64(),
+                        raw: None,
+                    }),
+                }),
+                Json::String(v) => TsType::TsLitType(TsLitType {
+                    span: DUMMY_SP,
+                    lit: TsLit::Str(Str {
+                        span: DUMMY_SP,
+                        value: v.clone().into(),
+                        raw: None,
+                    }),
+                }),
+                Json::Array(_) => todo!(),
+                Json::Object(_) => todo!(),
+            },
+            JsonSchema::StNever => TsType::TsKeywordType(TsKeywordType {
+                span: DUMMY_SP,
+                kind: TsKeywordTypeKind::TsNeverKeyword,
+            }),
+            JsonSchema::StUnknown => todo!(),
+            JsonSchema::StNot(v) => TsType::TsTypeRef(TsTypeRef {
+                span: DUMMY_SP,
+                type_name: Ident {
+                    span: DUMMY_SP,
+                    sym: "Not".into(),
+                    optional: false,
+                }
+                .into(),
+                type_params: Some(Box::new(TsTypeParamInstantiation {
+                    span: DUMMY_SP,
+                    params: vec![
+                        // TsType::TsKeywordType(TsKeywordType {
+                        //     span: DUMMY_SP,
+                        //     kind: TsKeywordTypeKind::TsUnknownKeyword,
+                        // })
+                        // .into(),
+                        v.to_ts_type().into(),
+                    ],
+                })),
+            }),
+            JsonSchema::AnyObject => TsType::TsTypeRef(TsTypeRef {
+                span: DUMMY_SP,
+                type_name: Ident {
+                    span: DUMMY_SP,
+                    sym: "Object".into(),
+                    optional: false,
+                }
+                .into(),
+                type_params: None,
+            }),
+            JsonSchema::AnyArrayLike => TsType::TsTypeRef(TsTypeRef {
+                span: DUMMY_SP,
+                type_name: Ident {
+                    span: DUMMY_SP,
+                    sym: "Array".into(),
+                    optional: false,
+                }
+                .into(),
+                type_params: None,
+            }),
         }
     }
 }

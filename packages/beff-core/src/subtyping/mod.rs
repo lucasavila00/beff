@@ -8,8 +8,10 @@ use self::bdd::MappingAtomic;
 use self::semtype::{SemType, SemTypeContext, SemTypeOps};
 use self::subtype::StringLitOrFormat;
 pub mod bdd;
+pub mod evidence;
 pub mod semtype;
 pub mod subtype;
+pub mod to_schema;
 use anyhow::anyhow;
 use anyhow::Result;
 
@@ -25,7 +27,7 @@ impl<'a> ToSemTypeConverter<'a> {
     fn get_reference(&self, name: &str) -> Result<&JsonSchema> {
         for validator in self.validators {
             if validator.name == name {
-                return Ok(&validator.schema.value);
+                return Ok(&validator.schema);
             }
         }
         return Err(anyhow!("reference not found: {}", name));
@@ -77,9 +79,10 @@ impl<'a> ToSemTypeConverter<'a> {
                 Ok(acc)
             }
             JsonSchema::AllOf(vs) => {
-                let mut acc = Rc::new(SemTypeContext::never());
+                let mut acc = Rc::new(SemTypeContext::unknown());
                 for v in vs {
-                    acc = acc.intersect(&self.to_sem_type(v, builder)?);
+                    let ty = self.to_sem_type(v, builder)?;
+                    acc = acc.intersect(&ty);
                 }
                 Ok(acc)
             }
@@ -103,7 +106,7 @@ impl<'a> ToSemTypeConverter<'a> {
                         }
                     })
                     .collect::<Result<_>>()?;
-                Ok(builder.mapping_definition(vs).into())
+                Ok(builder.mapping_definition(Rc::new(vs)).into())
             }
             JsonSchema::Array(items) => {
                 let items = self.to_sem_type(items, builder)?;
@@ -137,15 +140,20 @@ impl<'a> ToSemTypeConverter<'a> {
             JsonSchema::OpenApiResponseRef(_) => {
                 unreachable!("should not be part of semantic types")
             }
+            JsonSchema::StNever => todo!(),
+            JsonSchema::StUnknown => todo!(),
+            JsonSchema::StNot(_) => todo!(),
+            JsonSchema::AnyObject => todo!(),
+            JsonSchema::AnyArrayLike => todo!(),
         }
     }
 }
 
-trait ToSemType {
+pub trait ToSemType {
     fn to_sub_type(
         &self,
         validators: &[&Validator],
-        builder: &mut SemTypeContext,
+        ctx: &mut SemTypeContext,
     ) -> Result<Rc<SemType>>;
 }
 
@@ -153,19 +161,8 @@ impl ToSemType for JsonSchema {
     fn to_sub_type(
         &self,
         validators: &[&Validator],
-        builder: &mut SemTypeContext,
+        ctx: &mut SemTypeContext,
     ) -> Result<Rc<SemType>> {
-        ToSemTypeConverter::new(validators).to_sem_type(self, builder)
+        ToSemTypeConverter::new(validators).to_sem_type(self, ctx)
     }
-}
-
-pub fn is_sub_type(
-    a: &JsonSchema,
-    b: &JsonSchema,
-    validators: &[&Validator],
-    builder: &mut SemTypeContext,
-) -> Result<bool> {
-    let a = a.to_sub_type(validators, builder)?;
-    let b = b.to_sub_type(validators, builder)?;
-    return Ok(a.is_subtype(&b, builder));
 }

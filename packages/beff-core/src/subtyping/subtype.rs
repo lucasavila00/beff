@@ -4,6 +4,7 @@ use crate::ast::json::N;
 
 use super::{
     bdd::{list_is_empty, mapping_is_empty, Bdd, BddOps},
+    evidence::{ProperSubtypeEvidence, ProperSubtypeEvidenceResult},
     semtype::SemTypeContext,
 };
 
@@ -11,7 +12,7 @@ pub type BasicTypeCode = u32;
 pub type BasicTypeBitSet = u32;
 pub type NumberRepresentation = N;
 
-#[derive(Clone, Copy, PartialEq, Eq, Hash, Debug)]
+#[derive(Clone, Copy, PartialEq, Eq, Hash, Debug, PartialOrd, Ord)]
 
 pub enum SubTypeTag {
     Boolean = 1 << 0x1,
@@ -23,9 +24,24 @@ pub enum SubTypeTag {
     List = 1 << 0x7,
 }
 
+pub const VAL: u32 = 1 << 1 | 1 << 2 | 1 << 3 | 1 << 4 | 1 << 5 | 1 << 6 | 1 << 7;
+
 impl SubTypeTag {
     pub fn code(&self) -> BasicTypeCode {
         *self as u32
+    }
+
+    pub fn all() -> Vec<SubTypeTag> {
+        // Order matters for decision at materialization time
+        vec![
+            SubTypeTag::String,
+            SubTypeTag::Boolean,
+            SubTypeTag::Number,
+            SubTypeTag::Void,
+            SubTypeTag::Null,
+            SubTypeTag::Mapping,
+            SubTypeTag::List,
+        ]
     }
 }
 
@@ -94,7 +110,8 @@ fn vec_diff<K: PartialEq + Clone + Ord>(v1: &Vec<K>, v2: &Vec<K>) -> Vec<K> {
 }
 
 pub trait ProperSubtypeOps {
-    fn is_empty(&self, builder: &mut SemTypeContext) -> bool;
+    // fn is_empty(&self, builder: &mut SemTypeContext) -> bool;
+    fn is_empty_evidence(&self, builder: &mut SemTypeContext) -> ProperSubtypeEvidenceResult;
     fn intersect(&self, t2: &Rc<ProperSubtype>) -> Rc<SubType>;
     fn union(&self, t2: &Rc<ProperSubtype>) -> Rc<SubType>;
     fn diff(&self, t2: &Rc<ProperSubtype>) -> Rc<SubType>;
@@ -102,13 +119,21 @@ pub trait ProperSubtypeOps {
 }
 
 impl ProperSubtypeOps for Rc<ProperSubtype> {
-    fn is_empty(&self, builder: &mut SemTypeContext) -> bool {
+    fn is_empty_evidence(&self, builder: &mut SemTypeContext) -> ProperSubtypeEvidenceResult {
         match &**self {
-            ProperSubtype::Boolean(_) => false,
+            ProperSubtype::Boolean(b) => ProperSubtypeEvidence::Boolean(*b).to_result(),
             // Empty number sets don't use subtype representation.
-            ProperSubtype::Number { .. } => false,
+            ProperSubtype::Number { allowed, values } => ProperSubtypeEvidence::Number {
+                allowed: *allowed,
+                values: values.clone(),
+            }
+            .to_result(),
             // Empty string sets don't use subtype representation.
-            ProperSubtype::String { .. } => false,
+            ProperSubtype::String { allowed, values } => ProperSubtypeEvidence::String {
+                allowed: *allowed,
+                values: values.clone(),
+            }
+            .to_result(),
             ProperSubtype::Mapping(bdd) => mapping_is_empty(bdd, builder),
             ProperSubtype::List(bdd) => list_is_empty(bdd, builder),
         }

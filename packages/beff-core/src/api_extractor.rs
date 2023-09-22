@@ -1,12 +1,13 @@
 use crate::ast::json_schema::JsonSchema;
 use crate::diag::{
     Diagnostic, DiagnosticInfoMessage, DiagnosticInformation, DiagnosticParentMessage,
-    FullLocation, Located, Location,
+    FullLocation, Location,
 };
 use crate::open_api_ast::{
     self, ApiPath, HTTPMethod, Info, JsonRequestBody, OpenApi, OperationObject, ParameterIn,
     ParameterObject, ParsedPattern, Validator,
 };
+use crate::type_reference::{ResolvedLocalExpr, TypeResolver};
 use crate::type_to_schema::TypeToSchema;
 use crate::{BffFileName, FileManager, ParsedModule};
 use anyhow::anyhow;
@@ -21,9 +22,9 @@ use swc_common::{BytePos, Span, DUMMY_SP};
 use swc_ecma_ast::{
     ArrayPat, ArrowExpr, AssignPat, AssignProp, BigInt, BindingIdent, ComputedPropName,
     ExportDefaultExpr, Expr, FnExpr, Function, GetterProp, Ident, Invalid, KeyValueProp, Lit,
-    MethodProp, Number, ObjectPat, Pat, Prop, PropName, PropOrSpread, RestPat, SetterProp,
-    SpreadElement, Str, Tpl, TsEntityName, TsKeywordType, TsKeywordTypeKind, TsType, TsTypeAnn,
-    TsTypeParamDecl, TsTypeParamInstantiation, TsTypeRef,
+    MethodProp, Number, ObjectLit, ObjectPat, Pat, Prop, PropName, PropOrSpread, RestPat,
+    SetterProp, SpreadElement, Str, Tpl, TsEntityName, TsKeywordType, TsKeywordTypeKind, TsType,
+    TsTypeAnn, TsTypeParamDecl, TsTypeParamInstantiation, TsTypeRef,
 };
 use swc_ecma_visit::Visit;
 
@@ -47,14 +48,14 @@ fn maybe_extract_promise(typ: &TsType) -> &TsType {
 #[derive(Debug, Clone)]
 pub enum HandlerParameter {
     PathOrQueryOrBody {
-        schema: Located<JsonSchema>,
+        schema: JsonSchema,
         required: bool,
         description: Option<String>,
         span: Span,
     },
     Header {
         span: Span,
-        schema: Located<JsonSchema>,
+        schema: JsonSchema,
         required: bool,
         description: Option<String>,
     },
@@ -149,7 +150,7 @@ pub struct FnHandler {
     pub summary: Option<String>,
     pub description: Option<String>,
     pub parameters: Vec<(String, HandlerParameter)>,
-    pub return_type: Located<JsonSchema>,
+    pub return_type: JsonSchema,
     pub method_kind: MethodKind,
     pub span: Span,
 }
@@ -160,10 +161,9 @@ struct ExtractExportDefaultVisitor<'a, R: FileManager> {
     handlers: Vec<PathHandlerMap>,
     components: Vec<Validator>,
     public_definitions: HashSet<String>,
-    found_default_export: bool,
     errors: Vec<Diagnostic>,
     info: open_api_ast::Info,
-    // built_decoders: Option<Vec<BuiltDecoder>>,
+    export_default: Option<Box<Expr>>,
 }
 impl<'a, R: FileManager> ExtractExportDefaultVisitor<'a, R> {
     fn new(files: &'a mut R, current_file: BffFileName) -> ExtractExportDefaultVisitor<'a, R> {
@@ -172,7 +172,7 @@ impl<'a, R: FileManager> ExtractExportDefaultVisitor<'a, R> {
             current_file,
             handlers: vec![],
             components: vec![],
-            found_default_export: false,
+            export_default: None,
             errors: vec![],
             info: open_api_ast::Info {
                 title: None,
@@ -181,6 +181,65 @@ impl<'a, R: FileManager> ExtractExportDefaultVisitor<'a, R> {
             },
             // built_decoders: None,
             public_definitions: HashSet::new(),
+        }
+    }
+    fn parse_endpoints_object(&mut self, lit: &ObjectLit) {
+        for prop in &lit.props {
+            match prop {
+                PropOrSpread::Prop(prop) => {
+                    let method = self.endpoints_from_prop(prop);
+                    if let Ok(method) = method {
+                        self.handlers.push(method)
+                    };
+                }
+                PropOrSpread::Spread(SpreadElement { expr, .. }) => match expr.as_ref() {
+                    Expr::Ident(i) => {
+                        match TypeResolver::new(self.files, &self.current_file)
+                            .resolve_local_ident(i)
+                        {
+                            Ok(ResolvedLocalExpr::Expr(expr)) => {
+                                self.check_export_default_expr(&expr)
+                            }
+                            Ok(ResolvedLocalExpr::NamedImport { exported, .. }) => {
+                                self.check_export_default_expr(&exported)
+                            }
+                            Err(e) => {
+                                self.errors.push(*e);
+                            }
+                        }
+                    }
+                    _ => todo!(),
+                },
+            }
+        }
+    }
+    fn check_export_default_expr(&mut self, expr: &Expr) {
+        match expr {
+            Expr::Object(lit) => {
+                self.parse_endpoints_object(lit);
+            }
+            Expr::Ident(i) => {
+                match TypeResolver::new(self.files, &self.current_file).resolve_local_ident(i) {
+                    Ok(ResolvedLocalExpr::Expr(expr)) => self.check_export_default_expr(&expr),
+                    Ok(ResolvedLocalExpr::NamedImport { .. }) => {
+                        todo!()
+                    }
+                    Err(_) => todo!(),
+                }
+            }
+            _ => todo!(),
+        }
+    }
+
+    fn check_export_default(&mut self, current_file: &BffFileName) {
+        self.current_file = current_file.clone();
+        match self.export_default.clone() {
+            None => self.errors.push(
+                Location::unknown(&current_file)
+                    .to_info(DiagnosticInfoMessage::CouldNotFindDefaultExport)
+                    .to_diag(None),
+            ),
+            Some(expr) => self.check_export_default_expr(&expr),
         }
     }
 }
@@ -304,11 +363,11 @@ impl<'a, R: FileManager> ExtractExportDefaultVisitor<'a, R> {
             PropName::Computed(ComputedPropName { expr, span, .. }) => match &**expr {
                 Expr::Lit(Lit::Str(Str { span, value, .. })) => {
                     let locs = self.get_full_location(span)?;
-                    let p = ApiPath::parse_raw_pattern_str(value.as_ref(), locs);
+                    let p = ApiPath::parse_raw_pattern_str(value.as_ref(), Some(locs.clone()));
                     match p {
                         Ok(v) => Ok(v),
                         Err(e) => {
-                            self.errors.push(e);
+                            self.errors.push(locs.to_diag(e));
                             Err(anyhow!("failed to parse pattern"))
                         }
                     }
@@ -328,11 +387,14 @@ impl<'a, R: FileManager> ExtractExportDefaultVisitor<'a, R> {
                     }
                     let first_quasis = quasis.first().expect("we just checked the length");
                     let locs = self.get_full_location(span)?;
-                    let p = ApiPath::parse_raw_pattern_str(first_quasis.raw.as_ref(), locs);
+                    let p = ApiPath::parse_raw_pattern_str(
+                        first_quasis.raw.as_ref(),
+                        Some(locs.clone()),
+                    );
                     match p {
                         Ok(v) => Ok(v),
                         Err(e) => {
-                            self.errors.push(e);
+                            self.errors.push(locs.to_diag(e));
                             Err(anyhow!("failed to parse pattern"))
                         }
                     }
@@ -342,23 +404,26 @@ impl<'a, R: FileManager> ExtractExportDefaultVisitor<'a, R> {
                     DiagnosticInfoMessage::MustBeComputedKeyWithMethodAndPatternMustBeString,
                 ),
             },
-            PropName::Str(Str { span, value, .. }) => {
+            PropName::Ident(Ident {
+                span, sym: value, ..
+            })
+            | PropName::Str(Str { span, value, .. }) => {
                 let locs = self.get_full_location(span)?;
-                let p = ApiPath::parse_raw_pattern_str(&value.to_string(), locs);
+                let p = ApiPath::parse_raw_pattern_str(&value.to_string(), Some(locs.clone()));
                 match p {
                     Ok(v) => Ok(v),
                     Err(e) => {
-                        self.errors.push(e);
+                        self.errors.push(locs.to_diag(e));
                         Err(anyhow!("failed to parse pattern"))
                     }
                 }
             }
-            PropName::Ident(Ident { span, .. })
-            | PropName::Num(Number { span, .. })
-            | PropName::BigInt(BigInt { span, .. }) => self.error(
-                span,
-                DiagnosticInfoMessage::PatternMustBeComputedKeyOrString,
-            ),
+
+            PropName::Num(Number { span, .. }) | PropName::BigInt(BigInt { span, .. }) => self
+                .error(
+                    span,
+                    DiagnosticInfoMessage::PatternMustBeComputedKeyOrString,
+                ),
         }
     }
 
@@ -366,7 +431,7 @@ impl<'a, R: FileManager> ExtractExportDefaultVisitor<'a, R> {
         for d in defs {
             let found = self.components.iter_mut().find(|x| x.name == d.name);
             if let Some(found) = found {
-                if found.schema.value != d.schema.value {
+                if found.schema != d.schema {
                     self.push_error(
                         span,
                         DiagnosticInfoMessage::TwoDifferentTypesWithTheSameName,
@@ -378,7 +443,7 @@ impl<'a, R: FileManager> ExtractExportDefaultVisitor<'a, R> {
         }
     }
 
-    fn convert_to_json_schema(&mut self, ty: &TsType, span: &Span) -> Located<JsonSchema> {
+    fn convert_to_json_schema(&mut self, ty: &TsType, span: &Span) -> JsonSchema {
         let mut to_schema = TypeToSchema::new(self.files, self.current_file.clone());
         let res = to_schema.convert_ts_type(ty);
         match res {
@@ -412,7 +477,6 @@ impl<'a, R: FileManager> ExtractExportDefaultVisitor<'a, R> {
                 JsonSchema::Error
             }
         }
-        .located(self.get_full_location(span).unwrap())
     }
     fn parse_header_param(
         &mut self,
@@ -619,7 +683,10 @@ impl<'a, R: FileManager> ExtractExportDefaultVisitor<'a, R> {
 
     fn parse_method_kind(&mut self, key: &PropName) -> Result<MethodKind> {
         match key {
-            PropName::Ident(Ident { sym, span, .. }) => match sym.to_string().as_str() {
+            PropName::Str(Str {
+                span, value: sym, ..
+            })
+            | PropName::Ident(Ident { sym, span, .. }) => match sym.to_string().as_str() {
                 "get" => Ok(MethodKind::Get(span.clone())),
                 "post" => Ok(MethodKind::Post(span.clone())),
                 "put" => Ok(MethodKind::Put(span.clone())),
@@ -629,6 +696,7 @@ impl<'a, R: FileManager> ExtractExportDefaultVisitor<'a, R> {
                 "use" => Ok(MethodKind::Use(span.clone())),
                 _ => self.error(span, DiagnosticInfoMessage::NotAnHttpMethod),
             },
+
             _ => {
                 let span = get_prop_name_span(key);
                 self.error(&span, DiagnosticInfoMessage::NotAnHttpMethod)
@@ -686,7 +754,7 @@ impl<'a, R: FileManager> ExtractExportDefaultVisitor<'a, R> {
                     summary: None,
                     description: None,
                     parameters: vec![],
-                    return_type: JsonSchema::Any.located(self.get_full_location(&span).unwrap()),
+                    return_type: JsonSchema::Any,
                     method_kind: MethodKind::Use(span.clone()),
                     span: Self::get_prop_span(prop),
                 }];
@@ -732,7 +800,11 @@ impl<'a, R: FileManager> ExtractExportDefaultVisitor<'a, R> {
                     })
                     .collect();
 
-                return Ok(PathHandlerMap { pattern, handlers });
+                return Ok(PathHandlerMap {
+                    pattern,
+                    handlers,
+                    loc: self.get_full_location(&Self::get_prop_span(prop))?,
+                });
             }
         }
 
@@ -803,25 +875,7 @@ impl<'a, R: FileManager> Visit for ExtractExportDefaultVisitor<'a, R> {
             if let Some(comments) = comments {
                 self.parse_export_default_comments(comments);
             }
-            if let Expr::Object(lit) = &*n.expr {
-                self.found_default_export = true;
-                for prop in &lit.props {
-                    match prop {
-                        PropOrSpread::Prop(prop) => {
-                            let method = self.endpoints_from_prop(prop);
-                            if let Ok(method) = method {
-                                self.handlers.push(method)
-                            };
-                        }
-                        PropOrSpread::Spread(SpreadElement { dot3_token, .. }) => {
-                            self.push_error(
-                                dot3_token,
-                                DiagnosticInfoMessage::RestOnRouterDefaultExportNotSupportedYet,
-                            );
-                        }
-                    }
-                }
-            }
+            self.export_default = Some(n.expr.clone());
         }
     }
 }
@@ -840,7 +894,7 @@ fn is_type_simple(it: &JsonSchema, components: &Vec<Validator>) -> bool {
                 .iter()
                 .find(|it| &it.name == r)
                 .expect("can always find ref in json schema at this point");
-            is_type_simple(&def.schema.value, components)
+            is_type_simple(&def.schema, components)
         }
         JsonSchema::AnyOf(vs) => vs.iter().all(|it| is_type_simple(it, components)),
         JsonSchema::Null
@@ -855,6 +909,11 @@ fn is_type_simple(it: &JsonSchema, components: &Vec<Validator>) -> bool {
         | JsonSchema::Array(_)
         | JsonSchema::Tuple { .. } => false,
         JsonSchema::Error => true,
+        JsonSchema::StNever => todo!(),
+        JsonSchema::StUnknown => todo!(),
+        JsonSchema::StNot(_) => todo!(),
+        JsonSchema::AnyObject => todo!(),
+        JsonSchema::AnyArrayLike => todo!(),
     }
 }
 
@@ -895,11 +954,6 @@ impl<'a, R: FileManager> EndpointToPath<'a, R> {
         let file = self.files.get_or_fetch_file(&self.current_file);
         let err = Location::build(file, span, &self.current_file).to_info(info_msg);
         self.errors.push(err.to_diag(parent_msg));
-    }
-
-    fn get_locs(&mut self, span: &Span) -> Result<FullLocation> {
-        let file = self.files.get_existing_file(&self.current_file);
-        Location::build(file, span, &self.current_file).result_full()
     }
 
     fn endpoint_to_operation_object(
@@ -945,7 +999,7 @@ impl<'a, R: FileManager> EndpointToPath<'a, R> {
                     match operation_parameter_in_path_or_query_or_body(
                         key,
                         pattern,
-                        &schema.value,
+                        &schema,
                         self.components,
                     ) {
                         FunctionParameterIn::Path => parameters.push(ParameterObject {
@@ -1008,7 +1062,6 @@ impl<'a, R: FileManager> EndpointToPath<'a, R> {
             parameters,
             json_response_body: endpoint.return_type.clone(),
             json_request_body,
-            method_prop_span: self.get_locs(endpoint.method_kind.span())?,
         })
     }
 
@@ -1016,7 +1069,7 @@ impl<'a, R: FileManager> EndpointToPath<'a, R> {
         endpoints
             .iter()
             .map(|handler_map| {
-                let contains_star = handler_map.pattern.open_api_pattern.contains('*');
+                let contains_star = handler_map.pattern.raw.contains('*');
                 if contains_star {
                     for endpoint in &handler_map.handlers {
                         match endpoint.method_kind {
@@ -1046,7 +1099,7 @@ impl<'a, R: FileManager> EndpointToPath<'a, R> {
                         }
                     }
                 }
-                self.errors.extend(path.validate());
+                self.errors.extend(path.validate(&handler_map.loc));
                 path
             })
             .collect()
@@ -1055,6 +1108,7 @@ impl<'a, R: FileManager> EndpointToPath<'a, R> {
 
 #[derive(Clone)]
 pub struct PathHandlerMap {
+    pub loc: FullLocation,
     pub pattern: ParsedPattern,
     pub handlers: Vec<FnHandler>,
 }
@@ -1077,13 +1131,7 @@ type VisitExtractResult = (
 fn visit_extract<R: FileManager>(files: &mut R, current_file: BffFileName) -> VisitExtractResult {
     let mut visitor = ExtractExportDefaultVisitor::new(files, current_file.clone());
     let _ = visitor.visit_current_file();
-    if !visitor.found_default_export {
-        visitor.errors.push(
-            Location::unknown(&current_file)
-                .to_info(DiagnosticInfoMessage::CouldNotFindDefaultExport)
-                .to_diag(None),
-        )
-    }
+    visitor.check_export_default(&current_file);
 
     (
         visitor.handlers,

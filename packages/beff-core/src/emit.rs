@@ -5,7 +5,7 @@ use swc_ecma_ast::{Module, ModuleItem};
 use swc_ecma_codegen::Config;
 use swc_ecma_codegen::{text_writer::JsWriter, Emitter};
 
-pub fn emit_module(body: Vec<ModuleItem>) -> Result<String> {
+pub fn emit_module(body: Vec<ModuleItem>, new_line: &str) -> Result<String> {
     let ast = Module {
         span: DUMMY_SP,
         body,
@@ -21,7 +21,7 @@ pub fn emit_module(body: Vec<ModuleItem>) -> Result<String> {
                 cfg: Config::default(),
                 cm: cm.clone(),
                 comments: None,
-                wr: JsWriter::new(cm, "\n", &mut buf, None),
+                wr: JsWriter::new(cm, new_line, &mut buf, None),
             };
 
             emitter.emit_module(&ast)?;

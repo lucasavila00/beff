@@ -5,7 +5,9 @@
 	// Or use a Dockerfile or Docker Compose file. More info: https://containers.dev/guide/dockerfile
 	"image": "mcr.microsoft.com/devcontainers/javascript-node:1-18-bullseye",
 	"features": {
-		"ghcr.io/devcontainers/features/rust:1": {}
+		"ghcr.io/devcontainers/features/rust:1": {},
+		"ghcr.io/itsmechlark/features/postgresql:1": {},
+		"ghcr.io/robbert229/devcontainer-features/postgresql-client:1": {}
 	},
 
 	// Features to add to the dev container. More info: https://containers.dev/features.

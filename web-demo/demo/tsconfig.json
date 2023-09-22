@@ -8,5 +8,5 @@
     "allowSyntheticDefaultImports": true,
     "noEmit": true
   },
-  "include": ["./src"]
+  "include": ["./client"]
 }

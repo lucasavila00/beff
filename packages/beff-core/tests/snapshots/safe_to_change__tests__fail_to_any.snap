@@ -1,0 +1,38 @@
+---
+source: packages/beff-core/tests/safe_to_change.rs
+expression: "print_errors(from, to, &errors)"
+---
+from:
+
+        export default {
+            "/hello": {
+                get: ():1 => todo()
+            }
+        }
+        
+to:
+
+        export default {
+            "/hello": {
+                get: () => todo()
+            }
+        }
+        
+
+# Error at GET /hello:
+
+Response body is not compatible.
+
+```ts
+type Old = 1;
+```
+
+```ts
+type New = null | boolean | string | number | Object | Array;
+```
+
+Old clients will not support this response:
+
+```json
+"abc"
+```

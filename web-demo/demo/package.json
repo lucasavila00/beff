@@ -2,9 +2,10 @@
 	"name": "browser-esm-vite-react",
 	"scripts": {
 		"dev": "vite",
-		"build3": "vite build && cp -r dist/. ../../web/docs/static/playground/",
+		"build": "vite build && cp -r dist/. ../../packages/web-docs/static/playground/",
 		"serve": "vite preview",
-		"simpleserver": "node ../node_modules/yaserver/bin/yaserver --root ./dist --port 9999"
+		"simpleserver": "node ../node_modules/yaserver/bin/yaserver --root ./dist --port 9999",
+		"wasm": "wasm-pack build --release --target bundler --out-dir pkg --out-name index"
 	},
 	"devDependencies": {
 		"@types/react": "^18.2.21",

@@ -7,10 +7,13 @@ pub mod open_api_ast;
 pub mod parse;
 pub mod parser_extractor;
 pub mod print;
+pub mod schema_changes;
 pub mod subtyping;
 pub mod swc_builder;
 pub mod type_reference;
 pub mod type_to_schema;
+pub mod wasm_diag;
+
 use api_extractor::extract_schema;
 use api_extractor::RouterExtractResult;
 use core::fmt;
@@ -25,15 +28,21 @@ use swc_atoms::JsWord;
 use swc_common::SourceFile;
 use swc_common::SourceMap;
 use swc_common::SyntaxContext;
+use swc_ecma_ast::Decl;
+use swc_ecma_ast::Expr;
+use swc_ecma_ast::ModuleItem;
+use swc_ecma_ast::Pat;
+use swc_ecma_ast::Stmt;
 use swc_ecma_ast::{Module, TsType};
 use swc_ecma_ast::{TsInterfaceDecl, TsTypeAliasDecl};
 use swc_ecma_visit::Visit;
 use swc_node_comments::SwcComments;
 
 #[derive(Debug, Clone)]
-pub enum TypeExport {
+pub enum TypescriptExport {
     TsType { ty: Rc<TsType>, name: JsWord },
     TsInterfaceDecl(Rc<TsInterfaceDecl>),
+    ValueExpr { expr: Rc<Expr>, name: JsWord },
     StarOfOtherFile(Rc<ImportReference>),
     SomethingOfOtherFile(JsWord, BffFileName),
 }
@@ -86,28 +95,32 @@ impl ImportReference {
     }
 }
 #[derive(Debug, Clone)]
-pub struct TypeExportsModule {
-    named: HashMap<JsWord, Rc<TypeExport>>,
+pub struct TypescriptExportsModule {
+    named: HashMap<JsWord, Rc<TypescriptExport>>,
     extends: Vec<BffFileName>,
 }
-impl Default for TypeExportsModule {
+impl Default for TypescriptExportsModule {
     fn default() -> Self {
         Self::new()
     }
 }
-impl TypeExportsModule {
-    pub fn new() -> TypeExportsModule {
-        TypeExportsModule {
+impl TypescriptExportsModule {
+    pub fn new() -> TypescriptExportsModule {
+        TypescriptExportsModule {
             named: HashMap::new(),
             extends: Vec::new(),
         }
     }
 
-    pub fn insert(&mut self, name: JsWord, export: Rc<TypeExport>) {
+    pub fn insert(&mut self, name: JsWord, export: Rc<TypescriptExport>) {
         self.named.insert(name, export);
     }
 
-    pub fn get<R: FileManager>(&self, name: &JsWord, files: &mut R) -> Option<Rc<TypeExport>> {
+    pub fn get<R: FileManager>(
+        &self,
+        name: &JsWord,
+        files: &mut R,
+    ) -> Option<Rc<TypescriptExport>> {
         self.named.get(name).cloned().or_else(|| {
             for it in &self.extends {
                 let file = files.get_or_fetch_file(it)?;
@@ -130,19 +143,22 @@ pub struct ParsedModule {
     pub module: BffModuleData,
     pub imports: HashMap<(JsWord, SyntaxContext), Rc<ImportReference>>,
     pub comments: SwcComments,
-    pub type_exports: TypeExportsModule,
+    pub type_exports: TypescriptExportsModule,
 }
 
 #[derive(Debug)]
 pub struct ParsedModuleLocals {
     pub type_aliases: HashMap<(JsWord, SyntaxContext), Rc<TsType>>,
     pub interfaces: HashMap<(JsWord, SyntaxContext), Rc<TsInterfaceDecl>>,
+
+    pub exprs: HashMap<(JsWord, SyntaxContext), Rc<Expr>>,
 }
 impl ParsedModuleLocals {
     pub fn new() -> ParsedModuleLocals {
         ParsedModuleLocals {
             type_aliases: HashMap::new(),
             interfaces: HashMap::new(),
+            exprs: HashMap::new(),
         }
     }
 }
@@ -154,6 +170,38 @@ impl Default for ParsedModuleLocals {
 }
 pub struct ParserOfModuleLocals {
     content: ParsedModuleLocals,
+}
+impl ParserOfModuleLocals {
+    pub fn new() -> ParserOfModuleLocals {
+        ParserOfModuleLocals {
+            content: ParsedModuleLocals::new(),
+        }
+    }
+
+    pub fn visit_module_item_list(&mut self, it: &[ModuleItem]) {
+        for it in it {
+            match it {
+                ModuleItem::Stmt(Stmt::Decl(decl)) => {
+                    // add expr to self.content
+
+                    if let Decl::Var(decls) = decl {
+                        for it in &decls.decls {
+                            if let Some(expr) = &it.init {
+                                if let Pat::Ident(id) = &it.name {
+                                    self.content.exprs.insert(
+                                        (id.sym.clone(), id.span.ctxt),
+                                        Rc::new(*expr.clone()),
+                                    );
+                                }
+                            }
+                        }
+                    }
+                }
+                ModuleItem::ModuleDecl(_) => {}
+                ModuleItem::Stmt(_) => {}
+            }
+        }
+    }
 }
 
 impl Visit for ParserOfModuleLocals {
@@ -223,18 +271,6 @@ impl ExtractResult {
             )
             .collect()
     }
-
-    pub fn self_check_sem_types(&self) {
-        let definitions = self.validators();
-        for def in &definitions {
-            let res = def
-                .schema
-                .value
-                .is_sub_type(&def.schema.value, &definitions)
-                .unwrap();
-            assert!(res);
-        }
-    }
 }
 pub fn extract<R: FileManager>(files: &mut R, entry: EntryPoints) -> ExtractResult {
     let mut router = None;
@@ -247,8 +283,5 @@ pub fn extract<R: FileManager>(files: &mut R, entry: EntryPoints) -> ExtractResu
         parser = Some(extract_parser(files, entry));
     }
 
-    let e = ExtractResult { router, parser };
-    // e.self_check_sem_types();
-
-    e
+    ExtractResult { router, parser }
 }

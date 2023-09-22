@@ -12,7 +12,6 @@ const main = async () => {
 
   const cmds = {
     "build-rust": `wasm-pack build ${mode} --target nodejs`,
-    "build-rust-web": `wasm-pack build ${mode} --target bundler --out-dir ../../web-demo/demo/src/pkg --out-name index`,
     "build-cli":
       "esbuild ts-node/commandeer.ts --bundle --outfile=dist-cli/cli.js --platform=node --target=node14 --external:pnpapi --external:./pkg/beff_wasm.js --external:./pkg/beff_wasm_bg.js",
     "build-ext":

@@ -208,7 +208,9 @@ export function buildClient<T>(
     if (client[meta.pattern] == null) {
       client[meta.pattern] = {};
     }
-    client[meta.pattern][meta.method_kind] = async (...params: any) => {
+    client[meta.pattern][meta.method_kind.toLowerCase()] = async (
+      ...params: any
+    ) => {
       const requestParams = { meta, params };
       const bffReq = BffRequest.build(requestParams);
       const requestInit = bffReq.toRequestInit();

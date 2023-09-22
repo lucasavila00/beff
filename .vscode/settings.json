@@ -4,6 +4,7 @@
     "bindgen",
     "codegen",
     "Hono",
+    "insta",
     "openapi",
     "redoc",
     "Unfound",

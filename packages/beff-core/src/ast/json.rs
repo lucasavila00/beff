@@ -21,6 +21,22 @@ impl N {
         };
         serde_json::Value::Number(v)
     }
+
+    pub fn parse_f64(it: f64) -> Self {
+        if it.fract() == 0.0 {
+            return Self::parse_int(it.trunc() as i64);
+        }
+        N {
+            integral: it.trunc() as i64,
+            fractional: Some((it.fract() * 1_000_000_000.0) as i64),
+        }
+    }
+    pub fn parse_int(it: i64) -> Self {
+        N {
+            integral: it,
+            fractional: None,
+        }
+    }
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord)]
@@ -35,19 +51,10 @@ pub enum Json {
 
 impl Json {
     pub fn parse_f64(it: f64) -> Self {
-        if it.fract() == 0.0 {
-            return Self::parse_int(it.trunc() as i64);
-        }
-        Self::Number(N {
-            integral: it.trunc() as i64,
-            fractional: Some((it.fract() * 1_000_000_000.0) as i64),
-        })
+        Self::Number(N::parse_f64(it))
     }
     pub fn parse_int(it: i64) -> Self {
-        Self::Number(N {
-            integral: it,
-            fractional: None,
-        })
+        Self::Number(N::parse_int(it))
     }
 
     pub fn number_serde(it: &serde_json::Number) -> Self {

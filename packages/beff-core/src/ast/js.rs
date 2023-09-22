@@ -1,8 +1,13 @@
 use std::collections::BTreeMap;
 
-use swc_ecma_ast::Expr;
+use swc_common::DUMMY_SP;
+use swc_ecma_ast::{Expr, ExprStmt, ModuleItem, Stmt};
 
-use crate::ast::{json::Json, json_schema::JsonSchema};
+use crate::{
+    ast::{json::Json, json_schema::JsonSchema},
+    emit::emit_module,
+    print::expr::ToExpr,
+};
 
 use super::json::N;
 
@@ -40,6 +45,18 @@ impl Js {
             schema,
             required,
         }
+    }
+    pub fn to_string(self) -> String {
+        let expr = self.to_expr();
+
+        emit_module(
+            vec![ModuleItem::Stmt(Stmt::Expr(ExprStmt {
+                span: DUMMY_SP,
+                expr: Box::new(expr),
+            }))],
+            "\n",
+        )
+        .unwrap()
     }
 }
 pub trait ToJs {

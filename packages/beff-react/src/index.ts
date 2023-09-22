@@ -27,6 +27,11 @@ export type MutationHookResult<T> = {
   useMutation: (
     options?: Omit<UseMutationOptions<T>, "queryKey" | "queryFn">
   ) => UseMutationResult<T>;
+
+  useQuery: (
+    options?: Omit<UseQueryOptions<T>, "queryKey" | "queryFn">
+  ) => UseQueryResult<T>;
+
   fetch: () => Promise<T>;
 };
 export type NonGetHook<T> = T extends (...args: infer A) => Promise<infer R>
@@ -69,11 +74,17 @@ export const buildReactQueryClient = <T>(
     } else {
       queryClient[meta.pattern][meta.method_kind] = (...params: any[]) => ({
         fetch: () => fetcher(params),
-        useMutation: (options: any) =>
-          useMutation({
+        useQuery: (options: any) =>
+          useQuery({
             ...(options ?? {}),
             queryFn: async () => await fetcher(...params),
             queryKey: [meta.pattern, meta.method_kind, ...params],
+          }),
+        useMutation: (options: any) =>
+          useMutation({
+            ...(options ?? {}),
+            mutationFn: async () => await fetcher(...params),
+            mutationKey: [meta.pattern, meta.method_kind, ...params],
           }),
       });
     }
