@@ -28,8 +28,7 @@
   "scripts": {
     "build": "node script/build.js",
     "test": "node script/e2e.js && vitest --run --update",
-    "do": "npm run build && node npm-bin/index.js -v -p /home/lucas/fluff/bff/packages/beff-wasm/vitest/export-decoder/bff.json",
-    "stress": "npm run build-rust-release && time node npm-bin/index.js -v -p /home/lucas/fluff/bff/packages/example-blog/bff.json",
+    "do": "npm run build && node ../beff-cli/bin/index.js -v -p /home/lucas/fluff/beff/packages/beff-wasm/vitest/define-function/bff.json",
     "ts": "tsc --noEmit",
     "publish": "pnpm vsce publish --no-dependencies"
   },

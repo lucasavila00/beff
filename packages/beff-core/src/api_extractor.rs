@@ -179,7 +179,7 @@ impl<'a, R: FileManager> ExtractExportDefaultVisitor<'a, R> {
             public_definitions: HashSet::new(),
         }
     }
-    fn parse_endpoints_object(&mut self, lit: &ObjectLit) {
+    fn parse_endpoints_object(&mut self, lit: &ObjectLit, current_file: &BffFileName) {
         for prop in &lit.props {
             match prop {
                 PropOrSpread::Prop(prop) => {
@@ -189,19 +189,19 @@ impl<'a, R: FileManager> ExtractExportDefaultVisitor<'a, R> {
                     };
                 }
                 PropOrSpread::Spread(SpreadElement { expr, .. }) => {
-                    self.check_export_default_expr(&expr)
+                    self.check_expr_for_methods(&expr, &current_file)
                 }
             }
         }
     }
-    fn check_export_default_expr_ts_export(&mut self, expr: &SymbolExport) {
+    fn check_ts_export_for_methods(&mut self, expr: &SymbolExport, parent_file: &BffFileName) {
         match expr {
-            SymbolExport::ValueExpr { expr, .. } => self.check_export_default_expr(expr),
+            SymbolExport::ValueExpr { expr, .. } => self.check_expr_for_methods(expr, parent_file),
             SymbolExport::SomethingOfOtherFile(orig, file_name) => {
                 let file = self.files.get_or_fetch_file(file_name);
                 let exported = file.and_then(|file| file.symbol_exports.get(orig, self.files));
                 if let Some(export) = exported {
-                    self.check_export_default_expr_ts_export(&export);
+                    self.check_ts_export_for_methods(&export, file_name);
                 } else {
                     // Err(self
                     //     .make_err(&i.span, DiagnosticInfoMessage::CannotResolveNamespaceType)
@@ -214,26 +214,37 @@ impl<'a, R: FileManager> ExtractExportDefaultVisitor<'a, R> {
             SymbolExport::StarOfOtherFile(_) => todo!(),
         }
     }
-    fn check_export_default_expr(&mut self, expr: &Expr) {
+    fn check_expr_for_methods(&mut self, expr: &Expr, file_name: &BffFileName) {
         match expr {
             Expr::Object(lit) => {
-                self.parse_endpoints_object(lit);
+                self.parse_endpoints_object(lit, file_name);
             }
             Expr::Ident(i) => {
-                match TypeResolver::new(self.files, &self.current_file).resolve_local_symbol(i) {
-                    Ok(ResolvedLocalSymbol::Expr(expr)) => self.check_export_default_expr(&expr),
-                    Ok(ResolvedLocalSymbol::NamedImport { exported, .. }) => {
-                        self.check_export_default_expr_ts_export(&exported)
+                match TypeResolver::new(self.files, &file_name).resolve_local_symbol(i) {
+                    Ok(ResolvedLocalSymbol::Expr(expr)) => {
+                        self.check_expr_for_methods(&expr, file_name)
                     }
+                    Ok(ResolvedLocalSymbol::NamedImport {
+                        exported,
+                        from_file,
+                    }) => self.check_ts_export_for_methods(&exported, &from_file.file_name()),
+                    Ok(ResolvedLocalSymbol::SymbolExportDefault(export_default)) => self
+                        .check_expr_for_methods(
+                            &export_default.symbol_export,
+                            &export_default.file_name,
+                        ),
                     Ok(_) => todo!(),
-                    Err(e) => self.errors.push(*e),
+                    Err(e) => {
+                        self.errors.push(*e);
+                        todo!()
+                    }
                 }
             }
             _ => todo!(),
         }
     }
 
-    fn check_export_default(&mut self, current_file: &BffFileName) {
+    fn check_export_default_for_methods(&mut self) {
         let file = self.files.get_or_fetch_file(&self.current_file);
         let expr = file.and_then(|file| file.export_default.clone());
         match expr {
@@ -245,10 +256,10 @@ impl<'a, R: FileManager> ExtractExportDefaultVisitor<'a, R> {
                     }
                 }
 
-                self.check_export_default_expr(&expr.symbol_export)
+                self.check_expr_for_methods(&expr.symbol_export, &expr.file_name)
             }
             None => self.errors.push(
-                Location::unknown(&current_file)
+                Location::unknown(&self.current_file)
                     .to_info(DiagnosticInfoMessage::CouldNotFindDefaultExport)
                     .to_diag(None),
             ),
@@ -1127,7 +1138,7 @@ type VisitExtractResult = (
 );
 fn visit_extract<R: FileManager>(files: &mut R, current_file: BffFileName) -> VisitExtractResult {
     let mut visitor = ExtractExportDefaultVisitor::new(files, current_file.clone());
-    visitor.check_export_default(&current_file);
+    visitor.check_export_default_for_methods();
 
     (
         visitor.handlers,

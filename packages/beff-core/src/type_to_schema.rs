@@ -181,6 +181,7 @@ impl<'a, R: FileManager> TypeToSchema<'a, R> {
                 return self.convert_type_export(exported.as_ref(), from_file.file_name(), &i.span)
             }
             ResolvedLocalSymbol::Expr(_) => todo!(),
+            ResolvedLocalSymbol::SymbolExportDefault(_) => todo!(),
         }
     }
 

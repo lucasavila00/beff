@@ -1,7 +1,2 @@
-export default {
-  [`/hello3`]: {
-    get: function (): Promise<string> {
-      return Promise.resolve("Hello!");
-    },
-  },
-};
+import r31 from "./r3-1";
+export default { ...r31 };

@@ -5,7 +5,7 @@ use swc_ecma_ast::{Expr, Ident, TsInterfaceDecl, TsType};
 
 use crate::{
     diag::{Diagnostic, DiagnosticInfoMessage, Location},
-    BffFileName, FileManager, ImportReference, ParsedModule, SymbolExport,
+    BffFileName, FileManager, ImportReference, ParsedModule, SymbolExport, SymbolExportDefault,
 };
 
 pub struct TypeResolver<'a, R: FileManager> {
@@ -21,6 +21,7 @@ pub enum ResolvedLocalSymbol {
         exported: Rc<SymbolExport>,
         from_file: Rc<ImportReference>,
     },
+    SymbolExportDefault(Rc<SymbolExportDefault>),
     // ExportDefault(Rc<Expr>),
 }
 pub struct ResolvedNamespaceSymbol {
@@ -136,7 +137,7 @@ impl<'a, R: FileManager> TypeResolver<'a, R> {
                     let file = self.files.get_or_fetch_file(file_name);
                     let df = file.and_then(|file| file.export_default.clone());
                     match df {
-                        Some(d) => return Ok(ResolvedLocalSymbol::Expr(d.symbol_export.clone())),
+                        Some(d) => return Ok(ResolvedLocalSymbol::SymbolExportDefault(d.clone())),
                         None => todo!(),
                     }
                 }
