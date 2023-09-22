@@ -1,0 +1,11 @@
+Error: Cannot find symbol 'ThisDoesNotExist'
+ /errors/cannot-resolve-with-comments/router.ts:6:28
+   4 |   [`/hello`]: {
+   5 |     // C
+ > 6 |     get: async (): Promise<ThisDoesNotExist> => {
+     |                            ^^^^^^^^^^^^^^^^ Cannot find symbol 'ThisDoesNotExist'
+   7 |       // D
+   8 |       return "test";
+   9 |     },
+
+Found 1 error
