@@ -39,9 +39,10 @@ use swc_ecma_visit::Visit;
 use swc_node_comments::SwcComments;
 
 #[derive(Debug, Clone)]
-pub enum TypeExport {
+pub enum TypescriptExport {
     TsType { ty: Rc<TsType>, name: JsWord },
     TsInterfaceDecl(Rc<TsInterfaceDecl>),
+    ValueExpr { expr: Rc<Expr>, name: JsWord },
     StarOfOtherFile(Rc<ImportReference>),
     SomethingOfOtherFile(JsWord, BffFileName),
 }
@@ -94,28 +95,32 @@ impl ImportReference {
     }
 }
 #[derive(Debug, Clone)]
-pub struct TypeExportsModule {
-    named: HashMap<JsWord, Rc<TypeExport>>,
+pub struct TypescriptExportsModule {
+    named: HashMap<JsWord, Rc<TypescriptExport>>,
     extends: Vec<BffFileName>,
 }
-impl Default for TypeExportsModule {
+impl Default for TypescriptExportsModule {
     fn default() -> Self {
         Self::new()
     }
 }
-impl TypeExportsModule {
-    pub fn new() -> TypeExportsModule {
-        TypeExportsModule {
+impl TypescriptExportsModule {
+    pub fn new() -> TypescriptExportsModule {
+        TypescriptExportsModule {
             named: HashMap::new(),
             extends: Vec::new(),
         }
     }
 
-    pub fn insert(&mut self, name: JsWord, export: Rc<TypeExport>) {
+    pub fn insert(&mut self, name: JsWord, export: Rc<TypescriptExport>) {
         self.named.insert(name, export);
     }
 
-    pub fn get<R: FileManager>(&self, name: &JsWord, files: &mut R) -> Option<Rc<TypeExport>> {
+    pub fn get<R: FileManager>(
+        &self,
+        name: &JsWord,
+        files: &mut R,
+    ) -> Option<Rc<TypescriptExport>> {
         self.named.get(name).cloned().or_else(|| {
             for it in &self.extends {
                 let file = files.get_or_fetch_file(it)?;
@@ -138,7 +143,7 @@ pub struct ParsedModule {
     pub module: BffModuleData,
     pub imports: HashMap<(JsWord, SyntaxContext), Rc<ImportReference>>,
     pub comments: SwcComments,
-    pub type_exports: TypeExportsModule,
+    pub type_exports: TypescriptExportsModule,
 }
 
 #[derive(Debug)]

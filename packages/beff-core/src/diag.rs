@@ -80,6 +80,7 @@ pub enum DiagnosticInfoMessage {
     ThisRefersToSomethingThatCannotBeSerialized(String),
     TypeParameterApplicationNotSupported,
     CannotResolveLocalType(String),
+    CannotResolveLocalExpr(String),
 }
 
 #[allow(clippy::inherent_to_string)]
@@ -88,6 +89,9 @@ impl DiagnosticInfoMessage {
         match self {
             DiagnosticInfoMessage::CannotResolveLocalType(name) => {
                 format!("Cannot find type '{name}'")
+            }
+            DiagnosticInfoMessage::CannotResolveLocalExpr(name) => {
+                format!("Cannot find name '{name}'")
             }
             DiagnosticInfoMessage::KeywordNonSerializableToJsonSchema
             | DiagnosticInfoMessage::PropertyNonSerializableToJsonSchema

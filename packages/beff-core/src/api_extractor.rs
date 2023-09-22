@@ -200,7 +200,12 @@ impl<'a, R: FileManager> ExtractExportDefaultVisitor<'a, R> {
                             Ok(ResolvedLocalExpr::Expr(expr)) => {
                                 self.check_export_default_expr(&expr)
                             }
-                            Err(_) => todo!(),
+                            Ok(ResolvedLocalExpr::NamedImport { exported, .. }) => {
+                                self.check_export_default_expr(&exported)
+                            }
+                            Err(e) => {
+                                self.errors.push(*e);
+                            }
                         }
                     }
                     _ => todo!(),
@@ -216,6 +221,9 @@ impl<'a, R: FileManager> ExtractExportDefaultVisitor<'a, R> {
             Expr::Ident(i) => {
                 match TypeResolver::new(self.files, &self.current_file).resolve_local_ident(i) {
                     Ok(ResolvedLocalExpr::Expr(expr)) => self.check_export_default_expr(&expr),
+                    Ok(ResolvedLocalExpr::NamedImport { .. }) => {
+                        todo!()
+                    }
                     Err(_) => todo!(),
                 }
             }
