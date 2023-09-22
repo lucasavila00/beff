@@ -39,7 +39,7 @@ use swc_ecma_visit::Visit;
 use swc_node_comments::SwcComments;
 
 #[derive(Debug, Clone)]
-pub enum TypescriptExport {
+pub enum SymbolExport {
     TsType { ty: Rc<TsType>, name: JsWord },
     TsInterfaceDecl(Rc<TsInterfaceDecl>),
     ValueExpr { expr: Rc<Expr>, name: JsWord },
@@ -95,36 +95,32 @@ impl ImportReference {
     }
 }
 #[derive(Debug, Clone)]
-pub struct TypescriptExportsModule {
-    named: HashMap<JsWord, Rc<TypescriptExport>>,
+pub struct SymbolsExportsModule {
+    named: HashMap<JsWord, Rc<SymbolExport>>,
     extends: Vec<BffFileName>,
 }
-impl Default for TypescriptExportsModule {
+impl Default for SymbolsExportsModule {
     fn default() -> Self {
         Self::new()
     }
 }
-impl TypescriptExportsModule {
-    pub fn new() -> TypescriptExportsModule {
-        TypescriptExportsModule {
+impl SymbolsExportsModule {
+    pub fn new() -> SymbolsExportsModule {
+        SymbolsExportsModule {
             named: HashMap::new(),
             extends: Vec::new(),
         }
     }
 
-    pub fn insert(&mut self, name: JsWord, export: Rc<TypescriptExport>) {
+    pub fn insert(&mut self, name: JsWord, export: Rc<SymbolExport>) {
         self.named.insert(name, export);
     }
 
-    pub fn get<R: FileManager>(
-        &self,
-        name: &JsWord,
-        files: &mut R,
-    ) -> Option<Rc<TypescriptExport>> {
+    pub fn get<R: FileManager>(&self, name: &JsWord, files: &mut R) -> Option<Rc<SymbolExport>> {
         self.named.get(name).cloned().or_else(|| {
             for it in &self.extends {
                 let file = files.get_or_fetch_file(it)?;
-                let res = file.type_exports.get(name, files);
+                let res = file.symbol_exports.get(name, files);
                 if let Some(it) = res {
                     return Some(it.clone());
                 }
@@ -143,7 +139,7 @@ pub struct ParsedModule {
     pub module: BffModuleData,
     pub imports: HashMap<(JsWord, SyntaxContext), Rc<ImportReference>>,
     pub comments: SwcComments,
-    pub type_exports: TypescriptExportsModule,
+    pub symbol_exports: SymbolsExportsModule,
 }
 
 #[derive(Debug)]

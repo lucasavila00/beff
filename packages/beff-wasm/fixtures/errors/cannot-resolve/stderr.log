@@ -1,9 +1,9 @@
-Error: Cannot find type 'ThisDoesNotExist'
+Error: Cannot find symbol 'ThisDoesNotExist'
  /errors/cannot-resolve/router.ts:3:28
    1 | export default {
    2 |   [`/hello`]: {
  > 3 |     get: async (): Promise<ThisDoesNotExist> => {
-     |                            ^^^^^^^^^^^^^^^^ Cannot find type 'ThisDoesNotExist'
+     |                            ^^^^^^^^^^^^^^^^ Cannot find symbol 'ThisDoesNotExist'
    4 |       return "test";
    5 |     },
    6 |   },

@@ -1,3 +1,5 @@
+// import r1 from "./r1";
+
 import { r0 } from "./r0";
 
 const r1 = {
@@ -8,6 +10,7 @@ const r1 = {
     },
   },
 };
+
 const r = {
   ...r1,
   [`/hello3`]: {

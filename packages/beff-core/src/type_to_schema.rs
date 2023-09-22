@@ -4,8 +4,8 @@ use crate::diag::{
     Diagnostic, DiagnosticInfoMessage, DiagnosticInformation, DiagnosticParentMessage, Location,
 };
 use crate::open_api_ast::Validator;
-use crate::type_reference::{ResolvedLocalType, TypeResolver};
-use crate::{BffFileName, FileManager, ImportReference, TypescriptExport};
+use crate::type_reference::{ResolvedLocalSymbol, TypeResolver};
+use crate::{BffFileName, FileManager, ImportReference, SymbolExport};
 use std::collections::HashMap;
 use std::rc::Rc;
 use swc_atoms::JsWord;
@@ -133,23 +133,23 @@ impl<'a, R: FileManager> TypeToSchema<'a, R> {
 
     fn convert_type_export(
         &mut self,
-        exported: &TypescriptExport,
+        exported: &SymbolExport,
         from_file: &BffFileName,
         span: &Span,
     ) -> Res<JsonSchema> {
         let store_current_file = self.current_file.clone();
         self.current_file = from_file.clone();
         let ty = match exported {
-            TypescriptExport::TsType { ty: alias, .. } => self.convert_ts_type(alias)?,
-            TypescriptExport::TsInterfaceDecl(int) => self.convert_ts_interface_decl(int)?,
-            TypescriptExport::StarOfOtherFile(_) => {
+            SymbolExport::TsType { ty: alias, .. } => self.convert_ts_type(alias)?,
+            SymbolExport::TsInterfaceDecl(int) => self.convert_ts_interface_decl(int)?,
+            SymbolExport::StarOfOtherFile(_) => {
                 return self.error(span, DiagnosticInfoMessage::CannotUseStarAsType)
             }
-            TypescriptExport::SomethingOfOtherFile(word, from_file) => {
+            SymbolExport::SomethingOfOtherFile(word, from_file) => {
                 let exported = self
                     .files
                     .get_or_fetch_file(from_file)
-                    .and_then(|file| file.type_exports.get(word, self.files));
+                    .and_then(|file| file.symbol_exports.get(word, self.files));
                 match exported {
                     Some(exported) => {
                         self.convert_type_export(exported.as_ref(), from_file, span)?
@@ -164,22 +164,23 @@ impl<'a, R: FileManager> TypeToSchema<'a, R> {
                     }
                 }
             }
-            TypescriptExport::ValueExpr { .. } => todo!(),
+            SymbolExport::ValueExpr { .. } => todo!(),
         };
         self.current_file = store_current_file;
         Ok(ty)
     }
 
     fn get_type_ref_of_user_identifier(&mut self, i: &Ident) -> Res<JsonSchema> {
-        match TypeResolver::new(self.files, &self.current_file).resolve_local_type(i)? {
-            ResolvedLocalType::TsType(alias) => self.convert_ts_type(&alias),
-            ResolvedLocalType::TsInterfaceDecl(int) => self.convert_ts_interface_decl(&int),
-            ResolvedLocalType::NamedImport {
+        match TypeResolver::new(self.files, &self.current_file).resolve_local_symbol(i)? {
+            ResolvedLocalSymbol::TsType(alias) => self.convert_ts_type(&alias),
+            ResolvedLocalSymbol::TsInterfaceDecl(int) => self.convert_ts_interface_decl(&int),
+            ResolvedLocalSymbol::NamedImport {
                 exported,
                 from_file,
             } => {
                 return self.convert_type_export(exported.as_ref(), from_file.file_name(), &i.span)
             }
+            ResolvedLocalSymbol::Expr(_) => todo!(),
         }
     }
 
@@ -324,19 +325,19 @@ impl<'a, R: FileManager> TypeToSchema<'a, R> {
         from_file: &Rc<ImportReference>,
         right: &JsWord,
         span: &Span,
-    ) -> Res<(Rc<TypescriptExport>, Rc<ImportReference>, String)> {
+    ) -> Res<(Rc<SymbolExport>, Rc<ImportReference>, String)> {
         let exported = self
             .files
             .get_or_fetch_file(from_file.file_name())
-            .and_then(|module| module.type_exports.get(right, self.files));
+            .and_then(|module| module.symbol_exports.get(right, self.files));
         match exported {
             Some(exported) => {
                 let name = match &*exported {
-                    TypescriptExport::TsType { name, .. } => name.to_string(),
-                    TypescriptExport::TsInterfaceDecl(it) => it.id.sym.to_string(),
-                    TypescriptExport::StarOfOtherFile(_) => right.to_string(),
-                    TypescriptExport::SomethingOfOtherFile(that, _) => that.to_string(),
-                    TypescriptExport::ValueExpr { .. } => todo!(),
+                    SymbolExport::TsType { name, .. } => name.to_string(),
+                    SymbolExport::TsInterfaceDecl(it) => it.id.sym.to_string(),
+                    SymbolExport::StarOfOtherFile(_) => right.to_string(),
+                    SymbolExport::SomethingOfOtherFile(that, _) => that.to_string(),
+                    SymbolExport::ValueExpr { .. } => todo!(),
                 };
                 Ok((exported, from_file.clone(), name))
             }
@@ -349,26 +350,26 @@ impl<'a, R: FileManager> TypeToSchema<'a, R> {
 
     fn recursively_get_qualified_type_export(
         &mut self,
-        exported: Rc<TypescriptExport>,
+        exported: Rc<SymbolExport>,
         right: &Ident,
-    ) -> Res<(Rc<TypescriptExport>, Rc<ImportReference>, String)> {
+    ) -> Res<(Rc<SymbolExport>, Rc<ImportReference>, String)> {
         match &*exported {
-            TypescriptExport::TsType { .. } => self.error(
+            SymbolExport::TsType { .. } => self.error(
                 &right.span,
                 DiagnosticInfoMessage::CannotUseTsTypeAsQualified,
             ),
-            TypescriptExport::TsInterfaceDecl(_) => self.error(
+            SymbolExport::TsInterfaceDecl(_) => self.error(
                 &right.span,
                 DiagnosticInfoMessage::CannotUseTsInterfaceAsQualified,
             ),
-            TypescriptExport::StarOfOtherFile(other_file) => {
+            SymbolExport::StarOfOtherFile(other_file) => {
                 self.get_qualified_type_from_file(other_file, &right.sym, &right.span)
             }
-            TypescriptExport::SomethingOfOtherFile(word, from_file) => {
+            SymbolExport::SomethingOfOtherFile(word, from_file) => {
                 let exported = self
                     .files
                     .get_or_fetch_file(from_file)
-                    .and_then(|module| module.type_exports.get(word, self.files));
+                    .and_then(|module| module.symbol_exports.get(word, self.files));
 
                 match exported {
                     Some(exported) => self.recursively_get_qualified_type_export(exported, right),
@@ -380,13 +381,13 @@ impl<'a, R: FileManager> TypeToSchema<'a, R> {
                     ),
                 }
             }
-            TypescriptExport::ValueExpr { .. } => todo!(),
+            SymbolExport::ValueExpr { .. } => todo!(),
         }
     }
     fn __convert_ts_type_qual_inner(
         &mut self,
         q: &TsQualifiedName,
-    ) -> Res<(Rc<TypescriptExport>, Rc<ImportReference>, String)> {
+    ) -> Res<(Rc<SymbolExport>, Rc<ImportReference>, String)> {
         match &q.left {
             TsEntityName::TsQualifiedName(q2) => {
                 let (exported, _from_file, _name) = self.__convert_ts_type_qual_inner(q2)?;

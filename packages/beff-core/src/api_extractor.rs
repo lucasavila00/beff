@@ -7,9 +7,9 @@ use crate::open_api_ast::{
     self, ApiPath, HTTPMethod, Info, JsonRequestBody, OpenApi, OperationObject, ParameterIn,
     ParameterObject, ParsedPattern, Validator,
 };
-use crate::type_reference::{ResolvedLocalExpr, TypeResolver};
+use crate::type_reference::{ResolvedLocalSymbol, TypeResolver};
 use crate::type_to_schema::TypeToSchema;
-use crate::{BffFileName, FileManager, ParsedModule};
+use crate::{BffFileName, FileManager, ParsedModule, SymbolExport};
 use anyhow::anyhow;
 use anyhow::Result;
 use core::fmt;
@@ -192,25 +192,30 @@ impl<'a, R: FileManager> ExtractExportDefaultVisitor<'a, R> {
                         self.handlers.push(method)
                     };
                 }
-                PropOrSpread::Spread(SpreadElement { expr, .. }) => match expr.as_ref() {
-                    Expr::Ident(i) => {
-                        match TypeResolver::new(self.files, &self.current_file)
-                            .resolve_local_ident(i)
-                        {
-                            Ok(ResolvedLocalExpr::Expr(expr)) => {
-                                self.check_export_default_expr(&expr)
-                            }
-                            Ok(ResolvedLocalExpr::NamedImport { exported, .. }) => {
-                                self.check_export_default_expr(&exported)
-                            }
-                            Err(e) => {
-                                self.errors.push(*e);
-                            }
-                        }
-                    }
-                    _ => todo!(),
-                },
+                PropOrSpread::Spread(SpreadElement { expr, .. }) => {
+                    self.check_export_default_expr(&expr)
+                }
             }
+        }
+    }
+    fn check_export_default_expr_ts_export(&mut self, expr: &SymbolExport) {
+        match expr {
+            SymbolExport::ValueExpr { expr, .. } => self.check_export_default_expr(expr),
+            SymbolExport::SomethingOfOtherFile(orig, file_name) => {
+                let file = self.files.get_or_fetch_file(file_name);
+                let exported = file.and_then(|file| file.symbol_exports.get(orig, self.files));
+                if let Some(export) = exported {
+                    self.check_export_default_expr_ts_export(&export);
+                } else {
+                    // Err(self
+                    //     .make_err(&i.span, DiagnosticInfoMessage::CannotResolveNamespaceType)
+                    //     .into())
+                    todo!()
+                }
+            }
+            SymbolExport::TsType { .. } => todo!(),
+            SymbolExport::TsInterfaceDecl(_) => todo!(),
+            SymbolExport::StarOfOtherFile(_) => todo!(),
         }
     }
     fn check_export_default_expr(&mut self, expr: &Expr) {
@@ -219,12 +224,16 @@ impl<'a, R: FileManager> ExtractExportDefaultVisitor<'a, R> {
                 self.parse_endpoints_object(lit);
             }
             Expr::Ident(i) => {
-                match TypeResolver::new(self.files, &self.current_file).resolve_local_ident(i) {
-                    Ok(ResolvedLocalExpr::Expr(expr)) => self.check_export_default_expr(&expr),
-                    Ok(ResolvedLocalExpr::NamedImport { .. }) => {
-                        todo!()
+                match TypeResolver::new(self.files, &self.current_file).resolve_local_symbol(i) {
+                    Ok(ResolvedLocalSymbol::Expr(expr)) => self.check_export_default_expr(&expr),
+                    Ok(ResolvedLocalSymbol::NamedImport { exported, .. }) => {
+                        self.check_export_default_expr_ts_export(&exported)
                     }
-                    Err(_) => todo!(),
+                    Ok(_) => todo!(),
+                    Err(e) => {
+                        todo!()
+                        // self.errors.push(*e)
+                    }
                 }
             }
             _ => todo!(),

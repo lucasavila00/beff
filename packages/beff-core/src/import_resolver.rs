@@ -4,8 +4,8 @@ use crate::ImportReference;
 use crate::ParsedModule;
 use crate::ParsedModuleLocals;
 use crate::ParserOfModuleLocals;
-use crate::TypescriptExport;
-use crate::TypescriptExportsModule;
+use crate::SymbolExport;
+use crate::SymbolsExportsModule;
 use crate::UnresolvedExport;
 use anyhow::anyhow;
 use anyhow::Result;
@@ -37,7 +37,7 @@ pub trait FsModuleResolver {
 pub struct ImportsVisitor<'a, R: FsModuleResolver> {
     pub resolver: &'a mut R,
     pub imports: HashMap<(JsWord, SyntaxContext), Rc<ImportReference>>,
-    pub type_exports: TypescriptExportsModule,
+    pub type_exports: SymbolsExportsModule,
     pub current_file: BffFileName,
     pub unresolved_exports: Vec<UnresolvedExport>,
 }
@@ -45,7 +45,7 @@ impl<'a, R: FsModuleResolver> ImportsVisitor<'a, R> {
     pub fn from_file(current_file: BffFileName, resolver: &'a mut R) -> ImportsVisitor<'a, R> {
         ImportsVisitor {
             imports: HashMap::new(),
-            type_exports: TypescriptExportsModule::new(),
+            type_exports: SymbolsExportsModule::new(),
             current_file,
             unresolved_exports: Vec::new(),
             resolver,
@@ -96,14 +96,14 @@ impl<'a, R: FsModuleResolver> Visit for ImportsVisitor<'a, R> {
                 let TsInterfaceDecl { id, .. } = &**n;
                 self.type_exports.insert(
                     id.sym.clone(),
-                    Rc::new(TypescriptExport::TsInterfaceDecl(Rc::new(*n.clone()))),
+                    Rc::new(SymbolExport::TsInterfaceDecl(Rc::new(*n.clone()))),
                 );
             }
             Decl::TsTypeAlias(a) => {
                 let TsTypeAliasDecl { id, type_ann, .. } = &**a;
                 self.type_exports.insert(
                     id.sym.clone(),
-                    Rc::new(TypescriptExport::TsType {
+                    Rc::new(SymbolExport::TsType {
                         ty: Rc::new(*type_ann.clone()),
                         name: id.sym.clone(),
                     }),
@@ -115,7 +115,7 @@ impl<'a, R: FsModuleResolver> Visit for ImportsVisitor<'a, R> {
                         match &it.name {
                             Pat::Ident(it) => {
                                 let name = it.sym.clone();
-                                let export = Rc::new(TypescriptExport::ValueExpr {
+                                let export = Rc::new(SymbolExport::ValueExpr {
                                     expr: Rc::new(*expr.clone()),
                                     name: name.clone(),
                                 });
@@ -143,7 +143,7 @@ impl<'a, R: FsModuleResolver> Visit for ImportsVisitor<'a, R> {
                                 if let Some(file_name) = self.resolve_import(&src.value) {
                                     self.type_exports.insert(
                                         id.sym.clone(),
-                                        Rc::new(TypescriptExport::StarOfOtherFile(
+                                        Rc::new(SymbolExport::StarOfOtherFile(
                                             ImportReference::Star {
                                                 file_name: file_name.clone(),
                                             }
@@ -163,7 +163,7 @@ impl<'a, R: FsModuleResolver> Visit for ImportsVisitor<'a, R> {
                                 if let Some(file_name) = self.resolve_import(&src.value) {
                                     self.type_exports.insert(
                                         name,
-                                        Rc::new(TypescriptExport::SomethingOfOtherFile(
+                                        Rc::new(SymbolExport::SomethingOfOtherFile(
                                             id.sym.clone(),
                                             file_name.clone(),
                                         )),
@@ -260,7 +260,7 @@ pub fn parse_and_bind<R: FsModuleResolver>(
         if let Some(alias) = locals.content.type_aliases.get(&k) {
             type_exports.insert(
                 renamed.clone(),
-                Rc::new(TypescriptExport::TsType {
+                Rc::new(SymbolExport::TsType {
                     ty: alias.clone(),
                     name: k.0,
                 }),
@@ -270,14 +270,14 @@ pub fn parse_and_bind<R: FsModuleResolver>(
         if let Some(intf) = locals.content.interfaces.get(&k) {
             type_exports.insert(
                 renamed,
-                Rc::new(TypescriptExport::TsInterfaceDecl(intf.clone())),
+                Rc::new(SymbolExport::TsInterfaceDecl(intf.clone())),
             );
             continue;
         }
         if let Some(import) = v.imports.get(&k) {
             match &**import {
                 ImportReference::Named { orig, file_name } => {
-                    let it = Rc::new(TypescriptExport::SomethingOfOtherFile(
+                    let it = Rc::new(SymbolExport::SomethingOfOtherFile(
                         orig.as_ref().clone(),
                         file_name.clone(),
                     ));
@@ -287,7 +287,7 @@ pub fn parse_and_bind<R: FsModuleResolver>(
                 ImportReference::Star { .. } => {
                     type_exports.insert(
                         renamed,
-                        Rc::new(TypescriptExport::StarOfOtherFile(import.clone())),
+                        Rc::new(SymbolExport::StarOfOtherFile(import.clone())),
                     );
 
                     continue;
@@ -307,7 +307,7 @@ pub fn parse_and_bind<R: FsModuleResolver>(
 
     let f = Rc::new(ParsedModule {
         module,
-        type_exports,
+        symbol_exports: type_exports,
         imports: v.imports,
         comments,
         locals: locals.content,
