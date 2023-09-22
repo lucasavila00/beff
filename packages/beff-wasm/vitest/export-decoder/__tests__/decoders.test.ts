@@ -27,35 +27,48 @@ it("custom types", () => {
 });
 
 it("regular types", () => {
-  expect(generatedRouter.schema.components.schemas).toMatchInlineSnapshot(`
-    {
-      "StartsWithA": {
-        "format": "StartsWithA",
-        "type": "string",
-      },
-      "User": {
-        "properties": {
-          "age": {
-            "type": "number",
-          },
-          "name": {
-            "type": "string",
-          },
+  expect((generatedRouter.schema.components as any).schemas)
+    .toMatchInlineSnapshot(`
+      {
+        "StartsWithA": {
+          "format": "StartsWithA",
+          "type": "string",
         },
-        "required": [
-          "age",
-          "name",
-        ],
-        "type": "object",
-      },
-    }
-  `);
-  expect(User.parse({ name: "name", age: 123 })).toMatchInlineSnapshot(`
+        "User": {
+          "properties": {
+            "age": {
+              "type": "number",
+            },
+            "createdAt": {
+              "format": "Codec::ISO8061",
+              "type": "string",
+            },
+            "name": {
+              "type": "string",
+            },
+          },
+          "required": [
+            "age",
+            "createdAt",
+            "name",
+          ],
+          "type": "object",
+        },
+      }
+    `);
+  const u = User.parse({
+    name: "name",
+    age: 123,
+    createdAt: "2023-09-22T22:52:24.855Z",
+  });
+  expect(u).toMatchInlineSnapshot(`
     {
       "age": 123,
+      "createdAt": "2023-09-22T22:52:24.855Z",
       "name": "name",
     }
   `);
+  // expect(u.createdAt.toISOString()).toMatchInlineSnapshot();
   expect(() => User.parse({ name: 123 })).toThrowErrorMatchingInlineSnapshot(`
     BffParseError {
       "errors": [
@@ -65,6 +78,15 @@ it("regular types", () => {
           "path": [
             "User",
             "age",
+          ],
+          "received": undefined,
+        },
+        {
+          "error_kind": "CodecFailed",
+          "expected_type": "Codec::ISO8061",
+          "path": [
+            "User",
+            "createdAt",
           ],
           "received": undefined,
         },
@@ -90,6 +112,15 @@ it("regular types", () => {
           "path": [
             "User",
             "age",
+          ],
+          "received": undefined,
+        },
+        {
+          "error_kind": "CodecFailed",
+          "expected_type": "Codec::ISO8061",
+          "path": [
+            "User",
+            "createdAt",
           ],
           "received": undefined,
         },
@@ -138,6 +169,16 @@ it("regular types", () => {
             "received": undefined,
           },
           {
+            "error_kind": "CodecFailed",
+            "expected_type": "Codec::ISO8061",
+            "path": [
+              "[0]",
+              "User",
+              "createdAt",
+            ],
+            "received": undefined,
+          },
+          {
             "error_kind": "NotTypeof",
             "expected_type": "string",
             "path": [
@@ -156,6 +197,16 @@ it("regular types", () => {
               "age",
             ],
             "received": "def",
+          },
+          {
+            "error_kind": "CodecFailed",
+            "expected_type": "Codec::ISO8061",
+            "path": [
+              "[1]",
+              "User",
+              "createdAt",
+            ],
+            "received": undefined,
           },
           {
             "error_kind": "NotTypeof",

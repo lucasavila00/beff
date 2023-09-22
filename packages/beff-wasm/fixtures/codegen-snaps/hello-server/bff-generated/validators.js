@@ -9,7 +9,12 @@ const stringPredicates = {}
 function registerStringFormat(name, predicate) {
   stringPredicates[name] = predicate;
 }
-
+function isCodecInvalid(key, value) {
+  if (key === 'Codec::ISO8061') {
+    return isNaN(Date.parse(value));
+  }
+  throw new Error("unknown codec: " + key);
+}
 function isCustomFormatInvalid(key, value) {
   const predicate = stringPredicates[key];
   if (predicate == null) {
@@ -712,4 +717,4 @@ const validators = {
     UserEntity: UserEntity
 };
 
-export default { validators, isCustomFormatInvalid, registerStringFormat, add_path_to_errors };
+export default { validators, isCustomFormatInvalid, isCodecInvalid, registerStringFormat, add_path_to_errors };

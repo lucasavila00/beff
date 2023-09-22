@@ -1,5 +1,5 @@
 
-import vals from "./validators.js"; const { validators, add_path_to_errors, registerStringFormat, isCustomFormatInvalid } = vals;
+import vals from "./validators.js"; const { validators, add_path_to_errors, registerStringFormat, isCustomFormatInvalid, isCodecInvalid } = vals;
 const buildParsersInput = {
     "NotPublicRenamed": function(input) {
         let error_acc_0 = [];

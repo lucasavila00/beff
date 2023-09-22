@@ -1,5 +1,5 @@
 use crate::ast::json::Json;
-use crate::ast::json_schema::{JsonSchema, Optionality};
+use crate::ast::json_schema::{CodecName, JsonSchema, Optionality};
 use crate::diag::{
     Diagnostic, DiagnosticInfoMessage, DiagnosticInformation, DiagnosticParentMessage, Location,
 };
@@ -226,7 +226,7 @@ impl<'a, R: FileManager> TypeToSchema<'a, R> {
         type_params: &Option<Box<TsTypeParamInstantiation>>,
     ) -> Res<JsonSchema> {
         match i.sym.to_string().as_str() {
-            "Date" => return Ok(JsonSchema::Codec("ISO8061".to_string())),
+            "Date" => return Ok(JsonSchema::Codec(CodecName::new("ISO8061".to_string()))),
             "Array" => {
                 let type_params = type_params.as_ref().and_then(|it| it.params.split_first());
                 if let Some((ty, [])) = type_params {

@@ -523,7 +523,9 @@ impl DecoderFnGenerator {
             JsonSchema::StringWithFormat(it) => {
                 self.decode_runtime_registered_string(it, value_ref, err_storage, path)
             }
-            JsonSchema::Codec(name) => self.decode_duplex_codec(name, value_ref, err_storage, path),
+            JsonSchema::Codec(name) => {
+                self.decode_duplex_codec(&name.to_string(), value_ref, err_storage, path)
+            }
             JsonSchema::Error => unreachable!("should not print if schema had error"),
             JsonSchema::StNever => todo!(),
             JsonSchema::StUnknown => todo!(),

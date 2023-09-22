@@ -162,7 +162,7 @@ impl SwcBuilder {
     pub fn check_runtime_codec(type_name: &str, value: Expr) -> Expr {
         let check_custom_string_format = Expr::Ident(Ident {
             span: DUMMY_SP,
-            sym: "isCodecValid".into(),
+            sym: "isCodecInvalid".into(),
             optional: false,
         });
         Expr::Call(CallExpr {

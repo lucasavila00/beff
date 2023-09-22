@@ -136,7 +136,12 @@ const stringPredicates = {}
 function registerStringFormat(name, predicate) {
   stringPredicates[name] = predicate;
 }
-
+function isCodecInvalid(key, value) {
+  if (key === 'Codec::ISO8061') {
+    return isNaN(Date.parse(value));
+  }
+  throw new Error("unknown codec: " + key);
+}
 function isCustomFormatInvalid(key, value) {
   const predicate = stringPredicates[key];
   if (predicate == null) {
@@ -166,6 +171,7 @@ const finalizeValidatorsCode = (
   const exportedItems = [
     "validators",
     "isCustomFormatInvalid",
+    "isCodecInvalid",
     "registerStringFormat",
     "add_path_to_errors",
   ].join(", ");
@@ -184,7 +190,7 @@ function add_path_to_errors(errors, path) {
 };
 
 const importValidators = (mod: ProjectModule) => {
-  const i = `validators, add_path_to_errors, registerStringFormat, isCustomFormatInvalid`;
+  const i = `validators, add_path_to_errors, registerStringFormat, isCustomFormatInvalid, isCodecInvalid`;
   return mod === "esm"
     ? `import vals from "./validators.js"; const { ${i} } = vals;`
     : `const { ${i} } = require('./validators.js').default;`;

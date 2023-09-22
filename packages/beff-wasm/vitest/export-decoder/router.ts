@@ -4,7 +4,11 @@ type Ctx = any;
 export default {
   [`/{name}`]: {
     get: async (c: Ctx, name: string): Promise<User> => {
-      return User.parse({ name, age: 123 });
+      return User.parse({
+        name,
+        age: 123,
+        createdAt: new Date("2023-09-22T22:29:39.488Z"),
+      });
     },
   },
   ["/check-uuid/{uuid}"]: {
