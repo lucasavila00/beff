@@ -1,0 +1,34 @@
+version: "3"
+
+services:
+    dev:
+      build:
+        context: .
+        dockerfile: Dockerfile
+      entrypoint: sh
+      command: -c 'sudo chown -R devu /workspace && sleep infinity'
+      volumes:
+        - ..:/workspace:cached
+      user: devu
+      networks:
+        - devu_network
+      depends_on:
+        - postgresql
+    postgresql:
+      image: postgres:14.1
+      container_name: postgresql
+      environment:
+        POSTGRES_USER: "postgres_user"
+        POSTGRES_PASSWORD: "postgres_password"
+        POSTGRES_DB: "postgres_db"
+      networks:
+        - devu_network
+      volumes:
+        - devu-psql-data:/var/lib/postgresql/data
+
+volumes:
+    devu-psql-data:
+
+networks:
+  devu_network:
+    driver: bridge
