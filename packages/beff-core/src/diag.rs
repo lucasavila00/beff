@@ -80,6 +80,7 @@ pub enum DiagnosticInfoMessage {
     ThisRefersToSomethingThatCannotBeSerialized(String),
     TypeParameterApplicationNotSupported,
     CannotResolveLocalType(String),
+    CannotResolveLocalSymbol(String),
     CannotResolveLocalExpr(String),
 }
 
@@ -92,6 +93,9 @@ impl DiagnosticInfoMessage {
             }
             DiagnosticInfoMessage::CannotResolveLocalExpr(name) => {
                 format!("Cannot find name '{name}'")
+            }
+            DiagnosticInfoMessage::CannotResolveLocalSymbol(name) => {
+                format!("Cannot find symbol '{name}'")
             }
             DiagnosticInfoMessage::KeywordNonSerializableToJsonSchema
             | DiagnosticInfoMessage::PropertyNonSerializableToJsonSchema
@@ -252,13 +256,13 @@ impl DiagnosticInfoMessage {
                 "Decoder must have type annotation".to_string()
             }
             DiagnosticInfoMessage::CannotGetQualifiedTypeFromFile(name) => {
-                format!("Cannot find type '{name}'")
+                format!("Cannot find CannotGetQualifiedTypeFromFile type '{name}'")
             }
             DiagnosticInfoMessage::TwoCallsToBuildParsers => {
                 "buildParser can only be called once".to_string()
             }
             DiagnosticInfoMessage::CannotResolveSomethingOfOtherFile(name) => {
-                format!("Cannot find type '{name}'")
+                format!("Cannot find CannotResolveSomethingOfOtherFile type '{name}'")
             }
             DiagnosticInfoMessage::InvalidUsageOfStringFormatTypeParameter => {
                 "Invalid usage of string format type parameter".to_string()

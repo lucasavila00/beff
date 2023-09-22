@@ -5,7 +5,7 @@ use swc_ecma_ast::{Expr, Ident, TsInterfaceDecl, TsType};
 
 use crate::{
     diag::{Diagnostic, DiagnosticInfoMessage, Location},
-    BffFileName, FileManager, ImportReference, ParsedModule, TypescriptExport,
+    BffFileName, FileManager, ImportReference, ParsedModule, SymbolExport, SymbolExportDefault,
 };
 
 pub struct TypeResolver<'a, R: FileManager> {
@@ -13,22 +13,18 @@ pub struct TypeResolver<'a, R: FileManager> {
     pub current_file: BffFileName,
 }
 
-pub enum ResolvedLocalType {
+pub enum ResolvedLocalSymbol {
     TsType(Rc<TsType>),
     TsInterfaceDecl(Rc<TsInterfaceDecl>),
-    NamedImport {
-        exported: Rc<TypescriptExport>,
-        from_file: Rc<ImportReference>,
-    },
-}
-pub enum ResolvedLocalExpr {
     Expr(Rc<Expr>),
     NamedImport {
-        exported: Rc<Expr>,
+        exported: Rc<SymbolExport>,
         from_file: Rc<ImportReference>,
     },
+    SymbolExportDefault(Rc<SymbolExportDefault>),
+    // ExportDefault(Rc<Expr>),
 }
-pub struct ResolvedNamespaceType {
+pub struct ResolvedNamespaceSymbol {
     pub from_file: Rc<ImportReference>,
 }
 type Res<T> = Result<T, Box<Diagnostic>>;
@@ -48,27 +44,27 @@ impl<'a, R: FileManager> TypeResolver<'a, R> {
     fn resolve_export(
         &mut self,
         i: &Ident,
-        export: &Rc<TypescriptExport>,
-    ) -> Res<ResolvedNamespaceType> {
+        export: &Rc<SymbolExport>,
+    ) -> Res<ResolvedNamespaceSymbol> {
         match &**export {
-            TypescriptExport::StarOfOtherFile(reference) => Ok(ResolvedNamespaceType {
+            SymbolExport::StarOfOtherFile(reference) => Ok(ResolvedNamespaceSymbol {
                 from_file: reference.clone(),
             }),
-            TypescriptExport::TsType { .. } => Err(self
+            SymbolExport::TsType { .. } => Err(self
                 .make_err(
                     &i.span,
                     DiagnosticInfoMessage::ShouldNotResolveTsTypeAsNamespace,
                 )
                 .into()),
-            TypescriptExport::TsInterfaceDecl(_) => Err(self
+            SymbolExport::TsInterfaceDecl(_) => Err(self
                 .make_err(
                     &i.span,
                     DiagnosticInfoMessage::ShouldNotResolveTsInterfaceDeclAsNamespace,
                 )
                 .into()),
-            TypescriptExport::SomethingOfOtherFile(orig, file_name) => {
+            SymbolExport::SomethingOfOtherFile(orig, file_name) => {
                 let file = self.files.get_or_fetch_file(file_name);
-                let exported = file.and_then(|file| file.type_exports.get(orig, self.files));
+                let exported = file.and_then(|file| file.symbol_exports.get(orig, self.files));
                 if let Some(export) = exported {
                     return self.resolve_export(i, &export);
                 }
@@ -76,23 +72,23 @@ impl<'a, R: FileManager> TypeResolver<'a, R> {
                     .make_err(&i.span, DiagnosticInfoMessage::CannotResolveNamespaceType)
                     .into())
             }
-            TypescriptExport::ValueExpr { .. } => todo!(),
+            SymbolExport::ValueExpr { .. } => todo!(),
         }
     }
-    pub fn resolve_namespace_type(&mut self, i: &Ident) -> Res<ResolvedNamespaceType> {
+    pub fn resolve_namespace_type(&mut self, i: &Ident) -> Res<ResolvedNamespaceSymbol> {
         let k = &(i.sym.clone(), i.span.ctxt);
 
         if let Some(imported) = self.get_current_file().imports.get(k) {
             match &**imported {
                 ImportReference::Default { .. } => {}
                 ImportReference::Star { .. } => {
-                    return Ok(ResolvedNamespaceType {
+                    return Ok(ResolvedNamespaceSymbol {
                         from_file: imported.clone(),
                     })
                 }
                 ImportReference::Named { orig, file_name } => {
                     let file = self.files.get_or_fetch_file(file_name);
-                    let exported = file.and_then(|file| file.type_exports.get(orig, self.files));
+                    let exported = file.and_then(|file| file.symbol_exports.get(orig, self.files));
                     if let Some(export) = exported {
                         return self.resolve_export(i, &export);
                     }
@@ -111,73 +107,47 @@ impl<'a, R: FileManager> TypeResolver<'a, R> {
             .to_info(info_msg)
             .to_diag(None)
     }
-    pub fn resolve_local_type(&mut self, i: &Ident) -> Res<ResolvedLocalType> {
+    pub fn resolve_local_symbol(&mut self, i: &Ident) -> Res<ResolvedLocalSymbol> {
         let k = &(i.sym.clone(), i.span.ctxt);
         if let Some(alias) = self.get_current_file().locals.type_aliases.get(k) {
-            return Ok(ResolvedLocalType::TsType(alias.clone()));
+            return Ok(ResolvedLocalSymbol::TsType(alias.clone()));
+        }
+        if let Some(alias) = self.get_current_file().locals.exprs.get(k) {
+            return Ok(ResolvedLocalSymbol::Expr(alias.clone()));
         }
         if let Some(intf) = self.get_current_file().locals.interfaces.get(k) {
-            return Ok(ResolvedLocalType::TsInterfaceDecl(intf.clone()));
+            return Ok(ResolvedLocalSymbol::TsInterfaceDecl(intf.clone()));
         }
         if let Some(imported) = self.get_current_file().imports.get(k) {
             match &**imported {
                 ImportReference::Named { orig, file_name } => {
                     let file = self.files.get_or_fetch_file(file_name);
-                    let exported = file.and_then(|file| file.type_exports.get(orig, self.files));
+                    let exported = file.and_then(|file| file.symbol_exports.get(orig, self.files));
                     if let Some(exported) = exported {
-                        return Ok(ResolvedLocalType::NamedImport {
+                        return Ok(ResolvedLocalSymbol::NamedImport {
                             exported: exported.clone(),
                             from_file: imported.clone(),
                         });
                     }
                 }
-                ImportReference::Star { .. } => {}
-                ImportReference::Default { .. } => {}
-            }
-        }
-
-        Err(self
-            .make_err(
-                &i.span,
-                DiagnosticInfoMessage::CannotResolveLocalType(i.sym.to_string()),
-            )
-            .into())
-    }
-
-    pub fn resolve_local_ident(&mut self, i: &Ident) -> Res<ResolvedLocalExpr> {
-        let k = &(i.sym.clone(), i.span.ctxt);
-        if let Some(alias) = self.get_current_file().locals.exprs.get(k) {
-            return Ok(ResolvedLocalExpr::Expr(alias.clone()));
-        }
-        if let Some(imported) = self.get_current_file().imports.get(k) {
-            match &**imported {
-                ImportReference::Named { orig, file_name } => {
+                ImportReference::Star { .. } => {
+                    todo!()
+                }
+                ImportReference::Default { file_name } => {
                     let file = self.files.get_or_fetch_file(file_name);
-                    let exported = file.and_then(|file| file.type_exports.get(orig, self.files));
-
-                    if let Some(exported) = exported {
-                        match exported.as_ref() {
-                            TypescriptExport::ValueExpr { expr, .. } => {
-                                return Ok(ResolvedLocalExpr::NamedImport {
-                                    exported: expr.clone(),
-                                    from_file: imported.clone(),
-                                });
-                            }
-                            TypescriptExport::TsType { .. } => todo!(),
-                            TypescriptExport::TsInterfaceDecl(_) => todo!(),
-                            TypescriptExport::StarOfOtherFile(_) => todo!(),
-                            TypescriptExport::SomethingOfOtherFile(_, _) => todo!(),
-                        }
+                    let df = file.and_then(|file| file.export_default.clone());
+                    match df {
+                        Some(d) => return Ok(ResolvedLocalSymbol::SymbolExportDefault(d.clone())),
+                        None => todo!(),
                     }
                 }
-                ImportReference::Star { .. } => {}
-                ImportReference::Default { .. } => {}
             }
         }
+
         Err(self
             .make_err(
                 &i.span,
-                DiagnosticInfoMessage::CannotResolveLocalExpr(i.sym.to_string()),
+                DiagnosticInfoMessage::CannotResolveLocalSymbol(i.sym.to_string()),
             )
             .into())
     }

@@ -7,9 +7,9 @@ use crate::open_api_ast::{
     self, ApiPath, HTTPMethod, Info, JsonRequestBody, OpenApi, OperationObject, ParameterIn,
     ParameterObject, ParsedPattern, Validator,
 };
-use crate::type_reference::{ResolvedLocalExpr, TypeResolver};
+use crate::type_reference::{ResolvedLocalSymbol, TypeResolver};
 use crate::type_to_schema::TypeToSchema;
-use crate::{BffFileName, FileManager, ParsedModule};
+use crate::{BffFileName, FileManager, ParsedModule, SymbolExport};
 use anyhow::anyhow;
 use anyhow::Result;
 use core::fmt;
@@ -20,13 +20,12 @@ use std::rc::Rc;
 use swc_common::comments::{Comment, CommentKind, Comments};
 use swc_common::{BytePos, Span, DUMMY_SP};
 use swc_ecma_ast::{
-    ArrayPat, ArrowExpr, AssignPat, AssignProp, BigInt, BindingIdent, ComputedPropName,
-    ExportDefaultExpr, Expr, FnExpr, Function, GetterProp, Ident, Invalid, KeyValueProp, Lit,
-    MethodProp, Number, ObjectLit, ObjectPat, Pat, Prop, PropName, PropOrSpread, RestPat,
-    SetterProp, SpreadElement, Str, Tpl, TsEntityName, TsKeywordType, TsKeywordTypeKind, TsType,
-    TsTypeAnn, TsTypeParamDecl, TsTypeParamInstantiation, TsTypeRef,
+    ArrayPat, ArrowExpr, AssignPat, AssignProp, BigInt, BindingIdent, ComputedPropName, Expr,
+    FnExpr, Function, GetterProp, Ident, Invalid, KeyValueProp, Lit, MethodProp, Number, ObjectLit,
+    ObjectPat, Pat, Prop, PropName, PropOrSpread, RestPat, SetterProp, SpreadElement, Str, Tpl,
+    TsEntityName, TsKeywordType, TsKeywordTypeKind, TsType, TsTypeAnn, TsTypeParamDecl,
+    TsTypeParamInstantiation, TsTypeRef,
 };
-use swc_ecma_visit::Visit;
 
 fn maybe_extract_promise(typ: &TsType) -> &TsType {
     if let TsType::TsTypeRef(refs) = typ {
@@ -163,7 +162,6 @@ struct ExtractExportDefaultVisitor<'a, R: FileManager> {
     public_definitions: HashSet<String>,
     errors: Vec<Diagnostic>,
     info: open_api_ast::Info,
-    export_default: Option<Box<Expr>>,
 }
 impl<'a, R: FileManager> ExtractExportDefaultVisitor<'a, R> {
     fn new(files: &'a mut R, current_file: BffFileName) -> ExtractExportDefaultVisitor<'a, R> {
@@ -172,18 +170,16 @@ impl<'a, R: FileManager> ExtractExportDefaultVisitor<'a, R> {
             current_file,
             handlers: vec![],
             components: vec![],
-            export_default: None,
             errors: vec![],
             info: open_api_ast::Info {
                 title: None,
                 description: None,
                 version: None,
             },
-            // built_decoders: None,
             public_definitions: HashSet::new(),
         }
     }
-    fn parse_endpoints_object(&mut self, lit: &ObjectLit) {
+    fn parse_endpoints_object(&mut self, lit: &ObjectLit, current_file: &BffFileName) {
         for prop in &lit.props {
             match prop {
                 PropOrSpread::Prop(prop) => {
@@ -192,54 +188,81 @@ impl<'a, R: FileManager> ExtractExportDefaultVisitor<'a, R> {
                         self.handlers.push(method)
                     };
                 }
-                PropOrSpread::Spread(SpreadElement { expr, .. }) => match expr.as_ref() {
-                    Expr::Ident(i) => {
-                        match TypeResolver::new(self.files, &self.current_file)
-                            .resolve_local_ident(i)
-                        {
-                            Ok(ResolvedLocalExpr::Expr(expr)) => {
-                                self.check_export_default_expr(&expr)
-                            }
-                            Ok(ResolvedLocalExpr::NamedImport { exported, .. }) => {
-                                self.check_export_default_expr(&exported)
-                            }
-                            Err(e) => {
-                                self.errors.push(*e);
-                            }
-                        }
-                    }
-                    _ => todo!(),
-                },
+                PropOrSpread::Spread(SpreadElement { expr, .. }) => {
+                    self.check_expr_for_methods(&expr, &current_file)
+                }
             }
         }
     }
-    fn check_export_default_expr(&mut self, expr: &Expr) {
+    fn check_ts_export_for_methods(&mut self, expr: &SymbolExport, parent_file: &BffFileName) {
+        match expr {
+            SymbolExport::ValueExpr { expr, .. } => self.check_expr_for_methods(expr, parent_file),
+            SymbolExport::SomethingOfOtherFile(orig, file_name) => {
+                let file = self.files.get_or_fetch_file(file_name);
+                let exported = file.and_then(|file| file.symbol_exports.get(orig, self.files));
+                if let Some(export) = exported {
+                    self.check_ts_export_for_methods(&export, file_name);
+                } else {
+                    // Err(self
+                    //     .make_err(&i.span, DiagnosticInfoMessage::CannotResolveNamespaceType)
+                    //     .into())
+                    todo!()
+                }
+            }
+            SymbolExport::TsType { .. } => todo!(),
+            SymbolExport::TsInterfaceDecl(_) => todo!(),
+            SymbolExport::StarOfOtherFile(_) => todo!(),
+        }
+    }
+    fn check_expr_for_methods(&mut self, expr: &Expr, file_name: &BffFileName) {
         match expr {
             Expr::Object(lit) => {
-                self.parse_endpoints_object(lit);
+                self.parse_endpoints_object(lit, file_name);
             }
             Expr::Ident(i) => {
-                match TypeResolver::new(self.files, &self.current_file).resolve_local_ident(i) {
-                    Ok(ResolvedLocalExpr::Expr(expr)) => self.check_export_default_expr(&expr),
-                    Ok(ResolvedLocalExpr::NamedImport { .. }) => {
+                match TypeResolver::new(self.files, &file_name).resolve_local_symbol(i) {
+                    Ok(ResolvedLocalSymbol::Expr(expr)) => {
+                        self.check_expr_for_methods(&expr, file_name)
+                    }
+                    Ok(ResolvedLocalSymbol::NamedImport {
+                        exported,
+                        from_file,
+                    }) => self.check_ts_export_for_methods(&exported, &from_file.file_name()),
+                    Ok(ResolvedLocalSymbol::SymbolExportDefault(export_default)) => self
+                        .check_expr_for_methods(
+                            &export_default.symbol_export,
+                            &export_default.file_name,
+                        ),
+                    Ok(_) => todo!(),
+                    Err(e) => {
+                        self.errors.push(*e);
                         todo!()
                     }
-                    Err(_) => todo!(),
                 }
             }
             _ => todo!(),
         }
     }
 
-    fn check_export_default(&mut self, current_file: &BffFileName) {
-        self.current_file = current_file.clone();
-        match self.export_default.clone() {
+    fn check_export_default_for_methods(&mut self) {
+        let file = self.files.get_or_fetch_file(&self.current_file);
+        let expr = file.and_then(|file| file.export_default.clone());
+        match expr {
+            Some(expr) => {
+                if let Ok(file) = self.get_file(&expr.file_name) {
+                    let comments = file.comments.get_leading(expr.span.lo);
+                    if let Some(comments) = comments {
+                        self.parse_export_default_comments(comments);
+                    }
+                }
+
+                self.check_expr_for_methods(&expr.symbol_export, &expr.file_name)
+            }
             None => self.errors.push(
-                Location::unknown(&current_file)
+                Location::unknown(&self.current_file)
                     .to_info(DiagnosticInfoMessage::CouldNotFindDefaultExport)
                     .to_diag(None),
             ),
-            Some(expr) => self.check_export_default_expr(&expr),
         }
     }
 }
@@ -543,8 +566,8 @@ impl<'a, R: FileManager> ExtractExportDefaultVisitor<'a, R> {
         }
     }
 
-    fn get_current_file(&mut self) -> Result<Rc<ParsedModule>> {
-        match self.files.get_or_fetch_file(&self.current_file) {
+    fn get_file(&mut self, name: &BffFileName) -> Result<Rc<ParsedModule>> {
+        match self.files.get_or_fetch_file(&name) {
             Some(it) => Ok(it),
             None => {
                 self.errors.push(
@@ -560,11 +583,8 @@ impl<'a, R: FileManager> ExtractExportDefaultVisitor<'a, R> {
             }
         }
     }
-    fn visit_current_file(&mut self) -> Result<()> {
-        let file = self.get_current_file()?;
-        let module = file.module.module.clone();
-        self.visit_module(&module);
-        Ok(())
+    fn get_current_file(&mut self) -> Result<Rc<ParsedModule>> {
+        self.get_file(&self.current_file.clone())
     }
 
     fn parse_arrow_parameter(
@@ -868,18 +888,6 @@ impl<'a, R: FileManager> ExtractExportDefaultVisitor<'a, R> {
     }
 }
 
-impl<'a, R: FileManager> Visit for ExtractExportDefaultVisitor<'a, R> {
-    fn visit_export_default_expr(&mut self, n: &ExportDefaultExpr) {
-        if let Ok(file) = self.get_current_file() {
-            let comments = file.comments.get_leading(n.span.lo);
-            if let Some(comments) = comments {
-                self.parse_export_default_comments(comments);
-            }
-            self.export_default = Some(n.expr.clone());
-        }
-    }
-}
-
 pub enum FunctionParameterIn {
     Path,
     Query,
@@ -1130,8 +1138,7 @@ type VisitExtractResult = (
 );
 fn visit_extract<R: FileManager>(files: &mut R, current_file: BffFileName) -> VisitExtractResult {
     let mut visitor = ExtractExportDefaultVisitor::new(files, current_file.clone());
-    let _ = visitor.visit_current_file();
-    visitor.check_export_default(&current_file);
+    visitor.check_export_default_for_methods();
 
     (
         visitor.handlers,

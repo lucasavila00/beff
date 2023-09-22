@@ -1,9 +1,5 @@
 Error
  /errors/parse-error/app.ts
- Cannot find file '/errors/parse-error/app.ts' when converting to schema
-
-Error
- /errors/parse-error/app.ts
  Could not find default export
 
-Found 2 errors
+Found 1 error
