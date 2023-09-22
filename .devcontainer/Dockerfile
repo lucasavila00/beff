@@ -23,7 +23,7 @@ USER $USERNAME
 RUN curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
 ENV PATH="/home/devu/.cargo/bin:${PATH}"
 RUN cargo install wasm-pack
-
+RUN cargo install cargo-insta
 
 
 

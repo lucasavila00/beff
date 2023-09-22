@@ -106,6 +106,9 @@ const prettyPrintErrorMessage = (it: DecodeError): string => {
     case "NotEq": {
       return `Expected ${prettyPrintValue(it.expected_value)}`;
     }
+    case "CodecFailed": {
+      return `Expected ${it.expected_type}`;
+    }
     case "StringFormatCheckFailed": {
       return `Expected ${it.expected_type}`;
     }

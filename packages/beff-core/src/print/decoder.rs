@@ -61,6 +61,7 @@ enum DecodeError {
     NotEq(Json),
     InvalidUnion,
     StringFormatCheckFailed { name_of_type: String },
+    CodecFailed { name_of_type: String },
 }
 
 fn decode_error_variant(
@@ -100,6 +101,15 @@ impl DecodeError {
             DecodeError::InvalidUnion => decode_error_variant("InvalidUnion", path, received, None),
             DecodeError::StringFormatCheckFailed { name_of_type } => decode_error_variant(
                 "StringFormatCheckFailed",
+                path,
+                received,
+                Some(vec![(
+                    "expected_type".into(),
+                    Js::String(name_of_type.to_owned()),
+                )]),
+            ),
+            DecodeError::CodecFailed { name_of_type } => decode_error_variant(
+                "CodecFailed",
                 path,
                 received,
                 Some(vec![(
@@ -422,9 +432,35 @@ impl DecoderFnGenerator {
         );
         vec![check]
     }
+    fn decode_duplex_codec(
+        &mut self,
+        name_of_type: &str,
+        value_ref: &Expr,
+        err_storage: &str,
+        path: &[DecodePath],
+    ) -> Vec<Stmt> {
+        let check = SwcBuilder::if_(
+            SwcBuilder::check_runtime_codec(name_of_type, value_ref.clone()),
+            BlockStmt {
+                span: DUMMY_SP,
+                stmts: vec![store_error(
+                    err_storage,
+                    ReportedError {
+                        kind: DecodeError::CodecFailed {
+                            name_of_type: name_of_type.to_owned(),
+                        },
+                        path: path.to_vec(),
+                    },
+                    value_ref.clone(),
+                )],
+            },
+        );
+        vec![check]
+    }
+
     fn decode_runtime_registered_string(
         &mut self,
-        name_of_type: &String,
+        name_of_type: &str,
         value_ref: &Expr,
         err_storage: &str,
         path: &[DecodePath],
@@ -467,7 +503,13 @@ impl DecoderFnGenerator {
             JsonSchema::Number => Self::decode_with_typeof(value_ref, "number", err_storage, path),
             JsonSchema::Any => vec![],
             JsonSchema::Object(values) => self.decode_object(values, value_ref, err_storage, path),
+            JsonSchema::AnyObject => {
+                self.decode_object(&BTreeMap::new(), value_ref, err_storage, path)
+            }
             JsonSchema::Array(el) => self.decode_array(el, value_ref, err_storage, path),
+            JsonSchema::AnyArrayLike => {
+                self.decode_array(&JsonSchema::Any, value_ref, err_storage, path)
+            }
             JsonSchema::AnyOf(els) => self.decode_any_of(els, value_ref, err_storage, path),
             JsonSchema::Const(the_const) => {
                 Self::decode_with_eq(value_ref, the_const.clone(), err_storage, path)
@@ -481,12 +523,11 @@ impl DecoderFnGenerator {
             JsonSchema::StringWithFormat(it) => {
                 self.decode_runtime_registered_string(it, value_ref, err_storage, path)
             }
+            JsonSchema::Codec(name) => self.decode_duplex_codec(name, value_ref, err_storage, path),
             JsonSchema::Error => unreachable!("should not print if schema had error"),
             JsonSchema::StNever => todo!(),
             JsonSchema::StUnknown => todo!(),
             JsonSchema::StNot(_) => todo!(),
-            JsonSchema::AnyObject => todo!(),
-            JsonSchema::AnyArrayLike => todo!(),
         }
     }
 

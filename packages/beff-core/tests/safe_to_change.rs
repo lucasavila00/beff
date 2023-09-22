@@ -384,7 +384,7 @@ mod tests {
         let from = r#"
         export default {
             "/hello": {
-                get: ()  => {
+                get: ():string  => {
                     return "world";
                 }
             }
@@ -394,7 +394,7 @@ mod tests {
         let to = r#"
         export default {
             "/hello": {
-                get: () => {
+                get: ():string => {
                     return "world";
                 }
             }
@@ -409,7 +409,7 @@ mod tests {
         let from = r#"
         export default {
             "/hello": {
-                get: (c:Ctx, a: "a"|"b")  => {
+                get: (c:Ctx, a: "a"|"b") :string => {
                     return "world";
                 }
             }
@@ -419,7 +419,7 @@ mod tests {
         let to = r#"
         export default {
             "/hello": {
-                get: (c:Ctx, a: "a") => {
+                get: (c:Ctx, a: "a") :string => {
                     return "world";
                 }
             }
@@ -481,7 +481,7 @@ mod tests {
         let from = r#"
         export default {
             "/hello": {
-                get: () => todo()
+                get: () :any => todo()
             }
         }
         "#;
@@ -509,7 +509,7 @@ mod tests {
         let to = r#"
         export default {
             "/hello": {
-                get: () => todo()
+                get: ():any => todo()
             }
         }
         "#;

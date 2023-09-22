@@ -30,6 +30,9 @@ export type DecodeError =
   | ErrorVariant<"NotAnObject">
   | ErrorVariant<"NotAnArray">
   | ErrorVariant<"InvalidUnion">
+  | (ErrorVariant<"CodecFailed"> & {
+      expected_type: string;
+    })
   | (ErrorVariant<"StringFormatCheckFailed"> & {
       expected_type: string;
     })

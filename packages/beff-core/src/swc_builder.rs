@@ -132,10 +132,37 @@ impl SwcBuilder {
         })
     }
 
-    pub fn check_runtime_registered_string(type_name: &String, value: Expr) -> Expr {
+    pub fn check_runtime_registered_string(type_name: &str, value: Expr) -> Expr {
         let check_custom_string_format = Expr::Ident(Ident {
             span: DUMMY_SP,
             sym: "isCustomFormatInvalid".into(),
+            optional: false,
+        });
+        Expr::Call(CallExpr {
+            span: DUMMY_SP,
+            callee: Callee::Expr(check_custom_string_format.into()),
+            args: vec![
+                ExprOrSpread {
+                    spread: None,
+                    expr: Expr::Lit(Lit::Str(Str {
+                        span: DUMMY_SP,
+                        value: type_name.to_string().into(),
+                        raw: None,
+                    }))
+                    .into(),
+                },
+                ExprOrSpread {
+                    spread: None,
+                    expr: value.into(),
+                },
+            ],
+            type_args: None,
+        })
+    }
+    pub fn check_runtime_codec(type_name: &str, value: Expr) -> Expr {
+        let check_custom_string_format = Expr::Ident(Ident {
+            span: DUMMY_SP,
+            sym: "isCodecValid".into(),
             optional: false,
         });
         Expr::Call(CallExpr {

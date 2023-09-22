@@ -61,10 +61,10 @@ export default {
     },
   },
   "/with-default": {
-    get: async (c: Ctx, page: number = 1) => {
+    get: async (c: Ctx, page: number = 1): Promise<number> => {
       return page;
     },
-    post: async (c: Ctx, page: number | undefined = 1) => {
+    post: async (c: Ctx, page: number | undefined = 1): Promise<number> => {
       return page;
     },
   },

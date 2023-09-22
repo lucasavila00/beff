@@ -226,6 +226,7 @@ impl<'a, R: FileManager> TypeToSchema<'a, R> {
         type_params: &Option<Box<TsTypeParamInstantiation>>,
     ) -> Res<JsonSchema> {
         match i.sym.to_string().as_str() {
+            "Date" => return Ok(JsonSchema::Codec("ISO8061".to_string())),
             "Array" => {
                 let type_params = type_params.as_ref().and_then(|it| it.params.split_first());
                 if let Some((ty, [])) = type_params {

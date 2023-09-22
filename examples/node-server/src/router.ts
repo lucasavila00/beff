@@ -33,7 +33,7 @@ export default {
        * This is an example path parameter. Adding a comment here adds it to its description.
        */
       name: string
-    ) => {
+    ): { message: string } => {
       return {
         message: `Hello ${name}!`,
       };
@@ -51,7 +51,7 @@ export default {
        * This is an example query parameter. Adding a comment here adds it to its description.
        */
       limit: number
-    ) => {
+    ): string => {
       return body.message.slice(0, limit);
     },
   },

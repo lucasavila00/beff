@@ -85,6 +85,7 @@ pub enum JsonSchema {
     Const(Json),
     AnyObject,
     AnyArrayLike,
+    Codec(String),
     // semantic types
     StNever,
     StUnknown,
@@ -305,6 +306,14 @@ impl ToJson for JsonSchema {
                 ("type".into(), Json::String("string".into())),
                 ("format".into(), Json::String(format)),
             ]),
+            JsonSchema::Codec(format) => Json::object(vec![
+                ("type".into(), Json::String("string".into())),
+                (
+                    "format".into(),
+                    Json::String("Codec::".to_string() + format.as_str()),
+                ),
+            ]),
+
             JsonSchema::Object(values) => {
                 Json::object(vec![
                     //
@@ -638,6 +647,7 @@ impl JsonSchema {
                 .into(),
                 type_params: None,
             }),
+            JsonSchema::Codec(_) => todo!(),
         }
     }
 }

@@ -14,7 +14,7 @@ to:
 
         export default {
             "/hello": {
-                get: () => todo()
+                get: ():any => todo()
             }
         }
         

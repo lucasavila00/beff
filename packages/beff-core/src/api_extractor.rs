@@ -696,14 +696,17 @@ impl<'a, R: FileManager> ExtractExportDefaultVisitor<'a, R> {
     fn assert_and_extract_type_from_ann(
         &mut self,
         return_type: &Option<Box<TsTypeAnn>>,
-        _span: &Span,
+        span: &Span,
     ) -> TsType {
         match return_type.as_ref() {
             Some(t) => (*t.type_ann).clone(),
-            None => TsType::TsKeywordType(TsKeywordType {
-                span: DUMMY_SP,
-                kind: TsKeywordTypeKind::TsAnyKeyword,
-            }),
+            None => {
+                self.push_error(span, DiagnosticInfoMessage::ReturnAnnotationIsRequired);
+                TsType::TsKeywordType(TsKeywordType {
+                    span: DUMMY_SP,
+                    kind: TsKeywordTypeKind::TsAnyKeyword,
+                })
+            }
         }
     }
 
@@ -928,6 +931,7 @@ fn is_type_simple(it: &JsonSchema, components: &Vec<Validator>) -> bool {
         JsonSchema::StNot(_) => todo!(),
         JsonSchema::AnyObject => todo!(),
         JsonSchema::AnyArrayLike => todo!(),
+        JsonSchema::Codec(_) => todo!(),
     }
 }
 

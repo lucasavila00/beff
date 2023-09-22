@@ -12,4 +12,7 @@ export default {
       return StartsWithA.parse(uuid);
     },
   },
+  "/now": {
+    get: (): Date => new Date("2023-09-22T22:29:39.488Z"),
+  },
 };
