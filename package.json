@@ -6,10 +6,9 @@
   "scripts": {
     "ts": "pnpm run -r ts",
     "build": "pnpm run -r build",
-    "build2": "pnpm run -r build2",
     "test": "pnpm run -r test",
     "beff": "pnpm run -r beff",
-    "all": "pnpm run build && pnpm run beff && pnpm run ts && pnpm run build2 && pnpm run test",
+    "all": "pnpm run build && pnpm run beff && pnpm run ts && pnpm run test",
     "sd": "docsify serve docs"
   },
   "keywords": [],
