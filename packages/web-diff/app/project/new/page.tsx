@@ -52,7 +52,7 @@ const NewProject: FC<{
         },
       ]}
     >
-      <Box className="mx-auto max-w-4xl" pt="8">
+      <Box className="mx-auto max-w-xl" pt="8">
         <Card className="!bg-gray-1 dark:!bg-gray-3">
           <Flex p="4" align="center" direction="column">
             <Flex mb="4" gap="2" align="center">
