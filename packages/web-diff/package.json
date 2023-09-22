@@ -4,7 +4,7 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
-    "build3": "next build",
+    "build:web": "next build",
     "start": "next start",
     "lint": "next lint",
     "beff": "beff -p beff.json",
