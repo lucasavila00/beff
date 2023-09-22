@@ -1,8 +1,8 @@
 import { Ctx } from "@beff/hono";
 import { getServerSession } from "next-auth";
 import { Octokit } from "octokit";
-import { authOptions,  } from "@/app/api/auth/[...nextauth]/route";
 import { prisma } from "@/utils/prisma";
+import { authOptions } from "@/app/api/auth/[...nextauth]/options";
 
 export type GithubRepoData = {
   name: string;
