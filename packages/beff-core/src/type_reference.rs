@@ -76,7 +76,7 @@ impl<'a, R: FileManager> TypeResolver<'a, R> {
                     .make_err(&i.span, DiagnosticInfoMessage::CannotResolveNamespaceType)
                     .into())
             }
-            TypescriptExport::ValueExpr { expr, name } => todo!(),
+            TypescriptExport::ValueExpr { .. } => todo!(),
         }
     }
     pub fn resolve_namespace_type(&mut self, i: &Ident) -> Res<ResolvedNamespaceType> {
@@ -157,7 +157,7 @@ impl<'a, R: FileManager> TypeResolver<'a, R> {
 
                     if let Some(exported) = exported {
                         match exported.as_ref() {
-                            TypescriptExport::ValueExpr { expr, name } => {
+                            TypescriptExport::ValueExpr { expr, .. } => {
                                 return Ok(ResolvedLocalExpr::NamedImport {
                                     exported: expr.clone(),
                                     from_file: imported.clone(),

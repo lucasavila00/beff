@@ -164,7 +164,7 @@ impl<'a, R: FileManager> TypeToSchema<'a, R> {
                     }
                 }
             }
-            TypescriptExport::ValueExpr { expr, name } => todo!(),
+            TypescriptExport::ValueExpr { .. } => todo!(),
         };
         self.current_file = store_current_file;
         Ok(ty)
@@ -336,7 +336,7 @@ impl<'a, R: FileManager> TypeToSchema<'a, R> {
                     TypescriptExport::TsInterfaceDecl(it) => it.id.sym.to_string(),
                     TypescriptExport::StarOfOtherFile(_) => right.to_string(),
                     TypescriptExport::SomethingOfOtherFile(that, _) => that.to_string(),
-                    TypescriptExport::ValueExpr { expr, name } => todo!(),
+                    TypescriptExport::ValueExpr { .. } => todo!(),
                 };
                 Ok((exported, from_file.clone(), name))
             }
@@ -380,7 +380,7 @@ impl<'a, R: FileManager> TypeToSchema<'a, R> {
                     ),
                 }
             }
-            TypescriptExport::ValueExpr { expr, name } => todo!(),
+            TypescriptExport::ValueExpr { .. } => todo!(),
         }
     }
     fn __convert_ts_type_qual_inner(
