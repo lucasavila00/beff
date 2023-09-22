@@ -237,6 +237,7 @@ pub fn parse_and_bind<R: FsModuleResolver>(
         content: ParsedModuleLocals::new(),
     };
     locals.visit_module(&module.module);
+    locals.visit_module_item_list(&module.module.body);
 
     let mut type_exports = v.type_exports;
     for unresolved in v.unresolved_exports {

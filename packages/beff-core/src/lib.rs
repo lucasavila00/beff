@@ -28,6 +28,11 @@ use swc_atoms::JsWord;
 use swc_common::SourceFile;
 use swc_common::SourceMap;
 use swc_common::SyntaxContext;
+use swc_ecma_ast::Decl;
+use swc_ecma_ast::Expr;
+use swc_ecma_ast::ModuleItem;
+use swc_ecma_ast::Pat;
+use swc_ecma_ast::Stmt;
 use swc_ecma_ast::{Module, TsType};
 use swc_ecma_ast::{TsInterfaceDecl, TsTypeAliasDecl};
 use swc_ecma_visit::Visit;
@@ -140,12 +145,15 @@ pub struct ParsedModule {
 pub struct ParsedModuleLocals {
     pub type_aliases: HashMap<(JsWord, SyntaxContext), Rc<TsType>>,
     pub interfaces: HashMap<(JsWord, SyntaxContext), Rc<TsInterfaceDecl>>,
+
+    pub exprs: HashMap<(JsWord, SyntaxContext), Rc<Expr>>,
 }
 impl ParsedModuleLocals {
     pub fn new() -> ParsedModuleLocals {
         ParsedModuleLocals {
             type_aliases: HashMap::new(),
             interfaces: HashMap::new(),
+            exprs: HashMap::new(),
         }
     }
 }
@@ -157,6 +165,38 @@ impl Default for ParsedModuleLocals {
 }
 pub struct ParserOfModuleLocals {
     content: ParsedModuleLocals,
+}
+impl ParserOfModuleLocals {
+    pub fn new() -> ParserOfModuleLocals {
+        ParserOfModuleLocals {
+            content: ParsedModuleLocals::new(),
+        }
+    }
+
+    pub fn visit_module_item_list(&mut self, it: &[ModuleItem]) {
+        for it in it {
+            match it {
+                ModuleItem::Stmt(Stmt::Decl(decl)) => {
+                    // add expr to self.content
+
+                    if let Decl::Var(decls) = decl {
+                        for it in &decls.decls {
+                            if let Some(expr) = &it.init {
+                                if let Pat::Ident(id) = &it.name {
+                                    self.content.exprs.insert(
+                                        (id.sym.clone(), id.span.ctxt),
+                                        Rc::new(*expr.clone()),
+                                    );
+                                }
+                            }
+                        }
+                    }
+                }
+                ModuleItem::ModuleDecl(_) => {}
+                ModuleItem::Stmt(_) => {}
+            }
+        }
+    }
 }
 
 impl Visit for ParserOfModuleLocals {

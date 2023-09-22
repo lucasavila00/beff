@@ -1,7 +1,7 @@
 use std::rc::Rc;
 
 use swc_common::Span;
-use swc_ecma_ast::{Ident, TsInterfaceDecl, TsType};
+use swc_ecma_ast::{Expr, Ident, TsInterfaceDecl, TsType};
 
 use crate::{
     diag::{Diagnostic, DiagnosticInfoMessage, Location},
@@ -21,7 +21,9 @@ pub enum ResolvedLocalType {
         from_file: Rc<ImportReference>,
     },
 }
-
+pub enum ResolvedLocalExpr {
+    Expr(Rc<Expr>),
+}
 pub struct ResolvedNamespaceType {
     pub from_file: Rc<ImportReference>,
 }
@@ -131,5 +133,14 @@ impl<'a, R: FileManager> TypeResolver<'a, R> {
                 DiagnosticInfoMessage::CannotResolveLocalType(i.sym.to_string()),
             )
             .into())
+    }
+
+    pub fn resolve_local_ident(&mut self, i: &Ident) -> Res<ResolvedLocalExpr> {
+        let k = &(i.sym.clone(), i.span.ctxt);
+        if let Some(alias) = self.get_current_file().locals.exprs.get(k) {
+            return Ok(ResolvedLocalExpr::Expr(alias.clone()));
+        }
+
+        todo!()
     }
 }

@@ -1,4 +1,4 @@
-export default {
+const r = {
   [`/hello1`]: {
     get: async (): Promise<string> => {
       return "Hello!";
@@ -21,3 +21,5 @@ export default {
   },
   [`/hello5`]: { get: (): string => "Hello!" },
 };
+
+export default r;

@@ -7,6 +7,7 @@ use crate::open_api_ast::{
     self, ApiPath, HTTPMethod, Info, JsonRequestBody, OpenApi, OperationObject, ParameterIn,
     ParameterObject, ParsedPattern, Validator,
 };
+use crate::type_reference::{ResolvedLocalExpr, TypeResolver};
 use crate::type_to_schema::TypeToSchema;
 use crate::{BffFileName, FileManager, ParsedModule};
 use anyhow::anyhow;
@@ -160,12 +161,9 @@ struct ExtractExportDefaultVisitor<'a, R: FileManager> {
     handlers: Vec<PathHandlerMap>,
     components: Vec<Validator>,
     public_definitions: HashSet<String>,
-    // found_default_export: bool,
     errors: Vec<Diagnostic>,
     info: open_api_ast::Info,
-
     export_default: Option<Box<Expr>>,
-    // built_decoders: Option<Vec<BuiltDecoder>>,
 }
 impl<'a, R: FileManager> ExtractExportDefaultVisitor<'a, R> {
     fn new(files: &'a mut R, current_file: BffFileName) -> ExtractExportDefaultVisitor<'a, R> {
@@ -186,19 +184,66 @@ impl<'a, R: FileManager> ExtractExportDefaultVisitor<'a, R> {
         }
     }
 
+    fn check_export_default_expr(&mut self, expr: &Expr, current_file: &BffFileName) {
+        match expr {
+            Expr::Object(lit) => {
+                self.parse_endpoints_object(lit);
+            }
+            Expr::Ident(i) => {
+                match TypeResolver::new(self.files, &self.current_file).resolve_local_ident(i) {
+                    Ok(ResolvedLocalExpr::Expr(expr)) => {
+                        self.check_export_default_expr(&expr, current_file)
+                    }
+                    Err(_) => todo!(),
+                }
+            }
+            Expr::This(_) => todo!(),
+            Expr::Array(_) => todo!(),
+            Expr::Fn(_) => todo!(),
+            Expr::Unary(_) => todo!(),
+            Expr::Update(_) => todo!(),
+            Expr::Bin(_) => todo!(),
+            Expr::Assign(_) => todo!(),
+            Expr::Member(_) => todo!(),
+            Expr::SuperProp(_) => todo!(),
+            Expr::Cond(_) => todo!(),
+            Expr::Call(_) => todo!(),
+            Expr::New(_) => todo!(),
+            Expr::Seq(_) => todo!(),
+            Expr::Lit(_) => todo!(),
+            Expr::Tpl(_) => todo!(),
+            Expr::TaggedTpl(_) => todo!(),
+            Expr::Arrow(_) => todo!(),
+            Expr::Class(_) => todo!(),
+            Expr::Yield(_) => todo!(),
+            Expr::MetaProp(_) => todo!(),
+            Expr::Await(_) => todo!(),
+            Expr::Paren(_) => todo!(),
+            Expr::JSXMember(_) => todo!(),
+            Expr::JSXNamespacedName(_) => todo!(),
+            Expr::JSXEmpty(_) => todo!(),
+            Expr::JSXElement(_) => todo!(),
+            Expr::JSXFragment(_) => todo!(),
+            Expr::TsTypeAssertion(_) => todo!(),
+            Expr::TsConstAssertion(_) => todo!(),
+            Expr::TsNonNull(_) => todo!(),
+            Expr::TsAs(_) => todo!(),
+            Expr::TsInstantiation(_) => todo!(),
+            Expr::TsSatisfies(_) => todo!(),
+            Expr::PrivateName(_) => todo!(),
+            Expr::OptChain(_) => todo!(),
+            Expr::Invalid(_) => todo!(),
+        }
+    }
+
     fn check_export_default(&mut self, current_file: &BffFileName) {
         match self.export_default.clone() {
-            Some(expr) => match expr.as_ref() {
-                Expr::Object(lit) => {
-                    self.parse_endpoints_object(lit);
-                }
-                _ => todo!(),
-            },
             None => self.errors.push(
                 Location::unknown(&current_file)
                     .to_info(DiagnosticInfoMessage::CouldNotFindDefaultExport)
                     .to_diag(None),
             ),
+            Some(expr) => self.check_export_default_expr(&expr, current_file),
         }
     }
 }
