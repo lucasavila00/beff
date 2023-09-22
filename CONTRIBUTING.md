@@ -33,4 +33,4 @@ You must build the rust/wasm code before starting the playground (pnpm build).
 
 To build:
 
-`(cd web-demo/demo && npm run build3) && (cd web/docs && npm run build4)`
+`(cd web-demo/demo && npm run build:web) && (cd web/docs && npm run build:web)`

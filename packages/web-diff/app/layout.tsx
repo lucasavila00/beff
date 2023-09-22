@@ -7,8 +7,8 @@ import { Theme } from "@radix-ui/themes";
 import { Providers } from "./providers";
 import { ReactQueryProvider } from "@/components/query-client-provider";
 import { getServerSession } from "next-auth";
-import { authOptions } from "./api/auth/[...nextauth]/route";
 import { Layout } from "@/components/layout";
+import { authOptions } from "./api/auth/[...nextauth]/options";
 
 const inter = Inter({ subsets: ["latin"] });
 

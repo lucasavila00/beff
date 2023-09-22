@@ -19,7 +19,7 @@ app.route("/", routerApp);
 
 const handler = (request: Request) => app.fetch(request);
 
-export const beffServerClient = buildHonoTestClient<typeof router>({
+const beffServerClient = buildHonoTestClient<typeof router>({
   generated,
   app: routerApp,
 });
@@ -31,4 +31,5 @@ export {
   handler as DELETE,
   handler as PATCH,
   handler as OPTIONS,
+  beffServerClient,
 };
