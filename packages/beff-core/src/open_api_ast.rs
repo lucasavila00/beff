@@ -1,6 +1,5 @@
 use crate::{
     ast::{
-        js::Js,
         json::{Json, ToJson, ToJsonKv},
         json_schema::JsonSchema,
     },
@@ -20,19 +19,6 @@ fn clear_description(it: String) -> String {
         .map(|it| it.trim())
         .collect::<Vec<_>>()
         .join("\n")
-}
-fn resolve_schema(schema: JsonSchema, components: &Vec<Validator>) -> JsonSchema {
-    match schema {
-        JsonSchema::Ref(name) => match components.iter().find(|it| it.name == name) {
-            Some(def) => resolve_schema(def.schema.clone(), components),
-            None => unreachable!("everything should be resolved when printing"),
-        },
-        _ => schema,
-    }
-}
-
-pub fn build_coercer(schema: JsonSchema, components: &Vec<Validator>) -> Js {
-    Js::Coercer(resolve_schema(schema, components))
 }
 
 #[derive(Debug, Clone)]

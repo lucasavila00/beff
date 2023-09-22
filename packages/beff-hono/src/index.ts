@@ -75,10 +75,6 @@ const redocTemplate = (baseUrl: string) => `
 </html>
 `;
 
-const coerce = (coercer: any, value: any): any => {
-  return coercer(value).data;
-};
-
 const toHonoPattern = (pattern: string): string => {
   // replace {id} with :id
   return pattern.replace(/\{(\w+)\}/g, ":$1");
@@ -188,18 +184,15 @@ const handleMethod = async (
       switch (p.type) {
         case "path": {
           const value = c.hono.req.param(p.name);
-          const coerced = coerce(p.coercer, value);
-          return decodeWithMessage(p.validator, coerced);
+          return decodeWithMessage(p.validator, value);
         }
         case "query": {
           const value = c.hono.req.query(p.name);
-          const coerced = coerce(p.coercer, value);
-          return decodeWithMessage(p.validator, coerced);
+          return decodeWithMessage(p.validator, value);
         }
         case "header": {
           const value = c.hono.req.header(p.name);
-          const coerced = coerce(p.coercer, value);
-          return decodeWithMessage(p.validator, coerced);
+          return decodeWithMessage(p.validator, value);
         }
         case "body": {
           const value = await c.hono.req.json();

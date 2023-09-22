@@ -68,7 +68,7 @@ it("regular types", () => {
       "name": "name",
     }
   `);
-  // expect(u.createdAt.toISOString()).toMatchInlineSnapshot();
+  expect(u.createdAt.toISOString()).toMatchInlineSnapshot();
   expect(() => User.parse({ name: 123 })).toThrowErrorMatchingInlineSnapshot(`
     BffParseError {
       "errors": [

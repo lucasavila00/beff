@@ -1,65 +1,5 @@
 
 import vals from "./validators.js"; const { validators, add_path_to_errors, registerStringFormat, isCustomFormatInvalid, isCodecInvalid } = vals;
-
-
-function CoercionOk(data) {
-  return {
-    ok: true,
-    data,
-  }
-}
-
-function CoercionNoop(data) {
-  return {
-    ok: false,
-    data,
-  }
-}
-  
-
-function coerce_string(input) {
-  if (typeof input === "string") {
-    return CoercionOk(input)
-  }
-  return CoercionNoop(input);
-}
-const isNumeric = (num) =>
-  (typeof num === "number" || (typeof num === "string" && num.trim() !== "")) &&
-  !isNaN(num );
-function coerce_number(input) {
-  if (input == null) {
-    return CoercionNoop(input);
-  }
-  if (isNumeric(input)) {
-    return CoercionOk(Number(input));
-  }
-  return CoercionNoop(input);
-}
-function coerce_boolean(input) {
-  if (input == null) {
-    return CoercionNoop(input);
-  }
-  if (input === "true" || input === "false") {
-    return CoercionOk(input === "true");
-  }
-  if (input === "1" || input === "0") {
-    return CoercionOk(input === "1");
-  }
-  return CoercionNoop(input);
-}
-function coerce_union(input, ...cases) {
-  if (input == null) {
-    return CoercionNoop(input);
-  }
-  for (const c of cases) {
-    const r = c(input);
-    if (r.ok) {
-      return r;
-    }
-  }
-  return CoercionNoop(input);
-}
-
 const meta = [
     {
         "method_kind": "get",
@@ -68,9 +8,6 @@ const meta = [
                 "type": "context"
             },
             {
-                "coercer": function(input) {
-                    return coerce_number(input);
-                },
                 "name": "limit",
                 "required": false,
                 "type": "query",
@@ -147,9 +84,6 @@ const meta = [
                 "type": "context"
             },
             {
-                "coercer": function(input) {
-                    return coerce_string(input);
-                },
                 "name": "user_agent",
                 "required": true,
                 "type": "header",
@@ -206,9 +140,6 @@ const meta = [
                 "type": "context"
             },
             {
-                "coercer": function(input) {
-                    return coerce_number(input);
-                },
                 "name": "id",
                 "required": true,
                 "type": "path",
@@ -244,9 +175,6 @@ const meta = [
                 "type": "context"
             },
             {
-                "coercer": function(input) {
-                    return coerce_string(input);
-                },
                 "name": "id",
                 "required": true,
                 "type": "path",
@@ -289,9 +217,6 @@ const meta = [
                 "type": "context"
             },
             {
-                "coercer": function(input) {
-                    return coerce_string(input);
-                },
                 "name": "id",
                 "required": true,
                 "type": "path",

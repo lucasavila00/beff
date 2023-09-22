@@ -14,7 +14,7 @@ use crate::ast::js::Js;
 use crate::ast::json::{Json, ToJson, ToJsonKv};
 use crate::ast::json_schema::JsonSchema;
 use crate::emit::emit_module;
-use crate::open_api_ast::{build_coercer, OpenApi, ParsedPattern, Validator};
+use crate::open_api_ast::{OpenApi, ParsedPattern, Validator};
 use crate::parser_extractor::BuiltDecoder;
 use crate::print::decoder;
 use crate::ExtractResult;
@@ -104,7 +104,6 @@ fn param_to_server_js(
                         "validator".into(),
                         Js::named_decoder(name.to_string(), schema.clone(), required),
                     ),
-                    ("coercer".into(), build_coercer(schema, components)),
                 ]),
                 FunctionParameterIn::Query => Js::object(vec![
                     ("type".into(), Js::String("query".into())),
@@ -114,7 +113,6 @@ fn param_to_server_js(
                         "validator".into(),
                         Js::named_decoder(name.to_string(), schema.clone(), required),
                     ),
-                    ("coercer".into(), build_coercer(schema, components)),
                 ]),
                 FunctionParameterIn::Body => Js::object(vec![
                     ("type".into(), Js::String("body".into())),
@@ -142,7 +140,6 @@ fn param_to_server_js(
                     "validator".into(),
                     Js::named_decoder(name.to_string(), schema.clone(), required),
                 ),
-                ("coercer".into(), build_coercer(schema, components)),
             ])
         }
         HandlerParameter::Context(_) => {

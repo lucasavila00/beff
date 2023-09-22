@@ -24,7 +24,6 @@ pub enum Js {
         schema: JsonSchema,
         required: bool,
     },
-    Coercer(JsonSchema),
     Expr(Expr),
 }
 impl Js {

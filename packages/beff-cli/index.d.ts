@@ -9,7 +9,6 @@ export type MetaParamClient = {
 
 export type MetaParamServer = MetaParamClient & {
   validator: any;
-  coercer: any;
 };
 export type HandlerMetaClient = {
   method_kind: "get" | "post" | "put" | "delete" | "patch" | "options" | "use";

@@ -72,13 +72,6 @@ impl ToExpr for Js {
                 ident: None,
                 function: decoder::from_schema(&schema, &name_on_errors, required).into(),
             }),
-            Js::Coercer(schema) => {
-                let func = crate::print::coercer::from_schema(&schema);
-                Expr::Fn(FnExpr {
-                    ident: None,
-                    function: func.into(),
-                })
-            }
             Js::Null => Json::Null.to_expr(),
             Js::Bool(it) => Json::Bool(it).to_expr(),
             Js::Number(it) => Json::Number(it).to_expr(),
