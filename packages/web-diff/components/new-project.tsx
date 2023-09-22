@@ -18,7 +18,7 @@ import Fuse from "fuse.js";
 const ProjectList: FC<{
   search: string;
 }> = ({ search }) => {
-  const query = beff["/repos"].get().useQuery();
+  const query = beff["/repo"].get().useQuery();
 
   if (query.isLoading) {
     return (

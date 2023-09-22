@@ -179,7 +179,7 @@ impl<'a, R: FileManager> ExtractExportDefaultVisitor<'a, R> {
             public_definitions: HashSet::new(),
         }
     }
-    fn parse_endpoints_object(&mut self, lit: &ObjectLit, current_file: &BffFileName) {
+    fn parse_endpoints_object(&mut self, lit: &ObjectLit) {
         for prop in &lit.props {
             match prop {
                 PropOrSpread::Prop(prop) => {
@@ -189,19 +189,22 @@ impl<'a, R: FileManager> ExtractExportDefaultVisitor<'a, R> {
                     };
                 }
                 PropOrSpread::Spread(SpreadElement { expr, .. }) => {
-                    self.check_expr_for_methods(&expr, &current_file)
+                    self.check_expr_for_methods(&expr)
                 }
             }
         }
     }
-    fn check_ts_export_for_methods(&mut self, expr: &SymbolExport, parent_file: &BffFileName) {
+    fn check_ts_export_for_methods(&mut self, expr: &SymbolExport) {
         match expr {
-            SymbolExport::ValueExpr { expr, .. } => self.check_expr_for_methods(expr, parent_file),
+            SymbolExport::ValueExpr { expr, .. } => self.check_expr_for_methods(expr),
             SymbolExport::SomethingOfOtherFile(orig, file_name) => {
                 let file = self.files.get_or_fetch_file(file_name);
                 let exported = file.and_then(|file| file.symbol_exports.get(orig, self.files));
                 if let Some(export) = exported {
-                    self.check_ts_export_for_methods(&export, file_name);
+                    let old_file = self.current_file.clone();
+                    self.current_file = file_name.clone();
+                    self.check_ts_export_for_methods(&export);
+                    self.current_file = old_file;
                 } else {
                     // Err(self
                     //     .make_err(&i.span, DiagnosticInfoMessage::CannotResolveNamespaceType)
@@ -214,30 +217,31 @@ impl<'a, R: FileManager> ExtractExportDefaultVisitor<'a, R> {
             SymbolExport::StarOfOtherFile(_) => todo!(),
         }
     }
-    fn check_expr_for_methods(&mut self, expr: &Expr, file_name: &BffFileName) {
+    fn check_expr_for_methods(&mut self, expr: &Expr) {
         match expr {
             Expr::Object(lit) => {
-                self.parse_endpoints_object(lit, file_name);
+                self.parse_endpoints_object(lit);
             }
             Expr::Ident(i) => {
-                match TypeResolver::new(self.files, &file_name).resolve_local_symbol(i) {
-                    Ok(ResolvedLocalSymbol::Expr(expr)) => {
-                        self.check_expr_for_methods(&expr, file_name)
-                    }
+                match TypeResolver::new(self.files, &self.current_file).resolve_local_symbol(i) {
+                    Ok(ResolvedLocalSymbol::Expr(expr)) => self.check_expr_for_methods(&expr),
                     Ok(ResolvedLocalSymbol::NamedImport {
                         exported,
                         from_file,
-                    }) => self.check_ts_export_for_methods(&exported, &from_file.file_name()),
-                    Ok(ResolvedLocalSymbol::SymbolExportDefault(export_default)) => self
-                        .check_expr_for_methods(
-                            &export_default.symbol_export,
-                            &export_default.file_name,
-                        ),
-                    Ok(_) => todo!(),
-                    Err(e) => {
-                        self.errors.push(*e);
-                        todo!()
+                    }) => {
+                        let old_file = self.current_file.clone();
+                        self.current_file = from_file.file_name().clone();
+                        self.check_ts_export_for_methods(&exported);
+                        self.current_file = old_file;
                     }
+                    Ok(ResolvedLocalSymbol::SymbolExportDefault(export_default)) => {
+                        let old_file = self.current_file.clone();
+                        self.current_file = export_default.file_name.clone();
+                        self.check_expr_for_methods(&export_default.symbol_export);
+                        self.current_file = old_file;
+                    }
+                    Ok(_) => todo!(),
+                    Err(e) => self.errors.push(*e),
                 }
             }
             _ => todo!(),
@@ -255,8 +259,10 @@ impl<'a, R: FileManager> ExtractExportDefaultVisitor<'a, R> {
                         self.parse_export_default_comments(comments);
                     }
                 }
-
-                self.check_expr_for_methods(&expr.symbol_export, &expr.file_name)
+                let old_file = self.current_file.clone();
+                self.current_file = expr.file_name.clone();
+                self.check_expr_for_methods(&expr.symbol_export);
+                self.current_file = old_file;
             }
             None => self.errors.push(
                 Location::unknown(&self.current_file)
