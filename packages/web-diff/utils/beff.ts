@@ -1,6 +1,6 @@
-import type AppRouter from "@/app/api/beff/[...beff]/router";
+import type AppRouter from "@/beff/router";
 import { buildReactQueryClient } from "@beff/react";
-import generated from "@/app/api/beff/[...beff]/generated/client";
+import generated from "@/beff/generated/client";
 
 export const beff = buildReactQueryClient<typeof AppRouter>({
   generated,

@@ -1,6 +1,6 @@
-import router from "./router";
+import router from "@/beff/router";
 import { buildHonoApp, buildHonoTestClient } from "@beff/hono";
-import generated from "./generated/router";
+import generated from "@/beff/generated/router";
 import { Hono } from "hono";
 
 const routerApp = buildHonoApp({
