@@ -2,6 +2,7 @@
 CREATE TABLE "Project" (
     "id" TEXT NOT NULL,
     "fullName" TEXT NOT NULL,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
 
     CONSTRAINT "Project_pkey" PRIMARY KEY ("id")
 );
