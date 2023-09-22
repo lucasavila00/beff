@@ -67,7 +67,6 @@ pub enum DiagnosticInfoMessage {
     ComplexPathParameterNotSupported,
     PatternMustBeComputedKeyOrString,
     MustBeComputedKeyWithMethodAndPatternMustBeString,
-    RestOnRouterDefaultExportNotSupportedYet,
     HandlerCannotBeGenerator,
     ParameterIdentMustHaveTypeAnnotation,
     InferringTwoParamsAsRequestBody,
@@ -190,9 +189,6 @@ impl DiagnosticInfoMessage {
             }
             DiagnosticInfoMessage::MustBeComputedKeyWithMethodAndPatternMustBeString => {
                 "Must be computed key with method and pattern must be string".to_string()
-            }
-            DiagnosticInfoMessage::RestOnRouterDefaultExportNotSupportedYet => {
-                "Rest on router default export is not supported".to_string()
             }
             DiagnosticInfoMessage::HandlerCannotBeGenerator => {
                 "Handler cannot be a generator".to_string()

@@ -183,67 +183,55 @@ impl<'a, R: FileManager> ExtractExportDefaultVisitor<'a, R> {
             public_definitions: HashSet::new(),
         }
     }
-
-    fn check_export_default_expr(&mut self, expr: &Expr, current_file: &BffFileName) {
+    fn parse_endpoints_object(&mut self, lit: &ObjectLit) {
+        for prop in &lit.props {
+            match prop {
+                PropOrSpread::Prop(prop) => {
+                    let method = self.endpoints_from_prop(prop);
+                    if let Ok(method) = method {
+                        self.handlers.push(method)
+                    };
+                }
+                PropOrSpread::Spread(SpreadElement { expr, .. }) => match expr.as_ref() {
+                    Expr::Ident(i) => {
+                        match TypeResolver::new(self.files, &self.current_file)
+                            .resolve_local_ident(i)
+                        {
+                            Ok(ResolvedLocalExpr::Expr(expr)) => {
+                                self.check_export_default_expr(&expr)
+                            }
+                            Err(_) => todo!(),
+                        }
+                    }
+                    _ => todo!(),
+                },
+            }
+        }
+    }
+    fn check_export_default_expr(&mut self, expr: &Expr) {
         match expr {
             Expr::Object(lit) => {
                 self.parse_endpoints_object(lit);
             }
             Expr::Ident(i) => {
                 match TypeResolver::new(self.files, &self.current_file).resolve_local_ident(i) {
-                    Ok(ResolvedLocalExpr::Expr(expr)) => {
-                        self.check_export_default_expr(&expr, current_file)
-                    }
+                    Ok(ResolvedLocalExpr::Expr(expr)) => self.check_export_default_expr(&expr),
                     Err(_) => todo!(),
                 }
             }
-            Expr::This(_) => todo!(),
-            Expr::Array(_) => todo!(),
-            Expr::Fn(_) => todo!(),
-            Expr::Unary(_) => todo!(),
-            Expr::Update(_) => todo!(),
-            Expr::Bin(_) => todo!(),
-            Expr::Assign(_) => todo!(),
-            Expr::Member(_) => todo!(),
-            Expr::SuperProp(_) => todo!(),
-            Expr::Cond(_) => todo!(),
-            Expr::Call(_) => todo!(),
-            Expr::New(_) => todo!(),
-            Expr::Seq(_) => todo!(),
-            Expr::Lit(_) => todo!(),
-            Expr::Tpl(_) => todo!(),
-            Expr::TaggedTpl(_) => todo!(),
-            Expr::Arrow(_) => todo!(),
-            Expr::Class(_) => todo!(),
-            Expr::Yield(_) => todo!(),
-            Expr::MetaProp(_) => todo!(),
-            Expr::Await(_) => todo!(),
-            Expr::Paren(_) => todo!(),
-            Expr::JSXMember(_) => todo!(),
-            Expr::JSXNamespacedName(_) => todo!(),
-            Expr::JSXEmpty(_) => todo!(),
-            Expr::JSXElement(_) => todo!(),
-            Expr::JSXFragment(_) => todo!(),
-            Expr::TsTypeAssertion(_) => todo!(),
-            Expr::TsConstAssertion(_) => todo!(),
-            Expr::TsNonNull(_) => todo!(),
-            Expr::TsAs(_) => todo!(),
-            Expr::TsInstantiation(_) => todo!(),
-            Expr::TsSatisfies(_) => todo!(),
-            Expr::PrivateName(_) => todo!(),
-            Expr::OptChain(_) => todo!(),
-            Expr::Invalid(_) => todo!(),
+            _ => todo!(),
         }
     }
 
     fn check_export_default(&mut self, current_file: &BffFileName) {
+        self.current_file = current_file.clone();
         match self.export_default.clone() {
             None => self.errors.push(
                 Location::unknown(&current_file)
                     .to_info(DiagnosticInfoMessage::CouldNotFindDefaultExport)
                     .to_diag(None),
             ),
-            Some(expr) => self.check_export_default_expr(&expr, current_file),
+            Some(expr) => self.check_export_default_expr(&expr),
         }
     }
 }
@@ -866,25 +854,6 @@ impl<'a, R: FileManager> ExtractExportDefaultVisitor<'a, R> {
                         &c.span,
                         DiagnosticInfoMessage::CannotParseJsDocExportDefault,
                     ),
-                }
-            }
-        }
-    }
-
-    fn parse_endpoints_object(&mut self, lit: &ObjectLit) {
-        for prop in &lit.props {
-            match prop {
-                PropOrSpread::Prop(prop) => {
-                    let method = self.endpoints_from_prop(prop);
-                    if let Ok(method) = method {
-                        self.handlers.push(method)
-                    };
-                }
-                PropOrSpread::Spread(SpreadElement { dot3_token, .. }) => {
-                    self.push_error(
-                        dot3_token,
-                        DiagnosticInfoMessage::RestOnRouterDefaultExportNotSupportedYet,
-                    );
                 }
             }
         }
