@@ -1,6 +1,5 @@
-// import r1 from "./r1";
-
 import { r0 } from "./r0";
+import r3 from "./r3";
 
 const r1 = {
   ...r0,
@@ -13,11 +12,7 @@ const r1 = {
 
 const r = {
   ...r1,
-  [`/hello3`]: {
-    get: function (): Promise<string> {
-      return Promise.resolve("Hello!");
-    },
-  },
+  ...r3,
   [`/hello4`]: {
     get: function (): string {
       return "Hello!";

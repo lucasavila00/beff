@@ -27,6 +27,7 @@ use std::sync::Arc;
 use swc_atoms::JsWord;
 use swc_common::SourceFile;
 use swc_common::SourceMap;
+use swc_common::Span;
 use swc_common::SyntaxContext;
 use swc_ecma_ast::Decl;
 use swc_ecma_ast::Expr;
@@ -134,12 +135,18 @@ impl SymbolsExportsModule {
     }
 }
 
+pub struct SymbolExportDefault {
+    pub symbol_export: Rc<Expr>,
+    pub span: Span,
+    pub file_name: BffFileName,
+}
 pub struct ParsedModule {
     pub locals: ParsedModuleLocals,
     pub module: BffModuleData,
     pub imports: HashMap<(JsWord, SyntaxContext), Rc<ImportReference>>,
     pub comments: SwcComments,
     pub symbol_exports: SymbolsExportsModule,
+    pub export_default: Option<Rc<SymbolExportDefault>>,
 }
 
 #[derive(Debug)]

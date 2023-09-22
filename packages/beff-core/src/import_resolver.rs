@@ -5,6 +5,7 @@ use crate::ParsedModule;
 use crate::ParsedModuleLocals;
 use crate::ParserOfModuleLocals;
 use crate::SymbolExport;
+use crate::SymbolExportDefault;
 use crate::SymbolsExportsModule;
 use crate::UnresolvedExport;
 use anyhow::anyhow;
@@ -17,6 +18,7 @@ use swc_common::{FileName, SyntaxContext};
 use swc_ecma_ast::Decl;
 use swc_ecma_ast::ExportAll;
 use swc_ecma_ast::ExportDecl;
+use swc_ecma_ast::ExportDefaultExpr;
 use swc_ecma_ast::ExportNamedSpecifier;
 use swc_ecma_ast::ExportNamespaceSpecifier;
 use swc_ecma_ast::ExportSpecifier;
@@ -37,18 +39,20 @@ pub trait FsModuleResolver {
 pub struct ImportsVisitor<'a, R: FsModuleResolver> {
     pub resolver: &'a mut R,
     pub imports: HashMap<(JsWord, SyntaxContext), Rc<ImportReference>>,
-    pub type_exports: SymbolsExportsModule,
+    pub symbol_exports: SymbolsExportsModule,
     pub current_file: BffFileName,
     pub unresolved_exports: Vec<UnresolvedExport>,
+    pub export_default: Option<Rc<SymbolExportDefault>>,
 }
 impl<'a, R: FsModuleResolver> ImportsVisitor<'a, R> {
     pub fn from_file(current_file: BffFileName, resolver: &'a mut R) -> ImportsVisitor<'a, R> {
         ImportsVisitor {
             imports: HashMap::new(),
-            type_exports: SymbolsExportsModule::new(),
+            symbol_exports: SymbolsExportsModule::new(),
             current_file,
             unresolved_exports: Vec::new(),
             resolver,
+            export_default: None,
         }
     }
     fn resolve_import(&mut self, module_specifier: &str) -> Option<BffFileName> {
@@ -90,18 +94,29 @@ impl<'a, R: FsModuleResolver> ImportsVisitor<'a, R> {
 }
 
 impl<'a, R: FsModuleResolver> Visit for ImportsVisitor<'a, R> {
+    fn visit_export_default_expr(&mut self, n: &ExportDefaultExpr) {
+        self.export_default = Some(
+            SymbolExportDefault {
+                symbol_export: Rc::new(*n.expr.clone()),
+                span: n.span,
+                file_name: self.current_file.clone(),
+            }
+            .into(),
+        );
+    }
+
     fn visit_export_decl(&mut self, n: &ExportDecl) {
         match &n.decl {
             Decl::TsInterface(n) => {
                 let TsInterfaceDecl { id, .. } = &**n;
-                self.type_exports.insert(
+                self.symbol_exports.insert(
                     id.sym.clone(),
                     Rc::new(SymbolExport::TsInterfaceDecl(Rc::new(*n.clone()))),
                 );
             }
             Decl::TsTypeAlias(a) => {
                 let TsTypeAliasDecl { id, type_ann, .. } = &**a;
-                self.type_exports.insert(
+                self.symbol_exports.insert(
                     id.sym.clone(),
                     Rc::new(SymbolExport::TsType {
                         ty: Rc::new(*type_ann.clone()),
@@ -119,7 +134,7 @@ impl<'a, R: FsModuleResolver> Visit for ImportsVisitor<'a, R> {
                                     expr: Rc::new(*expr.clone()),
                                     name: name.clone(),
                                 });
-                                self.type_exports.insert(name, export);
+                                self.symbol_exports.insert(name, export);
                             }
                             _ => {}
                         }
@@ -141,7 +156,7 @@ impl<'a, R: FsModuleResolver> Visit for ImportsVisitor<'a, R> {
                         ExportSpecifier::Namespace(ExportNamespaceSpecifier { name, .. }) => {
                             if let ModuleExportName::Ident(id) = name {
                                 if let Some(file_name) = self.resolve_import(&src.value) {
-                                    self.type_exports.insert(
+                                    self.symbol_exports.insert(
                                         id.sym.clone(),
                                         Rc::new(SymbolExport::StarOfOtherFile(
                                             ImportReference::Star {
@@ -161,7 +176,7 @@ impl<'a, R: FsModuleResolver> Visit for ImportsVisitor<'a, R> {
                                     None => id.sym.clone(),
                                 };
                                 if let Some(file_name) = self.resolve_import(&src.value) {
-                                    self.type_exports.insert(
+                                    self.symbol_exports.insert(
                                         name,
                                         Rc::new(SymbolExport::SomethingOfOtherFile(
                                             id.sym.clone(),
@@ -202,7 +217,7 @@ impl<'a, R: FsModuleResolver> Visit for ImportsVisitor<'a, R> {
     }
     fn visit_export_all(&mut self, n: &ExportAll) {
         if let Some(file_name) = self.resolve_import(&n.src.value) {
-            self.type_exports.extend(file_name);
+            self.symbol_exports.extend(file_name);
         }
     }
     fn visit_import_decl(&mut self, node: &ImportDecl) {
@@ -253,12 +268,12 @@ pub fn parse_and_bind<R: FsModuleResolver>(
     locals.visit_module(&module.module);
     locals.visit_module_item_list(&module.module.body);
 
-    let mut type_exports = v.type_exports;
+    let mut symbol_exports = v.symbol_exports;
     for unresolved in v.unresolved_exports {
         let renamed = unresolved.renamed;
         let k = (unresolved.name.clone(), unresolved.span);
         if let Some(alias) = locals.content.type_aliases.get(&k) {
-            type_exports.insert(
+            symbol_exports.insert(
                 renamed.clone(),
                 Rc::new(SymbolExport::TsType {
                     ty: alias.clone(),
@@ -268,7 +283,7 @@ pub fn parse_and_bind<R: FsModuleResolver>(
             continue;
         }
         if let Some(intf) = locals.content.interfaces.get(&k) {
-            type_exports.insert(
+            symbol_exports.insert(
                 renamed,
                 Rc::new(SymbolExport::TsInterfaceDecl(intf.clone())),
             );
@@ -281,11 +296,11 @@ pub fn parse_and_bind<R: FsModuleResolver>(
                         orig.as_ref().clone(),
                         file_name.clone(),
                     ));
-                    type_exports.insert(renamed, it);
+                    symbol_exports.insert(renamed, it);
                     continue;
                 }
                 ImportReference::Star { .. } => {
-                    type_exports.insert(
+                    symbol_exports.insert(
                         renamed,
                         Rc::new(SymbolExport::StarOfOtherFile(import.clone())),
                     );
@@ -307,10 +322,11 @@ pub fn parse_and_bind<R: FsModuleResolver>(
 
     let f = Rc::new(ParsedModule {
         module,
-        symbol_exports: type_exports,
+        symbol_exports,
         imports: v.imports,
         comments,
         locals: locals.content,
+        export_default: v.export_default,
     });
     Ok(f)
 }

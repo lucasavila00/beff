@@ -21,6 +21,7 @@ pub enum ResolvedLocalSymbol {
         exported: Rc<SymbolExport>,
         from_file: Rc<ImportReference>,
     },
+    // ExportDefault(Rc<Expr>),
 }
 pub struct ResolvedNamespaceSymbol {
     pub from_file: Rc<ImportReference>,
@@ -128,14 +129,16 @@ impl<'a, R: FileManager> TypeResolver<'a, R> {
                         });
                     }
                 }
-                ImportReference::Star { file_name } => {
+                ImportReference::Star { .. } => {
                     todo!()
                 }
                 ImportReference::Default { file_name } => {
                     let file = self.files.get_or_fetch_file(file_name);
-
-                    // let def = file.and_then(|file| file.symbol_exports);
-                    todo!()
+                    let df = file.and_then(|file| file.export_default.clone());
+                    match df {
+                        Some(d) => return Ok(ResolvedLocalSymbol::Expr(d.symbol_export.clone())),
+                        None => todo!(),
+                    }
                 }
             }
         }
