@@ -121,10 +121,9 @@ function decodeAnyOf(ctx, input, required, vs) {
   }
   for (const v of vs) {
     const validatorCtx = {
-      errors: []
     };
     const newValue = v(validatorCtx, input);
-    if (validatorCtx.errors?.length === 0) {
+    if (validatorCtx.errors == null) {
       return newValue;
     }
   }
