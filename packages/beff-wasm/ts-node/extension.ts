@@ -3,11 +3,11 @@ import * as vscode from "vscode";
 import * as path from "path";
 import * as fs from "fs";
 import { Bundler, WasmDiagnosticInformation } from "./bundler";
-import { ProjectJson } from "./project";
+import { BeffUserSettings, ProjectJson, parseUserSettings } from "./project";
 
 const readProjectJson = (
   projectPath: string
-): Pick<ProjectJson, "router" | "module" | "parser"> => {
+): Pick<ProjectJson, "router" | "module" | "parser" | "settings"> => {
   const projectJson = JSON.parse(fs.readFileSync(projectPath, "utf-8"));
 
   if (!projectJson.router && !projectJson.parser) {
@@ -23,6 +23,7 @@ const readProjectJson = (
         ? projectJson.parser
         : String(projectJson.parser),
     module: projectJson.module,
+    settings: parseUserSettings(projectJson),
   };
 };
 
@@ -74,8 +75,14 @@ export function activate(context: vscode.ExtensionContext) {
     projectJson.parser == null
       ? undefined
       : path.join(path.dirname(projectPath), projectJson.parser);
+
   const updateDiag = () =>
-    updateDiagnostics(router_entrypoint, parser_entrypoint, collection);
+    updateDiagnostics(
+      router_entrypoint,
+      parser_entrypoint,
+      projectJson.settings,
+      collection
+    );
   updateDiag();
   const watcher = vscode.workspace.createFileSystemWatcher(
     new vscode.RelativePattern(workspacePath, "**/*.ts")
@@ -143,10 +150,15 @@ const relatedInformation = (
 function updateDiagnostics(
   router_entrypoint: string | undefined,
   parser_entrypoint: string | undefined,
+  settings: BeffUserSettings,
   collection: vscode.DiagnosticCollection
 ): void {
   collection.clear();
-  const diags = bundler?.diagnostics(router_entrypoint, parser_entrypoint);
+  const diags = bundler?.diagnostics(
+    router_entrypoint,
+    parser_entrypoint,
+    settings
+  );
   let acc: Record<string, vscode.Diagnostic[]> = {};
   const pushDiag = (k: string, v: vscode.Diagnostic) => {
     if (acc[k] == null) {

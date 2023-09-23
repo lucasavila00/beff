@@ -7,6 +7,7 @@ use crate::{open_api_ast::HTTPMethod, BffFileName, ParsedModule};
 
 #[derive(Debug, Clone)]
 pub enum DiagnosticInfoMessage {
+    CustomFormatIsNotRegistered,
     TypeMustNotBeEmpty,
     GetMustNotHaveBody,
     ReturnAnnotationIsRequired,
@@ -302,6 +303,9 @@ impl DiagnosticInfoMessage {
             }
             DiagnosticInfoMessage::TypeMustNotBeEmpty => {
                 "This type contains 'never' and cannot be serialized".to_string()
+            }
+            DiagnosticInfoMessage::CustomFormatIsNotRegistered => {
+                "Custom format is not registered".to_string()
             }
         }
     }

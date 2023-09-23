@@ -1,11 +1,11 @@
 import { it, expect } from "vitest";
-import { buildHonoApp, buildHonoTestClient } from "@beff/hono";
+import { buildHonoApp, buildHonoLocalClient } from "@beff/hono";
 import router from "../router";
 import generated from "../bff-generated/router";
 import generatedClient from "../bff-generated/router";
 
 const app = buildHonoApp({ router, generated });
-const beff = buildHonoTestClient<typeof router>({
+const beff = buildHonoLocalClient<typeof router>({
   generated: generatedClient,
   app,
 });
@@ -63,7 +63,7 @@ it("post with body and error", async () => {
     body: JSON.stringify({ a: 123 }),
   });
   const res = await app.request(req);
-  expect(res.status).toMatchInlineSnapshot('422');
+  expect(res.status).toMatchInlineSnapshot("422");
   expect(await res.json()).toMatchInlineSnapshot(
     `
     {
@@ -78,7 +78,7 @@ it("post with body and error, client", async () => {
     await beff["/req-body"].post({ a: 123 as any });
   } catch (e) {
     expect(e).toMatchInlineSnapshot(
-      '[HTTPException: #0 (data.a) expected string, received: 123]'
+      "[HTTPException: #0 (data.a) expected string, received: 123]"
     );
   }
 });
@@ -94,7 +94,7 @@ it("coerce", async () => {
     await beff["/path-param-boolean/{flag}"].get(true)
   ).toMatchInlineSnapshot("true");
   expect(await beff["/path-param-union/{id}"].get(456)).toMatchInlineSnapshot(
-    '456'
+    "456"
   );
 });
 

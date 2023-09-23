@@ -1,5 +1,5 @@
 
-import vals from "./validators.js"; const { decodeObject, decodeArray, decodeString, decodeNumber, decodeCodec, decodeStringWithFormat, decodeAnyOf, decodeAllOf, decodeBoolean, decodeAny, decodeTuple, decodeNull, decodeConst, encodeCodec, encodeAnyOf, encodeAllOf, validators, encoders, registerStringFormat, c } = vals;
+import validatorsMod from "./validators.js"; const { decodeObject, decodeArray, decodeString, decodeNumber, decodeCodec, decodeStringWithFormat, decodeAnyOf, decodeAllOf, decodeBoolean, decodeAny, decodeTuple, decodeNull, decodeConst, encodeCodec, encodeAnyOf, encodeAllOf, validators, encoders, c } = validatorsMod;
 const buildParsersInput = {
     "NotPublicRenamed": function(ctx, input) {
         return validators.NotPublic(ctx, input, true);
@@ -61,4 +61,4 @@ function buildParsers() {
   return decoders;
 }
 
-export default { buildParsers, registerStringFormat };
+export default { buildParsers };

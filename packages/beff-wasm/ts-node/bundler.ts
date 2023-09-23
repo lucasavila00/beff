@@ -11,6 +11,7 @@ import {
 } from "./tsc-slim/out";
 import { codeFrameColumns } from "@babel/code-frame";
 import * as chalk from "chalk";
+import { BeffUserSettings } from "./project";
 interface ModuleResolutionHost {
   fileExists(fileName: string): boolean;
   readFile(fileName: string): string | undefined;
@@ -216,6 +217,7 @@ export type WritableModules = {
   json_schema: string | undefined;
   js_built_parsers: string | undefined;
 };
+
 export class Bundler {
   cbs: ((path: string) => void)[];
   constructor(verbose: boolean) {
@@ -246,25 +248,34 @@ export class Bundler {
 
   public bundle(
     router_entrypoint: string | undefined,
-    parser_entrypoint: string | undefined
+    parser_entrypoint: string | undefined,
+    settings: BeffUserSettings
   ): WritableModules | undefined {
     return wasm.bundle_to_string(
       router_entrypoint ?? "",
-      parser_entrypoint ?? ""
+      parser_entrypoint ?? "",
+      serializeSettings(settings)
     );
   }
 
   public diagnostics(
     router_entrypoint: string | undefined,
-    parser_entrypoint: string | undefined
+    parser_entrypoint: string | undefined,
+    settings: BeffUserSettings
   ): WasmDiagnostic | null {
     return wasm.bundle_to_diagnostics(
       router_entrypoint ?? "",
-      parser_entrypoint ?? ""
+      parser_entrypoint ?? "",
+      serializeSettings(settings)
     );
   }
 
   public updateFileContent(file_name: string, content: string) {
     return wasm.update_file_content(file_name, content);
   }
+}
+function serializeSettings(settings: BeffUserSettings) {
+  return {
+    custom_formats: settings.customFormats.map((it) => it.name) ?? [],
+  };
 }

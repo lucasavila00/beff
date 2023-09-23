@@ -4,14 +4,14 @@ use crate::diag::{
     FullLocation, Location,
 };
 use crate::open_api_ast::{
-    self, ApiPath, HTTPMethod, Info, JsonRequestBody, OpenApi, OperationObject, ParameterIn,
+    self, ApiPath, HTTPMethod, JsonRequestBody, OpenApi, OperationObject, ParameterIn,
     ParameterObject, ParsedPattern, Validator,
 };
 use crate::subtyping::semtype::{SemTypeContext, SemTypeOps};
 use crate::subtyping::ToSemType;
 use crate::type_reference::{ResolvedLocalSymbol, TypeResolver};
 use crate::type_to_schema::TypeToSchema;
-use crate::{BffFileName, FileManager, ParsedModule, SymbolExport};
+use crate::{BeffUserSettings, BffFileName, FileManager, ParsedModule, SymbolExport};
 use anyhow::anyhow;
 use anyhow::Result;
 use core::fmt;
@@ -164,9 +164,14 @@ struct ExtractExportDefaultVisitor<'a, R: FileManager> {
     public_definitions: HashSet<String>,
     errors: Vec<Diagnostic>,
     info: open_api_ast::Info,
+    settings: &'a BeffUserSettings,
 }
 impl<'a, R: FileManager> ExtractExportDefaultVisitor<'a, R> {
-    fn new(files: &'a mut R, current_file: BffFileName) -> ExtractExportDefaultVisitor<'a, R> {
+    fn new(
+        files: &'a mut R,
+        current_file: BffFileName,
+        settings: &'a BeffUserSettings,
+    ) -> ExtractExportDefaultVisitor<'a, R> {
         ExtractExportDefaultVisitor {
             files,
             current_file,
@@ -179,6 +184,7 @@ impl<'a, R: FileManager> ExtractExportDefaultVisitor<'a, R> {
                 version: None,
             },
             public_definitions: HashSet::new(),
+            settings,
         }
     }
     fn parse_endpoints_object(&mut self, lit: &ObjectLit) {
@@ -490,7 +496,7 @@ impl<'a, R: FileManager> ExtractExportDefaultVisitor<'a, R> {
     }
 
     fn convert_to_json_schema(&mut self, ty: &TsType) -> JsonSchema {
-        let mut to_schema = TypeToSchema::new(self.files, self.current_file.clone());
+        let mut to_schema = TypeToSchema::new(self.files, self.current_file.clone(), self.settings);
         let res = to_schema.convert_ts_type(ty);
         let span = ty.span();
         match res {
@@ -1159,35 +1165,26 @@ pub struct RouterExtractResult {
     pub validators: Vec<Validator>,
 }
 
-type VisitExtractResult = (
-    Vec<PathHandlerMap>,
-    Vec<Validator>,
-    Vec<Diagnostic>,
-    Info,
-    HashSet<String>,
-);
-fn visit_extract<R: FileManager>(files: &mut R, current_file: BffFileName) -> VisitExtractResult {
-    let mut visitor = ExtractExportDefaultVisitor::new(files, current_file.clone());
-    visitor.check_export_default_for_methods();
-
-    (
-        visitor.handlers,
-        visitor.components,
-        visitor.errors,
-        visitor.info,
-        visitor.public_definitions,
-    )
-}
-
 pub fn extract_schema<R: FileManager>(
     files: &mut R,
     entry_file_name: BffFileName,
+    settings: &BeffUserSettings,
 ) -> RouterExtractResult {
-    let (handlers, components, errors, info, public_definitions) =
-        visit_extract(files, entry_file_name.clone());
+    let (handlers, components, errors, info, public_definitions) = {
+        let mut visitor =
+            ExtractExportDefaultVisitor::new(files, entry_file_name.clone(), settings);
+        visitor.check_export_default_for_methods();
+        (
+            visitor.handlers,
+            visitor.components,
+            visitor.errors,
+            visitor.info,
+            visitor.public_definitions,
+        )
+    };
 
     let mut transformer = EndpointToPath {
-        errors,
+        errors: errors,
         components: &components,
         current_file: entry_file_name.clone(),
         files,
@@ -1195,7 +1192,7 @@ pub fn extract_schema<R: FileManager>(
     let paths = transformer.endpoints_to_paths(&handlers);
     let errors = transformer.errors;
     let open_api = OpenApi {
-        info,
+        info: info,
         components: public_definitions.into_iter().collect(),
         paths,
     };

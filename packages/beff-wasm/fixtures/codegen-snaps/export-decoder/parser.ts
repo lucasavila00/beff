@@ -10,16 +10,13 @@ export type User = {
 };
 
 export type StartsWithA = StringFormat<"StartsWithA">;
-parser.registerStringFormat<StartsWithA>("StartsWithA", (it) =>
-  it.startsWith("A")
-);
+
 type A = 1 | 2;
 type B = 2 | 3;
 type D = 4 | 5;
 type E = 5 | 6;
 export type UnionNested = A | (B | (D | E));
 export type Password = StringFormat<"password">;
-parser.registerStringFormat("password", () => true);
 
 export const { StartsWithA, User, Users, NotPublicRenamed } =
   parser.buildParsers<{

@@ -134,13 +134,8 @@ function decodeStringWithFormat(ctx, input, required, format) {
   if (!required && input == null) {
     return input;
   }
-  if (typeof input === 'string') {
-    if (isCustomFormatValid(format, input)) {
-      return input;
-    }
-    return buildError(input, ctx,  "expected "+format)
-  }
-  return buildError(input, ctx,  "expected string")
+  return input
+  // throw new Error("decodeStringWithFormat not implemented")
 }
 function decodeAnyOf(ctx, input, required, vs) {
   if (!required && input == null) {
@@ -263,21 +258,7 @@ function encodeAnyOf(cbs, value) {
 }
 
 
-
-const stringPredicates = {}
-function registerStringFormat(name, predicate) {
-  stringPredicates[name] = predicate;
-}
-
-function isCustomFormatValid(key, value) {
-  const predicate = stringPredicates[key];
-  if (predicate == null) {
-    throw new Error("unknown string format: " + key);
-  }
-  return predicate(value);
-}
-
-function AllTypes(ctx, input) {
+function DecodeAllTypes(ctx, input) {
     return decodeObject(ctx, input, true, {
         "allBooleans": (ctx, input)=>(decodeBoolean(ctx, input, true)),
         "allNumbers": (ctx, input)=>(decodeNumber(ctx, input, true)),
@@ -380,7 +361,7 @@ function EncodeAllTypes(input) {
         unknown: input.unknown
     };
 }
-function Post(ctx, input) {
+function DecodePost(ctx, input) {
     return decodeObject(ctx, input, true, {
         "content": (ctx, input)=>(decodeString(ctx, input, true)),
         "id": (ctx, input)=>(decodeString(ctx, input, true))
@@ -392,7 +373,7 @@ function EncodePost(input) {
         id: input.id
     };
 }
-function User(ctx, input) {
+function DecodeUser(ctx, input) {
     return decodeObject(ctx, input, true, {
         "friends": (ctx, input)=>(decodeArray(ctx, input, true, (ctx, input)=>(validators.User(ctx, input, true)))),
         "id": (ctx, input)=>(decodeString(ctx, input, true))
@@ -405,9 +386,9 @@ function EncodeUser(input) {
     };
 }
 const validators = {
-    AllTypes: AllTypes,
-    Post: Post,
-    User: User
+    AllTypes: DecodeAllTypes,
+    Post: DecodePost,
+    User: DecodeUser
 };
 const encoders = {
     AllTypes: EncodeAllTypes,
@@ -415,4 +396,4 @@ const encoders = {
     User: EncodeUser
 };
 
-export default { decodeObject, decodeArray, decodeString, decodeNumber, decodeCodec, decodeStringWithFormat, decodeAnyOf, decodeAllOf, decodeBoolean, decodeAny, decodeTuple, decodeNull, decodeConst, encodeCodec, encodeAnyOf, encodeAllOf, validators, encoders, isCustomFormatValid, registerStringFormat };
+export default { decodeObject, decodeArray, decodeString, decodeNumber, decodeCodec, decodeStringWithFormat, decodeAnyOf, decodeAllOf, decodeBoolean, decodeAny, decodeTuple, decodeNull, decodeConst, encodeCodec, encodeAnyOf, encodeAllOf, validators, encoders };

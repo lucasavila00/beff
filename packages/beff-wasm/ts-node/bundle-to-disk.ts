@@ -20,10 +20,6 @@ export type TagOfFormat<T extends StringFormat<string>> =
   T extends StringFormat<infer Tag> ? Tag : never;
 
 declare const _exports: {
-  registerStringFormat: <T extends StringFormat<string>>(
-    name: TagOfFormat<T>,
-    isValid: (it: string) => boolean
-  ) => void;
   buildParsers: <T>() => Parsers<T>;
 };
 export default _exports;
@@ -170,13 +166,8 @@ function decodeStringWithFormat(ctx, input, required, format) {
   if (!required && input == null) {
     return input;
   }
-  if (typeof input === 'string') {
-    if (isCustomFormatValid(format, input)) {
-      return input;
-    }
-    return buildError(input, ctx,  "expected "+format)
-  }
-  return buildError(input, ctx,  "expected string")
+  return input
+  // throw new Error("decodeStringWithFormat not implemented")
 }
 function decodeAnyOf(ctx, input, required, vs) {
   if (!required && input == null) {
@@ -352,20 +343,6 @@ function buildParsers() {
 }
 `;
 
-const customFormatsCode = `
-const stringPredicates = {}
-function registerStringFormat(name, predicate) {
-  stringPredicates[name] = predicate;
-}
-
-function isCustomFormatValid(key, value) {
-  const predicate = stringPredicates[key];
-  if (predicate == null) {
-    throw new Error("unknown string format: " + key);
-  }
-  return predicate(value);
-}
-`;
 const esmTag = (mod: ProjectModule) => {
   if (mod === "cjs") {
     return `
@@ -384,33 +361,17 @@ const finalizeValidatorsCode = (
   wasmCode: WritableModules,
   mod: ProjectModule
 ) => {
-  const exportedItems = [
-    ...decodersExported,
-    "validators",
-    "encoders",
-    "isCustomFormatValid",
-    "registerStringFormat",
-  ].join(", ");
+  const exportedItems = [...decodersExported, "validators", "encoders"].join(
+    ", "
+  );
   const exports = [exportCode(mod), `{ ${exportedItems} };`].join(" ");
-  return [
-    decoders,
-    esmTag(mod),
-    customFormatsCode,
-    wasmCode.js_validators,
-    exports,
-  ].join("\n");
+  return [decoders, esmTag(mod), wasmCode.js_validators, exports].join("\n");
 };
 
 const importValidators = (mod: ProjectModule) => {
-  const i = [
-    ...decodersExported,
-    "validators",
-    "encoders",
-    "registerStringFormat",
-    "c",
-  ].join(", ");
+  const i = [...decodersExported, "validators", "encoders", "c"].join(", ");
   return mod === "esm"
-    ? `import vals from "./validators.js"; const { ${i} } = vals;`
+    ? `import validatorsMod from "./validators.js"; const { ${i} } = validatorsMod;`
     : `const { ${i} } = require('./validators.js').default;`;
 };
 const finalizeRouterFile = (wasmCode: WritableModules, mod: ProjectModule) => {
@@ -427,7 +388,7 @@ const finalizeRouterFile = (wasmCode: WritableModules, mod: ProjectModule) => {
 };
 
 const finalizeParserFile = (wasmCode: WritableModules, mod: ProjectModule) => {
-  const exportedItems = ["buildParsers", "registerStringFormat"].join(", ");
+  const exportedItems = ["buildParsers"].join(", ");
   const exports = [exportCode(mod), `{ ${exportedItems} };`].join(" ");
   return [
     esmTag(mod),
@@ -457,7 +418,11 @@ export const execProject = (
     console.log(`JS: Router entry point ${routerEntryPoint}`);
     console.log(`JS: Parser entry point ${parserEntryPoint}`);
   }
-  const outResult = bundler.bundle(routerEntryPoint, parserEntryPoint);
+  const outResult = bundler.bundle(
+    routerEntryPoint,
+    parserEntryPoint,
+    projectJson.settings
+  );
   if (outResult == null) {
     return "failed";
   }

@@ -3,10 +3,15 @@
     "beff",
     "bindgen",
     "codegen",
+    "ctxt",
     "Hono",
     "insta",
+    "jsdoc",
     "openapi",
+    "quasis",
     "redoc",
+    "semtype",
+    "subtyping",
     "Unfound",
     "Unserializeable"
   ]

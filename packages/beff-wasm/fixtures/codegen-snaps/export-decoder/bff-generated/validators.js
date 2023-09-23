@@ -134,13 +134,8 @@ function decodeStringWithFormat(ctx, input, required, format) {
   if (!required && input == null) {
     return input;
   }
-  if (typeof input === 'string') {
-    if (isCustomFormatValid(format, input)) {
-      return input;
-    }
-    return buildError(input, ctx,  "expected "+format)
-  }
-  return buildError(input, ctx,  "expected string")
+  return input
+  // throw new Error("decodeStringWithFormat not implemented")
 }
 function decodeAnyOf(ctx, input, required, vs) {
   if (!required && input == null) {
@@ -263,21 +258,7 @@ function encodeAnyOf(cbs, value) {
 }
 
 
-
-const stringPredicates = {}
-function registerStringFormat(name, predicate) {
-  stringPredicates[name] = predicate;
-}
-
-function isCustomFormatValid(key, value) {
-  const predicate = stringPredicates[key];
-  if (predicate == null) {
-    throw new Error("unknown string format: " + key);
-  }
-  return predicate(value);
-}
-
-function User(ctx, input) {
+function DecodeUser(ctx, input) {
     return decodeObject(ctx, input, true, {
         "age": (ctx, input)=>(decodeNumber(ctx, input, true)),
         "name": (ctx, input)=>(decodeString(ctx, input, true))
@@ -289,19 +270,19 @@ function EncodeUser(input) {
         name: input.name
     };
 }
-function Password(ctx, input) {
+function DecodePassword(ctx, input) {
     return decodeStringWithFormat(ctx, input, true, "password");
 }
 function EncodePassword(input) {
     return input;
 }
-function StartsWithA(ctx, input) {
+function DecodeStartsWithA(ctx, input) {
     return decodeStringWithFormat(ctx, input, true, "StartsWithA");
 }
 function EncodeStartsWithA(input) {
     return input;
 }
-function A(ctx, input) {
+function DecodeA(ctx, input) {
     return decodeAnyOf(ctx, input, true, [
         (ctx, input)=>(decodeConst(ctx, input, true, 1)),
         (ctx, input)=>(decodeConst(ctx, input, true, 2))
@@ -313,7 +294,7 @@ function EncodeA(input) {
         (input)=>(input)
     ], input);
 }
-function B(ctx, input) {
+function DecodeB(ctx, input) {
     return decodeAnyOf(ctx, input, true, [
         (ctx, input)=>(decodeConst(ctx, input, true, 2)),
         (ctx, input)=>(decodeConst(ctx, input, true, 3))
@@ -325,7 +306,7 @@ function EncodeB(input) {
         (input)=>(input)
     ], input);
 }
-function D(ctx, input) {
+function DecodeD(ctx, input) {
     return decodeAnyOf(ctx, input, true, [
         (ctx, input)=>(decodeConst(ctx, input, true, 4)),
         (ctx, input)=>(decodeConst(ctx, input, true, 5))
@@ -337,7 +318,7 @@ function EncodeD(input) {
         (input)=>(input)
     ], input);
 }
-function E(ctx, input) {
+function DecodeE(ctx, input) {
     return decodeAnyOf(ctx, input, true, [
         (ctx, input)=>(decodeConst(ctx, input, true, 5)),
         (ctx, input)=>(decodeConst(ctx, input, true, 6))
@@ -349,7 +330,7 @@ function EncodeE(input) {
         (input)=>(input)
     ], input);
 }
-function UnionNestedNamed(ctx, input) {
+function DecodeUnionNestedNamed(ctx, input) {
     return decodeAnyOf(ctx, input, true, [
         (ctx, input)=>(validators.A(ctx, input, true)),
         (ctx, input)=>(validators.B(ctx, input, true)),
@@ -365,7 +346,7 @@ function EncodeUnionNestedNamed(input) {
         (input)=>(encoders.E(input))
     ], input);
 }
-function NotPublic(ctx, input) {
+function DecodeNotPublic(ctx, input) {
     return decodeObject(ctx, input, true, {
         "a": (ctx, input)=>(decodeString(ctx, input, true))
     });
@@ -375,7 +356,7 @@ function EncodeNotPublic(input) {
         a: input.a
     };
 }
-function UnionNested(ctx, input) {
+function DecodeUnionNested(ctx, input) {
     return decodeAnyOf(ctx, input, true, [
         (ctx, input)=>(validators.A(ctx, input, true)),
         (ctx, input)=>(validators.B(ctx, input, true)),
@@ -392,16 +373,16 @@ function EncodeUnionNested(input) {
     ], input);
 }
 const validators = {
-    User: User,
-    Password: Password,
-    StartsWithA: StartsWithA,
-    A: A,
-    B: B,
-    D: D,
-    E: E,
-    UnionNestedNamed: UnionNestedNamed,
-    NotPublic: NotPublic,
-    UnionNested: UnionNested
+    User: DecodeUser,
+    Password: DecodePassword,
+    StartsWithA: DecodeStartsWithA,
+    A: DecodeA,
+    B: DecodeB,
+    D: DecodeD,
+    E: DecodeE,
+    UnionNestedNamed: DecodeUnionNestedNamed,
+    NotPublic: DecodeNotPublic,
+    UnionNested: DecodeUnionNested
 };
 const encoders = {
     User: EncodeUser,
@@ -416,4 +397,4 @@ const encoders = {
     UnionNested: EncodeUnionNested
 };
 
-export default { decodeObject, decodeArray, decodeString, decodeNumber, decodeCodec, decodeStringWithFormat, decodeAnyOf, decodeAllOf, decodeBoolean, decodeAny, decodeTuple, decodeNull, decodeConst, encodeCodec, encodeAnyOf, encodeAllOf, validators, encoders, isCustomFormatValid, registerStringFormat };
+export default { decodeObject, decodeArray, decodeString, decodeNumber, decodeCodec, decodeStringWithFormat, decodeAnyOf, decodeAllOf, decodeBoolean, decodeAny, decodeTuple, decodeNull, decodeConst, encodeCodec, encodeAnyOf, encodeAllOf, validators, encoders };

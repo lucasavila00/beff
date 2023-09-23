@@ -20,6 +20,9 @@ use diag::Diagnostic;
 use open_api_ast::Validator;
 use parser_extractor::extract_parser;
 use parser_extractor::ParserExtractResult;
+use serde::Deserialize;
+use serde::Serialize;
+use std::collections::BTreeSet;
 use std::collections::HashMap;
 use std::rc::Rc;
 use std::sync::Arc;
@@ -226,9 +229,16 @@ pub struct UnresolvedExport {
     pub span: SyntaxContext,
     pub renamed: JsWord,
 }
+
+#[derive(Serialize, Deserialize, Debug)]
+pub struct BeffUserSettings {
+    pub custom_formats: BTreeSet<String>,
+}
+
 pub struct EntryPoints {
     pub router_entry_point: Option<BffFileName>,
     pub parser_entry_point: Option<BffFileName>,
+    pub settings: BeffUserSettings,
 }
 pub trait FileManager {
     fn get_or_fetch_file(&mut self, name: &BffFileName) -> Option<Rc<ParsedModule>>;
@@ -274,15 +284,15 @@ impl ExtractResult {
             .collect()
     }
 }
-pub fn extract<R: FileManager>(files: &mut R, entry: EntryPoints) -> ExtractResult {
+pub fn extract<R: FileManager>(files: &mut R, entry_points: EntryPoints) -> ExtractResult {
     let mut router = None;
     let mut parser = None;
 
-    if let Some(entry) = entry.router_entry_point {
-        router = Some(extract_schema(files, entry));
+    if let Some(entry) = entry_points.router_entry_point {
+        router = Some(extract_schema(files, entry, &entry_points.settings));
     }
-    if let Some(entry) = entry.parser_entry_point {
-        parser = Some(extract_parser(files, entry));
+    if let Some(entry) = entry_points.parser_entry_point {
+        parser = Some(extract_parser(files, entry, &entry_points.settings));
     }
 
     ExtractResult { router, parser }

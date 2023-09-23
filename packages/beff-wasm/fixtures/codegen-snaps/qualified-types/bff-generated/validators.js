@@ -134,13 +134,8 @@ function decodeStringWithFormat(ctx, input, required, format) {
   if (!required && input == null) {
     return input;
   }
-  if (typeof input === 'string') {
-    if (isCustomFormatValid(format, input)) {
-      return input;
-    }
-    return buildError(input, ctx,  "expected "+format)
-  }
-  return buildError(input, ctx,  "expected string")
+  return input
+  // throw new Error("decodeStringWithFormat not implemented")
 }
 function decodeAnyOf(ctx, input, required, vs) {
   if (!required && input == null) {
@@ -263,21 +258,7 @@ function encodeAnyOf(cbs, value) {
 }
 
 
-
-const stringPredicates = {}
-function registerStringFormat(name, predicate) {
-  stringPredicates[name] = predicate;
-}
-
-function isCustomFormatValid(key, value) {
-  const predicate = stringPredicates[key];
-  if (predicate == null) {
-    throw new Error("unknown string format: " + key);
-  }
-  return predicate(value);
-}
-
-function UserEntityOriginal(ctx, input) {
+function DecodeUserEntityOriginal(ctx, input) {
     return decodeObject(ctx, input, true, {
         "id": (ctx, input)=>(decodeString(ctx, input, true))
     });
@@ -287,7 +268,7 @@ function EncodeUserEntityOriginal(input) {
         id: input.id
     };
 }
-function Abc123(ctx, input) {
+function DecodeAbc123(ctx, input) {
     return decodeObject(ctx, input, true, {
         "a": (ctx, input)=>(decodeString(ctx, input, true))
     });
@@ -297,7 +278,7 @@ function EncodeAbc123(input) {
         a: input.a
     };
 }
-function Def(ctx, input) {
+function DecodeDef(ctx, input) {
     return decodeObject(ctx, input, true, {
         "a": (ctx, input)=>(decodeString(ctx, input, true))
     });
@@ -307,7 +288,7 @@ function EncodeDef(input) {
         a: input.a
     };
 }
-function XYZ(ctx, input) {
+function DecodeXYZ(ctx, input) {
     return decodeObject(ctx, input, true, {
         "a": (ctx, input)=>(decodeNumber(ctx, input, true))
     });
@@ -317,18 +298,18 @@ function EncodeXYZ(input) {
         a: input.a
     };
 }
-function AAAAA(ctx, input) {
+function DecodeAAAAA(ctx, input) {
     return decodeConst(ctx, input, true, 123);
 }
 function EncodeAAAAA(input) {
     return input;
 }
 const validators = {
-    UserEntityOriginal: UserEntityOriginal,
-    Abc123: Abc123,
-    Def: Def,
-    XYZ: XYZ,
-    AAAAA: AAAAA
+    UserEntityOriginal: DecodeUserEntityOriginal,
+    Abc123: DecodeAbc123,
+    Def: DecodeDef,
+    XYZ: DecodeXYZ,
+    AAAAA: DecodeAAAAA
 };
 const encoders = {
     UserEntityOriginal: EncodeUserEntityOriginal,
@@ -338,4 +319,4 @@ const encoders = {
     AAAAA: EncodeAAAAA
 };
 
-export default { decodeObject, decodeArray, decodeString, decodeNumber, decodeCodec, decodeStringWithFormat, decodeAnyOf, decodeAllOf, decodeBoolean, decodeAny, decodeTuple, decodeNull, decodeConst, encodeCodec, encodeAnyOf, encodeAllOf, validators, encoders, isCustomFormatValid, registerStringFormat };
+export default { decodeObject, decodeArray, decodeString, decodeNumber, decodeCodec, decodeStringWithFormat, decodeAnyOf, decodeAllOf, decodeBoolean, decodeAny, decodeTuple, decodeNull, decodeConst, encodeCodec, encodeAnyOf, encodeAllOf, validators, encoders };

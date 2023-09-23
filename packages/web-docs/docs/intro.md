@@ -316,7 +316,7 @@ Create a file `router.test.ts` with:
 
 ```ts title="/router.test.ts"
 import { test, expect } from "vitest";
-import { buildHonoTestClient, buildHonoApp } from "@beff/hono";
+import { buildHonoLocalClient, buildHonoApp } from "@beff/hono";
 import router from "./router";
 import generated from "./generated/router";
 
@@ -325,7 +325,7 @@ const app = buildHonoApp({
   generated,
 });
 
-const client = buildHonoTestClient<typeof router>({ app, generated });
+const client = buildHonoLocalClient<typeof router>({ app, generated });
 
 test("get /", async () => {
   const result = await client["/"].get();

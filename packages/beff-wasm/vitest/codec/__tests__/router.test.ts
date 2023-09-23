@@ -1,11 +1,11 @@
 import { it, expect } from "vitest";
-import { buildHonoApp, buildHonoTestClient } from "@beff/hono";
+import { buildHonoApp, buildHonoLocalClient } from "@beff/hono";
 import router from "../router";
 import generated from "../bff-generated/router";
 import generatedClient from "../bff-generated/router";
 
 const app = buildHonoApp({ router, generated });
-const beff = buildHonoTestClient<typeof router>({
+const beff = buildHonoLocalClient<typeof router>({
   generated: generatedClient,
   app,
 });

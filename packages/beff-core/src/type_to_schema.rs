@@ -5,7 +5,7 @@ use crate::diag::{
 };
 use crate::open_api_ast::Validator;
 use crate::type_reference::{ResolvedLocalSymbol, TypeResolver};
-use crate::{BffFileName, FileManager, ImportReference, SymbolExport};
+use crate::{BeffUserSettings, BffFileName, FileManager, ImportReference, SymbolExport};
 use std::collections::HashMap;
 use std::rc::Rc;
 use swc_atoms::JsWord;
@@ -26,6 +26,7 @@ pub struct TypeToSchema<'a, R: FileManager> {
     pub current_file: BffFileName,
     pub components: HashMap<String, Option<Validator>>,
     pub ref_stack: Vec<DiagnosticInformation>,
+    pub settings: &'a BeffUserSettings,
 }
 
 fn extract_items_from_array(it: JsonSchema) -> JsonSchema {
@@ -38,12 +39,17 @@ fn extract_items_from_array(it: JsonSchema) -> JsonSchema {
 type Res<T> = Result<T, Box<Diagnostic>>;
 
 impl<'a, R: FileManager> TypeToSchema<'a, R> {
-    pub fn new(files: &'a mut R, current_file: BffFileName) -> TypeToSchema<'a, R> {
+    pub fn new(
+        files: &'a mut R,
+        current_file: BffFileName,
+        settings: &'a BeffUserSettings,
+    ) -> TypeToSchema<'a, R> {
         TypeToSchema {
             files,
             current_file,
             components: HashMap::new(),
             ref_stack: vec![],
+            settings,
         }
     }
     fn ts_keyword_type_kind_to_json_schema(
@@ -212,7 +218,13 @@ impl<'a, R: FileManager> TypeToSchema<'a, R> {
                     ..
                 }) = &**head
                 {
-                    return Ok(JsonSchema::StringWithFormat(value.to_string()));
+                    let val_str = value.to_string();
+                    if self.settings.custom_formats.contains(&val_str) {
+                        return Ok(JsonSchema::StringWithFormat(val_str));
+                    } else {
+                        return self
+                            .error(span, DiagnosticInfoMessage::CustomFormatIsNotRegistered);
+                    }
                 }
             }
         }

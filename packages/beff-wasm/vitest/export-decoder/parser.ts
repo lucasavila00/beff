@@ -10,12 +10,8 @@ export type User = {
 };
 
 export type StartsWithA = StringFormat<"StartsWithA">;
-parser.registerStringFormat<StartsWithA>("StartsWithA", (it) =>
-  it.startsWith("A")
-);
 
 export type Password = StringFormat<"Password">;
-parser.registerStringFormat<Password>("Password", (_it) => true);
 
 export const { User, Users, NotPublicRenamed, StartsWithA, Password } =
   parser.buildParsers<{
