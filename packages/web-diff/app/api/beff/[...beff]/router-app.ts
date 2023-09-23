@@ -1,5 +1,5 @@
 import router from "@/beff/router";
-import { buildHonoApp, buildHonoTestClient } from "@beff/hono";
+import { buildHonoApp, buildHonoLocalClient } from "@beff/hono";
 import generated from "@/beff/generated/router";
 
 export const routerApp = buildHonoApp({
@@ -12,7 +12,7 @@ export const routerApp = buildHonoApp({
   ],
 });
 
-export const beffServerClient = buildHonoTestClient<typeof router>({
+export const beffLocalClient = buildHonoLocalClient<typeof router>({
   generated,
   app: routerApp,
 });

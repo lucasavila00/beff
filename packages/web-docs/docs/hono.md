@@ -156,7 +156,7 @@ console.log(`Server running at http://localhost:3040/api`);
 console.log(`Check docs at at http://localhost:3040/api/docs`);
 ```
 
-### buildHonoTestClient
+### buildHonoLocalClient
 
 Creates a client for your router, like the one provided by [`@beff/client`](/docs/client). Even though using it seems to be using the router directly, the client does create an HTTP request and calls the router with it. Writing tests for your router has never been easier.
 
@@ -164,7 +164,7 @@ Creates a client for your router, like the one provided by [`@beff/client`](/doc
 
 ```ts title="/router.test.ts"
 import { test, expect } from "vitest";
-import { buildHonoTestClient, buildHonoApp } from "@beff/hono";
+import { buildHonoLocalClient, buildHonoApp } from "@beff/hono";
 import router from "./router";
 import generated from "./generated/router";
 
@@ -173,7 +173,7 @@ const app = buildHonoApp({
   generated,
 });
 
-const client = buildHonoTestClient<typeof router>({ app, generated });
+const client = buildHonoLocalClient<typeof router>({ app, generated });
 
 test("get /", async () => {
   const result = await client["/"].get();

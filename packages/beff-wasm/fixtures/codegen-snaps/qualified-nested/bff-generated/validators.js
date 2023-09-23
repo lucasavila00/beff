@@ -258,7 +258,7 @@ function encodeAnyOf(cbs, value) {
 }
 
 
-function User(ctx, input) {
+function DecodeUser(ctx, input) {
     return decodeObject(ctx, input, true, {
         "id": (ctx, input)=>(decodeString(ctx, input, true))
     });
@@ -269,7 +269,7 @@ function EncodeUser(input) {
     };
 }
 const validators = {
-    User: User
+    User: DecodeUser
 };
 const encoders = {
     User: EncodeUser

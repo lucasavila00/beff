@@ -3,12 +3,12 @@ import Image from "next/image";
 import wfy from "@/components/undraw/waiting_for_you.svg";
 import { NewProjectButton } from "@/components/new-project";
 import { BreadCrumbs } from "@/components/breadcrumbs";
-import { beffServerClient } from "./api/beff/[...beff]/router-app";
+import { beffLocalClient } from "./api/beff/[...beff]/router-app";
 import { BeffProject } from "@/beff/routers/project";
 import { FC } from "react";
 import { GitHubLogoIcon } from "@radix-ui/react-icons";
 import NextLink from "next/link";
-
+import { format } from "timeago.js";
 const ProjectTable: FC<{ projects: BeffProject[] }> = ({ projects }) => {
   return (
     <>
@@ -40,7 +40,7 @@ const ProjectTable: FC<{ projects: BeffProject[] }> = ({ projects }) => {
                     </NextLink>
                   </Link>
                 </Table.RowHeaderCell>
-                <Table.Cell>danilo@example.com</Table.Cell>
+                <Table.Cell>{format(project.updatedAt)}</Table.Cell>
               </Table.Row>
             );
           })}
@@ -62,7 +62,7 @@ const CreateFirstProject = () => {
   );
 };
 export default async function Home() {
-  const projects = await beffServerClient["/project"].get();
+  const projects = await beffLocalClient["/project"].get();
 
   return (
     <>

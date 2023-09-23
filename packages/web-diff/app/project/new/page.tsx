@@ -1,4 +1,4 @@
-import { beffServerClient } from "@/app/api/beff/[...beff]/router-app";
+import { beffLocalClient } from "@/app/api/beff/[...beff]/router-app";
 import { BreadCrumbs } from "@/components/breadcrumbs";
 import { CreateProjectButton } from "@/components/create-project-button";
 import {
@@ -38,7 +38,7 @@ const AppInstalledMessage: FC<{
 const NewProject: FC<{
   searchParams: { fullName: string };
 }> = async ({ searchParams }) => {
-  const installationStatus = await beffServerClient["/installation/status"].get(
+  const installationStatus = await beffLocalClient["/installation/status"].get(
     searchParams.fullName
   );
   const isAppInstalled = installationStatus === "installed";

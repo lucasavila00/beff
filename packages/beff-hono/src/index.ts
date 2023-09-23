@@ -249,7 +249,7 @@ export function buildHonoApp(options: {
   return app;
 }
 
-export const buildHonoTestClient = <T>(options: {
+export const buildHonoLocalClient = <T>(options: {
   generated: {
     meta: HandlerMetaServer[];
   };

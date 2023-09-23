@@ -258,7 +258,7 @@ function encodeAnyOf(cbs, value) {
 }
 
 
-function DataTypesKitchenSink(ctx, input) {
+function DecodeDataTypesKitchenSink(ctx, input) {
     return decodeObject(ctx, input, true, {
         "array1": (ctx, input)=>(decodeArray(ctx, input, true, (ctx, input)=>(decodeString(ctx, input, true)))),
         "array2": (ctx, input)=>(decodeArray(ctx, input, true, (ctx, input)=>(decodeString(ctx, input, true)))),
@@ -385,13 +385,13 @@ function EncodeDataTypesKitchenSink(input) {
         ], input.union_with_undefined)
     };
 }
-function A(ctx, input) {
+function DecodeA(ctx, input) {
     return decodeString(ctx, input, true);
 }
 function EncodeA(input) {
     return input;
 }
-function User(ctx, input) {
+function DecodeUser(ctx, input) {
     return decodeObject(ctx, input, true, {
         "entities": (ctx, input)=>(decodeArray(ctx, input, true, (ctx, input)=>(validators.UserEntity(ctx, input, true)))),
         "id": (ctx, input)=>(decodeNumber(ctx, input, true)),
@@ -407,7 +407,7 @@ function EncodeUser(input) {
         optional_prop: input.optional_prop
     };
 }
-function UserEntity(ctx, input) {
+function DecodeUserEntity(ctx, input) {
     return decodeObject(ctx, input, true, {
         "id": (ctx, input)=>(decodeString(ctx, input, true)),
         "idA": (ctx, input)=>(validators.A(ctx, input, true))
@@ -420,10 +420,10 @@ function EncodeUserEntity(input) {
     };
 }
 const validators = {
-    DataTypesKitchenSink: DataTypesKitchenSink,
-    A: A,
-    User: User,
-    UserEntity: UserEntity
+    DataTypesKitchenSink: DecodeDataTypesKitchenSink,
+    A: DecodeA,
+    User: DecodeUser,
+    UserEntity: DecodeUserEntity
 };
 const encoders = {
     DataTypesKitchenSink: EncodeDataTypesKitchenSink,

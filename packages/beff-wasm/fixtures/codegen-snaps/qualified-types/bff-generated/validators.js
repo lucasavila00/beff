@@ -258,7 +258,7 @@ function encodeAnyOf(cbs, value) {
 }
 
 
-function UserEntityOriginal(ctx, input) {
+function DecodeUserEntityOriginal(ctx, input) {
     return decodeObject(ctx, input, true, {
         "id": (ctx, input)=>(decodeString(ctx, input, true))
     });
@@ -268,7 +268,7 @@ function EncodeUserEntityOriginal(input) {
         id: input.id
     };
 }
-function Abc123(ctx, input) {
+function DecodeAbc123(ctx, input) {
     return decodeObject(ctx, input, true, {
         "a": (ctx, input)=>(decodeString(ctx, input, true))
     });
@@ -278,7 +278,7 @@ function EncodeAbc123(input) {
         a: input.a
     };
 }
-function Def(ctx, input) {
+function DecodeDef(ctx, input) {
     return decodeObject(ctx, input, true, {
         "a": (ctx, input)=>(decodeString(ctx, input, true))
     });
@@ -288,7 +288,7 @@ function EncodeDef(input) {
         a: input.a
     };
 }
-function XYZ(ctx, input) {
+function DecodeXYZ(ctx, input) {
     return decodeObject(ctx, input, true, {
         "a": (ctx, input)=>(decodeNumber(ctx, input, true))
     });
@@ -298,18 +298,18 @@ function EncodeXYZ(input) {
         a: input.a
     };
 }
-function AAAAA(ctx, input) {
+function DecodeAAAAA(ctx, input) {
     return decodeConst(ctx, input, true, 123);
 }
 function EncodeAAAAA(input) {
     return input;
 }
 const validators = {
-    UserEntityOriginal: UserEntityOriginal,
-    Abc123: Abc123,
-    Def: Def,
-    XYZ: XYZ,
-    AAAAA: AAAAA
+    UserEntityOriginal: DecodeUserEntityOriginal,
+    Abc123: DecodeAbc123,
+    Def: DecodeDef,
+    XYZ: DecodeXYZ,
+    AAAAA: DecodeAAAAA
 };
 const encoders = {
     UserEntityOriginal: EncodeUserEntityOriginal,

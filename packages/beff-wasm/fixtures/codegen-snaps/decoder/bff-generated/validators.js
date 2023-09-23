@@ -258,7 +258,7 @@ function encodeAnyOf(cbs, value) {
 }
 
 
-function AllTypes(ctx, input) {
+function DecodeAllTypes(ctx, input) {
     return decodeObject(ctx, input, true, {
         "allBooleans": (ctx, input)=>(decodeBoolean(ctx, input, true)),
         "allNumbers": (ctx, input)=>(decodeNumber(ctx, input, true)),
@@ -361,7 +361,7 @@ function EncodeAllTypes(input) {
         unknown: input.unknown
     };
 }
-function Post(ctx, input) {
+function DecodePost(ctx, input) {
     return decodeObject(ctx, input, true, {
         "content": (ctx, input)=>(decodeString(ctx, input, true)),
         "id": (ctx, input)=>(decodeString(ctx, input, true))
@@ -373,7 +373,7 @@ function EncodePost(input) {
         id: input.id
     };
 }
-function User(ctx, input) {
+function DecodeUser(ctx, input) {
     return decodeObject(ctx, input, true, {
         "friends": (ctx, input)=>(decodeArray(ctx, input, true, (ctx, input)=>(validators.User(ctx, input, true)))),
         "id": (ctx, input)=>(decodeString(ctx, input, true))
@@ -386,9 +386,9 @@ function EncodeUser(input) {
     };
 }
 const validators = {
-    AllTypes: AllTypes,
-    Post: Post,
-    User: User
+    AllTypes: DecodeAllTypes,
+    Post: DecodePost,
+    User: DecodeUser
 };
 const encoders = {
     AllTypes: EncodeAllTypes,

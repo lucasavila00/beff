@@ -277,7 +277,7 @@ impl ToWritableModules for ExtractResult {
             let decoder_fn_decl = ModuleItem::Stmt(Stmt::Decl(Decl::Fn(FnDecl {
                 ident: Ident {
                     span: DUMMY_SP,
-                    sym: comp.name.clone().into(),
+                    sym: ("Decode".to_string() + comp.name.as_str()).into(),
                     optional: false,
                 },
                 declare: false,
@@ -314,7 +314,7 @@ impl ToWritableModules for ExtractResult {
                             }),
                             value: Expr::Ident(Ident {
                                 span: DUMMY_SP,
-                                sym: it.into(),
+                                sym: ("Decode".to_string() + it.as_str()).into(),
                                 optional: false,
                             })
                             .into(),
