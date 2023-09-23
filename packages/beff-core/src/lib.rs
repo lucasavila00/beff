@@ -9,7 +9,6 @@ pub mod parser_extractor;
 pub mod print;
 pub mod schema_changes;
 pub mod subtyping;
-pub mod swc_builder;
 pub mod type_reference;
 pub mod type_to_schema;
 pub mod wasm_diag;

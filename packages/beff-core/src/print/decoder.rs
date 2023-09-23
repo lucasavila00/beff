@@ -1,9 +1,6 @@
 use std::collections::BTreeSet;
 
-use crate::{
-    ast::json_schema::{JsonSchema, Optionality},
-    swc_builder::SwcBuilder,
-};
+use crate::ast::json_schema::{JsonSchema, Optionality};
 use swc_common::DUMMY_SP;
 use swc_ecma_ast::{
     ArrayLit, ArrowExpr, BindingIdent, BlockStmt, BlockStmtOrExpr, Bool, CallExpr, Callee, Expr,
@@ -12,6 +9,27 @@ use swc_ecma_ast::{
 };
 
 use super::expr::ToExpr;
+struct SwcBuilder;
+
+impl SwcBuilder {
+    #[must_use]
+    pub fn input_ident() -> Ident {
+        Ident {
+            span: DUMMY_SP,
+            sym: "input".into(),
+            optional: false,
+        }
+    }
+
+    #[must_use]
+    pub fn ident_expr(name: &str) -> Expr {
+        Expr::Ident(Ident {
+            span: DUMMY_SP,
+            sym: name.into(),
+            optional: false,
+        })
+    }
+}
 
 struct DecoderFnGenerator {}
 
