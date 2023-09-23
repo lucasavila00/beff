@@ -193,7 +193,13 @@ function decodeAllOf(ctx, input, required, vs) {
   if (!required && input == null) {
     return input;
   }
-  throw new Error("decodeAllOf not implemented");
+  
+  let acc = {};
+  for (const v of vs) {
+    const newValue = v(ctx, input);
+    acc = { ...acc, ...newValue };
+  }
+  return acc
 }
 function decodeTuple(ctx, input, required, vs) {
   if (!required && input == null) {
@@ -239,7 +245,15 @@ function decodeConst(ctx, input, required, constValue) {
 }
 
 function encodeAllOf(cbs, value) {
-  throw new Error("encodeAllOf not implemented");
+  if (typeof value === "object") {
+    let acc = {};
+    for (const cb of cbs) {
+      const newValue = cb(value);
+      acc = { ...acc, ...newValue };
+    }
+    return acc;
+  }
+  return value;
 }
 
 function encodeAnyOf(cbs, value) {

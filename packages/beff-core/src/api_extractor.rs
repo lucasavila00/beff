@@ -1180,6 +1180,8 @@ pub fn extract_schema<R: FileManager>(
         paths,
     };
 
+    // TODO: validate that all intersections are valid (no empty types anywhere)
+
     RouterExtractResult {
         routes: handlers,
         open_api,
