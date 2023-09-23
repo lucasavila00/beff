@@ -53,14 +53,14 @@ function popPath(ctx) {
   }
   return ctx.paths.pop();
 }
-function buildError(ctx, kind) {
+function buildError(received, ctx, kind, ) {
   if (ctx.errors == null) {
     ctx.errors = [];
   }
   ctx.errors.push({
     kind,
     path: [],
-    received: 'todo',
+    received
   })
 }
 
@@ -81,7 +81,7 @@ function decodeObject(ctx, input, required, data) {
     }
     return acc;
   }
-  return buildError(ctx, "notObject")
+  return buildError(input, ctx,  "notObject")
 }
 function decodeArray(ctx, input, required, data) {
   if (!required && input == null) {
@@ -97,7 +97,7 @@ function decodeArray(ctx, input, required, data) {
     }
     return acc;
   }
-  return buildError(ctx, "notArray")
+  return buildError(input, ctx,  "notArray")
 }
 function decodeString(ctx, input, required) {
   if (!required && input == null) {
@@ -108,7 +108,7 @@ function decodeString(ctx, input, required) {
     return input;
   }
 
-  return buildError(ctx, "notString")
+  return buildError(input, ctx,  "notString")
 }
 const isNumeric = (num) =>
   (typeof num === "number" || (typeof num === "string" && num.trim() !== "")) &&
@@ -125,7 +125,7 @@ function decodeNumber(ctx, input, required) {
     return Number(input);
   }
 
-  return buildError(ctx, "notNumber")
+  return buildError(input, ctx,  "notNumber")
 }
 
 function decodeCodec(ctx, input, required, codec) {
@@ -136,12 +136,12 @@ function decodeCodec(ctx, input, required, codec) {
     case "Codec::ISO8061": {
       const d = new Date(input);
       if (isNaN(d.getTime())) {
-        return buildError(ctx, "notISO8061")
+        return buildError(input, ctx,  "notISO8061")
       }
       return d;
     }
   }
-  return buildError(ctx, "unknownCodec:"+codec)
+  return buildError(input, ctx,  "unknownCodec:"+codec)
 }
 
 function decodeStringWithFormat(ctx, input, required, format) {
@@ -152,9 +152,9 @@ function decodeStringWithFormat(ctx, input, required, format) {
     if (isCustomFormatValid(format, input)) {
       return input;
     }
-    return buildError(ctx, "notCustomFormat:"+format)
+    return buildError(input, ctx,  "notCustomFormat:"+format)
   }
-  return buildError(ctx, "notString")
+  return buildError(input, ctx,  "notString")
 }
 function decodeAnyOf(ctx, input, required, vs) {
   if (!required && input == null) {
@@ -168,7 +168,7 @@ function decodeAnyOf(ctx, input, required, vs) {
       return newValue;
     }
   }
-  return buildError(ctx, "notAnyOf")
+  return buildError(input, ctx,  "notAnyOf")
 }
 function decodeAllOf(ctx, input, required, vs) {
   if (!required && input == null) {
@@ -195,7 +195,7 @@ function decodeBoolean(ctx, input, required, ) {
   if (input === "1" || input === "0") {
     return (input === "1");
   }
-  return buildError(ctx, "notBoolean")
+  return buildError(input, ctx,  "notBoolean")
 }
 function decodeAny(ctx, input, required) {
   return input;
@@ -207,7 +207,7 @@ function decodeNull(ctx, input, required) {
   if (input === null) {
     return input;
   }
-  return buildError(ctx, "notNull")
+  return buildError(input, ctx,  "notNull")
 }
 function decodeConst(ctx, input, required, constValue) {
   if (!required && input == null) {
@@ -216,7 +216,7 @@ function decodeConst(ctx, input, required, constValue) {
   if (input == constValue) {
     return constValue;
   }
-  return buildError(ctx, "notConst")
+  return buildError(input, ctx,  "notConst")
 }
 `;
 const decodersExported = [

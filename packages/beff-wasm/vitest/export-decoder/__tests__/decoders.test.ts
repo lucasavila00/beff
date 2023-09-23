@@ -15,7 +15,7 @@ it("custom types", () => {
         {
           "kind": "notCustomFormat:StartsWithA",
           "path": [],
-          "received": "todo",
+          "received": "BB",
         },
       ],
       "success": false,
@@ -72,17 +72,17 @@ it("regular types", () => {
         {
           "kind": "notNumber",
           "path": [],
-          "received": "todo",
+          "received": undefined,
         },
         {
           "kind": "notISO8061",
           "path": [],
-          "received": "todo",
+          "received": undefined,
         },
         {
           "kind": "notString",
           "path": [],
-          "received": "todo",
+          "received": 123,
         },
       ],
     }
@@ -94,17 +94,17 @@ it("regular types", () => {
         {
           "kind": "notNumber",
           "path": [],
-          "received": "todo",
+          "received": undefined,
         },
         {
           "kind": "notISO8061",
           "path": [],
-          "received": "todo",
+          "received": undefined,
         },
         {
           "kind": "notString",
           "path": [],
-          "received": "todo",
+          "received": 123,
         },
       ],
       "success": false,
@@ -116,7 +116,7 @@ it("regular types", () => {
         {
           "kind": "notString",
           "path": [],
-          "received": "todo",
+          "received": undefined,
         },
       ],
       "success": false,
@@ -130,32 +130,32 @@ it("regular types", () => {
           {
             "kind": "notNumber",
             "path": [],
-            "received": "todo",
+            "received": undefined,
           },
           {
             "kind": "notISO8061",
             "path": [],
-            "received": "todo",
+            "received": undefined,
           },
           {
             "kind": "notString",
             "path": [],
-            "received": "todo",
+            "received": 123,
           },
           {
             "kind": "notNumber",
             "path": [],
-            "received": "todo",
+            "received": "def",
           },
           {
             "kind": "notISO8061",
             "path": [],
-            "received": "todo",
+            "received": undefined,
           },
           {
             "kind": "notString",
             "path": [],
-            "received": "todo",
+            "received": undefined,
           },
         ],
         "success": false,

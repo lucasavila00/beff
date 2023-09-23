@@ -39,7 +39,7 @@ it("works on recursive type", () => {
         {
           "kind": "notArray",
           "path": [],
-          "received": "todo",
+          "received": undefined,
         },
       ],
       "success": false,

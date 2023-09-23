@@ -67,7 +67,7 @@ it("post with body and error", async () => {
   expect(await res.json()).toMatchInlineSnapshot(
     `
     {
-      "message": "[{\\"kind\\":\\"notString\\",\\"path\\":[],\\"received\\":\\"todo\\"}]",
+      "message": "[{\\"kind\\":\\"notString\\",\\"path\\":[],\\"received\\":123}]",
     }
   `
   );
@@ -78,7 +78,7 @@ it("post with body and error, client", async () => {
     await beff["/req-body"].post({ a: 123 as any });
   } catch (e) {
     expect(e).toMatchInlineSnapshot(
-      '[HTTPException: [{"kind":"notString","path":[],"received":"todo"}]]'
+      '[HTTPException: [{"kind":"notString","path":[],"received":123}]]'
     );
   }
 });
