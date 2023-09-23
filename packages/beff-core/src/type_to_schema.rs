@@ -6,19 +6,20 @@ use crate::diag::{
 use crate::open_api_ast::Validator;
 use crate::type_reference::{ResolvedLocalSymbol, TypeResolver};
 use crate::{BeffUserSettings, BffFileName, FileManager, ImportReference, SymbolExport};
-use std::collections::HashMap;
+use std::collections::{BTreeMap, HashMap};
 use std::rc::Rc;
 use swc_atoms::JsWord;
-use swc_common::Span;
+use swc_common::{Span, Spanned};
 use swc_ecma_ast::{
-    Expr, Ident, Lit, Str, TsArrayType, TsCallSignatureDecl, TsConditionalType,
-    TsConstructSignatureDecl, TsConstructorType, TsEntityName, TsFnOrConstructorType, TsFnType,
-    TsGetterSignature, TsImportType, TsIndexSignature, TsIndexedAccessType, TsInferType,
-    TsInterfaceDecl, TsIntersectionType, TsKeywordType, TsKeywordTypeKind, TsLit, TsLitType,
-    TsMappedType, TsMethodSignature, TsOptionalType, TsParenthesizedType, TsQualifiedName,
-    TsRestType, TsSetterSignature, TsThisType, TsTplLitType, TsTupleType, TsType, TsTypeElement,
-    TsTypeLit, TsTypeOperator, TsTypeParamInstantiation, TsTypePredicate, TsTypeQuery, TsTypeRef,
-    TsUnionOrIntersectionType, TsUnionType,
+    Expr, Ident, Lit, MemberProp, Prop, PropOrSpread, Str, TsArrayType, TsCallSignatureDecl,
+    TsConditionalType, TsConstructSignatureDecl, TsConstructorType, TsEntityName,
+    TsFnOrConstructorType, TsFnType, TsGetterSignature, TsImportType, TsIndexSignature,
+    TsIndexedAccessType, TsInferType, TsInterfaceDecl, TsIntersectionType, TsKeywordType,
+    TsKeywordTypeKind, TsLit, TsLitType, TsMappedType, TsMethodSignature, TsOptionalType,
+    TsParenthesizedType, TsQualifiedName, TsRestType, TsSetterSignature, TsThisType, TsTplLitType,
+    TsTupleType, TsType, TsTypeElement, TsTypeLit, TsTypeOperator, TsTypeParamInstantiation,
+    TsTypePredicate, TsTypeQuery, TsTypeQueryExpr, TsTypeRef, TsUnionOrIntersectionType,
+    TsUnionType,
 };
 
 pub struct TypeToSchema<'a, R: FileManager> {
@@ -61,9 +62,7 @@ impl<'a, R: FileManager> TypeToSchema<'a, R> {
             TsKeywordTypeKind::TsUndefinedKeyword | TsKeywordTypeKind::TsNullKeyword => {
                 Ok(JsonSchema::Null)
             }
-            TsKeywordTypeKind::TsBigIntKeyword => {
-                Ok(JsonSchema::Codec(CodecName::new("BigInt".into())))
-            }
+            TsKeywordTypeKind::TsBigIntKeyword => Ok(JsonSchema::Codec(CodecName::BigInt)),
             TsKeywordTypeKind::TsAnyKeyword
             | TsKeywordTypeKind::TsUnknownKeyword
             | TsKeywordTypeKind::TsObjectKeyword => Ok(JsonSchema::Any),
@@ -240,7 +239,7 @@ impl<'a, R: FileManager> TypeToSchema<'a, R> {
         type_params: &Option<Box<TsTypeParamInstantiation>>,
     ) -> Res<JsonSchema> {
         match i.sym.to_string().as_str() {
-            "Date" => return Ok(JsonSchema::Codec(CodecName::new("ISO8061".to_string()))),
+            "Date" => return Ok(JsonSchema::Codec(CodecName::ISO8061)),
             "Array" => {
                 let type_params = type_params.as_ref().and_then(|it| it.params.split_first());
                 if let Some((ty, [])) = type_params {
@@ -482,6 +481,174 @@ impl<'a, R: FileManager> TypeToSchema<'a, R> {
         }
         v
     }
+
+    pub fn typeof_expr(&mut self, e: &Expr) -> Res<JsonSchema> {
+        match e {
+            Expr::Lit(l) => match l {
+                Lit::Str(s) => Ok(JsonSchema::Const(Json::String(s.value.to_string()))),
+                Lit::Bool(b) => Ok(JsonSchema::Const(Json::Bool(b.value))),
+                Lit::Null(_) => Ok(JsonSchema::Null),
+                Lit::Num(n) => Ok(JsonSchema::Const(Json::parse_f64(n.value))),
+                Lit::BigInt(_) => Ok(JsonSchema::Codec(CodecName::BigInt)),
+                Lit::Regex(_) => todo!(),
+                Lit::JSXText(_) => todo!(),
+            },
+            Expr::Array(lit) => {
+                let mut prefix_items = vec![];
+                for it in &lit.elems {
+                    if let Some(it) = it {
+                        match it.spread {
+                            Some(_) => todo!(),
+                            None => {
+                                let ty_schema = self.typeof_expr(&it.expr)?;
+                                prefix_items.push(ty_schema);
+                            }
+                        }
+                    }
+                }
+                Ok(JsonSchema::Tuple {
+                    prefix_items,
+                    items: None,
+                })
+            }
+            Expr::Object(lit) => {
+                let mut vs = BTreeMap::new();
+
+                for it in &lit.props {
+                    match it {
+                        PropOrSpread::Spread(_) => todo!(),
+                        PropOrSpread::Prop(p) => match p.as_ref() {
+                            Prop::KeyValue(p) => {
+                                let key: String = match &p.key {
+                                    swc_ecma_ast::PropName::Ident(id) => id.sym.to_string(),
+                                    swc_ecma_ast::PropName::Str(st) => st.value.to_string(),
+                                    swc_ecma_ast::PropName::Num(_) => todo!(),
+                                    swc_ecma_ast::PropName::Computed(_) => todo!(),
+                                    swc_ecma_ast::PropName::BigInt(_) => todo!(),
+                                };
+                                let value = self.typeof_expr(&p.value)?;
+                                vs.insert(key, value.required());
+                            }
+                            Prop::Shorthand(_) => todo!(),
+                            Prop::Assign(_) => todo!(),
+                            Prop::Getter(_) => todo!(),
+                            Prop::Setter(_) => todo!(),
+                            Prop::Method(_) => todo!(),
+                        },
+                    }
+                }
+
+                Ok(JsonSchema::Object(vs))
+            }
+            Expr::Ident(i) => {
+                let s =
+                    TypeResolver::new(self.files, &self.current_file).resolve_local_symbol(&i)?;
+                self.typeof_symbol(s)
+            }
+            _ => {
+                dbg!(e);
+                todo!()
+            }
+        }
+    }
+
+    pub fn typeof_symbol(&mut self, s: ResolvedLocalSymbol) -> Res<JsonSchema> {
+        match s {
+            ResolvedLocalSymbol::TsType(_) => todo!(),
+            ResolvedLocalSymbol::TsInterfaceDecl(_) => todo!(),
+            ResolvedLocalSymbol::Expr(e) => match e.as_ref() {
+                Expr::TsConstAssertion(c) => self.typeof_expr(&c.expr),
+                Expr::Member(m) => {
+                    let obj = self.typeof_expr(&m.obj)?;
+                    match obj {
+                        JsonSchema::Object(vs) => {
+                            let key: String = match &m.prop {
+                                MemberProp::Ident(i) => i.sym.to_string(),
+                                MemberProp::PrivateName(_) => todo!(),
+                                MemberProp::Computed(c) => {
+                                    let v = self.typeof_expr(&c.expr)?;
+                                    match v {
+                                        JsonSchema::Const(Json::String(s)) => s,
+                                        _ => {
+                                            todo!()
+                                        }
+                                    }
+                                }
+                            };
+                            match vs.get(&key) {
+                                Some(v) => Ok(v.inner().clone()),
+                                None => self.error(
+                                    &m.prop.span(),
+                                    DiagnosticInfoMessage::CannotFindPropertyInObject(key),
+                                ),
+                            }
+                        }
+                        _ => todo!(),
+                    }
+                }
+                e => self.error(&e.span(), DiagnosticInfoMessage::MustBeTsConstAssertion),
+            },
+            ResolvedLocalSymbol::NamedImport { .. } => todo!(),
+            ResolvedLocalSymbol::SymbolExportDefault(_) => todo!(),
+        }
+    }
+    pub fn convert_type_query(&mut self, q: &TsTypeQuery) -> Res<JsonSchema> {
+        assert!(q.type_args.is_none());
+        match q.expr_name {
+            TsTypeQueryExpr::Import(_) => todo!(),
+            TsTypeQueryExpr::TsEntityName(ref n) => match n {
+                TsEntityName::TsQualifiedName(_) => todo!(),
+                TsEntityName::Ident(n) => {
+                    let s = TypeResolver::new(self.files, &self.current_file)
+                        .resolve_local_symbol(&n)?;
+                    self.typeof_symbol(s)
+                }
+            },
+        }
+    }
+    pub fn convert_indexed_access(&mut self, i: &TsIndexedAccessType) -> Res<JsonSchema> {
+        let obj = self.convert_ts_type(&i.obj_type)?;
+        let index = self.convert_ts_type(&i.index_type)?;
+
+        match (obj, index) {
+            (
+                JsonSchema::Tuple {
+                    prefix_items,
+                    items,
+                },
+                JsonSchema::Number,
+            ) => {
+                let v = match items {
+                    Some(x) => vec![*x],
+                    None => vec![],
+                };
+                let vs = v.into_iter().chain(prefix_items.into_iter()).collect();
+                Ok(JsonSchema::any_of(vs))
+            }
+            (
+                JsonSchema::Tuple {
+                    prefix_items,
+                    items,
+                },
+                JsonSchema::Const(Json::Number(n)),
+            ) => {
+                let as_usize = n.to_f64() as usize;
+                match prefix_items.get(as_usize) {
+                    Some(v) => Ok(v.clone()),
+                    None => match items {
+                        Some(it) => Ok(*it.clone()),
+                        None => self.error(
+                            &i.index_type.span(),
+                            DiagnosticInfoMessage::IndexOutOfTupleRange(as_usize),
+                        ),
+                    },
+                }
+            }
+            _ => {
+                todo!()
+            }
+        }
+    }
     pub fn convert_ts_type(&mut self, typ: &TsType) -> Res<JsonSchema> {
         match typ {
             TsType::TsKeywordType(TsKeywordType { kind, span, .. }) => {
@@ -513,6 +680,7 @@ impl<'a, R: FileManager> TypeToSchema<'a, R> {
             TsType::TsArrayType(TsArrayType { elem_type, .. }) => {
                 Ok(JsonSchema::Array(self.convert_ts_type(elem_type)?.into()))
             }
+            TsType::TsTypeQuery(q) => self.convert_type_query(q),
             TsType::TsUnionOrIntersectionType(it) => match &it {
                 TsUnionOrIntersectionType::TsUnionType(TsUnionType { types, .. }) => {
                     self.union(types)
@@ -550,7 +718,7 @@ impl<'a, R: FileManager> TypeToSchema<'a, R> {
                 TsLit::Number(n) => Ok(JsonSchema::Const(Json::parse_f64(n.value))),
                 TsLit::Str(s) => Ok(JsonSchema::Const(Json::String(s.value.to_string().clone()))),
                 TsLit::Bool(b) => Ok(JsonSchema::Const(Json::Bool(b.value))),
-                TsLit::BigInt(_) => Ok(JsonSchema::Codec(CodecName::new("BigInt".into()))),
+                TsLit::BigInt(_) => Ok(JsonSchema::Codec(CodecName::BigInt)),
                 TsLit::Tpl(TsTplLitType {
                     span,
                     types,
@@ -588,15 +756,11 @@ impl<'a, R: FileManager> TypeToSchema<'a, R> {
             | TsType::TsTypeOperator(TsTypeOperator { span, .. })
             | TsType::TsMappedType(TsMappedType { span, .. })
             | TsType::TsTypePredicate(TsTypePredicate { span, .. })
-            | TsType::TsImportType(TsImportType { span, .. })
-            | TsType::TsTypeQuery(TsTypeQuery { span, .. }) => self.cannot_serialize_error(
+            | TsType::TsImportType(TsImportType { span, .. }) => self.cannot_serialize_error(
                 span,
                 DiagnosticInfoMessage::TypeConstructNonSerializableToJsonSchema,
             ),
-            TsType::TsIndexedAccessType(TsIndexedAccessType { span, .. }) => self.error(
-                span,
-                DiagnosticInfoMessage::CannotUnderstandTsIndexedAccessType,
-            ),
+            TsType::TsIndexedAccessType(i) => self.convert_indexed_access(i),
         }
     }
 }
