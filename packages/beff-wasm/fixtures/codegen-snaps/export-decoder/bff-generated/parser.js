@@ -1,5 +1,5 @@
 
-import vals from "./validators.js"; const { decodeObject, decodeArray, decodeString, decodeNumber, decodeCodec, decodeStringWithFormat, decodeAnyOf, decodeAllOf, decodeBoolean, decodeAny, decodeTuple, decodeNull, decodeConst, validators, registerStringFormat, c } = vals;
+import vals from "./validators.js"; const { decodeObject, decodeArray, decodeString, decodeNumber, decodeCodec, decodeStringWithFormat, decodeAnyOf, decodeAllOf, decodeBoolean, decodeAny, decodeTuple, decodeNull, decodeConst, validators, encoders, registerStringFormat, c } = vals;
 const buildParsersInput = {
     "NotPublicRenamed": function(ctx, input) {
         return validators.NotPublic(ctx, input, true);

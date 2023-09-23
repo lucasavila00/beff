@@ -94,7 +94,7 @@ it("coerce", async () => {
     await beff["/path-param-boolean/{flag}"].get(true)
   ).toMatchInlineSnapshot("true");
   expect(await beff["/path-param-union/{id}"].get(456)).toMatchInlineSnapshot(
-    "456"
+    '456'
   );
 });
 

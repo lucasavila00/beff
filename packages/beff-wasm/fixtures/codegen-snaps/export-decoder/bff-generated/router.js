@@ -1,5 +1,5 @@
 
-import vals from "./validators.js"; const { decodeObject, decodeArray, decodeString, decodeNumber, decodeCodec, decodeStringWithFormat, decodeAnyOf, decodeAllOf, decodeBoolean, decodeAny, decodeTuple, decodeNull, decodeConst, validators, registerStringFormat, c } = vals;
+import vals from "./validators.js"; const { decodeObject, decodeArray, decodeString, decodeNumber, decodeCodec, decodeStringWithFormat, decodeAnyOf, decodeAllOf, decodeBoolean, decodeAny, decodeTuple, decodeNull, decodeConst, validators, encoders, registerStringFormat, c } = vals;
 const meta = [
     {
         "method_kind": "get",
@@ -17,6 +17,9 @@ const meta = [
             }
         ],
         "pattern": "/{name}",
+        "return_encoder": function(input) {
+            return encoders.User(input);
+        },
         "return_validator": function(ctx, input) {
             return validators.User(ctx, input, true);
         }
@@ -45,6 +48,9 @@ const meta = [
             }
         ],
         "pattern": "/check-uuid/{uuid}",
+        "return_encoder": function(input) {
+            return encoders.StartsWithA(input);
+        },
         "return_validator": function(ctx, input) {
             return validators.StartsWithA(ctx, input, true);
         }
@@ -57,6 +63,9 @@ const meta = [
             }
         ],
         "pattern": "/UnionNested",
+        "return_encoder": function(input) {
+            return encoders.UnionNestedNamed(input);
+        },
         "return_validator": function(ctx, input) {
             return validators.UnionNestedNamed(ctx, input, true);
         }
@@ -69,6 +78,9 @@ const meta = [
             }
         ],
         "pattern": "/UnionNestedInline",
+        "return_encoder": function(input) {
+            return "todo";
+        },
         "return_validator": function(ctx, input) {
             return decodeAnyOf(ctx, input, true, [
                 (ctx, input)=>(decodeConst(ctx, input, true, 1)),

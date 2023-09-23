@@ -1,10 +1,13 @@
 
-import vals from "./validators.js"; const { decodeObject, decodeArray, decodeString, decodeNumber, decodeCodec, decodeStringWithFormat, decodeAnyOf, decodeAllOf, decodeBoolean, decodeAny, decodeTuple, decodeNull, decodeConst, validators, registerStringFormat, c } = vals;
+import vals from "./validators.js"; const { decodeObject, decodeArray, decodeString, decodeNumber, decodeCodec, decodeStringWithFormat, decodeAnyOf, decodeAllOf, decodeBoolean, decodeAny, decodeTuple, decodeNull, decodeConst, validators, encoders, registerStringFormat, c } = vals;
 const meta = [
     {
         "method_kind": "use",
         "params": [],
         "pattern": "/posts/*",
+        "return_encoder": function(input) {
+            return input;
+        },
         "return_validator": function(ctx, input) {
             return decodeAny(ctx, input, true);
         }
@@ -13,6 +16,11 @@ const meta = [
         "method_kind": "get",
         "params": [],
         "pattern": "/",
+        "return_encoder": function(input) {
+            return {
+                message: input
+            };
+        },
         "return_validator": function(ctx, input) {
             return decodeObject(ctx, input, true, {
                 "message": (ctx, input)=>(decodeString(ctx, input, true))
@@ -27,6 +35,12 @@ const meta = [
             }
         ],
         "pattern": "/posts",
+        "return_encoder": function(input) {
+            return {
+                ok: input,
+                posts: input.map((input)=>(input))
+            };
+        },
         "return_validator": function(ctx, input) {
             return decodeObject(ctx, input, true, {
                 "ok": (ctx, input)=>(decodeBoolean(ctx, input, true)),

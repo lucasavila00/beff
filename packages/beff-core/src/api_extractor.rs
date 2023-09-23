@@ -914,7 +914,8 @@ fn is_type_simple(it: &JsonSchema, components: &Vec<Validator>) -> bool {
             is_type_simple(&def.schema, components)
         }
         JsonSchema::AnyOf(vs) => vs.iter().all(|it| is_type_simple(it, components)),
-        JsonSchema::Null
+        JsonSchema::Codec(_)
+        | JsonSchema::Null
         | JsonSchema::Boolean
         | JsonSchema::String
         | JsonSchema::Number
@@ -931,7 +932,6 @@ fn is_type_simple(it: &JsonSchema, components: &Vec<Validator>) -> bool {
         JsonSchema::StNot(_) => todo!(),
         JsonSchema::AnyObject => todo!(),
         JsonSchema::AnyArrayLike => todo!(),
-        JsonSchema::Codec(_) => todo!(),
     }
 }
 

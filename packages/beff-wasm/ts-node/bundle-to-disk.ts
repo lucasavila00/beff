@@ -33,11 +33,6 @@ import { HandlerMetaServer, OpenAPIDocument } from "@beff/cli";
 declare const _exports: { meta: HandlerMetaServer[], schema: OpenAPIDocument };
 export default _exports;
 `;
-const CLIENT_DTS = `
-import { HandlerMetaClient } from "@beff/cli";
-declare const _exports: { meta: HandlerMetaClient[] };
-export default _exports;
-`;
 
 const decoders = `
 
@@ -305,6 +300,7 @@ const finalizeValidatorsCode = (
   const exportedItems = [
     ...decodersExported,
     "validators",
+    "encoders",
     "isCustomFormatValid",
     "registerStringFormat",
   ].join(", ");
@@ -322,6 +318,7 @@ const importValidators = (mod: ProjectModule) => {
   const i = [
     ...decodersExported,
     "validators",
+    "encoders",
     "registerStringFormat",
     "c",
   ].join(", ");
@@ -399,11 +396,6 @@ export const execProject = (
     fs.writeFileSync(
       path.join(outputDir, "openapi.json"),
       outResult.json_schema ?? ""
-    );
-
-    fs.writeFileSync(
-      path.join(outputDir, "client.d.ts"),
-      [CLIENT_DTS].join("\n")
     );
   }
 

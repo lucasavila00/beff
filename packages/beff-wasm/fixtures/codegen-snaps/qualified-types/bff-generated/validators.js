@@ -198,23 +198,46 @@ function UserEntityOriginal(ctx, input) {
         "id": (ctx, input)=>(decodeString(ctx, input, true))
     });
 }
+function EncodeUserEntityOriginal(input) {
+    return {
+        id: input
+    };
+}
 function Abc123(ctx, input) {
     return decodeObject(ctx, input, true, {
         "a": (ctx, input)=>(decodeString(ctx, input, true))
     });
+}
+function EncodeAbc123(input) {
+    return {
+        a: input
+    };
 }
 function Def(ctx, input) {
     return decodeObject(ctx, input, true, {
         "a": (ctx, input)=>(decodeString(ctx, input, true))
     });
 }
+function EncodeDef(input) {
+    return {
+        a: input
+    };
+}
 function XYZ(ctx, input) {
     return decodeObject(ctx, input, true, {
         "a": (ctx, input)=>(decodeNumber(ctx, input, true))
     });
 }
+function EncodeXYZ(input) {
+    return {
+        a: input
+    };
+}
 function AAAAA(ctx, input) {
     return decodeConst(ctx, input, true, 123);
+}
+function EncodeAAAAA(input) {
+    return input;
 }
 const validators = {
     UserEntityOriginal: UserEntityOriginal,
@@ -223,5 +246,12 @@ const validators = {
     XYZ: XYZ,
     AAAAA: AAAAA
 };
+const encoders = {
+    UserEntityOriginal: EncodeUserEntityOriginal,
+    Abc123: EncodeAbc123,
+    Def: EncodeDef,
+    XYZ: EncodeXYZ,
+    AAAAA: EncodeAAAAA
+};
 
-export default { decodeObject, decodeArray, decodeString, decodeNumber, decodeCodec, decodeStringWithFormat, decodeAnyOf, decodeAllOf, decodeBoolean, decodeAny, decodeTuple, decodeNull, decodeConst, validators, isCustomFormatValid, registerStringFormat };
+export default { decodeObject, decodeArray, decodeString, decodeNumber, decodeCodec, decodeStringWithFormat, decodeAnyOf, decodeAllOf, decodeBoolean, decodeAny, decodeTuple, decodeNull, decodeConst, validators, encoders, isCustomFormatValid, registerStringFormat };

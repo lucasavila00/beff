@@ -249,11 +249,48 @@ function AllTypes(ctx, input) {
         "unknown": (ctx, input)=>(decodeAny(ctx, input, true))
     });
 }
+function EncodeAllTypes(input) {
+    return {
+        allBooleans: input,
+        allNumbers: input,
+        allStrings: input,
+        any: input,
+        arrayOfStrings: input.map((input)=>(input)),
+        booleanLiteral: input,
+        interface: encoders.Post(input),
+        intersection: "todo",
+        null: input,
+        numberLiteral: input,
+        optionalType: input.map((input)=>(input)),
+        stringLiteral: input,
+        tuple: [
+            input,
+            input
+        ],
+        tupleWithRest: [
+            input,
+            input,
+            ...input.map((input)=>(input))
+        ],
+        typeReference: encoders.User(input),
+        undefined: input,
+        unionOfLiterals: "todo",
+        unionOfTypes: "todo",
+        unionWithNull: "todo",
+        unknown: input
+    };
+}
 function Post(ctx, input) {
     return decodeObject(ctx, input, true, {
         "content": (ctx, input)=>(decodeString(ctx, input, true)),
         "id": (ctx, input)=>(decodeString(ctx, input, true))
     });
+}
+function EncodePost(input) {
+    return {
+        content: input,
+        id: input
+    };
 }
 function User(ctx, input) {
     return decodeObject(ctx, input, true, {
@@ -261,10 +298,21 @@ function User(ctx, input) {
         "id": (ctx, input)=>(decodeString(ctx, input, true))
     });
 }
+function EncodeUser(input) {
+    return {
+        friends: input.map((input)=>(encoders.User(input))),
+        id: input
+    };
+}
 const validators = {
     AllTypes: AllTypes,
     Post: Post,
     User: User
 };
+const encoders = {
+    AllTypes: EncodeAllTypes,
+    Post: EncodePost,
+    User: EncodeUser
+};
 
-export default { decodeObject, decodeArray, decodeString, decodeNumber, decodeCodec, decodeStringWithFormat, decodeAnyOf, decodeAllOf, decodeBoolean, decodeAny, decodeTuple, decodeNull, decodeConst, validators, isCustomFormatValid, registerStringFormat };
+export default { decodeObject, decodeArray, decodeString, decodeNumber, decodeCodec, decodeStringWithFormat, decodeAnyOf, decodeAllOf, decodeBoolean, decodeAny, decodeTuple, decodeNull, decodeConst, validators, encoders, isCustomFormatValid, registerStringFormat };

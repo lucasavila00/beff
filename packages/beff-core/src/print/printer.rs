@@ -19,6 +19,7 @@ use crate::parser_extractor::BuiltDecoder;
 use crate::print::decoder;
 use crate::ExtractResult;
 
+use super::encoder;
 use super::expr::ToExpr;
 
 fn error_response_schema() -> JsonSchema {
@@ -169,7 +170,11 @@ fn handlers_to_server_js(items: Vec<PathHandlerMap>, components: &Vec<Validator>
                             ("pattern".into(), Js::String(it.pattern.raw.clone())),
                             (
                                 "return_validator".into(),
-                                Js::decoder(handler.return_type, true),
+                                Js::decoder(handler.return_type.clone(), true),
+                            ),
+                            (
+                                "return_encoder".into(),
+                                Js::encoder(handler.return_type, true),
                             ),
                         ])
                     })
@@ -275,10 +280,47 @@ impl ToWritableModules for ExtractResult {
                 function: decoder_fn.into(),
             })));
             stmt_validators.push(decoder_fn_decl);
+
+            let encoder_fn = encoder::from_schema(&comp.schema);
+            let encoder_fn_decl = ModuleItem::Stmt(Stmt::Decl(Decl::Fn(FnDecl {
+                ident: Ident {
+                    span: DUMMY_SP,
+                    sym: ("Encode".to_string() + comp.name.as_str()).into(),
+                    optional: false,
+                },
+                declare: false,
+                function: encoder_fn.into(),
+            })));
+            stmt_validators.push(encoder_fn_decl);
         }
 
         stmt_validators.push(const_decl(
             "validators",
+            Expr::Object(ObjectLit {
+                span: DUMMY_SP,
+                props: validator_names
+                    .clone()
+                    .into_iter()
+                    .map(|it| {
+                        PropOrSpread::Prop(Box::new(Prop::KeyValue(KeyValueProp {
+                            key: PropName::Ident(Ident {
+                                span: DUMMY_SP,
+                                sym: it.clone().into(),
+                                optional: false,
+                            }),
+                            value: Expr::Ident(Ident {
+                                span: DUMMY_SP,
+                                sym: it.into(),
+                                optional: false,
+                            })
+                            .into(),
+                        })))
+                    })
+                    .collect(),
+            }),
+        ));
+        stmt_validators.push(const_decl(
+            "encoders",
             Expr::Object(ObjectLit {
                 span: DUMMY_SP,
                 props: validator_names
@@ -292,7 +334,7 @@ impl ToWritableModules for ExtractResult {
                             }),
                             value: Expr::Ident(Ident {
                                 span: DUMMY_SP,
-                                sym: it.into(),
+                                sym: ("Encode".to_string() + it.as_str()).into(),
                                 optional: false,
                             })
                             .into(),

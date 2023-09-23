@@ -199,11 +199,23 @@ function User(ctx, input) {
         "name": (ctx, input)=>(decodeString(ctx, input, true))
     });
 }
+function EncodeUser(input) {
+    return {
+        age: input,
+        name: input
+    };
+}
 function Password(ctx, input) {
     return decodeStringWithFormat(ctx, input, true, "password");
 }
+function EncodePassword(input) {
+    return input;
+}
 function StartsWithA(ctx, input) {
     return decodeStringWithFormat(ctx, input, true, "StartsWithA");
+}
+function EncodeStartsWithA(input) {
+    return input;
 }
 function A(ctx, input) {
     return decodeAnyOf(ctx, input, true, [
@@ -211,11 +223,17 @@ function A(ctx, input) {
         (ctx, input)=>(decodeConst(ctx, input, true, 2))
     ]);
 }
+function EncodeA(input) {
+    return "todo";
+}
 function B(ctx, input) {
     return decodeAnyOf(ctx, input, true, [
         (ctx, input)=>(decodeConst(ctx, input, true, 2)),
         (ctx, input)=>(decodeConst(ctx, input, true, 3))
     ]);
+}
+function EncodeB(input) {
+    return "todo";
 }
 function D(ctx, input) {
     return decodeAnyOf(ctx, input, true, [
@@ -223,11 +241,17 @@ function D(ctx, input) {
         (ctx, input)=>(decodeConst(ctx, input, true, 5))
     ]);
 }
+function EncodeD(input) {
+    return "todo";
+}
 function E(ctx, input) {
     return decodeAnyOf(ctx, input, true, [
         (ctx, input)=>(decodeConst(ctx, input, true, 5)),
         (ctx, input)=>(decodeConst(ctx, input, true, 6))
     ]);
+}
+function EncodeE(input) {
+    return "todo";
 }
 function UnionNestedNamed(ctx, input) {
     return decodeAnyOf(ctx, input, true, [
@@ -237,10 +261,18 @@ function UnionNestedNamed(ctx, input) {
         (ctx, input)=>(validators.E(ctx, input, true))
     ]);
 }
+function EncodeUnionNestedNamed(input) {
+    return "todo";
+}
 function NotPublic(ctx, input) {
     return decodeObject(ctx, input, true, {
         "a": (ctx, input)=>(decodeString(ctx, input, true))
     });
+}
+function EncodeNotPublic(input) {
+    return {
+        a: input
+    };
 }
 function UnionNested(ctx, input) {
     return decodeAnyOf(ctx, input, true, [
@@ -249,6 +281,9 @@ function UnionNested(ctx, input) {
         (ctx, input)=>(validators.D(ctx, input, true)),
         (ctx, input)=>(validators.E(ctx, input, true))
     ]);
+}
+function EncodeUnionNested(input) {
+    return "todo";
 }
 const validators = {
     User: User,
@@ -262,5 +297,17 @@ const validators = {
     NotPublic: NotPublic,
     UnionNested: UnionNested
 };
+const encoders = {
+    User: EncodeUser,
+    Password: EncodePassword,
+    StartsWithA: EncodeStartsWithA,
+    A: EncodeA,
+    B: EncodeB,
+    D: EncodeD,
+    E: EncodeE,
+    UnionNestedNamed: EncodeUnionNestedNamed,
+    NotPublic: EncodeNotPublic,
+    UnionNested: EncodeUnionNested
+};
 
-export default { decodeObject, decodeArray, decodeString, decodeNumber, decodeCodec, decodeStringWithFormat, decodeAnyOf, decodeAllOf, decodeBoolean, decodeAny, decodeTuple, decodeNull, decodeConst, validators, isCustomFormatValid, registerStringFormat };
+export default { decodeObject, decodeArray, decodeString, decodeNumber, decodeCodec, decodeStringWithFormat, decodeAnyOf, decodeAllOf, decodeBoolean, decodeAny, decodeTuple, decodeNull, decodeConst, validators, encoders, isCustomFormatValid, registerStringFormat };

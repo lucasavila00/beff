@@ -1,10 +1,13 @@
 
-import vals from "./validators.js"; const { decodeObject, decodeArray, decodeString, decodeNumber, decodeCodec, decodeStringWithFormat, decodeAnyOf, decodeAllOf, decodeBoolean, decodeAny, decodeTuple, decodeNull, decodeConst, validators, registerStringFormat, c } = vals;
+import vals from "./validators.js"; const { decodeObject, decodeArray, decodeString, decodeNumber, decodeCodec, decodeStringWithFormat, decodeAnyOf, decodeAllOf, decodeBoolean, decodeAny, decodeTuple, decodeNull, decodeConst, validators, encoders, registerStringFormat, c } = vals;
 const meta = [
     {
         "method_kind": "get",
         "params": [],
         "pattern": "/a",
+        "return_encoder": function(input) {
+            return encoders.User(input);
+        },
         "return_validator": function(ctx, input) {
             return validators.User(ctx, input, true);
         }

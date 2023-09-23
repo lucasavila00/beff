@@ -198,8 +198,16 @@ function User(ctx, input) {
         "id": (ctx, input)=>(decodeString(ctx, input, true))
     });
 }
+function EncodeUser(input) {
+    return {
+        id: input
+    };
+}
 const validators = {
     User: User
 };
+const encoders = {
+    User: EncodeUser
+};
 
-export default { decodeObject, decodeArray, decodeString, decodeNumber, decodeCodec, decodeStringWithFormat, decodeAnyOf, decodeAllOf, decodeBoolean, decodeAny, decodeTuple, decodeNull, decodeConst, validators, isCustomFormatValid, registerStringFormat };
+export default { decodeObject, decodeArray, decodeString, decodeNumber, decodeCodec, decodeStringWithFormat, decodeAnyOf, decodeAllOf, decodeBoolean, decodeAny, decodeTuple, decodeNull, decodeConst, validators, encoders, isCustomFormatValid, registerStringFormat };

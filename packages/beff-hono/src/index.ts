@@ -177,7 +177,10 @@ const handleMethod = async (
   );
   const resolverParams = await Promise.all(resolverParamsPromise);
   const result = await handler(...resolverParams);
-  return c.hono.json(decodeNoMessage(meta.return_validator, result));
+
+  const resValidated = decodeNoMessage(meta.return_validator, result);
+  // const resEncoded = meta.return_encoder(resValidated);
+  return c.hono.json(resValidated);
 };
 
 const registerDocs = (app: Hono<any, any, any>, schema: any) => {

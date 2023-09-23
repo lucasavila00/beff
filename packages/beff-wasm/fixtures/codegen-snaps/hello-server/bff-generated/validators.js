@@ -266,8 +266,51 @@ function DataTypesKitchenSink(ctx, input) {
             ]))
     });
 }
+function EncodeDataTypesKitchenSink(input) {
+    return {
+        array1: input.map((input)=>(input)),
+        array2: input.map((input)=>(input)),
+        basic: {
+            a: input,
+            b: input,
+            c: input
+        },
+        enum: "todo",
+        literals: {
+            a: input,
+            b: input,
+            c: input
+        },
+        many_nullable: "todo",
+        nullable: "todo",
+        optional_prop: input,
+        str_template: input,
+        tuple1: [
+            input
+        ],
+        tuple2: [
+            input,
+            input
+        ],
+        tuple_lit: [
+            input,
+            input,
+            input
+        ],
+        tuple_rest: [
+            input,
+            input,
+            ...input.map((input)=>(input))
+        ],
+        union_of_many: "todo",
+        union_with_undefined: "todo"
+    };
+}
 function A(ctx, input) {
     return decodeString(ctx, input, true);
+}
+function EncodeA(input) {
+    return input;
 }
 function User(ctx, input) {
     return decodeObject(ctx, input, true, {
@@ -277,11 +320,25 @@ function User(ctx, input) {
         "optional_prop": (ctx, input)=>(decodeString(ctx, input, false))
     });
 }
+function EncodeUser(input) {
+    return {
+        entities: input.map((input)=>(encoders.UserEntity(input))),
+        id: input,
+        name: input,
+        optional_prop: input
+    };
+}
 function UserEntity(ctx, input) {
     return decodeObject(ctx, input, true, {
         "id": (ctx, input)=>(decodeString(ctx, input, true)),
         "idA": (ctx, input)=>(validators.A(ctx, input, true))
     });
+}
+function EncodeUserEntity(input) {
+    return {
+        id: input,
+        idA: encoders.A(input)
+    };
 }
 const validators = {
     DataTypesKitchenSink: DataTypesKitchenSink,
@@ -289,5 +346,11 @@ const validators = {
     User: User,
     UserEntity: UserEntity
 };
+const encoders = {
+    DataTypesKitchenSink: EncodeDataTypesKitchenSink,
+    A: EncodeA,
+    User: EncodeUser,
+    UserEntity: EncodeUserEntity
+};
 
-export default { decodeObject, decodeArray, decodeString, decodeNumber, decodeCodec, decodeStringWithFormat, decodeAnyOf, decodeAllOf, decodeBoolean, decodeAny, decodeTuple, decodeNull, decodeConst, validators, isCustomFormatValid, registerStringFormat };
+export default { decodeObject, decodeArray, decodeString, decodeNumber, decodeCodec, decodeStringWithFormat, decodeAnyOf, decodeAllOf, decodeBoolean, decodeAny, decodeTuple, decodeNull, decodeConst, validators, encoders, isCustomFormatValid, registerStringFormat };

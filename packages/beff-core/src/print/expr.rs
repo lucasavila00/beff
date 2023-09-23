@@ -6,7 +6,7 @@ use swc_ecma_ast::{
 
 use crate::ast::{js::Js, json::Json};
 
-use super::decoder;
+use super::{decoder, encoder};
 
 pub trait ToExpr {
     fn to_expr(self) -> Expr;
@@ -68,6 +68,11 @@ impl ToExpr for Js {
                 ident: None,
                 function: decoder::from_schema(&schema, required).into(),
             }),
+            Js::Encoder { schema, .. } => Expr::Fn(FnExpr {
+                ident: None,
+                function: encoder::from_schema(&schema).into(),
+            }),
+
             Js::Null => Json::Null.to_expr(),
             Js::Bool(it) => Json::Bool(it).to_expr(),
             Js::Number(it) => Json::Number(it).to_expr(),

@@ -17,6 +17,7 @@ export type HandlerMetaClient = {
 };
 export type HandlerMetaServer = HandlerMetaClient & {
   return_validator: any;
+  return_encoder: any;
   params: MetaParamServer[];
 };
 export type DecodeError = {

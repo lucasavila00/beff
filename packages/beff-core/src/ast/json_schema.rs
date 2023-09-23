@@ -98,6 +98,9 @@ impl CodecName {
     pub fn new(s: String) -> Self {
         Self(s)
     }
+    pub fn inner(&self) -> &str {
+        self.0.as_str()
+    }
     pub fn to_string(&self) -> String {
         "Codec::".to_string() + self.0.as_str()
     }
