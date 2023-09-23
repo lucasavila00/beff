@@ -1,7 +1,7 @@
 import { program } from "commander";
 import * as fs from "fs";
 import * as path from "path";
-import { ProjectJson } from "./project";
+import { ProjectJson, parseUserSettings } from "./project";
 import * as chalk from "chalk";
 import { execProject } from "./bundle-to-disk";
 import { Bundler } from "./bundler";
@@ -47,6 +47,7 @@ const readProjectJson = (projectPath: string): ProjectJson => {
         : String(projectJson.parser),
     outputDir: String(projectJson.outputDir),
     module: projectJson.module,
+    settings: parseUserSettings(projectJson.settings),
   };
 };
 

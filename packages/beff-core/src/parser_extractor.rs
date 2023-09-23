@@ -3,8 +3,8 @@ use std::rc::Rc;
 use crate::ast::json_schema::JsonSchema;
 use crate::diag::{Diagnostic, DiagnosticInfoMessage, DiagnosticInformation, Location};
 use crate::type_to_schema::TypeToSchema;
-use crate::ParsedModule;
 use crate::{open_api_ast::Validator, BffFileName, FileManager};
+use crate::{BeffUserSettings, ParsedModule};
 use anyhow::anyhow;
 use anyhow::Result;
 use swc_common::{Span, DUMMY_SP};
@@ -34,15 +34,21 @@ struct ExtractParserVisitor<'a, R: FileManager> {
     validators: Vec<Validator>,
     errors: Vec<Diagnostic>,
     built_decoders: Option<Vec<BuiltDecoder>>,
+    settings: &'a BeffUserSettings,
 }
 impl<'a, R: FileManager> ExtractParserVisitor<'a, R> {
-    fn new(files: &'a mut R, current_file: BffFileName) -> ExtractParserVisitor<'a, R> {
+    fn new(
+        files: &'a mut R,
+        current_file: BffFileName,
+        settings: &'a BeffUserSettings,
+    ) -> ExtractParserVisitor<'a, R> {
         ExtractParserVisitor {
             files,
             current_file,
             validators: vec![],
             errors: vec![],
             built_decoders: None,
+            settings,
         }
     }
 }
@@ -102,7 +108,7 @@ impl<'a, R: FileManager> ExtractParserVisitor<'a, R> {
         }
     }
     fn convert_to_json_schema(&mut self, ty: &TsType, span: &Span) -> JsonSchema {
-        let mut to_schema = TypeToSchema::new(self.files, self.current_file.clone());
+        let mut to_schema = TypeToSchema::new(self.files, self.current_file.clone(), self.settings);
         let res = to_schema.convert_ts_type(ty);
         match res {
             Ok(res) => {
@@ -237,23 +243,22 @@ impl<'a, R: FileManager> Visit for ExtractParserVisitor<'a, R> {
         }
     }
 }
-type VisitExtractResult = (Vec<Diagnostic>, Vec<Validator>, Option<Vec<BuiltDecoder>>);
-fn visit_extract<R: FileManager>(files: &mut R, current_file: BffFileName) -> VisitExtractResult {
-    let mut visitor = ExtractParserVisitor::new(files, current_file.clone());
-    let _ = visitor.visit_current_file();
-    (visitor.errors, visitor.validators, visitor.built_decoders)
-}
 
 pub fn extract_parser<R: FileManager>(
     files: &mut R,
     entry_file_name: BffFileName,
+    settings: &BeffUserSettings,
 ) -> ParserExtractResult {
-    let (errors, validators, built_decoders) = visit_extract(files, entry_file_name.clone());
+    let (errors, validators, built_decoders) = {
+        let mut visitor = ExtractParserVisitor::new(files, entry_file_name.clone(), settings);
+        let _ = visitor.visit_current_file();
+        (visitor.errors, visitor.validators, visitor.built_decoders)
+    };
 
     ParserExtractResult {
-        errors,
+        errors: errors,
         entry_file_name,
-        validators,
-        built_decoders,
+        validators: validators,
+        built_decoders: built_decoders,
     }
 }

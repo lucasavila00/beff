@@ -371,7 +371,7 @@ const finalizeValidatorsCode = (
 const importValidators = (mod: ProjectModule) => {
   const i = [...decodersExported, "validators", "encoders", "c"].join(", ");
   return mod === "esm"
-    ? `import vals from "./validators.js"; const { ${i} } = vals;`
+    ? `import validatorsMod from "./validators.js"; const { ${i} } = validatorsMod;`
     : `const { ${i} } = require('./validators.js').default;`;
 };
 const finalizeRouterFile = (wasmCode: WritableModules, mod: ProjectModule) => {
@@ -418,7 +418,11 @@ export const execProject = (
     console.log(`JS: Router entry point ${routerEntryPoint}`);
     console.log(`JS: Parser entry point ${parserEntryPoint}`);
   }
-  const outResult = bundler.bundle(routerEntryPoint, parserEntryPoint);
+  const outResult = bundler.bundle(
+    routerEntryPoint,
+    parserEntryPoint,
+    projectJson.settings
+  );
   if (outResult == null) {
     return "failed";
   }

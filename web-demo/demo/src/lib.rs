@@ -7,12 +7,14 @@ use beff_core::import_resolver::parse_and_bind;
 use beff_core::import_resolver::FsModuleResolver;
 use beff_core::print::printer::{ToWritableModules, WritableModules};
 use beff_core::wasm_diag::WasmDiagnostic;
+use beff_core::BeffUserSettings;
 use beff_core::BffFileName;
 use beff_core::ParsedModule;
 use beff_core::{EntryPoints, FileManager};
 use log::Level;
 use serde::Deserialize;
 use serde::Serialize;
+use std::collections::BTreeSet;
 use std::rc::Rc;
 use swc_common::{Globals, GLOBALS};
 use wasm_bindgen::prelude::wasm_bindgen;
@@ -77,6 +79,9 @@ fn bundle_to_string_inner(router_content: &str) -> Result<WritableResultOrDiagno
     let entry: EntryPoints = EntryPoints {
         router_entry_point: Some(BffFileName::new("router.bff".to_string())),
         parser_entry_point: None,
+        settings: BeffUserSettings {
+            custom_formats: BTreeSet::new(),
+        },
     };
 
     let mut man = FakeFileManager {

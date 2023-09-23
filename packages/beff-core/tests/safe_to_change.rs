@@ -1,6 +1,6 @@
 #[cfg(test)]
 mod tests {
-    use std::rc::Rc;
+    use std::{collections::BTreeSet, rc::Rc};
 
     use beff_core::{
         ast::json::Json,
@@ -8,7 +8,7 @@ mod tests {
         open_api_ast::{OpenApi, OpenApiParser, Validator},
         print::printer::open_api_to_json,
         schema_changes::{is_safe_to_change_to, MdReport, OpenApiBreakingChange},
-        BffFileName, EntryPoints, FileManager, ParsedModule,
+        BeffUserSettings, BffFileName, EntryPoints, FileManager, ParsedModule,
     };
     use similar_asserts::assert_eq;
     use swc_common::{Globals, GLOBALS};
@@ -46,6 +46,9 @@ mod tests {
         let entry = EntryPoints {
             router_entry_point: Some(BffFileName::new("file.ts".into())),
             parser_entry_point: None,
+            settings: BeffUserSettings {
+                custom_formats: BTreeSet::new(),
+            },
         };
         let res = beff_core::extract(&mut man, entry);
         let res = res.router.unwrap();
@@ -54,13 +57,13 @@ mod tests {
     }
 
     fn test_safe(from: &str, to: &str) -> Vec<OpenApiBreakingChange> {
-        let (from_api, from_vals) = parse_api(from);
-        let (to_api, to_vals) = parse_api(to);
+        let (from_api, from_validators) = parse_api(from);
+        let (to_api, to_validators) = parse_api(to);
         let errors = is_safe_to_change_to(
             &from_api,
             &to_api,
-            &from_vals.iter().collect::<Vec<_>>(),
-            &to_vals.iter().collect::<Vec<_>>(),
+            &from_validators.iter().collect::<Vec<_>>(),
+            &to_validators.iter().collect::<Vec<_>>(),
         )
         .unwrap();
         errors
@@ -91,8 +94,8 @@ mod tests {
             }
         }
         "#;
-        let (from_api, from_vals) = parse_api(from);
-        let str = open_api_to_json(from_api, &from_vals).to_string();
+        let (from_api, from_validators) = parse_api(from);
+        let str = open_api_to_json(from_api, &from_validators).to_string();
         let from_str = serde_json::from_str::<serde_json::Value>(&str).unwrap();
         let from_serde = Json::from_serde(&from_str);
         let mut parser = OpenApiParser::new();
