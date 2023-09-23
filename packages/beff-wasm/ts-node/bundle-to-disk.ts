@@ -180,8 +180,7 @@ function decodeAnyOf(ctx, input, required, vs) {
     return input;
   }
   for (const v of vs) {
-    const validatorCtx = {
-    };
+    const validatorCtx = {};
     const newValue = v(validatorCtx, input);
     if (validatorCtx.errors == null) {
       return newValue;
@@ -193,13 +192,22 @@ function decodeAllOf(ctx, input, required, vs) {
   if (!required && input == null) {
     return input;
   }
-  
   let acc = {};
+  let foundOneObject = false;
+  let allObjects = true;
   for (const v of vs) {
     const newValue = v(ctx, input);
-    acc = { ...acc, ...newValue };
+    const isObj = typeof newValue === "object";
+    allObjects = allObjects && isObj;
+    if (isObj) {
+      foundOneObject = true;
+      acc = { ...acc, ...newValue };
+    }
   }
-  return acc
+  if (foundOneObject && allObjects) {
+    return acc;
+  }
+  return input;
 }
 function decodeTuple(ctx, input, required, vs) {
   if (!required && input == null) {

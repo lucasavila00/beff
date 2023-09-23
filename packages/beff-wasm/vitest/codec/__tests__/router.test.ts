@@ -51,6 +51,6 @@ it("intersection", async () => {
     }
   `);
   expect((await beff["/intersection"].post(v)).b).toMatchInlineSnapshot("1");
-  // expect(await beff["/intersection"].get("a")).toMatchInlineSnapshot("1n");
-  // expect(await beff["/intersection"].get("a")).toMatchInlineSnapshot("3n");
+  expect(await beff["/intersection"].get("a")).toMatchInlineSnapshot('"a"');
+  expect(await beff["/intersection"].get("a")).toMatchInlineSnapshot('"a"');
 });

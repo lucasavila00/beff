@@ -913,7 +913,9 @@ fn is_type_simple(it: &JsonSchema, components: &Vec<Validator>) -> bool {
                 .expect("can always find ref in json schema at this point");
             is_type_simple(&def.schema, components)
         }
-        JsonSchema::AnyOf(vs) => vs.iter().all(|it| is_type_simple(it, components)),
+        JsonSchema::AllOf(vs) | JsonSchema::AnyOf(vs) => {
+            vs.iter().all(|it| is_type_simple(it, components))
+        }
         JsonSchema::Codec(_)
         | JsonSchema::Null
         | JsonSchema::Boolean
@@ -921,8 +923,7 @@ fn is_type_simple(it: &JsonSchema, components: &Vec<Validator>) -> bool {
         | JsonSchema::Number
         | JsonSchema::StringWithFormat(_)
         | JsonSchema::Const(_) => true,
-        JsonSchema::AllOf(_)
-        | JsonSchema::Any
+        JsonSchema::Any
         | JsonSchema::Object { .. }
         | JsonSchema::Array(_)
         | JsonSchema::Tuple { .. } => false,

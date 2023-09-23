@@ -85,7 +85,7 @@ mod tests {
         type A = string;
         export default {
             "/hello/{n}": {
-                get: (c:Ctx,n:string, a: 1, b: {c:2}, z: Header<string>): A => impl(),
+                delete: (c:Ctx,n:string, a: 1, b: {c:2}, z: Header<string>): A => impl(),
                 post: (c:Ctx,n:string,): ["a1", {a:number[]}]|["a2", {b:boolean[]}] => impl(),
                 put: (c:Ctx,n:string,): ["a1", {a:number}]|["a2", {a?:string}] => impl()
             }

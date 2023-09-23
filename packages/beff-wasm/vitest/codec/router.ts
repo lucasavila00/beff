@@ -44,8 +44,8 @@ export default {
     > => {
       return p;
     },
-    // get: async (_c: Ctx, p: ("a" | "b") & "a"): Promise<("a" | "b") & "a"> => {
-    //   return p;
-    // },
+    get: async (_c: Ctx, p: ("a" | "b") & "a"): Promise<("a" | "b") & "a"> => {
+      return p;
+    },
   },
 };

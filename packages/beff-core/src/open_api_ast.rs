@@ -302,9 +302,26 @@ impl ApiPath {
         acc
     }
 
+    fn validate_get_no_body(&self, method_prop_span: &FullLocation) -> Vec<Diagnostic> {
+        let mut acc = vec![];
+
+        for (k, v) in &self.methods {
+            if *k == HTTPMethod::Get {
+                if v.json_request_body.is_some() {
+                    let err = method_prop_span
+                        .clone()
+                        .to_diag(DiagnosticInfoMessage::GetMustNotHaveBody);
+                    acc.push(err);
+                }
+            }
+        }
+        acc
+    }
+
     pub fn validate(&self, method_prop_span: &FullLocation) -> Vec<Diagnostic> {
         self.validate_pattern_was_consumed(method_prop_span)
             .into_iter()
+            .chain(self.validate_get_no_body(method_prop_span).into_iter())
             .collect()
     }
 
