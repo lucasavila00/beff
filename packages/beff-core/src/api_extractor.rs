@@ -7,6 +7,8 @@ use crate::open_api_ast::{
     self, ApiPath, HTTPMethod, Info, JsonRequestBody, OpenApi, OperationObject, ParameterIn,
     ParameterObject, ParsedPattern, Validator,
 };
+use crate::subtyping::semtype::{SemTypeContext, SemTypeOps};
+use crate::subtyping::ToSemType;
 use crate::type_reference::{ResolvedLocalSymbol, TypeResolver};
 use crate::type_to_schema::TypeToSchema;
 use crate::{BffFileName, FileManager, ParsedModule, SymbolExport};
@@ -472,6 +474,21 @@ impl<'a, R: FileManager> ExtractExportDefaultVisitor<'a, R> {
         }
     }
 
+    fn validate_type_is_not_empty(&mut self, ty: &JsonSchema, span: &Span) {
+        let mut ctx = SemTypeContext::new();
+        let validators = &self.components.iter().collect::<Vec<_>>();
+        let st = ty.to_sub_type(validators, &mut ctx);
+
+        match st {
+            Ok(st) => {
+                if st.is_empty(&mut ctx) {
+                    self.push_error(span, DiagnosticInfoMessage::TypeMustNotBeEmpty);
+                }
+            }
+            Err(_) => todo!(),
+        }
+    }
+
     fn convert_to_json_schema(&mut self, ty: &TsType) -> JsonSchema {
         let mut to_schema = TypeToSchema::new(self.files, self.current_file.clone());
         let res = to_schema.convert_ts_type(ty);
@@ -499,6 +516,8 @@ impl<'a, R: FileManager> ExtractExportDefaultVisitor<'a, R> {
                 kvs.sort_by(|(ka, _), (kb, _)| ka.cmp(kb));
                 let ext: Vec<Validator> = kvs.into_iter().map(|(_k, v)| v).collect();
                 self.extend_components(ext, &span);
+
+                self.validate_type_is_not_empty(&res, &span);
 
                 res
             }
