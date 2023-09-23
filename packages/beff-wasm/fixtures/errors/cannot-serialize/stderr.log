@@ -88,25 +88,35 @@ Error: Exposing a type that cannot be converted to JSON schema
    21 |   [`/bad7`]: { get: (): B["b"] => todo() },
    22 |   [`/bad8`]: { get: (): never => todo() },
 
-Error: Exposing a type that cannot be converted to JSON schema
- /errors/cannot-serialize/app.ts:20:25
-   18 |   [`/bad4`]: { get: (): E => todo() },
-   19 |   [`/bad5`]: { get: (): (() => void) => todo() },
- > 20 |   [`/bad6`]: { get: (): typeof f => todo() },
-      |                         ^^^^^^^^ This cannot be converted to JSON schema
-   21 |   [`/bad7`]: { get: (): B["b"] => todo() },
-   22 |   [`/bad8`]: { get: (): never => todo() },
-   23 |   [`/bad9`]: { get: (): symbol => todo() },
+Error: Must be a TS const assertion
+ /errors/cannot-serialize/app.ts:13:11
+   11 | type E = true extends infer X ? X : never;
+   12 |
+ > 13 | const f = 1;
+      |           ^ Must be a TS const assertion
+   14 | export default {
+   15 |   [`/bad1`]: { get: (): Newable => todo() },
+   16 |   [`/bad2`]: { get: (): B => todo() },
 
-Error: Indexed access types are not supported
+Error: Exposing a type that cannot be converted to JSON schema
  /errors/cannot-serialize/app.ts:21:25
    19 |   [`/bad5`]: { get: (): (() => void) => todo() },
    20 |   [`/bad6`]: { get: (): typeof f => todo() },
  > 21 |   [`/bad7`]: { get: (): B["b"] => todo() },
-      |                         ^^^^^^ Indexed access types are not supported
+      |                         ^ `B` cannot be converted to JSON schema
    22 |   [`/bad8`]: { get: (): never => todo() },
    23 |   [`/bad9`]: { get: (): symbol => todo() },
    24 |   [`/bad10`]: { get: (): void => todo() },
+
+    Caused by:
+     /errors/cannot-serialize/app.ts:8:6
+        6 | }
+        7 | interface B {
+     >  8 |   b: this;
+          |      ^^^^ This cannot be converted to JSON schema
+        9 | }
+       10 | type D = true extends true ? true : true;
+       11 | type E = true extends infer X ? X : never;
 
 Error: Exposing a type that cannot be converted to JSON schema
  /errors/cannot-serialize/app.ts:22:25

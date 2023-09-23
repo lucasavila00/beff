@@ -61,4 +61,10 @@ export default {
       return b;
     },
   },
+  "/undefined": {
+    post: (c: Ctx, a: undefined): undefined => a,
+  },
+  "/union": {
+    post: (c: Ctx, a: "a" | "b"): "a" | "b" | "c" => a,
+  },
 };

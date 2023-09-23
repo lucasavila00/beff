@@ -129,3 +129,38 @@ it("tuple2", async () => {
     "[HTTPException: #0 (b) tuple has too many items, received: Array]"
   );
 });
+
+it("undefined", async () => {
+  await expect(
+    beff["/undefined"].post(
+      // @ts-expect-error
+      { a: "undefined" }
+    )
+  ).rejects.toMatchInlineSnapshot(
+    "[HTTPException: #0 (a) expected null, received: Object]"
+  );
+
+  expect(await beff["/undefined"].post(undefined)).toMatchInlineSnapshot(
+    "null"
+  );
+});
+
+it("union", async () => {
+  await expect(
+    beff["/union"].post(
+      // @ts-expect-error
+      { a: "undefined" }
+    )
+  ).rejects.toMatchInlineSnapshot(
+    '[HTTPException: #0 (a) expected one of, received: Object]'
+  );
+  await expect(
+    beff["/union"].post(
+      // @ts-expect-error
+      "c"
+    )
+  ).rejects.toMatchInlineSnapshot(
+    '[HTTPException: #0 (a) expected one of, received: "c"]'
+  );
+  expect(await beff["/union"].post("a")).toMatchInlineSnapshot('"a"');
+});

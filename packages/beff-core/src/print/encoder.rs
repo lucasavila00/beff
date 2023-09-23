@@ -2,10 +2,10 @@ use std::collections::BTreeSet;
 
 use swc_common::DUMMY_SP;
 use swc_ecma_ast::{
-    ArrayLit, ArrowExpr, BindingIdent, BlockStmt, BlockStmtOrExpr, CallExpr, Callee,
+    op, ArrayLit, ArrowExpr, BinExpr, BindingIdent, BlockStmt, BlockStmtOrExpr, CallExpr, Callee,
     ComputedPropName, Expr, ExprOrSpread, Function, Ident, KeyValueProp, Lit, MemberExpr,
-    MemberProp, Number, ObjectLit, Param, ParenExpr, Pat, Prop, PropName, PropOrSpread, ReturnStmt,
-    Stmt, Str,
+    MemberProp, Null, Number, ObjectLit, Param, ParenExpr, Pat, Prop, PropName, PropOrSpread,
+    ReturnStmt, Stmt, Str,
 };
 
 use crate::ast::json_schema::JsonSchema;
@@ -104,8 +104,20 @@ fn union_intersection(name: &str, vs: &BTreeSet<JsonSchema>, input_expr: Expr) -
 }
 fn encode_expr(schema: &JsonSchema, input_expr: Expr) -> Expr {
     match schema {
-        JsonSchema::Null
-        | JsonSchema::Boolean
+        JsonSchema::Null => {
+            let or_null = Expr::Bin(BinExpr {
+                span: DUMMY_SP,
+                left: input_expr.clone().into(),
+                op: op!("??"),
+                right: Expr::Lit(Lit::Null(Null { span: DUMMY_SP })).into(),
+            });
+            let or_null = Expr::Paren(ParenExpr {
+                span: DUMMY_SP,
+                expr: or_null.into(),
+            });
+            or_null
+        }
+        JsonSchema::Boolean
         | JsonSchema::String
         | JsonSchema::Number
         | JsonSchema::Any

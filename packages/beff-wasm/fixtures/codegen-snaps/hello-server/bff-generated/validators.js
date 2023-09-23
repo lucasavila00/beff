@@ -223,8 +223,11 @@ function decodeNull(ctx, input, required) {
   if (!required && input == null) {
     return input;
   }
-  if (input === null) {
-    return input;
+  if (input == "null" || input == "undefined") {
+    return null;
+  }
+  if (input == null) {
+    return null;
   }
   return buildError(input, ctx,  "expected null")
 }
@@ -347,12 +350,12 @@ function EncodeDataTypesKitchenSink(input) {
             c: input.literals.c
         },
         many_nullable: encodeAnyOf([
-            (input)=>(input),
+            (input)=>((input ?? null)),
             (input)=>(input),
             (input)=>(input)
         ], input.many_nullable),
         nullable: encodeAnyOf([
-            (input)=>(input),
+            (input)=>((input ?? null)),
             (input)=>(input)
         ], input.nullable),
         optional_prop: input.optional_prop,
@@ -380,7 +383,7 @@ function EncodeDataTypesKitchenSink(input) {
             (input)=>(input)
         ], input.union_of_many),
         union_with_undefined: encodeAnyOf([
-            (input)=>(input),
+            (input)=>((input ?? null)),
             (input)=>(input)
         ], input.union_with_undefined)
     };
