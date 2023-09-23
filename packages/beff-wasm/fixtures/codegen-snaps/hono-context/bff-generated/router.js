@@ -1,43 +1,22 @@
 
-import vals from "./validators.js"; const { validators, add_path_to_errors, registerStringFormat, isCustomFormatInvalid, isCodecInvalid } = vals;
+import vals from "./validators.js"; const { decodeObject, decodeArray, decodeString, decodeNumber, decodeCodec, decodeStringWithFormat, validators, registerStringFormat, isCustomFormatInvalid, isCodecInvalid } = vals;
 const meta = [
     {
         "method_kind": "use",
         "params": [],
         "pattern": "/posts/*",
-        "return_validator": function(input) {
-            let error_acc_0 = [];
-            return error_acc_0;
+        "return_validator": function(ctx, input) {
+            return decodeAny(ctx, input, true);
         }
     },
     {
         "method_kind": "get",
         "params": [],
         "pattern": "/",
-        "return_validator": function(input) {
-            let error_acc_0 = [];
-            if (typeof input == "object" && input != null) {
-                if (typeof input["message"] != "string") {
-                    error_acc_0.push({
-                        "error_kind": "NotTypeof",
-                        "expected_type": "string",
-                        "path": [
-                            "responseBody",
-                            "message"
-                        ],
-                        "received": input["message"]
-                    });
-                }
-            } else {
-                error_acc_0.push({
-                    "error_kind": "NotAnObject",
-                    "path": [
-                        "responseBody"
-                    ],
-                    "received": input
-                });
-            }
-            return error_acc_0;
+        "return_validator": function(ctx, input) {
+            return decodeObject(ctx, input, true, {
+                "message": (ctx, input)=>(decodeString(ctx, input, true))
+            });
         }
     },
     {
@@ -48,44 +27,11 @@ const meta = [
             }
         ],
         "pattern": "/posts",
-        "return_validator": function(input) {
-            let error_acc_0 = [];
-            if (typeof input == "object" && input != null) {
-                if (typeof input["ok"] != "boolean") {
-                    error_acc_0.push({
-                        "error_kind": "NotTypeof",
-                        "expected_type": "boolean",
-                        "path": [
-                            "responseBody",
-                            "ok"
-                        ],
-                        "received": input["ok"]
-                    });
-                }
-                if (Array.isArray(input["posts"])) {
-                    for(let index = 0; index < input["posts"].length; index++){
-                        const array_item_1 = input["posts"][index];
-                    }
-                } else {
-                    error_acc_0.push({
-                        "error_kind": "NotAnArray",
-                        "path": [
-                            "responseBody",
-                            "posts"
-                        ],
-                        "received": input["posts"]
-                    });
-                }
-            } else {
-                error_acc_0.push({
-                    "error_kind": "NotAnObject",
-                    "path": [
-                        "responseBody"
-                    ],
-                    "received": input
-                });
-            }
-            return error_acc_0;
+        "return_validator": function(ctx, input) {
+            return decodeObject(ctx, input, true, {
+                "ok": (ctx, input)=>(decodeBoolean(ctx, input, true)),
+                "posts": (ctx, input)=>(decodeArray(ctx, input, true, (ctx, input)=>(decodeAny(ctx, input, true))))
+            });
         }
     }
 ];

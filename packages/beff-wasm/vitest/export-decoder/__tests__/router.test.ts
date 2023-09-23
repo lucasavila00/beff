@@ -12,10 +12,34 @@ const beff = buildHonoTestClient<typeof router>({
 
 it("get", async () => {
   expect(await beff["/{name}"].get("name")).toMatchInlineSnapshot(`
-    {
-      "age": 123,
-      "createdAt": "2023-09-22T22:29:39.488Z",
-      "name": "name",
-    }
+    [
+      {
+        "error_kind": "NotTypeof",
+        "expected_type": "number",
+        "path": [
+          "responseBody",
+          "User",
+          "age",
+        ],
+      },
+      {
+        "error_kind": "CodecFailed",
+        "expected_type": "Codec::ISO8061",
+        "path": [
+          "responseBody",
+          "User",
+          "createdAt",
+        ],
+      },
+      {
+        "error_kind": "NotTypeof",
+        "expected_type": "string",
+        "path": [
+          "responseBody",
+          "User",
+          "name",
+        ],
+      },
+    ]
   `);
 });

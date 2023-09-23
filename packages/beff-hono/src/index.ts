@@ -159,19 +159,27 @@ const prettyPrintErrors = (errors: DecodeError[]): string => {
 };
 
 const decodeWithMessage = (validator: any, value: any) => {
-  const errors = validator(value);
+  const validatorCtx = {
+    errors: [],
+  };
+
+  const newValue = validator(validatorCtx, value);
+  const errors = validatorCtx.errors;
   if (errors.length > 0) {
     throw new BffHTTPException(422, prettyPrintErrors(errors));
   }
-  return value;
+  return newValue;
 };
 const decodeNoMessage = (validator: any, value: any) => {
-  const errors = validator(value);
-
+  const validatorCtx = {
+    errors: [],
+  };
+  const newValue = validator(validatorCtx, value);
+  const errors = validatorCtx.errors;
   if (errors.length > 0) {
     throw new BffHTTPException(500, "Internal error");
   }
-  return value;
+  return newValue;
 };
 
 const handleMethod = async (

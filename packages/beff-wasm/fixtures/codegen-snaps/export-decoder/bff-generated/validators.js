@@ -1,9 +1,78 @@
 
 
-function add_path_to_errors(errors, path) {
-  return errors.map((e) => ({ ...e, path: [...path, ...e.path] }));
+function buildError(ctx, kind) {
+  ctx.errors.push({
+    kind
+  })
 }
-    
+
+function decodeObject(ctx, input, required, data) {
+  if (!required && input == null) {
+    return input;
+  }
+  if (
+    typeof input === 'object' &&
+    !Array.isArray(input) &&
+    input !== null
+  ) {
+    const acc = {};
+    for (const [k, v] of Object.entries(data)) {
+      acc[k] = v(ctx, input[k]);
+    }
+    return acc;
+  }
+  return buildError(ctx, "notObject")
+}
+function decodeArray(ctx, input, required, data) {
+  if (!required && input == null) {
+    return input;
+  }
+  if (Array.isArray(input)) {
+    const acc = [];
+    for (const v of input) {
+      acc.push(data(ctx, v));
+    }
+    return acc;
+  }
+  return buildError(ctx, "notArray")
+}
+function decodeString(ctx, input, required) {
+  if (!required && input == null) {
+    return input;
+  }
+
+  if (typeof input === 'string') {
+    return input;
+  }
+
+  return buildError(ctx, "notString")
+}
+const isNumeric = (num) =>
+  (typeof num === "number" || (typeof num === "string" && num.trim() !== "")) &&
+  !isNaN(num );
+
+function decodeNumber(ctx, input, required) {
+  if (!required && input == null) {
+    return input;
+  }
+
+  if (isNumeric(input)) {
+    return Number(input);
+  }
+
+  return buildError(ctx, "notNumber")
+}
+
+function decodeCodec(ctx, input, required, codec) {
+  throw new Error("not implemented")
+}
+
+function decodeStringWithFormat(ctx, input, required, format) {
+  throw new Error("not implemented")
+}
+
+
+
 
 const stringPredicates = {}
 function registerStringFormat(name, predicate) {
@@ -23,314 +92,40 @@ function isCustomFormatInvalid(key, value) {
   return !predicate(value);
 }
 
-function User(input) {
-    let error_acc_0 = [];
-    if (typeof input == "object" && input != null) {
-        if (typeof input["age"] != "number") {
-            error_acc_0.push({
-                "error_kind": "NotTypeof",
-                "expected_type": "number",
-                "path": [
-                    "User",
-                    "age"
-                ],
-                "received": input["age"]
-            });
-        }
-        if (typeof input["name"] != "string") {
-            error_acc_0.push({
-                "error_kind": "NotTypeof",
-                "expected_type": "string",
-                "path": [
-                    "User",
-                    "name"
-                ],
-                "received": input["name"]
-            });
-        }
-    } else {
-        error_acc_0.push({
-            "error_kind": "NotAnObject",
-            "path": [
-                "User"
-            ],
-            "received": input
-        });
-    }
-    return error_acc_0;
+function User(ctx, input) {
+    return decodeObject(ctx, input, true, {
+        "age": (ctx, input)=>(decodeNumber(ctx, input, true)),
+        "name": (ctx, input)=>(decodeString(ctx, input, true))
+    });
 }
-function Password(input) {
-    let error_acc_0 = [];
-    if (isCustomFormatInvalid("password", input)) {
-        error_acc_0.push({
-            "error_kind": "StringFormatCheckFailed",
-            "expected_type": "password",
-            "path": [
-                "Password"
-            ],
-            "received": input
-        });
-    }
-    return error_acc_0;
+function Password(ctx, input) {
+    return decodeStringWithFormat(ctx, input, true, "password");
 }
-function StartsWithA(input) {
-    let error_acc_0 = [];
-    if (isCustomFormatInvalid("StartsWithA", input)) {
-        error_acc_0.push({
-            "error_kind": "StringFormatCheckFailed",
-            "expected_type": "StartsWithA",
-            "path": [
-                "StartsWithA"
-            ],
-            "received": input
-        });
-    }
-    return error_acc_0;
+function StartsWithA(ctx, input) {
+    return decodeStringWithFormat(ctx, input, true, "StartsWithA");
 }
-function A(input) {
-    let error_acc_0 = [];
-    let is_ok_1 = false;
-    let error_acc_2 = [];
-    if (input != 1) {
-        error_acc_2.push({
-            "error_kind": "NotEq",
-            "expected_value": 1,
-            "path": [
-                "A"
-            ],
-            "received": input
-        });
-    }
-    is_ok_1 = is_ok_1 || error_acc_2.length === 0;
-    let error_acc_3 = [];
-    if (input != 2) {
-        error_acc_3.push({
-            "error_kind": "NotEq",
-            "expected_value": 2,
-            "path": [
-                "A"
-            ],
-            "received": input
-        });
-    }
-    is_ok_1 = is_ok_1 || error_acc_3.length === 0;
-    if (!(is_ok_1)) {
-        error_acc_0.push({
-            "error_kind": "InvalidUnion",
-            "path": [
-                "A"
-            ],
-            "received": input
-        });
-    }
-    return error_acc_0;
+function A(ctx, input) {
+    return todoAnyOf(ctx, input, true);
 }
-function B(input) {
-    let error_acc_0 = [];
-    let is_ok_1 = false;
-    let error_acc_2 = [];
-    if (input != 2) {
-        error_acc_2.push({
-            "error_kind": "NotEq",
-            "expected_value": 2,
-            "path": [
-                "B"
-            ],
-            "received": input
-        });
-    }
-    is_ok_1 = is_ok_1 || error_acc_2.length === 0;
-    let error_acc_3 = [];
-    if (input != 3) {
-        error_acc_3.push({
-            "error_kind": "NotEq",
-            "expected_value": 3,
-            "path": [
-                "B"
-            ],
-            "received": input
-        });
-    }
-    is_ok_1 = is_ok_1 || error_acc_3.length === 0;
-    if (!(is_ok_1)) {
-        error_acc_0.push({
-            "error_kind": "InvalidUnion",
-            "path": [
-                "B"
-            ],
-            "received": input
-        });
-    }
-    return error_acc_0;
+function B(ctx, input) {
+    return todoAnyOf(ctx, input, true);
 }
-function D(input) {
-    let error_acc_0 = [];
-    let is_ok_1 = false;
-    let error_acc_2 = [];
-    if (input != 4) {
-        error_acc_2.push({
-            "error_kind": "NotEq",
-            "expected_value": 4,
-            "path": [
-                "D"
-            ],
-            "received": input
-        });
-    }
-    is_ok_1 = is_ok_1 || error_acc_2.length === 0;
-    let error_acc_3 = [];
-    if (input != 5) {
-        error_acc_3.push({
-            "error_kind": "NotEq",
-            "expected_value": 5,
-            "path": [
-                "D"
-            ],
-            "received": input
-        });
-    }
-    is_ok_1 = is_ok_1 || error_acc_3.length === 0;
-    if (!(is_ok_1)) {
-        error_acc_0.push({
-            "error_kind": "InvalidUnion",
-            "path": [
-                "D"
-            ],
-            "received": input
-        });
-    }
-    return error_acc_0;
+function D(ctx, input) {
+    return todoAnyOf(ctx, input, true);
 }
-function E(input) {
-    let error_acc_0 = [];
-    let is_ok_1 = false;
-    let error_acc_2 = [];
-    if (input != 5) {
-        error_acc_2.push({
-            "error_kind": "NotEq",
-            "expected_value": 5,
-            "path": [
-                "E"
-            ],
-            "received": input
-        });
-    }
-    is_ok_1 = is_ok_1 || error_acc_2.length === 0;
-    let error_acc_3 = [];
-    if (input != 6) {
-        error_acc_3.push({
-            "error_kind": "NotEq",
-            "expected_value": 6,
-            "path": [
-                "E"
-            ],
-            "received": input
-        });
-    }
-    is_ok_1 = is_ok_1 || error_acc_3.length === 0;
-    if (!(is_ok_1)) {
-        error_acc_0.push({
-            "error_kind": "InvalidUnion",
-            "path": [
-                "E"
-            ],
-            "received": input
-        });
-    }
-    return error_acc_0;
+function E(ctx, input) {
+    return todoAnyOf(ctx, input, true);
 }
-function UnionNestedNamed(input) {
-    let error_acc_0 = [];
-    let is_ok_1 = false;
-    let error_acc_2 = [];
-    error_acc_2.push(...add_path_to_errors(validators.A(input), [
-        "UnionNestedNamed"
-    ]));
-    is_ok_1 = is_ok_1 || error_acc_2.length === 0;
-    let error_acc_3 = [];
-    error_acc_3.push(...add_path_to_errors(validators.B(input), [
-        "UnionNestedNamed"
-    ]));
-    is_ok_1 = is_ok_1 || error_acc_3.length === 0;
-    let error_acc_4 = [];
-    error_acc_4.push(...add_path_to_errors(validators.D(input), [
-        "UnionNestedNamed"
-    ]));
-    is_ok_1 = is_ok_1 || error_acc_4.length === 0;
-    let error_acc_5 = [];
-    error_acc_5.push(...add_path_to_errors(validators.E(input), [
-        "UnionNestedNamed"
-    ]));
-    is_ok_1 = is_ok_1 || error_acc_5.length === 0;
-    if (!(is_ok_1)) {
-        error_acc_0.push({
-            "error_kind": "InvalidUnion",
-            "path": [
-                "UnionNestedNamed"
-            ],
-            "received": input
-        });
-    }
-    return error_acc_0;
+function UnionNestedNamed(ctx, input) {
+    return todoAnyOf(ctx, input, true);
 }
-function NotPublic(input) {
-    let error_acc_0 = [];
-    if (typeof input == "object" && input != null) {
-        if (typeof input["a"] != "string") {
-            error_acc_0.push({
-                "error_kind": "NotTypeof",
-                "expected_type": "string",
-                "path": [
-                    "NotPublic",
-                    "a"
-                ],
-                "received": input["a"]
-            });
-        }
-    } else {
-        error_acc_0.push({
-            "error_kind": "NotAnObject",
-            "path": [
-                "NotPublic"
-            ],
-            "received": input
-        });
-    }
-    return error_acc_0;
+function NotPublic(ctx, input) {
+    return decodeObject(ctx, input, true, {
+        "a": (ctx, input)=>(decodeString(ctx, input, true))
+    });
 }
-function UnionNested(input) {
-    let error_acc_0 = [];
-    let is_ok_1 = false;
-    let error_acc_2 = [];
-    error_acc_2.push(...add_path_to_errors(validators.A(input), [
-        "UnionNested"
-    ]));
-    is_ok_1 = is_ok_1 || error_acc_2.length === 0;
-    let error_acc_3 = [];
-    error_acc_3.push(...add_path_to_errors(validators.B(input), [
-        "UnionNested"
-    ]));
-    is_ok_1 = is_ok_1 || error_acc_3.length === 0;
-    let error_acc_4 = [];
-    error_acc_4.push(...add_path_to_errors(validators.D(input), [
-        "UnionNested"
-    ]));
-    is_ok_1 = is_ok_1 || error_acc_4.length === 0;
-    let error_acc_5 = [];
-    error_acc_5.push(...add_path_to_errors(validators.E(input), [
-        "UnionNested"
-    ]));
-    is_ok_1 = is_ok_1 || error_acc_5.length === 0;
-    if (!(is_ok_1)) {
-        error_acc_0.push({
-            "error_kind": "InvalidUnion",
-            "path": [
-                "UnionNested"
-            ],
-            "received": input
-        });
-    }
-    return error_acc_0;
+function UnionNested(ctx, input) {
+    return todoAnyOf(ctx, input, true);
 }
 const validators = {
     User: User,
@@ -345,4 +140,4 @@ const validators = {
     UnionNested: UnionNested
 };
 
-export default { validators, isCustomFormatInvalid, isCodecInvalid, registerStringFormat, add_path_to_errors };
+export default { decodeObject, decodeArray, decodeString, decodeNumber, decodeCodec, decodeStringWithFormat, validators, isCustomFormatInvalid, isCodecInvalid, registerStringFormat };

@@ -26,6 +26,14 @@ impl SwcBuilder {
     pub fn input_expr() -> Expr {
         Expr::Ident(Self::input_ident())
     }
+    #[must_use]
+    pub fn ident_expr(name: &str) -> Expr {
+        Expr::Ident(Ident {
+            span: DUMMY_SP,
+            sym: name.into(),
+            optional: false,
+        })
+    }
 
     #[must_use]
     pub fn if_(cond: Expr, then: BlockStmt) -> Stmt {

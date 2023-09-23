@@ -1,72 +1,29 @@
 
-import vals from "./validators.js"; const { validators, add_path_to_errors, registerStringFormat, isCustomFormatInvalid, isCodecInvalid } = vals;
+import vals from "./validators.js"; const { decodeObject, decodeArray, decodeString, decodeNumber, decodeCodec, decodeStringWithFormat, validators, registerStringFormat, isCustomFormatInvalid, isCodecInvalid } = vals;
 const buildParsersInput = {
-    "NotPublicRenamed": function(input) {
-        let error_acc_0 = [];
-        error_acc_0.push(...add_path_to_errors(validators.NotPublic(input), []));
-        return error_acc_0;
+    "NotPublicRenamed": function(ctx, input) {
+        return validators.NotPublic(ctx, input, true);
     },
-    "Password": function(input) {
-        let error_acc_0 = [];
-        error_acc_0.push(...add_path_to_errors(validators.Password(input), []));
-        return error_acc_0;
+    "Password": function(ctx, input) {
+        return validators.Password(ctx, input, true);
     },
-    "StartsWithA": function(input) {
-        let error_acc_0 = [];
-        error_acc_0.push(...add_path_to_errors(validators.StartsWithA(input), []));
-        return error_acc_0;
+    "StartsWithA": function(ctx, input) {
+        return validators.StartsWithA(ctx, input, true);
     },
-    "User": function(input) {
-        let error_acc_0 = [];
-        error_acc_0.push(...add_path_to_errors(validators.User(input), []));
-        return error_acc_0;
+    "User": function(ctx, input) {
+        return validators.User(ctx, input, true);
     },
-    "Users": function(input) {
-        let error_acc_0 = [];
-        if (Array.isArray(input)) {
-            for(let index = 0; index < input.length; index++){
-                const array_item_1 = input[index];
-                error_acc_0.push(...add_path_to_errors(validators.User(array_item_1), [
-                    "[" + index + "]"
-                ]));
-            }
-        } else {
-            error_acc_0.push({
-                "error_kind": "NotAnArray",
-                "path": [],
-                "received": input
-            });
-        }
-        return error_acc_0;
+    "Users": function(ctx, input) {
+        return decodeArray(ctx, input, true, (ctx, input)=>(validators.User(ctx, input, true)));
     },
-    "float": function(input) {
-        let error_acc_0 = [];
-        if (input != 123.456) {
-            error_acc_0.push({
-                "error_kind": "NotEq",
-                "expected_value": 123.456,
-                "path": [],
-                "received": input
-            });
-        }
-        return error_acc_0;
+    "float": function(ctx, input) {
+        return todConsto(ctx, input, true);
     },
-    "int": function(input) {
-        let error_acc_0 = [];
-        if (input != 123) {
-            error_acc_0.push({
-                "error_kind": "NotEq",
-                "expected_value": 123,
-                "path": [],
-                "received": input
-            });
-        }
-        return error_acc_0;
+    "int": function(ctx, input) {
+        return todConsto(ctx, input, true);
     },
-    "union": function(input) {
-        let error_acc_0 = [];
-        error_acc_0.push(...add_path_to_errors(validators.UnionNested(input), []));
-        return error_acc_0;
+    "union": function(ctx, input) {
+        return validators.UnionNested(ctx, input, true);
     }
 };
 
@@ -81,9 +38,13 @@ function buildParsers() {
   Object.keys(buildParsersInput).forEach(k => {
     let v = buildParsersInput[k];
     const safeParse = (input) => {
-      const validation_result = v(input);
+      const validatorCtx = {
+        errors: [],
+      };
+      const new_value = v(validatorCtx, input);
+      const validation_result = validatorCtx.errors;
       if (validation_result.length === 0) {
-        return { success: true, data: input };
+        return { success: true, data: new_value };
       }
       return { success: false, errors: validation_result };
     }

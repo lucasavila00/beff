@@ -1,16 +1,12 @@
 
-import vals from "./validators.js"; const { validators, add_path_to_errors, registerStringFormat, isCustomFormatInvalid, isCodecInvalid } = vals;
+import vals from "./validators.js"; const { decodeObject, decodeArray, decodeString, decodeNumber, decodeCodec, decodeStringWithFormat, validators, registerStringFormat, isCustomFormatInvalid, isCodecInvalid } = vals;
 const meta = [
     {
         "method_kind": "get",
         "params": [],
         "pattern": "/all-types",
-        "return_validator": function(input) {
-            let error_acc_0 = [];
-            error_acc_0.push(...add_path_to_errors(validators.AllTypes(input), [
-                "responseBody"
-            ]));
-            return error_acc_0;
+        "return_validator": function(ctx, input) {
+            return validators.AllTypes(ctx, input, true);
         }
     }
 ];

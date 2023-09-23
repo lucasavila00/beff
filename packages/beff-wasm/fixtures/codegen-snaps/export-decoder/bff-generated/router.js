@@ -1,5 +1,5 @@
 
-import vals from "./validators.js"; const { validators, add_path_to_errors, registerStringFormat, isCustomFormatInvalid, isCodecInvalid } = vals;
+import vals from "./validators.js"; const { decodeObject, decodeArray, decodeString, decodeNumber, decodeCodec, decodeStringWithFormat, validators, registerStringFormat, isCustomFormatInvalid, isCodecInvalid } = vals;
 const meta = [
     {
         "method_kind": "get",
@@ -11,29 +11,14 @@ const meta = [
                 "name": "name",
                 "required": true,
                 "type": "path",
-                "validator": function(input) {
-                    let error_acc_0 = [];
-                    if (typeof input != "string") {
-                        error_acc_0.push({
-                            "error_kind": "NotTypeof",
-                            "expected_type": "string",
-                            "path": [
-                                "name"
-                            ],
-                            "received": input
-                        });
-                    }
-                    return error_acc_0;
+                "validator": function(ctx, input) {
+                    return decodeString(ctx, input, true);
                 }
             }
         ],
         "pattern": "/{name}",
-        "return_validator": function(input) {
-            let error_acc_0 = [];
-            error_acc_0.push(...add_path_to_errors(validators.User(input), [
-                "responseBody"
-            ]));
-            return error_acc_0;
+        "return_validator": function(ctx, input) {
+            return validators.User(ctx, input, true);
         }
     },
     {
@@ -46,41 +31,22 @@ const meta = [
                 "name": "uuid",
                 "required": true,
                 "type": "path",
-                "validator": function(input) {
-                    let error_acc_0 = [];
-                    if (typeof input != "string") {
-                        error_acc_0.push({
-                            "error_kind": "NotTypeof",
-                            "expected_type": "string",
-                            "path": [
-                                "uuid"
-                            ],
-                            "received": input
-                        });
-                    }
-                    return error_acc_0;
+                "validator": function(ctx, input) {
+                    return decodeString(ctx, input, true);
                 }
             },
             {
                 "name": "p",
                 "required": true,
                 "type": "query",
-                "validator": function(input) {
-                    let error_acc_0 = [];
-                    error_acc_0.push(...add_path_to_errors(validators.Password(input), [
-                        "p"
-                    ]));
-                    return error_acc_0;
+                "validator": function(ctx, input) {
+                    return validators.Password(ctx, input, true);
                 }
             }
         ],
         "pattern": "/check-uuid/{uuid}",
-        "return_validator": function(input) {
-            let error_acc_0 = [];
-            error_acc_0.push(...add_path_to_errors(validators.StartsWithA(input), [
-                "responseBody"
-            ]));
-            return error_acc_0;
+        "return_validator": function(ctx, input) {
+            return validators.StartsWithA(ctx, input, true);
         }
     },
     {
@@ -91,12 +57,8 @@ const meta = [
             }
         ],
         "pattern": "/UnionNested",
-        "return_validator": function(input) {
-            let error_acc_0 = [];
-            error_acc_0.push(...add_path_to_errors(validators.UnionNestedNamed(input), [
-                "responseBody"
-            ]));
-            return error_acc_0;
+        "return_validator": function(ctx, input) {
+            return validators.UnionNestedNamed(ctx, input, true);
         }
     },
     {
@@ -107,91 +69,8 @@ const meta = [
             }
         ],
         "pattern": "/UnionNestedInline",
-        "return_validator": function(input) {
-            let error_acc_0 = [];
-            let is_ok_1 = false;
-            let error_acc_2 = [];
-            if (input != 1) {
-                error_acc_2.push({
-                    "error_kind": "NotEq",
-                    "expected_value": 1,
-                    "path": [
-                        "responseBody"
-                    ],
-                    "received": input
-                });
-            }
-            is_ok_1 = is_ok_1 || error_acc_2.length === 0;
-            let error_acc_3 = [];
-            if (input != 2) {
-                error_acc_3.push({
-                    "error_kind": "NotEq",
-                    "expected_value": 2,
-                    "path": [
-                        "responseBody"
-                    ],
-                    "received": input
-                });
-            }
-            is_ok_1 = is_ok_1 || error_acc_3.length === 0;
-            let error_acc_4 = [];
-            if (input != 3) {
-                error_acc_4.push({
-                    "error_kind": "NotEq",
-                    "expected_value": 3,
-                    "path": [
-                        "responseBody"
-                    ],
-                    "received": input
-                });
-            }
-            is_ok_1 = is_ok_1 || error_acc_4.length === 0;
-            let error_acc_5 = [];
-            if (input != 4) {
-                error_acc_5.push({
-                    "error_kind": "NotEq",
-                    "expected_value": 4,
-                    "path": [
-                        "responseBody"
-                    ],
-                    "received": input
-                });
-            }
-            is_ok_1 = is_ok_1 || error_acc_5.length === 0;
-            let error_acc_6 = [];
-            if (input != 5) {
-                error_acc_6.push({
-                    "error_kind": "NotEq",
-                    "expected_value": 5,
-                    "path": [
-                        "responseBody"
-                    ],
-                    "received": input
-                });
-            }
-            is_ok_1 = is_ok_1 || error_acc_6.length === 0;
-            let error_acc_7 = [];
-            if (input != 6) {
-                error_acc_7.push({
-                    "error_kind": "NotEq",
-                    "expected_value": 6,
-                    "path": [
-                        "responseBody"
-                    ],
-                    "received": input
-                });
-            }
-            is_ok_1 = is_ok_1 || error_acc_7.length === 0;
-            if (!(is_ok_1)) {
-                error_acc_0.push({
-                    "error_kind": "InvalidUnion",
-                    "path": [
-                        "responseBody"
-                    ],
-                    "received": input
-                });
-            }
-            return error_acc_0;
+        "return_validator": function(ctx, input) {
+            return todoAnyOf(ctx, input, true);
         }
     }
 ];

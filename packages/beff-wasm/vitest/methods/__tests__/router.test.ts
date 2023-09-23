@@ -216,7 +216,7 @@ it("gets hello", async () => {
     method: "GET",
   });
   const res = await app.request(req);
-  expect(res.status).toMatchInlineSnapshot("200");
+  expect(res.status).toMatchInlineSnapshot('200');
   expect(Object.fromEntries(res.headers.entries())).toMatchInlineSnapshot(`
     {
       "content-type": "application/json; charset=UTF-8",
@@ -230,7 +230,7 @@ it("post hello", async () => {
     method: "POST",
   });
   const res = await app.request(req);
-  expect(res.status).toMatchInlineSnapshot("200");
+  expect(res.status).toMatchInlineSnapshot('200');
   expect(Object.fromEntries(res.headers.entries())).toMatchInlineSnapshot(`
     {
       "content-type": "application/json; charset=UTF-8",
@@ -244,7 +244,7 @@ it("PUT hello", async () => {
     method: "PUT",
   });
   const res = await app.request(req);
-  expect(res.status).toMatchInlineSnapshot("200");
+  expect(res.status).toMatchInlineSnapshot('200');
   expect(Object.fromEntries(res.headers.entries())).toMatchInlineSnapshot(`
     {
       "content-type": "application/json; charset=UTF-8",
@@ -258,7 +258,7 @@ it("DELETE hello", async () => {
     method: "DELETE",
   });
   const res = await app.request(req);
-  expect(res.status).toMatchInlineSnapshot("200");
+  expect(res.status).toMatchInlineSnapshot('200');
   expect(Object.fromEntries(res.headers.entries())).toMatchInlineSnapshot(`
     {
       "content-type": "application/json; charset=UTF-8",
@@ -272,7 +272,7 @@ it("PATCH hello", async () => {
     method: "PATCH",
   });
   const res = await app.request(req);
-  expect(res.status).toMatchInlineSnapshot("200");
+  expect(res.status).toMatchInlineSnapshot('200');
   expect(Object.fromEntries(res.headers.entries())).toMatchInlineSnapshot(`
     {
       "content-type": "application/json; charset=UTF-8",
@@ -286,7 +286,7 @@ it("OPTIONS hello", async () => {
     method: "OPTIONS",
   });
   const res = await app.request(req);
-  expect(res.status).toMatchInlineSnapshot("200");
+  expect(res.status).toMatchInlineSnapshot('200');
   expect(Object.fromEntries(res.headers.entries())).toMatchInlineSnapshot(`
     {
       "content-type": "application/json; charset=UTF-8",

@@ -39,6 +39,89 @@ declare const _exports: { meta: HandlerMetaClient[] };
 export default _exports;
 `;
 
+const decoders = `
+
+function buildError(ctx, kind) {
+  ctx.errors.push({
+    kind
+  })
+}
+
+function decodeObject(ctx, input, required, data) {
+  if (!required && input == null) {
+    return input;
+  }
+  if (
+    typeof input === 'object' &&
+    !Array.isArray(input) &&
+    input !== null
+  ) {
+    const acc = {};
+    for (const [k, v] of Object.entries(data)) {
+      acc[k] = v(ctx, input[k]);
+    }
+    return acc;
+  }
+  return buildError(ctx, "notObject")
+}
+function decodeArray(ctx, input, required, data) {
+  if (!required && input == null) {
+    return input;
+  }
+  if (Array.isArray(input)) {
+    const acc = [];
+    for (const v of input) {
+      acc.push(data(ctx, v));
+    }
+    return acc;
+  }
+  return buildError(ctx, "notArray")
+}
+function decodeString(ctx, input, required) {
+  if (!required && input == null) {
+    return input;
+  }
+
+  if (typeof input === 'string') {
+    return input;
+  }
+
+  return buildError(ctx, "notString")
+}
+const isNumeric = (num) =>
+  (typeof num === "number" || (typeof num === "string" && num.trim() !== "")) &&
+  !isNaN(num );
+
+function decodeNumber(ctx, input, required) {
+  if (!required && input == null) {
+    return input;
+  }
+
+  if (isNumeric(input)) {
+    return Number(input);
+  }
+
+  return buildError(ctx, "notNumber")
+}
+
+function decodeCodec(ctx, input, required, codec) {
+  throw new Error("not implemented")
+}
+
+function decodeStringWithFormat(ctx, input, required, format) {
+  throw new Error("not implemented")
+}
+
+`;
+const decodersExported = [
+  "decodeObject",
+  "decodeArray",
+  "decodeString",
+  "decodeNumber",
+  "decodeCodec",
+  "decodeStringWithFormat",
+];
+
 const buildParsers = `
 class BffParseError {
   constructor(errors) {
@@ -50,9 +133,13 @@ function buildParsers() {
   Object.keys(buildParsersInput).forEach(k => {
     let v = buildParsersInput[k];
     const safeParse = (input) => {
-      const validation_result = v(input);
+      const validatorCtx = {
+        errors: [],
+      };
+      const new_value = v(validatorCtx, input);
+      const validation_result = validatorCtx.errors;
       if (validation_result.length === 0) {
-        return { success: true, data: input };
+        return { success: true, data: new_value };
       }
       return { success: false, errors: validation_result };
     }
@@ -109,20 +196,16 @@ const finalizeValidatorsCode = (
   mod: ProjectModule
 ) => {
   const exportedItems = [
+    ...decodersExported,
     "validators",
     "isCustomFormatInvalid",
     "isCodecInvalid",
     "registerStringFormat",
-    "add_path_to_errors",
   ].join(", ");
   const exports = [exportCode(mod), `{ ${exportedItems} };`].join(" ");
   return [
+    decoders,
     esmTag(mod),
-    `
-function add_path_to_errors(errors, path) {
-  return errors.map((e) => ({ ...e, path: [...path, ...e.path] }));
-}
-    `,
     customFormatsCode,
     wasmCode.js_validators,
     exports,
@@ -130,7 +213,13 @@ function add_path_to_errors(errors, path) {
 };
 
 const importValidators = (mod: ProjectModule) => {
-  const i = `validators, add_path_to_errors, registerStringFormat, isCustomFormatInvalid, isCodecInvalid`;
+  const i = [
+    ...decodersExported,
+    "validators",
+    "registerStringFormat",
+    "isCustomFormatInvalid",
+    "isCodecInvalid",
+  ].join(", ");
   return mod === "esm"
     ? `import vals from "./validators.js"; const { ${i} } = vals;`
     : `const { ${i} } = require('./validators.js').default;`;
