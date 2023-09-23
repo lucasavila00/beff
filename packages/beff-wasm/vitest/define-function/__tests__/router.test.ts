@@ -3,7 +3,7 @@ import { it, expect } from "vitest";
 import { buildHonoTestClient, buildHonoApp } from "@beff/hono";
 import router from "../router";
 import generated from "../bff-generated/router";
-import clientGenerated from "../bff-generated/client";
+import clientGenerated from "../bff-generated/router";
 
 const app = buildHonoApp({ router, generated });
 const bff = buildHonoTestClient<typeof router>({

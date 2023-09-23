@@ -341,11 +341,6 @@ const finalizeRouterFile = (wasmCode: WritableModules, mod: ProjectModule) => {
     exports,
   ].join("\n");
 };
-const finalizeClientFile = (wasmCode: WritableModules, mod: ProjectModule) => {
-  const exportedItems = ["meta"].join(", ");
-  const exports = [exportCode(mod), `{ ${exportedItems} };`].join(" ");
-  return [esmTag(mod), wasmCode.js_client_meta, exports].join("\n");
-};
 
 const finalizeParserFile = (wasmCode: WritableModules, mod: ProjectModule) => {
   const exportedItems = ["buildParsers", "registerStringFormat"].join(", ");
@@ -406,10 +401,6 @@ export const execProject = (
       outResult.json_schema ?? ""
     );
 
-    fs.writeFileSync(
-      path.join(outputDir, "client.js"),
-      finalizeClientFile(outResult, mod)
-    );
     fs.writeFileSync(
       path.join(outputDir, "client.d.ts"),
       [CLIENT_DTS].join("\n")

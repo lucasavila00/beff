@@ -2,7 +2,7 @@ import { it, expect } from "vitest";
 import { buildHonoApp, buildHonoTestClient } from "@beff/hono";
 import router from "../router";
 import generated from "../bff-generated/router";
-import generatedClient from "../bff-generated/client";
+import generatedClient from "../bff-generated/router";
 
 const app = buildHonoApp({ router, generated });
 const beff = buildHonoTestClient<typeof router>({
@@ -78,7 +78,7 @@ it("post with body and error, client", async () => {
     await beff["/req-body"].post({ a: 123 as any });
   } catch (e) {
     expect(e).toMatchInlineSnapshot(
-      '[HTTPException: #0 [a] expected string, received: 123]'
+      "[HTTPException: #0 [a] expected string, received: 123]"
     );
   }
 });
@@ -93,7 +93,9 @@ it("coerce", async () => {
   expect(
     await beff["/path-param-boolean/{flag}"].get(true)
   ).toMatchInlineSnapshot("true");
-  expect(await beff["/path-param-union/{id}"].get(456)).toMatchInlineSnapshot('456');
+  expect(await beff["/path-param-union/{id}"].get(456)).toMatchInlineSnapshot(
+    "456"
+  );
 });
 
 it("default param", async () => {

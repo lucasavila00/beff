@@ -30,6 +30,7 @@ impl Js {
     pub fn decoder(schema: JsonSchema, required: bool) -> Self {
         Self::Decoder { schema, required }
     }
+
     pub fn to_string(self) -> String {
         let expr = self.to_expr();
 

@@ -29,7 +29,7 @@ Creates a Type-Safe and OpenAPI compatible client based on your router.
 ```ts
 import { buildClient } from "@beff/client";
 // The client file contains only the minimal amount of data required.
-import generated from "../../../generated/client";
+import generated from "../../../generated/router";
 import type { AppRouter } from "../../../server";
 
 const fetchClient = buildClient<AppRouter>({
