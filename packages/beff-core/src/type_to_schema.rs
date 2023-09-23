@@ -4,6 +4,7 @@ use crate::diag::{
     Diagnostic, DiagnosticInfoMessage, DiagnosticInformation, DiagnosticParentMessage, Location,
 };
 use crate::open_api_ast::Validator;
+use crate::subtyping::semtype::{SemTypeContext, SemTypeOps};
 use crate::type_reference::{ResolvedLocalSymbol, TypeResolver};
 use crate::{BffFileName, FileManager, ImportReference, SymbolExport};
 use std::collections::HashMap;
@@ -273,13 +274,39 @@ impl<'a, R: FileManager> TypeToSchema<'a, R> {
         Ok(JsonSchema::any_of(vs))
     }
 
-    fn intersection(&mut self, types: &[Box<TsType>]) -> Res<JsonSchema> {
+    fn validate_type_is_not_empty(&mut self, ty: &JsonSchema, span: &Span) -> Res<()> {
+        let mut ctx = SemTypeContext::new();
+        let validators = &self
+            .components
+            .iter()
+            .flat_map(|it| {
+                //
+                it.1.as_ref()
+            })
+            .collect::<Vec<_>>();
+        let st = crate::subtyping::ToSemType::to_sub_type(ty, validators, &mut ctx);
+
+        match st {
+            Ok(st) => {
+                if st.is_empty(&mut ctx) {
+                    return self.error(span, DiagnosticInfoMessage::TypeMustNotBeEmpty);
+                }
+            }
+            Err(_) => todo!(),
+        }
+        Ok(())
+    }
+
+    fn intersection(&mut self, types: &[Box<TsType>], span: &Span) -> Res<JsonSchema> {
         let vs: Vec<JsonSchema> = types
             .iter()
             .map(|it| self.convert_ts_type(it))
             .collect::<Res<_>>()?;
+        let val = JsonSchema::all_of(vs);
 
-        Ok(JsonSchema::all_of(vs))
+        self.validate_type_is_not_empty(&val, &span)?;
+
+        Ok(val)
     }
 
     fn cannot_serialize_error<T>(&mut self, span: &Span, msg: DiagnosticInfoMessage) -> Res<T> {
@@ -480,8 +507,10 @@ impl<'a, R: FileManager> TypeToSchema<'a, R> {
                     self.union(types)
                 }
                 TsUnionOrIntersectionType::TsIntersectionType(TsIntersectionType {
-                    types, ..
-                }) => self.intersection(types),
+                    types,
+                    span,
+                    ..
+                }) => self.intersection(types, span),
             },
             TsType::TsTupleType(TsTupleType { elem_types, .. }) => {
                 let mut prefix_items = vec![];

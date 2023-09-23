@@ -300,7 +300,9 @@ impl DiagnosticInfoMessage {
             DiagnosticInfoMessage::GetMustNotHaveBody => {
                 "GET methods must not have a body".to_string()
             }
-            DiagnosticInfoMessage::TypeMustNotBeEmpty => "Type must not be empty".to_string(),
+            DiagnosticInfoMessage::TypeMustNotBeEmpty => {
+                "This type contains 'never' and cannot be serialized".to_string()
+            }
         }
     }
 }
