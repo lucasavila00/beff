@@ -1,11 +1,14 @@
 import { FC } from "react";
 import { Flex, Text, Box, Link, Heading, Button } from "@radix-ui/themes";
 import { UserButton } from "@/components/user-button";
-import { Session } from "next-auth";
+import { Session, getServerSession } from "next-auth";
 import NextLink from "next/link";
 import { DiscIcon } from "@radix-ui/react-icons";
 import { twMerge } from "tailwind-merge";
-import { BreadCrumbs } from "./breadcrumbs";
+import { authOptions } from "@/app/api/auth/[...nextauth]/options";
+import { IconProps } from "@radix-ui/react-icons/dist/types";
+import { SideNavLinks } from "./side-nav-links";
+
 const ConnectedUserButton: FC<{ session: Session | null }> = async ({
   session,
 }) => {
@@ -17,35 +20,11 @@ const ConnectedUserButton: FC<{ session: Session | null }> = async ({
   return <UserButton name={name} image={image} />;
 };
 
-const SideBarLink: FC<{
-  href: string;
-  active: boolean;
-  text: string;
-  icon: (props: { width: string; height: string }) => React.ReactNode;
-}> = ({ href, active, text, icon }) => {
-  const Icon = icon;
-  return (
-    <NextLink
-      className={twMerge(
-        "rounded-1 p-1.5",
-        active ? "text-blue-10 bg-blue-3" : "text-gray-11 hover:bg-gray-3"
-      )}
-      href={href}
-    >
-      <Flex gap="1" align="center">
-        <Icon width="18" height="18" />
-        <Text size="2" weight="medium">
-          {text}
-        </Text>
-      </Flex>
-    </NextLink>
-  );
-};
-
 export const Layout: FC<{
   children: React.ReactNode;
-  session: Session | null;
-}> = async ({ children, session }) => {
+}> = async ({ children }) => {
+  const session = await getServerSession(authOptions);
+
   return (
     <>
       <Flex width="100%" height="100%">
@@ -61,12 +40,7 @@ export const Layout: FC<{
               </NextLink>
             </Flex>
             <Flex px="6" direction="column" gap="1" width="100%">
-              <SideBarLink
-                href="/"
-                active={true}
-                text="Projects"
-                icon={DiscIcon}
-              />
+              <SideNavLinks />
             </Flex>
           </Flex>
           <Flex p="6" direction="column">
