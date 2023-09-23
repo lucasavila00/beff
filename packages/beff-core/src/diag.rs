@@ -7,6 +7,8 @@ use crate::{open_api_ast::HTTPMethod, BffFileName, ParsedModule};
 
 #[derive(Debug, Clone)]
 pub enum DiagnosticInfoMessage {
+    TypeMustNotBeEmpty,
+    GetMustNotHaveBody,
     ReturnAnnotationIsRequired,
     CannotGetFullLocation,
     InvalidIdentifierInPatternNoExplodeAllowed,
@@ -294,6 +296,12 @@ impl DiagnosticInfoMessage {
             }
             DiagnosticInfoMessage::ReturnAnnotationIsRequired => {
                 "Return annotation is required".to_string()
+            }
+            DiagnosticInfoMessage::GetMustNotHaveBody => {
+                "GET methods must not have a body".to_string()
+            }
+            DiagnosticInfoMessage::TypeMustNotBeEmpty => {
+                "This type contains 'never' and cannot be serialized".to_string()
             }
         }
     }

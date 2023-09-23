@@ -175,6 +175,9 @@ fn evidence_to_json(it: &Evidence) -> Json {
                         StringLitOrFormat::Format(fmt) => {
                             return Json::String("$$".to_owned() + fmt.as_str())
                         }
+                        StringLitOrFormat::Codec(fmt) => {
+                            return Json::String("$$".to_owned() + fmt.to_string().as_str())
+                        }
                     },
                     None => unreachable!("string values cannot be empty"),
                 }

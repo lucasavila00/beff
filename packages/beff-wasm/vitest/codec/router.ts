@@ -1,7 +1,7 @@
 import { Ctx } from "@beff/hono";
 
 export default {
-  ["/hello"]: {
+  ["/date"]: {
     post: async (
       _c: Ctx,
       b: {
@@ -25,6 +25,27 @@ export default {
     },
     get: async (_c: Ctx, a: 1n): Promise<1n> => {
       return a;
+    },
+  },
+  ["/intersection"]: {
+    post: async (
+      _c: Ctx,
+      p: {
+        a: string;
+      } & {
+        b: number;
+      }
+    ): Promise<
+      {
+        a: string;
+      } & {
+        b: number;
+      }
+    > => {
+      return p;
+    },
+    get: async (_c: Ctx, p: ("a" | "b") & "a"): Promise<("a" | "b") & "a"> => {
+      return p;
     },
   },
 };

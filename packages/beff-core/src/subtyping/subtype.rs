@@ -1,6 +1,6 @@
 use std::rc::Rc;
 
-use crate::ast::json::N;
+use crate::ast::{json::N, json_schema::CodecName};
 
 use super::{
     bdd::{list_is_empty, mapping_is_empty, Bdd, BddOps},
@@ -77,6 +77,7 @@ impl SubType {
 pub enum StringLitOrFormat {
     Lit(String),
     Format(String),
+    Codec(CodecName),
 }
 
 #[derive(PartialEq, Eq, Hash, Debug, Ord, PartialOrd)]

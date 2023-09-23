@@ -7,6 +7,8 @@ use crate::open_api_ast::{
     self, ApiPath, HTTPMethod, Info, JsonRequestBody, OpenApi, OperationObject, ParameterIn,
     ParameterObject, ParsedPattern, Validator,
 };
+use crate::subtyping::semtype::{SemTypeContext, SemTypeOps};
+use crate::subtyping::ToSemType;
 use crate::type_reference::{ResolvedLocalSymbol, TypeResolver};
 use crate::type_to_schema::TypeToSchema;
 use crate::{BffFileName, FileManager, ParsedModule, SymbolExport};
@@ -18,7 +20,7 @@ use jsdoc::Input;
 use std::collections::HashSet;
 use std::rc::Rc;
 use swc_common::comments::{Comment, CommentKind, Comments};
-use swc_common::{BytePos, Span, DUMMY_SP};
+use swc_common::{BytePos, Span, Spanned, DUMMY_SP};
 use swc_ecma_ast::{
     ArrayPat, ArrowExpr, AssignPat, AssignProp, BigInt, BindingIdent, ComputedPropName, Expr,
     FnExpr, Function, GetterProp, Ident, Invalid, KeyValueProp, Lit, MethodProp, Number, ObjectLit,
@@ -472,9 +474,25 @@ impl<'a, R: FileManager> ExtractExportDefaultVisitor<'a, R> {
         }
     }
 
-    fn convert_to_json_schema(&mut self, ty: &TsType, span: &Span) -> JsonSchema {
+    fn validate_type_is_not_empty(&mut self, ty: &JsonSchema, span: &Span) {
+        let mut ctx = SemTypeContext::new();
+        let validators = &self.components.iter().collect::<Vec<_>>();
+        let st = ty.to_sub_type(validators, &mut ctx);
+
+        match st {
+            Ok(st) => {
+                if st.is_empty(&mut ctx) {
+                    self.push_error(span, DiagnosticInfoMessage::TypeMustNotBeEmpty);
+                }
+            }
+            Err(_) => todo!(),
+        }
+    }
+
+    fn convert_to_json_schema(&mut self, ty: &TsType) -> JsonSchema {
         let mut to_schema = TypeToSchema::new(self.files, self.current_file.clone());
         let res = to_schema.convert_ts_type(ty);
+        let span = ty.span();
         match res {
             Ok(res) => {
                 let mut kvs = vec![];
@@ -489,7 +507,7 @@ impl<'a, R: FileManager> ExtractExportDefaultVisitor<'a, R> {
                             kvs.push((k, s))
                         }
                         None => self.push_error(
-                            span,
+                            &span,
                             DiagnosticInfoMessage::CannotResolveTypeReferenceOnExtracting(k),
                         ),
                     }
@@ -497,7 +515,9 @@ impl<'a, R: FileManager> ExtractExportDefaultVisitor<'a, R> {
 
                 kvs.sort_by(|(ka, _), (kb, _)| ka.cmp(kb));
                 let ext: Vec<Validator> = kvs.into_iter().map(|(_k, v)| v).collect();
-                self.extend_components(ext, span);
+                self.extend_components(ext, &span);
+
+                self.validate_type_is_not_empty(&res, &span);
 
                 res
             }
@@ -518,7 +538,7 @@ impl<'a, R: FileManager> ExtractExportDefaultVisitor<'a, R> {
         match params {
             Some((ty, [])) => Ok(HandlerParameter::Header {
                 span: lib_ty_name.span,
-                schema: self.convert_to_json_schema(ty, &lib_ty_name.span),
+                schema: self.convert_to_json_schema(ty),
                 required,
                 description,
             }),
@@ -546,7 +566,7 @@ impl<'a, R: FileManager> ExtractExportDefaultVisitor<'a, R> {
             }
         }
         Ok(HandlerParameter::PathOrQueryOrBody {
-            schema: self.convert_to_json_schema(ty, &tref.span),
+            schema: self.convert_to_json_schema(ty),
             required,
             description,
             span: tref.span,
@@ -564,7 +584,7 @@ impl<'a, R: FileManager> ExtractExportDefaultVisitor<'a, R> {
                 self.parse_type_ref_parameter(tref, ty, required, description)
             }
             _ => Ok(HandlerParameter::PathOrQueryOrBody {
-                schema: self.convert_to_json_schema(ty, span),
+                schema: self.convert_to_json_schema(ty),
                 required,
                 description,
                 span: *span,
@@ -685,8 +705,7 @@ impl<'a, R: FileManager> ExtractExportDefaultVisitor<'a, R> {
             parameters,
             summary: endpoint_comments.summary,
             description: endpoint_comments.description,
-            return_type: self
-                .convert_to_json_schema(maybe_extract_promise(&return_type), parent_span),
+            return_type: self.convert_to_json_schema(maybe_extract_promise(&return_type)),
             span: *parent_span,
         };
 
@@ -757,7 +776,7 @@ impl<'a, R: FileManager> ExtractExportDefaultVisitor<'a, R> {
                 .collect(),
             summary: endpoint_comments.summary,
             description: endpoint_comments.description,
-            return_type: self.convert_to_json_schema(maybe_extract_promise(&ret_ty), parent_span),
+            return_type: self.convert_to_json_schema(maybe_extract_promise(&ret_ty)),
             span: *parent_span,
         };
 
@@ -913,7 +932,9 @@ fn is_type_simple(it: &JsonSchema, components: &Vec<Validator>) -> bool {
                 .expect("can always find ref in json schema at this point");
             is_type_simple(&def.schema, components)
         }
-        JsonSchema::AnyOf(vs) => vs.iter().all(|it| is_type_simple(it, components)),
+        JsonSchema::AllOf(vs) | JsonSchema::AnyOf(vs) => {
+            vs.iter().all(|it| is_type_simple(it, components))
+        }
         JsonSchema::Codec(_)
         | JsonSchema::Null
         | JsonSchema::Boolean
@@ -921,8 +942,7 @@ fn is_type_simple(it: &JsonSchema, components: &Vec<Validator>) -> bool {
         | JsonSchema::Number
         | JsonSchema::StringWithFormat(_)
         | JsonSchema::Const(_) => true,
-        JsonSchema::AllOf(_)
-        | JsonSchema::Any
+        JsonSchema::Any
         | JsonSchema::Object { .. }
         | JsonSchema::Array(_)
         | JsonSchema::Tuple { .. } => false,
@@ -1179,6 +1199,8 @@ pub fn extract_schema<R: FileManager>(
         components: public_definitions.into_iter().collect(),
         paths,
     };
+
+    // TODO: validate that all intersections are valid (no empty types anywhere)
 
     RouterExtractResult {
         routes: handlers,

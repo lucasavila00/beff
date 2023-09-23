@@ -559,6 +559,9 @@ impl<'a> SchemerContext<'a> {
                                     !allowed,
                                 ));
                             }
+                            StringLitOrFormat::Codec(fmt) => {
+                                acc.insert(maybe_not(JsonSchema::Codec(fmt.clone()), !allowed));
+                            }
                         }
                     }
                 }
@@ -663,6 +666,7 @@ fn evidence_to_schema(ty: &Evidence) -> JsonSchema {
                             StringLitOrFormat::Format(fmt) => {
                                 JsonSchema::StringWithFormat(fmt.clone())
                             }
+                            StringLitOrFormat::Codec(fmt) => JsonSchema::Codec(fmt.clone()),
                         })
                         .collect(),
                 );

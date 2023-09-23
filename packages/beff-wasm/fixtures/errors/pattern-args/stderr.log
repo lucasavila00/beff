@@ -28,4 +28,14 @@ Error: Invalid context usage
    21 |     },
    22 |   },
 
-Found 3 errors
+Error: GET methods must not have a body
+ /errors/pattern-args/app.ts:18:3
+   16 |     },
+   17 |   },
+ > 18 |   [`/user2`]: {
+      |   ^^^^^^^^^^ GET methods must not have a body
+   19 |     get: async (a: string[] = []): Promise<User[]> => {
+   20 |       return todo();
+   21 |     },
+
+Found 4 errors
