@@ -1204,6 +1204,112 @@ mod tests {
     }
 
     #[test]
+    fn ok_typeof6() {
+        let from = r#"
+        type A = "ok" | "fail";
+        
+        export default {
+            "/hello": {
+                get: (): A => impl()
+            }
+        }
+        "#;
+
+        let to = r#"
+        const valueB = ["ok", "fail"] as const;
+        type B = typeof valueB[number];
+        
+        export default {
+            "/hello": {
+                get: (): B => impl()
+            }
+        }
+        "#;
+        let errors = test_safe(from, to);
+        assert!(errors.is_empty());
+    }
+
+    #[test]
+    fn ok_typeof7() {
+        let from = r#"
+        type A = "ok" | "fail";
+        
+        export default {
+            "/hello": {
+                get: (): A => impl()
+            }
+        }
+        "#;
+
+        let to = r#"
+        const valueA = {a: ["ok", "fail"]} as const;
+        const valueB = valueA.a;
+        type B = typeof valueB[number];
+        
+        export default {
+            "/hello": {
+                get: (): B => impl()
+            }
+        }
+        "#;
+        let errors = test_safe(from, to);
+        assert!(errors.is_empty());
+    }
+    #[test]
+    fn ok_typeof8() {
+        let from = r#"
+        type A = "ok" | "fail";
+        
+        export default {
+            "/hello": {
+                get: (): A => impl()
+            }
+        }
+        "#;
+
+        let to = r#"
+        const valueA = {a: ["ok", "fail"]} as const;
+        const valueB = valueA['a'];
+        type B = typeof valueB[number];
+        
+        export default {
+            "/hello": {
+                get: (): B => impl()
+            }
+        }
+        "#;
+        let errors = test_safe(from, to);
+        assert!(errors.is_empty());
+    }
+
+    #[test]
+    fn ok_typeof9() {
+        let from = r#"
+        type A ="fail";
+        
+        export default {
+            "/hello": {
+                get: (): A => impl()
+            }
+        }
+        "#;
+
+        let to = r#"
+        const valueA = {a: ["ok", "fail"]} as const;
+        const valueB = valueA['a'];
+        type B = typeof valueB[1];
+        
+        export default {
+            "/hello": {
+                get: (): B => impl()
+            }
+        }
+        "#;
+        let errors = test_safe(from, to);
+        assert!(errors.is_empty());
+    }
+
+    #[test]
     fn fail_typeof() {
         let from = r#"
         const valueB = "b" as const;

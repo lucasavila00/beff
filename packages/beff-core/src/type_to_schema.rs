@@ -11,14 +11,15 @@ use std::rc::Rc;
 use swc_atoms::JsWord;
 use swc_common::{Span, Spanned};
 use swc_ecma_ast::{
-    Expr, Ident, Lit, Prop, PropOrSpread, Str, TsArrayType, TsCallSignatureDecl, TsConditionalType,
-    TsConstructSignatureDecl, TsConstructorType, TsEntityName, TsFnOrConstructorType, TsFnType,
-    TsGetterSignature, TsImportType, TsIndexSignature, TsIndexedAccessType, TsInferType,
-    TsInterfaceDecl, TsIntersectionType, TsKeywordType, TsKeywordTypeKind, TsLit, TsLitType,
-    TsMappedType, TsMethodSignature, TsOptionalType, TsParenthesizedType, TsQualifiedName,
-    TsRestType, TsSetterSignature, TsThisType, TsTplLitType, TsTupleType, TsType, TsTypeElement,
-    TsTypeLit, TsTypeOperator, TsTypeParamInstantiation, TsTypePredicate, TsTypeQuery,
-    TsTypeQueryExpr, TsTypeRef, TsUnionOrIntersectionType, TsUnionType,
+    Expr, Ident, Lit, MemberProp, Prop, PropOrSpread, Str, TsArrayType, TsCallSignatureDecl,
+    TsConditionalType, TsConstructSignatureDecl, TsConstructorType, TsEntityName,
+    TsFnOrConstructorType, TsFnType, TsGetterSignature, TsImportType, TsIndexSignature,
+    TsIndexedAccessType, TsInferType, TsInterfaceDecl, TsIntersectionType, TsKeywordType,
+    TsKeywordTypeKind, TsLit, TsLitType, TsMappedType, TsMethodSignature, TsOptionalType,
+    TsParenthesizedType, TsQualifiedName, TsRestType, TsSetterSignature, TsThisType, TsTplLitType,
+    TsTupleType, TsType, TsTypeElement, TsTypeLit, TsTypeOperator, TsTypeParamInstantiation,
+    TsTypePredicate, TsTypeQuery, TsTypeQueryExpr, TsTypeRef, TsUnionOrIntersectionType,
+    TsUnionType,
 };
 
 pub struct TypeToSchema<'a, R: FileManager> {
@@ -539,41 +540,15 @@ impl<'a, R: FileManager> TypeToSchema<'a, R> {
 
                 Ok(JsonSchema::Object(vs))
             }
-            Expr::This(_) => todo!(),
-            Expr::Fn(_) => todo!(),
-            Expr::Unary(_) => todo!(),
-            Expr::Update(_) => todo!(),
-            Expr::Bin(_) => todo!(),
-            Expr::Assign(_) => todo!(),
-            Expr::Member(_) => todo!(),
-            Expr::SuperProp(_) => todo!(),
-            Expr::Cond(_) => todo!(),
-            Expr::Call(_) => todo!(),
-            Expr::New(_) => todo!(),
-            Expr::Seq(_) => todo!(),
-            Expr::Ident(_) => todo!(),
-            Expr::Tpl(_) => todo!(),
-            Expr::TaggedTpl(_) => todo!(),
-            Expr::Arrow(_) => todo!(),
-            Expr::Class(_) => todo!(),
-            Expr::Yield(_) => todo!(),
-            Expr::MetaProp(_) => todo!(),
-            Expr::Await(_) => todo!(),
-            Expr::Paren(_) => todo!(),
-            Expr::JSXMember(_) => todo!(),
-            Expr::JSXNamespacedName(_) => todo!(),
-            Expr::JSXEmpty(_) => todo!(),
-            Expr::JSXElement(_) => todo!(),
-            Expr::JSXFragment(_) => todo!(),
-            Expr::TsTypeAssertion(_) => todo!(),
-            Expr::TsConstAssertion(_) => todo!(),
-            Expr::TsNonNull(_) => todo!(),
-            Expr::TsAs(_) => todo!(),
-            Expr::TsInstantiation(_) => todo!(),
-            Expr::TsSatisfies(_) => todo!(),
-            Expr::PrivateName(_) => todo!(),
-            Expr::OptChain(_) => todo!(),
-            Expr::Invalid(_) => todo!(),
+            Expr::Ident(i) => {
+                let s =
+                    TypeResolver::new(self.files, &self.current_file).resolve_local_symbol(&i)?;
+                self.typeof_symbol(s)
+            }
+            _ => {
+                dbg!(e);
+                todo!()
+            }
         }
     }
 
@@ -583,6 +558,34 @@ impl<'a, R: FileManager> TypeToSchema<'a, R> {
             ResolvedLocalSymbol::TsInterfaceDecl(_) => todo!(),
             ResolvedLocalSymbol::Expr(e) => match e.as_ref() {
                 Expr::TsConstAssertion(c) => self.typeof_expr(&c.expr),
+                Expr::Member(m) => {
+                    let obj = self.typeof_expr(&m.obj)?;
+                    match obj {
+                        JsonSchema::Object(vs) => {
+                            let key: String = match &m.prop {
+                                MemberProp::Ident(i) => i.sym.to_string(),
+                                MemberProp::PrivateName(_) => todo!(),
+                                MemberProp::Computed(c) => {
+                                    let v = self.typeof_expr(&c.expr)?;
+                                    match v {
+                                        JsonSchema::Const(Json::String(s)) => s,
+                                        _ => {
+                                            todo!()
+                                        }
+                                    }
+                                }
+                            };
+                            match vs.get(&key) {
+                                Some(v) => Ok(v.inner().clone()),
+                                None => self.error(
+                                    &m.prop.span(),
+                                    DiagnosticInfoMessage::CannotFindPropertyInObject(key),
+                                ),
+                            }
+                        }
+                        _ => todo!(),
+                    }
+                }
                 e => self.error(&e.span(), DiagnosticInfoMessage::MustBeTsConstAssertion),
             },
             ResolvedLocalSymbol::NamedImport { .. } => todo!(),
@@ -601,6 +604,49 @@ impl<'a, R: FileManager> TypeToSchema<'a, R> {
                     self.typeof_symbol(s)
                 }
             },
+        }
+    }
+    pub fn convert_indexed_access(&mut self, i: &TsIndexedAccessType) -> Res<JsonSchema> {
+        let obj = self.convert_ts_type(&i.obj_type)?;
+        let index = self.convert_ts_type(&i.index_type)?;
+
+        match (obj, index) {
+            (
+                JsonSchema::Tuple {
+                    prefix_items,
+                    items,
+                },
+                JsonSchema::Number,
+            ) => {
+                let v = match items {
+                    Some(x) => vec![*x],
+                    None => vec![],
+                };
+                let vs = v.into_iter().chain(prefix_items.into_iter()).collect();
+                Ok(JsonSchema::any_of(vs))
+            }
+            (
+                JsonSchema::Tuple {
+                    prefix_items,
+                    items,
+                },
+                JsonSchema::Const(Json::Number(n)),
+            ) => {
+                let as_usize = n.to_f64() as usize;
+                match prefix_items.get(as_usize) {
+                    Some(v) => Ok(v.clone()),
+                    None => match items {
+                        Some(it) => Ok(*it.clone()),
+                        None => self.error(
+                            &i.index_type.span(),
+                            DiagnosticInfoMessage::IndexOutOfTupleRange(as_usize),
+                        ),
+                    },
+                }
+            }
+            _ => {
+                todo!()
+            }
         }
     }
     pub fn convert_ts_type(&mut self, typ: &TsType) -> Res<JsonSchema> {
@@ -714,10 +760,7 @@ impl<'a, R: FileManager> TypeToSchema<'a, R> {
                 span,
                 DiagnosticInfoMessage::TypeConstructNonSerializableToJsonSchema,
             ),
-            TsType::TsIndexedAccessType(TsIndexedAccessType { span, .. }) => self.error(
-                span,
-                DiagnosticInfoMessage::CannotUnderstandTsIndexedAccessType,
-            ),
+            TsType::TsIndexedAccessType(i) => self.convert_indexed_access(i),
         }
     }
 }

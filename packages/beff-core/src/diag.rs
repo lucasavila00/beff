@@ -7,6 +7,8 @@ use crate::{open_api_ast::HTTPMethod, BffFileName, ParsedModule};
 
 #[derive(Debug, Clone)]
 pub enum DiagnosticInfoMessage {
+    IndexOutOfTupleRange(usize),
+    CannotFindPropertyInObject(String),
     MustBeTsConstAssertion,
     CustomFormatIsNotRegistered,
     TypeMustNotBeEmpty,
@@ -44,7 +46,6 @@ pub enum DiagnosticInfoMessage {
     TemplateNonSerializableToJsonSchema,
     DuplicatedRestNonSerializableToJsonSchema,
     TypeConstructNonSerializableToJsonSchema,
-    CannotUnderstandTsIndexedAccessType,
     ContextInvalidAtThisPosition,
     ContextParameterMustBeFirst,
     PropSpreadIsNotSupportedOnMethodMap,
@@ -92,6 +93,9 @@ pub enum DiagnosticInfoMessage {
 impl DiagnosticInfoMessage {
     pub fn to_string(self) -> String {
         match self {
+            DiagnosticInfoMessage::IndexOutOfTupleRange(idx) => {
+                format!("Index out of tuple range: {}", idx)
+            }
             DiagnosticInfoMessage::CannotResolveLocalType(name) => {
                 format!("Cannot find type '{name}'")
             }
@@ -110,9 +114,6 @@ impl DiagnosticInfoMessage {
             }
             DiagnosticInfoMessage::ThisRefersToSomethingThatCannotBeSerialized(this) => {
                 format!("`{this}` cannot be converted to JSON schema")
-            }
-            DiagnosticInfoMessage::CannotUnderstandTsIndexedAccessType => {
-                "Indexed access types are not supported".to_string()
             }
             DiagnosticInfoMessage::ComplexPathParameterNotSupported => {
                 "This type is too complex for a path parameter".to_string()
@@ -310,6 +311,9 @@ impl DiagnosticInfoMessage {
             }
             DiagnosticInfoMessage::MustBeTsConstAssertion => {
                 "Must be a TS const assertion".to_string()
+            }
+            DiagnosticInfoMessage::CannotFindPropertyInObject(prop) => {
+                format!("Cannot find property '{prop}' in object")
             }
         }
     }
