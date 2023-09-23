@@ -213,7 +213,24 @@ function decodeTuple(ctx, input, required, vs) {
   if (!required && input == null) {
     return input;
   }
-  throw new Error("decodeTuple not implemented");
+  if (Array.isArray(input)) {
+    const acc = []
+    let idx = 0;
+    for (const v of vs.prefix) {
+      const newValue = v(ctx, input[idx]);
+      acc.push(newValue);
+      idx++;
+    }
+    if (vs.items != null) {
+      acc.push(...decodeArray(ctx, input.slice(idx), true, vs.items));
+    } else {
+      if (input.length > idx) {
+        return buildError(input, ctx,  "tuple has too many items")
+      }
+    }
+    return acc;
+  }
+  return buildError(input, ctx,  "expected tuple")
 }
 function decodeBoolean(ctx, input, required, ) {
   if (!required && input == null) {

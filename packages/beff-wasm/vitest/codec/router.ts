@@ -48,4 +48,17 @@ export default {
       return p;
     },
   },
+  "/tuple1": {
+    post: async (
+      _c: Ctx,
+      b: [number, number, ...string[]]
+    ): Promise<[number, number, ...string[]]> => {
+      return b;
+    },
+  },
+  "/tuple2": {
+    post: async (_c: Ctx, b: [number, number]): Promise<[number, number]> => {
+      return b;
+    },
+  },
 };

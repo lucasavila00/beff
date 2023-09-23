@@ -54,3 +54,38 @@ it("intersection", async () => {
   expect(await beff["/intersection"].get("a")).toMatchInlineSnapshot('"a"');
   expect(await beff["/intersection"].get("a")).toMatchInlineSnapshot('"a"');
 });
+
+it("tuple", async () => {
+  expect(await beff["/tuple1"].post([1, 2])).toMatchInlineSnapshot(`
+    [
+      1,
+      2,
+    ]
+  `);
+  expect(await beff["/tuple1"].post([1, 2, "3", "4", "5"]))
+    .toMatchInlineSnapshot(`
+      [
+        1,
+        2,
+        "3",
+        "4",
+        "5",
+      ]
+    `);
+});
+
+it("tuple2", async () => {
+  expect(await beff["/tuple2"].post([1, 2])).toMatchInlineSnapshot(`
+    [
+      1,
+      2,
+    ]
+  `);
+
+  // await expect(
+  //   beff["/tuple2"].post(
+  //     // @ts-expect-error
+  //     [1, 2, "3", "4", "5"]
+  //   )
+  // ).rejects.toMatchInlineSnapshot('[Error: tuple has too many items]');
+});
