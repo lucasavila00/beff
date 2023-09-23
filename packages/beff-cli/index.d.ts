@@ -19,7 +19,11 @@ export type HandlerMetaServer = HandlerMetaClient & {
   return_validator: any;
   params: MetaParamServer[];
 };
-
+export type DecodeError = {
+  message: string;
+  path: string[];
+  received: unknown;
+};
 export interface OpenAPIInfo {
   title?: string;
   description?: string;

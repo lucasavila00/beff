@@ -13,7 +13,7 @@ it("custom types", () => {
     {
       "errors": [
         {
-          "kind": "notCustomFormat:StartsWithA",
+          "message": "expected StartsWithA",
           "path": [],
           "received": "BB",
         },
@@ -70,18 +70,24 @@ it("regular types", () => {
     BffParseError {
       "errors": [
         {
-          "kind": "notNumber",
-          "path": [],
+          "message": "expected number",
+          "path": [
+            "age",
+          ],
           "received": undefined,
         },
         {
-          "kind": "notISO8061",
-          "path": [],
+          "message": "expected ISO8061 date",
+          "path": [
+            "createdAt",
+          ],
           "received": undefined,
         },
         {
-          "kind": "notString",
-          "path": [],
+          "message": "expected string",
+          "path": [
+            "name",
+          ],
           "received": 123,
         },
       ],
@@ -92,18 +98,24 @@ it("regular types", () => {
     {
       "errors": [
         {
-          "kind": "notNumber",
-          "path": [],
+          "message": "expected number",
+          "path": [
+            "age",
+          ],
           "received": undefined,
         },
         {
-          "kind": "notISO8061",
-          "path": [],
+          "message": "expected ISO8061 date",
+          "path": [
+            "createdAt",
+          ],
           "received": undefined,
         },
         {
-          "kind": "notString",
-          "path": [],
+          "message": "expected string",
+          "path": [
+            "name",
+          ],
           "received": 123,
         },
       ],
@@ -114,8 +126,10 @@ it("regular types", () => {
     {
       "errors": [
         {
-          "kind": "notString",
-          "path": [],
+          "message": "expected string",
+          "path": [
+            "a",
+          ],
           "received": undefined,
         },
       ],
@@ -128,33 +142,51 @@ it("regular types", () => {
       {
         "errors": [
           {
-            "kind": "notNumber",
-            "path": [],
+            "message": "expected number",
+            "path": [
+              "[0]",
+              "age",
+            ],
             "received": undefined,
           },
           {
-            "kind": "notISO8061",
-            "path": [],
+            "message": "expected ISO8061 date",
+            "path": [
+              "[0]",
+              "createdAt",
+            ],
             "received": undefined,
           },
           {
-            "kind": "notString",
-            "path": [],
+            "message": "expected string",
+            "path": [
+              "[0]",
+              "name",
+            ],
             "received": 123,
           },
           {
-            "kind": "notNumber",
-            "path": [],
+            "message": "expected number",
+            "path": [
+              "[1]",
+              "age",
+            ],
             "received": "def",
           },
           {
-            "kind": "notISO8061",
-            "path": [],
+            "message": "expected ISO8061 date",
+            "path": [
+              "[1]",
+              "createdAt",
+            ],
             "received": undefined,
           },
           {
-            "kind": "notString",
-            "path": [],
+            "message": "expected string",
+            "path": [
+              "[1]",
+              "name",
+            ],
             "received": undefined,
           },
         ],

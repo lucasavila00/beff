@@ -7,6 +7,7 @@ import {
   OpenApiServer,
 } from "@beff/cli";
 import { ClientFromRouter, buildClient } from "@beff/client";
+import { DecodeError } from "@beff/cli";
 import type { Context as HonoContext, Env } from "hono";
 
 export type Ctx<C = {}, E extends Env = any> = C & {
@@ -114,13 +115,22 @@ const prettyPrintValue = (it: unknown): string => {
   }
   return JSON.stringify(it);
 };
+const printErrors = (it: DecodeError[]): string => {
+  return it
+    .map((it, idx) => {
+      return `#${idx} [${it.path.join(".")}] ${
+        it.message
+      }, received: ${prettyPrintValue(it.received)}`;
+    })
+    .join(" | ");
+};
 const decodeWithMessage = (validator: any, value: any) => {
   const validatorCtx: any = {};
 
   const newValue = validator(validatorCtx, value);
   const errors = validatorCtx.errors;
   if (errors?.length > 0) {
-    throw new BffHTTPException(422, JSON.stringify(errors));
+    throw new BffHTTPException(422, printErrors(errors));
   }
   return newValue;
 };
