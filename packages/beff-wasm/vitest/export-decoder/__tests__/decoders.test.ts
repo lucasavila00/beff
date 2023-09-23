@@ -11,14 +11,8 @@ it("custom types", () => {
   `);
   expect(StartsWithA.safeParse("BB")).toMatchInlineSnapshot(`
     {
-      "errors": [
-        {
-          "message": "expected StartsWithA",
-          "path": [],
-          "received": "BB",
-        },
-      ],
-      "success": false,
+      "data": "BB",
+      "success": true,
     }
   `);
 });

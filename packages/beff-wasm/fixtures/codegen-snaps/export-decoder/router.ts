@@ -1,13 +1,7 @@
-import {
-  registerStringFormat,
-  StartsWithA,
-  UnionNested as UnionNestedNamed,
-  User,
-  StringFormat,
-} from "./parser";
+import { StringFormat } from "@beff/cli";
+import { StartsWithA, UnionNested as UnionNestedNamed, User } from "./parser";
 
 export type Password = StringFormat<"password">;
-registerStringFormat("password", () => true);
 type Ctx = any;
 export default {
   [`/{name}`]: {

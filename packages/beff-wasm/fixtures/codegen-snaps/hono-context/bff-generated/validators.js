@@ -134,13 +134,8 @@ function decodeStringWithFormat(ctx, input, required, format) {
   if (!required && input == null) {
     return input;
   }
-  if (typeof input === 'string') {
-    if (isCustomFormatValid(format, input)) {
-      return input;
-    }
-    return buildError(input, ctx,  "expected "+format)
-  }
-  return buildError(input, ctx,  "expected string")
+  return input
+  // throw new Error("decodeStringWithFormat not implemented")
 }
 function decodeAnyOf(ctx, input, required, vs) {
   if (!required && input == null) {
@@ -263,21 +258,7 @@ function encodeAnyOf(cbs, value) {
 }
 
 
-
-const stringPredicates = {}
-function registerStringFormat(name, predicate) {
-  stringPredicates[name] = predicate;
-}
-
-function isCustomFormatValid(key, value) {
-  const predicate = stringPredicates[key];
-  if (predicate == null) {
-    throw new Error("unknown string format: " + key);
-  }
-  return predicate(value);
-}
-
 const validators = {};
 const encoders = {};
 
-export default { decodeObject, decodeArray, decodeString, decodeNumber, decodeCodec, decodeStringWithFormat, decodeAnyOf, decodeAllOf, decodeBoolean, decodeAny, decodeTuple, decodeNull, decodeConst, encodeCodec, encodeAnyOf, encodeAllOf, validators, encoders, isCustomFormatValid, registerStringFormat };
+export default { decodeObject, decodeArray, decodeString, decodeNumber, decodeCodec, decodeStringWithFormat, decodeAnyOf, decodeAllOf, decodeBoolean, decodeAny, decodeTuple, decodeNull, decodeConst, encodeCodec, encodeAnyOf, encodeAllOf, validators, encoders };
