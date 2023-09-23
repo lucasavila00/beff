@@ -181,12 +181,19 @@ function decodeTuple(ctx, input, required, vs) {
     const acc = []
     let idx = 0;
     for (const v of vs.prefix) {
+      pushPath(ctx, '['+idx+']');
       const newValue = v(ctx, input[idx]);
+      popPath(ctx);
       acc.push(newValue);
       idx++;
     }
     if (vs.items != null) {
-      acc.push(...decodeArray(ctx, input.slice(idx), true, vs.items));
+      for(let i = idx; i < input.length; i++) {
+        const v = input[i];
+        pushPath(ctx, '['+i+']');
+        acc.push(vs.items(ctx, v));
+        popPath(ctx);
+      }
     } else {
       if (input.length > idx) {
         return buildError(input, ctx,  "tuple has too many items")

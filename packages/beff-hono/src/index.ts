@@ -5,8 +5,7 @@ import {
   OpenAPIDocument,
   OpenApiServer,
 } from "@beff/cli";
-import { ClientFromRouter, buildClient } from "@beff/client";
-import { DecodeError } from "@beff/cli";
+import { ClientFromRouter, buildClient, printErrors } from "@beff/client";
 import type { Context as HonoContext, Env } from "hono";
 
 export type Ctx<C = {}, E extends Env = any> = C & {
@@ -93,43 +92,17 @@ export const isBeffHttpException = (e: any): e is BffHTTPException => {
   return e?.isBeffHttpException;
 };
 
-const prettyPrintValue = (it: unknown): string => {
-  if (typeof it === "string") {
-    return `"${it}"`;
-  }
-  if (typeof it === "number") {
-    return `${it}`;
-  }
-  if (typeof it === "boolean") {
-    return `${it}`;
-  }
-  if (it === null) {
-    return "null";
-  }
-  if (Array.isArray(it)) {
-    return `Array`;
-  }
-  if (typeof it === "object") {
-    return `Object`;
-  }
-  return JSON.stringify(it);
-};
-const printErrors = (it: DecodeError[]): string => {
-  return it
-    .map((it, idx) => {
-      return `#${idx} [${it.path.join(".")}] ${
-        it.message
-      }, received: ${prettyPrintValue(it.received)}`;
-    })
-    .join(" | ");
-};
-const decodeWithMessage = (validator: any, value: any) => {
+const decodeWithMessage = (
+  validator: any,
+  value: any,
+  parentPath: string[]
+) => {
   const validatorCtx: any = {};
 
   const newValue = validator(validatorCtx, value);
   const errors = validatorCtx.errors;
   if (errors?.length > 0) {
-    throw new BffHTTPException(422, printErrors(errors));
+    throw new BffHTTPException(422, printErrors(errors, parentPath));
   }
   return newValue;
 };
@@ -153,19 +126,19 @@ const handleMethod = async (
       switch (p.type) {
         case "path": {
           const value = c.hono.req.param(p.name);
-          return decodeWithMessage(p.validator, value);
+          return decodeWithMessage(p.validator, value, [p.name]);
         }
         case "query": {
           const value = c.hono.req.query(p.name);
-          return decodeWithMessage(p.validator, value);
+          return decodeWithMessage(p.validator, value, [p.name]);
         }
         case "header": {
           const value = c.hono.req.header(p.name);
-          return decodeWithMessage(p.validator, value);
+          return decodeWithMessage(p.validator, value, [p.name]);
         }
         case "body": {
           const value = await c.hono.req.json();
-          return decodeWithMessage(p.validator, value);
+          return decodeWithMessage(p.validator, value, [p.name]);
         }
         case "context": {
           return c;

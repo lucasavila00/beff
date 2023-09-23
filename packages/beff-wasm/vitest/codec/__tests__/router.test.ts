@@ -56,6 +56,15 @@ it("intersection", async () => {
 });
 
 it("tuple", async () => {
+  await expect(
+    beff["/tuple1"].post(
+      // @ts-expect-error
+      [1]
+    )
+  ).rejects.toMatchInlineSnapshot(
+    '[HTTPException: #0 (b[1]) expected number, received: undefined]'
+  );
+
   expect(await beff["/tuple1"].post([1, 2])).toMatchInlineSnapshot(`
     [
       1,
@@ -82,10 +91,12 @@ it("tuple2", async () => {
     ]
   `);
 
-  // await expect(
-  //   beff["/tuple2"].post(
-  //     // @ts-expect-error
-  //     [1, 2, "3", "4", "5"]
-  //   )
-  // ).rejects.toMatchInlineSnapshot('[Error: tuple has too many items]');
+  await expect(
+    beff["/tuple2"].post(
+      // @ts-expect-error
+      [1, 2, "3", "4", "5"]
+    )
+  ).rejects.toMatchInlineSnapshot(
+    '[HTTPException: #0 (b) tuple has too many items, received: Array]'
+  );
 });

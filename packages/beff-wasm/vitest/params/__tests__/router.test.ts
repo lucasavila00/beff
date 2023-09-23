@@ -63,11 +63,11 @@ it("post with body and error", async () => {
     body: JSON.stringify({ a: 123 }),
   });
   const res = await app.request(req);
-  expect(res.status).toMatchInlineSnapshot("422");
+  expect(res.status).toMatchInlineSnapshot('422');
   expect(await res.json()).toMatchInlineSnapshot(
     `
     {
-      "message": "#0 [a] expected string, received: 123",
+      "message": "#0 (data.a) expected string, received: 123",
     }
   `
   );
@@ -78,7 +78,7 @@ it("post with body and error, client", async () => {
     await beff["/req-body"].post({ a: 123 as any });
   } catch (e) {
     expect(e).toMatchInlineSnapshot(
-      "[HTTPException: #0 [a] expected string, received: 123]"
+      '[HTTPException: #0 (data.a) expected string, received: 123]'
     );
   }
 });
