@@ -1,3 +1,5 @@
+use std::collections::BTreeSet;
+
 use crate::{
     ast::json_schema::{JsonSchema, Optionality},
     swc_builder::SwcBuilder,
@@ -5,9 +7,11 @@ use crate::{
 use swc_common::DUMMY_SP;
 use swc_ecma_ast::{
     ArrayLit, ArrowExpr, BindingIdent, BlockStmt, BlockStmtOrExpr, Bool, CallExpr, Callee, Expr,
-    ExprOrSpread, Function, Ident, KeyValueProp, Lit, MemberExpr, MemberProp, ObjectLit, Param,
-    ParenExpr, Pat, Prop, PropName, PropOrSpread, ReturnStmt, Stmt, Str,
+    ExprOrSpread, Function, Ident, KeyValueProp, Lit, MemberExpr, MemberProp, Null, ObjectLit,
+    Param, ParenExpr, Pat, Prop, PropName, PropOrSpread, ReturnStmt, Stmt, Str,
 };
+
+use super::expr::ToExpr;
 
 struct DecoderFnGenerator {}
 
@@ -118,14 +122,42 @@ impl DecoderFnGenerator {
         })
     }
 
+    fn decode_union_or_intersection(
+        decoder_name: &str,
+        required: bool,
+        vs: &BTreeSet<JsonSchema>,
+    ) -> Expr {
+        let els_expr: Vec<Expr> = vs
+            .iter()
+            .map(|it| Self::decode_expr(it, required))
+            .collect();
+        Self::decode_call_extra(
+            decoder_name,
+            required,
+            vec![Expr::Array(ArrayLit {
+                span: DUMMY_SP,
+                elems: els_expr
+                    .into_iter()
+                    .map(|it| {
+                        Some(ExprOrSpread {
+                            spread: None,
+                            expr: Self::make_cb(it).into(),
+                        })
+                    })
+                    .collect(),
+            })],
+        )
+    }
+
     fn decode_expr(schema: &JsonSchema, required: bool) -> Expr {
         match schema {
             JsonSchema::Error => unreachable!("should not print if schema had error"),
             JsonSchema::StNever => todo!(),
             JsonSchema::StUnknown => todo!(),
             JsonSchema::StNot(_) => todo!(),
+            JsonSchema::AnyObject => todo!(),
+            JsonSchema::AnyArrayLike => todo!(),
             JsonSchema::OpenApiResponseRef(_) => unreachable!("will not decode error schema"),
-
             JsonSchema::Null => Self::decode_call("decodeNull", required),
             JsonSchema::Boolean => Self::decode_call("decodeBoolean", required),
             JsonSchema::String => Self::decode_call("decodeString", required),
@@ -177,12 +209,64 @@ impl DecoderFnGenerator {
             JsonSchema::Tuple {
                 prefix_items,
                 items,
-            } => Self::decode_call("todo", required),
-            JsonSchema::AnyOf(_) => Self::decode_call("todoAnyOf", required),
-            JsonSchema::AllOf(_) => Self::decode_call("todAllOfo", required),
-            JsonSchema::Const(_) => Self::decode_call("todConsto", required),
-            JsonSchema::AnyObject => Self::decode_call("toAnyObjectdo", required),
-            JsonSchema::AnyArrayLike => Self::decode_call("tAnyArrayLikeodo", required),
+            } => Self::decode_call_extra(
+                "decodeTuple",
+                required,
+                vec![
+                    Expr::Object(ObjectLit {
+                        span: DUMMY_SP,
+                        props: vec![PropOrSpread::Prop(
+                            Prop::KeyValue(KeyValueProp {
+                                key: PropName::Ident(Ident {
+                                    span: DUMMY_SP,
+                                    sym: "prefix".into(),
+                                    optional: false,
+                                }),
+                                value: Box::new(Expr::Array(ArrayLit {
+                                    span: DUMMY_SP,
+                                    elems: prefix_items
+                                        .iter()
+                                        .map(|it| {
+                                            Some(ExprOrSpread {
+                                                spread: None,
+                                                expr: Self::make_cb(Self::decode_expr(it, true))
+                                                    .into(),
+                                            })
+                                        })
+                                        .collect(),
+                                })),
+                            })
+                            .into(),
+                        )],
+                    }),
+                    Expr::Object(ObjectLit {
+                        span: DUMMY_SP,
+                        props: vec![PropOrSpread::Prop(
+                            Prop::KeyValue(KeyValueProp {
+                                key: PropName::Ident(Ident {
+                                    span: DUMMY_SP,
+                                    sym: "items".into(),
+                                    optional: false,
+                                }),
+                                value: Box::new(match items {
+                                    Some(v) => Self::decode_expr(v, true),
+                                    None => Expr::Lit(Lit::Null(Null { span: DUMMY_SP })),
+                                }),
+                            })
+                            .into(),
+                        )],
+                    }),
+                ],
+            ),
+            JsonSchema::AnyOf(vs) => {
+                Self::decode_union_or_intersection("decodeAnyOf", required, vs)
+            }
+            JsonSchema::AllOf(vs) => {
+                Self::decode_union_or_intersection("decodeAllOf", required, vs)
+            }
+            JsonSchema::Const(json) => {
+                Self::decode_call_extra("decodeConst", required, vec![json.clone().to_expr()])
+            }
             JsonSchema::Codec(format) => Self::decode_call_extra(
                 "decodeCodec",
                 required,

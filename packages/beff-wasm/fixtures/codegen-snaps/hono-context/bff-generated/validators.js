@@ -2,7 +2,9 @@
 
 function buildError(ctx, kind) {
   ctx.errors.push({
-    kind
+    kind,
+    path: [],
+    received: 'todo',
   })
 }
 
@@ -55,7 +57,9 @@ function decodeNumber(ctx, input, required) {
   if (!required && input == null) {
     return input;
   }
-
+  if (typeof input === "number") {
+    return input;
+  }
   if (isNumeric(input)) {
     return Number(input);
   }
@@ -64,13 +68,99 @@ function decodeNumber(ctx, input, required) {
 }
 
 function decodeCodec(ctx, input, required, codec) {
-  throw new Error("not implemented")
+  if (!required && input == null) {
+    return input;
+  }
+  switch (codec) {
+    case "Codec::ISO8061": {
+      const d = new Date(input);
+      if (isNaN(d.getTime())) {
+        return buildError(ctx, "notISO8061")
+      }
+      return d;
+    }
+  }
+  return buildError(ctx, "unknownCodec:"+codec)
 }
 
 function decodeStringWithFormat(ctx, input, required, format) {
-  throw new Error("not implemented")
+  if (!required && input == null) {
+    return input;
+  }
+  if (typeof input === 'string') {
+    if (isCustomFormatValid(format, input)) {
+      return input;
+    }
+    return buildError(ctx, "notCustomFormat:"+format)
+  }
+  return buildError(ctx, "notString")
 }
-
+function decodeAnyOf(ctx, input, required, vs) {
+  if (!required && input == null) {
+    return input;
+  }
+  const errors = [];
+  for (const v of vs) {
+    const validatorCtx = {
+      errors: [],
+    };
+    const new_value = v(validatorCtx, input);
+    const validation_result = validatorCtx.errors;
+    if (validation_result.length === 0) {
+      return new_value;
+    }
+    errors.push(...validation_result);
+  }
+  return buildError(ctx, "notAnyOf")
+}
+function decodeAllOf(ctx, input, required, vs) {
+  if (!required && input == null) {
+    return input;
+  }
+  throw new Error("decodeAllOf not implemented");
+}
+function decodeTuple(ctx, input, required, vs) {
+  if (!required && input == null) {
+    return input;
+  }
+  throw new Error("decodeTuple not implemented");
+}
+function decodeBoolean(ctx, input, required, ) {
+  if (!required && input == null) {
+    return input;
+  }
+  if (typeof input === "boolean") {
+    return input;
+  }
+  if (input === "true" || input === "false") {
+    return (input === "true");
+  }
+  if (input === "1" || input === "0") {
+    return (input === "1");
+  }
+  return buildError(ctx, "notBoolean")
+}
+function decodeAny(ctx, input, required) {
+  return input;
+}
+function decodeNull(ctx, input, required) {
+  if (!required && input == null) {
+    return input;
+  }
+  if (input === null) {
+    return input;
+  }
+  return buildError(ctx, "notNull")
+}
+function decodeConst(ctx, input, required, constValue) {
+  if (!required && input == null) {
+    return input;
+  }
+  if (input === constValue) {
+    return input;
+  }
+  return buildError(ctx, "notConst")
+}
 
 
 
@@ -78,20 +168,15 @@ const stringPredicates = {}
 function registerStringFormat(name, predicate) {
   stringPredicates[name] = predicate;
 }
-function isCodecInvalid(key, value) {
-  if (key === 'Codec::ISO8061') {
-    return isNaN(Date.parse(value));
-  }
-  throw new Error("unknown codec: " + key);
-}
-function isCustomFormatInvalid(key, value) {
+
+function isCustomFormatValid(key, value) {
   const predicate = stringPredicates[key];
   if (predicate == null) {
     throw new Error("unknown string format: " + key);
   }
-  return !predicate(value);
+  return predicate(value);
 }
 
 const validators = {};
 
-export default { decodeObject, decodeArray, decodeString, decodeNumber, decodeCodec, decodeStringWithFormat, validators, isCustomFormatInvalid, isCodecInvalid, registerStringFormat };
+export default { decodeObject, decodeArray, decodeString, decodeNumber, decodeCodec, decodeStringWithFormat, decodeAnyOf, decodeAllOf, decodeBoolean, decodeAny, decodeTuple, decodeNull, decodeConst, validators, isCustomFormatValid, registerStringFormat };

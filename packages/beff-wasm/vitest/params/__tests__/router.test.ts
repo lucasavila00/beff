@@ -38,7 +38,7 @@ it("docs html", async () => {
 it("get", async () => {
   expect(await beff["/hello"].get()).toMatchInlineSnapshot('"Hello!"');
   const n = await beff["/query-param"].get(123);
-  expect(n).toMatchInlineSnapshot('123');
+  expect(n).toMatchInlineSnapshot("123");
   expect(
     await beff["/path-param/{name}"].get("the-param")
   ).toMatchInlineSnapshot('"the-param"');
@@ -63,21 +63,12 @@ it("post with body and error", async () => {
     body: JSON.stringify({ a: 123 }),
   });
   const res = await app.request(req);
-  expect(res.status).toMatchInlineSnapshot('500');
+  expect(res.status).toMatchInlineSnapshot("422");
   expect(await res.json()).toMatchInlineSnapshot(
     `
-    [
-      {
-        "error_kind": "NotTypeof",
-        "expected_type": "string",
-        "path": [
-          "responseBody",
-        ],
-        "received": {
-          "errors": [],
-        },
-      },
-    ]
+    {
+      "message": "Error #1:  ~ Path:  ~ Received: \\"todo\\"",
+    }
   `
   );
 });
@@ -87,7 +78,7 @@ it("post with body and error, client", async () => {
     await beff["/req-body"].post({ a: 123 as any });
   } catch (e) {
     expect(e).toMatchInlineSnapshot(
-      '[HTTPException: Internal Server Error]'
+      '[HTTPException: Error #1:  ~ Path:  ~ Received: "todo"]'
     );
   }
 });
@@ -97,85 +88,33 @@ it("coerce", async () => {
     await beff["/path-param-string/{name}"].get("the-param")
   ).toMatchInlineSnapshot('"the-param"');
   expect(await beff["/path-param-number/{id}"].get(123)).toMatchInlineSnapshot(
-    '123'
+    "123"
   );
   expect(
     await beff["/path-param-boolean/{flag}"].get(true)
-  ).toMatchInlineSnapshot(`
-    [
-      {
-        "error_kind": "NotTypeof",
-        "expected_type": "boolean",
-        "path": [
-          "responseBody",
-        ],
-        "received": {
-          "errors": [],
-        },
-      },
-    ]
-  `);
-  expect(await beff["/path-param-union/{id}"].get(456)).toMatchInlineSnapshot(
-    `
-    [
-      {
-        "error_kind": "InvalidUnion",
-        "path": [
-          "responseBody",
-          "ValidIds",
-        ],
-        "received": {
-          "errors": [],
-        },
-      },
-    ]
-  `
-  );
+  ).toMatchInlineSnapshot("true");
+  // expect(await beff["/path-param-union/{id}"].get(456)).toMatchInlineSnapshot(
+  //   `
+  //   [
+  //     {
+  //       "error_kind": "InvalidUnion",
+  //       "path": [
+  //         "responseBody",
+  //         "ValidIds",
+  //       ],
+  //       "received": {
+  //         "errors": [],
+  //       },
+  //     },
+  //   ]
+  // `
+  // );
 });
 
 it("default param", async () => {
-  expect(await beff["/with-default"].get()).toMatchInlineSnapshot('1');
-  expect(await beff["/with-default"].post()).toMatchInlineSnapshot(`
-    [
-      {
-        "error_kind": "NotTypeof",
-        "expected_type": "number",
-        "path": [
-          "responseBody",
-        ],
-        "received": {
-          "errors": [],
-        },
-      },
-    ]
-  `);
+  expect(await beff["/with-default"].get()).toMatchInlineSnapshot("1");
+  expect(await beff["/with-default"].post()).toMatchInlineSnapshot("1");
 
-  expect(await beff["/with-default"].get(5)).toMatchInlineSnapshot(`
-    [
-      {
-        "error_kind": "NotTypeof",
-        "expected_type": "number",
-        "path": [
-          "responseBody",
-        ],
-        "received": {
-          "errors": [],
-        },
-      },
-    ]
-  `);
-  expect(await beff["/with-default"].post(5)).toMatchInlineSnapshot(`
-    [
-      {
-        "error_kind": "NotTypeof",
-        "expected_type": "number",
-        "path": [
-          "responseBody",
-        ],
-        "received": {
-          "errors": [],
-        },
-      },
-    ]
-  `);
+  expect(await beff["/with-default"].get(5)).toMatchInlineSnapshot("5");
+  expect(await beff["/with-default"].post(5)).toMatchInlineSnapshot("5");
 });

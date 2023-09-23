@@ -38,6 +38,8 @@ it("works on recursive type", () => {
       "errors": [
         {
           "kind": "notArray",
+          "path": [],
+          "received": "todo",
         },
       ],
       "success": false,

@@ -1,5 +1,5 @@
 
-import vals from "./validators.js"; const { decodeObject, decodeArray, decodeString, decodeNumber, decodeCodec, decodeStringWithFormat, validators, registerStringFormat, isCustomFormatInvalid, isCodecInvalid } = vals;
+import vals from "./validators.js"; const { decodeObject, decodeArray, decodeString, decodeNumber, decodeCodec, decodeStringWithFormat, decodeAnyOf, decodeAllOf, decodeBoolean, decodeAny, decodeTuple, decodeNull, decodeConst, validators, registerStringFormat, c } = vals;
 const buildParsersInput = {
     "NotPublicRenamed": function(ctx, input) {
         return validators.NotPublic(ctx, input, true);
@@ -17,10 +17,10 @@ const buildParsersInput = {
         return decodeArray(ctx, input, true, (ctx, input)=>(validators.User(ctx, input, true)));
     },
     "float": function(ctx, input) {
-        return todConsto(ctx, input, true);
+        return decodeConst(ctx, input, true, 123.456);
     },
     "int": function(ctx, input) {
-        return todConsto(ctx, input, true);
+        return decodeConst(ctx, input, true, 123);
     },
     "union": function(ctx, input) {
         return validators.UnionNested(ctx, input, true);

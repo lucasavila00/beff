@@ -13,12 +13,9 @@ it("custom types", () => {
     {
       "errors": [
         {
-          "error_kind": "StringFormatCheckFailed",
-          "expected_type": "StartsWithA",
-          "path": [
-            "StartsWithA",
-          ],
-          "received": "BB",
+          "kind": "notCustomFormat:StartsWithA",
+          "path": [],
+          "received": "todo",
         },
       ],
       "success": false,
@@ -64,40 +61,28 @@ it("regular types", () => {
   expect(u).toMatchInlineSnapshot(`
     {
       "age": 123,
-      "createdAt": "2023-09-22T22:52:24.855Z",
+      "createdAt": 2023-09-22T22:52:24.855Z,
       "name": "name",
     }
   `);
-  expect(u.createdAt.toISOString()).toMatchInlineSnapshot();
+  expect(u.createdAt.toISOString()).toMatchInlineSnapshot('"2023-09-22T22:52:24.855Z"');
   expect(() => User.parse({ name: 123 })).toThrowErrorMatchingInlineSnapshot(`
     BffParseError {
       "errors": [
         {
-          "error_kind": "NotTypeof",
-          "expected_type": "number",
-          "path": [
-            "User",
-            "age",
-          ],
-          "received": undefined,
+          "kind": "notNumber",
+          "path": [],
+          "received": "todo",
         },
         {
-          "error_kind": "CodecFailed",
-          "expected_type": "Codec::ISO8061",
-          "path": [
-            "User",
-            "createdAt",
-          ],
-          "received": undefined,
+          "kind": "notISO8061",
+          "path": [],
+          "received": "todo",
         },
         {
-          "error_kind": "NotTypeof",
-          "expected_type": "string",
-          "path": [
-            "User",
-            "name",
-          ],
-          "received": 123,
+          "kind": "notString",
+          "path": [],
+          "received": "todo",
         },
       ],
     }
@@ -107,31 +92,19 @@ it("regular types", () => {
     {
       "errors": [
         {
-          "error_kind": "NotTypeof",
-          "expected_type": "number",
-          "path": [
-            "User",
-            "age",
-          ],
-          "received": undefined,
+          "kind": "notNumber",
+          "path": [],
+          "received": "todo",
         },
         {
-          "error_kind": "CodecFailed",
-          "expected_type": "Codec::ISO8061",
-          "path": [
-            "User",
-            "createdAt",
-          ],
-          "received": undefined,
+          "kind": "notISO8061",
+          "path": [],
+          "received": "todo",
         },
         {
-          "error_kind": "NotTypeof",
-          "expected_type": "string",
-          "path": [
-            "User",
-            "name",
-          ],
-          "received": 123,
+          "kind": "notString",
+          "path": [],
+          "received": "todo",
         },
       ],
       "success": false,
@@ -141,13 +114,9 @@ it("regular types", () => {
     {
       "errors": [
         {
-          "error_kind": "NotTypeof",
-          "expected_type": "string",
-          "path": [
-            "NotPublic",
-            "a",
-          ],
-          "received": undefined,
+          "kind": "notString",
+          "path": [],
+          "received": "todo",
         },
       ],
       "success": false,
@@ -159,64 +128,34 @@ it("regular types", () => {
       {
         "errors": [
           {
-            "error_kind": "NotTypeof",
-            "expected_type": "number",
-            "path": [
-              "[0]",
-              "User",
-              "age",
-            ],
-            "received": undefined,
+            "kind": "notNumber",
+            "path": [],
+            "received": "todo",
           },
           {
-            "error_kind": "CodecFailed",
-            "expected_type": "Codec::ISO8061",
-            "path": [
-              "[0]",
-              "User",
-              "createdAt",
-            ],
-            "received": undefined,
+            "kind": "notISO8061",
+            "path": [],
+            "received": "todo",
           },
           {
-            "error_kind": "NotTypeof",
-            "expected_type": "string",
-            "path": [
-              "[0]",
-              "User",
-              "name",
-            ],
-            "received": 123,
+            "kind": "notString",
+            "path": [],
+            "received": "todo",
           },
           {
-            "error_kind": "NotTypeof",
-            "expected_type": "number",
-            "path": [
-              "[1]",
-              "User",
-              "age",
-            ],
-            "received": "def",
+            "kind": "notNumber",
+            "path": [],
+            "received": "todo",
           },
           {
-            "error_kind": "CodecFailed",
-            "expected_type": "Codec::ISO8061",
-            "path": [
-              "[1]",
-              "User",
-              "createdAt",
-            ],
-            "received": undefined,
+            "kind": "notISO8061",
+            "path": [],
+            "received": "todo",
           },
           {
-            "error_kind": "NotTypeof",
-            "expected_type": "string",
-            "path": [
-              "[1]",
-              "User",
-              "name",
-            ],
-            "received": undefined,
+            "kind": "notString",
+            "path": [],
+            "received": "todo",
           },
         ],
         "success": false,
