@@ -223,8 +223,11 @@ function decodeNull(ctx, input, required) {
   if (!required && input == null) {
     return input;
   }
-  if (input === null) {
-    return input;
+  if (input == "null" || input == "undefined") {
+    return null;
+  }
+  if (input == null) {
+    return null;
   }
   return buildError(input, ctx,  "expected null")
 }
@@ -329,7 +332,7 @@ function EncodeAllTypes(input) {
                     b: input.b
                 })
         ], input.intersection),
-        null: input.null,
+        null: (input.null ?? null),
         numberLiteral: input.numberLiteral,
         optionalType: input.optionalType.map((input)=>(input)),
         stringLiteral: input.stringLiteral,
@@ -343,7 +346,7 @@ function EncodeAllTypes(input) {
             ...(input.tupleWithRest.slice(2).map((input)=>(input)))
         ],
         typeReference: encoders.User(input.typeReference),
-        undefined: input.undefined,
+        undefined: (input.undefined ?? null),
         unionOfLiterals: encodeAnyOf([
             (input)=>(input),
             (input)=>(input),
@@ -354,7 +357,7 @@ function EncodeAllTypes(input) {
             (input)=>(input)
         ], input.unionOfTypes),
         unionWithNull: encodeAnyOf([
-            (input)=>(input),
+            (input)=>((input ?? null)),
             (input)=>(input),
             (input)=>(input.map((input)=>(encoders.User(input))))
         ], input.unionWithNull),
