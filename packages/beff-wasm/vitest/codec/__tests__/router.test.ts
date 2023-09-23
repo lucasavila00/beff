@@ -12,9 +12,13 @@ const beff = buildHonoTestClient<typeof router>({
 
 it("works", async () => {
   expect(
-    await beff["/hello"].post({ a: new Date("2023-09-23T02:49:43.980Z") })
+    (
+      await beff["/hello"].post({ a: new Date("2023-09-23T02:49:43.980Z") })
+    ).toISOString()
   ).toMatchInlineSnapshot('"2023-09-23T02:49:43.980Z"');
   expect(
-    await beff["/hello"].get(new Date("2023-09-23T02:49:43.980Z"))
+    (
+      await beff["/hello"].get(new Date("2023-09-23T02:49:43.980Z"))
+    ).toISOString()
   ).toMatchInlineSnapshot('"2023-09-23T02:49:43.000Z"');
 });

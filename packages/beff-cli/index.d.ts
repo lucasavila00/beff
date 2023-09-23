@@ -1,21 +1,16 @@
 export type Header<T> = T;
 export type StringFormat<Tag extends string> = string & { __customType: Tag };
 
-export type MetaParamClient = {
+export type MetaParamServer = {
   type: "path" | "query" | "header" | "body" | "context";
   name: string;
   required: boolean;
-};
-
-export type MetaParamServer = MetaParamClient & {
   validator: any;
 };
-export type HandlerMetaClient = {
+export type HandlerMetaServer = {
   method_kind: "get" | "post" | "put" | "delete" | "patch" | "options" | "use";
   params: MetaParamClient[];
   pattern: string;
-};
-export type HandlerMetaServer = HandlerMetaClient & {
   return_validator: any;
   return_encoder: any;
   params: MetaParamServer[];

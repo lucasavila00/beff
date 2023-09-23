@@ -87,6 +87,15 @@ function decodeNumber(ctx, input, required) {
   return buildError(input, ctx,  "expected number")
 }
 
+function encodeCodec(codec, value) {
+  switch (codec) {
+    case "Codec::ISO8061": {
+      return value.toISOString();
+    }
+  }
+  throw new Error("encode - codec not found: "+codec);
+}
+
 function decodeCodec(ctx, input, required, codec) {
   if (!required && input == null) {
     return input;
@@ -180,6 +189,7 @@ function decodeConst(ctx, input, required, constValue) {
 
 
 
+
 const stringPredicates = {}
 function registerStringFormat(name, predicate) {
   stringPredicates[name] = predicate;
@@ -200,7 +210,7 @@ function UserEntityOriginal(ctx, input) {
 }
 function EncodeUserEntityOriginal(input) {
     return {
-        id: input
+        id: input.id
     };
 }
 function Abc123(ctx, input) {
@@ -210,7 +220,7 @@ function Abc123(ctx, input) {
 }
 function EncodeAbc123(input) {
     return {
-        a: input
+        a: input.a
     };
 }
 function Def(ctx, input) {
@@ -220,7 +230,7 @@ function Def(ctx, input) {
 }
 function EncodeDef(input) {
     return {
-        a: input
+        a: input.a
     };
 }
 function XYZ(ctx, input) {
@@ -230,7 +240,7 @@ function XYZ(ctx, input) {
 }
 function EncodeXYZ(input) {
     return {
-        a: input
+        a: input.a
     };
 }
 function AAAAA(ctx, input) {
@@ -254,4 +264,4 @@ const encoders = {
     AAAAA: EncodeAAAAA
 };
 
-export default { decodeObject, decodeArray, decodeString, decodeNumber, decodeCodec, decodeStringWithFormat, decodeAnyOf, decodeAllOf, decodeBoolean, decodeAny, decodeTuple, decodeNull, decodeConst, validators, encoders, isCustomFormatValid, registerStringFormat };
+export default { decodeObject, decodeArray, decodeString, decodeNumber, decodeCodec, decodeStringWithFormat, decodeAnyOf, decodeAllOf, decodeBoolean, decodeAny, decodeTuple, decodeNull, decodeConst, encodeCodec, validators, encoders, isCustomFormatValid, registerStringFormat };

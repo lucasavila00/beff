@@ -87,6 +87,15 @@ function decodeNumber(ctx, input, required) {
   return buildError(input, ctx,  "expected number")
 }
 
+function encodeCodec(codec, value) {
+  switch (codec) {
+    case "Codec::ISO8061": {
+      return value.toISOString();
+    }
+  }
+  throw new Error("encode - codec not found: "+codec);
+}
+
 function decodeCodec(ctx, input, required, codec) {
   if (!required && input == null) {
     return input;
@@ -180,6 +189,7 @@ function decodeConst(ctx, input, required, constValue) {
 
 
 
+
 const stringPredicates = {}
 function registerStringFormat(name, predicate) {
   stringPredicates[name] = predicate;
@@ -268,42 +278,42 @@ function DataTypesKitchenSink(ctx, input) {
 }
 function EncodeDataTypesKitchenSink(input) {
     return {
-        array1: input.map((input)=>(input)),
-        array2: input.map((input)=>(input)),
+        array1: input.array1.map((input)=>(input)),
+        array2: input.array2.map((input)=>(input)),
         basic: {
-            a: input,
-            b: input,
-            c: input
+            a: input.basic.a,
+            b: input.basic.b,
+            c: input.basic.c
         },
-        enum: "todo",
+        enum: input.enum,
         literals: {
-            a: input,
-            b: input,
-            c: input
+            a: input.literals.a,
+            b: input.literals.b,
+            c: input.literals.c
         },
-        many_nullable: "todo",
-        nullable: "todo",
-        optional_prop: input,
-        str_template: input,
+        many_nullable: input.many_nullable,
+        nullable: input.nullable,
+        optional_prop: input.optional_prop,
+        str_template: input.str_template,
         tuple1: [
-            input
+            input.tuple1[0]
         ],
         tuple2: [
-            input,
-            input
+            input.tuple2[0],
+            input.tuple2[1]
         ],
         tuple_lit: [
-            input,
-            input,
-            input
+            input.tuple_lit[0],
+            input.tuple_lit[1],
+            input.tuple_lit[2]
         ],
         tuple_rest: [
-            input,
-            input,
-            ...input.map((input)=>(input))
+            input.tuple_rest[0],
+            input.tuple_rest[1],
+            ...(input.tuple_rest.slice(2).map((input)=>(input)))
         ],
-        union_of_many: "todo",
-        union_with_undefined: "todo"
+        union_of_many: input.union_of_many,
+        union_with_undefined: input.union_with_undefined
     };
 }
 function A(ctx, input) {
@@ -322,10 +332,10 @@ function User(ctx, input) {
 }
 function EncodeUser(input) {
     return {
-        entities: input.map((input)=>(encoders.UserEntity(input))),
-        id: input,
-        name: input,
-        optional_prop: input
+        entities: input.entities.map((input)=>(encoders.UserEntity(input))),
+        id: input.id,
+        name: input.name,
+        optional_prop: input.optional_prop
     };
 }
 function UserEntity(ctx, input) {
@@ -336,8 +346,8 @@ function UserEntity(ctx, input) {
 }
 function EncodeUserEntity(input) {
     return {
-        id: input,
-        idA: encoders.A(input)
+        id: input.id,
+        idA: encoders.A(input.idA)
     };
 }
 const validators = {
@@ -353,4 +363,4 @@ const encoders = {
     UserEntity: EncodeUserEntity
 };
 
-export default { decodeObject, decodeArray, decodeString, decodeNumber, decodeCodec, decodeStringWithFormat, decodeAnyOf, decodeAllOf, decodeBoolean, decodeAny, decodeTuple, decodeNull, decodeConst, validators, encoders, isCustomFormatValid, registerStringFormat };
+export default { decodeObject, decodeArray, decodeString, decodeNumber, decodeCodec, decodeStringWithFormat, decodeAnyOf, decodeAllOf, decodeBoolean, decodeAny, decodeTuple, decodeNull, decodeConst, encodeCodec, validators, encoders, isCustomFormatValid, registerStringFormat };

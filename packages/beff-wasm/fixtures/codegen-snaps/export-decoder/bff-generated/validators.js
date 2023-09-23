@@ -87,6 +87,15 @@ function decodeNumber(ctx, input, required) {
   return buildError(input, ctx,  "expected number")
 }
 
+function encodeCodec(codec, value) {
+  switch (codec) {
+    case "Codec::ISO8061": {
+      return value.toISOString();
+    }
+  }
+  throw new Error("encode - codec not found: "+codec);
+}
+
 function decodeCodec(ctx, input, required, codec) {
   if (!required && input == null) {
     return input;
@@ -180,6 +189,7 @@ function decodeConst(ctx, input, required, constValue) {
 
 
 
+
 const stringPredicates = {}
 function registerStringFormat(name, predicate) {
   stringPredicates[name] = predicate;
@@ -201,8 +211,8 @@ function User(ctx, input) {
 }
 function EncodeUser(input) {
     return {
-        age: input,
-        name: input
+        age: input.age,
+        name: input.name
     };
 }
 function Password(ctx, input) {
@@ -224,7 +234,7 @@ function A(ctx, input) {
     ]);
 }
 function EncodeA(input) {
-    return "todo";
+    return input;
 }
 function B(ctx, input) {
     return decodeAnyOf(ctx, input, true, [
@@ -233,7 +243,7 @@ function B(ctx, input) {
     ]);
 }
 function EncodeB(input) {
-    return "todo";
+    return input;
 }
 function D(ctx, input) {
     return decodeAnyOf(ctx, input, true, [
@@ -242,7 +252,7 @@ function D(ctx, input) {
     ]);
 }
 function EncodeD(input) {
-    return "todo";
+    return input;
 }
 function E(ctx, input) {
     return decodeAnyOf(ctx, input, true, [
@@ -251,7 +261,7 @@ function E(ctx, input) {
     ]);
 }
 function EncodeE(input) {
-    return "todo";
+    return input;
 }
 function UnionNestedNamed(ctx, input) {
     return decodeAnyOf(ctx, input, true, [
@@ -262,7 +272,7 @@ function UnionNestedNamed(ctx, input) {
     ]);
 }
 function EncodeUnionNestedNamed(input) {
-    return "todo";
+    return input;
 }
 function NotPublic(ctx, input) {
     return decodeObject(ctx, input, true, {
@@ -271,7 +281,7 @@ function NotPublic(ctx, input) {
 }
 function EncodeNotPublic(input) {
     return {
-        a: input
+        a: input.a
     };
 }
 function UnionNested(ctx, input) {
@@ -283,7 +293,7 @@ function UnionNested(ctx, input) {
     ]);
 }
 function EncodeUnionNested(input) {
-    return "todo";
+    return input;
 }
 const validators = {
     User: User,
@@ -310,4 +320,4 @@ const encoders = {
     UnionNested: EncodeUnionNested
 };
 
-export default { decodeObject, decodeArray, decodeString, decodeNumber, decodeCodec, decodeStringWithFormat, decodeAnyOf, decodeAllOf, decodeBoolean, decodeAny, decodeTuple, decodeNull, decodeConst, validators, encoders, isCustomFormatValid, registerStringFormat };
+export default { decodeObject, decodeArray, decodeString, decodeNumber, decodeCodec, decodeStringWithFormat, decodeAnyOf, decodeAllOf, decodeBoolean, decodeAny, decodeTuple, decodeNull, decodeConst, encodeCodec, validators, encoders, isCustomFormatValid, registerStringFormat };

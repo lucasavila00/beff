@@ -1,4 +1,4 @@
-import type { HandlerMetaClient } from "@beff/cli";
+import type { HandlerMetaServer } from "@beff/cli";
 // import { fetch, Request } from "@whatwg-node/fetch";
 export type NormalizeRouterItem<T> = T extends (
   ...args: infer I
@@ -34,7 +34,7 @@ export type ClientFromRouter<R> = {
 
 type HTTPMethod = "GET" | "POST" | "PUT" | "DELETE" | "PATCH" | "OPTIONS";
 
-type ClientRequestParams = { meta: HandlerMetaClient; params: unknown[] };
+type ClientRequestParams = { meta: HandlerMetaServer; params: unknown[] };
 export class BffRequest {
   public method: HTTPMethod;
   public path: string;
@@ -159,7 +159,7 @@ export class BffRequest {
 //   response: Response;
 // }
 export type BuildClientOptions = {
-  generated: { meta: HandlerMetaClient[] };
+  generated: { meta: HandlerMetaServer[] };
   fetchFn?: typeof fetch;
   baseUrl?: string;
   // plugins?: ClientPlugin[];
@@ -264,7 +264,11 @@ export function buildClient<T>(
       // }
 
       if (r.ok) {
-        return r.json();
+        const data = await r.json();
+        const parser = meta.return_validator;
+        const validatorCtx: any = {};
+
+        return parser(validatorCtx, data);
       }
       const text = await r.text();
       let json: any;

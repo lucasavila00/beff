@@ -123,6 +123,15 @@ function decodeNumber(ctx, input, required) {
   return buildError(input, ctx,  "expected number")
 }
 
+function encodeCodec(codec, value) {
+  switch (codec) {
+    case "Codec::ISO8061": {
+      return value.toISOString();
+    }
+  }
+  throw new Error("encode - codec not found: "+codec);
+}
+
 function decodeCodec(ctx, input, required, codec) {
   if (!required && input == null) {
     return input;
@@ -213,6 +222,7 @@ function decodeConst(ctx, input, required, constValue) {
   }
   return buildError(input, ctx,  "expected "+JSON.stringify(constValue))
 }
+
 `;
 const decodersExported = [
   "decodeObject",
@@ -228,6 +238,7 @@ const decodersExported = [
   "decodeTuple",
   "decodeNull",
   "decodeConst",
+  "encodeCodec",
 ];
 
 const buildParsers = `

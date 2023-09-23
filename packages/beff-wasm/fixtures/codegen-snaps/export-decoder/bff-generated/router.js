@@ -1,5 +1,5 @@
 
-import vals from "./validators.js"; const { decodeObject, decodeArray, decodeString, decodeNumber, decodeCodec, decodeStringWithFormat, decodeAnyOf, decodeAllOf, decodeBoolean, decodeAny, decodeTuple, decodeNull, decodeConst, validators, encoders, registerStringFormat, c } = vals;
+import vals from "./validators.js"; const { decodeObject, decodeArray, decodeString, decodeNumber, decodeCodec, decodeStringWithFormat, decodeAnyOf, decodeAllOf, decodeBoolean, decodeAny, decodeTuple, decodeNull, decodeConst, encodeCodec, validators, encoders, registerStringFormat, c } = vals;
 const meta = [
     {
         "method_kind": "get",
@@ -79,7 +79,7 @@ const meta = [
         ],
         "pattern": "/UnionNestedInline",
         "return_encoder": function(input) {
-            return "todo";
+            return input;
         },
         "return_validator": function(ctx, input) {
             return decodeAnyOf(ctx, input, true, [

@@ -14,7 +14,7 @@ it("get", async () => {
   expect(await beff["/{name}"].get("name")).toMatchInlineSnapshot(`
     {
       "age": 123,
-      "createdAt": "2023-09-22T22:29:39.488Z",
+      "createdAt": 2023-09-22T22:29:39.488Z,
       "name": "name",
     }
   `);

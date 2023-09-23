@@ -1,6 +1,5 @@
 import { Hono } from "hono";
 import {
-  HandlerMetaClient,
   HandlerMetaServer,
   MetaParamServer,
   OpenAPIDocument,
@@ -179,8 +178,8 @@ const handleMethod = async (
   const result = await handler(...resolverParams);
 
   const resValidated = decodeNoMessage(meta.return_validator, result);
-  // const resEncoded = meta.return_encoder(resValidated);
-  return c.hono.json(resValidated);
+  const resEncoded = meta.return_encoder(resValidated);
+  return c.hono.json(resEncoded);
 };
 
 const registerDocs = (app: Hono<any, any, any>, schema: any) => {
@@ -279,7 +278,7 @@ export function buildHonoApp(options: {
 
 export const buildHonoTestClient = <T>(options: {
   generated: {
-    meta: HandlerMetaClient[];
+    meta: HandlerMetaServer[];
   };
   app: Hono<any, any, any>;
   env?: any;

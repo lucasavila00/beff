@@ -87,6 +87,15 @@ function decodeNumber(ctx, input, required) {
   return buildError(input, ctx,  "expected number")
 }
 
+function encodeCodec(codec, value) {
+  switch (codec) {
+    case "Codec::ISO8061": {
+      return value.toISOString();
+    }
+  }
+  throw new Error("encode - codec not found: "+codec);
+}
+
 function decodeCodec(ctx, input, required, codec) {
   if (!required && input == null) {
     return input;
@@ -180,6 +189,7 @@ function decodeConst(ctx, input, required, constValue) {
 
 
 
+
 const stringPredicates = {}
 function registerStringFormat(name, predicate) {
   stringPredicates[name] = predicate;
@@ -251,33 +261,33 @@ function AllTypes(ctx, input) {
 }
 function EncodeAllTypes(input) {
     return {
-        allBooleans: input,
-        allNumbers: input,
-        allStrings: input,
-        any: input,
-        arrayOfStrings: input.map((input)=>(input)),
-        booleanLiteral: input,
-        interface: encoders.Post(input),
-        intersection: "todo",
-        null: input,
-        numberLiteral: input,
-        optionalType: input.map((input)=>(input)),
-        stringLiteral: input,
+        allBooleans: input.allBooleans,
+        allNumbers: input.allNumbers,
+        allStrings: input.allStrings,
+        any: input.any,
+        arrayOfStrings: input.arrayOfStrings.map((input)=>(input)),
+        booleanLiteral: input.booleanLiteral,
+        interface: encoders.Post(input.interface),
+        intersection: input.intersection,
+        null: input.null,
+        numberLiteral: input.numberLiteral,
+        optionalType: input.optionalType.map((input)=>(input)),
+        stringLiteral: input.stringLiteral,
         tuple: [
-            input,
-            input
+            input.tuple[0],
+            input.tuple[1]
         ],
         tupleWithRest: [
-            input,
-            input,
-            ...input.map((input)=>(input))
+            input.tupleWithRest[0],
+            input.tupleWithRest[1],
+            ...(input.tupleWithRest.slice(2).map((input)=>(input)))
         ],
-        typeReference: encoders.User(input),
-        undefined: input,
-        unionOfLiterals: "todo",
-        unionOfTypes: "todo",
-        unionWithNull: "todo",
-        unknown: input
+        typeReference: encoders.User(input.typeReference),
+        undefined: input.undefined,
+        unionOfLiterals: input.unionOfLiterals,
+        unionOfTypes: input.unionOfTypes,
+        unionWithNull: input.unionWithNull,
+        unknown: input.unknown
     };
 }
 function Post(ctx, input) {
@@ -288,8 +298,8 @@ function Post(ctx, input) {
 }
 function EncodePost(input) {
     return {
-        content: input,
-        id: input
+        content: input.content,
+        id: input.id
     };
 }
 function User(ctx, input) {
@@ -300,8 +310,8 @@ function User(ctx, input) {
 }
 function EncodeUser(input) {
     return {
-        friends: input.map((input)=>(encoders.User(input))),
-        id: input
+        friends: input.friends.map((input)=>(encoders.User(input))),
+        id: input.id
     };
 }
 const validators = {
@@ -315,4 +325,4 @@ const encoders = {
     User: EncodeUser
 };
 
-export default { decodeObject, decodeArray, decodeString, decodeNumber, decodeCodec, decodeStringWithFormat, decodeAnyOf, decodeAllOf, decodeBoolean, decodeAny, decodeTuple, decodeNull, decodeConst, validators, encoders, isCustomFormatValid, registerStringFormat };
+export default { decodeObject, decodeArray, decodeString, decodeNumber, decodeCodec, decodeStringWithFormat, decodeAnyOf, decodeAllOf, decodeBoolean, decodeAny, decodeTuple, decodeNull, decodeConst, encodeCodec, validators, encoders, isCustomFormatValid, registerStringFormat };

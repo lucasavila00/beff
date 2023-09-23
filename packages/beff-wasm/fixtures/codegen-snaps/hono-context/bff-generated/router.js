@@ -1,5 +1,5 @@
 
-import vals from "./validators.js"; const { decodeObject, decodeArray, decodeString, decodeNumber, decodeCodec, decodeStringWithFormat, decodeAnyOf, decodeAllOf, decodeBoolean, decodeAny, decodeTuple, decodeNull, decodeConst, validators, encoders, registerStringFormat, c } = vals;
+import vals from "./validators.js"; const { decodeObject, decodeArray, decodeString, decodeNumber, decodeCodec, decodeStringWithFormat, decodeAnyOf, decodeAllOf, decodeBoolean, decodeAny, decodeTuple, decodeNull, decodeConst, encodeCodec, validators, encoders, registerStringFormat, c } = vals;
 const meta = [
     {
         "method_kind": "use",
@@ -18,7 +18,7 @@ const meta = [
         "pattern": "/",
         "return_encoder": function(input) {
             return {
-                message: input
+                message: input.message
             };
         },
         "return_validator": function(ctx, input) {
@@ -37,8 +37,8 @@ const meta = [
         "pattern": "/posts",
         "return_encoder": function(input) {
             return {
-                ok: input,
-                posts: input.map((input)=>(input))
+                ok: input.ok,
+                posts: input.posts.map((input)=>(input))
             };
         },
         "return_validator": function(ctx, input) {
