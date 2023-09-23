@@ -63,6 +63,7 @@ model Project {
   updatedAt DateTime @updatedAt
 
   ProjectAuthorization ProjectAuthorization[]
+  ProjectVersion       ProjectVersion[]
 
   @@unique([fullName])
 }
@@ -76,4 +77,19 @@ model ProjectAuthorization {
   user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([projectId, userId])
+}
+
+model ProjectVersion {
+  id        String @id @default(cuid())
+  projectId String
+  version   String
+
+  branch     String
+  commitHash String
+  schema     String
+  updatedAt  DateTime @updatedAt
+
+  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  @@unique([projectId, version, branch, commitHash])
 }

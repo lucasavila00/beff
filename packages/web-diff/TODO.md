@@ -1,2 +1,1 @@
 - [ ] react-query & toast
-- [ ] ds for projects

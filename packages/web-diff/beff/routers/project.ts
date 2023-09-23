@@ -6,7 +6,19 @@ export type BeffProject = {
   fullName: string;
   updatedAt: Date;
 };
+export type ProjectVersion = {
+  id: string;
+  projectId: string;
+  version: string;
+  updatedAt: Date;
+  schema: string;
+};
+
 export const ProjectRouter = {
+  "/project/{id}/versions": {
+    get: (_c: Ctx, id: string): Promise<ProjectVersion[]> =>
+      prisma.projectVersion.findMany({ where: { projectId: id } }),
+  },
   "/project/{id}": {
     get: (_c: Ctx, id: string): Promise<BeffProject | null> =>
       prisma.project.findUnique({ where: { id } }),
