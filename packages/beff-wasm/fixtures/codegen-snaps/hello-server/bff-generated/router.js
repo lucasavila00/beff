@@ -1,65 +1,5 @@
 
-import vals from "./validators.js"; const { validators, add_path_to_errors, registerStringFormat, isCustomFormatInvalid } = vals;
-
-
-function CoercionOk(data) {
-  return {
-    ok: true,
-    data,
-  }
-}
-
-function CoercionNoop(data) {
-  return {
-    ok: false,
-    data,
-  }
-}
-  
-
-function coerce_string(input) {
-  if (typeof input === "string") {
-    return CoercionOk(input)
-  }
-  return CoercionNoop(input);
-}
-const isNumeric = (num) =>
-  (typeof num === "number" || (typeof num === "string" && num.trim() !== "")) &&
-  !isNaN(num );
-function coerce_number(input) {
-  if (input == null) {
-    return CoercionNoop(input);
-  }
-  if (isNumeric(input)) {
-    return CoercionOk(Number(input));
-  }
-  return CoercionNoop(input);
-}
-function coerce_boolean(input) {
-  if (input == null) {
-    return CoercionNoop(input);
-  }
-  if (input === "true" || input === "false") {
-    return CoercionOk(input === "true");
-  }
-  if (input === "1" || input === "0") {
-    return CoercionOk(input === "1");
-  }
-  return CoercionNoop(input);
-}
-function coerce_union(input, ...cases) {
-  if (input == null) {
-    return CoercionNoop(input);
-  }
-  for (const c of cases) {
-    const r = c(input);
-    if (r.ok) {
-      return r;
-    }
-  }
-  return CoercionNoop(input);
-}
-
+import vals from "./validators.js"; const { decodeObject, decodeArray, decodeString, decodeNumber, decodeCodec, decodeStringWithFormat, decodeAnyOf, decodeAllOf, decodeBoolean, decodeAny, decodeTuple, decodeNull, decodeConst, encodeCodec, encodeAnyOf, encodeAllOf, validators, encoders, registerStringFormat, c } = vals;
 const meta = [
     {
         "method_kind": "get",
@@ -68,76 +8,45 @@ const meta = [
                 "type": "context"
             },
             {
-                "coercer": function(input) {
-                    return coerce_number(input);
+                "encoder": function(input) {
+                    return input;
                 },
                 "name": "limit",
                 "required": false,
                 "type": "query",
-                "validator": function(input) {
-                    let error_acc_0 = [];
-                    if (input == null) {
-                        return error_acc_0;
-                    }
-                    if (typeof input != "number") {
-                        error_acc_0.push({
-                            "error_kind": "NotTypeof",
-                            "expected_type": "number",
-                            "path": [
-                                "limit"
-                            ],
-                            "received": input
-                        });
-                    }
-                    return error_acc_0;
+                "validator": function(ctx, input) {
+                    return decodeNumber(ctx, input, false);
                 }
             }
         ],
         "pattern": "/optional-query-param",
-        "return_validator": function(input) {
-            let error_acc_0 = [];
-            if (typeof input != "number") {
-                error_acc_0.push({
-                    "error_kind": "NotTypeof",
-                    "expected_type": "number",
-                    "path": [
-                        "responseBody"
-                    ],
-                    "received": input
-                });
-            }
-            return error_acc_0;
+        "return_encoder": function(input) {
+            return input;
+        },
+        "return_validator": function(ctx, input) {
+            return decodeNumber(ctx, input, true);
         }
     },
     {
         "method_kind": "get",
         "params": [],
         "pattern": "/data-types-kitchen-sink",
-        "return_validator": function(input) {
-            let error_acc_0 = [];
-            error_acc_0.push(...add_path_to_errors(validators.DataTypesKitchenSink(input), [
-                "responseBody"
-            ]));
-            return error_acc_0;
+        "return_encoder": function(input) {
+            return encoders.DataTypesKitchenSink(input);
+        },
+        "return_validator": function(ctx, input) {
+            return validators.DataTypesKitchenSink(ctx, input, true);
         }
     },
     {
         "method_kind": "get",
         "params": [],
         "pattern": "/anon-func",
-        "return_validator": function(input) {
-            let error_acc_0 = [];
-            if (typeof input != "string") {
-                error_acc_0.push({
-                    "error_kind": "NotTypeof",
-                    "expected_type": "string",
-                    "path": [
-                        "responseBody"
-                    ],
-                    "received": input
-                });
-            }
-            return error_acc_0;
+        "return_encoder": function(input) {
+            return input;
+        },
+        "return_validator": function(ctx, input) {
+            return decodeString(ctx, input, true);
         }
     },
     {
@@ -147,56 +56,23 @@ const meta = [
                 "type": "context"
             },
             {
-                "coercer": function(input) {
-                    return coerce_string(input);
+                "encoder": function(input) {
+                    return input;
                 },
                 "name": "user_agent",
                 "required": true,
                 "type": "header",
-                "validator": function(input) {
-                    let error_acc_0 = [];
-                    if (typeof input != "string") {
-                        error_acc_0.push({
-                            "error_kind": "NotTypeof",
-                            "expected_type": "string",
-                            "path": [
-                                "user_agent"
-                            ],
-                            "received": input
-                        });
-                    }
-                    return error_acc_0;
+                "validator": function(ctx, input) {
+                    return decodeString(ctx, input, true);
                 }
             }
         ],
         "pattern": "/users",
-        "return_validator": function(input) {
-            let error_acc_0 = [];
-            if (Array.isArray(input)) {
-                for(let index = 0; index < input.length; index++){
-                    const array_item_1 = input[index];
-                    if (typeof array_item_1 != "string") {
-                        error_acc_0.push({
-                            "error_kind": "NotTypeof",
-                            "expected_type": "string",
-                            "path": [
-                                "responseBody",
-                                "[" + index + "]"
-                            ],
-                            "received": array_item_1
-                        });
-                    }
-                }
-            } else {
-                error_acc_0.push({
-                    "error_kind": "NotAnArray",
-                    "path": [
-                        "responseBody"
-                    ],
-                    "received": input
-                });
-            }
-            return error_acc_0;
+        "return_encoder": function(input) {
+            return input.map((input)=>(input));
+        },
+        "return_validator": function(ctx, input) {
+            return decodeArray(ctx, input, true, (ctx, input)=>(decodeString(ctx, input, true)));
         }
     },
     {
@@ -206,35 +82,23 @@ const meta = [
                 "type": "context"
             },
             {
-                "coercer": function(input) {
-                    return coerce_number(input);
+                "encoder": function(input) {
+                    return input;
                 },
                 "name": "id",
                 "required": true,
                 "type": "path",
-                "validator": function(input) {
-                    let error_acc_0 = [];
-                    if (typeof input != "number") {
-                        error_acc_0.push({
-                            "error_kind": "NotTypeof",
-                            "expected_type": "number",
-                            "path": [
-                                "id"
-                            ],
-                            "received": input
-                        });
-                    }
-                    return error_acc_0;
+                "validator": function(ctx, input) {
+                    return decodeNumber(ctx, input, true);
                 }
             }
         ],
         "pattern": "/users/{id}",
-        "return_validator": function(input) {
-            let error_acc_0 = [];
-            error_acc_0.push(...add_path_to_errors(validators.User(input), [
-                "responseBody"
-            ]));
-            return error_acc_0;
+        "return_encoder": function(input) {
+            return encoders.User(input);
+        },
+        "return_validator": function(ctx, input) {
+            return validators.User(ctx, input, true);
         }
     },
     {
@@ -244,42 +108,23 @@ const meta = [
                 "type": "context"
             },
             {
-                "coercer": function(input) {
-                    return coerce_string(input);
+                "encoder": function(input) {
+                    return input;
                 },
                 "name": "id",
                 "required": true,
                 "type": "path",
-                "validator": function(input) {
-                    let error_acc_0 = [];
-                    if (typeof input != "string") {
-                        error_acc_0.push({
-                            "error_kind": "NotTypeof",
-                            "expected_type": "string",
-                            "path": [
-                                "id"
-                            ],
-                            "received": input
-                        });
-                    }
-                    return error_acc_0;
+                "validator": function(ctx, input) {
+                    return decodeString(ctx, input, true);
                 }
             }
         ],
         "pattern": "/users2/{id}",
-        "return_validator": function(input) {
-            let error_acc_0 = [];
-            if (typeof input != "string") {
-                error_acc_0.push({
-                    "error_kind": "NotTypeof",
-                    "expected_type": "string",
-                    "path": [
-                        "responseBody"
-                    ],
-                    "received": input
-                });
-            }
-            return error_acc_0;
+        "return_encoder": function(input) {
+            return input;
+        },
+        "return_validator": function(ctx, input) {
+            return decodeString(ctx, input, true);
         }
     },
     {
@@ -289,99 +134,56 @@ const meta = [
                 "type": "context"
             },
             {
-                "coercer": function(input) {
-                    return coerce_string(input);
+                "encoder": function(input) {
+                    return input;
                 },
                 "name": "id",
                 "required": true,
                 "type": "path",
-                "validator": function(input) {
-                    let error_acc_0 = [];
-                    if (typeof input != "string") {
-                        error_acc_0.push({
-                            "error_kind": "NotTypeof",
-                            "expected_type": "string",
-                            "path": [
-                                "id"
-                            ],
-                            "received": input
-                        });
-                    }
-                    return error_acc_0;
+                "validator": function(ctx, input) {
+                    return decodeString(ctx, input, true);
                 }
             }
         ],
         "pattern": "/users2/{id}",
-        "return_validator": function(input) {
-            let error_acc_0 = [];
-            if (typeof input != "string") {
-                error_acc_0.push({
-                    "error_kind": "NotTypeof",
-                    "expected_type": "string",
-                    "path": [
-                        "responseBody"
-                    ],
-                    "received": input
-                });
-            }
-            return error_acc_0;
+        "return_encoder": function(input) {
+            return input;
+        },
+        "return_validator": function(ctx, input) {
+            return decodeString(ctx, input, true);
         }
     },
     {
         "method_kind": "get",
         "params": [],
         "pattern": "/users3",
-        "return_validator": function(input) {
-            let error_acc_0 = [];
-            if (typeof input != "string") {
-                error_acc_0.push({
-                    "error_kind": "NotTypeof",
-                    "expected_type": "string",
-                    "path": [
-                        "responseBody"
-                    ],
-                    "received": input
-                });
-            }
-            return error_acc_0;
+        "return_encoder": function(input) {
+            return input;
+        },
+        "return_validator": function(ctx, input) {
+            return decodeString(ctx, input, true);
         }
     },
     {
         "method_kind": "get",
         "params": [],
         "pattern": "/users4",
-        "return_validator": function(input) {
-            let error_acc_0 = [];
-            if (typeof input != "string") {
-                error_acc_0.push({
-                    "error_kind": "NotTypeof",
-                    "expected_type": "string",
-                    "path": [
-                        "responseBody"
-                    ],
-                    "received": input
-                });
-            }
-            return error_acc_0;
+        "return_encoder": function(input) {
+            return input;
+        },
+        "return_validator": function(ctx, input) {
+            return decodeString(ctx, input, true);
         }
     },
     {
         "method_kind": "post",
         "params": [],
         "pattern": "/users4",
-        "return_validator": function(input) {
-            let error_acc_0 = [];
-            if (typeof input != "string") {
-                error_acc_0.push({
-                    "error_kind": "NotTypeof",
-                    "expected_type": "string",
-                    "path": [
-                        "responseBody"
-                    ],
-                    "received": input
-                });
-            }
-            return error_acc_0;
+        "return_encoder": function(input) {
+            return input;
+        },
+        "return_validator": function(ctx, input) {
+            return decodeString(ctx, input, true);
         }
     }
 ];

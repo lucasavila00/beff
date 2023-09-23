@@ -58,8 +58,10 @@ model VerificationToken {
 }
 
 model Project {
-  id                   String                 @id @default(cuid())
-  fullName             String
+  id        String   @id @default(cuid())
+  fullName  String
+  updatedAt DateTime @updatedAt
+
   ProjectAuthorization ProjectAuthorization[]
 
   @@unique([fullName])

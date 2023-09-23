@@ -6,7 +6,7 @@ from:
 
         export default {
             "/hello": {
-                get: (c:Ctx, a: "a"|"b")  => {
+                get: (c:Ctx, a: "a"|"b") :string => {
                     return "world";
                 }
             }
@@ -16,7 +16,7 @@ to:
 
         export default {
             "/hello": {
-                get: (c:Ctx, a: "a") => {
+                get: (c:Ctx, a: "a") :string => {
                     return "world";
                 }
             }

@@ -37,12 +37,10 @@ it("works on recursive type", () => {
     {
       "errors": [
         {
-          "error_kind": "NotAnArray",
+          "message": "expected array",
           "path": [
-            "User",
             "friends",
             "[0]",
-            "User",
             "friends",
           ],
           "received": undefined,

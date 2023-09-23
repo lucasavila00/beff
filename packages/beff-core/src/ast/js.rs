@@ -19,12 +19,8 @@ pub enum Js {
     String(String),
     Array(Vec<Js>),
     Object(BTreeMap<String, Js>),
-    Decoder {
-        name_on_errors: Option<String>,
-        schema: JsonSchema,
-        required: bool,
-    },
-    Coercer(JsonSchema),
+    Decoder { schema: JsonSchema, required: bool },
+    Encoder { schema: JsonSchema, required: bool },
     Expr(Expr),
 }
 impl Js {
@@ -32,20 +28,13 @@ impl Js {
         Self::Object(vs.into_iter().collect())
     }
 
-    pub fn named_decoder(name: String, schema: JsonSchema, required: bool) -> Self {
-        Self::Decoder {
-            name_on_errors: Some(name),
-            schema,
-            required,
-        }
+    pub fn decoder(schema: JsonSchema, required: bool) -> Self {
+        Self::Decoder { schema, required }
     }
-    pub fn anon_decoder(schema: JsonSchema, required: bool) -> Self {
-        Self::Decoder {
-            name_on_errors: None,
-            schema,
-            required,
-        }
+    pub fn encoder(schema: JsonSchema, required: bool) -> Self {
+        Self::Encoder { schema, required }
     }
+
     pub fn to_string(self) -> String {
         let expr = self.to_expr();
 

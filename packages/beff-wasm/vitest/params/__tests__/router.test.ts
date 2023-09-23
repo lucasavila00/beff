@@ -2,7 +2,7 @@ import { it, expect } from "vitest";
 import { buildHonoApp, buildHonoTestClient } from "@beff/hono";
 import router from "../router";
 import generated from "../bff-generated/router";
-import generatedClient from "../bff-generated/client";
+import generatedClient from "../bff-generated/router";
 
 const app = buildHonoApp({ router, generated });
 const beff = buildHonoTestClient<typeof router>({
@@ -67,7 +67,7 @@ it("post with body and error", async () => {
   expect(await res.json()).toMatchInlineSnapshot(
     `
     {
-      "message": "Error #1: Expected string ~ Path: requestBody.a ~ Received: 123",
+      "message": "#0 [a] expected string, received: 123",
     }
   `
   );
@@ -78,7 +78,7 @@ it("post with body and error, client", async () => {
     await beff["/req-body"].post({ a: 123 as any });
   } catch (e) {
     expect(e).toMatchInlineSnapshot(
-      "[HTTPException: Error #1: Expected string ~ Path: requestBody.a ~ Received: 123]"
+      "[HTTPException: #0 [a] expected string, received: 123]"
     );
   }
 });
@@ -94,7 +94,7 @@ it("coerce", async () => {
     await beff["/path-param-boolean/{flag}"].get(true)
   ).toMatchInlineSnapshot("true");
   expect(await beff["/path-param-union/{id}"].get(456)).toMatchInlineSnapshot(
-    '"456"'
+    '456'
   );
 });
 

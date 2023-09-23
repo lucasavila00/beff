@@ -1,65 +1,5 @@
 
-import vals from "./validators.js"; const { validators, add_path_to_errors, registerStringFormat, isCustomFormatInvalid } = vals;
-
-
-function CoercionOk(data) {
-  return {
-    ok: true,
-    data,
-  }
-}
-
-function CoercionNoop(data) {
-  return {
-    ok: false,
-    data,
-  }
-}
-  
-
-function coerce_string(input) {
-  if (typeof input === "string") {
-    return CoercionOk(input)
-  }
-  return CoercionNoop(input);
-}
-const isNumeric = (num) =>
-  (typeof num === "number" || (typeof num === "string" && num.trim() !== "")) &&
-  !isNaN(num );
-function coerce_number(input) {
-  if (input == null) {
-    return CoercionNoop(input);
-  }
-  if (isNumeric(input)) {
-    return CoercionOk(Number(input));
-  }
-  return CoercionNoop(input);
-}
-function coerce_boolean(input) {
-  if (input == null) {
-    return CoercionNoop(input);
-  }
-  if (input === "true" || input === "false") {
-    return CoercionOk(input === "true");
-  }
-  if (input === "1" || input === "0") {
-    return CoercionOk(input === "1");
-  }
-  return CoercionNoop(input);
-}
-function coerce_union(input, ...cases) {
-  if (input == null) {
-    return CoercionNoop(input);
-  }
-  for (const c of cases) {
-    const r = c(input);
-    if (r.ok) {
-      return r;
-    }
-  }
-  return CoercionNoop(input);
-}
-
+import vals from "./validators.js"; const { decodeObject, decodeArray, decodeString, decodeNumber, decodeCodec, decodeStringWithFormat, decodeAnyOf, decodeAllOf, decodeBoolean, decodeAny, decodeTuple, decodeNull, decodeConst, encodeCodec, encodeAnyOf, encodeAllOf, validators, encoders, registerStringFormat, c } = vals;
 const meta = [
     {
         "method_kind": "get",
@@ -68,35 +8,23 @@ const meta = [
                 "type": "context"
             },
             {
-                "coercer": function(input) {
-                    return coerce_string(input);
+                "encoder": function(input) {
+                    return input;
                 },
                 "name": "name",
                 "required": true,
                 "type": "path",
-                "validator": function(input) {
-                    let error_acc_0 = [];
-                    if (typeof input != "string") {
-                        error_acc_0.push({
-                            "error_kind": "NotTypeof",
-                            "expected_type": "string",
-                            "path": [
-                                "name"
-                            ],
-                            "received": input
-                        });
-                    }
-                    return error_acc_0;
+                "validator": function(ctx, input) {
+                    return decodeString(ctx, input, true);
                 }
             }
         ],
         "pattern": "/{name}",
-        "return_validator": function(input) {
-            let error_acc_0 = [];
-            error_acc_0.push(...add_path_to_errors(validators.User(input), [
-                "responseBody"
-            ]));
-            return error_acc_0;
+        "return_encoder": function(input) {
+            return encoders.User(input);
+        },
+        "return_validator": function(ctx, input) {
+            return validators.User(ctx, input, true);
         }
     },
     {
@@ -106,50 +34,34 @@ const meta = [
                 "type": "context"
             },
             {
-                "coercer": function(input) {
-                    return coerce_string(input);
+                "encoder": function(input) {
+                    return input;
                 },
                 "name": "uuid",
                 "required": true,
                 "type": "path",
-                "validator": function(input) {
-                    let error_acc_0 = [];
-                    if (typeof input != "string") {
-                        error_acc_0.push({
-                            "error_kind": "NotTypeof",
-                            "expected_type": "string",
-                            "path": [
-                                "uuid"
-                            ],
-                            "received": input
-                        });
-                    }
-                    return error_acc_0;
+                "validator": function(ctx, input) {
+                    return decodeString(ctx, input, true);
                 }
             },
             {
-                "coercer": function(input) {
-                    return coerce_string(input);
+                "encoder": function(input) {
+                    return encoders.Password(input);
                 },
                 "name": "p",
                 "required": true,
                 "type": "query",
-                "validator": function(input) {
-                    let error_acc_0 = [];
-                    error_acc_0.push(...add_path_to_errors(validators.Password(input), [
-                        "p"
-                    ]));
-                    return error_acc_0;
+                "validator": function(ctx, input) {
+                    return validators.Password(ctx, input, true);
                 }
             }
         ],
         "pattern": "/check-uuid/{uuid}",
-        "return_validator": function(input) {
-            let error_acc_0 = [];
-            error_acc_0.push(...add_path_to_errors(validators.StartsWithA(input), [
-                "responseBody"
-            ]));
-            return error_acc_0;
+        "return_encoder": function(input) {
+            return encoders.StartsWithA(input);
+        },
+        "return_validator": function(ctx, input) {
+            return validators.StartsWithA(ctx, input, true);
         }
     },
     {
@@ -160,12 +72,11 @@ const meta = [
             }
         ],
         "pattern": "/UnionNested",
-        "return_validator": function(input) {
-            let error_acc_0 = [];
-            error_acc_0.push(...add_path_to_errors(validators.UnionNestedNamed(input), [
-                "responseBody"
-            ]));
-            return error_acc_0;
+        "return_encoder": function(input) {
+            return encoders.UnionNestedNamed(input);
+        },
+        "return_validator": function(ctx, input) {
+            return validators.UnionNestedNamed(ctx, input, true);
         }
     },
     {
@@ -176,91 +87,25 @@ const meta = [
             }
         ],
         "pattern": "/UnionNestedInline",
-        "return_validator": function(input) {
-            let error_acc_0 = [];
-            let is_ok_1 = false;
-            let error_acc_2 = [];
-            if (input != 1) {
-                error_acc_2.push({
-                    "error_kind": "NotEq",
-                    "expected_value": 1,
-                    "path": [
-                        "responseBody"
-                    ],
-                    "received": input
-                });
-            }
-            is_ok_1 = is_ok_1 || error_acc_2.length === 0;
-            let error_acc_3 = [];
-            if (input != 2) {
-                error_acc_3.push({
-                    "error_kind": "NotEq",
-                    "expected_value": 2,
-                    "path": [
-                        "responseBody"
-                    ],
-                    "received": input
-                });
-            }
-            is_ok_1 = is_ok_1 || error_acc_3.length === 0;
-            let error_acc_4 = [];
-            if (input != 3) {
-                error_acc_4.push({
-                    "error_kind": "NotEq",
-                    "expected_value": 3,
-                    "path": [
-                        "responseBody"
-                    ],
-                    "received": input
-                });
-            }
-            is_ok_1 = is_ok_1 || error_acc_4.length === 0;
-            let error_acc_5 = [];
-            if (input != 4) {
-                error_acc_5.push({
-                    "error_kind": "NotEq",
-                    "expected_value": 4,
-                    "path": [
-                        "responseBody"
-                    ],
-                    "received": input
-                });
-            }
-            is_ok_1 = is_ok_1 || error_acc_5.length === 0;
-            let error_acc_6 = [];
-            if (input != 5) {
-                error_acc_6.push({
-                    "error_kind": "NotEq",
-                    "expected_value": 5,
-                    "path": [
-                        "responseBody"
-                    ],
-                    "received": input
-                });
-            }
-            is_ok_1 = is_ok_1 || error_acc_6.length === 0;
-            let error_acc_7 = [];
-            if (input != 6) {
-                error_acc_7.push({
-                    "error_kind": "NotEq",
-                    "expected_value": 6,
-                    "path": [
-                        "responseBody"
-                    ],
-                    "received": input
-                });
-            }
-            is_ok_1 = is_ok_1 || error_acc_7.length === 0;
-            if (!(is_ok_1)) {
-                error_acc_0.push({
-                    "error_kind": "InvalidUnion",
-                    "path": [
-                        "responseBody"
-                    ],
-                    "received": input
-                });
-            }
-            return error_acc_0;
+        "return_encoder": function(input) {
+            return encodeAnyOf([
+                (input)=>(input),
+                (input)=>(input),
+                (input)=>(input),
+                (input)=>(input),
+                (input)=>(input),
+                (input)=>(input)
+            ], input);
+        },
+        "return_validator": function(ctx, input) {
+            return decodeAnyOf(ctx, input, true, [
+                (ctx, input)=>(decodeConst(ctx, input, true, 1)),
+                (ctx, input)=>(decodeConst(ctx, input, true, 2)),
+                (ctx, input)=>(decodeConst(ctx, input, true, 3)),
+                (ctx, input)=>(decodeConst(ctx, input, true, 4)),
+                (ctx, input)=>(decodeConst(ctx, input, true, 5)),
+                (ctx, input)=>(decodeConst(ctx, input, true, 6))
+            ]);
         }
     }
 ];

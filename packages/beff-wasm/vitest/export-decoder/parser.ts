@@ -6,6 +6,7 @@ export type NotPublic = {
 export type User = {
   name: string;
   age: number;
+  createdAt: Date;
 };
 
 export type StartsWithA = StringFormat<"StartsWithA">;

@@ -1,560 +1,371 @@
 
 
-function add_path_to_errors(errors, path) {
-  return errors.map((e) => ({ ...e, path: [...path, ...e.path] }));
+function pushPath(ctx, path) {
+  if (ctx.paths == null) {
+    ctx.paths = [];
+  }
+  ctx.paths.push(path);
 }
-    
+function popPath(ctx) {
+  if (ctx.paths == null) {
+    throw new Error("popPath: no paths");
+  }
+  return ctx.paths.pop();
+}
+function buildError(received, ctx, message, ) {
+  if (ctx.errors == null) {
+    ctx.errors = [];
+  }
+  ctx.errors.push({
+    message,
+    path: [...(ctx.paths??[])],
+    received
+  })
+}
+
+function decodeObject(ctx, input, required, data) {
+  if (!required && input == null) {
+    return input;
+  }
+  if (
+    typeof input === 'object' &&
+    !Array.isArray(input) &&
+    input !== null
+  ) {
+    const acc = {};
+    for (const [k, v] of Object.entries(data)) {
+      pushPath(ctx, k);
+      acc[k] = v(ctx, input[k]);
+      popPath(ctx);
+    }
+    return acc;
+  }
+  return buildError(input, ctx,  "expected object")
+}
+function decodeArray(ctx, input, required, data) {
+  if (!required && input == null) {
+    return input;
+  }
+  if (Array.isArray(input)) {
+    const acc = [];
+    for(let i = 0; i < input.length; i++) {
+      const v = input[i];
+      pushPath(ctx, '['+i+']');
+      acc.push(data(ctx, v));
+      popPath(ctx);
+    }
+    return acc;
+  }
+  return buildError(input, ctx,  "expected array")
+}
+function decodeString(ctx, input, required) {
+  if (!required && input == null) {
+    return input;
+  }
+
+  if (typeof input === 'string') {
+    return input;
+  }
+
+  return buildError(input, ctx,  "expected string")
+}
+const isNumeric = (num) =>
+  (typeof num === "number" || (typeof num === "string" && num.trim() !== "")) &&
+  !isNaN(num );
+
+function decodeNumber(ctx, input, required) {
+  if (!required && input == null) {
+    return input;
+  }
+  if (typeof input === "number") {
+    return input;
+  }
+  if (isNumeric(input)) {
+    return Number(input);
+  }
+
+  return buildError(input, ctx,  "expected number")
+}
+
+function encodeCodec(codec, value) {
+  switch (codec) {
+    case "Codec::ISO8061": {
+      return value.toISOString();
+    }
+    case "Codec::BigInt": {
+      return value.toString();
+    }
+  }
+  throw new Error("encode - codec not found: "+codec);
+}
+
+function decodeCodec(ctx, input, required, codec) {
+  if (!required && input == null) {
+    return input;
+  }
+  switch (codec) {
+    case "Codec::ISO8061": {
+      const d = new Date(input);
+      if (isNaN(d.getTime())) {
+        return buildError(input, ctx,  "expected ISO8061 date")
+      }
+      return d;
+    }
+    case "Codec::BigInt": {
+      if (typeof input === "bigint") {
+        return input;
+      }
+      if (typeof input === "number") {
+        return BigInt(input);
+      }
+      if (typeof input === "string") {
+        return BigInt(input);
+      }
+      return buildError(input, ctx,  "expected bigint")
+    }
+  }
+  return buildError(input, ctx,  "codec " + codec + " not implemented")
+}
+
+function decodeStringWithFormat(ctx, input, required, format) {
+  if (!required && input == null) {
+    return input;
+  }
+  if (typeof input === 'string') {
+    if (isCustomFormatValid(format, input)) {
+      return input;
+    }
+    return buildError(input, ctx,  "expected "+format)
+  }
+  return buildError(input, ctx,  "expected string")
+}
+function decodeAnyOf(ctx, input, required, vs) {
+  if (!required && input == null) {
+    return input;
+  }
+  for (const v of vs) {
+    const validatorCtx = {
+    };
+    const newValue = v(validatorCtx, input);
+    if (validatorCtx.errors == null) {
+      return newValue;
+    }
+  }
+  return buildError(input, ctx,  "expected one of")
+}
+function decodeAllOf(ctx, input, required, vs) {
+  if (!required && input == null) {
+    return input;
+  }
+  throw new Error("decodeAllOf not implemented");
+}
+function decodeTuple(ctx, input, required, vs) {
+  if (!required && input == null) {
+    return input;
+  }
+  throw new Error("decodeTuple not implemented");
+}
+function decodeBoolean(ctx, input, required, ) {
+  if (!required && input == null) {
+    return input;
+  }
+  if (typeof input === "boolean") {
+    return input;
+  }
+  if (input === "true" || input === "false") {
+    return (input === "true");
+  }
+  if (input === "1" || input === "0") {
+    return (input === "1");
+  }
+  return buildError(input, ctx,  "expected boolean")
+}
+function decodeAny(ctx, input, required) {
+  return input;
+}
+function decodeNull(ctx, input, required) {
+  if (!required && input == null) {
+    return input;
+  }
+  if (input === null) {
+    return input;
+  }
+  return buildError(input, ctx,  "expected null")
+}
+function decodeConst(ctx, input, required, constValue) {
+  if (!required && input == null) {
+    return input;
+  }
+  if (input == constValue) {
+    return constValue;
+  }
+  return buildError(input, ctx,  "expected "+JSON.stringify(constValue))
+}
+
+function encodeAllOf(cbs, value) {
+  throw new Error("encodeAllOf not implemented");
+}
+
+function encodeAnyOf(cbs, value) {
+  for (const cb of cbs) {
+    return cb(value);
+  }
+  return value
+}
+
+
 
 const stringPredicates = {}
 function registerStringFormat(name, predicate) {
   stringPredicates[name] = predicate;
 }
 
-function isCustomFormatInvalid(key, value) {
+function isCustomFormatValid(key, value) {
   const predicate = stringPredicates[key];
   if (predicate == null) {
     throw new Error("unknown string format: " + key);
   }
-  return !predicate(value);
+  return predicate(value);
 }
 
-function AllTypes(input) {
-    let error_acc_0 = [];
-    if (typeof input == "object" && input != null) {
-        if (typeof input["allBooleans"] != "boolean") {
-            error_acc_0.push({
-                "error_kind": "NotTypeof",
-                "expected_type": "boolean",
-                "path": [
-                    "AllTypes",
-                    "allBooleans"
-                ],
-                "received": input["allBooleans"]
-            });
-        }
-        if (typeof input["allNumbers"] != "number") {
-            error_acc_0.push({
-                "error_kind": "NotTypeof",
-                "expected_type": "number",
-                "path": [
-                    "AllTypes",
-                    "allNumbers"
-                ],
-                "received": input["allNumbers"]
-            });
-        }
-        if (typeof input["allStrings"] != "string") {
-            error_acc_0.push({
-                "error_kind": "NotTypeof",
-                "expected_type": "string",
-                "path": [
-                    "AllTypes",
-                    "allStrings"
-                ],
-                "received": input["allStrings"]
-            });
-        }
-        if (Array.isArray(input["arrayOfStrings"])) {
-            for(let index = 0; index < input["arrayOfStrings"].length; index++){
-                const array_item_1 = input["arrayOfStrings"][index];
-                if (typeof array_item_1 != "string") {
-                    error_acc_0.push({
-                        "error_kind": "NotTypeof",
-                        "expected_type": "string",
-                        "path": [
-                            "AllTypes",
-                            "arrayOfStrings",
-                            "[" + index + "]"
-                        ],
-                        "received": array_item_1
-                    });
-                }
-            }
-        } else {
-            error_acc_0.push({
-                "error_kind": "NotAnArray",
-                "path": [
-                    "AllTypes",
-                    "arrayOfStrings"
-                ],
-                "received": input["arrayOfStrings"]
-            });
-        }
-        if (input["booleanLiteral"] != true) {
-            error_acc_0.push({
-                "error_kind": "NotEq",
-                "expected_value": true,
-                "path": [
-                    "AllTypes",
-                    "booleanLiteral"
-                ],
-                "received": input["booleanLiteral"]
-            });
-        }
-        error_acc_0.push(...add_path_to_errors(validators.Post(input["interface"]), [
-            "AllTypes",
-            "interface"
-        ]));
-        if (typeof input["intersection"] == "object" && input["intersection"] != null) {
-            if (input["intersection"]["a"] != 1) {
-                error_acc_0.push({
-                    "error_kind": "NotEq",
-                    "expected_value": 1,
-                    "path": [
-                        "AllTypes",
-                        "intersection",
-                        "a"
-                    ],
-                    "received": input["intersection"]["a"]
-                });
-            }
-        } else {
-            error_acc_0.push({
-                "error_kind": "NotAnObject",
-                "path": [
-                    "AllTypes",
-                    "intersection"
-                ],
-                "received": input["intersection"]
-            });
-        }
-        if (typeof input["intersection"] == "object" && input["intersection"] != null) {
-            if (input["intersection"]["b"] != 2) {
-                error_acc_0.push({
-                    "error_kind": "NotEq",
-                    "expected_value": 2,
-                    "path": [
-                        "AllTypes",
-                        "intersection",
-                        "b"
-                    ],
-                    "received": input["intersection"]["b"]
-                });
-            }
-        } else {
-            error_acc_0.push({
-                "error_kind": "NotAnObject",
-                "path": [
-                    "AllTypes",
-                    "intersection"
-                ],
-                "received": input["intersection"]
-            });
-        }
-        if (input["null"] != null) {
-            error_acc_0.push({
-                "error_kind": "NotEq",
-                "expected_value": null,
-                "path": [
-                    "AllTypes",
-                    "null"
-                ],
-                "received": input["null"]
-            });
-        }
-        if (input["numberLiteral"] != 123) {
-            error_acc_0.push({
-                "error_kind": "NotEq",
-                "expected_value": 123,
-                "path": [
-                    "AllTypes",
-                    "numberLiteral"
-                ],
-                "received": input["numberLiteral"]
-            });
-        }
-        if (input["optionalType"] != null) {
-            if (Array.isArray(input["optionalType"])) {
-                for(let index = 0; index < input["optionalType"].length; index++){
-                    const array_item_2 = input["optionalType"][index];
-                    if (typeof array_item_2 != "number") {
-                        error_acc_0.push({
-                            "error_kind": "NotTypeof",
-                            "expected_type": "number",
-                            "path": [
-                                "AllTypes",
-                                "optionalType",
-                                "[" + index + "]"
-                            ],
-                            "received": array_item_2
-                        });
-                    }
-                }
-            } else {
-                error_acc_0.push({
-                    "error_kind": "NotAnArray",
-                    "path": [
-                        "AllTypes",
-                        "optionalType"
-                    ],
-                    "received": input["optionalType"]
-                });
-            }
-        }
-        if (input["stringLiteral"] != "a") {
-            error_acc_0.push({
-                "error_kind": "NotEq",
-                "expected_value": "a",
-                "path": [
-                    "AllTypes",
-                    "stringLiteral"
-                ],
-                "received": input["stringLiteral"]
-            });
-        }
-        if (Array.isArray(input["tuple"])) {
-            if (typeof input["tuple"][0] != "string") {
-                error_acc_0.push({
-                    "error_kind": "NotTypeof",
-                    "expected_type": "string",
-                    "path": [
-                        "AllTypes",
-                        "tuple",
-                        "[0]"
-                    ],
-                    "received": input["tuple"][0]
-                });
-            }
-            if (typeof input["tuple"][1] != "string") {
-                error_acc_0.push({
-                    "error_kind": "NotTypeof",
-                    "expected_type": "string",
-                    "path": [
-                        "AllTypes",
-                        "tuple",
-                        "[1]"
-                    ],
-                    "received": input["tuple"][1]
-                });
-            }
-        } else {
-            error_acc_0.push({
-                "error_kind": "NotAnArray",
-                "path": [
-                    "AllTypes",
-                    "tuple"
-                ],
-                "received": input["tuple"]
-            });
-        }
-        if (Array.isArray(input["tupleWithRest"])) {
-            if (typeof input["tupleWithRest"][0] != "string") {
-                error_acc_0.push({
-                    "error_kind": "NotTypeof",
-                    "expected_type": "string",
-                    "path": [
-                        "AllTypes",
-                        "tupleWithRest",
-                        "[0]"
-                    ],
-                    "received": input["tupleWithRest"][0]
-                });
-            }
-            if (typeof input["tupleWithRest"][1] != "string") {
-                error_acc_0.push({
-                    "error_kind": "NotTypeof",
-                    "expected_type": "string",
-                    "path": [
-                        "AllTypes",
-                        "tupleWithRest",
-                        "[1]"
-                    ],
-                    "received": input["tupleWithRest"][1]
-                });
-            }
-            if (Array.isArray(input["tupleWithRest"].slice(2))) {
-                for(let index = 0; index < input["tupleWithRest"].slice(2).length; index++){
-                    const array_item_3 = input["tupleWithRest"].slice(2)[index];
-                    if (typeof array_item_3 != "number") {
-                        error_acc_0.push({
-                            "error_kind": "NotTypeof",
-                            "expected_type": "number",
-                            "path": [
-                                "AllTypes",
-                                "tupleWithRest",
-                                "[" + index + "]",
-                                "[" + index + "]"
-                            ],
-                            "received": array_item_3
-                        });
-                    }
-                }
-            } else {
-                error_acc_0.push({
-                    "error_kind": "NotAnArray",
-                    "path": [
-                        "AllTypes",
-                        "tupleWithRest",
-                        "[" + index + "]"
-                    ],
-                    "received": input["tupleWithRest"].slice(2)
-                });
-            }
-        } else {
-            error_acc_0.push({
-                "error_kind": "NotAnArray",
-                "path": [
-                    "AllTypes",
-                    "tupleWithRest"
-                ],
-                "received": input["tupleWithRest"]
-            });
-        }
-        error_acc_0.push(...add_path_to_errors(validators.User(input["typeReference"]), [
-            "AllTypes",
-            "typeReference"
-        ]));
-        if (input["undefined"] != null) {
-            error_acc_0.push({
-                "error_kind": "NotEq",
-                "expected_value": null,
-                "path": [
-                    "AllTypes",
-                    "undefined"
-                ],
-                "received": input["undefined"]
-            });
-        }
-        let is_ok_4 = false;
-        let error_acc_5 = [];
-        if (input["unionOfLiterals"] != "a") {
-            error_acc_5.push({
-                "error_kind": "NotEq",
-                "expected_value": "a",
-                "path": [
-                    "AllTypes",
-                    "unionOfLiterals"
-                ],
-                "received": input["unionOfLiterals"]
-            });
-        }
-        is_ok_4 = is_ok_4 || error_acc_5.length === 0;
-        let error_acc_6 = [];
-        if (input["unionOfLiterals"] != "b") {
-            error_acc_6.push({
-                "error_kind": "NotEq",
-                "expected_value": "b",
-                "path": [
-                    "AllTypes",
-                    "unionOfLiterals"
-                ],
-                "received": input["unionOfLiterals"]
-            });
-        }
-        is_ok_4 = is_ok_4 || error_acc_6.length === 0;
-        let error_acc_7 = [];
-        if (input["unionOfLiterals"] != "c") {
-            error_acc_7.push({
-                "error_kind": "NotEq",
-                "expected_value": "c",
-                "path": [
-                    "AllTypes",
-                    "unionOfLiterals"
-                ],
-                "received": input["unionOfLiterals"]
-            });
-        }
-        is_ok_4 = is_ok_4 || error_acc_7.length === 0;
-        if (!(is_ok_4)) {
-            error_acc_0.push({
-                "error_kind": "InvalidUnion",
-                "path": [
-                    "AllTypes",
-                    "unionOfLiterals"
-                ],
-                "received": input["unionOfLiterals"]
-            });
-        }
-        let is_ok_8 = false;
-        let error_acc_9 = [];
-        if (typeof input["unionOfTypes"] != "string") {
-            error_acc_9.push({
-                "error_kind": "NotTypeof",
-                "expected_type": "string",
-                "path": [
-                    "AllTypes",
-                    "unionOfTypes"
-                ],
-                "received": input["unionOfTypes"]
-            });
-        }
-        is_ok_8 = is_ok_8 || error_acc_9.length === 0;
-        let error_acc_10 = [];
-        if (typeof input["unionOfTypes"] != "number") {
-            error_acc_10.push({
-                "error_kind": "NotTypeof",
-                "expected_type": "number",
-                "path": [
-                    "AllTypes",
-                    "unionOfTypes"
-                ],
-                "received": input["unionOfTypes"]
-            });
-        }
-        is_ok_8 = is_ok_8 || error_acc_10.length === 0;
-        if (!(is_ok_8)) {
-            error_acc_0.push({
-                "error_kind": "InvalidUnion",
-                "path": [
-                    "AllTypes",
-                    "unionOfTypes"
-                ],
-                "received": input["unionOfTypes"]
-            });
-        }
-        let is_ok_11 = false;
-        let error_acc_12 = [];
-        if (input["unionWithNull"] != null) {
-            error_acc_12.push({
-                "error_kind": "NotEq",
-                "expected_value": null,
-                "path": [
-                    "AllTypes",
-                    "unionWithNull"
-                ],
-                "received": input["unionWithNull"]
-            });
-        }
-        is_ok_11 = is_ok_11 || error_acc_12.length === 0;
-        let error_acc_13 = [];
-        if (typeof input["unionWithNull"] != "number") {
-            error_acc_13.push({
-                "error_kind": "NotTypeof",
-                "expected_type": "number",
-                "path": [
-                    "AllTypes",
-                    "unionWithNull"
-                ],
-                "received": input["unionWithNull"]
-            });
-        }
-        is_ok_11 = is_ok_11 || error_acc_13.length === 0;
-        let error_acc_14 = [];
-        if (Array.isArray(input["unionWithNull"])) {
-            for(let index = 0; index < input["unionWithNull"].length; index++){
-                const array_item_15 = input["unionWithNull"][index];
-                error_acc_14.push(...add_path_to_errors(validators.User(array_item_15), [
-                    "AllTypes",
-                    "unionWithNull",
-                    "[" + index + "]"
-                ]));
-            }
-        } else {
-            error_acc_14.push({
-                "error_kind": "NotAnArray",
-                "path": [
-                    "AllTypes",
-                    "unionWithNull"
-                ],
-                "received": input["unionWithNull"]
-            });
-        }
-        is_ok_11 = is_ok_11 || error_acc_14.length === 0;
-        if (!(is_ok_11)) {
-            error_acc_0.push({
-                "error_kind": "InvalidUnion",
-                "path": [
-                    "AllTypes",
-                    "unionWithNull"
-                ],
-                "received": input["unionWithNull"]
-            });
-        }
-    } else {
-        error_acc_0.push({
-            "error_kind": "NotAnObject",
-            "path": [
-                "AllTypes"
-            ],
-            "received": input
-        });
-    }
-    return error_acc_0;
+function AllTypes(ctx, input) {
+    return decodeObject(ctx, input, true, {
+        "allBooleans": (ctx, input)=>(decodeBoolean(ctx, input, true)),
+        "allNumbers": (ctx, input)=>(decodeNumber(ctx, input, true)),
+        "allStrings": (ctx, input)=>(decodeString(ctx, input, true)),
+        "any": (ctx, input)=>(decodeAny(ctx, input, true)),
+        "arrayOfStrings": (ctx, input)=>(decodeArray(ctx, input, true, (ctx, input)=>(decodeString(ctx, input, true)))),
+        "booleanLiteral": (ctx, input)=>(decodeConst(ctx, input, true, true)),
+        "interface": (ctx, input)=>(validators.Post(ctx, input, true)),
+        "intersection": (ctx, input)=>(decodeAllOf(ctx, input, true, [
+                (ctx, input)=>(decodeObject(ctx, input, true, {
+                        "a": (ctx, input)=>(decodeConst(ctx, input, true, 1))
+                    })),
+                (ctx, input)=>(decodeObject(ctx, input, true, {
+                        "b": (ctx, input)=>(decodeConst(ctx, input, true, 2))
+                    }))
+            ])),
+        "null": (ctx, input)=>(decodeNull(ctx, input, true)),
+        "numberLiteral": (ctx, input)=>(decodeConst(ctx, input, true, 123)),
+        "optionalType": (ctx, input)=>(decodeArray(ctx, input, false, (ctx, input)=>(decodeNumber(ctx, input, true)))),
+        "stringLiteral": (ctx, input)=>(decodeConst(ctx, input, true, "a")),
+        "tuple": (ctx, input)=>(decodeTuple(ctx, input, true, {
+                prefix: [
+                    (ctx, input)=>(decodeString(ctx, input, true)),
+                    (ctx, input)=>(decodeString(ctx, input, true))
+                ]
+            }, {
+                items: null
+            })),
+        "tupleWithRest": (ctx, input)=>(decodeTuple(ctx, input, true, {
+                prefix: [
+                    (ctx, input)=>(decodeString(ctx, input, true)),
+                    (ctx, input)=>(decodeString(ctx, input, true))
+                ]
+            }, {
+                items: decodeNumber(ctx, input, true)
+            })),
+        "typeReference": (ctx, input)=>(validators.User(ctx, input, true)),
+        "undefined": (ctx, input)=>(decodeNull(ctx, input, true)),
+        "unionOfLiterals": (ctx, input)=>(decodeAnyOf(ctx, input, true, [
+                (ctx, input)=>(decodeConst(ctx, input, true, "a")),
+                (ctx, input)=>(decodeConst(ctx, input, true, "b")),
+                (ctx, input)=>(decodeConst(ctx, input, true, "c"))
+            ])),
+        "unionOfTypes": (ctx, input)=>(decodeAnyOf(ctx, input, true, [
+                (ctx, input)=>(decodeString(ctx, input, true)),
+                (ctx, input)=>(decodeNumber(ctx, input, true))
+            ])),
+        "unionWithNull": (ctx, input)=>(decodeAnyOf(ctx, input, true, [
+                (ctx, input)=>(decodeNull(ctx, input, true)),
+                (ctx, input)=>(decodeNumber(ctx, input, true)),
+                (ctx, input)=>(decodeArray(ctx, input, true, (ctx, input)=>(validators.User(ctx, input, true))))
+            ])),
+        "unknown": (ctx, input)=>(decodeAny(ctx, input, true))
+    });
 }
-function Post(input) {
-    let error_acc_0 = [];
-    if (typeof input == "object" && input != null) {
-        if (typeof input["content"] != "string") {
-            error_acc_0.push({
-                "error_kind": "NotTypeof",
-                "expected_type": "string",
-                "path": [
-                    "Post",
-                    "content"
-                ],
-                "received": input["content"]
-            });
-        }
-        if (typeof input["id"] != "string") {
-            error_acc_0.push({
-                "error_kind": "NotTypeof",
-                "expected_type": "string",
-                "path": [
-                    "Post",
-                    "id"
-                ],
-                "received": input["id"]
-            });
-        }
-    } else {
-        error_acc_0.push({
-            "error_kind": "NotAnObject",
-            "path": [
-                "Post"
-            ],
-            "received": input
-        });
-    }
-    return error_acc_0;
+function EncodeAllTypes(input) {
+    return {
+        allBooleans: input.allBooleans,
+        allNumbers: input.allNumbers,
+        allStrings: input.allStrings,
+        any: input.any,
+        arrayOfStrings: input.arrayOfStrings.map((input)=>(input)),
+        booleanLiteral: input.booleanLiteral,
+        interface: encoders.Post(input.interface),
+        intersection: encodeAllOf([
+            (input)=>({
+                    a: input.a
+                }),
+            (input)=>({
+                    b: input.b
+                })
+        ], input.intersection),
+        null: input.null,
+        numberLiteral: input.numberLiteral,
+        optionalType: input.optionalType.map((input)=>(input)),
+        stringLiteral: input.stringLiteral,
+        tuple: [
+            input.tuple[0],
+            input.tuple[1]
+        ],
+        tupleWithRest: [
+            input.tupleWithRest[0],
+            input.tupleWithRest[1],
+            ...(input.tupleWithRest.slice(2).map((input)=>(input)))
+        ],
+        typeReference: encoders.User(input.typeReference),
+        undefined: input.undefined,
+        unionOfLiterals: encodeAnyOf([
+            (input)=>(input),
+            (input)=>(input),
+            (input)=>(input)
+        ], input.unionOfLiterals),
+        unionOfTypes: encodeAnyOf([
+            (input)=>(input),
+            (input)=>(input)
+        ], input.unionOfTypes),
+        unionWithNull: encodeAnyOf([
+            (input)=>(input),
+            (input)=>(input),
+            (input)=>(input.map((input)=>(encoders.User(input))))
+        ], input.unionWithNull),
+        unknown: input.unknown
+    };
 }
-function User(input) {
-    let error_acc_0 = [];
-    if (typeof input == "object" && input != null) {
-        if (Array.isArray(input["friends"])) {
-            for(let index = 0; index < input["friends"].length; index++){
-                const array_item_1 = input["friends"][index];
-                error_acc_0.push(...add_path_to_errors(validators.User(array_item_1), [
-                    "User",
-                    "friends",
-                    "[" + index + "]"
-                ]));
-            }
-        } else {
-            error_acc_0.push({
-                "error_kind": "NotAnArray",
-                "path": [
-                    "User",
-                    "friends"
-                ],
-                "received": input["friends"]
-            });
-        }
-        if (typeof input["id"] != "string") {
-            error_acc_0.push({
-                "error_kind": "NotTypeof",
-                "expected_type": "string",
-                "path": [
-                    "User",
-                    "id"
-                ],
-                "received": input["id"]
-            });
-        }
-    } else {
-        error_acc_0.push({
-            "error_kind": "NotAnObject",
-            "path": [
-                "User"
-            ],
-            "received": input
-        });
-    }
-    return error_acc_0;
+function Post(ctx, input) {
+    return decodeObject(ctx, input, true, {
+        "content": (ctx, input)=>(decodeString(ctx, input, true)),
+        "id": (ctx, input)=>(decodeString(ctx, input, true))
+    });
+}
+function EncodePost(input) {
+    return {
+        content: input.content,
+        id: input.id
+    };
+}
+function User(ctx, input) {
+    return decodeObject(ctx, input, true, {
+        "friends": (ctx, input)=>(decodeArray(ctx, input, true, (ctx, input)=>(validators.User(ctx, input, true)))),
+        "id": (ctx, input)=>(decodeString(ctx, input, true))
+    });
+}
+function EncodeUser(input) {
+    return {
+        friends: input.friends.map((input)=>(encoders.User(input))),
+        id: input.id
+    };
 }
 const validators = {
     AllTypes: AllTypes,
     Post: Post,
     User: User
 };
+const encoders = {
+    AllTypes: EncodeAllTypes,
+    Post: EncodePost,
+    User: EncodeUser
+};
 
-export default { validators, isCustomFormatInvalid, registerStringFormat, add_path_to_errors };
+export default { decodeObject, decodeArray, decodeString, decodeNumber, decodeCodec, decodeStringWithFormat, decodeAnyOf, decodeAllOf, decodeBoolean, decodeAny, decodeTuple, decodeNull, decodeConst, encodeCodec, encodeAnyOf, encodeAllOf, validators, encoders, isCustomFormatValid, registerStringFormat };

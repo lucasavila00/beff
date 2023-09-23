@@ -1,13 +1,12 @@
 import { Hono } from "hono";
 import {
-  DecodeError,
-  HandlerMetaClient,
   HandlerMetaServer,
   MetaParamServer,
   OpenAPIDocument,
   OpenApiServer,
 } from "@beff/cli";
 import { ClientFromRouter, buildClient } from "@beff/client";
+import { DecodeError } from "@beff/cli";
 import type { Context as HonoContext, Env } from "hono";
 
 export type Ctx<C = {}, E extends Env = any> = C & {
@@ -75,10 +74,6 @@ const redocTemplate = (baseUrl: string) => `
 </html>
 `;
 
-const coerce = (coercer: any, value: any): any => {
-  return coercer(value).data;
-};
-
 const toHonoPattern = (pattern: string): string => {
   // replace {id} with :id
   return pattern.replace(/\{(\w+)\}/g, ":$1");
@@ -96,23 +91,6 @@ class BffHTTPException extends Error {
 }
 export const isBeffHttpException = (e: any): e is BffHTTPException => {
   return e?.isBeffHttpException;
-};
-
-const prettyPrintErrorMessage = (it: DecodeError): string => {
-  switch (it.error_kind) {
-    case "NotTypeof": {
-      return `Expected ${it.expected_type}`;
-    }
-    case "NotEq": {
-      return `Expected ${prettyPrintValue(it.expected_value)}`;
-    }
-    case "StringFormatCheckFailed": {
-      return `Expected ${it.expected_type}`;
-    }
-    default: {
-      return it.error_kind;
-    }
-  }
 };
 
 const prettyPrintValue = (it: unknown): string => {
@@ -136,43 +114,33 @@ const prettyPrintValue = (it: unknown): string => {
   }
   return JSON.stringify(it);
 };
-const prettyPrintError = (it: DecodeError): string => {
-  return [
-    prettyPrintErrorMessage(it),
-    `Path: ${it.path.join(".")}`,
-    `Received: ${prettyPrintValue(it.received)}`,
-  ].join(" ~ ");
-};
-const MAX_ERRORS = 5;
-
-const printAndJoin = (errors: DecodeError[]): string => {
-  return errors
-    .map((it, idx) => `Error #${idx + 1}: ` + prettyPrintError(it))
+const printErrors = (it: DecodeError[]): string => {
+  return it
+    .map((it, idx) => {
+      return `#${idx} [${it.path.join(".")}] ${
+        it.message
+      }, received: ${prettyPrintValue(it.received)}`;
+    })
     .join(" | ");
 };
-const prettyPrintErrors = (errors: DecodeError[]): string => {
-  if (errors.length > MAX_ERRORS) {
-    const split = errors.slice(0, MAX_ERRORS);
-    const omitted = errors.length - MAX_ERRORS;
-    return printAndJoin(split) + `... ${omitted} more`;
-  }
-  return printAndJoin(errors);
-};
-
 const decodeWithMessage = (validator: any, value: any) => {
-  const errors = validator(value);
-  if (errors.length > 0) {
-    throw new BffHTTPException(422, prettyPrintErrors(errors));
+  const validatorCtx: any = {};
+
+  const newValue = validator(validatorCtx, value);
+  const errors = validatorCtx.errors;
+  if (errors?.length > 0) {
+    throw new BffHTTPException(422, printErrors(errors));
   }
-  return value;
+  return newValue;
 };
 const decodeNoMessage = (validator: any, value: any) => {
-  const errors = validator(value);
-
-  if (errors.length > 0) {
+  const validatorCtx: any = {};
+  const newValue = validator(validatorCtx, value);
+  const errors = validatorCtx.errors;
+  if (errors?.length > 0) {
     throw new BffHTTPException(500, "Internal error");
   }
-  return value;
+  return newValue;
 };
 
 const handleMethod = async (
@@ -185,18 +153,15 @@ const handleMethod = async (
       switch (p.type) {
         case "path": {
           const value = c.hono.req.param(p.name);
-          const coerced = coerce(p.coercer, value);
-          return decodeWithMessage(p.validator, coerced);
+          return decodeWithMessage(p.validator, value);
         }
         case "query": {
           const value = c.hono.req.query(p.name);
-          const coerced = coerce(p.coercer, value);
-          return decodeWithMessage(p.validator, coerced);
+          return decodeWithMessage(p.validator, value);
         }
         case "header": {
           const value = c.hono.req.header(p.name);
-          const coerced = coerce(p.coercer, value);
-          return decodeWithMessage(p.validator, coerced);
+          return decodeWithMessage(p.validator, value);
         }
         case "body": {
           const value = await c.hono.req.json();
@@ -211,7 +176,10 @@ const handleMethod = async (
   );
   const resolverParams = await Promise.all(resolverParamsPromise);
   const result = await handler(...resolverParams);
-  return c.hono.json(decodeNoMessage(meta.return_validator, result));
+
+  const resValidated = decodeNoMessage(meta.return_validator, result);
+  const resEncoded = meta.return_encoder(resValidated);
+  return c.hono.json(resEncoded);
 };
 
 const registerDocs = (app: Hono<any, any, any>, schema: any) => {
@@ -310,7 +278,7 @@ export function buildHonoApp(options: {
 
 export const buildHonoTestClient = <T>(options: {
   generated: {
-    meta: HandlerMetaClient[];
+    meta: HandlerMetaServer[];
   };
   app: Hono<any, any, any>;
   env?: any;

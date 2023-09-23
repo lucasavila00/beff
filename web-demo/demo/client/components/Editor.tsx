@@ -9,7 +9,6 @@ import { initialText } from "./initialText";
 type WritableModules = {
   js_validators: string;
   js_server_meta: string | undefined;
-  js_client_meta: string | undefined;
   json_schema: string | undefined;
   js_built_parsers: string | undefined;
 };

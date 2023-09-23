@@ -11,7 +11,7 @@ export const CreateProjectButton: FC<{
 }> = ({ isAppInstalled, fullName }) => {
   const router = useRouter();
 
-  const newProjectMutation = beff["/project/new"].post(fullName).useMutation({
+  const newProjectMutation = beff["/project"].put(fullName).useMutation({
     onSuccess: (res) => {
       router.push(`/project/${res.id}`);
     },

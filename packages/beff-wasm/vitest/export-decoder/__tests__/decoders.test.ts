@@ -13,11 +13,8 @@ it("custom types", () => {
     {
       "errors": [
         {
-          "error_kind": "StringFormatCheckFailed",
-          "expected_type": "StartsWithA",
-          "path": [
-            "StartsWithA",
-          ],
+          "message": "expected StartsWithA",
+          "path": [],
           "received": "BB",
         },
       ],
@@ -27,52 +24,68 @@ it("custom types", () => {
 });
 
 it("regular types", () => {
-  expect(generatedRouter.schema.components.schemas).toMatchInlineSnapshot(`
-    {
-      "StartsWithA": {
-        "format": "StartsWithA",
-        "type": "string",
-      },
-      "User": {
-        "properties": {
-          "age": {
-            "type": "number",
-          },
-          "name": {
-            "type": "string",
-          },
+  expect((generatedRouter.schema.components as any).schemas)
+    .toMatchInlineSnapshot(`
+      {
+        "StartsWithA": {
+          "format": "StartsWithA",
+          "type": "string",
         },
-        "required": [
-          "age",
-          "name",
-        ],
-        "type": "object",
-      },
-    }
-  `);
-  expect(User.parse({ name: "name", age: 123 })).toMatchInlineSnapshot(`
+        "User": {
+          "properties": {
+            "age": {
+              "type": "number",
+            },
+            "createdAt": {
+              "format": "Codec::ISO8061",
+              "type": "string",
+            },
+            "name": {
+              "type": "string",
+            },
+          },
+          "required": [
+            "age",
+            "createdAt",
+            "name",
+          ],
+          "type": "object",
+        },
+      }
+    `);
+  const u = User.parse({
+    name: "name",
+    age: 123,
+    createdAt: "2023-09-22T22:52:24.855Z",
+  });
+  expect(u).toMatchInlineSnapshot(`
     {
       "age": 123,
+      "createdAt": 2023-09-22T22:52:24.855Z,
       "name": "name",
     }
   `);
+  expect(u.createdAt.toISOString()).toMatchInlineSnapshot('"2023-09-22T22:52:24.855Z"');
   expect(() => User.parse({ name: 123 })).toThrowErrorMatchingInlineSnapshot(`
     BffParseError {
       "errors": [
         {
-          "error_kind": "NotTypeof",
-          "expected_type": "number",
+          "message": "expected number",
           "path": [
-            "User",
             "age",
           ],
           "received": undefined,
         },
         {
-          "error_kind": "NotTypeof",
-          "expected_type": "string",
+          "message": "expected ISO8061 date",
           "path": [
-            "User",
+            "createdAt",
+          ],
+          "received": undefined,
+        },
+        {
+          "message": "expected string",
+          "path": [
             "name",
           ],
           "received": 123,
@@ -85,19 +98,22 @@ it("regular types", () => {
     {
       "errors": [
         {
-          "error_kind": "NotTypeof",
-          "expected_type": "number",
+          "message": "expected number",
           "path": [
-            "User",
             "age",
           ],
           "received": undefined,
         },
         {
-          "error_kind": "NotTypeof",
-          "expected_type": "string",
+          "message": "expected ISO8061 date",
           "path": [
-            "User",
+            "createdAt",
+          ],
+          "received": undefined,
+        },
+        {
+          "message": "expected string",
+          "path": [
             "name",
           ],
           "received": 123,
@@ -110,10 +126,8 @@ it("regular types", () => {
     {
       "errors": [
         {
-          "error_kind": "NotTypeof",
-          "expected_type": "string",
+          "message": "expected string",
           "path": [
-            "NotPublic",
             "a",
           ],
           "received": undefined,
@@ -128,41 +142,49 @@ it("regular types", () => {
       {
         "errors": [
           {
-            "error_kind": "NotTypeof",
-            "expected_type": "number",
+            "message": "expected number",
             "path": [
               "[0]",
-              "User",
               "age",
             ],
             "received": undefined,
           },
           {
-            "error_kind": "NotTypeof",
-            "expected_type": "string",
+            "message": "expected ISO8061 date",
             "path": [
               "[0]",
-              "User",
+              "createdAt",
+            ],
+            "received": undefined,
+          },
+          {
+            "message": "expected string",
+            "path": [
+              "[0]",
               "name",
             ],
             "received": 123,
           },
           {
-            "error_kind": "NotTypeof",
-            "expected_type": "number",
+            "message": "expected number",
             "path": [
               "[1]",
-              "User",
               "age",
             ],
             "received": "def",
           },
           {
-            "error_kind": "NotTypeof",
-            "expected_type": "string",
+            "message": "expected ISO8061 date",
             "path": [
               "[1]",
-              "User",
+              "createdAt",
+            ],
+            "received": undefined,
+          },
+          {
+            "message": "expected string",
+            "path": [
+              "[1]",
               "name",
             ],
             "received": undefined,

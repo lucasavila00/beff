@@ -1,136 +1,70 @@
 
-import vals from "./validators.js"; const { validators, add_path_to_errors, registerStringFormat, isCustomFormatInvalid } = vals;
-
-
-function CoercionOk(data) {
-  return {
-    ok: true,
-    data,
-  }
-}
-
-function CoercionNoop(data) {
-  return {
-    ok: false,
-    data,
-  }
-}
-  
-
-function coerce_string(input) {
-  if (typeof input === "string") {
-    return CoercionOk(input)
-  }
-  return CoercionNoop(input);
-}
-const isNumeric = (num) =>
-  (typeof num === "number" || (typeof num === "string" && num.trim() !== "")) &&
-  !isNaN(num );
-function coerce_number(input) {
-  if (input == null) {
-    return CoercionNoop(input);
-  }
-  if (isNumeric(input)) {
-    return CoercionOk(Number(input));
-  }
-  return CoercionNoop(input);
-}
-function coerce_boolean(input) {
-  if (input == null) {
-    return CoercionNoop(input);
-  }
-  if (input === "true" || input === "false") {
-    return CoercionOk(input === "true");
-  }
-  if (input === "1" || input === "0") {
-    return CoercionOk(input === "1");
-  }
-  return CoercionNoop(input);
-}
-function coerce_union(input, ...cases) {
-  if (input == null) {
-    return CoercionNoop(input);
-  }
-  for (const c of cases) {
-    const r = c(input);
-    if (r.ok) {
-      return r;
-    }
-  }
-  return CoercionNoop(input);
-}
-
+import vals from "./validators.js"; const { decodeObject, decodeArray, decodeString, decodeNumber, decodeCodec, decodeStringWithFormat, decodeAnyOf, decodeAllOf, decodeBoolean, decodeAny, decodeTuple, decodeNull, decodeConst, encodeCodec, encodeAnyOf, encodeAllOf, validators, encoders, registerStringFormat, c } = vals;
 const meta = [
     {
         "method_kind": "get",
         "params": [],
         "pattern": "/abc",
-        "return_validator": function(input) {
-            let error_acc_0 = [];
-            error_acc_0.push(...add_path_to_errors(validators.UserEntityOriginal(input), [
-                "responseBody"
-            ]));
-            return error_acc_0;
+        "return_encoder": function(input) {
+            return encoders.UserEntityOriginal(input);
+        },
+        "return_validator": function(ctx, input) {
+            return validators.UserEntityOriginal(ctx, input, true);
         }
     },
     {
         "method_kind": "post",
         "params": [],
         "pattern": "/abc",
-        "return_validator": function(input) {
-            let error_acc_0 = [];
-            error_acc_0.push(...add_path_to_errors(validators.Abc123(input), [
-                "responseBody"
-            ]));
-            return error_acc_0;
+        "return_encoder": function(input) {
+            return encoders.Abc123(input);
+        },
+        "return_validator": function(ctx, input) {
+            return validators.Abc123(ctx, input, true);
         }
     },
     {
         "method_kind": "put",
         "params": [],
         "pattern": "/abc",
-        "return_validator": function(input) {
-            let error_acc_0 = [];
-            error_acc_0.push(...add_path_to_errors(validators.Def(input), [
-                "responseBody"
-            ]));
-            return error_acc_0;
+        "return_encoder": function(input) {
+            return encoders.Def(input);
+        },
+        "return_validator": function(ctx, input) {
+            return validators.Def(ctx, input, true);
         }
     },
     {
         "method_kind": "delete",
         "params": [],
         "pattern": "/abc",
-        "return_validator": function(input) {
-            let error_acc_0 = [];
-            error_acc_0.push(...add_path_to_errors(validators.XYZ(input), [
-                "responseBody"
-            ]));
-            return error_acc_0;
+        "return_encoder": function(input) {
+            return encoders.XYZ(input);
+        },
+        "return_validator": function(ctx, input) {
+            return validators.XYZ(ctx, input, true);
         }
     },
     {
         "method_kind": "get",
         "params": [],
         "pattern": "/def",
-        "return_validator": function(input) {
-            let error_acc_0 = [];
-            error_acc_0.push(...add_path_to_errors(validators.UserEntityOriginal(input), [
-                "responseBody"
-            ]));
-            return error_acc_0;
+        "return_encoder": function(input) {
+            return encoders.UserEntityOriginal(input);
+        },
+        "return_validator": function(ctx, input) {
+            return validators.UserEntityOriginal(ctx, input, true);
         }
     },
     {
         "method_kind": "post",
         "params": [],
         "pattern": "/def",
-        "return_validator": function(input) {
-            let error_acc_0 = [];
-            error_acc_0.push(...add_path_to_errors(validators.AAAAA(input), [
-                "responseBody"
-            ]));
-            return error_acc_0;
+        "return_encoder": function(input) {
+            return encoders.AAAAA(input);
+        },
+        "return_validator": function(ctx, input) {
+            return validators.AAAAA(ctx, input, true);
         }
     }
 ];

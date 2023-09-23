@@ -1,103 +1,30 @@
 
-import vals from "./validators.js"; const { validators, add_path_to_errors, registerStringFormat, isCustomFormatInvalid } = vals;
-
-
-function CoercionOk(data) {
-  return {
-    ok: true,
-    data,
-  }
-}
-
-function CoercionNoop(data) {
-  return {
-    ok: false,
-    data,
-  }
-}
-  
-
-function coerce_string(input) {
-  if (typeof input === "string") {
-    return CoercionOk(input)
-  }
-  return CoercionNoop(input);
-}
-const isNumeric = (num) =>
-  (typeof num === "number" || (typeof num === "string" && num.trim() !== "")) &&
-  !isNaN(num );
-function coerce_number(input) {
-  if (input == null) {
-    return CoercionNoop(input);
-  }
-  if (isNumeric(input)) {
-    return CoercionOk(Number(input));
-  }
-  return CoercionNoop(input);
-}
-function coerce_boolean(input) {
-  if (input == null) {
-    return CoercionNoop(input);
-  }
-  if (input === "true" || input === "false") {
-    return CoercionOk(input === "true");
-  }
-  if (input === "1" || input === "0") {
-    return CoercionOk(input === "1");
-  }
-  return CoercionNoop(input);
-}
-function coerce_union(input, ...cases) {
-  if (input == null) {
-    return CoercionNoop(input);
-  }
-  for (const c of cases) {
-    const r = c(input);
-    if (r.ok) {
-      return r;
-    }
-  }
-  return CoercionNoop(input);
-}
-
+import vals from "./validators.js"; const { decodeObject, decodeArray, decodeString, decodeNumber, decodeCodec, decodeStringWithFormat, decodeAnyOf, decodeAllOf, decodeBoolean, decodeAny, decodeTuple, decodeNull, decodeConst, encodeCodec, encodeAnyOf, encodeAllOf, validators, encoders, registerStringFormat, c } = vals;
 const meta = [
     {
         "method_kind": "use",
         "params": [],
         "pattern": "/posts/*",
-        "return_validator": function(input) {
-            let error_acc_0 = [];
-            return error_acc_0;
+        "return_encoder": function(input) {
+            return input;
+        },
+        "return_validator": function(ctx, input) {
+            return decodeAny(ctx, input, true);
         }
     },
     {
         "method_kind": "get",
         "params": [],
         "pattern": "/",
-        "return_validator": function(input) {
-            let error_acc_0 = [];
-            if (typeof input == "object" && input != null) {
-                if (typeof input["message"] != "string") {
-                    error_acc_0.push({
-                        "error_kind": "NotTypeof",
-                        "expected_type": "string",
-                        "path": [
-                            "responseBody",
-                            "message"
-                        ],
-                        "received": input["message"]
-                    });
-                }
-            } else {
-                error_acc_0.push({
-                    "error_kind": "NotAnObject",
-                    "path": [
-                        "responseBody"
-                    ],
-                    "received": input
-                });
-            }
-            return error_acc_0;
+        "return_encoder": function(input) {
+            return {
+                message: input.message
+            };
+        },
+        "return_validator": function(ctx, input) {
+            return decodeObject(ctx, input, true, {
+                "message": (ctx, input)=>(decodeString(ctx, input, true))
+            });
         }
     },
     {
@@ -108,44 +35,17 @@ const meta = [
             }
         ],
         "pattern": "/posts",
-        "return_validator": function(input) {
-            let error_acc_0 = [];
-            if (typeof input == "object" && input != null) {
-                if (typeof input["ok"] != "boolean") {
-                    error_acc_0.push({
-                        "error_kind": "NotTypeof",
-                        "expected_type": "boolean",
-                        "path": [
-                            "responseBody",
-                            "ok"
-                        ],
-                        "received": input["ok"]
-                    });
-                }
-                if (Array.isArray(input["posts"])) {
-                    for(let index = 0; index < input["posts"].length; index++){
-                        const array_item_1 = input["posts"][index];
-                    }
-                } else {
-                    error_acc_0.push({
-                        "error_kind": "NotAnArray",
-                        "path": [
-                            "responseBody",
-                            "posts"
-                        ],
-                        "received": input["posts"]
-                    });
-                }
-            } else {
-                error_acc_0.push({
-                    "error_kind": "NotAnObject",
-                    "path": [
-                        "responseBody"
-                    ],
-                    "received": input
-                });
-            }
-            return error_acc_0;
+        "return_encoder": function(input) {
+            return {
+                ok: input.ok,
+                posts: input.posts.map((input)=>(input))
+            };
+        },
+        "return_validator": function(ctx, input) {
+            return decodeObject(ctx, input, true, {
+                "ok": (ctx, input)=>(decodeBoolean(ctx, input, true)),
+                "posts": (ctx, input)=>(decodeArray(ctx, input, true, (ctx, input)=>(decodeAny(ctx, input, true))))
+            });
         }
     }
 ];

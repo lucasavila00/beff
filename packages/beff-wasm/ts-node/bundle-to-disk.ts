@@ -33,71 +33,240 @@ import { HandlerMetaServer, OpenAPIDocument } from "@beff/cli";
 declare const _exports: { meta: HandlerMetaServer[], schema: OpenAPIDocument };
 export default _exports;
 `;
-const CLIENT_DTS = `
-import { HandlerMetaClient } from "@beff/cli";
-declare const _exports: { meta: HandlerMetaClient[] };
-export default _exports;
-`;
-const coercerCode = `
 
-function CoercionOk(data) {
-  return {
-    ok: true,
-    data,
+const decoders = `
+
+function pushPath(ctx, path) {
+  if (ctx.paths == null) {
+    ctx.paths = [];
   }
+  ctx.paths.push(path);
+}
+function popPath(ctx) {
+  if (ctx.paths == null) {
+    throw new Error("popPath: no paths");
+  }
+  return ctx.paths.pop();
+}
+function buildError(received, ctx, message, ) {
+  if (ctx.errors == null) {
+    ctx.errors = [];
+  }
+  ctx.errors.push({
+    message,
+    path: [...(ctx.paths??[])],
+    received
+  })
 }
 
-function CoercionNoop(data) {
-  return {
-    ok: false,
-    data,
+function decodeObject(ctx, input, required, data) {
+  if (!required && input == null) {
+    return input;
   }
+  if (
+    typeof input === 'object' &&
+    !Array.isArray(input) &&
+    input !== null
+  ) {
+    const acc = {};
+    for (const [k, v] of Object.entries(data)) {
+      pushPath(ctx, k);
+      acc[k] = v(ctx, input[k]);
+      popPath(ctx);
+    }
+    return acc;
+  }
+  return buildError(input, ctx,  "expected object")
 }
-  
-
-function coerce_string(input) {
-  if (typeof input === "string") {
-    return CoercionOk(input)
+function decodeArray(ctx, input, required, data) {
+  if (!required && input == null) {
+    return input;
   }
-  return CoercionNoop(input);
+  if (Array.isArray(input)) {
+    const acc = [];
+    for(let i = 0; i < input.length; i++) {
+      const v = input[i];
+      pushPath(ctx, '['+i+']');
+      acc.push(data(ctx, v));
+      popPath(ctx);
+    }
+    return acc;
+  }
+  return buildError(input, ctx,  "expected array")
+}
+function decodeString(ctx, input, required) {
+  if (!required && input == null) {
+    return input;
+  }
+
+  if (typeof input === 'string') {
+    return input;
+  }
+
+  return buildError(input, ctx,  "expected string")
 }
 const isNumeric = (num) =>
   (typeof num === "number" || (typeof num === "string" && num.trim() !== "")) &&
   !isNaN(num );
-function coerce_number(input) {
-  if (input == null) {
-    return CoercionNoop(input);
+
+function decodeNumber(ctx, input, required) {
+  if (!required && input == null) {
+    return input;
+  }
+  if (typeof input === "number") {
+    return input;
   }
   if (isNumeric(input)) {
-    return CoercionOk(Number(input));
+    return Number(input);
   }
-  return CoercionNoop(input);
+
+  return buildError(input, ctx,  "expected number")
 }
-function coerce_boolean(input) {
-  if (input == null) {
-    return CoercionNoop(input);
-  }
-  if (input === "true" || input === "false") {
-    return CoercionOk(input === "true");
-  }
-  if (input === "1" || input === "0") {
-    return CoercionOk(input === "1");
-  }
-  return CoercionNoop(input);
-}
-function coerce_union(input, ...cases) {
-  if (input == null) {
-    return CoercionNoop(input);
-  }
-  for (const c of cases) {
-    const r = c(input);
-    if (r.ok) {
-      return r;
+
+function encodeCodec(codec, value) {
+  switch (codec) {
+    case "Codec::ISO8061": {
+      return value.toISOString();
+    }
+    case "Codec::BigInt": {
+      return value.toString();
     }
   }
-  return CoercionNoop(input);
+  throw new Error("encode - codec not found: "+codec);
+}
+
+function decodeCodec(ctx, input, required, codec) {
+  if (!required && input == null) {
+    return input;
+  }
+  switch (codec) {
+    case "Codec::ISO8061": {
+      const d = new Date(input);
+      if (isNaN(d.getTime())) {
+        return buildError(input, ctx,  "expected ISO8061 date")
+      }
+      return d;
+    }
+    case "Codec::BigInt": {
+      if (typeof input === "bigint") {
+        return input;
+      }
+      if (typeof input === "number") {
+        return BigInt(input);
+      }
+      if (typeof input === "string") {
+        return BigInt(input);
+      }
+      return buildError(input, ctx,  "expected bigint")
+    }
+  }
+  return buildError(input, ctx,  "codec " + codec + " not implemented")
+}
+
+function decodeStringWithFormat(ctx, input, required, format) {
+  if (!required && input == null) {
+    return input;
+  }
+  if (typeof input === 'string') {
+    if (isCustomFormatValid(format, input)) {
+      return input;
+    }
+    return buildError(input, ctx,  "expected "+format)
+  }
+  return buildError(input, ctx,  "expected string")
+}
+function decodeAnyOf(ctx, input, required, vs) {
+  if (!required && input == null) {
+    return input;
+  }
+  for (const v of vs) {
+    const validatorCtx = {
+    };
+    const newValue = v(validatorCtx, input);
+    if (validatorCtx.errors == null) {
+      return newValue;
+    }
+  }
+  return buildError(input, ctx,  "expected one of")
+}
+function decodeAllOf(ctx, input, required, vs) {
+  if (!required && input == null) {
+    return input;
+  }
+  throw new Error("decodeAllOf not implemented");
+}
+function decodeTuple(ctx, input, required, vs) {
+  if (!required && input == null) {
+    return input;
+  }
+  throw new Error("decodeTuple not implemented");
+}
+function decodeBoolean(ctx, input, required, ) {
+  if (!required && input == null) {
+    return input;
+  }
+  if (typeof input === "boolean") {
+    return input;
+  }
+  if (input === "true" || input === "false") {
+    return (input === "true");
+  }
+  if (input === "1" || input === "0") {
+    return (input === "1");
+  }
+  return buildError(input, ctx,  "expected boolean")
+}
+function decodeAny(ctx, input, required) {
+  return input;
+}
+function decodeNull(ctx, input, required) {
+  if (!required && input == null) {
+    return input;
+  }
+  if (input === null) {
+    return input;
+  }
+  return buildError(input, ctx,  "expected null")
+}
+function decodeConst(ctx, input, required, constValue) {
+  if (!required && input == null) {
+    return input;
+  }
+  if (input == constValue) {
+    return constValue;
+  }
+  return buildError(input, ctx,  "expected "+JSON.stringify(constValue))
+}
+
+function encodeAllOf(cbs, value) {
+  throw new Error("encodeAllOf not implemented");
+}
+
+function encodeAnyOf(cbs, value) {
+  for (const cb of cbs) {
+    return cb(value);
+  }
+  return value
 }
 `;
+const decodersExported = [
+  "decodeObject",
+  "decodeArray",
+  "decodeString",
+  "decodeNumber",
+  "decodeCodec",
+  "decodeStringWithFormat",
+  "decodeAnyOf",
+  "decodeAllOf",
+  "decodeBoolean",
+  "decodeAny",
+  "decodeTuple",
+  "decodeNull",
+  "decodeConst",
+  "encodeCodec",
+  "encodeAnyOf",
+  "encodeAllOf",
+];
 
 const buildParsers = `
 class BffParseError {
@@ -110,9 +279,12 @@ function buildParsers() {
   Object.keys(buildParsersInput).forEach(k => {
     let v = buildParsersInput[k];
     const safeParse = (input) => {
-      const validation_result = v(input);
-      if (validation_result.length === 0) {
-        return { success: true, data: input };
+      const validatorCtx = {
+      };
+      const new_value = v(validatorCtx, input);
+      const validation_result = validatorCtx.errors;
+      if (validation_result == null) {
+        return { success: true, data: new_value };
       }
       return { success: false, errors: validation_result };
     }
@@ -137,12 +309,12 @@ function registerStringFormat(name, predicate) {
   stringPredicates[name] = predicate;
 }
 
-function isCustomFormatInvalid(key, value) {
+function isCustomFormatValid(key, value) {
   const predicate = stringPredicates[key];
   if (predicate == null) {
     throw new Error("unknown string format: " + key);
   }
-  return !predicate(value);
+  return predicate(value);
 }
 `;
 const esmTag = (mod: ProjectModule) => {
@@ -164,19 +336,16 @@ const finalizeValidatorsCode = (
   mod: ProjectModule
 ) => {
   const exportedItems = [
+    ...decodersExported,
     "validators",
-    "isCustomFormatInvalid",
+    "encoders",
+    "isCustomFormatValid",
     "registerStringFormat",
-    "add_path_to_errors",
   ].join(", ");
   const exports = [exportCode(mod), `{ ${exportedItems} };`].join(" ");
   return [
+    decoders,
     esmTag(mod),
-    `
-function add_path_to_errors(errors, path) {
-  return errors.map((e) => ({ ...e, path: [...path, ...e.path] }));
-}
-    `,
     customFormatsCode,
     wasmCode.js_validators,
     exports,
@@ -184,7 +353,13 @@ function add_path_to_errors(errors, path) {
 };
 
 const importValidators = (mod: ProjectModule) => {
-  const i = `validators, add_path_to_errors, registerStringFormat, isCustomFormatInvalid`;
+  const i = [
+    ...decodersExported,
+    "validators",
+    "encoders",
+    "registerStringFormat",
+    "c",
+  ].join(", ");
   return mod === "esm"
     ? `import vals from "./validators.js"; const { ${i} } = vals;`
     : `const { ${i} } = require('./validators.js').default;`;
@@ -196,16 +371,10 @@ const finalizeRouterFile = (wasmCode: WritableModules, mod: ProjectModule) => {
   return [
     esmTag(mod),
     importValidators(mod),
-    coercerCode,
     wasmCode.js_server_meta,
     schema,
     exports,
   ].join("\n");
-};
-const finalizeClientFile = (wasmCode: WritableModules, mod: ProjectModule) => {
-  const exportedItems = ["meta"].join(", ");
-  const exports = [exportCode(mod), `{ ${exportedItems} };`].join(" ");
-  return [esmTag(mod), wasmCode.js_client_meta, exports].join("\n");
 };
 
 const finalizeParserFile = (wasmCode: WritableModules, mod: ProjectModule) => {
@@ -265,15 +434,6 @@ export const execProject = (
     fs.writeFileSync(
       path.join(outputDir, "openapi.json"),
       outResult.json_schema ?? ""
-    );
-
-    fs.writeFileSync(
-      path.join(outputDir, "client.js"),
-      finalizeClientFile(outResult, mod)
-    );
-    fs.writeFileSync(
-      path.join(outputDir, "client.d.ts"),
-      [CLIENT_DTS].join("\n")
     );
   }
 

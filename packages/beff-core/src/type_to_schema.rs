@@ -1,5 +1,5 @@
 use crate::ast::json::Json;
-use crate::ast::json_schema::{JsonSchema, Optionality};
+use crate::ast::json_schema::{CodecName, JsonSchema, Optionality};
 use crate::diag::{
     Diagnostic, DiagnosticInfoMessage, DiagnosticInformation, DiagnosticParentMessage, Location,
 };
@@ -11,7 +11,7 @@ use std::rc::Rc;
 use swc_atoms::JsWord;
 use swc_common::Span;
 use swc_ecma_ast::{
-    BigInt, Expr, Ident, Lit, Str, TsArrayType, TsCallSignatureDecl, TsConditionalType,
+    Expr, Ident, Lit, Str, TsArrayType, TsCallSignatureDecl, TsConditionalType,
     TsConstructSignatureDecl, TsConstructorType, TsEntityName, TsFnOrConstructorType, TsFnType,
     TsGetterSignature, TsImportType, TsIndexSignature, TsIndexedAccessType, TsInferType,
     TsInterfaceDecl, TsIntersectionType, TsKeywordType, TsKeywordTypeKind, TsLit, TsLitType,
@@ -55,11 +55,13 @@ impl<'a, R: FileManager> TypeToSchema<'a, R> {
             TsKeywordTypeKind::TsUndefinedKeyword | TsKeywordTypeKind::TsNullKeyword => {
                 Ok(JsonSchema::Null)
             }
+            TsKeywordTypeKind::TsBigIntKeyword => {
+                Ok(JsonSchema::Codec(CodecName::new("BigInt".into())))
+            }
             TsKeywordTypeKind::TsAnyKeyword
             | TsKeywordTypeKind::TsUnknownKeyword
             | TsKeywordTypeKind::TsObjectKeyword => Ok(JsonSchema::Any),
-            TsKeywordTypeKind::TsBigIntKeyword
-            | TsKeywordTypeKind::TsNeverKeyword
+            TsKeywordTypeKind::TsNeverKeyword
             | TsKeywordTypeKind::TsSymbolKeyword
             | TsKeywordTypeKind::TsIntrinsicKeyword
             | TsKeywordTypeKind::TsVoidKeyword => self.cannot_serialize_error(
@@ -226,6 +228,7 @@ impl<'a, R: FileManager> TypeToSchema<'a, R> {
         type_params: &Option<Box<TsTypeParamInstantiation>>,
     ) -> Res<JsonSchema> {
         match i.sym.to_string().as_str() {
+            "Date" => return Ok(JsonSchema::Codec(CodecName::new("ISO8061".to_string()))),
             "Array" => {
                 let type_params = type_params.as_ref().and_then(|it| it.params.split_first());
                 if let Some((ty, [])) = type_params {
@@ -507,10 +510,7 @@ impl<'a, R: FileManager> TypeToSchema<'a, R> {
                 TsLit::Number(n) => Ok(JsonSchema::Const(Json::parse_f64(n.value))),
                 TsLit::Str(s) => Ok(JsonSchema::Const(Json::String(s.value.to_string().clone()))),
                 TsLit::Bool(b) => Ok(JsonSchema::Const(Json::Bool(b.value))),
-                TsLit::BigInt(BigInt { span, .. }) => self.cannot_serialize_error(
-                    span,
-                    DiagnosticInfoMessage::BigIntNonSerializableToJsonSchema,
-                ),
+                TsLit::BigInt(_) => Ok(JsonSchema::Codec(CodecName::new("BigInt".into()))),
                 TsLit::Tpl(TsTplLitType {
                     span,
                     types,

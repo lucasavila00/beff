@@ -7,6 +7,7 @@ use crate::{open_api_ast::HTTPMethod, BffFileName, ParsedModule};
 
 #[derive(Debug, Clone)]
 pub enum DiagnosticInfoMessage {
+    ReturnAnnotationIsRequired,
     CannotGetFullLocation,
     InvalidIdentifierInPatternNoExplodeAllowed,
     CloseBlockMustEndPattern,
@@ -36,7 +37,6 @@ pub enum DiagnosticInfoMessage {
     JsDocsDescriptionCouldNotBeParsed,
     KeywordNonSerializableToJsonSchema,
     PropertyNonSerializableToJsonSchema,
-    BigIntNonSerializableToJsonSchema,
     TemplateNonSerializableToJsonSchema,
     DuplicatedRestNonSerializableToJsonSchema,
     TypeConstructNonSerializableToJsonSchema,
@@ -99,7 +99,6 @@ impl DiagnosticInfoMessage {
             }
             DiagnosticInfoMessage::KeywordNonSerializableToJsonSchema
             | DiagnosticInfoMessage::PropertyNonSerializableToJsonSchema
-            | DiagnosticInfoMessage::BigIntNonSerializableToJsonSchema
             | DiagnosticInfoMessage::TemplateNonSerializableToJsonSchema
             | DiagnosticInfoMessage::DuplicatedRestNonSerializableToJsonSchema
             | DiagnosticInfoMessage::TypeConstructNonSerializableToJsonSchema => {
@@ -292,6 +291,9 @@ impl DiagnosticInfoMessage {
             DiagnosticInfoMessage::InvalidDecoderProperty => "Invalid decoder property".to_string(),
             DiagnosticInfoMessage::PatternMustBeComputedKeyOrString => {
                 "Pattern must be computed key or string".to_string()
+            }
+            DiagnosticInfoMessage::ReturnAnnotationIsRequired => {
+                "Return annotation is required".to_string()
             }
         }
     }

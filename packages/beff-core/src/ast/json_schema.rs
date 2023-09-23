@@ -85,10 +85,25 @@ pub enum JsonSchema {
     Const(Json),
     AnyObject,
     AnyArrayLike,
+    Codec(CodecName),
     // semantic types
     StNever,
     StUnknown,
     StNot(Box<JsonSchema>),
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord)]
+pub struct CodecName(String);
+impl CodecName {
+    pub fn new(s: String) -> Self {
+        Self(s)
+    }
+    pub fn inner(&self) -> &str {
+        self.0.as_str()
+    }
+    pub fn to_string(&self) -> String {
+        "Codec::".to_string() + self.0.as_str()
+    }
 }
 
 struct UnionMerger(BTreeSet<JsonSchema>);
@@ -305,6 +320,11 @@ impl ToJson for JsonSchema {
                 ("type".into(), Json::String("string".into())),
                 ("format".into(), Json::String(format)),
             ]),
+            JsonSchema::Codec(format) => Json::object(vec![
+                ("type".into(), Json::String("string".into())),
+                ("format".into(), Json::String(format.to_string())),
+            ]),
+
             JsonSchema::Object(values) => {
                 Json::object(vec![
                     //
@@ -638,6 +658,7 @@ impl JsonSchema {
                 .into(),
                 type_params: None,
             }),
+            JsonSchema::Codec(_) => todo!(),
         }
     }
 }
