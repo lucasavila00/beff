@@ -7,6 +7,7 @@ use crate::{open_api_ast::HTTPMethod, BffFileName, ParsedModule};
 
 #[derive(Debug, Clone)]
 pub enum DiagnosticInfoMessage {
+    TypeMustNotBeEmpty,
     GetMustNotHaveBody,
     ReturnAnnotationIsRequired,
     CannotGetFullLocation,
@@ -299,6 +300,7 @@ impl DiagnosticInfoMessage {
             DiagnosticInfoMessage::GetMustNotHaveBody => {
                 "GET methods must not have a body".to_string()
             }
+            DiagnosticInfoMessage::TypeMustNotBeEmpty => "Type must not be empty".to_string(),
         }
     }
 }

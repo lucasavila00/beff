@@ -92,7 +92,7 @@ pub enum JsonSchema {
     StNot(Box<JsonSchema>),
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord)]
+#[derive(PartialEq, Eq, Hash, Debug, Ord, PartialOrd, Clone)]
 pub struct CodecName(String);
 impl CodecName {
     pub fn new(s: String) -> Self {
