@@ -343,10 +343,6 @@ impl DecoderFnGenerator {
     }
 }
 #[must_use]
-pub fn from_schema(
-    schema: &JsonSchema,
-    _name_to_report_err: &Option<String>,
-    required: bool,
-) -> Function {
+pub fn from_schema(schema: &JsonSchema, required: bool) -> Function {
     DecoderFnGenerator {}.fn_decoder_from_schema(schema, required)
 }
