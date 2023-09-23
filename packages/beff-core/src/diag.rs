@@ -7,6 +7,7 @@ use crate::{open_api_ast::HTTPMethod, BffFileName, ParsedModule};
 
 #[derive(Debug, Clone)]
 pub enum DiagnosticInfoMessage {
+    MustBeTsConstAssertion,
     CustomFormatIsNotRegistered,
     TypeMustNotBeEmpty,
     GetMustNotHaveBody,
@@ -306,6 +307,9 @@ impl DiagnosticInfoMessage {
             }
             DiagnosticInfoMessage::CustomFormatIsNotRegistered => {
                 "Custom format is not registered".to_string()
+            }
+            DiagnosticInfoMessage::MustBeTsConstAssertion => {
+                "Must be a TS const assertion".to_string()
             }
         }
     }

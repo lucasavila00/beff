@@ -1072,4 +1072,161 @@ mod tests {
         assert!(!errors.is_empty());
         insta::assert_snapshot!(print_errors(from, to, &errors));
     }
+
+    #[test]
+    fn ok_typeof() {
+        let from = r#"
+        type A = 'b';
+        
+        export default {
+            "/hello": {
+                get: (): A => impl()
+            }
+        }
+        "#;
+
+        let to = r#"
+        const valueB = "b" as const;
+        type B = typeof valueB;
+        
+        export default {
+            "/hello": {
+                get: (): B => impl()
+            }
+        }
+        "#;
+        let errors = test_safe(from, to);
+        assert!(errors.is_empty());
+    }
+
+    #[test]
+    fn ok_typeof2() {
+        let from = r#"
+        type A = 1;
+        
+        export default {
+            "/hello": {
+                get: (): A => impl()
+            }
+        }
+        "#;
+
+        let to = r#"
+        const valueB = 1 as const;
+        type B = typeof valueB;
+        
+        export default {
+            "/hello": {
+                get: (): B => impl()
+            }
+        }
+        "#;
+        let errors = test_safe(from, to);
+        assert!(errors.is_empty());
+    }
+
+    #[test]
+    fn ok_typeof3() {
+        let from = r#"
+        type A = true;
+        
+        export default {
+            "/hello": {
+                get: (): A => impl()
+            }
+        }
+        "#;
+
+        let to = r#"
+        const valueB = true as const;
+        type B = typeof valueB;
+        
+        export default {
+            "/hello": {
+                get: (): B => impl()
+            }
+        }
+        "#;
+        let errors = test_safe(from, to);
+        assert!(errors.is_empty());
+    }
+
+    #[test]
+    fn ok_typeof4() {
+        let from = r#"
+        type A = ["a"];
+        
+        export default {
+            "/hello": {
+                get: (): A => impl()
+            }
+        }
+        "#;
+
+        let to = r#"
+        const valueB = ["a"] as const;
+        type B = typeof valueB;
+        
+        export default {
+            "/hello": {
+                get: (): B => impl()
+            }
+        }
+        "#;
+        let errors = test_safe(from, to);
+        assert!(errors.is_empty());
+    }
+
+    #[test]
+    fn ok_typeof5() {
+        let from = r#"
+        type A = {a: 1}
+        
+        export default {
+            "/hello": {
+                get: (): A => impl()
+            }
+        }
+        "#;
+
+        let to = r#"
+        const valueB = {a:1} as const;
+        type B = typeof valueB;
+        
+        export default {
+            "/hello": {
+                get: (): B => impl()
+            }
+        }
+        "#;
+        let errors = test_safe(from, to);
+        assert!(errors.is_empty());
+    }
+
+    #[test]
+    fn fail_typeof() {
+        let from = r#"
+        const valueB = "b" as const;
+        type B = typeof valueB;
+        
+        export default {
+            "/hello": {
+                get: (): B => impl()
+            }
+        }
+        "#;
+
+        let to = r#"
+        type B = string;
+        export default {
+            "/hello": {
+                get: (): B => impl()
+            }
+        }
+        "#;
+
+        let errors = test_safe(from, to);
+        assert!(!errors.is_empty());
+        insta::assert_snapshot!(print_errors(from, to, &errors));
+    }
 }

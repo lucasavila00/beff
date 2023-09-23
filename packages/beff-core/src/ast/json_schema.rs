@@ -93,16 +93,17 @@ pub enum JsonSchema {
 }
 
 #[derive(PartialEq, Eq, Hash, Debug, Ord, PartialOrd, Clone)]
-pub struct CodecName(String);
+pub enum CodecName {
+    ISO8061,
+    BigInt,
+}
 impl CodecName {
-    pub fn new(s: String) -> Self {
-        Self(s)
-    }
-    pub fn inner(&self) -> &str {
-        self.0.as_str()
-    }
     pub fn to_string(&self) -> String {
-        "Codec::".to_string() + self.0.as_str()
+        let extra = match self {
+            CodecName::ISO8061 => "ISO8061",
+            CodecName::BigInt => "BigInt",
+        };
+        "Codec::".to_string() + extra
     }
 }
 
