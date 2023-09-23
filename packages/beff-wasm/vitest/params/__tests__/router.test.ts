@@ -67,7 +67,7 @@ it("post with body and error", async () => {
   expect(await res.json()).toMatchInlineSnapshot(
     `
     {
-      "message": "Error #1:  ~ Path:  ~ Received: \\"todo\\"",
+      "message": "[{\\"kind\\":\\"notString\\",\\"path\\":[],\\"received\\":\\"todo\\"}]",
     }
   `
   );
@@ -78,7 +78,7 @@ it("post with body and error, client", async () => {
     await beff["/req-body"].post({ a: 123 as any });
   } catch (e) {
     expect(e).toMatchInlineSnapshot(
-      '[HTTPException: Error #1:  ~ Path:  ~ Received: "todo"]'
+      '[HTTPException: [{"kind":"notString","path":[],"received":"todo"}]]'
     );
   }
 });
@@ -93,22 +93,7 @@ it("coerce", async () => {
   expect(
     await beff["/path-param-boolean/{flag}"].get(true)
   ).toMatchInlineSnapshot("true");
-  // expect(await beff["/path-param-union/{id}"].get(456)).toMatchInlineSnapshot(
-  //   `
-  //   [
-  //     {
-  //       "error_kind": "InvalidUnion",
-  //       "path": [
-  //         "responseBody",
-  //         "ValidIds",
-  //       ],
-  //       "received": {
-  //         "errors": [],
-  //       },
-  //     },
-  //   ]
-  // `
-  // );
+  expect(await beff["/path-param-union/{id}"].get(456)).toMatchInlineSnapshot('456');
 });
 
 it("default param", async () => {

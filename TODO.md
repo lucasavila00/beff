@@ -1,2 +1,0 @@
-- [ ] fix standalone parser tests
-- [ ] check for invalid intersections

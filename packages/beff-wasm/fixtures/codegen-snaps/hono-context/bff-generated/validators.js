@@ -99,17 +99,14 @@ function decodeAnyOf(ctx, input, required, vs) {
   if (!required && input == null) {
     return input;
   }
-  const errors = [];
   for (const v of vs) {
     const validatorCtx = {
       errors: [],
     };
-    const new_value = v(validatorCtx, input);
-    const validation_result = validatorCtx.errors;
-    if (validation_result.length === 0) {
-      return new_value;
+    const newValue = v(validatorCtx, input);
+    if (validatorCtx.errors.length === 0) {
+      return newValue;
     }
-    errors.push(...validation_result);
   }
   return buildError(ctx, "notAnyOf")
 }
@@ -156,8 +153,8 @@ function decodeConst(ctx, input, required, constValue) {
   if (!required && input == null) {
     return input;
   }
-  if (input === constValue) {
-    return input;
+  if (input == constValue) {
+    return constValue;
   }
   return buildError(ctx, "notConst")
 }

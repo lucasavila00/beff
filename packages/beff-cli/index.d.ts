@@ -20,28 +20,6 @@ export type HandlerMetaServer = HandlerMetaClient & {
   params: MetaParamServer[];
 };
 
-export type ErrorVariant<T> = {
-  error_kind: T;
-  path: string[];
-  received: unknown;
-};
-export type DecodeError =
-  | ErrorVariant<"NotAnObject">
-  | ErrorVariant<"NotAnArray">
-  | ErrorVariant<"InvalidUnion">
-  | (ErrorVariant<"CodecFailed"> & {
-      expected_type: string;
-    })
-  | (ErrorVariant<"StringFormatCheckFailed"> & {
-      expected_type: string;
-    })
-  | (ErrorVariant<"NotTypeof"> & {
-      expected_type: string;
-    })
-  | (ErrorVariant<"NotEq"> & {
-      expected_value: unknown;
-    });
-
 export interface OpenAPIInfo {
   title?: string;
   description?: string;

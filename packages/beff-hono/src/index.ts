@@ -1,6 +1,5 @@
 import { Hono } from "hono";
 import {
-  DecodeError,
   HandlerMetaClient,
   HandlerMetaServer,
   MetaParamServer,
@@ -94,26 +93,6 @@ export const isBeffHttpException = (e: any): e is BffHTTPException => {
   return e?.isBeffHttpException;
 };
 
-const prettyPrintErrorMessage = (it: DecodeError): string => {
-  switch (it.error_kind) {
-    case "NotTypeof": {
-      return `Expected ${it.expected_type}`;
-    }
-    case "NotEq": {
-      return `Expected ${prettyPrintValue(it.expected_value)}`;
-    }
-    case "CodecFailed": {
-      return `Expected ${it.expected_type}`;
-    }
-    case "StringFormatCheckFailed": {
-      return `Expected ${it.expected_type}`;
-    }
-    default: {
-      return it.error_kind;
-    }
-  }
-};
-
 const prettyPrintValue = (it: unknown): string => {
   if (typeof it === "string") {
     return `"${it}"`;
@@ -135,29 +114,6 @@ const prettyPrintValue = (it: unknown): string => {
   }
   return JSON.stringify(it);
 };
-const prettyPrintError = (it: DecodeError): string => {
-  return [
-    prettyPrintErrorMessage(it),
-    `Path: ${it.path.join(".")}`,
-    `Received: ${prettyPrintValue(it.received)}`,
-  ].join(" ~ ");
-};
-const MAX_ERRORS = 5;
-
-const printAndJoin = (errors: DecodeError[]): string => {
-  return errors
-    .map((it, idx) => `Error #${idx + 1}: ` + prettyPrintError(it))
-    .join(" | ");
-};
-const prettyPrintErrors = (errors: DecodeError[]): string => {
-  if (errors.length > MAX_ERRORS) {
-    const split = errors.slice(0, MAX_ERRORS);
-    const omitted = errors.length - MAX_ERRORS;
-    return printAndJoin(split) + `... ${omitted} more`;
-  }
-  return printAndJoin(errors);
-};
-
 const decodeWithMessage = (validator: any, value: any) => {
   const validatorCtx = {
     errors: [],
@@ -166,7 +122,7 @@ const decodeWithMessage = (validator: any, value: any) => {
   const newValue = validator(validatorCtx, value);
   const errors = validatorCtx.errors;
   if (errors.length > 0) {
-    throw new BffHTTPException(422, prettyPrintErrors(errors));
+    throw new BffHTTPException(422, JSON.stringify(errors));
   }
   return newValue;
 };
