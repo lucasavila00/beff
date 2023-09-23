@@ -119,7 +119,10 @@ function decodeCodec(ctx, input, required, codec) {
         return BigInt(input);
       }
       if (typeof input === "string") {
-        return BigInt(input);
+        try {
+          return BigInt(input);
+        } catch (e) {
+        }
       }
       return buildError(input, ctx,  "expected bigint")
     }
@@ -177,7 +180,31 @@ function decodeTuple(ctx, input, required, vs) {
   if (!required && input == null) {
     return input;
   }
-  throw new Error("decodeTuple not implemented");
+  if (Array.isArray(input)) {
+    const acc = []
+    let idx = 0;
+    for (const v of vs.prefix) {
+      pushPath(ctx, '['+idx+']');
+      const newValue = v(ctx, input[idx]);
+      popPath(ctx);
+      acc.push(newValue);
+      idx++;
+    }
+    if (vs.items != null) {
+      for(let i = idx; i < input.length; i++) {
+        const v = input[i];
+        pushPath(ctx, '['+i+']');
+        acc.push(vs.items(ctx, v));
+        popPath(ctx);
+      }
+    } else {
+      if (input.length > idx) {
+        return buildError(input, ctx,  "tuple has too many items")
+      }
+    }
+    return acc;
+  }
+  return buildError(input, ctx,  "expected tuple")
 }
 function decodeBoolean(ctx, input, required, ) {
   if (!required && input == null) {
@@ -275,17 +302,15 @@ function AllTypes(ctx, input) {
                 prefix: [
                     (ctx, input)=>(decodeString(ctx, input, true)),
                     (ctx, input)=>(decodeString(ctx, input, true))
-                ]
-            }, {
+                ],
                 items: null
             })),
         "tupleWithRest": (ctx, input)=>(decodeTuple(ctx, input, true, {
                 prefix: [
                     (ctx, input)=>(decodeString(ctx, input, true)),
                     (ctx, input)=>(decodeString(ctx, input, true))
-                ]
-            }, {
-                items: decodeNumber(ctx, input, true)
+                ],
+                items: (ctx, input)=>(decodeNumber(ctx, input, true))
             })),
         "typeReference": (ctx, input)=>(validators.User(ctx, input, true)),
         "undefined": (ctx, input)=>(decodeNull(ctx, input, true)),

@@ -230,10 +230,10 @@ impl DecoderFnGenerator {
             } => Self::decode_call_extra(
                 "decodeTuple",
                 required,
-                vec![
-                    Expr::Object(ObjectLit {
-                        span: DUMMY_SP,
-                        props: vec![PropOrSpread::Prop(
+                vec![Expr::Object(ObjectLit {
+                    span: DUMMY_SP,
+                    props: vec![
+                        PropOrSpread::Prop(
                             Prop::KeyValue(KeyValueProp {
                                 key: PropName::Ident(Ident {
                                     span: DUMMY_SP,
@@ -255,11 +255,8 @@ impl DecoderFnGenerator {
                                 })),
                             })
                             .into(),
-                        )],
-                    }),
-                    Expr::Object(ObjectLit {
-                        span: DUMMY_SP,
-                        props: vec![PropOrSpread::Prop(
+                        ),
+                        PropOrSpread::Prop(
                             Prop::KeyValue(KeyValueProp {
                                 key: PropName::Ident(Ident {
                                     span: DUMMY_SP,
@@ -267,14 +264,14 @@ impl DecoderFnGenerator {
                                     optional: false,
                                 }),
                                 value: Box::new(match items {
-                                    Some(v) => Self::decode_expr(v, true),
+                                    Some(v) => Self::make_cb(Self::decode_expr(v, true)),
                                     None => Expr::Lit(Lit::Null(Null { span: DUMMY_SP })),
                                 }),
                             })
                             .into(),
-                        )],
-                    }),
-                ],
+                        ),
+                    ],
+                })],
             ),
             JsonSchema::AnyOf(vs) => {
                 Self::decode_union_or_intersection("decodeAnyOf", required, vs)

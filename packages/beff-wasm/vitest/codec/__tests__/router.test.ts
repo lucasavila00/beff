@@ -11,6 +11,15 @@ const beff = buildHonoTestClient<typeof router>({
 });
 
 it("date", async () => {
+  await expect(
+    beff["/date"].post(
+      // @ts-expect-error
+      { a: "asd" }
+    )
+  ).rejects.toMatchInlineSnapshot(
+    '[HTTPException: #0 (b.a) expected ISO8061 date, received: "asd"]'
+  );
+
   expect(
     await beff["/date"].post({ a: new Date("2023-09-23T02:49:43.980Z") })
   ).toMatchInlineSnapshot("2023-09-23T02:49:43.980Z");
@@ -31,6 +40,15 @@ it("date", async () => {
 });
 
 it("bigint", async () => {
+  await expect(
+    beff["/bigint"].post(
+      // @ts-expect-error
+      { a: "asd" }
+    )
+  ).rejects.toMatchInlineSnapshot(
+    '[HTTPException: #0 (b.a) expected bigint, received: "asd"]'
+  );
+
   expect(await beff["/bigint"].post({ a: 1n })).toMatchInlineSnapshot("1n");
   expect((await beff["/bigint"].post({ a: 1n })) + 2n).toMatchInlineSnapshot(
     "3n"
@@ -40,6 +58,17 @@ it("bigint", async () => {
 });
 
 it("intersection", async () => {
+  await expect(
+    beff["/intersection"].post(
+      // @ts-expect-error
+      {
+        a: "",
+      }
+    )
+  ).rejects.toMatchInlineSnapshot(
+    "[HTTPException: #0 (p.b) expected number, received: undefined]"
+  );
+
   const v = {
     a: "a",
     b: 1,
@@ -53,4 +82,50 @@ it("intersection", async () => {
   expect((await beff["/intersection"].post(v)).b).toMatchInlineSnapshot("1");
   expect(await beff["/intersection"].get("a")).toMatchInlineSnapshot('"a"');
   expect(await beff["/intersection"].get("a")).toMatchInlineSnapshot('"a"');
+});
+
+it("tuple", async () => {
+  await expect(
+    beff["/tuple1"].post(
+      // @ts-expect-error
+      [1]
+    )
+  ).rejects.toMatchInlineSnapshot(
+    "[HTTPException: #0 (b[1]) expected number, received: undefined]"
+  );
+
+  expect(await beff["/tuple1"].post([1, 2])).toMatchInlineSnapshot(`
+    [
+      1,
+      2,
+    ]
+  `);
+  expect(await beff["/tuple1"].post([1, 2, "3", "4", "5"]))
+    .toMatchInlineSnapshot(`
+      [
+        1,
+        2,
+        "3",
+        "4",
+        "5",
+      ]
+    `);
+});
+
+it("tuple2", async () => {
+  expect(await beff["/tuple2"].post([1, 2])).toMatchInlineSnapshot(`
+    [
+      1,
+      2,
+    ]
+  `);
+
+  await expect(
+    beff["/tuple2"].post(
+      // @ts-expect-error
+      [1, 2, "3", "4", "5"]
+    )
+  ).rejects.toMatchInlineSnapshot(
+    "[HTTPException: #0 (b) tuple has too many items, received: Array]"
+  );
 });

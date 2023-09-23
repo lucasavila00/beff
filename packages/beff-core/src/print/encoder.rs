@@ -167,7 +167,7 @@ fn encode_expr(schema: &JsonSchema, input_expr: Expr) -> Expr {
             items,
         } => {
             let prefix_len = prefix_items.len();
-            Expr::Array(ArrayLit {
+            let value_expr = Expr::Array(ArrayLit {
                 span: DUMMY_SP,
                 elems: prefix_items
                     .iter()
@@ -232,7 +232,9 @@ fn encode_expr(schema: &JsonSchema, input_expr: Expr) -> Expr {
                         })
                     }))
                     .collect(),
-            })
+            });
+
+            value_expr
         }
         JsonSchema::AnyOf(vs) => union_intersection("encodeAnyOf", vs, input_expr),
         JsonSchema::AllOf(vs) => union_intersection("encodeAllOf", vs, input_expr),

@@ -1,4 +1,59 @@
-import type { HandlerMetaServer } from "@beff/cli";
+import type { DecodeError, HandlerMetaServer } from "@beff/cli";
+const prettyPrintValue = (it: unknown): string => {
+  if (typeof it === "string") {
+    return `"${it}"`;
+  }
+  if (typeof it === "number") {
+    return `${it}`;
+  }
+  if (typeof it === "boolean") {
+    return `${it}`;
+  }
+  if (it === null) {
+    return "null";
+  }
+  if (Array.isArray(it)) {
+    return `Array`;
+  }
+  if (typeof it === "object") {
+    return `Object`;
+  }
+  return JSON.stringify(it);
+};
+
+const joinWithDot = (it: string[]): string => {
+  if (it.length === 0) {
+    return "";
+  }
+  let acc = it[0];
+  for (const item of it.slice(1)) {
+    // skip dot if first char is [
+    if (item.startsWith("[")) {
+      acc += item;
+    } else {
+      acc += "." + item;
+    }
+  }
+  return acc;
+};
+export const printErrors = (
+  it: DecodeError[],
+  parentPath: string[]
+): string => {
+  return it
+    .map((err, idx) => {
+      const mergedPath = [...parentPath, ...err.path];
+      const path = mergedPath.length > 0 ? `(${joinWithDot(mergedPath)})` : "";
+
+      const msg = [err.message, `received: ${prettyPrintValue(err.received)}`]
+        .filter((it) => it.length > 0)
+        .join(", ");
+
+      return [`#${idx}`, path, msg].filter((it) => it.length > 0).join(" ");
+    })
+    .join(" | ");
+};
+
 // import { fetch, Request } from "@whatwg-node/fetch";
 export type NormalizeRouterItem<T> = T extends (
   ...args: infer I
@@ -66,7 +121,17 @@ export class BffRequest {
     for (let index = 0; index < clientParams.length; index++) {
       const metadata = clientParams[index];
       const encoder = metadata.encoder;
-      const param = encoder(params[index]);
+      const validator = metadata.validator;
+      const ctx: any = {};
+      const validParams = validator(ctx, params[index]);
+      if (ctx.errors != null) {
+        throw new BffHTTPException(
+          402,
+          printErrors(ctx.errors, [metadata.name])
+        );
+      }
+
+      const param = encoder(validParams);
       switch (metadata.type) {
         case "path": {
           path = path.replace(`{${metadata.name}}`, String(param));
