@@ -8,6 +8,9 @@ const meta = [
                 "type": "context"
             },
             {
+                "encoder": function(input) {
+                    return input;
+                },
                 "name": "limit",
                 "required": false,
                 "type": "query",
@@ -53,6 +56,9 @@ const meta = [
                 "type": "context"
             },
             {
+                "encoder": function(input) {
+                    return input;
+                },
                 "name": "user_agent",
                 "required": true,
                 "type": "header",
@@ -76,6 +82,9 @@ const meta = [
                 "type": "context"
             },
             {
+                "encoder": function(input) {
+                    return input;
+                },
                 "name": "id",
                 "required": true,
                 "type": "path",
@@ -99,6 +108,9 @@ const meta = [
                 "type": "context"
             },
             {
+                "encoder": function(input) {
+                    return input;
+                },
                 "name": "id",
                 "required": true,
                 "type": "path",
@@ -122,6 +134,9 @@ const meta = [
                 "type": "context"
             },
             {
+                "encoder": function(input) {
+                    return input;
+                },
                 "name": "id",
                 "required": true,
                 "type": "path",

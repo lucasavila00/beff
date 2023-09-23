@@ -6,10 +6,10 @@ export type MetaParamServer = {
   name: string;
   required: boolean;
   validator: any;
+  encoder: any;
 };
 export type HandlerMetaServer = {
   method_kind: "get" | "post" | "put" | "delete" | "patch" | "options" | "use";
-  params: MetaParamClient[];
   pattern: string;
   return_validator: any;
   return_encoder: any;

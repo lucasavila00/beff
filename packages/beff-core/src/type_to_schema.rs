@@ -11,7 +11,7 @@ use std::rc::Rc;
 use swc_atoms::JsWord;
 use swc_common::Span;
 use swc_ecma_ast::{
-    BigInt, Expr, Ident, Lit, Str, TsArrayType, TsCallSignatureDecl, TsConditionalType,
+    Expr, Ident, Lit, Str, TsArrayType, TsCallSignatureDecl, TsConditionalType,
     TsConstructSignatureDecl, TsConstructorType, TsEntityName, TsFnOrConstructorType, TsFnType,
     TsGetterSignature, TsImportType, TsIndexSignature, TsIndexedAccessType, TsInferType,
     TsInterfaceDecl, TsIntersectionType, TsKeywordType, TsKeywordTypeKind, TsLit, TsLitType,
@@ -55,11 +55,13 @@ impl<'a, R: FileManager> TypeToSchema<'a, R> {
             TsKeywordTypeKind::TsUndefinedKeyword | TsKeywordTypeKind::TsNullKeyword => {
                 Ok(JsonSchema::Null)
             }
+            TsKeywordTypeKind::TsBigIntKeyword => {
+                Ok(JsonSchema::Codec(CodecName::new("BigInt".into())))
+            }
             TsKeywordTypeKind::TsAnyKeyword
             | TsKeywordTypeKind::TsUnknownKeyword
             | TsKeywordTypeKind::TsObjectKeyword => Ok(JsonSchema::Any),
-            TsKeywordTypeKind::TsBigIntKeyword
-            | TsKeywordTypeKind::TsNeverKeyword
+            TsKeywordTypeKind::TsNeverKeyword
             | TsKeywordTypeKind::TsSymbolKeyword
             | TsKeywordTypeKind::TsIntrinsicKeyword
             | TsKeywordTypeKind::TsVoidKeyword => self.cannot_serialize_error(
@@ -508,10 +510,7 @@ impl<'a, R: FileManager> TypeToSchema<'a, R> {
                 TsLit::Number(n) => Ok(JsonSchema::Const(Json::parse_f64(n.value))),
                 TsLit::Str(s) => Ok(JsonSchema::Const(Json::String(s.value.to_string().clone()))),
                 TsLit::Bool(b) => Ok(JsonSchema::Const(Json::Bool(b.value))),
-                TsLit::BigInt(BigInt { span, .. }) => self.cannot_serialize_error(
-                    span,
-                    DiagnosticInfoMessage::BigIntNonSerializableToJsonSchema,
-                ),
+                TsLit::BigInt(_) => Ok(JsonSchema::Codec(CodecName::new("BigInt".into()))),
                 TsLit::Tpl(TsTplLitType {
                     span,
                     types,

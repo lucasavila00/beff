@@ -92,6 +92,9 @@ function encodeCodec(codec, value) {
     case "Codec::ISO8061": {
       return value.toISOString();
     }
+    case "Codec::BigInt": {
+      return value.toString();
+    }
   }
   throw new Error("encode - codec not found: "+codec);
 }
@@ -107,6 +110,18 @@ function decodeCodec(ctx, input, required, codec) {
         return buildError(input, ctx,  "expected ISO8061 date")
       }
       return d;
+    }
+    case "Codec::BigInt": {
+      if (typeof input === "bigint") {
+        return input;
+      }
+      if (typeof input === "number") {
+        return BigInt(input);
+      }
+      if (typeof input === "string") {
+        return BigInt(input);
+      }
+      return buildError(input, ctx,  "expected bigint")
     }
   }
   return buildError(input, ctx,  "codec " + codec + " not implemented")

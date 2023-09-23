@@ -14,4 +14,17 @@ export default {
       return a;
     },
   },
+  "/bigint": {
+    post: async (
+      _c: Ctx,
+      b: {
+        a: bigint;
+      }
+    ): Promise<bigint> => {
+      return b.a;
+    },
+    get: async (_c: Ctx, a: 1n): Promise<1n> => {
+      return a;
+    },
+  },
 };

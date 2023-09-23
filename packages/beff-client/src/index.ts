@@ -65,7 +65,8 @@ export class BffRequest {
 
     for (let index = 0; index < clientParams.length; index++) {
       const metadata = clientParams[index];
-      const param = params[index];
+      const encoder = metadata.encoder;
+      const param = encoder(params[index]);
       switch (metadata.type) {
         case "path": {
           path = path.replace(`{${metadata.name}}`, String(param));

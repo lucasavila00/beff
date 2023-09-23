@@ -102,18 +102,21 @@ fn param_to_server_js(
                     ("name".into(), Js::String(name.to_string())),
                     ("required".into(), Js::Bool(required)),
                     ("validator".into(), Js::decoder(schema.clone(), required)),
+                    ("encoder".into(), Js::encoder(schema.clone(), required)),
                 ]),
                 FunctionParameterIn::Query => Js::object(vec![
                     ("type".into(), Js::String("query".into())),
                     ("name".into(), Js::String(name.to_string())),
                     ("required".into(), Js::Bool(required)),
                     ("validator".into(), Js::decoder(schema.clone(), required)),
+                    ("encoder".into(), Js::encoder(schema.clone(), required)),
                 ]),
                 FunctionParameterIn::Body => Js::object(vec![
                     ("type".into(), Js::String("body".into())),
                     ("name".into(), Js::String(name.to_string())),
                     ("required".into(), Js::Bool(required)),
                     ("validator".into(), Js::decoder(schema.clone(), required)),
+                    ("encoder".into(), Js::encoder(schema.clone(), required)),
                 ]),
                 FunctionParameterIn::InvalidComplexPathParameter => {
                     unreachable!("will fail when extracting the json schema")
@@ -129,6 +132,7 @@ fn param_to_server_js(
                 ("name".into(), Js::String(name.to_string())),
                 ("required".into(), Js::Bool(required)),
                 ("validator".into(), Js::decoder(schema.clone(), required)),
+                ("encoder".into(), Js::encoder(schema.clone(), required)),
             ])
         }
         HandlerParameter::Context(_) => {

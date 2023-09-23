@@ -8,6 +8,9 @@ const meta = [
                 "type": "context"
             },
             {
+                "encoder": function(input) {
+                    return input;
+                },
                 "name": "name",
                 "required": true,
                 "type": "path",
@@ -31,6 +34,9 @@ const meta = [
                 "type": "context"
             },
             {
+                "encoder": function(input) {
+                    return input;
+                },
                 "name": "uuid",
                 "required": true,
                 "type": "path",
@@ -39,6 +45,9 @@ const meta = [
                 }
             },
             {
+                "encoder": function(input) {
+                    return encoders.Password(input);
+                },
                 "name": "p",
                 "required": true,
                 "type": "query",

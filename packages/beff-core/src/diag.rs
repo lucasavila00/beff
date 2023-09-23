@@ -37,7 +37,6 @@ pub enum DiagnosticInfoMessage {
     JsDocsDescriptionCouldNotBeParsed,
     KeywordNonSerializableToJsonSchema,
     PropertyNonSerializableToJsonSchema,
-    BigIntNonSerializableToJsonSchema,
     TemplateNonSerializableToJsonSchema,
     DuplicatedRestNonSerializableToJsonSchema,
     TypeConstructNonSerializableToJsonSchema,
@@ -100,7 +99,6 @@ impl DiagnosticInfoMessage {
             }
             DiagnosticInfoMessage::KeywordNonSerializableToJsonSchema
             | DiagnosticInfoMessage::PropertyNonSerializableToJsonSchema
-            | DiagnosticInfoMessage::BigIntNonSerializableToJsonSchema
             | DiagnosticInfoMessage::TemplateNonSerializableToJsonSchema
             | DiagnosticInfoMessage::DuplicatedRestNonSerializableToJsonSchema
             | DiagnosticInfoMessage::TypeConstructNonSerializableToJsonSchema => {
