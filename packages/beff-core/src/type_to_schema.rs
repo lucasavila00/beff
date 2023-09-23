@@ -218,7 +218,13 @@ impl<'a, R: FileManager> TypeToSchema<'a, R> {
                     ..
                 }) = &**head
                 {
-                    return Ok(JsonSchema::StringWithFormat(value.to_string()));
+                    let val_str = value.to_string();
+                    if self.settings.custom_formats.contains(&val_str) {
+                        return Ok(JsonSchema::StringWithFormat(val_str));
+                    } else {
+                        return self
+                            .error(span, DiagnosticInfoMessage::CustomFormatIsNotRegistered);
+                    }
                 }
             }
         }

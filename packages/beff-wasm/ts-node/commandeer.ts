@@ -47,7 +47,7 @@ const readProjectJson = (projectPath: string): ProjectJson => {
         : String(projectJson.parser),
     outputDir: String(projectJson.outputDir),
     module: projectJson.module,
-    settings: parseUserSettings(projectJson.settings),
+    settings: parseUserSettings(projectJson),
   };
 };
 

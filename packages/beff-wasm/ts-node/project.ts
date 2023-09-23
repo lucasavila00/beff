@@ -1,6 +1,5 @@
 export type BeffCustomFormat = {
   name: string;
-  regex: string;
 };
 
 export type BeffUserSettings = {

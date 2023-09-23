@@ -23,7 +23,7 @@ const readProjectJson = (
         ? projectJson.parser
         : String(projectJson.parser),
     module: projectJson.module,
-    settings: parseUserSettings(projectJson.settings),
+    settings: parseUserSettings(projectJson),
   };
 };
 

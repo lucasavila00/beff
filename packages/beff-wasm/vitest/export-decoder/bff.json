@@ -1,5 +1,13 @@
 {
     "router": "./router.ts",
     "parser": "./parser.ts",
-    "outputDir": "./bff-generated"
+    "outputDir": "./bff-generated",
+    "customFormats": [
+        {
+            "name": "Password"
+        },
+        {
+            "name": "StartsWithA"
+        }
+    ]
 }
