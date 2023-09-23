@@ -1,3 +1,5 @@
+use std::collections::BTreeSet;
+
 use swc_common::DUMMY_SP;
 use swc_ecma_ast::{
     ArrayLit, ArrowExpr, BindingIdent, BlockStmt, BlockStmtOrExpr, CallExpr, Callee,
@@ -61,6 +63,43 @@ fn make_cb(extra: Expr) -> Expr {
         is_generator: false,
         type_params: None,
         return_type: None,
+    })
+}
+
+fn union_intersection(name: &str, vs: &BTreeSet<JsonSchema>, input_expr: Expr) -> Expr {
+    Expr::Call(CallExpr {
+        span: DUMMY_SP,
+        callee: Callee::Expr(
+            Expr::Ident(Ident {
+                span: DUMMY_SP,
+                sym: name.into(),
+                optional: false,
+            })
+            .into(),
+        ),
+        args: vec![
+            ExprOrSpread {
+                spread: None,
+                expr: Expr::Array(ArrayLit {
+                    span: DUMMY_SP,
+                    elems: vs
+                        .iter()
+                        .map(|it| {
+                            Some(ExprOrSpread {
+                                spread: None,
+                                expr: make_cb(encode_expr(it, new_input_expr())).into(),
+                            })
+                        })
+                        .collect(),
+                })
+                .into(),
+            },
+            ExprOrSpread {
+                spread: None,
+                expr: input_expr.clone().into(),
+            },
+        ],
+        type_args: None,
     })
 }
 fn encode_expr(schema: &JsonSchema, input_expr: Expr) -> Expr {
@@ -195,8 +234,8 @@ fn encode_expr(schema: &JsonSchema, input_expr: Expr) -> Expr {
                     .collect(),
             })
         }
-        JsonSchema::AnyOf(vs) => input_expr.clone(),
-        JsonSchema::AllOf(vs) => input_expr.clone(),
+        JsonSchema::AnyOf(vs) => union_intersection("encodeAnyOf", vs, input_expr),
+        JsonSchema::AllOf(vs) => union_intersection("encodeAllOf", vs, input_expr),
         // JsonSchema::Codec(codec_name) => input_expr.clone(),
         JsonSchema::Codec(codec_name) => Expr::Call(CallExpr {
             span: DUMMY_SP,

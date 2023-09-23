@@ -238,6 +238,16 @@ function decodeConst(ctx, input, required, constValue) {
   return buildError(input, ctx,  "expected "+JSON.stringify(constValue))
 }
 
+function encodeAllOf(cbs, value) {
+  throw new Error("encodeAllOf not implemented");
+}
+
+function encodeAnyOf(cbs, value) {
+  for (const cb of cbs) {
+    return cb(value);
+  }
+  return value
+}
 `;
 const decodersExported = [
   "decodeObject",
@@ -254,6 +264,8 @@ const decodersExported = [
   "decodeNull",
   "decodeConst",
   "encodeCodec",
+  "encodeAnyOf",
+  "encodeAllOf",
 ];
 
 const buildParsers = `

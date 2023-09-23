@@ -202,6 +202,16 @@ function decodeConst(ctx, input, required, constValue) {
   return buildError(input, ctx,  "expected "+JSON.stringify(constValue))
 }
 
+function encodeAllOf(cbs, value) {
+  throw new Error("encodeAllOf not implemented");
+}
+
+function encodeAnyOf(cbs, value) {
+  for (const cb of cbs) {
+    return cb(value);
+  }
+  return value
+}
 
 
 
@@ -249,7 +259,10 @@ function A(ctx, input) {
     ]);
 }
 function EncodeA(input) {
-    return input;
+    return encodeAnyOf([
+        (input)=>(input),
+        (input)=>(input)
+    ], input);
 }
 function B(ctx, input) {
     return decodeAnyOf(ctx, input, true, [
@@ -258,7 +271,10 @@ function B(ctx, input) {
     ]);
 }
 function EncodeB(input) {
-    return input;
+    return encodeAnyOf([
+        (input)=>(input),
+        (input)=>(input)
+    ], input);
 }
 function D(ctx, input) {
     return decodeAnyOf(ctx, input, true, [
@@ -267,7 +283,10 @@ function D(ctx, input) {
     ]);
 }
 function EncodeD(input) {
-    return input;
+    return encodeAnyOf([
+        (input)=>(input),
+        (input)=>(input)
+    ], input);
 }
 function E(ctx, input) {
     return decodeAnyOf(ctx, input, true, [
@@ -276,7 +295,10 @@ function E(ctx, input) {
     ]);
 }
 function EncodeE(input) {
-    return input;
+    return encodeAnyOf([
+        (input)=>(input),
+        (input)=>(input)
+    ], input);
 }
 function UnionNestedNamed(ctx, input) {
     return decodeAnyOf(ctx, input, true, [
@@ -287,7 +309,12 @@ function UnionNestedNamed(ctx, input) {
     ]);
 }
 function EncodeUnionNestedNamed(input) {
-    return input;
+    return encodeAnyOf([
+        (input)=>(encoders.A(input)),
+        (input)=>(encoders.B(input)),
+        (input)=>(encoders.D(input)),
+        (input)=>(encoders.E(input))
+    ], input);
 }
 function NotPublic(ctx, input) {
     return decodeObject(ctx, input, true, {
@@ -308,7 +335,12 @@ function UnionNested(ctx, input) {
     ]);
 }
 function EncodeUnionNested(input) {
-    return input;
+    return encodeAnyOf([
+        (input)=>(encoders.A(input)),
+        (input)=>(encoders.B(input)),
+        (input)=>(encoders.D(input)),
+        (input)=>(encoders.E(input))
+    ], input);
 }
 const validators = {
     User: User,
@@ -335,4 +367,4 @@ const encoders = {
     UnionNested: EncodeUnionNested
 };
 
-export default { decodeObject, decodeArray, decodeString, decodeNumber, decodeCodec, decodeStringWithFormat, decodeAnyOf, decodeAllOf, decodeBoolean, decodeAny, decodeTuple, decodeNull, decodeConst, encodeCodec, validators, encoders, isCustomFormatValid, registerStringFormat };
+export default { decodeObject, decodeArray, decodeString, decodeNumber, decodeCodec, decodeStringWithFormat, decodeAnyOf, decodeAllOf, decodeBoolean, decodeAny, decodeTuple, decodeNull, decodeConst, encodeCodec, encodeAnyOf, encodeAllOf, validators, encoders, isCustomFormatValid, registerStringFormat };

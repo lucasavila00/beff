@@ -202,6 +202,16 @@ function decodeConst(ctx, input, required, constValue) {
   return buildError(input, ctx,  "expected "+JSON.stringify(constValue))
 }
 
+function encodeAllOf(cbs, value) {
+  throw new Error("encodeAllOf not implemented");
+}
+
+function encodeAnyOf(cbs, value) {
+  for (const cb of cbs) {
+    return cb(value);
+  }
+  return value
+}
 
 
 
@@ -300,14 +310,25 @@ function EncodeDataTypesKitchenSink(input) {
             b: input.basic.b,
             c: input.basic.c
         },
-        enum: input.enum,
+        enum: encodeAnyOf([
+            (input)=>(input),
+            (input)=>(input),
+            (input)=>(input)
+        ], input.enum),
         literals: {
             a: input.literals.a,
             b: input.literals.b,
             c: input.literals.c
         },
-        many_nullable: input.many_nullable,
-        nullable: input.nullable,
+        many_nullable: encodeAnyOf([
+            (input)=>(input),
+            (input)=>(input),
+            (input)=>(input)
+        ], input.many_nullable),
+        nullable: encodeAnyOf([
+            (input)=>(input),
+            (input)=>(input)
+        ], input.nullable),
         optional_prop: input.optional_prop,
         str_template: input.str_template,
         tuple1: [
@@ -327,8 +348,15 @@ function EncodeDataTypesKitchenSink(input) {
             input.tuple_rest[1],
             ...(input.tuple_rest.slice(2).map((input)=>(input)))
         ],
-        union_of_many: input.union_of_many,
-        union_with_undefined: input.union_with_undefined
+        union_of_many: encodeAnyOf([
+            (input)=>(input),
+            (input)=>(input),
+            (input)=>(input)
+        ], input.union_of_many),
+        union_with_undefined: encodeAnyOf([
+            (input)=>(input),
+            (input)=>(input)
+        ], input.union_with_undefined)
     };
 }
 function A(ctx, input) {
@@ -378,4 +406,4 @@ const encoders = {
     UserEntity: EncodeUserEntity
 };
 
-export default { decodeObject, decodeArray, decodeString, decodeNumber, decodeCodec, decodeStringWithFormat, decodeAnyOf, decodeAllOf, decodeBoolean, decodeAny, decodeTuple, decodeNull, decodeConst, encodeCodec, validators, encoders, isCustomFormatValid, registerStringFormat };
+export default { decodeObject, decodeArray, decodeString, decodeNumber, decodeCodec, decodeStringWithFormat, decodeAnyOf, decodeAllOf, decodeBoolean, decodeAny, decodeTuple, decodeNull, decodeConst, encodeCodec, encodeAnyOf, encodeAllOf, validators, encoders, isCustomFormatValid, registerStringFormat };

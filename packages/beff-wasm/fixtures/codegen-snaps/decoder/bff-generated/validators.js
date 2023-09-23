@@ -202,6 +202,16 @@ function decodeConst(ctx, input, required, constValue) {
   return buildError(input, ctx,  "expected "+JSON.stringify(constValue))
 }
 
+function encodeAllOf(cbs, value) {
+  throw new Error("encodeAllOf not implemented");
+}
+
+function encodeAnyOf(cbs, value) {
+  for (const cb of cbs) {
+    return cb(value);
+  }
+  return value
+}
 
 
 
@@ -283,7 +293,14 @@ function EncodeAllTypes(input) {
         arrayOfStrings: input.arrayOfStrings.map((input)=>(input)),
         booleanLiteral: input.booleanLiteral,
         interface: encoders.Post(input.interface),
-        intersection: input.intersection,
+        intersection: encodeAllOf([
+            (input)=>({
+                    a: input.a
+                }),
+            (input)=>({
+                    b: input.b
+                })
+        ], input.intersection),
         null: input.null,
         numberLiteral: input.numberLiteral,
         optionalType: input.optionalType.map((input)=>(input)),
@@ -299,9 +316,20 @@ function EncodeAllTypes(input) {
         ],
         typeReference: encoders.User(input.typeReference),
         undefined: input.undefined,
-        unionOfLiterals: input.unionOfLiterals,
-        unionOfTypes: input.unionOfTypes,
-        unionWithNull: input.unionWithNull,
+        unionOfLiterals: encodeAnyOf([
+            (input)=>(input),
+            (input)=>(input),
+            (input)=>(input)
+        ], input.unionOfLiterals),
+        unionOfTypes: encodeAnyOf([
+            (input)=>(input),
+            (input)=>(input)
+        ], input.unionOfTypes),
+        unionWithNull: encodeAnyOf([
+            (input)=>(input),
+            (input)=>(input),
+            (input)=>(input.map((input)=>(encoders.User(input))))
+        ], input.unionWithNull),
         unknown: input.unknown
     };
 }
@@ -340,4 +368,4 @@ const encoders = {
     User: EncodeUser
 };
 
-export default { decodeObject, decodeArray, decodeString, decodeNumber, decodeCodec, decodeStringWithFormat, decodeAnyOf, decodeAllOf, decodeBoolean, decodeAny, decodeTuple, decodeNull, decodeConst, encodeCodec, validators, encoders, isCustomFormatValid, registerStringFormat };
+export default { decodeObject, decodeArray, decodeString, decodeNumber, decodeCodec, decodeStringWithFormat, decodeAnyOf, decodeAllOf, decodeBoolean, decodeAny, decodeTuple, decodeNull, decodeConst, encodeCodec, encodeAnyOf, encodeAllOf, validators, encoders, isCustomFormatValid, registerStringFormat };
