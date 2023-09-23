@@ -155,7 +155,10 @@ function decodeCodec(ctx, input, required, codec) {
         return BigInt(input);
       }
       if (typeof input === "string") {
-        return BigInt(input);
+        try {
+          return BigInt(input);
+        } catch (e) {
+        }
       }
       return buildError(input, ctx,  "expected bigint")
     }
