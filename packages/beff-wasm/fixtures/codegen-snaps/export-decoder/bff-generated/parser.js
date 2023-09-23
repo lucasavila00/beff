@@ -39,11 +39,11 @@ function buildParsers() {
     let v = buildParsersInput[k];
     const safeParse = (input) => {
       const validatorCtx = {
-        errors: [],
+        errors: []
       };
       const new_value = v(validatorCtx, input);
       const validation_result = validatorCtx.errors;
-      if (validation_result.length === 0) {
+      if (validation_result?.length === 0) {
         return { success: true, data: new_value };
       }
       return { success: false, errors: validation_result };

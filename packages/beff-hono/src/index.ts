@@ -115,24 +115,20 @@ const prettyPrintValue = (it: unknown): string => {
   return JSON.stringify(it);
 };
 const decodeWithMessage = (validator: any, value: any) => {
-  const validatorCtx = {
-    errors: [],
-  };
+  const validatorCtx: any = {};
 
   const newValue = validator(validatorCtx, value);
   const errors = validatorCtx.errors;
-  if (errors.length > 0) {
+  if (errors?.length > 0) {
     throw new BffHTTPException(422, JSON.stringify(errors));
   }
   return newValue;
 };
 const decodeNoMessage = (validator: any, value: any) => {
-  const validatorCtx = {
-    errors: [],
-  };
+  const validatorCtx: any = {};
   const newValue = validator(validatorCtx, value);
   const errors = validatorCtx.errors;
-  if (errors.length > 0) {
+  if (errors?.length > 0) {
     throw new BffHTTPException(500, "Internal error");
   }
   return newValue;

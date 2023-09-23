@@ -41,7 +41,22 @@ export default _exports;
 
 const decoders = `
 
+function pushPath(ctx, path) {
+  if (ctx.paths == null) {
+    ctx.paths = [];
+  }
+  ctx.paths.push(path);
+}
+function popPath(ctx) {
+  if (ctx.paths == null) {
+    throw new Error("popPath: no paths");
+  }
+  return ctx.paths.pop();
+}
 function buildError(ctx, kind) {
+  if (ctx.errors == null) {
+    ctx.errors = [];
+  }
   ctx.errors.push({
     kind,
     path: [],
@@ -60,7 +75,9 @@ function decodeObject(ctx, input, required, data) {
   ) {
     const acc = {};
     for (const [k, v] of Object.entries(data)) {
+      pushPath(ctx, k);
       acc[k] = v(ctx, input[k]);
+      popPath(ctx);
     }
     return acc;
   }
@@ -72,8 +89,11 @@ function decodeArray(ctx, input, required, data) {
   }
   if (Array.isArray(input)) {
     const acc = [];
-    for (const v of input) {
+    for(let i = 0; i < input.length; i++) {
+      const v = input[i];
+      pushPath(ctx, '['+i+']');
       acc.push(data(ctx, v));
+      popPath(ctx);
     }
     return acc;
   }
@@ -142,10 +162,10 @@ function decodeAnyOf(ctx, input, required, vs) {
   }
   for (const v of vs) {
     const validatorCtx = {
-      errors: [],
+      errors: []
     };
     const newValue = v(validatorCtx, input);
-    if (validatorCtx.errors.length === 0) {
+    if (validatorCtx.errors?.length === 0) {
       return newValue;
     }
   }
@@ -228,11 +248,11 @@ function buildParsers() {
     let v = buildParsersInput[k];
     const safeParse = (input) => {
       const validatorCtx = {
-        errors: [],
+        errors: []
       };
       const new_value = v(validatorCtx, input);
       const validation_result = validatorCtx.errors;
-      if (validation_result.length === 0) {
+      if (validation_result?.length === 0) {
         return { success: true, data: new_value };
       }
       return { success: false, errors: validation_result };
