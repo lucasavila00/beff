@@ -254,7 +254,7 @@ export class Bundler {
     return wasm.bundle_to_string(
       router_entrypoint ?? "",
       parser_entrypoint ?? "",
-      settings
+      serializeSettings(settings)
     );
   }
 
@@ -266,11 +266,16 @@ export class Bundler {
     return wasm.bundle_to_diagnostics(
       router_entrypoint ?? "",
       parser_entrypoint ?? "",
-      settings
+      serializeSettings(settings)
     );
   }
 
   public updateFileContent(file_name: string, content: string) {
     return wasm.update_file_content(file_name, content);
   }
+}
+function serializeSettings(settings: BeffUserSettings) {
+  return {
+    custom_formats: settings.customFormats.map((it) => it.name) ?? [],
+  };
 }

@@ -232,7 +232,6 @@ pub struct UnresolvedExport {
 
 #[derive(Serialize, Deserialize, Debug)]
 pub struct BeffUserSettings {
-    #[serde(rename = "customFormats")]
     pub custom_formats: BTreeSet<String>,
 }
 

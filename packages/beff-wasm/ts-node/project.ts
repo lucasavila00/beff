@@ -1,5 +1,10 @@
+export type BeffCustomFormat = {
+  name: string;
+  regex: string;
+};
+
 export type BeffUserSettings = {
-  customFormats: string[];
+  customFormats: BeffCustomFormat[];
 };
 export type ProjectJson = {
   router?: string;
