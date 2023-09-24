@@ -1,29 +1,17 @@
 import { beffLocalClient } from "@/beff/router-app";
 import { NotFound } from "@/components/not-found";
 import { ProjectsBreadcrumbs } from "@/components/projects-breadcrumbs";
-import { Box, Card, Flex, Heading, Link, Text } from "@radix-ui/themes";
+import { Box, Flex, Heading, Link, Text } from "@radix-ui/themes";
 import { format } from "timeago.js";
 import hljs from "highlight.js/lib/core";
 import typescript from "highlight.js/lib/languages/typescript";
 import "highlight.js/styles/atom-one-dark.css";
-import { init, schema_to_ts_types } from "@/pkg";
-import NextLink from "next/link";
 import { ExternalLinkIcon } from "@radix-ui/react-icons";
-import { ProjectVersion } from "@/beff/routers/project";
 import { getVersionLabel } from "@/utils/helpers";
 import { Links } from "@/utils/route-links";
+import { beffWasm } from "@/utils/wasm";
 
 hljs.registerLanguage("typescript", typescript);
-
-let cache: any = null;
-const wasmGetter = (): { schema_to_ts_types: typeof schema_to_ts_types } => {
-  if (cache) {
-    return cache;
-  }
-  init(true);
-  cache = { schema_to_ts_types };
-  return cache;
-};
 
 export default async function Page({ params }: { params: { projectId: string; versionId: string } }) {
   const version = await beffLocalClient["/project/{projectId}/version/{versionId}"].get(
@@ -33,7 +21,7 @@ export default async function Page({ params }: { params: { projectId: string; ve
   if (version == null) {
     return <NotFound />;
   }
-  const tsType = wasmGetter().schema_to_ts_types(JSON.stringify(version.openApiSchema));
+  const tsType = beffWasm().schema_to_ts_types(JSON.stringify(version.openApiSchema));
   const tsTypeFmt = hljs.highlight(tsType, {
     language: "typescript",
   }).value;

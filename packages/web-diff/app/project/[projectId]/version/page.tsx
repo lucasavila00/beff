@@ -1,6 +1,6 @@
 import { beffLocalClient } from "@/beff/router-app";
 import { ProjectVersion } from "@/beff/routers/project";
-import { CompareSchemaVersion } from "@/components/compare-schema-version";
+import { CompareSchemaVersion } from "@/components/select-schema-version";
 import { ProjectsBreadcrumbs } from "@/components/projects-breadcrumbs";
 import { CheckCircledIcon } from "@radix-ui/react-icons";
 import { Box, Button, Card, Flex, Heading, Link, Select, Table } from "@radix-ui/themes";

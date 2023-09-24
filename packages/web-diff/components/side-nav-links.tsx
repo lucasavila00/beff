@@ -78,7 +78,8 @@ const getNav = (pathname: string): NavigationLinkInput[] => {
   if (pathname.startsWith("/project")) {
     return PROJECTS;
   }
-  throw new Error(`Unknown path ${pathname}`);
+  console.error(`Unknown path ${pathname}`);
+  return [];
 };
 const useNav = (): NavigationLink[] => {
   const pathname = usePathname();

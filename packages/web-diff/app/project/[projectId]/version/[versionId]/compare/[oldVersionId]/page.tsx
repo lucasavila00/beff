@@ -1,6 +1,7 @@
 import { beffLocalClient } from "@/beff/router-app";
 import { NotFound } from "@/components/not-found";
 import { ProjectsBreadcrumbs } from "@/components/projects-breadcrumbs";
+import { ToggleComparison } from "@/components/toggle-comparisson";
 import { getVersionLabel } from "@/utils/helpers";
 import { Links } from "@/utils/route-links";
 import { Box, Flex, Heading, Text } from "@radix-ui/themes";
@@ -44,11 +45,12 @@ export default async function Page({
         ]}
       >
         <Box className="mx-auto max-w-2xl" pt="8">
-          <Flex justify="between" align="baseline">
+          {/* <Flex justify="between" align="baseline">
             <Heading color="gray" mb="6">
               Compare
             </Heading>
-          </Flex>
+          </Flex> */}
+          <ToggleComparison version={version} oldVersion={oldVersion} />
         </Box>
       </ProjectsBreadcrumbs>
     </>
