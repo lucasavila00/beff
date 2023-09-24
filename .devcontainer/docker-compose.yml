@@ -1,33 +1,48 @@
 version: "3"
 
 services:
-    dev:
-      build:
-        context: .
-        dockerfile: Dockerfile
-      entrypoint: sh
-      command: -c 'sudo chown -R devu /workspace && sleep infinity'
-      volumes:
-        - ..:/workspace:cached
-      user: devu
-      networks:
-        - devu_network
-      depends_on:
-        - postgresql
-    postgresql:
-      image: postgres:14.1
-      container_name: postgresql
-      environment:
-        POSTGRES_USER: "postgres_user"
-        POSTGRES_PASSWORD: "postgres_password"
-        POSTGRES_DB: "postgres_db"
-      networks:
-        - devu_network
-      volumes:
-        - devu-psql-data:/var/lib/postgresql/data
-
+  dev:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    entrypoint: sh
+    command: -c 'sudo chown -R devu /workspace && sleep infinity'
+    volumes:
+      - ..:/workspace:cached
+    user: devu
+    networks:
+      - devu_network
+    depends_on:
+      - postgresql
+  postgresql:
+    image: postgres:14.1
+    container_name: postgresql
+    environment:
+      POSTGRES_USER: "postgres_user"
+      POSTGRES_PASSWORD: "postgres_password"
+      POSTGRES_DB: "postgres_db"
+    networks:
+      - devu_network
+    volumes:
+      - devu-psql-data:/var/lib/postgresql/data
+  pgadmin:
+    image: dpage/pgadmin4
+    container_name: pgadmin4_container
+    restart: always
+    expose:
+      - "5050"
+    ports:
+      - "5050:80"
+    environment:
+      PGADMIN_DEFAULT_EMAIL: admin@mail.com
+      PGADMIN_DEFAULT_PASSWORD: admin
+    volumes:
+      - pgadmin-data:/var/lib/pgadmin
+    networks:
+      - devu_network
 volumes:
-    devu-psql-data:
+  devu-psql-data:
+  pgadmin-data:
 
 networks:
   devu_network:

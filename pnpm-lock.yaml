@@ -245,6 +245,9 @@ importers:
       eslint-config-next:
         specifier: ^13.5.1
         version: 13.5.1(eslint@8.49.0)(typescript@5.2.2)
+      esno:
+        specifier: ^0.17.0
+        version: 0.17.0
       fuse.js:
         specifier: ^6.6.2
         version: 6.6.2
@@ -8379,6 +8382,13 @@ packages:
       text-table: 0.2.0
     transitivePeerDependencies:
       - supports-color
+    dev: false
+
+  /esno@0.17.0:
+    resolution: {integrity: sha512-w78cQGlptQfsBYfootUCitsKS+MD74uR5L6kNsvwVkJsfzEepIafbvWsx2xK4rcFP4IUftt4F6J8EhagUxX+Bg==}
+    hasBin: true
+    dependencies:
+      tsx: 3.12.10
     dev: false
 
   /espree@9.6.1:

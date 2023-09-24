@@ -4,6 +4,7 @@
     "bindgen",
     "codegen",
     "ctxt",
+    "esno",
     "Hono",
     "insta",
     "jsdoc",
