@@ -1393,4 +1393,27 @@ mod tests {
         "#;
         assert_eq_schema(from, to)
     }
+
+    #[test]
+    fn ok_keyof_arr() {
+        let from = r#"
+        
+        export default {
+            "/hello": {
+                get: (): number => impl()
+            }
+        }
+        "#;
+
+        let to = r#"
+        const B = ['a'] as const
+        type C = keyof typeof B;
+        export default {
+            "/hello": {
+                get: (): C => impl()
+            }
+        }
+        "#;
+        assert_eq_schema(from, to)
+    }
 }

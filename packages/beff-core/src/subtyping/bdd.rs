@@ -986,22 +986,32 @@ pub fn keyof(ctx: &mut SemTypeContext, st: Rc<SemType>) -> Rc<SemType> {
     let mut acc = Rc::new(SemTypeContext::never());
 
     for it in &st.subtype_data {
-        if let ProperSubtype::Mapping(it) = it.as_ref() {
-            for atom in to_bdd_atoms(it) {
-                if let Atom::Mapping(a) = atom.as_ref() {
-                    let a = ctx.get_mapping_atomic(*a);
+        match it.as_ref() {
+            ProperSubtype::Mapping(it) => {
+                for atom in to_bdd_atoms(it) {
+                    if let Atom::Mapping(a) = atom.as_ref() {
+                        let a = ctx.get_mapping_atomic(*a);
 
-                    for k in a.keys() {
-                        let key_ty = Rc::new(SemTypeContext::string_const(StringLitOrFormat::Lit(
-                            k.clone(),
-                        )));
-                        let ty_at_key = mapping_indexed_access(ctx, st.clone(), key_ty.clone());
-                        if !ty_at_key.is_empty(ctx) {
-                            acc = acc.union(&key_ty)
+                        for k in a.keys() {
+                            let key_ty = Rc::new(SemTypeContext::string_const(
+                                StringLitOrFormat::Lit(k.clone()),
+                            ));
+                            let ty_at_key = mapping_indexed_access(ctx, st.clone(), key_ty.clone());
+                            if !ty_at_key.is_empty(ctx) {
+                                acc = acc.union(&key_ty)
+                            }
                         }
-                    }
-                };
+                    };
+                }
             }
+            ProperSubtype::List(_) => {
+                let idx_st = Rc::new(SemTypeContext::number());
+                let ty_at_key = list_indexed_access(ctx, st.clone(), idx_st.clone());
+                if !ty_at_key.is_empty(ctx) {
+                    acc = acc.union(&idx_st)
+                }
+            }
+            _ => (),
         }
     }
     acc

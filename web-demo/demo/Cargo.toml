@@ -33,7 +33,3 @@ swc_ecma_visit = "0.95.0"
 serde_json = "1.0.107"
 [dev-dependencies]
 wasm-bindgen-test = "0.3.34"
-
-[profile.release]
-# Tell `rustc` to optimize for small code size.
-opt-level = "s"
