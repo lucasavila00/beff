@@ -4,7 +4,7 @@ use std::{
     rc::Rc,
 };
 
-use crate::subtyping::{bdd, semtype::SemTypeContext};
+use crate::{ast::json::N, subtyping::semtype::SemTypeContext};
 
 use super::{
     evidence::{
@@ -688,31 +688,6 @@ pub fn list_is_empty(bdd: &Rc<Bdd>, builder: &mut SemTypeContext) -> ProperSubty
     is_empty
 }
 
-// // function bddListMemberTypeInnerVal(Context cx, Bdd b, IntSubtype|true key, SemType accum) returns SemType {
-// //     if b is boolean {
-// //         return b ? accum : NEVER;
-// //     }
-// //     else {
-// //         return union(bddListMemberTypeInnerVal(cx, b.left, key,
-// //                                        intersect(listAtomicMemberTypeInnerVal(cx.listAtomType(b.atom), key),
-// //                                                  accum)),
-// //                      union(bddListMemberTypeInnerVal(cx, b.middle, key, accum),
-// //                            bddListMemberTypeInnerVal(cx, b.right, key, accum)));
-// //     }
-// // }
-
-// // function bddMappingMemberTypeInner(Context cx, Bdd b, StringSubtype|true key, SemType accum) returns SemType {
-// //     if b is boolean {
-// //         return b ? accum : NEVER;
-// //     }
-// //     else {
-// //         return union(bddMappingMemberTypeInner(cx, b.left, key,
-// //                                           intersect(mappingAtomicMemberTypeInner(cx.mappingAtomType(b.atom), key),
-// //                                                     accum)),
-// //                      union(bddMappingMemberTypeInner(cx, b.middle, key, accum),
-// //                            bddMappingMemberTypeInner(cx, b.right, key, accum)));
-// //     }
-// // }
 pub fn bdd_mapping_member_type_inner(
     ctx: &SemTypeContext,
     b: Rc<Bdd>,
@@ -740,11 +715,6 @@ pub fn bdd_mapping_member_type_inner(
             let c = bdd_mapping_member_type_inner(ctx, right.clone(), key, accum.clone());
 
             a.union(&b.union(&c))
-            //         return union(bddMappingMemberTypeInner(cx, b.left, key,
-            //                                           intersect(mappingAtomicMemberTypeInner(cx.mappingAtomType(b.atom), key),
-            //                                                     accum)),
-            //                      union(bddMappingMemberTypeInner(cx, b.middle, key, accum),
-            //                            bddMappingMemberTypeInner(cx, b.right, key, accum)));
         }
     }
 }
@@ -758,25 +728,6 @@ pub enum MappingStrKey {
     True,
 }
 
-// function mappingAtomicApplicableMemberTypesInner(MappingAtomicType atomic, StringSubtype|true key) returns SemType[] {
-//     SemType[] types = from CellSemType t in atomic.types select cellInner(t);
-//     SemType rest = cellInner(atomic.rest);
-//     SemType[] memberTypes = [];
-//     if key == true {
-//         memberTypes.push(...types);
-//         memberTypes.push(rest);
-//     }
-//     else {
-//         StringSubtypeListCoverage coverage = stringSubtypeListCoverage(key, atomic.names);
-//         foreach int index in coverage.indices {
-//             memberTypes.push(types[index]);
-//         }
-//         if !coverage.isSubtype {
-//             memberTypes.push(rest);
-//         }
-//     }
-//     return memberTypes;
-// }
 fn mapping_atomic_applicable_member_types_inner(
     atomic: Rc<MappingAtomic>,
     key: MappingStrKey,
@@ -824,30 +775,6 @@ fn mapping_member_type_inner(atomic: Rc<MappingAtomic>, key: MappingStrKey) -> R
         None => SemTypeContext::void().into(),
     }
 }
-// This computes the spec operation called "member type of K in T",
-// for the case when T is a subtype of list, and K is either `int` or a singleton int.
-// This is what Castagna calls projection.
-// We will extend this to allow `key` to be a SemType, which will turn into an IntSubtype.
-// If `t` is not a list, NEVER is returned
-pub fn list_indexed_access(
-    ctx: &SemTypeContext,
-    obj_st: Rc<SemType>,
-    idx_st: Rc<SemType>,
-) -> Rc<SemType> {
-    //     if t is BasicTypeBitSet {
-    //         return (t & LIST) != 0 ? VAL : NEVER;
-    //     }
-    match SemTypeContext::number_sub_type(idx_st) {
-        SubType::False(_) => SemTypeContext::never().into(),
-        //         IntSubtype|boolean keyData = intSubtype(k);
-        //         if keyData == false {
-        //             return NEVER;
-        //         }
-        //         return bddListMemberTypeInnerVal(cx, <Bdd>getComplexSubtypeData(t, BT_LIST), <IntSubtype|true>keyData, VAL);
-        SubType::True(_) => todo!(),
-        SubType::Proper(_) => todo!(),
-    }
-}
 
 // This computes the spec operation called "member type of K in T",
 // for when T is a subtype of mapping, and K is either `string` or a singleton string.
@@ -883,6 +810,155 @@ pub fn mapping_indexed_access(
                 _ => todo!(),
             };
             bdd_mapping_member_type_inner(ctx, bdd.clone(), k, SemTypeContext::unknown().into())
+        }
+    }
+}
+
+#[derive(Debug, Clone)]
+pub enum ListNumberKey {
+    N { allowed: bool, values: Vec<N> },
+    True,
+}
+
+fn int_subtype_contains(allowed: bool, values: &Vec<N>, it: usize) -> bool {
+    if !allowed {
+        for v in values {
+            let i = v.to_f64() as i64;
+            if i == (it as i64) {
+                return false;
+            }
+        }
+        return true;
+    }
+    for v in values {
+        let i = v.to_f64() as i64;
+        if i == (it as i64) {
+            return true;
+        }
+    }
+    return false;
+}
+fn int_subtype_max(allowed: bool, values: &Vec<N>) -> i64 {
+    if !allowed {
+        return -1;
+    }
+    let mut max = -1;
+    for it in values {
+        let i = it.to_f64() as i64;
+        if i > max {
+            max = i;
+        }
+    }
+    max
+}
+
+fn list_atomic_member_type_at_inner(
+    prefix_items: &Vec<Rc<SemType>>,
+    items: &Rc<SemType>,
+    key: ListNumberKey,
+) -> Rc<SemType> {
+    match key {
+        ListNumberKey::N { allowed, values } => {
+            let mut m = Rc::new(SemTypeContext::never());
+            let init_len = prefix_items.len();
+            if init_len > 0 {
+                for i in 0..init_len {
+                    if int_subtype_contains(allowed, &values, i) {
+                        m = m.union(&prefix_items[i]);
+                    }
+                }
+            }
+            if init_len == 0 || int_subtype_max(allowed, &values) > (init_len as i64) - 1 {
+                m = m.union(&items);
+            }
+            return m;
+        }
+        ListNumberKey::True => {
+            let mut m = items.clone();
+            for it in prefix_items.iter() {
+                m = m.union(it);
+            }
+            return m;
+        }
+    }
+}
+
+fn list_atomic_member_type_inner(atomic: Rc<ListAtomic>, key: ListNumberKey) -> Rc<SemType> {
+    return list_atomic_member_type_at_inner(&atomic.prefix_items, &atomic.items, key);
+}
+
+fn list_member_type_inner_val(atomic: Rc<ListAtomic>, key: ListNumberKey) -> Rc<SemType> {
+    let a = list_atomic_member_type_inner(atomic, key);
+    return a.diff(&Rc::new(SemTypeContext::void()));
+}
+
+fn bdd_list_member_type_inner_val(
+    ctx: &SemTypeContext,
+    b: Rc<Bdd>,
+    key: ListNumberKey,
+    accum: Rc<SemType>,
+) -> Rc<SemType> {
+    match b.as_ref() {
+        Bdd::True => accum,
+        Bdd::False => SemTypeContext::never().into(),
+        Bdd::Node {
+            atom,
+            left,
+            middle,
+            right,
+        } => {
+            let b_atom_type = match atom.as_ref() {
+                Atom::List(a) => ctx.get_list_atomic(*a),
+                _ => unreachable!(),
+            };
+            let a = list_member_type_inner_val(b_atom_type, key.clone());
+            let a = a.intersect(&accum);
+            let a = bdd_list_member_type_inner_val(ctx, left.clone(), key.clone(), a.clone());
+
+            let b = bdd_list_member_type_inner_val(ctx, middle.clone(), key.clone(), accum.clone());
+            let c = bdd_list_member_type_inner_val(ctx, right.clone(), key, accum.clone());
+
+            a.union(&b.union(&c))
+        }
+    }
+}
+
+// This computes the spec operation called "member type of K in T",
+// for the case when T is a subtype of list, and K is either `int` or a singleton int.
+// This is what Castagna calls projection.
+// We will extend this to allow `key` to be a SemType, which will turn into an IntSubtype.
+// If `t` is not a list, NEVER is returned
+pub fn list_indexed_access(
+    ctx: &SemTypeContext,
+    obj_st: Rc<SemType>,
+    idx_st: Rc<SemType>,
+) -> Rc<SemType> {
+    //     if t is BasicTypeBitSet {
+    //         return (t & LIST) != 0 ? VAL : NEVER;
+    //     }
+
+    let k: ListNumberKey = match SemTypeContext::number_sub_type(idx_st) {
+        SubType::False(_) => return SemTypeContext::never().into(),
+        SubType::True(_) => ListNumberKey::True,
+        SubType::Proper(proper) => match proper.as_ref() {
+            ProperSubtype::Number { allowed, values } => ListNumberKey::N {
+                allowed: *allowed,
+                values: values.clone(),
+            },
+            _ => unreachable!("should be string"),
+        },
+    };
+    let b = SemTypeContext::sub_type_data(obj_st, SubTypeTag::List);
+
+    match b {
+        SubType::False(_) => todo!(),
+        SubType::True(_) => todo!(),
+        SubType::Proper(p) => {
+            let bdd = match p.as_ref() {
+                ProperSubtype::List(bdd) => bdd,
+                _ => todo!(),
+            };
+            bdd_list_member_type_inner_val(ctx, bdd.clone(), k, SemTypeContext::unknown().into())
         }
     }
 }

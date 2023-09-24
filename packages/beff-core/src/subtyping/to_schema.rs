@@ -615,12 +615,13 @@ pub fn to_validators(
 ) -> (Validator, Vec<Validator>) {
     let mut schemer = SchemerContext::new(ctx);
     let out = schemer.convert_to_schema(ty, Some(name));
-    let vs = schemer
+    let vs: Vec<Validator> = schemer
         .validators
         .into_iter()
         .filter(|it| schemer.recursive_validators.contains(&it.name))
         .collect();
 
+    let vs = vs.into_iter().filter(|it| it.name != name).collect();
     (
         Validator {
             name: name.into(),
