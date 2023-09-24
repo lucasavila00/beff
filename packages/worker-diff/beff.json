@@ -1,0 +1,4 @@
+{
+    "router": "src/beff/router.ts",
+    "outputDir": "src/beff/generated"
+}

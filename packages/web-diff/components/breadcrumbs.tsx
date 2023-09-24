@@ -3,7 +3,7 @@ import { FC, Fragment, ReactNode } from "react";
 import NextLink from "next/link";
 import { SlashIcon } from "@radix-ui/react-icons";
 
-type Crumb = {
+export type Crumb = {
   href: string | null;
   text: string;
 };

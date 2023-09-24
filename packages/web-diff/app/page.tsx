@@ -1,14 +1,14 @@
+import { BeffProject } from "@/beff/routers/project";
+import { BreadCrumbs } from "@/components/breadcrumbs";
+import { NewProjectButton } from "@/components/new-project";
+import wfy from "@/components/undraw/waiting_for_you.svg";
+import { GitHubLogoIcon } from "@radix-ui/react-icons";
 import { Box, Card, Flex, Heading, Link, Table } from "@radix-ui/themes";
 import Image from "next/image";
-import wfy from "@/components/undraw/waiting_for_you.svg";
-import { NewProjectButton } from "@/components/new-project";
-import { BreadCrumbs } from "@/components/breadcrumbs";
-import { beffLocalClient } from "./api/beff/[...beff]/router-app";
-import { BeffProject } from "@/beff/routers/project";
-import { FC } from "react";
-import { GitHubLogoIcon } from "@radix-ui/react-icons";
 import NextLink from "next/link";
+import { FC } from "react";
 import { format } from "timeago.js";
+import { beffLocalClient } from "./api/beff/[...beff]/router-app";
 const ProjectTable: FC<{ projects: BeffProject[] }> = ({ projects }) => {
   return (
     <>
@@ -61,13 +61,13 @@ const CreateFirstProject = () => {
     </Card>
   );
 };
+
 export default async function Home() {
   const projects = await beffLocalClient["/project"].get();
-
   return (
     <>
       <BreadCrumbs crumbs={[]}>
-        <Box className="mx-auto max-w-xl" pt="8">
+        <Box className="mx-auto max-w-2xl" pt="8">
           {projects.length == 0 ? (
             <CreateFirstProject />
           ) : (

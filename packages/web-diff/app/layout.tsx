@@ -9,6 +9,7 @@ import { ReactQueryProvider } from "@/components/query-client-provider";
 import { getServerSession } from "next-auth";
 import { Layout } from "@/components/layout";
 import { authOptions } from "./api/auth/[...nextauth]/options";
+import { Suspense } from "react";
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -22,8 +23,6 @@ export default async function RootLayout({
 }: {
   children: React.ReactNode;
 }) {
-  const session = await getServerSession(authOptions);
-
   return (
     <html
       lang="en"
@@ -33,18 +32,20 @@ export default async function RootLayout({
       }}
     >
       <body className={[inter.className, "h-full"].join(" ")}>
-        <Providers>
-          <Theme
-            className="h-full"
-            accentColor="grass"
-            grayColor="gray"
-            radius="full"
-          >
-            <ReactQueryProvider>
-              <Layout session={session}>{children}</Layout>
-            </ReactQueryProvider>
-          </Theme>
-        </Providers>
+        <Suspense fallback={<>Loading...</>}>
+          <Providers>
+            <Theme
+              className="h-full"
+              accentColor="grass"
+              grayColor="gray"
+              radius="full"
+            >
+              <ReactQueryProvider>
+                <Layout>{children}</Layout>
+              </ReactQueryProvider>
+            </Theme>
+          </Providers>
+        </Suspense>
       </body>
     </html>
   );
