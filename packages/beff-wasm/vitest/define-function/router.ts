@@ -1,5 +1,6 @@
 import { r0 } from "./r0";
 import r3 from "./r3";
+import * as allOfR4 from "./r4";
 
 const r1 = {
   ...r0,
@@ -13,11 +14,7 @@ const r1 = {
 const r = {
   ...r1,
   ...r3,
-  [`/hello4`]: {
-    get: function (): string {
-      return "Hello!";
-    },
-  },
+  ...allOfR4.r4,
   [`/hello5`]: { get: (): string => "Hello!" },
 };
 

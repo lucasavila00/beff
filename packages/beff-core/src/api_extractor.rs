@@ -23,10 +23,10 @@ use swc_common::comments::{Comment, CommentKind, Comments};
 use swc_common::{BytePos, Span, Spanned, DUMMY_SP};
 use swc_ecma_ast::{
     ArrayPat, ArrowExpr, AssignPat, AssignProp, BigInt, BindingIdent, ComputedPropName, Expr,
-    FnExpr, Function, GetterProp, Ident, Invalid, KeyValueProp, Lit, MethodProp, Number, ObjectLit,
-    ObjectPat, Pat, Prop, PropName, PropOrSpread, RestPat, SetterProp, SpreadElement, Str, Tpl,
-    TsEntityName, TsKeywordType, TsKeywordTypeKind, TsType, TsTypeAnn, TsTypeParamDecl,
-    TsTypeParamInstantiation, TsTypeRef,
+    FnExpr, Function, GetterProp, Ident, Invalid, KeyValueProp, Lit, MemberExpr, MemberProp,
+    MethodProp, Number, ObjectLit, ObjectPat, Pat, Prop, PropName, PropOrSpread, RestPat,
+    SetterProp, SpreadElement, Str, Tpl, TsEntityName, TsKeywordType, TsKeywordTypeKind, TsType,
+    TsTypeAnn, TsTypeParamDecl, TsTypeParamInstantiation, TsTypeRef,
 };
 
 fn maybe_extract_promise(typ: &TsType) -> &TsType {
@@ -229,6 +229,37 @@ impl<'a, R: FileManager> ExtractExportDefaultVisitor<'a, R> {
             }
         }
     }
+    fn check_member_expr_for_methods(&mut self, expr: &MemberExpr) {
+        match expr.obj.as_ref() {
+            Expr::Ident(i) => {
+                match TypeResolver::new(self.files, &self.current_file).resolve_local_value(i) {
+                    Ok(r) => match r {
+                        ResolvedLocalSymbol::TsType(_) => todo!(),
+                        ResolvedLocalSymbol::TsInterfaceDecl(_) => todo!(),
+                        ResolvedLocalSymbol::Expr(e) => self.check_expr_for_methods(&e),
+                        ResolvedLocalSymbol::NamedImport { .. } => todo!(),
+                        ResolvedLocalSymbol::SymbolExportDefault(_) => todo!(),
+                        ResolvedLocalSymbol::Star(file_name) => {
+                            let file = self.files.get_or_fetch_file(&file_name);
+                            let prop_sym = match &expr.prop {
+                                MemberProp::Ident(i) => &i.sym,
+                                MemberProp::PrivateName(_) => todo!(),
+                                MemberProp::Computed(_) => todo!(),
+                            };
+                            let exp =
+                                file.and_then(|it| it.symbol_exports.get(&prop_sym, self.files));
+                            match exp {
+                                Some(s) => self.check_ts_export_for_methods(&s, &expr.span()),
+                                None => todo!(),
+                            }
+                        }
+                    },
+                    Err(_) => todo!(),
+                }
+            }
+            _ => todo!(),
+        }
+    }
     fn check_expr_for_methods(&mut self, expr: &Expr) {
         match expr {
             Expr::Object(lit) => {
@@ -252,6 +283,7 @@ impl<'a, R: FileManager> ExtractExportDefaultVisitor<'a, R> {
                         self.check_expr_for_methods(&export_default.symbol_export);
                         self.current_file = old_file;
                     }
+                    Ok(ResolvedLocalSymbol::Star { .. }) => todo!(),
                     Ok(ResolvedLocalSymbol::TsType { .. })
                     | Ok(ResolvedLocalSymbol::TsInterfaceDecl { .. }) => {
                         self.errors.push(
@@ -265,6 +297,7 @@ impl<'a, R: FileManager> ExtractExportDefaultVisitor<'a, R> {
                     Err(e) => self.errors.push(*e),
                 }
             }
+            Expr::Member(m) => self.check_member_expr_for_methods(m),
             _ => {
                 self.errors.push(
                     self.build_error(

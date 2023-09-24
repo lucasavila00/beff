@@ -22,7 +22,7 @@ pub enum ResolvedLocalSymbol {
         from_file: Rc<ImportReference>,
     },
     SymbolExportDefault(Rc<SymbolExportDefault>),
-    // ExportDefault(Rc<Expr>),
+    Star(BffFileName), // ExportDefault(Rc<Expr>),
 }
 pub struct ResolvedNamespaceSymbol {
     pub from_file: Rc<ImportReference>,
@@ -121,8 +121,8 @@ impl<'a, R: FileManager> TypeResolver<'a, R> {
                         });
                     }
                 }
-                ImportReference::Star { .. } => {
-                    todo!()
+                ImportReference::Star { file_name } => {
+                    return Ok(ResolvedLocalSymbol::Star(file_name.clone()));
                 }
                 ImportReference::Default { file_name } => {
                     let file = self.files.get_or_fetch_file(file_name);

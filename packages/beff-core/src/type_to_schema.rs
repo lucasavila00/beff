@@ -190,6 +190,7 @@ impl<'a, R: FileManager> TypeToSchema<'a, R> {
             ResolvedLocalSymbol::Expr(_) | ResolvedLocalSymbol::SymbolExportDefault(_) => {
                 self.error(&i.span, DiagnosticInfoMessage::FoundValueExpectedType)
             }
+            ResolvedLocalSymbol::Star(_) => todo!(),
         }
     }
 
@@ -567,6 +568,7 @@ impl<'a, R: FileManager> TypeToSchema<'a, R> {
             },
             ResolvedLocalSymbol::NamedImport { .. } => todo!(),
             ResolvedLocalSymbol::SymbolExportDefault(_) => todo!(),
+            ResolvedLocalSymbol::Star(_) => todo!(),
         }
     }
     pub fn convert_type_query(&mut self, q: &TsTypeQuery) -> Res<JsonSchema> {

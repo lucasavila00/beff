@@ -142,6 +142,7 @@ pub struct SymbolExportDefault {
     pub span: Span,
     pub file_name: BffFileName,
 }
+
 pub struct ParsedModule {
     pub locals: ParsedModuleLocals,
     pub module: BffModuleData,

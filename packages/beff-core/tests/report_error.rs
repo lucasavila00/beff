@@ -117,6 +117,11 @@ mod tests {
             .collect::<Vec<_>>()
             .join("\n")
     }
+    fn ok(from: &str) {
+        let p = parse_api(from);
+        let errors = p.errors();
+        assert!(errors.is_empty());
+    }
 
     #[test]
     fn fail1() {
@@ -178,5 +183,15 @@ mod tests {
     export default A
     "#;
         insta::assert_snapshot!(fail(from));
+    }
+    #[test]
+    fn ok1() {
+        let from = r#"
+    const a = {
+        b: {}
+    }
+    export default a.b
+    "#;
+        ok(from)
     }
 }
