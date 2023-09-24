@@ -963,3 +963,49 @@ pub fn list_indexed_access(
         }
     }
 }
+
+pub fn to_bdd_atoms(it: &Rc<Bdd>) -> Vec<Rc<Atom>> {
+    match it.as_ref() {
+        Bdd::True => vec![],
+        Bdd::False => vec![],
+        Bdd::Node {
+            atom,
+            left,
+            middle,
+            right,
+        } => {
+            let mut acc = vec![atom.clone()];
+            acc.extend(to_bdd_atoms(left));
+            acc.extend(to_bdd_atoms(middle));
+            acc.extend(to_bdd_atoms(right));
+            acc
+        }
+    }
+}
+pub fn keyof(ctx: &mut SemTypeContext, st: Rc<SemType>) -> Rc<SemType> {
+    let mut acc = Rc::new(SemTypeContext::never());
+
+    for it in &st.subtype_data {
+        if let ProperSubtype::Mapping(it) = it.as_ref() {
+            for atom in to_bdd_atoms(it) {
+                match atom.as_ref() {
+                    Atom::Mapping(a) => {
+                        let a = ctx.get_mapping_atomic(*a);
+
+                        for k in a.keys() {
+                            let key_ty = Rc::new(SemTypeContext::string_const(
+                                StringLitOrFormat::Lit(k.clone()),
+                            ));
+                            let ty_at_key = mapping_indexed_access(ctx, st.clone(), key_ty.clone());
+                            if !ty_at_key.is_empty(ctx) {
+                                acc = acc.union(&key_ty)
+                            }
+                        }
+                    }
+                    _ => {}
+                };
+            }
+        }
+    }
+    acc
+}

@@ -1,7 +1,9 @@
 use crate::subtyping::evidence::Evidence;
 
 use super::{
-    bdd::{list_indexed_access, mapping_indexed_access, Atom, Bdd, ListAtomic, MappingAtomic},
+    bdd::{
+        keyof, list_indexed_access, mapping_indexed_access, Atom, Bdd, ListAtomic, MappingAtomic,
+    },
     evidence::{EvidenceResult, ProperSubtypeEvidenceResult},
     subtype::{
         BasicTypeBitSet, BasicTypeCode, NumberRepresentation, ProperSubtype, ProperSubtypeOps,
@@ -477,5 +479,9 @@ impl SemTypeContext {
             return mapping_indexed_access(self, obj_st, idx_st);
         }
         list_result
+    }
+
+    pub fn keyof(&mut self, st: Rc<SemType>) -> Rc<SemType> {
+        keyof(self, st)
     }
 }

@@ -20,9 +20,9 @@ use swc_ecma_ast::{
     TsIndexedAccessType, TsInferType, TsInterfaceDecl, TsIntersectionType, TsKeywordType,
     TsKeywordTypeKind, TsLit, TsLitType, TsMappedType, TsMethodSignature, TsOptionalType,
     TsParenthesizedType, TsQualifiedName, TsRestType, TsSetterSignature, TsThisType, TsTplLitType,
-    TsTupleType, TsType, TsTypeElement, TsTypeLit, TsTypeOperator, TsTypeParamInstantiation,
-    TsTypePredicate, TsTypeQuery, TsTypeQueryExpr, TsTypeRef, TsUnionOrIntersectionType,
-    TsUnionType,
+    TsTupleType, TsType, TsTypeElement, TsTypeLit, TsTypeOperator, TsTypeOperatorOp,
+    TsTypeParamInstantiation, TsTypePredicate, TsTypeQuery, TsTypeQueryExpr, TsTypeRef,
+    TsUnionOrIntersectionType, TsUnionType,
 };
 
 pub struct TypeToSchema<'a, R: FileManager> {
@@ -593,7 +593,23 @@ impl<'a, R: FileManager> TypeToSchema<'a, R> {
             .filter_map(|it| it.as_ref())
             .collect()
     }
-    pub fn convert_indexed_access(&mut self, i: &TsIndexedAccessType) -> Res<JsonSchema> {
+
+    fn convert_sem_type(
+        &mut self,
+        access_st: Rc<SemType>,
+        ctx: &mut SemTypeContext,
+        span: &Span,
+    ) -> Res<JsonSchema> {
+        if access_st.is_empty(ctx) {
+            return self.error(&span, DiagnosticInfoMessage::InvalidIndexedAccess);
+        }
+        let (head, tail) = to_validators(ctx, &access_st, "AnyName");
+        for t in tail {
+            self.insert_definition(t.name.clone(), t.schema)?;
+        }
+        Ok(head.schema)
+    }
+    fn convert_indexed_access(&mut self, i: &TsIndexedAccessType) -> Res<JsonSchema> {
         let obj = self.convert_ts_type(&i.obj_type)?;
         let index = self.convert_ts_type(&i.index_type)?;
 
@@ -603,22 +619,18 @@ impl<'a, R: FileManager> TypeToSchema<'a, R> {
         let idx_st = index.to_sub_type(&self.validators_ref(), &mut ctx).unwrap();
 
         let access_st: Rc<SemType> = ctx.indexed_access(obj_st, idx_st);
+        return self.convert_sem_type(access_st, &mut ctx, &i.index_type.span());
+    }
+    fn convert_keyof(&mut self, k: &TsType) -> Res<JsonSchema> {
+        let json_schema = self.convert_ts_type(k)?;
+        let mut ctx = SemTypeContext::new();
+        let st = json_schema
+            .to_sub_type(&self.validators_ref(), &mut ctx)
+            .unwrap();
 
-        if access_st.is_empty(&mut ctx) {
-            return self.error(
-                &i.index_type.span(),
-                DiagnosticInfoMessage::InvalidIndexedAccess,
-            );
-        }
+        let keyof_st: Rc<SemType> = ctx.keyof(st);
 
-        // let json_schema = access_st.to_json_schema(&mut ctx, &self.validators_ref());
-        let (head, tail) = to_validators(&mut ctx, &access_st, "AnyName");
-
-        for t in tail {
-            self.insert_definition(t.name.clone(), t.schema)?;
-        }
-
-        Ok(head.schema)
+        return self.convert_sem_type(keyof_st, &mut ctx, &k.span());
     }
     pub fn convert_ts_type(&mut self, typ: &TsType) -> Res<JsonSchema> {
         match typ {
@@ -716,6 +728,14 @@ impl<'a, R: FileManager> TypeToSchema<'a, R> {
             TsType::TsOptionalType(TsOptionalType { span, .. }) => {
                 self.error(span, DiagnosticInfoMessage::OptionalTypeIsNotSupported)
             }
+            TsType::TsTypeOperator(TsTypeOperator { span, op, type_ann }) => match op {
+                TsTypeOperatorOp::KeyOf => self.convert_keyof(&type_ann),
+                TsTypeOperatorOp::Unique | TsTypeOperatorOp::ReadOnly => self
+                    .cannot_serialize_error(
+                        span,
+                        DiagnosticInfoMessage::TypeConstructNonSerializableToJsonSchema,
+                    ),
+            },
             TsType::TsRestType(_) => unreachable!("should have been handled by parent node"),
             TsType::TsThisType(TsThisType { span, .. })
             | TsType::TsFnOrConstructorType(
@@ -724,7 +744,6 @@ impl<'a, R: FileManager> TypeToSchema<'a, R> {
             )
             | TsType::TsConditionalType(TsConditionalType { span, .. })
             | TsType::TsInferType(TsInferType { span, .. })
-            | TsType::TsTypeOperator(TsTypeOperator { span, .. })
             | TsType::TsMappedType(TsMappedType { span, .. })
             | TsType::TsTypePredicate(TsTypePredicate { span, .. })
             | TsType::TsImportType(TsImportType { span, .. }) => self.cannot_serialize_error(

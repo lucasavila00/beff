@@ -70,6 +70,11 @@ mod tests {
     }
     fn assert_eq_schema(from: &str, to: &str) {
         let e1 = test_safe(from, to);
+        let st1 = print_errors(from, to, &e1);
+        if !e1.is_empty() {
+            // print it
+            println!("{}", st1);
+        }
         assert!(e1.is_empty());
         let e2 = test_safe(to, from);
         assert!(e2.is_empty());
@@ -1315,30 +1320,6 @@ mod tests {
     }
 
     #[test]
-    fn ok_member() {
-        let from = r#"
-        
-        export default {
-            "/hello": {
-                get: (): string => impl()
-            }
-        }
-        "#;
-
-        let to = r#"
-        const a = {
-            b: {
-                "/hello": {
-                    get: (): string => impl()
-                }
-            }
-        }
-        export default a.b
-        "#;
-        assert_eq_schema(from, to)
-    }
-
-    #[test]
     fn fail_typeof() {
         let from = r#"
         const valueB = "b" as const;
@@ -1363,5 +1344,53 @@ mod tests {
         let errors = test_safe(from, to);
         assert!(!errors.is_empty());
         insta::assert_snapshot!(print_errors(from, to, &errors));
+    }
+    #[test]
+    fn ok_member() {
+        let from = r#"
+        
+        export default {
+            "/hello": {
+                get: (): string => impl()
+            }
+        }
+        "#;
+
+        let to = r#"
+        const a = {
+            b: {
+                "/hello": {
+                    get: (): string => impl()
+                }
+            }
+        }
+        export default a.b
+        "#;
+        assert_eq_schema(from, to)
+    }
+
+    #[test]
+    fn ok_keyof() {
+        let from = r#"
+        
+        export default {
+            "/hello": {
+                get: (): 'A' => impl()
+            }
+        }
+        "#;
+
+        let to = r#"
+        const B = {
+            A: ''
+        } as const;
+        type C = keyof typeof B;
+        export default {
+            "/hello": {
+                get: (): C => impl()
+            }
+        }
+        "#;
+        assert_eq_schema(from, to)
     }
 }
