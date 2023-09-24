@@ -6,7 +6,7 @@ import { format } from "timeago.js";
 import { ExternalLinkIcon } from "@radix-ui/react-icons";
 import { getVersionLabel } from "@/utils/helpers";
 import { Links } from "@/utils/route-links";
-import { beffWasm } from "@/utils/wasm";
+import { schemaToTsTypes } from "@/utils/wasm";
 import { hljs } from "@/utils/hljs";
 
 export default async function Page({ params }: { params: { projectId: string; versionId: string } }) {
@@ -17,7 +17,7 @@ export default async function Page({ params }: { params: { projectId: string; ve
   if (version == null) {
     return <NotFound />;
   }
-  const tsType = beffWasm().schema_to_ts_types(JSON.stringify(version.openApiSchema));
+  const tsType = schemaToTsTypes(JSON.stringify(version.openApiSchema));
   const tsTypeFmt = hljs.highlight(tsType, {
     language: "typescript",
   }).value;

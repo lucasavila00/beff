@@ -1,12 +1,14 @@
 import { beffLocalClient } from "@/beff/router-app";
+import { ErrorCountCallout } from "@/components/error-count-callout";
 import { NotFound } from "@/components/not-found";
 import { ProjectsBreadcrumbs } from "@/components/projects-breadcrumbs";
 import { ToggleComparison } from "@/components/toggle-comparisson";
 import { getVersionLabel } from "@/utils/helpers";
 import { hljs } from "@/utils/hljs";
 import { Links } from "@/utils/route-links";
-import { beffWasm } from "@/utils/wasm";
-import { Box } from "@radix-ui/themes";
+import { textDiffSchemas, compareSchemasForErrors, SchemaError } from "@/utils/wasm";
+import { CrossCircledIcon } from "@radix-ui/react-icons";
+import { Box, Callout, Flex, Heading, Text } from "@radix-ui/themes";
 import { FC, Fragment } from "react";
 import { twMerge } from "tailwind-merge";
 
@@ -88,6 +90,61 @@ const ByLineDiff: FC<{ diffText: string }> = ({ diffText }) => {
   );
 };
 
+const ErrorDetailsTsTypes: FC<{ data: string }> = ({ data }) => {
+  return (
+    <pre className="hljs p-2 rounded-1">
+      <code
+        dangerouslySetInnerHTML={{
+          __html: hljs.highlight(data, {
+            language: "typescript",
+          }).value,
+        }}
+      />
+    </pre>
+  );
+};
+
+const ErrorDetailsJson: FC<{ data: string }> = ({ data }) => {
+  return (
+    <pre className="hljs p-2 rounded-1">
+      <code
+        dangerouslySetInnerHTML={{
+          __html: hljs.highlight(data, {
+            language: "json",
+          }).value,
+        }}
+      />
+    </pre>
+  );
+};
+
+const SchemaErrorsDetails: FC<{ errors: SchemaError[] }> = ({ errors }) => {
+  return (
+    <>
+      {errors.map((it, idx) => {
+        switch (it._tag) {
+          case "Heading": {
+            return (
+              <Heading mt="4" key={idx}>
+                {it.data}
+              </Heading>
+            );
+          }
+          case "Text": {
+            return <Text key={idx}>{it.data}</Text>;
+          }
+          case "TsTypes": {
+            return <ErrorDetailsTsTypes key={idx} data={it.data} />;
+          }
+          case "Json": {
+            return <ErrorDetailsJson key={idx} data={it.data} />;
+          }
+        }
+      })}
+    </>
+  );
+};
+
 export default async function Page({
   params,
 }: {
@@ -107,10 +164,10 @@ export default async function Page({
   }
   const label = getVersionLabel(version);
 
-  const diff = beffWasm().text_diff_schemas(
-    JSON.stringify(oldVersion.openApiSchema),
-    JSON.stringify(version.openApiSchema)
-  );
+  const from = JSON.stringify(oldVersion.openApiSchema);
+  const to = JSON.stringify(version.openApiSchema);
+  const diff = textDiffSchemas(from, to);
+  const errors = compareSchemasForErrors(from, to);
 
   return (
     <>
@@ -132,15 +189,16 @@ export default async function Page({
         ]}
       >
         <Box className="mx-auto max-w-4xl" pt="8">
-          {/* <Flex justify="between" align="baseline">
-            <Heading color="gray" mb="6">
-              Compare
-            </Heading>
-          </Flex> */}
           <ToggleComparison version={version} oldVersion={oldVersion} />
-          <Box className="p-2 rounded-1 hljs">
-            <ByLineDiff diffText={diff} />
-          </Box>
+          <ErrorCountCallout count={errors.length} />
+          {diff.length > 0 && (
+            <Box className="p-2 rounded-1 hljs " mb="8">
+              <ByLineDiff diffText={diff} />
+            </Box>
+          )}
+          <Flex gap="2" direction="column">
+            <SchemaErrorsDetails errors={errors} />
+          </Flex>
         </Box>
       </ProjectsBreadcrumbs>
     </>

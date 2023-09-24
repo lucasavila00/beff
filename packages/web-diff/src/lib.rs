@@ -69,7 +69,7 @@ pub fn text_diff_schemas(from: &str, to: &str) -> String {
 }
 
 #[wasm_bindgen]
-pub fn compare_schemas(from: &str, to: &str) -> Vec<JsValue> {
+pub fn compare_schemas_for_errors(from: &str, to: &str) -> Vec<JsValue> {
     let (from_api, from_vals) = parse_json(from);
     let (to_api, to_vals) = parse_json(to);
 
