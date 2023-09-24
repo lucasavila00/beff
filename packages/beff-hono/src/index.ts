@@ -1,10 +1,5 @@
 import { Hono } from "hono";
-import {
-  HandlerMetaServer,
-  MetaParamServer,
-  OpenAPIDocument,
-  OpenApiServer,
-} from "@beff/cli";
+import { HandlerMetaServer, MetaParamServer, OpenAPIDocument, OpenApiServer } from "@beff/cli";
 import { ClientFromRouter, buildClient, printErrors } from "@beff/client";
 import type { Context as HonoContext, Env } from "hono";
 
@@ -92,11 +87,7 @@ export const isBeffHttpException = (e: any): e is BffHTTPException => {
   return e?.isBeffHttpException;
 };
 
-const decodeWithMessage = (
-  validator: any,
-  value: any,
-  parentPath: string[]
-) => {
+const decodeWithMessage = (validator: any, value: any, parentPath: string[]) => {
   const validatorCtx: any = {};
 
   const newValue = validator(validatorCtx, value);
@@ -116,37 +107,31 @@ const decodeNoMessage = (validator: any, value: any) => {
   return newValue;
 };
 
-const handleMethod = async (
-  c: Ctx,
-  meta: HandlerMetaServer,
-  handler: Function
-) => {
-  const resolverParamsPromise: any[] = meta.params.map(
-    async (p: MetaParamServer) => {
-      switch (p.type) {
-        case "path": {
-          const value = c.hono.req.param(p.name);
-          return decodeWithMessage(p.validator, value, [p.name]);
-        }
-        case "query": {
-          const value = c.hono.req.query(p.name);
-          return decodeWithMessage(p.validator, value, [p.name]);
-        }
-        case "header": {
-          const value = c.hono.req.header(p.name);
-          return decodeWithMessage(p.validator, value, [p.name]);
-        }
-        case "body": {
-          const value = await c.hono.req.json();
-          return decodeWithMessage(p.validator, value, [p.name]);
-        }
-        case "context": {
-          return c;
-        }
+const handleMethod = async (c: Ctx, meta: HandlerMetaServer, handler: Function) => {
+  const resolverParamsPromise: any[] = meta.params.map(async (p: MetaParamServer) => {
+    switch (p.type) {
+      case "path": {
+        const value = c.hono.req.param(p.name);
+        return decodeWithMessage(p.validator, value, [p.name]);
       }
-      throw new Error("not implemented: " + p.type);
+      case "query": {
+        const value = c.hono.req.query(p.name);
+        return decodeWithMessage(p.validator, value, [p.name]);
+      }
+      case "header": {
+        const value = c.hono.req.header(p.name);
+        return decodeWithMessage(p.validator, value, [p.name]);
+      }
+      case "body": {
+        const value = await c.hono.req.json();
+        return decodeWithMessage(p.validator, value, [p.name]);
+      }
+      case "context": {
+        return c;
+      }
     }
-  );
+    throw new Error("not implemented: " + p.type);
+  });
   const resolverParams = await Promise.all(resolverParamsPromise);
   const result = await handler(...resolverParams);
 
@@ -157,12 +142,8 @@ const handleMethod = async (
 
 const registerDocs = (app: Hono<any, any, any>, schema: any) => {
   app.get("/v3/openapi.json", (req) => req.json(schema));
-  app.get("/docs", (c) =>
-    c.html(swaggerTemplate(c.req.url.replace("/docs", "")))
-  );
-  app.get("/redoc", (c) =>
-    c.html(redocTemplate(c.req.url.replace("/redoc", "")))
-  );
+  app.get("/docs", (c) => c.html(swaggerTemplate(c.req.url.replace("/docs", ""))));
+  app.get("/redoc", (c) => c.html(redocTemplate(c.req.url.replace("/redoc", ""))));
 };
 
 const lowerCaseRouter = (it: Record<string, Record<string, any>>) => {
@@ -199,9 +180,7 @@ export function buildHonoApp(options: {
     const routers = lowerCaseRouter(options.router);
     const handlerData = routers[meta.pattern][meta.method_kind.toLowerCase()];
     if (handlerData == null) {
-      throw new Error(
-        "handler not found: " + meta.method_kind + "  " + meta.pattern
-      );
+      throw new Error("handler not found: " + meta.method_kind + "  " + meta.pattern);
     }
     switch (meta.method_kind) {
       case "use": {
@@ -222,11 +201,7 @@ export function buildHonoApp(options: {
       case "options": {
         app[meta.method_kind](toHonoPattern(meta.pattern), async (c: any) => {
           try {
-            return await handleMethod(
-              { hono: c, ...(options.context ?? {}) },
-              meta,
-              handlerData
-            );
+            return await handleMethod({ hono: c, ...(options.context ?? {}) }, meta, handlerData);
           } catch (e) {
             if (isBeffHttpException(e)) {
               return c.json(
@@ -262,7 +237,6 @@ export const buildHonoLocalClient = <T>(options: {
   return buildClient<T>({
     baseUrl: baseUrl ?? "http://localhost",
     generated: generated,
-    fetchFn: async (req: any) =>
-      await app.fetch(req as any, env, executionContext),
+    fetchFn: async (req: any) => await app.fetch(req as any, env, executionContext),
   });
 };
