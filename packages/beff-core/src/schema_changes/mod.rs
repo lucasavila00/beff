@@ -75,7 +75,7 @@ pub fn print_ts_types(vs: Vec<(String, TsType)>) -> String {
         .line_width(80)
         .quote_style(QuoteStyle::PreferDouble)
         .build();
-    
+
     format_text(&PathBuf::from("f.ts"), &codes, &config)
         .expect("Could not parse...")
         .unwrap()
@@ -203,6 +203,13 @@ fn evidence_to_json(it: &Evidence) -> Json {
     }
 }
 
+fn merge_validators(it: &(Validator, Vec<Validator>)) -> Vec<&Validator> {
+    let (head, tail) = it;
+    let mut acc = vec![head];
+    acc.extend(tail);
+    acc
+}
+
 impl BreakingChange {
     pub fn print_report(&self) -> Md {
         match self {
@@ -212,8 +219,8 @@ impl BreakingChange {
                 // let v = diff_to_js(&err.diff, Some(&err.evidence_mater));
                 vec![MdReport::Text("Response body is not compatible.".into())]
                     .into_iter()
-                    .chain(print_validators(&err.super_type.iter().collect::<Vec<_>>()))
-                    .chain(print_validators(&err.sub_type.iter().collect::<Vec<_>>()))
+                    .chain(print_validators(&merge_validators(&err.super_type)))
+                    .chain(print_validators(&merge_validators(&err.sub_type)))
                     // .chain(print_validators(&err.diff_type.iter().collect::<Vec<_>>()))
                     // .chain(print_validators(
                     //     &err.evidence_type.iter().collect::<Vec<_>>(),
@@ -231,8 +238,8 @@ impl BreakingChange {
                     param_name
                 ))]
                 .into_iter()
-                .chain(print_validators(&err.sub_type.iter().collect::<Vec<_>>()))
-                .chain(print_validators(&err.super_type.iter().collect::<Vec<_>>()))
+                .chain(print_validators(&merge_validators(&err.sub_type)))
+                .chain(print_validators(&merge_validators(&err.super_type)))
                 // .chain(print_validators(&err.diff_type.iter().collect::<Vec<_>>()))
                 // .chain(print_validators(
                 //     &err.evidence_type.iter().collect::<Vec<_>>(),
@@ -265,8 +272,8 @@ struct SchemaReference<'a> {
 
 #[derive(Debug)]
 pub struct IsNotSubtype {
-    sub_type: Vec<Validator>,
-    super_type: Vec<Validator>,
+    sub_type: (Validator, Vec<Validator>),
+    super_type: (Validator, Vec<Validator>),
     evidence: Evidence,
 }
 

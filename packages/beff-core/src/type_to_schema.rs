@@ -4,6 +4,9 @@ use crate::diag::{
     Diagnostic, DiagnosticInfoMessage, DiagnosticInformation, DiagnosticParentMessage, Location,
 };
 use crate::open_api_ast::Validator;
+use crate::subtyping::semtype::{SemType, SemTypeContext, SemTypeOps};
+use crate::subtyping::to_schema::to_validators;
+use crate::subtyping::ToSemType;
 use crate::sym_reference::{ResolvedLocalSymbol, TypeResolver};
 use crate::{BeffUserSettings, BffFileName, FileManager, ImportReference, SymbolExport};
 use std::collections::{BTreeMap, HashMap};
@@ -584,48 +587,38 @@ impl<'a, R: FileManager> TypeToSchema<'a, R> {
             },
         }
     }
+    fn validators_ref(&self) -> Vec<&Validator> {
+        self.components
+            .values()
+            .filter_map(|it| it.as_ref())
+            .collect()
+    }
     pub fn convert_indexed_access(&mut self, i: &TsIndexedAccessType) -> Res<JsonSchema> {
         let obj = self.convert_ts_type(&i.obj_type)?;
         let index = self.convert_ts_type(&i.index_type)?;
 
-        match (obj, index) {
-            (
-                JsonSchema::Tuple {
-                    prefix_items,
-                    items,
-                },
-                JsonSchema::Number,
-            ) => {
-                let v = match items {
-                    Some(x) => vec![*x],
-                    None => vec![],
-                };
-                let vs = v.into_iter().chain(prefix_items).collect();
-                Ok(JsonSchema::any_of(vs))
-            }
-            (
-                JsonSchema::Tuple {
-                    prefix_items,
-                    items,
-                },
-                JsonSchema::Const(Json::Number(n)),
-            ) => {
-                let as_usize = n.to_f64() as usize;
-                match prefix_items.get(as_usize) {
-                    Some(v) => Ok(v.clone()),
-                    None => match items {
-                        Some(it) => Ok(*it.clone()),
-                        None => self.error(
-                            &i.index_type.span(),
-                            DiagnosticInfoMessage::IndexOutOfTupleRange(as_usize),
-                        ),
-                    },
-                }
-            }
-            _ => {
-                todo!()
-            }
+        let mut ctx = SemTypeContext::new();
+
+        let obj_st = obj.to_sub_type(&self.validators_ref(), &mut ctx).unwrap();
+        let idx_st = index.to_sub_type(&self.validators_ref(), &mut ctx).unwrap();
+
+        let access_st: Rc<SemType> = ctx.indexed_access(obj_st, idx_st);
+
+        if access_st.is_empty(&mut ctx) {
+            return self.error(
+                &i.index_type.span(),
+                DiagnosticInfoMessage::InvalidIndexedAccess,
+            );
         }
+
+        // let json_schema = access_st.to_json_schema(&mut ctx, &self.validators_ref());
+        let (head, tail) = to_validators(&mut ctx, &access_st, "AnyName");
+
+        for t in tail {
+            self.insert_definition(t.name.clone(), t.schema)?;
+        }
+
+        Ok(head.schema)
     }
     pub fn convert_ts_type(&mut self, typ: &TsType) -> Res<JsonSchema> {
         match typ {

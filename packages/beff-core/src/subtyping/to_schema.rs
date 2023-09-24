@@ -608,23 +608,26 @@ impl<'a> SchemerContext<'a> {
     }
 }
 
-pub fn to_validators(ctx: &mut SemTypeContext, ty: &Rc<SemType>, name: &str) -> Vec<Validator> {
+pub fn to_validators(
+    ctx: &mut SemTypeContext,
+    ty: &Rc<SemType>,
+    name: &str,
+) -> (Validator, Vec<Validator>) {
     let mut schemer = SchemerContext::new(ctx);
     let out = schemer.convert_to_schema(ty, Some(name));
     let vs = schemer
         .validators
         .into_iter()
-        .filter(|it| schemer.recursive_validators.contains(&it.name));
+        .filter(|it| schemer.recursive_validators.contains(&it.name))
+        .collect();
 
-    if schemer.recursive_validators.contains(name) {
-        vs.collect()
-    } else {
-        vs.chain(vec![Validator {
+    (
+        Validator {
             name: name.into(),
             schema: out,
-        }])
-        .collect()
-    }
+        },
+        vs,
+    )
 }
 fn maybe_not(it: JsonSchema, add_not: bool) -> JsonSchema {
     if add_not {

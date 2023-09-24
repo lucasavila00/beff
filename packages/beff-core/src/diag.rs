@@ -7,6 +7,7 @@ use crate::{open_api_ast::HTTPMethod, BffFileName, ParsedModule};
 
 #[derive(Debug, Clone)]
 pub enum DiagnosticInfoMessage {
+    InvalidIndexedAccess,
     TypeQueryArgsNotSupported,
     FoundValueExpectedType,
     CannotResolveValue,
@@ -337,6 +338,7 @@ impl DiagnosticInfoMessage {
             DiagnosticInfoMessage::TypeQueryArgsNotSupported => {
                 "Type query args are not supported".to_string()
             }
+            DiagnosticInfoMessage::InvalidIndexedAccess => "Invalid indexed access".to_string(),
         }
     }
 }

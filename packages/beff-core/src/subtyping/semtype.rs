@@ -1,7 +1,7 @@
 use crate::subtyping::evidence::Evidence;
 
 use super::{
-    bdd::{Atom, Bdd, ListAtomic, MappingAtomic},
+    bdd::{list_indexed_access, mapping_indexed_access, Atom, Bdd, ListAtomic, MappingAtomic},
     evidence::{EvidenceResult, ProperSubtypeEvidenceResult},
     subtype::{
         BasicTypeBitSet, BasicTypeCode, NumberRepresentation, ProperSubtype, ProperSubtypeOps,
@@ -440,5 +440,42 @@ impl SemTypeContext {
     }
     pub fn unknown() -> SemType {
         SemType::new_unknown()
+    }
+
+    fn get_complex_sub_type_data(s: &Vec<Rc<ProperSubtype>>, tag: SubTypeTag) -> SubType {
+        for t in s {
+            match (t.as_ref(), &tag) {
+                (ProperSubtype::Number { .. }, SubTypeTag::Number)
+                | (ProperSubtype::String { .. }, SubTypeTag::String)
+                | (ProperSubtype::Mapping(_), SubTypeTag::Mapping)
+                | (ProperSubtype::List(_), SubTypeTag::List)
+                | (ProperSubtype::Boolean(_), SubTypeTag::Boolean) => {
+                    return SubType::Proper(t.clone())
+                }
+                _ => {}
+            }
+        }
+        SubType::False(tag)
+    }
+    pub fn sub_type_data(s: Rc<SemType>, tag: SubTypeTag) -> SubType {
+        if (s.all & tag.code()) > 0 {
+            return SubType::True(tag);
+        }
+        return Self::get_complex_sub_type_data(&s.subtype_data, tag);
+    }
+
+    pub fn number_sub_type(s: Rc<SemType>) -> SubType {
+        Self::sub_type_data(s, SubTypeTag::Number)
+    }
+    pub fn string_sub_type(s: Rc<SemType>) -> SubType {
+        Self::sub_type_data(s, SubTypeTag::String)
+    }
+
+    pub fn indexed_access(&mut self, obj_st: Rc<SemType>, idx_st: Rc<SemType>) -> Rc<SemType> {
+        let list_result = list_indexed_access(self, obj_st.clone(), idx_st.clone());
+        if list_result.is_empty(self) {
+            return mapping_indexed_access(self, obj_st, idx_st);
+        }
+        return list_result;
     }
 }

@@ -4,13 +4,14 @@ use std::{
     rc::Rc,
 };
 
-use crate::subtyping::semtype::SemTypeContext;
+use crate::subtyping::{bdd, semtype::SemTypeContext};
 
 use super::{
     evidence::{
         Evidence, EvidenceResult, ListEvidence, ProperSubtypeEvidence, ProperSubtypeEvidenceResult,
     },
     semtype::{BddMemoEmptyRef, MemoEmpty, SemType, SemTypeOps},
+    subtype::{ProperSubtype, StringLitOrFormat, SubType, SubTypeTag},
 };
 
 pub type MappingAtomic = BTreeMap<String, Rc<SemType>>;
@@ -343,10 +344,12 @@ fn intersect_mapping(m1: Rc<MappingAtomic>, m2: Rc<MappingAtomic>) -> Option<Rc<
     let mut acc = vec![];
     for name in all_names {
         let type1 = m1
-            .get(*name).cloned()
+            .get(*name)
+            .cloned()
             .unwrap_or_else(|| Rc::new(SemTypeContext::unknown()));
         let type2 = m2
-            .get(*name).cloned()
+            .get(*name)
+            .cloned()
             .unwrap_or_else(|| Rc::new(SemTypeContext::unknown()));
         let t = type1.intersect(&type2);
         if t.is_never() {
@@ -382,10 +385,12 @@ fn mapping_inhabited(
 
             for name in all_names.iter() {
                 let pos_type = pos
-                    .get(**name).cloned()
+                    .get(**name)
+                    .cloned()
                     .unwrap_or_else(|| Rc::new(SemTypeContext::unknown()));
                 let neg_type = neg
-                    .get(**name).cloned()
+                    .get(**name)
+                    .cloned()
                     .unwrap_or_else(|| Rc::new(SemTypeContext::unknown()));
                 if pos_type.is_never() || neg_type.is_never() {
                     return mapping_inhabited(pos, &neg_list.next, builder);
@@ -393,10 +398,12 @@ fn mapping_inhabited(
             }
             for name in all_names {
                 let pos_type = pos
-                    .get(*name).cloned()
+                    .get(*name)
+                    .cloned()
                     .unwrap_or_else(|| Rc::new(SemTypeContext::unknown()));
                 let neg_type = neg
-                    .get(*name).cloned()
+                    .get(*name)
+                    .cloned()
                     .unwrap_or_else(|| Rc::new(SemTypeContext::unknown()));
 
                 let d = pos_type.diff(&neg_type);
@@ -679,4 +686,203 @@ pub fn list_is_empty(bdd: &Rc<Bdd>, builder: &mut SemTypeContext) -> ProperSubty
     let is_empty = bdd_every(bdd, &None, &None, list_formula_is_empty, builder);
     builder.list_memo.get_mut(bdd).unwrap().0 = MemoEmpty::from_bool(&is_empty);
     is_empty
+}
+
+// // function bddListMemberTypeInnerVal(Context cx, Bdd b, IntSubtype|true key, SemType accum) returns SemType {
+// //     if b is boolean {
+// //         return b ? accum : NEVER;
+// //     }
+// //     else {
+// //         return union(bddListMemberTypeInnerVal(cx, b.left, key,
+// //                                        intersect(listAtomicMemberTypeInnerVal(cx.listAtomType(b.atom), key),
+// //                                                  accum)),
+// //                      union(bddListMemberTypeInnerVal(cx, b.middle, key, accum),
+// //                            bddListMemberTypeInnerVal(cx, b.right, key, accum)));
+// //     }
+// // }
+
+// // function bddMappingMemberTypeInner(Context cx, Bdd b, StringSubtype|true key, SemType accum) returns SemType {
+// //     if b is boolean {
+// //         return b ? accum : NEVER;
+// //     }
+// //     else {
+// //         return union(bddMappingMemberTypeInner(cx, b.left, key,
+// //                                           intersect(mappingAtomicMemberTypeInner(cx.mappingAtomType(b.atom), key),
+// //                                                     accum)),
+// //                      union(bddMappingMemberTypeInner(cx, b.middle, key, accum),
+// //                            bddMappingMemberTypeInner(cx, b.right, key, accum)));
+// //     }
+// // }
+pub fn bdd_mapping_member_type_inner(
+    ctx: &SemTypeContext,
+    b: Rc<Bdd>,
+    key: MappingStrKey,
+    accum: Rc<SemType>,
+) -> Rc<SemType> {
+    match b.as_ref() {
+        Bdd::True => accum,
+        Bdd::False => SemTypeContext::never().into(),
+        Bdd::Node {
+            atom,
+            left,
+            middle,
+            right,
+        } => {
+            let b_atom_type = match atom.as_ref() {
+                Atom::Mapping(a) => ctx.get_mapping_atomic(*a),
+                _ => unreachable!(),
+            };
+            let a = mapping_member_type_inner(b_atom_type, key.clone());
+            let a = a.intersect(&accum);
+            let a = bdd_mapping_member_type_inner(ctx, left.clone(), key.clone(), a.clone());
+
+            let b = bdd_mapping_member_type_inner(ctx, middle.clone(), key.clone(), accum.clone());
+            let c = bdd_mapping_member_type_inner(ctx, right.clone(), key, accum.clone());
+
+            a.union(&b.union(&c))
+            //         return union(bddMappingMemberTypeInner(cx, b.left, key,
+            //                                           intersect(mappingAtomicMemberTypeInner(cx.mappingAtomType(b.atom), key),
+            //                                                     accum)),
+            //                      union(bddMappingMemberTypeInner(cx, b.middle, key, accum),
+            //                            bddMappingMemberTypeInner(cx, b.right, key, accum)));
+        }
+    }
+}
+
+#[derive(Debug, Clone)]
+pub enum MappingStrKey {
+    Str {
+        allowed: bool,
+        values: Vec<StringLitOrFormat>,
+    },
+    True,
+}
+
+// function mappingAtomicApplicableMemberTypesInner(MappingAtomicType atomic, StringSubtype|true key) returns SemType[] {
+//     SemType[] types = from CellSemType t in atomic.types select cellInner(t);
+//     SemType rest = cellInner(atomic.rest);
+//     SemType[] memberTypes = [];
+//     if key == true {
+//         memberTypes.push(...types);
+//         memberTypes.push(rest);
+//     }
+//     else {
+//         StringSubtypeListCoverage coverage = stringSubtypeListCoverage(key, atomic.names);
+//         foreach int index in coverage.indices {
+//             memberTypes.push(types[index]);
+//         }
+//         if !coverage.isSubtype {
+//             memberTypes.push(rest);
+//         }
+//     }
+//     return memberTypes;
+// }
+fn mapping_atomic_applicable_member_types_inner(
+    atomic: Rc<MappingAtomic>,
+    key: MappingStrKey,
+) -> Vec<Rc<SemType>> {
+    match key {
+        MappingStrKey::Str { allowed, values } => {
+            if !allowed {
+                return vec![];
+            }
+            let mut member_types = vec![];
+            for (k, ty) in atomic.iter() {
+                let found = values.iter().any(|it| match it {
+                    StringLitOrFormat::Lit(l) => l == k,
+                    StringLitOrFormat::Format(_) => todo!(),
+                    StringLitOrFormat::Codec(_) => todo!(),
+                });
+
+                if found {
+                    member_types.push(ty.clone());
+                }
+            }
+
+            member_types
+        }
+        MappingStrKey::True => atomic.values().cloned().collect(),
+    }
+}
+
+fn mapping_member_type_inner(atomic: Rc<MappingAtomic>, key: MappingStrKey) -> Rc<SemType> {
+    let mut member_type: Option<Rc<SemType>> = None;
+
+    for ty in mapping_atomic_applicable_member_types_inner(atomic, key) {
+        match member_type {
+            Some(mt) => {
+                member_type = Some(mt.union(&ty));
+            }
+            None => {
+                member_type = Some(ty);
+            }
+        }
+    }
+
+    match member_type {
+        Some(it) => it,
+        None => SemTypeContext::void().into(),
+    }
+}
+// This computes the spec operation called "member type of K in T",
+// for the case when T is a subtype of list, and K is either `int` or a singleton int.
+// This is what Castagna calls projection.
+// We will extend this to allow `key` to be a SemType, which will turn into an IntSubtype.
+// If `t` is not a list, NEVER is returned
+pub fn list_indexed_access(
+    ctx: &SemTypeContext,
+    obj_st: Rc<SemType>,
+    idx_st: Rc<SemType>,
+) -> Rc<SemType> {
+    //     if t is BasicTypeBitSet {
+    //         return (t & LIST) != 0 ? VAL : NEVER;
+    //     }
+    match SemTypeContext::number_sub_type(idx_st) {
+        SubType::False(_) => SemTypeContext::never().into(),
+        //         IntSubtype|boolean keyData = intSubtype(k);
+        //         if keyData == false {
+        //             return NEVER;
+        //         }
+        //         return bddListMemberTypeInnerVal(cx, <Bdd>getComplexSubtypeData(t, BT_LIST), <IntSubtype|true>keyData, VAL);
+        SubType::True(_) => todo!(),
+        SubType::Proper(_) => todo!(),
+    }
+}
+
+// This computes the spec operation called "member type of K in T",
+// for when T is a subtype of mapping, and K is either `string` or a singleton string.
+// This is what Castagna calls projection.
+pub fn mapping_indexed_access(
+    ctx: &SemTypeContext,
+    obj_st: Rc<SemType>,
+    idx_st: Rc<SemType>,
+) -> Rc<SemType> {
+    //     if t is BasicTypeBitSet {
+    //         return (t & MAPPING) != 0 ? VAL : UNDEF;
+    //     }
+
+    let k: MappingStrKey = match SemTypeContext::string_sub_type(idx_st) {
+        SubType::False(_) => return SemTypeContext::never().into(),
+        SubType::True(_) => MappingStrKey::True,
+        SubType::Proper(proper) => match proper.as_ref() {
+            ProperSubtype::String { allowed, values } => MappingStrKey::Str {
+                allowed: *allowed,
+                values: values.clone(),
+            },
+            _ => unreachable!("should be string"),
+        },
+    };
+
+    let b = SemTypeContext::sub_type_data(obj_st, SubTypeTag::Mapping);
+    match b {
+        SubType::False(_) => todo!(),
+        SubType::True(_) => todo!(),
+        SubType::Proper(p) => {
+            let bdd = match p.as_ref() {
+                ProperSubtype::Mapping(bdd) => bdd,
+                _ => todo!(),
+            };
+            bdd_mapping_member_type_inner(ctx, bdd.clone(), k, SemTypeContext::unknown().into())
+        }
+    }
 }
