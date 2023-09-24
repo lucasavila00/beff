@@ -865,7 +865,7 @@ fn list_atomic_member_type_at_inner(
             if init_len > 0 {
                 for (i, v) in prefix_items.iter().enumerate() {
                     if int_subtype_contains(allowed, &values, i) {
-                        m = m.union(&v);
+                        m = m.union(v);
                     }
                 }
             }
