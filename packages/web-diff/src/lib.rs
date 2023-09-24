@@ -20,7 +20,7 @@ enum WasmMdReport {
 }
 
 fn parse_json(it: &str) -> (OpenApi, Vec<Validator>) {
-    let from_str = serde_json::from_str::<serde_json::Value>(&it).unwrap();
+    let from_str = serde_json::from_str::<serde_json::Value>(it).unwrap();
 
     let from_serde = Json::from_serde(&from_str);
     let mut parser = OpenApiParser::new();
