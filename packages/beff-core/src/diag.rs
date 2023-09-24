@@ -7,6 +7,9 @@ use crate::{open_api_ast::HTTPMethod, BffFileName, ParsedModule};
 
 #[derive(Debug, Clone)]
 pub enum DiagnosticInfoMessage {
+    FoundTypeExpectedValue,
+    CouldNotUnderstandThisPartOfTheRouter,
+    CannotConvertToSubtype(String),
     IndexOutOfTupleRange(usize),
     CannotFindPropertyInObject(String),
     MustBeTsConstAssertion,
@@ -314,6 +317,15 @@ impl DiagnosticInfoMessage {
             }
             DiagnosticInfoMessage::CannotFindPropertyInObject(prop) => {
                 format!("Cannot find property '{prop}' in object")
+            }
+            DiagnosticInfoMessage::CannotConvertToSubtype(reason) => {
+                format!("Cannot convert to subtype: {reason}")
+            }
+            DiagnosticInfoMessage::CouldNotUnderstandThisPartOfTheRouter => {
+                "Could not understand this part of the router".to_string()
+            }
+            DiagnosticInfoMessage::FoundTypeExpectedValue => {
+                "Found type, expected value".to_string()
             }
         }
     }

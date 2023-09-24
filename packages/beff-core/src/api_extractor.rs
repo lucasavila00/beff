@@ -248,11 +248,28 @@ impl<'a, R: FileManager> ExtractExportDefaultVisitor<'a, R> {
                         self.check_expr_for_methods(&export_default.symbol_export);
                         self.current_file = old_file;
                     }
-                    Ok(_) => todo!(),
+                    Ok(ResolvedLocalSymbol::TsType { .. })
+                    | Ok(ResolvedLocalSymbol::TsInterfaceDecl { .. }) => {
+                        self.errors.push(
+                            self.build_error(
+                                &expr.span(),
+                                DiagnosticInfoMessage::FoundTypeExpectedValue,
+                            )
+                            .to_diag(None),
+                        );
+                    }
                     Err(e) => self.errors.push(*e),
                 }
             }
-            _ => todo!(),
+            _ => {
+                self.errors.push(
+                    self.build_error(
+                        &expr.span(),
+                        DiagnosticInfoMessage::CouldNotUnderstandThisPartOfTheRouter,
+                    )
+                    .to_diag(None),
+                );
+            }
         }
     }
 
@@ -491,7 +508,12 @@ impl<'a, R: FileManager> ExtractExportDefaultVisitor<'a, R> {
                     self.push_error(span, DiagnosticInfoMessage::TypeMustNotBeEmpty);
                 }
             }
-            Err(_) => todo!(),
+            Err(e) => {
+                self.push_error(
+                    span,
+                    DiagnosticInfoMessage::CannotConvertToSubtype(format!("{:?}", e)),
+                );
+            }
         }
     }
 
@@ -929,6 +951,7 @@ pub enum FunctionParameterIn {
     InvalidComplexPathParameter,
 }
 
+/// is_type_simple returns true if the type is simple enough to be used as a query parameter
 fn is_type_simple(it: &JsonSchema, components: &Vec<Validator>) -> bool {
     match it {
         JsonSchema::OpenApiResponseRef(r) | JsonSchema::Ref(r) => {
@@ -954,9 +977,11 @@ fn is_type_simple(it: &JsonSchema, components: &Vec<Validator>) -> bool {
         | JsonSchema::AnyObject
         | JsonSchema::AnyArrayLike
         | JsonSchema::Tuple { .. } => false,
-        JsonSchema::StNever => todo!(),
-        JsonSchema::StUnknown => todo!(),
-        JsonSchema::StNot(_) => todo!(),
+        JsonSchema::StNever | JsonSchema::StUnknown | JsonSchema::StNot(_) => {
+            // is_type_simple should be used just to infer what is the type of a parameter
+            // semantic types are only created after inference
+            unreachable!("Semantic types should not be checked for simplicity")
+        }
     }
 }
 

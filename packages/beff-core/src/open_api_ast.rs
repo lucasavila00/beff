@@ -6,6 +6,7 @@ use crate::{
     diag::{Diagnostic, DiagnosticInfoMessage, FullLocation},
     schema_changes::print_ts_types,
 };
+use anyhow::anyhow;
 use anyhow::Result;
 use core::fmt;
 use std::collections::BTreeMap;
@@ -685,13 +686,11 @@ impl OpenApiParser {
         }
         Ok(())
     }
-    pub fn process(&mut self, it: &Json) -> Result<()> {
+    pub fn consume_json(&mut self, it: &Json) -> Result<()> {
         match it {
-            Json::Null => todo!(),
-            Json::Bool(_) => todo!(),
-            Json::Number(_) => todo!(),
-            Json::String(_) => todo!(),
-            Json::Array(_) => todo!(),
+            Json::Null | Json::Bool(_) | Json::Number(_) | Json::String(_) | Json::Array(_) => {
+                return Err(anyhow!("Invalid json"))
+            }
             Json::Object(vs) => {
                 let schemas = vs.get("components").and_then(|it| match it {
                     Json::Object(v) => v.get("schemas"),

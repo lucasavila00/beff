@@ -24,7 +24,7 @@ fn parse_json(it: &str) -> (OpenApi, Vec<Validator>) {
 
     let from_serde = Json::from_serde(&from_str);
     let mut parser = OpenApiParser::new();
-    parser.process(&from_serde).unwrap();
+    parser.consume_json(&from_serde).unwrap();
     (parser.api, parser.components)
 }
 

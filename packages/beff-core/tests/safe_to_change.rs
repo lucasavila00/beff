@@ -99,7 +99,7 @@ mod tests {
         let from_str = serde_json::from_str::<serde_json::Value>(&str).unwrap();
         let from_serde = Json::from_serde(&from_str);
         let mut parser = OpenApiParser::new();
-        parser.process(&from_serde).unwrap();
+        parser.consume_json(&from_serde).unwrap();
         let str2 = open_api_to_json(parser.api, &parser.components).to_string();
 
         assert_eq!(str, str2);
