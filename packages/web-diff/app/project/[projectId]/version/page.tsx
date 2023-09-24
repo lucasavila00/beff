@@ -5,14 +5,14 @@ import { Box, Flex, Heading, Link, Table } from "@radix-ui/themes";
 import NextLink from "next/link";
 import { format } from "timeago.js";
 
-export default async function Branches({ params }: { params: { id: string } }) {
-  const versions = await beffLocalClient["/project/{id}/version"].get(params.id);
+export default async function Branches({ params }: { params: { projectId: string } }) {
+  const versions = await beffLocalClient["/project/{projectId}/version"].get(params.projectId);
   return (
     <ProjectsBreadcrumbs
-      projectId={params.id}
+      projectId={params.projectId}
       extra={[
         {
-          href: `/project/${params.id}/version`,
+          href: `/project/${params.projectId}/version`,
           text: "Versions",
         },
       ]}
@@ -37,7 +37,7 @@ export default async function Branches({ params }: { params: { id: string } }) {
                   <Table.Row key={v.id}>
                     <Table.RowHeaderCell>
                       <Link asChild>
-                        <NextLink href={`/project/${params.id}/version/${v.id}`}>
+                        <NextLink href={`/project/${params.projectId}/version/${v.id}`}>
                           <Flex gap="1" align="center">
                             {v.version}
                           </Flex>

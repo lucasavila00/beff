@@ -4,10 +4,16 @@ use crate::{
         json_schema::JsonSchema,
     },
     diag::{Diagnostic, DiagnosticInfoMessage, FullLocation},
+    schema_changes::print_ts_types,
 };
 use anyhow::Result;
 use core::fmt;
 use std::collections::BTreeMap;
+use swc_common::DUMMY_SP;
+use swc_ecma_ast::{
+    BindingIdent, Expr, Ident, TsFnOrConstructorType, TsFnParam, TsFnType, TsPropertySignature,
+    TsType, TsTypeAnn, TsTypeElement, TsTypeLit,
+};
 
 fn clear_description(it: String) -> String {
     let lines = it.split('\n').collect::<Vec<_>>();
@@ -364,6 +370,108 @@ pub struct OpenApi {
     pub info: Info,
     pub paths: Vec<ApiPath>,
     pub components: Vec<String>,
+}
+
+impl OpenApi {
+    fn build_type_lit(members: Vec<(String, TsType)>) -> TsType {
+        TsType::TsTypeLit(TsTypeLit {
+            span: DUMMY_SP,
+            members: members
+                .into_iter()
+                .map(|(k, v)| {
+                    TsTypeElement::TsPropertySignature(TsPropertySignature {
+                        span: DUMMY_SP,
+                        readonly: false,
+                        key: Expr::Ident(Ident {
+                            span: DUMMY_SP,
+                            sym: k.into(),
+                            optional: false,
+                        })
+                        .into(),
+                        computed: false,
+                        optional: false,
+                        init: None,
+                        params: vec![],
+                        type_ann: Some(Box::new(TsTypeAnn {
+                            span: DUMMY_SP,
+                            type_ann: Box::new(v),
+                        })),
+                        type_params: None,
+                    })
+                })
+                .collect(),
+        })
+    }
+    fn build_fn(params: &Vec<(String, TsType)>, return_type: TsType) -> TsType {
+        TsType::TsFnOrConstructorType(TsFnOrConstructorType::TsFnType(TsFnType {
+            span: DUMMY_SP,
+            params: params
+                .iter()
+                .map(|(k, v)| {
+                    TsFnParam::Ident(BindingIdent {
+                        id: Ident {
+                            span: DUMMY_SP,
+                            sym: k.clone().into(),
+                            optional: false,
+                        },
+                        type_ann: Some(Box::new(TsTypeAnn {
+                            span: DUMMY_SP,
+                            type_ann: Box::new(v.clone()),
+                        })),
+                    })
+                })
+                .collect(),
+            type_params: None,
+            type_ann: Box::new(TsTypeAnn {
+                span: DUMMY_SP,
+                type_ann: Box::new(return_type),
+            }),
+        }))
+    }
+    fn op_obj_params(it: &OperationObject) -> Vec<(String, TsType)> {
+        let mut acc = vec![];
+        for param in &it.parameters {
+            acc.push((param.name.clone(), param.schema.to_ts_type()));
+        }
+        acc
+    }
+    fn api_path_to_ts_type(path: &ApiPath) -> TsType {
+        let members: Vec<(String, TsType)> = path
+            .methods
+            .iter()
+            .map(|(k, v)| {
+                (
+                    k.to_string(),
+                    Self::build_fn(&Self::op_obj_params(v), v.json_response_body.to_ts_type()),
+                )
+            })
+            .collect::<Vec<_>>();
+        Self::build_type_lit(members)
+    }
+
+    pub fn as_typescript_string(&self, validators: &Vec<&Validator>) -> String {
+        let mut vs: Vec<(String, TsType)> = vec![];
+
+        let mut sorted_validators = validators
+            .iter()
+            .filter(|it| self.components.contains(&it.name))
+            .collect::<Vec<_>>();
+        sorted_validators.sort_by(|a, b| a.name.cmp(&b.name));
+
+        for v in sorted_validators {
+            vs.push((v.name.clone(), v.schema.to_ts_type()));
+        }
+
+        let members: Vec<(String, TsType)> = self
+            .paths
+            .iter()
+            .map(|it| (it.parsed_pattern.raw.clone(), Self::api_path_to_ts_type(it)))
+            .collect::<Vec<_>>();
+        let router_type = Self::build_type_lit(members);
+        vs.push(("Router".to_string(), router_type));
+
+        print_ts_types(vs)
+    }
 }
 
 pub struct OpenApiParser {

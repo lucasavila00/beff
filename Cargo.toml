@@ -1,2 +1,2 @@
 [workspace]
-members = ["packages/beff-core", "packages/beff-wasm", "web-demo/demo"]
+members = ["packages/beff-core", "packages/beff-wasm", "web-demo/demo", "packages/web-diff"]
