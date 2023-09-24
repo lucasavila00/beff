@@ -14,7 +14,7 @@ export const ToggleComparison: FC<{ version: ProjectVersion; oldVersion: Project
   const oldVersionLabel = getVersionLabel(oldVersion);
   return (
     <>
-      <Flex align="center" justify="between">
+      <Flex mb="8" align="center" justify="between">
         <Flex grow="1" direction="column" align="center">
           <Heading size="1">from</Heading>
           <Text>{oldVersionLabel}</Text>

@@ -3,15 +3,11 @@ import { NotFound } from "@/components/not-found";
 import { ProjectsBreadcrumbs } from "@/components/projects-breadcrumbs";
 import { Box, Flex, Heading, Link, Text } from "@radix-ui/themes";
 import { format } from "timeago.js";
-import hljs from "highlight.js/lib/core";
-import typescript from "highlight.js/lib/languages/typescript";
-import "highlight.js/styles/atom-one-dark.css";
 import { ExternalLinkIcon } from "@radix-ui/react-icons";
 import { getVersionLabel } from "@/utils/helpers";
 import { Links } from "@/utils/route-links";
 import { beffWasm } from "@/utils/wasm";
-
-hljs.registerLanguage("typescript", typescript);
+import { hljs } from "@/utils/hljs";
 
 export default async function Page({ params }: { params: { projectId: string; versionId: string } }) {
   const version = await beffLocalClient["/project/{projectId}/version/{versionId}"].get(

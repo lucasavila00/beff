@@ -5,6 +5,7 @@
     "codegen",
     "ctxt",
     "esno",
+    "Hljs",
     "Hono",
     "insta",
     "jsdoc",
