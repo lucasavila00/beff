@@ -461,7 +461,7 @@ impl SemTypeContext {
         if (s.all & tag.code()) > 0 {
             return SubType::True(tag);
         }
-        return Self::get_complex_sub_type_data(&s.subtype_data, tag);
+        Self::get_complex_sub_type_data(&s.subtype_data, tag)
     }
 
     pub fn number_sub_type(s: Rc<SemType>) -> SubType {
@@ -476,6 +476,6 @@ impl SemTypeContext {
         if list_result.is_empty(self) {
             return mapping_indexed_access(self, obj_st, idx_st);
         }
-        return list_result;
+        list_result
     }
 }

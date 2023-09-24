@@ -836,7 +836,7 @@ fn int_subtype_contains(allowed: bool, values: &Vec<N>, it: usize) -> bool {
             return true;
         }
     }
-    return false;
+    false
 }
 fn int_subtype_max(allowed: bool, values: &Vec<N>) -> i64 {
     if !allowed {
@@ -861,35 +861,36 @@ fn list_atomic_member_type_at_inner(
         ListNumberKey::N { allowed, values } => {
             let mut m = Rc::new(SemTypeContext::never());
             let init_len = prefix_items.len();
+
             if init_len > 0 {
-                for i in 0..init_len {
+                for (i, v) in prefix_items.iter().enumerate() {
                     if int_subtype_contains(allowed, &values, i) {
-                        m = m.union(&prefix_items[i]);
+                        m = m.union(&v);
                     }
                 }
             }
             if init_len == 0 || int_subtype_max(allowed, &values) > (init_len as i64) - 1 {
-                m = m.union(&items);
+                m = m.union(items);
             }
-            return m;
+            m
         }
         ListNumberKey::True => {
             let mut m = items.clone();
             for it in prefix_items.iter() {
                 m = m.union(it);
             }
-            return m;
+            m
         }
     }
 }
 
 fn list_atomic_member_type_inner(atomic: Rc<ListAtomic>, key: ListNumberKey) -> Rc<SemType> {
-    return list_atomic_member_type_at_inner(&atomic.prefix_items, &atomic.items, key);
+    list_atomic_member_type_at_inner(&atomic.prefix_items, &atomic.items, key)
 }
 
 fn list_member_type_inner_val(atomic: Rc<ListAtomic>, key: ListNumberKey) -> Rc<SemType> {
     let a = list_atomic_member_type_inner(atomic, key);
-    return a.diff(&Rc::new(SemTypeContext::void()));
+    a.diff(&Rc::new(SemTypeContext::void()))
 }
 
 fn bdd_list_member_type_inner_val(
