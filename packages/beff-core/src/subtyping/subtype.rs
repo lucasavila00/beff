@@ -54,7 +54,7 @@ pub enum SubType {
 
 impl SubType {
     fn number_subtype(allowed: bool, values: Vec<NumberRepresentation>) -> SubType {
-        if values.len() == 0 {
+        if values.is_empty() {
             if allowed {
                 return SubType::False(SubTypeTag::Number);
             }
@@ -63,7 +63,7 @@ impl SubType {
         SubType::Proper(ProperSubtype::Number { allowed, values }.into())
     }
     fn string_subtype(allowed: bool, values: Vec<StringLitOrFormat>) -> SubType {
-        if values.len() == 0 {
+        if values.is_empty() {
             if allowed {
                 return SubType::False(SubTypeTag::String);
             }
@@ -99,7 +99,7 @@ fn vec_union<K: PartialEq + Clone + Ord>(v1: &Vec<K>, v2: &Vec<K>) -> Vec<K> {
     let mut values: Vec<K> = v1.iter().cloned().chain(v2.iter().cloned()).collect();
     values.sort();
     values.dedup();
-    return values;
+    values
 }
 
 fn vec_intersect<K: PartialEq + Clone + Ord>(v1: &Vec<K>, v2: &Vec<K>) -> Vec<K> {
@@ -146,7 +146,7 @@ impl ProperSubtypeOps for Rc<ProperSubtype> {
                 if b1 == b2 {
                     return SubType::Proper(self.clone()).into();
                 }
-                return SubType::False(SubTypeTag::Boolean).into();
+                SubType::False(SubTypeTag::Boolean).into()
             }
             (
                 ProperSubtype::Number {
@@ -194,7 +194,7 @@ impl ProperSubtypeOps for Rc<ProperSubtype> {
                 if b1 == b2 {
                     return SubType::Proper(self.clone()).into();
                 }
-                return SubType::True(SubTypeTag::Boolean).into();
+                SubType::True(SubTypeTag::Boolean).into()
             }
             (
                 ProperSubtype::Number {
@@ -242,7 +242,7 @@ impl ProperSubtypeOps for Rc<ProperSubtype> {
                 if b1 == b2 {
                     return SubType::False(SubTypeTag::Boolean).into();
                 }
-                return SubType::Proper(self.clone()).into();
+                SubType::Proper(self.clone()).into()
             }
             (ProperSubtype::Mapping(b1), ProperSubtype::Mapping(b2)) => {
                 SubType::Proper(ProperSubtype::Mapping(b1.diff(b2)).into()).into()

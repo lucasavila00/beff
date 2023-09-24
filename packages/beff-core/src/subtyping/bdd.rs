@@ -343,12 +343,10 @@ fn intersect_mapping(m1: Rc<MappingAtomic>, m2: Rc<MappingAtomic>) -> Option<Rc<
     let mut acc = vec![];
     for name in all_names {
         let type1 = m1
-            .get(*name)
-            .map(|it| it.clone())
+            .get(*name).cloned()
             .unwrap_or_else(|| Rc::new(SemTypeContext::unknown()));
         let type2 = m2
-            .get(*name)
-            .map(|it| it.clone())
+            .get(*name).cloned()
             .unwrap_or_else(|| Rc::new(SemTypeContext::unknown()));
         let t = type1.intersect(&type2);
         if t.is_never() {
@@ -356,7 +354,7 @@ fn intersect_mapping(m1: Rc<MappingAtomic>, m2: Rc<MappingAtomic>) -> Option<Rc<
         }
         acc.push((name.to_string(), t))
     }
-    return Some(Rc::new(MappingAtomic::from_iter(acc)));
+    Some(Rc::new(MappingAtomic::from_iter(acc)))
 }
 
 enum MappingInhabited {
@@ -384,12 +382,10 @@ fn mapping_inhabited(
 
             for name in all_names.iter() {
                 let pos_type = pos
-                    .get(**name)
-                    .map(|it| it.clone())
+                    .get(**name).cloned()
                     .unwrap_or_else(|| Rc::new(SemTypeContext::unknown()));
                 let neg_type = neg
-                    .get(**name)
-                    .map(|it| it.clone())
+                    .get(**name).cloned()
                     .unwrap_or_else(|| Rc::new(SemTypeContext::unknown()));
                 if pos_type.is_never() || neg_type.is_never() {
                     return mapping_inhabited(pos, &neg_list.next, builder);
@@ -397,12 +393,10 @@ fn mapping_inhabited(
             }
             for name in all_names {
                 let pos_type = pos
-                    .get(*name)
-                    .map(|it| it.clone())
+                    .get(*name).cloned()
                     .unwrap_or_else(|| Rc::new(SemTypeContext::unknown()));
                 let neg_type = neg
-                    .get(*name)
-                    .map(|it| it.clone())
+                    .get(*name).cloned()
                     .unwrap_or_else(|| Rc::new(SemTypeContext::unknown()));
 
                 let d = pos_type.diff(&neg_type);
@@ -417,7 +411,7 @@ fn mapping_inhabited(
                 }
             }
 
-            return MappingInhabited::No;
+            MappingInhabited::No
         }
     }
 }
@@ -456,7 +450,7 @@ fn mapping_formula_is_empty(
         }
     }
     match mapping_inhabited(combined.clone(), neg_list, builder) {
-        MappingInhabited::No => return ProperSubtypeEvidenceResult::IsEmpty,
+        MappingInhabited::No => ProperSubtypeEvidenceResult::IsEmpty,
         MappingInhabited::Yes(ev) => {
             let ev2 = ev
                 .iter()
@@ -468,15 +462,15 @@ fn mapping_formula_is_empty(
                 })
                 .collect::<Vec<_>>();
 
-            return ProperSubtypeEvidence::Mapping(BTreeMap::from_iter(ev2).into()).to_result();
+            ProperSubtypeEvidence::Mapping(BTreeMap::from_iter(ev2).into()).to_result()
         }
-    };
+    }
 }
 pub fn mapping_is_empty(
     bdd: &Rc<Bdd>,
     builder: &mut SemTypeContext,
 ) -> ProperSubtypeEvidenceResult {
-    match builder.mapping_memo.get(&bdd) {
+    match builder.mapping_memo.get(bdd) {
         Some(mm) => match &mm.0 {
             MemoEmpty::True => return ProperSubtypeEvidenceResult::IsEmpty,
             MemoEmpty::False(ev) => return ev.clone(),
@@ -493,7 +487,7 @@ pub fn mapping_is_empty(
     }
 
     let is_empty = bdd_every(bdd, &None, &None, mapping_formula_is_empty, builder);
-    builder.mapping_memo.get_mut(&bdd).unwrap().0 = MemoEmpty::from_bool(&is_empty);
+    builder.mapping_memo.get_mut(bdd).unwrap().0 = MemoEmpty::from_bool(&is_empty);
     is_empty
 }
 enum ListInhabited {
@@ -514,7 +508,7 @@ fn list_inhabited(
     builder: &mut SemTypeContext,
 ) -> ListInhabited {
     match neg {
-        None => return ListInhabited::Yes(None, prefix_items.clone()),
+        None => ListInhabited::Yes(None, prefix_items.clone()),
         Some(neg) => {
             let mut len = prefix_items.len();
             let nt = match &*neg.atom {
@@ -581,7 +575,7 @@ fn list_inhabited(
 
             // This is correct for length 0, because we know that the length of the
             // negative is 0, and [] - [] is empty.
-            return ListInhabited::No;
+            ListInhabited::No
         }
     }
 }
@@ -659,14 +653,14 @@ fn list_formula_is_empty(
                 prefix_items: prefix2,
                 items: e,
             };
-            return ProperSubtypeEvidence::List(Rc::new(list_evidence)).to_result();
+            ProperSubtypeEvidence::List(Rc::new(list_evidence)).to_result()
         }
 
-        ListInhabited::No => return ProperSubtypeEvidenceResult::IsEmpty,
+        ListInhabited::No => ProperSubtypeEvidenceResult::IsEmpty,
     }
 }
 pub fn list_is_empty(bdd: &Rc<Bdd>, builder: &mut SemTypeContext) -> ProperSubtypeEvidenceResult {
-    match builder.list_memo.get(&bdd) {
+    match builder.list_memo.get(bdd) {
         Some(mm) => match &mm.0 {
             MemoEmpty::True => return ProperSubtypeEvidenceResult::IsEmpty,
             MemoEmpty::False(ev) => return ev.clone(),
@@ -683,6 +677,6 @@ pub fn list_is_empty(bdd: &Rc<Bdd>, builder: &mut SemTypeContext) -> ProperSubty
     }
 
     let is_empty = bdd_every(bdd, &None, &None, list_formula_is_empty, builder);
-    builder.list_memo.get_mut(&bdd).unwrap().0 = MemoEmpty::from_bool(&is_empty);
+    builder.list_memo.get_mut(bdd).unwrap().0 = MemoEmpty::from_bool(&is_empty);
     is_empty
 }

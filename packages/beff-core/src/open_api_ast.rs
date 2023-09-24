@@ -313,13 +313,11 @@ impl ApiPath {
         let mut acc = vec![];
 
         for (k, v) in &self.methods {
-            if *k == HTTPMethod::Get {
-                if v.json_request_body.is_some() {
-                    let err = method_prop_span
-                        .clone()
-                        .to_diag(DiagnosticInfoMessage::GetMustNotHaveBody);
-                    acc.push(err);
-                }
+            if *k == HTTPMethod::Get && v.json_request_body.is_some() {
+                let err = method_prop_span
+                    .clone()
+                    .to_diag(DiagnosticInfoMessage::GetMustNotHaveBody);
+                acc.push(err);
             }
         }
         acc
@@ -328,7 +326,7 @@ impl ApiPath {
     pub fn validate(&self, method_prop_span: &FullLocation) -> Vec<Diagnostic> {
         self.validate_pattern_was_consumed(method_prop_span)
             .into_iter()
-            .chain(self.validate_get_no_body(method_prop_span).into_iter())
+            .chain(self.validate_get_no_body(method_prop_span))
             .collect()
     }
 
@@ -570,7 +568,7 @@ impl OpenApiParser {
                             let required = vs
                                 .get("required")
                                 .and_then(|it| match it {
-                                    Json::Bool(st) => Some(st.clone()),
+                                    Json::Bool(st) => Some(*st),
                                     _ => None,
                                 })
                                 .unwrap();
@@ -651,16 +649,16 @@ impl OpenApiParser {
                     None => None,
                 };
 
-                return Ok(OperationObject {
+                Ok(OperationObject {
                     summary: None,
                     description: None,
                     parameters,
                     json_response_body: JsonSchema::from_json(json_response_body)?,
                     json_request_body,
-                });
+                })
             }
             val => {
-                return Err(anyhow!(
+                Err(anyhow!(
                     "Expected object, got {:?}",
                     val.to_serde().to_string()
                 ))
@@ -696,7 +694,7 @@ impl OpenApiParser {
                 for (name, op_obj) in vs {
                     let acc = Self::parse_op_object_map(op_obj)?;
                     let api_path = ApiPath {
-                        parsed_pattern: ApiPath::parse_raw_pattern_str(&name, None).unwrap(),
+                        parsed_pattern: ApiPath::parse_raw_pattern_str(name, None).unwrap(),
                         methods: BTreeMap::from_iter(acc),
                     };
                     self.api.paths.push(api_path);

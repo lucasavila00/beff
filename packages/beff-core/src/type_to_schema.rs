@@ -519,7 +519,7 @@ impl<'a, R: FileManager> TypeToSchema<'a, R> {
             }
             Expr::Ident(i) => {
                 let s =
-                    TypeResolver::new(self.files, &self.current_file).resolve_local_value(&i)?;
+                    TypeResolver::new(self.files, &self.current_file).resolve_local_value(i)?;
                 self.typeof_symbol(s, &i.span)
             }
             _ => {
@@ -581,7 +581,7 @@ impl<'a, R: FileManager> TypeToSchema<'a, R> {
                 TsEntityName::TsQualifiedName(_) => todo!(),
                 TsEntityName::Ident(n) => {
                     let s = TypeResolver::new(self.files, &self.current_file)
-                        .resolve_local_value(&n)?;
+                        .resolve_local_value(n)?;
                     self.typeof_symbol(s, &n.span)
                 }
             },
@@ -603,7 +603,7 @@ impl<'a, R: FileManager> TypeToSchema<'a, R> {
                     Some(x) => vec![*x],
                     None => vec![],
                 };
-                let vs = v.into_iter().chain(prefix_items.into_iter()).collect();
+                let vs = v.into_iter().chain(prefix_items).collect();
                 Ok(JsonSchema::any_of(vs))
             }
             (

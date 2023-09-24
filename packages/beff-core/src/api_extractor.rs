@@ -198,7 +198,7 @@ impl<'a, R: FileManager> ExtractExportDefaultVisitor<'a, R> {
                     };
                 }
                 PropOrSpread::Spread(SpreadElement { expr, .. }) => {
-                    self.check_expr_for_methods(&expr)
+                    self.check_expr_for_methods(expr)
                 }
             }
         }
@@ -217,14 +217,14 @@ impl<'a, R: FileManager> ExtractExportDefaultVisitor<'a, R> {
                     self.current_file = old_file;
                 } else {
                     self.errors.push(
-                        self.build_error(&span, DiagnosticInfoMessage::FoundTypeExpectedValue)
+                        self.build_error(span, DiagnosticInfoMessage::FoundTypeExpectedValue)
                             .to_diag(None),
                     );
                 }
             }
             SymbolExport::TsType { .. } | SymbolExport::TsInterfaceDecl(_) => {
                 self.errors.push(
-                    self.build_error(&span, DiagnosticInfoMessage::FoundTypeExpectedValue)
+                    self.build_error(span, DiagnosticInfoMessage::FoundTypeExpectedValue)
                         .to_diag(None),
                 );
             }
@@ -245,7 +245,7 @@ impl<'a, R: FileManager> ExtractExportDefaultVisitor<'a, R> {
                         ResolvedLocalSymbol::SymbolExportDefault(_) => todo!(),
                         ResolvedLocalSymbol::Star(file_name) => {
                             let file = self.files.get_or_fetch_file(&file_name);
-                            let exp = file.and_then(|it| it.symbol_exports.get(&right, self.files));
+                            let exp = file.and_then(|it| it.symbol_exports.get(right, self.files));
                             match exp {
                                 Some(s) => self.check_ts_export_for_methods(&s, span),
                                 None => todo!(),
@@ -531,7 +531,7 @@ impl<'a, R: FileManager> ExtractExportDefaultVisitor<'a, R> {
             })
             | PropName::Str(Str { span, value, .. }) => {
                 let locs = self.get_full_location(span)?;
-                let p = ApiPath::parse_raw_pattern_str(&value.to_string(), Some(locs.clone()));
+                let p = ApiPath::parse_raw_pattern_str(value.as_ref(), Some(locs.clone()));
                 match p {
                     Ok(v) => Ok(v),
                     Err(e) => {
@@ -689,7 +689,7 @@ impl<'a, R: FileManager> ExtractExportDefaultVisitor<'a, R> {
     }
 
     fn get_file(&mut self, name: &BffFileName) -> Result<Rc<ParsedModule>> {
-        match self.files.get_or_fetch_file(&name) {
+        match self.files.get_or_fetch_file(name) {
             Some(it) => Ok(it),
             None => {
                 self.errors.push(
@@ -831,13 +831,13 @@ impl<'a, R: FileManager> ExtractExportDefaultVisitor<'a, R> {
                 span, value: sym, ..
             })
             | PropName::Ident(Ident { sym, span, .. }) => match sym.to_string().as_str() {
-                "get" => Ok(MethodKind::Get(span.clone())),
-                "post" => Ok(MethodKind::Post(span.clone())),
-                "put" => Ok(MethodKind::Put(span.clone())),
-                "delete" => Ok(MethodKind::Delete(span.clone())),
-                "patch" => Ok(MethodKind::Patch(span.clone())),
-                "options" => Ok(MethodKind::Options(span.clone())),
-                "use" => Ok(MethodKind::Use(span.clone())),
+                "get" => Ok(MethodKind::Get(*span)),
+                "post" => Ok(MethodKind::Post(*span)),
+                "put" => Ok(MethodKind::Put(*span)),
+                "delete" => Ok(MethodKind::Delete(*span)),
+                "patch" => Ok(MethodKind::Patch(*span)),
+                "options" => Ok(MethodKind::Options(*span)),
+                "use" => Ok(MethodKind::Use(*span)),
                 _ => self.error(span, DiagnosticInfoMessage::NotAnHttpMethod),
             },
 
@@ -899,7 +899,7 @@ impl<'a, R: FileManager> ExtractExportDefaultVisitor<'a, R> {
                     description: None,
                     parameters: vec![],
                     return_type: JsonSchema::Any,
-                    method_kind: MethodKind::Use(span.clone()),
+                    method_kind: MethodKind::Use(span),
                     span: Self::get_prop_span(prop),
                 }];
             }
@@ -1135,7 +1135,7 @@ impl<'a, R: FileManager> EndpointToPath<'a, R> {
                     match operation_parameter_in_path_or_query_or_body(
                         key,
                         pattern,
-                        &schema,
+                        schema,
                         self.components,
                     ) {
                         FunctionParameterIn::Path => parameters.push(ParameterObject {
@@ -1276,7 +1276,7 @@ pub fn extract_schema<R: FileManager>(
     };
 
     let mut transformer = EndpointToPath {
-        errors: errors,
+        errors,
         components: &components,
         current_file: entry_file_name.clone(),
         files,
@@ -1284,7 +1284,7 @@ pub fn extract_schema<R: FileManager>(
     let paths = transformer.endpoints_to_paths(&handlers);
     let errors = transformer.errors;
     let open_api = OpenApi {
-        info: info,
+        info,
         components: public_definitions.into_iter().collect(),
         paths,
     };

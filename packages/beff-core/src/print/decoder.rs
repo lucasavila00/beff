@@ -187,8 +187,7 @@ impl DecoderFnGenerator {
                     span: DUMMY_SP,
                     value: format.to_string().into(),
                     raw: None,
-                }))
-                .into()],
+                }))],
             ),
             JsonSchema::Ref(r_name) => Self::decode_ref(r_name, required),
             JsonSchema::Object(vs) => Self::decode_call_extra(
@@ -288,8 +287,7 @@ impl DecoderFnGenerator {
                     span: DUMMY_SP,
                     value: format.to_string().into(),
                     raw: None,
-                }))
-                .into()],
+                }))],
             ),
         }
     }

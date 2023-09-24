@@ -191,7 +191,7 @@ impl JsonSchema {
         };
 
         let props = props
-            .into_iter()
+            .iter()
             .map(|(k, v)| {
                 JsonSchema::from_json(v).map(|v| match required.iter().find(|it| *it == k) {
                     Some(_) => (k.clone(), v.required()),
@@ -213,7 +213,7 @@ impl JsonSchema {
                 Some(its) => match its {
                     Json::Array(vs) => vs
                         .iter()
-                        .map(|it| JsonSchema::from_json(it))
+                        .map(JsonSchema::from_json)
                         .collect::<Result<Vec<_>>>()?,
                     _ => return Err(anyhow!("prefix_items must be an array")),
                 },
@@ -233,7 +233,7 @@ impl JsonSchema {
             let typ = vs
                 .get("items")
                 .ok_or(anyhow!("array must have items field"))?;
-            return Ok(JsonSchema::Array(JsonSchema::from_json(typ)?.into()));
+            Ok(JsonSchema::Array(JsonSchema::from_json(typ)?.into()))
         }
     }
 
@@ -256,7 +256,7 @@ impl JsonSchema {
                     let any_of = match any_of {
                         Json::Array(vs) => vs
                             .iter()
-                            .map(|it| JsonSchema::from_json(it))
+                            .map(JsonSchema::from_json)
                             .collect::<Result<Vec<_>>>()?,
                         _ => return Err(anyhow!("any of must be an array")),
                     };
@@ -266,7 +266,7 @@ impl JsonSchema {
                     let all_of = match all_of {
                         Json::Array(vs) => vs
                             .iter()
-                            .map(|it| JsonSchema::from_json(it))
+                            .map(JsonSchema::from_json)
                             .collect::<Result<Vec<_>>>()?,
                         _ => return Err(anyhow!("all of must be an array")),
                     };

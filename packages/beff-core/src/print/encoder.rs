@@ -115,11 +115,11 @@ fn encode_expr(schema: &JsonSchema, input_expr: Expr) -> Expr {
                 op: op!("??"),
                 right: Expr::Lit(Lit::Null(Null { span: DUMMY_SP })).into(),
             });
-            let or_null = Expr::Paren(ParenExpr {
+            
+            Expr::Paren(ParenExpr {
                 span: DUMMY_SP,
                 expr: or_null.into(),
-            });
-            or_null
+            })
         }
         JsonSchema::Boolean
         | JsonSchema::String
@@ -166,7 +166,8 @@ fn encode_expr(schema: &JsonSchema, input_expr: Expr) -> Expr {
                 }),
             });
 
-            let arr_dot_map_dot_call = Expr::Call(CallExpr {
+            
+            Expr::Call(CallExpr {
                 span: DUMMY_SP,
                 callee: Callee::Expr(arr_dot_map.into()),
                 args: vec![ExprOrSpread {
@@ -174,8 +175,7 @@ fn encode_expr(schema: &JsonSchema, input_expr: Expr) -> Expr {
                     expr: make_cb(encode_expr(ty, new_input_expr())).into(),
                 }],
                 type_args: None,
-            });
-            arr_dot_map_dot_call
+            })
         }
         JsonSchema::Tuple {
             prefix_items,

@@ -258,28 +258,27 @@ impl ExtractResult {
     pub fn errors(&self) -> Vec<&Diagnostic> {
         self.router
             .as_ref()
-            .map(|it| it.errors.iter().map(|it| it).collect())
+            .map(|it| it.errors.iter().collect())
             .unwrap_or(vec![])
             .into_iter()
             .chain(
                 self.parser
                     .as_ref()
-                    .map(|it| it.errors.iter().map(|it| it).collect())
+                    .map(|it| it.errors.iter().collect())
                     .unwrap_or(vec![]),
             )
-            .into_iter()
             .collect()
     }
     pub fn validators(&self) -> Vec<&Validator> {
         self.router
             .as_ref()
-            .map(|it| it.validators.iter().map(|it| it).collect())
+            .map(|it| it.validators.iter().collect())
             .unwrap_or(vec![])
             .into_iter()
             .chain(
                 self.parser
                     .as_ref()
-                    .map(|it| it.validators.iter().map(|it| it).collect())
+                    .map(|it| it.validators.iter().collect())
                     .unwrap_or(vec![]),
             )
             .collect()

@@ -30,7 +30,7 @@ impl<'a> ToSemTypeConverter<'a> {
                 return Ok(&validator.schema);
             }
         }
-        return Err(anyhow!("reference not found: {}", name));
+        Err(anyhow!("reference not found: {}", name))
     }
 
     fn to_sem_type(

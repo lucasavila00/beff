@@ -75,10 +75,10 @@ pub fn print_ts_types(vs: Vec<(String, TsType)>) -> String {
         .line_width(80)
         .quote_style(QuoteStyle::PreferDouble)
         .build();
-    let result = format_text(&PathBuf::from("f.ts"), &codes, &config)
+    
+    format_text(&PathBuf::from("f.ts"), &codes, &config)
         .expect("Could not parse...")
-        .unwrap();
-    result
+        .unwrap()
 }
 
 impl MdReport {
@@ -161,7 +161,7 @@ fn evidence_to_json(it: &Evidence) -> Json {
                     return Json::Number(N::parse_int(4773992856));
                 }
                 match values.split_first() {
-                    Some((h, _t)) => return Json::Number(h.clone()),
+                    Some((h, _t)) => Json::Number(h.clone()),
                     None => unreachable!("number values cannot be empty"),
                 }
             }
@@ -171,7 +171,7 @@ fn evidence_to_json(it: &Evidence) -> Json {
                 }
                 match values.split_first() {
                     Some((h, _t)) => match h {
-                        StringLitOrFormat::Lit(st) => return Json::String(st.clone()),
+                        StringLitOrFormat::Lit(st) => Json::String(st.clone()),
                         StringLitOrFormat::Format(fmt) => {
                             return Json::String("$$".to_owned() + fmt.as_str())
                         }
@@ -219,7 +219,7 @@ impl BreakingChange {
                     //     &err.evidence_type.iter().collect::<Vec<_>>(),
                     // ))
                     .chain(vec![
-                        MdReport::Text(format!("Old clients will not support this response:")),
+                        MdReport::Text("Old clients will not support this response:".to_string()),
                         MdReport::Json(evidence_to_json(&err.evidence)),
                     ])
                     .collect()
@@ -477,7 +477,7 @@ pub fn is_safe_to_change_to(
                             .map(|it| it.wrap(to_path.parsed_pattern.raw.clone(), *http_method)),
                         ),
                         None => acc.push(
-                            BreakingChange::MethodRemoved(http_method.clone())
+                            BreakingChange::MethodRemoved(*http_method)
                                 .wrap(to_path.parsed_pattern.raw.clone(), *http_method),
                         ),
                     }

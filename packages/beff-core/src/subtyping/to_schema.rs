@@ -33,8 +33,7 @@ impl<'a> SemTypeResolverContext<'a> {
         for atom in it {
             for (k, v) in atom.iter() {
                 let old_v = acc
-                    .get(k)
-                    .map(|it| it.clone())
+                    .get(k).cloned()
                     .unwrap_or_else(|| Rc::new(SemType::new_unknown()));
 
                 let v = old_v.intersect(v);
@@ -117,7 +116,7 @@ impl<'a> SemTypeResolverContext<'a> {
                 acc.push(Self::intersect_mapping_atomics(ty.collect()));
             }
         }
-        return acc;
+        acc
     }
     pub fn to_schema_mapping_bdd_vec(&mut self, bdd: &Rc<Bdd>) -> Vec<Rc<MappingAtomic>> {
         match bdd.as_ref() {
@@ -232,7 +231,7 @@ impl<'a> SemTypeResolverContext<'a> {
                 acc.push(Self::intersect_list_atomics(ty.collect()));
             }
         }
-        return acc;
+        acc
     }
     pub fn to_schema_list_bdd_vec(&mut self, bdd: &Rc<Bdd>) -> Vec<Rc<ListAtomic>> {
         match bdd.as_ref() {
@@ -370,7 +369,7 @@ impl<'a> SchemerContext<'a> {
                 acc.push(ty)
             }
         }
-        return JsonSchema::any_of(acc);
+        JsonSchema::any_of(acc)
     }
 
     fn to_schema_mapping(&mut self, bdd: &Rc<Bdd>) -> JsonSchema {
@@ -402,10 +401,10 @@ impl<'a> SchemerContext<'a> {
         } else {
             Some(Box::new(self.to_schema(&mt.items, None)))
         };
-        return JsonSchema::Tuple {
+        JsonSchema::Tuple {
             prefix_items,
             items,
-        };
+        }
     }
 
     // fn to_schema_list(&mut self, bdd: &Rc<Bdd>) -> JsonSchema {
@@ -481,7 +480,7 @@ impl<'a> SchemerContext<'a> {
                 acc.push(ty)
             }
         }
-        return JsonSchema::any_of(acc);
+        JsonSchema::any_of(acc)
     }
     fn to_schema_list(&mut self, bdd: &Rc<Bdd>) -> JsonSchema {
         match bdd.as_ref() {
@@ -580,7 +579,7 @@ impl<'a> SchemerContext<'a> {
         let new_name = match name {
             Some(n) => n.to_string(),
             None => {
-                self.counter = self.counter + 1;
+                self.counter += 1;
                 format!("t_{}", self.counter)
             }
         };
@@ -675,7 +674,7 @@ fn evidence_to_schema(ty: &Evidence) -> JsonSchema {
             ProperSubtypeEvidence::List(ev) => {
                 if ev.prefix_items.is_empty() {
                     match &ev.items {
-                        Some(e) => JsonSchema::Array(Box::new(evidence_to_schema(&e))),
+                        Some(e) => JsonSchema::Array(Box::new(evidence_to_schema(e))),
                         None => JsonSchema::AnyArrayLike,
                     }
                 } else {
