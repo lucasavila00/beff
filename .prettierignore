@@ -14,3 +14,4 @@ packages/beff-wasm/ts-node/tsc-slim/
 pnpm-lock.yaml/
 web-demo/demo/pkg/
 *generated/
+web-demo/demo/package-lock.json
