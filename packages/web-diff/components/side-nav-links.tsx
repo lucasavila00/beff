@@ -55,7 +55,7 @@ const PROJECTS: NavigationLink[] = [
     icon: DiscIcon,
   },
   {
-    href: "/project/{id}/versions",
+    href: "/project/{id}/version",
     text: "Versions",
     active: false,
     icon: DiscIcon,
