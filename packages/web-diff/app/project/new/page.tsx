@@ -1,4 +1,4 @@
-import { beffLocalClient } from "@/app/api/beff/[...beff]/router-app";
+import { beffLocalClient } from "@/beff/router-app";
 import { BreadCrumbs } from "@/components/breadcrumbs";
 import { CreateProjectButton } from "@/components/create-project-button";
 import { CheckCircledIcon, CrossCircledIcon, GitHubLogoIcon } from "@radix-ui/react-icons";
