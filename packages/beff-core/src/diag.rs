@@ -7,6 +7,8 @@ use crate::{open_api_ast::HTTPMethod, BffFileName, ParsedModule};
 
 #[derive(Debug, Clone)]
 pub enum DiagnosticInfoMessage {
+    FoundValueExpectedType,
+    CannotResolveValue,
     FoundTypeExpectedValue,
     CouldNotUnderstandThisPartOfTheRouter,
     CannotConvertToSubtype(String),
@@ -326,6 +328,10 @@ impl DiagnosticInfoMessage {
             }
             DiagnosticInfoMessage::FoundTypeExpectedValue => {
                 "Found type, expected value".to_string()
+            }
+            DiagnosticInfoMessage::CannotResolveValue => "Cannot resolve value".to_string(),
+            DiagnosticInfoMessage::FoundValueExpectedType => {
+                "Found value, expected type".to_string()
             }
         }
     }

@@ -1,0 +1,12 @@
+---
+source: packages/beff-core/tests/report_error.rs
+expression: fail(from)
+---
+Error: ~~~
+   ╭─[<unknown>:1:1]
+   │
+ 2 │     export default 1
+   │                     ┬  
+   │                     ╰── Could not understand this part of the router
+───╯
+

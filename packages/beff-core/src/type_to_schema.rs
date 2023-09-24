@@ -4,7 +4,7 @@ use crate::diag::{
     Diagnostic, DiagnosticInfoMessage, DiagnosticInformation, DiagnosticParentMessage, Location,
 };
 use crate::open_api_ast::Validator;
-use crate::type_reference::{ResolvedLocalSymbol, TypeResolver};
+use crate::sym_reference::{ResolvedLocalSymbol, TypeResolver};
 use crate::{BeffUserSettings, BffFileName, FileManager, ImportReference, SymbolExport};
 use std::collections::{BTreeMap, HashMap};
 use std::rc::Rc;
@@ -178,7 +178,7 @@ impl<'a, R: FileManager> TypeToSchema<'a, R> {
     }
 
     fn get_type_ref_of_user_identifier(&mut self, i: &Ident) -> Res<JsonSchema> {
-        match TypeResolver::new(self.files, &self.current_file).resolve_local_symbol(i)? {
+        match TypeResolver::new(self.files, &self.current_file).resolve_local_type(i)? {
             ResolvedLocalSymbol::TsType(alias) => self.convert_ts_type(&alias),
             ResolvedLocalSymbol::TsInterfaceDecl(int) => self.convert_ts_interface_decl(&int),
             ResolvedLocalSymbol::NamedImport {
@@ -187,8 +187,9 @@ impl<'a, R: FileManager> TypeToSchema<'a, R> {
             } => {
                 return self.convert_type_export(exported.as_ref(), from_file.file_name(), &i.span)
             }
-            ResolvedLocalSymbol::Expr(_) => todo!(),
-            ResolvedLocalSymbol::SymbolExportDefault(_) => todo!(),
+            ResolvedLocalSymbol::Expr(_) | ResolvedLocalSymbol::SymbolExportDefault(_) => {
+                self.error(&i.span, DiagnosticInfoMessage::FoundValueExpectedType)
+            }
         }
     }
 
@@ -284,37 +285,12 @@ impl<'a, R: FileManager> TypeToSchema<'a, R> {
         Ok(JsonSchema::any_of(vs))
     }
 
-    // fn validate_type_is_not_empty(&mut self, ty: &JsonSchema, span: &Span) -> Res<()> {
-    //     let mut ctx = SemTypeContext::new();
-    //     let validators = &self
-    //         .components
-    //         .iter()
-    //         .flat_map(|it| {
-    //             //
-    //             it.1.as_ref()
-    //         })
-    //         .collect::<Vec<_>>();
-    //     let st = crate::subtyping::ToSemType::to_sub_type(ty, validators, &mut ctx);
-
-    //     match st {
-    //         Ok(st) => {
-    //             if st.is_empty(&mut ctx) {
-    //                 return self.error(span, DiagnosticInfoMessage::TypeMustNotBeEmpty);
-    //             }
-    //         }
-    //         Err(_) => todo!(),
-    //     }
-    //     Ok(())
-    // }
-
     fn intersection(&mut self, types: &[Box<TsType>], _span: &Span) -> Res<JsonSchema> {
         let vs: Vec<JsonSchema> = types
             .iter()
             .map(|it| self.convert_ts_type(it))
             .collect::<Res<_>>()?;
         let val = JsonSchema::all_of(vs);
-
-        // self.validate_type_is_not_empty(&val, &span)?;
 
         Ok(val)
     }
@@ -542,8 +518,8 @@ impl<'a, R: FileManager> TypeToSchema<'a, R> {
             }
             Expr::Ident(i) => {
                 let s =
-                    TypeResolver::new(self.files, &self.current_file).resolve_local_symbol(&i)?;
-                self.typeof_symbol(s)
+                    TypeResolver::new(self.files, &self.current_file).resolve_local_value(&i)?;
+                self.typeof_symbol(s, &i.span)
             }
             _ => {
                 dbg!(e);
@@ -552,10 +528,11 @@ impl<'a, R: FileManager> TypeToSchema<'a, R> {
         }
     }
 
-    pub fn typeof_symbol(&mut self, s: ResolvedLocalSymbol) -> Res<JsonSchema> {
+    pub fn typeof_symbol(&mut self, s: ResolvedLocalSymbol, span: &Span) -> Res<JsonSchema> {
         match s {
-            ResolvedLocalSymbol::TsType(_) => todo!(),
-            ResolvedLocalSymbol::TsInterfaceDecl(_) => todo!(),
+            ResolvedLocalSymbol::TsType(_) | ResolvedLocalSymbol::TsInterfaceDecl(_) => {
+                self.error(span, DiagnosticInfoMessage::FoundTypeExpectedValue)
+            }
             ResolvedLocalSymbol::Expr(e) => match e.as_ref() {
                 Expr::TsConstAssertion(c) => self.typeof_expr(&c.expr),
                 Expr::Member(m) => {
@@ -600,8 +577,8 @@ impl<'a, R: FileManager> TypeToSchema<'a, R> {
                 TsEntityName::TsQualifiedName(_) => todo!(),
                 TsEntityName::Ident(n) => {
                     let s = TypeResolver::new(self.files, &self.current_file)
-                        .resolve_local_symbol(&n)?;
-                    self.typeof_symbol(s)
+                        .resolve_local_value(&n)?;
+                    self.typeof_symbol(s, &n.span)
                 }
             },
         }

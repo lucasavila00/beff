@@ -107,17 +107,8 @@ impl<'a, R: FileManager> TypeResolver<'a, R> {
             .to_info(info_msg)
             .to_diag(None)
     }
-    pub fn resolve_local_symbol(&mut self, i: &Ident) -> Res<ResolvedLocalSymbol> {
+    fn resolve_local_import(&mut self, i: &Ident) -> Res<ResolvedLocalSymbol> {
         let k = &(i.sym.clone(), i.span.ctxt);
-        if let Some(alias) = self.get_current_file().locals.type_aliases.get(k) {
-            return Ok(ResolvedLocalSymbol::TsType(alias.clone()));
-        }
-        if let Some(alias) = self.get_current_file().locals.exprs.get(k) {
-            return Ok(ResolvedLocalSymbol::Expr(alias.clone()));
-        }
-        if let Some(intf) = self.get_current_file().locals.interfaces.get(k) {
-            return Ok(ResolvedLocalSymbol::TsInterfaceDecl(intf.clone()));
-        }
         if let Some(imported) = self.get_current_file().imports.get(k) {
             match &**imported {
                 ImportReference::Named { orig, file_name } => {
@@ -150,5 +141,23 @@ impl<'a, R: FileManager> TypeResolver<'a, R> {
                 DiagnosticInfoMessage::CannotResolveLocalSymbol(i.sym.to_string()),
             )
             .into())
+    }
+    pub fn resolve_local_value(&mut self, i: &Ident) -> Res<ResolvedLocalSymbol> {
+        let k = &(i.sym.clone(), i.span.ctxt);
+
+        if let Some(alias) = self.get_current_file().locals.exprs.get(k) {
+            return Ok(ResolvedLocalSymbol::Expr(alias.clone()));
+        }
+        self.resolve_local_import(i)
+    }
+    pub fn resolve_local_type(&mut self, i: &Ident) -> Res<ResolvedLocalSymbol> {
+        let k = &(i.sym.clone(), i.span.ctxt);
+        if let Some(alias) = self.get_current_file().locals.type_aliases.get(k) {
+            return Ok(ResolvedLocalSymbol::TsType(alias.clone()));
+        }
+        if let Some(intf) = self.get_current_file().locals.interfaces.get(k) {
+            return Ok(ResolvedLocalSymbol::TsInterfaceDecl(intf.clone()));
+        }
+        self.resolve_local_import(i)
     }
 }

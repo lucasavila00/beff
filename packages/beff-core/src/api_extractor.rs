@@ -9,7 +9,7 @@ use crate::open_api_ast::{
 };
 use crate::subtyping::semtype::{SemTypeContext, SemTypeOps};
 use crate::subtyping::ToSemType;
-use crate::type_reference::{ResolvedLocalSymbol, TypeResolver};
+use crate::sym_reference::{ResolvedLocalSymbol, TypeResolver};
 use crate::type_to_schema::TypeToSchema;
 use crate::{BeffUserSettings, BffFileName, FileManager, ParsedModule, SymbolExport};
 use anyhow::anyhow;
@@ -202,8 +202,9 @@ impl<'a, R: FileManager> ExtractExportDefaultVisitor<'a, R> {
             }
         }
     }
-    fn check_ts_export_for_methods(&mut self, expr: &SymbolExport) {
+    fn check_ts_export_for_methods(&mut self, expr: &SymbolExport, span: &Span) {
         match expr {
+            SymbolExport::StarOfOtherFile(_) => todo!(),
             SymbolExport::ValueExpr { expr, .. } => self.check_expr_for_methods(expr),
             SymbolExport::SomethingOfOtherFile(orig, file_name) => {
                 let file = self.files.get_or_fetch_file(file_name);
@@ -211,18 +212,21 @@ impl<'a, R: FileManager> ExtractExportDefaultVisitor<'a, R> {
                 if let Some(export) = exported {
                     let old_file = self.current_file.clone();
                     self.current_file = file_name.clone();
-                    self.check_ts_export_for_methods(&export);
+                    self.check_ts_export_for_methods(&export, span);
                     self.current_file = old_file;
                 } else {
-                    // Err(self
-                    //     .make_err(&i.span, DiagnosticInfoMessage::CannotResolveNamespaceType)
-                    //     .into())
-                    todo!()
+                    self.errors.push(
+                        self.build_error(&span, DiagnosticInfoMessage::FoundTypeExpectedValue)
+                            .to_diag(None),
+                    );
                 }
             }
-            SymbolExport::TsType { .. } => todo!(),
-            SymbolExport::TsInterfaceDecl(_) => todo!(),
-            SymbolExport::StarOfOtherFile(_) => todo!(),
+            SymbolExport::TsType { .. } | SymbolExport::TsInterfaceDecl(_) => {
+                self.errors.push(
+                    self.build_error(&span, DiagnosticInfoMessage::FoundTypeExpectedValue)
+                        .to_diag(None),
+                );
+            }
         }
     }
     fn check_expr_for_methods(&mut self, expr: &Expr) {
@@ -231,7 +235,7 @@ impl<'a, R: FileManager> ExtractExportDefaultVisitor<'a, R> {
                 self.parse_endpoints_object(lit);
             }
             Expr::Ident(i) => {
-                match TypeResolver::new(self.files, &self.current_file).resolve_local_symbol(i) {
+                match TypeResolver::new(self.files, &self.current_file).resolve_local_value(i) {
                     Ok(ResolvedLocalSymbol::Expr(expr)) => self.check_expr_for_methods(&expr),
                     Ok(ResolvedLocalSymbol::NamedImport {
                         exported,
@@ -239,7 +243,7 @@ impl<'a, R: FileManager> ExtractExportDefaultVisitor<'a, R> {
                     }) => {
                         let old_file = self.current_file.clone();
                         self.current_file = from_file.file_name().clone();
-                        self.check_ts_export_for_methods(&exported);
+                        self.check_ts_export_for_methods(&exported, &expr.span());
                         self.current_file = old_file;
                     }
                     Ok(ResolvedLocalSymbol::SymbolExportDefault(export_default)) => {

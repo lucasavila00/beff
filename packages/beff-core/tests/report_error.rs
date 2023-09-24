@@ -144,4 +144,39 @@ mod tests {
     "#;
         insta::assert_snapshot!(fail(from));
     }
+    #[test]
+    fn fail3() {
+        let from = r#"
+    export default {
+        "/hello":1
+    }
+    "#;
+        insta::assert_snapshot!(fail(from));
+    }
+
+    #[test]
+    fn fail4() {
+        let from = r#"
+    export default 1
+    "#;
+        insta::assert_snapshot!(fail(from));
+    }
+    #[test]
+    fn fail5() {
+        let from = r#"
+    type A = string;
+    export default A
+    "#;
+        insta::assert_snapshot!(fail(from));
+    }
+    #[test]
+    fn fail6() {
+        let from = r#"
+    interface A {
+        a: string
+    }
+    export default A
+    "#;
+        insta::assert_snapshot!(fail(from));
+    }
 }
