@@ -91,7 +91,7 @@ pub enum DiagnosticInfoMessage {
 
 #[allow(clippy::inherent_to_string)]
 impl DiagnosticInfoMessage {
-    pub fn to_string(self) -> String {
+    pub fn to_string(&self) -> String {
         match self {
             DiagnosticInfoMessage::IndexOutOfTupleRange(idx) => {
                 format!("Index out of tuple range: {}", idx)
@@ -221,7 +221,7 @@ impl DiagnosticInfoMessage {
                 "Template must be of a single string".to_string()
             }
             DiagnosticInfoMessage::CannotFindFileWhenConvertingToSchema(f) => {
-                let name = f.0;
+                let name = &f.0;
                 format!("Cannot find file '{name}' when converting to schema")
             }
             DiagnosticInfoMessage::CannotFindTypeExportWhenConvertingToSchema(exp) => {
@@ -346,6 +346,8 @@ pub struct FullLocation {
     pub file_name: BffFileName,
     pub loc_lo: Loc,
     pub loc_hi: Loc,
+    pub offset_lo: usize,
+    pub offset_hi: usize,
 }
 
 impl FullLocation {
@@ -385,6 +387,8 @@ impl Location {
                     file_name: file.module.bff_fname.clone(),
                     loc_lo,
                     loc_hi,
+                    offset_lo: span.lo.0 as usize,
+                    offset_hi: span.hi.0 as usize,
                 })
             }
             None => Location::Unknown(UnknownLocation {
