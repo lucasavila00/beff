@@ -16,12 +16,18 @@ import { Links } from "@/utils/route-links";
 const CompatibilityStatus: FC<{
   curr: ProjectVersion;
   prev: ProjectVersion;
-}> = ({ prev }) => {
+}> = ({ prev, curr }) => {
   if (prev == null) {
     return <></>;
   }
   return (
-    <NextLink href={Links["/"]()}>
+    <NextLink
+      href={Links["/project/{projectId}/version/{versionId}/compare/{oldVersionId}"](
+        curr.projectId,
+        curr.id,
+        prev.id
+      )}
+    >
       <Button variant="ghost" color="gray">
         <Flex align="center" gap="1">
           <CheckCircledIcon color="green" />
