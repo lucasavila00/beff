@@ -8,10 +8,7 @@ export type Crumb = {
   text: string;
 };
 
-const RenderExtraCrumb: FC<{ href: string | null; text: string }> = ({
-  href,
-  text,
-}) => {
+const RenderExtraCrumb: FC<{ href: string | null; text: string }> = ({ href, text }) => {
   if (href == null) {
     return (
       <Text color="gray" weight="bold" ml="2">
@@ -28,17 +25,10 @@ const RenderExtraCrumb: FC<{ href: string | null; text: string }> = ({
   );
 };
 
-export const BreadCrumbs: FC<{ children: ReactNode; crumbs: Crumb[] }> = ({
-  children,
-  crumbs,
-}) => {
+export const BreadCrumbs: FC<{ children: ReactNode; crumbs: Crumb[] }> = ({ children, crumbs }) => {
   return (
     <>
-      <Flex
-        className="border-b dark:bg-gray-2 border-gray-5 h-20"
-        align="center"
-        pl="6"
-      >
+      <Flex className="border-b dark:bg-gray-2 border-gray-5 h-20" align="center" pl="6">
         <Text weight="bold">
           <Link asChild color="gray">
             <NextLink href="/">Home</NextLink>

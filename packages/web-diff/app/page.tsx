@@ -68,11 +68,7 @@ export default async function Home() {
     <>
       <BreadCrumbs crumbs={[]}>
         <Box className="mx-auto max-w-2xl" pt="8">
-          {projects.length == 0 ? (
-            <CreateFirstProject />
-          ) : (
-            <ProjectTable projects={projects} />
-          )}
+          {projects.length == 0 ? <CreateFirstProject /> : <ProjectTable projects={projects} />}
         </Box>
       </BreadCrumbs>
     </>

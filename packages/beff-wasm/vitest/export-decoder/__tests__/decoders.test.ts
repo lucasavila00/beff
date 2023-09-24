@@ -18,8 +18,7 @@ it("custom types", () => {
 });
 
 it("regular types", () => {
-  expect((generatedRouter.schema.components as any).schemas)
-    .toMatchInlineSnapshot(`
+  expect((generatedRouter.schema.components as any).schemas).toMatchInlineSnapshot(`
       {
         "StartsWithA": {
           "format": "StartsWithA",
@@ -131,8 +130,7 @@ it("regular types", () => {
     }
   `);
 
-  expect(Users.safeParse([{ name: 123 }, { age: "def" }]))
-    .toMatchInlineSnapshot(`
+  expect(Users.safeParse([{ name: 123 }, { age: "def" }])).toMatchInlineSnapshot(`
       {
         "errors": [
           {

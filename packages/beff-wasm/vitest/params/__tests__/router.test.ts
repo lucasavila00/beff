@@ -39,22 +39,14 @@ it("get", async () => {
   expect(await beff["/hello"].get()).toMatchInlineSnapshot('"Hello!"');
   const n = await beff["/query-param"].get(123);
   expect(n).toMatchInlineSnapshot("123");
-  expect(
-    await beff["/path-param/{name}"].get("the-param")
-  ).toMatchInlineSnapshot('"the-param"');
-  expect(
-    await beff["/header-param"].get("the-user-agent")
-  ).toMatchInlineSnapshot('"the-user-agent"');
+  expect(await beff["/path-param/{name}"].get("the-param")).toMatchInlineSnapshot('"the-param"');
+  expect(await beff["/header-param"].get("the-user-agent")).toMatchInlineSnapshot('"the-user-agent"');
 });
 
 it("post", async () => {
   expect(await beff["/hello"].post()).toMatchInlineSnapshot('"Hello!"');
-  expect(
-    await beff["/path-param/{name}"].post("the-param")
-  ).toMatchInlineSnapshot('"the-param"');
-  expect(
-    await beff["/req-body"].post({ a: "the-param" })
-  ).toMatchInlineSnapshot('"the-param"');
+  expect(await beff["/path-param/{name}"].post("the-param")).toMatchInlineSnapshot('"the-param"');
+  expect(await beff["/req-body"].post({ a: "the-param" })).toMatchInlineSnapshot('"the-param"');
 });
 
 it("post with body and error", async () => {
@@ -77,25 +69,15 @@ it("post with body and error, client", async () => {
   try {
     await beff["/req-body"].post({ a: 123 as any });
   } catch (e) {
-    expect(e).toMatchInlineSnapshot(
-      "[HTTPException: #0 (data.a) expected string, received: 123]"
-    );
+    expect(e).toMatchInlineSnapshot("[HTTPException: #0 (data.a) expected string, received: 123]");
   }
 });
 
 it("coerce", async () => {
-  expect(
-    await beff["/path-param-string/{name}"].get("the-param")
-  ).toMatchInlineSnapshot('"the-param"');
-  expect(await beff["/path-param-number/{id}"].get(123)).toMatchInlineSnapshot(
-    "123"
-  );
-  expect(
-    await beff["/path-param-boolean/{flag}"].get(true)
-  ).toMatchInlineSnapshot("true");
-  expect(await beff["/path-param-union/{id}"].get(456)).toMatchInlineSnapshot(
-    "456"
-  );
+  expect(await beff["/path-param-string/{name}"].get("the-param")).toMatchInlineSnapshot('"the-param"');
+  expect(await beff["/path-param-number/{id}"].get(123)).toMatchInlineSnapshot("123");
+  expect(await beff["/path-param-boolean/{flag}"].get(true)).toMatchInlineSnapshot("true");
+  expect(await beff["/path-param-union/{id}"].get(456)).toMatchInlineSnapshot("456");
 });
 
 it("default param", async () => {

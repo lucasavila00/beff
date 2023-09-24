@@ -10,9 +10,7 @@
       "type": "extensionHost",
       "request": "launch",
       "runtimeExecutable": "${execPath}",
-      "args": [
-        "--extensionDevelopmentPath=${workspaceFolder}/packages/beff-wasm"
-      ],
+      "args": ["--extensionDevelopmentPath=${workspaceFolder}/packages/beff-wasm"],
       "outFiles": ["${workspaceFolder}/packages/beff-wasm/dist-ext/**/*.js"]
       //   "preLaunchTask": "npm: watch"
     }

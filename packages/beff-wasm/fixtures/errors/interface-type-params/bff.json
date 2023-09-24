@@ -1,4 +1,4 @@
 {
-    "router": "./app.ts",
-    "outputDir": "./bff-generated"
+  "router": "./app.ts",
+  "outputDir": "./bff-generated"
 }

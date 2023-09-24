@@ -20,8 +20,7 @@ export const ProjectRouter = {
       prisma.projectVersion.findMany({ where: { projectId: id } }),
   },
   "/project/{id}": {
-    get: (_c: Ctx, id: string): Promise<BeffProject | null> =>
-      prisma.project.findUnique({ where: { id } }),
+    get: (_c: Ctx, id: string): Promise<BeffProject | null> => prisma.project.findUnique({ where: { id } }),
   },
   "/project": {
     get: (_c: Ctx): Promise<BeffProject[]> => prisma.project.findMany(),

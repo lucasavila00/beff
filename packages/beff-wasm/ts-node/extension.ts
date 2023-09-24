@@ -14,14 +14,8 @@ const readProjectJson = (
     throw new Error(`Field "router" or "parser" not found in bff.json`);
   }
   return {
-    router:
-      projectJson.router == null
-        ? projectJson.router
-        : String(projectJson.router),
-    parser:
-      projectJson.parser == null
-        ? projectJson.parser
-        : String(projectJson.parser),
+    router: projectJson.router == null ? projectJson.router : String(projectJson.router),
+    parser: projectJson.parser == null ? projectJson.parser : String(projectJson.parser),
     module: projectJson.module,
     settings: parseUserSettings(projectJson),
   };
@@ -30,10 +24,7 @@ const readProjectJson = (
 let crashed: any = false;
 
 let bundler: Bundler | null = null;
-const crashPopup = () =>
-  vscode.window.showErrorMessage(
-    `BFF WASM CRASHED. Please reload VSCode. ${crashed}`
-  );
+const crashPopup = () => vscode.window.showErrorMessage(`BFF WASM CRASHED. Please reload VSCode. ${crashed}`);
 const crashChecked = (cb: () => void) => {
   if (crashed) {
     crashPopup();
@@ -53,9 +44,7 @@ const crashChecked = (cb: () => void) => {
 const VERBOSE = false;
 
 export function activate(context: vscode.ExtensionContext) {
-  const beffPath = String(
-    vscode.workspace.getConfiguration("beff").get("configPath") ?? "beff.json"
-  );
+  const beffPath = String(vscode.workspace.getConfiguration("beff").get("configPath") ?? "beff.json");
 
   const workspacePath = vscode.workspace.workspaceFolders?.[0].uri.fsPath;
   if (!workspacePath) {
@@ -68,21 +57,12 @@ export function activate(context: vscode.ExtensionContext) {
   bundler = new Bundler(VERBOSE);
   // const router = projectJson.router;
   const router_entrypoint =
-    projectJson.router == null
-      ? undefined
-      : path.join(path.dirname(projectPath), projectJson.router);
+    projectJson.router == null ? undefined : path.join(path.dirname(projectPath), projectJson.router);
   const parser_entrypoint =
-    projectJson.parser == null
-      ? undefined
-      : path.join(path.dirname(projectPath), projectJson.parser);
+    projectJson.parser == null ? undefined : path.join(path.dirname(projectPath), projectJson.parser);
 
   const updateDiag = () =>
-    updateDiagnostics(
-      router_entrypoint,
-      parser_entrypoint,
-      projectJson.settings,
-      collection
-    );
+    updateDiagnostics(router_entrypoint, parser_entrypoint, projectJson.settings, collection);
   updateDiag();
   const watcher = vscode.workspace.createFileSystemWatcher(
     new vscode.RelativePattern(workspacePath, "**/*.ts")
@@ -120,9 +100,7 @@ const getFileNameFromDiag = (diag: WasmDiagnosticInformation) => {
   return diag.UnknownFile.current_file;
 };
 
-const relatedInformation = (
-  cause: WasmDiagnosticInformation
-): vscode.DiagnosticRelatedInformation => {
+const relatedInformation = (cause: WasmDiagnosticInformation): vscode.DiagnosticRelatedInformation => {
   if (cause.KnownFile) {
     const diag = cause.KnownFile;
     return {
@@ -154,11 +132,7 @@ function updateDiagnostics(
   collection: vscode.DiagnosticCollection
 ): void {
   collection.clear();
-  const diags = bundler?.diagnostics(
-    router_entrypoint,
-    parser_entrypoint,
-    settings
-  );
+  const diags = bundler?.diagnostics(router_entrypoint, parser_entrypoint, settings);
   let acc: Record<string, vscode.Diagnostic[]> = {};
   const pushDiag = (k: string, v: vscode.Diagnostic) => {
     if (acc[k] == null) {
@@ -177,18 +151,13 @@ function updateDiagnostics(
           new vscode.Position(diag.line_hi - 1, diag.col_hi)
         ),
         severity: vscode.DiagnosticSeverity.Error,
-        relatedInformation: (data.related_information ?? []).map(
-          relatedInformation
-        ),
+        relatedInformation: (data.related_information ?? []).map(relatedInformation),
       });
     } else {
       const diag = cause.UnknownFile;
       pushDiag(diag.current_file, {
         message: (data.message ? data.message + " - " : "") + diag.message,
-        range: new vscode.Range(
-          new vscode.Position(0, 0),
-          new vscode.Position(0, 0)
-        ),
+        range: new vscode.Range(new vscode.Position(0, 0), new vscode.Position(0, 0)),
         severity: vscode.DiagnosticSeverity.Error,
       });
     }
@@ -207,10 +176,7 @@ function updateDiagnostics(
         const diag = related.UnknownFile;
         pushDiag(diag.current_file, {
           message: diag.message,
-          range: new vscode.Range(
-            new vscode.Position(0, 0),
-            new vscode.Position(0, 0)
-          ),
+          range: new vscode.Range(new vscode.Position(0, 0), new vscode.Position(0, 0)),
           severity: vscode.DiagnosticSeverity.Warning,
         });
       }

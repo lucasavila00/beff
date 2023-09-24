@@ -1,8 +1,4 @@
-import {
-  BuildClientOptions,
-  ClientFromRouter,
-  buildClient,
-} from "@beff/client";
+import { BuildClientOptions, ClientFromRouter, buildClient } from "@beff/client";
 import {
   UseMutationOptions,
   UseMutationResult,
@@ -13,9 +9,7 @@ import {
 } from "@tanstack/react-query";
 
 export type QueryHookResult<T> = {
-  useQuery: (
-    options?: Omit<UseQueryOptions<T>, "queryKey" | "queryFn">
-  ) => UseQueryResult<T>;
+  useQuery: (options?: Omit<UseQueryOptions<T>, "queryKey" | "queryFn">) => UseQueryResult<T>;
   fetch: () => Promise<T>;
 };
 
@@ -24,13 +18,9 @@ export type GetHook<T> = T extends (...args: infer A) => Promise<infer R>
   : never;
 
 export type MutationHookResult<T> = {
-  useMutation: (
-    options?: Omit<UseMutationOptions<T>, "queryKey" | "queryFn">
-  ) => UseMutationResult<T>;
+  useMutation: (options?: Omit<UseMutationOptions<T>, "queryKey" | "queryFn">) => UseMutationResult<T>;
 
-  useQuery: (
-    options?: Omit<UseQueryOptions<T>, "queryKey" | "queryFn">
-  ) => UseQueryResult<T>;
+  useQuery: (options?: Omit<UseQueryOptions<T>, "queryKey" | "queryFn">) => UseQueryResult<T>;
 
   fetch: () => Promise<T>;
 };

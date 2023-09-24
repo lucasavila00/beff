@@ -15,12 +15,7 @@ const binPath = "../../beff-cli/bin/index.js";
 
 const oneCodegenSnap = async (subFolder) => {
   const bin = path.join(__dirname, binPath);
-  const p = path.join(
-    __dirname,
-    "../fixtures/codegen-snaps",
-    subFolder,
-    "bff.json"
-  );
+  const p = path.join(__dirname, "../fixtures/codegen-snaps", subFolder, "bff.json");
   const command = `node ${bin} -p ${p}`;
   console.log(command);
   const result = await execAsync(command);
@@ -127,9 +122,7 @@ const futures = async () => {
 };
 
 const codegenSnaps = async () => {
-  const subFolders = fs.readdirSync(
-    path.join(__dirname, "../fixtures/codegen-snaps")
-  );
+  const subFolders = fs.readdirSync(path.join(__dirname, "../fixtures/codegen-snaps"));
 
   await Promise.all(subFolders.map(oneCodegenSnap));
 };

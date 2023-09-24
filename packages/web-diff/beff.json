@@ -1,4 +1,4 @@
 {
-    "router": "beff/router.ts",
-    "outputDir": "beff/generated/"
+  "router": "beff/router.ts",
+  "outputDir": "beff/generated/"
 }

@@ -9,9 +9,7 @@ import { authOptions } from "@/app/api/auth/[...nextauth]/options";
 import { IconProps } from "@radix-ui/react-icons/dist/types";
 import { SideNavLinks } from "./side-nav-links";
 
-const ConnectedUserButton: FC<{ session: Session | null }> = async ({
-  session,
-}) => {
+const ConnectedUserButton: FC<{ session: Session | null }> = async ({ session }) => {
   if (session == null) {
     return <></>;
   }

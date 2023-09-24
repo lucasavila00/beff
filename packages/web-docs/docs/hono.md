@@ -184,10 +184,7 @@ test("get /", async () => {
   `);
 });
 test("get /items/{item_id}", async () => {
-  const result = await client["/items/{item_id}"].get(
-    "the item id",
-    "query param"
-  );
+  const result = await client["/items/{item_id}"].get("the item id", "query param");
   expect(result).toMatchInlineSnapshot(`
     {
       "item_id": "the item id",

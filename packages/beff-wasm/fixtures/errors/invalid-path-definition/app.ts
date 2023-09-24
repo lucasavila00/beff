@@ -10,9 +10,7 @@ export default {
       return 1;
     },
     set c(v) {},
-    [`AAAAAAAAAAAAAAAAAAGETOOOO/hello/{id}`]: async (
-      id: string
-    ): Promise<string> => id,
+    [`AAAAAAAAAAAAAAAAAAGETOOOO/hello/{id}`]: async (id: string): Promise<string> => id,
     [`GETOOOO/hello/{id}`]: async (id: string): Promise<string> => id,
     ...d,
     [`GET/hello2/{id}`]: async function* (id: string): Promise<string> {
@@ -31,9 +29,7 @@ export default {
     return 1;
   },
   set c(v) {},
-  [`AAAAAAAAAAAAAAAAAAGETOOOO/hello/{id}`]: async (
-    id: string
-  ): Promise<string> => id,
+  [`AAAAAAAAAAAAAAAAAAGETOOOO/hello/{id}`]: async (id: string): Promise<string> => id,
   [`GETOOOO/hello/{id}`]: async (id: string): Promise<string> => id,
   ...d,
   [`GET/hello2/{id}`]: async function* (id: string): Promise<string> {

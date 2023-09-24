@@ -18,17 +18,16 @@ type E = 5 | 6;
 export type UnionNested = A | (B | (D | E));
 export type Password = StringFormat<"password">;
 
-export const { StartsWithA, User, Users, NotPublicRenamed } =
-  parser.buildParsers<{
-    User: User;
-    Users: User[];
-    NotPublicRenamed: NotPublic;
-    StartsWithA: StartsWithA;
-    Password: Password;
-    float: 123.456;
-    int: 123;
-    union: UnionNested;
-  }>();
+export const { StartsWithA, User, Users, NotPublicRenamed } = parser.buildParsers<{
+  User: User;
+  Users: User[];
+  NotPublicRenamed: NotPublic;
+  StartsWithA: StartsWithA;
+  Password: Password;
+  float: 123.456;
+  int: 123;
+  union: UnionNested;
+}>();
 
 // type T1 = [string];
 // type T2 = string[];

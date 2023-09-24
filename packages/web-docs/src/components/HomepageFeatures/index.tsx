@@ -19,9 +19,8 @@ const FeatureList: FeatureItem[] = [
         <a href="https://fastapi.tiangolo.com/" target="__blank">
           FastAPI
         </a>{" "}
-        and it is as intuitive as possible. You can write your API in a few
-        minutes. It is based on familiar concepts like OpenAPI, JSON Schema, and
-        Typescript.
+        and it is as intuitive as possible. You can write your API in a few minutes. It is based on familiar
+        concepts like OpenAPI, JSON Schema, and Typescript.
       </>
     ),
   },
@@ -30,9 +29,8 @@ const FeatureList: FeatureItem[] = [
     Svg: require("@site/static/img/undraw_maker.svg").default,
     description: (
       <>
-        Focus on your code. Write familiar Typescript types. Beff will take care
-        of the rest. Automatic OpenAPI documentation, automatic validator
-        generation, automatic client generation, and more.
+        Focus on your code. Write familiar Typescript types. Beff will take care of the rest. Automatic
+        OpenAPI documentation, automatic validator generation, automatic client generation, and more.
       </>
     ),
   },
@@ -41,9 +39,8 @@ const FeatureList: FeatureItem[] = [
     Svg: require("@site/static/img/undraw_online_reading.svg").default,
     description: (
       <>
-        OpenAPI for API creation, including declarations of path operations,
-        parameters, body requests, security, etc. Automatic data model
-        documentation with JSON Schema (as OpenAPI itself is based on JSON
+        OpenAPI for API creation, including declarations of path operations, parameters, body requests,
+        security, etc. Automatic data model documentation with JSON Schema (as OpenAPI itself is based on JSON
         Schema).
       </>
     ),
@@ -53,10 +50,9 @@ const FeatureList: FeatureItem[] = [
     Svg: require("@site/static/img/undraw_check_boxes.svg").default,
     description: (
       <>
-        Beff is able to generate schema and validators for many Typescript
-        types. It outputs efficient generated code with zero runtime
-        dependencies. You can also use the validators stand alone, even without
-        a router.
+        Beff is able to generate schema and validators for many Typescript types. It outputs efficient
+        generated code with zero runtime dependencies. You can also use the validators stand alone, even
+        without a router.
       </>
     ),
   },
@@ -65,8 +61,8 @@ const FeatureList: FeatureItem[] = [
     Svg: require("@site/static/img/undraw_security_on.svg").default,
     description: (
       <>
-        Generate type-safe Typescript clients for your API, with Fetch or React
-        Query. Generate clients for 50+ programming languages with{" "}
+        Generate type-safe Typescript clients for your API, with Fetch or React Query. Generate clients for
+        50+ programming languages with{" "}
         <a href="https://openapi-generator.tech/" target="__blank">
           OpenAPI Generator
         </a>
@@ -78,9 +74,8 @@ const FeatureList: FeatureItem[] = [
     Svg: require("@site/static/img/undraw_camping.svg").default,
     description: (
       <>
-        Extend or customize your API with Hono. Deploy to Cloudflare Workers,
-        Deno, NodeJS, and more. Hono is a fast, type-safe, and extensible
-        runtime that powers Beff.
+        Extend or customize your API with Hono. Deploy to Cloudflare Workers, Deno, NodeJS, and more. Hono is
+        a fast, type-safe, and extensible runtime that powers Beff.
       </>
     ),
   },
