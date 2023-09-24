@@ -103,7 +103,7 @@ mod tests {
     }
 
     #[test]
-    fn ok1() {
+    fn fail1() {
         let from = r#"
     type A = STRING;
     export default {
@@ -112,8 +112,6 @@ mod tests {
         }
     }
     "#;
-
-        let s = parse_and_fail(from);
-        insta::assert_snapshot!(s);
+        insta::assert_snapshot!(parse_and_fail(from));
     }
 }
