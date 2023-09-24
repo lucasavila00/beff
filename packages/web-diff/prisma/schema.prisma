@@ -82,14 +82,15 @@ model ProjectAuthorization {
 model ProjectVersion {
   id        String @id @default(cuid())
   projectId String
-  version   String
 
   branch     String
   commitHash String
-  schema     String
-  updatedAt  DateTime @updatedAt
+
+  openApiSchema Json
+  updatedAt     DateTime @updatedAt
+  createdAt     DateTime @default(now())
 
   project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
 
-  @@unique([projectId, version, branch, commitHash])
+  @@unique([projectId, commitHash])
 }

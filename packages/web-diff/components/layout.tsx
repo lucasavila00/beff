@@ -8,6 +8,7 @@ import { twMerge } from "tailwind-merge";
 import { authOptions } from "@/app/api/auth/[...nextauth]/options";
 import { IconProps } from "@radix-ui/react-icons/dist/types";
 import { SideNavLinks } from "./side-nav-links";
+import { Links } from "@/utils/route-links";
 
 const ConnectedUserButton: FC<{ session: Session | null }> = async ({ session }) => {
   if (session == null) {
@@ -33,7 +34,7 @@ export const Layout: FC<{
         >
           <Flex direction="column" align="start">
             <Flex className="h-20" px="6" align="center" width="100%">
-              <NextLink href="/">
+              <NextLink href={Links["/"]()}>
                 <Heading>Beff Diff</Heading>
               </NextLink>
             </Flex>

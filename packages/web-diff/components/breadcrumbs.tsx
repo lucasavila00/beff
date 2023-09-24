@@ -2,6 +2,7 @@ import { Box, Text, Flex, Link } from "@radix-ui/themes";
 import { FC, Fragment, ReactNode } from "react";
 import NextLink from "next/link";
 import { SlashIcon } from "@radix-ui/react-icons";
+import { Links } from "@/utils/route-links";
 
 export type Crumb = {
   href: string | null;
@@ -31,7 +32,7 @@ export const BreadCrumbs: FC<{ children: ReactNode; crumbs: Crumb[] }> = ({ chil
       <Flex className="border-b dark:bg-gray-2 border-gray-5 h-20" align="center" pl="6">
         <Text weight="bold">
           <Link asChild color="gray">
-            <NextLink href="/">Home</NextLink>
+            <NextLink href={Links["/"]()}>Home</NextLink>
           </Link>
         </Text>
         {crumbs.map((crumb) => {

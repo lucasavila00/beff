@@ -3,6 +3,7 @@ use beff_core::{
     open_api_ast::{OpenApi, OpenApiParser, Validator},
     schema_changes::{is_safe_to_change_to, print_ts_types, MdReport, OpenApiBreakingChange},
 };
+use imara_diff::{diff, intern::InternedInput, Algorithm, UnifiedDiffBuilder};
 use log::Level;
 // use log::Level;
 use wasm_bindgen::{prelude::wasm_bindgen, JsValue};
@@ -52,7 +53,23 @@ pub fn schema_to_ts_types(schema: &str) -> String {
 }
 
 #[wasm_bindgen]
-pub fn compare_schemas(from: &str, to: &str) -> Vec<JsValue> {
+pub fn text_diff_schemas(from: &str, to: &str) -> String {
+    let (from_api, from_vals) = parse_json(from);
+    let (to_api, to_vals) = parse_json(to);
+    let before = from_api.as_typescript_string(&from_vals.iter().collect::<Vec<_>>());
+    let after = to_api.as_typescript_string(&to_vals.iter().collect::<Vec<_>>());
+
+    let input = InternedInput::new(before.as_str(), after.as_str());
+    let diff = diff(
+        Algorithm::Histogram,
+        &input,
+        UnifiedDiffBuilder::new(&input),
+    );
+    diff
+}
+
+#[wasm_bindgen]
+pub fn compare_schemas_for_errors(from: &str, to: &str) -> Vec<JsValue> {
     let (from_api, from_vals) = parse_json(from);
     let (to_api, to_vals) = parse_json(to);
 

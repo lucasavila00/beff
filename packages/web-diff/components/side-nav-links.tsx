@@ -6,6 +6,7 @@ import NextLink from "next/link";
 import { FC } from "react";
 import { twMerge } from "tailwind-merge";
 import { useParams, usePathname } from "next/navigation";
+import { LinkPatterns } from "@/utils/route-links";
 
 const SideBarLink: FC<{
   href: string;
@@ -31,51 +32,54 @@ const SideBarLink: FC<{
     </NextLink>
   );
 };
-type NavigationLink = {
-  href: string;
+type NavigationLinkInput = {
+  linkPattern: LinkPatterns;
   text: string;
   active: boolean;
   icon: React.ForwardRefExoticComponent<IconProps & React.RefAttributes<SVGSVGElement>>;
 };
 
-const HOME: NavigationLink[] = [
+const HOME: NavigationLinkInput[] = [
   {
-    href: "/",
+    linkPattern: "/",
     text: "Projects",
     active: false,
     icon: DiscIcon,
   },
 ];
 
-const PROJECTS: NavigationLink[] = [
+const PROJECTS: NavigationLinkInput[] = [
   {
-    href: "/project/{projectId}",
+    linkPattern: "/project/{projectId}",
     text: "Dashboard",
     active: false,
     icon: DiscIcon,
   },
   {
-    href: "/project/{projectId}/version",
+    linkPattern: "/project/{projectId}/version",
     text: "Versions",
     active: false,
     icon: DiscIcon,
   },
   {
-    href: "/project/{projectId}/branches",
+    linkPattern: "/project/{projectId}/branches",
     text: "Branches",
     active: false,
     icon: DiscIcon,
   },
 ];
 
-const getNav = (pathname: string): NavigationLink[] => {
+type NavigationLink = NavigationLinkInput & { href: string };
+
+const getNav = (pathname: string): NavigationLinkInput[] => {
   if (pathname === "/") {
     return HOME;
   }
   if (pathname.startsWith("/project")) {
     return PROJECTS;
   }
-  throw new Error(`Unknown path ${pathname}`);
+  console.error(`Unknown path ${pathname}`);
+  return [];
 };
 const useNav = (): NavigationLink[] => {
   const pathname = usePathname();
@@ -85,7 +89,7 @@ const useNav = (): NavigationLink[] => {
   return nav.map((it) => {
     const href = Object.entries(params).reduce(
       (acc, [key, value]) => acc.replace(`{${key}}`, String(value)),
-      it.href
+      it.linkPattern as string
     );
     return {
       ...it,

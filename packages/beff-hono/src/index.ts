@@ -102,6 +102,8 @@ const decodeNoMessage = (validator: any, value: any) => {
   const newValue = validator(validatorCtx, value);
   const errors = validatorCtx.errors;
   if (errors?.length > 0) {
+    //@ts-expect-error
+    console.error(printErrors(errors, ["responseBody"]));
     throw new BffHTTPException(500, "Internal error");
   }
   return newValue;

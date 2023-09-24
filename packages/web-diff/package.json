@@ -11,6 +11,7 @@
     "tsw": "tsc --noEmit --watch",
     "ts": "tsc --noEmit",
     "seed": "DATABASE_URL=postgresql://postgres_user:postgres_password@postgresql/postgres_db:5432 esno prisma/seed.ts",
+    "migrate:dev": "DATABASE_URL=postgresql://postgres_user:postgres_password@postgresql/postgres_db:5432 npx prisma migrate dev",
     "wasm:dev": "wasm-pack build --dev --target bundler --out-dir pkg --out-name index",
     "wasm:release": "wasm-pack build --release --target bundler --out-dir pkg --out-name index"
   },

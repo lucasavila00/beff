@@ -5,7 +5,6 @@ export async function GET(
   _request: Request,
   { params }: { params: { projectId: string; versionId: string } }
 ) {
-  console.log(params);
   const version = await beffLocalClient["/project/{projectId}/version/{versionId}"].get(
     params.projectId,
     params.versionId
@@ -13,5 +12,10 @@ export async function GET(
   if (version == null) {
     throw new Error("Not found");
   }
-  return NextResponse.json(JSON.parse(version.schema));
+  return new Response(JSON.stringify(version.openApiSchema), {
+    status: 200,
+    headers: {
+      "content-type": "application/json",
+    },
+  });
 }
