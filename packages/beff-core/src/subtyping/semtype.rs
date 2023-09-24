@@ -99,7 +99,7 @@ impl SemTypeOps for Rc<SemType> {
                     return Evidence::All(i).to_result();
                 }
             }
-            panic!()
+            unreachable!("should have found a tag")
         }
         for st in self.subtype_data.iter() {
             match st.is_empty_evidence(builder) {

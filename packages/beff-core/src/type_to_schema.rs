@@ -570,7 +570,9 @@ impl<'a, R: FileManager> TypeToSchema<'a, R> {
         }
     }
     pub fn convert_type_query(&mut self, q: &TsTypeQuery) -> Res<JsonSchema> {
-        assert!(q.type_args.is_none());
+        if q.type_args.is_some() {
+            return self.error(&q.span, DiagnosticInfoMessage::TypeQueryArgsNotSupported);
+        }
         match q.expr_name {
             TsTypeQueryExpr::Import(_) => todo!(),
             TsTypeQueryExpr::TsEntityName(ref n) => match n {

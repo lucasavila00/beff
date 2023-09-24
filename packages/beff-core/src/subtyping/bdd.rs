@@ -462,7 +462,9 @@ fn mapping_formula_is_empty(
                 .iter()
                 .map(|(k, it)| match it.is_empty_evidence(builder) {
                     EvidenceResult::Evidence(e) => (k.clone(), Rc::new(e)),
-                    EvidenceResult::IsEmpty => panic!(),
+                    EvidenceResult::IsEmpty => {
+                        unreachable!("mapping_inhabited should have returned false")
+                    }
                 })
                 .collect::<Vec<_>>();
 
@@ -648,7 +650,9 @@ fn list_formula_is_empty(
                 .into_iter()
                 .map(|it| match it.is_empty_evidence(builder) {
                     EvidenceResult::Evidence(e) => Rc::new(e),
-                    EvidenceResult::IsEmpty => panic!(),
+                    EvidenceResult::IsEmpty => {
+                        unreachable!("list_inhabited should have returned false")
+                    }
                 })
                 .collect::<Vec<_>>();
             let list_evidence = ListEvidence {

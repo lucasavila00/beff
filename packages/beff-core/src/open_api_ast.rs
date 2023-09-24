@@ -507,7 +507,7 @@ impl OpenApiParser {
                     });
                 }
             }
-            _ => panic!(),
+            _ => todo!(),
         }
         Ok(())
     }
@@ -595,10 +595,10 @@ impl OpenApiParser {
                                     required,
                                     schema,
                                 }),
-                                _ => panic!(),
+                                _ => todo!(),
                             }
                         }
-                        _ => panic!(),
+                        _ => todo!(),
                     }
                 }
 
@@ -649,7 +649,7 @@ impl OpenApiParser {
                     json_request_body,
                 });
             }
-            _ => panic!(),
+            _ => todo!(),
         }
     }
     fn parse_op_object_map(it: &Json) -> Result<Vec<(HTTPMethod, OperationObject)>> {
@@ -664,7 +664,7 @@ impl OpenApiParser {
                     }
                 }
             }
-            _ => panic!(),
+            _ => todo!(),
         }
 
         Ok(acc)
@@ -682,7 +682,7 @@ impl OpenApiParser {
                     self.api.paths.push(api_path);
                 }
             }
-            _ => panic!(),
+            _ => todo!(),
         }
         Ok(())
     }

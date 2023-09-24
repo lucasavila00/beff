@@ -7,6 +7,7 @@ use crate::{open_api_ast::HTTPMethod, BffFileName, ParsedModule};
 
 #[derive(Debug, Clone)]
 pub enum DiagnosticInfoMessage {
+    TypeQueryArgsNotSupported,
     FoundValueExpectedType,
     CannotResolveValue,
     FoundTypeExpectedValue,
@@ -332,6 +333,9 @@ impl DiagnosticInfoMessage {
             DiagnosticInfoMessage::CannotResolveValue => "Cannot resolve value".to_string(),
             DiagnosticInfoMessage::FoundValueExpectedType => {
                 "Found value, expected type".to_string()
+            }
+            DiagnosticInfoMessage::TypeQueryArgsNotSupported => {
+                "Type query args are not supported".to_string()
             }
         }
     }
