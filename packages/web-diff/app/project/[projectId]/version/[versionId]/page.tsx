@@ -9,6 +9,8 @@ import "highlight.js/styles/atom-one-dark.css";
 import { init, schema_to_ts_types } from "@/pkg";
 import NextLink from "next/link";
 import { ExternalLinkIcon } from "@radix-ui/react-icons";
+import { ProjectVersion } from "@/beff/routers/project";
+import { getVersionLabel } from "@/utils/helpers";
 
 hljs.registerLanguage("typescript", typescript);
 
@@ -30,10 +32,11 @@ export default async function Page({ params }: { params: { projectId: string; ve
   if (version == null) {
     return <NotFound />;
   }
-  const tsType = wasmGetter().schema_to_ts_types(version.schema);
+  const tsType = wasmGetter().schema_to_ts_types(JSON.stringify(version.openApiSchema));
   const tsTypeFmt = hljs.highlight(tsType, {
     language: "typescript",
   }).value;
+  const label = getVersionLabel(version);
   return (
     <>
       <ProjectsBreadcrumbs
@@ -45,17 +48,17 @@ export default async function Page({ params }: { params: { projectId: string; ve
           },
           {
             href: `/project/${params.projectId}/version/${params.versionId}`,
-            text: version.version,
+            text: label,
           },
         ]}
       >
         <Box className="mx-auto max-w-2xl" pt="8">
           <Flex justify="between" align="baseline">
             <Heading color="gray" mb="6">
-              {version.version}
+              {label}
             </Heading>
 
-            <Text color="gray">{format(version?.updatedAt)}</Text>
+            <Text color="gray">{format(version.createdAt)}</Text>
           </Flex>
 
           <Box>

@@ -9,9 +9,10 @@ export type BeffProject = {
 export type ProjectVersion = {
   id: string;
   projectId: string;
-  version: string;
-  updatedAt: Date;
-  schema: string;
+  createdAt: Date;
+  openApiSchema: unknown;
+  branch: string;
+  commitHash: string;
 };
 
 export const ProjectRouter = {
@@ -21,7 +22,12 @@ export const ProjectRouter = {
   },
   "/project/{projectId}/version": {
     get: (_c: Ctx, projectId: string): Promise<ProjectVersion[]> =>
-      prisma.projectVersion.findMany({ where: { projectId: projectId } }),
+      prisma.projectVersion.findMany({
+        where: { projectId: projectId },
+        orderBy: {
+          createdAt: "desc",
+        },
+      }),
   },
   "/project/{projectId}": {
     get: (_c: Ctx, projectId: string): Promise<BeffProject | null> =>

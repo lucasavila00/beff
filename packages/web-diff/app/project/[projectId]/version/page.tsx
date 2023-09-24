@@ -10,6 +10,7 @@ import { format } from "timeago.js";
 import wfy from "@/components/undraw/waiting_for_you.svg";
 import Image from "next/image";
 import { OpenDocsButton } from "@/components/open-docs-button";
+import { getVersionLabel } from "@/utils/helpers";
 
 const CompatibilityStatus: FC<{
   curr: ProjectVersion;
@@ -43,18 +44,19 @@ const VersionsTable: FC<{ versions: ProjectVersion[]; projectId: string }> = ({ 
       <Table.Body>
         {versions.map((v, idx, all) => {
           const prev = all[idx + 1];
+          const label = getVersionLabel(v);
           return (
             <Table.Row key={v.id} align="center">
               <Table.RowHeaderCell>
                 <Link asChild>
                   <NextLink href={`/project/${projectId}/version/${v.id}`}>
                     <Flex gap="1" align="center">
-                      {v.version}
+                      {label}
                     </Flex>
                   </NextLink>
                 </Link>
               </Table.RowHeaderCell>
-              <Table.Cell>{format(v.updatedAt)}</Table.Cell>
+              <Table.Cell>{format(v.createdAt)}</Table.Cell>
               <Table.Cell>
                 <CompatibilityStatus curr={v} prev={prev} />
               </Table.Cell>

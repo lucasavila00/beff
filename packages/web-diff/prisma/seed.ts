@@ -6,19 +6,16 @@ const schema = fs.readFileSync(__dirname + "/schema.json", "utf-8");
 const main = async () => {
   const client = new PrismaClient();
 
-  const firstUser = await client.user.findFirst({});
+  // const firstUser = await client.user.findFirst({});
 
   const firstProject = await client.project.findFirst({});
-
-  const version = {};
 
   await client.projectVersion.create({
     data: {
       projectId: firstProject!.id,
-      version: JSON.stringify(version),
       branch: "master",
-      commitHash: "123",
-      schema: "schema",
+      commitHash: "commitHash2",
+      openApiSchema: JSON.parse(schema),
     },
   });
 };

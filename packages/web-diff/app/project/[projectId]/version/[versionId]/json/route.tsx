@@ -12,7 +12,7 @@ export async function GET(
   if (version == null) {
     throw new Error("Not found");
   }
-  return new Response(version.schema, {
+  return new Response(JSON.stringify(version.openApiSchema), {
     status: 200,
     headers: {
       "content-type": "application/json",
