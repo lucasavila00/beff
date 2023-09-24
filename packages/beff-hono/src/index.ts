@@ -6,7 +6,7 @@ import type { Context as HonoContext, Env } from "hono";
 export type Ctx<C = {}, E extends Env = any> = C & {
   hono: HonoContext<E>;
 };
-const swaggerTemplate = (baseUrl: string) => `
+export const swaggerTemplate = (baseUrl: string) => `
 <!DOCTYPE html>
 <html lang="en">
   <head>
@@ -28,7 +28,7 @@ const swaggerTemplate = (baseUrl: string) => `
   <script>
     window.onload = () => {
       window.ui = SwaggerUIBundle({
-        url: '${baseUrl}/v3/openapi.json',
+        url: '${baseUrl}',
         dom_id: '#swagger-ui',
         presets: [
           SwaggerUIBundle.presets.apis,
@@ -41,7 +41,7 @@ const swaggerTemplate = (baseUrl: string) => `
   </body>
 </html>
 `;
-const redocTemplate = (baseUrl: string) => `
+export const redocTemplate = (baseUrl: string) => `
 <!DOCTYPE html>
 <html>
   <head>
@@ -62,7 +62,7 @@ const redocTemplate = (baseUrl: string) => `
     </style>
   </head>
   <body>
-    <redoc spec-url='${baseUrl}/v3/openapi.json'></redoc>
+    <redoc spec-url='${baseUrl}'></redoc>
     <script src="https://cdn.redoc.ly/redoc/latest/bundles/redoc.standalone.js"> </script>
   </body>
 </html>
@@ -142,8 +142,8 @@ const handleMethod = async (c: Ctx, meta: HandlerMetaServer, handler: Function) 
 
 const registerDocs = (app: Hono<any, any, any>, schema: any) => {
   app.get("/v3/openapi.json", (req) => req.json(schema));
-  app.get("/docs", (c) => c.html(swaggerTemplate(c.req.url.replace("/docs", ""))));
-  app.get("/redoc", (c) => c.html(redocTemplate(c.req.url.replace("/redoc", ""))));
+  app.get("/docs", (c) => c.html(swaggerTemplate(c.req.url.replace("/docs", "") + "/v3/openapi.json")));
+  app.get("/redoc", (c) => c.html(redocTemplate(c.req.url.replace("/redoc", "") + "/v3/openapi.json")));
 };
 
 const lowerCaseRouter = (it: Record<string, Record<string, any>>) => {
