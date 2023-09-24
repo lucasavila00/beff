@@ -529,7 +529,7 @@ impl<'a, R: FileManager> ExtractExportDefaultVisitor<'a, R> {
             }
             Err(diag) => {
                 self.errors.push(*diag);
-                JsonSchema::Error
+                JsonSchema::Any
             }
         }
     }
@@ -951,13 +951,12 @@ fn is_type_simple(it: &JsonSchema, components: &Vec<Validator>) -> bool {
         JsonSchema::Any
         | JsonSchema::Object { .. }
         | JsonSchema::Array(_)
+        | JsonSchema::AnyObject
+        | JsonSchema::AnyArrayLike
         | JsonSchema::Tuple { .. } => false,
-        JsonSchema::Error => true,
         JsonSchema::StNever => todo!(),
         JsonSchema::StUnknown => todo!(),
         JsonSchema::StNot(_) => todo!(),
-        JsonSchema::AnyObject => todo!(),
-        JsonSchema::AnyArrayLike => todo!(),
     }
 }
 

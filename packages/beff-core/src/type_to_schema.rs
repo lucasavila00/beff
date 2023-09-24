@@ -259,7 +259,7 @@ impl<'a, R: FileManager> TypeToSchema<'a, R> {
         self.components.insert(i.sym.to_string(), None);
 
         if type_params.is_some() {
-            self.insert_definition(i.sym.to_string(), JsonSchema::Error)?;
+            self.insert_definition(i.sym.to_string(), JsonSchema::Any)?;
             return self.cannot_serialize_error(
                 &i.span,
                 DiagnosticInfoMessage::TypeParameterApplicationNotSupported,
@@ -270,7 +270,7 @@ impl<'a, R: FileManager> TypeToSchema<'a, R> {
         match ty {
             Ok(ty) => self.insert_definition(i.sym.to_string(), ty),
             Err(e) => {
-                self.insert_definition(i.sym.to_string(), JsonSchema::Error)?;
+                self.insert_definition(i.sym.to_string(), JsonSchema::Any)?;
                 Err(e)
             }
         }

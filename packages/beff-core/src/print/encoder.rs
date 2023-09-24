@@ -121,7 +121,6 @@ fn encode_expr(schema: &JsonSchema, input_expr: Expr) -> Expr {
         | JsonSchema::String
         | JsonSchema::Number
         | JsonSchema::Any
-        | JsonSchema::Error
         | JsonSchema::Const(_)
         | JsonSchema::StringWithFormat(_) => input_expr.clone(),
         JsonSchema::Ref(schema_ref) => encode_ref(schema_ref, input_expr),

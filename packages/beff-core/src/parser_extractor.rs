@@ -134,7 +134,7 @@ impl<'a, R: FileManager> ExtractParserVisitor<'a, R> {
             }
             Err(diag) => {
                 self.errors.push(*diag);
-                JsonSchema::Error
+                JsonSchema::Any
             }
         }
     }

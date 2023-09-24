@@ -70,7 +70,7 @@ pub enum JsonSchema {
     String,
     Number,
     Any,
-    Error,
+    // Error,
     StringWithFormat(String),
     Object(BTreeMap<String, Optionality<JsonSchema>>),
     Array(Box<JsonSchema>),
@@ -421,7 +421,6 @@ impl ToJson for JsonSchema {
                 Json::object(v)
             }
             JsonSchema::Const(val) => Json::object(vec![("const".into(), val)]),
-            JsonSchema::Error => unreachable!("should not call print if schema had error"),
             JsonSchema::StNever => todo!(),
             JsonSchema::StUnknown => todo!(),
             JsonSchema::StNot(_) => todo!(),
@@ -451,7 +450,6 @@ impl JsonSchema {
                 kind: TsKeywordTypeKind::TsNumberKeyword,
             }),
             JsonSchema::Any => todo!(),
-            JsonSchema::Error => todo!(),
             JsonSchema::StringWithFormat(_) => todo!(),
             JsonSchema::Object(vs) => TsType::TsTypeLit(TsTypeLit {
                 span: DUMMY_SP,

@@ -169,7 +169,6 @@ impl DecoderFnGenerator {
 
     fn decode_expr(schema: &JsonSchema, required: bool) -> Expr {
         match schema {
-            JsonSchema::Error => unreachable!("should not print if schema had error"),
             JsonSchema::StNever => todo!(),
             JsonSchema::StUnknown => todo!(),
             JsonSchema::StNot(_) => todo!(),
