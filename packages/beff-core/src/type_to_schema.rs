@@ -601,7 +601,7 @@ impl<'a, R: FileManager> TypeToSchema<'a, R> {
         span: &Span,
     ) -> Res<JsonSchema> {
         if access_st.is_empty(ctx) {
-            return self.error(&span, DiagnosticInfoMessage::InvalidIndexedAccess);
+            return self.error(span, DiagnosticInfoMessage::InvalidIndexedAccess);
         }
         let (head, tail) = to_validators(ctx, &access_st, "AnyName");
         for t in tail {
@@ -619,7 +619,7 @@ impl<'a, R: FileManager> TypeToSchema<'a, R> {
         let idx_st = index.to_sub_type(&self.validators_ref(), &mut ctx).unwrap();
 
         let access_st: Rc<SemType> = ctx.indexed_access(obj_st, idx_st);
-        return self.convert_sem_type(access_st, &mut ctx, &i.index_type.span());
+        self.convert_sem_type(access_st, &mut ctx, &i.index_type.span())
     }
     fn convert_keyof(&mut self, k: &TsType) -> Res<JsonSchema> {
         let json_schema = self.convert_ts_type(k)?;
@@ -630,7 +630,7 @@ impl<'a, R: FileManager> TypeToSchema<'a, R> {
 
         let keyof_st: Rc<SemType> = ctx.keyof(st);
 
-        return self.convert_sem_type(keyof_st, &mut ctx, &k.span());
+        self.convert_sem_type(keyof_st, &mut ctx, &k.span())
     }
     pub fn convert_ts_type(&mut self, typ: &TsType) -> Res<JsonSchema> {
         match typ {
@@ -729,7 +729,7 @@ impl<'a, R: FileManager> TypeToSchema<'a, R> {
                 self.error(span, DiagnosticInfoMessage::OptionalTypeIsNotSupported)
             }
             TsType::TsTypeOperator(TsTypeOperator { span, op, type_ann }) => match op {
-                TsTypeOperatorOp::KeyOf => self.convert_keyof(&type_ann),
+                TsTypeOperatorOp::KeyOf => self.convert_keyof(type_ann),
                 TsTypeOperatorOp::Unique | TsTypeOperatorOp::ReadOnly => self
                     .cannot_serialize_error(
                         span,
