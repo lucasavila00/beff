@@ -1,6 +1,7 @@
 import { beffLocalClient } from "@/beff/router-app";
 import { BreadCrumbs } from "@/components/breadcrumbs";
 import { CreateProjectButton } from "@/components/create-project-button";
+import { Links } from "@/utils/route-links";
 import { CheckCircledIcon, CrossCircledIcon, GitHubLogoIcon } from "@radix-ui/react-icons";
 import { Box, Text, Card, Flex, Heading, Button, Link } from "@radix-ui/themes";
 import { FC } from "react";
@@ -24,7 +25,7 @@ const AppInstalledMessage: FC<{
         <Text size="1">The Github App not installed</Text>
       </Flex>
 
-      <Link mb="4" color="indigo" href="/todo">
+      <Link mb="4" color="indigo" href={Links["/todo-gh-app-install"]()}>
         Install the Github App
       </Link>
     </>

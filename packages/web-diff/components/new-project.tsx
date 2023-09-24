@@ -6,6 +6,7 @@ import { FC, useState } from "react";
 import NextLink from "next/link";
 
 import Fuse from "fuse.js";
+import { Links } from "@/utils/route-links";
 const ProjectList: FC<{
   search: string;
 }> = ({ search }) => {
@@ -29,15 +30,16 @@ const ProjectList: FC<{
 
   return (
     <Flex direction="column" p="2">
-      {filtered.map((it) => (
-        <Box key={it.nodeId}>
-          <Link size="1" asChild>
-            <NextLink href={`/project/new?fullName=${encodeURIComponent(it.fullName)}`}>
-              {it.fullName}
-            </NextLink>
-          </Link>
-        </Box>
-      ))}
+      {filtered.map((it) => {
+        const fullName = encodeURIComponent(it.fullName);
+        return (
+          <Box key={it.nodeId}>
+            <Link size="1" asChild>
+              <NextLink href={Links["/project/new?fullName={fullName}"](fullName)}>{it.fullName}</NextLink>
+            </Link>
+          </Box>
+        );
+      })}
     </Flex>
   );
 };

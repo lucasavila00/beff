@@ -9,6 +9,7 @@ import NextLink from "next/link";
 import { FC } from "react";
 import { format } from "timeago.js";
 import { beffLocalClient } from "../beff/router-app";
+import { Links } from "@/utils/route-links";
 const ProjectTable: FC<{ projects: BeffProject[] }> = ({ projects }) => {
   return (
     <>
@@ -32,7 +33,7 @@ const ProjectTable: FC<{ projects: BeffProject[] }> = ({ projects }) => {
               <Table.Row key={project.id}>
                 <Table.RowHeaderCell>
                   <Link asChild>
-                    <NextLink href={`/project/${project.id}`}>
+                    <NextLink href={Links["/project/{projectId}"](project.id)}>
                       <Flex gap="1" align="center">
                         <GitHubLogoIcon color="gray" />
                         {project.fullName}

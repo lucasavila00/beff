@@ -11,6 +11,7 @@ import wfy from "@/components/undraw/waiting_for_you.svg";
 import Image from "next/image";
 import { OpenDocsButton } from "@/components/open-docs-button";
 import { getVersionLabel } from "@/utils/helpers";
+import { Links } from "@/utils/route-links";
 
 const CompatibilityStatus: FC<{
   curr: ProjectVersion;
@@ -20,12 +21,14 @@ const CompatibilityStatus: FC<{
     return <></>;
   }
   return (
-    <Button variant="ghost" color="gray">
-      <Flex align="center" gap="1">
-        <CheckCircledIcon color="green" />
-        Compatible
-      </Flex>
-    </Button>
+    <NextLink href={Links["/"]()}>
+      <Button variant="ghost" color="gray">
+        <Flex align="center" gap="1">
+          <CheckCircledIcon color="green" />
+          Compatible
+        </Flex>
+      </Button>
+    </NextLink>
   );
 };
 
@@ -49,7 +52,7 @@ const VersionsTable: FC<{ versions: ProjectVersion[]; projectId: string }> = ({ 
             <Table.Row key={v.id} align="center">
               <Table.RowHeaderCell>
                 <Link asChild>
-                  <NextLink href={`/project/${projectId}/version/${v.id}`}>
+                  <NextLink href={Links["/project/{projectId}/version/{versionId}"](projectId, v.id)}>
                     <Flex gap="1" align="center">
                       {label}
                     </Flex>
@@ -90,7 +93,7 @@ export default async function Branches({ params }: { params: { projectId: string
       projectId={params.projectId}
       extra={[
         {
-          href: `/project/${params.projectId}/version`,
+          href: Links["/project/{projectId}/version"](params.projectId),
           text: "Versions",
         },
       ]}
