@@ -49,19 +49,19 @@ const HOME: NavigationLink[] = [
 
 const PROJECTS: NavigationLink[] = [
   {
-    href: "/project/{id}",
+    href: "/project/{projectId}",
     text: "Dashboard",
     active: false,
     icon: DiscIcon,
   },
   {
-    href: "/project/{id}/version",
+    href: "/project/{projectId}/version",
     text: "Versions",
     active: false,
     icon: DiscIcon,
   },
   {
-    href: "/project/{id}/branches",
+    href: "/project/{projectId}/branches",
     text: "Branches",
     active: false,
     icon: DiscIcon,

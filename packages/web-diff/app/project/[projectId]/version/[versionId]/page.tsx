@@ -4,6 +4,18 @@ import { ProjectsBreadcrumbs } from "@/components/projects-breadcrumbs";
 import { Box, Flex, Heading, Text } from "@radix-ui/themes";
 import { format } from "timeago.js";
 
+import { init, schema_to_ts_types } from "@/pkg";
+
+let cache: any = null;
+const wasmGetter = (): { schema_to_ts_types: typeof schema_to_ts_types } => {
+  if (cache) {
+    return cache;
+  }
+  init(true);
+  cache = { schema_to_ts_types };
+  return cache;
+};
+
 export default async function Page({ params }: { params: { projectId: string; versionId: string } }) {
   const version = await beffLocalClient["/project/{projectId}/version/{versionId}"].get(
     params.projectId,
@@ -12,6 +24,7 @@ export default async function Page({ params }: { params: { projectId: string; ve
   if (version == null) {
     return <NotFound />;
   }
+  const tsType = wasmGetter().schema_to_ts_types(version.schema);
   return (
     <>
       <ProjectsBreadcrumbs
@@ -35,6 +48,7 @@ export default async function Page({ params }: { params: { projectId: string; ve
 
             <Text color="gray">{format(version?.updatedAt)}</Text>
           </Flex>
+          <pre>{tsType}</pre>
           <pre>{JSON.stringify(version, null, 2)}</pre>
         </Box>
       </ProjectsBreadcrumbs>

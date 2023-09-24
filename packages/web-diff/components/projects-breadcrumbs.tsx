@@ -11,7 +11,7 @@ export const ProjectsBreadcrumbs: FC<{
   projectId: string;
   extra: Crumb[];
 }> = async ({ extra, children, projectId }) => {
-  const project = await beffLocalClient["/project/{id}"].get(projectId);
+  const project = await beffLocalClient["/project/{projectId}"].get(projectId);
   return (
     <BreadCrumbs
       crumbs={[

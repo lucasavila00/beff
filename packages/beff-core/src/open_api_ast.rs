@@ -11,8 +11,8 @@ use core::fmt;
 use std::collections::BTreeMap;
 use swc_common::DUMMY_SP;
 use swc_ecma_ast::{
-    BindingIdent, Expr, Ident, TsFnOrConstructorType, TsFnParam, TsFnType, TsPropertySignature,
-    TsType, TsTypeAnn, TsTypeElement, TsTypeLit,
+    BindingIdent, Expr, Ident, Str, TsFnOrConstructorType, TsFnParam, TsFnType,
+    TsPropertySignature, TsType, TsTypeAnn, TsTypeElement, TsTypeLit,
 };
 
 fn clear_description(it: String) -> String {
@@ -382,11 +382,11 @@ impl OpenApi {
                     TsTypeElement::TsPropertySignature(TsPropertySignature {
                         span: DUMMY_SP,
                         readonly: false,
-                        key: Expr::Ident(Ident {
+                        key: Expr::Lit(swc_ecma_ast::Lit::Str(Str {
                             span: DUMMY_SP,
-                            sym: k.into(),
-                            optional: false,
-                        })
+                            value: k.into(),
+                            raw: None,
+                        }))
                         .into(),
                         computed: false,
                         optional: false,
