@@ -1,11 +1,7 @@
 import { beffLocalClient } from "@/app/api/beff/[...beff]/router-app";
 import { BreadCrumbs } from "@/components/breadcrumbs";
 import { CreateProjectButton } from "@/components/create-project-button";
-import {
-  CheckCircledIcon,
-  CrossCircledIcon,
-  GitHubLogoIcon,
-} from "@radix-ui/react-icons";
+import { CheckCircledIcon, CrossCircledIcon, GitHubLogoIcon } from "@radix-ui/react-icons";
 import { Box, Text, Card, Flex, Heading, Button, Link } from "@radix-ui/themes";
 import { FC } from "react";
 
@@ -38,9 +34,7 @@ const AppInstalledMessage: FC<{
 const NewProject: FC<{
   searchParams: { fullName: string };
 }> = async ({ searchParams }) => {
-  const installationStatus = await beffLocalClient["/installation/status"].get(
-    searchParams.fullName
-  );
+  const installationStatus = await beffLocalClient["/installation/status"].get(searchParams.fullName);
   const isAppInstalled = installationStatus === "installed";
 
   return (
@@ -60,10 +54,7 @@ const NewProject: FC<{
               <Text>{searchParams.fullName}</Text>
             </Flex>
             <AppInstalledMessage isAppInstalled={isAppInstalled} />
-            <CreateProjectButton
-              fullName={searchParams.fullName}
-              isAppInstalled={isAppInstalled}
-            />
+            <CreateProjectButton fullName={searchParams.fullName} isAppInstalled={isAppInstalled} />
           </Flex>
         </Card>
       </Box>

@@ -69,8 +69,8 @@ Error: Not an object with method kind
  > 11 |     },
       | ^^^^^^ Not an object with method kind
    12 |     set c(v) {},
-   13 |     [`AAAAAAAAAAAAAAAAAAGETOOOO/hello/{id}`]: async (
-   14 |       id: string
+   13 |     [`AAAAAAAAAAAAAAAAAAGETOOOO/hello/{id}`]: async (id: string): Promise<string> => id,
+   14 |     [`GETOOOO/hello/{id}`]: async (id: string): Promise<string> => id,
 
 Error: Not an object with method kind
  /errors/invalid-path-definition/app.ts:12:5
@@ -78,255 +78,255 @@ Error: Not an object with method kind
    11 |     },
  > 12 |     set c(v) {},
       |     ^^^^^^^^^^^ Not an object with method kind
-   13 |     [`AAAAAAAAAAAAAAAAAAGETOOOO/hello/{id}`]: async (
-   14 |       id: string
-   15 |     ): Promise<string> => id,
+   13 |     [`AAAAAAAAAAAAAAAAAAGETOOOO/hello/{id}`]: async (id: string): Promise<string> => id,
+   14 |     [`GETOOOO/hello/{id}`]: async (id: string): Promise<string> => id,
+   15 |     ...d,
 
 Error: Not an HTTP method
  /errors/invalid-path-definition/app.ts:13:5
    11 |     },
    12 |     set c(v) {},
- > 13 |     [`AAAAAAAAAAAAAAAAAAGETOOOO/hello/{id}`]: async (
+ > 13 |     [`AAAAAAAAAAAAAAAAAAGETOOOO/hello/{id}`]: async (id: string): Promise<string> => id,
       |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ Not an HTTP method
-   14 |       id: string
-   15 |     ): Promise<string> => id,
-   16 |     [`GETOOOO/hello/{id}`]: async (id: string): Promise<string> => id,
+   14 |     [`GETOOOO/hello/{id}`]: async (id: string): Promise<string> => id,
+   15 |     ...d,
+   16 |     [`GET/hello2/{id}`]: async function* (id: string): Promise<string> {
 
 Error: Not an HTTP method
  /errors/invalid-path-definition/app.ts:13:5
    11 |     },
    12 |     set c(v) {},
- > 13 |     [`AAAAAAAAAAAAAAAAAAGETOOOO/hello/{id}`]: async (
+ > 13 |     [`AAAAAAAAAAAAAAAAAAGETOOOO/hello/{id}`]: async (id: string): Promise<string> => id,
       |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ Not an HTTP method
-   14 |       id: string
-   15 |     ): Promise<string> => id,
-   16 |     [`GETOOOO/hello/{id}`]: async (id: string): Promise<string> => id,
+   14 |     [`GETOOOO/hello/{id}`]: async (id: string): Promise<string> => id,
+   15 |     ...d,
+   16 |     [`GET/hello2/{id}`]: async function* (id: string): Promise<string> {
 
 Error: Not an HTTP method
- /errors/invalid-path-definition/app.ts:16:5
-   14 |       id: string
-   15 |     ): Promise<string> => id,
- > 16 |     [`GETOOOO/hello/{id}`]: async (id: string): Promise<string> => id,
+ /errors/invalid-path-definition/app.ts:14:5
+   12 |     set c(v) {},
+   13 |     [`AAAAAAAAAAAAAAAAAAGETOOOO/hello/{id}`]: async (id: string): Promise<string> => id,
+ > 14 |     [`GETOOOO/hello/{id}`]: async (id: string): Promise<string> => id,
       |     ^^^^^^^^^^^^^^^^^^^^^^ Not an HTTP method
-   17 |     ...d,
-   18 |     [`GET/hello2/{id}`]: async function* (id: string): Promise<string> {
-   19 |       return id;
+   15 |     ...d,
+   16 |     [`GET/hello2/{id}`]: async function* (id: string): Promise<string> {
+   17 |       return id;
 
 Error: Not an HTTP method
- /errors/invalid-path-definition/app.ts:16:5
-   14 |       id: string
-   15 |     ): Promise<string> => id,
- > 16 |     [`GETOOOO/hello/{id}`]: async (id: string): Promise<string> => id,
+ /errors/invalid-path-definition/app.ts:14:5
+   12 |     set c(v) {},
+   13 |     [`AAAAAAAAAAAAAAAAAAGETOOOO/hello/{id}`]: async (id: string): Promise<string> => id,
+ > 14 |     [`GETOOOO/hello/{id}`]: async (id: string): Promise<string> => id,
       |     ^^^^^^^^^^^^^^^^^^^^^^ Not an HTTP method
-   17 |     ...d,
-   18 |     [`GET/hello2/{id}`]: async function* (id: string): Promise<string> {
-   19 |       return id;
+   15 |     ...d,
+   16 |     [`GET/hello2/{id}`]: async function* (id: string): Promise<string> {
+   17 |       return id;
 
 Error: Spread props are not supported on method maps
- /errors/invalid-path-definition/app.ts:17:5
-   15 |     ): Promise<string> => id,
-   16 |     [`GETOOOO/hello/{id}`]: async (id: string): Promise<string> => id,
- > 17 |     ...d,
+ /errors/invalid-path-definition/app.ts:15:5
+   13 |     [`AAAAAAAAAAAAAAAAAAGETOOOO/hello/{id}`]: async (id: string): Promise<string> => id,
+   14 |     [`GETOOOO/hello/{id}`]: async (id: string): Promise<string> => id,
+ > 15 |     ...d,
       |     ^^^ Spread props are not supported on method maps
-   18 |     [`GET/hello2/{id}`]: async function* (id: string): Promise<string> {
-   19 |       return id;
-   20 |     },
+   16 |     [`GET/hello2/{id}`]: async function* (id: string): Promise<string> {
+   17 |       return id;
+   18 |     },
 
 Error: Not an HTTP method
- /errors/invalid-path-definition/app.ts:18:5
-   16 |     [`GETOOOO/hello/{id}`]: async (id: string): Promise<string> => id,
-   17 |     ...d,
- > 18 |     [`GET/hello2/{id}`]: async function* (id: string): Promise<string> {
+ /errors/invalid-path-definition/app.ts:16:5
+   14 |     [`GETOOOO/hello/{id}`]: async (id: string): Promise<string> => id,
+   15 |     ...d,
+ > 16 |     [`GET/hello2/{id}`]: async function* (id: string): Promise<string> {
       |     ^^^^^^^^^^^^^^^^^^^ Not an HTTP method
-   19 |       return id;
-   20 |     },
-   21 |     [`GET/hello3/{id}`]: <T>(id: string): string => id,
+   17 |       return id;
+   18 |     },
+   19 |     [`GET/hello3/{id}`]: <T>(id: string): string => id,
 
 Error: Handler cannot be a generator
- /errors/invalid-path-definition/app.ts:18:26
-   16 |     [`GETOOOO/hello/{id}`]: async (id: string): Promise<string> => id,
-   17 |     ...d,
- > 18 |     [`GET/hello2/{id}`]: async function* (id: string): Promise<string> {
+ /errors/invalid-path-definition/app.ts:16:26
+   14 |     [`GETOOOO/hello/{id}`]: async (id: string): Promise<string> => id,
+   15 |     ...d,
+ > 16 |     [`GET/hello2/{id}`]: async function* (id: string): Promise<string> {
       |                          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
- > 19 |       return id;
+ > 17 |       return id;
       | ^^^^^^^^^^^^^^^^
- > 20 |     },
+ > 18 |     },
       | ^^^^^^ Handler cannot be a generator
-   21 |     [`GET/hello3/{id}`]: <T>(id: string): string => id,
-   22 |     [`GET/hello4/{id}`]: async <T>(id: string): Promise<string> => id,
-   23 |     [`GET/hello5/{id}`]: async <T>(id: T): Promise<T> => id,
+   19 |     [`GET/hello3/{id}`]: <T>(id: string): string => id,
+   20 |     [`GET/hello4/{id}`]: async <T>(id: string): Promise<string> => id,
+   21 |     [`GET/hello5/{id}`]: async <T>(id: T): Promise<T> => id,
+
+Error: Not an HTTP method
+ /errors/invalid-path-definition/app.ts:19:5
+   17 |       return id;
+   18 |     },
+ > 19 |     [`GET/hello3/{id}`]: <T>(id: string): string => id,
+      |     ^^^^^^^^^^^^^^^^^^^ Not an HTTP method
+   20 |     [`GET/hello4/{id}`]: async <T>(id: string): Promise<string> => id,
+   21 |     [`GET/hello5/{id}`]: async <T>(id: T): Promise<T> => id,
+   22 |   },
+
+Error: Handler cannot have type parameters
+ /errors/invalid-path-definition/app.ts:19:26
+   17 |       return id;
+   18 |     },
+ > 19 |     [`GET/hello3/{id}`]: <T>(id: string): string => id,
+      |                          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ Handler cannot have type parameters
+   20 |     [`GET/hello4/{id}`]: async <T>(id: string): Promise<string> => id,
+   21 |     [`GET/hello5/{id}`]: async <T>(id: T): Promise<T> => id,
+   22 |   },
+
+Error: Not an HTTP method
+ /errors/invalid-path-definition/app.ts:20:5
+   18 |     },
+   19 |     [`GET/hello3/{id}`]: <T>(id: string): string => id,
+ > 20 |     [`GET/hello4/{id}`]: async <T>(id: string): Promise<string> => id,
+      |     ^^^^^^^^^^^^^^^^^^^ Not an HTTP method
+   21 |     [`GET/hello5/{id}`]: async <T>(id: T): Promise<T> => id,
+   22 |   },
+   23 |   [`GET/hello/{id}`]: async (id: string) => id,
+
+Error: Handler cannot have type parameters
+ /errors/invalid-path-definition/app.ts:20:26
+   18 |     },
+   19 |     [`GET/hello3/{id}`]: <T>(id: string): string => id,
+ > 20 |     [`GET/hello4/{id}`]: async <T>(id: string): Promise<string> => id,
+      |                          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ Handler cannot have type parameters
+   21 |     [`GET/hello5/{id}`]: async <T>(id: T): Promise<T> => id,
+   22 |   },
+   23 |   [`GET/hello/{id}`]: async (id: string) => id,
 
 Error: Not an HTTP method
  /errors/invalid-path-definition/app.ts:21:5
-   19 |       return id;
-   20 |     },
- > 21 |     [`GET/hello3/{id}`]: <T>(id: string): string => id,
+   19 |     [`GET/hello3/{id}`]: <T>(id: string): string => id,
+   20 |     [`GET/hello4/{id}`]: async <T>(id: string): Promise<string> => id,
+ > 21 |     [`GET/hello5/{id}`]: async <T>(id: T): Promise<T> => id,
       |     ^^^^^^^^^^^^^^^^^^^ Not an HTTP method
-   22 |     [`GET/hello4/{id}`]: async <T>(id: string): Promise<string> => id,
-   23 |     [`GET/hello5/{id}`]: async <T>(id: T): Promise<T> => id,
-   24 |   },
+   22 |   },
+   23 |   [`GET/hello/{id}`]: async (id: string) => id,
+   24 |   a: 1,
 
 Error: Handler cannot have type parameters
  /errors/invalid-path-definition/app.ts:21:26
-   19 |       return id;
-   20 |     },
- > 21 |     [`GET/hello3/{id}`]: <T>(id: string): string => id,
-      |                          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ Handler cannot have type parameters
-   22 |     [`GET/hello4/{id}`]: async <T>(id: string): Promise<string> => id,
-   23 |     [`GET/hello5/{id}`]: async <T>(id: T): Promise<T> => id,
-   24 |   },
-
-Error: Not an HTTP method
- /errors/invalid-path-definition/app.ts:22:5
-   20 |     },
-   21 |     [`GET/hello3/{id}`]: <T>(id: string): string => id,
- > 22 |     [`GET/hello4/{id}`]: async <T>(id: string): Promise<string> => id,
-      |     ^^^^^^^^^^^^^^^^^^^ Not an HTTP method
-   23 |     [`GET/hello5/{id}`]: async <T>(id: T): Promise<T> => id,
-   24 |   },
-   25 |   [`GET/hello/{id}`]: async (id: string) => id,
-
-Error: Handler cannot have type parameters
- /errors/invalid-path-definition/app.ts:22:26
-   20 |     },
-   21 |     [`GET/hello3/{id}`]: <T>(id: string): string => id,
- > 22 |     [`GET/hello4/{id}`]: async <T>(id: string): Promise<string> => id,
-      |                          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ Handler cannot have type parameters
-   23 |     [`GET/hello5/{id}`]: async <T>(id: T): Promise<T> => id,
-   24 |   },
-   25 |   [`GET/hello/{id}`]: async (id: string) => id,
-
-Error: Not an HTTP method
- /errors/invalid-path-definition/app.ts:23:5
-   21 |     [`GET/hello3/{id}`]: <T>(id: string): string => id,
-   22 |     [`GET/hello4/{id}`]: async <T>(id: string): Promise<string> => id,
- > 23 |     [`GET/hello5/{id}`]: async <T>(id: T): Promise<T> => id,
-      |     ^^^^^^^^^^^^^^^^^^^ Not an HTTP method
-   24 |   },
-   25 |   [`GET/hello/{id}`]: async (id: string) => id,
-   26 |   a: 1,
-
-Error: Handler cannot have type parameters
- /errors/invalid-path-definition/app.ts:23:26
-   21 |     [`GET/hello3/{id}`]: <T>(id: string): string => id,
-   22 |     [`GET/hello4/{id}`]: async <T>(id: string): Promise<string> => id,
- > 23 |     [`GET/hello5/{id}`]: async <T>(id: T): Promise<T> => id,
+   19 |     [`GET/hello3/{id}`]: <T>(id: string): string => id,
+   20 |     [`GET/hello4/{id}`]: async <T>(id: string): Promise<string> => id,
+ > 21 |     [`GET/hello5/{id}`]: async <T>(id: T): Promise<T> => id,
       |                          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ Handler cannot have type parameters
-   24 |   },
-   25 |   [`GET/hello/{id}`]: async (id: string) => id,
-   26 |   a: 1,
+   22 |   },
+   23 |   [`GET/hello/{id}`]: async (id: string) => id,
+   24 |   a: 1,
+
+Error: Not an object with method kind
+ /errors/invalid-path-definition/app.ts:23:3
+   21 |     [`GET/hello5/{id}`]: async <T>(id: T): Promise<T> => id,
+   22 |   },
+ > 23 |   [`GET/hello/{id}`]: async (id: string) => id,
+      |   ^^^^^^^^^^^^^^^^^^ Not an object with method kind
+   24 |   a: 1,
+   25 |   b() {
+   26 |     return 1;
+
+Error: Not an object with method kind
+ /errors/invalid-path-definition/app.ts:24:3
+   22 |   },
+   23 |   [`GET/hello/{id}`]: async (id: string) => id,
+ > 24 |   a: 1,
+      |   ^ Not an object with method kind
+   25 |   b() {
+   26 |     return 1;
+   27 |   },
 
 Error: Not an object with method kind
  /errors/invalid-path-definition/app.ts:25:3
-   23 |     [`GET/hello5/{id}`]: async <T>(id: T): Promise<T> => id,
-   24 |   },
- > 25 |   [`GET/hello/{id}`]: async (id: string) => id,
-      |   ^^^^^^^^^^^^^^^^^^ Not an object with method kind
-   26 |   a: 1,
-   27 |   b() {
-   28 |     return 1;
-
-Error: Not an object with method kind
- /errors/invalid-path-definition/app.ts:26:3
-   24 |   },
-   25 |   [`GET/hello/{id}`]: async (id: string) => id,
- > 26 |   a: 1,
+   23 |   [`GET/hello/{id}`]: async (id: string) => id,
+   24 |   a: 1,
+ > 25 |   b() {
       |   ^ Not an object with method kind
-   27 |   b() {
-   28 |     return 1;
-   29 |   },
+   26 |     return 1;
+   27 |   },
+   28 |   get c() {
 
 Error: Not an object with method kind
- /errors/invalid-path-definition/app.ts:27:3
-   25 |   [`GET/hello/{id}`]: async (id: string) => id,
-   26 |   a: 1,
- > 27 |   b() {
-      |   ^ Not an object with method kind
-   28 |     return 1;
-   29 |   },
-   30 |   get c() {
-
-Error: Not an object with method kind
- /errors/invalid-path-definition/app.ts:30:3
-   28 |     return 1;
-   29 |   },
- > 30 |   get c() {
+ /errors/invalid-path-definition/app.ts:28:3
+   26 |     return 1;
+   27 |   },
+ > 28 |   get c() {
       |   ^^^^^^^^^
- > 31 |     return 1;
+ > 29 |     return 1;
       | ^^^^^^^^^^^^^
- > 32 |   },
+ > 30 |   },
       | ^^^^ Not an object with method kind
-   33 |   set c(v) {},
-   34 |   [`AAAAAAAAAAAAAAAAAAGETOOOO/hello/{id}`]: async (
-   35 |     id: string
+   31 |   set c(v) {},
+   32 |   [`AAAAAAAAAAAAAAAAAAGETOOOO/hello/{id}`]: async (id: string): Promise<string> => id,
+   33 |   [`GETOOOO/hello/{id}`]: async (id: string): Promise<string> => id,
+
+Error: Not an object with method kind
+ /errors/invalid-path-definition/app.ts:31:3
+   29 |     return 1;
+   30 |   },
+ > 31 |   set c(v) {},
+      |   ^^^^^^^^^^^ Not an object with method kind
+   32 |   [`AAAAAAAAAAAAAAAAAAGETOOOO/hello/{id}`]: async (id: string): Promise<string> => id,
+   33 |   [`GETOOOO/hello/{id}`]: async (id: string): Promise<string> => id,
+   34 |   ...d,
+
+Error: Not an object with method kind
+ /errors/invalid-path-definition/app.ts:32:3
+   30 |   },
+   31 |   set c(v) {},
+ > 32 |   [`AAAAAAAAAAAAAAAAAAGETOOOO/hello/{id}`]: async (id: string): Promise<string> => id,
+      |   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ Not an object with method kind
+   33 |   [`GETOOOO/hello/{id}`]: async (id: string): Promise<string> => id,
+   34 |   ...d,
+   35 |   [`GET/hello2/{id}`]: async function* (id: string): Promise<string> {
 
 Error: Not an object with method kind
  /errors/invalid-path-definition/app.ts:33:3
-   31 |     return 1;
-   32 |   },
- > 33 |   set c(v) {},
-      |   ^^^^^^^^^^^ Not an object with method kind
-   34 |   [`AAAAAAAAAAAAAAAAAAGETOOOO/hello/{id}`]: async (
-   35 |     id: string
-   36 |   ): Promise<string> => id,
-
-Error: Not an object with method kind
- /errors/invalid-path-definition/app.ts:34:3
-   32 |   },
-   33 |   set c(v) {},
- > 34 |   [`AAAAAAAAAAAAAAAAAAGETOOOO/hello/{id}`]: async (
-      |   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ Not an object with method kind
-   35 |     id: string
-   36 |   ): Promise<string> => id,
-   37 |   [`GETOOOO/hello/{id}`]: async (id: string): Promise<string> => id,
-
-Error: Not an object with method kind
- /errors/invalid-path-definition/app.ts:37:3
-   35 |     id: string
-   36 |   ): Promise<string> => id,
- > 37 |   [`GETOOOO/hello/{id}`]: async (id: string): Promise<string> => id,
+   31 |   set c(v) {},
+   32 |   [`AAAAAAAAAAAAAAAAAAGETOOOO/hello/{id}`]: async (id: string): Promise<string> => id,
+ > 33 |   [`GETOOOO/hello/{id}`]: async (id: string): Promise<string> => id,
       |   ^^^^^^^^^^^^^^^^^^^^^^ Not an object with method kind
-   38 |   ...d,
-   39 |   [`GET/hello2/{id}`]: async function* (id: string): Promise<string> {
-   40 |     return id;
+   34 |   ...d,
+   35 |   [`GET/hello2/{id}`]: async function* (id: string): Promise<string> {
+   36 |     return id;
+
+Error: Not an object with method kind
+ /errors/invalid-path-definition/app.ts:35:3
+   33 |   [`GETOOOO/hello/{id}`]: async (id: string): Promise<string> => id,
+   34 |   ...d,
+ > 35 |   [`GET/hello2/{id}`]: async function* (id: string): Promise<string> {
+      |   ^^^^^^^^^^^^^^^^^^^ Not an object with method kind
+   36 |     return id;
+   37 |   },
+   38 |   [`GET/hello3/{id}`]: <T>(id: string): string => id,
+
+Error: Not an object with method kind
+ /errors/invalid-path-definition/app.ts:38:3
+   36 |     return id;
+   37 |   },
+ > 38 |   [`GET/hello3/{id}`]: <T>(id: string): string => id,
+      |   ^^^^^^^^^^^^^^^^^^^ Not an object with method kind
+   39 |   [`GET/hello4/{id}`]: async <T>(id: string): Promise<string> => id,
+   40 |   [`GET/hello5/{id}`]: async <T>(id: T): Promise<T> => id,
+   41 | };
 
 Error: Not an object with method kind
  /errors/invalid-path-definition/app.ts:39:3
-   37 |   [`GETOOOO/hello/{id}`]: async (id: string): Promise<string> => id,
-   38 |   ...d,
- > 39 |   [`GET/hello2/{id}`]: async function* (id: string): Promise<string> {
+   37 |   },
+   38 |   [`GET/hello3/{id}`]: <T>(id: string): string => id,
+ > 39 |   [`GET/hello4/{id}`]: async <T>(id: string): Promise<string> => id,
       |   ^^^^^^^^^^^^^^^^^^^ Not an object with method kind
-   40 |     return id;
-   41 |   },
-   42 |   [`GET/hello3/{id}`]: <T>(id: string): string => id,
+   40 |   [`GET/hello5/{id}`]: async <T>(id: T): Promise<T> => id,
+   41 | };
+   42 |
 
 Error: Not an object with method kind
- /errors/invalid-path-definition/app.ts:42:3
-   40 |     return id;
-   41 |   },
- > 42 |   [`GET/hello3/{id}`]: <T>(id: string): string => id,
+ /errors/invalid-path-definition/app.ts:40:3
+   38 |   [`GET/hello3/{id}`]: <T>(id: string): string => id,
+   39 |   [`GET/hello4/{id}`]: async <T>(id: string): Promise<string> => id,
+ > 40 |   [`GET/hello5/{id}`]: async <T>(id: T): Promise<T> => id,
       |   ^^^^^^^^^^^^^^^^^^^ Not an object with method kind
-   43 |   [`GET/hello4/{id}`]: async <T>(id: string): Promise<string> => id,
-   44 |   [`GET/hello5/{id}`]: async <T>(id: T): Promise<T> => id,
-   45 | };
-
-Error: Not an object with method kind
- /errors/invalid-path-definition/app.ts:43:3
-   41 |   },
-   42 |   [`GET/hello3/{id}`]: <T>(id: string): string => id,
- > 43 |   [`GET/hello4/{id}`]: async <T>(id: string): Promise<string> => id,
-      |   ^^^^^^^^^^^^^^^^^^^ Not an object with method kind
-   44 |   [`GET/hello5/{id}`]: async <T>(id: T): Promise<T> => id,
-   45 | };
-   46 |
-
-Error: Not an object with method kind
- /errors/invalid-path-definition/app.ts:44:3
-   42 |   [`GET/hello3/{id}`]: <T>(id: string): string => id,
-   43 |   [`GET/hello4/{id}`]: async <T>(id: string): Promise<string> => id,
- > 44 |   [`GET/hello5/{id}`]: async <T>(id: T): Promise<T> => id,
-      |   ^^^^^^^^^^^^^^^^^^^ Not an object with method kind
-   45 | };
-   46 |
+   41 | };
+   42 |
 
 Found 32 errors

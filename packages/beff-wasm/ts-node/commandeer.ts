@@ -16,9 +16,7 @@ const readProjectJson = (projectPath: string): ProjectJson => {
   try {
     file = fs.readFileSync(projectPath, "utf-8");
   } catch (e) {
-    throw bail(
-      `Failed to read JSON configuration file at ${projectPath}: ${e}`
-    );
+    throw bail(`Failed to read JSON configuration file at ${projectPath}: ${e}`);
   }
 
   let projectJson: any;
@@ -37,14 +35,8 @@ const readProjectJson = (projectPath: string): ProjectJson => {
   }
 
   return {
-    router:
-      projectJson.router == null
-        ? projectJson.router
-        : String(projectJson.router),
-    parser:
-      projectJson.parser == null
-        ? projectJson.parser
-        : String(projectJson.parser),
+    router: projectJson.router == null ? projectJson.router : String(projectJson.router),
+    parser: projectJson.parser == null ? projectJson.parser : String(projectJson.parser),
     outputDir: String(projectJson.outputDir),
     module: projectJson.module,
     settings: parseUserSettings(projectJson),

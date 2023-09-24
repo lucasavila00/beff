@@ -61,8 +61,7 @@ const parseSchema = (json_schema: string | undefined): unknown => {
 };
 
 const useEditorState = () => {
-  const [editor, setEditor] =
-    useState<monaco.editor.IStandaloneCodeEditor | null>(null);
+  const [editor, setEditor] = useState<monaco.editor.IStandaloneCodeEditor | null>(null);
   const monacoEl = useRef(null);
   const [schema, setSchema] = useState<string | undefined>(undefined);
 
@@ -94,8 +93,7 @@ const useEditorState = () => {
   };
 
   const updateContent = (new_content: string) => {
-    const res: BundleToStringResult | string =
-      wasm.bundle_to_string(new_content);
+    const res: BundleToStringResult | string = wasm.bundle_to_string(new_content);
     if (typeof res === "string") {
       console.error(res);
       return;
@@ -161,9 +159,7 @@ export const Editor: FC = () => {
       }}
     >
       <div className={styles.Editor} ref={monacoEl}></div>
-      <div className={styles.Docs}>
-        {parsedSchema != null && <SwaggerUI spec={parsedSchema} />}
-      </div>
+      <div className={styles.Docs}>{parsedSchema != null && <SwaggerUI spec={parsedSchema} />}</div>
     </div>
   );
 };

@@ -43,11 +43,7 @@ const resolveCompilerOptions = () => {
   }
 
   // Find tsconfig.json file
-  const tsconfigPath = findConfigFile(
-    process.cwd(),
-    tsSys.fileExists,
-    "tsconfig.json"
-  );
+  const tsconfigPath = findConfigFile(process.cwd(), tsSys.fileExists, "tsconfig.json");
 
   if (!tsconfigPath) {
     return {};
@@ -57,25 +53,13 @@ const resolveCompilerOptions = () => {
   const tsconfigFile = readConfigFile(tsconfigPath, tsSys.readFile);
 
   // Resolve extends
-  const parsedTsconfig = parseJsonConfigFileContent(
-    tsconfigFile.config,
-    tsSys,
-    path.dirname(tsconfigPath)
-  );
+  const parsedTsconfig = parseJsonConfigFileContent(tsconfigFile.config, tsSys, path.dirname(tsconfigPath));
 
   compilerOptionsCache = parsedTsconfig.options;
   return compilerOptionsCache;
 };
-const resolveImportNoCache = (
-  file_name: string,
-  mod: string
-): string | undefined => {
-  const resolved = resolveModuleName(
-    mod,
-    file_name,
-    resolveCompilerOptions(),
-    host
-  );
+const resolveImportNoCache = (file_name: string, mod: string): string | undefined => {
+  const resolved = resolveModuleName(mod, file_name, resolveCompilerOptions(), host);
   if ((globalThis as any).verbose) {
     console.log(
       `JS: Resolved -import ? from '${mod}'- at ${file_name} => ${resolved.resolvedModule?.resolvedFileName}`
@@ -113,10 +97,7 @@ const getRawLines = (fileName: string): string | undefined => {
     return undefined;
   }
 };
-const emitDiagnosticInfo = (
-  data: WasmDiagnosticInformation,
-  padding: string
-) => {
+const emitDiagnosticInfo = (data: WasmDiagnosticInformation, padding: string) => {
   if (data.UnknownFile) {
     const diag = data.UnknownFile;
     console.error(padding + chalk.red(`${diag.current_file}`));

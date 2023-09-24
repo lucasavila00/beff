@@ -49,10 +49,7 @@ export default {
     },
   },
   "/tuple1": {
-    post: async (
-      _c: Ctx,
-      b: [number, number, ...string[]]
-    ): Promise<[number, number, ...string[]]> => {
+    post: async (_c: Ctx, b: [number, number, ...string[]]): Promise<[number, number, ...string[]]> => {
       return b;
     },
   },

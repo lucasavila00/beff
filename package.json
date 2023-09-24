@@ -9,7 +9,9 @@
     "test": "pnpm run -r test",
     "beff": "pnpm run -r beff",
     "all": "pnpm run build && pnpm run beff && pnpm run ts && pnpm run test",
-    "sd": "docsify serve docs"
+    "sd": "docsify serve docs",
+    "prettier:check": "prettier --check .",
+    "prettier:write": "prettier --write ."
   },
   "keywords": [],
   "author": "",

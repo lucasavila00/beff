@@ -1,13 +1,6 @@
 "use client";
 import { FC, useEffect, useState } from "react";
-import {
-  Text,
-  Avatar,
-  DropdownMenu,
-  IconButton,
-  Button,
-  Inset,
-} from "@radix-ui/themes";
+import { Text, Avatar, DropdownMenu, IconButton, Button, Inset } from "@radix-ui/themes";
 import { useRouter } from "next/navigation";
 import { useTheme } from "next-themes";
 import { SettingsDialog } from "./settings-dialog";
@@ -27,10 +20,7 @@ const ThemeChanger = () => {
 
   return (
     <>
-      <DropdownMenu.RadioGroup
-        value={theme}
-        onValueChange={(newValue) => setTheme(newValue)}
-      >
+      <DropdownMenu.RadioGroup value={theme} onValueChange={(newValue) => setTheme(newValue)}>
         <DropdownMenu.RadioItem value="system">System</DropdownMenu.RadioItem>
         <DropdownMenu.RadioItem value="dark">Dark</DropdownMenu.RadioItem>
         <DropdownMenu.RadioItem value="light">Light</DropdownMenu.RadioItem>
@@ -39,10 +29,7 @@ const ThemeChanger = () => {
   );
 };
 
-export const UserButton: FC<{ image: string; name: string }> = async ({
-  image,
-  name,
-}) => {
+export const UserButton: FC<{ image: string; name: string }> = async ({ image, name }) => {
   const router = useRouter();
   return (
     <DropdownMenu.Root>
@@ -72,9 +59,7 @@ export const UserButton: FC<{ image: string; name: string }> = async ({
           </DropdownMenu.Item>
         </SettingsDialog>
         <DropdownMenu.Separator />
-        <DropdownMenu.Item onSelect={() => router.push("/api/auth/signout")}>
-          Logout
-        </DropdownMenu.Item>
+        <DropdownMenu.Item onSelect={() => router.push("/api/auth/signout")}>Logout</DropdownMenu.Item>
       </DropdownMenu.Content>
     </DropdownMenu.Root>
   );

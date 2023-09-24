@@ -1,4 +1,4 @@
-const {radixThemePreset} = require("radix-themes-tw");
+const { radixThemePreset } = require("radix-themes-tw");
 export default {
   content: [
     "./pages/**/*.{js,ts,jsx,tsx,mdx}",

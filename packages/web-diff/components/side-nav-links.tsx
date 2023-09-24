@@ -35,9 +35,7 @@ type NavigationLink = {
   href: string;
   text: string;
   active: boolean;
-  icon: React.ForwardRefExoticComponent<
-    IconProps & React.RefAttributes<SVGSVGElement>
-  >;
+  icon: React.ForwardRefExoticComponent<IconProps & React.RefAttributes<SVGSVGElement>>;
 };
 
 const HOME: NavigationLink[] = [

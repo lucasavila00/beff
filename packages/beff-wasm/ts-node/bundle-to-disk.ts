@@ -357,16 +357,10 @@ Object.defineProperty(exports, "__esModule", {
   return "";
 };
 
-const exportCode = (mod: ProjectModule) =>
-  mod === "esm" ? "export default" : "exports.default =";
+const exportCode = (mod: ProjectModule) => (mod === "esm" ? "export default" : "exports.default =");
 
-const finalizeValidatorsCode = (
-  wasmCode: WritableModules,
-  mod: ProjectModule
-) => {
-  const exportedItems = [...decodersExported, "validators", "encoders"].join(
-    ", "
-  );
+const finalizeValidatorsCode = (wasmCode: WritableModules, mod: ProjectModule) => {
+  const exportedItems = [...decodersExported, "validators", "encoders"].join(", ");
   const exports = [exportCode(mod), `{ ${exportedItems} };`].join(" ");
   return [decoders, esmTag(mod), wasmCode.js_validators, exports].join("\n");
 };
@@ -381,25 +375,13 @@ const finalizeRouterFile = (wasmCode: WritableModules, mod: ProjectModule) => {
   const schema = ["const schema = ", wasmCode.json_schema, ";"].join(" ");
   const exportedItems = ["meta", "schema"].join(", ");
   const exports = [exportCode(mod), `{ ${exportedItems} };`].join(" ");
-  return [
-    esmTag(mod),
-    importValidators(mod),
-    wasmCode.js_server_meta,
-    schema,
-    exports,
-  ].join("\n");
+  return [esmTag(mod), importValidators(mod), wasmCode.js_server_meta, schema, exports].join("\n");
 };
 
 const finalizeParserFile = (wasmCode: WritableModules, mod: ProjectModule) => {
   const exportedItems = ["buildParsers"].join(", ");
   const exports = [exportCode(mod), `{ ${exportedItems} };`].join(" ");
-  return [
-    esmTag(mod),
-    importValidators(mod),
-    wasmCode.js_built_parsers,
-    buildParsers,
-    exports,
-  ].join("\n");
+  return [esmTag(mod), importValidators(mod), wasmCode.js_built_parsers, buildParsers, exports].join("\n");
 };
 
 export const execProject = (
@@ -421,11 +403,7 @@ export const execProject = (
     console.log(`JS: Router entry point ${routerEntryPoint}`);
     console.log(`JS: Parser entry point ${parserEntryPoint}`);
   }
-  const outResult = bundler.bundle(
-    routerEntryPoint,
-    parserEntryPoint,
-    projectJson.settings
-  );
+  const outResult = bundler.bundle(routerEntryPoint, parserEntryPoint, projectJson.settings);
   if (outResult == null) {
     return "failed";
   }
@@ -434,35 +412,17 @@ export const execProject = (
     fs.mkdirSync(outputDir);
   }
 
-  fs.writeFileSync(
-    path.join(outputDir, "validators.js"),
-    finalizeValidatorsCode(outResult, mod)
-  );
+  fs.writeFileSync(path.join(outputDir, "validators.js"), finalizeValidatorsCode(outResult, mod));
 
   if (projectJson.router) {
-    fs.writeFileSync(
-      path.join(outputDir, "router.js"),
-      finalizeRouterFile(outResult, mod)
-    );
-    fs.writeFileSync(
-      path.join(outputDir, "router.d.ts"),
-      [ROUTER_DTS].join("\n")
-    );
-    fs.writeFileSync(
-      path.join(outputDir, "openapi.json"),
-      outResult.json_schema ?? ""
-    );
+    fs.writeFileSync(path.join(outputDir, "router.js"), finalizeRouterFile(outResult, mod));
+    fs.writeFileSync(path.join(outputDir, "router.d.ts"), [ROUTER_DTS].join("\n"));
+    fs.writeFileSync(path.join(outputDir, "openapi.json"), outResult.json_schema ?? "");
   }
 
   if (projectJson.parser) {
-    fs.writeFileSync(
-      path.join(outputDir, "parser.js"),
-      finalizeParserFile(outResult, mod)
-    );
-    fs.writeFileSync(
-      path.join(outputDir, "parser.d.ts"),
-      [PARSER_DTS].join("\n")
-    );
+    fs.writeFileSync(path.join(outputDir, "parser.js"), finalizeParserFile(outResult, mod));
+    fs.writeFileSync(path.join(outputDir, "parser.d.ts"), [PARSER_DTS].join("\n"));
   }
   return "ok";
 };

@@ -36,10 +36,7 @@ const joinWithDot = (it: string[]): string => {
   }
   return acc;
 };
-export const printErrors = (
-  it: DecodeError[],
-  parentPath: string[]
-): string => {
+export const printErrors = (it: DecodeError[], parentPath: string[]): string => {
   return it
     .map((err, idx) => {
       const mergedPath = [...parentPath, ...err.path];
@@ -55,18 +52,12 @@ export const printErrors = (
 };
 
 // import { fetch, Request } from "@whatwg-node/fetch";
-export type NormalizeRouterItem<T> = T extends (
-  ...args: infer I
-) => Promise<infer O>
+export type NormalizeRouterItem<T> = T extends (...args: infer I) => Promise<infer O>
   ? [I, O]
   : T extends (...args: infer I) => infer O
   ? [I, O]
   : never;
-type RemoveFirstOfTuple<T extends any[]> = T["length"] extends 0
-  ? []
-  : T extends [any, ...infer U]
-  ? U
-  : T;
+type RemoveFirstOfTuple<T extends any[]> = T["length"] extends 0 ? [] : T extends [any, ...infer U] ? U : T;
 
 // inlining SimpleHttpFunction crates better hovered tooltip types
 // export type SimpleHttpFunction<M extends [any[], any]> = (
@@ -125,10 +116,7 @@ export class BffRequest {
       const ctx: any = {};
       const validParams = validator(ctx, params[index]);
       if (ctx.errors != null) {
-        throw new BffHTTPException(
-          402,
-          printErrors(ctx.errors, [metadata.name])
-        );
+        throw new BffHTTPException(402, printErrors(ctx.errors, [metadata.name]));
       }
 
       const param = encoder(validParams);
@@ -169,12 +157,7 @@ export class BffRequest {
       }
     }
 
-    return new BffRequest(
-      method,
-      path,
-      init.headers ?? {},
-      init.requestBodyStringified
-    );
+    return new BffRequest(method, path, init.headers ?? {}, init.requestBodyStringified);
   };
 
   toRequestInit(): RequestInit {
@@ -242,9 +225,7 @@ class BffHTTPException extends Error {
   }
 }
 
-export function buildClient<T>(
-  options: BuildClientOptions
-): ClientFromRouter<T> {
+export function buildClient<T>(options: BuildClientOptions): ClientFromRouter<T> {
   const {
     generated,
     fetchFn = fetch,
@@ -274,9 +255,7 @@ export function buildClient<T>(
     if (client[meta.pattern] == null) {
       client[meta.pattern] = {};
     }
-    client[meta.pattern][meta.method_kind.toLowerCase()] = async (
-      ...params: any
-    ) => {
+    client[meta.pattern][meta.method_kind.toLowerCase()] = async (...params: any) => {
       const requestParams = { meta, params };
       const bffReq = BffRequest.build(requestParams);
       const requestInit = bffReq.toRequestInit();
