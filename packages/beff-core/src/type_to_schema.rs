@@ -472,14 +472,12 @@ impl<'a, R: FileManager> TypeToSchema<'a, R> {
             },
             Expr::Array(lit) => {
                 let mut prefix_items = vec![];
-                for it in &lit.elems {
-                    if let Some(it) = it {
-                        match it.spread {
-                            Some(_) => todo!(),
-                            None => {
-                                let ty_schema = self.typeof_expr(&it.expr)?;
-                                prefix_items.push(ty_schema);
-                            }
+                for it in lit.elems.iter().flatten() {
+                    match it.spread {
+                        Some(_) => todo!(),
+                        None => {
+                            let ty_schema = self.typeof_expr(&it.expr)?;
+                            prefix_items.push(ty_schema);
                         }
                     }
                 }
@@ -518,8 +516,7 @@ impl<'a, R: FileManager> TypeToSchema<'a, R> {
                 Ok(JsonSchema::Object(vs))
             }
             Expr::Ident(i) => {
-                let s =
-                    TypeResolver::new(self.files, &self.current_file).resolve_local_value(i)?;
+                let s = TypeResolver::new(self.files, &self.current_file).resolve_local_value(i)?;
                 self.typeof_symbol(s, &i.span)
             }
             _ => {
@@ -580,8 +577,8 @@ impl<'a, R: FileManager> TypeToSchema<'a, R> {
             TsTypeQueryExpr::TsEntityName(ref n) => match n {
                 TsEntityName::TsQualifiedName(_) => todo!(),
                 TsEntityName::Ident(n) => {
-                    let s = TypeResolver::new(self.files, &self.current_file)
-                        .resolve_local_value(n)?;
+                    let s =
+                        TypeResolver::new(self.files, &self.current_file).resolve_local_value(n)?;
                     self.typeof_symbol(s, &n.span)
                 }
             },

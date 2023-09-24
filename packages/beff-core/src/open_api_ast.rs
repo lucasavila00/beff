@@ -401,7 +401,7 @@ impl OpenApi {
                 .collect(),
         })
     }
-    fn build_fn(params: &Vec<(String, TsType)>, return_type: TsType) -> TsType {
+    fn build_fn(params: &[(String, TsType)], return_type: TsType) -> TsType {
         TsType::TsFnOrConstructorType(TsFnOrConstructorType::TsFnType(TsFnType {
             span: DUMMY_SP,
             params: params
@@ -448,7 +448,7 @@ impl OpenApi {
         Self::build_type_lit(members)
     }
 
-    pub fn as_typescript_string(&self, validators: &Vec<&Validator>) -> String {
+    pub fn as_typescript_string(&self, validators: &[&Validator]) -> String {
         let mut vs: Vec<(String, TsType)> = vec![];
 
         let mut sorted_validators = validators
@@ -477,7 +477,11 @@ pub struct OpenApiParser {
     pub api: OpenApi,
     pub components: Vec<Validator>,
 }
-
+impl Default for OpenApiParser {
+    fn default() -> Self {
+        Self::new()
+    }
+}
 impl OpenApiParser {
     pub fn new() -> OpenApiParser {
         OpenApiParser {
@@ -657,12 +661,10 @@ impl OpenApiParser {
                     json_request_body,
                 })
             }
-            val => {
-                Err(anyhow!(
-                    "Expected object, got {:?}",
-                    val.to_serde().to_string()
-                ))
-            }
+            val => Err(anyhow!(
+                "Expected object, got {:?}",
+                val.to_serde().to_string()
+            )),
         }
     }
     fn parse_op_object_map(it: &Json) -> Result<Vec<(HTTPMethod, OperationObject)>> {

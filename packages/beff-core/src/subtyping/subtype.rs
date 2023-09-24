@@ -95,18 +95,18 @@ pub enum ProperSubtype {
     List(Rc<Bdd>),
 }
 
-fn vec_union<K: PartialEq + Clone + Ord>(v1: &Vec<K>, v2: &Vec<K>) -> Vec<K> {
+fn vec_union<K: PartialEq + Clone + Ord>(v1: &[K], v2: &[K]) -> Vec<K> {
     let mut values: Vec<K> = v1.iter().cloned().chain(v2.iter().cloned()).collect();
     values.sort();
     values.dedup();
     values
 }
 
-fn vec_intersect<K: PartialEq + Clone + Ord>(v1: &Vec<K>, v2: &Vec<K>) -> Vec<K> {
+fn vec_intersect<K: PartialEq + Clone + Ord>(v1: &[K], v2: &[K]) -> Vec<K> {
     v1.iter().cloned().filter(|v| v2.contains(v)).collect()
 }
 
-fn vec_diff<K: PartialEq + Clone + Ord>(v1: &Vec<K>, v2: &Vec<K>) -> Vec<K> {
+fn vec_diff<K: PartialEq + Clone + Ord>(v1: &[K], v2: &[K]) -> Vec<K> {
     v1.iter().cloned().filter(|v| !v2.contains(v)).collect()
 }
 

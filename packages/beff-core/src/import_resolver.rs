@@ -127,16 +127,13 @@ impl<'a, R: FsModuleResolver> Visit for ImportsVisitor<'a, R> {
             Decl::Var(decl) => {
                 for it in &decl.decls {
                     if let Some(expr) = &it.init {
-                        match &it.name {
-                            Pat::Ident(it) => {
-                                let name = it.sym.clone();
-                                let export = Rc::new(SymbolExport::ValueExpr {
-                                    expr: Rc::new(*expr.clone()),
-                                    name: name.clone(),
-                                });
-                                self.symbol_exports.insert(name, export);
-                            }
-                            _ => {}
+                        if let Pat::Ident(it) = &it.name {
+                            let name = it.sym.clone();
+                            let export = Rc::new(SymbolExport::ValueExpr {
+                                expr: Rc::new(*expr.clone()),
+                                name: name.clone(),
+                            });
+                            self.symbol_exports.insert(name, export);
                         }
                     }
                 }

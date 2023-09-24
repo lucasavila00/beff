@@ -1,3 +1,4 @@
+use core::fmt;
 use std::collections::BTreeMap;
 use std::collections::BTreeSet;
 
@@ -101,13 +102,15 @@ pub enum CodecName {
     ISO8061,
     BigInt,
 }
-impl CodecName {
-    pub fn to_string(&self) -> String {
+
+impl fmt::Display for CodecName {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         let extra = match self {
             CodecName::ISO8061 => "ISO8061",
             CodecName::BigInt => "BigInt",
         };
-        "Codec::".to_string() + extra
+        let e = "Codec::".to_string() + extra;
+        write!(f, "{}", e)
     }
 }
 

@@ -293,12 +293,6 @@ impl DecoderFnGenerator {
     }
 
     fn fn_decoder_from_schema(&mut self, schema: &JsonSchema, required: bool) -> Function {
-        let mut stmts = vec![];
-
-        stmts.push(Stmt::Return(ReturnStmt {
-            span: DUMMY_SP,
-            arg: Some(Box::new(Self::decode_expr(schema, required))),
-        }));
         Function {
             params: vec![
                 Param {
@@ -326,7 +320,10 @@ impl DecoderFnGenerator {
             span: DUMMY_SP,
             body: BlockStmt {
                 span: DUMMY_SP,
-                stmts,
+                stmts: vec![Stmt::Return(ReturnStmt {
+                    span: DUMMY_SP,
+                    arg: Some(Box::new(Self::decode_expr(schema, required))),
+                })],
             }
             .into(),
             is_async: false,

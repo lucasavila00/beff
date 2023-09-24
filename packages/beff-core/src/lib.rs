@@ -177,6 +177,11 @@ impl Default for ParsedModuleLocals {
 pub struct ParserOfModuleLocals {
     content: ParsedModuleLocals,
 }
+impl Default for ParserOfModuleLocals {
+    fn default() -> Self {
+        Self::new()
+    }
+}
 impl ParserOfModuleLocals {
     pub fn new() -> ParserOfModuleLocals {
         ParserOfModuleLocals {

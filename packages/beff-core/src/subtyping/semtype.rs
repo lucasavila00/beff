@@ -48,21 +48,25 @@ impl Iterator for SubTypePairIterator {
             let data2 = self.t2.subtype_data.get(self.i2).unwrap();
             let code1 = data1.to_code();
             let code2 = data2.to_code();
-            if code1 == code2 {
-                self.i1 += 1;
-                self.i2 += 1;
-                if self.include(code1) {
-                    return Some((Some(data1.clone()), Some(data2.clone())));
+            match code1.cmp(&code2) {
+                std::cmp::Ordering::Equal => {
+                    self.i1 += 1;
+                    self.i2 += 1;
+                    if self.include(code1) {
+                        return Some((Some(data1.clone()), Some(data2.clone())));
+                    }
                 }
-            } else if code1 < code2 {
-                self.i1 += 1;
-                if self.include(code1) {
-                    return Some((Some(data1.clone()), None));
+                std::cmp::Ordering::Less => {
+                    self.i1 += 1;
+                    if self.include(code1) {
+                        return Some((Some(data1.clone()), None));
+                    }
                 }
-            } else {
-                self.i2 += 1;
-                if self.include(code2) {
-                    return Some((None, Some(data2.clone())));
+                std::cmp::Ordering::Greater => {
+                    self.i2 += 1;
+                    if self.include(code2) {
+                        return Some((None, Some(data2.clone())));
+                    }
                 }
             }
         }
@@ -316,6 +320,12 @@ pub struct SemTypeContext {
 
     pub json_schema_ref_memo: BTreeMap<String, usize>,
 }
+impl Default for SemTypeContext {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl SemTypeContext {
     pub fn get_mapping_atomic(&self, idx: usize) -> Rc<MappingAtomic> {
         self.mapping_definitions
