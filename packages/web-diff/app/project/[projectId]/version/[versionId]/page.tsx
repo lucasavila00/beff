@@ -1,9 +1,12 @@
 import { beffLocalClient } from "@/beff/router-app";
 import { NotFound } from "@/components/not-found";
 import { ProjectsBreadcrumbs } from "@/components/projects-breadcrumbs";
-import { Box, Flex, Heading, Text } from "@radix-ui/themes";
+import { Box, Card, Flex, Heading, Text } from "@radix-ui/themes";
 import { format } from "timeago.js";
-
+import hljs from "highlight.js/lib/core";
+import typescript from "highlight.js/lib/languages/typescript";
+hljs.registerLanguage("typescript", typescript);
+import "highlight.js/styles/atom-one-dark.css";
 import { init, schema_to_ts_types } from "@/pkg";
 
 let cache: any = null;
@@ -25,6 +28,7 @@ export default async function Page({ params }: { params: { projectId: string; ve
     return <NotFound />;
   }
   const tsType = wasmGetter().schema_to_ts_types(version.schema);
+  const tsTypeFmt = hljs.highlight("typescript", tsType).value;
   return (
     <>
       <ProjectsBreadcrumbs
@@ -48,8 +52,15 @@ export default async function Page({ params }: { params: { projectId: string; ve
 
             <Text color="gray">{format(version?.updatedAt)}</Text>
           </Flex>
-          <pre>{tsType}</pre>
-          <pre>{JSON.stringify(version, null, 2)}</pre>
+
+          <pre>
+            <code
+              className="hljs p-2 rounded-1 overflow-auto"
+              dangerouslySetInnerHTML={{
+                __html: tsTypeFmt,
+              }}
+            />
+          </pre>
         </Box>
       </ProjectsBreadcrumbs>
     </>
