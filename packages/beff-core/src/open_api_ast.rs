@@ -507,7 +507,12 @@ impl OpenApiParser {
                     });
                 }
             }
-            _ => todo!(),
+            it => {
+                return Err(anyhow!(
+                    "expected object, got {:?}",
+                    it.to_serde().to_string()
+                ))
+            }
         }
         Ok(())
     }
@@ -595,10 +600,15 @@ impl OpenApiParser {
                                     required,
                                     schema,
                                 }),
-                                _ => todo!(),
+                                txt => return Err(anyhow!("Unknown parameter type {}", txt)),
                             }
                         }
-                        _ => todo!(),
+                        val => {
+                            return Err(anyhow!(
+                                "Expected parameter object, got {:?}",
+                                val.to_serde().to_string()
+                            ))
+                        }
                     }
                 }
 
@@ -649,7 +659,12 @@ impl OpenApiParser {
                     json_request_body,
                 });
             }
-            _ => todo!(),
+            val => {
+                return Err(anyhow!(
+                    "Expected object, got {:?}",
+                    val.to_serde().to_string()
+                ))
+            }
         }
     }
     fn parse_op_object_map(it: &Json) -> Result<Vec<(HTTPMethod, OperationObject)>> {
@@ -664,7 +679,12 @@ impl OpenApiParser {
                     }
                 }
             }
-            _ => todo!(),
+            val => {
+                return Err(anyhow!(
+                    "Expected object, got {:?}",
+                    val.to_serde().to_string()
+                ))
+            }
         }
 
         Ok(acc)
@@ -682,7 +702,12 @@ impl OpenApiParser {
                     self.api.paths.push(api_path);
                 }
             }
-            _ => todo!(),
+            val => {
+                return Err(anyhow!(
+                    "Expected object, got {:?}",
+                    val.to_serde().to_string()
+                ))
+            }
         }
         Ok(())
     }

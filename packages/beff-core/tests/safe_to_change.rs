@@ -68,7 +68,12 @@ mod tests {
         .unwrap();
         errors
     }
-
+    fn assert_eq_schema(from: &str, to: &str) {
+        let e1 = test_safe(from, to);
+        assert!(e1.is_empty());
+        let e2 = test_safe(to, from);
+        assert!(e2.is_empty());
+    }
     fn print_errors(from: &str, to: &str, errors: &[OpenApiBreakingChange]) -> String {
         let errs = errors
             .iter()
@@ -1307,6 +1312,30 @@ mod tests {
         "#;
         let errors = test_safe(from, to);
         assert!(errors.is_empty());
+    }
+
+    #[test]
+    fn ok_member() {
+        let from = r#"
+        
+        export default {
+            "/hello": {
+                get: (): string => impl()
+            }
+        }
+        "#;
+
+        let to = r#"
+        const a = {
+            b: {
+                "/hello": {
+                    get: (): string => impl()
+                }
+            }
+        }
+        export default a.b
+        "#;
+        assert_eq_schema(from, to)
     }
 
     #[test]

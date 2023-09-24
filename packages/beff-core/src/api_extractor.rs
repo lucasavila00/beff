@@ -19,6 +19,7 @@ use jsdoc::ast::{SummaryTag, Tag, UnknownTag, VersionTag};
 use jsdoc::Input;
 use std::collections::HashSet;
 use std::rc::Rc;
+use swc_atoms::JsWord;
 use swc_common::comments::{Comment, CommentKind, Comments};
 use swc_common::{BytePos, Span, Spanned, DUMMY_SP};
 use swc_ecma_ast::{
@@ -229,27 +230,24 @@ impl<'a, R: FileManager> ExtractExportDefaultVisitor<'a, R> {
             }
         }
     }
-    fn check_member_expr_for_methods(&mut self, expr: &MemberExpr) {
-        match expr.obj.as_ref() {
+
+    fn check_member_expr_for_methods_inner(&mut self, left: &Expr, right: &JsWord, span: &Span) {
+        match left {
             Expr::Ident(i) => {
                 match TypeResolver::new(self.files, &self.current_file).resolve_local_value(i) {
                     Ok(r) => match r {
                         ResolvedLocalSymbol::TsType(_) => todo!(),
                         ResolvedLocalSymbol::TsInterfaceDecl(_) => todo!(),
-                        ResolvedLocalSymbol::Expr(e) => self.check_expr_for_methods(&e),
+                        ResolvedLocalSymbol::Expr(e) => {
+                            self.check_member_expr_for_methods_inner(&e, right, &e.span())
+                        }
                         ResolvedLocalSymbol::NamedImport { .. } => todo!(),
                         ResolvedLocalSymbol::SymbolExportDefault(_) => todo!(),
                         ResolvedLocalSymbol::Star(file_name) => {
                             let file = self.files.get_or_fetch_file(&file_name);
-                            let prop_sym = match &expr.prop {
-                                MemberProp::Ident(i) => &i.sym,
-                                MemberProp::PrivateName(_) => todo!(),
-                                MemberProp::Computed(_) => todo!(),
-                            };
-                            let exp =
-                                file.and_then(|it| it.symbol_exports.get(&prop_sym, self.files));
+                            let exp = file.and_then(|it| it.symbol_exports.get(&right, self.files));
                             match exp {
-                                Some(s) => self.check_ts_export_for_methods(&s, &expr.span()),
+                                Some(s) => self.check_ts_export_for_methods(&s, span),
                                 None => todo!(),
                             }
                         }
@@ -257,8 +255,41 @@ impl<'a, R: FileManager> ExtractExportDefaultVisitor<'a, R> {
                     Err(_) => todo!(),
                 }
             }
+            Expr::Object(vs) => {
+                let mut found = false;
+                for prop in &vs.props {
+                    match prop {
+                        PropOrSpread::Spread(_) => todo!(),
+                        PropOrSpread::Prop(p) => match p.as_ref() {
+                            Prop::KeyValue(kv) => {
+                                if let PropName::Ident(i) = &kv.key {
+                                    if i.sym == *right {
+                                        found = true;
+                                        self.check_expr_for_methods(&kv.value);
+                                    }
+                                }
+                            }
+                            Prop::Shorthand(_) => todo!(),
+                            Prop::Assign(_) => todo!(),
+                            Prop::Getter(_) => todo!(),
+                            Prop::Setter(_) => todo!(),
+                            Prop::Method(_) => todo!(),
+                        },
+                    }
+                }
+
+                assert!(found);
+            }
             _ => todo!(),
         }
+    }
+    fn check_member_expr_for_methods(&mut self, expr: &MemberExpr) {
+        let prop_sym = match &expr.prop {
+            MemberProp::Ident(i) => &i.sym,
+            MemberProp::PrivateName(_) => todo!(),
+            MemberProp::Computed(_) => todo!(),
+        };
+        self.check_member_expr_for_methods_inner(&expr.obj, prop_sym, &expr.span)
     }
     fn check_expr_for_methods(&mut self, expr: &Expr) {
         match expr {

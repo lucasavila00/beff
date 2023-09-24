@@ -79,17 +79,21 @@ pub enum JsonSchema {
         items: Option<Box<JsonSchema>>,
     },
     Ref(String),
+
+    // todo: remove this, handle it outside of json schema
     OpenApiResponseRef(String),
     AnyOf(BTreeSet<JsonSchema>),
     AllOf(BTreeSet<JsonSchema>),
     Const(Json),
-    AnyObject,
-    AnyArrayLike,
     Codec(CodecName),
     // semantic types
     StNever,
     StUnknown,
     StNot(Box<JsonSchema>),
+    // todo should be called StAnyObject?
+    AnyObject,
+    // todo should be called StAnyArrayLike?
+    AnyArrayLike,
 }
 
 #[derive(PartialEq, Eq, Hash, Debug, Ord, PartialOrd, Clone)]

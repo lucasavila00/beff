@@ -104,6 +104,10 @@ fn union_intersection(name: &str, vs: &BTreeSet<JsonSchema>, input_expr: Expr) -
 }
 fn encode_expr(schema: &JsonSchema, input_expr: Expr) -> Expr {
     match schema {
+        JsonSchema::AnyObject => encode_expr(&JsonSchema::object(vec![]), input_expr),
+        JsonSchema::AnyArrayLike => {
+            encode_expr(&JsonSchema::Array(JsonSchema::Any.into()), input_expr)
+        }
         JsonSchema::Null => {
             let or_null = Expr::Bin(BinExpr {
                 span: DUMMY_SP,
@@ -277,13 +281,10 @@ fn encode_expr(schema: &JsonSchema, input_expr: Expr) -> Expr {
             ],
             type_args: None,
         }),
-        // todo
-        JsonSchema::OpenApiResponseRef(_) => todo!(),
-        JsonSchema::AnyObject => todo!(),
-        JsonSchema::AnyArrayLike => todo!(),
-        JsonSchema::StNever => todo!(),
-        JsonSchema::StUnknown => todo!(),
-        JsonSchema::StNot(_) => todo!(),
+        JsonSchema::OpenApiResponseRef(_)
+        | JsonSchema::StNever
+        | JsonSchema::StUnknown
+        | JsonSchema::StNot(_) => unreachable!("cannot generate encoder for semantic types"),
     }
 }
 
