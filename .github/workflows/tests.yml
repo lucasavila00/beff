@@ -19,6 +19,7 @@ jobs:
           pnpm install
           pnpm prettier:check
           curl https://rustwasm.github.io/wasm-pack/installer/init.sh -sSf | sh
+          cargo clippy
           pnpm wasm:dev
           DEBUG=true pnpm all
           git diff-index --cached --quiet HEAD || (echo "Error: There are changed files" && exit 1)
