@@ -8,7 +8,7 @@
     "build": "pnpm run -r build",
     "test": "pnpm run -r test",
     "beff": "pnpm run -r beff",
-    "wasm": "pnpm run -r wasm",
+    "wasm:dev": "pnpm run -r wasm:dev",
     "all": "pnpm run build && pnpm run beff && pnpm run ts && pnpm run test",
     "sd": "docsify serve docs",
     "prettier:check": "prettier --check .",
