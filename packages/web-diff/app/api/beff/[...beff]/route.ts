@@ -1,5 +1,5 @@
 import { Hono } from "hono";
-import { routerApp } from "./router-app";
+import { routerApp } from "../../../../beff/router-app";
 
 const app = new Hono().basePath("/api/beff");
 

@@ -15,12 +15,17 @@ export type ProjectVersion = {
 };
 
 export const ProjectRouter = {
-  "/project/{id}/versions": {
-    get: (_c: Ctx, id: string): Promise<ProjectVersion[]> =>
-      prisma.projectVersion.findMany({ where: { projectId: id } }),
+  "/project/{projectId}/version/{versionId}": {
+    get: (_c: Ctx, projectId: string, versionId: string): Promise<ProjectVersion | null> =>
+      prisma.projectVersion.findUnique({ where: { id: versionId, projectId: projectId } }),
   },
-  "/project/{id}": {
-    get: (_c: Ctx, id: string): Promise<BeffProject | null> => prisma.project.findUnique({ where: { id } }),
+  "/project/{projectId}/version": {
+    get: (_c: Ctx, projectId: string): Promise<ProjectVersion[]> =>
+      prisma.projectVersion.findMany({ where: { projectId: projectId } }),
+  },
+  "/project/{projectId}": {
+    get: (_c: Ctx, projectId: string): Promise<BeffProject | null> =>
+      prisma.project.findUnique({ where: { id: projectId } }),
   },
   "/project": {
     get: (_c: Ctx): Promise<BeffProject[]> => prisma.project.findMany(),

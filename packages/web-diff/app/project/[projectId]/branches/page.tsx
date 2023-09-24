@@ -1,12 +1,12 @@
 import { ProjectsBreadcrumbs } from "@/components/projects-breadcrumbs";
 
-export default async function Branches({ params }: { params: { id: string } }) {
+export default async function Branches({ params }: { params: { projectId: string } }) {
   return (
     <ProjectsBreadcrumbs
-      projectId={params.id}
+      projectId={params.projectId}
       extra={[
         {
-          href: `/project/${params.id}/branches`,
+          href: `/project/${params.projectId}/branches`,
           text: "Branches",
         },
       ]}

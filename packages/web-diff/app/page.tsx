@@ -8,7 +8,7 @@ import Image from "next/image";
 import NextLink from "next/link";
 import { FC } from "react";
 import { format } from "timeago.js";
-import { beffLocalClient } from "./api/beff/[...beff]/router-app";
+import { beffLocalClient } from "../beff/router-app";
 const ProjectTable: FC<{ projects: BeffProject[] }> = ({ projects }) => {
   return (
     <>
