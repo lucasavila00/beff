@@ -1,4 +1,4 @@
-import { beffLocalClient } from "@/app/api/beff/[...beff]/router-app";
+import { beffLocalClient } from "@/beff/router-app";
 import { NotFound } from "@/components/not-found";
 import { ProjectsBreadcrumbs } from "@/components/projects-breadcrumbs";
 import { Box, Flex, Heading, Text } from "@radix-ui/themes";

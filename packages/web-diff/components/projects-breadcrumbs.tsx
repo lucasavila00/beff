@@ -1,5 +1,5 @@
 import { FC, ReactNode } from "react";
-import { beffLocalClient } from "@/app/api/beff/[...beff]/router-app";
+import { beffLocalClient } from "@/beff/router-app";
 import { BreadCrumbs, Crumb } from "@/components/breadcrumbs";
 const splitFullName = (fullName: string | null | undefined) => {
   if (!fullName) return { owner: "Not found", name: "Not found" };

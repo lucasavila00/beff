@@ -1,4 +1,4 @@
-import { beffLocalClient } from "@/app/api/beff/[...beff]/router-app";
+import { beffLocalClient } from "@/beff/router-app";
 import { ProjectsBreadcrumbs } from "@/components/projects-breadcrumbs";
 import { CheckCircledIcon } from "@radix-ui/react-icons";
 import { Box, Flex, Heading, Link, Table } from "@radix-ui/themes";

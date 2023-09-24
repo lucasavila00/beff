@@ -18,6 +18,7 @@ jobs:
         run: |
           pnpm install
           pnpm prettier:check
+          pnpm wasm
           curl https://rustwasm.github.io/wasm-pack/installer/init.sh -sSf | sh
           pnpm all
           git diff-index --cached --quiet HEAD || (echo "Error: There are changed files" && exit 1)
