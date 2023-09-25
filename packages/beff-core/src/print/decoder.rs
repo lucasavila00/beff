@@ -169,7 +169,6 @@ impl DecoderFnGenerator {
 
     fn decode_expr(schema: &JsonSchema, required: bool) -> Expr {
         match schema {
-            JsonSchema::Error => unreachable!("should not print if schema had error"),
             JsonSchema::StNever => todo!(),
             JsonSchema::StUnknown => todo!(),
             JsonSchema::StNot(_) => todo!(),
@@ -188,8 +187,7 @@ impl DecoderFnGenerator {
                     span: DUMMY_SP,
                     value: format.to_string().into(),
                     raw: None,
-                }))
-                .into()],
+                }))],
             ),
             JsonSchema::Ref(r_name) => Self::decode_ref(r_name, required),
             JsonSchema::Object(vs) => Self::decode_call_extra(
@@ -289,19 +287,12 @@ impl DecoderFnGenerator {
                     span: DUMMY_SP,
                     value: format.to_string().into(),
                     raw: None,
-                }))
-                .into()],
+                }))],
             ),
         }
     }
 
     fn fn_decoder_from_schema(&mut self, schema: &JsonSchema, required: bool) -> Function {
-        let mut stmts = vec![];
-
-        stmts.push(Stmt::Return(ReturnStmt {
-            span: DUMMY_SP,
-            arg: Some(Box::new(Self::decode_expr(schema, required))),
-        }));
         Function {
             params: vec![
                 Param {
@@ -329,7 +320,10 @@ impl DecoderFnGenerator {
             span: DUMMY_SP,
             body: BlockStmt {
                 span: DUMMY_SP,
-                stmts,
+                stmts: vec![Stmt::Return(ReturnStmt {
+                    span: DUMMY_SP,
+                    arg: Some(Box::new(Self::decode_expr(schema, required))),
+                })],
             }
             .into(),
             is_async: false,

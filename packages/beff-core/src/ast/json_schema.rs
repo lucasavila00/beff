@@ -1,3 +1,4 @@
+use core::fmt;
 use std::collections::BTreeMap;
 use std::collections::BTreeSet;
 
@@ -70,7 +71,7 @@ pub enum JsonSchema {
     String,
     Number,
     Any,
-    Error,
+    // Error,
     StringWithFormat(String),
     Object(BTreeMap<String, Optionality<JsonSchema>>),
     Array(Box<JsonSchema>),
@@ -79,17 +80,21 @@ pub enum JsonSchema {
         items: Option<Box<JsonSchema>>,
     },
     Ref(String),
+
+    // todo: remove this, handle it outside of json schema
     OpenApiResponseRef(String),
     AnyOf(BTreeSet<JsonSchema>),
     AllOf(BTreeSet<JsonSchema>),
     Const(Json),
-    AnyObject,
-    AnyArrayLike,
     Codec(CodecName),
     // semantic types
     StNever,
     StUnknown,
     StNot(Box<JsonSchema>),
+    // todo should be called StAnyObject?
+    AnyObject,
+    // todo should be called StAnyArrayLike?
+    AnyArrayLike,
 }
 
 #[derive(PartialEq, Eq, Hash, Debug, Ord, PartialOrd, Clone)]
@@ -97,13 +102,15 @@ pub enum CodecName {
     ISO8061,
     BigInt,
 }
-impl CodecName {
-    pub fn to_string(&self) -> String {
+
+impl fmt::Display for CodecName {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         let extra = match self {
             CodecName::ISO8061 => "ISO8061",
             CodecName::BigInt => "BigInt",
         };
-        "Codec::".to_string() + extra
+        let e = "Codec::".to_string() + extra;
+        write!(f, "{}", e)
     }
 }
 
@@ -187,7 +194,7 @@ impl JsonSchema {
         };
 
         let props = props
-            .into_iter()
+            .iter()
             .map(|(k, v)| {
                 JsonSchema::from_json(v).map(|v| match required.iter().find(|it| *it == k) {
                     Some(_) => (k.clone(), v.required()),
@@ -209,7 +216,7 @@ impl JsonSchema {
                 Some(its) => match its {
                     Json::Array(vs) => vs
                         .iter()
-                        .map(|it| JsonSchema::from_json(it))
+                        .map(JsonSchema::from_json)
                         .collect::<Result<Vec<_>>>()?,
                     _ => return Err(anyhow!("prefix_items must be an array")),
                 },
@@ -229,7 +236,7 @@ impl JsonSchema {
             let typ = vs
                 .get("items")
                 .ok_or(anyhow!("array must have items field"))?;
-            return Ok(JsonSchema::Array(JsonSchema::from_json(typ)?.into()));
+            Ok(JsonSchema::Array(JsonSchema::from_json(typ)?.into()))
         }
     }
 
@@ -252,7 +259,7 @@ impl JsonSchema {
                     let any_of = match any_of {
                         Json::Array(vs) => vs
                             .iter()
-                            .map(|it| JsonSchema::from_json(it))
+                            .map(JsonSchema::from_json)
                             .collect::<Result<Vec<_>>>()?,
                         _ => return Err(anyhow!("any of must be an array")),
                     };
@@ -262,7 +269,7 @@ impl JsonSchema {
                     let all_of = match all_of {
                         Json::Array(vs) => vs
                             .iter()
-                            .map(|it| JsonSchema::from_json(it))
+                            .map(JsonSchema::from_json)
                             .collect::<Result<Vec<_>>>()?,
                         _ => return Err(anyhow!("all of must be an array")),
                     };
@@ -421,7 +428,6 @@ impl ToJson for JsonSchema {
                 Json::object(v)
             }
             JsonSchema::Const(val) => Json::object(vec![("const".into(), val)]),
-            JsonSchema::Error => unreachable!("should not call print if schema had error"),
             JsonSchema::StNever => todo!(),
             JsonSchema::StUnknown => todo!(),
             JsonSchema::StNot(_) => todo!(),
@@ -451,7 +457,6 @@ impl JsonSchema {
                 kind: TsKeywordTypeKind::TsNumberKeyword,
             }),
             JsonSchema::Any => todo!(),
-            JsonSchema::Error => todo!(),
             JsonSchema::StringWithFormat(_) => todo!(),
             JsonSchema::Object(vs) => TsType::TsTypeLit(TsTypeLit {
                 span: DUMMY_SP,

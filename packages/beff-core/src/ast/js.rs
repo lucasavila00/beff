@@ -1,3 +1,4 @@
+use core::fmt;
 use std::collections::BTreeMap;
 
 use swc_common::DUMMY_SP;
@@ -23,6 +24,23 @@ pub enum Js {
     Encoder { schema: JsonSchema, required: bool },
     Expr(Expr),
 }
+
+impl fmt::Display for Js {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        let expr = self.clone().to_expr();
+
+        let e = emit_module(
+            vec![ModuleItem::Stmt(Stmt::Expr(ExprStmt {
+                span: DUMMY_SP,
+                expr: Box::new(expr),
+            }))],
+            "\n",
+        )
+        .unwrap();
+        write!(f, "{}", e)
+    }
+}
+
 impl Js {
     pub fn object(vs: Vec<(String, Js)>) -> Self {
         Self::Object(vs.into_iter().collect())
@@ -33,19 +51,6 @@ impl Js {
     }
     pub fn encoder(schema: JsonSchema, required: bool) -> Self {
         Self::Encoder { schema, required }
-    }
-
-    pub fn to_string(self) -> String {
-        let expr = self.to_expr();
-
-        emit_module(
-            vec![ModuleItem::Stmt(Stmt::Expr(ExprStmt {
-                span: DUMMY_SP,
-                expr: Box::new(expr),
-            }))],
-            "\n",
-        )
-        .unwrap()
     }
 }
 pub trait ToJs {

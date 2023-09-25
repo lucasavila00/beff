@@ -68,7 +68,17 @@ mod tests {
         .unwrap();
         errors
     }
-
+    fn assert_eq_schema(from: &str, to: &str) {
+        let e1 = test_safe(from, to);
+        let st1 = print_errors(from, to, &e1);
+        if !e1.is_empty() {
+            // print it
+            println!("{}", st1);
+        }
+        assert!(e1.is_empty());
+        let e2 = test_safe(to, from);
+        assert!(e2.is_empty());
+    }
     fn print_errors(from: &str, to: &str, errors: &[OpenApiBreakingChange]) -> String {
         let errs = errors
             .iter()
@@ -99,7 +109,7 @@ mod tests {
         let from_str = serde_json::from_str::<serde_json::Value>(&str).unwrap();
         let from_serde = Json::from_serde(&from_str);
         let mut parser = OpenApiParser::new();
-        parser.process(&from_serde).unwrap();
+        parser.consume_json(&from_serde).unwrap();
         let str2 = open_api_to_json(parser.api, &parser.components).to_string();
 
         assert_eq!(str, str2);
@@ -1334,5 +1344,76 @@ mod tests {
         let errors = test_safe(from, to);
         assert!(!errors.is_empty());
         insta::assert_snapshot!(print_errors(from, to, &errors));
+    }
+    #[test]
+    fn ok_member() {
+        let from = r#"
+        
+        export default {
+            "/hello": {
+                get: (): string => impl()
+            }
+        }
+        "#;
+
+        let to = r#"
+        const a = {
+            b: {
+                "/hello": {
+                    get: (): string => impl()
+                }
+            }
+        }
+        export default a.b
+        "#;
+        assert_eq_schema(from, to)
+    }
+
+    #[test]
+    fn ok_keyof() {
+        let from = r#"
+        
+        export default {
+            "/hello": {
+                get: (): 'A' => impl()
+            }
+        }
+        "#;
+
+        let to = r#"
+        const B = {
+            A: ''
+        } as const;
+        type C = keyof typeof B;
+        export default {
+            "/hello": {
+                get: (): C => impl()
+            }
+        }
+        "#;
+        assert_eq_schema(from, to)
+    }
+
+    #[test]
+    fn ok_keyof_arr() {
+        let from = r#"
+        
+        export default {
+            "/hello": {
+                get: (): number => impl()
+            }
+        }
+        "#;
+
+        let to = r#"
+        const B = ['a'] as const
+        type C = keyof typeof B;
+        export default {
+            "/hello": {
+                get: (): C => impl()
+            }
+        }
+        "#;
+        assert_eq_schema(from, to)
     }
 }

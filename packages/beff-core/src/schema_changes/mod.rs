@@ -75,10 +75,10 @@ pub fn print_ts_types(vs: Vec<(String, TsType)>) -> String {
         .line_width(80)
         .quote_style(QuoteStyle::PreferDouble)
         .build();
-    let result = format_text(&PathBuf::from("f.ts"), &codes, &config)
+
+    format_text(&PathBuf::from("f.ts"), &codes, &config)
         .expect("Could not parse...")
-        .unwrap();
-    result
+        .unwrap()
 }
 
 impl MdReport {
@@ -161,7 +161,7 @@ fn evidence_to_json(it: &Evidence) -> Json {
                     return Json::Number(N::parse_int(4773992856));
                 }
                 match values.split_first() {
-                    Some((h, _t)) => return Json::Number(h.clone()),
+                    Some((h, _t)) => Json::Number(h.clone()),
                     None => unreachable!("number values cannot be empty"),
                 }
             }
@@ -171,7 +171,7 @@ fn evidence_to_json(it: &Evidence) -> Json {
                 }
                 match values.split_first() {
                     Some((h, _t)) => match h {
-                        StringLitOrFormat::Lit(st) => return Json::String(st.clone()),
+                        StringLitOrFormat::Lit(st) => Json::String(st.clone()),
                         StringLitOrFormat::Format(fmt) => {
                             return Json::String("$$".to_owned() + fmt.as_str())
                         }
@@ -203,6 +203,13 @@ fn evidence_to_json(it: &Evidence) -> Json {
     }
 }
 
+fn merge_validators(it: &(Validator, Vec<Validator>)) -> Vec<&Validator> {
+    let (head, tail) = it;
+    let mut acc = vec![head];
+    acc.extend(tail);
+    acc
+}
+
 impl BreakingChange {
     pub fn print_report(&self) -> Md {
         match self {
@@ -212,14 +219,14 @@ impl BreakingChange {
                 // let v = diff_to_js(&err.diff, Some(&err.evidence_mater));
                 vec![MdReport::Text("Response body is not compatible.".into())]
                     .into_iter()
-                    .chain(print_validators(&err.super_type.iter().collect::<Vec<_>>()))
-                    .chain(print_validators(&err.sub_type.iter().collect::<Vec<_>>()))
+                    .chain(print_validators(&merge_validators(&err.super_type)))
+                    .chain(print_validators(&merge_validators(&err.sub_type)))
                     // .chain(print_validators(&err.diff_type.iter().collect::<Vec<_>>()))
                     // .chain(print_validators(
                     //     &err.evidence_type.iter().collect::<Vec<_>>(),
                     // ))
                     .chain(vec![
-                        MdReport::Text(format!("Old clients will not support this response:")),
+                        MdReport::Text("Old clients will not support this response:".to_string()),
                         MdReport::Json(evidence_to_json(&err.evidence)),
                     ])
                     .collect()
@@ -231,8 +238,8 @@ impl BreakingChange {
                     param_name
                 ))]
                 .into_iter()
-                .chain(print_validators(&err.sub_type.iter().collect::<Vec<_>>()))
-                .chain(print_validators(&err.super_type.iter().collect::<Vec<_>>()))
+                .chain(print_validators(&merge_validators(&err.sub_type)))
+                .chain(print_validators(&merge_validators(&err.super_type)))
                 // .chain(print_validators(&err.diff_type.iter().collect::<Vec<_>>()))
                 // .chain(print_validators(
                 //     &err.evidence_type.iter().collect::<Vec<_>>(),
@@ -265,8 +272,8 @@ struct SchemaReference<'a> {
 
 #[derive(Debug)]
 pub struct IsNotSubtype {
-    sub_type: Vec<Validator>,
-    super_type: Vec<Validator>,
+    sub_type: (Validator, Vec<Validator>),
+    super_type: (Validator, Vec<Validator>),
     evidence: Evidence,
 }
 
@@ -477,7 +484,7 @@ pub fn is_safe_to_change_to(
                             .map(|it| it.wrap(to_path.parsed_pattern.raw.clone(), *http_method)),
                         ),
                         None => acc.push(
-                            BreakingChange::MethodRemoved(http_method.clone())
+                            BreakingChange::MethodRemoved(*http_method)
                                 .wrap(to_path.parsed_pattern.raw.clone(), *http_method),
                         ),
                     }

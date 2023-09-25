@@ -30,7 +30,7 @@ impl<'a> ToSemTypeConverter<'a> {
                 return Ok(&validator.schema);
             }
         }
-        return Err(anyhow!("reference not found: {}", name));
+        Err(anyhow!("reference not found: {}", name))
     }
 
     fn to_sem_type(
@@ -136,7 +136,6 @@ impl<'a> ToSemTypeConverter<'a> {
                 Json::Array(_) => unreachable!("array cannot be used as a type const"),
                 Json::Object(_) => unreachable!("object cannot be used as a type const"),
             },
-            JsonSchema::Error => unreachable!("should not be part of semantic types"),
             JsonSchema::OpenApiResponseRef(_) => {
                 unreachable!("should not be part of semantic types")
             }

@@ -134,7 +134,7 @@ impl<'a, R: FileManager> ExtractParserVisitor<'a, R> {
             }
             Err(diag) => {
                 self.errors.push(*diag);
-                JsonSchema::Error
+                JsonSchema::Any
             }
         }
     }
@@ -256,9 +256,9 @@ pub fn extract_parser<R: FileManager>(
     };
 
     ParserExtractResult {
-        errors: errors,
+        errors,
         entry_file_name,
-        validators: validators,
-        built_decoders: built_decoders,
+        validators,
+        built_decoders,
     }
 }

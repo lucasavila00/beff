@@ -71,7 +71,7 @@ pub fn parse_content(content: &str) -> Result<Rc<ParsedModule>> {
     GLOBALS.set(&SWC_GLOBALS, || {
         let file_name = BffFileName::new("router.bff".to_string());
         let mut resolver = FakeModuleResolver {};
-        parse_and_bind(&mut resolver, &file_name, &content)
+        parse_and_bind(&mut resolver, &file_name, content)
     })
 }
 

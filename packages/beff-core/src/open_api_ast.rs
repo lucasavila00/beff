@@ -6,6 +6,7 @@ use crate::{
     diag::{Diagnostic, DiagnosticInfoMessage, FullLocation},
     schema_changes::print_ts_types,
 };
+use anyhow::anyhow;
 use anyhow::Result;
 use core::fmt;
 use std::collections::BTreeMap;
@@ -312,13 +313,11 @@ impl ApiPath {
         let mut acc = vec![];
 
         for (k, v) in &self.methods {
-            if *k == HTTPMethod::Get {
-                if v.json_request_body.is_some() {
-                    let err = method_prop_span
-                        .clone()
-                        .to_diag(DiagnosticInfoMessage::GetMustNotHaveBody);
-                    acc.push(err);
-                }
+            if *k == HTTPMethod::Get && v.json_request_body.is_some() {
+                let err = method_prop_span
+                    .clone()
+                    .to_diag(DiagnosticInfoMessage::GetMustNotHaveBody);
+                acc.push(err);
             }
         }
         acc
@@ -327,7 +326,7 @@ impl ApiPath {
     pub fn validate(&self, method_prop_span: &FullLocation) -> Vec<Diagnostic> {
         self.validate_pattern_was_consumed(method_prop_span)
             .into_iter()
-            .chain(self.validate_get_no_body(method_prop_span).into_iter())
+            .chain(self.validate_get_no_body(method_prop_span))
             .collect()
     }
 
@@ -402,7 +401,7 @@ impl OpenApi {
                 .collect(),
         })
     }
-    fn build_fn(params: &Vec<(String, TsType)>, return_type: TsType) -> TsType {
+    fn build_fn(params: &[(String, TsType)], return_type: TsType) -> TsType {
         TsType::TsFnOrConstructorType(TsFnOrConstructorType::TsFnType(TsFnType {
             span: DUMMY_SP,
             params: params
@@ -449,7 +448,7 @@ impl OpenApi {
         Self::build_type_lit(members)
     }
 
-    pub fn as_typescript_string(&self, validators: &Vec<&Validator>) -> String {
+    pub fn as_typescript_string(&self, validators: &[&Validator]) -> String {
         let mut vs: Vec<(String, TsType)> = vec![];
 
         let mut sorted_validators = validators
@@ -478,7 +477,11 @@ pub struct OpenApiParser {
     pub api: OpenApi,
     pub components: Vec<Validator>,
 }
-
+impl Default for OpenApiParser {
+    fn default() -> Self {
+        Self::new()
+    }
+}
 impl OpenApiParser {
     pub fn new() -> OpenApiParser {
         OpenApiParser {
@@ -506,7 +509,12 @@ impl OpenApiParser {
                     });
                 }
             }
-            _ => panic!(),
+            it => {
+                return Err(anyhow!(
+                    "expected object, got {:?}",
+                    it.to_serde().to_string()
+                ))
+            }
         }
         Ok(())
     }
@@ -564,7 +572,7 @@ impl OpenApiParser {
                             let required = vs
                                 .get("required")
                                 .and_then(|it| match it {
-                                    Json::Bool(st) => Some(st.clone()),
+                                    Json::Bool(st) => Some(*st),
                                     _ => None,
                                 })
                                 .unwrap();
@@ -594,10 +602,15 @@ impl OpenApiParser {
                                     required,
                                     schema,
                                 }),
-                                _ => panic!(),
+                                txt => return Err(anyhow!("Unknown parameter type {}", txt)),
                             }
                         }
-                        _ => panic!(),
+                        val => {
+                            return Err(anyhow!(
+                                "Expected parameter object, got {:?}",
+                                val.to_serde().to_string()
+                            ))
+                        }
                     }
                 }
 
@@ -640,15 +653,18 @@ impl OpenApiParser {
                     None => None,
                 };
 
-                return Ok(OperationObject {
+                Ok(OperationObject {
                     summary: None,
                     description: None,
                     parameters,
                     json_response_body: JsonSchema::from_json(json_response_body)?,
                     json_request_body,
-                });
+                })
             }
-            _ => panic!(),
+            val => Err(anyhow!(
+                "Expected object, got {:?}",
+                val.to_serde().to_string()
+            )),
         }
     }
     fn parse_op_object_map(it: &Json) -> Result<Vec<(HTTPMethod, OperationObject)>> {
@@ -663,7 +679,12 @@ impl OpenApiParser {
                     }
                 }
             }
-            _ => panic!(),
+            val => {
+                return Err(anyhow!(
+                    "Expected object, got {:?}",
+                    val.to_serde().to_string()
+                ))
+            }
         }
 
         Ok(acc)
@@ -675,23 +696,26 @@ impl OpenApiParser {
                 for (name, op_obj) in vs {
                     let acc = Self::parse_op_object_map(op_obj)?;
                     let api_path = ApiPath {
-                        parsed_pattern: ApiPath::parse_raw_pattern_str(&name, None).unwrap(),
+                        parsed_pattern: ApiPath::parse_raw_pattern_str(name, None).unwrap(),
                         methods: BTreeMap::from_iter(acc),
                     };
                     self.api.paths.push(api_path);
                 }
             }
-            _ => panic!(),
+            val => {
+                return Err(anyhow!(
+                    "Expected object, got {:?}",
+                    val.to_serde().to_string()
+                ))
+            }
         }
         Ok(())
     }
-    pub fn process(&mut self, it: &Json) -> Result<()> {
+    pub fn consume_json(&mut self, it: &Json) -> Result<()> {
         match it {
-            Json::Null => todo!(),
-            Json::Bool(_) => todo!(),
-            Json::Number(_) => todo!(),
-            Json::String(_) => todo!(),
-            Json::Array(_) => todo!(),
+            Json::Null | Json::Bool(_) | Json::Number(_) | Json::String(_) | Json::Array(_) => {
+                return Err(anyhow!("Invalid json"))
+            }
             Json::Object(vs) => {
                 let schemas = vs.get("components").and_then(|it| match it {
                     Json::Object(v) => v.get("schemas"),

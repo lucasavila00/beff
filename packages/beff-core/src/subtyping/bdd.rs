@@ -4,13 +4,14 @@ use std::{
     rc::Rc,
 };
 
-use crate::subtyping::semtype::SemTypeContext;
+use crate::{ast::json::N, subtyping::semtype::SemTypeContext};
 
 use super::{
     evidence::{
         Evidence, EvidenceResult, ListEvidence, ProperSubtypeEvidence, ProperSubtypeEvidenceResult,
     },
     semtype::{BddMemoEmptyRef, MemoEmpty, SemType, SemTypeOps},
+    subtype::{ProperSubtype, StringLitOrFormat, SubType, SubTypeTag},
 };
 
 pub type MappingAtomic = BTreeMap<String, Rc<SemType>>;
@@ -344,11 +345,11 @@ fn intersect_mapping(m1: Rc<MappingAtomic>, m2: Rc<MappingAtomic>) -> Option<Rc<
     for name in all_names {
         let type1 = m1
             .get(*name)
-            .map(|it| it.clone())
+            .cloned()
             .unwrap_or_else(|| Rc::new(SemTypeContext::unknown()));
         let type2 = m2
             .get(*name)
-            .map(|it| it.clone())
+            .cloned()
             .unwrap_or_else(|| Rc::new(SemTypeContext::unknown()));
         let t = type1.intersect(&type2);
         if t.is_never() {
@@ -356,7 +357,7 @@ fn intersect_mapping(m1: Rc<MappingAtomic>, m2: Rc<MappingAtomic>) -> Option<Rc<
         }
         acc.push((name.to_string(), t))
     }
-    return Some(Rc::new(MappingAtomic::from_iter(acc)));
+    Some(Rc::new(MappingAtomic::from_iter(acc)))
 }
 
 enum MappingInhabited {
@@ -385,11 +386,11 @@ fn mapping_inhabited(
             for name in all_names.iter() {
                 let pos_type = pos
                     .get(**name)
-                    .map(|it| it.clone())
+                    .cloned()
                     .unwrap_or_else(|| Rc::new(SemTypeContext::unknown()));
                 let neg_type = neg
                     .get(**name)
-                    .map(|it| it.clone())
+                    .cloned()
                     .unwrap_or_else(|| Rc::new(SemTypeContext::unknown()));
                 if pos_type.is_never() || neg_type.is_never() {
                     return mapping_inhabited(pos, &neg_list.next, builder);
@@ -398,11 +399,11 @@ fn mapping_inhabited(
             for name in all_names {
                 let pos_type = pos
                     .get(*name)
-                    .map(|it| it.clone())
+                    .cloned()
                     .unwrap_or_else(|| Rc::new(SemTypeContext::unknown()));
                 let neg_type = neg
                     .get(*name)
-                    .map(|it| it.clone())
+                    .cloned()
                     .unwrap_or_else(|| Rc::new(SemTypeContext::unknown()));
 
                 let d = pos_type.diff(&neg_type);
@@ -417,7 +418,7 @@ fn mapping_inhabited(
                 }
             }
 
-            return MappingInhabited::No;
+            MappingInhabited::No
         }
     }
 }
@@ -456,25 +457,27 @@ fn mapping_formula_is_empty(
         }
     }
     match mapping_inhabited(combined.clone(), neg_list, builder) {
-        MappingInhabited::No => return ProperSubtypeEvidenceResult::IsEmpty,
+        MappingInhabited::No => ProperSubtypeEvidenceResult::IsEmpty,
         MappingInhabited::Yes(ev) => {
             let ev2 = ev
                 .iter()
                 .map(|(k, it)| match it.is_empty_evidence(builder) {
                     EvidenceResult::Evidence(e) => (k.clone(), Rc::new(e)),
-                    EvidenceResult::IsEmpty => panic!(),
+                    EvidenceResult::IsEmpty => {
+                        unreachable!("mapping_inhabited should have returned false")
+                    }
                 })
                 .collect::<Vec<_>>();
 
-            return ProperSubtypeEvidence::Mapping(BTreeMap::from_iter(ev2).into()).to_result();
+            ProperSubtypeEvidence::Mapping(BTreeMap::from_iter(ev2).into()).to_result()
         }
-    };
+    }
 }
 pub fn mapping_is_empty(
     bdd: &Rc<Bdd>,
     builder: &mut SemTypeContext,
 ) -> ProperSubtypeEvidenceResult {
-    match builder.mapping_memo.get(&bdd) {
+    match builder.mapping_memo.get(bdd) {
         Some(mm) => match &mm.0 {
             MemoEmpty::True => return ProperSubtypeEvidenceResult::IsEmpty,
             MemoEmpty::False(ev) => return ev.clone(),
@@ -491,7 +494,7 @@ pub fn mapping_is_empty(
     }
 
     let is_empty = bdd_every(bdd, &None, &None, mapping_formula_is_empty, builder);
-    builder.mapping_memo.get_mut(&bdd).unwrap().0 = MemoEmpty::from_bool(&is_empty);
+    builder.mapping_memo.get_mut(bdd).unwrap().0 = MemoEmpty::from_bool(&is_empty);
     is_empty
 }
 enum ListInhabited {
@@ -512,7 +515,7 @@ fn list_inhabited(
     builder: &mut SemTypeContext,
 ) -> ListInhabited {
     match neg {
-        None => return ListInhabited::Yes(None, prefix_items.clone()),
+        None => ListInhabited::Yes(None, prefix_items.clone()),
         Some(neg) => {
             let mut len = prefix_items.len();
             let nt = match &*neg.atom {
@@ -579,7 +582,7 @@ fn list_inhabited(
 
             // This is correct for length 0, because we know that the length of the
             // negative is 0, and [] - [] is empty.
-            return ListInhabited::No;
+            ListInhabited::No
         }
     }
 }
@@ -648,21 +651,23 @@ fn list_formula_is_empty(
                 .into_iter()
                 .map(|it| match it.is_empty_evidence(builder) {
                     EvidenceResult::Evidence(e) => Rc::new(e),
-                    EvidenceResult::IsEmpty => panic!(),
+                    EvidenceResult::IsEmpty => {
+                        unreachable!("list_inhabited should have returned false")
+                    }
                 })
                 .collect::<Vec<_>>();
             let list_evidence = ListEvidence {
                 prefix_items: prefix2,
                 items: e,
             };
-            return ProperSubtypeEvidence::List(Rc::new(list_evidence)).to_result();
+            ProperSubtypeEvidence::List(Rc::new(list_evidence)).to_result()
         }
 
-        ListInhabited::No => return ProperSubtypeEvidenceResult::IsEmpty,
+        ListInhabited::No => ProperSubtypeEvidenceResult::IsEmpty,
     }
 }
 pub fn list_is_empty(bdd: &Rc<Bdd>, builder: &mut SemTypeContext) -> ProperSubtypeEvidenceResult {
-    match builder.list_memo.get(&bdd) {
+    match builder.list_memo.get(bdd) {
         Some(mm) => match &mm.0 {
             MemoEmpty::True => return ProperSubtypeEvidenceResult::IsEmpty,
             MemoEmpty::False(ev) => return ev.clone(),
@@ -679,6 +684,335 @@ pub fn list_is_empty(bdd: &Rc<Bdd>, builder: &mut SemTypeContext) -> ProperSubty
     }
 
     let is_empty = bdd_every(bdd, &None, &None, list_formula_is_empty, builder);
-    builder.list_memo.get_mut(&bdd).unwrap().0 = MemoEmpty::from_bool(&is_empty);
+    builder.list_memo.get_mut(bdd).unwrap().0 = MemoEmpty::from_bool(&is_empty);
     is_empty
+}
+
+pub fn bdd_mapping_member_type_inner(
+    ctx: &SemTypeContext,
+    b: Rc<Bdd>,
+    key: MappingStrKey,
+    accum: Rc<SemType>,
+) -> Rc<SemType> {
+    match b.as_ref() {
+        Bdd::True => accum,
+        Bdd::False => SemTypeContext::never().into(),
+        Bdd::Node {
+            atom,
+            left,
+            middle,
+            right,
+        } => {
+            let b_atom_type = match atom.as_ref() {
+                Atom::Mapping(a) => ctx.get_mapping_atomic(*a),
+                _ => unreachable!(),
+            };
+            let a = mapping_member_type_inner(b_atom_type, key.clone());
+            let a = a.intersect(&accum);
+            let a = bdd_mapping_member_type_inner(ctx, left.clone(), key.clone(), a.clone());
+
+            let b = bdd_mapping_member_type_inner(ctx, middle.clone(), key.clone(), accum.clone());
+            let c = bdd_mapping_member_type_inner(ctx, right.clone(), key, accum.clone());
+
+            a.union(&b.union(&c))
+        }
+    }
+}
+
+#[derive(Debug, Clone)]
+pub enum MappingStrKey {
+    Str {
+        allowed: bool,
+        values: Vec<StringLitOrFormat>,
+    },
+    True,
+}
+
+fn mapping_atomic_applicable_member_types_inner(
+    atomic: Rc<MappingAtomic>,
+    key: MappingStrKey,
+) -> Vec<Rc<SemType>> {
+    match key {
+        MappingStrKey::Str { allowed, values } => {
+            if !allowed {
+                return vec![];
+            }
+            let mut member_types = vec![];
+            for (k, ty) in atomic.iter() {
+                let found = values.iter().any(|it| match it {
+                    StringLitOrFormat::Lit(l) => l == k,
+                    StringLitOrFormat::Format(_) => todo!(),
+                    StringLitOrFormat::Codec(_) => todo!(),
+                });
+
+                if found {
+                    member_types.push(ty.clone());
+                }
+            }
+
+            member_types
+        }
+        MappingStrKey::True => atomic.values().cloned().collect(),
+    }
+}
+
+fn mapping_member_type_inner(atomic: Rc<MappingAtomic>, key: MappingStrKey) -> Rc<SemType> {
+    let mut member_type: Option<Rc<SemType>> = None;
+
+    for ty in mapping_atomic_applicable_member_types_inner(atomic, key) {
+        match member_type {
+            Some(mt) => {
+                member_type = Some(mt.union(&ty));
+            }
+            None => {
+                member_type = Some(ty);
+            }
+        }
+    }
+
+    match member_type {
+        Some(it) => it,
+        None => SemTypeContext::void().into(),
+    }
+}
+
+// This computes the spec operation called "member type of K in T",
+// for when T is a subtype of mapping, and K is either `string` or a singleton string.
+// This is what Castagna calls projection.
+pub fn mapping_indexed_access(
+    ctx: &SemTypeContext,
+    obj_st: Rc<SemType>,
+    idx_st: Rc<SemType>,
+) -> Rc<SemType> {
+    //     if t is BasicTypeBitSet {
+    //         return (t & MAPPING) != 0 ? VAL : UNDEF;
+    //     }
+
+    let k: MappingStrKey = match SemTypeContext::string_sub_type(idx_st) {
+        SubType::False(_) => return SemTypeContext::never().into(),
+        SubType::True(_) => MappingStrKey::True,
+        SubType::Proper(proper) => match proper.as_ref() {
+            ProperSubtype::String { allowed, values } => MappingStrKey::Str {
+                allowed: *allowed,
+                values: values.clone(),
+            },
+            _ => unreachable!("should be string"),
+        },
+    };
+
+    let b = SemTypeContext::sub_type_data(obj_st, SubTypeTag::Mapping);
+    match b {
+        SubType::False(_) => todo!(),
+        SubType::True(_) => todo!(),
+        SubType::Proper(p) => {
+            let bdd = match p.as_ref() {
+                ProperSubtype::Mapping(bdd) => bdd,
+                _ => todo!(),
+            };
+            bdd_mapping_member_type_inner(ctx, bdd.clone(), k, SemTypeContext::unknown().into())
+        }
+    }
+}
+
+#[derive(Debug, Clone)]
+pub enum ListNumberKey {
+    N { allowed: bool, values: Vec<N> },
+    True,
+}
+
+fn int_subtype_contains(allowed: bool, values: &Vec<N>, it: usize) -> bool {
+    if !allowed {
+        for v in values {
+            let i = v.to_f64() as i64;
+            if i == (it as i64) {
+                return false;
+            }
+        }
+        return true;
+    }
+    for v in values {
+        let i = v.to_f64() as i64;
+        if i == (it as i64) {
+            return true;
+        }
+    }
+    false
+}
+fn int_subtype_max(allowed: bool, values: &Vec<N>) -> i64 {
+    if !allowed {
+        return -1;
+    }
+    let mut max = -1;
+    for it in values {
+        let i = it.to_f64() as i64;
+        if i > max {
+            max = i;
+        }
+    }
+    max
+}
+
+fn list_atomic_member_type_at_inner(
+    prefix_items: &Vec<Rc<SemType>>,
+    items: &Rc<SemType>,
+    key: ListNumberKey,
+) -> Rc<SemType> {
+    match key {
+        ListNumberKey::N { allowed, values } => {
+            let mut m = Rc::new(SemTypeContext::never());
+            let init_len = prefix_items.len();
+
+            if init_len > 0 {
+                for (i, v) in prefix_items.iter().enumerate() {
+                    if int_subtype_contains(allowed, &values, i) {
+                        m = m.union(v);
+                    }
+                }
+            }
+            if init_len == 0 || int_subtype_max(allowed, &values) > (init_len as i64) - 1 {
+                m = m.union(items);
+            }
+            m
+        }
+        ListNumberKey::True => {
+            let mut m = items.clone();
+            for it in prefix_items.iter() {
+                m = m.union(it);
+            }
+            m
+        }
+    }
+}
+
+fn list_atomic_member_type_inner(atomic: Rc<ListAtomic>, key: ListNumberKey) -> Rc<SemType> {
+    list_atomic_member_type_at_inner(&atomic.prefix_items, &atomic.items, key)
+}
+
+fn list_member_type_inner_val(atomic: Rc<ListAtomic>, key: ListNumberKey) -> Rc<SemType> {
+    let a = list_atomic_member_type_inner(atomic, key);
+    a.diff(&Rc::new(SemTypeContext::void()))
+}
+
+fn bdd_list_member_type_inner_val(
+    ctx: &SemTypeContext,
+    b: Rc<Bdd>,
+    key: ListNumberKey,
+    accum: Rc<SemType>,
+) -> Rc<SemType> {
+    match b.as_ref() {
+        Bdd::True => accum,
+        Bdd::False => SemTypeContext::never().into(),
+        Bdd::Node {
+            atom,
+            left,
+            middle,
+            right,
+        } => {
+            let b_atom_type = match atom.as_ref() {
+                Atom::List(a) => ctx.get_list_atomic(*a),
+                _ => unreachable!(),
+            };
+            let a = list_member_type_inner_val(b_atom_type, key.clone());
+            let a = a.intersect(&accum);
+            let a = bdd_list_member_type_inner_val(ctx, left.clone(), key.clone(), a.clone());
+
+            let b = bdd_list_member_type_inner_val(ctx, middle.clone(), key.clone(), accum.clone());
+            let c = bdd_list_member_type_inner_val(ctx, right.clone(), key, accum.clone());
+
+            a.union(&b.union(&c))
+        }
+    }
+}
+
+// This computes the spec operation called "member type of K in T",
+// for the case when T is a subtype of list, and K is either `int` or a singleton int.
+// This is what Castagna calls projection.
+// We will extend this to allow `key` to be a SemType, which will turn into an IntSubtype.
+// If `t` is not a list, NEVER is returned
+pub fn list_indexed_access(
+    ctx: &SemTypeContext,
+    obj_st: Rc<SemType>,
+    idx_st: Rc<SemType>,
+) -> Rc<SemType> {
+    //     if t is BasicTypeBitSet {
+    //         return (t & LIST) != 0 ? VAL : NEVER;
+    //     }
+
+    let k: ListNumberKey = match SemTypeContext::number_sub_type(idx_st) {
+        SubType::False(_) => return SemTypeContext::never().into(),
+        SubType::True(_) => ListNumberKey::True,
+        SubType::Proper(proper) => match proper.as_ref() {
+            ProperSubtype::Number { allowed, values } => ListNumberKey::N {
+                allowed: *allowed,
+                values: values.clone(),
+            },
+            _ => unreachable!("should be string"),
+        },
+    };
+    let b = SemTypeContext::sub_type_data(obj_st, SubTypeTag::List);
+
+    match b {
+        SubType::False(_) => todo!(),
+        SubType::True(_) => todo!(),
+        SubType::Proper(p) => {
+            let bdd = match p.as_ref() {
+                ProperSubtype::List(bdd) => bdd,
+                _ => todo!(),
+            };
+            bdd_list_member_type_inner_val(ctx, bdd.clone(), k, SemTypeContext::unknown().into())
+        }
+    }
+}
+
+pub fn to_bdd_atoms(it: &Rc<Bdd>) -> Vec<Rc<Atom>> {
+    match it.as_ref() {
+        Bdd::True => vec![],
+        Bdd::False => vec![],
+        Bdd::Node {
+            atom,
+            left,
+            middle,
+            right,
+        } => {
+            let mut acc = vec![atom.clone()];
+            acc.extend(to_bdd_atoms(left));
+            acc.extend(to_bdd_atoms(middle));
+            acc.extend(to_bdd_atoms(right));
+            acc
+        }
+    }
+}
+pub fn keyof(ctx: &mut SemTypeContext, st: Rc<SemType>) -> Rc<SemType> {
+    let mut acc = Rc::new(SemTypeContext::never());
+
+    for it in &st.subtype_data {
+        match it.as_ref() {
+            ProperSubtype::Mapping(it) => {
+                for atom in to_bdd_atoms(it) {
+                    if let Atom::Mapping(a) = atom.as_ref() {
+                        let a = ctx.get_mapping_atomic(*a);
+
+                        for k in a.keys() {
+                            let key_ty = Rc::new(SemTypeContext::string_const(
+                                StringLitOrFormat::Lit(k.clone()),
+                            ));
+                            let ty_at_key = mapping_indexed_access(ctx, st.clone(), key_ty.clone());
+                            if !ty_at_key.is_empty(ctx) {
+                                acc = acc.union(&key_ty)
+                            }
+                        }
+                    };
+                }
+            }
+            ProperSubtype::List(_) => {
+                let idx_st = Rc::new(SemTypeContext::number());
+                let ty_at_key = list_indexed_access(ctx, st.clone(), idx_st.clone());
+                if !ty_at_key.is_empty(ctx) {
+                    acc = acc.union(&idx_st)
+                }
+            }
+            _ => (),
+        }
+    }
+    acc
 }

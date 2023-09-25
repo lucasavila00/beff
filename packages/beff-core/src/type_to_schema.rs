@@ -4,7 +4,10 @@ use crate::diag::{
     Diagnostic, DiagnosticInfoMessage, DiagnosticInformation, DiagnosticParentMessage, Location,
 };
 use crate::open_api_ast::Validator;
-use crate::type_reference::{ResolvedLocalSymbol, TypeResolver};
+use crate::subtyping::semtype::{SemType, SemTypeContext, SemTypeOps};
+use crate::subtyping::to_schema::to_validators;
+use crate::subtyping::ToSemType;
+use crate::sym_reference::{ResolvedLocalSymbol, TypeResolver};
 use crate::{BeffUserSettings, BffFileName, FileManager, ImportReference, SymbolExport};
 use std::collections::{BTreeMap, HashMap};
 use std::rc::Rc;
@@ -17,9 +20,9 @@ use swc_ecma_ast::{
     TsIndexedAccessType, TsInferType, TsInterfaceDecl, TsIntersectionType, TsKeywordType,
     TsKeywordTypeKind, TsLit, TsLitType, TsMappedType, TsMethodSignature, TsOptionalType,
     TsParenthesizedType, TsQualifiedName, TsRestType, TsSetterSignature, TsThisType, TsTplLitType,
-    TsTupleType, TsType, TsTypeElement, TsTypeLit, TsTypeOperator, TsTypeParamInstantiation,
-    TsTypePredicate, TsTypeQuery, TsTypeQueryExpr, TsTypeRef, TsUnionOrIntersectionType,
-    TsUnionType,
+    TsTupleType, TsType, TsTypeElement, TsTypeLit, TsTypeOperator, TsTypeOperatorOp,
+    TsTypeParamInstantiation, TsTypePredicate, TsTypeQuery, TsTypeQueryExpr, TsTypeRef,
+    TsUnionOrIntersectionType, TsUnionType,
 };
 
 pub struct TypeToSchema<'a, R: FileManager> {
@@ -178,7 +181,7 @@ impl<'a, R: FileManager> TypeToSchema<'a, R> {
     }
 
     fn get_type_ref_of_user_identifier(&mut self, i: &Ident) -> Res<JsonSchema> {
-        match TypeResolver::new(self.files, &self.current_file).resolve_local_symbol(i)? {
+        match TypeResolver::new(self.files, &self.current_file).resolve_local_type(i)? {
             ResolvedLocalSymbol::TsType(alias) => self.convert_ts_type(&alias),
             ResolvedLocalSymbol::TsInterfaceDecl(int) => self.convert_ts_interface_decl(&int),
             ResolvedLocalSymbol::NamedImport {
@@ -187,8 +190,10 @@ impl<'a, R: FileManager> TypeToSchema<'a, R> {
             } => {
                 return self.convert_type_export(exported.as_ref(), from_file.file_name(), &i.span)
             }
-            ResolvedLocalSymbol::Expr(_) => todo!(),
-            ResolvedLocalSymbol::SymbolExportDefault(_) => todo!(),
+            ResolvedLocalSymbol::Expr(_) | ResolvedLocalSymbol::SymbolExportDefault(_) => {
+                self.error(&i.span, DiagnosticInfoMessage::FoundValueExpectedType)
+            }
+            ResolvedLocalSymbol::Star(_) => todo!(),
         }
     }
 
@@ -259,7 +264,7 @@ impl<'a, R: FileManager> TypeToSchema<'a, R> {
         self.components.insert(i.sym.to_string(), None);
 
         if type_params.is_some() {
-            self.insert_definition(i.sym.to_string(), JsonSchema::Error)?;
+            self.insert_definition(i.sym.to_string(), JsonSchema::Any)?;
             return self.cannot_serialize_error(
                 &i.span,
                 DiagnosticInfoMessage::TypeParameterApplicationNotSupported,
@@ -270,7 +275,7 @@ impl<'a, R: FileManager> TypeToSchema<'a, R> {
         match ty {
             Ok(ty) => self.insert_definition(i.sym.to_string(), ty),
             Err(e) => {
-                self.insert_definition(i.sym.to_string(), JsonSchema::Error)?;
+                self.insert_definition(i.sym.to_string(), JsonSchema::Any)?;
                 Err(e)
             }
         }
@@ -284,37 +289,12 @@ impl<'a, R: FileManager> TypeToSchema<'a, R> {
         Ok(JsonSchema::any_of(vs))
     }
 
-    // fn validate_type_is_not_empty(&mut self, ty: &JsonSchema, span: &Span) -> Res<()> {
-    //     let mut ctx = SemTypeContext::new();
-    //     let validators = &self
-    //         .components
-    //         .iter()
-    //         .flat_map(|it| {
-    //             //
-    //             it.1.as_ref()
-    //         })
-    //         .collect::<Vec<_>>();
-    //     let st = crate::subtyping::ToSemType::to_sub_type(ty, validators, &mut ctx);
-
-    //     match st {
-    //         Ok(st) => {
-    //             if st.is_empty(&mut ctx) {
-    //                 return self.error(span, DiagnosticInfoMessage::TypeMustNotBeEmpty);
-    //             }
-    //         }
-    //         Err(_) => todo!(),
-    //     }
-    //     Ok(())
-    // }
-
     fn intersection(&mut self, types: &[Box<TsType>], _span: &Span) -> Res<JsonSchema> {
         let vs: Vec<JsonSchema> = types
             .iter()
             .map(|it| self.convert_ts_type(it))
             .collect::<Res<_>>()?;
         let val = JsonSchema::all_of(vs);
-
-        // self.validate_type_is_not_empty(&val, &span)?;
 
         Ok(val)
     }
@@ -495,14 +475,12 @@ impl<'a, R: FileManager> TypeToSchema<'a, R> {
             },
             Expr::Array(lit) => {
                 let mut prefix_items = vec![];
-                for it in &lit.elems {
-                    if let Some(it) = it {
-                        match it.spread {
-                            Some(_) => todo!(),
-                            None => {
-                                let ty_schema = self.typeof_expr(&it.expr)?;
-                                prefix_items.push(ty_schema);
-                            }
+                for it in lit.elems.iter().flatten() {
+                    match it.spread {
+                        Some(_) => todo!(),
+                        None => {
+                            let ty_schema = self.typeof_expr(&it.expr)?;
+                            prefix_items.push(ty_schema);
                         }
                     }
                 }
@@ -541,9 +519,8 @@ impl<'a, R: FileManager> TypeToSchema<'a, R> {
                 Ok(JsonSchema::Object(vs))
             }
             Expr::Ident(i) => {
-                let s =
-                    TypeResolver::new(self.files, &self.current_file).resolve_local_symbol(&i)?;
-                self.typeof_symbol(s)
+                let s = TypeResolver::new(self.files, &self.current_file).resolve_local_value(i)?;
+                self.typeof_symbol(s, &i.span)
             }
             _ => {
                 dbg!(e);
@@ -552,10 +529,11 @@ impl<'a, R: FileManager> TypeToSchema<'a, R> {
         }
     }
 
-    pub fn typeof_symbol(&mut self, s: ResolvedLocalSymbol) -> Res<JsonSchema> {
+    pub fn typeof_symbol(&mut self, s: ResolvedLocalSymbol, span: &Span) -> Res<JsonSchema> {
         match s {
-            ResolvedLocalSymbol::TsType(_) => todo!(),
-            ResolvedLocalSymbol::TsInterfaceDecl(_) => todo!(),
+            ResolvedLocalSymbol::TsType(_) | ResolvedLocalSymbol::TsInterfaceDecl(_) => {
+                self.error(span, DiagnosticInfoMessage::FoundTypeExpectedValue)
+            }
             ResolvedLocalSymbol::Expr(e) => match e.as_ref() {
                 Expr::TsConstAssertion(c) => self.typeof_expr(&c.expr),
                 Expr::Member(m) => {
@@ -590,64 +568,69 @@ impl<'a, R: FileManager> TypeToSchema<'a, R> {
             },
             ResolvedLocalSymbol::NamedImport { .. } => todo!(),
             ResolvedLocalSymbol::SymbolExportDefault(_) => todo!(),
+            ResolvedLocalSymbol::Star(_) => todo!(),
         }
     }
     pub fn convert_type_query(&mut self, q: &TsTypeQuery) -> Res<JsonSchema> {
-        assert!(q.type_args.is_none());
+        if q.type_args.is_some() {
+            return self.error(&q.span, DiagnosticInfoMessage::TypeQueryArgsNotSupported);
+        }
         match q.expr_name {
             TsTypeQueryExpr::Import(_) => todo!(),
             TsTypeQueryExpr::TsEntityName(ref n) => match n {
                 TsEntityName::TsQualifiedName(_) => todo!(),
                 TsEntityName::Ident(n) => {
-                    let s = TypeResolver::new(self.files, &self.current_file)
-                        .resolve_local_symbol(&n)?;
-                    self.typeof_symbol(s)
+                    let s =
+                        TypeResolver::new(self.files, &self.current_file).resolve_local_value(n)?;
+                    self.typeof_symbol(s, &n.span)
                 }
             },
         }
     }
-    pub fn convert_indexed_access(&mut self, i: &TsIndexedAccessType) -> Res<JsonSchema> {
+    fn validators_ref(&self) -> Vec<&Validator> {
+        self.components
+            .values()
+            .filter_map(|it| it.as_ref())
+            .collect()
+    }
+
+    fn convert_sem_type(
+        &mut self,
+        access_st: Rc<SemType>,
+        ctx: &mut SemTypeContext,
+        span: &Span,
+    ) -> Res<JsonSchema> {
+        if access_st.is_empty(ctx) {
+            return self.error(span, DiagnosticInfoMessage::InvalidIndexedAccess);
+        }
+        let (head, tail) = to_validators(ctx, &access_st, "AnyName");
+        for t in tail {
+            self.insert_definition(t.name.clone(), t.schema)?;
+        }
+        Ok(head.schema)
+    }
+    fn convert_indexed_access(&mut self, i: &TsIndexedAccessType) -> Res<JsonSchema> {
         let obj = self.convert_ts_type(&i.obj_type)?;
         let index = self.convert_ts_type(&i.index_type)?;
 
-        match (obj, index) {
-            (
-                JsonSchema::Tuple {
-                    prefix_items,
-                    items,
-                },
-                JsonSchema::Number,
-            ) => {
-                let v = match items {
-                    Some(x) => vec![*x],
-                    None => vec![],
-                };
-                let vs = v.into_iter().chain(prefix_items.into_iter()).collect();
-                Ok(JsonSchema::any_of(vs))
-            }
-            (
-                JsonSchema::Tuple {
-                    prefix_items,
-                    items,
-                },
-                JsonSchema::Const(Json::Number(n)),
-            ) => {
-                let as_usize = n.to_f64() as usize;
-                match prefix_items.get(as_usize) {
-                    Some(v) => Ok(v.clone()),
-                    None => match items {
-                        Some(it) => Ok(*it.clone()),
-                        None => self.error(
-                            &i.index_type.span(),
-                            DiagnosticInfoMessage::IndexOutOfTupleRange(as_usize),
-                        ),
-                    },
-                }
-            }
-            _ => {
-                todo!()
-            }
-        }
+        let mut ctx = SemTypeContext::new();
+
+        let obj_st = obj.to_sub_type(&self.validators_ref(), &mut ctx).unwrap();
+        let idx_st = index.to_sub_type(&self.validators_ref(), &mut ctx).unwrap();
+
+        let access_st: Rc<SemType> = ctx.indexed_access(obj_st, idx_st);
+        self.convert_sem_type(access_st, &mut ctx, &i.index_type.span())
+    }
+    fn convert_keyof(&mut self, k: &TsType) -> Res<JsonSchema> {
+        let json_schema = self.convert_ts_type(k)?;
+        let mut ctx = SemTypeContext::new();
+        let st = json_schema
+            .to_sub_type(&self.validators_ref(), &mut ctx)
+            .unwrap();
+
+        let keyof_st: Rc<SemType> = ctx.keyof(st);
+
+        self.convert_sem_type(keyof_st, &mut ctx, &k.span())
     }
     pub fn convert_ts_type(&mut self, typ: &TsType) -> Res<JsonSchema> {
         match typ {
@@ -745,6 +728,14 @@ impl<'a, R: FileManager> TypeToSchema<'a, R> {
             TsType::TsOptionalType(TsOptionalType { span, .. }) => {
                 self.error(span, DiagnosticInfoMessage::OptionalTypeIsNotSupported)
             }
+            TsType::TsTypeOperator(TsTypeOperator { span, op, type_ann }) => match op {
+                TsTypeOperatorOp::KeyOf => self.convert_keyof(type_ann),
+                TsTypeOperatorOp::Unique | TsTypeOperatorOp::ReadOnly => self
+                    .cannot_serialize_error(
+                        span,
+                        DiagnosticInfoMessage::TypeConstructNonSerializableToJsonSchema,
+                    ),
+            },
             TsType::TsRestType(_) => unreachable!("should have been handled by parent node"),
             TsType::TsThisType(TsThisType { span, .. })
             | TsType::TsFnOrConstructorType(
@@ -753,7 +744,6 @@ impl<'a, R: FileManager> TypeToSchema<'a, R> {
             )
             | TsType::TsConditionalType(TsConditionalType { span, .. })
             | TsType::TsInferType(TsInferType { span, .. })
-            | TsType::TsTypeOperator(TsTypeOperator { span, .. })
             | TsType::TsMappedType(TsMappedType { span, .. })
             | TsType::TsTypePredicate(TsTypePredicate { span, .. })
             | TsType::TsImportType(TsImportType { span, .. }) => self.cannot_serialize_error(

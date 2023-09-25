@@ -9,7 +9,7 @@ use crate::open_api_ast::{
 };
 use crate::subtyping::semtype::{SemTypeContext, SemTypeOps};
 use crate::subtyping::ToSemType;
-use crate::type_reference::{ResolvedLocalSymbol, TypeResolver};
+use crate::sym_reference::{ResolvedLocalSymbol, TypeResolver};
 use crate::type_to_schema::TypeToSchema;
 use crate::{BeffUserSettings, BffFileName, FileManager, ParsedModule, SymbolExport};
 use anyhow::anyhow;
@@ -19,14 +19,15 @@ use jsdoc::ast::{SummaryTag, Tag, UnknownTag, VersionTag};
 use jsdoc::Input;
 use std::collections::HashSet;
 use std::rc::Rc;
+use swc_atoms::JsWord;
 use swc_common::comments::{Comment, CommentKind, Comments};
 use swc_common::{BytePos, Span, Spanned, DUMMY_SP};
 use swc_ecma_ast::{
     ArrayPat, ArrowExpr, AssignPat, AssignProp, BigInt, BindingIdent, ComputedPropName, Expr,
-    FnExpr, Function, GetterProp, Ident, Invalid, KeyValueProp, Lit, MethodProp, Number, ObjectLit,
-    ObjectPat, Pat, Prop, PropName, PropOrSpread, RestPat, SetterProp, SpreadElement, Str, Tpl,
-    TsEntityName, TsKeywordType, TsKeywordTypeKind, TsType, TsTypeAnn, TsTypeParamDecl,
-    TsTypeParamInstantiation, TsTypeRef,
+    FnExpr, Function, GetterProp, Ident, Invalid, KeyValueProp, Lit, MemberExpr, MemberProp,
+    MethodProp, Number, ObjectLit, ObjectPat, Pat, Prop, PropName, PropOrSpread, RestPat,
+    SetterProp, SpreadElement, Str, Tpl, TsEntityName, TsKeywordType, TsKeywordTypeKind, TsType,
+    TsTypeAnn, TsTypeParamDecl, TsTypeParamInstantiation, TsTypeRef,
 };
 
 fn maybe_extract_promise(typ: &TsType) -> &TsType {
@@ -197,13 +198,14 @@ impl<'a, R: FileManager> ExtractExportDefaultVisitor<'a, R> {
                     };
                 }
                 PropOrSpread::Spread(SpreadElement { expr, .. }) => {
-                    self.check_expr_for_methods(&expr)
+                    self.check_expr_for_methods(expr)
                 }
             }
         }
     }
-    fn check_ts_export_for_methods(&mut self, expr: &SymbolExport) {
+    fn check_ts_export_for_methods(&mut self, expr: &SymbolExport, span: &Span) {
         match expr {
+            SymbolExport::StarOfOtherFile(_) => todo!(),
             SymbolExport::ValueExpr { expr, .. } => self.check_expr_for_methods(expr),
             SymbolExport::SomethingOfOtherFile(orig, file_name) => {
                 let file = self.files.get_or_fetch_file(file_name);
@@ -211,19 +213,83 @@ impl<'a, R: FileManager> ExtractExportDefaultVisitor<'a, R> {
                 if let Some(export) = exported {
                     let old_file = self.current_file.clone();
                     self.current_file = file_name.clone();
-                    self.check_ts_export_for_methods(&export);
+                    self.check_ts_export_for_methods(&export, span);
                     self.current_file = old_file;
                 } else {
-                    // Err(self
-                    //     .make_err(&i.span, DiagnosticInfoMessage::CannotResolveNamespaceType)
-                    //     .into())
-                    todo!()
+                    self.errors.push(
+                        self.build_error(span, DiagnosticInfoMessage::FoundTypeExpectedValue)
+                            .to_diag(None),
+                    );
                 }
             }
-            SymbolExport::TsType { .. } => todo!(),
-            SymbolExport::TsInterfaceDecl(_) => todo!(),
-            SymbolExport::StarOfOtherFile(_) => todo!(),
+            SymbolExport::TsType { .. } | SymbolExport::TsInterfaceDecl(_) => {
+                self.errors.push(
+                    self.build_error(span, DiagnosticInfoMessage::FoundTypeExpectedValue)
+                        .to_diag(None),
+                );
+            }
         }
+    }
+
+    fn check_member_expr_for_methods_inner(&mut self, left: &Expr, right: &JsWord, span: &Span) {
+        match left {
+            Expr::Ident(i) => {
+                match TypeResolver::new(self.files, &self.current_file).resolve_local_value(i) {
+                    Ok(r) => match r {
+                        ResolvedLocalSymbol::TsType(_) => todo!(),
+                        ResolvedLocalSymbol::TsInterfaceDecl(_) => todo!(),
+                        ResolvedLocalSymbol::Expr(e) => {
+                            self.check_member_expr_for_methods_inner(&e, right, &e.span())
+                        }
+                        ResolvedLocalSymbol::NamedImport { .. } => todo!(),
+                        ResolvedLocalSymbol::SymbolExportDefault(_) => todo!(),
+                        ResolvedLocalSymbol::Star(file_name) => {
+                            let file = self.files.get_or_fetch_file(&file_name);
+                            let exp = file.and_then(|it| it.symbol_exports.get(right, self.files));
+                            match exp {
+                                Some(s) => self.check_ts_export_for_methods(&s, span),
+                                None => todo!(),
+                            }
+                        }
+                    },
+                    Err(_) => todo!(),
+                }
+            }
+            Expr::Object(vs) => {
+                let mut found = false;
+                for prop in &vs.props {
+                    match prop {
+                        PropOrSpread::Spread(_) => todo!(),
+                        PropOrSpread::Prop(p) => match p.as_ref() {
+                            Prop::KeyValue(kv) => {
+                                if let PropName::Ident(i) = &kv.key {
+                                    if i.sym == *right {
+                                        found = true;
+                                        self.check_expr_for_methods(&kv.value);
+                                    }
+                                }
+                            }
+                            Prop::Shorthand(_) => todo!(),
+                            Prop::Assign(_) => todo!(),
+                            Prop::Getter(_) => todo!(),
+                            Prop::Setter(_) => todo!(),
+                            Prop::Method(_) => todo!(),
+                        },
+                    }
+                }
+
+                assert!(found);
+            }
+            _ => todo!(),
+        }
+    }
+    fn check_member_expr_for_methods(&mut self, expr: &MemberExpr) {
+        let prop_sym = match &expr.prop {
+            MemberProp::Ident(i) => &i.sym,
+            MemberProp::PrivateName(_) => todo!(),
+            MemberProp::Computed(_) => todo!(),
+        };
+        self.check_member_expr_for_methods_inner(&expr.obj, prop_sym, &expr.span)
     }
     fn check_expr_for_methods(&mut self, expr: &Expr) {
         match expr {
@@ -231,7 +297,7 @@ impl<'a, R: FileManager> ExtractExportDefaultVisitor<'a, R> {
                 self.parse_endpoints_object(lit);
             }
             Expr::Ident(i) => {
-                match TypeResolver::new(self.files, &self.current_file).resolve_local_symbol(i) {
+                match TypeResolver::new(self.files, &self.current_file).resolve_local_value(i) {
                     Ok(ResolvedLocalSymbol::Expr(expr)) => self.check_expr_for_methods(&expr),
                     Ok(ResolvedLocalSymbol::NamedImport {
                         exported,
@@ -239,7 +305,7 @@ impl<'a, R: FileManager> ExtractExportDefaultVisitor<'a, R> {
                     }) => {
                         let old_file = self.current_file.clone();
                         self.current_file = from_file.file_name().clone();
-                        self.check_ts_export_for_methods(&exported);
+                        self.check_ts_export_for_methods(&exported, &expr.span());
                         self.current_file = old_file;
                     }
                     Ok(ResolvedLocalSymbol::SymbolExportDefault(export_default)) => {
@@ -248,11 +314,30 @@ impl<'a, R: FileManager> ExtractExportDefaultVisitor<'a, R> {
                         self.check_expr_for_methods(&export_default.symbol_export);
                         self.current_file = old_file;
                     }
-                    Ok(_) => todo!(),
+                    Ok(ResolvedLocalSymbol::Star { .. }) => todo!(),
+                    Ok(ResolvedLocalSymbol::TsType { .. })
+                    | Ok(ResolvedLocalSymbol::TsInterfaceDecl { .. }) => {
+                        self.errors.push(
+                            self.build_error(
+                                &expr.span(),
+                                DiagnosticInfoMessage::FoundTypeExpectedValue,
+                            )
+                            .to_diag(None),
+                        );
+                    }
                     Err(e) => self.errors.push(*e),
                 }
             }
-            _ => todo!(),
+            Expr::Member(m) => self.check_member_expr_for_methods(m),
+            _ => {
+                self.errors.push(
+                    self.build_error(
+                        &expr.span(),
+                        DiagnosticInfoMessage::CouldNotUnderstandThisPartOfTheRouter,
+                    )
+                    .to_diag(None),
+                );
+            }
         }
     }
 
@@ -446,7 +531,7 @@ impl<'a, R: FileManager> ExtractExportDefaultVisitor<'a, R> {
             })
             | PropName::Str(Str { span, value, .. }) => {
                 let locs = self.get_full_location(span)?;
-                let p = ApiPath::parse_raw_pattern_str(&value.to_string(), Some(locs.clone()));
+                let p = ApiPath::parse_raw_pattern_str(value.as_ref(), Some(locs.clone()));
                 match p {
                     Ok(v) => Ok(v),
                     Err(e) => {
@@ -491,7 +576,12 @@ impl<'a, R: FileManager> ExtractExportDefaultVisitor<'a, R> {
                     self.push_error(span, DiagnosticInfoMessage::TypeMustNotBeEmpty);
                 }
             }
-            Err(_) => todo!(),
+            Err(e) => {
+                self.push_error(
+                    span,
+                    DiagnosticInfoMessage::CannotConvertToSubtype(format!("{:?}", e)),
+                );
+            }
         }
     }
 
@@ -529,7 +619,7 @@ impl<'a, R: FileManager> ExtractExportDefaultVisitor<'a, R> {
             }
             Err(diag) => {
                 self.errors.push(*diag);
-                JsonSchema::Error
+                JsonSchema::Any
             }
         }
     }
@@ -599,7 +689,7 @@ impl<'a, R: FileManager> ExtractExportDefaultVisitor<'a, R> {
     }
 
     fn get_file(&mut self, name: &BffFileName) -> Result<Rc<ParsedModule>> {
-        match self.files.get_or_fetch_file(&name) {
+        match self.files.get_or_fetch_file(name) {
             Some(it) => Ok(it),
             None => {
                 self.errors.push(
@@ -741,13 +831,13 @@ impl<'a, R: FileManager> ExtractExportDefaultVisitor<'a, R> {
                 span, value: sym, ..
             })
             | PropName::Ident(Ident { sym, span, .. }) => match sym.to_string().as_str() {
-                "get" => Ok(MethodKind::Get(span.clone())),
-                "post" => Ok(MethodKind::Post(span.clone())),
-                "put" => Ok(MethodKind::Put(span.clone())),
-                "delete" => Ok(MethodKind::Delete(span.clone())),
-                "patch" => Ok(MethodKind::Patch(span.clone())),
-                "options" => Ok(MethodKind::Options(span.clone())),
-                "use" => Ok(MethodKind::Use(span.clone())),
+                "get" => Ok(MethodKind::Get(*span)),
+                "post" => Ok(MethodKind::Post(*span)),
+                "put" => Ok(MethodKind::Put(*span)),
+                "delete" => Ok(MethodKind::Delete(*span)),
+                "patch" => Ok(MethodKind::Patch(*span)),
+                "options" => Ok(MethodKind::Options(*span)),
+                "use" => Ok(MethodKind::Use(*span)),
                 _ => self.error(span, DiagnosticInfoMessage::NotAnHttpMethod),
             },
 
@@ -809,7 +899,7 @@ impl<'a, R: FileManager> ExtractExportDefaultVisitor<'a, R> {
                     description: None,
                     parameters: vec![],
                     return_type: JsonSchema::Any,
-                    method_kind: MethodKind::Use(span.clone()),
+                    method_kind: MethodKind::Use(span),
                     span: Self::get_prop_span(prop),
                 }];
             }
@@ -929,6 +1019,7 @@ pub enum FunctionParameterIn {
     InvalidComplexPathParameter,
 }
 
+/// is_type_simple returns true if the type is simple enough to be used as a query parameter
 fn is_type_simple(it: &JsonSchema, components: &Vec<Validator>) -> bool {
     match it {
         JsonSchema::OpenApiResponseRef(r) | JsonSchema::Ref(r) => {
@@ -951,13 +1042,14 @@ fn is_type_simple(it: &JsonSchema, components: &Vec<Validator>) -> bool {
         JsonSchema::Any
         | JsonSchema::Object { .. }
         | JsonSchema::Array(_)
+        | JsonSchema::AnyObject
+        | JsonSchema::AnyArrayLike
         | JsonSchema::Tuple { .. } => false,
-        JsonSchema::Error => true,
-        JsonSchema::StNever => todo!(),
-        JsonSchema::StUnknown => todo!(),
-        JsonSchema::StNot(_) => todo!(),
-        JsonSchema::AnyObject => todo!(),
-        JsonSchema::AnyArrayLike => todo!(),
+        JsonSchema::StNever | JsonSchema::StUnknown | JsonSchema::StNot(_) => {
+            // is_type_simple should be used just to infer what is the type of a parameter
+            // semantic types are only created after inference
+            unreachable!("Semantic types should not be checked for simplicity")
+        }
     }
 }
 
@@ -1043,7 +1135,7 @@ impl<'a, R: FileManager> EndpointToPath<'a, R> {
                     match operation_parameter_in_path_or_query_or_body(
                         key,
                         pattern,
-                        &schema,
+                        schema,
                         self.components,
                     ) {
                         FunctionParameterIn::Path => parameters.push(ParameterObject {
@@ -1184,7 +1276,7 @@ pub fn extract_schema<R: FileManager>(
     };
 
     let mut transformer = EndpointToPath {
-        errors: errors,
+        errors,
         components: &components,
         current_file: entry_file_name.clone(),
         files,
@@ -1192,7 +1284,7 @@ pub fn extract_schema<R: FileManager>(
     let paths = transformer.endpoints_to_paths(&handlers);
     let errors = transformer.errors;
     let open_api = OpenApi {
-        info: info,
+        info,
         components: public_definitions.into_iter().collect(),
         paths,
     };

@@ -9,7 +9,7 @@ pub mod parser_extractor;
 pub mod print;
 pub mod schema_changes;
 pub mod subtyping;
-pub mod type_reference;
+pub mod sym_reference;
 pub mod type_to_schema;
 pub mod wasm_diag;
 
@@ -142,6 +142,7 @@ pub struct SymbolExportDefault {
     pub span: Span,
     pub file_name: BffFileName,
 }
+
 pub struct ParsedModule {
     pub locals: ParsedModuleLocals,
     pub module: BffModuleData,
@@ -175,6 +176,11 @@ impl Default for ParsedModuleLocals {
 }
 pub struct ParserOfModuleLocals {
     content: ParsedModuleLocals,
+}
+impl Default for ParserOfModuleLocals {
+    fn default() -> Self {
+        Self::new()
+    }
 }
 impl ParserOfModuleLocals {
     pub fn new() -> ParserOfModuleLocals {
@@ -257,28 +263,27 @@ impl ExtractResult {
     pub fn errors(&self) -> Vec<&Diagnostic> {
         self.router
             .as_ref()
-            .map(|it| it.errors.iter().map(|it| it).collect())
+            .map(|it| it.errors.iter().collect())
             .unwrap_or(vec![])
             .into_iter()
             .chain(
                 self.parser
                     .as_ref()
-                    .map(|it| it.errors.iter().map(|it| it).collect())
+                    .map(|it| it.errors.iter().collect())
                     .unwrap_or(vec![]),
             )
-            .into_iter()
             .collect()
     }
     pub fn validators(&self) -> Vec<&Validator> {
         self.router
             .as_ref()
-            .map(|it| it.validators.iter().map(|it| it).collect())
+            .map(|it| it.validators.iter().collect())
             .unwrap_or(vec![])
             .into_iter()
             .chain(
                 self.parser
                     .as_ref()
-                    .map(|it| it.validators.iter().map(|it| it).collect())
+                    .map(|it| it.validators.iter().collect())
                     .unwrap_or(vec![]),
             )
             .collect()

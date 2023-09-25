@@ -104,6 +104,10 @@ fn union_intersection(name: &str, vs: &BTreeSet<JsonSchema>, input_expr: Expr) -
 }
 fn encode_expr(schema: &JsonSchema, input_expr: Expr) -> Expr {
     match schema {
+        JsonSchema::AnyObject => encode_expr(&JsonSchema::object(vec![]), input_expr),
+        JsonSchema::AnyArrayLike => {
+            encode_expr(&JsonSchema::Array(JsonSchema::Any.into()), input_expr)
+        }
         JsonSchema::Null => {
             let or_null = Expr::Bin(BinExpr {
                 span: DUMMY_SP,
@@ -111,17 +115,16 @@ fn encode_expr(schema: &JsonSchema, input_expr: Expr) -> Expr {
                 op: op!("??"),
                 right: Expr::Lit(Lit::Null(Null { span: DUMMY_SP })).into(),
             });
-            let or_null = Expr::Paren(ParenExpr {
+            
+            Expr::Paren(ParenExpr {
                 span: DUMMY_SP,
                 expr: or_null.into(),
-            });
-            or_null
+            })
         }
         JsonSchema::Boolean
         | JsonSchema::String
         | JsonSchema::Number
         | JsonSchema::Any
-        | JsonSchema::Error
         | JsonSchema::Const(_)
         | JsonSchema::StringWithFormat(_) => input_expr.clone(),
         JsonSchema::Ref(schema_ref) => encode_ref(schema_ref, input_expr),
@@ -163,7 +166,8 @@ fn encode_expr(schema: &JsonSchema, input_expr: Expr) -> Expr {
                 }),
             });
 
-            let arr_dot_map_dot_call = Expr::Call(CallExpr {
+            
+            Expr::Call(CallExpr {
                 span: DUMMY_SP,
                 callee: Callee::Expr(arr_dot_map.into()),
                 args: vec![ExprOrSpread {
@@ -171,8 +175,7 @@ fn encode_expr(schema: &JsonSchema, input_expr: Expr) -> Expr {
                     expr: make_cb(encode_expr(ty, new_input_expr())).into(),
                 }],
                 type_args: None,
-            });
-            arr_dot_map_dot_call
+            })
         }
         JsonSchema::Tuple {
             prefix_items,
@@ -278,13 +281,10 @@ fn encode_expr(schema: &JsonSchema, input_expr: Expr) -> Expr {
             ],
             type_args: None,
         }),
-        // todo
-        JsonSchema::OpenApiResponseRef(_) => todo!(),
-        JsonSchema::AnyObject => todo!(),
-        JsonSchema::AnyArrayLike => todo!(),
-        JsonSchema::StNever => todo!(),
-        JsonSchema::StUnknown => todo!(),
-        JsonSchema::StNot(_) => todo!(),
+        JsonSchema::OpenApiResponseRef(_)
+        | JsonSchema::StNever
+        | JsonSchema::StUnknown
+        | JsonSchema::StNot(_) => unreachable!("cannot generate encoder for semantic types"),
     }
 }
 

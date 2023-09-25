@@ -103,12 +103,12 @@ fn parse_entrypoints(
     parser_entry_point: &str,
     settings: JsValue,
 ) -> EntryPoints {
-    let router_entry_point = if router_entry_point == "" {
+    let router_entry_point = if router_entry_point.is_empty() {
         None
     } else {
         Some(BffFileName::new(router_entry_point.to_string()))
     };
-    let parser_entry_point = if parser_entry_point == "" {
+    let parser_entry_point = if parser_entry_point.is_empty() {
         None
     } else {
         Some(BffFileName::new(parser_entry_point.to_string()))
@@ -154,9 +154,9 @@ fn run_extraction(entry: EntryPoints) -> ExtractResult {
             let mut man = LazyFileManager {
                 files: &mut b.files,
             };
-            let res = beff_core::extract(&mut man, entry);
+            
             // res.self_check_sem_types();
-            res
+            beff_core::extract(&mut man, entry)
         })
     })
 }
