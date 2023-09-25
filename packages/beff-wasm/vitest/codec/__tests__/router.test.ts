@@ -1,4 +1,4 @@
-import { it, expect } from "vitest";
+import { test, expect } from "vitest";
 import { buildHonoApp, buildHonoLocalClient } from "@beff/hono";
 import router from "../router";
 import generated from "../bff-generated/router";
@@ -10,7 +10,7 @@ const beff = buildHonoLocalClient<typeof router>({
   app,
 });
 
-it("date", async () => {
+test("date", async () => {
   await expect(
     beff["/date"].post(
       // @ts-expect-error
@@ -18,14 +18,14 @@ it("date", async () => {
     )
   ).rejects.toMatchInlineSnapshot('[HTTPException: #0 (b.a) expected ISO8061 date, received: "asd"]');
 
-  expect(await beff["/date"].post({ a: new Date("2023-09-23T02:49:43.980Z") })).toMatchInlineSnapshot(
-    "2023-09-23T02:49:43.980Z"
-  );
+  await expect(
+    beff["/date"].post({ a: new Date("2023-09-23T02:49:43.980Z") })
+  ).resolves.toMatchInlineSnapshot("2023-09-23T02:49:43.980Z");
 
   expect(
     (await beff["/date"].post({ a: new Date("2023-09-23T02:49:43.980Z") })).toISOString()
   ).toMatchInlineSnapshot('"2023-09-23T02:49:43.980Z"');
-  expect(await beff["/date"].get(new Date("2023-09-23T02:49:43.980Z"))).toMatchInlineSnapshot(
+  await expect(beff["/date"].get(new Date("2023-09-23T02:49:43.980Z"))).resolves.toMatchInlineSnapshot(
     "2023-09-23T02:49:43.980Z"
   );
   expect((await beff["/date"].get(new Date("2023-09-23T02:49:43.980Z"))).toISOString()).toMatchInlineSnapshot(
@@ -33,7 +33,7 @@ it("date", async () => {
   );
 });
 
-it("bigint", async () => {
+test("bigint", async () => {
   await expect(
     beff["/bigint"].post(
       // @ts-expect-error
@@ -41,13 +41,13 @@ it("bigint", async () => {
     )
   ).rejects.toMatchInlineSnapshot('[HTTPException: #0 (b.a) expected bigint, received: "asd"]');
 
-  expect(await beff["/bigint"].post({ a: 1n })).toMatchInlineSnapshot("1n");
+  await expect(beff["/bigint"].post({ a: 1n })).resolves.toMatchInlineSnapshot("1n");
   expect((await beff["/bigint"].post({ a: 1n })) + 2n).toMatchInlineSnapshot("3n");
-  expect(await beff["/bigint"].get(1n)).toMatchInlineSnapshot("1n");
+  await expect(beff["/bigint"].get(1n)).resolves.toMatchInlineSnapshot("1n");
   expect((await beff["/bigint"].get(1n)) + 2n).toMatchInlineSnapshot("3n");
 });
 
-it("intersection", async () => {
+test("intersection", async () => {
   await expect(
     beff["/intersection"].post(
       // @ts-expect-error
@@ -61,18 +61,18 @@ it("intersection", async () => {
     a: "a",
     b: 1,
   };
-  expect(await beff["/intersection"].post(v)).toMatchInlineSnapshot(`
+  await expect(beff["/intersection"].post(v)).resolves.toMatchInlineSnapshot(`
     {
       "a": "a",
       "b": 1,
     }
   `);
   expect((await beff["/intersection"].post(v)).b).toMatchInlineSnapshot("1");
-  expect(await beff["/intersection"].get("a")).toMatchInlineSnapshot('"a"');
-  expect(await beff["/intersection"].get("a")).toMatchInlineSnapshot('"a"');
+  await expect(beff["/intersection"].get("a")).resolves.toMatchInlineSnapshot('"a"');
+  await expect(beff["/intersection"].get("a")).resolves.toMatchInlineSnapshot('"a"');
 });
 
-it("tuple", async () => {
+test("tuple", async () => {
   await expect(
     beff["/tuple1"].post(
       // @ts-expect-error
@@ -80,13 +80,13 @@ it("tuple", async () => {
     )
   ).rejects.toMatchInlineSnapshot("[HTTPException: #0 (b[1]) expected number, received: undefined]");
 
-  expect(await beff["/tuple1"].post([1, 2])).toMatchInlineSnapshot(`
+  await expect(beff["/tuple1"].post([1, 2])).resolves.toMatchInlineSnapshot(`
     [
       1,
       2,
     ]
   `);
-  expect(await beff["/tuple1"].post([1, 2, "3", "4", "5"])).toMatchInlineSnapshot(`
+  await expect(beff["/tuple1"].post([1, 2, "3", "4", "5"])).resolves.toMatchInlineSnapshot(`
       [
         1,
         2,
@@ -97,8 +97,8 @@ it("tuple", async () => {
     `);
 });
 
-it("tuple2", async () => {
-  expect(await beff["/tuple2"].post([1, 2])).toMatchInlineSnapshot(`
+test("tuple2", async () => {
+  await expect(beff["/tuple2"].post([1, 2])).resolves.toMatchInlineSnapshot(`
     [
       1,
       2,
@@ -113,7 +113,7 @@ it("tuple2", async () => {
   ).rejects.toMatchInlineSnapshot("[HTTPException: #0 (b) tuple has too many items, received: Array]");
 });
 
-it("undefined", async () => {
+test("undefined", async () => {
   await expect(
     beff["/undefined"].post(
       // @ts-expect-error
@@ -121,10 +121,10 @@ it("undefined", async () => {
     )
   ).rejects.toMatchInlineSnapshot("[HTTPException: #0 (a) expected null, received: Object]");
 
-  expect(await beff["/undefined"].post(undefined)).toMatchInlineSnapshot("null");
+  await expect(beff["/undefined"].post(undefined)).resolves.toMatchInlineSnapshot("null");
 });
 
-it("union", async () => {
+test("union", async () => {
   await expect(
     beff["/union"].post(
       // @ts-expect-error
@@ -137,5 +137,5 @@ it("union", async () => {
       "c"
     )
   ).rejects.toMatchInlineSnapshot('[HTTPException: #0 (a) expected one of, received: "c"]');
-  expect(await beff["/union"].post("a")).toMatchInlineSnapshot('"a"');
+  await expect(beff["/union"].post("a")).resolves.toMatchInlineSnapshot('"a"');
 });

@@ -1,5 +1,4 @@
-import { Hono } from "hono";
-import { it, expect } from "vitest";
+import { test, expect } from "vitest";
 import { buildHonoLocalClient, buildHonoApp } from "@beff/hono";
 import router from "../router";
 import generated from "../bff-generated/router";
@@ -11,16 +10,16 @@ const bff = buildHonoLocalClient<typeof router>({
   app,
 });
 
-it("get", async () => {
-  expect(await bff["/hello1"].get()).toMatchInlineSnapshot('"Hello!"');
-  expect(await bff["/hello2"].get()).toMatchInlineSnapshot('"Hello!"');
-  expect(await bff["/hello3"].get()).toMatchInlineSnapshot('"Hello!"');
-  expect(await bff["/hello4"].get()).toMatchInlineSnapshot('"Hello!"');
-  expect(await bff["/hello5"].get()).toMatchInlineSnapshot('"Hello!"');
+test("get", async () => {
+  await expect(bff["/hello1"].get()).resolves.toMatchInlineSnapshot('"Hello!"');
+  await expect(bff["/hello2"].get()).resolves.toMatchInlineSnapshot('"Hello!"');
+  await expect(bff["/hello3"].get()).resolves.toMatchInlineSnapshot('"Hello!"');
+  await expect(bff["/hello4"].get()).resolves.toMatchInlineSnapshot('"Hello!"');
+  await expect(bff["/hello5"].get()).resolves.toMatchInlineSnapshot('"Hello!"');
 
-  expect(await router["/hello1"].get()).toMatchInlineSnapshot('"Hello!"');
-  expect(await router["/hello2"].get()).toMatchInlineSnapshot('"Hello!"');
-  expect(await router["/hello3"].get()).toMatchInlineSnapshot('"Hello!"');
-  expect(await router["/hello4"].get()).toMatchInlineSnapshot('"Hello!"');
-  expect(await router["/hello5"].get()).toMatchInlineSnapshot('"Hello!"');
+  await expect(router["/hello1"].get()).resolves.toMatchInlineSnapshot('"Hello!"');
+  await expect(router["/hello2"].get()).resolves.toMatchInlineSnapshot('"Hello!"');
+  await expect(router["/hello3"].get()).resolves.toMatchInlineSnapshot('"Hello!"');
+  expect(router["/hello4"].get()).toMatchInlineSnapshot('"Hello!"');
+  expect(router["/hello5"].get()).toMatchInlineSnapshot('"Hello!"');
 });
