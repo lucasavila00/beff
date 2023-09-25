@@ -432,7 +432,7 @@ impl ToJson for JsonSchema {
             JsonSchema::StUnknown => todo!(),
             JsonSchema::StNot(_) => todo!(),
             JsonSchema::AnyObject => todo!(),
-            JsonSchema::AnyArrayLike => todo!(),
+            JsonSchema::AnyArrayLike => JsonSchema::Array(JsonSchema::Any.into()).to_json(),
         }
     }
 }

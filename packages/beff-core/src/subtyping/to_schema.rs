@@ -388,6 +388,9 @@ impl<'a> SchemerContext<'a> {
 
     fn list_atom_schema(&mut self, mt: &Rc<ListAtomic>) -> JsonSchema {
         if mt.prefix_items.is_empty() {
+            if mt.items.is_any() {
+                return JsonSchema::AnyArrayLike;
+            }
             return JsonSchema::Array(Box::new(self.convert_to_schema(&mt.items, None)));
         }
 

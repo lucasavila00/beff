@@ -173,7 +173,9 @@ impl DecoderFnGenerator {
             JsonSchema::StUnknown => todo!(),
             JsonSchema::StNot(_) => todo!(),
             JsonSchema::AnyObject => todo!(),
-            JsonSchema::AnyArrayLike => todo!(),
+            JsonSchema::AnyArrayLike => {
+                Self::decode_expr(&JsonSchema::Array(JsonSchema::Any.into()), required)
+            }
             JsonSchema::OpenApiResponseRef(_) => unreachable!("will not decode error schema"),
             JsonSchema::Null => Self::decode_call("decodeNull", required),
             JsonSchema::Boolean => Self::decode_call("decodeBoolean", required),

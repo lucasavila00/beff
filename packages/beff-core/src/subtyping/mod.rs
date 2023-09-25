@@ -143,7 +143,9 @@ impl<'a> ToSemTypeConverter<'a> {
             JsonSchema::StUnknown => todo!(),
             JsonSchema::StNot(_) => todo!(),
             JsonSchema::AnyObject => todo!(),
-            JsonSchema::AnyArrayLike => todo!(),
+            JsonSchema::AnyArrayLike => {
+                self.to_sem_type(&JsonSchema::Array(JsonSchema::Any.into()), builder)
+            }
             JsonSchema::Codec(s) => {
                 Ok(SemTypeContext::string_const(StringLitOrFormat::Codec(s.clone())).into())
             }
