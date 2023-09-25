@@ -59,7 +59,8 @@ mod tests {
         match &d.loc {
             diag::Location::Full(loc) => {
                 e = e.with_label(
-                    Label::new(loc.offset_lo..loc.offset_hi).with_message(d.message.to_string()),
+                    Label::new(loc.offset_lo - 1..loc.offset_hi - 1)
+                        .with_message(d.message.to_string()),
                 );
             }
             diag::Location::Unknown(_) => todo!(),
@@ -94,7 +95,7 @@ mod tests {
         match &d.cause.loc {
             diag::Location::Full(loc) => {
                 e = e.with_label(
-                    Label::new(loc.offset_lo..loc.offset_hi)
+                    Label::new(loc.offset_lo - 1..loc.offset_hi - 1)
                         .with_message(d.cause.message.to_string()),
                 );
             }
@@ -123,6 +124,51 @@ mod tests {
         assert!(errors.is_empty());
     }
 
+    #[test]
+    fn fail_typeof_keyof_access() {
+        let from = r#"
+    const a1 = {a: 1};
+    const a2 = {a: 1} as const;
+    export default {
+        "/no_const": {
+            get: (): (typeof a1)['b'] => impl()
+        },
+        "/yes_const": {
+            get: (): (typeof a2)['b'] => impl()
+        }
+    }
+    "#;
+
+        insta::assert_snapshot!(fail(from));
+    }
+    #[test]
+    fn fail_tpl_rest() {
+        let from = r#"
+    type A = ['a','b','c', ]
+    type B = A[100]
+    export default {
+        "/hello": {
+            get: (): B => impl()
+        }
+    }
+    "#;
+
+        insta::assert_snapshot!(fail(from));
+    }
+    #[test]
+    fn fail_access_union_arr() {
+        let from = r#"
+    type A = [{tag:"a"}|{tag:"b"}]
+    type B = A[number]["tag"] & number
+    export default {
+        "/hello": {
+            get: (): B => impl()
+        }
+    }
+    "#;
+
+        insta::assert_snapshot!(fail(from));
+    }
     #[test]
     fn fail1() {
         let from = r#"

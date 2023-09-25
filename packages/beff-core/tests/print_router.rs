@@ -74,4 +74,159 @@ mod tests {
 
         insta::assert_snapshot!(ok(from));
     }
+
+    #[test]
+    fn ok_access_union_arr() {
+        let from = r#"
+    type A = [{tag:"a"}|{tag:"b"}]
+    type B = A[number]["tag"] & string
+    export default {
+        "/hello": {
+            get: (): B => impl()
+        }
+    }
+    "#;
+
+        insta::assert_snapshot!(ok(from));
+    }
+
+    #[test]
+    fn ok_typeof_keyof() {
+        let from = r#"
+    const a1 = {a: 1};
+    const a2 = {a: 1} as const;
+    export default {
+        "/no_const": {
+            get: (): typeof a1 => impl()
+        },
+        "/yes_const": {
+            get: (): typeof a2 => impl()
+        }
+    }
+    "#;
+
+        insta::assert_snapshot!(ok(from));
+    }
+    #[test]
+    fn ok_typeof_keyof_access() {
+        let from = r#"
+    const a1 = {a: 1};
+    const a2 = {a: 1} as const;
+    export default {
+        "/no_const": {
+            get: (): (typeof a1)['a'] => impl()
+        },
+        "/yes_const": {
+            get: (): (typeof a2)['a'] => impl()
+        }
+    }
+    "#;
+
+        insta::assert_snapshot!(ok(from));
+    }
+
+    #[test]
+    fn ok_typeof_keyof_no_const() {
+        let from = r#"
+    const A = {
+        a: "x",
+        b: "y"
+    }
+    type A = (typeof A)[keyof typeof A]
+    export default {
+    
+        "/it": {
+            get: (): A => impl()
+        }
+    }
+    "#;
+
+        insta::assert_snapshot!(ok(from));
+    }
+    #[test]
+    fn ok_typeof_keyof_as_const() {
+        let from = r#"
+    const A = {
+        a: "x",
+        b: "y"
+    } as const
+    type A = (typeof A)[keyof typeof A]
+    export default {
+    
+        "/it": {
+            get: (): A => impl()
+        }
+    }
+    "#;
+
+        insta::assert_snapshot!(ok(from));
+    }
+
+    #[test]
+    fn ok_typeof_keyof_as_const_arr() {
+        let from = r#"
+    const A = {
+        a: ["x"],
+        b: ["y"]
+    } as const
+    type A = (typeof A)[keyof typeof A]
+    export default {
+    
+        "/it": {
+            get: (): A => impl()
+        }
+    }
+    "#;
+
+        insta::assert_snapshot!(ok(from));
+    }
+    #[test]
+    fn ok_typeof_keyof_as_const_arr_indexed() {
+        let from = r#"
+    const A = {
+        a: ["x"],
+        b: ["y"]
+    } as const
+    type A = (typeof A)[keyof typeof A]
+    type B = A[keyof A]
+    export default {
+    
+        "/it": {
+            get: (): B => impl()
+        }
+    }
+    "#;
+
+        insta::assert_snapshot!(ok(from));
+    }
+
+    #[test]
+    fn ok_tpl() {
+        let from = r#"
+    type A = ['a','b','c']
+    type B = A[1]
+    export default {
+        "/hello": {
+            get: (): B => impl()
+        }
+    }
+    "#;
+
+        insta::assert_snapshot!(ok(from));
+    }
+
+    #[test]
+    fn ok_tpl_rest() {
+        let from = r#"
+    type A = ['a','b','c', ...string[]]
+    type B = A[100]
+    export default {
+        "/hello": {
+            get: (): B => impl()
+        }
+    }
+    "#;
+
+        insta::assert_snapshot!(ok(from));
+    }
 }

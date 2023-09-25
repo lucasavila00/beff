@@ -5,8 +5,8 @@ expression: fail(from)
 Error: ~~~
    ╭─[<unknown>:1:1]
    │
- 3 │         "/hello":1
-   │         ────┬───  
-   │             ╰───── Not an object with method kind
+ 3 │     type B = A[100]
+   │                ─┬─  
+   │                 ╰─── Invalid indexed access
 ───╯
 

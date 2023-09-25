@@ -311,7 +311,7 @@ impl DiagnosticInfoMessage {
                 "GET methods must not have a body".to_string()
             }
             DiagnosticInfoMessage::TypeMustNotBeEmpty => {
-                "This type contains 'never' and cannot be serialized".to_string()
+                "This type contains `never` and cannot be serialized".to_string()
             }
             DiagnosticInfoMessage::CustomFormatIsNotRegistered => {
                 "Custom format is not registered".to_string()

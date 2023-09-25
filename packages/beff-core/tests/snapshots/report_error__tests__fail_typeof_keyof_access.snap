@@ -1,0 +1,20 @@
+---
+source: packages/beff-core/tests/report_error.rs
+expression: fail(from)
+---
+Error: ~~~
+   ╭─[<unknown>:1:1]
+   │
+ 6 │             get: (): (typeof a1)['b'] => impl()
+   │                      ────────┬───────  
+   │                              ╰───────── This type contains `never` and cannot be serialized
+───╯
+
+Error: ~~~
+   ╭─[<unknown>:1:1]
+   │
+ 9 │             get: (): (typeof a2)['b'] => impl()
+   │                      ────────┬───────  
+   │                              ╰───────── This type contains `never` and cannot be serialized
+───╯
+
