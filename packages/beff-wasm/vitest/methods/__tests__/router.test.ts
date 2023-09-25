@@ -1,11 +1,11 @@
-import { it, expect } from "vitest";
+import { test, expect } from "vitest";
 import { buildHonoApp } from "@beff/hono";
 import router from "../router";
 import generated from "../bff-generated/router";
 
 const app = buildHonoApp({ router, generated });
 
-it("docs json", async () => {
+test("docs json", async () => {
   const req = new Request("http://localhost/v3/openapi.json", {
     method: "GET",
   });
@@ -16,7 +16,7 @@ it("docs json", async () => {
       "content-type": "application/json; charset=UTF-8",
     }
   `);
-  expect(await res.json()).toMatchInlineSnapshot(`
+  await expect(res.json()).resolves.toMatchInlineSnapshot(`
     {
       "components": {
         "responses": {
@@ -198,7 +198,7 @@ it("docs json", async () => {
     }
   `);
 });
-it("docs html", async () => {
+test("docs html", async () => {
   const req = new Request("http://localhost/docs", {
     method: "GET",
   });
@@ -211,7 +211,7 @@ it("docs html", async () => {
   `);
 });
 
-it("gets hello", async () => {
+test("gets hello", async () => {
   const req = new Request("http://localhost/hello", {
     method: "GET",
   });
@@ -222,10 +222,10 @@ it("gets hello", async () => {
       "content-type": "application/json; charset=UTF-8",
     }
   `);
-  expect(await res.json()).toMatchInlineSnapshot('"Hello!"');
+  await expect(res.json()).resolves.toMatchInlineSnapshot('"Hello!"');
 });
 
-it("post hello", async () => {
+test("post hello", async () => {
   const req = new Request("http://localhost/hello", {
     method: "POST",
   });
@@ -236,10 +236,10 @@ it("post hello", async () => {
       "content-type": "application/json; charset=UTF-8",
     }
   `);
-  expect(await res.json()).toMatchInlineSnapshot('"Hello!"');
+  await expect(res.json()).resolves.toMatchInlineSnapshot('"Hello!"');
 });
 
-it("PUT hello", async () => {
+test("pUT hello", async () => {
   const req = new Request("http://localhost/hello", {
     method: "PUT",
   });
@@ -250,10 +250,10 @@ it("PUT hello", async () => {
       "content-type": "application/json; charset=UTF-8",
     }
   `);
-  expect(await res.json()).toMatchInlineSnapshot('"Hello!"');
+  await expect(res.json()).resolves.toMatchInlineSnapshot('"Hello!"');
 });
 
-it("DELETE hello", async () => {
+test("dELETE hello", async () => {
   const req = new Request("http://localhost/hello", {
     method: "DELETE",
   });
@@ -264,10 +264,10 @@ it("DELETE hello", async () => {
       "content-type": "application/json; charset=UTF-8",
     }
   `);
-  expect(await res.json()).toMatchInlineSnapshot('"Hello!"');
+  await expect(res.json()).resolves.toMatchInlineSnapshot('"Hello!"');
 });
 
-it("PATCH hello", async () => {
+test("pATCH hello", async () => {
   const req = new Request("http://localhost/hello", {
     method: "PATCH",
   });
@@ -278,10 +278,10 @@ it("PATCH hello", async () => {
       "content-type": "application/json; charset=UTF-8",
     }
   `);
-  expect(await res.json()).toMatchInlineSnapshot('"Hello!"');
+  await expect(res.json()).resolves.toMatchInlineSnapshot('"Hello!"');
 });
 
-it("OPTIONS hello", async () => {
+test("oPTIONS hello", async () => {
   const req = new Request("http://localhost/hello", {
     method: "OPTIONS",
   });
@@ -292,5 +292,5 @@ it("OPTIONS hello", async () => {
       "content-type": "application/json; charset=UTF-8",
     }
   `);
-  expect(await res.json()).toMatchInlineSnapshot('"Hello!"');
+  await expect(res.json()).resolves.toMatchInlineSnapshot('"Hello!"');
 });

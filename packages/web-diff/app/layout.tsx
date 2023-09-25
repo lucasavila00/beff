@@ -6,9 +6,7 @@ import { Inter } from "next/font/google";
 import { Theme } from "@radix-ui/themes";
 import { Providers } from "./providers";
 import { ReactQueryProvider } from "@/components/query-client-provider";
-import { getServerSession } from "next-auth";
 import { Layout } from "@/components/layout";
-import { authOptions } from "./api/auth/[...nextauth]/options";
 import { Suspense } from "react";
 
 const inter = Inter({ subsets: ["latin"] });

@@ -18,53 +18,53 @@ export default {
     },
   },
   ["/path-param/{name}"]: {
-    get: async (c: Ctx, name: string): Promise<string> => {
+    get: async (_c: Ctx, name: string): Promise<string> => {
       return name;
     },
-    post: async (c: Ctx, name: string): Promise<string> => {
+    post: async (_c: Ctx, name: string): Promise<string> => {
       return name;
     },
   },
   ["/query-param"]: {
-    get: async (c: Ctx, limit: N2, optional?: string): Promise<number> => {
+    get: async (_c: Ctx, limit: N2, _optional?: string): Promise<number> => {
       return limit;
     },
   },
   ["/header-param"]: {
-    get: async (c: Ctx, user_agent: Header<string>): Promise<string> => {
+    get: async (_c: Ctx, user_agent: Header<string>): Promise<string> => {
       return user_agent;
     },
   },
   ["/req-body"]: {
-    post: async (c: Ctx, data: { a: string }): Promise<string> => {
+    post: async (_c: Ctx, data: { a: string }): Promise<string> => {
       return data.a;
     },
   },
   ["/path-param-string/{name}"]: {
-    get: async (c: Ctx, name: string): Promise<string> => {
+    get: async (_c: Ctx, name: string): Promise<string> => {
       return name;
     },
   },
   ["/path-param-number/{id}"]: {
-    get: async (c: Ctx, id: number): Promise<number> => {
+    get: async (_c: Ctx, id: number): Promise<number> => {
       return id;
     },
   },
   ["/path-param-boolean/{flag}"]: {
-    get: async (c: Ctx, flag: boolean): Promise<boolean> => {
+    get: async (_c: Ctx, flag: boolean): Promise<boolean> => {
       return flag;
     },
   },
   ["/path-param-union/{id}"]: {
-    get: async (c: Ctx, id: ValidIds): Promise<ValidIds> => {
+    get: async (_c: Ctx, id: ValidIds): Promise<ValidIds> => {
       return id;
     },
   },
   "/with-default": {
-    get: async (c: Ctx, page: number = 1): Promise<number> => {
+    get: async (_c: Ctx, page: number = 1): Promise<number> => {
       return page;
     },
-    post: async (c: Ctx, page: number | undefined = 1): Promise<number> => {
+    post: async (_c: Ctx, page: number | undefined = 1): Promise<number> => {
       return page;
     },
   },

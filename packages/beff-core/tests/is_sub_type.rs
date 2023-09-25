@@ -17,8 +17,8 @@ mod tests {
         b_validators: &[&Validator],
         ctx: &mut SemTypeContext,
     ) -> bool {
-        let a = a.to_sub_type(a_validators, ctx).unwrap();
-        let b = b.to_sub_type(b_validators, ctx).unwrap();
+        let a = a.to_sem_type(a_validators, ctx).unwrap();
+        let b = b.to_sem_type(b_validators, ctx).unwrap();
         return a.is_subtype(&b, ctx);
     }
 

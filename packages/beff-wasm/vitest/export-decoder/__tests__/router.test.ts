@@ -1,4 +1,4 @@
-import { it, expect } from "vitest";
+import { test, expect } from "vitest";
 import { buildHonoLocalClient, buildHonoApp } from "@beff/hono";
 import router from "../router";
 import generated from "../bff-generated/router";
@@ -10,8 +10,8 @@ const beff = buildHonoLocalClient<typeof router>({
   app,
 });
 
-it("get", async () => {
-  expect(await beff["/{name}"].get("name")).toMatchInlineSnapshot(`
+test("get", async () => {
+  await expect(beff["/{name}"].get("name")).resolves.toMatchInlineSnapshot(`
     {
       "age": 123,
       "createdAt": 2023-09-22T22:29:39.488Z,

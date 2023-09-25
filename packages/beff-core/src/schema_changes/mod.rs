@@ -289,11 +289,11 @@ impl<'a> SchemaReference<'a> {
 
         let mut builder = SemTypeContext::new();
 
-        let mut sub_st = sub.schema.to_sub_type(sub.validators, &mut builder)?;
+        let mut sub_st = sub.schema.to_sem_type(sub.validators, &mut builder)?;
         if !sub.required {
             sub_st = SemTypeContext::optional(sub_st);
         }
-        let mut supe_st = supe.schema.to_sub_type(supe.validators, &mut builder)?;
+        let mut supe_st = supe.schema.to_sem_type(supe.validators, &mut builder)?;
         if !supe.required {
             supe_st = SemTypeContext::optional(supe_st);
         }

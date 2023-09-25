@@ -1,8 +1,8 @@
-import { it, expect } from "vitest";
+import { test, expect } from "vitest";
 import { NotPublicRenamed, User, Users, StartsWithA } from "../parser";
 import generatedRouter from "../bff-generated/router";
 
-it("custom types", () => {
+test("custom types", () => {
   expect(StartsWithA.safeParse("AA")).toMatchInlineSnapshot(`
     {
       "data": "AA",
@@ -17,7 +17,7 @@ it("custom types", () => {
   `);
 });
 
-it("regular types", () => {
+test("regular types", () => {
   expect((generatedRouter.schema.components as any).schemas).toMatchInlineSnapshot(`
       {
         "StartsWithA": {

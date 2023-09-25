@@ -3,7 +3,7 @@ import { HandlerMetaServer, MetaParamServer, OpenAPIDocument, OpenApiServer } fr
 import { ClientFromRouter, buildClient, printErrors } from "@beff/client";
 import type { Context as HonoContext, Env } from "hono";
 
-export type Ctx<C = {}, E extends Env = any> = C & {
+export type Ctx<C = object, E extends Env = any> = C & {
   hono: HonoContext<E>;
 };
 export const swaggerTemplate = (baseUrl: string) => `
@@ -102,13 +102,12 @@ const decodeNoMessage = (validator: any, value: any) => {
   const newValue = validator(validatorCtx, value);
   const errors = validatorCtx.errors;
   if (errors?.length > 0) {
-    //@ts-expect-error
-    console.error(printErrors(errors, ["responseBody"]));
-    throw new BffHTTPException(500, "Internal error");
+    throw new BffHTTPException(500, printErrors(errors, ["responseBody"]));
   }
   return newValue;
 };
 
+// eslint-disable-next-line @typescript-eslint/ban-types
 const handleMethod = async (c: Ctx, meta: HandlerMetaServer, handler: Function) => {
   const resolverParamsPromise: any[] = meta.params.map(async (p: MetaParamServer) => {
     switch (p.type) {
@@ -168,7 +167,7 @@ export function buildHonoApp(options: {
     schema: any;
     meta: HandlerMetaServer[];
   };
-  context?: Object;
+  context?: object;
 }): Hono<Env, any, any> {
   const app = new Hono({ strict: false });
   let schema = { ...options.generated.schema, servers: options.servers ?? [] };

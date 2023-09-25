@@ -1,10 +1,10 @@
 import { ProjectVersion } from "@/beff/routers/project";
 import { getVersionLabel } from "@/utils/helpers";
-import { ThickArrowLeftIcon, ThickArrowRightIcon } from "@radix-ui/react-icons";
-import { Box, Flex, Heading, IconButton, Link, Text } from "@radix-ui/themes";
-import { FC } from "react";
-import NextLink from "next/link";
 import { Links } from "@/utils/route-links";
+import { ThickArrowLeftIcon, ThickArrowRightIcon } from "@radix-ui/react-icons";
+import { Box, Flex, Heading, IconButton, Link } from "@radix-ui/themes";
+import NextLink from "next/link";
+import { FC } from "react";
 
 const VersionName: FC<{
   desc: "from" | "to";

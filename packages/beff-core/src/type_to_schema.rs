@@ -552,10 +552,10 @@ impl<'a, R: FileManager> TypeToSchema<'a, R> {
                     MemberProp::PrivateName(_) => todo!(),
                     MemberProp::Computed(c) => {
                         let v = self.typeof_expr(&c.expr, as_const)?;
-                        v.to_sub_type(&self.validators_ref(), &mut ctx).unwrap()
+                        v.to_sem_type(&self.validators_ref(), &mut ctx).unwrap()
                     }
                 };
-                let st = obj.to_sub_type(&self.validators_ref(), &mut ctx).unwrap();
+                let st = obj.to_sem_type(&self.validators_ref(), &mut ctx).unwrap();
                 let access_st: Rc<SemType> = ctx.indexed_access(st, key);
                 self.convert_sem_type(access_st, &mut ctx, &m.prop.span())
             }
@@ -621,8 +621,8 @@ impl<'a, R: FileManager> TypeToSchema<'a, R> {
 
         let mut ctx = SemTypeContext::new();
 
-        let obj_st = obj.to_sub_type(&self.validators_ref(), &mut ctx).unwrap();
-        let idx_st = index.to_sub_type(&self.validators_ref(), &mut ctx).unwrap();
+        let obj_st = obj.to_sem_type(&self.validators_ref(), &mut ctx).unwrap();
+        let idx_st = index.to_sem_type(&self.validators_ref(), &mut ctx).unwrap();
 
         let access_st: Rc<SemType> = ctx.indexed_access(obj_st, idx_st);
         self.convert_sem_type(access_st, &mut ctx, &i.index_type.span())
@@ -631,7 +631,7 @@ impl<'a, R: FileManager> TypeToSchema<'a, R> {
         let json_schema = self.convert_ts_type(k)?;
         let mut ctx = SemTypeContext::new();
         let st = json_schema
-            .to_sub_type(&self.validators_ref(), &mut ctx)
+            .to_sem_type(&self.validators_ref(), &mut ctx)
             .unwrap();
 
         let keyof_st: Rc<SemType> = ctx.keyof(st);

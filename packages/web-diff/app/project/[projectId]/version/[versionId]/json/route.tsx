@@ -1,5 +1,4 @@
 import { beffLocalClient } from "@/beff/router-app";
-import { NextResponse } from "next/server";
 
 export async function GET(
   _request: Request,

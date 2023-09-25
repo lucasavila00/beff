@@ -400,7 +400,9 @@ export const execProject = (
     : undefined;
 
   if (verbose) {
+    // eslint-disable-next-line no-console
     console.log(`JS: Router entry point ${routerEntryPoint}`);
+    // eslint-disable-next-line no-console
     console.log(`JS: Parser entry point ${parserEntryPoint}`);
   }
   const outResult = bundler.bundle(routerEntryPoint, parserEntryPoint, projectJson.settings);

@@ -283,7 +283,7 @@ export function buildClient<T>(options: BuildClientOptions): ClientFromRouter<T>
         finalUrl = `${endpoint}${path}`;
       }
 
-      let currentFetchFn = fetchFn;
+      const currentFetchFn = fetchFn;
 
       // for (const onFetchHook of onFetchHooks) {
       //   await onFetchHook({
