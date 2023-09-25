@@ -64,4 +64,7 @@ export default {
   "/union": {
     post: (_c: Ctx, a: "a" | "b"): "a" | "b" | "c" => a,
   },
+  "/any_array": {
+    post: (_c: Ctx, a: Array<any>): Array<any> => a,
+  },
 };

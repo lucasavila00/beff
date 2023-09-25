@@ -104,7 +104,7 @@ fn union_intersection(name: &str, vs: &BTreeSet<JsonSchema>, input_expr: Expr) -
 }
 fn encode_expr(schema: &JsonSchema, input_expr: Expr) -> Expr {
     match schema {
-        JsonSchema::AnyObject => encode_expr(&JsonSchema::object(vec![]), input_expr),
+        JsonSchema::AnyObject => todo!(),
         JsonSchema::AnyArrayLike => {
             encode_expr(&JsonSchema::Array(JsonSchema::Any.into()), input_expr)
         }
@@ -115,7 +115,7 @@ fn encode_expr(schema: &JsonSchema, input_expr: Expr) -> Expr {
                 op: op!("??"),
                 right: Expr::Lit(Lit::Null(Null { span: DUMMY_SP })).into(),
             });
-            
+
             Expr::Paren(ParenExpr {
                 span: DUMMY_SP,
                 expr: or_null.into(),
@@ -166,7 +166,6 @@ fn encode_expr(schema: &JsonSchema, input_expr: Expr) -> Expr {
                 }),
             });
 
-            
             Expr::Call(CallExpr {
                 span: DUMMY_SP,
                 callee: Callee::Expr(arr_dot_map.into()),

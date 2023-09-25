@@ -432,7 +432,7 @@ impl ToJson for JsonSchema {
             JsonSchema::StUnknown => todo!(),
             JsonSchema::StNot(_) => todo!(),
             JsonSchema::AnyObject => todo!(),
-            JsonSchema::AnyArrayLike => todo!(),
+            JsonSchema::AnyArrayLike => JsonSchema::Array(JsonSchema::Any.into()).to_json(),
         }
     }
 }
@@ -456,7 +456,10 @@ impl JsonSchema {
                 span: DUMMY_SP,
                 kind: TsKeywordTypeKind::TsNumberKeyword,
             }),
-            JsonSchema::Any => todo!(),
+            JsonSchema::Any => TsType::TsKeywordType(TsKeywordType {
+                span: DUMMY_SP,
+                kind: TsKeywordTypeKind::TsAnyKeyword,
+            }),
             JsonSchema::StringWithFormat(_) => todo!(),
             JsonSchema::Object(vs) => TsType::TsTypeLit(TsTypeLit {
                 span: DUMMY_SP,

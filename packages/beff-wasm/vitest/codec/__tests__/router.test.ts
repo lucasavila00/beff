@@ -123,6 +123,22 @@ test("undefined", async () => {
 
   await expect(beff["/undefined"].post(undefined)).resolves.toMatchInlineSnapshot("null");
 });
+test("any_array", async () => {
+  await expect(
+    beff["/any_array"].post(
+      // @ts-expect-error
+      { a: "undefined" }
+    )
+  ).rejects.toMatchInlineSnapshot("[HTTPException: #0 (a) expected array, received: Object]");
+
+  await expect(beff["/any_array"].post([1, 2, 3])).resolves.toMatchInlineSnapshot(`
+    [
+      1,
+      2,
+      3,
+    ]
+  `);
+});
 
 test("union", async () => {
   await expect(

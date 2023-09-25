@@ -61,6 +61,18 @@ mod tests {
     }
 
     #[test]
+    fn ok_any_array() {
+        let from = r#"
+    export default {
+        "/hello": {
+            get: (): Array => impl()
+        }
+    }
+    "#;
+
+        insta::assert_snapshot!(ok(from));
+    }
+    #[test]
     fn ok_access_union() {
         let from = r#"
     type A = {tag:"a"}|{tag:"b"}
