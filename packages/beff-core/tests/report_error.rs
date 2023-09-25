@@ -124,6 +124,51 @@ mod tests {
     }
 
     #[test]
+    fn fail_typeof_keyof_access() {
+        let from = r#"
+    const a1 = {a: 1};
+    const a2 = {a: 1} as const;
+    export default {
+        "/no_const": {
+            get: (): (typeof a1)['b'] => impl()
+        },
+        "/yes_const": {
+            get: (): (typeof a2)['b'] => impl()
+        }
+    }
+    "#;
+
+        insta::assert_snapshot!(fail(from));
+    }
+    #[test]
+    fn fail_tpl_rest() {
+        let from = r#"
+    type A = ['a','b','c', ]
+    type B = A[100]
+    export default {
+        "/hello": {
+            get: (): B => impl()
+        }
+    }
+    "#;
+
+        insta::assert_snapshot!(fail(from));
+    }
+    #[test]
+    fn fail_access_union_arr() {
+        let from = r#"
+    type A = [{tag:"a"}|{tag:"b"}]
+    type B = A[number]["tag"] & number
+    export default {
+        "/hello": {
+            get: (): B => impl()
+        }
+    }
+    "#;
+
+        insta::assert_snapshot!(fail(from));
+    }
+    #[test]
     fn fail1() {
         let from = r#"
     type A = STRING;
