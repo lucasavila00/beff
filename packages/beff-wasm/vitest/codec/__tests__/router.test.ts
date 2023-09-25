@@ -129,7 +129,7 @@ test("any_array", async () => {
       // @ts-expect-error
       { a: "undefined" }
     )
-  ).rejects.toMatchInlineSnapshot('[HTTPException: #0 (a) expected array, received: Object]');
+  ).rejects.toMatchInlineSnapshot("[HTTPException: #0 (a) expected array, received: Object]");
 
   await expect(beff["/any_array"].post([1, 2, 3])).resolves.toMatchInlineSnapshot(`
     [
