@@ -16,7 +16,7 @@
     "noFallthroughCasesInSwitch": true,
     "noImplicitAny": true,
     "noImplicitThis": true,
-    "noImplicitOverride": true,
+    "noImplicitOverride": true
   },
-  "include": ["ts-node/**/*", "vitest/**/*"],
+  "include": ["ts-node/**/*", "vitest/**/*"]
 }

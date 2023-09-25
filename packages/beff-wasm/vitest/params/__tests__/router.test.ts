@@ -68,7 +68,9 @@ test("post with body and error", async () => {
 });
 
 test("post with body and error, client", async () => {
-  await expect(beff["/req-body"].post({ a: 123 as any })).rejects.toMatchInlineSnapshot('[HTTPException: #0 (data.a) expected string, received: 123]');
+  await expect(beff["/req-body"].post({ a: 123 as any })).rejects.toMatchInlineSnapshot(
+    "[HTTPException: #0 (data.a) expected string, received: 123]"
+  );
 });
 
 test("coerce", async () => {
