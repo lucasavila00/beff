@@ -6,7 +6,7 @@ Error: ~~~
    ╭─[<unknown>:1:1]
    │
  5 │     export default A
-   │                     ┬  
-   │                     ╰── Cannot find symbol 'A'
+   │                    ┬  
+   │                    ╰── Cannot find symbol 'A'
 ───╯
 

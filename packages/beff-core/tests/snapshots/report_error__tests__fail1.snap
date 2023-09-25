@@ -1,12 +1,12 @@
 ---
 source: packages/beff-core/tests/report_error.rs
-expression: parse_and_fail(from)
+expression: fail(from)
 ---
 Error: ~~~
    ╭─[<unknown>:1:1]
    │
  2 │     type A = STRING;
-   │               ───┬──  
-   │                  ╰──── Cannot find symbol 'STRING'
+   │              ───┬──  
+   │                 ╰──── Cannot find symbol 'STRING'
 ───╯
 

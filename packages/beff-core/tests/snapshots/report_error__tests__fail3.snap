@@ -6,7 +6,7 @@ Error: ~~~
    ╭─[<unknown>:1:1]
    │
  3 │         "/hello":1
-   │          ────┬───  
-   │              ╰───── Not an object with method kind
+   │         ────┬───  
+   │             ╰───── Not an object with method kind
 ───╯
 

@@ -59,7 +59,8 @@ mod tests {
         match &d.loc {
             diag::Location::Full(loc) => {
                 e = e.with_label(
-                    Label::new(loc.offset_lo..loc.offset_hi).with_message(d.message.to_string()),
+                    Label::new(loc.offset_lo - 1..loc.offset_hi - 1)
+                        .with_message(d.message.to_string()),
                 );
             }
             diag::Location::Unknown(_) => todo!(),
@@ -94,7 +95,7 @@ mod tests {
         match &d.cause.loc {
             diag::Location::Full(loc) => {
                 e = e.with_label(
-                    Label::new(loc.offset_lo..loc.offset_hi)
+                    Label::new(loc.offset_lo - 1..loc.offset_hi - 1)
                         .with_message(d.cause.message.to_string()),
                 );
             }
