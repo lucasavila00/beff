@@ -5,6 +5,7 @@ use crate::diag::{
 };
 use crate::open_api_ast::Validator;
 use crate::subtyping::semtype::{SemType, SemTypeContext, SemTypeOps};
+use crate::subtyping::subtype::StringLitOrFormat;
 use crate::subtyping::to_schema::to_validators;
 use crate::subtyping::ToSemType;
 use crate::sym_reference::{ResolvedLocalSymbol, TypeResolver};
@@ -14,15 +15,15 @@ use std::rc::Rc;
 use swc_atoms::JsWord;
 use swc_common::{Span, Spanned};
 use swc_ecma_ast::{
-    Expr, Ident, Lit, MemberProp, Prop, PropOrSpread, Str, TsArrayType, TsCallSignatureDecl,
-    TsConditionalType, TsConstructSignatureDecl, TsConstructorType, TsEntityName,
-    TsFnOrConstructorType, TsFnType, TsGetterSignature, TsImportType, TsIndexSignature,
-    TsIndexedAccessType, TsInferType, TsInterfaceDecl, TsIntersectionType, TsKeywordType,
-    TsKeywordTypeKind, TsLit, TsLitType, TsMappedType, TsMethodSignature, TsOptionalType,
-    TsParenthesizedType, TsQualifiedName, TsRestType, TsSetterSignature, TsThisType, TsTplLitType,
-    TsTupleType, TsType, TsTypeElement, TsTypeLit, TsTypeOperator, TsTypeOperatorOp,
-    TsTypeParamInstantiation, TsTypePredicate, TsTypeQuery, TsTypeQueryExpr, TsTypeRef,
-    TsUnionOrIntersectionType, TsUnionType,
+    Expr, Ident, Lit, MemberProp, Prop, PropName, PropOrSpread, Str, TsArrayType,
+    TsCallSignatureDecl, TsConditionalType, TsConstructSignatureDecl, TsConstructorType,
+    TsEntityName, TsFnOrConstructorType, TsFnType, TsGetterSignature, TsImportType,
+    TsIndexSignature, TsIndexedAccessType, TsInferType, TsInterfaceDecl, TsIntersectionType,
+    TsKeywordType, TsKeywordTypeKind, TsLit, TsLitType, TsMappedType, TsMethodSignature,
+    TsOptionalType, TsParenthesizedType, TsQualifiedName, TsRestType, TsSetterSignature,
+    TsThisType, TsTplLitType, TsTupleType, TsType, TsTypeElement, TsTypeLit, TsTypeOperator,
+    TsTypeOperatorOp, TsTypeParamInstantiation, TsTypePredicate, TsTypeQuery, TsTypeQueryExpr,
+    TsTypeRef, TsUnionOrIntersectionType, TsUnionType,
 };
 
 pub struct TypeToSchema<'a, R: FileManager> {
@@ -462,13 +463,31 @@ impl<'a, R: FileManager> TypeToSchema<'a, R> {
         v
     }
 
-    pub fn typeof_expr(&mut self, e: &Expr) -> Res<JsonSchema> {
+    pub fn typeof_expr(&mut self, e: &Expr, as_const: bool) -> Res<JsonSchema> {
         match e {
             Expr::Lit(l) => match l {
-                Lit::Str(s) => Ok(JsonSchema::Const(Json::String(s.value.to_string()))),
-                Lit::Bool(b) => Ok(JsonSchema::Const(Json::Bool(b.value))),
+                Lit::Str(s) => {
+                    if as_const {
+                        Ok(JsonSchema::Const(Json::String(s.value.to_string())))
+                    } else {
+                        Ok(JsonSchema::String)
+                    }
+                }
+                Lit::Bool(b) => {
+                    if as_const {
+                        Ok(JsonSchema::Const(Json::Bool(b.value)))
+                    } else {
+                        Ok(JsonSchema::Boolean)
+                    }
+                }
                 Lit::Null(_) => Ok(JsonSchema::Null),
-                Lit::Num(n) => Ok(JsonSchema::Const(Json::parse_f64(n.value))),
+                Lit::Num(n) => {
+                    if as_const {
+                        Ok(JsonSchema::Const(Json::parse_f64(n.value)))
+                    } else {
+                        Ok(JsonSchema::Number)
+                    }
+                }
                 Lit::BigInt(_) => Ok(JsonSchema::Codec(CodecName::BigInt)),
                 Lit::Regex(_) => todo!(),
                 Lit::JSXText(_) => todo!(),
@@ -479,7 +498,7 @@ impl<'a, R: FileManager> TypeToSchema<'a, R> {
                     match it.spread {
                         Some(_) => todo!(),
                         None => {
-                            let ty_schema = self.typeof_expr(&it.expr)?;
+                            let ty_schema = self.typeof_expr(&it.expr, as_const)?;
                             prefix_items.push(ty_schema);
                         }
                     }
@@ -498,13 +517,13 @@ impl<'a, R: FileManager> TypeToSchema<'a, R> {
                         PropOrSpread::Prop(p) => match p.as_ref() {
                             Prop::KeyValue(p) => {
                                 let key: String = match &p.key {
-                                    swc_ecma_ast::PropName::Ident(id) => id.sym.to_string(),
-                                    swc_ecma_ast::PropName::Str(st) => st.value.to_string(),
-                                    swc_ecma_ast::PropName::Num(_) => todo!(),
-                                    swc_ecma_ast::PropName::Computed(_) => todo!(),
-                                    swc_ecma_ast::PropName::BigInt(_) => todo!(),
+                                    PropName::Ident(id) => id.sym.to_string(),
+                                    PropName::Str(st) => st.value.to_string(),
+                                    PropName::Num(_) => todo!(),
+                                    PropName::Computed(_) => todo!(),
+                                    PropName::BigInt(_) => todo!(),
                                 };
-                                let value = self.typeof_expr(&p.value)?;
+                                let value = self.typeof_expr(&p.value, as_const)?;
                                 vs.insert(key, value.required());
                             }
                             Prop::Shorthand(_) => todo!(),
@@ -522,6 +541,24 @@ impl<'a, R: FileManager> TypeToSchema<'a, R> {
                 let s = TypeResolver::new(self.files, &self.current_file).resolve_local_value(i)?;
                 self.typeof_symbol(s, &i.span)
             }
+            Expr::TsConstAssertion(c) => self.typeof_expr(&c.expr, true),
+            Expr::Member(m) => {
+                let mut ctx = SemTypeContext::new();
+                let obj = self.typeof_expr(&m.obj, as_const)?;
+                let key: Rc<SemType> = match &m.prop {
+                    MemberProp::Ident(i) => Rc::new(SemTypeContext::string_const(
+                        StringLitOrFormat::Lit(i.sym.to_string()),
+                    )),
+                    MemberProp::PrivateName(_) => todo!(),
+                    MemberProp::Computed(c) => {
+                        let v = self.typeof_expr(&c.expr, as_const)?;
+                        v.to_sub_type(&self.validators_ref(), &mut ctx).unwrap()
+                    }
+                };
+                let st = obj.to_sub_type(&self.validators_ref(), &mut ctx).unwrap();
+                let access_st: Rc<SemType> = ctx.indexed_access(st, key);
+                self.convert_sem_type(access_st, &mut ctx, &m.prop.span())
+            }
             _ => {
                 dbg!(e);
                 todo!()
@@ -534,38 +571,7 @@ impl<'a, R: FileManager> TypeToSchema<'a, R> {
             ResolvedLocalSymbol::TsType(_) | ResolvedLocalSymbol::TsInterfaceDecl(_) => {
                 self.error(span, DiagnosticInfoMessage::FoundTypeExpectedValue)
             }
-            ResolvedLocalSymbol::Expr(e) => match e.as_ref() {
-                Expr::TsConstAssertion(c) => self.typeof_expr(&c.expr),
-                Expr::Member(m) => {
-                    let obj = self.typeof_expr(&m.obj)?;
-                    match obj {
-                        JsonSchema::Object(vs) => {
-                            let key: String = match &m.prop {
-                                MemberProp::Ident(i) => i.sym.to_string(),
-                                MemberProp::PrivateName(_) => todo!(),
-                                MemberProp::Computed(c) => {
-                                    let v = self.typeof_expr(&c.expr)?;
-                                    match v {
-                                        JsonSchema::Const(Json::String(s)) => s,
-                                        _ => {
-                                            todo!()
-                                        }
-                                    }
-                                }
-                            };
-                            match vs.get(&key) {
-                                Some(v) => Ok(v.inner().clone()),
-                                None => self.error(
-                                    &m.prop.span(),
-                                    DiagnosticInfoMessage::CannotFindPropertyInObject(key),
-                                ),
-                            }
-                        }
-                        _ => todo!(),
-                    }
-                }
-                e => self.error(&e.span(), DiagnosticInfoMessage::MustBeTsConstAssertion),
-            },
+            ResolvedLocalSymbol::Expr(e) => self.typeof_expr(&e, false),
             ResolvedLocalSymbol::NamedImport { .. } => todo!(),
             ResolvedLocalSymbol::SymbolExportDefault(_) => todo!(),
             ResolvedLocalSymbol::Star(_) => todo!(),
