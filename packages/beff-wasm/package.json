@@ -29,7 +29,7 @@
     "build": "node script/build.js",
     "test": "node script/e2e.js && vitest --run --update",
     "do": "npm run build && node ../beff-cli/bin/index.js -v -p /workspace/packages/beff-wasm/vitest/params/bff.json",
-    "ts": "tsc --noEmit",
+    "ts2": "tsc --noEmit",
     "publish": "pnpm vsce publish --no-dependencies",
     "lint": "eslint --ext .ts,.tsx .",
     "lint:fix": "eslint --ext .ts,.tsx . --fix"

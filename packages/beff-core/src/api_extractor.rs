@@ -568,7 +568,7 @@ impl<'a, R: FileManager> ExtractExportDefaultVisitor<'a, R> {
     fn validate_type_is_not_empty(&mut self, ty: &JsonSchema, span: &Span) {
         let mut ctx = SemTypeContext::new();
         let validators = &self.components.iter().collect::<Vec<_>>();
-        let st = ty.to_sub_type(validators, &mut ctx);
+        let st = ty.to_sem_type(validators, &mut ctx);
 
         match st {
             Ok(st) => {
