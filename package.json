@@ -8,6 +8,8 @@
     "build": "pnpm run -r build",
     "test": "pnpm run -r test",
     "beff": "pnpm run -r beff",
+    "lint": "pnpm run -r lint",
+    "lint:fix": "pnpm run -r lint:fix",
     "wasm:dev": "pnpm run -r wasm:dev",
     "all": "pnpm run build && pnpm run beff && pnpm run ts && pnpm run test",
     "sd": "docsify serve docs",

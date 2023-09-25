@@ -1,3 +1,4 @@
+/* eslint-disable no-console */
 import * as wasm from "../pkg/beff_wasm";
 import * as fs from "fs";
 import * as path from "path";
@@ -84,7 +85,7 @@ const resolveImport = (file_name: string, mod: string): string | undefined => {
   return result;
 };
 
-let fsCache: Record<string, string> = {};
+const fsCache: Record<string, string> = {};
 const getRawLines = (fileName: string): string | undefined => {
   if (fsCache[fileName]) {
     return fsCache[fileName];
@@ -146,7 +147,7 @@ const emitDiagnosticItem = (data: WasmDiagnosticItem) => {
   }
   emitDiagnosticInfo(data.cause, " ".repeat(1));
 
-  let inf = data.related_information ?? [];
+  const inf = data.related_information ?? [];
   if (inf.length == 0) {
     return;
   }

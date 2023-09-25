@@ -30,7 +30,9 @@
     "test": "node script/e2e.js && vitest --run --update",
     "do": "npm run build && node ../beff-cli/bin/index.js -v -p /workspace/packages/beff-wasm/vitest/params/bff.json",
     "ts": "tsc --noEmit",
-    "publish": "pnpm vsce publish --no-dependencies"
+    "publish": "pnpm vsce publish --no-dependencies",
+    "lint": "eslint --ext .ts,.tsx .",
+    "lint:fix": "eslint --ext .ts,.tsx . --fix"
   },
   "author": "",
   "license": "ISC",
@@ -44,10 +46,13 @@
     "@types/babel__code-frame": "^7.0.4",
     "@types/node": "^20.6.2",
     "@types/vscode": "^1.73.0",
+    "@typescript-eslint/eslint-plugin": "^6.7.2",
+    "@typescript-eslint/parser": "^6.7.2",
     "@vscode/vsce": "^2.21.0",
     "chalk": "^4.1.2",
     "commander": "^11.0.0",
     "esbuild": "^0.19.3",
+    "eslint": "^8.50.0",
     "hono": "^3.6.3",
     "typescript": "^5.2.2",
     "vitest": "^0.34.4"

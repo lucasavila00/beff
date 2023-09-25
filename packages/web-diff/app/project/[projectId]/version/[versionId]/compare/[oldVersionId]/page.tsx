@@ -7,8 +7,7 @@ import { getVersionLabel } from "@/utils/helpers";
 import { hljs } from "@/utils/hljs";
 import { Links } from "@/utils/route-links";
 import { textDiffSchemas, compareSchemasForErrors, SchemaError } from "@/utils/wasm";
-import { CrossCircledIcon } from "@radix-ui/react-icons";
-import { Box, Callout, Flex, Heading, Text } from "@radix-ui/themes";
+import { Box, Flex, Heading, Text } from "@radix-ui/themes";
 import { FC, Fragment } from "react";
 import { twMerge } from "tailwind-merge";
 

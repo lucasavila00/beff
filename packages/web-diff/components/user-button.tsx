@@ -1,8 +1,8 @@
 "use client";
-import { FC, useEffect, useState } from "react";
-import { Text, Avatar, DropdownMenu, IconButton, Button, Inset } from "@radix-ui/themes";
-import { useRouter } from "next/navigation";
+import { Avatar, Button, DropdownMenu, Text } from "@radix-ui/themes";
 import { useTheme } from "next-themes";
+import { useRouter } from "next/navigation";
+import { FC, useEffect, useState } from "react";
 import { SettingsDialog } from "./settings-dialog";
 
 const ThemeChanger = () => {

@@ -1,14 +1,11 @@
-import { FC } from "react";
-import { Flex, Text, Box, Link, Heading, Button } from "@radix-ui/themes";
+import { authOptions } from "@/app/api/auth/[...nextauth]/options";
 import { UserButton } from "@/components/user-button";
+import { Links } from "@/utils/route-links";
+import { Flex, Heading } from "@radix-ui/themes";
 import { Session, getServerSession } from "next-auth";
 import NextLink from "next/link";
-import { DiscIcon } from "@radix-ui/react-icons";
-import { twMerge } from "tailwind-merge";
-import { authOptions } from "@/app/api/auth/[...nextauth]/options";
-import { IconProps } from "@radix-ui/react-icons/dist/types";
+import { FC } from "react";
 import { SideNavLinks } from "./side-nav-links";
-import { Links } from "@/utils/route-links";
 
 const ConnectedUserButton: FC<{ session: Session | null }> = async ({ session }) => {
   if (session == null) {

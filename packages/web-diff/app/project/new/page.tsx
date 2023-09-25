@@ -3,7 +3,7 @@ import { BreadCrumbs } from "@/components/breadcrumbs";
 import { CreateProjectButton } from "@/components/create-project-button";
 import { Links } from "@/utils/route-links";
 import { CheckCircledIcon, CrossCircledIcon, GitHubLogoIcon } from "@radix-ui/react-icons";
-import { Box, Text, Card, Flex, Heading, Button, Link } from "@radix-ui/themes";
+import { Box, Text, Card, Flex, Link } from "@radix-ui/themes";
 import { FC } from "react";
 
 const AppInstalledMessage: FC<{

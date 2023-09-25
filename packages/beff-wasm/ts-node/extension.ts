@@ -43,7 +43,7 @@ const crashChecked = (cb: () => void) => {
 
 const VERBOSE = false;
 
-export function activate(context: vscode.ExtensionContext) {
+export function activate(_context: vscode.ExtensionContext) {
   const beffPath = String(vscode.workspace.getConfiguration("beff").get("configPath") ?? "beff.json");
 
   const workspacePath = vscode.workspace.workspaceFolders?.[0].uri.fsPath;
@@ -71,6 +71,7 @@ export function activate(context: vscode.ExtensionContext) {
 
   watcher.onDidChange((e) => {
     crashChecked(() => {
+      // eslint-disable-next-line no-console
       console.log("File changed1: ", e.fsPath);
       if (!observingExtensions.includes(path.extname(e.fsPath))) {
         return;
@@ -82,6 +83,7 @@ export function activate(context: vscode.ExtensionContext) {
   });
   vscode.workspace.onDidChangeTextDocument((e) => {
     crashChecked(() => {
+      // eslint-disable-next-line no-console
       console.log("File changed2: ", e.document.uri.fsPath);
       if (!observingExtensions.includes(path.extname(e.document.uri.fsPath))) {
         return;
@@ -133,7 +135,7 @@ function updateDiagnostics(
 ): void {
   collection.clear();
   const diags = bundler?.diagnostics(router_entrypoint, parser_entrypoint, settings);
-  let acc: Record<string, vscode.Diagnostic[]> = {};
+  const acc: Record<string, vscode.Diagnostic[]> = {};
   const pushDiag = (k: string, v: vscode.Diagnostic) => {
     if (acc[k] == null) {
       acc[k] = [];

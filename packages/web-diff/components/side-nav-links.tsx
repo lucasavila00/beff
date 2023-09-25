@@ -78,6 +78,7 @@ const getNav = (pathname: string): NavigationLinkInput[] => {
   if (pathname.startsWith("/project")) {
     return PROJECTS;
   }
+  // eslint-disable-next-line no-console
   console.error(`Unknown path ${pathname}`);
   return [];
 };

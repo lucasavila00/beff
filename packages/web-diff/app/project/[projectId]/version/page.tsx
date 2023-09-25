@@ -3,7 +3,7 @@ import { ProjectVersion } from "@/beff/routers/project";
 import { CompareSchemaVersion } from "@/components/select-schema-version";
 import { ProjectsBreadcrumbs } from "@/components/projects-breadcrumbs";
 import { CheckCircledIcon } from "@radix-ui/react-icons";
-import { Box, Button, Card, Flex, Heading, Link, Select, Table } from "@radix-ui/themes";
+import { Box, Button, Card, Flex, Heading, Link, Table } from "@radix-ui/themes";
 import NextLink from "next/link";
 import { FC } from "react";
 import { format } from "timeago.js";
