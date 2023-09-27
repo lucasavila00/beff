@@ -691,7 +691,7 @@ impl<'a, R: FileManager> TypeToSchema<'a, R> {
             }
             ResolvedLocalSymbol::Expr(e) => self.typeof_expr(&e, false),
             ResolvedLocalSymbol::NamedImport { .. } => todo!(),
-            ResolvedLocalSymbol::SymbolExportDefault(_) => todo!(),
+            ResolvedLocalSymbol::SymbolExportDefault(e) => self.typeof_expr(&e.symbol_export, true),
             ResolvedLocalSymbol::Star(_) => todo!(),
         }
     }

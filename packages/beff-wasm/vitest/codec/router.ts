@@ -1,6 +1,7 @@
 import { Ctx } from "@beff/hono";
 import * as E from "fp-ts/lib/Either";
 import either2 from "./either2";
+import exp_def from "./exp_def";
 export default {
   ...either2,
   "/either": {
@@ -78,5 +79,9 @@ export default {
   },
   "/any_array": {
     post: (_c: Ctx, a: Array<any>): Array<any> => a,
+  },
+
+  "/exp_default": {
+    post: (_c: Ctx, a: typeof exp_def): typeof exp_def => a,
   },
 };
