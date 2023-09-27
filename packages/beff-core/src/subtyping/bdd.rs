@@ -14,7 +14,10 @@ use super::{
     subtype::{ProperSubtype, StringLitOrFormat, SubType, SubTypeTag},
 };
 
-pub type MappingAtomic = BTreeMap<String, Rc<SemType>>;
+pub struct MappingAtomic {
+    pub kvs: BTreeMap<String, Rc<SemType>>,
+    pub rest: Rc<SemType>,
+}
 
 #[derive(PartialEq, Eq, Hash, Debug, Ord, PartialOrd, Clone)]
 pub struct ListAtomic {
@@ -337,17 +340,20 @@ fn bdd_every(
         ),
     }
 }
+
 fn intersect_mapping(m1: Rc<MappingAtomic>, m2: Rc<MappingAtomic>) -> Option<Rc<MappingAtomic>> {
-    let m1_names = BTreeSet::from_iter(m1.keys());
-    let m2_names = BTreeSet::from_iter(m2.keys());
+    let m1_names = BTreeSet::from_iter(m1.kvs.keys());
+    let m2_names = BTreeSet::from_iter(m2.kvs.keys());
     let all_names = m1_names.union(&m2_names).collect::<BTreeSet<_>>();
     let mut acc = vec![];
     for name in all_names {
         let type1 = m1
+            .kvs
             .get(*name)
             .cloned()
             .unwrap_or_else(|| Rc::new(SemTypeContext::unknown()));
         let type2 = m2
+            .kvs
             .get(*name)
             .cloned()
             .unwrap_or_else(|| Rc::new(SemTypeContext::unknown()));
@@ -357,7 +363,10 @@ fn intersect_mapping(m1: Rc<MappingAtomic>, m2: Rc<MappingAtomic>) -> Option<Rc<
         }
         acc.push((name.to_string(), t))
     }
-    Some(Rc::new(MappingAtomic::from_iter(acc)))
+    Some(Rc::new(MappingAtomic {
+        kvs: BTreeMap::from_iter(acc),
+        rest: m1.rest.intersect(&m2.rest),
+    }))
 }
 
 enum MappingInhabited {
@@ -378,17 +387,46 @@ fn mapping_inhabited(
                 _ => unreachable!(),
             };
 
-            let pos_names = BTreeSet::from_iter(pos.keys());
-            let neg_names = BTreeSet::from_iter(neg.keys());
+            let pos_names = BTreeSet::from_iter(pos.kvs.keys());
+            let neg_names = BTreeSet::from_iter(neg.kvs.keys());
 
             let all_names = pos_names.union(&neg_names).collect::<BTreeSet<_>>();
-
+            // todo!("MappingPairing");
+            // todo!("MappingPairing");
+            // todo!("MappingPairing");
+            // todo!("MappingPairing");
+            // todo!("MappingPairing");
+            // todo!("MappingPairing");
+            // todo!("MappingPairing");
+            // todo!("MappingPairing");
+            // todo!("MappingPairing");
+            // todo!("MappingPairing");
+            // todo!("MappingPairing");
+            // todo!("MappingPairing");
+            // todo!("MappingPairing");
+            // todo!("MappingPairing");
+            // todo!("MappingPairing");
+            // todo!("MappingPairing");
+            // todo!("MappingPairing");
+            // todo!("MappingPairing");
+            // todo!("MappingPairing");
+            // todo!("MappingPairing");
+            // todo!("MappingPairing");
+            // todo!("MappingPairing");
+            // todo!("MappingPairing");
+            // todo!("MappingPairing");
+            // todo!("MappingPairing");
+            // todo!("MappingPairing");
+            // todo!("MappingPairing");
+            // todo!("MappingPairing");
             for name in all_names.iter() {
                 let pos_type = pos
+                    .kvs
                     .get(**name)
                     .cloned()
                     .unwrap_or_else(|| Rc::new(SemTypeContext::unknown()));
                 let neg_type = neg
+                    .kvs
                     .get(**name)
                     .cloned()
                     .unwrap_or_else(|| Rc::new(SemTypeContext::unknown()));
@@ -398,21 +436,28 @@ fn mapping_inhabited(
             }
             for name in all_names {
                 let pos_type = pos
+                    .kvs
                     .get(*name)
                     .cloned()
                     .unwrap_or_else(|| Rc::new(SemTypeContext::unknown()));
                 let neg_type = neg
+                    .kvs
                     .get(*name)
                     .cloned()
                     .unwrap_or_else(|| Rc::new(SemTypeContext::unknown()));
 
                 let d = pos_type.diff(&neg_type);
                 if !d.is_empty(builder) {
-                    let mut mt = pos.as_ref().clone();
+                    let mut mt = pos.as_ref().kvs.clone();
                     mt.insert(name.to_string(), d);
-                    if let MappingInhabited::Yes(a) =
-                        mapping_inhabited(Rc::new(mt), &neg_list.next, builder)
-                    {
+                    if let MappingInhabited::Yes(a) = mapping_inhabited(
+                        Rc::new(MappingAtomic {
+                            kvs: mt,
+                            rest: pos.rest.clone(),
+                        }),
+                        &neg_list.next,
+                        builder,
+                    ) {
                         return MappingInhabited::Yes(a);
                     }
                 }
@@ -428,7 +473,10 @@ fn mapping_formula_is_empty(
     neg_list: &Option<Rc<Conjunction>>,
     builder: &mut SemTypeContext,
 ) -> ProperSubtypeEvidenceResult {
-    let mut combined: Rc<MappingAtomic> = Rc::new(BTreeMap::new());
+    let mut combined: Rc<MappingAtomic> = Rc::new(MappingAtomic {
+        kvs: BTreeMap::new(),
+        rest: Rc::new(SemType::new_unknown()),
+    });
     match pos_list {
         None => {}
         Some(pos_atom) => {
@@ -449,7 +497,7 @@ fn mapping_formula_is_empty(
                 }
                 p = some_p.next.clone();
             }
-            for t in combined.values() {
+            for t in combined.kvs.values() {
                 if let EvidenceResult::IsEmpty = t.is_empty_evidence(builder) {
                     return ProperSubtypeEvidenceResult::IsEmpty;
                 }
@@ -460,6 +508,7 @@ fn mapping_formula_is_empty(
         MappingInhabited::No => ProperSubtypeEvidenceResult::IsEmpty,
         MappingInhabited::Yes(ev) => {
             let ev2 = ev
+                .kvs
                 .iter()
                 .map(|(k, it)| match it.is_empty_evidence(builder) {
                     EvidenceResult::Evidence(e) => (k.clone(), Rc::new(e)),
@@ -738,12 +787,44 @@ fn mapping_atomic_applicable_member_types_inner(
                 return vec![];
             }
             let mut member_types = vec![];
-            for (k, ty) in atomic.iter() {
+            for (k, ty) in atomic.kvs.iter() {
                 let found = values.iter().any(|it| match it {
                     StringLitOrFormat::Lit(l) => l == k,
                     StringLitOrFormat::Format(_) => todo!(),
                     StringLitOrFormat::Codec(_) => todo!(),
                 });
+
+                // todo!("stringSubtypeListCoverage");
+                // todo!("stringSubtypeListCoverage");
+                // todo!("stringSubtypeListCoverage");
+                // todo!("stringSubtypeListCoverage");
+                // todo!("stringSubtypeListCoverage");
+                // todo!("stringSubtypeListCoverage");
+                // todo!("stringSubtypeListCoverage");
+                // todo!("stringSubtypeListCoverage");
+                // todo!("stringSubtypeListCoverage");
+                // todo!("stringSubtypeListCoverage");
+                // todo!("stringSubtypeListCoverage");
+                // todo!("stringSubtypeListCoverage");
+                // todo!("stringSubtypeListCoverage");
+                // todo!("stringSubtypeListCoverage");
+                // todo!("stringSubtypeListCoverage");
+                // todo!("stringSubtypeListCoverage");
+                // todo!("stringSubtypeListCoverage");
+                // todo!("stringSubtypeListCoverage");
+                // todo!("stringSubtypeListCoverage");
+                // todo!("stringSubtypeListCoverage");
+                // todo!("stringSubtypeListCoverage");
+                // todo!("stringSubtypeListCoverage");
+                // todo!("stringSubtypeListCoverage");
+                // todo!("stringSubtypeListCoverage");
+                // todo!("stringSubtypeListCoverage");
+                // todo!("stringSubtypeListCoverage");
+                // todo!("stringSubtypeListCoverage");
+                // todo!("stringSubtypeListCoverage");
+                // todo!("stringSubtypeListCoverage");
+                // todo!("stringSubtypeListCoverage");
+                // todo!("stringSubtypeListCoverage");
 
                 if found {
                     member_types.push(ty.clone());
@@ -752,7 +833,13 @@ fn mapping_atomic_applicable_member_types_inner(
 
             member_types
         }
-        MappingStrKey::True => atomic.values().cloned().collect(),
+        MappingStrKey::True => {
+            let mut v: Vec<Rc<SemType>> = atomic.kvs.values().cloned().collect();
+            if !atomic.rest.is_never() {
+                v.push(atomic.rest.clone());
+            }
+            v
+        }
     }
 }
 
@@ -992,7 +1079,7 @@ pub fn keyof(ctx: &mut SemTypeContext, st: Rc<SemType>) -> Rc<SemType> {
                     if let Atom::Mapping(a) = atom.as_ref() {
                         let a = ctx.get_mapping_atomic(*a);
 
-                        for k in a.keys() {
+                        for k in a.kvs.keys() {
                             let key_ty = Rc::new(SemTypeContext::string_const(
                                 StringLitOrFormat::Lit(k.clone()),
                             ));

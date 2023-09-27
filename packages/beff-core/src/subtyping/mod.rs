@@ -1,3 +1,4 @@
+use std::collections::BTreeMap;
 use std::rc::Rc;
 
 use crate::ast::json::Json;
@@ -51,7 +52,7 @@ impl<'a> ToSemTypeConverter<'a> {
                             let idx = builder.mapping_definitions.len();
                             builder.json_schema_ref_memo.insert(name.to_string(), idx);
                             builder.mapping_definitions.push(None);
-                            let vs: MappingAtomic = vs
+                            let vs = vs
                                 .iter()
                                 .map(|(k, v)| match v {
                                     Optionality::Optional(v) => self
@@ -62,6 +63,10 @@ impl<'a> ToSemTypeConverter<'a> {
                                     }
                                 })
                                 .collect::<Result<_>>()?;
+                            let vs = MappingAtomic {
+                                kvs: vs,
+                                rest: Rc::new(SemTypeContext::never()),
+                            };
                             builder.mapping_definitions[idx] = Some(Rc::new(vs));
                             let ty = Rc::new(SemTypeContext::mapping_definition_from_idx(idx));
                             return Ok(ty);
@@ -106,6 +111,10 @@ impl<'a> ToSemTypeConverter<'a> {
                         }
                     })
                     .collect::<Result<_>>()?;
+                let vs = MappingAtomic {
+                    kvs: vs,
+                    rest: SemTypeContext::never().into(),
+                };
                 Ok(builder.mapping_definition(Rc::new(vs)).into())
             }
             JsonSchema::Array(items) => {
@@ -142,7 +151,13 @@ impl<'a> ToSemTypeConverter<'a> {
             JsonSchema::StNever => todo!(),
             JsonSchema::StUnknown => todo!(),
             JsonSchema::StNot(_) => todo!(),
-            JsonSchema::AnyObject => todo!(),
+            JsonSchema::AnyObject => {
+                let vs = MappingAtomic {
+                    kvs: BTreeMap::new(),
+                    rest: SemTypeContext::unknown().into(),
+                };
+                Ok(builder.mapping_definition(Rc::new(vs)).into())
+            }
             JsonSchema::AnyArrayLike => {
                 self.to_sem_type(&JsonSchema::Array(JsonSchema::Any.into()), builder)
             }

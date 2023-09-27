@@ -28,18 +28,24 @@ pub struct SemTypeResolverContext<'a>(pub &'a mut SemTypeContext);
 
 impl<'a> SemTypeResolverContext<'a> {
     fn intersect_mapping_atomics(it: Vec<Rc<MappingAtomic>>) -> Rc<MappingAtomic> {
-        let mut acc: MappingAtomic = BTreeMap::new();
+        let mut acc: MappingAtomic = MappingAtomic {
+            kvs: BTreeMap::new(),
+            rest: SemType::new_unknown().into(),
+        };
 
         for atom in it {
-            for (k, v) in atom.iter() {
+            for (k, v) in atom.kvs.iter() {
                 let old_v = acc
+                    .kvs
                     .get(k)
                     .cloned()
                     .unwrap_or_else(|| Rc::new(SemType::new_unknown()));
 
                 let v = old_v.intersect(v);
 
-                acc.insert(k.clone(), v);
+                acc.kvs.insert(k.clone(), v);
+
+                acc.rest = acc.rest.intersect(&atom.rest);
             }
         }
 
@@ -48,9 +54,14 @@ impl<'a> SemTypeResolverContext<'a> {
 
     fn mapping_atomic_complement(it: Rc<MappingAtomic>) -> Rc<MappingAtomic> {
         let acc = it
+            .kvs
             .iter()
             .map(|(k, v)| (k.clone(), v.complement()))
             .collect();
+        let acc = MappingAtomic {
+            kvs: acc,
+            rest: it.rest.complement(),
+        };
         Rc::new(acc)
     }
 
@@ -284,7 +295,11 @@ impl<'a> SchemerContext<'a> {
     fn mapping_atom_schema(&mut self, mt: &Rc<MappingAtomic>) -> JsonSchema {
         let mut acc: Vec<(String, Optionality<JsonSchema>)> = vec![];
 
-        for (k, v) in mt.iter() {
+        if mt.rest.is_any() {
+            return JsonSchema::AnyObject;
+        }
+
+        for (k, v) in mt.kvs.iter() {
             let schema = self.convert_to_schema(v, None);
             let ty = if v.has_void() {
                 schema.optional()
