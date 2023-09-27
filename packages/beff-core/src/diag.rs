@@ -241,7 +241,9 @@ impl DiagnosticInfoMessage {
             DiagnosticInfoMessage::NotAnObjectWithMethodKind => {
                 "Not an object with method kind".to_string()
             }
-            DiagnosticInfoMessage::NotAnHttpMethod => "Not an HTTP method".to_string(),
+            DiagnosticInfoMessage::NotAnHttpMethod => {
+                "Not an HTTP method. Valid values are `get`, `post`, `put`, `delete`, `patch`, `options`".to_string()
+            }
             DiagnosticInfoMessage::CannotGetFullLocation => {
                 "Cannot get full location of the error".to_string()
             }
