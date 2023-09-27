@@ -3,7 +3,7 @@ const fs = require("fs");
 const path = require("path");
 const childProcess = require("child_process");
 const util = require("util");
-
+const PQueue = require("p-queue").default;
 const execAsync = util.promisify(childProcess.exec);
 
 const removePathFromLog = (content) => {
@@ -13,7 +13,7 @@ const removePathFromLog = (content) => {
 
 const binPath = "../../beff-cli/bin/index.js";
 
-const oneCodegenSnap = async (subFolder) => {
+const oneCodegenSnap = (subFolder) => async () => {
   const bin = path.join(__dirname, binPath);
   const p = path.join(__dirname, "../fixtures/codegen-snaps", subFolder, "bff.json");
   const command = `node ${bin} -p ${p}`;
@@ -28,7 +28,7 @@ const oneCodegenSnap = async (subFolder) => {
   }
 };
 
-const oneFuture = async (subFolder) => {
+const oneFuture = (subFolder) => async () => {
   const bin = path.join(__dirname, binPath);
   const p = path.join(__dirname, "../fixtures/future", subFolder, "bff.json");
   const command = `node ${bin} -p ${p}`;
@@ -59,7 +59,7 @@ const oneFuture = async (subFolder) => {
     );
   }
 };
-const oneFailure = async (subFolder) => {
+const oneFailure = (subFolder) => async () => {
   const bin = path.join(__dirname, binPath);
   const p = path.join(__dirname, "../fixtures/errors", subFolder, "bff.json");
   const command = `node ${bin} -p ${p}`;
@@ -90,7 +90,7 @@ const oneFailure = async (subFolder) => {
     );
   }
 };
-const oneVitest = async (subFolder) => {
+const oneVitest = (subFolder) => async () => {
   const bin = path.join(__dirname, binPath);
   const p = path.join(__dirname, "../vitest", subFolder, "bff.json");
   const command = `node ${bin} -p ${p}`;
@@ -105,29 +105,33 @@ const oneVitest = async (subFolder) => {
   }
 };
 
-const vitest = async () => {
+const vitest = () => {
   const subFolders = fs.readdirSync(path.join(__dirname, "../vitest"));
   const folders = subFolders.filter((f) => f !== ".gitignore" && !f.endsWith(".d.ts"));
-  await Promise.all(folders.map(oneVitest));
+  return folders.map(oneVitest);
 };
 
-const failures = async () => {
+const failures = () => {
   const subFolders = fs.readdirSync(path.join(__dirname, "../fixtures/errors"));
-  await Promise.all(subFolders.map(oneFailure));
+  return subFolders.map(oneFailure);
 };
 
-const futures = async () => {
+const futures = () => {
   const subFolders = fs.readdirSync(path.join(__dirname, "../fixtures/future"));
-  await Promise.all(subFolders.map(oneFuture));
+  return subFolders.map(oneFuture);
 };
 
-const codegenSnaps = async () => {
+const codegenSnaps = () => {
   const subFolders = fs.readdirSync(path.join(__dirname, "../fixtures/codegen-snaps"));
 
-  await Promise.all(subFolders.map(oneCodegenSnap));
+  return subFolders.map(oneCodegenSnap);
 };
+
 const main = async () => {
-  await Promise.all([codegenSnaps(), failures(), vitest(), futures()]);
+  const queue = new PQueue({ concurrency: 4 });
+  await queue.addAll([...codegenSnaps(), ...failures(), ...vitest(), ...futures()]);
+
+  await queue.onIdle();
 };
 
 main().catch((e) => {
