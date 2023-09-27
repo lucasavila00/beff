@@ -1138,13 +1138,23 @@ impl<'a, R: FileManager> EndpointToPath<'a, R> {
                         schema,
                         self.components,
                     ) {
-                        FunctionParameterIn::Path => parameters.push(ParameterObject {
-                            in_: ParameterIn::Path,
-                            name: key.clone(),
-                            required: *required,
-                            description: description.clone(),
-                            schema: schema.clone(),
-                        }),
+                        FunctionParameterIn::Path => {
+                            if !required {
+                                self.push_error(
+                                    span,
+                                    DiagnosticInfoMessage::PathParameterCannotBeOptional,
+                                    None,
+                                )
+                            }
+
+                            parameters.push(ParameterObject {
+                                in_: ParameterIn::Path,
+                                name: key.clone(),
+                                required: *required,
+                                description: description.clone(),
+                                schema: schema.clone(),
+                            })
+                        }
                         FunctionParameterIn::Query => parameters.push(ParameterObject {
                             in_: ParameterIn::Query,
                             name: key.clone(),
