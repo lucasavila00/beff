@@ -1,0 +1,13 @@
+---
+source: packages/beff-core/tests/print_router.rs
+expression: ok(from)
+---
+type Router = {
+  "/hello": {
+    "get": () => { "_tag": "Left"; "left": string } | {
+      "_tag": "Right";
+      "right": number;
+    };
+  };
+};
+

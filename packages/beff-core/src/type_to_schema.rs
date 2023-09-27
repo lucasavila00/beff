@@ -22,8 +22,8 @@ use swc_ecma_ast::{
     TsKeywordType, TsKeywordTypeKind, TsLit, TsLitType, TsMappedType, TsMethodSignature,
     TsOptionalType, TsParenthesizedType, TsQualifiedName, TsRestType, TsSetterSignature,
     TsThisType, TsTplLitType, TsTupleType, TsType, TsTypeElement, TsTypeLit, TsTypeOperator,
-    TsTypeOperatorOp, TsTypeParamInstantiation, TsTypePredicate, TsTypeQuery, TsTypeQueryExpr,
-    TsTypeRef, TsUnionOrIntersectionType, TsUnionType,
+    TsTypeOperatorOp, TsTypeParamDecl, TsTypeParamInstantiation, TsTypePredicate, TsTypeQuery,
+    TsTypeQueryExpr, TsTypeRef, TsUnionOrIntersectionType, TsUnionType,
 };
 
 pub struct TypeToSchema<'a, R: FileManager> {
@@ -31,6 +31,7 @@ pub struct TypeToSchema<'a, R: FileManager> {
     pub current_file: BffFileName,
     pub components: HashMap<String, Option<Validator>>,
     pub ref_stack: Vec<DiagnosticInformation>,
+    pub type_param_stack: Vec<BTreeMap<String, JsonSchema>>,
     pub settings: &'a BeffUserSettings,
 }
 
@@ -54,6 +55,7 @@ impl<'a, R: FileManager> TypeToSchema<'a, R> {
             current_file,
             components: HashMap::new(),
             ref_stack: vec![],
+            type_param_stack: vec![],
             settings,
         }
     }
@@ -125,7 +127,11 @@ impl<'a, R: FileManager> TypeToSchema<'a, R> {
         }
     }
 
-    fn convert_ts_interface_decl(&mut self, typ: &TsInterfaceDecl) -> Res<JsonSchema> {
+    fn convert_ts_interface_decl(
+        &mut self,
+        typ: &TsInterfaceDecl,
+        type_args: &Option<Box<TsTypeParamInstantiation>>,
+    ) -> Res<JsonSchema> {
         if !typ.extends.is_empty() {
             return self.cannot_serialize_error(
                 &typ.span,
@@ -133,13 +139,26 @@ impl<'a, R: FileManager> TypeToSchema<'a, R> {
             );
         }
 
-        Ok(JsonSchema::object(
+        let mut map: BTreeMap<String, JsonSchema> = BTreeMap::new();
+        if let (Some(params), Some(v)) = (&typ.type_params, type_args.as_ref()) {
+            for (i, param) in params.params.iter().enumerate() {
+                let param_name = param.name.sym.to_string();
+                let param_type = &v.params[i];
+                let param_type = self.convert_ts_type(param_type)?;
+                map.insert(param_name, param_type);
+            }
+        }
+        self.type_param_stack.push(map);
+
+        let r = Ok(JsonSchema::object(
             typ.body
                 .body
                 .iter()
                 .map(|x| self.convert_ts_type_element(x))
                 .collect::<Res<_>>()?,
-        ))
+        ));
+        self.type_param_stack.pop();
+        r
     }
 
     fn convert_type_export(
@@ -147,12 +166,13 @@ impl<'a, R: FileManager> TypeToSchema<'a, R> {
         exported: &SymbolExport,
         from_file: &BffFileName,
         span: &Span,
+        type_args: &Option<Box<TsTypeParamInstantiation>>,
     ) -> Res<JsonSchema> {
         let store_current_file = self.current_file.clone();
         self.current_file = from_file.clone();
         let ty = match exported {
             SymbolExport::TsType { ty: alias, .. } => self.convert_ts_type(alias)?,
-            SymbolExport::TsInterfaceDecl(int) => self.convert_ts_interface_decl(int)?,
+            SymbolExport::TsInterfaceDecl(int) => self.convert_ts_interface_decl(int, type_args)?,
             SymbolExport::StarOfOtherFile(_) => {
                 return self.error(span, DiagnosticInfoMessage::CannotUseStarAsType)
             }
@@ -163,7 +183,7 @@ impl<'a, R: FileManager> TypeToSchema<'a, R> {
                     .and_then(|file| file.symbol_exports.get(word, self.files));
                 match exported {
                     Some(exported) => {
-                        self.convert_type_export(exported.as_ref(), from_file, span)?
+                        self.convert_type_export(exported.as_ref(), from_file, span, type_args)?
                     }
                     None => {
                         return self.error(
@@ -176,25 +196,77 @@ impl<'a, R: FileManager> TypeToSchema<'a, R> {
                 }
             }
             SymbolExport::ValueExpr { .. } => todo!(),
+            SymbolExport::TsTypeTemplate { params, ty, .. } => {
+                self.apply_type_params(type_args, &params, &ty)?
+            }
         };
         self.current_file = store_current_file;
         Ok(ty)
     }
+    fn apply_type_params(
+        &mut self,
+        type_args: &Option<Box<TsTypeParamInstantiation>>,
+        decl: &TsTypeParamDecl,
+        ty: &TsType,
+    ) -> Res<JsonSchema> {
+        match type_args {
+            Some(v) => {
+                if v.params.len() != decl.params.len() {
+                    todo!()
+                    // return self.error(
+                    //     &v.span,
+                    //     DiagnosticInfoMessage::TypeParamsCountMismatch {
+                    //         expected: decl.params.len(),
+                    //         found: v.params.len(),
+                    //     },
+                    // );
+                }
 
-    fn get_type_ref_of_user_identifier(&mut self, i: &Ident) -> Res<JsonSchema> {
+                let mut map: BTreeMap<String, JsonSchema> = BTreeMap::new();
+                for (i, param) in decl.params.iter().enumerate() {
+                    let param_name = param.name.sym.to_string();
+                    let param_type = &v.params[i];
+                    let param_type = self.convert_ts_type(param_type)?;
+                    map.insert(param_name, param_type);
+                }
+                self.type_param_stack.push(map);
+
+                let ty = self.convert_ts_type(ty)?;
+                dbg!(&ty);
+                self.type_param_stack.pop();
+                Ok(ty)
+            }
+            None => todo!(),
+        }
+    }
+    fn get_type_ref_of_user_identifier(
+        &mut self,
+        i: &Ident,
+        type_args: &Option<Box<TsTypeParamInstantiation>>,
+    ) -> Res<JsonSchema> {
         match TypeResolver::new(self.files, &self.current_file).resolve_local_type(i)? {
             ResolvedLocalSymbol::TsType(alias) => self.convert_ts_type(&alias),
-            ResolvedLocalSymbol::TsInterfaceDecl(int) => self.convert_ts_interface_decl(&int),
+            ResolvedLocalSymbol::TsInterfaceDecl(int) => {
+                self.convert_ts_interface_decl(&int, type_args)
+            }
             ResolvedLocalSymbol::NamedImport {
                 exported,
                 from_file,
             } => {
-                return self.convert_type_export(exported.as_ref(), from_file.file_name(), &i.span)
+                return self.convert_type_export(
+                    exported.as_ref(),
+                    from_file.file_name(),
+                    &i.span,
+                    type_args,
+                )
             }
             ResolvedLocalSymbol::Expr(_) | ResolvedLocalSymbol::SymbolExportDefault(_) => {
                 self.error(&i.span, DiagnosticInfoMessage::FoundValueExpectedType)
             }
             ResolvedLocalSymbol::Star(_) => todo!(),
+            ResolvedLocalSymbol::TsTypeTemplate(decl, ty) => {
+                self.apply_type_params(type_args, &decl, &ty)
+            }
         }
     }
 
@@ -244,6 +316,14 @@ impl<'a, R: FileManager> TypeToSchema<'a, R> {
         i: &Ident,
         type_params: &Option<Box<TsTypeParamInstantiation>>,
     ) -> Res<JsonSchema> {
+        if type_params.is_none() {
+            for map in self.type_param_stack.iter().rev() {
+                if let Some(ty) = map.get(&i.sym.to_string()) {
+                    return Ok(ty.clone());
+                }
+            }
+        }
+
         match i.sym.to_string().as_str() {
             "Date" => return Ok(JsonSchema::Codec(CodecName::ISO8061)),
             "Array" => {
@@ -263,18 +343,16 @@ impl<'a, R: FileManager> TypeToSchema<'a, R> {
             return Ok(JsonSchema::Ref(i.sym.to_string()));
         }
         self.components.insert(i.sym.to_string(), None);
-
-        if type_params.is_some() {
-            self.insert_definition(i.sym.to_string(), JsonSchema::Any)?;
-            return self.cannot_serialize_error(
-                &i.span,
-                DiagnosticInfoMessage::TypeParameterApplicationNotSupported,
-            );
-        }
-
-        let ty = self.get_type_ref_of_user_identifier(i);
+        let ty = self.get_type_ref_of_user_identifier(i, type_params);
         match ty {
-            Ok(ty) => self.insert_definition(i.sym.to_string(), ty),
+            Ok(ty) => {
+                if type_params.is_some() {
+                    self.components.remove(&i.sym.to_string());
+                    Ok(ty)
+                } else {
+                    self.insert_definition(i.sym.to_string(), ty)
+                }
+            }
             Err(e) => {
                 self.insert_definition(i.sym.to_string(), JsonSchema::Any)?;
                 Err(e)
@@ -360,6 +438,7 @@ impl<'a, R: FileManager> TypeToSchema<'a, R> {
                     SymbolExport::StarOfOtherFile(_) => right.to_string(),
                     SymbolExport::SomethingOfOtherFile(that, _) => that.to_string(),
                     SymbolExport::ValueExpr { .. } => todo!(),
+                    SymbolExport::TsTypeTemplate { params, ty, name } => name.to_string(),
                 };
                 Ok((exported, from_file.clone(), name))
             }
@@ -404,6 +483,7 @@ impl<'a, R: FileManager> TypeToSchema<'a, R> {
                 }
             }
             SymbolExport::ValueExpr { .. } => todo!(),
+            SymbolExport::TsTypeTemplate { params, ty, name } => todo!(),
         }
     }
     fn __convert_ts_type_qual_inner(
@@ -430,8 +510,12 @@ impl<'a, R: FileManager> TypeToSchema<'a, R> {
         }
 
         let (exported, from_file, name) = self.__convert_ts_type_qual_inner(q)?;
-        let ty =
-            self.convert_type_export(exported.as_ref(), from_file.file_name(), &q.right.span)?;
+        let ty = self.convert_type_export(
+            exported.as_ref(),
+            from_file.file_name(),
+            &q.right.span,
+            todo!(),
+        )?;
         self.insert_definition(name, ty)
     }
     fn convert_ts_type_qual(&mut self, q: &TsQualifiedName) -> Res<JsonSchema> {
@@ -591,6 +675,7 @@ impl<'a, R: FileManager> TypeToSchema<'a, R> {
             ResolvedLocalSymbol::NamedImport { .. } => todo!(),
             ResolvedLocalSymbol::SymbolExportDefault(_) => todo!(),
             ResolvedLocalSymbol::Star(_) => todo!(),
+            ResolvedLocalSymbol::TsTypeTemplate(_, _) => todo!(),
         }
     }
     pub fn convert_type_query(&mut self, q: &TsTypeQuery) -> Res<JsonSchema> {

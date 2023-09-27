@@ -1,7 +1,7 @@
 use std::rc::Rc;
 
 use swc_common::Span;
-use swc_ecma_ast::{Expr, Ident, TsInterfaceDecl, TsType};
+use swc_ecma_ast::{Expr, Ident, TsInterfaceDecl, TsType, TsTypeParamDecl};
 
 use crate::{
     diag::{Diagnostic, DiagnosticInfoMessage, Location},
@@ -14,6 +14,7 @@ pub struct TypeResolver<'a, R: FileManager> {
 }
 
 pub enum ResolvedLocalSymbol {
+    TsTypeTemplate(Rc<TsTypeParamDecl>, Rc<TsType>),
     TsType(Rc<TsType>),
     TsInterfaceDecl(Rc<TsInterfaceDecl>),
     Expr(Rc<Expr>),
@@ -73,6 +74,7 @@ impl<'a, R: FileManager> TypeResolver<'a, R> {
                     .into())
             }
             SymbolExport::ValueExpr { .. } => todo!(),
+            SymbolExport::TsTypeTemplate { params, name, ty } => todo!(),
         }
     }
     pub fn resolve_namespace_type(&mut self, i: &Ident) -> Res<ResolvedNamespaceSymbol> {
@@ -154,6 +156,9 @@ impl<'a, R: FileManager> TypeResolver<'a, R> {
         let k = &(i.sym.clone(), i.span.ctxt);
         if let Some(alias) = self.get_current_file().locals.type_aliases.get(k) {
             return Ok(ResolvedLocalSymbol::TsType(alias.clone()));
+        }
+        if let Some((a, b)) = self.get_current_file().locals.type_templates.get(k) {
+            return Ok(ResolvedLocalSymbol::TsTypeTemplate(a.clone(), b.clone()));
         }
         if let Some(intf) = self.get_current_file().locals.interfaces.get(k) {
             return Ok(ResolvedLocalSymbol::TsInterfaceDecl(intf.clone()));
