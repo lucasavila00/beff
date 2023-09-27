@@ -294,9 +294,6 @@ function encodeAllOf(cbs, value) {
 }
 
 function encodeAnyOf(cbs, value) {
-  for (const cb of cbs) {
-    return cb(value);
-  }
   return value
 }
 `;
