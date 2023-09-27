@@ -3,6 +3,7 @@ import { buildHonoApp, buildHonoLocalClient } from "@beff/hono";
 import router from "../router";
 import generated from "../bff-generated/router";
 import generatedClient from "../bff-generated/router";
+import * as E from "fp-ts/lib/Either";
 
 const app = buildHonoApp({ router, generated });
 const beff = buildHonoLocalClient<typeof router>({
@@ -31,6 +32,16 @@ test("either", async () => {
       "left": "asd",
     }
   `);
+  await expect(
+    beff["/either"].post({
+      a: E.right(123),
+    })
+  ).resolves.toMatchInlineSnapshot(`
+    {
+      "_tag": "Right",
+      "right": 123,
+    }
+  `);
 });
 test("either2", async () => {
   await expect(
@@ -51,6 +62,16 @@ test("either2", async () => {
     {
       "_tag": "Left",
       "left": "asd",
+    }
+  `);
+  await expect(
+    beff["/either2"].post({
+      a: E.right(123),
+    })
+  ).resolves.toMatchInlineSnapshot(`
+    {
+      "_tag": "Right",
+      "right": 123,
     }
   `);
 });
