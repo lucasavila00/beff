@@ -8,6 +8,7 @@ use crate::{open_api_ast::HTTPMethod, BffFileName, ParsedModule};
 #[derive(Debug, Clone)]
 pub enum DiagnosticInfoMessage {
     PathMustStartWithDash,
+    PathParameterCannotBeOptional,
     InvalidIndexedAccess,
     TypeQueryArgsNotSupported,
     FoundValueExpectedType,
@@ -101,6 +102,9 @@ pub enum DiagnosticInfoMessage {
 impl DiagnosticInfoMessage {
     pub fn to_string(&self) -> String {
         match self {
+            DiagnosticInfoMessage::PathParameterCannotBeOptional => {
+                "Path parameter cannot be optional".to_string()
+            }
             DiagnosticInfoMessage::IndexOutOfTupleRange(idx) => {
                 format!("Index out of tuple range: {}", idx)
             }
@@ -238,7 +242,9 @@ impl DiagnosticInfoMessage {
             DiagnosticInfoMessage::NotAnObjectWithMethodKind => {
                 "Not an object with method kind".to_string()
             }
-            DiagnosticInfoMessage::NotAnHttpMethod => "Not an HTTP method".to_string(),
+            DiagnosticInfoMessage::NotAnHttpMethod => {
+                "Not an HTTP method. Valid values are `get`, `post`, `put`, `delete`, `patch`, `options`".to_string()
+            }
             DiagnosticInfoMessage::CannotGetFullLocation => {
                 "Cannot get full location of the error".to_string()
             }

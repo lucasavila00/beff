@@ -55,6 +55,7 @@
     "eslint": "^8.50.0",
     "eslint-plugin-vitest": "^0.3.1",
     "hono": "^3.6.3",
+    "p-queue": "^6.6.2",
     "typescript": "^5.2.2",
     "vitest": "^0.34.4"
   }
