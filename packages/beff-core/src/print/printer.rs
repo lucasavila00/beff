@@ -285,7 +285,7 @@ impl ToWritableModules for ExtractResult {
             })));
             stmt_validators.push(decoder_fn_decl);
 
-            let encoder_fn = encoder::from_schema(&comp.schema);
+            let encoder_fn = encoder::from_schema(&comp.schema, true);
             let encoder_fn_decl = ModuleItem::Stmt(Stmt::Decl(Decl::Fn(FnDecl {
                 ident: Ident {
                     span: DUMMY_SP,

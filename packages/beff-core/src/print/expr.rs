@@ -68,9 +68,11 @@ impl ToExpr for Js {
                 ident: None,
                 function: decoder::from_schema(&schema, required).into(),
             }),
-            Js::Encoder { schema, .. } => Expr::Fn(FnExpr {
+            Js::Encoder {
+                schema, required, ..
+            } => Expr::Fn(FnExpr {
                 ident: None,
-                function: encoder::from_schema(&schema).into(),
+                function: encoder::from_schema(&schema, required).into(),
             }),
 
             Js::Null => Json::Null.to_expr(),

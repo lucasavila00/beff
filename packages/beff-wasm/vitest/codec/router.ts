@@ -27,8 +27,8 @@ export default {
     },
   },
   "/optional2": {
-    post: async (_c: Ctx, b?: string[]): Promise<string[]> => {
-      return b ?? [];
+    post: async (_c: Ctx, b?: string[]): Promise<string[] | undefined> => {
+      return b;
     },
   },
   ["/date"]: {
