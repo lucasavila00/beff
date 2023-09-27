@@ -7,6 +7,7 @@ use crate::{open_api_ast::HTTPMethod, BffFileName, ParsedModule};
 
 #[derive(Debug, Clone)]
 pub enum DiagnosticInfoMessage {
+    PathMustStartWithDash,
     PathParameterCannotBeOptional,
     InvalidIndexedAccess,
     TypeQueryArgsNotSupported,
@@ -345,6 +346,9 @@ impl DiagnosticInfoMessage {
                 "Type query args are not supported".to_string()
             }
             DiagnosticInfoMessage::InvalidIndexedAccess => "Invalid indexed access".to_string(),
+            DiagnosticInfoMessage::PathMustStartWithDash => {
+                "Path must start with a dash".to_string()
+            }
         }
     }
 }
