@@ -8,7 +8,6 @@ use crate::SymbolExport;
 use crate::SymbolExportDefault;
 use crate::SymbolsExportsModule;
 use crate::UnresolvedExport;
-use anyhow::anyhow;
 use anyhow::Result;
 use std::collections::HashMap;
 use std::rc::Rc;
@@ -317,12 +316,6 @@ pub fn parse_and_bind<R: FsModuleResolver>(
                 }
             }
         }
-
-        return Err(anyhow!(
-            "Could not resolve export {name:?} in file {file_name:?}",
-            name = &unresolved.name,
-            file_name = file_name
-        ));
     }
 
     let f = Rc::new(ParsedModule {

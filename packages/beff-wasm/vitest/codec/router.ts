@@ -1,6 +1,18 @@
 import { Ctx } from "@beff/hono";
-
+import * as E from "fp-ts/lib/Either";
+import either2 from "./either2";
 export default {
+  ...either2,
+  "/either": {
+    post: async (
+      _c: Ctx,
+      b: {
+        a: E.Either<string, number>;
+      }
+    ): Promise<E.Either<string, number>> => {
+      return b.a;
+    },
+  },
   ["/date"]: {
     post: async (
       _c: Ctx,

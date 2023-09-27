@@ -138,7 +138,10 @@ impl<'a> FileManager for LazyFileManager<'a> {
                 self.files.insert(file_name.clone(), f.clone());
                 Some(f)
             }
-            Err(_) => None,
+            Err(err) => {
+                log::error!("{:?}", err);
+                None
+            }
         }
     }
 
@@ -154,7 +157,7 @@ fn run_extraction(entry: EntryPoints) -> ExtractResult {
             let mut man = LazyFileManager {
                 files: &mut b.files,
             };
-            
+
             // res.self_check_sem_types();
             beff_core::extract(&mut man, entry)
         })

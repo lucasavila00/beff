@@ -278,6 +278,15 @@ impl<'a, R: FileManager> TypeToSchema<'a, R> {
     }
 
     fn insert_definition(&mut self, name: String, schema: JsonSchema) -> Res<JsonSchema> {
+        match self.components.get(&name) {
+            Some(it) => match it {
+                Some(v) => {
+                    assert_eq!(v.schema, schema);
+                }
+                None => {}
+            },
+            None => {}
+        }
         self.components.insert(
             name.clone(),
             Some(Validator {
@@ -482,7 +491,7 @@ impl<'a, R: FileManager> TypeToSchema<'a, R> {
                     Some(exported) => self.recursively_get_qualified_type_export(exported, right),
                     None => self.error(
                         &right.span,
-                        DiagnosticInfoMessage::CannotGetQualifiedTypeFromFile(
+                        DiagnosticInfoMessage::CannotGetQualifiedTypeFromFileRec(
                             right.sym.to_string(),
                         ),
                     ),
@@ -508,7 +517,11 @@ impl<'a, R: FileManager> TypeToSchema<'a, R> {
         }
     }
 
-    fn __convert_ts_type_qual_caching(&mut self, q: &TsQualifiedName) -> Res<JsonSchema> {
+    fn __convert_ts_type_qual_caching(
+        &mut self,
+        q: &TsQualifiedName,
+        type_args: &Option<Box<TsTypeParamInstantiation>>,
+    ) -> Res<JsonSchema> {
         let found = self.components.get(&(q.right.sym.to_string()));
         if let Some(_found) = found {
             return Ok(JsonSchema::Ref(q.right.sym.to_string()));
@@ -519,17 +532,26 @@ impl<'a, R: FileManager> TypeToSchema<'a, R> {
             exported.as_ref(),
             from_file.file_name(),
             &q.right.span,
-            todo!(),
+            type_args,
         )?;
-        self.insert_definition(name, ty)
+        if type_args.is_some() {
+            self.components.remove(&name);
+            Ok(ty)
+        } else {
+            self.insert_definition(name, ty)
+        }
     }
-    fn convert_ts_type_qual(&mut self, q: &TsQualifiedName) -> Res<JsonSchema> {
+    fn convert_ts_type_qual(
+        &mut self,
+        q: &TsQualifiedName,
+        type_args: &Option<Box<TsTypeParamInstantiation>>,
+    ) -> Res<JsonSchema> {
         let current_ref = self.get_identifier_diag_info(&q.right);
         let did_push = current_ref.is_some();
         if let Some(current_ref) = current_ref {
             self.ref_stack.push(current_ref);
         }
-        let v = self.__convert_ts_type_qual_caching(q);
+        let v = self.__convert_ts_type_qual_caching(q, type_args);
         if did_push {
             self.ref_stack.pop();
         }
@@ -784,16 +806,7 @@ impl<'a, R: FileManager> TypeToSchema<'a, R> {
                 ..
             }) => match &type_name {
                 TsEntityName::Ident(i) => self.convert_ts_type_ident(i, type_params),
-                TsEntityName::TsQualifiedName(q) => {
-                    if type_params.is_some() {
-                        return self.error(
-                            &q.right.span,
-                            DiagnosticInfoMessage::CannotUseQualifiedTypeWithTypeParameters,
-                        );
-                    }
-
-                    self.convert_ts_type_qual(q)
-                }
+                TsEntityName::TsQualifiedName(q) => self.convert_ts_type_qual(q, type_params),
             },
             TsType::TsTypeLit(TsTypeLit { members, .. }) => Ok(JsonSchema::object(
                 members

@@ -1,3 +1,4 @@
+Failed to parse or resolve module: SourceFile(/errors/parse-error/app.ts)
 Error
  /errors/parse-error/app.ts
  Could not find default export
