@@ -10,6 +10,51 @@ const beff = buildHonoLocalClient<typeof router>({
   app,
 });
 
+test("either", async () => {
+  await expect(
+    beff["/either"].post(
+      // @ts-expect-error
+      { a: "asd" }
+    )
+  ).rejects.toMatchInlineSnapshot('[HTTPException: #0 (b.a) expected one of, received: "asd"]');
+
+  await expect(
+    beff["/either"].post({
+      a: {
+        _tag: "Left",
+        left: "asd",
+      },
+    })
+  ).resolves.toMatchInlineSnapshot(`
+    {
+      "_tag": "Left",
+      "left": "asd",
+    }
+  `);
+});
+test("either2", async () => {
+  await expect(
+    beff["/either2"].post(
+      // @ts-expect-error
+      { a: "asd" }
+    )
+  ).rejects.toMatchInlineSnapshot('[HTTPException: #0 (b.a) expected one of, received: "asd"]');
+
+  await expect(
+    beff["/either2"].post({
+      a: {
+        _tag: "Left",
+        left: "asd",
+      },
+    })
+  ).resolves.toMatchInlineSnapshot(`
+    {
+      "_tag": "Left",
+      "left": "asd",
+    }
+  `);
+});
+
 test("date", async () => {
   await expect(
     beff["/date"].post(

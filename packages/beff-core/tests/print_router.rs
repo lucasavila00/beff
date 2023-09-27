@@ -64,6 +64,87 @@ mod tests {
     }
 
     #[test]
+    fn ok_either() {
+        let from = r#"
+    /**
+     * @category model
+     * @since 2.0.0
+     */
+    type Left<E1> = {
+         _tag: 'Left',
+         left: E1,
+    }
+    /**
+     * @category model
+     * @since 2.0.0
+     */
+    type Right<A1> = {
+         _tag: 'Right',
+         right: A1,
+    }
+    /**
+     * @category model
+     * @since 2.0.0
+     */
+    type Either<E, A> = Left<E> | Right<A>
+
+    export default {
+      "/hello": {
+          get: (): Either<string, number> => impl()
+      }
+    }
+  "#;
+        insta::assert_snapshot!(ok(from));
+    }
+    #[test]
+    fn ok_either_interface() {
+        let from = r#"
+    /**
+     * @category model
+     * @since 2.0.0
+     */
+    interface Left<E1> {
+         _tag: 'Left',
+         left: E1,
+    }
+    /**
+     * @category model
+     * @since 2.0.0
+     */
+    interface Right<A2> {
+         _tag: 'Right',
+         right: A2,
+    }
+    /**
+     * @category model
+     * @since 2.0.0
+     */
+    type Either<E, A> = Left<E> | Right<A>
+
+    export default {
+      "/hello": {
+          get: (): Either<string, number> => impl()
+      }
+    }
+  "#;
+        insta::assert_snapshot!(ok(from));
+    }
+
+    #[test]
+    fn ok_template() {
+        let from = r#"
+    type A<E, A> = {
+        e:E,a:A
+    }
+    export default {
+      "/hello": {
+          get: (): A<string, number> => impl()
+      }
+    }
+  "#;
+        insta::assert_snapshot!(ok(from));
+    }
+    #[test]
     fn ok_any_array() {
         let from = r#"
     export default {
@@ -96,6 +177,22 @@ mod tests {
     export default {
         "/hello": {
             get: (): A => impl()
+        }
+    }
+    "#;
+
+        insta::assert_snapshot!(ok(from));
+    }
+
+    #[test]
+    fn ok_interface_name() {
+        let from = r#"
+    interface B {
+        a: string
+    }
+    export default {
+        "/hello": {
+            get: (): B => impl()
         }
     }
     "#;

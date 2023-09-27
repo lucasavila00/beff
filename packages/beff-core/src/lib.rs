@@ -36,6 +36,7 @@ use swc_ecma_ast::Expr;
 use swc_ecma_ast::ModuleItem;
 use swc_ecma_ast::Pat;
 use swc_ecma_ast::Stmt;
+use swc_ecma_ast::TsTypeParamDecl;
 use swc_ecma_ast::{Module, TsType};
 use swc_ecma_ast::{TsInterfaceDecl, TsTypeAliasDecl};
 use swc_ecma_visit::Visit;
@@ -43,9 +44,16 @@ use swc_node_comments::SwcComments;
 
 #[derive(Debug, Clone)]
 pub enum SymbolExport {
-    TsType { ty: Rc<TsType>, name: JsWord },
+    TsType {
+        params: Option<Rc<TsTypeParamDecl>>,
+        ty: Rc<TsType>,
+        name: JsWord,
+    },
     TsInterfaceDecl(Rc<TsInterfaceDecl>),
-    ValueExpr { expr: Rc<Expr>, name: JsWord },
+    ValueExpr {
+        expr: Rc<Expr>,
+        name: JsWord,
+    },
     StarOfOtherFile(Rc<ImportReference>),
     SomethingOfOtherFile(JsWord, BffFileName),
 }
@@ -152,9 +160,11 @@ pub struct ParsedModule {
     pub export_default: Option<Rc<SymbolExportDefault>>,
 }
 
+type TypeAliasMap = HashMap<(JsWord, SyntaxContext), (Option<Rc<TsTypeParamDecl>>, Rc<TsType>)>;
+
 #[derive(Debug)]
 pub struct ParsedModuleLocals {
-    pub type_aliases: HashMap<(JsWord, SyntaxContext), Rc<TsType>>,
+    pub type_aliases: TypeAliasMap,
     pub interfaces: HashMap<(JsWord, SyntaxContext), Rc<TsInterfaceDecl>>,
 
     pub exprs: HashMap<(JsWord, SyntaxContext), Rc<Expr>>,
@@ -217,10 +227,19 @@ impl ParserOfModuleLocals {
 
 impl Visit for ParserOfModuleLocals {
     fn visit_ts_type_alias_decl(&mut self, n: &TsTypeAliasDecl) {
-        let TsTypeAliasDecl { id, type_ann, .. } = n;
-        self.content
-            .type_aliases
-            .insert((id.sym.clone(), id.span.ctxt), Rc::new(*type_ann.clone()));
+        let TsTypeAliasDecl {
+            id,
+            type_ann,
+            type_params,
+            ..
+        } = n;
+        self.content.type_aliases.insert(
+            (id.sym.clone(), id.span.ctxt),
+            (
+                type_params.as_ref().map(|it| it.as_ref().clone().into()),
+                Rc::new(*type_ann.clone()),
+            ),
+        );
     }
     fn visit_ts_interface_decl(&mut self, n: &TsInterfaceDecl) {
         let TsInterfaceDecl { id, .. } = n;

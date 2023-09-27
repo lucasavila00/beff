@@ -8,7 +8,6 @@ use crate::SymbolExport;
 use crate::SymbolExportDefault;
 use crate::SymbolsExportsModule;
 use crate::UnresolvedExport;
-use anyhow::anyhow;
 use anyhow::Result;
 use std::collections::HashMap;
 use std::rc::Rc;
@@ -115,12 +114,18 @@ impl<'a, R: FsModuleResolver> Visit for ImportsVisitor<'a, R> {
                 );
             }
             Decl::TsTypeAlias(a) => {
-                let TsTypeAliasDecl { id, type_ann, .. } = &**a;
+                let TsTypeAliasDecl {
+                    id,
+                    type_ann,
+                    type_params,
+                    ..
+                } = &**a;
                 self.symbol_exports.insert(
                     id.sym.clone(),
                     Rc::new(SymbolExport::TsType {
                         ty: Rc::new(*type_ann.clone()),
                         name: id.sym.clone(),
+                        params: type_params.as_ref().map(|it| it.as_ref().clone().into()),
                     }),
                 );
             }
@@ -269,16 +274,18 @@ pub fn parse_and_bind<R: FsModuleResolver>(
     for unresolved in v.unresolved_exports {
         let renamed = unresolved.renamed;
         let k = (unresolved.name.clone(), unresolved.span);
-        if let Some(alias) = locals.content.type_aliases.get(&k) {
+        if let Some((params, ty)) = locals.content.type_aliases.get(&k) {
             symbol_exports.insert(
                 renamed.clone(),
                 Rc::new(SymbolExport::TsType {
-                    ty: alias.clone(),
+                    ty: ty.clone(),
                     name: k.0,
+                    params: params.clone(),
                 }),
             );
             continue;
         }
+
         if let Some(intf) = locals.content.interfaces.get(&k) {
             symbol_exports.insert(
                 renamed,
@@ -309,12 +316,6 @@ pub fn parse_and_bind<R: FsModuleResolver>(
                 }
             }
         }
-
-        return Err(anyhow!(
-            "Could not resolve export {name:?} in file {file_name:?}",
-            name = &unresolved.name,
-            file_name = file_name
-        ));
     }
 
     let f = Rc::new(ParsedModule {

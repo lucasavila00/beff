@@ -28,12 +28,12 @@ pub enum DiagnosticInfoMessage {
     CloseBlockMustEndPattern,
     OpenBlockMustStartPattern,
     StarPatternMustBeUsedWithUse,
-    CannotUseQualifiedTypeWithTypeParameters,
     CannotUseStarAsType,
     CannotUseTsTypeAsQualified,
     CannotUseTsInterfaceAsQualified,
     DecoderMustHaveTypeAnnotation,
     CannotGetQualifiedTypeFromFile(String),
+    CannotGetQualifiedTypeFromFileRec(String),
     TwoCallsToBuildParsers,
     CannotResolveSomethingOfOtherFile(String),
     InvalidUsageOfStringFormatTypeParameter,
@@ -260,9 +260,6 @@ impl DiagnosticInfoMessage {
             DiagnosticInfoMessage::StarPatternMustBeUsedWithUse => {
                 "* patterns can contain only `use` handlers".to_string()
             }
-            DiagnosticInfoMessage::CannotUseQualifiedTypeWithTypeParameters => {
-                "Cannot use qualified type with type parameters".to_string()
-            }
             DiagnosticInfoMessage::CannotUseStarAsType => "Cannot use star as type".to_string(),
             DiagnosticInfoMessage::CannotUseTsTypeAsQualified => {
                 "I cannot understand this type".to_string()
@@ -346,6 +343,9 @@ impl DiagnosticInfoMessage {
                 "Type query args are not supported".to_string()
             }
             DiagnosticInfoMessage::InvalidIndexedAccess => "Invalid indexed access".to_string(),
+            DiagnosticInfoMessage::CannotGetQualifiedTypeFromFileRec(s) => {
+                format!("Cannot get qualified type from recursive file: {s}")
+            }
             DiagnosticInfoMessage::PathMustStartWithDash => {
                 "Path must start with a dash".to_string()
             }

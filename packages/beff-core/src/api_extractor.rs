@@ -236,7 +236,7 @@ impl<'a, R: FileManager> ExtractExportDefaultVisitor<'a, R> {
             Expr::Ident(i) => {
                 match TypeResolver::new(self.files, &self.current_file).resolve_local_value(i) {
                     Ok(r) => match r {
-                        ResolvedLocalSymbol::TsType(_) => todo!(),
+                        ResolvedLocalSymbol::TsType(_, _) => todo!(),
                         ResolvedLocalSymbol::TsInterfaceDecl(_) => todo!(),
                         ResolvedLocalSymbol::Expr(e) => {
                             self.check_member_expr_for_methods_inner(&e, right, &e.span())

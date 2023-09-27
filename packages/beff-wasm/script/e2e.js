@@ -128,7 +128,7 @@ const codegenSnaps = () => {
 };
 
 const main = async () => {
-  const queue = new PQueue({ concurrency: 4 });
+  const queue = new PQueue({ concurrency: 8 });
   await queue.addAll([...codegenSnaps(), ...failures(), ...vitest(), ...futures()]);
 
   await queue.onIdle();
