@@ -88,6 +88,22 @@ mod tests {
     }
 
     #[test]
+    fn ok_access_syntatically() {
+        let from = r#"
+    type Tags = "a" | "b"
+    type A = {tag:Tags}
+    type B = {t:A["tag"]}
+    export default {
+        "/hello": {
+            get: (): B => impl()
+        }
+    }
+    "#;
+
+        insta::assert_snapshot!(ok(from));
+    }
+
+    #[test]
     fn ok_access_union_arr() {
         let from = r#"
     type A = [{tag:"a"}|{tag:"b"}]

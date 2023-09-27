@@ -545,6 +545,31 @@ impl<'a, R: FileManager> TypeToSchema<'a, R> {
             Expr::Member(m) => {
                 let mut ctx = SemTypeContext::new();
                 let obj = self.typeof_expr(&m.obj, as_const)?;
+                if let JsonSchema::Object(vs) = &obj {
+                    // try to do it syntatically to preserve aliases
+                    let x = match &m.prop {
+                        MemberProp::Ident(i) => {
+                            let k = i.sym.to_string();
+                            Some(k)
+                        }
+                        MemberProp::Computed(c) => {
+                            let v = self.typeof_expr(&c.expr, as_const)?;
+                            match v {
+                                JsonSchema::Const(Json::String(s)) => Some(s.clone()),
+                                _ => None,
+                            }
+                        }
+                        MemberProp::PrivateName(_) => None,
+                    };
+                    if let Some(key) = x {
+                        if let Some(v) = vs.get(&key) {
+                            if let Optionality::Required(v) = v {
+                                return Ok(v.clone());
+                            }
+                        };
+                    }
+                }
+                // fall back to semantic types if it cannot be done syntatically
                 let key: Rc<SemType> = match &m.prop {
                     MemberProp::Ident(i) => Rc::new(SemTypeContext::string_const(
                         StringLitOrFormat::Lit(i.sym.to_string()),
@@ -615,10 +640,41 @@ impl<'a, R: FileManager> TypeToSchema<'a, R> {
         }
         Ok(head.schema)
     }
+    fn convert_indexed_access_syntatically(
+        &mut self,
+        obj: &JsonSchema,
+        index: &JsonSchema,
+    ) -> Res<Option<JsonSchema>> {
+        // try to resolve syntatically
+        match (obj, index) {
+            (JsonSchema::Ref(r), _) => {
+                let v = self.components.get(r);
+
+                let v = v.and_then(|it| it.clone());
+                if let Some(v) = v {
+                    return self.convert_indexed_access_syntatically(&v.schema, index);
+                }
+            }
+            (JsonSchema::Object(vs), JsonSchema::Const(Json::String(s))) => {
+                let v = vs.get(s);
+                if let Some(v) = v {
+                    if let Optionality::Required(v) = v {
+                        return Ok(Some(v.clone()));
+                    }
+                }
+            }
+            _ => {}
+        }
+        Ok(None)
+    }
     fn convert_indexed_access(&mut self, i: &TsIndexedAccessType) -> Res<JsonSchema> {
         let obj = self.convert_ts_type(&i.obj_type)?;
         let index = self.convert_ts_type(&i.index_type)?;
 
+        if let Some(res) = self.convert_indexed_access_syntatically(&obj, &index)? {
+            return Ok(res);
+        }
+        // fallback to semantic
         let mut ctx = SemTypeContext::new();
 
         let obj_st = obj.to_sem_type(&self.validators_ref(), &mut ctx).unwrap();
@@ -638,6 +694,7 @@ impl<'a, R: FileManager> TypeToSchema<'a, R> {
 
         self.convert_sem_type(keyof_st, &mut ctx, &k.span())
     }
+
     pub fn convert_ts_type(&mut self, typ: &TsType) -> Res<JsonSchema> {
         match typ {
             TsType::TsKeywordType(TsKeywordType { kind, span, .. }) => {
