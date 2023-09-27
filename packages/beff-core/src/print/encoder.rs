@@ -4,8 +4,8 @@ use swc_common::DUMMY_SP;
 use swc_ecma_ast::{
     op, ArrayLit, ArrowExpr, BinExpr, BindingIdent, BlockStmt, BlockStmtOrExpr, CallExpr, Callee,
     ComputedPropName, Expr, ExprOrSpread, Function, Ident, KeyValueProp, Lit, MemberExpr,
-    MemberProp, Null, Number, ObjectLit, Param, ParenExpr, Pat, Prop, PropName, PropOrSpread,
-    ReturnStmt, Stmt, Str,
+    MemberProp, Null, Number, ObjectLit, OptChainBase, OptChainExpr, Param, ParenExpr, Pat, Prop,
+    PropName, PropOrSpread, ReturnStmt, Stmt, Str,
 };
 
 use crate::ast::json_schema::JsonSchema;
@@ -153,7 +153,7 @@ fn encode_expr(schema: &JsonSchema, input_expr: Expr) -> Expr {
                         sym: key_string.clone().into(),
                         optional: false,
                     });
-                    let member_expr = Expr::Member(MemberExpr {
+                    let member_expr = MemberExpr {
                         span: DUMMY_SP,
                         obj: input_expr.clone().into(),
                         prop: MemberProp::Ident(Ident {
@@ -161,7 +161,19 @@ fn encode_expr(schema: &JsonSchema, input_expr: Expr) -> Expr {
                             sym: key_string.clone().into(),
                             optional: false,
                         }),
-                    });
+                    };
+                    let member_expr = if value.is_required() {
+                        Expr::Member(member_expr)
+                    } else {
+                        Expr::OptChain(
+                            OptChainExpr {
+                                span: DUMMY_SP,
+                                optional: true,
+                                base: OptChainBase::Member(member_expr).into(),
+                            }
+                            .into(),
+                        )
+                    };
                     let value = encode_expr(value.inner(), member_expr);
                     PropOrSpread::Prop(Box::new(Prop::KeyValue(KeyValueProp {
                         key,
