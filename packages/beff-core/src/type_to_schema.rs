@@ -562,10 +562,8 @@ impl<'a, R: FileManager> TypeToSchema<'a, R> {
                         MemberProp::PrivateName(_) => None,
                     };
                     if let Some(key) = x {
-                        if let Some(v) = vs.get(&key) {
-                            if let Optionality::Required(v) = v {
-                                return Ok(v.clone());
-                            }
+                        if let Some(Optionality::Required(v)) = vs.get(&key) {
+                            return Ok(v.clone());
                         };
                     }
                 }
@@ -657,10 +655,8 @@ impl<'a, R: FileManager> TypeToSchema<'a, R> {
             }
             (JsonSchema::Object(vs), JsonSchema::Const(Json::String(s))) => {
                 let v = vs.get(s);
-                if let Some(v) = v {
-                    if let Optionality::Required(v) = v {
-                        return Ok(Some(v.clone()));
-                    }
+                if let Some(Optionality::Required(v)) = v {
+                    return Ok(Some(v.clone()));
                 }
             }
             _ => {}

@@ -8,7 +8,6 @@ pub mod parse;
 pub mod parser_extractor;
 pub mod print;
 pub mod schema_changes;
-pub mod simplify_schema;
 pub mod subtyping;
 pub mod sym_reference;
 pub mod type_to_schema;
@@ -23,12 +22,10 @@ use parser_extractor::extract_parser;
 use parser_extractor::ParserExtractResult;
 use serde::Deserialize;
 use serde::Serialize;
-use simplify_schema::SimplifySchema;
 use std::collections::BTreeSet;
 use std::collections::HashMap;
 use std::rc::Rc;
 use std::sync::Arc;
-use subtyping::semtype::SemTypeContext;
 use swc_atoms::JsWord;
 use swc_common::SourceFile;
 use swc_common::SourceMap;
@@ -303,5 +300,5 @@ pub fn extract<R: FileManager>(files: &mut R, entry_points: EntryPoints) -> Extr
         parser = Some(extract_parser(files, entry, &entry_points.settings));
     }
 
-    ExtractResult { router, parser }.simplify(&mut SemTypeContext::new())
+    ExtractResult { router, parser }
 }

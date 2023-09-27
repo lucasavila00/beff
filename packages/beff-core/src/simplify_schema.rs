@@ -20,9 +20,9 @@ impl SimplifySchema for HandlerParameter {
                 span,
             } => HandlerParameter::PathOrQueryOrBody {
                 schema: schema.simplify(ctx),
-                required: required,
-                description: description,
-                span: span,
+                required,
+                description,
+                span,
             },
             HandlerParameter::Header {
                 span,
@@ -100,15 +100,14 @@ fn maybe_simplify_with_sem_types(it: &JsonSchema, ctx: &mut SemTypeContext) -> O
         | JsonSchema::Null => Some(it.clone()),
         JsonSchema::Object(vs) => {
             Some(JsonSchema::object(
-                vs.into_iter()
+                vs.iter()
                     .map(|(k, v)| match v {
                         Optionality::Optional(v) => maybe_simplify_with_sem_types(v, ctx)
                             .map(|it| (k.clone(), it.optional())),
                         Optionality::Required(v) => maybe_simplify_with_sem_types(v, ctx)
                             .map(|it| (k.clone(), it.required())),
                     })
-                    .collect::<Option<Vec<_>>>()?
-                    .into(),
+                    .collect::<Option<Vec<_>>>()?,
             ))
         }
         JsonSchema::Array(v) => Some(JsonSchema::Array(
@@ -119,7 +118,7 @@ fn maybe_simplify_with_sem_types(it: &JsonSchema, ctx: &mut SemTypeContext) -> O
             items,
         } => {
             let prefix_items = prefix_items
-                .into_iter()
+                .iter()
                 .map(|it| maybe_simplify_with_sem_types(it, ctx))
                 .collect::<Option<_>>()?;
             let items = match items {
@@ -136,19 +135,19 @@ fn maybe_simplify_with_sem_types(it: &JsonSchema, ctx: &mut SemTypeContext) -> O
         )),
         JsonSchema::AnyOf(vs) => {
             let simple_vs = vs
-                .into_iter()
+                .iter()
                 .map(|it| maybe_simplify_with_sem_types(it, ctx))
                 .collect::<Option<Vec<_>>>()?;
             let any_of = JsonSchema::any_of(simple_vs);
-            return Some(simplify_with_sem_types(any_of, ctx));
+            Some(simplify_with_sem_types(any_of, ctx))
         }
         JsonSchema::AllOf(vs) => {
             let simple_vs = vs
-                .into_iter()
+                .iter()
                 .map(|it| maybe_simplify_with_sem_types(it, ctx))
                 .collect::<Option<Vec<_>>>()?;
             let any_of = JsonSchema::all_of(simple_vs);
-            return Some(simplify_with_sem_types(any_of, ctx));
+            Some(simplify_with_sem_types(any_of, ctx))
         }
     }
 }

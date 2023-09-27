@@ -3,6 +3,6 @@ source: packages/beff-core/tests/print_router.rs
 expression: ok(from)
 ---
 type A = [({ "tag": "a" } | { "tag": "b" })];
-type B = "a" | "b";
+type B = string & ("a" | "b");
 type Router = { "/hello": { "get": () => B } };
 
