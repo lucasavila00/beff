@@ -184,7 +184,7 @@ impl<'a, R: FileManager> TypeToSchema<'a, R> {
         let ty = match exported {
             SymbolExport::TsType {
                 ty: alias, params, ..
-            } => self.apply_type_params(type_args, &params, &alias)?,
+            } => self.apply_type_params(type_args, params, alias)?,
 
             SymbolExport::TsInterfaceDecl(int) => self.convert_ts_interface_decl(int, type_args)?,
             SymbolExport::StarOfOtherFile(_) => {
