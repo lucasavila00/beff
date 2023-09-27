@@ -51,7 +51,10 @@ mod tests {
     fn ok(from: &str) -> String {
         let p = parse_api(from);
         let errors = p.errors();
-        assert!(errors.is_empty());
+
+        if !errors.is_empty() {
+            panic!("errors: {:?}", errors);
+        }
         match p.router {
             Some(v) => v
                 .open_api
@@ -73,10 +76,53 @@ mod tests {
         insta::assert_snapshot!(ok(from));
     }
     #[test]
+    fn ok_no_simplify_unions() {
+        let from = r#"
+    type A = "a"| "b"| "c";
+    type B = "a"| "b"| "d" | "e";
+    export default {
+        "/hello": {
+            get: (): A|B => impl()
+        }
+    }
+    "#;
+
+        insta::assert_snapshot!(ok(from));
+    }
+    #[test]
+    fn ok_simplify_unions() {
+        let from = r#"
+    type A = ("a"| "b"| "c")|("a"| "b"| "d" | "e");
+    export default {
+        "/hello": {
+            get: (): A => impl()
+        }
+    }
+    "#;
+
+        insta::assert_snapshot!(ok(from));
+    }
+    #[test]
     fn ok_access_union() {
         let from = r#"
     type A = {tag:"a"}|{tag:"b"}
     type B = A["tag"]
+    export default {
+        "/hello": {
+            get: (): B => impl()
+        }
+    }
+    "#;
+
+        insta::assert_snapshot!(ok(from));
+    }
+
+    #[test]
+    fn ok_access_syntatically() {
+        let from = r#"
+    type Tags = "a" | "b"
+    type A = {tag:Tags}
+    type B = {t:A["tag"]}
     export default {
         "/hello": {
             get: (): B => impl()

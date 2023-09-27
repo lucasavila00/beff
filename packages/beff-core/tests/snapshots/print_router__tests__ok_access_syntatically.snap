@@ -1,0 +1,9 @@
+---
+source: packages/beff-core/tests/print_router.rs
+expression: ok(from)
+---
+type A = { "tag": Tags };
+type B = { "t": Tags };
+type Tags = "a" | "b";
+type Router = { "/hello": { "get": () => B } };
+
