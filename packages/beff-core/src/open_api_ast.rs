@@ -281,6 +281,9 @@ impl ApiPath {
         key: &str,
         locs: Option<FullLocation>,
     ) -> Result<ParsedPattern, DiagnosticInfoMessage> {
+        if !key.starts_with("/") {
+            return Err(DiagnosticInfoMessage::PathMustStartWithDash);
+        }
         let path_params = parse_pattern_params(key);
         match Self::validate_pattern(key) {
             Some(d) => Err(d),
