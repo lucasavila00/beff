@@ -165,14 +165,11 @@ fn encode_expr(schema: &JsonSchema, input_expr: Expr) -> Expr {
                     let member_expr = if value.is_required() {
                         Expr::Member(member_expr)
                     } else {
-                        Expr::OptChain(
-                            OptChainExpr {
-                                span: DUMMY_SP,
-                                optional: true,
-                                base: OptChainBase::Member(member_expr).into(),
-                            }
-                            .into(),
-                        )
+                        Expr::OptChain(OptChainExpr {
+                            span: DUMMY_SP,
+                            optional: true,
+                            base: OptChainBase::Member(member_expr).into(),
+                        })
                     };
                     let value = encode_expr(value.inner(), member_expr);
                     PropOrSpread::Prop(Box::new(Prop::KeyValue(KeyValueProp {
@@ -341,9 +338,7 @@ fn fn_encoder_from_schema(schema: &JsonSchema, required: bool) -> Function {
             test: if_null.into(),
             cons: Box::new(Stmt::Return(ReturnStmt {
                 span: DUMMY_SP,
-                arg: Some(Box::new(
-                    Expr::Lit(Lit::Null(Null { span: DUMMY_SP })).into(),
-                )),
+                arg: Some(Box::new(Expr::Lit(Lit::Null(Null { span: DUMMY_SP })))),
             })),
             alt: None,
         });
