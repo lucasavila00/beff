@@ -55,6 +55,17 @@ test("either2", async () => {
   `);
 });
 
+test("export default is as const", async () => {
+  await expect(
+    beff["/exp_default"].post(
+      //@ts-expect-error
+      "b"
+    )
+  ).rejects.toMatchInlineSnapshot('[HTTPException: #0 (a) expected "a", received: "b"]');
+
+  await expect(beff["/exp_default"].post("a")).resolves.toMatchInlineSnapshot('"a"');
+});
+
 test("date", async () => {
   await expect(
     beff["/date"].post(
