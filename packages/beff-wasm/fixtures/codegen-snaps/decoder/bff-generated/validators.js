@@ -83,6 +83,9 @@ function decodeNumber(ctx, input, required) {
   if (isNumeric(input)) {
     return Number(input);
   }
+  if (String(input).toLowerCase() == "nan") {
+    return NaN;
+  }
 
   return buildError(input, ctx,  "expected number")
 }
@@ -240,7 +243,12 @@ function decodeConst(ctx, input, required, constValue) {
   }
   return buildError(input, ctx,  "expected "+JSON.stringify(constValue))
 }
-
+function encodeNumber(value) {
+  if (Number.isNaN(value)) {
+    return "NaN";
+  }
+  return value;
+}
 function encodeAllOf(cbs, value) {
   if (typeof value === "object") {
     let acc = {};
@@ -318,7 +326,7 @@ function DecodeAllTypes(ctx, input) {
 function EncodeAllTypes(input) {
     return {
         allBooleans: input.allBooleans,
-        allNumbers: input.allNumbers,
+        allNumbers: encodeNumber(input.allNumbers),
         allStrings: input.allStrings,
         any: input.any,
         arrayOfStrings: input.arrayOfStrings.map((input)=>(input)),
@@ -334,7 +342,7 @@ function EncodeAllTypes(input) {
         ], input.intersection),
         null: (input.null ?? null),
         numberLiteral: input.numberLiteral,
-        optionalType: input.optionalType.map((input)=>(input)),
+        optionalType: input.optionalType.map((input)=>(encodeNumber(input))),
         stringLiteral: input.stringLiteral,
         tuple: [
             input.tuple[0],
@@ -343,7 +351,7 @@ function EncodeAllTypes(input) {
         tupleWithRest: [
             input.tupleWithRest[0],
             input.tupleWithRest[1],
-            ...(input.tupleWithRest.slice(2).map((input)=>(input)))
+            ...(input.tupleWithRest.slice(2).map((input)=>(encodeNumber(input))))
         ],
         typeReference: encoders.User(input.typeReference),
         undefined: (input.undefined ?? null),
@@ -354,11 +362,11 @@ function EncodeAllTypes(input) {
         ], input.unionOfLiterals),
         unionOfTypes: encodeAnyOf([
             (input)=>(input),
-            (input)=>(input)
+            (input)=>(encodeNumber(input))
         ], input.unionOfTypes),
         unionWithNull: encodeAnyOf([
             (input)=>((input ?? null)),
-            (input)=>(input),
+            (input)=>(encodeNumber(input)),
             (input)=>(input.map((input)=>(encoders.User(input))))
         ], input.unionWithNull),
         unknown: input.unknown
@@ -399,4 +407,4 @@ const encoders = {
     User: EncodeUser
 };
 
-export default { decodeObject, decodeArray, decodeString, decodeNumber, decodeCodec, decodeStringWithFormat, decodeAnyOf, decodeAllOf, decodeBoolean, decodeAny, decodeTuple, decodeNull, decodeConst, encodeCodec, encodeAnyOf, encodeAllOf, validators, encoders };
+export default { decodeObject, decodeArray, decodeString, decodeNumber, decodeCodec, decodeStringWithFormat, decodeAnyOf, decodeAllOf, decodeBoolean, decodeAny, decodeTuple, decodeNull, decodeConst, encodeCodec, encodeAnyOf, encodeAllOf, encodeNumber, validators, encoders };

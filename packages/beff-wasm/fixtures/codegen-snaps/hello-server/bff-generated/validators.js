@@ -83,6 +83,9 @@ function decodeNumber(ctx, input, required) {
   if (isNumeric(input)) {
     return Number(input);
   }
+  if (String(input).toLowerCase() == "nan") {
+    return NaN;
+  }
 
   return buildError(input, ctx,  "expected number")
 }
@@ -240,7 +243,12 @@ function decodeConst(ctx, input, required, constValue) {
   }
   return buildError(input, ctx,  "expected "+JSON.stringify(constValue))
 }
-
+function encodeNumber(value) {
+  if (Number.isNaN(value)) {
+    return "NaN";
+  }
+  return value;
+}
 function encodeAllOf(cbs, value) {
   if (typeof value === "object") {
     let acc = {};
@@ -336,7 +344,7 @@ function EncodeDataTypesKitchenSink(input) {
         array2: input.array2.map((input)=>(input)),
         basic: {
             a: input.basic.a,
-            b: input.basic.b,
+            b: encodeNumber(input.basic.b),
             c: input.basic.c
         },
         enum: encodeAnyOf([
@@ -352,7 +360,7 @@ function EncodeDataTypesKitchenSink(input) {
         many_nullable: encodeAnyOf([
             (input)=>((input ?? null)),
             (input)=>(input),
-            (input)=>(input)
+            (input)=>(encodeNumber(input))
         ], input.many_nullable),
         nullable: encodeAnyOf([
             (input)=>((input ?? null)),
@@ -375,12 +383,12 @@ function EncodeDataTypesKitchenSink(input) {
         tuple_rest: [
             input.tuple_rest[0],
             input.tuple_rest[1],
-            ...(input.tuple_rest.slice(2).map((input)=>(input)))
+            ...(input.tuple_rest.slice(2).map((input)=>(encodeNumber(input))))
         ],
         union_of_many: encodeAnyOf([
             (input)=>(input),
             (input)=>(input),
-            (input)=>(input)
+            (input)=>(encodeNumber(input))
         ], input.union_of_many),
         union_with_undefined: encodeAnyOf([
             (input)=>((input ?? null)),
@@ -405,7 +413,7 @@ function DecodeUser(ctx, input) {
 function EncodeUser(input) {
     return {
         entities: input.entities.map((input)=>(encoders.UserEntity(input))),
-        id: input.id,
+        id: encodeNumber(input.id),
         name: input.name,
         optional_prop: input.optional_prop
     };
@@ -435,4 +443,4 @@ const encoders = {
     UserEntity: EncodeUserEntity
 };
 
-export default { decodeObject, decodeArray, decodeString, decodeNumber, decodeCodec, decodeStringWithFormat, decodeAnyOf, decodeAllOf, decodeBoolean, decodeAny, decodeTuple, decodeNull, decodeConst, encodeCodec, encodeAnyOf, encodeAllOf, validators, encoders };
+export default { decodeObject, decodeArray, decodeString, decodeNumber, decodeCodec, decodeStringWithFormat, decodeAnyOf, decodeAllOf, decodeBoolean, decodeAny, decodeTuple, decodeNull, decodeConst, encodeCodec, encodeAnyOf, encodeAllOf, encodeNumber, validators, encoders };

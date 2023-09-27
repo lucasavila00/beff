@@ -83,6 +83,9 @@ function decodeNumber(ctx, input, required) {
   if (isNumeric(input)) {
     return Number(input);
   }
+  if (String(input).toLowerCase() == "nan") {
+    return NaN;
+  }
 
   return buildError(input, ctx,  "expected number")
 }
@@ -240,7 +243,12 @@ function decodeConst(ctx, input, required, constValue) {
   }
   return buildError(input, ctx,  "expected "+JSON.stringify(constValue))
 }
-
+function encodeNumber(value) {
+  if (Number.isNaN(value)) {
+    return "NaN";
+  }
+  return value;
+}
 function encodeAllOf(cbs, value) {
   if (typeof value === "object") {
     let acc = {};
@@ -264,4 +272,4 @@ function encodeAnyOf(cbs, value) {
 const validators = {};
 const encoders = {};
 
-export default { decodeObject, decodeArray, decodeString, decodeNumber, decodeCodec, decodeStringWithFormat, decodeAnyOf, decodeAllOf, decodeBoolean, decodeAny, decodeTuple, decodeNull, decodeConst, encodeCodec, encodeAnyOf, encodeAllOf, validators, encoders };
+export default { decodeObject, decodeArray, decodeString, decodeNumber, decodeCodec, decodeStringWithFormat, decodeAnyOf, decodeAllOf, decodeBoolean, decodeAny, decodeTuple, decodeNull, decodeConst, encodeCodec, encodeAnyOf, encodeAllOf, encodeNumber, validators, encoders };
