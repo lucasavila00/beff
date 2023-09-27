@@ -38,8 +38,8 @@ test("either", async () => {
     })
   ).resolves.toMatchInlineSnapshot(`
     {
-      "_tag": "Left",
-      "left": "asd",
+      "_tag": "Right",
+      "right": 123,
     }
   `);
 });
@@ -70,8 +70,8 @@ test("either2", async () => {
     })
   ).resolves.toMatchInlineSnapshot(`
     {
-      "_tag": "Left",
-      "left": "asd",
+      "_tag": "Right",
+      "right": 123,
     }
   `);
 });
