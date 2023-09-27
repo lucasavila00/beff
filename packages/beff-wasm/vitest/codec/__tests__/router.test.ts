@@ -223,3 +223,14 @@ test("nan2", async () => {
     ]
   `);
 });
+
+test("optional prop", async () => {
+  await expect(beff["/optional"].post({})).resolves.toMatchInlineSnapshot(`
+    {
+      "a": {
+        "a2": undefined,
+      },
+    }
+  `);
+  await expect(beff["/optional2"].post()).resolves.toMatchInlineSnapshot("null");
+});

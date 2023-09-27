@@ -366,7 +366,7 @@ function EncodeDataTypesKitchenSink(input) {
             (input)=>((input ?? null)),
             (input)=>(input)
         ], input.nullable),
-        optional_prop: input.optional_prop,
+        optional_prop: input?.optional_prop,
         str_template: input.str_template,
         tuple1: [
             input.tuple1[0]
@@ -415,7 +415,7 @@ function EncodeUser(input) {
         entities: input.entities.map((input)=>(encoders.UserEntity(input))),
         id: encodeNumber(input.id),
         name: input.name,
-        optional_prop: input.optional_prop
+        optional_prop: input?.optional_prop
     };
 }
 function DecodeUserEntity(ctx, input) {

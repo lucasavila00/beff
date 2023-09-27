@@ -3,9 +3,9 @@ use std::collections::BTreeSet;
 use swc_common::DUMMY_SP;
 use swc_ecma_ast::{
     op, ArrayLit, ArrowExpr, BinExpr, BindingIdent, BlockStmt, BlockStmtOrExpr, CallExpr, Callee,
-    ComputedPropName, Expr, ExprOrSpread, Function, Ident, KeyValueProp, Lit, MemberExpr,
-    MemberProp, Null, Number, ObjectLit, Param, ParenExpr, Pat, Prop, PropName, PropOrSpread,
-    ReturnStmt, Stmt, Str,
+    ComputedPropName, Expr, ExprOrSpread, Function, Ident, IfStmt, KeyValueProp, Lit, MemberExpr,
+    MemberProp, Null, Number, ObjectLit, OptChainBase, OptChainExpr, Param, ParenExpr, Pat, Prop,
+    PropName, PropOrSpread, ReturnStmt, Stmt, Str,
 };
 
 use crate::ast::json_schema::JsonSchema;
@@ -153,7 +153,7 @@ fn encode_expr(schema: &JsonSchema, input_expr: Expr) -> Expr {
                         sym: key_string.clone().into(),
                         optional: false,
                     });
-                    let member_expr = Expr::Member(MemberExpr {
+                    let member_expr = MemberExpr {
                         span: DUMMY_SP,
                         obj: input_expr.clone().into(),
                         prop: MemberProp::Ident(Ident {
@@ -161,7 +161,16 @@ fn encode_expr(schema: &JsonSchema, input_expr: Expr) -> Expr {
                             sym: key_string.clone().into(),
                             optional: false,
                         }),
-                    });
+                    };
+                    let member_expr = if value.is_required() {
+                        Expr::Member(member_expr)
+                    } else {
+                        Expr::OptChain(OptChainExpr {
+                            span: DUMMY_SP,
+                            optional: true,
+                            base: OptChainBase::Member(member_expr).into(),
+                        })
+                    };
                     let value = encode_expr(value.inner(), member_expr);
                     PropOrSpread::Prop(Box::new(Prop::KeyValue(KeyValueProp {
                         key,
@@ -314,8 +323,27 @@ fn new_input_expr() -> Expr {
     Expr::Ident(input_ident())
 }
 
-fn fn_encoder_from_schema(schema: &JsonSchema) -> Function {
+fn fn_encoder_from_schema(schema: &JsonSchema, required: bool) -> Function {
     let mut stmts = vec![];
+
+    if !required {
+        let if_null = Expr::Bin(BinExpr {
+            span: DUMMY_SP,
+            left: new_input_expr().into(),
+            op: op!("=="),
+            right: Expr::Lit(Lit::Null(Null { span: DUMMY_SP })).into(),
+        });
+        let if_null = Stmt::If(IfStmt {
+            span: DUMMY_SP,
+            test: if_null.into(),
+            cons: Box::new(Stmt::Return(ReturnStmt {
+                span: DUMMY_SP,
+                arg: Some(Box::new(Expr::Lit(Lit::Null(Null { span: DUMMY_SP })))),
+            })),
+            alt: None,
+        });
+        stmts.push(if_null);
+    }
 
     let input_expr = new_input_expr();
 
@@ -347,6 +375,6 @@ fn fn_encoder_from_schema(schema: &JsonSchema) -> Function {
 }
 
 #[must_use]
-pub fn from_schema(schema: &JsonSchema) -> Function {
-    fn_encoder_from_schema(schema)
+pub fn from_schema(schema: &JsonSchema, required: bool) -> Function {
+    fn_encoder_from_schema(schema, required)
 }

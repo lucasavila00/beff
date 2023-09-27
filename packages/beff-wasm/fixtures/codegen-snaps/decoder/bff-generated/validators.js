@@ -342,7 +342,7 @@ function EncodeAllTypes(input) {
         ], input.intersection),
         null: (input.null ?? null),
         numberLiteral: input.numberLiteral,
-        optionalType: input.optionalType.map((input)=>(encodeNumber(input))),
+        optionalType: input?.optionalType.map((input)=>(encodeNumber(input))),
         stringLiteral: input.stringLiteral,
         tuple: [
             input.tuple[0],

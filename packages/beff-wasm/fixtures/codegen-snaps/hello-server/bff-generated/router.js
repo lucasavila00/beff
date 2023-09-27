@@ -9,6 +9,7 @@ const meta = [
             },
             {
                 "encoder": function(input) {
+                    if (input == null) return null;
                     return encodeNumber(input);
                 },
                 "name": "limit",

@@ -14,6 +14,23 @@ export default {
       return b.a;
     },
   },
+  "/optional": {
+    post: async (
+      _c: Ctx,
+      b: {
+        a?: { a2?: string };
+      }
+    ): Promise<{
+      a?: { a2?: string };
+    }> => {
+      return b;
+    },
+  },
+  "/optional2": {
+    post: async (_c: Ctx, b?: string[]): Promise<string[] | undefined> => {
+      return b;
+    },
+  },
   ["/date"]: {
     post: async (
       _c: Ctx,
