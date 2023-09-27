@@ -160,9 +160,11 @@ pub struct ParsedModule {
     pub export_default: Option<Rc<SymbolExportDefault>>,
 }
 
+type TypeAliasMap = HashMap<(JsWord, SyntaxContext), (Option<Rc<TsTypeParamDecl>>, Rc<TsType>)>;
+
 #[derive(Debug)]
 pub struct ParsedModuleLocals {
-    pub type_aliases: HashMap<(JsWord, SyntaxContext), (Option<Rc<TsTypeParamDecl>>, Rc<TsType>)>,
+    pub type_aliases: TypeAliasMap,
     pub interfaces: HashMap<(JsWord, SyntaxContext), Rc<TsInterfaceDecl>>,
 
     pub exprs: HashMap<(JsWord, SyntaxContext), Rc<Expr>>,

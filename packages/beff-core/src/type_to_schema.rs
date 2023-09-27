@@ -221,27 +221,24 @@ impl<'a, R: FileManager> TypeToSchema<'a, R> {
         ty: &TsType,
     ) -> Res<JsonSchema> {
         let mut map: BTreeMap<String, JsonSchema> = BTreeMap::new();
-        match (type_args, decl) {
-            (Some(v), Some(decl)) => {
-                if v.params.len() != decl.params.len() {
-                    todo!()
-                    // return self.error(
-                    //     &v.span,
-                    //     DiagnosticInfoMessage::TypeParamsCountMismatch {
-                    //         expected: decl.params.len(),
-                    //         found: v.params.len(),
-                    //     },
-                    // );
-                }
-
-                for (i, param) in decl.params.iter().enumerate() {
-                    let param_name = param.name.sym.to_string();
-                    let param_type = &v.params[i];
-                    let param_type = self.convert_ts_type(param_type)?;
-                    map.insert(param_name, param_type);
-                }
+        if let (Some(v), Some(decl)) = (type_args, decl) {
+            if v.params.len() != decl.params.len() {
+                todo!()
+                // return self.error(
+                //     &v.span,
+                //     DiagnosticInfoMessage::TypeParamsCountMismatch {
+                //         expected: decl.params.len(),
+                //         found: v.params.len(),
+                //     },
+                // );
             }
-            _ => {}
+
+            for (i, param) in decl.params.iter().enumerate() {
+                let param_name = param.name.sym.to_string();
+                let param_type = &v.params[i];
+                let param_type = self.convert_ts_type(param_type)?;
+                map.insert(param_name, param_type);
+            }
         }
         self.type_param_stack.push(map);
 
@@ -278,14 +275,8 @@ impl<'a, R: FileManager> TypeToSchema<'a, R> {
     }
 
     fn insert_definition(&mut self, name: String, schema: JsonSchema) -> Res<JsonSchema> {
-        match self.components.get(&name) {
-            Some(it) => match it {
-                Some(v) => {
-                    assert_eq!(v.schema, schema);
-                }
-                None => {}
-            },
-            None => {}
+        if let Some(Some(v)) = self.components.get(&name) {
+            assert_eq!(v.schema, schema);
         }
         self.components.insert(
             name.clone(),
