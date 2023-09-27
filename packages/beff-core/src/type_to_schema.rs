@@ -547,21 +547,14 @@ impl<'a, R: FileManager> TypeToSchema<'a, R> {
                 let obj = self.typeof_expr(&m.obj, as_const)?;
                 if let JsonSchema::Object(vs) = &obj {
                     // try to do it syntatically to preserve aliases
-                    let x = match &m.prop {
-                        MemberProp::Ident(i) => {
-                            let k = i.sym.to_string();
-                            Some(k)
-                        }
-                        MemberProp::Computed(c) => {
-                            let v = self.typeof_expr(&c.expr, as_const)?;
-                            match v {
-                                JsonSchema::Const(Json::String(s)) => Some(s.clone()),
-                                _ => None,
-                            }
-                        }
+                    if let Some(key) = match &m.prop {
+                        MemberProp::Ident(i) => Some(i.sym.to_string()),
+                        MemberProp::Computed(c) => match self.typeof_expr(&c.expr, as_const)? {
+                            JsonSchema::Const(Json::String(s)) => Some(s.clone()),
+                            _ => None,
+                        },
                         MemberProp::PrivateName(_) => None,
-                    };
-                    if let Some(key) = x {
+                    } {
                         if let Some(Optionality::Required(v)) = vs.get(&key) {
                             return Ok(v.clone());
                         };

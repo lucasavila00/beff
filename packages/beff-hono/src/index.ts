@@ -159,6 +159,30 @@ const lowerCaseRouter = (it: Record<string, Record<string, any>>) => {
   return lowerCaseRouter;
 };
 
+const cmpMetaPattern = (a: string, b: string): number => {
+  const aParts = a.split("/");
+  const bParts = b.split("/");
+  const aPartsLen = aParts.length;
+  const bPartsLen = bParts.length;
+  const minLen = Math.min(aPartsLen, bPartsLen);
+  for (let i = 0; i < minLen; i++) {
+    const aPart = aParts[i];
+    const bPart = bParts[i];
+    if (aPart === bPart) {
+      continue;
+    }
+    if (aPart.startsWith("{") && aPart.endsWith("}")) {
+      return 1;
+    }
+    if (bPart.startsWith("{") && bPart.endsWith("}")) {
+      return -1;
+    }
+    return aPart.localeCompare(bPart);
+  }
+  return aPartsLen - bPartsLen;
+};
+const sortToRemoveShadows = (it: HandlerMetaServer[]): HandlerMetaServer[] =>
+  it.sort((a, b) => cmpMetaPattern(a.pattern, b.pattern));
 export function buildHonoApp(options: {
   router: Record<string, Record<string, any>>;
   servers?: OpenApiServer[];
@@ -176,7 +200,7 @@ export function buildHonoApp(options: {
     schema = transformOpenApiDocument(schema);
   }
   registerDocs(app, schema);
-  const handlersMeta: HandlerMetaServer[] = options.generated.meta;
+  const handlersMeta: HandlerMetaServer[] = sortToRemoveShadows(options.generated.meta);
   for (const meta of handlersMeta) {
     const routers = lowerCaseRouter(options.router);
     const handlerData = routers[meta.pattern][meta.method_kind.toLowerCase()];
