@@ -121,27 +121,14 @@ impl<'a, R: FsModuleResolver> Visit for ImportsVisitor<'a, R> {
                     type_params,
                     ..
                 } = &**a;
-                match type_params {
-                    Some(params) => {
-                        self.symbol_exports.insert(
-                            id.sym.clone(),
-                            Rc::new(SymbolExport::TsTypeTemplate {
-                                ty: Rc::new(*type_ann.clone()),
-                                name: id.sym.clone(),
-                                params: Rc::new((**params).clone()),
-                            }),
-                        );
-                    }
-                    None => {
-                        self.symbol_exports.insert(
-                            id.sym.clone(),
-                            Rc::new(SymbolExport::TsType {
-                                ty: Rc::new(*type_ann.clone()),
-                                name: id.sym.clone(),
-                            }),
-                        );
-                    }
-                }
+                self.symbol_exports.insert(
+                    id.sym.clone(),
+                    Rc::new(SymbolExport::TsType {
+                        ty: Rc::new(*type_ann.clone()),
+                        name: id.sym.clone(),
+                        params: type_params.as_ref().map(|it| it.as_ref().clone().into()),
+                    }),
+                );
             }
             Decl::Var(decl) => {
                 for it in &decl.decls {
@@ -288,20 +275,10 @@ pub fn parse_and_bind<R: FsModuleResolver>(
     for unresolved in v.unresolved_exports {
         let renamed = unresolved.renamed;
         let k = (unresolved.name.clone(), unresolved.span);
-        if let Some(alias) = locals.content.type_aliases.get(&k) {
+        if let Some((params, ty)) = locals.content.type_aliases.get(&k) {
             symbol_exports.insert(
                 renamed.clone(),
                 Rc::new(SymbolExport::TsType {
-                    ty: alias.clone(),
-                    name: k.0,
-                }),
-            );
-            continue;
-        }
-        if let Some((params, ty)) = locals.content.type_templates.get(&k) {
-            symbol_exports.insert(
-                renamed.clone(),
-                Rc::new(SymbolExport::TsTypeTemplate {
                     ty: ty.clone(),
                     name: k.0,
                     params: params.clone(),
@@ -309,6 +286,7 @@ pub fn parse_and_bind<R: FsModuleResolver>(
             );
             continue;
         }
+
         if let Some(intf) = locals.content.interfaces.get(&k) {
             symbol_exports.insert(
                 renamed,

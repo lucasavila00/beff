@@ -228,7 +228,6 @@ impl<'a, R: FileManager> ExtractExportDefaultVisitor<'a, R> {
                         .to_diag(None),
                 );
             }
-            SymbolExport::TsTypeTemplate { params, ty, name } => todo!(),
         }
     }
 
@@ -237,7 +236,7 @@ impl<'a, R: FileManager> ExtractExportDefaultVisitor<'a, R> {
             Expr::Ident(i) => {
                 match TypeResolver::new(self.files, &self.current_file).resolve_local_value(i) {
                     Ok(r) => match r {
-                        ResolvedLocalSymbol::TsType(_) => todo!(),
+                        ResolvedLocalSymbol::TsType(_, _) => todo!(),
                         ResolvedLocalSymbol::TsInterfaceDecl(_) => todo!(),
                         ResolvedLocalSymbol::Expr(e) => {
                             self.check_member_expr_for_methods_inner(&e, right, &e.span())
@@ -252,7 +251,6 @@ impl<'a, R: FileManager> ExtractExportDefaultVisitor<'a, R> {
                                 None => todo!(),
                             }
                         }
-                        ResolvedLocalSymbol::TsTypeTemplate(_, _) => todo!(),
                     },
                     Err(_) => todo!(),
                 }
@@ -317,7 +315,6 @@ impl<'a, R: FileManager> ExtractExportDefaultVisitor<'a, R> {
                         self.current_file = old_file;
                     }
                     Ok(ResolvedLocalSymbol::Star { .. }) => todo!(),
-                    Ok(ResolvedLocalSymbol::TsTypeTemplate { .. }) => todo!(),
                     Ok(ResolvedLocalSymbol::TsType { .. })
                     | Ok(ResolvedLocalSymbol::TsInterfaceDecl { .. }) => {
                         self.errors.push(

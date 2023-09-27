@@ -141,6 +141,17 @@ impl<'a, R: FileManager> TypeToSchema<'a, R> {
 
         let mut map: BTreeMap<String, JsonSchema> = BTreeMap::new();
         if let (Some(params), Some(v)) = (&typ.type_params, type_args.as_ref()) {
+            if v.params.len() != params.params.len() {
+                todo!()
+                // return self.error(
+                //     &v.span,
+                //     DiagnosticInfoMessage::TypeParamsCountMismatch {
+                //         expected: decl.params.len(),
+                //         found: v.params.len(),
+                //     },
+                // );
+            }
+
             for (i, param) in params.params.iter().enumerate() {
                 let param_name = param.name.sym.to_string();
                 let param_type = &v.params[i];
@@ -171,7 +182,10 @@ impl<'a, R: FileManager> TypeToSchema<'a, R> {
         let store_current_file = self.current_file.clone();
         self.current_file = from_file.clone();
         let ty = match exported {
-            SymbolExport::TsType { ty: alias, .. } => self.convert_ts_type(alias)?,
+            SymbolExport::TsType {
+                ty: alias, params, ..
+            } => self.apply_type_params(type_args, &params, &alias)?,
+
             SymbolExport::TsInterfaceDecl(int) => self.convert_ts_interface_decl(int, type_args)?,
             SymbolExport::StarOfOtherFile(_) => {
                 return self.error(span, DiagnosticInfoMessage::CannotUseStarAsType)
@@ -196,9 +210,6 @@ impl<'a, R: FileManager> TypeToSchema<'a, R> {
                 }
             }
             SymbolExport::ValueExpr { .. } => todo!(),
-            SymbolExport::TsTypeTemplate { params, ty, .. } => {
-                self.apply_type_params(type_args, &params, &ty)?
-            }
         };
         self.current_file = store_current_file;
         Ok(ty)
@@ -206,11 +217,12 @@ impl<'a, R: FileManager> TypeToSchema<'a, R> {
     fn apply_type_params(
         &mut self,
         type_args: &Option<Box<TsTypeParamInstantiation>>,
-        decl: &TsTypeParamDecl,
+        decl: &Option<Rc<TsTypeParamDecl>>,
         ty: &TsType,
     ) -> Res<JsonSchema> {
-        match type_args {
-            Some(v) => {
+        let mut map: BTreeMap<String, JsonSchema> = BTreeMap::new();
+        match (type_args, decl) {
+            (Some(v), Some(decl)) => {
                 if v.params.len() != decl.params.len() {
                     todo!()
                     // return self.error(
@@ -222,22 +234,20 @@ impl<'a, R: FileManager> TypeToSchema<'a, R> {
                     // );
                 }
 
-                let mut map: BTreeMap<String, JsonSchema> = BTreeMap::new();
                 for (i, param) in decl.params.iter().enumerate() {
                     let param_name = param.name.sym.to_string();
                     let param_type = &v.params[i];
                     let param_type = self.convert_ts_type(param_type)?;
                     map.insert(param_name, param_type);
                 }
-                self.type_param_stack.push(map);
-
-                let ty = self.convert_ts_type(ty)?;
-                dbg!(&ty);
-                self.type_param_stack.pop();
-                Ok(ty)
             }
-            None => todo!(),
+            _ => {}
         }
+        self.type_param_stack.push(map);
+
+        let ty = self.convert_ts_type(ty)?;
+        self.type_param_stack.pop();
+        Ok(ty)
     }
     fn get_type_ref_of_user_identifier(
         &mut self,
@@ -245,7 +255,7 @@ impl<'a, R: FileManager> TypeToSchema<'a, R> {
         type_args: &Option<Box<TsTypeParamInstantiation>>,
     ) -> Res<JsonSchema> {
         match TypeResolver::new(self.files, &self.current_file).resolve_local_type(i)? {
-            ResolvedLocalSymbol::TsType(alias) => self.convert_ts_type(&alias),
+            ResolvedLocalSymbol::TsType(decl, ty) => self.apply_type_params(type_args, &decl, &ty),
             ResolvedLocalSymbol::TsInterfaceDecl(int) => {
                 self.convert_ts_interface_decl(&int, type_args)
             }
@@ -264,9 +274,6 @@ impl<'a, R: FileManager> TypeToSchema<'a, R> {
                 self.error(&i.span, DiagnosticInfoMessage::FoundValueExpectedType)
             }
             ResolvedLocalSymbol::Star(_) => todo!(),
-            ResolvedLocalSymbol::TsTypeTemplate(decl, ty) => {
-                self.apply_type_params(type_args, &decl, &ty)
-            }
         }
     }
 
@@ -438,7 +445,6 @@ impl<'a, R: FileManager> TypeToSchema<'a, R> {
                     SymbolExport::StarOfOtherFile(_) => right.to_string(),
                     SymbolExport::SomethingOfOtherFile(that, _) => that.to_string(),
                     SymbolExport::ValueExpr { .. } => todo!(),
-                    SymbolExport::TsTypeTemplate { params, ty, name } => name.to_string(),
                 };
                 Ok((exported, from_file.clone(), name))
             }
@@ -483,7 +489,6 @@ impl<'a, R: FileManager> TypeToSchema<'a, R> {
                 }
             }
             SymbolExport::ValueExpr { .. } => todo!(),
-            SymbolExport::TsTypeTemplate { params, ty, name } => todo!(),
         }
     }
     fn __convert_ts_type_qual_inner(
@@ -668,14 +673,13 @@ impl<'a, R: FileManager> TypeToSchema<'a, R> {
 
     pub fn typeof_symbol(&mut self, s: ResolvedLocalSymbol, span: &Span) -> Res<JsonSchema> {
         match s {
-            ResolvedLocalSymbol::TsType(_) | ResolvedLocalSymbol::TsInterfaceDecl(_) => {
+            ResolvedLocalSymbol::TsType(_, _) | ResolvedLocalSymbol::TsInterfaceDecl(_) => {
                 self.error(span, DiagnosticInfoMessage::FoundTypeExpectedValue)
             }
             ResolvedLocalSymbol::Expr(e) => self.typeof_expr(&e, false),
             ResolvedLocalSymbol::NamedImport { .. } => todo!(),
             ResolvedLocalSymbol::SymbolExportDefault(_) => todo!(),
             ResolvedLocalSymbol::Star(_) => todo!(),
-            ResolvedLocalSymbol::TsTypeTemplate(_, _) => todo!(),
         }
     }
     pub fn convert_type_query(&mut self, q: &TsTypeQuery) -> Res<JsonSchema> {

@@ -44,12 +44,8 @@ use swc_node_comments::SwcComments;
 
 #[derive(Debug, Clone)]
 pub enum SymbolExport {
-    TsTypeTemplate {
-        params: Rc<TsTypeParamDecl>,
-        ty: Rc<TsType>,
-        name: JsWord,
-    },
     TsType {
+        params: Option<Rc<TsTypeParamDecl>>,
         ty: Rc<TsType>,
         name: JsWord,
     },
@@ -166,8 +162,7 @@ pub struct ParsedModule {
 
 #[derive(Debug)]
 pub struct ParsedModuleLocals {
-    pub type_aliases: HashMap<(JsWord, SyntaxContext), Rc<TsType>>,
-    pub type_templates: HashMap<(JsWord, SyntaxContext), (Rc<TsTypeParamDecl>, Rc<TsType>)>,
+    pub type_aliases: HashMap<(JsWord, SyntaxContext), (Option<Rc<TsTypeParamDecl>>, Rc<TsType>)>,
     pub interfaces: HashMap<(JsWord, SyntaxContext), Rc<TsInterfaceDecl>>,
 
     pub exprs: HashMap<(JsWord, SyntaxContext), Rc<Expr>>,
@@ -178,7 +173,6 @@ impl ParsedModuleLocals {
             type_aliases: HashMap::new(),
             interfaces: HashMap::new(),
             exprs: HashMap::new(),
-            type_templates: HashMap::new(),
         }
     }
 }
@@ -237,20 +231,13 @@ impl Visit for ParserOfModuleLocals {
             type_params,
             ..
         } = n;
-
-        match type_params {
-            Some(p) => {
-                self.content.type_templates.insert(
-                    (id.sym.clone(), id.span.ctxt),
-                    (Rc::new(*p.clone()), Rc::new(*type_ann.clone())),
-                );
-            }
-            None => {
-                self.content
-                    .type_aliases
-                    .insert((id.sym.clone(), id.span.ctxt), Rc::new(*type_ann.clone()));
-            }
-        }
+        self.content.type_aliases.insert(
+            (id.sym.clone(), id.span.ctxt),
+            (
+                type_params.as_ref().map(|it| it.as_ref().clone().into()),
+                Rc::new(*type_ann.clone()),
+            ),
+        );
     }
     fn visit_ts_interface_decl(&mut self, n: &TsInterfaceDecl) {
         let TsInterfaceDecl { id, .. } = n;

@@ -14,8 +14,7 @@ pub struct TypeResolver<'a, R: FileManager> {
 }
 
 pub enum ResolvedLocalSymbol {
-    TsTypeTemplate(Rc<TsTypeParamDecl>, Rc<TsType>),
-    TsType(Rc<TsType>),
+    TsType(Option<Rc<TsTypeParamDecl>>, Rc<TsType>),
     TsInterfaceDecl(Rc<TsInterfaceDecl>),
     Expr(Rc<Expr>),
     NamedImport {
@@ -74,7 +73,6 @@ impl<'a, R: FileManager> TypeResolver<'a, R> {
                     .into())
             }
             SymbolExport::ValueExpr { .. } => todo!(),
-            SymbolExport::TsTypeTemplate { params, name, ty } => todo!(),
         }
     }
     pub fn resolve_namespace_type(&mut self, i: &Ident) -> Res<ResolvedNamespaceSymbol> {
@@ -154,12 +152,10 @@ impl<'a, R: FileManager> TypeResolver<'a, R> {
     }
     pub fn resolve_local_type(&mut self, i: &Ident) -> Res<ResolvedLocalSymbol> {
         let k = &(i.sym.clone(), i.span.ctxt);
-        if let Some(alias) = self.get_current_file().locals.type_aliases.get(k) {
-            return Ok(ResolvedLocalSymbol::TsType(alias.clone()));
+        if let Some((a, b)) = self.get_current_file().locals.type_aliases.get(k) {
+            return Ok(ResolvedLocalSymbol::TsType(a.clone(), b.clone()));
         }
-        if let Some((a, b)) = self.get_current_file().locals.type_templates.get(k) {
-            return Ok(ResolvedLocalSymbol::TsTypeTemplate(a.clone(), b.clone()));
-        }
+
         if let Some(intf) = self.get_current_file().locals.interfaces.get(k) {
             return Ok(ResolvedLocalSymbol::TsInterfaceDecl(intf.clone()));
         }
