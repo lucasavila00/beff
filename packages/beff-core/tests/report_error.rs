@@ -182,6 +182,17 @@ mod tests {
         insta::assert_snapshot!(fail(from));
     }
     #[test]
+    fn fail_path_not_start_dash() {
+        let from = r#"
+    export default {
+        "hello": {
+            get: (): string => impl()
+        }        
+    }
+    "#;
+        insta::assert_snapshot!(fail(from));
+    }
+    #[test]
     fn fail1() {
         let from = r#"
     type A = STRING;

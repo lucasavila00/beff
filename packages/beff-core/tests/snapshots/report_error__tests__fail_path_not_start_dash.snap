@@ -1,0 +1,12 @@
+---
+source: packages/beff-core/tests/report_error.rs
+expression: fail(from)
+---
+Error: ~~~
+   ╭─[<unknown>:1:1]
+   │
+ 3 │         "hello": {
+   │         ───┬───  
+   │            ╰───── Path must start with a dash
+───╯
+

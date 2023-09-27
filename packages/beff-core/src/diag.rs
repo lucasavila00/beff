@@ -7,6 +7,7 @@ use crate::{open_api_ast::HTTPMethod, BffFileName, ParsedModule};
 
 #[derive(Debug, Clone)]
 pub enum DiagnosticInfoMessage {
+    PathMustStartWithDash,
     PathParameterCannotBeOptional,
     InvalidIndexedAccess,
     TypeQueryArgsNotSupported,
@@ -344,6 +345,9 @@ impl DiagnosticInfoMessage {
             DiagnosticInfoMessage::InvalidIndexedAccess => "Invalid indexed access".to_string(),
             DiagnosticInfoMessage::CannotGetQualifiedTypeFromFileRec(s) => {
                 format!("Cannot get qualified type from recursive file: {s}")
+            }
+            DiagnosticInfoMessage::PathMustStartWithDash => {
+                "Path must start with a dash".to_string()
             }
         }
     }
