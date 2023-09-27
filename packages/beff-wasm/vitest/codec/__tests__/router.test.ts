@@ -202,7 +202,7 @@ test("union", async () => {
 });
 
 test("nan", async () => {
-  await expect(beff["/nan"].post(NaN)).resolves.toMatchInlineSnapshot('NaN');
+  await expect(beff["/nan"].post(NaN)).resolves.toMatchInlineSnapshot("NaN");
 });
 
 test("nan2", async () => {
