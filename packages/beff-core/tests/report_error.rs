@@ -240,4 +240,18 @@ mod tests {
     "#;
         ok(from)
     }
+    #[test]
+    fn fail_path_param_optional() {
+        let from = r#"
+    
+    export default {
+        "/{a}": {
+            get: (c:Ctx, a?: string): string => {
+                return 'ok'
+            }
+        }
+    }
+    "#;
+        insta::assert_snapshot!(fail(from));
+    }
 }

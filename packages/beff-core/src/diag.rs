@@ -7,6 +7,7 @@ use crate::{open_api_ast::HTTPMethod, BffFileName, ParsedModule};
 
 #[derive(Debug, Clone)]
 pub enum DiagnosticInfoMessage {
+    PathParameterCannotBeOptional,
     InvalidIndexedAccess,
     TypeQueryArgsNotSupported,
     FoundValueExpectedType,
@@ -100,6 +101,9 @@ pub enum DiagnosticInfoMessage {
 impl DiagnosticInfoMessage {
     pub fn to_string(&self) -> String {
         match self {
+            DiagnosticInfoMessage::PathParameterCannotBeOptional => {
+                "Path parameter cannot be optional".to_string()
+            }
             DiagnosticInfoMessage::IndexOutOfTupleRange(idx) => {
                 format!("Index out of tuple range: {}", idx)
             }
