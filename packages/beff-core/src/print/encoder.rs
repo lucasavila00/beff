@@ -121,9 +121,24 @@ fn encode_expr(schema: &JsonSchema, input_expr: Expr) -> Expr {
                 expr: or_null.into(),
             })
         }
+        JsonSchema::Number => Expr::Call(CallExpr {
+            span: DUMMY_SP,
+            callee: Callee::Expr(
+                Expr::Ident(Ident {
+                    span: DUMMY_SP,
+                    sym: "encodeNumber".into(),
+                    optional: false,
+                })
+                .into(),
+            ),
+            args: vec![ExprOrSpread {
+                spread: None,
+                expr: input_expr.clone().into(),
+            }],
+            type_args: None,
+        }),
         JsonSchema::Boolean
         | JsonSchema::String
-        | JsonSchema::Number
         | JsonSchema::Any
         | JsonSchema::Const(_)
         | JsonSchema::StringWithFormat(_) => input_expr.clone(),

@@ -211,3 +211,15 @@ test("union", async () => {
   ).rejects.toMatchInlineSnapshot('[HTTPException: #0 (a) expected one of, received: "c"]');
   await expect(beff["/union"].post("a")).resolves.toMatchInlineSnapshot('"a"');
 });
+
+test("nan", async () => {
+  await expect(beff["/nan"].post(NaN)).resolves.toMatchInlineSnapshot("NaN");
+});
+
+test("nan2", async () => {
+  await expect(beff["/nan2"].post([NaN])).resolves.toMatchInlineSnapshot(`
+    [
+      NaN,
+    ]
+  `);
+});

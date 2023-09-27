@@ -40,6 +40,16 @@ export default {
       return a;
     },
   },
+  "/nan": {
+    post: async (_c: Ctx, a: number): Promise<number> => {
+      return a;
+    },
+  },
+  "/nan2": {
+    post: async (_c: Ctx, body: [number]): Promise<[number]> => {
+      return body;
+    },
+  },
   ["/intersection"]: {
     post: async (
       _c: Ctx,

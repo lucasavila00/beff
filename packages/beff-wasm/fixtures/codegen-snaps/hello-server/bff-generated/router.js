@@ -1,5 +1,5 @@
 
-import validatorsMod from "./validators.js"; const { decodeObject, decodeArray, decodeString, decodeNumber, decodeCodec, decodeStringWithFormat, decodeAnyOf, decodeAllOf, decodeBoolean, decodeAny, decodeTuple, decodeNull, decodeConst, encodeCodec, encodeAnyOf, encodeAllOf, validators, encoders, c } = validatorsMod;
+import validatorsMod from "./validators.js"; const { decodeObject, decodeArray, decodeString, decodeNumber, decodeCodec, decodeStringWithFormat, decodeAnyOf, decodeAllOf, decodeBoolean, decodeAny, decodeTuple, decodeNull, decodeConst, encodeCodec, encodeAnyOf, encodeAllOf, encodeNumber, validators, encoders, c } = validatorsMod;
 const meta = [
     {
         "method_kind": "get",
@@ -9,7 +9,7 @@ const meta = [
             },
             {
                 "encoder": function(input) {
-                    return input;
+                    return encodeNumber(input);
                 },
                 "name": "limit",
                 "required": false,
@@ -21,7 +21,7 @@ const meta = [
         ],
         "pattern": "/optional-query-param",
         "return_encoder": function(input) {
-            return input;
+            return encodeNumber(input);
         },
         "return_validator": function(ctx, input) {
             return decodeNumber(ctx, input, true);
@@ -83,7 +83,7 @@ const meta = [
             },
             {
                 "encoder": function(input) {
-                    return input;
+                    return encodeNumber(input);
                 },
                 "name": "id",
                 "required": true,
