@@ -26,4 +26,10 @@ export default {
   ...Router7.x,
   ...Router6.a.b.c.d,
   ...Router7.a.b.c.d,
+  ...E,
+  ...E.a,
+  ...E["a"],
+  ...D,
+  ...D.a,
+  ...D["a"],
 };

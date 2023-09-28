@@ -62,7 +62,7 @@ Error: Found type, expected value
       |      ^^^^^^^ Found type, expected value
    27 |   ...Router6.a.b.c.d,
    28 |   ...Router7.a.b.c.d,
-   29 | };
+   29 |   ...E,
 
 Error: Cannot resolve local expression access 'd'
  /errors/cannot-resolve/router.ts:27:6
@@ -71,8 +71,8 @@ Error: Cannot resolve local expression access 'd'
  > 27 |   ...Router6.a.b.c.d,
       |      ^^^^^^^^^^^^^ Cannot resolve local expression access 'd'
    28 |   ...Router7.a.b.c.d,
-   29 | };
-   30 |
+   29 |   ...E,
+   30 |   ...E.a,
 
 Error: Cannot resolve local expression access 'd'
  /errors/cannot-resolve/router.ts:28:6
@@ -80,7 +80,63 @@ Error: Cannot resolve local expression access 'd'
    27 |   ...Router6.a.b.c.d,
  > 28 |   ...Router7.a.b.c.d,
       |      ^^^^^^^^^^^^^ Cannot resolve local expression access 'd'
-   29 | };
-   30 |
+   29 |   ...E,
+   30 |   ...E.a,
+   31 |   ...E["a"],
 
-Found 9 errors
+Error: Export default not found
+ /errors/cannot-resolve/router.ts:29:6
+   27 |   ...Router6.a.b.c.d,
+   28 |   ...Router7.a.b.c.d,
+ > 29 |   ...E,
+      |      ^ Export default not found
+   30 |   ...E.a,
+   31 |   ...E["a"],
+   32 |   ...D,
+
+Error: Export default not found
+ /errors/cannot-resolve/router.ts:30:6
+   28 |   ...Router7.a.b.c.d,
+   29 |   ...E,
+ > 30 |   ...E.a,
+      |      ^ Export default not found
+   31 |   ...E["a"],
+   32 |   ...D,
+   33 |   ...D.a,
+
+Error: This should contain methods
+ /errors/cannot-resolve/router.ts:31:6
+   29 |   ...E,
+   30 |   ...E.a,
+ > 31 |   ...E["a"],
+      |      ^^^^^^ This should contain methods
+   32 |   ...D,
+   33 |   ...D.a,
+   34 |   ...D["a"],
+
+Error: Could not understand this part of the router
+ /errors/cannot-resolve/router.ts:32:6
+   30 |   ...E.a,
+   31 |   ...E["a"],
+ > 32 |   ...D,
+      |      ^ Could not understand this part of the router
+   33 |   ...D.a,
+   34 |   ...D["a"],
+   35 | };
+
+Error: Could not understand this part of the router
+ /errors/cannot-resolve/abc.ts:1:18
+ > 1 | export const a = 1;
+     |                  ^ Could not understand this part of the router
+   2 |
+
+Error: This should contain methods
+ /errors/cannot-resolve/router.ts:34:6
+   32 |   ...D,
+   33 |   ...D.a,
+ > 34 |   ...D["a"],
+      |      ^^^^^^ This should contain methods
+   35 | };
+   36 |
+
+Found 15 errors

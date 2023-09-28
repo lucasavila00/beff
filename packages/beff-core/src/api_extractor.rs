@@ -321,7 +321,12 @@ impl<'a, R: FileManager> ExtractExportDefaultVisitor<'a, R> {
     fn check_member_expr_for_methods(&mut self, expr: &MemberExpr) {
         let prop_sym = match &expr.prop {
             MemberProp::Ident(i) => &i.sym,
-            MemberProp::PrivateName(_) | MemberProp::Computed(_) => todo!(),
+            MemberProp::PrivateName(_) | MemberProp::Computed(_) => {
+                return self.push_error(
+                    &expr.span(),
+                    DiagnosticInfoMessage::ThisShouldContainMethods,
+                )
+            }
         };
         self.check_member_expr_for_methods_inner(&expr.obj, prop_sym)
     }
@@ -348,7 +353,10 @@ impl<'a, R: FileManager> ExtractExportDefaultVisitor<'a, R> {
                         self.check_expr_for_methods(&export_default.symbol_export);
                         self.current_file = old_file;
                     }
-                    Ok(ResolvedLocalSymbol::Star { .. }) => todo!(),
+                    Ok(ResolvedLocalSymbol::Star { .. }) => self.push_error(
+                        &expr.span(),
+                        DiagnosticInfoMessage::CouldNotUnderstandThisPartOfTheRouter,
+                    ),
                     Ok(ResolvedLocalSymbol::TsType { .. })
                     | Ok(ResolvedLocalSymbol::TsInterfaceDecl { .. }) => {
                         self.push_error(&expr.span(), DiagnosticInfoMessage::FoundTypeExpectedValue)

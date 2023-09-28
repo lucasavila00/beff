@@ -7,6 +7,7 @@ use crate::{open_api_ast::HTTPMethod, BffFileName, ParsedModule};
 
 #[derive(Debug, Clone)]
 pub enum DiagnosticInfoMessage {
+    ThisShouldContainMethods,
     ExportDefaultNotFound,
     PathMustStartWithDash,
     PathParameterCannotBeOptional,
@@ -104,6 +105,10 @@ pub enum DiagnosticInfoMessage {
 impl DiagnosticInfoMessage {
     pub fn to_string(&self) -> String {
         match self {
+            
+            DiagnosticInfoMessage::ThisShouldContainMethods => {
+                "This should contain methods".to_string()
+            }
             DiagnosticInfoMessage::ExportDefaultNotFound => {
                 "Export default not found".to_string()
             }
