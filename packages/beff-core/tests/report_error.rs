@@ -63,7 +63,7 @@ mod tests {
                         .with_message(d.message.to_string()),
                 );
             }
-            diag::Location::Unknown(_) => todo!(),
+            diag::Location::Unknown(_) => unreachable!(),
         }
 
         e.finish().write(Source::from(from), &mut buf).unwrap();
@@ -99,7 +99,7 @@ mod tests {
                         .with_message(d.cause.message.to_string()),
                 );
             }
-            diag::Location::Unknown(_) => todo!(),
+            diag::Location::Unknown(_) => unreachable!(),
         }
 
         e.finish().write(Source::from(from), &mut buf).unwrap();

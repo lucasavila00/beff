@@ -47,7 +47,7 @@ impl<'a, R: FileManager> TypeResolver<'a, R> {
         export: &Rc<SymbolExport>,
     ) -> Res<ResolvedNamespaceSymbol> {
         match &**export {
-            SymbolExport::StarOfOtherFile(reference) => Ok(ResolvedNamespaceSymbol {
+            SymbolExport::StarOfOtherFile { reference, .. } => Ok(ResolvedNamespaceSymbol {
                 from_file: reference.clone(),
             }),
             SymbolExport::TsType { .. } => Err(self
@@ -56,13 +56,17 @@ impl<'a, R: FileManager> TypeResolver<'a, R> {
                     DiagnosticInfoMessage::ShouldNotResolveTsTypeAsNamespace,
                 )
                 .into()),
-            SymbolExport::TsInterfaceDecl(_) => Err(self
+            SymbolExport::TsInterfaceDecl { .. } => Err(self
                 .make_err(
                     &i.span,
                     DiagnosticInfoMessage::ShouldNotResolveTsInterfaceDeclAsNamespace,
                 )
                 .into()),
-            SymbolExport::SomethingOfOtherFile(orig, file_name) => {
+            SymbolExport::SomethingOfOtherFile {
+                something: orig,
+                file: file_name,
+                ..
+            } => {
                 let file = self.files.get_or_fetch_file(file_name);
                 let exported = file.and_then(|file| file.symbol_exports.get(orig, self.files));
                 if let Some(export) = exported {
@@ -86,7 +90,9 @@ impl<'a, R: FileManager> TypeResolver<'a, R> {
                         from_file: imported.clone(),
                     })
                 }
-                ImportReference::Named { orig, file_name } => {
+                ImportReference::Named {
+                    orig, file_name, ..
+                } => {
                     let file = self.files.get_or_fetch_file(file_name);
                     let exported = file.and_then(|file| file.symbol_exports.get(orig, self.files));
                     if let Some(export) = exported {
@@ -111,7 +117,9 @@ impl<'a, R: FileManager> TypeResolver<'a, R> {
         let k = &(i.sym.clone(), i.span.ctxt);
         if let Some(imported) = self.get_current_file().imports.get(k) {
             match &**imported {
-                ImportReference::Named { orig, file_name } => {
+                ImportReference::Named {
+                    orig, file_name, ..
+                } => {
                     let file = self.files.get_or_fetch_file(file_name);
                     let exported = file.and_then(|file| file.symbol_exports.get(orig, self.files));
                     if let Some(exported) = exported {
@@ -121,7 +129,7 @@ impl<'a, R: FileManager> TypeResolver<'a, R> {
                         });
                     }
                 }
-                ImportReference::Star { file_name } => {
+                ImportReference::Star { file_name, .. } => {
                     return Ok(ResolvedLocalSymbol::Star(file_name.clone()));
                 }
                 ImportReference::Default { file_name } => {
@@ -129,7 +137,11 @@ impl<'a, R: FileManager> TypeResolver<'a, R> {
                     let df = file.and_then(|file| file.export_default.clone());
                     match df {
                         Some(d) => return Ok(ResolvedLocalSymbol::SymbolExportDefault(d.clone())),
-                        None => todo!(),
+                        None => {
+                            return Err(self
+                                .make_err(&i.span, DiagnosticInfoMessage::ExportDefaultNotFound)
+                                .into())
+                        }
                     }
                 }
             }

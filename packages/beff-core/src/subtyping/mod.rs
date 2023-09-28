@@ -139,16 +139,16 @@ impl<'a> ToSemTypeConverter<'a> {
             JsonSchema::OpenApiResponseRef(_) => {
                 unreachable!("should not be part of semantic types")
             }
-            JsonSchema::StNever => todo!(),
-            JsonSchema::StUnknown => todo!(),
-            JsonSchema::StNot(_) => todo!(),
-            JsonSchema::StAnyObject => todo!(),
             JsonSchema::AnyArrayLike => {
                 self.to_sem_type(&JsonSchema::Array(JsonSchema::Any.into()), builder)
             }
             JsonSchema::Codec(s) => {
                 Ok(SemTypeContext::string_const(StringLitOrFormat::Codec(s.clone())).into())
             }
+            JsonSchema::StNever
+            | JsonSchema::StUnknown
+            | JsonSchema::StNot(_)
+            | JsonSchema::StAnyObject => unreachable!("should not be part of conversion input"),
         }
     }
 }

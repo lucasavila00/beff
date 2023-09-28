@@ -203,56 +203,88 @@ impl<'a, R: FileManager> ExtractExportDefaultVisitor<'a, R> {
             }
         }
     }
-    fn check_ts_export_for_methods(&mut self, expr: &SymbolExport, span: &Span) {
+    fn check_ts_export_for_methods(&mut self, expr: &SymbolExport) {
         match expr {
-            SymbolExport::StarOfOtherFile(_) => todo!(),
             SymbolExport::ValueExpr { expr, .. } => self.check_expr_for_methods(expr),
-            SymbolExport::SomethingOfOtherFile(orig, file_name) => {
+            SymbolExport::SomethingOfOtherFile {
+                something: orig,
+                file: file_name,
+                ..
+            } => {
                 let file = self.files.get_or_fetch_file(file_name);
                 let exported = file.and_then(|file| file.symbol_exports.get(orig, self.files));
                 if let Some(export) = exported {
                     let old_file = self.current_file.clone();
                     self.current_file = file_name.clone();
-                    self.check_ts_export_for_methods(&export, span);
+                    self.check_ts_export_for_methods(&export);
                     self.current_file = old_file;
                 } else {
-                    self.errors.push(
-                        self.build_error(span, DiagnosticInfoMessage::FoundTypeExpectedValue)
-                            .to_diag(None),
-                    );
+                    self.push_error(&expr.span(), DiagnosticInfoMessage::FoundTypeExpectedValue)
                 }
             }
-            SymbolExport::TsType { .. } | SymbolExport::TsInterfaceDecl(_) => {
-                self.errors.push(
-                    self.build_error(span, DiagnosticInfoMessage::FoundTypeExpectedValue)
-                        .to_diag(None),
-                );
+            SymbolExport::StarOfOtherFile { .. }
+            | SymbolExport::TsType { .. }
+            | SymbolExport::TsInterfaceDecl { .. } => {
+                self.push_error(&expr.span(), DiagnosticInfoMessage::FoundTypeExpectedValue)
             }
         }
     }
 
-    fn check_member_expr_for_methods_inner(&mut self, left: &Expr, right: &JsWord, span: &Span) {
+    fn check_member_expr_for_methods_inner(&mut self, left: &Expr, right: &JsWord) {
         match left {
             Expr::Ident(i) => {
                 match TypeResolver::new(self.files, &self.current_file).resolve_local_value(i) {
                     Ok(r) => match r {
-                        ResolvedLocalSymbol::TsType(_, _) => todo!(),
-                        ResolvedLocalSymbol::TsInterfaceDecl(_) => todo!(),
+                        ResolvedLocalSymbol::TsType(_, _)
+                        | ResolvedLocalSymbol::TsInterfaceDecl(_) => self.push_error(
+                            &left.span(),
+                            DiagnosticInfoMessage::FoundTypeExpectedValue,
+                        ),
                         ResolvedLocalSymbol::Expr(e) => {
-                            self.check_member_expr_for_methods_inner(&e, right, &e.span())
+                            self.check_member_expr_for_methods_inner(&e, right)
                         }
-                        ResolvedLocalSymbol::NamedImport { .. } => todo!(),
+                        ResolvedLocalSymbol::NamedImport {
+                            exported,
+                            from_file,
+                        } => match exported.as_ref() {
+                            SymbolExport::TsType { .. } | SymbolExport::TsInterfaceDecl { .. } => {
+                                self.push_error(
+                                    &left.span(),
+                                    DiagnosticInfoMessage::FoundTypeExpectedValue,
+                                )
+                            }
+                            SymbolExport::ValueExpr { expr, name: _, .. } => {
+                                let tmp_file = self.current_file.clone();
+                                self.current_file = from_file.file_name().clone();
+                                self.check_member_expr_for_methods_inner(expr, right);
+                                self.current_file = tmp_file;
+                            }
+                            SymbolExport::StarOfOtherFile { .. } => todo!(),
+                            SymbolExport::SomethingOfOtherFile { .. } => todo!(),
+                        },
                         ResolvedLocalSymbol::SymbolExportDefault(_) => todo!(),
                         ResolvedLocalSymbol::Star(file_name) => {
                             let file = self.files.get_or_fetch_file(&file_name);
                             let exp = file.and_then(|it| it.symbol_exports.get(right, self.files));
                             match exp {
-                                Some(s) => self.check_ts_export_for_methods(&s, span),
-                                None => todo!(),
+                                Some(s) => {
+                                    let tmp_file = self.current_file.clone();
+                                    self.current_file = file_name.clone();
+                                    self.check_ts_export_for_methods(&s);
+                                    self.current_file = tmp_file;
+                                }
+                                None => self.push_error(
+                                    &left.span(),
+                                    DiagnosticInfoMessage::CannotResolveLocalExprAccess(
+                                        right.to_string(),
+                                    ),
+                                ),
                             }
                         }
                     },
-                    Err(_) => todo!(),
+                    Err(d) => {
+                        self.errors.push(*d);
+                    }
                 }
             }
             Expr::Object(vs) => {
@@ -269,27 +301,34 @@ impl<'a, R: FileManager> ExtractExportDefaultVisitor<'a, R> {
                                     }
                                 }
                             }
-                            Prop::Shorthand(_) => todo!(),
-                            Prop::Assign(_) => todo!(),
-                            Prop::Getter(_) => todo!(),
-                            Prop::Setter(_) => todo!(),
-                            Prop::Method(_) => todo!(),
+                            Prop::Shorthand(_)
+                            | Prop::Assign(_)
+                            | Prop::Getter(_)
+                            | Prop::Setter(_)
+                            | Prop::Method(_) => todo!(),
                         },
                     }
                 }
 
                 assert!(found);
             }
-            _ => todo!(),
+            _ => self.push_error(
+                &left.span(),
+                DiagnosticInfoMessage::CannotResolveLocalExprAccess(right.to_string()),
+            ),
         }
     }
     fn check_member_expr_for_methods(&mut self, expr: &MemberExpr) {
         let prop_sym = match &expr.prop {
             MemberProp::Ident(i) => &i.sym,
-            MemberProp::PrivateName(_) => todo!(),
-            MemberProp::Computed(_) => todo!(),
+            MemberProp::PrivateName(_) | MemberProp::Computed(_) => {
+                return self.push_error(
+                    &expr.span(),
+                    DiagnosticInfoMessage::ThisShouldContainMethods,
+                )
+            }
         };
-        self.check_member_expr_for_methods_inner(&expr.obj, prop_sym, &expr.span)
+        self.check_member_expr_for_methods_inner(&expr.obj, prop_sym)
     }
     fn check_expr_for_methods(&mut self, expr: &Expr) {
         match expr {
@@ -305,7 +344,7 @@ impl<'a, R: FileManager> ExtractExportDefaultVisitor<'a, R> {
                     }) => {
                         let old_file = self.current_file.clone();
                         self.current_file = from_file.file_name().clone();
-                        self.check_ts_export_for_methods(&exported, &expr.span());
+                        self.check_ts_export_for_methods(&exported);
                         self.current_file = old_file;
                     }
                     Ok(ResolvedLocalSymbol::SymbolExportDefault(export_default)) => {
@@ -314,30 +353,22 @@ impl<'a, R: FileManager> ExtractExportDefaultVisitor<'a, R> {
                         self.check_expr_for_methods(&export_default.symbol_export);
                         self.current_file = old_file;
                     }
-                    Ok(ResolvedLocalSymbol::Star { .. }) => todo!(),
+                    Ok(ResolvedLocalSymbol::Star { .. }) => self.push_error(
+                        &expr.span(),
+                        DiagnosticInfoMessage::CouldNotUnderstandThisPartOfTheRouter,
+                    ),
                     Ok(ResolvedLocalSymbol::TsType { .. })
                     | Ok(ResolvedLocalSymbol::TsInterfaceDecl { .. }) => {
-                        self.errors.push(
-                            self.build_error(
-                                &expr.span(),
-                                DiagnosticInfoMessage::FoundTypeExpectedValue,
-                            )
-                            .to_diag(None),
-                        );
+                        self.push_error(&expr.span(), DiagnosticInfoMessage::FoundTypeExpectedValue)
                     }
                     Err(e) => self.errors.push(*e),
                 }
             }
             Expr::Member(m) => self.check_member_expr_for_methods(m),
-            _ => {
-                self.errors.push(
-                    self.build_error(
-                        &expr.span(),
-                        DiagnosticInfoMessage::CouldNotUnderstandThisPartOfTheRouter,
-                    )
-                    .to_diag(None),
-                );
-            }
+            _ => self.push_error(
+                &expr.span(),
+                DiagnosticInfoMessage::CouldNotUnderstandThisPartOfTheRouter,
+            ),
         }
     }
 

@@ -7,6 +7,8 @@ use crate::{open_api_ast::HTTPMethod, BffFileName, ParsedModule};
 
 #[derive(Debug, Clone)]
 pub enum DiagnosticInfoMessage {
+    ThisShouldContainMethods,
+    ExportDefaultNotFound,
     PathMustStartWithDash,
     PathParameterCannotBeOptional,
     InvalidIndexedAccess,
@@ -96,12 +98,23 @@ pub enum DiagnosticInfoMessage {
     CannotResolveLocalType(String),
     CannotResolveLocalSymbol(String),
     CannotResolveLocalExpr(String),
+    CannotResolveLocalExprAccess(String),
 }
 
 #[allow(clippy::inherent_to_string)]
 impl DiagnosticInfoMessage {
     pub fn to_string(&self) -> String {
         match self {
+            
+            DiagnosticInfoMessage::ThisShouldContainMethods => {
+                "This should contain methods".to_string()
+            }
+            DiagnosticInfoMessage::ExportDefaultNotFound => {
+                "Export default not found".to_string()
+            }
+            DiagnosticInfoMessage::CannotResolveLocalExprAccess(of) => {
+                format!("Cannot resolve local expression access '{of}'")
+            }
             DiagnosticInfoMessage::PathParameterCannotBeOptional => {
                 "Path parameter cannot be optional".to_string()
             }
