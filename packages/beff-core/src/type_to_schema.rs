@@ -258,26 +258,21 @@ impl<'a, R: FileManager> TypeToSchema<'a, R> {
         acc: &mut Vec<(String, Optionality<JsonSchema>)>,
     ) -> Res<()> {
         let file = self.files.get_or_fetch_file(&file_name);
-        match file {
-            Some(pm) => {
-                for (k, v) in &pm.symbol_exports.named {
-                    match v.as_ref() {
-                        SymbolExport::TsType { .. } | SymbolExport::TsInterfaceDecl { .. } => {
-                            todo!()
-                        }
-                        SymbolExport::ValueExpr { expr, name: _, .. } => {
-                            let ty = self.typeof_expr(expr, false)?;
-                            acc.push((k.to_string(), ty.required()));
-                        }
-                        SymbolExport::StarOfOtherFile { .. } => todo!(),
-                        SymbolExport::SomethingOfOtherFile { .. } => todo!(),
+        if let Some(pm) = file {
+            for (k, v) in &pm.symbol_exports.named {
+                match v.as_ref() {
+                    SymbolExport::TsType { .. } | SymbolExport::TsInterfaceDecl { .. } => {}
+                    SymbolExport::ValueExpr { expr, name: _, .. } => {
+                        let ty = self.typeof_expr(expr, false)?;
+                        acc.push((k.to_string(), ty.required()));
                     }
-                }
-                for f in &pm.symbol_exports.extends {
-                    self.collect_value_exports(f.clone(), acc)?;
+                    SymbolExport::StarOfOtherFile { .. } => todo!(),
+                    SymbolExport::SomethingOfOtherFile { .. } => todo!(),
                 }
             }
-            None => todo!(),
+            for f in &pm.symbol_exports.extends {
+                self.collect_value_exports(f.clone(), acc)?;
+            }
         }
 
         Ok(())
