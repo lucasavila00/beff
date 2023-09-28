@@ -2,6 +2,8 @@ import * as D from "./abc";
 import E from "./def";
 import { router5 } from "./r5";
 import { Router6, Router7 } from "./r6";
+import { r11 } from "./r11";
+import { r13 } from "./r13";
 
 export default {
   [`/hello`]: {
@@ -32,4 +34,6 @@ export default {
   ...D,
   ...D.a,
   ...D["a"],
+  ...r11,
+  ...r13,
 };
