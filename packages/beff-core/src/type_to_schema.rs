@@ -176,7 +176,6 @@ impl<'a, R: FileManager> TypeToSchema<'a, R> {
         &mut self,
         exported: &SymbolExport,
         from_file: &BffFileName,
-        span: &Span,
         type_args: &Option<Box<TsTypeParamInstantiation>>,
     ) -> Res<JsonSchema> {
         let store_current_file = self.current_file.clone();
@@ -190,7 +189,7 @@ impl<'a, R: FileManager> TypeToSchema<'a, R> {
                 self.convert_ts_interface_decl(int, type_args)?
             }
             SymbolExport::StarOfOtherFile { .. } => {
-                return self.error(span, DiagnosticInfoMessage::CannotUseStarAsType)
+                return self.error(&exported.span(), DiagnosticInfoMessage::CannotUseStarAsType)
             }
             SymbolExport::SomethingOfOtherFile {
                 something: word,
@@ -203,7 +202,7 @@ impl<'a, R: FileManager> TypeToSchema<'a, R> {
                     .and_then(|file| file.symbol_exports.get(word, self.files));
                 match exported {
                     Some(exported) => {
-                        self.convert_type_export(exported.as_ref(), from_file, span, type_args)?
+                        self.convert_type_export(exported.as_ref(), from_file, type_args)?
                     }
                     None => {
                         return self.error(
@@ -263,8 +262,9 @@ impl<'a, R: FileManager> TypeToSchema<'a, R> {
             Some(pm) => {
                 for (k, v) in &pm.symbol_exports.named {
                     match v.as_ref() {
-                        SymbolExport::TsType { .. } => todo!(),
-                        SymbolExport::TsInterfaceDecl { .. } => todo!(),
+                        SymbolExport::TsType { .. } | SymbolExport::TsInterfaceDecl { .. } => {
+                            todo!()
+                        }
                         SymbolExport::ValueExpr { expr, name: _, .. } => {
                             let ty = self.typeof_expr(expr, false)?;
                             acc.push((k.to_string(), ty.required()));
@@ -300,7 +300,6 @@ impl<'a, R: FileManager> TypeToSchema<'a, R> {
                 return self.convert_type_export(
                     exported.as_ref(),
                     from_file.file_name(),
-                    &i.span,
                     type_args,
                 )
             }
@@ -487,7 +486,9 @@ impl<'a, R: FileManager> TypeToSchema<'a, R> {
                     SymbolExport::SomethingOfOtherFile {
                         something: that, ..
                     } => that.to_string(),
-                    SymbolExport::ValueExpr { .. } => todo!(),
+                    SymbolExport::ValueExpr { .. } => {
+                        return self.error(span, DiagnosticInfoMessage::FoundValueExpectedType)
+                    }
                 };
                 Ok((exported, from_file.clone(), name))
             }
@@ -567,12 +568,7 @@ impl<'a, R: FileManager> TypeToSchema<'a, R> {
         }
 
         let (exported, from_file, name) = self.__convert_ts_type_qual_inner(q)?;
-        let ty = self.convert_type_export(
-            exported.as_ref(),
-            from_file.file_name(),
-            &q.right.span,
-            type_args,
-        )?;
+        let ty = self.convert_type_export(exported.as_ref(), from_file.file_name(), type_args)?;
         if type_args.is_some() {
             self.components.remove(&name);
             Ok(ty)

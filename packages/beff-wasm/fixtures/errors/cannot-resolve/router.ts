@@ -6,6 +6,16 @@ import { r11 } from "./r11";
 import { r13 } from "./r13";
 
 export default {
+  [`/123`]: {
+    get: async (): Promise<r13["ads"]> => {
+      return "test";
+    },
+  },
+  [`/1234`]: {
+    get: async (): Promise<r13.asd> => {
+      return "test";
+    },
+  },
   [`/hello`]: {
     get: async (): Promise<ThisDoesNotExist> => {
       return "test";
