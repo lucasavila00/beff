@@ -44,4 +44,43 @@ Error: Found type, expected value
      |        ^^^^^^^^^^^^^^^^^^^^ Found type, expected value
    4 |
 
-Found 5 errors
+Error: Found type, expected value
+ /errors/cannot-resolve/router.ts:25:6
+   23 |   ...Router6,
+   24 |   ...Router7,
+ > 25 |   ...Router6.x,
+      |      ^^^^^^^ Found type, expected value
+   26 |   ...Router7.x,
+   27 |   ...Router6.a.b.c.d,
+   28 |   ...Router7.a.b.c.d,
+
+Error: Found type, expected value
+ /errors/cannot-resolve/router.ts:26:6
+   24 |   ...Router7,
+   25 |   ...Router6.x,
+ > 26 |   ...Router7.x,
+      |      ^^^^^^^ Found type, expected value
+   27 |   ...Router6.a.b.c.d,
+   28 |   ...Router7.a.b.c.d,
+   29 | };
+
+Error: Cannot resolve local expression access 'd'
+ /errors/cannot-resolve/router.ts:27:6
+   25 |   ...Router6.x,
+   26 |   ...Router7.x,
+ > 27 |   ...Router6.a.b.c.d,
+      |      ^^^^^^^^^^^^^ Cannot resolve local expression access 'd'
+   28 |   ...Router7.a.b.c.d,
+   29 | };
+   30 |
+
+Error: Cannot resolve local expression access 'd'
+ /errors/cannot-resolve/router.ts:28:6
+   26 |   ...Router7.x,
+   27 |   ...Router6.a.b.c.d,
+ > 28 |   ...Router7.a.b.c.d,
+      |      ^^^^^^^^^^^^^ Cannot resolve local expression access 'd'
+   29 | };
+   30 |
+
+Found 9 errors

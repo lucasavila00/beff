@@ -247,8 +247,12 @@ impl<'a, R: FileManager> ExtractExportDefaultVisitor<'a, R> {
                             exported,
                             from_file,
                         } => match exported.as_ref() {
-                            SymbolExport::TsType { .. } => todo!(),
-                            SymbolExport::TsInterfaceDecl { .. } => todo!(),
+                            SymbolExport::TsType { .. } | SymbolExport::TsInterfaceDecl { .. } => {
+                                self.push_error(
+                                    &left.span(),
+                                    DiagnosticInfoMessage::FoundTypeExpectedValue,
+                                )
+                            }
                             SymbolExport::ValueExpr { expr, name: _, .. } => {
                                 let tmp_file = self.current_file.clone();
                                 self.current_file = from_file.file_name().clone();
@@ -308,7 +312,10 @@ impl<'a, R: FileManager> ExtractExportDefaultVisitor<'a, R> {
 
                 assert!(found);
             }
-            _ => todo!(),
+            _ => self.push_error(
+                &left.span(),
+                DiagnosticInfoMessage::CannotResolveLocalExprAccess(right.to_string()),
+            ),
         }
     }
     fn check_member_expr_for_methods(&mut self, expr: &MemberExpr) {

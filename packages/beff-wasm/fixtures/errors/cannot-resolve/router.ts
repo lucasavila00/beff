@@ -22,4 +22,8 @@ export default {
   ...router5.router5Nested,
   ...Router6,
   ...Router7,
+  ...Router6.x,
+  ...Router7.x,
+  ...Router6.a.b.c.d,
+  ...Router7.a.b.c.d,
 };
