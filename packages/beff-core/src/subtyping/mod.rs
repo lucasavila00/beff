@@ -142,7 +142,7 @@ impl<'a> ToSemTypeConverter<'a> {
             JsonSchema::StNever => todo!(),
             JsonSchema::StUnknown => todo!(),
             JsonSchema::StNot(_) => todo!(),
-            JsonSchema::AnyObject => todo!(),
+            JsonSchema::StAnyObject => todo!(),
             JsonSchema::AnyArrayLike => {
                 self.to_sem_type(&JsonSchema::Array(JsonSchema::Any.into()), builder)
             }

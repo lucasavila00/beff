@@ -71,7 +71,7 @@ pub enum JsonSchema {
     String,
     Number,
     Any,
-    // Error,
+    AnyArrayLike,
     StringWithFormat(String),
     Object(BTreeMap<String, Optionality<JsonSchema>>),
     Array(Box<JsonSchema>),
@@ -91,10 +91,7 @@ pub enum JsonSchema {
     StNever,
     StUnknown,
     StNot(Box<JsonSchema>),
-    // todo should be called StAnyObject?
-    AnyObject,
-    // todo should be called StAnyArrayLike?
-    AnyArrayLike,
+    StAnyObject,
 }
 
 #[derive(PartialEq, Eq, Hash, Debug, Ord, PartialOrd, Clone)]
@@ -428,11 +425,11 @@ impl ToJson for JsonSchema {
                 Json::object(v)
             }
             JsonSchema::Const(val) => Json::object(vec![("const".into(), val)]),
-            JsonSchema::StNever => todo!(),
-            JsonSchema::StUnknown => todo!(),
-            JsonSchema::StNot(_) => todo!(),
-            JsonSchema::AnyObject => todo!(),
             JsonSchema::AnyArrayLike => JsonSchema::Array(JsonSchema::Any.into()).to_json(),
+            JsonSchema::StNever
+            | JsonSchema::StUnknown
+            | JsonSchema::StNot(_)
+            | JsonSchema::StAnyObject => todo!(),
         }
     }
 }
@@ -647,7 +644,7 @@ impl JsonSchema {
                     ],
                 })),
             }),
-            JsonSchema::AnyObject => TsType::TsTypeRef(TsTypeRef {
+            JsonSchema::StAnyObject => TsType::TsTypeRef(TsTypeRef {
                 span: DUMMY_SP,
                 type_name: Ident {
                     span: DUMMY_SP,
