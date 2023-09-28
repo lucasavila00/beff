@@ -172,7 +172,9 @@ impl DecoderFnGenerator {
             JsonSchema::StNever
             | JsonSchema::StUnknown
             | JsonSchema::StNot(_)
-            | JsonSchema::StAnyObject => todo!(),
+            | JsonSchema::StAnyObject => {
+                unreachable!("should not create decoders for semantic types")
+            }
             JsonSchema::AnyArrayLike => {
                 Self::decode_expr(&JsonSchema::Array(JsonSchema::Any.into()), required)
             }

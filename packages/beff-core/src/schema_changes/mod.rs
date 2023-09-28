@@ -214,7 +214,6 @@ impl BreakingChange {
     pub fn print_report(&self) -> Md {
         match self {
             BreakingChange::PathRemoved => vec![MdReport::Text("Path removed".to_string())],
-            // BreakingChange::MethodRemoved(_) => todo!(),
             BreakingChange::ResponseBodyBreakingChange(err) => {
                 // let v = diff_to_js(&err.diff, Some(&err.evidence_mater));
                 vec![MdReport::Text("Response body is not compatible.".into())]
@@ -253,10 +252,10 @@ impl BreakingChange {
                 ])
                 .collect()
             }
-            // BreakingChange::RequiredParamAdded { param_name } => todo!(),
-            // BreakingChange::RequestBodyBreakingChange(_) => todo!(),
-            // BreakingChange::AddedNonOptionalRequestBody => todo!(),
-            _ => todo!(),
+            BreakingChange::MethodRemoved(_) => todo!(),
+            BreakingChange::RequiredParamAdded { .. } => todo!(),
+            BreakingChange::RequestBodyBreakingChange(_) => todo!(),
+            BreakingChange::AddedNonOptionalRequestBody => todo!(),
         }
     }
 }

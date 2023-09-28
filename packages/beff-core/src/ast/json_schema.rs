@@ -648,7 +648,10 @@ impl JsonSchema {
                 }
             }
             JsonSchema::Const(v) => match v {
-                Json::Null => todo!(),
+                Json::Null => TsType::TsKeywordType(TsKeywordType {
+                    span: DUMMY_SP,
+                    kind: TsKeywordTypeKind::TsNullKeyword,
+                }),
                 Json::Bool(b) => TsType::TsLitType(TsLitType {
                     span: DUMMY_SP,
                     lit: TsLit::Bool(Bool {
@@ -679,7 +682,10 @@ impl JsonSchema {
                 span: DUMMY_SP,
                 kind: TsKeywordTypeKind::TsNeverKeyword,
             }),
-            JsonSchema::StUnknown => todo!(),
+            JsonSchema::StUnknown => TsType::TsKeywordType(TsKeywordType {
+                span: DUMMY_SP,
+                kind: TsKeywordTypeKind::TsUnknownKeyword,
+            }),
             JsonSchema::StNot(v) => TsType::TsTypeRef(TsTypeRef {
                 span: DUMMY_SP,
                 type_name: Ident {

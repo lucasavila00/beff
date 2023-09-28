@@ -257,11 +257,11 @@ impl<'a, R: FileManager> TypeToSchema<'a, R> {
             Some(pm) => {
                 for (k, v) in &pm.symbol_exports.named {
                     match v.as_ref() {
-                        SymbolExport::TsType { params, ty, name } => todo!(),
+                        SymbolExport::TsType { .. } => todo!(),
                         SymbolExport::TsInterfaceDecl(_) => todo!(),
-                        SymbolExport::ValueExpr { expr, name } => {
+                        SymbolExport::ValueExpr { expr, name: _ } => {
                             let ty = self.typeof_expr(expr, false)?;
-                            acc.push((name.to_string(), ty.required()));
+                            acc.push((k.to_string(), ty.required()));
                         }
                         SymbolExport::StarOfOtherFile(_) => todo!(),
                         SymbolExport::SomethingOfOtherFile(_, _) => todo!(),
