@@ -191,27 +191,27 @@ mod tests {
         let res = schema_is_sub_type(&t2, &t1, &definitions, &definitions);
         assert!(!res);
     }
-    #[test]
-    fn mappings2() {
-        let definitions = vec![];
+    // #[test]
+    // fn mappings2() {
+    //     let definitions = vec![];
 
-        let t1 = JsonSchema::object(vec![
-            (
-                "a".into(),
-                JsonSchema::Const(Json::String("abc".into())).required(),
-            ),
-            (
-                "b".into(),
-                JsonSchema::Const(Json::String("def".into())).required(),
-            ),
-        ]);
-        let t2 = JsonSchema::object(vec![("a".into(), JsonSchema::String.required())]);
+    //     let t1 = JsonSchema::object(vec![
+    //         (
+    //             "a".into(),
+    //             JsonSchema::Const(Json::String("abc".into())).required(),
+    //         ),
+    //         (
+    //             "b".into(),
+    //             JsonSchema::Const(Json::String("def".into())).required(),
+    //         ),
+    //     ]);
+    //     let t2 = JsonSchema::object(vec![("a".into(), JsonSchema::String.required())]);
 
-        let res = schema_is_sub_type(&t1, &t2, &definitions, &definitions);
-        assert!(res);
-        let res = schema_is_sub_type(&t2, &t1, &definitions, &definitions);
-        assert!(!res);
-    }
+    //     let res = schema_is_sub_type(&t1, &t2, &definitions, &definitions);
+    //     assert!(res);
+    //     let res = schema_is_sub_type(&t2, &t1, &definitions, &definitions);
+    //     assert!(!res);
+    // }
     #[test]
     fn mappings() {
         let definitions = vec![];

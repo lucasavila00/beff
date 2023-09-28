@@ -720,14 +720,14 @@ impl<'a, R: FileManager> TypeToSchema<'a, R> {
 
     fn convert_sem_type(
         &mut self,
-        access_st: Rc<SemType>,
+        st: Rc<SemType>,
         ctx: &mut SemTypeContext,
         span: &Span,
     ) -> Res<JsonSchema> {
-        if access_st.is_empty(ctx) {
+        if st.is_empty(ctx) {
             return self.error(span, DiagnosticInfoMessage::InvalidIndexedAccess);
         }
-        let (head, tail) = to_validators(ctx, &access_st, "AnyName");
+        let (head, tail) = to_validators(ctx, &st, "AnyName");
         for t in tail {
             self.insert_definition(t.name.clone(), t.schema)?;
         }

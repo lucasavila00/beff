@@ -6,15 +6,15 @@ Error: ~~~
    ╭─[<unknown>:1:1]
    │
  6 │             get: (): (typeof a1)['b'] => impl()
-   │                      ────────┬───────  
-   │                              ╰───────── This type contains `never` and cannot be serialized
+   │                                  ─┬─  
+   │                                   ╰─── Invalid indexed access
 ───╯
 
 Error: ~~~
    ╭─[<unknown>:1:1]
    │
  9 │             get: (): (typeof a2)['b'] => impl()
-   │                      ────────┬───────  
-   │                              ╰───────── This type contains `never` and cannot be serialized
+   │                                  ─┬─  
+   │                                   ╰─── Invalid indexed access
 ───╯
 

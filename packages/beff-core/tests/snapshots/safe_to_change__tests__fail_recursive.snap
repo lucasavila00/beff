@@ -40,7 +40,6 @@ Old clients will not support this response:
 ```json
 {
   "arr": [],
-  "p": true,
   "p2": "abc"
 }
 ```

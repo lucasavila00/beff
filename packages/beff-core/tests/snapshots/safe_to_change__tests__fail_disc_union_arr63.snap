@@ -37,7 +37,6 @@ Old clients will not support this response:
 [
   "a2",
   {
-    "a": "abc",
     "b": []
   }
 ]

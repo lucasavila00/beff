@@ -11,6 +11,7 @@ use self::subtype::StringLitOrFormat;
 pub mod bdd;
 pub mod evidence;
 pub mod semtype;
+pub mod string_coverage;
 pub mod subtype;
 pub mod to_schema;
 use anyhow::anyhow;
@@ -65,7 +66,7 @@ impl<'a> ToSemTypeConverter<'a> {
                                 .collect::<Result<_>>()?;
                             let vs = MappingAtomic {
                                 kvs: vs,
-                                rest: Rc::new(SemTypeContext::never()),
+                                rest: Rc::new(SemTypeContext::unknown()),
                             };
                             builder.mapping_definitions[idx] = Some(Rc::new(vs));
                             let ty = Rc::new(SemTypeContext::mapping_definition_from_idx(idx));
@@ -113,7 +114,7 @@ impl<'a> ToSemTypeConverter<'a> {
                     .collect::<Result<_>>()?;
                 let vs = MappingAtomic {
                     kvs: vs,
-                    rest: SemTypeContext::never().into(),
+                    rest: SemTypeContext::unknown().into(),
                 };
                 Ok(builder.mapping_definition(Rc::new(vs)).into())
             }

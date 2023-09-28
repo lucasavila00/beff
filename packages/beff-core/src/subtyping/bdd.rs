@@ -1,8 +1,4 @@
-use std::{
-    cmp::Ordering,
-    collections::{BTreeMap, BTreeSet},
-    rc::Rc,
-};
+use std::{cmp::Ordering, collections::BTreeMap, rc::Rc};
 
 use crate::{ast::json::N, subtyping::semtype::SemTypeContext};
 
@@ -11,6 +7,7 @@ use super::{
         Evidence, EvidenceResult, ListEvidence, ProperSubtypeEvidence, ProperSubtypeEvidenceResult,
     },
     semtype::{BddMemoEmptyRef, MemoEmpty, SemType, SemTypeOps},
+    string_coverage::string_subtype_list_coverage,
     subtype::{ProperSubtype, StringLitOrFormat, SubType, SubTypeTag},
 };
 
@@ -340,23 +337,140 @@ fn bdd_every(
         ),
     }
 }
+struct MappingPairing {
+    pub types1: Vec<Rc<SemType>>,
+    pub rest1: Rc<SemType>,
+    pub names1: Vec<String>,
+    pub i1: usize,
+    pub len1: usize,
 
+    pub types2: Vec<Rc<SemType>>,
+    pub rest2: Rc<SemType>,
+    pub names2: Vec<String>,
+    pub i2: usize,
+    pub len2: usize,
+}
+
+impl MappingPairing {
+    pub fn new(m1: &MappingAtomic, m2: &MappingAtomic) -> Self {
+        Self {
+            types1: m1.kvs.values().cloned().collect(),
+            names1: m1.kvs.keys().cloned().collect(),
+            rest1: m1.rest.clone(),
+            i1: 0,
+            len1: m1.kvs.len(),
+
+            types2: m2.kvs.values().cloned().collect(),
+            names2: m2.kvs.keys().cloned().collect(),
+            rest2: m2.rest.clone(),
+            i2: 0,
+            len2: m2.kvs.len(),
+        }
+    }
+}
+
+struct MappingPairingItem {
+    name: String,
+    type1: Rc<SemType>,
+    type2: Rc<SemType>,
+    index1: Option<usize>,
+    _index2: Option<usize>,
+}
+impl MappingPairing {
+    // private function curType1() returns CellSemType => self.types1[self.i1];
+    fn cur_type_1(&self) -> Rc<SemType> {
+        self.types1[self.i1].clone()
+    }
+
+    // private function curType2() returns CellSemType => self.types2[self.i2];
+    fn cur_type_2(&self) -> Rc<SemType> {
+        self.types2[self.i2].clone()
+    }
+
+    // private function curName1() returns string => self.names1[self.i1];
+    fn cur_name_1(&self) -> String {
+        self.names1[self.i1].clone()
+    }
+
+    // private function curName2() returns string => self.names2[self.i2];
+    fn cur_name_2(&self) -> String {
+        self.names2[self.i2].clone()
+    }
+}
+impl Iterator for MappingPairing {
+    type Item = MappingPairingItem;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        if self.i1 >= self.len1 {
+            if self.i2 >= self.len2 {
+                return None;
+            }
+            let v = Some(MappingPairingItem {
+                name: self.cur_name_2(),
+                type1: self.rest1.clone(),
+                type2: self.cur_type_2(),
+                _index2: Some(self.i2),
+                index1: None,
+            });
+            self.i2 += 1;
+            return v;
+        } else if self.i2 >= self.len2 {
+            let v = Some(MappingPairingItem {
+                name: self.cur_name_1(),
+                type1: self.cur_type_1(),
+                type2: self.rest2.clone(),
+                index1: Some(self.i1),
+                _index2: None,
+            });
+            self.i1 += 1;
+            return v;
+        } else {
+            let name1 = self.cur_name_1();
+            let name2 = self.cur_name_2();
+            if name1 < name2 {
+                let v = Some(MappingPairingItem {
+                    name: name1,
+                    type1: self.cur_type_1(),
+                    type2: self.rest2.clone(),
+                    index1: Some(self.i1),
+                    _index2: None,
+                });
+                self.i1 += 1;
+                return v;
+            } else if name2 < name1 {
+                let v = Some(MappingPairingItem {
+                    name: name2,
+                    type1: self.rest1.clone(),
+                    type2: self.cur_type_2(),
+                    _index2: Some(self.i2),
+                    index1: None,
+                });
+                self.i2 += 1;
+                return v;
+            } else {
+                let v = Some(MappingPairingItem {
+                    name: name1,
+                    type1: self.cur_type_1(),
+                    type2: self.cur_type_2(),
+                    index1: Some(self.i1),
+                    _index2: Some(self.i2),
+                });
+                self.i1 += 1;
+                self.i2 += 1;
+                return v;
+            }
+        }
+    }
+}
 fn intersect_mapping(m1: Rc<MappingAtomic>, m2: Rc<MappingAtomic>) -> Option<Rc<MappingAtomic>> {
-    let m1_names = BTreeSet::from_iter(m1.kvs.keys());
-    let m2_names = BTreeSet::from_iter(m2.kvs.keys());
-    let all_names = m1_names.union(&m2_names).collect::<BTreeSet<_>>();
     let mut acc = vec![];
-    for name in all_names {
-        let type1 = m1
-            .kvs
-            .get(*name)
-            .cloned()
-            .unwrap_or_else(|| Rc::new(SemTypeContext::unknown()));
-        let type2 = m2
-            .kvs
-            .get(*name)
-            .cloned()
-            .unwrap_or_else(|| Rc::new(SemTypeContext::unknown()));
+
+    let pairing = MappingPairing::new(&m1, &m2);
+
+    for MappingPairingItem {
+        name, type1, type2, ..
+    } in pairing
+    {
         let t = type1.intersect(&type2);
         if t.is_never() {
             return None;
@@ -373,90 +487,59 @@ enum MappingInhabited {
     Yes(Rc<MappingAtomic>),
     No,
 }
-
+fn insert_field(
+    m: &BTreeMap<String, Rc<SemType>>,
+    name: String,
+    st: Rc<SemType>,
+) -> BTreeMap<String, Rc<SemType>> {
+    let mut kvs = m.clone();
+    kvs.insert(name, st);
+    kvs
+}
 fn mapping_inhabited(
     pos: Rc<MappingAtomic>,
     neg_list: &Option<Rc<Conjunction>>,
-    builder: &mut SemTypeContext,
+    ctx: &mut SemTypeContext,
 ) -> MappingInhabited {
     match neg_list {
         None => MappingInhabited::Yes(pos.clone()),
         Some(neg_list) => {
             let neg = match &*neg_list.atom {
-                Atom::Mapping(a) => builder.get_mapping_atomic(*a),
+                Atom::Mapping(a) => ctx.get_mapping_atomic(*a),
                 _ => unreachable!(),
             };
 
-            let pos_names = BTreeSet::from_iter(pos.kvs.keys());
-            let neg_names = BTreeSet::from_iter(neg.kvs.keys());
-
-            let all_names = pos_names.union(&neg_names).collect::<BTreeSet<_>>();
-            // todo!("MappingPairing");
-            // todo!("MappingPairing");
-            // todo!("MappingPairing");
-            // todo!("MappingPairing");
-            // todo!("MappingPairing");
-            // todo!("MappingPairing");
-            // todo!("MappingPairing");
-            // todo!("MappingPairing");
-            // todo!("MappingPairing");
-            // todo!("MappingPairing");
-            // todo!("MappingPairing");
-            // todo!("MappingPairing");
-            // todo!("MappingPairing");
-            // todo!("MappingPairing");
-            // todo!("MappingPairing");
-            // todo!("MappingPairing");
-            // todo!("MappingPairing");
-            // todo!("MappingPairing");
-            // todo!("MappingPairing");
-            // todo!("MappingPairing");
-            // todo!("MappingPairing");
-            // todo!("MappingPairing");
-            // todo!("MappingPairing");
-            // todo!("MappingPairing");
-            // todo!("MappingPairing");
-            // todo!("MappingPairing");
-            // todo!("MappingPairing");
-            // todo!("MappingPairing");
-            for name in all_names.iter() {
-                let pos_type = pos
-                    .kvs
-                    .get(**name)
-                    .cloned()
-                    .unwrap_or_else(|| Rc::new(SemTypeContext::unknown()));
-                let neg_type = neg
-                    .kvs
-                    .get(**name)
-                    .cloned()
-                    .unwrap_or_else(|| Rc::new(SemTypeContext::unknown()));
-                if pos_type.is_never() || neg_type.is_never() {
-                    return mapping_inhabited(pos, &neg_list.next, builder);
-                }
+            let diff = pos.rest.diff(&neg.rest);
+            if !diff.is_empty(ctx) {
+                return mapping_inhabited(pos, &neg_list.next, ctx);
             }
-            for name in all_names {
-                let pos_type = pos
-                    .kvs
-                    .get(*name)
-                    .cloned()
-                    .unwrap_or_else(|| Rc::new(SemTypeContext::unknown()));
-                let neg_type = neg
-                    .kvs
-                    .get(*name)
-                    .cloned()
-                    .unwrap_or_else(|| Rc::new(SemTypeContext::unknown()));
+            let pairing = MappingPairing::new(&pos, &neg);
 
+            for MappingPairingItem {
+                name,
+                type1: pos_type,
+                type2: neg_type,
+                index1,
+                ..
+            } in pairing
+            {
                 let d = pos_type.diff(&neg_type);
-                if !d.is_empty(builder) {
-                    let mut mt = pos.as_ref().kvs.clone();
-                    mt.insert(name.to_string(), d);
+                if !d.is_empty(ctx) {
+                    let mt = if index1.is_none() {
+                        // the posType came from the rest type
+                        insert_field(&pos.kvs, name, d)
+                    } else {
+                        let mut mt = pos.as_ref().kvs.clone();
+                        mt.insert(name.to_string(), d);
+                        mt
+                    };
                     if let MappingInhabited::Yes(a) = mapping_inhabited(
                         Rc::new(MappingAtomic {
                             kvs: mt,
                             rest: pos.rest.clone(),
                         }),
                         &neg_list.next,
-                        builder,
+                        ctx,
                     ) {
                         return MappingInhabited::Yes(a);
                     }
@@ -783,54 +866,18 @@ fn mapping_atomic_applicable_member_types_inner(
 ) -> Vec<Rc<SemType>> {
     match key {
         MappingStrKey::Str { allowed, values } => {
-            if !allowed {
-                return vec![];
-            }
             let mut member_types = vec![];
-            for (k, ty) in atomic.kvs.iter() {
-                let found = values.iter().any(|it| match it {
-                    StringLitOrFormat::Lit(l) => l == k,
-                    StringLitOrFormat::Format(_) => todo!(),
-                    StringLitOrFormat::Codec(_) => todo!(),
-                });
+            let coverage = string_subtype_list_coverage(
+                (allowed, &values),
+                atomic.kvs.keys().into_iter().collect::<Vec<_>>(),
+            );
 
-                // todo!("stringSubtypeListCoverage");
-                // todo!("stringSubtypeListCoverage");
-                // todo!("stringSubtypeListCoverage");
-                // todo!("stringSubtypeListCoverage");
-                // todo!("stringSubtypeListCoverage");
-                // todo!("stringSubtypeListCoverage");
-                // todo!("stringSubtypeListCoverage");
-                // todo!("stringSubtypeListCoverage");
-                // todo!("stringSubtypeListCoverage");
-                // todo!("stringSubtypeListCoverage");
-                // todo!("stringSubtypeListCoverage");
-                // todo!("stringSubtypeListCoverage");
-                // todo!("stringSubtypeListCoverage");
-                // todo!("stringSubtypeListCoverage");
-                // todo!("stringSubtypeListCoverage");
-                // todo!("stringSubtypeListCoverage");
-                // todo!("stringSubtypeListCoverage");
-                // todo!("stringSubtypeListCoverage");
-                // todo!("stringSubtypeListCoverage");
-                // todo!("stringSubtypeListCoverage");
-                // todo!("stringSubtypeListCoverage");
-                // todo!("stringSubtypeListCoverage");
-                // todo!("stringSubtypeListCoverage");
-                // todo!("stringSubtypeListCoverage");
-                // todo!("stringSubtypeListCoverage");
-                // todo!("stringSubtypeListCoverage");
-                // todo!("stringSubtypeListCoverage");
-                // todo!("stringSubtypeListCoverage");
-                // todo!("stringSubtypeListCoverage");
-                // todo!("stringSubtypeListCoverage");
-                // todo!("stringSubtypeListCoverage");
-
-                if found {
-                    member_types.push(ty.clone());
-                }
+            for it in coverage.indices {
+                member_types.push(atomic.kvs.get(&it).unwrap().clone());
             }
-
+            if !coverage.is_subtype {
+                member_types.push(atomic.rest.clone());
+            }
             member_types
         }
         MappingStrKey::True => {
