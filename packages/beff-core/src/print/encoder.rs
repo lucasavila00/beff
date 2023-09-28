@@ -104,7 +104,6 @@ fn union_intersection(name: &str, vs: &BTreeSet<JsonSchema>, input_expr: Expr) -
 }
 fn encode_expr(schema: &JsonSchema, input_expr: Expr) -> Expr {
     match schema {
-        JsonSchema::AnyObject => todo!(),
         JsonSchema::AnyArrayLike => {
             encode_expr(&JsonSchema::Array(JsonSchema::Any.into()), input_expr)
         }
@@ -305,6 +304,7 @@ fn encode_expr(schema: &JsonSchema, input_expr: Expr) -> Expr {
             type_args: None,
         }),
         JsonSchema::OpenApiResponseRef(_)
+        | JsonSchema::StAnyObject
         | JsonSchema::StNever
         | JsonSchema::StUnknown
         | JsonSchema::StNot(_) => unreachable!("cannot generate encoder for semantic types"),

@@ -525,7 +525,7 @@ impl<'a> SchemerContext<'a> {
                         // noop
                     }
                     SubTypeTag::Mapping => {
-                        acc.insert(JsonSchema::AnyObject);
+                        acc.insert(JsonSchema::StAnyObject);
                     }
                     SubTypeTag::List => {
                         acc.insert(JsonSchema::AnyArrayLike);
@@ -647,7 +647,7 @@ fn evidence_to_schema(ty: &Evidence) -> JsonSchema {
             SubTypeTag::Number => JsonSchema::Number,
             SubTypeTag::String => JsonSchema::String,
             SubTypeTag::Null => JsonSchema::Null,
-            SubTypeTag::Mapping => JsonSchema::AnyObject,
+            SubTypeTag::Mapping => JsonSchema::StAnyObject,
             SubTypeTag::Void => JsonSchema::Ref("undefined".into()),
             SubTypeTag::List => JsonSchema::AnyArrayLike,
         },

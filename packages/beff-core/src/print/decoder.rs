@@ -169,10 +169,10 @@ impl DecoderFnGenerator {
 
     fn decode_expr(schema: &JsonSchema, required: bool) -> Expr {
         match schema {
-            JsonSchema::StNever => todo!(),
-            JsonSchema::StUnknown => todo!(),
-            JsonSchema::StNot(_) => todo!(),
-            JsonSchema::AnyObject => todo!(),
+            JsonSchema::StNever
+            | JsonSchema::StUnknown
+            | JsonSchema::StNot(_)
+            | JsonSchema::StAnyObject => todo!(),
             JsonSchema::AnyArrayLike => {
                 Self::decode_expr(&JsonSchema::Array(JsonSchema::Any.into()), required)
             }

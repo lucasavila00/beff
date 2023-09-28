@@ -1042,10 +1042,12 @@ fn is_type_simple(it: &JsonSchema, components: &Vec<Validator>) -> bool {
         JsonSchema::Any
         | JsonSchema::Object { .. }
         | JsonSchema::Array(_)
-        | JsonSchema::AnyObject
         | JsonSchema::AnyArrayLike
         | JsonSchema::Tuple { .. } => false,
-        JsonSchema::StNever | JsonSchema::StUnknown | JsonSchema::StNot(_) => {
+        JsonSchema::StAnyObject
+        | JsonSchema::StNever
+        | JsonSchema::StUnknown
+        | JsonSchema::StNot(_) => {
             // is_type_simple should be used just to infer what is the type of a parameter
             // semantic types are only created after inference
             unreachable!("Semantic types should not be checked for simplicity")

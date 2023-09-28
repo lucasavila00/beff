@@ -1320,6 +1320,64 @@ mod tests {
     }
 
     #[test]
+    fn ok_obj_add_key() {
+        let from = r#"
+        type A = {
+            a: 1
+        }
+        export default {
+            "/hello": {
+                get: (): A => impl()
+            }
+        }
+        "#;
+
+        let to = r#"
+        type B = {
+            a: 1,
+            b: 2
+        }
+        export default {
+            "/hello": {
+                get: (): B => impl()
+            }
+        }
+        "#;
+        let errors = test_safe(from, to);
+        assert!(errors.is_empty());
+    }
+
+    #[test]
+    fn fail_obj_add_key() {
+        let from = r#"
+        type A = {
+            a: 1,
+            b: 2
+        }
+        export default {
+            "/hello": {
+                get: (): A => impl()
+            }
+        }
+        "#;
+
+        let to = r#"
+        type B = {
+            a: 1,
+        }
+        export default {
+            "/hello": {
+                get: (): B => impl()
+            }
+        }
+        "#;
+
+        let errors = test_safe(from, to);
+        assert!(!errors.is_empty());
+        insta::assert_snapshot!(print_errors(from, to, &errors));
+    }
+
+    #[test]
     fn fail_typeof() {
         let from = r#"
         const valueB = "b" as const;
