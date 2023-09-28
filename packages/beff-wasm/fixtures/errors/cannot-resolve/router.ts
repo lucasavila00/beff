@@ -1,5 +1,6 @@
 import * as D from "./abc";
 import E from "./def";
+import { router5 } from "./r5";
 
 export default {
   [`/hello`]: {
@@ -17,4 +18,5 @@ export default {
       return "";
     },
   },
+  ...router5.router5Nested,
 };

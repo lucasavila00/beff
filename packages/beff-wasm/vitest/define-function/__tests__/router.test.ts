@@ -16,6 +16,7 @@ test("get", async () => {
   await expect(bff["/hello3"].get()).resolves.toMatchInlineSnapshot('"Hello!"');
   await expect(bff["/hello4"].get()).resolves.toMatchInlineSnapshot('"Hello!"');
   await expect(bff["/hello5"].get()).resolves.toMatchInlineSnapshot('"Hello!"');
+  await expect(bff["/hello100"].get()).resolves.toMatchInlineSnapshot('"Hello!"');
 
   await expect(router["/hello1"].get()).resolves.toMatchInlineSnapshot('"Hello!"');
   await expect(router["/hello2"].get()).resolves.toMatchInlineSnapshot('"Hello!"');

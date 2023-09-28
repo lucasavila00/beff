@@ -1,21 +1,31 @@
 Error: Cannot find symbol 'ThisDoesNotExist'
- /errors/cannot-resolve/router.ts:6:28
-   4 | export default {
-   5 |   [`/hello`]: {
- > 6 |     get: async (): Promise<ThisDoesNotExist> => {
-     |                            ^^^^^^^^^^^^^^^^ Cannot find symbol 'ThisDoesNotExist'
-   7 |       return "test";
-   8 |     },
-   9 |   },
+ /errors/cannot-resolve/router.ts:7:28
+    5 | export default {
+    6 |   [`/hello`]: {
+ >  7 |     get: async (): Promise<ThisDoesNotExist> => {
+      |                            ^^^^^^^^^^^^^^^^ Cannot find symbol 'ThisDoesNotExist'
+    8 |       return "test";
+    9 |     },
+   10 |   },
 
 Error: Export default not found
- /errors/cannot-resolve/router.ts:16:14
-   14 |   },
-   15 |   "/a3": {
- > 16 |     get: (): E => {
+ /errors/cannot-resolve/router.ts:17:14
+   15 |   },
+   16 |   "/a3": {
+ > 17 |     get: (): E => {
       |              ^ Export default not found
-   17 |       return "";
-   18 |     },
-   19 |   },
+   18 |       return "";
+   19 |     },
+   20 |   },
 
-Found 2 errors
+Error: Cannot find symbol 'asd'
+ /errors/cannot-resolve/r5.ts:3:29
+   1 | export const router5 = {
+   2 |   router5Nested: {
+ > 3 |     [`/hello5`]: { get: (): asd => "Hello!" },
+     |                             ^^^ Cannot find symbol 'asd'
+   4 |   },
+   5 | };
+   6 |
+
+Found 3 errors
