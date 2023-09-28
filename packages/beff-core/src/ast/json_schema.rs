@@ -429,9 +429,50 @@ impl ToJson for JsonSchema {
             JsonSchema::StNever
             | JsonSchema::StUnknown
             | JsonSchema::StNot(_)
-            | JsonSchema::StAnyObject => todo!(),
+            | JsonSchema::StAnyObject => {
+                unreachable!("semantic types should not be converted to json")
+            }
         }
     }
+}
+
+fn ts_brand(brand: &str) -> TsType {
+    // string & { __brand: "brand" }
+    TsType::TsUnionOrIntersectionType(TsUnionOrIntersectionType::TsIntersectionType(
+        TsIntersectionType {
+            span: DUMMY_SP,
+            types: vec![
+                Box::new(TsType::TsKeywordType(TsKeywordType {
+                    span: DUMMY_SP,
+                    kind: TsKeywordTypeKind::TsStringKeyword,
+                })),
+                Box::new(TsType::TsTypeLit(TsTypeLit {
+                    span: DUMMY_SP,
+                    members: vec![TsTypeElement::TsPropertySignature(TsPropertySignature {
+                        span: DUMMY_SP,
+                        readonly: false,
+                        key: "brand".into(),
+                        computed: false,
+                        optional: false,
+                        init: None,
+                        params: vec![],
+                        type_ann: Some(Box::new(TsTypeAnn {
+                            span: DUMMY_SP,
+                            type_ann: Box::new(TsType::TsLitType(TsLitType {
+                                span: DUMMY_SP,
+                                lit: TsLit::Str(Str {
+                                    span: DUMMY_SP,
+                                    value: brand.into(),
+                                    raw: None,
+                                }),
+                            })),
+                        })),
+                        type_params: None,
+                    })],
+                })),
+            ],
+        },
+    ))
 }
 
 impl JsonSchema {
@@ -457,7 +498,6 @@ impl JsonSchema {
                 span: DUMMY_SP,
                 kind: TsKeywordTypeKind::TsAnyKeyword,
             }),
-            JsonSchema::StringWithFormat(_) => todo!(),
             JsonSchema::Object(vs) => TsType::TsTypeLit(TsTypeLit {
                 span: DUMMY_SP,
                 members: vs
@@ -540,7 +580,23 @@ impl JsonSchema {
                 }),
                 type_params: None,
             }),
-            JsonSchema::OpenApiResponseRef(_) => todo!(),
+            JsonSchema::StringWithFormat(fmt) => ts_brand(fmt),
+            JsonSchema::Codec(c) => match c {
+                CodecName::ISO8061 => TsType::TsTypeRef(TsTypeRef {
+                    span: DUMMY_SP,
+                    type_name: TsEntityName::Ident(Ident {
+                        span: DUMMY_SP,
+                        sym: "Date".into(),
+                        optional: false,
+                    }),
+                    type_params: None,
+                }),
+                CodecName::BigInt => TsType::TsKeywordType(TsKeywordType {
+                    span: DUMMY_SP,
+                    kind: TsKeywordTypeKind::TsBigIntKeyword,
+                }),
+            },
+
             JsonSchema::AnyOf(vs) =>
             // TsType::TsUnionOrIntersectionType(
             //     TsUnionOrIntersectionType::TsUnionType(TsUnionType {
@@ -664,7 +720,9 @@ impl JsonSchema {
                 .into(),
                 type_params: None,
             }),
-            JsonSchema::Codec(_) => todo!(),
+            JsonSchema::OpenApiResponseRef(_) => {
+                unreachable!("open api response ref should not be converted to typescript")
+            }
         }
     }
 }

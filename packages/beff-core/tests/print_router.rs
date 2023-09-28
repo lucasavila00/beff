@@ -42,7 +42,7 @@ mod tests {
             router_entry_point: Some(BffFileName::new("file.ts".into())),
             parser_entry_point: None,
             settings: BeffUserSettings {
-                custom_formats: BTreeSet::new(),
+                custom_formats: BTreeSet::from_iter(vec!["password".to_string()]),
             },
         };
         beff_core::extract(&mut man, entry)
@@ -378,6 +378,46 @@ mod tests {
     export default {
         "/hello": {
             get: (): B => impl()
+        }
+    }
+    "#;
+
+        insta::assert_snapshot!(ok(from));
+    }
+    #[test]
+    fn ok_date() {
+        let from = r#"
+    type A = Date
+    export default {
+        "/hello": {
+            get: (): A => impl()
+        }
+    }
+    "#;
+
+        insta::assert_snapshot!(ok(from));
+    }
+    #[test]
+    fn ok_fmt() {
+        let from = r#"
+    type A = StringFormat<"password">
+    export default {
+        "/hello": {
+            get: (): A => impl()
+        }
+    }
+    "#;
+
+        insta::assert_snapshot!(ok(from));
+    }
+    #[test]
+    fn ok_typeof_bigint() {
+        let from = r#"
+    const a = 1n as const;
+    type A = typeof a;
+    export default {
+        "/hello": {
+            get: (): A => impl()
         }
     }
     "#;

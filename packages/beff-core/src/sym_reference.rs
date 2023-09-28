@@ -129,7 +129,11 @@ impl<'a, R: FileManager> TypeResolver<'a, R> {
                     let df = file.and_then(|file| file.export_default.clone());
                     match df {
                         Some(d) => return Ok(ResolvedLocalSymbol::SymbolExportDefault(d.clone())),
-                        None => todo!(),
+                        None => {
+                            return Err(self
+                                .make_err(&i.span, DiagnosticInfoMessage::ExportDefaultNotFound)
+                                .into())
+                        }
                     }
                 }
             }

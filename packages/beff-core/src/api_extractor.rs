@@ -205,7 +205,6 @@ impl<'a, R: FileManager> ExtractExportDefaultVisitor<'a, R> {
     }
     fn check_ts_export_for_methods(&mut self, expr: &SymbolExport, span: &Span) {
         match expr {
-            SymbolExport::StarOfOtherFile(_) => todo!(),
             SymbolExport::ValueExpr { expr, .. } => self.check_expr_for_methods(expr),
             SymbolExport::SomethingOfOtherFile(orig, file_name) => {
                 let file = self.files.get_or_fetch_file(file_name);
@@ -216,17 +215,13 @@ impl<'a, R: FileManager> ExtractExportDefaultVisitor<'a, R> {
                     self.check_ts_export_for_methods(&export, span);
                     self.current_file = old_file;
                 } else {
-                    self.errors.push(
-                        self.build_error(span, DiagnosticInfoMessage::FoundTypeExpectedValue)
-                            .to_diag(None),
-                    );
+                    self.push_error(span, DiagnosticInfoMessage::FoundTypeExpectedValue)
                 }
             }
-            SymbolExport::TsType { .. } | SymbolExport::TsInterfaceDecl(_) => {
-                self.errors.push(
-                    self.build_error(span, DiagnosticInfoMessage::FoundTypeExpectedValue)
-                        .to_diag(None),
-                );
+            SymbolExport::StarOfOtherFile(_)
+            | SymbolExport::TsType { .. }
+            | SymbolExport::TsInterfaceDecl(_) => {
+                self.push_error(span, DiagnosticInfoMessage::FoundTypeExpectedValue)
             }
         }
     }
@@ -236,8 +231,10 @@ impl<'a, R: FileManager> ExtractExportDefaultVisitor<'a, R> {
             Expr::Ident(i) => {
                 match TypeResolver::new(self.files, &self.current_file).resolve_local_value(i) {
                     Ok(r) => match r {
-                        ResolvedLocalSymbol::TsType(_, _) => todo!(),
-                        ResolvedLocalSymbol::TsInterfaceDecl(_) => todo!(),
+                        ResolvedLocalSymbol::TsType(_, _)
+                        | ResolvedLocalSymbol::TsInterfaceDecl(_) => {
+                            self.push_error(span, DiagnosticInfoMessage::FoundTypeExpectedValue)
+                        }
                         ResolvedLocalSymbol::Expr(e) => {
                             self.check_member_expr_for_methods_inner(&e, right, &e.span())
                         }
@@ -248,11 +245,18 @@ impl<'a, R: FileManager> ExtractExportDefaultVisitor<'a, R> {
                             let exp = file.and_then(|it| it.symbol_exports.get(right, self.files));
                             match exp {
                                 Some(s) => self.check_ts_export_for_methods(&s, span),
-                                None => todo!(),
+                                None => self.push_error(
+                                    span,
+                                    DiagnosticInfoMessage::CannotResolveLocalExprAccess(
+                                        right.to_string(),
+                                    ),
+                                ),
                             }
                         }
                     },
-                    Err(_) => todo!(),
+                    Err(d) => {
+                        self.errors.push(*d);
+                    }
                 }
             }
             Expr::Object(vs) => {
@@ -269,11 +273,11 @@ impl<'a, R: FileManager> ExtractExportDefaultVisitor<'a, R> {
                                     }
                                 }
                             }
-                            Prop::Shorthand(_) => todo!(),
-                            Prop::Assign(_) => todo!(),
-                            Prop::Getter(_) => todo!(),
-                            Prop::Setter(_) => todo!(),
-                            Prop::Method(_) => todo!(),
+                            Prop::Shorthand(_)
+                            | Prop::Assign(_)
+                            | Prop::Getter(_)
+                            | Prop::Setter(_)
+                            | Prop::Method(_) => todo!(),
                         },
                     }
                 }
@@ -286,8 +290,7 @@ impl<'a, R: FileManager> ExtractExportDefaultVisitor<'a, R> {
     fn check_member_expr_for_methods(&mut self, expr: &MemberExpr) {
         let prop_sym = match &expr.prop {
             MemberProp::Ident(i) => &i.sym,
-            MemberProp::PrivateName(_) => todo!(),
-            MemberProp::Computed(_) => todo!(),
+            MemberProp::PrivateName(_) | MemberProp::Computed(_) => todo!(),
         };
         self.check_member_expr_for_methods_inner(&expr.obj, prop_sym, &expr.span)
     }
@@ -317,27 +320,16 @@ impl<'a, R: FileManager> ExtractExportDefaultVisitor<'a, R> {
                     Ok(ResolvedLocalSymbol::Star { .. }) => todo!(),
                     Ok(ResolvedLocalSymbol::TsType { .. })
                     | Ok(ResolvedLocalSymbol::TsInterfaceDecl { .. }) => {
-                        self.errors.push(
-                            self.build_error(
-                                &expr.span(),
-                                DiagnosticInfoMessage::FoundTypeExpectedValue,
-                            )
-                            .to_diag(None),
-                        );
+                        self.push_error(&expr.span(), DiagnosticInfoMessage::FoundTypeExpectedValue)
                     }
                     Err(e) => self.errors.push(*e),
                 }
             }
             Expr::Member(m) => self.check_member_expr_for_methods(m),
-            _ => {
-                self.errors.push(
-                    self.build_error(
-                        &expr.span(),
-                        DiagnosticInfoMessage::CouldNotUnderstandThisPartOfTheRouter,
-                    )
-                    .to_diag(None),
-                );
-            }
+            _ => self.push_error(
+                &expr.span(),
+                DiagnosticInfoMessage::CouldNotUnderstandThisPartOfTheRouter,
+            ),
         }
     }
 

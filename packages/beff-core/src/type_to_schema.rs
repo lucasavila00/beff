@@ -246,6 +246,37 @@ impl<'a, R: FileManager> TypeToSchema<'a, R> {
         self.type_param_stack.pop();
         Ok(ty)
     }
+
+    fn collect_value_exports(
+        &mut self,
+        file_name: BffFileName,
+        acc: &mut Vec<(String, Optionality<JsonSchema>)>,
+    ) -> Res<()> {
+        let file = self.files.get_or_fetch_file(&file_name);
+        match file {
+            Some(pm) => {
+                for (k, v) in &pm.symbol_exports.named {
+                    match v.as_ref() {
+                        SymbolExport::TsType { params, ty, name } => todo!(),
+                        SymbolExport::TsInterfaceDecl(_) => todo!(),
+                        SymbolExport::ValueExpr { expr, name } => {
+                            let ty = self.typeof_expr(expr, false)?;
+                            acc.push((name.to_string(), ty.required()));
+                        }
+                        SymbolExport::StarOfOtherFile(_) => todo!(),
+                        SymbolExport::SomethingOfOtherFile(_, _) => todo!(),
+                    }
+                }
+                for f in &pm.symbol_exports.extends {
+                    self.collect_value_exports(f.clone(), acc)?;
+                }
+            }
+            None => todo!(),
+        }
+
+        Ok(())
+    }
+
     fn get_type_ref_of_user_identifier(
         &mut self,
         i: &Ident,
@@ -270,7 +301,11 @@ impl<'a, R: FileManager> TypeToSchema<'a, R> {
             ResolvedLocalSymbol::Expr(_) | ResolvedLocalSymbol::SymbolExportDefault(_) => {
                 self.error(&i.span, DiagnosticInfoMessage::FoundValueExpectedType)
             }
-            ResolvedLocalSymbol::Star(_) => todo!(),
+            ResolvedLocalSymbol::Star(file_name) => {
+                let mut vs = vec![];
+                self.collect_value_exports(file_name, &mut vs)?;
+                Ok(JsonSchema::object(vs))
+            }
         }
     }
 
@@ -628,11 +663,11 @@ impl<'a, R: FileManager> TypeToSchema<'a, R> {
                                 let value = self.typeof_expr(&p.value, as_const)?;
                                 vs.insert(key, value.required());
                             }
-                            Prop::Shorthand(_) => todo!(),
-                            Prop::Assign(_) => todo!(),
-                            Prop::Getter(_) => todo!(),
-                            Prop::Setter(_) => todo!(),
-                            Prop::Method(_) => todo!(),
+                            Prop::Shorthand(_)
+                            | Prop::Assign(_)
+                            | Prop::Getter(_)
+                            | Prop::Setter(_)
+                            | Prop::Method(_) => todo!(),
                         },
                     }
                 }
