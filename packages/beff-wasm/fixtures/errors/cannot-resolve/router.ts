@@ -1,6 +1,7 @@
 import * as D from "./abc";
 import E from "./def";
 import { router5 } from "./r5";
+import { Router6, Router7 } from "./r6";
 
 export default {
   [`/hello`]: {
@@ -19,4 +20,6 @@ export default {
     },
   },
   ...router5.router5Nested,
+  ...Router6,
+  ...Router7,
 };

@@ -186,11 +186,17 @@ impl<'a, R: FileManager> TypeToSchema<'a, R> {
                 ty: alias, params, ..
             } => self.apply_type_params(type_args, params, alias)?,
 
-            SymbolExport::TsInterfaceDecl(int) => self.convert_ts_interface_decl(int, type_args)?,
-            SymbolExport::StarOfOtherFile(_) => {
+            SymbolExport::TsInterfaceDecl { decl: int, .. } => {
+                self.convert_ts_interface_decl(int, type_args)?
+            }
+            SymbolExport::StarOfOtherFile { .. } => {
                 return self.error(span, DiagnosticInfoMessage::CannotUseStarAsType)
             }
-            SymbolExport::SomethingOfOtherFile(word, from_file) => {
+            SymbolExport::SomethingOfOtherFile {
+                something: word,
+                file: from_file,
+                span,
+            } => {
                 let exported = self
                     .files
                     .get_or_fetch_file(from_file)
@@ -258,13 +264,13 @@ impl<'a, R: FileManager> TypeToSchema<'a, R> {
                 for (k, v) in &pm.symbol_exports.named {
                     match v.as_ref() {
                         SymbolExport::TsType { .. } => todo!(),
-                        SymbolExport::TsInterfaceDecl(_) => todo!(),
-                        SymbolExport::ValueExpr { expr, name: _ } => {
+                        SymbolExport::TsInterfaceDecl { .. } => todo!(),
+                        SymbolExport::ValueExpr { expr, name: _, .. } => {
                             let ty = self.typeof_expr(expr, false)?;
                             acc.push((k.to_string(), ty.required()));
                         }
-                        SymbolExport::StarOfOtherFile(_) => todo!(),
-                        SymbolExport::SomethingOfOtherFile(_, _) => todo!(),
+                        SymbolExport::StarOfOtherFile { .. } => todo!(),
+                        SymbolExport::SomethingOfOtherFile { .. } => todo!(),
                     }
                 }
                 for f in &pm.symbol_exports.extends {
@@ -476,9 +482,11 @@ impl<'a, R: FileManager> TypeToSchema<'a, R> {
             Some(exported) => {
                 let name = match &*exported {
                     SymbolExport::TsType { name, .. } => name.to_string(),
-                    SymbolExport::TsInterfaceDecl(it) => it.id.sym.to_string(),
-                    SymbolExport::StarOfOtherFile(_) => right.to_string(),
-                    SymbolExport::SomethingOfOtherFile(that, _) => that.to_string(),
+                    SymbolExport::TsInterfaceDecl { decl: it, .. } => it.id.sym.to_string(),
+                    SymbolExport::StarOfOtherFile { .. } => right.to_string(),
+                    SymbolExport::SomethingOfOtherFile {
+                        something: that, ..
+                    } => that.to_string(),
                     SymbolExport::ValueExpr { .. } => todo!(),
                 };
                 Ok((exported, from_file.clone(), name))
@@ -500,14 +508,19 @@ impl<'a, R: FileManager> TypeToSchema<'a, R> {
                 &right.span,
                 DiagnosticInfoMessage::CannotUseTsTypeAsQualified,
             ),
-            SymbolExport::TsInterfaceDecl(_) => self.error(
+            SymbolExport::TsInterfaceDecl { .. } => self.error(
                 &right.span,
                 DiagnosticInfoMessage::CannotUseTsInterfaceAsQualified,
             ),
-            SymbolExport::StarOfOtherFile(other_file) => {
-                self.get_qualified_type_from_file(other_file, &right.sym, &right.span)
-            }
-            SymbolExport::SomethingOfOtherFile(word, from_file) => {
+            SymbolExport::StarOfOtherFile {
+                reference: other_file,
+                ..
+            } => self.get_qualified_type_from_file(other_file, &right.sym, &right.span),
+            SymbolExport::SomethingOfOtherFile {
+                something: word,
+                file: from_file,
+                ..
+            } => {
                 let exported = self
                     .files
                     .get_or_fetch_file(from_file)

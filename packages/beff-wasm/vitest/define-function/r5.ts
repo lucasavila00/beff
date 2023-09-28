@@ -3,3 +3,5 @@ export const router5 = {
     [`/hello5`]: { get: (): string => "Hello!" },
   },
 };
+
+export type Router6 = typeof router5;

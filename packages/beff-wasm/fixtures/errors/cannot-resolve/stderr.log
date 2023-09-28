@@ -1,22 +1,22 @@
 Error: Cannot find symbol 'ThisDoesNotExist'
- /errors/cannot-resolve/router.ts:7:28
-    5 | export default {
-    6 |   [`/hello`]: {
- >  7 |     get: async (): Promise<ThisDoesNotExist> => {
+ /errors/cannot-resolve/router.ts:8:28
+    6 | export default {
+    7 |   [`/hello`]: {
+ >  8 |     get: async (): Promise<ThisDoesNotExist> => {
       |                            ^^^^^^^^^^^^^^^^ Cannot find symbol 'ThisDoesNotExist'
-    8 |       return "test";
-    9 |     },
-   10 |   },
+    9 |       return "test";
+   10 |     },
+   11 |   },
 
 Error: Export default not found
- /errors/cannot-resolve/router.ts:17:14
-   15 |   },
-   16 |   "/a3": {
- > 17 |     get: (): E => {
+ /errors/cannot-resolve/router.ts:18:14
+   16 |   },
+   17 |   "/a3": {
+ > 18 |     get: (): E => {
       |              ^ Export default not found
-   18 |       return "";
-   19 |     },
-   20 |   },
+   19 |       return "";
+   20 |     },
+   21 |   },
 
 Error: Cannot find symbol 'asd'
  /errors/cannot-resolve/r5.ts:3:29
@@ -28,4 +28,20 @@ Error: Cannot find symbol 'asd'
    5 | };
    6 |
 
-Found 3 errors
+Error: Found type, expected value
+ /errors/cannot-resolve/r6.ts:1:8
+ > 1 | export type Router6 = {};
+     |        ^^^^^^^^^^^^^^^^^^ Found type, expected value
+   2 |
+   3 | export interface Router7 {}
+   4 |
+
+Error: Found type, expected value
+ /errors/cannot-resolve/r6.ts:3:8
+   1 | export type Router6 = {};
+   2 |
+ > 3 | export interface Router7 {}
+     |        ^^^^^^^^^^^^^^^^^^^^ Found type, expected value
+   4 |
+
+Found 5 errors

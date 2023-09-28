@@ -203,25 +203,29 @@ impl<'a, R: FileManager> ExtractExportDefaultVisitor<'a, R> {
             }
         }
     }
-    fn check_ts_export_for_methods(&mut self, expr: &SymbolExport, span: &Span) {
+    fn check_ts_export_for_methods(&mut self, expr: &SymbolExport) {
         match expr {
             SymbolExport::ValueExpr { expr, .. } => self.check_expr_for_methods(expr),
-            SymbolExport::SomethingOfOtherFile(orig, file_name) => {
+            SymbolExport::SomethingOfOtherFile {
+                something: orig,
+                file: file_name,
+                ..
+            } => {
                 let file = self.files.get_or_fetch_file(file_name);
                 let exported = file.and_then(|file| file.symbol_exports.get(orig, self.files));
                 if let Some(export) = exported {
                     let old_file = self.current_file.clone();
                     self.current_file = file_name.clone();
-                    self.check_ts_export_for_methods(&export, span);
+                    self.check_ts_export_for_methods(&export);
                     self.current_file = old_file;
                 } else {
-                    self.push_error(span, DiagnosticInfoMessage::FoundTypeExpectedValue)
+                    self.push_error(&expr.span(), DiagnosticInfoMessage::FoundTypeExpectedValue)
                 }
             }
-            SymbolExport::StarOfOtherFile(_)
+            SymbolExport::StarOfOtherFile { .. }
             | SymbolExport::TsType { .. }
-            | SymbolExport::TsInterfaceDecl(_) => {
-                self.push_error(span, DiagnosticInfoMessage::FoundTypeExpectedValue)
+            | SymbolExport::TsInterfaceDecl { .. } => {
+                self.push_error(&expr.span(), DiagnosticInfoMessage::FoundTypeExpectedValue)
             }
         }
     }
@@ -244,15 +248,15 @@ impl<'a, R: FileManager> ExtractExportDefaultVisitor<'a, R> {
                             from_file,
                         } => match exported.as_ref() {
                             SymbolExport::TsType { .. } => todo!(),
-                            SymbolExport::TsInterfaceDecl(_) => todo!(),
-                            SymbolExport::ValueExpr { expr, name: _ } => {
+                            SymbolExport::TsInterfaceDecl { .. } => todo!(),
+                            SymbolExport::ValueExpr { expr, name: _, .. } => {
                                 let tmp_file = self.current_file.clone();
                                 self.current_file = from_file.file_name().clone();
                                 self.check_member_expr_for_methods_inner(expr, right);
                                 self.current_file = tmp_file;
                             }
-                            SymbolExport::StarOfOtherFile(_) => todo!(),
-                            SymbolExport::SomethingOfOtherFile(_, _) => todo!(),
+                            SymbolExport::StarOfOtherFile { .. } => todo!(),
+                            SymbolExport::SomethingOfOtherFile { .. } => todo!(),
                         },
                         ResolvedLocalSymbol::SymbolExportDefault(_) => todo!(),
                         ResolvedLocalSymbol::Star(file_name) => {
@@ -262,7 +266,7 @@ impl<'a, R: FileManager> ExtractExportDefaultVisitor<'a, R> {
                                 Some(s) => {
                                     let tmp_file = self.current_file.clone();
                                     self.current_file = file_name.clone();
-                                    self.check_ts_export_for_methods(&s, &left.span());
+                                    self.check_ts_export_for_methods(&s);
                                     self.current_file = tmp_file;
                                 }
                                 None => self.push_error(
@@ -328,7 +332,7 @@ impl<'a, R: FileManager> ExtractExportDefaultVisitor<'a, R> {
                     }) => {
                         let old_file = self.current_file.clone();
                         self.current_file = from_file.file_name().clone();
-                        self.check_ts_export_for_methods(&exported, &expr.span());
+                        self.check_ts_export_for_methods(&exported);
                         self.current_file = old_file;
                     }
                     Ok(ResolvedLocalSymbol::SymbolExportDefault(export_default)) => {

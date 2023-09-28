@@ -48,14 +48,38 @@ pub enum SymbolExport {
         params: Option<Rc<TsTypeParamDecl>>,
         ty: Rc<TsType>,
         name: JsWord,
+        span: Span,
     },
-    TsInterfaceDecl(Rc<TsInterfaceDecl>),
+    TsInterfaceDecl {
+        decl: Rc<TsInterfaceDecl>,
+        span: Span,
+    },
     ValueExpr {
         expr: Rc<Expr>,
         name: JsWord,
+        span: Span,
     },
-    StarOfOtherFile(Rc<ImportReference>),
-    SomethingOfOtherFile(JsWord, BffFileName),
+    StarOfOtherFile {
+        reference: Rc<ImportReference>,
+        span: Span,
+    },
+    SomethingOfOtherFile {
+        something: JsWord,
+        file: BffFileName,
+        span: Span,
+    },
+}
+
+impl SymbolExport {
+    pub fn span(&self) -> Span {
+        match self {
+            SymbolExport::TsType { span, .. } => *span,
+            SymbolExport::TsInterfaceDecl { span, .. } => *span,
+            SymbolExport::ValueExpr { span, .. } => *span,
+            SymbolExport::StarOfOtherFile { span, .. } => *span,
+            SymbolExport::SomethingOfOtherFile { span, .. } => *span,
+        }
+    }
 }
 
 pub struct BffModuleData {
@@ -87,9 +111,11 @@ pub enum ImportReference {
     Named {
         orig: Rc<JsWord>,
         file_name: BffFileName,
+        span: Span,
     },
     Star {
         file_name: BffFileName,
+        span: Span,
     },
     Default {
         file_name: BffFileName,
