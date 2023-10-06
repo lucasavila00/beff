@@ -222,11 +222,11 @@ impl<'a, R: FileManager> TypeToSchema<'a, R> {
 
                 let param_name = param.name.sym.to_string();
                 let param_type = match positional_arg {
-                    Some(arg) => Some(self.convert_ts_type(&arg)?),
+                    Some(arg) => Some(self.convert_ts_type(arg)?),
                     None => param
                         .default
                         .as_ref()
-                        .map(|it| self.convert_ts_type(&it))
+                        .map(|it| self.convert_ts_type(it))
                         .transpose()?,
                 };
                 match param_type {
