@@ -308,22 +308,22 @@ impl ExtractResult {
     pub fn errors(&self) -> Vec<&Diagnostic> {
         self.router
             .as_ref()
-            .map(|it| it.errors.iter().collect())
-            .unwrap_or(vec![])
+            .map(|it| it.errors.iter().collect::<Vec<_>>())
+            .unwrap_or_default()
             .into_iter()
             .chain(
                 self.parser
                     .as_ref()
-                    .map(|it| it.errors.iter().collect())
-                    .unwrap_or(vec![]),
+                    .map(|it| it.errors.iter().collect::<Vec<_>>())
+                    .unwrap_or_default(),
             )
             .collect()
     }
     pub fn validators(&self) -> Vec<&Validator> {
         self.router
             .as_ref()
-            .map(|it| it.validators.iter().collect())
-            .unwrap_or(vec![])
+            .map(|it| it.validators.iter().collect::<Vec<_>>())
+            .unwrap_or_default()
             .into_iter()
             .chain(
                 self.parser
