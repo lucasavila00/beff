@@ -7,6 +7,7 @@ use crate::{open_api_ast::HTTPMethod, BffFileName, ParsedModule};
 
 #[derive(Debug, Clone)]
 pub enum DiagnosticInfoMessage {
+    NoArgumentInTypeApplication,
     ThisShouldContainMethods,
     ExportDefaultNotFound,
     PathMustStartWithDash,
@@ -105,7 +106,6 @@ pub enum DiagnosticInfoMessage {
 impl DiagnosticInfoMessage {
     pub fn to_string(&self) -> String {
         match self {
-            
             DiagnosticInfoMessage::ThisShouldContainMethods => {
                 "This should contain methods".to_string()
             }
@@ -361,6 +361,9 @@ impl DiagnosticInfoMessage {
             }
             DiagnosticInfoMessage::PathMustStartWithDash => {
                 "Path must start with a dash".to_string()
+            }
+            DiagnosticInfoMessage::NoArgumentInTypeApplication => {
+                "Missing this type argument".to_string()
             }
         }
     }

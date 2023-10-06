@@ -277,4 +277,33 @@ mod tests {
     "#;
         insta::assert_snapshot!(fail(from));
     }
+    #[test]
+    fn fail_missing_type_param() {
+        let from = r#"
+    
+        type A<X> = X
+        export default {
+            "/hello": {
+                get: (): A => impl()
+            }
+        }
+    "#;
+        insta::assert_snapshot!(fail(from));
+    }
+    #[test]
+    fn fail_missing_type_param_interface() {
+        let from = r#"
+    
+        
+        interface A<X> {
+            a: X
+        }
+        export default {
+            "/hello": {
+                get: (): A => impl()
+            }
+        }
+    "#;
+        insta::assert_snapshot!(fail(from));
+    }
 }

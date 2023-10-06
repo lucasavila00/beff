@@ -16,14 +16,13 @@ use swc_atoms::JsWord;
 use swc_common::{Span, Spanned};
 use swc_ecma_ast::{
     Expr, Ident, Lit, MemberProp, Prop, PropName, PropOrSpread, Str, TsArrayType,
-    TsCallSignatureDecl, TsConditionalType, TsConstructSignatureDecl, TsConstructorType,
-    TsEntityName, TsFnOrConstructorType, TsFnType, TsGetterSignature, TsImportType,
-    TsIndexSignature, TsIndexedAccessType, TsInferType, TsInterfaceDecl, TsIntersectionType,
-    TsKeywordType, TsKeywordTypeKind, TsLit, TsLitType, TsMappedType, TsMethodSignature,
-    TsOptionalType, TsParenthesizedType, TsQualifiedName, TsRestType, TsSetterSignature,
-    TsThisType, TsTplLitType, TsTupleType, TsType, TsTypeElement, TsTypeLit, TsTypeOperator,
-    TsTypeOperatorOp, TsTypeParamDecl, TsTypeParamInstantiation, TsTypePredicate, TsTypeQuery,
-    TsTypeQueryExpr, TsTypeRef, TsUnionOrIntersectionType, TsUnionType,
+    TsConditionalType, TsConstructorType, TsEntityName, TsFnOrConstructorType, TsFnType,
+    TsImportType, TsIndexedAccessType, TsInferType, TsInterfaceDecl, TsIntersectionType,
+    TsKeywordType, TsKeywordTypeKind, TsLit, TsLitType, TsMappedType, TsOptionalType,
+    TsParenthesizedType, TsQualifiedName, TsRestType, TsThisType, TsTplLitType, TsTupleType,
+    TsType, TsTypeElement, TsTypeLit, TsTypeOperator, TsTypeOperatorOp, TsTypeParam,
+    TsTypeParamDecl, TsTypeParamInstantiation, TsTypePredicate, TsTypeQuery, TsTypeQueryExpr,
+    TsTypeRef, TsUnionOrIntersectionType, TsUnionType,
 };
 
 pub struct TypeToSchema<'a, R: FileManager> {
@@ -113,17 +112,15 @@ impl<'a, R: FileManager> TypeToSchema<'a, R> {
                     ),
                 }
             }
-            TsTypeElement::TsGetterSignature(TsGetterSignature { span, .. })
-            | TsTypeElement::TsSetterSignature(TsSetterSignature { span, .. })
-            | TsTypeElement::TsMethodSignature(TsMethodSignature { span, .. })
-            | TsTypeElement::TsIndexSignature(TsIndexSignature { span, .. })
-            | TsTypeElement::TsCallSignatureDecl(TsCallSignatureDecl { span, .. })
-            | TsTypeElement::TsConstructSignatureDecl(TsConstructSignatureDecl { span, .. }) => {
-                self.cannot_serialize_error(
-                    span,
-                    DiagnosticInfoMessage::PropertyNonSerializableToJsonSchema,
-                )
-            }
+            TsTypeElement::TsGetterSignature(_)
+            | TsTypeElement::TsSetterSignature(_)
+            | TsTypeElement::TsMethodSignature(_)
+            | TsTypeElement::TsIndexSignature(_)
+            | TsTypeElement::TsCallSignatureDecl(_)
+            | TsTypeElement::TsConstructSignatureDecl(_) => self.cannot_serialize_error(
+                &prop.span(),
+                DiagnosticInfoMessage::PropertyNonSerializableToJsonSchema,
+            ),
         }
     }
 
@@ -139,26 +136,13 @@ impl<'a, R: FileManager> TypeToSchema<'a, R> {
             );
         }
 
-        let mut map: BTreeMap<String, JsonSchema> = BTreeMap::new();
-        if let (Some(params), Some(v)) = (&typ.type_params, type_args.as_ref()) {
-            if v.params.len() != params.params.len() {
-                todo!()
-                // return self.error(
-                //     &v.span,
-                //     DiagnosticInfoMessage::TypeParamsCountMismatch {
-                //         expected: decl.params.len(),
-                //         found: v.params.len(),
-                //     },
-                // );
-            }
+        let args = type_args
+            .as_ref()
+            .map(|it| it.params.iter().map(|it| it.as_ref()).collect::<Vec<_>>());
+        let params = typ.type_params.as_ref().map(|it| &it.params);
 
-            for (i, param) in params.params.iter().enumerate() {
-                let param_name = param.name.sym.to_string();
-                let param_type = &v.params[i];
-                let param_type = self.convert_ts_type(param_type)?;
-                map.insert(param_name, param_type);
-            }
-        }
+        let map = self.get_type_params_stack_map(args, params)?;
+
         self.type_param_stack.push(map);
 
         let r = Ok(JsonSchema::object(
@@ -219,34 +203,64 @@ impl<'a, R: FileManager> TypeToSchema<'a, R> {
         self.current_file = store_current_file;
         Ok(ty)
     }
+
+    fn get_type_params_stack_map(
+        &mut self,
+        args: Option<Vec<&TsType>>,
+        params: Option<&Vec<TsTypeParam>>,
+    ) -> Res<BTreeMap<String, JsonSchema>> {
+        let mut map: BTreeMap<String, JsonSchema> = BTreeMap::new();
+        if let Some(params) = params {
+            let empty_args = vec![];
+            let args_vec = args.unwrap_or(empty_args);
+
+            for (idx, param) in params.iter().enumerate() {
+                // check if there is a corresponding type arg,
+                // use default if there is not
+
+                let positional_arg = args_vec.get(idx);
+
+                let param_name = param.name.sym.to_string();
+                let param_type = match positional_arg {
+                    Some(arg) => Some(self.convert_ts_type(arg)?),
+                    None => param
+                        .default
+                        .as_ref()
+                        .map(|it| self.convert_ts_type(it))
+                        .transpose()?,
+                };
+                match param_type {
+                    Some(param_type) => {
+                        map.insert(param_name, param_type);
+                    }
+                    None => {
+                        return self.cannot_serialize_error(
+                            &param.span,
+                            DiagnosticInfoMessage::NoArgumentInTypeApplication,
+                        )
+                    }
+                }
+            }
+        } else {
+            assert!(args.is_none());
+        }
+
+        Ok(map)
+    }
+
     fn apply_type_params(
         &mut self,
         type_args: &Option<Box<TsTypeParamInstantiation>>,
         decl: &Option<Rc<TsTypeParamDecl>>,
         ty: &TsType,
     ) -> Res<JsonSchema> {
-        let mut map: BTreeMap<String, JsonSchema> = BTreeMap::new();
-        if let (Some(v), Some(decl)) = (type_args, decl) {
-            if v.params.len() != decl.params.len() {
-                todo!()
-                // return self.error(
-                //     &v.span,
-                //     DiagnosticInfoMessage::TypeParamsCountMismatch {
-                //         expected: decl.params.len(),
-                //         found: v.params.len(),
-                //     },
-                // );
-            }
+        let args = type_args
+            .as_ref()
+            .map(|it| it.params.iter().map(|it| it.as_ref()).collect::<Vec<_>>());
+        let params = decl.as_ref().map(|it| &it.params);
 
-            for (i, param) in decl.params.iter().enumerate() {
-                let param_name = param.name.sym.to_string();
-                let param_type = &v.params[i];
-                let param_type = self.convert_ts_type(param_type)?;
-                map.insert(param_name, param_type);
-            }
-        }
+        let map = self.get_type_params_stack_map(args, params)?;
         self.type_param_stack.push(map);
-
         let ty = self.convert_ts_type(ty)?;
         self.type_param_stack.pop();
         Ok(ty)
@@ -358,11 +372,12 @@ impl<'a, R: FileManager> TypeToSchema<'a, R> {
         i: &Ident,
         type_params: &Option<Box<TsTypeParamInstantiation>>,
     ) -> Res<JsonSchema> {
-        if type_params.is_none() {
-            for map in self.type_param_stack.iter().rev() {
-                if let Some(ty) = map.get(&i.sym.to_string()) {
-                    return Ok(ty.clone());
+        for map in self.type_param_stack.iter().rev() {
+            if let Some(ty) = map.get(&i.sym.to_string()) {
+                if type_params.is_some() {
+                    panic!("inner type params should be empty")
                 }
+                return Ok(ty.clone());
             }
         }
 

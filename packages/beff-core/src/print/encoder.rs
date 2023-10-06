@@ -28,7 +28,7 @@ fn encode_ref(schema_ref: &str, input_expr: Expr) -> Expr {
         .into(),
         prop: MemberProp::Ident(Ident {
             span: DUMMY_SP,
-            sym: schema_ref.clone().into(),
+            sym: schema_ref.into(),
             optional: false,
         }),
     });
