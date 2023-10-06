@@ -1537,7 +1537,7 @@ mod tests {
         let to = r#"
         export default {
             "/hello": {
-                get: (): 1 => impl()
+                get: (): {a:1} => impl()
             }
         }
         "#;
@@ -1546,7 +1546,7 @@ mod tests {
     #[test]
     fn ok_default_type_app_param_interface() {
         let from = r#"
-        interface A<X> {
+        interface A<X=1> {
             a: X
         }
         export default {
@@ -1559,7 +1559,7 @@ mod tests {
         let to = r#"
         export default {
             "/hello": {
-                get: (): 1 => impl()
+                get: (): {a:1} => impl()
             }
         }
         "#;
