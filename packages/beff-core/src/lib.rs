@@ -328,8 +328,8 @@ impl ExtractResult {
             .chain(
                 self.parser
                     .as_ref()
-                    .map(|it| it.validators.iter().collect())
-                    .unwrap_or(vec![]),
+                    .map(|it| it.validators.iter().collect::<Vec<_>>())
+                    .unwrap_or_default(),
             )
             .collect()
     }

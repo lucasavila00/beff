@@ -91,7 +91,7 @@ impl DecoderFnGenerator {
             .into(),
             prop: MemberProp::Ident(Ident {
                 span: DUMMY_SP,
-                sym: schema_ref.clone().into(),
+                sym: schema_ref.into(),
                 optional: false,
             }),
         });
