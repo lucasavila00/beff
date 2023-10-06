@@ -255,3 +255,6 @@ test("optional prop", async () => {
   `);
   await expect(beff["/optional2"].post()).resolves.toMatchInlineSnapshot("null");
 });
+test("imported names value", async () => {
+  await expect(beff["/named_import"].post("ABC")).resolves.toMatchInlineSnapshot('"ABC"');
+});

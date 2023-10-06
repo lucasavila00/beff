@@ -2,6 +2,7 @@ import { Ctx } from "@beff/hono";
 import * as E from "fp-ts/lib/Either";
 import either2 from "./either2";
 import exp_def from "./exp_def";
+import { ABC } from "./data_const";
 export default {
   ...either2,
   "/either": {
@@ -111,4 +112,10 @@ export default {
   "/exp_default": {
     post: (_c: Ctx, a: typeof exp_def): typeof exp_def => a,
   },
+  "/named_import": {
+    post: (_c: Ctx, a: typeof ABC): typeof ABC => a,
+  },
+  // "/dynamic_import": {
+  //   post: (_c: Ctx, a: typeof import("./data_const")): typeof import("./data_const") => a,
+  // },
 };

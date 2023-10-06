@@ -198,7 +198,9 @@ impl<'a, R: FileManager> TypeToSchema<'a, R> {
                     }
                 }
             }
-            SymbolExport::ValueExpr { .. } => todo!(),
+            SymbolExport::ValueExpr { span, .. } => {
+                return self.error(span, DiagnosticInfoMessage::FoundValueExpectedType)
+            }
         };
         self.current_file = store_current_file;
         Ok(ty)
@@ -547,7 +549,9 @@ impl<'a, R: FileManager> TypeToSchema<'a, R> {
                     ),
                 }
             }
-            SymbolExport::ValueExpr { .. } => todo!(),
+            SymbolExport::ValueExpr { span, .. } => {
+                return self.error(span, DiagnosticInfoMessage::FoundValueExpectedType)
+            }
         }
     }
     fn __convert_ts_type_qual_inner(
@@ -738,13 +742,34 @@ impl<'a, R: FileManager> TypeToSchema<'a, R> {
         }
     }
 
+    fn typeof_symbol_export(
+        &mut self,
+        exported: Rc<SymbolExport>,
+        from_file: Rc<ImportReference>,
+    ) -> Res<JsonSchema> {
+        let old_file = self.current_file.clone();
+        self.current_file = from_file.file_name().clone();
+        let ty: JsonSchema = match exported.as_ref() {
+            SymbolExport::TsType { .. } => todo!(),
+            SymbolExport::TsInterfaceDecl { .. } => todo!(),
+            SymbolExport::ValueExpr { expr, .. } => self.typeof_expr(&expr, false)?,
+            SymbolExport::StarOfOtherFile { .. } => todo!(),
+            SymbolExport::SomethingOfOtherFile { .. } => todo!(),
+        };
+        self.current_file = old_file;
+        Ok(ty)
+    }
+
     pub fn typeof_symbol(&mut self, s: ResolvedLocalSymbol, span: &Span) -> Res<JsonSchema> {
         match s {
             ResolvedLocalSymbol::TsType(_, _) | ResolvedLocalSymbol::TsInterfaceDecl(_) => {
                 self.error(span, DiagnosticInfoMessage::FoundTypeExpectedValue)
             }
             ResolvedLocalSymbol::Expr(e) => self.typeof_expr(&e, false),
-            ResolvedLocalSymbol::NamedImport { .. } => todo!(),
+            ResolvedLocalSymbol::NamedImport {
+                exported,
+                from_file,
+            } => self.typeof_symbol_export(exported, from_file),
             ResolvedLocalSymbol::SymbolExportDefault(e) => self.typeof_expr(&e.symbol_export, true),
             ResolvedLocalSymbol::Star(_) => todo!(),
         }
