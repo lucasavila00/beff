@@ -1,0 +1,19 @@
+---
+source: packages/beff-core/tests/report_error.rs
+expression: fail(from)
+---
+Error: Exposing a type that cannot be converted to JSON schema
+   ╭─[<unknown>:1:1]
+   │
+ 9 │                 get: (): A => impl()
+   │                          ┬  
+   │                          ╰── `A` cannot be converted to JSON schema
+───╯
+Advice: 
+   ╭─[<unknown>:1:1]
+   │
+ 4 │         interface A<X> {
+   │                     ┬  
+   │                     ╰── Missing this type argument
+───╯
+

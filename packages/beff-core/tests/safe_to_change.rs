@@ -73,11 +73,16 @@ mod tests {
         let st1 = print_errors(from, to, &e1);
         if !e1.is_empty() {
             // print it
-            println!("{}", st1);
+            println!("{:#?}", st1);
         }
         assert!(e1.is_empty());
         let e2 = test_safe(to, from);
-        assert!(e2.is_empty());
+        let st2 = print_errors(from, to, &e2);
+        if !e2.is_empty() {
+            // print it
+            println!("{:#?}", st2);
+        }
+        assert!(e2.is_empty(),);
     }
     fn print_errors(from: &str, to: &str, errors: &[OpenApiBreakingChange]) -> String {
         let errs = errors
@@ -1469,6 +1474,92 @@ mod tests {
         export default {
             "/hello": {
                 get: (): C => impl()
+            }
+        }
+        "#;
+        assert_eq_schema(from, to)
+    }
+
+    #[test]
+    fn ok_type_app_param() {
+        let from = r#"
+        type A<X> = X
+        export default {
+            "/hello": {
+                get: (): A<1> => impl()
+            }
+        }
+        "#;
+
+        let to = r#"
+        export default {
+            "/hello": {
+                get: (): 1 => impl()
+            }
+        }
+        "#;
+        assert_eq_schema(from, to)
+    }
+
+    #[test]
+    fn ok_default_type_app_param() {
+        let from = r#"
+        type A<X=1> = X
+        export default {
+            "/hello": {
+                get: (): A => impl()
+            }
+        }
+        "#;
+
+        let to = r#"
+        export default {
+            "/hello": {
+                get: (): 1 => impl()
+            }
+        }
+        "#;
+        assert_eq_schema(from, to)
+    }
+    #[test]
+    fn ok_type_app_param_interface() {
+        let from = r#"
+        interface A<X> {
+            a: X
+        }
+        export default {
+            "/hello": {
+                get: (): A<1> => impl()
+            }
+        }
+        "#;
+
+        let to = r#"
+        export default {
+            "/hello": {
+                get: (): 1 => impl()
+            }
+        }
+        "#;
+        assert_eq_schema(from, to)
+    }
+    #[test]
+    fn ok_default_type_app_param_interface() {
+        let from = r#"
+        interface A<X> {
+            a: X
+        }
+        export default {
+            "/hello": {
+                get: (): A => impl()
+            }
+        }
+        "#;
+
+        let to = r#"
+        export default {
+            "/hello": {
+                get: (): 1 => impl()
             }
         }
         "#;
