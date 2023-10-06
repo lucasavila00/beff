@@ -136,7 +136,9 @@ impl<'a, R: FileManager> TypeToSchema<'a, R> {
             );
         }
 
-        let args = type_args.as_ref().map(|it| &it.params);
+        let args = type_args
+            .as_ref()
+            .map(|it| it.params.iter().map(|it| it.as_ref()).collect::<Vec<_>>());
         let params = typ.type_params.as_ref().map(|it| &it.params);
 
         let map = self.get_type_params_stack_map(args, params)?;
@@ -204,13 +206,13 @@ impl<'a, R: FileManager> TypeToSchema<'a, R> {
 
     fn get_type_params_stack_map(
         &mut self,
-        args: Option<&Vec<Box<TsType>>>,
+        args: Option<Vec<&TsType>>,
         params: Option<&Vec<TsTypeParam>>,
     ) -> Res<BTreeMap<String, JsonSchema>> {
         let mut map: BTreeMap<String, JsonSchema> = BTreeMap::new();
         if let Some(params) = params {
             let empty_args = vec![];
-            let args_vec = args.unwrap_or(&empty_args);
+            let args_vec = args.unwrap_or(empty_args);
 
             for (idx, param) in params.iter().enumerate() {
                 // check if there is a corresponding type arg,
@@ -252,7 +254,9 @@ impl<'a, R: FileManager> TypeToSchema<'a, R> {
         decl: &Option<Rc<TsTypeParamDecl>>,
         ty: &TsType,
     ) -> Res<JsonSchema> {
-        let args = type_args.as_ref().map(|it| &it.params);
+        let args = type_args
+            .as_ref()
+            .map(|it| it.params.iter().map(|it| it.as_ref()).collect::<Vec<_>>());
         let params = decl.as_ref().map(|it| &it.params);
 
         let map = self.get_type_params_stack_map(args, params)?;
