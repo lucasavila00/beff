@@ -581,7 +581,7 @@ impl OpenApiParser {
                                 .ok_or(anyhow!("Missing parameter required"))?;
                             let schema = vs
                                 .get("schema")
-                                .map(|it| JsonSchema::from_json(it))
+                                .map(JsonSchema::from_json)
                                 .ok_or(anyhow!("Missing parameter schema"))??;
                             match in_.as_str() {
                                 "query" => parameters.push(ParameterObject {
@@ -631,7 +631,7 @@ impl OpenApiParser {
                         Json::Object(v) => v.get("schema"),
                         _ => None,
                     })
-                    .map(|it| JsonSchema::from_json(it))
+                    .map(JsonSchema::from_json)
                     .transpose()?;
 
                 let json_request_body = match json_request_body_schema {
