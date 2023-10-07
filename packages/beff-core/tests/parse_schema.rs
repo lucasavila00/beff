@@ -3,7 +3,7 @@ mod tests {
 
     use beff_core::ast::{
         json::{Json, ToJson},
-        json_schema::JsonSchema,
+        json_schema::{JsonSchema, JsonSchemaConst},
     };
 
     #[test]
@@ -65,20 +65,21 @@ mod tests {
             JsonSchema::any_of(vec![]),
             JsonSchema::any_of(vec![JsonSchema::String, JsonSchema::Number]),
             JsonSchema::any_of(vec![
-                JsonSchema::Const(Json::Bool(false)),
-                JsonSchema::Const(Json::Bool(true)),
+                JsonSchema::Const(JsonSchemaConst::Bool(false)),
+                JsonSchema::Const(JsonSchemaConst::Bool(true)),
             ]),
             JsonSchema::all_of(vec![]),
             JsonSchema::all_of(vec![JsonSchema::String, JsonSchema::Number]),
-            JsonSchema::Const(Json::String("abc".into())),
-            JsonSchema::Const(Json::parse_int(123)),
+            JsonSchema::Const(JsonSchemaConst::String("abc".into())),
+            JsonSchema::Const(JsonSchemaConst::parse_int(123)),
         ];
         for schema in schemas {
             let json = schema.clone().to_json();
-            let str = serde_json::to_string_pretty(&json.to_serde()).unwrap();
-            let from_str = serde_json::from_str::<serde_json::Value>(&str).unwrap();
+            let str = serde_json::to_string_pretty(&json.to_serde()).expect("failed to serialize");
+            let from_str =
+                serde_json::from_str::<serde_json::Value>(&str).expect("failed to parse");
             let from_serde = Json::from_serde(&from_str);
-            let from_json = JsonSchema::from_json(&from_serde).unwrap();
+            let from_json = JsonSchema::from_json(&from_serde).expect("failed to json");
             assert_eq!(schema, from_json,);
         }
     }

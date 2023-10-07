@@ -1,7 +1,6 @@
 use std::rc::Rc;
 
-use crate::ast::json::Json;
-use crate::ast::json_schema::Optionality;
+use crate::ast::json_schema::{JsonSchemaConst, Optionality};
 use crate::{ast::json_schema::JsonSchema, open_api_ast::Validator};
 
 use self::bdd::MappingAtomic;
@@ -127,14 +126,12 @@ impl<'a> ToSemTypeConverter<'a> {
                 Ok(builder.tuple(prefix_items, items).into())
             }
             JsonSchema::Const(cons) => match cons {
-                Json::Null => Ok(SemTypeContext::null().into()),
-                Json::Bool(b) => Ok(SemTypeContext::boolean_const(*b).into()),
-                Json::String(s) => {
+                JsonSchemaConst::Null => Ok(SemTypeContext::null().into()),
+                JsonSchemaConst::Bool(b) => Ok(SemTypeContext::boolean_const(*b).into()),
+                JsonSchemaConst::String(s) => {
                     Ok(SemTypeContext::string_const(StringLitOrFormat::Lit(s.clone())).into())
                 }
-                Json::Number(n) => Ok(SemTypeContext::number_const(n.clone()).into()),
-                Json::Array(_) => unreachable!("array cannot be used as a type const"),
-                Json::Object(_) => unreachable!("object cannot be used as a type const"),
+                JsonSchemaConst::Number(n) => Ok(SemTypeContext::number_const(n.clone()).into()),
             },
             JsonSchema::OpenApiResponseRef(_) => {
                 unreachable!("should not be part of semantic types")

@@ -15,7 +15,8 @@
         "streetsidesoftware.code-spell-checker",
         "dbaeumer.vscode-eslint",
         "rust-lang.rust-analyzer",
-        "esbenp.prettier-vscode"
+        "esbenp.prettier-vscode",
+        "GitHub.copilot"
       ]
     }
   }

@@ -1,0 +1,20 @@
+---
+source: packages/beff-core/tests/report_error.rs
+expression: fail(from)
+---
+Error: ~~~
+   ╭─[<unknown>:1:1]
+   │
+ 5 │                 post: (_c: Ctx, a: typeof import("./data_const")): typeof import("./data_const") => a,
+   │                                           ───────────┬──────────  
+   │                                                      ╰──────────── typeof import is not supported
+───╯
+
+Error: ~~~
+   ╭─[<unknown>:1:1]
+   │
+ 5 │                 post: (_c: Ctx, a: typeof import("./data_const")): typeof import("./data_const") => a,
+   │                                                                           ───────────┬──────────  
+   │                                                                                      ╰──────────── typeof import is not supported
+───╯
+

@@ -77,8 +77,8 @@ pub fn print_ts_types(vs: Vec<(String, TsType)>) -> String {
         .build();
 
     format_text(&PathBuf::from("f.ts"), &codes, &config)
-        .expect("Could not parse...")
-        .unwrap()
+        .expect("Could not parse(1)...")
+        .expect("Could not parse(2)...")
 }
 
 impl MdReport {
@@ -151,7 +151,7 @@ fn evidence_to_json(it: &Evidence) -> Json {
             SubTypeTag::String => Json::String("abc".into()),
             SubTypeTag::Null => Json::Null,
             SubTypeTag::Mapping => Json::object(vec![]),
-            SubTypeTag::Void => todo!(),
+            SubTypeTag::Void => Json::Null,
             SubTypeTag::List => Json::Array(vec![]),
         },
         Evidence::Proper(p) => match p {

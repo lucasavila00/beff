@@ -741,8 +741,9 @@ fn mapping_atomic_applicable_member_types_inner(
             for (k, ty) in atomic.iter() {
                 let found = values.iter().any(|it| match it {
                     StringLitOrFormat::Lit(l) => l == k,
-                    StringLitOrFormat::Format(_) => todo!(),
-                    StringLitOrFormat::Codec(_) => todo!(),
+                    StringLitOrFormat::Format(_) | StringLitOrFormat::Codec(_) => {
+                        unreachable!("format or codec cannot be used as mapping key")
+                    }
                 });
 
                 if found {

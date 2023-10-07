@@ -4,6 +4,9 @@ import { router5 } from "./r5";
 import { Router6, Router7 } from "./r6";
 import { r11 } from "./r11";
 import { r13 } from "./r13";
+import A2 from "./def";
+import { A3 } from "./def";
+import * as A4 from "./r6";
 
 export default {
   [`/123`]: {
@@ -28,6 +31,26 @@ export default {
   },
   "/a3": {
     get: (): E => {
+      return "";
+    },
+  },
+  "/a4": {
+    get: (): typeof A => {
+      return "";
+    },
+  },
+  "/a5": {
+    get: (): typeof A2 => {
+      return "";
+    },
+  },
+  "/a6": {
+    get: (): typeof A3 => {
+      return "";
+    },
+  },
+  "/a7": {
+    get: (): typeof A4 => {
       return "";
     },
   },

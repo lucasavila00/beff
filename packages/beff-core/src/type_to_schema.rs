@@ -1,5 +1,4 @@
-use crate::ast::json::Json;
-use crate::ast::json_schema::{CodecName, JsonSchema, Optionality};
+use crate::ast::json_schema::{CodecName, JsonSchema, JsonSchemaConst, Optionality};
 use crate::diag::{
     Diagnostic, DiagnosticInfoMessage, DiagnosticInformation, DiagnosticParentMessage, Location,
 };
@@ -198,7 +197,9 @@ impl<'a, R: FileManager> TypeToSchema<'a, R> {
                     }
                 }
             }
-            SymbolExport::ValueExpr { .. } => todo!(),
+            SymbolExport::ValueExpr { span, .. } => {
+                return self.error(span, DiagnosticInfoMessage::FoundValueExpectedType)
+            }
         };
         self.current_file = store_current_file;
         Ok(ty)
@@ -266,32 +267,6 @@ impl<'a, R: FileManager> TypeToSchema<'a, R> {
         Ok(ty)
     }
 
-    fn collect_value_exports(
-        &mut self,
-        file_name: BffFileName,
-        acc: &mut Vec<(String, Optionality<JsonSchema>)>,
-    ) -> Res<()> {
-        let file = self.files.get_or_fetch_file(&file_name);
-        if let Some(pm) = file {
-            for (k, v) in &pm.symbol_exports.named {
-                match v.as_ref() {
-                    SymbolExport::TsType { .. } | SymbolExport::TsInterfaceDecl { .. } => {}
-                    SymbolExport::ValueExpr { expr, name: _, .. } => {
-                        let ty = self.typeof_expr(expr, false)?;
-                        acc.push((k.to_string(), ty.required()));
-                    }
-                    SymbolExport::StarOfOtherFile { .. } => todo!(),
-                    SymbolExport::SomethingOfOtherFile { .. } => todo!(),
-                }
-            }
-            for f in &pm.symbol_exports.extends {
-                self.collect_value_exports(f.clone(), acc)?;
-            }
-        }
-
-        Ok(())
-    }
-
     fn get_type_ref_of_user_identifier(
         &mut self,
         i: &Ident,
@@ -312,13 +287,10 @@ impl<'a, R: FileManager> TypeToSchema<'a, R> {
                     type_args,
                 )
             }
-            ResolvedLocalSymbol::Expr(_) | ResolvedLocalSymbol::SymbolExportDefault(_) => {
+            ResolvedLocalSymbol::Star(_)
+            | ResolvedLocalSymbol::Expr(_)
+            | ResolvedLocalSymbol::SymbolExportDefault(_) => {
                 self.error(&i.span, DiagnosticInfoMessage::FoundValueExpectedType)
-            }
-            ResolvedLocalSymbol::Star(file_name) => {
-                let mut vs = vec![];
-                self.collect_value_exports(file_name, &mut vs)?;
-                Ok(JsonSchema::object(vs))
             }
         }
     }
@@ -547,7 +519,9 @@ impl<'a, R: FileManager> TypeToSchema<'a, R> {
                     ),
                 }
             }
-            SymbolExport::ValueExpr { .. } => todo!(),
+            SymbolExport::ValueExpr { span, .. } => {
+                self.error(span, DiagnosticInfoMessage::FoundValueExpectedType)
+            }
         }
     }
     fn __convert_ts_type_qual_inner(
@@ -560,8 +534,8 @@ impl<'a, R: FileManager> TypeToSchema<'a, R> {
                 self.recursively_get_qualified_type_export(exported, &q.right)
             }
             TsEntityName::Ident(i) => {
-                let ns =
-                    TypeResolver::new(self.files, &self.current_file).resolve_namespace_type(i)?;
+                let ns = TypeResolver::new(self.files, &self.current_file)
+                    .resolve_namespace_symbol(i)?;
                 self.get_qualified_type_from_file(&ns.from_file, &q.right.sym, &q.right.span)
             }
         }
@@ -624,14 +598,16 @@ impl<'a, R: FileManager> TypeToSchema<'a, R> {
             Expr::Lit(l) => match l {
                 Lit::Str(s) => {
                     if as_const {
-                        Ok(JsonSchema::Const(Json::String(s.value.to_string())))
+                        Ok(JsonSchema::Const(JsonSchemaConst::String(
+                            s.value.to_string(),
+                        )))
                     } else {
                         Ok(JsonSchema::String)
                     }
                 }
                 Lit::Bool(b) => {
                     if as_const {
-                        Ok(JsonSchema::Const(Json::Bool(b.value)))
+                        Ok(JsonSchema::Const(JsonSchemaConst::Bool(b.value)))
                     } else {
                         Ok(JsonSchema::Boolean)
                     }
@@ -639,7 +615,7 @@ impl<'a, R: FileManager> TypeToSchema<'a, R> {
                 Lit::Null(_) => Ok(JsonSchema::Null),
                 Lit::Num(n) => {
                     if as_const {
-                        Ok(JsonSchema::Const(Json::parse_f64(n.value)))
+                        Ok(JsonSchema::Const(JsonSchemaConst::parse_f64(n.value)))
                     } else {
                         Ok(JsonSchema::Number)
                     }
@@ -706,7 +682,7 @@ impl<'a, R: FileManager> TypeToSchema<'a, R> {
                     if let Some(key) = match &m.prop {
                         MemberProp::Ident(i) => Some(i.sym.to_string()),
                         MemberProp::Computed(c) => match self.typeof_expr(&c.expr, as_const)? {
-                            JsonSchema::Const(Json::String(s)) => Some(s.clone()),
+                            JsonSchema::Const(JsonSchemaConst::String(s)) => Some(s.clone()),
                             _ => None,
                         },
                         MemberProp::PrivateName(_) => None,
@@ -738,25 +714,133 @@ impl<'a, R: FileManager> TypeToSchema<'a, R> {
         }
     }
 
+    fn typeof_symbol_export(
+        &mut self,
+        exported: Rc<SymbolExport>,
+        from_file: Rc<ImportReference>,
+    ) -> Res<JsonSchema> {
+        let old_file = self.current_file.clone();
+        self.current_file = from_file.file_name().clone();
+        let ty: JsonSchema = match exported.as_ref() {
+            SymbolExport::TsType { .. } | SymbolExport::TsInterfaceDecl { .. } => todo!(),
+            SymbolExport::ValueExpr { expr, .. } => self.typeof_expr(expr, false)?,
+            SymbolExport::StarOfOtherFile { .. } => todo!(),
+            SymbolExport::SomethingOfOtherFile { .. } => todo!(),
+        };
+        self.current_file = old_file;
+        Ok(ty)
+    }
+
+    fn collect_value_exports(
+        &mut self,
+        file_name: &BffFileName,
+        acc: &mut Vec<(String, Optionality<JsonSchema>)>,
+    ) -> Res<()> {
+        let file = self.files.get_or_fetch_file(file_name);
+        if let Some(pm) = file {
+            for (k, v) in &pm.symbol_exports.named {
+                match v.as_ref() {
+                    SymbolExport::TsType { .. } | SymbolExport::TsInterfaceDecl { .. } => {}
+                    SymbolExport::ValueExpr { expr, name: _, .. } => {
+                        let ty = self.typeof_expr(expr, false)?;
+                        acc.push((k.to_string(), ty.required()));
+                    }
+                    SymbolExport::StarOfOtherFile { reference, .. } => match reference.as_ref() {
+                        ImportReference::Named { .. } => todo!(),
+                        ImportReference::Star { file_name, .. } => {
+                            let mut acc2 = vec![];
+                            self.collect_value_exports(file_name, &mut acc2)?;
+                            let v = JsonSchema::object(acc2);
+                            acc.push((k.to_string(), v.required()));
+                        }
+                        ImportReference::Default { .. } => todo!(),
+                    },
+                    SymbolExport::SomethingOfOtherFile {
+                        file,
+                        something,
+                        span,
+                    } => {
+                        let mut acc2 = vec![];
+                        self.collect_value_exports(file, &mut acc2)?;
+                        let found = acc2.iter().find(|(k, _)| k == &something.to_string());
+                        match found {
+                            Some((_, found)) => {
+                                acc.push((k.to_string(), found.clone()));
+                            }
+                            None => {
+                                return self.error(
+                                    span,
+                                    DiagnosticInfoMessage::CouldNotFindSomethingOfOtherFile(
+                                        something.to_string(),
+                                    ),
+                                )
+                            }
+                        }
+                    }
+                }
+            }
+            for f in &pm.symbol_exports.extends {
+                self.collect_value_exports(f, acc)?;
+            }
+        }
+
+        Ok(())
+    }
+
     pub fn typeof_symbol(&mut self, s: ResolvedLocalSymbol, span: &Span) -> Res<JsonSchema> {
         match s {
             ResolvedLocalSymbol::TsType(_, _) | ResolvedLocalSymbol::TsInterfaceDecl(_) => {
                 self.error(span, DiagnosticInfoMessage::FoundTypeExpectedValue)
             }
             ResolvedLocalSymbol::Expr(e) => self.typeof_expr(&e, false),
-            ResolvedLocalSymbol::NamedImport { .. } => todo!(),
+            ResolvedLocalSymbol::NamedImport {
+                exported,
+                from_file,
+            } => self.typeof_symbol_export(exported, from_file),
             ResolvedLocalSymbol::SymbolExportDefault(e) => self.typeof_expr(&e.symbol_export, true),
-            ResolvedLocalSymbol::Star(_) => todo!(),
+            ResolvedLocalSymbol::Star(file_name) => {
+                let mut acc = vec![];
+                self.collect_value_exports(&file_name, &mut acc)?;
+                Ok(JsonSchema::object(acc))
+            }
         }
     }
+    fn get_kv_from_schema(&mut self, schema: JsonSchema, key: &str, span: Span) -> Res<JsonSchema> {
+        if let JsonSchema::Object(kvs) = schema {
+            if let Some(Optionality::Required(v)) = kvs.get(key) {
+                return Ok(v.clone());
+            }
+        }
+        self.error(
+            &span,
+            DiagnosticInfoMessage::CannotResolveKey(key.to_string()),
+        )
+    }
+    fn convert_type_query_qualified(&mut self, q: &TsQualifiedName) -> Res<JsonSchema> {
+        match &q.left {
+            TsEntityName::TsQualifiedName(q) => {
+                let t = self.convert_type_query_qualified(q)?;
+                self.get_kv_from_schema(t, q.right.sym.as_ref(), q.right.span())
+            }
+            TsEntityName::Ident(id) => {
+                let s =
+                    TypeResolver::new(self.files, &self.current_file).resolve_local_value(id)?;
+                let t = self.typeof_symbol(s, &q.left.span())?;
+                self.get_kv_from_schema(t, q.right.sym.as_ref(), q.right.span())
+            }
+        }
+    }
+
     pub fn convert_type_query(&mut self, q: &TsTypeQuery) -> Res<JsonSchema> {
         if q.type_args.is_some() {
             return self.error(&q.span, DiagnosticInfoMessage::TypeQueryArgsNotSupported);
         }
         match q.expr_name {
-            TsTypeQueryExpr::Import(_) => todo!(),
+            TsTypeQueryExpr::Import(ref imp) => {
+                self.error(&imp.span, DiagnosticInfoMessage::TypeofImportNotSupported)
+            }
             TsTypeQueryExpr::TsEntityName(ref n) => match n {
-                TsEntityName::TsQualifiedName(_) => todo!(),
+                TsEntityName::TsQualifiedName(q) => self.convert_type_query_qualified(q),
                 TsEntityName::Ident(n) => {
                     let s =
                         TypeResolver::new(self.files, &self.current_file).resolve_local_value(n)?;
@@ -802,7 +886,7 @@ impl<'a, R: FileManager> TypeToSchema<'a, R> {
                     return self.convert_indexed_access_syntatically(&v.schema, index);
                 }
             }
-            (JsonSchema::Object(vs), JsonSchema::Const(Json::String(s))) => {
+            (JsonSchema::Object(vs), JsonSchema::Const(JsonSchemaConst::String(s))) => {
                 let v = vs.get(s);
                 if let Some(Optionality::Required(v)) = v {
                     return Ok(Some(v.clone()));
@@ -897,9 +981,11 @@ impl<'a, R: FileManager> TypeToSchema<'a, R> {
                 })
             }
             TsType::TsLitType(TsLitType { lit, .. }) => match lit {
-                TsLit::Number(n) => Ok(JsonSchema::Const(Json::parse_f64(n.value))),
-                TsLit::Str(s) => Ok(JsonSchema::Const(Json::String(s.value.to_string().clone()))),
-                TsLit::Bool(b) => Ok(JsonSchema::Const(Json::Bool(b.value))),
+                TsLit::Number(n) => Ok(JsonSchema::Const(JsonSchemaConst::parse_f64(n.value))),
+                TsLit::Str(s) => Ok(JsonSchema::Const(JsonSchemaConst::String(
+                    s.value.to_string().clone(),
+                ))),
+                TsLit::Bool(b) => Ok(JsonSchema::Const(JsonSchemaConst::Bool(b.value))),
                 TsLit::BigInt(_) => Ok(JsonSchema::Codec(CodecName::BigInt)),
                 TsLit::Tpl(TsTplLitType {
                     span,
@@ -913,7 +999,7 @@ impl<'a, R: FileManager> TypeToSchema<'a, R> {
                         );
                     }
 
-                    Ok(JsonSchema::Const(Json::String(
+                    Ok(JsonSchema::Const(JsonSchemaConst::String(
                         quasis
                             .iter()
                             .map(|it| it.raw.to_string())

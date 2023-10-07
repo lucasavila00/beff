@@ -36,7 +36,7 @@ impl fmt::Display for Js {
             }))],
             "\n",
         )
-        .unwrap();
+        .expect("failed to emit module");
         write!(f, "{}", e)
     }
 }
