@@ -34,7 +34,7 @@ mod tests {
         let file_name = BffFileName::new("file.ts".into());
         GLOBALS.set(&Globals::new(), || {
             let res = parse_and_bind(&mut resolver, &file_name, &content);
-            res.unwrap()
+            res.expect("failed to parse")
         })
     }
     fn parse_api(it: &str) -> ExtractResult {
@@ -66,7 +66,9 @@ mod tests {
             diag::Location::Unknown(_) => unreachable!(),
         }
 
-        e.finish().write(Source::from(from), &mut buf).unwrap();
+        e.finish()
+            .write(Source::from(from), &mut buf)
+            .expect("failed to write");
 
         String::from_utf8_lossy(&buf).to_string()
     }
@@ -102,7 +104,9 @@ mod tests {
             diag::Location::Unknown(_) => unreachable!(),
         }
 
-        e.finish().write(Source::from(from), &mut buf).unwrap();
+        e.finish()
+            .write(Source::from(from), &mut buf)
+            .expect("failed to write");
 
         String::from_utf8_lossy(&buf).to_string()
             + print_related_info(from, &d.related_information).as_str()

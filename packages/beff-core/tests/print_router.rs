@@ -32,7 +32,7 @@ mod tests {
         let file_name = BffFileName::new("file.ts".into());
         GLOBALS.set(&Globals::new(), || {
             let res = parse_and_bind(&mut resolver, &file_name, &content);
-            res.unwrap()
+            res.expect("failed to parse")
         })
     }
     fn parse_api(it: &str) -> ExtractResult {

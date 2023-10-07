@@ -543,7 +543,7 @@ impl OpenApiParser {
                         Json::Object(v) => v.get("schema"),
                         _ => None,
                     })
-                    .unwrap();
+                    .ok_or(anyhow!("Missing response body"))?;
 
                 let json_parameters = vs
                     .get("parameters")
@@ -564,25 +564,25 @@ impl OpenApiParser {
                                     Json::String(st) => Some(st.clone()),
                                     _ => None,
                                 })
-                                .unwrap();
+                                .ok_or(anyhow!("Missing parameter type"))?;
                             let name = vs
                                 .get("name")
                                 .and_then(|it| match it {
                                     Json::String(st) => Some(st.clone()),
                                     _ => None,
                                 })
-                                .unwrap();
+                                .ok_or(anyhow!("Missing parameter name"))?;
                             let required = vs
                                 .get("required")
                                 .and_then(|it| match it {
                                     Json::Bool(st) => Some(*st),
                                     _ => None,
                                 })
-                                .unwrap();
+                                .ok_or(anyhow!("Missing parameter required"))?;
                             let schema = vs
                                 .get("schema")
-                                .map(|it| JsonSchema::from_json(it).unwrap())
-                                .unwrap();
+                                .map(|it| JsonSchema::from_json(it))
+                                .ok_or(anyhow!("Missing parameter schema"))??;
                             match in_.as_str() {
                                 "query" => parameters.push(ParameterObject {
                                     name,
@@ -631,7 +631,8 @@ impl OpenApiParser {
                         Json::Object(v) => v.get("schema"),
                         _ => None,
                     })
-                    .map(|it| JsonSchema::from_json(it).unwrap());
+                    .map(|it| JsonSchema::from_json(it))
+                    .transpose()?;
 
                 let json_request_body = match json_request_body_schema {
                     Some(schema) => {
@@ -645,7 +646,7 @@ impl OpenApiParser {
                                 Json::Bool(v) => Some(*v),
                                 _ => None,
                             })
-                            .unwrap();
+                            .ok_or(anyhow!("Missing required"))?;
 
                         Some(JsonRequestBody {
                             description: None,
@@ -699,7 +700,8 @@ impl OpenApiParser {
                 for (name, op_obj) in vs {
                     let acc = Self::parse_op_object_map(op_obj)?;
                     let api_path = ApiPath {
-                        parsed_pattern: ApiPath::parse_raw_pattern_str(name, None).unwrap(),
+                        parsed_pattern: ApiPath::parse_raw_pattern_str(name, None)
+                            .map_err(|it| anyhow!(format!("{:#?}", it)))?,
                         methods: BTreeMap::from_iter(acc),
                     };
                     self.api.paths.push(api_path);

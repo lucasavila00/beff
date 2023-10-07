@@ -77,8 +77,8 @@ pub fn print_ts_types(vs: Vec<(String, TsType)>) -> String {
         .build();
 
     format_text(&PathBuf::from("f.ts"), &codes, &config)
-        .expect("Could not parse...")
-        .unwrap()
+        .expect("Could not parse(1)...")
+        .expect("Could not parse(2)...")
 }
 
 impl MdReport {
