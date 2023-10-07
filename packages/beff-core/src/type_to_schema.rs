@@ -550,7 +550,7 @@ impl<'a, R: FileManager> TypeToSchema<'a, R> {
                 }
             }
             SymbolExport::ValueExpr { span, .. } => {
-                return self.error(span, DiagnosticInfoMessage::FoundValueExpectedType)
+                self.error(span, DiagnosticInfoMessage::FoundValueExpectedType)
             }
         }
     }
@@ -752,7 +752,7 @@ impl<'a, R: FileManager> TypeToSchema<'a, R> {
         let ty: JsonSchema = match exported.as_ref() {
             SymbolExport::TsType { .. } => todo!(),
             SymbolExport::TsInterfaceDecl { .. } => todo!(),
-            SymbolExport::ValueExpr { expr, .. } => self.typeof_expr(&expr, false)?,
+            SymbolExport::ValueExpr { expr, .. } => self.typeof_expr(expr, false)?,
             SymbolExport::StarOfOtherFile { .. } => todo!(),
             SymbolExport::SomethingOfOtherFile { .. } => todo!(),
         };
@@ -787,13 +787,13 @@ impl<'a, R: FileManager> TypeToSchema<'a, R> {
         match &q.left {
             TsEntityName::TsQualifiedName(q) => {
                 let t = self.convert_type_query_qualified(q)?;
-                self.get_kv_from_schema(t, &q.right.sym.to_string())
+                self.get_kv_from_schema(t, q.right.sym.as_ref())
             }
             TsEntityName::Ident(id) => {
                 let s =
-                    TypeResolver::new(self.files, &self.current_file).resolve_local_value(&id)?;
+                    TypeResolver::new(self.files, &self.current_file).resolve_local_value(id)?;
                 let t = self.typeof_symbol(s, &q.left.span())?;
-                self.get_kv_from_schema(t, &q.right.sym.to_string())
+                self.get_kv_from_schema(t, q.right.sym.as_ref())
             }
         }
     }
