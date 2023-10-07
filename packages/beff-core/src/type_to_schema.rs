@@ -534,8 +534,8 @@ impl<'a, R: FileManager> TypeToSchema<'a, R> {
                 self.recursively_get_qualified_type_export(exported, &q.right)
             }
             TsEntityName::Ident(i) => {
-                let ns =
-                    TypeResolver::new(self.files, &self.current_file).resolve_namespace_type(i)?;
+                let ns = TypeResolver::new(self.files, &self.current_file)
+                    .resolve_namespace_symbol(i)?;
                 self.get_qualified_type_from_file(&ns.from_file, &q.right.sym, &q.right.span)
             }
         }

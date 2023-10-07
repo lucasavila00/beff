@@ -76,10 +76,12 @@ impl<'a, R: FileManager> TypeResolver<'a, R> {
                     .make_err(&i.span, DiagnosticInfoMessage::CannotResolveNamespaceType)
                     .into())
             }
-            SymbolExport::ValueExpr { .. } => todo!(),
+            SymbolExport::ValueExpr { .. } => Err(self
+                .make_err(&i.span, DiagnosticInfoMessage::CannotResolveNamespaceType)
+                .into()),
         }
     }
-    pub fn resolve_namespace_type(&mut self, i: &Ident) -> Res<ResolvedNamespaceSymbol> {
+    pub fn resolve_namespace_symbol(&mut self, i: &Ident) -> Res<ResolvedNamespaceSymbol> {
         let k = &(i.sym.clone(), i.span.ctxt);
 
         if let Some(imported) = self.get_current_file().imports.get(k) {
