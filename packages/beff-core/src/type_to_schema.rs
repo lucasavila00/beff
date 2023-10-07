@@ -805,26 +805,28 @@ impl<'a, R: FileManager> TypeToSchema<'a, R> {
             }
         }
     }
-    fn get_kv_from_schema(&mut self, schema: JsonSchema, key: &str) -> Res<JsonSchema> {
-        match schema {
-            JsonSchema::Object(kvs) => match kvs.get(key) {
-                Some(Optionality::Required(v)) => Ok(v.clone()),
-                _ => todo!(),
-            },
-            _ => todo!(),
+    fn get_kv_from_schema(&mut self, schema: JsonSchema, key: &str, span: Span) -> Res<JsonSchema> {
+        if let JsonSchema::Object(kvs) = schema {
+            if let Some(Optionality::Required(v)) = kvs.get(key) {
+                return Ok(v.clone());
+            }
         }
+        self.error(
+            &span,
+            DiagnosticInfoMessage::CannotResolveKey(key.to_string()),
+        )
     }
     fn convert_type_query_qualified(&mut self, q: &TsQualifiedName) -> Res<JsonSchema> {
         match &q.left {
             TsEntityName::TsQualifiedName(q) => {
                 let t = self.convert_type_query_qualified(q)?;
-                self.get_kv_from_schema(t, q.right.sym.as_ref())
+                self.get_kv_from_schema(t, q.right.sym.as_ref(), q.right.span())
             }
             TsEntityName::Ident(id) => {
                 let s =
                     TypeResolver::new(self.files, &self.current_file).resolve_local_value(id)?;
                 let t = self.typeof_symbol(s, &q.left.span())?;
-                self.get_kv_from_schema(t, q.right.sym.as_ref())
+                self.get_kv_from_schema(t, q.right.sym.as_ref(), q.right.span())
             }
         }
     }

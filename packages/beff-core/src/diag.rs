@@ -7,6 +7,7 @@ use crate::{open_api_ast::HTTPMethod, BffFileName, ParsedModule};
 
 #[derive(Debug, Clone)]
 pub enum DiagnosticInfoMessage {
+    CannotResolveKey(String),
     CouldNotFindSomethingOfOtherFile(String),
     TypeofImportNotSupported,
     NoArgumentInTypeApplication,
@@ -372,6 +373,9 @@ impl DiagnosticInfoMessage {
             }
             DiagnosticInfoMessage::CouldNotFindSomethingOfOtherFile(something) => {
                 format!("Could not find '{something}' of other file")
+            }
+            DiagnosticInfoMessage::CannotResolveKey(key) =>{
+                format!("Cannot resolve key '{key}' of non-object")
             }
         }
     }
