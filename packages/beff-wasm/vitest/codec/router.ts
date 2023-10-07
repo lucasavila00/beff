@@ -2,7 +2,7 @@ import { Ctx } from "@beff/hono";
 import * as E from "fp-ts/lib/Either";
 import either2 from "./either2";
 import exp_def from "./exp_def";
-import { ABC } from "./data_const";
+import { ABC, DEF } from "./data_const";
 export default {
   ...either2,
   "/either": {
@@ -114,6 +114,9 @@ export default {
   },
   "/named_import": {
     post: (_c: Ctx, a: typeof ABC): typeof ABC => a,
+  },
+  "/named_import_qualified": {
+    post: (_c: Ctx, a: typeof DEF.DEF2): typeof DEF.DEF2 => a,
   },
   // "/dynamic_import": {
   //   post: (_c: Ctx, a: typeof import("./data_const")): typeof import("./data_const") => a,

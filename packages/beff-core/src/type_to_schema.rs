@@ -774,6 +774,30 @@ impl<'a, R: FileManager> TypeToSchema<'a, R> {
             ResolvedLocalSymbol::Star(_) => todo!(),
         }
     }
+    fn get_kv_from_schema(&mut self, schema: JsonSchema, key: &str) -> Res<JsonSchema> {
+        match schema {
+            JsonSchema::Object(kvs) => match kvs.get(key) {
+                Some(Optionality::Required(v)) => Ok(v.clone()),
+                _ => todo!(),
+            },
+            _ => todo!(),
+        }
+    }
+    fn convert_type_query_qualified(&mut self, q: &TsQualifiedName) -> Res<JsonSchema> {
+        match &q.left {
+            TsEntityName::TsQualifiedName(q) => {
+                let t = self.convert_type_query_qualified(q)?;
+                self.get_kv_from_schema(t, &q.right.sym.to_string())
+            }
+            TsEntityName::Ident(id) => {
+                let s =
+                    TypeResolver::new(self.files, &self.current_file).resolve_local_value(&id)?;
+                let t = self.typeof_symbol(s, &q.left.span())?;
+                self.get_kv_from_schema(t, &q.right.sym.to_string())
+            }
+        }
+    }
+
     pub fn convert_type_query(&mut self, q: &TsTypeQuery) -> Res<JsonSchema> {
         if q.type_args.is_some() {
             return self.error(&q.span, DiagnosticInfoMessage::TypeQueryArgsNotSupported);
@@ -781,7 +805,7 @@ impl<'a, R: FileManager> TypeToSchema<'a, R> {
         match q.expr_name {
             TsTypeQueryExpr::Import(_) => todo!(),
             TsTypeQueryExpr::TsEntityName(ref n) => match n {
-                TsEntityName::TsQualifiedName(_) => todo!(),
+                TsEntityName::TsQualifiedName(q) => self.convert_type_query_qualified(q),
                 TsEntityName::Ident(n) => {
                     let s =
                         TypeResolver::new(self.files, &self.current_file).resolve_local_value(n)?;
