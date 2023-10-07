@@ -2,7 +2,7 @@
 mod tests {
 
     use beff_core::{
-        ast::{json::Json, json_schema::JsonSchema},
+        ast::json_schema::{JsonSchema, JsonSchemaConst},
         open_api_ast::Validator,
         subtyping::{
             semtype::{SemTypeContext, SemTypeOps},
@@ -198,11 +198,11 @@ mod tests {
         let t1 = JsonSchema::object(vec![
             (
                 "a".into(),
-                JsonSchema::Const(Json::String("abc".into())).required(),
+                JsonSchema::Const(JsonSchemaConst::String("abc".into())).required(),
             ),
             (
                 "b".into(),
-                JsonSchema::Const(Json::String("def".into())).required(),
+                JsonSchema::Const(JsonSchemaConst::String("def".into())).required(),
             ),
         ]);
         let t2 = JsonSchema::object(vec![("a".into(), JsonSchema::String.required())]);
@@ -218,7 +218,7 @@ mod tests {
 
         let t1 = JsonSchema::object(vec![(
             "a".into(),
-            JsonSchema::Const(Json::String("abc".into())).required(),
+            JsonSchema::Const(JsonSchemaConst::String("abc".into())).required(),
         )]);
         let t2 = JsonSchema::object(vec![("a".into(), JsonSchema::String.required())]);
 
@@ -231,7 +231,7 @@ mod tests {
     fn array2() {
         let definitions = vec![];
 
-        let t1 = JsonSchema::Array(JsonSchema::Const(Json::String("abc".into())).into());
+        let t1 = JsonSchema::Array(JsonSchema::Const(JsonSchemaConst::String("abc".into())).into());
         let t2 = JsonSchema::Array(JsonSchema::String.into());
 
         let res = schema_is_sub_type(&t1, &t2, &definitions, &definitions);
@@ -286,12 +286,12 @@ mod tests {
         let res = schema_is_sub_type(&t1, &t2, &definitions, &definitions);
         assert!(res);
 
-        let t1 = JsonSchema::Const(Json::Null);
+        let t1 = JsonSchema::Const(JsonSchemaConst::Null);
         let t2 = JsonSchema::Null;
         let res = schema_is_sub_type(&t1, &t2, &definitions, &definitions);
         assert!(res);
 
-        let t1 = JsonSchema::Const(Json::String("abc".into()));
+        let t1 = JsonSchema::Const(JsonSchemaConst::String("abc".into()));
         let t2 = JsonSchema::String;
         let res = schema_is_sub_type(&t1, &t2, &definitions, &definitions);
         assert!(res);
@@ -308,8 +308,8 @@ mod tests {
 
         let t1 = JsonSchema::Boolean;
         let t2 = JsonSchema::any_of(vec![
-            JsonSchema::Const(Json::Bool(true)),
-            JsonSchema::Const(Json::Bool(false)),
+            JsonSchema::Const(JsonSchemaConst::Bool(true)),
+            JsonSchema::Const(JsonSchemaConst::Bool(false)),
         ]);
         let res = schema_is_sub_type(&t1, &t2, &definitions, &definitions);
         assert!(res);

@@ -281,9 +281,11 @@ impl DecoderFnGenerator {
             JsonSchema::AllOf(vs) => {
                 Self::decode_union_or_intersection("decodeAllOf", required, vs)
             }
-            JsonSchema::Const(json) => {
-                Self::decode_call_extra("decodeConst", required, vec![json.clone().to_expr()])
-            }
+            JsonSchema::Const(json) => Self::decode_call_extra(
+                "decodeConst",
+                required,
+                vec![json.clone().to_json().to_expr()],
+            ),
             JsonSchema::Codec(format) => Self::decode_call_extra(
                 "decodeCodec",
                 required,

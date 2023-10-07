@@ -30,6 +30,8 @@ use swc_ecma_ast::TsTypeRef;
 use swc_ecma_ast::TsUnionOrIntersectionType;
 use swc_ecma_ast::TsUnionType;
 
+use super::json::N;
+
 #[derive(Debug, PartialEq, Eq, Clone, PartialOrd, Ord)]
 pub enum Optionality<T> {
     Optional(T),
@@ -65,6 +67,40 @@ impl Optionality<JsonSchema> {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord)]
+pub enum JsonSchemaConst {
+    Null,
+    Bool(bool),
+    Number(N),
+    String(String),
+}
+
+impl JsonSchemaConst {
+    pub fn to_json(self) -> Json {
+        match self {
+            JsonSchemaConst::Null => Json::Null,
+            JsonSchemaConst::Bool(b) => Json::Bool(b),
+            JsonSchemaConst::Number(n) => Json::Number(n),
+            JsonSchemaConst::String(s) => Json::String(s),
+        }
+    }
+    pub fn from_json(it: &Json) -> Result<Self> {
+        match it {
+            Json::Null => Ok(JsonSchemaConst::Null),
+            Json::Bool(b) => Ok(JsonSchemaConst::Bool(*b)),
+            Json::Number(n) => Ok(JsonSchemaConst::Number(n.clone())),
+            Json::String(s) => Ok(JsonSchemaConst::String(s.clone())),
+            _ => Err(anyhow!("not a const")),
+        }
+    }
+    pub fn parse_int(it: i64) -> Self {
+        Self::Number(N::parse_int(it))
+    }
+    pub fn parse_f64(value: f64) -> JsonSchemaConst {
+        Self::Number(N::parse_f64(value))
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord)]
 pub enum JsonSchema {
     Null,
     Boolean,
@@ -85,7 +121,7 @@ pub enum JsonSchema {
     OpenApiResponseRef(String),
     AnyOf(BTreeSet<JsonSchema>),
     AllOf(BTreeSet<JsonSchema>),
-    Const(Json),
+    Const(JsonSchemaConst),
     Codec(CodecName),
     // semantic types
     StNever,
@@ -241,13 +277,16 @@ impl JsonSchema {
         match it {
             Json::Object(vs) => {
                 if let Some(cons) = vs.get("const") {
-                    return Ok(JsonSchema::Const(cons.clone()));
+                    return Ok(JsonSchema::Const(JsonSchemaConst::from_json(cons)?));
                 }
                 if let Some(enu) = vs.get("enum") {
                     let enu = match enu {
-                        Json::Array(vs) => {
-                            vs.iter().map(|it| JsonSchema::Const(it.clone())).collect()
-                        }
+                        Json::Array(vs) => vs
+                            .iter()
+                            .map(|it| {
+                                JsonSchemaConst::from_json(it).map(|it| JsonSchema::Const(it))
+                            })
+                            .collect::<Result<Vec<_>>>()?,
                         _ => return Err(anyhow!("enum must be an array")),
                     };
                     return Ok(JsonSchema::any_of(enu));
@@ -386,7 +425,7 @@ impl ToJson for JsonSchema {
                     let vs = types
                         .into_iter()
                         .map(|it| match it {
-                            JsonSchema::Const(e) => e,
+                            JsonSchema::Const(e) => e.to_json(),
                             _ => unreachable!("should have been caught by all_literals check"),
                         })
                         .collect();
@@ -424,7 +463,7 @@ impl ToJson for JsonSchema {
                 }
                 Json::object(v)
             }
-            JsonSchema::Const(val) => Json::object(vec![("const".into(), val)]),
+            JsonSchema::Const(val) => Json::object(vec![("const".into(), val.to_json())]),
             JsonSchema::AnyArrayLike => JsonSchema::Array(JsonSchema::Any.into()).to_json(),
             JsonSchema::StNever
             | JsonSchema::StUnknown
@@ -648,18 +687,18 @@ impl JsonSchema {
                 }
             }
             JsonSchema::Const(v) => match v {
-                Json::Null => TsType::TsKeywordType(TsKeywordType {
+                JsonSchemaConst::Null => TsType::TsKeywordType(TsKeywordType {
                     span: DUMMY_SP,
                     kind: TsKeywordTypeKind::TsNullKeyword,
                 }),
-                Json::Bool(b) => TsType::TsLitType(TsLitType {
+                JsonSchemaConst::Bool(b) => TsType::TsLitType(TsLitType {
                     span: DUMMY_SP,
                     lit: TsLit::Bool(Bool {
                         span: DUMMY_SP,
                         value: *b,
                     }),
                 }),
-                Json::Number(n) => TsType::TsLitType(TsLitType {
+                JsonSchemaConst::Number(n) => TsType::TsLitType(TsLitType {
                     span: DUMMY_SP,
                     lit: TsLit::Number(swc_ecma_ast::Number {
                         span: DUMMY_SP,
@@ -667,7 +706,7 @@ impl JsonSchema {
                         raw: None,
                     }),
                 }),
-                Json::String(v) => TsType::TsLitType(TsLitType {
+                JsonSchemaConst::String(v) => TsType::TsLitType(TsLitType {
                     span: DUMMY_SP,
                     lit: TsLit::Str(Str {
                         span: DUMMY_SP,
@@ -675,8 +714,6 @@ impl JsonSchema {
                         raw: None,
                     }),
                 }),
-                Json::Array(_) => todo!(),
-                Json::Object(_) => todo!(),
             },
             JsonSchema::StNever => TsType::TsKeywordType(TsKeywordType {
                 span: DUMMY_SP,

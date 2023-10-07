@@ -1,5 +1,4 @@
-use crate::ast::json::Json;
-use crate::ast::json_schema::{CodecName, JsonSchema, Optionality};
+use crate::ast::json_schema::{CodecName, JsonSchema, JsonSchemaConst, Optionality};
 use crate::diag::{
     Diagnostic, DiagnosticInfoMessage, DiagnosticInformation, DiagnosticParentMessage, Location,
 };
@@ -599,14 +598,16 @@ impl<'a, R: FileManager> TypeToSchema<'a, R> {
             Expr::Lit(l) => match l {
                 Lit::Str(s) => {
                     if as_const {
-                        Ok(JsonSchema::Const(Json::String(s.value.to_string())))
+                        Ok(JsonSchema::Const(JsonSchemaConst::String(
+                            s.value.to_string(),
+                        )))
                     } else {
                         Ok(JsonSchema::String)
                     }
                 }
                 Lit::Bool(b) => {
                     if as_const {
-                        Ok(JsonSchema::Const(Json::Bool(b.value)))
+                        Ok(JsonSchema::Const(JsonSchemaConst::Bool(b.value)))
                     } else {
                         Ok(JsonSchema::Boolean)
                     }
@@ -614,7 +615,7 @@ impl<'a, R: FileManager> TypeToSchema<'a, R> {
                 Lit::Null(_) => Ok(JsonSchema::Null),
                 Lit::Num(n) => {
                     if as_const {
-                        Ok(JsonSchema::Const(Json::parse_f64(n.value)))
+                        Ok(JsonSchema::Const(JsonSchemaConst::parse_f64(n.value)))
                     } else {
                         Ok(JsonSchema::Number)
                     }
@@ -681,7 +682,7 @@ impl<'a, R: FileManager> TypeToSchema<'a, R> {
                     if let Some(key) = match &m.prop {
                         MemberProp::Ident(i) => Some(i.sym.to_string()),
                         MemberProp::Computed(c) => match self.typeof_expr(&c.expr, as_const)? {
-                            JsonSchema::Const(Json::String(s)) => Some(s.clone()),
+                            JsonSchema::Const(JsonSchemaConst::String(s)) => Some(s.clone()),
                             _ => None,
                         },
                         MemberProp::PrivateName(_) => None,
@@ -883,7 +884,7 @@ impl<'a, R: FileManager> TypeToSchema<'a, R> {
                     return self.convert_indexed_access_syntatically(&v.schema, index);
                 }
             }
-            (JsonSchema::Object(vs), JsonSchema::Const(Json::String(s))) => {
+            (JsonSchema::Object(vs), JsonSchema::Const(JsonSchemaConst::String(s))) => {
                 let v = vs.get(s);
                 if let Some(Optionality::Required(v)) = v {
                     return Ok(Some(v.clone()));
@@ -978,9 +979,11 @@ impl<'a, R: FileManager> TypeToSchema<'a, R> {
                 })
             }
             TsType::TsLitType(TsLitType { lit, .. }) => match lit {
-                TsLit::Number(n) => Ok(JsonSchema::Const(Json::parse_f64(n.value))),
-                TsLit::Str(s) => Ok(JsonSchema::Const(Json::String(s.value.to_string().clone()))),
-                TsLit::Bool(b) => Ok(JsonSchema::Const(Json::Bool(b.value))),
+                TsLit::Number(n) => Ok(JsonSchema::Const(JsonSchemaConst::parse_f64(n.value))),
+                TsLit::Str(s) => Ok(JsonSchema::Const(JsonSchemaConst::String(
+                    s.value.to_string().clone(),
+                ))),
+                TsLit::Bool(b) => Ok(JsonSchema::Const(JsonSchemaConst::Bool(b.value))),
                 TsLit::BigInt(_) => Ok(JsonSchema::Codec(CodecName::BigInt)),
                 TsLit::Tpl(TsTplLitType {
                     span,
@@ -994,7 +997,7 @@ impl<'a, R: FileManager> TypeToSchema<'a, R> {
                         );
                     }
 
-                    Ok(JsonSchema::Const(Json::String(
+                    Ok(JsonSchema::Const(JsonSchemaConst::String(
                         quasis
                             .iter()
                             .map(|it| it.raw.to_string())

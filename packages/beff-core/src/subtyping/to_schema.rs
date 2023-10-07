@@ -4,10 +4,7 @@ use std::{
 };
 
 use crate::{
-    ast::{
-        json::Json,
-        json_schema::{JsonSchema, Optionality},
-    },
+    ast::json_schema::{JsonSchema, JsonSchemaConst, Optionality},
     open_api_ast::Validator,
     subtyping::evidence::ProperSubtypeEvidence,
 };
@@ -537,12 +534,12 @@ impl<'a> SchemerContext<'a> {
         for s in &ty.subtype_data {
             match s.as_ref() {
                 ProperSubtype::Boolean(v) => {
-                    acc.insert(JsonSchema::Const(Json::Bool(*v)));
+                    acc.insert(JsonSchema::Const(JsonSchemaConst::Bool(*v)));
                 }
                 ProperSubtype::Number { allowed, values } => {
                     for h in values {
                         acc.insert(maybe_not(
-                            JsonSchema::Const(Json::Number(h.clone())),
+                            JsonSchema::Const(JsonSchemaConst::Number(h.clone())),
                             !allowed,
                         ));
                     }
@@ -552,7 +549,7 @@ impl<'a> SchemerContext<'a> {
                         match h {
                             StringLitOrFormat::Lit(st) => {
                                 acc.insert(maybe_not(
-                                    JsonSchema::Const(Json::String(st.clone())),
+                                    JsonSchema::Const(JsonSchemaConst::String(st.clone())),
                                     !allowed,
                                 ));
                             }
@@ -652,12 +649,12 @@ fn evidence_to_schema(ty: &Evidence) -> JsonSchema {
             SubTypeTag::List => JsonSchema::AnyArrayLike,
         },
         Evidence::Proper(p) => match p {
-            ProperSubtypeEvidence::Boolean(b) => JsonSchema::Const(Json::Bool(*b)),
+            ProperSubtypeEvidence::Boolean(b) => JsonSchema::Const(JsonSchemaConst::Bool(*b)),
             ProperSubtypeEvidence::Number { allowed, values } => {
                 let v = JsonSchema::AnyOf(
                     values
                         .iter()
-                        .map(|it| JsonSchema::Const(Json::Number(it.clone())))
+                        .map(|it| JsonSchema::Const(JsonSchemaConst::Number(it.clone())))
                         .collect(),
                 );
                 maybe_not(v, !allowed)
@@ -668,7 +665,7 @@ fn evidence_to_schema(ty: &Evidence) -> JsonSchema {
                         .iter()
                         .map(|it| match it {
                             StringLitOrFormat::Lit(lit) => {
-                                JsonSchema::Const(Json::String(lit.clone()))
+                                JsonSchema::Const(JsonSchemaConst::String(lit.clone()))
                             }
                             StringLitOrFormat::Format(fmt) => {
                                 JsonSchema::StringWithFormat(fmt.clone())
