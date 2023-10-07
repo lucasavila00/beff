@@ -283,9 +283,7 @@ impl JsonSchema {
                     let enu = match enu {
                         Json::Array(vs) => vs
                             .iter()
-                            .map(|it| {
-                                JsonSchemaConst::from_json(it).map(|it| JsonSchema::Const(it))
-                            })
+                            .map(|it| JsonSchemaConst::from_json(it).map(JsonSchema::Const))
                             .collect::<Result<Vec<_>>>()?,
                         _ => return Err(anyhow!("enum must be an array")),
                     };
