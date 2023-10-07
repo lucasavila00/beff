@@ -3,6 +3,7 @@ import * as E from "fp-ts/lib/Either";
 import either2 from "./either2";
 import exp_def from "./exp_def";
 import { ABC, DEF } from "./data_const";
+import * as STAR_IMPORT from "./data_const";
 export default {
   ...either2,
   "/either": {
@@ -117,5 +118,8 @@ export default {
   },
   "/named_import_qualified": {
     post: (_c: Ctx, a: typeof DEF.DEF2): typeof DEF.DEF2 => a,
+  },
+  "/typeof_star": {
+    post: (_c: Ctx, a: typeof STAR_IMPORT): typeof STAR_IMPORT => a,
   },
 };

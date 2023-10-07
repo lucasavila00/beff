@@ -262,3 +262,26 @@ test("imported named value", async () => {
 test("imported named qualified value", async () => {
   await expect(beff["/named_import_qualified"].post("DEF2")).resolves.toMatchInlineSnapshot('"DEF2"');
 });
+test("typeof_star", async () => {
+  await expect(
+    beff["/typeof_star"].post({
+      ABC: "ABC",
+      DEF: {
+        DEF2: "DEF2",
+      },
+      DC2: {
+        DC2: "DC2",
+      },
+    })
+  ).resolves.toMatchInlineSnapshot(`
+    {
+      "ABC": "ABC",
+      "DC2": {
+        "DC2": "DC2",
+      },
+      "DEF": {
+        "DEF2": "DEF2",
+      },
+    }
+  `);
+});
