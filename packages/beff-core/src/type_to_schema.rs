@@ -268,32 +268,6 @@ impl<'a, R: FileManager> TypeToSchema<'a, R> {
         Ok(ty)
     }
 
-    fn collect_value_exports(
-        &mut self,
-        file_name: BffFileName,
-        acc: &mut Vec<(String, Optionality<JsonSchema>)>,
-    ) -> Res<()> {
-        let file = self.files.get_or_fetch_file(&file_name);
-        if let Some(pm) = file {
-            for (k, v) in &pm.symbol_exports.named {
-                match v.as_ref() {
-                    SymbolExport::TsType { .. } | SymbolExport::TsInterfaceDecl { .. } => {}
-                    SymbolExport::ValueExpr { expr, name: _, .. } => {
-                        let ty = self.typeof_expr(expr, false)?;
-                        acc.push((k.to_string(), ty.required()));
-                    }
-                    SymbolExport::StarOfOtherFile { .. } => todo!(),
-                    SymbolExport::SomethingOfOtherFile { .. } => todo!(),
-                }
-            }
-            for f in &pm.symbol_exports.extends {
-                self.collect_value_exports(f.clone(), acc)?;
-            }
-        }
-
-        Ok(())
-    }
-
     fn get_type_ref_of_user_identifier(
         &mut self,
         i: &Ident,
@@ -314,13 +288,10 @@ impl<'a, R: FileManager> TypeToSchema<'a, R> {
                     type_args,
                 )
             }
-            ResolvedLocalSymbol::Expr(_) | ResolvedLocalSymbol::SymbolExportDefault(_) => {
+            ResolvedLocalSymbol::Star(_)
+            | ResolvedLocalSymbol::Expr(_)
+            | ResolvedLocalSymbol::SymbolExportDefault(_) => {
                 self.error(&i.span, DiagnosticInfoMessage::FoundValueExpectedType)
-            }
-            ResolvedLocalSymbol::Star(file_name) => {
-                let mut vs = vec![];
-                self.collect_value_exports(file_name, &mut vs)?;
-                Ok(JsonSchema::object(vs))
             }
         }
     }
@@ -742,6 +713,32 @@ impl<'a, R: FileManager> TypeToSchema<'a, R> {
         }
     }
 
+    // fn collect_value_exports(
+    //     &mut self,
+    //     file_name: BffFileName,
+    //     acc: &mut Vec<(String, Optionality<JsonSchema>)>,
+    // ) -> Res<()> {
+    //     let file = self.files.get_or_fetch_file(&file_name);
+    //     if let Some(pm) = file {
+    //         for (k, v) in &pm.symbol_exports.named {
+    //             match v.as_ref() {
+    //                 SymbolExport::TsType { .. } | SymbolExport::TsInterfaceDecl { .. } => {}
+    //                 SymbolExport::ValueExpr { expr, name: _, .. } => {
+    //                     let ty = self.typeof_expr(expr, false)?;
+    //                     acc.push((k.to_string(), ty.required()));
+    //                 }
+    //                 SymbolExport::StarOfOtherFile { .. } => todo!(),
+    //                 SymbolExport::SomethingOfOtherFile { .. } => todo!(),
+    //             }
+    //         }
+    //         for f in &pm.symbol_exports.extends {
+    //             self.collect_value_exports(f.clone(), acc)?;
+    //         }
+    //     }
+
+    //     Ok(())
+    // }
+
     fn typeof_symbol_export(
         &mut self,
         exported: Rc<SymbolExport>,
@@ -750,8 +747,7 @@ impl<'a, R: FileManager> TypeToSchema<'a, R> {
         let old_file = self.current_file.clone();
         self.current_file = from_file.file_name().clone();
         let ty: JsonSchema = match exported.as_ref() {
-            SymbolExport::TsType { .. } => todo!(),
-            SymbolExport::TsInterfaceDecl { .. } => todo!(),
+            SymbolExport::TsType { .. } | SymbolExport::TsInterfaceDecl { .. } => todo!(),
             SymbolExport::ValueExpr { expr, .. } => self.typeof_expr(expr, false)?,
             SymbolExport::StarOfOtherFile { .. } => todo!(),
             SymbolExport::SomethingOfOtherFile { .. } => todo!(),
@@ -803,7 +799,9 @@ impl<'a, R: FileManager> TypeToSchema<'a, R> {
             return self.error(&q.span, DiagnosticInfoMessage::TypeQueryArgsNotSupported);
         }
         match q.expr_name {
-            TsTypeQueryExpr::Import(_) => todo!(),
+            TsTypeQueryExpr::Import(ref imp) => {
+                self.error(&imp.span, DiagnosticInfoMessage::TypeofImportNotSupported)
+            }
             TsTypeQueryExpr::TsEntityName(ref n) => match n {
                 TsEntityName::TsQualifiedName(q) => self.convert_type_query_qualified(q),
                 TsEntityName::Ident(n) => {

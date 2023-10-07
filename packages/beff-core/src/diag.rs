@@ -7,6 +7,7 @@ use crate::{open_api_ast::HTTPMethod, BffFileName, ParsedModule};
 
 #[derive(Debug, Clone)]
 pub enum DiagnosticInfoMessage {
+    TypeofImportNotSupported,
     NoArgumentInTypeApplication,
     ThisShouldContainMethods,
     ExportDefaultNotFound,
@@ -364,6 +365,9 @@ impl DiagnosticInfoMessage {
             }
             DiagnosticInfoMessage::NoArgumentInTypeApplication => {
                 "Missing this type argument".to_string()
+            }
+            DiagnosticInfoMessage::TypeofImportNotSupported => {
+                "typeof import is not supported".to_string()
             }
         }
     }

@@ -306,4 +306,16 @@ mod tests {
     "#;
         insta::assert_snapshot!(fail(from));
     }
+    #[test]
+    fn fail_typeof_import() {
+        let from = r#"
+
+        export default {
+            "/dynamic_import": {
+                post: (_c: Ctx, a: typeof import("./data_const")): typeof import("./data_const") => a,
+            },
+        }
+    "#;
+        insta::assert_snapshot!(fail(from));
+    }
 }

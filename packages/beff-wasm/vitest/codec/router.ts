@@ -118,7 +118,4 @@ export default {
   "/named_import_qualified": {
     post: (_c: Ctx, a: typeof DEF.DEF2): typeof DEF.DEF2 => a,
   },
-  // "/dynamic_import": {
-  //   post: (_c: Ctx, a: typeof import("./data_const")): typeof import("./data_const") => a,
-  // },
 };
