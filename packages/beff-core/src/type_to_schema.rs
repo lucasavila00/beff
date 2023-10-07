@@ -735,7 +735,7 @@ impl<'a, R: FileManager> TypeToSchema<'a, R> {
         file_name: &BffFileName,
         acc: &mut Vec<(String, Optionality<JsonSchema>)>,
     ) -> Res<()> {
-        let file = self.files.get_or_fetch_file(&file_name);
+        let file = self.files.get_or_fetch_file(file_name);
         if let Some(pm) = file {
             for (k, v) in &pm.symbol_exports.named {
                 match v.as_ref() {
@@ -748,7 +748,7 @@ impl<'a, R: FileManager> TypeToSchema<'a, R> {
                         ImportReference::Named { .. } => todo!(),
                         ImportReference::Star { file_name, .. } => {
                             let mut acc2 = vec![];
-                            self.collect_value_exports(&file_name, &mut acc2)?;
+                            self.collect_value_exports(file_name, &mut acc2)?;
                             let v = JsonSchema::object(acc2);
                             acc.push((k.to_string(), v.required()));
                         }
