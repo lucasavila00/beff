@@ -293,7 +293,18 @@ function encodeAllOf(cbs, value) {
   return value;
 }
 
-function encodeAnyOf(cbs, value) {
+function encodeAnyOf(decodeCbs, encodeCbs, value) {
+  for (let i = 0; i < decodeCbs.length; i++) {
+    const decodeCb = decodeCbs[i];
+    const encodeCb = encodeCbs[i];
+    // try to validate this value
+    const validatorCtx = {};
+    const newValue = decodeCb(validatorCtx, value);
+    if (validatorCtx.errors == null) {
+      // validation passed, encode the value
+      return encodeCb(newValue);
+    }
+  }
   return value
 }
 `;

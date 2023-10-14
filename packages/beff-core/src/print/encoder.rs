@@ -3,12 +3,14 @@ use std::collections::BTreeSet;
 use swc_common::DUMMY_SP;
 use swc_ecma_ast::{
     op, ArrayLit, ArrowExpr, BinExpr, BindingIdent, BlockStmt, BlockStmtOrExpr, CallExpr, Callee,
-    ComputedPropName, Expr, ExprOrSpread, Function, Ident, IfStmt, KeyValueProp, Lit, MemberExpr,
-    MemberProp, Null, Number, ObjectLit, OptChainBase, OptChainExpr, Param, ParenExpr, Pat, Prop,
-    PropName, PropOrSpread, ReturnStmt, Stmt, Str,
+    ComputedPropName, Expr, ExprOrSpread, FnExpr, Function, Ident, IfStmt, KeyValueProp, Lit,
+    MemberExpr, MemberProp, Null, Number, ObjectLit, OptChainBase, OptChainExpr, Param, ParenExpr,
+    Pat, Prop, PropName, PropOrSpread, ReturnStmt, Stmt, Str,
 };
 
 use crate::ast::json_schema::JsonSchema;
+
+use super::decoder::{self};
 
 fn base_args(input_expr: Expr) -> Vec<ExprOrSpread> {
     vec![ExprOrSpread {
@@ -66,13 +68,13 @@ fn make_cb(extra: Expr) -> Expr {
     })
 }
 
-fn union_intersection(name: &str, vs: &BTreeSet<JsonSchema>, input_expr: Expr) -> Expr {
+fn encode_all_of(vs: &BTreeSet<JsonSchema>, input_expr: Expr) -> Expr {
     Expr::Call(CallExpr {
         span: DUMMY_SP,
         callee: Callee::Expr(
             Expr::Ident(Ident {
                 span: DUMMY_SP,
-                sym: name.into(),
+                sym: "encodeAllOf".into(),
                 optional: false,
             })
             .into(),
@@ -102,6 +104,64 @@ fn union_intersection(name: &str, vs: &BTreeSet<JsonSchema>, input_expr: Expr) -
         type_args: None,
     })
 }
+
+fn encode_any_of(vs: &BTreeSet<JsonSchema>, input_expr: Expr) -> Expr {
+    Expr::Call(CallExpr {
+        span: DUMMY_SP,
+        callee: Callee::Expr(
+            Expr::Ident(Ident {
+                span: DUMMY_SP,
+                sym: "encodeAnyOf".into(),
+                optional: false,
+            })
+            .into(),
+        ),
+        args: vec![
+            ExprOrSpread {
+                spread: None,
+                expr: Expr::Array(ArrayLit {
+                    span: DUMMY_SP,
+                    elems: vs
+                        .iter()
+                        .map(|it| {
+                            Some(ExprOrSpread {
+                                spread: None,
+                                expr: Expr::Fn(FnExpr {
+                                    ident: None,
+                                    function: Box::new(decoder::from_schema(it, true)),
+                                })
+                                .into(),
+                            })
+                        })
+                        .collect(),
+                })
+                .into(),
+            },
+            ExprOrSpread {
+                spread: None,
+                expr: Expr::Array(ArrayLit {
+                    span: DUMMY_SP,
+                    elems: vs
+                        .iter()
+                        .map(|it| {
+                            Some(ExprOrSpread {
+                                spread: None,
+                                expr: make_cb(encode_expr(it, new_input_expr())).into(),
+                            })
+                        })
+                        .collect(),
+                })
+                .into(),
+            },
+            ExprOrSpread {
+                spread: None,
+                expr: input_expr.clone().into(),
+            },
+        ],
+        type_args: None,
+    })
+}
+
 fn encode_expr(schema: &JsonSchema, input_expr: Expr) -> Expr {
     match schema {
         JsonSchema::AnyArrayLike => {
@@ -273,8 +333,8 @@ fn encode_expr(schema: &JsonSchema, input_expr: Expr) -> Expr {
 
             value_expr
         }
-        JsonSchema::AnyOf(vs) => union_intersection("encodeAnyOf", vs, input_expr),
-        JsonSchema::AllOf(vs) => union_intersection("encodeAllOf", vs, input_expr),
+        JsonSchema::AnyOf(vs) => encode_any_of(vs, input_expr),
+        JsonSchema::AllOf(vs) => encode_all_of(vs, input_expr),
         // JsonSchema::Codec(codec_name) => input_expr.clone(),
         JsonSchema::Codec(codec_name) => Expr::Call(CallExpr {
             span: DUMMY_SP,

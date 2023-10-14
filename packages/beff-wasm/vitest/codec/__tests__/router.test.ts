@@ -285,3 +285,54 @@ test("typeof_star", async () => {
     }
   `);
 });
+
+test("union encoding", async () => {
+  await expect(beff["/union_encoding"].post({ a: 1 })).resolves.toMatchInlineSnapshot(`
+    {
+      "a": 1,
+    }
+  `);
+
+  await expect(beff["/union_encoding"].post({ a: 1, b: 2 })).resolves.toMatchInlineSnapshot(`
+  {
+    "a": 1,
+  }
+`);
+
+  await expect(
+    beff["/union_encoding"].post({
+      a: 1,
+      //@ts-expect-error
+      b: 3,
+    })
+  ).resolves.toMatchInlineSnapshot(`
+  {
+    "a": 1,
+  }
+`);
+  await expect(beff["/union_encoding"].post({ b: 2 })).resolves.toMatchInlineSnapshot(`
+    {
+      "b": 2,
+    }
+  `);
+
+  await expect(
+    beff["/union_encoding"].post(
+      //@ts-expect-error
+      {
+        b: 2,
+        a: 3,
+      }
+    )
+  ).resolves.toMatchInlineSnapshot(`
+    {
+      "b": 2,
+    }
+  `);
+  await expect(
+    beff["/union_encoding"].post(
+      //@ts-expect-error
+      { c: 3 }
+    )
+  ).rejects.toMatchInlineSnapshot("[HTTPException: #0 (a) expected one of, received: Object]");
+});

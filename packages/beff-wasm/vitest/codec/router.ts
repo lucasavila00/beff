@@ -122,4 +122,7 @@ export default {
   "/typeof_star": {
     post: (_c: Ctx, a: typeof STAR_IMPORT): typeof STAR_IMPORT => a,
   },
+  "/union_encoding": {
+    post: (_c: Ctx, a: { a: 1 } | { b: 2 }): { a: 1 } | { b: 2 } => a,
+  },
 };

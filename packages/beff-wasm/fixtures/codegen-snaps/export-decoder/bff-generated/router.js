@@ -89,6 +89,25 @@ const meta = [
         "pattern": "/UnionNestedInline",
         "return_encoder": function(input) {
             return encodeAnyOf([
+                function(ctx, input) {
+                    return decodeConst(ctx, input, true, 1);
+                },
+                function(ctx, input) {
+                    return decodeConst(ctx, input, true, 2);
+                },
+                function(ctx, input) {
+                    return decodeConst(ctx, input, true, 3);
+                },
+                function(ctx, input) {
+                    return decodeConst(ctx, input, true, 4);
+                },
+                function(ctx, input) {
+                    return decodeConst(ctx, input, true, 5);
+                },
+                function(ctx, input) {
+                    return decodeConst(ctx, input, true, 6);
+                }
+            ], [
                 (input)=>(input),
                 (input)=>(input),
                 (input)=>(input),
