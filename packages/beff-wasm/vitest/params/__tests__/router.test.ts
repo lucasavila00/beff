@@ -61,7 +61,7 @@ test("post with body and error", async () => {
   await expect(res.json()).resolves.toMatchInlineSnapshot(
     `
     {
-      "message": "(data.a) expected string, received: 123",
+      "message": "#0 (data.a) expected string, received: 123",
     }
   `
   );
