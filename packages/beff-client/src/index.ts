@@ -53,7 +53,7 @@ const printRegularError = (err: RegularDecodeError, parentPath: string[], showRe
 };
 const printUnionError = (err: UnionDecodeError, parentPath: string[]): string => {
   const path = printPath(parentPath, err.path);
-  const printedErrors = printErrors(err.errors, [], false);
+  const printedErrors = printErrorsPart(err.errors, [], false);
   const innerMessages =
     printedErrors.length > 5
       ? printedErrors.slice(0, 5).join(" OR ") + " and more..."
@@ -64,11 +64,7 @@ const printUnionError = (err: UnionDecodeError, parentPath: string[]): string =>
     .join(", ");
   return joinFilteredStrings([path, msg]);
 };
-export const printErrors = (
-  it: DecodeError[],
-  parentPath: string[],
-  showReceived: boolean = true
-): string[] => {
+const printErrorsPart = (it: DecodeError[], parentPath: string[], showReceived: boolean): string[] => {
   return it.map((err) => {
     if ("isUnionError" in err) {
       return printUnionError(err, parentPath);
@@ -76,7 +72,11 @@ export const printErrors = (
     return printRegularError(err, parentPath, showReceived);
   });
 };
-
+export const printErrors = (it: DecodeError[], parentPath: string[]): string => {
+  return printErrorsPart(it, parentPath, true)
+    .map((msg, idx) => joinFilteredStrings([`#${idx}`, msg]))
+    .join(" | ");
+};
 // import { fetch, Request } from "@whatwg-node/fetch";
 export type NormalizeRouterItem<T> = T extends (...args: infer I) => Promise<infer O>
   ? [I, O]
@@ -142,12 +142,7 @@ export class BffRequest {
       const ctx: any = {};
       const validParams = validator(ctx, params[index]);
       if (ctx.errors != null) {
-        throw new BffHTTPException(
-          402,
-          printErrors(ctx.errors, [metadata.name])
-            .map((msg, idx) => joinFilteredStrings([`#${idx}`, msg]))
-            .join(" | ")
-        );
+        throw new BffHTTPException(402, printErrors(ctx.errors, [metadata.name]));
       }
 
       const param = encoder(validParams);
