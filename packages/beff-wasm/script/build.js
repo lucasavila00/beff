@@ -21,10 +21,11 @@ const makeJsBundle = () => {
       deleteComments(fs.readFileSync(path.join(__dirname, "../bundled-code", f), "utf-8")),
   ]);
   const bundle = Object.fromEntries(jsBundle);
-  fs.writeFileSync(
-    path.join(__dirname, "../ts-node/generated/bundle.ts"),
-    `export default ${JSON.stringify(bundle)}`
-  );
+  const folder = path.join(__dirname, "../ts-node/generated");
+  if (!fs.existsSync(folder)) {
+    fs.mkdirSync(folder);
+  }
+  fs.writeFileSync(path.join(folder, "bundle.ts"), `export default ${JSON.stringify(bundle)}`);
 };
 
 const main = async () => {
