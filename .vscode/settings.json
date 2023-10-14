@@ -4,6 +4,7 @@
     "bindgen",
     "codegen",
     "ctxt",
+    "elems",
     "esno",
     "Hljs",
     "Hono",

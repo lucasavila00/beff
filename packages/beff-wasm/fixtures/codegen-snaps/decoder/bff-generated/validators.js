@@ -261,7 +261,18 @@ function encodeAllOf(cbs, value) {
   return value;
 }
 
-function encodeAnyOf(cbs, value) {
+function encodeAnyOf(decodeCbs, encodeCbs, value) {
+  for (let i = 0; i < decodeCbs.length; i++) {
+    const decodeCb = decodeCbs[i];
+    const encodeCb = encodeCbs[i];
+    // try to validate this value
+    const validatorCtx = {};
+    const newValue = decodeCb(validatorCtx, value);
+    if (validatorCtx.errors == null) {
+      // validation passed, encode the value
+      return encodeCb(newValue);
+    }
+  }
   return value
 }
 
@@ -353,15 +364,42 @@ function EncodeAllTypes(input) {
         typeReference: encoders.User(input.typeReference),
         undefined: (input.undefined ?? null),
         unionOfLiterals: encodeAnyOf([
+            function(ctx, input) {
+                return decodeConst(ctx, input, true, "a");
+            },
+            function(ctx, input) {
+                return decodeConst(ctx, input, true, "b");
+            },
+            function(ctx, input) {
+                return decodeConst(ctx, input, true, "c");
+            }
+        ], [
             (input)=>(input),
             (input)=>(input),
             (input)=>(input)
         ], input.unionOfLiterals),
         unionOfTypes: encodeAnyOf([
+            function(ctx, input) {
+                return decodeString(ctx, input, true);
+            },
+            function(ctx, input) {
+                return decodeNumber(ctx, input, true);
+            }
+        ], [
             (input)=>(input),
             (input)=>(encodeNumber(input))
         ], input.unionOfTypes),
         unionWithNull: encodeAnyOf([
+            function(ctx, input) {
+                return decodeNull(ctx, input, true);
+            },
+            function(ctx, input) {
+                return decodeNumber(ctx, input, true);
+            },
+            function(ctx, input) {
+                return decodeArray(ctx, input, true, (ctx, input)=>(validators.User(ctx, input, true)));
+            }
+        ], [
             (input)=>((input ?? null)),
             (input)=>(encodeNumber(input)),
             (input)=>(input.map((input)=>(encoders.User(input))))

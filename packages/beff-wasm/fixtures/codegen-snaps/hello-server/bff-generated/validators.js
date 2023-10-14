@@ -261,7 +261,18 @@ function encodeAllOf(cbs, value) {
   return value;
 }
 
-function encodeAnyOf(cbs, value) {
+function encodeAnyOf(decodeCbs, encodeCbs, value) {
+  for (let i = 0; i < decodeCbs.length; i++) {
+    const decodeCb = decodeCbs[i];
+    const encodeCb = encodeCbs[i];
+    // try to validate this value
+    const validatorCtx = {};
+    const newValue = decodeCb(validatorCtx, value);
+    if (validatorCtx.errors == null) {
+      // validation passed, encode the value
+      return encodeCb(newValue);
+    }
+  }
   return value
 }
 
@@ -345,6 +356,16 @@ function EncodeDataTypesKitchenSink(input) {
             c: input.basic.c
         },
         enum: encodeAnyOf([
+            function(ctx, input) {
+                return decodeConst(ctx, input, true, "a");
+            },
+            function(ctx, input) {
+                return decodeConst(ctx, input, true, "b");
+            },
+            function(ctx, input) {
+                return decodeConst(ctx, input, true, "c");
+            }
+        ], [
             (input)=>(input),
             (input)=>(input),
             (input)=>(input)
@@ -355,11 +376,28 @@ function EncodeDataTypesKitchenSink(input) {
             c: input.literals.c
         },
         many_nullable: encodeAnyOf([
+            function(ctx, input) {
+                return decodeNull(ctx, input, true);
+            },
+            function(ctx, input) {
+                return decodeString(ctx, input, true);
+            },
+            function(ctx, input) {
+                return decodeNumber(ctx, input, true);
+            }
+        ], [
             (input)=>((input ?? null)),
             (input)=>(input),
             (input)=>(encodeNumber(input))
         ], input.many_nullable),
         nullable: encodeAnyOf([
+            function(ctx, input) {
+                return decodeNull(ctx, input, true);
+            },
+            function(ctx, input) {
+                return decodeString(ctx, input, true);
+            }
+        ], [
             (input)=>((input ?? null)),
             (input)=>(input)
         ], input.nullable),
@@ -383,11 +421,28 @@ function EncodeDataTypesKitchenSink(input) {
             ...(input.tuple_rest.slice(2).map((input)=>(encodeNumber(input))))
         ],
         union_of_many: encodeAnyOf([
+            function(ctx, input) {
+                return decodeBoolean(ctx, input, true);
+            },
+            function(ctx, input) {
+                return decodeString(ctx, input, true);
+            },
+            function(ctx, input) {
+                return decodeNumber(ctx, input, true);
+            }
+        ], [
             (input)=>(input),
             (input)=>(input),
             (input)=>(encodeNumber(input))
         ], input.union_of_many),
         union_with_undefined: encodeAnyOf([
+            function(ctx, input) {
+                return decodeNull(ctx, input, true);
+            },
+            function(ctx, input) {
+                return decodeString(ctx, input, true);
+            }
+        ], [
             (input)=>((input ?? null)),
             (input)=>(input)
         ], input.union_with_undefined)

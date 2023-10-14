@@ -261,7 +261,18 @@ function encodeAllOf(cbs, value) {
   return value;
 }
 
-function encodeAnyOf(cbs, value) {
+function encodeAnyOf(decodeCbs, encodeCbs, value) {
+  for (let i = 0; i < decodeCbs.length; i++) {
+    const decodeCb = decodeCbs[i];
+    const encodeCb = encodeCbs[i];
+    // try to validate this value
+    const validatorCtx = {};
+    const newValue = decodeCb(validatorCtx, value);
+    if (validatorCtx.errors == null) {
+      // validation passed, encode the value
+      return encodeCb(newValue);
+    }
+  }
   return value
 }
 
@@ -298,6 +309,13 @@ function DecodeA(ctx, input) {
 }
 function EncodeA(input) {
     return encodeAnyOf([
+        function(ctx, input) {
+            return decodeConst(ctx, input, true, 1);
+        },
+        function(ctx, input) {
+            return decodeConst(ctx, input, true, 2);
+        }
+    ], [
         (input)=>(input),
         (input)=>(input)
     ], input);
@@ -310,6 +328,13 @@ function DecodeB(ctx, input) {
 }
 function EncodeB(input) {
     return encodeAnyOf([
+        function(ctx, input) {
+            return decodeConst(ctx, input, true, 2);
+        },
+        function(ctx, input) {
+            return decodeConst(ctx, input, true, 3);
+        }
+    ], [
         (input)=>(input),
         (input)=>(input)
     ], input);
@@ -322,6 +347,13 @@ function DecodeD(ctx, input) {
 }
 function EncodeD(input) {
     return encodeAnyOf([
+        function(ctx, input) {
+            return decodeConst(ctx, input, true, 4);
+        },
+        function(ctx, input) {
+            return decodeConst(ctx, input, true, 5);
+        }
+    ], [
         (input)=>(input),
         (input)=>(input)
     ], input);
@@ -334,6 +366,13 @@ function DecodeE(ctx, input) {
 }
 function EncodeE(input) {
     return encodeAnyOf([
+        function(ctx, input) {
+            return decodeConst(ctx, input, true, 5);
+        },
+        function(ctx, input) {
+            return decodeConst(ctx, input, true, 6);
+        }
+    ], [
         (input)=>(input),
         (input)=>(input)
     ], input);
@@ -348,6 +387,19 @@ function DecodeUnionNestedNamed(ctx, input) {
 }
 function EncodeUnionNestedNamed(input) {
     return encodeAnyOf([
+        function(ctx, input) {
+            return validators.A(ctx, input, true);
+        },
+        function(ctx, input) {
+            return validators.B(ctx, input, true);
+        },
+        function(ctx, input) {
+            return validators.D(ctx, input, true);
+        },
+        function(ctx, input) {
+            return validators.E(ctx, input, true);
+        }
+    ], [
         (input)=>(encoders.A(input)),
         (input)=>(encoders.B(input)),
         (input)=>(encoders.D(input)),
@@ -374,6 +426,19 @@ function DecodeUnionNested(ctx, input) {
 }
 function EncodeUnionNested(input) {
     return encodeAnyOf([
+        function(ctx, input) {
+            return validators.A(ctx, input, true);
+        },
+        function(ctx, input) {
+            return validators.B(ctx, input, true);
+        },
+        function(ctx, input) {
+            return validators.D(ctx, input, true);
+        },
+        function(ctx, input) {
+            return validators.E(ctx, input, true);
+        }
+    ], [
         (input)=>(encoders.A(input)),
         (input)=>(encoders.B(input)),
         (input)=>(encoders.D(input)),
