@@ -15,11 +15,18 @@ export type HandlerMetaServer = {
   return_encoder: any;
   params: MetaParamServer[];
 };
-export type DecodeError = {
+export type RegularDecodeError = {
   message: string;
   path: string[];
   received: unknown;
 };
+export type UnionDecodeError = {
+  path: string[];
+  received: unknown;
+  isUnionError: true;
+  errors: DecodeError[];
+};
+export type DecodeError = RegularDecodeError | UnionDecodeError;
 export interface OpenAPIInfo {
   title?: string;
   description?: string;

@@ -17,7 +17,9 @@ test("either", async () => {
       // @ts-expect-error
       { a: "asd" }
     )
-  ).rejects.toMatchInlineSnapshot('[HTTPException: #0 (b.a) expected one of, received: "asd"]');
+  ).rejects.toMatchInlineSnapshot(
+    '[HTTPException: #0 (b.a) Failed to decode one of (expected object | expected object), received: "asd"]'
+  );
 
   await expect(
     beff["/either"].post({
@@ -49,7 +51,9 @@ test("either2", async () => {
       // @ts-expect-error
       { a: "asd" }
     )
-  ).rejects.toMatchInlineSnapshot('[HTTPException: #0 (b.a) expected one of, received: "asd"]');
+  ).rejects.toMatchInlineSnapshot(
+    '[HTTPException: #0 (b.a) Failed to decode one of (expected object | expected object), received: "asd"]'
+  );
 
   await expect(
     beff["/either2"].post({
@@ -223,14 +227,38 @@ test("union", async () => {
       // @ts-expect-error
       { a: "undefined" }
     )
-  ).rejects.toMatchInlineSnapshot("[HTTPException: #0 (a) expected one of, received: Object]");
+  ).rejects.toMatchInlineSnapshot(
+    '[HTTPException: #0 (a) Failed to decode one of (expected "a" | expected "b"), received: Object]'
+  );
   await expect(
     beff["/union"].post(
       // @ts-expect-error
       "c"
     )
-  ).rejects.toMatchInlineSnapshot('[HTTPException: #0 (a) expected one of, received: "c"]');
+  ).rejects.toMatchInlineSnapshot(
+    '[HTTPException: #0 (a) Failed to decode one of (expected "a" | expected "b"), received: "c"]'
+  );
   await expect(beff["/union"].post("a")).resolves.toMatchInlineSnapshot('"a"');
+});
+
+test("alphabet", async () => {
+  await expect(
+    beff["/alphabet"].post(
+      // @ts-expect-error
+      { a: "undefined" }
+    )
+  ).rejects.toMatchInlineSnapshot(
+    '[HTTPException: #0 (a) Failed to decode one of (expected "a" OR expected "b" OR expected "c" OR expected "d" OR expected "e" and more...), received: Object]'
+  );
+  await expect(
+    beff["/alphabet"].post(
+      // @ts-expect-error
+      123
+    )
+  ).rejects.toMatchInlineSnapshot(
+    '[HTTPException: #0 (a) Failed to decode one of (expected "a" OR expected "b" OR expected "c" OR expected "d" OR expected "e" and more...), received: 123]'
+  );
+  await expect(beff["/alphabet"].post("c")).resolves.toMatchInlineSnapshot('"c"');
 });
 
 test("nan", async () => {
@@ -334,5 +362,7 @@ test("union encoding", async () => {
       //@ts-expect-error
       { c: 3 }
     )
-  ).rejects.toMatchInlineSnapshot("[HTTPException: #0 (a) expected one of, received: Object]");
+  ).rejects.toMatchInlineSnapshot(
+    "[HTTPException: #0 (a) Failed to decode one of ((a) expected 1 | (b) expected 2), received: Object]"
+  );
 });

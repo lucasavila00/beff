@@ -4,6 +4,37 @@ import either2 from "./either2";
 import exp_def from "./exp_def";
 import { ABC, DEF } from "./data_const";
 import * as STAR_IMPORT from "./data_const";
+
+const ALPHABET = [
+  "a",
+  "b",
+  "c",
+  "d",
+  "e",
+  "f",
+  "g",
+  "h",
+  "i",
+  "j",
+  "k",
+  "l",
+  "m",
+  "n",
+  "o",
+  "p",
+  "q",
+  "r",
+  "s",
+  "t",
+  "u",
+  "v",
+  "w",
+  "x",
+  "y",
+  "z",
+] as const;
+type Alphabet = (typeof ALPHABET)[number];
+
 export default {
   ...either2,
   "/either": {
@@ -124,5 +155,8 @@ export default {
   },
   "/union_encoding": {
     post: (_c: Ctx, a: { a: 1 } | { b: 2 }): { a: 1 } | { b: 2 } => a,
+  },
+  "/alphabet": {
+    post: (_c: Ctx, a: Alphabet): Alphabet => a,
   },
 };
