@@ -22,6 +22,18 @@ function buildError(received, ctx, message) {
     received,
   });
 }
+function buildUnionError(received, ctx, errors) {
+  if (ctx.errors == null) {
+    ctx.errors = [];
+  }
+  ctx.errors.push({
+    message: "expected one of",
+    isUnionError: true,
+    errors,
+    path: [...(ctx.paths ?? [])],
+    received,
+  });
+}
 
 function decodeObject(ctx, input, required, data) {
   if (!required && input == null) {
@@ -144,14 +156,17 @@ function decodeAnyOf(ctx, input, required, vs) {
   if (!required && input == null) {
     return input;
   }
+
+  let accErrors = [];
   for (const v of vs) {
     const validatorCtx = {};
     const newValue = v(validatorCtx, input);
     if (validatorCtx.errors == null) {
       return newValue;
     }
+    accErrors.push(...(validatorCtx.errors ?? []));
   }
-  return buildError(input, ctx, "expected one of");
+  return buildUnionError(input, ctx, accErrors);
 }
 function decodeAllOf(ctx, input, required, vs) {
   if (!required && input == null) {
