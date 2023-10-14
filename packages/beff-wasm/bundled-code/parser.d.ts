@@ -1,4 +1,3 @@
-/* eslint-disable */
 import { DecodeError, StringFormat } from "@beff/cli";
 
 export type BeffParser<T> = {
