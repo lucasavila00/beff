@@ -258,9 +258,7 @@ test("alphabet", async () => {
   ).rejects.toMatchInlineSnapshot(
     '[HTTPException: #0 (a) Failed to decode one of (expected "a" OR expected "b" OR expected "c" OR expected "d" OR expected "e" and more...), received: 123]'
   );
-  await expect(beff["/alphabet"].post("c")).resolves.toMatchInlineSnapshot(
-    '"c"'
-  );
+  await expect(beff["/alphabet"].post("c")).resolves.toMatchInlineSnapshot('"c"');
 });
 
 test("nan", async () => {
@@ -365,6 +363,6 @@ test("union encoding", async () => {
       { c: 3 }
     )
   ).rejects.toMatchInlineSnapshot(
-    '[HTTPException: #0 (a) Failed to decode one of ((a) expected 1 | (b) expected 2), received: Object]'
+    "[HTTPException: #0 (a) Failed to decode one of ((a) expected 1 | (b) expected 2), received: Object]"
   );
 });
