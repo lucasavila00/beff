@@ -7,7 +7,29 @@ const util = require("util");
 const execAsync = util.promisify(childProcess.exec);
 
 const isDebug = process.env.DEBUG === "true";
+
+const deleteComments = (code) => {
+  return code.replace(/\/\/.*/g, "").replace(/\/\*.*\*\//g, "");
+};
+
+const makeJsBundle = () => {
+  const allFiles = fs.readdirSync(path.join(__dirname, "../bundled-code"));
+  const jsFiles = allFiles.filter((f) => f.endsWith(".js") || f.endsWith("d.ts"));
+  const jsBundle = jsFiles.map((f) => [
+    f,
+    (f.endsWith(".js") ? `//@ts-nocheck\n/* eslint-disable */\n` : `/* eslint-disable */\n`) +
+      deleteComments(fs.readFileSync(path.join(__dirname, "../bundled-code", f), "utf-8")),
+  ]);
+  const bundle = Object.fromEntries(jsBundle);
+  fs.writeFileSync(
+    path.join(__dirname, "../ts-node/generated/bundle.ts"),
+    `export default ${JSON.stringify(bundle)}`
+  );
+};
+
 const main = async () => {
+  await makeJsBundle();
+
   const mode = isDebug ? "--dev" : "--release";
 
   const cmds = {

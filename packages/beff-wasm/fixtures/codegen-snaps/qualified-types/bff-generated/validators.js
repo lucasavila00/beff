@@ -1,3 +1,5 @@
+//@ts-nocheck
+/* eslint-disable */
 
 
 function pushPath(ctx, path) {
@@ -12,26 +14,22 @@ function popPath(ctx) {
   }
   return ctx.paths.pop();
 }
-function buildError(received, ctx, message, ) {
+function buildError(received, ctx, message) {
   if (ctx.errors == null) {
     ctx.errors = [];
   }
   ctx.errors.push({
     message,
-    path: [...(ctx.paths??[])],
-    received
-  })
+    path: [...(ctx.paths ?? [])],
+    received,
+  });
 }
 
 function decodeObject(ctx, input, required, data) {
   if (!required && input == null) {
     return input;
   }
-  if (
-    typeof input === 'object' &&
-    !Array.isArray(input) &&
-    input !== null
-  ) {
+  if (typeof input === "object" && !Array.isArray(input) && input !== null) {
     const acc = {};
     for (const [k, v] of Object.entries(data)) {
       pushPath(ctx, k);
@@ -40,7 +38,7 @@ function decodeObject(ctx, input, required, data) {
     }
     return acc;
   }
-  return buildError(input, ctx,  "expected object")
+  return buildError(input, ctx, "expected object");
 }
 function decodeArray(ctx, input, required, data) {
   if (!required && input == null) {
@@ -48,30 +46,33 @@ function decodeArray(ctx, input, required, data) {
   }
   if (Array.isArray(input)) {
     const acc = [];
-    for(let i = 0; i < input.length; i++) {
+    for (let i = 0; i < input.length; i++) {
       const v = input[i];
-      pushPath(ctx, '['+i+']');
+      pushPath(ctx, "[" + i + "]");
       acc.push(data(ctx, v));
       popPath(ctx);
     }
     return acc;
   }
-  return buildError(input, ctx,  "expected array")
+  return buildError(input, ctx, "expected array");
 }
 function decodeString(ctx, input, required) {
   if (!required && input == null) {
     return input;
   }
 
-  if (typeof input === 'string') {
+  if (typeof input === "string") {
     return input;
   }
 
-  return buildError(input, ctx,  "expected string")
+  return buildError(input, ctx, "expected string");
 }
 const isNumeric = (num) =>
   (typeof num === "number" || (typeof num === "string" && num.trim() !== "")) &&
-  !isNaN(num );
+  !isNaN(
+    
+    num
+  );
 
 function decodeNumber(ctx, input, required) {
   if (!required && input == null) {
@@ -87,7 +88,7 @@ function decodeNumber(ctx, input, required) {
     return NaN;
   }
 
-  return buildError(input, ctx,  "expected number")
+  return buildError(input, ctx, "expected number");
 }
 
 function encodeCodec(codec, value) {
@@ -99,7 +100,7 @@ function encodeCodec(codec, value) {
       return value.toString();
     }
   }
-  throw new Error("encode - codec not found: "+codec);
+  throw new Error("encode - codec not found: " + codec);
 }
 
 function decodeCodec(ctx, input, required, codec) {
@@ -110,7 +111,7 @@ function decodeCodec(ctx, input, required, codec) {
     case "Codec::ISO8061": {
       const d = new Date(input);
       if (isNaN(d.getTime())) {
-        return buildError(input, ctx,  "expected ISO8061 date")
+        return buildError(input, ctx, "expected ISO8061 date");
       }
       return d;
     }
@@ -125,20 +126,21 @@ function decodeCodec(ctx, input, required, codec) {
         try {
           return BigInt(input);
         } catch (e) {
+          
         }
       }
-      return buildError(input, ctx,  "expected bigint")
+      return buildError(input, ctx, "expected bigint");
     }
   }
-  return buildError(input, ctx,  "codec " + codec + " not implemented")
+  return buildError(input, ctx, "codec " + codec + " not implemented");
 }
 
 function decodeStringWithFormat(ctx, input, required, format) {
   if (!required && input == null) {
     return input;
   }
-  return input
-  // throw new Error("decodeStringWithFormat not implemented")
+  return input;
+  
 }
 function decodeAnyOf(ctx, input, required, vs) {
   if (!required && input == null) {
@@ -151,7 +153,7 @@ function decodeAnyOf(ctx, input, required, vs) {
       return newValue;
     }
   }
-  return buildError(input, ctx,  "expected one of")
+  return buildError(input, ctx, "expected one of");
 }
 function decodeAllOf(ctx, input, required, vs) {
   if (!required && input == null) {
@@ -179,32 +181,32 @@ function decodeTuple(ctx, input, required, vs) {
     return input;
   }
   if (Array.isArray(input)) {
-    const acc = []
+    const acc = [];
     let idx = 0;
     for (const v of vs.prefix) {
-      pushPath(ctx, '['+idx+']');
+      pushPath(ctx, "[" + idx + "]");
       const newValue = v(ctx, input[idx]);
       popPath(ctx);
       acc.push(newValue);
       idx++;
     }
     if (vs.items != null) {
-      for(let i = idx; i < input.length; i++) {
+      for (let i = idx; i < input.length; i++) {
         const v = input[i];
-        pushPath(ctx, '['+i+']');
+        pushPath(ctx, "[" + i + "]");
         acc.push(vs.items(ctx, v));
         popPath(ctx);
       }
     } else {
       if (input.length > idx) {
-        return buildError(input, ctx,  "tuple has too many items")
+        return buildError(input, ctx, "tuple has too many items");
       }
     }
     return acc;
   }
-  return buildError(input, ctx,  "expected tuple")
+  return buildError(input, ctx, "expected tuple");
 }
-function decodeBoolean(ctx, input, required, ) {
+function decodeBoolean(ctx, input, required) {
   if (!required && input == null) {
     return input;
   }
@@ -212,12 +214,12 @@ function decodeBoolean(ctx, input, required, ) {
     return input;
   }
   if (input === "true" || input === "false") {
-    return (input === "true");
+    return input === "true";
   }
   if (input === "1" || input === "0") {
-    return (input === "1");
+    return input === "1";
   }
-  return buildError(input, ctx,  "expected boolean")
+  return buildError(input, ctx, "expected boolean");
 }
 function decodeAny(ctx, input, required) {
   return input;
@@ -232,7 +234,7 @@ function decodeNull(ctx, input, required) {
   if (input == null) {
     return null;
   }
-  return buildError(input, ctx,  "expected null")
+  return buildError(input, ctx, "expected null");
 }
 function decodeConst(ctx, input, required, constValue) {
   if (!required && input == null) {
@@ -241,7 +243,7 @@ function decodeConst(ctx, input, required, constValue) {
   if (input == constValue) {
     return constValue;
   }
-  return buildError(input, ctx,  "expected "+JSON.stringify(constValue))
+  return buildError(input, ctx, "expected " + JSON.stringify(constValue));
 }
 function encodeNumber(value) {
   if (Number.isNaN(value)) {
@@ -265,15 +267,15 @@ function encodeAnyOf(decodeCbs, encodeCbs, value) {
   for (let i = 0; i < decodeCbs.length; i++) {
     const decodeCb = decodeCbs[i];
     const encodeCb = encodeCbs[i];
-    // try to validate this value
+    
     const validatorCtx = {};
     const newValue = decodeCb(validatorCtx, value);
     if (validatorCtx.errors == null) {
-      // validation passed, encode the value
+      
       return encodeCb(newValue);
     }
   }
-  return value
+  return value;
 }
 
 

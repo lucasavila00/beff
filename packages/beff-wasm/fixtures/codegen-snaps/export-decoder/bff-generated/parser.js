@@ -27,6 +27,10 @@ const buildParsersInput = {
     }
 };
 
+//@ts-nocheck
+/* eslint-disable */
+
+
 
 class BffParseError {
   constructor(errors) {
@@ -34,28 +38,30 @@ class BffParseError {
   }
 }
 function buildParsers() {
-  let decoders ={};
-  Object.keys(buildParsersInput).forEach(k => {
+  let decoders = {};
+  
+  Object.keys(buildParsersInput).forEach((k) => {
+    
     let v = buildParsersInput[k];
     const safeParse = (input) => {
-      const validatorCtx = {
-      };
+      const validatorCtx = {};
       const new_value = v(validatorCtx, input);
       const validation_result = validatorCtx.errors;
       if (validation_result == null) {
         return { success: true, data: new_value };
       }
       return { success: false, errors: validation_result };
-    }
+    };
     const parse = (input) => {
       const safe = safeParse(input);
       if (safe.success) {
         return safe.data;
       }
-      throw new BffParseError(safe.errors)
+      throw new BffParseError(safe.errors);
     };
     decoders[k] = {
-      parse, safeParse
+      parse,
+      safeParse,
     };
   });
   return decoders;
