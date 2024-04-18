@@ -1030,16 +1030,10 @@ impl<'a, R: FileManager> TypeToSchema<'a, R> {
                 ))),
                 TsLit::Bool(b) => Ok(JsonSchema::Const(JsonSchemaConst::Bool(b.value))),
                 TsLit::BigInt(_) => Ok(JsonSchema::Codec(CodecName::BigInt)),
-                TsLit::Tpl(TsTplLitType {
-                    span,
-                    types,
-                    quasis,
-                }) => {
+                TsLit::Tpl(TsTplLitType { types, quasis, .. }) => {
                     if !types.is_empty() || quasis.len() != 1 {
-                        return self.cannot_serialize_error(
-                            span,
-                            DiagnosticInfoMessage::TemplateNonSerializableToJsonSchema,
-                        );
+                        // TODO: handle it better somehow
+                        return Ok(JsonSchema::String);
                     }
 
                     Ok(JsonSchema::Const(JsonSchemaConst::String(

@@ -61,7 +61,6 @@ pub enum DiagnosticInfoMessage {
     JsDocsDescriptionCouldNotBeParsed,
     KeywordNonSerializableToJsonSchema,
     PropertyNonSerializableToJsonSchema,
-    TemplateNonSerializableToJsonSchema,
     DuplicatedRestNonSerializableToJsonSchema,
     TypeConstructNonSerializableToJsonSchema,
     ContextInvalidAtThisPosition,
@@ -138,7 +137,6 @@ impl DiagnosticInfoMessage {
             }
             DiagnosticInfoMessage::KeywordNonSerializableToJsonSchema
             | DiagnosticInfoMessage::PropertyNonSerializableToJsonSchema
-            | DiagnosticInfoMessage::TemplateNonSerializableToJsonSchema
             | DiagnosticInfoMessage::DuplicatedRestNonSerializableToJsonSchema
             | DiagnosticInfoMessage::TypeConstructNonSerializableToJsonSchema => {
                 "This cannot be converted to JSON schema".to_string()
