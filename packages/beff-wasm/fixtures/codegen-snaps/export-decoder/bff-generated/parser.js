@@ -1,3 +1,6 @@
+//@ts-nocheck
+/* eslint-disable */
+
 
 import validatorsMod from "./validators.js"; const { decodeObject, decodeArray, decodeString, decodeNumber, decodeCodec, decodeStringWithFormat, decodeAnyOf, decodeAllOf, decodeBoolean, decodeAny, decodeTuple, decodeNull, decodeConst, encodeCodec, encodeAnyOf, encodeAllOf, encodeNumber, validators, encoders, c } = validatorsMod;
 const buildParsersInput = {
@@ -27,8 +30,6 @@ const buildParsersInput = {
     }
 };
 
-//@ts-nocheck
-/* eslint-disable */
 
 
 

@@ -40,7 +40,13 @@ const exportCode = (mod: ProjectModule) => (mod === "esm" ? "export default" : "
 const finalizeValidatorsCode = (wasmCode: WritableModules, mod: ProjectModule) => {
   const exportedItems = [...decodersExported, "validators", "encoders"].join(", ");
   const exports = [exportCode(mod), `{ ${exportedItems} };`].join(" ");
-  return [gen["decoders.js"], esmTag(mod), wasmCode.js_validators, exports].join("\n");
+  return [
+    "//@ts-nocheck\n/* eslint-disable */\n",
+    gen["decoders.js"],
+    esmTag(mod),
+    wasmCode.js_validators,
+    exports,
+  ].join("\n");
 };
 
 const importValidators = (mod: ProjectModule) => {
@@ -53,13 +59,21 @@ const finalizeRouterFile = (wasmCode: WritableModules, mod: ProjectModule) => {
   const schema = ["const schema = ", wasmCode.json_schema, ";"].join(" ");
   const exportedItems = ["meta", "schema"].join(", ");
   const exports = [exportCode(mod), `{ ${exportedItems} };`].join(" ");
-  return [esmTag(mod), importValidators(mod), wasmCode.js_server_meta, schema, exports].join("\n");
+  return [
+    "//@ts-nocheck\n/* eslint-disable */\n",
+    esmTag(mod),
+    importValidators(mod),
+    wasmCode.js_server_meta,
+    schema,
+    exports,
+  ].join("\n");
 };
 
 const finalizeParserFile = (wasmCode: WritableModules, mod: ProjectModule) => {
   const exportedItems = ["buildParsers"].join(", ");
   const exports = [exportCode(mod), `{ ${exportedItems} };`].join(" ");
   return [
+    "//@ts-nocheck\n/* eslint-disable */\n",
     esmTag(mod),
     importValidators(mod),
     wasmCode.js_built_parsers,
@@ -102,13 +116,19 @@ export const execProject = (
 
   if (projectJson.router) {
     fs.writeFileSync(path.join(outputDir, "router.js"), finalizeRouterFile(outResult, mod));
-    fs.writeFileSync(path.join(outputDir, "router.d.ts"), [gen["router.d.ts"]].join("\n"));
+    fs.writeFileSync(
+      path.join(outputDir, "router.d.ts"),
+      ["/* eslint-disable */\n", gen["router.d.ts"]].join("\n")
+    );
     fs.writeFileSync(path.join(outputDir, "openapi.json"), outResult.json_schema ?? "");
   }
 
   if (projectJson.parser) {
     fs.writeFileSync(path.join(outputDir, "parser.js"), finalizeParserFile(outResult, mod));
-    fs.writeFileSync(path.join(outputDir, "parser.d.ts"), [gen["parser.d.ts"]].join("\n"));
+    fs.writeFileSync(
+      path.join(outputDir, "parser.d.ts"),
+      ["/* eslint-disable */\n", gen["parser.d.ts"]].join("\n")
+    );
   }
   return "ok";
 };

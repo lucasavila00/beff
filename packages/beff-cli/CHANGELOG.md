@@ -1,5 +1,11 @@
 # @beff/cli
 
+## 0.0.10
+
+### Patch Changes
+
+- Add ts nocheck to out files
+
 ## 0.0.9
 
 ### Patch Changes

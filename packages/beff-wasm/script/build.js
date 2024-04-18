@@ -17,8 +17,7 @@ const makeJsBundle = () => {
   const jsFiles = allFiles.filter((f) => f.endsWith(".js") || f.endsWith("d.ts"));
   const jsBundle = jsFiles.map((f) => [
     f,
-    (f.endsWith(".js") ? `//@ts-nocheck\n/* eslint-disable */\n` : `/* eslint-disable */\n`) +
-      deleteComments(fs.readFileSync(path.join(__dirname, "../bundled-code", f), "utf-8")),
+    deleteComments(fs.readFileSync(path.join(__dirname, "../bundled-code", f), "utf-8")),
   ]);
   const bundle = Object.fromEntries(jsBundle);
   const folder = path.join(__dirname, "../ts-node/generated");
