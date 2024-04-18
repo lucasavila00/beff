@@ -424,4 +424,20 @@ mod tests {
 
         insta::assert_snapshot!(ok(from));
     }
+    #[test]
+    fn ok_enum() {
+        let from = r#"
+    enum A {
+        a = "AAA",
+        b = "BBB"
+    }
+    export default {
+        "/hello": {
+            get: (): A => impl()
+        }
+    }
+    "#;
+
+        insta::assert_snapshot!(ok(from));
+    }
 }

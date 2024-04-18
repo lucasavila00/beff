@@ -103,11 +103,11 @@ fn vec_union<K: PartialEq + Clone + Ord>(v1: &[K], v2: &[K]) -> Vec<K> {
 }
 
 fn vec_intersect<K: PartialEq + Clone + Ord>(v1: &[K], v2: &[K]) -> Vec<K> {
-    v1.iter().cloned().filter(|v| v2.contains(v)).collect()
+    v1.iter().filter(|v| v2.contains(v)).cloned().collect()
 }
 
 fn vec_diff<K: PartialEq + Clone + Ord>(v1: &[K], v2: &[K]) -> Vec<K> {
-    v1.iter().cloned().filter(|v| !v2.contains(v)).collect()
+    v1.iter().filter(|v| !v2.contains(v)).cloned().collect()
 }
 
 pub trait ProperSubtypeOps {

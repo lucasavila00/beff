@@ -9,6 +9,7 @@ use crate::{open_api_ast::HTTPMethod, BffFileName, ParsedModule};
 pub enum DiagnosticInfoMessage {
     CannotResolveKey(String),
     CouldNotFindSomethingOfOtherFile(String),
+    EnumMemberNoInit,
     TypeofImportNotSupported,
     NoArgumentInTypeApplication,
     ThisShouldContainMethods,
@@ -37,6 +38,7 @@ pub enum DiagnosticInfoMessage {
     CannotUseStarAsType,
     CannotUseTsTypeAsQualified,
     CannotUseTsInterfaceAsQualified,
+    CannotUseTsEnumAsQualified,
     DecoderMustHaveTypeAnnotation,
     CannotGetQualifiedTypeFromFile(String),
     CannotGetQualifiedTypeFromFileRec(String),
@@ -46,6 +48,7 @@ pub enum DiagnosticInfoMessage {
     CannotResolveNamespaceType,
     ShouldNotResolveTsInterfaceDeclAsNamespace,
     ShouldNotResolveTsTypeAsNamespace,
+    ShouldNotResolveTsEnumAsNamespace,
     DecoderShouldBeObjectWithTypesAndNames,
     TooManyTypeParamsOnDecoder,
     TooFewTypeParamsOnDecoder,
@@ -376,6 +379,15 @@ impl DiagnosticInfoMessage {
             }
             DiagnosticInfoMessage::CannotResolveKey(key) =>{
                 format!("Cannot resolve key '{key}' of non-object")
+            }
+            DiagnosticInfoMessage::EnumMemberNoInit => {
+                "Enum must have initializer".to_string()
+            }
+            DiagnosticInfoMessage::CannotUseTsEnumAsQualified => {
+                "Cannot use TS enum as qualified".to_string()
+            }
+            DiagnosticInfoMessage::ShouldNotResolveTsEnumAsNamespace => {
+                "Should not resolve TS enum as namespace".to_string()
             }
         }
     }

@@ -1,5 +1,14 @@
 # @beff/hono
 
+## 0.0.9
+
+### Patch Changes
+
+- Add enum support
+- Updated dependencies
+  - @beff/cli@0.0.9
+  - @beff/client@0.0.9
+
 ## 0.0.8
 
 ### Patch Changes

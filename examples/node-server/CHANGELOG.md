@@ -1,5 +1,13 @@
 # node-server
 
+## 1.0.5
+
+### Patch Changes
+
+- Updated dependencies
+  - @beff/cli@0.0.9
+  - @beff/hono@0.0.9
+
 ## 1.0.4
 
 ### Patch Changes
