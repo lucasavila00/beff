@@ -53,7 +53,7 @@ function decodeObject(ctx, input, required, data) {
   }
   return buildError(input, ctx, "expected object");
 }
-function decodeRecord(ctx, input, required, data) {
+function decodeRecord(ctx, input, required, keyValidator, valueValidator) {
   if (!required && input == null) {
     return input;
   }
@@ -61,7 +61,7 @@ function decodeRecord(ctx, input, required, data) {
     const acc = {};
     for (const [k, v] of Object.entries(input)) {
       pushPath(ctx, k);
-      acc[data[0](ctx, k)] = data[1](ctx, v);
+      acc[keyValidator(ctx, k)] = valueValidator(ctx, v);
       popPath(ctx);
     }
     return acc;
@@ -119,17 +119,7 @@ function decodeNumber(ctx, input, required) {
   return buildError(input, ctx, "expected number");
 }
 
-function encodeCodec(codec, value) {
-  switch (codec) {
-    case "Codec::ISO8061": {
-      return value.toISOString();
-    }
-    case "Codec::BigInt": {
-      return value.toString();
-    }
-  }
-  throw new Error("encode - codec not found: " + codec);
-}
+
 
 function decodeCodec(ctx, input, required, codec) {
   if (!required && input == null) {
@@ -276,40 +266,8 @@ function decodeConst(ctx, input, required, constValue) {
   }
   return buildError(input, ctx, "expected " + JSON.stringify(constValue));
 }
-function encodeNumber(value) {
-  if (Number.isNaN(value)) {
-    return "NaN";
-  }
-  return value;
-}
-function encodeAllOf(cbs, value) {
-  if (typeof value === "object") {
-    let acc = {};
-    for (const cb of cbs) {
-      const newValue = cb(value);
-      acc = { ...acc, ...newValue };
-    }
-    return acc;
-  }
-  return value;
-}
-
-function encodeAnyOf(decodeCbs, encodeCbs, value) {
-  for (let i = 0; i < decodeCbs.length; i++) {
-    const decodeCb = decodeCbs[i];
-    const encodeCb = encodeCbs[i];
-    
-    const validatorCtx = {};
-    const newValue = decodeCb(validatorCtx, value);
-    if (validatorCtx.errors == null) {
-      
-      return encodeCb(newValue);
-    }
-  }
-  return value;
-}
 
 
 const validators = {};
 
-export default { decodeObject, decodeArray, decodeString, decodeNumber, decodeCodec, decodeStringWithFormat, decodeAnyOf, decodeAllOf, decodeBoolean, decodeAny, decodeTuple, decodeNull, decodeConst, encodeCodec, encodeAnyOf, encodeAllOf, encodeNumber, validators };
+export default { decodeObject, decodeArray, decodeString, decodeNumber, decodeCodec, decodeStringWithFormat, decodeAnyOf, decodeAllOf, decodeBoolean, decodeAny, decodeTuple, decodeNull, decodeConst, validators };

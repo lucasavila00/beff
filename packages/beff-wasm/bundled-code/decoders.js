@@ -50,7 +50,7 @@ function decodeObject(ctx, input, required, data) {
   }
   return buildError(input, ctx, "expected object");
 }
-function decodeRecord(ctx, input, required, data) {
+function decodeRecord(ctx, input, required, keyValidator, valueValidator) {
   if (!required && input == null) {
     return input;
   }
@@ -58,7 +58,7 @@ function decodeRecord(ctx, input, required, data) {
     const acc = {};
     for (const [k, v] of Object.entries(input)) {
       pushPath(ctx, k);
-      acc[data[0](ctx, k)] = data[1](ctx, v);
+      acc[keyValidator(ctx, k)] = valueValidator(ctx, v);
       popPath(ctx);
     }
     return acc;
@@ -114,18 +114,6 @@ function decodeNumber(ctx, input, required) {
   }
 
   return buildError(input, ctx, "expected number");
-}
-
-function encodeCodec(codec, value) {
-  switch (codec) {
-    case "Codec::ISO8061": {
-      return value.toISOString();
-    }
-    case "Codec::BigInt": {
-      return value.toString();
-    }
-  }
-  throw new Error("encode - codec not found: " + codec);
 }
 
 function decodeCodec(ctx, input, required, codec) {
@@ -272,36 +260,4 @@ function decodeConst(ctx, input, required, constValue) {
     return constValue;
   }
   return buildError(input, ctx, "expected " + JSON.stringify(constValue));
-}
-function encodeNumber(value) {
-  if (Number.isNaN(value)) {
-    return "NaN";
-  }
-  return value;
-}
-function encodeAllOf(cbs, value) {
-  if (typeof value === "object") {
-    let acc = {};
-    for (const cb of cbs) {
-      const newValue = cb(value);
-      acc = { ...acc, ...newValue };
-    }
-    return acc;
-  }
-  return value;
-}
-
-function encodeAnyOf(decodeCbs, encodeCbs, value) {
-  for (let i = 0; i < decodeCbs.length; i++) {
-    const decodeCb = decodeCbs[i];
-    const encodeCb = encodeCbs[i];
-    // try to validate this value
-    const validatorCtx = {};
-    const newValue = decodeCb(validatorCtx, value);
-    if (validatorCtx.errors == null) {
-      // validation passed, encode the value
-      return encodeCb(newValue);
-    }
-  }
-  return value;
 }

@@ -15,13 +15,13 @@ use swc_atoms::JsWord;
 use swc_common::{Span, Spanned};
 use swc_ecma_ast::{
     Expr, Ident, Lit, MemberProp, Prop, PropName, PropOrSpread, Str, TsArrayType,
-    TsConditionalType, TsConstructorType, TsEntityName, TsEnumDecl, TsFnOrConstructorType,
-    TsFnType, TsImportType, TsIndexedAccessType, TsInferType, TsInterfaceDecl, TsIntersectionType,
-    TsKeywordType, TsKeywordTypeKind, TsLit, TsLitType, TsMappedType, TsOptionalType,
-    TsParenthesizedType, TsQualifiedName, TsRestType, TsThisType, TsTplLitType, TsTupleType,
-    TsType, TsTypeElement, TsTypeLit, TsTypeOperator, TsTypeOperatorOp, TsTypeParam,
-    TsTypeParamDecl, TsTypeParamInstantiation, TsTypePredicate, TsTypeQuery, TsTypeQueryExpr,
-    TsTypeRef, TsUnionOrIntersectionType, TsUnionType,
+    TsConditionalType, TsConstructorType, TsEntityName, TsEnumDecl, TsExprWithTypeArgs,
+    TsFnOrConstructorType, TsFnType, TsImportType, TsIndexedAccessType, TsInferType,
+    TsInterfaceDecl, TsIntersectionType, TsKeywordType, TsKeywordTypeKind, TsLit, TsLitType,
+    TsMappedType, TsOptionalType, TsParenthesizedType, TsQualifiedName, TsRestType, TsThisType,
+    TsTplLitType, TsTupleType, TsType, TsTypeElement, TsTypeLit, TsTypeOperator, TsTypeOperatorOp,
+    TsTypeParam, TsTypeParamDecl, TsTypeParamInstantiation, TsTypePredicate, TsTypeQuery,
+    TsTypeQueryExpr, TsTypeRef, TsUnionOrIntersectionType, TsUnionType,
 };
 
 pub struct TypeToSchema<'a, R: FileManager> {
@@ -339,18 +339,36 @@ impl<'a, R: FileManager> TypeToSchema<'a, R> {
 
         Ok(JsonSchema::any_of(values))
     }
+
+    fn convert_interface_extends(&mut self, typ: &Vec<TsExprWithTypeArgs>) -> Res<Vec<JsonSchema>> {
+        let mut vs = vec![];
+
+        for it in typ {
+            match it.type_args {
+                Some(_) => {
+                    return self.error(
+                        &it.span,
+                        DiagnosticInfoMessage::TypeArgsInExtendsUnsupported,
+                    )
+                }
+                None => match it.expr.as_ref() {
+                    Expr::Ident(id) => {
+                        let id_ty = self.get_type_ref(id, &None)?;
+                        vs.push(id_ty);
+                    }
+                    _ => return self.error(&it.span, DiagnosticInfoMessage::ExtendsShouldBeIdent),
+                },
+            }
+        }
+
+        Ok(vs)
+    }
+
     fn convert_ts_interface_decl(
         &mut self,
         typ: &TsInterfaceDecl,
         type_args: &Option<Box<TsTypeParamInstantiation>>,
     ) -> Res<JsonSchema> {
-        if !typ.extends.is_empty() {
-            return self.cannot_serialize_error(
-                &typ.span,
-                DiagnosticInfoMessage::TsInterfaceExtendsNotSupported,
-            );
-        }
-
         let args = type_args
             .as_ref()
             .map(|it| it.params.iter().map(|it| it.as_ref()).collect::<Vec<_>>());
@@ -368,7 +386,15 @@ impl<'a, R: FileManager> TypeToSchema<'a, R> {
                 .collect::<Res<_>>()?,
         ));
         self.type_param_stack.pop();
-        r
+
+        if typ.extends.is_empty() {
+            r
+        } else {
+            let ext = self.convert_interface_extends(&typ.extends)?;
+            Ok(JsonSchema::all_of(
+                ext.into_iter().chain(std::iter::once(r?)).collect(),
+            ))
+        }
     }
 
     fn convert_type_export(

@@ -139,4 +139,18 @@ mod tests {
         parse.buildParsers<{ A: Required<MaybeUser> }>();
       "#));
     }
+    #[test]
+    fn ok_interface_extends() {
+        insta::assert_snapshot!(ok(r#"
+
+        interface User {
+            name: string,
+            age: number,
+        }
+        interface Admin extends User {
+            role: string,
+        }
+        parse.buildParsers<{ Admin: Admin }>();
+      "#));
+    }
 }

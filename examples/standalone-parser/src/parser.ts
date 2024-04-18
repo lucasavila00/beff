@@ -1,12 +1,12 @@
 import parse from "./generated/parser";
 
-enum AccessLevel {
+export enum AccessLevel {
   ADMIN = "ADMIN",
   USER = "USER",
 }
 
 type AvatarSize = `${number}x${number}`;
-type Extra = Record<string, string>;
+export type Extra = Record<string, string>;
 
 export type User = {
   accessLevel: AccessLevel;
@@ -18,4 +18,15 @@ export type User = {
 
 export type PublicUser = Omit<User, "friends">;
 
-export const { User, PublicUser } = parse.buildParsers<{ User: User; PublicUser: PublicUser }>();
+type WithOptionals = {
+  optional?: string;
+};
+
+type Req = Required<WithOptionals>;
+
+export const { Extra, User, PublicUser } = parse.buildParsers<{
+  Extra: Extra;
+  User: User;
+  PublicUser: PublicUser;
+  Req: Req;
+}>();
