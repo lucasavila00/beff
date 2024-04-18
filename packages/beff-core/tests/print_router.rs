@@ -440,4 +440,18 @@ mod tests {
 
         insta::assert_snapshot!(ok(from));
     }
+    #[test]
+    fn ok_template_literal_type() {
+        let from = r#"
+    type TvideoSize = `v${number}x${number}`;
+    export default {
+        "/hello": {
+            get: (): TvideoSize => impl()
+        }
+    }
+    "#;
+
+        insta::assert_snapshot!(ok(from));
+    }
+
 }

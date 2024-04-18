@@ -1,5 +1,11 @@
 # @beff/cli
 
+## 0.0.11
+
+### Patch Changes
+
+- 94ecc27: Handle template literal type
+
 ## 0.0.10
 
 ### Patch Changes

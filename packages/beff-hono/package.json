@@ -1,6 +1,6 @@
 {
   "name": "@beff/hono",
-  "version": "0.0.10",
+  "version": "0.0.11",
   "description": "",
   "main": "dist/cjs/index.js",
   "scripts": {
@@ -20,8 +20,8 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "@beff/cli": "workspace:^0.0.10",
-    "@beff/client": "workspace:^0.0.10",
+    "@beff/cli": "workspace:^0.0.11",
+    "@beff/client": "workspace:^0.0.11",
     "hono": "^3.6.3",
     "vitest": "^0.34.4"
   },
