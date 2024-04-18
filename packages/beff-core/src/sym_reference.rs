@@ -15,6 +15,9 @@ pub struct TypeResolver<'a, R: FileManager> {
 
 pub enum TsBuiltIn {
     TsRecord(Span),
+    TsOmit(Span),
+    TsObject(Span),
+    TsRequired(Span),
 }
 
 pub enum ResolvedLocalSymbol {
@@ -164,6 +167,17 @@ impl<'a, R: FileManager> TypeResolver<'a, R> {
         match i.sym.as_ref() {
             "Record" => {
                 return Ok(ResolvedLocalSymbol::TsBuiltin(TsBuiltIn::TsRecord(i.span)));
+            }
+            "Object" => {
+                return Ok(ResolvedLocalSymbol::TsBuiltin(TsBuiltIn::TsObject(i.span)));
+            }
+            "Omit" => {
+                return Ok(ResolvedLocalSymbol::TsBuiltin(TsBuiltIn::TsOmit(i.span)));
+            }
+            "Required" => {
+                return Ok(ResolvedLocalSymbol::TsBuiltin(TsBuiltIn::TsRequired(
+                    i.span,
+                )));
             }
             _ => {}
         }

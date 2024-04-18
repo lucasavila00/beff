@@ -7,6 +7,12 @@ use crate::{open_api_ast::HTTPMethod, BffFileName, ParsedModule};
 
 #[derive(Debug, Clone)]
 pub enum DiagnosticInfoMessage {
+    RequiredShouldHaveObjectAsTypeArgument,
+    MissingArgumentsOnRequired,
+    OmitShouldHaveStringOrStringArrayAsTypeArgument,
+    OmitShouldHaveTwoTypeArguments,
+    OmitShouldHaveStringAsTypeArgument,
+    OmitShouldHaveObjectAsTypeArgument,
     IndexSignatureNonSerializableToJsonSchema,
     AnyhowError(String),
     CannotResolveKey(String),
@@ -218,6 +224,25 @@ impl DiagnosticInfoMessage {
             }
             DiagnosticInfoMessage::IndexSignatureNonSerializableToJsonSchema => {
                 "Index signature cannot be converted to JSON schema - Use Record<x,y>".to_string()
+            }
+            DiagnosticInfoMessage::OmitShouldHaveTwoTypeArguments => {
+                "Omit should have two type arguments".to_string()
+            }
+
+            DiagnosticInfoMessage::OmitShouldHaveObjectAsTypeArgument => {
+                "Omit should have object as first type argument".to_string()
+            }
+            DiagnosticInfoMessage::OmitShouldHaveStringAsTypeArgument => {
+                "Omit should have string as type argument".to_string()
+            }
+            DiagnosticInfoMessage::OmitShouldHaveStringOrStringArrayAsTypeArgument => {
+                "Omit should have string or string array as type argument".to_string()
+            }
+            DiagnosticInfoMessage::RequiredShouldHaveObjectAsTypeArgument => {
+                "Required should have object as type argument".to_string()
+            }
+            DiagnosticInfoMessage::MissingArgumentsOnRequired => {
+                "Missing arguments on required".to_string()
             }
         }
     }

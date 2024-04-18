@@ -16,4 +16,6 @@ export type User = {
   extra: Extra;
 };
 
-export const { User } = parse.buildParsers<{ User: User }>();
+export type PublicUser = Omit<User, "friends">;
+
+export const { User, PublicUser } = parse.buildParsers<{ User: User; PublicUser: PublicUser }>();

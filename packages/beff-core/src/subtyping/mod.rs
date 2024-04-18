@@ -93,7 +93,7 @@ impl<'a> ToSemTypeConverter<'a> {
             JsonSchema::StringWithFormat(s) => {
                 Ok(SemTypeContext::string_const(StringLitOrFormat::Format(s.clone())).into())
             }
-            JsonSchema::Record { .. } => {
+            JsonSchema::TsRecord { .. } => {
                 Err(anyhow!("Record type is not supported in semantic types"))
             }
             JsonSchema::Object(vs) => {

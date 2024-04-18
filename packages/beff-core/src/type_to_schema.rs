@@ -125,12 +125,87 @@ impl<'a, R: FileManager> TypeToSchema<'a, R> {
             ),
         }
     }
+
+    fn convert_omit_keys(
+        obj: &BTreeMap<String, Optionality<JsonSchema>>,
+        keys: Vec<String>,
+    ) -> JsonSchema {
+        let mut acc = vec![];
+        for (k, v) in obj {
+            if !keys.contains(k) {
+                acc.push((k.clone(), v.clone()));
+            }
+        }
+        JsonSchema::object(acc)
+    }
+    fn convert_omit(
+        &mut self,
+        span: &Span,
+        obj: &BTreeMap<String, Optionality<JsonSchema>>,
+        keys: JsonSchema,
+    ) -> Res<JsonSchema> {
+        match keys {
+            JsonSchema::Const(JsonSchemaConst::String(str)) => {
+                Ok(Self::convert_omit_keys(obj, vec![str]))
+            }
+            JsonSchema::AnyOf(rms) => {
+                let mut keys = vec![];
+                for rm in rms {
+                    match rm {
+                        JsonSchema::Const(JsonSchemaConst::String(str)) => {
+                            keys.push(str);
+                        }
+                        JsonSchema::Ref(n) => {
+                            let map = self.components.get(&n).and_then(|it| it.as_ref()).cloned();
+                            match map {
+                                Some(Validator {
+                                    schema: JsonSchema::Const(JsonSchemaConst::String(str)),
+                                    ..
+                                }) => keys.push(str),
+                                _ => {
+                                    return self.error(
+                                        span,
+                                        DiagnosticInfoMessage::OmitShouldHaveStringAsTypeArgument,
+                                    )
+                                }
+                            }
+                        }
+                        _ => {
+                            return self.error(
+                                span,
+                                DiagnosticInfoMessage::OmitShouldHaveStringAsTypeArgument,
+                            )
+                        }
+                    }
+                }
+                Ok(Self::convert_omit_keys(obj, keys))
+            }
+            _ => self.error(
+                span,
+                DiagnosticInfoMessage::OmitShouldHaveStringOrStringArrayAsTypeArgument,
+            ),
+        }
+    }
+    fn convert_required(&mut self, obj: &BTreeMap<String, Optionality<JsonSchema>>) -> JsonSchema {
+        let mut acc = vec![];
+        for (k, v) in obj {
+            acc.push((k.clone(), v.clone().to_required()));
+        }
+        JsonSchema::object(acc)
+    }
     fn convert_ts_built_in(
         &mut self,
         typ: &TsBuiltIn,
         type_args: &Option<Box<TsTypeParamInstantiation>>,
     ) -> Res<JsonSchema> {
         match typ {
+            TsBuiltIn::TsObject(_) => {
+                let key = Box::new(JsonSchema::String);
+                let value = Box::new(JsonSchema::Any);
+
+                Ok(JsonSchema::TsRecord { key, value })
+            }
+
             TsBuiltIn::TsRecord(span) => match type_args {
                 Some(vs) => {
                     let items = vs
@@ -149,10 +224,87 @@ impl<'a, R: FileManager> TypeToSchema<'a, R> {
                     let key = Box::new(items[0].clone());
                     let value = Box::new(items[1].clone());
 
-                    Ok(JsonSchema::Record { key, value })
+                    Ok(JsonSchema::TsRecord { key, value })
                 }
                 None => self
                     .cannot_serialize_error(span, DiagnosticInfoMessage::MissingArgumentsOnRecord),
+            },
+            TsBuiltIn::TsOmit(span) => match type_args {
+                Some(vs) => {
+                    let items = vs
+                        .params
+                        .iter()
+                        .map(|it| self.convert_ts_type(it))
+                        .collect::<Res<Vec<_>>>()?;
+
+                    if items.len() != 2 {
+                        return self
+                            .error(span, DiagnosticInfoMessage::OmitShouldHaveTwoTypeArguments);
+                    }
+                    let obj = items[0].clone();
+                    let k = items[1].clone();
+                    match obj {
+                        JsonSchema::Object(vs) => self.convert_omit(span, &vs, k),
+                        JsonSchema::Ref(r) => {
+                            let map = self.components.get(&r).and_then(|it| it.as_ref()).cloned();
+                            match map {
+                                Some(Validator {
+                                    schema: JsonSchema::Object(vs),
+                                    ..
+                                }) => self.convert_omit(span, &vs, k),
+                                _ => self.error(
+                                    span,
+                                    DiagnosticInfoMessage::OmitShouldHaveObjectAsTypeArgument,
+                                ),
+                            }
+                        }
+                        _ => self.error(
+                            span,
+                            DiagnosticInfoMessage::OmitShouldHaveObjectAsTypeArgument,
+                        ),
+                    }
+                }
+                None => self
+                    .cannot_serialize_error(span, DiagnosticInfoMessage::MissingArgumentsOnRecord),
+            },
+            TsBuiltIn::TsRequired(span) => match type_args {
+                Some(vs) => {
+                    let items = vs
+                        .params
+                        .iter()
+                        .map(|it| self.convert_ts_type(it))
+                        .collect::<Res<Vec<_>>>()?;
+
+                    if items.len() != 1 {
+                        return self
+                            .error(span, DiagnosticInfoMessage::OmitShouldHaveTwoTypeArguments);
+                    }
+                    let obj = items[0].clone();
+                    match obj {
+                        JsonSchema::Object(vs) => Ok(self.convert_required(&vs)),
+                        JsonSchema::Ref(r) => {
+                            let map = self.components.get(&r).and_then(|it| it.as_ref()).cloned();
+                            match map {
+                                Some(Validator {
+                                    schema: JsonSchema::Object(vs),
+                                    ..
+                                }) => Ok(self.convert_required(&vs)),
+                                _ => self.error(
+                                    span,
+                                    DiagnosticInfoMessage::RequiredShouldHaveObjectAsTypeArgument,
+                                ),
+                            }
+                        }
+                        _ => self.error(
+                            span,
+                            DiagnosticInfoMessage::RequiredShouldHaveObjectAsTypeArgument,
+                        ),
+                    }
+                }
+                None => self.cannot_serialize_error(
+                    span,
+                    DiagnosticInfoMessage::MissingArgumentsOnRequired,
+                ),
             },
         }
     }

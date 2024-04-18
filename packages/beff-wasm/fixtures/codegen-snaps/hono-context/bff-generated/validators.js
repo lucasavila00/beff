@@ -67,7 +67,6 @@ function decodeRecord(ctx, input, required, data) {
     return acc;
   }
   return buildError(input, ctx, "expected object");
-
 }
 function decodeArray(ctx, input, required, data) {
   if (!required && input == null) {
