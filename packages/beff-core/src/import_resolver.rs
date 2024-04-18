@@ -303,6 +303,17 @@ pub fn parse_and_bind<R: FsModuleResolver>(
             continue;
         }
 
+        if let Some(enum_) = locals.content.enums.get(&k) {
+            symbol_exports.insert(
+                renamed,
+                Rc::new(SymbolExport::TsEnumDecl {
+                    decl: enum_.clone(),
+                    span: enum_.span(),
+                }),
+            );
+            continue;
+        }
+
         if let Some(intf) = locals.content.interfaces.get(&k) {
             symbol_exports.insert(
                 renamed,

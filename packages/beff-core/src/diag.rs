@@ -9,6 +9,7 @@ use crate::{open_api_ast::HTTPMethod, BffFileName, ParsedModule};
 pub enum DiagnosticInfoMessage {
     CannotResolveKey(String),
     CouldNotFindSomethingOfOtherFile(String),
+    EnumMemberNoInit,
     TypeofImportNotSupported,
     NoArgumentInTypeApplication,
     ThisShouldContainMethods,
@@ -376,6 +377,9 @@ impl DiagnosticInfoMessage {
             }
             DiagnosticInfoMessage::CannotResolveKey(key) =>{
                 format!("Cannot resolve key '{key}' of non-object")
+            }
+            DiagnosticInfoMessage::EnumMemberNoInit => {
+                "Enum must have initializer".to_string()
             }
         }
     }

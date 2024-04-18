@@ -36,6 +36,7 @@ use swc_ecma_ast::Expr;
 use swc_ecma_ast::ModuleItem;
 use swc_ecma_ast::Pat;
 use swc_ecma_ast::Stmt;
+use swc_ecma_ast::TsEnumDecl;
 use swc_ecma_ast::TsTypeParamDecl;
 use swc_ecma_ast::{Module, TsType};
 use swc_ecma_ast::{TsInterfaceDecl, TsTypeAliasDecl};
@@ -52,6 +53,10 @@ pub enum SymbolExport {
     },
     TsInterfaceDecl {
         decl: Rc<TsInterfaceDecl>,
+        span: Span,
+    },
+    TsEnumDecl {
+        decl: Rc<TsEnumDecl>,
         span: Span,
     },
     ValueExpr {
@@ -78,6 +83,7 @@ impl SymbolExport {
             SymbolExport::ValueExpr { span, .. } => *span,
             SymbolExport::StarOfOtherFile { span, .. } => *span,
             SymbolExport::SomethingOfOtherFile { span, .. } => *span,
+            SymbolExport::TsEnumDecl { span, .. } => *span,
         }
     }
 }
@@ -192,6 +198,7 @@ type TypeAliasMap = HashMap<(JsWord, SyntaxContext), (Option<Rc<TsTypeParamDecl>
 pub struct ParsedModuleLocals {
     pub type_aliases: TypeAliasMap,
     pub interfaces: HashMap<(JsWord, SyntaxContext), Rc<TsInterfaceDecl>>,
+    pub enums: HashMap<(JsWord, SyntaxContext), Rc<TsEnumDecl>>,
 
     pub exprs: HashMap<(JsWord, SyntaxContext), Rc<Expr>>,
 }
@@ -200,6 +207,7 @@ impl ParsedModuleLocals {
         ParsedModuleLocals {
             type_aliases: HashMap::new(),
             interfaces: HashMap::new(),
+            enums: HashMap::new(),
             exprs: HashMap::new(),
         }
     }
@@ -271,6 +279,13 @@ impl Visit for ParserOfModuleLocals {
         let TsInterfaceDecl { id, .. } = n;
         self.content
             .interfaces
+            .insert((id.sym.clone(), id.span.ctxt), Rc::new(n.clone()));
+    }
+
+    fn visit_ts_enum_decl(&mut self, n: &swc_ecma_ast::TsEnumDecl) {
+        let TsEnumDecl { id, .. } = n;
+        self.content
+            .enums
             .insert((id.sym.clone(), id.span.ctxt), Rc::new(n.clone()));
     }
 }

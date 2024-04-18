@@ -227,6 +227,7 @@ impl<'a, R: FileManager> ExtractExportDefaultVisitor<'a, R> {
             | SymbolExport::TsInterfaceDecl { .. } => {
                 self.push_error(&expr.span(), DiagnosticInfoMessage::FoundTypeExpectedValue)
             }
+            SymbolExport::TsEnumDecl { decl, span } => todo!(),
         }
     }
 
@@ -247,12 +248,12 @@ impl<'a, R: FileManager> ExtractExportDefaultVisitor<'a, R> {
                             exported,
                             from_file,
                         } => match exported.as_ref() {
-                            SymbolExport::TsType { .. } | SymbolExport::TsInterfaceDecl { .. } => {
-                                self.push_error(
-                                    &left.span(),
-                                    DiagnosticInfoMessage::FoundTypeExpectedValue,
-                                )
-                            }
+                            SymbolExport::TsType { .. }
+                            | SymbolExport::TsInterfaceDecl { .. }
+                            | SymbolExport::TsEnumDecl { .. } => self.push_error(
+                                &left.span(),
+                                DiagnosticInfoMessage::FoundTypeExpectedValue,
+                            ),
                             SymbolExport::ValueExpr { expr, name: _, .. } => {
                                 let tmp_file = self.current_file.clone();
                                 self.current_file = from_file.file_name().clone();
@@ -281,6 +282,7 @@ impl<'a, R: FileManager> ExtractExportDefaultVisitor<'a, R> {
                                 ),
                             }
                         }
+                        ResolvedLocalSymbol::TsEnumDecl(_) => todo!(),
                     },
                     Err(d) => {
                         self.errors.push(*d);
@@ -358,6 +360,7 @@ impl<'a, R: FileManager> ExtractExportDefaultVisitor<'a, R> {
                         DiagnosticInfoMessage::CouldNotUnderstandThisPartOfTheRouter,
                     ),
                     Ok(ResolvedLocalSymbol::TsType { .. })
+                    | Ok(ResolvedLocalSymbol::TsEnumDecl { .. })
                     | Ok(ResolvedLocalSymbol::TsInterfaceDecl { .. }) => {
                         self.push_error(&expr.span(), DiagnosticInfoMessage::FoundTypeExpectedValue)
                     }

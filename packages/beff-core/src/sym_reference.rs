@@ -1,7 +1,7 @@
 use std::rc::Rc;
 
 use swc_common::Span;
-use swc_ecma_ast::{Expr, Ident, TsInterfaceDecl, TsType, TsTypeParamDecl};
+use swc_ecma_ast::{Expr, Ident, TsEnumDecl, TsInterfaceDecl, TsType, TsTypeParamDecl};
 
 use crate::{
     diag::{Diagnostic, DiagnosticInfoMessage, Location},
@@ -16,6 +16,7 @@ pub struct TypeResolver<'a, R: FileManager> {
 pub enum ResolvedLocalSymbol {
     TsType(Option<Rc<TsTypeParamDecl>>, Rc<TsType>),
     TsInterfaceDecl(Rc<TsInterfaceDecl>),
+    TsEnumDecl(Rc<TsEnumDecl>),
     Expr(Rc<Expr>),
     NamedImport {
         exported: Rc<SymbolExport>,
@@ -79,6 +80,7 @@ impl<'a, R: FileManager> TypeResolver<'a, R> {
             SymbolExport::ValueExpr { .. } => Err(self
                 .make_err(&i.span, DiagnosticInfoMessage::CannotResolveNamespaceType)
                 .into()),
+            SymbolExport::TsEnumDecl { decl, span } => todo!(),
         }
     }
     pub fn resolve_namespace_symbol(&mut self, i: &Ident) -> Res<ResolvedNamespaceSymbol> {
@@ -172,6 +174,9 @@ impl<'a, R: FileManager> TypeResolver<'a, R> {
 
         if let Some(intf) = self.get_current_file().locals.interfaces.get(k) {
             return Ok(ResolvedLocalSymbol::TsInterfaceDecl(intf.clone()));
+        }
+        if let Some(enum_) = self.get_current_file().locals.enums.get(k) {
+            return Ok(ResolvedLocalSymbol::TsEnumDecl(enum_.clone()));
         }
         self.resolve_local_import(i)
     }

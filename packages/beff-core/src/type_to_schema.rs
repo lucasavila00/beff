@@ -9,19 +9,19 @@ use crate::subtyping::to_schema::to_validators;
 use crate::subtyping::ToSemType;
 use crate::sym_reference::{ResolvedLocalSymbol, TypeResolver};
 use crate::{BeffUserSettings, BffFileName, FileManager, ImportReference, SymbolExport};
-use std::collections::{BTreeMap, HashMap};
+use std::collections::{BTreeMap, BTreeSet, HashMap};
 use std::rc::Rc;
 use swc_atoms::JsWord;
 use swc_common::{Span, Spanned};
 use swc_ecma_ast::{
     Expr, Ident, Lit, MemberProp, Prop, PropName, PropOrSpread, Str, TsArrayType,
-    TsConditionalType, TsConstructorType, TsEntityName, TsFnOrConstructorType, TsFnType,
-    TsImportType, TsIndexedAccessType, TsInferType, TsInterfaceDecl, TsIntersectionType,
-    TsKeywordType, TsKeywordTypeKind, TsLit, TsLitType, TsMappedType, TsOptionalType,
-    TsParenthesizedType, TsQualifiedName, TsRestType, TsThisType, TsTplLitType, TsTupleType,
-    TsType, TsTypeElement, TsTypeLit, TsTypeOperator, TsTypeOperatorOp, TsTypeParam,
-    TsTypeParamDecl, TsTypeParamInstantiation, TsTypePredicate, TsTypeQuery, TsTypeQueryExpr,
-    TsTypeRef, TsUnionOrIntersectionType, TsUnionType,
+    TsConditionalType, TsConstructorType, TsEntityName, TsEnumDecl, TsEnumMemberId,
+    TsFnOrConstructorType, TsFnType, TsImportType, TsIndexedAccessType, TsInferType,
+    TsInterfaceDecl, TsIntersectionType, TsKeywordType, TsKeywordTypeKind, TsLit, TsLitType,
+    TsMappedType, TsOptionalType, TsParenthesizedType, TsQualifiedName, TsRestType, TsThisType,
+    TsTplLitType, TsTupleType, TsType, TsTypeElement, TsTypeLit, TsTypeOperator, TsTypeOperatorOp,
+    TsTypeParam, TsTypeParamDecl, TsTypeParamInstantiation, TsTypePredicate, TsTypeQuery,
+    TsTypeQueryExpr, TsTypeRef, TsUnionOrIntersectionType, TsUnionType,
 };
 
 pub struct TypeToSchema<'a, R: FileManager> {
@@ -122,7 +122,37 @@ impl<'a, R: FileManager> TypeToSchema<'a, R> {
             ),
         }
     }
+    fn convert_enum_decl(&mut self, typ: &TsEnumDecl) -> Res<JsonSchema> {
+        let mut values = vec![];
 
+        for member in &typ.members {
+            match &member.init {
+                Some(init) => {
+                    let expr_ty = self.typeof_expr(&init, true)?;
+                    values.push(expr_ty);
+                }
+                None => {
+                    self.cannot_serialize_error(
+                        &typ.span,
+                        DiagnosticInfoMessage::EnumMemberNoInit,
+                    )?;
+                } // None => match &member.id {
+                  //     TsEnumMemberId::Ident(ident) => {
+                  //         let cons = JsonSchemaConst::String(ident.sym.to_string());
+                  //         let cons = JsonSchema::Const(cons);
+                  //         values.push(cons);
+                  //     }
+                  //     TsEnumMemberId::Str(str) => {
+                  //         let cons = JsonSchemaConst::String(str.value.to_string());
+                  //         let cons = JsonSchema::Const(cons);
+                  //         values.push(cons);
+                  //     }
+                  // },
+            }
+        }
+
+        Ok(JsonSchema::any_of(values))
+    }
     fn convert_ts_interface_decl(
         &mut self,
         typ: &TsInterfaceDecl,
@@ -200,6 +230,7 @@ impl<'a, R: FileManager> TypeToSchema<'a, R> {
             SymbolExport::ValueExpr { span, .. } => {
                 return self.error(span, DiagnosticInfoMessage::FoundValueExpectedType)
             }
+            SymbolExport::TsEnumDecl { decl, span } => todo!(),
         };
         self.current_file = store_current_file;
         Ok(ty)
@@ -292,6 +323,7 @@ impl<'a, R: FileManager> TypeToSchema<'a, R> {
             | ResolvedLocalSymbol::SymbolExportDefault(_) => {
                 self.error(&i.span, DiagnosticInfoMessage::FoundValueExpectedType)
             }
+            ResolvedLocalSymbol::TsEnumDecl(decl) => self.convert_enum_decl(&decl),
         }
     }
 
@@ -471,6 +503,7 @@ impl<'a, R: FileManager> TypeToSchema<'a, R> {
                     SymbolExport::ValueExpr { .. } => {
                         return self.error(span, DiagnosticInfoMessage::FoundValueExpectedType)
                     }
+                    SymbolExport::TsEnumDecl { decl, span } => todo!(),
                 };
                 Ok((exported, from_file.clone(), name))
             }
@@ -522,6 +555,7 @@ impl<'a, R: FileManager> TypeToSchema<'a, R> {
             SymbolExport::ValueExpr { span, .. } => {
                 self.error(span, DiagnosticInfoMessage::FoundValueExpectedType)
             }
+            SymbolExport::TsEnumDecl { decl, span } => todo!(),
         }
     }
     fn __convert_ts_type_qual_inner(
@@ -726,6 +760,7 @@ impl<'a, R: FileManager> TypeToSchema<'a, R> {
             SymbolExport::ValueExpr { expr, .. } => self.typeof_expr(expr, false)?,
             SymbolExport::StarOfOtherFile { .. } => todo!(),
             SymbolExport::SomethingOfOtherFile { .. } => todo!(),
+            SymbolExport::TsEnumDecl { decl, span } => todo!(),
         };
         self.current_file = old_file;
         Ok(ty)
@@ -777,6 +812,7 @@ impl<'a, R: FileManager> TypeToSchema<'a, R> {
                             }
                         }
                     }
+                    SymbolExport::TsEnumDecl { decl, span } => todo!(),
                 }
             }
             for f in &pm.symbol_exports.extends {
@@ -803,6 +839,7 @@ impl<'a, R: FileManager> TypeToSchema<'a, R> {
                 self.collect_value_exports(&file_name, &mut acc)?;
                 Ok(JsonSchema::object(acc))
             }
+            ResolvedLocalSymbol::TsEnumDecl(_) => todo!(),
         }
     }
     fn get_kv_from_schema(&mut self, schema: JsonSchema, key: &str, span: Span) -> Res<JsonSchema> {

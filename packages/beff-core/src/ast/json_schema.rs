@@ -116,6 +116,7 @@ pub enum JsonSchema {
         items: Option<Box<JsonSchema>>,
     },
     Ref(String),
+    // Enum(Vec<JsonSchemaConst>),
 
     // todo: remove this, handle it outside of json schema
     OpenApiResponseRef(String),

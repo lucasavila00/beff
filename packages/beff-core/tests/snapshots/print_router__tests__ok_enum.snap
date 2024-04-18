@@ -1,0 +1,7 @@
+---
+source: packages/beff-core/tests/print_router.rs
+expression: ok(from)
+---
+type A = "AAA" | "BBB";
+type Router = { "/hello": { "get": () => A } };
+
