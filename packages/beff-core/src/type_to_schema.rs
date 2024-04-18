@@ -7,7 +7,7 @@ use crate::subtyping::semtype::{SemType, SemTypeContext, SemTypeOps};
 use crate::subtyping::subtype::StringLitOrFormat;
 use crate::subtyping::to_schema::to_validators;
 use crate::subtyping::ToSemType;
-use crate::sym_reference::{ResolvedLocalSymbol, TypeResolver};
+use crate::sym_reference::{ResolvedLocalSymbol, TsBuiltIn, TypeResolver};
 use crate::{BeffUserSettings, BffFileName, FileManager, ImportReference, SymbolExport};
 use std::collections::{BTreeMap, HashMap};
 use std::rc::Rc;
@@ -120,6 +120,37 @@ impl<'a, R: FileManager> TypeToSchema<'a, R> {
                 &prop.span(),
                 DiagnosticInfoMessage::PropertyNonSerializableToJsonSchema,
             ),
+        }
+    }
+    fn convert_ts_built_in(
+        &mut self,
+        typ: &TsBuiltIn,
+        type_args: &Option<Box<TsTypeParamInstantiation>>,
+    ) -> Res<JsonSchema> {
+        match typ {
+            TsBuiltIn::TsRecord(span) => match type_args {
+                Some(vs) => {
+                    let items = vs
+                        .params
+                        .iter()
+                        .map(|it| self.convert_ts_type(it))
+                        .collect::<Res<Vec<_>>>()?;
+
+                    if items.len() != 2 {
+                        return self.error(
+                            span,
+                            DiagnosticInfoMessage::RecordShouldHaveTwoTypeArguments,
+                        );
+                    }
+
+                    let key = Box::new(items[0].clone());
+                    let value = Box::new(items[1].clone());
+
+                    Ok(JsonSchema::Record { key, value })
+                }
+                None => self
+                    .cannot_serialize_error(span, DiagnosticInfoMessage::MissingArgumentsOnRecord),
+            },
         }
     }
     fn convert_enum_decl(&mut self, typ: &TsEnumDecl) -> Res<JsonSchema> {
@@ -326,6 +357,7 @@ impl<'a, R: FileManager> TypeToSchema<'a, R> {
                 self.error(&i.span, DiagnosticInfoMessage::FoundValueExpectedType)
             }
             ResolvedLocalSymbol::TsEnumDecl(decl) => self.convert_enum_decl(&decl),
+            ResolvedLocalSymbol::TsBuiltin(bt) => self.convert_ts_built_in(&bt, type_args),
         }
     }
 
@@ -846,6 +878,7 @@ impl<'a, R: FileManager> TypeToSchema<'a, R> {
                 Ok(JsonSchema::object(acc))
             }
             ResolvedLocalSymbol::TsEnumDecl(_) => todo!(),
+            ResolvedLocalSymbol::TsBuiltin(_) => todo!(),
         }
     }
     fn get_kv_from_schema(&mut self, schema: JsonSchema, key: &str, span: Span) -> Res<JsonSchema> {

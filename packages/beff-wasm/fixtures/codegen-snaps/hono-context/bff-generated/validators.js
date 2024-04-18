@@ -53,6 +53,22 @@ function decodeObject(ctx, input, required, data) {
   }
   return buildError(input, ctx, "expected object");
 }
+function decodeRecord(ctx, input, required, data) {
+  if (!required && input == null) {
+    return input;
+  }
+  if (typeof input === "object" && !Array.isArray(input) && input !== null) {
+    const acc = {};
+    for (const [k, v] of Object.entries(input)) {
+      pushPath(ctx, k);
+      acc[data[0](ctx, k)] = data[1](ctx, v);
+      popPath(ctx);
+    }
+    return acc;
+  }
+  return buildError(input, ctx, "expected object");
+
+}
 function decodeArray(ctx, input, required, data) {
   if (!required && input == null) {
     return input;
@@ -296,6 +312,5 @@ function encodeAnyOf(decodeCbs, encodeCbs, value) {
 
 
 const validators = {};
-const encoders = {};
 
-export default { decodeObject, decodeArray, decodeString, decodeNumber, decodeCodec, decodeStringWithFormat, decodeAnyOf, decodeAllOf, decodeBoolean, decodeAny, decodeTuple, decodeNull, decodeConst, encodeCodec, encodeAnyOf, encodeAllOf, encodeNumber, validators, encoders };
+export default { decodeObject, decodeArray, decodeString, decodeNumber, decodeCodec, decodeStringWithFormat, decodeAnyOf, decodeAllOf, decodeBoolean, decodeAny, decodeTuple, decodeNull, decodeConst, encodeCodec, encodeAnyOf, encodeAllOf, encodeNumber, validators };

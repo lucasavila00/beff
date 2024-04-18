@@ -5,10 +5,14 @@ enum AccessLevel {
   USER = "USER",
 }
 
+type AvatarSize = `${number}x${number}`;
+type Extra = Record<string, string>;
 export type User = {
   accessLevel: AccessLevel;
   name: string;
   friends: User[];
+  avatarSize: AvatarSize;
+  extra: Extra;
 };
 
 export const { User } = parse.buildParsers<{ User: User }>();

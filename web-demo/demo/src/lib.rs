@@ -77,7 +77,6 @@ pub fn parse_content(content: &str) -> Result<Rc<ParsedModule>> {
 
 fn bundle_to_string_inner(router_content: &str) -> Result<WritableResultOrDiagnostics> {
     let entry: EntryPoints = EntryPoints {
-        router_entry_point: Some(BffFileName::new("router.bff".to_string())),
         parser_entry_point: None,
         settings: BeffUserSettings {
             custom_formats: BTreeSet::new(),

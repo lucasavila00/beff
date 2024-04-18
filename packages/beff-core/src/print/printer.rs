@@ -6,20 +6,15 @@ use swc_ecma_ast::{
     PropName, PropOrSpread, Stmt, VarDecl, VarDeclKind, VarDeclarator,
 };
 
-use crate::api_extractor::{
-    operation_parameter_in_path_or_query_or_body, FunctionParameterIn, HandlerParameter,
-    PathHandlerMap,
-};
 use crate::ast::js::Js;
 use crate::ast::json::{Json, ToJson, ToJsonKv};
 use crate::ast::json_schema::JsonSchema;
 use crate::emit::emit_module;
-use crate::open_api_ast::{OpenApi, ParsedPattern, Validator};
+use crate::open_api_ast::{OpenApi, Validator};
 use crate::parser_extractor::BuiltDecoder;
 use crate::print::decoder;
 use crate::ExtractResult;
 
-use super::encoder;
 use super::expr::ToExpr;
 
 fn error_response_schema() -> JsonSchema {
@@ -86,108 +81,6 @@ pub fn open_api_to_json(it: OpenApi, components: &[Validator]) -> Json {
     Json::object(v)
 }
 
-fn param_to_server_js(
-    name: &str,
-    param: HandlerParameter,
-    pattern: &ParsedPattern,
-    components: &Vec<Validator>,
-) -> Js {
-    match param {
-        HandlerParameter::PathOrQueryOrBody {
-            schema, required, ..
-        } => {
-            match operation_parameter_in_path_or_query_or_body(name, pattern, &schema, components) {
-                FunctionParameterIn::Path => Js::object(vec![
-                    ("type".into(), Js::String("path".into())),
-                    ("name".into(), Js::String(name.to_string())),
-                    ("required".into(), Js::Bool(required)),
-                    ("validator".into(), Js::decoder(schema.clone(), required)),
-                    ("encoder".into(), Js::encoder(schema.clone(), required)),
-                ]),
-                FunctionParameterIn::Query => Js::object(vec![
-                    ("type".into(), Js::String("query".into())),
-                    ("name".into(), Js::String(name.to_string())),
-                    ("required".into(), Js::Bool(required)),
-                    ("validator".into(), Js::decoder(schema.clone(), required)),
-                    ("encoder".into(), Js::encoder(schema.clone(), required)),
-                ]),
-                FunctionParameterIn::Body => Js::object(vec![
-                    ("type".into(), Js::String("body".into())),
-                    ("name".into(), Js::String(name.to_string())),
-                    ("required".into(), Js::Bool(required)),
-                    ("validator".into(), Js::decoder(schema.clone(), required)),
-                    ("encoder".into(), Js::encoder(schema.clone(), required)),
-                ]),
-                FunctionParameterIn::InvalidComplexPathParameter => {
-                    unreachable!("will fail when extracting the json schema")
-                }
-            }
-        }
-        HandlerParameter::Header {
-            schema, required, ..
-        } => {
-            Js::object(vec![
-                //
-                ("type".into(), Js::String("header".to_string())),
-                ("name".into(), Js::String(name.to_string())),
-                ("required".into(), Js::Bool(required)),
-                ("validator".into(), Js::decoder(schema.clone(), required)),
-                ("encoder".into(), Js::encoder(schema.clone(), required)),
-            ])
-        }
-        HandlerParameter::Context(_) => {
-            Js::object(vec![("type".into(), Js::String("context".into()))])
-        }
-    }
-}
-
-fn handlers_to_server_js(items: Vec<PathHandlerMap>, components: &Vec<Validator>) -> Js {
-    Js::Array(
-        items
-            .into_iter()
-            .flat_map(|it| {
-                it.handlers
-                    .into_iter()
-                    .map(|handler| {
-                        Js::object(vec![
-                            (
-                                "method_kind".into(),
-                                Js::String(handler.method_kind.to_string()),
-                            ),
-                            (
-                                "params".into(),
-                                Js::Array(
-                                    handler
-                                        .parameters
-                                        .into_iter()
-                                        .map(|(name, param)| {
-                                            param_to_server_js(
-                                                &name,
-                                                param,
-                                                &it.pattern,
-                                                components,
-                                            )
-                                        })
-                                        .collect(),
-                                ),
-                            ),
-                            ("pattern".into(), Js::String(it.pattern.raw.clone())),
-                            (
-                                "return_validator".into(),
-                                Js::decoder(handler.return_type.clone(), true),
-                            ),
-                            (
-                                "return_encoder".into(),
-                                Js::encoder(handler.return_type, true),
-                            ),
-                        ])
-                    })
-                    .collect::<Vec<_>>()
-            })
-            .collect(),
-    )
-}
-
 fn const_decl(name: &str, init: Expr) -> ModuleItem {
     ModuleItem::Stmt(Stmt::Decl(Decl::Var(
         VarDecl {
@@ -215,7 +108,6 @@ fn const_decl(name: &str, init: Expr) -> ModuleItem {
 #[derive(Serialize, Deserialize)]
 pub struct WritableModules {
     pub js_validators: String,
-    pub js_server_meta: Option<String>,
     pub js_built_parsers: Option<String>,
     pub json_schema: Option<String>,
 }
@@ -236,14 +128,9 @@ fn build_decoders_expr(decs: &[BuiltDecoder]) -> Js {
     )
 }
 
-fn merge_validator(
-    router: Option<&Vec<Validator>>,
-    parser: Option<&Vec<Validator>>,
-) -> Result<Vec<Validator>> {
-    let mut acc = vec![];
-    if let Some(router) = router {
-        acc.extend(router.iter().cloned());
-    }
+fn merge_validator(parser: Option<&Vec<Validator>>) -> Result<Vec<Validator>> {
+    let mut acc: Vec<Validator> = vec![];
+
     if let Some(parser) = parser {
         for d in parser {
             let found = acc.iter_mut().find(|x| x.name == d.name);
@@ -266,10 +153,7 @@ impl ToWritableModules for ExtractResult {
 
         let mut validator_names = vec![];
 
-        let validators = merge_validator(
-            self.router.as_ref().map(|it| &it.validators),
-            self.parser.as_ref().map(|it| &it.validators),
-        )?;
+        let validators = merge_validator(self.parser.as_ref().map(|it| &it.validators))?;
 
         for comp in &validators {
             validator_names.push(comp.name.clone());
@@ -284,18 +168,6 @@ impl ToWritableModules for ExtractResult {
                 function: decoder_fn.into(),
             })));
             stmt_validators.push(decoder_fn_decl);
-
-            let encoder_fn = encoder::from_schema(&comp.schema, true);
-            let encoder_fn_decl = ModuleItem::Stmt(Stmt::Decl(Decl::Fn(FnDecl {
-                ident: Ident {
-                    span: DUMMY_SP,
-                    sym: ("Encode".to_string() + comp.name.as_str()).into(),
-                    optional: false,
-                },
-                declare: false,
-                function: encoder_fn.into(),
-            })));
-            stmt_validators.push(encoder_fn_decl);
         }
 
         stmt_validators.push(const_decl(
@@ -323,43 +195,11 @@ impl ToWritableModules for ExtractResult {
                     .collect(),
             }),
         ));
-        stmt_validators.push(const_decl(
-            "encoders",
-            Expr::Object(ObjectLit {
-                span: DUMMY_SP,
-                props: validator_names
-                    .into_iter()
-                    .map(|it| {
-                        PropOrSpread::Prop(Box::new(Prop::KeyValue(KeyValueProp {
-                            key: PropName::Ident(Ident {
-                                span: DUMMY_SP,
-                                sym: it.clone().into(),
-                                optional: false,
-                            }),
-                            value: Expr::Ident(Ident {
-                                span: DUMMY_SP,
-                                sym: ("Encode".to_string() + it.as_str()).into(),
-                                optional: false,
-                            })
-                            .into(),
-                        })))
-                    })
-                    .collect(),
-            }),
-        ));
 
         let js_validators = emit_module(stmt_validators, "\n")?;
-        let mut json_schema = None;
+        let json_schema = None;
         let mut js_built_parsers = None;
-        let mut js_server_meta = None;
 
-        if let Some(router) = self.router {
-            let meta_expr = handlers_to_server_js(router.routes.clone(), &validators).to_expr();
-            let js_server_data = vec![const_decl("meta", meta_expr)];
-
-            js_server_meta = Some(emit_module(js_server_data, "\n")?);
-            json_schema = Some(open_api_to_json(router.open_api, &validators).to_string());
-        }
         if let Some(parser) = self.parser {
             let build_decoders_expr =
                 build_decoders_expr(&parser.built_decoders.unwrap_or_default());
@@ -369,7 +209,6 @@ impl ToWritableModules for ExtractResult {
 
         Ok(WritableModules {
             js_validators,
-            js_server_meta,
             js_built_parsers,
             json_schema,
         })

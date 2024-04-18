@@ -1,4 +1,0 @@
-{
-  "router": "./server/router.ts",
-  "outputDir": "./server/generated"
-}

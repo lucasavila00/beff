@@ -1,4 +1,3 @@
-pub mod api_extractor;
 pub mod ast;
 pub mod diag;
 pub mod emit;
@@ -13,8 +12,6 @@ pub mod sym_reference;
 pub mod type_to_schema;
 pub mod wasm_diag;
 
-use api_extractor::extract_schema;
-use api_extractor::RouterExtractResult;
 use core::fmt;
 use diag::Diagnostic;
 use open_api_ast::Validator;
@@ -302,7 +299,6 @@ pub struct BeffUserSettings {
 }
 
 pub struct EntryPoints {
-    pub router_entry_point: Option<BffFileName>,
     pub parser_entry_point: Option<BffFileName>,
     pub settings: BeffUserSettings,
 }
@@ -312,53 +308,32 @@ pub trait FileManager {
 }
 
 pub struct ExtractResult {
-    pub router: Option<RouterExtractResult>,
     pub parser: Option<ParserExtractResult>,
 }
 
 impl ExtractResult {
     pub fn is_empty(&self) -> bool {
-        self.router.is_none() && self.parser.is_none()
+        self.parser.is_none()
     }
     pub fn errors(&self) -> Vec<&Diagnostic> {
-        self.router
+        self.parser
             .as_ref()
             .map(|it| it.errors.iter().collect::<Vec<_>>())
             .unwrap_or_default()
-            .into_iter()
-            .chain(
-                self.parser
-                    .as_ref()
-                    .map(|it| it.errors.iter().collect::<Vec<_>>())
-                    .unwrap_or_default(),
-            )
-            .collect()
     }
     pub fn validators(&self) -> Vec<&Validator> {
-        self.router
+        self.parser
             .as_ref()
             .map(|it| it.validators.iter().collect::<Vec<_>>())
             .unwrap_or_default()
-            .into_iter()
-            .chain(
-                self.parser
-                    .as_ref()
-                    .map(|it| it.validators.iter().collect::<Vec<_>>())
-                    .unwrap_or_default(),
-            )
-            .collect()
     }
 }
 pub fn extract<R: FileManager>(files: &mut R, entry_points: EntryPoints) -> ExtractResult {
-    let mut router = None;
     let mut parser = None;
 
-    if let Some(entry) = entry_points.router_entry_point {
-        router = Some(extract_schema(files, entry, &entry_points.settings));
-    }
     if let Some(entry) = entry_points.parser_entry_point {
         parser = Some(extract_parser(files, entry, &entry_points.settings));
     }
 
-    ExtractResult { router, parser }
+    ExtractResult { parser }
 }

@@ -2,7 +2,7 @@
 /* eslint-disable */
 
 
-import validatorsMod from "./validators.js"; const { decodeObject, decodeArray, decodeString, decodeNumber, decodeCodec, decodeStringWithFormat, decodeAnyOf, decodeAllOf, decodeBoolean, decodeAny, decodeTuple, decodeNull, decodeConst, encodeCodec, encodeAnyOf, encodeAllOf, encodeNumber, validators, encoders, c } = validatorsMod;
+import validatorsMod from "./validators.js"; const { decodeObject, decodeArray, decodeString, decodeNumber, decodeCodec, decodeStringWithFormat, decodeAnyOf, decodeAllOf, decodeBoolean, decodeAny, decodeTuple, decodeNull, decodeConst, encodeCodec, encodeAnyOf, encodeAllOf, encodeNumber, validators, c } = validatorsMod;
 const meta = [
     {
         "method_kind": "get",
@@ -11,9 +11,6 @@ const meta = [
                 "type": "context"
             },
             {
-                "encoder": function(input) {
-                    return input;
-                },
                 "name": "name",
                 "required": true,
                 "type": "path",
@@ -23,9 +20,6 @@ const meta = [
             }
         ],
         "pattern": "/{name}",
-        "return_encoder": function(input) {
-            return encoders.User(input);
-        },
         "return_validator": function(ctx, input) {
             return validators.User(ctx, input, true);
         }
@@ -37,9 +31,6 @@ const meta = [
                 "type": "context"
             },
             {
-                "encoder": function(input) {
-                    return input;
-                },
                 "name": "uuid",
                 "required": true,
                 "type": "path",
@@ -48,9 +39,6 @@ const meta = [
                 }
             },
             {
-                "encoder": function(input) {
-                    return encoders.Password(input);
-                },
                 "name": "p",
                 "required": true,
                 "type": "query",
@@ -60,9 +48,6 @@ const meta = [
             }
         ],
         "pattern": "/check-uuid/{uuid}",
-        "return_encoder": function(input) {
-            return encoders.StartsWithA(input);
-        },
         "return_validator": function(ctx, input) {
             return validators.StartsWithA(ctx, input, true);
         }
@@ -75,9 +60,6 @@ const meta = [
             }
         ],
         "pattern": "/UnionNested",
-        "return_encoder": function(input) {
-            return encoders.UnionNestedNamed(input);
-        },
         "return_validator": function(ctx, input) {
             return validators.UnionNestedNamed(ctx, input, true);
         }
@@ -90,35 +72,6 @@ const meta = [
             }
         ],
         "pattern": "/UnionNestedInline",
-        "return_encoder": function(input) {
-            return encodeAnyOf([
-                function(ctx, input) {
-                    return decodeConst(ctx, input, true, 1);
-                },
-                function(ctx, input) {
-                    return decodeConst(ctx, input, true, 2);
-                },
-                function(ctx, input) {
-                    return decodeConst(ctx, input, true, 3);
-                },
-                function(ctx, input) {
-                    return decodeConst(ctx, input, true, 4);
-                },
-                function(ctx, input) {
-                    return decodeConst(ctx, input, true, 5);
-                },
-                function(ctx, input) {
-                    return decodeConst(ctx, input, true, 6);
-                }
-            ], [
-                (input)=>(input),
-                (input)=>(input),
-                (input)=>(input),
-                (input)=>(input),
-                (input)=>(input),
-                (input)=>(input)
-            ], input);
-        },
         "return_validator": function(ctx, input) {
             return decodeAnyOf(ctx, input, true, [
                 (ctx, input)=>(decodeConst(ctx, input, true, 1)),

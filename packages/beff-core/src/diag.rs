@@ -61,6 +61,8 @@ pub enum DiagnosticInfoMessage {
     JsDocsDescriptionCouldNotBeParsed,
     KeywordNonSerializableToJsonSchema,
     PropertyNonSerializableToJsonSchema,
+    MissingArgumentsOnRecord,
+    RecordShouldHaveTwoTypeArguments,
     DuplicatedRestNonSerializableToJsonSchema,
     TypeConstructNonSerializableToJsonSchema,
     ContextInvalidAtThisPosition,
@@ -386,6 +388,12 @@ impl DiagnosticInfoMessage {
             }
             DiagnosticInfoMessage::ShouldNotResolveTsEnumAsNamespace => {
                 "Should not resolve TS enum as namespace".to_string()
+            }
+            DiagnosticInfoMessage::MissingArgumentsOnRecord => {
+                "Missing arguments on record".to_string()
+            }
+            DiagnosticInfoMessage::RecordShouldHaveTwoTypeArguments => {
+                "Record should have two type arguments".to_string()
             }
         }
     }

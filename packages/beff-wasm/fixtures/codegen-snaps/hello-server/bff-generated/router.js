@@ -2,7 +2,7 @@
 /* eslint-disable */
 
 
-import validatorsMod from "./validators.js"; const { decodeObject, decodeArray, decodeString, decodeNumber, decodeCodec, decodeStringWithFormat, decodeAnyOf, decodeAllOf, decodeBoolean, decodeAny, decodeTuple, decodeNull, decodeConst, encodeCodec, encodeAnyOf, encodeAllOf, encodeNumber, validators, encoders, c } = validatorsMod;
+import validatorsMod from "./validators.js"; const { decodeObject, decodeArray, decodeString, decodeNumber, decodeCodec, decodeStringWithFormat, decodeAnyOf, decodeAllOf, decodeBoolean, decodeAny, decodeTuple, decodeNull, decodeConst, encodeCodec, encodeAnyOf, encodeAllOf, encodeNumber, validators, c } = validatorsMod;
 const meta = [
     {
         "method_kind": "get",
@@ -11,10 +11,6 @@ const meta = [
                 "type": "context"
             },
             {
-                "encoder": function(input) {
-                    if (input == null) return null;
-                    return encodeNumber(input);
-                },
                 "name": "limit",
                 "required": false,
                 "type": "query",
@@ -24,9 +20,6 @@ const meta = [
             }
         ],
         "pattern": "/optional-query-param",
-        "return_encoder": function(input) {
-            return encodeNumber(input);
-        },
         "return_validator": function(ctx, input) {
             return decodeNumber(ctx, input, true);
         }
@@ -35,9 +28,6 @@ const meta = [
         "method_kind": "get",
         "params": [],
         "pattern": "/data-types-kitchen-sink",
-        "return_encoder": function(input) {
-            return encoders.DataTypesKitchenSink(input);
-        },
         "return_validator": function(ctx, input) {
             return validators.DataTypesKitchenSink(ctx, input, true);
         }
@@ -46,9 +36,6 @@ const meta = [
         "method_kind": "get",
         "params": [],
         "pattern": "/anon-func",
-        "return_encoder": function(input) {
-            return input;
-        },
         "return_validator": function(ctx, input) {
             return decodeString(ctx, input, true);
         }
@@ -60,9 +47,6 @@ const meta = [
                 "type": "context"
             },
             {
-                "encoder": function(input) {
-                    return input;
-                },
                 "name": "user_agent",
                 "required": true,
                 "type": "header",
@@ -72,9 +56,6 @@ const meta = [
             }
         ],
         "pattern": "/users",
-        "return_encoder": function(input) {
-            return input.map((input)=>(input));
-        },
         "return_validator": function(ctx, input) {
             return decodeArray(ctx, input, true, (ctx, input)=>(decodeString(ctx, input, true)));
         }
@@ -86,9 +67,6 @@ const meta = [
                 "type": "context"
             },
             {
-                "encoder": function(input) {
-                    return encodeNumber(input);
-                },
                 "name": "id",
                 "required": true,
                 "type": "path",
@@ -98,9 +76,6 @@ const meta = [
             }
         ],
         "pattern": "/users/{id}",
-        "return_encoder": function(input) {
-            return encoders.User(input);
-        },
         "return_validator": function(ctx, input) {
             return validators.User(ctx, input, true);
         }
@@ -112,9 +87,6 @@ const meta = [
                 "type": "context"
             },
             {
-                "encoder": function(input) {
-                    return input;
-                },
                 "name": "id",
                 "required": true,
                 "type": "path",
@@ -124,9 +96,6 @@ const meta = [
             }
         ],
         "pattern": "/users2/{id}",
-        "return_encoder": function(input) {
-            return input;
-        },
         "return_validator": function(ctx, input) {
             return decodeString(ctx, input, true);
         }
@@ -138,9 +107,6 @@ const meta = [
                 "type": "context"
             },
             {
-                "encoder": function(input) {
-                    return input;
-                },
                 "name": "id",
                 "required": true,
                 "type": "path",
@@ -150,9 +116,6 @@ const meta = [
             }
         ],
         "pattern": "/users2/{id}",
-        "return_encoder": function(input) {
-            return input;
-        },
         "return_validator": function(ctx, input) {
             return decodeString(ctx, input, true);
         }
@@ -161,9 +124,6 @@ const meta = [
         "method_kind": "get",
         "params": [],
         "pattern": "/users3",
-        "return_encoder": function(input) {
-            return input;
-        },
         "return_validator": function(ctx, input) {
             return decodeString(ctx, input, true);
         }
@@ -172,9 +132,6 @@ const meta = [
         "method_kind": "get",
         "params": [],
         "pattern": "/users4",
-        "return_encoder": function(input) {
-            return input;
-        },
         "return_validator": function(ctx, input) {
             return decodeString(ctx, input, true);
         }
@@ -183,9 +140,6 @@ const meta = [
         "method_kind": "post",
         "params": [],
         "pattern": "/users4",
-        "return_encoder": function(input) {
-            return input;
-        },
         "return_validator": function(ctx, input) {
             return decodeString(ctx, input, true);
         }

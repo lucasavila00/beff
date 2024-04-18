@@ -229,27 +229,17 @@ export class Bundler {
   }
 
   public bundle(
-    router_entrypoint: string | undefined,
     parser_entrypoint: string | undefined,
     settings: BeffUserSettings
   ): WritableModules | undefined {
-    return wasm.bundle_to_string(
-      router_entrypoint ?? "",
-      parser_entrypoint ?? "",
-      serializeSettings(settings)
-    );
+    return wasm.bundle_to_string(parser_entrypoint ?? "", serializeSettings(settings));
   }
 
   public diagnostics(
-    router_entrypoint: string | undefined,
     parser_entrypoint: string | undefined,
     settings: BeffUserSettings
   ): WasmDiagnostic | null {
-    return wasm.bundle_to_diagnostics(
-      router_entrypoint ?? "",
-      parser_entrypoint ?? "",
-      serializeSettings(settings)
-    );
+    return wasm.bundle_to_diagnostics(parser_entrypoint ?? "", serializeSettings(settings));
   }
 
   public updateFileContent(file_name: string, content: string) {

@@ -116,6 +116,10 @@ pub enum JsonSchema {
         items: Option<Box<JsonSchema>>,
     },
     Ref(String),
+    Record {
+        key: Box<JsonSchema>,
+        value: Box<JsonSchema>,
+    },
     // Enum(Vec<JsonSchemaConst>),
 
     // todo: remove this, handle it outside of json schema
@@ -405,6 +409,7 @@ impl ToJson for JsonSchema {
             JsonSchema::Boolean => {
                 Json::object(vec![("type".into(), Json::String("boolean".into()))])
             }
+            JsonSchema::Record { .. } => todo!(),
             JsonSchema::Number => {
                 Json::object(vec![("type".into(), Json::String("number".into()))])
             }
@@ -536,6 +541,7 @@ impl JsonSchema {
                 span: DUMMY_SP,
                 kind: TsKeywordTypeKind::TsAnyKeyword,
             }),
+            JsonSchema::Record { .. } => todo!(),
             JsonSchema::Object(vs) => TsType::TsTypeLit(TsTypeLit {
                 span: DUMMY_SP,
                 members: vs

@@ -53,6 +53,22 @@ function decodeObject(ctx, input, required, data) {
   }
   return buildError(input, ctx, "expected object");
 }
+function decodeRecord(ctx, input, required, data) {
+  if (!required && input == null) {
+    return input;
+  }
+  if (typeof input === "object" && !Array.isArray(input) && input !== null) {
+    const acc = {};
+    for (const [k, v] of Object.entries(input)) {
+      pushPath(ctx, k);
+      acc[data[0](ctx, k)] = data[1](ctx, v);
+      popPath(ctx);
+    }
+    return acc;
+  }
+  return buildError(input, ctx, "expected object");
+
+}
 function decodeArray(ctx, input, required, data) {
   if (!required && input == null) {
     return input;
@@ -295,222 +311,6 @@ function encodeAnyOf(decodeCbs, encodeCbs, value) {
 }
 
 
-function DecodeDataTypesKitchenSink(ctx, input) {
-    return decodeObject(ctx, input, true, {
-        "array1": (ctx, input)=>(decodeArray(ctx, input, true, (ctx, input)=>(decodeString(ctx, input, true)))),
-        "array2": (ctx, input)=>(decodeArray(ctx, input, true, (ctx, input)=>(decodeString(ctx, input, true)))),
-        "basic": (ctx, input)=>(decodeObject(ctx, input, true, {
-                "a": (ctx, input)=>(decodeString(ctx, input, true)),
-                "b": (ctx, input)=>(decodeNumber(ctx, input, true)),
-                "c": (ctx, input)=>(decodeBoolean(ctx, input, true))
-            })),
-        "enum": (ctx, input)=>(decodeAnyOf(ctx, input, true, [
-                (ctx, input)=>(decodeConst(ctx, input, true, "a")),
-                (ctx, input)=>(decodeConst(ctx, input, true, "b")),
-                (ctx, input)=>(decodeConst(ctx, input, true, "c"))
-            ])),
-        "literals": (ctx, input)=>(decodeObject(ctx, input, true, {
-                "a": (ctx, input)=>(decodeConst(ctx, input, true, "a")),
-                "b": (ctx, input)=>(decodeConst(ctx, input, true, 1)),
-                "c": (ctx, input)=>(decodeConst(ctx, input, true, true))
-            })),
-        "many_nullable": (ctx, input)=>(decodeAnyOf(ctx, input, true, [
-                (ctx, input)=>(decodeNull(ctx, input, true)),
-                (ctx, input)=>(decodeString(ctx, input, true)),
-                (ctx, input)=>(decodeNumber(ctx, input, true))
-            ])),
-        "nullable": (ctx, input)=>(decodeAnyOf(ctx, input, true, [
-                (ctx, input)=>(decodeNull(ctx, input, true)),
-                (ctx, input)=>(decodeString(ctx, input, true))
-            ])),
-        "optional_prop": (ctx, input)=>(decodeString(ctx, input, false)),
-        "str_template": (ctx, input)=>(decodeConst(ctx, input, true, "ab")),
-        "tuple1": (ctx, input)=>(decodeTuple(ctx, input, true, {
-                prefix: [
-                    (ctx, input)=>(decodeString(ctx, input, true))
-                ],
-                items: null
-            })),
-        "tuple2": (ctx, input)=>(decodeTuple(ctx, input, true, {
-                prefix: [
-                    (ctx, input)=>(decodeString(ctx, input, true)),
-                    (ctx, input)=>(decodeString(ctx, input, true))
-                ],
-                items: null
-            })),
-        "tuple_lit": (ctx, input)=>(decodeTuple(ctx, input, true, {
-                prefix: [
-                    (ctx, input)=>(decodeConst(ctx, input, true, "a")),
-                    (ctx, input)=>(decodeConst(ctx, input, true, 1)),
-                    (ctx, input)=>(decodeConst(ctx, input, true, true))
-                ],
-                items: null
-            })),
-        "tuple_rest": (ctx, input)=>(decodeTuple(ctx, input, true, {
-                prefix: [
-                    (ctx, input)=>(decodeString(ctx, input, true)),
-                    (ctx, input)=>(decodeString(ctx, input, true))
-                ],
-                items: (ctx, input)=>(decodeNumber(ctx, input, true))
-            })),
-        "union_of_many": (ctx, input)=>(decodeAnyOf(ctx, input, true, [
-                (ctx, input)=>(decodeBoolean(ctx, input, true)),
-                (ctx, input)=>(decodeString(ctx, input, true)),
-                (ctx, input)=>(decodeNumber(ctx, input, true))
-            ])),
-        "union_with_undefined": (ctx, input)=>(decodeAnyOf(ctx, input, true, [
-                (ctx, input)=>(decodeNull(ctx, input, true)),
-                (ctx, input)=>(decodeString(ctx, input, true))
-            ]))
-    });
-}
-function EncodeDataTypesKitchenSink(input) {
-    return {
-        array1: input.array1.map((input)=>(input)),
-        array2: input.array2.map((input)=>(input)),
-        basic: {
-            a: input.basic.a,
-            b: encodeNumber(input.basic.b),
-            c: input.basic.c
-        },
-        enum: encodeAnyOf([
-            function(ctx, input) {
-                return decodeConst(ctx, input, true, "a");
-            },
-            function(ctx, input) {
-                return decodeConst(ctx, input, true, "b");
-            },
-            function(ctx, input) {
-                return decodeConst(ctx, input, true, "c");
-            }
-        ], [
-            (input)=>(input),
-            (input)=>(input),
-            (input)=>(input)
-        ], input.enum),
-        literals: {
-            a: input.literals.a,
-            b: input.literals.b,
-            c: input.literals.c
-        },
-        many_nullable: encodeAnyOf([
-            function(ctx, input) {
-                return decodeNull(ctx, input, true);
-            },
-            function(ctx, input) {
-                return decodeString(ctx, input, true);
-            },
-            function(ctx, input) {
-                return decodeNumber(ctx, input, true);
-            }
-        ], [
-            (input)=>((input ?? null)),
-            (input)=>(input),
-            (input)=>(encodeNumber(input))
-        ], input.many_nullable),
-        nullable: encodeAnyOf([
-            function(ctx, input) {
-                return decodeNull(ctx, input, true);
-            },
-            function(ctx, input) {
-                return decodeString(ctx, input, true);
-            }
-        ], [
-            (input)=>((input ?? null)),
-            (input)=>(input)
-        ], input.nullable),
-        optional_prop: input?.optional_prop,
-        str_template: input.str_template,
-        tuple1: [
-            input.tuple1[0]
-        ],
-        tuple2: [
-            input.tuple2[0],
-            input.tuple2[1]
-        ],
-        tuple_lit: [
-            input.tuple_lit[0],
-            input.tuple_lit[1],
-            input.tuple_lit[2]
-        ],
-        tuple_rest: [
-            input.tuple_rest[0],
-            input.tuple_rest[1],
-            ...(input.tuple_rest.slice(2).map((input)=>(encodeNumber(input))))
-        ],
-        union_of_many: encodeAnyOf([
-            function(ctx, input) {
-                return decodeBoolean(ctx, input, true);
-            },
-            function(ctx, input) {
-                return decodeString(ctx, input, true);
-            },
-            function(ctx, input) {
-                return decodeNumber(ctx, input, true);
-            }
-        ], [
-            (input)=>(input),
-            (input)=>(input),
-            (input)=>(encodeNumber(input))
-        ], input.union_of_many),
-        union_with_undefined: encodeAnyOf([
-            function(ctx, input) {
-                return decodeNull(ctx, input, true);
-            },
-            function(ctx, input) {
-                return decodeString(ctx, input, true);
-            }
-        ], [
-            (input)=>((input ?? null)),
-            (input)=>(input)
-        ], input.union_with_undefined)
-    };
-}
-function DecodeA(ctx, input) {
-    return decodeString(ctx, input, true);
-}
-function EncodeA(input) {
-    return input;
-}
-function DecodeUser(ctx, input) {
-    return decodeObject(ctx, input, true, {
-        "entities": (ctx, input)=>(decodeArray(ctx, input, true, (ctx, input)=>(validators.UserEntity(ctx, input, true)))),
-        "id": (ctx, input)=>(decodeNumber(ctx, input, true)),
-        "name": (ctx, input)=>(decodeString(ctx, input, true)),
-        "optional_prop": (ctx, input)=>(decodeString(ctx, input, false))
-    });
-}
-function EncodeUser(input) {
-    return {
-        entities: input.entities.map((input)=>(encoders.UserEntity(input))),
-        id: encodeNumber(input.id),
-        name: input.name,
-        optional_prop: input?.optional_prop
-    };
-}
-function DecodeUserEntity(ctx, input) {
-    return decodeObject(ctx, input, true, {
-        "id": (ctx, input)=>(decodeString(ctx, input, true)),
-        "idA": (ctx, input)=>(validators.A(ctx, input, true))
-    });
-}
-function EncodeUserEntity(input) {
-    return {
-        id: input.id,
-        idA: encoders.A(input.idA)
-    };
-}
-const validators = {
-    DataTypesKitchenSink: DecodeDataTypesKitchenSink,
-    A: DecodeA,
-    User: DecodeUser,
-    UserEntity: DecodeUserEntity
-};
-const encoders = {
-    DataTypesKitchenSink: EncodeDataTypesKitchenSink,
-    A: EncodeA,
-    User: EncodeUser,
-    UserEntity: EncodeUserEntity
-};
+const validators = {};
 
-export default { decodeObject, decodeArray, decodeString, decodeNumber, decodeCodec, decodeStringWithFormat, decodeAnyOf, decodeAllOf, decodeBoolean, decodeAny, decodeTuple, decodeNull, decodeConst, encodeCodec, encodeAnyOf, encodeAllOf, encodeNumber, validators, encoders };
+export default { decodeObject, decodeArray, decodeString, decodeNumber, decodeCodec, decodeStringWithFormat, decodeAnyOf, decodeAllOf, decodeBoolean, decodeAny, decodeTuple, decodeNull, decodeConst, encodeCodec, encodeAnyOf, encodeAllOf, encodeNumber, validators };
