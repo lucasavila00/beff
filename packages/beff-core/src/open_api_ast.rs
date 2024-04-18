@@ -453,7 +453,7 @@ impl OpenApi {
     }
     pub fn as_typescript_string_(
         validators: &[&Validator],
-        built_decoders: &Vec<BuiltDecoder>,
+        built_decoders: &[BuiltDecoder],
     ) -> String {
         let mut vs: Vec<(String, TsType)> = vec![];
 
