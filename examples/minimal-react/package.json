@@ -1,7 +1,7 @@
 {
   "name": "@examples/minimal-react",
   "private": true,
-  "version": "10.38.6",
+  "version": "10.38.7",
   "workspaces": [
     "client",
     "server"
@@ -26,10 +26,10 @@
     "wait-port": "^1.0.4"
   },
   "dependencies": {
-    "@beff/cli": "workspace:^0.0.9",
-    "@beff/client": "workspace:^0.0.9",
-    "@beff/hono": "workspace:^0.0.9",
-    "@beff/react": "workspace:^0.0.9",
+    "@beff/cli": "workspace:^0.0.10",
+    "@beff/client": "workspace:^0.0.10",
+    "@beff/hono": "workspace:^0.0.10",
+    "@beff/react": "workspace:^0.0.10",
     "@hono/node-server": "^1.1.1",
     "@tanstack/react-query": "^4.35.3",
     "@types/node": "^20.6.2",
