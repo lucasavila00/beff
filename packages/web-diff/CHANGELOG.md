@@ -1,5 +1,14 @@
 # web-diff
 
+## 0.1.3
+
+### Patch Changes
+
+- Updated dependencies [94ecc27]
+  - @beff/cli@0.0.11
+  - @beff/hono@0.0.11
+  - @beff/react@0.0.11
+
 ## 0.1.2
 
 ### Patch Changes
