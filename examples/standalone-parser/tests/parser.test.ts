@@ -13,16 +13,51 @@ it("works on recursive type", () => {
   };
   expect(User.safeParse(valid)).toMatchInlineSnapshot(`
     {
-      "data": {
-        "friends": [
-          {
-            "friends": [],
-            "name": "User2",
-          },
-        ],
-        "name": "User1",
-      },
-      "success": true,
+      "errors": [
+        {
+          "errors": [
+            {
+              "message": "expected \\"ADMIN\\"",
+              "path": [],
+              "received": undefined,
+            },
+            {
+              "message": "expected \\"USER\\"",
+              "path": [],
+              "received": undefined,
+            },
+          ],
+          "isUnionError": true,
+          "message": "expected one of",
+          "path": [
+            "accessLevel",
+          ],
+          "received": undefined,
+        },
+        {
+          "errors": [
+            {
+              "message": "expected \\"ADMIN\\"",
+              "path": [],
+              "received": undefined,
+            },
+            {
+              "message": "expected \\"USER\\"",
+              "path": [],
+              "received": undefined,
+            },
+          ],
+          "isUnionError": true,
+          "message": "expected one of",
+          "path": [
+            "friends",
+            "[0]",
+            "accessLevel",
+          ],
+          "received": undefined,
+        },
+      ],
+      "success": false,
     }
   `);
   const invalid = {
@@ -36,6 +71,48 @@ it("works on recursive type", () => {
   expect(User.safeParse(invalid)).toMatchInlineSnapshot(`
     {
       "errors": [
+        {
+          "errors": [
+            {
+              "message": "expected \\"ADMIN\\"",
+              "path": [],
+              "received": undefined,
+            },
+            {
+              "message": "expected \\"USER\\"",
+              "path": [],
+              "received": undefined,
+            },
+          ],
+          "isUnionError": true,
+          "message": "expected one of",
+          "path": [
+            "accessLevel",
+          ],
+          "received": undefined,
+        },
+        {
+          "errors": [
+            {
+              "message": "expected \\"ADMIN\\"",
+              "path": [],
+              "received": undefined,
+            },
+            {
+              "message": "expected \\"USER\\"",
+              "path": [],
+              "received": undefined,
+            },
+          ],
+          "isUnionError": true,
+          "message": "expected one of",
+          "path": [
+            "friends",
+            "[0]",
+            "accessLevel",
+          ],
+          "received": undefined,
+        },
         {
           "message": "expected array",
           "path": [

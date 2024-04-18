@@ -80,7 +80,12 @@ impl<'a, R: FileManager> TypeResolver<'a, R> {
             SymbolExport::ValueExpr { .. } => Err(self
                 .make_err(&i.span, DiagnosticInfoMessage::CannotResolveNamespaceType)
                 .into()),
-            SymbolExport::TsEnumDecl { decl, span } => todo!(),
+            SymbolExport::TsEnumDecl { .. } => Err(self
+                .make_err(
+                    &i.span,
+                    DiagnosticInfoMessage::ShouldNotResolveTsEnumAsNamespace,
+                )
+                .into()),
         }
     }
     pub fn resolve_namespace_symbol(&mut self, i: &Ident) -> Res<ResolvedNamespaceSymbol> {

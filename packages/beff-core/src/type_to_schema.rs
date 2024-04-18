@@ -9,19 +9,19 @@ use crate::subtyping::to_schema::to_validators;
 use crate::subtyping::ToSemType;
 use crate::sym_reference::{ResolvedLocalSymbol, TypeResolver};
 use crate::{BeffUserSettings, BffFileName, FileManager, ImportReference, SymbolExport};
-use std::collections::{BTreeMap, BTreeSet, HashMap};
+use std::collections::{BTreeMap, HashMap};
 use std::rc::Rc;
 use swc_atoms::JsWord;
 use swc_common::{Span, Spanned};
 use swc_ecma_ast::{
     Expr, Ident, Lit, MemberProp, Prop, PropName, PropOrSpread, Str, TsArrayType,
-    TsConditionalType, TsConstructorType, TsEntityName, TsEnumDecl, TsEnumMemberId,
-    TsFnOrConstructorType, TsFnType, TsImportType, TsIndexedAccessType, TsInferType,
-    TsInterfaceDecl, TsIntersectionType, TsKeywordType, TsKeywordTypeKind, TsLit, TsLitType,
-    TsMappedType, TsOptionalType, TsParenthesizedType, TsQualifiedName, TsRestType, TsThisType,
-    TsTplLitType, TsTupleType, TsType, TsTypeElement, TsTypeLit, TsTypeOperator, TsTypeOperatorOp,
-    TsTypeParam, TsTypeParamDecl, TsTypeParamInstantiation, TsTypePredicate, TsTypeQuery,
-    TsTypeQueryExpr, TsTypeRef, TsUnionOrIntersectionType, TsUnionType,
+    TsConditionalType, TsConstructorType, TsEntityName, TsEnumDecl, TsFnOrConstructorType,
+    TsFnType, TsImportType, TsIndexedAccessType, TsInferType, TsInterfaceDecl, TsIntersectionType,
+    TsKeywordType, TsKeywordTypeKind, TsLit, TsLitType, TsMappedType, TsOptionalType,
+    TsParenthesizedType, TsQualifiedName, TsRestType, TsThisType, TsTplLitType, TsTupleType,
+    TsType, TsTypeElement, TsTypeLit, TsTypeOperator, TsTypeOperatorOp, TsTypeParam,
+    TsTypeParamDecl, TsTypeParamInstantiation, TsTypePredicate, TsTypeQuery, TsTypeQueryExpr,
+    TsTypeRef, TsUnionOrIntersectionType, TsUnionType,
 };
 
 pub struct TypeToSchema<'a, R: FileManager> {
@@ -230,7 +230,9 @@ impl<'a, R: FileManager> TypeToSchema<'a, R> {
             SymbolExport::ValueExpr { span, .. } => {
                 return self.error(span, DiagnosticInfoMessage::FoundValueExpectedType)
             }
-            SymbolExport::TsEnumDecl { decl, span } => todo!(),
+            SymbolExport::TsEnumDecl { decl, .. } => {
+                return self.convert_enum_decl(decl);
+            }
         };
         self.current_file = store_current_file;
         Ok(ty)
@@ -503,7 +505,7 @@ impl<'a, R: FileManager> TypeToSchema<'a, R> {
                     SymbolExport::ValueExpr { .. } => {
                         return self.error(span, DiagnosticInfoMessage::FoundValueExpectedType)
                     }
-                    SymbolExport::TsEnumDecl { decl, span } => todo!(),
+                    SymbolExport::TsEnumDecl { decl, .. } => decl.id.sym.to_string(),
                 };
                 Ok((exported, from_file.clone(), name))
             }
@@ -555,7 +557,9 @@ impl<'a, R: FileManager> TypeToSchema<'a, R> {
             SymbolExport::ValueExpr { span, .. } => {
                 self.error(span, DiagnosticInfoMessage::FoundValueExpectedType)
             }
-            SymbolExport::TsEnumDecl { decl, span } => todo!(),
+            SymbolExport::TsEnumDecl { span, .. } => {
+                self.error(span, DiagnosticInfoMessage::CannotUseTsEnumAsQualified)
+            }
         }
     }
     fn __convert_ts_type_qual_inner(
@@ -756,11 +760,12 @@ impl<'a, R: FileManager> TypeToSchema<'a, R> {
         let old_file = self.current_file.clone();
         self.current_file = from_file.file_name().clone();
         let ty: JsonSchema = match exported.as_ref() {
-            SymbolExport::TsType { .. } | SymbolExport::TsInterfaceDecl { .. } => todo!(),
+            SymbolExport::TsEnumDecl { .. }
+            | SymbolExport::TsType { .. }
+            | SymbolExport::TsInterfaceDecl { .. } => todo!(),
             SymbolExport::ValueExpr { expr, .. } => self.typeof_expr(expr, false)?,
             SymbolExport::StarOfOtherFile { .. } => todo!(),
             SymbolExport::SomethingOfOtherFile { .. } => todo!(),
-            SymbolExport::TsEnumDecl { decl, span } => todo!(),
         };
         self.current_file = old_file;
         Ok(ty)
@@ -775,7 +780,9 @@ impl<'a, R: FileManager> TypeToSchema<'a, R> {
         if let Some(pm) = file {
             for (k, v) in &pm.symbol_exports.named {
                 match v.as_ref() {
-                    SymbolExport::TsType { .. } | SymbolExport::TsInterfaceDecl { .. } => {}
+                    SymbolExport::TsEnumDecl { .. }
+                    | SymbolExport::TsType { .. }
+                    | SymbolExport::TsInterfaceDecl { .. } => {}
                     SymbolExport::ValueExpr { expr, name: _, .. } => {
                         let ty = self.typeof_expr(expr, false)?;
                         acc.push((k.to_string(), ty.required()));
@@ -812,7 +819,6 @@ impl<'a, R: FileManager> TypeToSchema<'a, R> {
                             }
                         }
                     }
-                    SymbolExport::TsEnumDecl { decl, span } => todo!(),
                 }
             }
             for f in &pm.symbol_exports.extends {

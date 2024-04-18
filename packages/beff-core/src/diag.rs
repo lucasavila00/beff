@@ -38,6 +38,7 @@ pub enum DiagnosticInfoMessage {
     CannotUseStarAsType,
     CannotUseTsTypeAsQualified,
     CannotUseTsInterfaceAsQualified,
+    CannotUseTsEnumAsQualified,
     DecoderMustHaveTypeAnnotation,
     CannotGetQualifiedTypeFromFile(String),
     CannotGetQualifiedTypeFromFileRec(String),
@@ -47,6 +48,7 @@ pub enum DiagnosticInfoMessage {
     CannotResolveNamespaceType,
     ShouldNotResolveTsInterfaceDeclAsNamespace,
     ShouldNotResolveTsTypeAsNamespace,
+    ShouldNotResolveTsEnumAsNamespace,
     DecoderShouldBeObjectWithTypesAndNames,
     TooManyTypeParamsOnDecoder,
     TooFewTypeParamsOnDecoder,
@@ -380,6 +382,12 @@ impl DiagnosticInfoMessage {
             }
             DiagnosticInfoMessage::EnumMemberNoInit => {
                 "Enum must have initializer".to_string()
+            }
+            DiagnosticInfoMessage::CannotUseTsEnumAsQualified => {
+                "Cannot use TS enum as qualified".to_string()
+            }
+            DiagnosticInfoMessage::ShouldNotResolveTsEnumAsNamespace => {
+                "Should not resolve TS enum as namespace".to_string()
             }
         }
     }

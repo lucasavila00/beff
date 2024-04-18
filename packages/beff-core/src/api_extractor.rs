@@ -222,12 +222,13 @@ impl<'a, R: FileManager> ExtractExportDefaultVisitor<'a, R> {
                     self.push_error(&expr.span(), DiagnosticInfoMessage::FoundTypeExpectedValue)
                 }
             }
+
             SymbolExport::StarOfOtherFile { .. }
+            | SymbolExport::TsEnumDecl { .. }
             | SymbolExport::TsType { .. }
             | SymbolExport::TsInterfaceDecl { .. } => {
                 self.push_error(&expr.span(), DiagnosticInfoMessage::FoundTypeExpectedValue)
             }
-            SymbolExport::TsEnumDecl { decl, span } => todo!(),
         }
     }
 
