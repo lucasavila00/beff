@@ -7,6 +7,8 @@ use crate::{open_api_ast::HTTPMethod, BffFileName, ParsedModule};
 
 #[derive(Debug, Clone)]
 pub enum DiagnosticInfoMessage {
+    ExtendsShouldBeIdent,
+    TypeArgsInExtendsUnsupported,
     RequiredShouldHaveObjectAsTypeArgument,
     MissingArgumentsOnRequired,
     OmitShouldHaveStringOrStringArrayAsTypeArgument,
@@ -243,6 +245,12 @@ impl DiagnosticInfoMessage {
             }
             DiagnosticInfoMessage::MissingArgumentsOnRequired => {
                 "Missing arguments on required".to_string()
+            }
+            DiagnosticInfoMessage::TypeArgsInExtendsUnsupported => {
+                "Type arguments in extends are not supported".to_string()
+            }
+            DiagnosticInfoMessage::ExtendsShouldBeIdent => {
+                "Extends should be an identifier".to_string()
             }
         }
     }
