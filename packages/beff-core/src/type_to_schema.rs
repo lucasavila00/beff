@@ -111,10 +111,13 @@ impl<'a, R: FileManager> TypeToSchema<'a, R> {
                     ),
                 }
             }
+            TsTypeElement::TsIndexSignature(_) => self.cannot_serialize_error(
+                &prop.span(),
+                DiagnosticInfoMessage::IndexSignatureNonSerializableToJsonSchema,
+            ),
             TsTypeElement::TsGetterSignature(_)
             | TsTypeElement::TsSetterSignature(_)
             | TsTypeElement::TsMethodSignature(_)
-            | TsTypeElement::TsIndexSignature(_)
             | TsTypeElement::TsCallSignatureDecl(_)
             | TsTypeElement::TsConstructSignatureDecl(_) => self.cannot_serialize_error(
                 &prop.span(),
@@ -500,9 +503,12 @@ impl<'a, R: FileManager> TypeToSchema<'a, R> {
         let file = self.files.get_or_fetch_file(&self.current_file);
         Location::build(file, span, &self.current_file).to_info(msg)
     }
-    fn error<T>(&mut self, span: &Span, msg: DiagnosticInfoMessage) -> Res<T> {
+    fn box_error(&mut self, span: &Span, msg: DiagnosticInfoMessage) -> Box<Diagnostic> {
         let err = self.create_error(span, msg);
-        Err(err.to_diag(None).into())
+        err.to_diag(None).into()
+    }
+    fn error<T>(&mut self, span: &Span, msg: DiagnosticInfoMessage) -> Res<T> {
+        Err(self.box_error(span, msg))
     }
     fn get_identifier_diag_info(&mut self, i: &Ident) -> Option<DiagnosticInformation> {
         self.files
@@ -770,10 +776,20 @@ impl<'a, R: FileManager> TypeToSchema<'a, R> {
                     MemberProp::PrivateName(_) => todo!(),
                     MemberProp::Computed(c) => {
                         let v = self.typeof_expr(&c.expr, as_const)?;
-                        v.to_sem_type(&self.validators_ref(), &mut ctx).unwrap()
+                        v.to_sem_type(&self.validators_ref(), &mut ctx)
+                            .map_err(|e| {
+                                self.box_error(
+                                    &m.span,
+                                    DiagnosticInfoMessage::AnyhowError(e.to_string()),
+                                )
+                            })?
                     }
                 };
-                let st = obj.to_sem_type(&self.validators_ref(), &mut ctx).unwrap();
+                let st = obj
+                    .to_sem_type(&self.validators_ref(), &mut ctx)
+                    .map_err(|e| {
+                        self.box_error(&m.span, DiagnosticInfoMessage::AnyhowError(e.to_string()))
+                    })?;
                 let access_st: Rc<SemType> = ctx.indexed_access(st, key);
                 self.convert_sem_type(access_st, &mut ctx, &m.prop.span())
             }
@@ -982,8 +998,16 @@ impl<'a, R: FileManager> TypeToSchema<'a, R> {
         // fallback to semantic
         let mut ctx = SemTypeContext::new();
 
-        let obj_st = obj.to_sem_type(&self.validators_ref(), &mut ctx).unwrap();
-        let idx_st = index.to_sem_type(&self.validators_ref(), &mut ctx).unwrap();
+        let obj_st = obj
+            .to_sem_type(&self.validators_ref(), &mut ctx)
+            .map_err(|e| {
+                self.box_error(&i.span, DiagnosticInfoMessage::AnyhowError(e.to_string()))
+            })?;
+        let idx_st = index
+            .to_sem_type(&self.validators_ref(), &mut ctx)
+            .map_err(|e| {
+                self.box_error(&i.span, DiagnosticInfoMessage::AnyhowError(e.to_string()))
+            })?;
 
         let access_st: Rc<SemType> = ctx.indexed_access(obj_st, idx_st);
         self.convert_sem_type(access_st, &mut ctx, &i.index_type.span())
@@ -993,7 +1017,9 @@ impl<'a, R: FileManager> TypeToSchema<'a, R> {
         let mut ctx = SemTypeContext::new();
         let st = json_schema
             .to_sem_type(&self.validators_ref(), &mut ctx)
-            .unwrap();
+            .map_err(|e| {
+                self.box_error(&k.span(), DiagnosticInfoMessage::AnyhowError(e.to_string()))
+            })?;
 
         let keyof_st: Rc<SemType> = ctx.keyof(st);
 
