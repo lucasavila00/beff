@@ -116,7 +116,6 @@ const failures = () => {
   return subFolders.map(oneFailure);
 };
 
-
 const codegenSnaps = () => {
   const subFolders = fs.readdirSync(path.join(__dirname, "../fixtures/codegen-snaps"));
 
@@ -125,7 +124,7 @@ const codegenSnaps = () => {
 
 const main = async () => {
   const queue = new PQueue({ concurrency: 8 });
-  await queue.addAll([...codegenSnaps(), ...failures(),]);
+  await queue.addAll([...codegenSnaps(), ...failures()]);
 
   await queue.onIdle();
 };
