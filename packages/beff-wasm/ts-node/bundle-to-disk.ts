@@ -18,10 +18,6 @@ const decodersExported = [
   "decodeTuple",
   "decodeNull",
   "decodeConst",
-  "encodeCodec",
-  "encodeAnyOf",
-  "encodeAllOf",
-  "encodeNumber",
 ];
 
 const esmTag = (mod: ProjectModule) => {
