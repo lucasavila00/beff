@@ -36,7 +36,7 @@ fn maybe_extract_promise(typ: &TsType) -> &TsType {
             // if name is promise
             if i.sym == *"Promise" {
                 if let Some(inst) = refs.type_params.as_ref() {
-                    let ts_type = inst.params.get(0);
+                    let ts_type = inst.params.first();
                     if let Some(ts_type) = ts_type {
                         return ts_type;
                     }

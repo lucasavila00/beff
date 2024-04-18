@@ -128,7 +128,7 @@ impl<'a, R: FileManager> TypeToSchema<'a, R> {
         for member in &typ.members {
             match &member.init {
                 Some(init) => {
-                    let expr_ty = self.typeof_expr(&init, true)?;
+                    let expr_ty = self.typeof_expr(init, true)?;
                     values.push(expr_ty);
                 }
                 None => {

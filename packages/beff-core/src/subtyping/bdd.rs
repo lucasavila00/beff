@@ -854,7 +854,7 @@ fn int_subtype_max(allowed: bool, values: &Vec<N>) -> i64 {
 }
 
 fn list_atomic_member_type_at_inner(
-    prefix_items: &Vec<Rc<SemType>>,
+    prefix_items: &[Rc<SemType>],
     items: &Rc<SemType>,
     key: ListNumberKey,
 ) -> Rc<SemType> {
