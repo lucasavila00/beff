@@ -90,35 +90,30 @@ const oneFailure = (subFolder) => async () => {
     );
   }
 };
-const oneVitest = (subFolder) => async () => {
-  const bin = path.join(__dirname, binPath);
-  const p = path.join(__dirname, "../vitest", subFolder, "bff.json");
-  const command = `node ${bin} -p ${p}`;
-  console.log(command);
-  const result = await execAsync(command);
-  console.log(result.stdout.trim());
+// const oneVitest = (subFolder) => async () => {
+//   const bin = path.join(__dirname, binPath);
+//   const p = path.join(__dirname, "../vitest", subFolder, "bff.json");
+//   const command = `node ${bin} -p ${p}`;
+//   console.log(command);
+//   const result = await execAsync(command);
+//   console.log(result.stdout.trim());
 
-  const stderr = result.stderr.trim();
-  if (stderr) {
-    console.error(stderr);
-    throw new Error("stderr is not empty");
-  }
-};
+//   const stderr = result.stderr.trim();
+//   if (stderr) {
+//     console.error(stderr);
+//     throw new Error("stderr is not empty");
+//   }
+// };
 
-const vitest = () => {
-  const subFolders = fs.readdirSync(path.join(__dirname, "../vitest"));
-  const folders = subFolders.filter((f) => f !== ".gitignore" && !f.endsWith(".d.ts"));
-  return folders.map(oneVitest);
-};
+// const vitest = () => {
+//   const subFolders = fs.readdirSync(path.join(__dirname, "../vitest"));
+//   const folders = subFolders.filter((f) => f !== ".gitignore" && !f.endsWith(".d.ts"));
+//   return folders.map(oneVitest);
+// };
 
 const failures = () => {
   const subFolders = fs.readdirSync(path.join(__dirname, "../fixtures/errors"));
   return subFolders.map(oneFailure);
-};
-
-const futures = () => {
-  const subFolders = fs.readdirSync(path.join(__dirname, "../fixtures/future"));
-  return subFolders.map(oneFuture);
 };
 
 const codegenSnaps = () => {
@@ -129,7 +124,7 @@ const codegenSnaps = () => {
 
 const main = async () => {
   const queue = new PQueue({ concurrency: 8 });
-  await queue.addAll([...codegenSnaps(), ...failures(), ...vitest(), ...futures()]);
+  await queue.addAll([...codegenSnaps(), ...failures()]);
 
   await queue.onIdle();
 };

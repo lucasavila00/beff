@@ -16,11 +16,13 @@ use swc_ecma_ast::{
 };
 use swc_ecma_visit::Visit;
 
+#[derive(Debug)]
 pub struct BuiltDecoder {
     pub exported_name: String,
     pub schema: JsonSchema,
 }
 
+#[derive(Debug)]
 pub struct ParserExtractResult {
     pub errors: Vec<Diagnostic>,
     pub entry_file_name: BffFileName,

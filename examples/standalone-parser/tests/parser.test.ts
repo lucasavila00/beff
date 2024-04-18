@@ -35,6 +35,20 @@ it("works on recursive type", () => {
           "received": undefined,
         },
         {
+          "message": "expected string",
+          "path": [
+            "avatarSize",
+          ],
+          "received": undefined,
+        },
+        {
+          "message": "expected object",
+          "path": [
+            "extra",
+          ],
+          "received": undefined,
+        },
+        {
           "errors": [
             {
               "message": "expected \\"ADMIN\\"",
@@ -53,6 +67,24 @@ it("works on recursive type", () => {
             "friends",
             "[0]",
             "accessLevel",
+          ],
+          "received": undefined,
+        },
+        {
+          "message": "expected string",
+          "path": [
+            "friends",
+            "[0]",
+            "avatarSize",
+          ],
+          "received": undefined,
+        },
+        {
+          "message": "expected object",
+          "path": [
+            "friends",
+            "[0]",
+            "extra",
           ],
           "received": undefined,
         },
@@ -92,6 +124,20 @@ it("works on recursive type", () => {
           "received": undefined,
         },
         {
+          "message": "expected string",
+          "path": [
+            "avatarSize",
+          ],
+          "received": undefined,
+        },
+        {
+          "message": "expected object",
+          "path": [
+            "extra",
+          ],
+          "received": undefined,
+        },
+        {
           "errors": [
             {
               "message": "expected \\"ADMIN\\"",
@@ -110,6 +156,24 @@ it("works on recursive type", () => {
             "friends",
             "[0]",
             "accessLevel",
+          ],
+          "received": undefined,
+        },
+        {
+          "message": "expected string",
+          "path": [
+            "friends",
+            "[0]",
+            "avatarSize",
+          ],
+          "received": undefined,
+        },
+        {
+          "message": "expected object",
+          "path": [
+            "friends",
+            "[0]",
+            "extra",
           ],
           "received": undefined,
         },

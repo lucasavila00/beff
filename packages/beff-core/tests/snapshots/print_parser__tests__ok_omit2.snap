@@ -1,0 +1,7 @@
+---
+source: packages/beff-core/tests/print_parser.rs
+expression: ok(from)
+---
+type User = { "age": number; "email": string; "name": string };
+type A = { "name": string };
+

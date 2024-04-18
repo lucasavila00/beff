@@ -7,34 +7,30 @@ use crate::{open_api_ast::HTTPMethod, BffFileName, ParsedModule};
 
 #[derive(Debug, Clone)]
 pub enum DiagnosticInfoMessage {
+    RequiredShouldHaveObjectAsTypeArgument,
+    MissingArgumentsOnRequired,
+    OmitShouldHaveStringOrStringArrayAsTypeArgument,
+    OmitShouldHaveTwoTypeArguments,
+    OmitShouldHaveStringAsTypeArgument,
+    OmitShouldHaveObjectAsTypeArgument,
+    IndexSignatureNonSerializableToJsonSchema,
+    AnyhowError(String),
     CannotResolveKey(String),
     CouldNotFindSomethingOfOtherFile(String),
     EnumMemberNoInit,
     TypeofImportNotSupported,
     NoArgumentInTypeApplication,
-    ThisShouldContainMethods,
     ExportDefaultNotFound,
     PathMustStartWithDash,
-    PathParameterCannotBeOptional,
     InvalidIndexedAccess,
     TypeQueryArgsNotSupported,
     FoundValueExpectedType,
-    CannotResolveValue,
     FoundTypeExpectedValue,
-    CouldNotUnderstandThisPartOfTheRouter,
-    CannotConvertToSubtype(String),
-    IndexOutOfTupleRange(usize),
-    CannotFindPropertyInObject(String),
-    MustBeTsConstAssertion,
     CustomFormatIsNotRegistered,
-    TypeMustNotBeEmpty,
     GetMustNotHaveBody,
-    ReturnAnnotationIsRequired,
-    CannotGetFullLocation,
     InvalidIdentifierInPatternNoExplodeAllowed,
     CloseBlockMustEndPattern,
     OpenBlockMustStartPattern,
-    StarPatternMustBeUsedWithUse,
     CannotUseStarAsType,
     CannotUseTsTypeAsQualified,
     CannotUseTsInterfaceAsQualified,
@@ -55,133 +51,53 @@ pub enum DiagnosticInfoMessage {
     GenericDecoderIsNotSupported,
     InvalidDecoderKey,
     InvalidDecoderProperty,
-    CannotParseJsDocExportDefault,
-    JsDocDescriptionRestIsNotEmpty,
-    JsDocsParameterDescriptionHasTags,
-    JsDocsDescriptionCouldNotBeParsed,
     KeywordNonSerializableToJsonSchema,
     PropertyNonSerializableToJsonSchema,
+    MissingArgumentsOnRecord,
+    RecordShouldHaveTwoTypeArguments,
     DuplicatedRestNonSerializableToJsonSchema,
     TypeConstructNonSerializableToJsonSchema,
-    ContextInvalidAtThisPosition,
-    ContextParameterMustBeFirst,
-    PropSpreadIsNotSupportedOnMethodMap,
     OptionalTypeIsNotSupported,
     PropShouldHaveTypeAnnotation,
     PropKeyShouldBeIdent,
-    UnknownJsDocTagOfTypeUnknown(String),
-    UnknownJsDocTagOnEndpoint(String),
-    UnknownJsDocTagOnRouter(String),
-    CannotParseJsDocEndpoint,
-    TooManyCommentsJsDoc,
-    CannotResolveTypeReferenceOnConverting(String),
     CannotResolveTypeReferenceOnExtracting(String),
-    HandlerCannotHaveTypeParameters,
     UnmatchedPathParameter(String, HTTPMethod),
-    CouldNotResolveIdentifierOnPathParamTuple,
     TsInterfaceExtendsNotSupported,
-    TsTypeParametersNotSupportedOnTuple,
-    RestParamMustBeTypeAnnotated,
-    ParameterPatternNotSupported,
-    CouldNotUnderstandRestParameter,
-    RestParameterMustBeTuple,
-    CouldNotFindDefaultExport,
-    ComplexPathParameterNotSupported,
-    PatternMustBeComputedKeyOrString,
-    MustBeComputedKeyWithMethodAndPatternMustBeString,
-    HandlerCannotBeGenerator,
-    ParameterIdentMustHaveTypeAnnotation,
-    InferringTwoParamsAsRequestBody,
-    TooManyParamsOnLibType,
     TwoDifferentTypesWithTheSameName,
-    TemplateMustBeOfSingleString,
     CannotFindFileWhenConvertingToSchema(BffFileName),
-    CannotFindTypeExportWhenConvertingToSchema(String),
-    NotAnObjectWithMethodKind,
-    NotAnHttpMethod,
     ThisRefersToSomethingThatCannotBeSerialized(String),
-    TypeParameterApplicationNotSupported,
-    CannotResolveLocalType(String),
     CannotResolveLocalSymbol(String),
-    CannotResolveLocalExpr(String),
-    CannotResolveLocalExprAccess(String),
 }
 
 #[allow(clippy::inherent_to_string)]
 impl DiagnosticInfoMessage {
     pub fn to_string(&self) -> String {
         match self {
-            DiagnosticInfoMessage::ThisShouldContainMethods => {
-                "This should contain methods".to_string()
-            }
-            DiagnosticInfoMessage::ExportDefaultNotFound => {
-                "Export default not found".to_string()
-            }
-            DiagnosticInfoMessage::CannotResolveLocalExprAccess(of) => {
-                format!("Cannot resolve local expression access '{of}'")
-            }
-            DiagnosticInfoMessage::PathParameterCannotBeOptional => {
-                "Path parameter cannot be optional".to_string()
-            }
-            DiagnosticInfoMessage::IndexOutOfTupleRange(idx) => {
-                format!("Index out of tuple range: {}", idx)
-            }
-            DiagnosticInfoMessage::CannotResolveLocalType(name) => {
-                format!("Cannot find type '{name}'")
-            }
-            DiagnosticInfoMessage::CannotResolveLocalExpr(name) => {
-                format!("Cannot find name '{name}'")
-            }
+            DiagnosticInfoMessage::ExportDefaultNotFound => "Export default not found".to_string(),
             DiagnosticInfoMessage::CannotResolveLocalSymbol(name) => {
                 format!("Cannot find symbol '{name}'")
             }
-            DiagnosticInfoMessage::KeywordNonSerializableToJsonSchema
-            | DiagnosticInfoMessage::PropertyNonSerializableToJsonSchema
-            | DiagnosticInfoMessage::DuplicatedRestNonSerializableToJsonSchema
-            | DiagnosticInfoMessage::TypeConstructNonSerializableToJsonSchema => {
+            DiagnosticInfoMessage::KeywordNonSerializableToJsonSchema => {
+                "This keyword cannot be converted to JSON schema".to_string()
+            }
+            DiagnosticInfoMessage::PropertyNonSerializableToJsonSchema => {
+                "This property cannot be converted to JSON schema".to_string()
+            }
+            DiagnosticInfoMessage::DuplicatedRestNonSerializableToJsonSchema => {
+                "This rest parameter cannot be converted to JSON schema".to_string()
+            }
+            DiagnosticInfoMessage::TypeConstructNonSerializableToJsonSchema => {
                 "This cannot be converted to JSON schema".to_string()
             }
             DiagnosticInfoMessage::ThisRefersToSomethingThatCannotBeSerialized(this) => {
                 format!("`{this}` cannot be converted to JSON schema")
             }
-            DiagnosticInfoMessage::ComplexPathParameterNotSupported => {
-                "This type is too complex for a path parameter".to_string()
-            }
-            DiagnosticInfoMessage::ContextInvalidAtThisPosition => {
-                "Context usage is not valid at this position.".to_string()
-            }
-            DiagnosticInfoMessage::ContextParameterMustBeFirst => {
-                "Context must be the first parameter".to_string()
-            }
             DiagnosticInfoMessage::TsInterfaceExtendsNotSupported => {
                 "Interface extends are not supported".to_string()
-            }
-            DiagnosticInfoMessage::TypeParameterApplicationNotSupported => {
-                "Type parameter application is not supported".to_string()
-            }
-            DiagnosticInfoMessage::UnknownJsDocTagOfTypeUnknown(tag)
-            | DiagnosticInfoMessage::UnknownJsDocTagOnRouter(tag)
-            | DiagnosticInfoMessage::UnknownJsDocTagOnEndpoint(tag) => {
-                format!("Jsdoc tag '{tag}' cannot be converted to OpenAPI")
-            }
-            DiagnosticInfoMessage::JsDocsParameterDescriptionHasTags => {
-                "Jsdoc parameter description cannot have tags".to_string()
             }
             DiagnosticInfoMessage::UnmatchedPathParameter(param, method) => {
                 let method = method.to_string().to_uppercase();
                 format!("Path parameter `{param}` is not being used in the function parameters of method `{method}`")
-            }
-            DiagnosticInfoMessage::CannotParseJsDocExportDefault => {
-                "Failed to parse Js Docs of the default export".to_string()
-            }
-            DiagnosticInfoMessage::JsDocDescriptionRestIsNotEmpty => {
-                "Failed to parse Js Docs descriptions, rest is not empty".to_string()
-            }
-            DiagnosticInfoMessage::JsDocsDescriptionCouldNotBeParsed => {
-                "Failed to parse Js Docs descriptions".to_string()
-            }
-            DiagnosticInfoMessage::PropSpreadIsNotSupportedOnMethodMap => {
-                "Spread props are not supported on method maps".to_string()
             }
             DiagnosticInfoMessage::OptionalTypeIsNotSupported => {
                 "Optional types are not supported at this position".to_string()
@@ -192,78 +108,15 @@ impl DiagnosticInfoMessage {
             DiagnosticInfoMessage::PropKeyShouldBeIdent => {
                 "Property name should be an identifier".to_string()
             }
-            DiagnosticInfoMessage::CannotParseJsDocEndpoint => {
-                "Failed to parse Js Docs of the endpoint".to_string()
-            }
-            DiagnosticInfoMessage::TooManyCommentsJsDoc => {
-                "Failed to parse Js Docs. Only one comment is allowed".to_string()
-            }
-            DiagnosticInfoMessage::CannotResolveTypeReferenceOnConverting(name) => {
-                format!("Failed to resolve type reference '{name}' when converting to schema")
-            }
             DiagnosticInfoMessage::CannotResolveTypeReferenceOnExtracting(name) => {
                 format!("Failed to resolve type reference '{name}' when extracting")
-            }
-            DiagnosticInfoMessage::HandlerCannotHaveTypeParameters => {
-                "Handler cannot have type parameters".to_string()
-            }
-            DiagnosticInfoMessage::CouldNotResolveIdentifierOnPathParamTuple => {
-                "Could not resolve identifier on path parameter tuple".to_string()
-            }
-            DiagnosticInfoMessage::TsTypeParametersNotSupportedOnTuple => {
-                "Type parameters are not supported on tuples".to_string()
-            }
-            DiagnosticInfoMessage::RestParamMustBeTypeAnnotated => {
-                "Rest parameter must be type annotated".to_string()
-            }
-            DiagnosticInfoMessage::ParameterPatternNotSupported => {
-                "Parameter pattern is not supported".to_string()
-            }
-            DiagnosticInfoMessage::CouldNotUnderstandRestParameter => {
-                "Could not understand rest parameter".to_string()
-            }
-            DiagnosticInfoMessage::RestParameterMustBeTuple => {
-                "Rest parameter must be a tuple".to_string()
-            }
-            DiagnosticInfoMessage::CouldNotFindDefaultExport => {
-                "Could not find default export".to_string()
-            }
-            DiagnosticInfoMessage::MustBeComputedKeyWithMethodAndPatternMustBeString => {
-                "Must be computed key with method and pattern must be string".to_string()
-            }
-            DiagnosticInfoMessage::HandlerCannotBeGenerator => {
-                "Handler cannot be a generator".to_string()
-            }
-            DiagnosticInfoMessage::ParameterIdentMustHaveTypeAnnotation => {
-                "Parameter identifier must have a type annotation".to_string()
-            }
-            DiagnosticInfoMessage::InferringTwoParamsAsRequestBody => {
-                "Inferring two parameters as request body".to_string()
-            }
-            DiagnosticInfoMessage::TooManyParamsOnLibType => {
-                "Too many parameters on lib type".to_string()
             }
             DiagnosticInfoMessage::TwoDifferentTypesWithTheSameName => {
                 "Two different types with the same name".to_string()
             }
-            DiagnosticInfoMessage::TemplateMustBeOfSingleString => {
-                "Template must be of a single string".to_string()
-            }
             DiagnosticInfoMessage::CannotFindFileWhenConvertingToSchema(f) => {
                 let name = &f.0;
                 format!("Cannot find file '{name}' when converting to schema")
-            }
-            DiagnosticInfoMessage::CannotFindTypeExportWhenConvertingToSchema(exp) => {
-                format!("Cannot find type export '{exp}' when converting to schema")
-            }
-            DiagnosticInfoMessage::NotAnObjectWithMethodKind => {
-                "Not an object with method kind".to_string()
-            }
-            DiagnosticInfoMessage::NotAnHttpMethod => {
-                "Not an HTTP method. Valid values are `get`, `post`, `put`, `delete`, `patch`, `options`".to_string()
-            }
-            DiagnosticInfoMessage::CannotGetFullLocation => {
-                "Cannot get full location of the error".to_string()
             }
             DiagnosticInfoMessage::InvalidIdentifierInPatternNoExplodeAllowed => {
                 "Invalid pattern content".to_string()
@@ -273,9 +126,6 @@ impl DiagnosticInfoMessage {
             }
             DiagnosticInfoMessage::OpenBlockMustStartPattern => {
                 "Pattern must start with '{'".to_string()
-            }
-            DiagnosticInfoMessage::StarPatternMustBeUsedWithUse => {
-                "* patterns can contain only `use` handlers".to_string()
             }
             DiagnosticInfoMessage::CannotUseStarAsType => "Cannot use star as type".to_string(),
             DiagnosticInfoMessage::CannotUseTsTypeAsQualified => {
@@ -322,37 +172,15 @@ impl DiagnosticInfoMessage {
             }
             DiagnosticInfoMessage::InvalidDecoderKey => "Invalid decoder key".to_string(),
             DiagnosticInfoMessage::InvalidDecoderProperty => "Invalid decoder property".to_string(),
-            DiagnosticInfoMessage::PatternMustBeComputedKeyOrString => {
-                "Pattern must be computed key or string".to_string()
-            }
-            DiagnosticInfoMessage::ReturnAnnotationIsRequired => {
-                "Return annotation is required".to_string()
-            }
             DiagnosticInfoMessage::GetMustNotHaveBody => {
                 "GET methods must not have a body".to_string()
-            }
-            DiagnosticInfoMessage::TypeMustNotBeEmpty => {
-                "This type contains `never` and cannot be serialized".to_string()
             }
             DiagnosticInfoMessage::CustomFormatIsNotRegistered => {
                 "Custom format is not registered".to_string()
             }
-            DiagnosticInfoMessage::MustBeTsConstAssertion => {
-                "Must be a TS const assertion".to_string()
-            }
-            DiagnosticInfoMessage::CannotFindPropertyInObject(prop) => {
-                format!("Cannot find property '{prop}' in object")
-            }
-            DiagnosticInfoMessage::CannotConvertToSubtype(reason) => {
-                format!("Cannot convert to subtype: {reason}")
-            }
-            DiagnosticInfoMessage::CouldNotUnderstandThisPartOfTheRouter => {
-                "Could not understand this part of the router".to_string()
-            }
             DiagnosticInfoMessage::FoundTypeExpectedValue => {
                 "Found type, expected value".to_string()
             }
-            DiagnosticInfoMessage::CannotResolveValue => "Cannot resolve value".to_string(),
             DiagnosticInfoMessage::FoundValueExpectedType => {
                 "Found value, expected type".to_string()
             }
@@ -375,17 +203,46 @@ impl DiagnosticInfoMessage {
             DiagnosticInfoMessage::CouldNotFindSomethingOfOtherFile(something) => {
                 format!("Could not find '{something}' of other file")
             }
-            DiagnosticInfoMessage::CannotResolveKey(key) =>{
+            DiagnosticInfoMessage::CannotResolveKey(key) => {
                 format!("Cannot resolve key '{key}' of non-object")
             }
-            DiagnosticInfoMessage::EnumMemberNoInit => {
-                "Enum must have initializer".to_string()
-            }
+            DiagnosticInfoMessage::EnumMemberNoInit => "Enum must have initializer".to_string(),
             DiagnosticInfoMessage::CannotUseTsEnumAsQualified => {
                 "Cannot use TS enum as qualified".to_string()
             }
             DiagnosticInfoMessage::ShouldNotResolveTsEnumAsNamespace => {
                 "Should not resolve TS enum as namespace".to_string()
+            }
+            DiagnosticInfoMessage::MissingArgumentsOnRecord => {
+                "Missing arguments on record".to_string()
+            }
+            DiagnosticInfoMessage::RecordShouldHaveTwoTypeArguments => {
+                "Record should have two type arguments".to_string()
+            }
+            DiagnosticInfoMessage::AnyhowError(err) => {
+                format!("Error: {err}")
+            }
+            DiagnosticInfoMessage::IndexSignatureNonSerializableToJsonSchema => {
+                "Index signature cannot be converted to JSON schema - Use Record<x,y>".to_string()
+            }
+            DiagnosticInfoMessage::OmitShouldHaveTwoTypeArguments => {
+                "Omit should have two type arguments".to_string()
+            }
+
+            DiagnosticInfoMessage::OmitShouldHaveObjectAsTypeArgument => {
+                "Omit should have object as first type argument".to_string()
+            }
+            DiagnosticInfoMessage::OmitShouldHaveStringAsTypeArgument => {
+                "Omit should have string as type argument".to_string()
+            }
+            DiagnosticInfoMessage::OmitShouldHaveStringOrStringArrayAsTypeArgument => {
+                "Omit should have string or string array as type argument".to_string()
+            }
+            DiagnosticInfoMessage::RequiredShouldHaveObjectAsTypeArgument => {
+                "Required should have object as type argument".to_string()
+            }
+            DiagnosticInfoMessage::MissingArgumentsOnRequired => {
+                "Missing arguments on required".to_string()
             }
         }
     }

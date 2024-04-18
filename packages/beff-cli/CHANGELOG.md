@@ -1,5 +1,11 @@
 # @beff/cli
 
+## 0.0.12
+
+### Patch Changes
+
+- remove openapi
+
 ## 0.0.11
 
 ### Patch Changes

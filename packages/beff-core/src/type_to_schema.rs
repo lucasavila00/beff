@@ -7,7 +7,7 @@ use crate::subtyping::semtype::{SemType, SemTypeContext, SemTypeOps};
 use crate::subtyping::subtype::StringLitOrFormat;
 use crate::subtyping::to_schema::to_validators;
 use crate::subtyping::ToSemType;
-use crate::sym_reference::{ResolvedLocalSymbol, TypeResolver};
+use crate::sym_reference::{ResolvedLocalSymbol, TsBuiltIn, TypeResolver};
 use crate::{BeffUserSettings, BffFileName, FileManager, ImportReference, SymbolExport};
 use std::collections::{BTreeMap, HashMap};
 use std::rc::Rc;
@@ -111,15 +111,201 @@ impl<'a, R: FileManager> TypeToSchema<'a, R> {
                     ),
                 }
             }
+            TsTypeElement::TsIndexSignature(_) => self.cannot_serialize_error(
+                &prop.span(),
+                DiagnosticInfoMessage::IndexSignatureNonSerializableToJsonSchema,
+            ),
             TsTypeElement::TsGetterSignature(_)
             | TsTypeElement::TsSetterSignature(_)
             | TsTypeElement::TsMethodSignature(_)
-            | TsTypeElement::TsIndexSignature(_)
             | TsTypeElement::TsCallSignatureDecl(_)
             | TsTypeElement::TsConstructSignatureDecl(_) => self.cannot_serialize_error(
                 &prop.span(),
                 DiagnosticInfoMessage::PropertyNonSerializableToJsonSchema,
             ),
+        }
+    }
+
+    fn convert_omit_keys(
+        obj: &BTreeMap<String, Optionality<JsonSchema>>,
+        keys: Vec<String>,
+    ) -> JsonSchema {
+        let mut acc = vec![];
+        for (k, v) in obj {
+            if !keys.contains(k) {
+                acc.push((k.clone(), v.clone()));
+            }
+        }
+        JsonSchema::object(acc)
+    }
+    fn convert_omit(
+        &mut self,
+        span: &Span,
+        obj: &BTreeMap<String, Optionality<JsonSchema>>,
+        keys: JsonSchema,
+    ) -> Res<JsonSchema> {
+        match keys {
+            JsonSchema::Const(JsonSchemaConst::String(str)) => {
+                Ok(Self::convert_omit_keys(obj, vec![str]))
+            }
+            JsonSchema::AnyOf(rms) => {
+                let mut keys = vec![];
+                for rm in rms {
+                    match rm {
+                        JsonSchema::Const(JsonSchemaConst::String(str)) => {
+                            keys.push(str);
+                        }
+                        JsonSchema::Ref(n) => {
+                            let map = self.components.get(&n).and_then(|it| it.as_ref()).cloned();
+                            match map {
+                                Some(Validator {
+                                    schema: JsonSchema::Const(JsonSchemaConst::String(str)),
+                                    ..
+                                }) => keys.push(str),
+                                _ => {
+                                    return self.error(
+                                        span,
+                                        DiagnosticInfoMessage::OmitShouldHaveStringAsTypeArgument,
+                                    )
+                                }
+                            }
+                        }
+                        _ => {
+                            return self.error(
+                                span,
+                                DiagnosticInfoMessage::OmitShouldHaveStringAsTypeArgument,
+                            )
+                        }
+                    }
+                }
+                Ok(Self::convert_omit_keys(obj, keys))
+            }
+            _ => self.error(
+                span,
+                DiagnosticInfoMessage::OmitShouldHaveStringOrStringArrayAsTypeArgument,
+            ),
+        }
+    }
+    fn convert_required(&mut self, obj: &BTreeMap<String, Optionality<JsonSchema>>) -> JsonSchema {
+        let mut acc = vec![];
+        for (k, v) in obj {
+            acc.push((k.clone(), v.clone().to_required()));
+        }
+        JsonSchema::object(acc)
+    }
+    fn convert_ts_built_in(
+        &mut self,
+        typ: &TsBuiltIn,
+        type_args: &Option<Box<TsTypeParamInstantiation>>,
+    ) -> Res<JsonSchema> {
+        match typ {
+            TsBuiltIn::TsObject(_) => {
+                let key = Box::new(JsonSchema::String);
+                let value = Box::new(JsonSchema::Any);
+
+                Ok(JsonSchema::TsRecord { key, value })
+            }
+
+            TsBuiltIn::TsRecord(span) => match type_args {
+                Some(vs) => {
+                    let items = vs
+                        .params
+                        .iter()
+                        .map(|it| self.convert_ts_type(it))
+                        .collect::<Res<Vec<_>>>()?;
+
+                    if items.len() != 2 {
+                        return self.error(
+                            span,
+                            DiagnosticInfoMessage::RecordShouldHaveTwoTypeArguments,
+                        );
+                    }
+
+                    let key = Box::new(items[0].clone());
+                    let value = Box::new(items[1].clone());
+
+                    Ok(JsonSchema::TsRecord { key, value })
+                }
+                None => self
+                    .cannot_serialize_error(span, DiagnosticInfoMessage::MissingArgumentsOnRecord),
+            },
+            TsBuiltIn::TsOmit(span) => match type_args {
+                Some(vs) => {
+                    let items = vs
+                        .params
+                        .iter()
+                        .map(|it| self.convert_ts_type(it))
+                        .collect::<Res<Vec<_>>>()?;
+
+                    if items.len() != 2 {
+                        return self
+                            .error(span, DiagnosticInfoMessage::OmitShouldHaveTwoTypeArguments);
+                    }
+                    let obj = items[0].clone();
+                    let k = items[1].clone();
+                    match obj {
+                        JsonSchema::Object(vs) => self.convert_omit(span, &vs, k),
+                        JsonSchema::Ref(r) => {
+                            let map = self.components.get(&r).and_then(|it| it.as_ref()).cloned();
+                            match map {
+                                Some(Validator {
+                                    schema: JsonSchema::Object(vs),
+                                    ..
+                                }) => self.convert_omit(span, &vs, k),
+                                _ => self.error(
+                                    span,
+                                    DiagnosticInfoMessage::OmitShouldHaveObjectAsTypeArgument,
+                                ),
+                            }
+                        }
+                        _ => self.error(
+                            span,
+                            DiagnosticInfoMessage::OmitShouldHaveObjectAsTypeArgument,
+                        ),
+                    }
+                }
+                None => self
+                    .cannot_serialize_error(span, DiagnosticInfoMessage::MissingArgumentsOnRecord),
+            },
+            TsBuiltIn::TsRequired(span) => match type_args {
+                Some(vs) => {
+                    let items = vs
+                        .params
+                        .iter()
+                        .map(|it| self.convert_ts_type(it))
+                        .collect::<Res<Vec<_>>>()?;
+
+                    if items.len() != 1 {
+                        return self
+                            .error(span, DiagnosticInfoMessage::OmitShouldHaveTwoTypeArguments);
+                    }
+                    let obj = items[0].clone();
+                    match obj {
+                        JsonSchema::Object(vs) => Ok(self.convert_required(&vs)),
+                        JsonSchema::Ref(r) => {
+                            let map = self.components.get(&r).and_then(|it| it.as_ref()).cloned();
+                            match map {
+                                Some(Validator {
+                                    schema: JsonSchema::Object(vs),
+                                    ..
+                                }) => Ok(self.convert_required(&vs)),
+                                _ => self.error(
+                                    span,
+                                    DiagnosticInfoMessage::RequiredShouldHaveObjectAsTypeArgument,
+                                ),
+                            }
+                        }
+                        _ => self.error(
+                            span,
+                            DiagnosticInfoMessage::RequiredShouldHaveObjectAsTypeArgument,
+                        ),
+                    }
+                }
+                None => self.cannot_serialize_error(
+                    span,
+                    DiagnosticInfoMessage::MissingArgumentsOnRequired,
+                ),
+            },
         }
     }
     fn convert_enum_decl(&mut self, typ: &TsEnumDecl) -> Res<JsonSchema> {
@@ -326,6 +512,7 @@ impl<'a, R: FileManager> TypeToSchema<'a, R> {
                 self.error(&i.span, DiagnosticInfoMessage::FoundValueExpectedType)
             }
             ResolvedLocalSymbol::TsEnumDecl(decl) => self.convert_enum_decl(&decl),
+            ResolvedLocalSymbol::TsBuiltin(bt) => self.convert_ts_built_in(&bt, type_args),
         }
     }
 
@@ -468,9 +655,12 @@ impl<'a, R: FileManager> TypeToSchema<'a, R> {
         let file = self.files.get_or_fetch_file(&self.current_file);
         Location::build(file, span, &self.current_file).to_info(msg)
     }
-    fn error<T>(&mut self, span: &Span, msg: DiagnosticInfoMessage) -> Res<T> {
+    fn box_error(&mut self, span: &Span, msg: DiagnosticInfoMessage) -> Box<Diagnostic> {
         let err = self.create_error(span, msg);
-        Err(err.to_diag(None).into())
+        err.to_diag(None).into()
+    }
+    fn error<T>(&mut self, span: &Span, msg: DiagnosticInfoMessage) -> Res<T> {
+        Err(self.box_error(span, msg))
     }
     fn get_identifier_diag_info(&mut self, i: &Ident) -> Option<DiagnosticInformation> {
         self.files
@@ -738,10 +928,20 @@ impl<'a, R: FileManager> TypeToSchema<'a, R> {
                     MemberProp::PrivateName(_) => todo!(),
                     MemberProp::Computed(c) => {
                         let v = self.typeof_expr(&c.expr, as_const)?;
-                        v.to_sem_type(&self.validators_ref(), &mut ctx).unwrap()
+                        v.to_sem_type(&self.validators_ref(), &mut ctx)
+                            .map_err(|e| {
+                                self.box_error(
+                                    &m.span,
+                                    DiagnosticInfoMessage::AnyhowError(e.to_string()),
+                                )
+                            })?
                     }
                 };
-                let st = obj.to_sem_type(&self.validators_ref(), &mut ctx).unwrap();
+                let st = obj
+                    .to_sem_type(&self.validators_ref(), &mut ctx)
+                    .map_err(|e| {
+                        self.box_error(&m.span, DiagnosticInfoMessage::AnyhowError(e.to_string()))
+                    })?;
                 let access_st: Rc<SemType> = ctx.indexed_access(st, key);
                 self.convert_sem_type(access_st, &mut ctx, &m.prop.span())
             }
@@ -846,6 +1046,7 @@ impl<'a, R: FileManager> TypeToSchema<'a, R> {
                 Ok(JsonSchema::object(acc))
             }
             ResolvedLocalSymbol::TsEnumDecl(_) => todo!(),
+            ResolvedLocalSymbol::TsBuiltin(_) => todo!(),
         }
     }
     fn get_kv_from_schema(&mut self, schema: JsonSchema, key: &str, span: Span) -> Res<JsonSchema> {
@@ -949,8 +1150,16 @@ impl<'a, R: FileManager> TypeToSchema<'a, R> {
         // fallback to semantic
         let mut ctx = SemTypeContext::new();
 
-        let obj_st = obj.to_sem_type(&self.validators_ref(), &mut ctx).unwrap();
-        let idx_st = index.to_sem_type(&self.validators_ref(), &mut ctx).unwrap();
+        let obj_st = obj
+            .to_sem_type(&self.validators_ref(), &mut ctx)
+            .map_err(|e| {
+                self.box_error(&i.span, DiagnosticInfoMessage::AnyhowError(e.to_string()))
+            })?;
+        let idx_st = index
+            .to_sem_type(&self.validators_ref(), &mut ctx)
+            .map_err(|e| {
+                self.box_error(&i.span, DiagnosticInfoMessage::AnyhowError(e.to_string()))
+            })?;
 
         let access_st: Rc<SemType> = ctx.indexed_access(obj_st, idx_st);
         self.convert_sem_type(access_st, &mut ctx, &i.index_type.span())
@@ -960,7 +1169,9 @@ impl<'a, R: FileManager> TypeToSchema<'a, R> {
         let mut ctx = SemTypeContext::new();
         let st = json_schema
             .to_sem_type(&self.validators_ref(), &mut ctx)
-            .unwrap();
+            .map_err(|e| {
+                self.box_error(&k.span(), DiagnosticInfoMessage::AnyhowError(e.to_string()))
+            })?;
 
         let keyof_st: Rc<SemType> = ctx.keyof(st);
 

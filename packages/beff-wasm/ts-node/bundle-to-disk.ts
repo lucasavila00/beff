@@ -38,7 +38,7 @@ Object.defineProperty(exports, "__esModule", {
 const exportCode = (mod: ProjectModule) => (mod === "esm" ? "export default" : "exports.default =");
 
 const finalizeValidatorsCode = (wasmCode: WritableModules, mod: ProjectModule) => {
-  const exportedItems = [...decodersExported, "validators", "encoders"].join(", ");
+  const exportedItems = [...decodersExported, "validators"].join(", ");
   const exports = [exportCode(mod), `{ ${exportedItems} };`].join(" ");
   return [
     "//@ts-nocheck\n/* eslint-disable */\n",
@@ -50,23 +50,10 @@ const finalizeValidatorsCode = (wasmCode: WritableModules, mod: ProjectModule) =
 };
 
 const importValidators = (mod: ProjectModule) => {
-  const i = [...decodersExported, "validators", "encoders", "c"].join(", ");
+  const i = [...decodersExported, "validators", "c"].join(", ");
   return mod === "esm"
     ? `import validatorsMod from "./validators.js"; const { ${i} } = validatorsMod;`
     : `const { ${i} } = require('./validators.js').default;`;
-};
-const finalizeRouterFile = (wasmCode: WritableModules, mod: ProjectModule) => {
-  const schema = ["const schema = ", wasmCode.json_schema, ";"].join(" ");
-  const exportedItems = ["meta", "schema"].join(", ");
-  const exports = [exportCode(mod), `{ ${exportedItems} };`].join(" ");
-  return [
-    "//@ts-nocheck\n/* eslint-disable */\n",
-    esmTag(mod),
-    importValidators(mod),
-    wasmCode.js_server_meta,
-    schema,
-    exports,
-  ].join("\n");
 };
 
 const finalizeParserFile = (wasmCode: WritableModules, mod: ProjectModule) => {
@@ -90,20 +77,15 @@ export const execProject = (
 ): "ok" | "failed" => {
   const mod = projectJson.module ?? "esm";
 
-  const routerEntryPoint = projectJson.router
-    ? path.join(path.dirname(projectPath), projectJson.router)
-    : undefined;
   const parserEntryPoint = projectJson.parser
     ? path.join(path.dirname(projectPath), projectJson.parser)
     : undefined;
 
   if (verbose) {
     // eslint-disable-next-line no-console
-    console.log(`JS: Router entry point ${routerEntryPoint}`);
-    // eslint-disable-next-line no-console
     console.log(`JS: Parser entry point ${parserEntryPoint}`);
   }
-  const outResult = bundler.bundle(routerEntryPoint, parserEntryPoint, projectJson.settings);
+  const outResult = bundler.bundle(parserEntryPoint, projectJson.settings);
   if (outResult == null) {
     return "failed";
   }
@@ -113,15 +95,6 @@ export const execProject = (
   }
 
   fs.writeFileSync(path.join(outputDir, "validators.js"), finalizeValidatorsCode(outResult, mod));
-
-  if (projectJson.router) {
-    fs.writeFileSync(path.join(outputDir, "router.js"), finalizeRouterFile(outResult, mod));
-    fs.writeFileSync(
-      path.join(outputDir, "router.d.ts"),
-      ["/* eslint-disable */\n", gen["router.d.ts"]].join("\n")
-    );
-    fs.writeFileSync(path.join(outputDir, "openapi.json"), outResult.json_schema ?? "");
-  }
 
   if (projectJson.parser) {
     fs.writeFileSync(path.join(outputDir, "parser.js"), finalizeParserFile(outResult, mod));

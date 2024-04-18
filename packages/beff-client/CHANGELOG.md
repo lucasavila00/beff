@@ -1,5 +1,13 @@
 # @beff/client
 
+## 0.0.12
+
+### Patch Changes
+
+- remove openapi
+- Updated dependencies
+  - @beff/cli@0.0.12
+
 ## 0.0.11
 
 ### Patch Changes

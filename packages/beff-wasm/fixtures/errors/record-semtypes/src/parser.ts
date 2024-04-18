@@ -13,9 +13,7 @@ export type User = {
   name: string;
   friends: User[];
   avatarSize: AvatarSize;
-  extra: Extra;
+  extra: Extra[string];
 };
 
-export type PublicUser = Omit<User, "friends">;
-
-export const { User, PublicUser } = parse.buildParsers<{ User: User; PublicUser: PublicUser }>();
+export const { User } = parse.buildParsers<{ User: User }>();

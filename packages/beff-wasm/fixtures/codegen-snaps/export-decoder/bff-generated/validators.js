@@ -53,6 +53,21 @@ function decodeObject(ctx, input, required, data) {
   }
   return buildError(input, ctx, "expected object");
 }
+function decodeRecord(ctx, input, required, data) {
+  if (!required && input == null) {
+    return input;
+  }
+  if (typeof input === "object" && !Array.isArray(input) && input !== null) {
+    const acc = {};
+    for (const [k, v] of Object.entries(input)) {
+      pushPath(ctx, k);
+      acc[data[0](ctx, k)] = data[1](ctx, v);
+      popPath(ctx);
+    }
+    return acc;
+  }
+  return buildError(input, ctx, "expected object");
+}
 function decodeArray(ctx, input, required, data) {
   if (!required && input == null) {
     return input;
@@ -301,23 +316,16 @@ function DecodeUser(ctx, input) {
         "name": (ctx, input)=>(decodeString(ctx, input, true))
     });
 }
-function EncodeUser(input) {
-    return {
-        age: encodeNumber(input.age),
-        name: input.name
-    };
-}
-function DecodePassword(ctx, input) {
-    return decodeStringWithFormat(ctx, input, true, "password");
-}
-function EncodePassword(input) {
-    return input;
+function DecodeNotPublic(ctx, input) {
+    return decodeObject(ctx, input, true, {
+        "a": (ctx, input)=>(decodeString(ctx, input, true))
+    });
 }
 function DecodeStartsWithA(ctx, input) {
     return decodeStringWithFormat(ctx, input, true, "StartsWithA");
 }
-function EncodeStartsWithA(input) {
-    return input;
+function DecodePassword(ctx, input) {
+    return decodeStringWithFormat(ctx, input, true, "password");
 }
 function DecodeA(ctx, input) {
     return decodeAnyOf(ctx, input, true, [
@@ -325,37 +333,11 @@ function DecodeA(ctx, input) {
         (ctx, input)=>(decodeConst(ctx, input, true, 2))
     ]);
 }
-function EncodeA(input) {
-    return encodeAnyOf([
-        function(ctx, input) {
-            return decodeConst(ctx, input, true, 1);
-        },
-        function(ctx, input) {
-            return decodeConst(ctx, input, true, 2);
-        }
-    ], [
-        (input)=>(input),
-        (input)=>(input)
-    ], input);
-}
 function DecodeB(ctx, input) {
     return decodeAnyOf(ctx, input, true, [
         (ctx, input)=>(decodeConst(ctx, input, true, 2)),
         (ctx, input)=>(decodeConst(ctx, input, true, 3))
     ]);
-}
-function EncodeB(input) {
-    return encodeAnyOf([
-        function(ctx, input) {
-            return decodeConst(ctx, input, true, 2);
-        },
-        function(ctx, input) {
-            return decodeConst(ctx, input, true, 3);
-        }
-    ], [
-        (input)=>(input),
-        (input)=>(input)
-    ], input);
 }
 function DecodeD(ctx, input) {
     return decodeAnyOf(ctx, input, true, [
@@ -363,76 +345,11 @@ function DecodeD(ctx, input) {
         (ctx, input)=>(decodeConst(ctx, input, true, 5))
     ]);
 }
-function EncodeD(input) {
-    return encodeAnyOf([
-        function(ctx, input) {
-            return decodeConst(ctx, input, true, 4);
-        },
-        function(ctx, input) {
-            return decodeConst(ctx, input, true, 5);
-        }
-    ], [
-        (input)=>(input),
-        (input)=>(input)
-    ], input);
-}
 function DecodeE(ctx, input) {
     return decodeAnyOf(ctx, input, true, [
         (ctx, input)=>(decodeConst(ctx, input, true, 5)),
         (ctx, input)=>(decodeConst(ctx, input, true, 6))
     ]);
-}
-function EncodeE(input) {
-    return encodeAnyOf([
-        function(ctx, input) {
-            return decodeConst(ctx, input, true, 5);
-        },
-        function(ctx, input) {
-            return decodeConst(ctx, input, true, 6);
-        }
-    ], [
-        (input)=>(input),
-        (input)=>(input)
-    ], input);
-}
-function DecodeUnionNestedNamed(ctx, input) {
-    return decodeAnyOf(ctx, input, true, [
-        (ctx, input)=>(validators.A(ctx, input, true)),
-        (ctx, input)=>(validators.B(ctx, input, true)),
-        (ctx, input)=>(validators.D(ctx, input, true)),
-        (ctx, input)=>(validators.E(ctx, input, true))
-    ]);
-}
-function EncodeUnionNestedNamed(input) {
-    return encodeAnyOf([
-        function(ctx, input) {
-            return validators.A(ctx, input, true);
-        },
-        function(ctx, input) {
-            return validators.B(ctx, input, true);
-        },
-        function(ctx, input) {
-            return validators.D(ctx, input, true);
-        },
-        function(ctx, input) {
-            return validators.E(ctx, input, true);
-        }
-    ], [
-        (input)=>(encoders.A(input)),
-        (input)=>(encoders.B(input)),
-        (input)=>(encoders.D(input)),
-        (input)=>(encoders.E(input))
-    ], input);
-}
-function DecodeNotPublic(ctx, input) {
-    return decodeObject(ctx, input, true, {
-        "a": (ctx, input)=>(decodeString(ctx, input, true))
-    });
-}
-function EncodeNotPublic(input) {
-    return {
-        a: input.a
-    };
 }
 function DecodeUnionNested(ctx, input) {
     return decodeAnyOf(ctx, input, true, [
@@ -442,50 +359,16 @@ function DecodeUnionNested(ctx, input) {
         (ctx, input)=>(validators.E(ctx, input, true))
     ]);
 }
-function EncodeUnionNested(input) {
-    return encodeAnyOf([
-        function(ctx, input) {
-            return validators.A(ctx, input, true);
-        },
-        function(ctx, input) {
-            return validators.B(ctx, input, true);
-        },
-        function(ctx, input) {
-            return validators.D(ctx, input, true);
-        },
-        function(ctx, input) {
-            return validators.E(ctx, input, true);
-        }
-    ], [
-        (input)=>(encoders.A(input)),
-        (input)=>(encoders.B(input)),
-        (input)=>(encoders.D(input)),
-        (input)=>(encoders.E(input))
-    ], input);
-}
 const validators = {
     User: DecodeUser,
-    Password: DecodePassword,
+    NotPublic: DecodeNotPublic,
     StartsWithA: DecodeStartsWithA,
+    Password: DecodePassword,
     A: DecodeA,
     B: DecodeB,
     D: DecodeD,
     E: DecodeE,
-    UnionNestedNamed: DecodeUnionNestedNamed,
-    NotPublic: DecodeNotPublic,
     UnionNested: DecodeUnionNested
 };
-const encoders = {
-    User: EncodeUser,
-    Password: EncodePassword,
-    StartsWithA: EncodeStartsWithA,
-    A: EncodeA,
-    B: EncodeB,
-    D: EncodeD,
-    E: EncodeE,
-    UnionNestedNamed: EncodeUnionNestedNamed,
-    NotPublic: EncodeNotPublic,
-    UnionNested: EncodeUnionNested
-};
 
-export default { decodeObject, decodeArray, decodeString, decodeNumber, decodeCodec, decodeStringWithFormat, decodeAnyOf, decodeAllOf, decodeBoolean, decodeAny, decodeTuple, decodeNull, decodeConst, encodeCodec, encodeAnyOf, encodeAllOf, encodeNumber, validators, encoders };
+export default { decodeObject, decodeArray, decodeString, decodeNumber, decodeCodec, decodeStringWithFormat, decodeAnyOf, decodeAllOf, decodeBoolean, decodeAny, decodeTuple, decodeNull, decodeConst, encodeCodec, encodeAnyOf, encodeAllOf, encodeNumber, validators };

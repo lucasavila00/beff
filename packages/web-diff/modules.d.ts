@@ -1,2 +1,0 @@
-// svg
-declare module "*.svg";

@@ -295,6 +295,14 @@ impl DecoderFnGenerator {
                     raw: None,
                 }))],
             ),
+            JsonSchema::TsRecord { key, value } => Self::decode_call_extra(
+                "decodeRecord",
+                required,
+                vec![
+                    Self::make_cb(Self::decode_expr(key, true)),
+                    Self::make_cb(Self::decode_expr(value, true)),
+                ],
+            ),
         }
     }
 

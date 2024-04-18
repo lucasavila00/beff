@@ -53,6 +53,21 @@ function decodeObject(ctx, input, required, data) {
   }
   return buildError(input, ctx, "expected object");
 }
+function decodeRecord(ctx, input, required, data) {
+  if (!required && input == null) {
+    return input;
+  }
+  if (typeof input === "object" && !Array.isArray(input) && input !== null) {
+    const acc = {};
+    for (const [k, v] of Object.entries(input)) {
+      pushPath(ctx, k);
+      acc[data[0](ctx, k)] = data[1](ctx, v);
+      popPath(ctx);
+    }
+    return acc;
+  }
+  return buildError(input, ctx, "expected object");
+}
 function decodeArray(ctx, input, required, data) {
   if (!required && input == null) {
     return input;
@@ -295,65 +310,6 @@ function encodeAnyOf(decodeCbs, encodeCbs, value) {
 }
 
 
-function DecodeUserEntityOriginal(ctx, input) {
-    return decodeObject(ctx, input, true, {
-        "id": (ctx, input)=>(decodeString(ctx, input, true))
-    });
-}
-function EncodeUserEntityOriginal(input) {
-    return {
-        id: input.id
-    };
-}
-function DecodeAbc123(ctx, input) {
-    return decodeObject(ctx, input, true, {
-        "a": (ctx, input)=>(decodeString(ctx, input, true))
-    });
-}
-function EncodeAbc123(input) {
-    return {
-        a: input.a
-    };
-}
-function DecodeDef(ctx, input) {
-    return decodeObject(ctx, input, true, {
-        "a": (ctx, input)=>(decodeString(ctx, input, true))
-    });
-}
-function EncodeDef(input) {
-    return {
-        a: input.a
-    };
-}
-function DecodeXYZ(ctx, input) {
-    return decodeObject(ctx, input, true, {
-        "a": (ctx, input)=>(decodeNumber(ctx, input, true))
-    });
-}
-function EncodeXYZ(input) {
-    return {
-        a: encodeNumber(input.a)
-    };
-}
-function DecodeAAAAA(ctx, input) {
-    return decodeConst(ctx, input, true, 123);
-}
-function EncodeAAAAA(input) {
-    return input;
-}
-const validators = {
-    UserEntityOriginal: DecodeUserEntityOriginal,
-    Abc123: DecodeAbc123,
-    Def: DecodeDef,
-    XYZ: DecodeXYZ,
-    AAAAA: DecodeAAAAA
-};
-const encoders = {
-    UserEntityOriginal: EncodeUserEntityOriginal,
-    Abc123: EncodeAbc123,
-    Def: EncodeDef,
-    XYZ: EncodeXYZ,
-    AAAAA: EncodeAAAAA
-};
+const validators = {};
 
-export default { decodeObject, decodeArray, decodeString, decodeNumber, decodeCodec, decodeStringWithFormat, decodeAnyOf, decodeAllOf, decodeBoolean, decodeAny, decodeTuple, decodeNull, decodeConst, encodeCodec, encodeAnyOf, encodeAllOf, encodeNumber, validators, encoders };
+export default { decodeObject, decodeArray, decodeString, decodeNumber, decodeCodec, decodeStringWithFormat, decodeAnyOf, decodeAllOf, decodeBoolean, decodeAny, decodeTuple, decodeNull, decodeConst, encodeCodec, encodeAnyOf, encodeAllOf, encodeNumber, validators };

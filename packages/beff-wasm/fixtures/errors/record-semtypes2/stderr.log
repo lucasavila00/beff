@@ -1,0 +1,29 @@
+Error: Exposing a type that cannot be converted to JSON schema
+ /errors/record-semtypes2/src/parser.ts:21:52
+   19 | };
+   20 |
+ > 21 | export const { User } = parse.buildParsers<{ User: User }>();
+      |                                                    ^^^^ `User` cannot be converted to JSON schema
+   22 |
+
+    Caused by:
+     /errors/record-semtypes2/src/parser.ts:18:10
+       16 |   friends: User[];
+       17 |   avatarSize: AvatarSize;
+     > 18 |   extra: Extra[string];
+          |          ^^^^^ `Extra` cannot be converted to JSON schema
+       19 | };
+       20 |
+       21 | export const { User } = parse.buildParsers<{ User: User }>();
+
+    Caused by:
+     /errors/record-semtypes2/src/parser.ts:10:3
+        8 | type AvatarSize = `${number}x${number}`;
+        9 | type Extra = {
+     > 10 |   [key: string]: string;
+          |   ^^^^^^^^^^^^^^^^^^^^^^ Index signature cannot be converted to JSON schema - Use Record<x,y>
+       11 | };
+       12 |
+       13 | export type User = {
+
+Found 1 error

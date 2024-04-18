@@ -2,15 +2,12 @@
 /* eslint-disable */
 
 
-import validatorsMod from "./validators.js"; const { decodeObject, decodeArray, decodeString, decodeNumber, decodeCodec, decodeStringWithFormat, decodeAnyOf, decodeAllOf, decodeBoolean, decodeAny, decodeTuple, decodeNull, decodeConst, encodeCodec, encodeAnyOf, encodeAllOf, encodeNumber, validators, encoders, c } = validatorsMod;
+import validatorsMod from "./validators.js"; const { decodeObject, decodeArray, decodeString, decodeNumber, decodeCodec, decodeStringWithFormat, decodeAnyOf, decodeAllOf, decodeBoolean, decodeAny, decodeTuple, decodeNull, decodeConst, encodeCodec, encodeAnyOf, encodeAllOf, encodeNumber, validators, c } = validatorsMod;
 const meta = [
     {
         "method_kind": "get",
         "params": [],
         "pattern": "/all-types",
-        "return_encoder": function(input) {
-            return encoders.AllTypes(input);
-        },
         "return_validator": function(ctx, input) {
             return validators.AllTypes(ctx, input, true);
         }

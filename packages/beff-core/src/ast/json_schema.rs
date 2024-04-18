@@ -55,6 +55,12 @@ impl<T> Optionality<T> {
             Optionality::Required(_) => true,
         }
     }
+    pub fn to_required(self) -> Optionality<T> {
+        match self {
+            Optionality::Optional(t) => Optionality::Required(t),
+            Optionality::Required(t) => Optionality::Required(t),
+        }
+    }
 }
 
 impl Optionality<JsonSchema> {
@@ -116,6 +122,10 @@ pub enum JsonSchema {
         items: Option<Box<JsonSchema>>,
     },
     Ref(String),
+    TsRecord {
+        key: Box<JsonSchema>,
+        value: Box<JsonSchema>,
+    },
     // Enum(Vec<JsonSchemaConst>),
 
     // todo: remove this, handle it outside of json schema
@@ -405,6 +415,7 @@ impl ToJson for JsonSchema {
             JsonSchema::Boolean => {
                 Json::object(vec![("type".into(), Json::String("boolean".into()))])
             }
+            JsonSchema::TsRecord { .. } => todo!(),
             JsonSchema::Number => {
                 Json::object(vec![("type".into(), Json::String("number".into()))])
             }
@@ -536,6 +547,23 @@ impl JsonSchema {
                 span: DUMMY_SP,
                 kind: TsKeywordTypeKind::TsAnyKeyword,
             }),
+            JsonSchema::TsRecord { key, value } => {
+                let key = key.to_ts_type();
+                let value = value.to_ts_type();
+                TsType::TsTypeRef(TsTypeRef {
+                    span: DUMMY_SP,
+                    type_name: Ident {
+                        span: DUMMY_SP,
+                        sym: "Record".into(),
+                        optional: false,
+                    }
+                    .into(),
+                    type_params: Some(Box::new(TsTypeParamInstantiation {
+                        span: DUMMY_SP,
+                        params: vec![key.into(), value.into()],
+                    })),
+                })
+            }
             JsonSchema::Object(vs) => TsType::TsTypeLit(TsTypeLit {
                 span: DUMMY_SP,
                 members: vs

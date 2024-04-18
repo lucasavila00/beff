@@ -2,15 +2,12 @@
 /* eslint-disable */
 
 
-import validatorsMod from "./validators.js"; const { decodeObject, decodeArray, decodeString, decodeNumber, decodeCodec, decodeStringWithFormat, decodeAnyOf, decodeAllOf, decodeBoolean, decodeAny, decodeTuple, decodeNull, decodeConst, encodeCodec, encodeAnyOf, encodeAllOf, encodeNumber, validators, encoders, c } = validatorsMod;
+import validatorsMod from "./validators.js"; const { decodeObject, decodeArray, decodeString, decodeNumber, decodeCodec, decodeStringWithFormat, decodeAnyOf, decodeAllOf, decodeBoolean, decodeAny, decodeTuple, decodeNull, decodeConst, encodeCodec, encodeAnyOf, encodeAllOf, encodeNumber, validators, c } = validatorsMod;
 const meta = [
     {
         "method_kind": "use",
         "params": [],
         "pattern": "/posts/*",
-        "return_encoder": function(input) {
-            return input;
-        },
         "return_validator": function(ctx, input) {
             return decodeAny(ctx, input, true);
         }
@@ -19,11 +16,6 @@ const meta = [
         "method_kind": "get",
         "params": [],
         "pattern": "/",
-        "return_encoder": function(input) {
-            return {
-                message: input.message
-            };
-        },
         "return_validator": function(ctx, input) {
             return decodeObject(ctx, input, true, {
                 "message": (ctx, input)=>(decodeString(ctx, input, true))
@@ -38,12 +30,6 @@ const meta = [
             }
         ],
         "pattern": "/posts",
-        "return_encoder": function(input) {
-            return {
-                ok: input.ok,
-                posts: input.posts.map((input)=>(input))
-            };
-        },
         "return_validator": function(ctx, input) {
             return decodeObject(ctx, input, true, {
                 "ok": (ctx, input)=>(decodeBoolean(ctx, input, true)),

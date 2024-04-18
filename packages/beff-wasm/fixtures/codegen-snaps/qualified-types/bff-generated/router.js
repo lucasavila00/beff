@@ -2,15 +2,12 @@
 /* eslint-disable */
 
 
-import validatorsMod from "./validators.js"; const { decodeObject, decodeArray, decodeString, decodeNumber, decodeCodec, decodeStringWithFormat, decodeAnyOf, decodeAllOf, decodeBoolean, decodeAny, decodeTuple, decodeNull, decodeConst, encodeCodec, encodeAnyOf, encodeAllOf, encodeNumber, validators, encoders, c } = validatorsMod;
+import validatorsMod from "./validators.js"; const { decodeObject, decodeArray, decodeString, decodeNumber, decodeCodec, decodeStringWithFormat, decodeAnyOf, decodeAllOf, decodeBoolean, decodeAny, decodeTuple, decodeNull, decodeConst, encodeCodec, encodeAnyOf, encodeAllOf, encodeNumber, validators, c } = validatorsMod;
 const meta = [
     {
         "method_kind": "get",
         "params": [],
         "pattern": "/abc",
-        "return_encoder": function(input) {
-            return encoders.UserEntityOriginal(input);
-        },
         "return_validator": function(ctx, input) {
             return validators.UserEntityOriginal(ctx, input, true);
         }
@@ -19,9 +16,6 @@ const meta = [
         "method_kind": "post",
         "params": [],
         "pattern": "/abc",
-        "return_encoder": function(input) {
-            return encoders.Abc123(input);
-        },
         "return_validator": function(ctx, input) {
             return validators.Abc123(ctx, input, true);
         }
@@ -30,9 +24,6 @@ const meta = [
         "method_kind": "put",
         "params": [],
         "pattern": "/abc",
-        "return_encoder": function(input) {
-            return encoders.Def(input);
-        },
         "return_validator": function(ctx, input) {
             return validators.Def(ctx, input, true);
         }
@@ -41,9 +32,6 @@ const meta = [
         "method_kind": "delete",
         "params": [],
         "pattern": "/abc",
-        "return_encoder": function(input) {
-            return encoders.XYZ(input);
-        },
         "return_validator": function(ctx, input) {
             return validators.XYZ(ctx, input, true);
         }
@@ -52,9 +40,6 @@ const meta = [
         "method_kind": "get",
         "params": [],
         "pattern": "/def",
-        "return_encoder": function(input) {
-            return encoders.UserEntityOriginal(input);
-        },
         "return_validator": function(ctx, input) {
             return validators.UserEntityOriginal(ctx, input, true);
         }
@@ -63,9 +48,6 @@ const meta = [
         "method_kind": "post",
         "params": [],
         "pattern": "/def",
-        "return_encoder": function(input) {
-            return encoders.AAAAA(input);
-        },
         "return_validator": function(ctx, input) {
             return validators.AAAAA(ctx, input, true);
         }

@@ -53,6 +53,21 @@ function decodeObject(ctx, input, required, data) {
   }
   return buildError(input, ctx, "expected object");
 }
+function decodeRecord(ctx, input, required, data) {
+  if (!required && input == null) {
+    return input;
+  }
+  if (typeof input === "object" && !Array.isArray(input) && input !== null) {
+    const acc = {};
+    for (const [k, v] of Object.entries(input)) {
+      pushPath(ctx, k);
+      acc[data[0](ctx, k)] = data[1](ctx, v);
+      popPath(ctx);
+    }
+    return acc;
+  }
+  return buildError(input, ctx, "expected object");
+}
 function decodeArray(ctx, input, required, data) {
   if (!required && input == null) {
     return input;
@@ -295,169 +310,6 @@ function encodeAnyOf(decodeCbs, encodeCbs, value) {
 }
 
 
-function DecodeAllTypes(ctx, input) {
-    return decodeObject(ctx, input, true, {
-        "allBooleans": (ctx, input)=>(decodeBoolean(ctx, input, true)),
-        "allNumbers": (ctx, input)=>(decodeNumber(ctx, input, true)),
-        "allStrings": (ctx, input)=>(decodeString(ctx, input, true)),
-        "any": (ctx, input)=>(decodeAny(ctx, input, true)),
-        "arrayOfStrings": (ctx, input)=>(decodeArray(ctx, input, true, (ctx, input)=>(decodeString(ctx, input, true)))),
-        "booleanLiteral": (ctx, input)=>(decodeConst(ctx, input, true, true)),
-        "interface": (ctx, input)=>(validators.Post(ctx, input, true)),
-        "intersection": (ctx, input)=>(decodeAllOf(ctx, input, true, [
-                (ctx, input)=>(decodeObject(ctx, input, true, {
-                        "a": (ctx, input)=>(decodeConst(ctx, input, true, 1))
-                    })),
-                (ctx, input)=>(decodeObject(ctx, input, true, {
-                        "b": (ctx, input)=>(decodeConst(ctx, input, true, 2))
-                    }))
-            ])),
-        "null": (ctx, input)=>(decodeNull(ctx, input, true)),
-        "numberLiteral": (ctx, input)=>(decodeConst(ctx, input, true, 123)),
-        "optionalType": (ctx, input)=>(decodeArray(ctx, input, false, (ctx, input)=>(decodeNumber(ctx, input, true)))),
-        "stringLiteral": (ctx, input)=>(decodeConst(ctx, input, true, "a")),
-        "tuple": (ctx, input)=>(decodeTuple(ctx, input, true, {
-                prefix: [
-                    (ctx, input)=>(decodeString(ctx, input, true)),
-                    (ctx, input)=>(decodeString(ctx, input, true))
-                ],
-                items: null
-            })),
-        "tupleWithRest": (ctx, input)=>(decodeTuple(ctx, input, true, {
-                prefix: [
-                    (ctx, input)=>(decodeString(ctx, input, true)),
-                    (ctx, input)=>(decodeString(ctx, input, true))
-                ],
-                items: (ctx, input)=>(decodeNumber(ctx, input, true))
-            })),
-        "typeReference": (ctx, input)=>(validators.User(ctx, input, true)),
-        "undefined": (ctx, input)=>(decodeNull(ctx, input, true)),
-        "unionOfLiterals": (ctx, input)=>(decodeAnyOf(ctx, input, true, [
-                (ctx, input)=>(decodeConst(ctx, input, true, "a")),
-                (ctx, input)=>(decodeConst(ctx, input, true, "b")),
-                (ctx, input)=>(decodeConst(ctx, input, true, "c"))
-            ])),
-        "unionOfTypes": (ctx, input)=>(decodeAnyOf(ctx, input, true, [
-                (ctx, input)=>(decodeString(ctx, input, true)),
-                (ctx, input)=>(decodeNumber(ctx, input, true))
-            ])),
-        "unionWithNull": (ctx, input)=>(decodeAnyOf(ctx, input, true, [
-                (ctx, input)=>(decodeNull(ctx, input, true)),
-                (ctx, input)=>(decodeNumber(ctx, input, true)),
-                (ctx, input)=>(decodeArray(ctx, input, true, (ctx, input)=>(validators.User(ctx, input, true))))
-            ])),
-        "unknown": (ctx, input)=>(decodeAny(ctx, input, true))
-    });
-}
-function EncodeAllTypes(input) {
-    return {
-        allBooleans: input.allBooleans,
-        allNumbers: encodeNumber(input.allNumbers),
-        allStrings: input.allStrings,
-        any: input.any,
-        arrayOfStrings: input.arrayOfStrings.map((input)=>(input)),
-        booleanLiteral: input.booleanLiteral,
-        interface: encoders.Post(input.interface),
-        intersection: encodeAllOf([
-            (input)=>({
-                    a: input.a
-                }),
-            (input)=>({
-                    b: input.b
-                })
-        ], input.intersection),
-        null: (input.null ?? null),
-        numberLiteral: input.numberLiteral,
-        optionalType: input?.optionalType.map((input)=>(encodeNumber(input))),
-        stringLiteral: input.stringLiteral,
-        tuple: [
-            input.tuple[0],
-            input.tuple[1]
-        ],
-        tupleWithRest: [
-            input.tupleWithRest[0],
-            input.tupleWithRest[1],
-            ...(input.tupleWithRest.slice(2).map((input)=>(encodeNumber(input))))
-        ],
-        typeReference: encoders.User(input.typeReference),
-        undefined: (input.undefined ?? null),
-        unionOfLiterals: encodeAnyOf([
-            function(ctx, input) {
-                return decodeConst(ctx, input, true, "a");
-            },
-            function(ctx, input) {
-                return decodeConst(ctx, input, true, "b");
-            },
-            function(ctx, input) {
-                return decodeConst(ctx, input, true, "c");
-            }
-        ], [
-            (input)=>(input),
-            (input)=>(input),
-            (input)=>(input)
-        ], input.unionOfLiterals),
-        unionOfTypes: encodeAnyOf([
-            function(ctx, input) {
-                return decodeString(ctx, input, true);
-            },
-            function(ctx, input) {
-                return decodeNumber(ctx, input, true);
-            }
-        ], [
-            (input)=>(input),
-            (input)=>(encodeNumber(input))
-        ], input.unionOfTypes),
-        unionWithNull: encodeAnyOf([
-            function(ctx, input) {
-                return decodeNull(ctx, input, true);
-            },
-            function(ctx, input) {
-                return decodeNumber(ctx, input, true);
-            },
-            function(ctx, input) {
-                return decodeArray(ctx, input, true, (ctx, input)=>(validators.User(ctx, input, true)));
-            }
-        ], [
-            (input)=>((input ?? null)),
-            (input)=>(encodeNumber(input)),
-            (input)=>(input.map((input)=>(encoders.User(input))))
-        ], input.unionWithNull),
-        unknown: input.unknown
-    };
-}
-function DecodePost(ctx, input) {
-    return decodeObject(ctx, input, true, {
-        "content": (ctx, input)=>(decodeString(ctx, input, true)),
-        "id": (ctx, input)=>(decodeString(ctx, input, true))
-    });
-}
-function EncodePost(input) {
-    return {
-        content: input.content,
-        id: input.id
-    };
-}
-function DecodeUser(ctx, input) {
-    return decodeObject(ctx, input, true, {
-        "friends": (ctx, input)=>(decodeArray(ctx, input, true, (ctx, input)=>(validators.User(ctx, input, true)))),
-        "id": (ctx, input)=>(decodeString(ctx, input, true))
-    });
-}
-function EncodeUser(input) {
-    return {
-        friends: input.friends.map((input)=>(encoders.User(input))),
-        id: input.id
-    };
-}
-const validators = {
-    AllTypes: DecodeAllTypes,
-    Post: DecodePost,
-    User: DecodeUser
-};
-const encoders = {
-    AllTypes: EncodeAllTypes,
-    Post: EncodePost,
-    User: EncodeUser
-};
+const validators = {};
 
-export default { decodeObject, decodeArray, decodeString, decodeNumber, decodeCodec, decodeStringWithFormat, decodeAnyOf, decodeAllOf, decodeBoolean, decodeAny, decodeTuple, decodeNull, decodeConst, encodeCodec, encodeAnyOf, encodeAllOf, encodeNumber, validators, encoders };
+export default { decodeObject, decodeArray, decodeString, decodeNumber, decodeCodec, decodeStringWithFormat, decodeAnyOf, decodeAllOf, decodeBoolean, decodeAny, decodeTuple, decodeNull, decodeConst, encodeCodec, encodeAnyOf, encodeAllOf, encodeNumber, validators };
