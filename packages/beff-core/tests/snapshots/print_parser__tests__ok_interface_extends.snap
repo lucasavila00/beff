@@ -1,6 +1,5 @@
 ---
 source: packages/beff-core/tests/print_parser.rs
-assertion_line: 144
 expression: "ok(r#\"\n\n        interface User {\n            name: string,\n            age: number,\n        }\n        interface Admin extends User {\n            role: string,\n        }\n        parse.buildParsers<{ Admin: Admin }>();\n      \"#)"
 ---
 type Admin = { "role": string } & User;
