@@ -119,8 +119,6 @@ function decodeNumber(ctx, input, required) {
   return buildError(input, ctx, "expected number");
 }
 
-
-
 function decodeCodec(ctx, input, required, codec) {
   if (!required && input == null) {
     return input;
@@ -268,53 +266,53 @@ function decodeConst(ctx, input, required, constValue) {
 }
 
 
-function DecodeUser(ctx, input) {
-    return decodeObject(ctx, input, true, {
+function DecodeUser(ctx, input, required = true) {
+    return decodeObject(ctx, input, required, {
         "age": (ctx, input)=>(decodeNumber(ctx, input, true)),
         "name": (ctx, input)=>(decodeString(ctx, input, true))
     });
 }
-function DecodeNotPublic(ctx, input) {
-    return decodeObject(ctx, input, true, {
+function DecodeNotPublic(ctx, input, required = true) {
+    return decodeObject(ctx, input, required, {
         "a": (ctx, input)=>(decodeString(ctx, input, true))
     });
 }
-function DecodeStartsWithA(ctx, input) {
-    return decodeStringWithFormat(ctx, input, true, "StartsWithA");
+function DecodeStartsWithA(ctx, input, required = true) {
+    return decodeStringWithFormat(ctx, input, required, "StartsWithA");
 }
-function DecodePassword(ctx, input) {
-    return decodeStringWithFormat(ctx, input, true, "password");
+function DecodePassword(ctx, input, required = true) {
+    return decodeStringWithFormat(ctx, input, required, "password");
 }
-function DecodeA(ctx, input) {
-    return decodeAnyOf(ctx, input, true, [
-        (ctx, input)=>(decodeConst(ctx, input, true, 1)),
-        (ctx, input)=>(decodeConst(ctx, input, true, 2))
+function DecodeA(ctx, input, required = true) {
+    return decodeAnyOf(ctx, input, required, [
+        (ctx, input)=>(decodeConst(ctx, input, required, 1)),
+        (ctx, input)=>(decodeConst(ctx, input, required, 2))
     ]);
 }
-function DecodeB(ctx, input) {
-    return decodeAnyOf(ctx, input, true, [
-        (ctx, input)=>(decodeConst(ctx, input, true, 2)),
-        (ctx, input)=>(decodeConst(ctx, input, true, 3))
+function DecodeB(ctx, input, required = true) {
+    return decodeAnyOf(ctx, input, required, [
+        (ctx, input)=>(decodeConst(ctx, input, required, 2)),
+        (ctx, input)=>(decodeConst(ctx, input, required, 3))
     ]);
 }
-function DecodeD(ctx, input) {
-    return decodeAnyOf(ctx, input, true, [
-        (ctx, input)=>(decodeConst(ctx, input, true, 4)),
-        (ctx, input)=>(decodeConst(ctx, input, true, 5))
+function DecodeD(ctx, input, required = true) {
+    return decodeAnyOf(ctx, input, required, [
+        (ctx, input)=>(decodeConst(ctx, input, required, 4)),
+        (ctx, input)=>(decodeConst(ctx, input, required, 5))
     ]);
 }
-function DecodeE(ctx, input) {
-    return decodeAnyOf(ctx, input, true, [
-        (ctx, input)=>(decodeConst(ctx, input, true, 5)),
-        (ctx, input)=>(decodeConst(ctx, input, true, 6))
+function DecodeE(ctx, input, required = true) {
+    return decodeAnyOf(ctx, input, required, [
+        (ctx, input)=>(decodeConst(ctx, input, required, 5)),
+        (ctx, input)=>(decodeConst(ctx, input, required, 6))
     ]);
 }
-function DecodeUnionNested(ctx, input) {
-    return decodeAnyOf(ctx, input, true, [
-        (ctx, input)=>(validators.A(ctx, input, true)),
-        (ctx, input)=>(validators.B(ctx, input, true)),
-        (ctx, input)=>(validators.D(ctx, input, true)),
-        (ctx, input)=>(validators.E(ctx, input, true))
+function DecodeUnionNested(ctx, input, required = true) {
+    return decodeAnyOf(ctx, input, required, [
+        (ctx, input)=>(validators.A(ctx, input, required)),
+        (ctx, input)=>(validators.B(ctx, input, required)),
+        (ctx, input)=>(validators.D(ctx, input, required)),
+        (ctx, input)=>(validators.E(ctx, input, required))
     ]);
 }
 const validators = {

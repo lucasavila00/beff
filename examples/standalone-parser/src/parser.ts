@@ -24,9 +24,18 @@ type WithOptionals = {
 
 type Req = Required<WithOptionals>;
 
-export const { Extra, User, PublicUser } = parse.buildParsers<{
+export interface Repro2 {
+  useSmallerSizes: boolean;
+}
+
+export interface Repro1 {
+  sizes?: Repro2;
+}
+
+export const { Extra, User, PublicUser, Repro1 } = parse.buildParsers<{
   Extra: Extra;
   User: User;
   PublicUser: PublicUser;
   Req: Req;
+  Repro1: Repro1;
 }>();

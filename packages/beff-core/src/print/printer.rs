@@ -118,12 +118,7 @@ pub trait ToWritableModules {
 fn build_decoders_expr(decs: &[BuiltDecoder]) -> Js {
     Js::Object(
         decs.iter()
-            .map(|it| {
-                (
-                    it.exported_name.clone(),
-                    Js::decoder(it.schema.clone(), true),
-                )
-            })
+            .map(|it| (it.exported_name.clone(), Js::decoder(it.schema.clone())))
             .collect(),
     )
 }
@@ -157,7 +152,7 @@ impl ToWritableModules for ExtractResult {
 
         for comp in &validators {
             validator_names.push(comp.name.clone());
-            let decoder_fn = decoder::from_schema(&comp.schema, true);
+            let decoder_fn = decoder::from_schema(&comp.schema);
             let decoder_fn_decl = ModuleItem::Stmt(Stmt::Decl(Decl::Fn(FnDecl {
                 ident: Ident {
                     span: DUMMY_SP,
