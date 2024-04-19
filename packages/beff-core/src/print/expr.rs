@@ -64,9 +64,9 @@ impl ToExpr for Json {
 impl ToExpr for Js {
     fn to_expr(self) -> Expr {
         match self {
-            Js::Decoder { schema, required } => Expr::Fn(FnExpr {
+            Js::Decoder { schema } => Expr::Fn(FnExpr {
                 ident: None,
-                function: decoder::from_schema(&schema, required).into(),
+                function: decoder::from_schema(&schema).into(),
             }),
             Js::Null => Json::Null.to_expr(),
             Js::Bool(it) => Json::Bool(it).to_expr(),

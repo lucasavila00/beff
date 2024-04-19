@@ -7,6 +7,14 @@ use crate::{open_api_ast::HTTPMethod, BffFileName, ParsedModule};
 
 #[derive(Debug, Clone)]
 pub enum DiagnosticInfoMessage {
+    PartialShouldHaveObjectAsTypeArgument,
+    MissingArgumentsOnPartial,
+    PickShouldHaveStringAsTypeArgument,
+    PickShouldHaveStringOrStringArrayAsTypeArgument,
+    MissingArgumentsOnOmit,
+    MissingArgumentsOnPick,
+    PickShouldHaveTwoTypeArguments,
+    PickShouldHaveObjectAsTypeArgument,
     ExtendsShouldBeIdent,
     TypeArgsInExtendsUnsupported,
     RequiredShouldHaveObjectAsTypeArgument,
@@ -251,6 +259,30 @@ impl DiagnosticInfoMessage {
             }
             DiagnosticInfoMessage::ExtendsShouldBeIdent => {
                 "Extends should be an identifier".to_string()
+            }
+            DiagnosticInfoMessage::MissingArgumentsOnOmit => {
+                "Missing arguments on omit".to_string()
+            }
+            DiagnosticInfoMessage::MissingArgumentsOnPick => {
+                "Missing arguments on pick".to_string()
+            }
+            DiagnosticInfoMessage::PickShouldHaveTwoTypeArguments => {
+                "Pick should have two type arguments".to_string()
+            }
+            DiagnosticInfoMessage::PickShouldHaveObjectAsTypeArgument => {
+                "Pick should have object as type argument".to_string()
+            }
+            DiagnosticInfoMessage::PickShouldHaveStringAsTypeArgument => {
+                "Pick should have string as type argument".to_string()
+            }
+            DiagnosticInfoMessage::PickShouldHaveStringOrStringArrayAsTypeArgument => {
+                "Pick should have string or string array as type argument".to_string()
+            }
+            DiagnosticInfoMessage::PartialShouldHaveObjectAsTypeArgument => {
+                "Partial should have object as type argument".to_string()
+            }
+            DiagnosticInfoMessage::MissingArgumentsOnPartial => {
+                "Missing arguments on partial".to_string()
             }
         }
     }

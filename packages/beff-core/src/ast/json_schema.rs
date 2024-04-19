@@ -61,6 +61,12 @@ impl<T> Optionality<T> {
             Optionality::Required(t) => Optionality::Required(t),
         }
     }
+    pub fn to_optional(self) -> Optionality<T> {
+        match self {
+            Optionality::Optional(t) => Optionality::Optional(t),
+            Optionality::Required(t) => Optionality::Optional(t),
+        }
+    }
 }
 
 impl Optionality<JsonSchema> {

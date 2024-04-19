@@ -1,5 +1,13 @@
 import { it, expect } from "vitest";
-import { AccessLevel, Extra, User } from "../src/parser";
+import { AccessLevel, Extra, User, Repro1 } from "../src/parser";
+
+it("repro1", () => {
+  expect(Repro1.parse({})).toMatchInlineSnapshot(`
+    {
+      "sizes": undefined,
+    }
+  `);
+});
 
 it("checks records", () => {
   expect(Extra.safeParse({ key: 123 })).toMatchInlineSnapshot(`

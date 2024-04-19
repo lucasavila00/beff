@@ -20,7 +20,7 @@ pub enum Js {
     String(String),
     Array(Vec<Js>),
     Object(BTreeMap<String, Js>),
-    Decoder { schema: JsonSchema, required: bool },
+    Decoder { schema: JsonSchema },
     Expr(Expr),
 }
 
@@ -45,8 +45,8 @@ impl Js {
         Self::Object(vs.into_iter().collect())
     }
 
-    pub fn decoder(schema: JsonSchema, required: bool) -> Self {
-        Self::Decoder { schema, required }
+    pub fn decoder(schema: JsonSchema) -> Self {
+        Self::Decoder { schema }
     }
 }
 pub trait ToJs {

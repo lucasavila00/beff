@@ -109,6 +109,20 @@ mod tests {
         insta::assert_snapshot!(ok(from));
     }
     #[test]
+    fn ok_pick() {
+        let from = r#"
+
+    type User = {
+        name: string,
+        age: number,
+        email: string,
+    }
+    parse.buildParsers<{ A: Pick<User, 'age'> }>();
+
+  "#;
+        insta::assert_snapshot!(ok(from));
+    }
+    #[test]
     fn ok_omit2() {
         let from = r#"
 
@@ -118,6 +132,20 @@ mod tests {
         email: string,
     }
     parse.buildParsers<{ A: Omit<User, 'age'|'email'> }>();
+
+  "#;
+        insta::assert_snapshot!(ok(from));
+    }
+    #[test]
+    fn ok_partial() {
+        let from = r#"
+
+    type User = {
+        name: string,
+        age: number,
+        email: string,
+    }
+    parse.buildParsers<{ A: Partial<User> }>();
 
   "#;
         insta::assert_snapshot!(ok(from));

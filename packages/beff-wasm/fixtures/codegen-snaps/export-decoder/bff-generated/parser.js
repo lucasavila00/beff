@@ -4,29 +4,29 @@
 
 import validatorsMod from "./validators.js"; const { decodeObject, decodeArray, decodeString, decodeNumber, decodeCodec, decodeStringWithFormat, decodeAnyOf, decodeAllOf, decodeBoolean, decodeAny, decodeTuple, decodeNull, decodeConst, validators, c } = validatorsMod;
 const buildParsersInput = {
-    "NotPublicRenamed": function(ctx, input) {
-        return validators.NotPublic(ctx, input, true);
+    "NotPublicRenamed": function(ctx, input, required = true) {
+        return validators.NotPublic(ctx, input, required);
     },
-    "Password": function(ctx, input) {
-        return validators.Password(ctx, input, true);
+    "Password": function(ctx, input, required = true) {
+        return validators.Password(ctx, input, required);
     },
-    "StartsWithA": function(ctx, input) {
-        return validators.StartsWithA(ctx, input, true);
+    "StartsWithA": function(ctx, input, required = true) {
+        return validators.StartsWithA(ctx, input, required);
     },
-    "User": function(ctx, input) {
-        return validators.User(ctx, input, true);
+    "User": function(ctx, input, required = true) {
+        return validators.User(ctx, input, required);
     },
-    "Users": function(ctx, input) {
-        return decodeArray(ctx, input, true, (ctx, input)=>(validators.User(ctx, input, true)));
+    "Users": function(ctx, input, required = true) {
+        return decodeArray(ctx, input, required, (ctx, input)=>(validators.User(ctx, input, true)));
     },
-    "float": function(ctx, input) {
-        return decodeConst(ctx, input, true, 123.456);
+    "float": function(ctx, input, required = true) {
+        return decodeConst(ctx, input, required, 123.456);
     },
-    "int": function(ctx, input) {
-        return decodeConst(ctx, input, true, 123);
+    "int": function(ctx, input, required = true) {
+        return decodeConst(ctx, input, required, 123);
     },
-    "union": function(ctx, input) {
-        return validators.UnionNested(ctx, input, true);
+    "union": function(ctx, input, required = true) {
+        return validators.UnionNested(ctx, input, required);
     }
 };
 

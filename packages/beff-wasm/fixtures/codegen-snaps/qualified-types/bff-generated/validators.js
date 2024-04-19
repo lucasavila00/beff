@@ -119,8 +119,6 @@ function decodeNumber(ctx, input, required) {
   return buildError(input, ctx, "expected number");
 }
 
-
-
 function decodeCodec(ctx, input, required, codec) {
   if (!required && input == null) {
     return input;
