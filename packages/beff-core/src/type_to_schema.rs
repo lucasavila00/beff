@@ -125,6 +125,66 @@ impl<'a, R: FileManager> TypeToSchema<'a, R> {
             ),
         }
     }
+    fn convert_pick_keys(
+        obj: &BTreeMap<String, Optionality<JsonSchema>>,
+        keys: Vec<String>,
+    ) -> JsonSchema {
+        let mut acc = vec![];
+        for (k, v) in obj {
+            if keys.contains(k) {
+                acc.push((k.clone(), v.clone()));
+            }
+        }
+        JsonSchema::object(acc)
+    }
+    fn convert_pick(
+        &mut self,
+        span: &Span,
+        obj: &BTreeMap<String, Optionality<JsonSchema>>,
+        keys: JsonSchema,
+    ) -> Res<JsonSchema> {
+        match keys {
+            JsonSchema::Const(JsonSchemaConst::String(str)) => {
+                Ok(Self::convert_pick_keys(obj, vec![str]))
+            }
+            JsonSchema::AnyOf(rms) => {
+                let mut keys = vec![];
+                for rm in rms {
+                    match rm {
+                        JsonSchema::Const(JsonSchemaConst::String(str)) => {
+                            keys.push(str);
+                        }
+                        JsonSchema::Ref(n) => {
+                            let map = self.components.get(&n).and_then(|it| it.as_ref()).cloned();
+                            match map {
+                                Some(Validator {
+                                    schema: JsonSchema::Const(JsonSchemaConst::String(str)),
+                                    ..
+                                }) => keys.push(str),
+                                _ => {
+                                    return self.error(
+                                        span,
+                                        DiagnosticInfoMessage::PickShouldHaveStringAsTypeArgument,
+                                    )
+                                }
+                            }
+                        }
+                        _ => {
+                            return self.error(
+                                span,
+                                DiagnosticInfoMessage::PickShouldHaveStringAsTypeArgument,
+                            )
+                        }
+                    }
+                }
+                Ok(Self::convert_pick_keys(obj, keys))
+            }
+            _ => self.error(
+                span,
+                DiagnosticInfoMessage::PickShouldHaveStringOrStringArrayAsTypeArgument,
+            ),
+        }
+    }
 
     fn convert_omit_keys(
         obj: &BTreeMap<String, Optionality<JsonSchema>>,
@@ -138,6 +198,7 @@ impl<'a, R: FileManager> TypeToSchema<'a, R> {
         }
         JsonSchema::object(acc)
     }
+
     fn convert_omit(
         &mut self,
         span: &Span,
@@ -193,6 +254,13 @@ impl<'a, R: FileManager> TypeToSchema<'a, R> {
         }
         JsonSchema::object(acc)
     }
+    fn convert_partial(&mut self, obj: &BTreeMap<String, Optionality<JsonSchema>>) -> JsonSchema {
+        let mut acc = vec![];
+        for (k, v) in obj {
+            acc.push((k.clone(), v.clone().to_optional()));
+        }
+        JsonSchema::object(acc)
+    }
     fn convert_ts_built_in(
         &mut self,
         typ: &TsBuiltIn,
@@ -229,6 +297,45 @@ impl<'a, R: FileManager> TypeToSchema<'a, R> {
                 None => self
                     .cannot_serialize_error(span, DiagnosticInfoMessage::MissingArgumentsOnRecord),
             },
+            TsBuiltIn::TsPick(span) => match type_args {
+                Some(vs) => {
+                    let items = vs
+                        .params
+                        .iter()
+                        .map(|it| self.convert_ts_type(it))
+                        .collect::<Res<Vec<_>>>()?;
+
+                    if items.len() != 2 {
+                        return self
+                            .error(span, DiagnosticInfoMessage::PickShouldHaveTwoTypeArguments);
+                    }
+                    let obj = items[0].clone();
+                    let k = items[1].clone();
+                    match obj {
+                        JsonSchema::Object(vs) => self.convert_pick(span, &vs, k),
+                        JsonSchema::Ref(r) => {
+                            let map = self.components.get(&r).and_then(|it| it.as_ref()).cloned();
+                            match map {
+                                Some(Validator {
+                                    schema: JsonSchema::Object(vs),
+                                    ..
+                                }) => self.convert_pick(span, &vs, k),
+                                _ => self.error(
+                                    span,
+                                    DiagnosticInfoMessage::PickShouldHaveObjectAsTypeArgument,
+                                ),
+                            }
+                        }
+                        _ => self.error(
+                            span,
+                            DiagnosticInfoMessage::PickShouldHaveObjectAsTypeArgument,
+                        ),
+                    }
+                }
+                None => {
+                    self.cannot_serialize_error(span, DiagnosticInfoMessage::MissingArgumentsOnPick)
+                }
+            },
             TsBuiltIn::TsOmit(span) => match type_args {
                 Some(vs) => {
                     let items = vs
@@ -264,8 +371,9 @@ impl<'a, R: FileManager> TypeToSchema<'a, R> {
                         ),
                     }
                 }
-                None => self
-                    .cannot_serialize_error(span, DiagnosticInfoMessage::MissingArgumentsOnRecord),
+                None => {
+                    self.cannot_serialize_error(span, DiagnosticInfoMessage::MissingArgumentsOnOmit)
+                }
             },
             TsBuiltIn::TsRequired(span) => match type_args {
                 Some(vs) => {
@@ -305,6 +413,43 @@ impl<'a, R: FileManager> TypeToSchema<'a, R> {
                     span,
                     DiagnosticInfoMessage::MissingArgumentsOnRequired,
                 ),
+            },
+            TsBuiltIn::TsPartial(span) => match type_args {
+                Some(vs) => {
+                    let items = vs
+                        .params
+                        .iter()
+                        .map(|it| self.convert_ts_type(it))
+                        .collect::<Res<Vec<_>>>()?;
+
+                    if items.len() != 1 {
+                        return self
+                            .error(span, DiagnosticInfoMessage::OmitShouldHaveTwoTypeArguments);
+                    }
+                    let obj = items[0].clone();
+                    match obj {
+                        JsonSchema::Object(vs) => Ok(self.convert_partial(&vs)),
+                        JsonSchema::Ref(r) => {
+                            let map = self.components.get(&r).and_then(|it| it.as_ref()).cloned();
+                            match map {
+                                Some(Validator {
+                                    schema: JsonSchema::Object(vs),
+                                    ..
+                                }) => Ok(self.convert_partial(&vs)),
+                                _ => self.error(
+                                    span,
+                                    DiagnosticInfoMessage::PartialShouldHaveObjectAsTypeArgument,
+                                ),
+                            }
+                        }
+                        _ => self.error(
+                            span,
+                            DiagnosticInfoMessage::PartialShouldHaveObjectAsTypeArgument,
+                        ),
+                    }
+                }
+                None => self
+                    .cannot_serialize_error(span, DiagnosticInfoMessage::MissingArgumentsOnPartial),
             },
         }
     }
