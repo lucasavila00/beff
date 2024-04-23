@@ -134,14 +134,14 @@ fn build_decoders_expr(decs: &[BuiltDecoder], validators: &Vec<Validator>) -> Ex
             .into_iter()
             .map(|(key, value)| {
                 PropOrSpread::Prop(
-                    Box::new(Prop::KeyValue(KeyValueProp {
+                    Prop::KeyValue(KeyValueProp {
                         key: PropName::Ident(Ident {
                             span: DUMMY_SP,
                             sym: key.into(),
                             optional: false,
                         }),
                         value: value.into(),
-                    }))
+                    })
                     .into(),
                 )
             })
