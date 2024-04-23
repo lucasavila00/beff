@@ -149,6 +149,19 @@ function decodeStringWithFormat(ctx, input, required, format) {
   return input;
   
 }
+
+
+function decodeAnyOfConsts(ctx, input, required, consts) {
+  if (!required && input == null) {
+    return input;
+  }
+  for (const c of consts) {
+    if (input === c) {
+      return c;
+    }
+  }
+  return buildError(input, ctx, "expected one of " + consts.map(it => JSON.stringify(it)).join(", "));
+}
 function decodeAnyOf(ctx, input, required, vs) {
   if (!required && input == null) {
     return input;
@@ -255,9 +268,9 @@ function DecodeExtra(ctx, input, required = true) {
     return decodeRecord(ctx, input, required, (ctx, input)=>(decodeString(ctx, input, true)), (ctx, input)=>(decodeString(ctx, input, true)));
 }
 function DecodeAccessLevel(ctx, input, required = true) {
-    return decodeAnyOf(ctx, input, required, [
-        (ctx, input)=>(decodeConst(ctx, input, required, "ADMIN")),
-        (ctx, input)=>(decodeConst(ctx, input, required, "USER"))
+    return decodeAnyOfConsts(ctx, input, required, [
+        "ADMIN",
+        "USER"
     ]);
 }
 function DecodeAvatarSize(ctx, input, required = true) {
@@ -306,9 +319,9 @@ function DecodeSettings(ctx, input, required = true) {
         "d": (ctx, input)=>(decodeObject(ctx, input, true, {
                 "tag": (ctx, input)=>(decodeConst(ctx, input, true, "d"))
             })),
-        "level": (ctx, input)=>(decodeAnyOf(ctx, input, true, [
-                (ctx, input)=>(decodeConst(ctx, input, true, "a")),
-                (ctx, input)=>(decodeConst(ctx, input, true, "b"))
+        "level": (ctx, input)=>(decodeAnyOfConsts(ctx, input, true, [
+                "a",
+                "b"
             ]))
     });
 }

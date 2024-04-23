@@ -85,20 +85,7 @@ it("works on recursive type", () => {
     {
       "errors": [
         {
-          "errors": [
-            {
-              "message": "expected \\"ADMIN\\"",
-              "path": [],
-              "received": undefined,
-            },
-            {
-              "message": "expected \\"USER\\"",
-              "path": [],
-              "received": undefined,
-            },
-          ],
-          "isUnionError": true,
-          "message": "expected one of",
+          "message": "expected one of \\"ADMIN\\", \\"USER\\"",
           "path": [
             "accessLevel",
           ],
@@ -119,20 +106,7 @@ it("works on recursive type", () => {
           "received": undefined,
         },
         {
-          "errors": [
-            {
-              "message": "expected \\"ADMIN\\"",
-              "path": [],
-              "received": undefined,
-            },
-            {
-              "message": "expected \\"USER\\"",
-              "path": [],
-              "received": undefined,
-            },
-          ],
-          "isUnionError": true,
-          "message": "expected one of",
+          "message": "expected one of \\"ADMIN\\", \\"USER\\"",
           "path": [
             "friends",
             "[0]",

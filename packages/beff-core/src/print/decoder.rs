@@ -292,6 +292,30 @@ impl DecoderFnGenerator {
                 })],
             ),
             JsonSchema::AnyOf(vs) => {
+                let all_consts = vs.iter().all(|it| matches!(it, JsonSchema::Const(_)));
+                if all_consts {
+                    let consts: Vec<Expr> = vs
+                        .iter()
+                        .map(|it| match it {
+                            JsonSchema::Const(json) => json.clone().to_json().to_expr(),
+                            _ => unreachable!(),
+                        })
+                        .collect();
+                    let consts = vec![Expr::Array(ArrayLit {
+                        span: DUMMY_SP,
+                        elems: consts
+                            .into_iter()
+                            .map(|it| {
+                                Some(ExprOrSpread {
+                                    spread: None,
+                                    expr: it.into(),
+                                })
+                            })
+                            .collect(),
+                    })];
+                    return Self::decode_call_extra("decodeAnyOfConsts", required, consts);
+                }
+
                 Self::decode_union_or_intersection("decodeAnyOf", required, vs)
             }
             JsonSchema::AllOf(vs) => {
