@@ -1346,21 +1346,30 @@ impl<'a, R: FileManager> TypeToSchema<'a, R> {
         self.convert_sem_type(keyof_st, &mut ctx, &k.span())
     }
 
-    fn extract_union(&self, tp: JsonSchema) -> Vec<JsonSchema> {
+    fn extract_union(&mut self, tp: JsonSchema) -> Res<Vec<JsonSchema>> {
         match tp {
-            JsonSchema::AnyOf(v) => Vec::from_iter(v)
-                .into_iter()
-                .flat_map(|it| self.extract_union(it))
-                .collect(),
+            JsonSchema::AnyOf(v) => {
+                let mut vs = vec![];
+                for item in v {
+                    let extracted = self.extract_union(item)?;
+                    vs.extend(extracted);
+                }
+                Ok(vs)
+            }
             JsonSchema::Ref(r) => {
                 let v = self.components.get(&r);
                 let v = v.and_then(|it| it.clone());
                 match v {
                     Some(v) => self.extract_union(v.schema),
-                    None => vec![JsonSchema::Any],
+                    None => {
+                        return self.error(
+                            &Span::default(),
+                            DiagnosticInfoMessage::CannotResolveRefInExtractUnion,
+                        )
+                    }
                 }
             }
-            _ => vec![tp],
+            _ => Ok(vec![tp]),
         }
     }
 
@@ -1376,7 +1385,7 @@ impl<'a, R: FileManager> TypeToSchema<'a, R> {
             }
         };
         let constraint_schema = self.convert_ts_type(constraint)?;
-        let values = self.extract_union(constraint_schema);
+        let values = self.extract_union(constraint_schema)?;
 
         let mut string_keys = vec![];
 
