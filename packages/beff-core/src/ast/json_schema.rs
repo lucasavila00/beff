@@ -209,7 +209,29 @@ impl JsonSchema {
     pub fn all_of(vs: Vec<JsonSchema>) -> Self {
         match vs.len() {
             1 => vs.into_iter().next().expect("we just checked len"),
-            _ => Self::AllOf(BTreeSet::from_iter(vs)),
+            _ => {
+                let mut obj_kvs: Vec<(String, Optionality<JsonSchema>)> = vec![];
+                let mut all_objects = true;
+
+                for v in vs.iter() {
+                    match v {
+                        JsonSchema::Object(vs) => {
+                            obj_kvs.extend(vs.iter().map(|it| (it.0.clone(), it.1.clone())));
+                        }
+                        _ => {
+                            all_objects = false;
+                            break;
+                        }
+                    }
+                }
+
+                if all_objects && vs.len() > 1 {
+                    JsonSchema::object(obj_kvs)
+                } else {
+                    Self::AllOf(BTreeSet::from_iter(vs))
+                }
+                // Self::AllOf(BTreeSet::from_iter(vs))
+            }
         }
     }
 

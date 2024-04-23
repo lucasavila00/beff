@@ -794,9 +794,8 @@ impl<'a, R: FileManager> TypeToSchema<'a, R> {
             .iter()
             .map(|it| self.convert_ts_type(it))
             .collect::<Res<_>>()?;
-        let val = JsonSchema::all_of(vs);
 
-        Ok(val)
+        Ok(JsonSchema::all_of(vs))
     }
 
     fn cannot_serialize_error<T>(&mut self, span: &Span, msg: DiagnosticInfoMessage) -> Res<T> {
@@ -1275,7 +1274,10 @@ impl<'a, R: FileManager> TypeToSchema<'a, R> {
         span: &Span,
     ) -> Res<JsonSchema> {
         if access_st.is_empty(ctx) {
-            return self.error(span, DiagnosticInfoMessage::InvalidIndexedAccess);
+            return self.error(
+                span,
+                DiagnosticInfoMessage::NeverCannotBeConvertedToJsonSchema,
+            );
         }
         let (head, tail) = to_validators(ctx, &access_st, "AnyName");
         for t in tail {

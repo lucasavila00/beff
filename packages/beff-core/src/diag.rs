@@ -7,6 +7,7 @@ use crate::{open_api_ast::HTTPMethod, BffFileName, ParsedModule};
 
 #[derive(Debug, Clone)]
 pub enum DiagnosticInfoMessage {
+    NeverCannotBeConvertedToJsonSchema,
     CannotResolveRefInExtractUnion,
     PartialShouldHaveObjectAsTypeArgument,
     MissingArgumentsOnPartial,
@@ -335,6 +336,9 @@ impl DiagnosticInfoMessage {
             }
             DiagnosticInfoMessage::CannotResolveRefInExtractUnion => {
                 "Cannot resolve ref in extract union".to_string()
+            }
+            DiagnosticInfoMessage::NeverCannotBeConvertedToJsonSchema => {
+                "'Never' cannot be converted to JSON schema".to_string()
             }
         }
     }
