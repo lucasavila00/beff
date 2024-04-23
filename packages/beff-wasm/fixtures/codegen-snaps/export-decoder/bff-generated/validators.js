@@ -38,7 +38,7 @@ function buildUnionError(received, ctx, errors) {
   });
 }
 
-function decodeObject(ctx, input, required, data) {
+function decodeObject(ctx, input, required, data, additionalPropsValidator = null) {
   if (!required && input == null) {
     return input;
   }
@@ -49,25 +49,22 @@ function decodeObject(ctx, input, required, data) {
       acc[k] = v(ctx, input[k]);
       popPath(ctx);
     }
-    return acc;
-  }
-  return buildError(input, ctx, "expected object");
-}
-function decodeRecord(ctx, input, required, keyValidator, valueValidator) {
-  if (!required && input == null) {
-    return input;
-  }
-  if (typeof input === "object" && !Array.isArray(input) && input !== null) {
-    const acc = {};
-    for (const [k, v] of Object.entries(input)) {
-      pushPath(ctx, k);
-      acc[keyValidator(ctx, k)] = valueValidator(ctx, v);
-      popPath(ctx);
+
+    if (additionalPropsValidator != null) {
+      for (const [k, v] of Object.entries(input)) {
+        if (acc[k] == null) {
+          pushPath(ctx, k);
+          
+          acc[k] = additionalPropsValidator(ctx, v);
+          popPath(ctx);
+        }
+      }
     }
     return acc;
   }
   return buildError(input, ctx, "expected object");
 }
+
 function decodeArray(ctx, input, required, data) {
   if (!required && input == null) {
     return input;

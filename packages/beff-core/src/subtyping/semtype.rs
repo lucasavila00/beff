@@ -320,8 +320,13 @@ impl MemoEmpty {
 #[derive(Clone, Debug)]
 pub struct BddMemoEmptyRef(pub MemoEmpty);
 
+pub struct MappingAtomicType {
+    pub vs: Rc<MappingAtomic>,
+    pub rest: Rc<SemType>,
+}
+
 pub struct SemTypeContext {
-    pub mapping_definitions: Vec<Option<Rc<MappingAtomic>>>,
+    pub mapping_definitions: Vec<Option<Rc<MappingAtomicType>>>,
     pub mapping_memo: BTreeMap<Bdd, BddMemoEmptyRef>,
 
     pub list_definitions: Vec<Option<Rc<ListAtomic>>>,
@@ -338,7 +343,7 @@ impl Default for SemTypeContext {
 }
 
 impl SemTypeContext {
-    pub fn get_mapping_atomic(&self, idx: usize) -> Rc<MappingAtomic> {
+    pub fn get_mapping_atomic(&self, idx: usize) -> Rc<MappingAtomicType> {
         self.mapping_definitions
             .get(idx)
             .expect("should exist")
@@ -392,9 +397,15 @@ impl SemTypeContext {
             vec![ProperSubtype::Mapping(Bdd::from_atom(Atom::Mapping(idx)).into()).into()],
         )
     }
-    pub fn mapping_definition(&mut self, vs: Rc<MappingAtomic>) -> SemType {
+    pub fn mapping_definition(&mut self, vs: Rc<MappingAtomic>, rest: Rc<SemType>) -> SemType {
         let idx = self.mapping_definitions.len();
-        self.mapping_definitions.push(Some(vs.clone()));
+        self.mapping_definitions.push(Some(
+            MappingAtomicType {
+                vs: vs.clone(),
+                rest,
+            }
+            .into(),
+        ));
 
         Self::mapping_definition_from_idx(idx)
     }

@@ -6,11 +6,14 @@ use crate::ast::json::{Json, ToJson};
 use anyhow::anyhow;
 use anyhow::Result;
 use swc_common::DUMMY_SP;
+use swc_ecma_ast::BindingIdent;
 use swc_ecma_ast::Bool;
 use swc_ecma_ast::Ident;
 use swc_ecma_ast::Str;
 use swc_ecma_ast::TsArrayType;
 use swc_ecma_ast::TsEntityName;
+use swc_ecma_ast::TsFnParam;
+use swc_ecma_ast::TsIndexSignature;
 use swc_ecma_ast::TsIntersectionType;
 use swc_ecma_ast::TsKeywordType;
 use swc_ecma_ast::TsKeywordTypeKind;
@@ -121,18 +124,16 @@ pub enum JsonSchema {
     Any,
     AnyArrayLike,
     StringWithFormat(String),
-    Object(BTreeMap<String, Optionality<JsonSchema>>),
+    Object {
+        vs: BTreeMap<String, Optionality<JsonSchema>>,
+        rest: Option<Box<JsonSchema>>,
+    },
     Array(Box<JsonSchema>),
     Tuple {
         prefix_items: Vec<JsonSchema>,
         items: Option<Box<JsonSchema>>,
     },
     Ref(String),
-    TsRecord {
-        key: Box<JsonSchema>,
-        value: Box<JsonSchema>,
-    },
-    // Enum(Vec<JsonSchemaConst>),
 
     // todo: remove this, handle it outside of json schema
     OpenApiResponseRef(String),
@@ -189,8 +190,14 @@ impl UnionMerger {
 }
 
 impl JsonSchema {
-    pub fn object(vs: Vec<(String, Optionality<JsonSchema>)>) -> Self {
-        Self::Object(vs.into_iter().collect())
+    pub fn object(
+        vs: Vec<(String, Optionality<JsonSchema>)>,
+        rest: Option<Box<JsonSchema>>,
+    ) -> Self {
+        Self::Object {
+            vs: vs.into_iter().collect(),
+            rest,
+        }
     }
 
     pub fn required(self) -> Optionality<JsonSchema> {
@@ -212,10 +219,15 @@ impl JsonSchema {
             _ => {
                 let mut obj_kvs: Vec<(String, Optionality<JsonSchema>)> = vec![];
                 let mut all_objects = true;
+                let mut rest_is_none = true;
 
                 for v in vs.iter() {
                     match v {
-                        JsonSchema::Object(vs) => {
+                        JsonSchema::Object { vs, rest } => {
+                            if rest.is_some() {
+                                rest_is_none = false;
+                                break;
+                            }
                             obj_kvs.extend(vs.iter().map(|it| (it.0.clone(), it.1.clone())));
                         }
                         _ => {
@@ -225,8 +237,8 @@ impl JsonSchema {
                     }
                 }
 
-                if all_objects && vs.len() > 1 {
-                    JsonSchema::object(obj_kvs)
+                if rest_is_none && all_objects && vs.len() > 1 {
+                    JsonSchema::object(obj_kvs, None)
                 } else {
                     Self::AllOf(BTreeSet::from_iter(vs))
                 }
@@ -234,162 +246,7 @@ impl JsonSchema {
             }
         }
     }
-
-    fn parse_string(vs: &BTreeMap<String, Json>) -> Result<Self> {
-        match vs.get("format") {
-            Some(Json::String(format)) => Ok(JsonSchema::StringWithFormat(format.clone())),
-            _ => Ok(JsonSchema::String),
-        }
-    }
-    fn parse_object(vs: &BTreeMap<String, Json>) -> Result<Self> {
-        let props = vs
-            .get("properties")
-            .ok_or(anyhow!("object must have properties field"))?;
-        let props = match props {
-            Json::Object(props) => props,
-            _ => return Err(anyhow!("properties must be an object")),
-        };
-
-        let required = vs
-            .get("required")
-            .ok_or(anyhow!("object must have required field"))?;
-
-        let required = match required {
-            Json::Array(required) => required
-                .iter()
-                .map(|it| match it {
-                    Json::String(s) => Ok(s.clone()),
-                    _ => Err(anyhow!("required must be an array of strings")),
-                })
-                .collect::<Result<Vec<_>>>()?,
-            _ => return Err(anyhow!("required must be an array")),
-        };
-
-        let props = props
-            .iter()
-            .map(|(k, v)| {
-                JsonSchema::from_json(v).map(|v| match required.iter().find(|it| *it == k) {
-                    Some(_) => (k.clone(), v.required()),
-                    None => (k.clone(), v.optional()),
-                })
-            })
-            .collect::<Result<_>>()?;
-
-        Ok(JsonSchema::object(props))
-    }
-
-    fn parse_array(vs: &BTreeMap<String, Json>) -> Result<Self> {
-        // if it has prefixItems or minItems or maxItems it is tuple
-
-        let has_extra_props = vs.iter().any(|(k, _v)| k != "type" && k != "items");
-
-        if has_extra_props {
-            let prefix_items = match vs.get("prefixItems") {
-                Some(its) => match its {
-                    Json::Array(vs) => vs
-                        .iter()
-                        .map(JsonSchema::from_json)
-                        .collect::<Result<Vec<_>>>()?,
-                    _ => return Err(anyhow!("prefix_items must be an array")),
-                },
-                _ => vec![],
-            };
-
-            let items = match vs.get("items") {
-                Some(it) => Some(Box::new(JsonSchema::from_json(it)?)),
-                None => None,
-            };
-
-            Ok(JsonSchema::Tuple {
-                prefix_items,
-                items,
-            })
-        } else {
-            let typ = vs
-                .get("items")
-                .ok_or(anyhow!("array must have items field"))?;
-            Ok(JsonSchema::Array(JsonSchema::from_json(typ)?.into()))
-        }
-    }
-
-    pub fn from_json(it: &Json) -> Result<Self> {
-        match it {
-            Json::Object(vs) => {
-                if let Some(cons) = vs.get("const") {
-                    return Ok(JsonSchema::Const(JsonSchemaConst::from_json(cons)?));
-                }
-                if let Some(enu) = vs.get("enum") {
-                    let enu = match enu {
-                        Json::Array(vs) => vs
-                            .iter()
-                            .map(|it| JsonSchemaConst::from_json(it).map(JsonSchema::Const))
-                            .collect::<Result<Vec<_>>>()?,
-                        _ => return Err(anyhow!("enum must be an array")),
-                    };
-                    return Ok(JsonSchema::any_of(enu));
-                }
-                if let Some(any_of) = vs.get("anyOf") {
-                    let any_of = match any_of {
-                        Json::Array(vs) => vs
-                            .iter()
-                            .map(JsonSchema::from_json)
-                            .collect::<Result<Vec<_>>>()?,
-                        _ => return Err(anyhow!("any of must be an array")),
-                    };
-                    return Ok(JsonSchema::any_of(any_of));
-                }
-                if let Some(all_of) = vs.get("allOf") {
-                    let all_of = match all_of {
-                        Json::Array(vs) => vs
-                            .iter()
-                            .map(JsonSchema::from_json)
-                            .collect::<Result<Vec<_>>>()?,
-                        _ => return Err(anyhow!("all of must be an array")),
-                    };
-                    return Ok(JsonSchema::all_of(all_of));
-                }
-
-                if let Some(reference) = vs.get("$ref") {
-                    let reference = match reference {
-                        Json::String(st) => st.clone(),
-                        _ => return Err(anyhow!("reference must be a string")),
-                    };
-                    let schemas_prefix = "#/components/schemas/";
-                    if reference.starts_with(schemas_prefix) {
-                        return Ok(JsonSchema::Ref(reference.replace(schemas_prefix, "")));
-                    }
-                    let responses_prefix = "#/components/responses/";
-                    if reference.starts_with(responses_prefix) {
-                        return Ok(JsonSchema::OpenApiResponseRef(
-                            reference.replace(responses_prefix, ""),
-                        ));
-                    }
-
-                    return Err(anyhow!("invalid reference {reference:?}"));
-                }
-
-                let typ = vs.get("type");
-                match typ {
-                    Some(typ) => match typ {
-                        Json::String(typ) => match typ.as_str() {
-                            "null" => Ok(JsonSchema::Null),
-                            "string" => Self::parse_string(vs),
-                            "boolean" => Ok(JsonSchema::Boolean),
-                            "number" => Ok(JsonSchema::Number),
-                            "object" => Self::parse_object(vs),
-                            "array" => Self::parse_array(vs),
-                            _ => Err(anyhow!("unknown type: {}", typ)),
-                        },
-                        _ => Err(anyhow!("type must be a string")),
-                    },
-                    None => Ok(JsonSchema::Any),
-                }
-            }
-            _ => Err(anyhow!("JsonSchema must be an object")),
-        }
-    }
 }
-
 impl ToJson for JsonSchema {
     #[allow(clippy::cast_precision_loss)]
     fn to_json(self) -> Json {
@@ -406,8 +263,8 @@ impl ToJson for JsonSchema {
                 ("format".into(), Json::String(format.to_string())),
             ]),
 
-            JsonSchema::Object(values) => {
-                Json::object(vec![
+            JsonSchema::Object { vs: values, rest } => {
+                let mut vs = vec![
                     //
                     ("type".into(), Json::String("object".into())),
                     (
@@ -431,7 +288,12 @@ impl ToJson for JsonSchema {
                                 .collect(),
                         ),
                     ),
-                ])
+                ];
+
+                if let Some(rest) = rest {
+                    vs.push(("additionalProperties".into(), rest.to_json()));
+                }
+                Json::object(vs)
             }
             JsonSchema::Array(typ) => {
                 Json::object(vec![
@@ -443,7 +305,6 @@ impl ToJson for JsonSchema {
             JsonSchema::Boolean => {
                 Json::object(vec![("type".into(), Json::String("boolean".into()))])
             }
-            JsonSchema::TsRecord { .. } => todo!(),
             JsonSchema::Number => {
                 Json::object(vec![("type".into(), Json::String("number".into()))])
             }
@@ -575,26 +436,8 @@ impl JsonSchema {
                 span: DUMMY_SP,
                 kind: TsKeywordTypeKind::TsAnyKeyword,
             }),
-            JsonSchema::TsRecord { key, value } => {
-                let key = key.to_ts_type();
-                let value = value.to_ts_type();
-                TsType::TsTypeRef(TsTypeRef {
-                    span: DUMMY_SP,
-                    type_name: Ident {
-                        span: DUMMY_SP,
-                        sym: "Record".into(),
-                        optional: false,
-                    }
-                    .into(),
-                    type_params: Some(Box::new(TsTypeParamInstantiation {
-                        span: DUMMY_SP,
-                        params: vec![key.into(), value.into()],
-                    })),
-                })
-            }
-            JsonSchema::Object(vs) => TsType::TsTypeLit(TsTypeLit {
-                span: DUMMY_SP,
-                members: vs
+            JsonSchema::Object { vs, rest } => {
+                let mut members: Vec<TsTypeElement> = vs
                     .iter()
                     .map(|(k, v)| {
                         TsTypeElement::TsPropertySignature(TsPropertySignature {
@@ -612,8 +455,48 @@ impl JsonSchema {
                             type_params: None,
                         })
                     })
-                    .collect(),
-            }),
+                    .collect();
+
+                if let Some(rest) = rest {
+                    let rest = TsTypeElement::TsIndexSignature(TsIndexSignature {
+                        span: DUMMY_SP,
+                        readonly: false,
+                        params: vec![TsFnParam::Ident(BindingIdent {
+                            id: Ident {
+                                span: DUMMY_SP,
+                                sym: "key".into(),
+                                optional: false,
+                            },
+                            // string type always
+                            type_ann: Some(
+                                TsTypeAnn {
+                                    span: DUMMY_SP,
+                                    type_ann: TsType::TsKeywordType(TsKeywordType {
+                                        span: DUMMY_SP,
+                                        kind: TsKeywordTypeKind::TsStringKeyword,
+                                    })
+                                    .into(),
+                                }
+                                .into(),
+                            ),
+                        })],
+                        type_ann: Some(
+                            TsTypeAnn {
+                                span: DUMMY_SP,
+                                type_ann: rest.to_ts_type().into(),
+                            }
+                            .into(),
+                        ),
+                        is_static: false,
+                    });
+                    members.push(rest);
+                }
+
+                TsType::TsTypeLit(TsTypeLit {
+                    span: DUMMY_SP,
+                    members,
+                })
+            }
             JsonSchema::Array(ty) => {
                 let ty = ty.to_ts_type();
                 TsType::TsTypeRef(TsTypeRef {

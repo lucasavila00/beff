@@ -2,7 +2,6 @@ pub mod ast;
 pub mod diag;
 pub mod emit;
 pub mod import_resolver;
-pub mod open_api_ast;
 pub mod parse;
 pub mod parser_extractor;
 pub mod print;
@@ -12,9 +11,12 @@ pub mod sym_reference;
 pub mod type_to_schema;
 pub mod wasm_diag;
 
+use crate::ast::{
+    json::{Json, ToJson, ToJsonKv},
+    json_schema::JsonSchema,
+};
 use core::fmt;
 use diag::Diagnostic;
-use open_api_ast::Validator;
 use parser_extractor::extract_parser;
 use parser_extractor::ParserExtractResult;
 use serde::Deserialize;
@@ -336,4 +338,15 @@ pub fn extract<R: FileManager>(files: &mut R, entry_points: EntryPoints) -> Extr
     }
 
     ExtractResult { parser }
+}
+
+#[derive(Debug, Clone)]
+pub struct Validator {
+    pub name: String,
+    pub schema: JsonSchema,
+}
+impl ToJsonKv for Validator {
+    fn to_json_kv(self) -> Vec<(String, Json)> {
+        vec![(self.name.clone(), self.schema.to_json())]
+    }
 }

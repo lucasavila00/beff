@@ -5,14 +5,12 @@ use std::{
 
 use crate::{
     ast::json_schema::{JsonSchema, JsonSchemaConst, Optionality},
-    open_api_ast::Validator,
-    subtyping::evidence::ProperSubtypeEvidence,
+    Validator,
 };
 
 use super::{
-    bdd::{Atom, Bdd, ListAtomic, MappingAtomic},
-    evidence::Evidence,
-    semtype::{SemType, SemTypeContext, SemTypeOps},
+    bdd::{Atom, Bdd, ListAtomic},
+    semtype::{MappingAtomicType, SemType, SemTypeContext, SemTypeOps},
     subtype::{ProperSubtype, StringLitOrFormat, SubTypeTag},
 };
 
@@ -24,111 +22,6 @@ pub enum SchemaMemo {
 pub struct SemTypeResolverContext<'a>(pub &'a mut SemTypeContext);
 
 impl<'a> SemTypeResolverContext<'a> {
-    fn intersect_mapping_atomics(it: Vec<Rc<MappingAtomic>>) -> Rc<MappingAtomic> {
-        let mut acc: MappingAtomic = BTreeMap::new();
-
-        for atom in it {
-            for (k, v) in atom.iter() {
-                let old_v = acc
-                    .get(k)
-                    .cloned()
-                    .unwrap_or_else(|| Rc::new(SemType::new_unknown()));
-
-                let v = old_v.intersect(v);
-
-                acc.insert(k.clone(), v);
-            }
-        }
-
-        Rc::new(acc)
-    }
-
-    fn mapping_atomic_complement(it: Rc<MappingAtomic>) -> Rc<MappingAtomic> {
-        let acc = it
-            .iter()
-            .map(|(k, v)| (k.clone(), v.complement()))
-            .collect();
-        Rc::new(acc)
-    }
-
-    fn convert_to_schema_mapping_node_bdd_vec(
-        &mut self,
-        atom: &Rc<Atom>,
-        left: &Rc<Bdd>,
-        middle: &Rc<Bdd>,
-        right: &Rc<Bdd>,
-    ) -> Vec<Rc<MappingAtomic>> {
-        let mt = match atom.as_ref() {
-            Atom::Mapping(a) => self.0.get_mapping_atomic(*a).clone(),
-            _ => unreachable!(),
-        };
-
-        let mut acc: Vec<Rc<MappingAtomic>> = vec![];
-
-        match left.as_ref() {
-            Bdd::True => {
-                acc.push(mt.clone());
-            }
-            Bdd::False => {
-                // noop
-            }
-            Bdd::Node {
-                atom,
-                left,
-                middle,
-                right,
-            } => {
-                let ty = vec![mt.clone()]
-                    .into_iter()
-                    .chain(self.convert_to_schema_mapping_node_bdd_vec(atom, left, middle, right));
-
-                acc.push(Self::intersect_mapping_atomics(ty.collect()));
-            }
-        };
-
-        match middle.as_ref() {
-            Bdd::False => {
-                // noop
-            }
-            Bdd::True | Bdd::Node { .. } => {
-                acc.extend(self.to_schema_mapping_bdd_vec(middle));
-            }
-        }
-        match right.as_ref() {
-            Bdd::True => {
-                acc.push(Self::mapping_atomic_complement(mt.clone()));
-            }
-            Bdd::False => {
-                // noop
-            }
-            Bdd::Node {
-                atom,
-                left,
-                middle,
-                right,
-            } => {
-                let ty = vec![Self::mapping_atomic_complement(mt.clone())]
-                    .into_iter()
-                    .chain(self.convert_to_schema_mapping_node_bdd_vec(atom, left, middle, right));
-
-                acc.push(Self::intersect_mapping_atomics(ty.collect()));
-            }
-        }
-        acc
-    }
-    pub fn to_schema_mapping_bdd_vec(&mut self, bdd: &Rc<Bdd>) -> Vec<Rc<MappingAtomic>> {
-        match bdd.as_ref() {
-            Bdd::True => todo!(),
-            Bdd::False => todo!(),
-            Bdd::Node {
-                atom,
-                left,
-                middle,
-                right,
-            } => self.convert_to_schema_mapping_node_bdd_vec(atom, left, middle, right),
-        }
-    }
-
     fn intersect_list_atomics(it: Vec<Rc<ListAtomic>>) -> Rc<ListAtomic> {
         let items = it
             .iter()
@@ -275,10 +168,10 @@ impl<'a> SchemerContext<'a> {
         }
     }
 
-    fn mapping_atom_schema(&mut self, mt: &Rc<MappingAtomic>) -> JsonSchema {
+    fn mapping_atom_schema(&mut self, mt: &Rc<MappingAtomicType>) -> JsonSchema {
         let mut acc: Vec<(String, Optionality<JsonSchema>)> = vec![];
 
-        for (k, v) in mt.iter() {
+        for (k, v) in mt.vs.iter() {
             let schema = self.convert_to_schema(v, None);
             let ty = if v.has_void() {
                 schema.optional()
@@ -288,7 +181,16 @@ impl<'a> SchemerContext<'a> {
             acc.push((k.clone(), ty));
         }
 
-        JsonSchema::Object(BTreeMap::from_iter(acc))
+        let rest = if mt.rest.is_empty(self.ctx.0) {
+            None
+        } else {
+            Some(Box::new(self.convert_to_schema(&mt.rest, None)))
+        };
+
+        JsonSchema::Object {
+            vs: BTreeMap::from_iter(acc),
+            rest,
+        }
     }
 
     // fn to_schema_mapping(&mut self, bdd: &Rc<Bdd>) -> JsonSchema {
@@ -633,79 +535,4 @@ fn maybe_not(it: JsonSchema, add_not: bool) -> JsonSchema {
     } else {
         it
     }
-}
-fn evidence_to_schema(ty: &Evidence) -> JsonSchema {
-    match ty {
-        Evidence::All(t) => match t {
-            SubTypeTag::Boolean => JsonSchema::Boolean,
-            SubTypeTag::Number => JsonSchema::Number,
-            SubTypeTag::String => JsonSchema::String,
-            SubTypeTag::Null => JsonSchema::Null,
-            SubTypeTag::Mapping => JsonSchema::StAnyObject,
-            SubTypeTag::Void => JsonSchema::Ref("undefined".into()),
-            SubTypeTag::List => JsonSchema::AnyArrayLike,
-        },
-        Evidence::Proper(p) => match p {
-            ProperSubtypeEvidence::Boolean(b) => JsonSchema::Const(JsonSchemaConst::Bool(*b)),
-            ProperSubtypeEvidence::Number { allowed, values } => {
-                let v = JsonSchema::AnyOf(
-                    values
-                        .iter()
-                        .map(|it| JsonSchema::Const(JsonSchemaConst::Number(it.clone())))
-                        .collect(),
-                );
-                maybe_not(v, !allowed)
-            }
-            ProperSubtypeEvidence::String { allowed, values } => {
-                let v = JsonSchema::AnyOf(
-                    values
-                        .iter()
-                        .map(|it| match it {
-                            StringLitOrFormat::Lit(lit) => {
-                                JsonSchema::Const(JsonSchemaConst::String(lit.clone()))
-                            }
-                            StringLitOrFormat::Format(fmt) => {
-                                JsonSchema::StringWithFormat(fmt.clone())
-                            }
-                            StringLitOrFormat::Codec(fmt) => JsonSchema::Codec(fmt.clone()),
-                        })
-                        .collect(),
-                );
-                maybe_not(v, !allowed)
-            }
-            ProperSubtypeEvidence::List(ev) => {
-                if ev.prefix_items.is_empty() {
-                    match &ev.items {
-                        Some(e) => JsonSchema::Array(Box::new(evidence_to_schema(e))),
-                        None => JsonSchema::AnyArrayLike,
-                    }
-                } else {
-                    JsonSchema::Tuple {
-                        prefix_items: ev
-                            .prefix_items
-                            .iter()
-                            .map(|it| evidence_to_schema(it))
-                            .collect(),
-                        items: ev.items.as_ref().map(|it| Box::new(evidence_to_schema(it))),
-                    }
-                }
-            }
-            ProperSubtypeEvidence::Mapping(vs) => JsonSchema::object(
-                vs.iter()
-                    .map(|(k, v)| (k.clone(), evidence_to_schema(v).required()))
-                    .collect(),
-            ),
-        },
-    }
-}
-pub fn to_validators_evidence(
-    _ctx: &mut SemTypeContext,
-    ty: &Evidence,
-    name: &str,
-) -> Vec<Validator> {
-    let schema = evidence_to_schema(ty);
-    vec![Validator {
-        name: name.to_string(),
-        schema,
-    }]
 }

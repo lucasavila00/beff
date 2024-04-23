@@ -13,7 +13,7 @@ export type User = {
   name: string;
   friends: User[];
   avatarSize: AvatarSize;
-  extra: Extra[string];
+  extra: () => null;
 };
 
 export const { User } = parse.buildParsers<{ User: User }>();

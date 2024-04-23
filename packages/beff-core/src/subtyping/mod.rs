@@ -1,10 +1,10 @@
 use std::rc::Rc;
 
 use crate::ast::json_schema::{JsonSchemaConst, Optionality};
-use crate::{ast::json_schema::JsonSchema, open_api_ast::Validator};
+use crate::{ast::json_schema::JsonSchema, Validator};
 
 use self::bdd::MappingAtomic;
-use self::semtype::{SemType, SemTypeContext, SemTypeOps};
+use self::semtype::{MappingAtomicType, SemType, SemTypeContext, SemTypeOps};
 use self::subtype::StringLitOrFormat;
 pub mod bdd;
 pub mod evidence;
@@ -40,7 +40,7 @@ impl<'a> ToSemTypeConverter<'a> {
         match schema {
             JsonSchema::Ref(name) => {
                 let schema = self.get_reference(name)?;
-                if let JsonSchema::Object(vs) = schema {
+                if let JsonSchema::Object { vs, rest } = schema {
                     match builder.json_schema_ref_memo.get(name) {
                         Some(idx) => {
                             let ty = Rc::new(SemTypeContext::mapping_definition_from_idx(*idx));
@@ -61,7 +61,15 @@ impl<'a> ToSemTypeConverter<'a> {
                                     }
                                 })
                                 .collect::<Result<_>>()?;
-                            builder.mapping_definitions[idx] = Some(Rc::new(vs));
+                            let rest = match rest {
+                                Some(r) => self.to_sem_type(r, builder)?,
+                                None => SemTypeContext::never().into(),
+                            };
+
+                            builder.mapping_definitions[idx] = Some(Rc::new(MappingAtomicType {
+                                vs: vs.into(),
+                                rest,
+                            }));
                             let ty = Rc::new(SemTypeContext::mapping_definition_from_idx(idx));
                             return Ok(ty);
                         }
@@ -93,10 +101,7 @@ impl<'a> ToSemTypeConverter<'a> {
             JsonSchema::StringWithFormat(s) => {
                 Ok(SemTypeContext::string_const(StringLitOrFormat::Format(s.clone())).into())
             }
-            JsonSchema::TsRecord { .. } => {
-                Err(anyhow!("Record type is not supported in semantic types"))
-            }
-            JsonSchema::Object(vs) => {
+            JsonSchema::Object { vs, rest } => {
                 let vs = vs
                     .iter()
                     .map(|(k, v)| match v {
@@ -108,7 +113,11 @@ impl<'a> ToSemTypeConverter<'a> {
                         }
                     })
                     .collect::<Result<_>>()?;
-                Ok(builder.mapping_definition(Rc::new(vs)).into())
+                let rest = match rest {
+                    Some(r) => self.to_sem_type(r, builder)?,
+                    None => SemTypeContext::never().into(),
+                };
+                Ok(builder.mapping_definition(Rc::new(vs), rest).into())
             }
             JsonSchema::Array(items) => {
                 let items = self.to_sem_type(items, builder)?;
