@@ -1361,12 +1361,10 @@ impl<'a, R: FileManager> TypeToSchema<'a, R> {
                 let v = v.and_then(|it| it.clone());
                 match v {
                     Some(v) => self.extract_union(v.schema),
-                    None => {
-                        return self.error(
-                            &Span::default(),
-                            DiagnosticInfoMessage::CannotResolveRefInExtractUnion,
-                        )
-                    }
+                    None => self.error(
+                        &Span::default(),
+                        DiagnosticInfoMessage::CannotResolveRefInExtractUnion,
+                    ),
                 }
             }
             _ => Ok(vec![tp]),
