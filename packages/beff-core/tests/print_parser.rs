@@ -218,4 +218,12 @@ mod tests {
         parse.buildParsers<{ Mapped: Mapped }>();
       "#));
     }
+    #[test]
+    fn ok_mapped_type_repro() {
+        insta::assert_snapshot!(ok(r#"
+        type Obj = { a: string } & {d: string}
+        type MappedKeys = keyof Obj;
+        parse.buildParsers<{ MappedKeys: MappedKeys }>();
+      "#));
+    }
 }
