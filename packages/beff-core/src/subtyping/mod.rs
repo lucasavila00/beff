@@ -66,13 +66,10 @@ impl<'a> ToSemTypeConverter<'a> {
                                 None => SemTypeContext::never().into(),
                             };
 
-                            builder.mapping_definitions[idx] = Some(Rc::new(
-                                MappingAtomicType {
-                                    vs: vs.into(),
-                                    rest,
-                                }
-                                .into(),
-                            ));
+                            builder.mapping_definitions[idx] = Some(Rc::new(MappingAtomicType {
+                                vs: vs.into(),
+                                rest,
+                            }));
                             let ty = Rc::new(SemTypeContext::mapping_definition_from_idx(idx));
                             return Ok(ty);
                         }

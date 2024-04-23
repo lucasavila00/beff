@@ -763,7 +763,7 @@ fn mapping_atomic_applicable_member_types_inner(
         MappingStrKey::True => {
             let mut vs: Vec<Rc<SemType>> = atomic.vs.values().cloned().collect();
             vs.push(atomic.rest.clone());
-            return vs;
+            vs
         }
     }
 }

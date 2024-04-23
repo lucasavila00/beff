@@ -1,5 +1,13 @@
 # @beff/client
 
+## 0.0.20
+
+### Patch Changes
+
+- Print json schema, improve record usage
+- Updated dependencies
+  - @beff/cli@0.0.20
+
 ## 0.0.19
 
 ### Patch Changes
