@@ -92,12 +92,6 @@ function decodeString(ctx, input, required) {
 
   return buildError(input, ctx, "expected string");
 }
-const isNumeric = (num) =>
-  (typeof num === "number" || (typeof num === "string" && num.trim() !== "")) &&
-  !isNaN(
-    //@ts-ignore
-    num
-  );
 
 function decodeNumber(ctx, input, required) {
   if (!required && input == null) {
@@ -105,9 +99,6 @@ function decodeNumber(ctx, input, required) {
   }
   if (typeof input === "number") {
     return input;
-  }
-  if (isNumeric(input)) {
-    return Number(input);
   }
   if (String(input).toLowerCase() == "nan") {
     return NaN;
@@ -228,12 +219,6 @@ function decodeBoolean(ctx, input, required) {
   }
   if (typeof input === "boolean") {
     return input;
-  }
-  if (input === "true" || input === "false") {
-    return input === "true";
-  }
-  if (input === "1" || input === "0") {
-    return input === "1";
   }
   return buildError(input, ctx, "expected boolean");
 }
