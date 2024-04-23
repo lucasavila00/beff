@@ -1,5 +1,13 @@
 # @beff/client
 
+## 0.0.15
+
+### Patch Changes
+
+- Fix union bug
+- Updated dependencies
+  - @beff/cli@0.0.15
+
 ## 0.0.14
 
 ### Patch Changes

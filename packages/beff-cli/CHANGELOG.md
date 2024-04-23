@@ -1,5 +1,11 @@
 # @beff/cli
 
+## 0.0.15
+
+### Patch Changes
+
+- Fix union bug
+
 ## 0.0.14
 
 ### Patch Changes
