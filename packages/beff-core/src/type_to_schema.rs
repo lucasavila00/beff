@@ -1402,7 +1402,7 @@ impl<'a, R: FileManager> TypeToSchema<'a, R> {
                 name.clone(),
                 JsonSchema::Const(JsonSchemaConst::String(key.clone())),
             )]));
-            let ty = self.convert_ts_type(&type_ann)?;
+            let ty = self.convert_ts_type(type_ann)?;
             self.type_param_stack.pop();
 
             let ty = match k.optional {
