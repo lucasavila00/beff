@@ -2,6 +2,7 @@
 *.next/
 *dist/
 *pkg/
+packages/beff-wasm/bundled-code/
 packages/beff-cli/dist-cli/
 packages/beff-wasm/dist-cli/
 packages/web-docs/static/playground/assets/
