@@ -2,11 +2,10 @@ use anyhow::{anyhow, Result};
 use serde::{Deserialize, Serialize};
 use swc_common::DUMMY_SP;
 use swc_ecma_ast::{
-    BindingIdent, Decl, Expr, FnDecl, Ident, KeyValueProp, ModuleItem, ObjectLit, Pat, Prop,
-    PropName, PropOrSpread, Stmt, VarDecl, VarDeclKind, VarDeclarator,
+    BindingIdent, Decl, Expr, FnDecl, FnExpr, Ident, KeyValueProp, ModuleItem, ObjectLit, Pat,
+    Prop, PropName, PropOrSpread, Stmt, VarDecl, VarDeclKind, VarDeclarator,
 };
 
-use crate::ast::js::Js;
 use crate::ast::json::{Json, ToJson, ToJsonKv};
 use crate::ast::json_schema::JsonSchema;
 use crate::emit::emit_module;
@@ -14,8 +13,6 @@ use crate::open_api_ast::{OpenApi, Validator};
 use crate::parser_extractor::BuiltDecoder;
 use crate::print::decoder;
 use crate::ExtractResult;
-
-use super::expr::ToExpr;
 
 fn error_response_schema() -> JsonSchema {
     JsonSchema::object(vec![("message".to_string(), JsonSchema::String.required())])
@@ -115,12 +112,41 @@ pub struct WritableModules {
 pub trait ToWritableModules {
     fn to_module(self) -> Result<WritableModules>;
 }
-fn build_decoders_expr(decs: &[BuiltDecoder]) -> Js {
-    Js::Object(
-        decs.iter()
-            .map(|it| (it.exported_name.clone(), Js::decoder(it.schema.clone())))
+fn build_decoders_expr(decs: &[BuiltDecoder]) -> Expr {
+    let mut exprs: Vec<_> = decs
+        .iter()
+        .map(|decoder| {
+            (
+                decoder.exported_name.clone(),
+                Expr::Fn(FnExpr {
+                    ident: None,
+                    function: decoder::from_schema(&decoder.schema).into(),
+                }),
+            )
+        })
+        .collect();
+
+    exprs.sort_by(|(a, _), (b, _)| a.cmp(b));
+
+    Expr::Object(ObjectLit {
+        span: DUMMY_SP,
+        props: exprs
+            .into_iter()
+            .map(|(key, value)| {
+                PropOrSpread::Prop(
+                    Box::new(Prop::KeyValue(KeyValueProp {
+                        key: PropName::Ident(Ident {
+                            span: DUMMY_SP,
+                            sym: key.into(),
+                            optional: false,
+                        }),
+                        value: value.into(),
+                    }))
+                    .into(),
+                )
+            })
             .collect(),
-    )
+    })
 }
 
 fn merge_validator(parser: Option<&Vec<Validator>>) -> Result<Vec<Validator>> {
@@ -196,9 +222,8 @@ impl ToWritableModules for ExtractResult {
         let mut js_built_parsers = None;
 
         if let Some(parser) = self.parser {
-            let build_decoders_expr =
-                build_decoders_expr(&parser.built_decoders.unwrap_or_default());
-            let built_st = const_decl("buildParsersInput", (build_decoders_expr).to_expr());
+            let decoders_expr = build_decoders_expr(&parser.built_decoders.unwrap_or_default());
+            let built_st = const_decl("buildParsersInput", decoders_expr);
             js_built_parsers = Some(emit_module(vec![built_st], "\n")?);
         }
 
