@@ -196,4 +196,26 @@ mod tests {
         parse.buildParsers<{ SettingsUpdate: SettingsUpdate }>();
       "#));
     }
+    #[test]
+    fn ok_mapped_type() {
+        insta::assert_snapshot!(ok(r#"
+        export type Mapped = {
+            [K in "a" | "b"]: {
+                value: K;
+            };
+        };
+        parse.buildParsers<{ Mapped: Mapped }>();
+      "#));
+    }
+    #[test]
+    fn ok_mapped_type_optional() {
+        insta::assert_snapshot!(ok(r#"
+        export type Mapped = {
+            [K in "a" | "b"]?: {
+                value: K;
+            };
+        };
+        parse.buildParsers<{ Mapped: Mapped }>();
+      "#));
+    }
 }

@@ -66,7 +66,14 @@ pub enum DiagnosticInfoMessage {
     MissingArgumentsOnRecord,
     RecordShouldHaveTwoTypeArguments,
     DuplicatedRestNonSerializableToJsonSchema,
-    TypeConstructNonSerializableToJsonSchema,
+    UniqueNonSerializableToJsonSchema,
+    ReadonlyNonSerializableToJsonSchema,
+    ThisTypeNonSerializableToJsonSchema,
+    TsFnOrConstructorTypeNonSerializableToJsonSchema,
+    TsConditionalTypeNonSerializableToJsonSchema,
+    TsInferTypeNonSerializableToJsonSchema,
+    TsTypePredicateNonSerializableToJsonSchema,
+    TsImportTypeNonSerializableToJsonSchema,
     OptionalTypeIsNotSupported,
     PropShouldHaveTypeAnnotation,
     PropKeyShouldBeIdent,
@@ -77,6 +84,11 @@ pub enum DiagnosticInfoMessage {
     CannotFindFileWhenConvertingToSchema(BffFileName),
     ThisRefersToSomethingThatCannotBeSerialized(String),
     CannotResolveLocalSymbol(String),
+    NoConstraintInMappedType,
+    NonStringKeyInMappedType,
+    NoTypeAnnotationInMappedType,
+    CannotConvertExprToSchema,
+    MappedTypeMinusNotSupported,
 }
 
 #[allow(clippy::inherent_to_string)]
@@ -95,9 +107,6 @@ impl DiagnosticInfoMessage {
             }
             DiagnosticInfoMessage::DuplicatedRestNonSerializableToJsonSchema => {
                 "This rest parameter cannot be converted to JSON schema".to_string()
-            }
-            DiagnosticInfoMessage::TypeConstructNonSerializableToJsonSchema => {
-                "This cannot be converted to JSON schema".to_string()
             }
             DiagnosticInfoMessage::ThisRefersToSomethingThatCannotBeSerialized(this) => {
                 format!("`{this}` cannot be converted to JSON schema")
@@ -283,6 +292,45 @@ impl DiagnosticInfoMessage {
             }
             DiagnosticInfoMessage::MissingArgumentsOnPartial => {
                 "Missing arguments on partial".to_string()
+            }
+            DiagnosticInfoMessage::UniqueNonSerializableToJsonSchema => {
+                "Unique cannot be converted to JSON schema".to_string()
+            }
+            DiagnosticInfoMessage::ReadonlyNonSerializableToJsonSchema => {
+                "Readonly cannot be converted to JSON schema".to_string()
+            }
+            DiagnosticInfoMessage::ThisTypeNonSerializableToJsonSchema => {
+                "'This' type cannot be converted to JSON schema".to_string()
+            }
+            DiagnosticInfoMessage::TsFnOrConstructorTypeNonSerializableToJsonSchema => {
+                "Function or constructor type cannot be converted to JSON schema".to_string()
+            }
+            DiagnosticInfoMessage::TsConditionalTypeNonSerializableToJsonSchema => {
+                "Conditional type cannot be converted to JSON schema".to_string()
+            }
+            DiagnosticInfoMessage::TsInferTypeNonSerializableToJsonSchema => {
+                "Infer type cannot be converted to JSON schema".to_string()
+            }
+            DiagnosticInfoMessage::TsTypePredicateNonSerializableToJsonSchema => {
+                "Type predicate cannot be converted to JSON schema".to_string()
+            }
+            DiagnosticInfoMessage::TsImportTypeNonSerializableToJsonSchema => {
+                "Import type cannot be converted to JSON schema".to_string()
+            }
+            DiagnosticInfoMessage::NoConstraintInMappedType => {
+                "No constraint in mapped type".to_string()
+            }
+            DiagnosticInfoMessage::NonStringKeyInMappedType => {
+                "Non-string key in mapped type".to_string()
+            }
+            DiagnosticInfoMessage::NoTypeAnnotationInMappedType => {
+                "No type annotation in mapped type".to_string()
+            }
+            DiagnosticInfoMessage::CannotConvertExprToSchema => {
+                "Cannot convert expression to JSON schema".to_string()
+            }
+            DiagnosticInfoMessage::MappedTypeMinusNotSupported => {
+                "Mapped type minus is not supported".to_string()
             }
         }
     }

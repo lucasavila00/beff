@@ -41,12 +41,24 @@ export type Settings = {
 };
 
 export type SettingsUpdate = Settings["a" | "level" | "d"];
-
-export const { Extra, User, PublicUser, Repro1, SettingsUpdate } = parse.buildParsers<{
-  Extra: Extra;
-  User: User;
-  PublicUser: PublicUser;
-  Req: Req;
-  Repro1: Repro1;
-  SettingsUpdate: SettingsUpdate;
-}>();
+export type Mapped = {
+  [K in "a" | "b"]: {
+    value: K;
+  };
+};
+export type MappedOptional = {
+  [K in "a" | "b"]?: {
+    value: K;
+  };
+};
+export const { Extra, User, PublicUser, Repro1, SettingsUpdate, Mapped, MappedOptional } =
+  parse.buildParsers<{
+    Extra: Extra;
+    User: User;
+    PublicUser: PublicUser;
+    Req: Req;
+    Repro1: Repro1;
+    SettingsUpdate: SettingsUpdate;
+    Mapped: Mapped;
+    MappedOptional: MappedOptional;
+  }>();
