@@ -1,5 +1,11 @@
 # @beff/cli
 
+## 0.0.16
+
+### Patch Changes
+
+- Mapped types
+
 ## 0.0.15
 
 ### Patch Changes
