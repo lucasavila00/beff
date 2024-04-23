@@ -263,8 +263,6 @@ struct SchemerContext<'a> {
     validators: Vec<Validator>,
 
     recursive_validators: BTreeSet<String>,
-
-    counter: usize,
 }
 
 impl<'a> SchemerContext<'a> {
@@ -273,7 +271,6 @@ impl<'a> SchemerContext<'a> {
             ctx: SemTypeResolverContext(ctx),
             validators: vec![],
             schemer_memo: BTreeMap::new(),
-            counter: 0,
             recursive_validators: BTreeSet::new(),
         }
     }
@@ -580,8 +577,8 @@ impl<'a> SchemerContext<'a> {
         let new_name = match name {
             Some(n) => n.to_string(),
             None => {
-                self.counter += 1;
-                format!("t_{}", self.counter)
+                self.ctx.0.counter += 1;
+                format!("t_{}", self.ctx.0.counter)
             }
         };
         if let Some(mater) = self.schemer_memo.get(ty) {

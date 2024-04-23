@@ -1,5 +1,13 @@
 # @beff/client
 
+## 0.0.18
+
+### Patch Changes
+
+- Recursive types counter
+- Updated dependencies
+  - @beff/cli@0.0.18
+
 ## 0.0.17
 
 ### Patch Changes
