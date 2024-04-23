@@ -7,6 +7,7 @@ use crate::{open_api_ast::HTTPMethod, BffFileName, ParsedModule};
 
 #[derive(Debug, Clone)]
 pub enum DiagnosticInfoMessage {
+    CannotResolveRefInExtractUnion,
     PartialShouldHaveObjectAsTypeArgument,
     MissingArgumentsOnPartial,
     PickShouldHaveStringAsTypeArgument,
@@ -331,6 +332,9 @@ impl DiagnosticInfoMessage {
             }
             DiagnosticInfoMessage::MappedTypeMinusNotSupported => {
                 "Mapped type minus is not supported".to_string()
+            }
+            DiagnosticInfoMessage::CannotResolveRefInExtractUnion => {
+                "Cannot resolve ref in extract union".to_string()
             }
         }
     }
