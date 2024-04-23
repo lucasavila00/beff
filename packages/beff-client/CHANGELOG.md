@@ -1,5 +1,13 @@
 # @beff/client
 
+## 0.0.17
+
+### Patch Changes
+
+- Fix keyof intersection
+- Updated dependencies
+  - @beff/cli@0.0.17
+
 ## 0.0.16
 
 ### Patch Changes
