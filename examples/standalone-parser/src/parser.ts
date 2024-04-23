@@ -32,10 +32,21 @@ export interface Repro1 {
   sizes?: Repro2;
 }
 
-export const { Extra, User, PublicUser, Repro1 } = parse.buildParsers<{
+export type Settings = {
+  a: string;
+  level: "a" | "b";
+  d: {
+    tag: "d";
+  };
+};
+
+export type SettingsUpdate = Settings["a" | "level" | "d"];
+
+export const { Extra, User, PublicUser, Repro1, SettingsUpdate } = parse.buildParsers<{
   Extra: Extra;
   User: User;
   PublicUser: PublicUser;
   Req: Req;
   Repro1: Repro1;
+  SettingsUpdate: SettingsUpdate;
 }>();

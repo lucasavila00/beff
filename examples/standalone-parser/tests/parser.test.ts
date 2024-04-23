@@ -1,10 +1,20 @@
 import { it, expect } from "vitest";
-import { AccessLevel, Extra, User, Repro1 } from "../src/parser";
+import { AccessLevel, Extra, User, Repro1, SettingsUpdate } from "../src/parser";
 
 it("repro1", () => {
   expect(Repro1.parse({})).toMatchInlineSnapshot(`
     {
       "sizes": undefined,
+    }
+  `);
+});
+it("OneOfSettingsUpdate", () => {
+  const valid: SettingsUpdate = {
+    tag: "d",
+  };
+  expect(SettingsUpdate.parse(valid)).toMatchInlineSnapshot(`
+    {
+      "tag": "d",
     }
   `);
 });

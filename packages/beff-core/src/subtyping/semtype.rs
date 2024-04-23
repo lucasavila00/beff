@@ -30,44 +30,48 @@ impl Iterator for SubTypePairIterator {
     type Item = (Option<Rc<ProperSubtype>>, Option<Rc<ProperSubtype>>);
 
     fn next(&mut self) -> Option<Self::Item> {
-        if self.i1 >= self.t1.subtype_data.len() {
-            if self.i2 >= self.t2.subtype_data.len() {
-                return None;
-            }
-            let data2 = self.t2.subtype_data.get(self.i2).unwrap();
-            self.i2 += 1;
-            if self.include(data2.to_code()) {
-                return Some((None, Some(data2.clone())));
-            }
-        } else if self.i2 >= self.t2.subtype_data.len() {
-            let data1 = self.t1.subtype_data.get(self.i1).unwrap();
-            self.i1 += 1;
-            if self.include(data1.to_code()) {
-                return Some((Some(data1.clone()), None));
-            }
-        } else {
-            let data1 = self.t1.subtype_data.get(self.i1).unwrap();
-            let data2 = self.t2.subtype_data.get(self.i2).unwrap();
-            let code1 = data1.to_code();
-            let code2 = data2.to_code();
-            match code1.cmp(&code2) {
-                std::cmp::Ordering::Equal => {
-                    self.i1 += 1;
-                    self.i2 += 1;
-                    if self.include(code1) {
-                        return Some((Some(data1.clone()), Some(data2.clone())));
-                    }
+        loop {
+            if self.i1 >= self.t1.subtype_data.len() {
+                if self.i2 >= self.t2.subtype_data.len() {
+                    break;
                 }
-                std::cmp::Ordering::Less => {
-                    self.i1 += 1;
-                    if self.include(code1) {
-                        return Some((Some(data1.clone()), None));
-                    }
+                let data2 = self.t2.subtype_data.get(self.i2).unwrap();
+                self.i2 += 1;
+                if self.include(data2.to_code()) {
+                    return Some((None, Some(data2.clone())));
                 }
-                std::cmp::Ordering::Greater => {
-                    self.i2 += 1;
-                    if self.include(code2) {
-                        return Some((None, Some(data2.clone())));
+            } else if self.i2 >= self.t2.subtype_data.len() {
+                let data1 = self.t1.subtype_data.get(self.i1).unwrap();
+                self.i1 += 1;
+                if self.include(data1.to_code()) {
+                    return Some((Some(data1.clone()), None));
+                }
+            } else {
+                let data1 = self.t1.subtype_data.get(self.i1).unwrap();
+                let data2 = self.t2.subtype_data.get(self.i2).unwrap();
+
+                let code1 = data1.to_code();
+                let code2 = data2.to_code();
+
+                match code1.cmp(&code2) {
+                    std::cmp::Ordering::Equal => {
+                        self.i1 += 1;
+                        self.i2 += 1;
+                        if self.include(code1) {
+                            return Some((Some(data1.clone()), Some(data2.clone())));
+                        }
+                    }
+                    std::cmp::Ordering::Less => {
+                        self.i1 += 1;
+                        if self.include(code1) {
+                            return Some((Some(data1.clone()), None));
+                        }
+                    }
+                    std::cmp::Ordering::Greater => {
+                        self.i2 += 1;
+                        if self.include(code2) {
+                            return Some((None, Some(data2.clone())));
+                        }
                     }
                 }
             }

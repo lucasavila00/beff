@@ -181,4 +181,19 @@ mod tests {
         parse.buildParsers<{ Admin: Admin }>();
       "#));
     }
+    #[test]
+    fn ok_repro() {
+        insta::assert_snapshot!(ok(r#"
+        export type Settings = {
+            a: string;
+            level: "a" | "b";
+            d: {
+                tag: "d";
+            };
+        };
+          
+        export type SettingsUpdate = Settings["a" | "level" | "d"];
+        parse.buildParsers<{ SettingsUpdate: SettingsUpdate }>();
+      "#));
+    }
 }
