@@ -146,6 +146,19 @@ function decodeStringWithFormat(ctx, input, required, format) {
   return input;
   // throw new Error("decodeStringWithFormat not implemented")
 }
+
+
+function decodeAnyOfConsts(ctx, input, required, consts) {
+  if (!required && input == null) {
+    return input;
+  }
+  for (const c of consts) {
+    if (input === c) {
+      return c;
+    }
+  }
+  return buildError(input, ctx, "expected one of " + consts.map(it => JSON.stringify(it)).join(", "));
+}
 function decodeAnyOf(ctx, input, required, vs) {
   if (!required && input == null) {
     return input;

@@ -3,6 +3,7 @@
     "beff",
     "bindgen",
     "codegen",
+    "consts",
     "ctxt",
     "elems",
     "esno",

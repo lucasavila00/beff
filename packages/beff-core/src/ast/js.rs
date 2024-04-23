@@ -4,11 +4,7 @@ use std::collections::BTreeMap;
 use swc_common::DUMMY_SP;
 use swc_ecma_ast::{Expr, ExprStmt, ModuleItem, Stmt};
 
-use crate::{
-    ast::{json::Json, json_schema::JsonSchema},
-    emit::emit_module,
-    print::expr::ToExpr,
-};
+use crate::{ast::json::Json, emit::emit_module, print::expr::ToExpr};
 
 use super::json::N;
 
@@ -20,7 +16,6 @@ pub enum Js {
     String(String),
     Array(Vec<Js>),
     Object(BTreeMap<String, Js>),
-    Decoder { schema: JsonSchema },
     Expr(Expr),
 }
 
@@ -43,10 +38,6 @@ impl fmt::Display for Js {
 impl Js {
     pub fn object(vs: Vec<(String, Js)>) -> Self {
         Self::Object(vs.into_iter().collect())
-    }
-
-    pub fn decoder(schema: JsonSchema) -> Self {
-        Self::Decoder { schema }
     }
 }
 pub trait ToJs {

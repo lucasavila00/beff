@@ -1,12 +1,10 @@
 use swc_common::DUMMY_SP;
 use swc_ecma_ast::{
-    ArrayLit, Bool, Expr, ExprOrSpread, FnExpr, KeyValueProp, Lit, Null, Number, ObjectLit, Prop,
-    PropName, PropOrSpread, Str,
+    ArrayLit, Bool, Expr, ExprOrSpread, KeyValueProp, Lit, Null, Number, ObjectLit, Prop, PropName,
+    PropOrSpread, Str,
 };
 
 use crate::ast::{js::Js, json::Json};
-
-use super::decoder;
 
 pub trait ToExpr {
     fn to_expr(self) -> Expr;
@@ -64,10 +62,6 @@ impl ToExpr for Json {
 impl ToExpr for Js {
     fn to_expr(self) -> Expr {
         match self {
-            Js::Decoder { schema } => Expr::Fn(FnExpr {
-                ident: None,
-                function: decoder::from_schema(&schema).into(),
-            }),
             Js::Null => Json::Null.to_expr(),
             Js::Bool(it) => Json::Bool(it).to_expr(),
             Js::Number(it) => Json::Number(it).to_expr(),

@@ -149,6 +149,19 @@ function decodeStringWithFormat(ctx, input, required, format) {
   return input;
   
 }
+
+
+function decodeAnyOfConsts(ctx, input, required, consts) {
+  if (!required && input == null) {
+    return input;
+  }
+  for (const c of consts) {
+    if (input === c) {
+      return c;
+    }
+  }
+  return buildError(input, ctx, "expected one of " + consts.map(it => JSON.stringify(it)).join(", "));
+}
 function decodeAnyOf(ctx, input, required, vs) {
   if (!required && input == null) {
     return input;
@@ -269,35 +282,37 @@ function DecodePassword(ctx, input, required = true) {
     return decodeStringWithFormat(ctx, input, required, "password");
 }
 function DecodeA(ctx, input, required = true) {
-    return decodeAnyOf(ctx, input, required, [
-        (ctx, input)=>(decodeConst(ctx, input, required, 1)),
-        (ctx, input)=>(decodeConst(ctx, input, required, 2))
+    return decodeAnyOfConsts(ctx, input, required, [
+        1,
+        2
     ]);
 }
 function DecodeB(ctx, input, required = true) {
-    return decodeAnyOf(ctx, input, required, [
-        (ctx, input)=>(decodeConst(ctx, input, required, 2)),
-        (ctx, input)=>(decodeConst(ctx, input, required, 3))
+    return decodeAnyOfConsts(ctx, input, required, [
+        2,
+        3
     ]);
 }
 function DecodeD(ctx, input, required = true) {
-    return decodeAnyOf(ctx, input, required, [
-        (ctx, input)=>(decodeConst(ctx, input, required, 4)),
-        (ctx, input)=>(decodeConst(ctx, input, required, 5))
+    return decodeAnyOfConsts(ctx, input, required, [
+        4,
+        5
     ]);
 }
 function DecodeE(ctx, input, required = true) {
-    return decodeAnyOf(ctx, input, required, [
-        (ctx, input)=>(decodeConst(ctx, input, required, 5)),
-        (ctx, input)=>(decodeConst(ctx, input, required, 6))
+    return decodeAnyOfConsts(ctx, input, required, [
+        5,
+        6
     ]);
 }
 function DecodeUnionNested(ctx, input, required = true) {
-    return decodeAnyOf(ctx, input, required, [
-        (ctx, input)=>(validators.A(ctx, input, required)),
-        (ctx, input)=>(validators.B(ctx, input, required)),
-        (ctx, input)=>(validators.D(ctx, input, required)),
-        (ctx, input)=>(validators.E(ctx, input, required))
+    return decodeAnyOfConsts(ctx, input, required, [
+        1,
+        2,
+        3,
+        4,
+        5,
+        6
     ]);
 }
 const validators = {
