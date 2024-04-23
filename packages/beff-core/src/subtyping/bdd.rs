@@ -378,6 +378,7 @@ fn mapping_inhabited(
                 _ => unreachable!(),
             };
 
+            // TODO: fixme, add rest support
             let neg = &neg.vs;
 
             let pos_names = BTreeSet::from_iter(pos.keys());
@@ -435,6 +436,7 @@ fn mapping_formula_is_empty(
         None => {}
         Some(pos_atom) => {
             match pos_atom.atom.as_ref() {
+                // TODO: fixme, add rest support
                 Atom::Mapping(a) => combined = builder.get_mapping_atomic(*a).vs.clone(),
                 _ => unreachable!(),
             };
@@ -444,6 +446,7 @@ fn mapping_formula_is_empty(
                     Atom::Mapping(a) => builder.get_mapping_atomic(*a),
                     _ => unreachable!(),
                 };
+                // TODO: fixme, add rest support
                 let m = intersect_mapping(combined.clone(), p_atom.vs.clone());
                 match m {
                     None => return ProperSubtypeEvidenceResult::IsEmpty,
