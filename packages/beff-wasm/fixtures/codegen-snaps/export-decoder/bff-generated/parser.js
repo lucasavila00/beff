@@ -4,28 +4,28 @@
 
 import validatorsMod from "./validators.js"; const { decodeObject, decodeArray, decodeString, decodeNumber, decodeCodec, decodeStringWithFormat, decodeAnyOf, decodeAllOf, decodeBoolean, decodeAny, decodeTuple, decodeNull, decodeConst, validators, c } = validatorsMod;
 const buildParsersInput = {
-    NotPublicRenamed: function(ctx, input, required = true) {
+    "NotPublicRenamed": function(ctx, input, required = true) {
         return validators.NotPublic(ctx, input, required);
     },
-    Password: function(ctx, input, required = true) {
+    "Password": function(ctx, input, required = true) {
         return validators.Password(ctx, input, required);
     },
-    StartsWithA: function(ctx, input, required = true) {
+    "StartsWithA": function(ctx, input, required = true) {
         return validators.StartsWithA(ctx, input, required);
     },
-    User: function(ctx, input, required = true) {
+    "User": function(ctx, input, required = true) {
         return validators.User(ctx, input, required);
     },
-    Users: function(ctx, input, required = true) {
+    "Users": function(ctx, input, required = true) {
         return decodeArray(ctx, input, required, (ctx, input)=>(validators.User(ctx, input, true)));
     },
-    float: function(ctx, input, required = true) {
+    "float": function(ctx, input, required = true) {
         return decodeConst(ctx, input, required, 123.456);
     },
-    int: function(ctx, input, required = true) {
+    "int": function(ctx, input, required = true) {
         return decodeConst(ctx, input, required, 123);
     },
-    union: function(ctx, input, required = true) {
+    "union": function(ctx, input, required = true) {
         return validators.UnionNested(ctx, input, required);
     }
 };

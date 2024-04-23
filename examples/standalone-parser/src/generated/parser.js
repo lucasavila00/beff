@@ -4,28 +4,28 @@
 
 import validatorsMod from "./validators.js"; const { decodeObject, decodeArray, decodeString, decodeNumber, decodeCodec, decodeStringWithFormat, decodeAnyOf, decodeAllOf, decodeBoolean, decodeAny, decodeTuple, decodeNull, decodeConst, validators, c } = validatorsMod;
 const buildParsersInput = {
-    Extra: function(ctx, input, required = true) {
+    "Extra": function(ctx, input, required = true) {
         return validators.Extra(ctx, input, required);
     },
-    Mapped: function(ctx, input, required = true) {
+    "Mapped": function(ctx, input, required = true) {
         return validators.Mapped(ctx, input, required);
     },
-    MappedOptional: function(ctx, input, required = true) {
+    "MappedOptional": function(ctx, input, required = true) {
         return validators.MappedOptional(ctx, input, required);
     },
-    PublicUser: function(ctx, input, required = true) {
+    "PublicUser": function(ctx, input, required = true) {
         return validators.PublicUser(ctx, input, required);
     },
-    Repro1: function(ctx, input, required = true) {
+    "Repro1": function(ctx, input, required = true) {
         return validators.Repro1(ctx, input, required);
     },
-    Req: function(ctx, input, required = true) {
+    "Req": function(ctx, input, required = true) {
         return validators.Req(ctx, input, required);
     },
-    SettingsUpdate: function(ctx, input, required = true) {
+    "SettingsUpdate": function(ctx, input, required = true) {
         return validators.SettingsUpdate(ctx, input, required);
     },
-    User: function(ctx, input, required = true) {
+    "User": function(ctx, input, required = true) {
         return validators.User(ctx, input, required);
     }
 };

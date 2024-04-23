@@ -3,7 +3,7 @@ use serde::{Deserialize, Serialize};
 use swc_common::DUMMY_SP;
 use swc_ecma_ast::{
     BindingIdent, Decl, Expr, FnDecl, FnExpr, Ident, KeyValueProp, ModuleItem, ObjectLit, Pat,
-    Prop, PropName, PropOrSpread, Stmt, VarDecl, VarDeclKind, VarDeclarator,
+    Prop, PropName, PropOrSpread, Stmt, Str, VarDecl, VarDeclKind, VarDeclarator,
 };
 
 use crate::ast::json::{Json, ToJson, ToJsonKv};
@@ -135,10 +135,10 @@ fn build_decoders_expr(decs: &[BuiltDecoder], validators: &Vec<Validator>) -> Ex
             .map(|(key, value)| {
                 PropOrSpread::Prop(
                     Prop::KeyValue(KeyValueProp {
-                        key: PropName::Ident(Ident {
+                        key: PropName::Str(Str {
                             span: DUMMY_SP,
-                            sym: key.into(),
-                            optional: false,
+                            value: key.into(),
+                            raw: None,
                         }),
                         value: value.into(),
                     })
