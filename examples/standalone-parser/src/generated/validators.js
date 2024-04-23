@@ -95,12 +95,6 @@ function decodeString(ctx, input, required) {
 
   return buildError(input, ctx, "expected string");
 }
-const isNumeric = (num) =>
-  (typeof num === "number" || (typeof num === "string" && num.trim() !== "")) &&
-  !isNaN(
-    
-    num
-  );
 
 function decodeNumber(ctx, input, required) {
   if (!required && input == null) {
@@ -108,9 +102,6 @@ function decodeNumber(ctx, input, required) {
   }
   if (typeof input === "number") {
     return input;
-  }
-  if (isNumeric(input)) {
-    return Number(input);
   }
   if (String(input).toLowerCase() == "nan") {
     return NaN;
@@ -232,12 +223,6 @@ function decodeBoolean(ctx, input, required) {
   if (typeof input === "boolean") {
     return input;
   }
-  if (input === "true" || input === "false") {
-    return input === "true";
-  }
-  if (input === "1" || input === "0") {
-    return input === "1";
-  }
   return buildError(input, ctx, "expected boolean");
 }
 function decodeAny(ctx, input, required) {
@@ -266,6 +251,109 @@ function decodeConst(ctx, input, required, constValue) {
 }
 
 
-const validators = {};
+function DecodeExtra(ctx, input, required = true) {
+    return decodeRecord(ctx, input, required, (ctx, input)=>(decodeString(ctx, input, true)), (ctx, input)=>(decodeString(ctx, input, true)));
+}
+function DecodeAccessLevel(ctx, input, required = true) {
+    return decodeAnyOf(ctx, input, required, [
+        (ctx, input)=>(decodeConst(ctx, input, required, "ADMIN")),
+        (ctx, input)=>(decodeConst(ctx, input, required, "USER"))
+    ]);
+}
+function DecodeAvatarSize(ctx, input, required = true) {
+    return decodeString(ctx, input, required);
+}
+function DecodeUser(ctx, input, required = true) {
+    return decodeObject(ctx, input, required, {
+        "accessLevel": (ctx, input)=>(validators.AccessLevel(ctx, input, true)),
+        "avatarSize": (ctx, input)=>(validators.AvatarSize(ctx, input, true)),
+        "extra": (ctx, input)=>(validators.Extra(ctx, input, true)),
+        "friends": (ctx, input)=>(decodeArray(ctx, input, true, (ctx, input)=>(validators.User(ctx, input, true)))),
+        "name": (ctx, input)=>(decodeString(ctx, input, true))
+    });
+}
+function DecodePublicUser(ctx, input, required = true) {
+    return decodeObject(ctx, input, required, {
+        "accessLevel": (ctx, input)=>(validators.AccessLevel(ctx, input, true)),
+        "avatarSize": (ctx, input)=>(validators.AvatarSize(ctx, input, true)),
+        "extra": (ctx, input)=>(validators.Extra(ctx, input, true)),
+        "name": (ctx, input)=>(decodeString(ctx, input, true))
+    });
+}
+function DecodeReq(ctx, input, required = true) {
+    return decodeObject(ctx, input, required, {
+        "optional": (ctx, input)=>(decodeString(ctx, input, true))
+    });
+}
+function DecodeWithOptionals(ctx, input, required = true) {
+    return decodeObject(ctx, input, required, {
+        "optional": (ctx, input)=>(decodeString(ctx, input, false))
+    });
+}
+function DecodeRepro1(ctx, input, required = true) {
+    return decodeObject(ctx, input, required, {
+        "sizes": (ctx, input)=>(validators.Repro2(ctx, input, false))
+    });
+}
+function DecodeRepro2(ctx, input, required = true) {
+    return decodeObject(ctx, input, required, {
+        "useSmallerSizes": (ctx, input)=>(decodeBoolean(ctx, input, true))
+    });
+}
+function DecodeSettings(ctx, input, required = true) {
+    return decodeObject(ctx, input, required, {
+        "a": (ctx, input)=>(decodeString(ctx, input, true)),
+        "d": (ctx, input)=>(decodeObject(ctx, input, true, {
+                "tag": (ctx, input)=>(decodeConst(ctx, input, true, "d"))
+            })),
+        "level": (ctx, input)=>(decodeAnyOf(ctx, input, true, [
+                (ctx, input)=>(decodeConst(ctx, input, true, "a")),
+                (ctx, input)=>(decodeConst(ctx, input, true, "b"))
+            ]))
+    });
+}
+function DecodeSettingsUpdate(ctx, input, required = true) {
+    return decodeAnyOf(ctx, input, required, [
+        (ctx, input)=>(decodeString(ctx, input, required)),
+        (ctx, input)=>(decodeObject(ctx, input, required, {
+                "tag": (ctx, input)=>(decodeConst(ctx, input, true, "d"))
+            }))
+    ]);
+}
+function DecodeMapped(ctx, input, required = true) {
+    return decodeObject(ctx, input, required, {
+        "a": (ctx, input)=>(decodeObject(ctx, input, true, {
+                "value": (ctx, input)=>(decodeConst(ctx, input, true, "a"))
+            })),
+        "b": (ctx, input)=>(decodeObject(ctx, input, true, {
+                "value": (ctx, input)=>(decodeConst(ctx, input, true, "b"))
+            }))
+    });
+}
+function DecodeMappedOptional(ctx, input, required = true) {
+    return decodeObject(ctx, input, required, {
+        "a": (ctx, input)=>(decodeObject(ctx, input, false, {
+                "value": (ctx, input)=>(decodeConst(ctx, input, true, "a"))
+            })),
+        "b": (ctx, input)=>(decodeObject(ctx, input, false, {
+                "value": (ctx, input)=>(decodeConst(ctx, input, true, "b"))
+            }))
+    });
+}
+const validators = {
+    Extra: DecodeExtra,
+    AccessLevel: DecodeAccessLevel,
+    AvatarSize: DecodeAvatarSize,
+    User: DecodeUser,
+    PublicUser: DecodePublicUser,
+    Req: DecodeReq,
+    WithOptionals: DecodeWithOptionals,
+    Repro1: DecodeRepro1,
+    Repro2: DecodeRepro2,
+    Settings: DecodeSettings,
+    SettingsUpdate: DecodeSettingsUpdate,
+    Mapped: DecodeMapped,
+    MappedOptional: DecodeMappedOptional
+};
 
 export default { decodeObject, decodeArray, decodeString, decodeNumber, decodeCodec, decodeStringWithFormat, decodeAnyOf, decodeAllOf, decodeBoolean, decodeAny, decodeTuple, decodeNull, decodeConst, validators };
