@@ -1,0 +1,219 @@
+{
+  "AccessLevel": {
+    "enum": [
+      "ADMIN",
+      "USER"
+    ]
+  },
+  "AvatarSize": {
+    "type": "string"
+  },
+  "Extra": {
+    "additionalProperties": {
+      "type": "string"
+    },
+    "properties": {},
+    "required": [],
+    "type": "object"
+  },
+  "Mapped": {
+    "properties": {
+      "a": {
+        "properties": {
+          "value": {
+            "const": "a"
+          }
+        },
+        "required": [
+          "value"
+        ],
+        "type": "object"
+      },
+      "b": {
+        "properties": {
+          "value": {
+            "const": "b"
+          }
+        },
+        "required": [
+          "value"
+        ],
+        "type": "object"
+      }
+    },
+    "required": [
+      "a",
+      "b"
+    ],
+    "type": "object"
+  },
+  "MappedOptional": {
+    "properties": {
+      "a": {
+        "properties": {
+          "value": {
+            "const": "a"
+          }
+        },
+        "required": [
+          "value"
+        ],
+        "type": "object"
+      },
+      "b": {
+        "properties": {
+          "value": {
+            "const": "b"
+          }
+        },
+        "required": [
+          "value"
+        ],
+        "type": "object"
+      }
+    },
+    "required": [],
+    "type": "object"
+  },
+  "PublicUser": {
+    "properties": {
+      "accessLevel": {
+        "$ref": "#/components/schemas/AccessLevel"
+      },
+      "avatarSize": {
+        "$ref": "#/components/schemas/AvatarSize"
+      },
+      "extra": {
+        "$ref": "#/components/schemas/Extra"
+      },
+      "name": {
+        "type": "string"
+      }
+    },
+    "required": [
+      "accessLevel",
+      "avatarSize",
+      "extra",
+      "name"
+    ],
+    "type": "object"
+  },
+  "Repro1": {
+    "properties": {
+      "sizes": {
+        "$ref": "#/components/schemas/Repro2"
+      }
+    },
+    "required": [],
+    "type": "object"
+  },
+  "Repro2": {
+    "properties": {
+      "useSmallerSizes": {
+        "type": "boolean"
+      }
+    },
+    "required": [
+      "useSmallerSizes"
+    ],
+    "type": "object"
+  },
+  "Req": {
+    "properties": {
+      "optional": {
+        "type": "string"
+      }
+    },
+    "required": [
+      "optional"
+    ],
+    "type": "object"
+  },
+  "Settings": {
+    "properties": {
+      "a": {
+        "type": "string"
+      },
+      "d": {
+        "properties": {
+          "tag": {
+            "const": "d"
+          }
+        },
+        "required": [
+          "tag"
+        ],
+        "type": "object"
+      },
+      "level": {
+        "enum": [
+          "a",
+          "b"
+        ]
+      }
+    },
+    "required": [
+      "a",
+      "d",
+      "level"
+    ],
+    "type": "object"
+  },
+  "SettingsUpdate": {
+    "anyOf": [
+      {
+        "type": "string"
+      },
+      {
+        "properties": {
+          "tag": {
+            "const": "d"
+          }
+        },
+        "required": [
+          "tag"
+        ],
+        "type": "object"
+      }
+    ]
+  },
+  "User": {
+    "properties": {
+      "accessLevel": {
+        "$ref": "#/components/schemas/AccessLevel"
+      },
+      "avatarSize": {
+        "$ref": "#/components/schemas/AvatarSize"
+      },
+      "extra": {
+        "$ref": "#/components/schemas/Extra"
+      },
+      "friends": {
+        "items": {
+          "$ref": "#/components/schemas/User"
+        },
+        "type": "array"
+      },
+      "name": {
+        "type": "string"
+      }
+    },
+    "required": [
+      "accessLevel",
+      "avatarSize",
+      "extra",
+      "friends",
+      "name"
+    ],
+    "type": "object"
+  },
+  "WithOptionals": {
+    "properties": {
+      "optional": {
+        "type": "string"
+      }
+    },
+    "required": [],
+    "type": "object"
+  }
+}

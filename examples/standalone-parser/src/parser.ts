@@ -51,6 +51,7 @@ export type MappedOptional = {
     value: K;
   };
 };
+
 export const { Extra, User, PublicUser, Repro1, SettingsUpdate, Mapped, MappedOptional } =
   parse.buildParsers<{
     Extra: Extra;

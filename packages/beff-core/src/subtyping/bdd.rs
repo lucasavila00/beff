@@ -10,7 +10,7 @@ use super::{
     evidence::{
         Evidence, EvidenceResult, ListEvidence, ProperSubtypeEvidence, ProperSubtypeEvidenceResult,
     },
-    semtype::{BddMemoEmptyRef, MemoEmpty, SemType, SemTypeOps},
+    semtype::{BddMemoEmptyRef, MappingAtomicType, MemoEmpty, SemType, SemTypeOps},
     subtype::{ProperSubtype, StringLitOrFormat, SubType, SubTypeTag},
 };
 
@@ -378,6 +378,8 @@ fn mapping_inhabited(
                 _ => unreachable!(),
             };
 
+            let neg = &neg.vs;
+
             let pos_names = BTreeSet::from_iter(pos.keys());
             let neg_names = BTreeSet::from_iter(neg.keys());
 
@@ -433,7 +435,7 @@ fn mapping_formula_is_empty(
         None => {}
         Some(pos_atom) => {
             match pos_atom.atom.as_ref() {
-                Atom::Mapping(a) => combined = builder.get_mapping_atomic(*a).clone(),
+                Atom::Mapping(a) => combined = builder.get_mapping_atomic(*a).vs.clone(),
                 _ => unreachable!(),
             };
             let mut p = pos_atom.next.clone();
@@ -442,7 +444,7 @@ fn mapping_formula_is_empty(
                     Atom::Mapping(a) => builder.get_mapping_atomic(*a),
                     _ => unreachable!(),
                 };
-                let m = intersect_mapping(combined.clone(), p_atom.clone());
+                let m = intersect_mapping(combined.clone(), p_atom.vs.clone());
                 match m {
                     None => return ProperSubtypeEvidenceResult::IsEmpty,
                     Some(m) => combined = m,
@@ -707,7 +709,7 @@ pub fn bdd_mapping_member_type_inner(
                 Atom::Mapping(a) => ctx.get_mapping_atomic(*a),
                 _ => unreachable!(),
             };
-            let a = mapping_member_type_inner(b_atom_type, key.clone());
+            let a = mapping_member_type_inner(b_atom_type.clone(), key.clone());
             let a = a.intersect(&accum);
             let a = bdd_mapping_member_type_inner(ctx, left.clone(), key.clone(), a.clone());
 
@@ -729,7 +731,7 @@ pub enum MappingStrKey {
 }
 
 fn mapping_atomic_applicable_member_types_inner(
-    atomic: Rc<MappingAtomic>,
+    atomic: Rc<MappingAtomicType>,
     key: MappingStrKey,
 ) -> Vec<Rc<SemType>> {
     match key {
@@ -738,7 +740,7 @@ fn mapping_atomic_applicable_member_types_inner(
                 return vec![];
             }
             let mut member_types = vec![];
-            for (k, ty) in atomic.iter() {
+            for (k, ty) in atomic.vs.iter() {
                 let found = values.iter().any(|it| match it {
                     StringLitOrFormat::Lit(l) => l == k,
                     StringLitOrFormat::Format(_) | StringLitOrFormat::Codec(_) => {
@@ -751,13 +753,22 @@ fn mapping_atomic_applicable_member_types_inner(
                 }
             }
 
+            let is_subtype = member_types.len() == atomic.vs.len();
+            if !is_subtype {
+                member_types.push(atomic.rest.clone());
+            }
+
             member_types
         }
-        MappingStrKey::True => atomic.values().cloned().collect(),
+        MappingStrKey::True => {
+            let mut vs: Vec<Rc<SemType>> = atomic.vs.values().cloned().collect();
+            vs.push(atomic.rest.clone());
+            return vs;
+        }
     }
 }
 
-fn mapping_member_type_inner(atomic: Rc<MappingAtomic>, key: MappingStrKey) -> Rc<SemType> {
+fn mapping_member_type_inner(atomic: Rc<MappingAtomicType>, key: MappingStrKey) -> Rc<SemType> {
     let mut member_type: Option<Rc<SemType>> = None;
 
     for ty in mapping_atomic_applicable_member_types_inner(atomic, key) {
@@ -993,7 +1004,7 @@ pub fn keyof(ctx: &mut SemTypeContext, st: Rc<SemType>) -> Rc<SemType> {
                     if let Atom::Mapping(a) = atom.as_ref() {
                         let a = ctx.get_mapping_atomic(*a);
 
-                        for k in a.keys() {
+                        for k in a.vs.keys() {
                             let key_ty = Rc::new(SemTypeContext::string_const(
                                 StringLitOrFormat::Lit(k.clone()),
                             ));

@@ -247,4 +247,14 @@ mod tests {
         parse.buildParsers<{ MappedKeys: MappedKeys }>();
       "#));
     }
+    #[test]
+    fn ok_record_access() {
+        insta::assert_snapshot!(ok(r#"
+        export type Extra = Record<string, string>;
+        type ExtraValue = Extra[string];
+
+        parse.buildParsers<{ ExtraValue: ExtraValue }>();
+      "#));
+    }
 }
+

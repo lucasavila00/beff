@@ -7,6 +7,9 @@ use crate::{BffFileName, ParsedModule};
 
 #[derive(Debug, Clone)]
 pub enum DiagnosticInfoMessage {
+    RestFoundOnExtractObject,
+    ShouldHaveObjectAsTypeArgument,
+    RecordKeyShouldBeString,
     NeverCannotBeConvertedToJsonSchema,
     CannotResolveRefInExtractUnion,
     PartialShouldHaveObjectAsTypeArgument,
@@ -334,6 +337,15 @@ impl DiagnosticInfoMessage {
             }
             DiagnosticInfoMessage::NeverCannotBeConvertedToJsonSchema => {
                 "'Never' cannot be converted to JSON schema".to_string()
+            }
+            DiagnosticInfoMessage::RecordKeyShouldBeString => {
+                "Record key should be a string".to_string()
+            }
+            DiagnosticInfoMessage::ShouldHaveObjectAsTypeArgument => {
+                "Should have object as type argument".to_string()
+            }
+            DiagnosticInfoMessage::RestFoundOnExtractObject => {
+                "Rest found on extract object".to_string()
             }
         }
     }

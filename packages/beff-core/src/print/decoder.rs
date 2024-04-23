@@ -255,10 +255,8 @@ impl<'a> DecoderFnGenerator<'a> {
                 }))],
             ),
             JsonSchema::Ref(r_name) => Self::decode_ref(r_name, required),
-            JsonSchema::Object(vs) => Self::decode_call_extra(
-                "decodeObject",
-                required,
-                vec![Expr::Object(ObjectLit {
+            JsonSchema::Object { vs, rest } => {
+                let mut extra = vec![Expr::Object(ObjectLit {
                     span: DUMMY_SP,
                     props: vs
                         .iter()
@@ -280,8 +278,13 @@ impl<'a> DecoderFnGenerator<'a> {
                             })))
                         })
                         .collect(),
-                })],
-            ),
+                })];
+                if let Some(rest) = rest {
+                    let rest = self.decode_expr(rest, Required::Known(false));
+                    extra.push(Self::make_cb(rest));
+                }
+                Self::decode_call_extra("decodeObject", required, extra)
+            }
             JsonSchema::Array(ty) => Self::decode_call_extra(
                 "decodeArray",
                 required,
@@ -355,14 +358,6 @@ impl<'a> DecoderFnGenerator<'a> {
                     value: format.to_string().into(),
                     raw: None,
                 }))],
-            ),
-            JsonSchema::TsRecord { key, value } => Self::decode_call_extra(
-                "decodeRecord",
-                required,
-                vec![
-                    Self::make_cb(self.decode_expr(key, Required::Known(true))),
-                    Self::make_cb(self.decode_expr(value, Required::Known(true))),
-                ],
             ),
         }
     }
