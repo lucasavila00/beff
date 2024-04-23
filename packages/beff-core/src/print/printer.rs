@@ -112,7 +112,7 @@ pub struct WritableModules {
 pub trait ToWritableModules {
     fn to_module(self) -> Result<WritableModules>;
 }
-fn build_decoders_expr(decs: &[BuiltDecoder]) -> Expr {
+fn build_decoders_expr(decs: &[BuiltDecoder], validators: &Vec<Validator>) -> Expr {
     let mut exprs: Vec<_> = decs
         .iter()
         .map(|decoder| {
@@ -120,7 +120,7 @@ fn build_decoders_expr(decs: &[BuiltDecoder]) -> Expr {
                 decoder.exported_name.clone(),
                 Expr::Fn(FnExpr {
                     ident: None,
-                    function: decoder::from_schema(&decoder.schema).into(),
+                    function: decoder::from_schema(&decoder.schema, validators).into(),
                 }),
             )
         })
@@ -178,7 +178,7 @@ impl ToWritableModules for ExtractResult {
 
         for comp in &validators {
             validator_names.push(comp.name.clone());
-            let decoder_fn = decoder::from_schema(&comp.schema);
+            let decoder_fn = decoder::from_schema(&comp.schema, &validators);
             let decoder_fn_decl = ModuleItem::Stmt(Stmt::Decl(Decl::Fn(FnDecl {
                 ident: Ident {
                     span: DUMMY_SP,
@@ -222,7 +222,8 @@ impl ToWritableModules for ExtractResult {
         let mut js_built_parsers = None;
 
         if let Some(parser) = self.parser {
-            let decoders_expr = build_decoders_expr(&parser.built_decoders.unwrap_or_default());
+            let decoders_expr =
+                build_decoders_expr(&parser.built_decoders.unwrap_or_default(), &validators);
             let built_st = const_decl("buildParsersInput", decoders_expr);
             js_built_parsers = Some(emit_module(vec![built_st], "\n")?);
         }

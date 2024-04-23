@@ -306,11 +306,13 @@ function DecodeE(ctx, input, required = true) {
     ]);
 }
 function DecodeUnionNested(ctx, input, required = true) {
-    return decodeAnyOf(ctx, input, required, [
-        (ctx, input)=>(validators.A(ctx, input, required)),
-        (ctx, input)=>(validators.B(ctx, input, required)),
-        (ctx, input)=>(validators.D(ctx, input, required)),
-        (ctx, input)=>(validators.E(ctx, input, required))
+    return decodeAnyOfConsts(ctx, input, required, [
+        1,
+        2,
+        3,
+        4,
+        5,
+        6
     ]);
 }
 const validators = {
