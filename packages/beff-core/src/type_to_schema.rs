@@ -14,7 +14,7 @@ use std::rc::Rc;
 use swc_atoms::JsWord;
 use swc_common::{Span, Spanned};
 use swc_ecma_ast::{
-    Expr, Ident, Lit, MemberProp, Prop, PropName, PropOrSpread, Str, TsArrayType,
+    Expr, Ident, Lit, MemberProp, Prop, PropName, PropOrSpread, Str, TruePlusMinus, TsArrayType,
     TsConditionalType, TsConstructorType, TsEntityName, TsEnumDecl, TsExprWithTypeArgs,
     TsFnOrConstructorType, TsFnType, TsImportType, TsIndexedAccessType, TsInferType,
     TsInterfaceDecl, TsIntersectionType, TsKeywordType, TsKeywordTypeKind, TsLit, TsLitType,
@@ -1116,10 +1116,7 @@ impl<'a, R: FileManager> TypeToSchema<'a, R> {
                 let access_st: Rc<SemType> = ctx.indexed_access(st, key);
                 self.convert_sem_type(access_st, &mut ctx, &m.prop.span())
             }
-            _ => {
-                dbg!(e);
-                todo!()
-            }
+            _ => self.error(&e.span(), DiagnosticInfoMessage::CannotConvertExprToSchema),
         }
     }
 
@@ -1349,6 +1346,82 @@ impl<'a, R: FileManager> TypeToSchema<'a, R> {
         self.convert_sem_type(keyof_st, &mut ctx, &k.span())
     }
 
+    fn extract_union(&self, tp: JsonSchema) -> Vec<JsonSchema> {
+        match tp {
+            JsonSchema::AnyOf(v) => Vec::from_iter(v)
+                .into_iter()
+                .flat_map(|it| self.extract_union(it))
+                .collect(),
+            JsonSchema::Ref(r) => {
+                let v = self.components.get(&r);
+                let v = v.and_then(|it| it.clone());
+                match v {
+                    Some(v) => self.extract_union(v.schema),
+                    None => vec![JsonSchema::Any],
+                }
+            }
+            _ => vec![tp],
+        }
+    }
+
+    fn convert_mapped_type(&mut self, k: &TsMappedType) -> Res<JsonSchema> {
+        let name = k.type_param.name.sym.to_string();
+        let constraint = match k.type_param.constraint {
+            Some(ref it) => it.as_ref(),
+            None => {
+                return self.error(
+                    &k.type_param.span,
+                    DiagnosticInfoMessage::NoConstraintInMappedType,
+                )
+            }
+        };
+        let constraint_schema = self.convert_ts_type(constraint)?;
+        let values = self.extract_union(constraint_schema);
+
+        let mut string_keys = vec![];
+
+        for v in values {
+            match v {
+                JsonSchema::Const(JsonSchemaConst::String(s)) => {
+                    string_keys.push(s);
+                }
+                _ => return self.error(&k.span, DiagnosticInfoMessage::NonStringKeyInMappedType),
+            }
+        }
+
+        let type_ann = match &k.type_ann {
+            Some(ref type_ann) => type_ann.as_ref(),
+            None => {
+                return self.error(&k.span, DiagnosticInfoMessage::NoTypeAnnotationInMappedType)
+            }
+        };
+
+        let mut vs = vec![];
+        for key in string_keys.into_iter() {
+            self.type_param_stack.push(BTreeMap::from_iter(vec![(
+                name.clone(),
+                JsonSchema::Const(JsonSchemaConst::String(key.clone())),
+            )]));
+            let ty = self.convert_ts_type(&type_ann)?;
+            self.type_param_stack.pop();
+
+            let ty = match k.optional {
+                Some(opt) => match opt {
+                    TruePlusMinus::True => Optionality::Optional(ty),
+                    TruePlusMinus::Plus => Optionality::Required(ty),
+                    TruePlusMinus::Minus => {
+                        return self
+                            .error(&k.span, DiagnosticInfoMessage::MappedTypeMinusNotSupported)
+                    }
+                },
+                None => Optionality::Required(ty),
+            };
+            vs.push((key, ty));
+        }
+
+        Ok(JsonSchema::object(vs))
+    }
+
     pub fn convert_ts_type(&mut self, typ: &TsType) -> Res<JsonSchema> {
         match typ {
             TsType::TsKeywordType(TsKeywordType { kind, span, .. }) => {
@@ -1434,27 +1507,46 @@ impl<'a, R: FileManager> TypeToSchema<'a, R> {
             }
             TsType::TsTypeOperator(TsTypeOperator { span, op, type_ann }) => match op {
                 TsTypeOperatorOp::KeyOf => self.convert_keyof(type_ann),
-                TsTypeOperatorOp::Unique | TsTypeOperatorOp::ReadOnly => self
-                    .cannot_serialize_error(
-                        span,
-                        DiagnosticInfoMessage::TypeConstructNonSerializableToJsonSchema,
-                    ),
+                TsTypeOperatorOp::Unique => self.cannot_serialize_error(
+                    span,
+                    DiagnosticInfoMessage::UniqueNonSerializableToJsonSchema,
+                ),
+                TsTypeOperatorOp::ReadOnly => self.cannot_serialize_error(
+                    span,
+                    DiagnosticInfoMessage::ReadonlyNonSerializableToJsonSchema,
+                ),
             },
+            TsType::TsMappedType(k) => self.convert_mapped_type(k),
             TsType::TsRestType(_) => unreachable!("should have been handled by parent node"),
-            TsType::TsThisType(TsThisType { span, .. })
-            | TsType::TsFnOrConstructorType(
+            TsType::TsIndexedAccessType(i) => self.convert_indexed_access(i),
+            TsType::TsThisType(TsThisType { span, .. }) => self.cannot_serialize_error(
+                span,
+                DiagnosticInfoMessage::ThisTypeNonSerializableToJsonSchema,
+            ),
+            TsType::TsFnOrConstructorType(
                 TsFnOrConstructorType::TsConstructorType(TsConstructorType { span, .. })
                 | TsFnOrConstructorType::TsFnType(TsFnType { span, .. }),
-            )
-            | TsType::TsConditionalType(TsConditionalType { span, .. })
-            | TsType::TsInferType(TsInferType { span, .. })
-            | TsType::TsMappedType(TsMappedType { span, .. })
-            | TsType::TsTypePredicate(TsTypePredicate { span, .. })
-            | TsType::TsImportType(TsImportType { span, .. }) => self.cannot_serialize_error(
+            ) => self.cannot_serialize_error(
                 span,
-                DiagnosticInfoMessage::TypeConstructNonSerializableToJsonSchema,
+                DiagnosticInfoMessage::TsFnOrConstructorTypeNonSerializableToJsonSchema,
             ),
-            TsType::TsIndexedAccessType(i) => self.convert_indexed_access(i),
+            TsType::TsConditionalType(TsConditionalType { span, .. }) => self
+                .cannot_serialize_error(
+                    span,
+                    DiagnosticInfoMessage::TsConditionalTypeNonSerializableToJsonSchema,
+                ),
+            TsType::TsInferType(TsInferType { span, .. }) => self.cannot_serialize_error(
+                span,
+                DiagnosticInfoMessage::TsInferTypeNonSerializableToJsonSchema,
+            ),
+            TsType::TsTypePredicate(TsTypePredicate { span, .. }) => self.cannot_serialize_error(
+                span,
+                DiagnosticInfoMessage::TsTypePredicateNonSerializableToJsonSchema,
+            ),
+            TsType::TsImportType(TsImportType { span, .. }) => self.cannot_serialize_error(
+                span,
+                DiagnosticInfoMessage::TsImportTypeNonSerializableToJsonSchema,
+            ),
         }
     }
 }
