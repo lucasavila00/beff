@@ -2,7 +2,7 @@ use std::collections::BTreeSet;
 
 use crate::{
     ast::json_schema::{JsonSchema, Optionality},
-    open_api_ast::Validator,
+    Validator,
 };
 use swc_common::DUMMY_SP;
 use swc_ecma_ast::{

@@ -4,10 +4,10 @@ mod tests {
 
     use beff_core::{
         import_resolver::{parse_and_bind, FsModuleResolver},
-        open_api_ast::Validator,
         parser_extractor::BuiltDecoder,
         schema_changes::print_ts_types,
         BeffUserSettings, BffFileName, EntryPoints, ExtractResult, FileManager, ParsedModule,
+        Validator,
     };
     use swc_common::{Globals, GLOBALS};
     use swc_ecma_ast::TsType;

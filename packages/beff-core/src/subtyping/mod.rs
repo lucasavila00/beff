@@ -1,7 +1,7 @@
 use std::rc::Rc;
 
 use crate::ast::json_schema::{JsonSchemaConst, Optionality};
-use crate::{ast::json_schema::JsonSchema, open_api_ast::Validator};
+use crate::{ast::json_schema::JsonSchema, Validator};
 
 use self::bdd::MappingAtomic;
 use self::semtype::{SemType, SemTypeContext, SemTypeOps};

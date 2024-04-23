@@ -5,8 +5,8 @@ use std::{
 
 use crate::{
     ast::json_schema::{JsonSchema, JsonSchemaConst, Optionality},
-    open_api_ast::Validator,
     subtyping::evidence::ProperSubtypeEvidence,
+    Validator,
 };
 
 use super::{

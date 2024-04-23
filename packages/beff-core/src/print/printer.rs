@@ -8,10 +8,10 @@ use swc_ecma_ast::{
 
 use crate::ast::json::{Json, ToJsonKv};
 use crate::emit::emit_module;
-use crate::open_api_ast::Validator;
 use crate::parser_extractor::BuiltDecoder;
 use crate::print::decoder;
 use crate::ExtractResult;
+use crate::Validator;
 
 fn const_decl(name: &str, init: Expr) -> ModuleItem {
     ModuleItem::Stmt(Stmt::Decl(Decl::Var(

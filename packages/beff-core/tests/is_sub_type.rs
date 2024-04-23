@@ -3,11 +3,11 @@ mod tests {
 
     use beff_core::{
         ast::json_schema::{JsonSchema, JsonSchemaConst},
-        open_api_ast::Validator,
         subtyping::{
             semtype::{SemTypeContext, SemTypeOps},
             ToSemType,
         },
+        Validator,
     };
 
     pub fn is_sub_type(
