@@ -3,7 +3,7 @@ use core::fmt;
 use std::{rc::Rc, sync::Arc};
 use swc_common::{BytePos, Loc, SourceMap, Span};
 
-use crate::{open_api_ast::HTTPMethod, BffFileName, ParsedModule};
+use crate::{BffFileName, ParsedModule};
 
 #[derive(Debug, Clone)]
 pub enum DiagnosticInfoMessage {
@@ -80,7 +80,6 @@ pub enum DiagnosticInfoMessage {
     PropShouldHaveTypeAnnotation,
     PropKeyShouldBeIdent,
     CannotResolveTypeReferenceOnExtracting(String),
-    UnmatchedPathParameter(String, HTTPMethod),
     TsInterfaceExtendsNotSupported,
     TwoDifferentTypesWithTheSameName,
     CannotFindFileWhenConvertingToSchema(BffFileName),
@@ -115,10 +114,6 @@ impl DiagnosticInfoMessage {
             }
             DiagnosticInfoMessage::TsInterfaceExtendsNotSupported => {
                 "Interface extends are not supported".to_string()
-            }
-            DiagnosticInfoMessage::UnmatchedPathParameter(param, method) => {
-                let method = method.to_string().to_uppercase();
-                format!("Path parameter `{param}` is not being used in the function parameters of method `{method}`")
             }
             DiagnosticInfoMessage::OptionalTypeIsNotSupported => {
                 "Optional types are not supported at this position".to_string()

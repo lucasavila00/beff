@@ -4,10 +4,13 @@ mod tests {
 
     use beff_core::{
         import_resolver::{parse_and_bind, FsModuleResolver},
-        open_api_ast::OpenApi,
+        open_api_ast::Validator,
+        parser_extractor::BuiltDecoder,
+        schema_changes::print_ts_types,
         BeffUserSettings, BffFileName, EntryPoints, ExtractResult, FileManager, ParsedModule,
     };
     use swc_common::{Globals, GLOBALS};
+    use swc_ecma_ast::TsType;
     struct TestFileManager {
         pub f: Rc<ParsedModule>,
     }
@@ -47,7 +50,25 @@ mod tests {
         };
         beff_core::extract(&mut man, entry)
     }
+    fn as_typescript_string_(validators: &[&Validator], built_decoders: &[BuiltDecoder]) -> String {
+        let mut vs: Vec<(String, TsType)> = vec![];
 
+        let mut sorted_validators = validators.iter().collect::<Vec<_>>();
+        sorted_validators.sort_by(|a, b| a.name.cmp(&b.name));
+
+        for v in sorted_validators {
+            vs.push((v.name.clone(), v.schema.to_ts_type()));
+        }
+
+        let mut sorted_decoders = built_decoders.iter().collect::<Vec<_>>();
+        sorted_decoders.sort_by(|a, b| a.exported_name.cmp(&b.exported_name));
+
+        for v in sorted_decoders {
+            vs.push((v.exported_name.clone(), v.schema.to_ts_type()));
+        }
+
+        print_ts_types(vs)
+    }
     fn ok(from: &str) -> String {
         let p = parse_api(from);
         let errors = p.errors();
@@ -56,7 +77,7 @@ mod tests {
             panic!("errors: {:?}", errors);
         }
         match p.parser {
-            Some(v) => OpenApi::as_typescript_string_(
+            Some(v) => as_typescript_string_(
                 &v.validators.iter().collect::<Vec<_>>(),
                 &v.built_decoders.as_ref().unwrap_or(&vec![]),
             ),

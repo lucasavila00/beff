@@ -6,77 +6,12 @@ use swc_ecma_ast::{
     Prop, PropName, PropOrSpread, Stmt, Str, VarDecl, VarDeclKind, VarDeclarator,
 };
 
-use crate::ast::json::{Json, ToJson, ToJsonKv};
-use crate::ast::json_schema::JsonSchema;
+use crate::ast::json::{Json, ToJsonKv};
 use crate::emit::emit_module;
-use crate::open_api_ast::{OpenApi, Validator};
+use crate::open_api_ast::Validator;
 use crate::parser_extractor::BuiltDecoder;
 use crate::print::decoder;
 use crate::ExtractResult;
-
-fn error_response_schema() -> JsonSchema {
-    JsonSchema::object(vec![("message".to_string(), JsonSchema::String.required())])
-}
-
-fn error_response(code: &str, description: &str) -> (String, Json) {
-    (
-        code.into(),
-        Json::object(vec![
-            ("description".into(), Json::String(description.into())),
-            (
-                "content".into(),
-                Json::object(vec![(
-                    "application/json".into(),
-                    Json::object(vec![("schema".into(), error_response_schema().to_json())]),
-                )]),
-            ),
-        ]),
-    )
-}
-pub fn open_api_to_json(it: OpenApi, components: &[Validator]) -> Json {
-    let v = vec![
-        //
-        ("openapi".into(), Json::String("3.1.0".into())),
-        ("info".into(), it.info.to_json()),
-        (
-            "paths".into(),
-            Json::object(
-                it.paths
-                    .into_iter()
-                    .flat_map(ToJsonKv::to_json_kv)
-                    .collect(),
-            ),
-        ),
-        (
-            "components".into(),
-            Json::object(vec![
-                (
-                    "schemas".into(),
-                    Json::object(
-                        it.components
-                            .into_iter()
-                            .map(|name| {
-                                components
-                                    .iter()
-                                    .find(|it| it.name == name)
-                                    .expect("everything should be resolved by now")
-                            })
-                            .flat_map(|it| ToJsonKv::to_json_kv(it.clone()))
-                            .collect(),
-                    ),
-                ),
-                (
-                    "responses".into(),
-                    Json::object(vec![
-                        error_response("DecodeError", "Invalid parameters or request body"),
-                        error_response("UnexpectedError", "Unexpected Error"),
-                    ]),
-                ),
-            ]),
-        ),
-    ];
-    Json::object(v)
-}
 
 fn const_decl(name: &str, init: Expr) -> ModuleItem {
     ModuleItem::Stmt(Stmt::Decl(Decl::Var(
@@ -218,7 +153,15 @@ impl ToWritableModules for ExtractResult {
         ));
 
         let js_validators = emit_module(stmt_validators, "\n")?;
-        let json_schema = None;
+
+        let json_schema = Json::object(
+            validators
+                .iter()
+                .flat_map(|it| ToJsonKv::to_json_kv(it.clone()))
+                .collect(),
+        );
+
+        let json_schema = Some(json_schema.to_string());
         let mut js_built_parsers = None;
 
         if let Some(parser) = self.parser {
