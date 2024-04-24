@@ -1,5 +1,11 @@
 # @beff/cli
 
+## 0.0.22
+
+### Patch Changes
+
+- More discriminated union optimization
+
 ## 0.0.21
 
 ### Patch Changes
