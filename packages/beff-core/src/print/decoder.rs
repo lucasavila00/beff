@@ -195,6 +195,10 @@ impl<'a> DecoderFnGenerator<'a> {
         }
     }
     fn decode_any_of(&self, vs: &BTreeSet<JsonSchema>, required: Required) -> Expr {
+        if vs.is_empty() {
+            panic!("empty anyOf is not allowed")
+        }
+
         let flat_values = vs
             .iter()
             .flat_map(|it| self.extract_union(it))
