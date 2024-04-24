@@ -1,7 +1,0 @@
----
-source: packages/beff-core/tests/print_router.rs
-expression: ok(from)
----
-type TvideoSize = string;
-type Router = { "/hello": { "get": () => TvideoSize } };
-

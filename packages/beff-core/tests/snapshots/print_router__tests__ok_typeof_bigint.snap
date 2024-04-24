@@ -1,7 +1,0 @@
----
-source: packages/beff-core/tests/print_router.rs
-expression: ok(from)
----
-type A = bigint;
-type Router = { "/hello": { "get": () => A } };
-
