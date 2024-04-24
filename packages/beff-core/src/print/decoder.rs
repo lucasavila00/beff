@@ -247,7 +247,7 @@ impl<'a> DecoderFnGenerator<'a> {
                 .collect(),
         });
 
-        return Self::decode_call_extra(
+        Self::decode_call_extra(
             "decodeAnyOfDiscriminated",
             required,
             vec![
@@ -258,7 +258,7 @@ impl<'a> DecoderFnGenerator<'a> {
                 })),
                 extra_obj,
             ],
-        );
+        )
     }
     fn maybe_decode_any_of_discriminated(
         &self,

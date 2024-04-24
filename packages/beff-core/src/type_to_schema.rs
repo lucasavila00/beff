@@ -1246,7 +1246,7 @@ impl<'a, 'b, R: FileManager> TypeToSchema<'a, 'b, R> {
                 DiagnosticInfoMessage::NeverCannotBeConvertedToJsonSchema,
             );
         }
-        let (head, tail) = to_validators(ctx, &access_st, "AnyName", &mut self.counter);
+        let (head, tail) = to_validators(ctx, &access_st, "AnyName", self.counter);
         for t in tail {
             self.insert_definition(t.name.clone(), t.schema)?;
         }
