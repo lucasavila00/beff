@@ -1,0 +1,26 @@
+---
+source: packages/beff-core/tests/print_parser.rs
+expression: "decoder(r#\"\n        export type DiscriminatedUnion4 =\n            | {\n                type: \"a\";\n                a: {\n                  subType: \"a1\";\n                  a1: string;\n                };\n              }\n            | {\n                type: \"a\";\n                a: {\n                  subType: \"a2\";\n                  a2: string;\n                };\n              };\n        parse.buildParsers<{ DiscriminatedUnion4: DiscriminatedUnion4 }>();\n      \"#)"
+---
+function DecodeDiscriminatedUnion4(ctx, input, required = true) {
+    return decodeAnyOfDiscriminated(ctx, input, required, "type", {
+        "a": (ctx, input)=>(decodeAnyOf(ctx, input, true, [
+                (ctx, input)=>(decodeObject(ctx, input, true, {
+                        "a": (ctx, input)=>(decodeObject(ctx, input, true, {
+                                "a1": (ctx, input)=>(decodeString(ctx, input, true)),
+                                "subType": (ctx, input)=>(decodeConst(ctx, input, true, "a1"))
+                            }))
+                    })),
+                (ctx, input)=>(decodeObject(ctx, input, true, {
+                        "a": (ctx, input)=>(decodeObject(ctx, input, true, {
+                                "a2": (ctx, input)=>(decodeString(ctx, input, true)),
+                                "subType": (ctx, input)=>(decodeConst(ctx, input, true, "a2"))
+                            }))
+                    }))
+            ]))
+    });
+}
+const validators = {
+    DiscriminatedUnion4: DecodeDiscriminatedUnion4
+};
+

@@ -452,6 +452,37 @@ function DecodeDiscriminatedUnion2(ctx, input, required = true) {
             }))
     ]);
 }
+function DecodeDiscriminatedUnion3(ctx, input, required = true) {
+    return decodeAnyOfDiscriminated(ctx, input, required, "type", {
+        "a": (ctx, input)=>(decodeObject(ctx, input, true, {
+                "a1": (ctx, input)=>(decodeString(ctx, input, true))
+            })),
+        "b": (ctx, input)=>(decodeObject(ctx, input, true, {
+                "value": (ctx, input)=>(decodeNumber(ctx, input, true))
+            })),
+        "c": (ctx, input)=>(decodeObject(ctx, input, true, {
+                "a1": (ctx, input)=>(decodeString(ctx, input, true))
+            }))
+    });
+}
+function DecodeDiscriminatedUnion4(ctx, input, required = true) {
+    return decodeAnyOfDiscriminated(ctx, input, required, "type", {
+        "a": (ctx, input)=>(decodeAnyOf(ctx, input, true, [
+                (ctx, input)=>(decodeObject(ctx, input, true, {
+                        "a": (ctx, input)=>(decodeObject(ctx, input, true, {
+                                "a1": (ctx, input)=>(decodeString(ctx, input, true)),
+                                "subType": (ctx, input)=>(decodeConst(ctx, input, true, "a1"))
+                            }))
+                    })),
+                (ctx, input)=>(decodeObject(ctx, input, true, {
+                        "a": (ctx, input)=>(decodeObject(ctx, input, true, {
+                                "a2": (ctx, input)=>(decodeString(ctx, input, true)),
+                                "subType": (ctx, input)=>(decodeConst(ctx, input, true, "a2"))
+                            }))
+                    }))
+            ]))
+    });
+}
 const validators = {
     OmitSettings: DecodeOmitSettings,
     Settings: DecodeSettings,
@@ -472,7 +503,9 @@ const validators = {
     Mapped: DecodeMapped,
     MappedOptional: DecodeMappedOptional,
     DiscriminatedUnion: DecodeDiscriminatedUnion,
-    DiscriminatedUnion2: DecodeDiscriminatedUnion2
+    DiscriminatedUnion2: DecodeDiscriminatedUnion2,
+    DiscriminatedUnion3: DecodeDiscriminatedUnion3,
+    DiscriminatedUnion4: DecodeDiscriminatedUnion4
 };
 
 export default { decodeObject, decodeArray, decodeString, decodeNumber, decodeCodec, decodeStringWithFormat, decodeAnyOf, decodeAllOf, decodeBoolean, decodeAny, decodeTuple, decodeNull, decodeConst, validators };

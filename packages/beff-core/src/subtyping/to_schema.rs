@@ -149,22 +149,24 @@ impl<'a> SemTypeResolverContext<'a> {
     }
 }
 
-struct SchemerContext<'a> {
+struct SchemerContext<'a, 'b> {
     ctx: SemTypeResolverContext<'a>,
 
     schemer_memo: BTreeMap<Rc<SemType>, SchemaMemo>,
     validators: Vec<Validator>,
 
     recursive_validators: BTreeSet<String>,
+    counter: &'b mut usize,
 }
 
-impl<'a> SchemerContext<'a> {
-    fn new(ctx: &'a mut SemTypeContext) -> Self {
+impl<'a, 'b> SchemerContext<'a, 'b> {
+    fn new(ctx: &'a mut SemTypeContext, counter: &'b mut usize) -> Self {
         Self {
             ctx: SemTypeResolverContext(ctx),
             validators: vec![],
             schemer_memo: BTreeMap::new(),
             recursive_validators: BTreeSet::new(),
+            counter,
         }
     }
 
@@ -479,8 +481,8 @@ impl<'a> SchemerContext<'a> {
         let new_name = match name {
             Some(n) => n.to_string(),
             None => {
-                self.ctx.0.counter += 1;
-                format!("t_{}", self.ctx.0.counter)
+                *self.counter += 1;
+                format!("t_{}", self.counter)
             }
         };
         if let Some(mater) = self.schemer_memo.get(ty) {
@@ -511,8 +513,9 @@ pub fn to_validators(
     ctx: &mut SemTypeContext,
     ty: &Rc<SemType>,
     name: &str,
+    counter: &mut usize,
 ) -> (Validator, Vec<Validator>) {
-    let mut schemer = SchemerContext::new(ctx);
+    let mut schemer = SchemerContext::new(ctx, counter);
     let out = schemer.convert_to_schema(ty, Some(name));
     let vs: Vec<Validator> = schemer
         .validators
