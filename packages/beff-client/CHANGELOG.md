@@ -1,5 +1,13 @@
 # @beff/client
 
+## 0.0.22
+
+### Patch Changes
+
+- More discriminated union optimization
+- Updated dependencies
+  - @beff/cli@0.0.22
+
 ## 0.0.21
 
 ### Patch Changes

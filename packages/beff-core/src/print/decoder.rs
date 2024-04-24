@@ -194,6 +194,72 @@ impl<'a> DecoderFnGenerator<'a> {
             _ => vec![it.clone()],
         }
     }
+
+    fn decode_any_of_discriminated(
+        &self,
+        required: Required,
+        discriminator: String,
+        discriminator_strings: BTreeSet<String>,
+        object_vs: Vec<&BTreeMap<String, Optionality<JsonSchema>>>,
+    ) -> Expr {
+        let mut acc = BTreeMap::new();
+        for current_key in discriminator_strings {
+            let mut cases = vec![];
+            for vs in object_vs.iter() {
+                let value = vs.get(&discriminator).unwrap().inner();
+
+                let all_values = self.extract_union(value);
+                for s in all_values {
+                    if let JsonSchema::Const(JsonSchemaConst::String(s)) = s {
+                        if s == current_key {
+                            let new_obj_vs: Vec<(String, Optionality<JsonSchema>)> = vs
+                                .iter()
+                                .filter(|it| it.0 != &discriminator)
+                                .map(|it| (it.0.clone(), it.1.clone()))
+                                .collect();
+                            let new_obj = JsonSchema::object(new_obj_vs, None);
+                            cases.push(new_obj);
+                        }
+                    }
+                }
+            }
+            let schema = JsonSchema::any_of(cases);
+
+            acc.insert(current_key, schema);
+        }
+
+        let extra_obj = Expr::Object(ObjectLit {
+            span: DUMMY_SP,
+            props: acc
+                .iter()
+                .map(|(key, value)| {
+                    PropOrSpread::Prop(Box::new(Prop::KeyValue(KeyValueProp {
+                        key: PropName::Str(Str {
+                            span: DUMMY_SP,
+                            value: key.clone().into(),
+                            raw: None,
+                        }),
+                        value: Box::new(Self::make_cb(
+                            self.decode_expr(value, Required::Known(true)),
+                        )),
+                    })))
+                })
+                .collect(),
+        });
+
+        Self::decode_call_extra(
+            "decodeAnyOfDiscriminated",
+            required,
+            vec![
+                Expr::Lit(Lit::Str(Str {
+                    span: DUMMY_SP,
+                    value: discriminator.clone().into(),
+                    raw: None,
+                })),
+                extra_obj,
+            ],
+        )
+    }
     fn maybe_decode_any_of_discriminated(
         &self,
         flat_values: &BTreeSet<JsonSchema>,
@@ -202,105 +268,68 @@ impl<'a> DecoderFnGenerator<'a> {
         let all_objects_without_rest = flat_values
             .iter()
             .all(|it| matches!(it, JsonSchema::Object { rest: None, .. }));
+
+        let object_vs = flat_values
+            .iter()
+            .filter_map(|it| match it {
+                JsonSchema::Object { vs, rest: _ } => Some(vs),
+                _ => None,
+            })
+            .collect::<Vec<_>>();
         if all_objects_without_rest {
             let mut keys = vec![];
-            for v in flat_values {
-                if let JsonSchema::Object { vs, .. } = v {
-                    for key in vs.keys() {
-                        keys.push(key.clone());
-                    }
+            for vs in &object_vs {
+                for key in vs.keys() {
+                    keys.push(key.clone());
                 }
             }
 
             for discriminator in keys {
-                let contained_in_all = flat_values.iter().all(|it| match it {
-                    JsonSchema::Object { vs, .. } => vs.contains_key(&discriminator),
-                    _ => false,
-                });
+                let contained_in_all = object_vs.iter().all(|it| it.contains_key(&discriminator));
                 if contained_in_all {
-                    let values = flat_values
+                    let values = object_vs
+                        .iter()
+                        .map(|it| it.get(&discriminator).unwrap().clone())
+                        .collect::<BTreeSet<_>>();
+
+                    let all_required = values
+                        .iter()
+                        .all(|it| matches!(it, Optionality::Required(_)));
+
+                    if !all_required {
+                        continue;
+                    }
+
+                    let discriminator_values = values
                         .iter()
                         .map(|it| match it {
-                            JsonSchema::Object { vs, .. } => {
-                                vs.get(&discriminator).unwrap().clone()
-                            }
+                            Optionality::Required(schema) => schema.clone(),
                             _ => unreachable!(),
                         })
                         .collect::<BTreeSet<_>>();
+                    let flat_discriminator_values = discriminator_values
+                        .iter()
+                        .flat_map(|it| self.extract_union(it))
+                        .collect::<BTreeSet<_>>();
 
-                    let all_string_consts = values.iter().all(|it| {
-                        matches!(
-                            it,
-                            Optionality::Required(JsonSchema::Const(JsonSchemaConst::String(_)))
-                        )
-                    });
+                    let all_string_consts = flat_discriminator_values
+                        .iter()
+                        .all(|it| matches!(it, JsonSchema::Const(JsonSchemaConst::String(_))));
 
                     if all_string_consts {
-                        let key_values = values
+                        let discriminator_strings: BTreeSet<String> = flat_discriminator_values
                             .iter()
                             .map(|it| match it {
-                                Optionality::Required(JsonSchema::Const(
-                                    JsonSchemaConst::String(s),
-                                )) => s.clone(),
+                                JsonSchema::Const(JsonSchemaConst::String(s)) => s.clone(),
                                 _ => unreachable!(),
                             })
                             .collect::<BTreeSet<_>>();
 
-                        let mut acc = BTreeMap::new();
-                        for current_key in key_values {
-                            let mut cases = vec![];
-                            for flat_val in flat_values {
-                                if let JsonSchema::Object { vs, rest: _ } = flat_val {
-                                    let value = vs.get(&discriminator).unwrap();
-                                    if let Optionality::Required(JsonSchema::Const(
-                                        JsonSchemaConst::String(s),
-                                    )) = value
-                                    {
-                                        if s == &current_key {
-                                            let new_obj_vs: Vec<(String, Optionality<JsonSchema>)> =
-                                                vs.iter()
-                                                    .filter(|it| it.0 != &discriminator)
-                                                    .map(|it| (it.0.clone(), it.1.clone()))
-                                                    .collect();
-                                            let new_obj = JsonSchema::object(new_obj_vs, None);
-                                            cases.push(new_obj);
-                                        }
-                                    }
-                                }
-                            }
-                            acc.insert(current_key, JsonSchema::any_of(cases));
-                        }
-
-                        let extra_obj = Expr::Object(ObjectLit {
-                            span: DUMMY_SP,
-                            props: acc
-                                .iter()
-                                .map(|(key, value)| {
-                                    PropOrSpread::Prop(Box::new(Prop::KeyValue(KeyValueProp {
-                                        key: PropName::Str(Str {
-                                            span: DUMMY_SP,
-                                            value: key.clone().into(),
-                                            raw: None,
-                                        }),
-                                        value: Box::new(Self::make_cb(
-                                            self.decode_expr(value, Required::Known(true)),
-                                        )),
-                                    })))
-                                })
-                                .collect(),
-                        });
-
-                        return Some(Self::decode_call_extra(
-                            "decodeAnyOfDiscriminated",
+                        return Some(self.decode_any_of_discriminated(
                             required,
-                            vec![
-                                Expr::Lit(Lit::Str(Str {
-                                    span: DUMMY_SP,
-                                    value: discriminator.clone().into(),
-                                    raw: None,
-                                })),
-                                extra_obj,
-                            ],
+                            discriminator,
+                            discriminator_strings,
+                            object_vs,
                         ));
                     }
                 }

@@ -24,13 +24,14 @@ use swc_ecma_ast::{
     TsTypeQueryExpr, TsTypeRef, TsUnionOrIntersectionType, TsUnionType,
 };
 
-pub struct TypeToSchema<'a, R: FileManager> {
+pub struct TypeToSchema<'a, 'b, R: FileManager> {
     pub files: &'a mut R,
     pub current_file: BffFileName,
     pub components: HashMap<String, Option<Validator>>,
     pub ref_stack: Vec<DiagnosticInformation>,
     pub type_param_stack: Vec<BTreeMap<String, JsonSchema>>,
     pub settings: &'a BeffUserSettings,
+    pub counter: &'b mut usize,
 }
 
 fn extract_items_from_array(it: JsonSchema) -> JsonSchema {
@@ -42,12 +43,13 @@ fn extract_items_from_array(it: JsonSchema) -> JsonSchema {
 
 type Res<T> = Result<T, Box<Diagnostic>>;
 
-impl<'a, R: FileManager> TypeToSchema<'a, R> {
+impl<'a, 'b, R: FileManager> TypeToSchema<'a, 'b, R> {
     pub fn new(
         files: &'a mut R,
         current_file: BffFileName,
         settings: &'a BeffUserSettings,
-    ) -> TypeToSchema<'a, R> {
+        counter: &'b mut usize,
+    ) -> TypeToSchema<'a, 'b, R> {
         TypeToSchema {
             files,
             current_file,
@@ -55,6 +57,7 @@ impl<'a, R: FileManager> TypeToSchema<'a, R> {
             ref_stack: vec![],
             type_param_stack: vec![],
             settings,
+            counter,
         }
     }
     fn ts_keyword_type_kind_to_json_schema(
@@ -1243,7 +1246,7 @@ impl<'a, R: FileManager> TypeToSchema<'a, R> {
                 DiagnosticInfoMessage::NeverCannotBeConvertedToJsonSchema,
             );
         }
-        let (head, tail) = to_validators(ctx, &access_st, "AnyName");
+        let (head, tail) = to_validators(ctx, &access_st, "AnyName", self.counter);
         for t in tail {
             self.insert_definition(t.name.clone(), t.schema)?;
         }

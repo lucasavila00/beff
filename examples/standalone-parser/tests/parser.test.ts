@@ -12,8 +12,39 @@ import {
   RequiredPartialObject,
   DiscriminatedUnion,
   DiscriminatedUnion2,
+  DiscriminatedUnion3,
+  DiscriminatedUnion4,
 } from "../src/parser";
-
+it("DiscriminatedUnion3", () => {
+  const validD3: DiscriminatedUnion4 = {
+    type: "a",
+    a: {
+      subType: "a1",
+      a1: "a",
+    },
+  };
+  expect(DiscriminatedUnion4.parse(validD3)).toMatchInlineSnapshot(`
+    {
+      "a": {
+        "a1": "a",
+        "subType": "a1",
+      },
+      "type": "a",
+    }
+  `);
+});
+it("DiscriminatedUnion3", () => {
+  const validD3: DiscriminatedUnion3 = {
+    type: "a",
+    a1: "a",
+  };
+  expect(DiscriminatedUnion3.parse(validD3)).toMatchInlineSnapshot(`
+    {
+      "a1": "a",
+      "type": "a",
+    }
+  `);
+});
 it("DiscriminatedUnion", () => {
   const validD: DiscriminatedUnion2 = {
     type: "d",
@@ -25,6 +56,7 @@ it("DiscriminatedUnion", () => {
       "valueD": 1,
     }
   `);
+
   const validD2: DiscriminatedUnion2 = {
     valueD: 1,
   };

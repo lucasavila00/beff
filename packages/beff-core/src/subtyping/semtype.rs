@@ -333,8 +333,6 @@ pub struct SemTypeContext {
     pub list_memo: BTreeMap<Bdd, BddMemoEmptyRef>,
 
     pub json_schema_ref_memo: BTreeMap<String, usize>,
-
-    pub counter: usize,
 }
 impl Default for SemTypeContext {
     fn default() -> Self {
@@ -367,7 +365,6 @@ impl SemTypeContext {
             mapping_memo: BTreeMap::new(),
             list_memo: BTreeMap::new(),
             json_schema_ref_memo: BTreeMap::new(),
-            counter: 0,
         }
     }
     pub fn number_const(value: NumberRepresentation) -> SemType {

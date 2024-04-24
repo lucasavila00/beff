@@ -5,6 +5,7 @@ mod tests {
     use beff_core::{
         import_resolver::{parse_and_bind, FsModuleResolver},
         parser_extractor::BuiltDecoder,
+        print::printer::ToWritableModules,
         schema_changes::print_ts_types,
         BeffUserSettings, BffFileName, EntryPoints, ExtractResult, FileManager, ParsedModule,
         Validator,
@@ -81,6 +82,23 @@ mod tests {
                 &v.validators.iter().collect::<Vec<_>>(),
                 &v.built_decoders.as_ref().unwrap_or(&vec![]),
             ),
+            None => panic!(),
+        }
+    }
+
+    fn decoder(from: &str) -> String {
+        let p = parse_api(from);
+        let errors = p.errors();
+
+        if !errors.is_empty() {
+            panic!("errors: {:?}", errors);
+        }
+        match p.parser {
+            Some(v) => {
+                let res = ExtractResult { parser: Some(v) };
+                let m = res.to_module().unwrap();
+                m.js_validators
+            }
             None => panic!(),
         }
     }
@@ -256,5 +274,27 @@ mod tests {
         parse.buildParsers<{ ExtraValue: ExtraValue }>();
       "#));
     }
+    #[test]
+    fn ok_discriminated_union() {
+        insta::assert_snapshot!(decoder(
+            r#"
+        export type DiscriminatedUnion4 =
+            | {
+                type: "a";
+                a: {
+                  subType: "a1";
+                  a1: string;
+                };
+              }
+            | {
+                type: "a";
+                a: {
+                  subType: "a2";
+                  a2: string;
+                };
+              };
+        parse.buildParsers<{ DiscriminatedUnion4: DiscriminatedUnion4 }>();
+      "#
+        ));
+    }
 }
-

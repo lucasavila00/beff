@@ -28,6 +28,7 @@ pub struct ParserExtractResult {
     pub entry_file_name: BffFileName,
     pub validators: Vec<Validator>,
     pub built_decoders: Option<Vec<BuiltDecoder>>,
+    pub counter: usize,
 }
 
 struct ExtractParserVisitor<'a, R: FileManager> {
@@ -37,6 +38,7 @@ struct ExtractParserVisitor<'a, R: FileManager> {
     errors: Vec<Diagnostic>,
     built_decoders: Option<Vec<BuiltDecoder>>,
     settings: &'a BeffUserSettings,
+    counter: usize,
 }
 impl<'a, R: FileManager> ExtractParserVisitor<'a, R> {
     fn new(
@@ -51,6 +53,7 @@ impl<'a, R: FileManager> ExtractParserVisitor<'a, R> {
             errors: vec![],
             built_decoders: None,
             settings,
+            counter: 0,
         }
     }
 }
@@ -110,7 +113,12 @@ impl<'a, R: FileManager> ExtractParserVisitor<'a, R> {
         }
     }
     fn convert_to_json_schema(&mut self, ty: &TsType, span: &Span) -> JsonSchema {
-        let mut to_schema = TypeToSchema::new(self.files, self.current_file.clone(), self.settings);
+        let mut to_schema = TypeToSchema::new(
+            self.files,
+            self.current_file.clone(),
+            self.settings,
+            &mut self.counter,
+        );
         let res = to_schema.convert_ts_type(ty);
         match res {
             Ok(res) => {
@@ -251,10 +259,15 @@ pub fn extract_parser<R: FileManager>(
     entry_file_name: BffFileName,
     settings: &BeffUserSettings,
 ) -> ParserExtractResult {
-    let (errors, validators, built_decoders) = {
+    let (errors, validators, built_decoders, counter) = {
         let mut visitor = ExtractParserVisitor::new(files, entry_file_name.clone(), settings);
         let _ = visitor.visit_current_file();
-        (visitor.errors, visitor.validators, visitor.built_decoders)
+        (
+            visitor.errors,
+            visitor.validators,
+            visitor.built_decoders,
+            visitor.counter,
+        )
     };
 
     ParserExtractResult {
@@ -262,5 +275,6 @@ pub fn extract_parser<R: FileManager>(
         entry_file_name,
         validators,
         built_decoders,
+        counter,
     }
 }

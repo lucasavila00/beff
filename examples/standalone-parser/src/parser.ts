@@ -81,6 +81,15 @@ export type DiscriminatedUnion =
       type: "b";
       value: number;
     };
+export type DiscriminatedUnion3 =
+  | {
+      type: "a" | "c";
+      a1: string;
+    }
+  | {
+      type: "b";
+      value: number;
+    };
 export type DiscriminatedUnion2 =
   | {
       type: "a";
@@ -102,6 +111,21 @@ export type DiscriminatedUnion2 =
       value: number;
     };
 
+export type DiscriminatedUnion4 =
+  | {
+      type: "a";
+      a: {
+        subType: "a1";
+        a1: string;
+      };
+    }
+  | {
+      type: "a";
+      a: {
+        subType: "a2";
+        a2: string;
+      };
+    };
 export const {
   RequiredPartialObject,
   LevelAndDSettings,
@@ -117,6 +141,8 @@ export const {
   PartialObject,
   DiscriminatedUnion,
   DiscriminatedUnion2,
+  DiscriminatedUnion3,
+  DiscriminatedUnion4,
 } = parse.buildParsers<{
   OmitSettings: OmitSettings;
   RequiredPartialObject: RequiredPartialObject;
@@ -133,4 +159,6 @@ export const {
   PartialObject: PartialObject;
   DiscriminatedUnion: DiscriminatedUnion;
   DiscriminatedUnion2: DiscriminatedUnion2;
+  DiscriminatedUnion3: DiscriminatedUnion3;
+  DiscriminatedUnion4: DiscriminatedUnion4;
 }>();

@@ -10,6 +10,12 @@ const buildParsersInput = {
     "DiscriminatedUnion2": function(ctx, input, required = true) {
         return validators.DiscriminatedUnion2(ctx, input, required);
     },
+    "DiscriminatedUnion3": function(ctx, input, required = true) {
+        return validators.DiscriminatedUnion3(ctx, input, required);
+    },
+    "DiscriminatedUnion4": function(ctx, input, required = true) {
+        return validators.DiscriminatedUnion4(ctx, input, required);
+    },
     "Extra": function(ctx, input, required = true) {
         return validators.Extra(ctx, input, required);
     },
