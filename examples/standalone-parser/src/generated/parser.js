@@ -4,6 +4,12 @@
 
 import validatorsMod from "./validators.js"; const { decodeObject, decodeArray, decodeString, decodeNumber, decodeCodec, decodeStringWithFormat, decodeAnyOf, decodeAllOf, decodeBoolean, decodeAny, decodeTuple, decodeNull, decodeConst, validators, c } = validatorsMod;
 const buildParsersInput = {
+    "DiscriminatedUnion": function(ctx, input, required = true) {
+        return validators.DiscriminatedUnion(ctx, input, required);
+    },
+    "DiscriminatedUnion2": function(ctx, input, required = true) {
+        return validators.DiscriminatedUnion2(ctx, input, required);
+    },
     "Extra": function(ctx, input, required = true) {
         return validators.Extra(ctx, input, required);
     },

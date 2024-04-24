@@ -65,6 +65,43 @@ export type PartialObject = {
 
 export type RequiredPartialObject = Required<PartialObject>;
 
+export type DiscriminatedUnion =
+  | {
+      type: "a";
+      subType: "a1";
+      a1: string;
+      a11?: string;
+    }
+  | {
+      type: "a";
+      subType: "a2";
+      a2: string;
+    }
+  | {
+      type: "b";
+      value: number;
+    };
+export type DiscriminatedUnion2 =
+  | {
+      type: "a";
+      subType: "a1";
+      a1: string;
+      a11?: string;
+    }
+  | {
+      type: "a";
+      subType: "a2";
+      a2: string;
+    }
+  | {
+      type?: "d";
+      valueD: number;
+    }
+  | {
+      type: "b";
+      value: number;
+    };
+
 export const {
   RequiredPartialObject,
   LevelAndDSettings,
@@ -78,6 +115,8 @@ export const {
   MappedOptional,
   OmitSettings,
   PartialObject,
+  DiscriminatedUnion,
+  DiscriminatedUnion2,
 } = parse.buildParsers<{
   OmitSettings: OmitSettings;
   RequiredPartialObject: RequiredPartialObject;
@@ -92,4 +131,6 @@ export const {
   Mapped: Mapped;
   MappedOptional: MappedOptional;
   PartialObject: PartialObject;
+  DiscriminatedUnion: DiscriminatedUnion;
+  DiscriminatedUnion2: DiscriminatedUnion2;
 }>();

@@ -1,7 +1,7 @@
-use std::collections::BTreeSet;
+use std::collections::{BTreeMap, BTreeSet};
 
 use crate::{
-    ast::json_schema::{JsonSchema, Optionality},
+    ast::json_schema::{JsonSchema, JsonSchemaConst, Optionality},
     Validator,
 };
 use swc_common::DUMMY_SP;
@@ -194,15 +194,125 @@ impl<'a> DecoderFnGenerator<'a> {
             _ => vec![it.clone()],
         }
     }
-    fn decode_any_of(&self, vs: &BTreeSet<JsonSchema>, required: Required) -> Expr {
-        if vs.is_empty() {
-            panic!("empty anyOf is not allowed")
-        }
-
-        let flat_values = vs
+    fn maybe_decode_any_of_discriminated(
+        &self,
+        flat_values: &BTreeSet<JsonSchema>,
+        required: Required,
+    ) -> Option<Expr> {
+        let all_objects_without_rest = flat_values
             .iter()
-            .flat_map(|it| self.extract_union(it))
-            .collect::<BTreeSet<_>>();
+            .all(|it| matches!(it, JsonSchema::Object { rest: None, .. }));
+        if all_objects_without_rest {
+            let mut keys = vec![];
+            for v in flat_values {
+                if let JsonSchema::Object { vs, .. } = v {
+                    for key in vs.keys() {
+                        keys.push(key.clone());
+                    }
+                }
+            }
+
+            for discriminator in keys {
+                let contained_in_all = flat_values.iter().all(|it| match it {
+                    JsonSchema::Object { vs, .. } => vs.contains_key(&discriminator),
+                    _ => false,
+                });
+                if contained_in_all {
+                    let values = flat_values
+                        .iter()
+                        .map(|it| match it {
+                            JsonSchema::Object { vs, .. } => {
+                                vs.get(&discriminator).unwrap().clone()
+                            }
+                            _ => unreachable!(),
+                        })
+                        .collect::<BTreeSet<_>>();
+
+                    let all_string_consts = values.iter().all(|it| {
+                        matches!(
+                            it,
+                            Optionality::Required(JsonSchema::Const(JsonSchemaConst::String(_)))
+                        )
+                    });
+
+                    if all_string_consts {
+                        let key_values = values
+                            .iter()
+                            .map(|it| match it {
+                                Optionality::Required(JsonSchema::Const(
+                                    JsonSchemaConst::String(s),
+                                )) => s.clone(),
+                                _ => unreachable!(),
+                            })
+                            .collect::<BTreeSet<_>>();
+
+                        let mut acc = BTreeMap::new();
+                        for current_key in key_values {
+                            let mut cases = vec![];
+                            for flat_val in flat_values {
+                                if let JsonSchema::Object { vs, rest: _ } = flat_val {
+                                    let value = vs.get(&discriminator).unwrap();
+                                    if let Optionality::Required(JsonSchema::Const(
+                                        JsonSchemaConst::String(s),
+                                    )) = value
+                                    {
+                                        if s == &current_key {
+                                            let new_obj_vs: Vec<(String, Optionality<JsonSchema>)> =
+                                                vs.iter()
+                                                    .filter(|it| it.0 != &discriminator)
+                                                    .map(|it| (it.0.clone(), it.1.clone()))
+                                                    .collect();
+                                            let new_obj = JsonSchema::object(new_obj_vs, None);
+                                            cases.push(new_obj);
+                                        }
+                                    }
+                                }
+                            }
+                            acc.insert(current_key, JsonSchema::any_of(cases));
+                        }
+
+                        let extra_obj = Expr::Object(ObjectLit {
+                            span: DUMMY_SP,
+                            props: acc
+                                .iter()
+                                .map(|(key, value)| {
+                                    PropOrSpread::Prop(Box::new(Prop::KeyValue(KeyValueProp {
+                                        key: PropName::Str(Str {
+                                            span: DUMMY_SP,
+                                            value: key.clone().into(),
+                                            raw: None,
+                                        }),
+                                        value: Box::new(Self::make_cb(
+                                            self.decode_expr(value, Required::Known(true)),
+                                        )),
+                                    })))
+                                })
+                                .collect(),
+                        });
+
+                        return Some(Self::decode_call_extra(
+                            "decodeAnyOfDiscriminated",
+                            required,
+                            vec![
+                                Expr::Lit(Lit::Str(Str {
+                                    span: DUMMY_SP,
+                                    value: discriminator.clone().into(),
+                                    raw: None,
+                                })),
+                                extra_obj,
+                            ],
+                        ));
+                    }
+                }
+            }
+        }
+        None
+    }
+
+    fn maybe_decode_any_of_consts(
+        flat_values: &BTreeSet<JsonSchema>,
+        required: Required,
+    ) -> Option<Expr> {
         let all_consts = flat_values
             .iter()
             .all(|it| matches!(it, JsonSchema::Const(_)));
@@ -226,7 +336,31 @@ impl<'a> DecoderFnGenerator<'a> {
                     })
                     .collect(),
             })];
-            return Self::decode_call_extra("decodeAnyOfConsts", required, consts);
+            return Some(Self::decode_call_extra(
+                "decodeAnyOfConsts",
+                required,
+                consts,
+            ));
+        }
+        None
+    }
+    fn decode_any_of(&self, vs: &BTreeSet<JsonSchema>, required: Required) -> Expr {
+        if vs.is_empty() {
+            panic!("empty anyOf is not allowed")
+        }
+
+        let flat_values = vs
+            .iter()
+            .flat_map(|it| self.extract_union(it))
+            .collect::<BTreeSet<_>>();
+
+        if let Some(consts) = Self::maybe_decode_any_of_consts(&flat_values, required) {
+            return consts;
+        }
+
+        if let Some(discriminated) = self.maybe_decode_any_of_discriminated(&flat_values, required)
+        {
+            return discriminated;
         }
 
         self.decode_union_or_intersection("decodeAnyOf", required, vs)
