@@ -206,7 +206,7 @@ impl<'a> DecoderFnGenerator<'a> {
             let mut keys = vec![];
             for v in flat_values {
                 if let JsonSchema::Object { vs, .. } = v {
-                    for (key, _) in vs {
+                    for key in vs.keys() {
                         keys.push(key.clone());
                     }
                 }
