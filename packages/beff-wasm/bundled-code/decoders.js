@@ -144,6 +144,23 @@ function decodeStringWithFormat(ctx, input, required, format) {
   // throw new Error("decodeStringWithFormat not implemented")
 }
 
+function decodeAnyOfDiscriminated(ctx, input, required, discriminator, mapping) {
+  if (!required && input == null) {
+    return input;
+  }
+  const d = input[discriminator];
+  if (d == null) {
+    return buildError(input, ctx, "expected discriminator key " + JSON.stringify(discriminator))
+  }
+  const v = mapping[d];
+  if (v == null) {
+    pushPath(ctx, discriminator);
+    const err = buildError(d, ctx, "expected one of " + Object.keys(mapping).map(it => JSON.stringify(it)).join(", "));
+    popPath(ctx);
+    return err;
+  }
+  return { ...v(ctx, input), [discriminator]: d };
+}
 
 function decodeAnyOfConsts(ctx, input, required, consts) {
   if (!required && input == null) {

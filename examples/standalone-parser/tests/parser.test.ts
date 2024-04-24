@@ -10,8 +10,137 @@ import {
   LevelAndDSettings,
   OmitSettings,
   RequiredPartialObject,
+  DiscriminatedUnion,
+  DiscriminatedUnion2,
 } from "../src/parser";
 
+it("DiscriminatedUnion", () => {
+  const validD: DiscriminatedUnion2 = {
+    type: "d",
+    valueD: 1,
+  };
+  expect(DiscriminatedUnion2.parse(validD)).toMatchInlineSnapshot(`
+    {
+      "type": "d",
+      "valueD": 1,
+    }
+  `);
+  const validD2: DiscriminatedUnion2 = {
+    valueD: 1,
+  };
+  expect(DiscriminatedUnion2.parse(validD2)).toMatchInlineSnapshot(`
+    {
+      "type": undefined,
+      "valueD": 1,
+    }
+  `);
+  const valid: DiscriminatedUnion = {
+    type: "a",
+    subType: "a1",
+    a1: "a",
+  };
+  expect(DiscriminatedUnion.parse(valid)).toMatchInlineSnapshot(`
+    {
+      "a1": "a",
+      "a11": undefined,
+      "subType": "a1",
+      "type": "a",
+    }
+  `);
+  const valid3: DiscriminatedUnion = {
+    type: "a",
+    subType: "a1",
+    a1: "a",
+    a11: "a",
+  };
+  expect(DiscriminatedUnion.parse(valid3)).toMatchInlineSnapshot(`
+    {
+      "a1": "a",
+      "a11": "a",
+      "subType": "a1",
+      "type": "a",
+    }
+  `);
+  const invalid4 = {
+    type: "a",
+    subType: "a1",
+    a1: "a",
+    a11: 123,
+  };
+  expect(DiscriminatedUnion.safeParse(invalid4)).toMatchInlineSnapshot(`
+    {
+      "errors": [
+        {
+          "message": "expected string",
+          "path": [
+            "a11",
+          ],
+          "received": 123,
+        },
+      ],
+      "success": false,
+    }
+  `);
+  const valid2: DiscriminatedUnion = {
+    type: "b",
+    value: 1,
+  };
+  expect(DiscriminatedUnion.parse(valid2)).toMatchInlineSnapshot(`
+    {
+      "type": "b",
+      "value": 1,
+    }
+  `);
+
+  expect(
+    DiscriminatedUnion.safeParse({
+      type: "a",
+    })
+  ).toMatchInlineSnapshot(`
+    {
+      "errors": [
+        {
+          "message": "expected discriminator key \\"subType\\"",
+          "path": [],
+          "received": {
+            "type": "a",
+          },
+        },
+      ],
+      "success": false,
+    }
+  `);
+  expect(
+    DiscriminatedUnion.safeParse({
+      type: "c",
+    })
+  ).toMatchInlineSnapshot(`
+    {
+      "errors": [
+        {
+          "message": "expected one of \\"a\\", \\"b\\"",
+          "path": [
+            "type",
+          ],
+          "received": "c",
+        },
+      ],
+      "success": false,
+    }
+  `);
+  expect(DiscriminatedUnion.safeParse({})).toMatchInlineSnapshot(`
+    {
+      "errors": [
+        {
+          "message": "expected discriminator key \\"type\\"",
+          "path": [],
+          "received": {},
+        },
+      ],
+      "success": false,
+    }
+  `);
+});
 it("repro1", () => {
   expect(Repro1.parse({})).toMatchInlineSnapshot(`
     {

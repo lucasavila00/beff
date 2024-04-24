@@ -147,6 +147,23 @@ function decodeStringWithFormat(ctx, input, required, format) {
   
 }
 
+function decodeAnyOfDiscriminated(ctx, input, required, discriminator, mapping) {
+  if (!required && input == null) {
+    return input;
+  }
+  const d = input[discriminator];
+  if (d == null) {
+    return buildError(input, ctx, "expected discriminator key " + JSON.stringify(discriminator))
+  }
+  const v = mapping[d];
+  if (v == null) {
+    pushPath(ctx, discriminator);
+    const err = buildError(d, ctx, "expected one of " + Object.keys(mapping).map(it => JSON.stringify(it)).join(", "));
+    popPath(ctx);
+    return err;
+  }
+  return { ...v(ctx, input), [discriminator]: d };
+}
 
 function decodeAnyOfConsts(ctx, input, required, consts) {
   if (!required && input == null) {
@@ -396,6 +413,45 @@ function DecodeMappedOptional(ctx, input, required = true) {
             }))
     });
 }
+function DecodeDiscriminatedUnion(ctx, input, required = true) {
+    return decodeAnyOfDiscriminated(ctx, input, required, "type", {
+        "a": (ctx, input)=>(decodeAnyOfDiscriminated(ctx, input, true, "subType", {
+                "a1": (ctx, input)=>(decodeObject(ctx, input, true, {
+                        "a1": (ctx, input)=>(decodeString(ctx, input, true)),
+                        "a11": (ctx, input)=>(decodeString(ctx, input, false))
+                    })),
+                "a2": (ctx, input)=>(decodeObject(ctx, input, true, {
+                        "a2": (ctx, input)=>(decodeString(ctx, input, true))
+                    }))
+            })),
+        "b": (ctx, input)=>(decodeObject(ctx, input, true, {
+                "value": (ctx, input)=>(decodeNumber(ctx, input, true))
+            }))
+    });
+}
+function DecodeDiscriminatedUnion2(ctx, input, required = true) {
+    return decodeAnyOf(ctx, input, required, [
+        (ctx, input)=>(decodeObject(ctx, input, required, {
+                "a1": (ctx, input)=>(decodeString(ctx, input, true)),
+                "a11": (ctx, input)=>(decodeString(ctx, input, false)),
+                "subType": (ctx, input)=>(decodeConst(ctx, input, true, "a1")),
+                "type": (ctx, input)=>(decodeConst(ctx, input, true, "a"))
+            })),
+        (ctx, input)=>(decodeObject(ctx, input, required, {
+                "a2": (ctx, input)=>(decodeString(ctx, input, true)),
+                "subType": (ctx, input)=>(decodeConst(ctx, input, true, "a2")),
+                "type": (ctx, input)=>(decodeConst(ctx, input, true, "a"))
+            })),
+        (ctx, input)=>(decodeObject(ctx, input, required, {
+                "type": (ctx, input)=>(decodeConst(ctx, input, false, "d")),
+                "valueD": (ctx, input)=>(decodeNumber(ctx, input, true))
+            })),
+        (ctx, input)=>(decodeObject(ctx, input, required, {
+                "type": (ctx, input)=>(decodeConst(ctx, input, true, "b")),
+                "value": (ctx, input)=>(decodeNumber(ctx, input, true))
+            }))
+    ]);
+}
 const validators = {
     OmitSettings: DecodeOmitSettings,
     Settings: DecodeSettings,
@@ -414,7 +470,9 @@ const validators = {
     Repro2: DecodeRepro2,
     SettingsUpdate: DecodeSettingsUpdate,
     Mapped: DecodeMapped,
-    MappedOptional: DecodeMappedOptional
+    MappedOptional: DecodeMappedOptional,
+    DiscriminatedUnion: DecodeDiscriminatedUnion,
+    DiscriminatedUnion2: DecodeDiscriminatedUnion2
 };
 
 export default { decodeObject, decodeArray, decodeString, decodeNumber, decodeCodec, decodeStringWithFormat, decodeAnyOf, decodeAllOf, decodeBoolean, decodeAny, decodeTuple, decodeNull, decodeConst, validators };
