@@ -1,10 +1,82 @@
 import { it, expect } from "vitest";
-import { AccessLevel, Extra, User, Repro1, SettingsUpdate } from "../src/parser";
+import {
+  PartialObject,
+  AccessLevel,
+  Extra,
+  User,
+  Repro1,
+  SettingsUpdate,
+  PartialSettings,
+  LevelAndDSettings,
+  OmitSettings,
+  RequiredPartialObject,
+} from "../src/parser";
 
 it("repro1", () => {
   expect(Repro1.parse({})).toMatchInlineSnapshot(`
     {
       "sizes": undefined,
+    }
+  `);
+});
+it("PartialObject", () => {
+  expect(PartialObject.parse({})).toMatchInlineSnapshot(`
+    {
+      "a": undefined,
+      "b": undefined,
+    }
+  `);
+});
+it("PartialSettings", () => {
+  expect(PartialSettings.parse({})).toMatchInlineSnapshot(`
+    {
+      "a": undefined,
+      "d": undefined,
+      "level": undefined,
+    }
+  `);
+});
+it("LevelAndDSettings", () => {
+  const valid: LevelAndDSettings = {
+    level: "a",
+    d: {
+      tag: "d",
+    },
+  };
+  expect(LevelAndDSettings.parse(valid)).toMatchInlineSnapshot(`
+    {
+      "d": {
+        "tag": "d",
+      },
+      "level": "a",
+    }
+  `);
+});
+it("OmitSettings", () => {
+  const valid: OmitSettings = {
+    level: "a",
+    d: {
+      tag: "d",
+    },
+  };
+  expect(OmitSettings.parse(valid)).toMatchInlineSnapshot(`
+    {
+      "d": {
+        "tag": "d",
+      },
+      "level": "a",
+    }
+  `);
+});
+it("RequiredPartialObject", () => {
+  const valid: RequiredPartialObject = {
+    a: "a",
+    b: 1,
+  };
+  expect(RequiredPartialObject.parse(valid)).toMatchInlineSnapshot(`
+    {
+      "a": "a",
+      "b": 1,
     }
   `);
 });
