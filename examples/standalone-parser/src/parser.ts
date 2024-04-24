@@ -52,14 +52,44 @@ export type MappedOptional = {
   };
 };
 
-export const { Extra, User, PublicUser, Repro1, SettingsUpdate, Mapped, MappedOptional } =
-  parse.buildParsers<{
-    Extra: Extra;
-    User: User;
-    PublicUser: PublicUser;
-    Req: Req;
-    Repro1: Repro1;
-    SettingsUpdate: SettingsUpdate;
-    Mapped: Mapped;
-    MappedOptional: MappedOptional;
-  }>();
+export type PartialSettings = Partial<Settings>;
+
+export type LevelAndDSettings = Pick<Settings, "level" | "d">;
+
+export type OmitSettings = Omit<Settings, "a">;
+
+export type PartialObject = {
+  a?: string;
+  b?: number;
+};
+
+export type RequiredPartialObject = Required<PartialObject>;
+
+export const {
+  RequiredPartialObject,
+  LevelAndDSettings,
+  PartialSettings,
+  Extra,
+  User,
+  PublicUser,
+  Repro1,
+  SettingsUpdate,
+  Mapped,
+  MappedOptional,
+  OmitSettings,
+  PartialObject,
+} = parse.buildParsers<{
+  OmitSettings: OmitSettings;
+  RequiredPartialObject: RequiredPartialObject;
+  LevelAndDSettings: LevelAndDSettings;
+  PartialSettings: PartialSettings;
+  Extra: Extra;
+  User: User;
+  PublicUser: PublicUser;
+  Req: Req;
+  Repro1: Repro1;
+  SettingsUpdate: SettingsUpdate;
+  Mapped: Mapped;
+  MappedOptional: MappedOptional;
+  PartialObject: PartialObject;
+}>();

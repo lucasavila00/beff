@@ -7,11 +7,23 @@ const buildParsersInput = {
     "Extra": function(ctx, input, required = true) {
         return validators.Extra(ctx, input, required);
     },
+    "LevelAndDSettings": function(ctx, input, required = true) {
+        return validators.LevelAndDSettings(ctx, input, required);
+    },
     "Mapped": function(ctx, input, required = true) {
         return validators.Mapped(ctx, input, required);
     },
     "MappedOptional": function(ctx, input, required = true) {
         return validators.MappedOptional(ctx, input, required);
+    },
+    "OmitSettings": function(ctx, input, required = true) {
+        return validators.OmitSettings(ctx, input, required);
+    },
+    "PartialObject": function(ctx, input, required = true) {
+        return validators.PartialObject(ctx, input, required);
+    },
+    "PartialSettings": function(ctx, input, required = true) {
+        return validators.PartialSettings(ctx, input, required);
     },
     "PublicUser": function(ctx, input, required = true) {
         return validators.PublicUser(ctx, input, required);
@@ -21,6 +33,9 @@ const buildParsersInput = {
     },
     "Req": function(ctx, input, required = true) {
         return validators.Req(ctx, input, required);
+    },
+    "RequiredPartialObject": function(ctx, input, required = true) {
+        return validators.RequiredPartialObject(ctx, input, required);
     },
     "SettingsUpdate": function(ctx, input, required = true) {
         return validators.SettingsUpdate(ctx, input, required);

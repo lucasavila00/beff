@@ -16,6 +16,32 @@
     "required": [],
     "type": "object"
   },
+  "LevelAndDSettings": {
+    "properties": {
+      "d": {
+        "properties": {
+          "tag": {
+            "const": "d"
+          }
+        },
+        "required": [
+          "tag"
+        ],
+        "type": "object"
+      },
+      "level": {
+        "enum": [
+          "a",
+          "b"
+        ]
+      }
+    },
+    "required": [
+      "d",
+      "level"
+    ],
+    "type": "object"
+  },
   "Mapped": {
     "properties": {
       "a": {
@@ -75,6 +101,70 @@
     "required": [],
     "type": "object"
   },
+  "OmitSettings": {
+    "properties": {
+      "d": {
+        "properties": {
+          "tag": {
+            "const": "d"
+          }
+        },
+        "required": [
+          "tag"
+        ],
+        "type": "object"
+      },
+      "level": {
+        "enum": [
+          "a",
+          "b"
+        ]
+      }
+    },
+    "required": [
+      "d",
+      "level"
+    ],
+    "type": "object"
+  },
+  "PartialObject": {
+    "properties": {
+      "a": {
+        "type": "string"
+      },
+      "b": {
+        "type": "number"
+      }
+    },
+    "required": [],
+    "type": "object"
+  },
+  "PartialSettings": {
+    "properties": {
+      "a": {
+        "type": "string"
+      },
+      "d": {
+        "properties": {
+          "tag": {
+            "const": "d"
+          }
+        },
+        "required": [
+          "tag"
+        ],
+        "type": "object"
+      },
+      "level": {
+        "enum": [
+          "a",
+          "b"
+        ]
+      }
+    },
+    "required": [],
+    "type": "object"
+  },
   "PublicUser": {
     "properties": {
       "accessLevel": {
@@ -126,6 +216,21 @@
     },
     "required": [
       "optional"
+    ],
+    "type": "object"
+  },
+  "RequiredPartialObject": {
+    "properties": {
+      "a": {
+        "type": "string"
+      },
+      "b": {
+        "type": "number"
+      }
+    },
+    "required": [
+      "a",
+      "b"
     ],
     "type": "object"
   },

@@ -261,6 +261,64 @@ function decodeConst(ctx, input, required, constValue) {
 }
 
 
+function DecodeOmitSettings(ctx, input, required = true) {
+    return decodeObject(ctx, input, required, {
+        "d": (ctx, input)=>(decodeObject(ctx, input, true, {
+                "tag": (ctx, input)=>(decodeConst(ctx, input, true, "d"))
+            })),
+        "level": (ctx, input)=>(decodeAnyOfConsts(ctx, input, true, [
+                "a",
+                "b"
+            ]))
+    });
+}
+function DecodeSettings(ctx, input, required = true) {
+    return decodeObject(ctx, input, required, {
+        "a": (ctx, input)=>(decodeString(ctx, input, true)),
+        "d": (ctx, input)=>(decodeObject(ctx, input, true, {
+                "tag": (ctx, input)=>(decodeConst(ctx, input, true, "d"))
+            })),
+        "level": (ctx, input)=>(decodeAnyOfConsts(ctx, input, true, [
+                "a",
+                "b"
+            ]))
+    });
+}
+function DecodePartialObject(ctx, input, required = true) {
+    return decodeObject(ctx, input, required, {
+        "a": (ctx, input)=>(decodeString(ctx, input, false)),
+        "b": (ctx, input)=>(decodeNumber(ctx, input, false))
+    });
+}
+function DecodeRequiredPartialObject(ctx, input, required = true) {
+    return decodeObject(ctx, input, required, {
+        "a": (ctx, input)=>(decodeString(ctx, input, true)),
+        "b": (ctx, input)=>(decodeNumber(ctx, input, true))
+    });
+}
+function DecodeLevelAndDSettings(ctx, input, required = true) {
+    return decodeObject(ctx, input, required, {
+        "d": (ctx, input)=>(decodeObject(ctx, input, true, {
+                "tag": (ctx, input)=>(decodeConst(ctx, input, true, "d"))
+            })),
+        "level": (ctx, input)=>(decodeAnyOfConsts(ctx, input, true, [
+                "a",
+                "b"
+            ]))
+    });
+}
+function DecodePartialSettings(ctx, input, required = true) {
+    return decodeObject(ctx, input, required, {
+        "a": (ctx, input)=>(decodeString(ctx, input, false)),
+        "d": (ctx, input)=>(decodeObject(ctx, input, false, {
+                "tag": (ctx, input)=>(decodeConst(ctx, input, true, "d"))
+            })),
+        "level": (ctx, input)=>(decodeAnyOfConsts(ctx, input, false, [
+                "a",
+                "b"
+            ]))
+    });
+}
 function DecodeExtra(ctx, input, required = true) {
     return decodeObject(ctx, input, required, {}, (ctx, input)=>(decodeString(ctx, input, false)));
 }
@@ -310,18 +368,6 @@ function DecodeRepro2(ctx, input, required = true) {
         "useSmallerSizes": (ctx, input)=>(decodeBoolean(ctx, input, true))
     });
 }
-function DecodeSettings(ctx, input, required = true) {
-    return decodeObject(ctx, input, required, {
-        "a": (ctx, input)=>(decodeString(ctx, input, true)),
-        "d": (ctx, input)=>(decodeObject(ctx, input, true, {
-                "tag": (ctx, input)=>(decodeConst(ctx, input, true, "d"))
-            })),
-        "level": (ctx, input)=>(decodeAnyOfConsts(ctx, input, true, [
-                "a",
-                "b"
-            ]))
-    });
-}
 function DecodeSettingsUpdate(ctx, input, required = true) {
     return decodeAnyOf(ctx, input, required, [
         (ctx, input)=>(decodeString(ctx, input, required)),
@@ -351,6 +397,12 @@ function DecodeMappedOptional(ctx, input, required = true) {
     });
 }
 const validators = {
+    OmitSettings: DecodeOmitSettings,
+    Settings: DecodeSettings,
+    PartialObject: DecodePartialObject,
+    RequiredPartialObject: DecodeRequiredPartialObject,
+    LevelAndDSettings: DecodeLevelAndDSettings,
+    PartialSettings: DecodePartialSettings,
     Extra: DecodeExtra,
     AccessLevel: DecodeAccessLevel,
     AvatarSize: DecodeAvatarSize,
@@ -360,7 +412,6 @@ const validators = {
     WithOptionals: DecodeWithOptionals,
     Repro1: DecodeRepro1,
     Repro2: DecodeRepro2,
-    Settings: DecodeSettings,
     SettingsUpdate: DecodeSettingsUpdate,
     Mapped: DecodeMapped,
     MappedOptional: DecodeMappedOptional
