@@ -1,8 +1,0 @@
----
-source: packages/beff-core/tests/print_router.rs
-expression: ok(from)
----
-type A = ["a", "b", "c"];
-type B = "b";
-type Router = { "/hello": { "get": () => B } };
-
