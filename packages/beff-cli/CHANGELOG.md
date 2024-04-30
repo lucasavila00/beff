@@ -1,5 +1,11 @@
 # @beff/cli
 
+## 0.0.25
+
+### Patch Changes
+
+- fix export value bug
+
 ## 0.0.24
 
 ### Patch Changes

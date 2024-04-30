@@ -203,6 +203,20 @@ impl<'a, R: FileManager> TypeResolver<'a, R> {
         if let Some(alias) = self.get_current_file().locals.exprs.get(k) {
             return Ok(ResolvedLocalSymbol::Expr(alias.clone()));
         }
+
+        if let Some(exported) = self.get_current_file().symbol_exports.named.get(&i.sym) {
+            match exported.as_ref() {
+                SymbolExport::ValueExpr { expr, .. } => {
+                    return Ok(ResolvedLocalSymbol::Expr(expr.clone()));
+                }
+                SymbolExport::TsType { .. }
+                | SymbolExport::TsEnumDecl { .. }
+                | SymbolExport::TsInterfaceDecl { .. }
+                | SymbolExport::StarOfOtherFile { .. }
+                | SymbolExport::SomethingOfOtherFile { .. } => {}
+            }
+        }
+
         self.resolve_local_import(i)
     }
     pub fn resolve_local_type(&mut self, i: &Ident) -> Res<ResolvedLocalSymbol> {
@@ -217,6 +231,7 @@ impl<'a, R: FileManager> TypeResolver<'a, R> {
         if let Some(enum_) = self.get_current_file().locals.enums.get(k) {
             return Ok(ResolvedLocalSymbol::TsEnumDecl(enum_.clone()));
         }
+
         self.resolve_local_import(i)
     }
 }

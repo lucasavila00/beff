@@ -1,4 +1,13 @@
 import parse from "./generated/parser";
+import { OtherEnum } from "./types";
+
+export const ALL_TYPES = [
+  "OmitSettings",
+  "RequiredPartialObject",
+  "LevelAndDSettings",
+  "PartialSettings",
+] as const;
+export type AllTypes = (typeof ALL_TYPES)[number];
 
 export enum AccessLevel {
   ADMIN = "ADMIN",
@@ -161,4 +170,7 @@ export const {
   DiscriminatedUnion2: DiscriminatedUnion2;
   DiscriminatedUnion3: DiscriminatedUnion3;
   DiscriminatedUnion4: DiscriminatedUnion4;
+  AllTypes: AllTypes;
+  AccessLevel: AccessLevel;
+  OtherEnum: OtherEnum;
 }>();

@@ -6,6 +6,12 @@ import {printErrors} from '@beff/client';
 import {z} from 'zod';
 import validatorsMod from "./validators.js"; const { decodeObject, decodeArray, decodeString, decodeNumber, decodeCodec, decodeStringWithFormat, decodeAnyOf, decodeAllOf, decodeBoolean, decodeAny, decodeTuple, decodeNull, decodeConst, validators, c } = validatorsMod;
 const buildParsersInput = {
+    "AccessLevel": function(ctx, input, required = true) {
+        return validators.AccessLevel(ctx, input, required);
+    },
+    "AllTypes": function(ctx, input, required = true) {
+        return validators.AllTypes(ctx, input, required);
+    },
     "DiscriminatedUnion": function(ctx, input, required = true) {
         return validators.DiscriminatedUnion(ctx, input, required);
     },
@@ -32,6 +38,9 @@ const buildParsersInput = {
     },
     "OmitSettings": function(ctx, input, required = true) {
         return validators.OmitSettings(ctx, input, required);
+    },
+    "OtherEnum": function(ctx, input, required = true) {
+        return validators.OtherEnum(ctx, input, required);
     },
     "PartialObject": function(ctx, input, required = true) {
         return validators.PartialObject(ctx, input, required);
