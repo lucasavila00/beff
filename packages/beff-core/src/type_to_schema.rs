@@ -938,6 +938,57 @@ impl<'a, 'b, R: FileManager> TypeToSchema<'a, 'b, R> {
         q: &TsQualifiedName,
         type_args: &Option<Box<TsTypeParamInstantiation>>,
     ) -> Res<JsonSchema> {
+        match &q.left {
+            TsEntityName::TsQualifiedName(_) => {}
+            TsEntityName::Ident(i) => {
+                let ns = TypeResolver::new(self.files, &self.current_file)
+                    .resolve_namespace_symbol(i, true);
+                if let Ok(resolved) = ns {
+                    match resolved.from_file.as_ref() {
+                        ImportReference::Named {
+                            orig, file_name, ..
+                        } => {
+                            let from_file =
+                                self.files.get_or_fetch_file(file_name).and_then(|module| {
+                                    module.symbol_exports.get_type(orig, self.files)
+                                });
+
+                            if let Some(symbol_export) = from_file {
+                                if let SymbolExport::TsEnumDecl { decl, span } =
+                                    symbol_export.as_ref()
+                                {
+                                    let found = decl.members.iter().find(|it| match &it.id {
+                                        swc_ecma_ast::TsEnumMemberId::Ident(i2) => {
+                                            i2.sym == q.right.sym
+                                        }
+                                        swc_ecma_ast::TsEnumMemberId::Str(_) => todo!(),
+                                    });
+                                    return match found {
+                                        Some(item) => match &item.init {
+                                            Some(init) => {
+                                                let expr_ty = self.typeof_expr(init, true)?;
+                                                Ok(expr_ty)
+                                            }
+                                            None => self.cannot_serialize_error(
+                                                span,
+                                                DiagnosticInfoMessage::EnumMemberNoInit,
+                                            ),
+                                        },
+                                        None => self.cannot_serialize_error(
+                                            span,
+                                            DiagnosticInfoMessage::EnumMemberNoInit,
+                                        ),
+                                    };
+                                }
+                            }
+                        }
+                        ImportReference::Star { .. } => {}
+                        ImportReference::Default { .. } => {}
+                    }
+                }
+            }
+        }
+
         let found = self.components.get(&(q.right.sym.to_string()));
         if let Some(_found) = found {
             return Ok(JsonSchema::Ref(q.right.sym.to_string()));
@@ -957,6 +1008,34 @@ impl<'a, 'b, R: FileManager> TypeToSchema<'a, 'b, R> {
         q: &TsQualifiedName,
         type_args: &Option<Box<TsTypeParamInstantiation>>,
     ) -> Res<JsonSchema> {
+        match &q.left {
+            TsEntityName::TsQualifiedName(_) => {}
+            TsEntityName::Ident(i) => {
+                let k = &(i.sym.clone(), i.span.ctxt);
+                let local_enum = self
+                    .files
+                    .get_existing_file(&self.current_file)
+                    .and_then(|current_file| current_file.locals.enums.get(k).cloned());
+                if let Some(local) = local_enum {
+                    let found = local.members.iter().find(|it| match &it.id {
+                        swc_ecma_ast::TsEnumMemberId::Ident(i2) => i2.sym == q.right.sym,
+                        swc_ecma_ast::TsEnumMemberId::Str(_) => todo!(),
+                    });
+
+                    return match &found.as_ref().and_then(|it| it.init.clone()) {
+                        Some(init) => {
+                            let expr_ty = self.typeof_expr(init, true)?;
+                            Ok(expr_ty)
+                        }
+                        None => self.cannot_serialize_error(
+                            &q.right.span,
+                            DiagnosticInfoMessage::EnumMemberNoInit,
+                        ),
+                    };
+                }
+            }
+        };
+
         let current_ref = self.get_identifier_diag_info(&q.right);
         let did_push = current_ref.is_some();
         if let Some(current_ref) = current_ref {

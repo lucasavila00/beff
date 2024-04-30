@@ -12,4 +12,6 @@ export const ARR2 = [...ARR1, "C"] as const;
 
 export type Arr2 = (typeof ARR2)[number];
 
-export { ValidCurrency } from "./types3";
+export { ValidCurrency } from "./types2";
+
+export { OtherEnum2 } from "./types2";

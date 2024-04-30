@@ -527,6 +527,19 @@ function DecodeArr2(ctx, input, required = true) {
 function DecodeValidCurrency(ctx, input, required = true) {
     return decodeStringWithFormat(ctx, input, required, "ValidCurrency");
 }
+function DecodeUnionWithEnumAccess(ctx, input, required = true) {
+    return decodeAnyOfDiscriminated(ctx, input, required, "tag", {
+        "a": (ctx, input)=>(decodeObject(ctx, input, true, {
+                "value": (ctx, input)=>(decodeString(ctx, input, true))
+            })),
+        "b": (ctx, input)=>(decodeObject(ctx, input, true, {
+                "value": (ctx, input)=>(decodeNumber(ctx, input, true))
+            })),
+        "c": (ctx, input)=>(decodeObject(ctx, input, true, {
+                "value": (ctx, input)=>(decodeBoolean(ctx, input, true))
+            }))
+    });
+}
 const validators = {
     OmitSettings: DecodeOmitSettings,
     Settings: DecodeSettings,
@@ -553,7 +566,8 @@ const validators = {
     AllTypes: DecodeAllTypes,
     OtherEnum: DecodeOtherEnum,
     Arr2: DecodeArr2,
-    ValidCurrency: DecodeValidCurrency
+    ValidCurrency: DecodeValidCurrency,
+    UnionWithEnumAccess: DecodeUnionWithEnumAccess
 };
 
 export default { decodeObject, decodeArray, decodeString, decodeNumber, decodeCodec, decodeStringWithFormat, decodeAnyOf, decodeAllOf, decodeBoolean, decodeAny, decodeTuple, decodeNull, decodeConst, registerCustomFormatter, validators };

@@ -7,6 +7,9 @@ use crate::{BffFileName, ParsedModule};
 
 #[derive(Debug, Clone)]
 pub enum DiagnosticInfoMessage {
+    CannotResolveNamespaceTypeNamespaceSymbol,
+    CannotResolveNamespaceTypeValueExpr,
+    CannotResolveNamespaceTypeSomethingOfOtherFile,
     ExpectedTuple,
     ExpectedArray,
     SpreadShouldBeArray,
@@ -353,6 +356,15 @@ impl DiagnosticInfoMessage {
             DiagnosticInfoMessage::SpreadShouldBeArray => "Spread should be an array".to_string(),
             DiagnosticInfoMessage::ExpectedArray => "Expected an array".to_string(),
             DiagnosticInfoMessage::ExpectedTuple => "Expected a tuple".to_string(),
+            DiagnosticInfoMessage::CannotResolveNamespaceTypeNamespaceSymbol => {
+                "Cannot resolve namespace type namespace symbol".to_string()
+            }
+            DiagnosticInfoMessage::CannotResolveNamespaceTypeValueExpr => {
+                "Cannot resolve namespace type value expression".to_string()
+            }
+            DiagnosticInfoMessage::CannotResolveNamespaceTypeSomethingOfOtherFile => {
+                "Cannot resolve namespace type something of other file".to_string()
+            }
         }
     }
 }
