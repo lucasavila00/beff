@@ -147,6 +147,9 @@ function decodeStringWithFormat(ctx, input, required, format) {
   if (!required && input == null) {
     return input;
   }
+  if (typeof input !== "string") {
+    return buildError(input, ctx, "expected string with format " + JSON.stringify(format));
+  }
 
   const validator = customFormatters[format];
 
