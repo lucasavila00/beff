@@ -28,6 +28,7 @@ use swc_ecma_ast::ImportStarAsSpecifier;
 use swc_ecma_ast::ModuleExportName;
 use swc_ecma_ast::NamedExport;
 use swc_ecma_ast::Pat;
+use swc_ecma_ast::TsEnumDecl;
 use swc_ecma_ast::{
     ImportDecl, ImportNamedSpecifier, ImportSpecifier, TsInterfaceDecl, TsTypeAliasDecl,
 };
@@ -123,6 +124,16 @@ impl<'a, R: FsModuleResolver> Visit for ImportsVisitor<'a, R> {
                     }),
                 );
             }
+            Decl::TsEnum(decl) => {
+                let TsEnumDecl { id, .. } = &**decl;
+                self.symbol_exports.insert(
+                    id.sym.clone(),
+                    Rc::new(SymbolExport::TsEnumDecl {
+                        decl: Rc::new(*decl.clone()),
+                        span: decl.span,
+                    }),
+                );
+            }
             Decl::TsTypeAlias(a) => {
                 let TsTypeAliasDecl {
                     id,
@@ -156,8 +167,8 @@ impl<'a, R: FsModuleResolver> Visit for ImportsVisitor<'a, R> {
                     }
                 }
             }
-            Decl::TsModule(_) | Decl::Using(_) | Decl::Class(_) | Decl::Fn(_) | Decl::TsEnum(_) => {
-            }
+
+            Decl::TsModule(_) | Decl::Using(_) | Decl::Class(_) | Decl::Fn(_) => {}
         }
     }
 

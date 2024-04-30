@@ -1,4 +1,5 @@
 import parse from "./generated/parser";
+import { OtherEnum } from "./types";
 
 export const ALL_TYPES = [
   "OmitSettings",
@@ -170,4 +171,6 @@ export const {
   DiscriminatedUnion3: DiscriminatedUnion3;
   DiscriminatedUnion4: DiscriminatedUnion4;
   AllTypes: AllTypes;
+  AccessLevel: AccessLevel;
+  OtherEnum: OtherEnum;
 }>();

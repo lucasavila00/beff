@@ -491,6 +491,12 @@ function DecodeAllTypes(ctx, input, required = true) {
         "RequiredPartialObject"
     ]);
 }
+function DecodeOtherEnum(ctx, input, required = true) {
+    return decodeAnyOfConsts(ctx, input, required, [
+        "a",
+        "b"
+    ]);
+}
 const validators = {
     OmitSettings: DecodeOmitSettings,
     Settings: DecodeSettings,
@@ -514,7 +520,8 @@ const validators = {
     DiscriminatedUnion2: DecodeDiscriminatedUnion2,
     DiscriminatedUnion3: DecodeDiscriminatedUnion3,
     DiscriminatedUnion4: DecodeDiscriminatedUnion4,
-    AllTypes: DecodeAllTypes
+    AllTypes: DecodeAllTypes,
+    OtherEnum: DecodeOtherEnum
 };
 
 export default { decodeObject, decodeArray, decodeString, decodeNumber, decodeCodec, decodeStringWithFormat, decodeAnyOf, decodeAllOf, decodeBoolean, decodeAny, decodeTuple, decodeNull, decodeConst, validators };

@@ -206,21 +206,12 @@ impl<'a, R: FileManager> TypeResolver<'a, R> {
 
         if let Some(exported) = self.get_current_file().symbol_exports.named.get(&i.sym) {
             match exported.as_ref() {
-                // SymbolExport::TsType { params, ty, .. } => {
-                //     return Ok(ResolvedLocalSymbol::TsType(params.clone(), ty.clone()));
-                // }
-                // SymbolExport::TsInterfaceDecl { decl, .. } => {
-                //     return Ok(ResolvedLocalSymbol::TsInterfaceDecl(decl.clone()));
-                // }
-                // SymbolExport::TsEnumDecl { decl, .. } => {
-                //     return Ok(ResolvedLocalSymbol::TsEnumDecl(decl.clone()));
-                // }
                 SymbolExport::ValueExpr { expr, .. } => {
                     return Ok(ResolvedLocalSymbol::Expr(expr.clone()));
                 }
                 SymbolExport::TsType { .. }
-                | SymbolExport::TsInterfaceDecl { .. }
                 | SymbolExport::TsEnumDecl { .. }
+                | SymbolExport::TsInterfaceDecl { .. }
                 | SymbolExport::StarOfOtherFile { .. }
                 | SymbolExport::SomethingOfOtherFile { .. } => {}
             }

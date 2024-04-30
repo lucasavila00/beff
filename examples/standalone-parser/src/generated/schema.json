@@ -364,6 +364,12 @@
     ],
     "type": "object"
   },
+  "OtherEnum": {
+    "enum": [
+      "a",
+      "b"
+    ]
+  },
   "PartialObject": {
     "properties": {
       "a": {
