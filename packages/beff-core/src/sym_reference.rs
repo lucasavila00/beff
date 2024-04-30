@@ -91,18 +91,33 @@ impl<'a, R: FileManager> TypeResolver<'a, R> {
                     return self.resolve_export(i, &export, is_type);
                 }
                 Err(self
-                    .make_err(&i.span, DiagnosticInfoMessage::CannotResolveNamespaceType)
+                    .make_err(
+                        &i.span,
+                        DiagnosticInfoMessage::CannotResolveNamespaceTypeSomethingOfOtherFile,
+                    )
                     .into())
             }
             SymbolExport::ValueExpr { .. } => Err(self
-                .make_err(&i.span, DiagnosticInfoMessage::CannotResolveNamespaceType)
+                .make_err(
+                    &i.span,
+                    DiagnosticInfoMessage::CannotResolveNamespaceTypeValueExpr,
+                )
                 .into()),
+
             SymbolExport::TsEnumDecl { .. } => Err(self
                 .make_err(
                     &i.span,
                     DiagnosticInfoMessage::ShouldNotResolveTsEnumAsNamespace,
                 )
                 .into()),
+            // SymbolExport::TsEnumDecl { span, .. } => Ok(ResolvedNamespaceSymbol {
+            //     from_file: ImportReference::Named {
+            //         orig: i.sym.clone().into(),
+            //         file_name: self.current_file.clone(),
+            //         span: *span,
+            //     }
+            //     .into(),
+            // }),
         }
     }
     pub fn resolve_namespace_symbol(
@@ -139,7 +154,10 @@ impl<'a, R: FileManager> TypeResolver<'a, R> {
         }
 
         Err(self
-            .make_err(&i.span, DiagnosticInfoMessage::CannotResolveNamespaceType)
+            .make_err(
+                &i.span,
+                DiagnosticInfoMessage::CannotResolveNamespaceTypeNamespaceSymbol,
+            )
             .into())
     }
 

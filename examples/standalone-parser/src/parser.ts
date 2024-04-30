@@ -135,6 +135,17 @@ export type DiscriminatedUnion4 =
         a2: string;
       };
     };
+
+// type UnionWithEnumAccess =
+//   | {
+//       tag: OtherEnum.A;
+//       value: string;
+//     }
+//   | {
+//       tag: OtherEnum.B;
+//       value: number;
+//     };
+
 export const {
   RequiredPartialObject,
   LevelAndDSettings,
@@ -154,6 +165,7 @@ export const {
   DiscriminatedUnion4,
   Arr2C,
   ValidCurrency: ValidCurrencyCodec,
+  UnionWithEnumAccess,
 } = parse.buildParsers<{
   OmitSettings: OmitSettings;
   RequiredPartialObject: RequiredPartialObject;
@@ -177,6 +189,7 @@ export const {
   OtherEnum: OtherEnum;
   Arr2C: Arr2;
   ValidCurrency: ValidCurrency;
+  // UnionWithEnumAccess: UnionWithEnumAccess;
 }>({
   customFormats: {
     ValidCurrency: (input: string) => {

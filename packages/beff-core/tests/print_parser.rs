@@ -298,6 +298,30 @@ mod tests {
       "#));
     }
     #[test]
+    fn ok_enum_member() {
+        insta::assert_snapshot!(ok(r#"
+        export enum Enum {
+            A = "a",
+            B = "b",
+        }
+        export type X = Enum.A
+
+        parse.buildParsers<{ X: X }>();
+      "#));
+    }
+    #[test]
+    fn ok_enum_member2() {
+        insta::assert_snapshot!(ok(r#"
+        enum Enum {
+            A = "a",
+            B = "b",
+        }
+        type X = Enum.A
+
+        parse.buildParsers<{ X: X }>();
+      "#));
+    }
+    #[test]
     fn ok_discriminated_union() {
         insta::assert_snapshot!(decoder(
             r#"
