@@ -2,6 +2,7 @@
 /* eslint-disable */
 
 
+import {z} from 'zod';
 import validatorsMod from "./validators.js"; const { decodeObject, decodeArray, decodeString, decodeNumber, decodeCodec, decodeStringWithFormat, decodeAnyOf, decodeAllOf, decodeBoolean, decodeAny, decodeTuple, decodeNull, decodeConst, validators, c } = validatorsMod;
 const buildParsersInput = {
     "NotPublicRenamed": function(ctx, input, required = true) {
@@ -60,9 +61,14 @@ function buildParsers() {
       }
       throw new BffParseError(safe.errors);
     };
+    const zod = () => {
+      
+      return z.custom(data => parse(data))
+    }
     decoders[k] = {
       parse,
       safeParse,
+      zod
     };
   });
   return decoders;

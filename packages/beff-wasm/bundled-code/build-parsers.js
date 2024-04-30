@@ -28,9 +28,14 @@ function buildParsers() {
       }
       throw new BffParseError(safe.errors);
     };
+    const zod = () => {
+      //@ts-ignore
+      return z.custom(data => parse(data))
+    }
     decoders[k] = {
       parse,
       safeParse,
+      zod
     };
   });
   return decoders;

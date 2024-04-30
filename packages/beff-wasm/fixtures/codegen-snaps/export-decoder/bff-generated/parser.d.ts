@@ -1,10 +1,12 @@
 /* eslint-disable */
 
 import { DecodeError, StringFormat } from "@beff/cli";
+import { ZodType } from "zod";
 
 export type BeffParser<T> = {
   parse: (input: any) => T;
   safeParse: (input: any) => { success: true; data: T } | { success: false; errors: DecodeError[] };
+  zod: () => ZodType<T>;
 };
 type Parsers<T> = {
   [K in keyof T]: BeffParser<T[K]>;

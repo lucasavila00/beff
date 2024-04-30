@@ -268,7 +268,44 @@ it("checks records", () => {
     }
   `);
 });
-
+it("to zod works", () => {
+  const valid: User = {
+    name: "User1",
+    friends: [
+      {
+        name: "User2",
+        friends: [],
+        accessLevel: AccessLevel.USER,
+        avatarSize: "100x100",
+        extra: {},
+      },
+    ],
+    accessLevel: AccessLevel.ADMIN,
+    avatarSize: "100x100",
+    extra: {
+      key: "value",
+    },
+  };
+  expect(User.zod().parse(valid)).toMatchInlineSnapshot(`
+    {
+      "accessLevel": "ADMIN",
+      "avatarSize": "100x100",
+      "extra": {
+        "key": "value",
+      },
+      "friends": [
+        {
+          "accessLevel": "USER",
+          "avatarSize": "100x100",
+          "extra": {},
+          "friends": [],
+          "name": "User2",
+        },
+      ],
+      "name": "User1",
+    }
+  `);
+});
 it("works on recursive type", () => {
   const valid: User = {
     name: "User1",
