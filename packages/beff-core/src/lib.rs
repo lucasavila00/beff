@@ -179,18 +179,7 @@ impl SymbolsExportsModule {
             None
         });
 
-        known.or_else(|| {
-            self.named_unknown.get(name).cloned().or_else(|| {
-                for it in &self.extends {
-                    let file = files.get_or_fetch_file(it)?;
-                    let res = file.symbol_exports.get_value(name, files);
-                    if let Some(it) = res {
-                        return Some(it.clone());
-                    }
-                }
-                None
-            })
-        })
+        known.or_else(|| self.named_unknown.get(name).cloned())
     }
 
     pub fn insert_type(&mut self, name: JsWord, export: Rc<SymbolExport>) {
@@ -217,18 +206,7 @@ impl SymbolsExportsModule {
             None
         });
 
-        known.or_else(|| {
-            self.named_unknown.get(name).cloned().or_else(|| {
-                for it in &self.extends {
-                    let file = files.get_or_fetch_file(it)?;
-                    let res = file.symbol_exports.get_type(name, files);
-                    if let Some(it) = res {
-                        return Some(it.clone());
-                    }
-                }
-                None
-            })
-        })
+        known.or_else(|| self.named_unknown.get(name).cloned())
     }
 
     pub fn extend(&mut self, other: BffFileName) {
