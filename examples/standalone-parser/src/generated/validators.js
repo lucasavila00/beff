@@ -483,6 +483,14 @@ function DecodeDiscriminatedUnion4(ctx, input, required = true) {
             ]))
     });
 }
+function DecodeAllTypes(ctx, input, required = true) {
+    return decodeAnyOfConsts(ctx, input, required, [
+        "LevelAndDSettings",
+        "OmitSettings",
+        "PartialSettings",
+        "RequiredPartialObject"
+    ]);
+}
 const validators = {
     OmitSettings: DecodeOmitSettings,
     Settings: DecodeSettings,
@@ -505,7 +513,8 @@ const validators = {
     DiscriminatedUnion: DecodeDiscriminatedUnion,
     DiscriminatedUnion2: DecodeDiscriminatedUnion2,
     DiscriminatedUnion3: DecodeDiscriminatedUnion3,
-    DiscriminatedUnion4: DecodeDiscriminatedUnion4
+    DiscriminatedUnion4: DecodeDiscriminatedUnion4,
+    AllTypes: DecodeAllTypes
 };
 
 export default { decodeObject, decodeArray, decodeString, decodeNumber, decodeCodec, decodeStringWithFormat, decodeAnyOf, decodeAllOf, decodeBoolean, decodeAny, decodeTuple, decodeNull, decodeConst, validators };

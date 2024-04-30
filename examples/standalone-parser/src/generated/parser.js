@@ -6,6 +6,9 @@ import {printErrors} from '@beff/client';
 import {z} from 'zod';
 import validatorsMod from "./validators.js"; const { decodeObject, decodeArray, decodeString, decodeNumber, decodeCodec, decodeStringWithFormat, decodeAnyOf, decodeAllOf, decodeBoolean, decodeAny, decodeTuple, decodeNull, decodeConst, validators, c } = validatorsMod;
 const buildParsersInput = {
+    "AllTypes": function(ctx, input, required = true) {
+        return validators.AllTypes(ctx, input, required);
+    },
     "DiscriminatedUnion": function(ctx, input, required = true) {
         return validators.DiscriminatedUnion(ctx, input, required);
     },

@@ -5,6 +5,14 @@
       "USER"
     ]
   },
+  "AllTypes": {
+    "enum": [
+      "LevelAndDSettings",
+      "OmitSettings",
+      "PartialSettings",
+      "RequiredPartialObject"
+    ]
+  },
   "AvatarSize": {
     "type": "string"
   },
