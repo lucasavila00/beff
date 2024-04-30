@@ -140,6 +140,9 @@ impl ImportReference {
 pub struct SymbolsExportsModule {
     named_types: HashMap<JsWord, Rc<SymbolExport>>,
     named_values: HashMap<JsWord, Rc<SymbolExport>>,
+
+    named_unknown: HashMap<JsWord, Rc<SymbolExport>>,
+
     extends: Vec<BffFileName>,
 }
 impl Default for SymbolsExportsModule {
@@ -152,6 +155,7 @@ impl SymbolsExportsModule {
         SymbolsExportsModule {
             named_types: HashMap::new(),
             named_values: HashMap::new(),
+            named_unknown: HashMap::new(),
             extends: Vec::new(),
         }
     }
@@ -164,7 +168,7 @@ impl SymbolsExportsModule {
         name: &JsWord,
         files: &mut R,
     ) -> Option<Rc<SymbolExport>> {
-        self.named_values.get(name).cloned().or_else(|| {
+        let known = self.named_values.get(name).cloned().or_else(|| {
             for it in &self.extends {
                 let file = files.get_or_fetch_file(it)?;
                 let res = file.symbol_exports.get_value(name, files);
@@ -173,11 +177,17 @@ impl SymbolsExportsModule {
                 }
             }
             None
-        })
+        });
+
+        known.or_else(|| self.named_unknown.get(name).cloned())
     }
 
     pub fn insert_type(&mut self, name: JsWord, export: Rc<SymbolExport>) {
         self.named_types.insert(name, export);
+    }
+
+    pub fn insert_unknown(&mut self, name: JsWord, export: Rc<SymbolExport>) {
+        self.named_unknown.insert(name, export);
     }
 
     pub fn get_type<R: FileManager>(
@@ -185,7 +195,7 @@ impl SymbolsExportsModule {
         name: &JsWord,
         files: &mut R,
     ) -> Option<Rc<SymbolExport>> {
-        self.named_types.get(name).cloned().or_else(|| {
+        let known = self.named_types.get(name).cloned().or_else(|| {
             for it in &self.extends {
                 let file = files.get_or_fetch_file(it)?;
                 let res = file.symbol_exports.get_type(name, files);
@@ -194,7 +204,9 @@ impl SymbolsExportsModule {
                 }
             }
             None
-        })
+        });
+
+        known.or_else(|| self.named_unknown.get(name).cloned())
     }
 
     pub fn extend(&mut self, other: BffFileName) {

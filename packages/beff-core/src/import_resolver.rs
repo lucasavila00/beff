@@ -174,48 +174,46 @@ impl<'a, R: FsModuleResolver> Visit for ImportsVisitor<'a, R> {
 
     fn visit_named_export(&mut self, n: &NamedExport) {
         match &n.src {
-            Some(_src) => {
+            Some(src) => {
                 //
                 for s in &n.specifiers {
                     match s {
                         ExportSpecifier::Default(_) => {}
-                        ExportSpecifier::Namespace(ExportNamespaceSpecifier { .. }) => {
-                            panic!("ExportSpecifier::Namespace(ExportNamespaceSpecifier is not supported")
-                            // if let ModuleExportName::Ident(id) = name {
-                            //     if let Some(file_name) = self.resolve_import(&src.value) {
-                            //         self.symbol_exports.insert(
-                            //             id.sym.clone(),
-                            //             Rc::new(SymbolExport::StarOfOtherFile {
-                            //                 reference: ImportReference::Star {
-                            //                     file_name: file_name.clone(),
-                            //                     span: id.span,
-                            //                 }
-                            //                 .into(),
-                            //                 span: id.span,
-                            //             }),
-                            //         )
-                            //     }
-                            // }
+                        ExportSpecifier::Namespace(ExportNamespaceSpecifier { name, .. }) => {
+                            if let ModuleExportName::Ident(id) = name {
+                                if let Some(file_name) = self.resolve_import(&src.value) {
+                                    self.symbol_exports.insert_unknown(
+                                        id.sym.clone(),
+                                        Rc::new(SymbolExport::StarOfOtherFile {
+                                            reference: ImportReference::Star {
+                                                file_name: file_name.clone(),
+                                                span: id.span,
+                                            }
+                                            .into(),
+                                            span: id.span,
+                                        }),
+                                    )
+                                }
+                            }
                         }
-                        ExportSpecifier::Named(ExportNamedSpecifier { .. }) => {
-                            panic!("ExportSpecifier::Named(ExportNamedSpecifier is not supported")
-                            // if let ModuleExportName::Ident(id) = orig {
-                            //     let name = match exported {
-                            //         Some(ModuleExportName::Ident(ex)) => ex.sym.clone(),
-                            //         Some(ModuleExportName::Str(st)) => st.value.clone(),
-                            //         None => id.sym.clone(),
-                            //     };
-                            //     if let Some(file_name) = self.resolve_import(&src.value) {
-                            //         self.symbol_exports.insert(
-                            //             name,
-                            //             Rc::new(SymbolExport::SomethingOfOtherFile {
-                            //                 something: id.sym.clone(),
-                            //                 file: file_name.clone(),
-                            //                 span: id.span,
-                            //             }),
-                            //         )
-                            //     }
-                            // }
+                        ExportSpecifier::Named(ExportNamedSpecifier { orig, exported, .. }) => {
+                            if let ModuleExportName::Ident(id) = orig {
+                                let name = match exported {
+                                    Some(ModuleExportName::Ident(ex)) => ex.sym.clone(),
+                                    Some(ModuleExportName::Str(st)) => st.value.clone(),
+                                    None => id.sym.clone(),
+                                };
+                                if let Some(file_name) = self.resolve_import(&src.value) {
+                                    self.symbol_exports.insert_unknown(
+                                        name,
+                                        Rc::new(SymbolExport::SomethingOfOtherFile {
+                                            something: id.sym.clone(),
+                                            file: file_name.clone(),
+                                            span: id.span,
+                                        }),
+                                    )
+                                }
+                            }
                         }
                     }
                 }
@@ -339,12 +337,25 @@ pub fn parse_and_bind<R: FsModuleResolver>(
         }
         if let Some(import) = v.imports.get(&k) {
             match &**import {
-                ImportReference::Named { .. } => {
-                    return Err(anyhow::anyhow!("ImportReference::Named is not supported"));
+                ImportReference::Named { orig, span, .. } => {
+                    let it = Rc::new(SymbolExport::SomethingOfOtherFile {
+                        something: orig.as_ref().clone(),
+                        file: file_name.clone(),
+                        span: *span,
+                    });
+                    symbol_exports.insert_unknown(renamed, it);
+                    continue;
                 }
-                ImportReference::Star { .. } => {
-                    return Err(anyhow::anyhow!("ImportReference::Star is not supported"));
+                ImportReference::Star { span, .. } => {
+                    symbol_exports.insert_unknown(
+                        renamed,
+                        Rc::new(SymbolExport::StarOfOtherFile {
+                            reference: import.clone(),
+                            span: *span,
+                        }),
+                    );
                 }
+
                 ImportReference::Default { .. } => {
                     continue;
                 }
