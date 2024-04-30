@@ -563,7 +563,7 @@ impl<'a, 'b, R: FileManager> TypeToSchema<'a, 'b, R> {
                 let exported = self
                     .files
                     .get_or_fetch_file(from_file)
-                    .and_then(|file| file.symbol_exports.get(word, self.files));
+                    .and_then(|file| file.symbol_exports.get_type(word, self.files));
                 match exported {
                     Some(exported) => {
                         self.convert_type_export(exported.as_ref(), from_file, type_args)?
@@ -846,7 +846,7 @@ impl<'a, 'b, R: FileManager> TypeToSchema<'a, 'b, R> {
         let exported = self
             .files
             .get_or_fetch_file(from_file.file_name())
-            .and_then(|module| module.symbol_exports.get(right, self.files));
+            .and_then(|module| module.symbol_exports.get_type(right, self.files));
         match exported {
             Some(exported) => {
                 let name = match &*exported {
@@ -896,7 +896,7 @@ impl<'a, 'b, R: FileManager> TypeToSchema<'a, 'b, R> {
                 let exported = self
                     .files
                     .get_or_fetch_file(from_file)
-                    .and_then(|module| module.symbol_exports.get(word, self.files));
+                    .and_then(|module| module.symbol_exports.get_type(word, self.files));
 
                 match exported {
                     Some(exported) => self.recursively_get_qualified_type_export(exported, right),
@@ -927,7 +927,7 @@ impl<'a, 'b, R: FileManager> TypeToSchema<'a, 'b, R> {
             }
             TsEntityName::Ident(i) => {
                 let ns = TypeResolver::new(self.files, &self.current_file)
-                    .resolve_namespace_symbol(i)?;
+                    .resolve_namespace_symbol(i, true)?;
                 self.get_qualified_type_from_file(&ns.from_file, &q.right.sym, &q.right.span)
             }
         }
@@ -1151,7 +1151,7 @@ impl<'a, 'b, R: FileManager> TypeToSchema<'a, 'b, R> {
     ) -> Res<()> {
         let file = self.files.get_or_fetch_file(file_name);
         if let Some(pm) = file {
-            for (k, v) in &pm.symbol_exports.named {
+            for (k, v) in &pm.symbol_exports.named_values {
                 match v.as_ref() {
                     SymbolExport::TsEnumDecl { .. }
                     | SymbolExport::TsType { .. }

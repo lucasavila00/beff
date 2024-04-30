@@ -56,6 +56,7 @@ impl<'a, R: FileManager> TypeResolver<'a, R> {
         &mut self,
         i: &Ident,
         export: &Rc<SymbolExport>,
+        is_type: bool,
     ) -> Res<ResolvedNamespaceSymbol> {
         match &**export {
             SymbolExport::StarOfOtherFile { reference, .. } => Ok(ResolvedNamespaceSymbol {
@@ -79,9 +80,15 @@ impl<'a, R: FileManager> TypeResolver<'a, R> {
                 ..
             } => {
                 let file = self.files.get_or_fetch_file(file_name);
-                let exported = file.and_then(|file| file.symbol_exports.get(orig, self.files));
+                let exported = file.and_then(|file| {
+                    if is_type {
+                        file.symbol_exports.get_type(orig, self.files)
+                    } else {
+                        file.symbol_exports.get_value(orig, self.files)
+                    }
+                });
                 if let Some(export) = exported {
-                    return self.resolve_export(i, &export);
+                    return self.resolve_export(i, &export, is_type);
                 }
                 Err(self
                     .make_err(&i.span, DiagnosticInfoMessage::CannotResolveNamespaceType)
@@ -98,7 +105,11 @@ impl<'a, R: FileManager> TypeResolver<'a, R> {
                 .into()),
         }
     }
-    pub fn resolve_namespace_symbol(&mut self, i: &Ident) -> Res<ResolvedNamespaceSymbol> {
+    pub fn resolve_namespace_symbol(
+        &mut self,
+        i: &Ident,
+        is_type: bool,
+    ) -> Res<ResolvedNamespaceSymbol> {
         let k = &(i.sym.clone(), i.span.ctxt);
 
         if let Some(imported) = self.get_current_file().imports.get(k) {
@@ -113,9 +124,15 @@ impl<'a, R: FileManager> TypeResolver<'a, R> {
                     orig, file_name, ..
                 } => {
                     let file = self.files.get_or_fetch_file(file_name);
-                    let exported = file.and_then(|file| file.symbol_exports.get(orig, self.files));
+                    let exported = file.and_then(|file| {
+                        if is_type {
+                            file.symbol_exports.get_type(orig, self.files)
+                        } else {
+                            file.symbol_exports.get_value(orig, self.files)
+                        }
+                    });
                     if let Some(export) = exported {
-                        return self.resolve_export(i, &export);
+                        return self.resolve_export(i, &export, is_type);
                     }
                 }
             }
@@ -132,7 +149,7 @@ impl<'a, R: FileManager> TypeResolver<'a, R> {
             .to_info(info_msg)
             .to_diag(None)
     }
-    fn resolve_local_import(&mut self, i: &Ident) -> Res<ResolvedLocalSymbol> {
+    fn resolve_local_import(&mut self, i: &Ident, is_type: bool) -> Res<ResolvedLocalSymbol> {
         let k = &(i.sym.clone(), i.span.ctxt);
         if let Some(imported) = self.get_current_file().imports.get(k) {
             match &**imported {
@@ -140,7 +157,13 @@ impl<'a, R: FileManager> TypeResolver<'a, R> {
                     orig, file_name, ..
                 } => {
                     let file = self.files.get_or_fetch_file(file_name);
-                    let exported = file.and_then(|file| file.symbol_exports.get(orig, self.files));
+                    let exported = file.and_then(|file| {
+                        if is_type {
+                            file.symbol_exports.get_type(orig, self.files)
+                        } else {
+                            file.symbol_exports.get_value(orig, self.files)
+                        }
+                    });
                     if let Some(exported) = exported {
                         return Ok(ResolvedLocalSymbol::NamedImport {
                             exported: exported.clone(),
@@ -204,7 +227,12 @@ impl<'a, R: FileManager> TypeResolver<'a, R> {
             return Ok(ResolvedLocalSymbol::Expr(alias.clone()));
         }
 
-        if let Some(exported) = self.get_current_file().symbol_exports.named.get(&i.sym) {
+        if let Some(exported) = self
+            .get_current_file()
+            .symbol_exports
+            .named_values
+            .get(&i.sym)
+        {
             match exported.as_ref() {
                 SymbolExport::ValueExpr { expr, .. } => {
                     return Ok(ResolvedLocalSymbol::Expr(expr.clone()));
@@ -217,7 +245,7 @@ impl<'a, R: FileManager> TypeResolver<'a, R> {
             }
         }
 
-        self.resolve_local_import(i)
+        self.resolve_local_import(i, false)
     }
     pub fn resolve_local_type(&mut self, i: &Ident) -> Res<ResolvedLocalSymbol> {
         let k = &(i.sym.clone(), i.span.ctxt);
@@ -232,6 +260,6 @@ impl<'a, R: FileManager> TypeResolver<'a, R> {
             return Ok(ResolvedLocalSymbol::TsEnumDecl(enum_.clone()));
         }
 
-        self.resolve_local_import(i)
+        self.resolve_local_import(i, true)
     }
 }
