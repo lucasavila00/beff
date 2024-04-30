@@ -30,7 +30,11 @@ function buildParsers() {
     };
     const zod = () => {
       //@ts-ignore
-      return z.custom(data => parse(data))
+      return z.custom(data => safeParse(data).success, val => {
+        const errors = safeParse(val).errors;
+        //@ts-ignore
+        return printErrors(errors, [])
+      })
     }
     decoders[k] = {
       parse,

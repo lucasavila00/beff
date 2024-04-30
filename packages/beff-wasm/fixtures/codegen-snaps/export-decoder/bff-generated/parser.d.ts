@@ -1,6 +1,7 @@
 /* eslint-disable */
 
 import { DecodeError, StringFormat } from "@beff/cli";
+
 import { ZodType } from "zod";
 
 export type BeffParser<T> = {

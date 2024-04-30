@@ -305,6 +305,28 @@ it("to zod works", () => {
       "name": "User1",
     }
   `);
+
+  const invalid = {
+    name: "User1",
+    friends: [
+      {
+        name: "User2",
+      },
+    ],
+  };
+  expect(User.zod().safeParse(invalid)).toMatchInlineSnapshot(`
+    {
+      "error": [ZodError: [
+      {
+        "code": "custom",
+        "message": "#0 (accessLevel) expected one of \\"ADMIN\\", \\"USER\\", received: undefined | #1 (avatarSize) expected string, received: undefined | #2 (extra) expected object, received: undefined | #3 (friends[0].accessLevel) expected one of \\"ADMIN\\", \\"USER\\", received: undefined | #4 (friends[0].avatarSize) expected string, received: undefined | #5 (friends[0].extra) expected object, received: undefined | #6 (friends[0].friends) expected array, received: undefined",
+        "fatal": true,
+        "path": []
+      }
+    ]],
+      "success": false,
+    }
+  `);
 });
 it("works on recursive type", () => {
   const valid: User = {

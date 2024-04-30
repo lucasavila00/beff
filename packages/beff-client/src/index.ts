@@ -72,7 +72,7 @@ const printErrorsPart = (it: DecodeError[], parentPath: string[], showReceived: 
     return printRegularError(err, parentPath, showReceived);
   });
 };
-export const printErrors = (it: DecodeError[], parentPath: string[]): string => {
+export const printErrors = (it: DecodeError[], parentPath: string[] = []): string => {
   return printErrorsPart(it, parentPath, true)
     .map((msg, idx) => joinFilteredStrings([`#${idx}`, msg]))
     .join(" | ");

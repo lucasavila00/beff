@@ -2,6 +2,7 @@
 /* eslint-disable */
 
 
+import {printErrors} from '@beff/client';
 import {z} from 'zod';
 import validatorsMod from "./validators.js"; const { decodeObject, decodeArray, decodeString, decodeNumber, decodeCodec, decodeStringWithFormat, decodeAnyOf, decodeAllOf, decodeBoolean, decodeAny, decodeTuple, decodeNull, decodeConst, validators, c } = validatorsMod;
 const buildParsersInput = {
@@ -63,7 +64,11 @@ function buildParsers() {
     };
     const zod = () => {
       
-      return z.custom(data => parse(data))
+      return z.custom(data => safeParse(data).success, val => {
+        const errors = safeParse(val).errors;
+        
+        return printErrors(errors, [])
+      })
     }
     decoders[k] = {
       parse,

@@ -21,6 +21,9 @@ importers:
       '@beff/cli':
         specifier: workspace:^0.0.23
         version: link:../../packages/beff-cli
+      '@beff/client':
+        specifier: workspace:^
+        version: link:../../packages/beff-client
       vitest:
         specifier: ^0.34.4
         version: 0.34.4

@@ -1,4 +1,5 @@
 import { DecodeError, StringFormat } from "@beff/cli";
+//@ts-ignore
 import { ZodType } from "zod";
 
 export type BeffParser<T> = {

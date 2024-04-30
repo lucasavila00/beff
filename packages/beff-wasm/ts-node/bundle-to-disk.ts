@@ -48,8 +48,8 @@ const finalizeValidatorsCode = (wasmCode: WritableModules, mod: ProjectModule) =
 const importValidators = (mod: ProjectModule) => {
   const i = [...decodersExported, "validators", "c"].join(", ");
   return mod === "esm"
-    ? `import {z} from 'zod';\nimport validatorsMod from "./validators.js"; const { ${i} } = validatorsMod;`
-    : `const{z} = require('zod');\nconst { ${i} } = require('./validators.js').default;`;
+    ? `import {printErrors} from '@beff/client';\nimport {z} from 'zod';\nimport validatorsMod from "./validators.js"; const { ${i} } = validatorsMod;`
+    : `const {printErrors} = require('beff/client');\nconst {z} = require('zod');\nconst { ${i} } = require('./validators.js').default;`;
 };
 
 const finalizeParserFile = (wasmCode: WritableModules, mod: ProjectModule) => {
