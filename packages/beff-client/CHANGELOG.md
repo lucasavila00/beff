@@ -1,5 +1,13 @@
 # @beff/client
 
+## 0.0.25
+
+### Patch Changes
+
+- fix export value bug
+- Updated dependencies
+  - @beff/cli@0.0.25
+
 ## 0.0.24
 
 ### Patch Changes
