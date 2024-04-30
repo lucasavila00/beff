@@ -1,5 +1,13 @@
 # @beff/client
 
+## 0.0.23
+
+### Patch Changes
+
+- zod
+- Updated dependencies
+  - @beff/cli@0.0.23
+
 ## 0.0.22
 
 ### Patch Changes
