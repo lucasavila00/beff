@@ -1,5 +1,5 @@
 import parse from "./generated/parser";
-import { Arr2, OtherEnum } from "./types";
+import { Arr2, OtherEnum, ValidCurrency } from "./types";
 
 export const ALL_TYPES = [
   "OmitSettings",
@@ -153,6 +153,7 @@ export const {
   DiscriminatedUnion3,
   DiscriminatedUnion4,
   Arr2C,
+  ValidCurrency: ValidCurrencyCodec,
 } = parse.buildParsers<{
   OmitSettings: OmitSettings;
   RequiredPartialObject: RequiredPartialObject;
@@ -175,4 +176,14 @@ export const {
   AccessLevel: AccessLevel;
   OtherEnum: OtherEnum;
   Arr2C: Arr2;
-}>();
+  ValidCurrency: ValidCurrency;
+}>({
+  customFormats: {
+    ValidCurrency: (input: string) => {
+      if (input === "USD") {
+        return true;
+      }
+      return false;
+    },
+  },
+});

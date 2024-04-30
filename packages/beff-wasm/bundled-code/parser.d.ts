@@ -13,7 +13,12 @@ type Parsers<T> = {
 
 export type TagOfFormat<T extends StringFormat<string>> = T extends StringFormat<infer Tag> ? Tag : never;
 
+export type BuildParserFunction = <T>(args?: {
+  customFormats?: { [key: string]: (input: string) => boolean };
+}) => Parsers<T>;
+
 declare const _exports: {
-  buildParsers: <T>() => Parsers<T>;
+  buildParsers: BuildParserFunction
 };
+
 export default _exports;

@@ -15,8 +15,26 @@ import {
   DiscriminatedUnion3,
   DiscriminatedUnion4,
   Arr2C,
+  ValidCurrencyCodec,
 } from "../src/parser";
 import { Arr2 } from "../src/types";
+it("Custom Format", () => {
+  expect(ValidCurrencyCodec.parse("USD")).toMatchInlineSnapshot('"USD"');
+});
+it("Custom Format", () => {
+  expect(ValidCurrencyCodec.safeParse("asdasdadasd")).toMatchInlineSnapshot(`
+    {
+      "errors": [
+        {
+          "message": "expected string with format \\"ValidCurrency\\"",
+          "path": [],
+          "received": "asdasdadasd",
+        },
+      ],
+      "success": false,
+    }
+  `);
+});
 it("Arr spread", () => {
   expect(Arr2C.parse("C" satisfies Arr2)).toMatchInlineSnapshot('"C"');
 });

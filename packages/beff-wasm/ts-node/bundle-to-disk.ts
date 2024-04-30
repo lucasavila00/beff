@@ -18,6 +18,7 @@ const decodersExported = [
   "decodeTuple",
   "decodeNull",
   "decodeConst",
+  "registerCustomFormatter",
 ];
 
 const esmTag = (mod: ProjectModule) => {
@@ -52,13 +53,16 @@ const importValidators = (mod: ProjectModule) => {
     : `const {printErrors} = require('beff/client');\nconst {z} = require('zod');\nconst { ${i} } = require('./validators.js').default;`;
 };
 
-const finalizeParserFile = (wasmCode: WritableModules, mod: ProjectModule) => {
+const finalizeParserFile = (wasmCode: WritableModules, mod: ProjectModule, customFormats: string[]) => {
   const exportedItems = ["buildParsers"].join(", ");
   const exports = [exportCode(mod), `{ ${exportedItems} };`].join(" ");
+
+  const customFormatsCode = `const RequiredCustomFormats = ${JSON.stringify(customFormats)};`;
   return [
     "//@ts-nocheck\n/* eslint-disable */\n",
     esmTag(mod),
     importValidators(mod),
+    customFormatsCode,
     wasmCode.js_built_parsers,
     gen["build-parsers.js"],
     exports,
@@ -96,7 +100,10 @@ export const execProject = (
   }
 
   if (projectJson.parser) {
-    fs.writeFileSync(path.join(outputDir, "parser.js"), finalizeParserFile(outResult, mod));
+    fs.writeFileSync(
+      path.join(outputDir, "parser.js"),
+      finalizeParserFile(outResult, mod, projectJson.settings.customFormats.map((it) => it.name) ?? [])
+    );
     fs.writeFileSync(
       path.join(outputDir, "parser.d.ts"),
       ["/* eslint-disable */\n", gen["parser.d.ts"]].join("\n")
