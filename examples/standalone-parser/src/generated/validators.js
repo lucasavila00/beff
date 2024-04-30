@@ -497,6 +497,13 @@ function DecodeOtherEnum(ctx, input, required = true) {
         "b"
     ]);
 }
+function DecodeArr2(ctx, input, required = true) {
+    return decodeAnyOfConsts(ctx, input, required, [
+        "A",
+        "B",
+        "C"
+    ]);
+}
 const validators = {
     OmitSettings: DecodeOmitSettings,
     Settings: DecodeSettings,
@@ -521,7 +528,8 @@ const validators = {
     DiscriminatedUnion3: DecodeDiscriminatedUnion3,
     DiscriminatedUnion4: DecodeDiscriminatedUnion4,
     AllTypes: DecodeAllTypes,
-    OtherEnum: DecodeOtherEnum
+    OtherEnum: DecodeOtherEnum,
+    Arr2: DecodeArr2
 };
 
 export default { decodeObject, decodeArray, decodeString, decodeNumber, decodeCodec, decodeStringWithFormat, decodeAnyOf, decodeAllOf, decodeBoolean, decodeAny, decodeTuple, decodeNull, decodeConst, validators };

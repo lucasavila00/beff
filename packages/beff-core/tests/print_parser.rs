@@ -275,6 +275,17 @@ mod tests {
       "#));
     }
     #[test]
+    fn ok_array_spread() {
+        insta::assert_snapshot!(ok(r#"
+        const Arr1 = ["a", "b"] as const
+        const Arr2 = [...Arr1, "c"] as const
+
+        type Arr2C = typeof Arr2[number];
+
+        parse.buildParsers<{ Arr2C: Arr2C }>();
+      "#));
+    }
+    #[test]
     fn ok_discriminated_union() {
         insta::assert_snapshot!(decoder(
             r#"

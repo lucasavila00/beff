@@ -1,5 +1,5 @@
 import parse from "./generated/parser";
-import { OtherEnum } from "./types";
+import { Arr2, OtherEnum } from "./types";
 
 export const ALL_TYPES = [
   "OmitSettings",
@@ -152,6 +152,7 @@ export const {
   DiscriminatedUnion2,
   DiscriminatedUnion3,
   DiscriminatedUnion4,
+  Arr2C,
 } = parse.buildParsers<{
   OmitSettings: OmitSettings;
   RequiredPartialObject: RequiredPartialObject;
@@ -173,4 +174,5 @@ export const {
   AllTypes: AllTypes;
   AccessLevel: AccessLevel;
   OtherEnum: OtherEnum;
+  Arr2C: Arr2;
 }>();

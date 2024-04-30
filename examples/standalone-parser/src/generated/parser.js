@@ -12,6 +12,9 @@ const buildParsersInput = {
     "AllTypes": function(ctx, input, required = true) {
         return validators.AllTypes(ctx, input, required);
     },
+    "Arr2C": function(ctx, input, required = true) {
+        return validators.Arr2(ctx, input, required);
+    },
     "DiscriminatedUnion": function(ctx, input, required = true) {
         return validators.DiscriminatedUnion(ctx, input, required);
     },

@@ -14,7 +14,12 @@ import {
   DiscriminatedUnion2,
   DiscriminatedUnion3,
   DiscriminatedUnion4,
+  Arr2C,
 } from "../src/parser";
+import { Arr2 } from "../src/types";
+it("Arr spread", () => {
+  expect(Arr2C.parse("C" satisfies Arr2)).toMatchInlineSnapshot('"C"');
+});
 it("DiscriminatedUnion3", () => {
   const validD3: DiscriminatedUnion4 = {
     type: "a",
