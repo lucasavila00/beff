@@ -265,6 +265,41 @@ impl<'a, 'b, R: FileManager> TypeToSchema<'a, 'b, R> {
         JsonSchema::object(acc, None)
     }
 
+    fn extract_array(&mut self, arr: JsonSchema, span: Span) -> Res<JsonSchema> {
+        match arr {
+            JsonSchema::Array(items) => Ok(*items),
+            JsonSchema::Ref(n) => {
+                let map = self.components.get(&n).and_then(|it| it.as_ref()).cloned();
+                match map {
+                    Some(Validator { schema, .. }) => self.extract_array(schema, span),
+                    _ => self.error(&span, DiagnosticInfoMessage::ExpectedArray),
+                }
+            }
+            _ => self.error(&span, DiagnosticInfoMessage::ExpectedArray),
+        }
+    }
+    fn extract_tuple(&mut self, arr: JsonSchema, span: Span) -> Res<Vec<JsonSchema>> {
+        match arr {
+            JsonSchema::Tuple {
+                mut prefix_items,
+                items,
+            } => {
+                if let Some(r) = items {
+                    prefix_items.push(*r);
+                }
+                Ok(prefix_items)
+            }
+            JsonSchema::Ref(n) => {
+                let map = self.components.get(&n).and_then(|it| it.as_ref()).cloned();
+                match map {
+                    Some(Validator { schema, .. }) => self.extract_tuple(schema, span),
+                    _ => self.error(&span, DiagnosticInfoMessage::ExpectedTuple),
+                }
+            }
+            _ => self.error(&span, DiagnosticInfoMessage::ExpectedTuple),
+        }
+    }
+
     fn extract_object(
         &mut self,
         obj: &JsonSchema,
@@ -278,15 +313,7 @@ impl<'a, 'b, R: FileManager> TypeToSchema<'a, 'b, R> {
             JsonSchema::Ref(r) => {
                 let map = self.components.get(r).and_then(|it| it.as_ref()).cloned();
                 match map {
-                    Some(Validator {
-                        schema: JsonSchema::Object { vs, rest },
-                        ..
-                    }) => match rest {
-                        Some(_) => {
-                            self.error(span, DiagnosticInfoMessage::RestFoundOnExtractObject)
-                        }
-                        None => Ok(vs.clone()),
-                    },
+                    Some(Validator { schema, .. }) => self.extract_object(&schema, span),
                     _ => self.error(span, DiagnosticInfoMessage::ShouldHaveObjectAsTypeArgument),
                 }
             }
@@ -993,7 +1020,19 @@ impl<'a, 'b, R: FileManager> TypeToSchema<'a, 'b, R> {
                 let mut prefix_items = vec![];
                 for it in lit.elems.iter().flatten() {
                     match it.spread {
-                        Some(_) => todo!(),
+                        Some(span) => {
+                            let ty_schema = self.typeof_expr(&it.expr, as_const)?;
+
+                            match self.extract_tuple(ty_schema.clone(), span) {
+                                Ok(vs) => {
+                                    prefix_items.extend(vs);
+                                }
+                                Err(_) => {
+                                    let inner_schema = self.extract_array(ty_schema, span)?;
+                                    prefix_items.push(inner_schema);
+                                }
+                            }
+                        }
                         None => {
                             let ty_schema = self.typeof_expr(&it.expr, as_const)?;
                             prefix_items.push(ty_schema);

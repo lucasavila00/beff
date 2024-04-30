@@ -1,5 +1,13 @@
 # @beff/client
 
+## 0.0.26
+
+### Patch Changes
+
+- array and tuple spread
+- Updated dependencies
+  - @beff/cli@0.0.26
+
 ## 0.0.25
 
 ### Patch Changes

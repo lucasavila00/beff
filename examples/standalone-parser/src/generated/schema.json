@@ -13,6 +13,13 @@
       "RequiredPartialObject"
     ]
   },
+  "Arr2": {
+    "enum": [
+      "A",
+      "B",
+      "C"
+    ]
+  },
   "AvatarSize": {
     "type": "string"
   },
