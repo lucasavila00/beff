@@ -966,7 +966,14 @@ impl<'a, 'b, R: FileManager> TypeToSchema<'a, 'b, R> {
                                     return match found {
                                         Some(item) => match &item.init {
                                             Some(init) => {
-                                                let expr_ty = self.typeof_expr(init, true)?;
+                                                let expr_ty = {
+                                                    let store_current_file =
+                                                        self.current_file.clone();
+                                                    self.current_file = file_name.clone();
+                                                    let out = self.typeof_expr(init, true)?;
+                                                    self.current_file = store_current_file;
+                                                    out
+                                                };
                                                 Ok(expr_ty)
                                             }
                                             None => self.cannot_serialize_error(
