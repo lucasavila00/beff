@@ -271,9 +271,7 @@ impl<'a, 'b, R: FileManager> TypeToSchema<'a, 'b, R> {
             JsonSchema::Ref(n) => {
                 let map = self.components.get(&n).and_then(|it| it.as_ref()).cloned();
                 match map {
-                    Some(Validator { schema, .. }) => {
-                        return self.extract_array(schema, span);
-                    }
+                    Some(Validator { schema, .. }) => self.extract_array(schema, span),
                     _ => self.error(&span, DiagnosticInfoMessage::ExpectedArray),
                 }
             }
@@ -294,9 +292,7 @@ impl<'a, 'b, R: FileManager> TypeToSchema<'a, 'b, R> {
             JsonSchema::Ref(n) => {
                 let map = self.components.get(&n).and_then(|it| it.as_ref()).cloned();
                 match map {
-                    Some(Validator { schema, .. }) => {
-                        return self.extract_tuple(schema, span);
-                    }
+                    Some(Validator { schema, .. }) => self.extract_tuple(schema, span),
                     _ => self.error(&span, DiagnosticInfoMessage::ExpectedArray),
                 }
             }
@@ -317,9 +313,7 @@ impl<'a, 'b, R: FileManager> TypeToSchema<'a, 'b, R> {
             JsonSchema::Ref(r) => {
                 let map = self.components.get(r).and_then(|it| it.as_ref()).cloned();
                 match map {
-                    Some(Validator { schema, .. }) => {
-                        return self.extract_object(&schema, span);
-                    }
+                    Some(Validator { schema, .. }) => self.extract_object(&schema, span),
                     _ => self.error(span, DiagnosticInfoMessage::ShouldHaveObjectAsTypeArgument),
                 }
             }
