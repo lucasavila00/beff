@@ -25,4 +25,5 @@ jobs:
           curl https://rustwasm.github.io/wasm-pack/installer/init.sh -sSf | sh
           pnpm build
           (cd packages/beff-cli && pnpm publish --no-git-checks --access public)
+          (cd packages/beff-client && pnpm publish --no-git-checks --access public)
           # (cd packages/beff-wasm && npm run publish)
