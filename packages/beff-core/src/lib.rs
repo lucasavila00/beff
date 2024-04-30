@@ -138,7 +138,8 @@ impl ImportReference {
 }
 #[derive(Debug, Clone)]
 pub struct SymbolsExportsModule {
-    named: HashMap<JsWord, Rc<SymbolExport>>,
+    named_types: HashMap<JsWord, Rc<SymbolExport>>,
+    named_values: HashMap<JsWord, Rc<SymbolExport>>,
     extends: Vec<BffFileName>,
 }
 impl Default for SymbolsExportsModule {
@@ -149,20 +150,45 @@ impl Default for SymbolsExportsModule {
 impl SymbolsExportsModule {
     pub fn new() -> SymbolsExportsModule {
         SymbolsExportsModule {
-            named: HashMap::new(),
+            named_types: HashMap::new(),
+            named_values: HashMap::new(),
             extends: Vec::new(),
         }
     }
-
-    pub fn insert(&mut self, name: JsWord, export: Rc<SymbolExport>) {
-        self.named.insert(name, export);
+    pub fn insert_value(&mut self, name: JsWord, export: Rc<SymbolExport>) {
+        self.named_values.insert(name, export);
     }
 
-    pub fn get<R: FileManager>(&self, name: &JsWord, files: &mut R) -> Option<Rc<SymbolExport>> {
-        self.named.get(name).cloned().or_else(|| {
+    pub fn get_value<R: FileManager>(
+        &self,
+        name: &JsWord,
+        files: &mut R,
+    ) -> Option<Rc<SymbolExport>> {
+        self.named_values.get(name).cloned().or_else(|| {
             for it in &self.extends {
                 let file = files.get_or_fetch_file(it)?;
-                let res = file.symbol_exports.get(name, files);
+                let res = file.symbol_exports.get_value(name, files);
+                if let Some(it) = res {
+                    return Some(it.clone());
+                }
+            }
+            None
+        })
+    }
+
+    pub fn insert_type(&mut self, name: JsWord, export: Rc<SymbolExport>) {
+        self.named_types.insert(name, export);
+    }
+
+    pub fn get_type<R: FileManager>(
+        &self,
+        name: &JsWord,
+        files: &mut R,
+    ) -> Option<Rc<SymbolExport>> {
+        self.named_types.get(name).cloned().or_else(|| {
+            for it in &self.extends {
+                let file = files.get_or_fetch_file(it)?;
+                let res = file.symbol_exports.get_type(name, files);
                 if let Some(it) = res {
                     return Some(it.clone());
                 }
