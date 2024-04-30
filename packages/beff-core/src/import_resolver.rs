@@ -340,24 +340,10 @@ pub fn parse_and_bind<R: FsModuleResolver>(
         if let Some(import) = v.imports.get(&k) {
             match &**import {
                 ImportReference::Named { .. } => {
-                    // let it = Rc::new(SymbolExport::SomethingOfOtherFile {
-                    //     something: orig.as_ref().clone(),
-                    //     file: file_name.clone(),
-                    //     span: *span,
-                    // });
-                    // symbol_exports.insert(renamed, it);
-                    // continue;
-                    panic!("ImportReference::Named is not supported")
+                    return Err(anyhow::anyhow!("ImportReference::Named is not supported"));
                 }
                 ImportReference::Star { .. } => {
-                    // symbol_exports.insert(
-                    //     renamed,
-                    //     Rc::new(SymbolExport::StarOfOtherFile {
-                    //         reference: import.clone(),
-                    //         span: *span,
-                    //     }),
-                    // );
-                    panic!("ImportReference::Star is not supported")
+                    return Err(anyhow::anyhow!("ImportReference::Star is not supported"));
                 }
                 ImportReference::Default { .. } => {
                     continue;
