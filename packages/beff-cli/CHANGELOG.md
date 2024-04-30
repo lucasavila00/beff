@@ -1,5 +1,11 @@
 # @beff/cli
 
+## 0.0.23
+
+### Patch Changes
+
+- zod
+
 ## 0.0.22
 
 ### Patch Changes
