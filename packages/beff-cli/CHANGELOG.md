@@ -1,5 +1,11 @@
 # @beff/cli
 
+## 0.0.31
+
+### Patch Changes
+
+- bugfix enum import
+
 ## 0.0.30
 
 ### Patch Changes
