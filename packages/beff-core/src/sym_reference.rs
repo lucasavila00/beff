@@ -57,6 +57,7 @@ impl<'a, R: FileManager> TypeResolver<'a, R> {
         i: &Ident,
         export: &Rc<SymbolExport>,
         is_type: bool,
+        at_file: BffFileName,
     ) -> Res<ResolvedNamespaceSymbol> {
         match &**export {
             SymbolExport::StarOfOtherFile { reference, .. } => Ok(ResolvedNamespaceSymbol {
@@ -88,7 +89,7 @@ impl<'a, R: FileManager> TypeResolver<'a, R> {
                     }
                 });
                 if let Some(export) = exported {
-                    return self.resolve_export(i, &export, is_type);
+                    return self.resolve_export(i, &export, is_type, file_name.clone());
                 }
                 Err(self
                     .make_err(
@@ -103,21 +104,14 @@ impl<'a, R: FileManager> TypeResolver<'a, R> {
                     DiagnosticInfoMessage::CannotResolveNamespaceTypeValueExpr,
                 )
                 .into()),
-
-            SymbolExport::TsEnumDecl { .. } => Err(self
-                .make_err(
-                    &i.span,
-                    DiagnosticInfoMessage::ShouldNotResolveTsEnumAsNamespace,
-                )
-                .into()),
-            // SymbolExport::TsEnumDecl { span, .. } => Ok(ResolvedNamespaceSymbol {
-            //     from_file: ImportReference::Named {
-            //         orig: i.sym.clone().into(),
-            //         file_name: self.current_file.clone(),
-            //         span: *span,
-            //     }
-            //     .into(),
-            // }),
+            SymbolExport::TsEnumDecl { span, .. } => Ok(ResolvedNamespaceSymbol {
+                from_file: ImportReference::Named {
+                    orig: i.sym.clone().into(),
+                    file_name: at_file.clone(),
+                    span: *span,
+                }
+                .into(),
+            }),
         }
     }
     pub fn resolve_namespace_symbol(
@@ -147,7 +141,7 @@ impl<'a, R: FileManager> TypeResolver<'a, R> {
                         }
                     });
                     if let Some(export) = exported {
-                        return self.resolve_export(i, &export, is_type);
+                        return self.resolve_export(i, &export, is_type, file_name.clone());
                     }
                 }
             }

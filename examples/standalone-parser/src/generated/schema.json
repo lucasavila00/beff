@@ -532,6 +532,55 @@
       }
     ]
   },
+  "UnionWithEnumAccess": {
+    "anyOf": [
+      {
+        "properties": {
+          "tag": {
+            "const": "a"
+          },
+          "value": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "tag",
+          "value"
+        ],
+        "type": "object"
+      },
+      {
+        "properties": {
+          "tag": {
+            "const": "b"
+          },
+          "value": {
+            "type": "number"
+          }
+        },
+        "required": [
+          "tag",
+          "value"
+        ],
+        "type": "object"
+      },
+      {
+        "properties": {
+          "tag": {
+            "const": "c"
+          },
+          "value": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "tag",
+          "value"
+        ],
+        "type": "object"
+      }
+    ]
+  },
   "User": {
     "properties": {
       "accessLevel": {

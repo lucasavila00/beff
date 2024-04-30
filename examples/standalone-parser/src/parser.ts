@@ -1,5 +1,5 @@
 import parse from "./generated/parser";
-import { Arr2, OtherEnum, ValidCurrency } from "./types";
+import { Arr2, OtherEnum, ValidCurrency, OtherEnum2 } from "./types";
 
 export const ALL_TYPES = [
   "OmitSettings",
@@ -136,15 +136,19 @@ export type DiscriminatedUnion4 =
       };
     };
 
-// type UnionWithEnumAccess =
-//   | {
-//       tag: OtherEnum.A;
-//       value: string;
-//     }
-//   | {
-//       tag: OtherEnum.B;
-//       value: number;
-//     };
+type UnionWithEnumAccess =
+  | {
+      tag: OtherEnum.A;
+      value: string;
+    }
+  | {
+      tag: OtherEnum.B;
+      value: number;
+    }
+  | {
+      tag: OtherEnum2.C;
+      value: boolean;
+    };
 
 export const {
   RequiredPartialObject,
@@ -189,7 +193,7 @@ export const {
   OtherEnum: OtherEnum;
   Arr2C: Arr2;
   ValidCurrency: ValidCurrency;
-  // UnionWithEnumAccess: UnionWithEnumAccess;
+  UnionWithEnumAccess: UnionWithEnumAccess;
 }>({
   customFormats: {
     ValidCurrency: (input: string) => {

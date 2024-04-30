@@ -938,33 +938,68 @@ impl<'a, 'b, R: FileManager> TypeToSchema<'a, 'b, R> {
         q: &TsQualifiedName,
         type_args: &Option<Box<TsTypeParamInstantiation>>,
     ) -> Res<JsonSchema> {
+        match &q.left {
+            TsEntityName::TsQualifiedName(_) => {}
+            TsEntityName::Ident(i) => {
+                let ns = TypeResolver::new(self.files, &self.current_file)
+                    .resolve_namespace_symbol(i, true);
+                match ns {
+                    Ok(resolved) => match resolved.from_file.as_ref() {
+                        ImportReference::Named {
+                            orig, file_name, ..
+                        } => {
+                            let from_file =
+                                self.files.get_or_fetch_file(file_name).and_then(|module| {
+                                    module.symbol_exports.get_type(orig, self.files)
+                                });
+
+                            match from_file {
+                                Some(symbol_export) => match symbol_export.as_ref() {
+                                    SymbolExport::TsEnumDecl { decl, span } => {
+                                        let found = decl.members.iter().find(|it| match &it.id {
+                                            swc_ecma_ast::TsEnumMemberId::Ident(i2) => {
+                                                i2.sym == q.right.sym
+                                            }
+                                            swc_ecma_ast::TsEnumMemberId::Str(_) => todo!(),
+                                        });
+                                        return match found {
+                                            Some(item) => match &item.init {
+                                                Some(init) => {
+                                                    let expr_ty = self.typeof_expr(init, true)?;
+                                                    Ok(expr_ty)
+                                                }
+                                                None => self.cannot_serialize_error(
+                                                    span,
+                                                    DiagnosticInfoMessage::EnumMemberNoInit,
+                                                ),
+                                            },
+                                            None => self.cannot_serialize_error(
+                                                span,
+                                                DiagnosticInfoMessage::EnumMemberNoInit,
+                                            ),
+                                        };
+                                    }
+                                    SymbolExport::TsType { .. }
+                                    | SymbolExport::TsInterfaceDecl { .. }
+                                    | SymbolExport::ValueExpr { .. }
+                                    | SymbolExport::StarOfOtherFile { .. }
+                                    | SymbolExport::SomethingOfOtherFile { .. } => {}
+                                },
+                                None => {}
+                            }
+                        }
+                        ImportReference::Star { .. } => {}
+                        ImportReference::Default { .. } => {}
+                    },
+                    Err(_) => {}
+                }
+            }
+        }
+
         let found = self.components.get(&(q.right.sym.to_string()));
         if let Some(_found) = found {
             return Ok(JsonSchema::Ref(q.right.sym.to_string()));
         }
-
-        // match &q.left {
-        //     TsEntityName::TsQualifiedName(_) => {}
-        //     TsEntityName::Ident(i) => {
-        //         let ns = TypeResolver::new(self.files, &self.current_file)
-        //             .resolve_namespace_symbol(i, true);
-        //         match ns {
-        //             Ok(resolved) => {
-        //                 match resolved.from_file.as_ref() {
-        //                     ImportReference::Named {
-        //                         orig,
-        //                         file_name,
-        //                         span,
-        //                     } => todo!(),
-        //                     ImportReference::Star { file_name, span } => todo!(),
-        //                     ImportReference::Default { file_name } => todo!(),
-        //                 }
-        //                 // print to stderr
-        //             }
-        //             Err(_) => {}
-        //         }
-        //     }
-        // }
 
         let (exported, from_file, name) = self.__convert_ts_type_qual_inner(q)?;
         let ty = self.convert_type_export(exported.as_ref(), from_file.file_name(), type_args)?;
