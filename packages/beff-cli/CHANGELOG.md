@@ -1,5 +1,11 @@
 # @beff/cli
 
+## 0.0.24
+
+### Patch Changes
+
+- publish client
+
 ## 0.0.23
 
 ### Patch Changes
