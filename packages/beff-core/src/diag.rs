@@ -7,6 +7,7 @@ use crate::{BffFileName, ParsedModule};
 
 #[derive(Debug, Clone)]
 pub enum DiagnosticInfoMessage {
+    ExpectedTuple,
     ExpectedArray,
     SpreadShouldBeArray,
     RestFoundOnExtractObject,
@@ -351,6 +352,7 @@ impl DiagnosticInfoMessage {
             }
             DiagnosticInfoMessage::SpreadShouldBeArray => "Spread should be an array".to_string(),
             DiagnosticInfoMessage::ExpectedArray => "Expected an array".to_string(),
+            DiagnosticInfoMessage::ExpectedTuple => "Expected a tuple".to_string(),
         }
     }
 }

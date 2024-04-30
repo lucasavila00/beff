@@ -293,10 +293,10 @@ impl<'a, 'b, R: FileManager> TypeToSchema<'a, 'b, R> {
                 let map = self.components.get(&n).and_then(|it| it.as_ref()).cloned();
                 match map {
                     Some(Validator { schema, .. }) => self.extract_tuple(schema, span),
-                    _ => self.error(&span, DiagnosticInfoMessage::ExpectedArray),
+                    _ => self.error(&span, DiagnosticInfoMessage::ExpectedTuple),
                 }
             }
-            _ => self.error(&span, DiagnosticInfoMessage::ExpectedArray),
+            _ => self.error(&span, DiagnosticInfoMessage::ExpectedTuple),
         }
     }
 
