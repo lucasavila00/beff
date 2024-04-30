@@ -12,4 +12,4 @@ export const ARR2 = [...ARR1, "C"] as const;
 
 export type Arr2 = (typeof ARR2)[number];
 
-export type ValidCurrency = StringFormat<"ValidCurrency">;
+export { ValidCurrency } from "./types3";
