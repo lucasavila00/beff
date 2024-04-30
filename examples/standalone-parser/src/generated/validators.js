@@ -3,6 +3,13 @@
 
 
 
+
+const customFormatters = {}
+
+function registerCustomFormatter(name, validator) {
+  customFormatters[name] = validator;
+}
+
 function pushPath(ctx, path) {
   if (ctx.paths == null) {
     ctx.paths = [];
@@ -143,8 +150,18 @@ function decodeStringWithFormat(ctx, input, required, format) {
   if (!required && input == null) {
     return input;
   }
-  return input;
-  
+
+  const validator = customFormatters[format];
+
+  if (validator == null) {
+    return buildError(input, ctx, "format " + JSON.stringify(format) + " not implemented");
+  }
+
+  const isOk = validator(input);
+  if (isOk) {
+    return input;
+  }
+  return buildError(input, ctx, "expected string with format " + JSON.stringify(format));
 }
 
 function decodeAnyOfDiscriminated(ctx, input, required, discriminator, mapping) {
@@ -504,6 +521,9 @@ function DecodeArr2(ctx, input, required = true) {
         "C"
     ]);
 }
+function DecodeValidCurrency(ctx, input, required = true) {
+    return decodeStringWithFormat(ctx, input, required, "ValidCurrency");
+}
 const validators = {
     OmitSettings: DecodeOmitSettings,
     Settings: DecodeSettings,
@@ -529,7 +549,8 @@ const validators = {
     DiscriminatedUnion4: DecodeDiscriminatedUnion4,
     AllTypes: DecodeAllTypes,
     OtherEnum: DecodeOtherEnum,
-    Arr2: DecodeArr2
+    Arr2: DecodeArr2,
+    ValidCurrency: DecodeValidCurrency
 };
 
-export default { decodeObject, decodeArray, decodeString, decodeNumber, decodeCodec, decodeStringWithFormat, decodeAnyOf, decodeAllOf, decodeBoolean, decodeAny, decodeTuple, decodeNull, decodeConst, validators };
+export default { decodeObject, decodeArray, decodeString, decodeNumber, decodeCodec, decodeStringWithFormat, decodeAnyOf, decodeAllOf, decodeBoolean, decodeAny, decodeTuple, decodeNull, decodeConst, registerCustomFormatter, validators };

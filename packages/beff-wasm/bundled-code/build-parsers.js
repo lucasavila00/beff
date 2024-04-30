@@ -6,7 +6,22 @@ class BffParseError {
     this.errors = errors;
   }
 }
-function buildParsers() {
+function buildParsers(args) {
+
+  const customFormats = args?.customFormats ?? {}
+  //@ts-ignore
+  for (const k of RequiredCustomFormats) {
+    if (customFormats[k] == null) {
+      throw new Error(`Missing custom format ${k}`);
+    }
+  }
+
+  Object.keys(customFormats).forEach((k) => {
+    const v = customFormats[k];
+    registerCustomFormatter(k, v);
+  });
+
+
   let decoders = {};
   //@ts-ignore
   Object.keys(buildParsersInput).forEach((k) => {

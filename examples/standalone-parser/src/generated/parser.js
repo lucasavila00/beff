@@ -4,7 +4,8 @@
 
 import {printErrors} from '@beff/client';
 import {z} from 'zod';
-import validatorsMod from "./validators.js"; const { decodeObject, decodeArray, decodeString, decodeNumber, decodeCodec, decodeStringWithFormat, decodeAnyOf, decodeAllOf, decodeBoolean, decodeAny, decodeTuple, decodeNull, decodeConst, validators, c } = validatorsMod;
+import validatorsMod from "./validators.js"; const { decodeObject, decodeArray, decodeString, decodeNumber, decodeCodec, decodeStringWithFormat, decodeAnyOf, decodeAllOf, decodeBoolean, decodeAny, decodeTuple, decodeNull, decodeConst, registerCustomFormatter, validators, c } = validatorsMod;
+const RequiredCustomFormats = ["ValidCurrency"];
 const buildParsersInput = {
     "AccessLevel": function(ctx, input, required = true) {
         return validators.AccessLevel(ctx, input, required);
@@ -68,6 +69,9 @@ const buildParsersInput = {
     },
     "User": function(ctx, input, required = true) {
         return validators.User(ctx, input, required);
+    },
+    "ValidCurrency": function(ctx, input, required = true) {
+        return validators.ValidCurrency(ctx, input, required);
     }
 };
 
@@ -79,7 +83,22 @@ class BffParseError {
     this.errors = errors;
   }
 }
-function buildParsers() {
+function buildParsers(args) {
+
+  const customFormats = args?.customFormats ?? {}
+  
+  for (const k of RequiredCustomFormats) {
+    if (customFormats[k] == null) {
+      throw new Error(`Missing custom format ${k}`);
+    }
+  }
+
+  Object.keys(customFormats).forEach((k) => {
+    const v = customFormats[k];
+    registerCustomFormatter(k, v);
+  });
+
+
   let decoders = {};
   
   Object.keys(buildParsersInput).forEach((k) => {

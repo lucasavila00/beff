@@ -1,4 +1,9 @@
 {
   "parser": "./src/parser.ts",
-  "outputDir": "./src/generated"
+  "outputDir": "./src/generated",
+  "customFormats": [
+    {
+      "name": "ValidCurrency"
+    }
+  ]
 }

@@ -562,6 +562,10 @@
     ],
     "type": "object"
   },
+  "ValidCurrency": {
+    "format": "ValidCurrency",
+    "type": "string"
+  },
   "WithOptionals": {
     "properties": {
       "optional": {
