@@ -305,6 +305,14 @@ mod tests {
       "#));
     }
     #[test]
+    fn ok_record_union() {
+        insta::assert_snapshot!(ok(r#"
+        export type Extra = Record<'a'|'b', string>;
+
+        parse.buildParsers<{ Extra: Extra }>();
+      "#));
+    }
+    #[test]
     fn ok_array_spread() {
         insta::assert_snapshot!(ok(r#"
         const Arr1 = ["a", "b"] as const
