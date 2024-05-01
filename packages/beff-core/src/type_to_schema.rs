@@ -1392,12 +1392,12 @@ impl<'a, 'b, R: FileManager> TypeToSchema<'a, 'b, R> {
                     if let Some(f) = self.files.get_or_fetch_file(&self.current_file) {
                         let k = &(n.sym.clone(), n.span.ctxt);
                         if let Some(expr_decl) = f.locals.exprs_decls.get(k) {
-                            return self.convert_ts_type(&expr_decl);
+                            return self.convert_ts_type(expr_decl);
                         }
 
                         if let Some(exported) = f.symbol_exports.named_values.get(&n.sym) {
                             if let SymbolExport::ExprDecl { ty, .. } = exported.as_ref() {
-                                return self.convert_ts_type(&ty);
+                                return self.convert_ts_type(ty);
                             }
                         }
                     }
