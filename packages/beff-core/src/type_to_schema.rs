@@ -553,7 +553,7 @@ impl<'a, 'b, R: FileManager> TypeToSchema<'a, 'b, R> {
                 self.convert_ts_interface_decl(int, type_args)?
             }
             SymbolExport::StarOfOtherFile { .. } => {
-                return self.error(&exported.span(), DiagnosticInfoMessage::CannotUseStarAsType)
+                self.error(&exported.span(), DiagnosticInfoMessage::CannotUseStarAsType)?
             }
             SymbolExport::SomethingOfOtherFile {
                 something: word,
@@ -568,22 +568,16 @@ impl<'a, 'b, R: FileManager> TypeToSchema<'a, 'b, R> {
                     Some(exported) => {
                         self.convert_type_export(exported.as_ref(), from_file, type_args)?
                     }
-                    None => {
-                        return self.error(
-                            span,
-                            DiagnosticInfoMessage::CannotResolveSomethingOfOtherFile(
-                                word.to_string(),
-                            ),
-                        )
-                    }
+                    None => self.error(
+                        span,
+                        DiagnosticInfoMessage::CannotResolveSomethingOfOtherFile(word.to_string()),
+                    )?,
                 }
             }
             SymbolExport::ValueExpr { span, .. } => {
-                return self.error(span, DiagnosticInfoMessage::FoundValueExpectedType)
+                self.error(span, DiagnosticInfoMessage::FoundValueExpectedType)?
             }
-            SymbolExport::TsEnumDecl { decl, .. } => {
-                return self.convert_enum_decl(decl);
-            }
+            SymbolExport::TsEnumDecl { decl, .. } => self.convert_enum_decl(decl)?,
         };
         self.current_file = store_current_file;
         Ok(ty)
