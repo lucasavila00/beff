@@ -14,4 +14,4 @@ export type Arr2 = (typeof ARR2)[number];
 
 export { ValidCurrency } from "./types2";
 
-export { OtherEnum2 } from "./types2";
+export { OtherEnum2, Arr3 } from "./types2";

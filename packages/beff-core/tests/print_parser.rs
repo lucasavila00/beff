@@ -286,6 +286,33 @@ mod tests {
       "#));
     }
     #[test]
+    fn ok_array_spread_declare() {
+        insta::assert_snapshot!(ok(r#"
+        declare const Arr1 = ["a", "b"] as const
+        declare const Arr2 = [...Arr1, "c"] as const
+
+        type Arr2C = typeof Arr2[number];
+
+        parse.buildParsers<{ Arr2C: Arr2C }>();
+      "#));
+    }
+    #[test]
+    fn ok_array_spread_declare2() {
+        insta::assert_snapshot!(ok(r#"
+        declare const AllArr1: ["a", "b"] 
+        type Arr1 = typeof AllArr1[number];
+        parse.buildParsers<{ Arr1: Arr1 }>();
+      "#));
+    }
+    #[test]
+    fn ok_array_spread_declare3() {
+        insta::assert_snapshot!(ok(r#"
+        export declare const AllArr1: ["a", "b"] 
+        type Arr1 = typeof AllArr1[number];
+        parse.buildParsers<{ Arr1: Arr1 }>();
+      "#));
+    }
+    #[test]
     fn ok_array_spread2() {
         insta::assert_snapshot!(ok(r#"
         export const Arr1 = ["a", "b"] as const

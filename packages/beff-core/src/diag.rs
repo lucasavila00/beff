@@ -7,6 +7,8 @@ use crate::{BffFileName, ParsedModule};
 
 #[derive(Debug, Clone)]
 pub enum DiagnosticInfoMessage {
+    CannotUseExprDeclAsQualified,
+    CannotResolveNamespaceTypeExprDecl,
     CannotResolveNamespaceTypeNamespaceSymbol,
     CannotResolveNamespaceTypeValueExpr,
     CannotResolveNamespaceTypeSomethingOfOtherFile,
@@ -364,6 +366,12 @@ impl DiagnosticInfoMessage {
             }
             DiagnosticInfoMessage::CannotResolveNamespaceTypeSomethingOfOtherFile => {
                 "Cannot resolve namespace type something of other file".to_string()
+            }
+            DiagnosticInfoMessage::CannotResolveNamespaceTypeExprDecl => {
+                "Cannot resolve namespace type expression declaration".to_string()
+            }
+            DiagnosticInfoMessage::CannotUseExprDeclAsQualified => {
+                "Cannot use expression declaration as qualified".to_string()
             }
         }
     }

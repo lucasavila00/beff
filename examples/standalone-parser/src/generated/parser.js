@@ -16,6 +16,9 @@ const buildParsersInput = {
     "Arr2C": function(ctx, input, required = true) {
         return validators.Arr2(ctx, input, required);
     },
+    "Arr3": function(ctx, input, required = true) {
+        return validators.Arr3(ctx, input, required);
+    },
     "DiscriminatedUnion": function(ctx, input, required = true) {
         return validators.DiscriminatedUnion(ctx, input, required);
     },

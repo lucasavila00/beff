@@ -49,19 +49,29 @@ pub enum SymbolExport {
         ty: Rc<TsType>,
         name: JsWord,
         span: Span,
+        original_file: BffFileName,
     },
     TsInterfaceDecl {
         decl: Rc<TsInterfaceDecl>,
         span: Span,
+        original_file: BffFileName,
     },
     TsEnumDecl {
         decl: Rc<TsEnumDecl>,
         span: Span,
+        original_file: BffFileName,
     },
     ValueExpr {
         expr: Rc<Expr>,
         name: JsWord,
         span: Span,
+        original_file: BffFileName,
+    },
+    ExprDecl {
+        name: JsWord,
+        span: Span,
+        original_file: BffFileName,
+        ty: Rc<TsType>,
     },
     StarOfOtherFile {
         reference: Rc<ImportReference>,
@@ -77,12 +87,13 @@ pub enum SymbolExport {
 impl SymbolExport {
     pub fn span(&self) -> Span {
         match self {
-            SymbolExport::TsType { span, .. } => *span,
-            SymbolExport::TsInterfaceDecl { span, .. } => *span,
-            SymbolExport::ValueExpr { span, .. } => *span,
-            SymbolExport::StarOfOtherFile { span, .. } => *span,
-            SymbolExport::SomethingOfOtherFile { span, .. } => *span,
-            SymbolExport::TsEnumDecl { span, .. } => *span,
+            SymbolExport::TsType { span, .. }
+            | SymbolExport::TsInterfaceDecl { span, .. }
+            | SymbolExport::ValueExpr { span, .. }
+            | SymbolExport::StarOfOtherFile { span, .. }
+            | SymbolExport::SomethingOfOtherFile { span, .. }
+            | SymbolExport::TsEnumDecl { span, .. }
+            | SymbolExport::ExprDecl { span, .. } => *span,
         }
     }
 }
@@ -238,6 +249,7 @@ pub struct ParsedModuleLocals {
     pub enums: HashMap<(JsWord, SyntaxContext), Rc<TsEnumDecl>>,
 
     pub exprs: HashMap<(JsWord, SyntaxContext), Rc<Expr>>,
+    pub exprs_decls: HashMap<(JsWord, SyntaxContext), Rc<TsType>>,
 }
 impl ParsedModuleLocals {
     pub fn new() -> ParsedModuleLocals {
@@ -246,6 +258,7 @@ impl ParsedModuleLocals {
             interfaces: HashMap::new(),
             enums: HashMap::new(),
             exprs: HashMap::new(),
+            exprs_decls: HashMap::new(),
         }
     }
 }
@@ -275,15 +288,25 @@ impl ParserOfModuleLocals {
             match it {
                 ModuleItem::Stmt(Stmt::Decl(decl)) => {
                     // add expr to self.content
-
-                    if let Decl::Var(decls) = decl {
-                        for it in &decls.decls {
+                    if let Decl::Var(var_decl) = decl {
+                        for it in &var_decl.decls {
                             if let Some(expr) = &it.init {
                                 if let Pat::Ident(id) = &it.name {
                                     self.content.exprs.insert(
                                         (id.sym.clone(), id.span.ctxt),
                                         Rc::new(*expr.clone()),
                                     );
+                                }
+                            }
+
+                            if var_decl.declare {
+                                if let Pat::Ident(id) = &it.name {
+                                    if let Some(ann) = &id.type_ann {
+                                        self.content.exprs_decls.insert(
+                                            (id.sym.clone(), id.span.ctxt),
+                                            Rc::new(*ann.type_ann.clone()),
+                                        );
+                                    }
                                 }
                             }
                         }

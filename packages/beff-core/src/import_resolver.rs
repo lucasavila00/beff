@@ -121,6 +121,7 @@ impl<'a, R: FsModuleResolver> Visit for ImportsVisitor<'a, R> {
                     Rc::new(SymbolExport::TsInterfaceDecl {
                         decl: Rc::new(*n.clone()),
                         span: n.span,
+                        original_file: self.current_file.clone(),
                     }),
                 );
             }
@@ -131,6 +132,7 @@ impl<'a, R: FsModuleResolver> Visit for ImportsVisitor<'a, R> {
                     Rc::new(SymbolExport::TsEnumDecl {
                         decl: Rc::new(*decl.clone()),
                         span: decl.span,
+                        original_file: self.current_file.clone(),
                     }),
                 );
             }
@@ -149,11 +151,12 @@ impl<'a, R: FsModuleResolver> Visit for ImportsVisitor<'a, R> {
                         name: id.sym.clone(),
                         params: type_params.as_ref().map(|it| it.as_ref().clone().into()),
                         span: *span,
+                        original_file: self.current_file.clone(),
                     }),
                 );
             }
-            Decl::Var(decl) => {
-                for it in &decl.decls {
+            Decl::Var(var_decl) => {
+                for it in &var_decl.decls {
                     if let Some(expr) = &it.init {
                         if let Pat::Ident(it) = &it.name {
                             let name = it.sym.clone();
@@ -161,8 +164,24 @@ impl<'a, R: FsModuleResolver> Visit for ImportsVisitor<'a, R> {
                                 expr: Rc::new(*expr.clone()),
                                 name: name.clone(),
                                 span: it.span,
+                                original_file: self.current_file.clone(),
                             });
                             self.symbol_exports.insert_value(name, export);
+                        }
+                    }
+
+                    if var_decl.declare {
+                        if let Pat::Ident(it) = &it.name {
+                            if let Some(ann) = &it.type_ann {
+                                let name = it.sym.clone();
+                                let export = Rc::new(SymbolExport::ExprDecl {
+                                    ty: Rc::new(*ann.type_ann.clone()),
+                                    name: name.clone(),
+                                    span: it.span,
+                                    original_file: self.current_file.clone(),
+                                });
+                                self.symbol_exports.insert_value(name, export);
+                            }
                         }
                     }
                 }
@@ -309,6 +328,7 @@ pub fn parse_and_bind<R: FsModuleResolver>(
                     name: k.0,
                     params: params.clone(),
                     span: ty.span(),
+                    original_file: file_name.clone(),
                 }),
             );
             continue;
@@ -320,6 +340,7 @@ pub fn parse_and_bind<R: FsModuleResolver>(
                 Rc::new(SymbolExport::TsEnumDecl {
                     decl: enum_.clone(),
                     span: enum_.span(),
+                    original_file: file_name.clone(),
                 }),
             );
             continue;
@@ -331,6 +352,7 @@ pub fn parse_and_bind<R: FsModuleResolver>(
                 Rc::new(SymbolExport::TsInterfaceDecl {
                     decl: intf.clone(),
                     span: intf.span(),
+                    original_file: file_name.clone(),
                 }),
             );
             continue;

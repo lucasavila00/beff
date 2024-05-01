@@ -20,6 +20,12 @@
       "C"
     ]
   },
+  "Arr3": {
+    "enum": [
+      "X",
+      "Y"
+    ]
+  },
   "AvatarSize": {
     "type": "string"
   },
