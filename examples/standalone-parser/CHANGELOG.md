@@ -1,5 +1,13 @@
 # node-server
 
+## 1.0.31
+
+### Patch Changes
+
+- Updated dependencies
+  - @beff/client@0.0.34
+  - @beff/cli@0.0.34
+
 ## 1.0.30
 
 ### Patch Changes
