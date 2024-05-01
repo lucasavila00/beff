@@ -1,5 +1,11 @@
 # @beff/cli
 
+## 0.0.36
+
+### Patch Changes
+
+- union ket bug
+
 ## 0.0.35
 
 ### Patch Changes
