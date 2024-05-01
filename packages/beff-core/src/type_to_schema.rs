@@ -356,7 +356,37 @@ impl<'a, 'b, R: FileManager> TypeToSchema<'a, 'b, R> {
                                 rest: Some(Box::new(value)),
                             })
                         }
-                        _ => self.error(span, DiagnosticInfoMessage::RecordKeyShouldBeString),
+                        _ => {
+                            let union = self.extract_union(*key);
+                            if let Ok(vs) = union {
+                                let mut string_keys = vec![];
+                                for v in vs {
+                                    match v {
+                                        JsonSchema::Const(JsonSchemaConst::String(str)) => {
+                                            string_keys.push(str);
+                                        }
+                                        _ => {
+                                            return self.error(
+                                                span,
+                                                DiagnosticInfoMessage::RecordKeyShouldBeString,
+                                            );
+                                        }
+                                    }
+                                }
+
+                                let value = items[1].clone();
+
+                                Ok(JsonSchema::Object {
+                                    vs: string_keys
+                                        .into_iter()
+                                        .map(|it| (it, value.clone().optional()))
+                                        .collect(),
+                                    rest: None,
+                                })
+                            } else {
+                                self.error(span, DiagnosticInfoMessage::RecordKeyShouldBeString)
+                            }
+                        }
                     }
                 }
                 None => self
