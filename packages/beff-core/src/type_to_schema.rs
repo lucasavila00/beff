@@ -379,7 +379,7 @@ impl<'a, 'b, R: FileManager> TypeToSchema<'a, 'b, R> {
                                 Ok(JsonSchema::Object {
                                     vs: string_keys
                                         .into_iter()
-                                        .map(|it| (it, value.clone().optional()))
+                                        .map(|it| (it, value.clone().required()))
                                         .collect(),
                                     rest: None,
                                 })

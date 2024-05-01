@@ -1,5 +1,13 @@
 # @beff/client
 
+## 0.0.36
+
+### Patch Changes
+
+- union ket bug
+- Updated dependencies
+  - @beff/cli@0.0.36
+
 ## 0.0.35
 
 ### Patch Changes
