@@ -190,6 +190,36 @@ mod tests {
         insta::assert_snapshot!(ok(from));
     }
     #[test]
+    fn ok_partial2() {
+        let from = r#"
+
+    type User2 ={enabled: boolean} &Partial< {
+        name: string,
+        age: number,
+        email: string,
+    }>
+    parse.buildParsers<{ A: User2 }>();
+
+  "#;
+        insta::assert_snapshot!(ok(from));
+    }
+    #[test]
+    fn ok_partial3() {
+        let from = r#"
+
+    type User2 ={enabled: boolean} &Partial< {
+        name: string,
+        age: number,
+        email: string,
+    }>
+
+    type ObjWithUsers = {enabled: boolean} & Partial<{a2: User2}>
+    parse.buildParsers<{ A: ObjWithUsers }>();
+
+  "#;
+        insta::assert_snapshot!(ok(from));
+    }
+    #[test]
     fn ok_object() {
         insta::assert_snapshot!(ok(r#"
         parse.buildParsers<{ A: Object }>();

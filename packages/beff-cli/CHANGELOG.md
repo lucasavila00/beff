@@ -1,5 +1,11 @@
 # @beff/cli
 
+## 0.0.34
+
+### Patch Changes
+
+- fix type application bug
+
 ## 0.0.33
 
 ### Patch Changes

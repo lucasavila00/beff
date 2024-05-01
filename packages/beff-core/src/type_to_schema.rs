@@ -434,8 +434,10 @@ impl<'a, 'b, R: FileManager> TypeToSchema<'a, 'b, R> {
                         .collect::<Res<Vec<_>>>()?;
 
                     if items.len() != 1 {
-                        return self
-                            .error(span, DiagnosticInfoMessage::OmitShouldHaveTwoTypeArguments);
+                        return self.error(
+                            span,
+                            DiagnosticInfoMessage::PartialShouldHaveOneTypeArgument,
+                        );
                     }
                     let obj = items[0].clone();
                     let vs = self.extract_object(&obj, span)?;
@@ -505,14 +507,11 @@ impl<'a, 'b, R: FileManager> TypeToSchema<'a, 'b, R> {
     fn convert_ts_interface_decl(
         &mut self,
         typ: &TsInterfaceDecl,
-        type_args: &Option<Box<TsTypeParamInstantiation>>,
+        type_args: Option<Vec<JsonSchema>>,
     ) -> Res<JsonSchema> {
-        let args = type_args
-            .as_ref()
-            .map(|it| it.params.iter().map(|it| it.as_ref()).collect::<Vec<_>>());
         let params = typ.type_params.as_ref().map(|it| &it.params);
 
-        let map = self.get_type_params_stack_map(args, params)?;
+        let map = self.get_type_params_stack_map(type_args, params)?;
 
         self.type_param_stack.push(map);
 
@@ -540,7 +539,7 @@ impl<'a, 'b, R: FileManager> TypeToSchema<'a, 'b, R> {
         &mut self,
         exported: &SymbolExport,
         from_file: &BffFileName,
-        type_args: &Option<Box<TsTypeParamInstantiation>>,
+        type_args: Option<Vec<JsonSchema>>,
     ) -> Res<JsonSchema> {
         let store_current_file = self.current_file.clone();
         self.current_file = from_file.clone();
@@ -621,32 +620,32 @@ impl<'a, 'b, R: FileManager> TypeToSchema<'a, 'b, R> {
 
     fn get_type_params_stack_map(
         &mut self,
-        args: Option<Vec<&TsType>>,
+        type_args: Option<Vec<JsonSchema>>,
         params: Option<&Vec<TsTypeParam>>,
     ) -> Res<BTreeMap<String, JsonSchema>> {
         let mut map: BTreeMap<String, JsonSchema> = BTreeMap::new();
         if let Some(params) = params {
             let empty_args = vec![];
-            let args_vec = args.unwrap_or(empty_args);
+            let args_vec = type_args.unwrap_or(empty_args);
 
             for (idx, param) in params.iter().enumerate() {
                 // check if there is a corresponding type arg,
                 // use default if there is not
 
-                let positional_arg = args_vec.get(idx);
+                let param_type = args_vec.get(idx);
 
                 let param_name = param.name.sym.to_string();
-                let param_type = match positional_arg {
-                    Some(arg) => Some(self.convert_ts_type(arg)?),
-                    None => param
-                        .default
-                        .as_ref()
-                        .map(|it| self.convert_ts_type(it))
-                        .transpose()?,
-                };
+                // let param_type = match positional_arg {
+                //     Some(arg) => Some(self.convert_ts_type(arg)?),
+                //     None => param
+                //         .default
+                //         .as_ref()
+                //         .map(|it| self.convert_ts_type(it))
+                //         .transpose()?,
+                // };
                 match param_type {
                     Some(param_type) => {
-                        map.insert(param_name, param_type);
+                        map.insert(param_name, param_type.clone());
                     }
                     None => {
                         return self.cannot_serialize_error(
@@ -657,7 +656,7 @@ impl<'a, 'b, R: FileManager> TypeToSchema<'a, 'b, R> {
                 }
             }
         } else {
-            assert!(args.is_none());
+            assert!(type_args.is_none());
         }
 
         Ok(map)
@@ -665,16 +664,13 @@ impl<'a, 'b, R: FileManager> TypeToSchema<'a, 'b, R> {
 
     fn apply_type_params(
         &mut self,
-        type_args: &Option<Box<TsTypeParamInstantiation>>,
+        type_args: Option<Vec<JsonSchema>>,
         decl: &Option<Rc<TsTypeParamDecl>>,
         ty: &TsType,
     ) -> Res<JsonSchema> {
-        let args = type_args
-            .as_ref()
-            .map(|it| it.params.iter().map(|it| it.as_ref()).collect::<Vec<_>>());
         let params = decl.as_ref().map(|it| &it.params);
 
-        let map = self.get_type_params_stack_map(args, params)?;
+        let map = self.get_type_params_stack_map(type_args, params)?;
         self.type_param_stack.push(map);
         let ty = self.convert_ts_type(ty)?;
         self.type_param_stack.pop();
@@ -686,6 +682,15 @@ impl<'a, 'b, R: FileManager> TypeToSchema<'a, 'b, R> {
         i: &Ident,
         type_args: &Option<Box<TsTypeParamInstantiation>>,
     ) -> Res<JsonSchema> {
+        let type_args = type_args
+            .as_ref()
+            .map(|it| {
+                it.params
+                    .iter()
+                    .map(|it| self.convert_ts_type(it))
+                    .collect::<Res<Vec<_>>>()
+            })
+            .transpose()?;
         match TypeResolver::new(self.files, &self.current_file).resolve_local_type(i)? {
             ResolvedLocalSymbol::TsType(decl, ty) => self.apply_type_params(type_args, &decl, &ty),
             ResolvedLocalSymbol::TsInterfaceDecl(int) => {
@@ -707,7 +712,7 @@ impl<'a, 'b, R: FileManager> TypeToSchema<'a, 'b, R> {
                 self.error(&i.span, DiagnosticInfoMessage::FoundValueExpectedType)
             }
             ResolvedLocalSymbol::TsEnumDecl(decl) => self.convert_enum_decl(&decl),
-            ResolvedLocalSymbol::TsBuiltin(bt) => self.convert_ts_built_in(&bt, type_args),
+            ResolvedLocalSymbol::TsBuiltin(_) => panic!("should be converted earlier"),
         }
     }
 
@@ -782,12 +787,18 @@ impl<'a, 'b, R: FileManager> TypeToSchema<'a, 'b, R> {
             "StringFormat" => return self.get_string_with_format(type_params, &i.span),
             _ => {}
         }
+        if let ResolvedLocalSymbol::TsBuiltin(bt) =
+            TypeResolver::new(self.files, &self.current_file).resolve_local_type(i)?
+        {
+            return self.convert_ts_built_in(&bt, type_params);
+        }
 
         let found = self.components.get(&(i.sym.to_string()));
         if let Some(_found) = found {
             return Ok(JsonSchema::Ref(i.sym.to_string()));
         }
         self.components.insert(i.sym.to_string(), None);
+
         let ty = self.get_type_ref_of_user_identifier(i, type_params);
         match ty {
             Ok(ty) => {
@@ -1042,7 +1053,19 @@ impl<'a, 'b, R: FileManager> TypeToSchema<'a, 'b, R> {
         }
 
         let (exported, from_file, name) = self.__convert_ts_type_qual_inner(q)?;
-        let ty = self.convert_type_export(exported.as_ref(), from_file.file_name(), type_args)?;
+
+        let type_args_schema = type_args
+            .as_ref()
+            .map(|it| {
+                it.params
+                    .iter()
+                    .map(|it| self.convert_ts_type(it))
+                    .collect::<Res<Vec<_>>>()
+            })
+            .transpose()?;
+
+        let ty =
+            self.convert_type_export(exported.as_ref(), from_file.file_name(), type_args_schema)?;
         if type_args.is_some() {
             self.components.remove(&name);
             Ok(ty)
