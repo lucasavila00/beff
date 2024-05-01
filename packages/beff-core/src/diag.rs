@@ -7,6 +7,7 @@ use crate::{BffFileName, ParsedModule};
 
 #[derive(Debug, Clone)]
 pub enum DiagnosticInfoMessage {
+    PartialShouldHaveOneTypeArgument,
     CannotUseExprDeclAsQualified,
     CannotResolveNamespaceTypeExprDecl,
     CannotResolveNamespaceTypeNamespaceSymbol,
@@ -92,7 +93,7 @@ pub enum DiagnosticInfoMessage {
     PropKeyShouldBeIdent,
     CannotResolveTypeReferenceOnExtracting(String),
     TsInterfaceExtendsNotSupported,
-    TwoDifferentTypesWithTheSameName,
+    TwoDifferentTypesWithTheSameName(String),
     CannotFindFileWhenConvertingToSchema(BffFileName),
     ThisRefersToSomethingThatCannotBeSerialized(String),
     CannotResolveLocalSymbol(String),
@@ -138,8 +139,8 @@ impl DiagnosticInfoMessage {
             DiagnosticInfoMessage::CannotResolveTypeReferenceOnExtracting(name) => {
                 format!("Failed to resolve type reference '{name}' when extracting")
             }
-            DiagnosticInfoMessage::TwoDifferentTypesWithTheSameName => {
-                "Two different types with the same name".to_string()
+            DiagnosticInfoMessage::TwoDifferentTypesWithTheSameName(name) => {
+                format!("This includes two different types with the same name '{name}'")
             }
             DiagnosticInfoMessage::CannotFindFileWhenConvertingToSchema(f) => {
                 let name = &f.0;
@@ -372,6 +373,9 @@ impl DiagnosticInfoMessage {
             }
             DiagnosticInfoMessage::CannotUseExprDeclAsQualified => {
                 "Cannot use expression declaration as qualified".to_string()
+            }
+            DiagnosticInfoMessage::PartialShouldHaveOneTypeArgument => {
+                "Partial should have one type argument".to_string()
             }
         }
     }

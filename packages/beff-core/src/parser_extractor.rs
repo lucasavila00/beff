@@ -102,9 +102,18 @@ impl<'a, R: FileManager> ExtractParserVisitor<'a, R> {
             let found = self.validators.iter_mut().find(|x| x.name == d.name);
             if let Some(found) = found {
                 if found.schema != d.schema {
+                    // let found_schema = format!("{:?}", found.schema);
+                    // let d_schema = format!("{:?}", d.schema);
+
+                    // let msg = format!(
+                    //     "Found schema: {},\n\n\n new schema: {}",
+                    //     found_schema, d_schema
+                    // );
+                    // web_sys::console::log_1(&msg.into());
+                    // todo!("{:?} Two different types with the same name.", d.name);
                     self.push_error(
                         span,
-                        DiagnosticInfoMessage::TwoDifferentTypesWithTheSameName,
+                        DiagnosticInfoMessage::TwoDifferentTypesWithTheSameName(d.name.clone()),
                     );
                 }
             } else {
