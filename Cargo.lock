@@ -79,6 +79,7 @@ dependencies = [
  "swc_ecma_transforms_base",
  "swc_ecma_visit",
  "swc_node_comments",
+ "web-sys",
 ]
 
 [[package]]
