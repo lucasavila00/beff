@@ -546,14 +546,31 @@ impl<'a, 'b, R: FileManager> TypeToSchema<'a, 'b, R> {
         self.current_file = from_file.clone();
         let ty = match exported {
             SymbolExport::TsType {
-                ty: alias, params, ..
-            } => self.apply_type_params(type_args, params, alias)?,
+                ty: alias,
+                params,
+                original_file,
+                ..
+            } => {
+                let store_current_file = self.current_file.clone();
+                self.current_file = original_file.clone();
+                let res = self.apply_type_params(type_args, params, alias);
+                self.current_file = store_current_file;
+                res
+            }
 
-            SymbolExport::TsInterfaceDecl { decl: int, .. } => {
-                self.convert_ts_interface_decl(int, type_args)?
+            SymbolExport::TsInterfaceDecl {
+                decl: int,
+                original_file,
+                ..
+            } => {
+                let store_current_file = self.current_file.clone();
+                self.current_file = original_file.clone();
+                let res = self.convert_ts_interface_decl(int, type_args);
+                self.current_file = store_current_file;
+                res
             }
             SymbolExport::StarOfOtherFile { .. } => {
-                self.error(&exported.span(), DiagnosticInfoMessage::CannotUseStarAsType)?
+                self.error(&exported.span(), DiagnosticInfoMessage::CannotUseStarAsType)
             }
             SymbolExport::SomethingOfOtherFile {
                 something: word,
@@ -566,21 +583,40 @@ impl<'a, 'b, R: FileManager> TypeToSchema<'a, 'b, R> {
                     .and_then(|file| file.symbol_exports.get_type(word, self.files));
                 match exported {
                     Some(exported) => {
-                        self.convert_type_export(exported.as_ref(), from_file, type_args)?
+                        self.convert_type_export(exported.as_ref(), from_file, type_args)
                     }
                     None => self.error(
                         span,
                         DiagnosticInfoMessage::CannotResolveSomethingOfOtherFile(word.to_string()),
-                    )?,
+                    ),
                 }
             }
             SymbolExport::ValueExpr { span, .. } => {
-                self.error(span, DiagnosticInfoMessage::FoundValueExpectedType)?
+                self.error(span, DiagnosticInfoMessage::FoundValueExpectedType)
             }
-            SymbolExport::TsEnumDecl { decl, .. } => self.convert_enum_decl(decl)?,
+            SymbolExport::TsEnumDecl {
+                decl,
+                original_file,
+                ..
+            } => {
+                let store_current_file = self.current_file.clone();
+                self.current_file = original_file.clone();
+                let res = self.convert_enum_decl(decl);
+                self.current_file = store_current_file;
+                res
+            }
+            SymbolExport::ExprDecl {
+                original_file, ty, ..
+            } => {
+                let store_current_file = self.current_file.clone();
+                self.current_file = original_file.clone();
+                let res = self.convert_ts_type(ty);
+                self.current_file = store_current_file;
+                res
+            }
         };
         self.current_file = store_current_file;
-        Ok(ty)
+        ty
     }
 
     fn get_type_params_stack_map(
@@ -854,6 +890,10 @@ impl<'a, 'b, R: FileManager> TypeToSchema<'a, 'b, R> {
                         return self.error(span, DiagnosticInfoMessage::FoundValueExpectedType)
                     }
                     SymbolExport::TsEnumDecl { decl, .. } => decl.id.sym.to_string(),
+                    SymbolExport::ExprDecl { span, .. } => {
+                        return self
+                            .error(span, DiagnosticInfoMessage::CannotUseExprDeclAsQualified)
+                    }
                 };
                 Ok((exported, from_file.clone(), name))
             }
@@ -908,6 +948,9 @@ impl<'a, 'b, R: FileManager> TypeToSchema<'a, 'b, R> {
             SymbolExport::TsEnumDecl { span, .. } => {
                 self.error(span, DiagnosticInfoMessage::CannotUseTsEnumAsQualified)
             }
+            SymbolExport::ExprDecl { span, .. } => {
+                self.error(span, DiagnosticInfoMessage::CannotUseExprDeclAsQualified)
+            }
         }
     }
     fn __convert_ts_type_qual_inner(
@@ -948,8 +991,11 @@ impl<'a, 'b, R: FileManager> TypeToSchema<'a, 'b, R> {
                                 });
 
                             if let Some(symbol_export) = from_file {
-                                if let SymbolExport::TsEnumDecl { decl, span } =
-                                    symbol_export.as_ref()
+                                if let SymbolExport::TsEnumDecl {
+                                    decl,
+                                    span,
+                                    original_file,
+                                } = symbol_export.as_ref()
                                 {
                                     let found = decl.members.iter().find(|it| match &it.id {
                                         swc_ecma_ast::TsEnumMemberId::Ident(i2) => {
@@ -963,10 +1009,10 @@ impl<'a, 'b, R: FileManager> TypeToSchema<'a, 'b, R> {
                                                 let expr_ty = {
                                                     let store_current_file =
                                                         self.current_file.clone();
-                                                    self.current_file = file_name.clone();
-                                                    let out = self.typeof_expr(init, true)?;
+                                                    self.current_file = original_file.clone();
+                                                    let out = self.typeof_expr(init, true);
                                                     self.current_file = store_current_file;
-                                                    out
+                                                    out?
                                                 };
                                                 Ok(expr_ty)
                                             }
@@ -1212,16 +1258,17 @@ impl<'a, 'b, R: FileManager> TypeToSchema<'a, 'b, R> {
     ) -> Res<JsonSchema> {
         let old_file = self.current_file.clone();
         self.current_file = from_file.file_name().clone();
-        let ty: JsonSchema = match exported.as_ref() {
+        let ty = match exported.as_ref() {
             SymbolExport::TsEnumDecl { .. }
             | SymbolExport::TsType { .. }
             | SymbolExport::TsInterfaceDecl { .. } => todo!(),
-            SymbolExport::ValueExpr { expr, .. } => self.typeof_expr(expr, false)?,
+            SymbolExport::ValueExpr { expr, .. } => self.typeof_expr(expr, false),
             SymbolExport::StarOfOtherFile { .. } => todo!(),
             SymbolExport::SomethingOfOtherFile { .. } => todo!(),
+            SymbolExport::ExprDecl { .. } => todo!(),
         };
         self.current_file = old_file;
-        Ok(ty)
+        ty
     }
 
     fn collect_value_exports(
@@ -1271,6 +1318,9 @@ impl<'a, 'b, R: FileManager> TypeToSchema<'a, 'b, R> {
                                 )
                             }
                         }
+                    }
+                    SymbolExport::ExprDecl { name, ty, .. } => {
+                        acc.push((name.to_string(), self.convert_ts_type(ty)?.required()));
                     }
                 }
             }
@@ -1339,6 +1389,18 @@ impl<'a, 'b, R: FileManager> TypeToSchema<'a, 'b, R> {
             TsTypeQueryExpr::TsEntityName(ref n) => match n {
                 TsEntityName::TsQualifiedName(q) => self.convert_type_query_qualified(q),
                 TsEntityName::Ident(n) => {
+                    if let Some(f) = self.files.get_or_fetch_file(&self.current_file) {
+                        let k = &(n.sym.clone(), n.span.ctxt);
+                        if let Some(expr_decl) = f.locals.exprs_decls.get(k) {
+                            return self.convert_ts_type(expr_decl);
+                        }
+
+                        if let Some(exported) = f.symbol_exports.named_values.get(&n.sym) {
+                            if let SymbolExport::ExprDecl { ty, .. } = exported.as_ref() {
+                                return self.convert_ts_type(ty);
+                            }
+                        }
+                    }
                     let s =
                         TypeResolver::new(self.files, &self.current_file).resolve_local_value(n)?;
                     self.typeof_symbol(s, &n.span)
@@ -1607,10 +1669,7 @@ impl<'a, 'b, R: FileManager> TypeToSchema<'a, 'b, R> {
                     span,
                     DiagnosticInfoMessage::UniqueNonSerializableToJsonSchema,
                 ),
-                TsTypeOperatorOp::ReadOnly => self.cannot_serialize_error(
-                    span,
-                    DiagnosticInfoMessage::ReadonlyNonSerializableToJsonSchema,
-                ),
+                TsTypeOperatorOp::ReadOnly => self.convert_ts_type(type_ann),
             },
             TsType::TsMappedType(k) => self.convert_mapped_type(k),
             TsType::TsRestType(_) => unreachable!("should have been handled by parent node"),

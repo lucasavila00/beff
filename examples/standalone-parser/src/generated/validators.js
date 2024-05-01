@@ -298,6 +298,12 @@ function decodeConst(ctx, input, required, constValue) {
 }
 
 
+function DecodeArr3(ctx, input, required = true) {
+    return decodeAnyOfConsts(ctx, input, required, [
+        "X",
+        "Y"
+    ]);
+}
 function DecodeOmitSettings(ctx, input, required = true) {
     return decodeObject(ctx, input, required, {
         "d": (ctx, input)=>(decodeObject(ctx, input, true, {
@@ -541,6 +547,7 @@ function DecodeUnionWithEnumAccess(ctx, input, required = true) {
     });
 }
 const validators = {
+    Arr3: DecodeArr3,
     OmitSettings: DecodeOmitSettings,
     Settings: DecodeSettings,
     PartialObject: DecodePartialObject,

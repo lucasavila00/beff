@@ -112,6 +112,12 @@ impl<'a, R: FileManager> TypeResolver<'a, R> {
                 }
                 .into(),
             }),
+            SymbolExport::ExprDecl { .. } => Err(self
+                .make_err(
+                    &i.span,
+                    DiagnosticInfoMessage::CannotResolveNamespaceTypeExprDecl,
+                )
+                .into()),
         }
     }
     pub fn resolve_namespace_symbol(
@@ -252,6 +258,7 @@ impl<'a, R: FileManager> TypeResolver<'a, R> {
                 SymbolExport::TsType { .. }
                 | SymbolExport::TsEnumDecl { .. }
                 | SymbolExport::TsInterfaceDecl { .. }
+                | SymbolExport::ExprDecl { .. }
                 | SymbolExport::StarOfOtherFile { .. }
                 | SymbolExport::SomethingOfOtherFile { .. } => {}
             }
