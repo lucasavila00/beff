@@ -441,7 +441,7 @@ fn mapping_formula_is_empty(
                 _ => unreachable!(),
             };
             let mut p = pos_atom.next.clone();
-            while let Some(some_p) = p {
+            while let Some(ref some_p) = p {
                 let p_atom = match &*some_p.atom {
                     Atom::Mapping(a) => builder.get_mapping_atomic(*a),
                     _ => unreachable!(),
@@ -452,7 +452,7 @@ fn mapping_formula_is_empty(
                     None => return ProperSubtypeEvidenceResult::IsEmpty,
                     Some(m) => combined = m,
                 }
-                p = some_p.next.clone();
+                p.clone_from(&some_p.next.clone());
             }
             for t in combined.values() {
                 if let EvidenceResult::IsEmpty = t.is_empty_evidence(builder) {
@@ -608,7 +608,7 @@ fn list_formula_is_empty(
                 Atom::List(a) => builder.get_list_atomic(*a).clone(),
                 _ => unreachable!(),
             };
-            prefix_items = lt.prefix_items.clone();
+            prefix_items.clone_from(&lt.prefix_items);
             items = lt.items.clone();
 
             let mut p = pos_atom.next.clone();
@@ -640,7 +640,7 @@ fn list_formula_is_empty(
                     }
                 }
                 items = items.intersect(&lt.items);
-                p = some_p.next.clone();
+                p.clone_from(&some_p.next.clone());
             }
 
             for m in prefix_items.iter() {
