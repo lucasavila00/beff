@@ -409,4 +409,28 @@ mod tests {
       "#
         ));
     }
+    #[test]
+    fn ok_exclude() {
+        insta::assert_snapshot!(ok(r#"
+        type A = "a" | "b";
+
+        type B = "b" | "c";
+
+        type X = Exclude<A, B>;
+
+        parse.buildParsers<{ X: X }>();
+      "#));
+    }
+    #[test]
+    fn ok_exclude2() {
+        insta::assert_snapshot!(ok(r#"
+        type Shape =
+        | { kind: "circle"; radius: number }
+        | { kind: "square"; x: number }
+        | { kind: "triangle"; x: number; y: number };
+       
+        type T3 = Exclude<Shape, { kind: "circle" }>
+        parse.buildParsers<{ T3: T3 }>();
+      "#));
+    }
 }

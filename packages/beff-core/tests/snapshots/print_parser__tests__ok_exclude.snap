@@ -1,0 +1,9 @@
+---
+source: packages/beff-core/tests/print_parser.rs
+expression: "ok(r#\"\n        type A = \"a\" | \"b\";\n\n        type B = \"b\" | \"c\";\n\n        type X = Exclude<A, B>;\n\n        parse.buildParsers<{ X: X }>();\n      \"#)"
+---
+type A = "a" | "b";
+type B = "b" | "c";
+type X = "a";
+type X = X;
+

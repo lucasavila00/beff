@@ -20,6 +20,7 @@ pub enum TsBuiltIn {
     TsRequired(Span),
     TsPartial(Span),
     TsPick(Span),
+    TsExclude(Span),
 }
 
 pub enum ResolvedLocalSymbol {
@@ -216,6 +217,9 @@ impl<'a, R: FileManager> TypeResolver<'a, R> {
             }
             "Omit" => {
                 return Ok(ResolvedLocalSymbol::TsBuiltin(TsBuiltIn::TsOmit(i.span)));
+            }
+            "Exclude" => {
+                return Ok(ResolvedLocalSymbol::TsBuiltin(TsBuiltIn::TsExclude(i.span)));
             }
             "Pick" => {
                 return Ok(ResolvedLocalSymbol::TsBuiltin(TsBuiltIn::TsPick(i.span)));
