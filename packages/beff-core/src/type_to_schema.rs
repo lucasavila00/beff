@@ -496,7 +496,7 @@ impl<'a, 'b, R: FileManager> TypeToSchema<'a, 'b, R> {
                     let left_st = left_ty
                         .to_sem_type(&self.validators_ref(), &mut ctx)
                         .map_err(|e| {
-                            self.box_error(&span, DiagnosticInfoMessage::AnyhowError(e.to_string()))
+                            self.box_error(span, DiagnosticInfoMessage::AnyhowError(e.to_string()))
                         })?;
 
                     let right_ty = items[1].clone();
@@ -504,7 +504,7 @@ impl<'a, 'b, R: FileManager> TypeToSchema<'a, 'b, R> {
                     let right_st = right_ty
                         .to_sem_type(&self.validators_ref(), &mut ctx)
                         .map_err(|e| {
-                            self.box_error(&span, DiagnosticInfoMessage::AnyhowError(e.to_string()))
+                            self.box_error(span, DiagnosticInfoMessage::AnyhowError(e.to_string()))
                         })?;
 
                     let subtracted_ty = left_st.diff(&right_st);
