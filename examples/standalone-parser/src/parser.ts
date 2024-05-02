@@ -149,6 +149,12 @@ type UnionWithEnumAccess =
       tag: OtherEnum2.C;
       value: boolean;
     };
+type Shape =
+  | { kind: "circle"; radius: number }
+  | { kind: "square"; x: number }
+  | { kind: "triangle"; x: number; y: number };
+
+type T3 = Exclude<Shape, { kind: "circle" }>;
 
 export const {
   RequiredPartialObject,
@@ -170,6 +176,7 @@ export const {
   Arr2C,
   ValidCurrency: ValidCurrencyCodec,
   UnionWithEnumAccess,
+  T3,
 } = parse.buildParsers<{
   Arr3: Arr3;
   OmitSettings: OmitSettings;
@@ -195,6 +202,7 @@ export const {
   Arr2C: Arr2;
   ValidCurrency: ValidCurrency;
   UnionWithEnumAccess: UnionWithEnumAccess;
+  T3: T3;
 }>({
   customFormats: {
     ValidCurrency: (input: string) => {

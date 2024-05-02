@@ -239,7 +239,6 @@ impl<'a, 'b> SchemerContext<'a, 'b> {
                 acc.push(JsonSchema::all_of(ty.collect()));
             }
         };
-
         match middle.as_ref() {
             Bdd::False => {
                 // noop
@@ -467,7 +466,14 @@ impl<'a, 'b> SchemerContext<'a, 'b> {
                     }
                 }
                 ProperSubtype::Mapping(bdd) => {
-                    acc.insert(self.convert_to_schema_mapping(bdd));
+                    let mapping_ty = self
+                        .convert_to_schema_mapping(bdd)
+                        .remove_nots_of_intersections_and_empty_of_union(
+                            &self.validators.iter().collect::<Vec<_>>(),
+                            self.ctx.0,
+                        );
+
+                    acc.insert(mapping_ty);
                 }
                 ProperSubtype::List(bdd) => {
                     acc.insert(self.convert_to_schema_list(bdd));

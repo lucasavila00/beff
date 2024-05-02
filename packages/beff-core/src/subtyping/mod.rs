@@ -154,10 +154,15 @@ impl<'a> ToSemTypeConverter<'a> {
             JsonSchema::Codec(s) => {
                 Ok(SemTypeContext::string_const(StringLitOrFormat::Codec(s.clone())).into())
             }
-            JsonSchema::StNever
-            | JsonSchema::StUnknown
-            | JsonSchema::StNot(_)
-            | JsonSchema::StAnyObject => unreachable!("should not be part of conversion input"),
+            JsonSchema::StNever => Ok(SemTypeContext::never().into()),
+            JsonSchema::StUnknown => Ok(SemTypeContext::unknown().into()),
+            JsonSchema::StNot(it) => {
+                let chd = self.to_sem_type(it, builder)?;
+                Ok(chd.complement())
+            }
+            JsonSchema::StAnyObject => {
+                unreachable!("should not be part of conversion input")
+            }
         }
     }
 }
