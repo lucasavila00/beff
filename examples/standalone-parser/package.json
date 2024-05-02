@@ -1,6 +1,6 @@
 {
   "name": "standalone-parser",
-  "version": "1.0.33",
+  "version": "1.0.34",
   "description": "",
   "main": "index.js",
   "scripts": {
@@ -11,7 +11,7 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "@beff/cli": "workspace:^0.0.36",
+    "@beff/cli": "workspace:^0.0.37",
     "@beff/client": "workspace:^",
     "vitest": "^0.34.4",
     "zod": "^3.23.5"
