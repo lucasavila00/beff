@@ -476,6 +476,43 @@ impl<'a, 'b, R: FileManager> TypeToSchema<'a, 'b, R> {
                 None => self
                     .cannot_serialize_error(span, DiagnosticInfoMessage::MissingArgumentsOnPartial),
             },
+            TsBuiltIn::TsExclude(span) => match type_args {
+                Some(vs) => {
+                    let items = vs
+                        .params
+                        .iter()
+                        .map(|it| self.convert_ts_type(it))
+                        .collect::<Res<Vec<_>>>()?;
+                    if items.len() != 2 {
+                        return self.error(
+                            span,
+                            DiagnosticInfoMessage::ExcludeShouldHaveTwoTypeArguments,
+                        );
+                    }
+                    let mut ctx = SemTypeContext::new();
+
+                    let left_ty = items[0].clone();
+
+                    let left_st = left_ty
+                        .to_sem_type(&self.validators_ref(), &mut ctx)
+                        .map_err(|e| {
+                            self.box_error(&span, DiagnosticInfoMessage::AnyhowError(e.to_string()))
+                        })?;
+
+                    let right_ty = items[1].clone();
+
+                    let right_st = right_ty
+                        .to_sem_type(&self.validators_ref(), &mut ctx)
+                        .map_err(|e| {
+                            self.box_error(&span, DiagnosticInfoMessage::AnyhowError(e.to_string()))
+                        })?;
+
+                    let subtracted_ty = left_st.diff(&right_st);
+                    self.convert_sem_type(subtracted_ty, &mut ctx, span)
+                }
+                None => self
+                    .cannot_serialize_error(span, DiagnosticInfoMessage::MissingArgumentsOnExclude),
+            },
         }
     }
     fn convert_enum_decl(&mut self, typ: &TsEnumDecl) -> Res<JsonSchema> {

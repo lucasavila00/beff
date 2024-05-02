@@ -7,6 +7,8 @@ use crate::{BffFileName, ParsedModule};
 
 #[derive(Debug, Clone)]
 pub enum DiagnosticInfoMessage {
+    ExcludeShouldHaveTwoTypeArguments,
+    MissingArgumentsOnExclude,
     PartialShouldHaveOneTypeArgument,
     CannotUseExprDeclAsQualified,
     CannotResolveNamespaceTypeExprDecl,
@@ -376,6 +378,12 @@ impl DiagnosticInfoMessage {
             }
             DiagnosticInfoMessage::PartialShouldHaveOneTypeArgument => {
                 "Partial should have one type argument".to_string()
+            }
+            DiagnosticInfoMessage::MissingArgumentsOnExclude => {
+                "Missing arguments on exclude".to_string()
+            }
+            DiagnosticInfoMessage::ExcludeShouldHaveTwoTypeArguments => {
+                "Exclude should have two type arguments".to_string()
             }
         }
     }
