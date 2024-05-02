@@ -6,20 +6,10 @@ type Shape = { "kind": "circle"; "radius": number } | {
   "kind": "square";
   "x": number;
 } | { "kind": "triangle"; "x": number; "y": number };
-type T3 =
-  | ({ "kind": "circle"; "radius": number } & Not<{ "kind": "circle" }>)
-  | (
-    & (
-      | ({ "kind": "square"; "x": number } & Not<{ "kind": "circle" }>)
-      | (
-        & (
-          & { "kind": "triangle"; "x": number; "y": number }
-          & Not<{ "kind": "circle" }>
-        )
-        & Not<{ "kind": "square"; "x": number }>
-      )
-    )
-    & Not<{ "kind": "circle"; "radius": number }>
-  );
+type T3 = { "kind": "square"; "x": number } | {
+  "kind": "triangle";
+  "x": number;
+  "y": number;
+};
 type T3 = T3;
 

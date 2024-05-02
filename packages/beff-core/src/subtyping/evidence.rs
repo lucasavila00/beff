@@ -35,6 +35,12 @@ pub enum ProperSubtypeEvidenceResult {
     Evidence(ProperSubtypeEvidence),
 }
 
+impl ProperSubtypeEvidenceResult {
+    pub fn is_empty(&self) -> bool {
+        matches!(self, ProperSubtypeEvidenceResult::IsEmpty)
+    }
+}
+
 #[derive(PartialEq, Eq, Hash, Debug, Ord, PartialOrd)]
 pub enum Evidence {
     All(SubTypeTag),

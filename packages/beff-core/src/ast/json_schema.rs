@@ -3,6 +3,10 @@ use std::collections::BTreeMap;
 use std::collections::BTreeSet;
 
 use crate::ast::json::{Json, ToJson};
+use crate::subtyping::semtype::SemTypeContext;
+use crate::subtyping::semtype::SemTypeOps;
+use crate::subtyping::ToSemType;
+use crate::Validator;
 use anyhow::anyhow;
 use anyhow::Result;
 use swc_common::DUMMY_SP;
@@ -244,6 +248,48 @@ impl JsonSchema {
                 }
                 // Self::AllOf(BTreeSet::from_iter(vs))
             }
+        }
+    }
+
+    pub fn remove_nots_of_intersections_and_empty_of_union(
+        self,
+        validators: &[&Validator],
+        ctx: &mut SemTypeContext,
+    ) -> JsonSchema {
+        match self {
+            JsonSchema::AllOf(vs) => {
+                let semantic = JsonSchema::AllOf(vs.clone())
+                    .to_sem_type(validators, ctx)
+                    .unwrap();
+                let is_empty = semantic.is_empty(ctx);
+                if is_empty {
+                    return JsonSchema::StNever;
+                }
+
+                let vs = vs
+                    .into_iter()
+                    .map(|it| it.remove_nots_of_intersections_and_empty_of_union(validators, ctx))
+                    .filter(|it| !matches!(it, JsonSchema::StNot(_)))
+                    .collect();
+                JsonSchema::all_of(vs)
+            }
+            JsonSchema::AnyOf(vs) => {
+                let vs: Vec<JsonSchema> = vs
+                    .into_iter()
+                    .filter(|it| {
+                        let semantic = it.to_sem_type(validators, ctx).unwrap();
+                        let is_empty = semantic.is_empty(ctx);
+                        !is_empty
+                    })
+                    .collect();
+
+                let vs = vs
+                    .into_iter()
+                    .map(|it| it.remove_nots_of_intersections_and_empty_of_union(validators, ctx))
+                    .collect();
+                JsonSchema::any_of(vs)
+            }
+            v => v,
         }
     }
 }

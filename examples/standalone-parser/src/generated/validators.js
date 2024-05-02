@@ -546,6 +546,31 @@ function DecodeUnionWithEnumAccess(ctx, input, required = true) {
             }))
     });
 }
+function DecodeShape(ctx, input, required = true) {
+    return decodeAnyOfDiscriminated(ctx, input, required, "kind", {
+        "circle": (ctx, input)=>(decodeObject(ctx, input, true, {
+                "radius": (ctx, input)=>(decodeNumber(ctx, input, true))
+            })),
+        "square": (ctx, input)=>(decodeObject(ctx, input, true, {
+                "x": (ctx, input)=>(decodeNumber(ctx, input, true))
+            })),
+        "triangle": (ctx, input)=>(decodeObject(ctx, input, true, {
+                "x": (ctx, input)=>(decodeNumber(ctx, input, true)),
+                "y": (ctx, input)=>(decodeNumber(ctx, input, true))
+            }))
+    });
+}
+function DecodeT3(ctx, input, required = true) {
+    return decodeAnyOfDiscriminated(ctx, input, required, "kind", {
+        "square": (ctx, input)=>(decodeObject(ctx, input, true, {
+                "x": (ctx, input)=>(decodeNumber(ctx, input, true))
+            })),
+        "triangle": (ctx, input)=>(decodeObject(ctx, input, true, {
+                "x": (ctx, input)=>(decodeNumber(ctx, input, true)),
+                "y": (ctx, input)=>(decodeNumber(ctx, input, true))
+            }))
+    });
+}
 const validators = {
     Arr3: DecodeArr3,
     OmitSettings: DecodeOmitSettings,
@@ -574,7 +599,9 @@ const validators = {
     OtherEnum: DecodeOtherEnum,
     Arr2: DecodeArr2,
     ValidCurrency: DecodeValidCurrency,
-    UnionWithEnumAccess: DecodeUnionWithEnumAccess
+    UnionWithEnumAccess: DecodeUnionWithEnumAccess,
+    Shape: DecodeShape,
+    T3: DecodeT3
 };
 
 export default { decodeObject, decodeArray, decodeString, decodeNumber, decodeCodec, decodeStringWithFormat, decodeAnyOf, decodeAllOf, decodeBoolean, decodeAny, decodeTuple, decodeNull, decodeConst, registerCustomFormatter, validators };

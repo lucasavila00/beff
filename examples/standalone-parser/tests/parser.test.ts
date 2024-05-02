@@ -16,8 +16,43 @@ import {
   DiscriminatedUnion4,
   Arr2C,
   ValidCurrencyCodec,
+  T3,
 } from "../src/parser";
 import { Arr2 } from "../src/types";
+it("exclude object", () => {
+  expect(
+    T3.parse({
+      kind: "square",
+      x: 1,
+    })
+  ).toMatchInlineSnapshot(`
+    {
+      "kind": "square",
+      "x": 1,
+    }
+  `);
+});
+it("exclude object", () => {
+  expect(
+    T3.safeParse({
+      kind: "circle",
+      radius: 1,
+    })
+  ).toMatchInlineSnapshot(`
+    {
+      "errors": [
+        {
+          "message": "expected one of \\"square\\", \\"triangle\\"",
+          "path": [
+            "kind",
+          ],
+          "received": "circle",
+        },
+      ],
+      "success": false,
+    }
+  `);
+});
 it("Custom Format", () => {
   expect(ValidCurrencyCodec.parse("USD")).toMatchInlineSnapshot('"USD"');
 });

@@ -70,6 +70,9 @@ const buildParsersInput = {
     "SettingsUpdate": function(ctx, input, required = true) {
         return validators.SettingsUpdate(ctx, input, required);
     },
+    "T3": function(ctx, input, required = true) {
+        return validators.T3(ctx, input, required);
+    },
     "UnionWithEnumAccess": function(ctx, input, required = true) {
         return validators.UnionWithEnumAccess(ctx, input, required);
     },

@@ -508,7 +508,13 @@ impl<'a, 'b, R: FileManager> TypeToSchema<'a, 'b, R> {
                         })?;
 
                     let subtracted_ty = left_st.diff(&right_st);
-                    self.convert_sem_type(subtracted_ty, &mut ctx, span)
+                    let res = self
+                        .convert_sem_type(subtracted_ty, &mut ctx, span)?
+                        .remove_nots_of_intersections_and_empty_of_union(
+                            &self.validators_ref(),
+                            &mut ctx,
+                        );
+                    Ok(res)
                 }
                 None => self
                     .cannot_serialize_error(span, DiagnosticInfoMessage::MissingArgumentsOnExclude),
