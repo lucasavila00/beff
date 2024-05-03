@@ -16,6 +16,21 @@ importers:
         specifier: ^2.26.2
         version: 2.26.2
 
+  examples/bug-rust-repro:
+    dependencies:
+      '@beff/cli':
+        specifier: workspace:^0.0.39
+        version: link:../../packages/beff-cli
+      '@beff/client':
+        specifier: workspace:^
+        version: link:../../packages/beff-client
+      vitest:
+        specifier: ^0.34.4
+        version: 0.34.4
+      zod:
+        specifier: ^3.23.5
+        version: 3.23.5
+
   examples/standalone-parser:
     dependencies:
       '@beff/cli':
