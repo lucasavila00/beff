@@ -1,5 +1,11 @@
 # @beff/cli
 
+## 0.0.38
+
+### Patch Changes
+
+- rust 177
+
 ## 0.0.37
 
 ### Patch Changes

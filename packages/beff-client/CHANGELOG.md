@@ -1,5 +1,13 @@
 # @beff/client
 
+## 0.0.38
+
+### Patch Changes
+
+- rust 177
+- Updated dependencies
+  - @beff/cli@0.0.38
+
 ## 0.0.37
 
 ### Patch Changes
