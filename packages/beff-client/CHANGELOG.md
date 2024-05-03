@@ -1,5 +1,13 @@
 # @beff/client
 
+## 0.0.39
+
+### Patch Changes
+
+- rollback rust
+- Updated dependencies
+  - @beff/cli@0.0.39
+
 ## 0.0.38
 
 ### Patch Changes
