@@ -1,5 +1,11 @@
 # @beff/cli
 
+## 0.0.41
+
+### Patch Changes
+
+- ad-hoc b
+
 ## 0.0.40
 
 ### Patch Changes
