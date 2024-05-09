@@ -46,6 +46,11 @@ function decodeObject(ctx, input, required, data, additionalPropsValidator = nul
   if (!required && input == null) {
     return input;
   }
+
+  const disallowExtraProperties = ctx?.disallowExtraProperties ?? false;
+
+  const allowedExtraProperties = ctx.allowedExtraProperties__ ?? []
+
   if (typeof input === "object" && !Array.isArray(input) && input !== null) {
     const acc = {};
     for (const [k, v] of Object.entries(data)) {
@@ -64,6 +69,17 @@ function decodeObject(ctx, input, required, data, additionalPropsValidator = nul
         }
       }
     }
+
+    if (disallowExtraProperties) {
+      for (const k of Object.keys(input)) {
+        if (acc[k] == null && allowedExtraProperties.indexOf(k) == -1) {
+          pushPath(ctx, k);
+          buildError(input[k], ctx, "extra property");
+          popPath(ctx);
+        }
+      }
+    }
+
     return acc;
   }
   return buildError(input, ctx, "expected object");
@@ -179,7 +195,11 @@ function decodeAnyOfDiscriminated(ctx, input, required, discriminator, mapping) 
     popPath(ctx);
     return err;
   }
-  return { ...v(ctx, input), [discriminator]: d };
+  const prevAllow = (ctx.allowedExtraProperties__ ?? []);
+  ctx.allowedExtraProperties__ = [...prevAllow, discriminator]
+  const out = v(ctx, input);
+  ctx.allowedExtraProperties__ = prevAllow;
+  return { ...out, [discriminator]: d };
 }
 
 function decodeAnyOfConsts(ctx, input, required, consts) {

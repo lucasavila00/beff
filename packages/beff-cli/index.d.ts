@@ -16,9 +16,16 @@ export type UnionDecodeError = {
 };
 export type DecodeError = RegularDecodeError | UnionDecodeError;
 
+export type ParseOptions = {
+  disallowExtraProperties?: boolean;
+};
+
 export type BeffParser<T> = {
-  parse: (input: any) => T;
-  safeParse: (input: any) => { success: true; data: T } | { success: false; errors: DecodeError[] };
+  parse: (input: any, options?: ParseOptions) => T;
+  safeParse: (
+    input: any,
+    options?: ParseOptions
+  ) => { success: true; data: T } | { success: false; errors: DecodeError[] };
   zod: () => ZodType<T>;
 };
 type Parsers<T> = {

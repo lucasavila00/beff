@@ -1,5 +1,13 @@
 # @beff/client
 
+## 0.0.42
+
+### Patch Changes
+
+- disallow extra prop
+- Updated dependencies
+  - @beff/cli@0.0.42
+
 ## 0.0.41
 
 ### Patch Changes
