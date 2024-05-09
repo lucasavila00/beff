@@ -10,6 +10,9 @@ const buildParsersInput = {
     "AccessLevel": function(ctx, input, required = true) {
         return validators.AccessLevel(ctx, input, required);
     },
+    "AccessLevelCodec": function(ctx, input, required = true) {
+        return validators.AccessLevel(ctx, input, required);
+    },
     "AllTypes": function(ctx, input, required = true) {
         return validators.AllTypes(ctx, input, required);
     },
@@ -87,11 +90,6 @@ const buildParsersInput = {
 
 
 
-class BffParseError {
-  constructor(errors) {
-    this.errors = errors;
-  }
-}
 function buildParsers(args) {
 
   const customFormats = args?.customFormats ?? {}
@@ -104,6 +102,7 @@ function buildParsers(args) {
 
   Object.keys(customFormats).forEach((k) => {
     const v = customFormats[k];
+    
     registerCustomFormatter(k, v);
   });
 
@@ -127,7 +126,7 @@ function buildParsers(args) {
       if (safe.success) {
         return safe.data;
       }
-      throw new BffParseError(safe.errors);
+      throw safe
     };
     const zod = () => {
       

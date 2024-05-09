@@ -19,6 +19,7 @@ import {
   T3,
 } from "../src/parser";
 import { Arr2 } from "../src/types";
+
 it("exclude object", () => {
   expect(
     T3.parse({
