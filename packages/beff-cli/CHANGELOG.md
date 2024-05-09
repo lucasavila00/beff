@@ -1,5 +1,11 @@
 # @beff/cli
 
+## 0.0.40
+
+### Patch Changes
+
+- move types to cli
+
 ## 0.0.39
 
 ### Patch Changes

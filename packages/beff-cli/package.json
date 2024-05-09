@@ -1,6 +1,6 @@
 {
   "name": "@beff/cli",
-  "version": "0.0.39",
+  "version": "0.0.40",
   "description": "",
   "bin": {
     "beff": "./bin/index.js"
@@ -9,5 +9,8 @@
   "typings": "index.d.ts",
   "keywords": [],
   "author": "",
-  "license": "ISC"
+  "license": "ISC",
+  "dependencies": {
+    "zod": "^3.23.5"
+  }
 }
