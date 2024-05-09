@@ -1,5 +1,11 @@
 # @beff/cli
 
+## 0.0.42
+
+### Patch Changes
+
+- disallow extra prop
+
 ## 0.0.41
 
 ### Patch Changes
