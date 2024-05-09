@@ -1,5 +1,13 @@
 # @beff/client
 
+## 0.0.41
+
+### Patch Changes
+
+- ad-hoc b
+- Updated dependencies
+  - @beff/cli@0.0.41
+
 ## 0.0.40
 
 ### Patch Changes

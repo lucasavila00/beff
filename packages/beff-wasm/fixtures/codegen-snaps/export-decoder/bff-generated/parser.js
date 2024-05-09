@@ -36,11 +36,6 @@ const buildParsersInput = {
 
 
 
-class BffParseError {
-  constructor(errors) {
-    this.errors = errors;
-  }
-}
 function buildParsers(args) {
 
   const customFormats = args?.customFormats ?? {}
@@ -53,6 +48,7 @@ function buildParsers(args) {
 
   Object.keys(customFormats).forEach((k) => {
     const v = customFormats[k];
+    
     registerCustomFormatter(k, v);
   });
 
@@ -76,7 +72,7 @@ function buildParsers(args) {
       if (safe.success) {
         return safe.data;
       }
-      throw new BffParseError(safe.errors);
+      throw safe
     };
     const zod = () => {
       
