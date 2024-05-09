@@ -31,7 +31,11 @@ importers:
         specifier: ^3.23.5
         version: 3.23.5
 
-  packages/beff-cli: {}
+  packages/beff-cli:
+    dependencies:
+      zod:
+        specifier: ^3.23.5
+        version: 3.23.5
 
   packages/beff-client:
     dependencies:

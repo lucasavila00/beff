@@ -9,5 +9,8 @@
   "typings": "index.d.ts",
   "keywords": [],
   "author": "",
-  "license": "ISC"
+  "license": "ISC",
+  "dependencies": {
+    "zod": "^3.23.5"
+  }
 }
