@@ -3,6 +3,8 @@ use std::{
     rc::Rc,
 };
 
+use anyhow::bail;
+
 use crate::{
     ast::json_schema::{JsonSchema, JsonSchemaConst, Optionality},
     Validator,
@@ -184,8 +186,7 @@ impl<'a, 'b> SchemerContext<'a, 'b> {
         }
 
         let rest = if mt.rest.is_empty(self.ctx.0) {
-            // bail!("rest should not be empty, all records are open")
-            None
+            bail!("rest should not be empty, all records are open")
         } else if mt.rest.is_any() {
             None
         } else {
@@ -425,7 +426,7 @@ impl<'a, 'b> SchemerContext<'a, 'b> {
                         acc.insert(JsonSchema::String);
                     }
                     SubTypeTag::Void => {
-                        // noop
+                        acc.insert(JsonSchema::Null);
                     }
                     SubTypeTag::Mapping => {
                         acc.insert(JsonSchema::object(vec![], Some(JsonSchema::Any.into())));

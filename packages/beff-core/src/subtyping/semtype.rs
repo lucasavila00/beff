@@ -320,6 +320,8 @@ impl MemoEmpty {
 #[derive(Clone, Debug)]
 pub struct BddMemoEmptyRef(pub MemoEmpty);
 
+#[derive(Debug)]
+
 pub struct MappingAtomicType {
     pub vs: Rc<MappingAtomic>,
     pub rest: Rc<SemType>,

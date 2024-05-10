@@ -1550,7 +1550,7 @@ impl<'a, 'b, R: FileManager> TypeToSchema<'a, 'b, R> {
             })?;
 
         let access_st: Rc<SemType> = ctx.indexed_access(obj_st, idx_st);
-        self.convert_sem_type(access_st, &mut ctx, &i.index_type.span())
+        self.convert_sem_type(access_st, &mut ctx, &i.span())
     }
     fn convert_keyof(&mut self, k: &TsType) -> Res<JsonSchema> {
         let json_schema = self.convert_ts_type(k)?;

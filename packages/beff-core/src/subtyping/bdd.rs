@@ -814,7 +814,6 @@ pub fn mapping_indexed_access(
             _ => unreachable!("should be string"),
         },
     };
-
     let b = SemTypeContext::sub_type_data(obj_st, SubTypeTag::Mapping);
     match b {
         SubType::False(_) => todo!(),

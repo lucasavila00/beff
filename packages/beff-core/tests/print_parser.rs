@@ -433,4 +433,19 @@ mod tests {
         parse.buildParsers<{ T3: T3 }>();
       "#));
     }
+    #[test]
+    fn ok_repro_3() {
+        insta::assert_snapshot!(ok(r#"
+      
+        export interface IY {
+            a: string
+        }
+        export interface IX {
+            sizes?: IY;
+        }
+        // type IX2 = Required<IX>
+        type T3 = IX[keyof IX]
+        parse.buildParsers<{ T3: T3 }>();
+      "#));
+    }
 }
