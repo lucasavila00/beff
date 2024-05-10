@@ -1,5 +1,13 @@
 # @beff/client
 
+## 0.0.45
+
+### Patch Changes
+
+- Flat json schema export
+- Updated dependencies
+  - @beff/cli@0.0.45
+
 ## 0.0.44
 
 ### Patch Changes
