@@ -3,8 +3,8 @@ use std::rc::Rc;
 use crate::ast::json_schema::{JsonSchemaConst, Optionality};
 use crate::{ast::json_schema::JsonSchema, Validator};
 
-use self::bdd::MappingAtomic;
-use self::semtype::{MappingAtomicType, SemType, SemTypeContext, SemTypeOps};
+use self::bdd::{ListAtomic, MappingAtomic};
+use self::semtype::{ComplexSemType, MappingAtomicType, SemType, SemTypeContext, SemTypeOps};
 use self::subtype::StringLitOrFormat;
 pub mod bdd;
 pub mod evidence;
@@ -40,15 +40,57 @@ impl<'a> ToSemTypeConverter<'a> {
         match schema {
             JsonSchema::Ref(name) => {
                 let schema = self.get_reference(name)?;
+                // handle recursive types
+                if let JsonSchema::Tuple {
+                    prefix_items,
+                    items,
+                } = schema
+                {
+                    match builder.list_json_schema_ref_memo.get(name) {
+                        Some(idx) => {
+                            let ty = Rc::new(SemTypeContext::mapping_definition_from_idx(*idx));
+                            return Ok(ty);
+                        }
+                        None => {
+                            let idx = builder.list_definitions.len();
+                            builder
+                                .list_json_schema_ref_memo
+                                .insert(name.to_string(), idx);
+                            builder.list_definitions.push(None);
+
+                            let items = match items {
+                                Some(items) => Some(self.to_sem_type(items, builder)?),
+                                None => None,
+                            };
+                            let prefix_items: Vec<Rc<ComplexSemType>> = prefix_items
+                                .iter()
+                                .map(|v| self.to_sem_type(v, builder))
+                                .collect::<Result<_>>()?;
+
+                            builder.list_definitions[idx] = Some(Rc::new(ListAtomic {
+                                prefix_items,
+                                // todo: should be unknown?
+                                items: items.unwrap_or(SemTypeContext::never().into()),
+                            }));
+
+                            let ty = Rc::new(SemTypeContext::list_definition_from_idx(idx));
+
+                            return Ok(ty);
+                        }
+                    }
+                }
+                // handle recursive types
                 if let JsonSchema::Object { vs, rest } = schema {
-                    match builder.json_schema_ref_memo.get(name) {
+                    match builder.mapping_json_schema_ref_memo.get(name) {
                         Some(idx) => {
                             let ty = Rc::new(SemTypeContext::mapping_definition_from_idx(*idx));
                             return Ok(ty);
                         }
                         None => {
                             let idx = builder.mapping_definitions.len();
-                            builder.json_schema_ref_memo.insert(name.to_string(), idx);
+                            builder
+                                .mapping_json_schema_ref_memo
+                                .insert(name.to_string(), idx);
                             builder.mapping_definitions.push(None);
                             let vs: MappingAtomic = vs
                                 .iter()
@@ -131,7 +173,7 @@ impl<'a> ToSemTypeConverter<'a> {
                     Some(items) => Some(self.to_sem_type(items, builder)?),
                     None => None,
                 };
-                let prefix_items = prefix_items
+                let prefix_items: Vec<Rc<ComplexSemType>> = prefix_items
                     .iter()
                     .map(|v| self.to_sem_type(v, builder))
                     .collect::<Result<_>>()?;
