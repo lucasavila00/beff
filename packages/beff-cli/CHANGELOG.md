@@ -1,5 +1,11 @@
 # @beff/cli
 
+## 0.0.43
+
+### Patch Changes
+
+- better error reporting
+
 ## 0.0.42
 
 ### Patch Changes

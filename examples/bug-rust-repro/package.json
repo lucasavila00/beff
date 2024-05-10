@@ -10,7 +10,7 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "@beff/cli": "workspace:^0.0.39",
+    "@beff/cli": "workspace:^",
     "@beff/client": "workspace:^",
     "vitest": "^0.34.4",
     "zod": "^3.23.5"
