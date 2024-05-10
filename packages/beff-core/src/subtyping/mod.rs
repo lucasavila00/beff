@@ -155,7 +155,6 @@ impl<'a> ToSemTypeConverter<'a> {
                 Ok(SemTypeContext::string_const(StringLitOrFormat::Codec(s.clone())).into())
             }
             JsonSchema::StNever => Ok(SemTypeContext::never().into()),
-            JsonSchema::StUnknown => Ok(SemTypeContext::unknown().into()),
             JsonSchema::StNot(it) => {
                 let chd = self.to_sem_type(it, builder)?;
                 Ok(chd.complement())
