@@ -1,9 +1,13 @@
 ---
 source: packages/beff-core/tests/print_parser.rs
+assertion_line: 204
 expression: ok(from)
 ---
-type User2 = { "age"?: number; "email"?: string; "name"?: string } & {
+type User2 = {
+  "age"?: number;
+  "email"?: string;
   "enabled": boolean;
+  "name"?: string;
 };
 type A = User2;
 

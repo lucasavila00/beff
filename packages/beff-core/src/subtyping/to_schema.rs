@@ -185,13 +185,11 @@ impl<'a, 'b> SchemerContext<'a, 'b> {
 
         let rest = if mt.rest.is_empty(self.ctx.0) {
             panic!("rest should not be empty, all records are open")
+        } else if mt.rest.is_any() {
+            None
         } else {
-            if mt.rest.is_any() {
-                None
-            } else {
-                let schema = self.convert_to_schema(&mt.rest, None);
-                Some(Box::new(schema))
-            }
+            let schema = self.convert_to_schema(&mt.rest, None);
+            Some(Box::new(schema))
         };
 
         JsonSchema::Object {

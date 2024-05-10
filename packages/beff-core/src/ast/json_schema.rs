@@ -245,7 +245,6 @@ impl JsonSchema {
                 } else {
                     Self::AllOf(BTreeSet::from_iter(vs))
                 }
-                // Self::AllOf(BTreeSet::from_iter(vs))
             }
         }
     }
