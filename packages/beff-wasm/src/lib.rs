@@ -100,8 +100,6 @@ struct LazyFileManager<'a> {
 
 impl<'a> FileManager for LazyFileManager<'a> {
     fn get_or_fetch_file(&mut self, file_name: &BffFileName) -> Option<Rc<ParsedModule>> {
-        log::debug!("RUST: get_or_fetch_file...");
-
         if let Some(it) = self.files.get(file_name) {
             return Some(it.clone());
         }
@@ -112,12 +110,7 @@ impl<'a> FileManager for LazyFileManager<'a> {
         match res {
             Ok(f) => {
                 self.files.insert(file_name.clone(), f.clone());
-                log::debug!("RUST: get_or_fetch_file inserted...");
-
-                let s = Some(f);
-                log::debug!("RUST: get_or_fetch_file built s...");
-
-                s
+                Some(f)
             }
             Err(err) => {
                 log::error!("{:?}", err);

@@ -307,7 +307,6 @@ pub fn parse_and_bind<R: FsModuleResolver>(
         content.to_owned(),
     );
     let (module, comments) = parse_with_swc(&source_file, cm, file_name)?;
-    log::debug!("RUST: Visiting file {file_name:?}");
 
     let mut v = ImportsVisitor::from_file(BffFileName::new(module.fm.name.to_string()), resolver);
     v.visit_module(&module.module);
@@ -386,7 +385,6 @@ pub fn parse_and_bind<R: FsModuleResolver>(
             }
         }
     }
-    log::debug!("RUST: Finished parse & visit file {file_name:?}");
 
     let f = Rc::new(ParsedModule {
         module,

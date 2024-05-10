@@ -74,10 +74,7 @@ impl<'a, R: FileManager> ExtractParserVisitor<'a, R> {
     }
 
     fn get_current_file(&mut self) -> Result<Rc<ParsedModule>> {
-        log::debug!("RUST: start get_current_file...");
         let res = self.files.get_or_fetch_file(&self.current_file);
-
-        log::debug!("RUST: get_current_file got res...");
 
         match res {
             Some(it) => Ok(it),
@@ -96,11 +93,8 @@ impl<'a, R: FileManager> ExtractParserVisitor<'a, R> {
         }
     }
     fn visit_current_file(&mut self) -> Result<()> {
-        log::debug!("RUST: Start visit_current_file...");
         let file = self.get_current_file()?;
-        log::debug!("RUST: Got current file...");
         let module = file.module.module.clone();
-        log::debug!("RUST: Cloned file...");
         self.visit_module(&module);
         Ok(())
     }
@@ -251,8 +245,6 @@ impl<'a, R: FileManager> ExtractParserVisitor<'a, R> {
 
 impl<'a, R: FileManager> Visit for ExtractParserVisitor<'a, R> {
     fn visit_call_expr(&mut self, n: &CallExpr) {
-        log::debug!("RUST: Visit call expr...");
-
         match n.callee {
             Callee::Super(_) => {}
             Callee::Import(_) => {}
@@ -279,10 +271,8 @@ pub fn extract_parser<R: FileManager>(
     settings: &BeffUserSettings,
 ) -> ParserExtractResult {
     let (errors, validators, built_decoders, counter) = {
-        log::debug!("RUST: Start extract parser...");
         let mut visitor = ExtractParserVisitor::new(files, entry_file_name.clone(), settings);
         let _ = visitor.visit_current_file();
-        log::debug!("RUST: Finish extract parser...");
         (
             visitor.errors,
             visitor.validators,
