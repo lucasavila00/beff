@@ -176,6 +176,7 @@ export const {
   Arr2C,
   ValidCurrency: ValidCurrencyCodec,
   UnionWithEnumAccess,
+  AccessLevelCodec,
   T3,
 } = parse.buildParsers<{
   Arr3: Arr3;
@@ -203,6 +204,7 @@ export const {
   ValidCurrency: ValidCurrency;
   UnionWithEnumAccess: UnionWithEnumAccess;
   T3: T3;
+  AccessLevelCodec: AccessLevel;
 }>({
   customFormats: {
     ValidCurrency: (input: string) => {

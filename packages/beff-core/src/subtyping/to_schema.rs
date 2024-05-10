@@ -184,9 +184,12 @@ impl<'a, 'b> SchemerContext<'a, 'b> {
         }
 
         let rest = if mt.rest.is_empty(self.ctx.0) {
+            panic!("rest should not be empty, all records are open")
+        } else if mt.rest.is_any() {
             None
         } else {
-            Some(Box::new(self.convert_to_schema(&mt.rest, None)))
+            let schema = self.convert_to_schema(&mt.rest, None);
+            Some(Box::new(schema))
         };
 
         JsonSchema::Object {
@@ -422,7 +425,7 @@ impl<'a, 'b> SchemerContext<'a, 'b> {
                         // noop
                     }
                     SubTypeTag::Mapping => {
-                        acc.insert(JsonSchema::StAnyObject);
+                        acc.insert(JsonSchema::object(vec![], Some(JsonSchema::Any.into())));
                     }
                     SubTypeTag::List => {
                         acc.insert(JsonSchema::AnyArrayLike);

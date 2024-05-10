@@ -1,5 +1,23 @@
 # @beff/cli
 
+## 0.0.42
+
+### Patch Changes
+
+- disallow extra prop
+
+## 0.0.41
+
+### Patch Changes
+
+- ad-hoc b
+
+## 0.0.40
+
+### Patch Changes
+
+- move types to cli
+
 ## 0.0.39
 
 ### Patch Changes

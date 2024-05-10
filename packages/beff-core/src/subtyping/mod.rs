@@ -115,7 +115,7 @@ impl<'a> ToSemTypeConverter<'a> {
                     .collect::<Result<_>>()?;
                 let rest = match rest {
                     Some(r) => self.to_sem_type(r, builder)?,
-                    None => SemTypeContext::never().into(),
+                    None => SemTypeContext::unknown().into(),
                 };
                 Ok(builder.mapping_definition(Rc::new(vs), rest).into())
             }
@@ -159,9 +159,6 @@ impl<'a> ToSemTypeConverter<'a> {
             JsonSchema::StNot(it) => {
                 let chd = self.to_sem_type(it, builder)?;
                 Ok(chd.complement())
-            }
-            JsonSchema::StAnyObject => {
-                unreachable!("should not be part of conversion input")
             }
         }
     }

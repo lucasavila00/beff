@@ -1,20 +1,8 @@
+import { ZodType } from "zod";
+
 export type Header<T> = T;
 export type StringFormat<Tag extends string> = string & { __customType: Tag };
 
-export type MetaParamServer = {
-  type: "path" | "query" | "header" | "body" | "context";
-  name: string;
-  required: boolean;
-  validator: any;
-  encoder: any;
-};
-export type HandlerMetaServer = {
-  method_kind: "get" | "post" | "put" | "delete" | "patch" | "options" | "use";
-  pattern: string;
-  return_validator: any;
-  return_encoder: any;
-  params: MetaParamServer[];
-};
 export type RegularDecodeError = {
   message: string;
   path: string[];
@@ -27,3 +15,25 @@ export type UnionDecodeError = {
   errors: DecodeError[];
 };
 export type DecodeError = RegularDecodeError | UnionDecodeError;
+
+export type ParseOptions = {
+  disallowExtraProperties?: boolean;
+};
+
+export type BeffParser<T> = {
+  parse: (input: any, options?: ParseOptions) => T;
+  safeParse: (
+    input: any,
+    options?: ParseOptions
+  ) => { success: true; data: T } | { success: false; errors: DecodeError[] };
+  zod: () => ZodType<T>;
+};
+type Parsers<T> = {
+  [K in keyof T]: BeffParser<T[K]>;
+};
+
+export type TagOfFormat<T extends StringFormat<string>> = T extends StringFormat<infer Tag> ? Tag : never;
+
+export type BuildParserFunction = <T>(args?: {
+  customFormats?: { [key: string]: (input: string) => boolean };
+}) => Parsers<T>;

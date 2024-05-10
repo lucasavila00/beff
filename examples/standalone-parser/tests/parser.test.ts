@@ -19,6 +19,7 @@ import {
   T3,
 } from "../src/parser";
 import { Arr2 } from "../src/types";
+
 it("exclude object", () => {
   expect(
     T3.parse({
@@ -29,6 +30,49 @@ it("exclude object", () => {
     {
       "kind": "square",
       "x": 1,
+    }
+  `);
+});
+it("disallow extra properties", () => {
+  expect(
+    T3.parse(
+      {
+        kind: "square",
+        x: 1,
+      },
+      {
+        disallowExtraProperties: true,
+      }
+    )
+  ).toMatchInlineSnapshot(`
+  {
+    "kind": "square",
+    "x": 1,
+  }
+`);
+  expect(
+    T3.safeParse(
+      {
+        kind: "square",
+        x: 1,
+        y: 1,
+      },
+      {
+        disallowExtraProperties: true,
+      }
+    )
+  ).toMatchInlineSnapshot(`
+    {
+      "errors": [
+        {
+          "message": "extra property",
+          "path": [
+            "y",
+          ],
+          "received": 1,
+        },
+      ],
+      "success": false,
     }
   `);
 });

@@ -1,11 +1,6 @@
 /* eslint-disable no-undef */
 //@ts-check
 
-class BffParseError {
-  constructor(errors) {
-    this.errors = errors;
-  }
-}
 function buildParsers(args) {
 
   const customFormats = args?.customFormats ?? {}
@@ -18,6 +13,7 @@ function buildParsers(args) {
 
   Object.keys(customFormats).forEach((k) => {
     const v = customFormats[k];
+    //@ts-ignore
     registerCustomFormatter(k, v);
   });
 
@@ -27,8 +23,10 @@ function buildParsers(args) {
   Object.keys(buildParsersInput).forEach((k) => {
     //@ts-ignore
     let v = buildParsersInput[k];
-    const safeParse = (input) => {
-      const validatorCtx = {};
+    const safeParse = (input, options) => {
+      const validatorCtx = {
+        disallowExtraProperties: options?.disallowExtraProperties ?? false,
+      };
       const new_value = v(validatorCtx, input);
       const validation_result = validatorCtx.errors;
       if (validation_result == null) {
@@ -36,12 +34,12 @@ function buildParsers(args) {
       }
       return { success: false, errors: validation_result };
     };
-    const parse = (input) => {
-      const safe = safeParse(input);
+    const parse = (input, options) => {
+      const safe = safeParse(input, options);
       if (safe.success) {
         return safe.data;
       }
-      throw new BffParseError(safe.errors);
+      throw safe
     };
     const zod = () => {
       //@ts-ignore
