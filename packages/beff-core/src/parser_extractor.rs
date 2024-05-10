@@ -74,7 +74,9 @@ impl<'a, R: FileManager> ExtractParserVisitor<'a, R> {
     }
 
     fn get_current_file(&mut self) -> Result<Rc<ParsedModule>> {
-        match self.files.get_or_fetch_file(&self.current_file) {
+        let res = self.files.get_or_fetch_file(&self.current_file);
+
+        match res {
             Some(it) => Ok(it),
             None => {
                 self.errors.push(

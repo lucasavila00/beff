@@ -307,6 +307,7 @@ pub fn parse_and_bind<R: FsModuleResolver>(
         content.to_owned(),
     );
     let (module, comments) = parse_with_swc(&source_file, cm, file_name)?;
+
     let mut v = ImportsVisitor::from_file(BffFileName::new(module.fm.name.to_string()), resolver);
     v.visit_module(&module.module);
 
