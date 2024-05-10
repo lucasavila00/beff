@@ -156,7 +156,7 @@ impl ToWritableModules for ExtractResult {
         let json_schema = Json::object(
             validators
                 .iter()
-                .flat_map(|it| Validator::to_json_kv(it.clone(), &validators))
+                .flat_map(|it| Validator::to_json_kv(it, &validators))
                 .collect(),
         );
 
