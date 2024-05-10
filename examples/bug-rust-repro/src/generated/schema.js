@@ -3,3 +3,4 @@ const jsonSchema = {
     "type": "string"
   }
 };
+export default jsonSchema;

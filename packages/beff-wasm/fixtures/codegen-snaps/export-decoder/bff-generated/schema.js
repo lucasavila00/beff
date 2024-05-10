@@ -86,3 +86,4 @@ const jsonSchema = {
     "type": "object"
   }
 };
+export default jsonSchema;
