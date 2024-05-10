@@ -149,7 +149,6 @@ pub enum JsonSchema {
     StNever,
     StUnknown,
     StNot(Box<JsonSchema>),
-    StAnyObject,
 }
 
 #[derive(PartialEq, Eq, Hash, Debug, Ord, PartialOrd, Clone)]
@@ -410,10 +409,7 @@ impl ToJson for JsonSchema {
             }
             JsonSchema::Const(val) => Json::object(vec![("const".into(), val.to_json())]),
             JsonSchema::AnyArrayLike => JsonSchema::Array(JsonSchema::Any.into()).to_json(),
-            JsonSchema::StNever
-            | JsonSchema::StUnknown
-            | JsonSchema::StNot(_)
-            | JsonSchema::StAnyObject => {
+            JsonSchema::StNever | JsonSchema::StUnknown | JsonSchema::StNot(_) => {
                 unreachable!("semantic types should not be converted to json")
             }
         }
@@ -726,16 +722,6 @@ impl JsonSchema {
                         v.to_ts_type().into(),
                     ],
                 })),
-            }),
-            JsonSchema::StAnyObject => TsType::TsTypeRef(TsTypeRef {
-                span: DUMMY_SP,
-                type_name: Ident {
-                    span: DUMMY_SP,
-                    sym: "Object".into(),
-                    optional: false,
-                }
-                .into(),
-                type_params: None,
             }),
             JsonSchema::AnyArrayLike => TsType::TsTypeRef(TsTypeRef {
                 span: DUMMY_SP,
