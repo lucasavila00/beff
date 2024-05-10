@@ -2,7 +2,7 @@ use core::fmt;
 use std::collections::BTreeMap;
 use std::collections::BTreeSet;
 
-use crate::ast::json::{Json, ToJson};
+use crate::ast::json::Json;
 use crate::subtyping::semtype::SemTypeContext;
 use crate::subtyping::semtype::SemTypeOps;
 use crate::subtyping::ToSemType;
@@ -140,7 +140,6 @@ pub enum JsonSchema {
     Ref(String),
 
     // todo: remove this, handle it outside of json schema
-    OpenApiResponseRef(String),
     AnyOf(BTreeSet<JsonSchema>),
     AllOf(BTreeSet<JsonSchema>),
     Const(JsonSchemaConst),
@@ -290,10 +289,146 @@ impl JsonSchema {
         }
     }
 }
-impl ToJson for JsonSchema {
+// impl ToJson for JsonSchema {
+//     #[allow(clippy::cast_precision_loss)]
+//     fn to_json(self) -> Json {
+//         match self {
+//             JsonSchema::String => {
+//                 Json::object(vec![("type".into(), Json::String("string".into()))])
+//             }
+//             JsonSchema::StringWithFormat(format) => Json::object(vec![
+//                 ("type".into(), Json::String("string".into())),
+//                 ("format".into(), Json::String(format)),
+//             ]),
+//             JsonSchema::Codec(format) => Json::object(vec![
+//                 ("type".into(), Json::String("string".into())),
+//                 ("format".into(), Json::String(format.to_string())),
+//             ]),
+
+//             JsonSchema::Object { vs: values, rest } => {
+//                 let mut vs = vec![
+//                     //
+//                     ("type".into(), Json::String("object".into())),
+//                     (
+//                         "required".into(),
+//                         //
+//                         Json::Array(
+//                             values
+//                                 .iter()
+//                                 .filter(|(_k, v)| v.is_required())
+//                                 .map(|(k, _v)| Json::String(k.clone()))
+//                                 .collect(),
+//                         ),
+//                     ),
+//                     (
+//                         "properties".into(),
+//                         //
+//                         Json::Object(
+//                             values
+//                                 .into_iter()
+//                                 .map(|(k, v)| (k, v.inner_move().to_json()))
+//                                 .collect(),
+//                         ),
+//                     ),
+//                 ];
+
+//                 if let Some(rest) = rest {
+//                     vs.push(("additionalProperties".into(), rest.to_json()));
+//                 }
+//                 Json::object(vs)
+//             }
+//             JsonSchema::Array(typ) => {
+//                 Json::object(vec![
+//                     //
+//                     ("type".into(), Json::String("array".into())),
+//                     ("items".into(), (*typ).to_json()),
+//                 ])
+//             }
+//             JsonSchema::Boolean => {
+//                 Json::object(vec![("type".into(), Json::String("boolean".into()))])
+//             }
+//             JsonSchema::Number => {
+//                 Json::object(vec![("type".into(), Json::String("number".into()))])
+//             }
+//             JsonSchema::Any => Json::object(vec![]),
+//             JsonSchema::Ref(reference) => Json::object(vec![(
+//                 "$ref".into(),
+//                 Json::String(format!("#/components/schemas/{reference}")),
+//             )]),
+//             JsonSchema::OpenApiResponseRef(reference) => Json::object(vec![(
+//                 "$ref".into(),
+//                 Json::String(format!("#/components/responses/{reference}")),
+//             )]),
+//             JsonSchema::Null => Json::object(vec![("type".into(), Json::String("null".into()))]),
+//             JsonSchema::AnyOf(types) => {
+//                 let all_literals = types.iter().all(|it| matches!(it, JsonSchema::Const(_)));
+//                 if all_literals {
+//                     let vs = types
+//                         .into_iter()
+//                         .map(|it| match it {
+//                             JsonSchema::Const(e) => e.to_json(),
+//                             _ => unreachable!("should have been caught by all_literals check"),
+//                         })
+//                         .collect();
+//                     Json::object(vec![("enum".into(), Json::Array(vs))])
+//                 } else {
+//                     let vs = types.into_iter().map(ToJson::to_json).collect();
+//                     Json::object(vec![("anyOf".into(), Json::Array(vs))])
+//                 }
+//             }
+//             JsonSchema::AllOf(types) => Json::object(vec![(
+//                 "allOf".into(),
+//                 Json::Array(types.into_iter().map(ToJson::to_json).collect()),
+//             )]),
+
+//             JsonSchema::Tuple {
+//                 prefix_items,
+//                 items,
+//             } => {
+//                 let mut v = vec![
+//                     //
+//                     ("type".into(), Json::String("array".into())),
+//                 ];
+//                 let len_f = prefix_items.len();
+//                 if !prefix_items.is_empty() {
+//                     v.push((
+//                         "prefixItems".into(),
+//                         Json::Array(prefix_items.into_iter().map(ToJson::to_json).collect()),
+//                     ));
+//                 }
+//                 if let Some(ty) = items {
+//                     v.push(("items".into(), ty.to_json()));
+//                 } else {
+//                     v.push(("minItems".into(), Json::parse_int(len_f as i64)));
+//                     v.push(("maxItems".into(), Json::parse_int(len_f as i64)));
+//                 }
+//                 Json::object(v)
+//             }
+//             JsonSchema::Const(val) => Json::object(vec![("const".into(), val.to_json())]),
+//             JsonSchema::AnyArrayLike => JsonSchema::Array(JsonSchema::Any.into()).to_json(),
+//             JsonSchema::StNever | JsonSchema::StNot(_) => {
+//                 unreachable!("semantic types should not be converted to json")
+//             }
+//         }
+//     }
+// }
+
+pub struct JsonFlatConverter<'a> {
+    seen_refs: BTreeSet<String>,
+    validators: &'a [Validator],
+}
+
+impl<'a> JsonFlatConverter<'a> {
+    pub fn new(validators: &'a [Validator]) -> Self {
+        Self {
+            seen_refs: BTreeSet::new(),
+            validators,
+        }
+    }
+
     #[allow(clippy::cast_precision_loss)]
-    fn to_json(self) -> Json {
-        match self {
+    pub fn to_json_flat(&mut self, schema: JsonSchema) -> Json {
+        match schema {
             JsonSchema::String => {
                 Json::object(vec![("type".into(), Json::String("string".into()))])
             }
@@ -327,14 +462,14 @@ impl ToJson for JsonSchema {
                         Json::Object(
                             values
                                 .into_iter()
-                                .map(|(k, v)| (k, v.inner_move().to_json()))
+                                .map(|(k, v)| (k, self.to_json_flat(v.inner_move())))
                                 .collect(),
                         ),
                     ),
                 ];
 
                 if let Some(rest) = rest {
-                    vs.push(("additionalProperties".into(), rest.to_json()));
+                    vs.push(("additionalProperties".into(), self.to_json_flat(*rest)));
                 }
                 Json::object(vs)
             }
@@ -342,7 +477,7 @@ impl ToJson for JsonSchema {
                 Json::object(vec![
                     //
                     ("type".into(), Json::String("array".into())),
-                    ("items".into(), (*typ).to_json()),
+                    ("items".into(), self.to_json_flat(*typ)),
                 ])
             }
             JsonSchema::Boolean => {
@@ -352,14 +487,23 @@ impl ToJson for JsonSchema {
                 Json::object(vec![("type".into(), Json::String("number".into()))])
             }
             JsonSchema::Any => Json::object(vec![]),
-            JsonSchema::Ref(reference) => Json::object(vec![(
-                "$ref".into(),
-                Json::String(format!("#/components/schemas/{reference}")),
-            )]),
-            JsonSchema::OpenApiResponseRef(reference) => Json::object(vec![(
-                "$ref".into(),
-                Json::String(format!("#/components/responses/{reference}")),
-            )]),
+            JsonSchema::Ref(reference) => {
+                if self.seen_refs.contains(&reference) {
+                    // recursive type, let's return "ANY"
+                    return Json::object(vec![]);
+                }
+                let validator = self
+                    .validators
+                    .iter()
+                    .find(|it| it.name == reference)
+                    .expect("reference should be in validators");
+                self.seen_refs.insert(reference.clone());
+                let schema = validator.schema.clone();
+                let json = self.to_json_flat(schema);
+                self.seen_refs.remove(&reference);
+                json
+            }
+
             JsonSchema::Null => Json::object(vec![("type".into(), Json::String("null".into()))]),
             JsonSchema::AnyOf(types) => {
                 let all_literals = types.iter().all(|it| matches!(it, JsonSchema::Const(_)));
@@ -373,13 +517,13 @@ impl ToJson for JsonSchema {
                         .collect();
                     Json::object(vec![("enum".into(), Json::Array(vs))])
                 } else {
-                    let vs = types.into_iter().map(ToJson::to_json).collect();
+                    let vs = types.into_iter().map(|it| self.to_json_flat(it)).collect();
                     Json::object(vec![("anyOf".into(), Json::Array(vs))])
                 }
             }
             JsonSchema::AllOf(types) => Json::object(vec![(
                 "allOf".into(),
-                Json::Array(types.into_iter().map(ToJson::to_json).collect()),
+                Json::Array(types.into_iter().map(|it| self.to_json_flat(it)).collect()),
             )]),
 
             JsonSchema::Tuple {
@@ -394,11 +538,16 @@ impl ToJson for JsonSchema {
                 if !prefix_items.is_empty() {
                     v.push((
                         "prefixItems".into(),
-                        Json::Array(prefix_items.into_iter().map(ToJson::to_json).collect()),
+                        Json::Array(
+                            prefix_items
+                                .into_iter()
+                                .map(|it| self.to_json_flat(it))
+                                .collect(),
+                        ),
                     ));
                 }
                 if let Some(ty) = items {
-                    v.push(("items".into(), ty.to_json()));
+                    v.push(("items".into(), self.to_json_flat(*ty)));
                 } else {
                     v.push(("minItems".into(), Json::parse_int(len_f as i64)));
                     v.push(("maxItems".into(), Json::parse_int(len_f as i64)));
@@ -406,7 +555,9 @@ impl ToJson for JsonSchema {
                 Json::object(v)
             }
             JsonSchema::Const(val) => Json::object(vec![("const".into(), val.to_json())]),
-            JsonSchema::AnyArrayLike => JsonSchema::Array(JsonSchema::Any.into()).to_json(),
+            JsonSchema::AnyArrayLike => {
+                self.to_json_flat(JsonSchema::Array(JsonSchema::Any.into()))
+            }
             JsonSchema::StNever | JsonSchema::StNot(_) => {
                 unreachable!("semantic types should not be converted to json")
             }
@@ -727,9 +878,6 @@ impl JsonSchema {
                 .into(),
                 type_params: None,
             }),
-            JsonSchema::OpenApiResponseRef(_) => {
-                unreachable!("open api response ref should not be converted to typescript")
-            }
         }
     }
 }

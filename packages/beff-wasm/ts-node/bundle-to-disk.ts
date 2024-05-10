@@ -96,7 +96,12 @@ export const execProject = (
 
   fs.writeFileSync(path.join(outputDir, "validators.js"), finalizeValidatorsCode(outResult, mod));
   if (outResult.json_schema != null) {
-    fs.writeFileSync(path.join(outputDir, "schema.json"), outResult.json_schema);
+    const exportJsonSchema =
+      projectJson.module === "cjs" ? "module.exports = jsonSchema;" : "export default jsonSchema;";
+    fs.writeFileSync(
+      path.join(outputDir, "schema.js"),
+      "const jsonSchema = " + outResult.json_schema + ";\n" + exportJsonSchema
+    );
   }
 
   if (projectJson.parser) {
