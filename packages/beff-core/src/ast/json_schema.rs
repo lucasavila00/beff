@@ -470,6 +470,8 @@ impl<'a> JsonFlatConverter<'a> {
 
                 if let Some(rest) = rest {
                     vs.push(("additionalProperties".into(), self.to_json_flat(*rest)));
+                } else {
+                    vs.push(("additionalProperties".into(), Json::Bool(false)));
                 }
                 Json::object(vs)
             }
@@ -508,14 +510,23 @@ impl<'a> JsonFlatConverter<'a> {
             JsonSchema::AnyOf(types) => {
                 let all_literals = types.iter().all(|it| matches!(it, JsonSchema::Const(_)));
                 if all_literals {
-                    let vs = types
+                    let vs: Vec<Json> = types
                         .into_iter()
                         .map(|it| match it {
                             JsonSchema::Const(e) => e.to_json(),
                             _ => unreachable!("should have been caught by all_literals check"),
                         })
                         .collect();
-                    Json::object(vec![("enum".into(), Json::Array(vs))])
+
+                    let all_strings = vs.iter().all(|it| matches!(it, Json::String(_)));
+                    if all_strings {
+                        Json::object(vec![
+                            ("enum".into(), Json::Array(vs)),
+                            ("type".into(), Json::String("string".into())),
+                        ])
+                    } else {
+                        Json::object(vec![("enum".into(), Json::Array(vs))])
+                    }
                 } else {
                     let vs = types.into_iter().map(|it| self.to_json_flat(it)).collect();
                     Json::object(vec![("anyOf".into(), Json::Array(vs))])

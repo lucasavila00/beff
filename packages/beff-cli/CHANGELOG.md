@@ -1,5 +1,11 @@
 # @beff/cli
 
+## 0.0.46
+
+### Patch Changes
+
+- better json schema
+
 ## 0.0.45
 
 ### Patch Changes
