@@ -1,5 +1,13 @@
 # @beff/client
 
+## 0.0.44
+
+### Patch Changes
+
+- fix st obj bugs
+- Updated dependencies
+  - @beff/cli@0.0.44
+
 ## 0.0.43
 
 ### Patch Changes

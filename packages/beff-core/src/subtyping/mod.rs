@@ -63,7 +63,7 @@ impl<'a> ToSemTypeConverter<'a> {
                                 .collect::<Result<_>>()?;
                             let rest = match rest {
                                 Some(r) => self.to_sem_type(r, builder)?,
-                                None => SemTypeContext::never().into(),
+                                None => SemTypeContext::unknown().into(),
                             };
 
                             builder.mapping_definitions[idx] = Some(Rc::new(MappingAtomicType {
