@@ -403,7 +403,6 @@ impl<'a> DecoderFnGenerator<'a> {
             JsonSchema::AnyArrayLike => {
                 self.decode_expr(&JsonSchema::Array(JsonSchema::Any.into()), required)
             }
-            JsonSchema::OpenApiResponseRef(_) => unreachable!("will not decode error schema"),
             JsonSchema::Null => Self::decode_call("decodeNull", required),
             JsonSchema::Boolean => Self::decode_call("decodeBoolean", required),
             JsonSchema::String => Self::decode_call("decodeString", required),

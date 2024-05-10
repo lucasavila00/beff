@@ -1,4 +1,4 @@
-{
+const jsonSchema = {
   "A": {
     "enum": [
       1,
@@ -45,16 +45,28 @@
   "UnionNested": {
     "anyOf": [
       {
-        "$ref": "#/components/schemas/A"
+        "enum": [
+          1,
+          2
+        ]
       },
       {
-        "$ref": "#/components/schemas/B"
+        "enum": [
+          2,
+          3
+        ]
       },
       {
-        "$ref": "#/components/schemas/D"
+        "enum": [
+          4,
+          5
+        ]
       },
       {
-        "$ref": "#/components/schemas/E"
+        "enum": [
+          5,
+          6
+        ]
       }
     ]
   },
@@ -73,4 +85,4 @@
     ],
     "type": "object"
   }
-}
+};

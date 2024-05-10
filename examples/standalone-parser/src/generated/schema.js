@@ -1,4 +1,4 @@
-{
+const jsonSchema = {
   "AccessLevel": {
     "enum": [
       "ADMIN",
@@ -424,13 +424,21 @@
   "PublicUser": {
     "properties": {
       "accessLevel": {
-        "$ref": "#/components/schemas/AccessLevel"
+        "enum": [
+          "ADMIN",
+          "USER"
+        ]
       },
       "avatarSize": {
-        "$ref": "#/components/schemas/AvatarSize"
+        "type": "string"
       },
       "extra": {
-        "$ref": "#/components/schemas/Extra"
+        "additionalProperties": {
+          "type": "string"
+        },
+        "properties": {},
+        "required": [],
+        "type": "object"
       },
       "name": {
         "type": "string"
@@ -447,7 +455,15 @@
   "Repro1": {
     "properties": {
       "sizes": {
-        "$ref": "#/components/schemas/Repro2"
+        "properties": {
+          "useSmallerSizes": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "useSmallerSizes"
+        ],
+        "type": "object"
       }
     },
     "required": [],
@@ -681,17 +697,58 @@
   "User": {
     "properties": {
       "accessLevel": {
-        "$ref": "#/components/schemas/AccessLevel"
+        "enum": [
+          "ADMIN",
+          "USER"
+        ]
       },
       "avatarSize": {
-        "$ref": "#/components/schemas/AvatarSize"
+        "type": "string"
       },
       "extra": {
-        "$ref": "#/components/schemas/Extra"
+        "additionalProperties": {
+          "type": "string"
+        },
+        "properties": {},
+        "required": [],
+        "type": "object"
       },
       "friends": {
         "items": {
-          "$ref": "#/components/schemas/User"
+          "properties": {
+            "accessLevel": {
+              "enum": [
+                "ADMIN",
+                "USER"
+              ]
+            },
+            "avatarSize": {
+              "type": "string"
+            },
+            "extra": {
+              "additionalProperties": {
+                "type": "string"
+              },
+              "properties": {},
+              "required": [],
+              "type": "object"
+            },
+            "friends": {
+              "items": {},
+              "type": "array"
+            },
+            "name": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "accessLevel",
+            "avatarSize",
+            "extra",
+            "friends",
+            "name"
+          ],
+          "type": "object"
         },
         "type": "array"
       },
@@ -721,4 +778,4 @@
     "required": [],
     "type": "object"
   }
-}
+};
