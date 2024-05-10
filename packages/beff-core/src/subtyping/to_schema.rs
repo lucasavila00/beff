@@ -3,8 +3,6 @@ use std::{
     rc::Rc,
 };
 
-use anyhow::bail;
-
 use crate::{
     ast::json_schema::{JsonSchema, JsonSchemaConst, Optionality},
     Validator,
@@ -186,7 +184,8 @@ impl<'a, 'b> SchemerContext<'a, 'b> {
         }
 
         let rest = if mt.rest.is_empty(self.ctx.0) {
-            bail!("rest should not be empty, all records are open")
+            // bail!("rest should not be empty, all records are open")
+            None
         } else if mt.rest.is_any() {
             None
         } else {
