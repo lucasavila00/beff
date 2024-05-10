@@ -1361,7 +1361,7 @@ impl<'a, 'b, R: FileManager> TypeToSchema<'a, 'b, R> {
             SymbolExport::ValueExpr { expr, .. } => self.typeof_expr(expr, false),
             SymbolExport::StarOfOtherFile { .. } => todo!(),
             SymbolExport::SomethingOfOtherFile { .. } => todo!(),
-            SymbolExport::ExprDecl { .. } => todo!(),
+            SymbolExport::ExprDecl { ty, .. } => self.convert_ts_type(ty),
         };
         self.current_file = old_file;
         ty
@@ -1523,7 +1523,10 @@ impl<'a, 'b, R: FileManager> TypeToSchema<'a, 'b, R> {
                 DiagnosticInfoMessage::NeverCannotBeConvertedToJsonSchema,
             );
         }
-        let (head, tail) = to_validators(ctx, &access_st, "AnyName", self.counter);
+        let (head, tail) =
+            to_validators(ctx, &access_st, "AnyName", self.counter).map_err(|any| {
+                self.box_error(span, DiagnosticInfoMessage::AnyhowError(any.to_string()))
+            })?;
         for t in tail {
             self.insert_definition(t.name.clone(), t.schema)?;
         }
