@@ -160,9 +160,6 @@ impl<'a> ToSemTypeConverter<'a> {
                 let chd = self.to_sem_type(it, builder)?;
                 Ok(chd.complement())
             }
-            JsonSchema::StAnyObject => {
-                unreachable!("should not be part of conversion input")
-            }
         }
     }
 }
