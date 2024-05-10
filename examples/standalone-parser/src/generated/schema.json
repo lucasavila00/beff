@@ -32,6 +32,7 @@
   "DiscriminatedUnion": {
     "anyOf": [
       {
+        "additionalProperties": {},
         "properties": {
           "a1": {
             "type": "string"
@@ -54,6 +55,7 @@
         "type": "object"
       },
       {
+        "additionalProperties": {},
         "properties": {
           "a2": {
             "type": "string"
@@ -73,6 +75,7 @@
         "type": "object"
       },
       {
+        "additionalProperties": {},
         "properties": {
           "type": {
             "const": "b"
@@ -92,6 +95,7 @@
   "DiscriminatedUnion2": {
     "anyOf": [
       {
+        "additionalProperties": {},
         "properties": {
           "a1": {
             "type": "string"
@@ -114,6 +118,7 @@
         "type": "object"
       },
       {
+        "additionalProperties": {},
         "properties": {
           "a2": {
             "type": "string"
@@ -133,6 +138,7 @@
         "type": "object"
       },
       {
+        "additionalProperties": {},
         "properties": {
           "type": {
             "const": "d"
@@ -147,6 +153,7 @@
         "type": "object"
       },
       {
+        "additionalProperties": {},
         "properties": {
           "type": {
             "const": "b"
@@ -166,6 +173,7 @@
   "DiscriminatedUnion3": {
     "anyOf": [
       {
+        "additionalProperties": {},
         "properties": {
           "a1": {
             "type": "string"
@@ -184,6 +192,7 @@
         "type": "object"
       },
       {
+        "additionalProperties": {},
         "properties": {
           "type": {
             "const": "b"
@@ -203,8 +212,10 @@
   "DiscriminatedUnion4": {
     "anyOf": [
       {
+        "additionalProperties": {},
         "properties": {
           "a": {
+            "additionalProperties": {},
             "properties": {
               "a1": {
                 "type": "string"
@@ -230,8 +241,10 @@
         "type": "object"
       },
       {
+        "additionalProperties": {},
         "properties": {
           "a": {
+            "additionalProperties": {},
             "properties": {
               "a2": {
                 "type": "string"
@@ -267,8 +280,10 @@
     "type": "object"
   },
   "LevelAndDSettings": {
+    "additionalProperties": {},
     "properties": {
       "d": {
+        "additionalProperties": {},
         "properties": {
           "tag": {
             "const": "d"
@@ -293,8 +308,10 @@
     "type": "object"
   },
   "Mapped": {
+    "additionalProperties": {},
     "properties": {
       "a": {
+        "additionalProperties": {},
         "properties": {
           "value": {
             "const": "a"
@@ -306,6 +323,7 @@
         "type": "object"
       },
       "b": {
+        "additionalProperties": {},
         "properties": {
           "value": {
             "const": "b"
@@ -324,8 +342,10 @@
     "type": "object"
   },
   "MappedOptional": {
+    "additionalProperties": {},
     "properties": {
       "a": {
+        "additionalProperties": {},
         "properties": {
           "value": {
             "const": "a"
@@ -337,6 +357,7 @@
         "type": "object"
       },
       "b": {
+        "additionalProperties": {},
         "properties": {
           "value": {
             "const": "b"
@@ -352,8 +373,10 @@
     "type": "object"
   },
   "OmitSettings": {
+    "additionalProperties": {},
     "properties": {
       "d": {
+        "additionalProperties": {},
         "properties": {
           "tag": {
             "const": "d"
@@ -384,6 +407,7 @@
     ]
   },
   "PartialObject": {
+    "additionalProperties": {},
     "properties": {
       "a": {
         "type": "string"
@@ -396,11 +420,13 @@
     "type": "object"
   },
   "PartialSettings": {
+    "additionalProperties": {},
     "properties": {
       "a": {
         "type": "string"
       },
       "d": {
+        "additionalProperties": {},
         "properties": {
           "tag": {
             "const": "d"
@@ -422,6 +448,7 @@
     "type": "object"
   },
   "PublicUser": {
+    "additionalProperties": {},
     "properties": {
       "accessLevel": {
         "$ref": "#/components/schemas/AccessLevel"
@@ -445,6 +472,7 @@
     "type": "object"
   },
   "Repro1": {
+    "additionalProperties": {},
     "properties": {
       "sizes": {
         "$ref": "#/components/schemas/Repro2"
@@ -454,6 +482,7 @@
     "type": "object"
   },
   "Repro2": {
+    "additionalProperties": {},
     "properties": {
       "useSmallerSizes": {
         "type": "boolean"
@@ -465,6 +494,7 @@
     "type": "object"
   },
   "Req": {
+    "additionalProperties": {},
     "properties": {
       "optional": {
         "type": "string"
@@ -476,6 +506,7 @@
     "type": "object"
   },
   "RequiredPartialObject": {
+    "additionalProperties": {},
     "properties": {
       "a": {
         "type": "string"
@@ -491,11 +522,13 @@
     "type": "object"
   },
   "Settings": {
+    "additionalProperties": {},
     "properties": {
       "a": {
         "type": "string"
       },
       "d": {
+        "additionalProperties": {},
         "properties": {
           "tag": {
             "const": "d"
@@ -526,6 +559,32 @@
         "type": "string"
       },
       {
+        "additionalProperties": {
+          "anyOf": [
+            {
+              "type": "null"
+            },
+            {
+              "type": "boolean"
+            },
+            {
+              "type": "string"
+            },
+            {
+              "type": "number"
+            },
+            {
+              "items": {},
+              "type": "array"
+            },
+            {
+              "additionalProperties": {},
+              "properties": {},
+              "required": [],
+              "type": "object"
+            }
+          ]
+        },
         "properties": {
           "tag": {
             "const": "d"
@@ -541,6 +600,7 @@
   "Shape": {
     "anyOf": [
       {
+        "additionalProperties": {},
         "properties": {
           "kind": {
             "const": "circle"
@@ -556,6 +616,7 @@
         "type": "object"
       },
       {
+        "additionalProperties": {},
         "properties": {
           "kind": {
             "const": "square"
@@ -571,6 +632,7 @@
         "type": "object"
       },
       {
+        "additionalProperties": {},
         "properties": {
           "kind": {
             "const": "triangle"
@@ -594,6 +656,32 @@
   "T3": {
     "anyOf": [
       {
+        "additionalProperties": {
+          "anyOf": [
+            {
+              "type": "null"
+            },
+            {
+              "type": "boolean"
+            },
+            {
+              "type": "string"
+            },
+            {
+              "type": "number"
+            },
+            {
+              "items": {},
+              "type": "array"
+            },
+            {
+              "additionalProperties": {},
+              "properties": {},
+              "required": [],
+              "type": "object"
+            }
+          ]
+        },
         "properties": {
           "kind": {
             "const": "square"
@@ -609,6 +697,32 @@
         "type": "object"
       },
       {
+        "additionalProperties": {
+          "anyOf": [
+            {
+              "type": "null"
+            },
+            {
+              "type": "boolean"
+            },
+            {
+              "type": "string"
+            },
+            {
+              "type": "number"
+            },
+            {
+              "items": {},
+              "type": "array"
+            },
+            {
+              "additionalProperties": {},
+              "properties": {},
+              "required": [],
+              "type": "object"
+            }
+          ]
+        },
         "properties": {
           "kind": {
             "const": "triangle"
@@ -632,6 +746,7 @@
   "UnionWithEnumAccess": {
     "anyOf": [
       {
+        "additionalProperties": {},
         "properties": {
           "tag": {
             "const": "a"
@@ -647,6 +762,7 @@
         "type": "object"
       },
       {
+        "additionalProperties": {},
         "properties": {
           "tag": {
             "const": "b"
@@ -662,6 +778,7 @@
         "type": "object"
       },
       {
+        "additionalProperties": {},
         "properties": {
           "tag": {
             "const": "c"
@@ -679,6 +796,7 @@
     ]
   },
   "User": {
+    "additionalProperties": {},
     "properties": {
       "accessLevel": {
         "$ref": "#/components/schemas/AccessLevel"
@@ -713,6 +831,7 @@
     "type": "string"
   },
   "WithOptionals": {
+    "additionalProperties": {},
     "properties": {
       "optional": {
         "type": "string"

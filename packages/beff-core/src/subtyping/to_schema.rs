@@ -418,7 +418,10 @@ impl<'a, 'b> SchemerContext<'a, 'b> {
                         // noop
                     }
                     SubTypeTag::Mapping => {
-                        acc.insert(JsonSchema::StAnyObject);
+                        acc.insert(JsonSchema::Object {
+                            vs: BTreeMap::new(),
+                            rest: JsonSchema::Any.into(),
+                        });
                     }
                     SubTypeTag::List => {
                         acc.insert(JsonSchema::AnyArrayLike);

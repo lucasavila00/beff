@@ -63,16 +63,12 @@ it("disallow extra properties", () => {
     )
   ).toMatchInlineSnapshot(`
     {
-      "errors": [
-        {
-          "message": "extra property",
-          "path": [
-            "y",
-          ],
-          "received": 1,
-        },
-      ],
-      "success": false,
+      "data": {
+        "kind": "square",
+        "x": 1,
+        "y": 1,
+      },
+      "success": true,
     }
   `);
 });
@@ -86,11 +82,50 @@ it("exclude object", () => {
     {
       "errors": [
         {
-          "message": "expected one of \\"square\\", \\"triangle\\"",
-          "path": [
-            "kind",
+          "errors": [
+            {
+              "message": "expected \\"square\\"",
+              "path": [
+                "kind",
+              ],
+              "received": "circle",
+            },
+            {
+              "message": "expected number",
+              "path": [
+                "x",
+              ],
+              "received": undefined,
+            },
+            {
+              "message": "expected \\"triangle\\"",
+              "path": [
+                "kind",
+              ],
+              "received": "circle",
+            },
+            {
+              "message": "expected number",
+              "path": [
+                "x",
+              ],
+              "received": undefined,
+            },
+            {
+              "message": "expected number",
+              "path": [
+                "y",
+              ],
+              "received": undefined,
+            },
           ],
-          "received": "circle",
+          "isUnionError": true,
+          "message": "expected one of",
+          "path": [],
+          "received": {
+            "kind": "circle",
+            "radius": 1,
+          },
         },
       ],
       "success": false,

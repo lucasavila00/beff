@@ -44,7 +44,7 @@ mod tests {
                         JsonSchema::Ref("User".into()).required(),
                     ),
                 ],
-                None,
+                JsonSchema::Any.into(),
             ),
         }];
 
@@ -54,7 +54,7 @@ mod tests {
                 ("id".into(), JsonSchema::String.required()),
                 ("bestFriend".into(), JsonSchema::Null.required()),
             ],
-            None,
+            JsonSchema::Any.into(),
         );
 
         let res = schema_is_sub_type(
@@ -84,7 +84,7 @@ mod tests {
                         JsonSchema::Ref("User".into()).optional(),
                     ),
                 ],
-                None,
+                JsonSchema::Any.into(),
             ),
         }];
 
@@ -97,7 +97,7 @@ mod tests {
                     JsonSchema::Ref("User".into()).optional(),
                 ),
             ],
-            None,
+            JsonSchema::Any.into(),
         );
 
         let res = schema_is_sub_type(
@@ -127,7 +127,7 @@ mod tests {
                         JsonSchema::Ref("User".into()).optional(),
                     ),
                 ],
-                None,
+                JsonSchema::Any.into(),
             ),
         }];
 
@@ -140,7 +140,7 @@ mod tests {
                     JsonSchema::Ref("User".into()).optional(),
                 ),
             ],
-            None,
+            JsonSchema::Any.into(),
         );
 
         let res = schema_is_sub_type(
@@ -171,7 +171,7 @@ mod tests {
                         JsonSchema::Ref("User".into()).optional(),
                     ),
                 ],
-                None,
+                JsonSchema::Any.into(),
             ),
         }];
 
@@ -180,14 +180,14 @@ mod tests {
                 ("a".into(), JsonSchema::String.required()),
                 ("b".into(), JsonSchema::Ref("User".into()).required()),
             ],
-            None,
+            JsonSchema::Any.into(),
         );
         let t2 = JsonSchema::object(
             vec![
                 ("a".into(), JsonSchema::String.required()),
                 ("b".into(), JsonSchema::Ref("User".into()).optional()),
             ],
-            None,
+            JsonSchema::Any.into(),
         );
 
         let res = schema_is_sub_type(
@@ -210,8 +210,14 @@ mod tests {
     fn mappings3() {
         let definitions = vec![];
 
-        let t1 = JsonSchema::object(vec![("a".into(), JsonSchema::String.required())], None);
-        let t2 = JsonSchema::object(vec![("a".into(), JsonSchema::String.optional())], None);
+        let t1 = JsonSchema::object(
+            vec![("a".into(), JsonSchema::String.required())],
+            JsonSchema::Any.into(),
+        );
+        let t2 = JsonSchema::object(
+            vec![("a".into(), JsonSchema::String.optional())],
+            JsonSchema::Any.into(),
+        );
 
         let res = schema_is_sub_type(&t1, &t2, &definitions, &definitions);
         assert!(res);
@@ -233,9 +239,12 @@ mod tests {
                     JsonSchema::Const(JsonSchemaConst::String("def".into())).required(),
                 ),
             ],
-            None,
+            JsonSchema::Any.into(),
         );
-        let t2 = JsonSchema::object(vec![("a".into(), JsonSchema::String.required())], None);
+        let t2 = JsonSchema::object(
+            vec![("a".into(), JsonSchema::String.required())],
+            JsonSchema::Any.into(),
+        );
 
         let res = schema_is_sub_type(&t1, &t2, &definitions, &definitions);
         assert!(res);
@@ -251,9 +260,12 @@ mod tests {
                 "a".into(),
                 JsonSchema::Const(JsonSchemaConst::String("abc".into())).required(),
             )],
-            None,
+            JsonSchema::Any.into(),
         );
-        let t2 = JsonSchema::object(vec![("a".into(), JsonSchema::String.required())], None);
+        let t2 = JsonSchema::object(
+            vec![("a".into(), JsonSchema::String.required())],
+            JsonSchema::Any.into(),
+        );
 
         let res = schema_is_sub_type(&t1, &t2, &definitions, &definitions);
         assert!(res);

@@ -2,8 +2,9 @@
 source: packages/beff-core/tests/print_parser.rs
 expression: ok(from)
 ---
-type A = { "_tag": "Left"; "left": string } | {
+type A = { "_tag": "Left"; "left": string; [key: string]: any } | {
   "_tag": "Right";
   "right": number;
+  [key: string]: any;
 };
 

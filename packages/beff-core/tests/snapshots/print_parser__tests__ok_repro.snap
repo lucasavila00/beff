@@ -2,7 +2,17 @@
 source: packages/beff-core/tests/print_parser.rs
 expression: "ok(r#\"\n        export type Settings = {\n            a: string;\n            level: \"a\" | \"b\";\n            d: {\n                tag: \"d\";\n            };\n        };\n          \n        export type SettingsUpdate = Settings[\"a\" | \"level\" | \"d\"];\n        parse.buildParsers<{ SettingsUpdate: SettingsUpdate }>();\n      \"#)"
 ---
-type Settings = { "a": string; "d": { "tag": "d" }; "level": "a" | "b" };
-type SettingsUpdate = string | { "tag": "d" };
+type Settings = {
+  "a": string;
+  "d": { "tag": "d"; [key: string]: any };
+  "level": "a" | "b";
+  [key: string]: any;
+};
+type SettingsUpdate = string | {
+  "tag": "d";
+  [key: string]: null | boolean | string | number | Array | {
+    [key: string]: any;
+  };
+};
 type SettingsUpdate = SettingsUpdate;
 

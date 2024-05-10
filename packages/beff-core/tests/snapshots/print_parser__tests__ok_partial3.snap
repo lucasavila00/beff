@@ -2,12 +2,13 @@
 source: packages/beff-core/tests/print_parser.rs
 expression: ok(from)
 ---
-type ObjWithUsers = { "a2"?: User2; "enabled": boolean };
+type ObjWithUsers = { "a2"?: User2; "enabled": boolean; [key: string]: any };
 type User2 = {
   "age"?: number;
   "email"?: string;
   "enabled": boolean;
   "name"?: string;
+  [key: string]: any;
 };
 type A = ObjWithUsers;
 

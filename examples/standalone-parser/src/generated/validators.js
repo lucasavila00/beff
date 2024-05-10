@@ -436,7 +436,14 @@ function DecodeSettingsUpdate(ctx, input, required = true) {
         (ctx, input)=>(decodeString(ctx, input, required)),
         (ctx, input)=>(decodeObject(ctx, input, required, {
                 "tag": (ctx, input)=>(decodeConst(ctx, input, true, "d"))
-            }))
+            }, (ctx, input)=>(decodeAnyOf(ctx, input, false, [
+                    (ctx, input)=>(decodeNull(ctx, input, false)),
+                    (ctx, input)=>(decodeBoolean(ctx, input, false)),
+                    (ctx, input)=>(decodeString(ctx, input, false)),
+                    (ctx, input)=>(decodeNumber(ctx, input, false)),
+                    (ctx, input)=>(decodeArray(ctx, input, false, (ctx, input)=>(decodeAny(ctx, input, true)))),
+                    (ctx, input)=>(decodeObject(ctx, input, false, {}))
+                ]))))
     ]);
 }
 function DecodeMapped(ctx, input, required = true) {
@@ -581,15 +588,31 @@ function DecodeShape(ctx, input, required = true) {
     });
 }
 function DecodeT3(ctx, input, required = true) {
-    return decodeAnyOfDiscriminated(ctx, input, required, "kind", {
-        "square": (ctx, input)=>(decodeObject(ctx, input, true, {
+    return decodeAnyOf(ctx, input, required, [
+        (ctx, input)=>(decodeObject(ctx, input, required, {
+                "kind": (ctx, input)=>(decodeConst(ctx, input, true, "square")),
                 "x": (ctx, input)=>(decodeNumber(ctx, input, true))
-            })),
-        "triangle": (ctx, input)=>(decodeObject(ctx, input, true, {
+            }, (ctx, input)=>(decodeAnyOf(ctx, input, false, [
+                    (ctx, input)=>(decodeNull(ctx, input, false)),
+                    (ctx, input)=>(decodeBoolean(ctx, input, false)),
+                    (ctx, input)=>(decodeString(ctx, input, false)),
+                    (ctx, input)=>(decodeNumber(ctx, input, false)),
+                    (ctx, input)=>(decodeArray(ctx, input, false, (ctx, input)=>(decodeAny(ctx, input, true)))),
+                    (ctx, input)=>(decodeObject(ctx, input, false, {}))
+                ])))),
+        (ctx, input)=>(decodeObject(ctx, input, required, {
+                "kind": (ctx, input)=>(decodeConst(ctx, input, true, "triangle")),
                 "x": (ctx, input)=>(decodeNumber(ctx, input, true)),
                 "y": (ctx, input)=>(decodeNumber(ctx, input, true))
-            }))
-    });
+            }, (ctx, input)=>(decodeAnyOf(ctx, input, false, [
+                    (ctx, input)=>(decodeNull(ctx, input, false)),
+                    (ctx, input)=>(decodeBoolean(ctx, input, false)),
+                    (ctx, input)=>(decodeString(ctx, input, false)),
+                    (ctx, input)=>(decodeNumber(ctx, input, false)),
+                    (ctx, input)=>(decodeArray(ctx, input, false, (ctx, input)=>(decodeAny(ctx, input, true)))),
+                    (ctx, input)=>(decodeObject(ctx, input, false, {}))
+                ]))))
+    ]);
 }
 const validators = {
     Arr3: DecodeArr3,

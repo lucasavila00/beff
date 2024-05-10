@@ -400,10 +400,7 @@ impl<'a> DecoderFnGenerator<'a> {
 
     fn decode_expr(&self, schema: &JsonSchema, required: Required) -> Expr {
         match schema {
-            JsonSchema::StNever
-            | JsonSchema::StUnknown
-            | JsonSchema::StNot(_)
-            | JsonSchema::StAnyObject => {
+            JsonSchema::StNever | JsonSchema::StUnknown | JsonSchema::StNot(_) => {
                 unreachable!("should not create decoders for semantic types")
             }
             JsonSchema::AnyArrayLike => {
@@ -449,9 +446,13 @@ impl<'a> DecoderFnGenerator<'a> {
                         })
                         .collect(),
                 })];
-
-                let rest = self.decode_expr(rest, Required::Known(false));
-                extra.push(Self::make_cb(rest));
+                match &**rest {
+                    JsonSchema::Any => {}
+                    _ => {
+                        let rest = self.decode_expr(rest, Required::Known(false));
+                        extra.push(Self::make_cb(rest));
+                    }
+                }
                 Self::decode_call_extra("decodeObject", required, extra)
             }
             JsonSchema::Array(ty) => Self::decode_call_extra(

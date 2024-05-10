@@ -24,6 +24,7 @@
     ]
   },
   "NotPublic": {
+    "additionalProperties": {},
     "properties": {
       "a": {
         "type": "string"
@@ -59,6 +60,7 @@
     ]
   },
   "User": {
+    "additionalProperties": {},
     "properties": {
       "age": {
         "type": "number"
