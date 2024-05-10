@@ -147,7 +147,6 @@ pub enum JsonSchema {
     Codec(CodecName),
     // semantic types
     StNever,
-    StUnknown,
     StNot(Box<JsonSchema>),
 }
 
@@ -408,7 +407,7 @@ impl ToJson for JsonSchema {
             }
             JsonSchema::Const(val) => Json::object(vec![("const".into(), val.to_json())]),
             JsonSchema::AnyArrayLike => JsonSchema::Array(JsonSchema::Any.into()).to_json(),
-            JsonSchema::StNever | JsonSchema::StUnknown | JsonSchema::StNot(_) => {
+            JsonSchema::StNever | JsonSchema::StNot(_) => {
                 unreachable!("semantic types should not be converted to json")
             }
         }
@@ -697,10 +696,6 @@ impl JsonSchema {
             JsonSchema::StNever => TsType::TsKeywordType(TsKeywordType {
                 span: DUMMY_SP,
                 kind: TsKeywordTypeKind::TsNeverKeyword,
-            }),
-            JsonSchema::StUnknown => TsType::TsKeywordType(TsKeywordType {
-                span: DUMMY_SP,
-                kind: TsKeywordTypeKind::TsUnknownKeyword,
             }),
             JsonSchema::StNot(v) => TsType::TsTypeRef(TsTypeRef {
                 span: DUMMY_SP,

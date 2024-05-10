@@ -397,7 +397,7 @@ impl<'a> DecoderFnGenerator<'a> {
 
     fn decode_expr(&self, schema: &JsonSchema, required: Required) -> Expr {
         match schema {
-            JsonSchema::StNever | JsonSchema::StUnknown | JsonSchema::StNot(_) => {
+            JsonSchema::StNever | JsonSchema::StNot(_) => {
                 unreachable!("should not create decoders for semantic types")
             }
             JsonSchema::AnyArrayLike => {
