@@ -217,7 +217,7 @@ impl<'a> DecoderFnGenerator<'a> {
                                 .filter(|it| it.0 != &discriminator)
                                 .map(|it| (it.0.clone(), it.1.clone()))
                                 .collect();
-                            let new_obj = JsonSchema::object(new_obj_vs, None);
+                            let new_obj = JsonSchema::object(new_obj_vs, JsonSchema::Any.into());
                             cases.push(new_obj);
                         }
                     }
@@ -265,9 +265,12 @@ impl<'a> DecoderFnGenerator<'a> {
         flat_values: &BTreeSet<JsonSchema>,
         required: Required,
     ) -> Option<Expr> {
-        let all_objects_without_rest = flat_values
-            .iter()
-            .all(|it| matches!(it, JsonSchema::Object { rest: None, .. }));
+        let all_objects_without_rest = flat_values.iter().all(|it| match it {
+            JsonSchema::Object { rest, .. } => {
+                matches!(**rest, JsonSchema::Any)
+            }
+            _ => false,
+        });
 
         let object_vs = flat_values
             .iter()
@@ -446,10 +449,9 @@ impl<'a> DecoderFnGenerator<'a> {
                         })
                         .collect(),
                 })];
-                if let Some(rest) = rest {
-                    let rest = self.decode_expr(rest, Required::Known(false));
-                    extra.push(Self::make_cb(rest));
-                }
+
+                let rest = self.decode_expr(rest, Required::Known(false));
+                extra.push(Self::make_cb(rest));
                 Self::decode_call_extra("decodeObject", required, extra)
             }
             JsonSchema::Array(ty) => Self::decode_call_extra(

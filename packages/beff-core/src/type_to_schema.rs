@@ -138,7 +138,7 @@ impl<'a, 'b, R: FileManager> TypeToSchema<'a, 'b, R> {
                 acc.push((k.clone(), v.clone()));
             }
         }
-        JsonSchema::object(acc, None)
+        JsonSchema::object(acc, JsonSchema::Any.into())
     }
     fn convert_pick(
         &mut self,
@@ -199,7 +199,7 @@ impl<'a, 'b, R: FileManager> TypeToSchema<'a, 'b, R> {
                 acc.push((k.clone(), v.clone()));
             }
         }
-        JsonSchema::object(acc, None)
+        JsonSchema::object(acc, JsonSchema::Any.into())
     }
 
     fn convert_omit(
@@ -255,14 +255,14 @@ impl<'a, 'b, R: FileManager> TypeToSchema<'a, 'b, R> {
         for (k, v) in obj {
             acc.push((k.clone(), v.clone().to_required()));
         }
-        JsonSchema::object(acc, None)
+        JsonSchema::object(acc, JsonSchema::Any.into())
     }
     fn convert_partial(&mut self, obj: &BTreeMap<String, Optionality<JsonSchema>>) -> JsonSchema {
         let mut acc = vec![];
         for (k, v) in obj {
             acc.push((k.clone(), v.clone().to_optional()));
         }
-        JsonSchema::object(acc, None)
+        JsonSchema::object(acc, JsonSchema::Any.into())
     }
 
     fn extract_array(&mut self, arr: JsonSchema, span: Span) -> Res<JsonSchema> {
@@ -306,9 +306,9 @@ impl<'a, 'b, R: FileManager> TypeToSchema<'a, 'b, R> {
         span: &Span,
     ) -> Res<BTreeMap<String, Optionality<JsonSchema>>> {
         match obj {
-            JsonSchema::Object { vs, rest } => match rest {
-                Some(_) => self.error(span, DiagnosticInfoMessage::RestFoundOnExtractObject),
-                None => Ok(vs.clone()),
+            JsonSchema::Object { vs, rest } => match **rest {
+                JsonSchema::Any => Ok(vs.clone()),
+                _ => self.error(span, DiagnosticInfoMessage::RestFoundOnExtractObject),
             },
             JsonSchema::Ref(r) => {
                 let map = self.components.get(r).and_then(|it| it.as_ref()).cloned();
@@ -328,7 +328,7 @@ impl<'a, 'b, R: FileManager> TypeToSchema<'a, 'b, R> {
         match typ {
             TsBuiltIn::TsObject(_) => Ok(JsonSchema::Object {
                 vs: BTreeMap::new(),
-                rest: Some(Box::new(JsonSchema::Any)),
+                rest: Box::new(JsonSchema::Any),
             }),
 
             TsBuiltIn::TsRecord(span) => match type_args {
@@ -353,7 +353,7 @@ impl<'a, 'b, R: FileManager> TypeToSchema<'a, 'b, R> {
                             let value = items[1].clone();
                             Ok(JsonSchema::Object {
                                 vs: BTreeMap::new(),
-                                rest: Some(Box::new(value)),
+                                rest: Box::new(value),
                             })
                         }
                         _ => {
@@ -381,7 +381,7 @@ impl<'a, 'b, R: FileManager> TypeToSchema<'a, 'b, R> {
                                         .into_iter()
                                         .map(|it| (it, value.clone().required()))
                                         .collect(),
-                                    rest: None,
+                                    rest: JsonSchema::Any.into(),
                                 })
                             } else {
                                 self.error(span, DiagnosticInfoMessage::RecordKeyShouldBeString)
@@ -594,7 +594,7 @@ impl<'a, 'b, R: FileManager> TypeToSchema<'a, 'b, R> {
                 .iter()
                 .map(|x| self.convert_ts_type_element(x))
                 .collect::<Res<_>>()?,
-            None,
+            JsonSchema::Any.into(),
         ));
         self.type_param_stack.pop();
 
@@ -1293,7 +1293,10 @@ impl<'a, 'b, R: FileManager> TypeToSchema<'a, 'b, R> {
                     }
                 }
 
-                Ok(JsonSchema::Object { vs, rest: None })
+                Ok(JsonSchema::Object {
+                    vs,
+                    rest: JsonSchema::Any.into(),
+                })
             }
             Expr::Ident(i) => {
                 let s = TypeResolver::new(self.files, &self.current_file).resolve_local_value(i)?;
@@ -1388,7 +1391,7 @@ impl<'a, 'b, R: FileManager> TypeToSchema<'a, 'b, R> {
                         ImportReference::Star { file_name, .. } => {
                             let mut acc2 = vec![];
                             self.collect_value_exports(file_name, &mut acc2)?;
-                            let v = JsonSchema::object(acc2, None);
+                            let v = JsonSchema::object(acc2, JsonSchema::Any.into());
                             acc.push((k.to_string(), v.required()));
                         }
                         ImportReference::Default { .. } => todo!(),
@@ -1442,7 +1445,7 @@ impl<'a, 'b, R: FileManager> TypeToSchema<'a, 'b, R> {
             ResolvedLocalSymbol::Star(file_name) => {
                 let mut acc = vec![];
                 self.collect_value_exports(&file_name, &mut acc)?;
-                Ok(JsonSchema::object(acc, None))
+                Ok(JsonSchema::object(acc, JsonSchema::Any.into()))
             }
             ResolvedLocalSymbol::TsEnumDecl(_) => todo!(),
             ResolvedLocalSymbol::TsBuiltin(_) => todo!(),
@@ -1672,7 +1675,7 @@ impl<'a, 'b, R: FileManager> TypeToSchema<'a, 'b, R> {
             vs.push((key, ty));
         }
 
-        Ok(JsonSchema::object(vs, None))
+        Ok(JsonSchema::object(vs, JsonSchema::Any.into()))
     }
 
     pub fn convert_ts_type(&mut self, typ: &TsType) -> Res<JsonSchema> {
@@ -1693,7 +1696,7 @@ impl<'a, 'b, R: FileManager> TypeToSchema<'a, 'b, R> {
                     .iter()
                     .map(|prop| self.convert_ts_type_element(prop))
                     .collect::<Res<_>>()?,
-                None,
+                JsonSchema::Any.into(),
             )),
             TsType::TsArrayType(TsArrayType { elem_type, .. }) => {
                 Ok(JsonSchema::Array(self.convert_ts_type(elem_type)?.into()))

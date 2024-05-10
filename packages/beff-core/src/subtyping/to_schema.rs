@@ -183,11 +183,7 @@ impl<'a, 'b> SchemerContext<'a, 'b> {
             acc.push((k.clone(), ty));
         }
 
-        let rest = if mt.rest.is_empty(self.ctx.0) {
-            None
-        } else {
-            Some(Box::new(self.convert_to_schema(&mt.rest, None)))
-        };
+        let rest = Box::new(self.convert_to_schema(&mt.rest, None));
 
         JsonSchema::Object {
             vs: BTreeMap::from_iter(acc),

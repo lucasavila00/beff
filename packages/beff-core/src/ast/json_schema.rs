@@ -130,7 +130,7 @@ pub enum JsonSchema {
     StringWithFormat(String),
     Object {
         vs: BTreeMap<String, Optionality<JsonSchema>>,
-        rest: Option<Box<JsonSchema>>,
+        rest: Box<JsonSchema>,
     },
     Array(Box<JsonSchema>),
     Tuple {
@@ -194,10 +194,7 @@ impl UnionMerger {
 }
 
 impl JsonSchema {
-    pub fn object(
-        vs: Vec<(String, Optionality<JsonSchema>)>,
-        rest: Option<Box<JsonSchema>>,
-    ) -> Self {
+    pub fn object(vs: Vec<(String, Optionality<JsonSchema>)>, rest: Box<JsonSchema>) -> Self {
         Self::Object {
             vs: vs.into_iter().collect(),
             rest,
@@ -223,15 +220,12 @@ impl JsonSchema {
             _ => {
                 let mut obj_kvs: Vec<(String, Optionality<JsonSchema>)> = vec![];
                 let mut all_objects = true;
-                let mut rest_is_none = true;
+                let mut all_rests = vec![];
 
                 for v in vs.iter() {
                     match v {
                         JsonSchema::Object { vs, rest } => {
-                            if rest.is_some() {
-                                rest_is_none = false;
-                                break;
-                            }
+                            all_rests.push(*rest.clone());
                             obj_kvs.extend(vs.iter().map(|it| (it.0.clone(), it.1.clone())));
                         }
                         _ => {
@@ -241,8 +235,8 @@ impl JsonSchema {
                     }
                 }
 
-                if rest_is_none && all_objects && vs.len() > 1 {
-                    JsonSchema::object(obj_kvs, None)
+                if all_objects && vs.len() > 1 {
+                    JsonSchema::object(obj_kvs, Self::all_of(all_rests).into())
                 } else {
                     Self::AllOf(BTreeSet::from_iter(vs))
                 }
@@ -336,9 +330,7 @@ impl ToJson for JsonSchema {
                     ),
                 ];
 
-                if let Some(rest) = rest {
-                    vs.push(("additionalProperties".into(), rest.to_json()));
-                }
+                vs.push(("additionalProperties".into(), rest.to_json()));
                 Json::object(vs)
             }
             JsonSchema::Array(typ) => {
@@ -503,40 +495,38 @@ impl JsonSchema {
                     })
                     .collect();
 
-                if let Some(rest) = rest {
-                    let rest = TsTypeElement::TsIndexSignature(TsIndexSignature {
-                        span: DUMMY_SP,
-                        readonly: false,
-                        params: vec![TsFnParam::Ident(BindingIdent {
-                            id: Ident {
-                                span: DUMMY_SP,
-                                sym: "key".into(),
-                                optional: false,
-                            },
-                            // string type always
-                            type_ann: Some(
-                                TsTypeAnn {
-                                    span: DUMMY_SP,
-                                    type_ann: TsType::TsKeywordType(TsKeywordType {
-                                        span: DUMMY_SP,
-                                        kind: TsKeywordTypeKind::TsStringKeyword,
-                                    })
-                                    .into(),
-                                }
-                                .into(),
-                            ),
-                        })],
+                let rest = TsTypeElement::TsIndexSignature(TsIndexSignature {
+                    span: DUMMY_SP,
+                    readonly: false,
+                    params: vec![TsFnParam::Ident(BindingIdent {
+                        id: Ident {
+                            span: DUMMY_SP,
+                            sym: "key".into(),
+                            optional: false,
+                        },
+                        // string type always
                         type_ann: Some(
                             TsTypeAnn {
                                 span: DUMMY_SP,
-                                type_ann: rest.to_ts_type().into(),
+                                type_ann: TsType::TsKeywordType(TsKeywordType {
+                                    span: DUMMY_SP,
+                                    kind: TsKeywordTypeKind::TsStringKeyword,
+                                })
+                                .into(),
                             }
                             .into(),
                         ),
-                        is_static: false,
-                    });
-                    members.push(rest);
-                }
+                    })],
+                    type_ann: Some(
+                        TsTypeAnn {
+                            span: DUMMY_SP,
+                            type_ann: rest.to_ts_type().into(),
+                        }
+                        .into(),
+                    ),
+                    is_static: false,
+                });
+                members.push(rest);
 
                 TsType::TsTypeLit(TsTypeLit {
                     span: DUMMY_SP,
