@@ -170,11 +170,11 @@ impl<'a, 'b> SchemerContext<'a, 'b> {
         }
     }
 
-    fn mapping_atom_schema(&mut self, mt: &Rc<MappingAtomicType>) -> JsonSchema {
+    fn mapping_atom_schema(&mut self, mt: &Rc<MappingAtomicType>) -> anyhow::Result<JsonSchema> {
         let mut acc: Vec<(String, Optionality<JsonSchema>)> = vec![];
 
         for (k, v) in mt.vs.iter() {
-            let schema = self.convert_to_schema(v, None);
+            let schema = self.convert_to_schema(v, None)?;
             let ty = if v.has_void() {
                 schema.optional()
             } else {
@@ -184,18 +184,19 @@ impl<'a, 'b> SchemerContext<'a, 'b> {
         }
 
         let rest = if mt.rest.is_empty(self.ctx.0) {
-            panic!("rest should not be empty, all records are open")
+            // bail!("rest should not be empty, all records are open")
+            None
         } else if mt.rest.is_any() {
             None
         } else {
-            let schema = self.convert_to_schema(&mt.rest, None);
+            let schema = self.convert_to_schema(&mt.rest, None)?;
             Some(Box::new(schema))
         };
 
-        JsonSchema::Object {
+        Ok(JsonSchema::Object {
             vs: BTreeMap::from_iter(acc),
             rest,
-        }
+        })
     }
 
     // fn to_schema_mapping(&mut self, bdd: &Rc<Bdd>) -> JsonSchema {
@@ -213,13 +214,13 @@ impl<'a, 'b> SchemerContext<'a, 'b> {
         left: &Rc<Bdd>,
         middle: &Rc<Bdd>,
         right: &Rc<Bdd>,
-    ) -> JsonSchema {
+    ) -> anyhow::Result<JsonSchema> {
         let mt = match atom.as_ref() {
             Atom::Mapping(a) => self.ctx.0.get_mapping_atomic(*a).clone(),
             _ => unreachable!(),
         };
 
-        let explained_sts = self.mapping_atom_schema(&mt);
+        let explained_sts = self.mapping_atom_schema(&mt)?;
 
         let mut acc = vec![];
 
@@ -237,7 +238,7 @@ impl<'a, 'b> SchemerContext<'a, 'b> {
                 right,
             } => {
                 let ty = vec![explained_sts.clone()].into_iter().chain(vec![
-                    self.convert_to_schema_mapping_node(atom, left, middle, right)
+                    self.convert_to_schema_mapping_node(atom, left, middle, right)?
                 ]);
                 acc.push(JsonSchema::all_of(ty.collect()));
             }
@@ -247,7 +248,7 @@ impl<'a, 'b> SchemerContext<'a, 'b> {
                 // noop
             }
             Bdd::True | Bdd::Node { .. } => {
-                acc.push(self.convert_to_schema_mapping(middle));
+                acc.push(self.convert_to_schema_mapping(middle)?);
             }
         }
         match right.as_ref() {
@@ -265,15 +266,15 @@ impl<'a, 'b> SchemerContext<'a, 'b> {
             } => {
                 let ty = JsonSchema::all_of(vec![
                     JsonSchema::StNot(Box::new(explained_sts)),
-                    self.convert_to_schema_mapping_node(atom, left, middle, right),
+                    self.convert_to_schema_mapping_node(atom, left, middle, right)?,
                 ]);
                 acc.push(ty)
             }
         }
-        JsonSchema::any_of(acc)
+        Ok(JsonSchema::any_of(acc))
     }
 
-    fn convert_to_schema_mapping(&mut self, bdd: &Rc<Bdd>) -> JsonSchema {
+    fn convert_to_schema_mapping(&mut self, bdd: &Rc<Bdd>) -> anyhow::Result<JsonSchema> {
         match bdd.as_ref() {
             Bdd::True => todo!(),
             Bdd::False => todo!(),
@@ -286,29 +287,31 @@ impl<'a, 'b> SchemerContext<'a, 'b> {
         }
     }
 
-    fn list_atom_schema(&mut self, mt: &Rc<ListAtomic>) -> JsonSchema {
+    fn list_atom_schema(&mut self, mt: &Rc<ListAtomic>) -> anyhow::Result<JsonSchema> {
         if mt.prefix_items.is_empty() {
             if mt.items.is_any() {
-                return JsonSchema::AnyArrayLike;
+                return Ok(JsonSchema::AnyArrayLike);
             }
-            return JsonSchema::Array(Box::new(self.convert_to_schema(&mt.items, None)));
+            return Ok(JsonSchema::Array(Box::new(
+                self.convert_to_schema(&mt.items, None)?,
+            )));
         }
 
         let prefix_items = mt
             .prefix_items
             .iter()
             .map(|it| self.convert_to_schema(it, None))
-            .collect();
+            .collect::<anyhow::Result<Vec<_>>>()?;
 
         let items = if mt.items.is_never() {
             None
         } else {
-            Some(Box::new(self.convert_to_schema(&mt.items, None)))
+            Some(Box::new(self.convert_to_schema(&mt.items, None)?))
         };
-        JsonSchema::Tuple {
+        Ok(JsonSchema::Tuple {
             prefix_items,
             items,
-        }
+        })
     }
 
     // fn to_schema_list(&mut self, bdd: &Rc<Bdd>) -> JsonSchema {
@@ -326,13 +329,13 @@ impl<'a, 'b> SchemerContext<'a, 'b> {
         left: &Rc<Bdd>,
         middle: &Rc<Bdd>,
         right: &Rc<Bdd>,
-    ) -> JsonSchema {
+    ) -> anyhow::Result<JsonSchema> {
         let lt = match atom.as_ref() {
             Atom::List(a) => self.ctx.0.get_list_atomic(*a).clone(),
             _ => unreachable!(),
         };
 
-        let explained_sts = self.list_atom_schema(&lt);
+        let explained_sts = self.list_atom_schema(&lt)?;
 
         let mut acc = vec![];
 
@@ -350,7 +353,7 @@ impl<'a, 'b> SchemerContext<'a, 'b> {
                 right,
             } => {
                 let ty = vec![explained_sts.clone()].into_iter().chain(vec![
-                    self.convert_to_schema_list_node(atom, left, middle, right)
+                    self.convert_to_schema_list_node(atom, left, middle, right)?
                 ]);
                 acc.push(JsonSchema::all_of(ty.collect()));
             }
@@ -361,7 +364,7 @@ impl<'a, 'b> SchemerContext<'a, 'b> {
                 // noop
             }
             Bdd::True | Bdd::Node { .. } => {
-                acc.push(self.convert_to_schema_list(middle));
+                acc.push(self.convert_to_schema_list(middle)?);
             }
         }
         match right.as_ref() {
@@ -379,14 +382,14 @@ impl<'a, 'b> SchemerContext<'a, 'b> {
             } => {
                 let ty = JsonSchema::all_of(vec![
                     JsonSchema::StNot(Box::new(explained_sts)),
-                    self.convert_to_schema_list_node(atom, left, middle, right),
+                    self.convert_to_schema_list_node(atom, left, middle, right)?,
                 ]);
                 acc.push(ty)
             }
         }
-        JsonSchema::any_of(acc)
+        Ok(JsonSchema::any_of(acc))
     }
-    fn convert_to_schema_list(&mut self, bdd: &Rc<Bdd>) -> JsonSchema {
+    fn convert_to_schema_list(&mut self, bdd: &Rc<Bdd>) -> anyhow::Result<JsonSchema> {
         match bdd.as_ref() {
             Bdd::True => todo!(),
             Bdd::False => todo!(),
@@ -399,9 +402,9 @@ impl<'a, 'b> SchemerContext<'a, 'b> {
         }
     }
 
-    fn convert_to_schema_no_cache(&mut self, ty: &SemType) -> JsonSchema {
+    fn convert_to_schema_no_cache(&mut self, ty: &SemType) -> anyhow::Result<JsonSchema> {
         if ty.all == 0 && ty.subtype_data.is_empty() {
-            return JsonSchema::StNever;
+            return Ok(JsonSchema::StNever);
         }
 
         let mut acc = BTreeSet::new();
@@ -469,18 +472,22 @@ impl<'a, 'b> SchemerContext<'a, 'b> {
                     }
                 }
                 ProperSubtype::Mapping(bdd) => {
-                    let mapping_ty = self.convert_to_schema_mapping(bdd);
+                    let mapping_ty = self.convert_to_schema_mapping(bdd)?;
                     acc.insert(mapping_ty);
                 }
                 ProperSubtype::List(bdd) => {
-                    acc.insert(self.convert_to_schema_list(bdd));
+                    acc.insert(self.convert_to_schema_list(bdd)?);
                 }
             };
         }
 
-        JsonSchema::any_of(acc.into_iter().collect())
+        Ok(JsonSchema::any_of(acc.into_iter().collect()))
     }
-    pub fn convert_to_schema(&mut self, ty: &Rc<SemType>, name: Option<&str>) -> JsonSchema {
+    pub fn convert_to_schema(
+        &mut self,
+        ty: &Rc<SemType>,
+        name: Option<&str>,
+    ) -> anyhow::Result<JsonSchema> {
         let new_name = match name {
             Some(n) => n.to_string(),
             None => {
@@ -490,17 +497,17 @@ impl<'a, 'b> SchemerContext<'a, 'b> {
         };
         if let Some(mater) = self.schemer_memo.get(ty) {
             match mater {
-                SchemaMemo::Schema(mater) => return mater.clone(),
+                SchemaMemo::Schema(mater) => return Ok(mater.clone()),
                 SchemaMemo::Undefined(ref_name) => {
                     self.recursive_validators.insert(ref_name.clone());
-                    return JsonSchema::Ref(ref_name.into());
+                    return Ok(JsonSchema::Ref(ref_name.into()));
                 }
             }
         } else {
             self.schemer_memo
                 .insert(ty.clone(), SchemaMemo::Undefined(new_name.clone()));
         }
-        let schema = self.convert_to_schema_no_cache(ty);
+        let schema = self.convert_to_schema_no_cache(ty)?;
         self.schemer_memo
             .insert(ty.clone(), SchemaMemo::Schema(schema.clone()));
         self.validators.push(Validator {
@@ -508,7 +515,7 @@ impl<'a, 'b> SchemerContext<'a, 'b> {
             schema: schema.clone(),
         });
 
-        schema
+        Ok(schema)
     }
 }
 
@@ -517,9 +524,9 @@ pub fn to_validators(
     ty: &Rc<SemType>,
     name: &str,
     counter: &mut usize,
-) -> (Validator, Vec<Validator>) {
+) -> anyhow::Result<(Validator, Vec<Validator>)> {
     let mut schemer = SchemerContext::new(ctx, counter);
-    let out = schemer.convert_to_schema(ty, Some(name));
+    let out = schemer.convert_to_schema(ty, Some(name))?;
     let vs: Vec<Validator> = schemer
         .validators
         .into_iter()
@@ -527,13 +534,13 @@ pub fn to_validators(
         .collect();
 
     let vs = vs.into_iter().filter(|it| it.name != name).collect();
-    (
+    Ok((
         Validator {
             name: name.into(),
             schema: out,
         },
         vs,
-    )
+    ))
 }
 fn maybe_not(it: JsonSchema, add_not: bool) -> JsonSchema {
     if add_not {

@@ -208,47 +208,18 @@ impl<'a, 'b, R: FileManager> TypeToSchema<'a, 'b, R> {
         obj: &BTreeMap<String, Optionality<JsonSchema>>,
         keys: JsonSchema,
     ) -> Res<JsonSchema> {
-        match keys {
-            JsonSchema::Const(JsonSchemaConst::String(str)) => {
-                Ok(Self::convert_omit_keys(obj, vec![str]))
-            }
-            JsonSchema::AnyOf(rms) => {
-                let mut keys = vec![];
-                for rm in rms {
-                    match rm {
-                        JsonSchema::Const(JsonSchemaConst::String(str)) => {
-                            keys.push(str);
-                        }
-                        JsonSchema::Ref(n) => {
-                            let map = self.components.get(&n).and_then(|it| it.as_ref()).cloned();
-                            match map {
-                                Some(Validator {
-                                    schema: JsonSchema::Const(JsonSchemaConst::String(str)),
-                                    ..
-                                }) => keys.push(str),
-                                _ => {
-                                    return self.error(
-                                        span,
-                                        DiagnosticInfoMessage::OmitShouldHaveStringAsTypeArgument,
-                                    )
-                                }
-                            }
-                        }
-                        _ => {
-                            return self.error(
-                                span,
-                                DiagnosticInfoMessage::OmitShouldHaveStringAsTypeArgument,
-                            )
-                        }
-                    }
-                }
-                Ok(Self::convert_omit_keys(obj, keys))
-            }
-            _ => self.error(
-                span,
-                DiagnosticInfoMessage::OmitShouldHaveStringOrStringArrayAsTypeArgument,
-            ),
-        }
+        let keys = self.extract_union(keys)?;
+        let str_keys = keys
+            .iter()
+            .map(|it| match it {
+                JsonSchema::Const(JsonSchemaConst::String(str)) => Ok(str.clone()),
+                _ => self.error(
+                    span,
+                    DiagnosticInfoMessage::OmitShouldHaveStringAsTypeArgument,
+                ),
+            })
+            .collect::<Res<Vec<_>>>()?;
+        Ok(Self::convert_omit_keys(obj, str_keys))
     }
     fn convert_required(&mut self, obj: &BTreeMap<String, Optionality<JsonSchema>>) -> JsonSchema {
         let mut acc = vec![];
@@ -1361,7 +1332,7 @@ impl<'a, 'b, R: FileManager> TypeToSchema<'a, 'b, R> {
             SymbolExport::ValueExpr { expr, .. } => self.typeof_expr(expr, false),
             SymbolExport::StarOfOtherFile { .. } => todo!(),
             SymbolExport::SomethingOfOtherFile { .. } => todo!(),
-            SymbolExport::ExprDecl { .. } => todo!(),
+            SymbolExport::ExprDecl { ty, .. } => self.convert_ts_type(ty),
         };
         self.current_file = old_file;
         ty
@@ -1523,7 +1494,10 @@ impl<'a, 'b, R: FileManager> TypeToSchema<'a, 'b, R> {
                 DiagnosticInfoMessage::NeverCannotBeConvertedToJsonSchema,
             );
         }
-        let (head, tail) = to_validators(ctx, &access_st, "AnyName", self.counter);
+        let (head, tail) =
+            to_validators(ctx, &access_st, "AnyName", self.counter).map_err(|any| {
+                self.box_error(span, DiagnosticInfoMessage::AnyhowError(any.to_string()))
+            })?;
         for t in tail {
             self.insert_definition(t.name.clone(), t.schema)?;
         }
