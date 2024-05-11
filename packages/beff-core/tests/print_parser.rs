@@ -456,4 +456,13 @@ mod tests {
         parse.buildParsers<{ IX2: IX2 }>();
       "#));
     }
+    #[test]
+    fn ok_conditional_type() {
+        insta::assert_snapshot!(ok(r#"
+        export type IX<T> = T extends true ? number : string
+        type IX2 = IX<true>
+        type IX3 = IX<false>
+        parse.buildParsers<{ IX2: IX2, IX3: IX3 }>();
+      "#));
+    }
 }

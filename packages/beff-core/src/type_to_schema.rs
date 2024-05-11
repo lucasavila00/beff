@@ -1755,11 +1755,7 @@ impl<'a, 'b, R: FileManager> TypeToSchema<'a, 'b, R> {
                 span,
                 DiagnosticInfoMessage::TsFnOrConstructorTypeNonSerializableToJsonSchema,
             ),
-            TsType::TsConditionalType(TsConditionalType { span, .. }) => self
-                .cannot_serialize_error(
-                    span,
-                    DiagnosticInfoMessage::TsConditionalTypeNonSerializableToJsonSchema,
-                ),
+            TsType::TsConditionalType(t) => self.convert_conditional_type(t),
             TsType::TsInferType(TsInferType { span, .. }) => self.cannot_serialize_error(
                 span,
                 DiagnosticInfoMessage::TsInferTypeNonSerializableToJsonSchema,
@@ -1772,6 +1768,39 @@ impl<'a, 'b, R: FileManager> TypeToSchema<'a, 'b, R> {
                 span,
                 DiagnosticInfoMessage::TsImportTypeNonSerializableToJsonSchema,
             ),
+        }
+    }
+
+    fn convert_conditional_type(&mut self, t: &TsConditionalType) -> Res<JsonSchema> {
+        let check_type_schema = self.convert_ts_type(&t.check_type)?;
+        let extends_type_schema = self.convert_ts_type(&t.extends_type)?;
+
+        let mut ctx = SemTypeContext::new();
+
+        let check_type_st = check_type_schema
+            .to_sem_type(&self.validators_ref(), &mut ctx)
+            .map_err(|e| {
+                self.box_error(
+                    &t.check_type.span(),
+                    DiagnosticInfoMessage::AnyhowError(e.to_string()),
+                )
+            })?;
+
+        let extends_type_st = extends_type_schema
+            .to_sem_type(&self.validators_ref(), &mut ctx)
+            .map_err(|e| {
+                self.box_error(
+                    &t.extends_type.span(),
+                    DiagnosticInfoMessage::AnyhowError(e.to_string()),
+                )
+            })?;
+
+        let is_true = check_type_st.is_subtype(&extends_type_st, &mut ctx);
+
+        if is_true {
+            self.convert_ts_type(&t.true_type)
+        } else {
+            self.convert_ts_type(&t.false_type)
         }
     }
 }

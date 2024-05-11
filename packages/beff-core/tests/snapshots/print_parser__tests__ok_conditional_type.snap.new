@@ -1,0 +1,10 @@
+---
+source: packages/beff-core/tests/print_parser.rs
+assertion_line: 461
+expression: "ok(r#\"\n        export type IX<T> = T extends true ? number : string\n        type IX2 = IX<true>\n        type IX3 = IX<false>\n        parse.buildParsers<{ IX2: IX2, IX3: IX3 }>();\n      \"#)"
+---
+type IX2 = number;
+type IX3 = string;
+type IX2 = IX2;
+type IX3 = IX3;
+
