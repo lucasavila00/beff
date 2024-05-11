@@ -20,6 +20,51 @@ import {
 } from "../src/parser";
 import { Arr2 } from "../src/types";
 
+it("print schema", () => {
+  expect(T3.jsonSchema).toMatchInlineSnapshot(`
+    {
+      "anyOf": [
+        {
+          "additionalProperties": false,
+          "properties": {
+            "kind": {
+              "const": "square",
+            },
+            "x": {
+              "type": "number",
+            },
+          },
+          "required": [
+            "kind",
+            "x",
+          ],
+          "type": "object",
+        },
+        {
+          "additionalProperties": false,
+          "properties": {
+            "kind": {
+              "const": "triangle",
+            },
+            "x": {
+              "type": "number",
+            },
+            "y": {
+              "type": "number",
+            },
+          },
+          "required": [
+            "kind",
+            "x",
+            "y",
+          ],
+          "type": "object",
+        },
+      ],
+    }
+  `);
+});
+
 it("exclude object", () => {
   expect(
     T3.parse({

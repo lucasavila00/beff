@@ -52,7 +52,9 @@ function buildParsers(args) {
     decoders[k] = {
       parse,
       safeParse,
-      zod
+      zod,
+      //@ts-ignore
+      jsonSchema: jsonSchema[k]
     };
   });
   return decoders;

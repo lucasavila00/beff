@@ -6,6 +6,13 @@ const jsonSchema = {
     ],
     "type": "string"
   },
+  "AccessLevelCodec": {
+    "enum": [
+      "ADMIN",
+      "USER"
+    ],
+    "type": "string"
+  },
   "AllTypes": {
     "enum": [
       "LevelAndDSettings",
@@ -15,7 +22,7 @@ const jsonSchema = {
     ],
     "type": "string"
   },
-  "Arr2": {
+  "Arr2C": {
     "enum": [
       "A",
       "B",
@@ -28,9 +35,6 @@ const jsonSchema = {
       "X",
       "Y"
     ],
-    "type": "string"
-  },
-  "AvatarSize": {
     "type": "string"
   },
   "DiscriminatedUnion": {
@@ -508,18 +512,6 @@ const jsonSchema = {
     "required": [],
     "type": "object"
   },
-  "Repro2": {
-    "additionalProperties": false,
-    "properties": {
-      "useSmallerSizes": {
-        "type": "boolean"
-      }
-    },
-    "required": [
-      "useSmallerSizes"
-    ],
-    "type": "object"
-  },
   "Req": {
     "additionalProperties": false,
     "properties": {
@@ -548,39 +540,6 @@ const jsonSchema = {
     ],
     "type": "object"
   },
-  "Settings": {
-    "additionalProperties": false,
-    "properties": {
-      "a": {
-        "type": "string"
-      },
-      "d": {
-        "additionalProperties": false,
-        "properties": {
-          "tag": {
-            "const": "d"
-          }
-        },
-        "required": [
-          "tag"
-        ],
-        "type": "object"
-      },
-      "level": {
-        "enum": [
-          "a",
-          "b"
-        ],
-        "type": "string"
-      }
-    },
-    "required": [
-      "a",
-      "d",
-      "level"
-    ],
-    "type": "object"
-  },
   "SettingsUpdate": {
     "anyOf": [
       {
@@ -595,62 +554,6 @@ const jsonSchema = {
         },
         "required": [
           "tag"
-        ],
-        "type": "object"
-      }
-    ]
-  },
-  "Shape": {
-    "anyOf": [
-      {
-        "additionalProperties": false,
-        "properties": {
-          "kind": {
-            "const": "circle"
-          },
-          "radius": {
-            "type": "number"
-          }
-        },
-        "required": [
-          "kind",
-          "radius"
-        ],
-        "type": "object"
-      },
-      {
-        "additionalProperties": false,
-        "properties": {
-          "kind": {
-            "const": "square"
-          },
-          "x": {
-            "type": "number"
-          }
-        },
-        "required": [
-          "kind",
-          "x"
-        ],
-        "type": "object"
-      },
-      {
-        "additionalProperties": false,
-        "properties": {
-          "kind": {
-            "const": "triangle"
-          },
-          "x": {
-            "type": "number"
-          },
-          "y": {
-            "type": "number"
-          }
-        },
-        "required": [
-          "kind",
-          "x",
-          "y"
         ],
         "type": "object"
       }
@@ -770,44 +673,7 @@ const jsonSchema = {
         "type": "object"
       },
       "friends": {
-        "items": {
-          "additionalProperties": false,
-          "properties": {
-            "accessLevel": {
-              "enum": [
-                "ADMIN",
-                "USER"
-              ],
-              "type": "string"
-            },
-            "avatarSize": {
-              "type": "string"
-            },
-            "extra": {
-              "additionalProperties": {
-                "type": "string"
-              },
-              "properties": {},
-              "required": [],
-              "type": "object"
-            },
-            "friends": {
-              "items": {},
-              "type": "array"
-            },
-            "name": {
-              "type": "string"
-            }
-          },
-          "required": [
-            "accessLevel",
-            "avatarSize",
-            "extra",
-            "friends",
-            "name"
-          ],
-          "type": "object"
-        },
+        "items": {},
         "type": "array"
       },
       "name": {
@@ -826,16 +692,6 @@ const jsonSchema = {
   "ValidCurrency": {
     "format": "ValidCurrency",
     "type": "string"
-  },
-  "WithOptionals": {
-    "additionalProperties": false,
-    "properties": {
-      "optional": {
-        "type": "string"
-      }
-    },
-    "required": [],
-    "type": "object"
   }
 };
 export default jsonSchema;
