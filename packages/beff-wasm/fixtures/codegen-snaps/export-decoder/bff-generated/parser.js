@@ -68,7 +68,8 @@ function buildParsers(args) {
       if (validation_result == null) {
         return { success: true, data: new_value };
       }
-      return { success: false, errors: validation_result };
+      const errorsSlice = validation_result.slice(0, 10);
+      return { success: false, errors: errorsSlice };
     };
     const parse = (input, options) => {
       const safe = safeParse(input, options);
