@@ -1,6 +1,7 @@
 use std::rc::Rc;
 
-use crate::ast::json_schema::JsonSchema;
+use crate::ast::json::Json;
+use crate::ast::json_schema::{JsonFlatConverter, JsonSchema};
 use crate::diag::{Diagnostic, DiagnosticInfoMessage, DiagnosticInformation, Location};
 use crate::type_to_schema::TypeToSchema;
 use crate::{BeffUserSettings, ParsedModule};
@@ -20,6 +21,14 @@ use swc_ecma_visit::Visit;
 pub struct BuiltDecoder {
     pub exported_name: String,
     pub schema: JsonSchema,
+}
+impl BuiltDecoder {
+    pub fn to_json_kv(&self, validators: &[Validator]) -> Vec<(String, Json)> {
+        vec![(
+            self.exported_name.clone(),
+            JsonFlatConverter::new(validators).to_json_flat(self.schema.clone()),
+        )]
+    }
 }
 
 #[derive(Debug)]

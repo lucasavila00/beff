@@ -1,5 +1,12 @@
 /* eslint-disable @typescript-eslint/ban-ts-comment */
-import type { BeffParser, DecodeError, ParseOptions, RegularDecodeError, UnionDecodeError } from "@beff/cli";
+import type {
+  BeffParser,
+  DecodeError,
+  JSONSchema7,
+  ParseOptions,
+  RegularDecodeError,
+  UnionDecodeError,
+} from "@beff/cli";
 
 const prettyPrintValue = (it: unknown): string => {
   if (typeof it === "string") {
@@ -86,7 +93,8 @@ const buildParserFromSafeParser = <T>(
   safeParse: (
     input: any,
     options?: ParseOptions
-  ) => { success: true; data: T } | { success: false; errors: DecodeError[] }
+  ) => { success: true; data: T } | { success: false; errors: DecodeError[] },
+  jsonSchema: JSONSchema7
 ): BeffParser<T> => {
   const parse = (input: any, options?: ParseOptions) => {
     const safe = safeParse(input, options);
@@ -106,10 +114,12 @@ const buildParserFromSafeParser = <T>(
       }
     );
   };
+
   return {
     safeParse,
     parse,
     zod,
+    jsonSchema,
   };
 };
 
@@ -118,112 +128,155 @@ const Object_ = <T extends Record<string, BeffParser<any>>>(
 ): BeffParser<{
   [K in keyof T]: T[K] extends BeffParser<infer U> ? U : never;
 }> =>
-  buildParserFromSafeParser((input: any, options?: ParseOptions) => {
-    const disallowExtraProperties = options?.disallowExtraProperties ?? false;
+  buildParserFromSafeParser(
+    (input: any, options?: ParseOptions) => {
+      const disallowExtraProperties = options?.disallowExtraProperties ?? false;
 
-    const errors: DecodeError[] = [];
-    const result = {} as any;
+      const errors: DecodeError[] = [];
+      const result = {} as any;
 
-    for (const key in fields) {
-      const field = fields[key];
-      const res = field.safeParse(input[key]);
-      if (res.success) {
-        result[key] = res.data;
-      } else {
-        errors.push(...res.errors.map((it) => ({ ...it, path: [key, ...it.path] })));
-      }
-    }
-
-    if (disallowExtraProperties) {
-      for (const key in input) {
-        if (!fields[key]) {
-          errors.push({
-            message: "Extra property",
-            path: [key],
-            received: input[key],
-          });
+      for (const key in fields) {
+        const field = fields[key];
+        const res = field.safeParse(input[key]);
+        if (res.success) {
+          result[key] = res.data;
+        } else {
+          errors.push(...res.errors.map((it) => ({ ...it, path: [key, ...it.path] })));
         }
       }
-    }
-    if (errors.length > 0) {
-      return { success: false, errors };
-    }
-    return { success: true, data: result };
-  });
+
+      if (disallowExtraProperties) {
+        for (const key in input) {
+          if (!fields[key]) {
+            errors.push({
+              message: "Extra property",
+              path: [key],
+              received: input[key],
+            });
+          }
+        }
+      }
+      if (errors.length > 0) {
+        return { success: false, errors };
+      }
+      return { success: true, data: result };
+    },
+    Object.keys(fields).reduce(
+      (acc, key) => {
+        acc.properties = {
+          ...acc.properties,
+          [key]: fields[key].jsonSchema,
+        };
+        return acc;
+      },
+      { type: "object", properties: {}, additionalProperties: false } as JSONSchema7
+    )
+  );
 
 const String_ = (): BeffParser<string> =>
-  buildParserFromSafeParser((input: any) => {
-    if (typeof input === "string") {
-      return { success: true, data: input };
+  buildParserFromSafeParser(
+    (input: any) => {
+      if (typeof input === "string") {
+        return { success: true, data: input };
+      }
+      return { success: false, errors: [{ message: "Expected string", path: [], received: input }] };
+    },
+    {
+      type: "string",
     }
-    return { success: false, errors: [{ message: "Expected string", path: [], received: input }] };
-  });
+  );
 
 const Number_ = (): BeffParser<number> =>
-  buildParserFromSafeParser((input: any) => {
-    if (typeof input === "number") {
-      return { success: true, data: input };
+  buildParserFromSafeParser(
+    (input: any) => {
+      if (typeof input === "number") {
+        return { success: true, data: input };
+      }
+      return { success: false, errors: [{ message: "Expected number", path: [], received: input }] };
+    },
+    {
+      type: "number",
     }
-    return { success: false, errors: [{ message: "Expected number", path: [], received: input }] };
-  });
+  );
 
 const Boolean_ = (): BeffParser<boolean> =>
-  buildParserFromSafeParser((input: any) => {
-    if (typeof input === "boolean") {
-      return { success: true, data: input };
+  buildParserFromSafeParser(
+    (input: any) => {
+      if (typeof input === "boolean") {
+        return { success: true, data: input };
+      }
+      return { success: false, errors: [{ message: "Expected boolean", path: [], received: input }] };
+    },
+    {
+      type: "boolean",
     }
-    return { success: false, errors: [{ message: "Expected boolean", path: [], received: input }] };
-  });
+  );
 
 const Undefined_ = (): BeffParser<undefined> =>
-  buildParserFromSafeParser((input: any) => {
-    if (input == undefined) {
-      return { success: true, data: input };
+  buildParserFromSafeParser(
+    (input: any) => {
+      if (input == undefined) {
+        return { success: true, data: input };
+      }
+      return { success: false, errors: [{ message: "Expected undefined", path: [], received: input }] };
+    },
+    {
+      type: "null",
     }
-    return { success: false, errors: [{ message: "Expected undefined", path: [], received: input }] };
-  });
+  );
 
 const Null_ = (): BeffParser<undefined> =>
-  buildParserFromSafeParser((input: any) => {
-    if (input == null) {
-      return { success: true, data: input };
+  buildParserFromSafeParser(
+    (input: any) => {
+      if (input == null) {
+        return { success: true, data: input };
+      }
+      return { success: false, errors: [{ message: "Expected null", path: [], received: input }] };
+    },
+    {
+      type: "null",
     }
-    return { success: false, errors: [{ message: "Expected null", path: [], received: input }] };
-  });
+  );
 
 const Any_ = (): BeffParser<any> =>
   buildParserFromSafeParser((input: any) => {
     return { success: true, data: input };
-  });
+  }, {});
 
 const Unknown_ = (): BeffParser<unknown> =>
   buildParserFromSafeParser((input: any) => {
     return { success: true, data: input };
-  });
+  }, {});
 
 const Array_ = <T>(parser: BeffParser<T>): BeffParser<T[]> =>
-  buildParserFromSafeParser((input: any) => {
-    if (!Array.isArray(input)) {
-      return {
-        success: false,
-        errors: [{ message: "Expected array", path: [], received: input }],
-      };
-    }
-    const errors: DecodeError[] = [];
-    const results: T[] = [];
-    for (let i = 0; i < input.length; i++) {
-      const res = parser.safeParse(input[i]);
-      if (res.success) {
-        results.push(res.data);
-      } else {
-        errors.push(...res.errors.map((it) => ({ ...it, path: [i.toString(), ...it.path] })));
+  buildParserFromSafeParser(
+    (input: any) => {
+      if (!Array.isArray(input)) {
+        return {
+          success: false,
+          errors: [{ message: "Expected array", path: [], received: input }],
+        };
       }
+      const errors: DecodeError[] = [];
+      const results: T[] = [];
+      for (let i = 0; i < input.length; i++) {
+        const res = parser.safeParse(input[i]);
+        if (res.success) {
+          results.push(res.data);
+        } else {
+          errors.push(...res.errors.map((it) => ({ ...it, path: [i.toString(), ...it.path] })));
+        }
+      }
+      if (errors.length > 0) {
+        return { success: false, errors };
+      }
+      return { success: true, data: results };
+    },
+    {
+      type: "array",
+      items: parser.jsonSchema,
     }
-    if (errors.length > 0) {
-      return { success: false, errors };
-    }
-    return { success: true, data: results };
-  });
+  );
 
 export const b = {
   Object: Object_,

@@ -407,7 +407,7 @@ pub struct Validator {
     pub schema: JsonSchema,
 }
 impl Validator {
-    fn to_json_kv(&self, validators: &[Validator]) -> Vec<(String, Json)> {
+    pub fn to_json_kv(&self, validators: &[Validator]) -> Vec<(String, Json)> {
         vec![(
             self.name.clone(),
             JsonFlatConverter::new(validators).to_json_flat(self.schema.clone()),

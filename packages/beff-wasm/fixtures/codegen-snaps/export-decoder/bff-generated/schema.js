@@ -1,29 +1,5 @@
 const jsonSchema = {
-  "A": {
-    "enum": [
-      1,
-      2
-    ]
-  },
-  "B": {
-    "enum": [
-      2,
-      3
-    ]
-  },
-  "D": {
-    "enum": [
-      4,
-      5
-    ]
-  },
-  "E": {
-    "enum": [
-      5,
-      6
-    ]
-  },
-  "NotPublic": {
+  "NotPublicRenamed": {
     "additionalProperties": false,
     "properties": {
       "a": {
@@ -43,7 +19,48 @@ const jsonSchema = {
     "format": "StartsWithA",
     "type": "string"
   },
-  "UnionNested": {
+  "User": {
+    "additionalProperties": false,
+    "properties": {
+      "age": {
+        "type": "number"
+      },
+      "name": {
+        "type": "string"
+      }
+    },
+    "required": [
+      "age",
+      "name"
+    ],
+    "type": "object"
+  },
+  "Users": {
+    "items": {
+      "additionalProperties": false,
+      "properties": {
+        "age": {
+          "type": "number"
+        },
+        "name": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "age",
+        "name"
+      ],
+      "type": "object"
+    },
+    "type": "array"
+  },
+  "float": {
+    "const": 123.456
+  },
+  "int": {
+    "const": 123
+  },
+  "union": {
     "anyOf": [
       {
         "enum": [
@@ -70,22 +87,6 @@ const jsonSchema = {
         ]
       }
     ]
-  },
-  "User": {
-    "additionalProperties": false,
-    "properties": {
-      "age": {
-        "type": "number"
-      },
-      "name": {
-        "type": "string"
-      }
-    },
-    "required": [
-      "age",
-      "name"
-    ],
-    "type": "object"
   }
 };
 export default jsonSchema;

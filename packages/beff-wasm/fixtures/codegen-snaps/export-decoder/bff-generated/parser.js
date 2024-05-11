@@ -2,6 +2,7 @@
 /* eslint-disable */
 
 
+import jsonSchema from "./schema.js";
 import {printErrors} from '@beff/client';
 import {z} from 'zod';
 import validatorsMod from "./validators.js"; const { decodeObject, decodeArray, decodeString, decodeNumber, decodeCodec, decodeStringWithFormat, decodeAnyOf, decodeAllOf, decodeBoolean, decodeAny, decodeTuple, decodeNull, decodeConst, registerCustomFormatter, validators, c } = validatorsMod;
@@ -87,7 +88,9 @@ function buildParsers(args) {
     decoders[k] = {
       parse,
       safeParse,
-      zod
+      zod,
+      
+      jsonSchema: jsonSchema[k]
     };
   });
   return decoders;
