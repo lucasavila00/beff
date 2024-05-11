@@ -1,3 +1,9 @@
+use crate::ast::json::Json;
+use crate::emit::emit_module;
+use crate::parser_extractor::BuiltDecoder;
+use crate::print::decoder;
+use crate::ExtractResult;
+use crate::Validator;
 use anyhow::{anyhow, Result};
 use serde::{Deserialize, Serialize};
 use swc_common::DUMMY_SP;
@@ -5,13 +11,6 @@ use swc_ecma_ast::{
     BindingIdent, Decl, Expr, FnDecl, FnExpr, Ident, KeyValueProp, ModuleItem, ObjectLit, Pat,
     Prop, PropName, PropOrSpread, Stmt, Str, VarDecl, VarDeclKind, VarDeclarator,
 };
-
-use crate::ast::json::{Json, ToJsonKv};
-use crate::emit::emit_module;
-use crate::parser_extractor::BuiltDecoder;
-use crate::print::decoder;
-use crate::ExtractResult;
-use crate::Validator;
 
 fn const_decl(name: &str, init: Expr) -> ModuleItem {
     ModuleItem::Stmt(Stmt::Decl(Decl::Var(
@@ -157,7 +156,7 @@ impl ToWritableModules for ExtractResult {
         let json_schema = Json::object(
             validators
                 .iter()
-                .flat_map(|it| ToJsonKv::to_json_kv(it.clone()))
+                .flat_map(|it| Validator::to_json_kv(it, &validators))
                 .collect(),
         );
 

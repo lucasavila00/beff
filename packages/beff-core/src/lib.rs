@@ -12,8 +12,8 @@ pub mod type_to_schema;
 pub mod wasm_diag;
 
 use crate::ast::{
-    json::{Json, ToJson, ToJsonKv},
-    json_schema::JsonSchema,
+    json::Json,
+    json_schema::{JsonFlatConverter, JsonSchema},
 };
 use core::fmt;
 use diag::Diagnostic;
@@ -406,8 +406,11 @@ pub struct Validator {
     pub name: String,
     pub schema: JsonSchema,
 }
-impl ToJsonKv for Validator {
-    fn to_json_kv(self) -> Vec<(String, Json)> {
-        vec![(self.name.clone(), self.schema.to_json())]
+impl Validator {
+    fn to_json_kv(&self, validators: &[Validator]) -> Vec<(String, Json)> {
+        vec![(
+            self.name.clone(),
+            JsonFlatConverter::new(validators).to_json_flat(self.schema.clone()),
+        )]
     }
 }

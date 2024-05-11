@@ -187,9 +187,6 @@ impl<'a> ToSemTypeConverter<'a> {
                 }
                 JsonSchemaConst::Number(n) => Ok(SemTypeContext::number_const(n.clone()).into()),
             },
-            JsonSchema::OpenApiResponseRef(_) => {
-                unreachable!("should not be part of semantic types")
-            }
             JsonSchema::AnyArrayLike => {
                 self.to_sem_type(&JsonSchema::Array(JsonSchema::Any.into()), builder)
             }

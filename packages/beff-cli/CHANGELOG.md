@@ -1,5 +1,17 @@
 # @beff/cli
 
+## 0.0.46
+
+### Patch Changes
+
+- better json schema
+
+## 0.0.45
+
+### Patch Changes
+
+- Flat json schema export
+
 ## 0.0.44
 
 ### Patch Changes
