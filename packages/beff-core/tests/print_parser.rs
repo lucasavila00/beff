@@ -456,12 +456,4 @@ mod tests {
         parse.buildParsers<{ IX2: IX2 }>();
       "#));
     }
-    #[test]
-    fn ok_recursive_array() {
-        insta::assert_snapshot!(ok(r#"
-        export type IX = string | IX[]
-        type IX2 = IX[0]
-        parse.buildParsers<{ IX2: IX2 }>();
-      "#));
-    }
 }

@@ -3,7 +3,8 @@ const jsonSchema = {
     "enum": [
       "ADMIN",
       "USER"
-    ]
+    ],
+    "type": "string"
   },
   "AllTypes": {
     "enum": [
@@ -11,20 +12,23 @@ const jsonSchema = {
       "OmitSettings",
       "PartialSettings",
       "RequiredPartialObject"
-    ]
+    ],
+    "type": "string"
   },
   "Arr2": {
     "enum": [
       "A",
       "B",
       "C"
-    ]
+    ],
+    "type": "string"
   },
   "Arr3": {
     "enum": [
       "X",
       "Y"
-    ]
+    ],
+    "type": "string"
   },
   "AvatarSize": {
     "type": "string"
@@ -32,6 +36,7 @@ const jsonSchema = {
   "DiscriminatedUnion": {
     "anyOf": [
       {
+        "additionalProperties": false,
         "properties": {
           "a1": {
             "type": "string"
@@ -54,6 +59,7 @@ const jsonSchema = {
         "type": "object"
       },
       {
+        "additionalProperties": false,
         "properties": {
           "a2": {
             "type": "string"
@@ -73,6 +79,7 @@ const jsonSchema = {
         "type": "object"
       },
       {
+        "additionalProperties": false,
         "properties": {
           "type": {
             "const": "b"
@@ -92,6 +99,7 @@ const jsonSchema = {
   "DiscriminatedUnion2": {
     "anyOf": [
       {
+        "additionalProperties": false,
         "properties": {
           "a1": {
             "type": "string"
@@ -114,6 +122,7 @@ const jsonSchema = {
         "type": "object"
       },
       {
+        "additionalProperties": false,
         "properties": {
           "a2": {
             "type": "string"
@@ -133,6 +142,7 @@ const jsonSchema = {
         "type": "object"
       },
       {
+        "additionalProperties": false,
         "properties": {
           "type": {
             "const": "d"
@@ -147,6 +157,7 @@ const jsonSchema = {
         "type": "object"
       },
       {
+        "additionalProperties": false,
         "properties": {
           "type": {
             "const": "b"
@@ -166,6 +177,7 @@ const jsonSchema = {
   "DiscriminatedUnion3": {
     "anyOf": [
       {
+        "additionalProperties": false,
         "properties": {
           "a1": {
             "type": "string"
@@ -174,7 +186,8 @@ const jsonSchema = {
             "enum": [
               "a",
               "c"
-            ]
+            ],
+            "type": "string"
           }
         },
         "required": [
@@ -184,6 +197,7 @@ const jsonSchema = {
         "type": "object"
       },
       {
+        "additionalProperties": false,
         "properties": {
           "type": {
             "const": "b"
@@ -203,8 +217,10 @@ const jsonSchema = {
   "DiscriminatedUnion4": {
     "anyOf": [
       {
+        "additionalProperties": false,
         "properties": {
           "a": {
+            "additionalProperties": false,
             "properties": {
               "a1": {
                 "type": "string"
@@ -230,8 +246,10 @@ const jsonSchema = {
         "type": "object"
       },
       {
+        "additionalProperties": false,
         "properties": {
           "a": {
+            "additionalProperties": false,
             "properties": {
               "a2": {
                 "type": "string"
@@ -267,8 +285,10 @@ const jsonSchema = {
     "type": "object"
   },
   "LevelAndDSettings": {
+    "additionalProperties": false,
     "properties": {
       "d": {
+        "additionalProperties": false,
         "properties": {
           "tag": {
             "const": "d"
@@ -283,7 +303,8 @@ const jsonSchema = {
         "enum": [
           "a",
           "b"
-        ]
+        ],
+        "type": "string"
       }
     },
     "required": [
@@ -293,8 +314,10 @@ const jsonSchema = {
     "type": "object"
   },
   "Mapped": {
+    "additionalProperties": false,
     "properties": {
       "a": {
+        "additionalProperties": false,
         "properties": {
           "value": {
             "const": "a"
@@ -306,6 +329,7 @@ const jsonSchema = {
         "type": "object"
       },
       "b": {
+        "additionalProperties": false,
         "properties": {
           "value": {
             "const": "b"
@@ -324,8 +348,10 @@ const jsonSchema = {
     "type": "object"
   },
   "MappedOptional": {
+    "additionalProperties": false,
     "properties": {
       "a": {
+        "additionalProperties": false,
         "properties": {
           "value": {
             "const": "a"
@@ -337,6 +363,7 @@ const jsonSchema = {
         "type": "object"
       },
       "b": {
+        "additionalProperties": false,
         "properties": {
           "value": {
             "const": "b"
@@ -352,8 +379,10 @@ const jsonSchema = {
     "type": "object"
   },
   "OmitSettings": {
+    "additionalProperties": false,
     "properties": {
       "d": {
+        "additionalProperties": false,
         "properties": {
           "tag": {
             "const": "d"
@@ -368,7 +397,8 @@ const jsonSchema = {
         "enum": [
           "a",
           "b"
-        ]
+        ],
+        "type": "string"
       }
     },
     "required": [
@@ -381,9 +411,11 @@ const jsonSchema = {
     "enum": [
       "a",
       "b"
-    ]
+    ],
+    "type": "string"
   },
   "PartialObject": {
+    "additionalProperties": false,
     "properties": {
       "a": {
         "type": "string"
@@ -396,11 +428,13 @@ const jsonSchema = {
     "type": "object"
   },
   "PartialSettings": {
+    "additionalProperties": false,
     "properties": {
       "a": {
         "type": "string"
       },
       "d": {
+        "additionalProperties": false,
         "properties": {
           "tag": {
             "const": "d"
@@ -415,19 +449,22 @@ const jsonSchema = {
         "enum": [
           "a",
           "b"
-        ]
+        ],
+        "type": "string"
       }
     },
     "required": [],
     "type": "object"
   },
   "PublicUser": {
+    "additionalProperties": false,
     "properties": {
       "accessLevel": {
         "enum": [
           "ADMIN",
           "USER"
-        ]
+        ],
+        "type": "string"
       },
       "avatarSize": {
         "type": "string"
@@ -453,8 +490,10 @@ const jsonSchema = {
     "type": "object"
   },
   "Repro1": {
+    "additionalProperties": false,
     "properties": {
       "sizes": {
+        "additionalProperties": false,
         "properties": {
           "useSmallerSizes": {
             "type": "boolean"
@@ -470,6 +509,7 @@ const jsonSchema = {
     "type": "object"
   },
   "Repro2": {
+    "additionalProperties": false,
     "properties": {
       "useSmallerSizes": {
         "type": "boolean"
@@ -481,6 +521,7 @@ const jsonSchema = {
     "type": "object"
   },
   "Req": {
+    "additionalProperties": false,
     "properties": {
       "optional": {
         "type": "string"
@@ -492,6 +533,7 @@ const jsonSchema = {
     "type": "object"
   },
   "RequiredPartialObject": {
+    "additionalProperties": false,
     "properties": {
       "a": {
         "type": "string"
@@ -507,11 +549,13 @@ const jsonSchema = {
     "type": "object"
   },
   "Settings": {
+    "additionalProperties": false,
     "properties": {
       "a": {
         "type": "string"
       },
       "d": {
+        "additionalProperties": false,
         "properties": {
           "tag": {
             "const": "d"
@@ -526,7 +570,8 @@ const jsonSchema = {
         "enum": [
           "a",
           "b"
-        ]
+        ],
+        "type": "string"
       }
     },
     "required": [
@@ -542,6 +587,7 @@ const jsonSchema = {
         "type": "string"
       },
       {
+        "additionalProperties": false,
         "properties": {
           "tag": {
             "const": "d"
@@ -557,6 +603,7 @@ const jsonSchema = {
   "Shape": {
     "anyOf": [
       {
+        "additionalProperties": false,
         "properties": {
           "kind": {
             "const": "circle"
@@ -572,6 +619,7 @@ const jsonSchema = {
         "type": "object"
       },
       {
+        "additionalProperties": false,
         "properties": {
           "kind": {
             "const": "square"
@@ -587,6 +635,7 @@ const jsonSchema = {
         "type": "object"
       },
       {
+        "additionalProperties": false,
         "properties": {
           "kind": {
             "const": "triangle"
@@ -610,6 +659,7 @@ const jsonSchema = {
   "T3": {
     "anyOf": [
       {
+        "additionalProperties": false,
         "properties": {
           "kind": {
             "const": "square"
@@ -625,6 +675,7 @@ const jsonSchema = {
         "type": "object"
       },
       {
+        "additionalProperties": false,
         "properties": {
           "kind": {
             "const": "triangle"
@@ -648,6 +699,7 @@ const jsonSchema = {
   "UnionWithEnumAccess": {
     "anyOf": [
       {
+        "additionalProperties": false,
         "properties": {
           "tag": {
             "const": "a"
@@ -663,6 +715,7 @@ const jsonSchema = {
         "type": "object"
       },
       {
+        "additionalProperties": false,
         "properties": {
           "tag": {
             "const": "b"
@@ -678,6 +731,7 @@ const jsonSchema = {
         "type": "object"
       },
       {
+        "additionalProperties": false,
         "properties": {
           "tag": {
             "const": "c"
@@ -695,12 +749,14 @@ const jsonSchema = {
     ]
   },
   "User": {
+    "additionalProperties": false,
     "properties": {
       "accessLevel": {
         "enum": [
           "ADMIN",
           "USER"
-        ]
+        ],
+        "type": "string"
       },
       "avatarSize": {
         "type": "string"
@@ -715,12 +771,14 @@ const jsonSchema = {
       },
       "friends": {
         "items": {
+          "additionalProperties": false,
           "properties": {
             "accessLevel": {
               "enum": [
                 "ADMIN",
                 "USER"
-              ]
+              ],
+              "type": "string"
             },
             "avatarSize": {
               "type": "string"
@@ -770,6 +828,7 @@ const jsonSchema = {
     "type": "string"
   },
   "WithOptionals": {
+    "additionalProperties": false,
     "properties": {
       "optional": {
         "type": "string"

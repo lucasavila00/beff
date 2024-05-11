@@ -24,6 +24,7 @@ const jsonSchema = {
     ]
   },
   "NotPublic": {
+    "additionalProperties": false,
     "properties": {
       "a": {
         "type": "string"
@@ -71,6 +72,7 @@ const jsonSchema = {
     ]
   },
   "User": {
+    "additionalProperties": false,
     "properties": {
       "age": {
         "type": "number"
