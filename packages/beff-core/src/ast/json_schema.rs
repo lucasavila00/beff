@@ -139,7 +139,6 @@ pub enum JsonSchema {
     },
     Ref(String),
 
-    // todo: remove this, handle it outside of json schema
     AnyOf(BTreeSet<JsonSchema>),
     AllOf(BTreeSet<JsonSchema>),
     Const(JsonSchemaConst),
