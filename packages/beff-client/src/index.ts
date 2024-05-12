@@ -101,7 +101,10 @@ const buildParserFromSafeParser = <T>(
     if (safe.success) {
       return safe.data;
     }
-    throw safe;
+    const error = new Error(`Failed to parse`);
+    //@ts-ignore
+    error.errors = safe.errors;
+    throw error;
   };
   const zod = () => {
     //@ts-ignore

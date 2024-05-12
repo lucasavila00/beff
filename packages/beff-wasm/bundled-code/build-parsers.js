@@ -40,7 +40,10 @@ function buildParsers(args) {
       if (safe.success) {
         return safe.data;
       }
-      throw safe
+      const error = new Error(`Failed to parse ${k}`);
+      //@ts-ignore
+      error.errors = safe.errors;
+      throw error
     };
     const zod = () => {
       //@ts-ignore
