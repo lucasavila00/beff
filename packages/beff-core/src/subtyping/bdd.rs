@@ -501,7 +501,11 @@ pub fn mapping_is_empty(
     }
 
     let is_empty = bdd_every(bdd, &None, &None, mapping_formula_is_empty, builder);
-    builder.mapping_memo.get_mut(bdd).unwrap().0 = MemoEmpty::from_bool(&is_empty);
+    builder
+        .mapping_memo
+        .get_mut(bdd)
+        .expect("bdd should be cached by now")
+        .0 = MemoEmpty::from_bool(&is_empty);
     is_empty
 }
 enum ListInhabited {
@@ -691,7 +695,11 @@ pub fn list_is_empty(bdd: &Rc<Bdd>, builder: &mut SemTypeContext) -> ProperSubty
     }
 
     let is_empty = bdd_every(bdd, &None, &None, list_formula_is_empty, builder);
-    builder.list_memo.get_mut(bdd).unwrap().0 = MemoEmpty::from_bool(&is_empty);
+    builder
+        .list_memo
+        .get_mut(bdd)
+        .expect("bdd should be cached by now")
+        .0 = MemoEmpty::from_bool(&is_empty);
     is_empty
 }
 
@@ -832,12 +840,18 @@ pub fn mapping_indexed_access(
     };
     let b = SemTypeContext::sub_type_data(obj_st, SubTypeTag::Mapping);
     match b {
-        SubType::False(_) => todo!(),
-        SubType::True(_) => todo!(),
+        SubType::False(_) => {
+            bail!("not a mapping - false")
+        }
+        SubType::True(_) => {
+            bail!("not a mapping - true")
+        }
         SubType::Proper(p) => {
             let bdd = match p.as_ref() {
                 ProperSubtype::Mapping(bdd) => bdd,
-                _ => todo!(),
+                _ => {
+                    bail!("not a mapping - proper")
+                }
             };
             bdd_mapping_member_type_inner(ctx, bdd.clone(), k, SemTypeContext::unknown().into())
         }
@@ -963,13 +977,13 @@ pub fn list_indexed_access(
     ctx: &SemTypeContext,
     obj_st: Rc<SemType>,
     idx_st: Rc<SemType>,
-) -> Rc<SemType> {
+) -> anyhow::Result<Rc<SemType>> {
     //     if t is BasicTypeBitSet {
     //         return (t & LIST) != 0 ? VAL : NEVER;
     //     }
 
     let k: ListNumberKey = match SemTypeContext::number_sub_type(idx_st) {
-        SubType::False(_) => return SemTypeContext::never().into(),
+        SubType::False(_) => return Ok(SemTypeContext::never().into()),
         SubType::True(_) => ListNumberKey::True,
         SubType::Proper(proper) => match proper.as_ref() {
             ProperSubtype::Number { allowed, values } => ListNumberKey::N {
@@ -982,14 +996,25 @@ pub fn list_indexed_access(
     let b = SemTypeContext::sub_type_data(obj_st, SubTypeTag::List);
 
     match b {
-        SubType::False(_) => todo!(),
-        SubType::True(_) => todo!(),
+        SubType::False(_) => {
+            bail!("not a list - false")
+        }
+        SubType::True(_) => {
+            bail!("not a list - true")
+        }
         SubType::Proper(p) => {
             let bdd = match p.as_ref() {
                 ProperSubtype::List(bdd) => bdd,
-                _ => todo!(),
+                _ => {
+                    bail!("not a list - proper")
+                }
             };
-            bdd_list_member_type_inner_val(ctx, bdd.clone(), k, SemTypeContext::unknown().into())
+            Ok(bdd_list_member_type_inner_val(
+                ctx,
+                bdd.clone(),
+                k,
+                SemTypeContext::unknown().into(),
+            ))
         }
     }
 }
@@ -1037,7 +1062,7 @@ pub fn keyof(ctx: &mut SemTypeContext, st: Rc<SemType>) -> anyhow::Result<Rc<Sem
             }
             ProperSubtype::List(_) => {
                 let idx_st = Rc::new(SemTypeContext::number());
-                let ty_at_key = list_indexed_access(ctx, st.clone(), idx_st.clone());
+                let ty_at_key = list_indexed_access(ctx, st.clone(), idx_st.clone())?;
                 if !ty_at_key.is_empty(ctx) {
                     acc = acc.union(&idx_st)
                 }

@@ -17,13 +17,13 @@ use swc_atoms::JsWord;
 use swc_common::{Span, Spanned};
 use swc_ecma_ast::{
     Expr, Ident, Lit, MemberProp, Prop, PropName, PropOrSpread, Str, TruePlusMinus, TsArrayType,
-    TsConditionalType, TsConstructorType, TsEntityName, TsEnumDecl, TsExprWithTypeArgs,
-    TsFnOrConstructorType, TsFnType, TsImportType, TsIndexedAccessType, TsInferType,
-    TsInterfaceDecl, TsIntersectionType, TsKeywordType, TsKeywordTypeKind, TsLit, TsLitType,
-    TsMappedType, TsOptionalType, TsParenthesizedType, TsQualifiedName, TsRestType, TsThisType,
-    TsTplLitType, TsTupleType, TsType, TsTypeElement, TsTypeLit, TsTypeOperator, TsTypeOperatorOp,
-    TsTypeParam, TsTypeParamDecl, TsTypeParamInstantiation, TsTypePredicate, TsTypeQuery,
-    TsTypeQueryExpr, TsTypeRef, TsUnionOrIntersectionType, TsUnionType,
+    TsConditionalType, TsConstructorType, TsEntityName, TsEnumDecl, TsEnumMemberId,
+    TsExprWithTypeArgs, TsFnOrConstructorType, TsFnType, TsImportType, TsIndexedAccessType,
+    TsInferType, TsInterfaceDecl, TsIntersectionType, TsKeywordType, TsKeywordTypeKind, TsLit,
+    TsLitType, TsMappedType, TsOptionalType, TsParenthesizedType, TsQualifiedName, TsRestType,
+    TsThisType, TsTplLitType, TsTupleType, TsType, TsTypeElement, TsTypeLit, TsTypeOperator,
+    TsTypeOperatorOp, TsTypeParam, TsTypeParamDecl, TsTypeParamInstantiation, TsTypePredicate,
+    TsTypeQuery, TsTypeQueryExpr, TsTypeRef, TsUnionOrIntersectionType, TsUnionType,
 };
 
 pub struct TypeToSchema<'a, 'b, R: FileManager> {
@@ -486,7 +486,10 @@ impl<'a, 'b, R: FileManager> TypeToSchema<'a, 'b, R> {
                         .remove_nots_of_intersections_and_empty_of_union(
                             &self.validators_ref(),
                             &mut ctx,
-                        );
+                        )
+                        .map_err(|e| {
+                            self.box_error(span, DiagnosticInfoMessage::AnyhowError(e.to_string()))
+                        })?;
                     Ok(res)
                 }
                 None => self
@@ -1055,10 +1058,8 @@ impl<'a, 'b, R: FileManager> TypeToSchema<'a, 'b, R> {
                                 } = symbol_export.as_ref()
                                 {
                                     let found = decl.members.iter().find(|it| match &it.id {
-                                        swc_ecma_ast::TsEnumMemberId::Ident(i2) => {
-                                            i2.sym == q.right.sym
-                                        }
-                                        swc_ecma_ast::TsEnumMemberId::Str(_) => todo!(),
+                                        TsEnumMemberId::Ident(i2) => i2.sym == q.right.sym,
+                                        TsEnumMemberId::Str(_) => unreachable!(),
                                     });
                                     return match found {
                                         Some(item) => match &item.init {
@@ -1134,8 +1135,8 @@ impl<'a, 'b, R: FileManager> TypeToSchema<'a, 'b, R> {
                     .and_then(|current_file| current_file.locals.enums.get(k).cloned());
                 if let Some(local) = local_enum {
                     let found = local.members.iter().find(|it| match &it.id {
-                        swc_ecma_ast::TsEnumMemberId::Ident(i2) => i2.sym == q.right.sym,
-                        swc_ecma_ast::TsEnumMemberId::Str(_) => todo!(),
+                        TsEnumMemberId::Ident(i2) => i2.sym == q.right.sym,
+                        TsEnumMemberId::Str(_) => unreachable!(),
                     });
 
                     return match &found.as_ref().and_then(|it| it.init.clone()) {
@@ -1208,8 +1209,12 @@ impl<'a, 'b, R: FileManager> TypeToSchema<'a, 'b, R> {
                     }
                 }
                 Lit::BigInt(_) => Ok(JsonSchema::Codec(CodecName::BigInt)),
-                Lit::Regex(_) => todo!(),
-                Lit::JSXText(_) => todo!(),
+                Lit::Regex(_) => {
+                    self.error(&e.span(), DiagnosticInfoMessage::TypeOfRegexNotSupported)
+                }
+                Lit::JSXText(_) => {
+                    self.error(&e.span(), DiagnosticInfoMessage::TypeOfJSXTextNotSupported)
+                }
             },
             Expr::Array(lit) => {
                 let mut prefix_items = vec![];
@@ -1244,15 +1249,31 @@ impl<'a, 'b, R: FileManager> TypeToSchema<'a, 'b, R> {
 
                 for it in &lit.props {
                     match it {
-                        PropOrSpread::Spread(_) => todo!(),
+                        PropOrSpread::Spread(_) => {
+                            return self.error(
+                                &it.span(),
+                                DiagnosticInfoMessage::TypeofObjectUnsupportedSpread,
+                            )
+                        }
                         PropOrSpread::Prop(p) => match p.as_ref() {
                             Prop::KeyValue(p) => {
                                 let key: String = match &p.key {
                                     PropName::Ident(id) => id.sym.to_string(),
                                     PropName::Str(st) => st.value.to_string(),
-                                    PropName::Num(_) => todo!(),
-                                    PropName::Computed(_) => todo!(),
-                                    PropName::BigInt(_) => todo!(),
+                                    PropName::Num(_) => {
+                                        return self.error(
+                                            &p.key.span(),
+                                            DiagnosticInfoMessage::TypeofObjectUnsupportedPropNum,
+                                        )
+                                    }
+                                    PropName::Computed(_) => return self.error(
+                                        &p.key.span(),
+                                        DiagnosticInfoMessage::TypeofObjectUnsupportedPropComputed,
+                                    ),
+                                    PropName::BigInt(_) => return self.error(
+                                        &p.key.span(),
+                                        DiagnosticInfoMessage::TypeofObjectUnsupportedPropBigInt,
+                                    ),
                                 };
                                 let value = self.typeof_expr(&p.value, as_const)?;
                                 vs.insert(key, value.required());
@@ -1261,7 +1282,12 @@ impl<'a, 'b, R: FileManager> TypeToSchema<'a, 'b, R> {
                             | Prop::Assign(_)
                             | Prop::Getter(_)
                             | Prop::Setter(_)
-                            | Prop::Method(_) => todo!(),
+                            | Prop::Method(_) => {
+                                return self.error(
+                                    &p.span(),
+                                    DiagnosticInfoMessage::TypeofObjectUnsupportedProp,
+                                )
+                            }
                         },
                     }
                 }
@@ -1296,7 +1322,12 @@ impl<'a, 'b, R: FileManager> TypeToSchema<'a, 'b, R> {
                     MemberProp::Ident(i) => Rc::new(SemTypeContext::string_const(
                         StringLitOrFormat::Lit(i.sym.to_string()),
                     )),
-                    MemberProp::PrivateName(_) => todo!(),
+                    MemberProp::PrivateName(_) => {
+                        return self.error(
+                            &m.prop.span(),
+                            DiagnosticInfoMessage::TypeofPrivateNameNotSupported,
+                        )
+                    }
                     MemberProp::Computed(c) => {
                         let v = self.typeof_expr(&c.expr, as_const)?;
                         v.to_sem_type(&self.validators_ref(), &mut ctx)
@@ -1332,10 +1363,19 @@ impl<'a, 'b, R: FileManager> TypeToSchema<'a, 'b, R> {
         let ty = match exported.as_ref() {
             SymbolExport::TsEnumDecl { .. }
             | SymbolExport::TsType { .. }
-            | SymbolExport::TsInterfaceDecl { .. } => todo!(),
+            | SymbolExport::TsInterfaceDecl { .. } => self.error(
+                &exported.span(),
+                DiagnosticInfoMessage::FoundTypeExpectedValueInSymbolExport,
+            ),
             SymbolExport::ValueExpr { expr, .. } => self.typeof_expr(expr, false),
-            SymbolExport::StarOfOtherFile { .. } => todo!(),
-            SymbolExport::SomethingOfOtherFile { .. } => todo!(),
+            SymbolExport::StarOfOtherFile { .. } => self.error(
+                &exported.span(),
+                DiagnosticInfoMessage::TypeOfStarNotSupported,
+            ),
+            SymbolExport::SomethingOfOtherFile { .. } => self.error(
+                &exported.span(),
+                DiagnosticInfoMessage::TypeOfSomethingOfOtherFileNotSupported,
+            ),
             SymbolExport::ExprDecl { ty, .. } => self.convert_ts_type(ty),
         };
         self.current_file = old_file;
@@ -1359,14 +1399,20 @@ impl<'a, 'b, R: FileManager> TypeToSchema<'a, 'b, R> {
                         acc.push((k.to_string(), ty.required()));
                     }
                     SymbolExport::StarOfOtherFile { reference, .. } => match reference.as_ref() {
-                        ImportReference::Named { .. } => todo!(),
+                        ImportReference::Named { .. } => {
+                            return self
+                                .error(&v.span(), DiagnosticInfoMessage::CannotUseNamedAsStar)
+                        }
                         ImportReference::Star { file_name, .. } => {
                             let mut acc2 = vec![];
                             self.collect_value_exports(file_name, &mut acc2)?;
                             let v = JsonSchema::object(acc2, None);
                             acc.push((k.to_string(), v.required()));
                         }
-                        ImportReference::Default { .. } => todo!(),
+                        ImportReference::Default { .. } => {
+                            return self
+                                .error(&v.span(), DiagnosticInfoMessage::CannotUseDefaultAsStar)
+                        }
                     },
                     SymbolExport::SomethingOfOtherFile {
                         file,
@@ -1419,8 +1465,12 @@ impl<'a, 'b, R: FileManager> TypeToSchema<'a, 'b, R> {
                 self.collect_value_exports(&file_name, &mut acc)?;
                 Ok(JsonSchema::object(acc, None))
             }
-            ResolvedLocalSymbol::TsEnumDecl(_) => todo!(),
-            ResolvedLocalSymbol::TsBuiltin(_) => todo!(),
+            ResolvedLocalSymbol::TsEnumDecl(_) => {
+                self.error(span, DiagnosticInfoMessage::TypeofTsEnumNotSupported)
+            }
+            ResolvedLocalSymbol::TsBuiltin(_) => {
+                self.error(span, DiagnosticInfoMessage::TypeOfTsBuiltinNotSupported)
+            }
         }
     }
     fn get_kv_from_schema(&mut self, schema: JsonSchema, key: &str, span: Span) -> Res<JsonSchema> {

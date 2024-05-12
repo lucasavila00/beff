@@ -96,7 +96,7 @@ mod tests {
         match p.parser {
             Some(v) => {
                 let res = ExtractResult { parser: Some(v) };
-                let m = res.to_module().unwrap();
+                let m = res.to_module().expect("should be able to emit module");
                 m.js_validators
             }
             None => panic!(),

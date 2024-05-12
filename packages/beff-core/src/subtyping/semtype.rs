@@ -35,20 +35,20 @@ impl Iterator for SubTypePairIterator {
                 if self.i2 >= self.t2.subtype_data.len() {
                     break;
                 }
-                let data2 = self.t2.subtype_data.get(self.i2).unwrap();
+                let data2 = self.t2.subtype_data.get(self.i2).expect("should exist");
                 self.i2 += 1;
                 if self.include(data2.to_code()) {
                     return Some((None, Some(data2.clone())));
                 }
             } else if self.i2 >= self.t2.subtype_data.len() {
-                let data1 = self.t1.subtype_data.get(self.i1).unwrap();
+                let data1 = self.t1.subtype_data.get(self.i1).expect("should exist");
                 self.i1 += 1;
                 if self.include(data1.to_code()) {
                     return Some((Some(data1.clone()), None));
                 }
             } else {
-                let data1 = self.t1.subtype_data.get(self.i1).unwrap();
-                let data2 = self.t2.subtype_data.get(self.i2).unwrap();
+                let data1 = self.t1.subtype_data.get(self.i1).expect("should exist");
+                let data2 = self.t2.subtype_data.get(self.i2).expect("should exist");
 
                 let code1 = data1.to_code();
                 let code2 = data2.to_code();
@@ -500,7 +500,7 @@ impl SemTypeContext {
         obj_st: Rc<SemType>,
         idx_st: Rc<SemType>,
     ) -> anyhow::Result<Rc<SemType>> {
-        let list_result = list_indexed_access(self, obj_st.clone(), idx_st.clone());
+        let list_result = list_indexed_access(self, obj_st.clone(), idx_st.clone())?;
         if list_result.is_empty(self) {
             return mapping_indexed_access(self, obj_st, idx_st);
         }
