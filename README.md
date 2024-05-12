@@ -75,11 +75,16 @@ const maybeUser = Parser.User.safeParse(null);
 
 The `beff` binary can run in watch mode, too.
 
-```
+```shell
+$ npx beff -h
+Usage: beff [options]
+
+Generate validators from typescript types
+
 Options:
-  -p, --project <string>
-  -v, --verbose
-  -w, --watch
+  -p, --project <string>  Path to the project file
+  -v, --verbose           Print verbose output
+  -w, --watch             Watch for file changes
   -h, --help              display help for command
 ```
 
