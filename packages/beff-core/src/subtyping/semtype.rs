@@ -495,15 +495,19 @@ impl SemTypeContext {
         Self::sub_type_data(s, SubTypeTag::String)
     }
 
-    pub fn indexed_access(&mut self, obj_st: Rc<SemType>, idx_st: Rc<SemType>) -> Rc<SemType> {
+    pub fn indexed_access(
+        &mut self,
+        obj_st: Rc<SemType>,
+        idx_st: Rc<SemType>,
+    ) -> anyhow::Result<Rc<SemType>> {
         let list_result = list_indexed_access(self, obj_st.clone(), idx_st.clone());
         if list_result.is_empty(self) {
             return mapping_indexed_access(self, obj_st, idx_st);
         }
-        list_result
+        Ok(list_result)
     }
 
-    pub fn keyof(&mut self, st: Rc<SemType>) -> Rc<SemType> {
+    pub fn keyof(&mut self, st: Rc<SemType>) -> anyhow::Result<Rc<SemType>> {
         keyof(self, st)
     }
 }

@@ -19,7 +19,7 @@ mod tests {
     ) -> bool {
         let a = a.to_sem_type(a_validators, ctx).unwrap();
         let b = b.to_sem_type(b_validators, ctx).unwrap();
-        return a.is_subtype(&b, ctx);
+        a.is_subtype(&b, ctx)
     }
 
     fn schema_is_sub_type(
@@ -29,12 +29,12 @@ mod tests {
         b_validators: &[&Validator],
     ) -> bool {
         let mut ctx = SemTypeContext::new();
-        return is_sub_type(a, b, a_validators, b_validators, &mut ctx);
+        is_sub_type(a, b, a_validators, b_validators, &mut ctx)
     }
 
     #[test]
     fn ref2() {
-        let definitions = vec![Validator {
+        let definitions = [Validator {
             name: "User".into(),
             schema: JsonSchema::object(
                 vec![
@@ -74,7 +74,7 @@ mod tests {
     }
     #[test]
     fn ref1() {
-        let definitions = vec![Validator {
+        let definitions = [Validator {
             name: "User".into(),
             schema: JsonSchema::object(
                 vec![
@@ -117,7 +117,7 @@ mod tests {
     }
     #[test]
     fn ref3() {
-        let definitions = vec![Validator {
+        let definitions = [Validator {
             name: "User".into(),
             schema: JsonSchema::object(
                 vec![
@@ -161,7 +161,7 @@ mod tests {
 
     #[test]
     fn mappings4() {
-        let definitions = vec![Validator {
+        let definitions = [Validator {
             name: "User".into(),
             schema: JsonSchema::object(
                 vec![
@@ -290,7 +290,7 @@ mod tests {
         let definitions = vec![];
 
         let t1 = JsonSchema::Tuple {
-            prefix_items: vec![JsonSchema::String.into()],
+            prefix_items: vec![JsonSchema::String],
             items: None,
         };
         let t2 = JsonSchema::Array(JsonSchema::String.into());

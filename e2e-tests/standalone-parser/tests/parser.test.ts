@@ -17,9 +17,38 @@ import {
   Arr2C,
   ValidCurrencyCodec,
   T3,
+  AvatarSize,
 } from "../src/parser";
 import { Arr2 } from "../src/types";
 
+it("tpl", () => {
+  expect(AvatarSize.parse("1x1")).toMatchInlineSnapshot('"1x1"');
+  expect(AvatarSize.parse("1.0x1.0")).toMatchInlineSnapshot('"1.0x1.0"');
+  expect(AvatarSize.safeParse("abc")).toMatchInlineSnapshot(`
+    {
+      "errors": [
+        {
+          "message": "expected string matching \${number}x\${number}",
+          "path": [],
+          "received": "abc",
+        },
+      ],
+      "success": false,
+    }
+  `);
+  expect(AvatarSize.safeParse("1xa")).toMatchInlineSnapshot(`
+    {
+      "errors": [
+        {
+          "message": "expected string matching \${number}x\${number}",
+          "path": [],
+          "received": "1xa",
+        },
+      ],
+      "success": false,
+    }
+  `);
+});
 it("print schema", () => {
   expect(T3.jsonSchema).toMatchInlineSnapshot(`
     {
@@ -466,7 +495,7 @@ it("to zod works", () => {
       "error": [ZodError: [
       {
         "code": "custom",
-        "message": "#0 (accessLevel) expected one of \\"ADMIN\\", \\"USER\\", received: undefined | #1 (avatarSize) expected string, received: undefined | #2 (extra) expected object, received: undefined | #3 (friends[0].accessLevel) expected one of \\"ADMIN\\", \\"USER\\", received: undefined | #4 (friends[0].avatarSize) expected string, received: undefined | #5 (friends[0].extra) expected object, received: undefined | #6 (friends[0].friends) expected array, received: undefined",
+        "message": "#0 (accessLevel) expected one of \\"ADMIN\\", \\"USER\\", received: undefined | #1 (avatarSize) expected string matching \${number}x\${number}, received: undefined | #2 (extra) expected object, received: undefined | #3 (friends[0].accessLevel) expected one of \\"ADMIN\\", \\"USER\\", received: undefined | #4 (friends[0].avatarSize) expected string matching \${number}x\${number}, received: undefined | #5 (friends[0].extra) expected object, received: undefined | #6 (friends[0].friends) expected array, received: undefined",
         "fatal": true,
         "path": []
       }
@@ -531,7 +560,7 @@ it("works on recursive type", () => {
           "received": undefined,
         },
         {
-          "message": "expected string",
+          "message": "expected string matching \${number}x\${number}",
           "path": [
             "avatarSize",
           ],
@@ -554,7 +583,7 @@ it("works on recursive type", () => {
           "received": undefined,
         },
         {
-          "message": "expected string",
+          "message": "expected string matching \${number}x\${number}",
           "path": [
             "friends",
             "[0]",

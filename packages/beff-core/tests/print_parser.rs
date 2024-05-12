@@ -36,7 +36,7 @@ mod tests {
         let mut resolver = TestResolver {};
         let file_name = BffFileName::new("file.ts".into());
         GLOBALS.set(&Globals::new(), || {
-            let res = parse_and_bind(&mut resolver, &file_name, &content);
+            let res = parse_and_bind(&mut resolver, &file_name, content);
             res.expect("failed to parse")
         })
     }
@@ -80,7 +80,7 @@ mod tests {
         match p.parser {
             Some(v) => as_typescript_string_(
                 &v.validators.iter().collect::<Vec<_>>(),
-                &v.built_decoders.as_ref().unwrap_or(&vec![]),
+                v.built_decoders.as_ref().unwrap_or(&vec![]),
             ),
             None => panic!(),
         }
@@ -463,6 +463,13 @@ mod tests {
         type IX2 = IX<true>
         type IX3 = IX<false>
         parse.buildParsers<{ IX2: IX2, IX3: IX3 }>();
+      "#));
+    }
+    #[test]
+    fn ok_tpl_lit1() {
+        insta::assert_snapshot!(ok(r#"
+        export type IX = `a${string}b${number}c`
+        parse.buildParsers<{ IX: IX }>();
       "#));
     }
 }

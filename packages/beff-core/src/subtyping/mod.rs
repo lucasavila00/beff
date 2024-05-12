@@ -156,6 +156,9 @@ impl<'a> ToSemTypeConverter<'a> {
             JsonSchema::StringWithFormat(s) => {
                 Ok(SemTypeContext::string_const(StringLitOrFormat::Format(s.clone())).into())
             }
+            JsonSchema::TplLitType(tpl) => {
+                Ok(SemTypeContext::string_const(StringLitOrFormat::Tpl(tpl.clone())).into())
+            }
             JsonSchema::Object { vs, rest } => {
                 let vs = vs
                     .iter()
