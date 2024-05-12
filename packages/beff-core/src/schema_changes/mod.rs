@@ -28,7 +28,7 @@ pub fn print_ts_types(vs: Vec<(String, TsType)>) -> String {
                 ))))],
                 "",
             )
-            .unwrap()
+            .expect("emitting module should work")
         })
         .collect::<Vec<String>>()
         .join("\n");

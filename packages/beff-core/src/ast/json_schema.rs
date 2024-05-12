@@ -274,41 +274,47 @@ impl JsonSchema {
         self,
         validators: &[&Validator],
         ctx: &mut SemTypeContext,
-    ) -> JsonSchema {
+    ) -> anyhow::Result<JsonSchema> {
         match self {
             JsonSchema::AllOf(vs) => {
-                let semantic = JsonSchema::AllOf(vs.clone())
-                    .to_sem_type(validators, ctx)
-                    .unwrap();
+                let semantic = JsonSchema::AllOf(vs.clone()).to_sem_type(validators, ctx)?;
                 let is_empty = semantic.is_empty(ctx);
                 if is_empty {
-                    return JsonSchema::StNever;
+                    return Ok(JsonSchema::StNever);
                 }
 
                 let vs = vs
                     .into_iter()
                     .map(|it| it.remove_nots_of_intersections_and_empty_of_union(validators, ctx))
+                    .collect::<Result<Vec<_>>>()?;
+
+                let vs = vs
+                    .into_iter()
                     .filter(|it| !matches!(it, JsonSchema::StNot(_)))
                     .collect();
-                JsonSchema::all_of(vs)
+                Ok(JsonSchema::all_of(vs))
             }
             JsonSchema::AnyOf(vs) => {
+                let vs = vs
+                    .into_iter()
+                    .map(|it| it.to_sem_type(validators, ctx).map(|r| (it, r)))
+                    .collect::<Result<Vec<_>>>()?;
                 let vs: Vec<JsonSchema> = vs
                     .into_iter()
-                    .filter(|it| {
-                        let semantic = it.to_sem_type(validators, ctx).unwrap();
+                    .filter(|(_, semantic)| {
                         let is_empty = semantic.is_empty(ctx);
                         !is_empty
                     })
+                    .map(|(it, _)| it)
                     .collect();
 
                 let vs = vs
                     .into_iter()
                     .map(|it| it.remove_nots_of_intersections_and_empty_of_union(validators, ctx))
-                    .collect();
-                JsonSchema::any_of(vs)
+                    .collect::<Result<Vec<_>>>()?;
+                Ok(JsonSchema::any_of(vs))
             }
-            v => v,
+            v => Ok(v),
         }
     }
 }

@@ -7,6 +7,21 @@ use crate::{BffFileName, ParsedModule};
 
 #[derive(Debug, Clone)]
 pub enum DiagnosticInfoMessage {
+    TypeOfJSXTextNotSupported,
+    TypeOfRegexNotSupported,
+    TypeofObjectUnsupportedPropNum,
+    TypeofObjectUnsupportedPropComputed,
+    TypeofObjectUnsupportedPropBigInt,
+    TypeofObjectUnsupportedSpread,
+    TypeofObjectUnsupportedProp,
+    TypeofPrivateNameNotSupported,
+    FoundTypeExpectedValueInSymbolExport,
+    TypeOfStarNotSupported,
+    TypeOfSomethingOfOtherFileNotSupported,
+    CannotUseDefaultAsStar,
+    CannotUseNamedAsStar,
+    TypeOfTsBuiltinNotSupported,
+    TypeofTsEnumNotSupported,
     TplLitTypeNonStringNonNumberNonBoolean,
     ExcludeShouldHaveTwoTypeArguments,
     MissingArgumentsOnExclude,
@@ -388,6 +403,49 @@ impl DiagnosticInfoMessage {
             }
             DiagnosticInfoMessage::TplLitTypeNonStringNonNumberNonBoolean => {
                 "Template literal type must be a string, number, or boolean".to_string()
+            }
+            DiagnosticInfoMessage::TypeofTsEnumNotSupported => {
+                "typeof on TS enum is not supported".to_string()
+            }
+            DiagnosticInfoMessage::TypeOfTsBuiltinNotSupported => {
+                "typeof on TS builtin is not supported".to_string()
+            }
+            DiagnosticInfoMessage::CannotUseNamedAsStar => "Cannot use named as star".to_string(),
+            DiagnosticInfoMessage::CannotUseDefaultAsStar => {
+                "Cannot use default as star".to_string()
+            }
+            DiagnosticInfoMessage::TypeOfSomethingOfOtherFileNotSupported => {
+                "typeof something of other file is not supported".to_string()
+            }
+            DiagnosticInfoMessage::TypeOfStarNotSupported => {
+                "typeof * is not supported".to_string()
+            }
+            DiagnosticInfoMessage::FoundTypeExpectedValueInSymbolExport => {
+                "Found type, expected value in symbol export".to_string()
+            }
+            DiagnosticInfoMessage::TypeofPrivateNameNotSupported => {
+                "typeof on private name is not supported".to_string()
+            }
+            DiagnosticInfoMessage::TypeofObjectUnsupportedProp => {
+                "typeof on object unsupported prop".to_string()
+            }
+            DiagnosticInfoMessage::TypeofObjectUnsupportedSpread => {
+                "typeof on object unsupported spread".to_string()
+            }
+            DiagnosticInfoMessage::TypeofObjectUnsupportedPropBigInt => {
+                "typeof on object unsupported prop BigInt".to_string()
+            }
+            DiagnosticInfoMessage::TypeofObjectUnsupportedPropComputed => {
+                "typeof on object unsupported prop computed".to_string()
+            }
+            DiagnosticInfoMessage::TypeofObjectUnsupportedPropNum => {
+                "typeof on object unsupported prop num".to_string()
+            }
+            DiagnosticInfoMessage::TypeOfRegexNotSupported => {
+                "typeof on regex is not supported".to_string()
+            }
+            DiagnosticInfoMessage::TypeOfJSXTextNotSupported => {
+                "typeof on JSX text is not supported".to_string()
             }
         }
     }

@@ -88,7 +88,8 @@ fn parse_entrypoints(parser_entry_point: &str, settings: JsValue) -> EntryPoints
     } else {
         Some(BffFileName::new(parser_entry_point.to_string()))
     };
-    let settings: BeffUserSettings = serde_wasm_bindgen::from_value(settings).unwrap();
+    let settings: BeffUserSettings =
+        serde_wasm_bindgen::from_value(settings).expect("should be able to parse settings");
     EntryPoints {
         parser_entry_point,
         settings,

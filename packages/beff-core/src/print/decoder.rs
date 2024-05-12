@@ -206,7 +206,10 @@ impl<'a> DecoderFnGenerator<'a> {
         for current_key in discriminator_strings {
             let mut cases = vec![];
             for vs in object_vs.iter() {
-                let value = vs.get(&discriminator).unwrap().inner();
+                let value = vs
+                    .get(&discriminator)
+                    .expect("we already checked the discriminator exists")
+                    .inner();
 
                 let all_values = self.extract_union(value);
                 for s in all_values {
@@ -289,7 +292,11 @@ impl<'a> DecoderFnGenerator<'a> {
                 if contained_in_all {
                     let values = object_vs
                         .iter()
-                        .map(|it| it.get(&discriminator).unwrap().clone())
+                        .map(|it| {
+                            it.get(&discriminator)
+                                .expect("we already checked the discriminator exists")
+                                .clone()
+                        })
                         .collect::<BTreeSet<_>>();
 
                     let all_required = values

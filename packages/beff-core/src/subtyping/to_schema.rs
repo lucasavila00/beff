@@ -67,7 +67,7 @@ impl<'a> SemTypeResolverContext<'a> {
         left: &Rc<Bdd>,
         middle: &Rc<Bdd>,
         right: &Rc<Bdd>,
-    ) -> Vec<Rc<ListAtomic>> {
+    ) -> anyhow::Result<Vec<Rc<ListAtomic>>> {
         let mt = match atom.as_ref() {
             Atom::List(a) => self.0.get_list_atomic(*a).clone(),
             _ => unreachable!(),
@@ -90,7 +90,7 @@ impl<'a> SemTypeResolverContext<'a> {
             } => {
                 let ty = vec![mt.clone()]
                     .into_iter()
-                    .chain(self.convert_to_schema_list_node_bdd_vec(atom, left, middle, right));
+                    .chain(self.convert_to_schema_list_node_bdd_vec(atom, left, middle, right)?);
 
                 acc.push(Self::intersect_list_atomics(ty.collect()));
             }
@@ -101,7 +101,7 @@ impl<'a> SemTypeResolverContext<'a> {
                 // noop
             }
             Bdd::True | Bdd::Node { .. } => {
-                acc.extend(self.to_schema_list_bdd_vec(middle));
+                acc.extend(self.to_schema_list_bdd_vec(middle)?);
             }
         }
         match right.as_ref() {
@@ -119,28 +119,26 @@ impl<'a> SemTypeResolverContext<'a> {
             } => {
                 let ty = vec![Self::list_atomic_complement(mt.clone())]
                     .into_iter()
-                    .chain(self.convert_to_schema_list_node_bdd_vec(atom, left, middle, right));
+                    .chain(self.convert_to_schema_list_node_bdd_vec(atom, left, middle, right)?);
 
                 acc.push(Self::intersect_list_atomics(ty.collect()));
             }
         }
-        acc
+        Ok(acc)
     }
-    pub fn to_schema_list_bdd_vec(&mut self, bdd: &Rc<Bdd>) -> Vec<Rc<ListAtomic>> {
+    pub fn to_schema_list_bdd_vec(&mut self, bdd: &Rc<Bdd>) -> anyhow::Result<Vec<Rc<ListAtomic>>> {
         match bdd.as_ref() {
             Bdd::True => {
                 // vec![Rc::new(ListAtomic {
                 //     prefix_items: vec![],
                 //     items: Rc::new(SemType::new_unknown()),
                 // })]
-                todo!()
+                bail!("to_schema_list_bdd_vec - true should not be here")
             }
-            Bdd::False => {
-                vec![Rc::new(ListAtomic {
-                    prefix_items: vec![],
-                    items: Rc::new(SemType::new_never()),
-                })]
-            }
+            Bdd::False => Ok(vec![Rc::new(ListAtomic {
+                prefix_items: vec![],
+                items: Rc::new(SemType::new_never()),
+            })]),
             Bdd::Node {
                 atom,
                 left,
@@ -277,8 +275,12 @@ impl<'a, 'b> SchemerContext<'a, 'b> {
 
     fn convert_to_schema_mapping(&mut self, bdd: &Rc<Bdd>) -> anyhow::Result<JsonSchema> {
         match bdd.as_ref() {
-            Bdd::True => todo!(),
-            Bdd::False => todo!(),
+            Bdd::True => {
+                bail!("convert_to_schema_mapping - true should not be here")
+            }
+            Bdd::False => {
+                bail!("convert_to_schema_mapping - false should not be here")
+            }
             Bdd::Node {
                 atom,
                 left,
@@ -392,8 +394,12 @@ impl<'a, 'b> SchemerContext<'a, 'b> {
     }
     fn convert_to_schema_list(&mut self, bdd: &Rc<Bdd>) -> anyhow::Result<JsonSchema> {
         match bdd.as_ref() {
-            Bdd::True => todo!(),
-            Bdd::False => todo!(),
+            Bdd::True => {
+                bail!("convert_to_schema_list - true should not be here")
+            }
+            Bdd::False => {
+                bail!("convert_to_schema_list - false should not be here")
+            }
             Bdd::Node {
                 atom,
                 left,
@@ -469,7 +475,12 @@ impl<'a, 'b> SchemerContext<'a, 'b> {
                             StringLitOrFormat::Codec(fmt) => {
                                 acc.insert(maybe_not(JsonSchema::Codec(fmt.clone()), !allowed));
                             }
-                            StringLitOrFormat::Tpl(_) => todo!(),
+                            StringLitOrFormat::Tpl(items) => {
+                                acc.insert(maybe_not(
+                                    JsonSchema::TplLitType(items.clone()),
+                                    !allowed,
+                                ));
+                            }
                         }
                     }
                 }
