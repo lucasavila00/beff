@@ -1,4 +1,4 @@
-import { program } from "commander";
+import { Command } from "commander";
 import * as fs from "fs";
 import * as path from "path";
 import { ProjectJson, parseUserSettings } from "./project";
@@ -28,15 +28,14 @@ const readProjectJson = (projectPath: string): ProjectJson => {
     throw bail(`Failed to parse bff.json: ${e}`);
   }
 
-  if (!projectJson.router && !projectJson.parser) {
-    throw bail(`Field "router" or "parser" not found in bff.json`);
+  if (!projectJson.parser) {
+    throw bail(`Field or "parser" not found in bff.json`);
   }
   if (!projectJson.outputDir) {
     throw bail(`Field "outputDir" not found in bff.json`);
   }
 
   return {
-    router: projectJson.router == null ? projectJson.router : String(projectJson.router),
     parser: projectJson.parser == null ? projectJson.parser : String(projectJson.parser),
     outputDir: String(projectJson.outputDir),
     module: projectJson.module,
@@ -57,12 +56,17 @@ const getProjectPath = (projectPath: string | undefined): string => {
 
 const watching: Record<string, boolean> = {};
 export const commanderExec = () => {
+  const program = new Command();
+
   const start = Date.now();
-  program.option("-p, --project <string>");
-  program.option("-v, --verbose");
-  program.option("-w, --watch");
-  program.parse();
-  const options = program.opts();
+  const command = program
+    .name("beff")
+    .description("Generate validators from typescript types")
+    .option("-p, --project <string>", "Path to the project file")
+    .option("-v, --verbose", "Print verbose output")
+    .option("-w, --watch", "Watch for file changes")
+    .parse();
+  const options = command.opts();
   const projectPath = getProjectPath(options.project);
   const projectJson = readProjectJson(projectPath);
   const verbose = options.verbose ?? false;
