@@ -2,8 +2,8 @@
 
 ## Requirements
 
-- Rust 1.72.0
-- Node 18
+- Rust 1.80.0
+- Node 20
 
 ### Setup
 
@@ -13,24 +13,8 @@ To build and test everything:
 
 - `DEBUG=true pnpm all`
 
-DEBUG environment variable controls whether WASM is compiled in release or dev mode. It takes a minute to compile in release mode and a second on dev mode.
+DEBUG environment variable controls whether WASM is compiled in release or dev mode.
 
-### Setup (web)
+It takes a minute to compile in release mode and a second on dev mode.
 
-The website is made of 2 projects. The playground (web-demo/demo) should be built before building the website (web/docs).
-
-You must build the rust/wasm code before starting the playground (pnpm build).
-
-#### Test the playground:
-
-`cd web-demo/demo && npm run dev`
-
-#### Test the website:
-
-`cd web/docs && npm run start`
-
-### Build
-
-To build:
-
-`(cd web-demo/demo && npm run build:web) && (cd web/docs && npm run build:web)`
+Dev mode contains function names in stack traces.
