@@ -1210,10 +1210,10 @@ impl<'a, 'b, R: FileManager> TypeToSchema<'a, 'b, R> {
                 }
                 Lit::BigInt(_) => Ok(JsonSchema::Codec(CodecName::BigInt)),
                 Lit::Regex(_) => {
-                    return self.error(&e.span(), DiagnosticInfoMessage::TypeOfRegexNotSupported)
+                    self.error(&e.span(), DiagnosticInfoMessage::TypeOfRegexNotSupported)
                 }
                 Lit::JSXText(_) => {
-                    return self.error(&e.span(), DiagnosticInfoMessage::TypeOfJSXTextNotSupported)
+                    self.error(&e.span(), DiagnosticInfoMessage::TypeOfJSXTextNotSupported)
                 }
             },
             Expr::Array(lit) => {
