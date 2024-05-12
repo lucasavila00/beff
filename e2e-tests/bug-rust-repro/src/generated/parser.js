@@ -55,7 +55,10 @@ function buildParsers(args) {
       if (safe.success) {
         return safe.data;
       }
-      throw safe
+      const error = new Error(`Failed to parse ${k}`);
+      
+      error.errors = safe.errors;
+      throw error
     };
     const zod = () => {
       
