@@ -1,5 +1,13 @@
 # @beff/client
 
+## 0.0.47
+
+### Patch Changes
+
+- check github release log
+- Updated dependencies
+  - @beff/cli@0.0.47
+
 ## 0.0.46
 
 ### Patch Changes
