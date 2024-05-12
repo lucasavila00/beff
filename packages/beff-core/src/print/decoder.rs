@@ -546,21 +546,21 @@ impl<'a> DecoderFnGenerator<'a> {
                             // match the exact string
 
                             let escaped_lit = lit
-                                .replace("\\", "\\\\")
-                                .replace("(", "\\(")
-                                .replace(")", "\\)")
-                                .replace("[", "\\[")
-                                .replace("]", "\\]")
-                                .replace("{", "\\{")
-                                .replace("}", "\\}")
-                                .replace(".", "\\.")
-                                .replace("*", "\\*")
-                                .replace("+", "\\+")
-                                .replace("?", "\\?")
-                                .replace("|", "\\|")
-                                .replace("^", "\\^")
-                                .replace("$", "\\$")
-                                .replace("/", "\\/");
+                                .replace('\\', "\\\\")
+                                .replace('(', "\\(")
+                                .replace(')', "\\)")
+                                .replace('[', "\\[")
+                                .replace(']', "\\]")
+                                .replace('{', "\\{")
+                                .replace('}', "\\}")
+                                .replace('.', "\\.")
+                                .replace('*', "\\*")
+                                .replace('+', "\\+")
+                                .replace('?', "\\?")
+                                .replace('|', "\\|")
+                                .replace('^', "\\^")
+                                .replace('$', "\\$")
+                                .replace('/', "\\/");
 
                             regex_exp_parts.push(escaped_lit.clone());
                         }
