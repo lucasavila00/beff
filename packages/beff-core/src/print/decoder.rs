@@ -1,14 +1,14 @@
 use std::collections::{BTreeMap, BTreeSet};
 
 use crate::{
-    ast::json_schema::{JsonSchema, JsonSchemaConst, Optionality},
+    ast::json_schema::{JsonSchema, JsonSchemaConst, Optionality, TplLitTypeItem},
     Validator,
 };
 use swc_common::DUMMY_SP;
 use swc_ecma_ast::{
     ArrayLit, ArrowExpr, AssignPat, BindingIdent, BlockStmt, BlockStmtOrExpr, Bool, CallExpr,
     Callee, Expr, ExprOrSpread, Function, Ident, KeyValueProp, Lit, MemberExpr, MemberProp, Null,
-    ObjectLit, Param, ParenExpr, Pat, Prop, PropName, PropOrSpread, ReturnStmt, Stmt, Str,
+    ObjectLit, Param, ParenExpr, Pat, Prop, PropName, PropOrSpread, Regex, ReturnStmt, Stmt, Str,
 };
 
 use super::expr::ToExpr;
@@ -522,6 +522,73 @@ impl<'a> DecoderFnGenerator<'a> {
                     raw: None,
                 }))],
             ),
+            JsonSchema::TplLitType(items) => {
+                let mut regex_exp_parts: Vec<String> = vec![];
+
+                for item in items {
+                    match item {
+                        TplLitTypeItem::String => {
+                            // match any string
+                            regex_exp_parts.push(".*".into());
+                        }
+                        TplLitTypeItem::Number => {
+                            // match any typescript number
+                            regex_exp_parts.push(r"\d+(\.\d+)?".into());
+                        }
+                        TplLitTypeItem::Boolean => {
+                            // match "true" or "false"
+                            regex_exp_parts.push("true|false".into());
+                        }
+                        TplLitTypeItem::Quasis(lit) => {
+                            if lit.is_empty() {
+                                continue;
+                            }
+                            // match the exact string
+
+                            let escaped_lit = lit
+                                .replace("\\", "\\\\")
+                                .replace("(", "\\(")
+                                .replace(")", "\\)")
+                                .replace("[", "\\[")
+                                .replace("]", "\\]")
+                                .replace("{", "\\{")
+                                .replace("}", "\\}")
+                                .replace(".", "\\.")
+                                .replace("*", "\\*")
+                                .replace("+", "\\+")
+                                .replace("?", "\\?")
+                                .replace("|", "\\|")
+                                .replace("^", "\\^")
+                                .replace("$", "\\$")
+                                .replace("/", "\\/");
+
+                            regex_exp_parts.push(escaped_lit.clone());
+                        }
+                    }
+                }
+
+                let regex_exp: String = regex_exp_parts
+                    .iter()
+                    .map(|it| format!("({})", it))
+                    .collect::<String>();
+
+                Self::decode_call_extra(
+                    "decodeRegex",
+                    required,
+                    vec![
+                        Expr::Lit(Lit::Regex(Regex {
+                            span: DUMMY_SP,
+                            exp: regex_exp.into(),
+                            flags: "".into(),
+                        })),
+                        Expr::Lit(Lit::Str(Str {
+                            span: DUMMY_SP,
+                            value: TplLitTypeItem::describe_vec(items).into(),
+                            raw: None,
+                        })),
+                    ],
+                )
+            }
         }
     }
 

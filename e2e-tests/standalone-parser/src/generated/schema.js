@@ -37,6 +37,10 @@ const jsonSchema = {
     ],
     "type": "string"
   },
+  "AvatarSize": {
+    "format": "${number}x${number}",
+    "type": "string"
+  },
   "DiscriminatedUnion": {
     "anyOf": [
       {
@@ -471,6 +475,7 @@ const jsonSchema = {
         "type": "string"
       },
       "avatarSize": {
+        "format": "${number}x${number}",
         "type": "string"
       },
       "extra": {
@@ -662,6 +667,7 @@ const jsonSchema = {
         "type": "string"
       },
       "avatarSize": {
+        "format": "${number}x${number}",
         "type": "string"
       },
       "extra": {

@@ -1,4 +1,6 @@
-use crate::ast::json_schema::{CodecName, JsonSchema, JsonSchemaConst, Optionality};
+use crate::ast::json_schema::{
+    CodecName, JsonSchema, JsonSchemaConst, Optionality, TplLitTypeItem,
+};
 use crate::diag::{
     Diagnostic, DiagnosticInfoMessage, DiagnosticInformation, DiagnosticParentMessage, Location,
 };
@@ -1311,7 +1313,9 @@ impl<'a, 'b, R: FileManager> TypeToSchema<'a, 'b, R> {
                     .map_err(|e| {
                         self.box_error(&m.span, DiagnosticInfoMessage::AnyhowError(e.to_string()))
                     })?;
-                let access_st: Rc<SemType> = ctx.indexed_access(st, key);
+                let access_st: Rc<SemType> = ctx.indexed_access(st, key).map_err(|e| {
+                    self.box_error(&m.span, DiagnosticInfoMessage::AnyhowError(e.to_string()))
+                })?;
                 self.convert_sem_type(access_st, &mut ctx, &m.prop.span())
             }
             _ => self.error(&e.span(), DiagnosticInfoMessage::CannotConvertExprToSchema),
@@ -1549,7 +1553,9 @@ impl<'a, 'b, R: FileManager> TypeToSchema<'a, 'b, R> {
                 self.box_error(&i.span, DiagnosticInfoMessage::AnyhowError(e.to_string()))
             })?;
 
-        let access_st: Rc<SemType> = ctx.indexed_access(obj_st, idx_st);
+        let access_st: Rc<SemType> = ctx.indexed_access(obj_st, idx_st).map_err(|e| {
+            self.box_error(&i.span, DiagnosticInfoMessage::AnyhowError(e.to_string()))
+        })?;
         self.convert_sem_type(access_st, &mut ctx, &i.span())
     }
     fn convert_keyof(&mut self, k: &TsType) -> Res<JsonSchema> {
@@ -1561,7 +1567,9 @@ impl<'a, 'b, R: FileManager> TypeToSchema<'a, 'b, R> {
                 self.box_error(&k.span(), DiagnosticInfoMessage::AnyhowError(e.to_string()))
             })?;
 
-        let keyof_st: Rc<SemType> = ctx.keyof(st);
+        let keyof_st: Rc<SemType> = ctx.keyof(st).map_err(|e| {
+            self.box_error(&k.span(), DiagnosticInfoMessage::AnyhowError(e.to_string()))
+        })?;
 
         self.convert_sem_type(keyof_st, &mut ctx, &k.span())
     }
@@ -1649,6 +1657,55 @@ impl<'a, 'b, R: FileManager> TypeToSchema<'a, 'b, R> {
         Ok(JsonSchema::object(vs, None))
     }
 
+    fn convert_ts_tpl_lit_type_non_trivial(&mut self, it: &TsTplLitType) -> Res<JsonSchema> {
+        let mut quasis_idx = 0;
+        let mut types_idx = 0;
+        let mut selecting_quasis = true;
+
+        let mut acc: Vec<TplLitTypeItem> = vec![];
+        let iter_count = it.quasis.len() + it.types.len();
+        for _ in 0..iter_count {
+            if selecting_quasis {
+                let quasis = &it.quasis[quasis_idx];
+                quasis_idx += 1;
+                acc.push(TplLitTypeItem::Quasis(quasis.raw.to_string()));
+                selecting_quasis = false;
+            } else {
+                let type_ = &it.types[types_idx];
+                types_idx += 1;
+
+                let ty = self.convert_ts_type(type_)?;
+                match ty {
+                    JsonSchema::Boolean => acc.push(TplLitTypeItem::Boolean),
+                    JsonSchema::String => acc.push(TplLitTypeItem::String),
+                    JsonSchema::Number => acc.push(TplLitTypeItem::Number),
+                    _ => {
+                        return self.error(
+                            &type_.span(),
+                            DiagnosticInfoMessage::TplLitTypeNonStringNonNumberNonBoolean,
+                        )
+                    }
+                }
+
+                selecting_quasis = true;
+            }
+        }
+
+        Ok(JsonSchema::TplLitType(acc))
+    }
+    fn convert_ts_tpl_lit_type(&mut self, it: &TsTplLitType) -> Res<JsonSchema> {
+        if !it.types.is_empty() || it.quasis.len() != 1 {
+            self.convert_ts_tpl_lit_type_non_trivial(it)
+        } else {
+            Ok(JsonSchema::Const(JsonSchemaConst::String(
+                it.quasis
+                    .iter()
+                    .map(|it| it.raw.to_string())
+                    .collect::<String>(),
+            )))
+        }
+    }
+
     pub fn convert_ts_type(&mut self, typ: &TsType) -> Res<JsonSchema> {
         match typ {
             TsType::TsKeywordType(TsKeywordType { kind, span, .. }) => {
@@ -1713,19 +1770,7 @@ impl<'a, 'b, R: FileManager> TypeToSchema<'a, 'b, R> {
                 ))),
                 TsLit::Bool(b) => Ok(JsonSchema::Const(JsonSchemaConst::Bool(b.value))),
                 TsLit::BigInt(_) => Ok(JsonSchema::Codec(CodecName::BigInt)),
-                TsLit::Tpl(TsTplLitType { types, quasis, .. }) => {
-                    if !types.is_empty() || quasis.len() != 1 {
-                        // TODO: handle it better somehow
-                        return Ok(JsonSchema::String);
-                    }
-
-                    Ok(JsonSchema::Const(JsonSchemaConst::String(
-                        quasis
-                            .iter()
-                            .map(|it| it.raw.to_string())
-                            .collect::<String>(),
-                    )))
-                }
+                TsLit::Tpl(it) => self.convert_ts_tpl_lit_type(it),
             },
             TsType::TsParenthesizedType(TsParenthesizedType { type_ann, .. }) => {
                 self.convert_ts_type(type_ann)

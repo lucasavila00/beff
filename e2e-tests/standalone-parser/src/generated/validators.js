@@ -317,6 +317,17 @@ function decodeConst(ctx, input, required, constValue) {
   return buildError(input, ctx, "expected " + JSON.stringify(constValue));
 }
 
+function decodeRegex(ctx, input, required, regex, description) {
+  if (!required && input == null) {
+    return input;
+  }
+  if (typeof input === "string") {
+    if (regex.test(input)) {
+      return input;
+    }
+  }
+  return buildError(input, ctx, "expected string matching " + description);
+}
 
 function DecodeArr3(ctx, input, required = true) {
     return decodeAnyOfConsts(ctx, input, required, [
@@ -392,7 +403,7 @@ function DecodeAccessLevel(ctx, input, required = true) {
     ]);
 }
 function DecodeAvatarSize(ctx, input, required = true) {
-    return decodeString(ctx, input, required);
+    return decodeRegex(ctx, input, required, /(\d+(\.\d+)?)(x)(\d+(\.\d+)?)/, "${number}x${number}");
 }
 function DecodeUser(ctx, input, required = true) {
     return decodeObject(ctx, input, required, {

@@ -4,6 +4,8 @@ use std::{
     rc::Rc,
 };
 
+use anyhow::bail;
+
 use crate::{ast::json::N, subtyping::semtype::SemTypeContext};
 
 use super::{
@@ -698,10 +700,10 @@ pub fn bdd_mapping_member_type_inner(
     b: Rc<Bdd>,
     key: MappingStrKey,
     accum: Rc<SemType>,
-) -> Rc<SemType> {
+) -> anyhow::Result<Rc<SemType>> {
     match b.as_ref() {
-        Bdd::True => accum,
-        Bdd::False => SemTypeContext::never().into(),
+        Bdd::True => Ok(accum),
+        Bdd::False => Ok(SemTypeContext::never().into()),
         Bdd::Node {
             atom,
             left,
@@ -712,14 +714,14 @@ pub fn bdd_mapping_member_type_inner(
                 Atom::Mapping(a) => ctx.get_mapping_atomic(*a),
                 _ => unreachable!(),
             };
-            let a = mapping_member_type_inner(b_atom_type.clone(), key.clone());
+            let a = mapping_member_type_inner(b_atom_type.clone(), key.clone())?;
             let a = a.intersect(&accum);
-            let a = bdd_mapping_member_type_inner(ctx, left.clone(), key.clone(), a.clone());
+            let a = bdd_mapping_member_type_inner(ctx, left.clone(), key.clone(), a.clone())?;
 
-            let b = bdd_mapping_member_type_inner(ctx, middle.clone(), key.clone(), accum.clone());
-            let c = bdd_mapping_member_type_inner(ctx, right.clone(), key, accum.clone());
+            let b = bdd_mapping_member_type_inner(ctx, middle.clone(), key.clone(), accum.clone())?;
+            let c = bdd_mapping_member_type_inner(ctx, right.clone(), key, accum.clone())?;
 
-            a.union(&b.union(&c))
+            Ok(a.union(&b.union(&c)))
         }
     }
 }
@@ -736,20 +738,31 @@ pub enum MappingStrKey {
 fn mapping_atomic_applicable_member_types_inner(
     atomic: Rc<MappingAtomicType>,
     key: MappingStrKey,
-) -> Vec<Rc<SemType>> {
+) -> anyhow::Result<Vec<Rc<SemType>>> {
     match key {
         MappingStrKey::Str { allowed, values } => {
             if !allowed {
-                return vec![];
+                return Ok(vec![]);
             }
             let mut member_types = vec![];
             for (k, ty) in atomic.vs.iter() {
-                let found = values.iter().any(|it| match it {
-                    StringLitOrFormat::Lit(l) => l == k,
-                    StringLitOrFormat::Format(_) | StringLitOrFormat::Codec(_) => {
-                        unreachable!("format or codec cannot be used as mapping key")
+                let mut found = false;
+
+                for it in &values {
+                    match it {
+                        StringLitOrFormat::Lit(l) => {
+                            if l == k {
+                                found = true;
+                                break;
+                            }
+                        }
+                        StringLitOrFormat::Tpl(_)
+                        | StringLitOrFormat::Format(_)
+                        | StringLitOrFormat::Codec(_) => {
+                            bail!("format or codec cannot be used as mapping key")
+                        }
                     }
-                });
+                }
 
                 if found {
                     member_types.push(ty.clone());
@@ -761,20 +774,23 @@ fn mapping_atomic_applicable_member_types_inner(
                 member_types.push(atomic.rest.clone());
             }
 
-            member_types
+            Ok(member_types)
         }
         MappingStrKey::True => {
             let mut vs: Vec<Rc<SemType>> = atomic.vs.values().cloned().collect();
             vs.push(atomic.rest.clone());
-            vs
+            Ok(vs)
         }
     }
 }
 
-fn mapping_member_type_inner(atomic: Rc<MappingAtomicType>, key: MappingStrKey) -> Rc<SemType> {
+fn mapping_member_type_inner(
+    atomic: Rc<MappingAtomicType>,
+    key: MappingStrKey,
+) -> anyhow::Result<Rc<SemType>> {
     let mut member_type: Option<Rc<SemType>> = None;
 
-    for ty in mapping_atomic_applicable_member_types_inner(atomic, key) {
+    for ty in mapping_atomic_applicable_member_types_inner(atomic, key)? {
         match member_type {
             Some(mt) => {
                 member_type = Some(mt.union(&ty));
@@ -786,8 +802,8 @@ fn mapping_member_type_inner(atomic: Rc<MappingAtomicType>, key: MappingStrKey) 
     }
 
     match member_type {
-        Some(it) => it,
-        None => SemTypeContext::void().into(),
+        Some(it) => Ok(it),
+        None => Ok(SemTypeContext::void().into()),
     }
 }
 
@@ -798,13 +814,13 @@ pub fn mapping_indexed_access(
     ctx: &SemTypeContext,
     obj_st: Rc<SemType>,
     idx_st: Rc<SemType>,
-) -> Rc<SemType> {
+) -> anyhow::Result<Rc<SemType>> {
     //     if t is BasicTypeBitSet {
     //         return (t & MAPPING) != 0 ? VAL : UNDEF;
     //     }
 
     let k: MappingStrKey = match SemTypeContext::string_sub_type(idx_st) {
-        SubType::False(_) => return SemTypeContext::never().into(),
+        SubType::False(_) => return Ok(SemTypeContext::never().into()),
         SubType::True(_) => MappingStrKey::True,
         SubType::Proper(proper) => match proper.as_ref() {
             ProperSubtype::String { allowed, values } => MappingStrKey::Str {
@@ -996,7 +1012,7 @@ pub fn to_bdd_atoms(it: &Rc<Bdd>) -> Vec<Rc<Atom>> {
         }
     }
 }
-pub fn keyof(ctx: &mut SemTypeContext, st: Rc<SemType>) -> Rc<SemType> {
+pub fn keyof(ctx: &mut SemTypeContext, st: Rc<SemType>) -> anyhow::Result<Rc<SemType>> {
     let mut acc = Rc::new(SemTypeContext::never());
 
     for it in &st.subtype_data {
@@ -1010,7 +1026,8 @@ pub fn keyof(ctx: &mut SemTypeContext, st: Rc<SemType>) -> Rc<SemType> {
                             let key_ty = Rc::new(SemTypeContext::string_const(
                                 StringLitOrFormat::Lit(k.clone()),
                             ));
-                            let ty_at_key = mapping_indexed_access(ctx, st.clone(), key_ty.clone());
+                            let ty_at_key =
+                                mapping_indexed_access(ctx, st.clone(), key_ty.clone())?;
                             if !ty_at_key.is_empty(ctx) {
                                 acc = acc.union(&key_ty)
                             }
@@ -1028,5 +1045,5 @@ pub fn keyof(ctx: &mut SemTypeContext, st: Rc<SemType>) -> Rc<SemType> {
             _ => (),
         }
     }
-    acc
+    Ok(acc)
 }

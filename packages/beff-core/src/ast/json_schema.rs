@@ -14,6 +14,7 @@ use swc_ecma_ast::BindingIdent;
 use swc_ecma_ast::Bool;
 use swc_ecma_ast::Ident;
 use swc_ecma_ast::Str;
+use swc_ecma_ast::TplElement;
 use swc_ecma_ast::TsArrayType;
 use swc_ecma_ast::TsEntityName;
 use swc_ecma_ast::TsFnParam;
@@ -26,6 +27,7 @@ use swc_ecma_ast::TsLitType;
 use swc_ecma_ast::TsParenthesizedType;
 use swc_ecma_ast::TsPropertySignature;
 use swc_ecma_ast::TsRestType;
+use swc_ecma_ast::TsTplLitType;
 use swc_ecma_ast::TsTupleElement;
 use swc_ecma_ast::TsTupleType;
 use swc_ecma_ast::TsType;
@@ -119,6 +121,27 @@ impl JsonSchemaConst {
     }
 }
 
+#[derive(PartialEq, Eq, Hash, Debug, Ord, PartialOrd, Clone)]
+pub enum TplLitTypeItem {
+    String,
+    Number,
+    Boolean,
+    Quasis(String),
+}
+
+impl TplLitTypeItem {
+    pub fn describe_vec(vs: &[Self]) -> String {
+        vs.iter()
+            .map(|it| match it {
+                TplLitTypeItem::String => "${string}".to_string(),
+                TplLitTypeItem::Number => "${number}".to_string(),
+                TplLitTypeItem::Boolean => "${boolean}".to_string(),
+                TplLitTypeItem::Quasis(s) => s.clone(),
+            })
+            .collect()
+    }
+}
+
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord)]
 pub enum JsonSchema {
     Null,
@@ -128,6 +151,7 @@ pub enum JsonSchema {
     Any,
     AnyArrayLike,
     StringWithFormat(String),
+    TplLitType(Vec<TplLitTypeItem>),
     Object {
         vs: BTreeMap<String, Optionality<JsonSchema>>,
         rest: Option<Box<JsonSchema>>,
@@ -288,129 +312,6 @@ impl JsonSchema {
         }
     }
 }
-// impl ToJson for JsonSchema {
-//     #[allow(clippy::cast_precision_loss)]
-//     fn to_json(self) -> Json {
-//         match self {
-//             JsonSchema::String => {
-//                 Json::object(vec![("type".into(), Json::String("string".into()))])
-//             }
-//             JsonSchema::StringWithFormat(format) => Json::object(vec![
-//                 ("type".into(), Json::String("string".into())),
-//                 ("format".into(), Json::String(format)),
-//             ]),
-//             JsonSchema::Codec(format) => Json::object(vec![
-//                 ("type".into(), Json::String("string".into())),
-//                 ("format".into(), Json::String(format.to_string())),
-//             ]),
-
-//             JsonSchema::Object { vs: values, rest } => {
-//                 let mut vs = vec![
-//                     //
-//                     ("type".into(), Json::String("object".into())),
-//                     (
-//                         "required".into(),
-//                         //
-//                         Json::Array(
-//                             values
-//                                 .iter()
-//                                 .filter(|(_k, v)| v.is_required())
-//                                 .map(|(k, _v)| Json::String(k.clone()))
-//                                 .collect(),
-//                         ),
-//                     ),
-//                     (
-//                         "properties".into(),
-//                         //
-//                         Json::Object(
-//                             values
-//                                 .into_iter()
-//                                 .map(|(k, v)| (k, v.inner_move().to_json()))
-//                                 .collect(),
-//                         ),
-//                     ),
-//                 ];
-
-//                 if let Some(rest) = rest {
-//                     vs.push(("additionalProperties".into(), rest.to_json()));
-//                 }
-//                 Json::object(vs)
-//             }
-//             JsonSchema::Array(typ) => {
-//                 Json::object(vec![
-//                     //
-//                     ("type".into(), Json::String("array".into())),
-//                     ("items".into(), (*typ).to_json()),
-//                 ])
-//             }
-//             JsonSchema::Boolean => {
-//                 Json::object(vec![("type".into(), Json::String("boolean".into()))])
-//             }
-//             JsonSchema::Number => {
-//                 Json::object(vec![("type".into(), Json::String("number".into()))])
-//             }
-//             JsonSchema::Any => Json::object(vec![]),
-//             JsonSchema::Ref(reference) => Json::object(vec![(
-//                 "$ref".into(),
-//                 Json::String(format!("#/components/schemas/{reference}")),
-//             )]),
-//             JsonSchema::OpenApiResponseRef(reference) => Json::object(vec![(
-//                 "$ref".into(),
-//                 Json::String(format!("#/components/responses/{reference}")),
-//             )]),
-//             JsonSchema::Null => Json::object(vec![("type".into(), Json::String("null".into()))]),
-//             JsonSchema::AnyOf(types) => {
-//                 let all_literals = types.iter().all(|it| matches!(it, JsonSchema::Const(_)));
-//                 if all_literals {
-//                     let vs = types
-//                         .into_iter()
-//                         .map(|it| match it {
-//                             JsonSchema::Const(e) => e.to_json(),
-//                             _ => unreachable!("should have been caught by all_literals check"),
-//                         })
-//                         .collect();
-//                     Json::object(vec![("enum".into(), Json::Array(vs))])
-//                 } else {
-//                     let vs = types.into_iter().map(ToJson::to_json).collect();
-//                     Json::object(vec![("anyOf".into(), Json::Array(vs))])
-//                 }
-//             }
-//             JsonSchema::AllOf(types) => Json::object(vec![(
-//                 "allOf".into(),
-//                 Json::Array(types.into_iter().map(ToJson::to_json).collect()),
-//             )]),
-
-//             JsonSchema::Tuple {
-//                 prefix_items,
-//                 items,
-//             } => {
-//                 let mut v = vec![
-//                     //
-//                     ("type".into(), Json::String("array".into())),
-//                 ];
-//                 let len_f = prefix_items.len();
-//                 if !prefix_items.is_empty() {
-//                     v.push((
-//                         "prefixItems".into(),
-//                         Json::Array(prefix_items.into_iter().map(ToJson::to_json).collect()),
-//                     ));
-//                 }
-//                 if let Some(ty) = items {
-//                     v.push(("items".into(), ty.to_json()));
-//                 } else {
-//                     v.push(("minItems".into(), Json::parse_int(len_f as i64)));
-//                     v.push(("maxItems".into(), Json::parse_int(len_f as i64)));
-//                 }
-//                 Json::object(v)
-//             }
-//             JsonSchema::Const(val) => Json::object(vec![("const".into(), val.to_json())]),
-//             JsonSchema::AnyArrayLike => JsonSchema::Array(JsonSchema::Any.into()).to_json(),
-//             JsonSchema::StNever | JsonSchema::StNot(_) => {
-//                 unreachable!("semantic types should not be converted to json")
-//             }
-//         }
-//     }
-// }
 
 pub struct JsonFlatConverter<'a> {
     seen_refs: BTreeSet<String>,
@@ -438,6 +339,13 @@ impl<'a> JsonFlatConverter<'a> {
             JsonSchema::Codec(format) => Json::object(vec![
                 ("type".into(), Json::String("string".into())),
                 ("format".into(), Json::String(format.to_string())),
+            ]),
+            JsonSchema::TplLitType(items) => Json::object(vec![
+                ("type".into(), Json::String("string".into())),
+                (
+                    "format".into(),
+                    Json::String(TplLitTypeItem::describe_vec(&items)),
+                ),
             ]),
 
             JsonSchema::Object { vs: values, rest } => {
@@ -888,6 +796,59 @@ impl JsonSchema {
                 .into(),
                 type_params: None,
             }),
+            JsonSchema::TplLitType(items) => {
+                let mut types: Vec<Box<TsType>> = vec![];
+                let mut quasis: Vec<TplElement> = vec![];
+
+                for item in items {
+                    match item {
+                        TplLitTypeItem::String => {
+                            types.push(
+                                TsType::TsKeywordType(TsKeywordType {
+                                    span: DUMMY_SP,
+                                    kind: TsKeywordTypeKind::TsStringKeyword,
+                                })
+                                .into(),
+                            );
+                        }
+                        TplLitTypeItem::Number => {
+                            types.push(
+                                TsType::TsKeywordType(TsKeywordType {
+                                    span: DUMMY_SP,
+                                    kind: TsKeywordTypeKind::TsNumberKeyword,
+                                })
+                                .into(),
+                            );
+                        }
+                        TplLitTypeItem::Boolean => {
+                            types.push(
+                                TsType::TsKeywordType(TsKeywordType {
+                                    span: DUMMY_SP,
+                                    kind: TsKeywordTypeKind::TsBooleanKeyword,
+                                })
+                                .into(),
+                            );
+                        }
+                        TplLitTypeItem::Quasis(str) => {
+                            quasis.push(TplElement {
+                                span: DUMMY_SP,
+                                tail: false,
+                                raw: str.clone().into(),
+                                cooked: Some(str.clone().into()),
+                            });
+                        }
+                    }
+                }
+
+                TsType::TsLitType(TsLitType {
+                    span: DUMMY_SP,
+                    lit: TsLit::Tpl(TsTplLitType {
+                        span: DUMMY_SP,
+                        types,
+                        quasis,
+                    }),
+                })
+            }
         }
     }
 }

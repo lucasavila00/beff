@@ -7,6 +7,7 @@ use crate::{BffFileName, ParsedModule};
 
 #[derive(Debug, Clone)]
 pub enum DiagnosticInfoMessage {
+    TplLitTypeNonStringNonNumberNonBoolean,
     ExcludeShouldHaveTwoTypeArguments,
     MissingArgumentsOnExclude,
     PartialShouldHaveOneTypeArgument,
@@ -384,6 +385,9 @@ impl DiagnosticInfoMessage {
             }
             DiagnosticInfoMessage::ExcludeShouldHaveTwoTypeArguments => {
                 "Exclude should have two type arguments".to_string()
+            }
+            DiagnosticInfoMessage::TplLitTypeNonStringNonNumberNonBoolean => {
+                "Template literal type must be a string, number, or boolean".to_string()
             }
         }
     }

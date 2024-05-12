@@ -14,7 +14,7 @@ export enum AccessLevel {
   USER = "USER",
 }
 
-type AvatarSize = `${number}x${number}`;
+export type AvatarSize = `${number}x${number}`;
 export type Extra = Record<string, string>;
 
 export type User = {
@@ -178,6 +178,7 @@ export const {
   UnionWithEnumAccess,
   AccessLevelCodec,
   T3,
+  AvatarSize,
 } = parse.buildParsers<{
   Arr3: Arr3;
   OmitSettings: OmitSettings;
@@ -205,6 +206,7 @@ export const {
   UnionWithEnumAccess: UnionWithEnumAccess;
   T3: T3;
   AccessLevelCodec: AccessLevel;
+  AvatarSize: AvatarSize;
 }>({
   customFormats: {
     ValidCurrency: (input: string) => {

@@ -317,6 +317,17 @@ function decodeConst(ctx, input, required, constValue) {
   return buildError(input, ctx, "expected " + JSON.stringify(constValue));
 }
 
+function decodeRegex(ctx, input, required, regex, description) {
+  if (!required && input == null) {
+    return input;
+  }
+  if (typeof input === "string") {
+    if (regex.test(input)) {
+      return input;
+    }
+  }
+  return buildError(input, ctx, "expected string matching " + description);
+}
 
 function DecodeA(ctx, input, required = true) {
     return decodeString(ctx, input, required);

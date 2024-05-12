@@ -23,6 +23,9 @@ const buildParsersInput = {
     "Arr3": function(ctx, input, required = true) {
         return validators.Arr3(ctx, input, required);
     },
+    "AvatarSize": function(ctx, input, required = true) {
+        return validators.AvatarSize(ctx, input, required);
+    },
     "DiscriminatedUnion": function(ctx, input, required = true) {
         return validators.DiscriminatedUnion(ctx, input, required);
     },

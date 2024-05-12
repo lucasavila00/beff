@@ -465,4 +465,11 @@ mod tests {
         parse.buildParsers<{ IX2: IX2, IX3: IX3 }>();
       "#));
     }
+    #[test]
+    fn ok_tpl_lit1() {
+        insta::assert_snapshot!(ok(r#"
+        export type IX = `a${string}b${number}c`
+        parse.buildParsers<{ IX: IX }>();
+      "#));
+    }
 }

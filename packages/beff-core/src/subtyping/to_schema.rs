@@ -469,6 +469,7 @@ impl<'a, 'b> SchemerContext<'a, 'b> {
                             StringLitOrFormat::Codec(fmt) => {
                                 acc.insert(maybe_not(JsonSchema::Codec(fmt.clone()), !allowed));
                             }
+                            StringLitOrFormat::Tpl(_) => todo!(),
                         }
                     }
                 }
