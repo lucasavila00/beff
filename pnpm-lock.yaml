@@ -16,7 +16,7 @@ importers:
         specifier: ^2.26.2
         version: 2.26.2
 
-  examples/bug-rust-repro:
+  e2e-tests/bug-rust-repro:
     dependencies:
       '@beff/cli':
         specifier: workspace:^
@@ -31,7 +31,7 @@ importers:
         specifier: ^3.23.5
         version: 3.23.5
 
-  examples/standalone-parser:
+  e2e-tests/standalone-parser:
     dependencies:
       '@beff/cli':
         specifier: workspace:^0.0.46
