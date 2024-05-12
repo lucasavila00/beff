@@ -1,17 +1,17 @@
 use std::collections::{BTreeMap, BTreeSet};
 
+use super::expr::ToExpr;
 use crate::{
     ast::json_schema::{JsonSchema, JsonSchemaConst, Optionality, TplLitTypeItem},
     Validator,
 };
+use std::fmt::Write;
 use swc_common::DUMMY_SP;
 use swc_ecma_ast::{
     ArrayLit, ArrowExpr, AssignPat, BindingIdent, BlockStmt, BlockStmtOrExpr, Bool, CallExpr,
     Callee, Expr, ExprOrSpread, Function, Ident, KeyValueProp, Lit, MemberExpr, MemberProp, Null,
     ObjectLit, Param, ParenExpr, Pat, Prop, PropName, PropOrSpread, Regex, ReturnStmt, Stmt, Str,
 };
-
-use super::expr::ToExpr;
 struct SwcBuilder;
 
 impl SwcBuilder {
@@ -567,10 +567,13 @@ impl<'a> DecoderFnGenerator<'a> {
                     }
                 }
 
-                let regex_exp: String = regex_exp_parts
-                    .iter()
-                    .map(|it| format!("({})", it))
-                    .collect::<String>();
+                let regex_exp: String =
+                    regex_exp_parts
+                        .iter()
+                        .fold(String::new(), |mut output, it| {
+                            let _ = write!(output, "({it})");
+                            output
+                        });
 
                 Self::decode_call_extra(
                     "decodeRegex",
