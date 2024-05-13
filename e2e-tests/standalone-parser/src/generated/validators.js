@@ -332,6 +332,9 @@ function decodeRegex(ctx, input, required, regex, description) {
 function DecodeVersion(ctx, input, required = true) {
     return decodeRegex(ctx, input, required, /(\d+(\.\d+)?)(\.)(\d+(\.\d+)?)(\.)(\d+(\.\d+)?)/, "${number}.${number}.${number}");
 }
+function DecodeVersion2(ctx, input, required = true) {
+    return decodeRegex(ctx, input, required, /(v)(\d+(\.\d+)?)(\.)(\d+(\.\d+)?)(\.)(\d+(\.\d+)?)/, "v${number}.${number}.${number}");
+}
 function DecodeAccessLevel2(ctx, input, required = true) {
     return decodeAnyOfConsts(ctx, input, required, [
         "ADMIN Admin",
@@ -619,6 +622,7 @@ function DecodeT3(ctx, input, required = true) {
 }
 const validators = {
     Version: DecodeVersion,
+    Version2: DecodeVersion2,
     AccessLevel2: DecodeAccessLevel2,
     AccessLevelTpl2: DecodeAccessLevelTpl2,
     AccessLevel: DecodeAccessLevel,

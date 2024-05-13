@@ -710,6 +710,10 @@ const jsonSchema = {
   "Version": {
     "format": "${number}.${number}.${number}",
     "type": "string"
+  },
+  "Version2": {
+    "format": "v${number}.${number}.${number}",
+    "type": "string"
   }
 };
 export default jsonSchema;

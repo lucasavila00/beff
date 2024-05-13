@@ -21,10 +21,24 @@ import {
   AccessLevelTpl,
   AccessLevelTpl2,
   Version,
+  Version2,
 } from "../src/parser";
 import { Arr2 } from "../src/types";
 
 it("tpl", () => {
+  expect(Version2.parse("v1.2.3")).toMatchInlineSnapshot('"v1.2.3"');
+  expect(Version2.safeParse("UNKNOWN")).toMatchInlineSnapshot(`
+    {
+      "errors": [
+        {
+          "message": "expected string matching v\${number}.\${number}.\${number}",
+          "path": [],
+          "received": "UNKNOWN",
+        },
+      ],
+      "success": false,
+    }
+  `);
   expect(Version.parse("1.2.3")).toMatchInlineSnapshot('"1.2.3"');
   expect(Version.safeParse("UNKNOWN")).toMatchInlineSnapshot(`
     {

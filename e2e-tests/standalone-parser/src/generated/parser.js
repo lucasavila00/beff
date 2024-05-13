@@ -97,6 +97,9 @@ const buildParsersInput = {
     },
     "Version": function(ctx, input, required = true) {
         return validators.Version(ctx, input, required);
+    },
+    "Version2": function(ctx, input, required = true) {
+        return validators.Version2(ctx, input, required);
     }
 };
 

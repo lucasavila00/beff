@@ -165,9 +165,11 @@ type Shape =
 type T3 = Exclude<Shape, { kind: "circle" }>;
 
 type Version = `${number}.${number}.${number}`;
+type Version2 = `v${number}.${number}.${number}`;
 
 export const {
   Version,
+  Version2,
   RequiredPartialObject,
   LevelAndDSettings,
   PartialSettings,
@@ -194,6 +196,7 @@ export const {
   AccessLevelTpl2,
 } = parse.buildParsers<{
   Version: Version;
+  Version2: Version2;
   AccessLevelTpl2: AccessLevelTpl2;
   AccessLevelTpl: AccessLevelTpl;
   Arr3: Arr3;
