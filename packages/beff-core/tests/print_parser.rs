@@ -483,4 +483,16 @@ mod tests {
         parse.buildParsers<{ IX: IX }>();
       "#));
     }
+    #[test]
+    fn ok_repro4() {
+        insta::assert_snapshot!(ok(r#"
+        export const a = "a" as const;
+        export const b = "b" as const;
+        
+        export const AllTs = [a, b] as const;
+        export type AllTs = (typeof AllTs)[number];
+        
+        parse.buildParsers<{ AllTs: AllTs }>();
+      "#));
+    }
 }

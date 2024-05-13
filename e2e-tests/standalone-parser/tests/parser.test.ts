@@ -22,6 +22,9 @@ import {
   AccessLevelTpl2,
   Version,
   Version2,
+  AObject,
+  BObject,
+  AllTs,
 } from "../src/parser";
 import { Arr2 } from "../src/types";
 
@@ -163,6 +166,28 @@ it("exclude object", () => {
       "x": 1,
     }
   `);
+});
+it("import * ", () => {
+  const x: AObject = {
+    tag: "a",
+  };
+
+  expect(AObject.parse(x)).toMatchInlineSnapshot(`
+    {
+      "tag": "a",
+    }
+  `);
+  const x2: BObject = {
+    tag: "b",
+  };
+
+  expect(BObject.parse(x2)).toMatchInlineSnapshot(`
+    {
+      "tag": "b",
+    }
+  `);
+
+  expect(AllTs.parse("b")).toMatchInlineSnapshot('"b"');
 });
 it("disallow extra properties", () => {
   expect(

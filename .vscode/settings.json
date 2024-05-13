@@ -5,6 +5,7 @@
     "codegen",
     "consts",
     "ctxt",
+    "curr",
     "elems",
     "esno",
     "Hljs",

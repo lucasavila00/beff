@@ -1387,6 +1387,18 @@ impl<'a, 'b, R: FileManager> TypeToSchema<'a, 'b, R> {
         file_name: &BffFileName,
         acc: &mut Vec<(String, Optionality<JsonSchema>)>,
     ) -> Res<()> {
+        let store_current_file = self.current_file.clone();
+        self.current_file = file_name.clone();
+        // We must not use "?" if doing current file update, otherwise we get lost on errors
+        let out = self.collect_value_exports_no_curr_file_update____(file_name, acc);
+        self.current_file = store_current_file;
+        out
+    }
+    fn collect_value_exports_no_curr_file_update____(
+        &mut self,
+        file_name: &BffFileName,
+        acc: &mut Vec<(String, Optionality<JsonSchema>)>,
+    ) -> Res<()> {
         let file = self.files.get_or_fetch_file(file_name);
         if let Some(pm) = file {
             for (k, v) in &pm.symbol_exports.named_values {

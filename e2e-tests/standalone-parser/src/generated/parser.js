@@ -8,6 +8,9 @@ import {z} from 'zod';
 import validatorsMod from "./validators.js"; const { decodeObject, decodeArray, decodeString, decodeNumber, decodeCodec, decodeStringWithFormat, decodeAnyOf, decodeAllOf, decodeBoolean, decodeAny, decodeTuple, decodeNull, decodeConst, registerCustomFormatter, validators, c } = validatorsMod;
 const RequiredCustomFormats = ["ValidCurrency"];
 const buildParsersInput = {
+    "AObject": function(ctx, input, required = true) {
+        return validators.AObject(ctx, input, required);
+    },
     "AccessLevel": function(ctx, input, required = true) {
         return validators.AccessLevel(ctx, input, required);
     },
@@ -20,6 +23,9 @@ const buildParsersInput = {
     "AccessLevelTpl2": function(ctx, input, required = true) {
         return validators.AccessLevelTpl2(ctx, input, required);
     },
+    "AllTs": function(ctx, input, required = true) {
+        return validators.AllTs(ctx, input, required);
+    },
     "AllTypes": function(ctx, input, required = true) {
         return validators.AllTypes(ctx, input, required);
     },
@@ -31,6 +37,9 @@ const buildParsersInput = {
     },
     "AvatarSize": function(ctx, input, required = true) {
         return validators.AvatarSize(ctx, input, required);
+    },
+    "BObject": function(ctx, input, required = true) {
+        return validators.BObject(ctx, input, required);
     },
     "DiscriminatedUnion": function(ctx, input, required = true) {
         return validators.DiscriminatedUnion(ctx, input, required);

@@ -1,5 +1,11 @@
 # @beff/cli
 
+## 0.0.49
+
+### Patch Changes
+
+- collect values fix
+
 ## 0.0.48
 
 ### Patch Changes
