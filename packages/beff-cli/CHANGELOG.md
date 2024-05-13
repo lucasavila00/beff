@@ -1,5 +1,11 @@
 # @beff/cli
 
+## 0.0.50
+
+### Patch Changes
+
+- b.void fix
+
 ## 0.0.49
 
 ### Patch Changes
