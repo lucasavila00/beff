@@ -329,6 +329,24 @@ function decodeRegex(ctx, input, required, regex, description) {
   return buildError(input, ctx, "expected string matching " + description);
 }
 
+function DecodeAccessLevel2(ctx, input, required = true) {
+    return decodeAnyOfConsts(ctx, input, required, [
+        "ADMIN Admin",
+        "USER User"
+    ]);
+}
+function DecodeAccessLevelTpl2(ctx, input, required = true) {
+    return decodeRegex(ctx, input, required, /((ADMIN Admin)|(USER User))/, '("ADMIN Admin" | "USER User")');
+}
+function DecodeAccessLevel(ctx, input, required = true) {
+    return decodeAnyOfConsts(ctx, input, required, [
+        "ADMIN",
+        "USER"
+    ]);
+}
+function DecodeAccessLevelTpl(ctx, input, required = true) {
+    return decodeRegex(ctx, input, required, /((ADMIN)|(USER))/, '("ADMIN" | "USER")');
+}
 function DecodeArr3(ctx, input, required = true) {
     return decodeAnyOfConsts(ctx, input, required, [
         "X",
@@ -395,12 +413,6 @@ function DecodePartialSettings(ctx, input, required = true) {
 }
 function DecodeExtra(ctx, input, required = true) {
     return decodeObject(ctx, input, required, {}, (ctx, input)=>(decodeString(ctx, input, false)));
-}
-function DecodeAccessLevel(ctx, input, required = true) {
-    return decodeAnyOfConsts(ctx, input, required, [
-        "ADMIN",
-        "USER"
-    ]);
 }
 function DecodeAvatarSize(ctx, input, required = true) {
     return decodeRegex(ctx, input, required, /(\d+(\.\d+)?)(x)(\d+(\.\d+)?)/, "${number}x${number}");
@@ -603,6 +615,10 @@ function DecodeT3(ctx, input, required = true) {
     });
 }
 const validators = {
+    AccessLevel2: DecodeAccessLevel2,
+    AccessLevelTpl2: DecodeAccessLevelTpl2,
+    AccessLevel: DecodeAccessLevel,
+    AccessLevelTpl: DecodeAccessLevelTpl,
     Arr3: DecodeArr3,
     OmitSettings: DecodeOmitSettings,
     Settings: DecodeSettings,
@@ -611,7 +627,6 @@ const validators = {
     LevelAndDSettings: DecodeLevelAndDSettings,
     PartialSettings: DecodePartialSettings,
     Extra: DecodeExtra,
-    AccessLevel: DecodeAccessLevel,
     AvatarSize: DecodeAvatarSize,
     User: DecodeUser,
     PublicUser: DecodePublicUser,

@@ -5,7 +5,6 @@ use crate::{
     ast::json_schema::{JsonSchema, JsonSchemaConst, Optionality, TplLitTypeItem},
     Validator,
 };
-use std::fmt::Write;
 use swc_common::DUMMY_SP;
 use swc_ecma_ast::{
     ArrayLit, ArrowExpr, AssignPat, BindingIdent, BlockStmt, BlockStmtOrExpr, Bool, CallExpr,
@@ -530,57 +529,11 @@ impl<'a> DecoderFnGenerator<'a> {
                 }))],
             ),
             JsonSchema::TplLitType(items) => {
-                let mut regex_exp_parts: Vec<String> = vec![];
+                let mut regex_exp = String::new();
 
                 for item in items {
-                    match item {
-                        TplLitTypeItem::String => {
-                            // match any string
-                            regex_exp_parts.push(".*".into());
-                        }
-                        TplLitTypeItem::Number => {
-                            // match any typescript number
-                            regex_exp_parts.push(r"\d+(\.\d+)?".into());
-                        }
-                        TplLitTypeItem::Boolean => {
-                            // match "true" or "false"
-                            regex_exp_parts.push("true|false".into());
-                        }
-                        TplLitTypeItem::Quasis(lit) => {
-                            if lit.is_empty() {
-                                continue;
-                            }
-                            // match the exact string
-
-                            let escaped_lit = lit
-                                .replace('\\', "\\\\")
-                                .replace('(', "\\(")
-                                .replace(')', "\\)")
-                                .replace('[', "\\[")
-                                .replace(']', "\\]")
-                                .replace('{', "\\{")
-                                .replace('}', "\\}")
-                                .replace('.', "\\.")
-                                .replace('*', "\\*")
-                                .replace('+', "\\+")
-                                .replace('?', "\\?")
-                                .replace('|', "\\|")
-                                .replace('^', "\\^")
-                                .replace('$', "\\$")
-                                .replace('/', "\\/");
-
-                            regex_exp_parts.push(escaped_lit.clone());
-                        }
-                    }
+                    regex_exp.push_str(&item.regex_expr());
                 }
-
-                let regex_exp: String =
-                    regex_exp_parts
-                        .iter()
-                        .fold(String::new(), |mut output, it| {
-                            let _ = write!(output, "({it})");
-                            output
-                        });
 
                 Self::decode_call_extra(
                     "decodeRegex",

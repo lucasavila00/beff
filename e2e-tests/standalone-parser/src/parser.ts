@@ -15,6 +15,14 @@ export enum AccessLevel {
 }
 
 export type AvatarSize = `${number}x${number}`;
+export type AccessLevelTpl = `${AccessLevel}`;
+
+export enum AccessLevel2 {
+  ADMIN = "ADMIN Admin",
+  USER = "USER User",
+}
+export type AccessLevelTpl2 = `${AccessLevel2}`;
+
 export type Extra = Record<string, string>;
 
 export type User = {
@@ -179,7 +187,11 @@ export const {
   AccessLevelCodec,
   T3,
   AvatarSize,
+  AccessLevelTpl,
+  AccessLevelTpl2,
 } = parse.buildParsers<{
+  AccessLevelTpl2: AccessLevelTpl2;
+  AccessLevelTpl: AccessLevelTpl;
   Arr3: Arr3;
   OmitSettings: OmitSettings;
   RequiredPartialObject: RequiredPartialObject;

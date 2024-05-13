@@ -13,6 +13,14 @@ const jsonSchema = {
     ],
     "type": "string"
   },
+  "AccessLevelTpl": {
+    "format": "(\"ADMIN\" | \"USER\")",
+    "type": "string"
+  },
+  "AccessLevelTpl2": {
+    "format": "(\"ADMIN Admin\" | \"USER User\")",
+    "type": "string"
+  },
   "AllTypes": {
     "enum": [
       "LevelAndDSettings",

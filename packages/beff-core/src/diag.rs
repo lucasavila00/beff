@@ -7,6 +7,7 @@ use crate::{BffFileName, ParsedModule};
 
 #[derive(Debug, Clone)]
 pub enum DiagnosticInfoMessage {
+    CannotResolveRefInJsonSchemaToTplLit,
     TypeOfJSXTextNotSupported,
     TypeOfRegexNotSupported,
     TypeofObjectUnsupportedPropNum,
@@ -446,6 +447,9 @@ impl DiagnosticInfoMessage {
             }
             DiagnosticInfoMessage::TypeOfJSXTextNotSupported => {
                 "typeof on JSX text is not supported".to_string()
+            }
+            DiagnosticInfoMessage::CannotResolveRefInJsonSchemaToTplLit => {
+                "Cannot resolve ref in JSON schema to template literal".to_string()
             }
         }
     }
