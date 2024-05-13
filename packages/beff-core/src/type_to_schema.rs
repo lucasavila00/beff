@@ -68,17 +68,20 @@ impl<'a, 'b, R: FileManager> TypeToSchema<'a, 'b, R> {
         span: &Span,
     ) -> Res<JsonSchema> {
         match kind {
-            TsKeywordTypeKind::TsUndefinedKeyword | TsKeywordTypeKind::TsNullKeyword => {
-                Ok(JsonSchema::Null)
-            }
+            TsKeywordTypeKind::TsVoidKeyword
+            | TsKeywordTypeKind::TsUndefinedKeyword
+            | TsKeywordTypeKind::TsNullKeyword => Ok(JsonSchema::Null),
+
             TsKeywordTypeKind::TsBigIntKeyword => Ok(JsonSchema::Codec(CodecName::BigInt)),
-            TsKeywordTypeKind::TsAnyKeyword
-            | TsKeywordTypeKind::TsUnknownKeyword
-            | TsKeywordTypeKind::TsObjectKeyword => Ok(JsonSchema::Any),
+            TsKeywordTypeKind::TsAnyKeyword | TsKeywordTypeKind::TsUnknownKeyword => {
+                Ok(JsonSchema::Any)
+            }
+            TsKeywordTypeKind::TsObjectKeyword => {
+                Ok(JsonSchema::object(vec![], Some(JsonSchema::Any.into())))
+            }
             TsKeywordTypeKind::TsNeverKeyword
             | TsKeywordTypeKind::TsSymbolKeyword
-            | TsKeywordTypeKind::TsIntrinsicKeyword
-            | TsKeywordTypeKind::TsVoidKeyword => self.cannot_serialize_error(
+            | TsKeywordTypeKind::TsIntrinsicKeyword => self.cannot_serialize_error(
                 span,
                 DiagnosticInfoMessage::KeywordNonSerializableToJsonSchema,
             ),

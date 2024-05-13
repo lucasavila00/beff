@@ -495,4 +495,11 @@ mod tests {
         parse.buildParsers<{ AllTs: AllTs }>();
       "#));
     }
+    #[test]
+    fn ok_void() {
+        insta::assert_snapshot!(ok(r#"
+        export type IX = void
+        parse.buildParsers<{ IX: IX }>();
+      "#));
+    }
 }

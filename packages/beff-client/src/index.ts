@@ -228,6 +228,19 @@ const Undefined_ = (): BeffParser<undefined> =>
     }
   );
 
+const Void_ = (): BeffParser<undefined> =>
+  buildParserFromSafeParser(
+    (input: any) => {
+      if (input == undefined) {
+        return { success: true, data: input };
+      }
+      return { success: false, errors: [{ message: "Expected void", path: [], received: input }] };
+    },
+    {
+      type: "null",
+    }
+  );
+
 const Null_ = (): BeffParser<undefined> =>
   buildParserFromSafeParser(
     (input: any) => {
@@ -291,4 +304,5 @@ export const b = {
   Null: Null_,
   Any: Any_,
   Unknown: Unknown_,
+  Void: Void_,
 };
