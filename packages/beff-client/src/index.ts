@@ -228,7 +228,7 @@ const Undefined_ = (): BeffParser<undefined> =>
     }
   );
 
-const Void_ = (): BeffParser<undefined> =>
+const Void_ = (): BeffParser<void> =>
   buildParserFromSafeParser(
     (input: any) => {
       if (input == undefined) {
