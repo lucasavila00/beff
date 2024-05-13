@@ -1,5 +1,13 @@
 # @beff/client
 
+## 0.0.50
+
+### Patch Changes
+
+- b.void fix
+- Updated dependencies
+  - @beff/cli@0.0.50
+
 ## 0.0.49
 
 ### Patch Changes
