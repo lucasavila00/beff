@@ -1,4 +1,16 @@
 const jsonSchema = {
+  "AObject": {
+    "additionalProperties": false,
+    "properties": {
+      "tag": {
+        "const": "a"
+      }
+    },
+    "required": [
+      "tag"
+    ],
+    "type": "object"
+  },
   "AccessLevel": {
     "enum": [
       "ADMIN",
@@ -19,6 +31,13 @@ const jsonSchema = {
   },
   "AccessLevelTpl2": {
     "format": "(\"ADMIN Admin\" | \"USER User\")",
+    "type": "string"
+  },
+  "AllTs": {
+    "enum": [
+      "a",
+      "b"
+    ],
     "type": "string"
   },
   "AllTypes": {
@@ -48,6 +67,18 @@ const jsonSchema = {
   "AvatarSize": {
     "format": "${number}x${number}",
     "type": "string"
+  },
+  "BObject": {
+    "additionalProperties": false,
+    "properties": {
+      "tag": {
+        "const": "b"
+      }
+    },
+    "required": [
+      "tag"
+    ],
+    "type": "object"
   },
   "DiscriminatedUnion": {
     "anyOf": [

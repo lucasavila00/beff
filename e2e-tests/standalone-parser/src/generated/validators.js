@@ -329,6 +329,17 @@ function decodeRegex(ctx, input, required, regex, description) {
   return buildError(input, ctx, "expected string matching " + description);
 }
 
+function DecodeAllTs(ctx, input, required = true) {
+    return decodeAnyOfConsts(ctx, input, required, [
+        "a",
+        "b"
+    ]);
+}
+function DecodeAObject(ctx, input, required = true) {
+    return decodeObject(ctx, input, required, {
+        "tag": (ctx, input)=>(decodeConst(ctx, input, true, "a"))
+    });
+}
 function DecodeVersion(ctx, input, required = true) {
     return decodeRegex(ctx, input, required, /(\d+(\.\d+)?)(\.)(\d+(\.\d+)?)(\.)(\d+(\.\d+)?)/, "${number}.${number}.${number}");
 }
@@ -620,7 +631,14 @@ function DecodeT3(ctx, input, required = true) {
             }))
     });
 }
+function DecodeBObject(ctx, input, required = true) {
+    return decodeObject(ctx, input, required, {
+        "tag": (ctx, input)=>(decodeConst(ctx, input, true, "b"))
+    });
+}
 const validators = {
+    AllTs: DecodeAllTs,
+    AObject: DecodeAObject,
     Version: DecodeVersion,
     Version2: DecodeVersion2,
     AccessLevel2: DecodeAccessLevel2,
@@ -655,7 +673,8 @@ const validators = {
     ValidCurrency: DecodeValidCurrency,
     UnionWithEnumAccess: DecodeUnionWithEnumAccess,
     Shape: DecodeShape,
-    T3: DecodeT3
+    T3: DecodeT3,
+    BObject: DecodeBObject
 };
 
 export default { decodeObject, decodeArray, decodeString, decodeNumber, decodeCodec, decodeStringWithFormat, decodeAnyOf, decodeAllOf, decodeBoolean, decodeAny, decodeTuple, decodeNull, decodeConst, registerCustomFormatter, validators };

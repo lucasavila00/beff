@@ -1,5 +1,7 @@
 import parse from "./generated/parser";
 import { Arr2, OtherEnum, ValidCurrency, OtherEnum2, Arr3 } from "./types";
+import * as T4 from "./types4";
+import { b } from "./types4";
 
 export const ALL_TYPES = [
   "OmitSettings",
@@ -167,6 +169,12 @@ type T3 = Exclude<Shape, { kind: "circle" }>;
 type Version = `${number}.${number}.${number}`;
 type Version2 = `v${number}.${number}.${number}`;
 
+export type AObject = {
+  tag: typeof T4.a;
+};
+
+export type BObject = { tag: typeof b };
+
 export const {
   Version,
   Version2,
@@ -194,7 +202,12 @@ export const {
   AvatarSize,
   AccessLevelTpl,
   AccessLevelTpl2,
+  AObject,
+  BObject,
+  AllTs,
 } = parse.buildParsers<{
+  AllTs: T4.AllTs;
+  AObject: AObject;
   Version: Version;
   Version2: Version2;
   AccessLevelTpl2: AccessLevelTpl2;
@@ -226,6 +239,7 @@ export const {
   T3: T3;
   AccessLevelCodec: AccessLevel;
   AvatarSize: AvatarSize;
+  BObject: BObject;
 }>({
   customFormats: {
     ValidCurrency: (input: string) => {
