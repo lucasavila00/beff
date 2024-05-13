@@ -94,6 +94,9 @@ const buildParsersInput = {
     },
     "ValidCurrency": function(ctx, input, required = true) {
         return validators.ValidCurrency(ctx, input, required);
+    },
+    "Version": function(ctx, input, required = true) {
+        return validators.Version(ctx, input, required);
     }
 };
 

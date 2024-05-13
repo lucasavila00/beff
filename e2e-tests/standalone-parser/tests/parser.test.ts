@@ -20,10 +20,24 @@ import {
   AvatarSize,
   AccessLevelTpl,
   AccessLevelTpl2,
+  Version,
 } from "../src/parser";
 import { Arr2 } from "../src/types";
 
 it("tpl", () => {
+  expect(Version.parse("1.2.3")).toMatchInlineSnapshot('"1.2.3"');
+  expect(Version.safeParse("UNKNOWN")).toMatchInlineSnapshot(`
+    {
+      "errors": [
+        {
+          "message": "expected string matching \${number}.\${number}.\${number}",
+          "path": [],
+          "received": "UNKNOWN",
+        },
+      ],
+      "success": false,
+    }
+  `);
   expect(AccessLevelTpl2.parse("ADMIN Admin")).toMatchInlineSnapshot('"ADMIN Admin"');
   expect(AccessLevelTpl2.safeParse("UNKNOWN")).toMatchInlineSnapshot(`
     {

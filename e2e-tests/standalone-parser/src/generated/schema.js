@@ -706,6 +706,10 @@ const jsonSchema = {
   "ValidCurrency": {
     "format": "ValidCurrency",
     "type": "string"
+  },
+  "Version": {
+    "format": "${number}.${number}.${number}",
+    "type": "string"
   }
 };
 export default jsonSchema;
