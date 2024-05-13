@@ -1734,12 +1734,10 @@ impl<'a, 'b, R: FileManager> TypeToSchema<'a, 'b, R> {
                     ),
                 }
             }
-            _ => {
-                return self.error(
-                    span,
-                    DiagnosticInfoMessage::TplLitTypeNonStringNonNumberNonBoolean,
-                );
-            }
+            _ => self.error(
+                span,
+                DiagnosticInfoMessage::TplLitTypeNonStringNonNumberNonBoolean,
+            ),
         }
     }
 
