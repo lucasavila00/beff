@@ -1,5 +1,13 @@
 # @beff/client
 
+## 0.0.48
+
+### Patch Changes
+
+- enum tpl
+- Updated dependencies
+  - @beff/cli@0.0.48
+
 ## 0.0.47
 
 ### Patch Changes
