@@ -18,10 +18,67 @@ import {
   ValidCurrencyCodec,
   T3,
   AvatarSize,
+  AccessLevelTpl,
+  AccessLevelTpl2,
+  Version,
+  Version2,
 } from "../src/parser";
 import { Arr2 } from "../src/types";
 
 it("tpl", () => {
+  expect(Version2.parse("v1.2.3")).toMatchInlineSnapshot('"v1.2.3"');
+  expect(Version2.safeParse("UNKNOWN")).toMatchInlineSnapshot(`
+    {
+      "errors": [
+        {
+          "message": "expected string matching v\${number}.\${number}.\${number}",
+          "path": [],
+          "received": "UNKNOWN",
+        },
+      ],
+      "success": false,
+    }
+  `);
+  expect(Version.parse("1.2.3")).toMatchInlineSnapshot('"1.2.3"');
+  expect(Version.safeParse("UNKNOWN")).toMatchInlineSnapshot(`
+    {
+      "errors": [
+        {
+          "message": "expected string matching \${number}.\${number}.\${number}",
+          "path": [],
+          "received": "UNKNOWN",
+        },
+      ],
+      "success": false,
+    }
+  `);
+  expect(AccessLevelTpl2.parse("ADMIN Admin")).toMatchInlineSnapshot('"ADMIN Admin"');
+  expect(AccessLevelTpl2.safeParse("UNKNOWN")).toMatchInlineSnapshot(`
+    {
+      "errors": [
+        {
+          "message": "expected string matching (\\"ADMIN Admin\\" | \\"USER User\\")",
+          "path": [],
+          "received": "UNKNOWN",
+        },
+      ],
+      "success": false,
+    }
+  `);
+  expect(AccessLevelTpl.parse("ADMIN")).toMatchInlineSnapshot('"ADMIN"');
+  expect(AccessLevelTpl.safeParse("UNKNOWN")).toMatchInlineSnapshot(`
+    {
+      "errors": [
+        {
+          "message": "expected string matching (\\"ADMIN\\" | \\"USER\\")",
+          "path": [],
+          "received": "UNKNOWN",
+        },
+      ],
+      "success": false,
+    }
+  `);
+
   expect(AvatarSize.parse("1x1")).toMatchInlineSnapshot('"1x1"');
   expect(AvatarSize.parse("1.0x1.0")).toMatchInlineSnapshot('"1.0x1.0"');
   expect(AvatarSize.safeParse("abc")).toMatchInlineSnapshot(`

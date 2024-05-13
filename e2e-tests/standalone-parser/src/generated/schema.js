@@ -13,6 +13,14 @@ const jsonSchema = {
     ],
     "type": "string"
   },
+  "AccessLevelTpl": {
+    "format": "(\"ADMIN\" | \"USER\")",
+    "type": "string"
+  },
+  "AccessLevelTpl2": {
+    "format": "(\"ADMIN Admin\" | \"USER User\")",
+    "type": "string"
+  },
   "AllTypes": {
     "enum": [
       "LevelAndDSettings",
@@ -697,6 +705,14 @@ const jsonSchema = {
   },
   "ValidCurrency": {
     "format": "ValidCurrency",
+    "type": "string"
+  },
+  "Version": {
+    "format": "${number}.${number}.${number}",
+    "type": "string"
+  },
+  "Version2": {
+    "format": "v${number}.${number}.${number}",
     "type": "string"
   }
 };

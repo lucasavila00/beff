@@ -1,5 +1,11 @@
 # @beff/cli
 
+## 0.0.48
+
+### Patch Changes
+
+- enum tpl
+
 ## 0.0.47
 
 ### Patch Changes

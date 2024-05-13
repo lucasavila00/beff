@@ -1707,6 +1707,40 @@ impl<'a, 'b, R: FileManager> TypeToSchema<'a, 'b, R> {
         Ok(JsonSchema::object(vs, None))
     }
 
+    fn json_schema_to_tpl_lit(&mut self, span: &Span, schema: &JsonSchema) -> Res<TplLitTypeItem> {
+        match schema {
+            JsonSchema::Boolean => Ok(TplLitTypeItem::Boolean),
+            JsonSchema::String => Ok(TplLitTypeItem::String),
+            JsonSchema::Number => Ok(TplLitTypeItem::Number),
+            JsonSchema::Const(JsonSchemaConst::String(txt)) => {
+                Ok(TplLitTypeItem::StringConst(txt.to_string()))
+            }
+            JsonSchema::AnyOf(vs) => {
+                let mut acc = vec![];
+                for v in vs {
+                    let item = self.json_schema_to_tpl_lit(span, v)?;
+                    acc.push(item);
+                }
+                Ok(TplLitTypeItem::one_of(acc))
+            }
+            JsonSchema::Ref(name) => {
+                let v = self.components.get(name);
+                let v = v.and_then(|it| it.clone());
+                match v {
+                    Some(v) => self.json_schema_to_tpl_lit(span, &v.schema),
+                    None => self.error(
+                        span,
+                        DiagnosticInfoMessage::CannotResolveRefInJsonSchemaToTplLit,
+                    ),
+                }
+            }
+            _ => self.error(
+                span,
+                DiagnosticInfoMessage::TplLitTypeNonStringNonNumberNonBoolean,
+            ),
+        }
+    }
+
     fn convert_ts_tpl_lit_type_non_trivial(&mut self, it: &TsTplLitType) -> Res<JsonSchema> {
         let mut quasis_idx = 0;
         let mut types_idx = 0;
@@ -1725,17 +1759,7 @@ impl<'a, 'b, R: FileManager> TypeToSchema<'a, 'b, R> {
                 types_idx += 1;
 
                 let ty = self.convert_ts_type(type_)?;
-                match ty {
-                    JsonSchema::Boolean => acc.push(TplLitTypeItem::Boolean),
-                    JsonSchema::String => acc.push(TplLitTypeItem::String),
-                    JsonSchema::Number => acc.push(TplLitTypeItem::Number),
-                    _ => {
-                        return self.error(
-                            &type_.span(),
-                            DiagnosticInfoMessage::TplLitTypeNonStringNonNumberNonBoolean,
-                        )
-                    }
-                }
+                acc.push(self.json_schema_to_tpl_lit(&it.span, &ty)?);
 
                 selecting_quasis = true;
             }

@@ -14,6 +14,12 @@ const buildParsersInput = {
     "AccessLevelCodec": function(ctx, input, required = true) {
         return validators.AccessLevel(ctx, input, required);
     },
+    "AccessLevelTpl": function(ctx, input, required = true) {
+        return validators.AccessLevelTpl(ctx, input, required);
+    },
+    "AccessLevelTpl2": function(ctx, input, required = true) {
+        return validators.AccessLevelTpl2(ctx, input, required);
+    },
     "AllTypes": function(ctx, input, required = true) {
         return validators.AllTypes(ctx, input, required);
     },
@@ -88,6 +94,12 @@ const buildParsersInput = {
     },
     "ValidCurrency": function(ctx, input, required = true) {
         return validators.ValidCurrency(ctx, input, required);
+    },
+    "Version": function(ctx, input, required = true) {
+        return validators.Version(ctx, input, required);
+    },
+    "Version2": function(ctx, input, required = true) {
+        return validators.Version2(ctx, input, required);
     }
 };
 

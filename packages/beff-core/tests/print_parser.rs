@@ -472,4 +472,15 @@ mod tests {
         parse.buildParsers<{ IX: IX }>();
       "#));
     }
+    #[test]
+    fn ok_tpl_lit2() {
+        insta::assert_snapshot!(ok(r#"
+        enum Abc {
+            A = "A",
+            B = "B",
+        }
+        export type IX = `${Abc}`
+        parse.buildParsers<{ IX: IX }>();
+      "#));
+    }
 }

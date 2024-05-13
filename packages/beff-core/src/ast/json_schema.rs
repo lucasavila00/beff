@@ -126,17 +126,94 @@ pub enum TplLitTypeItem {
     String,
     Number,
     Boolean,
+    StringConst(String),
     Quasis(String),
+    OneOf(BTreeSet<TplLitTypeItem>),
+}
+
+fn escape_regex(lit: &str) -> String {
+    // match the exact string
+
+    lit.replace('\\', "\\\\")
+        .replace('(', "\\(")
+        .replace(')', "\\)")
+        .replace('[', "\\[")
+        .replace(']', "\\]")
+        .replace('{', "\\{")
+        .replace('}', "\\}")
+        .replace('.', "\\.")
+        .replace('*', "\\*")
+        .replace('+', "\\+")
+        .replace('?', "\\?")
+        .replace('|', "\\|")
+        .replace('^', "\\^")
+        .replace('$', "\\$")
+        .replace('/', "\\/")
 }
 
 impl TplLitTypeItem {
+    pub fn one_of(vs: Vec<TplLitTypeItem>) -> TplLitTypeItem {
+        let vs = vs.into_iter().collect::<BTreeSet<_>>();
+        if vs.len() == 1 {
+            vs.into_iter().next().expect("we just checked len")
+        } else {
+            TplLitTypeItem::OneOf(vs)
+        }
+    }
+
+    pub fn regex_expr(&self) -> String {
+        match self {
+            TplLitTypeItem::String => "(.*)".to_string(),
+            TplLitTypeItem::Number => r"(\d+(\.\d+)?)".to_string(),
+            TplLitTypeItem::Boolean => "(true|false)".to_string(),
+            TplLitTypeItem::Quasis(lit) => {
+                if lit.is_empty() {
+                    return "".to_string();
+                }
+                let escaped_lit = escape_regex(lit);
+                format!("({})", escaped_lit)
+            }
+            TplLitTypeItem::OneOf(vs) => {
+                let mut vs = vs.iter().collect::<Vec<_>>();
+                vs.sort();
+                let vs = vs
+                    .into_iter()
+                    .map(|it| it.regex_expr())
+                    .filter(|it| !it.is_empty())
+                    .collect::<Vec<_>>();
+                let vs = vs.join("|");
+                format!("({})", vs)
+            }
+            TplLitTypeItem::StringConst(lit) => {
+                if lit.is_empty() {
+                    return "".to_string();
+                }
+                let escaped_lit = escape_regex(lit);
+                format!("({})", escaped_lit)
+            }
+        }
+    }
+
     pub fn describe_vec(vs: &[Self]) -> String {
         vs.iter()
             .map(|it| match it {
                 TplLitTypeItem::String => "${string}".to_string(),
                 TplLitTypeItem::Number => "${number}".to_string(),
                 TplLitTypeItem::Boolean => "${boolean}".to_string(),
+                TplLitTypeItem::StringConst(v) => {
+                    format!("\"{}\"", v)
+                }
                 TplLitTypeItem::Quasis(s) => s.clone(),
+                TplLitTypeItem::OneOf(values) => {
+                    let mut values = values.iter().collect::<Vec<_>>();
+                    values.sort();
+                    let values = values
+                        .into_iter()
+                        .map(|it| Self::describe_vec(&[it.clone()]))
+                        .collect::<Vec<_>>()
+                        .join(" | ");
+                    format!("({})", values)
+                }
             })
             .collect()
     }
@@ -843,9 +920,82 @@ impl JsonSchema {
                                 cooked: Some(str.clone().into()),
                             });
                         }
+                        TplLitTypeItem::OneOf(vs) => {
+                            // do not recurse
+                            let mut types2: Vec<Box<TsType>> = vec![];
+
+                            for v in vs {
+                                match v {
+                                    TplLitTypeItem::String => {
+                                        types2.push(
+                                            TsType::TsKeywordType(TsKeywordType {
+                                                span: DUMMY_SP,
+                                                kind: TsKeywordTypeKind::TsStringKeyword,
+                                            })
+                                            .into(),
+                                        );
+                                    }
+                                    TplLitTypeItem::Number => {
+                                        types2.push(
+                                            TsType::TsKeywordType(TsKeywordType {
+                                                span: DUMMY_SP,
+                                                kind: TsKeywordTypeKind::TsNumberKeyword,
+                                            })
+                                            .into(),
+                                        );
+                                    }
+                                    TplLitTypeItem::Boolean => {
+                                        types2.push(
+                                            TsType::TsKeywordType(TsKeywordType {
+                                                span: DUMMY_SP,
+                                                kind: TsKeywordTypeKind::TsBooleanKeyword,
+                                            })
+                                            .into(),
+                                        );
+                                    }
+                                    TplLitTypeItem::StringConst(v) => {
+                                        types2.push(
+                                            TsType::TsLitType(TsLitType {
+                                                span: DUMMY_SP,
+                                                lit: TsLit::Str(Str {
+                                                    span: DUMMY_SP,
+                                                    value: v.clone().into(),
+                                                    raw: None,
+                                                }),
+                                            })
+                                            .into(),
+                                        );
+                                    }
+                                    TplLitTypeItem::Quasis(_) => unreachable!(),
+                                    TplLitTypeItem::OneOf(_) => unreachable!(),
+                                }
+                            }
+
+                            types.push(
+                                TsType::TsUnionOrIntersectionType(
+                                    TsUnionOrIntersectionType::TsUnionType(TsUnionType {
+                                        span: DUMMY_SP,
+                                        types: types2,
+                                    }),
+                                )
+                                .into(),
+                            );
+                        }
+                        TplLitTypeItem::StringConst(v) => {
+                            types.push(
+                                TsType::TsLitType(TsLitType {
+                                    span: DUMMY_SP,
+                                    lit: TsLit::Str(Str {
+                                        span: DUMMY_SP,
+                                        value: v.clone().into(),
+                                        raw: None,
+                                    }),
+                                })
+                                .into(),
+                            );
+                        }
                     }
                 }
-
                 TsType::TsLitType(TsLitType {
                     span: DUMMY_SP,
                     lit: TsLit::Tpl(TsTplLitType {
