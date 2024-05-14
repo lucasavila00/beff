@@ -7,6 +7,7 @@ use crate::{BffFileName, ParsedModule};
 
 #[derive(Debug, Clone)]
 pub enum DiagnosticInfoMessage {
+    TwoCallsToBuildSchemas,
     CannotResolveRefInJsonSchemaToTplLit,
     TypeOfJSXTextNotSupported,
     TypeOfRegexNotSupported,
@@ -450,6 +451,9 @@ impl DiagnosticInfoMessage {
             }
             DiagnosticInfoMessage::CannotResolveRefInJsonSchemaToTplLit => {
                 "Cannot resolve ref in JSON schema to template literal".to_string()
+            }
+            DiagnosticInfoMessage::TwoCallsToBuildSchemas => {
+                "buildSchemas can only be called once".to_string()
             }
         }
     }

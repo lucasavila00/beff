@@ -49,15 +49,12 @@ const finalizeValidatorsCode = (wasmCode: WritableModules, mod: ProjectModule) =
 const importValidators = (mod: ProjectModule) => {
   const i = [...decodersExported, "validators", "c"].join(", ");
 
-  const importSchemas =
-    mod === "esm" ? `import jsonSchema from "./schema.js";` : `const jsonSchema = require('./schema.js');`;
-
   const importRest =
     mod === "esm"
       ? `import {printErrors} from '@beff/client';\nimport {z} from 'zod';\nimport validatorsMod from "./validators.js"; const { ${i} } = validatorsMod;`
       : `const {printErrors} = require('beff/client');\nconst {z} = require('zod');\nconst { ${i} } = require('./validators.js').default;`;
 
-  return [importSchemas, importRest].join("\n");
+  return [importRest].join("\n");
 };
 
 const finalizeParserFile = (wasmCode: WritableModules, mod: ProjectModule, customFormats: string[]) => {
@@ -88,11 +85,15 @@ export const execProject = (
     ? path.join(path.dirname(projectPath), projectJson.parser)
     : undefined;
 
+  const schemaEntryPoint = projectJson.schema
+    ? path.join(path.dirname(projectPath), projectJson.schema)
+    : undefined;
+
   if (verbose) {
     // eslint-disable-next-line no-console
     console.log(`JS: Parser entry point ${parserEntryPoint}`);
   }
-  const outResult = bundler.bundle(parserEntryPoint, projectJson.settings);
+  const outResult = bundler.bundle(parserEntryPoint, schemaEntryPoint, projectJson.settings);
   if (outResult == null) {
     return "failed";
   }
@@ -102,12 +103,16 @@ export const execProject = (
   }
 
   fs.writeFileSync(path.join(outputDir, "validators.js"), finalizeValidatorsCode(outResult, mod));
-  if (outResult.json_schema != null) {
+  if (projectJson.schema) {
     const exportJsonSchema =
-      projectJson.module === "cjs" ? "module.exports = jsonSchema;" : "export default jsonSchema;";
+      projectJson.module === "cjs" ? "module.exports = {buildSchemas};" : "export default {buildSchemas};";
     fs.writeFileSync(
       path.join(outputDir, "schema.js"),
-      "const jsonSchema = " + outResult.json_schema + ";\n" + exportJsonSchema
+      "const jsonSchema = " + outResult.json_schema + ";\n" + gen["build-schema.js"] + exportJsonSchema
+    );
+    fs.writeFileSync(
+      path.join(outputDir, "schema.d.ts"),
+      ["/* eslint-disable */\n", gen["schema.d.ts"]].join("\n")
     );
   }
 

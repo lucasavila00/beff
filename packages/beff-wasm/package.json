@@ -41,7 +41,7 @@
   },
   "devDependencies": {
     "@babel/code-frame": "^7.22.13",
-    "@beff/cli": "workspace:^0.0.50",
+    "@beff/cli": "workspace:^0.0.51",
     "@types/babel__code-frame": "^7.0.4",
     "@types/node": "^20.6.2",
     "@types/vscode": "^1.73.0",

@@ -1,5 +1,11 @@
 # @beff/cli
 
+## 0.0.51
+
+### Patch Changes
+
+- export schema on its own
+
 ## 0.0.50
 
 ### Patch Changes

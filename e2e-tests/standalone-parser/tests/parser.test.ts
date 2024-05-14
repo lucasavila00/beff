@@ -27,6 +27,7 @@ import {
   AllTs,
 } from "../src/parser";
 import { Arr2 } from "../src/types";
+import { Schemas } from "../src/schema";
 
 it("tpl", () => {
   expect(Version2.parse("v1.2.3")).toMatchInlineSnapshot('"v1.2.3"');
@@ -110,7 +111,7 @@ it("tpl", () => {
   `);
 });
 it("print schema", () => {
-  expect(T3.jsonSchema).toMatchInlineSnapshot(`
+  expect(Schemas.T3).toMatchInlineSnapshot(`
     {
       "anyOf": [
         {

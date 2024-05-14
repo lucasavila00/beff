@@ -7,14 +7,14 @@ import { BeffUserSettings, ProjectJson, parseUserSettings } from "./project";
 
 const readProjectJson = (
   projectPath: string
-): Pick<ProjectJson, "router" | "module" | "parser" | "settings"> => {
+): Pick<ProjectJson, "schema" | "module" | "parser" | "settings"> => {
   const projectJson = JSON.parse(fs.readFileSync(projectPath, "utf-8"));
 
   if (!projectJson.router && !projectJson.parser) {
     throw new Error(`Field "router" or "parser" not found in bff.json`);
   }
   return {
-    router: projectJson.router == null ? projectJson.router : String(projectJson.router),
+    schema: projectJson.schema == null ? projectJson.schema : String(projectJson.schema),
     parser: projectJson.parser == null ? projectJson.parser : String(projectJson.parser),
     module: projectJson.module,
     settings: parseUserSettings(projectJson),
@@ -56,13 +56,13 @@ export function activate(_context: vscode.ExtensionContext) {
 
   bundler = new Bundler(VERBOSE);
   // const router = projectJson.router;
-  const router_entrypoint =
-    projectJson.router == null ? undefined : path.join(path.dirname(projectPath), projectJson.router);
+  const schema_entrypoint =
+    projectJson.schema == null ? undefined : path.join(path.dirname(projectPath), projectJson.schema);
   const parser_entrypoint =
     projectJson.parser == null ? undefined : path.join(path.dirname(projectPath), projectJson.parser);
 
   const updateDiag = () =>
-    updateDiagnostics(router_entrypoint, parser_entrypoint, projectJson.settings, collection);
+    updateDiagnostics(schema_entrypoint, parser_entrypoint, projectJson.settings, collection);
   updateDiag();
   const watcher = vscode.workspace.createFileSystemWatcher(
     new vscode.RelativePattern(workspacePath, "**/*.ts")
@@ -128,13 +128,13 @@ const relatedInformation = (cause: WasmDiagnosticInformation): vscode.Diagnostic
 };
 
 function updateDiagnostics(
-  router_entrypoint: string | undefined,
+  schema_entrypoint: string | undefined,
   parser_entrypoint: string | undefined,
   settings: BeffUserSettings,
   collection: vscode.DiagnosticCollection
 ): void {
   collection.clear();
-  const diags = bundler?.diagnostics(router_entrypoint, parser_entrypoint, settings);
+  const diags = bundler?.diagnostics(parser_entrypoint, schema_entrypoint, settings);
   const acc: Record<string, vscode.Diagnostic[]> = {};
   const pushDiag = (k: string, v: vscode.Diagnostic) => {
     if (acc[k] == null) {

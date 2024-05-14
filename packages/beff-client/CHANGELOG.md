@@ -1,5 +1,13 @@
 # @beff/client
 
+## 0.0.51
+
+### Patch Changes
+
+- export schema on its own
+- Updated dependencies
+  - @beff/cli@0.0.51
+
 ## 0.0.50
 
 ### Patch Changes

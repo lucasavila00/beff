@@ -34,7 +34,7 @@ importers:
   e2e-tests/standalone-parser:
     dependencies:
       '@beff/cli':
-        specifier: workspace:^0.0.50
+        specifier: workspace:^0.0.51
         version: link:../../packages/beff-cli
       '@beff/client':
         specifier: workspace:^
@@ -55,7 +55,7 @@ importers:
   packages/beff-client:
     dependencies:
       '@beff/cli':
-        specifier: workspace:^0.0.50
+        specifier: workspace:^0.0.51
         version: link:../beff-cli
     devDependencies:
       '@typescript-eslint/eslint-plugin':
@@ -86,7 +86,7 @@ importers:
         specifier: ^7.22.13
         version: 7.22.13
       '@beff/cli':
-        specifier: workspace:^0.0.50
+        specifier: workspace:^0.0.51
         version: link:../beff-cli
       '@types/babel__code-frame':
         specifier: ^7.0.4

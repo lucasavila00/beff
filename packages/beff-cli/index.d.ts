@@ -204,7 +204,6 @@ export type BeffParser<T> = {
     options?: ParseOptions
   ) => { success: true; data: T } | { success: false; errors: DecodeError[] };
   zod: () => ZodType<T>;
-  jsonSchema: JSONSchema7;
 };
 type Parsers<T> = {
   [K in keyof T]: BeffParser<T[K]>;
@@ -215,3 +214,11 @@ export type TagOfFormat<T extends StringFormat<string>> = T extends StringFormat
 export type BuildParserFunction = <T>(args?: {
   customFormats?: { [key: string]: (input: string) => boolean };
 }) => Parsers<T>;
+
+type Schemas<T> = {
+  [K in keyof T]: JSONSchema7;
+};
+
+export type BuildSchemaFunction = <T>() => Schemas<T>;
+
+export type TypeOf<T> = T extends BeffParser<infer U> ? U : never;

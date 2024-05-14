@@ -104,33 +104,3 @@ it("mix", () => {
     }
   `);
 });
-
-it("json schema", () => {
-  expect(AccessLevelCodec.jsonSchema).toMatchInlineSnapshot(`
-    {
-      "enum": [
-        "ADMIN",
-        "USER",
-      ],
-      "type": "string",
-    }
-  `);
-  const T3 = b.Object({
-    y: AccessLevelCodec,
-  });
-  expect(T3.jsonSchema).toMatchInlineSnapshot(`
-    {
-      "additionalProperties": false,
-      "properties": {
-        "y": {
-          "enum": [
-            "ADMIN",
-            "USER",
-          ],
-          "type": "string",
-        },
-      },
-      "type": "object",
-    }
-  `);
-});

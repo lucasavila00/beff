@@ -57,8 +57,6 @@ function buildParsers(args) {
       parse,
       safeParse,
       zod,
-      //@ts-ignore
-      jsonSchema: jsonSchema[k]
     };
   });
   return decoders;

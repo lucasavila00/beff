@@ -230,16 +230,26 @@ export class Bundler {
 
   public bundle(
     parser_entrypoint: string | undefined,
+    schema_entrypoint: string | undefined,
     settings: BeffUserSettings
   ): WritableModules | undefined {
-    return wasm.bundle_to_string(parser_entrypoint ?? "", serializeSettings(settings));
+    return wasm.bundle_to_string(
+      parser_entrypoint ?? "",
+      schema_entrypoint ?? "",
+      serializeSettings(settings)
+    );
   }
 
   public diagnostics(
     parser_entrypoint: string | undefined,
+    schema_entrypoint: string | undefined,
     settings: BeffUserSettings
   ): WasmDiagnostic | null {
-    return wasm.bundle_to_diagnostics(parser_entrypoint ?? "", serializeSettings(settings));
+    return wasm.bundle_to_diagnostics(
+      parser_entrypoint ?? "",
+      schema_entrypoint ?? "",
+      serializeSettings(settings)
+    );
   }
 
   public updateFileContent(file_name: string, content: string) {
