@@ -164,7 +164,7 @@ type Shape =
   | { kind: "square"; x: number }
   | { kind: "triangle"; x: number; y: number };
 
-type T3 = Exclude<Shape, { kind: "circle" }>;
+export type T3 = Exclude<Shape, { kind: "circle" }>;
 
 type Version = `${number}.${number}.${number}`;
 type Version2 = `v${number}.${number}.${number}`;

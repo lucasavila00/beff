@@ -66,32 +66,58 @@ extern "C" {
     fn emit_diagnostic(diag: JsValue);
 }
 #[wasm_bindgen]
-pub fn bundle_to_string(parser_entry_point: &str, settings: JsValue) -> JsValue {
-    match bundle_to_string_inner(parse_entrypoints(parser_entry_point, settings)) {
+pub fn bundle_to_string(
+    parser_entry_point: &str,
+    schema_entry_point: &str,
+    settings: JsValue,
+) -> JsValue {
+    match bundle_to_string_inner(parse_entrypoints(
+        parser_entry_point,
+        schema_entry_point,
+        settings,
+    )) {
         Ok(s) => serde_wasm_bindgen::to_value(&s).expect("should be able to serialize bundle"),
         Err(_) => JsValue::null(),
     }
 }
 
 #[wasm_bindgen]
-pub fn bundle_to_diagnostics(parser_entry_point: &str, settings: JsValue) -> JsValue {
-    let v = bundle_to_diagnostics_inner(parse_entrypoints(parser_entry_point, settings));
+pub fn bundle_to_diagnostics(
+    parser_entry_point: &str,
+    schema_entry_point: &str,
+    settings: JsValue,
+) -> JsValue {
+    let v = bundle_to_diagnostics_inner(parse_entrypoints(
+        parser_entry_point,
+        schema_entry_point,
+        settings,
+    ));
     serde_wasm_bindgen::to_value(&v).expect("should be able to serialize diagnostics")
 }
 #[wasm_bindgen]
 pub fn update_file_content(file_name: &str, content: &str) {
     update_file_content_inner(file_name, content)
 }
-fn parse_entrypoints(parser_entry_point: &str, settings: JsValue) -> EntryPoints {
+fn parse_entrypoints(
+    parser_entry_point: &str,
+    schema_entry_point: &str,
+    settings: JsValue,
+) -> EntryPoints {
     let parser_entry_point = if parser_entry_point.is_empty() {
         None
     } else {
         Some(BffFileName::new(parser_entry_point.to_string()))
     };
+    let schema_entry_point = if schema_entry_point.is_empty() {
+        None
+    } else {
+        Some(BffFileName::new(schema_entry_point.to_string()))
+    };
     let settings: BeffUserSettings =
         serde_wasm_bindgen::from_value(settings).expect("should be able to parse settings");
     EntryPoints {
         parser_entry_point,
+        schema_entry_point,
         settings,
     }
 }

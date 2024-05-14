@@ -7,6 +7,7 @@ export type BeffUserSettings = {
 };
 export type ProjectJson = {
   parser?: string;
+  schema?: string;
   outputDir: string;
   module: ProjectModule | undefined;
   settings: BeffUserSettings;

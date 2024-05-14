@@ -1,5 +1,6 @@
 {
   "parser": "./src/parser.ts",
+  "schema": "./src/schema.ts",
   "outputDir": "./src/generated",
   "customFormats": [
     {

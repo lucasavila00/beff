@@ -154,22 +154,26 @@ impl ToWritableModules for ExtractResult {
         let js_validators = emit_module(stmt_validators, "\n")?;
 
         let mut js_built_parsers = None;
-        let mut json_schema = None;
 
         if let Some(parser) = self.parser {
             let decoders = parser.built_decoders.unwrap_or_default();
+            let decoders_expr = build_decoders_expr(&decoders, &validators);
+            let built_st = const_decl("buildParsersInput", decoders_expr);
+            js_built_parsers = Some(emit_module(vec![built_st], "\n")?);
+        }
+
+        let mut json_schema = None;
+        if let Some(schema) = self.schema {
+            let decoders = schema.built_decoders.unwrap_or_default();
             let json_schema_obj = Json::object(
                 decoders
                     .iter()
                     .flat_map(|it| BuiltDecoder::to_json_kv(it, &validators))
                     .collect(),
             );
+            // schema
             json_schema = Some(json_schema_obj.to_string());
-            let decoders_expr = build_decoders_expr(&decoders, &validators);
-            let built_st = const_decl("buildParsersInput", decoders_expr);
-            js_built_parsers = Some(emit_module(vec![built_st], "\n")?);
         }
-
         Ok(WritableModules {
             js_validators,
             js_built_parsers,
