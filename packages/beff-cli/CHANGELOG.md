@@ -1,5 +1,11 @@
 # @beff/cli
 
+## 0.0.52
+
+### Patch Changes
+
+- fix b.zod
+
 ## 0.0.51
 
 ### Patch Changes

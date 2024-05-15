@@ -1,5 +1,13 @@
 # @beff/client
 
+## 0.0.52
+
+### Patch Changes
+
+- fix b.zod
+- Updated dependencies
+  - @beff/cli@0.0.52
+
 ## 0.0.51
 
 ### Patch Changes
