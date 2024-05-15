@@ -1,5 +1,6 @@
 /* eslint-disable @typescript-eslint/ban-ts-comment */
 import type { BeffParser, DecodeError, ParseOptions, RegularDecodeError, UnionDecodeError } from "@beff/cli";
+import { z } from "zod";
 
 const prettyPrintValue = (it: unknown): string => {
   if (typeof it === "string") {
@@ -102,6 +103,7 @@ const buildParserFromSafeParser = <T>(
     //@ts-ignore
     return z.custom(
       (data: any) => safeParse(data).success,
+      //@ts-ignore
       (val: any) => {
         const errors = (safeParse(val) as any).errors;
         //@ts-ignore
@@ -113,6 +115,7 @@ const buildParserFromSafeParser = <T>(
   return {
     safeParse,
     parse,
+    //@ts-ignore
     zod,
   };
 };
