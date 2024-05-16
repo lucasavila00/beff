@@ -52,7 +52,7 @@ export const Parsers = parse.buildParsers<{
 
 ### 4. Generate the parser code
 
-`@beff/cli` install a `beff` binary.
+`@beff/cli` installs a `beff` binary.
 
 ```shell
 npx beff -p beff.json
@@ -88,7 +88,7 @@ Options:
   -h, --help              display help for command
 ```
 
-## Extra Features
+## Features
 
 ### Json Schema
 
