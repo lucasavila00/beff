@@ -90,6 +90,42 @@ Options:
 
 ## Extra Features
 
+### Json Schema
+
+Generate flat JSON schema from types.
+
+Recursive types are not supported and become the equivalent of `any` in the second time they appear.
+
+Configure your `beff.json`
+
+```json
+{
+  "parser": "./src/parser.ts",
+  "outputDir": "./src/generated"
+}
+```
+
+Import the generated code and configure types that will be exported.
+
+```ts
+import s from "./generated/schema";
+
+type ProfileData = {
+  name: string;
+};
+
+type User = {
+  profile: ProfileData;
+  age: number;
+};
+
+export const Schemas = s.buildSchemas<{
+  User: User;
+}>();
+
+console.log(Schemas.User); // JSON Schema without references
+```
+
 ### Custom String Formats
 
 Configure your `beff.json`
@@ -154,19 +190,6 @@ const AdHocItem = b.Object({
 const AdHocList = b.Array(AdHocItem);
 
 const ls = AdHocList.parse([]);
-```
-
-### Json Schema
-
-Validator have a `.jsonSchema` property with a flattened JSON Schema.
-
-Recursive types are not supported and become the equivalent of `any` in the second time they appear.
-
-```ts
-import { Parsers } from "./parser.ts";
-import { z } from "zod";
-
-const userSchema = Parsers.User.jsonSchema;
 ```
 
 ### Zod Compatibility
