@@ -1,5 +1,11 @@
 # @beff/cli
 
+## 0.0.53
+
+### Patch Changes
+
+- add name to schema
+
 ## 0.0.52
 
 ### Patch Changes
