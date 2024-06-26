@@ -204,6 +204,7 @@ export type BeffParser<T> = {
     options?: ParseOptions
   ) => { success: true; data: T } | { success: false; errors: DecodeError[] };
   zod: () => ZodType<T>;
+  name: string;
 };
 type Parsers<T> = {
   [K in keyof T]: BeffParser<T[K]>;

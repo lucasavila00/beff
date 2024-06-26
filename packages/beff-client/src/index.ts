@@ -84,6 +84,7 @@ export const printErrors = (it: DecodeError[], parentPath: string[] = []): strin
 };
 
 const buildParserFromSafeParser = <T>(
+  name: string,
   safeParse: (
     input: any,
     options?: ParseOptions
@@ -117,6 +118,7 @@ const buildParserFromSafeParser = <T>(
     parse,
     //@ts-ignore
     zod,
+    name,
   };
 };
 
@@ -125,7 +127,7 @@ const Object_ = <T extends Record<string, BeffParser<any>>>(
 ): BeffParser<{
   [K in keyof T]: T[K] extends BeffParser<infer U> ? U : never;
 }> =>
-  buildParserFromSafeParser((input: any, options?: ParseOptions) => {
+  buildParserFromSafeParser("b.Object", (input: any, options?: ParseOptions) => {
     const disallowExtraProperties = options?.disallowExtraProperties ?? false;
 
     const errors: DecodeError[] = [];
@@ -159,7 +161,7 @@ const Object_ = <T extends Record<string, BeffParser<any>>>(
   });
 
 const String_ = (): BeffParser<string> =>
-  buildParserFromSafeParser((input: any) => {
+  buildParserFromSafeParser("String", (input: any) => {
     if (typeof input === "string") {
       return { success: true, data: input };
     }
@@ -167,7 +169,7 @@ const String_ = (): BeffParser<string> =>
   });
 
 const Number_ = (): BeffParser<number> =>
-  buildParserFromSafeParser((input: any) => {
+  buildParserFromSafeParser("Number", (input: any) => {
     if (typeof input === "number") {
       return { success: true, data: input };
     }
@@ -175,7 +177,7 @@ const Number_ = (): BeffParser<number> =>
   });
 
 const Boolean_ = (): BeffParser<boolean> =>
-  buildParserFromSafeParser((input: any) => {
+  buildParserFromSafeParser("Boolean", (input: any) => {
     if (typeof input === "boolean") {
       return { success: true, data: input };
     }
@@ -183,7 +185,7 @@ const Boolean_ = (): BeffParser<boolean> =>
   });
 
 const Undefined_ = (): BeffParser<undefined> =>
-  buildParserFromSafeParser((input: any) => {
+  buildParserFromSafeParser("Undefined", (input: any) => {
     if (input == undefined) {
       return { success: true, data: input };
     }
@@ -191,7 +193,7 @@ const Undefined_ = (): BeffParser<undefined> =>
   });
 
 const Void_ = (): BeffParser<void> =>
-  buildParserFromSafeParser((input: any) => {
+  buildParserFromSafeParser("Void", (input: any) => {
     if (input == undefined) {
       return { success: true, data: input };
     }
@@ -199,7 +201,7 @@ const Void_ = (): BeffParser<void> =>
   });
 
 const Null_ = (): BeffParser<undefined> =>
-  buildParserFromSafeParser((input: any) => {
+  buildParserFromSafeParser("Null", (input: any) => {
     if (input == null) {
       return { success: true, data: input };
     }
@@ -207,17 +209,17 @@ const Null_ = (): BeffParser<undefined> =>
   });
 
 const Any_ = (): BeffParser<any> =>
-  buildParserFromSafeParser((input: any) => {
+  buildParserFromSafeParser("Any", (input: any) => {
     return { success: true, data: input };
   });
 
 const Unknown_ = (): BeffParser<unknown> =>
-  buildParserFromSafeParser((input: any) => {
+  buildParserFromSafeParser("Unknown", (input: any) => {
     return { success: true, data: input };
   });
 
 const Array_ = <T>(parser: BeffParser<T>): BeffParser<T[]> =>
-  buildParserFromSafeParser((input: any) => {
+  buildParserFromSafeParser("b.Array", (input: any) => {
     if (!Array.isArray(input)) {
       return {
         success: false,

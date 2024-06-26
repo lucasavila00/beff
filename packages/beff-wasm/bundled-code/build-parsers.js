@@ -57,6 +57,7 @@ function buildParsers(args) {
       parse,
       safeParse,
       zod,
+      name: k,
     };
   });
   return decoders;

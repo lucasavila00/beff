@@ -493,6 +493,8 @@ it("RequiredPartialObject", () => {
     a: "a",
     b: 1,
   };
+  expect(RequiredPartialObject.name).toMatchInlineSnapshot('"RequiredPartialObject"');
+
   expect(RequiredPartialObject.parse(valid)).toMatchInlineSnapshot(`
     {
       "a": "a",
@@ -605,6 +607,7 @@ it("works on recursive type", () => {
       key: "value",
     },
   };
+  expect(User.name).toMatchInlineSnapshot('"User"');
   expect(User.parse(valid)).toMatchInlineSnapshot(`
     {
       "accessLevel": "ADMIN",
