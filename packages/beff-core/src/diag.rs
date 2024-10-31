@@ -7,6 +7,7 @@ use crate::{BffFileName, ParsedModule};
 
 #[derive(Debug, Clone)]
 pub enum DiagnosticInfoMessage {
+    TplLitTypeUnsupported,
     TwoCallsToBuildSchemas,
     CannotResolveRefInJsonSchemaToTplLit,
     TypeOfJSXTextNotSupported,
@@ -454,6 +455,9 @@ impl DiagnosticInfoMessage {
             }
             DiagnosticInfoMessage::TwoCallsToBuildSchemas => {
                 "buildSchemas can only be called once".to_string()
+            }
+            DiagnosticInfoMessage::TplLitTypeUnsupported => {
+                "Template literal type is not supported".to_string()
             }
         }
     }
