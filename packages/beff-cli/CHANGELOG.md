@@ -1,5 +1,11 @@
 # @beff/cli
 
+## 0.0.54
+
+### Patch Changes
+
+- Parse satisfies expr
+
 ## 0.0.53
 
 ### Patch Changes

@@ -1302,6 +1302,7 @@ impl<'a, 'b, R: FileManager> TypeToSchema<'a, 'b, R> {
                 self.typeof_symbol(s, &i.span)
             }
             Expr::TsConstAssertion(c) => self.typeof_expr(&c.expr, true),
+            Expr::TsSatisfies(c) => self.typeof_expr(&c.expr, true),
             Expr::Member(m) => {
                 let mut ctx = SemTypeContext::new();
                 let obj = self.typeof_expr(&m.obj, as_const)?;
