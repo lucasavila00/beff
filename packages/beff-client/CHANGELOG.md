@@ -1,5 +1,13 @@
 # @beff/client
 
+## 0.0.56
+
+### Patch Changes
+
+- Typeof shorthand
+- Updated dependencies
+  - @beff/cli@0.0.56
+
 ## 0.0.55
 
 ### Patch Changes
