@@ -1186,6 +1186,24 @@ impl<'a, 'b, R: FileManager> TypeToSchema<'a, 'b, R> {
 
     pub fn typeof_expr(&mut self, e: &Expr, as_const: bool) -> Res<JsonSchema> {
         match e {
+            Expr::Tpl(s) => {
+                if as_const {
+                    let mut acc: Vec<TplLitTypeItem> = vec![];
+
+                    for it in &s.exprs {
+                        let ty = match it.as_ref() {
+                            Expr::Call(_) => Ok(JsonSchema::String),
+                            _ => self.typeof_expr(it, as_const),
+                        }?;
+                        let res = self.json_schema_to_tpl_lit(&it.span(), &ty)?;
+                        acc.push(res);
+                    }
+
+                    Ok(JsonSchema::TplLitType(acc))
+                } else {
+                    Ok(JsonSchema::String)
+                }
+            }
             Expr::Lit(l) => match l {
                 Lit::Str(s) => {
                     if as_const {
@@ -1302,7 +1320,7 @@ impl<'a, 'b, R: FileManager> TypeToSchema<'a, 'b, R> {
                 self.typeof_symbol(s, &i.span)
             }
             Expr::TsConstAssertion(c) => self.typeof_expr(&c.expr, true),
-            Expr::TsSatisfies(c) => self.typeof_expr(&c.expr, true),
+            Expr::TsSatisfies(c) => self.typeof_expr(&c.expr, as_const),
             Expr::Member(m) => {
                 let mut ctx = SemTypeContext::new();
                 let obj = self.typeof_expr(&m.obj, as_const)?;
@@ -1353,7 +1371,10 @@ impl<'a, 'b, R: FileManager> TypeToSchema<'a, 'b, R> {
                 })?;
                 self.convert_sem_type(access_st, &mut ctx, &m.prop.span())
             }
-            _ => self.error(&e.span(), DiagnosticInfoMessage::CannotConvertExprToSchema),
+            _ => {
+                dbg!(&e);
+                self.error(&e.span(), DiagnosticInfoMessage::CannotConvertExprToSchema)
+            }
         }
     }
 

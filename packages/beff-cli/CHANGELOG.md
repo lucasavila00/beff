@@ -1,5 +1,11 @@
 # @beff/cli
 
+## 0.0.55
+
+### Patch Changes
+
+- Handle tpl expr as const
+
 ## 0.0.54
 
 ### Patch Changes

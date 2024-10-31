@@ -509,6 +509,26 @@ mod tests {
       "#));
     }
     #[test]
+    fn ok_repro6() {
+        insta::assert_snapshot!(ok(r#"
+        const x = (it: string) => it;
+        export const ABC = {a: `b`, c: `d${x("d")}d`};
+        export type AllTs = (keyof typeof ABC);
+
+        parse.buildParsers<{ AllTs: AllTs }>();
+      "#));
+    }
+    #[test]
+    fn ok_repro7() {
+        insta::assert_snapshot!(ok(r#"
+        const x = (it: string) => it;
+        export const ABC = {a: `b`, c: `d${x("d")}d`} as const satisfies Record<string, string>;
+        export type AllTs = (keyof typeof ABC);
+
+        parse.buildParsers<{ AllTs: AllTs }>();
+      "#));
+    }
+    #[test]
     fn ok_void() {
         insta::assert_snapshot!(ok(r#"
         export type IX = void
