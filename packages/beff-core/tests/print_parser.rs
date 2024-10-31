@@ -500,6 +500,15 @@ mod tests {
       "#));
     }
     #[test]
+    fn ok_repro5() {
+        insta::assert_snapshot!(ok(r#"
+        export const ABC = {a: "b", c: "d"} as const satisfies Record<string, string>;
+        export type AllTs = (keyof typeof ABC);
+
+        parse.buildParsers<{ AllTs: AllTs }>();
+      "#));
+    }
+    #[test]
     fn ok_void() {
         insta::assert_snapshot!(ok(r#"
         export type IX = void
