@@ -1,5 +1,11 @@
 # @beff/cli
 
+## 0.0.56
+
+### Patch Changes
+
+- Typeof shorthand
+
 ## 0.0.55
 
 ### Patch Changes

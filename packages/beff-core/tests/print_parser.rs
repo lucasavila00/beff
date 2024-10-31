@@ -529,6 +529,17 @@ mod tests {
       "#));
     }
     #[test]
+    fn ok_repro8() {
+        insta::assert_snapshot!(ok(r#"
+        const x = (it: string) => it;
+        const def = "def";
+        export const ABC = {a: `b`, c: `d${x("d")}d`, def ,} as const satisfies Record<string, string>;
+        export type AllTs = (keyof typeof ABC);
+
+        parse.buildParsers<{ AllTs: AllTs }>();
+      "#));
+    }
+    #[test]
     fn ok_void() {
         insta::assert_snapshot!(ok(r#"
         export type IX = void

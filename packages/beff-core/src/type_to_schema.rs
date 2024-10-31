@@ -1299,8 +1299,12 @@ impl<'a, 'b, R: FileManager> TypeToSchema<'a, 'b, R> {
                                 let value = self.typeof_expr(&p.value, as_const)?;
                                 vs.insert(key, value.required());
                             }
-                            Prop::Shorthand(_)
-                            | Prop::Assign(_)
+                            Prop::Shorthand(p) => {
+                                let key: String = p.sym.to_string();
+                                let value = self.typeof_expr(&Expr::Ident(p.clone()), as_const)?;
+                                vs.insert(key, value.required());
+                            }
+                            Prop::Assign(_)
                             | Prop::Getter(_)
                             | Prop::Setter(_)
                             | Prop::Method(_) => {
