@@ -18,6 +18,7 @@ use swc_ecma_ast::TplElement;
 use swc_ecma_ast::TsArrayType;
 use swc_ecma_ast::TsEntityName;
 use swc_ecma_ast::TsFnParam;
+use swc_ecma_ast::TsFnType;
 use swc_ecma_ast::TsIndexSignature;
 use swc_ecma_ast::TsIntersectionType;
 use swc_ecma_ast::TsKeywordType;
@@ -247,6 +248,7 @@ pub enum JsonSchema {
     // semantic types
     StNever,
     StNot(Box<JsonSchema>),
+    Function,
 }
 
 #[derive(PartialEq, Eq, Hash, Debug, Ord, PartialOrd, Clone)]
@@ -410,26 +412,27 @@ impl<'a> JsonFlatConverter<'a> {
     }
 
     #[allow(clippy::cast_precision_loss)]
-    pub fn to_json_flat(&mut self, schema: JsonSchema) -> Json {
+    pub fn to_json_flat(&mut self, schema: JsonSchema) -> anyhow::Result<Json> {
         match schema {
-            JsonSchema::String => {
-                Json::object(vec![("type".into(), Json::String("string".into()))])
-            }
-            JsonSchema::StringWithFormat(format) => Json::object(vec![
+            JsonSchema::String => Ok(Json::object(vec![(
+                "type".into(),
+                Json::String("string".into()),
+            )])),
+            JsonSchema::StringWithFormat(format) => Ok(Json::object(vec![
                 ("type".into(), Json::String("string".into())),
                 ("format".into(), Json::String(format)),
-            ]),
-            JsonSchema::Codec(format) => Json::object(vec![
+            ])),
+            JsonSchema::Codec(format) => Ok(Json::object(vec![
                 ("type".into(), Json::String("string".into())),
                 ("format".into(), Json::String(format.to_string())),
-            ]),
-            JsonSchema::TplLitType(items) => Json::object(vec![
+            ])),
+            JsonSchema::TplLitType(items) => Ok(Json::object(vec![
                 ("type".into(), Json::String("string".into())),
                 (
                     "format".into(),
                     Json::String(TplLitTypeItem::describe_vec(&items)),
                 ),
-            ]),
+            ])),
 
             JsonSchema::Object { vs: values, rest } => {
                 let mut vs = vec![
@@ -452,37 +455,39 @@ impl<'a> JsonFlatConverter<'a> {
                         Json::Object(
                             values
                                 .into_iter()
-                                .map(|(k, v)| (k, self.to_json_flat(v.inner_move())))
-                                .collect(),
+                                .map(|(k, v)| self.to_json_flat(v.inner_move()).map(|v| (k, v)))
+                                .collect::<anyhow::Result<BTreeMap<_, _>>>()?,
                         ),
                     ),
                 ];
 
                 if let Some(rest) = rest {
-                    vs.push(("additionalProperties".into(), self.to_json_flat(*rest)));
+                    vs.push(("additionalProperties".into(), self.to_json_flat(*rest)?));
                 } else {
                     vs.push(("additionalProperties".into(), Json::Bool(false)));
                 }
-                Json::object(vs)
+                Ok(Json::object(vs))
             }
             JsonSchema::Array(typ) => {
-                Json::object(vec![
+                Ok(Json::object(vec![
                     //
                     ("type".into(), Json::String("array".into())),
-                    ("items".into(), self.to_json_flat(*typ)),
-                ])
+                    ("items".into(), self.to_json_flat(*typ)?),
+                ]))
             }
-            JsonSchema::Boolean => {
-                Json::object(vec![("type".into(), Json::String("boolean".into()))])
-            }
-            JsonSchema::Number => {
-                Json::object(vec![("type".into(), Json::String("number".into()))])
-            }
-            JsonSchema::Any => Json::object(vec![]),
+            JsonSchema::Boolean => Ok(Json::object(vec![(
+                "type".into(),
+                Json::String("boolean".into()),
+            )])),
+            JsonSchema::Number => Ok(Json::object(vec![(
+                "type".into(),
+                Json::String("number".into()),
+            )])),
+            JsonSchema::Any => Ok(Json::object(vec![])),
             JsonSchema::Ref(reference) => {
                 if self.seen_refs.contains(&reference) {
                     // recursive type, let's return "ANY"
-                    return Json::object(vec![]);
+                    return Ok(Json::object(vec![]));
                 }
                 let validator = self
                     .validators
@@ -496,7 +501,10 @@ impl<'a> JsonFlatConverter<'a> {
                 json
             }
 
-            JsonSchema::Null => Json::object(vec![("type".into(), Json::String("null".into()))]),
+            JsonSchema::Null => Ok(Json::object(vec![(
+                "type".into(),
+                Json::String("null".into()),
+            )])),
             JsonSchema::AnyOf(types) => {
                 let all_literals = types.iter().all(|it| matches!(it, JsonSchema::Const(_)));
                 if all_literals {
@@ -510,22 +518,30 @@ impl<'a> JsonFlatConverter<'a> {
 
                     let all_strings = vs.iter().all(|it| matches!(it, Json::String(_)));
                     if all_strings {
-                        Json::object(vec![
+                        Ok(Json::object(vec![
                             ("enum".into(), Json::Array(vs)),
                             ("type".into(), Json::String("string".into())),
-                        ])
+                        ]))
                     } else {
-                        Json::object(vec![("enum".into(), Json::Array(vs))])
+                        Ok(Json::object(vec![("enum".into(), Json::Array(vs))]))
                     }
                 } else {
-                    let vs = types.into_iter().map(|it| self.to_json_flat(it)).collect();
-                    Json::object(vec![("anyOf".into(), Json::Array(vs))])
+                    let vs = types
+                        .into_iter()
+                        .map(|it| self.to_json_flat(it))
+                        .collect::<anyhow::Result<_>>()?;
+                    Ok(Json::object(vec![("anyOf".into(), Json::Array(vs))]))
                 }
             }
-            JsonSchema::AllOf(types) => Json::object(vec![(
-                "allOf".into(),
-                Json::Array(types.into_iter().map(|it| self.to_json_flat(it)).collect()),
-            )]),
+            JsonSchema::AllOf(types) => {
+                let mut arr_types = vec![];
+
+                for t in types {
+                    arr_types.push(self.to_json_flat(t)?);
+                }
+
+                Ok(Json::object(vec![("allOf".into(), Json::Array(arr_types))]))
+            }
 
             JsonSchema::Tuple {
                 prefix_items,
@@ -543,25 +559,26 @@ impl<'a> JsonFlatConverter<'a> {
                             prefix_items
                                 .into_iter()
                                 .map(|it| self.to_json_flat(it))
-                                .collect(),
+                                .collect::<anyhow::Result<_>>()?,
                         ),
                     ));
                 }
                 if let Some(ty) = items {
-                    v.push(("items".into(), self.to_json_flat(*ty)));
+                    v.push(("items".into(), self.to_json_flat(*ty)?));
                 } else {
                     v.push(("minItems".into(), Json::parse_int(len_f as i64)));
                     v.push(("maxItems".into(), Json::parse_int(len_f as i64)));
                 }
-                Json::object(v)
+                Ok(Json::object(v))
             }
-            JsonSchema::Const(val) => Json::object(vec![("const".into(), val.to_json())]),
+            JsonSchema::Const(val) => Ok(Json::object(vec![("const".into(), val.to_json())])),
             JsonSchema::AnyArrayLike => {
                 self.to_json_flat(JsonSchema::Array(JsonSchema::Any.into()))
             }
             JsonSchema::StNever | JsonSchema::StNot(_) => {
-                unreachable!("semantic types should not be converted to json")
+                Err(anyhow!("semantic types should not be converted to json"))
             }
+            JsonSchema::Function => Err(anyhow!("function type is not supported in json schema"))?,
         }
     }
 }
@@ -1005,6 +1022,22 @@ impl JsonSchema {
                     }),
                 })
             }
+            JsonSchema::Function => TsType::TsFnOrConstructorType(
+                swc_ecma_ast::TsFnOrConstructorType::TsFnType(TsFnType {
+                    span: DUMMY_SP,
+                    params: vec![],
+                    type_params: None,
+                    type_ann: TsTypeAnn {
+                        span: DUMMY_SP,
+                        type_ann: TsType::TsKeywordType(TsKeywordType {
+                            span: DUMMY_SP,
+                            kind: TsKeywordTypeKind::TsVoidKeyword,
+                        })
+                        .into(),
+                    }
+                    .into(),
+                }),
+            ),
         }
     }
 }

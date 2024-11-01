@@ -466,6 +466,9 @@ impl SemTypeContext {
         SemType::new_unknown()
     }
 
+    pub(crate) fn function() -> SemType {
+        SemType::new_basic(SubTypeTag::Function.code())
+    }
     fn get_complex_sub_type_data(s: &Vec<Rc<ProperSubtype>>, tag: SubTypeTag) -> SubType {
         for t in s {
             match (t.as_ref(), &tag) {

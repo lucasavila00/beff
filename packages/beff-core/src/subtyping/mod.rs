@@ -214,6 +214,7 @@ impl<'a> ToSemTypeConverter<'a> {
                 let chd = self.convert_to_sem_type(it, builder)?;
                 Ok(chd.complement())
             }
+            JsonSchema::Function => Ok(SemTypeContext::function().into()),
         }
     }
 }
