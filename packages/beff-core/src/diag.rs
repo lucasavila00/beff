@@ -7,6 +7,7 @@ use crate::{BffFileName, ParsedModule};
 
 #[derive(Debug, Clone)]
 pub enum DiagnosticInfoMessage {
+    EnumMemberNotFound,
     TplLitTypeUnsupported,
     TwoCallsToBuildSchemas,
     CannotResolveRefInJsonSchemaToTplLit,
@@ -459,6 +460,7 @@ impl DiagnosticInfoMessage {
             DiagnosticInfoMessage::TplLitTypeUnsupported => {
                 "Template literal type is not supported".to_string()
             }
+            DiagnosticInfoMessage::EnumMemberNotFound => "Enum member not found".to_string(),
         }
     }
 }

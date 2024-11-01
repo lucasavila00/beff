@@ -1,0 +1,6 @@
+---
+source: packages/beff-core/tests/print_parser.rs
+expression: "ok(r#\"\n        enum E {\n          A=\"A\",\n          B=\"B\"\n        };\n        const val = E.B as const;\n        export type AllTs = typeof val;\n\n        parse.buildParsers<{ AllTs: AllTs }>();\n      \"#)"
+---
+type AllTs = "A" | "B";
+type AllTs = AllTs;

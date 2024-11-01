@@ -249,6 +249,10 @@ impl<'a, R: FileManager> TypeResolver<'a, R> {
             return Ok(ResolvedLocalSymbol::Expr(alias.clone()));
         }
 
+        if let Some(enum_) = self.get_current_file().locals.enums.get(k) {
+            return Ok(ResolvedLocalSymbol::TsEnumDecl(enum_.clone()));
+        }
+
         if let Some(exported) = self
             .get_current_file()
             .symbol_exports
