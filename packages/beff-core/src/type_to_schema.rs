@@ -1270,11 +1270,19 @@ impl<'a, 'b, R: FileManager> TypeToSchema<'a, 'b, R> {
 
                 for it in &lit.props {
                     match it {
-                        PropOrSpread::Spread(_) => {
-                            return self.error(
-                                &it.span(),
-                                DiagnosticInfoMessage::TypeofObjectUnsupportedSpread,
-                            )
+                        PropOrSpread::Spread(sp) => {
+                            let spread_ty = self.typeof_expr(&sp.expr, as_const)?;
+
+                            if let JsonSchema::Object { vs: spread_vs, .. } = spread_ty {
+                                for (k, v) in spread_vs {
+                                    vs.insert(k, v);
+                                }
+                            } else {
+                                return self.error(
+                                    &it.span(),
+                                    DiagnosticInfoMessage::TypeofObjectUnsupportedSpread,
+                                );
+                            }
                         }
                         PropOrSpread::Prop(p) => match p.as_ref() {
                             Prop::KeyValue(p) => {
@@ -1452,6 +1460,16 @@ impl<'a, 'b, R: FileManager> TypeToSchema<'a, 'b, R> {
                 self.convert_sem_type(access_st, &mut ctx, &m.prop.span())
             }
             Expr::Arrow(_a) => Ok(JsonSchema::Function),
+            Expr::Bin(e) => {
+                let left = self.typeof_expr(&e.left, as_const)?;
+                let right = self.typeof_expr(&e.right, as_const)?;
+
+                match (left, right) {
+                    (JsonSchema::Number, JsonSchema::Number) => Ok(JsonSchema::Number),
+                    (JsonSchema::String, JsonSchema::String) => Ok(JsonSchema::String),
+                    _ => self.error(&e.span(), DiagnosticInfoMessage::CannotConvertExprToSchema),
+                }
+            }
             _ => {
                 dbg!(&e);
                 self.error(&e.span(), DiagnosticInfoMessage::CannotConvertExprToSchema)

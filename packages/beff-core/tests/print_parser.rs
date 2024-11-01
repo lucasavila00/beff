@@ -575,6 +575,25 @@ mod tests {
       "#));
     }
     #[test]
+    fn ok_repro12() {
+        insta::assert_snapshot!(ok(r#"
+        const val = 1 + 1;
+        export type AllTs = typeof val;
+
+        parse.buildParsers<{ AllTs: AllTs }>();
+      "#));
+    }
+    #[test]
+    fn ok_repro13() {
+        insta::assert_snapshot!(ok(r#"
+        const val = {a: 1} as const;
+        const spread = {...val, b: 2} as const;
+        export type AllTs = typeof spread;
+
+        parse.buildParsers<{ AllTs: AllTs }>();
+      "#));
+    }
+    #[test]
     fn ok_void() {
         insta::assert_snapshot!(ok(r#"
         export type IX = void
