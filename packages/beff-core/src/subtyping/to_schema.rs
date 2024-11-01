@@ -440,6 +440,9 @@ impl<'a, 'b> SchemerContext<'a, 'b> {
                     SubTypeTag::List => {
                         acc.insert(JsonSchema::AnyArrayLike);
                     }
+                    SubTypeTag::Function => {
+                        acc.insert(JsonSchema::Function);
+                    }
                 };
             }
         }

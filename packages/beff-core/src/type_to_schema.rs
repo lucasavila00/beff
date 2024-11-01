@@ -1375,6 +1375,7 @@ impl<'a, 'b, R: FileManager> TypeToSchema<'a, 'b, R> {
                 })?;
                 self.convert_sem_type(access_st, &mut ctx, &m.prop.span())
             }
+            Expr::Arrow(_a) => Ok(JsonSchema::Function),
             _ => {
                 dbg!(&e);
                 self.error(&e.span(), DiagnosticInfoMessage::CannotConvertExprToSchema)

@@ -23,11 +23,11 @@ pub struct BuiltDecoder {
     pub schema: JsonSchema,
 }
 impl BuiltDecoder {
-    pub fn to_json_kv(&self, validators: &[Validator]) -> Vec<(String, Json)> {
-        vec![(
+    pub fn to_json_kv(&self, validators: &[Validator]) -> anyhow::Result<Vec<(String, Json)>> {
+        Ok(vec![(
             self.exported_name.clone(),
-            JsonFlatConverter::new(validators).to_json_flat(self.schema.clone()),
-        )]
+            JsonFlatConverter::new(validators).to_json_flat(self.schema.clone())?,
+        )])
     }
 }
 

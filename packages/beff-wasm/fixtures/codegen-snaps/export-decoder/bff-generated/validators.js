@@ -130,6 +130,16 @@ function decodeNumber(ctx, input, required) {
   return buildError(input, ctx, "expected number");
 }
 
+function decodeFunction(ctx, input, required) {
+  if (!required && input == null) {
+    return input;
+  }
+  if (typeof input === "function") {
+    return input;
+  }
+  return buildError(input, ctx, "expected function");
+}
+
 function decodeCodec(ctx, input, required, codec) {
   if (!required && input == null) {
     return input;
@@ -392,4 +402,4 @@ const validators = {
     UnionNested: DecodeUnionNested
 };
 
-export default { decodeObject, decodeArray, decodeString, decodeNumber, decodeCodec, decodeStringWithFormat, decodeAnyOf, decodeAllOf, decodeBoolean, decodeAny, decodeTuple, decodeNull, decodeConst, registerCustomFormatter, validators };
+export default { decodeObject, decodeArray, decodeString, decodeNumber, decodeCodec, decodeFunction, decodeStringWithFormat, decodeAnyOf, decodeAllOf, decodeBoolean, decodeAny, decodeTuple, decodeNull, decodeConst, registerCustomFormatter, validators };

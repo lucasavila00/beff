@@ -1,6 +1,9 @@
 use std::rc::Rc;
 
-use crate::ast::{json::N, json_schema::{CodecName, TplLitTypeItem}};
+use crate::ast::{
+    json::N,
+    json_schema::{CodecName, TplLitTypeItem},
+};
 
 use super::{
     bdd::{list_is_empty, mapping_is_empty, Bdd, BddOps},
@@ -22,9 +25,10 @@ pub enum SubTypeTag {
     Mapping = 1 << 0x5,
     Void = 1 << 0x6,
     List = 1 << 0x7,
+    Function = 1 << 0x8,
 }
 
-pub const VAL: u32 = 1 << 1 | 1 << 2 | 1 << 3 | 1 << 4 | 1 << 5 | 1 << 6 | 1 << 7;
+pub const VAL: u32 = 1 << 1 | 1 << 2 | 1 << 3 | 1 << 4 | 1 << 5 | 1 << 6 | 1 << 7 | 1 << 8;
 
 impl SubTypeTag {
     pub fn code(&self) -> BasicTypeCode {
@@ -41,6 +45,7 @@ impl SubTypeTag {
             SubTypeTag::Null,
             SubTypeTag::Mapping,
             SubTypeTag::List,
+            SubTypeTag::Function,
         ]
     }
 }

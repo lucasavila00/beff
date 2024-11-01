@@ -1,5 +1,13 @@
 # @beff/client
 
+## 0.0.57
+
+### Patch Changes
+
+- func types
+- Updated dependencies
+  - @beff/cli@0.0.57
+
 ## 0.0.56
 
 ### Patch Changes

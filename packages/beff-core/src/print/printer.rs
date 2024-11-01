@@ -168,7 +168,10 @@ impl ToWritableModules for ExtractResult {
             let json_schema_obj = Json::object(
                 decoders
                     .iter()
-                    .flat_map(|it| BuiltDecoder::to_json_kv(it, &validators))
+                    .map(|it| BuiltDecoder::to_json_kv(it, &validators))
+                    .collect::<Result<Vec<Vec<(String, Json)>>>>()?
+                    .into_iter()
+                    .flatten()
                     .collect(),
             );
             // schema

@@ -552,6 +552,7 @@ impl<'a> DecoderFnGenerator<'a> {
                     ],
                 )
             }
+            JsonSchema::Function => Self::decode_call("decodeFunction", required),
         }
     }
 
