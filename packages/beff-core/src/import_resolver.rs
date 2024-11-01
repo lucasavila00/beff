@@ -135,6 +135,14 @@ impl<'a, R: FsModuleResolver> Visit for ImportsVisitor<'a, R> {
                         original_file: self.current_file.clone(),
                     }),
                 );
+                self.symbol_exports.insert_value(
+                    id.sym.clone(),
+                    Rc::new(SymbolExport::TsEnumDecl {
+                        decl: Rc::new(*decl.clone()),
+                        span: decl.span,
+                        original_file: self.current_file.clone(),
+                    }),
+                );
             }
             Decl::TsTypeAlias(a) => {
                 let TsTypeAliasDecl {

@@ -1,5 +1,11 @@
 # @beff/cli
 
+## 0.0.59
+
+### Patch Changes
+
+- typeof enum bugs
+
 ## 0.0.58
 
 ### Patch Changes

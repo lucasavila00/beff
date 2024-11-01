@@ -1327,49 +1327,93 @@ impl<'a, 'b, R: FileManager> TypeToSchema<'a, 'b, R> {
             Expr::TsSatisfies(c) => self.typeof_expr(&c.expr, as_const),
             Expr::Member(m) => {
                 let mut ctx = SemTypeContext::new();
-                if let Expr::Ident(i) = &m.obj.as_ref() {
-                    let s =
-                        TypeResolver::new(self.files, &self.current_file).resolve_local_value(i)?;
-                    if let ResolvedLocalSymbol::TsEnumDecl(decl) = s {
-                        // check if enum contains the member
-                        let prop = match &m.prop {
-                            MemberProp::Ident(i) => Some(i.sym.to_string()),
-                            MemberProp::Computed(c) => match self.typeof_expr(&c.expr, as_const)? {
-                                JsonSchema::Const(JsonSchemaConst::String(s)) => Some(s.clone()),
-                                _ => None,
-                            },
-                            MemberProp::PrivateName(_) => None,
-                        };
-                        let prop_str = prop.unwrap_or("".to_string());
-                        let found = decl.members.iter().find(|it| {
-                            //
-                            match &it.id {
-                                TsEnumMemberId::Ident(i2) => {
-                                    i2.sym.to_string() == prop_str.as_str()
+                let k = match &m.prop {
+                    MemberProp::Ident(i) => Some(i.sym.to_string()),
+                    MemberProp::Computed(c) => match self.typeof_expr(&c.expr, as_const)? {
+                        JsonSchema::Const(JsonSchemaConst::String(s)) => Some(s.clone()),
+                        _ => None,
+                    },
+                    MemberProp::PrivateName(_) => None,
+                };
+                if let Some(key) = &k {
+                    let from_enum = if let Expr::Ident(i) = &m.obj.as_ref() {
+                        if let Ok(decl) = TypeResolver::new(self.files, &self.current_file)
+                            .resolve_namespace_symbol(i, false)
+                        {
+                            match decl.from_file.as_ref() {
+                                ImportReference::Named {
+                                    orig,
+                                    file_name,
+                                    span,
+                                } => {
+                                    let Some(from_file) = self
+                                        .files
+                                        .get_or_fetch_file(file_name)
+                                        .and_then(|module| {
+                                            module.symbol_exports.get_type(orig, self.files)
+                                        })
+                                    else {
+                                        return self.error(
+                                            span,
+                                            DiagnosticInfoMessage::CannotResolveNamedImport,
+                                        );
+                                    };
+                                    match from_file.as_ref() {
+                                        SymbolExport::TsEnumDecl { decl, .. } => Some(decl.clone()),
+                                        _ => {
+                                            return self.error(
+                                                span,
+                                                DiagnosticInfoMessage::CannotResolveNamedImport,
+                                            );
+                                        }
+                                    }
                                 }
-                                TsEnumMemberId::Str(_) => unreachable!(),
+                                ImportReference::Star { .. } => {
+                                    return self.error(
+                                        &i.span,
+                                        DiagnosticInfoMessage::CannotResolveNamedImport,
+                                    );
+                                }
+                                ImportReference::Default { .. } => {
+                                    return self.error(
+                                        &i.span,
+                                        DiagnosticInfoMessage::CannotResolveNamedImport,
+                                    );
+                                }
                             }
-                        });
-
-                        if let Some(_found) = found {
-                            // return the enum's type
-                            return self.convert_enum_decl(&decl);
+                        } else if let Ok(ResolvedLocalSymbol::TsEnumDecl(decl)) =
+                            TypeResolver::new(self.files, &self.current_file).resolve_local_value(i)
+                        {
+                            Some(decl)
+                        } else {
+                            None
                         }
-                        return self
-                            .error(&m.prop.span(), DiagnosticInfoMessage::EnumMemberNotFound);
+                    } else {
+                        None
+                    };
+                    if let Some(from_enum) = from_enum {
+                        if !as_const {
+                            return self.convert_enum_decl(&from_enum);
+                        }
+                        let Some(enum_value) = from_enum.members.iter().find(|it| match &it.id {
+                            TsEnumMemberId::Ident(i) => i.sym == *key,
+                            TsEnumMemberId::Str(_) => unreachable!(),
+                        }) else {
+                            return self
+                                .error(&m.prop.span(), DiagnosticInfoMessage::EnumMemberNotFound);
+                        };
+                        let Some(init) = &enum_value.init else {
+                            return self
+                                .error(&m.prop.span(), DiagnosticInfoMessage::EnumMemberNoInit);
+                        };
+
+                        return self.typeof_expr(&init, true);
                     }
                 }
                 let obj = self.typeof_expr(&m.obj, as_const)?;
-                if let JsonSchema::Object { vs, rest: _ } = &obj {
-                    // try to do it syntatically to preserve aliases
-                    if let Some(key) = match &m.prop {
-                        MemberProp::Ident(i) => Some(i.sym.to_string()),
-                        MemberProp::Computed(c) => match self.typeof_expr(&c.expr, as_const)? {
-                            JsonSchema::Const(JsonSchemaConst::String(s)) => Some(s.clone()),
-                            _ => None,
-                        },
-                        MemberProp::PrivateName(_) => None,
-                    } {
+                if let Some(key) = k {
+                    if let JsonSchema::Object { vs, rest: _ } = &obj {
+                        // try to do it syntatically to preserve aliases
                         if let Some(Optionality::Required(v)) = vs.get(&key) {
                             return Ok(v.clone());
                         };
@@ -1423,9 +1467,8 @@ impl<'a, 'b, R: FileManager> TypeToSchema<'a, 'b, R> {
         let old_file = self.current_file.clone();
         self.current_file = from_file.file_name().clone();
         let ty = match exported.as_ref() {
-            SymbolExport::TsEnumDecl { .. }
-            | SymbolExport::TsType { .. }
-            | SymbolExport::TsInterfaceDecl { .. } => self.error(
+            SymbolExport::TsEnumDecl { decl, .. } => return self.convert_enum_decl(&decl),
+            SymbolExport::TsType { .. } | SymbolExport::TsInterfaceDecl { .. } => self.error(
                 &exported.span(),
                 DiagnosticInfoMessage::FoundTypeExpectedValueInSymbolExport,
             ),

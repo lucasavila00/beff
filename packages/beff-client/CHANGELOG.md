@@ -1,5 +1,13 @@
 # @beff/client
 
+## 0.0.59
+
+### Patch Changes
+
+- typeof enum bugs
+- Updated dependencies
+  - @beff/cli@0.0.59
+
 ## 0.0.58
 
 ### Patch Changes
