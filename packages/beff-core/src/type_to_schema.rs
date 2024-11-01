@@ -1407,7 +1407,7 @@ impl<'a, 'b, R: FileManager> TypeToSchema<'a, 'b, R> {
                                 .error(&m.prop.span(), DiagnosticInfoMessage::EnumMemberNoInit);
                         };
 
-                        return self.typeof_expr(&init, true);
+                        return self.typeof_expr(init, true);
                     }
                 }
                 let obj = self.typeof_expr(&m.obj, as_const)?;
@@ -1467,7 +1467,7 @@ impl<'a, 'b, R: FileManager> TypeToSchema<'a, 'b, R> {
         let old_file = self.current_file.clone();
         self.current_file = from_file.file_name().clone();
         let ty = match exported.as_ref() {
-            SymbolExport::TsEnumDecl { decl, .. } => return self.convert_enum_decl(&decl),
+            SymbolExport::TsEnumDecl { decl, .. } => return self.convert_enum_decl(decl),
             SymbolExport::TsType { .. } | SymbolExport::TsInterfaceDecl { .. } => self.error(
                 &exported.span(),
                 DiagnosticInfoMessage::FoundTypeExpectedValueInSymbolExport,
