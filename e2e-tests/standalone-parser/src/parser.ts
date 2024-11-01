@@ -175,6 +175,10 @@ export type AObject = {
 
 export type BObject = { tag: typeof b };
 
+const ImportEnumTypeof = {
+  A: OtherEnum.A,
+} as const;
+
 export const {
   Version,
   Version2,
@@ -240,6 +244,7 @@ export const {
   AccessLevelCodec: AccessLevel;
   AvatarSize: AvatarSize;
   BObject: BObject;
+  ImportEnumTypeof: typeof ImportEnumTypeof;
 }>({
   customFormats: {
     ValidCurrency: (input: string) => {

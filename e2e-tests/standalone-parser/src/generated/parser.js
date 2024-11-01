@@ -55,6 +55,11 @@ const buildParsersInput = {
     "Extra": function(ctx, input, required = true) {
         return validators.Extra(ctx, input, required);
     },
+    "ImportEnumTypeof": function(ctx, input, required = true) {
+        return decodeObject(ctx, input, required, {
+            "A": (ctx, input)=>(decodeConst(ctx, input, true, "a"))
+        });
+    },
     "LevelAndDSettings": function(ctx, input, required = true) {
         return validators.LevelAndDSettings(ctx, input, required);
     },
