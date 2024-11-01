@@ -549,6 +549,32 @@ mod tests {
       "#));
     }
     #[test]
+    fn ok_repro10() {
+        insta::assert_snapshot!(ok(r#"
+        enum E {
+          A="A",
+          B="B"
+        };
+        export const ABC = {a: E.B, } as const satisfies Record<string, string>;
+        export type AllTs = (keyof typeof ABC);
+
+        parse.buildParsers<{ AllTs: AllTs }>();
+      "#));
+    }
+    #[test]
+    fn ok_repro11() {
+        insta::assert_snapshot!(ok(r#"
+        enum E {
+          A="A",
+          B="B"
+        };
+        const val = E.B as const;
+        export type AllTs = typeof val;
+
+        parse.buildParsers<{ AllTs: AllTs }>();
+      "#));
+    }
+    #[test]
     fn ok_void() {
         insta::assert_snapshot!(ok(r#"
         export type IX = void

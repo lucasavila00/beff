@@ -1327,6 +1327,38 @@ impl<'a, 'b, R: FileManager> TypeToSchema<'a, 'b, R> {
             Expr::TsSatisfies(c) => self.typeof_expr(&c.expr, as_const),
             Expr::Member(m) => {
                 let mut ctx = SemTypeContext::new();
+                if let Expr::Ident(i) = &m.obj.as_ref() {
+                    let s =
+                        TypeResolver::new(self.files, &self.current_file).resolve_local_value(i)?;
+                    if let ResolvedLocalSymbol::TsEnumDecl(decl) = s {
+                        // check if enum contains the member
+                        let prop = match &m.prop {
+                            MemberProp::Ident(i) => Some(i.sym.to_string()),
+                            MemberProp::Computed(c) => match self.typeof_expr(&c.expr, as_const)? {
+                                JsonSchema::Const(JsonSchemaConst::String(s)) => Some(s.clone()),
+                                _ => None,
+                            },
+                            MemberProp::PrivateName(_) => None,
+                        };
+                        let prop_str = prop.unwrap_or("".to_string());
+                        let found = decl.members.iter().find(|it| {
+                            //
+                            match &it.id {
+                                TsEnumMemberId::Ident(i2) => {
+                                    i2.sym.to_string() == prop_str.as_str()
+                                }
+                                TsEnumMemberId::Str(_) => unreachable!(),
+                            }
+                        });
+
+                        if let Some(_found) = found {
+                            // return the enum's type
+                            return self.convert_enum_decl(&decl);
+                        }
+                        return self
+                            .error(&m.prop.span(), DiagnosticInfoMessage::EnumMemberNotFound);
+                    }
+                }
                 let obj = self.typeof_expr(&m.obj, as_const)?;
                 if let JsonSchema::Object { vs, rest: _ } = &obj {
                     // try to do it syntatically to preserve aliases
@@ -1507,9 +1539,7 @@ impl<'a, 'b, R: FileManager> TypeToSchema<'a, 'b, R> {
                 self.collect_value_exports(&file_name, &mut acc)?;
                 Ok(JsonSchema::object(acc, None))
             }
-            ResolvedLocalSymbol::TsEnumDecl(_) => {
-                self.error(span, DiagnosticInfoMessage::TypeofTsEnumNotSupported)
-            }
+            ResolvedLocalSymbol::TsEnumDecl(enum_decl) => self.convert_enum_decl(&enum_decl),
             ResolvedLocalSymbol::TsBuiltin(_) => {
                 self.error(span, DiagnosticInfoMessage::TypeOfTsBuiltinNotSupported)
             }
