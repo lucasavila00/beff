@@ -575,9 +575,9 @@ impl<'a> JsonFlatConverter<'a> {
             JsonSchema::AnyArrayLike => {
                 self.to_json_flat(JsonSchema::Array(JsonSchema::Any.into()))
             }
-            JsonSchema::StNever | JsonSchema::StNot(_) => {
-                Err(anyhow!("semantic types should not be converted to json"))
-            }
+            JsonSchema::StNever => self.to_json_flat(JsonSchema::AnyOf(BTreeSet::new())),
+
+            JsonSchema::StNot(_) => Err(anyhow!("semantic types should not be converted to json")),
             JsonSchema::Function => Err(anyhow!("function type is not supported in json schema"))?,
         }
     }
