@@ -600,4 +600,29 @@ mod tests {
         parse.buildParsers<{ IX: IX }>();
       "#));
     }
+    #[test]
+    fn ok_never() {
+        insta::assert_snapshot!(ok(r#"
+        export type ABC = {}
+        export type KABC = keyof ABC
+
+        export type DEF = {
+            a: string
+        }
+        export type KDEF = keyof DEF
+
+        export type K = KABC | KDEF
+
+        parse.buildParsers<{ K: K }>();
+      "#));
+    }
+    #[test]
+    fn ok_never2() {
+        insta::assert_snapshot!(ok(r#"
+        export type ABC = {}
+        export type KABC = keyof ABC
+     
+        parse.buildParsers<{ KABC: KABC }>();
+      "#));
+    }
 }

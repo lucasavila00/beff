@@ -23,7 +23,7 @@ pub enum SchemaMemo {
 
 pub struct SemTypeResolverContext<'a>(pub &'a mut SemTypeContext);
 
-impl<'a> SemTypeResolverContext<'a> {
+impl SemTypeResolverContext<'_> {
     fn intersect_list_atomics(it: Vec<Rc<ListAtomic>>) -> Rc<ListAtomic> {
         let items = it
             .iter()

@@ -100,7 +100,7 @@ impl<'a, R: FsModuleResolver> ImportsVisitor<'a, R> {
     }
 }
 
-impl<'a, R: FsModuleResolver> Visit for ImportsVisitor<'a, R> {
+impl<R: FsModuleResolver> Visit for ImportsVisitor<'_, R> {
     fn visit_export_default_expr(&mut self, n: &ExportDefaultExpr) {
         self.export_default = Some(
             SymbolExportDefault {

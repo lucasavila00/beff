@@ -42,7 +42,6 @@ pub enum DiagnosticInfoMessage {
     RestFoundOnExtractObject,
     ShouldHaveObjectAsTypeArgument,
     RecordKeyShouldBeString,
-    NeverCannotBeConvertedToJsonSchema,
     CannotResolveRefInExtractUnion,
     PartialShouldHaveObjectAsTypeArgument,
     MissingArgumentsOnPartial,
@@ -366,9 +365,6 @@ impl DiagnosticInfoMessage {
             }
             DiagnosticInfoMessage::CannotResolveRefInExtractUnion => {
                 "Cannot resolve ref in extract union".to_string()
-            }
-            DiagnosticInfoMessage::NeverCannotBeConvertedToJsonSchema => {
-                "'Never' cannot be converted to JSON schema".to_string()
             }
             DiagnosticInfoMessage::RecordKeyShouldBeString => {
                 "Record key should be a string".to_string()

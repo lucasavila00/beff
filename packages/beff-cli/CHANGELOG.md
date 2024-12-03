@@ -1,5 +1,11 @@
 # @beff/cli
 
+## 0.0.61
+
+### Patch Changes
+
+- dont bail on never
+
 ## 0.0.60
 
 ### Patch Changes

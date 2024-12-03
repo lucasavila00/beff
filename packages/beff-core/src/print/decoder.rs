@@ -42,7 +42,7 @@ struct DecoderFnGenerator<'a> {
     validators: &'a Vec<Validator>,
 }
 
-impl<'a> DecoderFnGenerator<'a> {
+impl DecoderFnGenerator<'_> {
     fn decode_call(fn_name: &str, required: Required) -> Expr {
         Self::decode_call_extra(fn_name, required, vec![])
     }
