@@ -1,5 +1,11 @@
 # beff-vscode
 
+## 0.0.14
+
+### Patch Changes
+
+- fix bugs
+
 ## 0.0.8
 
 ### Patch Changes

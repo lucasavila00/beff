@@ -1,7 +1,7 @@
 {
   "name": "beff-vscode",
   "publisher": "beff",
-  "version": "0.0.13",
+  "version": "0.0.14",
   "description": "",
   "engines": {
     "vscode": "^1.73.0"
