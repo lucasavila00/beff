@@ -125,7 +125,7 @@ struct LazyFileManager<'a> {
     pub files: &'a mut HashMap<BffFileName, Rc<ParsedModule>>,
 }
 
-impl<'a> FileManager for LazyFileManager<'a> {
+impl FileManager for LazyFileManager<'_> {
     fn get_or_fetch_file(&mut self, file_name: &BffFileName) -> Option<Rc<ParsedModule>> {
         if let Some(it) = self.files.get(file_name) {
             return Some(it.clone());
