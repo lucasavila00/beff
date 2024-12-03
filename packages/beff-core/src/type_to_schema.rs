@@ -1676,10 +1676,7 @@ impl<'a, 'b, R: FileManager> TypeToSchema<'a, 'b, R> {
         span: &Span,
     ) -> Res<JsonSchema> {
         if access_st.is_empty(ctx) {
-            return self.error(
-                span,
-                DiagnosticInfoMessage::NeverCannotBeConvertedToJsonSchema,
-            );
+            return Ok(JsonSchema::StNever);
         }
         let (head, tail) =
             to_validators(ctx, &access_st, "AnyName", self.counter).map_err(|any| {
