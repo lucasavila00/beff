@@ -179,6 +179,16 @@ const ImportEnumTypeof = {
   A: OtherEnum.A,
 } as const;
 
+export type ABC = {};
+export type KABC = keyof ABC;
+
+export type DEF = {
+  a: string;
+};
+export type KDEF = keyof DEF;
+
+export type K = KABC | KDEF;
+
 export const {
   Version,
   Version2,
@@ -245,6 +255,9 @@ export const {
   AvatarSize: AvatarSize;
   BObject: BObject;
   ImportEnumTypeof: typeof ImportEnumTypeof;
+  KDEF: KDEF;
+  KABC: KABC;
+  K: K;
 }>({
   customFormats: {
     ValidCurrency: (input: string) => {

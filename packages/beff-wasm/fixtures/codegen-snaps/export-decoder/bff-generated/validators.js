@@ -317,6 +317,12 @@ function decodeNull(ctx, input, required) {
   }
   return buildError(input, ctx, "expected null");
 }
+function decodeNever(ctx, input, required) {
+  if (!required && input == null) {
+    return input;
+  }
+  return buildError(input, ctx, "never");
+}
 function decodeConst(ctx, input, required, constValue) {
   if (!required && input == null) {
     return input;
@@ -402,4 +408,4 @@ const validators = {
     UnionNested: DecodeUnionNested
 };
 
-export default { decodeObject, decodeArray, decodeString, decodeNumber, decodeCodec, decodeFunction, decodeStringWithFormat, decodeAnyOf, decodeAllOf, decodeBoolean, decodeAny, decodeTuple, decodeNull, decodeConst, registerCustomFormatter, validators };
+export default { decodeObject, decodeArray, decodeString, decodeNumber, decodeCodec, decodeFunction, decodeStringWithFormat, decodeAnyOf, decodeAllOf, decodeBoolean, decodeAny, decodeTuple, decodeNull, decodeNever, decodeConst, registerCustomFormatter, validators };

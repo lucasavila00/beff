@@ -1,5 +1,11 @@
 # @beff/cli
 
+## 0.0.62
+
+### Patch Changes
+
+- fix bugs never decoder
+
 ## 0.0.61
 
 ### Patch Changes

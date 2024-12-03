@@ -1,5 +1,13 @@
 # @beff/client
 
+## 0.0.62
+
+### Patch Changes
+
+- fix bugs never decoder
+- Updated dependencies
+  - @beff/cli@0.0.62
+
 ## 0.0.61
 
 ### Patch Changes

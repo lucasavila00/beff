@@ -317,6 +317,12 @@ function decodeNull(ctx, input, required) {
   }
   return buildError(input, ctx, "expected null");
 }
+function decodeNever(ctx, input, required) {
+  if (!required && input == null) {
+    return input;
+  }
+  return buildError(input, ctx, "never");
+}
 function decodeConst(ctx, input, required, constValue) {
   if (!required && input == null) {
     return input;
@@ -646,6 +652,26 @@ function DecodeBObject(ctx, input, required = true) {
         "tag": (ctx, input)=>(decodeConst(ctx, input, true, "b"))
     });
 }
+function DecodeDEF(ctx, input, required = true) {
+    return decodeObject(ctx, input, required, {
+        "a": (ctx, input)=>(decodeString(ctx, input, true))
+    });
+}
+function DecodeKDEF(ctx, input, required = true) {
+    return decodeConst(ctx, input, required, "a");
+}
+function DecodeABC(ctx, input, required = true) {
+    return decodeObject(ctx, input, required, {});
+}
+function DecodeKABC(ctx, input, required = true) {
+    return decodeNever(ctx, input, required);
+}
+function DecodeK(ctx, input, required = true) {
+    return decodeAnyOf(ctx, input, required, [
+        (ctx, input)=>(validators.KABC(ctx, input, required)),
+        (ctx, input)=>(validators.KDEF(ctx, input, required))
+    ]);
+}
 const validators = {
     AllTs: DecodeAllTs,
     AObject: DecodeAObject,
@@ -684,7 +710,12 @@ const validators = {
     UnionWithEnumAccess: DecodeUnionWithEnumAccess,
     Shape: DecodeShape,
     T3: DecodeT3,
-    BObject: DecodeBObject
+    BObject: DecodeBObject,
+    DEF: DecodeDEF,
+    KDEF: DecodeKDEF,
+    ABC: DecodeABC,
+    KABC: DecodeKABC,
+    K: DecodeK
 };
 
-export default { decodeObject, decodeArray, decodeString, decodeNumber, decodeCodec, decodeFunction, decodeStringWithFormat, decodeAnyOf, decodeAllOf, decodeBoolean, decodeAny, decodeTuple, decodeNull, decodeConst, registerCustomFormatter, validators };
+export default { decodeObject, decodeArray, decodeString, decodeNumber, decodeCodec, decodeFunction, decodeStringWithFormat, decodeAnyOf, decodeAllOf, decodeBoolean, decodeAny, decodeTuple, decodeNull, decodeNever, decodeConst, registerCustomFormatter, validators };

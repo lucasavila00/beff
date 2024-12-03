@@ -403,9 +403,11 @@ impl DecoderFnGenerator<'_> {
 
     fn decode_expr(&self, schema: &JsonSchema, required: Required) -> Expr {
         match schema {
-            JsonSchema::StNever | JsonSchema::StNot(_) => {
+            JsonSchema::StNot(_) => {
                 unreachable!("should not create decoders for semantic types")
             }
+
+            JsonSchema::StNever => Self::decode_call("decodeNever", required),
             JsonSchema::AnyArrayLike => {
                 self.decode_expr(&JsonSchema::Array(JsonSchema::Any.into()), required)
             }

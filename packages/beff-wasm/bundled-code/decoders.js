@@ -314,6 +314,12 @@ function decodeNull(ctx, input, required) {
   }
   return buildError(input, ctx, "expected null");
 }
+function decodeNever(ctx, input, required) {
+  if (!required && input == null) {
+    return input;
+  }
+  return buildError(input, ctx, "never");
+}
 function decodeConst(ctx, input, required, constValue) {
   if (!required && input == null) {
     return input;
