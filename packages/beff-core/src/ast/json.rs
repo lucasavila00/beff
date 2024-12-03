@@ -70,7 +70,6 @@ impl Json {
     }
 
     #[must_use]
-
     pub fn object(vs: Vec<(String, Json)>) -> Self {
         Self::Object(vs.into_iter().collect())
     }

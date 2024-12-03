@@ -751,13 +751,7 @@ impl<'a, 'b, R: FileManager> TypeToSchema<'a, 'b, R> {
             ResolvedLocalSymbol::NamedImport {
                 exported,
                 from_file,
-            } => {
-                return self.convert_type_export(
-                    exported.as_ref(),
-                    from_file.file_name(),
-                    type_args,
-                )
-            }
+            } => self.convert_type_export(exported.as_ref(), from_file.file_name(), type_args),
             ResolvedLocalSymbol::Star(_)
             | ResolvedLocalSymbol::Expr(_)
             | ResolvedLocalSymbol::SymbolExportDefault(_) => {

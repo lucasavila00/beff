@@ -67,7 +67,7 @@ impl<'a, R: FileManager> ExtractParserVisitor<'a, R> {
     }
 }
 
-impl<'a, R: FileManager> ExtractParserVisitor<'a, R> {
+impl<R: FileManager> ExtractParserVisitor<'_, R> {
     fn build_error(&self, span: &Span, msg: DiagnosticInfoMessage) -> DiagnosticInformation {
         let file = self.files.get_existing_file(&self.current_file);
         Location::build(file, span, &self.current_file).to_info(msg)
@@ -252,7 +252,7 @@ impl<'a, R: FileManager> ExtractParserVisitor<'a, R> {
     }
 }
 
-impl<'a, R: FileManager> Visit for ExtractParserVisitor<'a, R> {
+impl<R: FileManager> Visit for ExtractParserVisitor<'_, R> {
     fn visit_call_expr(&mut self, n: &CallExpr) {
         match n.callee {
             Callee::Super(_) => {}
