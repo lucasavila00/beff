@@ -4,7 +4,7 @@
 
 import {printErrors} from '@beff/client';
 import {z} from 'zod';
-import validatorsMod from "./validators.js"; const { decodeObject, decodeArray, decodeString, decodeNumber, decodeCodec, decodeFunction, decodeStringWithFormat, decodeAnyOf, decodeAllOf, decodeBoolean, decodeAny, decodeTuple, decodeNull, decodeConst, registerCustomFormatter, validators, c } = validatorsMod;
+import validatorsMod from "./validators.js"; const { decodeObject, decodeArray, decodeString, decodeNumber, decodeCodec, decodeFunction, decodeStringWithFormat, decodeAnyOf, decodeAllOf, decodeBoolean, decodeAny, decodeTuple, decodeNull, decodeNever, decodeConst, registerCustomFormatter, validators, c } = validatorsMod;
 const RequiredCustomFormats = ["ValidCurrency"];
 const buildParsersInput = {
     "AObject": function(ctx, input, required = true) {
@@ -59,6 +59,15 @@ const buildParsersInput = {
         return decodeObject(ctx, input, required, {
             "A": (ctx, input)=>(decodeConst(ctx, input, true, "a"))
         });
+    },
+    "K": function(ctx, input, required = true) {
+        return validators.K(ctx, input, required);
+    },
+    "KABC": function(ctx, input, required = true) {
+        return validators.KABC(ctx, input, required);
+    },
+    "KDEF": function(ctx, input, required = true) {
+        return validators.KDEF(ctx, input, required);
     },
     "LevelAndDSettings": function(ctx, input, required = true) {
         return validators.LevelAndDSettings(ctx, input, required);
