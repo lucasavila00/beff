@@ -1,10 +1,8 @@
 ---
 source: packages/beff-core/tests/print_parser.rs
-assertion_line: 630
 expression: "ok(r#\"\n        export type A = {a: string}\n        export type B = {b: string}\n\n        export type KABC = Omit<A & B, 'a'>\n     \n        parse.buildParsers<{ KABC: KABC }>();\n      \"#)"
 ---
 type A = { "a": string };
 type B = { "b": string };
 type KABC = { "b": string };
 type KABC = KABC;
-
