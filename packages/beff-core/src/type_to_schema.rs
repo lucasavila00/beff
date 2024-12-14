@@ -293,6 +293,16 @@ impl<'a, 'b, R: FileManager> TypeToSchema<'a, 'b, R> {
                     _ => self.error(span, DiagnosticInfoMessage::ShouldHaveObjectAsTypeArgument),
                 }
             }
+            JsonSchema::AllOf(vs) => {
+                let mut acc = BTreeMap::new();
+
+                for v in vs {
+                    let extracted = self.extract_object(v, span)?;
+                    acc.extend(extracted);
+                }
+
+                Ok(acc)
+            }
             _ => self.error(span, DiagnosticInfoMessage::ShouldHaveObjectAsTypeArgument),
         }
     }
