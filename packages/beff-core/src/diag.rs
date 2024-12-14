@@ -7,6 +7,7 @@ use crate::{BffFileName, ParsedModule};
 
 #[derive(Debug, Clone)]
 pub enum DiagnosticInfoMessage {
+    ObjectHasConflictingKeyValueInIntersection,
     CannotResolveNamedImport,
     EnumMemberNotFound,
     TplLitTypeUnsupported,
@@ -460,6 +461,9 @@ impl DiagnosticInfoMessage {
             DiagnosticInfoMessage::EnumMemberNotFound => "Enum member not found".to_string(),
             DiagnosticInfoMessage::CannotResolveNamedImport => {
                 "Cannot resolve named import".to_string()
+            }
+            DiagnosticInfoMessage::ObjectHasConflictingKeyValueInIntersection => {
+                "Object has conflicting key value in intersection".to_string()
             }
         }
     }

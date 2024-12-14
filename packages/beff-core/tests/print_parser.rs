@@ -625,4 +625,15 @@ mod tests {
         parse.buildParsers<{ KABC: KABC }>();
       "#));
     }
+    #[test]
+    fn ok_omit_intersection() {
+        insta::assert_snapshot!(ok(r#"
+        export type A = {a: string}
+        export type B = {b: string}
+
+        export type KABC = Omit<A & B, 'a'>
+     
+        parse.buildParsers<{ KABC: KABC }>();
+      "#));
+    }
 }
