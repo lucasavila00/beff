@@ -290,7 +290,7 @@ impl<'a, 'b, R: FileManager> TypeToSchema<'a, 'b, R> {
                 let map = self.components.get(r).and_then(|it| it.as_ref()).cloned();
                 match map {
                     Some(Validator { schema, .. }) => self.extract_object(&schema, span),
-                    _ => self.error(span, DiagnosticInfoMessage::ShouldHaveObjectAsTypeArgument),
+                    None => self.error(span, DiagnosticInfoMessage::ShouldHaveObjectAsTypeArgument),
                 }
             }
             JsonSchema::AllOf(vs) => {
@@ -298,6 +298,18 @@ impl<'a, 'b, R: FileManager> TypeToSchema<'a, 'b, R> {
 
                 for v in vs {
                     let extracted = self.extract_object(v, span)?;
+
+                    // check that if items have the same key, they have the same value
+
+                    for (k, v) in &extracted {
+                        if let Some(existing) = acc.get(k) {
+                            if existing != v {
+                                return self
+                                    .error(span, DiagnosticInfoMessage::ObjectHasConflictingKeyValueInIntersection);
+                            }
+                        }
+                    }
+
                     acc.extend(extracted);
                 }
 
