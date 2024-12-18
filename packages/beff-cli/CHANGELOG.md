@@ -1,5 +1,11 @@
 # @beff/cli
 
+## 0.0.66
+
+### Patch Changes
+
+- remove null and undefined string coercion
+
 ## 0.0.64
 
 ### Patch Changes
