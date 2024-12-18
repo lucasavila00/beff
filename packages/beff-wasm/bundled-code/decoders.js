@@ -306,9 +306,6 @@ function decodeNull(ctx, input, required) {
   if (!required && input == null) {
     return input;
   }
-  if (input == "null" || input == "undefined") {
-    return null;
-  }
   if (input == null) {
     return null;
   }

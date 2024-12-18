@@ -1,5 +1,13 @@
 # @beff/client
 
+## 0.0.66
+
+### Patch Changes
+
+- remove null and undefined string coercion
+- Updated dependencies
+  - @beff/cli@0.0.66
+
 ## 0.0.65
 
 ### Patch Changes
