@@ -342,6 +342,17 @@ function decodeRegex(ctx, input, required, regex, description) {
   return buildError(input, ctx, "expected string matching " + description);
 }
 
+function DecodeTransportedValue(ctx, input, required = true) {
+    return decodeAnyOf(ctx, input, required, [
+        (ctx, input)=>(decodeNull(ctx, input, required)),
+        (ctx, input)=>(decodeString(ctx, input, required)),
+        (ctx, input)=>(decodeArray(ctx, input, required, (ctx, input)=>(decodeAnyOf(ctx, input, true, [
+                    (ctx, input)=>(decodeNull(ctx, input, true)),
+                    (ctx, input)=>(decodeString(ctx, input, true)),
+                    (ctx, input)=>(decodeNumber(ctx, input, true))
+                ]))))
+    ]);
+}
 function DecodeAllTs(ctx, input, required = true) {
     return decodeAnyOfConsts(ctx, input, required, [
         "a",
@@ -670,6 +681,7 @@ function DecodeK(ctx, input, required = true) {
     ]);
 }
 const validators = {
+    TransportedValue: DecodeTransportedValue,
     AllTs: DecodeAllTs,
     AObject: DecodeAObject,
     Version: DecodeVersion,

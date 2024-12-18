@@ -108,6 +108,9 @@ const buildParsersInput = {
     "T3": function(ctx, input, required = true) {
         return validators.T3(ctx, input, required);
     },
+    "TransportedValue": function(ctx, input, required = true) {
+        return validators.TransportedValue(ctx, input, required);
+    },
     "UnionWithEnumAccess": function(ctx, input, required = true) {
         return validators.UnionWithEnumAccess(ctx, input, required);
     },

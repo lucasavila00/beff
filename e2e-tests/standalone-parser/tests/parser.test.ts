@@ -25,9 +25,20 @@ import {
   AObject,
   BObject,
   AllTs,
+  TransportedValue,
 } from "../src/parser";
 import { Arr2 } from "../src/types";
 import { Schemas } from "../src/schema";
+
+it("TransportedValue bug", () => {
+  expect(TransportedValue.parse(null)).toEqual(null);
+  expect(TransportedValue.parse(undefined)).toEqual(null);
+  expect(TransportedValue.parse("")).toEqual("");
+  expect(TransportedValue.parse(["abc"])).toStrictEqual(["abc"]);
+  expect(TransportedValue.parse([123])).toStrictEqual([123]);
+  expect(TransportedValue.parse(["123"])).toStrictEqual(["123"]);
+  expect(TransportedValue.parse(["undefined"])).toStrictEqual(["undefined"]);
+});
 
 it("tpl", () => {
   expect(Version2.parse("v1.2.3")).toMatchInlineSnapshot('"v1.2.3"');

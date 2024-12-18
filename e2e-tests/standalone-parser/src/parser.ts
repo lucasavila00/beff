@@ -189,6 +189,8 @@ export type KDEF = keyof DEF;
 
 export type K = KABC | KDEF;
 
+export type TransportedValue = string | null | undefined | Array<string | number | null | undefined>;
+
 export const {
   Version,
   Version2,
@@ -219,7 +221,9 @@ export const {
   AObject,
   BObject,
   AllTs,
+  TransportedValue,
 } = parse.buildParsers<{
+  TransportedValue: TransportedValue;
   AllTs: T4.AllTs;
   AObject: AObject;
   Version: Version;
