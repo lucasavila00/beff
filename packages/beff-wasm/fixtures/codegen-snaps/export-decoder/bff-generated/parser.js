@@ -14,9 +14,9 @@ const buildParsersInput = {
     "Password": validators.Password,
     "StartsWithA": validators.StartsWithA,
     "User": validators.User,
-    "Users": hoisted_Users_0.decode.bind(hoisted_Users_0),
-    "float": hoisted_float_1.decode.bind(hoisted_float_1),
-    "int": hoisted_int_2.decode.bind(hoisted_int_2),
+    "Users": hoisted_Users_0.decodeArrayDecoder.bind(hoisted_Users_0),
+    "float": hoisted_float_1.decodeConstDecoder.bind(hoisted_float_1),
+    "int": hoisted_int_2.decodeConstDecoder.bind(hoisted_int_2),
     "union": validators.UnionNested
 };
 
