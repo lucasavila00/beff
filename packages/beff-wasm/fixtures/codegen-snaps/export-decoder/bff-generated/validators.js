@@ -4,7 +4,7 @@
 
 
 
-const customFormatters = {}
+const customFormatters = {};
 
 function registerCustomFormatter(name, validator) {
   customFormatters[name] = validator;
@@ -45,14 +45,10 @@ function buildUnionError(received, ctx, errors) {
   });
 }
 
-function decodeObject(ctx, input, required, data, additionalPropsValidator = null) {
-  if (!required && input == null) {
-    return input;
-  }
-
+function decodeObject(ctx, input, data, additionalPropsValidator = null) {
   const disallowExtraProperties = ctx?.disallowExtraProperties ?? false;
 
-  const allowedExtraProperties = ctx.allowedExtraProperties__ ?? []
+  const allowedExtraProperties = ctx.allowedExtraProperties__ ?? [];
 
   if (typeof input === "object" && !Array.isArray(input) && input !== null) {
     const acc = {};
@@ -88,10 +84,7 @@ function decodeObject(ctx, input, required, data, additionalPropsValidator = nul
   return buildError(input, ctx, "expected object");
 }
 
-function decodeArray(ctx, input, required, data) {
-  if (!required && input == null) {
-    return input;
-  }
+function decodeArray(ctx, input, data) {
   if (Array.isArray(input)) {
     const acc = [];
     for (let i = 0; i < input.length; i++) {
@@ -104,11 +97,7 @@ function decodeArray(ctx, input, required, data) {
   }
   return buildError(input, ctx, "expected array");
 }
-function decodeString(ctx, input, required) {
-  if (!required && input == null) {
-    return input;
-  }
-
+function decodeString(ctx, input) {
   if (typeof input === "string") {
     return input;
   }
@@ -116,10 +105,7 @@ function decodeString(ctx, input, required) {
   return buildError(input, ctx, "expected string");
 }
 
-function decodeNumber(ctx, input, required) {
-  if (!required && input == null) {
-    return input;
-  }
+function decodeNumber(ctx, input) {
   if (typeof input === "number") {
     return input;
   }
@@ -130,20 +116,14 @@ function decodeNumber(ctx, input, required) {
   return buildError(input, ctx, "expected number");
 }
 
-function decodeFunction(ctx, input, required) {
-  if (!required && input == null) {
-    return input;
-  }
+function decodeFunction(ctx, input) {
   if (typeof input === "function") {
     return input;
   }
   return buildError(input, ctx, "expected function");
 }
 
-function decodeCodec(ctx, input, required, codec) {
-  if (!required && input == null) {
-    return input;
-  }
+function decodeCodec(ctx, input, codec) {
   switch (codec) {
     case "Codec::ISO8061": {
       const d = new Date(input);
@@ -172,10 +152,7 @@ function decodeCodec(ctx, input, required, codec) {
   return buildError(input, ctx, "codec " + codec + " not implemented");
 }
 
-function decodeStringWithFormat(ctx, input, required, format) {
-  if (!required && input == null) {
-    return input;
-  }
+function decodeStringWithFormat(ctx, input, format) {
   if (typeof input !== "string") {
     return buildError(input, ctx, "expected string with format " + JSON.stringify(format));
   }
@@ -193,44 +170,41 @@ function decodeStringWithFormat(ctx, input, required, format) {
   return buildError(input, ctx, "expected string with format " + JSON.stringify(format));
 }
 
-function decodeAnyOfDiscriminated(ctx, input, required, discriminator, mapping) {
-  if (!required && input == null) {
-    return input;
-  }
+function decodeAnyOfDiscriminated(ctx, input, discriminator, mapping) {
   const d = input[discriminator];
   if (d == null) {
-    return buildError(input, ctx, "expected discriminator key " + JSON.stringify(discriminator))
+    return buildError(input, ctx, "expected discriminator key " + JSON.stringify(discriminator));
   }
   const v = mapping[d];
   if (v == null) {
     pushPath(ctx, discriminator);
-    const err = buildError(d, ctx, "expected one of " + Object.keys(mapping).map(it => JSON.stringify(it)).join(", "));
+    const err = buildError(
+      d,
+      ctx,
+      "expected one of " +
+        Object.keys(mapping)
+          .map((it) => JSON.stringify(it))
+          .join(", ")
+    );
     popPath(ctx);
     return err;
   }
-  const prevAllow = (ctx.allowedExtraProperties__ ?? []);
-  ctx.allowedExtraProperties__ = [...prevAllow, discriminator]
+  const prevAllow = ctx.allowedExtraProperties__ ?? [];
+  ctx.allowedExtraProperties__ = [...prevAllow, discriminator];
   const out = v(ctx, input);
   ctx.allowedExtraProperties__ = prevAllow;
   return { ...out, [discriminator]: d };
 }
 
-function decodeAnyOfConsts(ctx, input, required, consts) {
-  if (!required && input == null) {
-    return input;
-  }
+function decodeAnyOfConsts(ctx, input, consts) {
   for (const c of consts) {
     if (input === c) {
       return c;
     }
   }
-  return buildError(input, ctx, "expected one of " + consts.map(it => JSON.stringify(it)).join(", "));
+  return buildError(input, ctx, "expected one of " + consts.map((it) => JSON.stringify(it)).join(", "));
 }
-function decodeAnyOf(ctx, input, required, vs) {
-  if (!required && input == null) {
-    return input;
-  }
-
+function decodeAnyOf(ctx, input, vs) {
   let accErrors = [];
   for (const v of vs) {
     const validatorCtx = {};
@@ -242,10 +216,7 @@ function decodeAnyOf(ctx, input, required, vs) {
   }
   return buildUnionError(input, ctx, accErrors);
 }
-function decodeAllOf(ctx, input, required, vs) {
-  if (!required && input == null) {
-    return input;
-  }
+function decodeAllOf(ctx, input, vs) {
   let acc = {};
   let foundOneObject = false;
   let allObjects = true;
@@ -263,10 +234,7 @@ function decodeAllOf(ctx, input, required, vs) {
   }
   return input;
 }
-function decodeTuple(ctx, input, required, vs) {
-  if (!required && input == null) {
-    return input;
-  }
+function decodeTuple(ctx, input, vs) {
   if (Array.isArray(input)) {
     const acc = [];
     let idx = 0;
@@ -293,47 +261,32 @@ function decodeTuple(ctx, input, required, vs) {
   }
   return buildError(input, ctx, "expected tuple");
 }
-function decodeBoolean(ctx, input, required) {
-  if (!required && input == null) {
-    return input;
-  }
+function decodeBoolean(ctx, input) {
   if (typeof input === "boolean") {
     return input;
   }
   return buildError(input, ctx, "expected boolean");
 }
-function decodeAny(ctx, input, required) {
+function decodeAny(ctx, input) {
   return input;
 }
-function decodeNull(ctx, input, required) {
-  if (!required && input == null) {
-    return input;
-  }
+function decodeNull(ctx, input) {
   if (input == null) {
-    return null;
-  }
-  return buildError(input, ctx, "expected null");
-}
-function decodeNever(ctx, input, required) {
-  if (!required && input == null) {
     return input;
   }
+  return buildError(input, ctx, "expected nullish value");
+}
+function decodeNever(ctx, input) {
   return buildError(input, ctx, "never");
 }
-function decodeConst(ctx, input, required, constValue) {
-  if (!required && input == null) {
-    return input;
-  }
+function decodeConst(ctx, input, constValue) {
   if (input == constValue) {
     return constValue;
   }
   return buildError(input, ctx, "expected " + JSON.stringify(constValue));
 }
 
-function decodeRegex(ctx, input, required, regex, description) {
-  if (!required && input == null) {
-    return input;
-  }
+function decodeRegex(ctx, input, regex, description) {
   if (typeof input === "string") {
     if (regex.test(input)) {
       return input;
@@ -342,32 +295,33 @@ function decodeRegex(ctx, input, required, regex, description) {
   return buildError(input, ctx, "expected string matching " + description);
 }
 
+
 function DecodeUser(ctx, input, required = true) {
-    return decodeObject(ctx, input, required, hoisted_User_0);
+    return decodeObject(ctx, input, hoisted_User_0);
 }
 function DecodeNotPublic(ctx, input, required = true) {
-    return decodeObject(ctx, input, required, hoisted_NotPublic_1);
+    return decodeObject(ctx, input, hoisted_NotPublic_1);
 }
 function DecodeStartsWithA(ctx, input, required = true) {
-    return decodeStringWithFormat(ctx, input, required, "StartsWithA");
+    return decodeStringWithFormat(ctx, input, "StartsWithA");
 }
 function DecodePassword(ctx, input, required = true) {
-    return decodeStringWithFormat(ctx, input, required, "password");
+    return decodeStringWithFormat(ctx, input, "password");
 }
 function DecodeA(ctx, input, required = true) {
-    return decodeAnyOfConsts(ctx, input, required, hoisted_A_2);
+    return decodeAnyOfConsts(ctx, input, hoisted_A_2);
 }
 function DecodeB(ctx, input, required = true) {
-    return decodeAnyOfConsts(ctx, input, required, hoisted_B_3);
+    return decodeAnyOfConsts(ctx, input, hoisted_B_3);
 }
 function DecodeD(ctx, input, required = true) {
-    return decodeAnyOfConsts(ctx, input, required, hoisted_D_4);
+    return decodeAnyOfConsts(ctx, input, hoisted_D_4);
 }
 function DecodeE(ctx, input, required = true) {
-    return decodeAnyOfConsts(ctx, input, required, hoisted_E_5);
+    return decodeAnyOfConsts(ctx, input, hoisted_E_5);
 }
 function DecodeUnionNested(ctx, input, required = true) {
-    return decodeAnyOfConsts(ctx, input, required, hoisted_UnionNested_6);
+    return decodeAnyOfConsts(ctx, input, hoisted_UnionNested_6);
 }
 const validators = {
     User: DecodeUser,
@@ -381,11 +335,11 @@ const validators = {
     UnionNested: DecodeUnionNested
 };
 const hoisted_User_0 = {
-    "age": (ctx, input)=>(decodeNumber(ctx, input, true)),
-    "name": (ctx, input)=>(decodeString(ctx, input, true))
+    "age": (ctx, input)=>(decodeNumber(ctx, input)),
+    "name": (ctx, input)=>(decodeString(ctx, input))
 };
 const hoisted_NotPublic_1 = {
-    "a": (ctx, input)=>(decodeString(ctx, input, true))
+    "a": (ctx, input)=>(decodeString(ctx, input))
 };
 const hoisted_A_2 = [
     1,

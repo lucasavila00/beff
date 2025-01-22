@@ -33,7 +33,7 @@ import { Schemas } from "../src/schema";
 
 it("TransportedValue bug", () => {
   expect(TransportedValue.parse(null)).toEqual(null);
-  expect(TransportedValue.parse(undefined)).toEqual(null);
+  expect(TransportedValue.parse(undefined)).toEqual(undefined);
   expect(TransportedValue.parse("")).toEqual("");
   expect(TransportedValue.parse(["abc"])).toStrictEqual(["abc"]);
   expect(TransportedValue.parse([123])).toStrictEqual([123]);
@@ -389,7 +389,20 @@ it("DiscriminatedUnion", () => {
     {
       "errors": [
         {
-          "message": "expected string",
+          "errors": [
+            {
+              "message": "expected nullish value",
+              "path": [],
+              "received": 123,
+            },
+            {
+              "message": "expected string",
+              "path": [],
+              "received": 123,
+            },
+          ],
+          "isUnionError": true,
+          "message": "expected one of",
           "path": [
             "a11",
           ],

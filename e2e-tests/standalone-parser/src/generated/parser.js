@@ -8,133 +8,132 @@ import validatorsMod from "./validators.js"; const { decodeObject, decodeArray, 
 const RequiredCustomFormats = ["ValidCurrency"];
 const buildParsersInput = {
     "AObject": function(ctx, input, required = true) {
-        return validators.AObject(ctx, input, required);
+        return validators.AObject(ctx, input);
     },
     "AccessLevel": function(ctx, input, required = true) {
-        return validators.AccessLevel(ctx, input, required);
+        return validators.AccessLevel(ctx, input);
     },
     "AccessLevelCodec": function(ctx, input, required = true) {
-        return validators.AccessLevel(ctx, input, required);
+        return validators.AccessLevel(ctx, input);
     },
     "AccessLevelTpl": function(ctx, input, required = true) {
-        return validators.AccessLevelTpl(ctx, input, required);
+        return validators.AccessLevelTpl(ctx, input);
     },
     "AccessLevelTpl2": function(ctx, input, required = true) {
-        return validators.AccessLevelTpl2(ctx, input, required);
+        return validators.AccessLevelTpl2(ctx, input);
     },
     "AllTs": function(ctx, input, required = true) {
-        return validators.AllTs(ctx, input, required);
+        return validators.AllTs(ctx, input);
     },
     "AllTypes": function(ctx, input, required = true) {
-        return validators.AllTypes(ctx, input, required);
+        return validators.AllTypes(ctx, input);
     },
     "Arr2C": function(ctx, input, required = true) {
-        return validators.Arr2(ctx, input, required);
+        return validators.Arr2(ctx, input);
     },
     "Arr3": function(ctx, input, required = true) {
-        return validators.Arr3(ctx, input, required);
+        return validators.Arr3(ctx, input);
     },
     "AvatarSize": function(ctx, input, required = true) {
-        return validators.AvatarSize(ctx, input, required);
+        return validators.AvatarSize(ctx, input);
     },
     "BObject": function(ctx, input, required = true) {
-        return validators.BObject(ctx, input, required);
+        return validators.BObject(ctx, input);
     },
     "DiscriminatedUnion": function(ctx, input, required = true) {
-        return validators.DiscriminatedUnion(ctx, input, required);
+        return validators.DiscriminatedUnion(ctx, input);
     },
     "DiscriminatedUnion2": function(ctx, input, required = true) {
-        return validators.DiscriminatedUnion2(ctx, input, required);
+        return validators.DiscriminatedUnion2(ctx, input);
     },
     "DiscriminatedUnion3": function(ctx, input, required = true) {
-        return validators.DiscriminatedUnion3(ctx, input, required);
+        return validators.DiscriminatedUnion3(ctx, input);
     },
     "DiscriminatedUnion4": function(ctx, input, required = true) {
-        return validators.DiscriminatedUnion4(ctx, input, required);
+        return validators.DiscriminatedUnion4(ctx, input);
     },
     "Extra": function(ctx, input, required = true) {
-        return validators.Extra(ctx, input, required);
+        return validators.Extra(ctx, input);
     },
     "ImportEnumTypeof": function(ctx, input, required = true) {
-        return decodeObject(ctx, input, required, hoisted_ImportEnumTypeof_0);
+        return decodeObject(ctx, input, hoisted_ImportEnumTypeof_0);
     },
     "K": function(ctx, input, required = true) {
-        return validators.K(ctx, input, required);
+        return validators.K(ctx, input);
     },
     "KABC": function(ctx, input, required = true) {
-        return validators.KABC(ctx, input, required);
+        return validators.KABC(ctx, input);
     },
     "KDEF": function(ctx, input, required = true) {
-        return validators.KDEF(ctx, input, required);
+        return validators.KDEF(ctx, input);
     },
     "LevelAndDSettings": function(ctx, input, required = true) {
-        return validators.LevelAndDSettings(ctx, input, required);
+        return validators.LevelAndDSettings(ctx, input);
     },
     "Mapped": function(ctx, input, required = true) {
-        return validators.Mapped(ctx, input, required);
+        return validators.Mapped(ctx, input);
     },
     "MappedOptional": function(ctx, input, required = true) {
-        return validators.MappedOptional(ctx, input, required);
+        return validators.MappedOptional(ctx, input);
     },
     "OmitSettings": function(ctx, input, required = true) {
-        return validators.OmitSettings(ctx, input, required);
+        return validators.OmitSettings(ctx, input);
     },
     "OtherEnum": function(ctx, input, required = true) {
-        return validators.OtherEnum(ctx, input, required);
+        return validators.OtherEnum(ctx, input);
     },
     "PartialObject": function(ctx, input, required = true) {
-        return validators.PartialObject(ctx, input, required);
+        return validators.PartialObject(ctx, input);
     },
     "PartialSettings": function(ctx, input, required = true) {
-        return validators.PartialSettings(ctx, input, required);
+        return validators.PartialSettings(ctx, input);
     },
     "PublicUser": function(ctx, input, required = true) {
-        return validators.PublicUser(ctx, input, required);
+        return validators.PublicUser(ctx, input);
     },
     "Repro1": function(ctx, input, required = true) {
-        return validators.Repro1(ctx, input, required);
+        return validators.Repro1(ctx, input);
     },
     "Req": function(ctx, input, required = true) {
-        return validators.Req(ctx, input, required);
+        return validators.Req(ctx, input);
     },
     "RequiredPartialObject": function(ctx, input, required = true) {
-        return validators.RequiredPartialObject(ctx, input, required);
+        return validators.RequiredPartialObject(ctx, input);
     },
     "SettingsUpdate": function(ctx, input, required = true) {
-        return validators.SettingsUpdate(ctx, input, required);
+        return validators.SettingsUpdate(ctx, input);
     },
     "T3": function(ctx, input, required = true) {
-        return validators.T3(ctx, input, required);
+        return validators.T3(ctx, input);
     },
     "TransportedValue": function(ctx, input, required = true) {
-        return validators.TransportedValue(ctx, input, required);
+        return validators.TransportedValue(ctx, input);
     },
     "UnionWithEnumAccess": function(ctx, input, required = true) {
-        return validators.UnionWithEnumAccess(ctx, input, required);
+        return validators.UnionWithEnumAccess(ctx, input);
     },
     "User": function(ctx, input, required = true) {
-        return validators.User(ctx, input, required);
+        return validators.User(ctx, input);
     },
     "ValidCurrency": function(ctx, input, required = true) {
-        return validators.ValidCurrency(ctx, input, required);
+        return validators.ValidCurrency(ctx, input);
     },
     "Version": function(ctx, input, required = true) {
-        return validators.Version(ctx, input, required);
+        return validators.Version(ctx, input);
     },
     "Version2": function(ctx, input, required = true) {
-        return validators.Version2(ctx, input, required);
+        return validators.Version2(ctx, input);
     }
 };
 const hoisted_ImportEnumTypeof_0 = {
-    "A": (ctx, input)=>(decodeConst(ctx, input, true, "a"))
+    "A": (ctx, input)=>(decodeConst(ctx, input, "a"))
 };
 
 
 
 
 function buildParsers(args) {
-
-  const customFormats = args?.customFormats ?? {}
+  const customFormats = args?.customFormats ?? {};
   
   for (const k of RequiredCustomFormats) {
     if (customFormats[k] == null) {
@@ -147,7 +146,6 @@ function buildParsers(args) {
     
     registerCustomFormatter(k, v);
   });
-
 
   let decoders = {};
   
@@ -174,16 +172,19 @@ function buildParsers(args) {
       const error = new Error(`Failed to parse ${k}`);
       
       error.errors = safe.errors;
-      throw error
+      throw error;
     };
     const zod = () => {
       
-      return z.custom(data => safeParse(data).success, val => {
-        const errors = safeParse(val).errors;
-        
-        return printErrors(errors, [])
-      })
-    }
+      return z.custom(
+        (data) => safeParse(data).success,
+        (val) => {
+          const errors = safeParse(val).errors;
+          
+          return printErrors(errors, []);
+        }
+      );
+    };
     decoders[k] = {
       parse,
       safeParse,

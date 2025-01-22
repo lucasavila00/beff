@@ -8,7 +8,7 @@ import validatorsMod from "./validators.js"; const { decodeObject, decodeArray, 
 const RequiredCustomFormats = ["ValidCurrency"];
 const buildParsersInput = {
     "A": function(ctx, input, required = true) {
-        return validators.A(ctx, input, required);
+        return validators.A(ctx, input);
     }
 };
 
@@ -16,8 +16,7 @@ const buildParsersInput = {
 
 
 function buildParsers(args) {
-
-  const customFormats = args?.customFormats ?? {}
+  const customFormats = args?.customFormats ?? {};
   
   for (const k of RequiredCustomFormats) {
     if (customFormats[k] == null) {
@@ -30,7 +29,6 @@ function buildParsers(args) {
     
     registerCustomFormatter(k, v);
   });
-
 
   let decoders = {};
   
@@ -57,16 +55,19 @@ function buildParsers(args) {
       const error = new Error(`Failed to parse ${k}`);
       
       error.errors = safe.errors;
-      throw error
+      throw error;
     };
     const zod = () => {
       
-      return z.custom(data => safeParse(data).success, val => {
-        const errors = safeParse(val).errors;
-        
-        return printErrors(errors, [])
-      })
-    }
+      return z.custom(
+        (data) => safeParse(data).success,
+        (val) => {
+          const errors = safeParse(val).errors;
+          
+          return printErrors(errors, []);
+        }
+      );
+    };
     decoders[k] = {
       parse,
       safeParse,

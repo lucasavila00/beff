@@ -8,38 +8,37 @@ import validatorsMod from "./validators.js"; const { decodeObject, decodeArray, 
 const RequiredCustomFormats = ["password","StartsWithA"];
 const buildParsersInput = {
     "NotPublicRenamed": function(ctx, input, required = true) {
-        return validators.NotPublic(ctx, input, required);
+        return validators.NotPublic(ctx, input);
     },
     "Password": function(ctx, input, required = true) {
-        return validators.Password(ctx, input, required);
+        return validators.Password(ctx, input);
     },
     "StartsWithA": function(ctx, input, required = true) {
-        return validators.StartsWithA(ctx, input, required);
+        return validators.StartsWithA(ctx, input);
     },
     "User": function(ctx, input, required = true) {
-        return validators.User(ctx, input, required);
+        return validators.User(ctx, input);
     },
     "Users": function(ctx, input, required = true) {
-        return decodeArray(ctx, input, required, hoisted_Users_0);
+        return decodeArray(ctx, input, hoisted_Users_0);
     },
     "float": function(ctx, input, required = true) {
-        return decodeConst(ctx, input, required, 123.456);
+        return decodeConst(ctx, input, 123.456);
     },
     "int": function(ctx, input, required = true) {
-        return decodeConst(ctx, input, required, 123);
+        return decodeConst(ctx, input, 123);
     },
     "union": function(ctx, input, required = true) {
-        return validators.UnionNested(ctx, input, required);
+        return validators.UnionNested(ctx, input);
     }
 };
-const hoisted_Users_0 = (ctx, input)=>(validators.User(ctx, input, true));
+const hoisted_Users_0 = (ctx, input)=>(validators.User(ctx, input));
 
 
 
 
 function buildParsers(args) {
-
-  const customFormats = args?.customFormats ?? {}
+  const customFormats = args?.customFormats ?? {};
   
   for (const k of RequiredCustomFormats) {
     if (customFormats[k] == null) {
@@ -52,7 +51,6 @@ function buildParsers(args) {
     
     registerCustomFormatter(k, v);
   });
-
 
   let decoders = {};
   
@@ -79,16 +77,19 @@ function buildParsers(args) {
       const error = new Error(`Failed to parse ${k}`);
       
       error.errors = safe.errors;
-      throw error
+      throw error;
     };
     const zod = () => {
       
-      return z.custom(data => safeParse(data).success, val => {
-        const errors = safeParse(val).errors;
-        
-        return printErrors(errors, [])
-      })
-    }
+      return z.custom(
+        (data) => safeParse(data).success,
+        (val) => {
+          const errors = safeParse(val).errors;
+          
+          return printErrors(errors, []);
+        }
+      );
+    };
     decoders[k] = {
       parse,
       safeParse,
