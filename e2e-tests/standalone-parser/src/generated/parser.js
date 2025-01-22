@@ -4,7 +4,7 @@
 
 import {printErrors} from '@beff/client';
 import {z} from 'zod';
-import validatorsMod from "./validators.js"; const { decodeObject, decodeArray, decodeString, decodeNumber, CodecDecoder, decodeFunction, decodeStringWithFormat, decodeAnyOf, decodeAllOf, decodeBoolean, decodeAny, decodeTuple, decodeNull, decodeNever, RegexDecoder, ConstDecoder, registerCustomFormatter, validators, c } = validatorsMod;
+import validatorsMod from "./validators.js"; const { decodeObject, decodeArray, decodeString, decodeNumber, CodecDecoder, decodeFunction, decodeStringWithFormat, decodeAnyOf, decodeAllOf, decodeBoolean, decodeAny, TupleDecoder, decodeNull, decodeNever, RegexDecoder, ConstDecoder, registerCustomFormatter, validators, c } = validatorsMod;
 const RequiredCustomFormats = ["ValidCurrency"];
 const buildParsersInput = {
     "AObject": function(ctx, input) {
@@ -59,7 +59,7 @@ const buildParsersInput = {
         return ((ctx, input)=>(validators.Extra(ctx, input)))(ctx, input);
     },
     "ImportEnumTypeof": function(ctx, input) {
-        return ((ctx, input)=>(decodeObject(ctx, input, hoisted_ImportEnumTypeof_2)))(ctx, input);
+        return ((ctx, input)=>(decodeObject(ctx, input, hoisted_ImportEnumTypeof_4)))(ctx, input);
     },
     "K": function(ctx, input) {
         return ((ctx, input)=>(validators.K(ctx, input)))(ctx, input);
@@ -112,6 +112,12 @@ const buildParsersInput = {
     "TransportedValue": function(ctx, input) {
         return ((ctx, input)=>(validators.TransportedValue(ctx, input)))(ctx, input);
     },
+    "TupleCodec": function(ctx, input) {
+        return (hoisted_TupleCodec_1.decode.bind(hoisted_TupleCodec_1))(ctx, input);
+    },
+    "TupleCodecRest": function(ctx, input) {
+        return (hoisted_TupleCodecRest_2.decode.bind(hoisted_TupleCodecRest_2))(ctx, input);
+    },
     "UnionWithEnumAccess": function(ctx, input) {
         return ((ctx, input)=>(validators.UnionWithEnumAccess(ctx, input)))(ctx, input);
     },
@@ -129,9 +135,24 @@ const buildParsersInput = {
     }
 };
 const hoisted_BigIntCodec_0 = new CodecDecoder("Codec::BigInt");
-const hoisted_ImportEnumTypeof_1 = new ConstDecoder("a");
-const hoisted_ImportEnumTypeof_2 = {
-    "A": hoisted_ImportEnumTypeof_1.decode.bind(hoisted_ImportEnumTypeof_1)
+const hoisted_TupleCodec_1 = new TupleDecoder({
+    prefix: [
+        decodeNumber,
+        decodeNumber,
+        decodeNumber
+    ],
+    items: null
+});
+const hoisted_TupleCodecRest_2 = new TupleDecoder({
+    prefix: [
+        decodeNumber,
+        decodeNumber
+    ],
+    items: decodeString
+});
+const hoisted_ImportEnumTypeof_3 = new ConstDecoder("a");
+const hoisted_ImportEnumTypeof_4 = {
+    "A": hoisted_ImportEnumTypeof_3.decode.bind(hoisted_ImportEnumTypeof_3)
 };
 
 

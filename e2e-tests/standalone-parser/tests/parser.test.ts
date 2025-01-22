@@ -28,6 +28,8 @@ import {
   TransportedValue,
   ImportEnumTypeofCodec,
   BigIntCodec,
+  TupleCodec,
+  TupleCodecRest,
 } from "../src/parser";
 import { Arr2 } from "../src/types";
 import { Schemas } from "../src/schema";
@@ -59,6 +61,45 @@ it("import enum typeof", () => {
 
 it("BigIntCodec", () => {
   expect(BigIntCodec.parse("123")).toMatchInlineSnapshot(`123n`);
+});
+it("TupleCodec", () => {
+  expect(TupleCodec.safeParse([1])).toMatchInlineSnapshot(`
+    {
+      "errors": [
+        {
+          "message": "expected number",
+          "path": [
+            "[1]",
+          ],
+          "received": undefined,
+        },
+        {
+          "message": "expected number",
+          "path": [
+            "[2]",
+          ],
+          "received": undefined,
+        },
+      ],
+      "success": false,
+    }
+  `);
+});
+it("TupleCodecRest", () => {
+  expect(TupleCodecRest.safeParse([1, 2, 3])).toMatchInlineSnapshot(`
+    {
+      "errors": [
+        {
+          "message": "expected string",
+          "path": [
+            "[2]",
+          ],
+          "received": 3,
+        },
+      ],
+      "success": false,
+    }
+  `);
 });
 
 it("tpl", () => {

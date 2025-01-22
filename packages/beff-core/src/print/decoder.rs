@@ -558,9 +558,10 @@ impl DecoderFnGenerator<'_> {
                     ],
                 });
 
-                Self::make_cb(Self::decode_call_extra(
-                    "decodeTuple",
-                    vec![self.hoist_expr(hoisted, tpl_extra)],
+                Self::decode_bound(self.new_hoisted_decoder(
+                    hoisted,
+                    "TupleDecoder",
+                    vec![tpl_extra],
                 ))
             }
             JsonSchema::AnyOf(vs) => Self::make_cb(self.decode_any_of(vs, hoisted)),

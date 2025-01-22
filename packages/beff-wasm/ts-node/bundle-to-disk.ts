@@ -16,7 +16,7 @@ const decodersExported = [
   "decodeAllOf",
   "decodeBoolean",
   "decodeAny",
-  "decodeTuple",
+  "TupleDecoder",
   "decodeNull",
   "decodeNever",
   "RegexDecoder",

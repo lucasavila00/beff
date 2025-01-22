@@ -235,32 +235,37 @@ function decodeAllOf(ctx, input, vs) {
   }
   return input;
 }
-function decodeTuple(ctx, input, vs) {
-  if (Array.isArray(input)) {
-    const acc = [];
-    let idx = 0;
-    for (const v of vs.prefix) {
-      pushPath(ctx, "[" + idx + "]");
-      const newValue = v(ctx, input[idx]);
-      popPath(ctx);
-      acc.push(newValue);
-      idx++;
-    }
-    if (vs.items != null) {
-      for (let i = idx; i < input.length; i++) {
-        const v = input[i];
-        pushPath(ctx, "[" + i + "]");
-        acc.push(vs.items(ctx, v));
-        popPath(ctx);
-      }
-    } else {
-      if (input.length > idx) {
-        return buildError(input, ctx, "tuple has too many items");
-      }
-    }
-    return acc;
+class TupleDecoder {
+  constructor(vs) {
+    this.vs = vs;
   }
-  return buildError(input, ctx, "expected tuple");
+  decode(ctx, input) {
+    if (Array.isArray(input)) {
+      const acc = [];
+      let idx = 0;
+      for (const v of this.vs.prefix) {
+        pushPath(ctx, "[" + idx + "]");
+        const newValue = v(ctx, input[idx]);
+        popPath(ctx);
+        acc.push(newValue);
+        idx++;
+      }
+      if (this.vs.items != null) {
+        for (let i = idx; i < input.length; i++) {
+          const v = input[i];
+          pushPath(ctx, "[" + i + "]");
+          acc.push(this.vs.items(ctx, v));
+          popPath(ctx);
+        }
+      } else {
+        if (input.length > idx) {
+          return buildError(input, ctx, "tuple has too many items");
+        }
+      }
+      return acc;
+    }
+    return buildError(input, ctx, "expected tuple");
+  }
 }
 function decodeBoolean(ctx, input) {
   if (typeof input === "boolean") {
