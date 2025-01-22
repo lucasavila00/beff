@@ -1,5 +1,11 @@
 # @beff/cli
 
+## 0.0.69
+
+### Patch Changes
+
+- hoist arr
+
 ## 0.0.68
 
 ### Patch Changes
