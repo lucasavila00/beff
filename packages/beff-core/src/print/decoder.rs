@@ -428,7 +428,7 @@ impl DecoderFnGenerator<'_> {
 
             JsonSchema::StNever => SwcBuilder::ident_expr("decodeNever"),
             JsonSchema::AnyArrayLike => {
-                Self::make_cb(self.decode_expr(&JsonSchema::Array(JsonSchema::Any.into()), hoisted))
+                self.decode_expr(&JsonSchema::Array(JsonSchema::Any.into()), hoisted)
             }
             JsonSchema::Null => SwcBuilder::ident_expr("decodeNull"),
             JsonSchema::Boolean => SwcBuilder::ident_expr("decodeBoolean"),
