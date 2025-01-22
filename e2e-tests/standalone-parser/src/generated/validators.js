@@ -321,12 +321,13 @@ class AnyOfDecoder {
     this.vs = vs;
   }
   decodeAnyOfDecoder(ctx, input) {
+    const optimisticCtx = {
+      noErrorMessages: true,
+    };
     for (const v of this.vs) {
-      const validatorCtx = {
-        noErrorMessages: true,
-      };
-      const newValue = v(validatorCtx, input);
-      if (validatorCtx.errors == null) {
+      optimisticCtx.errors = null;
+      const newValue = v(optimisticCtx, input);
+      if (optimisticCtx.errors == null) {
         return newValue;
       }
     }
