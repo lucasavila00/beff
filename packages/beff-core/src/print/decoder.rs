@@ -165,23 +165,34 @@ impl DecoderFnGenerator<'_> {
     ) -> Expr {
         let els_expr: Vec<Expr> = vs
             .iter()
-            .map(|it| self.decode_expr(it, required, hoisted))
+            .map(|it| {
+                self.decode_expr(
+                    it,
+                    // force inner to be required, because we're checking outside already
+                    Required::Known(true),
+                    hoisted,
+                )
+            })
             .collect();
+
         Self::decode_call_extra(
             decoder_name,
             required,
-            vec![Expr::Array(ArrayLit {
-                span: DUMMY_SP,
-                elems: els_expr
-                    .into_iter()
-                    .map(|it| {
-                        Some(ExprOrSpread {
-                            spread: None,
-                            expr: Self::make_cb(it).into(),
+            vec![self.hoist_expr(
+                hoisted,
+                Expr::Array(ArrayLit {
+                    span: DUMMY_SP,
+                    elems: els_expr
+                        .into_iter()
+                        .map(|it| {
+                            Some(ExprOrSpread {
+                                spread: None,
+                                expr: Self::make_cb(it).into(),
+                            })
                         })
-                    })
-                    .collect(),
-            })],
+                        .collect(),
+                }),
+            )],
         )
     }
     fn extract_union(&self, it: &JsonSchema) -> Vec<JsonSchema> {
@@ -266,7 +277,7 @@ impl DecoderFnGenerator<'_> {
                     value: discriminator.clone().into(),
                     raw: None,
                 })),
-                extra_obj,
+                self.hoist_expr(hoisted, extra_obj),
             ],
         )
     }
@@ -354,6 +365,19 @@ impl DecoderFnGenerator<'_> {
         None
     }
 
+    fn hoist_expr(&self, hoisted: &mut Vec<ModuleItem>, to_hoist: Expr) -> Expr {
+        let hoist_count = hoisted.len();
+        let var_name = format!("hoisted_{}_{}", &self.name, hoist_count);
+        let new_statement = const_decl(&var_name, to_hoist);
+        hoisted.push(new_statement);
+
+        Expr::Ident(Ident {
+            span: DUMMY_SP,
+            sym: var_name.into(),
+            optional: false,
+        })
+    }
+
     fn maybe_decode_any_of_consts(
         &self,
         flat_values: &BTreeSet<JsonSchema>,
@@ -372,30 +396,26 @@ impl DecoderFnGenerator<'_> {
                 })
                 .collect();
 
-            let arr = Expr::Array(ArrayLit {
-                span: DUMMY_SP,
-                elems: consts
-                    .into_iter()
-                    .map(|it| {
-                        Some(ExprOrSpread {
-                            spread: None,
-                            expr: it.into(),
+            let consts = self.hoist_expr(
+                hoisted,
+                Expr::Array(ArrayLit {
+                    span: DUMMY_SP,
+                    elems: consts
+                        .into_iter()
+                        .map(|it| {
+                            Some(ExprOrSpread {
+                                spread: None,
+                                expr: it.into(),
+                            })
                         })
-                    })
-                    .collect(),
-            });
-
-            let hoist_count = hoisted.len();
-            let var_name = format!("hoisted_{}_{}", &self.name, hoist_count);
-            let new_statement = const_decl(&var_name, arr);
-            hoisted.push(new_statement);
-
-            let refs = vec![Expr::Ident(Ident {
-                span: DUMMY_SP,
-                sym: var_name.into(),
-                optional: false,
-            })];
-            return Some(Self::decode_call_extra("decodeAnyOfConsts", required, refs));
+                        .collect(),
+                }),
+            );
+            return Some(Self::decode_call_extra(
+                "decodeAnyOfConsts",
+                required,
+                vec![consts],
+            ));
         }
         None
     }
@@ -460,7 +480,7 @@ impl DecoderFnGenerator<'_> {
             ),
             JsonSchema::Ref(r_name) => Self::decode_ref(r_name, required),
             JsonSchema::Object { vs, rest } => {
-                let mut extra = vec![Expr::Object(ObjectLit {
+                let obj_to_hoist = Expr::Object(ObjectLit {
                     span: DUMMY_SP,
                     props: vs
                         .iter()
@@ -482,7 +502,9 @@ impl DecoderFnGenerator<'_> {
                             })))
                         })
                         .collect(),
-                })];
+                });
+
+                let mut extra = vec![self.hoist_expr(hoisted, obj_to_hoist)];
                 if let Some(rest) = rest {
                     let rest = self.decode_expr(rest, Required::Known(false), hoisted);
                     extra.push(Self::make_cb(rest));

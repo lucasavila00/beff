@@ -1,5 +1,11 @@
 # @beff/cli
 
+## 0.0.68
+
+### Patch Changes
+
+- hoist obj
+
 ## 0.0.67
 
 ### Patch Changes

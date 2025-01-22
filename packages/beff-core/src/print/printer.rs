@@ -163,21 +163,30 @@ impl ToWritableModules for ExtractResult {
             }),
         ));
 
-        let mut js_built_parsers = None;
-
-        if let Some(parser) = self.parser {
-            let decoders = parser.built_decoders.unwrap_or_default();
-            let decoders_expr = build_decoders_expr(&decoders, &validators, &mut hoisted);
-            let built_st = const_decl("buildParsersInput", decoders_expr);
-            js_built_parsers = Some(emit_module(vec![built_st], "\n")?);
-        }
         let js_validators = emit_module(
-            hoisted
+            stmt_validators
                 .into_iter()
-                .chain(stmt_validators.into_iter())
+                .chain(hoisted.into_iter())
                 .collect(),
             "\n",
         )?;
+
+        let mut js_built_parsers = None;
+
+        if let Some(parser) = self.parser {
+            let mut acc_hoisted = vec![];
+            let decoders = parser.built_decoders.unwrap_or_default();
+            let decoders_expr = build_decoders_expr(&decoders, &validators, &mut acc_hoisted);
+            let built_st = const_decl("buildParsersInput", decoders_expr);
+
+            js_built_parsers = Some(emit_module(
+                vec![built_st]
+                    .into_iter()
+                    .chain(acc_hoisted.into_iter())
+                    .collect(),
+                "\n",
+            )?);
+        }
 
         let mut json_schema = None;
         if let Some(schema) = self.schema {

@@ -196,6 +196,7 @@ export const {
   Version2,
   RequiredPartialObject,
   LevelAndDSettings,
+  ImportEnumTypeof: ImportEnumTypeofCodec,
   PartialSettings,
   Extra,
   User,

@@ -342,40 +342,11 @@ function decodeRegex(ctx, input, required, regex, description) {
   return buildError(input, ctx, "expected string matching " + description);
 }
 
-const hoisted_A_0 = [
-    1,
-    2
-];
-const hoisted_B_1 = [
-    2,
-    3
-];
-const hoisted_D_2 = [
-    4,
-    5
-];
-const hoisted_E_3 = [
-    5,
-    6
-];
-const hoisted_UnionNested_4 = [
-    1,
-    2,
-    3,
-    4,
-    5,
-    6
-];
 function DecodeUser(ctx, input, required = true) {
-    return decodeObject(ctx, input, required, {
-        "age": (ctx, input)=>(decodeNumber(ctx, input, true)),
-        "name": (ctx, input)=>(decodeString(ctx, input, true))
-    });
+    return decodeObject(ctx, input, required, hoisted_User_0);
 }
 function DecodeNotPublic(ctx, input, required = true) {
-    return decodeObject(ctx, input, required, {
-        "a": (ctx, input)=>(decodeString(ctx, input, true))
-    });
+    return decodeObject(ctx, input, required, hoisted_NotPublic_1);
 }
 function DecodeStartsWithA(ctx, input, required = true) {
     return decodeStringWithFormat(ctx, input, required, "StartsWithA");
@@ -384,19 +355,19 @@ function DecodePassword(ctx, input, required = true) {
     return decodeStringWithFormat(ctx, input, required, "password");
 }
 function DecodeA(ctx, input, required = true) {
-    return decodeAnyOfConsts(ctx, input, required, hoisted_A_0);
+    return decodeAnyOfConsts(ctx, input, required, hoisted_A_2);
 }
 function DecodeB(ctx, input, required = true) {
-    return decodeAnyOfConsts(ctx, input, required, hoisted_B_1);
+    return decodeAnyOfConsts(ctx, input, required, hoisted_B_3);
 }
 function DecodeD(ctx, input, required = true) {
-    return decodeAnyOfConsts(ctx, input, required, hoisted_D_2);
+    return decodeAnyOfConsts(ctx, input, required, hoisted_D_4);
 }
 function DecodeE(ctx, input, required = true) {
-    return decodeAnyOfConsts(ctx, input, required, hoisted_E_3);
+    return decodeAnyOfConsts(ctx, input, required, hoisted_E_5);
 }
 function DecodeUnionNested(ctx, input, required = true) {
-    return decodeAnyOfConsts(ctx, input, required, hoisted_UnionNested_4);
+    return decodeAnyOfConsts(ctx, input, required, hoisted_UnionNested_6);
 }
 const validators = {
     User: DecodeUser,
@@ -409,5 +380,36 @@ const validators = {
     E: DecodeE,
     UnionNested: DecodeUnionNested
 };
+const hoisted_User_0 = {
+    "age": (ctx, input)=>(decodeNumber(ctx, input, true)),
+    "name": (ctx, input)=>(decodeString(ctx, input, true))
+};
+const hoisted_NotPublic_1 = {
+    "a": (ctx, input)=>(decodeString(ctx, input, true))
+};
+const hoisted_A_2 = [
+    1,
+    2
+];
+const hoisted_B_3 = [
+    2,
+    3
+];
+const hoisted_D_4 = [
+    4,
+    5
+];
+const hoisted_E_5 = [
+    5,
+    6
+];
+const hoisted_UnionNested_6 = [
+    1,
+    2,
+    3,
+    4,
+    5,
+    6
+];
 
 export default { decodeObject, decodeArray, decodeString, decodeNumber, decodeCodec, decodeFunction, decodeStringWithFormat, decodeAnyOf, decodeAllOf, decodeBoolean, decodeAny, decodeTuple, decodeNull, decodeNever, decodeConst, registerCustomFormatter, validators };
