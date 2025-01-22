@@ -168,22 +168,28 @@ class CodecDecoder {
   }
 }
 
-function decodeStringWithFormat(ctx, input, format) {
-  if (typeof input !== "string") {
-    return buildError(input, ctx, "expected string with format " + JSON.stringify(format));
+class StringWithFormatDecoder {
+  constructor(format) {
+    this.format = format;
   }
 
-  const validator = customFormatters[format];
+  decode(ctx, input) {
+    if (typeof input !== "string") {
+      return buildError(input, ctx, "expected string with format " + JSON.stringify(this.format));
+    }
 
-  if (validator == null) {
-    return buildError(input, ctx, "format " + JSON.stringify(format) + " not implemented");
-  }
+    const validator = customFormatters[this.format];
 
-  const isOk = validator(input);
-  if (isOk) {
-    return input;
+    if (validator == null) {
+      return buildError(input, ctx, "format " + JSON.stringify(this.format) + " not implemented");
+    }
+
+    const isOk = validator(input);
+    if (isOk) {
+      return input;
+    }
+    return buildError(input, ctx, "expected string with format " + JSON.stringify(this.format));
   }
-  return buildError(input, ctx, "expected string with format " + JSON.stringify(format));
 }
 
 function decodeAnyOfDiscriminated(ctx, input, discriminator, mapping) {
@@ -434,34 +440,34 @@ function DecodeArr2(ctx, input) {
     return ((ctx, input)=>(decodeAnyOfConsts(ctx, input, hoisted_Arr2_95)))(ctx, input);
 }
 function DecodeValidCurrency(ctx, input) {
-    return ((ctx, input)=>(decodeStringWithFormat(ctx, input, "ValidCurrency")))(ctx, input);
+    return (hoisted_ValidCurrency_96.decode.bind(hoisted_ValidCurrency_96))(ctx, input);
 }
 function DecodeUnionWithEnumAccess(ctx, input) {
-    return ((ctx, input)=>(decodeAnyOfDiscriminated(ctx, input, "tag", hoisted_UnionWithEnumAccess_99)))(ctx, input);
+    return ((ctx, input)=>(decodeAnyOfDiscriminated(ctx, input, "tag", hoisted_UnionWithEnumAccess_100)))(ctx, input);
 }
 function DecodeShape(ctx, input) {
-    return ((ctx, input)=>(decodeAnyOfDiscriminated(ctx, input, "kind", hoisted_Shape_103)))(ctx, input);
+    return ((ctx, input)=>(decodeAnyOfDiscriminated(ctx, input, "kind", hoisted_Shape_104)))(ctx, input);
 }
 function DecodeT3(ctx, input) {
-    return ((ctx, input)=>(decodeAnyOfDiscriminated(ctx, input, "kind", hoisted_T3_106)))(ctx, input);
+    return ((ctx, input)=>(decodeAnyOfDiscriminated(ctx, input, "kind", hoisted_T3_107)))(ctx, input);
 }
 function DecodeBObject(ctx, input) {
-    return (hoisted_BObject_108.decode.bind(hoisted_BObject_108))(ctx, input);
+    return (hoisted_BObject_109.decode.bind(hoisted_BObject_109))(ctx, input);
 }
 function DecodeDEF(ctx, input) {
-    return (hoisted_DEF_109.decode.bind(hoisted_DEF_109))(ctx, input);
+    return (hoisted_DEF_110.decode.bind(hoisted_DEF_110))(ctx, input);
 }
 function DecodeKDEF(ctx, input) {
-    return (hoisted_KDEF_110.decode.bind(hoisted_KDEF_110))(ctx, input);
+    return (hoisted_KDEF_111.decode.bind(hoisted_KDEF_111))(ctx, input);
 }
 function DecodeABC(ctx, input) {
-    return (hoisted_ABC_111.decode.bind(hoisted_ABC_111))(ctx, input);
+    return (hoisted_ABC_112.decode.bind(hoisted_ABC_112))(ctx, input);
 }
 function DecodeKABC(ctx, input) {
     return (decodeNever)(ctx, input);
 }
 function DecodeK(ctx, input) {
-    return ((ctx, input)=>(decodeAnyOf(ctx, input, hoisted_K_112)))(ctx, input);
+    return ((ctx, input)=>(decodeAnyOf(ctx, input, hoisted_K_113)))(ctx, input);
 }
 const validators = {
     TransportedValue: DecodeTransportedValue,
@@ -811,58 +817,59 @@ const hoisted_Arr2_95 = [
     "B",
     "C"
 ];
-const hoisted_UnionWithEnumAccess_96 = new ObjectDecoder({
+const hoisted_ValidCurrency_96 = new StringWithFormatDecoder("ValidCurrency");
+const hoisted_UnionWithEnumAccess_97 = new ObjectDecoder({
     "value": decodeString
 });
-const hoisted_UnionWithEnumAccess_97 = new ObjectDecoder({
+const hoisted_UnionWithEnumAccess_98 = new ObjectDecoder({
     "value": decodeNumber
 });
-const hoisted_UnionWithEnumAccess_98 = new ObjectDecoder({
+const hoisted_UnionWithEnumAccess_99 = new ObjectDecoder({
     "value": decodeBoolean
 });
-const hoisted_UnionWithEnumAccess_99 = {
-    "a": hoisted_UnionWithEnumAccess_96.decode.bind(hoisted_UnionWithEnumAccess_96),
-    "b": hoisted_UnionWithEnumAccess_97.decode.bind(hoisted_UnionWithEnumAccess_97),
-    "c": hoisted_UnionWithEnumAccess_98.decode.bind(hoisted_UnionWithEnumAccess_98)
+const hoisted_UnionWithEnumAccess_100 = {
+    "a": hoisted_UnionWithEnumAccess_97.decode.bind(hoisted_UnionWithEnumAccess_97),
+    "b": hoisted_UnionWithEnumAccess_98.decode.bind(hoisted_UnionWithEnumAccess_98),
+    "c": hoisted_UnionWithEnumAccess_99.decode.bind(hoisted_UnionWithEnumAccess_99)
 };
-const hoisted_Shape_100 = new ObjectDecoder({
+const hoisted_Shape_101 = new ObjectDecoder({
     "radius": decodeNumber
 });
-const hoisted_Shape_101 = new ObjectDecoder({
-    "x": decodeNumber
-});
 const hoisted_Shape_102 = new ObjectDecoder({
-    "x": decodeNumber,
-    "y": decodeNumber
-});
-const hoisted_Shape_103 = {
-    "circle": hoisted_Shape_100.decode.bind(hoisted_Shape_100),
-    "square": hoisted_Shape_101.decode.bind(hoisted_Shape_101),
-    "triangle": hoisted_Shape_102.decode.bind(hoisted_Shape_102)
-};
-const hoisted_T3_104 = new ObjectDecoder({
     "x": decodeNumber
 });
-const hoisted_T3_105 = new ObjectDecoder({
+const hoisted_Shape_103 = new ObjectDecoder({
     "x": decodeNumber,
     "y": decodeNumber
 });
-const hoisted_T3_106 = {
-    "square": hoisted_T3_104.decode.bind(hoisted_T3_104),
-    "triangle": hoisted_T3_105.decode.bind(hoisted_T3_105)
+const hoisted_Shape_104 = {
+    "circle": hoisted_Shape_101.decode.bind(hoisted_Shape_101),
+    "square": hoisted_Shape_102.decode.bind(hoisted_Shape_102),
+    "triangle": hoisted_Shape_103.decode.bind(hoisted_Shape_103)
 };
-const hoisted_BObject_107 = new ConstDecoder("b");
-const hoisted_BObject_108 = new ObjectDecoder({
-    "tag": hoisted_BObject_107.decode.bind(hoisted_BObject_107)
+const hoisted_T3_105 = new ObjectDecoder({
+    "x": decodeNumber
 });
-const hoisted_DEF_109 = new ObjectDecoder({
+const hoisted_T3_106 = new ObjectDecoder({
+    "x": decodeNumber,
+    "y": decodeNumber
+});
+const hoisted_T3_107 = {
+    "square": hoisted_T3_105.decode.bind(hoisted_T3_105),
+    "triangle": hoisted_T3_106.decode.bind(hoisted_T3_106)
+};
+const hoisted_BObject_108 = new ConstDecoder("b");
+const hoisted_BObject_109 = new ObjectDecoder({
+    "tag": hoisted_BObject_108.decode.bind(hoisted_BObject_108)
+});
+const hoisted_DEF_110 = new ObjectDecoder({
     "a": decodeString
 });
-const hoisted_KDEF_110 = new ConstDecoder("a");
-const hoisted_ABC_111 = new ObjectDecoder({});
-const hoisted_K_112 = [
+const hoisted_KDEF_111 = new ConstDecoder("a");
+const hoisted_ABC_112 = new ObjectDecoder({});
+const hoisted_K_113 = [
     (ctx, input)=>(validators.KABC(ctx, input)),
     (ctx, input)=>(validators.KDEF(ctx, input))
 ];
 
-export default { ObjectDecoder, ArrayDecoder, decodeString, decodeNumber, CodecDecoder, decodeFunction, decodeStringWithFormat, decodeAnyOf, decodeAllOf, decodeBoolean, decodeAny, TupleDecoder, decodeNull, decodeNever, RegexDecoder, ConstDecoder, registerCustomFormatter, validators };
+export default { ObjectDecoder, ArrayDecoder, decodeString, decodeNumber, CodecDecoder, decodeFunction, StringWithFormatDecoder, decodeAnyOf, decodeAllOf, decodeBoolean, decodeAny, TupleDecoder, decodeNull, decodeNever, RegexDecoder, ConstDecoder, registerCustomFormatter, validators };

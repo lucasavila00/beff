@@ -168,22 +168,28 @@ class CodecDecoder {
   }
 }
 
-function decodeStringWithFormat(ctx, input, format) {
-  if (typeof input !== "string") {
-    return buildError(input, ctx, "expected string with format " + JSON.stringify(format));
+class StringWithFormatDecoder {
+  constructor(format) {
+    this.format = format;
   }
 
-  const validator = customFormatters[format];
+  decode(ctx, input) {
+    if (typeof input !== "string") {
+      return buildError(input, ctx, "expected string with format " + JSON.stringify(this.format));
+    }
 
-  if (validator == null) {
-    return buildError(input, ctx, "format " + JSON.stringify(format) + " not implemented");
-  }
+    const validator = customFormatters[this.format];
 
-  const isOk = validator(input);
-  if (isOk) {
-    return input;
+    if (validator == null) {
+      return buildError(input, ctx, "format " + JSON.stringify(this.format) + " not implemented");
+    }
+
+    const isOk = validator(input);
+    if (isOk) {
+      return input;
+    }
+    return buildError(input, ctx, "expected string with format " + JSON.stringify(this.format));
   }
-  return buildError(input, ctx, "expected string with format " + JSON.stringify(format));
 }
 
 function decodeAnyOfDiscriminated(ctx, input, discriminator, mapping) {
@@ -338,25 +344,25 @@ function DecodeNotPublic(ctx, input) {
     return (hoisted_NotPublic_1.decode.bind(hoisted_NotPublic_1))(ctx, input);
 }
 function DecodeStartsWithA(ctx, input) {
-    return ((ctx, input)=>(decodeStringWithFormat(ctx, input, "StartsWithA")))(ctx, input);
+    return (hoisted_StartsWithA_2.decode.bind(hoisted_StartsWithA_2))(ctx, input);
 }
 function DecodePassword(ctx, input) {
-    return ((ctx, input)=>(decodeStringWithFormat(ctx, input, "password")))(ctx, input);
+    return (hoisted_Password_3.decode.bind(hoisted_Password_3))(ctx, input);
 }
 function DecodeA(ctx, input) {
-    return ((ctx, input)=>(decodeAnyOfConsts(ctx, input, hoisted_A_2)))(ctx, input);
+    return ((ctx, input)=>(decodeAnyOfConsts(ctx, input, hoisted_A_4)))(ctx, input);
 }
 function DecodeB(ctx, input) {
-    return ((ctx, input)=>(decodeAnyOfConsts(ctx, input, hoisted_B_3)))(ctx, input);
+    return ((ctx, input)=>(decodeAnyOfConsts(ctx, input, hoisted_B_5)))(ctx, input);
 }
 function DecodeD(ctx, input) {
-    return ((ctx, input)=>(decodeAnyOfConsts(ctx, input, hoisted_D_4)))(ctx, input);
+    return ((ctx, input)=>(decodeAnyOfConsts(ctx, input, hoisted_D_6)))(ctx, input);
 }
 function DecodeE(ctx, input) {
-    return ((ctx, input)=>(decodeAnyOfConsts(ctx, input, hoisted_E_5)))(ctx, input);
+    return ((ctx, input)=>(decodeAnyOfConsts(ctx, input, hoisted_E_7)))(ctx, input);
 }
 function DecodeUnionNested(ctx, input) {
-    return ((ctx, input)=>(decodeAnyOfConsts(ctx, input, hoisted_UnionNested_6)))(ctx, input);
+    return ((ctx, input)=>(decodeAnyOfConsts(ctx, input, hoisted_UnionNested_8)))(ctx, input);
 }
 const validators = {
     User: DecodeUser,
@@ -376,23 +382,25 @@ const hoisted_User_0 = new ObjectDecoder({
 const hoisted_NotPublic_1 = new ObjectDecoder({
     "a": decodeString
 });
-const hoisted_A_2 = [
+const hoisted_StartsWithA_2 = new StringWithFormatDecoder("StartsWithA");
+const hoisted_Password_3 = new StringWithFormatDecoder("password");
+const hoisted_A_4 = [
     1,
     2
 ];
-const hoisted_B_3 = [
+const hoisted_B_5 = [
     2,
     3
 ];
-const hoisted_D_4 = [
+const hoisted_D_6 = [
     4,
     5
 ];
-const hoisted_E_5 = [
+const hoisted_E_7 = [
     5,
     6
 ];
-const hoisted_UnionNested_6 = [
+const hoisted_UnionNested_8 = [
     1,
     2,
     3,
@@ -401,4 +409,4 @@ const hoisted_UnionNested_6 = [
     6
 ];
 
-export default { ObjectDecoder, ArrayDecoder, decodeString, decodeNumber, CodecDecoder, decodeFunction, decodeStringWithFormat, decodeAnyOf, decodeAllOf, decodeBoolean, decodeAny, TupleDecoder, decodeNull, decodeNever, RegexDecoder, ConstDecoder, registerCustomFormatter, validators };
+export default { ObjectDecoder, ArrayDecoder, decodeString, decodeNumber, CodecDecoder, decodeFunction, StringWithFormatDecoder, decodeAnyOf, decodeAllOf, decodeBoolean, decodeAny, TupleDecoder, decodeNull, decodeNever, RegexDecoder, ConstDecoder, registerCustomFormatter, validators };

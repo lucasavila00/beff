@@ -168,22 +168,28 @@ class CodecDecoder {
   }
 }
 
-function decodeStringWithFormat(ctx, input, format) {
-  if (typeof input !== "string") {
-    return buildError(input, ctx, "expected string with format " + JSON.stringify(format));
+class StringWithFormatDecoder {
+  constructor(format) {
+    this.format = format;
   }
 
-  const validator = customFormatters[format];
+  decode(ctx, input) {
+    if (typeof input !== "string") {
+      return buildError(input, ctx, "expected string with format " + JSON.stringify(this.format));
+    }
 
-  if (validator == null) {
-    return buildError(input, ctx, "format " + JSON.stringify(format) + " not implemented");
-  }
+    const validator = customFormatters[this.format];
 
-  const isOk = validator(input);
-  if (isOk) {
-    return input;
+    if (validator == null) {
+      return buildError(input, ctx, "format " + JSON.stringify(this.format) + " not implemented");
+    }
+
+    const isOk = validator(input);
+    if (isOk) {
+      return input;
+    }
+    return buildError(input, ctx, "expected string with format " + JSON.stringify(this.format));
   }
-  return buildError(input, ctx, "expected string with format " + JSON.stringify(format));
 }
 
 function decodeAnyOfDiscriminated(ctx, input, discriminator, mapping) {
@@ -338,4 +344,4 @@ const validators = {
     A: DecodeA
 };
 
-export default { ObjectDecoder, ArrayDecoder, decodeString, decodeNumber, CodecDecoder, decodeFunction, decodeStringWithFormat, decodeAnyOf, decodeAllOf, decodeBoolean, decodeAny, TupleDecoder, decodeNull, decodeNever, RegexDecoder, ConstDecoder, registerCustomFormatter, validators };
+export default { ObjectDecoder, ArrayDecoder, decodeString, decodeNumber, CodecDecoder, decodeFunction, StringWithFormatDecoder, decodeAnyOf, decodeAllOf, decodeBoolean, decodeAny, TupleDecoder, decodeNull, decodeNever, RegexDecoder, ConstDecoder, registerCustomFormatter, validators };

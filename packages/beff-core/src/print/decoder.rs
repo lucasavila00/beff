@@ -461,8 +461,9 @@ impl DecoderFnGenerator<'_> {
             JsonSchema::String => SwcBuilder::ident_expr("decodeString"),
             JsonSchema::Number => SwcBuilder::ident_expr("decodeNumber"),
             JsonSchema::Any => SwcBuilder::ident_expr("decodeAny"),
-            JsonSchema::StringWithFormat(format) => Self::make_cb(Self::decode_call_extra(
-                "decodeStringWithFormat",
+            JsonSchema::StringWithFormat(format) => Self::decode_bound(self.new_hoisted_decoder(
+                hoisted,
+                "StringWithFormatDecoder",
                 vec![Expr::Lit(Lit::Str(Str {
                     span: DUMMY_SP,
                     value: format.to_string().into(),

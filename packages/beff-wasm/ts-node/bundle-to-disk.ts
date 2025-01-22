@@ -11,7 +11,7 @@ const decodersExported = [
   "decodeNumber",
   "CodecDecoder",
   "decodeFunction",
-  "decodeStringWithFormat",
+  "StringWithFormatDecoder",
   "decodeAnyOf",
   "decodeAllOf",
   "decodeBoolean",
