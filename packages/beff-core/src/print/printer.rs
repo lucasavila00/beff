@@ -12,7 +12,7 @@ use swc_ecma_ast::{
     Prop, PropName, PropOrSpread, Stmt, Str, VarDecl, VarDeclKind, VarDeclarator,
 };
 
-fn const_decl(name: &str, init: Expr) -> ModuleItem {
+pub fn const_decl(name: &str, init: Expr) -> ModuleItem {
     ModuleItem::Stmt(Stmt::Decl(Decl::Var(
         VarDecl {
             span: DUMMY_SP,
@@ -46,7 +46,11 @@ pub struct WritableModules {
 pub trait ToWritableModules {
     fn to_module(self) -> Result<WritableModules>;
 }
-fn build_decoders_expr(decs: &[BuiltDecoder], validators: &Vec<Validator>) -> Expr {
+fn build_decoders_expr(
+    decs: &[BuiltDecoder],
+    validators: &Vec<Validator>,
+    hoisted: &mut Vec<ModuleItem>,
+) -> Expr {
     let mut exprs: Vec<_> = decs
         .iter()
         .map(|decoder| {
@@ -54,7 +58,13 @@ fn build_decoders_expr(decs: &[BuiltDecoder], validators: &Vec<Validator>) -> Ex
                 decoder.exported_name.clone(),
                 Expr::Fn(FnExpr {
                     ident: None,
-                    function: decoder::from_schema(&decoder.schema, validators).into(),
+                    function: decoder::from_schema(
+                        &decoder.schema,
+                        validators,
+                        hoisted,
+                        &decoder.exported_name,
+                    )
+                    .into(),
                 }),
             )
         })
@@ -107,12 +117,14 @@ impl ToWritableModules for ExtractResult {
         let mut stmt_validators = vec![];
 
         let mut validator_names = vec![];
+        let mut hoisted: Vec<ModuleItem> = vec![];
 
         let validators = merge_validator(self.parser.as_ref().map(|it| &it.validators))?;
 
         for comp in &validators {
             validator_names.push(comp.name.clone());
-            let decoder_fn = decoder::from_schema(&comp.schema, &validators);
+            let decoder_fn =
+                decoder::from_schema(&comp.schema, &validators, &mut hoisted, &comp.name);
             let decoder_fn_decl = ModuleItem::Stmt(Stmt::Decl(Decl::Fn(FnDecl {
                 ident: Ident {
                     span: DUMMY_SP,
@@ -151,16 +163,21 @@ impl ToWritableModules for ExtractResult {
             }),
         ));
 
-        let js_validators = emit_module(stmt_validators, "\n")?;
-
         let mut js_built_parsers = None;
 
         if let Some(parser) = self.parser {
             let decoders = parser.built_decoders.unwrap_or_default();
-            let decoders_expr = build_decoders_expr(&decoders, &validators);
+            let decoders_expr = build_decoders_expr(&decoders, &validators, &mut hoisted);
             let built_st = const_decl("buildParsersInput", decoders_expr);
             js_built_parsers = Some(emit_module(vec![built_st], "\n")?);
         }
+        let js_validators = emit_module(
+            hoisted
+                .into_iter()
+                .chain(stmt_validators.into_iter())
+                .collect(),
+            "\n",
+        )?;
 
         let mut json_schema = None;
         if let Some(schema) = self.schema {

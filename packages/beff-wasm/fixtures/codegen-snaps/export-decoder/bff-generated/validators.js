@@ -342,6 +342,30 @@ function decodeRegex(ctx, input, required, regex, description) {
   return buildError(input, ctx, "expected string matching " + description);
 }
 
+const hoisted_A_0 = [
+    1,
+    2
+];
+const hoisted_B_1 = [
+    2,
+    3
+];
+const hoisted_D_2 = [
+    4,
+    5
+];
+const hoisted_E_3 = [
+    5,
+    6
+];
+const hoisted_UnionNested_4 = [
+    1,
+    2,
+    3,
+    4,
+    5,
+    6
+];
 function DecodeUser(ctx, input, required = true) {
     return decodeObject(ctx, input, required, {
         "age": (ctx, input)=>(decodeNumber(ctx, input, true)),
@@ -360,38 +384,19 @@ function DecodePassword(ctx, input, required = true) {
     return decodeStringWithFormat(ctx, input, required, "password");
 }
 function DecodeA(ctx, input, required = true) {
-    return decodeAnyOfConsts(ctx, input, required, [
-        1,
-        2
-    ]);
+    return decodeAnyOfConsts(ctx, input, required, hoisted_A_0);
 }
 function DecodeB(ctx, input, required = true) {
-    return decodeAnyOfConsts(ctx, input, required, [
-        2,
-        3
-    ]);
+    return decodeAnyOfConsts(ctx, input, required, hoisted_B_1);
 }
 function DecodeD(ctx, input, required = true) {
-    return decodeAnyOfConsts(ctx, input, required, [
-        4,
-        5
-    ]);
+    return decodeAnyOfConsts(ctx, input, required, hoisted_D_2);
 }
 function DecodeE(ctx, input, required = true) {
-    return decodeAnyOfConsts(ctx, input, required, [
-        5,
-        6
-    ]);
+    return decodeAnyOfConsts(ctx, input, required, hoisted_E_3);
 }
 function DecodeUnionNested(ctx, input, required = true) {
-    return decodeAnyOfConsts(ctx, input, required, [
-        1,
-        2,
-        3,
-        4,
-        5,
-        6
-    ]);
+    return decodeAnyOfConsts(ctx, input, required, hoisted_UnionNested_4);
 }
 const validators = {
     User: DecodeUser,
