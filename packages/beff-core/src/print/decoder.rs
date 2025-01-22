@@ -511,22 +511,16 @@ impl DecoderFnGenerator<'_> {
                 }
                 Self::decode_call_extra("decodeObject", required, extra)
             }
-            JsonSchema::Array(ty) => Self::decode_call_extra(
-                "decodeArray",
-                required,
-                vec![Self::make_cb(self.decode_expr(
-                    ty,
-                    Required::Known(true),
-                    hoisted,
-                ))],
-            ),
+            JsonSchema::Array(ty) => {
+                let decoding = self.decode_expr(ty, Required::Known(true), hoisted);
+                let decoding = self.hoist_expr(hoisted, Self::make_cb(decoding));
+                Self::decode_call_extra("decodeArray", required, vec![decoding])
+            }
             JsonSchema::Tuple {
                 prefix_items,
                 items,
-            } => Self::decode_call_extra(
-                "decodeTuple",
-                required,
-                vec![Expr::Object(ObjectLit {
+            } => {
+                let tpl_extra = Expr::Object(ObjectLit {
                     span: DUMMY_SP,
                     props: vec![
                         PropOrSpread::Prop(
@@ -575,8 +569,14 @@ impl DecoderFnGenerator<'_> {
                             .into(),
                         ),
                     ],
-                })],
-            ),
+                });
+
+                Self::decode_call_extra(
+                    "decodeTuple",
+                    required,
+                    vec![self.hoist_expr(hoisted, tpl_extra)],
+                )
+            }
             JsonSchema::AnyOf(vs) => self.decode_any_of(vs, required, hoisted),
             JsonSchema::AllOf(vs) => {
                 self.decode_union_or_intersection("decodeAllOf", required, vs, hoisted)

@@ -20,7 +20,7 @@ const buildParsersInput = {
         return validators.User(ctx, input, required);
     },
     "Users": function(ctx, input, required = true) {
-        return decodeArray(ctx, input, required, (ctx, input)=>(validators.User(ctx, input, true)));
+        return decodeArray(ctx, input, required, hoisted_Users_0);
     },
     "float": function(ctx, input, required = true) {
         return decodeConst(ctx, input, required, 123.456);
@@ -32,6 +32,7 @@ const buildParsersInput = {
         return validators.UnionNested(ctx, input, required);
     }
 };
+const hoisted_Users_0 = (ctx, input)=>(validators.User(ctx, input, true));
 
 
 
