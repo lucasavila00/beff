@@ -237,7 +237,14 @@ class AnyOfConstsDecoder {
     return buildError(
       input,
       ctx,
-      "expected one of " + this.consts.map((it) => JSON.stringify(it)).join(", ")
+      this.consts.length < 3
+        ? "expected one of " + this.consts.map((it) => JSON.stringify(it)).join(", ")
+        : "expected one of " +
+            this.consts
+              .slice(0, 3)
+              .map((it) => JSON.stringify(it))
+              .join(", ") +
+            "..."
     );
   }
 }
