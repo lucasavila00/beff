@@ -8,28 +8,48 @@ function registerCustomFormatter(name, validator) {
 }
 
 function pushPath(ctx, path) {
+  if (ctx.noErrorMessages) {
+    return;
+  }
   if (ctx.paths == null) {
     ctx.paths = [];
   }
   ctx.paths.push(path);
 }
 function popPath(ctx) {
+  if (ctx.noErrorMessages) {
+    return;
+  }
   if (ctx.paths == null) {
     throw new Error("popPath: no paths");
   }
   return ctx.paths.pop();
 }
-function buildError(received, ctx, message) {
+function storeError(ctx, received, message) {
+  if (ctx.noErrorMessages) {
+    ctx.errors = true;
+    return;
+  }
   if (ctx.errors == null) {
     ctx.errors = [];
   }
+
+  let messageStr = message;
+  if (typeof message === "function") {
+    messageStr = message();
+  }
+
   ctx.errors.push({
-    message,
+    message: messageStr,
     path: [...(ctx.paths ?? [])],
     received,
   });
 }
-function buildUnionError(received, ctx, errors) {
+function storeUnionError(ctx, received, errors) {
+  if (ctx.noErrorMessages) {
+    ctx.errors = true;
+    return;
+  }
   if (ctx.errors == null) {
     ctx.errors = [];
   }
@@ -40,6 +60,79 @@ function buildUnionError(received, ctx, errors) {
     path: [...(ctx.paths ?? [])],
     received,
   });
+}
+
+function decodeString(ctx, input) {
+  if (typeof input === "string") {
+    return input;
+  }
+
+  return storeError(ctx, input, "expected string");
+}
+
+function decodeNumber(ctx, input) {
+  if (typeof input === "number") {
+    return input;
+  }
+  if (String(input).toLowerCase() == "nan") {
+    return NaN;
+  }
+
+  return storeError(ctx, input, "expected number");
+}
+
+function decodeFunction(ctx, input) {
+  if (typeof input === "function") {
+    return input;
+  }
+  return storeError(ctx, input, "expected function");
+}
+function decodeBoolean(ctx, input) {
+  if (typeof input === "boolean") {
+    return input;
+  }
+  return storeError(ctx, input, "expected boolean");
+}
+function decodeAny(ctx, input) {
+  return input;
+}
+function decodeNull(ctx, input) {
+  if (input == null) {
+    return input;
+  }
+  return storeError(ctx, input, "expected nullish value");
+}
+function decodeNever(ctx, input) {
+  return storeError(ctx, input, "never");
+}
+
+class ConstDecoder {
+  constructor(value) {
+    this.value = value;
+  }
+
+  decodeConstDecoder(ctx, input) {
+    if (input == this.value) {
+      return this.value;
+    }
+    return storeError(ctx, input, () => "expected " + JSON.stringify(this.value));
+  }
+}
+
+class RegexDecoder {
+  constructor(regex, description) {
+    this.regex = regex;
+    this.description = description;
+  }
+
+  decodeRegexDecoder(ctx, input) {
+    if (typeof input === "string") {
+      if (this.regex.test(input)) {
+        return input;
+      }
+    }
+    return storeError(ctx, input, () => "expected string matching " + this.description);
+  }
 }
 
 class ObjectDecoder {
@@ -75,7 +168,7 @@ class ObjectDecoder {
         for (const k of Object.keys(input)) {
           if (acc[k] == null && allowedExtraProperties.indexOf(k) == -1) {
             pushPath(ctx, k);
-            buildError(input[k], ctx, "extra property");
+            storeError(ctx, input[k], "extra property");
             popPath(ctx);
           }
         }
@@ -83,7 +176,7 @@ class ObjectDecoder {
 
       return acc;
     }
-    return buildError(input, ctx, "expected object");
+    return storeError(ctx, input, "expected object");
   }
 }
 
@@ -103,33 +196,8 @@ class ArrayDecoder {
       }
       return acc;
     }
-    return buildError(input, ctx, "expected array");
+    return storeError(ctx, input, "expected array");
   }
-}
-function decodeString(ctx, input) {
-  if (typeof input === "string") {
-    return input;
-  }
-
-  return buildError(input, ctx, "expected string");
-}
-
-function decodeNumber(ctx, input) {
-  if (typeof input === "number") {
-    return input;
-  }
-  if (String(input).toLowerCase() == "nan") {
-    return NaN;
-  }
-
-  return buildError(input, ctx, "expected number");
-}
-
-function decodeFunction(ctx, input) {
-  if (typeof input === "function") {
-    return input;
-  }
-  return buildError(input, ctx, "expected function");
 }
 class CodecDecoder {
   constructor(codec) {
@@ -140,7 +208,7 @@ class CodecDecoder {
       case "Codec::ISO8061": {
         const d = new Date(input);
         if (isNaN(d.getTime())) {
-          return buildError(input, ctx, "expected ISO8061 date");
+          return storeError(ctx, input, "expected ISO8061 date");
         }
         return d;
       }
@@ -158,10 +226,10 @@ class CodecDecoder {
             //noop
           }
         }
-        return buildError(input, ctx, "expected bigint");
+        return storeError(ctx, input, "expected bigint");
       }
     }
-    return buildError(input, ctx, "codec " + this.codec + " not implemented");
+    return storeError(ctx, input, () => "codec " + this.codec + " not implemented");
   }
 }
 
@@ -172,20 +240,20 @@ class StringWithFormatDecoder {
 
   decodeStringWithFormatDecoder(ctx, input) {
     if (typeof input !== "string") {
-      return buildError(input, ctx, "expected string with format " + JSON.stringify(this.format));
+      return storeError(ctx, input, "expected string with format " + JSON.stringify(this.format));
     }
 
     const validator = customFormatters[this.format];
 
     if (validator == null) {
-      return buildError(input, ctx, "format " + JSON.stringify(this.format) + " not implemented");
+      return storeError(ctx, input, () => "format " + JSON.stringify(this.format) + " not implemented");
     }
 
     const isOk = validator(input);
     if (isOk) {
       return input;
     }
-    return buildError(input, ctx, "expected string with format " + JSON.stringify(this.format));
+    return storeError(ctx, input, "expected string with format " + JSON.stringify(this.format));
   }
 }
 class AnyOfDiscriminatedDecoder {
@@ -197,15 +265,16 @@ class AnyOfDiscriminatedDecoder {
   decodeAnyOfDiscriminatedDecoder(ctx, input) {
     const d = input[this.discriminator];
     if (d == null) {
-      return buildError(input, ctx, "expected discriminator key " + JSON.stringify(this.discriminator));
+      return storeError(ctx, input, () => "expected discriminator key " + JSON.stringify(this.discriminator));
     }
     const v = this.mapping[d];
     if (v == null) {
       pushPath(ctx, this.discriminator);
-      const err = buildError(
-        d,
+      const err = storeError(
         ctx,
-        "expected one of " +
+        d,
+        () =>
+          "expected one of " +
           Object.keys(this.mapping)
             .map((it) => JSON.stringify(it))
             .join(", ")
@@ -231,17 +300,15 @@ class AnyOfConstsDecoder {
         return c;
       }
     }
-    return buildError(
-      input,
-      ctx,
+    return storeError(ctx, input, () =>
       this.consts.length < 3
         ? "expected one of " + this.consts.map((it) => JSON.stringify(it)).join(", ")
         : "expected one of " +
-            this.consts
-              .slice(0, 3)
-              .map((it) => JSON.stringify(it))
-              .join(", ") +
-            "..."
+          this.consts
+            .slice(0, 3)
+            .map((it) => JSON.stringify(it))
+            .join(", ") +
+          "..."
     );
   }
 }
@@ -251,6 +318,16 @@ class AnyOfDecoder {
     this.vs = vs;
   }
   decodeAnyOfDecoder(ctx, input) {
+    for (const v of this.vs) {
+      const validatorCtx = {
+        noErrorMessages: true,
+      };
+      const newValue = v(validatorCtx, input);
+      if (validatorCtx.errors == null) {
+        return newValue;
+      }
+    }
+
     let accErrors = [];
     for (const v of this.vs) {
       const validatorCtx = {};
@@ -260,7 +337,7 @@ class AnyOfDecoder {
       }
       accErrors.push(...(validatorCtx.errors ?? []));
     }
-    return buildUnionError(input, ctx, accErrors);
+    return storeUnionError(ctx, input, accErrors);
   }
 }
 class AllOfDecoder {
@@ -310,58 +387,11 @@ class TupleDecoder {
         }
       } else {
         if (input.length > idx) {
-          return buildError(input, ctx, "tuple has too many items");
+          return storeError(ctx, input, "tuple has too many items");
         }
       }
       return acc;
     }
-    return buildError(input, ctx, "expected tuple");
-  }
-}
-function decodeBoolean(ctx, input) {
-  if (typeof input === "boolean") {
-    return input;
-  }
-  return buildError(input, ctx, "expected boolean");
-}
-function decodeAny(ctx, input) {
-  return input;
-}
-function decodeNull(ctx, input) {
-  if (input == null) {
-    return input;
-  }
-  return buildError(input, ctx, "expected nullish value");
-}
-function decodeNever(ctx, input) {
-  return buildError(input, ctx, "never");
-}
-
-class ConstDecoder {
-  constructor(value) {
-    this.value = value;
-  }
-
-  decodeConstDecoder(ctx, input) {
-    if (input == this.value) {
-      return this.value;
-    }
-    return buildError(input, ctx, "expected " + JSON.stringify(this.value));
-  }
-}
-
-class RegexDecoder {
-  constructor(regex, description) {
-    this.regex = regex;
-    this.description = description;
-  }
-
-  decodeRegexDecoder(ctx, input) {
-    if (typeof input === "string") {
-      if (this.regex.test(input)) {
-        return input;
-      }
-    }
-    return buildError(input, ctx, "expected string matching " + this.description);
+    return storeError(ctx, input, "expected tuple");
   }
 }
