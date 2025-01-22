@@ -165,23 +165,34 @@ impl DecoderFnGenerator<'_> {
     ) -> Expr {
         let els_expr: Vec<Expr> = vs
             .iter()
-            .map(|it| self.decode_expr(it, required, hoisted))
+            .map(|it| {
+                self.decode_expr(
+                    it,
+                    // force inner to be required, because we're checking outside already
+                    Required::Known(true),
+                    hoisted,
+                )
+            })
             .collect();
+
         Self::decode_call_extra(
             decoder_name,
             required,
-            vec![Expr::Array(ArrayLit {
-                span: DUMMY_SP,
-                elems: els_expr
-                    .into_iter()
-                    .map(|it| {
-                        Some(ExprOrSpread {
-                            spread: None,
-                            expr: Self::make_cb(it).into(),
+            vec![self.hoist_expr(
+                hoisted,
+                Expr::Array(ArrayLit {
+                    span: DUMMY_SP,
+                    elems: els_expr
+                        .into_iter()
+                        .map(|it| {
+                            Some(ExprOrSpread {
+                                spread: None,
+                                expr: Self::make_cb(it).into(),
+                            })
                         })
-                    })
-                    .collect(),
-            })],
+                        .collect(),
+                }),
+            )],
         )
     }
     fn extract_union(&self, it: &JsonSchema) -> Vec<JsonSchema> {
@@ -266,7 +277,7 @@ impl DecoderFnGenerator<'_> {
                     value: discriminator.clone().into(),
                     raw: None,
                 })),
-                extra_obj,
+                self.hoist_expr(hoisted, extra_obj),
             ],
         )
     }
@@ -385,20 +396,26 @@ impl DecoderFnGenerator<'_> {
                 })
                 .collect();
 
-            let arr = Expr::Array(ArrayLit {
-                span: DUMMY_SP,
-                elems: consts
-                    .into_iter()
-                    .map(|it| {
-                        Some(ExprOrSpread {
-                            spread: None,
-                            expr: it.into(),
+            let consts = self.hoist_expr(
+                hoisted,
+                Expr::Array(ArrayLit {
+                    span: DUMMY_SP,
+                    elems: consts
+                        .into_iter()
+                        .map(|it| {
+                            Some(ExprOrSpread {
+                                spread: None,
+                                expr: it.into(),
+                            })
                         })
-                    })
-                    .collect(),
-            });
-            let refs = vec![self.hoist_expr(hoisted, arr)];
-            return Some(Self::decode_call_extra("decodeAnyOfConsts", required, refs));
+                        .collect(),
+                }),
+            );
+            return Some(Self::decode_call_extra(
+                "decodeAnyOfConsts",
+                required,
+                vec![consts],
+            ));
         }
         None
     }

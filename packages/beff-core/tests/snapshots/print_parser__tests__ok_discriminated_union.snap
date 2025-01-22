@@ -3,12 +3,7 @@ source: packages/beff-core/tests/print_parser.rs
 expression: "decoder(r#\"\n        export type DiscriminatedUnion4 =\n            | {\n                type: \"a\";\n                a: {\n                  subType: \"a1\";\n                  a1: string;\n                };\n              }\n            | {\n                type: \"a\";\n                a: {\n                  subType: \"a2\";\n                  a2: string;\n                };\n              };\n        parse.buildParsers<{ DiscriminatedUnion4: DiscriminatedUnion4 }>();\n      \"#)"
 ---
 function DecodeDiscriminatedUnion4(ctx, input, required = true) {
-    return decodeAnyOfDiscriminated(ctx, input, required, "type", {
-        "a": (ctx, input)=>(decodeAnyOf(ctx, input, true, [
-                (ctx, input)=>(decodeObject(ctx, input, true, hoisted_DiscriminatedUnion4_1)),
-                (ctx, input)=>(decodeObject(ctx, input, true, hoisted_DiscriminatedUnion4_3))
-            ]))
-    });
+    return decodeAnyOfDiscriminated(ctx, input, required, "type", hoisted_DiscriminatedUnion4_5);
 }
 const validators = {
     DiscriminatedUnion4: DecodeDiscriminatedUnion4
@@ -26,4 +21,11 @@ const hoisted_DiscriminatedUnion4_2 = {
 };
 const hoisted_DiscriminatedUnion4_3 = {
     "a": (ctx, input)=>(decodeObject(ctx, input, true, hoisted_DiscriminatedUnion4_2))
+};
+const hoisted_DiscriminatedUnion4_4 = [
+    (ctx, input)=>(decodeObject(ctx, input, true, hoisted_DiscriminatedUnion4_1)),
+    (ctx, input)=>(decodeObject(ctx, input, true, hoisted_DiscriminatedUnion4_3))
+];
+const hoisted_DiscriminatedUnion4_5 = {
+    "a": (ctx, input)=>(decodeAnyOf(ctx, input, true, hoisted_DiscriminatedUnion4_4))
 };

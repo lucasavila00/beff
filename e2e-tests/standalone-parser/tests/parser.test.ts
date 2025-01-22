@@ -26,6 +26,7 @@ import {
   BObject,
   AllTs,
   TransportedValue,
+  ImportEnumTypeofCodec,
 } from "../src/parser";
 import { Arr2 } from "../src/types";
 import { Schemas } from "../src/schema";
@@ -38,6 +39,21 @@ it("TransportedValue bug", () => {
   expect(TransportedValue.parse([123])).toStrictEqual([123]);
   expect(TransportedValue.parse(["123"])).toStrictEqual(["123"]);
   expect(TransportedValue.parse(["undefined"])).toStrictEqual(["undefined"]);
+});
+
+it("import enum typeof", () => {
+  expect(ImportEnumTypeofCodec.safeParse("ADMIN")).toMatchInlineSnapshot(`
+    {
+      "errors": [
+        {
+          "message": "expected object",
+          "path": [],
+          "received": "ADMIN",
+        },
+      ],
+      "success": false,
+    }
+  `);
 });
 
 it("tpl", () => {
