@@ -1,5 +1,11 @@
 # @beff/cli
 
+## 0.0.73
+
+### Patch Changes
+
+- optimizations
+
 ## 0.0.72
 
 ### Patch Changes
