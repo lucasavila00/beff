@@ -74,7 +74,7 @@ impl DecoderFnGenerator<'_> {
                 })
                 .collect(),
         });
-        Self::decode_bound(self.new_hoisted_decoder(hoisted, decoder_name, vec![arr_lit]))
+        self.new_hoisted_decoder(hoisted, decoder_name, vec![arr_lit])
     }
     fn extract_union(&self, it: &JsonSchema) -> Vec<JsonSchema> {
         match it {
@@ -144,7 +144,7 @@ impl DecoderFnGenerator<'_> {
                 })
                 .collect(),
         });
-        Self::decode_bound(self.new_hoisted_decoder(
+        self.new_hoisted_decoder(
             hoisted,
             "AnyOfDiscriminatedDecoder",
             vec![
@@ -155,7 +155,7 @@ impl DecoderFnGenerator<'_> {
                 })),
                 extra_obj,
             ],
-        ))
+        )
     }
     fn maybe_decode_any_of_discriminated(
         &self,
@@ -253,13 +253,13 @@ impl DecoderFnGenerator<'_> {
         })
     }
 
-    fn decode_bound(hoisted: Expr) -> Expr {
+    fn decode_bound(class: &str, hoisted: Expr) -> Expr {
         let member = Expr::Member(MemberExpr {
             span: DUMMY_SP,
             obj: hoisted.clone().into(),
             prop: MemberProp::Ident(Ident {
                 span: DUMMY_SP,
-                sym: "decode".into(),
+                sym: format!("decode{}", class).into(),
                 optional: false,
             }),
         });
@@ -299,7 +299,8 @@ impl DecoderFnGenerator<'_> {
             ),
             type_args: None,
         });
-        self.hoist_expr(hoisted, new_expr)
+
+        Self::decode_bound(class, self.hoist_expr(hoisted, new_expr))
     }
 
     fn maybe_decode_any_of_consts(
@@ -333,11 +334,7 @@ impl DecoderFnGenerator<'_> {
                     .collect(),
             });
 
-            return Some(Self::decode_bound(self.new_hoisted_decoder(
-                hoisted,
-                "AnyOfConstsDecoder",
-                vec![consts],
-            )));
+            return Some(self.new_hoisted_decoder(hoisted, "AnyOfConstsDecoder", vec![consts]));
         }
         None
     }
@@ -377,7 +374,7 @@ impl DecoderFnGenerator<'_> {
             JsonSchema::String => SwcBuilder::ident_expr("decodeString"),
             JsonSchema::Number => SwcBuilder::ident_expr("decodeNumber"),
             JsonSchema::Any => SwcBuilder::ident_expr("decodeAny"),
-            JsonSchema::StringWithFormat(format) => Self::decode_bound(self.new_hoisted_decoder(
+            JsonSchema::StringWithFormat(format) => self.new_hoisted_decoder(
                 hoisted,
                 "StringWithFormatDecoder",
                 vec![Expr::Lit(Lit::Str(Str {
@@ -385,7 +382,7 @@ impl DecoderFnGenerator<'_> {
                     value: format.to_string().into(),
                     raw: None,
                 }))],
-            )),
+            ),
             JsonSchema::Ref(r_name) => Self::decode_ref(r_name),
             JsonSchema::Object { vs, rest } => {
                 let obj_to_hoist = Expr::Object(ObjectLit {
@@ -401,7 +398,7 @@ impl DecoderFnGenerator<'_> {
                                 }),
                                 value: Box::new(match value {
                                     Optionality::Optional(schema) => {
-                                        let nullable_schema = &JsonSchema::AnyOf(
+                                        let nullable_schema = &JsonSchema::any_of(
                                             vec![JsonSchema::Null, schema.clone()]
                                                 .into_iter()
                                                 .collect(),
@@ -422,16 +419,12 @@ impl DecoderFnGenerator<'_> {
                     let rest = self.decode_expr(rest, hoisted);
                     extra.push(rest);
                 }
-                Self::decode_bound(self.new_hoisted_decoder(hoisted, "ObjectDecoder", extra))
+                self.new_hoisted_decoder(hoisted, "ObjectDecoder", extra)
             }
             JsonSchema::Array(ty) => {
                 let decoding = self.decode_expr(ty, hoisted);
 
-                Self::decode_bound(self.new_hoisted_decoder(
-                    hoisted,
-                    "ArrayDecoder",
-                    vec![decoding],
-                ))
+                self.new_hoisted_decoder(hoisted, "ArrayDecoder", vec![decoding])
             }
             JsonSchema::Tuple {
                 prefix_items,
@@ -479,20 +472,16 @@ impl DecoderFnGenerator<'_> {
                     ],
                 });
 
-                Self::decode_bound(self.new_hoisted_decoder(
-                    hoisted,
-                    "TupleDecoder",
-                    vec![tpl_extra],
-                ))
+                self.new_hoisted_decoder(hoisted, "TupleDecoder", vec![tpl_extra])
             }
             JsonSchema::AnyOf(vs) => self.decode_any_of(vs, hoisted),
             JsonSchema::AllOf(vs) => self.decode_union_or_intersection("AllOfDecoder", vs, hoisted),
-            JsonSchema::Const(json) => Self::decode_bound(self.new_hoisted_decoder(
+            JsonSchema::Const(json) => self.new_hoisted_decoder(
                 hoisted,
                 "ConstDecoder",
                 vec![json.clone().to_json().to_expr()],
-            )),
-            JsonSchema::Codec(format) => Self::decode_bound(self.new_hoisted_decoder(
+            ),
+            JsonSchema::Codec(format) => self.new_hoisted_decoder(
                 hoisted,
                 "CodecDecoder",
                 vec![Expr::Lit(Lit::Str(Str {
@@ -500,7 +489,7 @@ impl DecoderFnGenerator<'_> {
                     value: format.to_string().into(),
                     raw: None,
                 }))],
-            )),
+            ),
             JsonSchema::TplLitType(items) => {
                 let mut regex_exp = String::new();
 
@@ -508,7 +497,7 @@ impl DecoderFnGenerator<'_> {
                     regex_exp.push_str(&item.regex_expr());
                 }
 
-                Self::decode_bound(self.new_hoisted_decoder(
+                self.new_hoisted_decoder(
                     hoisted,
                     "RegexDecoder",
                     vec![
@@ -523,7 +512,7 @@ impl DecoderFnGenerator<'_> {
                             raw: None,
                         })),
                     ],
-                ))
+                )
             }
             JsonSchema::Function => SwcBuilder::ident_expr("decodeFunction"),
         };

@@ -51,7 +51,7 @@ class ObjectDecoder {
     this.additionalPropsValidator = additionalPropsValidator;
   }
 
-  decode(ctx, input) {
+  decodeObjectDecoder(ctx, input) {
     const disallowExtraProperties = ctx?.disallowExtraProperties ?? false;
 
     const allowedExtraProperties = ctx.allowedExtraProperties__ ?? [];
@@ -95,7 +95,7 @@ class ArrayDecoder {
     this.data = data;
   }
 
-  decode(ctx, input) {
+  decodeArrayDecoder(ctx, input) {
     if (Array.isArray(input)) {
       const acc = [];
       for (let i = 0; i < input.length; i++) {
@@ -138,7 +138,7 @@ class CodecDecoder {
   constructor(codec) {
     this.codec = codec;
   }
-  decode(ctx, input) {
+  decodeCodecDecoder(ctx, input) {
     switch (this.codec) {
       case "Codec::ISO8061": {
         const d = new Date(input);
@@ -173,7 +173,7 @@ class StringWithFormatDecoder {
     this.format = format;
   }
 
-  decode(ctx, input) {
+  decodeStringWithFormatDecoder(ctx, input) {
     if (typeof input !== "string") {
       return buildError(input, ctx, "expected string with format " + JSON.stringify(this.format));
     }
@@ -197,7 +197,7 @@ class AnyOfDiscriminatedDecoder {
     this.mapping = mapping;
   }
 
-  decode(ctx, input) {
+  decodeAnyOfDiscriminatedDecoder(ctx, input) {
     const d = input[this.discriminator];
     if (d == null) {
       return buildError(input, ctx, "expected discriminator key " + JSON.stringify(this.discriminator));
@@ -228,7 +228,7 @@ class AnyOfConstsDecoder {
   constructor(consts) {
     this.consts = consts;
   }
-  decode(ctx, input) {
+  decodeAnyOfConstsDecoder(ctx, input) {
     for (const c of this.consts) {
       if (input === c) {
         return c;
@@ -246,7 +246,7 @@ class AnyOfDecoder {
   constructor(vs) {
     this.vs = vs;
   }
-  decode(ctx, input) {
+  decodeAnyOfDecoder(ctx, input) {
     let accErrors = [];
     for (const v of this.vs) {
       const validatorCtx = {};
@@ -263,7 +263,7 @@ class AllOfDecoder {
   constructor(vs) {
     this.vs = vs;
   }
-  decode(ctx, input) {
+  decodeAllOfDecoder(ctx, input) {
     let acc = {};
     let foundOneObject = false;
     let allObjects = true;
@@ -286,7 +286,7 @@ class TupleDecoder {
   constructor(vs) {
     this.vs = vs;
   }
-  decode(ctx, input) {
+  decodeTupleDecoder(ctx, input) {
     if (Array.isArray(input)) {
       const acc = [];
       let idx = 0;
@@ -338,7 +338,7 @@ class ConstDecoder {
     this.value = value;
   }
 
-  decode(ctx, input) {
+  decodeConstDecoder(ctx, input) {
     if (input == this.value) {
       return this.value;
     }
@@ -352,7 +352,7 @@ class RegexDecoder {
     this.description = description;
   }
 
-  decode(ctx, input) {
+  decodeRegexDecoder(ctx, input) {
     if (typeof input === "string") {
       if (this.regex.test(input)) {
         return input;
@@ -364,31 +364,31 @@ class RegexDecoder {
 
 
 function DecodeUser(ctx, input) {
-    return (hoisted_User_0.decode.bind(hoisted_User_0))(ctx, input);
+    return (hoisted_User_0.decodeObjectDecoder.bind(hoisted_User_0))(ctx, input);
 }
 function DecodeNotPublic(ctx, input) {
-    return (hoisted_NotPublic_1.decode.bind(hoisted_NotPublic_1))(ctx, input);
+    return (hoisted_NotPublic_1.decodeObjectDecoder.bind(hoisted_NotPublic_1))(ctx, input);
 }
 function DecodeStartsWithA(ctx, input) {
-    return (hoisted_StartsWithA_2.decode.bind(hoisted_StartsWithA_2))(ctx, input);
+    return (hoisted_StartsWithA_2.decodeStringWithFormatDecoder.bind(hoisted_StartsWithA_2))(ctx, input);
 }
 function DecodePassword(ctx, input) {
-    return (hoisted_Password_3.decode.bind(hoisted_Password_3))(ctx, input);
+    return (hoisted_Password_3.decodeStringWithFormatDecoder.bind(hoisted_Password_3))(ctx, input);
 }
 function DecodeA(ctx, input) {
-    return (hoisted_A_4.decode.bind(hoisted_A_4))(ctx, input);
+    return (hoisted_A_4.decodeAnyOfConstsDecoder.bind(hoisted_A_4))(ctx, input);
 }
 function DecodeB(ctx, input) {
-    return (hoisted_B_5.decode.bind(hoisted_B_5))(ctx, input);
+    return (hoisted_B_5.decodeAnyOfConstsDecoder.bind(hoisted_B_5))(ctx, input);
 }
 function DecodeD(ctx, input) {
-    return (hoisted_D_6.decode.bind(hoisted_D_6))(ctx, input);
+    return (hoisted_D_6.decodeAnyOfConstsDecoder.bind(hoisted_D_6))(ctx, input);
 }
 function DecodeE(ctx, input) {
-    return (hoisted_E_7.decode.bind(hoisted_E_7))(ctx, input);
+    return (hoisted_E_7.decodeAnyOfConstsDecoder.bind(hoisted_E_7))(ctx, input);
 }
 function DecodeUnionNested(ctx, input) {
-    return (hoisted_UnionNested_8.decode.bind(hoisted_UnionNested_8))(ctx, input);
+    return (hoisted_UnionNested_8.decodeAnyOfConstsDecoder.bind(hoisted_UnionNested_8))(ctx, input);
 }
 const validators = {
     User: DecodeUser,

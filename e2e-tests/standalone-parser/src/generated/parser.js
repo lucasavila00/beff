@@ -25,7 +25,7 @@ const hoisted_TupleCodecRest_2 = new TupleDecoder({
 const hoisted_StringArrCodec_3 = new ArrayDecoder(decodeString);
 const hoisted_ImportEnumTypeof_4 = new ConstDecoder("a");
 const hoisted_ImportEnumTypeof_5 = new ObjectDecoder({
-    "A": hoisted_ImportEnumTypeof_4.decode.bind(hoisted_ImportEnumTypeof_4)
+    "A": hoisted_ImportEnumTypeof_4.decodeConstDecoder.bind(hoisted_ImportEnumTypeof_4)
 });
 const buildParsersInput = {
     "AObject": validators.AObject,
@@ -39,13 +39,13 @@ const buildParsersInput = {
     "Arr3": validators.Arr3,
     "AvatarSize": validators.AvatarSize,
     "BObject": validators.BObject,
-    "BigIntCodec": hoisted_BigIntCodec_0.decode.bind(hoisted_BigIntCodec_0),
+    "BigIntCodec": hoisted_BigIntCodec_0.decodeCodecDecoder.bind(hoisted_BigIntCodec_0),
     "DiscriminatedUnion": validators.DiscriminatedUnion,
     "DiscriminatedUnion2": validators.DiscriminatedUnion2,
     "DiscriminatedUnion3": validators.DiscriminatedUnion3,
     "DiscriminatedUnion4": validators.DiscriminatedUnion4,
     "Extra": validators.Extra,
-    "ImportEnumTypeof": hoisted_ImportEnumTypeof_5.decode.bind(hoisted_ImportEnumTypeof_5),
+    "ImportEnumTypeof": hoisted_ImportEnumTypeof_5.decodeObjectDecoder.bind(hoisted_ImportEnumTypeof_5),
     "K": validators.K,
     "KABC": validators.KABC,
     "KDEF": validators.KDEF,
@@ -61,11 +61,11 @@ const buildParsersInput = {
     "Req": validators.Req,
     "RequiredPartialObject": validators.RequiredPartialObject,
     "SettingsUpdate": validators.SettingsUpdate,
-    "StringArrCodec": hoisted_StringArrCodec_3.decode.bind(hoisted_StringArrCodec_3),
+    "StringArrCodec": hoisted_StringArrCodec_3.decodeArrayDecoder.bind(hoisted_StringArrCodec_3),
     "T3": validators.T3,
     "TransportedValue": validators.TransportedValue,
-    "TupleCodec": hoisted_TupleCodec_1.decode.bind(hoisted_TupleCodec_1),
-    "TupleCodecRest": hoisted_TupleCodecRest_2.decode.bind(hoisted_TupleCodecRest_2),
+    "TupleCodec": hoisted_TupleCodec_1.decodeTupleDecoder.bind(hoisted_TupleCodec_1),
+    "TupleCodecRest": hoisted_TupleCodecRest_2.decodeTupleDecoder.bind(hoisted_TupleCodecRest_2),
     "UnionWithEnumAccess": validators.UnionWithEnumAccess,
     "User": validators.User,
     "ValidCurrency": validators.ValidCurrency,
