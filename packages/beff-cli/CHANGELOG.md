@@ -1,5 +1,11 @@
 # @beff/cli
 
+## 0.0.72
+
+### Patch Changes
+
+- optimize union
+
 ## 0.0.71
 
 ### Patch Changes

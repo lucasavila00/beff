@@ -1,5 +1,13 @@
 # @beff/client
 
+## 0.0.72
+
+### Patch Changes
+
+- optimize union
+- Updated dependencies
+  - @beff/cli@0.0.72
+
 ## 0.0.71
 
 ### Patch Changes
