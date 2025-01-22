@@ -226,35 +226,46 @@ function decodeAnyOfConsts(ctx, input, consts) {
   }
   return buildError(input, ctx, "expected one of " + consts.map((it) => JSON.stringify(it)).join(", "));
 }
-function decodeAnyOf(ctx, input, vs) {
-  let accErrors = [];
-  for (const v of vs) {
-    const validatorCtx = {};
-    const newValue = v(validatorCtx, input);
-    if (validatorCtx.errors == null) {
-      return newValue;
-    }
-    accErrors.push(...(validatorCtx.errors ?? []));
+
+class AnyOfDecoder {
+  constructor(vs) {
+    this.vs = vs;
   }
-  return buildUnionError(input, ctx, accErrors);
+  decode(ctx, input) {
+    let accErrors = [];
+    for (const v of this.vs) {
+      const validatorCtx = {};
+      const newValue = v(validatorCtx, input);
+      if (validatorCtx.errors == null) {
+        return newValue;
+      }
+      accErrors.push(...(validatorCtx.errors ?? []));
+    }
+    return buildUnionError(input, ctx, accErrors);
+  }
 }
-function decodeAllOf(ctx, input, vs) {
-  let acc = {};
-  let foundOneObject = false;
-  let allObjects = true;
-  for (const v of vs) {
-    const newValue = v(ctx, input);
-    const isObj = typeof newValue === "object";
-    allObjects = allObjects && isObj;
-    if (isObj) {
-      foundOneObject = true;
-      acc = { ...acc, ...newValue };
+class AllOfDecoder {
+  constructor(vs) {
+    this.vs = vs;
+  }
+  decode(ctx, input) {
+    let acc = {};
+    let foundOneObject = false;
+    let allObjects = true;
+    for (const v of this.vs) {
+      const newValue = v(ctx, input);
+      const isObj = typeof newValue === "object";
+      allObjects = allObjects && isObj;
+      if (isObj) {
+        foundOneObject = true;
+        acc = { ...acc, ...newValue };
+      }
     }
+    if (foundOneObject && allObjects) {
+      return acc;
+    }
+    return input;
   }
-  if (foundOneObject && allObjects) {
-    return acc;
-  }
-  return input;
 }
 class TupleDecoder {
   constructor(vs) {
@@ -344,4 +355,4 @@ const validators = {
     A: DecodeA
 };
 
-export default { ObjectDecoder, ArrayDecoder, decodeString, decodeNumber, CodecDecoder, decodeFunction, StringWithFormatDecoder, decodeAnyOf, decodeAllOf, decodeBoolean, decodeAny, TupleDecoder, decodeNull, decodeNever, RegexDecoder, ConstDecoder, registerCustomFormatter, validators };
+export default { ObjectDecoder, ArrayDecoder, decodeString, decodeNumber, CodecDecoder, decodeFunction, StringWithFormatDecoder, AnyOfDecoder, AllOfDecoder, decodeBoolean, decodeAny, TupleDecoder, decodeNull, decodeNever, RegexDecoder, ConstDecoder, registerCustomFormatter, validators };

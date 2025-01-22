@@ -141,25 +141,19 @@ impl DecoderFnGenerator<'_> {
         hoisted: &mut Vec<ModuleItem>,
     ) -> Expr {
         let els_expr: Vec<Expr> = vs.iter().map(|it| self.decode_expr(it, hoisted)).collect();
-
-        Self::decode_call_extra(
-            decoder_name,
-            vec![self.hoist_expr(
-                hoisted,
-                Expr::Array(ArrayLit {
-                    span: DUMMY_SP,
-                    elems: els_expr
-                        .into_iter()
-                        .map(|it| {
-                            Some(ExprOrSpread {
-                                spread: None,
-                                expr: it.into(),
-                            })
-                        })
-                        .collect(),
-                }),
-            )],
-        )
+        let arr_lit = Expr::Array(ArrayLit {
+            span: DUMMY_SP,
+            elems: els_expr
+                .into_iter()
+                .map(|it| {
+                    Some(ExprOrSpread {
+                        spread: None,
+                        expr: it.into(),
+                    })
+                })
+                .collect(),
+        });
+        Self::decode_bound(self.new_hoisted_decoder(hoisted, decoder_name, vec![arr_lit]))
     }
     fn extract_union(&self, it: &JsonSchema) -> Vec<JsonSchema> {
         match it {
@@ -229,8 +223,7 @@ impl DecoderFnGenerator<'_> {
                 })
                 .collect(),
         });
-
-        Self::decode_call_extra(
+        Self::make_cb(Self::decode_call_extra(
             "decodeAnyOfDiscriminated",
             vec![
                 Expr::Lit(Lit::Str(Str {
@@ -240,7 +233,7 @@ impl DecoderFnGenerator<'_> {
                 })),
                 self.hoist_expr(hoisted, extra_obj),
             ],
-        )
+        ))
     }
     fn maybe_decode_any_of_discriminated(
         &self,
@@ -421,7 +414,10 @@ impl DecoderFnGenerator<'_> {
                         .collect(),
                 }),
             );
-            return Some(Self::decode_call_extra("decodeAnyOfConsts", vec![consts]));
+            return Some(Self::make_cb(Self::decode_call_extra(
+                "decodeAnyOfConsts",
+                vec![consts],
+            )));
         }
         None
     }
@@ -443,7 +439,7 @@ impl DecoderFnGenerator<'_> {
             return discriminated;
         }
 
-        self.decode_union_or_intersection("decodeAnyOf", vs, hoisted)
+        self.decode_union_or_intersection("AnyOfDecoder", vs, hoisted)
     }
 
     fn decode_expr(&self, schema: &JsonSchema, hoisted: &mut Vec<ModuleItem>) -> Expr {
@@ -569,10 +565,8 @@ impl DecoderFnGenerator<'_> {
                     vec![tpl_extra],
                 ))
             }
-            JsonSchema::AnyOf(vs) => Self::make_cb(self.decode_any_of(vs, hoisted)),
-            JsonSchema::AllOf(vs) => {
-                Self::make_cb(self.decode_union_or_intersection("decodeAllOf", vs, hoisted))
-            }
+            JsonSchema::AnyOf(vs) => self.decode_any_of(vs, hoisted),
+            JsonSchema::AllOf(vs) => self.decode_union_or_intersection("AllOfDecoder", vs, hoisted),
             JsonSchema::Const(json) => Self::decode_bound(self.new_hoisted_decoder(
                 hoisted,
                 "ConstDecoder",
