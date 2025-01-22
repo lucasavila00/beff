@@ -1,15 +1,15 @@
-use std::collections::{BTreeMap, BTreeSet};
-
-use super::expr::ToExpr;
+use super::{expr::ToExpr, printer::const_decl};
 use crate::{
     ast::json_schema::{JsonSchema, JsonSchemaConst, Optionality, TplLitTypeItem},
     Validator,
 };
+use std::collections::{BTreeMap, BTreeSet};
 use swc_common::DUMMY_SP;
 use swc_ecma_ast::{
     ArrayLit, ArrowExpr, AssignPat, BindingIdent, BlockStmt, BlockStmtOrExpr, Bool, CallExpr,
-    Callee, Expr, ExprOrSpread, Function, Ident, KeyValueProp, Lit, MemberExpr, MemberProp, Null,
-    ObjectLit, Param, ParenExpr, Pat, Prop, PropName, PropOrSpread, Regex, ReturnStmt, Stmt, Str,
+    Callee, Expr, ExprOrSpread, Function, Ident, KeyValueProp, Lit, MemberExpr, MemberProp,
+    ModuleItem, Null, ObjectLit, Param, ParenExpr, Pat, Prop, PropName, PropOrSpread, Regex,
+    ReturnStmt, Stmt, Str,
 };
 struct SwcBuilder;
 
@@ -160,8 +160,12 @@ impl DecoderFnGenerator<'_> {
         decoder_name: &str,
         required: Required,
         vs: &BTreeSet<JsonSchema>,
+        hoisted: &mut Vec<ModuleItem>,
     ) -> Expr {
-        let els_expr: Vec<Expr> = vs.iter().map(|it| self.decode_expr(it, required)).collect();
+        let els_expr: Vec<Expr> = vs
+            .iter()
+            .map(|it| self.decode_expr(it, required, hoisted))
+            .collect();
         Self::decode_call_extra(
             decoder_name,
             required,
@@ -200,6 +204,7 @@ impl DecoderFnGenerator<'_> {
         discriminator: String,
         discriminator_strings: BTreeSet<String>,
         object_vs: Vec<&BTreeMap<String, Optionality<JsonSchema>>>,
+        hoisted: &mut Vec<ModuleItem>,
     ) -> Expr {
         let mut acc = BTreeMap::new();
         for current_key in discriminator_strings {
@@ -241,9 +246,11 @@ impl DecoderFnGenerator<'_> {
                             value: key.clone().into(),
                             raw: None,
                         }),
-                        value: Box::new(Self::make_cb(
-                            self.decode_expr(value, Required::Known(true)),
-                        )),
+                        value: Box::new(Self::make_cb(self.decode_expr(
+                            value,
+                            Required::Known(true),
+                            hoisted,
+                        ))),
                     })))
                 })
                 .collect(),
@@ -266,6 +273,7 @@ impl DecoderFnGenerator<'_> {
         &self,
         flat_values: &BTreeSet<JsonSchema>,
         required: Required,
+        hoisted: &mut Vec<ModuleItem>,
     ) -> Option<Expr> {
         let all_objects_without_rest = flat_values
             .iter()
@@ -336,6 +344,7 @@ impl DecoderFnGenerator<'_> {
                             discriminator,
                             discriminator_strings,
                             object_vs,
+                            hoisted,
                         ));
                     }
                 }
@@ -347,6 +356,7 @@ impl DecoderFnGenerator<'_> {
     fn maybe_decode_any_of_consts(
         flat_values: &BTreeSet<JsonSchema>,
         required: Required,
+        hoisted: &mut Vec<ModuleItem>,
     ) -> Option<Expr> {
         let all_consts = flat_values
             .iter()
@@ -359,7 +369,8 @@ impl DecoderFnGenerator<'_> {
                     _ => unreachable!(),
                 })
                 .collect();
-            let consts = vec![Expr::Array(ArrayLit {
+
+            let arr = Expr::Array(ArrayLit {
                 span: DUMMY_SP,
                 elems: consts
                     .into_iter()
@@ -370,16 +381,28 @@ impl DecoderFnGenerator<'_> {
                         })
                     })
                     .collect(),
+            });
+
+            let hoist_count = hoisted.len();
+            let var_name = format!("hoisted_{}", hoist_count);
+            let new_statement = const_decl(&var_name, arr);
+            hoisted.push(new_statement);
+
+            let refs = vec![Expr::Ident(Ident {
+                span: DUMMY_SP,
+                sym: var_name.into(),
+                optional: false,
             })];
-            return Some(Self::decode_call_extra(
-                "decodeAnyOfConsts",
-                required,
-                consts,
-            ));
+            return Some(Self::decode_call_extra("decodeAnyOfConsts", required, refs));
         }
         None
     }
-    fn decode_any_of(&self, vs: &BTreeSet<JsonSchema>, required: Required) -> Expr {
+    fn decode_any_of(
+        &self,
+        vs: &BTreeSet<JsonSchema>,
+        required: Required,
+        hoisted: &mut Vec<ModuleItem>,
+    ) -> Expr {
         if vs.is_empty() {
             panic!("empty anyOf is not allowed")
         }
@@ -389,28 +412,36 @@ impl DecoderFnGenerator<'_> {
             .flat_map(|it| self.extract_union(it))
             .collect::<BTreeSet<_>>();
 
-        if let Some(consts) = Self::maybe_decode_any_of_consts(&flat_values, required) {
+        if let Some(consts) = Self::maybe_decode_any_of_consts(&flat_values, required, hoisted) {
             return consts;
         }
 
-        if let Some(discriminated) = self.maybe_decode_any_of_discriminated(&flat_values, required)
+        if let Some(discriminated) =
+            self.maybe_decode_any_of_discriminated(&flat_values, required, hoisted)
         {
             return discriminated;
         }
 
-        self.decode_union_or_intersection("decodeAnyOf", required, vs)
+        self.decode_union_or_intersection("decodeAnyOf", required, vs, hoisted)
     }
 
-    fn decode_expr(&self, schema: &JsonSchema, required: Required) -> Expr {
+    fn decode_expr(
+        &self,
+        schema: &JsonSchema,
+        required: Required,
+        hoisted: &mut Vec<ModuleItem>,
+    ) -> Expr {
         match schema {
             JsonSchema::StNot(_) => {
                 unreachable!("should not create decoders for semantic types")
             }
 
             JsonSchema::StNever => Self::decode_call("decodeNever", required),
-            JsonSchema::AnyArrayLike => {
-                self.decode_expr(&JsonSchema::Array(JsonSchema::Any.into()), required)
-            }
+            JsonSchema::AnyArrayLike => self.decode_expr(
+                &JsonSchema::Array(JsonSchema::Any.into()),
+                required,
+                hoisted,
+            ),
             JsonSchema::Null => Self::decode_call("decodeNull", required),
             JsonSchema::Boolean => Self::decode_call("decodeBoolean", required),
             JsonSchema::String => Self::decode_call("decodeString", required),
@@ -440,10 +471,10 @@ impl DecoderFnGenerator<'_> {
                                 }),
                                 value: Box::new(Self::make_cb(match value {
                                     Optionality::Optional(schema) => {
-                                        self.decode_expr(schema, Required::Known(false))
+                                        self.decode_expr(schema, Required::Known(false), hoisted)
                                     }
                                     Optionality::Required(schema) => {
-                                        self.decode_expr(schema, Required::Known(true))
+                                        self.decode_expr(schema, Required::Known(true), hoisted)
                                     }
                                 })),
                             })))
@@ -451,7 +482,7 @@ impl DecoderFnGenerator<'_> {
                         .collect(),
                 })];
                 if let Some(rest) = rest {
-                    let rest = self.decode_expr(rest, Required::Known(false));
+                    let rest = self.decode_expr(rest, Required::Known(false), hoisted);
                     extra.push(Self::make_cb(rest));
                 }
                 Self::decode_call_extra("decodeObject", required, extra)
@@ -459,7 +490,11 @@ impl DecoderFnGenerator<'_> {
             JsonSchema::Array(ty) => Self::decode_call_extra(
                 "decodeArray",
                 required,
-                vec![Self::make_cb(self.decode_expr(ty, Required::Known(true)))],
+                vec![Self::make_cb(self.decode_expr(
+                    ty,
+                    Required::Known(true),
+                    hoisted,
+                ))],
             ),
             JsonSchema::Tuple {
                 prefix_items,
@@ -484,9 +519,11 @@ impl DecoderFnGenerator<'_> {
                                         .map(|it| {
                                             Some(ExprOrSpread {
                                                 spread: None,
-                                                expr: Self::make_cb(
-                                                    self.decode_expr(it, Required::Known(true)),
-                                                )
+                                                expr: Self::make_cb(self.decode_expr(
+                                                    it,
+                                                    Required::Known(true),
+                                                    hoisted,
+                                                ))
                                                 .into(),
                                             })
                                         })
@@ -503,9 +540,11 @@ impl DecoderFnGenerator<'_> {
                                     optional: false,
                                 }),
                                 value: Box::new(match items {
-                                    Some(v) => {
-                                        Self::make_cb(self.decode_expr(v, Required::Known(true)))
-                                    }
+                                    Some(v) => Self::make_cb(self.decode_expr(
+                                        v,
+                                        Required::Known(true),
+                                        hoisted,
+                                    )),
                                     None => Expr::Lit(Lit::Null(Null { span: DUMMY_SP })),
                                 }),
                             })
@@ -514,8 +553,10 @@ impl DecoderFnGenerator<'_> {
                     ],
                 })],
             ),
-            JsonSchema::AnyOf(vs) => self.decode_any_of(vs, required),
-            JsonSchema::AllOf(vs) => self.decode_union_or_intersection("decodeAllOf", required, vs),
+            JsonSchema::AnyOf(vs) => self.decode_any_of(vs, required, hoisted),
+            JsonSchema::AllOf(vs) => {
+                self.decode_union_or_intersection("decodeAllOf", required, vs, hoisted)
+            }
             JsonSchema::Const(json) => Self::decode_call_extra(
                 "decodeConst",
                 required,
@@ -558,7 +599,11 @@ impl DecoderFnGenerator<'_> {
         }
     }
 
-    fn fn_decoder_from_schema(&mut self, schema: &JsonSchema) -> Function {
+    fn fn_decoder_from_schema(
+        &mut self,
+        schema: &JsonSchema,
+        hoisted: &mut Vec<ModuleItem>,
+    ) -> Function {
         Function {
             params: vec![
                 Param {
@@ -609,7 +654,11 @@ impl DecoderFnGenerator<'_> {
                 span: DUMMY_SP,
                 stmts: vec![Stmt::Return(ReturnStmt {
                     span: DUMMY_SP,
-                    arg: Some(Box::new(self.decode_expr(schema, Required::FromArgs))),
+                    arg: Some(Box::new(self.decode_expr(
+                        schema,
+                        Required::FromArgs,
+                        hoisted,
+                    ))),
                 })],
             }
             .into(),
@@ -621,6 +670,10 @@ impl DecoderFnGenerator<'_> {
     }
 }
 #[must_use]
-pub fn from_schema(schema: &JsonSchema, validators: &Vec<Validator>) -> Function {
-    DecoderFnGenerator { validators }.fn_decoder_from_schema(schema)
+pub fn from_schema(
+    schema: &JsonSchema,
+    validators: &Vec<Validator>,
+    hoisted: &mut Vec<ModuleItem>,
+) -> Function {
+    DecoderFnGenerator { validators }.fn_decoder_from_schema(schema, hoisted)
 }
