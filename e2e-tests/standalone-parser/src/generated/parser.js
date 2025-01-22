@@ -4,7 +4,7 @@
 
 import {printErrors} from '@beff/client';
 import {z} from 'zod';
-import validatorsMod from "./validators.js"; const { decodeObject, decodeArray, decodeString, decodeNumber, decodeCodec, decodeFunction, decodeStringWithFormat, decodeAnyOf, decodeAllOf, decodeBoolean, decodeAny, decodeTuple, decodeNull, decodeNever, decodeConst, registerCustomFormatter, validators, c } = validatorsMod;
+import validatorsMod from "./validators.js"; const { decodeObject, decodeArray, decodeString, decodeNumber, decodeCodec, decodeFunction, decodeStringWithFormat, decodeAnyOf, decodeAllOf, decodeBoolean, decodeAny, decodeTuple, decodeNull, decodeNever, RegexDecoder, ConstDecoder, registerCustomFormatter, validators, c } = validatorsMod;
 const RequiredCustomFormats = ["ValidCurrency"];
 const buildParsersInput = {
     "AObject": function(ctx, input) {
@@ -56,7 +56,7 @@ const buildParsersInput = {
         return ((ctx, input)=>(validators.Extra(ctx, input)))(ctx, input);
     },
     "ImportEnumTypeof": function(ctx, input) {
-        return ((ctx, input)=>(decodeObject(ctx, input, hoisted_ImportEnumTypeof_0)))(ctx, input);
+        return ((ctx, input)=>(decodeObject(ctx, input, hoisted_ImportEnumTypeof_1)))(ctx, input);
     },
     "K": function(ctx, input) {
         return ((ctx, input)=>(validators.K(ctx, input)))(ctx, input);
@@ -125,8 +125,9 @@ const buildParsersInput = {
         return ((ctx, input)=>(validators.Version2(ctx, input)))(ctx, input);
     }
 };
-const hoisted_ImportEnumTypeof_0 = {
-    "A": (ctx, input)=>(decodeConst(ctx, input, "a"))
+const hoisted_ImportEnumTypeof_0 = new ConstDecoder("a");
+const hoisted_ImportEnumTypeof_1 = {
+    "A": hoisted_ImportEnumTypeof_0.decode.bind(hoisted_ImportEnumTypeof_0)
 };
 
 

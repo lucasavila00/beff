@@ -19,7 +19,8 @@ const decodersExported = [
   "decodeTuple",
   "decodeNull",
   "decodeNever",
-  "decodeConst",
+  "RegexDecoder",
+  "ConstDecoder",
   "registerCustomFormatter",
 ];
 

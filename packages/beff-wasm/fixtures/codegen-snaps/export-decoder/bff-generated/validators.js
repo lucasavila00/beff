@@ -279,11 +279,18 @@ function decodeNull(ctx, input) {
 function decodeNever(ctx, input) {
   return buildError(input, ctx, "never");
 }
-function decodeConst(ctx, input, constValue) {
-  if (input == constValue) {
-    return constValue;
+
+class ConstDecoder {
+  constructor(value) {
+    this.value = value;
   }
-  return buildError(input, ctx, "expected " + JSON.stringify(constValue));
+
+  decode(ctx, input) {
+    if (input == this.value) {
+      return this.value;
+    }
+    return buildError(input, ctx, "expected " + JSON.stringify(this.value));
+  }
 }
 
 class RegexDecoder {
@@ -373,4 +380,4 @@ const hoisted_UnionNested_6 = [
     6
 ];
 
-export default { decodeObject, decodeArray, decodeString, decodeNumber, decodeCodec, decodeFunction, decodeStringWithFormat, decodeAnyOf, decodeAllOf, decodeBoolean, decodeAny, decodeTuple, decodeNull, decodeNever, decodeConst, registerCustomFormatter, validators };
+export default { decodeObject, decodeArray, decodeString, decodeNumber, decodeCodec, decodeFunction, decodeStringWithFormat, decodeAnyOf, decodeAllOf, decodeBoolean, decodeAny, decodeTuple, decodeNull, decodeNever, RegexDecoder, ConstDecoder, registerCustomFormatter, validators };

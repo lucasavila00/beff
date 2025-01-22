@@ -365,6 +365,29 @@ impl DecoderFnGenerator<'_> {
         })
     }
 
+    fn new_hoisted_decoder(
+        &self,
+        hoisted: &mut Vec<ModuleItem>,
+        class: &str,
+        args: Vec<Expr>,
+    ) -> Expr {
+        let new_expr = Expr::New(NewExpr {
+            span: DUMMY_SP,
+            callee: Box::new(SwcBuilder::ident_expr(class)),
+            args: Some(
+                args.into_iter()
+                    .map(|it| ExprOrSpread {
+                        spread: None,
+                        expr: it.into(),
+                    })
+                    .collect(),
+            ),
+            type_args: None,
+        });
+        let hoisted = self.hoist_expr(hoisted, new_expr);
+        hoisted
+    }
+
     fn maybe_decode_any_of_consts(
         &self,
         flat_values: &BTreeSet<JsonSchema>,
@@ -544,8 +567,9 @@ impl DecoderFnGenerator<'_> {
             JsonSchema::AllOf(vs) => {
                 Self::make_cb(self.decode_union_or_intersection("decodeAllOf", vs, hoisted))
             }
-            JsonSchema::Const(json) => Self::make_cb(Self::decode_call_extra(
-                "decodeConst",
+            JsonSchema::Const(json) => Self::decode_bound(self.new_hoisted_decoder(
+                hoisted,
+                "ConstDecoder",
                 vec![json.clone().to_json().to_expr()],
             )),
             JsonSchema::Codec(format) => Self::make_cb(Self::decode_call_extra(
@@ -563,27 +587,22 @@ impl DecoderFnGenerator<'_> {
                     regex_exp.push_str(&item.regex_expr());
                 }
 
-                let new_expr = Expr::New(NewExpr {
-                    span: DUMMY_SP,
-                    callee: Box::new(SwcBuilder::ident_expr("RegexDecoder")),
-                    args: Some(vec![
+                Self::decode_bound(self.new_hoisted_decoder(
+                    hoisted,
+                    "RegexDecoder",
+                    vec![
                         Expr::Lit(Lit::Regex(Regex {
                             span: DUMMY_SP,
                             exp: regex_exp.into(),
                             flags: "".into(),
-                        }))
-                        .into(),
+                        })),
                         Expr::Lit(Lit::Str(Str {
                             span: DUMMY_SP,
                             value: TplLitTypeItem::describe_vec(items).into(),
                             raw: None,
-                        }))
-                        .into(),
-                    ]),
-                    type_args: None,
-                });
-                let hoisted = self.hoist_expr(hoisted, new_expr);
-                Self::decode_bound(hoisted)
+                        })),
+                    ],
+                ))
             }
             JsonSchema::Function => SwcBuilder::ident_expr("decodeFunction"),
         };

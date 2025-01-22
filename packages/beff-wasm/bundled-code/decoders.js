@@ -276,11 +276,18 @@ function decodeNull(ctx, input) {
 function decodeNever(ctx, input) {
   return buildError(input, ctx, "never");
 }
-function decodeConst(ctx, input, constValue) {
-  if (input == constValue) {
-    return constValue;
+
+class ConstDecoder {
+  constructor(value) {
+    this.value = value;
   }
-  return buildError(input, ctx, "expected " + JSON.stringify(constValue));
+
+  decode(ctx, input) {
+    if (input == this.value) {
+      return this.value;
+    }
+    return buildError(input, ctx, "expected " + JSON.stringify(this.value));
+  }
 }
 
 class RegexDecoder {

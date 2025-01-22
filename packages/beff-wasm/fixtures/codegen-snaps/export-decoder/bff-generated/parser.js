@@ -4,7 +4,7 @@
 
 import {printErrors} from '@beff/client';
 import {z} from 'zod';
-import validatorsMod from "./validators.js"; const { decodeObject, decodeArray, decodeString, decodeNumber, decodeCodec, decodeFunction, decodeStringWithFormat, decodeAnyOf, decodeAllOf, decodeBoolean, decodeAny, decodeTuple, decodeNull, decodeNever, decodeConst, registerCustomFormatter, validators, c } = validatorsMod;
+import validatorsMod from "./validators.js"; const { decodeObject, decodeArray, decodeString, decodeNumber, decodeCodec, decodeFunction, decodeStringWithFormat, decodeAnyOf, decodeAllOf, decodeBoolean, decodeAny, decodeTuple, decodeNull, decodeNever, RegexDecoder, ConstDecoder, registerCustomFormatter, validators, c } = validatorsMod;
 const RequiredCustomFormats = ["password","StartsWithA"];
 const buildParsersInput = {
     "NotPublicRenamed": function(ctx, input) {
@@ -23,16 +23,18 @@ const buildParsersInput = {
         return ((ctx, input)=>(decodeArray(ctx, input, hoisted_Users_0)))(ctx, input);
     },
     "float": function(ctx, input) {
-        return ((ctx, input)=>(decodeConst(ctx, input, 123.456)))(ctx, input);
+        return (hoisted_float_1.decode.bind(hoisted_float_1))(ctx, input);
     },
     "int": function(ctx, input) {
-        return ((ctx, input)=>(decodeConst(ctx, input, 123)))(ctx, input);
+        return (hoisted_int_2.decode.bind(hoisted_int_2))(ctx, input);
     },
     "union": function(ctx, input) {
         return ((ctx, input)=>(validators.UnionNested(ctx, input)))(ctx, input);
     }
 };
 const hoisted_Users_0 = (ctx, input)=>(validators.User(ctx, input));
+const hoisted_float_1 = new ConstDecoder(123.456);
+const hoisted_int_2 = new ConstDecoder(123);
 
 
 
