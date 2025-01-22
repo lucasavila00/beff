@@ -1,5 +1,13 @@
 # @beff/client
 
+## 0.0.69
+
+### Patch Changes
+
+- hoist arr
+- Updated dependencies
+  - @beff/cli@0.0.69
+
 ## 0.0.68
 
 ### Patch Changes
