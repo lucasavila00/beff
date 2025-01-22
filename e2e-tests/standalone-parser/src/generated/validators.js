@@ -84,18 +84,24 @@ function decodeObject(ctx, input, data, additionalPropsValidator = null) {
   return buildError(input, ctx, "expected object");
 }
 
-function decodeArray(ctx, input, data) {
-  if (Array.isArray(input)) {
-    const acc = [];
-    for (let i = 0; i < input.length; i++) {
-      const v = input[i];
-      pushPath(ctx, "[" + i + "]");
-      acc.push(data(ctx, v));
-      popPath(ctx);
-    }
-    return acc;
+class ArrayDecoder {
+  constructor(data) {
+    this.data = data;
   }
-  return buildError(input, ctx, "expected array");
+
+  decode(ctx, input) {
+    if (Array.isArray(input)) {
+      const acc = [];
+      for (let i = 0; i < input.length; i++) {
+        const v = input[i];
+        pushPath(ctx, "[" + i + "]");
+        acc.push(this.data(ctx, v));
+        popPath(ctx);
+      }
+      return acc;
+    }
+    return buildError(input, ctx, "expected array");
+  }
 }
 function decodeString(ctx, input) {
   if (typeof input === "string") {
@@ -502,11 +508,11 @@ const hoisted_TransportedValue_0 = [
     decodeString,
     decodeNumber
 ];
-const hoisted_TransportedValue_1 = (ctx, input)=>(decodeAnyOf(ctx, input, hoisted_TransportedValue_0));
+const hoisted_TransportedValue_1 = new ArrayDecoder((ctx, input)=>(decodeAnyOf(ctx, input, hoisted_TransportedValue_0)));
 const hoisted_TransportedValue_2 = [
     decodeNull,
     decodeString,
-    (ctx, input)=>(decodeArray(ctx, input, hoisted_TransportedValue_1))
+    hoisted_TransportedValue_1.decode.bind(hoisted_TransportedValue_1)
 ];
 const hoisted_AllTs_3 = [
     "a",
@@ -612,12 +618,12 @@ const hoisted_PartialSettings_35 = {
 };
 const hoisted_Extra_36 = {};
 const hoisted_AvatarSize_37 = new RegexDecoder(/(\d+(\.\d+)?)(x)(\d+(\.\d+)?)/, "${number}x${number}");
-const hoisted_User_38 = (ctx, input)=>(validators.User(ctx, input));
+const hoisted_User_38 = new ArrayDecoder((ctx, input)=>(validators.User(ctx, input)));
 const hoisted_User_39 = {
     "accessLevel": (ctx, input)=>(validators.AccessLevel(ctx, input)),
     "avatarSize": (ctx, input)=>(validators.AvatarSize(ctx, input)),
     "extra": (ctx, input)=>(validators.Extra(ctx, input)),
-    "friends": (ctx, input)=>(decodeArray(ctx, input, hoisted_User_38)),
+    "friends": hoisted_User_38.decode.bind(hoisted_User_38),
     "name": decodeString
 };
 const hoisted_PublicUser_40 = {
@@ -853,4 +859,4 @@ const hoisted_K_112 = [
     (ctx, input)=>(validators.KDEF(ctx, input))
 ];
 
-export default { decodeObject, decodeArray, decodeString, decodeNumber, CodecDecoder, decodeFunction, decodeStringWithFormat, decodeAnyOf, decodeAllOf, decodeBoolean, decodeAny, TupleDecoder, decodeNull, decodeNever, RegexDecoder, ConstDecoder, registerCustomFormatter, validators };
+export default { decodeObject, ArrayDecoder, decodeString, decodeNumber, CodecDecoder, decodeFunction, decodeStringWithFormat, decodeAnyOf, decodeAllOf, decodeBoolean, decodeAny, TupleDecoder, decodeNull, decodeNever, RegexDecoder, ConstDecoder, registerCustomFormatter, validators };

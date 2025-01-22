@@ -509,8 +509,12 @@ impl DecoderFnGenerator<'_> {
             }
             JsonSchema::Array(ty) => {
                 let decoding = self.decode_expr(ty, hoisted);
-                let decoding = self.hoist_expr(hoisted, decoding);
-                Self::make_cb(Self::decode_call_extra("decodeArray", vec![decoding]))
+
+                Self::decode_bound(self.new_hoisted_decoder(
+                    hoisted,
+                    "ArrayDecoder",
+                    vec![decoding],
+                ))
             }
             JsonSchema::Tuple {
                 prefix_items,

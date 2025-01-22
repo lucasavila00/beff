@@ -6,7 +6,7 @@ import gen from "./generated/bundle";
 
 const decodersExported = [
   "decodeObject",
-  "decodeArray",
+  "ArrayDecoder",
   "decodeString",
   "decodeNumber",
   "CodecDecoder",

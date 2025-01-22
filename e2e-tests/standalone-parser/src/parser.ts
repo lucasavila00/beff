@@ -226,11 +226,13 @@ export const {
   BigIntCodec: BigIntCodec,
   TupleCodec: TupleCodec,
   TupleCodecRest: TupleCodecRest,
+  StringArrCodec: StringArrCodec,
 } = parse.buildParsers<{
   TransportedValue: TransportedValue;
   BigIntCodec: bigint;
   TupleCodec: [number, number, number];
   TupleCodecRest: [number, number, ...string[]];
+  StringArrCodec: string[];
   AllTs: T4.AllTs;
   AObject: AObject;
   Version: Version;

@@ -30,6 +30,7 @@ import {
   BigIntCodec,
   TupleCodec,
   TupleCodecRest,
+  StringArrCodec,
 } from "../src/parser";
 import { Arr2 } from "../src/types";
 import { Schemas } from "../src/schema";
@@ -89,6 +90,36 @@ it("TupleCodecRest", () => {
   expect(TupleCodecRest.safeParse([1, 2, 3])).toMatchInlineSnapshot(`
     {
       "errors": [
+        {
+          "message": "expected string",
+          "path": [
+            "[2]",
+          ],
+          "received": 3,
+        },
+      ],
+      "success": false,
+    }
+  `);
+});
+it("StringArrCodec", () => {
+  expect(StringArrCodec.safeParse([1, 2, 3])).toMatchInlineSnapshot(`
+    {
+      "errors": [
+        {
+          "message": "expected string",
+          "path": [
+            "[0]",
+          ],
+          "received": 1,
+        },
+        {
+          "message": "expected string",
+          "path": [
+            "[1]",
+          ],
+          "received": 2,
+        },
         {
           "message": "expected string",
           "path": [

@@ -4,7 +4,7 @@
 
 import {printErrors} from '@beff/client';
 import {z} from 'zod';
-import validatorsMod from "./validators.js"; const { decodeObject, decodeArray, decodeString, decodeNumber, CodecDecoder, decodeFunction, decodeStringWithFormat, decodeAnyOf, decodeAllOf, decodeBoolean, decodeAny, TupleDecoder, decodeNull, decodeNever, RegexDecoder, ConstDecoder, registerCustomFormatter, validators, c } = validatorsMod;
+import validatorsMod from "./validators.js"; const { decodeObject, ArrayDecoder, decodeString, decodeNumber, CodecDecoder, decodeFunction, decodeStringWithFormat, decodeAnyOf, decodeAllOf, decodeBoolean, decodeAny, TupleDecoder, decodeNull, decodeNever, RegexDecoder, ConstDecoder, registerCustomFormatter, validators, c } = validatorsMod;
 const RequiredCustomFormats = ["ValidCurrency"];
 const buildParsersInput = {
     "AObject": function(ctx, input) {
@@ -59,7 +59,7 @@ const buildParsersInput = {
         return ((ctx, input)=>(validators.Extra(ctx, input)))(ctx, input);
     },
     "ImportEnumTypeof": function(ctx, input) {
-        return ((ctx, input)=>(decodeObject(ctx, input, hoisted_ImportEnumTypeof_4)))(ctx, input);
+        return ((ctx, input)=>(decodeObject(ctx, input, hoisted_ImportEnumTypeof_5)))(ctx, input);
     },
     "K": function(ctx, input) {
         return ((ctx, input)=>(validators.K(ctx, input)))(ctx, input);
@@ -106,6 +106,9 @@ const buildParsersInput = {
     "SettingsUpdate": function(ctx, input) {
         return ((ctx, input)=>(validators.SettingsUpdate(ctx, input)))(ctx, input);
     },
+    "StringArrCodec": function(ctx, input) {
+        return (hoisted_StringArrCodec_3.decode.bind(hoisted_StringArrCodec_3))(ctx, input);
+    },
     "T3": function(ctx, input) {
         return ((ctx, input)=>(validators.T3(ctx, input)))(ctx, input);
     },
@@ -150,9 +153,10 @@ const hoisted_TupleCodecRest_2 = new TupleDecoder({
     ],
     items: decodeString
 });
-const hoisted_ImportEnumTypeof_3 = new ConstDecoder("a");
-const hoisted_ImportEnumTypeof_4 = {
-    "A": hoisted_ImportEnumTypeof_3.decode.bind(hoisted_ImportEnumTypeof_3)
+const hoisted_StringArrCodec_3 = new ArrayDecoder(decodeString);
+const hoisted_ImportEnumTypeof_4 = new ConstDecoder("a");
+const hoisted_ImportEnumTypeof_5 = {
+    "A": hoisted_ImportEnumTypeof_4.decode.bind(hoisted_ImportEnumTypeof_4)
 };
 
 

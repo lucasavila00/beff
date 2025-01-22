@@ -84,18 +84,24 @@ function decodeObject(ctx, input, data, additionalPropsValidator = null) {
   return buildError(input, ctx, "expected object");
 }
 
-function decodeArray(ctx, input, data) {
-  if (Array.isArray(input)) {
-    const acc = [];
-    for (let i = 0; i < input.length; i++) {
-      const v = input[i];
-      pushPath(ctx, "[" + i + "]");
-      acc.push(data(ctx, v));
-      popPath(ctx);
-    }
-    return acc;
+class ArrayDecoder {
+  constructor(data) {
+    this.data = data;
   }
-  return buildError(input, ctx, "expected array");
+
+  decode(ctx, input) {
+    if (Array.isArray(input)) {
+      const acc = [];
+      for (let i = 0; i < input.length; i++) {
+        const v = input[i];
+        pushPath(ctx, "[" + i + "]");
+        acc.push(this.data(ctx, v));
+        popPath(ctx);
+      }
+      return acc;
+    }
+    return buildError(input, ctx, "expected array");
+  }
 }
 function decodeString(ctx, input) {
   if (typeof input === "string") {
@@ -326,4 +332,4 @@ const validators = {
     A: DecodeA
 };
 
-export default { decodeObject, decodeArray, decodeString, decodeNumber, CodecDecoder, decodeFunction, decodeStringWithFormat, decodeAnyOf, decodeAllOf, decodeBoolean, decodeAny, TupleDecoder, decodeNull, decodeNever, RegexDecoder, ConstDecoder, registerCustomFormatter, validators };
+export default { decodeObject, ArrayDecoder, decodeString, decodeNumber, CodecDecoder, decodeFunction, decodeStringWithFormat, decodeAnyOf, decodeAllOf, decodeBoolean, decodeAny, TupleDecoder, decodeNull, decodeNever, RegexDecoder, ConstDecoder, registerCustomFormatter, validators };
