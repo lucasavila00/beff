@@ -1,5 +1,13 @@
 # @beff/client
 
+## 0.0.68
+
+### Patch Changes
+
+- hoist obj
+- Updated dependencies
+  - @beff/cli@0.0.68
+
 ## 0.0.67
 
 ### Patch Changes
