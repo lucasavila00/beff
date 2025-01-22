@@ -342,49 +342,49 @@ function decodeRegex(ctx, input, required, regex, description) {
   return buildError(input, ctx, "expected string matching " + description);
 }
 
-const hoisted_0 = [
+const hoisted_AllTs_0 = [
     "a",
     "b"
 ];
-const hoisted_1 = [
+const hoisted_AccessLevel2_1 = [
     "ADMIN Admin",
     "USER User"
 ];
-const hoisted_2 = [
+const hoisted_AccessLevel_2 = [
     "ADMIN",
     "USER"
 ];
-const hoisted_3 = [
+const hoisted_Arr3_3 = [
     "X",
     "Y"
 ];
-const hoisted_4 = [
+const hoisted_OmitSettings_4 = [
     "a",
     "b"
 ];
-const hoisted_5 = [
+const hoisted_Settings_5 = [
     "a",
     "b"
 ];
-const hoisted_6 = [
+const hoisted_LevelAndDSettings_6 = [
     "a",
     "b"
 ];
-const hoisted_7 = [
+const hoisted_PartialSettings_7 = [
     "a",
     "b"
 ];
-const hoisted_8 = [
+const hoisted_AllTypes_8 = [
     "LevelAndDSettings",
     "OmitSettings",
     "PartialSettings",
     "RequiredPartialObject"
 ];
-const hoisted_9 = [
+const hoisted_OtherEnum_9 = [
     "a",
     "b"
 ];
-const hoisted_10 = [
+const hoisted_Arr2_10 = [
     "A",
     "B",
     "C"
@@ -401,7 +401,7 @@ function DecodeTransportedValue(ctx, input, required = true) {
     ]);
 }
 function DecodeAllTs(ctx, input, required = true) {
-    return decodeAnyOfConsts(ctx, input, required, hoisted_0);
+    return decodeAnyOfConsts(ctx, input, required, hoisted_AllTs_0);
 }
 function DecodeAObject(ctx, input, required = true) {
     return decodeObject(ctx, input, required, {
@@ -415,26 +415,26 @@ function DecodeVersion2(ctx, input, required = true) {
     return decodeRegex(ctx, input, required, /(v)(\d+(\.\d+)?)(\.)(\d+(\.\d+)?)(\.)(\d+(\.\d+)?)/, "v${number}.${number}.${number}");
 }
 function DecodeAccessLevel2(ctx, input, required = true) {
-    return decodeAnyOfConsts(ctx, input, required, hoisted_1);
+    return decodeAnyOfConsts(ctx, input, required, hoisted_AccessLevel2_1);
 }
 function DecodeAccessLevelTpl2(ctx, input, required = true) {
     return decodeRegex(ctx, input, required, /((ADMIN Admin)|(USER User))/, '("ADMIN Admin" | "USER User")');
 }
 function DecodeAccessLevel(ctx, input, required = true) {
-    return decodeAnyOfConsts(ctx, input, required, hoisted_2);
+    return decodeAnyOfConsts(ctx, input, required, hoisted_AccessLevel_2);
 }
 function DecodeAccessLevelTpl(ctx, input, required = true) {
     return decodeRegex(ctx, input, required, /((ADMIN)|(USER))/, '("ADMIN" | "USER")');
 }
 function DecodeArr3(ctx, input, required = true) {
-    return decodeAnyOfConsts(ctx, input, required, hoisted_3);
+    return decodeAnyOfConsts(ctx, input, required, hoisted_Arr3_3);
 }
 function DecodeOmitSettings(ctx, input, required = true) {
     return decodeObject(ctx, input, required, {
         "d": (ctx, input)=>(decodeObject(ctx, input, true, {
                 "tag": (ctx, input)=>(decodeConst(ctx, input, true, "d"))
             })),
-        "level": (ctx, input)=>(decodeAnyOfConsts(ctx, input, true, hoisted_4))
+        "level": (ctx, input)=>(decodeAnyOfConsts(ctx, input, true, hoisted_OmitSettings_4))
     });
 }
 function DecodeSettings(ctx, input, required = true) {
@@ -443,7 +443,7 @@ function DecodeSettings(ctx, input, required = true) {
         "d": (ctx, input)=>(decodeObject(ctx, input, true, {
                 "tag": (ctx, input)=>(decodeConst(ctx, input, true, "d"))
             })),
-        "level": (ctx, input)=>(decodeAnyOfConsts(ctx, input, true, hoisted_5))
+        "level": (ctx, input)=>(decodeAnyOfConsts(ctx, input, true, hoisted_Settings_5))
     });
 }
 function DecodePartialObject(ctx, input, required = true) {
@@ -463,7 +463,7 @@ function DecodeLevelAndDSettings(ctx, input, required = true) {
         "d": (ctx, input)=>(decodeObject(ctx, input, true, {
                 "tag": (ctx, input)=>(decodeConst(ctx, input, true, "d"))
             })),
-        "level": (ctx, input)=>(decodeAnyOfConsts(ctx, input, true, hoisted_6))
+        "level": (ctx, input)=>(decodeAnyOfConsts(ctx, input, true, hoisted_LevelAndDSettings_6))
     });
 }
 function DecodePartialSettings(ctx, input, required = true) {
@@ -472,7 +472,7 @@ function DecodePartialSettings(ctx, input, required = true) {
         "d": (ctx, input)=>(decodeObject(ctx, input, false, {
                 "tag": (ctx, input)=>(decodeConst(ctx, input, true, "d"))
             })),
-        "level": (ctx, input)=>(decodeAnyOfConsts(ctx, input, false, hoisted_7))
+        "level": (ctx, input)=>(decodeAnyOfConsts(ctx, input, false, hoisted_PartialSettings_7))
     });
 }
 function DecodeExtra(ctx, input, required = true) {
@@ -617,13 +617,13 @@ function DecodeDiscriminatedUnion4(ctx, input, required = true) {
     });
 }
 function DecodeAllTypes(ctx, input, required = true) {
-    return decodeAnyOfConsts(ctx, input, required, hoisted_8);
+    return decodeAnyOfConsts(ctx, input, required, hoisted_AllTypes_8);
 }
 function DecodeOtherEnum(ctx, input, required = true) {
-    return decodeAnyOfConsts(ctx, input, required, hoisted_9);
+    return decodeAnyOfConsts(ctx, input, required, hoisted_OtherEnum_9);
 }
 function DecodeArr2(ctx, input, required = true) {
-    return decodeAnyOfConsts(ctx, input, required, hoisted_10);
+    return decodeAnyOfConsts(ctx, input, required, hoisted_Arr2_10);
 }
 function DecodeValidCurrency(ctx, input, required = true) {
     return decodeStringWithFormat(ctx, input, required, "ValidCurrency");

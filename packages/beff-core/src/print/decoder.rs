@@ -40,6 +40,7 @@ enum Required {
 }
 struct DecoderFnGenerator<'a> {
     validators: &'a Vec<Validator>,
+    name: String,
 }
 
 impl DecoderFnGenerator<'_> {
@@ -354,6 +355,7 @@ impl DecoderFnGenerator<'_> {
     }
 
     fn maybe_decode_any_of_consts(
+        &self,
         flat_values: &BTreeSet<JsonSchema>,
         required: Required,
         hoisted: &mut Vec<ModuleItem>,
@@ -384,7 +386,7 @@ impl DecoderFnGenerator<'_> {
             });
 
             let hoist_count = hoisted.len();
-            let var_name = format!("hoisted_{}", hoist_count);
+            let var_name = format!("hoisted_{}_{}", &self.name, hoist_count);
             let new_statement = const_decl(&var_name, arr);
             hoisted.push(new_statement);
 
@@ -412,7 +414,7 @@ impl DecoderFnGenerator<'_> {
             .flat_map(|it| self.extract_union(it))
             .collect::<BTreeSet<_>>();
 
-        if let Some(consts) = Self::maybe_decode_any_of_consts(&flat_values, required, hoisted) {
+        if let Some(consts) = self.maybe_decode_any_of_consts(&flat_values, required, hoisted) {
             return consts;
         }
 
@@ -674,6 +676,11 @@ pub fn from_schema(
     schema: &JsonSchema,
     validators: &Vec<Validator>,
     hoisted: &mut Vec<ModuleItem>,
+    name: &str,
 ) -> Function {
-    DecoderFnGenerator { validators }.fn_decoder_from_schema(schema, hoisted)
+    DecoderFnGenerator {
+        validators,
+        name: name.to_owned(),
+    }
+    .fn_decoder_from_schema(schema, hoisted)
 }

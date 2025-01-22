@@ -58,7 +58,13 @@ fn build_decoders_expr(
                 decoder.exported_name.clone(),
                 Expr::Fn(FnExpr {
                     ident: None,
-                    function: decoder::from_schema(&decoder.schema, validators, hoisted).into(),
+                    function: decoder::from_schema(
+                        &decoder.schema,
+                        validators,
+                        hoisted,
+                        &decoder.exported_name,
+                    )
+                    .into(),
                 }),
             )
         })
@@ -117,7 +123,8 @@ impl ToWritableModules for ExtractResult {
 
         for comp in &validators {
             validator_names.push(comp.name.clone());
-            let decoder_fn = decoder::from_schema(&comp.schema, &validators, &mut hoisted);
+            let decoder_fn =
+                decoder::from_schema(&comp.schema, &validators, &mut hoisted, &comp.name);
             let decoder_fn_decl = ModuleItem::Stmt(Stmt::Decl(Decl::Fn(FnDecl {
                 ident: Ident {
                     span: DUMMY_SP,
