@@ -4,7 +4,7 @@
 
 import {printErrors} from '@beff/client';
 import {z} from 'zod';
-import validatorsMod from "./validators.js"; const { ObjectDecoder, ArrayDecoder, decodeString, decodeNumber, CodecDecoder, decodeFunction, StringWithFormatDecoder, AnyOfDecoder, AllOfDecoder, decodeBoolean, decodeAny, TupleDecoder, decodeNull, decodeNever, RegexDecoder, ConstDecoder, registerCustomFormatter, validators, c } = validatorsMod;
+import validatorsMod from "./validators.js"; const { ObjectDecoder, ArrayDecoder, decodeString, decodeNumber, CodecDecoder, decodeFunction, StringWithFormatDecoder, AnyOfDecoder, AllOfDecoder, decodeBoolean, decodeAny, TupleDecoder, decodeNull, decodeNever, RegexDecoder, ConstDecoder, registerCustomFormatter, AnyOfConstsDecoder, validators, c } = validatorsMod;
 const RequiredCustomFormats = ["password","StartsWithA"];
 const buildParsersInput = {
     "NotPublicRenamed": function(ctx, input) {

@@ -399,23 +399,22 @@ impl DecoderFnGenerator<'_> {
                 })
                 .collect();
 
-            let consts = self.hoist_expr(
-                hoisted,
-                Expr::Array(ArrayLit {
-                    span: DUMMY_SP,
-                    elems: consts
-                        .into_iter()
-                        .map(|it| {
-                            Some(ExprOrSpread {
-                                spread: None,
-                                expr: it.into(),
-                            })
+            let consts = Expr::Array(ArrayLit {
+                span: DUMMY_SP,
+                elems: consts
+                    .into_iter()
+                    .map(|it| {
+                        Some(ExprOrSpread {
+                            spread: None,
+                            expr: it.into(),
                         })
-                        .collect(),
-                }),
-            );
-            return Some(Self::make_cb(Self::decode_call_extra(
-                "decodeAnyOfConsts",
+                    })
+                    .collect(),
+            });
+
+            return Some(Self::decode_bound(self.new_hoisted_decoder(
+                hoisted,
+                "AnyOfConstsDecoder",
                 vec![consts],
             )));
         }

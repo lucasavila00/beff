@@ -215,13 +215,22 @@ function decodeAnyOfDiscriminated(ctx, input, discriminator, mapping) {
   return { ...out, [discriminator]: d };
 }
 
-function decodeAnyOfConsts(ctx, input, consts) {
-  for (const c of consts) {
-    if (input === c) {
-      return c;
-    }
+class AnyOfConstsDecoder {
+  constructor(consts) {
+    this.consts = consts;
   }
-  return buildError(input, ctx, "expected one of " + consts.map((it) => JSON.stringify(it)).join(", "));
+  decode(ctx, input) {
+    for (const c of this.consts) {
+      if (input === c) {
+        return c;
+      }
+    }
+    return buildError(
+      input,
+      ctx,
+      "expected one of " + this.consts.map((it) => JSON.stringify(it)).join(", ")
+    );
+  }
 }
 
 class AnyOfDecoder {

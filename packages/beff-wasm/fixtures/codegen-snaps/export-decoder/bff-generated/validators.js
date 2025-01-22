@@ -218,13 +218,22 @@ function decodeAnyOfDiscriminated(ctx, input, discriminator, mapping) {
   return { ...out, [discriminator]: d };
 }
 
-function decodeAnyOfConsts(ctx, input, consts) {
-  for (const c of consts) {
-    if (input === c) {
-      return c;
-    }
+class AnyOfConstsDecoder {
+  constructor(consts) {
+    this.consts = consts;
   }
-  return buildError(input, ctx, "expected one of " + consts.map((it) => JSON.stringify(it)).join(", "));
+  decode(ctx, input) {
+    for (const c of this.consts) {
+      if (input === c) {
+        return c;
+      }
+    }
+    return buildError(
+      input,
+      ctx,
+      "expected one of " + this.consts.map((it) => JSON.stringify(it)).join(", ")
+    );
+  }
 }
 
 class AnyOfDecoder {
@@ -361,19 +370,19 @@ function DecodePassword(ctx, input) {
     return (hoisted_Password_3.decode.bind(hoisted_Password_3))(ctx, input);
 }
 function DecodeA(ctx, input) {
-    return ((ctx, input)=>(decodeAnyOfConsts(ctx, input, hoisted_A_4)))(ctx, input);
+    return (hoisted_A_4.decode.bind(hoisted_A_4))(ctx, input);
 }
 function DecodeB(ctx, input) {
-    return ((ctx, input)=>(decodeAnyOfConsts(ctx, input, hoisted_B_5)))(ctx, input);
+    return (hoisted_B_5.decode.bind(hoisted_B_5))(ctx, input);
 }
 function DecodeD(ctx, input) {
-    return ((ctx, input)=>(decodeAnyOfConsts(ctx, input, hoisted_D_6)))(ctx, input);
+    return (hoisted_D_6.decode.bind(hoisted_D_6))(ctx, input);
 }
 function DecodeE(ctx, input) {
-    return ((ctx, input)=>(decodeAnyOfConsts(ctx, input, hoisted_E_7)))(ctx, input);
+    return (hoisted_E_7.decode.bind(hoisted_E_7))(ctx, input);
 }
 function DecodeUnionNested(ctx, input) {
-    return ((ctx, input)=>(decodeAnyOfConsts(ctx, input, hoisted_UnionNested_8)))(ctx, input);
+    return (hoisted_UnionNested_8.decode.bind(hoisted_UnionNested_8))(ctx, input);
 }
 const validators = {
     User: DecodeUser,
@@ -395,29 +404,29 @@ const hoisted_NotPublic_1 = new ObjectDecoder({
 });
 const hoisted_StartsWithA_2 = new StringWithFormatDecoder("StartsWithA");
 const hoisted_Password_3 = new StringWithFormatDecoder("password");
-const hoisted_A_4 = [
+const hoisted_A_4 = new AnyOfConstsDecoder([
     1,
     2
-];
-const hoisted_B_5 = [
+]);
+const hoisted_B_5 = new AnyOfConstsDecoder([
     2,
     3
-];
-const hoisted_D_6 = [
+]);
+const hoisted_D_6 = new AnyOfConstsDecoder([
     4,
     5
-];
-const hoisted_E_7 = [
+]);
+const hoisted_E_7 = new AnyOfConstsDecoder([
     5,
     6
-];
-const hoisted_UnionNested_8 = [
+]);
+const hoisted_UnionNested_8 = new AnyOfConstsDecoder([
     1,
     2,
     3,
     4,
     5,
     6
-];
+]);
 
-export default { ObjectDecoder, ArrayDecoder, decodeString, decodeNumber, CodecDecoder, decodeFunction, StringWithFormatDecoder, AnyOfDecoder, AllOfDecoder, decodeBoolean, decodeAny, TupleDecoder, decodeNull, decodeNever, RegexDecoder, ConstDecoder, registerCustomFormatter, validators };
+export default { ObjectDecoder, ArrayDecoder, decodeString, decodeNumber, CodecDecoder, decodeFunction, StringWithFormatDecoder, AnyOfDecoder, AllOfDecoder, decodeBoolean, decodeAny, TupleDecoder, decodeNull, decodeNever, RegexDecoder, ConstDecoder, registerCustomFormatter, AnyOfConstsDecoder, validators };
