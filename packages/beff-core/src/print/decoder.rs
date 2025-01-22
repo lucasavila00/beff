@@ -39,7 +39,7 @@ struct DecoderFnGenerator<'a> {
 
 impl DecoderFnGenerator<'_> {
     fn decode_ref(schema_ref: &str) -> Expr {
-        let decoder_ref_fn = Expr::Member(MemberExpr {
+        Expr::Member(MemberExpr {
             span: DUMMY_SP,
             obj: Expr::Ident(Ident {
                 span: DUMMY_SP,
@@ -52,8 +52,7 @@ impl DecoderFnGenerator<'_> {
                 sym: schema_ref.into(),
                 optional: false,
             }),
-        });
-        decoder_ref_fn
+        })
     }
 
     fn decode_union_or_intersection(
