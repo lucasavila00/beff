@@ -27,13 +27,17 @@ import {
   AllTs,
   TransportedValue,
   ImportEnumTypeofCodec,
+  BigIntCodec,
+  TupleCodec,
+  TupleCodecRest,
+  StringArrCodec,
 } from "../src/parser";
 import { Arr2 } from "../src/types";
 import { Schemas } from "../src/schema";
 
 it("TransportedValue bug", () => {
   expect(TransportedValue.parse(null)).toEqual(null);
-  expect(TransportedValue.parse(undefined)).toEqual(null);
+  expect(TransportedValue.parse(undefined)).toEqual(undefined);
   expect(TransportedValue.parse("")).toEqual("");
   expect(TransportedValue.parse(["abc"])).toStrictEqual(["abc"]);
   expect(TransportedValue.parse([123])).toStrictEqual([123]);
@@ -49,6 +53,79 @@ it("import enum typeof", () => {
           "message": "expected object",
           "path": [],
           "received": "ADMIN",
+        },
+      ],
+      "success": false,
+    }
+  `);
+});
+
+it("BigIntCodec", () => {
+  expect(BigIntCodec.parse("123")).toMatchInlineSnapshot(`123n`);
+});
+it("TupleCodec", () => {
+  expect(TupleCodec.safeParse([1])).toMatchInlineSnapshot(`
+    {
+      "errors": [
+        {
+          "message": "expected number",
+          "path": [
+            "[1]",
+          ],
+          "received": undefined,
+        },
+        {
+          "message": "expected number",
+          "path": [
+            "[2]",
+          ],
+          "received": undefined,
+        },
+      ],
+      "success": false,
+    }
+  `);
+});
+it("TupleCodecRest", () => {
+  expect(TupleCodecRest.safeParse([1, 2, 3])).toMatchInlineSnapshot(`
+    {
+      "errors": [
+        {
+          "message": "expected string",
+          "path": [
+            "[2]",
+          ],
+          "received": 3,
+        },
+      ],
+      "success": false,
+    }
+  `);
+});
+it("StringArrCodec", () => {
+  expect(StringArrCodec.safeParse([1, 2, 3])).toMatchInlineSnapshot(`
+    {
+      "errors": [
+        {
+          "message": "expected string",
+          "path": [
+            "[0]",
+          ],
+          "received": 1,
+        },
+        {
+          "message": "expected string",
+          "path": [
+            "[1]",
+          ],
+          "received": 2,
+        },
+        {
+          "message": "expected string",
+          "path": [
+            "[2]",
+          ],
+          "received": 3,
         },
       ],
       "success": false,
@@ -229,11 +306,11 @@ it("disallow extra properties", () => {
       }
     )
   ).toMatchInlineSnapshot(`
-  {
-    "kind": "square",
-    "x": 1,
-  }
-`);
+    {
+      "kind": "square",
+      "x": 1,
+    }
+  `);
   expect(
     T3.safeParse(
       {
@@ -389,7 +466,20 @@ it("DiscriminatedUnion", () => {
     {
       "errors": [
         {
-          "message": "expected string",
+          "errors": [
+            {
+              "message": "expected nullish value",
+              "path": [],
+              "received": 123,
+            },
+            {
+              "message": "expected string",
+              "path": [],
+              "received": 123,
+            },
+          ],
+          "isUnionError": true,
+          "message": "expected one of",
           "path": [
             "a11",
           ],

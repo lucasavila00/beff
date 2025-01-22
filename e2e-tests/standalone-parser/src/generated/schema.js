@@ -43,6 +43,7 @@ const jsonSchema = {
 
 
 function buildSchemas() {
-    
-    return jsonSchema
-}export default {buildSchemas};
+  
+  return jsonSchema;
+}
+export default {buildSchemas};

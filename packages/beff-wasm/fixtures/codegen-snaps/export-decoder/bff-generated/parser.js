@@ -4,42 +4,27 @@
 
 import {printErrors} from '@beff/client';
 import {z} from 'zod';
-import validatorsMod from "./validators.js"; const { decodeObject, decodeArray, decodeString, decodeNumber, decodeCodec, decodeFunction, decodeStringWithFormat, decodeAnyOf, decodeAllOf, decodeBoolean, decodeAny, decodeTuple, decodeNull, decodeNever, decodeConst, registerCustomFormatter, validators, c } = validatorsMod;
+import validatorsMod from "./validators.js"; const { ObjectDecoder, ArrayDecoder, decodeString, decodeNumber, CodecDecoder, decodeFunction, StringWithFormatDecoder, AnyOfDecoder, AllOfDecoder, decodeBoolean, decodeAny, TupleDecoder, decodeNull, decodeNever, RegexDecoder, ConstDecoder, registerCustomFormatter, AnyOfConstsDecoder, AnyOfDiscriminatedDecoder, validators, c } = validatorsMod;
 const RequiredCustomFormats = ["password","StartsWithA"];
+const hoisted_Users_0 = new ArrayDecoder(validators.User);
+const hoisted_float_1 = new ConstDecoder(123.456);
+const hoisted_int_2 = new ConstDecoder(123);
 const buildParsersInput = {
-    "NotPublicRenamed": function(ctx, input, required = true) {
-        return validators.NotPublic(ctx, input, required);
-    },
-    "Password": function(ctx, input, required = true) {
-        return validators.Password(ctx, input, required);
-    },
-    "StartsWithA": function(ctx, input, required = true) {
-        return validators.StartsWithA(ctx, input, required);
-    },
-    "User": function(ctx, input, required = true) {
-        return validators.User(ctx, input, required);
-    },
-    "Users": function(ctx, input, required = true) {
-        return decodeArray(ctx, input, required, hoisted_Users_0);
-    },
-    "float": function(ctx, input, required = true) {
-        return decodeConst(ctx, input, required, 123.456);
-    },
-    "int": function(ctx, input, required = true) {
-        return decodeConst(ctx, input, required, 123);
-    },
-    "union": function(ctx, input, required = true) {
-        return validators.UnionNested(ctx, input, required);
-    }
+    "NotPublicRenamed": validators.NotPublic,
+    "Password": validators.Password,
+    "StartsWithA": validators.StartsWithA,
+    "User": validators.User,
+    "Users": hoisted_Users_0.decode.bind(hoisted_Users_0),
+    "float": hoisted_float_1.decode.bind(hoisted_float_1),
+    "int": hoisted_int_2.decode.bind(hoisted_int_2),
+    "union": validators.UnionNested
 };
-const hoisted_Users_0 = (ctx, input)=>(validators.User(ctx, input, true));
 
 
 
 
 function buildParsers(args) {
-
-  const customFormats = args?.customFormats ?? {}
+  const customFormats = args?.customFormats ?? {};
   
   for (const k of RequiredCustomFormats) {
     if (customFormats[k] == null) {
@@ -52,7 +37,6 @@ function buildParsers(args) {
     
     registerCustomFormatter(k, v);
   });
-
 
   let decoders = {};
   
@@ -79,16 +63,19 @@ function buildParsers(args) {
       const error = new Error(`Failed to parse ${k}`);
       
       error.errors = safe.errors;
-      throw error
+      throw error;
     };
     const zod = () => {
       
-      return z.custom(data => safeParse(data).success, val => {
-        const errors = safeParse(val).errors;
-        
-        return printErrors(errors, [])
-      })
-    }
+      return z.custom(
+        (data) => safeParse(data).success,
+        (val) => {
+          const errors = safeParse(val).errors;
+          
+          return printErrors(errors, []);
+        }
+      );
+    };
     decoders[k] = {
       parse,
       safeParse,

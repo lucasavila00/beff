@@ -4,7 +4,7 @@
 
 
 
-const customFormatters = {}
+const customFormatters = {};
 
 function registerCustomFormatter(name, validator) {
   customFormatters[name] = validator;
@@ -45,70 +45,71 @@ function buildUnionError(received, ctx, errors) {
   });
 }
 
-function decodeObject(ctx, input, required, data, additionalPropsValidator = null) {
-  if (!required && input == null) {
-    return input;
+class ObjectDecoder {
+  constructor(data, additionalPropsValidator = null) {
+    this.data = data;
+    this.additionalPropsValidator = additionalPropsValidator;
   }
 
-  const disallowExtraProperties = ctx?.disallowExtraProperties ?? false;
+  decode(ctx, input) {
+    const disallowExtraProperties = ctx?.disallowExtraProperties ?? false;
 
-  const allowedExtraProperties = ctx.allowedExtraProperties__ ?? []
+    const allowedExtraProperties = ctx.allowedExtraProperties__ ?? [];
 
-  if (typeof input === "object" && !Array.isArray(input) && input !== null) {
-    const acc = {};
-    for (const [k, v] of Object.entries(data)) {
-      pushPath(ctx, k);
-      acc[k] = v(ctx, input[k]);
-      popPath(ctx);
-    }
+    if (typeof input === "object" && !Array.isArray(input) && input !== null) {
+      const acc = {};
+      for (const [k, v] of Object.entries(this.data)) {
+        pushPath(ctx, k);
+        acc[k] = v(ctx, input[k]);
+        popPath(ctx);
+      }
 
-    if (additionalPropsValidator != null) {
-      for (const [k, v] of Object.entries(input)) {
-        if (acc[k] == null) {
-          pushPath(ctx, k);
-          
-          acc[k] = additionalPropsValidator(ctx, v);
-          popPath(ctx);
+      if (this.additionalPropsValidator != null) {
+        for (const [k, v] of Object.entries(input)) {
+          if (acc[k] == null) {
+            pushPath(ctx, k);
+            acc[k] = this.additionalPropsValidator(ctx, v);
+            popPath(ctx);
+          }
         }
       }
-    }
 
-    if (disallowExtraProperties) {
-      for (const k of Object.keys(input)) {
-        if (acc[k] == null && allowedExtraProperties.indexOf(k) == -1) {
-          pushPath(ctx, k);
-          buildError(input[k], ctx, "extra property");
-          popPath(ctx);
+      if (disallowExtraProperties) {
+        for (const k of Object.keys(input)) {
+          if (acc[k] == null && allowedExtraProperties.indexOf(k) == -1) {
+            pushPath(ctx, k);
+            buildError(input[k], ctx, "extra property");
+            popPath(ctx);
+          }
         }
       }
-    }
 
-    return acc;
+      return acc;
+    }
+    return buildError(input, ctx, "expected object");
   }
-  return buildError(input, ctx, "expected object");
 }
 
-function decodeArray(ctx, input, required, data) {
-  if (!required && input == null) {
-    return input;
-  }
-  if (Array.isArray(input)) {
-    const acc = [];
-    for (let i = 0; i < input.length; i++) {
-      const v = input[i];
-      pushPath(ctx, "[" + i + "]");
-      acc.push(data(ctx, v));
-      popPath(ctx);
-    }
-    return acc;
-  }
-  return buildError(input, ctx, "expected array");
-}
-function decodeString(ctx, input, required) {
-  if (!required && input == null) {
-    return input;
+class ArrayDecoder {
+  constructor(data) {
+    this.data = data;
   }
 
+  decode(ctx, input) {
+    if (Array.isArray(input)) {
+      const acc = [];
+      for (let i = 0; i < input.length; i++) {
+        const v = input[i];
+        pushPath(ctx, "[" + i + "]");
+        acc.push(this.data(ctx, v));
+        popPath(ctx);
+      }
+      return acc;
+    }
+    return buildError(input, ctx, "expected array");
+  }
+}
+function decodeString(ctx, input) {
   if (typeof input === "string") {
     return input;
   }
@@ -116,10 +117,7 @@ function decodeString(ctx, input, required) {
   return buildError(input, ctx, "expected string");
 }
 
-function decodeNumber(ctx, input, required) {
-  if (!required && input == null) {
-    return input;
-  }
+function decodeNumber(ctx, input) {
   if (typeof input === "number") {
     return input;
   }
@@ -130,349 +128,372 @@ function decodeNumber(ctx, input, required) {
   return buildError(input, ctx, "expected number");
 }
 
-function decodeFunction(ctx, input, required) {
-  if (!required && input == null) {
-    return input;
-  }
+function decodeFunction(ctx, input) {
   if (typeof input === "function") {
     return input;
   }
   return buildError(input, ctx, "expected function");
 }
+class CodecDecoder {
+  constructor(codec) {
+    this.codec = codec;
+  }
+  decode(ctx, input) {
+    switch (this.codec) {
+      case "Codec::ISO8061": {
+        const d = new Date(input);
+        if (isNaN(d.getTime())) {
+          return buildError(input, ctx, "expected ISO8061 date");
+        }
+        return d;
+      }
+      case "Codec::BigInt": {
+        if (typeof input === "bigint") {
+          return input;
+        }
+        if (typeof input === "number") {
+          return BigInt(input);
+        }
+        if (typeof input === "string") {
+          try {
+            return BigInt(input);
+          } catch (e) {
+            
+          }
+        }
+        return buildError(input, ctx, "expected bigint");
+      }
+    }
+    return buildError(input, ctx, "codec " + this.codec + " not implemented");
+  }
+}
 
-function decodeCodec(ctx, input, required, codec) {
-  if (!required && input == null) {
+class StringWithFormatDecoder {
+  constructor(format) {
+    this.format = format;
+  }
+
+  decode(ctx, input) {
+    if (typeof input !== "string") {
+      return buildError(input, ctx, "expected string with format " + JSON.stringify(this.format));
+    }
+
+    const validator = customFormatters[this.format];
+
+    if (validator == null) {
+      return buildError(input, ctx, "format " + JSON.stringify(this.format) + " not implemented");
+    }
+
+    const isOk = validator(input);
+    if (isOk) {
+      return input;
+    }
+    return buildError(input, ctx, "expected string with format " + JSON.stringify(this.format));
+  }
+}
+class AnyOfDiscriminatedDecoder {
+  constructor(discriminator, mapping) {
+    this.discriminator = discriminator;
+    this.mapping = mapping;
+  }
+
+  decode(ctx, input) {
+    const d = input[this.discriminator];
+    if (d == null) {
+      return buildError(input, ctx, "expected discriminator key " + JSON.stringify(this.discriminator));
+    }
+    const v = this.mapping[d];
+    if (v == null) {
+      pushPath(ctx, this.discriminator);
+      const err = buildError(
+        d,
+        ctx,
+        "expected one of " +
+          Object.keys(this.mapping)
+            .map((it) => JSON.stringify(it))
+            .join(", ")
+      );
+      popPath(ctx);
+      return err;
+    }
+    const prevAllow = ctx.allowedExtraProperties__ ?? [];
+    ctx.allowedExtraProperties__ = [...prevAllow, this.discriminator];
+    const out = v(ctx, input);
+    ctx.allowedExtraProperties__ = prevAllow;
+    return { ...out, [this.discriminator]: d };
+  }
+}
+
+class AnyOfConstsDecoder {
+  constructor(consts) {
+    this.consts = consts;
+  }
+  decode(ctx, input) {
+    for (const c of this.consts) {
+      if (input === c) {
+        return c;
+      }
+    }
+    return buildError(
+      input,
+      ctx,
+      "expected one of " + this.consts.map((it) => JSON.stringify(it)).join(", ")
+    );
+  }
+}
+
+class AnyOfDecoder {
+  constructor(vs) {
+    this.vs = vs;
+  }
+  decode(ctx, input) {
+    let accErrors = [];
+    for (const v of this.vs) {
+      const validatorCtx = {};
+      const newValue = v(validatorCtx, input);
+      if (validatorCtx.errors == null) {
+        return newValue;
+      }
+      accErrors.push(...(validatorCtx.errors ?? []));
+    }
+    return buildUnionError(input, ctx, accErrors);
+  }
+}
+class AllOfDecoder {
+  constructor(vs) {
+    this.vs = vs;
+  }
+  decode(ctx, input) {
+    let acc = {};
+    let foundOneObject = false;
+    let allObjects = true;
+    for (const v of this.vs) {
+      const newValue = v(ctx, input);
+      const isObj = typeof newValue === "object";
+      allObjects = allObjects && isObj;
+      if (isObj) {
+        foundOneObject = true;
+        acc = { ...acc, ...newValue };
+      }
+    }
+    if (foundOneObject && allObjects) {
+      return acc;
+    }
     return input;
   }
-  switch (codec) {
-    case "Codec::ISO8061": {
-      const d = new Date(input);
-      if (isNaN(d.getTime())) {
-        return buildError(input, ctx, "expected ISO8061 date");
+}
+class TupleDecoder {
+  constructor(vs) {
+    this.vs = vs;
+  }
+  decode(ctx, input) {
+    if (Array.isArray(input)) {
+      const acc = [];
+      let idx = 0;
+      for (const v of this.vs.prefix) {
+        pushPath(ctx, "[" + idx + "]");
+        const newValue = v(ctx, input[idx]);
+        popPath(ctx);
+        acc.push(newValue);
+        idx++;
       }
-      return d;
-    }
-    case "Codec::BigInt": {
-      if (typeof input === "bigint") {
-        return input;
-      }
-      if (typeof input === "number") {
-        return BigInt(input);
-      }
-      if (typeof input === "string") {
-        try {
-          return BigInt(input);
-        } catch (e) {
-          
+      if (this.vs.items != null) {
+        for (let i = idx; i < input.length; i++) {
+          const v = input[i];
+          pushPath(ctx, "[" + i + "]");
+          acc.push(this.vs.items(ctx, v));
+          popPath(ctx);
+        }
+      } else {
+        if (input.length > idx) {
+          return buildError(input, ctx, "tuple has too many items");
         }
       }
-      return buildError(input, ctx, "expected bigint");
+      return acc;
     }
+    return buildError(input, ctx, "expected tuple");
   }
-  return buildError(input, ctx, "codec " + codec + " not implemented");
 }
-
-function decodeStringWithFormat(ctx, input, required, format) {
-  if (!required && input == null) {
-    return input;
-  }
-  if (typeof input !== "string") {
-    return buildError(input, ctx, "expected string with format " + JSON.stringify(format));
-  }
-
-  const validator = customFormatters[format];
-
-  if (validator == null) {
-    return buildError(input, ctx, "format " + JSON.stringify(format) + " not implemented");
-  }
-
-  const isOk = validator(input);
-  if (isOk) {
-    return input;
-  }
-  return buildError(input, ctx, "expected string with format " + JSON.stringify(format));
-}
-
-function decodeAnyOfDiscriminated(ctx, input, required, discriminator, mapping) {
-  if (!required && input == null) {
-    return input;
-  }
-  const d = input[discriminator];
-  if (d == null) {
-    return buildError(input, ctx, "expected discriminator key " + JSON.stringify(discriminator))
-  }
-  const v = mapping[d];
-  if (v == null) {
-    pushPath(ctx, discriminator);
-    const err = buildError(d, ctx, "expected one of " + Object.keys(mapping).map(it => JSON.stringify(it)).join(", "));
-    popPath(ctx);
-    return err;
-  }
-  const prevAllow = (ctx.allowedExtraProperties__ ?? []);
-  ctx.allowedExtraProperties__ = [...prevAllow, discriminator]
-  const out = v(ctx, input);
-  ctx.allowedExtraProperties__ = prevAllow;
-  return { ...out, [discriminator]: d };
-}
-
-function decodeAnyOfConsts(ctx, input, required, consts) {
-  if (!required && input == null) {
-    return input;
-  }
-  for (const c of consts) {
-    if (input === c) {
-      return c;
-    }
-  }
-  return buildError(input, ctx, "expected one of " + consts.map(it => JSON.stringify(it)).join(", "));
-}
-function decodeAnyOf(ctx, input, required, vs) {
-  if (!required && input == null) {
-    return input;
-  }
-
-  let accErrors = [];
-  for (const v of vs) {
-    const validatorCtx = {};
-    const newValue = v(validatorCtx, input);
-    if (validatorCtx.errors == null) {
-      return newValue;
-    }
-    accErrors.push(...(validatorCtx.errors ?? []));
-  }
-  return buildUnionError(input, ctx, accErrors);
-}
-function decodeAllOf(ctx, input, required, vs) {
-  if (!required && input == null) {
-    return input;
-  }
-  let acc = {};
-  let foundOneObject = false;
-  let allObjects = true;
-  for (const v of vs) {
-    const newValue = v(ctx, input);
-    const isObj = typeof newValue === "object";
-    allObjects = allObjects && isObj;
-    if (isObj) {
-      foundOneObject = true;
-      acc = { ...acc, ...newValue };
-    }
-  }
-  if (foundOneObject && allObjects) {
-    return acc;
-  }
-  return input;
-}
-function decodeTuple(ctx, input, required, vs) {
-  if (!required && input == null) {
-    return input;
-  }
-  if (Array.isArray(input)) {
-    const acc = [];
-    let idx = 0;
-    for (const v of vs.prefix) {
-      pushPath(ctx, "[" + idx + "]");
-      const newValue = v(ctx, input[idx]);
-      popPath(ctx);
-      acc.push(newValue);
-      idx++;
-    }
-    if (vs.items != null) {
-      for (let i = idx; i < input.length; i++) {
-        const v = input[i];
-        pushPath(ctx, "[" + i + "]");
-        acc.push(vs.items(ctx, v));
-        popPath(ctx);
-      }
-    } else {
-      if (input.length > idx) {
-        return buildError(input, ctx, "tuple has too many items");
-      }
-    }
-    return acc;
-  }
-  return buildError(input, ctx, "expected tuple");
-}
-function decodeBoolean(ctx, input, required) {
-  if (!required && input == null) {
-    return input;
-  }
+function decodeBoolean(ctx, input) {
   if (typeof input === "boolean") {
     return input;
   }
   return buildError(input, ctx, "expected boolean");
 }
-function decodeAny(ctx, input, required) {
+function decodeAny(ctx, input) {
   return input;
 }
-function decodeNull(ctx, input, required) {
-  if (!required && input == null) {
-    return input;
-  }
+function decodeNull(ctx, input) {
   if (input == null) {
-    return null;
-  }
-  return buildError(input, ctx, "expected null");
-}
-function decodeNever(ctx, input, required) {
-  if (!required && input == null) {
     return input;
   }
+  return buildError(input, ctx, "expected nullish value");
+}
+function decodeNever(ctx, input) {
   return buildError(input, ctx, "never");
 }
-function decodeConst(ctx, input, required, constValue) {
-  if (!required && input == null) {
-    return input;
-  }
-  if (input == constValue) {
-    return constValue;
-  }
-  return buildError(input, ctx, "expected " + JSON.stringify(constValue));
-}
 
-function decodeRegex(ctx, input, required, regex, description) {
-  if (!required && input == null) {
-    return input;
+class ConstDecoder {
+  constructor(value) {
+    this.value = value;
   }
-  if (typeof input === "string") {
-    if (regex.test(input)) {
-      return input;
+
+  decode(ctx, input) {
+    if (input == this.value) {
+      return this.value;
     }
+    return buildError(input, ctx, "expected " + JSON.stringify(this.value));
   }
-  return buildError(input, ctx, "expected string matching " + description);
 }
 
-function DecodeTransportedValue(ctx, input, required = true) {
-    return decodeAnyOf(ctx, input, required, hoisted_TransportedValue_2);
+class RegexDecoder {
+  constructor(regex, description) {
+    this.regex = regex;
+    this.description = description;
+  }
+
+  decode(ctx, input) {
+    if (typeof input === "string") {
+      if (this.regex.test(input)) {
+        return input;
+      }
+    }
+    return buildError(input, ctx, "expected string matching " + this.description);
+  }
 }
-function DecodeAllTs(ctx, input, required = true) {
-    return decodeAnyOfConsts(ctx, input, required, hoisted_AllTs_3);
+
+
+function DecodeTransportedValue(ctx, input) {
+    return (hoisted_TransportedValue_2.decode.bind(hoisted_TransportedValue_2))(ctx, input);
 }
-function DecodeAObject(ctx, input, required = true) {
-    return decodeObject(ctx, input, required, hoisted_AObject_4);
+function DecodeAllTs(ctx, input) {
+    return (hoisted_AllTs_3.decode.bind(hoisted_AllTs_3))(ctx, input);
 }
-function DecodeVersion(ctx, input, required = true) {
-    return decodeRegex(ctx, input, required, /(\d+(\.\d+)?)(\.)(\d+(\.\d+)?)(\.)(\d+(\.\d+)?)/, "${number}.${number}.${number}");
+function DecodeAObject(ctx, input) {
+    return (hoisted_AObject_5.decode.bind(hoisted_AObject_5))(ctx, input);
 }
-function DecodeVersion2(ctx, input, required = true) {
-    return decodeRegex(ctx, input, required, /(v)(\d+(\.\d+)?)(\.)(\d+(\.\d+)?)(\.)(\d+(\.\d+)?)/, "v${number}.${number}.${number}");
+function DecodeVersion(ctx, input) {
+    return (hoisted_Version_6.decode.bind(hoisted_Version_6))(ctx, input);
 }
-function DecodeAccessLevel2(ctx, input, required = true) {
-    return decodeAnyOfConsts(ctx, input, required, hoisted_AccessLevel2_5);
+function DecodeVersion2(ctx, input) {
+    return (hoisted_Version2_7.decode.bind(hoisted_Version2_7))(ctx, input);
 }
-function DecodeAccessLevelTpl2(ctx, input, required = true) {
-    return decodeRegex(ctx, input, required, /((ADMIN Admin)|(USER User))/, '("ADMIN Admin" | "USER User")');
+function DecodeAccessLevel2(ctx, input) {
+    return (hoisted_AccessLevel2_8.decode.bind(hoisted_AccessLevel2_8))(ctx, input);
 }
-function DecodeAccessLevel(ctx, input, required = true) {
-    return decodeAnyOfConsts(ctx, input, required, hoisted_AccessLevel_6);
+function DecodeAccessLevelTpl2(ctx, input) {
+    return (hoisted_AccessLevelTpl2_9.decode.bind(hoisted_AccessLevelTpl2_9))(ctx, input);
 }
-function DecodeAccessLevelTpl(ctx, input, required = true) {
-    return decodeRegex(ctx, input, required, /((ADMIN)|(USER))/, '("ADMIN" | "USER")');
+function DecodeAccessLevel(ctx, input) {
+    return (hoisted_AccessLevel_10.decode.bind(hoisted_AccessLevel_10))(ctx, input);
 }
-function DecodeArr3(ctx, input, required = true) {
-    return decodeAnyOfConsts(ctx, input, required, hoisted_Arr3_7);
+function DecodeAccessLevelTpl(ctx, input) {
+    return (hoisted_AccessLevelTpl_11.decode.bind(hoisted_AccessLevelTpl_11))(ctx, input);
 }
-function DecodeOmitSettings(ctx, input, required = true) {
-    return decodeObject(ctx, input, required, hoisted_OmitSettings_10);
+function DecodeArr3(ctx, input) {
+    return (hoisted_Arr3_12.decode.bind(hoisted_Arr3_12))(ctx, input);
 }
-function DecodeSettings(ctx, input, required = true) {
-    return decodeObject(ctx, input, required, hoisted_Settings_13);
+function DecodeOmitSettings(ctx, input) {
+    return (hoisted_OmitSettings_16.decode.bind(hoisted_OmitSettings_16))(ctx, input);
 }
-function DecodePartialObject(ctx, input, required = true) {
-    return decodeObject(ctx, input, required, hoisted_PartialObject_14);
+function DecodeSettings(ctx, input) {
+    return (hoisted_Settings_20.decode.bind(hoisted_Settings_20))(ctx, input);
 }
-function DecodeRequiredPartialObject(ctx, input, required = true) {
-    return decodeObject(ctx, input, required, hoisted_RequiredPartialObject_15);
+function DecodePartialObject(ctx, input) {
+    return (hoisted_PartialObject_23.decode.bind(hoisted_PartialObject_23))(ctx, input);
 }
-function DecodeLevelAndDSettings(ctx, input, required = true) {
-    return decodeObject(ctx, input, required, hoisted_LevelAndDSettings_18);
+function DecodeRequiredPartialObject(ctx, input) {
+    return (hoisted_RequiredPartialObject_24.decode.bind(hoisted_RequiredPartialObject_24))(ctx, input);
 }
-function DecodePartialSettings(ctx, input, required = true) {
-    return decodeObject(ctx, input, required, hoisted_PartialSettings_21);
+function DecodeLevelAndDSettings(ctx, input) {
+    return (hoisted_LevelAndDSettings_28.decode.bind(hoisted_LevelAndDSettings_28))(ctx, input);
 }
-function DecodeExtra(ctx, input, required = true) {
-    return decodeObject(ctx, input, required, hoisted_Extra_22, (ctx, input)=>(decodeString(ctx, input, false)));
+function DecodePartialSettings(ctx, input) {
+    return (hoisted_PartialSettings_35.decode.bind(hoisted_PartialSettings_35))(ctx, input);
 }
-function DecodeAvatarSize(ctx, input, required = true) {
-    return decodeRegex(ctx, input, required, /(\d+(\.\d+)?)(x)(\d+(\.\d+)?)/, "${number}x${number}");
+function DecodeExtra(ctx, input) {
+    return (hoisted_Extra_36.decode.bind(hoisted_Extra_36))(ctx, input);
 }
-function DecodeUser(ctx, input, required = true) {
-    return decodeObject(ctx, input, required, hoisted_User_24);
+function DecodeAvatarSize(ctx, input) {
+    return (hoisted_AvatarSize_37.decode.bind(hoisted_AvatarSize_37))(ctx, input);
 }
-function DecodePublicUser(ctx, input, required = true) {
-    return decodeObject(ctx, input, required, hoisted_PublicUser_25);
+function DecodeUser(ctx, input) {
+    return (hoisted_User_39.decode.bind(hoisted_User_39))(ctx, input);
 }
-function DecodeReq(ctx, input, required = true) {
-    return decodeObject(ctx, input, required, hoisted_Req_26);
+function DecodePublicUser(ctx, input) {
+    return (hoisted_PublicUser_40.decode.bind(hoisted_PublicUser_40))(ctx, input);
 }
-function DecodeWithOptionals(ctx, input, required = true) {
-    return decodeObject(ctx, input, required, hoisted_WithOptionals_27);
+function DecodeReq(ctx, input) {
+    return (hoisted_Req_41.decode.bind(hoisted_Req_41))(ctx, input);
 }
-function DecodeRepro1(ctx, input, required = true) {
-    return decodeObject(ctx, input, required, hoisted_Repro1_28);
+function DecodeWithOptionals(ctx, input) {
+    return (hoisted_WithOptionals_43.decode.bind(hoisted_WithOptionals_43))(ctx, input);
 }
-function DecodeRepro2(ctx, input, required = true) {
-    return decodeObject(ctx, input, required, hoisted_Repro2_29);
+function DecodeRepro1(ctx, input) {
+    return (hoisted_Repro1_45.decode.bind(hoisted_Repro1_45))(ctx, input);
 }
-function DecodeSettingsUpdate(ctx, input, required = true) {
-    return decodeAnyOf(ctx, input, required, hoisted_SettingsUpdate_31);
+function DecodeRepro2(ctx, input) {
+    return (hoisted_Repro2_46.decode.bind(hoisted_Repro2_46))(ctx, input);
 }
-function DecodeMapped(ctx, input, required = true) {
-    return decodeObject(ctx, input, required, hoisted_Mapped_34);
+function DecodeSettingsUpdate(ctx, input) {
+    return (hoisted_SettingsUpdate_49.decode.bind(hoisted_SettingsUpdate_49))(ctx, input);
 }
-function DecodeMappedOptional(ctx, input, required = true) {
-    return decodeObject(ctx, input, required, hoisted_MappedOptional_37);
+function DecodeMapped(ctx, input) {
+    return (hoisted_Mapped_54.decode.bind(hoisted_Mapped_54))(ctx, input);
 }
-function DecodeDiscriminatedUnion(ctx, input, required = true) {
-    return decodeAnyOfDiscriminated(ctx, input, required, "type", hoisted_DiscriminatedUnion_42);
+function DecodeMappedOptional(ctx, input) {
+    return (hoisted_MappedOptional_61.decode.bind(hoisted_MappedOptional_61))(ctx, input);
 }
-function DecodeDiscriminatedUnion2(ctx, input, required = true) {
-    return decodeAnyOf(ctx, input, required, hoisted_DiscriminatedUnion2_47);
+function DecodeDiscriminatedUnion(ctx, input) {
+    return (hoisted_DiscriminatedUnion_67.decode.bind(hoisted_DiscriminatedUnion_67))(ctx, input);
 }
-function DecodeDiscriminatedUnion3(ctx, input, required = true) {
-    return decodeAnyOfDiscriminated(ctx, input, required, "type", hoisted_DiscriminatedUnion3_51);
+function DecodeDiscriminatedUnion2(ctx, input) {
+    return (hoisted_DiscriminatedUnion2_80.decode.bind(hoisted_DiscriminatedUnion2_80))(ctx, input);
 }
-function DecodeDiscriminatedUnion4(ctx, input, required = true) {
-    return decodeAnyOfDiscriminated(ctx, input, required, "type", hoisted_DiscriminatedUnion4_57);
+function DecodeDiscriminatedUnion3(ctx, input) {
+    return (hoisted_DiscriminatedUnion3_84.decode.bind(hoisted_DiscriminatedUnion3_84))(ctx, input);
 }
-function DecodeAllTypes(ctx, input, required = true) {
-    return decodeAnyOfConsts(ctx, input, required, hoisted_AllTypes_58);
+function DecodeDiscriminatedUnion4(ctx, input) {
+    return (hoisted_DiscriminatedUnion4_92.decode.bind(hoisted_DiscriminatedUnion4_92))(ctx, input);
 }
-function DecodeOtherEnum(ctx, input, required = true) {
-    return decodeAnyOfConsts(ctx, input, required, hoisted_OtherEnum_59);
+function DecodeAllTypes(ctx, input) {
+    return (hoisted_AllTypes_93.decode.bind(hoisted_AllTypes_93))(ctx, input);
 }
-function DecodeArr2(ctx, input, required = true) {
-    return decodeAnyOfConsts(ctx, input, required, hoisted_Arr2_60);
+function DecodeOtherEnum(ctx, input) {
+    return (hoisted_OtherEnum_94.decode.bind(hoisted_OtherEnum_94))(ctx, input);
 }
-function DecodeValidCurrency(ctx, input, required = true) {
-    return decodeStringWithFormat(ctx, input, required, "ValidCurrency");
+function DecodeArr2(ctx, input) {
+    return (hoisted_Arr2_95.decode.bind(hoisted_Arr2_95))(ctx, input);
 }
-function DecodeUnionWithEnumAccess(ctx, input, required = true) {
-    return decodeAnyOfDiscriminated(ctx, input, required, "tag", hoisted_UnionWithEnumAccess_64);
+function DecodeValidCurrency(ctx, input) {
+    return (hoisted_ValidCurrency_96.decode.bind(hoisted_ValidCurrency_96))(ctx, input);
 }
-function DecodeShape(ctx, input, required = true) {
-    return decodeAnyOfDiscriminated(ctx, input, required, "kind", hoisted_Shape_68);
+function DecodeUnionWithEnumAccess(ctx, input) {
+    return (hoisted_UnionWithEnumAccess_100.decode.bind(hoisted_UnionWithEnumAccess_100))(ctx, input);
 }
-function DecodeT3(ctx, input, required = true) {
-    return decodeAnyOfDiscriminated(ctx, input, required, "kind", hoisted_T3_71);
+function DecodeShape(ctx, input) {
+    return (hoisted_Shape_104.decode.bind(hoisted_Shape_104))(ctx, input);
 }
-function DecodeBObject(ctx, input, required = true) {
-    return decodeObject(ctx, input, required, hoisted_BObject_72);
+function DecodeT3(ctx, input) {
+    return (hoisted_T3_107.decode.bind(hoisted_T3_107))(ctx, input);
 }
-function DecodeDEF(ctx, input, required = true) {
-    return decodeObject(ctx, input, required, hoisted_DEF_73);
+function DecodeBObject(ctx, input) {
+    return (hoisted_BObject_109.decode.bind(hoisted_BObject_109))(ctx, input);
 }
-function DecodeKDEF(ctx, input, required = true) {
-    return decodeConst(ctx, input, required, "a");
+function DecodeDEF(ctx, input) {
+    return (hoisted_DEF_110.decode.bind(hoisted_DEF_110))(ctx, input);
 }
-function DecodeABC(ctx, input, required = true) {
-    return decodeObject(ctx, input, required, hoisted_ABC_74);
+function DecodeKDEF(ctx, input) {
+    return (hoisted_KDEF_111.decode.bind(hoisted_KDEF_111))(ctx, input);
 }
-function DecodeKABC(ctx, input, required = true) {
-    return decodeNever(ctx, input, required);
+function DecodeABC(ctx, input) {
+    return (hoisted_ABC_112.decode.bind(hoisted_ABC_112))(ctx, input);
 }
-function DecodeK(ctx, input, required = true) {
-    return decodeAnyOf(ctx, input, required, hoisted_K_75);
+function DecodeKABC(ctx, input) {
+    return (decodeNever)(ctx, input);
+}
+function DecodeK(ctx, input) {
+    return (hoisted_K_113.decode.bind(hoisted_K_113))(ctx, input);
 }
 const validators = {
     TransportedValue: DecodeTransportedValue,
@@ -520,287 +541,361 @@ const validators = {
     KABC: DecodeKABC,
     K: DecodeK
 };
-const hoisted_TransportedValue_0 = [
-    (ctx, input)=>(decodeNull(ctx, input, true)),
-    (ctx, input)=>(decodeString(ctx, input, true)),
-    (ctx, input)=>(decodeNumber(ctx, input, true))
-];
-const hoisted_TransportedValue_1 = (ctx, input)=>(decodeAnyOf(ctx, input, true, hoisted_TransportedValue_0));
-const hoisted_TransportedValue_2 = [
-    (ctx, input)=>(decodeNull(ctx, input, true)),
-    (ctx, input)=>(decodeString(ctx, input, true)),
-    (ctx, input)=>(decodeArray(ctx, input, true, hoisted_TransportedValue_1))
-];
-const hoisted_AllTs_3 = [
+const hoisted_TransportedValue_0 = new AnyOfDecoder([
+    decodeNull,
+    decodeString,
+    decodeNumber
+]);
+const hoisted_TransportedValue_1 = new ArrayDecoder(hoisted_TransportedValue_0.decode.bind(hoisted_TransportedValue_0));
+const hoisted_TransportedValue_2 = new AnyOfDecoder([
+    decodeNull,
+    decodeString,
+    hoisted_TransportedValue_1.decode.bind(hoisted_TransportedValue_1)
+]);
+const hoisted_AllTs_3 = new AnyOfConstsDecoder([
     "a",
     "b"
-];
-const hoisted_AObject_4 = {
-    "tag": (ctx, input)=>(decodeConst(ctx, input, true, "a"))
-};
-const hoisted_AccessLevel2_5 = [
+]);
+const hoisted_AObject_4 = new ConstDecoder("a");
+const hoisted_AObject_5 = new ObjectDecoder({
+    "tag": hoisted_AObject_4.decode.bind(hoisted_AObject_4)
+});
+const hoisted_Version_6 = new RegexDecoder(/(\d+(\.\d+)?)(\.)(\d+(\.\d+)?)(\.)(\d+(\.\d+)?)/, "${number}.${number}.${number}");
+const hoisted_Version2_7 = new RegexDecoder(/(v)(\d+(\.\d+)?)(\.)(\d+(\.\d+)?)(\.)(\d+(\.\d+)?)/, "v${number}.${number}.${number}");
+const hoisted_AccessLevel2_8 = new AnyOfConstsDecoder([
     "ADMIN Admin",
     "USER User"
-];
-const hoisted_AccessLevel_6 = [
+]);
+const hoisted_AccessLevelTpl2_9 = new RegexDecoder(/((ADMIN Admin)|(USER User))/, '("ADMIN Admin" | "USER User")');
+const hoisted_AccessLevel_10 = new AnyOfConstsDecoder([
     "ADMIN",
     "USER"
-];
-const hoisted_Arr3_7 = [
+]);
+const hoisted_AccessLevelTpl_11 = new RegexDecoder(/((ADMIN)|(USER))/, '("ADMIN" | "USER")');
+const hoisted_Arr3_12 = new AnyOfConstsDecoder([
     "X",
     "Y"
-];
-const hoisted_OmitSettings_8 = {
-    "tag": (ctx, input)=>(decodeConst(ctx, input, true, "d"))
-};
-const hoisted_OmitSettings_9 = [
+]);
+const hoisted_OmitSettings_13 = new ConstDecoder("d");
+const hoisted_OmitSettings_14 = new ObjectDecoder({
+    "tag": hoisted_OmitSettings_13.decode.bind(hoisted_OmitSettings_13)
+});
+const hoisted_OmitSettings_15 = new AnyOfConstsDecoder([
     "a",
     "b"
-];
-const hoisted_OmitSettings_10 = {
-    "d": (ctx, input)=>(decodeObject(ctx, input, true, hoisted_OmitSettings_8)),
-    "level": (ctx, input)=>(decodeAnyOfConsts(ctx, input, true, hoisted_OmitSettings_9))
-};
-const hoisted_Settings_11 = {
-    "tag": (ctx, input)=>(decodeConst(ctx, input, true, "d"))
-};
-const hoisted_Settings_12 = [
+]);
+const hoisted_OmitSettings_16 = new ObjectDecoder({
+    "d": hoisted_OmitSettings_14.decode.bind(hoisted_OmitSettings_14),
+    "level": hoisted_OmitSettings_15.decode.bind(hoisted_OmitSettings_15)
+});
+const hoisted_Settings_17 = new ConstDecoder("d");
+const hoisted_Settings_18 = new ObjectDecoder({
+    "tag": hoisted_Settings_17.decode.bind(hoisted_Settings_17)
+});
+const hoisted_Settings_19 = new AnyOfConstsDecoder([
     "a",
     "b"
-];
-const hoisted_Settings_13 = {
-    "a": (ctx, input)=>(decodeString(ctx, input, true)),
-    "d": (ctx, input)=>(decodeObject(ctx, input, true, hoisted_Settings_11)),
-    "level": (ctx, input)=>(decodeAnyOfConsts(ctx, input, true, hoisted_Settings_12))
-};
-const hoisted_PartialObject_14 = {
-    "a": (ctx, input)=>(decodeString(ctx, input, false)),
-    "b": (ctx, input)=>(decodeNumber(ctx, input, false))
-};
-const hoisted_RequiredPartialObject_15 = {
-    "a": (ctx, input)=>(decodeString(ctx, input, true)),
-    "b": (ctx, input)=>(decodeNumber(ctx, input, true))
-};
-const hoisted_LevelAndDSettings_16 = {
-    "tag": (ctx, input)=>(decodeConst(ctx, input, true, "d"))
-};
-const hoisted_LevelAndDSettings_17 = [
+]);
+const hoisted_Settings_20 = new ObjectDecoder({
+    "a": decodeString,
+    "d": hoisted_Settings_18.decode.bind(hoisted_Settings_18),
+    "level": hoisted_Settings_19.decode.bind(hoisted_Settings_19)
+});
+const hoisted_PartialObject_21 = new AnyOfDecoder([
+    decodeNull,
+    decodeString
+]);
+const hoisted_PartialObject_22 = new AnyOfDecoder([
+    decodeNull,
+    decodeNumber
+]);
+const hoisted_PartialObject_23 = new ObjectDecoder({
+    "a": hoisted_PartialObject_21.decode.bind(hoisted_PartialObject_21),
+    "b": hoisted_PartialObject_22.decode.bind(hoisted_PartialObject_22)
+});
+const hoisted_RequiredPartialObject_24 = new ObjectDecoder({
+    "a": decodeString,
+    "b": decodeNumber
+});
+const hoisted_LevelAndDSettings_25 = new ConstDecoder("d");
+const hoisted_LevelAndDSettings_26 = new ObjectDecoder({
+    "tag": hoisted_LevelAndDSettings_25.decode.bind(hoisted_LevelAndDSettings_25)
+});
+const hoisted_LevelAndDSettings_27 = new AnyOfConstsDecoder([
     "a",
     "b"
-];
-const hoisted_LevelAndDSettings_18 = {
-    "d": (ctx, input)=>(decodeObject(ctx, input, true, hoisted_LevelAndDSettings_16)),
-    "level": (ctx, input)=>(decodeAnyOfConsts(ctx, input, true, hoisted_LevelAndDSettings_17))
-};
-const hoisted_PartialSettings_19 = {
-    "tag": (ctx, input)=>(decodeConst(ctx, input, true, "d"))
-};
-const hoisted_PartialSettings_20 = [
+]);
+const hoisted_LevelAndDSettings_28 = new ObjectDecoder({
+    "d": hoisted_LevelAndDSettings_26.decode.bind(hoisted_LevelAndDSettings_26),
+    "level": hoisted_LevelAndDSettings_27.decode.bind(hoisted_LevelAndDSettings_27)
+});
+const hoisted_PartialSettings_29 = new AnyOfDecoder([
+    decodeNull,
+    decodeString
+]);
+const hoisted_PartialSettings_30 = new ConstDecoder("d");
+const hoisted_PartialSettings_31 = new ObjectDecoder({
+    "tag": hoisted_PartialSettings_30.decode.bind(hoisted_PartialSettings_30)
+});
+const hoisted_PartialSettings_32 = new AnyOfDecoder([
+    decodeNull,
+    hoisted_PartialSettings_31.decode.bind(hoisted_PartialSettings_31)
+]);
+const hoisted_PartialSettings_33 = new AnyOfConstsDecoder([
     "a",
     "b"
-];
-const hoisted_PartialSettings_21 = {
-    "a": (ctx, input)=>(decodeString(ctx, input, false)),
-    "d": (ctx, input)=>(decodeObject(ctx, input, false, hoisted_PartialSettings_19)),
-    "level": (ctx, input)=>(decodeAnyOfConsts(ctx, input, false, hoisted_PartialSettings_20))
-};
-const hoisted_Extra_22 = {};
-const hoisted_User_23 = (ctx, input)=>(validators.User(ctx, input, true));
-const hoisted_User_24 = {
-    "accessLevel": (ctx, input)=>(validators.AccessLevel(ctx, input, true)),
-    "avatarSize": (ctx, input)=>(validators.AvatarSize(ctx, input, true)),
-    "extra": (ctx, input)=>(validators.Extra(ctx, input, true)),
-    "friends": (ctx, input)=>(decodeArray(ctx, input, true, hoisted_User_23)),
-    "name": (ctx, input)=>(decodeString(ctx, input, true))
-};
-const hoisted_PublicUser_25 = {
-    "accessLevel": (ctx, input)=>(validators.AccessLevel(ctx, input, true)),
-    "avatarSize": (ctx, input)=>(validators.AvatarSize(ctx, input, true)),
-    "extra": (ctx, input)=>(validators.Extra(ctx, input, true)),
-    "name": (ctx, input)=>(decodeString(ctx, input, true))
-};
-const hoisted_Req_26 = {
-    "optional": (ctx, input)=>(decodeString(ctx, input, true))
-};
-const hoisted_WithOptionals_27 = {
-    "optional": (ctx, input)=>(decodeString(ctx, input, false))
-};
-const hoisted_Repro1_28 = {
-    "sizes": (ctx, input)=>(validators.Repro2(ctx, input, false))
-};
-const hoisted_Repro2_29 = {
-    "useSmallerSizes": (ctx, input)=>(decodeBoolean(ctx, input, true))
-};
-const hoisted_SettingsUpdate_30 = {
-    "tag": (ctx, input)=>(decodeConst(ctx, input, true, "d"))
-};
-const hoisted_SettingsUpdate_31 = [
-    (ctx, input)=>(decodeString(ctx, input, true)),
-    (ctx, input)=>(decodeObject(ctx, input, true, hoisted_SettingsUpdate_30))
-];
-const hoisted_Mapped_32 = {
-    "value": (ctx, input)=>(decodeConst(ctx, input, true, "a"))
-};
-const hoisted_Mapped_33 = {
-    "value": (ctx, input)=>(decodeConst(ctx, input, true, "b"))
-};
-const hoisted_Mapped_34 = {
-    "a": (ctx, input)=>(decodeObject(ctx, input, true, hoisted_Mapped_32)),
-    "b": (ctx, input)=>(decodeObject(ctx, input, true, hoisted_Mapped_33))
-};
-const hoisted_MappedOptional_35 = {
-    "value": (ctx, input)=>(decodeConst(ctx, input, true, "a"))
-};
-const hoisted_MappedOptional_36 = {
-    "value": (ctx, input)=>(decodeConst(ctx, input, true, "b"))
-};
-const hoisted_MappedOptional_37 = {
-    "a": (ctx, input)=>(decodeObject(ctx, input, false, hoisted_MappedOptional_35)),
-    "b": (ctx, input)=>(decodeObject(ctx, input, false, hoisted_MappedOptional_36))
-};
-const hoisted_DiscriminatedUnion_38 = {
-    "a1": (ctx, input)=>(decodeString(ctx, input, true)),
-    "a11": (ctx, input)=>(decodeString(ctx, input, false))
-};
-const hoisted_DiscriminatedUnion_39 = {
-    "a2": (ctx, input)=>(decodeString(ctx, input, true))
-};
-const hoisted_DiscriminatedUnion_40 = {
-    "a1": (ctx, input)=>(decodeObject(ctx, input, true, hoisted_DiscriminatedUnion_38)),
-    "a2": (ctx, input)=>(decodeObject(ctx, input, true, hoisted_DiscriminatedUnion_39))
-};
-const hoisted_DiscriminatedUnion_41 = {
-    "value": (ctx, input)=>(decodeNumber(ctx, input, true))
-};
-const hoisted_DiscriminatedUnion_42 = {
-    "a": (ctx, input)=>(decodeAnyOfDiscriminated(ctx, input, true, "subType", hoisted_DiscriminatedUnion_40)),
-    "b": (ctx, input)=>(decodeObject(ctx, input, true, hoisted_DiscriminatedUnion_41))
-};
-const hoisted_DiscriminatedUnion2_43 = {
-    "a1": (ctx, input)=>(decodeString(ctx, input, true)),
-    "a11": (ctx, input)=>(decodeString(ctx, input, false)),
-    "subType": (ctx, input)=>(decodeConst(ctx, input, true, "a1")),
-    "type": (ctx, input)=>(decodeConst(ctx, input, true, "a"))
-};
-const hoisted_DiscriminatedUnion2_44 = {
-    "a2": (ctx, input)=>(decodeString(ctx, input, true)),
-    "subType": (ctx, input)=>(decodeConst(ctx, input, true, "a2")),
-    "type": (ctx, input)=>(decodeConst(ctx, input, true, "a"))
-};
-const hoisted_DiscriminatedUnion2_45 = {
-    "type": (ctx, input)=>(decodeConst(ctx, input, false, "d")),
-    "valueD": (ctx, input)=>(decodeNumber(ctx, input, true))
-};
-const hoisted_DiscriminatedUnion2_46 = {
-    "type": (ctx, input)=>(decodeConst(ctx, input, true, "b")),
-    "value": (ctx, input)=>(decodeNumber(ctx, input, true))
-};
-const hoisted_DiscriminatedUnion2_47 = [
-    (ctx, input)=>(decodeObject(ctx, input, true, hoisted_DiscriminatedUnion2_43)),
-    (ctx, input)=>(decodeObject(ctx, input, true, hoisted_DiscriminatedUnion2_44)),
-    (ctx, input)=>(decodeObject(ctx, input, true, hoisted_DiscriminatedUnion2_45)),
-    (ctx, input)=>(decodeObject(ctx, input, true, hoisted_DiscriminatedUnion2_46))
-];
-const hoisted_DiscriminatedUnion3_48 = {
-    "a1": (ctx, input)=>(decodeString(ctx, input, true))
-};
-const hoisted_DiscriminatedUnion3_49 = {
-    "value": (ctx, input)=>(decodeNumber(ctx, input, true))
-};
-const hoisted_DiscriminatedUnion3_50 = {
-    "a1": (ctx, input)=>(decodeString(ctx, input, true))
-};
-const hoisted_DiscriminatedUnion3_51 = {
-    "a": (ctx, input)=>(decodeObject(ctx, input, true, hoisted_DiscriminatedUnion3_48)),
-    "b": (ctx, input)=>(decodeObject(ctx, input, true, hoisted_DiscriminatedUnion3_49)),
-    "c": (ctx, input)=>(decodeObject(ctx, input, true, hoisted_DiscriminatedUnion3_50))
-};
-const hoisted_DiscriminatedUnion4_52 = {
-    "a1": (ctx, input)=>(decodeString(ctx, input, true)),
-    "subType": (ctx, input)=>(decodeConst(ctx, input, true, "a1"))
-};
-const hoisted_DiscriminatedUnion4_53 = {
-    "a": (ctx, input)=>(decodeObject(ctx, input, true, hoisted_DiscriminatedUnion4_52))
-};
-const hoisted_DiscriminatedUnion4_54 = {
-    "a2": (ctx, input)=>(decodeString(ctx, input, true)),
-    "subType": (ctx, input)=>(decodeConst(ctx, input, true, "a2"))
-};
-const hoisted_DiscriminatedUnion4_55 = {
-    "a": (ctx, input)=>(decodeObject(ctx, input, true, hoisted_DiscriminatedUnion4_54))
-};
-const hoisted_DiscriminatedUnion4_56 = [
-    (ctx, input)=>(decodeObject(ctx, input, true, hoisted_DiscriminatedUnion4_53)),
-    (ctx, input)=>(decodeObject(ctx, input, true, hoisted_DiscriminatedUnion4_55))
-];
-const hoisted_DiscriminatedUnion4_57 = {
-    "a": (ctx, input)=>(decodeAnyOf(ctx, input, true, hoisted_DiscriminatedUnion4_56))
-};
-const hoisted_AllTypes_58 = [
+]);
+const hoisted_PartialSettings_34 = new AnyOfDecoder([
+    decodeNull,
+    hoisted_PartialSettings_33.decode.bind(hoisted_PartialSettings_33)
+]);
+const hoisted_PartialSettings_35 = new ObjectDecoder({
+    "a": hoisted_PartialSettings_29.decode.bind(hoisted_PartialSettings_29),
+    "d": hoisted_PartialSettings_32.decode.bind(hoisted_PartialSettings_32),
+    "level": hoisted_PartialSettings_34.decode.bind(hoisted_PartialSettings_34)
+});
+const hoisted_Extra_36 = new ObjectDecoder({}, decodeString);
+const hoisted_AvatarSize_37 = new RegexDecoder(/(\d+(\.\d+)?)(x)(\d+(\.\d+)?)/, "${number}x${number}");
+const hoisted_User_38 = new ArrayDecoder(validators.User);
+const hoisted_User_39 = new ObjectDecoder({
+    "accessLevel": validators.AccessLevel,
+    "avatarSize": validators.AvatarSize,
+    "extra": validators.Extra,
+    "friends": hoisted_User_38.decode.bind(hoisted_User_38),
+    "name": decodeString
+});
+const hoisted_PublicUser_40 = new ObjectDecoder({
+    "accessLevel": validators.AccessLevel,
+    "avatarSize": validators.AvatarSize,
+    "extra": validators.Extra,
+    "name": decodeString
+});
+const hoisted_Req_41 = new ObjectDecoder({
+    "optional": decodeString
+});
+const hoisted_WithOptionals_42 = new AnyOfDecoder([
+    decodeNull,
+    decodeString
+]);
+const hoisted_WithOptionals_43 = new ObjectDecoder({
+    "optional": hoisted_WithOptionals_42.decode.bind(hoisted_WithOptionals_42)
+});
+const hoisted_Repro1_44 = new AnyOfDecoder([
+    decodeNull,
+    validators.Repro2
+]);
+const hoisted_Repro1_45 = new ObjectDecoder({
+    "sizes": hoisted_Repro1_44.decode.bind(hoisted_Repro1_44)
+});
+const hoisted_Repro2_46 = new ObjectDecoder({
+    "useSmallerSizes": decodeBoolean
+});
+const hoisted_SettingsUpdate_47 = new ConstDecoder("d");
+const hoisted_SettingsUpdate_48 = new ObjectDecoder({
+    "tag": hoisted_SettingsUpdate_47.decode.bind(hoisted_SettingsUpdate_47)
+});
+const hoisted_SettingsUpdate_49 = new AnyOfDecoder([
+    decodeString,
+    hoisted_SettingsUpdate_48.decode.bind(hoisted_SettingsUpdate_48)
+]);
+const hoisted_Mapped_50 = new ConstDecoder("a");
+const hoisted_Mapped_51 = new ObjectDecoder({
+    "value": hoisted_Mapped_50.decode.bind(hoisted_Mapped_50)
+});
+const hoisted_Mapped_52 = new ConstDecoder("b");
+const hoisted_Mapped_53 = new ObjectDecoder({
+    "value": hoisted_Mapped_52.decode.bind(hoisted_Mapped_52)
+});
+const hoisted_Mapped_54 = new ObjectDecoder({
+    "a": hoisted_Mapped_51.decode.bind(hoisted_Mapped_51),
+    "b": hoisted_Mapped_53.decode.bind(hoisted_Mapped_53)
+});
+const hoisted_MappedOptional_55 = new ConstDecoder("a");
+const hoisted_MappedOptional_56 = new ObjectDecoder({
+    "value": hoisted_MappedOptional_55.decode.bind(hoisted_MappedOptional_55)
+});
+const hoisted_MappedOptional_57 = new AnyOfDecoder([
+    decodeNull,
+    hoisted_MappedOptional_56.decode.bind(hoisted_MappedOptional_56)
+]);
+const hoisted_MappedOptional_58 = new ConstDecoder("b");
+const hoisted_MappedOptional_59 = new ObjectDecoder({
+    "value": hoisted_MappedOptional_58.decode.bind(hoisted_MappedOptional_58)
+});
+const hoisted_MappedOptional_60 = new AnyOfDecoder([
+    decodeNull,
+    hoisted_MappedOptional_59.decode.bind(hoisted_MappedOptional_59)
+]);
+const hoisted_MappedOptional_61 = new ObjectDecoder({
+    "a": hoisted_MappedOptional_57.decode.bind(hoisted_MappedOptional_57),
+    "b": hoisted_MappedOptional_60.decode.bind(hoisted_MappedOptional_60)
+});
+const hoisted_DiscriminatedUnion_62 = new AnyOfDecoder([
+    decodeNull,
+    decodeString
+]);
+const hoisted_DiscriminatedUnion_63 = new ObjectDecoder({
+    "a1": decodeString,
+    "a11": hoisted_DiscriminatedUnion_62.decode.bind(hoisted_DiscriminatedUnion_62)
+});
+const hoisted_DiscriminatedUnion_64 = new ObjectDecoder({
+    "a2": decodeString
+});
+const hoisted_DiscriminatedUnion_65 = new AnyOfDiscriminatedDecoder("subType", {
+    "a1": hoisted_DiscriminatedUnion_63.decode.bind(hoisted_DiscriminatedUnion_63),
+    "a2": hoisted_DiscriminatedUnion_64.decode.bind(hoisted_DiscriminatedUnion_64)
+});
+const hoisted_DiscriminatedUnion_66 = new ObjectDecoder({
+    "value": decodeNumber
+});
+const hoisted_DiscriminatedUnion_67 = new AnyOfDiscriminatedDecoder("type", {
+    "a": hoisted_DiscriminatedUnion_65.decode.bind(hoisted_DiscriminatedUnion_65),
+    "b": hoisted_DiscriminatedUnion_66.decode.bind(hoisted_DiscriminatedUnion_66)
+});
+const hoisted_DiscriminatedUnion2_68 = new AnyOfDecoder([
+    decodeNull,
+    decodeString
+]);
+const hoisted_DiscriminatedUnion2_69 = new ConstDecoder("a1");
+const hoisted_DiscriminatedUnion2_70 = new ConstDecoder("a");
+const hoisted_DiscriminatedUnion2_71 = new ObjectDecoder({
+    "a1": decodeString,
+    "a11": hoisted_DiscriminatedUnion2_68.decode.bind(hoisted_DiscriminatedUnion2_68),
+    "subType": hoisted_DiscriminatedUnion2_69.decode.bind(hoisted_DiscriminatedUnion2_69),
+    "type": hoisted_DiscriminatedUnion2_70.decode.bind(hoisted_DiscriminatedUnion2_70)
+});
+const hoisted_DiscriminatedUnion2_72 = new ConstDecoder("a2");
+const hoisted_DiscriminatedUnion2_73 = new ConstDecoder("a");
+const hoisted_DiscriminatedUnion2_74 = new ObjectDecoder({
+    "a2": decodeString,
+    "subType": hoisted_DiscriminatedUnion2_72.decode.bind(hoisted_DiscriminatedUnion2_72),
+    "type": hoisted_DiscriminatedUnion2_73.decode.bind(hoisted_DiscriminatedUnion2_73)
+});
+const hoisted_DiscriminatedUnion2_75 = new ConstDecoder("d");
+const hoisted_DiscriminatedUnion2_76 = new AnyOfDecoder([
+    decodeNull,
+    hoisted_DiscriminatedUnion2_75.decode.bind(hoisted_DiscriminatedUnion2_75)
+]);
+const hoisted_DiscriminatedUnion2_77 = new ObjectDecoder({
+    "type": hoisted_DiscriminatedUnion2_76.decode.bind(hoisted_DiscriminatedUnion2_76),
+    "valueD": decodeNumber
+});
+const hoisted_DiscriminatedUnion2_78 = new ConstDecoder("b");
+const hoisted_DiscriminatedUnion2_79 = new ObjectDecoder({
+    "type": hoisted_DiscriminatedUnion2_78.decode.bind(hoisted_DiscriminatedUnion2_78),
+    "value": decodeNumber
+});
+const hoisted_DiscriminatedUnion2_80 = new AnyOfDecoder([
+    hoisted_DiscriminatedUnion2_71.decode.bind(hoisted_DiscriminatedUnion2_71),
+    hoisted_DiscriminatedUnion2_74.decode.bind(hoisted_DiscriminatedUnion2_74),
+    hoisted_DiscriminatedUnion2_77.decode.bind(hoisted_DiscriminatedUnion2_77),
+    hoisted_DiscriminatedUnion2_79.decode.bind(hoisted_DiscriminatedUnion2_79)
+]);
+const hoisted_DiscriminatedUnion3_81 = new ObjectDecoder({
+    "a1": decodeString
+});
+const hoisted_DiscriminatedUnion3_82 = new ObjectDecoder({
+    "value": decodeNumber
+});
+const hoisted_DiscriminatedUnion3_83 = new ObjectDecoder({
+    "a1": decodeString
+});
+const hoisted_DiscriminatedUnion3_84 = new AnyOfDiscriminatedDecoder("type", {
+    "a": hoisted_DiscriminatedUnion3_81.decode.bind(hoisted_DiscriminatedUnion3_81),
+    "b": hoisted_DiscriminatedUnion3_82.decode.bind(hoisted_DiscriminatedUnion3_82),
+    "c": hoisted_DiscriminatedUnion3_83.decode.bind(hoisted_DiscriminatedUnion3_83)
+});
+const hoisted_DiscriminatedUnion4_85 = new ConstDecoder("a1");
+const hoisted_DiscriminatedUnion4_86 = new ObjectDecoder({
+    "a1": decodeString,
+    "subType": hoisted_DiscriminatedUnion4_85.decode.bind(hoisted_DiscriminatedUnion4_85)
+});
+const hoisted_DiscriminatedUnion4_87 = new ObjectDecoder({
+    "a": hoisted_DiscriminatedUnion4_86.decode.bind(hoisted_DiscriminatedUnion4_86)
+});
+const hoisted_DiscriminatedUnion4_88 = new ConstDecoder("a2");
+const hoisted_DiscriminatedUnion4_89 = new ObjectDecoder({
+    "a2": decodeString,
+    "subType": hoisted_DiscriminatedUnion4_88.decode.bind(hoisted_DiscriminatedUnion4_88)
+});
+const hoisted_DiscriminatedUnion4_90 = new ObjectDecoder({
+    "a": hoisted_DiscriminatedUnion4_89.decode.bind(hoisted_DiscriminatedUnion4_89)
+});
+const hoisted_DiscriminatedUnion4_91 = new AnyOfDecoder([
+    hoisted_DiscriminatedUnion4_87.decode.bind(hoisted_DiscriminatedUnion4_87),
+    hoisted_DiscriminatedUnion4_90.decode.bind(hoisted_DiscriminatedUnion4_90)
+]);
+const hoisted_DiscriminatedUnion4_92 = new AnyOfDiscriminatedDecoder("type", {
+    "a": hoisted_DiscriminatedUnion4_91.decode.bind(hoisted_DiscriminatedUnion4_91)
+});
+const hoisted_AllTypes_93 = new AnyOfConstsDecoder([
     "LevelAndDSettings",
     "OmitSettings",
     "PartialSettings",
     "RequiredPartialObject"
-];
-const hoisted_OtherEnum_59 = [
+]);
+const hoisted_OtherEnum_94 = new AnyOfConstsDecoder([
     "a",
     "b"
-];
-const hoisted_Arr2_60 = [
+]);
+const hoisted_Arr2_95 = new AnyOfConstsDecoder([
     "A",
     "B",
     "C"
-];
-const hoisted_UnionWithEnumAccess_61 = {
-    "value": (ctx, input)=>(decodeString(ctx, input, true))
-};
-const hoisted_UnionWithEnumAccess_62 = {
-    "value": (ctx, input)=>(decodeNumber(ctx, input, true))
-};
-const hoisted_UnionWithEnumAccess_63 = {
-    "value": (ctx, input)=>(decodeBoolean(ctx, input, true))
-};
-const hoisted_UnionWithEnumAccess_64 = {
-    "a": (ctx, input)=>(decodeObject(ctx, input, true, hoisted_UnionWithEnumAccess_61)),
-    "b": (ctx, input)=>(decodeObject(ctx, input, true, hoisted_UnionWithEnumAccess_62)),
-    "c": (ctx, input)=>(decodeObject(ctx, input, true, hoisted_UnionWithEnumAccess_63))
-};
-const hoisted_Shape_65 = {
-    "radius": (ctx, input)=>(decodeNumber(ctx, input, true))
-};
-const hoisted_Shape_66 = {
-    "x": (ctx, input)=>(decodeNumber(ctx, input, true))
-};
-const hoisted_Shape_67 = {
-    "x": (ctx, input)=>(decodeNumber(ctx, input, true)),
-    "y": (ctx, input)=>(decodeNumber(ctx, input, true))
-};
-const hoisted_Shape_68 = {
-    "circle": (ctx, input)=>(decodeObject(ctx, input, true, hoisted_Shape_65)),
-    "square": (ctx, input)=>(decodeObject(ctx, input, true, hoisted_Shape_66)),
-    "triangle": (ctx, input)=>(decodeObject(ctx, input, true, hoisted_Shape_67))
-};
-const hoisted_T3_69 = {
-    "x": (ctx, input)=>(decodeNumber(ctx, input, true))
-};
-const hoisted_T3_70 = {
-    "x": (ctx, input)=>(decodeNumber(ctx, input, true)),
-    "y": (ctx, input)=>(decodeNumber(ctx, input, true))
-};
-const hoisted_T3_71 = {
-    "square": (ctx, input)=>(decodeObject(ctx, input, true, hoisted_T3_69)),
-    "triangle": (ctx, input)=>(decodeObject(ctx, input, true, hoisted_T3_70))
-};
-const hoisted_BObject_72 = {
-    "tag": (ctx, input)=>(decodeConst(ctx, input, true, "b"))
-};
-const hoisted_DEF_73 = {
-    "a": (ctx, input)=>(decodeString(ctx, input, true))
-};
-const hoisted_ABC_74 = {};
-const hoisted_K_75 = [
-    (ctx, input)=>(validators.KABC(ctx, input, true)),
-    (ctx, input)=>(validators.KDEF(ctx, input, true))
-];
+]);
+const hoisted_ValidCurrency_96 = new StringWithFormatDecoder("ValidCurrency");
+const hoisted_UnionWithEnumAccess_97 = new ObjectDecoder({
+    "value": decodeString
+});
+const hoisted_UnionWithEnumAccess_98 = new ObjectDecoder({
+    "value": decodeNumber
+});
+const hoisted_UnionWithEnumAccess_99 = new ObjectDecoder({
+    "value": decodeBoolean
+});
+const hoisted_UnionWithEnumAccess_100 = new AnyOfDiscriminatedDecoder("tag", {
+    "a": hoisted_UnionWithEnumAccess_97.decode.bind(hoisted_UnionWithEnumAccess_97),
+    "b": hoisted_UnionWithEnumAccess_98.decode.bind(hoisted_UnionWithEnumAccess_98),
+    "c": hoisted_UnionWithEnumAccess_99.decode.bind(hoisted_UnionWithEnumAccess_99)
+});
+const hoisted_Shape_101 = new ObjectDecoder({
+    "radius": decodeNumber
+});
+const hoisted_Shape_102 = new ObjectDecoder({
+    "x": decodeNumber
+});
+const hoisted_Shape_103 = new ObjectDecoder({
+    "x": decodeNumber,
+    "y": decodeNumber
+});
+const hoisted_Shape_104 = new AnyOfDiscriminatedDecoder("kind", {
+    "circle": hoisted_Shape_101.decode.bind(hoisted_Shape_101),
+    "square": hoisted_Shape_102.decode.bind(hoisted_Shape_102),
+    "triangle": hoisted_Shape_103.decode.bind(hoisted_Shape_103)
+});
+const hoisted_T3_105 = new ObjectDecoder({
+    "x": decodeNumber
+});
+const hoisted_T3_106 = new ObjectDecoder({
+    "x": decodeNumber,
+    "y": decodeNumber
+});
+const hoisted_T3_107 = new AnyOfDiscriminatedDecoder("kind", {
+    "square": hoisted_T3_105.decode.bind(hoisted_T3_105),
+    "triangle": hoisted_T3_106.decode.bind(hoisted_T3_106)
+});
+const hoisted_BObject_108 = new ConstDecoder("b");
+const hoisted_BObject_109 = new ObjectDecoder({
+    "tag": hoisted_BObject_108.decode.bind(hoisted_BObject_108)
+});
+const hoisted_DEF_110 = new ObjectDecoder({
+    "a": decodeString
+});
+const hoisted_KDEF_111 = new ConstDecoder("a");
+const hoisted_ABC_112 = new ObjectDecoder({});
+const hoisted_K_113 = new AnyOfDecoder([
+    validators.KABC,
+    validators.KDEF
+]);
 
-export default { decodeObject, decodeArray, decodeString, decodeNumber, decodeCodec, decodeFunction, decodeStringWithFormat, decodeAnyOf, decodeAllOf, decodeBoolean, decodeAny, decodeTuple, decodeNull, decodeNever, decodeConst, registerCustomFormatter, validators };
+export default { ObjectDecoder, ArrayDecoder, decodeString, decodeNumber, CodecDecoder, decodeFunction, StringWithFormatDecoder, AnyOfDecoder, AllOfDecoder, decodeBoolean, decodeAny, TupleDecoder, decodeNull, decodeNever, RegexDecoder, ConstDecoder, registerCustomFormatter, AnyOfConstsDecoder, AnyOfDiscriminatedDecoder, validators };

@@ -3,7 +3,7 @@
 import { BuildParserFunction } from "@beff/cli";
 
 declare const _exports: {
-  buildParsers: BuildParserFunction
+  buildParsers: BuildParserFunction;
 };
 
 export default _exports;

@@ -2,8 +2,7 @@
 //@ts-check
 
 function buildParsers(args) {
-
-  const customFormats = args?.customFormats ?? {}
+  const customFormats = args?.customFormats ?? {};
   //@ts-ignore
   for (const k of RequiredCustomFormats) {
     if (customFormats[k] == null) {
@@ -16,7 +15,6 @@ function buildParsers(args) {
     //@ts-ignore
     registerCustomFormatter(k, v);
   });
-
 
   let decoders = {};
   //@ts-ignore
@@ -43,16 +41,19 @@ function buildParsers(args) {
       const error = new Error(`Failed to parse ${k}`);
       //@ts-ignore
       error.errors = safe.errors;
-      throw error
+      throw error;
     };
     const zod = () => {
       //@ts-ignore
-      return z.custom(data => safeParse(data).success, val => {
-        const errors = safeParse(val).errors;
-        //@ts-ignore
-        return printErrors(errors, [])
-      })
-    }
+      return z.custom(
+        (data) => safeParse(data).success,
+        (val) => {
+          const errors = safeParse(val).errors;
+          //@ts-ignore
+          return printErrors(errors, []);
+        }
+      );
+    };
     decoders[k] = {
       parse,
       safeParse,

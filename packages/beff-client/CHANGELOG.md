@@ -1,5 +1,13 @@
 # @beff/client
 
+## 0.0.70
+
+### Patch Changes
+
+- required reimpl
+- Updated dependencies
+  - @beff/cli@0.0.70
+
 ## 0.0.69
 
 ### Patch Changes
