@@ -335,11 +335,11 @@ const validators = {
     UnionNested: DecodeUnionNested
 };
 const hoisted_User_0 = {
-    "age": (ctx, input)=>(decodeNumber(ctx, input)),
-    "name": (ctx, input)=>(decodeString(ctx, input))
+    "age": decodeNumber,
+    "name": decodeString
 };
 const hoisted_NotPublic_1 = {
-    "a": (ctx, input)=>(decodeString(ctx, input))
+    "a": decodeString
 };
 const hoisted_A_2 = [
     1,

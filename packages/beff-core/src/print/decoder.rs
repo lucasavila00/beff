@@ -38,10 +38,6 @@ struct DecoderFnGenerator<'a> {
 }
 
 impl DecoderFnGenerator<'_> {
-    fn decode_call(fn_name: &str) -> Expr {
-        Self::decode_call_extra(fn_name, vec![])
-    }
-
     fn base_args() -> Vec<ExprOrSpread> {
         vec![
             ExprOrSpread {
@@ -405,24 +401,24 @@ impl DecoderFnGenerator<'_> {
                 unreachable!("should not create decoders for semantic types")
             }
 
-            JsonSchema::StNever => Self::decode_call("decodeNever"),
+            JsonSchema::StNever => SwcBuilder::ident_expr("decodeNever"),
             JsonSchema::AnyArrayLike => {
-                self.decode_expr(&JsonSchema::Array(JsonSchema::Any.into()), hoisted)
+                Self::make_cb(self.decode_expr(&JsonSchema::Array(JsonSchema::Any.into()), hoisted))
             }
-            JsonSchema::Null => Self::decode_call("decodeNull"),
-            JsonSchema::Boolean => Self::decode_call("decodeBoolean"),
-            JsonSchema::String => Self::decode_call("decodeString"),
-            JsonSchema::Number => Self::decode_call("decodeNumber"),
-            JsonSchema::Any => Self::decode_call("decodeAny"),
-            JsonSchema::StringWithFormat(format) => Self::decode_call_extra(
+            JsonSchema::Null => SwcBuilder::ident_expr("decodeNull"),
+            JsonSchema::Boolean => SwcBuilder::ident_expr("decodeBoolean"),
+            JsonSchema::String => SwcBuilder::ident_expr("decodeString"),
+            JsonSchema::Number => SwcBuilder::ident_expr("decodeNumber"),
+            JsonSchema::Any => SwcBuilder::ident_expr("decodeAny"),
+            JsonSchema::StringWithFormat(format) => Self::make_cb(Self::decode_call_extra(
                 "decodeStringWithFormat",
                 vec![Expr::Lit(Lit::Str(Str {
                     span: DUMMY_SP,
                     value: format.to_string().into(),
                     raw: None,
                 }))],
-            ),
-            JsonSchema::Ref(r_name) => Self::decode_ref(r_name),
+            )),
+            JsonSchema::Ref(r_name) => Self::make_cb(Self::decode_ref(r_name)),
             JsonSchema::Object { vs, rest } => {
                 let obj_to_hoist = Expr::Object(ObjectLit {
                     span: DUMMY_SP,
@@ -458,12 +454,12 @@ impl DecoderFnGenerator<'_> {
                     let rest = self.decode_expr(rest, hoisted);
                     extra.push(rest);
                 }
-                Self::decode_call_extra("decodeObject", extra)
+                Self::make_cb(Self::decode_call_extra("decodeObject", extra))
             }
             JsonSchema::Array(ty) => {
                 let decoding = self.decode_expr(ty, hoisted);
                 let decoding = self.hoist_expr(hoisted, decoding);
-                Self::decode_call_extra("decodeArray", vec![decoding])
+                Self::make_cb(Self::decode_call_extra("decodeArray", vec![decoding]))
             }
             JsonSchema::Tuple {
                 prefix_items,
@@ -511,21 +507,27 @@ impl DecoderFnGenerator<'_> {
                     ],
                 });
 
-                Self::decode_call_extra("decodeTuple", vec![self.hoist_expr(hoisted, tpl_extra)])
+                Self::make_cb(Self::decode_call_extra(
+                    "decodeTuple",
+                    vec![self.hoist_expr(hoisted, tpl_extra)],
+                ))
             }
-            JsonSchema::AnyOf(vs) => self.decode_any_of(vs, hoisted),
-            JsonSchema::AllOf(vs) => self.decode_union_or_intersection("decodeAllOf", vs, hoisted),
-            JsonSchema::Const(json) => {
-                Self::decode_call_extra("decodeConst", vec![json.clone().to_json().to_expr()])
+            JsonSchema::AnyOf(vs) => Self::make_cb(self.decode_any_of(vs, hoisted)),
+            JsonSchema::AllOf(vs) => {
+                Self::make_cb(self.decode_union_or_intersection("decodeAllOf", vs, hoisted))
             }
-            JsonSchema::Codec(format) => Self::decode_call_extra(
+            JsonSchema::Const(json) => Self::make_cb(Self::decode_call_extra(
+                "decodeConst",
+                vec![json.clone().to_json().to_expr()],
+            )),
+            JsonSchema::Codec(format) => Self::make_cb(Self::decode_call_extra(
                 "decodeCodec",
                 vec![Expr::Lit(Lit::Str(Str {
                     span: DUMMY_SP,
                     value: format.to_string().into(),
                     raw: None,
                 }))],
-            ),
+            )),
             JsonSchema::TplLitType(items) => {
                 let mut regex_exp = String::new();
 
@@ -533,7 +535,7 @@ impl DecoderFnGenerator<'_> {
                     regex_exp.push_str(&item.regex_expr());
                 }
 
-                Self::decode_call_extra(
+                Self::make_cb(Self::decode_call_extra(
                     "decodeRegex",
                     vec![
                         Expr::Lit(Lit::Regex(Regex {
@@ -547,12 +549,12 @@ impl DecoderFnGenerator<'_> {
                             raw: None,
                         })),
                     ],
-                )
+                ))
             }
-            JsonSchema::Function => Self::decode_call("decodeFunction"),
+            JsonSchema::Function => SwcBuilder::ident_expr("decodeFunction"),
         };
 
-        Self::make_cb(call)
+        call
     }
 
     fn fn_decoder_from_schema(

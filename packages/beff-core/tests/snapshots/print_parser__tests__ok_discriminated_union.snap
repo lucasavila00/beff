@@ -9,14 +9,14 @@ const validators = {
     DiscriminatedUnion4: DecodeDiscriminatedUnion4
 };
 const hoisted_DiscriminatedUnion4_0 = {
-    "a1": (ctx, input)=>(decodeString(ctx, input)),
+    "a1": decodeString,
     "subType": (ctx, input)=>(decodeConst(ctx, input, "a1"))
 };
 const hoisted_DiscriminatedUnion4_1 = {
     "a": (ctx, input)=>(decodeObject(ctx, input, hoisted_DiscriminatedUnion4_0))
 };
 const hoisted_DiscriminatedUnion4_2 = {
-    "a2": (ctx, input)=>(decodeString(ctx, input)),
+    "a2": decodeString,
     "subType": (ctx, input)=>(decodeConst(ctx, input, "a2"))
 };
 const hoisted_DiscriminatedUnion4_3 = {

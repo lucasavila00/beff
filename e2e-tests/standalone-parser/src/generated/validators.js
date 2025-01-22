@@ -345,7 +345,7 @@ function DecodePartialSettings(ctx, input) {
     return ((ctx, input)=>(decodeObject(ctx, input, hoisted_PartialSettings_26)))(ctx, input);
 }
 function DecodeExtra(ctx, input) {
-    return ((ctx, input)=>(decodeObject(ctx, input, hoisted_Extra_27, (ctx, input)=>(decodeString(ctx, input)))))(ctx, input);
+    return ((ctx, input)=>(decodeObject(ctx, input, hoisted_Extra_27, decodeString)))(ctx, input);
 }
 function DecodeAvatarSize(ctx, input) {
     return ((ctx, input)=>(decodeRegex(ctx, input, /(\d+(\.\d+)?)(x)(\d+(\.\d+)?)/, "${number}x${number}")))(ctx, input);
@@ -423,7 +423,7 @@ function DecodeABC(ctx, input) {
     return ((ctx, input)=>(decodeObject(ctx, input, hoisted_ABC_86)))(ctx, input);
 }
 function DecodeKABC(ctx, input) {
-    return ((ctx, input)=>(decodeNever(ctx, input)))(ctx, input);
+    return (decodeNever)(ctx, input);
 }
 function DecodeK(ctx, input) {
     return ((ctx, input)=>(decodeAnyOf(ctx, input, hoisted_K_87)))(ctx, input);
@@ -475,14 +475,14 @@ const validators = {
     K: DecodeK
 };
 const hoisted_TransportedValue_0 = [
-    (ctx, input)=>(decodeNull(ctx, input)),
-    (ctx, input)=>(decodeString(ctx, input)),
-    (ctx, input)=>(decodeNumber(ctx, input))
+    decodeNull,
+    decodeString,
+    decodeNumber
 ];
 const hoisted_TransportedValue_1 = (ctx, input)=>(decodeAnyOf(ctx, input, hoisted_TransportedValue_0));
 const hoisted_TransportedValue_2 = [
-    (ctx, input)=>(decodeNull(ctx, input)),
-    (ctx, input)=>(decodeString(ctx, input)),
+    decodeNull,
+    decodeString,
     (ctx, input)=>(decodeArray(ctx, input, hoisted_TransportedValue_1))
 ];
 const hoisted_AllTs_3 = [
@@ -523,25 +523,25 @@ const hoisted_Settings_12 = [
     "b"
 ];
 const hoisted_Settings_13 = {
-    "a": (ctx, input)=>(decodeString(ctx, input)),
+    "a": decodeString,
     "d": (ctx, input)=>(decodeObject(ctx, input, hoisted_Settings_11)),
     "level": (ctx, input)=>(decodeAnyOfConsts(ctx, input, hoisted_Settings_12))
 };
 const hoisted_PartialObject_14 = [
-    (ctx, input)=>(decodeNull(ctx, input)),
-    (ctx, input)=>(decodeString(ctx, input))
+    decodeNull,
+    decodeString
 ];
 const hoisted_PartialObject_15 = [
-    (ctx, input)=>(decodeNull(ctx, input)),
-    (ctx, input)=>(decodeNumber(ctx, input))
+    decodeNull,
+    decodeNumber
 ];
 const hoisted_PartialObject_16 = {
     "a": (ctx, input)=>(decodeAnyOf(ctx, input, hoisted_PartialObject_14)),
     "b": (ctx, input)=>(decodeAnyOf(ctx, input, hoisted_PartialObject_15))
 };
 const hoisted_RequiredPartialObject_17 = {
-    "a": (ctx, input)=>(decodeString(ctx, input)),
-    "b": (ctx, input)=>(decodeNumber(ctx, input))
+    "a": decodeString,
+    "b": decodeNumber
 };
 const hoisted_LevelAndDSettings_18 = {
     "tag": (ctx, input)=>(decodeConst(ctx, input, "d"))
@@ -555,14 +555,14 @@ const hoisted_LevelAndDSettings_20 = {
     "level": (ctx, input)=>(decodeAnyOfConsts(ctx, input, hoisted_LevelAndDSettings_19))
 };
 const hoisted_PartialSettings_21 = [
-    (ctx, input)=>(decodeNull(ctx, input)),
-    (ctx, input)=>(decodeString(ctx, input))
+    decodeNull,
+    decodeString
 ];
 const hoisted_PartialSettings_22 = {
     "tag": (ctx, input)=>(decodeConst(ctx, input, "d"))
 };
 const hoisted_PartialSettings_23 = [
-    (ctx, input)=>(decodeNull(ctx, input)),
+    decodeNull,
     (ctx, input)=>(decodeObject(ctx, input, hoisted_PartialSettings_22))
 ];
 const hoisted_PartialSettings_24 = [
@@ -570,7 +570,7 @@ const hoisted_PartialSettings_24 = [
     "b"
 ];
 const hoisted_PartialSettings_25 = [
-    (ctx, input)=>(decodeNull(ctx, input)),
+    decodeNull,
     (ctx, input)=>(decodeAnyOfConsts(ctx, input, hoisted_PartialSettings_24))
 ];
 const hoisted_PartialSettings_26 = {
@@ -585,39 +585,39 @@ const hoisted_User_29 = {
     "avatarSize": (ctx, input)=>(validators.AvatarSize(ctx, input)),
     "extra": (ctx, input)=>(validators.Extra(ctx, input)),
     "friends": (ctx, input)=>(decodeArray(ctx, input, hoisted_User_28)),
-    "name": (ctx, input)=>(decodeString(ctx, input))
+    "name": decodeString
 };
 const hoisted_PublicUser_30 = {
     "accessLevel": (ctx, input)=>(validators.AccessLevel(ctx, input)),
     "avatarSize": (ctx, input)=>(validators.AvatarSize(ctx, input)),
     "extra": (ctx, input)=>(validators.Extra(ctx, input)),
-    "name": (ctx, input)=>(decodeString(ctx, input))
+    "name": decodeString
 };
 const hoisted_Req_31 = {
-    "optional": (ctx, input)=>(decodeString(ctx, input))
+    "optional": decodeString
 };
 const hoisted_WithOptionals_32 = [
-    (ctx, input)=>(decodeNull(ctx, input)),
-    (ctx, input)=>(decodeString(ctx, input))
+    decodeNull,
+    decodeString
 ];
 const hoisted_WithOptionals_33 = {
     "optional": (ctx, input)=>(decodeAnyOf(ctx, input, hoisted_WithOptionals_32))
 };
 const hoisted_Repro1_34 = [
-    (ctx, input)=>(decodeNull(ctx, input)),
+    decodeNull,
     (ctx, input)=>(validators.Repro2(ctx, input))
 ];
 const hoisted_Repro1_35 = {
     "sizes": (ctx, input)=>(decodeAnyOf(ctx, input, hoisted_Repro1_34))
 };
 const hoisted_Repro2_36 = {
-    "useSmallerSizes": (ctx, input)=>(decodeBoolean(ctx, input))
+    "useSmallerSizes": decodeBoolean
 };
 const hoisted_SettingsUpdate_37 = {
     "tag": (ctx, input)=>(decodeConst(ctx, input, "d"))
 };
 const hoisted_SettingsUpdate_38 = [
-    (ctx, input)=>(decodeString(ctx, input)),
+    decodeString,
     (ctx, input)=>(decodeObject(ctx, input, hoisted_SettingsUpdate_37))
 ];
 const hoisted_Mapped_39 = {
@@ -634,14 +634,14 @@ const hoisted_MappedOptional_42 = {
     "value": (ctx, input)=>(decodeConst(ctx, input, "a"))
 };
 const hoisted_MappedOptional_43 = [
-    (ctx, input)=>(decodeNull(ctx, input)),
+    decodeNull,
     (ctx, input)=>(decodeObject(ctx, input, hoisted_MappedOptional_42))
 ];
 const hoisted_MappedOptional_44 = {
     "value": (ctx, input)=>(decodeConst(ctx, input, "b"))
 };
 const hoisted_MappedOptional_45 = [
-    (ctx, input)=>(decodeNull(ctx, input)),
+    decodeNull,
     (ctx, input)=>(decodeObject(ctx, input, hoisted_MappedOptional_44))
 ];
 const hoisted_MappedOptional_46 = {
@@ -649,53 +649,53 @@ const hoisted_MappedOptional_46 = {
     "b": (ctx, input)=>(decodeAnyOf(ctx, input, hoisted_MappedOptional_45))
 };
 const hoisted_DiscriminatedUnion_47 = [
-    (ctx, input)=>(decodeNull(ctx, input)),
-    (ctx, input)=>(decodeString(ctx, input))
+    decodeNull,
+    decodeString
 ];
 const hoisted_DiscriminatedUnion_48 = {
-    "a1": (ctx, input)=>(decodeString(ctx, input)),
+    "a1": decodeString,
     "a11": (ctx, input)=>(decodeAnyOf(ctx, input, hoisted_DiscriminatedUnion_47))
 };
 const hoisted_DiscriminatedUnion_49 = {
-    "a2": (ctx, input)=>(decodeString(ctx, input))
+    "a2": decodeString
 };
 const hoisted_DiscriminatedUnion_50 = {
     "a1": (ctx, input)=>(decodeObject(ctx, input, hoisted_DiscriminatedUnion_48)),
     "a2": (ctx, input)=>(decodeObject(ctx, input, hoisted_DiscriminatedUnion_49))
 };
 const hoisted_DiscriminatedUnion_51 = {
-    "value": (ctx, input)=>(decodeNumber(ctx, input))
+    "value": decodeNumber
 };
 const hoisted_DiscriminatedUnion_52 = {
     "a": (ctx, input)=>(decodeAnyOfDiscriminated(ctx, input, "subType", hoisted_DiscriminatedUnion_50)),
     "b": (ctx, input)=>(decodeObject(ctx, input, hoisted_DiscriminatedUnion_51))
 };
 const hoisted_DiscriminatedUnion2_53 = [
-    (ctx, input)=>(decodeNull(ctx, input)),
-    (ctx, input)=>(decodeString(ctx, input))
+    decodeNull,
+    decodeString
 ];
 const hoisted_DiscriminatedUnion2_54 = {
-    "a1": (ctx, input)=>(decodeString(ctx, input)),
+    "a1": decodeString,
     "a11": (ctx, input)=>(decodeAnyOf(ctx, input, hoisted_DiscriminatedUnion2_53)),
     "subType": (ctx, input)=>(decodeConst(ctx, input, "a1")),
     "type": (ctx, input)=>(decodeConst(ctx, input, "a"))
 };
 const hoisted_DiscriminatedUnion2_55 = {
-    "a2": (ctx, input)=>(decodeString(ctx, input)),
+    "a2": decodeString,
     "subType": (ctx, input)=>(decodeConst(ctx, input, "a2")),
     "type": (ctx, input)=>(decodeConst(ctx, input, "a"))
 };
 const hoisted_DiscriminatedUnion2_56 = [
-    (ctx, input)=>(decodeNull(ctx, input)),
+    decodeNull,
     (ctx, input)=>(decodeConst(ctx, input, "d"))
 ];
 const hoisted_DiscriminatedUnion2_57 = {
     "type": (ctx, input)=>(decodeAnyOf(ctx, input, hoisted_DiscriminatedUnion2_56)),
-    "valueD": (ctx, input)=>(decodeNumber(ctx, input))
+    "valueD": decodeNumber
 };
 const hoisted_DiscriminatedUnion2_58 = {
     "type": (ctx, input)=>(decodeConst(ctx, input, "b")),
-    "value": (ctx, input)=>(decodeNumber(ctx, input))
+    "value": decodeNumber
 };
 const hoisted_DiscriminatedUnion2_59 = [
     (ctx, input)=>(decodeObject(ctx, input, hoisted_DiscriminatedUnion2_54)),
@@ -704,13 +704,13 @@ const hoisted_DiscriminatedUnion2_59 = [
     (ctx, input)=>(decodeObject(ctx, input, hoisted_DiscriminatedUnion2_58))
 ];
 const hoisted_DiscriminatedUnion3_60 = {
-    "a1": (ctx, input)=>(decodeString(ctx, input))
+    "a1": decodeString
 };
 const hoisted_DiscriminatedUnion3_61 = {
-    "value": (ctx, input)=>(decodeNumber(ctx, input))
+    "value": decodeNumber
 };
 const hoisted_DiscriminatedUnion3_62 = {
-    "a1": (ctx, input)=>(decodeString(ctx, input))
+    "a1": decodeString
 };
 const hoisted_DiscriminatedUnion3_63 = {
     "a": (ctx, input)=>(decodeObject(ctx, input, hoisted_DiscriminatedUnion3_60)),
@@ -718,14 +718,14 @@ const hoisted_DiscriminatedUnion3_63 = {
     "c": (ctx, input)=>(decodeObject(ctx, input, hoisted_DiscriminatedUnion3_62))
 };
 const hoisted_DiscriminatedUnion4_64 = {
-    "a1": (ctx, input)=>(decodeString(ctx, input)),
+    "a1": decodeString,
     "subType": (ctx, input)=>(decodeConst(ctx, input, "a1"))
 };
 const hoisted_DiscriminatedUnion4_65 = {
     "a": (ctx, input)=>(decodeObject(ctx, input, hoisted_DiscriminatedUnion4_64))
 };
 const hoisted_DiscriminatedUnion4_66 = {
-    "a2": (ctx, input)=>(decodeString(ctx, input)),
+    "a2": decodeString,
     "subType": (ctx, input)=>(decodeConst(ctx, input, "a2"))
 };
 const hoisted_DiscriminatedUnion4_67 = {
@@ -754,13 +754,13 @@ const hoisted_Arr2_72 = [
     "C"
 ];
 const hoisted_UnionWithEnumAccess_73 = {
-    "value": (ctx, input)=>(decodeString(ctx, input))
+    "value": decodeString
 };
 const hoisted_UnionWithEnumAccess_74 = {
-    "value": (ctx, input)=>(decodeNumber(ctx, input))
+    "value": decodeNumber
 };
 const hoisted_UnionWithEnumAccess_75 = {
-    "value": (ctx, input)=>(decodeBoolean(ctx, input))
+    "value": decodeBoolean
 };
 const hoisted_UnionWithEnumAccess_76 = {
     "a": (ctx, input)=>(decodeObject(ctx, input, hoisted_UnionWithEnumAccess_73)),
@@ -768,14 +768,14 @@ const hoisted_UnionWithEnumAccess_76 = {
     "c": (ctx, input)=>(decodeObject(ctx, input, hoisted_UnionWithEnumAccess_75))
 };
 const hoisted_Shape_77 = {
-    "radius": (ctx, input)=>(decodeNumber(ctx, input))
+    "radius": decodeNumber
 };
 const hoisted_Shape_78 = {
-    "x": (ctx, input)=>(decodeNumber(ctx, input))
+    "x": decodeNumber
 };
 const hoisted_Shape_79 = {
-    "x": (ctx, input)=>(decodeNumber(ctx, input)),
-    "y": (ctx, input)=>(decodeNumber(ctx, input))
+    "x": decodeNumber,
+    "y": decodeNumber
 };
 const hoisted_Shape_80 = {
     "circle": (ctx, input)=>(decodeObject(ctx, input, hoisted_Shape_77)),
@@ -783,11 +783,11 @@ const hoisted_Shape_80 = {
     "triangle": (ctx, input)=>(decodeObject(ctx, input, hoisted_Shape_79))
 };
 const hoisted_T3_81 = {
-    "x": (ctx, input)=>(decodeNumber(ctx, input))
+    "x": decodeNumber
 };
 const hoisted_T3_82 = {
-    "x": (ctx, input)=>(decodeNumber(ctx, input)),
-    "y": (ctx, input)=>(decodeNumber(ctx, input))
+    "x": decodeNumber,
+    "y": decodeNumber
 };
 const hoisted_T3_83 = {
     "square": (ctx, input)=>(decodeObject(ctx, input, hoisted_T3_81)),
@@ -797,7 +797,7 @@ const hoisted_BObject_84 = {
     "tag": (ctx, input)=>(decodeConst(ctx, input, "b"))
 };
 const hoisted_DEF_85 = {
-    "a": (ctx, input)=>(decodeString(ctx, input))
+    "a": decodeString
 };
 const hoisted_ABC_86 = {};
 const hoisted_K_87 = [
