@@ -56,9 +56,7 @@ const buildParsersInput = {
         return validators.Extra(ctx, input, required);
     },
     "ImportEnumTypeof": function(ctx, input, required = true) {
-        return decodeObject(ctx, input, required, {
-            "A": (ctx, input)=>(decodeConst(ctx, input, true, "a"))
-        });
+        return decodeObject(ctx, input, required, hoisted_ImportEnumTypeof_61);
     },
     "K": function(ctx, input, required = true) {
         return validators.K(ctx, input, required);

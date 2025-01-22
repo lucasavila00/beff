@@ -172,9 +172,9 @@ impl ToWritableModules for ExtractResult {
             js_built_parsers = Some(emit_module(vec![built_st], "\n")?);
         }
         let js_validators = emit_module(
-            hoisted
+            stmt_validators
                 .into_iter()
-                .chain(stmt_validators.into_iter())
+                .chain(hoisted.into_iter())
                 .collect(),
             "\n",
         )?;

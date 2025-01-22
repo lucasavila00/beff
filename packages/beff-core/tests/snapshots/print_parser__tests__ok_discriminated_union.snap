@@ -5,22 +5,25 @@ expression: "decoder(r#\"\n        export type DiscriminatedUnion4 =\n          
 function DecodeDiscriminatedUnion4(ctx, input, required = true) {
     return decodeAnyOfDiscriminated(ctx, input, required, "type", {
         "a": (ctx, input)=>(decodeAnyOf(ctx, input, true, [
-                (ctx, input)=>(decodeObject(ctx, input, true, {
-                        "a": (ctx, input)=>(decodeObject(ctx, input, true, {
-                                "a1": (ctx, input)=>(decodeString(ctx, input, true)),
-                                "subType": (ctx, input)=>(decodeConst(ctx, input, true, "a1"))
-                            }))
-                    })),
-                (ctx, input)=>(decodeObject(ctx, input, true, {
-                        "a": (ctx, input)=>(decodeObject(ctx, input, true, {
-                                "a2": (ctx, input)=>(decodeString(ctx, input, true)),
-                                "subType": (ctx, input)=>(decodeConst(ctx, input, true, "a2"))
-                            }))
-                    }))
+                (ctx, input)=>(decodeObject(ctx, input, true, hoisted_DiscriminatedUnion4_1)),
+                (ctx, input)=>(decodeObject(ctx, input, true, hoisted_DiscriminatedUnion4_3))
             ]))
     });
 }
 const validators = {
     DiscriminatedUnion4: DecodeDiscriminatedUnion4
 };
-
+const hoisted_DiscriminatedUnion4_0 = {
+    "a1": (ctx, input)=>(decodeString(ctx, input, true)),
+    "subType": (ctx, input)=>(decodeConst(ctx, input, true, "a1"))
+};
+const hoisted_DiscriminatedUnion4_1 = {
+    "a": (ctx, input)=>(decodeObject(ctx, input, true, hoisted_DiscriminatedUnion4_0))
+};
+const hoisted_DiscriminatedUnion4_2 = {
+    "a2": (ctx, input)=>(decodeString(ctx, input, true)),
+    "subType": (ctx, input)=>(decodeConst(ctx, input, true, "a2"))
+};
+const hoisted_DiscriminatedUnion4_3 = {
+    "a": (ctx, input)=>(decodeObject(ctx, input, true, hoisted_DiscriminatedUnion4_2))
+};
