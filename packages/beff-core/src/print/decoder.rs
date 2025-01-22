@@ -52,28 +52,6 @@ impl DecoderFnGenerator<'_> {
         ]
     }
 
-    fn decode_call_extra(fn_name: &str, extra: Vec<Expr>) -> Expr {
-        Expr::Call(CallExpr {
-            span: DUMMY_SP,
-            callee: Callee::Expr(
-                Expr::Ident(Ident {
-                    span: DUMMY_SP,
-                    sym: fn_name.into(),
-                    optional: false,
-                })
-                .into(),
-            ),
-            args: Self::base_args()
-                .into_iter()
-                .chain(extra.into_iter().map(|it| ExprOrSpread {
-                    spread: None,
-                    expr: it.into(),
-                }))
-                .collect(),
-            type_args: None,
-        })
-    }
-
     fn decode_ref(schema_ref: &str) -> Expr {
         let decoder_ref_fn = Expr::Member(MemberExpr {
             span: DUMMY_SP,
@@ -223,15 +201,16 @@ impl DecoderFnGenerator<'_> {
                 })
                 .collect(),
         });
-        Self::make_cb(Self::decode_call_extra(
-            "decodeAnyOfDiscriminated",
+        Self::decode_bound(self.new_hoisted_decoder(
+            hoisted,
+            "AnyOfDiscriminatedDecoder",
             vec![
                 Expr::Lit(Lit::Str(Str {
                     span: DUMMY_SP,
                     value: discriminator.clone().into(),
                     raw: None,
                 })),
-                self.hoist_expr(hoisted, extra_obj),
+                extra_obj,
             ],
         ))
     }

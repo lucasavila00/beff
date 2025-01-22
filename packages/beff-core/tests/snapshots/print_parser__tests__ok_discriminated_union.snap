@@ -3,7 +3,7 @@ source: packages/beff-core/tests/print_parser.rs
 expression: "decoder(r#\"\n        export type DiscriminatedUnion4 =\n            | {\n                type: \"a\";\n                a: {\n                  subType: \"a1\";\n                  a1: string;\n                };\n              }\n            | {\n                type: \"a\";\n                a: {\n                  subType: \"a2\";\n                  a2: string;\n                };\n              };\n        parse.buildParsers<{ DiscriminatedUnion4: DiscriminatedUnion4 }>();\n      \"#)"
 ---
 function DecodeDiscriminatedUnion4(ctx, input) {
-    return ((ctx, input)=>(decodeAnyOfDiscriminated(ctx, input, "type", hoisted_DiscriminatedUnion4_7)))(ctx, input);
+    return (hoisted_DiscriminatedUnion4_7.decode.bind(hoisted_DiscriminatedUnion4_7))(ctx, input);
 }
 const validators = {
     DiscriminatedUnion4: DecodeDiscriminatedUnion4
@@ -28,6 +28,6 @@ const hoisted_DiscriminatedUnion4_6 = new AnyOfDecoder([
     hoisted_DiscriminatedUnion4_2.decode.bind(hoisted_DiscriminatedUnion4_2),
     hoisted_DiscriminatedUnion4_5.decode.bind(hoisted_DiscriminatedUnion4_5)
 ]);
-const hoisted_DiscriminatedUnion4_7 = {
+const hoisted_DiscriminatedUnion4_7 = new AnyOfDiscriminatedDecoder("type", {
     "a": hoisted_DiscriminatedUnion4_6.decode.bind(hoisted_DiscriminatedUnion4_6)
-};
+});

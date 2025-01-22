@@ -191,31 +191,37 @@ class StringWithFormatDecoder {
     return buildError(input, ctx, "expected string with format " + JSON.stringify(this.format));
   }
 }
+class AnyOfDiscriminatedDecoder {
+  constructor(discriminator, mapping) {
+    this.discriminator = discriminator;
+    this.mapping = mapping;
+  }
 
-function decodeAnyOfDiscriminated(ctx, input, discriminator, mapping) {
-  const d = input[discriminator];
-  if (d == null) {
-    return buildError(input, ctx, "expected discriminator key " + JSON.stringify(discriminator));
+  decode(ctx, input) {
+    const d = input[this.discriminator];
+    if (d == null) {
+      return buildError(input, ctx, "expected discriminator key " + JSON.stringify(this.discriminator));
+    }
+    const v = this.mapping[d];
+    if (v == null) {
+      pushPath(ctx, this.discriminator);
+      const err = buildError(
+        d,
+        ctx,
+        "expected one of " +
+          Object.keys(this.mapping)
+            .map((it) => JSON.stringify(it))
+            .join(", ")
+      );
+      popPath(ctx);
+      return err;
+    }
+    const prevAllow = ctx.allowedExtraProperties__ ?? [];
+    ctx.allowedExtraProperties__ = [...prevAllow, this.discriminator];
+    const out = v(ctx, input);
+    ctx.allowedExtraProperties__ = prevAllow;
+    return { ...out, [this.discriminator]: d };
   }
-  const v = mapping[d];
-  if (v == null) {
-    pushPath(ctx, discriminator);
-    const err = buildError(
-      d,
-      ctx,
-      "expected one of " +
-        Object.keys(mapping)
-          .map((it) => JSON.stringify(it))
-          .join(", ")
-    );
-    popPath(ctx);
-    return err;
-  }
-  const prevAllow = ctx.allowedExtraProperties__ ?? [];
-  ctx.allowedExtraProperties__ = [...prevAllow, discriminator];
-  const out = v(ctx, input);
-  ctx.allowedExtraProperties__ = prevAllow;
-  return { ...out, [discriminator]: d };
 }
 
 class AnyOfConstsDecoder {
@@ -364,4 +370,4 @@ const validators = {
     A: DecodeA
 };
 
-export default { ObjectDecoder, ArrayDecoder, decodeString, decodeNumber, CodecDecoder, decodeFunction, StringWithFormatDecoder, AnyOfDecoder, AllOfDecoder, decodeBoolean, decodeAny, TupleDecoder, decodeNull, decodeNever, RegexDecoder, ConstDecoder, registerCustomFormatter, AnyOfConstsDecoder, validators };
+export default { ObjectDecoder, ArrayDecoder, decodeString, decodeNumber, CodecDecoder, decodeFunction, StringWithFormatDecoder, AnyOfDecoder, AllOfDecoder, decodeBoolean, decodeAny, TupleDecoder, decodeNull, decodeNever, RegexDecoder, ConstDecoder, registerCustomFormatter, AnyOfConstsDecoder, AnyOfDiscriminatedDecoder, validators };

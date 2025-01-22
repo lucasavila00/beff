@@ -23,6 +23,7 @@ const decodersExported = [
   "ConstDecoder",
   "registerCustomFormatter",
   "AnyOfConstsDecoder",
+  "AnyOfDiscriminatedDecoder",
 ];
 
 const esmTag = (mod: ProjectModule) => {
