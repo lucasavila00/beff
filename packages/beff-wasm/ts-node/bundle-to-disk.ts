@@ -9,7 +9,7 @@ const decodersExported = [
   "decodeArray",
   "decodeString",
   "decodeNumber",
-  "decodeCodec",
+  "CodecDecoder",
   "decodeFunction",
   "decodeStringWithFormat",
   "decodeAnyOf",

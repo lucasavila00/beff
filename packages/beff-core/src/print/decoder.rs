@@ -572,8 +572,9 @@ impl DecoderFnGenerator<'_> {
                 "ConstDecoder",
                 vec![json.clone().to_json().to_expr()],
             )),
-            JsonSchema::Codec(format) => Self::make_cb(Self::decode_call_extra(
-                "decodeCodec",
+            JsonSchema::Codec(format) => Self::decode_bound(self.new_hoisted_decoder(
+                hoisted,
+                "CodecDecoder",
                 vec![Expr::Lit(Lit::Str(Str {
                     span: DUMMY_SP,
                     value: format.to_string().into(),

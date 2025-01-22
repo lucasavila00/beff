@@ -223,8 +223,10 @@ export const {
   BObject,
   AllTs,
   TransportedValue,
+  BigIntCodec: BigIntCodec,
 } = parse.buildParsers<{
   TransportedValue: TransportedValue;
+  BigIntCodec: bigint;
   AllTs: T4.AllTs;
   AObject: AObject;
   Version: Version;

@@ -27,6 +27,7 @@ import {
   AllTs,
   TransportedValue,
   ImportEnumTypeofCodec,
+  BigIntCodec,
 } from "../src/parser";
 import { Arr2 } from "../src/types";
 import { Schemas } from "../src/schema";
@@ -54,6 +55,10 @@ it("import enum typeof", () => {
       "success": false,
     }
   `);
+});
+
+it("BigIntCodec", () => {
+  expect(BigIntCodec.parse("123")).toMatchInlineSnapshot(`123n`);
 });
 
 it("tpl", () => {

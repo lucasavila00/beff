@@ -122,34 +122,38 @@ function decodeFunction(ctx, input) {
   }
   return buildError(input, ctx, "expected function");
 }
-
-function decodeCodec(ctx, input, codec) {
-  switch (codec) {
-    case "Codec::ISO8061": {
-      const d = new Date(input);
-      if (isNaN(d.getTime())) {
-        return buildError(input, ctx, "expected ISO8061 date");
-      }
-      return d;
-    }
-    case "Codec::BigInt": {
-      if (typeof input === "bigint") {
-        return input;
-      }
-      if (typeof input === "number") {
-        return BigInt(input);
-      }
-      if (typeof input === "string") {
-        try {
-          return BigInt(input);
-        } catch (e) {
-          
-        }
-      }
-      return buildError(input, ctx, "expected bigint");
-    }
+class CodecDecoder {
+  constructor(codec) {
+    this.codec = codec;
   }
-  return buildError(input, ctx, "codec " + codec + " not implemented");
+  decode(ctx, input) {
+    switch (this.codec) {
+      case "Codec::ISO8061": {
+        const d = new Date(input);
+        if (isNaN(d.getTime())) {
+          return buildError(input, ctx, "expected ISO8061 date");
+        }
+        return d;
+      }
+      case "Codec::BigInt": {
+        if (typeof input === "bigint") {
+          return input;
+        }
+        if (typeof input === "number") {
+          return BigInt(input);
+        }
+        if (typeof input === "string") {
+          try {
+            return BigInt(input);
+          } catch (e) {
+            
+          }
+        }
+        return buildError(input, ctx, "expected bigint");
+      }
+    }
+    return buildError(input, ctx, "codec " + this.codec + " not implemented");
+  }
 }
 
 function decodeStringWithFormat(ctx, input, format) {
@@ -380,4 +384,4 @@ const hoisted_UnionNested_6 = [
     6
 ];
 
-export default { decodeObject, decodeArray, decodeString, decodeNumber, decodeCodec, decodeFunction, decodeStringWithFormat, decodeAnyOf, decodeAllOf, decodeBoolean, decodeAny, decodeTuple, decodeNull, decodeNever, RegexDecoder, ConstDecoder, registerCustomFormatter, validators };
+export default { decodeObject, decodeArray, decodeString, decodeNumber, CodecDecoder, decodeFunction, decodeStringWithFormat, decodeAnyOf, decodeAllOf, decodeBoolean, decodeAny, decodeTuple, decodeNull, decodeNever, RegexDecoder, ConstDecoder, registerCustomFormatter, validators };
