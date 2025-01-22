@@ -45,43 +45,49 @@ function buildUnionError(received, ctx, errors) {
   });
 }
 
-function decodeObject(ctx, input, data, additionalPropsValidator = null) {
-  const disallowExtraProperties = ctx?.disallowExtraProperties ?? false;
-
-  const allowedExtraProperties = ctx.allowedExtraProperties__ ?? [];
-
-  if (typeof input === "object" && !Array.isArray(input) && input !== null) {
-    const acc = {};
-    for (const [k, v] of Object.entries(data)) {
-      pushPath(ctx, k);
-      acc[k] = v(ctx, input[k]);
-      popPath(ctx);
-    }
-
-    if (additionalPropsValidator != null) {
-      for (const [k, v] of Object.entries(input)) {
-        if (acc[k] == null) {
-          pushPath(ctx, k);
-          
-          acc[k] = additionalPropsValidator(ctx, v);
-          popPath(ctx);
-        }
-      }
-    }
-
-    if (disallowExtraProperties) {
-      for (const k of Object.keys(input)) {
-        if (acc[k] == null && allowedExtraProperties.indexOf(k) == -1) {
-          pushPath(ctx, k);
-          buildError(input[k], ctx, "extra property");
-          popPath(ctx);
-        }
-      }
-    }
-
-    return acc;
+class ObjectDecoder {
+  constructor(data, additionalPropsValidator = null) {
+    this.data = data;
+    this.additionalPropsValidator = additionalPropsValidator;
   }
-  return buildError(input, ctx, "expected object");
+
+  decode(ctx, input) {
+    const disallowExtraProperties = ctx?.disallowExtraProperties ?? false;
+
+    const allowedExtraProperties = ctx.allowedExtraProperties__ ?? [];
+
+    if (typeof input === "object" && !Array.isArray(input) && input !== null) {
+      const acc = {};
+      for (const [k, v] of Object.entries(this.data)) {
+        pushPath(ctx, k);
+        acc[k] = v(ctx, input[k]);
+        popPath(ctx);
+      }
+
+      if (this.additionalPropsValidator != null) {
+        for (const [k, v] of Object.entries(input)) {
+          if (acc[k] == null) {
+            pushPath(ctx, k);
+            acc[k] = this.additionalPropsValidator(ctx, v);
+            popPath(ctx);
+          }
+        }
+      }
+
+      if (disallowExtraProperties) {
+        for (const k of Object.keys(input)) {
+          if (acc[k] == null && allowedExtraProperties.indexOf(k) == -1) {
+            pushPath(ctx, k);
+            buildError(input[k], ctx, "extra property");
+            popPath(ctx);
+          }
+        }
+      }
+
+      return acc;
+    }
+    return buildError(input, ctx, "expected object");
+  }
 }
 
 class ArrayDecoder {
@@ -326,10 +332,10 @@ class RegexDecoder {
 
 
 function DecodeUser(ctx, input) {
-    return ((ctx, input)=>(decodeObject(ctx, input, hoisted_User_0)))(ctx, input);
+    return (hoisted_User_0.decode.bind(hoisted_User_0))(ctx, input);
 }
 function DecodeNotPublic(ctx, input) {
-    return ((ctx, input)=>(decodeObject(ctx, input, hoisted_NotPublic_1)))(ctx, input);
+    return (hoisted_NotPublic_1.decode.bind(hoisted_NotPublic_1))(ctx, input);
 }
 function DecodeStartsWithA(ctx, input) {
     return ((ctx, input)=>(decodeStringWithFormat(ctx, input, "StartsWithA")))(ctx, input);
@@ -363,13 +369,13 @@ const validators = {
     E: DecodeE,
     UnionNested: DecodeUnionNested
 };
-const hoisted_User_0 = {
+const hoisted_User_0 = new ObjectDecoder({
     "age": decodeNumber,
     "name": decodeString
-};
-const hoisted_NotPublic_1 = {
+});
+const hoisted_NotPublic_1 = new ObjectDecoder({
     "a": decodeString
-};
+});
 const hoisted_A_2 = [
     1,
     2
@@ -395,4 +401,4 @@ const hoisted_UnionNested_6 = [
     6
 ];
 
-export default { decodeObject, ArrayDecoder, decodeString, decodeNumber, CodecDecoder, decodeFunction, decodeStringWithFormat, decodeAnyOf, decodeAllOf, decodeBoolean, decodeAny, TupleDecoder, decodeNull, decodeNever, RegexDecoder, ConstDecoder, registerCustomFormatter, validators };
+export default { ObjectDecoder, ArrayDecoder, decodeString, decodeNumber, CodecDecoder, decodeFunction, decodeStringWithFormat, decodeAnyOf, decodeAllOf, decodeBoolean, decodeAny, TupleDecoder, decodeNull, decodeNever, RegexDecoder, ConstDecoder, registerCustomFormatter, validators };

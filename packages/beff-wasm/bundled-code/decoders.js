@@ -42,43 +42,49 @@ function buildUnionError(received, ctx, errors) {
   });
 }
 
-function decodeObject(ctx, input, data, additionalPropsValidator = null) {
-  const disallowExtraProperties = ctx?.disallowExtraProperties ?? false;
-
-  const allowedExtraProperties = ctx.allowedExtraProperties__ ?? [];
-
-  if (typeof input === "object" && !Array.isArray(input) && input !== null) {
-    const acc = {};
-    for (const [k, v] of Object.entries(data)) {
-      pushPath(ctx, k);
-      acc[k] = v(ctx, input[k]);
-      popPath(ctx);
-    }
-
-    if (additionalPropsValidator != null) {
-      for (const [k, v] of Object.entries(input)) {
-        if (acc[k] == null) {
-          pushPath(ctx, k);
-          //@ts-ignore
-          acc[k] = additionalPropsValidator(ctx, v);
-          popPath(ctx);
-        }
-      }
-    }
-
-    if (disallowExtraProperties) {
-      for (const k of Object.keys(input)) {
-        if (acc[k] == null && allowedExtraProperties.indexOf(k) == -1) {
-          pushPath(ctx, k);
-          buildError(input[k], ctx, "extra property");
-          popPath(ctx);
-        }
-      }
-    }
-
-    return acc;
+class ObjectDecoder {
+  constructor(data, additionalPropsValidator = null) {
+    this.data = data;
+    this.additionalPropsValidator = additionalPropsValidator;
   }
-  return buildError(input, ctx, "expected object");
+
+  decode(ctx, input) {
+    const disallowExtraProperties = ctx?.disallowExtraProperties ?? false;
+
+    const allowedExtraProperties = ctx.allowedExtraProperties__ ?? [];
+
+    if (typeof input === "object" && !Array.isArray(input) && input !== null) {
+      const acc = {};
+      for (const [k, v] of Object.entries(this.data)) {
+        pushPath(ctx, k);
+        acc[k] = v(ctx, input[k]);
+        popPath(ctx);
+      }
+
+      if (this.additionalPropsValidator != null) {
+        for (const [k, v] of Object.entries(input)) {
+          if (acc[k] == null) {
+            pushPath(ctx, k);
+            acc[k] = this.additionalPropsValidator(ctx, v);
+            popPath(ctx);
+          }
+        }
+      }
+
+      if (disallowExtraProperties) {
+        for (const k of Object.keys(input)) {
+          if (acc[k] == null && allowedExtraProperties.indexOf(k) == -1) {
+            pushPath(ctx, k);
+            buildError(input[k], ctx, "extra property");
+            popPath(ctx);
+          }
+        }
+      }
+
+      return acc;
+    }
+    return buildError(input, ctx, "expected object");
+  }
 }
 
 class ArrayDecoder {

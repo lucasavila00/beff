@@ -500,12 +500,12 @@ impl DecoderFnGenerator<'_> {
                         .collect(),
                 });
 
-                let mut extra = vec![self.hoist_expr(hoisted, obj_to_hoist)];
+                let mut extra = vec![obj_to_hoist];
                 if let Some(rest) = rest {
                     let rest = self.decode_expr(rest, hoisted);
                     extra.push(rest);
                 }
-                Self::make_cb(Self::decode_call_extra("decodeObject", extra))
+                Self::decode_bound(self.new_hoisted_decoder(hoisted, "ObjectDecoder", extra))
             }
             JsonSchema::Array(ty) => {
                 let decoding = self.decode_expr(ty, hoisted);

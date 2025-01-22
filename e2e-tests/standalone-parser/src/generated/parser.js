@@ -4,7 +4,7 @@
 
 import {printErrors} from '@beff/client';
 import {z} from 'zod';
-import validatorsMod from "./validators.js"; const { decodeObject, ArrayDecoder, decodeString, decodeNumber, CodecDecoder, decodeFunction, decodeStringWithFormat, decodeAnyOf, decodeAllOf, decodeBoolean, decodeAny, TupleDecoder, decodeNull, decodeNever, RegexDecoder, ConstDecoder, registerCustomFormatter, validators, c } = validatorsMod;
+import validatorsMod from "./validators.js"; const { ObjectDecoder, ArrayDecoder, decodeString, decodeNumber, CodecDecoder, decodeFunction, decodeStringWithFormat, decodeAnyOf, decodeAllOf, decodeBoolean, decodeAny, TupleDecoder, decodeNull, decodeNever, RegexDecoder, ConstDecoder, registerCustomFormatter, validators, c } = validatorsMod;
 const RequiredCustomFormats = ["ValidCurrency"];
 const buildParsersInput = {
     "AObject": function(ctx, input) {
@@ -59,7 +59,7 @@ const buildParsersInput = {
         return ((ctx, input)=>(validators.Extra(ctx, input)))(ctx, input);
     },
     "ImportEnumTypeof": function(ctx, input) {
-        return ((ctx, input)=>(decodeObject(ctx, input, hoisted_ImportEnumTypeof_5)))(ctx, input);
+        return (hoisted_ImportEnumTypeof_5.decode.bind(hoisted_ImportEnumTypeof_5))(ctx, input);
     },
     "K": function(ctx, input) {
         return ((ctx, input)=>(validators.K(ctx, input)))(ctx, input);
@@ -155,9 +155,9 @@ const hoisted_TupleCodecRest_2 = new TupleDecoder({
 });
 const hoisted_StringArrCodec_3 = new ArrayDecoder(decodeString);
 const hoisted_ImportEnumTypeof_4 = new ConstDecoder("a");
-const hoisted_ImportEnumTypeof_5 = {
+const hoisted_ImportEnumTypeof_5 = new ObjectDecoder({
     "A": hoisted_ImportEnumTypeof_4.decode.bind(hoisted_ImportEnumTypeof_4)
-};
+});
 
 
 

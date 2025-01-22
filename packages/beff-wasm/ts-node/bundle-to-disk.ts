@@ -5,7 +5,7 @@ import { ProjectJson, ProjectModule } from "./project";
 import gen from "./generated/bundle";
 
 const decodersExported = [
-  "decodeObject",
+  "ObjectDecoder",
   "ArrayDecoder",
   "decodeString",
   "decodeNumber",
