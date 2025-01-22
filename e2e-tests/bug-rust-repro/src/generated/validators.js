@@ -298,10 +298,13 @@ class AnyOfConstsDecoder {
     this.consts = consts;
   }
   decodeAnyOfConstsDecoder(ctx, input) {
-    for (const c of this.consts) {
-      if (input === c) {
-        return c;
+    if (input == null) {
+      if (this.consts.includes(null) || this.consts.includes(undefined)) {
+        return input;
       }
+    }
+    if (this.consts.includes(input)) {
+      return input;
     }
     return storeError(ctx, input, () =>
       this.consts.length < 3
