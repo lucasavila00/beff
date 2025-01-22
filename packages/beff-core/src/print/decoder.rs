@@ -398,7 +398,7 @@ impl DecoderFnGenerator<'_> {
                                 }),
                                 value: Box::new(match value {
                                     Optionality::Optional(schema) => {
-                                        let nullable_schema = &JsonSchema::AnyOf(
+                                        let nullable_schema = &JsonSchema::any_of(
                                             vec![JsonSchema::Null, schema.clone()]
                                                 .into_iter()
                                                 .collect(),
