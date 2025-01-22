@@ -6,10 +6,9 @@ use crate::{
 use std::collections::{BTreeMap, BTreeSet};
 use swc_common::DUMMY_SP;
 use swc_ecma_ast::{
-    ArrayLit, ArrowExpr, BindingIdent, BlockStmt, BlockStmtOrExpr, CallExpr, Callee, Expr,
-    ExprOrSpread, Function, Ident, KeyValueProp, Lit, MemberExpr, MemberProp, ModuleItem, NewExpr,
-    Null, ObjectLit, Param, ParenExpr, Pat, Prop, PropName, PropOrSpread, Regex, ReturnStmt, Stmt,
-    Str,
+    ArrayLit, BindingIdent, BlockStmt, CallExpr, Callee, Expr, ExprOrSpread, Function, Ident,
+    KeyValueProp, Lit, MemberExpr, MemberProp, ModuleItem, NewExpr, Null, ObjectLit, Param,
+    ParenExpr, Pat, Prop, PropName, PropOrSpread, Regex, ReturnStmt, Stmt, Str,
 };
 struct SwcBuilder;
 
@@ -39,19 +38,6 @@ struct DecoderFnGenerator<'a> {
 }
 
 impl DecoderFnGenerator<'_> {
-    fn base_args() -> Vec<ExprOrSpread> {
-        vec![
-            ExprOrSpread {
-                spread: None,
-                expr: SwcBuilder::ident_expr("ctx").into(),
-            },
-            ExprOrSpread {
-                spread: None,
-                expr: SwcBuilder::ident_expr("input").into(),
-            },
-        ]
-    }
-
     fn decode_ref(schema_ref: &str) -> Expr {
         let decoder_ref_fn = Expr::Member(MemberExpr {
             span: DUMMY_SP,
@@ -67,49 +53,7 @@ impl DecoderFnGenerator<'_> {
                 optional: false,
             }),
         });
-
-        Expr::Call(CallExpr {
-            span: DUMMY_SP,
-            callee: Callee::Expr(decoder_ref_fn.into()),
-            args: Self::base_args(),
-            type_args: None,
-        })
-    }
-
-    fn make_cb(body: Expr) -> Expr {
-        Expr::Arrow(ArrowExpr {
-            span: DUMMY_SP,
-            params: vec![
-                Pat::Ident(BindingIdent {
-                    id: Ident {
-                        span: DUMMY_SP,
-                        sym: "ctx".into(),
-                        optional: false,
-                    },
-                    type_ann: None,
-                }),
-                Pat::Ident(BindingIdent {
-                    id: Ident {
-                        span: DUMMY_SP,
-                        sym: "input".into(),
-                        optional: false,
-                    },
-                    type_ann: None,
-                }),
-            ],
-            body: BlockStmtOrExpr::Expr(
-                Expr::Paren(ParenExpr {
-                    span: DUMMY_SP,
-                    expr: body.into(),
-                })
-                .into(),
-            )
-            .into(),
-            is_async: false,
-            is_generator: false,
-            type_params: None,
-            return_type: None,
-        })
+        decoder_ref_fn
     }
 
     fn decode_union_or_intersection(
@@ -444,7 +388,7 @@ impl DecoderFnGenerator<'_> {
                     raw: None,
                 }))],
             )),
-            JsonSchema::Ref(r_name) => Self::make_cb(Self::decode_ref(r_name)),
+            JsonSchema::Ref(r_name) => Self::decode_ref(r_name),
             JsonSchema::Object { vs, rest } => {
                 let obj_to_hoist = Expr::Object(ObjectLit {
                     span: DUMMY_SP,
@@ -663,4 +607,18 @@ pub fn from_schema(
         name: name.to_owned(),
     }
     .fn_decoder_from_schema(schema, hoisted)
+}
+
+#[must_use]
+pub fn from_schema_expr(
+    schema: &JsonSchema,
+    validators: &Vec<Validator>,
+    hoisted: &mut Vec<ModuleItem>,
+    name: &str,
+) -> Expr {
+    DecoderFnGenerator {
+        validators,
+        name: name.to_owned(),
+    }
+    .decode_expr(schema, hoisted)
 }

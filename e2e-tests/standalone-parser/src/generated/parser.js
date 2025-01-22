@@ -6,137 +6,6 @@ import {printErrors} from '@beff/client';
 import {z} from 'zod';
 import validatorsMod from "./validators.js"; const { ObjectDecoder, ArrayDecoder, decodeString, decodeNumber, CodecDecoder, decodeFunction, StringWithFormatDecoder, AnyOfDecoder, AllOfDecoder, decodeBoolean, decodeAny, TupleDecoder, decodeNull, decodeNever, RegexDecoder, ConstDecoder, registerCustomFormatter, AnyOfConstsDecoder, AnyOfDiscriminatedDecoder, validators, c } = validatorsMod;
 const RequiredCustomFormats = ["ValidCurrency"];
-const buildParsersInput = {
-    "AObject": function(ctx, input) {
-        return ((ctx, input)=>(validators.AObject(ctx, input)))(ctx, input);
-    },
-    "AccessLevel": function(ctx, input) {
-        return ((ctx, input)=>(validators.AccessLevel(ctx, input)))(ctx, input);
-    },
-    "AccessLevelCodec": function(ctx, input) {
-        return ((ctx, input)=>(validators.AccessLevel(ctx, input)))(ctx, input);
-    },
-    "AccessLevelTpl": function(ctx, input) {
-        return ((ctx, input)=>(validators.AccessLevelTpl(ctx, input)))(ctx, input);
-    },
-    "AccessLevelTpl2": function(ctx, input) {
-        return ((ctx, input)=>(validators.AccessLevelTpl2(ctx, input)))(ctx, input);
-    },
-    "AllTs": function(ctx, input) {
-        return ((ctx, input)=>(validators.AllTs(ctx, input)))(ctx, input);
-    },
-    "AllTypes": function(ctx, input) {
-        return ((ctx, input)=>(validators.AllTypes(ctx, input)))(ctx, input);
-    },
-    "Arr2C": function(ctx, input) {
-        return ((ctx, input)=>(validators.Arr2(ctx, input)))(ctx, input);
-    },
-    "Arr3": function(ctx, input) {
-        return ((ctx, input)=>(validators.Arr3(ctx, input)))(ctx, input);
-    },
-    "AvatarSize": function(ctx, input) {
-        return ((ctx, input)=>(validators.AvatarSize(ctx, input)))(ctx, input);
-    },
-    "BObject": function(ctx, input) {
-        return ((ctx, input)=>(validators.BObject(ctx, input)))(ctx, input);
-    },
-    "BigIntCodec": function(ctx, input) {
-        return (hoisted_BigIntCodec_0.decode.bind(hoisted_BigIntCodec_0))(ctx, input);
-    },
-    "DiscriminatedUnion": function(ctx, input) {
-        return ((ctx, input)=>(validators.DiscriminatedUnion(ctx, input)))(ctx, input);
-    },
-    "DiscriminatedUnion2": function(ctx, input) {
-        return ((ctx, input)=>(validators.DiscriminatedUnion2(ctx, input)))(ctx, input);
-    },
-    "DiscriminatedUnion3": function(ctx, input) {
-        return ((ctx, input)=>(validators.DiscriminatedUnion3(ctx, input)))(ctx, input);
-    },
-    "DiscriminatedUnion4": function(ctx, input) {
-        return ((ctx, input)=>(validators.DiscriminatedUnion4(ctx, input)))(ctx, input);
-    },
-    "Extra": function(ctx, input) {
-        return ((ctx, input)=>(validators.Extra(ctx, input)))(ctx, input);
-    },
-    "ImportEnumTypeof": function(ctx, input) {
-        return (hoisted_ImportEnumTypeof_5.decode.bind(hoisted_ImportEnumTypeof_5))(ctx, input);
-    },
-    "K": function(ctx, input) {
-        return ((ctx, input)=>(validators.K(ctx, input)))(ctx, input);
-    },
-    "KABC": function(ctx, input) {
-        return ((ctx, input)=>(validators.KABC(ctx, input)))(ctx, input);
-    },
-    "KDEF": function(ctx, input) {
-        return ((ctx, input)=>(validators.KDEF(ctx, input)))(ctx, input);
-    },
-    "LevelAndDSettings": function(ctx, input) {
-        return ((ctx, input)=>(validators.LevelAndDSettings(ctx, input)))(ctx, input);
-    },
-    "Mapped": function(ctx, input) {
-        return ((ctx, input)=>(validators.Mapped(ctx, input)))(ctx, input);
-    },
-    "MappedOptional": function(ctx, input) {
-        return ((ctx, input)=>(validators.MappedOptional(ctx, input)))(ctx, input);
-    },
-    "OmitSettings": function(ctx, input) {
-        return ((ctx, input)=>(validators.OmitSettings(ctx, input)))(ctx, input);
-    },
-    "OtherEnum": function(ctx, input) {
-        return ((ctx, input)=>(validators.OtherEnum(ctx, input)))(ctx, input);
-    },
-    "PartialObject": function(ctx, input) {
-        return ((ctx, input)=>(validators.PartialObject(ctx, input)))(ctx, input);
-    },
-    "PartialSettings": function(ctx, input) {
-        return ((ctx, input)=>(validators.PartialSettings(ctx, input)))(ctx, input);
-    },
-    "PublicUser": function(ctx, input) {
-        return ((ctx, input)=>(validators.PublicUser(ctx, input)))(ctx, input);
-    },
-    "Repro1": function(ctx, input) {
-        return ((ctx, input)=>(validators.Repro1(ctx, input)))(ctx, input);
-    },
-    "Req": function(ctx, input) {
-        return ((ctx, input)=>(validators.Req(ctx, input)))(ctx, input);
-    },
-    "RequiredPartialObject": function(ctx, input) {
-        return ((ctx, input)=>(validators.RequiredPartialObject(ctx, input)))(ctx, input);
-    },
-    "SettingsUpdate": function(ctx, input) {
-        return ((ctx, input)=>(validators.SettingsUpdate(ctx, input)))(ctx, input);
-    },
-    "StringArrCodec": function(ctx, input) {
-        return (hoisted_StringArrCodec_3.decode.bind(hoisted_StringArrCodec_3))(ctx, input);
-    },
-    "T3": function(ctx, input) {
-        return ((ctx, input)=>(validators.T3(ctx, input)))(ctx, input);
-    },
-    "TransportedValue": function(ctx, input) {
-        return ((ctx, input)=>(validators.TransportedValue(ctx, input)))(ctx, input);
-    },
-    "TupleCodec": function(ctx, input) {
-        return (hoisted_TupleCodec_1.decode.bind(hoisted_TupleCodec_1))(ctx, input);
-    },
-    "TupleCodecRest": function(ctx, input) {
-        return (hoisted_TupleCodecRest_2.decode.bind(hoisted_TupleCodecRest_2))(ctx, input);
-    },
-    "UnionWithEnumAccess": function(ctx, input) {
-        return ((ctx, input)=>(validators.UnionWithEnumAccess(ctx, input)))(ctx, input);
-    },
-    "User": function(ctx, input) {
-        return ((ctx, input)=>(validators.User(ctx, input)))(ctx, input);
-    },
-    "ValidCurrency": function(ctx, input) {
-        return ((ctx, input)=>(validators.ValidCurrency(ctx, input)))(ctx, input);
-    },
-    "Version": function(ctx, input) {
-        return ((ctx, input)=>(validators.Version(ctx, input)))(ctx, input);
-    },
-    "Version2": function(ctx, input) {
-        return ((ctx, input)=>(validators.Version2(ctx, input)))(ctx, input);
-    }
-};
 const hoisted_BigIntCodec_0 = new CodecDecoder("Codec::BigInt");
 const hoisted_TupleCodec_1 = new TupleDecoder({
     prefix: [
@@ -158,6 +27,51 @@ const hoisted_ImportEnumTypeof_4 = new ConstDecoder("a");
 const hoisted_ImportEnumTypeof_5 = new ObjectDecoder({
     "A": hoisted_ImportEnumTypeof_4.decode.bind(hoisted_ImportEnumTypeof_4)
 });
+const buildParsersInput = {
+    "AObject": validators.AObject,
+    "AccessLevel": validators.AccessLevel,
+    "AccessLevelCodec": validators.AccessLevel,
+    "AccessLevelTpl": validators.AccessLevelTpl,
+    "AccessLevelTpl2": validators.AccessLevelTpl2,
+    "AllTs": validators.AllTs,
+    "AllTypes": validators.AllTypes,
+    "Arr2C": validators.Arr2,
+    "Arr3": validators.Arr3,
+    "AvatarSize": validators.AvatarSize,
+    "BObject": validators.BObject,
+    "BigIntCodec": hoisted_BigIntCodec_0.decode.bind(hoisted_BigIntCodec_0),
+    "DiscriminatedUnion": validators.DiscriminatedUnion,
+    "DiscriminatedUnion2": validators.DiscriminatedUnion2,
+    "DiscriminatedUnion3": validators.DiscriminatedUnion3,
+    "DiscriminatedUnion4": validators.DiscriminatedUnion4,
+    "Extra": validators.Extra,
+    "ImportEnumTypeof": hoisted_ImportEnumTypeof_5.decode.bind(hoisted_ImportEnumTypeof_5),
+    "K": validators.K,
+    "KABC": validators.KABC,
+    "KDEF": validators.KDEF,
+    "LevelAndDSettings": validators.LevelAndDSettings,
+    "Mapped": validators.Mapped,
+    "MappedOptional": validators.MappedOptional,
+    "OmitSettings": validators.OmitSettings,
+    "OtherEnum": validators.OtherEnum,
+    "PartialObject": validators.PartialObject,
+    "PartialSettings": validators.PartialSettings,
+    "PublicUser": validators.PublicUser,
+    "Repro1": validators.Repro1,
+    "Req": validators.Req,
+    "RequiredPartialObject": validators.RequiredPartialObject,
+    "SettingsUpdate": validators.SettingsUpdate,
+    "StringArrCodec": hoisted_StringArrCodec_3.decode.bind(hoisted_StringArrCodec_3),
+    "T3": validators.T3,
+    "TransportedValue": validators.TransportedValue,
+    "TupleCodec": hoisted_TupleCodec_1.decode.bind(hoisted_TupleCodec_1),
+    "TupleCodecRest": hoisted_TupleCodecRest_2.decode.bind(hoisted_TupleCodecRest_2),
+    "UnionWithEnumAccess": validators.UnionWithEnumAccess,
+    "User": validators.User,
+    "ValidCurrency": validators.ValidCurrency,
+    "Version": validators.Version,
+    "Version2": validators.Version2
+};
 
 
 

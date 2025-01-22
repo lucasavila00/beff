@@ -6,35 +6,19 @@ import {printErrors} from '@beff/client';
 import {z} from 'zod';
 import validatorsMod from "./validators.js"; const { ObjectDecoder, ArrayDecoder, decodeString, decodeNumber, CodecDecoder, decodeFunction, StringWithFormatDecoder, AnyOfDecoder, AllOfDecoder, decodeBoolean, decodeAny, TupleDecoder, decodeNull, decodeNever, RegexDecoder, ConstDecoder, registerCustomFormatter, AnyOfConstsDecoder, AnyOfDiscriminatedDecoder, validators, c } = validatorsMod;
 const RequiredCustomFormats = ["password","StartsWithA"];
-const buildParsersInput = {
-    "NotPublicRenamed": function(ctx, input) {
-        return ((ctx, input)=>(validators.NotPublic(ctx, input)))(ctx, input);
-    },
-    "Password": function(ctx, input) {
-        return ((ctx, input)=>(validators.Password(ctx, input)))(ctx, input);
-    },
-    "StartsWithA": function(ctx, input) {
-        return ((ctx, input)=>(validators.StartsWithA(ctx, input)))(ctx, input);
-    },
-    "User": function(ctx, input) {
-        return ((ctx, input)=>(validators.User(ctx, input)))(ctx, input);
-    },
-    "Users": function(ctx, input) {
-        return (hoisted_Users_0.decode.bind(hoisted_Users_0))(ctx, input);
-    },
-    "float": function(ctx, input) {
-        return (hoisted_float_1.decode.bind(hoisted_float_1))(ctx, input);
-    },
-    "int": function(ctx, input) {
-        return (hoisted_int_2.decode.bind(hoisted_int_2))(ctx, input);
-    },
-    "union": function(ctx, input) {
-        return ((ctx, input)=>(validators.UnionNested(ctx, input)))(ctx, input);
-    }
-};
-const hoisted_Users_0 = new ArrayDecoder((ctx, input)=>(validators.User(ctx, input)));
+const hoisted_Users_0 = new ArrayDecoder(validators.User);
 const hoisted_float_1 = new ConstDecoder(123.456);
 const hoisted_int_2 = new ConstDecoder(123);
+const buildParsersInput = {
+    "NotPublicRenamed": validators.NotPublic,
+    "Password": validators.Password,
+    "StartsWithA": validators.StartsWithA,
+    "User": validators.User,
+    "Users": hoisted_Users_0.decode.bind(hoisted_Users_0),
+    "float": hoisted_float_1.decode.bind(hoisted_float_1),
+    "int": hoisted_int_2.decode.bind(hoisted_int_2),
+    "union": validators.UnionNested
+};
 
 
 

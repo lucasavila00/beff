@@ -656,18 +656,18 @@ const hoisted_PartialSettings_35 = new ObjectDecoder({
 });
 const hoisted_Extra_36 = new ObjectDecoder({}, decodeString);
 const hoisted_AvatarSize_37 = new RegexDecoder(/(\d+(\.\d+)?)(x)(\d+(\.\d+)?)/, "${number}x${number}");
-const hoisted_User_38 = new ArrayDecoder((ctx, input)=>(validators.User(ctx, input)));
+const hoisted_User_38 = new ArrayDecoder(validators.User);
 const hoisted_User_39 = new ObjectDecoder({
-    "accessLevel": (ctx, input)=>(validators.AccessLevel(ctx, input)),
-    "avatarSize": (ctx, input)=>(validators.AvatarSize(ctx, input)),
-    "extra": (ctx, input)=>(validators.Extra(ctx, input)),
+    "accessLevel": validators.AccessLevel,
+    "avatarSize": validators.AvatarSize,
+    "extra": validators.Extra,
     "friends": hoisted_User_38.decode.bind(hoisted_User_38),
     "name": decodeString
 });
 const hoisted_PublicUser_40 = new ObjectDecoder({
-    "accessLevel": (ctx, input)=>(validators.AccessLevel(ctx, input)),
-    "avatarSize": (ctx, input)=>(validators.AvatarSize(ctx, input)),
-    "extra": (ctx, input)=>(validators.Extra(ctx, input)),
+    "accessLevel": validators.AccessLevel,
+    "avatarSize": validators.AvatarSize,
+    "extra": validators.Extra,
     "name": decodeString
 });
 const hoisted_Req_41 = new ObjectDecoder({
@@ -682,7 +682,7 @@ const hoisted_WithOptionals_43 = new ObjectDecoder({
 });
 const hoisted_Repro1_44 = new AnyOfDecoder([
     decodeNull,
-    (ctx, input)=>(validators.Repro2(ctx, input))
+    validators.Repro2
 ]);
 const hoisted_Repro1_45 = new ObjectDecoder({
     "sizes": hoisted_Repro1_44.decode.bind(hoisted_Repro1_44)
@@ -894,8 +894,8 @@ const hoisted_DEF_110 = new ObjectDecoder({
 const hoisted_KDEF_111 = new ConstDecoder("a");
 const hoisted_ABC_112 = new ObjectDecoder({});
 const hoisted_K_113 = new AnyOfDecoder([
-    (ctx, input)=>(validators.KABC(ctx, input)),
-    (ctx, input)=>(validators.KDEF(ctx, input))
+    validators.KABC,
+    validators.KDEF
 ]);
 
 export default { ObjectDecoder, ArrayDecoder, decodeString, decodeNumber, CodecDecoder, decodeFunction, StringWithFormatDecoder, AnyOfDecoder, AllOfDecoder, decodeBoolean, decodeAny, TupleDecoder, decodeNull, decodeNever, RegexDecoder, ConstDecoder, registerCustomFormatter, AnyOfConstsDecoder, AnyOfDiscriminatedDecoder, validators };

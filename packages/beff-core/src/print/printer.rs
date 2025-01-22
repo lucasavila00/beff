@@ -8,8 +8,8 @@ use anyhow::{anyhow, Result};
 use serde::{Deserialize, Serialize};
 use swc_common::DUMMY_SP;
 use swc_ecma_ast::{
-    BindingIdent, Decl, Expr, FnDecl, FnExpr, Ident, KeyValueProp, ModuleItem, ObjectLit, Pat,
-    Prop, PropName, PropOrSpread, Stmt, Str, VarDecl, VarDeclKind, VarDeclarator,
+    BindingIdent, Decl, Expr, FnDecl, Ident, KeyValueProp, ModuleItem, ObjectLit, Pat, Prop,
+    PropName, PropOrSpread, Stmt, Str, VarDecl, VarDeclKind, VarDeclarator,
 };
 
 pub fn const_decl(name: &str, init: Expr) -> ModuleItem {
@@ -56,16 +56,12 @@ fn build_decoders_expr(
         .map(|decoder| {
             (
                 decoder.exported_name.clone(),
-                Expr::Fn(FnExpr {
-                    ident: None,
-                    function: decoder::from_schema(
-                        &decoder.schema,
-                        validators,
-                        hoisted,
-                        &decoder.exported_name,
-                    )
-                    .into(),
-                }),
+                decoder::from_schema_expr(
+                    &decoder.schema,
+                    validators,
+                    hoisted,
+                    &decoder.exported_name,
+                ),
             )
         })
         .collect();
@@ -180,9 +176,9 @@ impl ToWritableModules for ExtractResult {
             let built_st = const_decl("buildParsersInput", decoders_expr);
 
             js_built_parsers = Some(emit_module(
-                vec![built_st]
+                acc_hoisted
                     .into_iter()
-                    .chain(acc_hoisted.into_iter())
+                    .chain(vec![built_st].into_iter())
                     .collect(),
                 "\n",
             )?);
