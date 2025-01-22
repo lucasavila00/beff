@@ -286,13 +286,20 @@ function decodeConst(ctx, input, constValue) {
   return buildError(input, ctx, "expected " + JSON.stringify(constValue));
 }
 
-function decodeRegex(ctx, input, regex, description) {
-  if (typeof input === "string") {
-    if (regex.test(input)) {
-      return input;
-    }
+class RegexDecoder {
+  constructor(regex, description) {
+    this.regex = regex;
+    this.description = description;
   }
-  return buildError(input, ctx, "expected string matching " + description);
+
+  decode(ctx, input) {
+    if (typeof input === "string") {
+      if (this.regex.test(input)) {
+        return input;
+      }
+    }
+    return buildError(input, ctx, "expected string matching " + this.description);
+  }
 }
 
 
@@ -306,127 +313,127 @@ function DecodeAObject(ctx, input) {
     return ((ctx, input)=>(decodeObject(ctx, input, hoisted_AObject_4)))(ctx, input);
 }
 function DecodeVersion(ctx, input) {
-    return ((ctx, input)=>(decodeRegex(ctx, input, /(\d+(\.\d+)?)(\.)(\d+(\.\d+)?)(\.)(\d+(\.\d+)?)/, "${number}.${number}.${number}")))(ctx, input);
+    return (hoisted_Version_5.decode.bind(hoisted_Version_5))(ctx, input);
 }
 function DecodeVersion2(ctx, input) {
-    return ((ctx, input)=>(decodeRegex(ctx, input, /(v)(\d+(\.\d+)?)(\.)(\d+(\.\d+)?)(\.)(\d+(\.\d+)?)/, "v${number}.${number}.${number}")))(ctx, input);
+    return (hoisted_Version2_6.decode.bind(hoisted_Version2_6))(ctx, input);
 }
 function DecodeAccessLevel2(ctx, input) {
-    return ((ctx, input)=>(decodeAnyOfConsts(ctx, input, hoisted_AccessLevel2_5)))(ctx, input);
+    return ((ctx, input)=>(decodeAnyOfConsts(ctx, input, hoisted_AccessLevel2_7)))(ctx, input);
 }
 function DecodeAccessLevelTpl2(ctx, input) {
-    return ((ctx, input)=>(decodeRegex(ctx, input, /((ADMIN Admin)|(USER User))/, '("ADMIN Admin" | "USER User")')))(ctx, input);
+    return (hoisted_AccessLevelTpl2_8.decode.bind(hoisted_AccessLevelTpl2_8))(ctx, input);
 }
 function DecodeAccessLevel(ctx, input) {
-    return ((ctx, input)=>(decodeAnyOfConsts(ctx, input, hoisted_AccessLevel_6)))(ctx, input);
+    return ((ctx, input)=>(decodeAnyOfConsts(ctx, input, hoisted_AccessLevel_9)))(ctx, input);
 }
 function DecodeAccessLevelTpl(ctx, input) {
-    return ((ctx, input)=>(decodeRegex(ctx, input, /((ADMIN)|(USER))/, '("ADMIN" | "USER")')))(ctx, input);
+    return (hoisted_AccessLevelTpl_10.decode.bind(hoisted_AccessLevelTpl_10))(ctx, input);
 }
 function DecodeArr3(ctx, input) {
-    return ((ctx, input)=>(decodeAnyOfConsts(ctx, input, hoisted_Arr3_7)))(ctx, input);
+    return ((ctx, input)=>(decodeAnyOfConsts(ctx, input, hoisted_Arr3_11)))(ctx, input);
 }
 function DecodeOmitSettings(ctx, input) {
-    return ((ctx, input)=>(decodeObject(ctx, input, hoisted_OmitSettings_10)))(ctx, input);
+    return ((ctx, input)=>(decodeObject(ctx, input, hoisted_OmitSettings_14)))(ctx, input);
 }
 function DecodeSettings(ctx, input) {
-    return ((ctx, input)=>(decodeObject(ctx, input, hoisted_Settings_13)))(ctx, input);
+    return ((ctx, input)=>(decodeObject(ctx, input, hoisted_Settings_17)))(ctx, input);
 }
 function DecodePartialObject(ctx, input) {
-    return ((ctx, input)=>(decodeObject(ctx, input, hoisted_PartialObject_16)))(ctx, input);
+    return ((ctx, input)=>(decodeObject(ctx, input, hoisted_PartialObject_20)))(ctx, input);
 }
 function DecodeRequiredPartialObject(ctx, input) {
-    return ((ctx, input)=>(decodeObject(ctx, input, hoisted_RequiredPartialObject_17)))(ctx, input);
+    return ((ctx, input)=>(decodeObject(ctx, input, hoisted_RequiredPartialObject_21)))(ctx, input);
 }
 function DecodeLevelAndDSettings(ctx, input) {
-    return ((ctx, input)=>(decodeObject(ctx, input, hoisted_LevelAndDSettings_20)))(ctx, input);
+    return ((ctx, input)=>(decodeObject(ctx, input, hoisted_LevelAndDSettings_24)))(ctx, input);
 }
 function DecodePartialSettings(ctx, input) {
-    return ((ctx, input)=>(decodeObject(ctx, input, hoisted_PartialSettings_26)))(ctx, input);
+    return ((ctx, input)=>(decodeObject(ctx, input, hoisted_PartialSettings_30)))(ctx, input);
 }
 function DecodeExtra(ctx, input) {
-    return ((ctx, input)=>(decodeObject(ctx, input, hoisted_Extra_27, decodeString)))(ctx, input);
+    return ((ctx, input)=>(decodeObject(ctx, input, hoisted_Extra_31, decodeString)))(ctx, input);
 }
 function DecodeAvatarSize(ctx, input) {
-    return ((ctx, input)=>(decodeRegex(ctx, input, /(\d+(\.\d+)?)(x)(\d+(\.\d+)?)/, "${number}x${number}")))(ctx, input);
+    return (hoisted_AvatarSize_32.decode.bind(hoisted_AvatarSize_32))(ctx, input);
 }
 function DecodeUser(ctx, input) {
-    return ((ctx, input)=>(decodeObject(ctx, input, hoisted_User_29)))(ctx, input);
+    return ((ctx, input)=>(decodeObject(ctx, input, hoisted_User_34)))(ctx, input);
 }
 function DecodePublicUser(ctx, input) {
-    return ((ctx, input)=>(decodeObject(ctx, input, hoisted_PublicUser_30)))(ctx, input);
+    return ((ctx, input)=>(decodeObject(ctx, input, hoisted_PublicUser_35)))(ctx, input);
 }
 function DecodeReq(ctx, input) {
-    return ((ctx, input)=>(decodeObject(ctx, input, hoisted_Req_31)))(ctx, input);
+    return ((ctx, input)=>(decodeObject(ctx, input, hoisted_Req_36)))(ctx, input);
 }
 function DecodeWithOptionals(ctx, input) {
-    return ((ctx, input)=>(decodeObject(ctx, input, hoisted_WithOptionals_33)))(ctx, input);
+    return ((ctx, input)=>(decodeObject(ctx, input, hoisted_WithOptionals_38)))(ctx, input);
 }
 function DecodeRepro1(ctx, input) {
-    return ((ctx, input)=>(decodeObject(ctx, input, hoisted_Repro1_35)))(ctx, input);
+    return ((ctx, input)=>(decodeObject(ctx, input, hoisted_Repro1_40)))(ctx, input);
 }
 function DecodeRepro2(ctx, input) {
-    return ((ctx, input)=>(decodeObject(ctx, input, hoisted_Repro2_36)))(ctx, input);
+    return ((ctx, input)=>(decodeObject(ctx, input, hoisted_Repro2_41)))(ctx, input);
 }
 function DecodeSettingsUpdate(ctx, input) {
-    return ((ctx, input)=>(decodeAnyOf(ctx, input, hoisted_SettingsUpdate_38)))(ctx, input);
+    return ((ctx, input)=>(decodeAnyOf(ctx, input, hoisted_SettingsUpdate_43)))(ctx, input);
 }
 function DecodeMapped(ctx, input) {
-    return ((ctx, input)=>(decodeObject(ctx, input, hoisted_Mapped_41)))(ctx, input);
+    return ((ctx, input)=>(decodeObject(ctx, input, hoisted_Mapped_46)))(ctx, input);
 }
 function DecodeMappedOptional(ctx, input) {
-    return ((ctx, input)=>(decodeObject(ctx, input, hoisted_MappedOptional_46)))(ctx, input);
+    return ((ctx, input)=>(decodeObject(ctx, input, hoisted_MappedOptional_51)))(ctx, input);
 }
 function DecodeDiscriminatedUnion(ctx, input) {
-    return ((ctx, input)=>(decodeAnyOfDiscriminated(ctx, input, "type", hoisted_DiscriminatedUnion_52)))(ctx, input);
+    return ((ctx, input)=>(decodeAnyOfDiscriminated(ctx, input, "type", hoisted_DiscriminatedUnion_57)))(ctx, input);
 }
 function DecodeDiscriminatedUnion2(ctx, input) {
-    return ((ctx, input)=>(decodeAnyOf(ctx, input, hoisted_DiscriminatedUnion2_59)))(ctx, input);
+    return ((ctx, input)=>(decodeAnyOf(ctx, input, hoisted_DiscriminatedUnion2_64)))(ctx, input);
 }
 function DecodeDiscriminatedUnion3(ctx, input) {
-    return ((ctx, input)=>(decodeAnyOfDiscriminated(ctx, input, "type", hoisted_DiscriminatedUnion3_63)))(ctx, input);
+    return ((ctx, input)=>(decodeAnyOfDiscriminated(ctx, input, "type", hoisted_DiscriminatedUnion3_68)))(ctx, input);
 }
 function DecodeDiscriminatedUnion4(ctx, input) {
-    return ((ctx, input)=>(decodeAnyOfDiscriminated(ctx, input, "type", hoisted_DiscriminatedUnion4_69)))(ctx, input);
+    return ((ctx, input)=>(decodeAnyOfDiscriminated(ctx, input, "type", hoisted_DiscriminatedUnion4_74)))(ctx, input);
 }
 function DecodeAllTypes(ctx, input) {
-    return ((ctx, input)=>(decodeAnyOfConsts(ctx, input, hoisted_AllTypes_70)))(ctx, input);
+    return ((ctx, input)=>(decodeAnyOfConsts(ctx, input, hoisted_AllTypes_75)))(ctx, input);
 }
 function DecodeOtherEnum(ctx, input) {
-    return ((ctx, input)=>(decodeAnyOfConsts(ctx, input, hoisted_OtherEnum_71)))(ctx, input);
+    return ((ctx, input)=>(decodeAnyOfConsts(ctx, input, hoisted_OtherEnum_76)))(ctx, input);
 }
 function DecodeArr2(ctx, input) {
-    return ((ctx, input)=>(decodeAnyOfConsts(ctx, input, hoisted_Arr2_72)))(ctx, input);
+    return ((ctx, input)=>(decodeAnyOfConsts(ctx, input, hoisted_Arr2_77)))(ctx, input);
 }
 function DecodeValidCurrency(ctx, input) {
     return ((ctx, input)=>(decodeStringWithFormat(ctx, input, "ValidCurrency")))(ctx, input);
 }
 function DecodeUnionWithEnumAccess(ctx, input) {
-    return ((ctx, input)=>(decodeAnyOfDiscriminated(ctx, input, "tag", hoisted_UnionWithEnumAccess_76)))(ctx, input);
+    return ((ctx, input)=>(decodeAnyOfDiscriminated(ctx, input, "tag", hoisted_UnionWithEnumAccess_81)))(ctx, input);
 }
 function DecodeShape(ctx, input) {
-    return ((ctx, input)=>(decodeAnyOfDiscriminated(ctx, input, "kind", hoisted_Shape_80)))(ctx, input);
+    return ((ctx, input)=>(decodeAnyOfDiscriminated(ctx, input, "kind", hoisted_Shape_85)))(ctx, input);
 }
 function DecodeT3(ctx, input) {
-    return ((ctx, input)=>(decodeAnyOfDiscriminated(ctx, input, "kind", hoisted_T3_83)))(ctx, input);
+    return ((ctx, input)=>(decodeAnyOfDiscriminated(ctx, input, "kind", hoisted_T3_88)))(ctx, input);
 }
 function DecodeBObject(ctx, input) {
-    return ((ctx, input)=>(decodeObject(ctx, input, hoisted_BObject_84)))(ctx, input);
+    return ((ctx, input)=>(decodeObject(ctx, input, hoisted_BObject_89)))(ctx, input);
 }
 function DecodeDEF(ctx, input) {
-    return ((ctx, input)=>(decodeObject(ctx, input, hoisted_DEF_85)))(ctx, input);
+    return ((ctx, input)=>(decodeObject(ctx, input, hoisted_DEF_90)))(ctx, input);
 }
 function DecodeKDEF(ctx, input) {
     return ((ctx, input)=>(decodeConst(ctx, input, "a")))(ctx, input);
 }
 function DecodeABC(ctx, input) {
-    return ((ctx, input)=>(decodeObject(ctx, input, hoisted_ABC_86)))(ctx, input);
+    return ((ctx, input)=>(decodeObject(ctx, input, hoisted_ABC_91)))(ctx, input);
 }
 function DecodeKABC(ctx, input) {
     return (decodeNever)(ctx, input);
 }
 function DecodeK(ctx, input) {
-    return ((ctx, input)=>(decodeAnyOf(ctx, input, hoisted_K_87)))(ctx, input);
+    return ((ctx, input)=>(decodeAnyOf(ctx, input, hoisted_K_92)))(ctx, input);
 }
 const validators = {
     TransportedValue: DecodeTransportedValue,
@@ -492,315 +499,320 @@ const hoisted_AllTs_3 = [
 const hoisted_AObject_4 = {
     "tag": (ctx, input)=>(decodeConst(ctx, input, "a"))
 };
-const hoisted_AccessLevel2_5 = [
+const hoisted_Version_5 = new RegexDecoder(/(\d+(\.\d+)?)(\.)(\d+(\.\d+)?)(\.)(\d+(\.\d+)?)/, "${number}.${number}.${number}");
+const hoisted_Version2_6 = new RegexDecoder(/(v)(\d+(\.\d+)?)(\.)(\d+(\.\d+)?)(\.)(\d+(\.\d+)?)/, "v${number}.${number}.${number}");
+const hoisted_AccessLevel2_7 = [
     "ADMIN Admin",
     "USER User"
 ];
-const hoisted_AccessLevel_6 = [
+const hoisted_AccessLevelTpl2_8 = new RegexDecoder(/((ADMIN Admin)|(USER User))/, '("ADMIN Admin" | "USER User")');
+const hoisted_AccessLevel_9 = [
     "ADMIN",
     "USER"
 ];
-const hoisted_Arr3_7 = [
+const hoisted_AccessLevelTpl_10 = new RegexDecoder(/((ADMIN)|(USER))/, '("ADMIN" | "USER")');
+const hoisted_Arr3_11 = [
     "X",
     "Y"
 ];
-const hoisted_OmitSettings_8 = {
+const hoisted_OmitSettings_12 = {
     "tag": (ctx, input)=>(decodeConst(ctx, input, "d"))
 };
-const hoisted_OmitSettings_9 = [
+const hoisted_OmitSettings_13 = [
     "a",
     "b"
 ];
-const hoisted_OmitSettings_10 = {
-    "d": (ctx, input)=>(decodeObject(ctx, input, hoisted_OmitSettings_8)),
-    "level": (ctx, input)=>(decodeAnyOfConsts(ctx, input, hoisted_OmitSettings_9))
+const hoisted_OmitSettings_14 = {
+    "d": (ctx, input)=>(decodeObject(ctx, input, hoisted_OmitSettings_12)),
+    "level": (ctx, input)=>(decodeAnyOfConsts(ctx, input, hoisted_OmitSettings_13))
 };
-const hoisted_Settings_11 = {
+const hoisted_Settings_15 = {
     "tag": (ctx, input)=>(decodeConst(ctx, input, "d"))
 };
-const hoisted_Settings_12 = [
+const hoisted_Settings_16 = [
     "a",
     "b"
 ];
-const hoisted_Settings_13 = {
+const hoisted_Settings_17 = {
     "a": decodeString,
-    "d": (ctx, input)=>(decodeObject(ctx, input, hoisted_Settings_11)),
-    "level": (ctx, input)=>(decodeAnyOfConsts(ctx, input, hoisted_Settings_12))
+    "d": (ctx, input)=>(decodeObject(ctx, input, hoisted_Settings_15)),
+    "level": (ctx, input)=>(decodeAnyOfConsts(ctx, input, hoisted_Settings_16))
 };
-const hoisted_PartialObject_14 = [
+const hoisted_PartialObject_18 = [
     decodeNull,
     decodeString
 ];
-const hoisted_PartialObject_15 = [
+const hoisted_PartialObject_19 = [
     decodeNull,
     decodeNumber
 ];
-const hoisted_PartialObject_16 = {
-    "a": (ctx, input)=>(decodeAnyOf(ctx, input, hoisted_PartialObject_14)),
-    "b": (ctx, input)=>(decodeAnyOf(ctx, input, hoisted_PartialObject_15))
+const hoisted_PartialObject_20 = {
+    "a": (ctx, input)=>(decodeAnyOf(ctx, input, hoisted_PartialObject_18)),
+    "b": (ctx, input)=>(decodeAnyOf(ctx, input, hoisted_PartialObject_19))
 };
-const hoisted_RequiredPartialObject_17 = {
+const hoisted_RequiredPartialObject_21 = {
     "a": decodeString,
     "b": decodeNumber
 };
-const hoisted_LevelAndDSettings_18 = {
+const hoisted_LevelAndDSettings_22 = {
     "tag": (ctx, input)=>(decodeConst(ctx, input, "d"))
 };
-const hoisted_LevelAndDSettings_19 = [
+const hoisted_LevelAndDSettings_23 = [
     "a",
     "b"
 ];
-const hoisted_LevelAndDSettings_20 = {
-    "d": (ctx, input)=>(decodeObject(ctx, input, hoisted_LevelAndDSettings_18)),
-    "level": (ctx, input)=>(decodeAnyOfConsts(ctx, input, hoisted_LevelAndDSettings_19))
+const hoisted_LevelAndDSettings_24 = {
+    "d": (ctx, input)=>(decodeObject(ctx, input, hoisted_LevelAndDSettings_22)),
+    "level": (ctx, input)=>(decodeAnyOfConsts(ctx, input, hoisted_LevelAndDSettings_23))
 };
-const hoisted_PartialSettings_21 = [
-    decodeNull,
-    decodeString
-];
-const hoisted_PartialSettings_22 = {
-    "tag": (ctx, input)=>(decodeConst(ctx, input, "d"))
-};
-const hoisted_PartialSettings_23 = [
-    decodeNull,
-    (ctx, input)=>(decodeObject(ctx, input, hoisted_PartialSettings_22))
-];
-const hoisted_PartialSettings_24 = [
-    "a",
-    "b"
-];
 const hoisted_PartialSettings_25 = [
     decodeNull,
-    (ctx, input)=>(decodeAnyOfConsts(ctx, input, hoisted_PartialSettings_24))
+    decodeString
 ];
 const hoisted_PartialSettings_26 = {
-    "a": (ctx, input)=>(decodeAnyOf(ctx, input, hoisted_PartialSettings_21)),
-    "d": (ctx, input)=>(decodeAnyOf(ctx, input, hoisted_PartialSettings_23)),
-    "level": (ctx, input)=>(decodeAnyOf(ctx, input, hoisted_PartialSettings_25))
+    "tag": (ctx, input)=>(decodeConst(ctx, input, "d"))
 };
-const hoisted_Extra_27 = {};
-const hoisted_User_28 = (ctx, input)=>(validators.User(ctx, input));
-const hoisted_User_29 = {
+const hoisted_PartialSettings_27 = [
+    decodeNull,
+    (ctx, input)=>(decodeObject(ctx, input, hoisted_PartialSettings_26))
+];
+const hoisted_PartialSettings_28 = [
+    "a",
+    "b"
+];
+const hoisted_PartialSettings_29 = [
+    decodeNull,
+    (ctx, input)=>(decodeAnyOfConsts(ctx, input, hoisted_PartialSettings_28))
+];
+const hoisted_PartialSettings_30 = {
+    "a": (ctx, input)=>(decodeAnyOf(ctx, input, hoisted_PartialSettings_25)),
+    "d": (ctx, input)=>(decodeAnyOf(ctx, input, hoisted_PartialSettings_27)),
+    "level": (ctx, input)=>(decodeAnyOf(ctx, input, hoisted_PartialSettings_29))
+};
+const hoisted_Extra_31 = {};
+const hoisted_AvatarSize_32 = new RegexDecoder(/(\d+(\.\d+)?)(x)(\d+(\.\d+)?)/, "${number}x${number}");
+const hoisted_User_33 = (ctx, input)=>(validators.User(ctx, input));
+const hoisted_User_34 = {
     "accessLevel": (ctx, input)=>(validators.AccessLevel(ctx, input)),
     "avatarSize": (ctx, input)=>(validators.AvatarSize(ctx, input)),
     "extra": (ctx, input)=>(validators.Extra(ctx, input)),
-    "friends": (ctx, input)=>(decodeArray(ctx, input, hoisted_User_28)),
+    "friends": (ctx, input)=>(decodeArray(ctx, input, hoisted_User_33)),
     "name": decodeString
 };
-const hoisted_PublicUser_30 = {
+const hoisted_PublicUser_35 = {
     "accessLevel": (ctx, input)=>(validators.AccessLevel(ctx, input)),
     "avatarSize": (ctx, input)=>(validators.AvatarSize(ctx, input)),
     "extra": (ctx, input)=>(validators.Extra(ctx, input)),
     "name": decodeString
 };
-const hoisted_Req_31 = {
+const hoisted_Req_36 = {
     "optional": decodeString
 };
-const hoisted_WithOptionals_32 = [
+const hoisted_WithOptionals_37 = [
     decodeNull,
     decodeString
 ];
-const hoisted_WithOptionals_33 = {
-    "optional": (ctx, input)=>(decodeAnyOf(ctx, input, hoisted_WithOptionals_32))
+const hoisted_WithOptionals_38 = {
+    "optional": (ctx, input)=>(decodeAnyOf(ctx, input, hoisted_WithOptionals_37))
 };
-const hoisted_Repro1_34 = [
+const hoisted_Repro1_39 = [
     decodeNull,
     (ctx, input)=>(validators.Repro2(ctx, input))
 ];
-const hoisted_Repro1_35 = {
-    "sizes": (ctx, input)=>(decodeAnyOf(ctx, input, hoisted_Repro1_34))
+const hoisted_Repro1_40 = {
+    "sizes": (ctx, input)=>(decodeAnyOf(ctx, input, hoisted_Repro1_39))
 };
-const hoisted_Repro2_36 = {
+const hoisted_Repro2_41 = {
     "useSmallerSizes": decodeBoolean
 };
-const hoisted_SettingsUpdate_37 = {
+const hoisted_SettingsUpdate_42 = {
     "tag": (ctx, input)=>(decodeConst(ctx, input, "d"))
 };
-const hoisted_SettingsUpdate_38 = [
+const hoisted_SettingsUpdate_43 = [
     decodeString,
-    (ctx, input)=>(decodeObject(ctx, input, hoisted_SettingsUpdate_37))
+    (ctx, input)=>(decodeObject(ctx, input, hoisted_SettingsUpdate_42))
 ];
-const hoisted_Mapped_39 = {
+const hoisted_Mapped_44 = {
     "value": (ctx, input)=>(decodeConst(ctx, input, "a"))
 };
-const hoisted_Mapped_40 = {
+const hoisted_Mapped_45 = {
     "value": (ctx, input)=>(decodeConst(ctx, input, "b"))
 };
-const hoisted_Mapped_41 = {
-    "a": (ctx, input)=>(decodeObject(ctx, input, hoisted_Mapped_39)),
-    "b": (ctx, input)=>(decodeObject(ctx, input, hoisted_Mapped_40))
+const hoisted_Mapped_46 = {
+    "a": (ctx, input)=>(decodeObject(ctx, input, hoisted_Mapped_44)),
+    "b": (ctx, input)=>(decodeObject(ctx, input, hoisted_Mapped_45))
 };
-const hoisted_MappedOptional_42 = {
+const hoisted_MappedOptional_47 = {
     "value": (ctx, input)=>(decodeConst(ctx, input, "a"))
 };
-const hoisted_MappedOptional_43 = [
+const hoisted_MappedOptional_48 = [
     decodeNull,
-    (ctx, input)=>(decodeObject(ctx, input, hoisted_MappedOptional_42))
+    (ctx, input)=>(decodeObject(ctx, input, hoisted_MappedOptional_47))
 ];
-const hoisted_MappedOptional_44 = {
+const hoisted_MappedOptional_49 = {
     "value": (ctx, input)=>(decodeConst(ctx, input, "b"))
 };
-const hoisted_MappedOptional_45 = [
+const hoisted_MappedOptional_50 = [
     decodeNull,
-    (ctx, input)=>(decodeObject(ctx, input, hoisted_MappedOptional_44))
+    (ctx, input)=>(decodeObject(ctx, input, hoisted_MappedOptional_49))
 ];
-const hoisted_MappedOptional_46 = {
-    "a": (ctx, input)=>(decodeAnyOf(ctx, input, hoisted_MappedOptional_43)),
-    "b": (ctx, input)=>(decodeAnyOf(ctx, input, hoisted_MappedOptional_45))
+const hoisted_MappedOptional_51 = {
+    "a": (ctx, input)=>(decodeAnyOf(ctx, input, hoisted_MappedOptional_48)),
+    "b": (ctx, input)=>(decodeAnyOf(ctx, input, hoisted_MappedOptional_50))
 };
-const hoisted_DiscriminatedUnion_47 = [
+const hoisted_DiscriminatedUnion_52 = [
     decodeNull,
     decodeString
 ];
-const hoisted_DiscriminatedUnion_48 = {
+const hoisted_DiscriminatedUnion_53 = {
     "a1": decodeString,
-    "a11": (ctx, input)=>(decodeAnyOf(ctx, input, hoisted_DiscriminatedUnion_47))
+    "a11": (ctx, input)=>(decodeAnyOf(ctx, input, hoisted_DiscriminatedUnion_52))
 };
-const hoisted_DiscriminatedUnion_49 = {
+const hoisted_DiscriminatedUnion_54 = {
     "a2": decodeString
 };
-const hoisted_DiscriminatedUnion_50 = {
-    "a1": (ctx, input)=>(decodeObject(ctx, input, hoisted_DiscriminatedUnion_48)),
-    "a2": (ctx, input)=>(decodeObject(ctx, input, hoisted_DiscriminatedUnion_49))
+const hoisted_DiscriminatedUnion_55 = {
+    "a1": (ctx, input)=>(decodeObject(ctx, input, hoisted_DiscriminatedUnion_53)),
+    "a2": (ctx, input)=>(decodeObject(ctx, input, hoisted_DiscriminatedUnion_54))
 };
-const hoisted_DiscriminatedUnion_51 = {
+const hoisted_DiscriminatedUnion_56 = {
     "value": decodeNumber
 };
-const hoisted_DiscriminatedUnion_52 = {
-    "a": (ctx, input)=>(decodeAnyOfDiscriminated(ctx, input, "subType", hoisted_DiscriminatedUnion_50)),
-    "b": (ctx, input)=>(decodeObject(ctx, input, hoisted_DiscriminatedUnion_51))
+const hoisted_DiscriminatedUnion_57 = {
+    "a": (ctx, input)=>(decodeAnyOfDiscriminated(ctx, input, "subType", hoisted_DiscriminatedUnion_55)),
+    "b": (ctx, input)=>(decodeObject(ctx, input, hoisted_DiscriminatedUnion_56))
 };
-const hoisted_DiscriminatedUnion2_53 = [
+const hoisted_DiscriminatedUnion2_58 = [
     decodeNull,
     decodeString
 ];
-const hoisted_DiscriminatedUnion2_54 = {
+const hoisted_DiscriminatedUnion2_59 = {
     "a1": decodeString,
-    "a11": (ctx, input)=>(decodeAnyOf(ctx, input, hoisted_DiscriminatedUnion2_53)),
+    "a11": (ctx, input)=>(decodeAnyOf(ctx, input, hoisted_DiscriminatedUnion2_58)),
     "subType": (ctx, input)=>(decodeConst(ctx, input, "a1")),
     "type": (ctx, input)=>(decodeConst(ctx, input, "a"))
 };
-const hoisted_DiscriminatedUnion2_55 = {
+const hoisted_DiscriminatedUnion2_60 = {
     "a2": decodeString,
     "subType": (ctx, input)=>(decodeConst(ctx, input, "a2")),
     "type": (ctx, input)=>(decodeConst(ctx, input, "a"))
 };
-const hoisted_DiscriminatedUnion2_56 = [
+const hoisted_DiscriminatedUnion2_61 = [
     decodeNull,
     (ctx, input)=>(decodeConst(ctx, input, "d"))
 ];
-const hoisted_DiscriminatedUnion2_57 = {
-    "type": (ctx, input)=>(decodeAnyOf(ctx, input, hoisted_DiscriminatedUnion2_56)),
+const hoisted_DiscriminatedUnion2_62 = {
+    "type": (ctx, input)=>(decodeAnyOf(ctx, input, hoisted_DiscriminatedUnion2_61)),
     "valueD": decodeNumber
 };
-const hoisted_DiscriminatedUnion2_58 = {
+const hoisted_DiscriminatedUnion2_63 = {
     "type": (ctx, input)=>(decodeConst(ctx, input, "b")),
     "value": decodeNumber
 };
-const hoisted_DiscriminatedUnion2_59 = [
-    (ctx, input)=>(decodeObject(ctx, input, hoisted_DiscriminatedUnion2_54)),
-    (ctx, input)=>(decodeObject(ctx, input, hoisted_DiscriminatedUnion2_55)),
-    (ctx, input)=>(decodeObject(ctx, input, hoisted_DiscriminatedUnion2_57)),
-    (ctx, input)=>(decodeObject(ctx, input, hoisted_DiscriminatedUnion2_58))
+const hoisted_DiscriminatedUnion2_64 = [
+    (ctx, input)=>(decodeObject(ctx, input, hoisted_DiscriminatedUnion2_59)),
+    (ctx, input)=>(decodeObject(ctx, input, hoisted_DiscriminatedUnion2_60)),
+    (ctx, input)=>(decodeObject(ctx, input, hoisted_DiscriminatedUnion2_62)),
+    (ctx, input)=>(decodeObject(ctx, input, hoisted_DiscriminatedUnion2_63))
 ];
-const hoisted_DiscriminatedUnion3_60 = {
+const hoisted_DiscriminatedUnion3_65 = {
     "a1": decodeString
 };
-const hoisted_DiscriminatedUnion3_61 = {
+const hoisted_DiscriminatedUnion3_66 = {
     "value": decodeNumber
 };
-const hoisted_DiscriminatedUnion3_62 = {
+const hoisted_DiscriminatedUnion3_67 = {
     "a1": decodeString
 };
-const hoisted_DiscriminatedUnion3_63 = {
-    "a": (ctx, input)=>(decodeObject(ctx, input, hoisted_DiscriminatedUnion3_60)),
-    "b": (ctx, input)=>(decodeObject(ctx, input, hoisted_DiscriminatedUnion3_61)),
-    "c": (ctx, input)=>(decodeObject(ctx, input, hoisted_DiscriminatedUnion3_62))
+const hoisted_DiscriminatedUnion3_68 = {
+    "a": (ctx, input)=>(decodeObject(ctx, input, hoisted_DiscriminatedUnion3_65)),
+    "b": (ctx, input)=>(decodeObject(ctx, input, hoisted_DiscriminatedUnion3_66)),
+    "c": (ctx, input)=>(decodeObject(ctx, input, hoisted_DiscriminatedUnion3_67))
 };
-const hoisted_DiscriminatedUnion4_64 = {
+const hoisted_DiscriminatedUnion4_69 = {
     "a1": decodeString,
     "subType": (ctx, input)=>(decodeConst(ctx, input, "a1"))
 };
-const hoisted_DiscriminatedUnion4_65 = {
-    "a": (ctx, input)=>(decodeObject(ctx, input, hoisted_DiscriminatedUnion4_64))
+const hoisted_DiscriminatedUnion4_70 = {
+    "a": (ctx, input)=>(decodeObject(ctx, input, hoisted_DiscriminatedUnion4_69))
 };
-const hoisted_DiscriminatedUnion4_66 = {
+const hoisted_DiscriminatedUnion4_71 = {
     "a2": decodeString,
     "subType": (ctx, input)=>(decodeConst(ctx, input, "a2"))
 };
-const hoisted_DiscriminatedUnion4_67 = {
-    "a": (ctx, input)=>(decodeObject(ctx, input, hoisted_DiscriminatedUnion4_66))
+const hoisted_DiscriminatedUnion4_72 = {
+    "a": (ctx, input)=>(decodeObject(ctx, input, hoisted_DiscriminatedUnion4_71))
 };
-const hoisted_DiscriminatedUnion4_68 = [
-    (ctx, input)=>(decodeObject(ctx, input, hoisted_DiscriminatedUnion4_65)),
-    (ctx, input)=>(decodeObject(ctx, input, hoisted_DiscriminatedUnion4_67))
+const hoisted_DiscriminatedUnion4_73 = [
+    (ctx, input)=>(decodeObject(ctx, input, hoisted_DiscriminatedUnion4_70)),
+    (ctx, input)=>(decodeObject(ctx, input, hoisted_DiscriminatedUnion4_72))
 ];
-const hoisted_DiscriminatedUnion4_69 = {
-    "a": (ctx, input)=>(decodeAnyOf(ctx, input, hoisted_DiscriminatedUnion4_68))
+const hoisted_DiscriminatedUnion4_74 = {
+    "a": (ctx, input)=>(decodeAnyOf(ctx, input, hoisted_DiscriminatedUnion4_73))
 };
-const hoisted_AllTypes_70 = [
+const hoisted_AllTypes_75 = [
     "LevelAndDSettings",
     "OmitSettings",
     "PartialSettings",
     "RequiredPartialObject"
 ];
-const hoisted_OtherEnum_71 = [
+const hoisted_OtherEnum_76 = [
     "a",
     "b"
 ];
-const hoisted_Arr2_72 = [
+const hoisted_Arr2_77 = [
     "A",
     "B",
     "C"
 ];
-const hoisted_UnionWithEnumAccess_73 = {
+const hoisted_UnionWithEnumAccess_78 = {
     "value": decodeString
 };
-const hoisted_UnionWithEnumAccess_74 = {
+const hoisted_UnionWithEnumAccess_79 = {
     "value": decodeNumber
 };
-const hoisted_UnionWithEnumAccess_75 = {
+const hoisted_UnionWithEnumAccess_80 = {
     "value": decodeBoolean
 };
-const hoisted_UnionWithEnumAccess_76 = {
-    "a": (ctx, input)=>(decodeObject(ctx, input, hoisted_UnionWithEnumAccess_73)),
-    "b": (ctx, input)=>(decodeObject(ctx, input, hoisted_UnionWithEnumAccess_74)),
-    "c": (ctx, input)=>(decodeObject(ctx, input, hoisted_UnionWithEnumAccess_75))
+const hoisted_UnionWithEnumAccess_81 = {
+    "a": (ctx, input)=>(decodeObject(ctx, input, hoisted_UnionWithEnumAccess_78)),
+    "b": (ctx, input)=>(decodeObject(ctx, input, hoisted_UnionWithEnumAccess_79)),
+    "c": (ctx, input)=>(decodeObject(ctx, input, hoisted_UnionWithEnumAccess_80))
 };
-const hoisted_Shape_77 = {
+const hoisted_Shape_82 = {
     "radius": decodeNumber
 };
-const hoisted_Shape_78 = {
+const hoisted_Shape_83 = {
     "x": decodeNumber
 };
-const hoisted_Shape_79 = {
+const hoisted_Shape_84 = {
     "x": decodeNumber,
     "y": decodeNumber
 };
-const hoisted_Shape_80 = {
-    "circle": (ctx, input)=>(decodeObject(ctx, input, hoisted_Shape_77)),
-    "square": (ctx, input)=>(decodeObject(ctx, input, hoisted_Shape_78)),
-    "triangle": (ctx, input)=>(decodeObject(ctx, input, hoisted_Shape_79))
+const hoisted_Shape_85 = {
+    "circle": (ctx, input)=>(decodeObject(ctx, input, hoisted_Shape_82)),
+    "square": (ctx, input)=>(decodeObject(ctx, input, hoisted_Shape_83)),
+    "triangle": (ctx, input)=>(decodeObject(ctx, input, hoisted_Shape_84))
 };
-const hoisted_T3_81 = {
+const hoisted_T3_86 = {
     "x": decodeNumber
 };
-const hoisted_T3_82 = {
+const hoisted_T3_87 = {
     "x": decodeNumber,
     "y": decodeNumber
 };
-const hoisted_T3_83 = {
-    "square": (ctx, input)=>(decodeObject(ctx, input, hoisted_T3_81)),
-    "triangle": (ctx, input)=>(decodeObject(ctx, input, hoisted_T3_82))
+const hoisted_T3_88 = {
+    "square": (ctx, input)=>(decodeObject(ctx, input, hoisted_T3_86)),
+    "triangle": (ctx, input)=>(decodeObject(ctx, input, hoisted_T3_87))
 };
-const hoisted_BObject_84 = {
+const hoisted_BObject_89 = {
     "tag": (ctx, input)=>(decodeConst(ctx, input, "b"))
 };
-const hoisted_DEF_85 = {
+const hoisted_DEF_90 = {
     "a": decodeString
 };
-const hoisted_ABC_86 = {};
-const hoisted_K_87 = [
+const hoisted_ABC_91 = {};
+const hoisted_K_92 = [
     (ctx, input)=>(validators.KABC(ctx, input)),
     (ctx, input)=>(validators.KDEF(ctx, input))
 ];

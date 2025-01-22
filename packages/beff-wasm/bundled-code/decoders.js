@@ -283,11 +283,18 @@ function decodeConst(ctx, input, constValue) {
   return buildError(input, ctx, "expected " + JSON.stringify(constValue));
 }
 
-function decodeRegex(ctx, input, regex, description) {
-  if (typeof input === "string") {
-    if (regex.test(input)) {
-      return input;
-    }
+class RegexDecoder {
+  constructor(regex, description) {
+    this.regex = regex;
+    this.description = description;
   }
-  return buildError(input, ctx, "expected string matching " + description);
+
+  decode(ctx, input) {
+    if (typeof input === "string") {
+      if (this.regex.test(input)) {
+        return input;
+      }
+    }
+    return buildError(input, ctx, "expected string matching " + this.description);
+  }
 }

@@ -7,8 +7,9 @@ use std::collections::{BTreeMap, BTreeSet};
 use swc_common::DUMMY_SP;
 use swc_ecma_ast::{
     ArrayLit, ArrowExpr, BindingIdent, BlockStmt, BlockStmtOrExpr, CallExpr, Callee, Expr,
-    ExprOrSpread, Function, Ident, KeyValueProp, Lit, MemberExpr, MemberProp, ModuleItem, Null,
-    ObjectLit, Param, ParenExpr, Pat, Prop, PropName, PropOrSpread, Regex, ReturnStmt, Stmt, Str,
+    ExprOrSpread, Function, Ident, KeyValueProp, Lit, MemberExpr, MemberProp, ModuleItem, NewExpr,
+    Null, ObjectLit, Param, ParenExpr, Pat, Prop, PropName, PropOrSpread, Regex, ReturnStmt, Stmt,
+    Str,
 };
 struct SwcBuilder;
 
@@ -337,6 +338,33 @@ impl DecoderFnGenerator<'_> {
         })
     }
 
+    fn decode_bound(hoisted: Expr) -> Expr {
+        let member = Expr::Member(MemberExpr {
+            span: DUMMY_SP,
+            obj: hoisted.clone().into(),
+            prop: MemberProp::Ident(Ident {
+                span: DUMMY_SP,
+                sym: "decode".into(),
+                optional: false,
+            }),
+        });
+        let bind_member = Expr::Member(MemberExpr {
+            span: DUMMY_SP,
+            obj: member.into(),
+            prop: MemberProp::Ident(Ident {
+                span: DUMMY_SP,
+                sym: "bind".into(),
+                optional: false,
+            }),
+        });
+        Expr::Call(CallExpr {
+            span: DUMMY_SP,
+            callee: Callee::Expr(bind_member.into()),
+            args: vec![hoisted.into()],
+            type_args: None,
+        })
+    }
+
     fn maybe_decode_any_of_consts(
         &self,
         flat_values: &BTreeSet<JsonSchema>,
@@ -535,21 +563,27 @@ impl DecoderFnGenerator<'_> {
                     regex_exp.push_str(&item.regex_expr());
                 }
 
-                Self::make_cb(Self::decode_call_extra(
-                    "decodeRegex",
-                    vec![
+                let new_expr = Expr::New(NewExpr {
+                    span: DUMMY_SP,
+                    callee: Box::new(SwcBuilder::ident_expr("RegexDecoder")),
+                    args: Some(vec![
                         Expr::Lit(Lit::Regex(Regex {
                             span: DUMMY_SP,
                             exp: regex_exp.into(),
                             flags: "".into(),
-                        })),
+                        }))
+                        .into(),
                         Expr::Lit(Lit::Str(Str {
                             span: DUMMY_SP,
                             value: TplLitTypeItem::describe_vec(items).into(),
                             raw: None,
-                        })),
-                    ],
-                ))
+                        }))
+                        .into(),
+                    ]),
+                    type_args: None,
+                });
+                let hoisted = self.hoist_expr(hoisted, new_expr);
+                Self::decode_bound(hoisted)
             }
             JsonSchema::Function => SwcBuilder::ident_expr("decodeFunction"),
         };
