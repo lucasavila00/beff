@@ -8,7 +8,7 @@ import validatorsMod from "./validators.js"; const { decodeObject, decodeArray, 
 const RequiredCustomFormats = ["ValidCurrency"];
 const buildParsersInput = {
     "A": function(ctx, input) {
-        return validators.A(ctx, input);
+        return ((ctx, input)=>(validators.A(ctx, input)))(ctx, input);
     }
 };
 

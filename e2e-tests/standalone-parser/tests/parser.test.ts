@@ -229,11 +229,11 @@ it("disallow extra properties", () => {
       }
     )
   ).toMatchInlineSnapshot(`
-  {
-    "kind": "square",
-    "x": 1,
-  }
-`);
+    {
+      "kind": "square",
+      "x": 1,
+    }
+  `);
   expect(
     T3.safeParse(
       {

@@ -297,31 +297,31 @@ function decodeRegex(ctx, input, regex, description) {
 
 
 function DecodeUser(ctx, input) {
-    return decodeObject(ctx, input, hoisted_User_0);
+    return ((ctx, input)=>(decodeObject(ctx, input, hoisted_User_0)))(ctx, input);
 }
 function DecodeNotPublic(ctx, input) {
-    return decodeObject(ctx, input, hoisted_NotPublic_1);
+    return ((ctx, input)=>(decodeObject(ctx, input, hoisted_NotPublic_1)))(ctx, input);
 }
 function DecodeStartsWithA(ctx, input) {
-    return decodeStringWithFormat(ctx, input, "StartsWithA");
+    return ((ctx, input)=>(decodeStringWithFormat(ctx, input, "StartsWithA")))(ctx, input);
 }
 function DecodePassword(ctx, input) {
-    return decodeStringWithFormat(ctx, input, "password");
+    return ((ctx, input)=>(decodeStringWithFormat(ctx, input, "password")))(ctx, input);
 }
 function DecodeA(ctx, input) {
-    return decodeAnyOfConsts(ctx, input, hoisted_A_2);
+    return ((ctx, input)=>(decodeAnyOfConsts(ctx, input, hoisted_A_2)))(ctx, input);
 }
 function DecodeB(ctx, input) {
-    return decodeAnyOfConsts(ctx, input, hoisted_B_3);
+    return ((ctx, input)=>(decodeAnyOfConsts(ctx, input, hoisted_B_3)))(ctx, input);
 }
 function DecodeD(ctx, input) {
-    return decodeAnyOfConsts(ctx, input, hoisted_D_4);
+    return ((ctx, input)=>(decodeAnyOfConsts(ctx, input, hoisted_D_4)))(ctx, input);
 }
 function DecodeE(ctx, input) {
-    return decodeAnyOfConsts(ctx, input, hoisted_E_5);
+    return ((ctx, input)=>(decodeAnyOfConsts(ctx, input, hoisted_E_5)))(ctx, input);
 }
 function DecodeUnionNested(ctx, input) {
-    return decodeAnyOfConsts(ctx, input, hoisted_UnionNested_6);
+    return ((ctx, input)=>(decodeAnyOfConsts(ctx, input, hoisted_UnionNested_6)))(ctx, input);
 }
 const validators = {
     User: DecodeUser,

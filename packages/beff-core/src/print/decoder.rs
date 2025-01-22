@@ -101,7 +101,7 @@ impl DecoderFnGenerator<'_> {
         })
     }
 
-    fn make_cb(extra: Expr) -> Expr {
+    fn make_cb(body: Expr) -> Expr {
         Expr::Arrow(ArrowExpr {
             span: DUMMY_SP,
             params: vec![
@@ -125,7 +125,7 @@ impl DecoderFnGenerator<'_> {
             body: BlockStmtOrExpr::Expr(
                 Expr::Paren(ParenExpr {
                     span: DUMMY_SP,
-                    expr: extra.into(),
+                    expr: body.into(),
                 })
                 .into(),
             )
@@ -156,7 +156,7 @@ impl DecoderFnGenerator<'_> {
                         .map(|it| {
                             Some(ExprOrSpread {
                                 spread: None,
-                                expr: Self::make_cb(it).into(),
+                                expr: it.into(),
                             })
                         })
                         .collect(),
@@ -227,7 +227,7 @@ impl DecoderFnGenerator<'_> {
                             value: key.clone().into(),
                             raw: None,
                         }),
-                        value: Box::new(Self::make_cb(self.decode_expr(value, hoisted))),
+                        value: Box::new(self.decode_expr(value, hoisted)),
                     })))
                 })
                 .collect(),
@@ -400,7 +400,7 @@ impl DecoderFnGenerator<'_> {
     }
 
     fn decode_expr(&self, schema: &JsonSchema, hoisted: &mut Vec<ModuleItem>) -> Expr {
-        match schema {
+        let call = match schema {
             JsonSchema::StNot(_) => {
                 unreachable!("should not create decoders for semantic types")
             }
@@ -435,7 +435,7 @@ impl DecoderFnGenerator<'_> {
                                     value: key.clone().into(),
                                     raw: None,
                                 }),
-                                value: Box::new(Self::make_cb(match value {
+                                value: Box::new(match value {
                                     Optionality::Optional(schema) => {
                                         let nullable_schema = &JsonSchema::AnyOf(
                                             vec![JsonSchema::Null, schema.clone()]
@@ -447,7 +447,7 @@ impl DecoderFnGenerator<'_> {
                                     Optionality::Required(schema) => {
                                         self.decode_expr(schema, hoisted)
                                     }
-                                })),
+                                }),
                             })))
                         })
                         .collect(),
@@ -456,13 +456,13 @@ impl DecoderFnGenerator<'_> {
                 let mut extra = vec![self.hoist_expr(hoisted, obj_to_hoist)];
                 if let Some(rest) = rest {
                     let rest = self.decode_expr(rest, hoisted);
-                    extra.push(Self::make_cb(rest));
+                    extra.push(rest);
                 }
                 Self::decode_call_extra("decodeObject", extra)
             }
             JsonSchema::Array(ty) => {
                 let decoding = self.decode_expr(ty, hoisted);
-                let decoding = self.hoist_expr(hoisted, Self::make_cb(decoding));
+                let decoding = self.hoist_expr(hoisted, decoding);
                 Self::decode_call_extra("decodeArray", vec![decoding])
             }
             JsonSchema::Tuple {
@@ -486,8 +486,7 @@ impl DecoderFnGenerator<'_> {
                                         .map(|it| {
                                             Some(ExprOrSpread {
                                                 spread: None,
-                                                expr: Self::make_cb(self.decode_expr(it, hoisted))
-                                                    .into(),
+                                                expr: self.decode_expr(it, hoisted).into(),
                                             })
                                         })
                                         .collect(),
@@ -503,7 +502,7 @@ impl DecoderFnGenerator<'_> {
                                     optional: false,
                                 }),
                                 value: Box::new(match items {
-                                    Some(v) => Self::make_cb(self.decode_expr(v, hoisted)),
+                                    Some(v) => self.decode_expr(v, hoisted),
                                     None => Expr::Lit(Lit::Null(Null { span: DUMMY_SP })),
                                 }),
                             })
@@ -551,7 +550,9 @@ impl DecoderFnGenerator<'_> {
                 )
             }
             JsonSchema::Function => Self::decode_call("decodeFunction"),
-        }
+        };
+
+        Self::make_cb(call)
     }
 
     fn fn_decoder_from_schema(
@@ -588,7 +589,24 @@ impl DecoderFnGenerator<'_> {
                 span: DUMMY_SP,
                 stmts: vec![Stmt::Return(ReturnStmt {
                     span: DUMMY_SP,
-                    arg: Some(Box::new(self.decode_expr(schema, hoisted))),
+                    arg: Some(Box::new(Expr::Call(CallExpr {
+                        span: DUMMY_SP,
+                        callee: Callee::Expr(Box::new(Expr::Paren(ParenExpr {
+                            span: DUMMY_SP,
+                            expr: Box::new(self.decode_expr(schema, hoisted)),
+                        }))),
+                        args: vec![
+                            ExprOrSpread {
+                                spread: None,
+                                expr: SwcBuilder::ident_expr("ctx").into(),
+                            },
+                            ExprOrSpread {
+                                spread: None,
+                                expr: SwcBuilder::ident_expr("input").into(),
+                            },
+                        ],
+                        type_args: None,
+                    }))),
                 })],
             }
             .into(),
