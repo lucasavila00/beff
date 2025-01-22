@@ -300,8 +300,7 @@ impl DecoderFnGenerator<'_> {
             ),
             type_args: None,
         });
-        let hoisted = self.hoist_expr(hoisted, new_expr);
-        hoisted
+        self.hoist_expr(hoisted, new_expr)
     }
 
     fn maybe_decode_any_of_consts(
