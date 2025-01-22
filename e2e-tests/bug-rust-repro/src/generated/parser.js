@@ -7,7 +7,7 @@ import {z} from 'zod';
 import validatorsMod from "./validators.js"; const { decodeObject, decodeArray, decodeString, decodeNumber, decodeCodec, decodeFunction, decodeStringWithFormat, decodeAnyOf, decodeAllOf, decodeBoolean, decodeAny, decodeTuple, decodeNull, decodeNever, decodeConst, registerCustomFormatter, validators, c } = validatorsMod;
 const RequiredCustomFormats = ["ValidCurrency"];
 const buildParsersInput = {
-    "A": function(ctx, input, required = true) {
+    "A": function(ctx, input) {
         return validators.A(ctx, input);
     }
 };

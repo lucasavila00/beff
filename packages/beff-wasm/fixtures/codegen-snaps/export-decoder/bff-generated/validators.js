@@ -296,31 +296,31 @@ function decodeRegex(ctx, input, regex, description) {
 }
 
 
-function DecodeUser(ctx, input, required = true) {
+function DecodeUser(ctx, input) {
     return decodeObject(ctx, input, hoisted_User_0);
 }
-function DecodeNotPublic(ctx, input, required = true) {
+function DecodeNotPublic(ctx, input) {
     return decodeObject(ctx, input, hoisted_NotPublic_1);
 }
-function DecodeStartsWithA(ctx, input, required = true) {
+function DecodeStartsWithA(ctx, input) {
     return decodeStringWithFormat(ctx, input, "StartsWithA");
 }
-function DecodePassword(ctx, input, required = true) {
+function DecodePassword(ctx, input) {
     return decodeStringWithFormat(ctx, input, "password");
 }
-function DecodeA(ctx, input, required = true) {
+function DecodeA(ctx, input) {
     return decodeAnyOfConsts(ctx, input, hoisted_A_2);
 }
-function DecodeB(ctx, input, required = true) {
+function DecodeB(ctx, input) {
     return decodeAnyOfConsts(ctx, input, hoisted_B_3);
 }
-function DecodeD(ctx, input, required = true) {
+function DecodeD(ctx, input) {
     return decodeAnyOfConsts(ctx, input, hoisted_D_4);
 }
-function DecodeE(ctx, input, required = true) {
+function DecodeE(ctx, input) {
     return decodeAnyOfConsts(ctx, input, hoisted_E_5);
 }
-function DecodeUnionNested(ctx, input, required = true) {
+function DecodeUnionNested(ctx, input) {
     return decodeAnyOfConsts(ctx, input, hoisted_UnionNested_6);
 }
 const validators = {

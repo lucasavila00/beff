@@ -296,7 +296,7 @@ function decodeRegex(ctx, input, regex, description) {
 }
 
 
-function DecodeA(ctx, input, required = true) {
+function DecodeA(ctx, input) {
     return decodeString(ctx, input);
 }
 const validators = {

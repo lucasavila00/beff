@@ -6,10 +6,9 @@ use crate::{
 use std::collections::{BTreeMap, BTreeSet};
 use swc_common::DUMMY_SP;
 use swc_ecma_ast::{
-    ArrayLit, ArrowExpr, AssignPat, BindingIdent, BlockStmt, BlockStmtOrExpr, Bool, CallExpr,
-    Callee, Expr, ExprOrSpread, Function, Ident, KeyValueProp, Lit, MemberExpr, MemberProp,
-    ModuleItem, Null, ObjectLit, Param, ParenExpr, Pat, Prop, PropName, PropOrSpread, Regex,
-    ReturnStmt, Stmt, Str,
+    ArrayLit, ArrowExpr, BindingIdent, BlockStmt, BlockStmtOrExpr, CallExpr, Callee, Expr,
+    ExprOrSpread, Function, Ident, KeyValueProp, Lit, MemberExpr, MemberProp, ModuleItem, Null,
+    ObjectLit, Param, ParenExpr, Pat, Prop, PropName, PropOrSpread, Regex, ReturnStmt, Stmt, Str,
 };
 struct SwcBuilder;
 
@@ -580,27 +579,6 @@ impl DecoderFnGenerator<'_> {
                     pat: Pat::Ident(BindingIdent {
                         id: SwcBuilder::input_ident(),
                         type_ann: None,
-                    }),
-                },
-                Param {
-                    span: DUMMY_SP,
-                    decorators: vec![],
-                    pat: Pat::Assign(AssignPat {
-                        span: DUMMY_SP,
-                        left: Pat::Ident(BindingIdent {
-                            id: Ident {
-                                span: DUMMY_SP,
-                                sym: "required".into(),
-                                optional: false,
-                            },
-                            type_ann: None,
-                        })
-                        .into(),
-                        right: Expr::Lit(Lit::Bool(Bool {
-                            span: DUMMY_SP,
-                            value: true,
-                        }))
-                        .into(),
                     }),
                 },
             ],

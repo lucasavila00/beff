@@ -296,136 +296,136 @@ function decodeRegex(ctx, input, regex, description) {
 }
 
 
-function DecodeTransportedValue(ctx, input, required = true) {
+function DecodeTransportedValue(ctx, input) {
     return decodeAnyOf(ctx, input, hoisted_TransportedValue_2);
 }
-function DecodeAllTs(ctx, input, required = true) {
+function DecodeAllTs(ctx, input) {
     return decodeAnyOfConsts(ctx, input, hoisted_AllTs_3);
 }
-function DecodeAObject(ctx, input, required = true) {
+function DecodeAObject(ctx, input) {
     return decodeObject(ctx, input, hoisted_AObject_4);
 }
-function DecodeVersion(ctx, input, required = true) {
+function DecodeVersion(ctx, input) {
     return decodeRegex(ctx, input, /(\d+(\.\d+)?)(\.)(\d+(\.\d+)?)(\.)(\d+(\.\d+)?)/, "${number}.${number}.${number}");
 }
-function DecodeVersion2(ctx, input, required = true) {
+function DecodeVersion2(ctx, input) {
     return decodeRegex(ctx, input, /(v)(\d+(\.\d+)?)(\.)(\d+(\.\d+)?)(\.)(\d+(\.\d+)?)/, "v${number}.${number}.${number}");
 }
-function DecodeAccessLevel2(ctx, input, required = true) {
+function DecodeAccessLevel2(ctx, input) {
     return decodeAnyOfConsts(ctx, input, hoisted_AccessLevel2_5);
 }
-function DecodeAccessLevelTpl2(ctx, input, required = true) {
+function DecodeAccessLevelTpl2(ctx, input) {
     return decodeRegex(ctx, input, /((ADMIN Admin)|(USER User))/, '("ADMIN Admin" | "USER User")');
 }
-function DecodeAccessLevel(ctx, input, required = true) {
+function DecodeAccessLevel(ctx, input) {
     return decodeAnyOfConsts(ctx, input, hoisted_AccessLevel_6);
 }
-function DecodeAccessLevelTpl(ctx, input, required = true) {
+function DecodeAccessLevelTpl(ctx, input) {
     return decodeRegex(ctx, input, /((ADMIN)|(USER))/, '("ADMIN" | "USER")');
 }
-function DecodeArr3(ctx, input, required = true) {
+function DecodeArr3(ctx, input) {
     return decodeAnyOfConsts(ctx, input, hoisted_Arr3_7);
 }
-function DecodeOmitSettings(ctx, input, required = true) {
+function DecodeOmitSettings(ctx, input) {
     return decodeObject(ctx, input, hoisted_OmitSettings_10);
 }
-function DecodeSettings(ctx, input, required = true) {
+function DecodeSettings(ctx, input) {
     return decodeObject(ctx, input, hoisted_Settings_13);
 }
-function DecodePartialObject(ctx, input, required = true) {
+function DecodePartialObject(ctx, input) {
     return decodeObject(ctx, input, hoisted_PartialObject_16);
 }
-function DecodeRequiredPartialObject(ctx, input, required = true) {
+function DecodeRequiredPartialObject(ctx, input) {
     return decodeObject(ctx, input, hoisted_RequiredPartialObject_17);
 }
-function DecodeLevelAndDSettings(ctx, input, required = true) {
+function DecodeLevelAndDSettings(ctx, input) {
     return decodeObject(ctx, input, hoisted_LevelAndDSettings_20);
 }
-function DecodePartialSettings(ctx, input, required = true) {
+function DecodePartialSettings(ctx, input) {
     return decodeObject(ctx, input, hoisted_PartialSettings_26);
 }
-function DecodeExtra(ctx, input, required = true) {
+function DecodeExtra(ctx, input) {
     return decodeObject(ctx, input, hoisted_Extra_27, (ctx, input)=>(decodeString(ctx, input)));
 }
-function DecodeAvatarSize(ctx, input, required = true) {
+function DecodeAvatarSize(ctx, input) {
     return decodeRegex(ctx, input, /(\d+(\.\d+)?)(x)(\d+(\.\d+)?)/, "${number}x${number}");
 }
-function DecodeUser(ctx, input, required = true) {
+function DecodeUser(ctx, input) {
     return decodeObject(ctx, input, hoisted_User_29);
 }
-function DecodePublicUser(ctx, input, required = true) {
+function DecodePublicUser(ctx, input) {
     return decodeObject(ctx, input, hoisted_PublicUser_30);
 }
-function DecodeReq(ctx, input, required = true) {
+function DecodeReq(ctx, input) {
     return decodeObject(ctx, input, hoisted_Req_31);
 }
-function DecodeWithOptionals(ctx, input, required = true) {
+function DecodeWithOptionals(ctx, input) {
     return decodeObject(ctx, input, hoisted_WithOptionals_33);
 }
-function DecodeRepro1(ctx, input, required = true) {
+function DecodeRepro1(ctx, input) {
     return decodeObject(ctx, input, hoisted_Repro1_35);
 }
-function DecodeRepro2(ctx, input, required = true) {
+function DecodeRepro2(ctx, input) {
     return decodeObject(ctx, input, hoisted_Repro2_36);
 }
-function DecodeSettingsUpdate(ctx, input, required = true) {
+function DecodeSettingsUpdate(ctx, input) {
     return decodeAnyOf(ctx, input, hoisted_SettingsUpdate_38);
 }
-function DecodeMapped(ctx, input, required = true) {
+function DecodeMapped(ctx, input) {
     return decodeObject(ctx, input, hoisted_Mapped_41);
 }
-function DecodeMappedOptional(ctx, input, required = true) {
+function DecodeMappedOptional(ctx, input) {
     return decodeObject(ctx, input, hoisted_MappedOptional_46);
 }
-function DecodeDiscriminatedUnion(ctx, input, required = true) {
+function DecodeDiscriminatedUnion(ctx, input) {
     return decodeAnyOfDiscriminated(ctx, input, "type", hoisted_DiscriminatedUnion_52);
 }
-function DecodeDiscriminatedUnion2(ctx, input, required = true) {
+function DecodeDiscriminatedUnion2(ctx, input) {
     return decodeAnyOf(ctx, input, hoisted_DiscriminatedUnion2_59);
 }
-function DecodeDiscriminatedUnion3(ctx, input, required = true) {
+function DecodeDiscriminatedUnion3(ctx, input) {
     return decodeAnyOfDiscriminated(ctx, input, "type", hoisted_DiscriminatedUnion3_63);
 }
-function DecodeDiscriminatedUnion4(ctx, input, required = true) {
+function DecodeDiscriminatedUnion4(ctx, input) {
     return decodeAnyOfDiscriminated(ctx, input, "type", hoisted_DiscriminatedUnion4_69);
 }
-function DecodeAllTypes(ctx, input, required = true) {
+function DecodeAllTypes(ctx, input) {
     return decodeAnyOfConsts(ctx, input, hoisted_AllTypes_70);
 }
-function DecodeOtherEnum(ctx, input, required = true) {
+function DecodeOtherEnum(ctx, input) {
     return decodeAnyOfConsts(ctx, input, hoisted_OtherEnum_71);
 }
-function DecodeArr2(ctx, input, required = true) {
+function DecodeArr2(ctx, input) {
     return decodeAnyOfConsts(ctx, input, hoisted_Arr2_72);
 }
-function DecodeValidCurrency(ctx, input, required = true) {
+function DecodeValidCurrency(ctx, input) {
     return decodeStringWithFormat(ctx, input, "ValidCurrency");
 }
-function DecodeUnionWithEnumAccess(ctx, input, required = true) {
+function DecodeUnionWithEnumAccess(ctx, input) {
     return decodeAnyOfDiscriminated(ctx, input, "tag", hoisted_UnionWithEnumAccess_76);
 }
-function DecodeShape(ctx, input, required = true) {
+function DecodeShape(ctx, input) {
     return decodeAnyOfDiscriminated(ctx, input, "kind", hoisted_Shape_80);
 }
-function DecodeT3(ctx, input, required = true) {
+function DecodeT3(ctx, input) {
     return decodeAnyOfDiscriminated(ctx, input, "kind", hoisted_T3_83);
 }
-function DecodeBObject(ctx, input, required = true) {
+function DecodeBObject(ctx, input) {
     return decodeObject(ctx, input, hoisted_BObject_84);
 }
-function DecodeDEF(ctx, input, required = true) {
+function DecodeDEF(ctx, input) {
     return decodeObject(ctx, input, hoisted_DEF_85);
 }
-function DecodeKDEF(ctx, input, required = true) {
+function DecodeKDEF(ctx, input) {
     return decodeConst(ctx, input, "a");
 }
-function DecodeABC(ctx, input, required = true) {
+function DecodeABC(ctx, input) {
     return decodeObject(ctx, input, hoisted_ABC_86);
 }
-function DecodeKABC(ctx, input, required = true) {
+function DecodeKABC(ctx, input) {
     return decodeNever(ctx, input);
 }
-function DecodeK(ctx, input, required = true) {
+function DecodeK(ctx, input) {
     return decodeAnyOf(ctx, input, hoisted_K_87);
 }
 const validators = {
