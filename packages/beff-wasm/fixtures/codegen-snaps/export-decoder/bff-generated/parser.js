@@ -95,7 +95,7 @@ function buildParsers(args) {
       let ctx = { path: [], disallowExtraProperties };
       return {
         success: false,
-        errors: e(ctx, input),
+        errors: e(ctx, input).slice(0, 10),
       };
     };
     const parse = (input, options) => {

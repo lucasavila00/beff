@@ -480,6 +480,10 @@ class AllOfValidator {
   }
   validateAllOfValidator(ctx, input) {
     for (const v of this.vs) {
+      const isObj = typeof input === "object";
+      if (!isObj) {
+        return false;
+      }
       if (!v(ctx, input)) {
         return false;
       }
@@ -495,7 +499,6 @@ class AllOfParser {
   }
   parseAllOfParser(ctx, input) {
     let acc = {};
-
     for (let i = 0; i < this.validators.length; i++) {
       const p = this.parsers[i];
       const parsed = p(ctx, input);
@@ -514,7 +517,12 @@ class AllOfReporter {
     this.reporters = reporters;
   }
   reportAllOfReporter(ctx, input) {
-    throw new Error("reportAllOfReporter Not implemented");
+    const acc = [];
+    for (const v of this.reporters) {
+      const errors = v(ctx, input);
+      acc.push(...errors);
+    }
+    return acc;
   }
 }
 
