@@ -312,6 +312,7 @@ impl JsonSchema {
 
     pub fn any_of(vs: Vec<JsonSchema>) -> Self {
         match vs.len() {
+            0 => JsonSchema::StNever,
             1 => vs.into_iter().next().expect("we just checked len"),
             _ => UnionMerger::schema(vs),
         }

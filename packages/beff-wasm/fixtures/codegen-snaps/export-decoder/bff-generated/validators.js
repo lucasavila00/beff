@@ -198,28 +198,6 @@ class StringWithFormatDecoder {
     return buildError(ctx, `expected string with format "${this.format}"`, input);
   }
 }
-class AnyOfDiscriminatedDecoder {
-  constructor(discriminator, mapping) {
-    this.discriminator = discriminator;
-    this.mapping = mapping;
-  }
-
-  validateAnyOfDiscriminatedDecoder(ctx, input) {
-    const d = input[this.discriminator];
-    if (d == null) {
-      return false;
-    }
-    const v = this.mapping[d];
-    if (v == null) {
-      
-      return false;
-    }
-    if (!v(ctx, input)) {
-      return false;
-    }
-    return true;
-  }
-}
 const limitedCommaJoinJson = (arr) => {
   const limit = 3;
   if (arr.length < limit) {
@@ -375,6 +353,66 @@ class ObjectParser {
     }
 
     return acc;
+  }
+}
+
+class AnyOfDiscriminatedValidator {
+  constructor(discriminator, mapping) {
+    this.discriminator = discriminator;
+    this.mapping = mapping;
+  }
+
+  validateAnyOfDiscriminatedValidator(ctx, input) {
+    const d = input[this.discriminator];
+    if (d == null) {
+      return false;
+    }
+    const v = this.mapping[d];
+    if (v == null) {
+      
+      return false;
+    }
+    if (!v(ctx, input)) {
+      return false;
+    }
+    return true;
+  }
+}
+
+class AnyOfDiscriminatedParser {
+  constructor(discriminator, mapping) {
+    this.discriminator = discriminator;
+    this.mapping = mapping;
+  }
+
+  parseAnyOfDiscriminatedParser(ctx, input) {
+    const parser = this.mapping[input[this.discriminator]];
+    if (parser == null) {
+      throw new Error("Unknown discriminator");
+    }
+    return {
+      [this.discriminator]: input[this.discriminator],
+      ...parser(ctx, input),
+    };
+  }
+}
+
+class AnyOfDiscriminatedReporter {
+  constructor(discriminator, mapping) {
+    this.discriminator = discriminator;
+    this.mapping = mapping;
+  }
+
+  reportAnyOfDiscriminatedReporter(ctx, input) {
+    const d = input[this.discriminator];
+    if (d == null) {
+      return buildError(ctx, `missing discriminator ${this.discriminator}`, input);
+    }
+    const v = this.mapping[d];
+    if (v == null) {
+      return buildError(ctx, `unknown discriminator ${d}`, input);
+    }
+    return v(ctx, input);
   }
 }
 
@@ -794,4 +832,4 @@ const hoisted_UnionNested_0 = new AnyOfConstsDecoder([
     6
 ]);
 
-export default { registerCustomFormatter, ObjectValidator, ObjectParser, ArrayParser, ArrayValidator, CodecDecoder, StringWithFormatDecoder, AnyOfValidator, AnyOfParser, AllOfValidator, AllOfParser, TupleParser, TupleValidator, RegexDecoder, ConstDecoder, AnyOfConstsDecoder, AnyOfDiscriminatedDecoder, validateString, validateNumber, validateFunction, validateBoolean, validateAny, validateNull, validateNever, parseIdentity, AnyOfReporter, AllOfReporter, reportString, reportNumber, reportNull, reportBoolean, reportAny, reportNever, reportFunction, ArrayReporter, ObjectReporter, TupleReporter, validators, parsers, reporters };
+export default { registerCustomFormatter, ObjectValidator, ObjectParser, ArrayParser, ArrayValidator, CodecDecoder, StringWithFormatDecoder, AnyOfValidator, AnyOfParser, AllOfValidator, AllOfParser, TupleParser, TupleValidator, RegexDecoder, ConstDecoder, AnyOfConstsDecoder, AnyOfDiscriminatedReporter, AnyOfDiscriminatedParser, AnyOfDiscriminatedValidator, validateString, validateNumber, validateFunction, validateBoolean, validateAny, validateNull, validateNever, parseIdentity, AnyOfReporter, AllOfReporter, reportString, reportNumber, reportNull, reportBoolean, reportAny, reportNever, reportFunction, ArrayReporter, ObjectReporter, TupleReporter, validators, parsers, reporters };

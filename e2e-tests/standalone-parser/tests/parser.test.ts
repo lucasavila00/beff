@@ -348,25 +348,7 @@ it("disallow extra properties", () => {
     {
       "errors": [
         {
-          "errors": [
-            {
-              "message": "unexpected extra properties: \\"y\\"",
-              "path": [],
-              "received": {
-                "kind": "square",
-                "x": 1,
-                "y": 1,
-              },
-            },
-            {
-              "message": "expected \\"triangle\\"",
-              "path": [
-                "kind",
-              ],
-              "received": "square",
-            },
-          ],
-          "isUnionError": true,
+          "message": "unexpected extra properties: \\"y\\"",
           "path": [],
           "received": {
             "kind": "square",
@@ -389,44 +371,7 @@ it("exclude object", () => {
     {
       "errors": [
         {
-          "errors": [
-            {
-              "message": "expected \\"square\\"",
-              "path": [
-                "kind",
-              ],
-              "received": "circle",
-            },
-            {
-              "message": "expected number",
-              "path": [
-                "x",
-              ],
-              "received": undefined,
-            },
-            {
-              "message": "expected \\"triangle\\"",
-              "path": [
-                "kind",
-              ],
-              "received": "circle",
-            },
-            {
-              "message": "expected number",
-              "path": [
-                "x",
-              ],
-              "received": undefined,
-            },
-            {
-              "message": "expected number",
-              "path": [
-                "y",
-              ],
-              "received": undefined,
-            },
-          ],
-          "isUnionError": true,
+          "message": "unknown discriminator circle",
           "path": [],
           "received": {
             "kind": "circle",
@@ -548,23 +493,7 @@ it("DiscriminatedUnion", () => {
         {
           "errors": [
             {
-              "errors": [
-                {
-                  "message": "expected nullish",
-                  "path": [
-                    "a11",
-                  ],
-                  "received": 123,
-                },
-                {
-                  "message": "expected string",
-                  "path": [
-                    "a11",
-                  ],
-                  "received": 123,
-                },
-              ],
-              "isUnionError": true,
+              "message": "expected nullish",
               "path": [
                 "a11",
               ],
@@ -573,40 +502,16 @@ it("DiscriminatedUnion", () => {
             {
               "message": "expected string",
               "path": [
-                "a2",
+                "a11",
               ],
-              "received": undefined,
-            },
-            {
-              "message": "expected \\"a2\\"",
-              "path": [
-                "subType",
-              ],
-              "received": "a1",
-            },
-            {
-              "message": "expected \\"b\\"",
-              "path": [
-                "type",
-              ],
-              "received": "a",
-            },
-            {
-              "message": "expected number",
-              "path": [
-                "value",
-              ],
-              "received": undefined,
+              "received": 123,
             },
           ],
           "isUnionError": true,
-          "path": [],
-          "received": {
-            "a1": "a",
-            "a11": 123,
-            "subType": "a1",
-            "type": "a",
-          },
+          "path": [
+            "a11",
+          ],
+          "received": 123,
         },
       ],
       "success": false,
@@ -631,51 +536,7 @@ it("DiscriminatedUnion", () => {
     {
       "errors": [
         {
-          "errors": [
-            {
-              "message": "expected string",
-              "path": [
-                "a1",
-              ],
-              "received": undefined,
-            },
-            {
-              "message": "expected \\"a1\\"",
-              "path": [
-                "subType",
-              ],
-              "received": undefined,
-            },
-            {
-              "message": "expected string",
-              "path": [
-                "a2",
-              ],
-              "received": undefined,
-            },
-            {
-              "message": "expected \\"a2\\"",
-              "path": [
-                "subType",
-              ],
-              "received": undefined,
-            },
-            {
-              "message": "expected \\"b\\"",
-              "path": [
-                "type",
-              ],
-              "received": "a",
-            },
-            {
-              "message": "expected number",
-              "path": [
-                "value",
-              ],
-              "received": undefined,
-            },
-          ],
-          "isUnionError": true,
+          "message": "missing discriminator subType",
           "path": [],
           "received": {
             "type": "a",
@@ -693,65 +554,7 @@ it("DiscriminatedUnion", () => {
     {
       "errors": [
         {
-          "errors": [
-            {
-              "message": "expected string",
-              "path": [
-                "a1",
-              ],
-              "received": undefined,
-            },
-            {
-              "message": "expected \\"a1\\"",
-              "path": [
-                "subType",
-              ],
-              "received": undefined,
-            },
-            {
-              "message": "expected \\"a\\"",
-              "path": [
-                "type",
-              ],
-              "received": "c",
-            },
-            {
-              "message": "expected string",
-              "path": [
-                "a2",
-              ],
-              "received": undefined,
-            },
-            {
-              "message": "expected \\"a2\\"",
-              "path": [
-                "subType",
-              ],
-              "received": undefined,
-            },
-            {
-              "message": "expected \\"a\\"",
-              "path": [
-                "type",
-              ],
-              "received": "c",
-            },
-            {
-              "message": "expected \\"b\\"",
-              "path": [
-                "type",
-              ],
-              "received": "c",
-            },
-            {
-              "message": "expected number",
-              "path": [
-                "value",
-              ],
-              "received": undefined,
-            },
-          ],
-          "isUnionError": true,
+          "message": "unknown discriminator c",
           "path": [],
           "received": {
             "type": "c",
@@ -765,65 +568,7 @@ it("DiscriminatedUnion", () => {
     {
       "errors": [
         {
-          "errors": [
-            {
-              "message": "expected string",
-              "path": [
-                "a1",
-              ],
-              "received": undefined,
-            },
-            {
-              "message": "expected \\"a1\\"",
-              "path": [
-                "subType",
-              ],
-              "received": undefined,
-            },
-            {
-              "message": "expected \\"a\\"",
-              "path": [
-                "type",
-              ],
-              "received": undefined,
-            },
-            {
-              "message": "expected string",
-              "path": [
-                "a2",
-              ],
-              "received": undefined,
-            },
-            {
-              "message": "expected \\"a2\\"",
-              "path": [
-                "subType",
-              ],
-              "received": undefined,
-            },
-            {
-              "message": "expected \\"a\\"",
-              "path": [
-                "type",
-              ],
-              "received": undefined,
-            },
-            {
-              "message": "expected \\"b\\"",
-              "path": [
-                "type",
-              ],
-              "received": undefined,
-            },
-            {
-              "message": "expected number",
-              "path": [
-                "value",
-              ],
-              "received": undefined,
-            },
-          ],
-          "isUnionError": true,
+          "message": "missing discriminator type",
           "path": [],
           "received": {},
         },
