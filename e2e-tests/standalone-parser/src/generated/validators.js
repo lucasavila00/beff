@@ -261,136 +261,136 @@ function ValidateTransportedValue(ctx, input) {
     return (hoisted_TransportedValue_2.decodeAnyOfDecoder.bind(hoisted_TransportedValue_2))(ctx, input);
 }
 function ValidateOnlyAKey(ctx, input) {
-    return (hoisted_OnlyAKey_3.decodeObjectDecoder.bind(hoisted_OnlyAKey_3))(ctx, input);
+    return (hoisted_OnlyAKey_0.decodeObjectDecoder.bind(hoisted_OnlyAKey_0))(ctx, input);
 }
 function ValidateAllTs(ctx, input) {
-    return (hoisted_AllTs_4.decodeAnyOfConstsDecoder.bind(hoisted_AllTs_4))(ctx, input);
+    return (hoisted_AllTs_0.decodeAnyOfConstsDecoder.bind(hoisted_AllTs_0))(ctx, input);
 }
 function ValidateAObject(ctx, input) {
-    return (hoisted_AObject_6.decodeObjectDecoder.bind(hoisted_AObject_6))(ctx, input);
+    return (hoisted_AObject_1.decodeObjectDecoder.bind(hoisted_AObject_1))(ctx, input);
 }
 function ValidateVersion(ctx, input) {
-    return (hoisted_Version_7.decodeRegexDecoder.bind(hoisted_Version_7))(ctx, input);
+    return (hoisted_Version_0.decodeRegexDecoder.bind(hoisted_Version_0))(ctx, input);
 }
 function ValidateVersion2(ctx, input) {
-    return (hoisted_Version2_8.decodeRegexDecoder.bind(hoisted_Version2_8))(ctx, input);
+    return (hoisted_Version2_0.decodeRegexDecoder.bind(hoisted_Version2_0))(ctx, input);
 }
 function ValidateAccessLevel2(ctx, input) {
-    return (hoisted_AccessLevel2_9.decodeAnyOfConstsDecoder.bind(hoisted_AccessLevel2_9))(ctx, input);
+    return (hoisted_AccessLevel2_0.decodeAnyOfConstsDecoder.bind(hoisted_AccessLevel2_0))(ctx, input);
 }
 function ValidateAccessLevelTpl2(ctx, input) {
-    return (hoisted_AccessLevelTpl2_10.decodeRegexDecoder.bind(hoisted_AccessLevelTpl2_10))(ctx, input);
+    return (hoisted_AccessLevelTpl2_0.decodeRegexDecoder.bind(hoisted_AccessLevelTpl2_0))(ctx, input);
 }
 function ValidateAccessLevel(ctx, input) {
-    return (hoisted_AccessLevel_11.decodeAnyOfConstsDecoder.bind(hoisted_AccessLevel_11))(ctx, input);
+    return (hoisted_AccessLevel_0.decodeAnyOfConstsDecoder.bind(hoisted_AccessLevel_0))(ctx, input);
 }
 function ValidateAccessLevelTpl(ctx, input) {
-    return (hoisted_AccessLevelTpl_12.decodeRegexDecoder.bind(hoisted_AccessLevelTpl_12))(ctx, input);
+    return (hoisted_AccessLevelTpl_0.decodeRegexDecoder.bind(hoisted_AccessLevelTpl_0))(ctx, input);
 }
 function ValidateArr3(ctx, input) {
-    return (hoisted_Arr3_13.decodeAnyOfConstsDecoder.bind(hoisted_Arr3_13))(ctx, input);
+    return (hoisted_Arr3_0.decodeAnyOfConstsDecoder.bind(hoisted_Arr3_0))(ctx, input);
 }
 function ValidateOmitSettings(ctx, input) {
-    return (hoisted_OmitSettings_17.decodeObjectDecoder.bind(hoisted_OmitSettings_17))(ctx, input);
+    return (hoisted_OmitSettings_3.decodeObjectDecoder.bind(hoisted_OmitSettings_3))(ctx, input);
 }
 function ValidateSettings(ctx, input) {
-    return (hoisted_Settings_21.decodeObjectDecoder.bind(hoisted_Settings_21))(ctx, input);
+    return (hoisted_Settings_3.decodeObjectDecoder.bind(hoisted_Settings_3))(ctx, input);
 }
 function ValidatePartialObject(ctx, input) {
-    return (hoisted_PartialObject_24.decodeObjectDecoder.bind(hoisted_PartialObject_24))(ctx, input);
+    return (hoisted_PartialObject_2.decodeObjectDecoder.bind(hoisted_PartialObject_2))(ctx, input);
 }
 function ValidateRequiredPartialObject(ctx, input) {
-    return (hoisted_RequiredPartialObject_25.decodeObjectDecoder.bind(hoisted_RequiredPartialObject_25))(ctx, input);
+    return (hoisted_RequiredPartialObject_0.decodeObjectDecoder.bind(hoisted_RequiredPartialObject_0))(ctx, input);
 }
 function ValidateLevelAndDSettings(ctx, input) {
-    return (hoisted_LevelAndDSettings_29.decodeObjectDecoder.bind(hoisted_LevelAndDSettings_29))(ctx, input);
+    return (hoisted_LevelAndDSettings_3.decodeObjectDecoder.bind(hoisted_LevelAndDSettings_3))(ctx, input);
 }
 function ValidatePartialSettings(ctx, input) {
-    return (hoisted_PartialSettings_37.decodeObjectDecoder.bind(hoisted_PartialSettings_37))(ctx, input);
+    return (hoisted_PartialSettings_7.decodeObjectDecoder.bind(hoisted_PartialSettings_7))(ctx, input);
 }
 function ValidateExtra(ctx, input) {
-    return (hoisted_Extra_38.decodeObjectDecoder.bind(hoisted_Extra_38))(ctx, input);
+    return (hoisted_Extra_0.decodeObjectDecoder.bind(hoisted_Extra_0))(ctx, input);
 }
 function ValidateAvatarSize(ctx, input) {
-    return (hoisted_AvatarSize_39.decodeRegexDecoder.bind(hoisted_AvatarSize_39))(ctx, input);
+    return (hoisted_AvatarSize_0.decodeRegexDecoder.bind(hoisted_AvatarSize_0))(ctx, input);
 }
 function ValidateUser(ctx, input) {
-    return (hoisted_User_41.decodeObjectDecoder.bind(hoisted_User_41))(ctx, input);
+    return (hoisted_User_1.decodeObjectDecoder.bind(hoisted_User_1))(ctx, input);
 }
 function ValidatePublicUser(ctx, input) {
-    return (hoisted_PublicUser_42.decodeObjectDecoder.bind(hoisted_PublicUser_42))(ctx, input);
+    return (hoisted_PublicUser_0.decodeObjectDecoder.bind(hoisted_PublicUser_0))(ctx, input);
 }
 function ValidateReq(ctx, input) {
-    return (hoisted_Req_43.decodeObjectDecoder.bind(hoisted_Req_43))(ctx, input);
+    return (hoisted_Req_0.decodeObjectDecoder.bind(hoisted_Req_0))(ctx, input);
 }
 function ValidateWithOptionals(ctx, input) {
-    return (hoisted_WithOptionals_45.decodeObjectDecoder.bind(hoisted_WithOptionals_45))(ctx, input);
+    return (hoisted_WithOptionals_1.decodeObjectDecoder.bind(hoisted_WithOptionals_1))(ctx, input);
 }
 function ValidateRepro1(ctx, input) {
-    return (hoisted_Repro1_47.decodeObjectDecoder.bind(hoisted_Repro1_47))(ctx, input);
+    return (hoisted_Repro1_1.decodeObjectDecoder.bind(hoisted_Repro1_1))(ctx, input);
 }
 function ValidateRepro2(ctx, input) {
-    return (hoisted_Repro2_48.decodeObjectDecoder.bind(hoisted_Repro2_48))(ctx, input);
+    return (hoisted_Repro2_0.decodeObjectDecoder.bind(hoisted_Repro2_0))(ctx, input);
 }
 function ValidateSettingsUpdate(ctx, input) {
-    return (hoisted_SettingsUpdate_51.decodeAnyOfDecoder.bind(hoisted_SettingsUpdate_51))(ctx, input);
+    return (hoisted_SettingsUpdate_2.decodeAnyOfDecoder.bind(hoisted_SettingsUpdate_2))(ctx, input);
 }
 function ValidateMapped(ctx, input) {
-    return (hoisted_Mapped_56.decodeObjectDecoder.bind(hoisted_Mapped_56))(ctx, input);
+    return (hoisted_Mapped_4.decodeObjectDecoder.bind(hoisted_Mapped_4))(ctx, input);
 }
 function ValidateMappedOptional(ctx, input) {
-    return (hoisted_MappedOptional_63.decodeObjectDecoder.bind(hoisted_MappedOptional_63))(ctx, input);
+    return (hoisted_MappedOptional_6.decodeObjectDecoder.bind(hoisted_MappedOptional_6))(ctx, input);
 }
 function ValidateDiscriminatedUnion(ctx, input) {
-    return (hoisted_DiscriminatedUnion_69.decodeAnyOfDiscriminatedDecoder.bind(hoisted_DiscriminatedUnion_69))(ctx, input);
+    return (hoisted_DiscriminatedUnion_5.decodeAnyOfDiscriminatedDecoder.bind(hoisted_DiscriminatedUnion_5))(ctx, input);
 }
 function ValidateDiscriminatedUnion2(ctx, input) {
-    return (hoisted_DiscriminatedUnion2_82.decodeAnyOfDecoder.bind(hoisted_DiscriminatedUnion2_82))(ctx, input);
+    return (hoisted_DiscriminatedUnion2_12.decodeAnyOfDecoder.bind(hoisted_DiscriminatedUnion2_12))(ctx, input);
 }
 function ValidateDiscriminatedUnion3(ctx, input) {
-    return (hoisted_DiscriminatedUnion3_86.decodeAnyOfDiscriminatedDecoder.bind(hoisted_DiscriminatedUnion3_86))(ctx, input);
+    return (hoisted_DiscriminatedUnion3_3.decodeAnyOfDiscriminatedDecoder.bind(hoisted_DiscriminatedUnion3_3))(ctx, input);
 }
 function ValidateDiscriminatedUnion4(ctx, input) {
-    return (hoisted_DiscriminatedUnion4_94.decodeAnyOfDiscriminatedDecoder.bind(hoisted_DiscriminatedUnion4_94))(ctx, input);
+    return (hoisted_DiscriminatedUnion4_7.decodeAnyOfDiscriminatedDecoder.bind(hoisted_DiscriminatedUnion4_7))(ctx, input);
 }
 function ValidateAllTypes(ctx, input) {
-    return (hoisted_AllTypes_95.decodeAnyOfConstsDecoder.bind(hoisted_AllTypes_95))(ctx, input);
+    return (hoisted_AllTypes_0.decodeAnyOfConstsDecoder.bind(hoisted_AllTypes_0))(ctx, input);
 }
 function ValidateOtherEnum(ctx, input) {
-    return (hoisted_OtherEnum_96.decodeAnyOfConstsDecoder.bind(hoisted_OtherEnum_96))(ctx, input);
+    return (hoisted_OtherEnum_0.decodeAnyOfConstsDecoder.bind(hoisted_OtherEnum_0))(ctx, input);
 }
 function ValidateArr2(ctx, input) {
-    return (hoisted_Arr2_97.decodeAnyOfConstsDecoder.bind(hoisted_Arr2_97))(ctx, input);
+    return (hoisted_Arr2_0.decodeAnyOfConstsDecoder.bind(hoisted_Arr2_0))(ctx, input);
 }
 function ValidateValidCurrency(ctx, input) {
-    return (hoisted_ValidCurrency_98.decodeStringWithFormatDecoder.bind(hoisted_ValidCurrency_98))(ctx, input);
+    return (hoisted_ValidCurrency_0.decodeStringWithFormatDecoder.bind(hoisted_ValidCurrency_0))(ctx, input);
 }
 function ValidateUnionWithEnumAccess(ctx, input) {
-    return (hoisted_UnionWithEnumAccess_102.decodeAnyOfDiscriminatedDecoder.bind(hoisted_UnionWithEnumAccess_102))(ctx, input);
+    return (hoisted_UnionWithEnumAccess_3.decodeAnyOfDiscriminatedDecoder.bind(hoisted_UnionWithEnumAccess_3))(ctx, input);
 }
 function ValidateShape(ctx, input) {
-    return (hoisted_Shape_106.decodeAnyOfDiscriminatedDecoder.bind(hoisted_Shape_106))(ctx, input);
+    return (hoisted_Shape_3.decodeAnyOfDiscriminatedDecoder.bind(hoisted_Shape_3))(ctx, input);
 }
 function ValidateT3(ctx, input) {
-    return (hoisted_T3_109.decodeAnyOfDiscriminatedDecoder.bind(hoisted_T3_109))(ctx, input);
+    return (hoisted_T3_2.decodeAnyOfDiscriminatedDecoder.bind(hoisted_T3_2))(ctx, input);
 }
 function ValidateBObject(ctx, input) {
-    return (hoisted_BObject_111.decodeObjectDecoder.bind(hoisted_BObject_111))(ctx, input);
+    return (hoisted_BObject_1.decodeObjectDecoder.bind(hoisted_BObject_1))(ctx, input);
 }
 function ValidateDEF(ctx, input) {
-    return (hoisted_DEF_112.decodeObjectDecoder.bind(hoisted_DEF_112))(ctx, input);
+    return (hoisted_DEF_0.decodeObjectDecoder.bind(hoisted_DEF_0))(ctx, input);
 }
 function ValidateKDEF(ctx, input) {
-    return (hoisted_KDEF_113.decodeConstDecoder.bind(hoisted_KDEF_113))(ctx, input);
+    return (hoisted_KDEF_0.decodeConstDecoder.bind(hoisted_KDEF_0))(ctx, input);
 }
 function ValidateABC(ctx, input) {
-    return (hoisted_ABC_114.decodeObjectDecoder.bind(hoisted_ABC_114))(ctx, input);
+    return (hoisted_ABC_0.decodeObjectDecoder.bind(hoisted_ABC_0))(ctx, input);
 }
 function ValidateKABC(ctx, input) {
     return (decodeNever)(ctx, input);
 }
 function ValidateK(ctx, input) {
-    return (hoisted_K_115.decodeAnyOfDecoder.bind(hoisted_K_115))(ctx, input);
+    return (hoisted_K_0.decodeAnyOfDecoder.bind(hoisted_K_0))(ctx, input);
 }
 const validators = {
     TransportedValue: ValidateTransportedValue,
@@ -450,350 +450,350 @@ const hoisted_TransportedValue_2 = new AnyOfDecoder([
     decodeString,
     hoisted_TransportedValue_1.decodeArrayDecoder.bind(hoisted_TransportedValue_1)
 ]);
-const hoisted_OnlyAKey_3 = new ObjectDecoder({
+const hoisted_OnlyAKey_0 = new ObjectDecoder({
     "A": decodeString
 });
-const hoisted_AllTs_4 = new AnyOfConstsDecoder([
+const hoisted_AllTs_0 = new AnyOfConstsDecoder([
     "a",
     "b"
 ]);
-const hoisted_AObject_5 = new ConstDecoder("a");
-const hoisted_AObject_6 = new ObjectDecoder({
-    "tag": hoisted_AObject_5.decodeConstDecoder.bind(hoisted_AObject_5)
+const hoisted_AObject_0 = new ConstDecoder("a");
+const hoisted_AObject_1 = new ObjectDecoder({
+    "tag": hoisted_AObject_0.decodeConstDecoder.bind(hoisted_AObject_0)
 });
-const hoisted_Version_7 = new RegexDecoder(/(\d+(\.\d+)?)(\.)(\d+(\.\d+)?)(\.)(\d+(\.\d+)?)/, "${number}.${number}.${number}");
-const hoisted_Version2_8 = new RegexDecoder(/(v)(\d+(\.\d+)?)(\.)(\d+(\.\d+)?)(\.)(\d+(\.\d+)?)/, "v${number}.${number}.${number}");
-const hoisted_AccessLevel2_9 = new AnyOfConstsDecoder([
+const hoisted_Version_0 = new RegexDecoder(/(\d+(\.\d+)?)(\.)(\d+(\.\d+)?)(\.)(\d+(\.\d+)?)/, "${number}.${number}.${number}");
+const hoisted_Version2_0 = new RegexDecoder(/(v)(\d+(\.\d+)?)(\.)(\d+(\.\d+)?)(\.)(\d+(\.\d+)?)/, "v${number}.${number}.${number}");
+const hoisted_AccessLevel2_0 = new AnyOfConstsDecoder([
     "ADMIN Admin",
     "USER User"
 ]);
-const hoisted_AccessLevelTpl2_10 = new RegexDecoder(/((ADMIN Admin)|(USER User))/, '("ADMIN Admin" | "USER User")');
-const hoisted_AccessLevel_11 = new AnyOfConstsDecoder([
+const hoisted_AccessLevelTpl2_0 = new RegexDecoder(/((ADMIN Admin)|(USER User))/, '("ADMIN Admin" | "USER User")');
+const hoisted_AccessLevel_0 = new AnyOfConstsDecoder([
     "ADMIN",
     "USER"
 ]);
-const hoisted_AccessLevelTpl_12 = new RegexDecoder(/((ADMIN)|(USER))/, '("ADMIN" | "USER")');
-const hoisted_Arr3_13 = new AnyOfConstsDecoder([
+const hoisted_AccessLevelTpl_0 = new RegexDecoder(/((ADMIN)|(USER))/, '("ADMIN" | "USER")');
+const hoisted_Arr3_0 = new AnyOfConstsDecoder([
     "X",
     "Y"
 ]);
-const hoisted_OmitSettings_14 = new ConstDecoder("d");
-const hoisted_OmitSettings_15 = new ObjectDecoder({
-    "tag": hoisted_OmitSettings_14.decodeConstDecoder.bind(hoisted_OmitSettings_14)
+const hoisted_OmitSettings_0 = new ConstDecoder("d");
+const hoisted_OmitSettings_1 = new ObjectDecoder({
+    "tag": hoisted_OmitSettings_0.decodeConstDecoder.bind(hoisted_OmitSettings_0)
 });
-const hoisted_OmitSettings_16 = new AnyOfConstsDecoder([
+const hoisted_OmitSettings_2 = new AnyOfConstsDecoder([
     "a",
     "b"
 ]);
-const hoisted_OmitSettings_17 = new ObjectDecoder({
-    "d": hoisted_OmitSettings_15.decodeObjectDecoder.bind(hoisted_OmitSettings_15),
-    "level": hoisted_OmitSettings_16.decodeAnyOfConstsDecoder.bind(hoisted_OmitSettings_16)
+const hoisted_OmitSettings_3 = new ObjectDecoder({
+    "d": hoisted_OmitSettings_1.decodeObjectDecoder.bind(hoisted_OmitSettings_1),
+    "level": hoisted_OmitSettings_2.decodeAnyOfConstsDecoder.bind(hoisted_OmitSettings_2)
 });
-const hoisted_Settings_18 = new ConstDecoder("d");
-const hoisted_Settings_19 = new ObjectDecoder({
-    "tag": hoisted_Settings_18.decodeConstDecoder.bind(hoisted_Settings_18)
+const hoisted_Settings_0 = new ConstDecoder("d");
+const hoisted_Settings_1 = new ObjectDecoder({
+    "tag": hoisted_Settings_0.decodeConstDecoder.bind(hoisted_Settings_0)
 });
-const hoisted_Settings_20 = new AnyOfConstsDecoder([
+const hoisted_Settings_2 = new AnyOfConstsDecoder([
     "a",
     "b"
 ]);
-const hoisted_Settings_21 = new ObjectDecoder({
+const hoisted_Settings_3 = new ObjectDecoder({
     "a": decodeString,
-    "d": hoisted_Settings_19.decodeObjectDecoder.bind(hoisted_Settings_19),
-    "level": hoisted_Settings_20.decodeAnyOfConstsDecoder.bind(hoisted_Settings_20)
+    "d": hoisted_Settings_1.decodeObjectDecoder.bind(hoisted_Settings_1),
+    "level": hoisted_Settings_2.decodeAnyOfConstsDecoder.bind(hoisted_Settings_2)
 });
-const hoisted_PartialObject_22 = new AnyOfDecoder([
+const hoisted_PartialObject_0 = new AnyOfDecoder([
     decodeNull,
     decodeString
 ]);
-const hoisted_PartialObject_23 = new AnyOfDecoder([
+const hoisted_PartialObject_1 = new AnyOfDecoder([
     decodeNull,
     decodeNumber
 ]);
-const hoisted_PartialObject_24 = new ObjectDecoder({
-    "a": hoisted_PartialObject_22.decodeAnyOfDecoder.bind(hoisted_PartialObject_22),
-    "b": hoisted_PartialObject_23.decodeAnyOfDecoder.bind(hoisted_PartialObject_23)
+const hoisted_PartialObject_2 = new ObjectDecoder({
+    "a": hoisted_PartialObject_0.decodeAnyOfDecoder.bind(hoisted_PartialObject_0),
+    "b": hoisted_PartialObject_1.decodeAnyOfDecoder.bind(hoisted_PartialObject_1)
 });
-const hoisted_RequiredPartialObject_25 = new ObjectDecoder({
+const hoisted_RequiredPartialObject_0 = new ObjectDecoder({
     "a": decodeString,
     "b": decodeNumber
 });
-const hoisted_LevelAndDSettings_26 = new ConstDecoder("d");
-const hoisted_LevelAndDSettings_27 = new ObjectDecoder({
-    "tag": hoisted_LevelAndDSettings_26.decodeConstDecoder.bind(hoisted_LevelAndDSettings_26)
+const hoisted_LevelAndDSettings_0 = new ConstDecoder("d");
+const hoisted_LevelAndDSettings_1 = new ObjectDecoder({
+    "tag": hoisted_LevelAndDSettings_0.decodeConstDecoder.bind(hoisted_LevelAndDSettings_0)
 });
-const hoisted_LevelAndDSettings_28 = new AnyOfConstsDecoder([
+const hoisted_LevelAndDSettings_2 = new AnyOfConstsDecoder([
     "a",
     "b"
 ]);
-const hoisted_LevelAndDSettings_29 = new ObjectDecoder({
-    "d": hoisted_LevelAndDSettings_27.decodeObjectDecoder.bind(hoisted_LevelAndDSettings_27),
-    "level": hoisted_LevelAndDSettings_28.decodeAnyOfConstsDecoder.bind(hoisted_LevelAndDSettings_28)
+const hoisted_LevelAndDSettings_3 = new ObjectDecoder({
+    "d": hoisted_LevelAndDSettings_1.decodeObjectDecoder.bind(hoisted_LevelAndDSettings_1),
+    "level": hoisted_LevelAndDSettings_2.decodeAnyOfConstsDecoder.bind(hoisted_LevelAndDSettings_2)
 });
-const hoisted_PartialSettings_30 = new AnyOfDecoder([
+const hoisted_PartialSettings_0 = new AnyOfDecoder([
     decodeNull,
     decodeString
 ]);
-const hoisted_PartialSettings_31 = new ConstDecoder("d");
-const hoisted_PartialSettings_32 = new ObjectDecoder({
-    "tag": hoisted_PartialSettings_31.decodeConstDecoder.bind(hoisted_PartialSettings_31)
+const hoisted_PartialSettings_1 = new ConstDecoder("d");
+const hoisted_PartialSettings_2 = new ObjectDecoder({
+    "tag": hoisted_PartialSettings_1.decodeConstDecoder.bind(hoisted_PartialSettings_1)
 });
-const hoisted_PartialSettings_33 = new AnyOfDecoder([
+const hoisted_PartialSettings_3 = new AnyOfDecoder([
     decodeNull,
-    hoisted_PartialSettings_32.decodeObjectDecoder.bind(hoisted_PartialSettings_32)
+    hoisted_PartialSettings_2.decodeObjectDecoder.bind(hoisted_PartialSettings_2)
 ]);
-const hoisted_PartialSettings_34 = new ConstDecoder("a");
-const hoisted_PartialSettings_35 = new ConstDecoder("b");
-const hoisted_PartialSettings_36 = new AnyOfDecoder([
+const hoisted_PartialSettings_4 = new ConstDecoder("a");
+const hoisted_PartialSettings_5 = new ConstDecoder("b");
+const hoisted_PartialSettings_6 = new AnyOfDecoder([
     decodeNull,
-    hoisted_PartialSettings_34.decodeConstDecoder.bind(hoisted_PartialSettings_34),
-    hoisted_PartialSettings_35.decodeConstDecoder.bind(hoisted_PartialSettings_35)
+    hoisted_PartialSettings_4.decodeConstDecoder.bind(hoisted_PartialSettings_4),
+    hoisted_PartialSettings_5.decodeConstDecoder.bind(hoisted_PartialSettings_5)
 ]);
-const hoisted_PartialSettings_37 = new ObjectDecoder({
-    "a": hoisted_PartialSettings_30.decodeAnyOfDecoder.bind(hoisted_PartialSettings_30),
-    "d": hoisted_PartialSettings_33.decodeAnyOfDecoder.bind(hoisted_PartialSettings_33),
-    "level": hoisted_PartialSettings_36.decodeAnyOfDecoder.bind(hoisted_PartialSettings_36)
+const hoisted_PartialSettings_7 = new ObjectDecoder({
+    "a": hoisted_PartialSettings_0.decodeAnyOfDecoder.bind(hoisted_PartialSettings_0),
+    "d": hoisted_PartialSettings_3.decodeAnyOfDecoder.bind(hoisted_PartialSettings_3),
+    "level": hoisted_PartialSettings_6.decodeAnyOfDecoder.bind(hoisted_PartialSettings_6)
 });
-const hoisted_Extra_38 = new ObjectDecoder({}, decodeString);
-const hoisted_AvatarSize_39 = new RegexDecoder(/(\d+(\.\d+)?)(x)(\d+(\.\d+)?)/, "${number}x${number}");
-const hoisted_User_40 = new ArrayDecoder(validators.User);
-const hoisted_User_41 = new ObjectDecoder({
+const hoisted_Extra_0 = new ObjectDecoder({}, decodeString);
+const hoisted_AvatarSize_0 = new RegexDecoder(/(\d+(\.\d+)?)(x)(\d+(\.\d+)?)/, "${number}x${number}");
+const hoisted_User_0 = new ArrayDecoder(validators.User);
+const hoisted_User_1 = new ObjectDecoder({
     "accessLevel": validators.AccessLevel,
     "avatarSize": validators.AvatarSize,
     "extra": validators.Extra,
-    "friends": hoisted_User_40.decodeArrayDecoder.bind(hoisted_User_40),
+    "friends": hoisted_User_0.decodeArrayDecoder.bind(hoisted_User_0),
     "name": decodeString
 });
-const hoisted_PublicUser_42 = new ObjectDecoder({
+const hoisted_PublicUser_0 = new ObjectDecoder({
     "accessLevel": validators.AccessLevel,
     "avatarSize": validators.AvatarSize,
     "extra": validators.Extra,
     "name": decodeString
 });
-const hoisted_Req_43 = new ObjectDecoder({
+const hoisted_Req_0 = new ObjectDecoder({
     "optional": decodeString
 });
-const hoisted_WithOptionals_44 = new AnyOfDecoder([
+const hoisted_WithOptionals_0 = new AnyOfDecoder([
     decodeNull,
     decodeString
 ]);
-const hoisted_WithOptionals_45 = new ObjectDecoder({
-    "optional": hoisted_WithOptionals_44.decodeAnyOfDecoder.bind(hoisted_WithOptionals_44)
+const hoisted_WithOptionals_1 = new ObjectDecoder({
+    "optional": hoisted_WithOptionals_0.decodeAnyOfDecoder.bind(hoisted_WithOptionals_0)
 });
-const hoisted_Repro1_46 = new AnyOfDecoder([
+const hoisted_Repro1_0 = new AnyOfDecoder([
     decodeNull,
     validators.Repro2
 ]);
-const hoisted_Repro1_47 = new ObjectDecoder({
-    "sizes": hoisted_Repro1_46.decodeAnyOfDecoder.bind(hoisted_Repro1_46)
+const hoisted_Repro1_1 = new ObjectDecoder({
+    "sizes": hoisted_Repro1_0.decodeAnyOfDecoder.bind(hoisted_Repro1_0)
 });
-const hoisted_Repro2_48 = new ObjectDecoder({
+const hoisted_Repro2_0 = new ObjectDecoder({
     "useSmallerSizes": decodeBoolean
 });
-const hoisted_SettingsUpdate_49 = new ConstDecoder("d");
-const hoisted_SettingsUpdate_50 = new ObjectDecoder({
-    "tag": hoisted_SettingsUpdate_49.decodeConstDecoder.bind(hoisted_SettingsUpdate_49)
+const hoisted_SettingsUpdate_0 = new ConstDecoder("d");
+const hoisted_SettingsUpdate_1 = new ObjectDecoder({
+    "tag": hoisted_SettingsUpdate_0.decodeConstDecoder.bind(hoisted_SettingsUpdate_0)
 });
-const hoisted_SettingsUpdate_51 = new AnyOfDecoder([
+const hoisted_SettingsUpdate_2 = new AnyOfDecoder([
     decodeString,
-    hoisted_SettingsUpdate_50.decodeObjectDecoder.bind(hoisted_SettingsUpdate_50)
+    hoisted_SettingsUpdate_1.decodeObjectDecoder.bind(hoisted_SettingsUpdate_1)
 ]);
-const hoisted_Mapped_52 = new ConstDecoder("a");
-const hoisted_Mapped_53 = new ObjectDecoder({
-    "value": hoisted_Mapped_52.decodeConstDecoder.bind(hoisted_Mapped_52)
+const hoisted_Mapped_0 = new ConstDecoder("a");
+const hoisted_Mapped_1 = new ObjectDecoder({
+    "value": hoisted_Mapped_0.decodeConstDecoder.bind(hoisted_Mapped_0)
 });
-const hoisted_Mapped_54 = new ConstDecoder("b");
-const hoisted_Mapped_55 = new ObjectDecoder({
-    "value": hoisted_Mapped_54.decodeConstDecoder.bind(hoisted_Mapped_54)
+const hoisted_Mapped_2 = new ConstDecoder("b");
+const hoisted_Mapped_3 = new ObjectDecoder({
+    "value": hoisted_Mapped_2.decodeConstDecoder.bind(hoisted_Mapped_2)
 });
-const hoisted_Mapped_56 = new ObjectDecoder({
-    "a": hoisted_Mapped_53.decodeObjectDecoder.bind(hoisted_Mapped_53),
-    "b": hoisted_Mapped_55.decodeObjectDecoder.bind(hoisted_Mapped_55)
+const hoisted_Mapped_4 = new ObjectDecoder({
+    "a": hoisted_Mapped_1.decodeObjectDecoder.bind(hoisted_Mapped_1),
+    "b": hoisted_Mapped_3.decodeObjectDecoder.bind(hoisted_Mapped_3)
 });
-const hoisted_MappedOptional_57 = new ConstDecoder("a");
-const hoisted_MappedOptional_58 = new ObjectDecoder({
-    "value": hoisted_MappedOptional_57.decodeConstDecoder.bind(hoisted_MappedOptional_57)
+const hoisted_MappedOptional_0 = new ConstDecoder("a");
+const hoisted_MappedOptional_1 = new ObjectDecoder({
+    "value": hoisted_MappedOptional_0.decodeConstDecoder.bind(hoisted_MappedOptional_0)
 });
-const hoisted_MappedOptional_59 = new AnyOfDecoder([
+const hoisted_MappedOptional_2 = new AnyOfDecoder([
     decodeNull,
-    hoisted_MappedOptional_58.decodeObjectDecoder.bind(hoisted_MappedOptional_58)
+    hoisted_MappedOptional_1.decodeObjectDecoder.bind(hoisted_MappedOptional_1)
 ]);
-const hoisted_MappedOptional_60 = new ConstDecoder("b");
-const hoisted_MappedOptional_61 = new ObjectDecoder({
-    "value": hoisted_MappedOptional_60.decodeConstDecoder.bind(hoisted_MappedOptional_60)
+const hoisted_MappedOptional_3 = new ConstDecoder("b");
+const hoisted_MappedOptional_4 = new ObjectDecoder({
+    "value": hoisted_MappedOptional_3.decodeConstDecoder.bind(hoisted_MappedOptional_3)
 });
-const hoisted_MappedOptional_62 = new AnyOfDecoder([
+const hoisted_MappedOptional_5 = new AnyOfDecoder([
     decodeNull,
-    hoisted_MappedOptional_61.decodeObjectDecoder.bind(hoisted_MappedOptional_61)
+    hoisted_MappedOptional_4.decodeObjectDecoder.bind(hoisted_MappedOptional_4)
 ]);
-const hoisted_MappedOptional_63 = new ObjectDecoder({
-    "a": hoisted_MappedOptional_59.decodeAnyOfDecoder.bind(hoisted_MappedOptional_59),
-    "b": hoisted_MappedOptional_62.decodeAnyOfDecoder.bind(hoisted_MappedOptional_62)
+const hoisted_MappedOptional_6 = new ObjectDecoder({
+    "a": hoisted_MappedOptional_2.decodeAnyOfDecoder.bind(hoisted_MappedOptional_2),
+    "b": hoisted_MappedOptional_5.decodeAnyOfDecoder.bind(hoisted_MappedOptional_5)
 });
-const hoisted_DiscriminatedUnion_64 = new AnyOfDecoder([
+const hoisted_DiscriminatedUnion_0 = new AnyOfDecoder([
     decodeNull,
     decodeString
 ]);
-const hoisted_DiscriminatedUnion_65 = new ObjectDecoder({
+const hoisted_DiscriminatedUnion_1 = new ObjectDecoder({
     "a1": decodeString,
-    "a11": hoisted_DiscriminatedUnion_64.decodeAnyOfDecoder.bind(hoisted_DiscriminatedUnion_64)
+    "a11": hoisted_DiscriminatedUnion_0.decodeAnyOfDecoder.bind(hoisted_DiscriminatedUnion_0)
 });
-const hoisted_DiscriminatedUnion_66 = new ObjectDecoder({
+const hoisted_DiscriminatedUnion_2 = new ObjectDecoder({
     "a2": decodeString
 });
-const hoisted_DiscriminatedUnion_67 = new AnyOfDiscriminatedDecoder("subType", {
-    "a1": hoisted_DiscriminatedUnion_65.decodeObjectDecoder.bind(hoisted_DiscriminatedUnion_65),
-    "a2": hoisted_DiscriminatedUnion_66.decodeObjectDecoder.bind(hoisted_DiscriminatedUnion_66)
+const hoisted_DiscriminatedUnion_3 = new AnyOfDiscriminatedDecoder("subType", {
+    "a1": hoisted_DiscriminatedUnion_1.decodeObjectDecoder.bind(hoisted_DiscriminatedUnion_1),
+    "a2": hoisted_DiscriminatedUnion_2.decodeObjectDecoder.bind(hoisted_DiscriminatedUnion_2)
 });
-const hoisted_DiscriminatedUnion_68 = new ObjectDecoder({
+const hoisted_DiscriminatedUnion_4 = new ObjectDecoder({
     "value": decodeNumber
 });
-const hoisted_DiscriminatedUnion_69 = new AnyOfDiscriminatedDecoder("type", {
-    "a": hoisted_DiscriminatedUnion_67.decodeAnyOfDiscriminatedDecoder.bind(hoisted_DiscriminatedUnion_67),
-    "b": hoisted_DiscriminatedUnion_68.decodeObjectDecoder.bind(hoisted_DiscriminatedUnion_68)
+const hoisted_DiscriminatedUnion_5 = new AnyOfDiscriminatedDecoder("type", {
+    "a": hoisted_DiscriminatedUnion_3.decodeAnyOfDiscriminatedDecoder.bind(hoisted_DiscriminatedUnion_3),
+    "b": hoisted_DiscriminatedUnion_4.decodeObjectDecoder.bind(hoisted_DiscriminatedUnion_4)
 });
-const hoisted_DiscriminatedUnion2_70 = new AnyOfDecoder([
+const hoisted_DiscriminatedUnion2_0 = new AnyOfDecoder([
     decodeNull,
     decodeString
 ]);
-const hoisted_DiscriminatedUnion2_71 = new ConstDecoder("a1");
-const hoisted_DiscriminatedUnion2_72 = new ConstDecoder("a");
-const hoisted_DiscriminatedUnion2_73 = new ObjectDecoder({
+const hoisted_DiscriminatedUnion2_1 = new ConstDecoder("a1");
+const hoisted_DiscriminatedUnion2_2 = new ConstDecoder("a");
+const hoisted_DiscriminatedUnion2_3 = new ObjectDecoder({
     "a1": decodeString,
-    "a11": hoisted_DiscriminatedUnion2_70.decodeAnyOfDecoder.bind(hoisted_DiscriminatedUnion2_70),
-    "subType": hoisted_DiscriminatedUnion2_71.decodeConstDecoder.bind(hoisted_DiscriminatedUnion2_71),
-    "type": hoisted_DiscriminatedUnion2_72.decodeConstDecoder.bind(hoisted_DiscriminatedUnion2_72)
+    "a11": hoisted_DiscriminatedUnion2_0.decodeAnyOfDecoder.bind(hoisted_DiscriminatedUnion2_0),
+    "subType": hoisted_DiscriminatedUnion2_1.decodeConstDecoder.bind(hoisted_DiscriminatedUnion2_1),
+    "type": hoisted_DiscriminatedUnion2_2.decodeConstDecoder.bind(hoisted_DiscriminatedUnion2_2)
 });
-const hoisted_DiscriminatedUnion2_74 = new ConstDecoder("a2");
-const hoisted_DiscriminatedUnion2_75 = new ConstDecoder("a");
-const hoisted_DiscriminatedUnion2_76 = new ObjectDecoder({
+const hoisted_DiscriminatedUnion2_4 = new ConstDecoder("a2");
+const hoisted_DiscriminatedUnion2_5 = new ConstDecoder("a");
+const hoisted_DiscriminatedUnion2_6 = new ObjectDecoder({
     "a2": decodeString,
-    "subType": hoisted_DiscriminatedUnion2_74.decodeConstDecoder.bind(hoisted_DiscriminatedUnion2_74),
-    "type": hoisted_DiscriminatedUnion2_75.decodeConstDecoder.bind(hoisted_DiscriminatedUnion2_75)
+    "subType": hoisted_DiscriminatedUnion2_4.decodeConstDecoder.bind(hoisted_DiscriminatedUnion2_4),
+    "type": hoisted_DiscriminatedUnion2_5.decodeConstDecoder.bind(hoisted_DiscriminatedUnion2_5)
 });
-const hoisted_DiscriminatedUnion2_77 = new ConstDecoder("d");
-const hoisted_DiscriminatedUnion2_78 = new AnyOfDecoder([
+const hoisted_DiscriminatedUnion2_7 = new ConstDecoder("d");
+const hoisted_DiscriminatedUnion2_8 = new AnyOfDecoder([
     decodeNull,
-    hoisted_DiscriminatedUnion2_77.decodeConstDecoder.bind(hoisted_DiscriminatedUnion2_77)
+    hoisted_DiscriminatedUnion2_7.decodeConstDecoder.bind(hoisted_DiscriminatedUnion2_7)
 ]);
-const hoisted_DiscriminatedUnion2_79 = new ObjectDecoder({
-    "type": hoisted_DiscriminatedUnion2_78.decodeAnyOfDecoder.bind(hoisted_DiscriminatedUnion2_78),
+const hoisted_DiscriminatedUnion2_9 = new ObjectDecoder({
+    "type": hoisted_DiscriminatedUnion2_8.decodeAnyOfDecoder.bind(hoisted_DiscriminatedUnion2_8),
     "valueD": decodeNumber
 });
-const hoisted_DiscriminatedUnion2_80 = new ConstDecoder("b");
-const hoisted_DiscriminatedUnion2_81 = new ObjectDecoder({
-    "type": hoisted_DiscriminatedUnion2_80.decodeConstDecoder.bind(hoisted_DiscriminatedUnion2_80),
+const hoisted_DiscriminatedUnion2_10 = new ConstDecoder("b");
+const hoisted_DiscriminatedUnion2_11 = new ObjectDecoder({
+    "type": hoisted_DiscriminatedUnion2_10.decodeConstDecoder.bind(hoisted_DiscriminatedUnion2_10),
     "value": decodeNumber
 });
-const hoisted_DiscriminatedUnion2_82 = new AnyOfDecoder([
-    hoisted_DiscriminatedUnion2_73.decodeObjectDecoder.bind(hoisted_DiscriminatedUnion2_73),
-    hoisted_DiscriminatedUnion2_76.decodeObjectDecoder.bind(hoisted_DiscriminatedUnion2_76),
-    hoisted_DiscriminatedUnion2_79.decodeObjectDecoder.bind(hoisted_DiscriminatedUnion2_79),
-    hoisted_DiscriminatedUnion2_81.decodeObjectDecoder.bind(hoisted_DiscriminatedUnion2_81)
+const hoisted_DiscriminatedUnion2_12 = new AnyOfDecoder([
+    hoisted_DiscriminatedUnion2_3.decodeObjectDecoder.bind(hoisted_DiscriminatedUnion2_3),
+    hoisted_DiscriminatedUnion2_6.decodeObjectDecoder.bind(hoisted_DiscriminatedUnion2_6),
+    hoisted_DiscriminatedUnion2_9.decodeObjectDecoder.bind(hoisted_DiscriminatedUnion2_9),
+    hoisted_DiscriminatedUnion2_11.decodeObjectDecoder.bind(hoisted_DiscriminatedUnion2_11)
 ]);
-const hoisted_DiscriminatedUnion3_83 = new ObjectDecoder({
+const hoisted_DiscriminatedUnion3_0 = new ObjectDecoder({
     "a1": decodeString
 });
-const hoisted_DiscriminatedUnion3_84 = new ObjectDecoder({
+const hoisted_DiscriminatedUnion3_1 = new ObjectDecoder({
     "value": decodeNumber
 });
-const hoisted_DiscriminatedUnion3_85 = new ObjectDecoder({
+const hoisted_DiscriminatedUnion3_2 = new ObjectDecoder({
     "a1": decodeString
 });
-const hoisted_DiscriminatedUnion3_86 = new AnyOfDiscriminatedDecoder("type", {
-    "a": hoisted_DiscriminatedUnion3_83.decodeObjectDecoder.bind(hoisted_DiscriminatedUnion3_83),
-    "b": hoisted_DiscriminatedUnion3_84.decodeObjectDecoder.bind(hoisted_DiscriminatedUnion3_84),
-    "c": hoisted_DiscriminatedUnion3_85.decodeObjectDecoder.bind(hoisted_DiscriminatedUnion3_85)
+const hoisted_DiscriminatedUnion3_3 = new AnyOfDiscriminatedDecoder("type", {
+    "a": hoisted_DiscriminatedUnion3_0.decodeObjectDecoder.bind(hoisted_DiscriminatedUnion3_0),
+    "b": hoisted_DiscriminatedUnion3_1.decodeObjectDecoder.bind(hoisted_DiscriminatedUnion3_1),
+    "c": hoisted_DiscriminatedUnion3_2.decodeObjectDecoder.bind(hoisted_DiscriminatedUnion3_2)
 });
-const hoisted_DiscriminatedUnion4_87 = new ConstDecoder("a1");
-const hoisted_DiscriminatedUnion4_88 = new ObjectDecoder({
+const hoisted_DiscriminatedUnion4_0 = new ConstDecoder("a1");
+const hoisted_DiscriminatedUnion4_1 = new ObjectDecoder({
     "a1": decodeString,
-    "subType": hoisted_DiscriminatedUnion4_87.decodeConstDecoder.bind(hoisted_DiscriminatedUnion4_87)
+    "subType": hoisted_DiscriminatedUnion4_0.decodeConstDecoder.bind(hoisted_DiscriminatedUnion4_0)
 });
-const hoisted_DiscriminatedUnion4_89 = new ObjectDecoder({
-    "a": hoisted_DiscriminatedUnion4_88.decodeObjectDecoder.bind(hoisted_DiscriminatedUnion4_88)
+const hoisted_DiscriminatedUnion4_2 = new ObjectDecoder({
+    "a": hoisted_DiscriminatedUnion4_1.decodeObjectDecoder.bind(hoisted_DiscriminatedUnion4_1)
 });
-const hoisted_DiscriminatedUnion4_90 = new ConstDecoder("a2");
-const hoisted_DiscriminatedUnion4_91 = new ObjectDecoder({
+const hoisted_DiscriminatedUnion4_3 = new ConstDecoder("a2");
+const hoisted_DiscriminatedUnion4_4 = new ObjectDecoder({
     "a2": decodeString,
-    "subType": hoisted_DiscriminatedUnion4_90.decodeConstDecoder.bind(hoisted_DiscriminatedUnion4_90)
+    "subType": hoisted_DiscriminatedUnion4_3.decodeConstDecoder.bind(hoisted_DiscriminatedUnion4_3)
 });
-const hoisted_DiscriminatedUnion4_92 = new ObjectDecoder({
-    "a": hoisted_DiscriminatedUnion4_91.decodeObjectDecoder.bind(hoisted_DiscriminatedUnion4_91)
+const hoisted_DiscriminatedUnion4_5 = new ObjectDecoder({
+    "a": hoisted_DiscriminatedUnion4_4.decodeObjectDecoder.bind(hoisted_DiscriminatedUnion4_4)
 });
-const hoisted_DiscriminatedUnion4_93 = new AnyOfDecoder([
-    hoisted_DiscriminatedUnion4_89.decodeObjectDecoder.bind(hoisted_DiscriminatedUnion4_89),
-    hoisted_DiscriminatedUnion4_92.decodeObjectDecoder.bind(hoisted_DiscriminatedUnion4_92)
+const hoisted_DiscriminatedUnion4_6 = new AnyOfDecoder([
+    hoisted_DiscriminatedUnion4_2.decodeObjectDecoder.bind(hoisted_DiscriminatedUnion4_2),
+    hoisted_DiscriminatedUnion4_5.decodeObjectDecoder.bind(hoisted_DiscriminatedUnion4_5)
 ]);
-const hoisted_DiscriminatedUnion4_94 = new AnyOfDiscriminatedDecoder("type", {
-    "a": hoisted_DiscriminatedUnion4_93.decodeAnyOfDecoder.bind(hoisted_DiscriminatedUnion4_93)
+const hoisted_DiscriminatedUnion4_7 = new AnyOfDiscriminatedDecoder("type", {
+    "a": hoisted_DiscriminatedUnion4_6.decodeAnyOfDecoder.bind(hoisted_DiscriminatedUnion4_6)
 });
-const hoisted_AllTypes_95 = new AnyOfConstsDecoder([
+const hoisted_AllTypes_0 = new AnyOfConstsDecoder([
     "LevelAndDSettings",
     "OmitSettings",
     "PartialSettings",
     "RequiredPartialObject"
 ]);
-const hoisted_OtherEnum_96 = new AnyOfConstsDecoder([
+const hoisted_OtherEnum_0 = new AnyOfConstsDecoder([
     "a",
     "b"
 ]);
-const hoisted_Arr2_97 = new AnyOfConstsDecoder([
+const hoisted_Arr2_0 = new AnyOfConstsDecoder([
     "A",
     "B",
     "C"
 ]);
-const hoisted_ValidCurrency_98 = new StringWithFormatDecoder("ValidCurrency");
-const hoisted_UnionWithEnumAccess_99 = new ObjectDecoder({
+const hoisted_ValidCurrency_0 = new StringWithFormatDecoder("ValidCurrency");
+const hoisted_UnionWithEnumAccess_0 = new ObjectDecoder({
     "value": decodeString
 });
-const hoisted_UnionWithEnumAccess_100 = new ObjectDecoder({
+const hoisted_UnionWithEnumAccess_1 = new ObjectDecoder({
     "value": decodeNumber
 });
-const hoisted_UnionWithEnumAccess_101 = new ObjectDecoder({
+const hoisted_UnionWithEnumAccess_2 = new ObjectDecoder({
     "value": decodeBoolean
 });
-const hoisted_UnionWithEnumAccess_102 = new AnyOfDiscriminatedDecoder("tag", {
-    "a": hoisted_UnionWithEnumAccess_99.decodeObjectDecoder.bind(hoisted_UnionWithEnumAccess_99),
-    "b": hoisted_UnionWithEnumAccess_100.decodeObjectDecoder.bind(hoisted_UnionWithEnumAccess_100),
-    "c": hoisted_UnionWithEnumAccess_101.decodeObjectDecoder.bind(hoisted_UnionWithEnumAccess_101)
+const hoisted_UnionWithEnumAccess_3 = new AnyOfDiscriminatedDecoder("tag", {
+    "a": hoisted_UnionWithEnumAccess_0.decodeObjectDecoder.bind(hoisted_UnionWithEnumAccess_0),
+    "b": hoisted_UnionWithEnumAccess_1.decodeObjectDecoder.bind(hoisted_UnionWithEnumAccess_1),
+    "c": hoisted_UnionWithEnumAccess_2.decodeObjectDecoder.bind(hoisted_UnionWithEnumAccess_2)
 });
-const hoisted_Shape_103 = new ObjectDecoder({
+const hoisted_Shape_0 = new ObjectDecoder({
     "radius": decodeNumber
 });
-const hoisted_Shape_104 = new ObjectDecoder({
+const hoisted_Shape_1 = new ObjectDecoder({
     "x": decodeNumber
 });
-const hoisted_Shape_105 = new ObjectDecoder({
+const hoisted_Shape_2 = new ObjectDecoder({
     "x": decodeNumber,
     "y": decodeNumber
 });
-const hoisted_Shape_106 = new AnyOfDiscriminatedDecoder("kind", {
-    "circle": hoisted_Shape_103.decodeObjectDecoder.bind(hoisted_Shape_103),
-    "square": hoisted_Shape_104.decodeObjectDecoder.bind(hoisted_Shape_104),
-    "triangle": hoisted_Shape_105.decodeObjectDecoder.bind(hoisted_Shape_105)
+const hoisted_Shape_3 = new AnyOfDiscriminatedDecoder("kind", {
+    "circle": hoisted_Shape_0.decodeObjectDecoder.bind(hoisted_Shape_0),
+    "square": hoisted_Shape_1.decodeObjectDecoder.bind(hoisted_Shape_1),
+    "triangle": hoisted_Shape_2.decodeObjectDecoder.bind(hoisted_Shape_2)
 });
-const hoisted_T3_107 = new ObjectDecoder({
+const hoisted_T3_0 = new ObjectDecoder({
     "x": decodeNumber
 });
-const hoisted_T3_108 = new ObjectDecoder({
+const hoisted_T3_1 = new ObjectDecoder({
     "x": decodeNumber,
     "y": decodeNumber
 });
-const hoisted_T3_109 = new AnyOfDiscriminatedDecoder("kind", {
-    "square": hoisted_T3_107.decodeObjectDecoder.bind(hoisted_T3_107),
-    "triangle": hoisted_T3_108.decodeObjectDecoder.bind(hoisted_T3_108)
+const hoisted_T3_2 = new AnyOfDiscriminatedDecoder("kind", {
+    "square": hoisted_T3_0.decodeObjectDecoder.bind(hoisted_T3_0),
+    "triangle": hoisted_T3_1.decodeObjectDecoder.bind(hoisted_T3_1)
 });
-const hoisted_BObject_110 = new ConstDecoder("b");
-const hoisted_BObject_111 = new ObjectDecoder({
-    "tag": hoisted_BObject_110.decodeConstDecoder.bind(hoisted_BObject_110)
+const hoisted_BObject_0 = new ConstDecoder("b");
+const hoisted_BObject_1 = new ObjectDecoder({
+    "tag": hoisted_BObject_0.decodeConstDecoder.bind(hoisted_BObject_0)
 });
-const hoisted_DEF_112 = new ObjectDecoder({
+const hoisted_DEF_0 = new ObjectDecoder({
     "a": decodeString
 });
-const hoisted_KDEF_113 = new ConstDecoder("a");
-const hoisted_ABC_114 = new ObjectDecoder({});
-const hoisted_K_115 = new AnyOfDecoder([
+const hoisted_KDEF_0 = new ConstDecoder("a");
+const hoisted_ABC_0 = new ObjectDecoder({});
+const hoisted_K_0 = new AnyOfDecoder([
     validators.KABC,
     validators.KDEF
 ]);

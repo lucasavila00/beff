@@ -261,28 +261,28 @@ function ValidateUser(ctx, input) {
     return (hoisted_User_0.decodeObjectDecoder.bind(hoisted_User_0))(ctx, input);
 }
 function ValidateNotPublic(ctx, input) {
-    return (hoisted_NotPublic_1.decodeObjectDecoder.bind(hoisted_NotPublic_1))(ctx, input);
+    return (hoisted_NotPublic_0.decodeObjectDecoder.bind(hoisted_NotPublic_0))(ctx, input);
 }
 function ValidateStartsWithA(ctx, input) {
-    return (hoisted_StartsWithA_2.decodeStringWithFormatDecoder.bind(hoisted_StartsWithA_2))(ctx, input);
+    return (hoisted_StartsWithA_0.decodeStringWithFormatDecoder.bind(hoisted_StartsWithA_0))(ctx, input);
 }
 function ValidatePassword(ctx, input) {
-    return (hoisted_Password_3.decodeStringWithFormatDecoder.bind(hoisted_Password_3))(ctx, input);
+    return (hoisted_Password_0.decodeStringWithFormatDecoder.bind(hoisted_Password_0))(ctx, input);
 }
 function ValidateA(ctx, input) {
-    return (hoisted_A_4.decodeAnyOfConstsDecoder.bind(hoisted_A_4))(ctx, input);
+    return (hoisted_A_0.decodeAnyOfConstsDecoder.bind(hoisted_A_0))(ctx, input);
 }
 function ValidateB(ctx, input) {
-    return (hoisted_B_5.decodeAnyOfConstsDecoder.bind(hoisted_B_5))(ctx, input);
+    return (hoisted_B_0.decodeAnyOfConstsDecoder.bind(hoisted_B_0))(ctx, input);
 }
 function ValidateD(ctx, input) {
-    return (hoisted_D_6.decodeAnyOfConstsDecoder.bind(hoisted_D_6))(ctx, input);
+    return (hoisted_D_0.decodeAnyOfConstsDecoder.bind(hoisted_D_0))(ctx, input);
 }
 function ValidateE(ctx, input) {
-    return (hoisted_E_7.decodeAnyOfConstsDecoder.bind(hoisted_E_7))(ctx, input);
+    return (hoisted_E_0.decodeAnyOfConstsDecoder.bind(hoisted_E_0))(ctx, input);
 }
 function ValidateUnionNested(ctx, input) {
-    return (hoisted_UnionNested_8.decodeAnyOfConstsDecoder.bind(hoisted_UnionNested_8))(ctx, input);
+    return (hoisted_UnionNested_0.decodeAnyOfConstsDecoder.bind(hoisted_UnionNested_0))(ctx, input);
 }
 const validators = {
     User: ValidateUser,
@@ -299,28 +299,28 @@ const hoisted_User_0 = new ObjectDecoder({
     "age": decodeNumber,
     "name": decodeString
 });
-const hoisted_NotPublic_1 = new ObjectDecoder({
+const hoisted_NotPublic_0 = new ObjectDecoder({
     "a": decodeString
 });
-const hoisted_StartsWithA_2 = new StringWithFormatDecoder("StartsWithA");
-const hoisted_Password_3 = new StringWithFormatDecoder("password");
-const hoisted_A_4 = new AnyOfConstsDecoder([
+const hoisted_StartsWithA_0 = new StringWithFormatDecoder("StartsWithA");
+const hoisted_Password_0 = new StringWithFormatDecoder("password");
+const hoisted_A_0 = new AnyOfConstsDecoder([
     1,
     2
 ]);
-const hoisted_B_5 = new AnyOfConstsDecoder([
+const hoisted_B_0 = new AnyOfConstsDecoder([
     2,
     3
 ]);
-const hoisted_D_6 = new AnyOfConstsDecoder([
+const hoisted_D_0 = new AnyOfConstsDecoder([
     4,
     5
 ]);
-const hoisted_E_7 = new AnyOfConstsDecoder([
+const hoisted_E_0 = new AnyOfConstsDecoder([
     5,
     6
 ]);
-const hoisted_UnionNested_8 = new AnyOfConstsDecoder([
+const hoisted_UnionNested_0 = new AnyOfConstsDecoder([
     1,
     2,
     3,

@@ -119,8 +119,9 @@ impl ToWritableModules for ExtractResult {
 
         for comp in &validators {
             validator_names.push(comp.name.clone());
+            let mut local_hoisted = vec![];
             let decoder_fn =
-                decoder::from_schema(&comp.schema, &validators, &mut hoisted, &comp.name);
+                decoder::from_schema(&comp.schema, &validators, &mut local_hoisted, &comp.name);
             let decoder_fn_decl = ModuleItem::Stmt(Stmt::Decl(Decl::Fn(FnDecl {
                 ident: Ident {
                     span: DUMMY_SP,
@@ -131,6 +132,7 @@ impl ToWritableModules for ExtractResult {
                 function: decoder_fn.into(),
             })));
             stmt_validators.push(decoder_fn_decl);
+            hoisted.extend(local_hoisted.into_iter());
         }
 
         stmt_validators.push(const_decl(
