@@ -161,7 +161,7 @@ it("tpl", () => {
     {
       "errors": [
         {
-          "message": "expected v\${number}.\${number}.\${number}",
+          "message": "expected string matching v\${number}.\${number}.\${number}",
           "path": [],
           "received": "UNKNOWN",
         },
@@ -174,7 +174,7 @@ it("tpl", () => {
     {
       "errors": [
         {
-          "message": "expected \${number}.\${number}.\${number}",
+          "message": "expected string matching \${number}.\${number}.\${number}",
           "path": [],
           "received": "UNKNOWN",
         },
@@ -187,7 +187,7 @@ it("tpl", () => {
     {
       "errors": [
         {
-          "message": "expected (\\"ADMIN Admin\\" | \\"USER User\\")",
+          "message": "expected string matching (\\"ADMIN Admin\\" | \\"USER User\\")",
           "path": [],
           "received": "UNKNOWN",
         },
@@ -200,7 +200,7 @@ it("tpl", () => {
     {
       "errors": [
         {
-          "message": "expected (\\"ADMIN\\" | \\"USER\\")",
+          "message": "expected string matching (\\"ADMIN\\" | \\"USER\\")",
           "path": [],
           "received": "UNKNOWN",
         },
@@ -215,7 +215,7 @@ it("tpl", () => {
     {
       "errors": [
         {
-          "message": "expected \${number}x\${number}",
+          "message": "expected string matching \${number}x\${number}",
           "path": [],
           "received": "abc",
         },
@@ -227,7 +227,7 @@ it("tpl", () => {
     {
       "errors": [
         {
-          "message": "expected \${number}x\${number}",
+          "message": "expected string matching \${number}x\${number}",
           "path": [],
           "received": "1xa",
         },
@@ -493,7 +493,7 @@ it("DiscriminatedUnion", () => {
         {
           "errors": [
             {
-              "message": "expected nullish",
+              "message": "expected nullish value",
               "path": [
                 "a11",
               ],
@@ -725,7 +725,7 @@ it("to zod works", () => {
       "error": [ZodError: [
       {
         "code": "custom",
-        "message": "#0 (accessLevel) expected one of \\"ADMIN\\", \\"USER\\", received: undefined | #1 (avatarSize) expected \${number}x\${number}, received: undefined | #2 (extra) expected object, received: undefined | #3 (friends[0].accessLevel) expected one of \\"ADMIN\\", \\"USER\\", received: undefined | #4 (friends[0].avatarSize) expected \${number}x\${number}, received: undefined | #5 (friends[0].extra) expected object, received: undefined | #6 (friends[0].friends) expected array, received: undefined",
+        "message": "#0 (accessLevel) expected one of \\"ADMIN\\", \\"USER\\", received: undefined | #1 (avatarSize) expected string matching \${number}x\${number}, received: undefined | #2 (extra) expected object, received: undefined | #3 (friends[0].accessLevel) expected one of \\"ADMIN\\", \\"USER\\", received: undefined | #4 (friends[0].avatarSize) expected string matching \${number}x\${number}, received: undefined | #5 (friends[0].extra) expected object, received: undefined | #6 (friends[0].friends) expected array, received: undefined",
         "fatal": true,
         "path": []
       }
@@ -791,7 +791,7 @@ it("works on recursive type", () => {
           "received": undefined,
         },
         {
-          "message": "expected \${number}x\${number}",
+          "message": "expected string matching \${number}x\${number}",
           "path": [
             "avatarSize",
           ],
@@ -814,7 +814,7 @@ it("works on recursive type", () => {
           "received": undefined,
         },
         {
-          "message": "expected \${number}x\${number}",
+          "message": "expected string matching \${number}x\${number}",
           "path": [
             "friends",
             "[0]",

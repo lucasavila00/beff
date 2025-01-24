@@ -78,7 +78,7 @@ function validateNull(ctx, input) {
 }
 
 function reportNull(ctx, input) {
-  return buildError(ctx, "expected nullish", input);
+  return buildError(ctx, "expected nullish value", input);
 }
 
 function validateNever(ctx, input) {
@@ -133,7 +133,7 @@ class RegexDecoder {
   }
 
   reportRegexDecoder(ctx, input) {
-    return buildError(ctx, `expected ${this.description}`, input);
+    return buildError(ctx, `expected string matching ${this.description}`, input);
   }
 }
 
