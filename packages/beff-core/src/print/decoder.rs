@@ -574,43 +574,80 @@ impl DecoderFnGenerator<'_> {
                     vec![prefix_parser_arr, item_parser],
                 )
             }
-            // JsonSchema::Object { vs, rest } => {
-            //     let obj_to_hoist = Expr::Object(ObjectLit {
-            //         span: DUMMY_SP,
-            //         props: vs
-            //             .iter()
-            //             .map(|(key, value)| {
-            //                 PropOrSpread::Prop(Box::new(Prop::KeyValue(KeyValueProp {
-            //                     key: PropName::Str(Str {
-            //                         span: DUMMY_SP,
-            //                         value: key.clone().into(),
-            //                         raw: None,
-            //                     }),
-            //                     value: Box::new(match value {
-            //                         Optionality::Optional(schema) => {
-            //                             let nullable_schema = &JsonSchema::any_of(
-            //                                 vec![JsonSchema::Null, schema.clone()]
-            //                                     .into_iter()
-            //                                     .collect(),
-            //                             );
-            //                             self.decode_expr(nullable_schema, hoisted)
-            //                         }
-            //                         Optionality::Required(schema) => {
-            //                             self.decode_expr(schema, hoisted)
-            //                         }
-            //                     }),
-            //                 })))
-            //             })
-            //             .collect(),
-            //     });
+            JsonSchema::Object { vs, rest } => {
+                let mut validator_rest = Expr::Lit(Lit::Null(Null { span: DUMMY_SP }));
+                let mut parser_rest = Expr::Lit(Lit::Null(Null { span: DUMMY_SP }));
 
-            //     let mut extra = vec![obj_to_hoist];
-            //     if let Some(rest) = rest {
-            //         let rest = self.decode_expr(rest, hoisted);
-            //         extra.push(rest);
-            //     }
-            //     self.new_hoisted_decoder(hoisted, "ObjectDecoder", extra)
-            // }
+                let mut mapped = BTreeMap::new();
+
+                for (k, v) in vs.iter() {
+                    let r = match v {
+                        Optionality::Optional(schema) => {
+                            let nullable_schema = &JsonSchema::any_of(
+                                vec![JsonSchema::Null, schema.clone()].into_iter().collect(),
+                            );
+                            self.generate_schema_code(nullable_schema, hoisted)
+                        }
+                        Optionality::Required(schema) => self.generate_schema_code(schema, hoisted),
+                    };
+                    mapped.insert(k.clone(), r);
+                }
+
+                let obj_validator = Expr::Object(ObjectLit {
+                    span: DUMMY_SP,
+                    props: mapped
+                        .iter()
+                        .map(|(key, value)| {
+                            PropOrSpread::Prop(
+                                Prop::KeyValue(KeyValueProp {
+                                    key: PropName::Str(Str {
+                                        span: DUMMY_SP,
+                                        value: key.clone().into(),
+                                        raw: None,
+                                    }),
+                                    value: value.validator.clone().into(),
+                                })
+                                .into(),
+                            )
+                        })
+                        .collect(),
+                });
+
+                let obj_parser = Expr::Object(ObjectLit {
+                    span: DUMMY_SP,
+                    props: mapped
+                        .iter()
+                        .map(|(key, value)| {
+                            PropOrSpread::Prop(
+                                Prop::KeyValue(KeyValueProp {
+                                    key: PropName::Str(Str {
+                                        span: DUMMY_SP,
+                                        value: key.clone().into(),
+                                        raw: None,
+                                    }),
+                                    value: value.parser.clone().into(),
+                                })
+                                .into(),
+                            )
+                        })
+                        .collect(),
+                });
+                if let Some(rest) = rest {
+                    let SchemaCode {
+                        validator: val,
+                        parser: par,
+                    } = self.generate_schema_code(rest, hoisted);
+                    validator_rest = val;
+                    parser_rest = par;
+                }
+
+                self.dynamic_schema_code(
+                    "Object",
+                    hoisted,
+                    vec![obj_validator, validator_rest],
+                    vec![obj_parser, parser_rest],
+                )
+            }
 
             // JsonSchema::AnyOf(vs) => self.decode_any_of(vs, hoisted),
             // JsonSchema::AllOf(vs) => self.decode_union_or_intersection("AllOfDecoder", vs, hoisted),

@@ -704,4 +704,13 @@ mod tests {
       "#
         ));
     }
+    #[test]
+    fn ok_object_decoder() {
+        insta::assert_snapshot!(decoder(
+            r#"
+        export type Alias = {a:string}
+        parse.buildParsers<{ Dec: Alias }>();
+      "#
+        ));
+    }
 }
