@@ -95,13 +95,22 @@ class ObjectDecoder {
   }
 }
 
-class ArrayDecoder {
-  constructor(innerValidator, innerParser) {
-    this.innerValidator = innerValidator;
+class ArrayParser {
+  constructor(innerParser) {
     this.innerParser = innerParser;
   }
 
-  validateArrayDecoder(ctx, input) {
+  parseArrayParser(ctx, input) {
+    return input.map((v) => this.innerParser(ctx, v));
+  }
+}
+
+class ArrayValidator {
+  constructor(innerValidator) {
+    this.innerValidator = innerValidator;
+  }
+
+  validateArrayValidator(ctx, input) {
     if (Array.isArray(input)) {
       for (let i = 0; i < input.length; i++) {
         const v = input[i];
@@ -113,10 +122,8 @@ class ArrayDecoder {
     }
     return true;
   }
-  parseArrayDecoder(ctx, input) {
-    return input.map((v) => this.innerParser(ctx, v));
-  }
 }
+
 class CodecDecoder {
   constructor(codec) {
     this.codec = codec;

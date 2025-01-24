@@ -3,10 +3,10 @@ source: packages/beff-core/tests/print_parser.rs
 expression: "decoder(r#\"\n        export type Alias = [number, number]\n        parse.buildParsers<{ Dec: Alias }>();\n      \"#)"
 ---
 function ValidateAlias(ctx, input) {
-    return (hoisted_Alias_0.validateTupleDecoder.bind(hoisted_Alias_0))(ctx, input);
+    return (hoisted_Alias_0.validateTupleValidator.bind(hoisted_Alias_0))(ctx, input);
 }
 function ParseAlias(ctx, input) {
-    return (hoisted_Alias_0.parseTupleDecoder.bind(hoisted_Alias_0))(ctx, input);
+    return (hoisted_Alias_1.parseTupleParser.bind(hoisted_Alias_1))(ctx, input);
 }
 const validators = {
     Alias: ValidateAlias
@@ -14,11 +14,11 @@ const validators = {
 const parsers = {
     Alias: ParseAlias
 };
-const hoisted_Alias_0 = new TupleDecoder([
+const hoisted_Alias_0 = new TupleValidator([
     validateNumber,
     validateNumber
-], [
+], null);
+const hoisted_Alias_1 = new TupleParser([
     parseIdentity,
     parseIdentity
-], null, null);
-
+], null);

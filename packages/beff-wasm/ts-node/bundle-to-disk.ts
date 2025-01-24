@@ -7,7 +7,8 @@ import gen from "./generated/bundle";
 const decodersExported = [
   "registerCustomFormatter",
   "ObjectDecoder",
-  "ArrayDecoder",
+  "ArrayParser",
+  "ArrayValidator",
   "CodecDecoder",
   "StringWithFormatDecoder",
   "AnyOfDecoder",

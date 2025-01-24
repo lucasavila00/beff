@@ -361,7 +361,7 @@ impl DecoderFnGenerator<'_> {
             optional: false,
         })
     }
-    fn new_hoisted_decoder(
+    fn static_schema_code(
         &self,
         hoisted: &mut Vec<ModuleItem>,
         class: &str,
@@ -390,6 +390,61 @@ impl DecoderFnGenerator<'_> {
             parser: bound_parse,
         }
     }
+
+    fn dynamic_schema_code(
+        &self,
+        name: &str,
+        hoisted: &mut Vec<ModuleItem>,
+        validator_args: Vec<Expr>,
+        parser_args: Vec<Expr>,
+    ) -> SchemaCode {
+        let validator_fn_name = format!("{}Validator", name);
+
+        let new_val_expr = Expr::New(NewExpr {
+            span: DUMMY_SP,
+            callee: Box::new(SwcBuilder::ident_expr(&validator_fn_name)),
+            args: Some(
+                validator_args
+                    .into_iter()
+                    .map(|it| ExprOrSpread {
+                        spread: None,
+                        expr: it.into(),
+                    })
+                    .collect(),
+            ),
+            type_args: None,
+        });
+        let bound_validate = Self::bound_method(
+            &format!("validate{}", validator_fn_name),
+            &self.hoist_expr(hoisted, new_val_expr),
+        );
+
+        let parser_fn_name = format!("{}Parser", name);
+        let new_parser_expr = Expr::New(NewExpr {
+            span: DUMMY_SP,
+            callee: Box::new(SwcBuilder::ident_expr(&parser_fn_name)),
+            args: Some(
+                parser_args
+                    .into_iter()
+                    .map(|it| ExprOrSpread {
+                        spread: None,
+                        expr: it.into(),
+                    })
+                    .collect(),
+            ),
+            type_args: None,
+        });
+        let bound_parse = Self::bound_method(
+            &format!("parse{}", parser_fn_name),
+            &self.hoist_expr(hoisted, new_parser_expr),
+        );
+
+        SchemaCode {
+            validator: bound_validate,
+            parser: bound_parse,
+        }
+    }
+
     fn generate_schema_code(
         &self,
         schema: &JsonSchema,
@@ -410,7 +465,7 @@ impl DecoderFnGenerator<'_> {
             JsonSchema::Function => Self::primitive_schema_code("Function"),
             JsonSchema::Any => Self::primitive_schema_code("Any"),
             JsonSchema::Ref(r_name) => Self::ref_schema_code(r_name),
-            JsonSchema::StringWithFormat(format) => self.new_hoisted_decoder(
+            JsonSchema::StringWithFormat(format) => self.static_schema_code(
                 hoisted,
                 "StringWithFormatDecoder",
                 vec![Expr::Lit(Lit::Str(Str {
@@ -419,12 +474,12 @@ impl DecoderFnGenerator<'_> {
                     raw: None,
                 }))],
             ),
-            JsonSchema::Const(json) => self.new_hoisted_decoder(
+            JsonSchema::Const(json) => self.static_schema_code(
                 hoisted,
                 "ConstDecoder",
                 vec![json.clone().to_json().to_expr()],
             ),
-            JsonSchema::Codec(format) => self.new_hoisted_decoder(
+            JsonSchema::Codec(format) => self.static_schema_code(
                 hoisted,
                 "CodecDecoder",
                 vec![Expr::Lit(Lit::Str(Str {
@@ -440,7 +495,7 @@ impl DecoderFnGenerator<'_> {
                     regex_exp.push_str(&item.regex_expr());
                 }
 
-                self.new_hoisted_decoder(
+                self.static_schema_code(
                     hoisted,
                     "RegexDecoder",
                     vec![
@@ -462,7 +517,7 @@ impl DecoderFnGenerator<'_> {
                     validator: inner_val,
                     parser: inner_parser,
                 } = self.generate_schema_code(ty, hoisted);
-                self.new_hoisted_decoder(hoisted, "ArrayDecoder", vec![inner_val, inner_parser])
+                self.dynamic_schema_code("Array", hoisted, vec![inner_val], vec![inner_parser])
             }
             JsonSchema::Tuple {
                 prefix_items,
@@ -512,15 +567,11 @@ impl DecoderFnGenerator<'_> {
                         })
                         .collect(),
                 });
-                self.new_hoisted_decoder(
+                self.dynamic_schema_code(
+                    "Tuple",
                     hoisted,
-                    "TupleDecoder",
-                    vec![
-                        prefix_val_arr,
-                        prefix_parser_arr,
-                        item_validator,
-                        item_parser,
-                    ],
+                    vec![prefix_val_arr, item_validator],
+                    vec![prefix_parser_arr, item_parser],
                 )
             }
             // JsonSchema::Object { vs, rest } => {
