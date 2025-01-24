@@ -114,7 +114,7 @@ class ConstDecoder {
   }
 
   reportConstDecoder(ctx, input) {
-    return buildError(ctx, `expected ${this.value}`, input);
+    return buildError(ctx, `expected ${JSON.stringify(this.value)}`, input);
   }
 }
 
@@ -195,7 +195,7 @@ class StringWithFormatDecoder {
     return input;
   }
   reportStringWithFormatDecoder(ctx, input) {
-    return buildError(ctx, `expected string with format ${this.format}`, input);
+    return buildError(ctx, `expected string with format "${this.format}"`, input);
   }
 }
 class AnyOfDiscriminatedDecoder {
@@ -220,7 +220,18 @@ class AnyOfDiscriminatedDecoder {
     return true;
   }
 }
-
+const limitedCommaJoinJson = (arr) => {
+  const limit = 3;
+  if (arr.length < limit) {
+    return arr.map((it) => JSON.stringify(it)).join(", ");
+  }
+  return (
+    arr
+      .slice(0, limit)
+      .map((it) => JSON.stringify(it))
+      .join(", ") + `...`
+  );
+};
 class AnyOfConstsDecoder {
   constructor(consts) {
     this.consts = consts;
@@ -232,6 +243,12 @@ class AnyOfConstsDecoder {
       }
     }
     return this.consts.includes(input);
+  }
+  parseAnyOfConstsDecoder(ctx, input) {
+    return input;
+  }
+  reportAnyOfConstsDecoder(ctx, input) {
+    return buildError(ctx, `expected one of ${limitedCommaJoinJson(this.consts)}`, input);
   }
 }
 
@@ -276,6 +293,7 @@ class ObjectValidator {
     return false;
   }
 }
+
 class ObjectReporter {
   constructor(dataValidator, restValidator, dataReporter, restReporter) {
     this.dataValidator = dataValidator;
@@ -320,7 +338,7 @@ class ObjectReporter {
         const inputKeys = Object.keys(input);
         const extraKeys = inputKeys.filter((k) => !configKeys.includes(k));
         if (extraKeys.length > 0) {
-          return buildError(ctx, `unexpected extra properties: ${extraKeys.join(", ")}`, input);
+          return buildError(ctx, `unexpected extra properties: ${limitedCommaJoinJson(extraKeys)}`, input);
         }
       }
     }
@@ -620,13 +638,13 @@ function ReportOnlyAKey(ctx, input) {
     return (hoisted_OnlyAKey_2.reportObjectReporter.bind(hoisted_OnlyAKey_2))(ctx, input);
 }
 function ValidateAllTs(ctx, input) {
-    return (hoisted_AllTs_2.validateAnyOfValidator.bind(hoisted_AllTs_2))(ctx, input);
+    return (hoisted_AllTs_0.validateAnyOfConstsDecoder.bind(hoisted_AllTs_0))(ctx, input);
 }
 function ParseAllTs(ctx, input) {
-    return (hoisted_AllTs_3.parseAnyOfParser.bind(hoisted_AllTs_3))(ctx, input);
+    return (hoisted_AllTs_0.parseAnyOfConstsDecoder.bind(hoisted_AllTs_0))(ctx, input);
 }
 function ReportAllTs(ctx, input) {
-    return (hoisted_AllTs_4.reportAnyOfReporter.bind(hoisted_AllTs_4))(ctx, input);
+    return (hoisted_AllTs_0.reportAnyOfConstsDecoder.bind(hoisted_AllTs_0))(ctx, input);
 }
 function ValidateAObject(ctx, input) {
     return (hoisted_AObject_1.validateObjectValidator.bind(hoisted_AObject_1))(ctx, input);
@@ -656,13 +674,13 @@ function ReportVersion2(ctx, input) {
     return (hoisted_Version2_0.reportRegexDecoder.bind(hoisted_Version2_0))(ctx, input);
 }
 function ValidateAccessLevel2(ctx, input) {
-    return (hoisted_AccessLevel2_2.validateAnyOfValidator.bind(hoisted_AccessLevel2_2))(ctx, input);
+    return (hoisted_AccessLevel2_0.validateAnyOfConstsDecoder.bind(hoisted_AccessLevel2_0))(ctx, input);
 }
 function ParseAccessLevel2(ctx, input) {
-    return (hoisted_AccessLevel2_3.parseAnyOfParser.bind(hoisted_AccessLevel2_3))(ctx, input);
+    return (hoisted_AccessLevel2_0.parseAnyOfConstsDecoder.bind(hoisted_AccessLevel2_0))(ctx, input);
 }
 function ReportAccessLevel2(ctx, input) {
-    return (hoisted_AccessLevel2_4.reportAnyOfReporter.bind(hoisted_AccessLevel2_4))(ctx, input);
+    return (hoisted_AccessLevel2_0.reportAnyOfConstsDecoder.bind(hoisted_AccessLevel2_0))(ctx, input);
 }
 function ValidateAccessLevelTpl2(ctx, input) {
     return (hoisted_AccessLevelTpl2_0.validateRegexDecoder.bind(hoisted_AccessLevelTpl2_0))(ctx, input);
@@ -674,13 +692,13 @@ function ReportAccessLevelTpl2(ctx, input) {
     return (hoisted_AccessLevelTpl2_0.reportRegexDecoder.bind(hoisted_AccessLevelTpl2_0))(ctx, input);
 }
 function ValidateAccessLevel(ctx, input) {
-    return (hoisted_AccessLevel_2.validateAnyOfValidator.bind(hoisted_AccessLevel_2))(ctx, input);
+    return (hoisted_AccessLevel_0.validateAnyOfConstsDecoder.bind(hoisted_AccessLevel_0))(ctx, input);
 }
 function ParseAccessLevel(ctx, input) {
-    return (hoisted_AccessLevel_3.parseAnyOfParser.bind(hoisted_AccessLevel_3))(ctx, input);
+    return (hoisted_AccessLevel_0.parseAnyOfConstsDecoder.bind(hoisted_AccessLevel_0))(ctx, input);
 }
 function ReportAccessLevel(ctx, input) {
-    return (hoisted_AccessLevel_4.reportAnyOfReporter.bind(hoisted_AccessLevel_4))(ctx, input);
+    return (hoisted_AccessLevel_0.reportAnyOfConstsDecoder.bind(hoisted_AccessLevel_0))(ctx, input);
 }
 function ValidateAccessLevelTpl(ctx, input) {
     return (hoisted_AccessLevelTpl_0.validateRegexDecoder.bind(hoisted_AccessLevelTpl_0))(ctx, input);
@@ -692,31 +710,31 @@ function ReportAccessLevelTpl(ctx, input) {
     return (hoisted_AccessLevelTpl_0.reportRegexDecoder.bind(hoisted_AccessLevelTpl_0))(ctx, input);
 }
 function ValidateArr3(ctx, input) {
-    return (hoisted_Arr3_2.validateAnyOfValidator.bind(hoisted_Arr3_2))(ctx, input);
+    return (hoisted_Arr3_0.validateAnyOfConstsDecoder.bind(hoisted_Arr3_0))(ctx, input);
 }
 function ParseArr3(ctx, input) {
-    return (hoisted_Arr3_3.parseAnyOfParser.bind(hoisted_Arr3_3))(ctx, input);
+    return (hoisted_Arr3_0.parseAnyOfConstsDecoder.bind(hoisted_Arr3_0))(ctx, input);
 }
 function ReportArr3(ctx, input) {
-    return (hoisted_Arr3_4.reportAnyOfReporter.bind(hoisted_Arr3_4))(ctx, input);
+    return (hoisted_Arr3_0.reportAnyOfConstsDecoder.bind(hoisted_Arr3_0))(ctx, input);
 }
 function ValidateOmitSettings(ctx, input) {
-    return (hoisted_OmitSettings_9.validateObjectValidator.bind(hoisted_OmitSettings_9))(ctx, input);
+    return (hoisted_OmitSettings_5.validateObjectValidator.bind(hoisted_OmitSettings_5))(ctx, input);
 }
 function ParseOmitSettings(ctx, input) {
-    return (hoisted_OmitSettings_10.parseObjectParser.bind(hoisted_OmitSettings_10))(ctx, input);
+    return (hoisted_OmitSettings_6.parseObjectParser.bind(hoisted_OmitSettings_6))(ctx, input);
 }
 function ReportOmitSettings(ctx, input) {
-    return (hoisted_OmitSettings_11.reportObjectReporter.bind(hoisted_OmitSettings_11))(ctx, input);
+    return (hoisted_OmitSettings_7.reportObjectReporter.bind(hoisted_OmitSettings_7))(ctx, input);
 }
 function ValidateSettings(ctx, input) {
-    return (hoisted_Settings_9.validateObjectValidator.bind(hoisted_Settings_9))(ctx, input);
+    return (hoisted_Settings_5.validateObjectValidator.bind(hoisted_Settings_5))(ctx, input);
 }
 function ParseSettings(ctx, input) {
-    return (hoisted_Settings_10.parseObjectParser.bind(hoisted_Settings_10))(ctx, input);
+    return (hoisted_Settings_6.parseObjectParser.bind(hoisted_Settings_6))(ctx, input);
 }
 function ReportSettings(ctx, input) {
-    return (hoisted_Settings_11.reportObjectReporter.bind(hoisted_Settings_11))(ctx, input);
+    return (hoisted_Settings_7.reportObjectReporter.bind(hoisted_Settings_7))(ctx, input);
 }
 function ValidatePartialObject(ctx, input) {
     return (hoisted_PartialObject_6.validateObjectValidator.bind(hoisted_PartialObject_6))(ctx, input);
@@ -737,13 +755,13 @@ function ReportRequiredPartialObject(ctx, input) {
     return (hoisted_RequiredPartialObject_2.reportObjectReporter.bind(hoisted_RequiredPartialObject_2))(ctx, input);
 }
 function ValidateLevelAndDSettings(ctx, input) {
-    return (hoisted_LevelAndDSettings_9.validateObjectValidator.bind(hoisted_LevelAndDSettings_9))(ctx, input);
+    return (hoisted_LevelAndDSettings_5.validateObjectValidator.bind(hoisted_LevelAndDSettings_5))(ctx, input);
 }
 function ParseLevelAndDSettings(ctx, input) {
-    return (hoisted_LevelAndDSettings_10.parseObjectParser.bind(hoisted_LevelAndDSettings_10))(ctx, input);
+    return (hoisted_LevelAndDSettings_6.parseObjectParser.bind(hoisted_LevelAndDSettings_6))(ctx, input);
 }
 function ReportLevelAndDSettings(ctx, input) {
-    return (hoisted_LevelAndDSettings_11.reportObjectReporter.bind(hoisted_LevelAndDSettings_11))(ctx, input);
+    return (hoisted_LevelAndDSettings_7.reportObjectReporter.bind(hoisted_LevelAndDSettings_7))(ctx, input);
 }
 function ValidatePartialSettings(ctx, input) {
     return (hoisted_PartialSettings_15.validateObjectValidator.bind(hoisted_PartialSettings_15))(ctx, input);
@@ -872,13 +890,13 @@ function ReportDiscriminatedUnion2(ctx, input) {
     return (hoisted_DiscriminatedUnion2_26.reportAnyOfReporter.bind(hoisted_DiscriminatedUnion2_26))(ctx, input);
 }
 function ValidateDiscriminatedUnion3(ctx, input) {
-    return (hoisted_DiscriminatedUnion3_12.validateAnyOfValidator.bind(hoisted_DiscriminatedUnion3_12))(ctx, input);
+    return (hoisted_DiscriminatedUnion3_8.validateAnyOfValidator.bind(hoisted_DiscriminatedUnion3_8))(ctx, input);
 }
 function ParseDiscriminatedUnion3(ctx, input) {
-    return (hoisted_DiscriminatedUnion3_13.parseAnyOfParser.bind(hoisted_DiscriminatedUnion3_13))(ctx, input);
+    return (hoisted_DiscriminatedUnion3_9.parseAnyOfParser.bind(hoisted_DiscriminatedUnion3_9))(ctx, input);
 }
 function ReportDiscriminatedUnion3(ctx, input) {
-    return (hoisted_DiscriminatedUnion3_14.reportAnyOfReporter.bind(hoisted_DiscriminatedUnion3_14))(ctx, input);
+    return (hoisted_DiscriminatedUnion3_10.reportAnyOfReporter.bind(hoisted_DiscriminatedUnion3_10))(ctx, input);
 }
 function ValidateDiscriminatedUnion4(ctx, input) {
     return (hoisted_DiscriminatedUnion4_16.validateAnyOfValidator.bind(hoisted_DiscriminatedUnion4_16))(ctx, input);
@@ -890,31 +908,31 @@ function ReportDiscriminatedUnion4(ctx, input) {
     return (hoisted_DiscriminatedUnion4_18.reportAnyOfReporter.bind(hoisted_DiscriminatedUnion4_18))(ctx, input);
 }
 function ValidateAllTypes(ctx, input) {
-    return (hoisted_AllTypes_4.validateAnyOfValidator.bind(hoisted_AllTypes_4))(ctx, input);
+    return (hoisted_AllTypes_0.validateAnyOfConstsDecoder.bind(hoisted_AllTypes_0))(ctx, input);
 }
 function ParseAllTypes(ctx, input) {
-    return (hoisted_AllTypes_5.parseAnyOfParser.bind(hoisted_AllTypes_5))(ctx, input);
+    return (hoisted_AllTypes_0.parseAnyOfConstsDecoder.bind(hoisted_AllTypes_0))(ctx, input);
 }
 function ReportAllTypes(ctx, input) {
-    return (hoisted_AllTypes_6.reportAnyOfReporter.bind(hoisted_AllTypes_6))(ctx, input);
+    return (hoisted_AllTypes_0.reportAnyOfConstsDecoder.bind(hoisted_AllTypes_0))(ctx, input);
 }
 function ValidateOtherEnum(ctx, input) {
-    return (hoisted_OtherEnum_2.validateAnyOfValidator.bind(hoisted_OtherEnum_2))(ctx, input);
+    return (hoisted_OtherEnum_0.validateAnyOfConstsDecoder.bind(hoisted_OtherEnum_0))(ctx, input);
 }
 function ParseOtherEnum(ctx, input) {
-    return (hoisted_OtherEnum_3.parseAnyOfParser.bind(hoisted_OtherEnum_3))(ctx, input);
+    return (hoisted_OtherEnum_0.parseAnyOfConstsDecoder.bind(hoisted_OtherEnum_0))(ctx, input);
 }
 function ReportOtherEnum(ctx, input) {
-    return (hoisted_OtherEnum_4.reportAnyOfReporter.bind(hoisted_OtherEnum_4))(ctx, input);
+    return (hoisted_OtherEnum_0.reportAnyOfConstsDecoder.bind(hoisted_OtherEnum_0))(ctx, input);
 }
 function ValidateArr2(ctx, input) {
-    return (hoisted_Arr2_3.validateAnyOfValidator.bind(hoisted_Arr2_3))(ctx, input);
+    return (hoisted_Arr2_0.validateAnyOfConstsDecoder.bind(hoisted_Arr2_0))(ctx, input);
 }
 function ParseArr2(ctx, input) {
-    return (hoisted_Arr2_4.parseAnyOfParser.bind(hoisted_Arr2_4))(ctx, input);
+    return (hoisted_Arr2_0.parseAnyOfConstsDecoder.bind(hoisted_Arr2_0))(ctx, input);
 }
 function ReportArr2(ctx, input) {
-    return (hoisted_Arr2_5.reportAnyOfReporter.bind(hoisted_Arr2_5))(ctx, input);
+    return (hoisted_Arr2_0.reportAnyOfConstsDecoder.bind(hoisted_Arr2_0))(ctx, input);
 }
 function ValidateValidCurrency(ctx, input) {
     return (hoisted_ValidCurrency_0.validateStringWithFormatDecoder.bind(hoisted_ValidCurrency_0))(ctx, input);
@@ -1207,25 +1225,9 @@ const hoisted_OnlyAKey_2 = new ObjectReporter({
 }, null, {
     "A": reportString
 }, null);
-const hoisted_AllTs_0 = new ConstDecoder("a");
-const hoisted_AllTs_1 = new ConstDecoder("b");
-const hoisted_AllTs_2 = new AnyOfValidator([
-    hoisted_AllTs_0.validateConstDecoder.bind(hoisted_AllTs_0),
-    hoisted_AllTs_1.validateConstDecoder.bind(hoisted_AllTs_1)
-]);
-const hoisted_AllTs_3 = new AnyOfParser([
-    hoisted_AllTs_0.validateConstDecoder.bind(hoisted_AllTs_0),
-    hoisted_AllTs_1.validateConstDecoder.bind(hoisted_AllTs_1)
-], [
-    hoisted_AllTs_0.parseConstDecoder.bind(hoisted_AllTs_0),
-    hoisted_AllTs_1.parseConstDecoder.bind(hoisted_AllTs_1)
-]);
-const hoisted_AllTs_4 = new AnyOfReporter([
-    hoisted_AllTs_0.validateConstDecoder.bind(hoisted_AllTs_0),
-    hoisted_AllTs_1.validateConstDecoder.bind(hoisted_AllTs_1)
-], [
-    hoisted_AllTs_0.reportConstDecoder.bind(hoisted_AllTs_0),
-    hoisted_AllTs_1.reportConstDecoder.bind(hoisted_AllTs_1)
+const hoisted_AllTs_0 = new AnyOfConstsDecoder([
+    "a",
+    "b"
 ]);
 const hoisted_AObject_0 = new ConstDecoder("a");
 const hoisted_AObject_1 = new ObjectValidator({
@@ -1241,67 +1243,19 @@ const hoisted_AObject_3 = new ObjectReporter({
 }, null);
 const hoisted_Version_0 = new RegexDecoder(/(\d+(\.\d+)?)(\.)(\d+(\.\d+)?)(\.)(\d+(\.\d+)?)/, "${number}.${number}.${number}");
 const hoisted_Version2_0 = new RegexDecoder(/(v)(\d+(\.\d+)?)(\.)(\d+(\.\d+)?)(\.)(\d+(\.\d+)?)/, "v${number}.${number}.${number}");
-const hoisted_AccessLevel2_0 = new ConstDecoder("ADMIN Admin");
-const hoisted_AccessLevel2_1 = new ConstDecoder("USER User");
-const hoisted_AccessLevel2_2 = new AnyOfValidator([
-    hoisted_AccessLevel2_0.validateConstDecoder.bind(hoisted_AccessLevel2_0),
-    hoisted_AccessLevel2_1.validateConstDecoder.bind(hoisted_AccessLevel2_1)
-]);
-const hoisted_AccessLevel2_3 = new AnyOfParser([
-    hoisted_AccessLevel2_0.validateConstDecoder.bind(hoisted_AccessLevel2_0),
-    hoisted_AccessLevel2_1.validateConstDecoder.bind(hoisted_AccessLevel2_1)
-], [
-    hoisted_AccessLevel2_0.parseConstDecoder.bind(hoisted_AccessLevel2_0),
-    hoisted_AccessLevel2_1.parseConstDecoder.bind(hoisted_AccessLevel2_1)
-]);
-const hoisted_AccessLevel2_4 = new AnyOfReporter([
-    hoisted_AccessLevel2_0.validateConstDecoder.bind(hoisted_AccessLevel2_0),
-    hoisted_AccessLevel2_1.validateConstDecoder.bind(hoisted_AccessLevel2_1)
-], [
-    hoisted_AccessLevel2_0.reportConstDecoder.bind(hoisted_AccessLevel2_0),
-    hoisted_AccessLevel2_1.reportConstDecoder.bind(hoisted_AccessLevel2_1)
+const hoisted_AccessLevel2_0 = new AnyOfConstsDecoder([
+    "ADMIN Admin",
+    "USER User"
 ]);
 const hoisted_AccessLevelTpl2_0 = new RegexDecoder(/((ADMIN Admin)|(USER User))/, '("ADMIN Admin" | "USER User")');
-const hoisted_AccessLevel_0 = new ConstDecoder("ADMIN");
-const hoisted_AccessLevel_1 = new ConstDecoder("USER");
-const hoisted_AccessLevel_2 = new AnyOfValidator([
-    hoisted_AccessLevel_0.validateConstDecoder.bind(hoisted_AccessLevel_0),
-    hoisted_AccessLevel_1.validateConstDecoder.bind(hoisted_AccessLevel_1)
-]);
-const hoisted_AccessLevel_3 = new AnyOfParser([
-    hoisted_AccessLevel_0.validateConstDecoder.bind(hoisted_AccessLevel_0),
-    hoisted_AccessLevel_1.validateConstDecoder.bind(hoisted_AccessLevel_1)
-], [
-    hoisted_AccessLevel_0.parseConstDecoder.bind(hoisted_AccessLevel_0),
-    hoisted_AccessLevel_1.parseConstDecoder.bind(hoisted_AccessLevel_1)
-]);
-const hoisted_AccessLevel_4 = new AnyOfReporter([
-    hoisted_AccessLevel_0.validateConstDecoder.bind(hoisted_AccessLevel_0),
-    hoisted_AccessLevel_1.validateConstDecoder.bind(hoisted_AccessLevel_1)
-], [
-    hoisted_AccessLevel_0.reportConstDecoder.bind(hoisted_AccessLevel_0),
-    hoisted_AccessLevel_1.reportConstDecoder.bind(hoisted_AccessLevel_1)
+const hoisted_AccessLevel_0 = new AnyOfConstsDecoder([
+    "ADMIN",
+    "USER"
 ]);
 const hoisted_AccessLevelTpl_0 = new RegexDecoder(/((ADMIN)|(USER))/, '("ADMIN" | "USER")');
-const hoisted_Arr3_0 = new ConstDecoder("X");
-const hoisted_Arr3_1 = new ConstDecoder("Y");
-const hoisted_Arr3_2 = new AnyOfValidator([
-    hoisted_Arr3_0.validateConstDecoder.bind(hoisted_Arr3_0),
-    hoisted_Arr3_1.validateConstDecoder.bind(hoisted_Arr3_1)
-]);
-const hoisted_Arr3_3 = new AnyOfParser([
-    hoisted_Arr3_0.validateConstDecoder.bind(hoisted_Arr3_0),
-    hoisted_Arr3_1.validateConstDecoder.bind(hoisted_Arr3_1)
-], [
-    hoisted_Arr3_0.parseConstDecoder.bind(hoisted_Arr3_0),
-    hoisted_Arr3_1.parseConstDecoder.bind(hoisted_Arr3_1)
-]);
-const hoisted_Arr3_4 = new AnyOfReporter([
-    hoisted_Arr3_0.validateConstDecoder.bind(hoisted_Arr3_0),
-    hoisted_Arr3_1.validateConstDecoder.bind(hoisted_Arr3_1)
-], [
-    hoisted_Arr3_0.reportConstDecoder.bind(hoisted_Arr3_0),
-    hoisted_Arr3_1.reportConstDecoder.bind(hoisted_Arr3_1)
+const hoisted_Arr3_0 = new AnyOfConstsDecoder([
+    "X",
+    "Y"
 ]);
 const hoisted_OmitSettings_0 = new ConstDecoder("d");
 const hoisted_OmitSettings_1 = new ObjectValidator({
@@ -1315,40 +1269,24 @@ const hoisted_OmitSettings_3 = new ObjectReporter({
 }, null, {
     "tag": hoisted_OmitSettings_0.reportConstDecoder.bind(hoisted_OmitSettings_0)
 }, null);
-const hoisted_OmitSettings_4 = new ConstDecoder("a");
-const hoisted_OmitSettings_5 = new ConstDecoder("b");
-const hoisted_OmitSettings_6 = new AnyOfValidator([
-    hoisted_OmitSettings_4.validateConstDecoder.bind(hoisted_OmitSettings_4),
-    hoisted_OmitSettings_5.validateConstDecoder.bind(hoisted_OmitSettings_5)
+const hoisted_OmitSettings_4 = new AnyOfConstsDecoder([
+    "a",
+    "b"
 ]);
-const hoisted_OmitSettings_7 = new AnyOfParser([
-    hoisted_OmitSettings_4.validateConstDecoder.bind(hoisted_OmitSettings_4),
-    hoisted_OmitSettings_5.validateConstDecoder.bind(hoisted_OmitSettings_5)
-], [
-    hoisted_OmitSettings_4.parseConstDecoder.bind(hoisted_OmitSettings_4),
-    hoisted_OmitSettings_5.parseConstDecoder.bind(hoisted_OmitSettings_5)
-]);
-const hoisted_OmitSettings_8 = new AnyOfReporter([
-    hoisted_OmitSettings_4.validateConstDecoder.bind(hoisted_OmitSettings_4),
-    hoisted_OmitSettings_5.validateConstDecoder.bind(hoisted_OmitSettings_5)
-], [
-    hoisted_OmitSettings_4.reportConstDecoder.bind(hoisted_OmitSettings_4),
-    hoisted_OmitSettings_5.reportConstDecoder.bind(hoisted_OmitSettings_5)
-]);
-const hoisted_OmitSettings_9 = new ObjectValidator({
+const hoisted_OmitSettings_5 = new ObjectValidator({
     "d": hoisted_OmitSettings_1.validateObjectValidator.bind(hoisted_OmitSettings_1),
-    "level": hoisted_OmitSettings_6.validateAnyOfValidator.bind(hoisted_OmitSettings_6)
+    "level": hoisted_OmitSettings_4.validateAnyOfConstsDecoder.bind(hoisted_OmitSettings_4)
 }, null);
-const hoisted_OmitSettings_10 = new ObjectParser({
+const hoisted_OmitSettings_6 = new ObjectParser({
     "d": hoisted_OmitSettings_2.parseObjectParser.bind(hoisted_OmitSettings_2),
-    "level": hoisted_OmitSettings_7.parseAnyOfParser.bind(hoisted_OmitSettings_7)
+    "level": hoisted_OmitSettings_4.parseAnyOfConstsDecoder.bind(hoisted_OmitSettings_4)
 }, null);
-const hoisted_OmitSettings_11 = new ObjectReporter({
+const hoisted_OmitSettings_7 = new ObjectReporter({
     "d": hoisted_OmitSettings_1.validateObjectValidator.bind(hoisted_OmitSettings_1),
-    "level": hoisted_OmitSettings_6.validateAnyOfValidator.bind(hoisted_OmitSettings_6)
+    "level": hoisted_OmitSettings_4.validateAnyOfConstsDecoder.bind(hoisted_OmitSettings_4)
 }, null, {
     "d": hoisted_OmitSettings_3.reportObjectReporter.bind(hoisted_OmitSettings_3),
-    "level": hoisted_OmitSettings_8.reportAnyOfReporter.bind(hoisted_OmitSettings_8)
+    "level": hoisted_OmitSettings_4.reportAnyOfConstsDecoder.bind(hoisted_OmitSettings_4)
 }, null);
 const hoisted_Settings_0 = new ConstDecoder("d");
 const hoisted_Settings_1 = new ObjectValidator({
@@ -1362,44 +1300,28 @@ const hoisted_Settings_3 = new ObjectReporter({
 }, null, {
     "tag": hoisted_Settings_0.reportConstDecoder.bind(hoisted_Settings_0)
 }, null);
-const hoisted_Settings_4 = new ConstDecoder("a");
-const hoisted_Settings_5 = new ConstDecoder("b");
-const hoisted_Settings_6 = new AnyOfValidator([
-    hoisted_Settings_4.validateConstDecoder.bind(hoisted_Settings_4),
-    hoisted_Settings_5.validateConstDecoder.bind(hoisted_Settings_5)
+const hoisted_Settings_4 = new AnyOfConstsDecoder([
+    "a",
+    "b"
 ]);
-const hoisted_Settings_7 = new AnyOfParser([
-    hoisted_Settings_4.validateConstDecoder.bind(hoisted_Settings_4),
-    hoisted_Settings_5.validateConstDecoder.bind(hoisted_Settings_5)
-], [
-    hoisted_Settings_4.parseConstDecoder.bind(hoisted_Settings_4),
-    hoisted_Settings_5.parseConstDecoder.bind(hoisted_Settings_5)
-]);
-const hoisted_Settings_8 = new AnyOfReporter([
-    hoisted_Settings_4.validateConstDecoder.bind(hoisted_Settings_4),
-    hoisted_Settings_5.validateConstDecoder.bind(hoisted_Settings_5)
-], [
-    hoisted_Settings_4.reportConstDecoder.bind(hoisted_Settings_4),
-    hoisted_Settings_5.reportConstDecoder.bind(hoisted_Settings_5)
-]);
-const hoisted_Settings_9 = new ObjectValidator({
+const hoisted_Settings_5 = new ObjectValidator({
     "a": validateString,
     "d": hoisted_Settings_1.validateObjectValidator.bind(hoisted_Settings_1),
-    "level": hoisted_Settings_6.validateAnyOfValidator.bind(hoisted_Settings_6)
+    "level": hoisted_Settings_4.validateAnyOfConstsDecoder.bind(hoisted_Settings_4)
 }, null);
-const hoisted_Settings_10 = new ObjectParser({
+const hoisted_Settings_6 = new ObjectParser({
     "a": parseIdentity,
     "d": hoisted_Settings_2.parseObjectParser.bind(hoisted_Settings_2),
-    "level": hoisted_Settings_7.parseAnyOfParser.bind(hoisted_Settings_7)
+    "level": hoisted_Settings_4.parseAnyOfConstsDecoder.bind(hoisted_Settings_4)
 }, null);
-const hoisted_Settings_11 = new ObjectReporter({
+const hoisted_Settings_7 = new ObjectReporter({
     "a": validateString,
     "d": hoisted_Settings_1.validateObjectValidator.bind(hoisted_Settings_1),
-    "level": hoisted_Settings_6.validateAnyOfValidator.bind(hoisted_Settings_6)
+    "level": hoisted_Settings_4.validateAnyOfConstsDecoder.bind(hoisted_Settings_4)
 }, null, {
     "a": reportString,
     "d": hoisted_Settings_3.reportObjectReporter.bind(hoisted_Settings_3),
-    "level": hoisted_Settings_8.reportAnyOfReporter.bind(hoisted_Settings_8)
+    "level": hoisted_Settings_4.reportAnyOfConstsDecoder.bind(hoisted_Settings_4)
 }, null);
 const hoisted_PartialObject_0 = new AnyOfValidator([
     validateNull,
@@ -1479,40 +1401,24 @@ const hoisted_LevelAndDSettings_3 = new ObjectReporter({
 }, null, {
     "tag": hoisted_LevelAndDSettings_0.reportConstDecoder.bind(hoisted_LevelAndDSettings_0)
 }, null);
-const hoisted_LevelAndDSettings_4 = new ConstDecoder("a");
-const hoisted_LevelAndDSettings_5 = new ConstDecoder("b");
-const hoisted_LevelAndDSettings_6 = new AnyOfValidator([
-    hoisted_LevelAndDSettings_4.validateConstDecoder.bind(hoisted_LevelAndDSettings_4),
-    hoisted_LevelAndDSettings_5.validateConstDecoder.bind(hoisted_LevelAndDSettings_5)
+const hoisted_LevelAndDSettings_4 = new AnyOfConstsDecoder([
+    "a",
+    "b"
 ]);
-const hoisted_LevelAndDSettings_7 = new AnyOfParser([
-    hoisted_LevelAndDSettings_4.validateConstDecoder.bind(hoisted_LevelAndDSettings_4),
-    hoisted_LevelAndDSettings_5.validateConstDecoder.bind(hoisted_LevelAndDSettings_5)
-], [
-    hoisted_LevelAndDSettings_4.parseConstDecoder.bind(hoisted_LevelAndDSettings_4),
-    hoisted_LevelAndDSettings_5.parseConstDecoder.bind(hoisted_LevelAndDSettings_5)
-]);
-const hoisted_LevelAndDSettings_8 = new AnyOfReporter([
-    hoisted_LevelAndDSettings_4.validateConstDecoder.bind(hoisted_LevelAndDSettings_4),
-    hoisted_LevelAndDSettings_5.validateConstDecoder.bind(hoisted_LevelAndDSettings_5)
-], [
-    hoisted_LevelAndDSettings_4.reportConstDecoder.bind(hoisted_LevelAndDSettings_4),
-    hoisted_LevelAndDSettings_5.reportConstDecoder.bind(hoisted_LevelAndDSettings_5)
-]);
-const hoisted_LevelAndDSettings_9 = new ObjectValidator({
+const hoisted_LevelAndDSettings_5 = new ObjectValidator({
     "d": hoisted_LevelAndDSettings_1.validateObjectValidator.bind(hoisted_LevelAndDSettings_1),
-    "level": hoisted_LevelAndDSettings_6.validateAnyOfValidator.bind(hoisted_LevelAndDSettings_6)
+    "level": hoisted_LevelAndDSettings_4.validateAnyOfConstsDecoder.bind(hoisted_LevelAndDSettings_4)
 }, null);
-const hoisted_LevelAndDSettings_10 = new ObjectParser({
+const hoisted_LevelAndDSettings_6 = new ObjectParser({
     "d": hoisted_LevelAndDSettings_2.parseObjectParser.bind(hoisted_LevelAndDSettings_2),
-    "level": hoisted_LevelAndDSettings_7.parseAnyOfParser.bind(hoisted_LevelAndDSettings_7)
+    "level": hoisted_LevelAndDSettings_4.parseAnyOfConstsDecoder.bind(hoisted_LevelAndDSettings_4)
 }, null);
-const hoisted_LevelAndDSettings_11 = new ObjectReporter({
+const hoisted_LevelAndDSettings_7 = new ObjectReporter({
     "d": hoisted_LevelAndDSettings_1.validateObjectValidator.bind(hoisted_LevelAndDSettings_1),
-    "level": hoisted_LevelAndDSettings_6.validateAnyOfValidator.bind(hoisted_LevelAndDSettings_6)
+    "level": hoisted_LevelAndDSettings_4.validateAnyOfConstsDecoder.bind(hoisted_LevelAndDSettings_4)
 }, null, {
     "d": hoisted_LevelAndDSettings_3.reportObjectReporter.bind(hoisted_LevelAndDSettings_3),
-    "level": hoisted_LevelAndDSettings_8.reportAnyOfReporter.bind(hoisted_LevelAndDSettings_8)
+    "level": hoisted_LevelAndDSettings_4.reportAnyOfConstsDecoder.bind(hoisted_LevelAndDSettings_4)
 }, null);
 const hoisted_PartialSettings_0 = new AnyOfValidator([
     validateNull,
@@ -2132,74 +2038,58 @@ const hoisted_DiscriminatedUnion2_26 = new AnyOfReporter([
     hoisted_DiscriminatedUnion2_19.reportObjectReporter.bind(hoisted_DiscriminatedUnion2_19),
     hoisted_DiscriminatedUnion2_23.reportObjectReporter.bind(hoisted_DiscriminatedUnion2_23)
 ]);
-const hoisted_DiscriminatedUnion3_0 = new ConstDecoder("a");
-const hoisted_DiscriminatedUnion3_1 = new ConstDecoder("c");
-const hoisted_DiscriminatedUnion3_2 = new AnyOfValidator([
-    hoisted_DiscriminatedUnion3_0.validateConstDecoder.bind(hoisted_DiscriminatedUnion3_0),
-    hoisted_DiscriminatedUnion3_1.validateConstDecoder.bind(hoisted_DiscriminatedUnion3_1)
+const hoisted_DiscriminatedUnion3_0 = new AnyOfConstsDecoder([
+    "a",
+    "c"
 ]);
-const hoisted_DiscriminatedUnion3_3 = new AnyOfParser([
-    hoisted_DiscriminatedUnion3_0.validateConstDecoder.bind(hoisted_DiscriminatedUnion3_0),
-    hoisted_DiscriminatedUnion3_1.validateConstDecoder.bind(hoisted_DiscriminatedUnion3_1)
-], [
-    hoisted_DiscriminatedUnion3_0.parseConstDecoder.bind(hoisted_DiscriminatedUnion3_0),
-    hoisted_DiscriminatedUnion3_1.parseConstDecoder.bind(hoisted_DiscriminatedUnion3_1)
-]);
-const hoisted_DiscriminatedUnion3_4 = new AnyOfReporter([
-    hoisted_DiscriminatedUnion3_0.validateConstDecoder.bind(hoisted_DiscriminatedUnion3_0),
-    hoisted_DiscriminatedUnion3_1.validateConstDecoder.bind(hoisted_DiscriminatedUnion3_1)
-], [
-    hoisted_DiscriminatedUnion3_0.reportConstDecoder.bind(hoisted_DiscriminatedUnion3_0),
-    hoisted_DiscriminatedUnion3_1.reportConstDecoder.bind(hoisted_DiscriminatedUnion3_1)
-]);
-const hoisted_DiscriminatedUnion3_5 = new ObjectValidator({
+const hoisted_DiscriminatedUnion3_1 = new ObjectValidator({
     "a1": validateString,
-    "type": hoisted_DiscriminatedUnion3_2.validateAnyOfValidator.bind(hoisted_DiscriminatedUnion3_2)
+    "type": hoisted_DiscriminatedUnion3_0.validateAnyOfConstsDecoder.bind(hoisted_DiscriminatedUnion3_0)
 }, null);
-const hoisted_DiscriminatedUnion3_6 = new ObjectParser({
+const hoisted_DiscriminatedUnion3_2 = new ObjectParser({
     "a1": parseIdentity,
-    "type": hoisted_DiscriminatedUnion3_3.parseAnyOfParser.bind(hoisted_DiscriminatedUnion3_3)
+    "type": hoisted_DiscriminatedUnion3_0.parseAnyOfConstsDecoder.bind(hoisted_DiscriminatedUnion3_0)
 }, null);
-const hoisted_DiscriminatedUnion3_7 = new ObjectReporter({
+const hoisted_DiscriminatedUnion3_3 = new ObjectReporter({
     "a1": validateString,
-    "type": hoisted_DiscriminatedUnion3_2.validateAnyOfValidator.bind(hoisted_DiscriminatedUnion3_2)
+    "type": hoisted_DiscriminatedUnion3_0.validateAnyOfConstsDecoder.bind(hoisted_DiscriminatedUnion3_0)
 }, null, {
     "a1": reportString,
-    "type": hoisted_DiscriminatedUnion3_4.reportAnyOfReporter.bind(hoisted_DiscriminatedUnion3_4)
+    "type": hoisted_DiscriminatedUnion3_0.reportAnyOfConstsDecoder.bind(hoisted_DiscriminatedUnion3_0)
 }, null);
-const hoisted_DiscriminatedUnion3_8 = new ConstDecoder("b");
-const hoisted_DiscriminatedUnion3_9 = new ObjectValidator({
-    "type": hoisted_DiscriminatedUnion3_8.validateConstDecoder.bind(hoisted_DiscriminatedUnion3_8),
+const hoisted_DiscriminatedUnion3_4 = new ConstDecoder("b");
+const hoisted_DiscriminatedUnion3_5 = new ObjectValidator({
+    "type": hoisted_DiscriminatedUnion3_4.validateConstDecoder.bind(hoisted_DiscriminatedUnion3_4),
     "value": validateNumber
 }, null);
-const hoisted_DiscriminatedUnion3_10 = new ObjectParser({
-    "type": hoisted_DiscriminatedUnion3_8.parseConstDecoder.bind(hoisted_DiscriminatedUnion3_8),
+const hoisted_DiscriminatedUnion3_6 = new ObjectParser({
+    "type": hoisted_DiscriminatedUnion3_4.parseConstDecoder.bind(hoisted_DiscriminatedUnion3_4),
     "value": parseIdentity
 }, null);
-const hoisted_DiscriminatedUnion3_11 = new ObjectReporter({
-    "type": hoisted_DiscriminatedUnion3_8.validateConstDecoder.bind(hoisted_DiscriminatedUnion3_8),
+const hoisted_DiscriminatedUnion3_7 = new ObjectReporter({
+    "type": hoisted_DiscriminatedUnion3_4.validateConstDecoder.bind(hoisted_DiscriminatedUnion3_4),
     "value": validateNumber
 }, null, {
-    "type": hoisted_DiscriminatedUnion3_8.reportConstDecoder.bind(hoisted_DiscriminatedUnion3_8),
+    "type": hoisted_DiscriminatedUnion3_4.reportConstDecoder.bind(hoisted_DiscriminatedUnion3_4),
     "value": reportNumber
 }, null);
-const hoisted_DiscriminatedUnion3_12 = new AnyOfValidator([
-    hoisted_DiscriminatedUnion3_5.validateObjectValidator.bind(hoisted_DiscriminatedUnion3_5),
-    hoisted_DiscriminatedUnion3_9.validateObjectValidator.bind(hoisted_DiscriminatedUnion3_9)
+const hoisted_DiscriminatedUnion3_8 = new AnyOfValidator([
+    hoisted_DiscriminatedUnion3_1.validateObjectValidator.bind(hoisted_DiscriminatedUnion3_1),
+    hoisted_DiscriminatedUnion3_5.validateObjectValidator.bind(hoisted_DiscriminatedUnion3_5)
 ]);
-const hoisted_DiscriminatedUnion3_13 = new AnyOfParser([
-    hoisted_DiscriminatedUnion3_5.validateObjectValidator.bind(hoisted_DiscriminatedUnion3_5),
-    hoisted_DiscriminatedUnion3_9.validateObjectValidator.bind(hoisted_DiscriminatedUnion3_9)
+const hoisted_DiscriminatedUnion3_9 = new AnyOfParser([
+    hoisted_DiscriminatedUnion3_1.validateObjectValidator.bind(hoisted_DiscriminatedUnion3_1),
+    hoisted_DiscriminatedUnion3_5.validateObjectValidator.bind(hoisted_DiscriminatedUnion3_5)
 ], [
-    hoisted_DiscriminatedUnion3_6.parseObjectParser.bind(hoisted_DiscriminatedUnion3_6),
-    hoisted_DiscriminatedUnion3_10.parseObjectParser.bind(hoisted_DiscriminatedUnion3_10)
+    hoisted_DiscriminatedUnion3_2.parseObjectParser.bind(hoisted_DiscriminatedUnion3_2),
+    hoisted_DiscriminatedUnion3_6.parseObjectParser.bind(hoisted_DiscriminatedUnion3_6)
 ]);
-const hoisted_DiscriminatedUnion3_14 = new AnyOfReporter([
-    hoisted_DiscriminatedUnion3_5.validateObjectValidator.bind(hoisted_DiscriminatedUnion3_5),
-    hoisted_DiscriminatedUnion3_9.validateObjectValidator.bind(hoisted_DiscriminatedUnion3_9)
+const hoisted_DiscriminatedUnion3_10 = new AnyOfReporter([
+    hoisted_DiscriminatedUnion3_1.validateObjectValidator.bind(hoisted_DiscriminatedUnion3_1),
+    hoisted_DiscriminatedUnion3_5.validateObjectValidator.bind(hoisted_DiscriminatedUnion3_5)
 ], [
-    hoisted_DiscriminatedUnion3_7.reportObjectReporter.bind(hoisted_DiscriminatedUnion3_7),
-    hoisted_DiscriminatedUnion3_11.reportObjectReporter.bind(hoisted_DiscriminatedUnion3_11)
+    hoisted_DiscriminatedUnion3_3.reportObjectReporter.bind(hoisted_DiscriminatedUnion3_3),
+    hoisted_DiscriminatedUnion3_7.reportObjectReporter.bind(hoisted_DiscriminatedUnion3_7)
 ]);
 const hoisted_DiscriminatedUnion4_0 = new ConstDecoder("a1");
 const hoisted_DiscriminatedUnion4_1 = new ObjectValidator({
@@ -2283,83 +2173,20 @@ const hoisted_DiscriminatedUnion4_18 = new AnyOfReporter([
     hoisted_DiscriminatedUnion4_7.reportObjectReporter.bind(hoisted_DiscriminatedUnion4_7),
     hoisted_DiscriminatedUnion4_15.reportObjectReporter.bind(hoisted_DiscriminatedUnion4_15)
 ]);
-const hoisted_AllTypes_0 = new ConstDecoder("LevelAndDSettings");
-const hoisted_AllTypes_1 = new ConstDecoder("OmitSettings");
-const hoisted_AllTypes_2 = new ConstDecoder("PartialSettings");
-const hoisted_AllTypes_3 = new ConstDecoder("RequiredPartialObject");
-const hoisted_AllTypes_4 = new AnyOfValidator([
-    hoisted_AllTypes_0.validateConstDecoder.bind(hoisted_AllTypes_0),
-    hoisted_AllTypes_1.validateConstDecoder.bind(hoisted_AllTypes_1),
-    hoisted_AllTypes_2.validateConstDecoder.bind(hoisted_AllTypes_2),
-    hoisted_AllTypes_3.validateConstDecoder.bind(hoisted_AllTypes_3)
+const hoisted_AllTypes_0 = new AnyOfConstsDecoder([
+    "LevelAndDSettings",
+    "OmitSettings",
+    "PartialSettings",
+    "RequiredPartialObject"
 ]);
-const hoisted_AllTypes_5 = new AnyOfParser([
-    hoisted_AllTypes_0.validateConstDecoder.bind(hoisted_AllTypes_0),
-    hoisted_AllTypes_1.validateConstDecoder.bind(hoisted_AllTypes_1),
-    hoisted_AllTypes_2.validateConstDecoder.bind(hoisted_AllTypes_2),
-    hoisted_AllTypes_3.validateConstDecoder.bind(hoisted_AllTypes_3)
-], [
-    hoisted_AllTypes_0.parseConstDecoder.bind(hoisted_AllTypes_0),
-    hoisted_AllTypes_1.parseConstDecoder.bind(hoisted_AllTypes_1),
-    hoisted_AllTypes_2.parseConstDecoder.bind(hoisted_AllTypes_2),
-    hoisted_AllTypes_3.parseConstDecoder.bind(hoisted_AllTypes_3)
+const hoisted_OtherEnum_0 = new AnyOfConstsDecoder([
+    "a",
+    "b"
 ]);
-const hoisted_AllTypes_6 = new AnyOfReporter([
-    hoisted_AllTypes_0.validateConstDecoder.bind(hoisted_AllTypes_0),
-    hoisted_AllTypes_1.validateConstDecoder.bind(hoisted_AllTypes_1),
-    hoisted_AllTypes_2.validateConstDecoder.bind(hoisted_AllTypes_2),
-    hoisted_AllTypes_3.validateConstDecoder.bind(hoisted_AllTypes_3)
-], [
-    hoisted_AllTypes_0.reportConstDecoder.bind(hoisted_AllTypes_0),
-    hoisted_AllTypes_1.reportConstDecoder.bind(hoisted_AllTypes_1),
-    hoisted_AllTypes_2.reportConstDecoder.bind(hoisted_AllTypes_2),
-    hoisted_AllTypes_3.reportConstDecoder.bind(hoisted_AllTypes_3)
-]);
-const hoisted_OtherEnum_0 = new ConstDecoder("a");
-const hoisted_OtherEnum_1 = new ConstDecoder("b");
-const hoisted_OtherEnum_2 = new AnyOfValidator([
-    hoisted_OtherEnum_0.validateConstDecoder.bind(hoisted_OtherEnum_0),
-    hoisted_OtherEnum_1.validateConstDecoder.bind(hoisted_OtherEnum_1)
-]);
-const hoisted_OtherEnum_3 = new AnyOfParser([
-    hoisted_OtherEnum_0.validateConstDecoder.bind(hoisted_OtherEnum_0),
-    hoisted_OtherEnum_1.validateConstDecoder.bind(hoisted_OtherEnum_1)
-], [
-    hoisted_OtherEnum_0.parseConstDecoder.bind(hoisted_OtherEnum_0),
-    hoisted_OtherEnum_1.parseConstDecoder.bind(hoisted_OtherEnum_1)
-]);
-const hoisted_OtherEnum_4 = new AnyOfReporter([
-    hoisted_OtherEnum_0.validateConstDecoder.bind(hoisted_OtherEnum_0),
-    hoisted_OtherEnum_1.validateConstDecoder.bind(hoisted_OtherEnum_1)
-], [
-    hoisted_OtherEnum_0.reportConstDecoder.bind(hoisted_OtherEnum_0),
-    hoisted_OtherEnum_1.reportConstDecoder.bind(hoisted_OtherEnum_1)
-]);
-const hoisted_Arr2_0 = new ConstDecoder("A");
-const hoisted_Arr2_1 = new ConstDecoder("B");
-const hoisted_Arr2_2 = new ConstDecoder("C");
-const hoisted_Arr2_3 = new AnyOfValidator([
-    hoisted_Arr2_0.validateConstDecoder.bind(hoisted_Arr2_0),
-    hoisted_Arr2_1.validateConstDecoder.bind(hoisted_Arr2_1),
-    hoisted_Arr2_2.validateConstDecoder.bind(hoisted_Arr2_2)
-]);
-const hoisted_Arr2_4 = new AnyOfParser([
-    hoisted_Arr2_0.validateConstDecoder.bind(hoisted_Arr2_0),
-    hoisted_Arr2_1.validateConstDecoder.bind(hoisted_Arr2_1),
-    hoisted_Arr2_2.validateConstDecoder.bind(hoisted_Arr2_2)
-], [
-    hoisted_Arr2_0.parseConstDecoder.bind(hoisted_Arr2_0),
-    hoisted_Arr2_1.parseConstDecoder.bind(hoisted_Arr2_1),
-    hoisted_Arr2_2.parseConstDecoder.bind(hoisted_Arr2_2)
-]);
-const hoisted_Arr2_5 = new AnyOfReporter([
-    hoisted_Arr2_0.validateConstDecoder.bind(hoisted_Arr2_0),
-    hoisted_Arr2_1.validateConstDecoder.bind(hoisted_Arr2_1),
-    hoisted_Arr2_2.validateConstDecoder.bind(hoisted_Arr2_2)
-], [
-    hoisted_Arr2_0.reportConstDecoder.bind(hoisted_Arr2_0),
-    hoisted_Arr2_1.reportConstDecoder.bind(hoisted_Arr2_1),
-    hoisted_Arr2_2.reportConstDecoder.bind(hoisted_Arr2_2)
+const hoisted_Arr2_0 = new AnyOfConstsDecoder([
+    "A",
+    "B",
+    "C"
 ]);
 const hoisted_ValidCurrency_0 = new StringWithFormatDecoder("ValidCurrency");
 const hoisted_UnionWithEnumAccess_0 = new ConstDecoder("a");

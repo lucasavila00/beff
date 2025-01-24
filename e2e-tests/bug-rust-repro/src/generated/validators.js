@@ -114,7 +114,7 @@ class ConstDecoder {
   }
 
   reportConstDecoder(ctx, input) {
-    return buildError(ctx, `expected ${this.value}`, input);
+    return buildError(ctx, `expected ${JSON.stringify(this.value)}`, input);
   }
 }
 
@@ -195,7 +195,7 @@ class StringWithFormatDecoder {
     return input;
   }
   reportStringWithFormatDecoder(ctx, input) {
-    return buildError(ctx, `expected string with format ${this.format}`, input);
+    return buildError(ctx, `expected string with format "${this.format}"`, input);
   }
 }
 class AnyOfDiscriminatedDecoder {
@@ -220,7 +220,18 @@ class AnyOfDiscriminatedDecoder {
     return true;
   }
 }
-
+const limitedCommaJoinJson = (arr) => {
+  const limit = 3;
+  if (arr.length < limit) {
+    return arr.map((it) => JSON.stringify(it)).join(", ");
+  }
+  return (
+    arr
+      .slice(0, limit)
+      .map((it) => JSON.stringify(it))
+      .join(", ") + `...`
+  );
+};
 class AnyOfConstsDecoder {
   constructor(consts) {
     this.consts = consts;
@@ -232,6 +243,12 @@ class AnyOfConstsDecoder {
       }
     }
     return this.consts.includes(input);
+  }
+  parseAnyOfConstsDecoder(ctx, input) {
+    return input;
+  }
+  reportAnyOfConstsDecoder(ctx, input) {
+    return buildError(ctx, `expected one of ${limitedCommaJoinJson(this.consts)}`, input);
   }
 }
 
@@ -276,6 +293,7 @@ class ObjectValidator {
     return false;
   }
 }
+
 class ObjectReporter {
   constructor(dataValidator, restValidator, dataReporter, restReporter) {
     this.dataValidator = dataValidator;
@@ -320,7 +338,7 @@ class ObjectReporter {
         const inputKeys = Object.keys(input);
         const extraKeys = inputKeys.filter((k) => !configKeys.includes(k));
         if (extraKeys.length > 0) {
-          return buildError(ctx, `unexpected extra properties: ${extraKeys.join(", ")}`, input);
+          return buildError(ctx, `unexpected extra properties: ${limitedCommaJoinJson(extraKeys)}`, input);
         }
       }
     }

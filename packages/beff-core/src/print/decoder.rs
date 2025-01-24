@@ -38,20 +38,20 @@ struct DecoderFnGenerator<'a> {
 }
 
 impl DecoderFnGenerator<'_> {
-    // fn extract_union(&self, it: &JsonSchema) -> Vec<JsonSchema> {
-    //     match it {
-    //         JsonSchema::AnyOf(vs) => vs.iter().flat_map(|it| self.extract_union(it)).collect(),
-    //         JsonSchema::Ref(r) => {
-    //             let v = self
-    //                 .named_schemas
-    //                 .iter()
-    //                 .find(|it| it.name == *r)
-    //                 .expect("everything should be resolved by now");
-    //             self.extract_union(&v.schema)
-    //         }
-    //         _ => vec![it.clone()],
-    //     }
-    // }
+    fn extract_union(&self, it: &JsonSchema) -> Vec<JsonSchema> {
+        match it {
+            JsonSchema::AnyOf(vs) => vs.iter().flat_map(|it| self.extract_union(it)).collect(),
+            JsonSchema::Ref(r) => {
+                let v = self
+                    .named_schemas
+                    .iter()
+                    .find(|it| it.name == *r)
+                    .expect("everything should be resolved by now");
+                self.extract_union(&v.schema)
+            }
+            _ => vec![it.clone()],
+        }
+    }
 
     // fn decode_any_of_discriminated(
     //     &self,
@@ -202,41 +202,40 @@ impl DecoderFnGenerator<'_> {
     //     None
     // }
 
-    // fn maybe_decode_any_of_consts(
-    //     &self,
-    //     flat_values: &BTreeSet<JsonSchema>,
+    fn maybe_decode_any_of_consts(
+        &self,
+        flat_values: &BTreeSet<JsonSchema>,
+        hoisted: &mut Vec<ModuleItem>,
+    ) -> Option<SchemaCode> {
+        let all_consts = flat_values
+            .iter()
+            .all(|it| matches!(it, JsonSchema::Const(_)));
+        if all_consts {
+            let consts: Vec<Expr> = flat_values
+                .iter()
+                .map(|it| match it {
+                    JsonSchema::Const(json) => json.clone().to_json().to_expr(),
+                    _ => unreachable!(),
+                })
+                .collect();
 
-    //     hoisted: &mut Vec<ModuleItem>,
-    // ) -> Option<Expr> {
-    //     let all_consts = flat_values
-    //         .iter()
-    //         .all(|it| matches!(it, JsonSchema::Const(_)));
-    //     if all_consts {
-    //         let consts: Vec<Expr> = flat_values
-    //             .iter()
-    //             .map(|it| match it {
-    //                 JsonSchema::Const(json) => json.clone().to_json().to_expr(),
-    //                 _ => unreachable!(),
-    //             })
-    //             .collect();
+            let consts = Expr::Array(ArrayLit {
+                span: DUMMY_SP,
+                elems: consts
+                    .into_iter()
+                    .map(|it| {
+                        Some(ExprOrSpread {
+                            spread: None,
+                            expr: it.into(),
+                        })
+                    })
+                    .collect(),
+            });
 
-    //         let consts = Expr::Array(ArrayLit {
-    //             span: DUMMY_SP,
-    //             elems: consts
-    //                 .into_iter()
-    //                 .map(|it| {
-    //                     Some(ExprOrSpread {
-    //                         spread: None,
-    //                         expr: it.into(),
-    //                     })
-    //                 })
-    //                 .collect(),
-    //         });
-
-    //         return Some(self.new_hoisted_decoder(hoisted, "AnyOfConstsDecoder", vec![consts]));
-    //     }
-    //     None
-    // }
+            return Some(self.static_schema_code(hoisted, "AnyOfConstsDecoder", vec![consts]));
+        }
+        None
+    }
     fn decode_any_of(
         &self,
         vs: &BTreeSet<JsonSchema>,
@@ -246,14 +245,14 @@ impl DecoderFnGenerator<'_> {
             panic!("empty anyOf is not allowed")
         }
 
-        // let flat_values = vs
-        //     .iter()
-        //     .flat_map(|it: &JsonSchema| self.extract_union(it))
-        //     .collect::<BTreeSet<_>>();
+        let flat_values = vs
+            .iter()
+            .flat_map(|it: &JsonSchema| self.extract_union(it))
+            .collect::<BTreeSet<_>>();
 
-        // if let Some(consts) = self.maybe_decode_any_of_consts(&flat_values, hoisted) {
-        //     return consts;
-        // }
+        if let Some(consts) = self.maybe_decode_any_of_consts(&flat_values, hoisted) {
+            return consts;
+        }
 
         // if let Some(discriminated) = self.maybe_decode_any_of_discriminated(&flat_values, hoisted) {
         //     return discriminated;

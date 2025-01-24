@@ -350,7 +350,7 @@ it("disallow extra properties", () => {
         {
           "errors": [
             {
-              "message": "unexpected extra properties: y",
+              "message": "unexpected extra properties: \\"y\\"",
               "path": [],
               "received": {
                 "kind": "square",
@@ -359,7 +359,7 @@ it("disallow extra properties", () => {
               },
             },
             {
-              "message": "expected triangle",
+              "message": "expected \\"triangle\\"",
               "path": [
                 "kind",
               ],
@@ -391,7 +391,7 @@ it("exclude object", () => {
         {
           "errors": [
             {
-              "message": "expected square",
+              "message": "expected \\"square\\"",
               "path": [
                 "kind",
               ],
@@ -405,7 +405,7 @@ it("exclude object", () => {
               "received": undefined,
             },
             {
-              "message": "expected triangle",
+              "message": "expected \\"triangle\\"",
               "path": [
                 "kind",
               ],
@@ -446,7 +446,7 @@ it("Custom Format", () => {
     {
       "errors": [
         {
-          "message": "expected string with format ValidCurrency",
+          "message": "expected string with format \\"ValidCurrency\\"",
           "path": [],
           "received": "asdasdadasd",
         },
@@ -578,14 +578,14 @@ it("DiscriminatedUnion", () => {
               "received": undefined,
             },
             {
-              "message": "expected a2",
+              "message": "expected \\"a2\\"",
               "path": [
                 "subType",
               ],
               "received": "a1",
             },
             {
-              "message": "expected b",
+              "message": "expected \\"b\\"",
               "path": [
                 "type",
               ],
@@ -640,7 +640,7 @@ it("DiscriminatedUnion", () => {
               "received": undefined,
             },
             {
-              "message": "expected a1",
+              "message": "expected \\"a1\\"",
               "path": [
                 "subType",
               ],
@@ -654,14 +654,14 @@ it("DiscriminatedUnion", () => {
               "received": undefined,
             },
             {
-              "message": "expected a2",
+              "message": "expected \\"a2\\"",
               "path": [
                 "subType",
               ],
               "received": undefined,
             },
             {
-              "message": "expected b",
+              "message": "expected \\"b\\"",
               "path": [
                 "type",
               ],
@@ -702,14 +702,14 @@ it("DiscriminatedUnion", () => {
               "received": undefined,
             },
             {
-              "message": "expected a1",
+              "message": "expected \\"a1\\"",
               "path": [
                 "subType",
               ],
               "received": undefined,
             },
             {
-              "message": "expected a",
+              "message": "expected \\"a\\"",
               "path": [
                 "type",
               ],
@@ -723,21 +723,21 @@ it("DiscriminatedUnion", () => {
               "received": undefined,
             },
             {
-              "message": "expected a2",
+              "message": "expected \\"a2\\"",
               "path": [
                 "subType",
               ],
               "received": undefined,
             },
             {
-              "message": "expected a",
+              "message": "expected \\"a\\"",
               "path": [
                 "type",
               ],
               "received": "c",
             },
             {
-              "message": "expected b",
+              "message": "expected \\"b\\"",
               "path": [
                 "type",
               ],
@@ -774,14 +774,14 @@ it("DiscriminatedUnion", () => {
               "received": undefined,
             },
             {
-              "message": "expected a1",
+              "message": "expected \\"a1\\"",
               "path": [
                 "subType",
               ],
               "received": undefined,
             },
             {
-              "message": "expected a",
+              "message": "expected \\"a\\"",
               "path": [
                 "type",
               ],
@@ -795,21 +795,21 @@ it("DiscriminatedUnion", () => {
               "received": undefined,
             },
             {
-              "message": "expected a2",
+              "message": "expected \\"a2\\"",
               "path": [
                 "subType",
               ],
               "received": undefined,
             },
             {
-              "message": "expected a",
+              "message": "expected \\"a\\"",
               "path": [
                 "type",
               ],
               "received": undefined,
             },
             {
-              "message": "expected b",
+              "message": "expected \\"b\\"",
               "path": [
                 "type",
               ],
@@ -980,7 +980,7 @@ it("to zod works", () => {
       "error": [ZodError: [
       {
         "code": "custom",
-        "message": "#0 (accessLevel) Failed to decode one of ((accessLevel) expected ADMIN | (accessLevel) expected USER), received: undefined | #1 (avatarSize) expected \${number}x\${number}, received: undefined | #2 (extra) expected object, received: undefined | #3 (friends[0].accessLevel) Failed to decode one of ((friends[0].accessLevel) expected ADMIN | (friends[0].accessLevel) expected USER), received: undefined | #4 (friends[0].avatarSize) expected \${number}x\${number}, received: undefined | #5 (friends[0].extra) expected object, received: undefined | #6 (friends[0].friends) expected array, received: undefined",
+        "message": "#0 (accessLevel) expected one of \\"ADMIN\\", \\"USER\\", received: undefined | #1 (avatarSize) expected \${number}x\${number}, received: undefined | #2 (extra) expected object, received: undefined | #3 (friends[0].accessLevel) expected one of \\"ADMIN\\", \\"USER\\", received: undefined | #4 (friends[0].avatarSize) expected \${number}x\${number}, received: undefined | #5 (friends[0].extra) expected object, received: undefined | #6 (friends[0].friends) expected array, received: undefined",
         "fatal": true,
         "path": []
       }
@@ -1039,23 +1039,7 @@ it("works on recursive type", () => {
     {
       "errors": [
         {
-          "errors": [
-            {
-              "message": "expected ADMIN",
-              "path": [
-                "accessLevel",
-              ],
-              "received": undefined,
-            },
-            {
-              "message": "expected USER",
-              "path": [
-                "accessLevel",
-              ],
-              "received": undefined,
-            },
-          ],
-          "isUnionError": true,
+          "message": "expected one of \\"ADMIN\\", \\"USER\\"",
           "path": [
             "accessLevel",
           ],
@@ -1076,27 +1060,7 @@ it("works on recursive type", () => {
           "received": undefined,
         },
         {
-          "errors": [
-            {
-              "message": "expected ADMIN",
-              "path": [
-                "friends",
-                "[0]",
-                "accessLevel",
-              ],
-              "received": undefined,
-            },
-            {
-              "message": "expected USER",
-              "path": [
-                "friends",
-                "[0]",
-                "accessLevel",
-              ],
-              "received": undefined,
-            },
-          ],
-          "isUnionError": true,
+          "message": "expected one of \\"ADMIN\\", \\"USER\\"",
           "path": [
             "friends",
             "[0]",
