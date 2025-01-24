@@ -507,12 +507,23 @@ class AnyOfParser {
     this.parsers = parsers;
   }
   parseAnyOfParser(ctx, input) {
+    const items = [];
     for (let i = 0; i < this.validators.length; i++) {
       if (this.validators[i](ctx, input)) {
-        return this.parsers[i](ctx, input);
+        items.push(this.parsers[i](ctx, input));
       }
     }
-    throw new Error("No parsers matched");
+    const unique = [...new Set(items)];
+    if (unique.length === 1) {
+      return unique[0];
+    }
+
+    
+    if (unique.every((it) => typeof it === "object")) {
+      return Object.assign({}, ...unique);
+    }
+
+    throw new Error("AnyOfParser: Expected exactly one validator to match");
   }
 }
 class AnyOfReporter {
