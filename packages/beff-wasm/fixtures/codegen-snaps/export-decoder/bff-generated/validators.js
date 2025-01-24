@@ -877,22 +877,22 @@ class TupleReporter {
 
 
 function ValidateUser(ctx, input) {
-    return (hoisted_User_0.validateObjectValidator.bind(hoisted_User_0))(ctx, input);
+    return (hoisted_User_2.validateObjectValidator.bind(hoisted_User_2))(ctx, input);
 }
 function ParseUser(ctx, input) {
-    return (hoisted_User_1.parseObjectParser.bind(hoisted_User_1))(ctx, input);
+    return (hoisted_User_3.parseObjectParser.bind(hoisted_User_3))(ctx, input);
 }
 function ReportUser(ctx, input) {
-    return (hoisted_User_2.reportObjectReporter.bind(hoisted_User_2))(ctx, input);
+    return (hoisted_User_4.reportObjectReporter.bind(hoisted_User_4))(ctx, input);
 }
 function ValidateNotPublic(ctx, input) {
-    return (hoisted_NotPublic_0.validateObjectValidator.bind(hoisted_NotPublic_0))(ctx, input);
+    return (hoisted_NotPublic_2.validateObjectValidator.bind(hoisted_NotPublic_2))(ctx, input);
 }
 function ParseNotPublic(ctx, input) {
-    return (hoisted_NotPublic_1.parseObjectParser.bind(hoisted_NotPublic_1))(ctx, input);
+    return (hoisted_NotPublic_3.parseObjectParser.bind(hoisted_NotPublic_3))(ctx, input);
 }
 function ReportNotPublic(ctx, input) {
-    return (hoisted_NotPublic_2.reportObjectReporter.bind(hoisted_NotPublic_2))(ctx, input);
+    return (hoisted_NotPublic_4.reportObjectReporter.bind(hoisted_NotPublic_4))(ctx, input);
 }
 function ValidateStartsWithA(ctx, input) {
     return (hoisted_StartsWithA_0.validateStringWithFormatDecoder.bind(hoisted_StartsWithA_0))(ctx, input);
@@ -990,30 +990,29 @@ const reporters = {
     E: ReportE,
     UnionNested: ReportUnionNested
 };
-const hoisted_User_0 = new ObjectValidator({
+const hoisted_User_0 = {
     "age": validateNumber,
     "name": validateString
-}, null);
-const hoisted_User_1 = new ObjectParser({
+};
+const hoisted_User_1 = null;
+const hoisted_User_2 = new ObjectValidator(hoisted_User_0, hoisted_User_1);
+const hoisted_User_3 = new ObjectParser({
     "age": parseIdentity,
     "name": parseIdentity
 }, null);
-const hoisted_User_2 = new ObjectReporter({
-    "age": validateNumber,
-    "name": validateString
-}, null, {
+const hoisted_User_4 = new ObjectReporter(hoisted_User_0, hoisted_User_1, {
     "age": reportNumber,
     "name": reportString
 }, null);
-const hoisted_NotPublic_0 = new ObjectValidator({
+const hoisted_NotPublic_0 = {
     "a": validateString
-}, null);
-const hoisted_NotPublic_1 = new ObjectParser({
+};
+const hoisted_NotPublic_1 = null;
+const hoisted_NotPublic_2 = new ObjectValidator(hoisted_NotPublic_0, hoisted_NotPublic_1);
+const hoisted_NotPublic_3 = new ObjectParser({
     "a": parseIdentity
 }, null);
-const hoisted_NotPublic_2 = new ObjectReporter({
-    "a": validateString
-}, null, {
+const hoisted_NotPublic_4 = new ObjectReporter(hoisted_NotPublic_0, hoisted_NotPublic_1, {
     "a": reportString
 }, null);
 const hoisted_StartsWithA_0 = new StringWithFormatDecoder("StartsWithA");

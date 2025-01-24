@@ -541,18 +541,21 @@ impl DecoderFnGenerator<'_> {
             reporters.push(rep);
         }
 
-        let validators_arr = Expr::Array(ArrayLit {
-            span: DUMMY_SP,
-            elems: validators
-                .into_iter()
-                .map(|it| {
-                    Some(ExprOrSpread {
-                        spread: None,
-                        expr: it.into(),
+        let validators_arr = self.hoist_expr(
+            hoisted,
+            Expr::Array(ArrayLit {
+                span: DUMMY_SP,
+                elems: validators
+                    .into_iter()
+                    .map(|it| {
+                        Some(ExprOrSpread {
+                            spread: None,
+                            expr: it.into(),
+                        })
                     })
-                })
-                .collect(),
-        });
+                    .collect(),
+            }),
+        );
 
         self.dynamic_schema_code(
             decoder_name,
@@ -663,6 +666,7 @@ impl DecoderFnGenerator<'_> {
                     parser: inner_parser,
                     reporter: inner_reporter,
                 } = self.generate_schema_code(ty, hoisted);
+                let inner_val = self.hoist_expr(hoisted, inner_val);
                 self.dynamic_schema_code(
                     "Array",
                     hoisted,
@@ -737,6 +741,8 @@ impl DecoderFnGenerator<'_> {
                         })
                         .collect(),
                 });
+                let prefix_val_arr = self.hoist_expr(hoisted, prefix_val_arr);
+                let item_validator = self.hoist_expr(hoisted, item_validator);
                 self.dynamic_schema_code(
                     "Tuple",
                     hoisted,
@@ -840,6 +846,9 @@ impl DecoderFnGenerator<'_> {
                     parser_rest = par;
                     reporter_rest = rep;
                 }
+
+                let obj_validator = self.hoist_expr(hoisted, obj_validator);
+                let validator_rest = self.hoist_expr(hoisted, validator_rest);
 
                 self.dynamic_schema_code(
                     "Object",

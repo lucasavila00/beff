@@ -6,19 +6,20 @@ import {printErrors} from '@beff/client';
 import {z} from 'zod';
 import validatorsMod from "./validators.js"; const { registerCustomFormatter, ObjectValidator, ObjectParser, ArrayParser, ArrayValidator, CodecDecoder, StringWithFormatDecoder, AnyOfValidator, AnyOfParser, AllOfValidator, AllOfParser, TupleParser, TupleValidator, RegexDecoder, ConstDecoder, AnyOfConstsDecoder, AnyOfDiscriminatedReporter, AnyOfDiscriminatedParser, AnyOfDiscriminatedValidator, validateString, validateNumber, validateFunction, validateBoolean, validateAny, validateNull, validateNever, parseIdentity, AnyOfReporter, AllOfReporter, reportString, reportNumber, reportNull, reportBoolean, reportAny, reportNever, reportFunction, ArrayReporter, ObjectReporter, TupleReporter, validators, parsers, reporters, c } = validatorsMod;
 const RequiredCustomFormats = ["password","StartsWithA"];
-const hoisted_Users_0 = new ArrayValidator(validators.User);
-const hoisted_Users_1 = new ArrayParser(parsers.User);
-const hoisted_Users_2 = new ArrayReporter(validators.User, reporters.User);
-const hoisted_float_3 = new ConstDecoder(123.456);
-const hoisted_int_4 = new ConstDecoder(123);
+const hoisted_Users_0 = validators.User;
+const hoisted_Users_1 = new ArrayValidator(hoisted_Users_0);
+const hoisted_Users_2 = new ArrayParser(parsers.User);
+const hoisted_Users_3 = new ArrayReporter(hoisted_Users_0, reporters.User);
+const hoisted_float_4 = new ConstDecoder(123.456);
+const hoisted_int_5 = new ConstDecoder(123);
 const buildValidatorsInput = {
     "NotPublicRenamed": validators.NotPublic,
     "Password": validators.Password,
     "StartsWithA": validators.StartsWithA,
     "User": validators.User,
-    "Users": hoisted_Users_0.validateArrayValidator.bind(hoisted_Users_0),
-    "float": hoisted_float_3.validateConstDecoder.bind(hoisted_float_3),
-    "int": hoisted_int_4.validateConstDecoder.bind(hoisted_int_4),
+    "Users": hoisted_Users_1.validateArrayValidator.bind(hoisted_Users_1),
+    "float": hoisted_float_4.validateConstDecoder.bind(hoisted_float_4),
+    "int": hoisted_int_5.validateConstDecoder.bind(hoisted_int_5),
     "union": validators.UnionNested
 };
 const buildParsersInput = {
@@ -26,9 +27,9 @@ const buildParsersInput = {
     "Password": parsers.Password,
     "StartsWithA": parsers.StartsWithA,
     "User": parsers.User,
-    "Users": hoisted_Users_1.parseArrayParser.bind(hoisted_Users_1),
-    "float": hoisted_float_3.parseConstDecoder.bind(hoisted_float_3),
-    "int": hoisted_int_4.parseConstDecoder.bind(hoisted_int_4),
+    "Users": hoisted_Users_2.parseArrayParser.bind(hoisted_Users_2),
+    "float": hoisted_float_4.parseConstDecoder.bind(hoisted_float_4),
+    "int": hoisted_int_5.parseConstDecoder.bind(hoisted_int_5),
     "union": parsers.UnionNested
 };
 const buildReportersInput = {
@@ -36,9 +37,9 @@ const buildReportersInput = {
     "Password": reporters.Password,
     "StartsWithA": reporters.StartsWithA,
     "User": reporters.User,
-    "Users": hoisted_Users_2.reportArrayReporter.bind(hoisted_Users_2),
-    "float": hoisted_float_3.reportConstDecoder.bind(hoisted_float_3),
-    "int": hoisted_int_4.reportConstDecoder.bind(hoisted_int_4),
+    "Users": hoisted_Users_3.reportArrayReporter.bind(hoisted_Users_3),
+    "float": hoisted_float_4.reportConstDecoder.bind(hoisted_float_4),
+    "int": hoisted_int_5.reportConstDecoder.bind(hoisted_int_5),
     "union": reporters.UnionNested
 };
 

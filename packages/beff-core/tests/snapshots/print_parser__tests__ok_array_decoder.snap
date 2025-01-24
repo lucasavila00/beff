@@ -3,13 +3,13 @@ source: packages/beff-core/tests/print_parser.rs
 expression: "decoder(r#\"\n        export type Alias = string[];\n        parse.buildParsers<{ Dec: Alias }>();\n      \"#)"
 ---
 function ValidateAlias(ctx, input) {
-    return (hoisted_Alias_0.validateArrayValidator.bind(hoisted_Alias_0))(ctx, input);
+    return (hoisted_Alias_1.validateArrayValidator.bind(hoisted_Alias_1))(ctx, input);
 }
 function ParseAlias(ctx, input) {
-    return (hoisted_Alias_1.parseArrayParser.bind(hoisted_Alias_1))(ctx, input);
+    return (hoisted_Alias_2.parseArrayParser.bind(hoisted_Alias_2))(ctx, input);
 }
 function ReportAlias(ctx, input) {
-    return (hoisted_Alias_2.reportArrayReporter.bind(hoisted_Alias_2))(ctx, input);
+    return (hoisted_Alias_3.reportArrayReporter.bind(hoisted_Alias_3))(ctx, input);
 }
 const validators = {
     Alias: ValidateAlias
@@ -20,6 +20,7 @@ const parsers = {
 const reporters = {
     Alias: ReportAlias
 };
-const hoisted_Alias_0 = new ArrayValidator(validateString);
-const hoisted_Alias_1 = new ArrayParser(parseIdentity);
-const hoisted_Alias_2 = new ArrayReporter(validateString, reportString);
+const hoisted_Alias_0 = validateString;
+const hoisted_Alias_1 = new ArrayValidator(hoisted_Alias_0);
+const hoisted_Alias_2 = new ArrayParser(parseIdentity);
+const hoisted_Alias_3 = new ArrayReporter(hoisted_Alias_0, reportString);
