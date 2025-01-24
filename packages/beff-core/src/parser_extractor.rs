@@ -5,7 +5,7 @@ use crate::ast::json_schema::{JsonFlatConverter, JsonSchema};
 use crate::diag::{Diagnostic, DiagnosticInfoMessage, DiagnosticInformation, Location};
 use crate::type_to_schema::TypeToSchema;
 use crate::{BeffUserSettings, ParsedModule};
-use crate::{BffFileName, FileManager, Validator};
+use crate::{BffFileName, FileManager, NamedSchema};
 use anyhow::anyhow;
 use anyhow::Result;
 use swc_common::{Span, DUMMY_SP};
@@ -23,7 +23,7 @@ pub struct BuiltDecoder {
     pub schema: JsonSchema,
 }
 impl BuiltDecoder {
-    pub fn to_json_kv(&self, validators: &[Validator]) -> anyhow::Result<Vec<(String, Json)>> {
+    pub fn to_json_kv(&self, validators: &[NamedSchema]) -> anyhow::Result<Vec<(String, Json)>> {
         Ok(vec![(
             self.exported_name.clone(),
             JsonFlatConverter::new(validators).to_json_flat(self.schema.clone())?,
@@ -35,7 +35,7 @@ impl BuiltDecoder {
 pub struct ParserExtractResult {
     pub errors: Vec<Diagnostic>,
     pub entry_file_name: BffFileName,
-    pub validators: Vec<Validator>,
+    pub validators: Vec<NamedSchema>,
     pub built_decoders: Option<Vec<BuiltDecoder>>,
     pub counter: usize,
 }
@@ -43,7 +43,7 @@ pub struct ParserExtractResult {
 struct ExtractParserVisitor<'a, R: FileManager> {
     files: &'a mut R,
     current_file: BffFileName,
-    validators: Vec<Validator>,
+    validators: Vec<NamedSchema>,
     errors: Vec<Diagnostic>,
     built_decoders: Option<Vec<BuiltDecoder>>,
     settings: &'a BeffUserSettings,
@@ -108,7 +108,7 @@ impl<R: FileManager> ExtractParserVisitor<'_, R> {
         Ok(())
     }
 
-    fn extend_components(&mut self, defs: Vec<Validator>, span: &Span) {
+    fn extend_components(&mut self, defs: Vec<NamedSchema>, span: &Span) {
         for d in defs {
             let found = self.validators.iter_mut().find(|x| x.name == d.name);
             if let Some(found) = found {
@@ -157,7 +157,7 @@ impl<R: FileManager> ExtractParserVisitor<'_, R> {
                 }
 
                 kvs.sort_by(|(ka, _), (kb, _)| ka.cmp(kb));
-                let ext: Vec<Validator> = kvs.into_iter().map(|(_k, v)| v).collect();
+                let ext: Vec<NamedSchema> = kvs.into_iter().map(|(_k, v)| v).collect();
                 self.extend_components(ext, span);
 
                 res

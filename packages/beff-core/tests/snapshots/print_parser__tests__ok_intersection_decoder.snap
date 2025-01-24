@@ -1,0 +1,36 @@
+---
+source: packages/beff-core/tests/print_parser.rs
+expression: "decoder(r#\"\n        export type Alias = {a:string} & {b:number}\n        parse.buildParsers<{ Dec: Alias }>();\n      \"#)"
+---
+function ValidateAlias(ctx, input) {
+    return (hoisted_Alias_2.validateObjectValidator.bind(hoisted_Alias_2))(ctx, input);
+}
+function ParseAlias(ctx, input) {
+    return (hoisted_Alias_3.parseObjectParser.bind(hoisted_Alias_3))(ctx, input);
+}
+function ReportAlias(ctx, input) {
+    return (hoisted_Alias_4.reportObjectReporter.bind(hoisted_Alias_4))(ctx, input);
+}
+const validators = {
+    Alias: ValidateAlias
+};
+const parsers = {
+    Alias: ParseAlias
+};
+const reporters = {
+    Alias: ReportAlias
+};
+const hoisted_Alias_0 = {
+    "a": validateString,
+    "b": validateNumber
+};
+const hoisted_Alias_1 = null;
+const hoisted_Alias_2 = new ObjectValidator(hoisted_Alias_0, hoisted_Alias_1);
+const hoisted_Alias_3 = new ObjectParser({
+    "a": parseIdentity,
+    "b": parseIdentity
+}, null);
+const hoisted_Alias_4 = new ObjectReporter(hoisted_Alias_0, hoisted_Alias_1, {
+    "a": reportString,
+    "b": reportNumber
+}, null);

@@ -31,6 +31,8 @@ import {
   TupleCodec,
   TupleCodecRest,
   StringArrCodec,
+  OnlyAKeyCodec,
+  ObjectWithArrCodec,
 } from "../src/parser";
 import { Arr2 } from "../src/types";
 import { Schemas } from "../src/schema";
@@ -61,7 +63,7 @@ it("import enum typeof", () => {
 });
 
 it("BigIntCodec", () => {
-  expect(BigIntCodec.parse("123")).toMatchInlineSnapshot(`123n`);
+  expect(BigIntCodec.parse(123n)).toMatchInlineSnapshot("123n");
 });
 it("TupleCodec", () => {
   expect(TupleCodec.safeParse([1])).toMatchInlineSnapshot(`
@@ -126,6 +128,26 @@ it("StringArrCodec", () => {
             "[2]",
           ],
           "received": 3,
+        },
+      ],
+      "success": false,
+    }
+  `);
+});
+it("OnlyAKeyCodec", () => {
+  expect(JSON.stringify(OnlyAKeyCodec.parse({ A: "show", B: "hide" }))).toBe(`{"A":"show"}`);
+});
+
+it("ObjectWithArrCodec", () => {
+  expect(ObjectWithArrCodec.safeParse({})).toMatchInlineSnapshot(`
+    {
+      "errors": [
+        {
+          "message": "expected array",
+          "path": [
+            "a",
+          ],
+          "received": undefined,
         },
       ],
       "success": false,

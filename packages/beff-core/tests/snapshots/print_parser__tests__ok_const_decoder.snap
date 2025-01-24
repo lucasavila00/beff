@@ -1,0 +1,23 @@
+---
+source: packages/beff-core/tests/print_parser.rs
+expression: "decoder(r#\"\n        export type Alias = \"some_string_const\"\n        parse.buildParsers<{ Dec: Alias }>();\n      \"#)"
+---
+function ValidateAlias(ctx, input) {
+    return (hoisted_Alias_0.validateConstDecoder.bind(hoisted_Alias_0))(ctx, input);
+}
+function ParseAlias(ctx, input) {
+    return (hoisted_Alias_0.parseConstDecoder.bind(hoisted_Alias_0))(ctx, input);
+}
+function ReportAlias(ctx, input) {
+    return (hoisted_Alias_0.reportConstDecoder.bind(hoisted_Alias_0))(ctx, input);
+}
+const validators = {
+    Alias: ValidateAlias
+};
+const parsers = {
+    Alias: ParseAlias
+};
+const reporters = {
+    Alias: ReportAlias
+};
+const hoisted_Alias_0 = new ConstDecoder("some_string_const");

@@ -1,109 +1,290 @@
 /* eslint-disable */
 //@ts-check
 
+// based on https://github.com/TehShrike/deepmerge
+// MIT License
+// Copyright (c) 2012 - 2022 James Halliday, Josh Duff, and other contributors of deepmerge
+
+const JSON_PROTO = Object.getPrototypeOf({});
+
+function deepmergeConstructor(options) {
+  function isNotPrototypeKey(value) {
+    return value !== "constructor" && value !== "prototype" && value !== "__proto__";
+  }
+
+  function cloneArray(value) {
+    let i = 0;
+    const il = value.length;
+    const result = new Array(il);
+    for (i; i < il; ++i) {
+      result[i] = clone(value[i]);
+    }
+    return result;
+  }
+
+  function cloneObject(target) {
+    const result = {};
+
+    if (cloneProtoObject && Object.getPrototypeOf(target) !== JSON_PROTO) {
+      return cloneProtoObject(target);
+    }
+
+    const targetKeys = getKeys(target);
+    let i, il, key;
+    for (i = 0, il = targetKeys.length; i < il; ++i) {
+      isNotPrototypeKey((key = targetKeys[i])) && (result[key] = clone(target[key]));
+    }
+    return result;
+  }
+
+  function concatArrays(target, source) {
+    const tl = target.length;
+    const sl = source.length;
+    let i = 0;
+    const result = new Array(tl + sl);
+    for (i; i < tl; ++i) {
+      result[i] = clone(target[i]);
+    }
+    for (i = 0; i < sl; ++i) {
+      result[i + tl] = clone(source[i]);
+    }
+    return result;
+  }
+
+  const propertyIsEnumerable = Object.prototype.propertyIsEnumerable;
+  function getSymbolsAndKeys(value) {
+    const result = Object.keys(value);
+    const keys = Object.getOwnPropertySymbols(value);
+    for (let i = 0, il = keys.length; i < il; ++i) {
+      //@ts-ignore
+      propertyIsEnumerable.call(value, keys[i]) && result.push(keys[i]);
+    }
+    return result;
+  }
+
+  const getKeys = options?.symbols ? getSymbolsAndKeys : Object.keys;
+
+  const cloneProtoObject =
+    typeof options?.cloneProtoObject === "function" ? options.cloneProtoObject : undefined;
+
+  function isMergeableObject(value) {
+    return (
+      typeof value === "object" && value !== null && !(value instanceof RegExp) && !(value instanceof Date)
+    );
+  }
+
+  function isPrimitive(value) {
+    return typeof value !== "object" || value === null;
+  }
+
+  const isPrimitiveOrBuiltIn =
+    typeof Buffer !== "undefined"
+      ? (value) =>
+          typeof value !== "object" ||
+          value === null ||
+          value instanceof RegExp ||
+          value instanceof Date ||
+          value instanceof Buffer
+      : (value) =>
+          typeof value !== "object" || value === null || value instanceof RegExp || value instanceof Date;
+
+  const mergeArray =
+    options && typeof options.mergeArray === "function"
+      ? options.mergeArray({ clone, deepmerge: _deepmerge, getKeys, isMergeableObject })
+      : concatArrays;
+
+  function clone(entry) {
+    return isMergeableObject(entry) ? (Array.isArray(entry) ? cloneArray(entry) : cloneObject(entry)) : entry;
+  }
+
+  function mergeObject(target, source) {
+    const result = {};
+    const targetKeys = getKeys(target);
+    const sourceKeys = getKeys(source);
+    let i, il, key;
+    for (i = 0, il = targetKeys.length; i < il; ++i) {
+      isNotPrototypeKey((key = targetKeys[i])) &&
+        sourceKeys.indexOf(key) === -1 &&
+        (result[key] = clone(target[key]));
+    }
+
+    for (i = 0, il = sourceKeys.length; i < il; ++i) {
+      if (!isNotPrototypeKey((key = sourceKeys[i]))) {
+        continue;
+      }
+
+      if (key in target) {
+        if (targetKeys.indexOf(key) !== -1) {
+          if (
+            cloneProtoObject &&
+            isMergeableObject(source[key]) &&
+            Object.getPrototypeOf(source[key]) !== JSON_PROTO
+          ) {
+            result[key] = cloneProtoObject(source[key]);
+          } else {
+            result[key] = _deepmerge(target[key], source[key]);
+          }
+        }
+      } else {
+        result[key] = clone(source[key]);
+      }
+    }
+    return result;
+  }
+
+  function _deepmerge(target, source) {
+    const sourceIsArray = Array.isArray(source);
+    const targetIsArray = Array.isArray(target);
+
+    if (isPrimitive(source)) {
+      return source;
+    } else if (isPrimitiveOrBuiltIn(target)) {
+      return clone(source);
+    } else if (sourceIsArray && targetIsArray) {
+      return mergeArray(target, source);
+    } else if (sourceIsArray !== targetIsArray) {
+      return clone(source);
+    } else {
+      return mergeObject(target, source);
+    }
+  }
+
+  function _deepmergeAll() {
+    switch (arguments.length) {
+      case 0:
+        return {};
+      case 1:
+        return clone(arguments[0]);
+      case 2:
+        return _deepmerge(arguments[0], arguments[1]);
+    }
+    let result;
+    for (let i = 0, il = arguments.length; i < il; ++i) {
+      result = _deepmerge(result, arguments[i]);
+    }
+    return result;
+  }
+
+  return options?.all ? _deepmergeAll : _deepmerge;
+}
+
+function deepmergeArray(options) {
+  const deepmerge = options.deepmerge;
+  const clone = options.clone;
+  return function (target, source) {
+    let i = 0;
+    const tl = target.length;
+    const sl = source.length;
+    const il = Math.max(target.length, source.length);
+    const result = new Array(il);
+    for (i = 0; i < il; ++i) {
+      if (i < sl) {
+        result[i] = deepmerge(target[i], source[i]);
+      } else {
+        result[i] = clone(target[i]);
+      }
+    }
+    return result;
+  };
+}
+
+const deepmerge = deepmergeConstructor({ all: true, mergeArray: deepmergeArray });
+
 const customFormatters = {};
 
 function registerCustomFormatter(name, validator) {
   customFormatters[name] = validator;
 }
 
-function pushPath(ctx, path) {
-  if (ctx.noErrorMessages) {
-    return;
-  }
-  if (ctx.paths == null) {
-    ctx.paths = [];
-  }
-  ctx.paths.push(path);
+function pushPath(ctx, key) {
+  ctx.path.push(key);
 }
 function popPath(ctx) {
-  if (ctx.noErrorMessages) {
-    return;
-  }
-  if (ctx.paths == null) {
-    throw new Error("popPath: no paths");
-  }
-  return ctx.paths.pop();
+  ctx.path.pop();
 }
-function storeError(ctx, received, message) {
-  if (ctx.noErrorMessages) {
-    ctx.errors = true;
-    return;
-  }
-  if (ctx.errors == null) {
-    ctx.errors = [];
-  }
-
-  let messageStr = message;
-  if (typeof message === "function") {
-    messageStr = message();
-  }
-
-  ctx.errors.push({
-    message: messageStr,
-    path: [...(ctx.paths ?? [])],
-    received,
-  });
-}
-function storeUnionError(ctx, received, errors) {
-  if (ctx.noErrorMessages) {
-    ctx.errors = true;
-    return;
-  }
-  if (ctx.errors == null) {
-    ctx.errors = [];
-  }
-  ctx.errors.push({
-    message: "expected one of",
-    isUnionError: true,
-    errors,
-    path: [...(ctx.paths ?? [])],
-    received,
-  });
+function buildError(ctx, message, received) {
+  return [
+    {
+      message,
+      path: [...ctx.path],
+      received,
+    },
+  ];
 }
 
-function decodeString(ctx, input) {
-  if (typeof input === "string") {
-    return input;
-  }
-
-  return storeError(ctx, input, "expected string");
+function buildUnionError(ctx, errors, received) {
+  return [
+    {
+      path: [...ctx.path],
+      received,
+      errors,
+      isUnionError: true,
+      message: "expected one of",
+    },
+  ];
 }
 
-function decodeNumber(ctx, input) {
-  if (typeof input === "number") {
-    return input;
-  }
-  if (String(input).toLowerCase() == "nan") {
-    return NaN;
-  }
-
-  return storeError(ctx, input, "expected number");
-}
-
-function decodeFunction(ctx, input) {
-  if (typeof input === "function") {
-    return input;
-  }
-  return storeError(ctx, input, "expected function");
-}
-function decodeBoolean(ctx, input) {
-  if (typeof input === "boolean") {
-    return input;
-  }
-  return storeError(ctx, input, "expected boolean");
-}
-function decodeAny(ctx, input) {
+function parseIdentity(ctx, input) {
   return input;
 }
-function decodeNull(ctx, input) {
-  if (input == null) {
-    return input;
-  }
-  return storeError(ctx, input, "expected nullish value");
+
+function validateString(ctx, input) {
+  return typeof input === "string";
 }
-function decodeNever(ctx, input) {
-  return storeError(ctx, input, "never");
+
+function reportString(ctx, input) {
+  return buildError(ctx, "expected string", input);
+}
+
+function validateNumber(ctx, input) {
+  return typeof input === "number";
+}
+
+function reportNumber(ctx, input) {
+  return buildError(ctx, "expected number", input);
+}
+
+function validateBoolean(ctx, input) {
+  return typeof input === "boolean";
+}
+
+function reportBoolean(ctx, input) {
+  return buildError(ctx, "expected boolean", input);
+}
+
+function validateAny(ctx, input) {
+  return true;
+}
+
+function reportAny(ctx, input) {
+  return buildError(ctx, "expected any", input);
+}
+
+function validateNull(ctx, input) {
+  if (input == null) {
+    return true;
+  }
+  return false;
+}
+
+function reportNull(ctx, input) {
+  return buildError(ctx, "expected nullish value", input);
+}
+
+function validateNever(ctx, input) {
+  return false;
+}
+
+function reportNever(ctx, input) {
+  return buildError(ctx, "expected never", input);
+}
+
+function validateFunction(ctx, input) {
+  return typeof input === "function";
+}
+
+function reportFunction(ctx, input) {
+  return buildError(ctx, "expected function", input);
 }
 
 class ConstDecoder {
@@ -111,11 +292,16 @@ class ConstDecoder {
     this.value = value;
   }
 
-  decodeConstDecoder(ctx, input) {
-    if (input == this.value) {
-      return this.value;
-    }
-    return storeError(ctx, input, () => "expected " + JSON.stringify(this.value));
+  validateConstDecoder(ctx, input) {
+    return input === this.value;
+  }
+
+  parseConstDecoder(ctx, input) {
+    return input;
+  }
+
+  reportConstDecoder(ctx, input) {
+    return buildError(ctx, `expected ${JSON.stringify(this.value)}`, input);
   }
 }
 
@@ -125,111 +311,52 @@ class RegexDecoder {
     this.description = description;
   }
 
-  decodeRegexDecoder(ctx, input) {
+  validateRegexDecoder(ctx, input) {
     if (typeof input === "string") {
-      if (this.regex.test(input)) {
-        return input;
-      }
+      return this.regex.test(input);
     }
-    return storeError(ctx, input, () => "expected string matching " + this.description);
+    return false;
+  }
+
+  parseRegexDecoder(ctx, input) {
+    return input;
+  }
+
+  reportRegexDecoder(ctx, input) {
+    return buildError(ctx, `expected string matching ${this.description}`, input);
   }
 }
 
-class ObjectDecoder {
-  constructor(data, additionalPropsValidator = null) {
-    this.data = data;
-    this.additionalPropsValidator = additionalPropsValidator;
-  }
-
-  decodeObjectDecoder(ctx, input) {
-    const disallowExtraProperties = ctx?.disallowExtraProperties ?? false;
-
-    const allowedExtraProperties = ctx.allowedExtraProperties__ ?? [];
-
-    if (typeof input === "object" && !Array.isArray(input) && input !== null) {
-      const acc = {};
-      for (const [k, v] of Object.entries(this.data)) {
-        pushPath(ctx, k);
-        acc[k] = v(ctx, input[k]);
-        popPath(ctx);
-      }
-
-      if (this.additionalPropsValidator != null) {
-        for (const [k, v] of Object.entries(input)) {
-          if (acc[k] == null) {
-            pushPath(ctx, k);
-            acc[k] = this.additionalPropsValidator(ctx, v);
-            popPath(ctx);
-          }
-        }
-      }
-
-      if (disallowExtraProperties) {
-        for (const k of Object.keys(input)) {
-          if (acc[k] == null && allowedExtraProperties.indexOf(k) == -1) {
-            pushPath(ctx, k);
-            storeError(ctx, input[k], "extra property");
-            popPath(ctx);
-          }
-        }
-      }
-
-      return acc;
-    }
-    return storeError(ctx, input, "expected object");
-  }
-}
-
-class ArrayDecoder {
-  constructor(data) {
-    this.data = data;
-  }
-
-  decodeArrayDecoder(ctx, input) {
-    if (Array.isArray(input)) {
-      const acc = [];
-      for (let i = 0; i < input.length; i++) {
-        const v = input[i];
-        pushPath(ctx, "[" + i + "]");
-        acc.push(this.data(ctx, v));
-        popPath(ctx);
-      }
-      return acc;
-    }
-    return storeError(ctx, input, "expected array");
-  }
-}
 class CodecDecoder {
   constructor(codec) {
     this.codec = codec;
   }
-  decodeCodecDecoder(ctx, input) {
+  validateCodecDecoder(ctx, input) {
     switch (this.codec) {
       case "Codec::ISO8061": {
-        const d = new Date(input);
-        if (isNaN(d.getTime())) {
-          return storeError(ctx, input, "expected ISO8061 date");
-        }
-        return d;
+        return input instanceof Date;
       }
       case "Codec::BigInt": {
-        if (typeof input === "bigint") {
-          return input;
-        }
-        if (typeof input === "number") {
-          return BigInt(input);
-        }
-        if (typeof input === "string") {
-          try {
-            return BigInt(input);
-          } catch (e) {
-            //noop
-          }
-        }
-        return storeError(ctx, input, "expected bigint");
+        return typeof input === "bigint";
       }
     }
-    return storeError(ctx, input, () => "codec " + this.codec + " not implemented");
+    return false;
+  }
+  parseCodecDecoder(ctx, input) {
+    return input;
+  }
+
+  reportCodecDecoder(ctx, input) {
+    switch (this.codec) {
+      case "Codec::ISO8061": {
+        return buildError(ctx, `expected Date`, input);
+      }
+      case "Codec::BigInt": {
+        return buildError(ctx, `expected BigInt`, input);
+      }
+    }
+
+    return buildError(ctx, `expected ${this.codec}`, input);
   }
 }
 
@@ -238,164 +365,509 @@ class StringWithFormatDecoder {
     this.format = format;
   }
 
-  decodeStringWithFormatDecoder(ctx, input) {
+  validateStringWithFormatDecoder(ctx, input) {
     if (typeof input !== "string") {
-      return storeError(ctx, input, "expected string with format " + JSON.stringify(this.format));
+      return false;
     }
 
     const validator = customFormatters[this.format];
 
     if (validator == null) {
-      return storeError(ctx, input, () => "format " + JSON.stringify(this.format) + " not implemented");
+      return false;
     }
 
-    const isOk = validator(input);
-    if (isOk) {
-      return input;
-    }
-    return storeError(ctx, input, "expected string with format " + JSON.stringify(this.format));
+    return validator(input);
+  }
+  parseStringWithFormatDecoder(ctx, input) {
+    return input;
+  }
+  reportStringWithFormatDecoder(ctx, input) {
+    return buildError(ctx, `expected string with format "${this.format}"`, input);
   }
 }
-class AnyOfDiscriminatedDecoder {
+const limitedCommaJoinJson = (arr) => {
+  const limit = 3;
+  if (arr.length < limit) {
+    return arr.map((it) => JSON.stringify(it)).join(", ");
+  }
+  return (
+    arr
+      .slice(0, limit)
+      .map((it) => JSON.stringify(it))
+      .join(", ") + `...`
+  );
+};
+class AnyOfConstsDecoder {
+  constructor(consts) {
+    this.consts = consts;
+  }
+  validateAnyOfConstsDecoder(ctx, input) {
+    if (input == null) {
+      if (this.consts.includes(null) || this.consts.includes(undefined)) {
+        return true;
+      }
+    }
+    return this.consts.includes(input);
+  }
+  parseAnyOfConstsDecoder(ctx, input) {
+    return input;
+  }
+  reportAnyOfConstsDecoder(ctx, input) {
+    return buildError(ctx, `expected one of ${limitedCommaJoinJson(this.consts)}`, input);
+  }
+}
+
+class ObjectValidator {
+  constructor(data, rest) {
+    this.data = data;
+    this.rest = rest;
+  }
+
+  validateObjectValidator(ctx, input) {
+    if (typeof input === "object" && !Array.isArray(input) && input !== null) {
+      const configKeys = Object.keys(this.data);
+      for (const k of configKeys) {
+        const validator = this.data[k];
+        if (!validator(ctx, input[k])) {
+          return false;
+        }
+      }
+
+      if (this.rest != null) {
+        const inputKeys = Object.keys(input);
+        const extraKeys = inputKeys.filter((k) => !configKeys.includes(k));
+        for (const k of extraKeys) {
+          const v = input[k];
+          if (!this.rest(ctx, v)) {
+            return false;
+          }
+        }
+      } else {
+        if (ctx.disallowExtraProperties) {
+          const inputKeys = Object.keys(input);
+          const extraKeys = inputKeys.filter((k) => !configKeys.includes(k));
+
+          if (extraKeys.length > 0) {
+            return false;
+          }
+        }
+      }
+
+      return true;
+    }
+    return false;
+  }
+}
+
+class ObjectReporter {
+  constructor(dataValidator, restValidator, dataReporter, restReporter) {
+    this.dataValidator = dataValidator;
+    this.restValidator = restValidator;
+    this.dataReporter = dataReporter;
+    this.restReporter = restReporter;
+  }
+
+  reportObjectReporter(ctx, input) {
+    if (typeof input !== "object" || Array.isArray(input) || input === null) {
+      return buildError(ctx, "expected object", input);
+    }
+
+    let acc = [];
+
+    const configKeys = Object.keys(this.dataReporter);
+
+    for (const k of configKeys) {
+      const ok = this.dataValidator[k](ctx, input[k]);
+      if (!ok) {
+        pushPath(ctx, k);
+        const arr2 = this.dataReporter[k](ctx, input[k]);
+        acc.push(...arr2);
+        popPath(ctx);
+      }
+    }
+
+    if (this.restReporter != null) {
+      const inputKeys = Object.keys(input);
+      const extraKeys = inputKeys.filter((k) => !configKeys.includes(k));
+      for (const k of extraKeys) {
+        const ok = this.restValidator(ctx, input[k]);
+        if (!ok) {
+          pushPath(ctx, k);
+          const arr2 = this.restReporter(ctx, input[k]);
+          acc.push(...arr2);
+          popPath(ctx);
+        }
+      }
+    } else {
+      if (ctx.disallowExtraProperties) {
+        const inputKeys = Object.keys(input);
+        const extraKeys = inputKeys.filter((k) => !configKeys.includes(k));
+        if (extraKeys.length > 0) {
+          // return buildError(ctx, `unexpected extra properties: ${limitedCommaJoinJson(extraKeys)}`, input);
+          return extraKeys.flatMap((k) => {
+            pushPath(ctx, k);
+            const err = buildError(ctx, `extra property`, input[k]);
+            popPath(ctx);
+            return err;
+          });
+        }
+      }
+    }
+
+    return acc;
+  }
+}
+class ObjectParser {
+  constructor(data, rest) {
+    this.data = data;
+    this.rest = rest;
+  }
+
+  parseObjectParser(ctx, input) {
+    let acc = {};
+
+    const inputKeys = Object.keys(input);
+    const dataKeys = Object.keys(this.data);
+    const missingKeys = dataKeys.filter((k) => !inputKeys.includes(k));
+
+    for (const k of missingKeys) {
+      acc[k] = undefined;
+    }
+
+    for (const k of inputKeys) {
+      const v = input[k];
+      if (k in this.data) {
+        const itemParsed = this.data[k](ctx, v);
+        acc[k] = itemParsed;
+      } else if (this.rest != null) {
+        const restParsed = this.rest(ctx, v);
+        acc[k] = restParsed;
+      }
+    }
+
+    return acc;
+  }
+}
+
+class AnyOfDiscriminatedValidator {
   constructor(discriminator, mapping) {
     this.discriminator = discriminator;
     this.mapping = mapping;
   }
 
-  decodeAnyOfDiscriminatedDecoder(ctx, input) {
+  validateAnyOfDiscriminatedValidator(ctx, input) {
+    if (typeof input !== "object" || input == null) {
+      return false;
+    }
     const d = input[this.discriminator];
     if (d == null) {
-      return storeError(ctx, input, () => "expected discriminator key " + JSON.stringify(this.discriminator));
+      return false;
+    }
+    const v = this.mapping[d];
+    if (v == null) {
+      // not one of the known discriminators
+      return false;
+    }
+
+    return v(ctx, input);
+  }
+}
+
+class AnyOfDiscriminatedParser {
+  constructor(discriminator, mapping) {
+    this.discriminator = discriminator;
+    this.mapping = mapping;
+  }
+
+  parseAnyOfDiscriminatedParser(ctx, input) {
+    const parser = this.mapping[input[this.discriminator]];
+    if (parser == null) {
+      throw new Error("Unknown discriminator");
+    }
+    return {
+      ...parser(ctx, input),
+      [this.discriminator]: input[this.discriminator],
+    };
+  }
+}
+
+class AnyOfDiscriminatedReporter {
+  constructor(discriminator, mapping) {
+    this.discriminator = discriminator;
+    this.mapping = mapping;
+  }
+
+  reportAnyOfDiscriminatedReporter(ctx, input) {
+    const d = input[this.discriminator];
+    if (d == null) {
+      return buildError(ctx, "expected discriminator key " + JSON.stringify(this.discriminator), input);
     }
     const v = this.mapping[d];
     if (v == null) {
       pushPath(ctx, this.discriminator);
-      const err = storeError(
+      const errs = buildError(
         ctx,
-        d,
-        () =>
-          "expected one of " +
+        "expected one of " +
           Object.keys(this.mapping)
             .map((it) => JSON.stringify(it))
-            .join(", ")
+            .join(", "),
+        d
       );
       popPath(ctx);
-      return err;
+      return errs;
     }
-    const prevAllow = ctx.allowedExtraProperties__ ?? [];
-    ctx.allowedExtraProperties__ = [...prevAllow, this.discriminator];
-    const out = v(ctx, input);
-    ctx.allowedExtraProperties__ = prevAllow;
-    return { ...out, [this.discriminator]: d };
+    return v(ctx, input);
   }
 }
 
-class AnyOfConstsDecoder {
-  constructor(consts) {
-    this.consts = consts;
+class ArrayParser {
+  constructor(innerParser) {
+    this.innerParser = innerParser;
   }
-  decodeAnyOfConstsDecoder(ctx, input) {
-    if (input == null) {
-      if (this.consts.includes(null) || this.consts.includes(undefined)) {
-        return input;
-      }
-    }
-    if (this.consts.includes(input)) {
-      return input;
-    }
-    return storeError(ctx, input, () =>
-      this.consts.length < 3
-        ? "expected one of " + this.consts.map((it) => JSON.stringify(it)).join(", ")
-        : "expected one of " +
-          this.consts
-            .slice(0, 3)
-            .map((it) => JSON.stringify(it))
-            .join(", ") +
-          "..."
-    );
+
+  parseArrayParser(ctx, input) {
+    return input.map((v) => this.innerParser(ctx, v));
   }
 }
 
-class AnyOfDecoder {
-  constructor(vs) {
-    this.vs = vs;
+class ArrayValidator {
+  constructor(innerValidator) {
+    this.innerValidator = innerValidator;
   }
-  decodeAnyOfDecoder(ctx, input) {
-    const optimisticCtx = {
-      noErrorMessages: true,
-    };
-    for (const v of this.vs) {
-      optimisticCtx.errors = null;
-      const newValue = v(optimisticCtx, input);
-      if (optimisticCtx.errors == null) {
-        return newValue;
-      }
-    }
 
-    let accErrors = [];
-    for (const v of this.vs) {
-      const validatorCtx = {};
-      const newValue = v(validatorCtx, input);
-      if (validatorCtx.errors == null) {
-        return newValue;
-      }
-      accErrors.push(...(validatorCtx.errors ?? []));
-    }
-    return storeUnionError(ctx, input, accErrors);
-  }
-}
-class AllOfDecoder {
-  constructor(vs) {
-    this.vs = vs;
-  }
-  decodeAllOfDecoder(ctx, input) {
-    let acc = {};
-    let foundOneObject = false;
-    let allObjects = true;
-    for (const v of this.vs) {
-      const newValue = v(ctx, input);
-      const isObj = typeof newValue === "object";
-      allObjects = allObjects && isObj;
-      if (isObj) {
-        foundOneObject = true;
-        acc = { ...acc, ...newValue };
-      }
-    }
-    if (foundOneObject && allObjects) {
-      return acc;
-    }
-    return input;
-  }
-}
-class TupleDecoder {
-  constructor(vs) {
-    this.vs = vs;
-  }
-  decodeTupleDecoder(ctx, input) {
+  validateArrayValidator(ctx, input) {
     if (Array.isArray(input)) {
-      const acc = [];
-      let idx = 0;
-      for (const v of this.vs.prefix) {
-        pushPath(ctx, "[" + idx + "]");
-        const newValue = v(ctx, input[idx]);
+      for (let i = 0; i < input.length; i++) {
+        const v = input[i];
+        const ok = this.innerValidator(ctx, v);
+        if (!ok) {
+          return false;
+        }
+      }
+      return true;
+    }
+    return false;
+  }
+}
+
+class ArrayReporter {
+  constructor(innerValidator, innerReporter) {
+    this.innerValidator = innerValidator;
+    this.innerReporter = innerReporter;
+  }
+
+  reportArrayReporter(ctx, input) {
+    if (!Array.isArray(input)) {
+      return buildError(ctx, "expected array", input);
+    }
+
+    let acc = [];
+    for (let i = 0; i < input.length; i++) {
+      const ok = this.innerValidator(ctx, input[i]);
+      if (!ok) {
+        pushPath(ctx, `[${i}]`);
+        const v = input[i];
+        const arr2 = this.innerReporter(ctx, v);
+        acc.push(...arr2);
         popPath(ctx);
-        acc.push(newValue);
+      }
+    }
+
+    return acc;
+  }
+}
+
+class AnyOfValidator {
+  constructor(vs) {
+    this.vs = vs;
+  }
+  validateAnyOfValidator(ctx, input) {
+    for (const v of this.vs) {
+      if (v(ctx, input)) {
+        return true;
+      }
+    }
+    return false;
+  }
+}
+class AnyOfParser {
+  constructor(validators, parsers) {
+    this.validators = validators;
+    this.parsers = parsers;
+  }
+  parseAnyOfParser(ctx, input) {
+    const items = [];
+    for (let i = 0; i < this.validators.length; i++) {
+      if (this.validators[i](ctx, input)) {
+        items.push(this.parsers[i](ctx, input));
+      }
+    }
+    return deepmerge(...items);
+  }
+}
+class AnyOfReporter {
+  constructor(validators, reporters) {
+    this.validators = validators;
+    this.reporters = reporters;
+  }
+  reportAnyOfReporter(ctx, input) {
+    const acc = [];
+    const oldPaths = ctx.path;
+    ctx.path = [];
+    for (const v of this.reporters) {
+      const errors = v(ctx, input);
+      acc.push(...errors);
+    }
+    ctx.path = oldPaths;
+    return buildUnionError(ctx, acc, input);
+  }
+}
+
+class AllOfValidator {
+  constructor(vs) {
+    this.vs = vs;
+  }
+  validateAllOfValidator(ctx, input) {
+    for (const v of this.vs) {
+      const isObj = typeof input === "object";
+      if (!isObj) {
+        return false;
+      }
+      if (!v(ctx, input)) {
+        return false;
+      }
+    }
+    return true;
+  }
+}
+
+class AllOfParser {
+  constructor(validators, parsers) {
+    this.validators = validators;
+    this.parsers = parsers;
+  }
+  parseAllOfParser(ctx, input) {
+    let acc = {};
+    for (let i = 0; i < this.validators.length; i++) {
+      const p = this.parsers[i];
+      const parsed = p(ctx, input);
+      if (typeof parsed !== "object") {
+        throw new Error("AllOfParser: Expected object");
+      }
+      acc = { ...acc, ...parsed };
+    }
+    return acc;
+  }
+}
+
+class AllOfReporter {
+  constructor(validators, reporters) {
+    this.validators = validators;
+    this.reporters = reporters;
+  }
+  reportAllOfReporter(ctx, input) {
+    const acc = [];
+    for (const v of this.reporters) {
+      const errors = v(ctx, input);
+      acc.push(...errors);
+    }
+    return acc;
+  }
+}
+
+class TupleValidator {
+  constructor(prefix, rest) {
+    this.prefix = prefix;
+    this.rest = rest;
+  }
+  validateTupleValidator(ctx, input) {
+    if (Array.isArray(input)) {
+      let idx = 0;
+      for (const prefixVal of this.prefix) {
+        if (!prefixVal(ctx, input[idx])) {
+          return false;
+        }
         idx++;
       }
-      if (this.vs.items != null) {
+      const itemVal = this.rest;
+      if (itemVal != null) {
         for (let i = idx; i < input.length; i++) {
-          const v = input[i];
-          pushPath(ctx, "[" + i + "]");
-          acc.push(this.vs.items(ctx, v));
-          popPath(ctx);
+          if (!itemVal(ctx, input[i])) {
+            return false;
+          }
         }
       } else {
         if (input.length > idx) {
-          return storeError(ctx, input, "tuple has too many items");
+          return false;
         }
       }
-      return acc;
+      return true;
     }
-    return storeError(ctx, input, "expected tuple");
+    return false;
+  }
+}
+
+class TupleParser {
+  constructor(prefix, rest) {
+    this.prefix = prefix;
+    this.rest = rest;
+  }
+  parseTupleParser(ctx, input) {
+    let idx = 0;
+    let acc = [];
+    for (const prefixParser of this.prefix) {
+      acc.push(prefixParser(ctx, input[idx]));
+      idx++;
+    }
+    if (this.rest != null) {
+      for (let i = idx; i < input.length; i++) {
+        acc.push(this.rest(ctx, input[i]));
+      }
+    }
+    return acc;
+  }
+}
+
+class TupleReporter {
+  constructor(prefixValidator, restValidator, prefixReporter, restReporter) {
+    this.prefixValidator = prefixValidator;
+    this.restValidator = restValidator;
+    this.prefixReporter = prefixReporter;
+    this.restReporter = restReporter;
+  }
+  reportTupleReporter(ctx, input) {
+    if (!Array.isArray(input)) {
+      return buildError(ctx, "expected tuple", input);
+    }
+
+    let idx = 0;
+
+    let acc = [];
+
+    for (const prefixReporter of this.prefixReporter) {
+      const ok = this.prefixValidator[idx](ctx, input[idx]);
+      if (!ok) {
+        pushPath(ctx, `[${idx}]`);
+        const errors = prefixReporter(ctx, input[idx]);
+        acc.push(...errors);
+        popPath(ctx);
+      }
+      idx++;
+    }
+
+    const restReporter = this.restReporter;
+    if (restReporter != null) {
+      for (let i = idx; i < input.length; i++) {
+        const ok = this.restValidator(ctx, input[i]);
+        if (!ok) {
+          pushPath(ctx, `[${i}]`);
+          const errors = restReporter(ctx, input[i]);
+          acc.push(...errors);
+          popPath(ctx);
+        }
+      }
+    }
+
+    return acc;
   }
 }

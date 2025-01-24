@@ -1,5 +1,13 @@
 # @beff/client
 
+## 0.0.74
+
+### Patch Changes
+
+- new cgen backend
+- Updated dependencies
+  - @beff/cli@0.0.74
+
 ## 0.0.73
 
 ### Patch Changes

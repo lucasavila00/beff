@@ -113,12 +113,17 @@ const buildParserFromSafeParser = <T>(
     );
   };
 
+  const validate = (input: any): input is T => {
+    return safeParse(input).success;
+  };
+
   return {
     safeParse,
     parse,
     //@ts-ignore
     zod,
     name,
+    validate,
   };
 };
 

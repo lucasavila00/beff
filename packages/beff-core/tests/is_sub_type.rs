@@ -7,14 +7,14 @@ mod tests {
             semtype::{SemTypeContext, SemTypeOps},
             ToSemType,
         },
-        Validator,
+        NamedSchema,
     };
 
     pub fn is_sub_type(
         a: &JsonSchema,
         b: &JsonSchema,
-        a_validators: &[&Validator],
-        b_validators: &[&Validator],
+        a_validators: &[&NamedSchema],
+        b_validators: &[&NamedSchema],
         ctx: &mut SemTypeContext,
     ) -> bool {
         let a = a.to_sem_type(a_validators, ctx).expect("should work");
@@ -25,8 +25,8 @@ mod tests {
     fn schema_is_sub_type(
         a: &JsonSchema,
         b: &JsonSchema,
-        a_validators: &[&Validator],
-        b_validators: &[&Validator],
+        a_validators: &[&NamedSchema],
+        b_validators: &[&NamedSchema],
     ) -> bool {
         let mut ctx = SemTypeContext::new();
         is_sub_type(a, b, a_validators, b_validators, &mut ctx)
@@ -34,7 +34,7 @@ mod tests {
 
     #[test]
     fn ref2() {
-        let definitions = [Validator {
+        let definitions = [NamedSchema {
             name: "User".into(),
             schema: JsonSchema::object(
                 vec![
@@ -60,21 +60,21 @@ mod tests {
         let res = schema_is_sub_type(
             &t1,
             &t2,
-            &definitions.iter().collect::<Vec<&Validator>>(),
-            &definitions.iter().collect::<Vec<&Validator>>(),
+            &definitions.iter().collect::<Vec<&NamedSchema>>(),
+            &definitions.iter().collect::<Vec<&NamedSchema>>(),
         );
         assert!(res);
         let res = schema_is_sub_type(
             &t2,
             &t1,
-            &definitions.iter().collect::<Vec<&Validator>>(),
-            &definitions.iter().collect::<Vec<&Validator>>(),
+            &definitions.iter().collect::<Vec<&NamedSchema>>(),
+            &definitions.iter().collect::<Vec<&NamedSchema>>(),
         );
         assert!(!res);
     }
     #[test]
     fn ref1() {
-        let definitions = [Validator {
+        let definitions = [NamedSchema {
             name: "User".into(),
             schema: JsonSchema::object(
                 vec![
@@ -103,21 +103,21 @@ mod tests {
         let res = schema_is_sub_type(
             &t1,
             &t2,
-            &definitions.iter().collect::<Vec<&Validator>>(),
-            &definitions.iter().collect::<Vec<&Validator>>(),
+            &definitions.iter().collect::<Vec<&NamedSchema>>(),
+            &definitions.iter().collect::<Vec<&NamedSchema>>(),
         );
         assert!(res);
         let res = schema_is_sub_type(
             &t2,
             &t1,
-            &definitions.iter().collect::<Vec<&Validator>>(),
-            &definitions.iter().collect::<Vec<&Validator>>(),
+            &definitions.iter().collect::<Vec<&NamedSchema>>(),
+            &definitions.iter().collect::<Vec<&NamedSchema>>(),
         );
         assert!(res);
     }
     #[test]
     fn ref3() {
-        let definitions = [Validator {
+        let definitions = [NamedSchema {
             name: "User".into(),
             schema: JsonSchema::object(
                 vec![
@@ -146,22 +146,22 @@ mod tests {
         let res = schema_is_sub_type(
             &t1,
             &t2,
-            &definitions.iter().collect::<Vec<&Validator>>(),
-            &definitions.iter().collect::<Vec<&Validator>>(),
+            &definitions.iter().collect::<Vec<&NamedSchema>>(),
+            &definitions.iter().collect::<Vec<&NamedSchema>>(),
         );
         assert!(!res);
         let res = schema_is_sub_type(
             &t2,
             &t1,
-            &definitions.iter().collect::<Vec<&Validator>>(),
-            &definitions.iter().collect::<Vec<&Validator>>(),
+            &definitions.iter().collect::<Vec<&NamedSchema>>(),
+            &definitions.iter().collect::<Vec<&NamedSchema>>(),
         );
         assert!(!res);
     }
 
     #[test]
     fn mappings4() {
-        let definitions = [Validator {
+        let definitions = [NamedSchema {
             name: "User".into(),
             schema: JsonSchema::object(
                 vec![
@@ -193,15 +193,15 @@ mod tests {
         let res = schema_is_sub_type(
             &t1,
             &t2,
-            &definitions.iter().collect::<Vec<&Validator>>(),
-            &definitions.iter().collect::<Vec<&Validator>>(),
+            &definitions.iter().collect::<Vec<&NamedSchema>>(),
+            &definitions.iter().collect::<Vec<&NamedSchema>>(),
         );
         assert!(res);
         let res = schema_is_sub_type(
             &t2,
             &t1,
-            &definitions.iter().collect::<Vec<&Validator>>(),
-            &definitions.iter().collect::<Vec<&Validator>>(),
+            &definitions.iter().collect::<Vec<&NamedSchema>>(),
+            &definitions.iter().collect::<Vec<&NamedSchema>>(),
         );
         assert!(!res);
     }

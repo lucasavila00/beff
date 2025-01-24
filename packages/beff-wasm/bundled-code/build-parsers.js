@@ -18,30 +18,50 @@ function buildParsers(args) {
 
   let decoders = {};
   //@ts-ignore
-  Object.keys(buildParsersInput).forEach((k) => {
+  Object.keys(buildValidatorsInput).forEach((k) => {
     //@ts-ignore
-    let v = buildParsersInput[k];
-    const safeParse = (input, options) => {
-      const validatorCtx = {
-        disallowExtraProperties: options?.disallowExtraProperties ?? false,
-      };
-      const new_value = v(validatorCtx, input);
-      const validation_result = validatorCtx.errors;
-      if (validation_result == null) {
-        return { success: true, data: new_value };
+    let v = buildValidatorsInput[k];
+    const validate = (input, options) => {
+      const disallowExtraProperties = options?.disallowExtraProperties ?? false;
+      const ctx = { disallowExtraProperties };
+      const ok = v(ctx, input);
+      if (typeof ok !== "boolean") {
+        throw new Error("INTERNAL ERROR: Expected boolean");
       }
-      const errorsSlice = validation_result.slice(0, 10);
-      return { success: false, errors: errorsSlice };
+      return ok;
+    };
+    const safeParse = (input, options) => {
+      const disallowExtraProperties = options?.disallowExtraProperties ?? false;
+      const ok = validate(input, options);
+      // const validation_result = validatorCtx.errors;
+      // if (validation_result == null) {
+      //   return { success: true, data: new_value };
+      // }
+      // const errorsSlice = validation_result.slice(0, 10);
+      // return { success: false, errors: errorsSlice };
+      if (ok) {
+        //@ts-ignore
+        let p = buildParsersInput[k];
+        let ctx = { disallowExtraProperties };
+        const parsed = p(ctx, input);
+        return { success: true, data: parsed };
+      }
+      //@ts-ignore
+      let e = buildReportersInput[k];
+      let ctx = { path: [], disallowExtraProperties };
+      return {
+        success: false,
+        errors: e(ctx, input).slice(0, 10),
+      };
     };
     const parse = (input, options) => {
       const safe = safeParse(input, options);
       if (safe.success) {
         return safe.data;
       }
-      const error = new Error(`Failed to parse ${k}`);
       //@ts-ignore
-      error.errors = safe.errors;
-      throw error;
+      const explained = printErrors(safe.errors, []);
+      throw new Error(`Failed to parse ${k} - ${explained}`);
     };
     const zod = () => {
       //@ts-ignore
@@ -59,6 +79,7 @@ function buildParsers(args) {
       safeParse,
       zod,
       name: k,
+      validate,
     };
   });
   return decoders;

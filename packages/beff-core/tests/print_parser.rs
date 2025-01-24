@@ -7,8 +7,8 @@ mod tests {
         parser_extractor::BuiltDecoder,
         print::printer::ToWritableModules,
         schema_changes::print_ts_types,
-        BeffUserSettings, BffFileName, EntryPoints, ExtractResult, FileManager, ParsedModule,
-        Validator,
+        BeffUserSettings, BffFileName, EntryPoints, ExtractResult, FileManager, NamedSchema,
+        ParsedModule,
     };
     use swc_common::{Globals, GLOBALS};
     use swc_ecma_ast::TsType;
@@ -52,7 +52,10 @@ mod tests {
         };
         beff_core::extract(&mut man, entry)
     }
-    fn as_typescript_string_(validators: &[&Validator], built_decoders: &[BuiltDecoder]) -> String {
+    fn as_typescript_string_(
+        validators: &[&NamedSchema],
+        built_decoders: &[BuiltDecoder],
+    ) -> String {
         let mut vs: Vec<(String, TsType)> = vec![];
 
         let mut sorted_validators = validators.iter().collect::<Vec<_>>();
@@ -635,5 +638,97 @@ mod tests {
      
         parse.buildParsers<{ KABC: KABC }>();
       "#));
+    }
+
+    #[test]
+    fn ok_string_decoder() {
+        insta::assert_snapshot!(decoder(
+            r#"
+        export type Alias = string;
+        parse.buildParsers<{ Dec: Alias }>();
+      "#
+        ));
+    }
+
+    #[test]
+    fn ok_array_decoder() {
+        insta::assert_snapshot!(decoder(
+            r#"
+        export type Alias = string[];
+        parse.buildParsers<{ Dec: Alias }>();
+      "#
+        ));
+    }
+    #[test]
+    fn ok_string_with_fmt_decoder() {
+        insta::assert_snapshot!(decoder(
+            r#"
+        export type Alias = StringFormat<"password">;
+        parse.buildParsers<{ Dec: Alias }>();
+      "#
+        ));
+    }
+    #[test]
+    fn ok_const_decoder() {
+        insta::assert_snapshot!(decoder(
+            r#"
+        export type Alias = "some_string_const"
+        parse.buildParsers<{ Dec: Alias }>();
+      "#
+        ));
+    }
+    #[test]
+    fn ok_codec_decoder() {
+        insta::assert_snapshot!(decoder(
+            r#"
+        export type Alias = Date
+        parse.buildParsers<{ Dec: Alias }>();
+      "#
+        ));
+    }
+    #[test]
+    fn ok_template_lit_decoder() {
+        insta::assert_snapshot!(decoder(
+            r#"
+        export type Alias = `${number}__${number}`
+        parse.buildParsers<{ Dec: Alias }>();
+      "#
+        ));
+    }
+    #[test]
+    fn ok_tuple_decoder() {
+        insta::assert_snapshot!(decoder(
+            r#"
+        export type Alias = [number, number]
+        parse.buildParsers<{ Dec: Alias }>();
+      "#
+        ));
+    }
+    #[test]
+    fn ok_object_decoder() {
+        insta::assert_snapshot!(decoder(
+            r#"
+        export type Alias = {a:string}
+        parse.buildParsers<{ Dec: Alias }>();
+      "#
+        ));
+    }
+    #[test]
+    fn ok_union_decoder() {
+        insta::assert_snapshot!(decoder(
+            r#"
+        export type Alias = string | number
+        parse.buildParsers<{ Dec: Alias }>();
+      "#
+        ));
+    }
+    #[test]
+    fn ok_intersection_decoder() {
+        insta::assert_snapshot!(decoder(
+            r#"
+        export type Alias = {a:string} & {b:number}
+        parse.buildParsers<{ Dec: Alias }>();
+      "#
+        ));
     }
 }

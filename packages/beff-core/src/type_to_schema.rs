@@ -9,7 +9,7 @@ use crate::subtyping::subtype::StringLitOrFormat;
 use crate::subtyping::to_schema::to_validators;
 use crate::subtyping::ToSemType;
 use crate::sym_reference::{ResolvedLocalSymbol, TsBuiltIn, TypeResolver};
-use crate::Validator;
+use crate::NamedSchema;
 use crate::{BeffUserSettings, BffFileName, FileManager, ImportReference, SymbolExport};
 use std::collections::{BTreeMap, HashMap};
 use std::rc::Rc;
@@ -29,7 +29,7 @@ use swc_ecma_ast::{
 pub struct TypeToSchema<'a, 'b, R: FileManager> {
     pub files: &'a mut R,
     pub current_file: BffFileName,
-    pub components: HashMap<String, Option<Validator>>,
+    pub components: HashMap<String, Option<NamedSchema>>,
     pub ref_stack: Vec<DiagnosticInformation>,
     pub type_param_stack: Vec<BTreeMap<String, JsonSchema>>,
     pub settings: &'a BeffUserSettings,
@@ -165,7 +165,7 @@ impl<'a, 'b, R: FileManager> TypeToSchema<'a, 'b, R> {
                         JsonSchema::Ref(n) => {
                             let map = self.components.get(&n).and_then(|it| it.as_ref()).cloned();
                             match map {
-                                Some(Validator {
+                                Some(NamedSchema {
                                     schema: JsonSchema::Const(JsonSchemaConst::String(str)),
                                     ..
                                 }) => keys.push(str),
@@ -247,7 +247,7 @@ impl<'a, 'b, R: FileManager> TypeToSchema<'a, 'b, R> {
             JsonSchema::Ref(n) => {
                 let map = self.components.get(&n).and_then(|it| it.as_ref()).cloned();
                 match map {
-                    Some(Validator { schema, .. }) => self.extract_array(schema, span),
+                    Some(NamedSchema { schema, .. }) => self.extract_array(schema, span),
                     _ => self.error(&span, DiagnosticInfoMessage::ExpectedArray),
                 }
             }
@@ -268,7 +268,7 @@ impl<'a, 'b, R: FileManager> TypeToSchema<'a, 'b, R> {
             JsonSchema::Ref(n) => {
                 let map = self.components.get(&n).and_then(|it| it.as_ref()).cloned();
                 match map {
-                    Some(Validator { schema, .. }) => self.extract_tuple(schema, span),
+                    Some(NamedSchema { schema, .. }) => self.extract_tuple(schema, span),
                     _ => self.error(&span, DiagnosticInfoMessage::ExpectedTuple),
                 }
             }
@@ -289,7 +289,7 @@ impl<'a, 'b, R: FileManager> TypeToSchema<'a, 'b, R> {
             JsonSchema::Ref(r) => {
                 let map = self.components.get(r).and_then(|it| it.as_ref()).cloned();
                 match map {
-                    Some(Validator { schema, .. }) => self.extract_object(&schema, span),
+                    Some(NamedSchema { schema, .. }) => self.extract_object(&schema, span),
                     None => self.error(span, DiagnosticInfoMessage::ShouldHaveObjectAsTypeArgument),
                 }
             }
@@ -790,7 +790,7 @@ impl<'a, 'b, R: FileManager> TypeToSchema<'a, 'b, R> {
         }
         self.components.insert(
             name.clone(),
-            Some(Validator {
+            Some(NamedSchema {
                 name: name.clone(),
                 schema,
             }),
@@ -1678,7 +1678,7 @@ impl<'a, 'b, R: FileManager> TypeToSchema<'a, 'b, R> {
             },
         }
     }
-    fn validators_ref(&self) -> Vec<&Validator> {
+    fn validators_ref(&self) -> Vec<&NamedSchema> {
         self.components
             .values()
             .filter_map(|it| it.as_ref())

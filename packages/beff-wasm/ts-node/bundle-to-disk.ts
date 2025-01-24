@@ -5,25 +5,45 @@ import { ProjectJson, ProjectModule } from "./project";
 import gen from "./generated/bundle";
 
 const decodersExported = [
-  "ObjectDecoder",
-  "ArrayDecoder",
-  "decodeString",
-  "decodeNumber",
+  "registerCustomFormatter",
+  "ObjectValidator",
+  "ObjectParser",
+  "ArrayParser",
+  "ArrayValidator",
   "CodecDecoder",
-  "decodeFunction",
   "StringWithFormatDecoder",
-  "AnyOfDecoder",
-  "AllOfDecoder",
-  "decodeBoolean",
-  "decodeAny",
-  "TupleDecoder",
-  "decodeNull",
-  "decodeNever",
+  "AnyOfValidator",
+  "AnyOfParser",
+  "AllOfValidator",
+  "AllOfParser",
+  "TupleParser",
+  "TupleValidator",
   "RegexDecoder",
   "ConstDecoder",
-  "registerCustomFormatter",
   "AnyOfConstsDecoder",
-  "AnyOfDiscriminatedDecoder",
+  "AnyOfDiscriminatedReporter",
+  "AnyOfDiscriminatedParser",
+  "AnyOfDiscriminatedValidator",
+  "validateString",
+  "validateNumber",
+  "validateFunction",
+  "validateBoolean",
+  "validateAny",
+  "validateNull",
+  "validateNever",
+  "parseIdentity",
+  "AnyOfReporter",
+  "AllOfReporter",
+  "reportString",
+  "reportNumber",
+  "reportNull",
+  "reportBoolean",
+  "reportAny",
+  "reportNever",
+  "reportFunction",
+  "ArrayReporter",
+  "ObjectReporter",
+  "TupleReporter",
 ];
 
 const esmTag = (mod: ProjectModule) => {
@@ -40,7 +60,7 @@ Object.defineProperty(exports, "__esModule", {
 const exportCode = (mod: ProjectModule) => (mod === "esm" ? "export default" : "exports.default =");
 
 const finalizeValidatorsCode = (wasmCode: WritableModules, mod: ProjectModule) => {
-  const exportedItems = [...decodersExported, "validators"].join(", ");
+  const exportedItems = [...decodersExported, "validators", "parsers", "reporters"].join(", ");
   const exports = [exportCode(mod), `{ ${exportedItems} };`].join(" ");
   return [
     "//@ts-nocheck\n/* eslint-disable */\n",
@@ -52,7 +72,7 @@ const finalizeValidatorsCode = (wasmCode: WritableModules, mod: ProjectModule) =
 };
 
 const importValidators = (mod: ProjectModule) => {
-  const i = [...decodersExported, "validators", "c"].join(", ");
+  const i = [...decodersExported, "validators", "parsers", "reporters", "c"].join(", ");
 
   const importRest =
     mod === "esm"
