@@ -257,6 +257,15 @@ class ObjectValidator {
             return false;
           }
         }
+      } else {
+        if (ctx.disallowExtraProperties) {
+          const inputKeys = Object.keys(input);
+          const extraKeys = inputKeys.filter((k) => !configKeys.includes(k));
+
+          if (extraKeys.length > 0) {
+            return false;
+          }
+        }
       }
 
       return true;
@@ -285,8 +294,7 @@ class ObjectReporter {
       const ok = this.dataValidator[k](ctx, input[k]);
       if (!ok) {
         pushPath(ctx, k);
-        const v = this.dataReporter[k];
-        const arr2 = v(ctx, input[k]);
+        const arr2 = this.dataReporter[k](ctx, input[k]);
         acc.push(...arr2);
         popPath(ctx);
       }
@@ -299,10 +307,17 @@ class ObjectReporter {
         const ok = this.restValidator(ctx, input[k]);
         if (!ok) {
           pushPath(ctx, k);
-          const v = input[k];
-          const arr2 = this.restReporter(ctx, v);
+          const arr2 = this.restReporter(ctx, input[k]);
           acc.push(...arr2);
           popPath(ctx);
+        }
+      }
+    } else {
+      if (ctx.disallowExtraProperties) {
+        const inputKeys = Object.keys(input);
+        const extraKeys = inputKeys.filter((k) => !configKeys.includes(k));
+        if (extraKeys.length > 0) {
+          return buildError(ctx, `unexpected extra properties: ${extraKeys.join(", ")}`, input);
         }
       }
     }
@@ -320,15 +335,21 @@ class ObjectParser {
     let acc = {};
 
     const inputKeys = Object.keys(input);
+    const dataKeys = Object.keys(this.data);
+    const missingKeys = dataKeys.filter((k) => !inputKeys.includes(k));
+
+    for (const k of missingKeys) {
+      acc[k] = undefined;
+    }
+
     for (const k of inputKeys) {
       const v = input[k];
       if (k in this.data) {
-        const p = this.data[k];
-        acc[k] = p(ctx, v);
-      } else {
-        if (this.rest != null) {
-          acc[k] = this.rest(ctx, v);
-        }
+        const itemParsed = this.data[k](ctx, v);
+        acc[k] = itemParsed;
+      } else if (this.rest != null) {
+        const restParsed = this.rest(ctx, v);
+        acc[k] = restParsed;
       }
     }
 
@@ -474,7 +495,7 @@ class AllOfReporter {
     this.reporters = reporters;
   }
   reportAllOfReporter(ctx, input) {
-    throw new Error("Not implemented");
+    throw new Error("reportAllOfReporter Not implemented");
   }
 }
 
@@ -516,7 +537,18 @@ class TupleParser {
     this.rest = rest;
   }
   parseTupleParser(ctx, input) {
-    throw new Error("Not implemented");
+    let idx = 0;
+    let acc = [];
+    for (const prefixParser of this.prefix) {
+      acc.push(prefixParser(ctx, input[idx]));
+      idx++;
+    }
+    if (this.rest != null) {
+      for (let i = idx; i < input.length; i++) {
+        acc.push(this.rest(ctx, input[i]));
+      }
+    }
+    return acc;
   }
 }
 
@@ -528,6 +560,10 @@ class TupleReporter {
     this.restReporter = restReporter;
   }
   reportTupleReporter(ctx, input) {
+    if (!Array.isArray(input)) {
+      return buildError(ctx, "expected array", input);
+    }
+
     let idx = 0;
 
     let acc = [];

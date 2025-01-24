@@ -40,10 +40,8 @@ function buildParsers(args) {
     
     let v = buildValidatorsInput[k];
     const validate = (input, options) => {
-      if (options?.disallowExtraProperties ?? false) {
-        throw new Error("disallowExtraProperties not supported");
-      }
-      const ctx = null;
+      const disallowExtraProperties = options?.disallowExtraProperties ?? false;
+      const ctx = { disallowExtraProperties };
       const ok = v(ctx, input);
       if (typeof ok !== "boolean") {
         throw new Error("INTERNAL ERROR: Expected boolean");
@@ -51,6 +49,7 @@ function buildParsers(args) {
       return ok;
     };
     const safeParse = (input, options) => {
+      const disallowExtraProperties = options?.disallowExtraProperties ?? false;
       const ok = validate(input, options);
       
       
@@ -61,13 +60,13 @@ function buildParsers(args) {
       if (ok) {
         
         let p = buildParsersInput[k];
-        let ctx = null;
+        let ctx = { disallowExtraProperties };
         const parsed = p(ctx, input);
         return { success: true, data: parsed };
       }
       
       let e = buildReportersInput[k];
-      let ctx = { path: [] };
+      let ctx = { path: [], disallowExtraProperties };
       return {
         success: false,
         errors: e(ctx, input),

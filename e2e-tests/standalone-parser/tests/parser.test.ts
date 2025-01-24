@@ -298,7 +298,7 @@ it("import * ", () => {
 
   expect(AllTs.parse("b")).toMatchInlineSnapshot('"b"');
 });
-it.skip("disallow extra properties", () => {
+it("disallow extra properties", () => {
   expect(
     T3.parse(
       {
@@ -330,7 +330,25 @@ it.skip("disallow extra properties", () => {
     {
       "errors": [
         {
-          "message": "failed to parse!!!",
+          "errors": [
+            {
+              "message": "unexpected extra properties: y",
+              "path": [],
+              "received": {
+                "kind": "square",
+                "x": 1,
+                "y": 1,
+              },
+            },
+            {
+              "message": "expected triangle",
+              "path": [
+                "kind",
+              ],
+              "received": "square",
+            },
+          ],
+          "isUnionError": true,
           "path": [],
           "received": {
             "kind": "square",
@@ -469,6 +487,7 @@ it("DiscriminatedUnion", () => {
   };
   expect(DiscriminatedUnion2.parse(validD2)).toMatchInlineSnapshot(`
     {
+      "type": undefined,
       "valueD": 1,
     }
   `);
@@ -480,6 +499,7 @@ it("DiscriminatedUnion", () => {
   expect(DiscriminatedUnion.parse(valid)).toMatchInlineSnapshot(`
     {
       "a1": "a",
+      "a11": undefined,
       "subType": "a1",
       "type": "a",
     }
@@ -795,13 +815,28 @@ it("DiscriminatedUnion", () => {
   `);
 });
 it("repro1", () => {
-  expect(Repro1.parse({})).toMatchInlineSnapshot("{}");
+  expect(Repro1.parse({})).toMatchInlineSnapshot(`
+    {
+      "sizes": undefined,
+    }
+  `);
 });
 it("PartialObject", () => {
-  expect(PartialObject.parse({})).toMatchInlineSnapshot("{}");
+  expect(PartialObject.parse({})).toMatchInlineSnapshot(`
+    {
+      "a": undefined,
+      "b": undefined,
+    }
+  `);
 });
 it("PartialSettings", () => {
-  expect(PartialSettings.parse({})).toMatchInlineSnapshot("{}");
+  expect(PartialSettings.parse({})).toMatchInlineSnapshot(`
+    {
+      "a": undefined,
+      "d": undefined,
+      "level": undefined,
+    }
+  `);
 });
 it("LevelAndDSettings", () => {
   const valid: LevelAndDSettings = {
