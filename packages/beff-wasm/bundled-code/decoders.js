@@ -313,7 +313,13 @@ class ObjectReporter {
         const inputKeys = Object.keys(input);
         const extraKeys = inputKeys.filter((k) => !configKeys.includes(k));
         if (extraKeys.length > 0) {
-          return buildError(ctx, `unexpected extra properties: ${limitedCommaJoinJson(extraKeys)}`, input);
+          // return buildError(ctx, `unexpected extra properties: ${limitedCommaJoinJson(extraKeys)}`, input);
+          return extraKeys.flatMap((k) => {
+            pushPath(ctx, k);
+            const err = buildError(ctx, `extra property`, input[k]);
+            popPath(ctx);
+            return err;
+          });
         }
       }
     }
@@ -369,10 +375,8 @@ class AnyOfDiscriminatedValidator {
       // not one of the known discriminators
       return false;
     }
-    if (!v(ctx, input)) {
-      return false;
-    }
-    return true;
+
+    return v(ctx, input);
   }
 }
 
@@ -388,8 +392,8 @@ class AnyOfDiscriminatedParser {
       throw new Error("Unknown discriminator");
     }
     return {
-      [this.discriminator]: input[this.discriminator],
       ...parser(ctx, input),
+      [this.discriminator]: input[this.discriminator],
     };
   }
 }
@@ -403,11 +407,21 @@ class AnyOfDiscriminatedReporter {
   reportAnyOfDiscriminatedReporter(ctx, input) {
     const d = input[this.discriminator];
     if (d == null) {
-      return buildError(ctx, `missing discriminator ${this.discriminator}`, input);
+      return buildError(ctx, "expected discriminator key " + JSON.stringify(this.discriminator), input);
     }
     const v = this.mapping[d];
     if (v == null) {
-      return buildError(ctx, `unknown discriminator ${d}`, input);
+      pushPath(ctx, this.discriminator);
+      const errs = buildError(
+        ctx,
+        "expected one of " +
+          Object.keys(this.mapping)
+            .map((it) => JSON.stringify(it))
+            .join(", "),
+        d
+      );
+      popPath(ctx);
+      return errs;
     }
     return v(ctx, input);
   }

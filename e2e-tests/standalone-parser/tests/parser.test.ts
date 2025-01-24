@@ -348,13 +348,11 @@ it("disallow extra properties", () => {
     {
       "errors": [
         {
-          "message": "unexpected extra properties: \\"y\\"",
-          "path": [],
-          "received": {
-            "kind": "square",
-            "x": 1,
-            "y": 1,
-          },
+          "message": "extra property",
+          "path": [
+            "y",
+          ],
+          "received": 1,
         },
       ],
       "success": false,
@@ -371,12 +369,11 @@ it("exclude object", () => {
     {
       "errors": [
         {
-          "message": "unknown discriminator circle",
-          "path": [],
-          "received": {
-            "kind": "circle",
-            "radius": 1,
-          },
+          "message": "expected one of \\"square\\", \\"triangle\\"",
+          "path": [
+            "kind",
+          ],
+          "received": "circle",
         },
       ],
       "success": false,
@@ -536,7 +533,7 @@ it("DiscriminatedUnion", () => {
     {
       "errors": [
         {
-          "message": "missing discriminator subType",
+          "message": "expected discriminator key \\"subType\\"",
           "path": [],
           "received": {
             "type": "a",
@@ -554,11 +551,11 @@ it("DiscriminatedUnion", () => {
     {
       "errors": [
         {
-          "message": "unknown discriminator c",
-          "path": [],
-          "received": {
-            "type": "c",
-          },
+          "message": "expected one of \\"a\\", \\"b\\"",
+          "path": [
+            "type",
+          ],
+          "received": "c",
         },
       ],
       "success": false,
@@ -568,7 +565,7 @@ it("DiscriminatedUnion", () => {
     {
       "errors": [
         {
-          "message": "missing discriminator type",
+          "message": "expected discriminator key \\"type\\"",
           "path": [],
           "received": {},
         },
