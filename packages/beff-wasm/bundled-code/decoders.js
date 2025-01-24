@@ -46,6 +46,10 @@ class ConstDecoder {
   validateConstDecoder(ctx, input) {
     return input === this.value;
   }
+
+  parseConstDecoder(ctx, input) {
+    throw new Error("Not implemented");
+  }
 }
 
 class RegexDecoder {
@@ -60,15 +64,19 @@ class RegexDecoder {
     }
     return false;
   }
+
+  parseRegexDecoder(ctx, input) {
+    throw new Error("Not implemented");
+  }
 }
 
-class ObjectDecoder {
-  constructor(data, additionalPropsValidator = null) {
+class ObjectValidator {
+  constructor(data, rest) {
     this.data = data;
-    this.additionalPropsValidator = additionalPropsValidator;
+    this.rest = rest;
   }
 
-  validateObjectDecoder(ctx, input) {
+  validateObjectValidator(ctx, input) {
     if (typeof input === "object" && !Array.isArray(input) && input !== null) {
       const configKeys = Object.keys(this.data);
       for (const k of configKeys) {
@@ -78,12 +86,12 @@ class ObjectDecoder {
         }
       }
 
-      if (this.additionalPropsValidator != null) {
+      if (this.rest != null) {
         const inputKeys = Object.keys(input);
         const extraKeys = inputKeys.filter((k) => !configKeys.includes(k));
         for (const k of extraKeys) {
           const v = input[k];
-          if (!this.additionalPropsValidator(ctx, v)) {
+          if (!this.rest(ctx, v)) {
             return false;
           }
         }
@@ -92,6 +100,17 @@ class ObjectDecoder {
       return true;
     }
     return false;
+  }
+}
+
+class ObjectParser {
+  constructor(data, rest) {
+    this.data = data;
+    this.rest = rest;
+  }
+
+  parseObjectParser(ctx, input) {
+    throw new Error("Not implemented");
   }
 }
 
@@ -153,6 +172,9 @@ class CodecDecoder {
     }
     return false;
   }
+  parseCodecDecoder(ctx, input) {
+    throw new Error("Not implemented");
+  }
 }
 
 class StringWithFormatDecoder {
@@ -172,6 +194,9 @@ class StringWithFormatDecoder {
     }
 
     return validator(input);
+  }
+  parseStringWithFormatDecoder(ctx, input) {
+    throw new Error("Not implemented");
   }
 }
 class AnyOfDiscriminatedDecoder {
@@ -211,11 +236,11 @@ class AnyOfConstsDecoder {
   }
 }
 
-class AnyOfDecoder {
+class AnyOfValidator {
   constructor(vs) {
     this.vs = vs;
   }
-  validateAnyOfDecoder(ctx, input) {
+  validateAnyOfValidator(ctx, input) {
     for (const v of this.vs) {
       if (v(ctx, input)) {
         return true;
@@ -224,11 +249,19 @@ class AnyOfDecoder {
     return false;
   }
 }
-class AllOfDecoder {
+class AnyOfParser {
   constructor(vs) {
     this.vs = vs;
   }
-  validateAllOfDecoder(ctx, input) {
+  parseAnyOfParser(ctx, input) {
+    throw new Error("Not implemented");
+  }
+}
+class AllOfValidator {
+  constructor(vs) {
+    this.vs = vs;
+  }
+  validateAllOfValidator(ctx, input) {
     for (const v of this.vs) {
       if (!v(ctx, input)) {
         return false;
@@ -237,23 +270,30 @@ class AllOfDecoder {
     return true;
   }
 }
-class TupleDecoder {
-  constructor(prefix_val_arr, prefix_parser_arr, item_validator, item_parser) {
-    this.prefixValidator = prefix_val_arr;
-    this.prefixParser = prefix_parser_arr;
-    this.itemsValidator = item_validator;
-    this.itemParser = item_parser;
+
+class AllOfParser {
+  constructor(vs) {
+    this.vs = vs;
   }
-  validateTupleDecoder(ctx, input) {
+  parseAllOfParser(ctx, input) {
+    throw new Error("Not implemented");
+  }
+}
+class TupleValidator {
+  constructor(prefix, rest) {
+    this.prefix = prefix;
+    this.rest = rest;
+  }
+  validateTupleValidator(ctx, input) {
     if (Array.isArray(input)) {
       let idx = 0;
-      for (const prefixVal of this.prefixValidator) {
+      for (const prefixVal of this.prefix) {
         if (!prefixVal(ctx, input[idx])) {
           return false;
         }
         idx++;
       }
-      const itemVal = this.itemsValidator;
+      const itemVal = this.rest;
       if (itemVal != null) {
         for (let i = idx; i < input.length; i++) {
           if (!itemVal(ctx, input[i])) {
@@ -268,5 +308,15 @@ class TupleDecoder {
       return true;
     }
     return false;
+  }
+}
+
+class TupleParser {
+  constructor(prefix, rest) {
+    this.prefix = prefix;
+    this.rest = rest;
+  }
+  parseTupleParser(ctx, input) {
+    throw new Error("Not implemented");
   }
 }

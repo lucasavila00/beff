@@ -6,14 +6,18 @@ import gen from "./generated/bundle";
 
 const decodersExported = [
   "registerCustomFormatter",
-  "ObjectDecoder",
+  "ObjectValidator",
+  "ObjectParser",
   "ArrayParser",
   "ArrayValidator",
   "CodecDecoder",
   "StringWithFormatDecoder",
-  "AnyOfDecoder",
-  "AllOfDecoder",
-  "TupleDecoder",
+  "AnyOfValidator",
+  "AnyOfParser",
+  "AllOfValidator",
+  "AllOfParser",
+  "TupleParser",
+  "TupleValidator",
   "RegexDecoder",
   "ConstDecoder",
   "AnyOfConstsDecoder",
@@ -42,7 +46,7 @@ Object.defineProperty(exports, "__esModule", {
 const exportCode = (mod: ProjectModule) => (mod === "esm" ? "export default" : "exports.default =");
 
 const finalizeValidatorsCode = (wasmCode: WritableModules, mod: ProjectModule) => {
-  const exportedItems = [...decodersExported, "validators"].join(", ");
+  const exportedItems = [...decodersExported, "validators", "parsers"].join(", ");
   const exports = [exportCode(mod), `{ ${exportedItems} };`].join(" ");
   return [
     "//@ts-nocheck\n/* eslint-disable */\n",
@@ -54,7 +58,7 @@ const finalizeValidatorsCode = (wasmCode: WritableModules, mod: ProjectModule) =
 };
 
 const importValidators = (mod: ProjectModule) => {
-  const i = [...decodersExported, "validators", "c"].join(", ");
+  const i = [...decodersExported, "validators", "parsers", "c"].join(", ");
 
   const importRest =
     mod === "esm"

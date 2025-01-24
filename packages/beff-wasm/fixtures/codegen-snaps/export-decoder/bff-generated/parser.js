@@ -4,20 +4,31 @@
 
 import {printErrors} from '@beff/client';
 import {z} from 'zod';
-import validatorsMod from "./validators.js"; const { registerCustomFormatter, ObjectDecoder, ArrayDecoder, CodecDecoder, StringWithFormatDecoder, AnyOfDecoder, AllOfDecoder, TupleDecoder, RegexDecoder, ConstDecoder, AnyOfConstsDecoder, AnyOfDiscriminatedDecoder, validateString, validateNumber, validateFunction, validateBoolean, validateAny, validateNull, validateNever, validators, c } = validatorsMod;
+import validatorsMod from "./validators.js"; const { registerCustomFormatter, ObjectValidator, ObjectParser, ArrayParser, ArrayValidator, CodecDecoder, StringWithFormatDecoder, AnyOfValidator, AnyOfParser, AllOfValidator, AllOfParser, TupleParser, TupleValidator, RegexDecoder, ConstDecoder, AnyOfConstsDecoder, AnyOfDiscriminatedDecoder, validateString, validateNumber, validateFunction, validateBoolean, validateAny, validateNull, validateNever, parseIdentity, validators, parsers, c } = validatorsMod;
 const RequiredCustomFormats = ["password","StartsWithA"];
-const hoisted_Users_0 = new ArrayDecoder(validators.User);
-const hoisted_float_1 = new ConstDecoder(123.456);
-const hoisted_int_2 = new ConstDecoder(123);
+const hoisted_Users_0 = new ArrayValidator(validators.User);
+const hoisted_Users_1 = new ArrayParser(parsers.User);
+const hoisted_float_2 = new ConstDecoder(123.456);
+const hoisted_int_3 = new ConstDecoder(123);
 const buildValidatorsInput = {
     "NotPublicRenamed": validators.NotPublic,
     "Password": validators.Password,
     "StartsWithA": validators.StartsWithA,
     "User": validators.User,
-    "Users": hoisted_Users_0.validateArrayDecoder.bind(hoisted_Users_0),
-    "float": hoisted_float_1.validateConstDecoder.bind(hoisted_float_1),
-    "int": hoisted_int_2.validateConstDecoder.bind(hoisted_int_2),
+    "Users": hoisted_Users_0.validateArrayValidator.bind(hoisted_Users_0),
+    "float": hoisted_float_2.validateConstDecoder.bind(hoisted_float_2),
+    "int": hoisted_int_3.validateConstDecoder.bind(hoisted_int_3),
     "union": validators.UnionNested
+};
+const buildParsersInput = {
+    "NotPublicRenamed": parsers.NotPublic,
+    "Password": parsers.Password,
+    "StartsWithA": parsers.StartsWithA,
+    "User": parsers.User,
+    "Users": hoisted_Users_1.parseArrayParser.bind(hoisted_Users_1),
+    "float": hoisted_float_2.parseConstDecoder.bind(hoisted_float_2),
+    "int": hoisted_int_3.parseConstDecoder.bind(hoisted_int_3),
+    "union": parsers.UnionNested
 };
 
 

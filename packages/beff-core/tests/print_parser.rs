@@ -713,4 +713,22 @@ mod tests {
       "#
         ));
     }
+    #[test]
+    fn ok_union_decoder() {
+        insta::assert_snapshot!(decoder(
+            r#"
+        export type Alias = string | number
+        parse.buildParsers<{ Dec: Alias }>();
+      "#
+        ));
+    }
+    #[test]
+    fn ok_intersection_decoder() {
+        insta::assert_snapshot!(decoder(
+            r#"
+        export type Alias = {a:string} & {b:number}
+        parse.buildParsers<{ Dec: Alias }>();
+      "#
+        ));
+    }
 }

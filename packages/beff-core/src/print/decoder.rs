@@ -1,12 +1,9 @@
 use super::{expr::ToExpr, printer::const_decl};
 use crate::{
-    ast::json_schema::{JsonSchema, JsonSchemaConst, Optionality, TplLitTypeItem},
+    ast::json_schema::{JsonSchema, Optionality, TplLitTypeItem},
     NamedSchema,
 };
-use std::{
-    clone,
-    collections::{BTreeMap, BTreeSet},
-};
+use std::collections::{BTreeMap, BTreeSet};
 use swc_common::DUMMY_SP;
 use swc_ecma_ast::{
     ArrayLit, BindingIdent, BlockStmt, CallExpr, Callee, Expr, ExprOrSpread, Function, Ident,
@@ -41,27 +38,6 @@ struct DecoderFnGenerator<'a> {
 }
 
 impl DecoderFnGenerator<'_> {
-    // fn decode_union_or_intersection(
-    //     &self,
-    //     decoder_name: &str,
-    //     vs: &BTreeSet<JsonSchema>,
-    //     hoisted: &mut Vec<ModuleItem>,
-    // ) -> Expr {
-    //     let els_expr: Vec<Expr> = vs.iter().map(|it| self.decode_expr(it, hoisted)).collect();
-    //     let arr_lit = Expr::Array(ArrayLit {
-    //         span: DUMMY_SP,
-    //         elems: els_expr
-    //             .into_iter()
-    //             .map(|it| {
-    //                 Some(ExprOrSpread {
-    //                     spread: None,
-    //                     expr: it.into(),
-    //                 })
-    //             })
-    //             .collect(),
-    //     });
-    //     self.new_hoisted_decoder(hoisted, decoder_name, vec![arr_lit])
-    // }
     // fn extract_union(&self, it: &JsonSchema) -> Vec<JsonSchema> {
     //     match it {
     //         JsonSchema::AnyOf(vs) => vs.iter().flat_map(|it| self.extract_union(it)).collect(),
@@ -261,26 +237,30 @@ impl DecoderFnGenerator<'_> {
     //     }
     //     None
     // }
-    // fn decode_any_of(&self, vs: &BTreeSet<JsonSchema>, hoisted: &mut Vec<ModuleItem>) -> Expr {
-    //     if vs.is_empty() {
-    //         panic!("empty anyOf is not allowed")
-    //     }
+    fn decode_any_of(
+        &self,
+        vs: &BTreeSet<JsonSchema>,
+        hoisted: &mut Vec<ModuleItem>,
+    ) -> SchemaCode {
+        if vs.is_empty() {
+            panic!("empty anyOf is not allowed")
+        }
 
-    //     let flat_values = vs
-    //         .iter()
-    //         .flat_map(|it: &JsonSchema| self.extract_union(it))
-    //         .collect::<BTreeSet<_>>();
+        // let flat_values = vs
+        //     .iter()
+        //     .flat_map(|it: &JsonSchema| self.extract_union(it))
+        //     .collect::<BTreeSet<_>>();
 
-    //     if let Some(consts) = self.maybe_decode_any_of_consts(&flat_values, hoisted) {
-    //         return consts;
-    //     }
+        // if let Some(consts) = self.maybe_decode_any_of_consts(&flat_values, hoisted) {
+        //     return consts;
+        // }
 
-    //     if let Some(discriminated) = self.maybe_decode_any_of_discriminated(&flat_values, hoisted) {
-    //         return discriminated;
-    //     }
+        // if let Some(discriminated) = self.maybe_decode_any_of_discriminated(&flat_values, hoisted) {
+        //     return discriminated;
+        // }
 
-    //     self.decode_union_or_intersection("AnyOfDecoder", vs, hoisted)
-    // }
+        self.decode_union_or_intersection("AnyOf", vs, hoisted)
+    }
 
     fn primitive_schema_code(t: &str) -> SchemaCode {
         SchemaCode {
@@ -444,7 +424,53 @@ impl DecoderFnGenerator<'_> {
             parser: bound_parse,
         }
     }
+    fn decode_union_or_intersection(
+        &self,
+        decoder_name: &str,
+        vs: &BTreeSet<JsonSchema>,
+        hoisted: &mut Vec<ModuleItem>,
+    ) -> SchemaCode {
+        let mut validators: Vec<Expr> = vec![];
+        let mut parsers: Vec<Expr> = vec![];
 
+        for v in vs {
+            let SchemaCode {
+                validator: val,
+                parser: par,
+            } = self.generate_schema_code(v, hoisted);
+            validators.push(val);
+            parsers.push(par);
+        }
+
+        self.dynamic_schema_code(
+            decoder_name,
+            hoisted,
+            vec![Expr::Array(ArrayLit {
+                span: DUMMY_SP,
+                elems: validators
+                    .into_iter()
+                    .map(|it| {
+                        Some(ExprOrSpread {
+                            spread: None,
+                            expr: it.into(),
+                        })
+                    })
+                    .collect(),
+            })],
+            vec![Expr::Array(ArrayLit {
+                span: DUMMY_SP,
+                elems: parsers
+                    .into_iter()
+                    .map(|it| {
+                        Some(ExprOrSpread {
+                            spread: None,
+                            expr: it.into(),
+                        })
+                    })
+                    .collect(),
+            })],
+        )
+    }
     fn generate_schema_code(
         &self,
         schema: &JsonSchema,
@@ -649,12 +675,8 @@ impl DecoderFnGenerator<'_> {
                 )
             }
 
-            // JsonSchema::AnyOf(vs) => self.decode_any_of(vs, hoisted),
-            // JsonSchema::AllOf(vs) => self.decode_union_or_intersection("AllOfDecoder", vs, hoisted),
-            _ => {
-                dbg!(schema);
-                unimplemented!()
-            }
+            JsonSchema::AnyOf(vs) => self.decode_any_of(vs, hoisted),
+            JsonSchema::AllOf(vs) => self.decode_union_or_intersection("AllOf", vs, hoisted),
         };
 
         call
