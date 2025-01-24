@@ -33,6 +33,7 @@ function buildUnionError(ctx, errors, received) {
       received,
       errors,
       isUnionError: true,
+      message: "expected one of",
     },
   ];
 }
