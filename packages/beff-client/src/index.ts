@@ -85,6 +85,7 @@ export const printErrors = (it: DecodeError[], parentPath: string[] = []): strin
 
 const buildParserFromSafeParser = <T>(
   name: string,
+  validate: (input: any, options?: ParseOptions) => input is T,
   safeParse: (
     input: any,
     options?: ParseOptions
@@ -113,10 +114,6 @@ const buildParserFromSafeParser = <T>(
     );
   };
 
-  const validate = (input: any): input is T => {
-    return safeParse(input).success;
-  };
-
   return {
     safeParse,
     parse,
@@ -132,120 +129,192 @@ const Object_ = <T extends Record<string, BeffParser<any>>>(
 ): BeffParser<{
   [K in keyof T]: T[K] extends BeffParser<infer U> ? U : never;
 }> =>
-  buildParserFromSafeParser("b.Object", (input: any, options?: ParseOptions) => {
-    const disallowExtraProperties = options?.disallowExtraProperties ?? false;
+  buildParserFromSafeParser(
+    "b.Object",
+    (input: any, options?: ParseOptions): input is any => {
+      const disallowExtraProperties = options?.disallowExtraProperties ?? false;
 
-    const errors: DecodeError[] = [];
-    const result = {} as any;
-
-    for (const key in fields) {
-      const field = fields[key];
-      const res = field.safeParse(input[key]);
-      if (res.success) {
-        result[key] = res.data;
-      } else {
-        errors.push(...res.errors.map((it) => ({ ...it, path: [key, ...it.path] })));
+      if (typeof input !== "object" || input == null || Array.isArray(input)) {
+        return false;
       }
-    }
 
-    if (disallowExtraProperties) {
-      for (const key in input) {
-        if (!fields[key]) {
-          errors.push({
-            message: "Extra property",
-            path: [key],
-            received: input[key],
-          });
+      for (const key in fields) {
+        if (!fields[key].validate(input[key])) {
+          return false;
         }
       }
+
+      if (disallowExtraProperties) {
+        for (const key in input) {
+          if (!fields[key]) {
+            return false;
+          }
+        }
+      }
+
+      return true;
+    },
+    (input: any, options?: ParseOptions) => {
+      const disallowExtraProperties = options?.disallowExtraProperties ?? false;
+
+      const errors: DecodeError[] = [];
+      const result = {} as any;
+
+      for (const key in fields) {
+        const field = fields[key];
+        const res = field.safeParse(input[key]);
+        if (res.success) {
+          result[key] = res.data;
+        } else {
+          errors.push(...res.errors.map((it) => ({ ...it, path: [key, ...it.path] })));
+        }
+      }
+
+      if (disallowExtraProperties) {
+        for (const key in input) {
+          if (!fields[key]) {
+            errors.push({
+              message: "Extra property",
+              path: [key],
+              received: input[key],
+            });
+          }
+        }
+      }
+      if (errors.length > 0) {
+        return { success: false, errors };
+      }
+      return { success: true, data: result };
     }
-    if (errors.length > 0) {
-      return { success: false, errors };
-    }
-    return { success: true, data: result };
-  });
+  );
 
 const String_ = (): BeffParser<string> =>
-  buildParserFromSafeParser("String", (input: any) => {
-    if (typeof input === "string") {
-      return { success: true, data: input };
+  buildParserFromSafeParser(
+    "String",
+    (input) => typeof input === "string",
+    (input: any) => {
+      if (typeof input === "string") {
+        return { success: true, data: input };
+      }
+      return { success: false, errors: [{ message: "Expected string", path: [], received: input }] };
     }
-    return { success: false, errors: [{ message: "Expected string", path: [], received: input }] };
-  });
+  );
 
 const Number_ = (): BeffParser<number> =>
-  buildParserFromSafeParser("Number", (input: any) => {
-    if (typeof input === "number") {
-      return { success: true, data: input };
+  buildParserFromSafeParser(
+    "Number",
+    (input) => typeof input === "number",
+    (input: any) => {
+      if (typeof input === "number") {
+        return { success: true, data: input };
+      }
+      return { success: false, errors: [{ message: "Expected number", path: [], received: input }] };
     }
-    return { success: false, errors: [{ message: "Expected number", path: [], received: input }] };
-  });
+  );
 
 const Boolean_ = (): BeffParser<boolean> =>
-  buildParserFromSafeParser("Boolean", (input: any) => {
-    if (typeof input === "boolean") {
-      return { success: true, data: input };
+  buildParserFromSafeParser(
+    "Boolean",
+    (input) => typeof input === "boolean",
+    (input: any) => {
+      if (typeof input === "boolean") {
+        return { success: true, data: input };
+      }
+      return { success: false, errors: [{ message: "Expected boolean", path: [], received: input }] };
     }
-    return { success: false, errors: [{ message: "Expected boolean", path: [], received: input }] };
-  });
+  );
 
 const Undefined_ = (): BeffParser<undefined> =>
-  buildParserFromSafeParser("Undefined", (input: any) => {
-    if (input == undefined) {
-      return { success: true, data: input };
+  buildParserFromSafeParser(
+    "Undefined",
+    (input): input is undefined => input == null,
+    (input: any) => {
+      if (input == undefined) {
+        return { success: true, data: input };
+      }
+      return { success: false, errors: [{ message: "Expected undefined", path: [], received: input }] };
     }
-    return { success: false, errors: [{ message: "Expected undefined", path: [], received: input }] };
-  });
+  );
 
 const Void_ = (): BeffParser<void> =>
-  buildParserFromSafeParser("Void", (input: any) => {
-    if (input == undefined) {
-      return { success: true, data: input };
+  buildParserFromSafeParser(
+    "Void",
+    (input): input is undefined => input == null,
+    (input: any) => {
+      if (input == undefined) {
+        return { success: true, data: input };
+      }
+      return { success: false, errors: [{ message: "Expected void", path: [], received: input }] };
     }
-    return { success: false, errors: [{ message: "Expected void", path: [], received: input }] };
-  });
+  );
 
 const Null_ = (): BeffParser<undefined> =>
-  buildParserFromSafeParser("Null", (input: any) => {
-    if (input == null) {
-      return { success: true, data: input };
+  buildParserFromSafeParser(
+    "Null",
+    (input): input is undefined => input == null,
+    (input: any) => {
+      if (input == null) {
+        return { success: true, data: input };
+      }
+      return { success: false, errors: [{ message: "Expected null", path: [], received: input }] };
     }
-    return { success: false, errors: [{ message: "Expected null", path: [], received: input }] };
-  });
+  );
 
 const Any_ = (): BeffParser<any> =>
-  buildParserFromSafeParser("Any", (input: any) => {
-    return { success: true, data: input };
-  });
+  buildParserFromSafeParser(
+    "Any",
+    (_input): _input is any => true,
+    (input: any) => {
+      return { success: true, data: input };
+    }
+  );
 
 const Unknown_ = (): BeffParser<unknown> =>
-  buildParserFromSafeParser("Unknown", (input: any) => {
-    return { success: true, data: input };
-  });
+  buildParserFromSafeParser(
+    "Unknown",
+    (_input): _input is unknown => true,
+    (input: any) => {
+      return { success: true, data: input };
+    }
+  );
 
 const Array_ = <T>(parser: BeffParser<T>): BeffParser<T[]> =>
-  buildParserFromSafeParser("b.Array", (input: any) => {
-    if (!Array.isArray(input)) {
-      return {
-        success: false,
-        errors: [{ message: "Expected array", path: [], received: input }],
-      };
-    }
-    const errors: DecodeError[] = [];
-    const results: T[] = [];
-    for (let i = 0; i < input.length; i++) {
-      const res = parser.safeParse(input[i]);
-      if (res.success) {
-        results.push(res.data);
-      } else {
-        errors.push(...res.errors.map((it) => ({ ...it, path: [i.toString(), ...it.path] })));
+  buildParserFromSafeParser(
+    "b.Array",
+    (input: any): input is any => {
+      if (!Array.isArray(input)) {
+        return false;
       }
+      for (let i = 0; i < input.length; i++) {
+        if (!parser.validate(input[i])) {
+          return false;
+        }
+      }
+      return true;
+    },
+    (input: any) => {
+      if (!Array.isArray(input)) {
+        return {
+          success: false,
+          errors: [{ message: "Expected array", path: [], received: input }],
+        };
+      }
+      const errors: DecodeError[] = [];
+      const results: T[] = [];
+      for (let i = 0; i < input.length; i++) {
+        const res = parser.safeParse(input[i]);
+        if (res.success) {
+          results.push(res.data);
+        } else {
+          errors.push(...res.errors.map((it) => ({ ...it, path: [i.toString(), ...it.path] })));
+        }
+      }
+      if (errors.length > 0) {
+        return { success: false, errors };
+      }
+      return { success: true, data: results };
     }
-    if (errors.length > 0) {
-      return { success: false, errors };
-    }
-    return { success: true, data: results };
-  });
+  );
 
 export const b = {
   Object: Object_,
