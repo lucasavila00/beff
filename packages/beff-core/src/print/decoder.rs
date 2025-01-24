@@ -818,7 +818,7 @@ pub fn validator_for_schema(
     name: &str,
 ) -> SchemaCode {
     DecoderFnGenerator {
-        named_schemas: named_schemas,
+        named_schemas,
         name: name.to_owned(),
     }
     .generate_schema_code(schema, hoisted)

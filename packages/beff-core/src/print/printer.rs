@@ -299,8 +299,7 @@ impl ToWritableModules for ExtractResult {
                                     optional: false,
                                 })
                                 .into(),
-                            }))
-                            .into(),
+                            })),
                         )
                     })
                     .collect(),
