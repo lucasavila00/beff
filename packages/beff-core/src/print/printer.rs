@@ -46,7 +46,7 @@ pub struct WritableModules {
 pub trait ToWritableModules {
     fn to_module(self) -> Result<WritableModules>;
 }
-fn build_decoders_expr(
+fn build_validators_expr(
     decs: &[BuiltDecoder],
     validators: &Vec<Validator>,
     hoisted: &mut Vec<ModuleItem>,
@@ -56,7 +56,7 @@ fn build_decoders_expr(
         .map(|decoder| {
             (
                 decoder.exported_name.clone(),
-                decoder::from_schema_expr(
+                decoder::validator_for_schema(
                     &decoder.schema,
                     validators,
                     hoisted,
@@ -124,7 +124,7 @@ impl ToWritableModules for ExtractResult {
             let decoder_fn_decl = ModuleItem::Stmt(Stmt::Decl(Decl::Fn(FnDecl {
                 ident: Ident {
                     span: DUMMY_SP,
-                    sym: format!("Decode{}", comp.name).into(),
+                    sym: format!("Validate{}", comp.name).into(),
                     optional: false,
                 },
                 declare: false,
@@ -149,7 +149,7 @@ impl ToWritableModules for ExtractResult {
                             }),
                             value: Expr::Ident(Ident {
                                 span: DUMMY_SP,
-                                sym: format!("Decode{}", it).into(),
+                                sym: format!("Validate{}", it).into(),
                                 optional: false,
                             })
                             .into(),
@@ -170,15 +170,17 @@ impl ToWritableModules for ExtractResult {
         let mut js_built_parsers = None;
 
         if let Some(parser) = self.parser {
-            let mut acc_hoisted = vec![];
+            let mut parser_hoisted = vec![];
             let decoders = parser.built_decoders.unwrap_or_default();
-            let decoders_expr = build_decoders_expr(&decoders, &validators, &mut acc_hoisted);
-            let built_st = const_decl("buildParsersInput", decoders_expr);
+
+            let validators_expr =
+                build_validators_expr(&decoders, &validators, &mut parser_hoisted);
+            let build_validators_input = const_decl("buildValidatorsInput", validators_expr);
 
             js_built_parsers = Some(emit_module(
-                acc_hoisted
+                parser_hoisted
                     .into_iter()
-                    .chain(vec![built_st].into_iter())
+                    .chain(vec![build_validators_input].into_iter())
                     .collect(),
                 "\n",
             )?);

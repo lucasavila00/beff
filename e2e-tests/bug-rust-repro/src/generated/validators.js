@@ -257,11 +257,11 @@ class TupleDecoder {
 }
 
 
-function DecodeA(ctx, input) {
+function ValidateA(ctx, input) {
     return (decodeString)(ctx, input);
 }
 const validators = {
-    A: DecodeA
+    A: ValidateA
 };
 
 export default { ObjectDecoder, ArrayDecoder, decodeString, decodeNumber, CodecDecoder, decodeFunction, StringWithFormatDecoder, AnyOfDecoder, AllOfDecoder, decodeBoolean, decodeAny, TupleDecoder, decodeNull, decodeNever, RegexDecoder, ConstDecoder, registerCustomFormatter, AnyOfConstsDecoder, AnyOfDiscriminatedDecoder, validators };

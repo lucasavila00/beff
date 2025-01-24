@@ -9,7 +9,7 @@ const RequiredCustomFormats = ["password","StartsWithA"];
 const hoisted_Users_0 = new ArrayDecoder(validators.User);
 const hoisted_float_1 = new ConstDecoder(123.456);
 const hoisted_int_2 = new ConstDecoder(123);
-const buildParsersInput = {
+const buildValidatorsInput = {
     "NotPublicRenamed": validators.NotPublic,
     "Password": validators.Password,
     "StartsWithA": validators.StartsWithA,
@@ -40,9 +40,9 @@ function buildParsers(args) {
 
   let decoders = {};
   
-  Object.keys(buildParsersInput).forEach((k) => {
+  Object.keys(buildValidatorsInput).forEach((k) => {
     
-    let v = buildParsersInput[k];
+    let v = buildValidatorsInput[k];
     const safeParse = (input, options) => {
       if (options?.disallowExtraProperties ?? false) {
         throw new Error("disallowExtraProperties not supported");

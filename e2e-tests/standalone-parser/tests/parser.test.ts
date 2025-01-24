@@ -31,6 +31,7 @@ import {
   TupleCodec,
   TupleCodecRest,
   StringArrCodec,
+  OnlyAKeyCodec,
 } from "../src/parser";
 import { Arr2 } from "../src/types";
 import { Schemas } from "../src/schema";
@@ -114,6 +115,9 @@ it("StringArrCodec", () => {
       "success": false,
     }
   `);
+});
+it("OnlyAKeyCodec", () => {
+  expect(JSON.stringify(OnlyAKeyCodec.parse({ A: "show", B: "hide" }))).toBe(`{"A":"show"}`);
 });
 
 it("tpl", () => {

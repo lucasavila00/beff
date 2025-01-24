@@ -191,6 +191,10 @@ export type K = KABC | KDEF;
 
 export type TransportedValue = string | null | undefined | Array<string | number | null | undefined>;
 
+export type OnlyAKey = {
+  A: string;
+};
+
 export const {
   Version,
   Version2,
@@ -227,8 +231,10 @@ export const {
   TupleCodec: TupleCodec,
   TupleCodecRest: TupleCodecRest,
   StringArrCodec: StringArrCodec,
+  OnlyAKey: OnlyAKeyCodec,
 } = parse.buildParsers<{
   TransportedValue: TransportedValue;
+  OnlyAKey: OnlyAKey;
   BigIntCodec: bigint;
   TupleCodec: [number, number, number];
   TupleCodecRest: [number, number, ...string[]];

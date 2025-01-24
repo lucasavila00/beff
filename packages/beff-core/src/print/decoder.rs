@@ -597,7 +597,7 @@ pub fn from_schema(
 }
 
 #[must_use]
-pub fn from_schema_expr(
+pub fn validator_for_schema(
     schema: &JsonSchema,
     validators: &Vec<Validator>,
     hoisted: &mut Vec<ModuleItem>,

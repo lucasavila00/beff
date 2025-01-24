@@ -257,43 +257,43 @@ class TupleDecoder {
 }
 
 
-function DecodeUser(ctx, input) {
+function ValidateUser(ctx, input) {
     return (hoisted_User_0.decodeObjectDecoder.bind(hoisted_User_0))(ctx, input);
 }
-function DecodeNotPublic(ctx, input) {
+function ValidateNotPublic(ctx, input) {
     return (hoisted_NotPublic_1.decodeObjectDecoder.bind(hoisted_NotPublic_1))(ctx, input);
 }
-function DecodeStartsWithA(ctx, input) {
+function ValidateStartsWithA(ctx, input) {
     return (hoisted_StartsWithA_2.decodeStringWithFormatDecoder.bind(hoisted_StartsWithA_2))(ctx, input);
 }
-function DecodePassword(ctx, input) {
+function ValidatePassword(ctx, input) {
     return (hoisted_Password_3.decodeStringWithFormatDecoder.bind(hoisted_Password_3))(ctx, input);
 }
-function DecodeA(ctx, input) {
+function ValidateA(ctx, input) {
     return (hoisted_A_4.decodeAnyOfConstsDecoder.bind(hoisted_A_4))(ctx, input);
 }
-function DecodeB(ctx, input) {
+function ValidateB(ctx, input) {
     return (hoisted_B_5.decodeAnyOfConstsDecoder.bind(hoisted_B_5))(ctx, input);
 }
-function DecodeD(ctx, input) {
+function ValidateD(ctx, input) {
     return (hoisted_D_6.decodeAnyOfConstsDecoder.bind(hoisted_D_6))(ctx, input);
 }
-function DecodeE(ctx, input) {
+function ValidateE(ctx, input) {
     return (hoisted_E_7.decodeAnyOfConstsDecoder.bind(hoisted_E_7))(ctx, input);
 }
-function DecodeUnionNested(ctx, input) {
+function ValidateUnionNested(ctx, input) {
     return (hoisted_UnionNested_8.decodeAnyOfConstsDecoder.bind(hoisted_UnionNested_8))(ctx, input);
 }
 const validators = {
-    User: DecodeUser,
-    NotPublic: DecodeNotPublic,
-    StartsWithA: DecodeStartsWithA,
-    Password: DecodePassword,
-    A: DecodeA,
-    B: DecodeB,
-    D: DecodeD,
-    E: DecodeE,
-    UnionNested: DecodeUnionNested
+    User: ValidateUser,
+    NotPublic: ValidateNotPublic,
+    StartsWithA: ValidateStartsWithA,
+    Password: ValidatePassword,
+    A: ValidateA,
+    B: ValidateB,
+    D: ValidateD,
+    E: ValidateE,
+    UnionNested: ValidateUnionNested
 };
 const hoisted_User_0 = new ObjectDecoder({
     "age": decodeNumber,

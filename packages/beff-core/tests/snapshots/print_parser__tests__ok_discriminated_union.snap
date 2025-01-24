@@ -2,11 +2,11 @@
 source: packages/beff-core/tests/print_parser.rs
 expression: "decoder(r#\"\n        export type DiscriminatedUnion4 =\n            | {\n                type: \"a\";\n                a: {\n                  subType: \"a1\";\n                  a1: string;\n                };\n              }\n            | {\n                type: \"a\";\n                a: {\n                  subType: \"a2\";\n                  a2: string;\n                };\n              };\n        parse.buildParsers<{ DiscriminatedUnion4: DiscriminatedUnion4 }>();\n      \"#)"
 ---
-function DecodeDiscriminatedUnion4(ctx, input) {
+function ValidateDiscriminatedUnion4(ctx, input) {
     return (hoisted_DiscriminatedUnion4_7.decodeAnyOfDiscriminatedDecoder.bind(hoisted_DiscriminatedUnion4_7))(ctx, input);
 }
 const validators = {
-    DiscriminatedUnion4: DecodeDiscriminatedUnion4
+    DiscriminatedUnion4: ValidateDiscriminatedUnion4
 };
 const hoisted_DiscriminatedUnion4_0 = new ConstDecoder("a1");
 const hoisted_DiscriminatedUnion4_1 = new ObjectDecoder({

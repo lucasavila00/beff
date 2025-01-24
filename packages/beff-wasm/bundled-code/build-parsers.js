@@ -18,9 +18,9 @@ function buildParsers(args) {
 
   let decoders = {};
   //@ts-ignore
-  Object.keys(buildParsersInput).forEach((k) => {
+  Object.keys(buildValidatorsInput).forEach((k) => {
     //@ts-ignore
-    let v = buildParsersInput[k];
+    let v = buildValidatorsInput[k];
     const safeParse = (input, options) => {
       if (options?.disallowExtraProperties ?? false) {
         throw new Error("disallowExtraProperties not supported");

@@ -27,7 +27,7 @@ const hoisted_ImportEnumTypeof_4 = new ConstDecoder("a");
 const hoisted_ImportEnumTypeof_5 = new ObjectDecoder({
     "A": hoisted_ImportEnumTypeof_4.decodeConstDecoder.bind(hoisted_ImportEnumTypeof_4)
 });
-const buildParsersInput = {
+const buildValidatorsInput = {
     "AObject": validators.AObject,
     "AccessLevel": validators.AccessLevel,
     "AccessLevelCodec": validators.AccessLevel,
@@ -53,6 +53,7 @@ const buildParsersInput = {
     "Mapped": validators.Mapped,
     "MappedOptional": validators.MappedOptional,
     "OmitSettings": validators.OmitSettings,
+    "OnlyAKey": validators.OnlyAKey,
     "OtherEnum": validators.OtherEnum,
     "PartialObject": validators.PartialObject,
     "PartialSettings": validators.PartialSettings,
@@ -93,9 +94,9 @@ function buildParsers(args) {
 
   let decoders = {};
   
-  Object.keys(buildParsersInput).forEach((k) => {
+  Object.keys(buildValidatorsInput).forEach((k) => {
     
-    let v = buildParsersInput[k];
+    let v = buildValidatorsInput[k];
     const safeParse = (input, options) => {
       if (options?.disallowExtraProperties ?? false) {
         throw new Error("disallowExtraProperties not supported");

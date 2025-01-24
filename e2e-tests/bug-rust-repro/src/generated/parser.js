@@ -6,7 +6,7 @@ import {printErrors} from '@beff/client';
 import {z} from 'zod';
 import validatorsMod from "./validators.js"; const { ObjectDecoder, ArrayDecoder, decodeString, decodeNumber, CodecDecoder, decodeFunction, StringWithFormatDecoder, AnyOfDecoder, AllOfDecoder, decodeBoolean, decodeAny, TupleDecoder, decodeNull, decodeNever, RegexDecoder, ConstDecoder, registerCustomFormatter, AnyOfConstsDecoder, AnyOfDiscriminatedDecoder, validators, c } = validatorsMod;
 const RequiredCustomFormats = ["ValidCurrency"];
-const buildParsersInput = {
+const buildValidatorsInput = {
     "A": validators.A
 };
 
@@ -30,9 +30,9 @@ function buildParsers(args) {
 
   let decoders = {};
   
-  Object.keys(buildParsersInput).forEach((k) => {
+  Object.keys(buildValidatorsInput).forEach((k) => {
     
-    let v = buildParsersInput[k];
+    let v = buildValidatorsInput[k];
     const safeParse = (input, options) => {
       if (options?.disallowExtraProperties ?? false) {
         throw new Error("disallowExtraProperties not supported");
