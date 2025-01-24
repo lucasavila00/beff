@@ -1,5 +1,11 @@
 # @beff/cli
 
+## 0.0.74
+
+### Patch Changes
+
+- new cgen backend
+
 ## 0.0.73
 
 ### Patch Changes
