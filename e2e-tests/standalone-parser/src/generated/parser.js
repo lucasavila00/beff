@@ -4,28 +4,28 @@
 
 import {printErrors} from '@beff/client';
 import {z} from 'zod';
-import validatorsMod from "./validators.js"; const { ObjectDecoder, ArrayDecoder, decodeString, decodeNumber, CodecDecoder, decodeFunction, StringWithFormatDecoder, AnyOfDecoder, AllOfDecoder, decodeBoolean, decodeAny, TupleDecoder, decodeNull, decodeNever, RegexDecoder, ConstDecoder, registerCustomFormatter, AnyOfConstsDecoder, AnyOfDiscriminatedDecoder, validators, c } = validatorsMod;
+import validatorsMod from "./validators.js"; const { registerCustomFormatter, ObjectDecoder, ArrayDecoder, CodecDecoder, StringWithFormatDecoder, AnyOfDecoder, AllOfDecoder, TupleDecoder, RegexDecoder, ConstDecoder, AnyOfConstsDecoder, AnyOfDiscriminatedDecoder, validateString, validateNumber, validateFunction, validateBoolean, validateAny, validateNull, validateNever, validators, c } = validatorsMod;
 const RequiredCustomFormats = ["ValidCurrency"];
 const hoisted_BigIntCodec_0 = new CodecDecoder("Codec::BigInt");
 const hoisted_TupleCodec_1 = new TupleDecoder({
     prefix: [
-        decodeNumber,
-        decodeNumber,
-        decodeNumber
+        validateNumber,
+        validateNumber,
+        validateNumber
     ],
     items: null
 });
 const hoisted_TupleCodecRest_2 = new TupleDecoder({
     prefix: [
-        decodeNumber,
-        decodeNumber
+        validateNumber,
+        validateNumber
     ],
-    items: decodeString
+    items: validateString
 });
-const hoisted_StringArrCodec_3 = new ArrayDecoder(decodeString);
+const hoisted_StringArrCodec_3 = new ArrayDecoder(validateString);
 const hoisted_ImportEnumTypeof_4 = new ConstDecoder("a");
 const hoisted_ImportEnumTypeof_5 = new ObjectDecoder({
-    "A": hoisted_ImportEnumTypeof_4.decodeConstDecoder.bind(hoisted_ImportEnumTypeof_4)
+    "A": hoisted_ImportEnumTypeof_4.validateConstDecoder.bind(hoisted_ImportEnumTypeof_4)
 });
 const buildValidatorsInput = {
     "AObject": validators.AObject,
@@ -39,13 +39,13 @@ const buildValidatorsInput = {
     "Arr3": validators.Arr3,
     "AvatarSize": validators.AvatarSize,
     "BObject": validators.BObject,
-    "BigIntCodec": hoisted_BigIntCodec_0.decodeCodecDecoder.bind(hoisted_BigIntCodec_0),
+    "BigIntCodec": hoisted_BigIntCodec_0.validateCodecDecoder.bind(hoisted_BigIntCodec_0),
     "DiscriminatedUnion": validators.DiscriminatedUnion,
     "DiscriminatedUnion2": validators.DiscriminatedUnion2,
     "DiscriminatedUnion3": validators.DiscriminatedUnion3,
     "DiscriminatedUnion4": validators.DiscriminatedUnion4,
     "Extra": validators.Extra,
-    "ImportEnumTypeof": hoisted_ImportEnumTypeof_5.decodeObjectDecoder.bind(hoisted_ImportEnumTypeof_5),
+    "ImportEnumTypeof": hoisted_ImportEnumTypeof_5.validateObjectDecoder.bind(hoisted_ImportEnumTypeof_5),
     "K": validators.K,
     "KABC": validators.KABC,
     "KDEF": validators.KDEF,
@@ -62,11 +62,11 @@ const buildValidatorsInput = {
     "Req": validators.Req,
     "RequiredPartialObject": validators.RequiredPartialObject,
     "SettingsUpdate": validators.SettingsUpdate,
-    "StringArrCodec": hoisted_StringArrCodec_3.decodeArrayDecoder.bind(hoisted_StringArrCodec_3),
+    "StringArrCodec": hoisted_StringArrCodec_3.validateArrayDecoder.bind(hoisted_StringArrCodec_3),
     "T3": validators.T3,
     "TransportedValue": validators.TransportedValue,
-    "TupleCodec": hoisted_TupleCodec_1.decodeTupleDecoder.bind(hoisted_TupleCodec_1),
-    "TupleCodecRest": hoisted_TupleCodecRest_2.decodeTupleDecoder.bind(hoisted_TupleCodecRest_2),
+    "TupleCodec": hoisted_TupleCodec_1.validateTupleDecoder.bind(hoisted_TupleCodec_1),
+    "TupleCodecRest": hoisted_TupleCodecRest_2.validateTupleDecoder.bind(hoisted_TupleCodecRest_2),
     "UnionWithEnumAccess": validators.UnionWithEnumAccess,
     "User": validators.User,
     "ValidCurrency": validators.ValidCurrency,

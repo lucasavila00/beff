@@ -120,8 +120,12 @@ impl ToWritableModules for ExtractResult {
         for comp in &validators {
             validator_names.push(comp.name.clone());
             let mut local_hoisted = vec![];
-            let decoder_fn =
-                decoder::from_schema(&comp.schema, &validators, &mut local_hoisted, &comp.name);
+            let decoder_fn = decoder::func_validator_for_schema(
+                &comp.schema,
+                &validators,
+                &mut local_hoisted,
+                &comp.name,
+            );
             let decoder_fn_decl = ModuleItem::Stmt(Stmt::Decl(Decl::Fn(FnDecl {
                 ident: Ident {
                     span: DUMMY_SP,

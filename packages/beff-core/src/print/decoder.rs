@@ -259,7 +259,7 @@ impl DecoderFnGenerator<'_> {
             obj: hoisted.clone().into(),
             prop: MemberProp::Ident(Ident {
                 span: DUMMY_SP,
-                sym: format!("decode{}", class).into(),
+                sym: format!("validate{}", class).into(),
                 optional: false,
             }),
         });
@@ -345,7 +345,7 @@ impl DecoderFnGenerator<'_> {
 
         let flat_values = vs
             .iter()
-            .flat_map(|it| self.extract_union(it))
+            .flat_map(|it: &JsonSchema| self.extract_union(it))
             .collect::<BTreeSet<_>>();
 
         if let Some(consts) = self.maybe_decode_any_of_consts(&flat_values, hoisted) {
@@ -361,19 +361,16 @@ impl DecoderFnGenerator<'_> {
 
     fn decode_expr(&self, schema: &JsonSchema, hoisted: &mut Vec<ModuleItem>) -> Expr {
         let call = match schema {
-            JsonSchema::StNot(_) => {
-                unreachable!("should not create decoders for semantic types")
-            }
-
-            JsonSchema::StNever => SwcBuilder::ident_expr("decodeNever"),
             JsonSchema::AnyArrayLike => {
                 self.decode_expr(&JsonSchema::Array(JsonSchema::Any.into()), hoisted)
             }
-            JsonSchema::Null => SwcBuilder::ident_expr("decodeNull"),
-            JsonSchema::Boolean => SwcBuilder::ident_expr("decodeBoolean"),
-            JsonSchema::String => SwcBuilder::ident_expr("decodeString"),
-            JsonSchema::Number => SwcBuilder::ident_expr("decodeNumber"),
-            JsonSchema::Any => SwcBuilder::ident_expr("decodeAny"),
+            JsonSchema::StNever => SwcBuilder::ident_expr("validateNever"),
+            JsonSchema::Null => SwcBuilder::ident_expr("validateNull"),
+            JsonSchema::Boolean => SwcBuilder::ident_expr("validateBoolean"),
+            JsonSchema::String => SwcBuilder::ident_expr("validateString"),
+            JsonSchema::Number => SwcBuilder::ident_expr("validateNumber"),
+            JsonSchema::Function => SwcBuilder::ident_expr("validateFunction"),
+            JsonSchema::Any => SwcBuilder::ident_expr("validateAny"),
             JsonSchema::StringWithFormat(format) => self.new_hoisted_decoder(
                 hoisted,
                 "StringWithFormatDecoder",
@@ -474,8 +471,6 @@ impl DecoderFnGenerator<'_> {
 
                 self.new_hoisted_decoder(hoisted, "TupleDecoder", vec![tpl_extra])
             }
-            JsonSchema::AnyOf(vs) => self.decode_any_of(vs, hoisted),
-            JsonSchema::AllOf(vs) => self.decode_union_or_intersection("AllOfDecoder", vs, hoisted),
             JsonSchema::Const(json) => self.new_hoisted_decoder(
                 hoisted,
                 "ConstDecoder",
@@ -514,86 +509,15 @@ impl DecoderFnGenerator<'_> {
                     ],
                 )
             }
-            JsonSchema::Function => SwcBuilder::ident_expr("decodeFunction"),
+            JsonSchema::AnyOf(vs) => self.decode_any_of(vs, hoisted),
+            JsonSchema::AllOf(vs) => self.decode_union_or_intersection("AllOfDecoder", vs, hoisted),
+            JsonSchema::StNot(_) => {
+                unreachable!("should not create decoders for semantic types")
+            }
         };
 
         call
     }
-
-    fn fn_decoder_from_schema(
-        &mut self,
-        schema: &JsonSchema,
-        hoisted: &mut Vec<ModuleItem>,
-    ) -> Function {
-        Function {
-            params: vec![
-                Param {
-                    span: DUMMY_SP,
-                    decorators: vec![],
-                    pat: Pat::Ident(BindingIdent {
-                        id: Ident {
-                            span: DUMMY_SP,
-                            sym: "ctx".into(),
-                            optional: false,
-                        },
-                        type_ann: None,
-                    }),
-                },
-                Param {
-                    span: DUMMY_SP,
-                    decorators: vec![],
-                    pat: Pat::Ident(BindingIdent {
-                        id: SwcBuilder::input_ident(),
-                        type_ann: None,
-                    }),
-                },
-            ],
-            decorators: vec![],
-            span: DUMMY_SP,
-            body: BlockStmt {
-                span: DUMMY_SP,
-                stmts: vec![Stmt::Return(ReturnStmt {
-                    span: DUMMY_SP,
-                    arg: Some(Box::new(Expr::Call(CallExpr {
-                        span: DUMMY_SP,
-                        callee: Callee::Expr(Box::new(Expr::Paren(ParenExpr {
-                            span: DUMMY_SP,
-                            expr: Box::new(self.decode_expr(schema, hoisted)),
-                        }))),
-                        args: vec![
-                            ExprOrSpread {
-                                spread: None,
-                                expr: SwcBuilder::ident_expr("ctx").into(),
-                            },
-                            ExprOrSpread {
-                                spread: None,
-                                expr: SwcBuilder::ident_expr("input").into(),
-                            },
-                        ],
-                        type_args: None,
-                    }))),
-                })],
-            }
-            .into(),
-            is_async: false,
-            is_generator: false,
-            type_params: None,
-            return_type: None,
-        }
-    }
-}
-#[must_use]
-pub fn from_schema(
-    schema: &JsonSchema,
-    validators: &Vec<Validator>,
-    hoisted: &mut Vec<ModuleItem>,
-    name: &str,
-) -> Function {
-    DecoderFnGenerator {
-        validators,
-        name: name.to_owned(),
-    }
-    .fn_decoder_from_schema(schema, hoisted)
 }
 
 #[must_use]
@@ -608,4 +532,70 @@ pub fn validator_for_schema(
         name: name.to_owned(),
     }
     .decode_expr(schema, hoisted)
+}
+
+#[must_use]
+pub fn func_validator_for_schema(
+    schema: &JsonSchema,
+    validators: &Vec<Validator>,
+    hoisted: &mut Vec<ModuleItem>,
+    name: &str,
+) -> Function {
+    let expr = validator_for_schema(schema, validators, hoisted, name);
+
+    Function {
+        params: vec![
+            Param {
+                span: DUMMY_SP,
+                decorators: vec![],
+                pat: Pat::Ident(BindingIdent {
+                    id: Ident {
+                        span: DUMMY_SP,
+                        sym: "ctx".into(),
+                        optional: false,
+                    },
+                    type_ann: None,
+                }),
+            },
+            Param {
+                span: DUMMY_SP,
+                decorators: vec![],
+                pat: Pat::Ident(BindingIdent {
+                    id: SwcBuilder::input_ident(),
+                    type_ann: None,
+                }),
+            },
+        ],
+        decorators: vec![],
+        span: DUMMY_SP,
+        body: BlockStmt {
+            span: DUMMY_SP,
+            stmts: vec![Stmt::Return(ReturnStmt {
+                span: DUMMY_SP,
+                arg: Some(Box::new(Expr::Call(CallExpr {
+                    span: DUMMY_SP,
+                    callee: Callee::Expr(Box::new(Expr::Paren(ParenExpr {
+                        span: DUMMY_SP,
+                        expr: expr.into(),
+                    }))),
+                    args: vec![
+                        ExprOrSpread {
+                            spread: None,
+                            expr: SwcBuilder::ident_expr("ctx").into(),
+                        },
+                        ExprOrSpread {
+                            spread: None,
+                            expr: SwcBuilder::ident_expr("input").into(),
+                        },
+                    ],
+                    type_args: None,
+                }))),
+            })],
+        }
+        .into(),
+        is_async: false,
+        is_generator: false,
+        type_params: None,
+        return_type: None,
+    }
 }

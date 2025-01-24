@@ -4,7 +4,7 @@
 
 import {printErrors} from '@beff/client';
 import {z} from 'zod';
-import validatorsMod from "./validators.js"; const { ObjectDecoder, ArrayDecoder, decodeString, decodeNumber, CodecDecoder, decodeFunction, StringWithFormatDecoder, AnyOfDecoder, AllOfDecoder, decodeBoolean, decodeAny, TupleDecoder, decodeNull, decodeNever, RegexDecoder, ConstDecoder, registerCustomFormatter, AnyOfConstsDecoder, AnyOfDiscriminatedDecoder, validators, c } = validatorsMod;
+import validatorsMod from "./validators.js"; const { registerCustomFormatter, ObjectDecoder, ArrayDecoder, CodecDecoder, StringWithFormatDecoder, AnyOfDecoder, AllOfDecoder, TupleDecoder, RegexDecoder, ConstDecoder, AnyOfConstsDecoder, AnyOfDiscriminatedDecoder, validateString, validateNumber, validateFunction, validateBoolean, validateAny, validateNull, validateNever, validators, c } = validatorsMod;
 const RequiredCustomFormats = ["password","StartsWithA"];
 const hoisted_Users_0 = new ArrayDecoder(validators.User);
 const hoisted_float_1 = new ConstDecoder(123.456);
@@ -14,9 +14,9 @@ const buildValidatorsInput = {
     "Password": validators.Password,
     "StartsWithA": validators.StartsWithA,
     "User": validators.User,
-    "Users": hoisted_Users_0.decodeArrayDecoder.bind(hoisted_Users_0),
-    "float": hoisted_float_1.decodeConstDecoder.bind(hoisted_float_1),
-    "int": hoisted_int_2.decodeConstDecoder.bind(hoisted_int_2),
+    "Users": hoisted_Users_0.validateArrayDecoder.bind(hoisted_Users_0),
+    "float": hoisted_float_1.validateConstDecoder.bind(hoisted_float_1),
+    "int": hoisted_int_2.validateConstDecoder.bind(hoisted_int_2),
     "union": validators.UnionNested
 };
 

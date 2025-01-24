@@ -7,30 +7,30 @@ function registerCustomFormatter(name, validator) {
   customFormatters[name] = validator;
 }
 
-function decodeString(ctx, input) {
+function validateString(ctx, input) {
   return typeof input === "string";
 }
 
-function decodeNumber(ctx, input) {
+function validateNumber(ctx, input) {
   return typeof input === "number";
 }
 
-function decodeBoolean(ctx, input) {
+function validateBoolean(ctx, input) {
   return typeof input === "boolean";
 }
-function decodeAny(ctx, input) {
+function validateAny(ctx, input) {
   return true;
 }
-function decodeNull(ctx, input) {
+function validateNull(ctx, input) {
   if (input == null) {
     return true;
   }
   return false;
 }
-function decodeNever(ctx, input) {
+function validateNever(ctx, input) {
   return false;
 }
-function decodeFunction(ctx, input) {
+function validateFunction(ctx, input) {
   return typeof input === "function";
 }
 
@@ -39,7 +39,7 @@ class ConstDecoder {
     this.value = value;
   }
 
-  decodeConstDecoder(ctx, input) {
+  validateConstDecoder(ctx, input) {
     return input === this.value;
   }
 }
@@ -50,7 +50,7 @@ class RegexDecoder {
     this.description = description;
   }
 
-  decodeRegexDecoder(ctx, input) {
+  validateRegexDecoder(ctx, input) {
     if (typeof input === "string") {
       return this.regex.test(input);
     }
@@ -64,7 +64,7 @@ class ObjectDecoder {
     this.additionalPropsValidator = additionalPropsValidator;
   }
 
-  decodeObjectDecoder(ctx, input) {
+  validateObjectDecoder(ctx, input) {
     if (typeof input === "object" && !Array.isArray(input) && input !== null) {
       const configKeys = Object.keys(this.data);
       for (const k of configKeys) {
@@ -96,7 +96,7 @@ class ArrayDecoder {
     this.data = data;
   }
 
-  decodeArrayDecoder(ctx, input) {
+  validateArrayDecoder(ctx, input) {
     if (Array.isArray(input)) {
       for (let i = 0; i < input.length; i++) {
         const v = input[i];
@@ -113,7 +113,7 @@ class CodecDecoder {
   constructor(codec) {
     this.codec = codec;
   }
-  decodeCodecDecoder(ctx, input) {
+  validateCodecDecoder(ctx, input) {
     switch (this.codec) {
       case "Codec::ISO8061": {
         const d = new Date(input);
@@ -145,7 +145,7 @@ class StringWithFormatDecoder {
     this.format = format;
   }
 
-  decodeStringWithFormatDecoder(ctx, input) {
+  validateStringWithFormatDecoder(ctx, input) {
     if (typeof input !== "string") {
       return false;
     }
@@ -165,7 +165,7 @@ class AnyOfDiscriminatedDecoder {
     this.mapping = mapping;
   }
 
-  decodeAnyOfDiscriminatedDecoder(ctx, input) {
+  validateAnyOfDiscriminatedDecoder(ctx, input) {
     const d = input[this.discriminator];
     if (d == null) {
       return false;
@@ -186,7 +186,7 @@ class AnyOfConstsDecoder {
   constructor(consts) {
     this.consts = consts;
   }
-  decodeAnyOfConstsDecoder(ctx, input) {
+  validateAnyOfConstsDecoder(ctx, input) {
     if (input == null) {
       if (this.consts.includes(null) || this.consts.includes(undefined)) {
         return true;
@@ -200,7 +200,7 @@ class AnyOfDecoder {
   constructor(vs) {
     this.vs = vs;
   }
-  decodeAnyOfDecoder(ctx, input) {
+  validateAnyOfDecoder(ctx, input) {
     for (const v of this.vs) {
       if (v(ctx, input)) {
         return true;
@@ -213,7 +213,7 @@ class AllOfDecoder {
   constructor(vs) {
     this.vs = vs;
   }
-  decodeAllOfDecoder(ctx, input) {
+  validateAllOfDecoder(ctx, input) {
     for (const v of this.vs) {
       if (!v(ctx, input)) {
         return false;
@@ -226,7 +226,7 @@ class TupleDecoder {
   constructor(vs) {
     this.vs = vs;
   }
-  decodeTupleDecoder(ctx, input) {
+  validateTupleDecoder(ctx, input) {
     if (Array.isArray(input)) {
       let idx = 0;
       for (const prefixVal of this.vs.prefix) {

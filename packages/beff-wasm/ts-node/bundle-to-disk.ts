@@ -5,25 +5,25 @@ import { ProjectJson, ProjectModule } from "./project";
 import gen from "./generated/bundle";
 
 const decodersExported = [
+  "registerCustomFormatter",
   "ObjectDecoder",
   "ArrayDecoder",
-  "decodeString",
-  "decodeNumber",
   "CodecDecoder",
-  "decodeFunction",
   "StringWithFormatDecoder",
   "AnyOfDecoder",
   "AllOfDecoder",
-  "decodeBoolean",
-  "decodeAny",
   "TupleDecoder",
-  "decodeNull",
-  "decodeNever",
   "RegexDecoder",
   "ConstDecoder",
-  "registerCustomFormatter",
   "AnyOfConstsDecoder",
   "AnyOfDiscriminatedDecoder",
+  "validateString",
+  "validateNumber",
+  "validateFunction",
+  "validateBoolean",
+  "validateAny",
+  "validateNull",
+  "validateNever",
 ];
 
 const esmTag = (mod: ProjectModule) => {
