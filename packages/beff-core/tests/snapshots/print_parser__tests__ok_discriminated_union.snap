@@ -55,6 +55,9 @@ const hoisted_DiscriminatedUnion4_12 = new AnyOfValidator([
     hoisted_DiscriminatedUnion4_10.validateObjectValidator.bind(hoisted_DiscriminatedUnion4_10)
 ]);
 const hoisted_DiscriminatedUnion4_13 = new AnyOfParser([
+    hoisted_DiscriminatedUnion4_4.validateObjectValidator.bind(hoisted_DiscriminatedUnion4_4),
+    hoisted_DiscriminatedUnion4_10.validateObjectValidator.bind(hoisted_DiscriminatedUnion4_10)
+], [
     hoisted_DiscriminatedUnion4_5.parseObjectParser.bind(hoisted_DiscriminatedUnion4_5),
     hoisted_DiscriminatedUnion4_11.parseObjectParser.bind(hoisted_DiscriminatedUnion4_11)
 ]);

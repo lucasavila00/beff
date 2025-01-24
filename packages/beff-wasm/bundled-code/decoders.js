@@ -48,7 +48,7 @@ class ConstDecoder {
   }
 
   parseConstDecoder(ctx, input) {
-    throw new Error("Not implemented");
+    return input;
   }
 }
 
@@ -66,7 +66,7 @@ class RegexDecoder {
   }
 
   parseRegexDecoder(ctx, input) {
-    throw new Error("Not implemented");
+    return input;
   }
 }
 
@@ -110,7 +110,22 @@ class ObjectParser {
   }
 
   parseObjectParser(ctx, input) {
-    throw new Error("Not implemented");
+    let acc = {};
+
+    const inputKeys = Object.keys(input);
+    for (const k of inputKeys) {
+      const v = input[k];
+      if (k in this.data) {
+        const p = this.data[k];
+        acc[k] = p(ctx, v);
+      } else {
+        if (this.rest != null) {
+          acc[k] = this.rest(ctx, v);
+        }
+      }
+    }
+
+    return acc;
   }
 }
 
@@ -162,6 +177,7 @@ class CodecDecoder {
         }
         if (typeof input === "string") {
           try {
+            BigInt(input);
             return true;
           } catch (e) {
             //noop
@@ -173,7 +189,23 @@ class CodecDecoder {
     return false;
   }
   parseCodecDecoder(ctx, input) {
-    throw new Error("Not implemented");
+    switch (this.codec) {
+      case "Codec::ISO8061": {
+        return new Date(input);
+      }
+      case "Codec::BigInt": {
+        if (typeof input === "bigint") {
+          return input;
+        }
+        if (typeof input === "number") {
+          return BigInt(input);
+        }
+        if (typeof input === "string") {
+          return BigInt(input);
+        }
+        throw new Error("Codec::BigInt: invalid input");
+      }
+    }
   }
 }
 
@@ -196,7 +228,7 @@ class StringWithFormatDecoder {
     return validator(input);
   }
   parseStringWithFormatDecoder(ctx, input) {
-    throw new Error("Not implemented");
+    return input;
   }
 }
 class AnyOfDiscriminatedDecoder {
@@ -250,11 +282,17 @@ class AnyOfValidator {
   }
 }
 class AnyOfParser {
-  constructor(vs) {
-    this.vs = vs;
+  constructor(validators, parsers) {
+    this.validators = validators;
+    this.parsers = parsers;
   }
   parseAnyOfParser(ctx, input) {
-    throw new Error("Not implemented");
+    for (let i = 0; i < this.validators.length; i++) {
+      if (this.validators[i](ctx, input)) {
+        return this.parsers[i](ctx, input);
+      }
+    }
+    throw new Error("No parsers matched");
   }
 }
 class AllOfValidator {
@@ -272,11 +310,22 @@ class AllOfValidator {
 }
 
 class AllOfParser {
-  constructor(vs) {
-    this.vs = vs;
+  constructor(validators, parsers) {
+    this.validators = validators;
+    this.parsers = parsers;
   }
   parseAllOfParser(ctx, input) {
-    throw new Error("Not implemented");
+    let acc = {};
+
+    for (let i = 0; i < this.validators.length; i++) {
+      const p = this.parsers[i];
+      const parsed = p(ctx, input);
+      if (typeof parsed !== "object") {
+        throw new Error("AllOfParser: Expected object");
+      }
+      acc = { ...acc, ...parsed };
+    }
+    return acc;
   }
 }
 class TupleValidator {

@@ -19,7 +19,9 @@ const hoisted_Alias_0 = new AnyOfValidator([
     validateNumber
 ]);
 const hoisted_Alias_1 = new AnyOfParser([
+    validateString,
+    validateNumber
+], [
     parseIdentity,
     parseIdentity
 ]);
-

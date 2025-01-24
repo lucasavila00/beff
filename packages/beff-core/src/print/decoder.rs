@@ -442,33 +442,38 @@ impl DecoderFnGenerator<'_> {
             parsers.push(par);
         }
 
+        let validators_arr = Expr::Array(ArrayLit {
+            span: DUMMY_SP,
+            elems: validators
+                .into_iter()
+                .map(|it| {
+                    Some(ExprOrSpread {
+                        spread: None,
+                        expr: it.into(),
+                    })
+                })
+                .collect(),
+        });
+
         self.dynamic_schema_code(
             decoder_name,
             hoisted,
-            vec![Expr::Array(ArrayLit {
-                span: DUMMY_SP,
-                elems: validators
-                    .into_iter()
-                    .map(|it| {
-                        Some(ExprOrSpread {
-                            spread: None,
-                            expr: it.into(),
+            vec![validators_arr.clone()],
+            vec![
+                validators_arr,
+                Expr::Array(ArrayLit {
+                    span: DUMMY_SP,
+                    elems: parsers
+                        .into_iter()
+                        .map(|it| {
+                            Some(ExprOrSpread {
+                                spread: None,
+                                expr: it.into(),
+                            })
                         })
-                    })
-                    .collect(),
-            })],
-            vec![Expr::Array(ArrayLit {
-                span: DUMMY_SP,
-                elems: parsers
-                    .into_iter()
-                    .map(|it| {
-                        Some(ExprOrSpread {
-                            spread: None,
-                            expr: it.into(),
-                        })
-                    })
-                    .collect(),
-            })],
+                        .collect(),
+                }),
+            ],
         )
     }
     fn generate_schema_code(

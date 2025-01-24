@@ -62,7 +62,7 @@ it("import enum typeof", () => {
 });
 
 it("BigIntCodec", () => {
-  expect(BigIntCodec.parse("123")).toMatchInlineSnapshot('"123"');
+  expect(BigIntCodec.parse("123")).toMatchInlineSnapshot('123n');
 });
 it("TupleCodec", () => {
   expect(TupleCodec.safeParse([1])).toMatchInlineSnapshot(`
@@ -528,13 +528,13 @@ it("DiscriminatedUnion", () => {
   `);
 });
 it("repro1", () => {
-  expect(Repro1.parse({})).toMatchInlineSnapshot("{}");
+  expect(Repro1.parse({})).toMatchInlineSnapshot('{}');
 });
 it("PartialObject", () => {
-  expect(PartialObject.parse({})).toMatchInlineSnapshot("{}");
+  expect(PartialObject.parse({})).toMatchInlineSnapshot('{}');
 });
 it("PartialSettings", () => {
-  expect(PartialSettings.parse({})).toMatchInlineSnapshot("{}");
+  expect(PartialSettings.parse({})).toMatchInlineSnapshot('{}');
 });
 it("LevelAndDSettings", () => {
   const valid: LevelAndDSettings = {

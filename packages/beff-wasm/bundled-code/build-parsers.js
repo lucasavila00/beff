@@ -21,7 +21,7 @@ function buildParsers(args) {
   Object.keys(buildValidatorsInput).forEach((k) => {
     //@ts-ignore
     let v = buildValidatorsInput[k];
-    const safeParse = (input, options) => {
+    const validate = (input, options) => {
       if (options?.disallowExtraProperties ?? false) {
         throw new Error("disallowExtraProperties not supported");
       }
@@ -29,6 +29,10 @@ function buildParsers(args) {
       if (typeof ok !== "boolean") {
         throw new Error("DEBUG: Expected boolean");
       }
+      return ok;
+    };
+    const safeParse = (input, options) => {
+      const ok = validate(input, options);
       // const validation_result = validatorCtx.errors;
       // if (validation_result == null) {
       //   return { success: true, data: new_value };
@@ -36,7 +40,10 @@ function buildParsers(args) {
       // const errorsSlice = validation_result.slice(0, 10);
       // return { success: false, errors: errorsSlice };
       if (ok) {
-        return { success: true, data: input };
+        //@ts-ignore
+        let p = buildParsersInput[k];
+        const parsed = p(null, input);
+        return { success: true, data: parsed };
       }
       return {
         success: false,
@@ -75,6 +82,7 @@ function buildParsers(args) {
       safeParse,
       zod,
       name: k,
+      validate,
     };
   });
   return decoders;

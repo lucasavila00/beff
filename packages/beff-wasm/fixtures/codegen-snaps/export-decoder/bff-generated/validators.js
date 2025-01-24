@@ -51,7 +51,7 @@ class ConstDecoder {
   }
 
   parseConstDecoder(ctx, input) {
-    throw new Error("Not implemented");
+    return input;
   }
 }
 
@@ -69,7 +69,7 @@ class RegexDecoder {
   }
 
   parseRegexDecoder(ctx, input) {
-    throw new Error("Not implemented");
+    return input;
   }
 }
 
@@ -113,7 +113,22 @@ class ObjectParser {
   }
 
   parseObjectParser(ctx, input) {
-    throw new Error("Not implemented");
+    let acc = {};
+
+    const inputKeys = Object.keys(input);
+    for (const k of inputKeys) {
+      const v = input[k];
+      if (k in this.data) {
+        const p = this.data[k];
+        acc[k] = p(ctx, v);
+      } else {
+        if (this.rest != null) {
+          acc[k] = this.rest(ctx, v);
+        }
+      }
+    }
+
+    return acc;
   }
 }
 
@@ -165,6 +180,7 @@ class CodecDecoder {
         }
         if (typeof input === "string") {
           try {
+            BigInt(input);
             return true;
           } catch (e) {
             
@@ -176,7 +192,23 @@ class CodecDecoder {
     return false;
   }
   parseCodecDecoder(ctx, input) {
-    throw new Error("Not implemented");
+    switch (this.codec) {
+      case "Codec::ISO8061": {
+        return new Date(input);
+      }
+      case "Codec::BigInt": {
+        if (typeof input === "bigint") {
+          return input;
+        }
+        if (typeof input === "number") {
+          return BigInt(input);
+        }
+        if (typeof input === "string") {
+          return BigInt(input);
+        }
+        throw new Error("Codec::BigInt: invalid input");
+      }
+    }
   }
 }
 
@@ -199,7 +231,7 @@ class StringWithFormatDecoder {
     return validator(input);
   }
   parseStringWithFormatDecoder(ctx, input) {
-    throw new Error("Not implemented");
+    return input;
   }
 }
 class AnyOfDiscriminatedDecoder {
@@ -253,11 +285,17 @@ class AnyOfValidator {
   }
 }
 class AnyOfParser {
-  constructor(vs) {
-    this.vs = vs;
+  constructor(validators, parsers) {
+    this.validators = validators;
+    this.parsers = parsers;
   }
   parseAnyOfParser(ctx, input) {
-    throw new Error("Not implemented");
+    for (let i = 0; i < this.validators.length; i++) {
+      if (this.validators[i](ctx, input)) {
+        return this.parsers[i](ctx, input);
+      }
+    }
+    throw new Error("No parsers matched");
   }
 }
 class AllOfValidator {
@@ -275,11 +313,22 @@ class AllOfValidator {
 }
 
 class AllOfParser {
-  constructor(vs) {
-    this.vs = vs;
+  constructor(validators, parsers) {
+    this.validators = validators;
+    this.parsers = parsers;
   }
   parseAllOfParser(ctx, input) {
-    throw new Error("Not implemented");
+    let acc = {};
+
+    for (let i = 0; i < this.validators.length; i++) {
+      const p = this.parsers[i];
+      const parsed = p(ctx, input);
+      if (typeof parsed !== "object") {
+        throw new Error("AllOfParser: Expected object");
+      }
+      acc = { ...acc, ...parsed };
+    }
+    return acc;
   }
 }
 class TupleValidator {
@@ -424,6 +473,9 @@ const hoisted_A_2 = new AnyOfValidator([
     hoisted_A_1.validateConstDecoder.bind(hoisted_A_1)
 ]);
 const hoisted_A_3 = new AnyOfParser([
+    hoisted_A_0.validateConstDecoder.bind(hoisted_A_0),
+    hoisted_A_1.validateConstDecoder.bind(hoisted_A_1)
+], [
     hoisted_A_0.parseConstDecoder.bind(hoisted_A_0),
     hoisted_A_1.parseConstDecoder.bind(hoisted_A_1)
 ]);
@@ -434,6 +486,9 @@ const hoisted_B_2 = new AnyOfValidator([
     hoisted_B_1.validateConstDecoder.bind(hoisted_B_1)
 ]);
 const hoisted_B_3 = new AnyOfParser([
+    hoisted_B_0.validateConstDecoder.bind(hoisted_B_0),
+    hoisted_B_1.validateConstDecoder.bind(hoisted_B_1)
+], [
     hoisted_B_0.parseConstDecoder.bind(hoisted_B_0),
     hoisted_B_1.parseConstDecoder.bind(hoisted_B_1)
 ]);
@@ -444,6 +499,9 @@ const hoisted_D_2 = new AnyOfValidator([
     hoisted_D_1.validateConstDecoder.bind(hoisted_D_1)
 ]);
 const hoisted_D_3 = new AnyOfParser([
+    hoisted_D_0.validateConstDecoder.bind(hoisted_D_0),
+    hoisted_D_1.validateConstDecoder.bind(hoisted_D_1)
+], [
     hoisted_D_0.parseConstDecoder.bind(hoisted_D_0),
     hoisted_D_1.parseConstDecoder.bind(hoisted_D_1)
 ]);
@@ -454,6 +512,9 @@ const hoisted_E_2 = new AnyOfValidator([
     hoisted_E_1.validateConstDecoder.bind(hoisted_E_1)
 ]);
 const hoisted_E_3 = new AnyOfParser([
+    hoisted_E_0.validateConstDecoder.bind(hoisted_E_0),
+    hoisted_E_1.validateConstDecoder.bind(hoisted_E_1)
+], [
     hoisted_E_0.parseConstDecoder.bind(hoisted_E_0),
     hoisted_E_1.parseConstDecoder.bind(hoisted_E_1)
 ]);
@@ -464,6 +525,11 @@ const hoisted_UnionNested_0 = new AnyOfValidator([
     validators.E
 ]);
 const hoisted_UnionNested_1 = new AnyOfParser([
+    validators.A,
+    validators.B,
+    validators.D,
+    validators.E
+], [
     parsers.A,
     parsers.B,
     parsers.D,

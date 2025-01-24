@@ -150,7 +150,7 @@ function buildParsers(args) {
   Object.keys(buildValidatorsInput).forEach((k) => {
     
     let v = buildValidatorsInput[k];
-    const safeParse = (input, options) => {
+    const validate = (input, options) => {
       if (options?.disallowExtraProperties ?? false) {
         throw new Error("disallowExtraProperties not supported");
       }
@@ -158,6 +158,10 @@ function buildParsers(args) {
       if (typeof ok !== "boolean") {
         throw new Error("DEBUG: Expected boolean");
       }
+      return ok;
+    };
+    const safeParse = (input, options) => {
+      const ok = validate(input, options);
       
       
       
@@ -165,7 +169,10 @@ function buildParsers(args) {
       
       
       if (ok) {
-        return { success: true, data: input };
+        
+        let p = buildParsersInput[k];
+        const parsed = p(null, input);
+        return { success: true, data: parsed };
       }
       return {
         success: false,
@@ -204,6 +211,7 @@ function buildParsers(args) {
       safeParse,
       zod,
       name: k,
+      validate,
     };
   });
   return decoders;
