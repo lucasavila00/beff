@@ -636,4 +636,14 @@ mod tests {
         parse.buildParsers<{ KABC: KABC }>();
       "#));
     }
+
+    #[test]
+    fn ok_string_decoder() {
+        insta::assert_snapshot!(decoder(
+            r#"
+        export type Alias = string;
+        parse.buildParsers<{ Dec: Alias }>();
+      "#
+        ));
+    }
 }

@@ -34,16 +34,32 @@ function buildParsers(args) {
     
     let v = buildParsersInput[k];
     const safeParse = (input, options) => {
-      const validatorCtx = {
-        disallowExtraProperties: options?.disallowExtraProperties ?? false,
-      };
-      const new_value = v(validatorCtx, input);
-      const validation_result = validatorCtx.errors;
-      if (validation_result == null) {
-        return { success: true, data: new_value };
+      if (options?.disallowExtraProperties ?? false) {
+        throw new Error("disallowExtraProperties not supported");
       }
-      const errorsSlice = validation_result.slice(0, 10);
-      return { success: false, errors: errorsSlice };
+      const ok = v(null, input);
+      if (typeof ok !== "boolean") {
+        throw new Error("DEBUG: Expected boolean");
+      }
+      
+      
+      
+      
+      
+      
+      if (ok) {
+        return { success: true, data: input };
+      }
+      return {
+        success: false,
+        errors: [
+          {
+            message: "failed to parse!!!",
+            path: [],
+            received: input,
+          },
+        ],
+      };
     };
     const parse = (input, options) => {
       const safe = safeParse(input, options);

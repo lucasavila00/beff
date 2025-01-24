@@ -7,103 +7,31 @@ function registerCustomFormatter(name, validator) {
   customFormatters[name] = validator;
 }
 
-function pushPath(ctx, path) {
-  if (ctx.noErrorMessages) {
-    return;
-  }
-  if (ctx.paths == null) {
-    ctx.paths = [];
-  }
-  ctx.paths.push(path);
-}
-function popPath(ctx) {
-  if (ctx.noErrorMessages) {
-    return;
-  }
-  if (ctx.paths == null) {
-    throw new Error("popPath: no paths");
-  }
-  return ctx.paths.pop();
-}
-function storeError(ctx, received, message) {
-  if (ctx.noErrorMessages) {
-    ctx.errors = true;
-    return;
-  }
-  if (ctx.errors == null) {
-    ctx.errors = [];
-  }
-
-  let messageStr = message;
-  if (typeof message === "function") {
-    messageStr = message();
-  }
-
-  ctx.errors.push({
-    message: messageStr,
-    path: [...(ctx.paths ?? [])],
-    received,
-  });
-}
-function storeUnionError(ctx, received, errors) {
-  if (ctx.noErrorMessages) {
-    ctx.errors = true;
-    return;
-  }
-  if (ctx.errors == null) {
-    ctx.errors = [];
-  }
-  ctx.errors.push({
-    message: "expected one of",
-    isUnionError: true,
-    errors,
-    path: [...(ctx.paths ?? [])],
-    received,
-  });
-}
-
 function decodeString(ctx, input) {
-  if (typeof input === "string") {
-    return input;
-  }
-
-  return storeError(ctx, input, "expected string");
+  return typeof input === "string";
 }
 
 function decodeNumber(ctx, input) {
-  if (typeof input === "number") {
-    return input;
-  }
-  if (String(input).toLowerCase() == "nan") {
-    return NaN;
-  }
-
-  return storeError(ctx, input, "expected number");
+  return typeof input === "number";
 }
 
-function decodeFunction(ctx, input) {
-  if (typeof input === "function") {
-    return input;
-  }
-  return storeError(ctx, input, "expected function");
-}
 function decodeBoolean(ctx, input) {
-  if (typeof input === "boolean") {
-    return input;
-  }
-  return storeError(ctx, input, "expected boolean");
+  return typeof input === "boolean";
 }
 function decodeAny(ctx, input) {
-  return input;
+  return true;
 }
 function decodeNull(ctx, input) {
   if (input == null) {
-    return input;
+    return true;
   }
-  return storeError(ctx, input, "expected nullish value");
+  return false;
 }
 function decodeNever(ctx, input) {
-  return storeError(ctx, input, "never");
+  return false;
+}
+function decodeFunction(ctx, input) {
+  return typeof input === "function";
 }
 
 class ConstDecoder {
@@ -112,10 +40,7 @@ class ConstDecoder {
   }
 
   decodeConstDecoder(ctx, input) {
-    if (input == this.value) {
-      return this.value;
-    }
-    return storeError(ctx, input, () => "expected " + JSON.stringify(this.value));
+    return input === this.value;
   }
 }
 
@@ -127,11 +52,9 @@ class RegexDecoder {
 
   decodeRegexDecoder(ctx, input) {
     if (typeof input === "string") {
-      if (this.regex.test(input)) {
-        return input;
-      }
+      return this.regex.test(input);
     }
-    return storeError(ctx, input, () => "expected string matching " + this.description);
+    return false;
   }
 }
 
@@ -142,41 +65,29 @@ class ObjectDecoder {
   }
 
   decodeObjectDecoder(ctx, input) {
-    const disallowExtraProperties = ctx?.disallowExtraProperties ?? false;
-
-    const allowedExtraProperties = ctx.allowedExtraProperties__ ?? [];
-
     if (typeof input === "object" && !Array.isArray(input) && input !== null) {
-      const acc = {};
-      for (const [k, v] of Object.entries(this.data)) {
-        pushPath(ctx, k);
-        acc[k] = v(ctx, input[k]);
-        popPath(ctx);
+      const configKeys = Object.keys(this.data);
+      for (const k of configKeys) {
+        const v = this.data[k];
+        if (!v(ctx, input[k])) {
+          return false;
+        }
       }
 
       if (this.additionalPropsValidator != null) {
-        for (const [k, v] of Object.entries(input)) {
-          if (acc[k] == null) {
-            pushPath(ctx, k);
-            acc[k] = this.additionalPropsValidator(ctx, v);
-            popPath(ctx);
+        const inputKeys = Object.keys(input);
+        const extraKeys = inputKeys.filter((k) => !configKeys.includes(k));
+        for (const k of extraKeys) {
+          const v = input[k];
+          if (!this.additionalPropsValidator(ctx, v)) {
+            return false;
           }
         }
       }
 
-      if (disallowExtraProperties) {
-        for (const k of Object.keys(input)) {
-          if (acc[k] == null && allowedExtraProperties.indexOf(k) == -1) {
-            pushPath(ctx, k);
-            storeError(ctx, input[k], "extra property");
-            popPath(ctx);
-          }
-        }
-      }
-
-      return acc;
+      return true;
     }
-    return storeError(ctx, input, "expected object");
+    return false;
   }
 }
 
@@ -187,16 +98,15 @@ class ArrayDecoder {
 
   decodeArrayDecoder(ctx, input) {
     if (Array.isArray(input)) {
-      const acc = [];
       for (let i = 0; i < input.length; i++) {
         const v = input[i];
-        pushPath(ctx, "[" + i + "]");
-        acc.push(this.data(ctx, v));
-        popPath(ctx);
+        const ok = this.data(ctx, v);
+        if (!ok) {
+          return false;
+        }
       }
-      return acc;
     }
-    return storeError(ctx, input, "expected array");
+    return true;
   }
 }
 class CodecDecoder {
@@ -207,29 +117,26 @@ class CodecDecoder {
     switch (this.codec) {
       case "Codec::ISO8061": {
         const d = new Date(input);
-        if (isNaN(d.getTime())) {
-          return storeError(ctx, input, "expected ISO8061 date");
-        }
-        return d;
+        return !isNaN(d.getTime());
       }
       case "Codec::BigInt": {
         if (typeof input === "bigint") {
-          return input;
+          return true;
         }
         if (typeof input === "number") {
-          return BigInt(input);
+          return true;
         }
         if (typeof input === "string") {
           try {
-            return BigInt(input);
+            return true;
           } catch (e) {
             //noop
           }
         }
-        return storeError(ctx, input, "expected bigint");
+        return false;
       }
     }
-    return storeError(ctx, input, () => "codec " + this.codec + " not implemented");
+    return false;
   }
 }
 
@@ -240,20 +147,16 @@ class StringWithFormatDecoder {
 
   decodeStringWithFormatDecoder(ctx, input) {
     if (typeof input !== "string") {
-      return storeError(ctx, input, "expected string with format " + JSON.stringify(this.format));
+      return false;
     }
 
     const validator = customFormatters[this.format];
 
     if (validator == null) {
-      return storeError(ctx, input, () => "format " + JSON.stringify(this.format) + " not implemented");
+      return false;
     }
 
-    const isOk = validator(input);
-    if (isOk) {
-      return input;
-    }
-    return storeError(ctx, input, "expected string with format " + JSON.stringify(this.format));
+    return validator(input);
   }
 }
 class AnyOfDiscriminatedDecoder {
@@ -265,28 +168,17 @@ class AnyOfDiscriminatedDecoder {
   decodeAnyOfDiscriminatedDecoder(ctx, input) {
     const d = input[this.discriminator];
     if (d == null) {
-      return storeError(ctx, input, () => "expected discriminator key " + JSON.stringify(this.discriminator));
+      return false;
     }
     const v = this.mapping[d];
     if (v == null) {
-      pushPath(ctx, this.discriminator);
-      const err = storeError(
-        ctx,
-        d,
-        () =>
-          "expected one of " +
-          Object.keys(this.mapping)
-            .map((it) => JSON.stringify(it))
-            .join(", ")
-      );
-      popPath(ctx);
-      return err;
+      // not one of the known discriminators
+      return false;
     }
-    const prevAllow = ctx.allowedExtraProperties__ ?? [];
-    ctx.allowedExtraProperties__ = [...prevAllow, this.discriminator];
-    const out = v(ctx, input);
-    ctx.allowedExtraProperties__ = prevAllow;
-    return { ...out, [this.discriminator]: d };
+    if (!v(ctx, input)) {
+      return false;
+    }
+    return true;
   }
 }
 
@@ -297,22 +189,10 @@ class AnyOfConstsDecoder {
   decodeAnyOfConstsDecoder(ctx, input) {
     if (input == null) {
       if (this.consts.includes(null) || this.consts.includes(undefined)) {
-        return input;
+        return true;
       }
     }
-    if (this.consts.includes(input)) {
-      return input;
-    }
-    return storeError(ctx, input, () =>
-      this.consts.length < 3
-        ? "expected one of " + this.consts.map((it) => JSON.stringify(it)).join(", ")
-        : "expected one of " +
-          this.consts
-            .slice(0, 3)
-            .map((it) => JSON.stringify(it))
-            .join(", ") +
-          "..."
-    );
+    return this.consts.includes(input);
   }
 }
 
@@ -321,27 +201,12 @@ class AnyOfDecoder {
     this.vs = vs;
   }
   decodeAnyOfDecoder(ctx, input) {
-    const optimisticCtx = {
-      noErrorMessages: true,
-    };
     for (const v of this.vs) {
-      optimisticCtx.errors = null;
-      const newValue = v(optimisticCtx, input);
-      if (optimisticCtx.errors == null) {
-        return newValue;
+      if (v(ctx, input)) {
+        return true;
       }
     }
-
-    let accErrors = [];
-    for (const v of this.vs) {
-      const validatorCtx = {};
-      const newValue = v(validatorCtx, input);
-      if (validatorCtx.errors == null) {
-        return newValue;
-      }
-      accErrors.push(...(validatorCtx.errors ?? []));
-    }
-    return storeUnionError(ctx, input, accErrors);
+    return false;
   }
 }
 class AllOfDecoder {
@@ -349,22 +214,12 @@ class AllOfDecoder {
     this.vs = vs;
   }
   decodeAllOfDecoder(ctx, input) {
-    let acc = {};
-    let foundOneObject = false;
-    let allObjects = true;
     for (const v of this.vs) {
-      const newValue = v(ctx, input);
-      const isObj = typeof newValue === "object";
-      allObjects = allObjects && isObj;
-      if (isObj) {
-        foundOneObject = true;
-        acc = { ...acc, ...newValue };
+      if (!v(ctx, input)) {
+        return false;
       }
     }
-    if (foundOneObject && allObjects) {
-      return acc;
-    }
-    return input;
+    return true;
   }
 }
 class TupleDecoder {
@@ -373,29 +228,27 @@ class TupleDecoder {
   }
   decodeTupleDecoder(ctx, input) {
     if (Array.isArray(input)) {
-      const acc = [];
       let idx = 0;
-      for (const v of this.vs.prefix) {
-        pushPath(ctx, "[" + idx + "]");
-        const newValue = v(ctx, input[idx]);
-        popPath(ctx);
-        acc.push(newValue);
+      for (const prefixVal of this.vs.prefix) {
+        if (!prefixVal(ctx, input[idx])) {
+          return false;
+        }
         idx++;
       }
-      if (this.vs.items != null) {
+      const itemVal = this.vs.items;
+      if (itemVal != null) {
         for (let i = idx; i < input.length; i++) {
-          const v = input[i];
-          pushPath(ctx, "[" + i + "]");
-          acc.push(this.vs.items(ctx, v));
-          popPath(ctx);
+          if (!itemVal(ctx, input[i])) {
+            return false;
+          }
         }
       } else {
         if (input.length > idx) {
-          return storeError(ctx, input, "tuple has too many items");
+          return false;
         }
       }
-      return acc;
+      return true;
     }
-    return storeError(ctx, input, "expected tuple");
+    return false;
   }
 }

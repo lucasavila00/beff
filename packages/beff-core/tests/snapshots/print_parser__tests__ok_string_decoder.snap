@@ -1,0 +1,11 @@
+---
+source: packages/beff-core/tests/print_parser.rs
+expression: "decoder(r#\"\n        export type Alias = string;\n        parse.buildParsers<{ Dec: Alias }>();\n      \"#)"
+---
+function DecodeAlias(ctx, input) {
+    return (decodeString)(ctx, input);
+}
+const validators = {
+    Alias: DecodeAlias
+};
+

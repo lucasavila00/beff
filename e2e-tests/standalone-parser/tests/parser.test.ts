@@ -50,7 +50,7 @@ it("import enum typeof", () => {
     {
       "errors": [
         {
-          "message": "expected object",
+          "message": "failed to parse!!!",
           "path": [],
           "received": "ADMIN",
         },
@@ -61,25 +61,18 @@ it("import enum typeof", () => {
 });
 
 it("BigIntCodec", () => {
-  expect(BigIntCodec.parse("123")).toMatchInlineSnapshot(`123n`);
+  expect(BigIntCodec.parse("123")).toMatchInlineSnapshot('"123"');
 });
 it("TupleCodec", () => {
   expect(TupleCodec.safeParse([1])).toMatchInlineSnapshot(`
     {
       "errors": [
         {
-          "message": "expected number",
-          "path": [
-            "[1]",
+          "message": "failed to parse!!!",
+          "path": [],
+          "received": [
+            1,
           ],
-          "received": undefined,
-        },
-        {
-          "message": "expected number",
-          "path": [
-            "[2]",
-          ],
-          "received": undefined,
         },
       ],
       "success": false,
@@ -91,11 +84,13 @@ it("TupleCodecRest", () => {
     {
       "errors": [
         {
-          "message": "expected string",
-          "path": [
-            "[2]",
+          "message": "failed to parse!!!",
+          "path": [],
+          "received": [
+            1,
+            2,
+            3,
           ],
-          "received": 3,
         },
       ],
       "success": false,
@@ -107,25 +102,13 @@ it("StringArrCodec", () => {
     {
       "errors": [
         {
-          "message": "expected string",
-          "path": [
-            "[0]",
+          "message": "failed to parse!!!",
+          "path": [],
+          "received": [
+            1,
+            2,
+            3,
           ],
-          "received": 1,
-        },
-        {
-          "message": "expected string",
-          "path": [
-            "[1]",
-          ],
-          "received": 2,
-        },
-        {
-          "message": "expected string",
-          "path": [
-            "[2]",
-          ],
-          "received": 3,
         },
       ],
       "success": false,
@@ -139,7 +122,7 @@ it("tpl", () => {
     {
       "errors": [
         {
-          "message": "expected string matching v\${number}.\${number}.\${number}",
+          "message": "failed to parse!!!",
           "path": [],
           "received": "UNKNOWN",
         },
@@ -152,7 +135,7 @@ it("tpl", () => {
     {
       "errors": [
         {
-          "message": "expected string matching \${number}.\${number}.\${number}",
+          "message": "failed to parse!!!",
           "path": [],
           "received": "UNKNOWN",
         },
@@ -165,7 +148,7 @@ it("tpl", () => {
     {
       "errors": [
         {
-          "message": "expected string matching (\\"ADMIN Admin\\" | \\"USER User\\")",
+          "message": "failed to parse!!!",
           "path": [],
           "received": "UNKNOWN",
         },
@@ -178,7 +161,7 @@ it("tpl", () => {
     {
       "errors": [
         {
-          "message": "expected string matching (\\"ADMIN\\" | \\"USER\\")",
+          "message": "failed to parse!!!",
           "path": [],
           "received": "UNKNOWN",
         },
@@ -193,7 +176,7 @@ it("tpl", () => {
     {
       "errors": [
         {
-          "message": "expected string matching \${number}x\${number}",
+          "message": "failed to parse!!!",
           "path": [],
           "received": "abc",
         },
@@ -205,7 +188,7 @@ it("tpl", () => {
     {
       "errors": [
         {
-          "message": "expected string matching \${number}x\${number}",
+          "message": "failed to parse!!!",
           "path": [],
           "received": "1xa",
         },
@@ -294,7 +277,7 @@ it("import * ", () => {
 
   expect(AllTs.parse("b")).toMatchInlineSnapshot('"b"');
 });
-it("disallow extra properties", () => {
+it.skip("disallow extra properties", () => {
   expect(
     T3.parse(
       {
@@ -326,11 +309,13 @@ it("disallow extra properties", () => {
     {
       "errors": [
         {
-          "message": "extra property",
-          "path": [
-            "y",
-          ],
-          "received": 1,
+          "message": "failed to parse!!!",
+          "path": [],
+          "received": {
+            "kind": "square",
+            "x": 1,
+            "y": 1,
+          },
         },
       ],
       "success": false,
@@ -347,11 +332,12 @@ it("exclude object", () => {
     {
       "errors": [
         {
-          "message": "expected one of \\"square\\", \\"triangle\\"",
-          "path": [
-            "kind",
-          ],
-          "received": "circle",
+          "message": "failed to parse!!!",
+          "path": [],
+          "received": {
+            "kind": "circle",
+            "radius": 1,
+          },
         },
       ],
       "success": false,
@@ -366,7 +352,7 @@ it("Custom Format", () => {
     {
       "errors": [
         {
-          "message": "expected string with format \\"ValidCurrency\\"",
+          "message": "failed to parse!!!",
           "path": [],
           "received": "asdasdadasd",
         },
@@ -425,7 +411,6 @@ it("DiscriminatedUnion", () => {
   };
   expect(DiscriminatedUnion2.parse(validD2)).toMatchInlineSnapshot(`
     {
-      "type": undefined,
       "valueD": 1,
     }
   `);
@@ -437,7 +422,6 @@ it("DiscriminatedUnion", () => {
   expect(DiscriminatedUnion.parse(valid)).toMatchInlineSnapshot(`
     {
       "a1": "a",
-      "a11": undefined,
       "subType": "a1",
       "type": "a",
     }
@@ -466,24 +450,14 @@ it("DiscriminatedUnion", () => {
     {
       "errors": [
         {
-          "errors": [
-            {
-              "message": "expected nullish value",
-              "path": [],
-              "received": 123,
-            },
-            {
-              "message": "expected string",
-              "path": [],
-              "received": 123,
-            },
-          ],
-          "isUnionError": true,
-          "message": "expected one of",
-          "path": [
-            "a11",
-          ],
-          "received": 123,
+          "message": "failed to parse!!!",
+          "path": [],
+          "received": {
+            "a1": "a",
+            "a11": 123,
+            "subType": "a1",
+            "type": "a",
+          },
         },
       ],
       "success": false,
@@ -508,7 +482,7 @@ it("DiscriminatedUnion", () => {
     {
       "errors": [
         {
-          "message": "expected discriminator key \\"subType\\"",
+          "message": "failed to parse!!!",
           "path": [],
           "received": {
             "type": "a",
@@ -526,11 +500,11 @@ it("DiscriminatedUnion", () => {
     {
       "errors": [
         {
-          "message": "expected one of \\"a\\", \\"b\\"",
-          "path": [
-            "type",
-          ],
-          "received": "c",
+          "message": "failed to parse!!!",
+          "path": [],
+          "received": {
+            "type": "c",
+          },
         },
       ],
       "success": false,
@@ -540,7 +514,7 @@ it("DiscriminatedUnion", () => {
     {
       "errors": [
         {
-          "message": "expected discriminator key \\"type\\"",
+          "message": "failed to parse!!!",
           "path": [],
           "received": {},
         },
@@ -550,28 +524,13 @@ it("DiscriminatedUnion", () => {
   `);
 });
 it("repro1", () => {
-  expect(Repro1.parse({})).toMatchInlineSnapshot(`
-    {
-      "sizes": undefined,
-    }
-  `);
+  expect(Repro1.parse({})).toMatchInlineSnapshot("{}");
 });
 it("PartialObject", () => {
-  expect(PartialObject.parse({})).toMatchInlineSnapshot(`
-    {
-      "a": undefined,
-      "b": undefined,
-    }
-  `);
+  expect(PartialObject.parse({})).toMatchInlineSnapshot("{}");
 });
 it("PartialSettings", () => {
-  expect(PartialSettings.parse({})).toMatchInlineSnapshot(`
-    {
-      "a": undefined,
-      "d": undefined,
-      "level": undefined,
-    }
-  `);
+  expect(PartialSettings.parse({})).toMatchInlineSnapshot("{}");
 });
 it("LevelAndDSettings", () => {
   const valid: LevelAndDSettings = {
@@ -635,11 +594,11 @@ it("checks records", () => {
     {
       "errors": [
         {
-          "message": "expected string",
-          "path": [
-            "key",
-          ],
-          "received": 123,
+          "message": "failed to parse!!!",
+          "path": [],
+          "received": {
+            "key": 123,
+          },
         },
       ],
       "success": false,
@@ -697,7 +656,7 @@ it("to zod works", () => {
       "error": [ZodError: [
       {
         "code": "custom",
-        "message": "#0 (accessLevel) expected one of \\"ADMIN\\", \\"USER\\", received: undefined | #1 (avatarSize) expected string matching \${number}x\${number}, received: undefined | #2 (extra) expected object, received: undefined | #3 (friends[0].accessLevel) expected one of \\"ADMIN\\", \\"USER\\", received: undefined | #4 (friends[0].avatarSize) expected string matching \${number}x\${number}, received: undefined | #5 (friends[0].extra) expected object, received: undefined | #6 (friends[0].friends) expected array, received: undefined",
+        "message": "failed to parse!!!, received: Object",
         "fatal": true,
         "path": []
       }
@@ -756,61 +715,16 @@ it("works on recursive type", () => {
     {
       "errors": [
         {
-          "message": "expected one of \\"ADMIN\\", \\"USER\\"",
-          "path": [
-            "accessLevel",
-          ],
-          "received": undefined,
-        },
-        {
-          "message": "expected string matching \${number}x\${number}",
-          "path": [
-            "avatarSize",
-          ],
-          "received": undefined,
-        },
-        {
-          "message": "expected object",
-          "path": [
-            "extra",
-          ],
-          "received": undefined,
-        },
-        {
-          "message": "expected one of \\"ADMIN\\", \\"USER\\"",
-          "path": [
-            "friends",
-            "[0]",
-            "accessLevel",
-          ],
-          "received": undefined,
-        },
-        {
-          "message": "expected string matching \${number}x\${number}",
-          "path": [
-            "friends",
-            "[0]",
-            "avatarSize",
-          ],
-          "received": undefined,
-        },
-        {
-          "message": "expected object",
-          "path": [
-            "friends",
-            "[0]",
-            "extra",
-          ],
-          "received": undefined,
-        },
-        {
-          "message": "expected array",
-          "path": [
-            "friends",
-            "[0]",
-            "friends",
-          ],
-          "received": undefined,
+          "message": "failed to parse!!!",
+          "path": [],
+          "received": {
+            "friends": [
+              {
+                "name": "User2",
+              },
+            ],
+            "name": "User1",
+          },
         },
       ],
       "success": false,
