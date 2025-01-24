@@ -556,6 +556,9 @@ class AnyOfDiscriminatedValidator {
   }
 
   validateAnyOfDiscriminatedValidator(ctx, input) {
+    if (typeof input !== "object" || input == null) {
+      return false;
+    }
     const d = input[this.discriminator];
     if (d == null) {
       return false;
