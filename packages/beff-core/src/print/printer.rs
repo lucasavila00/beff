@@ -65,6 +65,7 @@ fn build_decoders(
     let mut parser_exprs: Vec<_> = vec![];
     let mut report_exprs: Vec<_> = vec![];
     for decoder in decs {
+        let mut local_hoisted = vec![];
         let SchemaCode {
             validator,
             parser,
@@ -72,12 +73,14 @@ fn build_decoders(
         } = decoder::validator_for_schema(
             &decoder.schema,
             validators,
-            hoisted,
+            &mut local_hoisted,
             &decoder.exported_name,
         );
         validator_exprs.push((decoder.exported_name.clone(), validator));
         parser_exprs.push((decoder.exported_name.clone(), parser));
         report_exprs.push((decoder.exported_name.clone(), reporter));
+
+        hoisted.extend(local_hoisted.into_iter());
     }
 
     validator_exprs.sort_by(|(a, _), (b, _)| a.cmp(b));
@@ -286,21 +289,19 @@ impl ToWritableModules for ExtractResult {
                 props: schema_names
                     .into_iter()
                     .map(|it| {
-                        PropOrSpread::Prop(
-                            Box::new(Prop::KeyValue(KeyValueProp {
-                                key: PropName::Ident(Ident {
-                                    span: DUMMY_SP,
-                                    sym: it.clone().into(),
-                                    optional: false,
-                                }),
-                                value: Expr::Ident(Ident {
-                                    span: DUMMY_SP,
-                                    sym: format!("Report{}", it).into(),
-                                    optional: false,
-                                })
-                                .into(),
-                            })),
-                        )
+                        PropOrSpread::Prop(Box::new(Prop::KeyValue(KeyValueProp {
+                            key: PropName::Ident(Ident {
+                                span: DUMMY_SP,
+                                sym: it.clone().into(),
+                                optional: false,
+                            }),
+                            value: Expr::Ident(Ident {
+                                span: DUMMY_SP,
+                                sym: format!("Report{}", it).into(),
+                                optional: false,
+                            })
+                            .into(),
+                        })))
                     })
                     .collect(),
             }),

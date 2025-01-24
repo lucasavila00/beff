@@ -10,16 +10,16 @@ const hoisted_Users_0 = validators.User;
 const hoisted_Users_1 = new ArrayValidator(hoisted_Users_0);
 const hoisted_Users_2 = new ArrayParser(parsers.User);
 const hoisted_Users_3 = new ArrayReporter(hoisted_Users_0, reporters.User);
-const hoisted_float_4 = new ConstDecoder(123.456);
-const hoisted_int_5 = new ConstDecoder(123);
+const hoisted_float_0 = new ConstDecoder(123.456);
+const hoisted_int_0 = new ConstDecoder(123);
 const buildValidatorsInput = {
     "NotPublicRenamed": validators.NotPublic,
     "Password": validators.Password,
     "StartsWithA": validators.StartsWithA,
     "User": validators.User,
     "Users": hoisted_Users_1.validateArrayValidator.bind(hoisted_Users_1),
-    "float": hoisted_float_4.validateConstDecoder.bind(hoisted_float_4),
-    "int": hoisted_int_5.validateConstDecoder.bind(hoisted_int_5),
+    "float": hoisted_float_0.validateConstDecoder.bind(hoisted_float_0),
+    "int": hoisted_int_0.validateConstDecoder.bind(hoisted_int_0),
     "union": validators.UnionNested
 };
 const buildParsersInput = {
@@ -28,8 +28,8 @@ const buildParsersInput = {
     "StartsWithA": parsers.StartsWithA,
     "User": parsers.User,
     "Users": hoisted_Users_2.parseArrayParser.bind(hoisted_Users_2),
-    "float": hoisted_float_4.parseConstDecoder.bind(hoisted_float_4),
-    "int": hoisted_int_5.parseConstDecoder.bind(hoisted_int_5),
+    "float": hoisted_float_0.parseConstDecoder.bind(hoisted_float_0),
+    "int": hoisted_int_0.parseConstDecoder.bind(hoisted_int_0),
     "union": parsers.UnionNested
 };
 const buildReportersInput = {
@@ -38,8 +38,8 @@ const buildReportersInput = {
     "StartsWithA": reporters.StartsWithA,
     "User": reporters.User,
     "Users": hoisted_Users_3.reportArrayReporter.bind(hoisted_Users_3),
-    "float": hoisted_float_4.reportConstDecoder.bind(hoisted_float_4),
-    "int": hoisted_int_5.reportConstDecoder.bind(hoisted_int_5),
+    "float": hoisted_float_0.reportConstDecoder.bind(hoisted_float_0),
+    "int": hoisted_int_0.reportConstDecoder.bind(hoisted_int_0),
     "union": reporters.UnionNested
 };
 

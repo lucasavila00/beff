@@ -21,53 +21,53 @@ const hoisted_ObjectWithArr_7 = new ObjectParser({
 const hoisted_ObjectWithArr_8 = new ObjectReporter(hoisted_ObjectWithArr_4, hoisted_ObjectWithArr_5, {
     "a": hoisted_ObjectWithArr_3.reportArrayReporter.bind(hoisted_ObjectWithArr_3)
 }, null);
-const hoisted_BigIntCodec_9 = new CodecDecoder("Codec::BigInt");
-const hoisted_TupleCodec_10 = [
+const hoisted_BigIntCodec_0 = new CodecDecoder("Codec::BigInt");
+const hoisted_TupleCodec_0 = [
     validateNumber,
     validateNumber,
     validateNumber
 ];
-const hoisted_TupleCodec_11 = null;
-const hoisted_TupleCodec_12 = new TupleValidator(hoisted_TupleCodec_10, hoisted_TupleCodec_11);
-const hoisted_TupleCodec_13 = new TupleParser([
+const hoisted_TupleCodec_1 = null;
+const hoisted_TupleCodec_2 = new TupleValidator(hoisted_TupleCodec_0, hoisted_TupleCodec_1);
+const hoisted_TupleCodec_3 = new TupleParser([
     parseIdentity,
     parseIdentity,
     parseIdentity
 ], null);
-const hoisted_TupleCodec_14 = new TupleReporter(hoisted_TupleCodec_10, hoisted_TupleCodec_11, [
+const hoisted_TupleCodec_4 = new TupleReporter(hoisted_TupleCodec_0, hoisted_TupleCodec_1, [
     reportNumber,
     reportNumber,
     reportNumber
 ], null);
-const hoisted_TupleCodecRest_15 = [
+const hoisted_TupleCodecRest_0 = [
     validateNumber,
     validateNumber
 ];
-const hoisted_TupleCodecRest_16 = validateString;
-const hoisted_TupleCodecRest_17 = new TupleValidator(hoisted_TupleCodecRest_15, hoisted_TupleCodecRest_16);
-const hoisted_TupleCodecRest_18 = new TupleParser([
+const hoisted_TupleCodecRest_1 = validateString;
+const hoisted_TupleCodecRest_2 = new TupleValidator(hoisted_TupleCodecRest_0, hoisted_TupleCodecRest_1);
+const hoisted_TupleCodecRest_3 = new TupleParser([
     parseIdentity,
     parseIdentity
 ], parseIdentity);
-const hoisted_TupleCodecRest_19 = new TupleReporter(hoisted_TupleCodecRest_15, hoisted_TupleCodecRest_16, [
+const hoisted_TupleCodecRest_4 = new TupleReporter(hoisted_TupleCodecRest_0, hoisted_TupleCodecRest_1, [
     reportNumber,
     reportNumber
 ], reportString);
-const hoisted_StringArrCodec_20 = validateString;
-const hoisted_StringArrCodec_21 = new ArrayValidator(hoisted_StringArrCodec_20);
-const hoisted_StringArrCodec_22 = new ArrayParser(parseIdentity);
-const hoisted_StringArrCodec_23 = new ArrayReporter(hoisted_StringArrCodec_20, reportString);
-const hoisted_ImportEnumTypeof_24 = new ConstDecoder("a");
-const hoisted_ImportEnumTypeof_25 = {
-    "A": hoisted_ImportEnumTypeof_24.validateConstDecoder.bind(hoisted_ImportEnumTypeof_24)
+const hoisted_StringArrCodec_0 = validateString;
+const hoisted_StringArrCodec_1 = new ArrayValidator(hoisted_StringArrCodec_0);
+const hoisted_StringArrCodec_2 = new ArrayParser(parseIdentity);
+const hoisted_StringArrCodec_3 = new ArrayReporter(hoisted_StringArrCodec_0, reportString);
+const hoisted_ImportEnumTypeof_0 = new ConstDecoder("a");
+const hoisted_ImportEnumTypeof_1 = {
+    "A": hoisted_ImportEnumTypeof_0.validateConstDecoder.bind(hoisted_ImportEnumTypeof_0)
 };
-const hoisted_ImportEnumTypeof_26 = null;
-const hoisted_ImportEnumTypeof_27 = new ObjectValidator(hoisted_ImportEnumTypeof_25, hoisted_ImportEnumTypeof_26);
-const hoisted_ImportEnumTypeof_28 = new ObjectParser({
-    "A": hoisted_ImportEnumTypeof_24.parseConstDecoder.bind(hoisted_ImportEnumTypeof_24)
+const hoisted_ImportEnumTypeof_2 = null;
+const hoisted_ImportEnumTypeof_3 = new ObjectValidator(hoisted_ImportEnumTypeof_1, hoisted_ImportEnumTypeof_2);
+const hoisted_ImportEnumTypeof_4 = new ObjectParser({
+    "A": hoisted_ImportEnumTypeof_0.parseConstDecoder.bind(hoisted_ImportEnumTypeof_0)
 }, null);
-const hoisted_ImportEnumTypeof_29 = new ObjectReporter(hoisted_ImportEnumTypeof_25, hoisted_ImportEnumTypeof_26, {
-    "A": hoisted_ImportEnumTypeof_24.reportConstDecoder.bind(hoisted_ImportEnumTypeof_24)
+const hoisted_ImportEnumTypeof_5 = new ObjectReporter(hoisted_ImportEnumTypeof_1, hoisted_ImportEnumTypeof_2, {
+    "A": hoisted_ImportEnumTypeof_0.reportConstDecoder.bind(hoisted_ImportEnumTypeof_0)
 }, null);
 const buildValidatorsInput = {
     "AObject": validators.AObject,
@@ -81,13 +81,13 @@ const buildValidatorsInput = {
     "Arr3": validators.Arr3,
     "AvatarSize": validators.AvatarSize,
     "BObject": validators.BObject,
-    "BigIntCodec": hoisted_BigIntCodec_9.validateCodecDecoder.bind(hoisted_BigIntCodec_9),
+    "BigIntCodec": hoisted_BigIntCodec_0.validateCodecDecoder.bind(hoisted_BigIntCodec_0),
     "DiscriminatedUnion": validators.DiscriminatedUnion,
     "DiscriminatedUnion2": validators.DiscriminatedUnion2,
     "DiscriminatedUnion3": validators.DiscriminatedUnion3,
     "DiscriminatedUnion4": validators.DiscriminatedUnion4,
     "Extra": validators.Extra,
-    "ImportEnumTypeof": hoisted_ImportEnumTypeof_27.validateObjectValidator.bind(hoisted_ImportEnumTypeof_27),
+    "ImportEnumTypeof": hoisted_ImportEnumTypeof_3.validateObjectValidator.bind(hoisted_ImportEnumTypeof_3),
     "K": validators.K,
     "KABC": validators.KABC,
     "KDEF": validators.KDEF,
@@ -105,11 +105,11 @@ const buildValidatorsInput = {
     "Req": validators.Req,
     "RequiredPartialObject": validators.RequiredPartialObject,
     "SettingsUpdate": validators.SettingsUpdate,
-    "StringArrCodec": hoisted_StringArrCodec_21.validateArrayValidator.bind(hoisted_StringArrCodec_21),
+    "StringArrCodec": hoisted_StringArrCodec_1.validateArrayValidator.bind(hoisted_StringArrCodec_1),
     "T3": validators.T3,
     "TransportedValue": validators.TransportedValue,
-    "TupleCodec": hoisted_TupleCodec_12.validateTupleValidator.bind(hoisted_TupleCodec_12),
-    "TupleCodecRest": hoisted_TupleCodecRest_17.validateTupleValidator.bind(hoisted_TupleCodecRest_17),
+    "TupleCodec": hoisted_TupleCodec_2.validateTupleValidator.bind(hoisted_TupleCodec_2),
+    "TupleCodecRest": hoisted_TupleCodecRest_2.validateTupleValidator.bind(hoisted_TupleCodecRest_2),
     "UnionWithEnumAccess": validators.UnionWithEnumAccess,
     "User": validators.User,
     "ValidCurrency": validators.ValidCurrency,
@@ -128,13 +128,13 @@ const buildParsersInput = {
     "Arr3": parsers.Arr3,
     "AvatarSize": parsers.AvatarSize,
     "BObject": parsers.BObject,
-    "BigIntCodec": hoisted_BigIntCodec_9.parseCodecDecoder.bind(hoisted_BigIntCodec_9),
+    "BigIntCodec": hoisted_BigIntCodec_0.parseCodecDecoder.bind(hoisted_BigIntCodec_0),
     "DiscriminatedUnion": parsers.DiscriminatedUnion,
     "DiscriminatedUnion2": parsers.DiscriminatedUnion2,
     "DiscriminatedUnion3": parsers.DiscriminatedUnion3,
     "DiscriminatedUnion4": parsers.DiscriminatedUnion4,
     "Extra": parsers.Extra,
-    "ImportEnumTypeof": hoisted_ImportEnumTypeof_28.parseObjectParser.bind(hoisted_ImportEnumTypeof_28),
+    "ImportEnumTypeof": hoisted_ImportEnumTypeof_4.parseObjectParser.bind(hoisted_ImportEnumTypeof_4),
     "K": parsers.K,
     "KABC": parsers.KABC,
     "KDEF": parsers.KDEF,
@@ -152,11 +152,11 @@ const buildParsersInput = {
     "Req": parsers.Req,
     "RequiredPartialObject": parsers.RequiredPartialObject,
     "SettingsUpdate": parsers.SettingsUpdate,
-    "StringArrCodec": hoisted_StringArrCodec_22.parseArrayParser.bind(hoisted_StringArrCodec_22),
+    "StringArrCodec": hoisted_StringArrCodec_2.parseArrayParser.bind(hoisted_StringArrCodec_2),
     "T3": parsers.T3,
     "TransportedValue": parsers.TransportedValue,
-    "TupleCodec": hoisted_TupleCodec_13.parseTupleParser.bind(hoisted_TupleCodec_13),
-    "TupleCodecRest": hoisted_TupleCodecRest_18.parseTupleParser.bind(hoisted_TupleCodecRest_18),
+    "TupleCodec": hoisted_TupleCodec_3.parseTupleParser.bind(hoisted_TupleCodec_3),
+    "TupleCodecRest": hoisted_TupleCodecRest_3.parseTupleParser.bind(hoisted_TupleCodecRest_3),
     "UnionWithEnumAccess": parsers.UnionWithEnumAccess,
     "User": parsers.User,
     "ValidCurrency": parsers.ValidCurrency,
@@ -175,13 +175,13 @@ const buildReportersInput = {
     "Arr3": reporters.Arr3,
     "AvatarSize": reporters.AvatarSize,
     "BObject": reporters.BObject,
-    "BigIntCodec": hoisted_BigIntCodec_9.reportCodecDecoder.bind(hoisted_BigIntCodec_9),
+    "BigIntCodec": hoisted_BigIntCodec_0.reportCodecDecoder.bind(hoisted_BigIntCodec_0),
     "DiscriminatedUnion": reporters.DiscriminatedUnion,
     "DiscriminatedUnion2": reporters.DiscriminatedUnion2,
     "DiscriminatedUnion3": reporters.DiscriminatedUnion3,
     "DiscriminatedUnion4": reporters.DiscriminatedUnion4,
     "Extra": reporters.Extra,
-    "ImportEnumTypeof": hoisted_ImportEnumTypeof_29.reportObjectReporter.bind(hoisted_ImportEnumTypeof_29),
+    "ImportEnumTypeof": hoisted_ImportEnumTypeof_5.reportObjectReporter.bind(hoisted_ImportEnumTypeof_5),
     "K": reporters.K,
     "KABC": reporters.KABC,
     "KDEF": reporters.KDEF,
@@ -199,11 +199,11 @@ const buildReportersInput = {
     "Req": reporters.Req,
     "RequiredPartialObject": reporters.RequiredPartialObject,
     "SettingsUpdate": reporters.SettingsUpdate,
-    "StringArrCodec": hoisted_StringArrCodec_23.reportArrayReporter.bind(hoisted_StringArrCodec_23),
+    "StringArrCodec": hoisted_StringArrCodec_3.reportArrayReporter.bind(hoisted_StringArrCodec_3),
     "T3": reporters.T3,
     "TransportedValue": reporters.TransportedValue,
-    "TupleCodec": hoisted_TupleCodec_14.reportTupleReporter.bind(hoisted_TupleCodec_14),
-    "TupleCodecRest": hoisted_TupleCodecRest_19.reportTupleReporter.bind(hoisted_TupleCodecRest_19),
+    "TupleCodec": hoisted_TupleCodec_4.reportTupleReporter.bind(hoisted_TupleCodec_4),
+    "TupleCodecRest": hoisted_TupleCodecRest_4.reportTupleReporter.bind(hoisted_TupleCodecRest_4),
     "UnionWithEnumAccess": reporters.UnionWithEnumAccess,
     "User": reporters.User,
     "ValidCurrency": reporters.ValidCurrency,
