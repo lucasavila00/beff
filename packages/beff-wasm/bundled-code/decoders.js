@@ -242,8 +242,8 @@ class ObjectValidator {
     if (typeof input === "object" && !Array.isArray(input) && input !== null) {
       const configKeys = Object.keys(this.data);
       for (const k of configKeys) {
-        const v = this.data[k];
-        if (!v(ctx, input[k])) {
+        const validator = this.data[k];
+        if (!validator(ctx, input[k])) {
           return false;
         }
       }
@@ -381,8 +381,9 @@ class ArrayValidator {
           return false;
         }
       }
+      return true;
     }
-    return true;
+    return false;
   }
 }
 
@@ -561,7 +562,7 @@ class TupleReporter {
   }
   reportTupleReporter(ctx, input) {
     if (!Array.isArray(input)) {
-      return buildError(ctx, "expected array", input);
+      return buildError(ctx, "expected tuple", input);
     }
 
     let idx = 0;

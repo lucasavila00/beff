@@ -32,6 +32,7 @@ import {
   TupleCodecRest,
   StringArrCodec,
   OnlyAKeyCodec,
+  ObjectWithArrCodec,
 } from "../src/parser";
 import { Arr2 } from "../src/types";
 import { Schemas } from "../src/schema";
@@ -135,6 +136,23 @@ it("StringArrCodec", () => {
 });
 it("OnlyAKeyCodec", () => {
   expect(JSON.stringify(OnlyAKeyCodec.parse({ A: "show", B: "hide" }))).toBe(`{"A":"show"}`);
+});
+
+it("ObjectWithArrCodec", () => {
+  expect(ObjectWithArrCodec.safeParse({})).toMatchInlineSnapshot(`
+    {
+      "errors": [
+        {
+          "message": "expected array",
+          "path": [
+            "a",
+          ],
+          "received": undefined,
+        },
+      ],
+      "success": false,
+    }
+  `);
 });
 
 it("tpl", () => {
@@ -962,7 +980,7 @@ it("to zod works", () => {
       "error": [ZodError: [
       {
         "code": "custom",
-        "message": "#0 (accessLevel) Failed to decode one of ((accessLevel) expected ADMIN | (accessLevel) expected USER), received: undefined | #1 (avatarSize) expected \${number}x\${number}, received: undefined | #2 (extra) expected object, received: undefined | #3 (friends[0].accessLevel) Failed to decode one of ((friends[0].accessLevel) expected ADMIN | (friends[0].accessLevel) expected USER), received: undefined | #4 (friends[0].avatarSize) expected \${number}x\${number}, received: undefined | #5 (friends[0].extra) expected object, received: undefined",
+        "message": "#0 (accessLevel) Failed to decode one of ((accessLevel) expected ADMIN | (accessLevel) expected USER), received: undefined | #1 (avatarSize) expected \${number}x\${number}, received: undefined | #2 (extra) expected object, received: undefined | #3 (friends[0].accessLevel) Failed to decode one of ((friends[0].accessLevel) expected ADMIN | (friends[0].accessLevel) expected USER), received: undefined | #4 (friends[0].avatarSize) expected \${number}x\${number}, received: undefined | #5 (friends[0].extra) expected object, received: undefined | #6 (friends[0].friends) expected array, received: undefined",
         "fatal": true,
         "path": []
       }
@@ -1101,6 +1119,15 @@ it("works on recursive type", () => {
             "friends",
             "[0]",
             "extra",
+          ],
+          "received": undefined,
+        },
+        {
+          "message": "expected array",
+          "path": [
+            "friends",
+            "[0]",
+            "friends",
           ],
           "received": undefined,
         },

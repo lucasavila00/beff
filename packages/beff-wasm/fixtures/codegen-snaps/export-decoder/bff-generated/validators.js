@@ -245,8 +245,8 @@ class ObjectValidator {
     if (typeof input === "object" && !Array.isArray(input) && input !== null) {
       const configKeys = Object.keys(this.data);
       for (const k of configKeys) {
-        const v = this.data[k];
-        if (!v(ctx, input[k])) {
+        const validator = this.data[k];
+        if (!validator(ctx, input[k])) {
           return false;
         }
       }
@@ -297,8 +297,7 @@ class ObjectReporter {
       const ok = this.dataValidator[k](ctx, input[k]);
       if (!ok) {
         pushPath(ctx, k);
-        const v = this.dataReporter[k];
-        const arr2 = v(ctx, input[k]);
+        const arr2 = this.dataReporter[k](ctx, input[k]);
         acc.push(...arr2);
         popPath(ctx);
       }
@@ -311,8 +310,7 @@ class ObjectReporter {
         const ok = this.restValidator(ctx, input[k]);
         if (!ok) {
           pushPath(ctx, k);
-          const v = input[k];
-          const arr2 = this.restReporter(ctx, v);
+          const arr2 = this.restReporter(ctx, input[k]);
           acc.push(...arr2);
           popPath(ctx);
         }
@@ -386,8 +384,9 @@ class ArrayValidator {
           return false;
         }
       }
+      return true;
     }
-    return true;
+    return false;
   }
 }
 
@@ -566,7 +565,7 @@ class TupleReporter {
   }
   reportTupleReporter(ctx, input) {
     if (!Array.isArray(input)) {
-      return buildError(ctx, "expected array", input);
+      return buildError(ctx, "expected tuple", input);
     }
 
     let idx = 0;

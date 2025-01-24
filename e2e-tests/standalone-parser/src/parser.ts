@@ -232,9 +232,13 @@ export const {
   TupleCodecRest: TupleCodecRest,
   StringArrCodec: StringArrCodec,
   OnlyAKey: OnlyAKeyCodec,
+  ObjectWithArr: ObjectWithArrCodec,
 } = parse.buildParsers<{
   TransportedValue: TransportedValue;
   OnlyAKey: OnlyAKey;
+  ObjectWithArr: {
+    a: string[];
+  };
   BigIntCodec: bigint;
   TupleCodec: [number, number, number];
   TupleCodecRest: [number, number, ...string[]];
