@@ -49,7 +49,7 @@ function buildParsers(args) {
       }
       //@ts-ignore
       let e = buildReportersInput[k];
-      let ctx = {};
+      let ctx = { path: [] };
       return {
         success: false,
         errors: e(ctx, input),

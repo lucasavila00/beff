@@ -7,14 +7,31 @@ function registerCustomFormatter(name, validator) {
   customFormatters[name] = validator;
 }
 
-function pushPath(ctx, key) {}
-function popPath(ctx) {}
+function pushPath(ctx, key) {
+  ctx.path.push(key);
+}
+function popPath(ctx) {
+  ctx.path.pop();
+}
 function buildError(ctx, message, received) {
-  return {
-    message,
-    path: [...ctx.path],
-    received,
-  };
+  return [
+    {
+      message,
+      path: [...ctx.path],
+      received,
+    },
+  ];
+}
+
+function buildUnionError(ctx, errors, received) {
+  return [
+    {
+      path: [...ctx.path],
+      received,
+      errors,
+      isUnionError: true,
+    },
+  ];
 }
 
 function parseIdentity(ctx, input) {
@@ -94,7 +111,7 @@ class ConstDecoder {
   }
 
   reportConstDecoder(ctx, input) {
-    throw new Error("Not implemented");
+    return buildError(ctx, `expected ${this.value}`, input);
   }
 }
 
@@ -116,7 +133,7 @@ class RegexDecoder {
   }
 
   reportRegexDecoder(ctx, input) {
-    throw new Error("Not implemented");
+    return buildError(ctx, `expected ${this.description}`, input);
   }
 }
 
@@ -159,14 +176,32 @@ class ObjectReporter {
   }
 
   reportObjectReporter(ctx, input) {
+    if (typeof input !== "object" || Array.isArray(input) || input === null) {
+      return buildError(ctx, "expected object", input);
+    }
+
     let acc = [];
 
-    for (const k in this.data) {
-      throw new Error("Not implemented obj data");
+    const configKeys = Object.keys(this.data);
+
+    for (const k of configKeys) {
+      pushPath(ctx, k);
+      const v = this.data[k];
+      const arr2 = v(ctx, input[k]);
+      acc.push(...arr2);
+      popPath(ctx);
     }
 
     if (this.rest != null) {
-      throw new Error("Not implemented obj rest");
+      const inputKeys = Object.keys(input);
+      const extraKeys = inputKeys.filter((k) => !configKeys.includes(k));
+      for (const k of extraKeys) {
+        pushPath(ctx, k);
+        const v = input[k];
+        const arr2 = this.rest(ctx, v);
+        acc.push(...arr2);
+        popPath(ctx);
+      }
     }
 
     return acc;
@@ -233,7 +268,20 @@ class ArrayReporter {
   }
 
   reportArrayReporter(ctx, input) {
-    throw new Error("Not implemented");
+    if (!Array.isArray(input)) {
+      return buildError(ctx, "expected array", input);
+    }
+
+    let acc = [];
+    for (let i = 0; i < input.length; i++) {
+      pushPath(ctx, `[${i}]`);
+      const v = input[i];
+      const arr2 = this.innerReporter(ctx, v);
+      acc.push(...arr2);
+      popPath(ctx);
+    }
+
+    return acc;
   }
 }
 
@@ -257,7 +305,16 @@ class CodecDecoder {
   }
 
   reportCodecDecoder(ctx, input) {
-    throw new Error("Not implemented");
+    switch (this.codec) {
+      case "Codec::ISO8061": {
+        return buildError(ctx, `expected Date`, input);
+      }
+      case "Codec::BigInt": {
+        return buildError(ctx, `expected BigInt`, input);
+      }
+    }
+
+    return buildError(ctx, `expected ${this.codec}`, input);
   }
 }
 
@@ -281,6 +338,9 @@ class StringWithFormatDecoder {
   }
   parseStringWithFormatDecoder(ctx, input) {
     return input;
+  }
+  reportStringWithFormatDecoder(ctx, input) {
+    return buildError(ctx, `expected string with format ${this.format}`, input);
   }
 }
 class AnyOfDiscriminatedDecoder {
@@ -352,7 +412,12 @@ class AnyOfReporter {
     this.vs = vs;
   }
   reportAnyOfReporter(ctx, input) {
-    throw new Error("Not implemented");
+    const acc = [];
+    for (const v of this.vs) {
+      const errors = v(ctx, input);
+      acc.push(...errors);
+    }
+    return acc;
   }
 }
 
@@ -447,6 +512,28 @@ class TupleReporter {
     this.rest = rest;
   }
   reportTupleReporter(ctx, input) {
-    throw new Error("Not implemented");
+    let idx = 0;
+
+    let acc = [];
+
+    for (const prefixVal of this.prefix) {
+      pushPath(ctx, `[${idx}]`);
+      const errors = prefixVal(ctx, input[idx]);
+      acc.push(...errors);
+      popPath(ctx);
+      idx++;
+    }
+
+    const itemVal = this.rest;
+    if (itemVal != null) {
+      for (let i = idx; i < input.length; i++) {
+        pushPath(ctx, `[${i}]`);
+        const errors = itemVal(ctx, input[i]);
+        acc.push(...errors);
+        popPath(ctx);
+      }
+    }
+
+    return acc;
   }
 }
