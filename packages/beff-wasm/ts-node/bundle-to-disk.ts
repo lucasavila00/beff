@@ -24,6 +24,7 @@ const decodersExported = [
   "validateAny",
   "validateNull",
   "validateNever",
+  "parseIdentity",
 ];
 
 const esmTag = (mod: ProjectModule) => {

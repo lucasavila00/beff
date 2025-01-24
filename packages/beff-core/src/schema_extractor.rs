@@ -5,7 +5,7 @@ use crate::diag::{Diagnostic, DiagnosticInfoMessage, DiagnosticInformation, Loca
 use crate::parser_extractor::BuiltDecoder;
 use crate::type_to_schema::TypeToSchema;
 use crate::{BeffUserSettings, ParsedModule};
-use crate::{BffFileName, FileManager, Validator};
+use crate::{BffFileName, FileManager, NamedSchema};
 use anyhow::anyhow;
 use anyhow::Result;
 use swc_common::{Span, DUMMY_SP};
@@ -21,7 +21,7 @@ use swc_ecma_visit::Visit;
 pub struct SchemaExtractResult {
     pub errors: Vec<Diagnostic>,
     pub entry_file_name: BffFileName,
-    pub validators: Vec<Validator>,
+    pub validators: Vec<NamedSchema>,
     pub built_decoders: Option<Vec<BuiltDecoder>>,
     pub counter: usize,
 }
@@ -29,7 +29,7 @@ pub struct SchemaExtractResult {
 struct ExtractSchemaVisitor<'a, R: FileManager> {
     files: &'a mut R,
     current_file: BffFileName,
-    validators: Vec<Validator>,
+    validators: Vec<NamedSchema>,
     errors: Vec<Diagnostic>,
     built_decoders: Option<Vec<BuiltDecoder>>,
     settings: &'a BeffUserSettings,
@@ -94,7 +94,7 @@ impl<R: FileManager> ExtractSchemaVisitor<'_, R> {
         Ok(())
     }
 
-    fn extend_components(&mut self, defs: Vec<Validator>, span: &Span) {
+    fn extend_components(&mut self, defs: Vec<NamedSchema>, span: &Span) {
         for d in defs {
             let found = self.validators.iter_mut().find(|x| x.name == d.name);
             if let Some(found) = found {
@@ -143,7 +143,7 @@ impl<R: FileManager> ExtractSchemaVisitor<'_, R> {
                 }
 
                 kvs.sort_by(|(ka, _), (kb, _)| ka.cmp(kb));
-                let ext: Vec<Validator> = kvs.into_iter().map(|(_k, v)| v).collect();
+                let ext: Vec<NamedSchema> = kvs.into_iter().map(|(_k, v)| v).collect();
                 self.extend_components(ext, span);
 
                 res

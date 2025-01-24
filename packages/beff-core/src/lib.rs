@@ -388,7 +388,7 @@ impl ExtractResult {
             .map(|it| it.errors.iter().collect::<Vec<_>>())
             .unwrap_or_default()
     }
-    pub fn validators(&self) -> Vec<&Validator> {
+    pub fn validators(&self) -> Vec<&NamedSchema> {
         self.parser
             .as_ref()
             .map(|it| it.validators.iter().collect::<Vec<_>>())
@@ -416,12 +416,12 @@ pub fn extract<R: FileManager>(files: &mut R, entry_points: EntryPoints) -> Extr
 }
 
 #[derive(Debug, Clone)]
-pub struct Validator {
+pub struct NamedSchema {
     pub name: String,
     pub schema: JsonSchema,
 }
-impl Validator {
-    pub fn to_json_kv(&self, validators: &[Validator]) -> anyhow::Result<Vec<(String, Json)>> {
+impl NamedSchema {
+    pub fn to_json_kv(&self, validators: &[NamedSchema]) -> anyhow::Result<Vec<(String, Json)>> {
         Ok(vec![(
             self.name.clone(),
             JsonFlatConverter::new(validators).to_json_flat(self.schema.clone())?,

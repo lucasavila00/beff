@@ -2,7 +2,7 @@ use std::collections::BTreeSet;
 use std::rc::Rc;
 
 use crate::ast::json_schema::{JsonSchemaConst, Optionality};
-use crate::{ast::json_schema::JsonSchema, Validator};
+use crate::{ast::json_schema::JsonSchema, NamedSchema};
 
 use self::bdd::{ListAtomic, MappingAtomic};
 use self::semtype::{ComplexSemType, MappingAtomicType, SemType, SemTypeContext, SemTypeOps};
@@ -16,12 +16,12 @@ use anyhow::Result;
 use anyhow::{anyhow, bail};
 
 struct ToSemTypeConverter<'a> {
-    validators: &'a [&'a Validator],
+    validators: &'a [&'a NamedSchema],
     seen_refs: BTreeSet<String>,
 }
 
 impl<'a> ToSemTypeConverter<'a> {
-    fn new(validators: &'a [&'a Validator]) -> Self {
+    fn new(validators: &'a [&'a NamedSchema]) -> Self {
         Self {
             validators,
             seen_refs: BTreeSet::new(),
@@ -222,7 +222,7 @@ impl<'a> ToSemTypeConverter<'a> {
 pub trait ToSemType {
     fn to_sem_type(
         &self,
-        validators: &[&Validator],
+        validators: &[&NamedSchema],
         ctx: &mut SemTypeContext,
     ) -> Result<Rc<SemType>>;
 }
@@ -230,7 +230,7 @@ pub trait ToSemType {
 impl ToSemType for JsonSchema {
     fn to_sem_type(
         &self,
-        validators: &[&Validator],
+        validators: &[&NamedSchema],
         ctx: &mut SemTypeContext,
     ) -> Result<Rc<SemType>> {
         ToSemTypeConverter::new(validators).convert_to_sem_type(self, ctx)

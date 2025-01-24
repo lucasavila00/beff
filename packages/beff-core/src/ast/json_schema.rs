@@ -6,7 +6,7 @@ use crate::ast::json::Json;
 use crate::subtyping::semtype::SemTypeContext;
 use crate::subtyping::semtype::SemTypeOps;
 use crate::subtyping::ToSemType;
-use crate::Validator;
+use crate::NamedSchema;
 use anyhow::anyhow;
 use anyhow::Result;
 use swc_common::DUMMY_SP;
@@ -351,7 +351,7 @@ impl JsonSchema {
 
     pub fn remove_nots_of_intersections_and_empty_of_union(
         self,
-        validators: &[&Validator],
+        validators: &[&NamedSchema],
         ctx: &mut SemTypeContext,
     ) -> anyhow::Result<JsonSchema> {
         match self {
@@ -400,11 +400,11 @@ impl JsonSchema {
 
 pub struct JsonFlatConverter<'a> {
     seen_refs: BTreeSet<String>,
-    validators: &'a [Validator],
+    validators: &'a [NamedSchema],
 }
 
 impl<'a> JsonFlatConverter<'a> {
-    pub fn new(validators: &'a [Validator]) -> Self {
+    pub fn new(validators: &'a [NamedSchema]) -> Self {
         Self {
             seen_refs: BTreeSet::new(),
             validators,

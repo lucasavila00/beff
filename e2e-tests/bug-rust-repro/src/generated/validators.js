@@ -10,6 +10,10 @@ function registerCustomFormatter(name, validator) {
   customFormatters[name] = validator;
 }
 
+function parseIdentity(ctx, input) {
+  return input;
+}
+
 function validateString(ctx, input) {
   return typeof input === "string";
 }
@@ -95,21 +99,25 @@ class ObjectDecoder {
 }
 
 class ArrayDecoder {
-  constructor(data) {
-    this.data = data;
+  constructor(innerValidator, innerParser) {
+    this.innerValidator = innerValidator;
+    this.innerParser = innerParser;
   }
 
   validateArrayDecoder(ctx, input) {
     if (Array.isArray(input)) {
       for (let i = 0; i < input.length; i++) {
         const v = input[i];
-        const ok = this.data(ctx, v);
+        const ok = this.innerValidator(ctx, v);
         if (!ok) {
           return false;
         }
       }
     }
     return true;
+  }
+  parseArrayDecoder(ctx, input) {
+    return input.map((v) => this.innerParser(ctx, v));
   }
 }
 class CodecDecoder {
@@ -260,8 +268,14 @@ class TupleDecoder {
 function ValidateA(ctx, input) {
     return (validateString)(ctx, input);
 }
+function ParseA(ctx, input) {
+    return (parseIdentity)(ctx, input);
+}
 const validators = {
     A: ValidateA
+};
+const parsers = {
+    A: ParseA
 };
 
 export default { registerCustomFormatter, ObjectDecoder, ArrayDecoder, CodecDecoder, StringWithFormatDecoder, AnyOfDecoder, AllOfDecoder, TupleDecoder, RegexDecoder, ConstDecoder, AnyOfConstsDecoder, AnyOfDiscriminatedDecoder, validateString, validateNumber, validateFunction, validateBoolean, validateAny, validateNull, validateNever, validators };

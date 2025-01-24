@@ -5,6 +5,12 @@ expression: "decoder(r#\"\n        export type Alias = string;\n        parse.bu
 function ValidateAlias(ctx, input) {
     return (validateString)(ctx, input);
 }
+function ParseAlias(ctx, input) {
+    return (parseIdentity)(ctx, input);
+}
 const validators = {
     Alias: ValidateAlias
+};
+const parsers = {
+    Alias: ParseAlias
 };

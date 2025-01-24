@@ -7,7 +7,7 @@ use anyhow::bail;
 
 use crate::{
     ast::json_schema::{JsonSchema, JsonSchemaConst, Optionality},
-    Validator,
+    NamedSchema,
 };
 
 use super::{
@@ -153,7 +153,7 @@ struct SchemerContext<'a, 'b> {
     ctx: SemTypeResolverContext<'a>,
 
     schemer_memo: BTreeMap<Rc<SemType>, SchemaMemo>,
-    validators: Vec<Validator>,
+    validators: Vec<NamedSchema>,
 
     recursive_validators: BTreeSet<String>,
     counter: &'b mut usize,
@@ -526,7 +526,7 @@ impl<'a, 'b> SchemerContext<'a, 'b> {
         let schema = self.convert_to_schema_no_cache(ty)?;
         self.schemer_memo
             .insert(ty.clone(), SchemaMemo::Schema(schema.clone()));
-        self.validators.push(Validator {
+        self.validators.push(NamedSchema {
             name: new_name,
             schema: schema.clone(),
         });
@@ -540,10 +540,10 @@ pub fn to_validators(
     ty: &Rc<SemType>,
     name: &str,
     counter: &mut usize,
-) -> anyhow::Result<(Validator, Vec<Validator>)> {
+) -> anyhow::Result<(NamedSchema, Vec<NamedSchema>)> {
     let mut schemer = SchemerContext::new(ctx, counter);
     let out = schemer.convert_to_schema(ty, Some(name))?;
-    let vs: Vec<Validator> = schemer
+    let vs: Vec<NamedSchema> = schemer
         .validators
         .into_iter()
         .filter(|it| schemer.recursive_validators.contains(&it.name))
@@ -551,7 +551,7 @@ pub fn to_validators(
 
     let vs = vs.into_iter().filter(|it| it.name != name).collect();
     Ok((
-        Validator {
+        NamedSchema {
             name: name.into(),
             schema: out,
         },

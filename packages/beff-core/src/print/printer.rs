@@ -3,7 +3,7 @@ use crate::emit::emit_module;
 use crate::parser_extractor::BuiltDecoder;
 use crate::print::decoder;
 use crate::ExtractResult;
-use crate::Validator;
+use crate::NamedSchema;
 use anyhow::{anyhow, Result};
 use serde::{Deserialize, Serialize};
 use swc_common::DUMMY_SP;
@@ -11,6 +11,9 @@ use swc_ecma_ast::{
     BindingIdent, Decl, Expr, FnDecl, Ident, KeyValueProp, ModuleItem, ObjectLit, Pat, Prop,
     PropName, PropOrSpread, Stmt, Str, VarDecl, VarDeclKind, VarDeclarator,
 };
+
+use super::decoder::SchemaCode;
+use super::decoder::SchemaCodeFunctions;
 
 pub fn const_decl(name: &str, init: Expr) -> ModuleItem {
     ModuleItem::Stmt(Stmt::Decl(Decl::Var(
@@ -46,31 +49,36 @@ pub struct WritableModules {
 pub trait ToWritableModules {
     fn to_module(self) -> Result<WritableModules>;
 }
-fn build_validators_expr(
+
+pub struct DecodersCode {
+    pub validator: Expr,
+    pub parser: Expr,
+}
+
+fn build_decoders(
     decs: &[BuiltDecoder],
-    validators: &Vec<Validator>,
+    validators: &Vec<NamedSchema>,
     hoisted: &mut Vec<ModuleItem>,
-) -> Expr {
-    let mut exprs: Vec<_> = decs
-        .iter()
-        .map(|decoder| {
-            (
-                decoder.exported_name.clone(),
-                decoder::validator_for_schema(
-                    &decoder.schema,
-                    validators,
-                    hoisted,
-                    &decoder.exported_name,
-                ),
-            )
-        })
-        .collect();
+) -> DecodersCode {
+    let mut validator_exprs: Vec<_> = vec![];
+    let mut parser_exprs: Vec<_> = vec![];
+    for decoder in decs {
+        let SchemaCode { validator, parser } = decoder::validator_for_schema(
+            &decoder.schema,
+            validators,
+            hoisted,
+            &decoder.exported_name,
+        );
+        validator_exprs.push((decoder.exported_name.clone(), validator));
+        parser_exprs.push((decoder.exported_name.clone(), parser));
+    }
 
-    exprs.sort_by(|(a, _), (b, _)| a.cmp(b));
+    validator_exprs.sort_by(|(a, _), (b, _)| a.cmp(b));
+    parser_exprs.sort_by(|(a, _), (b, _)| a.cmp(b));
 
-    Expr::Object(ObjectLit {
+    let validator = Expr::Object(ObjectLit {
         span: DUMMY_SP,
-        props: exprs
+        props: validator_exprs
             .into_iter()
             .map(|(key, value)| {
                 PropOrSpread::Prop(
@@ -86,11 +94,33 @@ fn build_validators_expr(
                 )
             })
             .collect(),
-    })
+    });
+
+    let parser = Expr::Object(ObjectLit {
+        span: DUMMY_SP,
+        props: parser_exprs
+            .into_iter()
+            .map(|(key, value)| {
+                PropOrSpread::Prop(
+                    Prop::KeyValue(KeyValueProp {
+                        key: PropName::Str(Str {
+                            span: DUMMY_SP,
+                            value: key.into(),
+                            raw: None,
+                        }),
+                        value: value.into(),
+                    })
+                    .into(),
+                )
+            })
+            .collect(),
+    });
+
+    DecodersCode { validator, parser }
 }
 
-fn merge_validator(parser: Option<&Vec<Validator>>) -> Result<Vec<Validator>> {
-    let mut acc: Vec<Validator> = vec![];
+fn merge_named_schema(parser: Option<&Vec<NamedSchema>>) -> Result<Vec<NamedSchema>> {
+    let mut acc: Vec<NamedSchema> = vec![];
 
     if let Some(parser) = parser {
         for d in parser {
@@ -110,40 +140,52 @@ fn merge_validator(parser: Option<&Vec<Validator>>) -> Result<Vec<Validator>> {
 }
 impl ToWritableModules for ExtractResult {
     fn to_module(self) -> Result<WritableModules> {
-        let mut stmt_validators = vec![];
+        let mut stmt_named_schemas = vec![];
 
-        let mut validator_names = vec![];
+        let mut schema_names = vec![];
         let mut hoisted: Vec<ModuleItem> = vec![];
 
-        let validators = merge_validator(self.parser.as_ref().map(|it| &it.validators))?;
+        let named_schemas = merge_named_schema(self.parser.as_ref().map(|it| &it.validators))?;
 
-        for comp in &validators {
-            validator_names.push(comp.name.clone());
+        for comp in &named_schemas {
+            schema_names.push(comp.name.clone());
             let mut local_hoisted = vec![];
-            let decoder_fn = decoder::func_validator_for_schema(
+            let SchemaCodeFunctions { validator, parser } = decoder::func_validator_for_schema(
                 &comp.schema,
-                &validators,
+                &named_schemas,
                 &mut local_hoisted,
                 &comp.name,
             );
-            let decoder_fn_decl = ModuleItem::Stmt(Stmt::Decl(Decl::Fn(FnDecl {
+            let validator_fn_decl = ModuleItem::Stmt(Stmt::Decl(Decl::Fn(FnDecl {
                 ident: Ident {
                     span: DUMMY_SP,
                     sym: format!("Validate{}", comp.name).into(),
                     optional: false,
                 },
                 declare: false,
-                function: decoder_fn.into(),
+                function: validator.into(),
             })));
-            stmt_validators.push(decoder_fn_decl);
+            stmt_named_schemas.push(validator_fn_decl);
+
+            let parser_fn_decl = ModuleItem::Stmt(Stmt::Decl(Decl::Fn(FnDecl {
+                ident: Ident {
+                    span: DUMMY_SP,
+                    sym: format!("Parse{}", comp.name).into(),
+                    optional: false,
+                },
+                declare: false,
+                function: parser.into(),
+            })));
+            stmt_named_schemas.push(parser_fn_decl);
+
             hoisted.extend(local_hoisted.into_iter());
         }
 
-        stmt_validators.push(const_decl(
+        stmt_named_schemas.push(const_decl(
             "validators",
             Expr::Object(ObjectLit {
                 span: DUMMY_SP,
-                props: validator_names
+                props: schema_names
                     .clone()
                     .into_iter()
                     .map(|it| {
@@ -164,9 +206,34 @@ impl ToWritableModules for ExtractResult {
                     .collect(),
             }),
         ));
+        stmt_named_schemas.push(const_decl(
+            "parsers",
+            Expr::Object(ObjectLit {
+                span: DUMMY_SP,
+                props: schema_names
+                    .clone()
+                    .into_iter()
+                    .map(|it| {
+                        PropOrSpread::Prop(Box::new(Prop::KeyValue(KeyValueProp {
+                            key: PropName::Ident(Ident {
+                                span: DUMMY_SP,
+                                sym: it.clone().into(),
+                                optional: false,
+                            }),
+                            value: Expr::Ident(Ident {
+                                span: DUMMY_SP,
+                                sym: format!("Parse{}", it).into(),
+                                optional: false,
+                            })
+                            .into(),
+                        })))
+                    })
+                    .collect(),
+            }),
+        ));
 
         let js_validators = emit_module(
-            stmt_validators
+            stmt_named_schemas
                 .into_iter()
                 .chain(hoisted.into_iter())
                 .collect(),
@@ -179,14 +246,15 @@ impl ToWritableModules for ExtractResult {
             let mut parser_hoisted = vec![];
             let decoders = parser.built_decoders.unwrap_or_default();
 
-            let validators_expr =
-                build_validators_expr(&decoders, &validators, &mut parser_hoisted);
-            let build_validators_input = const_decl("buildValidatorsInput", validators_expr);
+            let DecodersCode { validator, parser } =
+                build_decoders(&decoders, &named_schemas, &mut parser_hoisted);
+            let build_validators_input = const_decl("buildValidatorsInput", validator);
+            let build_parsers_input = const_decl("buildParsersInput", parser);
 
             js_built_parsers = Some(emit_module(
                 parser_hoisted
                     .into_iter()
-                    .chain(vec![build_validators_input].into_iter())
+                    .chain(vec![build_validators_input, build_parsers_input].into_iter())
                     .collect(),
                 "\n",
             )?);
@@ -198,7 +266,7 @@ impl ToWritableModules for ExtractResult {
             let json_schema_obj = Json::object(
                 decoders
                     .iter()
-                    .map(|it| BuiltDecoder::to_json_kv(it, &validators))
+                    .map(|it| BuiltDecoder::to_json_kv(it, &named_schemas))
                     .collect::<Result<Vec<Vec<(String, Json)>>>>()?
                     .into_iter()
                     .flatten()

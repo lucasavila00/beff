@@ -9,6 +9,9 @@ const RequiredCustomFormats = ["ValidCurrency"];
 const buildValidatorsInput = {
     "A": validators.A
 };
+const buildParsersInput = {
+    "A": parsers.A
+};
 
 
 
