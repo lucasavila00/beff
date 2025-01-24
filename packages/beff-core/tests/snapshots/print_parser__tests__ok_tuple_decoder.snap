@@ -29,6 +29,9 @@ const hoisted_Alias_1 = new TupleParser([
     parseIdentity
 ], null);
 const hoisted_Alias_2 = new TupleReporter([
+    validateNumber,
+    validateNumber
+], null, [
     reportNumber,
     reportNumber
 ], null);

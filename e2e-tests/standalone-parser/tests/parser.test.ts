@@ -353,39 +353,49 @@ it("exclude object", () => {
     {
       "errors": [
         {
-          "message": "expected square",
-          "path": [
-            "kind",
+          "errors": [
+            {
+              "message": "expected square",
+              "path": [
+                "kind",
+              ],
+              "received": "circle",
+            },
+            {
+              "message": "expected number",
+              "path": [
+                "x",
+              ],
+              "received": undefined,
+            },
+            {
+              "message": "expected triangle",
+              "path": [
+                "kind",
+              ],
+              "received": "circle",
+            },
+            {
+              "message": "expected number",
+              "path": [
+                "x",
+              ],
+              "received": undefined,
+            },
+            {
+              "message": "expected number",
+              "path": [
+                "y",
+              ],
+              "received": undefined,
+            },
           ],
-          "received": "circle",
-        },
-        {
-          "message": "expected number",
-          "path": [
-            "x",
-          ],
-          "received": undefined,
-        },
-        {
-          "message": "expected triangle",
-          "path": [
-            "kind",
-          ],
-          "received": "circle",
-        },
-        {
-          "message": "expected number",
-          "path": [
-            "x",
-          ],
-          "received": undefined,
-        },
-        {
-          "message": "expected number",
-          "path": [
-            "y",
-          ],
-          "received": undefined,
+          "isUnionError": true,
+          "path": [],
+          "received": {
+            "kind": "circle",
+            "radius": 1,
+          },
         },
       ],
       "success": false,
@@ -498,67 +508,67 @@ it("DiscriminatedUnion", () => {
     {
       "errors": [
         {
-          "message": "expected nullish",
-          "path": [
-            "a11",
+          "errors": [
+            {
+              "errors": [
+                {
+                  "message": "expected nullish",
+                  "path": [
+                    "a11",
+                  ],
+                  "received": 123,
+                },
+                {
+                  "message": "expected string",
+                  "path": [
+                    "a11",
+                  ],
+                  "received": 123,
+                },
+              ],
+              "isUnionError": true,
+              "path": [
+                "a11",
+              ],
+              "received": 123,
+            },
+            {
+              "message": "expected string",
+              "path": [
+                "a2",
+              ],
+              "received": undefined,
+            },
+            {
+              "message": "expected a2",
+              "path": [
+                "subType",
+              ],
+              "received": "a1",
+            },
+            {
+              "message": "expected b",
+              "path": [
+                "type",
+              ],
+              "received": "a",
+            },
+            {
+              "message": "expected number",
+              "path": [
+                "value",
+              ],
+              "received": undefined,
+            },
           ],
-          "received": 123,
-        },
-        {
-          "message": "expected string",
-          "path": [
-            "a11",
-          ],
-          "received": 123,
-        },
-        {
-          "message": "expected a1",
-          "path": [
-            "subType",
-          ],
-          "received": "a1",
-        },
-        {
-          "message": "expected a",
-          "path": [
-            "type",
-          ],
-          "received": "a",
-        },
-        {
-          "message": "expected string",
-          "path": [
-            "a2",
-          ],
-          "received": undefined,
-        },
-        {
-          "message": "expected a2",
-          "path": [
-            "subType",
-          ],
-          "received": "a1",
-        },
-        {
-          "message": "expected a",
-          "path": [
-            "type",
-          ],
-          "received": "a",
-        },
-        {
-          "message": "expected b",
-          "path": [
-            "type",
-          ],
-          "received": "a",
-        },
-        {
-          "message": "expected number",
-          "path": [
-            "value",
-          ],
-          "received": undefined,
+          "isUnionError": true,
+          "path": [],
+          "received": {
+            "a1": "a",
+            "a11": 123,
+            "subType": "a1",
+            "type": "a",
+          },
         },
       ],
       "success": false,
@@ -583,67 +593,55 @@ it("DiscriminatedUnion", () => {
     {
       "errors": [
         {
-          "message": "expected string",
-          "path": [
-            "a1",
+          "errors": [
+            {
+              "message": "expected string",
+              "path": [
+                "a1",
+              ],
+              "received": undefined,
+            },
+            {
+              "message": "expected a1",
+              "path": [
+                "subType",
+              ],
+              "received": undefined,
+            },
+            {
+              "message": "expected string",
+              "path": [
+                "a2",
+              ],
+              "received": undefined,
+            },
+            {
+              "message": "expected a2",
+              "path": [
+                "subType",
+              ],
+              "received": undefined,
+            },
+            {
+              "message": "expected b",
+              "path": [
+                "type",
+              ],
+              "received": "a",
+            },
+            {
+              "message": "expected number",
+              "path": [
+                "value",
+              ],
+              "received": undefined,
+            },
           ],
-          "received": undefined,
-        },
-        {
-          "message": "expected string",
-          "path": [
-            "a11",
-          ],
-          "received": undefined,
-        },
-        {
-          "message": "expected a1",
-          "path": [
-            "subType",
-          ],
-          "received": undefined,
-        },
-        {
-          "message": "expected a",
-          "path": [
-            "type",
-          ],
-          "received": "a",
-        },
-        {
-          "message": "expected string",
-          "path": [
-            "a2",
-          ],
-          "received": undefined,
-        },
-        {
-          "message": "expected a2",
-          "path": [
-            "subType",
-          ],
-          "received": undefined,
-        },
-        {
-          "message": "expected a",
-          "path": [
-            "type",
-          ],
-          "received": "a",
-        },
-        {
-          "message": "expected b",
-          "path": [
-            "type",
-          ],
-          "received": "a",
-        },
-        {
-          "message": "expected number",
-          "path": [
-            "value",
-          ],
-          "received": undefined,
+          "isUnionError": true,
+          "path": [],
+          "received": {
+            "type": "a",
+          },
         },
       ],
       "success": false,
@@ -657,67 +655,69 @@ it("DiscriminatedUnion", () => {
     {
       "errors": [
         {
-          "message": "expected string",
-          "path": [
-            "a1",
+          "errors": [
+            {
+              "message": "expected string",
+              "path": [
+                "a1",
+              ],
+              "received": undefined,
+            },
+            {
+              "message": "expected a1",
+              "path": [
+                "subType",
+              ],
+              "received": undefined,
+            },
+            {
+              "message": "expected a",
+              "path": [
+                "type",
+              ],
+              "received": "c",
+            },
+            {
+              "message": "expected string",
+              "path": [
+                "a2",
+              ],
+              "received": undefined,
+            },
+            {
+              "message": "expected a2",
+              "path": [
+                "subType",
+              ],
+              "received": undefined,
+            },
+            {
+              "message": "expected a",
+              "path": [
+                "type",
+              ],
+              "received": "c",
+            },
+            {
+              "message": "expected b",
+              "path": [
+                "type",
+              ],
+              "received": "c",
+            },
+            {
+              "message": "expected number",
+              "path": [
+                "value",
+              ],
+              "received": undefined,
+            },
           ],
-          "received": undefined,
-        },
-        {
-          "message": "expected string",
-          "path": [
-            "a11",
-          ],
-          "received": undefined,
-        },
-        {
-          "message": "expected a1",
-          "path": [
-            "subType",
-          ],
-          "received": undefined,
-        },
-        {
-          "message": "expected a",
-          "path": [
-            "type",
-          ],
-          "received": "c",
-        },
-        {
-          "message": "expected string",
-          "path": [
-            "a2",
-          ],
-          "received": undefined,
-        },
-        {
-          "message": "expected a2",
-          "path": [
-            "subType",
-          ],
-          "received": undefined,
-        },
-        {
-          "message": "expected a",
-          "path": [
-            "type",
-          ],
-          "received": "c",
-        },
-        {
-          "message": "expected b",
-          "path": [
-            "type",
-          ],
-          "received": "c",
-        },
-        {
-          "message": "expected number",
-          "path": [
-            "value",
-          ],
-          "received": undefined,
+          "isUnionError": true,
+          "path": [],
+          "received": {
+            "type": "c",
+          },
         },
       ],
       "success": false,
@@ -727,67 +727,67 @@ it("DiscriminatedUnion", () => {
     {
       "errors": [
         {
-          "message": "expected string",
-          "path": [
-            "a1",
+          "errors": [
+            {
+              "message": "expected string",
+              "path": [
+                "a1",
+              ],
+              "received": undefined,
+            },
+            {
+              "message": "expected a1",
+              "path": [
+                "subType",
+              ],
+              "received": undefined,
+            },
+            {
+              "message": "expected a",
+              "path": [
+                "type",
+              ],
+              "received": undefined,
+            },
+            {
+              "message": "expected string",
+              "path": [
+                "a2",
+              ],
+              "received": undefined,
+            },
+            {
+              "message": "expected a2",
+              "path": [
+                "subType",
+              ],
+              "received": undefined,
+            },
+            {
+              "message": "expected a",
+              "path": [
+                "type",
+              ],
+              "received": undefined,
+            },
+            {
+              "message": "expected b",
+              "path": [
+                "type",
+              ],
+              "received": undefined,
+            },
+            {
+              "message": "expected number",
+              "path": [
+                "value",
+              ],
+              "received": undefined,
+            },
           ],
-          "received": undefined,
-        },
-        {
-          "message": "expected string",
-          "path": [
-            "a11",
-          ],
-          "received": undefined,
-        },
-        {
-          "message": "expected a1",
-          "path": [
-            "subType",
-          ],
-          "received": undefined,
-        },
-        {
-          "message": "expected a",
-          "path": [
-            "type",
-          ],
-          "received": undefined,
-        },
-        {
-          "message": "expected string",
-          "path": [
-            "a2",
-          ],
-          "received": undefined,
-        },
-        {
-          "message": "expected a2",
-          "path": [
-            "subType",
-          ],
-          "received": undefined,
-        },
-        {
-          "message": "expected a",
-          "path": [
-            "type",
-          ],
-          "received": undefined,
-        },
-        {
-          "message": "expected b",
-          "path": [
-            "type",
-          ],
-          "received": undefined,
-        },
-        {
-          "message": "expected number",
-          "path": [
-            "value",
-          ],
-          "received": undefined,
+          "isUnionError": true,
+          "path": [],
+          "received": {},
         },
       ],
       "success": false,
@@ -927,7 +927,7 @@ it("to zod works", () => {
       "error": [ZodError: [
       {
         "code": "custom",
-        "message": "#0 (accessLevel) expected ADMIN, received: undefined | #1 (accessLevel) expected USER, received: undefined | #2 (avatarSize) expected \${number}x\${number}, received: undefined | #3 (extra) expected object, received: undefined | #4 (friends[0].accessLevel) expected ADMIN, received: undefined | #5 (friends[0].accessLevel) expected USER, received: undefined | #6 (friends[0].avatarSize) expected \${number}x\${number}, received: undefined | #7 (friends[0].extra) expected object, received: undefined | #8 (friends[0].friends) expected array, received: undefined",
+        "message": "#0 (accessLevel) Failed to decode one of ((accessLevel) expected ADMIN | (accessLevel) expected USER), received: undefined | #1 (avatarSize) expected \${number}x\${number}, received: undefined | #2 (extra) expected object, received: undefined | #3 (friends[0].accessLevel) Failed to decode one of ((friends[0].accessLevel) expected ADMIN | (friends[0].accessLevel) expected USER), received: undefined | #4 (friends[0].avatarSize) expected \${number}x\${number}, received: undefined | #5 (friends[0].extra) expected object, received: undefined",
         "fatal": true,
         "path": []
       }
@@ -986,14 +986,23 @@ it("works on recursive type", () => {
     {
       "errors": [
         {
-          "message": "expected ADMIN",
-          "path": [
-            "accessLevel",
+          "errors": [
+            {
+              "message": "expected ADMIN",
+              "path": [
+                "accessLevel",
+              ],
+              "received": undefined,
+            },
+            {
+              "message": "expected USER",
+              "path": [
+                "accessLevel",
+              ],
+              "received": undefined,
+            },
           ],
-          "received": undefined,
-        },
-        {
-          "message": "expected USER",
+          "isUnionError": true,
           "path": [
             "accessLevel",
           ],
@@ -1014,16 +1023,27 @@ it("works on recursive type", () => {
           "received": undefined,
         },
         {
-          "message": "expected ADMIN",
-          "path": [
-            "friends",
-            "[0]",
-            "accessLevel",
+          "errors": [
+            {
+              "message": "expected ADMIN",
+              "path": [
+                "friends",
+                "[0]",
+                "accessLevel",
+              ],
+              "received": undefined,
+            },
+            {
+              "message": "expected USER",
+              "path": [
+                "friends",
+                "[0]",
+                "accessLevel",
+              ],
+              "received": undefined,
+            },
           ],
-          "received": undefined,
-        },
-        {
-          "message": "expected USER",
+          "isUnionError": true,
           "path": [
             "friends",
             "[0]",
@@ -1046,15 +1066,6 @@ it("works on recursive type", () => {
             "friends",
             "[0]",
             "extra",
-          ],
-          "received": undefined,
-        },
-        {
-          "message": "expected array",
-          "path": [
-            "friends",
-            "[0]",
-            "friends",
           ],
           "received": undefined,
         },

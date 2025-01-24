@@ -29,6 +29,9 @@ const hoisted_Alias_1 = new ObjectParser({
     "b": parseIdentity
 }, null);
 const hoisted_Alias_2 = new ObjectReporter({
+    "a": validateString,
+    "b": validateNumber
+}, null, {
     "a": reportString,
     "b": reportNumber
 }, null);

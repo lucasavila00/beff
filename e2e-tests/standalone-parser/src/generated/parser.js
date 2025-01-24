@@ -18,6 +18,10 @@ const hoisted_TupleCodec_2 = new TupleParser([
     parseIdentity
 ], null);
 const hoisted_TupleCodec_3 = new TupleReporter([
+    validateNumber,
+    validateNumber,
+    validateNumber
+], null, [
     reportNumber,
     reportNumber,
     reportNumber
@@ -31,12 +35,15 @@ const hoisted_TupleCodecRest_5 = new TupleParser([
     parseIdentity
 ], parseIdentity);
 const hoisted_TupleCodecRest_6 = new TupleReporter([
+    validateNumber,
+    validateNumber
+], validateString, [
     reportNumber,
     reportNumber
 ], reportString);
 const hoisted_StringArrCodec_7 = new ArrayValidator(validateString);
 const hoisted_StringArrCodec_8 = new ArrayParser(parseIdentity);
-const hoisted_StringArrCodec_9 = new ArrayReporter(reportString);
+const hoisted_StringArrCodec_9 = new ArrayReporter(validateString, reportString);
 const hoisted_ImportEnumTypeof_10 = new ConstDecoder("a");
 const hoisted_ImportEnumTypeof_11 = new ObjectValidator({
     "A": hoisted_ImportEnumTypeof_10.validateConstDecoder.bind(hoisted_ImportEnumTypeof_10)
@@ -45,6 +52,8 @@ const hoisted_ImportEnumTypeof_12 = new ObjectParser({
     "A": hoisted_ImportEnumTypeof_10.parseConstDecoder.bind(hoisted_ImportEnumTypeof_10)
 }, null);
 const hoisted_ImportEnumTypeof_13 = new ObjectReporter({
+    "A": hoisted_ImportEnumTypeof_10.validateConstDecoder.bind(hoisted_ImportEnumTypeof_10)
+}, null, {
     "A": hoisted_ImportEnumTypeof_10.reportConstDecoder.bind(hoisted_ImportEnumTypeof_10)
 }, null);
 const buildValidatorsInput = {

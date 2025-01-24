@@ -8,7 +8,7 @@ import validatorsMod from "./validators.js"; const { registerCustomFormatter, Ob
 const RequiredCustomFormats = ["password","StartsWithA"];
 const hoisted_Users_0 = new ArrayValidator(validators.User);
 const hoisted_Users_1 = new ArrayParser(parsers.User);
-const hoisted_Users_2 = new ArrayReporter(reporters.User);
+const hoisted_Users_2 = new ArrayReporter(validators.User, reporters.User);
 const hoisted_float_3 = new ConstDecoder(123.456);
 const hoisted_int_4 = new ConstDecoder(123);
 const buildValidatorsInput = {

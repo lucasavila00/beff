@@ -137,154 +137,6 @@ class RegexDecoder {
   }
 }
 
-class ObjectValidator {
-  constructor(data, rest) {
-    this.data = data;
-    this.rest = rest;
-  }
-
-  validateObjectValidator(ctx, input) {
-    if (typeof input === "object" && !Array.isArray(input) && input !== null) {
-      const configKeys = Object.keys(this.data);
-      for (const k of configKeys) {
-        const v = this.data[k];
-        if (!v(ctx, input[k])) {
-          return false;
-        }
-      }
-
-      if (this.rest != null) {
-        const inputKeys = Object.keys(input);
-        const extraKeys = inputKeys.filter((k) => !configKeys.includes(k));
-        for (const k of extraKeys) {
-          const v = input[k];
-          if (!this.rest(ctx, v)) {
-            return false;
-          }
-        }
-      }
-
-      return true;
-    }
-    return false;
-  }
-}
-class ObjectReporter {
-  constructor(data, rest) {
-    this.data = data;
-    this.rest = rest;
-  }
-
-  reportObjectReporter(ctx, input) {
-    if (typeof input !== "object" || Array.isArray(input) || input === null) {
-      return buildError(ctx, "expected object", input);
-    }
-
-    let acc = [];
-
-    const configKeys = Object.keys(this.data);
-
-    for (const k of configKeys) {
-      pushPath(ctx, k);
-      const v = this.data[k];
-      const arr2 = v(ctx, input[k]);
-      acc.push(...arr2);
-      popPath(ctx);
-    }
-
-    if (this.rest != null) {
-      const inputKeys = Object.keys(input);
-      const extraKeys = inputKeys.filter((k) => !configKeys.includes(k));
-      for (const k of extraKeys) {
-        pushPath(ctx, k);
-        const v = input[k];
-        const arr2 = this.rest(ctx, v);
-        acc.push(...arr2);
-        popPath(ctx);
-      }
-    }
-
-    return acc;
-  }
-}
-class ObjectParser {
-  constructor(data, rest) {
-    this.data = data;
-    this.rest = rest;
-  }
-
-  parseObjectParser(ctx, input) {
-    let acc = {};
-
-    const inputKeys = Object.keys(input);
-    for (const k of inputKeys) {
-      const v = input[k];
-      if (k in this.data) {
-        const p = this.data[k];
-        acc[k] = p(ctx, v);
-      } else {
-        if (this.rest != null) {
-          acc[k] = this.rest(ctx, v);
-        }
-      }
-    }
-
-    return acc;
-  }
-}
-
-class ArrayParser {
-  constructor(innerParser) {
-    this.innerParser = innerParser;
-  }
-
-  parseArrayParser(ctx, input) {
-    return input.map((v) => this.innerParser(ctx, v));
-  }
-}
-
-class ArrayValidator {
-  constructor(innerValidator) {
-    this.innerValidator = innerValidator;
-  }
-
-  validateArrayValidator(ctx, input) {
-    if (Array.isArray(input)) {
-      for (let i = 0; i < input.length; i++) {
-        const v = input[i];
-        const ok = this.innerValidator(ctx, v);
-        if (!ok) {
-          return false;
-        }
-      }
-    }
-    return true;
-  }
-}
-
-class ArrayReporter {
-  constructor(innerReporter) {
-    this.innerReporter = innerReporter;
-  }
-
-  reportArrayReporter(ctx, input) {
-    if (!Array.isArray(input)) {
-      return buildError(ctx, "expected array", input);
-    }
-
-    let acc = [];
-    for (let i = 0; i < input.length; i++) {
-      pushPath(ctx, `[${i}]`);
-      const v = input[i];
-      const arr2 = this.innerReporter(ctx, v);
-      acc.push(...arr2);
-      popPath(ctx);
-    }
-
-    return acc;
-  }
-}
-
 class CodecDecoder {
   constructor(codec) {
     this.codec = codec;
@@ -380,6 +232,166 @@ class AnyOfConstsDecoder {
   }
 }
 
+class ObjectValidator {
+  constructor(data, rest) {
+    this.data = data;
+    this.rest = rest;
+  }
+
+  validateObjectValidator(ctx, input) {
+    if (typeof input === "object" && !Array.isArray(input) && input !== null) {
+      const configKeys = Object.keys(this.data);
+      for (const k of configKeys) {
+        const v = this.data[k];
+        if (!v(ctx, input[k])) {
+          return false;
+        }
+      }
+
+      if (this.rest != null) {
+        const inputKeys = Object.keys(input);
+        const extraKeys = inputKeys.filter((k) => !configKeys.includes(k));
+        for (const k of extraKeys) {
+          const v = input[k];
+          if (!this.rest(ctx, v)) {
+            return false;
+          }
+        }
+      }
+
+      return true;
+    }
+    return false;
+  }
+}
+class ObjectReporter {
+  constructor(dataValidator, restValidator, dataReporter, restReporter) {
+    this.dataValidator = dataValidator;
+    this.restValidator = restValidator;
+    this.dataReporter = dataReporter;
+    this.restReporter = restReporter;
+  }
+
+  reportObjectReporter(ctx, input) {
+    if (typeof input !== "object" || Array.isArray(input) || input === null) {
+      return buildError(ctx, "expected object", input);
+    }
+
+    let acc = [];
+
+    const configKeys = Object.keys(this.dataReporter);
+
+    for (const k of configKeys) {
+      const ok = this.dataValidator[k](ctx, input[k]);
+      if (!ok) {
+        pushPath(ctx, k);
+        const v = this.dataReporter[k];
+        const arr2 = v(ctx, input[k]);
+        acc.push(...arr2);
+        popPath(ctx);
+      }
+    }
+
+    if (this.restReporter != null) {
+      const inputKeys = Object.keys(input);
+      const extraKeys = inputKeys.filter((k) => !configKeys.includes(k));
+      for (const k of extraKeys) {
+        const ok = this.restValidator(ctx, input[k]);
+        if (!ok) {
+          pushPath(ctx, k);
+          const v = input[k];
+          const arr2 = this.restReporter(ctx, v);
+          acc.push(...arr2);
+          popPath(ctx);
+        }
+      }
+    }
+
+    return acc;
+  }
+}
+class ObjectParser {
+  constructor(data, rest) {
+    this.data = data;
+    this.rest = rest;
+  }
+
+  parseObjectParser(ctx, input) {
+    let acc = {};
+
+    const inputKeys = Object.keys(input);
+    for (const k of inputKeys) {
+      const v = input[k];
+      if (k in this.data) {
+        const p = this.data[k];
+        acc[k] = p(ctx, v);
+      } else {
+        if (this.rest != null) {
+          acc[k] = this.rest(ctx, v);
+        }
+      }
+    }
+
+    return acc;
+  }
+}
+
+class ArrayParser {
+  constructor(innerParser) {
+    this.innerParser = innerParser;
+  }
+
+  parseArrayParser(ctx, input) {
+    return input.map((v) => this.innerParser(ctx, v));
+  }
+}
+
+class ArrayValidator {
+  constructor(innerValidator) {
+    this.innerValidator = innerValidator;
+  }
+
+  validateArrayValidator(ctx, input) {
+    if (Array.isArray(input)) {
+      for (let i = 0; i < input.length; i++) {
+        const v = input[i];
+        const ok = this.innerValidator(ctx, v);
+        if (!ok) {
+          return false;
+        }
+      }
+    }
+    return true;
+  }
+}
+
+class ArrayReporter {
+  constructor(innerValidator, innerReporter) {
+    this.innerValidator = innerValidator;
+    this.innerReporter = innerReporter;
+  }
+
+  reportArrayReporter(ctx, input) {
+    if (!Array.isArray(input)) {
+      return buildError(ctx, "expected array", input);
+    }
+
+    let acc = [];
+    for (let i = 0; i < input.length; i++) {
+      const ok = this.innerValidator(ctx, input[i]);
+      if (!ok) {
+        pushPath(ctx, `[${i}]`);
+        const v = input[i];
+        const arr2 = this.innerReporter(ctx, v);
+        acc.push(...arr2);
+        popPath(ctx);
+      }
+    }
+
+    return acc;
+  }
+}
+
 class AnyOfValidator {
   constructor(vs) {
     this.vs = vs;
@@ -408,16 +420,17 @@ class AnyOfParser {
   }
 }
 class AnyOfReporter {
-  constructor(vs) {
-    this.vs = vs;
+  constructor(validators, reporters) {
+    this.validators = validators;
+    this.reporters = reporters;
   }
   reportAnyOfReporter(ctx, input) {
     const acc = [];
-    for (const v of this.vs) {
+    for (const v of this.reporters) {
       const errors = v(ctx, input);
       acc.push(...errors);
     }
-    return acc;
+    return buildUnionError(ctx, acc, input);
   }
 }
 
@@ -456,8 +469,9 @@ class AllOfParser {
 }
 
 class AllOfReporter {
-  constructor(vs) {
-    this.vs = vs;
+  constructor(validators, reporters) {
+    this.validators = validators;
+    this.reporters = reporters;
   }
   reportAllOfReporter(ctx, input) {
     throw new Error("Not implemented");
@@ -507,30 +521,38 @@ class TupleParser {
 }
 
 class TupleReporter {
-  constructor(prefix, rest) {
-    this.prefix = prefix;
-    this.rest = rest;
+  constructor(prefixValidator, restValidator, prefixReporter, restReporter) {
+    this.prefixValidator = prefixValidator;
+    this.restValidator = restValidator;
+    this.prefixReporter = prefixReporter;
+    this.restReporter = restReporter;
   }
   reportTupleReporter(ctx, input) {
     let idx = 0;
 
     let acc = [];
 
-    for (const prefixVal of this.prefix) {
-      pushPath(ctx, `[${idx}]`);
-      const errors = prefixVal(ctx, input[idx]);
-      acc.push(...errors);
-      popPath(ctx);
+    for (const prefixReporter of this.prefixReporter) {
+      const ok = this.prefixValidator[idx](ctx, input[idx]);
+      if (!ok) {
+        pushPath(ctx, `[${idx}]`);
+        const errors = prefixReporter(ctx, input[idx]);
+        acc.push(...errors);
+        popPath(ctx);
+      }
       idx++;
     }
 
-    const itemVal = this.rest;
-    if (itemVal != null) {
+    const restReporter = this.restReporter;
+    if (restReporter != null) {
       for (let i = idx; i < input.length; i++) {
-        pushPath(ctx, `[${i}]`);
-        const errors = itemVal(ctx, input[i]);
-        acc.push(...errors);
-        popPath(ctx);
+        const ok = this.restValidator(ctx, input[i]);
+        if (!ok) {
+          pushPath(ctx, `[${i}]`);
+          const errors = restReporter(ctx, input[i]);
+          acc.push(...errors);
+          popPath(ctx);
+        }
       }
     }
 

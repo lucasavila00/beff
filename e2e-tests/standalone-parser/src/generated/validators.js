@@ -46,9 +46,6 @@ function validateString(ctx, input) {
 }
 
 function reportString(ctx, input) {
-  if (typeof input === "string") {
-    return [];
-  }
   return buildError(ctx, "expected string", input);
 }
 
@@ -57,9 +54,6 @@ function validateNumber(ctx, input) {
 }
 
 function reportNumber(ctx, input) {
-  if (typeof input === "number") {
-    return [];
-  }
   return buildError(ctx, "expected number", input);
 }
 
@@ -68,9 +62,6 @@ function validateBoolean(ctx, input) {
 }
 
 function reportBoolean(ctx, input) {
-  if (typeof input === "boolean") {
-    return [];
-  }
   return buildError(ctx, "expected boolean", input);
 }
 
@@ -79,7 +70,7 @@ function validateAny(ctx, input) {
 }
 
 function reportAny(ctx, input) {
-  return [];
+  return buildError(ctx, "expected any", input);
 }
 
 function validateNull(ctx, input) {
@@ -90,9 +81,6 @@ function validateNull(ctx, input) {
 }
 
 function reportNull(ctx, input) {
-  if (input == null) {
-    return [];
-  }
   return buildError(ctx, "expected nullish", input);
 }
 
@@ -109,9 +97,6 @@ function validateFunction(ctx, input) {
 }
 
 function reportFunction(ctx, input) {
-  if (typeof input === "function") {
-    return [];
-  }
   return buildError(ctx, "expected function", input);
 }
 
@@ -152,154 +137,6 @@ class RegexDecoder {
 
   reportRegexDecoder(ctx, input) {
     return buildError(ctx, `expected ${this.description}`, input);
-  }
-}
-
-class ObjectValidator {
-  constructor(data, rest) {
-    this.data = data;
-    this.rest = rest;
-  }
-
-  validateObjectValidator(ctx, input) {
-    if (typeof input === "object" && !Array.isArray(input) && input !== null) {
-      const configKeys = Object.keys(this.data);
-      for (const k of configKeys) {
-        const v = this.data[k];
-        if (!v(ctx, input[k])) {
-          return false;
-        }
-      }
-
-      if (this.rest != null) {
-        const inputKeys = Object.keys(input);
-        const extraKeys = inputKeys.filter((k) => !configKeys.includes(k));
-        for (const k of extraKeys) {
-          const v = input[k];
-          if (!this.rest(ctx, v)) {
-            return false;
-          }
-        }
-      }
-
-      return true;
-    }
-    return false;
-  }
-}
-class ObjectReporter {
-  constructor(data, rest) {
-    this.data = data;
-    this.rest = rest;
-  }
-
-  reportObjectReporter(ctx, input) {
-    if (typeof input !== "object" || Array.isArray(input) || input === null) {
-      return buildError(ctx, "expected object", input);
-    }
-
-    let acc = [];
-
-    const configKeys = Object.keys(this.data);
-
-    for (const k of configKeys) {
-      pushPath(ctx, k);
-      const v = this.data[k];
-      const arr2 = v(ctx, input[k]);
-      acc.push(...arr2);
-      popPath(ctx);
-    }
-
-    if (this.rest != null) {
-      const inputKeys = Object.keys(input);
-      const extraKeys = inputKeys.filter((k) => !configKeys.includes(k));
-      for (const k of extraKeys) {
-        pushPath(ctx, k);
-        const v = input[k];
-        const arr2 = this.rest(ctx, v);
-        acc.push(...arr2);
-        popPath(ctx);
-      }
-    }
-
-    return acc;
-  }
-}
-class ObjectParser {
-  constructor(data, rest) {
-    this.data = data;
-    this.rest = rest;
-  }
-
-  parseObjectParser(ctx, input) {
-    let acc = {};
-
-    const inputKeys = Object.keys(input);
-    for (const k of inputKeys) {
-      const v = input[k];
-      if (k in this.data) {
-        const p = this.data[k];
-        acc[k] = p(ctx, v);
-      } else {
-        if (this.rest != null) {
-          acc[k] = this.rest(ctx, v);
-        }
-      }
-    }
-
-    return acc;
-  }
-}
-
-class ArrayParser {
-  constructor(innerParser) {
-    this.innerParser = innerParser;
-  }
-
-  parseArrayParser(ctx, input) {
-    return input.map((v) => this.innerParser(ctx, v));
-  }
-}
-
-class ArrayValidator {
-  constructor(innerValidator) {
-    this.innerValidator = innerValidator;
-  }
-
-  validateArrayValidator(ctx, input) {
-    if (Array.isArray(input)) {
-      for (let i = 0; i < input.length; i++) {
-        const v = input[i];
-        const ok = this.innerValidator(ctx, v);
-        if (!ok) {
-          return false;
-        }
-      }
-    }
-    return true;
-  }
-}
-
-class ArrayReporter {
-  constructor(innerReporter) {
-    this.innerReporter = innerReporter;
-  }
-
-  reportArrayReporter(ctx, input) {
-    if (!Array.isArray(input)) {
-      return buildError(ctx, "expected array", input);
-    }
-
-    let acc = [];
-    for (let i = 0; i < input.length; i++) {
-      pushPath(ctx, `[${i}]`);
-      const v = input[i];
-      const arr2 = this.innerReporter(ctx, v);
-      acc.push(...arr2);
-      popPath(ctx);
-    }
-
-    return acc;
   }
 }
 
@@ -398,6 +235,166 @@ class AnyOfConstsDecoder {
   }
 }
 
+class ObjectValidator {
+  constructor(data, rest) {
+    this.data = data;
+    this.rest = rest;
+  }
+
+  validateObjectValidator(ctx, input) {
+    if (typeof input === "object" && !Array.isArray(input) && input !== null) {
+      const configKeys = Object.keys(this.data);
+      for (const k of configKeys) {
+        const v = this.data[k];
+        if (!v(ctx, input[k])) {
+          return false;
+        }
+      }
+
+      if (this.rest != null) {
+        const inputKeys = Object.keys(input);
+        const extraKeys = inputKeys.filter((k) => !configKeys.includes(k));
+        for (const k of extraKeys) {
+          const v = input[k];
+          if (!this.rest(ctx, v)) {
+            return false;
+          }
+        }
+      }
+
+      return true;
+    }
+    return false;
+  }
+}
+class ObjectReporter {
+  constructor(dataValidator, restValidator, dataReporter, restReporter) {
+    this.dataValidator = dataValidator;
+    this.restValidator = restValidator;
+    this.dataReporter = dataReporter;
+    this.restReporter = restReporter;
+  }
+
+  reportObjectReporter(ctx, input) {
+    if (typeof input !== "object" || Array.isArray(input) || input === null) {
+      return buildError(ctx, "expected object", input);
+    }
+
+    let acc = [];
+
+    const configKeys = Object.keys(this.dataReporter);
+
+    for (const k of configKeys) {
+      const ok = this.dataValidator[k](ctx, input[k]);
+      if (!ok) {
+        pushPath(ctx, k);
+        const v = this.dataReporter[k];
+        const arr2 = v(ctx, input[k]);
+        acc.push(...arr2);
+        popPath(ctx);
+      }
+    }
+
+    if (this.restReporter != null) {
+      const inputKeys = Object.keys(input);
+      const extraKeys = inputKeys.filter((k) => !configKeys.includes(k));
+      for (const k of extraKeys) {
+        const ok = this.restValidator(ctx, input[k]);
+        if (!ok) {
+          pushPath(ctx, k);
+          const v = input[k];
+          const arr2 = this.restReporter(ctx, v);
+          acc.push(...arr2);
+          popPath(ctx);
+        }
+      }
+    }
+
+    return acc;
+  }
+}
+class ObjectParser {
+  constructor(data, rest) {
+    this.data = data;
+    this.rest = rest;
+  }
+
+  parseObjectParser(ctx, input) {
+    let acc = {};
+
+    const inputKeys = Object.keys(input);
+    for (const k of inputKeys) {
+      const v = input[k];
+      if (k in this.data) {
+        const p = this.data[k];
+        acc[k] = p(ctx, v);
+      } else {
+        if (this.rest != null) {
+          acc[k] = this.rest(ctx, v);
+        }
+      }
+    }
+
+    return acc;
+  }
+}
+
+class ArrayParser {
+  constructor(innerParser) {
+    this.innerParser = innerParser;
+  }
+
+  parseArrayParser(ctx, input) {
+    return input.map((v) => this.innerParser(ctx, v));
+  }
+}
+
+class ArrayValidator {
+  constructor(innerValidator) {
+    this.innerValidator = innerValidator;
+  }
+
+  validateArrayValidator(ctx, input) {
+    if (Array.isArray(input)) {
+      for (let i = 0; i < input.length; i++) {
+        const v = input[i];
+        const ok = this.innerValidator(ctx, v);
+        if (!ok) {
+          return false;
+        }
+      }
+    }
+    return true;
+  }
+}
+
+class ArrayReporter {
+  constructor(innerValidator, innerReporter) {
+    this.innerValidator = innerValidator;
+    this.innerReporter = innerReporter;
+  }
+
+  reportArrayReporter(ctx, input) {
+    if (!Array.isArray(input)) {
+      return buildError(ctx, "expected array", input);
+    }
+
+    let acc = [];
+    for (let i = 0; i < input.length; i++) {
+      const ok = this.innerValidator(ctx, input[i]);
+      if (!ok) {
+        pushPath(ctx, `[${i}]`);
+        const v = input[i];
+        const arr2 = this.innerReporter(ctx, v);
+        acc.push(...arr2);
+        popPath(ctx);
+      }
+    }
+
+    return acc;
+  }
+}
+
 class AnyOfValidator {
   constructor(vs) {
     this.vs = vs;
@@ -426,16 +423,17 @@ class AnyOfParser {
   }
 }
 class AnyOfReporter {
-  constructor(vs) {
-    this.vs = vs;
+  constructor(validators, reporters) {
+    this.validators = validators;
+    this.reporters = reporters;
   }
   reportAnyOfReporter(ctx, input) {
     const acc = [];
-    for (const v of this.vs) {
+    for (const v of this.reporters) {
       const errors = v(ctx, input);
       acc.push(...errors);
     }
-    return acc;
+    return buildUnionError(ctx, acc, input);
   }
 }
 
@@ -474,8 +472,9 @@ class AllOfParser {
 }
 
 class AllOfReporter {
-  constructor(vs) {
-    this.vs = vs;
+  constructor(validators, reporters) {
+    this.validators = validators;
+    this.reporters = reporters;
   }
   reportAllOfReporter(ctx, input) {
     throw new Error("Not implemented");
@@ -525,30 +524,38 @@ class TupleParser {
 }
 
 class TupleReporter {
-  constructor(prefix, rest) {
-    this.prefix = prefix;
-    this.rest = rest;
+  constructor(prefixValidator, restValidator, prefixReporter, restReporter) {
+    this.prefixValidator = prefixValidator;
+    this.restValidator = restValidator;
+    this.prefixReporter = prefixReporter;
+    this.restReporter = restReporter;
   }
   reportTupleReporter(ctx, input) {
     let idx = 0;
 
     let acc = [];
 
-    for (const prefixVal of this.prefix) {
-      pushPath(ctx, `[${idx}]`);
-      const errors = prefixVal(ctx, input[idx]);
-      acc.push(...errors);
-      popPath(ctx);
+    for (const prefixReporter of this.prefixReporter) {
+      const ok = this.prefixValidator[idx](ctx, input[idx]);
+      if (!ok) {
+        pushPath(ctx, `[${idx}]`);
+        const errors = prefixReporter(ctx, input[idx]);
+        acc.push(...errors);
+        popPath(ctx);
+      }
       idx++;
     }
 
-    const itemVal = this.rest;
-    if (itemVal != null) {
+    const restReporter = this.restReporter;
+    if (restReporter != null) {
       for (let i = idx; i < input.length; i++) {
-        pushPath(ctx, `[${i}]`);
-        const errors = itemVal(ctx, input[i]);
-        acc.push(...errors);
-        popPath(ctx);
+        const ok = this.restValidator(ctx, input[i]);
+        if (!ok) {
+          pushPath(ctx, `[${i}]`);
+          const errors = restReporter(ctx, input[i]);
+          acc.push(...errors);
+          popPath(ctx);
+        }
       }
     }
 
@@ -1118,13 +1125,17 @@ const hoisted_TransportedValue_1 = new AnyOfParser([
     parseIdentity
 ]);
 const hoisted_TransportedValue_2 = new AnyOfReporter([
+    validateNull,
+    validateString,
+    validateNumber
+], [
     reportNull,
     reportString,
     reportNumber
 ]);
 const hoisted_TransportedValue_3 = new ArrayValidator(hoisted_TransportedValue_0.validateAnyOfValidator.bind(hoisted_TransportedValue_0));
 const hoisted_TransportedValue_4 = new ArrayParser(hoisted_TransportedValue_1.parseAnyOfParser.bind(hoisted_TransportedValue_1));
-const hoisted_TransportedValue_5 = new ArrayReporter(hoisted_TransportedValue_2.reportAnyOfReporter.bind(hoisted_TransportedValue_2));
+const hoisted_TransportedValue_5 = new ArrayReporter(hoisted_TransportedValue_0.validateAnyOfValidator.bind(hoisted_TransportedValue_0), hoisted_TransportedValue_2.reportAnyOfReporter.bind(hoisted_TransportedValue_2));
 const hoisted_TransportedValue_6 = new AnyOfValidator([
     validateNull,
     validateString,
@@ -1140,6 +1151,10 @@ const hoisted_TransportedValue_7 = new AnyOfParser([
     hoisted_TransportedValue_4.parseArrayParser.bind(hoisted_TransportedValue_4)
 ]);
 const hoisted_TransportedValue_8 = new AnyOfReporter([
+    validateNull,
+    validateString,
+    hoisted_TransportedValue_3.validateArrayValidator.bind(hoisted_TransportedValue_3)
+], [
     reportNull,
     reportString,
     hoisted_TransportedValue_5.reportArrayReporter.bind(hoisted_TransportedValue_5)
@@ -1151,6 +1166,8 @@ const hoisted_OnlyAKey_1 = new ObjectParser({
     "A": parseIdentity
 }, null);
 const hoisted_OnlyAKey_2 = new ObjectReporter({
+    "A": validateString
+}, null, {
     "A": reportString
 }, null);
 const hoisted_AllTs_0 = new ConstDecoder("a");
@@ -1167,6 +1184,9 @@ const hoisted_AllTs_3 = new AnyOfParser([
     hoisted_AllTs_1.parseConstDecoder.bind(hoisted_AllTs_1)
 ]);
 const hoisted_AllTs_4 = new AnyOfReporter([
+    hoisted_AllTs_0.validateConstDecoder.bind(hoisted_AllTs_0),
+    hoisted_AllTs_1.validateConstDecoder.bind(hoisted_AllTs_1)
+], [
     hoisted_AllTs_0.reportConstDecoder.bind(hoisted_AllTs_0),
     hoisted_AllTs_1.reportConstDecoder.bind(hoisted_AllTs_1)
 ]);
@@ -1178,6 +1198,8 @@ const hoisted_AObject_2 = new ObjectParser({
     "tag": hoisted_AObject_0.parseConstDecoder.bind(hoisted_AObject_0)
 }, null);
 const hoisted_AObject_3 = new ObjectReporter({
+    "tag": hoisted_AObject_0.validateConstDecoder.bind(hoisted_AObject_0)
+}, null, {
     "tag": hoisted_AObject_0.reportConstDecoder.bind(hoisted_AObject_0)
 }, null);
 const hoisted_Version_0 = new RegexDecoder(/(\d+(\.\d+)?)(\.)(\d+(\.\d+)?)(\.)(\d+(\.\d+)?)/, "${number}.${number}.${number}");
@@ -1196,6 +1218,9 @@ const hoisted_AccessLevel2_3 = new AnyOfParser([
     hoisted_AccessLevel2_1.parseConstDecoder.bind(hoisted_AccessLevel2_1)
 ]);
 const hoisted_AccessLevel2_4 = new AnyOfReporter([
+    hoisted_AccessLevel2_0.validateConstDecoder.bind(hoisted_AccessLevel2_0),
+    hoisted_AccessLevel2_1.validateConstDecoder.bind(hoisted_AccessLevel2_1)
+], [
     hoisted_AccessLevel2_0.reportConstDecoder.bind(hoisted_AccessLevel2_0),
     hoisted_AccessLevel2_1.reportConstDecoder.bind(hoisted_AccessLevel2_1)
 ]);
@@ -1214,6 +1239,9 @@ const hoisted_AccessLevel_3 = new AnyOfParser([
     hoisted_AccessLevel_1.parseConstDecoder.bind(hoisted_AccessLevel_1)
 ]);
 const hoisted_AccessLevel_4 = new AnyOfReporter([
+    hoisted_AccessLevel_0.validateConstDecoder.bind(hoisted_AccessLevel_0),
+    hoisted_AccessLevel_1.validateConstDecoder.bind(hoisted_AccessLevel_1)
+], [
     hoisted_AccessLevel_0.reportConstDecoder.bind(hoisted_AccessLevel_0),
     hoisted_AccessLevel_1.reportConstDecoder.bind(hoisted_AccessLevel_1)
 ]);
@@ -1232,6 +1260,9 @@ const hoisted_Arr3_3 = new AnyOfParser([
     hoisted_Arr3_1.parseConstDecoder.bind(hoisted_Arr3_1)
 ]);
 const hoisted_Arr3_4 = new AnyOfReporter([
+    hoisted_Arr3_0.validateConstDecoder.bind(hoisted_Arr3_0),
+    hoisted_Arr3_1.validateConstDecoder.bind(hoisted_Arr3_1)
+], [
     hoisted_Arr3_0.reportConstDecoder.bind(hoisted_Arr3_0),
     hoisted_Arr3_1.reportConstDecoder.bind(hoisted_Arr3_1)
 ]);
@@ -1243,6 +1274,8 @@ const hoisted_OmitSettings_2 = new ObjectParser({
     "tag": hoisted_OmitSettings_0.parseConstDecoder.bind(hoisted_OmitSettings_0)
 }, null);
 const hoisted_OmitSettings_3 = new ObjectReporter({
+    "tag": hoisted_OmitSettings_0.validateConstDecoder.bind(hoisted_OmitSettings_0)
+}, null, {
     "tag": hoisted_OmitSettings_0.reportConstDecoder.bind(hoisted_OmitSettings_0)
 }, null);
 const hoisted_OmitSettings_4 = new ConstDecoder("a");
@@ -1259,6 +1292,9 @@ const hoisted_OmitSettings_7 = new AnyOfParser([
     hoisted_OmitSettings_5.parseConstDecoder.bind(hoisted_OmitSettings_5)
 ]);
 const hoisted_OmitSettings_8 = new AnyOfReporter([
+    hoisted_OmitSettings_4.validateConstDecoder.bind(hoisted_OmitSettings_4),
+    hoisted_OmitSettings_5.validateConstDecoder.bind(hoisted_OmitSettings_5)
+], [
     hoisted_OmitSettings_4.reportConstDecoder.bind(hoisted_OmitSettings_4),
     hoisted_OmitSettings_5.reportConstDecoder.bind(hoisted_OmitSettings_5)
 ]);
@@ -1271,6 +1307,9 @@ const hoisted_OmitSettings_10 = new ObjectParser({
     "level": hoisted_OmitSettings_7.parseAnyOfParser.bind(hoisted_OmitSettings_7)
 }, null);
 const hoisted_OmitSettings_11 = new ObjectReporter({
+    "d": hoisted_OmitSettings_1.validateObjectValidator.bind(hoisted_OmitSettings_1),
+    "level": hoisted_OmitSettings_6.validateAnyOfValidator.bind(hoisted_OmitSettings_6)
+}, null, {
     "d": hoisted_OmitSettings_3.reportObjectReporter.bind(hoisted_OmitSettings_3),
     "level": hoisted_OmitSettings_8.reportAnyOfReporter.bind(hoisted_OmitSettings_8)
 }, null);
@@ -1282,6 +1321,8 @@ const hoisted_Settings_2 = new ObjectParser({
     "tag": hoisted_Settings_0.parseConstDecoder.bind(hoisted_Settings_0)
 }, null);
 const hoisted_Settings_3 = new ObjectReporter({
+    "tag": hoisted_Settings_0.validateConstDecoder.bind(hoisted_Settings_0)
+}, null, {
     "tag": hoisted_Settings_0.reportConstDecoder.bind(hoisted_Settings_0)
 }, null);
 const hoisted_Settings_4 = new ConstDecoder("a");
@@ -1298,6 +1339,9 @@ const hoisted_Settings_7 = new AnyOfParser([
     hoisted_Settings_5.parseConstDecoder.bind(hoisted_Settings_5)
 ]);
 const hoisted_Settings_8 = new AnyOfReporter([
+    hoisted_Settings_4.validateConstDecoder.bind(hoisted_Settings_4),
+    hoisted_Settings_5.validateConstDecoder.bind(hoisted_Settings_5)
+], [
     hoisted_Settings_4.reportConstDecoder.bind(hoisted_Settings_4),
     hoisted_Settings_5.reportConstDecoder.bind(hoisted_Settings_5)
 ]);
@@ -1312,6 +1356,10 @@ const hoisted_Settings_10 = new ObjectParser({
     "level": hoisted_Settings_7.parseAnyOfParser.bind(hoisted_Settings_7)
 }, null);
 const hoisted_Settings_11 = new ObjectReporter({
+    "a": validateString,
+    "d": hoisted_Settings_1.validateObjectValidator.bind(hoisted_Settings_1),
+    "level": hoisted_Settings_6.validateAnyOfValidator.bind(hoisted_Settings_6)
+}, null, {
     "a": reportString,
     "d": hoisted_Settings_3.reportObjectReporter.bind(hoisted_Settings_3),
     "level": hoisted_Settings_8.reportAnyOfReporter.bind(hoisted_Settings_8)
@@ -1328,6 +1376,9 @@ const hoisted_PartialObject_1 = new AnyOfParser([
     parseIdentity
 ]);
 const hoisted_PartialObject_2 = new AnyOfReporter([
+    validateNull,
+    validateString
+], [
     reportNull,
     reportString
 ]);
@@ -1343,6 +1394,9 @@ const hoisted_PartialObject_4 = new AnyOfParser([
     parseIdentity
 ]);
 const hoisted_PartialObject_5 = new AnyOfReporter([
+    validateNull,
+    validateNumber
+], [
     reportNull,
     reportNumber
 ]);
@@ -1355,6 +1409,9 @@ const hoisted_PartialObject_7 = new ObjectParser({
     "b": hoisted_PartialObject_4.parseAnyOfParser.bind(hoisted_PartialObject_4)
 }, null);
 const hoisted_PartialObject_8 = new ObjectReporter({
+    "a": hoisted_PartialObject_0.validateAnyOfValidator.bind(hoisted_PartialObject_0),
+    "b": hoisted_PartialObject_3.validateAnyOfValidator.bind(hoisted_PartialObject_3)
+}, null, {
     "a": hoisted_PartialObject_2.reportAnyOfReporter.bind(hoisted_PartialObject_2),
     "b": hoisted_PartialObject_5.reportAnyOfReporter.bind(hoisted_PartialObject_5)
 }, null);
@@ -1367,6 +1424,9 @@ const hoisted_RequiredPartialObject_1 = new ObjectParser({
     "b": parseIdentity
 }, null);
 const hoisted_RequiredPartialObject_2 = new ObjectReporter({
+    "a": validateString,
+    "b": validateNumber
+}, null, {
     "a": reportString,
     "b": reportNumber
 }, null);
@@ -1378,6 +1438,8 @@ const hoisted_LevelAndDSettings_2 = new ObjectParser({
     "tag": hoisted_LevelAndDSettings_0.parseConstDecoder.bind(hoisted_LevelAndDSettings_0)
 }, null);
 const hoisted_LevelAndDSettings_3 = new ObjectReporter({
+    "tag": hoisted_LevelAndDSettings_0.validateConstDecoder.bind(hoisted_LevelAndDSettings_0)
+}, null, {
     "tag": hoisted_LevelAndDSettings_0.reportConstDecoder.bind(hoisted_LevelAndDSettings_0)
 }, null);
 const hoisted_LevelAndDSettings_4 = new ConstDecoder("a");
@@ -1394,6 +1456,9 @@ const hoisted_LevelAndDSettings_7 = new AnyOfParser([
     hoisted_LevelAndDSettings_5.parseConstDecoder.bind(hoisted_LevelAndDSettings_5)
 ]);
 const hoisted_LevelAndDSettings_8 = new AnyOfReporter([
+    hoisted_LevelAndDSettings_4.validateConstDecoder.bind(hoisted_LevelAndDSettings_4),
+    hoisted_LevelAndDSettings_5.validateConstDecoder.bind(hoisted_LevelAndDSettings_5)
+], [
     hoisted_LevelAndDSettings_4.reportConstDecoder.bind(hoisted_LevelAndDSettings_4),
     hoisted_LevelAndDSettings_5.reportConstDecoder.bind(hoisted_LevelAndDSettings_5)
 ]);
@@ -1406,6 +1471,9 @@ const hoisted_LevelAndDSettings_10 = new ObjectParser({
     "level": hoisted_LevelAndDSettings_7.parseAnyOfParser.bind(hoisted_LevelAndDSettings_7)
 }, null);
 const hoisted_LevelAndDSettings_11 = new ObjectReporter({
+    "d": hoisted_LevelAndDSettings_1.validateObjectValidator.bind(hoisted_LevelAndDSettings_1),
+    "level": hoisted_LevelAndDSettings_6.validateAnyOfValidator.bind(hoisted_LevelAndDSettings_6)
+}, null, {
     "d": hoisted_LevelAndDSettings_3.reportObjectReporter.bind(hoisted_LevelAndDSettings_3),
     "level": hoisted_LevelAndDSettings_8.reportAnyOfReporter.bind(hoisted_LevelAndDSettings_8)
 }, null);
@@ -1421,6 +1489,9 @@ const hoisted_PartialSettings_1 = new AnyOfParser([
     parseIdentity
 ]);
 const hoisted_PartialSettings_2 = new AnyOfReporter([
+    validateNull,
+    validateString
+], [
     reportNull,
     reportString
 ]);
@@ -1432,6 +1503,8 @@ const hoisted_PartialSettings_5 = new ObjectParser({
     "tag": hoisted_PartialSettings_3.parseConstDecoder.bind(hoisted_PartialSettings_3)
 }, null);
 const hoisted_PartialSettings_6 = new ObjectReporter({
+    "tag": hoisted_PartialSettings_3.validateConstDecoder.bind(hoisted_PartialSettings_3)
+}, null, {
     "tag": hoisted_PartialSettings_3.reportConstDecoder.bind(hoisted_PartialSettings_3)
 }, null);
 const hoisted_PartialSettings_7 = new AnyOfValidator([
@@ -1446,6 +1519,9 @@ const hoisted_PartialSettings_8 = new AnyOfParser([
     hoisted_PartialSettings_5.parseObjectParser.bind(hoisted_PartialSettings_5)
 ]);
 const hoisted_PartialSettings_9 = new AnyOfReporter([
+    validateNull,
+    hoisted_PartialSettings_4.validateObjectValidator.bind(hoisted_PartialSettings_4)
+], [
     reportNull,
     hoisted_PartialSettings_6.reportObjectReporter.bind(hoisted_PartialSettings_6)
 ]);
@@ -1466,6 +1542,10 @@ const hoisted_PartialSettings_13 = new AnyOfParser([
     hoisted_PartialSettings_11.parseConstDecoder.bind(hoisted_PartialSettings_11)
 ]);
 const hoisted_PartialSettings_14 = new AnyOfReporter([
+    validateNull,
+    hoisted_PartialSettings_10.validateConstDecoder.bind(hoisted_PartialSettings_10),
+    hoisted_PartialSettings_11.validateConstDecoder.bind(hoisted_PartialSettings_11)
+], [
     reportNull,
     hoisted_PartialSettings_10.reportConstDecoder.bind(hoisted_PartialSettings_10),
     hoisted_PartialSettings_11.reportConstDecoder.bind(hoisted_PartialSettings_11)
@@ -1481,17 +1561,21 @@ const hoisted_PartialSettings_16 = new ObjectParser({
     "level": hoisted_PartialSettings_13.parseAnyOfParser.bind(hoisted_PartialSettings_13)
 }, null);
 const hoisted_PartialSettings_17 = new ObjectReporter({
+    "a": hoisted_PartialSettings_0.validateAnyOfValidator.bind(hoisted_PartialSettings_0),
+    "d": hoisted_PartialSettings_7.validateAnyOfValidator.bind(hoisted_PartialSettings_7),
+    "level": hoisted_PartialSettings_12.validateAnyOfValidator.bind(hoisted_PartialSettings_12)
+}, null, {
     "a": hoisted_PartialSettings_2.reportAnyOfReporter.bind(hoisted_PartialSettings_2),
     "d": hoisted_PartialSettings_9.reportAnyOfReporter.bind(hoisted_PartialSettings_9),
     "level": hoisted_PartialSettings_14.reportAnyOfReporter.bind(hoisted_PartialSettings_14)
 }, null);
 const hoisted_Extra_0 = new ObjectValidator({}, validateString);
 const hoisted_Extra_1 = new ObjectParser({}, parseIdentity);
-const hoisted_Extra_2 = new ObjectReporter({}, reportString);
+const hoisted_Extra_2 = new ObjectReporter({}, validateString, {}, reportString);
 const hoisted_AvatarSize_0 = new RegexDecoder(/(\d+(\.\d+)?)(x)(\d+(\.\d+)?)/, "${number}x${number}");
 const hoisted_User_0 = new ArrayValidator(validators.User);
 const hoisted_User_1 = new ArrayParser(parsers.User);
-const hoisted_User_2 = new ArrayReporter(reporters.User);
+const hoisted_User_2 = new ArrayReporter(validators.User, reporters.User);
 const hoisted_User_3 = new ObjectValidator({
     "accessLevel": validators.AccessLevel,
     "avatarSize": validators.AvatarSize,
@@ -1507,6 +1591,12 @@ const hoisted_User_4 = new ObjectParser({
     "name": parseIdentity
 }, null);
 const hoisted_User_5 = new ObjectReporter({
+    "accessLevel": validators.AccessLevel,
+    "avatarSize": validators.AvatarSize,
+    "extra": validators.Extra,
+    "friends": hoisted_User_0.validateArrayValidator.bind(hoisted_User_0),
+    "name": validateString
+}, null, {
     "accessLevel": reporters.AccessLevel,
     "avatarSize": reporters.AvatarSize,
     "extra": reporters.Extra,
@@ -1526,6 +1616,11 @@ const hoisted_PublicUser_1 = new ObjectParser({
     "name": parseIdentity
 }, null);
 const hoisted_PublicUser_2 = new ObjectReporter({
+    "accessLevel": validators.AccessLevel,
+    "avatarSize": validators.AvatarSize,
+    "extra": validators.Extra,
+    "name": validateString
+}, null, {
     "accessLevel": reporters.AccessLevel,
     "avatarSize": reporters.AvatarSize,
     "extra": reporters.Extra,
@@ -1538,6 +1633,8 @@ const hoisted_Req_1 = new ObjectParser({
     "optional": parseIdentity
 }, null);
 const hoisted_Req_2 = new ObjectReporter({
+    "optional": validateString
+}, null, {
     "optional": reportString
 }, null);
 const hoisted_WithOptionals_0 = new AnyOfValidator([
@@ -1552,6 +1649,9 @@ const hoisted_WithOptionals_1 = new AnyOfParser([
     parseIdentity
 ]);
 const hoisted_WithOptionals_2 = new AnyOfReporter([
+    validateNull,
+    validateString
+], [
     reportNull,
     reportString
 ]);
@@ -1562,6 +1662,8 @@ const hoisted_WithOptionals_4 = new ObjectParser({
     "optional": hoisted_WithOptionals_1.parseAnyOfParser.bind(hoisted_WithOptionals_1)
 }, null);
 const hoisted_WithOptionals_5 = new ObjectReporter({
+    "optional": hoisted_WithOptionals_0.validateAnyOfValidator.bind(hoisted_WithOptionals_0)
+}, null, {
     "optional": hoisted_WithOptionals_2.reportAnyOfReporter.bind(hoisted_WithOptionals_2)
 }, null);
 const hoisted_Repro1_0 = new AnyOfValidator([
@@ -1576,6 +1678,9 @@ const hoisted_Repro1_1 = new AnyOfParser([
     parsers.Repro2
 ]);
 const hoisted_Repro1_2 = new AnyOfReporter([
+    validateNull,
+    validators.Repro2
+], [
     reportNull,
     reporters.Repro2
 ]);
@@ -1586,6 +1691,8 @@ const hoisted_Repro1_4 = new ObjectParser({
     "sizes": hoisted_Repro1_1.parseAnyOfParser.bind(hoisted_Repro1_1)
 }, null);
 const hoisted_Repro1_5 = new ObjectReporter({
+    "sizes": hoisted_Repro1_0.validateAnyOfValidator.bind(hoisted_Repro1_0)
+}, null, {
     "sizes": hoisted_Repro1_2.reportAnyOfReporter.bind(hoisted_Repro1_2)
 }, null);
 const hoisted_Repro2_0 = new ObjectValidator({
@@ -1595,6 +1702,8 @@ const hoisted_Repro2_1 = new ObjectParser({
     "useSmallerSizes": parseIdentity
 }, null);
 const hoisted_Repro2_2 = new ObjectReporter({
+    "useSmallerSizes": validateBoolean
+}, null, {
     "useSmallerSizes": reportBoolean
 }, null);
 const hoisted_SettingsUpdate_0 = new ConstDecoder("d");
@@ -1605,6 +1714,8 @@ const hoisted_SettingsUpdate_2 = new ObjectParser({
     "tag": hoisted_SettingsUpdate_0.parseConstDecoder.bind(hoisted_SettingsUpdate_0)
 }, null);
 const hoisted_SettingsUpdate_3 = new ObjectReporter({
+    "tag": hoisted_SettingsUpdate_0.validateConstDecoder.bind(hoisted_SettingsUpdate_0)
+}, null, {
     "tag": hoisted_SettingsUpdate_0.reportConstDecoder.bind(hoisted_SettingsUpdate_0)
 }, null);
 const hoisted_SettingsUpdate_4 = new AnyOfValidator([
@@ -1619,6 +1730,9 @@ const hoisted_SettingsUpdate_5 = new AnyOfParser([
     hoisted_SettingsUpdate_2.parseObjectParser.bind(hoisted_SettingsUpdate_2)
 ]);
 const hoisted_SettingsUpdate_6 = new AnyOfReporter([
+    validateString,
+    hoisted_SettingsUpdate_1.validateObjectValidator.bind(hoisted_SettingsUpdate_1)
+], [
     reportString,
     hoisted_SettingsUpdate_3.reportObjectReporter.bind(hoisted_SettingsUpdate_3)
 ]);
@@ -1630,6 +1744,8 @@ const hoisted_Mapped_2 = new ObjectParser({
     "value": hoisted_Mapped_0.parseConstDecoder.bind(hoisted_Mapped_0)
 }, null);
 const hoisted_Mapped_3 = new ObjectReporter({
+    "value": hoisted_Mapped_0.validateConstDecoder.bind(hoisted_Mapped_0)
+}, null, {
     "value": hoisted_Mapped_0.reportConstDecoder.bind(hoisted_Mapped_0)
 }, null);
 const hoisted_Mapped_4 = new ConstDecoder("b");
@@ -1640,6 +1756,8 @@ const hoisted_Mapped_6 = new ObjectParser({
     "value": hoisted_Mapped_4.parseConstDecoder.bind(hoisted_Mapped_4)
 }, null);
 const hoisted_Mapped_7 = new ObjectReporter({
+    "value": hoisted_Mapped_4.validateConstDecoder.bind(hoisted_Mapped_4)
+}, null, {
     "value": hoisted_Mapped_4.reportConstDecoder.bind(hoisted_Mapped_4)
 }, null);
 const hoisted_Mapped_8 = new ObjectValidator({
@@ -1651,6 +1769,9 @@ const hoisted_Mapped_9 = new ObjectParser({
     "b": hoisted_Mapped_6.parseObjectParser.bind(hoisted_Mapped_6)
 }, null);
 const hoisted_Mapped_10 = new ObjectReporter({
+    "a": hoisted_Mapped_1.validateObjectValidator.bind(hoisted_Mapped_1),
+    "b": hoisted_Mapped_5.validateObjectValidator.bind(hoisted_Mapped_5)
+}, null, {
     "a": hoisted_Mapped_3.reportObjectReporter.bind(hoisted_Mapped_3),
     "b": hoisted_Mapped_7.reportObjectReporter.bind(hoisted_Mapped_7)
 }, null);
@@ -1662,6 +1783,8 @@ const hoisted_MappedOptional_2 = new ObjectParser({
     "value": hoisted_MappedOptional_0.parseConstDecoder.bind(hoisted_MappedOptional_0)
 }, null);
 const hoisted_MappedOptional_3 = new ObjectReporter({
+    "value": hoisted_MappedOptional_0.validateConstDecoder.bind(hoisted_MappedOptional_0)
+}, null, {
     "value": hoisted_MappedOptional_0.reportConstDecoder.bind(hoisted_MappedOptional_0)
 }, null);
 const hoisted_MappedOptional_4 = new AnyOfValidator([
@@ -1676,6 +1799,9 @@ const hoisted_MappedOptional_5 = new AnyOfParser([
     hoisted_MappedOptional_2.parseObjectParser.bind(hoisted_MappedOptional_2)
 ]);
 const hoisted_MappedOptional_6 = new AnyOfReporter([
+    validateNull,
+    hoisted_MappedOptional_1.validateObjectValidator.bind(hoisted_MappedOptional_1)
+], [
     reportNull,
     hoisted_MappedOptional_3.reportObjectReporter.bind(hoisted_MappedOptional_3)
 ]);
@@ -1687,6 +1813,8 @@ const hoisted_MappedOptional_9 = new ObjectParser({
     "value": hoisted_MappedOptional_7.parseConstDecoder.bind(hoisted_MappedOptional_7)
 }, null);
 const hoisted_MappedOptional_10 = new ObjectReporter({
+    "value": hoisted_MappedOptional_7.validateConstDecoder.bind(hoisted_MappedOptional_7)
+}, null, {
     "value": hoisted_MappedOptional_7.reportConstDecoder.bind(hoisted_MappedOptional_7)
 }, null);
 const hoisted_MappedOptional_11 = new AnyOfValidator([
@@ -1701,6 +1829,9 @@ const hoisted_MappedOptional_12 = new AnyOfParser([
     hoisted_MappedOptional_9.parseObjectParser.bind(hoisted_MappedOptional_9)
 ]);
 const hoisted_MappedOptional_13 = new AnyOfReporter([
+    validateNull,
+    hoisted_MappedOptional_8.validateObjectValidator.bind(hoisted_MappedOptional_8)
+], [
     reportNull,
     hoisted_MappedOptional_10.reportObjectReporter.bind(hoisted_MappedOptional_10)
 ]);
@@ -1713,6 +1844,9 @@ const hoisted_MappedOptional_15 = new ObjectParser({
     "b": hoisted_MappedOptional_12.parseAnyOfParser.bind(hoisted_MappedOptional_12)
 }, null);
 const hoisted_MappedOptional_16 = new ObjectReporter({
+    "a": hoisted_MappedOptional_4.validateAnyOfValidator.bind(hoisted_MappedOptional_4),
+    "b": hoisted_MappedOptional_11.validateAnyOfValidator.bind(hoisted_MappedOptional_11)
+}, null, {
     "a": hoisted_MappedOptional_6.reportAnyOfReporter.bind(hoisted_MappedOptional_6),
     "b": hoisted_MappedOptional_13.reportAnyOfReporter.bind(hoisted_MappedOptional_13)
 }, null);
@@ -1728,6 +1862,9 @@ const hoisted_DiscriminatedUnion_1 = new AnyOfParser([
     parseIdentity
 ]);
 const hoisted_DiscriminatedUnion_2 = new AnyOfReporter([
+    validateNull,
+    validateString
+], [
     reportNull,
     reportString
 ]);
@@ -1746,6 +1883,11 @@ const hoisted_DiscriminatedUnion_6 = new ObjectParser({
     "type": hoisted_DiscriminatedUnion_4.parseConstDecoder.bind(hoisted_DiscriminatedUnion_4)
 }, null);
 const hoisted_DiscriminatedUnion_7 = new ObjectReporter({
+    "a1": validateString,
+    "a11": hoisted_DiscriminatedUnion_0.validateAnyOfValidator.bind(hoisted_DiscriminatedUnion_0),
+    "subType": hoisted_DiscriminatedUnion_3.validateConstDecoder.bind(hoisted_DiscriminatedUnion_3),
+    "type": hoisted_DiscriminatedUnion_4.validateConstDecoder.bind(hoisted_DiscriminatedUnion_4)
+}, null, {
     "a1": reportString,
     "a11": hoisted_DiscriminatedUnion_2.reportAnyOfReporter.bind(hoisted_DiscriminatedUnion_2),
     "subType": hoisted_DiscriminatedUnion_3.reportConstDecoder.bind(hoisted_DiscriminatedUnion_3),
@@ -1764,6 +1906,10 @@ const hoisted_DiscriminatedUnion_11 = new ObjectParser({
     "type": hoisted_DiscriminatedUnion_9.parseConstDecoder.bind(hoisted_DiscriminatedUnion_9)
 }, null);
 const hoisted_DiscriminatedUnion_12 = new ObjectReporter({
+    "a2": validateString,
+    "subType": hoisted_DiscriminatedUnion_8.validateConstDecoder.bind(hoisted_DiscriminatedUnion_8),
+    "type": hoisted_DiscriminatedUnion_9.validateConstDecoder.bind(hoisted_DiscriminatedUnion_9)
+}, null, {
     "a2": reportString,
     "subType": hoisted_DiscriminatedUnion_8.reportConstDecoder.bind(hoisted_DiscriminatedUnion_8),
     "type": hoisted_DiscriminatedUnion_9.reportConstDecoder.bind(hoisted_DiscriminatedUnion_9)
@@ -1778,6 +1924,9 @@ const hoisted_DiscriminatedUnion_15 = new ObjectParser({
     "value": parseIdentity
 }, null);
 const hoisted_DiscriminatedUnion_16 = new ObjectReporter({
+    "type": hoisted_DiscriminatedUnion_13.validateConstDecoder.bind(hoisted_DiscriminatedUnion_13),
+    "value": validateNumber
+}, null, {
     "type": hoisted_DiscriminatedUnion_13.reportConstDecoder.bind(hoisted_DiscriminatedUnion_13),
     "value": reportNumber
 }, null);
@@ -1796,6 +1945,10 @@ const hoisted_DiscriminatedUnion_18 = new AnyOfParser([
     hoisted_DiscriminatedUnion_15.parseObjectParser.bind(hoisted_DiscriminatedUnion_15)
 ]);
 const hoisted_DiscriminatedUnion_19 = new AnyOfReporter([
+    hoisted_DiscriminatedUnion_5.validateObjectValidator.bind(hoisted_DiscriminatedUnion_5),
+    hoisted_DiscriminatedUnion_10.validateObjectValidator.bind(hoisted_DiscriminatedUnion_10),
+    hoisted_DiscriminatedUnion_14.validateObjectValidator.bind(hoisted_DiscriminatedUnion_14)
+], [
     hoisted_DiscriminatedUnion_7.reportObjectReporter.bind(hoisted_DiscriminatedUnion_7),
     hoisted_DiscriminatedUnion_12.reportObjectReporter.bind(hoisted_DiscriminatedUnion_12),
     hoisted_DiscriminatedUnion_16.reportObjectReporter.bind(hoisted_DiscriminatedUnion_16)
@@ -1812,6 +1965,9 @@ const hoisted_DiscriminatedUnion2_1 = new AnyOfParser([
     parseIdentity
 ]);
 const hoisted_DiscriminatedUnion2_2 = new AnyOfReporter([
+    validateNull,
+    validateString
+], [
     reportNull,
     reportString
 ]);
@@ -1830,6 +1986,11 @@ const hoisted_DiscriminatedUnion2_6 = new ObjectParser({
     "type": hoisted_DiscriminatedUnion2_4.parseConstDecoder.bind(hoisted_DiscriminatedUnion2_4)
 }, null);
 const hoisted_DiscriminatedUnion2_7 = new ObjectReporter({
+    "a1": validateString,
+    "a11": hoisted_DiscriminatedUnion2_0.validateAnyOfValidator.bind(hoisted_DiscriminatedUnion2_0),
+    "subType": hoisted_DiscriminatedUnion2_3.validateConstDecoder.bind(hoisted_DiscriminatedUnion2_3),
+    "type": hoisted_DiscriminatedUnion2_4.validateConstDecoder.bind(hoisted_DiscriminatedUnion2_4)
+}, null, {
     "a1": reportString,
     "a11": hoisted_DiscriminatedUnion2_2.reportAnyOfReporter.bind(hoisted_DiscriminatedUnion2_2),
     "subType": hoisted_DiscriminatedUnion2_3.reportConstDecoder.bind(hoisted_DiscriminatedUnion2_3),
@@ -1848,6 +2009,10 @@ const hoisted_DiscriminatedUnion2_11 = new ObjectParser({
     "type": hoisted_DiscriminatedUnion2_9.parseConstDecoder.bind(hoisted_DiscriminatedUnion2_9)
 }, null);
 const hoisted_DiscriminatedUnion2_12 = new ObjectReporter({
+    "a2": validateString,
+    "subType": hoisted_DiscriminatedUnion2_8.validateConstDecoder.bind(hoisted_DiscriminatedUnion2_8),
+    "type": hoisted_DiscriminatedUnion2_9.validateConstDecoder.bind(hoisted_DiscriminatedUnion2_9)
+}, null, {
     "a2": reportString,
     "subType": hoisted_DiscriminatedUnion2_8.reportConstDecoder.bind(hoisted_DiscriminatedUnion2_8),
     "type": hoisted_DiscriminatedUnion2_9.reportConstDecoder.bind(hoisted_DiscriminatedUnion2_9)
@@ -1865,6 +2030,9 @@ const hoisted_DiscriminatedUnion2_15 = new AnyOfParser([
     hoisted_DiscriminatedUnion2_13.parseConstDecoder.bind(hoisted_DiscriminatedUnion2_13)
 ]);
 const hoisted_DiscriminatedUnion2_16 = new AnyOfReporter([
+    validateNull,
+    hoisted_DiscriminatedUnion2_13.validateConstDecoder.bind(hoisted_DiscriminatedUnion2_13)
+], [
     reportNull,
     hoisted_DiscriminatedUnion2_13.reportConstDecoder.bind(hoisted_DiscriminatedUnion2_13)
 ]);
@@ -1877,6 +2045,9 @@ const hoisted_DiscriminatedUnion2_18 = new ObjectParser({
     "valueD": parseIdentity
 }, null);
 const hoisted_DiscriminatedUnion2_19 = new ObjectReporter({
+    "type": hoisted_DiscriminatedUnion2_14.validateAnyOfValidator.bind(hoisted_DiscriminatedUnion2_14),
+    "valueD": validateNumber
+}, null, {
     "type": hoisted_DiscriminatedUnion2_16.reportAnyOfReporter.bind(hoisted_DiscriminatedUnion2_16),
     "valueD": reportNumber
 }, null);
@@ -1890,6 +2061,9 @@ const hoisted_DiscriminatedUnion2_22 = new ObjectParser({
     "value": parseIdentity
 }, null);
 const hoisted_DiscriminatedUnion2_23 = new ObjectReporter({
+    "type": hoisted_DiscriminatedUnion2_20.validateConstDecoder.bind(hoisted_DiscriminatedUnion2_20),
+    "value": validateNumber
+}, null, {
     "type": hoisted_DiscriminatedUnion2_20.reportConstDecoder.bind(hoisted_DiscriminatedUnion2_20),
     "value": reportNumber
 }, null);
@@ -1911,6 +2085,11 @@ const hoisted_DiscriminatedUnion2_25 = new AnyOfParser([
     hoisted_DiscriminatedUnion2_22.parseObjectParser.bind(hoisted_DiscriminatedUnion2_22)
 ]);
 const hoisted_DiscriminatedUnion2_26 = new AnyOfReporter([
+    hoisted_DiscriminatedUnion2_5.validateObjectValidator.bind(hoisted_DiscriminatedUnion2_5),
+    hoisted_DiscriminatedUnion2_10.validateObjectValidator.bind(hoisted_DiscriminatedUnion2_10),
+    hoisted_DiscriminatedUnion2_17.validateObjectValidator.bind(hoisted_DiscriminatedUnion2_17),
+    hoisted_DiscriminatedUnion2_21.validateObjectValidator.bind(hoisted_DiscriminatedUnion2_21)
+], [
     hoisted_DiscriminatedUnion2_7.reportObjectReporter.bind(hoisted_DiscriminatedUnion2_7),
     hoisted_DiscriminatedUnion2_12.reportObjectReporter.bind(hoisted_DiscriminatedUnion2_12),
     hoisted_DiscriminatedUnion2_19.reportObjectReporter.bind(hoisted_DiscriminatedUnion2_19),
@@ -1930,6 +2109,9 @@ const hoisted_DiscriminatedUnion3_3 = new AnyOfParser([
     hoisted_DiscriminatedUnion3_1.parseConstDecoder.bind(hoisted_DiscriminatedUnion3_1)
 ]);
 const hoisted_DiscriminatedUnion3_4 = new AnyOfReporter([
+    hoisted_DiscriminatedUnion3_0.validateConstDecoder.bind(hoisted_DiscriminatedUnion3_0),
+    hoisted_DiscriminatedUnion3_1.validateConstDecoder.bind(hoisted_DiscriminatedUnion3_1)
+], [
     hoisted_DiscriminatedUnion3_0.reportConstDecoder.bind(hoisted_DiscriminatedUnion3_0),
     hoisted_DiscriminatedUnion3_1.reportConstDecoder.bind(hoisted_DiscriminatedUnion3_1)
 ]);
@@ -1942,6 +2124,9 @@ const hoisted_DiscriminatedUnion3_6 = new ObjectParser({
     "type": hoisted_DiscriminatedUnion3_3.parseAnyOfParser.bind(hoisted_DiscriminatedUnion3_3)
 }, null);
 const hoisted_DiscriminatedUnion3_7 = new ObjectReporter({
+    "a1": validateString,
+    "type": hoisted_DiscriminatedUnion3_2.validateAnyOfValidator.bind(hoisted_DiscriminatedUnion3_2)
+}, null, {
     "a1": reportString,
     "type": hoisted_DiscriminatedUnion3_4.reportAnyOfReporter.bind(hoisted_DiscriminatedUnion3_4)
 }, null);
@@ -1955,6 +2140,9 @@ const hoisted_DiscriminatedUnion3_10 = new ObjectParser({
     "value": parseIdentity
 }, null);
 const hoisted_DiscriminatedUnion3_11 = new ObjectReporter({
+    "type": hoisted_DiscriminatedUnion3_8.validateConstDecoder.bind(hoisted_DiscriminatedUnion3_8),
+    "value": validateNumber
+}, null, {
     "type": hoisted_DiscriminatedUnion3_8.reportConstDecoder.bind(hoisted_DiscriminatedUnion3_8),
     "value": reportNumber
 }, null);
@@ -1970,6 +2158,9 @@ const hoisted_DiscriminatedUnion3_13 = new AnyOfParser([
     hoisted_DiscriminatedUnion3_10.parseObjectParser.bind(hoisted_DiscriminatedUnion3_10)
 ]);
 const hoisted_DiscriminatedUnion3_14 = new AnyOfReporter([
+    hoisted_DiscriminatedUnion3_5.validateObjectValidator.bind(hoisted_DiscriminatedUnion3_5),
+    hoisted_DiscriminatedUnion3_9.validateObjectValidator.bind(hoisted_DiscriminatedUnion3_9)
+], [
     hoisted_DiscriminatedUnion3_7.reportObjectReporter.bind(hoisted_DiscriminatedUnion3_7),
     hoisted_DiscriminatedUnion3_11.reportObjectReporter.bind(hoisted_DiscriminatedUnion3_11)
 ]);
@@ -1983,6 +2174,9 @@ const hoisted_DiscriminatedUnion4_2 = new ObjectParser({
     "subType": hoisted_DiscriminatedUnion4_0.parseConstDecoder.bind(hoisted_DiscriminatedUnion4_0)
 }, null);
 const hoisted_DiscriminatedUnion4_3 = new ObjectReporter({
+    "a1": validateString,
+    "subType": hoisted_DiscriminatedUnion4_0.validateConstDecoder.bind(hoisted_DiscriminatedUnion4_0)
+}, null, {
     "a1": reportString,
     "subType": hoisted_DiscriminatedUnion4_0.reportConstDecoder.bind(hoisted_DiscriminatedUnion4_0)
 }, null);
@@ -1996,6 +2190,9 @@ const hoisted_DiscriminatedUnion4_6 = new ObjectParser({
     "type": hoisted_DiscriminatedUnion4_4.parseConstDecoder.bind(hoisted_DiscriminatedUnion4_4)
 }, null);
 const hoisted_DiscriminatedUnion4_7 = new ObjectReporter({
+    "a": hoisted_DiscriminatedUnion4_1.validateObjectValidator.bind(hoisted_DiscriminatedUnion4_1),
+    "type": hoisted_DiscriminatedUnion4_4.validateConstDecoder.bind(hoisted_DiscriminatedUnion4_4)
+}, null, {
     "a": hoisted_DiscriminatedUnion4_3.reportObjectReporter.bind(hoisted_DiscriminatedUnion4_3),
     "type": hoisted_DiscriminatedUnion4_4.reportConstDecoder.bind(hoisted_DiscriminatedUnion4_4)
 }, null);
@@ -2009,6 +2206,9 @@ const hoisted_DiscriminatedUnion4_10 = new ObjectParser({
     "subType": hoisted_DiscriminatedUnion4_8.parseConstDecoder.bind(hoisted_DiscriminatedUnion4_8)
 }, null);
 const hoisted_DiscriminatedUnion4_11 = new ObjectReporter({
+    "a2": validateString,
+    "subType": hoisted_DiscriminatedUnion4_8.validateConstDecoder.bind(hoisted_DiscriminatedUnion4_8)
+}, null, {
     "a2": reportString,
     "subType": hoisted_DiscriminatedUnion4_8.reportConstDecoder.bind(hoisted_DiscriminatedUnion4_8)
 }, null);
@@ -2022,6 +2222,9 @@ const hoisted_DiscriminatedUnion4_14 = new ObjectParser({
     "type": hoisted_DiscriminatedUnion4_12.parseConstDecoder.bind(hoisted_DiscriminatedUnion4_12)
 }, null);
 const hoisted_DiscriminatedUnion4_15 = new ObjectReporter({
+    "a": hoisted_DiscriminatedUnion4_9.validateObjectValidator.bind(hoisted_DiscriminatedUnion4_9),
+    "type": hoisted_DiscriminatedUnion4_12.validateConstDecoder.bind(hoisted_DiscriminatedUnion4_12)
+}, null, {
     "a": hoisted_DiscriminatedUnion4_11.reportObjectReporter.bind(hoisted_DiscriminatedUnion4_11),
     "type": hoisted_DiscriminatedUnion4_12.reportConstDecoder.bind(hoisted_DiscriminatedUnion4_12)
 }, null);
@@ -2037,6 +2240,9 @@ const hoisted_DiscriminatedUnion4_17 = new AnyOfParser([
     hoisted_DiscriminatedUnion4_14.parseObjectParser.bind(hoisted_DiscriminatedUnion4_14)
 ]);
 const hoisted_DiscriminatedUnion4_18 = new AnyOfReporter([
+    hoisted_DiscriminatedUnion4_5.validateObjectValidator.bind(hoisted_DiscriminatedUnion4_5),
+    hoisted_DiscriminatedUnion4_13.validateObjectValidator.bind(hoisted_DiscriminatedUnion4_13)
+], [
     hoisted_DiscriminatedUnion4_7.reportObjectReporter.bind(hoisted_DiscriminatedUnion4_7),
     hoisted_DiscriminatedUnion4_15.reportObjectReporter.bind(hoisted_DiscriminatedUnion4_15)
 ]);
@@ -2062,6 +2268,11 @@ const hoisted_AllTypes_5 = new AnyOfParser([
     hoisted_AllTypes_3.parseConstDecoder.bind(hoisted_AllTypes_3)
 ]);
 const hoisted_AllTypes_6 = new AnyOfReporter([
+    hoisted_AllTypes_0.validateConstDecoder.bind(hoisted_AllTypes_0),
+    hoisted_AllTypes_1.validateConstDecoder.bind(hoisted_AllTypes_1),
+    hoisted_AllTypes_2.validateConstDecoder.bind(hoisted_AllTypes_2),
+    hoisted_AllTypes_3.validateConstDecoder.bind(hoisted_AllTypes_3)
+], [
     hoisted_AllTypes_0.reportConstDecoder.bind(hoisted_AllTypes_0),
     hoisted_AllTypes_1.reportConstDecoder.bind(hoisted_AllTypes_1),
     hoisted_AllTypes_2.reportConstDecoder.bind(hoisted_AllTypes_2),
@@ -2081,6 +2292,9 @@ const hoisted_OtherEnum_3 = new AnyOfParser([
     hoisted_OtherEnum_1.parseConstDecoder.bind(hoisted_OtherEnum_1)
 ]);
 const hoisted_OtherEnum_4 = new AnyOfReporter([
+    hoisted_OtherEnum_0.validateConstDecoder.bind(hoisted_OtherEnum_0),
+    hoisted_OtherEnum_1.validateConstDecoder.bind(hoisted_OtherEnum_1)
+], [
     hoisted_OtherEnum_0.reportConstDecoder.bind(hoisted_OtherEnum_0),
     hoisted_OtherEnum_1.reportConstDecoder.bind(hoisted_OtherEnum_1)
 ]);
@@ -2102,6 +2316,10 @@ const hoisted_Arr2_4 = new AnyOfParser([
     hoisted_Arr2_2.parseConstDecoder.bind(hoisted_Arr2_2)
 ]);
 const hoisted_Arr2_5 = new AnyOfReporter([
+    hoisted_Arr2_0.validateConstDecoder.bind(hoisted_Arr2_0),
+    hoisted_Arr2_1.validateConstDecoder.bind(hoisted_Arr2_1),
+    hoisted_Arr2_2.validateConstDecoder.bind(hoisted_Arr2_2)
+], [
     hoisted_Arr2_0.reportConstDecoder.bind(hoisted_Arr2_0),
     hoisted_Arr2_1.reportConstDecoder.bind(hoisted_Arr2_1),
     hoisted_Arr2_2.reportConstDecoder.bind(hoisted_Arr2_2)
@@ -2117,6 +2335,9 @@ const hoisted_UnionWithEnumAccess_2 = new ObjectParser({
     "value": parseIdentity
 }, null);
 const hoisted_UnionWithEnumAccess_3 = new ObjectReporter({
+    "tag": hoisted_UnionWithEnumAccess_0.validateConstDecoder.bind(hoisted_UnionWithEnumAccess_0),
+    "value": validateString
+}, null, {
     "tag": hoisted_UnionWithEnumAccess_0.reportConstDecoder.bind(hoisted_UnionWithEnumAccess_0),
     "value": reportString
 }, null);
@@ -2130,6 +2351,9 @@ const hoisted_UnionWithEnumAccess_6 = new ObjectParser({
     "value": parseIdentity
 }, null);
 const hoisted_UnionWithEnumAccess_7 = new ObjectReporter({
+    "tag": hoisted_UnionWithEnumAccess_4.validateConstDecoder.bind(hoisted_UnionWithEnumAccess_4),
+    "value": validateNumber
+}, null, {
     "tag": hoisted_UnionWithEnumAccess_4.reportConstDecoder.bind(hoisted_UnionWithEnumAccess_4),
     "value": reportNumber
 }, null);
@@ -2143,6 +2367,9 @@ const hoisted_UnionWithEnumAccess_10 = new ObjectParser({
     "value": parseIdentity
 }, null);
 const hoisted_UnionWithEnumAccess_11 = new ObjectReporter({
+    "tag": hoisted_UnionWithEnumAccess_8.validateConstDecoder.bind(hoisted_UnionWithEnumAccess_8),
+    "value": validateBoolean
+}, null, {
     "tag": hoisted_UnionWithEnumAccess_8.reportConstDecoder.bind(hoisted_UnionWithEnumAccess_8),
     "value": reportBoolean
 }, null);
@@ -2161,6 +2388,10 @@ const hoisted_UnionWithEnumAccess_13 = new AnyOfParser([
     hoisted_UnionWithEnumAccess_10.parseObjectParser.bind(hoisted_UnionWithEnumAccess_10)
 ]);
 const hoisted_UnionWithEnumAccess_14 = new AnyOfReporter([
+    hoisted_UnionWithEnumAccess_1.validateObjectValidator.bind(hoisted_UnionWithEnumAccess_1),
+    hoisted_UnionWithEnumAccess_5.validateObjectValidator.bind(hoisted_UnionWithEnumAccess_5),
+    hoisted_UnionWithEnumAccess_9.validateObjectValidator.bind(hoisted_UnionWithEnumAccess_9)
+], [
     hoisted_UnionWithEnumAccess_3.reportObjectReporter.bind(hoisted_UnionWithEnumAccess_3),
     hoisted_UnionWithEnumAccess_7.reportObjectReporter.bind(hoisted_UnionWithEnumAccess_7),
     hoisted_UnionWithEnumAccess_11.reportObjectReporter.bind(hoisted_UnionWithEnumAccess_11)
@@ -2175,6 +2406,9 @@ const hoisted_Shape_2 = new ObjectParser({
     "radius": parseIdentity
 }, null);
 const hoisted_Shape_3 = new ObjectReporter({
+    "kind": hoisted_Shape_0.validateConstDecoder.bind(hoisted_Shape_0),
+    "radius": validateNumber
+}, null, {
     "kind": hoisted_Shape_0.reportConstDecoder.bind(hoisted_Shape_0),
     "radius": reportNumber
 }, null);
@@ -2188,6 +2422,9 @@ const hoisted_Shape_6 = new ObjectParser({
     "x": parseIdentity
 }, null);
 const hoisted_Shape_7 = new ObjectReporter({
+    "kind": hoisted_Shape_4.validateConstDecoder.bind(hoisted_Shape_4),
+    "x": validateNumber
+}, null, {
     "kind": hoisted_Shape_4.reportConstDecoder.bind(hoisted_Shape_4),
     "x": reportNumber
 }, null);
@@ -2203,6 +2440,10 @@ const hoisted_Shape_10 = new ObjectParser({
     "y": parseIdentity
 }, null);
 const hoisted_Shape_11 = new ObjectReporter({
+    "kind": hoisted_Shape_8.validateConstDecoder.bind(hoisted_Shape_8),
+    "x": validateNumber,
+    "y": validateNumber
+}, null, {
     "kind": hoisted_Shape_8.reportConstDecoder.bind(hoisted_Shape_8),
     "x": reportNumber,
     "y": reportNumber
@@ -2222,6 +2463,10 @@ const hoisted_Shape_13 = new AnyOfParser([
     hoisted_Shape_10.parseObjectParser.bind(hoisted_Shape_10)
 ]);
 const hoisted_Shape_14 = new AnyOfReporter([
+    hoisted_Shape_1.validateObjectValidator.bind(hoisted_Shape_1),
+    hoisted_Shape_5.validateObjectValidator.bind(hoisted_Shape_5),
+    hoisted_Shape_9.validateObjectValidator.bind(hoisted_Shape_9)
+], [
     hoisted_Shape_3.reportObjectReporter.bind(hoisted_Shape_3),
     hoisted_Shape_7.reportObjectReporter.bind(hoisted_Shape_7),
     hoisted_Shape_11.reportObjectReporter.bind(hoisted_Shape_11)
@@ -2236,6 +2481,9 @@ const hoisted_T3_2 = new ObjectParser({
     "x": parseIdentity
 }, null);
 const hoisted_T3_3 = new ObjectReporter({
+    "kind": hoisted_T3_0.validateConstDecoder.bind(hoisted_T3_0),
+    "x": validateNumber
+}, null, {
     "kind": hoisted_T3_0.reportConstDecoder.bind(hoisted_T3_0),
     "x": reportNumber
 }, null);
@@ -2251,6 +2499,10 @@ const hoisted_T3_6 = new ObjectParser({
     "y": parseIdentity
 }, null);
 const hoisted_T3_7 = new ObjectReporter({
+    "kind": hoisted_T3_4.validateConstDecoder.bind(hoisted_T3_4),
+    "x": validateNumber,
+    "y": validateNumber
+}, null, {
     "kind": hoisted_T3_4.reportConstDecoder.bind(hoisted_T3_4),
     "x": reportNumber,
     "y": reportNumber
@@ -2267,6 +2519,9 @@ const hoisted_T3_9 = new AnyOfParser([
     hoisted_T3_6.parseObjectParser.bind(hoisted_T3_6)
 ]);
 const hoisted_T3_10 = new AnyOfReporter([
+    hoisted_T3_1.validateObjectValidator.bind(hoisted_T3_1),
+    hoisted_T3_5.validateObjectValidator.bind(hoisted_T3_5)
+], [
     hoisted_T3_3.reportObjectReporter.bind(hoisted_T3_3),
     hoisted_T3_7.reportObjectReporter.bind(hoisted_T3_7)
 ]);
@@ -2278,6 +2533,8 @@ const hoisted_BObject_2 = new ObjectParser({
     "tag": hoisted_BObject_0.parseConstDecoder.bind(hoisted_BObject_0)
 }, null);
 const hoisted_BObject_3 = new ObjectReporter({
+    "tag": hoisted_BObject_0.validateConstDecoder.bind(hoisted_BObject_0)
+}, null, {
     "tag": hoisted_BObject_0.reportConstDecoder.bind(hoisted_BObject_0)
 }, null);
 const hoisted_DEF_0 = new ObjectValidator({
@@ -2287,12 +2544,14 @@ const hoisted_DEF_1 = new ObjectParser({
     "a": parseIdentity
 }, null);
 const hoisted_DEF_2 = new ObjectReporter({
+    "a": validateString
+}, null, {
     "a": reportString
 }, null);
 const hoisted_KDEF_0 = new ConstDecoder("a");
 const hoisted_ABC_0 = new ObjectValidator({}, null);
 const hoisted_ABC_1 = new ObjectParser({}, null);
-const hoisted_ABC_2 = new ObjectReporter({}, null);
+const hoisted_ABC_2 = new ObjectReporter({}, null, {}, null);
 const hoisted_K_0 = new AnyOfValidator([
     validators.KABC,
     validators.KDEF
@@ -2305,6 +2564,9 @@ const hoisted_K_1 = new AnyOfParser([
     parsers.KDEF
 ]);
 const hoisted_K_2 = new AnyOfReporter([
+    validators.KABC,
+    validators.KDEF
+], [
     reporters.KABC,
     reporters.KDEF
 ]);

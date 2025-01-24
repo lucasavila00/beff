@@ -506,7 +506,7 @@ impl DecoderFnGenerator<'_> {
             hoisted,
             vec![validators_arr.clone()],
             vec![
-                validators_arr,
+                validators_arr.clone(),
                 Expr::Array(ArrayLit {
                     span: DUMMY_SP,
                     elems: parsers
@@ -520,18 +520,21 @@ impl DecoderFnGenerator<'_> {
                         .collect(),
                 }),
             ],
-            vec![Expr::Array(ArrayLit {
-                span: DUMMY_SP,
-                elems: reporters
-                    .into_iter()
-                    .map(|it| {
-                        Some(ExprOrSpread {
-                            spread: None,
-                            expr: it.into(),
+            vec![
+                validators_arr,
+                Expr::Array(ArrayLit {
+                    span: DUMMY_SP,
+                    elems: reporters
+                        .into_iter()
+                        .map(|it| {
+                            Some(ExprOrSpread {
+                                spread: None,
+                                expr: it.into(),
+                            })
                         })
-                    })
-                    .collect(),
-            })],
+                        .collect(),
+                }),
+            ],
         )
     }
     fn generate_schema_code(
@@ -610,9 +613,9 @@ impl DecoderFnGenerator<'_> {
                 self.dynamic_schema_code(
                     "Array",
                     hoisted,
-                    vec![inner_val],
+                    vec![inner_val.clone()],
                     vec![inner_parser],
-                    vec![inner_reporter],
+                    vec![inner_val, inner_reporter],
                 )
             }
             JsonSchema::Tuple {
@@ -684,9 +687,14 @@ impl DecoderFnGenerator<'_> {
                 self.dynamic_schema_code(
                     "Tuple",
                     hoisted,
-                    vec![prefix_val_arr, item_validator],
+                    vec![prefix_val_arr.clone(), item_validator.clone()],
                     vec![prefix_parser_arr, item_parser],
-                    vec![prefix_reporter_arr, item_reporter],
+                    vec![
+                        prefix_val_arr,
+                        item_validator,
+                        prefix_reporter_arr,
+                        item_reporter,
+                    ],
                 )
             }
             JsonSchema::Object { vs, rest } => {
@@ -783,9 +791,9 @@ impl DecoderFnGenerator<'_> {
                 self.dynamic_schema_code(
                     "Object",
                     hoisted,
-                    vec![obj_validator, validator_rest],
+                    vec![obj_validator.clone(), validator_rest.clone()],
                     vec![obj_parser, parser_rest],
-                    vec![obj_reporter, reporter_rest],
+                    vec![obj_validator, validator_rest, obj_reporter, reporter_rest],
                 )
             }
 

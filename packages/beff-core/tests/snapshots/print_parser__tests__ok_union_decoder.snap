@@ -32,6 +32,9 @@ const hoisted_Alias_1 = new AnyOfParser([
     parseIdentity
 ]);
 const hoisted_Alias_2 = new AnyOfReporter([
+    validateString,
+    validateNumber
+], [
     reportString,
     reportNumber
 ]);

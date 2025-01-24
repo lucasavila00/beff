@@ -30,6 +30,9 @@ const hoisted_DiscriminatedUnion4_2 = new ObjectParser({
     "subType": hoisted_DiscriminatedUnion4_0.parseConstDecoder.bind(hoisted_DiscriminatedUnion4_0)
 }, null);
 const hoisted_DiscriminatedUnion4_3 = new ObjectReporter({
+    "a1": validateString,
+    "subType": hoisted_DiscriminatedUnion4_0.validateConstDecoder.bind(hoisted_DiscriminatedUnion4_0)
+}, null, {
     "a1": reportString,
     "subType": hoisted_DiscriminatedUnion4_0.reportConstDecoder.bind(hoisted_DiscriminatedUnion4_0)
 }, null);
@@ -43,6 +46,9 @@ const hoisted_DiscriminatedUnion4_6 = new ObjectParser({
     "type": hoisted_DiscriminatedUnion4_4.parseConstDecoder.bind(hoisted_DiscriminatedUnion4_4)
 }, null);
 const hoisted_DiscriminatedUnion4_7 = new ObjectReporter({
+    "a": hoisted_DiscriminatedUnion4_1.validateObjectValidator.bind(hoisted_DiscriminatedUnion4_1),
+    "type": hoisted_DiscriminatedUnion4_4.validateConstDecoder.bind(hoisted_DiscriminatedUnion4_4)
+}, null, {
     "a": hoisted_DiscriminatedUnion4_3.reportObjectReporter.bind(hoisted_DiscriminatedUnion4_3),
     "type": hoisted_DiscriminatedUnion4_4.reportConstDecoder.bind(hoisted_DiscriminatedUnion4_4)
 }, null);
@@ -56,6 +62,9 @@ const hoisted_DiscriminatedUnion4_10 = new ObjectParser({
     "subType": hoisted_DiscriminatedUnion4_8.parseConstDecoder.bind(hoisted_DiscriminatedUnion4_8)
 }, null);
 const hoisted_DiscriminatedUnion4_11 = new ObjectReporter({
+    "a2": validateString,
+    "subType": hoisted_DiscriminatedUnion4_8.validateConstDecoder.bind(hoisted_DiscriminatedUnion4_8)
+}, null, {
     "a2": reportString,
     "subType": hoisted_DiscriminatedUnion4_8.reportConstDecoder.bind(hoisted_DiscriminatedUnion4_8)
 }, null);
@@ -69,6 +78,9 @@ const hoisted_DiscriminatedUnion4_14 = new ObjectParser({
     "type": hoisted_DiscriminatedUnion4_12.parseConstDecoder.bind(hoisted_DiscriminatedUnion4_12)
 }, null);
 const hoisted_DiscriminatedUnion4_15 = new ObjectReporter({
+    "a": hoisted_DiscriminatedUnion4_9.validateObjectValidator.bind(hoisted_DiscriminatedUnion4_9),
+    "type": hoisted_DiscriminatedUnion4_12.validateConstDecoder.bind(hoisted_DiscriminatedUnion4_12)
+}, null, {
     "a": hoisted_DiscriminatedUnion4_11.reportObjectReporter.bind(hoisted_DiscriminatedUnion4_11),
     "type": hoisted_DiscriminatedUnion4_12.reportConstDecoder.bind(hoisted_DiscriminatedUnion4_12)
 }, null);
@@ -84,6 +96,9 @@ const hoisted_DiscriminatedUnion4_17 = new AnyOfParser([
     hoisted_DiscriminatedUnion4_14.parseObjectParser.bind(hoisted_DiscriminatedUnion4_14)
 ]);
 const hoisted_DiscriminatedUnion4_18 = new AnyOfReporter([
+    hoisted_DiscriminatedUnion4_5.validateObjectValidator.bind(hoisted_DiscriminatedUnion4_5),
+    hoisted_DiscriminatedUnion4_13.validateObjectValidator.bind(hoisted_DiscriminatedUnion4_13)
+], [
     hoisted_DiscriminatedUnion4_7.reportObjectReporter.bind(hoisted_DiscriminatedUnion4_7),
     hoisted_DiscriminatedUnion4_15.reportObjectReporter.bind(hoisted_DiscriminatedUnion4_15)
 ]);
