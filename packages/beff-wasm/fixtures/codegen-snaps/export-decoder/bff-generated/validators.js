@@ -59,6 +59,7 @@ function deepmergeConstructor(options) {
     const result = Object.keys(value);
     const keys = Object.getOwnPropertySymbols(value);
     for (let i = 0, il = keys.length; i < il; ++i) {
+      
       propertyIsEnumerable.call(value, keys[i]) && result.push(keys[i]);
     }
     return result;
@@ -169,7 +170,29 @@ function deepmergeConstructor(options) {
 
   return options?.all ? _deepmergeAll : _deepmerge;
 }
-const deepmerge = deepmergeConstructor({ all: true });
+
+function deepmergeArray(options) {
+  const deepmerge = options.deepmerge;
+  const clone = options.clone;
+  return function (target, source) {
+    let i = 0;
+    const tl = target.length;
+    const sl = source.length;
+    const il = Math.max(target.length, source.length);
+    const result = new Array(il);
+    for (i = 0; i < il; ++i) {
+      if (i < sl) {
+        result[i] = deepmerge(target[i], source[i]);
+      } else {
+        result[i] = clone(target[i]);
+      }
+    }
+    return result;
+  };
+}
+
+const deepmerge = deepmergeConstructor({ all: true, mergeArray: deepmergeArray });
+
 const customFormatters = {};
 
 function registerCustomFormatter(name, validator) {
@@ -689,10 +712,13 @@ class AnyOfReporter {
   }
   reportAnyOfReporter(ctx, input) {
     const acc = [];
+    const oldPaths = ctx.path;
+    ctx.path = [];
     for (const v of this.reporters) {
       const errors = v(ctx, input);
       acc.push(...errors);
     }
+    ctx.path = oldPaths;
     return buildUnionError(ctx, acc, input);
   }
 }
