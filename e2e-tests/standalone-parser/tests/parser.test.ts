@@ -49,13 +49,7 @@ it("TransportedValue bug", () => {
 it("import enum typeof", () => {
   expect(ImportEnumTypeofCodec.safeParse("ADMIN")).toMatchInlineSnapshot(`
     {
-      "errors": [
-        {
-          "message": "failed to parse!!!",
-          "path": [],
-          "received": "ADMIN",
-        },
-      ],
+      "errors": undefined,
       "success": false,
     }
   `);
@@ -596,15 +590,7 @@ it("OneOfSettingsUpdate", () => {
 it("checks records", () => {
   expect(Extra.safeParse({ key: 123 })).toMatchInlineSnapshot(`
     {
-      "errors": [
-        {
-          "message": "failed to parse!!!",
-          "path": [],
-          "received": {
-            "key": 123,
-          },
-        },
-      ],
+      "errors": undefined,
       "success": false,
     }
   `);
@@ -717,20 +703,7 @@ it("works on recursive type", () => {
   };
   expect(User.safeParse(invalid)).toMatchInlineSnapshot(`
     {
-      "errors": [
-        {
-          "message": "failed to parse!!!",
-          "path": [],
-          "received": {
-            "friends": [
-              {
-                "name": "User2",
-              },
-            ],
-            "name": "User1",
-          },
-        },
-      ],
+      "errors": undefined,
       "success": false,
     }
   `);

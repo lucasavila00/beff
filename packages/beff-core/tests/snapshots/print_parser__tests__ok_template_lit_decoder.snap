@@ -8,10 +8,16 @@ function ValidateAlias(ctx, input) {
 function ParseAlias(ctx, input) {
     return (hoisted_Alias_0.parseRegexDecoder.bind(hoisted_Alias_0))(ctx, input);
 }
+function ReportAlias(ctx, input) {
+    return (hoisted_Alias_0.reportRegexDecoder.bind(hoisted_Alias_0))(ctx, input);
+}
 const validators = {
     Alias: ValidateAlias
 };
 const parsers = {
     Alias: ParseAlias
+};
+const reporters = {
+    Alias: ReportAlias
 };
 const hoisted_Alias_0 = new RegexDecoder(/(\d+(\.\d+)?)(__)(\d+(\.\d+)?)/, "${number}__${number}");

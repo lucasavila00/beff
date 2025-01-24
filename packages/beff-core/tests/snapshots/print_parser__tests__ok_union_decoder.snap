@@ -8,11 +8,17 @@ function ValidateAlias(ctx, input) {
 function ParseAlias(ctx, input) {
     return (hoisted_Alias_1.parseAnyOfParser.bind(hoisted_Alias_1))(ctx, input);
 }
+function ReportAlias(ctx, input) {
+    return (hoisted_Alias_2.reportAnyOfReporter.bind(hoisted_Alias_2))(ctx, input);
+}
 const validators = {
     Alias: ValidateAlias
 };
 const parsers = {
     Alias: ParseAlias
+};
+const reporters = {
+    Alias: ReportAlias
 };
 const hoisted_Alias_0 = new AnyOfValidator([
     validateString,
@@ -24,4 +30,8 @@ const hoisted_Alias_1 = new AnyOfParser([
 ], [
     parseIdentity,
     parseIdentity
+]);
+const hoisted_Alias_2 = new AnyOfReporter([
+    reportString,
+    reportNumber
 ]);

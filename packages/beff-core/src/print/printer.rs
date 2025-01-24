@@ -53,6 +53,7 @@ pub trait ToWritableModules {
 pub struct DecodersCode {
     pub validator: Expr,
     pub parser: Expr,
+    pub reporter: Expr,
 }
 
 fn build_decoders(
@@ -62,8 +63,13 @@ fn build_decoders(
 ) -> DecodersCode {
     let mut validator_exprs: Vec<_> = vec![];
     let mut parser_exprs: Vec<_> = vec![];
+    let mut report_exprs: Vec<_> = vec![];
     for decoder in decs {
-        let SchemaCode { validator, parser } = decoder::validator_for_schema(
+        let SchemaCode {
+            validator,
+            parser,
+            reporter,
+        } = decoder::validator_for_schema(
             &decoder.schema,
             validators,
             hoisted,
@@ -71,10 +77,12 @@ fn build_decoders(
         );
         validator_exprs.push((decoder.exported_name.clone(), validator));
         parser_exprs.push((decoder.exported_name.clone(), parser));
+        report_exprs.push((decoder.exported_name.clone(), reporter));
     }
 
     validator_exprs.sort_by(|(a, _), (b, _)| a.cmp(b));
     parser_exprs.sort_by(|(a, _), (b, _)| a.cmp(b));
+    report_exprs.sort_by(|(a, _), (b, _)| a.cmp(b));
 
     let validator = Expr::Object(ObjectLit {
         span: DUMMY_SP,
@@ -116,7 +124,31 @@ fn build_decoders(
             .collect(),
     });
 
-    DecodersCode { validator, parser }
+    let reporter = Expr::Object(ObjectLit {
+        span: DUMMY_SP,
+        props: report_exprs
+            .into_iter()
+            .map(|(key, value)| {
+                PropOrSpread::Prop(
+                    Prop::KeyValue(KeyValueProp {
+                        key: PropName::Str(Str {
+                            span: DUMMY_SP,
+                            value: key.into(),
+                            raw: None,
+                        }),
+                        value: value.into(),
+                    })
+                    .into(),
+                )
+            })
+            .collect(),
+    });
+
+    DecodersCode {
+        validator,
+        parser,
+        reporter,
+    }
 }
 
 fn merge_named_schema(parser: Option<&Vec<NamedSchema>>) -> Result<Vec<NamedSchema>> {
@@ -150,7 +182,11 @@ impl ToWritableModules for ExtractResult {
         for comp in &named_schemas {
             schema_names.push(comp.name.clone());
             let mut local_hoisted = vec![];
-            let SchemaCodeFunctions { validator, parser } = decoder::func_validator_for_schema(
+            let SchemaCodeFunctions {
+                validator,
+                parser,
+                reporter,
+            } = decoder::func_validator_for_schema(
                 &comp.schema,
                 &named_schemas,
                 &mut local_hoisted,
@@ -177,6 +213,17 @@ impl ToWritableModules for ExtractResult {
                 function: parser.into(),
             })));
             stmt_named_schemas.push(parser_fn_decl);
+
+            let reporter_fn_decl = ModuleItem::Stmt(Stmt::Decl(Decl::Fn(FnDecl {
+                ident: Ident {
+                    span: DUMMY_SP,
+                    sym: format!("Report{}", comp.name).into(),
+                    optional: false,
+                },
+                declare: false,
+                function: reporter.into(),
+            })));
+            stmt_named_schemas.push(reporter_fn_decl);
 
             hoisted.extend(local_hoisted.into_iter());
         }
@@ -232,6 +279,34 @@ impl ToWritableModules for ExtractResult {
             }),
         ));
 
+        stmt_named_schemas.push(const_decl(
+            "reporters",
+            Expr::Object(ObjectLit {
+                span: DUMMY_SP,
+                props: schema_names
+                    .into_iter()
+                    .map(|it| {
+                        PropOrSpread::Prop(
+                            Box::new(Prop::KeyValue(KeyValueProp {
+                                key: PropName::Ident(Ident {
+                                    span: DUMMY_SP,
+                                    sym: it.clone().into(),
+                                    optional: false,
+                                }),
+                                value: Expr::Ident(Ident {
+                                    span: DUMMY_SP,
+                                    sym: format!("Report{}", it).into(),
+                                    optional: false,
+                                })
+                                .into(),
+                            }))
+                            .into(),
+                        )
+                    })
+                    .collect(),
+            }),
+        ));
+
         let js_validators = emit_module(
             stmt_named_schemas
                 .into_iter()
@@ -246,15 +321,26 @@ impl ToWritableModules for ExtractResult {
             let mut parser_hoisted = vec![];
             let decoders = parser.built_decoders.unwrap_or_default();
 
-            let DecodersCode { validator, parser } =
-                build_decoders(&decoders, &named_schemas, &mut parser_hoisted);
+            let DecodersCode {
+                validator,
+                parser,
+                reporter,
+            } = build_decoders(&decoders, &named_schemas, &mut parser_hoisted);
             let build_validators_input = const_decl("buildValidatorsInput", validator);
             let build_parsers_input = const_decl("buildParsersInput", parser);
+            let build_reporters_input = const_decl("buildReportersInput", reporter);
 
             js_built_parsers = Some(emit_module(
                 parser_hoisted
                     .into_iter()
-                    .chain(vec![build_validators_input, build_parsers_input].into_iter())
+                    .chain(
+                        vec![
+                            build_validators_input,
+                            build_parsers_input,
+                            build_reporters_input,
+                        ]
+                        .into_iter(),
+                    )
                     .collect(),
                 "\n",
             )?);

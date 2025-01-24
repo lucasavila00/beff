@@ -30,6 +30,18 @@ const decodersExported = [
   "validateNull",
   "validateNever",
   "parseIdentity",
+  "AnyOfReporter",
+  "AllOfReporter",
+  "reportString",
+  "reportNumber",
+  "reportNull",
+  "reportBoolean",
+  "reportAny",
+  "reportNever",
+  "reportFunction",
+  "ArrayReporter",
+  "ObjectReporter",
+  "TupleReporter",
 ];
 
 const esmTag = (mod: ProjectModule) => {
@@ -46,7 +58,7 @@ Object.defineProperty(exports, "__esModule", {
 const exportCode = (mod: ProjectModule) => (mod === "esm" ? "export default" : "exports.default =");
 
 const finalizeValidatorsCode = (wasmCode: WritableModules, mod: ProjectModule) => {
-  const exportedItems = [...decodersExported, "validators", "parsers"].join(", ");
+  const exportedItems = [...decodersExported, "validators", "parsers", "reporters"].join(", ");
   const exports = [exportCode(mod), `{ ${exportedItems} };`].join(" ");
   return [
     "//@ts-nocheck\n/* eslint-disable */\n",
@@ -58,7 +70,7 @@ const finalizeValidatorsCode = (wasmCode: WritableModules, mod: ProjectModule) =
 };
 
 const importValidators = (mod: ProjectModule) => {
-  const i = [...decodersExported, "validators", "parsers", "c"].join(", ");
+  const i = [...decodersExported, "validators", "parsers", "reporters", "c"].join(", ");
 
   const importRest =
     mod === "esm"

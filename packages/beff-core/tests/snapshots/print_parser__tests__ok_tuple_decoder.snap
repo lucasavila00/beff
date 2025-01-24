@@ -8,11 +8,17 @@ function ValidateAlias(ctx, input) {
 function ParseAlias(ctx, input) {
     return (hoisted_Alias_1.parseTupleParser.bind(hoisted_Alias_1))(ctx, input);
 }
+function ReportAlias(ctx, input) {
+    return (hoisted_Alias_2.reportTupleReporter.bind(hoisted_Alias_2))(ctx, input);
+}
 const validators = {
     Alias: ValidateAlias
 };
 const parsers = {
     Alias: ParseAlias
+};
+const reporters = {
+    Alias: ReportAlias
 };
 const hoisted_Alias_0 = new TupleValidator([
     validateNumber,
@@ -21,4 +27,8 @@ const hoisted_Alias_0 = new TupleValidator([
 const hoisted_Alias_1 = new TupleParser([
     parseIdentity,
     parseIdentity
+], null);
+const hoisted_Alias_2 = new TupleReporter([
+    reportNumber,
+    reportNumber
 ], null);

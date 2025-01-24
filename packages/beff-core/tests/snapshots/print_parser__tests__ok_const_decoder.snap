@@ -8,11 +8,16 @@ function ValidateAlias(ctx, input) {
 function ParseAlias(ctx, input) {
     return (hoisted_Alias_0.parseConstDecoder.bind(hoisted_Alias_0))(ctx, input);
 }
+function ReportAlias(ctx, input) {
+    return (hoisted_Alias_0.reportConstDecoder.bind(hoisted_Alias_0))(ctx, input);
+}
 const validators = {
     Alias: ValidateAlias
 };
 const parsers = {
     Alias: ParseAlias
 };
+const reporters = {
+    Alias: ReportAlias
+};
 const hoisted_Alias_0 = new ConstDecoder("some_string_const");
-

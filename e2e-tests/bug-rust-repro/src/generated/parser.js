@@ -4,13 +4,16 @@
 
 import {printErrors} from '@beff/client';
 import {z} from 'zod';
-import validatorsMod from "./validators.js"; const { registerCustomFormatter, ObjectValidator, ObjectParser, ArrayParser, ArrayValidator, CodecDecoder, StringWithFormatDecoder, AnyOfValidator, AnyOfParser, AllOfValidator, AllOfParser, TupleParser, TupleValidator, RegexDecoder, ConstDecoder, AnyOfConstsDecoder, AnyOfDiscriminatedDecoder, validateString, validateNumber, validateFunction, validateBoolean, validateAny, validateNull, validateNever, parseIdentity, validators, parsers, c } = validatorsMod;
+import validatorsMod from "./validators.js"; const { registerCustomFormatter, ObjectValidator, ObjectParser, ArrayParser, ArrayValidator, CodecDecoder, StringWithFormatDecoder, AnyOfValidator, AnyOfParser, AllOfValidator, AllOfParser, TupleParser, TupleValidator, RegexDecoder, ConstDecoder, AnyOfConstsDecoder, AnyOfDiscriminatedDecoder, validateString, validateNumber, validateFunction, validateBoolean, validateAny, validateNull, validateNever, parseIdentity, AnyOfReporter, AllOfReporter, reportString, reportNumber, reportNull, reportBoolean, reportAny, reportNever, reportFunction, ArrayReporter, ObjectReporter, TupleReporter, validators, parsers, reporters, c } = validatorsMod;
 const RequiredCustomFormats = ["ValidCurrency"];
 const buildValidatorsInput = {
     "A": validators.A
 };
 const buildParsersInput = {
     "A": parsers.A
+};
+const buildReportersInput = {
+    "A": reporters.A
 };
 
 
@@ -40,9 +43,10 @@ function buildParsers(args) {
       if (options?.disallowExtraProperties ?? false) {
         throw new Error("disallowExtraProperties not supported");
       }
-      const ok = v(null, input);
+      const ctx = null;
+      const ok = v(ctx, input);
       if (typeof ok !== "boolean") {
-        throw new Error("DEBUG: Expected boolean");
+        throw new Error("INTERNAL ERROR: Expected boolean");
       }
       return ok;
     };
@@ -57,18 +61,16 @@ function buildParsers(args) {
       if (ok) {
         
         let p = buildParsersInput[k];
-        const parsed = p(null, input);
+        let ctx = null;
+        const parsed = p(ctx, input);
         return { success: true, data: parsed };
       }
+      
+      let e = buildReportersInput[k];
+      let ctx = {};
       return {
         success: false,
-        errors: [
-          {
-            message: "failed to parse!!!",
-            path: [],
-            received: input,
-          },
-        ],
+        errors: e(ctx, input),
       };
     };
     const parse = (input, options) => {
@@ -76,10 +78,9 @@ function buildParsers(args) {
       if (safe.success) {
         return safe.data;
       }
-      const error = new Error(`Failed to parse ${k}`);
       
-      error.errors = safe.errors;
-      throw error;
+      const explained = printErrors(safe.errors, []);
+      throw new Error(`Failed to parse ${k} - ${explained}`);
     };
     const zod = () => {
       

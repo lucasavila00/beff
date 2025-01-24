@@ -8,9 +8,15 @@ function ValidateAlias(ctx, input) {
 function ParseAlias(ctx, input) {
     return (parseIdentity)(ctx, input);
 }
+function ReportAlias(ctx, input) {
+    return (reportString)(ctx, input);
+}
 const validators = {
     Alias: ValidateAlias
 };
 const parsers = {
     Alias: ParseAlias
+};
+const reporters = {
+    Alias: ReportAlias
 };

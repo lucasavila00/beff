@@ -10,6 +10,16 @@ function registerCustomFormatter(name, validator) {
   customFormatters[name] = validator;
 }
 
+function pushPath(ctx, key) {}
+function popPath(ctx) {}
+function buildError(ctx, message, received) {
+  return {
+    message,
+    path: [...ctx.path],
+    received,
+  };
+}
+
 function parseIdentity(ctx, input) {
   return input;
 }
@@ -18,27 +28,59 @@ function validateString(ctx, input) {
   return typeof input === "string";
 }
 
+function reportString(ctx, input) {
+  return buildError(ctx, "expected string", input);
+}
+
 function validateNumber(ctx, input) {
   return typeof input === "number";
+}
+
+function reportNumber(ctx, input) {
+  return buildError(ctx, "expected number", input);
 }
 
 function validateBoolean(ctx, input) {
   return typeof input === "boolean";
 }
+
+function reportBoolean(ctx, input) {
+  return buildError(ctx, "expected boolean", input);
+}
+
 function validateAny(ctx, input) {
   return true;
 }
+
+function reportAny(ctx, input) {
+  return buildError(ctx, "expected any", input);
+}
+
 function validateNull(ctx, input) {
   if (input == null) {
     return true;
   }
   return false;
 }
+
+function reportNull(ctx, input) {
+  return buildError(ctx, "expected nullish", input);
+}
+
 function validateNever(ctx, input) {
   return false;
 }
+
+function reportNever(ctx, input) {
+  return buildError(ctx, "expected never", input);
+}
+
 function validateFunction(ctx, input) {
   return typeof input === "function";
+}
+
+function reportFunction(ctx, input) {
+  return buildError(ctx, "expected function", input);
 }
 
 class ConstDecoder {
@@ -52,6 +94,10 @@ class ConstDecoder {
 
   parseConstDecoder(ctx, input) {
     return input;
+  }
+
+  reportConstDecoder(ctx, input) {
+    throw new Error("Not implemented");
   }
 }
 
@@ -70,6 +116,10 @@ class RegexDecoder {
 
   parseRegexDecoder(ctx, input) {
     return input;
+  }
+
+  reportRegexDecoder(ctx, input) {
+    throw new Error("Not implemented");
   }
 }
 
@@ -105,7 +155,26 @@ class ObjectValidator {
     return false;
   }
 }
+class ObjectReporter {
+  constructor(data, rest) {
+    this.data = data;
+    this.rest = rest;
+  }
 
+  reportObjectReporter(ctx, input) {
+    let acc = [];
+
+    for (const k in this.data) {
+      throw new Error("Not implemented obj data");
+    }
+
+    if (this.rest != null) {
+      throw new Error("Not implemented obj rest");
+    }
+
+    return acc;
+  }
+}
 class ObjectParser {
   constructor(data, rest) {
     this.data = data;
@@ -161,6 +230,16 @@ class ArrayValidator {
   }
 }
 
+class ArrayReporter {
+  constructor(innerReporter) {
+    this.innerReporter = innerReporter;
+  }
+
+  reportArrayReporter(ctx, input) {
+    throw new Error("Not implemented");
+  }
+}
+
 class CodecDecoder {
   constructor(codec) {
     this.codec = codec;
@@ -168,47 +247,20 @@ class CodecDecoder {
   validateCodecDecoder(ctx, input) {
     switch (this.codec) {
       case "Codec::ISO8061": {
-        const d = new Date(input);
-        return !isNaN(d.getTime());
+        return input instanceof Date;
       }
       case "Codec::BigInt": {
-        if (typeof input === "bigint") {
-          return true;
-        }
-        if (typeof input === "number") {
-          return true;
-        }
-        if (typeof input === "string") {
-          try {
-            BigInt(input);
-            return true;
-          } catch (e) {
-            
-          }
-        }
-        return false;
+        return typeof input === "bigint";
       }
     }
     return false;
   }
   parseCodecDecoder(ctx, input) {
-    switch (this.codec) {
-      case "Codec::ISO8061": {
-        return new Date(input);
-      }
-      case "Codec::BigInt": {
-        if (typeof input === "bigint") {
-          return input;
-        }
-        if (typeof input === "number") {
-          return BigInt(input);
-        }
-        if (typeof input === "string") {
-          return BigInt(input);
-        }
-        throw new Error("Codec::BigInt: invalid input");
-      }
-    }
+    return input;
+  }
+
+  reportCodecDecoder(ctx, input) {
+    throw new Error("Not implemented");
   }
 }
 
@@ -298,6 +350,15 @@ class AnyOfParser {
     throw new Error("No parsers matched");
   }
 }
+class AnyOfReporter {
+  constructor(vs) {
+    this.vs = vs;
+  }
+  reportAnyOfReporter(ctx, input) {
+    throw new Error("Not implemented");
+  }
+}
+
 class AllOfValidator {
   constructor(vs) {
     this.vs = vs;
@@ -331,6 +392,16 @@ class AllOfParser {
     return acc;
   }
 }
+
+class AllOfReporter {
+  constructor(vs) {
+    this.vs = vs;
+  }
+  reportAllOfReporter(ctx, input) {
+    throw new Error("Not implemented");
+  }
+}
+
 class TupleValidator {
   constructor(prefix, rest) {
     this.prefix = prefix;
@@ -373,6 +444,16 @@ class TupleParser {
   }
 }
 
+class TupleReporter {
+  constructor(prefix, rest) {
+    this.prefix = prefix;
+    this.rest = rest;
+  }
+  reportTupleReporter(ctx, input) {
+    throw new Error("Not implemented");
+  }
+}
+
 
 function ValidateA(ctx, input) {
     return (validateString)(ctx, input);
@@ -380,11 +461,17 @@ function ValidateA(ctx, input) {
 function ParseA(ctx, input) {
     return (parseIdentity)(ctx, input);
 }
+function ReportA(ctx, input) {
+    return (reportString)(ctx, input);
+}
 const validators = {
     A: ValidateA
 };
 const parsers = {
     A: ParseA
 };
+const reporters = {
+    A: ReportA
+};
 
-export default { registerCustomFormatter, ObjectValidator, ObjectParser, ArrayParser, ArrayValidator, CodecDecoder, StringWithFormatDecoder, AnyOfValidator, AnyOfParser, AllOfValidator, AllOfParser, TupleParser, TupleValidator, RegexDecoder, ConstDecoder, AnyOfConstsDecoder, AnyOfDiscriminatedDecoder, validateString, validateNumber, validateFunction, validateBoolean, validateAny, validateNull, validateNever, parseIdentity, validators, parsers };
+export default { registerCustomFormatter, ObjectValidator, ObjectParser, ArrayParser, ArrayValidator, CodecDecoder, StringWithFormatDecoder, AnyOfValidator, AnyOfParser, AllOfValidator, AllOfParser, TupleParser, TupleValidator, RegexDecoder, ConstDecoder, AnyOfConstsDecoder, AnyOfDiscriminatedDecoder, validateString, validateNumber, validateFunction, validateBoolean, validateAny, validateNull, validateNever, parseIdentity, AnyOfReporter, AllOfReporter, reportString, reportNumber, reportNull, reportBoolean, reportAny, reportNever, reportFunction, ArrayReporter, ObjectReporter, TupleReporter, validators, parsers, reporters };

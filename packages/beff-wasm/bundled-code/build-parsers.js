@@ -25,9 +25,10 @@ function buildParsers(args) {
       if (options?.disallowExtraProperties ?? false) {
         throw new Error("disallowExtraProperties not supported");
       }
-      const ok = v(null, input);
+      const ctx = null;
+      const ok = v(ctx, input);
       if (typeof ok !== "boolean") {
-        throw new Error("DEBUG: Expected boolean");
+        throw new Error("INTERNAL ERROR: Expected boolean");
       }
       return ok;
     };
@@ -42,18 +43,16 @@ function buildParsers(args) {
       if (ok) {
         //@ts-ignore
         let p = buildParsersInput[k];
-        const parsed = p(null, input);
+        let ctx = null;
+        const parsed = p(ctx, input);
         return { success: true, data: parsed };
       }
+      //@ts-ignore
+      let e = buildReportersInput[k];
+      let ctx = {};
       return {
         success: false,
-        errors: [
-          {
-            message: "failed to parse!!!",
-            path: [],
-            received: input,
-          },
-        ],
+        errors: e(ctx, input),
       };
     };
     const parse = (input, options) => {
@@ -61,10 +60,9 @@ function buildParsers(args) {
       if (safe.success) {
         return safe.data;
       }
-      const error = new Error(`Failed to parse ${k}`);
       //@ts-ignore
-      error.errors = safe.errors;
-      throw error;
+      const explained = printErrors(safe.errors, []);
+      throw new Error(`Failed to parse ${k} - ${explained}`);
     };
     const zod = () => {
       //@ts-ignore

@@ -4,7 +4,7 @@
 
 import {printErrors} from '@beff/client';
 import {z} from 'zod';
-import validatorsMod from "./validators.js"; const { registerCustomFormatter, ObjectValidator, ObjectParser, ArrayParser, ArrayValidator, CodecDecoder, StringWithFormatDecoder, AnyOfValidator, AnyOfParser, AllOfValidator, AllOfParser, TupleParser, TupleValidator, RegexDecoder, ConstDecoder, AnyOfConstsDecoder, AnyOfDiscriminatedDecoder, validateString, validateNumber, validateFunction, validateBoolean, validateAny, validateNull, validateNever, parseIdentity, validators, parsers, c } = validatorsMod;
+import validatorsMod from "./validators.js"; const { registerCustomFormatter, ObjectValidator, ObjectParser, ArrayParser, ArrayValidator, CodecDecoder, StringWithFormatDecoder, AnyOfValidator, AnyOfParser, AllOfValidator, AllOfParser, TupleParser, TupleValidator, RegexDecoder, ConstDecoder, AnyOfConstsDecoder, AnyOfDiscriminatedDecoder, validateString, validateNumber, validateFunction, validateBoolean, validateAny, validateNull, validateNever, parseIdentity, AnyOfReporter, AllOfReporter, reportString, reportNumber, reportNull, reportBoolean, reportAny, reportNever, reportFunction, ArrayReporter, ObjectReporter, TupleReporter, validators, parsers, reporters, c } = validatorsMod;
 const RequiredCustomFormats = ["ValidCurrency"];
 const hoisted_BigIntCodec_0 = new CodecDecoder("Codec::BigInt");
 const hoisted_TupleCodec_1 = new TupleValidator([
@@ -17,22 +17,35 @@ const hoisted_TupleCodec_2 = new TupleParser([
     parseIdentity,
     parseIdentity
 ], null);
-const hoisted_TupleCodecRest_3 = new TupleValidator([
+const hoisted_TupleCodec_3 = new TupleReporter([
+    reportNumber,
+    reportNumber,
+    reportNumber
+], null);
+const hoisted_TupleCodecRest_4 = new TupleValidator([
     validateNumber,
     validateNumber
 ], validateString);
-const hoisted_TupleCodecRest_4 = new TupleParser([
+const hoisted_TupleCodecRest_5 = new TupleParser([
     parseIdentity,
     parseIdentity
 ], parseIdentity);
-const hoisted_StringArrCodec_5 = new ArrayValidator(validateString);
-const hoisted_StringArrCodec_6 = new ArrayParser(parseIdentity);
-const hoisted_ImportEnumTypeof_7 = new ConstDecoder("a");
-const hoisted_ImportEnumTypeof_8 = new ObjectValidator({
-    "A": hoisted_ImportEnumTypeof_7.validateConstDecoder.bind(hoisted_ImportEnumTypeof_7)
+const hoisted_TupleCodecRest_6 = new TupleReporter([
+    reportNumber,
+    reportNumber
+], reportString);
+const hoisted_StringArrCodec_7 = new ArrayValidator(validateString);
+const hoisted_StringArrCodec_8 = new ArrayParser(parseIdentity);
+const hoisted_StringArrCodec_9 = new ArrayReporter(reportString);
+const hoisted_ImportEnumTypeof_10 = new ConstDecoder("a");
+const hoisted_ImportEnumTypeof_11 = new ObjectValidator({
+    "A": hoisted_ImportEnumTypeof_10.validateConstDecoder.bind(hoisted_ImportEnumTypeof_10)
 }, null);
-const hoisted_ImportEnumTypeof_9 = new ObjectParser({
-    "A": hoisted_ImportEnumTypeof_7.parseConstDecoder.bind(hoisted_ImportEnumTypeof_7)
+const hoisted_ImportEnumTypeof_12 = new ObjectParser({
+    "A": hoisted_ImportEnumTypeof_10.parseConstDecoder.bind(hoisted_ImportEnumTypeof_10)
+}, null);
+const hoisted_ImportEnumTypeof_13 = new ObjectReporter({
+    "A": hoisted_ImportEnumTypeof_10.reportConstDecoder.bind(hoisted_ImportEnumTypeof_10)
 }, null);
 const buildValidatorsInput = {
     "AObject": validators.AObject,
@@ -52,7 +65,7 @@ const buildValidatorsInput = {
     "DiscriminatedUnion3": validators.DiscriminatedUnion3,
     "DiscriminatedUnion4": validators.DiscriminatedUnion4,
     "Extra": validators.Extra,
-    "ImportEnumTypeof": hoisted_ImportEnumTypeof_8.validateObjectValidator.bind(hoisted_ImportEnumTypeof_8),
+    "ImportEnumTypeof": hoisted_ImportEnumTypeof_11.validateObjectValidator.bind(hoisted_ImportEnumTypeof_11),
     "K": validators.K,
     "KABC": validators.KABC,
     "KDEF": validators.KDEF,
@@ -69,11 +82,11 @@ const buildValidatorsInput = {
     "Req": validators.Req,
     "RequiredPartialObject": validators.RequiredPartialObject,
     "SettingsUpdate": validators.SettingsUpdate,
-    "StringArrCodec": hoisted_StringArrCodec_5.validateArrayValidator.bind(hoisted_StringArrCodec_5),
+    "StringArrCodec": hoisted_StringArrCodec_7.validateArrayValidator.bind(hoisted_StringArrCodec_7),
     "T3": validators.T3,
     "TransportedValue": validators.TransportedValue,
     "TupleCodec": hoisted_TupleCodec_1.validateTupleValidator.bind(hoisted_TupleCodec_1),
-    "TupleCodecRest": hoisted_TupleCodecRest_3.validateTupleValidator.bind(hoisted_TupleCodecRest_3),
+    "TupleCodecRest": hoisted_TupleCodecRest_4.validateTupleValidator.bind(hoisted_TupleCodecRest_4),
     "UnionWithEnumAccess": validators.UnionWithEnumAccess,
     "User": validators.User,
     "ValidCurrency": validators.ValidCurrency,
@@ -98,7 +111,7 @@ const buildParsersInput = {
     "DiscriminatedUnion3": parsers.DiscriminatedUnion3,
     "DiscriminatedUnion4": parsers.DiscriminatedUnion4,
     "Extra": parsers.Extra,
-    "ImportEnumTypeof": hoisted_ImportEnumTypeof_9.parseObjectParser.bind(hoisted_ImportEnumTypeof_9),
+    "ImportEnumTypeof": hoisted_ImportEnumTypeof_12.parseObjectParser.bind(hoisted_ImportEnumTypeof_12),
     "K": parsers.K,
     "KABC": parsers.KABC,
     "KDEF": parsers.KDEF,
@@ -115,16 +128,62 @@ const buildParsersInput = {
     "Req": parsers.Req,
     "RequiredPartialObject": parsers.RequiredPartialObject,
     "SettingsUpdate": parsers.SettingsUpdate,
-    "StringArrCodec": hoisted_StringArrCodec_6.parseArrayParser.bind(hoisted_StringArrCodec_6),
+    "StringArrCodec": hoisted_StringArrCodec_8.parseArrayParser.bind(hoisted_StringArrCodec_8),
     "T3": parsers.T3,
     "TransportedValue": parsers.TransportedValue,
     "TupleCodec": hoisted_TupleCodec_2.parseTupleParser.bind(hoisted_TupleCodec_2),
-    "TupleCodecRest": hoisted_TupleCodecRest_4.parseTupleParser.bind(hoisted_TupleCodecRest_4),
+    "TupleCodecRest": hoisted_TupleCodecRest_5.parseTupleParser.bind(hoisted_TupleCodecRest_5),
     "UnionWithEnumAccess": parsers.UnionWithEnumAccess,
     "User": parsers.User,
     "ValidCurrency": parsers.ValidCurrency,
     "Version": parsers.Version,
     "Version2": parsers.Version2
+};
+const buildReportersInput = {
+    "AObject": reporters.AObject,
+    "AccessLevel": reporters.AccessLevel,
+    "AccessLevelCodec": reporters.AccessLevel,
+    "AccessLevelTpl": reporters.AccessLevelTpl,
+    "AccessLevelTpl2": reporters.AccessLevelTpl2,
+    "AllTs": reporters.AllTs,
+    "AllTypes": reporters.AllTypes,
+    "Arr2C": reporters.Arr2,
+    "Arr3": reporters.Arr3,
+    "AvatarSize": reporters.AvatarSize,
+    "BObject": reporters.BObject,
+    "BigIntCodec": hoisted_BigIntCodec_0.reportCodecDecoder.bind(hoisted_BigIntCodec_0),
+    "DiscriminatedUnion": reporters.DiscriminatedUnion,
+    "DiscriminatedUnion2": reporters.DiscriminatedUnion2,
+    "DiscriminatedUnion3": reporters.DiscriminatedUnion3,
+    "DiscriminatedUnion4": reporters.DiscriminatedUnion4,
+    "Extra": reporters.Extra,
+    "ImportEnumTypeof": hoisted_ImportEnumTypeof_13.reportObjectReporter.bind(hoisted_ImportEnumTypeof_13),
+    "K": reporters.K,
+    "KABC": reporters.KABC,
+    "KDEF": reporters.KDEF,
+    "LevelAndDSettings": reporters.LevelAndDSettings,
+    "Mapped": reporters.Mapped,
+    "MappedOptional": reporters.MappedOptional,
+    "OmitSettings": reporters.OmitSettings,
+    "OnlyAKey": reporters.OnlyAKey,
+    "OtherEnum": reporters.OtherEnum,
+    "PartialObject": reporters.PartialObject,
+    "PartialSettings": reporters.PartialSettings,
+    "PublicUser": reporters.PublicUser,
+    "Repro1": reporters.Repro1,
+    "Req": reporters.Req,
+    "RequiredPartialObject": reporters.RequiredPartialObject,
+    "SettingsUpdate": reporters.SettingsUpdate,
+    "StringArrCodec": hoisted_StringArrCodec_9.reportArrayReporter.bind(hoisted_StringArrCodec_9),
+    "T3": reporters.T3,
+    "TransportedValue": reporters.TransportedValue,
+    "TupleCodec": hoisted_TupleCodec_3.reportTupleReporter.bind(hoisted_TupleCodec_3),
+    "TupleCodecRest": hoisted_TupleCodecRest_6.reportTupleReporter.bind(hoisted_TupleCodecRest_6),
+    "UnionWithEnumAccess": reporters.UnionWithEnumAccess,
+    "User": reporters.User,
+    "ValidCurrency": reporters.ValidCurrency,
+    "Version": reporters.Version,
+    "Version2": reporters.Version2
 };
 
 
@@ -154,9 +213,10 @@ function buildParsers(args) {
       if (options?.disallowExtraProperties ?? false) {
         throw new Error("disallowExtraProperties not supported");
       }
-      const ok = v(null, input);
+      const ctx = null;
+      const ok = v(ctx, input);
       if (typeof ok !== "boolean") {
-        throw new Error("DEBUG: Expected boolean");
+        throw new Error("INTERNAL ERROR: Expected boolean");
       }
       return ok;
     };
@@ -171,18 +231,16 @@ function buildParsers(args) {
       if (ok) {
         
         let p = buildParsersInput[k];
-        const parsed = p(null, input);
+        let ctx = null;
+        const parsed = p(ctx, input);
         return { success: true, data: parsed };
       }
+      
+      let e = buildReportersInput[k];
+      let ctx = {};
       return {
         success: false,
-        errors: [
-          {
-            message: "failed to parse!!!",
-            path: [],
-            received: input,
-          },
-        ],
+        errors: e(ctx, input),
       };
     };
     const parse = (input, options) => {
@@ -190,10 +248,9 @@ function buildParsers(args) {
       if (safe.success) {
         return safe.data;
       }
-      const error = new Error(`Failed to parse ${k}`);
       
-      error.errors = safe.errors;
-      throw error;
+      const explained = printErrors(safe.errors, []);
+      throw new Error(`Failed to parse ${k} - ${explained}`);
     };
     const zod = () => {
       
