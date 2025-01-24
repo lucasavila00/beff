@@ -687,10 +687,19 @@ mod tests {
         ));
     }
     #[test]
-    fn ok_tpl_lit_decoder() {
+    fn ok_template_lit_decoder() {
         insta::assert_snapshot!(decoder(
             r#"
         export type Alias = `${number}__${number}`
+        parse.buildParsers<{ Dec: Alias }>();
+      "#
+        ));
+    }
+    #[test]
+    fn ok_tuple_decoder() {
+        insta::assert_snapshot!(decoder(
+            r#"
+        export type Alias = [number, number]
         parse.buildParsers<{ Dec: Alias }>();
       "#
         ));

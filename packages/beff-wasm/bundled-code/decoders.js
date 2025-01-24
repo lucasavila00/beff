@@ -231,19 +231,22 @@ class AllOfDecoder {
   }
 }
 class TupleDecoder {
-  constructor(vs) {
-    this.vs = vs;
+  constructor(prefix_val_arr, prefix_parser_arr, item_validator, item_parser) {
+    this.prefixValidator = prefix_val_arr;
+    this.prefixParser = prefix_parser_arr;
+    this.itemsValidator = item_validator;
+    this.itemParser = item_parser;
   }
   validateTupleDecoder(ctx, input) {
     if (Array.isArray(input)) {
       let idx = 0;
-      for (const prefixVal of this.vs.prefix) {
+      for (const prefixVal of this.prefixValidator) {
         if (!prefixVal(ctx, input[idx])) {
           return false;
         }
         idx++;
       }
-      const itemVal = this.vs.items;
+      const itemVal = this.itemsValidator;
       if (itemVal != null) {
         for (let i = idx; i < input.length; i++) {
           if (!itemVal(ctx, input[i])) {

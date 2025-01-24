@@ -468,50 +468,60 @@ impl DecoderFnGenerator<'_> {
                 prefix_items,
                 items,
             } => {
-                // let tpl_extra = Expr::Object(ObjectLit {
-                //     span: DUMMY_SP,
-                //     props: vec![
-                //         PropOrSpread::Prop(
-                //             Prop::KeyValue(KeyValueProp {
-                //                 key: PropName::Ident(Ident {
-                //                     span: DUMMY_SP,
-                //                     sym: "prefix".into(),
-                //                     optional: false,
-                //                 }),
-                //                 value: Box::new(Expr::Array(ArrayLit {
-                //                     span: DUMMY_SP,
-                //                     elems: prefix_items
-                //                         .iter()
-                //                         .map(|it| {
-                //                             Some(ExprOrSpread {
-                //                                 spread: None,
-                //                                 expr: self.decode_expr(it, hoisted).into(),
-                //                             })
-                //                         })
-                //                         .collect(),
-                //                 })),
-                //             })
-                //             .into(),
-                //         ),
-                //         PropOrSpread::Prop(
-                //             Prop::KeyValue(KeyValueProp {
-                //                 key: PropName::Ident(Ident {
-                //                     span: DUMMY_SP,
-                //                     sym: "items".into(),
-                //                     optional: false,
-                //                 }),
-                //                 value: Box::new(match items {
-                //                     Some(v) => self.decode_expr(v, hoisted),
-                //                     None => Expr::Lit(Lit::Null(Null { span: DUMMY_SP })),
-                //                 }),
-                //             })
-                //             .into(),
-                //         ),
-                //     ],
-                // });
-
-                // self.new_hoisted_decoder(hoisted, "TupleDecoder", vec![tpl_extra])
-                todo!()
+                let mut prefix_validators: Vec<Expr> = vec![];
+                let mut prefix_parsers: Vec<Expr> = vec![];
+                let mut item_validator = Expr::Lit(Lit::Null(Null { span: DUMMY_SP }));
+                let mut item_parser = Expr::Lit(Lit::Null(Null { span: DUMMY_SP }));
+                for p in prefix_items {
+                    let SchemaCode {
+                        validator: val,
+                        parser: par,
+                    } = self.generate_schema_code(p, hoisted);
+                    prefix_validators.push(val);
+                    prefix_parsers.push(par);
+                }
+                if let Some(items) = items {
+                    let SchemaCode {
+                        validator: val,
+                        parser: par,
+                    } = self.generate_schema_code(items, hoisted);
+                    item_validator = val;
+                    item_parser = par;
+                }
+                let prefix_val_arr = Expr::Array(ArrayLit {
+                    span: DUMMY_SP,
+                    elems: prefix_validators
+                        .into_iter()
+                        .map(|it| {
+                            Some(ExprOrSpread {
+                                spread: None,
+                                expr: it.into(),
+                            })
+                        })
+                        .collect(),
+                });
+                let prefix_parser_arr = Expr::Array(ArrayLit {
+                    span: DUMMY_SP,
+                    elems: prefix_parsers
+                        .into_iter()
+                        .map(|it| {
+                            Some(ExprOrSpread {
+                                spread: None,
+                                expr: it.into(),
+                            })
+                        })
+                        .collect(),
+                });
+                self.new_hoisted_decoder(
+                    hoisted,
+                    "TupleDecoder",
+                    vec![
+                        prefix_val_arr,
+                        prefix_parser_arr,
+                        item_validator,
+                        item_parser,
+                    ],
+                )
             }
             // JsonSchema::Object { vs, rest } => {
             //     let obj_to_hoist = Expr::Object(ObjectLit {
