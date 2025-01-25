@@ -36,7 +36,7 @@ impl SubOps for bool {
         if self == other {
             SubtypeResult::Bot
         } else {
-            SubtypeResult::Proper(Box::new(*self))
+            SubtypeResult::Proper(self.clone().into())
         }
     }
 
@@ -64,14 +64,6 @@ pub struct StringSubtype {
 }
 
 impl StringSubtype {
-    pub fn to_option(self) -> Option<StringSubtype> {
-        if self.values.is_empty() {
-            None
-        } else {
-            Some(self)
-        }
-    }
-
     pub fn to_subtype_result(self) -> SubtypeResult<StringSubtype> {
         if self.values.is_empty() {
             SubtypeResult::Bot
@@ -89,33 +81,7 @@ impl SubOps for StringSubtype {
         }
     }
     fn sub_diff(&self, other: &Self) -> SubtypeResult<Self> {
-        let StringSubtype {
-            allowed: a1,
-            values: v1,
-        } = self;
-        let StringSubtype {
-            allowed: a2,
-            values: v2,
-        } = other;
-        (match (a1, !a2) {
-            (true, true) => StringSubtype {
-                allowed: true,
-                values: vec_intersect(v1, v2),
-            },
-            (false, false) => StringSubtype {
-                allowed: false,
-                values: vec_union(v1, v2),
-            },
-            (true, false) => StringSubtype {
-                allowed: true,
-                values: vec_diff(v1, v2),
-            },
-            (false, true) => StringSubtype {
-                allowed: true,
-                values: vec_diff(v2, v1),
-            },
-        })
-        .to_subtype_result()
+        self.sub_intersect(&other.sub_complement())
     }
 
     fn sub_intersect(&self, other: &Self) -> SubtypeResult<Self> {
