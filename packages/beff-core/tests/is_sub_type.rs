@@ -419,5 +419,28 @@ mod tests {
           | (Not<Array<boolean>> & Not<Array<number>>)
           | (() => void);
         "###);
+
+        let and_back_again = union_complement.union(&st1).union(&st2);
+
+        let comp_schema = schemer
+            .convert_to_schema(&and_back_again, None)
+            .expect("should work");
+        let out = print_ts_types(vec![("test".to_owned(), comp_schema.to_ts_type())]);
+        insta::assert_snapshot!(out, @r###"
+        type test =
+          | null
+          | boolean
+          | string
+          | number
+          | { [key: string]: any }
+          | Array<boolean>
+          | Array<number>
+          | (Not<Array<boolean>> & Not<Array<number>>)
+          | (() => void);
+        "###);
+
+        assert!(and_back_again.is_same_type(&SemTypeContext::unknown().into(), &mut ctx));
+
+        assert!(and_back_again.is_any(&mut ctx));
     }
 }

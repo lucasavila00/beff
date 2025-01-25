@@ -260,8 +260,8 @@ impl SemType {
     pub fn is_never(&self) -> bool {
         self.all == 0 && self.subtype_data.is_empty()
     }
-    pub fn is_any(&self) -> bool {
-        self.all == VAL
+    pub fn is_any(self: &Rc<Self>, ctx: &mut SemTypeContext) -> bool {
+        SemTypeOps::is_same_type(self, &Rc::new(SemType::new_unknown()), ctx)
     }
     pub fn new_basic(all: BasicTypeBitSet) -> SemType {
         SemType {

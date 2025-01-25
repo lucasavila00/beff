@@ -185,7 +185,7 @@ impl<'a, 'b> SchemerContext<'a, 'b> {
 
         let rest = if mt.rest.is_empty(self.ctx.0) {
             bail!("rest should not be empty, all records are open")
-        } else if mt.rest.is_any() {
+        } else if mt.rest.is_any(self.ctx.0) {
             None
         } else {
             let schema = self.convert_to_schema(&mt.rest, None)?;
@@ -292,7 +292,7 @@ impl<'a, 'b> SchemerContext<'a, 'b> {
 
     fn list_atom_schema(&mut self, mt: &Rc<ListAtomic>) -> anyhow::Result<JsonSchema> {
         if mt.prefix_items.is_empty() {
-            if mt.items.is_any() {
+            if mt.items.is_any(&mut self.ctx.0) {
                 return Ok(JsonSchema::AnyArrayLike);
             }
             return Ok(JsonSchema::Array(Box::new(
