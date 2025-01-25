@@ -3,8 +3,10 @@ mod tests {
 
     use beff_core::{
         ast::json_schema::{JsonSchema, JsonSchemaConst},
+        schema_changes::print_ts_types,
         subtyping::{
             semtype::{SemTypeContext, SemTypeOps},
+            to_schema::SchemerContext,
             ToSemType,
         },
         NamedSchema,
@@ -356,5 +358,32 @@ mod tests {
 
         let res = schema_is_sub_type(&t2, &t1, &definitions, &definitions);
         assert!(!res);
+    }
+    #[test]
+    fn array3() {
+        let definitions = vec![];
+
+        let t1 = JsonSchema::Array(JsonSchema::String.into());
+        let mut ctx = SemTypeContext::new();
+        let st = t1.to_sem_type(&definitions, &mut ctx).expect("should work");
+
+        let comp = st.complement();
+        let mut counter = 0;
+        let mut schemer = SchemerContext::new(&mut ctx, &mut counter);
+
+        let comp_schema = schemer.convert_to_schema(&comp, None).expect("should work");
+
+        let out = print_ts_types(vec![("test".to_owned(), comp_schema.to_ts_type())]);
+
+        insta::assert_snapshot!(out, @r###"
+        type test =
+          | null
+          | boolean
+          | string
+          | number
+          | { [key: string]: any }
+          | Not<Array<string>>
+          | (() => void);
+        "###);
     }
 }

@@ -57,7 +57,7 @@ impl SubOps for bool {
     }
 }
 
-#[derive(Clone)]
+#[derive(Clone, PartialEq, Eq, PartialOrd, Ord, Debug)]
 pub struct StringSubtype {
     pub allowed: bool,
     pub values: Vec<String>,
@@ -70,6 +70,10 @@ impl StringSubtype {
         } else {
             SubtypeResult::Proper(self.into())
         }
+    }
+
+    fn is_never(&self) -> bool {
+        self.values.is_empty()
     }
 }
 
@@ -147,63 +151,115 @@ impl SubOps for StringSubtype {
     }
 }
 
-#[derive(Clone)]
-pub struct ListSubtype {}
+#[derive(Clone, PartialEq, Eq, PartialOrd, Ord, Debug)]
+pub struct ListSubtypeItem {
+    pub allowed: bool,
+    pub rest: Ty,
+}
+
+impl ListSubtypeItem {
+    fn is_never(&self) -> bool {
+        self.rest.is_never()
+    }
+}
+
+#[derive(Clone, PartialEq, Eq, PartialOrd, Ord, Debug)]
+pub struct ListSubtype {
+    pub items: Vec<ListSubtypeItem>,
+}
 
 impl ListSubtype {
     pub fn new_from_rest_ty(ty: Ty) -> Self {
-        todo!()
+        ListSubtype {
+            items: vec![ListSubtypeItem {
+                rest: ty,
+                allowed: true,
+            }],
+        }
     }
 
-    fn is_empty(&self) -> bool {
-        todo!()
+    fn is_never(&self) -> bool {
+        self.items.iter().all(|i| i.is_never())
     }
 
     fn display(&self) -> String {
-        // let mut inner = vec![];
-        // for i in &l.items {
-        //     let r = i.rest.display_impl(false);
-        //     inner.push(format!("list[{}]", r));
-        // }
+        let mut inner = vec![];
 
-        // inner.join(" | ")
+        for i in &self.items {
+            if i.allowed {
+                inner.push(format!("list[{}]", i.rest.display()));
+            } else {
+                inner.push(format!("(list - list[{}])", i.rest.display()));
+            }
+        }
 
-        todo!()
+        inner.join(" | ")
     }
 }
 
 impl SubOps for ListSubtype {
     fn sub_complement(&self) -> Self {
-        todo!()
+        ListSubtype {
+            items: self
+                .items
+                .iter()
+                .map(|i| ListSubtypeItem {
+                    allowed: !i.allowed,
+                    rest: i.rest.clone(),
+                })
+                .collect(),
+        }
     }
     fn sub_diff(&self, other: &Self) -> SubtypeResult<Self> {
-        todo!()
+        self.sub_intersect(&other.sub_complement())
     }
 
     fn sub_intersect(&self, other: &Self) -> SubtypeResult<Self> {
-        // SubtypeResult::Proper(
-        //     ListSubtype {
-        //         items: vec_intersect(&self.items, &other.items),
-        //     }
-        //     .into(),
-        // )
+        let mut items = vec![];
 
-        todo!()
+        for a in &self.items {
+            for b in &other.items {
+                let out = match (a.allowed, b.allowed) {
+                    (true, true) => ListSubtypeItem {
+                        allowed: true,
+                        rest: a.rest.intersect(&b.rest),
+                    },
+                    (true, false) => ListSubtypeItem {
+                        allowed: true,
+                        rest: a.rest.diff(&b.rest),
+                    },
+                    (false, true) => ListSubtypeItem {
+                        allowed: true,
+                        rest: b.rest.diff(&a.rest),
+                    },
+                    (false, false) => ListSubtypeItem {
+                        allowed: false,
+                        rest: a.rest.union(&b.rest),
+                    },
+                };
+                if out.is_never() {
+                    continue;
+                }
+
+                items.push(out);
+            }
+        }
+
+        SubtypeResult::Proper(ListSubtype { items }.into())
     }
 
     fn sub_union(&self, other: &Self) -> SubtypeResult<Self> {
-        // SubtypeResult::Proper(
-        //     ListSubtype {
-        //         items: vec_union(&self.items, &other.items),
-        //     }
-        //     .into(),
-        // )
-        todo!()
+        SubtypeResult::Proper(
+            ListSubtype {
+                items: vec_union(&self.items, &other.items),
+            }
+            .into(),
+        )
     }
 }
 
 #[bitfield(u8)]
-#[derive(Eq, PartialEq)]
+#[derive(PartialEq, Eq, PartialOrd, Ord)]
 pub struct TypeBitSet {
     pub boolean: bool,
     pub number: bool,
@@ -230,7 +286,7 @@ impl TypeBitSet {
     }
 }
 
-#[derive(Clone)]
+#[derive(Clone, PartialEq, Eq, PartialOrd, Ord, Debug)]
 pub struct SubtypeData {
     pub boolean: Option<bool>,
     pub string: Option<StringSubtype>,
@@ -246,15 +302,15 @@ impl SubtypeData {
         }
     }
 
-    pub fn is_empty(&self) -> bool {
+    pub fn is_never(&self) -> bool {
         self.boolean.is_none()
             && match &self.string {
                 None => true,
-                Some(s) => s.values.is_empty(),
+                Some(s) => s.is_never(),
             }
             && match &self.list {
                 None => true,
-                Some(s) => s.is_empty(),
+                Some(s) => s.is_never(),
             }
     }
 
@@ -349,16 +405,13 @@ impl SubtypeData {
     }
 }
 
-#[derive(Clone)]
+#[derive(Clone, PartialEq, Eq, PartialOrd, Ord, Debug)]
 pub struct Ty {
     pub all: TypeBitSet,
     pub subtype_data: SubtypeData,
 }
 
 impl Ty {
-    pub fn is_never(&self) -> bool {
-        self.all == TypeBitSet::new_none() && self.subtype_data.is_empty()
-    }
     pub fn is_unknown(&self) -> bool {
         self.all == TypeBitSet::new_every()
     }
@@ -367,12 +420,12 @@ impl Ty {
         self.subtype_data.some_as_bitset()
     }
 
-    pub fn is_empty(&self) -> bool {
+    pub fn is_never(&self) -> bool {
         if self.all.into_bits() != 0 {
             return false;
         }
 
-        self.subtype_data.is_empty()
+        self.subtype_data.is_never()
     }
 
     pub fn complement(&self) -> Ty {
@@ -380,7 +433,7 @@ impl Ty {
     }
     pub fn is_subtype(&self, b: &Ty) -> bool {
         let d = self.diff(b);
-        d.is_empty()
+        d.is_never()
     }
 
     pub fn is_same_type(&self, b: &Ty) -> bool {
@@ -611,7 +664,7 @@ impl Ty {
         if let Some(s) = &self.subtype_data.string {
             if !s.allowed {
                 let joined = format!(
-                    "!({})",
+                    "(string - ({}))",
                     s.values
                         .iter()
                         .map(|v| format!("'{}'", v))
@@ -636,7 +689,7 @@ impl Ty {
         }
     }
     pub fn display(&self) -> String {
-        self.display_impl(true)
+        self.display_impl(false)
     }
 }
 
@@ -767,12 +820,12 @@ mod tests {
         assert!(a.is_subtype(&c));
         assert!(!c.is_subtype(&a));
 
-        insta::assert_snapshot!(a.display(), @"(boolean)");
-        insta::assert_snapshot!(b.display(), @"(number)");
-        insta::assert_snapshot!(c.display(), @"(boolean | number)");
+        insta::assert_snapshot!(a.display(), @"boolean");
+        insta::assert_snapshot!(b.display(), @"number");
+        insta::assert_snapshot!(c.display(), @"boolean | number");
 
-        insta::assert_snapshot!(c.diff(&a).display(), @"(number)");
-        insta::assert_snapshot!(b.diff(&a).display(), @"(number)");
+        insta::assert_snapshot!(c.diff(&a).display(), @"number");
+        insta::assert_snapshot!(b.diff(&a).display(), @"number");
     }
 
     #[test]
@@ -789,11 +842,11 @@ mod tests {
         assert!(!b.is_subtype(&t));
         assert!(!b.is_subtype(&f));
 
-        insta::assert_snapshot!(t.display(), @"(true)");
-        insta::assert_snapshot!(f.display(), @"(false)");
-        insta::assert_snapshot!(b.display(), @"(boolean)");
+        insta::assert_snapshot!(t.display(), @"true");
+        insta::assert_snapshot!(f.display(), @"false");
+        insta::assert_snapshot!(b.display(), @"boolean");
 
-        insta::assert_snapshot!(b.diff(&t).display(), @"(false)");
+        insta::assert_snapshot!(b.diff(&t).display(), @"false");
 
         assert!(t.intersect(&f).is_never());
 
@@ -806,29 +859,29 @@ mod tests {
     #[test]
     fn string_const() {
         let a = TC::new_string_const(vec!["a".to_string()]);
-        insta::assert_snapshot!(a.display(), @"('a')");
+        insta::assert_snapshot!(a.display(), @"'a'");
 
         let b = TC::new_string_const(vec!["b".to_string()]);
-        insta::assert_snapshot!(b.display(), @"('b')");
+        insta::assert_snapshot!(b.display(), @"'b'");
 
         let u = a.union(&b);
-        insta::assert_snapshot!(u.display(), @"('a' | 'b')");
+        insta::assert_snapshot!(u.display(), @"'a' | 'b'");
 
         let au = a.intersect(&u);
-        insta::assert_snapshot!(au.display(), @"('a')");
+        insta::assert_snapshot!(au.display(), @"'a'");
 
         let i = a.intersect(&b);
-        insta::assert_snapshot!(i.display(), @"()");
+        insta::assert_snapshot!(i.display(), @"");
         assert!(i.is_never());
 
         let d = a.diff(&b);
-        insta::assert_snapshot!(d.display(), @"('a')");
+        insta::assert_snapshot!(d.display(), @"'a'");
 
         let e = u.diff(&a);
-        insta::assert_snapshot!(e.display(), @"('b')");
+        insta::assert_snapshot!(e.display(), @"'b'");
 
         let c = a.complement();
-        insta::assert_snapshot!(c.display(), @"(boolean | number | null | list | map | function | !('a'))");
+        insta::assert_snapshot!(c.display(), @"boolean | number | null | list | map | function | (string - ('a'))");
     }
 
     #[test]
@@ -838,7 +891,7 @@ mod tests {
 
         let u = t.union(&a);
 
-        insta::assert_snapshot!(u.display(), @"(true | 'a')");
+        insta::assert_snapshot!(u.display(), @"true | 'a'");
     }
 
     #[test]
@@ -851,7 +904,7 @@ mod tests {
 
         let u = b.union(&a).union(&t);
 
-        insta::assert_snapshot!(u.display(), @"(boolean | 'a')");
+        insta::assert_snapshot!(u.display(), @"boolean | 'a'");
     }
 
     #[test]
@@ -861,22 +914,34 @@ mod tests {
 
         let u = b.union(&l);
 
-        insta::assert_snapshot!(u.display(), @"(boolean | list)");
+        insta::assert_snapshot!(u.display(), @"boolean | list");
 
         let list_bools = TC::new_parametric_list(b.clone());
-        insta::assert_snapshot!(list_bools.display(), @"(list[boolean])");
+        insta::assert_snapshot!(list_bools.display(), @"list[boolean]");
+        insta::assert_snapshot!(list_bools.complement().display(), @"boolean | number | string | null | map | function | (list - list[boolean])");
 
         let list_nulls = TC::new_parametric_list(TC::new_null());
         let u = list_bools.union(&list_nulls);
-        insta::assert_snapshot!(u.display(), @"(list[boolean] | list[null])");
+        insta::assert_snapshot!(u.display(), @"list[boolean] | list[null]");
 
         let intersected = u.intersect(&list_bools);
-        insta::assert_snapshot!(intersected.display(), @"(list[boolean])");
+        insta::assert_snapshot!(intersected.display(), @"list[boolean]");
 
         let diffed = u.diff(&list_bools);
-        insta::assert_snapshot!(diffed.display(), @"(list[null])");
+        insta::assert_snapshot!(diffed.display(), @"list[null]");
+    }
 
-        let complemented1 = list_bools.complement();
-        insta::assert_snapshot!(complemented1.display(), @"");
+    #[test]
+    fn list_of_bool_diff() {
+        let b = TC::new_boolean();
+        let list_bools = TC::new_parametric_list(b.clone());
+
+        let list_nulls = TC::new_parametric_list(TC::new_null());
+
+        let u = list_bools.union(&list_nulls);
+        insta::assert_snapshot!(u.display(), @"list[boolean] | list[null]");
+
+        let diffed = u.diff(&list_bools);
+        insta::assert_snapshot!(diffed.display(), @"list[null]");
     }
 }

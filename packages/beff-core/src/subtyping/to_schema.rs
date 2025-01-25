@@ -149,7 +149,7 @@ impl SemTypeResolverContext<'_> {
     }
 }
 
-struct SchemerContext<'a, 'b> {
+pub struct SchemerContext<'a, 'b> {
     ctx: SemTypeResolverContext<'a>,
 
     schemer_memo: BTreeMap<Rc<SemType>, SchemaMemo>,
@@ -160,7 +160,7 @@ struct SchemerContext<'a, 'b> {
 }
 
 impl<'a, 'b> SchemerContext<'a, 'b> {
-    fn new(ctx: &'a mut SemTypeContext, counter: &'b mut usize) -> Self {
+    pub fn new(ctx: &'a mut SemTypeContext, counter: &'b mut usize) -> Self {
         Self {
             ctx: SemTypeResolverContext(ctx),
             validators: vec![],

@@ -21,6 +21,7 @@
     "subtyping",
     "syntatically",
     "Unfound",
-    "Unserializeable"
+    "Unserializeable",
+    "negs"
   ]
 }
