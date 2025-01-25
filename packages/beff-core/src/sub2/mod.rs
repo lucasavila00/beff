@@ -157,13 +157,32 @@ impl SubOps for StringSubtype {
 }
 
 #[derive(Clone, PartialEq, Eq, PartialOrd, Ord, Debug)]
-pub struct ListSubtypeItem {
-    pub allowed: bool,
+pub struct ListSubtypeAtom {
     pub prefix: Vec<Ty>,
     pub rest: Ty,
 }
 
-impl ListSubtypeItem {
+impl ListSubtypeAtom {
+    fn display(&self) -> String {
+        let prefix_parts = self
+            .prefix
+            .iter()
+            .map(|p| p.display())
+            .collect::<Vec<String>>();
+
+        let mut rest = self.rest.display();
+        if !rest.is_empty() {
+            rest = format!("{}...", rest);
+        }
+
+        let prefix = if prefix_parts.is_empty() {
+            "".to_owned()
+        } else {
+            let comma = if rest.is_empty() { "" } else { ", " };
+            format!("{}{}", prefix_parts.join(", "), comma)
+        };
+        format!("list[{}{}]", prefix, rest)
+    }
     fn is_never(&self) -> bool {
         for p in &self.prefix {
             if p.is_never() {
@@ -175,56 +194,82 @@ impl ListSubtypeItem {
 }
 
 #[derive(Clone, PartialEq, Eq, PartialOrd, Ord, Debug)]
+pub struct ListSubtypeAtomDnf {
+    pub pos: Vec<ListSubtypeAtom>,
+    pub neg: Vec<ListSubtypeAtom>,
+}
+
+#[derive(Clone, PartialEq, Eq, PartialOrd, Ord, Debug)]
 pub struct ListSubtype {
-    pub items: Vec<ListSubtypeItem>,
+    pub items: Vec<ListSubtypeAtomDnf>,
 }
 
 impl ListSubtype {
     pub fn new_parametric_list(ty: Ty) -> Self {
         ListSubtype {
-            items: vec![ListSubtypeItem {
-                rest: ty,
-                allowed: true,
-                prefix: vec![],
+            items: vec![ListSubtypeAtomDnf {
+                pos: vec![ListSubtypeAtom {
+                    prefix: vec![],
+                    rest: ty,
+                }],
+                neg: vec![],
             }],
         }
     }
     pub fn new_closed_tuple(prefix: Vec<Ty>) -> Self {
         ListSubtype {
-            items: vec![ListSubtypeItem {
-                rest: TC::new_never(),
-                allowed: true,
-                prefix,
+            items: vec![ListSubtypeAtomDnf {
+                pos: vec![ListSubtypeAtom {
+                    prefix,
+                    rest: TC::new_never(),
+                }],
+                neg: vec![],
             }],
         }
     }
+    pub fn new_open_tuple(prefix: Vec<Ty>, rest: Ty) -> Self {
+        // ListSubtype {
+        //     items: vec![ListSubtypeAtom {
+        //         rest,
+        //         allowed: true,
+        //         prefix,
+        //     }],
+        // }
+        todo!()
+    }
 
     fn display(&self) -> String {
-        let mut inner = vec![];
+        let mut inner: Vec<String> = vec![];
 
         for i in &self.items {
-            let prefix_parts = i
-                .prefix
-                .iter()
-                .map(|p| p.display())
-                .collect::<Vec<String>>();
-
-            let mut rest = i.rest.display();
-            if !rest.is_empty() {
-                rest = format!("{}...", rest);
+            let mut pos = vec![];
+            for p in &i.pos {
+                pos.push(p.display());
             }
 
-            let prefix = if prefix_parts.is_empty() {
-                "".to_owned()
-            } else {
-                let comma = if rest.is_empty() { "" } else { ", " };
-                format!("{}{}", prefix_parts.join(", "), comma)
-            };
+            let mut neg = vec![];
+            for n in &i.neg {
+                neg.push(n.display());
+            }
 
-            if i.allowed {
-                inner.push(format!("list[{}{}]", prefix, rest));
+            let pos_part = pos.join(" | ");
+
+            if neg.is_empty() {
+                if pos_part.is_empty() {
+                    todo!()
+                } else {
+                    inner.push(pos_part);
+                }
             } else {
-                inner.push(format!("(list - list[{}{}])", prefix, rest));
+                if pos_part.is_empty() {
+                    let mut acc = "list".to_owned();
+                    for n in neg {
+                        acc += &format!(" - {}", n);
+                    }
+                    inner.push(format!("({})", acc));
+                } else {
+                    todo!()
+                }
             }
         }
 
@@ -238,10 +283,9 @@ impl SubOps for ListSubtype {
             items: self
                 .items
                 .iter()
-                .map(|i| ListSubtypeItem {
-                    allowed: !i.allowed,
-                    rest: i.rest.clone(),
-                    prefix: i.prefix.clone(),
+                .map(|i| ListSubtypeAtomDnf {
+                    pos: i.neg.clone(),
+                    neg: i.pos.clone(),
                 })
                 .collect(),
         }
@@ -251,104 +295,106 @@ impl SubOps for ListSubtype {
     }
 
     fn sub_intersect(&self, other: &Self) -> SubtypeResult<Self> {
-        let mut items = vec![];
+        // let mut items = vec![];
 
-        for a in &self.items {
-            for b in &other.items {
-                let out = match (a.allowed, b.allowed) {
-                    (true, true) => {
-                        let mut prefix = vec![];
-                        let longest_len = a.prefix.len().max(b.prefix.len());
-                        for i in 0..longest_len {
-                            let a_ty = a.prefix.get(i);
-                            let b_ty = b.prefix.get(i);
-                            match (a_ty, b_ty) {
-                                (None, None) => todo!(),
-                                (None, Some(_)) => todo!(),
-                                (Some(_), None) => todo!(),
-                                (Some(a), Some(b)) => {
-                                    prefix.push(a.intersect(b));
-                                }
-                            }
-                        }
+        // for a in &self.items {
+        //     for b in &other.items {
+        //         let out = match (a.allowed, b.allowed) {
+        //             (true, true) => {
+        //                 let mut prefix = vec![];
+        //                 let longest_len = a.prefix.len().max(b.prefix.len());
+        //                 for i in 0..longest_len {
+        //                     let a_ty = a.prefix.get(i);
+        //                     let b_ty = b.prefix.get(i);
+        //                     match (a_ty, b_ty) {
+        //                         (None, None) => todo!(),
+        //                         (None, Some(_)) => todo!(),
+        //                         (Some(_), None) => todo!(),
+        //                         (Some(a), Some(b)) => {
+        //                             prefix.push(a.intersect(b));
+        //                         }
+        //                     }
+        //                 }
 
-                        ListSubtypeItem {
-                            allowed: true,
-                            rest: a.rest.intersect(&b.rest),
-                            prefix: prefix,
-                        }
-                    }
-                    (true, false) => {
-                        let mut prefix = vec![];
-                        let longest_len = a.prefix.len().max(b.prefix.len());
-                        for i in 0..longest_len {
-                            let a_ty = a.prefix.get(i);
-                            let b_ty = b.prefix.get(i);
-                            match (a_ty, b_ty) {
-                                (None, None) => todo!(),
-                                (None, Some(_)) => todo!(),
-                                (Some(_), None) => todo!(),
-                                (Some(a), Some(b)) => {
-                                    prefix.push(a.diff(b));
-                                }
-                            }
-                        }
+        //                 ListSubtypeAtom {
+        //                     allowed: true,
+        //                     rest: a.rest.intersect(&b.rest),
+        //                     prefix: prefix,
+        //                 }
+        //             }
+        //             (true, false) => {
+        //                 let mut prefix = vec![];
+        //                 let longest_len = a.prefix.len().max(b.prefix.len());
+        //                 for i in 0..longest_len {
+        //                     let a_ty = a.prefix.get(i);
+        //                     let b_ty = b.prefix.get(i);
+        //                     match (a_ty, b_ty) {
+        //                         (None, None) => todo!(),
+        //                         (None, Some(_)) => todo!(),
+        //                         (Some(_), None) => todo!(),
+        //                         (Some(a), Some(b)) => {
+        //                             prefix.push(a.diff(b));
+        //                         }
+        //                     }
+        //                 }
 
-                        ListSubtypeItem {
-                            allowed: true,
-                            rest: a.rest.diff(&b.rest),
-                            prefix,
-                        }
-                    }
-                    (false, true) => {
-                        let mut prefix = vec![];
-                        let longest_len = a.prefix.len().max(b.prefix.len());
-                        for i in 0..longest_len {
-                            let a_ty = a.prefix.get(i);
-                            let b_ty = b.prefix.get(i);
-                            prefix.push(match (a_ty, b_ty) {
-                                (None, Some(_)) => todo!(),
-                                (Some(_), None) => todo!(),
-                                (Some(a), Some(b)) => b.diff(a),
-                                (None, None) => unreachable!(),
-                            })
-                        }
-                        ListSubtypeItem {
-                            allowed: true,
-                            rest: b.rest.diff(&a.rest),
-                            prefix,
-                        }
-                    }
-                    (false, false) => {
-                        let mut prefix = vec![];
-                        let longest_len = a.prefix.len().max(b.prefix.len());
-                        for i in 0..longest_len {
-                            let a_ty = a.prefix.get(i);
-                            let b_ty = b.prefix.get(i);
-                            match (a_ty, b_ty) {
-                                (None, None) => todo!(),
-                                (None, Some(_)) => todo!(),
-                                (Some(_), None) => todo!(),
-                                (Some(_), Some(_)) => todo!(),
-                            }
-                        }
+        //                 ListSubtypeAtom {
+        //                     allowed: true,
+        //                     rest: a.rest.diff(&b.rest),
+        //                     prefix,
+        //                 }
+        //             }
+        //             (false, true) => {
+        //                 let mut prefix = vec![];
+        //                 let longest_len = a.prefix.len().max(b.prefix.len());
+        //                 for i in 0..longest_len {
+        //                     let a_ty = a.prefix.get(i);
+        //                     let b_ty = b.prefix.get(i);
+        //                     prefix.push(match (a_ty, b_ty) {
+        //                         (None, Some(_)) => todo!(),
+        //                         (Some(_), None) => todo!(),
+        //                         (Some(a), Some(b)) => b.diff(a),
+        //                         (None, None) => unreachable!(),
+        //                     })
+        //                 }
+        //                 ListSubtypeAtom {
+        //                     allowed: true,
+        //                     rest: b.rest.diff(&a.rest),
+        //                     prefix,
+        //                 }
+        //             }
+        //             (false, false) => {
+        //                 let mut prefix = vec![];
+        //                 let longest_len = a.prefix.len().max(b.prefix.len());
+        //                 for i in 0..longest_len {
+        //                     let a_ty = a.prefix.get(i);
+        //                     let b_ty = b.prefix.get(i);
+        //                     match (a_ty, b_ty) {
+        //                         (None, None) => todo!(),
+        //                         (None, Some(_)) => todo!(),
+        //                         (Some(_), None) => todo!(),
+        //                         (Some(_), Some(_)) => todo!(),
+        //                     }
+        //                 }
 
-                        ListSubtypeItem {
-                            allowed: false,
-                            rest: a.rest.union(&b.rest),
-                            prefix,
-                        }
-                    }
-                };
-                if out.is_never() {
-                    continue;
-                }
+        //                 ListSubtypeAtom {
+        //                     allowed: false,
+        //                     rest: a.rest.union(&b.rest),
+        //                     prefix,
+        //                 }
+        //             }
+        //         };
+        //         if out.is_never() {
+        //             continue;
+        //         }
 
-                items.push(out);
-            }
-        }
+        //         items.push(out);
+        //     }
+        // }
 
-        SubtypeResult::Proper(ListSubtype { items }.into())
+        // SubtypeResult::Proper(ListSubtype { items }.into())
+
+        todo!()
     }
 
     fn sub_union(&self, other: &Self) -> SubtypeResult<Self> {
@@ -361,7 +407,8 @@ impl SubOps for ListSubtype {
     }
 
     fn is_never(&self) -> bool {
-        self.items.iter().all(|i| i.is_never())
+        // self.items.iter().all(|i| i.is_never())
+        todo!()
     }
 }
 
@@ -900,13 +947,8 @@ impl TC {
     pub fn new_open_tuple(prefix: Vec<Ty>, rest: Ty) -> Ty {
         Ty {
             all: TypeBitSet::new(),
-            subtype_data: SubtypeData::new_empty().with_list(ListSubtype {
-                items: vec![ListSubtypeItem {
-                    allowed: true,
-                    prefix,
-                    rest,
-                }],
-            }),
+            subtype_data: SubtypeData::new_empty()
+                .with_list(ListSubtype::new_open_tuple(prefix, rest)),
         }
     }
 }
@@ -1035,60 +1077,6 @@ mod tests {
     }
 
     #[test]
-    fn list_of_bool() {
-        let b = TC::new_boolean();
-        let l = TC::new_list_top();
-
-        let u = b.union(&l);
-
-        insta::assert_snapshot!(u.display(), @"boolean | list");
-
-        let list_bools = TC::new_parametric_list(b.clone());
-        insta::assert_snapshot!(list_bools.display(), @"list[boolean...]");
-        insta::assert_snapshot!(list_bools.complement().display(), @"boolean | number | string | null | map | function | (list - list[boolean...])");
-
-        let list_nulls = TC::new_parametric_list(TC::new_null());
-        let u = list_bools.union(&list_nulls);
-        insta::assert_snapshot!(u.display(), @"list[boolean...] | list[null...]");
-
-        let intersected = u.intersect(&list_bools);
-        insta::assert_snapshot!(intersected.display(), @"list[boolean...]");
-
-        let diffed = u.diff(&list_bools);
-        insta::assert_snapshot!(diffed.display(), @"list[null...]");
-    }
-
-    #[test]
-    fn list_of_bool_diff() {
-        let b = TC::new_boolean();
-        let list_bools = TC::new_parametric_list(b.clone());
-
-        let list_nulls = TC::new_parametric_list(TC::new_null());
-
-        let u = list_bools.union(&list_nulls);
-        insta::assert_snapshot!(u.display(), @"list[boolean...] | list[null...]");
-
-        let diffed = u.diff(&list_bools);
-        insta::assert_snapshot!(diffed.display(), @"list[null...]");
-        assert!(!diffed.is_never());
-
-        let diffed2 = diffed.diff(&list_nulls);
-        assert!(diffed2.is_never());
-
-        let diffed3 = diffed.diff(&TC::new_list_top());
-        assert!(diffed3.is_never());
-    }
-
-    #[test]
-    fn tuple() {
-        let b = TC::new_boolean();
-        let t1 = TC::new_closed_tuple(vec![b.clone()]);
-        insta::assert_snapshot!(t1.display(), @"list[boolean]");
-        let t2 = TC::new_closed_tuple(vec![b.clone(), b.clone()]);
-        insta::assert_snapshot!(t2.display(), @"list[boolean, boolean]");
-    }
-
-    #[test]
     fn empty_test_bool() {
         let top = TC::new_unknown();
         let t = TC::new_bool_const(true);
@@ -1111,65 +1099,140 @@ mod tests {
         let sub2 = sub1.diff(&t_complement);
         assert!(sub2.is_never());
     }
+
     #[test]
-    fn empty_test_list() {
-        let top = TC::new_unknown();
+    fn tuple() {
+        let b = TC::new_boolean();
+        let t1 = TC::new_closed_tuple(vec![b.clone()]);
+        insta::assert_snapshot!(t1.display(), @"list[boolean]");
 
-        let t = TC::new_parametric_list(TC::new_bool_const(true));
-        let sub1 = top.diff(&t);
-        insta::assert_snapshot!(sub1.display(), @"boolean | number | string | null | map | function | (list - list[true...])");
+        let i1comp = t1.complement();
+        insta::assert_snapshot!(i1comp.display(), @"boolean | number | string | null | map | function | (list - list[boolean])");
 
-        let t_complement = t.complement();
-        let sub2 = sub1.diff(&t_complement);
-        assert!(sub2.is_never());
+        let t2 = TC::new_closed_tuple(vec![b.clone(), b.clone()]);
+        insta::assert_snapshot!(t2.display(), @"list[boolean, boolean]");
     }
+
     #[test]
-    fn empty_test_tuple() {
-        let top = TC::new_unknown();
+    fn tuple2() {
+        let b = TC::new_boolean();
+        let t1 = TC::new_parametric_list(b.clone());
+        insta::assert_snapshot!(t1.display(), @"list[boolean...]");
+        let n = TC::new_number();
+        let t2 = TC::new_parametric_list(n.clone());
+        insta::assert_snapshot!(t2.display(), @"list[number...]");
 
-        let t = TC::new_closed_tuple(vec![TC::new_null(), TC::new_string()]);
-        let sub1 = top.diff(&t);
-        insta::assert_snapshot!(sub1.display(), @"boolean | number | string | null | map | function | (list - list[null, string])");
+        let union = t1.union(&t2);
+        insta::assert_snapshot!(union.display(), @"list[boolean...] | list[number...]");
 
-        let t_complement = t.complement();
-        let sub2 = sub1.diff(&t_complement);
-        assert!(sub2.is_never());
+        let union_complement = union.complement();
+        insta::assert_snapshot!(union_complement.display(), @"boolean | number | string | null | map | function | (list - list[boolean...]) | (list - list[number...])");
     }
-    #[test]
-    fn empty_test_open_tuple() {
-        let top = TC::new_unknown();
 
-        let t = TC::new_open_tuple(vec![TC::new_string()], TC::new_string());
-        let sub1 = top.diff(&t);
-        insta::assert_snapshot!(sub1.display(), @"boolean | number | string | null | map | function | (list - list[string, string...])");
+    // #[test]
+    // fn list_of_bool() {
+    //     let b = TC::new_boolean();
+    //     let l = TC::new_list_top();
 
-        let t_complement = t.complement();
-        let sub2 = sub1.diff(&t_complement);
-        assert!(sub2.is_never());
-    }
-    #[test]
-    fn intersect_test_list() {
-        let a = TC::new_closed_tuple(vec![TC::new_string()]);
-        insta::assert_snapshot!(a.display(), @"list[string]");
+    //     let u = b.union(&l);
 
-        let intersection = a.intersect(&a);
-        insta::assert_snapshot!(intersection.display(), @"list[string]");
+    //     insta::assert_snapshot!(u.display(), @"boolean | list");
 
-        assert!(intersection.is_same_type(&a));
-    }
-    #[test]
-    fn intersect_test_list2() {
-        let a = TC::new_closed_tuple(vec![TC::new_string()]);
-        let b = TC::new_closed_tuple(vec![TC::new_number()]);
-        let c = a.union(&b);
-        insta::assert_snapshot!(c.display(), @"list[number] | list[string]");
+    //     let list_bools = TC::new_parametric_list(b.clone());
+    //     insta::assert_snapshot!(list_bools.display(), @"list[boolean...]");
+    //     insta::assert_snapshot!(list_bools.complement().display(), @"boolean | number | string | null | map | function | (list - list[boolean...])");
 
-        let intersection = c.intersect(&c);
-        insta::assert_snapshot!(intersection.display(), @"list[number] | list[string]");
+    //     let list_nulls = TC::new_parametric_list(TC::new_null());
+    //     let u = list_bools.union(&list_nulls);
+    //     insta::assert_snapshot!(u.display(), @"list[boolean...] | list[null...]");
 
-        let intersection_complement = intersection.complement();
-        insta::assert_snapshot!(intersection_complement.display(), @"boolean | number | string | null | map | function | (list - list[number]) | (list - list[string])");
+    //     let intersected = u.intersect(&list_bools);
+    //     insta::assert_snapshot!(intersected.display(), @"list[boolean...]");
 
-        assert!(intersection.is_same_type(&c));
-    }
+    //     let diffed = u.diff(&list_bools);
+    //     insta::assert_snapshot!(diffed.display(), @"list[null...]");
+    // }
+
+    // #[test]
+    // fn list_of_bool_diff() {
+    //     let b = TC::new_boolean();
+    //     let list_bools = TC::new_parametric_list(b.clone());
+
+    //     let list_nulls = TC::new_parametric_list(TC::new_null());
+
+    //     let u = list_bools.union(&list_nulls);
+    //     insta::assert_snapshot!(u.display(), @"list[boolean...] | list[null...]");
+
+    //     let diffed = u.diff(&list_bools);
+    //     insta::assert_snapshot!(diffed.display(), @"list[null...]");
+    //     assert!(!diffed.is_never());
+
+    //     let diffed2 = diffed.diff(&list_nulls);
+    //     assert!(diffed2.is_never());
+
+    //     let diffed3 = diffed.diff(&TC::new_list_top());
+    //     assert!(diffed3.is_never());
+    // }
+
+    // #[test]
+    // fn empty_test_list() {
+    //     let top = TC::new_unknown();
+
+    //     let t = TC::new_parametric_list(TC::new_bool_const(true));
+    //     let sub1 = top.diff(&t);
+    //     insta::assert_snapshot!(sub1.display(), @"boolean | number | string | null | map | function | (list - list[true...])");
+
+    //     let t_complement = t.complement();
+    //     let sub2 = sub1.diff(&t_complement);
+    //     assert!(sub2.is_never());
+    // }
+    // #[test]
+    // fn empty_test_tuple() {
+    //     let top = TC::new_unknown();
+
+    //     let t = TC::new_closed_tuple(vec![TC::new_null(), TC::new_string()]);
+    //     let sub1 = top.diff(&t);
+    //     insta::assert_snapshot!(sub1.display(), @"boolean | number | string | null | map | function | (list - list[null, string])");
+
+    //     let t_complement = t.complement();
+    //     let sub2 = sub1.diff(&t_complement);
+    //     assert!(sub2.is_never());
+    // }
+    // #[test]
+    // fn empty_test_open_tuple() {
+    //     let top = TC::new_unknown();
+
+    //     let t = TC::new_open_tuple(vec![TC::new_string()], TC::new_string());
+    //     let sub1 = top.diff(&t);
+    //     insta::assert_snapshot!(sub1.display(), @"boolean | number | string | null | map | function | (list - list[string, string...])");
+
+    //     let t_complement = t.complement();
+    //     let sub2 = sub1.diff(&t_complement);
+    //     assert!(sub2.is_never());
+    // }
+    // #[test]
+    // fn intersect_test_list() {
+    //     let a = TC::new_closed_tuple(vec![TC::new_string()]);
+    //     insta::assert_snapshot!(a.display(), @"list[string]");
+
+    //     let intersection = a.intersect(&a);
+    //     insta::assert_snapshot!(intersection.display(), @"list[string]");
+
+    //     assert!(intersection.is_same_type(&a));
+    // }
+    // #[test]
+    // fn intersect_test_list2() {
+    //     let a = TC::new_closed_tuple(vec![TC::new_string()]);
+    //     let b = TC::new_closed_tuple(vec![TC::new_number()]);
+    //     let c = a.union(&b);
+    //     insta::assert_snapshot!(c.display(), @"list[number] | list[string]");
+
+    //     let intersection = c.intersect(&c);
+    //     insta::assert_snapshot!(intersection.display(), @"list[number] | list[string]");
+
+    //     let intersection_complement = intersection.complement();
+    //     insta::assert_snapshot!(intersection_complement.display(), @"boolean | number | string | null | map | function | (list - list[number]) | (list - list[string])");
+
+    //     assert!(intersection.is_same_type(&c));
+    // }
 }

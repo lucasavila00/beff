@@ -386,4 +386,38 @@ mod tests {
           | (() => void);
         "###);
     }
+
+    #[test]
+    fn array_union() {
+        let definitions = vec![];
+
+        let t1 = JsonSchema::Array(JsonSchema::Boolean.into());
+        let t2 = JsonSchema::Array(JsonSchema::Number.into());
+        let mut ctx = SemTypeContext::new();
+        let st1 = t1.to_sem_type(&definitions, &mut ctx).expect("should work");
+        let st2 = t2.to_sem_type(&definitions, &mut ctx).expect("should work");
+
+        let union = st1.union(&st2);
+        let union_complement = union.complement();
+
+        let mut counter = 0;
+        let mut schemer = SchemerContext::new(&mut ctx, &mut counter);
+
+        let comp_schema = schemer
+            .convert_to_schema(&union_complement, None)
+            .expect("should work");
+
+        let out = print_ts_types(vec![("test".to_owned(), comp_schema.to_ts_type())]);
+
+        insta::assert_snapshot!(out, @r###"
+        type test =
+          | null
+          | boolean
+          | string
+          | number
+          | { [key: string]: any }
+          | (Not<Array<boolean>> & Not<Array<number>>)
+          | (() => void);
+        "###);
+    }
 }
