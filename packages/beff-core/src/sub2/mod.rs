@@ -1,26 +1,37 @@
 use bitfield_struct::bitfield;
 
+fn vec_union<K: PartialEq + Clone + Ord>(v1: &[K], v2: &[K]) -> Vec<K> {
+    let mut values: Vec<K> = v1.iter().cloned().chain(v2.iter().cloned()).collect();
+    values.sort();
+    values.dedup();
+    values
+}
+
+fn vec_intersect<K: PartialEq + Clone + Ord>(v1: &[K], v2: &[K]) -> Vec<K> {
+    v1.iter().filter(|v| v2.contains(v)).cloned().collect()
+}
+
+fn vec_diff<K: PartialEq + Clone + Ord>(v1: &[K], v2: &[K]) -> Vec<K> {
+    v1.iter().filter(|v| !v2.contains(v)).cloned().collect()
+}
+
 pub enum SubtypeResult<T: ?Sized> {
     Top,
     Bot,
     Proper(Box<T>),
 }
 
-pub trait Complementable {
-    fn complement(&self) -> Self;
+pub trait SubOps {
+    fn sub_complement(&self) -> Self;
+    fn sub_diff(&self, other: &Self) -> SubtypeResult<Self>;
+    fn sub_intersect(&self, other: &Self) -> SubtypeResult<Self>;
+    fn sub_union(&self, other: &Self) -> SubtypeResult<Self>;
 }
 
-impl Complementable for bool {
-    fn complement(&self) -> Self {
+impl SubOps for bool {
+    fn sub_complement(&self) -> Self {
         !self
     }
-}
-
-pub trait SubDifferentiable {
-    fn sub_diff(&self, other: &Self) -> SubtypeResult<Self>;
-}
-
-impl SubDifferentiable for bool {
     fn sub_diff(&self, other: &Self) -> SubtypeResult<Self> {
         if self == other {
             SubtypeResult::Bot
@@ -28,22 +39,25 @@ impl SubDifferentiable for bool {
             SubtypeResult::Proper(Box::new(*self))
         }
     }
+
+    fn sub_intersect(&self, other: &Self) -> SubtypeResult<Self> {
+        if self == other {
+            SubtypeResult::Proper(self.clone().into())
+        } else {
+            SubtypeResult::Bot
+        }
+    }
+
+    fn sub_union(&self, other: &Self) -> SubtypeResult<Self> {
+        if self == other {
+            SubtypeResult::Proper(self.clone().into())
+        } else {
+            SubtypeResult::Top
+        }
+    }
 }
 
-#[bitfield(u8)]
-#[derive(PartialEq, Eq, PartialOrd, Ord)]
-pub struct TypeBitSet {
-    pub boolean: bool,
-    pub number: bool,
-    pub string: bool,
-    pub null: bool,
-    pub list: bool,
-    pub map: bool,
-    pub function: bool,
-    pub _padding: bool,
-}
-
-#[derive(Clone, PartialEq, Eq, PartialOrd, Ord)]
+#[derive(Clone)]
 pub struct StringSubtype {
     pub allowed: bool,
     pub values: Vec<String>,
@@ -67,28 +81,173 @@ impl StringSubtype {
     }
 }
 
-#[derive(Clone, PartialEq, Eq, PartialOrd, Ord)]
-pub struct ListSubtypeItem {
-    pub rest: Ty,
+impl SubOps for StringSubtype {
+    fn sub_complement(&self) -> Self {
+        StringSubtype {
+            allowed: !self.allowed,
+            values: self.values.clone(),
+        }
+    }
+    fn sub_diff(&self, other: &Self) -> SubtypeResult<Self> {
+        let StringSubtype {
+            allowed: a1,
+            values: v1,
+        } = self;
+        let StringSubtype {
+            allowed: a2,
+            values: v2,
+        } = other;
+        (match (a1, !a2) {
+            (true, true) => StringSubtype {
+                allowed: true,
+                values: vec_intersect(v1, v2),
+            },
+            (false, false) => StringSubtype {
+                allowed: false,
+                values: vec_union(v1, v2),
+            },
+            (true, false) => StringSubtype {
+                allowed: true,
+                values: vec_diff(v1, v2),
+            },
+            (false, true) => StringSubtype {
+                allowed: true,
+                values: vec_diff(v2, v1),
+            },
+        })
+        .to_subtype_result()
+    }
+
+    fn sub_intersect(&self, other: &Self) -> SubtypeResult<Self> {
+        let StringSubtype {
+            allowed: a1,
+            values: v1,
+        } = self;
+
+        let StringSubtype {
+            allowed: a2,
+            values: v2,
+        } = other;
+        (match (*a1, *a2) {
+            (true, true) => StringSubtype {
+                allowed: true,
+                values: vec_intersect(v1, v2),
+            },
+            (false, false) => StringSubtype {
+                allowed: false,
+                values: vec_union(v1, v2),
+            },
+            (true, false) => StringSubtype {
+                allowed: true,
+                values: vec_diff(v1, v2),
+            },
+            (false, true) => StringSubtype {
+                allowed: true,
+                values: vec_diff(v2, v1),
+            },
+        })
+        .to_subtype_result()
+    }
+
+    fn sub_union(&self, other: &Self) -> SubtypeResult<Self> {
+        let StringSubtype {
+            allowed: a1,
+            values: v1,
+        } = self;
+
+        let StringSubtype {
+            allowed: a2,
+            values: v2,
+        } = other;
+        (match (*a1, *a2) {
+            (true, true) => StringSubtype {
+                allowed: true,
+                values: vec_union(v1, v2),
+            },
+            (false, false) => StringSubtype {
+                allowed: false,
+                values: vec_intersect(v1, v2),
+            },
+            (true, false) => StringSubtype {
+                allowed: false,
+                values: vec_diff(v2, v1),
+            },
+            (false, true) => StringSubtype {
+                allowed: false,
+                values: vec_diff(v1, v2),
+            },
+        })
+        .to_subtype_result()
+    }
 }
 
-#[derive(Clone, PartialEq, Eq, PartialOrd, Ord)]
-pub struct ListSubtype {
-    pub items: Vec<ListSubtypeItem>,
+#[derive(Clone)]
+pub struct ListSubtype {}
+
+impl ListSubtype {
+    pub fn new_from_rest_ty(ty: Ty) -> Self {
+        todo!()
+    }
+
+    fn is_empty(&self) -> bool {
+        todo!()
+    }
+
+    fn display(&self) -> String {
+        // let mut inner = vec![];
+        // for i in &l.items {
+        //     let r = i.rest.display_impl(false);
+        //     inner.push(format!("list[{}]", r));
+        // }
+
+        // inner.join(" | ")
+
+        todo!()
+    }
 }
 
-#[derive(Clone, PartialEq, Eq, PartialOrd, Ord)]
-pub struct SubtypeData {
-    pub boolean: Option<bool>,
-    pub string: Option<StringSubtype>,
-    pub list: Option<ListSubtype>,
-}
-#[derive(Clone, PartialEq, Eq, PartialOrd, Ord)]
-pub struct Ty {
-    pub all: TypeBitSet,
-    pub subtype_data: SubtypeData,
+impl SubOps for ListSubtype {
+    fn sub_complement(&self) -> Self {
+        todo!()
+    }
+    fn sub_diff(&self, other: &Self) -> SubtypeResult<Self> {
+        todo!()
+    }
+
+    fn sub_intersect(&self, other: &Self) -> SubtypeResult<Self> {
+        // SubtypeResult::Proper(
+        //     ListSubtype {
+        //         items: vec_intersect(&self.items, &other.items),
+        //     }
+        //     .into(),
+        // )
+
+        todo!()
+    }
+
+    fn sub_union(&self, other: &Self) -> SubtypeResult<Self> {
+        // SubtypeResult::Proper(
+        //     ListSubtype {
+        //         items: vec_union(&self.items, &other.items),
+        //     }
+        //     .into(),
+        // )
+        todo!()
+    }
 }
 
+#[bitfield(u8)]
+#[derive(Eq, PartialEq)]
+pub struct TypeBitSet {
+    pub boolean: bool,
+    pub number: bool,
+    pub string: bool,
+    pub null: bool,
+    pub list: bool,
+    pub map: bool,
+    pub function: bool,
+    pub _padding: bool,
+}
 impl TypeBitSet {
     pub fn new_every() -> Self {
         TypeBitSet::new()
@@ -103,6 +262,13 @@ impl TypeBitSet {
     pub fn new_none() -> Self {
         TypeBitSet::new()
     }
+}
+
+#[derive(Clone)]
+pub struct SubtypeData {
+    pub boolean: Option<bool>,
+    pub string: Option<StringSubtype>,
+    pub list: Option<ListSubtype>,
 }
 
 impl SubtypeData {
@@ -122,7 +288,7 @@ impl SubtypeData {
             }
             && match &self.list {
                 None => true,
-                Some(s) => s.items.is_empty() || s.items.iter().all(|i| i.rest.is_empty()),
+                Some(s) => s.is_empty(),
             }
     }
 
@@ -159,168 +325,68 @@ impl SubtypeData {
         self
     }
 
-    fn diff_generic<T: Clone + Complementable + SubDifferentiable>(
-        a: &Option<T>,
-        b: &Option<T>,
-    ) -> SubtypeResult<T> {
+    fn diff<T: Clone + SubOps>(a: &Option<T>, b: &Option<T>) -> SubtypeResult<T> {
         match (&a, &b) {
             (Some(a), None) => SubtypeResult::Proper(a.clone().into()),
-            (None, Some(b)) => SubtypeResult::Proper(b.complement().into()),
+            (None, Some(b)) => SubtypeResult::Proper(b.sub_complement().into()),
             (Some(a), Some(b)) => a.sub_diff(b),
             (None, None) => SubtypeResult::Bot,
         }
     }
 
+    fn intersect<T: Clone + SubOps>(a: &Option<T>, b: &Option<T>) -> SubtypeResult<T> {
+        match (&a, &b) {
+            (Some(a), None) => SubtypeResult::Proper(a.clone().into()),
+            (None, Some(b)) => SubtypeResult::Proper(b.clone().into()),
+            (Some(a), Some(b)) => a.sub_intersect(b),
+            (None, None) => SubtypeResult::Bot,
+        }
+    }
+
+    fn union<T: Clone + SubOps>(a: &Option<T>, b: &Option<T>) -> SubtypeResult<T> {
+        match (&a, &b) {
+            (None, None) => SubtypeResult::Bot,
+            (Some(a), None) => SubtypeResult::Proper(a.clone().into()),
+            (None, Some(b)) => SubtypeResult::Proper(b.clone().into()),
+            (Some(a), Some(b)) => a.sub_union(b),
+        }
+    }
+
     pub fn diff_bool(&self, other: &Self) -> SubtypeResult<bool> {
-        Self::diff_generic(&self.boolean, &other.boolean)
+        Self::diff(&self.boolean, &other.boolean)
+    }
+    pub fn diff_string(&self, other: &Self) -> SubtypeResult<StringSubtype> {
+        Self::diff(&self.string, &other.string)
+    }
+    pub fn diff_list(&self, other: &Self) -> SubtypeResult<ListSubtype> {
+        Self::diff(&self.list, &other.list)
     }
 
-    fn intersect_generic<T: Clone>(
-        a: &Option<T>,
-        b: &Option<T>,
-        on_both: impl FnOnce(&T, &T) -> SubtypeResult<T>,
-    ) -> SubtypeResult<T> {
-        match (&a, &b) {
-            (Some(a), None) => SubtypeResult::Proper(a.clone().into()),
-            (None, Some(b)) => SubtypeResult::Proper(b.clone().into()),
-            (Some(a), Some(b)) => on_both(a, b),
-            (None, None) => SubtypeResult::Bot,
-        }
-    }
     pub fn intersect_bool(&self, other: &Self) -> SubtypeResult<bool> {
-        Self::intersect_generic(&self.boolean, &other.boolean, |a, b| {
-            if a == b {
-                SubtypeResult::Proper(a.clone().into())
-            } else {
-                SubtypeResult::Bot
-            }
-        })
+        Self::intersect(&self.boolean, &other.boolean)
     }
-
     pub fn intersect_string(&self, other: &Self) -> SubtypeResult<StringSubtype> {
-        Self::intersect_generic(&self.string, &other.string, |a, b| {
-            let StringSubtype {
-                allowed: a1,
-                values: v1,
-            } = a;
-
-            let StringSubtype {
-                allowed: a2,
-                values: v2,
-            } = b;
-            (match (*a1, *a2) {
-                (true, true) => StringSubtype {
-                    allowed: true,
-                    values: vec_intersect(v1, v2),
-                },
-                (false, false) => StringSubtype {
-                    allowed: false,
-                    values: vec_union(v1, v2),
-                },
-                (true, false) => StringSubtype {
-                    allowed: true,
-                    values: vec_diff(v1, v2),
-                },
-                (false, true) => StringSubtype {
-                    allowed: true,
-                    values: vec_diff(v2, v1),
-                },
-            })
-            .to_subtype_result()
-        })
+        Self::intersect(&self.string, &other.string)
     }
-
     pub fn intersect_list(&self, other: &Self) -> SubtypeResult<ListSubtype> {
-        Self::intersect_generic(&self.list, &other.list, |a, b| {
-            SubtypeResult::Proper(
-                ListSubtype {
-                    items: vec_intersect(&a.items, &b.items),
-                }
-                .into(),
-            )
-        })
-    }
-
-    fn union_generic<T: Clone>(
-        a: &Option<T>,
-        b: &Option<T>,
-        on_both: impl FnOnce(&T, &T) -> SubtypeResult<T>,
-    ) -> SubtypeResult<T> {
-        match (&a, &b) {
-            (None, None) => SubtypeResult::Bot,
-            (Some(a), None) => SubtypeResult::Proper(a.clone().into()),
-            (None, Some(b)) => SubtypeResult::Proper(b.clone().into()),
-            (Some(a), Some(b)) => on_both(a, b),
-        }
+        Self::intersect(&self.list, &other.list)
     }
 
     pub fn union_bool(&self, other: &Self) -> SubtypeResult<bool> {
-        Self::union_generic(&self.boolean, &other.boolean, |a, b| {
-            if a == b {
-                SubtypeResult::Proper(a.clone().into())
-            } else {
-                SubtypeResult::Top
-            }
-        })
+        Self::union(&self.boolean, &other.boolean)
     }
     pub fn union_string(&self, other: &Self) -> SubtypeResult<StringSubtype> {
-        Self::union_generic(&self.string, &other.string, |a, b| {
-            let StringSubtype {
-                allowed: a1,
-                values: v1,
-            } = a;
-
-            let StringSubtype {
-                allowed: a2,
-                values: v2,
-            } = b;
-            (match (*a1, *a2) {
-                (true, true) => StringSubtype {
-                    allowed: true,
-                    values: vec_union(v1, v2),
-                },
-                (false, false) => StringSubtype {
-                    allowed: false,
-                    values: vec_intersect(v1, v2),
-                },
-                (true, false) => StringSubtype {
-                    allowed: false,
-                    values: vec_diff(v2, v1),
-                },
-                (false, true) => StringSubtype {
-                    allowed: false,
-                    values: vec_diff(v1, v2),
-                },
-            })
-            .to_subtype_result()
-        })
+        Self::union(&self.string, &other.string)
     }
-
     pub fn union_list(&self, other: &Self) -> SubtypeResult<ListSubtype> {
-        Self::union_generic(&self.list, &other.list, |a, b| {
-            SubtypeResult::Proper(
-                ListSubtype {
-                    items: vec_union(&a.items, &b.items),
-                }
-                .into(),
-            )
-        })
+        Self::union(&self.list, &other.list)
     }
 }
 
-fn vec_union<K: PartialEq + Clone + Ord>(v1: &[K], v2: &[K]) -> Vec<K> {
-    let mut values: Vec<K> = v1.iter().cloned().chain(v2.iter().cloned()).collect();
-    values.sort();
-    values.dedup();
-    values
-}
-
-fn vec_intersect<K: PartialEq + Clone + Ord>(v1: &[K], v2: &[K]) -> Vec<K> {
-    v1.iter().filter(|v| v2.contains(v)).cloned().collect()
-}
-
-fn vec_diff<K: PartialEq + Clone + Ord>(v1: &[K], v2: &[K]) -> Vec<K> {
-    v1.iter().filter(|v| !v2.contains(v)).cloned().collect()
+#[derive(Clone)]
+pub struct Ty {
+    pub all: TypeBitSet,
+    pub subtype_data: SubtypeData,
 }
 
 impl Ty {
@@ -344,7 +410,7 @@ impl Ty {
     }
 
     pub fn complement(&self) -> Ty {
-        TCtx::new_unknown().diff(&self)
+        TC::new_unknown().diff(&self)
     }
     pub fn is_subtype(&self, b: &Ty) -> bool {
         let d = self.diff(b);
@@ -451,54 +517,31 @@ impl Ty {
         }
 
         if some.string() {
-            match (&self.subtype_data.string, &b.subtype_data.string) {
-                (Some(a), None) => {
-                    subtype_data.string = Some(a.clone());
+            match self.subtype_data.diff_string(&b.subtype_data) {
+                SubtypeResult::Top => {
+                    all.set_string(true);
                 }
-                (None, Some(b)) => {
-                    subtype_data.string = Some(StringSubtype {
-                        allowed: !b.allowed,
-                        values: b.values.clone(),
-                    });
+                SubtypeResult::Bot => {
+                    // pass
                 }
-                (
-                    Some(StringSubtype {
-                        allowed: a1,
-                        values: v1,
-                    }),
-                    Some(StringSubtype {
-                        allowed: a2,
-                        values: v2,
-                    }),
-                ) => {
-                    subtype_data.string = (match (a1, !a2) {
-                        (true, true) => StringSubtype {
-                            allowed: true,
-                            values: vec_intersect(v1, v2),
-                        },
-                        (false, false) => StringSubtype {
-                            allowed: false,
-                            values: vec_union(v1, v2),
-                        },
-                        (true, false) => StringSubtype {
-                            allowed: true,
-                            values: vec_diff(v1, v2),
-                        },
-                        (false, true) => StringSubtype {
-                            allowed: true,
-                            values: vec_diff(v2, v1),
-                        },
-                    })
-                    .to_option()
-                }
-                (None, None) => {
-                    todo!()
+                SubtypeResult::Proper(p) => {
+                    subtype_data.string = Some(*p);
                 }
             }
         }
 
         if some.list() {
-            subtype_data.list = diff_list_subtypes(&self.subtype_data.list, &b.subtype_data.list);
+            match self.subtype_data.diff_list(&b.subtype_data) {
+                SubtypeResult::Top => {
+                    all.set_list(true);
+                }
+                SubtypeResult::Bot => {
+                    // pass
+                }
+                SubtypeResult::Proper(p) => {
+                    subtype_data.list = Some(*p);
+                }
+            }
         }
         Ty {
             all: all,
@@ -616,13 +659,7 @@ impl Ty {
         }
 
         if let Some(l) = &self.subtype_data.list {
-            let mut inner = vec![];
-            for i in &l.items {
-                let r = i.rest.display_impl(false);
-                inner.push(format!("list[{}]", r));
-            }
-
-            acc.push(inner.join(" | "));
+            acc.push(l.display());
         }
 
         let j = acc.join(" | ");
@@ -637,29 +674,9 @@ impl Ty {
     }
 }
 
-fn diff_list_subtypes(
-    list_1: &Option<ListSubtype>,
-    list_2: &Option<ListSubtype>,
-) -> Option<ListSubtype> {
-    match (list_1, list_2) {
-        (None, None) => None,
-        (None, Some(l2)) =>
-        // Some(ListSubtype {
-        //     rest: l2.rest.complement().into(),
-        // })
-        {
-            todo!()
-        }
-        (Some(l1), None) => Some(l1.clone()),
-        (Some(l1), Some(l2)) => Some(ListSubtype {
-            items: vec_diff(&l1.items, &l2.items),
-        }),
-    }
-}
+pub struct TC {}
 
-pub struct TCtx {}
-
-impl TCtx {
+impl TC {
     pub fn new_never() -> Ty {
         Ty {
             all: TypeBitSet::new(),
@@ -743,9 +760,7 @@ impl TCtx {
     pub fn new_parametric_list(rest: Ty) -> Ty {
         Ty {
             all: TypeBitSet::new(),
-            subtype_data: SubtypeData::new_empty().with_list(ListSubtype {
-                items: vec![ListSubtypeItem { rest }],
-            }),
+            subtype_data: SubtypeData::new_empty().with_list(ListSubtype::new_from_rest_ty(rest)),
         }
     }
 }
@@ -756,29 +771,29 @@ mod tests {
 
     #[test]
     fn test_never() {
-        let never = TCtx::new_never();
+        let never = TC::new_never();
         assert!(never.is_never());
         assert!(!never.is_unknown());
     }
 
     #[test]
     fn test_boolean() {
-        let boolean = TCtx::new_boolean();
+        let boolean = TC::new_boolean();
         assert!(!boolean.is_never());
         assert!(!boolean.is_unknown());
     }
 
     #[test]
     fn test_unknown() {
-        let unknown = TCtx::new_unknown();
+        let unknown = TC::new_unknown();
         assert!(!unknown.is_never());
         assert!(unknown.is_unknown());
     }
 
     #[test]
     fn test_union() {
-        let a = TCtx::new_boolean();
-        let b = TCtx::new_number();
+        let a = TC::new_boolean();
+        let b = TC::new_number();
         let c = a.union(&b);
         assert!(!c.is_never());
         assert!(!c.is_unknown());
@@ -796,8 +811,8 @@ mod tests {
 
     #[test]
     fn bool_const() {
-        let t = TCtx::new_bool_const(true);
-        let f = TCtx::new_bool_const(false);
+        let t = TC::new_bool_const(true);
+        let f = TC::new_bool_const(false);
         let b = t.union(&f);
         assert!(!b.is_never());
         assert!(!b.is_unknown());
@@ -816,7 +831,7 @@ mod tests {
 
         assert!(t.intersect(&f).is_never());
 
-        assert!(b.is_same_type(&TCtx::new_boolean()));
+        assert!(b.is_same_type(&TC::new_boolean()));
 
         assert!(b.intersect(&t).is_same_type(&t));
         assert!(b.intersect(&f).is_same_type(&f));
@@ -824,10 +839,10 @@ mod tests {
 
     #[test]
     fn string_const() {
-        let a = TCtx::new_string_const(vec!["a".to_string()]);
+        let a = TC::new_string_const(vec!["a".to_string()]);
         insta::assert_snapshot!(a.display(), @"('a')");
 
-        let b = TCtx::new_string_const(vec!["b".to_string()]);
+        let b = TC::new_string_const(vec!["b".to_string()]);
         insta::assert_snapshot!(b.display(), @"('b')");
 
         let u = a.union(&b);
@@ -852,8 +867,8 @@ mod tests {
 
     #[test]
     fn string_and_bool_const() {
-        let t = TCtx::new_bool_const(true);
-        let a = TCtx::new_string_const(vec!["a".to_string()]);
+        let t = TC::new_bool_const(true);
+        let a = TC::new_string_const(vec!["a".to_string()]);
 
         let u = t.union(&a);
 
@@ -862,11 +877,11 @@ mod tests {
 
     #[test]
     fn bool_and_string() {
-        let b = TCtx::new_boolean();
+        let b = TC::new_boolean();
 
-        let t = TCtx::new_bool_const(true);
+        let t = TC::new_bool_const(true);
 
-        let a = TCtx::new_string_const(vec!["a".to_string()]);
+        let a = TC::new_string_const(vec!["a".to_string()]);
 
         let u = b.union(&a).union(&t);
 
@@ -875,17 +890,17 @@ mod tests {
 
     #[test]
     fn list_of_bool() {
-        let b = TCtx::new_boolean();
-        let l = TCtx::new_list_top();
+        let b = TC::new_boolean();
+        let l = TC::new_list_top();
 
         let u = b.union(&l);
 
         insta::assert_snapshot!(u.display(), @"(boolean | list)");
 
-        let list_bools = TCtx::new_parametric_list(b.clone());
+        let list_bools = TC::new_parametric_list(b.clone());
         insta::assert_snapshot!(list_bools.display(), @"(list[boolean])");
 
-        let list_nulls = TCtx::new_parametric_list(TCtx::new_null());
+        let list_nulls = TC::new_parametric_list(TC::new_null());
         let u = list_bools.union(&list_nulls);
         insta::assert_snapshot!(u.display(), @"(list[boolean] | list[null])");
 
