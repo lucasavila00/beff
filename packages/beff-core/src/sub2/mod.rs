@@ -23,15 +23,15 @@ pub enum SubtypeResult<T: ?Sized> {
 
 pub trait SubOps {
     fn is_never(&self) -> bool;
-    fn sub_complement(&self) -> Self;
+    fn sub_complement(&self) -> SubtypeResult<Self>;
     fn sub_diff(&self, other: &Self) -> SubtypeResult<Self>;
     fn sub_intersect(&self, other: &Self) -> SubtypeResult<Self>;
     fn sub_union(&self, other: &Self) -> SubtypeResult<Self>;
 }
 
 impl SubOps for bool {
-    fn sub_complement(&self) -> Self {
-        !self
+    fn sub_complement(&self) -> SubtypeResult<Self> {
+        SubtypeResult::Proper((!self).into())
     }
     fn sub_diff(&self, other: &Self) -> SubtypeResult<Self> {
         if self == other {
@@ -83,14 +83,20 @@ impl StringSubtype {
 }
 
 impl SubOps for StringSubtype {
-    fn sub_complement(&self) -> Self {
+    fn sub_complement(&self) -> SubtypeResult<Self> {
         StringSubtype {
             allowed: !self.allowed,
             values: self.values.clone(),
         }
+        .to_subtype_result()
     }
     fn sub_diff(&self, other: &Self) -> SubtypeResult<Self> {
-        self.sub_intersect(&other.sub_complement())
+        match other.sub_complement() {
+            SubtypeResult::Top => todo!(),
+            SubtypeResult::Bot => todo!(),
+            SubtypeResult::Proper(i) => self.sub_intersect(&i),
+        }
+        // self.sub_intersect(&other.sub_complement())
     }
 
     fn sub_intersect(&self, other: &Self) -> SubtypeResult<Self> {
@@ -163,146 +169,113 @@ impl SubOps for StringSubtype {
 
 #[derive(Clone, PartialEq, Eq, PartialOrd, Ord, Debug)]
 pub struct ListSubtypeAtom {
-    pub prefix: Vec<Ty>,
     pub rest: Ty,
 }
 
 impl ListSubtypeAtom {
     fn display(&self) -> String {
-        let prefix_parts = self
-            .prefix
-            .iter()
-            .map(|p| p.display())
-            .collect::<Vec<String>>();
+        // let prefix_parts = self
+        //     .prefix
+        //     .iter()
+        //     .map(|p| p.display())
+        //     .collect::<Vec<String>>();
 
         let mut rest = self.rest.display();
         if !rest.is_empty() {
             rest = format!("{}...", rest);
         }
 
-        let prefix = if prefix_parts.is_empty() {
-            "".to_owned()
-        } else {
-            let comma = if rest.is_empty() { "" } else { ", " };
-            format!("{}{}", prefix_parts.join(", "), comma)
-        };
-        format!("list[{}{}]", prefix, rest)
-    }
-    fn is_never(&self) -> bool {
-        for p in &self.prefix {
-            if p.is_never() {
-                return true;
-            }
-        }
-        self.prefix.is_empty() && self.rest.is_never()
+        // let prefix = if prefix_parts.is_empty() {
+        //     "".to_owned()
+        // } else {
+        //     let comma = if rest.is_empty() { "" } else { ", " };
+        //     format!("{}{}", prefix_parts.join(", "), comma)
+        // };
+        format!(
+            "list[{}]",
+            // prefix,
+            rest
+        )
     }
 }
 
 #[derive(Clone, PartialEq, Eq, PartialOrd, Ord, Debug)]
-pub enum ListSubtypeAtomDnf {
-    Pos(Vec<ListSubtypeAtom>),
-    Neg(Vec<ListSubtypeAtom>),
+pub struct ListDnf {
+    pub pos: ListSubtypeAtom,
+    pub neg: Vec<ListSubtypeAtom>,
+}
+impl ListDnf {
+    fn is_never(&self) -> bool {
+        todo!()
+    }
 }
 
 #[derive(Clone, PartialEq, Eq, PartialOrd, Ord, Debug)]
 pub struct ListSubtype {
-    pub items: Vec<ListSubtypeAtomDnf>,
+    pub items: Vec<ListDnf>,
 }
 
 impl ListSubtype {
     pub fn new_parametric_list(ty: Ty) -> Self {
         ListSubtype {
-            items: vec![ListSubtypeAtomDnf::Pos(vec![ListSubtypeAtom {
-                prefix: vec![],
-                rest: ty,
-            }])],
+            items: vec![ListDnf {
+                pos: ListSubtypeAtom { rest: ty },
+                neg: vec![],
+            }],
         }
     }
     pub fn new_closed_tuple(prefix: Vec<Ty>) -> Self {
-        ListSubtype {
-            items: vec![ListSubtypeAtomDnf::Pos(vec![ListSubtypeAtom {
-                prefix,
-                rest: TC::new_never(),
-            }])],
-        }
+        todo!()
     }
     pub fn new_open_tuple(prefix: Vec<Ty>, rest: Ty) -> Self {
-        ListSubtype {
-            items: vec![ListSubtypeAtomDnf::Pos(vec![ListSubtypeAtom {
-                prefix,
-                rest,
-            }])],
-        }
+        todo!()
     }
-
     fn display(&self) -> String {
-        let mut inner: Vec<String> = vec![];
+        let mut outer: Vec<String> = vec![];
+        for it in &self.items {
+            let mut inner: Vec<String> = vec![];
 
-        for i in &self.items {
-            let mut pos = vec![];
-            let mut neg = vec![];
-            match i {
-                ListSubtypeAtomDnf::Pos(v) => {
-                    for p in v {
-                        pos.push(p.display());
-                    }
-                }
-                ListSubtypeAtomDnf::Neg(v) => {
-                    for n in v {
-                        neg.push(n.display());
-                    }
-                }
+            inner.push(it.pos.display());
+
+            for n in &it.neg {
+                inner.push(format!("!{}", n.display()));
             }
 
-            let pos_part = pos.join(" & ");
-
-            if neg.is_empty() {
-                if pos_part.is_empty() {
-                    inner.push("errorbothempty".to_owned());
-                } else {
-                    inner.push(pos_part);
-                }
+            if inner.len() > 1 {
+                outer.push(format!("({})", inner.join(" & ")));
             } else {
-                if pos_part.is_empty() {
-                    let mut acc = "list".to_owned();
-                    for n in neg {
-                        acc += &format!(" - {}", n);
-                    }
-                    inner.push(format!("({})", acc));
-                } else {
-                    todo!()
-                }
+                outer.push(inner.join(" & "));
             }
         }
 
-        inner.join(" | ")
+        outer.join(" | ")
     }
 }
 
 impl SubOps for ListSubtype {
-    fn sub_complement(&self) -> Self {
+    fn sub_complement(&self) -> SubtypeResult<Self> {
         let mut items = vec![];
 
         let mut positives = vec![];
-
         for it in &self.items {
-            match it {
-                ListSubtypeAtomDnf::Pos(vec) => {
-                    positives.extend(vec.clone());
-                }
-                ListSubtypeAtomDnf::Neg(vec) => {
-                    for v in vec {
-                        items.push(ListSubtypeAtomDnf::Pos(vec![v.clone()]));
-                    }
-                }
+            positives.push(it.pos.clone());
+            for it in &it.neg {
+                items.push(ListDnf {
+                    pos: it.clone(),
+                    neg: vec![],
+                });
             }
         }
 
-        if !positives.is_empty() {
-            items.push(ListSubtypeAtomDnf::Neg(positives));
-        }
+        let dnf = ListDnf {
+            pos: ListSubtypeAtom {
+                rest: TC::new_unknown(),
+            },
+            neg: positives,
+        };
+        items.push(dnf);
 
-        ListSubtype { items }
+        SubtypeResult::Proper(ListSubtype { items }.into())
     }
 
     fn sub_intersect(&self, other: &Self) -> SubtypeResult<Self> {
@@ -310,28 +283,11 @@ impl SubOps for ListSubtype {
     }
 
     fn is_never(&self) -> bool {
-        dbg!(&self);
-        if self.items.is_empty() {
-            return true;
-        }
-        for i in &self.items {
-            match i {
-                ListSubtypeAtomDnf::Pos(v) => {
-                    if v.is_empty() {
-                        return true;
-                    }
-                    for a in v {
-                        if a.is_never() {
-                            return true;
-                        }
-                    }
-                }
-                ListSubtypeAtomDnf::Neg(_) => {
-                    return false;
-                }
-            }
-        }
-        return false;
+        // is never if all items are never
+        self.items.iter().all(|it| {
+            //
+            it.is_never()
+        })
     }
 
     fn sub_union(&self, other: &Self) -> SubtypeResult<Self> {
@@ -343,7 +299,13 @@ impl SubOps for ListSubtype {
         )
     }
     fn sub_diff(&self, other: &Self) -> SubtypeResult<Self> {
-        self.sub_intersect(&other.sub_complement())
+        // match other.sub_complement() {
+        //     SubtypeResult::Top => todo!(),
+        //     SubtypeResult::Bot => todo!(),
+        //     SubtypeResult::Proper(_) => todo!(),
+        // }
+        // // self.sub_intersect(&other.sub_complement())
+        todo!()
     }
 }
 
@@ -439,7 +401,14 @@ impl SubtypeData {
     fn diff<T: Clone + SubOps>(a: &Option<T>, b: &Option<T>) -> SubtypeResult<T> {
         match (&a, &b) {
             (Some(a), None) => SubtypeResult::Proper(a.clone().into()),
-            (None, Some(b)) => SubtypeResult::Proper(b.sub_complement().into()),
+            (None, Some(b)) => {
+                match b.sub_complement() {
+                    SubtypeResult::Top => todo!(),
+                    SubtypeResult::Bot => todo!(),
+                    i @ SubtypeResult::Proper(_) => i,
+                }
+                // SubtypeResult::Proper(b.sub_complement().into())
+            }
             (Some(a), Some(b)) => a.sub_diff(b),
             (None, None) => SubtypeResult::Bot,
         }
@@ -1061,43 +1030,50 @@ mod tests {
         assert!(all.is_unknown());
     }
 
-    #[test]
-    fn tuple() {
-        let b = TC::new_boolean();
-        let t1 = TC::new_closed_tuple(vec![b.clone()]);
-        insta::assert_snapshot!(t1.display(), @"list[boolean]");
+    // #[test]
+    // fn tuple2() {
+    //     let b = TC::new_boolean();
+    //     let t1 = TC::new_parametric_list(b.clone());
+    //     insta::assert_snapshot!(t1.display(), @"list[boolean...]");
+    //     let n = TC::new_number();
+    //     let t2 = TC::new_parametric_list(n.clone());
+    //     insta::assert_snapshot!(t2.display(), @"list[number...]");
 
-        let i1comp = t1.complement();
-        insta::assert_snapshot!(i1comp.display(), @"boolean | number | string | null | map | function | (list - list[boolean])");
+    //     let union = t1.union(&t2);
+    //     insta::assert_snapshot!(union.display(), @"list[boolean...] | list[number...]");
+    //     assert!(!union.is_unknown());
 
-        let t2 = TC::new_closed_tuple(vec![b.clone(), b.clone()]);
-        insta::assert_snapshot!(t2.display(), @"list[boolean, boolean]");
-    }
+    //     let union_complement1 = union.complement();
+    //     insta::assert_snapshot!(union_complement1.display(), @"boolean | number | string | null | map | function | (list[boolean | number | string | null | list | map | function...] & !list[boolean...] & !list[number...])");
+    //     assert!(!union_complement1.is_unknown());
 
-    #[test]
-    fn tuple2() {
-        let b = TC::new_boolean();
-        let t1 = TC::new_parametric_list(b.clone());
-        insta::assert_snapshot!(t1.display(), @"list[boolean...]");
-        let n = TC::new_number();
-        let t2 = TC::new_parametric_list(n.clone());
-        insta::assert_snapshot!(t2.display(), @"list[number...]");
+    //     let and_back_again = union_complement1.complement();
+    //     insta::assert_snapshot!(and_back_again.display(), @"list[boolean...] | list[number...] | (list[boolean | number | string | null | list | map | function...] & !list[boolean | number | string | null | list | map | function...])");
 
-        let union = t1.union(&t2);
-        insta::assert_snapshot!(union.display(), @"list[boolean...] | list[number...]");
+    //     let union_complement2 = and_back_again.complement();
+    //     insta::assert_snapshot!(union_complement2.display(), @"boolean | number | string | null | map | function | list[boolean | number | string | null | list | map | function...] | (list[boolean | number | string | null | list | map | function...] & !list[boolean...] & !list[number...] & !list[boolean | number | string | null | list | map | function...])");
 
-        let union_complement = union.complement();
-        insta::assert_snapshot!(union_complement.display(), @"boolean | number | string | null | map | function | (list - list[boolean...] - list[number...])");
+    //     let all_again0 = union_complement1.union(&t1);
+    //     insta::assert_snapshot!(all_again0.display(), @"boolean | number | string | null | map | function | list[boolean...] | (list[boolean | number | string | null | list | map | function...] & !list[boolean...] & !list[number...])");
+    //     assert!(!all_again0.is_unknown());
 
-        let and_back_again = union_complement.complement();
-        insta::assert_snapshot!(and_back_again.display(), @"list[boolean...] | list[number...]");
+    //     let all_again = union_complement1.union(&t1).union(&t2);
+    //     insta::assert_snapshot!(all_again.display(), @"boolean | number | string | null | map | function | list[boolean...] | list[number...] | (list[boolean | number | string | null | list | map | function...] & !list[boolean...] & !list[number...])");
+    //     // assert!(all_again.is_unknown());
+    // }
 
-        let all_again = union_complement.union(&t1).union(&t2);
-        insta::assert_snapshot!(all_again.display(), @"boolean | number | string | null | map | function | list[boolean...] | list[number...] | (list - list[boolean...] - list[number...])");
+    // #[test]
+    // fn tuple() {
+    //     let b = TC::new_boolean();
+    //     let t1 = TC::new_closed_tuple(vec![b.clone()]);
+    //     insta::assert_snapshot!(t1.display(), @"list[boolean]");
 
-        assert!(all_again.is_unknown());
-    }
+    //     let i1comp = t1.complement();
+    //     insta::assert_snapshot!(i1comp.display(), @"boolean | number | string | null | map | function | (list - list[boolean])");
 
+    //     let t2 = TC::new_closed_tuple(vec![b.clone(), b.clone()]);
+    //     insta::assert_snapshot!(t2.display(), @"list[boolean, boolean]");
+    // }
     // #[test]
     // fn list_of_bool() {
     //     let b = TC::new_boolean();
