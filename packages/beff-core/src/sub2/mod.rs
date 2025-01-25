@@ -1,9 +1,9 @@
 use bitfield_struct::bitfield;
 
-pub enum SubtypeResult<T> {
+pub enum SubtypeResult<T: ?Sized> {
     Top,
     Bot,
-    Proper(T),
+    Proper(Box<T>),
 }
 
 pub trait Complementable {
@@ -17,7 +17,17 @@ impl Complementable for bool {
 }
 
 pub trait SubDifferentiable {
-    fn sub_diff(&self, other: &Self) -> SubtypeResult<Box<Self>>;
+    fn sub_diff(&self, other: &Self) -> SubtypeResult<Self>;
+}
+
+impl SubDifferentiable for bool {
+    fn sub_diff(&self, other: &Self) -> SubtypeResult<Self> {
+        if self == other {
+            SubtypeResult::Bot
+        } else {
+            SubtypeResult::Proper(Box::new(*self))
+        }
+    }
 }
 
 #[bitfield(u8)]
@@ -52,7 +62,7 @@ impl StringSubtype {
         if self.values.is_empty() {
             SubtypeResult::Bot
         } else {
-            SubtypeResult::Proper(self)
+            SubtypeResult::Proper(self.into())
         }
     }
 }
@@ -149,26 +159,20 @@ impl SubtypeData {
         self
     }
 
-    fn diff_generic<T: Clone + Complementable>(
+    fn diff_generic<T: Clone + Complementable + SubDifferentiable>(
         a: &Option<T>,
         b: &Option<T>,
-        on_both: impl FnOnce(&T, &T) -> SubtypeResult<T>,
     ) -> SubtypeResult<T> {
         match (&a, &b) {
-            (Some(a), None) => SubtypeResult::Proper(a.clone()),
-            (None, Some(b)) => SubtypeResult::Proper(b.complement()),
-            (Some(a), Some(b)) => on_both(a, b),
+            (Some(a), None) => SubtypeResult::Proper(a.clone().into()),
+            (None, Some(b)) => SubtypeResult::Proper(b.complement().into()),
+            (Some(a), Some(b)) => a.sub_diff(b),
             (None, None) => SubtypeResult::Bot,
         }
     }
+
     pub fn diff_bool(&self, other: &Self) -> SubtypeResult<bool> {
-        Self::diff_generic(&self.boolean, &other.boolean, |a, b| {
-            if a == b {
-                SubtypeResult::Bot
-            } else {
-                SubtypeResult::Proper(*a)
-            }
-        })
+        Self::diff_generic(&self.boolean, &other.boolean)
     }
 
     fn intersect_generic<T: Clone>(
@@ -177,8 +181,8 @@ impl SubtypeData {
         on_both: impl FnOnce(&T, &T) -> SubtypeResult<T>,
     ) -> SubtypeResult<T> {
         match (&a, &b) {
-            (Some(a), None) => SubtypeResult::Proper(a.clone()),
-            (None, Some(b)) => SubtypeResult::Proper(b.clone()),
+            (Some(a), None) => SubtypeResult::Proper(a.clone().into()),
+            (None, Some(b)) => SubtypeResult::Proper(b.clone().into()),
             (Some(a), Some(b)) => on_both(a, b),
             (None, None) => SubtypeResult::Bot,
         }
@@ -186,7 +190,7 @@ impl SubtypeData {
     pub fn intersect_bool(&self, other: &Self) -> SubtypeResult<bool> {
         Self::intersect_generic(&self.boolean, &other.boolean, |a, b| {
             if a == b {
-                SubtypeResult::Proper(*a)
+                SubtypeResult::Proper(a.clone().into())
             } else {
                 SubtypeResult::Bot
             }
@@ -228,9 +232,12 @@ impl SubtypeData {
 
     pub fn intersect_list(&self, other: &Self) -> SubtypeResult<ListSubtype> {
         Self::intersect_generic(&self.list, &other.list, |a, b| {
-            SubtypeResult::Proper(ListSubtype {
-                items: vec_intersect(&a.items, &b.items),
-            })
+            SubtypeResult::Proper(
+                ListSubtype {
+                    items: vec_intersect(&a.items, &b.items),
+                }
+                .into(),
+            )
         })
     }
 
@@ -241,8 +248,8 @@ impl SubtypeData {
     ) -> SubtypeResult<T> {
         match (&a, &b) {
             (None, None) => SubtypeResult::Bot,
-            (Some(a), None) => SubtypeResult::Proper(a.clone()),
-            (None, Some(b)) => SubtypeResult::Proper(b.clone()),
+            (Some(a), None) => SubtypeResult::Proper(a.clone().into()),
+            (None, Some(b)) => SubtypeResult::Proper(b.clone().into()),
             (Some(a), Some(b)) => on_both(a, b),
         }
     }
@@ -250,7 +257,7 @@ impl SubtypeData {
     pub fn union_bool(&self, other: &Self) -> SubtypeResult<bool> {
         Self::union_generic(&self.boolean, &other.boolean, |a, b| {
             if a == b {
-                SubtypeResult::Proper(*a)
+                SubtypeResult::Proper(a.clone().into())
             } else {
                 SubtypeResult::Top
             }
@@ -291,9 +298,12 @@ impl SubtypeData {
 
     pub fn union_list(&self, other: &Self) -> SubtypeResult<ListSubtype> {
         Self::union_generic(&self.list, &other.list, |a, b| {
-            SubtypeResult::Proper(ListSubtype {
-                items: vec_union(&a.items, &b.items),
-            })
+            SubtypeResult::Proper(
+                ListSubtype {
+                    items: vec_union(&a.items, &b.items),
+                }
+                .into(),
+            )
         })
     }
 }
@@ -373,7 +383,7 @@ impl Ty {
                     // pass
                 }
                 SubtypeResult::Proper(p) => {
-                    subtype_data.boolean = Some(p);
+                    subtype_data.boolean = Some(*p);
                 }
             }
         }
@@ -386,7 +396,7 @@ impl Ty {
                     // pass
                 }
                 SubtypeResult::Proper(p) => {
-                    subtype_data.string = Some(p);
+                    subtype_data.string = Some(*p);
                 }
             }
         }
@@ -400,7 +410,7 @@ impl Ty {
                     // pass
                 }
                 SubtypeResult::Proper(p) => {
-                    subtype_data.list = Some(p);
+                    subtype_data.list = Some(*p);
                 }
             }
         }
@@ -435,7 +445,7 @@ impl Ty {
                     // pass
                 }
                 SubtypeResult::Proper(p) => {
-                    subtype_data.boolean = Some(p);
+                    subtype_data.boolean = Some(*p);
                 }
             }
         }
@@ -521,7 +531,7 @@ impl Ty {
                     // pass
                 }
                 SubtypeResult::Proper(p) => {
-                    subtype_data.boolean = Some(p);
+                    subtype_data.boolean = Some(*p);
                 }
             }
         }
@@ -534,7 +544,7 @@ impl Ty {
                     // pass
                 }
                 SubtypeResult::Proper(p) => {
-                    subtype_data.string = Some(p);
+                    subtype_data.string = Some(*p);
                 }
             }
         }
@@ -547,7 +557,7 @@ impl Ty {
                     // pass
                 }
                 SubtypeResult::Proper(p) => {
-                    subtype_data.list = Some(p);
+                    subtype_data.list = Some(*p);
                 }
             }
         }
