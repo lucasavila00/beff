@@ -200,7 +200,7 @@ impl ListSubtypeAtom {
 
 #[derive(Clone, PartialEq, Eq, PartialOrd, Ord, Debug)]
 pub enum ListSubtypeAtomDnf {
-    Pos(ListSubtypeAtom),
+    Pos(Vec<ListSubtypeAtom>),
     Neg(Vec<ListSubtypeAtom>),
 }
 
@@ -212,23 +212,26 @@ pub struct ListSubtype {
 impl ListSubtype {
     pub fn new_parametric_list(ty: Ty) -> Self {
         ListSubtype {
-            items: vec![ListSubtypeAtomDnf::Pos(ListSubtypeAtom {
+            items: vec![ListSubtypeAtomDnf::Pos(vec![ListSubtypeAtom {
                 prefix: vec![],
                 rest: ty,
-            })],
+            }])],
         }
     }
     pub fn new_closed_tuple(prefix: Vec<Ty>) -> Self {
         ListSubtype {
-            items: vec![ListSubtypeAtomDnf::Pos(ListSubtypeAtom {
+            items: vec![ListSubtypeAtomDnf::Pos(vec![ListSubtypeAtom {
                 prefix,
                 rest: TC::new_never(),
-            })],
+            }])],
         }
     }
     pub fn new_open_tuple(prefix: Vec<Ty>, rest: Ty) -> Self {
         ListSubtype {
-            items: vec![ListSubtypeAtomDnf::Pos(ListSubtypeAtom { prefix, rest })],
+            items: vec![ListSubtypeAtomDnf::Pos(vec![ListSubtypeAtom {
+                prefix,
+                rest,
+            }])],
         }
     }
 
@@ -239,8 +242,10 @@ impl ListSubtype {
             let mut pos = vec![];
             let mut neg = vec![];
             match i {
-                ListSubtypeAtomDnf::Pos(list_subtype_atom) => {
-                    pos.push(list_subtype_atom.display());
+                ListSubtypeAtomDnf::Pos(v) => {
+                    for p in v {
+                        pos.push(p.display());
+                    }
                 }
                 ListSubtypeAtomDnf::Neg(v) => {
                     for n in v {
@@ -249,11 +254,11 @@ impl ListSubtype {
                 }
             }
 
-            let pos_part = pos.join(" | ");
+            let pos_part = pos.join(" & ");
 
             if neg.is_empty() {
                 if pos_part.is_empty() {
-                    todo!()
+                    inner.push("errorbothempty".to_owned());
                 } else {
                     inner.push(pos_part);
                 }
@@ -276,38 +281,28 @@ impl ListSubtype {
 
 impl SubOps for ListSubtype {
     fn sub_complement(&self) -> Self {
-        // let mut pos_collect = vec![];
-        // let mut neg_collect = vec![];
-        // for it in &self.items {
-        //     match it {
-        //         ListSubtypeAtomDnf::Pos(list_subtype_atom) => {
-        //             pos_collect.push(list_subtype_atom.clone());
-        //         }
-        //         ListSubtypeAtomDnf::Neg(vec) => {
-        //             neg_collect.extend(vec.clone());
-        //         }
-        //     }
-        // }
+        let mut items = vec![];
 
-        // if neg_collect.is_empty() {
-        //     ListSubtype {
-        //         items: vec![ListSubtypeAtomDnf::Neg(pos_collect)],
-        //     }
-        // } else {
-        //     if pos_collect.is_empty() {
-        //         ListSubtype {
-        //             items: neg_collect
-        //                 .iter()
-        //                 .map(|n| ListSubtypeAtomDnf::Pos(n.clone()))
-        //                 .collect(),
-        //         }
-        //     } else {
-        //         dbg!(&pos_collect);
-        //         dbg!(&neg_collect);
-        //         todo!()
-        //     }
-        // }
-        todo!()
+        let mut positives = vec![];
+
+        for it in &self.items {
+            match it {
+                ListSubtypeAtomDnf::Pos(vec) => {
+                    positives.extend(vec.clone());
+                }
+                ListSubtypeAtomDnf::Neg(vec) => {
+                    for v in vec {
+                        items.push(ListSubtypeAtomDnf::Pos(vec![v.clone()]));
+                    }
+                }
+            }
+        }
+
+        if !positives.is_empty() {
+            items.push(ListSubtypeAtomDnf::Neg(positives));
+        }
+
+        ListSubtype { items }
     }
 
     fn sub_intersect(&self, other: &Self) -> SubtypeResult<Self> {
@@ -315,7 +310,28 @@ impl SubOps for ListSubtype {
     }
 
     fn is_never(&self) -> bool {
-        todo!()
+        dbg!(&self);
+        if self.items.is_empty() {
+            return true;
+        }
+        for i in &self.items {
+            match i {
+                ListSubtypeAtomDnf::Pos(v) => {
+                    if v.is_empty() {
+                        return true;
+                    }
+                    for a in v {
+                        if a.is_never() {
+                            return true;
+                        }
+                    }
+                }
+                ListSubtypeAtomDnf::Neg(_) => {
+                    return false;
+                }
+            }
+        }
+        return false;
     }
 
     fn sub_union(&self, other: &Self) -> SubtypeResult<Self> {
@@ -1040,6 +1056,9 @@ mod tests {
         let t_complement = t.complement();
         let sub2 = sub1.diff(&t_complement);
         assert!(sub2.is_never());
+
+        let all = sub1.union(&t);
+        assert!(all.is_unknown());
     }
 
     #[test]
