@@ -3,6 +3,7 @@
     "beff",
     "bindgen",
     "codegen",
+    "Complementable",
     "consts",
     "ctxt",
     "curr",

@@ -6,6 +6,20 @@ pub enum SubtypeResult<T> {
     Proper(T),
 }
 
+pub trait Complementable {
+    fn complement(&self) -> Self;
+}
+
+impl Complementable for bool {
+    fn complement(&self) -> Self {
+        !self
+    }
+}
+
+pub trait SubDifferentiable {
+    fn sub_diff(&self, other: &Self) -> SubtypeResult<Box<Self>>;
+}
+
 #[bitfield(u8)]
 #[derive(PartialEq, Eq, PartialOrd, Ord)]
 pub struct TypeBitSet {
@@ -135,34 +149,125 @@ impl SubtypeData {
         self
     }
 
-    pub fn union_bool(&self, other: &Self) -> SubtypeResult<bool> {
-        match (&self.boolean, &other.boolean) {
-            (Some(a), None) => SubtypeResult::Proper(*a),
-            (None, Some(b)) => SubtypeResult::Proper(*b),
-            (Some(a), Some(b)) => {
-                if a == b {
-                    SubtypeResult::Proper(*a)
-                } else {
-                    SubtypeResult::Top
-                }
-            }
+    fn diff_generic<T: Clone + Complementable>(
+        a: &Option<T>,
+        b: &Option<T>,
+        on_both: impl FnOnce(&T, &T) -> SubtypeResult<T>,
+    ) -> SubtypeResult<T> {
+        match (&a, &b) {
+            (Some(a), None) => SubtypeResult::Proper(a.clone()),
+            (None, Some(b)) => SubtypeResult::Proper(b.complement()),
+            (Some(a), Some(b)) => on_both(a, b),
             (None, None) => SubtypeResult::Bot,
         }
     }
-    pub fn union_string(&self, other: &Self) -> SubtypeResult<StringSubtype> {
-        match (&self.string, &other.string) {
+    pub fn diff_bool(&self, other: &Self) -> SubtypeResult<bool> {
+        Self::diff_generic(&self.boolean, &other.boolean, |a, b| {
+            if a == b {
+                SubtypeResult::Bot
+            } else {
+                SubtypeResult::Proper(*a)
+            }
+        })
+    }
+
+    fn intersect_generic<T: Clone>(
+        a: &Option<T>,
+        b: &Option<T>,
+        on_both: impl FnOnce(&T, &T) -> SubtypeResult<T>,
+    ) -> SubtypeResult<T> {
+        match (&a, &b) {
             (Some(a), None) => SubtypeResult::Proper(a.clone()),
             (None, Some(b)) => SubtypeResult::Proper(b.clone()),
-            (
-                Some(StringSubtype {
-                    allowed: a1,
-                    values: v1,
-                }),
-                Some(StringSubtype {
-                    allowed: a2,
-                    values: v2,
-                }),
-            ) => (match (*a1, *a2) {
+            (Some(a), Some(b)) => on_both(a, b),
+            (None, None) => SubtypeResult::Bot,
+        }
+    }
+    pub fn intersect_bool(&self, other: &Self) -> SubtypeResult<bool> {
+        Self::intersect_generic(&self.boolean, &other.boolean, |a, b| {
+            if a == b {
+                SubtypeResult::Proper(*a)
+            } else {
+                SubtypeResult::Bot
+            }
+        })
+    }
+
+    pub fn intersect_string(&self, other: &Self) -> SubtypeResult<StringSubtype> {
+        Self::intersect_generic(&self.string, &other.string, |a, b| {
+            let StringSubtype {
+                allowed: a1,
+                values: v1,
+            } = a;
+
+            let StringSubtype {
+                allowed: a2,
+                values: v2,
+            } = b;
+            (match (*a1, *a2) {
+                (true, true) => StringSubtype {
+                    allowed: true,
+                    values: vec_intersect(v1, v2),
+                },
+                (false, false) => StringSubtype {
+                    allowed: false,
+                    values: vec_union(v1, v2),
+                },
+                (true, false) => StringSubtype {
+                    allowed: true,
+                    values: vec_diff(v1, v2),
+                },
+                (false, true) => StringSubtype {
+                    allowed: true,
+                    values: vec_diff(v2, v1),
+                },
+            })
+            .to_subtype_result()
+        })
+    }
+
+    pub fn intersect_list(&self, other: &Self) -> SubtypeResult<ListSubtype> {
+        Self::intersect_generic(&self.list, &other.list, |a, b| {
+            SubtypeResult::Proper(ListSubtype {
+                items: vec_intersect(&a.items, &b.items),
+            })
+        })
+    }
+
+    fn union_generic<T: Clone>(
+        a: &Option<T>,
+        b: &Option<T>,
+        on_both: impl FnOnce(&T, &T) -> SubtypeResult<T>,
+    ) -> SubtypeResult<T> {
+        match (&a, &b) {
+            (None, None) => SubtypeResult::Bot,
+            (Some(a), None) => SubtypeResult::Proper(a.clone()),
+            (None, Some(b)) => SubtypeResult::Proper(b.clone()),
+            (Some(a), Some(b)) => on_both(a, b),
+        }
+    }
+
+    pub fn union_bool(&self, other: &Self) -> SubtypeResult<bool> {
+        Self::union_generic(&self.boolean, &other.boolean, |a, b| {
+            if a == b {
+                SubtypeResult::Proper(*a)
+            } else {
+                SubtypeResult::Top
+            }
+        })
+    }
+    pub fn union_string(&self, other: &Self) -> SubtypeResult<StringSubtype> {
+        Self::union_generic(&self.string, &other.string, |a, b| {
+            let StringSubtype {
+                allowed: a1,
+                values: v1,
+            } = a;
+
+            let StringSubtype {
+                allowed: a2,
+                values: v2,
+            } = b;
+            (match (*a1, *a2) {
                 (true, true) => StringSubtype {
                     allowed: true,
                     values: vec_union(v1, v2),
@@ -180,20 +285,16 @@ impl SubtypeData {
                     values: vec_diff(v1, v2),
                 },
             })
-            .to_subtype_result(),
-            (None, None) => SubtypeResult::Bot,
-        }
+            .to_subtype_result()
+        })
     }
 
     pub fn union_list(&self, other: &Self) -> SubtypeResult<ListSubtype> {
-        match (&self.list, &other.list) {
-            (Some(l1), None) => SubtypeResult::Proper(l1.clone()),
-            (None, Some(l2)) => SubtypeResult::Proper(l2.clone()),
-            (Some(l1), Some(l2)) => SubtypeResult::Proper(ListSubtype {
-                items: vec_union(&l1.items, &l2.items),
-            }),
-            (None, None) => SubtypeResult::Bot,
-        }
+        Self::union_generic(&self.list, &other.list, |a, b| {
+            SubtypeResult::Proper(ListSubtype {
+                items: vec_union(&a.items, &b.items),
+            })
+        })
     }
 }
 
@@ -261,75 +362,47 @@ impl Ty {
         let some = TypeBitSet::from_bits(some);
 
         let mut subtype_data = SubtypeData::new_empty();
-        let all = TypeBitSet::from_bits(all);
+        let mut all = TypeBitSet::from_bits(all);
 
         if some.boolean() {
-            match (&self.subtype_data.boolean, &b.subtype_data.boolean) {
-                (Some(a), None) => {
-                    subtype_data.boolean = Some(*a);
+            match self.subtype_data.intersect_bool(&b.subtype_data) {
+                SubtypeResult::Top => {
+                    all.set_boolean(true);
                 }
-                (None, Some(b)) => {
-                    subtype_data.boolean = Some(*b);
+                SubtypeResult::Bot => {
+                    // pass
                 }
-                (Some(a), Some(b)) => {
-                    if a == b {
-                        subtype_data.boolean = Some(*a);
-                    } else {
-                        // pass
-                    }
-                }
-                (None, None) => {
-                    todo!()
+                SubtypeResult::Proper(p) => {
+                    subtype_data.boolean = Some(p);
                 }
             }
         }
         if some.string() {
-            match (&self.subtype_data.string, &b.subtype_data.string) {
-                (Some(a), None) => {
-                    subtype_data.string = Some(a.clone());
+            match self.subtype_data.intersect_string(&b.subtype_data) {
+                SubtypeResult::Top => {
+                    all.set_string(true);
                 }
-                (None, Some(b)) => {
-                    subtype_data.string = Some(b.clone());
+                SubtypeResult::Bot => {
+                    // pass
                 }
-                (
-                    Some(StringSubtype {
-                        allowed: a1,
-                        values: v1,
-                    }),
-                    Some(StringSubtype {
-                        allowed: a2,
-                        values: v2,
-                    }),
-                ) => {
-                    subtype_data.string = (match (*a1, *a2) {
-                        (true, true) => StringSubtype {
-                            allowed: true,
-                            values: vec_intersect(v1, v2),
-                        },
-                        (false, false) => StringSubtype {
-                            allowed: false,
-                            values: vec_union(v1, v2),
-                        },
-                        (true, false) => StringSubtype {
-                            allowed: true,
-                            values: vec_diff(v1, v2),
-                        },
-                        (false, true) => StringSubtype {
-                            allowed: true,
-                            values: vec_diff(v2, v1),
-                        },
-                    })
-                    .to_option()
-                }
-                (None, None) => {
-                    todo!()
+                SubtypeResult::Proper(p) => {
+                    subtype_data.string = Some(p);
                 }
             }
         }
 
         if some.list() {
-            subtype_data.list =
-                intersect_list_subtypes(&self.subtype_data.list, &b.subtype_data.list);
+            match self.subtype_data.intersect_list(&b.subtype_data) {
+                SubtypeResult::Top => {
+                    all.set_list(true);
+                }
+                SubtypeResult::Bot => {
+                    // pass
+                }
+                SubtypeResult::Proper(p) => {
+                    subtype_data.list = Some(p);
+                }
+            }
         }
 
         Ty {
@@ -351,25 +424,18 @@ impl Ty {
         }
 
         let mut subtype_data = SubtypeData::new_empty();
-        let all = TypeBitSet::from_bits(all);
+        let mut all = TypeBitSet::from_bits(all);
         let some = TypeBitSet::from_bits(some);
         if some.boolean() {
-            match (&self.subtype_data.boolean, &b.subtype_data.boolean) {
-                (Some(a), None) => {
-                    subtype_data.boolean = Some(*a);
+            match self.subtype_data.diff_bool(&b.subtype_data) {
+                SubtypeResult::Top => {
+                    all.set_boolean(true);
                 }
-                (None, Some(b)) => {
-                    subtype_data.boolean = Some(!b);
+                SubtypeResult::Bot => {
+                    // pass
                 }
-                (Some(a), Some(b)) => {
-                    if a == b {
-                        // pass
-                    } else {
-                        subtype_data.boolean = Some(*a);
-                    }
-                }
-                (None, None) => {
-                    todo!()
+                SubtypeResult::Proper(p) => {
+                    subtype_data.boolean = Some(p);
                 }
             }
         }
@@ -558,20 +624,6 @@ impl Ty {
     }
     pub fn display(&self) -> String {
         self.display_impl(true)
-    }
-}
-
-fn intersect_list_subtypes(
-    list_1: &Option<ListSubtype>,
-    list_2: &Option<ListSubtype>,
-) -> Option<ListSubtype> {
-    match (list_1, list_2) {
-        (None, None) => None,
-        (None, Some(l2)) => Some(l2.clone()),
-        (Some(l1), None) => Some(l1.clone()),
-        (Some(l1), Some(l2)) => Some(ListSubtype {
-            items: vec_intersect(&l1.items, &l2.items),
-        }),
     }
 }
 
@@ -770,6 +822,9 @@ mod tests {
 
         let u = a.union(&b);
         insta::assert_snapshot!(u.display(), @"('a' | 'b')");
+
+        let au = a.intersect(&u);
+        insta::assert_snapshot!(au.display(), @"('a')");
 
         let i = a.intersect(&b);
         insta::assert_snapshot!(i.display(), @"()");
