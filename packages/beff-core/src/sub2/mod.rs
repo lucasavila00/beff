@@ -22,6 +22,7 @@ pub enum SubtypeResult<T: ?Sized> {
 }
 
 pub trait SubOps {
+    fn is_never(&self) -> bool;
     fn sub_complement(&self) -> Self;
     fn sub_diff(&self, other: &Self) -> SubtypeResult<Self>;
     fn sub_intersect(&self, other: &Self) -> SubtypeResult<Self>;
@@ -55,6 +56,10 @@ impl SubOps for bool {
             SubtypeResult::Top
         }
     }
+
+    fn is_never(&self) -> bool {
+        false
+    }
 }
 
 #[derive(Clone, PartialEq, Eq, PartialOrd, Ord, Debug)]
@@ -70,10 +75,6 @@ impl StringSubtype {
         } else {
             SubtypeResult::Proper(self.into())
         }
-    }
-
-    fn is_never(&self) -> bool {
-        self.values.is_empty()
     }
 }
 
@@ -149,6 +150,10 @@ impl SubOps for StringSubtype {
         })
         .to_subtype_result()
     }
+
+    fn is_never(&self) -> bool {
+        self.values.is_empty()
+    }
 }
 
 #[derive(Clone, PartialEq, Eq, PartialOrd, Ord, Debug)]
@@ -176,10 +181,6 @@ impl ListSubtype {
                 allowed: true,
             }],
         }
-    }
-
-    fn is_never(&self) -> bool {
-        self.items.iter().all(|i| i.is_never())
     }
 
     fn display(&self) -> String {
@@ -255,6 +256,10 @@ impl SubOps for ListSubtype {
             }
             .into(),
         )
+    }
+
+    fn is_never(&self) -> bool {
+        self.items.iter().all(|i| i.is_never())
     }
 }
 
@@ -943,5 +948,12 @@ mod tests {
 
         let diffed = u.diff(&list_bools);
         insta::assert_snapshot!(diffed.display(), @"list[null]");
+        assert!(!diffed.is_never());
+
+        let diffed2 = diffed.diff(&list_nulls);
+        assert!(diffed2.is_never());
+
+        let diffed3 = diffed.diff(&TC::new_list_top());
+        assert!(diffed3.is_never());
     }
 }
