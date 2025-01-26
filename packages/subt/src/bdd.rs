@@ -1,4 +1,4 @@
-use crate::sub::Ty;
+use crate::sub::{Dnf, Ty};
 use std::{cmp::Ordering, collections::BTreeMap, rc::Rc};
 
 #[derive(PartialEq, Eq, Hash, Debug, Ord, PartialOrd)]
@@ -302,6 +302,10 @@ impl ListAtomic {
     pub fn display(&self) -> String {
         let items_display = self.items.display();
         format!("list[({})...]", items_display)
+    }
+    pub fn to_dnf(&self) -> Dnf {
+        let inner_dnf = self.items.to_dnf();
+        Dnf::list(inner_dnf)
     }
 }
 

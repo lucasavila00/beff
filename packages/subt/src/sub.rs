@@ -375,24 +375,23 @@ impl Ty {
             list: self.list.intersect(&b.list),
         }
     }
-
-    pub fn display(&self) -> String {
-        let mut acc = vec![];
+    pub fn to_dnf(&self) -> Dnf {
+        let mut acc: Vec<Dnf> = vec![];
 
         if self.bitmap.null() {
-            acc.push("null".to_owned());
+            acc.push(Dnf::top("null".to_owned()));
         }
 
         match self.boolean {
             BooleanSubtype::Top => {
-                acc.push("boolean".to_owned());
+                acc.push(Dnf::top("boolean".to_owned()));
             }
             BooleanSubtype::Bot => {}
             BooleanSubtype::Bool(v) => {
                 if v {
-                    acc.push("true".to_owned());
+                    acc.push(Dnf::const_("true".to_owned()));
                 } else {
-                    acc.push("false".to_owned());
+                    acc.push(Dnf::const_("false".to_owned()));
                 }
             }
         }
@@ -400,52 +399,52 @@ impl Ty {
         match &self.string {
             StringSubtype::Pos(vec) => {
                 for v in vec {
-                    acc.push(format!("'{}'", v));
+                    acc.push(Dnf::const_(format!("'{}'", v)));
                 }
             }
             StringSubtype::Neg(vec) => {
                 if vec.is_empty() {
-                    acc.push("string".to_owned());
+                    acc.push(Dnf::top("string".to_owned()));
                 } else {
-                    let joined = format!(
-                        "(string - ({}))",
+                    acc.push(Dnf::and(
                         vec.iter()
-                            .map(|v| format!("'{}'", v))
-                            .collect::<Vec<String>>()
-                            .join(" | ")
-                    );
-                    acc.push(joined);
+                            .map(|v| Dnf::not(Dnf::const_(format!("'{}'", v))))
+                            .collect(),
+                    ));
                 }
             }
         }
 
-        acc.extend(self.display_list());
+        acc.push(self.list_to_dnf());
 
-        acc.join(" | ")
+        Dnf::or(acc)
+    }
+    pub fn display(&self) -> String {
+        self.to_dnf().display(false)
     }
 
-    fn display_list(&self) -> Vec<String> {
-        Self::display_list_bdd(&self.list)
+    fn list_to_dnf(&self) -> Dnf {
+        Self::display_list_bdd_dnf(&self.list)
     }
 
-    fn display_list_bdd(it: &Rc<Bdd>) -> Vec<String> {
+    fn display_list_bdd_dnf(it: &Rc<Bdd>) -> Dnf {
         match it.as_ref() {
-            Bdd::True => vec!["list".to_string()],
-            Bdd::False => vec![],
+            Bdd::True => Dnf::top("list".to_string()),
+            Bdd::False => Dnf::bot(),
             Bdd::Node {
                 atom,
                 left,
                 middle,
                 right,
-            } => Self::display_list_bdd_node(atom, left, middle, right),
+            } => Self::display_list_bdd_node_dnf(atom, left, middle, right),
         }
     }
-    fn display_list_bdd_node(
+    fn display_list_bdd_node_dnf(
         atom: &Rc<Atom>,
         left: &Rc<Bdd>,
         middle: &Rc<Bdd>,
         right: &Rc<Bdd>,
-    ) -> Vec<String> {
+    ) -> Dnf {
         let lt = {
             let c = local_ctx();
             let ctx = c.lock().unwrap();
@@ -454,8 +453,8 @@ impl Ty {
                 _ => unreachable!(),
             }
         };
-        let explained_sts = lt.display();
-        let mut acc = vec![];
+        let explained_sts = lt.to_dnf();
+        let mut acc: Vec<Dnf> = vec![];
 
         match left.as_ref() {
             Bdd::True => {
@@ -471,9 +470,9 @@ impl Ty {
                 right,
             } => {
                 let mut acc2 = vec![explained_sts.clone()];
-                acc2.extend(Self::display_list_bdd_node(atom, left, middle, right));
+                acc2.push(Self::display_list_bdd_node_dnf(atom, left, middle, right));
 
-                acc.push(format!("({})", acc2.join(" & ")));
+                acc.push(Dnf::and(acc2));
             }
         };
 
@@ -482,12 +481,12 @@ impl Ty {
                 // noop
             }
             Bdd::True | Bdd::Node { .. } => {
-                acc.extend(Self::display_list_bdd(middle));
+                acc.push(Self::display_list_bdd_dnf(middle));
             }
         }
         match right.as_ref() {
             Bdd::True => {
-                acc.push(format!("!({})", explained_sts));
+                acc.push(Dnf::not(explained_sts));
             }
             Bdd::False => {
                 // noop
@@ -499,19 +498,108 @@ impl Ty {
                 right,
             } => {
                 let ty = vec![
-                    format!("!({})", explained_sts),
-                    format!(
-                        "({})",
-                        Self::display_list_bdd_node(atom, left, middle, right).join(" | ")
-                    ),
-                ]
-                .join(" & ");
+                    Dnf::not(explained_sts),
+                    Self::display_list_bdd_node_dnf(atom, left, middle, right),
+                ];
 
-                acc.push(format!("({})", ty));
+                acc.push(Dnf::and(ty));
             }
         }
 
-        acc
+        Dnf::or(acc)
+    }
+}
+
+#[derive(Debug, Clone)]
+pub enum Dnf {
+    Or(Vec<Dnf>),
+    And(Vec<Dnf>),
+    Not(Box<Dnf>),
+    Top(String),
+    Const(String),
+    Bot,
+    List(Box<Dnf>),
+}
+
+impl Dnf {
+    pub fn or(v: Vec<Dnf>) -> Dnf {
+        // flatten ors
+        let mut acc: Vec<Dnf> = vec![];
+        for d in v {
+            match d {
+                Dnf::Or(v) => acc.extend(v),
+                d => acc.push(d),
+            }
+        }
+        // filter all bots
+        let acc: Vec<Dnf> = acc.into_iter().filter(|d| !matches!(d, Dnf::Bot)).collect();
+        // if len 1, return just it
+        if acc.len() == 1 {
+            acc.into_iter().next().unwrap()
+        } else {
+            Dnf::Or(acc)
+        }
+    }
+    pub fn and(v: Vec<Dnf>) -> Dnf {
+        // if len 1, return just it
+        if v.len() == 1 {
+            v.into_iter().next().unwrap()
+        } else {
+            Dnf::And(v)
+        }
+    }
+    pub fn not(v: Dnf) -> Dnf {
+        Dnf::Not(Box::new(v))
+    }
+    pub fn top(v: String) -> Dnf {
+        Dnf::Top(v)
+    }
+    pub fn const_(v: String) -> Dnf {
+        Dnf::Const(v)
+    }
+    pub fn bot() -> Dnf {
+        Dnf::Bot
+    }
+    pub fn list(v: Dnf) -> Dnf {
+        Dnf::List(Box::new(v))
+    }
+
+    pub fn display(&self, wrap: bool) -> String {
+        match self {
+            Dnf::Or(vec) => {
+                let inner = vec
+                    .iter()
+                    .map(|d| d.display(true))
+                    .collect::<Vec<String>>()
+                    .join(" | ");
+                if wrap {
+                    format!("({})", inner)
+                } else {
+                    inner
+                }
+            }
+            Dnf::And(vec) => {
+                let inner = vec
+                    .iter()
+                    .map(|d| d.display(true))
+                    .collect::<Vec<String>>()
+                    .join(" & ");
+                if wrap {
+                    format!("({})", inner)
+                } else {
+                    inner
+                }
+            }
+            Dnf::Not(dnf) => {
+                format!("!({})", dnf.display(false))
+            }
+            Dnf::Top(it) => it.clone(),
+            Dnf::Const(it) => it.clone(),
+            Dnf::Bot => "⊥".to_owned(),
+            Dnf::List(dnf) => {
+                format!("list[{}...]", dnf.display(true))
+            }
+        }
     }
 }
 
@@ -703,7 +791,7 @@ mod tests {
         insta::assert_snapshot!(a.display(), @"'a'");
 
         let c = a.complement();
-        insta::assert_snapshot!(c.display(), @"null | boolean | (string - ('a')) | list");
+        insta::assert_snapshot!(c.display(), @"null | boolean | !('a') | list");
 
         let back = c.complement();
         assert!(back.is_same_type(&a));
@@ -797,7 +885,7 @@ mod tests {
         let top = Ty::new_top();
         let t = Ty::new_strings(vec!["a".to_string()]);
         let sub1 = top.diff(&t);
-        insta::assert_snapshot!(sub1.display(), @"null | boolean | (string - ('a')) | list");
+        insta::assert_snapshot!(sub1.display(), @"null | boolean | !('a') | list");
 
         let t_complement = t.complement();
         let sub2 = sub1.diff(&t_complement);
@@ -811,13 +899,13 @@ mod tests {
     fn list_tests() {
         let bool_ty = Ty::new_bool_top();
         let l = Ty::new_parametric_list(bool_ty);
-        insta::assert_snapshot!(l.display(), @"list[(boolean)...]");
+        insta::assert_snapshot!(l.display(), @"list[boolean...]");
 
         let complement = l.complement();
-        insta::assert_snapshot!(complement.display(), @"null | boolean | string | !(list[(boolean)...])");
+        insta::assert_snapshot!(complement.display(), @"null | boolean | string | !(list[boolean...])");
 
         let and_back_again = complement.complement();
-        insta::assert_snapshot!(and_back_again.display(), @"list[(boolean)...]");
+        insta::assert_snapshot!(and_back_again.display(), @"list[boolean...]");
         assert!(and_back_again.is_same_type(&l));
     }
     #[test]
@@ -829,13 +917,16 @@ mod tests {
         let l2 = Ty::new_parametric_list(string_ty);
 
         let u = l1.union(&l2);
-        insta::assert_snapshot!(u.display(), @"list[(boolean)...] | list[(string)...]");
+        insta::assert_snapshot!(u.display(), @"list[boolean...] | list[string...]");
+        insta::assert_compact_debug_snapshot!(u.to_dnf(), @r###"Or([List(Top("boolean")), List(Top("string"))])"###);
 
         let complement = u.complement();
-        insta::assert_snapshot!(complement.display(), @"null | boolean | string | (!(list[(boolean)...]) & (!(list[(string)...])))");
+        insta::assert_snapshot!(complement.display(), @"null | boolean | string | (!(list[boolean...]) & !(list[string...]))");
+
+        insta::assert_compact_debug_snapshot!(complement.to_dnf(), @r###"Or([Top("null"), Top("boolean"), Top("string"), And([Not(List(Top("boolean"))), Not(List(Top("string")))])])"###);
 
         let and_back_again = complement.complement();
-        insta::assert_snapshot!(and_back_again.display(), @"list[(boolean)...] | list[(string)...]");
+        insta::assert_snapshot!(and_back_again.display(), @"list[boolean...] | list[string...]");
         assert!(and_back_again.is_same_type(&u));
     }
     #[test]
@@ -863,13 +954,15 @@ mod tests {
 
         let u = l1.union(&l2);
         let u = Ty::new_parametric_list(u);
-        insta::assert_snapshot!(u.display(), @"list[(list[(boolean)...] | list[(string)...])...]");
+        insta::assert_snapshot!(u.display(), @"list[(list[boolean...] | list[string...])...]");
 
         let complement = u.complement();
-        insta::assert_snapshot!(complement.display(), @"null | boolean | string | !(list[(list[(boolean)...] | list[(string)...])...])");
+        insta::assert_snapshot!(complement.display(), @"null | boolean | string | !(list[(list[boolean...] | list[string...])...])");
+        insta::assert_compact_debug_snapshot!(complement.to_dnf(), @r###"Or([Top("null"), Top("boolean"), Top("string"), Not(List(Or([List(Top("boolean")), List(Top("string"))])))])"###);
+        insta::assert_compact_debug_snapshot!(complement.to_dnf().display(false), @r###""null | boolean | string | !(list[(list[boolean...] | list[string...])...])""###);
 
         let and_back_again = complement.complement();
-        insta::assert_snapshot!(and_back_again.display(), @"list[(list[(boolean)...] | list[(string)...])...]");
+        insta::assert_snapshot!(and_back_again.display(), @"list[(list[boolean...] | list[string...])...]");
         assert!(and_back_again.is_same_type(&u));
     }
 }
