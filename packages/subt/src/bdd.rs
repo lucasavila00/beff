@@ -299,13 +299,14 @@ pub struct ListAtomic {
 }
 
 impl ListAtomic {
-    pub fn display(&self) -> String {
-        let items_display = self.items.display();
-        format!("list[({})...]", items_display)
-    }
     pub fn to_dnf(&self) -> Dnf {
         let inner_dnf = self.items.to_dnf();
-        Dnf::list(inner_dnf)
+        let prefix = self
+            .prefix_items
+            .iter()
+            .map(|it| it.to_dnf())
+            .collect::<Vec<_>>();
+        Dnf::list(prefix, inner_dnf)
     }
 }
 

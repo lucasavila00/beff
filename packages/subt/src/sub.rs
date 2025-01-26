@@ -6,7 +6,8 @@ use std::{
 use bitfield_struct::bitfield;
 
 use crate::bdd::{
-    list_is_empty, Atom, Bdd, EvidenceResult, ListAtomic, ProperSubtypeEvidenceResult, TC,
+    list_is_empty, Atom, Bdd, Evidence, EvidenceResult, ListAtomic, ProperSubtypeEvidence,
+    ProperSubtypeEvidenceResult, TC,
 };
 
 fn vec_union<K: PartialEq + Clone + Ord>(v1: &[K], v2: &[K]) -> Vec<K> {
@@ -74,7 +75,7 @@ impl BooleanSubtype {
     fn new_top() -> BooleanSubtype {
         BooleanSubtype::Top
     }
-    fn is_bot(&self) -> bool {
+    pub fn is_bot(&self) -> bool {
         matches!(self, BooleanSubtype::Bot)
     }
     pub fn is_top(&self) -> bool {
@@ -313,20 +314,49 @@ impl Ty {
     }
 
     pub fn is_bot(&self) -> bool {
-        self.bitmap.is_bot()
-            && self.boolean.is_bot()
-            && self.string.is_bot()
-            && (match list_is_empty(
-                &self.list,
-                //
-                &mut local_ctx().lock().unwrap(),
-            ) {
-                ProperSubtypeEvidenceResult::IsEmpty => true,
-                ProperSubtypeEvidenceResult::Evidence(_) => false,
-            })
+        matches!(self.is_empty_evidence(), EvidenceResult::IsEmpty)
     }
     pub fn is_empty_evidence(&self) -> EvidenceResult {
-        todo!()
+        if self.bitmap.into_bits() != 0 {
+            if self.bitmap.null() {
+                return Evidence::BitmapNull {}.to_result();
+            }
+
+            unreachable!("should have found a tag")
+        }
+
+        match &self.boolean {
+            BooleanSubtype::Top => {
+                return EvidenceResult::Evidence(Evidence::Proper(ProperSubtypeEvidence::Boolean(
+                    true,
+                )))
+            }
+            BooleanSubtype::Bot => {}
+            BooleanSubtype::Bool(b) => {
+                return EvidenceResult::Evidence(Evidence::Proper(ProperSubtypeEvidence::Boolean(
+                    *b,
+                )))
+            }
+        }
+        if !self.string.is_bot() {
+            return EvidenceResult::Evidence(Evidence::Proper(match &self.string {
+                StringSubtype::Pos(vec) => ProperSubtypeEvidence::String {
+                    allowed: true,
+                    values: vec.clone(),
+                },
+                StringSubtype::Neg(vec) => ProperSubtypeEvidence::String {
+                    allowed: false,
+                    values: vec.clone(),
+                },
+            }));
+        }
+        if let ProperSubtypeEvidenceResult::Evidence(e) =
+            list_is_empty(&self.list, &mut local_ctx().lock().unwrap())
+        {
+            return EvidenceResult::Evidence(Evidence::Proper(e));
+        };
+
+        return EvidenceResult::IsEmpty;
     }
     pub fn is_subtype(&self, b: &Ty) -> bool {
         self.diff(b).is_bot()
@@ -379,36 +409,32 @@ impl Ty {
         let mut acc: Vec<Dnf> = vec![];
 
         if self.bitmap.null() {
-            acc.push(Dnf::top("null".to_owned()));
+            acc.push(Dnf::null());
         }
 
         match self.boolean {
             BooleanSubtype::Top => {
-                acc.push(Dnf::top("boolean".to_owned()));
+                acc.push(Dnf::bool_top());
             }
             BooleanSubtype::Bot => {}
             BooleanSubtype::Bool(v) => {
-                if v {
-                    acc.push(Dnf::const_("true".to_owned()));
-                } else {
-                    acc.push(Dnf::const_("false".to_owned()));
-                }
+                acc.push(Dnf::bool_const(v));
             }
         }
 
         match &self.string {
             StringSubtype::Pos(vec) => {
                 for v in vec {
-                    acc.push(Dnf::const_(format!("'{}'", v)));
+                    acc.push(Dnf::string_const(v.clone()));
                 }
             }
             StringSubtype::Neg(vec) => {
                 if vec.is_empty() {
-                    acc.push(Dnf::top("string".to_owned()));
+                    acc.push(Dnf::string_top());
                 } else {
                     acc.push(Dnf::and(
                         vec.iter()
-                            .map(|v| Dnf::not(Dnf::const_(format!("'{}'", v))))
+                            .map(|v| Dnf::not(Dnf::string_const(v.clone())))
                             .collect(),
                     ));
                 }
@@ -429,7 +455,7 @@ impl Ty {
 
     fn display_list_bdd_dnf(it: &Rc<Bdd>) -> Dnf {
         match it.as_ref() {
-            Bdd::True => Dnf::top("list".to_string()),
+            Bdd::True => Dnf::list_top(),
             Bdd::False => Dnf::bot(),
             Bdd::Node {
                 atom,
@@ -515,13 +541,20 @@ pub enum Dnf {
     Or(Vec<Dnf>),
     And(Vec<Dnf>),
     Not(Box<Dnf>),
-    Top(String),
-    Const(String),
+    Null,
+    BoolTop,
+    StringTop,
+    ListTop,
+    BoolConst(bool),
+    StringConst(String),
     Bot,
-    List(Box<Dnf>),
+    List { prefix: Vec<Dnf>, rest: Box<Dnf> },
 }
 
 impl Dnf {
+    pub fn is_bot(&self) -> bool {
+        matches!(self, Dnf::Bot)
+    }
     pub fn or(v: Vec<Dnf>) -> Dnf {
         // flatten ors
         let mut acc: Vec<Dnf> = vec![];
@@ -551,17 +584,33 @@ impl Dnf {
     pub fn not(v: Dnf) -> Dnf {
         Dnf::Not(Box::new(v))
     }
-    pub fn top(v: String) -> Dnf {
-        Dnf::Top(v)
+    pub fn null() -> Dnf {
+        Dnf::Null
     }
-    pub fn const_(v: String) -> Dnf {
-        Dnf::Const(v)
+    pub fn bool_top() -> Dnf {
+        Dnf::BoolTop
+    }
+    pub fn string_top() -> Dnf {
+        Dnf::StringTop
+    }
+    pub fn list_top() -> Dnf {
+        Dnf::ListTop
+    }
+
+    pub fn string_const(v: String) -> Dnf {
+        Dnf::StringConst(v)
+    }
+    pub fn bool_const(v: bool) -> Dnf {
+        Dnf::BoolConst(v)
     }
     pub fn bot() -> Dnf {
         Dnf::Bot
     }
-    pub fn list(v: Dnf) -> Dnf {
-        Dnf::List(Box::new(v))
+    pub fn list(prefix: Vec<Dnf>, rest: Dnf) -> Dnf {
+        Dnf::List {
+            prefix,
+            rest: Box::new(rest),
+        }
     }
 
     pub fn display(&self, wrap: bool) -> String {
@@ -593,12 +642,28 @@ impl Dnf {
             Dnf::Not(dnf) => {
                 format!("!({})", dnf.display(false))
             }
-            Dnf::Top(it) => it.clone(),
-            Dnf::Const(it) => it.clone(),
+            Dnf::StringConst(it) => format!("'{}'", it),
+            Dnf::BoolConst(it) => it.to_string(),
             Dnf::Bot => "⊥".to_owned(),
-            Dnf::List(dnf) => {
-                format!("list[{}...]", dnf.display(true))
+            Dnf::List { prefix, rest } => {
+                let mut prefix = prefix
+                    .iter()
+                    .map(|d| d.display(true))
+                    .collect::<Vec<String>>()
+                    .join(", ");
+                let mut rest_part = "".to_owned();
+                if !rest.is_bot() {
+                    rest_part = rest_part + rest.display(true).as_str() + "...";
+                    if !prefix.is_empty() {
+                        prefix = prefix + ", ";
+                    }
+                }
+                format!("list[{}{}]", prefix, rest_part)
             }
+            Dnf::Null => "null".to_owned(),
+            Dnf::BoolTop => "boolean".to_owned(),
+            Dnf::StringTop => "string".to_owned(),
+            Dnf::ListTop => "list".to_owned(),
         }
     }
 }
@@ -918,12 +983,9 @@ mod tests {
 
         let u = l1.union(&l2);
         insta::assert_snapshot!(u.display(), @"list[boolean...] | list[string...]");
-        insta::assert_compact_debug_snapshot!(u.to_dnf(), @r###"Or([List(Top("boolean")), List(Top("string"))])"###);
 
         let complement = u.complement();
         insta::assert_snapshot!(complement.display(), @"null | boolean | string | (!(list[boolean...]) & !(list[string...]))");
-
-        insta::assert_compact_debug_snapshot!(complement.to_dnf(), @r###"Or([Top("null"), Top("boolean"), Top("string"), And([Not(List(Top("boolean"))), Not(List(Top("string")))])])"###);
 
         let and_back_again = complement.complement();
         insta::assert_snapshot!(and_back_again.display(), @"list[boolean...] | list[string...]");
@@ -940,6 +1002,10 @@ mod tests {
         let u = l1.union(&l2);
 
         let complement = u.complement();
+        insta::assert_snapshot!(complement.display(), @"null | boolean | string | (!(list[boolean...]) & !(list[string...]))");
+        let u1 = complement.union(&l1);
+        insta::assert_snapshot!(u1.display(), @"null | boolean | string | list[boolean...] | (!(list[boolean...]) & !(list[string...]))");
+        assert!(!u1.is_top());
 
         let unionized = complement.union(&l1).union(&l2);
         assert!(unionized.is_top());
@@ -958,8 +1024,6 @@ mod tests {
 
         let complement = u.complement();
         insta::assert_snapshot!(complement.display(), @"null | boolean | string | !(list[(list[boolean...] | list[string...])...])");
-        insta::assert_compact_debug_snapshot!(complement.to_dnf(), @r###"Or([Top("null"), Top("boolean"), Top("string"), Not(List(Or([List(Top("boolean")), List(Top("string"))])))])"###);
-        insta::assert_compact_debug_snapshot!(complement.to_dnf().display(false), @r###""null | boolean | string | !(list[(list[boolean...] | list[string...])...])""###);
 
         let and_back_again = complement.complement();
         insta::assert_snapshot!(and_back_again.display(), @"list[(list[boolean...] | list[string...])...]");
