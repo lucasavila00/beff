@@ -302,7 +302,7 @@ impl Ty {
         let pos = tc.list_definitions.len();
         tc.list_definitions.push(Some(Rc::new(ListAtomic {
             prefix_items: vec![],
-            items: items.into(),
+            rest: items.into(),
         })));
 
         pos
@@ -410,72 +410,72 @@ impl Ty {
             list: self.list.intersect(&b.list),
         }
     }
-    pub fn to_dnf(&self) -> Dnf {
-        let mut acc: Vec<Dnf> = vec![];
+    pub fn to_cf(&self) -> CF {
+        let mut acc: Vec<CF> = vec![];
 
         if self.bitmap.null() {
-            acc.push(Dnf::null());
+            acc.push(CF::null());
         }
 
         match self.boolean {
             BooleanSubtype::Top => {
-                acc.push(Dnf::bool_top());
+                acc.push(CF::bool_top());
             }
             BooleanSubtype::Bot => {}
             BooleanSubtype::Bool(v) => {
-                acc.push(Dnf::bool_const(v));
+                acc.push(CF::bool_const(v));
             }
         }
 
         match &self.string {
             StringSubtype::Pos(vec) => {
                 for v in vec {
-                    acc.push(Dnf::string_const(v.clone()));
+                    acc.push(CF::string_const(v.clone()));
                 }
             }
             StringSubtype::Neg(vec) => {
                 if vec.is_empty() {
-                    acc.push(Dnf::string_top());
+                    acc.push(CF::string_top());
                 } else {
-                    acc.push(Dnf::and(
+                    acc.push(CF::and(
                         vec.iter()
-                            .map(|v| Dnf::not(Dnf::string_const(v.clone())))
+                            .map(|v| CF::not(CF::string_const(v.clone())))
                             .collect(),
                     ));
                 }
             }
         }
 
-        acc.push(self.list_to_dnf());
+        acc.push(self.list_to_cf());
 
-        Dnf::or(acc)
+        CF::or(acc)
     }
     pub fn display_inner(&self) -> String {
-        self.to_dnf().display_impl(false)
+        self.to_cf().display_impl(false)
     }
 
-    fn list_to_dnf(&self) -> Dnf {
-        Self::display_list_bdd_dnf(&self.list)
+    fn list_to_cf(&self) -> CF {
+        Self::display_list_bdd_cf(&self.list)
     }
 
-    fn display_list_bdd_dnf(it: &Rc<Bdd>) -> Dnf {
+    fn display_list_bdd_cf(it: &Rc<Bdd>) -> CF {
         match it.as_ref() {
-            Bdd::True => Dnf::list_top(),
-            Bdd::False => Dnf::bot(),
+            Bdd::True => CF::list_top(),
+            Bdd::False => CF::bot(),
             Bdd::Node {
                 atom,
                 left,
                 middle,
                 right,
-            } => Self::display_list_bdd_node_dnf(atom, left, middle, right),
+            } => Self::display_list_bdd_node_cf(atom, left, middle, right),
         }
     }
-    fn display_list_bdd_node_dnf(
+    fn display_list_bdd_node_cf(
         atom: &Rc<Atom>,
         left: &Rc<Bdd>,
         middle: &Rc<Bdd>,
         right: &Rc<Bdd>,
-    ) -> Dnf {
+    ) -> CF {
         let lt = {
             let c = local_ctx();
             let ctx = c.lock().unwrap();
@@ -484,8 +484,8 @@ impl Ty {
                 _ => unreachable!(),
             }
         };
-        let explained_sts = lt.to_dnf();
-        let mut acc: Vec<Dnf> = vec![];
+        let explained_sts = lt.to_cf();
+        let mut acc: Vec<CF> = vec![];
 
         match left.as_ref() {
             Bdd::True => {
@@ -501,9 +501,9 @@ impl Ty {
                 right,
             } => {
                 let mut acc2 = vec![explained_sts.clone()];
-                acc2.push(Self::display_list_bdd_node_dnf(atom, left, middle, right));
+                acc2.push(Self::display_list_bdd_node_cf(atom, left, middle, right));
 
-                acc.push(Dnf::and(acc2));
+                acc.push(CF::and(acc2));
             }
         };
 
@@ -512,12 +512,12 @@ impl Ty {
                 // noop
             }
             Bdd::True | Bdd::Node { .. } => {
-                acc.push(Self::display_list_bdd_dnf(middle));
+                acc.push(Self::display_list_bdd_cf(middle));
             }
         }
         match right.as_ref() {
             Bdd::True => {
-                acc.push(Dnf::not(explained_sts));
+                acc.push(CF::not(explained_sts));
             }
             Bdd::False => {
                 // noop
@@ -529,23 +529,23 @@ impl Ty {
                 right,
             } => {
                 let ty = vec![
-                    Dnf::not(explained_sts),
-                    Self::display_list_bdd_node_dnf(atom, left, middle, right),
+                    CF::not(explained_sts),
+                    Self::display_list_bdd_node_cf(atom, left, middle, right),
                 ];
 
-                acc.push(Dnf::and(ty));
+                acc.push(CF::and(ty));
             }
         }
 
-        Dnf::or(acc)
+        CF::or(acc)
     }
 }
 
 #[derive(Debug, Clone)]
-pub enum Dnf {
-    Or(Vec<Dnf>),
-    And(Vec<Dnf>),
-    Not(Box<Dnf>),
+pub enum CF {
+    Or(Vec<CF>),
+    And(Vec<CF>),
+    Not(Box<CF>),
     Null,
     BoolTop,
     StringTop,
@@ -553,66 +553,66 @@ pub enum Dnf {
     BoolConst(bool),
     StringConst(String),
     Bot,
-    List { prefix: Vec<Dnf>, rest: Box<Dnf> },
+    List { prefix: Vec<CF>, rest: Box<CF> },
 }
 
-impl Dnf {
+impl CF {
     pub fn is_bot(&self) -> bool {
-        matches!(self, Dnf::Bot)
+        matches!(self, CF::Bot)
     }
-    pub fn or(v: Vec<Dnf>) -> Dnf {
+    pub fn or(v: Vec<CF>) -> CF {
         // flatten ors
-        let mut acc: Vec<Dnf> = vec![];
+        let mut acc: Vec<CF> = vec![];
         for d in v {
             match d {
-                Dnf::Or(v) => acc.extend(v),
+                CF::Or(v) => acc.extend(v),
                 d => acc.push(d),
             }
         }
         // filter all bots
-        let acc: Vec<Dnf> = acc.into_iter().filter(|d| !matches!(d, Dnf::Bot)).collect();
+        let acc: Vec<CF> = acc.into_iter().filter(|d| !matches!(d, CF::Bot)).collect();
         // if len 1, return just it
         if acc.len() == 1 {
             acc.into_iter().next().unwrap()
         } else {
-            Dnf::Or(acc)
+            CF::Or(acc)
         }
     }
-    pub fn and(v: Vec<Dnf>) -> Dnf {
+    pub fn and(v: Vec<CF>) -> CF {
         // if len 1, return just it
         if v.len() == 1 {
             v.into_iter().next().unwrap()
         } else {
-            Dnf::And(v)
+            CF::And(v)
         }
     }
-    pub fn not(v: Dnf) -> Dnf {
-        Dnf::Not(Box::new(v))
+    pub fn not(v: CF) -> CF {
+        CF::Not(Box::new(v))
     }
-    pub fn null() -> Dnf {
-        Dnf::Null
+    pub fn null() -> CF {
+        CF::Null
     }
-    pub fn bool_top() -> Dnf {
-        Dnf::BoolTop
+    pub fn bool_top() -> CF {
+        CF::BoolTop
     }
-    pub fn string_top() -> Dnf {
-        Dnf::StringTop
+    pub fn string_top() -> CF {
+        CF::StringTop
     }
-    pub fn list_top() -> Dnf {
-        Dnf::ListTop
+    pub fn list_top() -> CF {
+        CF::ListTop
     }
 
-    pub fn string_const(v: String) -> Dnf {
-        Dnf::StringConst(v)
+    pub fn string_const(v: String) -> CF {
+        CF::StringConst(v)
     }
-    pub fn bool_const(v: bool) -> Dnf {
-        Dnf::BoolConst(v)
+    pub fn bool_const(v: bool) -> CF {
+        CF::BoolConst(v)
     }
-    pub fn bot() -> Dnf {
-        Dnf::Bot
+    pub fn bot() -> CF {
+        CF::Bot
     }
-    pub fn list(prefix: Vec<Dnf>, rest: Dnf) -> Dnf {
-        Dnf::List {
+    pub fn list(prefix: Vec<CF>, rest: CF) -> CF {
+        CF::List {
             prefix,
             rest: Box::new(rest),
         }
@@ -620,7 +620,7 @@ impl Dnf {
 
     pub fn display_impl(&self, wrap: bool) -> String {
         match self {
-            Dnf::Or(vec) => {
+            CF::Or(vec) => {
                 let inner = vec
                     .iter()
                     .map(|d| d.display_impl(true))
@@ -632,7 +632,7 @@ impl Dnf {
                     inner
                 }
             }
-            Dnf::And(vec) => {
+            CF::And(vec) => {
                 let inner = vec
                     .iter()
                     .map(|d| d.display_impl(true))
@@ -644,13 +644,13 @@ impl Dnf {
                     inner
                 }
             }
-            Dnf::Not(dnf) => {
+            CF::Not(dnf) => {
                 format!("!({})", dnf.display_impl(false))
             }
-            Dnf::StringConst(it) => format!("'{}'", it),
-            Dnf::BoolConst(it) => it.to_string(),
-            Dnf::Bot => "⊥".to_owned(),
-            Dnf::List { prefix, rest } => {
+            CF::StringConst(it) => format!("'{}'", it),
+            CF::BoolConst(it) => it.to_string(),
+            CF::Bot => "⊥".to_owned(),
+            CF::List { prefix, rest } => {
                 if prefix.is_empty() {
                     if !rest.is_bot() {
                         return format!("[]{}", rest.display_impl(true));
@@ -670,10 +670,10 @@ impl Dnf {
                 }
                 format!("list[{}{}]", prefix, rest_part)
             }
-            Dnf::Null => "null".to_owned(),
-            Dnf::BoolTop => "boolean".to_owned(),
-            Dnf::StringTop => "string".to_owned(),
-            Dnf::ListTop => "list".to_owned(),
+            CF::Null => "null".to_owned(),
+            CF::BoolTop => "boolean".to_owned(),
+            CF::StringTop => "string".to_owned(),
+            CF::ListTop => "list".to_owned(),
         }
     }
 }

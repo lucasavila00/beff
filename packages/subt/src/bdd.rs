@@ -1,4 +1,4 @@
-use crate::sub::{Dnf, Ty};
+use crate::sub::{Ty, CF};
 use std::{cmp::Ordering, collections::BTreeMap, rc::Rc};
 
 #[derive(PartialEq, Eq, Hash, Debug, Ord, PartialOrd)]
@@ -295,18 +295,18 @@ pub struct BddMemoEmptyRef(pub MemoEmpty);
 #[derive(Debug)]
 pub struct ListAtomic {
     pub prefix_items: Vec<Rc<Ty>>,
-    pub items: Rc<Ty>,
+    pub rest: Rc<Ty>,
 }
 
 impl ListAtomic {
-    pub fn to_dnf(&self) -> Dnf {
-        let inner_dnf = self.items.to_dnf();
+    pub fn to_cf(&self) -> CF {
+        let rest = self.rest.to_cf();
         let prefix = self
             .prefix_items
             .iter()
-            .map(|it| it.to_dnf())
+            .map(|it| it.to_cf())
             .collect::<Vec<_>>();
-        Dnf::list(prefix, inner_dnf)
+        CF::list(prefix, rest)
     }
 }
 
@@ -443,7 +443,7 @@ fn list_formula_is_empty(
                 _ => unreachable!(),
             };
             prefix_items.clone_from(&lt.prefix_items);
-            items = lt.items.clone();
+            items = lt.rest.clone();
 
             let mut p = pos_atom.next.clone();
 
@@ -455,25 +455,25 @@ fn list_formula_is_empty(
                 };
                 let new_len = std::cmp::max(prefix_items.len(), lt.prefix_items.len());
                 if prefix_items.len() < new_len {
-                    if lt.items.is_bot() {
+                    if lt.rest.is_bot() {
                         return ProperSubtypeEvidenceResult::IsEmpty;
                     }
                     for _i in prefix_items.len()..new_len {
-                        prefix_items.push(lt.items.clone());
+                        prefix_items.push(lt.rest.clone());
                     }
                 }
                 for i in 0..lt.prefix_items.len() {
                     prefix_items[i] = prefix_items[i].intersect(&lt.prefix_items[i]).into();
                 }
                 if lt.prefix_items.len() < new_len {
-                    if lt.items.is_bot() {
+                    if lt.rest.is_bot() {
                         return ProperSubtypeEvidenceResult::IsEmpty;
                     }
                     for i in lt.prefix_items.len()..new_len {
-                        prefix_items[i] = prefix_items[i].intersect(&lt.items).into();
+                        prefix_items[i] = prefix_items[i].intersect(&lt.rest).into();
                     }
                 }
-                items = items.intersect(&lt.items).into();
+                items = items.intersect(&lt.rest).into();
                 p.clone_from(&some_p.next.clone());
             }
 
@@ -540,7 +540,7 @@ fn list_inhabited(
                     prefix_items.push(items.clone());
                 }
                 len = neg_len;
-            } else if neg_len < len && nt.items.is_bot() {
+            } else if neg_len < len && nt.rest.is_bot() {
                 return list_inhabited(prefix_items, items, &neg.next, builder);
             }
 
@@ -570,7 +570,7 @@ fn list_inhabited(
                 let ntm = if i < neg_len {
                     nt.prefix_items[i].clone()
                 } else {
-                    nt.items.clone()
+                    nt.rest.clone()
                 };
                 let d = Rc::new(prefix_items[i].diff(&ntm));
                 if !d.is_bot() {
@@ -584,7 +584,7 @@ fn list_inhabited(
                 }
             }
 
-            let diff = items.diff(&nt.items);
+            let diff = items.diff(&nt.rest);
             if let EvidenceResult::Evidence(e) = diff.is_empty_evidence() {
                 return ListInhabited::Yes(Some(e.into()), prefix_items.clone());
             }
