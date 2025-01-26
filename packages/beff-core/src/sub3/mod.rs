@@ -485,6 +485,10 @@ mod tests {
         let c = a.complement();
         insta::assert_snapshot!(c.display(), @"null | false | string");
 
+        let back = c.complement();
+        assert!(back.is_same_type(&a));
+        insta::assert_snapshot!(back.display(), @"true");
+
         let all = c.union(&a);
         insta::assert_snapshot!(all.display(), @"null | boolean | string");
 
@@ -525,6 +529,28 @@ mod tests {
 
         let c = a.complement();
         insta::assert_snapshot!(c.display(), @"null | boolean | (string - ('a'))");
+
+        let back = c.complement();
+        assert!(back.is_same_type(&a));
+        insta::assert_snapshot!(back.display(), @"'a'");
+
+        let all = c.union(&a);
+        insta::assert_snapshot!(all.display(), @"null | boolean | string");
+
+        assert!(all.is_top());
+    }
+
+    #[test]
+    fn null_test() {
+        let a = Ty::new_null();
+        insta::assert_snapshot!(a.display(), @"null");
+
+        let c = a.complement();
+        insta::assert_snapshot!(c.display(), @"boolean | string");
+
+        let back = c.complement();
+        assert!(back.is_same_type(&a));
+        insta::assert_snapshot!(back.display(), @"null");
 
         let all = c.union(&a);
         insta::assert_snapshot!(all.display(), @"null | boolean | string");
