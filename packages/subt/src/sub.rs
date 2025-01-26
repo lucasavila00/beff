@@ -1,4 +1,14 @@
+use std::{
+    rc::Rc,
+    sync::{Arc, Mutex},
+};
+
 use bitfield_struct::bitfield;
+
+use crate::bdd::{
+    list_is_empty, Atom, Bdd, EvidenceResult, ListAtomic, ProperSubtypeEvidenceResult, TC,
+};
+
 fn vec_union<K: PartialEq + Clone + Ord>(v1: &[K], v2: &[K]) -> Vec<K> {
     let mut values: Vec<K> = v1.iter().cloned().chain(v2.iter().cloned()).collect();
     values.sort();
@@ -12,6 +22,14 @@ fn vec_intersect<K: PartialEq + Clone + Ord>(v1: &[K], v2: &[K]) -> Vec<K> {
 
 fn vec_diff<K: PartialEq + Clone + Ord>(v1: &[K], v2: &[K]) -> Vec<K> {
     v1.iter().filter(|v| !v2.contains(v)).cloned().collect()
+}
+
+thread_local! {
+    static SEMTYPE_CTX: Arc<Mutex<TC>> = Arc::new(Mutex::new(TC::new()));
+}
+
+fn local_ctx() -> Arc<Mutex<TC>> {
+    SEMTYPE_CTX.with(|ctx| ctx.clone())
 }
 
 #[bitfield(u8)]
@@ -191,10 +209,12 @@ impl StringSubtype {
     }
 }
 
+#[derive(Debug)]
 pub struct Ty {
     pub bitmap: BitMap,
     pub boolean: BooleanSubtype,
     pub string: StringSubtype,
+    pub list: Rc<Bdd>,
 }
 
 impl Ty {
@@ -203,13 +223,15 @@ impl Ty {
             bitmap: BitMap::new_bot(),
             boolean: BooleanSubtype::new_bot(),
             string: StringSubtype::new_bot(),
+            list: Bdd::False.into(),
         }
     }
-    fn new_top() -> Ty {
+    pub fn new_top() -> Ty {
         Self {
             bitmap: BitMap::new_top(),
             boolean: BooleanSubtype::new_top(),
             string: StringSubtype::new_top(),
+            list: Bdd::True.into(),
         }
     }
 
@@ -218,6 +240,7 @@ impl Ty {
             bitmap: BitMap::new_bot().with_null(true),
             boolean: BooleanSubtype::new_bot(),
             string: StringSubtype::new_bot(),
+            list: Bdd::False.into(),
         }
     }
 
@@ -226,6 +249,7 @@ impl Ty {
             bitmap: BitMap::new_bot(),
             boolean: BooleanSubtype::new_top(),
             string: StringSubtype::new_bot(),
+            list: Bdd::False.into(),
         }
     }
 
@@ -234,6 +258,7 @@ impl Ty {
             bitmap: BitMap::new_bot(),
             boolean: BooleanSubtype::Bool(b),
             string: StringSubtype::new_bot(),
+            list: Bdd::False.into(),
         }
     }
 
@@ -242,6 +267,7 @@ impl Ty {
             bitmap: BitMap::new_bot(),
             boolean: BooleanSubtype::new_bot(),
             string: StringSubtype::new_top(),
+            list: Bdd::False.into(),
         }
     }
 
@@ -250,15 +276,60 @@ impl Ty {
             bitmap: BitMap::new_bot(),
             boolean: BooleanSubtype::new_bot(),
             string: StringSubtype::Pos(v),
+            list: Bdd::False.into(),
+        }
+    }
+
+    pub fn new_list_top() -> Self {
+        Self {
+            bitmap: BitMap::new_bot(),
+            boolean: BooleanSubtype::new_bot(),
+            string: StringSubtype::new_bot(),
+            list: Bdd::True.into(),
+        }
+    }
+
+    fn insert_list_atomic(items: Ty) -> usize {
+        let c = local_ctx();
+        let mut tc = c.lock().unwrap();
+
+        let pos = tc.list_definitions.len();
+        tc.list_definitions.push(Some(Rc::new(ListAtomic {
+            prefix_items: vec![],
+            items: items.into(),
+        })));
+
+        pos
+    }
+
+    pub fn new_parametric_list(t: Ty) -> Self {
+        let pos = Self::insert_list_atomic(t);
+        Self {
+            bitmap: BitMap::new_bot(),
+            boolean: BooleanSubtype::new_bot(),
+            string: StringSubtype::new_bot(),
+            list: Bdd::from_atom(Atom::List(pos)).into(),
         }
     }
 
     pub fn is_bot(&self) -> bool {
-        self.bitmap.is_bot() && self.boolean.is_bot() && self.string.is_bot()
+        self.bitmap.is_bot()
+            && self.boolean.is_bot()
+            && self.string.is_bot()
+            && (match list_is_empty(
+                &self.list,
+                //
+                &mut local_ctx().lock().unwrap(),
+            ) {
+                ProperSubtypeEvidenceResult::IsEmpty => true,
+                ProperSubtypeEvidenceResult::Evidence(_) => false,
+            })
+    }
+    pub fn is_empty_evidence(&self) -> EvidenceResult {
+        todo!()
     }
     pub fn is_subtype(&self, b: &Ty) -> bool {
-        let d = self.diff(b);
-        d.is_bot()
+        self.diff(b).is_bot()
     }
 
     pub fn is_same_type(&self, b: &Ty) -> bool {
@@ -274,6 +345,7 @@ impl Ty {
             bitmap: self.bitmap.complement(),
             boolean: self.boolean.complement(),
             string: self.string.complement(),
+            list: self.list.complement(),
         }
     }
 
@@ -283,6 +355,7 @@ impl Ty {
             bitmap: BitMap::from_bits(all_bitmap),
             boolean: self.boolean.diff(&b.boolean),
             string: self.string.diff(&b.string),
+            list: self.list.diff(&b.list),
         }
     }
     pub fn union(&self, b: &Ty) -> Ty {
@@ -290,6 +363,7 @@ impl Ty {
             bitmap: BitMap::from_bits(self.bitmap.into_bits() | b.bitmap.into_bits()),
             boolean: self.boolean.union(&b.boolean),
             string: self.string.union(&b.string),
+            list: self.list.union(&b.list),
         }
     }
 
@@ -298,6 +372,7 @@ impl Ty {
             bitmap: BitMap::from_bits(self.bitmap.into_bits() & b.bitmap.into_bits()),
             boolean: self.boolean.intersect(&b.boolean),
             string: self.string.intersect(&b.string),
+            list: self.list.intersect(&b.list),
         }
     }
 
@@ -344,7 +419,99 @@ impl Ty {
             }
         }
 
+        acc.extend(self.display_list());
+
         acc.join(" | ")
+    }
+
+    fn display_list(&self) -> Vec<String> {
+        Self::display_list_bdd(&self.list)
+    }
+
+    fn display_list_bdd(it: &Rc<Bdd>) -> Vec<String> {
+        match it.as_ref() {
+            Bdd::True => vec!["list".to_string()],
+            Bdd::False => vec![],
+            Bdd::Node {
+                atom,
+                left,
+                middle,
+                right,
+            } => Self::display_list_bdd_node(atom, left, middle, right),
+        }
+    }
+    fn display_list_bdd_node(
+        atom: &Rc<Atom>,
+        left: &Rc<Bdd>,
+        middle: &Rc<Bdd>,
+        right: &Rc<Bdd>,
+    ) -> Vec<String> {
+        let lt = {
+            let c = local_ctx();
+            let ctx = c.lock().unwrap();
+            match atom.as_ref() {
+                Atom::List(a) => ctx.get_list_atomic(*a).clone(),
+                _ => unreachable!(),
+            }
+        };
+        let explained_sts = lt.display();
+        let mut acc = vec![];
+
+        match left.as_ref() {
+            Bdd::True => {
+                acc.push(explained_sts.clone());
+            }
+            Bdd::False => {
+                // noop
+            }
+            Bdd::Node {
+                atom,
+                left,
+                middle,
+                right,
+            } => {
+                let mut acc2 = vec![explained_sts.clone()];
+                acc2.extend(Self::display_list_bdd_node(atom, left, middle, right));
+
+                acc.push(format!("({})", acc2.join(" & ")));
+            }
+        };
+
+        match middle.as_ref() {
+            Bdd::False => {
+                // noop
+            }
+            Bdd::True | Bdd::Node { .. } => {
+                acc.extend(Self::display_list_bdd(middle));
+            }
+        }
+        match right.as_ref() {
+            Bdd::True => {
+                acc.push(format!("!({})", explained_sts));
+            }
+            Bdd::False => {
+                // noop
+            }
+            Bdd::Node {
+                atom,
+                left,
+                middle,
+                right,
+            } => {
+                let ty = vec![
+                    format!("!({})", explained_sts),
+                    format!(
+                        "({})",
+                        Self::display_list_bdd_node(atom, left, middle, right).join(" | ")
+                    ),
+                ]
+                .join(" & ");
+
+                acc.push(format!("({})", ty));
+            }
+        }
+
+        acc
     }
 }
 
@@ -457,6 +624,14 @@ mod tests {
         assert!(!unknown.is_bot());
         assert!(unknown.is_top());
     }
+    #[test]
+    fn test_list() {
+        let l = Ty::new_list_top();
+        assert!(!l.is_bot());
+        assert!(!l.is_top());
+
+        insta::assert_snapshot!(l.display(), @"list");
+    }
 
     #[test]
     fn test_union() {
@@ -483,14 +658,14 @@ mod tests {
         insta::assert_snapshot!(a.display(), @"true");
 
         let c = a.complement();
-        insta::assert_snapshot!(c.display(), @"null | false | string");
+        insta::assert_snapshot!(c.display(), @"null | false | string | list");
 
         let back = c.complement();
         assert!(back.is_same_type(&a));
         insta::assert_snapshot!(back.display(), @"true");
 
         let all = c.union(&a);
-        insta::assert_snapshot!(all.display(), @"null | boolean | string");
+        insta::assert_snapshot!(all.display(), @"null | boolean | string | list");
 
         assert!(all.is_top());
     }
@@ -528,14 +703,14 @@ mod tests {
         insta::assert_snapshot!(a.display(), @"'a'");
 
         let c = a.complement();
-        insta::assert_snapshot!(c.display(), @"null | boolean | (string - ('a'))");
+        insta::assert_snapshot!(c.display(), @"null | boolean | (string - ('a')) | list");
 
         let back = c.complement();
         assert!(back.is_same_type(&a));
         insta::assert_snapshot!(back.display(), @"'a'");
 
         let all = c.union(&a);
-        insta::assert_snapshot!(all.display(), @"null | boolean | string");
+        insta::assert_snapshot!(all.display(), @"null | boolean | string | list");
 
         assert!(all.is_top());
     }
@@ -546,14 +721,14 @@ mod tests {
         insta::assert_snapshot!(a.display(), @"null");
 
         let c = a.complement();
-        insta::assert_snapshot!(c.display(), @"boolean | string");
+        insta::assert_snapshot!(c.display(), @"boolean | string | list");
 
         let back = c.complement();
         assert!(back.is_same_type(&a));
         insta::assert_snapshot!(back.display(), @"null");
 
         let all = c.union(&a);
-        insta::assert_snapshot!(all.display(), @"null | boolean | string");
+        insta::assert_snapshot!(all.display(), @"null | boolean | string | list");
 
         assert!(all.is_top());
     }
@@ -610,7 +785,7 @@ mod tests {
         let top = Ty::new_top();
         let t = Ty::new_bool(true);
         let sub1 = top.diff(&t);
-        insta::assert_snapshot!(sub1.display(), @"null | false | string");
+        insta::assert_snapshot!(sub1.display(), @"null | false | string | list");
 
         let t_complement = t.complement();
         let sub2 = sub1.diff(&t_complement);
@@ -622,7 +797,7 @@ mod tests {
         let top = Ty::new_top();
         let t = Ty::new_strings(vec!["a".to_string()]);
         let sub1 = top.diff(&t);
-        insta::assert_snapshot!(sub1.display(), @"null | boolean | (string - ('a'))");
+        insta::assert_snapshot!(sub1.display(), @"null | boolean | (string - ('a')) | list");
 
         let t_complement = t.complement();
         let sub2 = sub1.diff(&t_complement);
@@ -630,5 +805,71 @@ mod tests {
 
         let all = sub1.union(&t);
         assert!(all.is_top());
+    }
+
+    #[test]
+    fn list_tests() {
+        let bool_ty = Ty::new_bool_top();
+        let l = Ty::new_parametric_list(bool_ty);
+        insta::assert_snapshot!(l.display(), @"list[(boolean)...]");
+
+        let complement = l.complement();
+        insta::assert_snapshot!(complement.display(), @"null | boolean | string | !(list[(boolean)...])");
+
+        let and_back_again = complement.complement();
+        insta::assert_snapshot!(and_back_again.display(), @"list[(boolean)...]");
+        assert!(and_back_again.is_same_type(&l));
+    }
+    #[test]
+    fn list_tests2() {
+        let bool_ty = Ty::new_bool_top();
+        let l1 = Ty::new_parametric_list(bool_ty);
+
+        let string_ty = Ty::new_string_top();
+        let l2 = Ty::new_parametric_list(string_ty);
+
+        let u = l1.union(&l2);
+        insta::assert_snapshot!(u.display(), @"list[(boolean)...] | list[(string)...]");
+
+        let complement = u.complement();
+        insta::assert_snapshot!(complement.display(), @"null | boolean | string | (!(list[(boolean)...]) & (!(list[(string)...])))");
+
+        let and_back_again = complement.complement();
+        insta::assert_snapshot!(and_back_again.display(), @"list[(boolean)...] | list[(string)...]");
+        assert!(and_back_again.is_same_type(&u));
+    }
+    #[test]
+    fn list_tests21() {
+        let bool_ty = Ty::new_bool_top();
+        let l1 = Ty::new_parametric_list(bool_ty);
+
+        let string_ty = Ty::new_string_top();
+        let l2 = Ty::new_parametric_list(string_ty);
+
+        let u = l1.union(&l2);
+
+        let complement = u.complement();
+
+        let unionized = complement.union(&l1).union(&l2);
+        assert!(unionized.is_top());
+    }
+    #[test]
+    fn list_tests3() {
+        let bool_ty = Ty::new_bool_top();
+        let l1 = Ty::new_parametric_list(bool_ty);
+
+        let string_ty = Ty::new_string_top();
+        let l2 = Ty::new_parametric_list(string_ty);
+
+        let u = l1.union(&l2);
+        let u = Ty::new_parametric_list(u);
+        insta::assert_snapshot!(u.display(), @"list[(list[(boolean)...] | list[(string)...])...]");
+
+        let complement = u.complement();
+        insta::assert_snapshot!(complement.display(), @"null | boolean | string | !(list[(list[(boolean)...] | list[(string)...])...])");
+
+        let and_back_again = complement.complement();
+        insta::assert_snapshot!(and_back_again.display(), @"list[(list[(boolean)...] | list[(string)...])...]");
+        assert!(and_back_again.is_same_type(&u));
     }
 }

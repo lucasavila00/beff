@@ -7,8 +7,6 @@ pub mod parser_extractor;
 pub mod print;
 pub mod schema_changes;
 pub mod schema_extractor;
-pub mod sub2;
-pub mod sub3;
 pub mod subtyping;
 pub mod sym_reference;
 pub mod type_to_schema;
