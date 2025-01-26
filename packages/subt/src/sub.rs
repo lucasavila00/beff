@@ -1,4 +1,5 @@
 use std::{
+    fmt::Display,
     rc::Rc,
     sync::{Arc, Mutex},
 };
@@ -217,7 +218,11 @@ pub struct Ty {
     pub string: StringSubtype,
     pub list: Rc<Bdd>,
 }
-
+impl Display for Ty {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", self.display_inner())
+    }
+}
 impl Ty {
     pub fn new_bot() -> Self {
         Self {
@@ -445,8 +450,8 @@ impl Ty {
 
         Dnf::or(acc)
     }
-    pub fn display(&self) -> String {
-        self.to_dnf().display(false)
+    pub fn display_inner(&self) -> String {
+        self.to_dnf().display_impl(false)
     }
 
     fn list_to_dnf(&self) -> Dnf {
@@ -613,12 +618,12 @@ impl Dnf {
         }
     }
 
-    pub fn display(&self, wrap: bool) -> String {
+    pub fn display_impl(&self, wrap: bool) -> String {
         match self {
             Dnf::Or(vec) => {
                 let inner = vec
                     .iter()
-                    .map(|d| d.display(true))
+                    .map(|d| d.display_impl(true))
                     .collect::<Vec<String>>()
                     .join(" | ");
                 if wrap {
@@ -630,7 +635,7 @@ impl Dnf {
             Dnf::And(vec) => {
                 let inner = vec
                     .iter()
-                    .map(|d| d.display(true))
+                    .map(|d| d.display_impl(true))
                     .collect::<Vec<String>>()
                     .join(" & ");
                 if wrap {
@@ -640,20 +645,25 @@ impl Dnf {
                 }
             }
             Dnf::Not(dnf) => {
-                format!("!({})", dnf.display(false))
+                format!("!({})", dnf.display_impl(false))
             }
             Dnf::StringConst(it) => format!("'{}'", it),
             Dnf::BoolConst(it) => it.to_string(),
             Dnf::Bot => "⊥".to_owned(),
             Dnf::List { prefix, rest } => {
+                if prefix.is_empty() {
+                    if !rest.is_bot() {
+                        return format!("[]{}", rest.display_impl(true));
+                    }
+                }
                 let mut prefix = prefix
                     .iter()
-                    .map(|d| d.display(true))
+                    .map(|d| d.display_impl(true))
                     .collect::<Vec<String>>()
                     .join(", ");
                 let mut rest_part = "".to_owned();
                 if !rest.is_bot() {
-                    rest_part = rest_part + rest.display(true).as_str() + "...";
+                    rest_part = rest_part + rest.display_impl(true).as_str() + "...";
                     if !prefix.is_empty() {
                         prefix = prefix + ", ";
                     }
@@ -783,7 +793,7 @@ mod tests {
         assert!(!l.is_bot());
         assert!(!l.is_top());
 
-        insta::assert_snapshot!(l.display(), @"list");
+        insta::assert_snapshot!(l, @"list");
     }
 
     #[test]
@@ -797,28 +807,28 @@ mod tests {
         assert!(a.is_subtype(&c));
         assert!(!c.is_subtype(&a));
 
-        insta::assert_snapshot!(a.display(), @"boolean");
-        insta::assert_snapshot!(b.display(), @"null");
-        insta::assert_snapshot!(c.display(), @"null | boolean");
+        insta::assert_snapshot!(a, @"boolean");
+        insta::assert_snapshot!(b, @"null");
+        insta::assert_snapshot!(c, @"null | boolean");
 
-        insta::assert_snapshot!(c.diff(&a).display(), @"null");
-        insta::assert_snapshot!(b.diff(&a).display(), @"null");
+        insta::assert_snapshot!(c.diff(&a), @"null");
+        insta::assert_snapshot!(b.diff(&a), @"null");
     }
 
     #[test]
     fn bool_const0() {
         let a = Ty::new_bool(true);
-        insta::assert_snapshot!(a.display(), @"true");
+        insta::assert_snapshot!(a, @"true");
 
         let c = a.complement();
-        insta::assert_snapshot!(c.display(), @"null | false | string | list");
+        insta::assert_snapshot!(c, @"null | false | string | list");
 
         let back = c.complement();
         assert!(back.is_same_type(&a));
-        insta::assert_snapshot!(back.display(), @"true");
+        insta::assert_snapshot!(back, @"true");
 
         let all = c.union(&a);
-        insta::assert_snapshot!(all.display(), @"null | boolean | string | list");
+        insta::assert_snapshot!(all, @"null | boolean | string | list");
 
         assert!(all.is_top());
     }
@@ -836,11 +846,11 @@ mod tests {
         assert!(!b.is_subtype(&t));
         assert!(!b.is_subtype(&f));
 
-        insta::assert_snapshot!(t.display(), @"true");
-        insta::assert_snapshot!(f.display(), @"false");
-        insta::assert_snapshot!(b.display(), @"boolean");
+        insta::assert_snapshot!(t, @"true");
+        insta::assert_snapshot!(f, @"false");
+        insta::assert_snapshot!(b, @"boolean");
 
-        insta::assert_snapshot!(b.diff(&t).display(), @"false");
+        insta::assert_snapshot!(b.diff(&t), @"false");
 
         assert!(t.intersect(&f).is_bot());
 
@@ -853,17 +863,17 @@ mod tests {
     #[test]
     fn string_const0() {
         let a = Ty::new_strings(vec!["a".to_string()]);
-        insta::assert_snapshot!(a.display(), @"'a'");
+        insta::assert_snapshot!(a, @"'a'");
 
         let c = a.complement();
-        insta::assert_snapshot!(c.display(), @"null | boolean | !('a') | list");
+        insta::assert_snapshot!(c, @"null | boolean | !('a') | list");
 
         let back = c.complement();
         assert!(back.is_same_type(&a));
-        insta::assert_snapshot!(back.display(), @"'a'");
+        insta::assert_snapshot!(back, @"'a'");
 
         let all = c.union(&a);
-        insta::assert_snapshot!(all.display(), @"null | boolean | string | list");
+        insta::assert_snapshot!(all, @"null | boolean | string | list");
 
         assert!(all.is_top());
     }
@@ -871,43 +881,43 @@ mod tests {
     #[test]
     fn null_test() {
         let a = Ty::new_null();
-        insta::assert_snapshot!(a.display(), @"null");
+        insta::assert_snapshot!(a, @"null");
 
         let c = a.complement();
-        insta::assert_snapshot!(c.display(), @"boolean | string | list");
+        insta::assert_snapshot!(c, @"boolean | string | list");
 
         let back = c.complement();
         assert!(back.is_same_type(&a));
-        insta::assert_snapshot!(back.display(), @"null");
+        insta::assert_snapshot!(back, @"null");
 
         let all = c.union(&a);
-        insta::assert_snapshot!(all.display(), @"null | boolean | string | list");
+        insta::assert_snapshot!(all, @"null | boolean | string | list");
 
         assert!(all.is_top());
     }
     #[test]
     fn string_const() {
         let a = Ty::new_strings(vec!["a".to_string()]);
-        insta::assert_snapshot!(a.display(), @"'a'");
+        insta::assert_snapshot!(a, @"'a'");
 
         let b = Ty::new_strings(vec!["b".to_string()]);
-        insta::assert_snapshot!(b.display(), @"'b'");
+        insta::assert_snapshot!(b, @"'b'");
 
         let u = a.union(&b);
-        insta::assert_snapshot!(u.display(), @"'a' | 'b'");
+        insta::assert_snapshot!(u, @"'a' | 'b'");
 
         let au = a.intersect(&u);
-        insta::assert_snapshot!(au.display(), @"'a'");
+        insta::assert_snapshot!(au, @"'a'");
 
         let i = a.intersect(&b);
-        insta::assert_snapshot!(i.display(), @"");
+        insta::assert_snapshot!(i, @"");
         assert!(i.is_bot());
 
         let d = a.diff(&b);
-        insta::assert_snapshot!(d.display(), @"'a'");
+        insta::assert_snapshot!(d, @"'a'");
 
         let e = u.diff(&a);
-        insta::assert_snapshot!(e.display(), @"'b'");
+        insta::assert_snapshot!(e, @"'b'");
     }
 
     #[test]
@@ -917,7 +927,7 @@ mod tests {
 
         let u = t.union(&a);
 
-        insta::assert_snapshot!(u.display(), @"true | 'a'");
+        insta::assert_snapshot!(u, @"true | 'a'");
     }
 
     #[test]
@@ -930,7 +940,7 @@ mod tests {
 
         let u = b.union(&a).union(&t);
 
-        insta::assert_snapshot!(u.display(), @"boolean | 'a'");
+        insta::assert_snapshot!(u, @"boolean | 'a'");
     }
 
     #[test]
@@ -938,7 +948,7 @@ mod tests {
         let top = Ty::new_top();
         let t = Ty::new_bool(true);
         let sub1 = top.diff(&t);
-        insta::assert_snapshot!(sub1.display(), @"null | false | string | list");
+        insta::assert_snapshot!(sub1, @"null | false | string | list");
 
         let t_complement = t.complement();
         let sub2 = sub1.diff(&t_complement);
@@ -950,7 +960,7 @@ mod tests {
         let top = Ty::new_top();
         let t = Ty::new_strings(vec!["a".to_string()]);
         let sub1 = top.diff(&t);
-        insta::assert_snapshot!(sub1.display(), @"null | boolean | !('a') | list");
+        insta::assert_snapshot!(sub1, @"null | boolean | !('a') | list");
 
         let t_complement = t.complement();
         let sub2 = sub1.diff(&t_complement);
@@ -964,13 +974,13 @@ mod tests {
     fn list_tests() {
         let bool_ty = Ty::new_bool_top();
         let l = Ty::new_parametric_list(bool_ty);
-        insta::assert_snapshot!(l.display(), @"list[boolean...]");
+        insta::assert_snapshot!(l, @"[]boolean");
 
         let complement = l.complement();
-        insta::assert_snapshot!(complement.display(), @"null | boolean | string | !(list[boolean...])");
+        insta::assert_snapshot!(complement, @"null | boolean | string | !([]boolean)");
 
         let and_back_again = complement.complement();
-        insta::assert_snapshot!(and_back_again.display(), @"list[boolean...]");
+        insta::assert_snapshot!(and_back_again, @"[]boolean");
         assert!(and_back_again.is_same_type(&l));
     }
     #[test]
@@ -982,13 +992,13 @@ mod tests {
         let l2 = Ty::new_parametric_list(string_ty);
 
         let u = l1.union(&l2);
-        insta::assert_snapshot!(u.display(), @"list[boolean...] | list[string...]");
+        insta::assert_snapshot!(u, @"[]boolean | []string");
 
         let complement = u.complement();
-        insta::assert_snapshot!(complement.display(), @"null | boolean | string | (!(list[boolean...]) & !(list[string...]))");
+        insta::assert_snapshot!(complement, @"null | boolean | string | (!([]boolean) & !([]string))");
 
         let and_back_again = complement.complement();
-        insta::assert_snapshot!(and_back_again.display(), @"list[boolean...] | list[string...]");
+        insta::assert_snapshot!(and_back_again, @"[]boolean | []string");
         assert!(and_back_again.is_same_type(&u));
     }
     #[test]
@@ -1002,12 +1012,12 @@ mod tests {
         let u = l1.union(&l2);
 
         let complement = u.complement();
-        insta::assert_snapshot!(complement.display(), @"null | boolean | string | (!(list[boolean...]) & !(list[string...]))");
+        insta::assert_snapshot!(complement, @"null | boolean | string | (!([]boolean) & !([]string))");
         let u1 = complement.union(&l1);
-        insta::assert_snapshot!(u1.display(), @"null | boolean | string | list[boolean...] | (!(list[boolean...]) & !(list[string...]))");
+        insta::assert_snapshot!(u1, @"null | boolean | string | []boolean | (!([]boolean) & !([]string))");
         assert!(!u1.is_top());
 
-        let unionized = complement.union(&l1).union(&l2);
+        let unionized = u1.union(&l2);
         assert!(unionized.is_top());
     }
     #[test]
@@ -1020,13 +1030,13 @@ mod tests {
 
         let u = l1.union(&l2);
         let u = Ty::new_parametric_list(u);
-        insta::assert_snapshot!(u.display(), @"list[(list[boolean...] | list[string...])...]");
+        insta::assert_snapshot!(u, @"[]([]boolean | []string)");
 
         let complement = u.complement();
-        insta::assert_snapshot!(complement.display(), @"null | boolean | string | !(list[(list[boolean...] | list[string...])...])");
+        insta::assert_snapshot!(complement, @"null | boolean | string | !([]([]boolean | []string))");
 
         let and_back_again = complement.complement();
-        insta::assert_snapshot!(and_back_again.display(), @"list[(list[boolean...] | list[string...])...]");
+        insta::assert_snapshot!(and_back_again, @"[]([]boolean | []string)");
         assert!(and_back_again.is_same_type(&u));
     }
 }
