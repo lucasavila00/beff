@@ -191,6 +191,7 @@ const Object_ = <T extends Record<string, BeffParser<any>>>(
 const String_ = (): BeffParser<string> =>
   buildParserFromSafeParser(
     "String",
+    //@ts-ignore
     (input) => typeof input === "string",
     (input: any) => {
       if (typeof input === "string") {
@@ -203,6 +204,7 @@ const String_ = (): BeffParser<string> =>
 const Number_ = (): BeffParser<number> =>
   buildParserFromSafeParser(
     "Number",
+    //@ts-ignore
     (input) => typeof input === "number",
     (input: any) => {
       if (typeof input === "number") {
@@ -215,6 +217,7 @@ const Number_ = (): BeffParser<number> =>
 const Boolean_ = (): BeffParser<boolean> =>
   buildParserFromSafeParser(
     "Boolean",
+    //@ts-ignore
     (input) => typeof input === "boolean",
     (input: any) => {
       if (typeof input === "boolean") {
@@ -239,6 +242,7 @@ const Undefined_ = (): BeffParser<undefined> =>
 const Void_ = (): BeffParser<void> =>
   buildParserFromSafeParser(
     "Void",
+    //@ts-ignore
     (input): input is undefined => input == null,
     (input: any) => {
       if (input == undefined) {
@@ -263,6 +267,7 @@ const Null_ = (): BeffParser<undefined> =>
 const Any_ = (): BeffParser<any> =>
   buildParserFromSafeParser(
     "Any",
+    //@ts-ignore
     (_input): _input is any => true,
     (input: any) => {
       return { success: true, data: input };
@@ -281,6 +286,7 @@ const Unknown_ = (): BeffParser<unknown> =>
 const Array_ = <T>(parser: BeffParser<T>): BeffParser<T[]> =>
   buildParserFromSafeParser(
     "b.Array",
+    //@ts-ignore
     (input: any): input is any => {
       if (!Array.isArray(input)) {
         return false;

@@ -1,5 +1,13 @@
 # @beff/client
 
+## 0.0.77
+
+### Patch Changes
+
+- fix bugs
+- Updated dependencies
+  - @beff/cli@0.0.77
+
 ## 0.0.76
 
 ### Patch Changes
