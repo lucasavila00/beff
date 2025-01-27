@@ -1,5 +1,9 @@
-use crate::sub::{Ty, CF};
-use std::{cmp::Ordering, collections::BTreeMap, rc::Rc};
+use crate::sub::{CFMemo, ListAtomic, Ty, CF};
+use std::{
+    cmp::Ordering,
+    collections::{BTreeMap, BTreeSet},
+    rc::Rc,
+};
 
 #[derive(PartialEq, Eq, Hash, Debug, Ord, PartialOrd)]
 pub enum Atom {
@@ -292,33 +296,22 @@ impl MemoEmpty {
 #[derive(Clone, Debug)]
 pub struct BddMemoEmptyRef(pub MemoEmpty);
 
-#[derive(Debug)]
-pub struct ListAtomic {
-    pub prefix_items: Vec<Rc<Ty>>,
-    pub rest: Rc<Ty>,
-}
-
-impl ListAtomic {
-    pub fn to_cf(&self) -> CF {
-        let rest = self.rest.to_cf();
-        let prefix = self
-            .prefix_items
-            .iter()
-            .map(|it| it.to_cf())
-            .collect::<Vec<_>>();
-        CF::list(prefix, rest)
-    }
-}
-
 pub struct TC {
     pub list_definitions: Vec<Option<Rc<ListAtomic>>>,
     pub list_memo: BTreeMap<Bdd, BddMemoEmptyRef>,
+
+    pub seen: BTreeMap<Ty, CFMemo>,
+    pub recursive_seen: BTreeSet<usize>,
+    pub to_export: Vec<(usize, CF)>,
 }
 impl TC {
     pub fn new() -> Self {
         Self {
             list_definitions: vec![],
             list_memo: BTreeMap::new(),
+            seen: BTreeMap::new(),
+            recursive_seen: BTreeSet::new(),
+            to_export: vec![],
         }
     }
     pub fn get_list_atomic(&self, idx: usize) -> Rc<ListAtomic> {

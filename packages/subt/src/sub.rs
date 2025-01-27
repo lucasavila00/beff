@@ -7,7 +7,7 @@ use std::{
 use bitfield_struct::bitfield;
 
 use crate::bdd::{
-    list_is_empty, Atom, Bdd, Evidence, EvidenceResult, ListAtomic, ProperSubtypeEvidence,
+    list_is_empty, Atom, Bdd, Evidence, EvidenceResult, ProperSubtypeEvidence,
     ProperSubtypeEvidenceResult, TC,
 };
 
@@ -34,7 +34,15 @@ fn local_ctx() -> Arc<Mutex<TC>> {
     SEMTYPE_CTX.with(|ctx| ctx.clone())
 }
 
+#[derive(Debug)]
+
+pub enum CFMemo {
+    Schema(CF),
+    Undefined(usize),
+}
+
 #[bitfield(u8)]
+#[derive(PartialEq, Eq, PartialOrd, Ord)]
 pub struct BitMap {
     pub null: bool,
 
@@ -62,7 +70,7 @@ impl BitMap {
     }
 }
 
-#[derive(Clone, Debug, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord)]
 pub enum BooleanSubtype {
     Top,
     Bot,
@@ -140,7 +148,7 @@ impl BooleanSubtype {
     }
 }
 
-#[derive(Clone, Debug, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord)]
 pub enum StringSubtype {
     Pos(Vec<String>),
     Neg(Vec<String>),
@@ -212,6 +220,24 @@ impl StringSubtype {
 }
 
 #[derive(Debug)]
+pub struct ListAtomic {
+    pub prefix_items: Vec<Rc<Ty>>,
+    pub rest: Rc<Ty>,
+}
+
+impl ListAtomic {
+    pub fn to_cf(&self) -> CF {
+        let rest = self.rest.to_cf();
+        let prefix = self
+            .prefix_items
+            .iter()
+            .map(|it| it.to_cf())
+            .collect::<Vec<_>>();
+        CF::list(prefix, rest)
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord)]
 pub struct Ty {
     pub bitmap: BitMap,
     pub boolean: BooleanSubtype,
@@ -295,13 +321,17 @@ impl Ty {
         }
     }
 
-    fn insert_list_atomic(items: Ty) -> usize {
+    pub fn list_def_len() -> usize {
+        local_ctx().lock().unwrap().list_definitions.len()
+    }
+
+    pub fn insert_list_atomic(prefix: Vec<Ty>, items: Ty) -> usize {
         let c = local_ctx();
         let mut tc = c.lock().unwrap();
 
         let pos = tc.list_definitions.len();
         tc.list_definitions.push(Some(Rc::new(ListAtomic {
-            prefix_items: vec![],
+            prefix_items: prefix.into_iter().map(|it| Rc::new(it)).collect(),
             rest: items.into(),
         })));
 
@@ -309,7 +339,26 @@ impl Ty {
     }
 
     pub fn new_parametric_list(t: Ty) -> Self {
-        let pos = Self::insert_list_atomic(t);
+        let pos = Self::insert_list_atomic(vec![], t);
+        Self {
+            bitmap: BitMap::new_bot(),
+            boolean: BooleanSubtype::new_bot(),
+            string: StringSubtype::new_bot(),
+            list: Bdd::from_atom(Atom::List(pos)).into(),
+        }
+    }
+
+    pub fn new_tuple(prefix: Vec<Ty>) -> Self {
+        let pos = Self::insert_list_atomic(prefix, Ty::new_bot());
+        Self {
+            bitmap: BitMap::new_bot(),
+            boolean: BooleanSubtype::new_bot(),
+            string: StringSubtype::new_bot(),
+            list: Bdd::from_atom(Atom::List(pos)).into(),
+        }
+    }
+
+    pub fn new_parametric_list_from_pos(pos: usize) -> Self {
         Self {
             bitmap: BitMap::new_bot(),
             boolean: BooleanSubtype::new_bot(),
@@ -411,6 +460,50 @@ impl Ty {
         }
     }
     pub fn to_cf(&self) -> CF {
+        let new_name = local_ctx().lock().unwrap().seen.len();
+        let mut rec_seen = None;
+        {
+            let ctx = local_ctx();
+            let mut guard = ctx.lock().unwrap();
+            let seen = &mut guard.seen;
+            match seen.get(self).clone() {
+                Some(CFMemo::Schema(cf)) => return cf.clone(),
+                Some(CFMemo::Undefined(name)) => {
+                    rec_seen = Some(name.clone());
+                }
+                None => {
+                    seen.insert(self.clone(), CFMemo::Undefined(new_name));
+                }
+            }
+        }
+
+        if let Some(name) = rec_seen {
+            let ctx = local_ctx();
+            let mut guard = ctx.lock().unwrap();
+            guard.recursive_seen.insert(name.clone());
+            return CF::Ref(name.clone());
+        }
+        let ty = self.to_cf_no_recursive_check();
+
+        local_ctx()
+            .lock()
+            .unwrap()
+            .seen
+            .insert(self.clone(), CFMemo::Schema(ty.clone()));
+
+        {
+            let ctx = local_ctx();
+            let mut guard = ctx.lock().unwrap();
+
+            if guard.recursive_seen.contains(&new_name) {
+                guard.to_export.push((new_name.clone(), ty.clone()));
+                return CF::Ref(new_name);
+            }
+        }
+
+        ty
+    }
+    pub fn to_cf_no_recursive_check(&self) -> CF {
         let mut acc: Vec<CF> = vec![];
 
         if self.bitmap.null() {
@@ -552,6 +645,7 @@ pub enum CF {
     ListTop,
     BoolConst(bool),
     StringConst(String),
+    Ref(usize),
     Bot,
     List { prefix: Vec<CF>, rest: Box<CF> },
 }
@@ -571,6 +665,11 @@ impl CF {
         }
         // filter all bots
         let acc: Vec<CF> = acc.into_iter().filter(|d| !matches!(d, CF::Bot)).collect();
+        // if len 0, return bot
+        if acc.is_empty() {
+            return CF::Bot;
+        }
+
         // if len 1, return just it
         if acc.len() == 1 {
             acc.into_iter().next().unwrap()
@@ -661,6 +760,9 @@ impl CF {
                     .map(|d| d.display_impl(true))
                     .collect::<Vec<String>>()
                     .join(", ");
+                if rest.is_bot() {
+                    return format!("tuple[{}]", prefix);
+                }
                 let mut rest_part = "".to_owned();
                 if !rest.is_bot() {
                     rest_part = rest_part + rest.display_impl(true).as_str() + "...";
@@ -674,12 +776,15 @@ impl CF {
             CF::BoolTop => "boolean".to_owned(),
             CF::StringTop => "string".to_owned(),
             CF::ListTop => "list".to_owned(),
+            CF::Ref(r) => format!("ref({})", r),
         }
     }
 }
 
 #[cfg(test)]
 mod tests {
+    use std::collections::BTreeMap;
+
     use super::*;
 
     #[test]
@@ -910,7 +1015,7 @@ mod tests {
         insta::assert_snapshot!(au, @"'a'");
 
         let i = a.intersect(&b);
-        insta::assert_snapshot!(i, @"");
+        insta::assert_snapshot!(i, @"⊥");
         assert!(i.is_bot());
 
         let d = a.diff(&b);
@@ -1018,6 +1123,7 @@ mod tests {
         assert!(!u1.is_top());
 
         let unionized = u1.union(&l2);
+        insta::assert_snapshot!(unionized, @"null | boolean | string | []boolean | []string | (!([]boolean) & !([]string))");
         assert!(unionized.is_top());
     }
     #[test]
@@ -1038,5 +1144,43 @@ mod tests {
         let and_back_again = complement.complement();
         insta::assert_snapshot!(and_back_again, @"[]([]boolean | []string)");
         assert!(and_back_again.is_same_type(&u));
+    }
+
+    #[test]
+    fn tuple_print() {
+        let bool_ty = Ty::new_bool_top();
+        let l = Ty::new_tuple(vec![bool_ty.clone()]);
+        insta::assert_snapshot!(l, @"tuple[boolean]");
+    }
+    #[test]
+    fn recursive_list() {
+        let bool_ty = Ty::new_bool_top();
+
+        let idx = Ty::list_def_len();
+
+        let l1atom = Ty::insert_list_atomic(
+            vec![
+                bool_ty.clone(),
+                bool_ty.union(&Ty::new_parametric_list_from_pos(idx)),
+            ],
+            Ty::new_bot(),
+        );
+        let l1 = bool_ty.union(&Ty::new_parametric_list_from_pos(l1atom));
+        // type T = boolean | tuple[boolean, T]
+        insta::assert_snapshot!(l1, @"ref(0)");
+
+        let complement = l1.complement();
+        insta::assert_snapshot!(complement, @"null | string | !(tuple[boolean, (boolean | tuple[boolean, ref(0)])])");
+
+        let mut acc = BTreeMap::new();
+        for (name, cf) in local_ctx().lock().unwrap().to_export.clone() {
+            acc.insert(name, cf.display_impl(false));
+        }
+
+        insta::assert_debug_snapshot!(acc, @r###"
+        {
+            0: "boolean | tuple[boolean, ref(0)]",
+        }
+        "###);
     }
 }
