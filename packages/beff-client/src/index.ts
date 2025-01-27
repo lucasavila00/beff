@@ -155,6 +155,13 @@ const Object_ = <T extends Record<string, BeffParser<any>>>(
       return true;
     },
     (input: any, options?: ParseOptions) => {
+      if (typeof input !== "object" || input == null || Array.isArray(input)) {
+        return {
+          success: false,
+          errors: [{ message: "Expected object", path: [], received: input }],
+        };
+      }
+
       const disallowExtraProperties = options?.disallowExtraProperties ?? false;
 
       const errors: DecodeError[] = [];
