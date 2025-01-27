@@ -265,6 +265,7 @@ pub enum ProperSubtypeEvidence {
     Boolean(bool),
     String { allowed: bool, values: Vec<String> },
     List(Rc<ListEvidence>),
+    Mapping,
 }
 impl ProperSubtypeEvidence {
     pub fn to_result(self) -> ProperSubtypeEvidenceResult {
