@@ -601,6 +601,10 @@ class AnyOfDiscriminatedReporter {
   }
 
   reportAnyOfDiscriminatedReporter(ctx, input) {
+    if (input == null || typeof input !== "object") {
+      return buildError(ctx, "expected object", input);
+    }
+
     const d = input[this.discriminator];
     if (d == null) {
       return buildError(ctx, "expected discriminator key " + JSON.stringify(this.discriminator), input);
