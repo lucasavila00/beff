@@ -97,10 +97,14 @@ impl MappingSubtype {
     pub fn is_same_type(&self, other: &MappingSubtype) -> bool {
         self.is_subtype(other) && other.is_subtype(self)
     }
-    fn diff_map_one_field(dnf1: &MappingSubtype, key: &str, value: &Ty) -> MappingSubtype {
+    fn diff_map_one_field(
+        dnf1: &[MappingSubtypeItem],
+        key: &str,
+        value: &Ty,
+    ) -> Vec<MappingSubtypeItem> {
         let mut acc = vec![];
 
-        for it in &dnf1.0 {
+        for it in dnf1 {
             let MappingSubtypeItem {
                 tag: tag1,
                 fields: fields1,
@@ -123,64 +127,66 @@ impl MappingSubtype {
             }
         }
 
-        MappingSubtype(acc)
+        acc
     }
 
     pub fn diff(&self, other: &MappingSubtype) -> MappingSubtype {
-        let dnf1 = self;
-        let dnf2 = other;
-        dnf2.0
-            .iter()
-            .fold(dnf1.clone(), |dnf1, it: &MappingSubtypeItem| {
-                // Optimization: we are removing an open map with one field.
-                if it.tag == MappingSubtypeTag::Open && it.fields.0.len() == 1 && it.negs.is_empty()
+        let mut dnf1_acc = self.0.clone();
+
+        for it in other.0.iter() {
+            // Optimization: we are removing an open map with one field.
+            if it.tag == MappingSubtypeTag::Open && it.fields.0.len() == 1 && it.negs.is_empty() {
+                let (key, ty) = it.fields.0.iter().next().unwrap();
+                dnf1_acc = Self::diff_map_one_field(&dnf1_acc, key, ty);
+                continue;
+            }
+            let tag2 = &it.tag;
+            let fields2 = &it.fields;
+            let negs2 = &it.negs;
+
+            let mut acc: Vec<MappingSubtypeItem> = vec![];
+
+            for MappingSubtypeItem {
+                tag: tag1,
+                fields: fields1,
+                negs: negs1,
+            } in dnf1_acc.iter()
+            {
+                let start = if *tag2 == MappingSubtypeTag::Closed && fields2.0.is_empty() {
+                    vec![]
+                } else {
+                    vec![MappingSubtypeItemNeg {
+                        tag: tag2.clone(),
+                        fields: fields2.clone(),
+                    }]
+                };
+                acc.push(MappingSubtypeItem {
+                    tag: tag1.clone(),
+                    fields: fields1.clone(),
+                    negs: start.into_iter().chain(negs1.iter().cloned()).collect(),
+                });
+
+                for MappingSubtypeItemNeg {
+                    tag: neg_tag2,
+                    fields: neg_fields2,
+                } in negs2.iter()
                 {
-                    let (key, ty) = it.fields.0.iter().next().unwrap();
-                    return Self::diff_map_one_field(&dnf1, key, ty);
-                }
-                let tag2 = &it.tag;
-                let fields2 = &it.fields;
-                let negs2 = &it.negs;
-
-                let mut acc: Vec<MappingSubtypeItem> = vec![];
-
-                for MappingSubtypeItem {
-                    tag: tag1,
-                    fields: fields1,
-                    negs: negs1,
-                } in dnf1.0.iter()
-                {
-                    acc.push(MappingSubtypeItem {
-                        tag: tag1.clone(),
-                        fields: fields1.clone(),
-                        negs: vec![MappingSubtypeItemNeg {
-                            tag: tag2.clone(),
-                            fields: fields2.clone(),
-                        }]
-                        .into_iter()
-                        .chain(negs1.iter().cloned())
-                        .collect(),
-                    });
-
-                    for MappingSubtypeItemNeg {
-                        tag: neg_tag2,
-                        fields: neg_fields2,
-                    } in negs2.iter()
+                    if let Ok(MappingSubtypeItemNeg { tag, fields }) =
+                        map_literal_intersection(&tag1, &fields1, &neg_tag2, &neg_fields2)
                     {
-                        if let Ok(MappingSubtypeItemNeg { tag, fields }) =
-                            map_literal_intersection(&tag1, &fields1, &neg_tag2, &neg_fields2)
-                        {
-                            acc.push(MappingSubtypeItem {
-                                tag,
-                                fields,
-                                negs: negs1.clone(),
-                            });
-                        }
+                        acc.push(MappingSubtypeItem {
+                            tag,
+                            fields,
+                            negs: negs1.clone(),
+                        });
                     }
                 }
+            }
 
-                MappingSubtype(acc)
-            })
+            dnf1_acc = acc;
+        }
+
+        MappingSubtype(dnf1_acc)
     }
 
     pub fn union(&self, other: &MappingSubtype) -> MappingSubtype {
@@ -520,7 +526,7 @@ mod tests {
         }]);
 
         let c1 = b.complement();
-        insta::assert_snapshot!(c1.to_cf().display_impl(false), @"{b: (null | string | (mapping & !(⊥)) | list)}");
+        insta::assert_snapshot!(c1.to_cf().display_impl(false), @"{b: (null | string | mapping | list)}");
 
         let c2 = c1.complement();
         insta::assert_snapshot!(c2.to_cf().display_impl(false), @"{b: boolean}");
@@ -543,6 +549,6 @@ mod tests {
         }]);
 
         let c1 = t.diff(&b);
-        insta::assert_snapshot!(c1.to_cf().display_impl(false), @"{b: (null | string | (mapping & !(⊥)) | list)}");
+        insta::assert_snapshot!(c1.to_cf().display_impl(false), @"{b: (null | string | mapping | list)}");
     }
 }

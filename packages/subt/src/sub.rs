@@ -549,13 +549,13 @@ mod tests {
         let u = l1.union(&l2);
 
         let complement = u.complement();
-        insta::assert_snapshot!(complement, @"null | boolean | string | {a: (null | (mapping & !(⊥) & !(⊥)) | list)} | list");
+        insta::assert_snapshot!(complement, @"null | boolean | string | {a: (null | mapping | list)} | list");
         let u1 = complement.union(&l1);
-        insta::assert_snapshot!(u1, @"null | boolean | string | {a: boolean} | {a: (null | (mapping & !(⊥) & !(⊥)) | list)} | list");
+        insta::assert_snapshot!(u1, @"null | boolean | string | {a: boolean} | {a: (null | mapping | list)} | list");
         assert!(!u1.is_top());
 
         let unionized = u1.union(&l2);
-        insta::assert_snapshot!(unionized, @"null | boolean | string | {a: boolean} | {a: string} | {a: (null | (mapping & !(⊥) & !(⊥)) | list)} | list");
+        insta::assert_snapshot!(unionized, @"null | boolean | string | {a: boolean} | {a: string} | {a: (null | mapping | list)} | list");
         assert!(unionized.is_top());
     }
 
@@ -695,7 +695,7 @@ mod tests {
         let complement = m.complement();
         assert!(!complement.is_bot());
 
-        insta::assert_snapshot!(complement, @"null | boolean | string | {b: (null | string | (mapping & !(⊥)) | list)} | list");
+        insta::assert_snapshot!(complement, @"null | boolean | string | {b: (null | string | mapping | list)} | list");
 
         let back = complement.complement();
         insta::assert_snapshot!(back, @"{b: boolean}");
@@ -714,10 +714,10 @@ mod tests {
         let complement = m.complement();
         assert!(!complement.is_bot());
 
-        insta::assert_snapshot!(complement, @"null | string | ({b: (null | string | (mapping & !(⊥)) | list)} & !(⊥)) | list");
+        insta::assert_snapshot!(complement, @"null | string | {b: (null | string | mapping | list)} | list");
 
         let back = complement.complement();
-        insta::assert_snapshot!(back, @"boolean | (mapping & !({b: (null | string | (mapping & !(⊥)) | list)}))");
+        insta::assert_snapshot!(back, @"boolean | {b: boolean}");
         assert!(back.is_same_type(&m));
     }
 
@@ -746,14 +746,14 @@ mod tests {
         insta::assert_snapshot!(a, @"true");
 
         let c = a.complement();
-        insta::assert_snapshot!(c, @"null | false | string | (mapping & !(⊥)) | list");
+        insta::assert_snapshot!(c, @"null | false | string | mapping | list");
 
         let back = c.complement();
         assert!(back.is_same_type(&a));
         insta::assert_snapshot!(back, @"true");
 
         let all = c.union(&a);
-        insta::assert_snapshot!(all, @"null | boolean | string | (mapping & !(⊥)) | list");
+        insta::assert_snapshot!(all, @"null | boolean | string | mapping | list");
 
         assert!(all.is_top());
     }
@@ -791,14 +791,14 @@ mod tests {
         insta::assert_snapshot!(a, @"'a'");
 
         let c = a.complement();
-        insta::assert_snapshot!(c, @"null | boolean | !('a') | (mapping & !(⊥)) | list");
+        insta::assert_snapshot!(c, @"null | boolean | !('a') | mapping | list");
 
         let back = c.complement();
         assert!(back.is_same_type(&a));
         insta::assert_snapshot!(back, @"'a'");
 
         let all = c.union(&a);
-        insta::assert_snapshot!(all, @"null | boolean | string | (mapping & !(⊥)) | list");
+        insta::assert_snapshot!(all, @"null | boolean | string | mapping | list");
 
         assert!(all.is_top());
     }
@@ -809,14 +809,14 @@ mod tests {
         insta::assert_snapshot!(a, @"null");
 
         let c = a.complement();
-        insta::assert_snapshot!(c, @"boolean | string | (mapping & !(⊥)) | list");
+        insta::assert_snapshot!(c, @"boolean | string | mapping | list");
 
         let back = c.complement();
         assert!(back.is_same_type(&a));
         insta::assert_snapshot!(back, @"null");
 
         let all = c.union(&a);
-        insta::assert_snapshot!(all, @"null | boolean | string | (mapping & !(⊥)) | list");
+        insta::assert_snapshot!(all, @"null | boolean | string | mapping | list");
 
         assert!(all.is_top());
     }
@@ -873,7 +873,7 @@ mod tests {
         let top = Ty::new_top();
         let t = Ty::new_bool(true);
         let sub1 = top.diff(&t);
-        insta::assert_snapshot!(sub1, @"null | false | string | (mapping & !(⊥)) | list");
+        insta::assert_snapshot!(sub1, @"null | false | string | mapping | list");
 
         let t_complement = t.complement();
         let sub2 = sub1.diff(&t_complement);
@@ -885,7 +885,7 @@ mod tests {
         let top = Ty::new_top();
         let t = Ty::new_strings(vec!["a".to_string()]);
         let sub1 = top.diff(&t);
-        insta::assert_snapshot!(sub1, @"null | boolean | !('a') | (mapping & !(⊥)) | list");
+        insta::assert_snapshot!(sub1, @"null | boolean | !('a') | mapping | list");
 
         let t_complement = t.complement();
         let sub2 = sub1.diff(&t_complement);
@@ -902,7 +902,7 @@ mod tests {
         insta::assert_snapshot!(l, @"[]boolean");
 
         let complement = l.complement();
-        insta::assert_snapshot!(complement, @"null | boolean | string | (mapping & !(⊥)) | !([]boolean)");
+        insta::assert_snapshot!(complement, @"null | boolean | string | mapping | !([]boolean)");
 
         let and_back_again = complement.complement();
         insta::assert_snapshot!(and_back_again, @"[]boolean");
@@ -920,7 +920,7 @@ mod tests {
         insta::assert_snapshot!(u, @"[]boolean | []string");
 
         let complement = u.complement();
-        insta::assert_snapshot!(complement, @"null | boolean | string | (mapping & !(⊥)) | (!([]boolean) & !([]string))");
+        insta::assert_snapshot!(complement, @"null | boolean | string | mapping | (!([]boolean) & !([]string))");
 
         let and_back_again = complement.complement();
         insta::assert_snapshot!(and_back_again, @"[]boolean | []string");
@@ -937,13 +937,13 @@ mod tests {
         let u = l1.union(&l2);
 
         let complement = u.complement();
-        insta::assert_snapshot!(complement, @"null | boolean | string | (mapping & !(⊥)) | (!([]boolean) & !([]string))");
+        insta::assert_snapshot!(complement, @"null | boolean | string | mapping | (!([]boolean) & !([]string))");
         let u1 = complement.union(&l1);
-        insta::assert_snapshot!(u1, @"null | boolean | string | (mapping & !(⊥)) | []boolean | (!([]boolean) & !([]string))");
+        insta::assert_snapshot!(u1, @"null | boolean | string | mapping | []boolean | (!([]boolean) & !([]string))");
         assert!(!u1.is_top());
 
         let unionized = u1.union(&l2);
-        insta::assert_snapshot!(unionized, @"null | boolean | string | (mapping & !(⊥)) | []boolean | []string | (!([]boolean) & !([]string))");
+        insta::assert_snapshot!(unionized, @"null | boolean | string | mapping | []boolean | []string | (!([]boolean) & !([]string))");
         assert!(unionized.is_top());
     }
     #[test]
@@ -959,7 +959,7 @@ mod tests {
         insta::assert_snapshot!(u, @"[]([]boolean | []string)");
 
         let complement = u.complement();
-        insta::assert_snapshot!(complement, @"null | boolean | string | (mapping & !(⊥)) | !([]([]boolean | []string))");
+        insta::assert_snapshot!(complement, @"null | boolean | string | mapping | !([]([]boolean | []string))");
 
         let and_back_again = complement.complement();
         insta::assert_snapshot!(and_back_again, @"[]([]boolean | []string)");
@@ -990,7 +990,7 @@ mod tests {
         insta::assert_snapshot!(l1, @"ref(0)");
 
         let complement = l1.complement();
-        insta::assert_snapshot!(complement, @"null | string | (mapping & !(⊥)) | !(tuple[boolean, (boolean | tuple[boolean, ref(0)])])");
+        insta::assert_snapshot!(complement, @"null | string | mapping | !(tuple[boolean, (boolean | tuple[boolean, ref(0)])])");
 
         let mut acc = BTreeMap::new();
         for (name, cf) in local_ctx().lock().unwrap().to_export.clone() {
