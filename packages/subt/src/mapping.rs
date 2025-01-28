@@ -127,10 +127,6 @@ impl MappingSubtype {
     }
 
     pub fn diff(&self, other: &MappingSubtype) -> MappingSubtype {
-        // let mut dnf1 = self.clone();
-
-        // for it in other.0 {}
-
         let dnf1 = self;
         let dnf2 = other;
         dnf2.0

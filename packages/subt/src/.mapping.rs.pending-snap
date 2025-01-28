@@ -1,6 +1,0 @@
-{"run_id":"1738104160-882257878","line":520,"new":{"module_name":"subt__mapping__tests","snapshot_name":"mapping_subtype2","metadata":{"source":"packages/subt/src/mapping.rs","assertion_line":520,"expression":"c1.to_cf().display_impl(false)"},"snapshot":"{b: (null | string | mapping | (mapping & !(⊥)) | list)}"},"old":{"module_name":"subt__mapping__tests","metadata":{},"snapshot":"{b: (null | string | (mapping & !(⊥)) | list)}"}}
-{"run_id":"1738104160-882257878","line":543,"new":{"module_name":"subt__mapping__tests","snapshot_name":"mapping_subtype3-2","metadata":{"source":"packages/subt/src/mapping.rs","assertion_line":543,"expression":"c1.to_cf().display_impl(false)"},"snapshot":"{b: (null | string | mapping | (mapping & !(⊥)) | list)}"},"old":{"module_name":"subt__mapping__tests","metadata":{},"snapshot":"{b: (null | string | (mapping & !(⊥)) | list)}"}}
-{"run_id":"1738104221-633141115","line":527,"new":null,"old":null}
-{"run_id":"1738104221-633141115","line":537,"new":null,"old":null}
-{"run_id":"1738104221-633141115","line":530,"new":null,"old":null}
-{"run_id":"1738104221-633141115","line":550,"new":null,"old":null}
