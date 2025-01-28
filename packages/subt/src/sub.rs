@@ -245,9 +245,12 @@ impl MappingAtomic {
         MappingAtomic(BTreeMap::new())
     }
 
-    fn to_cf(&self) -> CF {
+    fn to_cf(&self, tag: &MappingSubtypeTag) -> CF {
         let fields = self.0.iter().map(|(k, v)| (k.clone(), v.to_cf())).collect();
-        CF::Mapping { fields }
+        CF::Mapping {
+            fields,
+            tag: tag.clone(),
+        }
     }
 }
 
@@ -308,21 +311,56 @@ impl MappingSubtype {
         dnf2.0
             .iter()
             .fold(dnf1.clone(), |dnf1, it: &MappingSubtypeItem| {
+                // # Optimization: we are removing an open map with one field.
                 if it.tag == MappingSubtypeTag::Open && it.fields.0.len() == 1 && it.negs.is_empty()
                 {
                     let field2 = &it.fields.0;
 
-                    todo!()
-                    //       Enum.reduce(dnf1, [], fn {tag1, fields1, negs1}, acc ->
-                    //         {key, value, _rest} = :maps.next(:maps.iterator(fields2))
-                    //         t_diff = difference(Map.get(fields1, key, tag_to_type(tag1)), value)
-
-                    //         if empty?(t_diff) do
-                    //           acc
-                    //         else
-                    //           [{tag1, Map.put(fields1, key, t_diff), negs1} | acc]
-                    //         end
-                    //       end)
+                    return dnf1.0.iter().fold(
+                        MappingSubtype(vec![]),
+                        |acc,
+                         MappingSubtypeItem {
+                             tag: tag1,
+                             fields: fields1,
+                             negs: negs1,
+                         }| {
+                            match field2.into_iter().collect::<Vec<_>>().split_first() {
+                                None => unreachable!(),
+                                Some(((key, value), _rest)) => {
+                                    //
+                                    let f =
+                                        fields1.0.get(*key).cloned().unwrap_or_else(
+                                            || match tag1 {
+                                                MappingSubtypeTag::Open => Ty::new_top(),
+                                                MappingSubtypeTag::Closed => Ty::new_bot(),
+                                            },
+                                        );
+                                    let t_diff = f.diff(value);
+                                    if t_diff.is_bot() {
+                                        acc
+                                    } else {
+                                        MappingSubtype(
+                                            vec![MappingSubtypeItem {
+                                                tag: tag1.clone(),
+                                                fields: MappingAtomic(
+                                                    fields1
+                                                        .0
+                                                        .clone()
+                                                        .into_iter()
+                                                        .chain(vec![((*key).to_owned(), t_diff)])
+                                                        .collect(),
+                                                ),
+                                                negs: negs1.clone(),
+                                            }]
+                                            .into_iter()
+                                            .chain(acc.0.iter().cloned())
+                                            .collect(),
+                                        )
+                                    }
+                                }
+                            }
+                        },
+                    );
                 }
                 let tag2 = &it.tag;
                 let fields2 = &it.fields;
@@ -452,23 +490,75 @@ impl MappingSubtype {
             }
             Some((
                 MappingSubtypeItemNeg {
-                    tag: tag2,
+                    tag: neg_tag,
                     fields: neg_fields,
                 },
-                rest,
+                negs,
             )) => {
                 // we have a negative 'all' erasing everything
-                if *tag2 == MappingSubtypeTag::Open && neg_fields.0.is_empty() {
+                if *neg_tag == MappingSubtypeTag::Open && neg_fields.0.is_empty() {
                     return true;
                 }
                 // an open map can never be erased by a closed one, as the open one would have an 'infinite' part
                 // and the closed one wouldn't
-                if *tag == MappingSubtypeTag::Open && *tag2 == MappingSubtypeTag::Closed {
-                    return Self::is_bot_impl(&MappingSubtypeTag::Open, fields, rest);
+                if *tag == MappingSubtypeTag::Open && *neg_tag == MappingSubtypeTag::Closed {
+                    return Self::is_bot_impl(&MappingSubtypeTag::Open, fields, negs);
                 }
 
-                (neg_fields.0.iter().all(|it: (&String, &Ty)| todo!())
-                    && fields.0.iter().all(|it| todo!()))
+                (neg_fields
+                    .0
+                    .iter()
+                    .all(|(neg_key, neg_type): (&String, &Ty)| {
+                        //
+                        //          # Keys that are present in the negative map, but not in the positive one
+                        let l = if is_map_key(fields, neg_key) {
+                            true
+                        } else {
+                            //          # The key is not shared between positive and negative maps,
+                            //          # if the negative type is optional, then there may be a value in common
+                            match tag {
+                                MappingSubtypeTag::Closed => return is_optional_static(neg_type),
+                                //          # There may be value in common
+                                MappingSubtypeTag::Open => {
+                                    let diff = Ty::new_top().diff(neg_type);
+                                    diff.is_bot()
+                                        || Self::is_bot_impl(
+                                            tag,
+                                            &MappingAtomic(
+                                                fields
+                                                    .0
+                                                    .clone()
+                                                    .into_iter()
+                                                    .chain(vec![(neg_key.clone(), diff)])
+                                                    .collect(),
+                                            ),
+                                            negs,
+                                        )
+                                }
+                            }
+                        };
+                        l && fields.0.iter().all(|(key, typ)| {
+                            //
+                            if neg_fields.0.is_empty() {
+                                todo!()
+                            } else {
+                                let diff = Ty::new_top().diff(neg_type);
+                                diff.is_bot()
+                                    || Self::is_bot_impl(
+                                        tag,
+                                        &MappingAtomic(
+                                            fields
+                                                .0
+                                                .clone()
+                                                .into_iter()
+                                                .chain(vec![(key.clone(), diff)])
+                                                .collect(),
+                                        ),
+                                        negs,
+                                    )
+                            }
+                        })
+                    }))
                     || Self::is_bot_impl(tag, fields, negs)
 
                 //     defp map_empty?(tag, fields, [{neg_tag, neg_fields} | negs]) do
@@ -516,26 +606,33 @@ impl MappingSubtype {
     }
 
     fn to_cf(&self) -> CF {
-        // if self.mapping.is_top() {
-        //     acc.push(CF::MappingTop);
-        // } else {
-        // }
         if self.is_top() {
             return CF::MappingTop;
         }
 
         let mut acc: Vec<CF> = vec![];
 
-        for mut it in &self.0 {
+        for it in &self.0 {
             let mut acc2 = vec![];
+            acc2.push(it.fields.to_cf(&it.tag));
 
-            acc2.push(it.fields.to_cf());
+            for n in &it.negs {
+                acc2.push(CF::not(n.fields.to_cf(&it.tag)));
+            }
 
             acc.push(CF::and(acc2));
         }
 
         CF::or(acc)
     }
+}
+
+fn is_optional_static(neg_type: &Ty) -> bool {
+    todo!()
+}
+
+fn is_map_key(fields: &MappingAtomic, k: &str) -> bool {
+    fields.0.contains_key(k)
 }
 
 fn map_literal_intersection(
@@ -545,14 +642,8 @@ fn map_literal_intersection(
     pos2: &MappingAtomic,
 ) -> Result<MappingSubtypeItemNeg, ()> {
     match (tag1, pos1, tag2, pos2) {
-        //   # Both open: the result is open.
+        // Both open: the result is open.
         (MappingSubtypeTag::Open, map1, MappingSubtypeTag::Open, map2) => {
-            //     new_fields =
-            //     symmetrical_merge(map1, map2, fn _, type1, type2 ->
-            //       non_empty_intersection!(type1, type2)
-            //     end)
-
-            //   {:open, new_fields}
             let new_fields = symmetrical_merge(map1, map2, |_, type1, type2| {
                 non_empty_intersection(type1, type2)
             });
@@ -562,7 +653,7 @@ fn map_literal_intersection(
             })
         }
 
-        //   # Open and closed: result is closed, all fields from open should be in closed, except not_set ones.
+        // Open and closed: result is closed, all fields from open should be in closed, except not_set ones.
         (MappingSubtypeTag::Open, open, MappingSubtypeTag::Closed, closed)
         | (MappingSubtypeTag::Closed, closed, MappingSubtypeTag::Open, open) => {
             let kvs = open.0.iter().collect::<Vec<_>>();
@@ -570,19 +661,6 @@ fn map_literal_intersection(
             map_literal_intersection_loop(split_first, closed)
         }
 
-        // # Both closed: the result is closed.
-        // defp map_literal_intersection(:closed, map1, :closed, map2) do
-        //   new_fields =
-        //     symmetrical_intersection(map1, map2, fn _, type1, type2 ->
-        //       non_empty_intersection!(type1, type2)
-        //     end)
-
-        //   if map_size(new_fields) < map_size(map1) or map_size(new_fields) < map_size(map2) do
-        //     throw(:empty)
-        //   end
-
-        //   {:closed, new_fields}
-        // end
         (MappingSubtypeTag::Closed, map1, MappingSubtypeTag::Closed, map2) => {
             let new_fields = symmetrical_intersection(map1, map2, |_, type1, type2| {
                 non_empty_intersection(type1, type2)
@@ -801,6 +879,20 @@ impl Ty {
             string: StringSubtype::new_bot(),
             list: Bdd::from_atom(Atom::List(pos)).into(),
             mapping: MappingSubtype::new_bot(),
+        }
+    }
+
+    pub fn new_mapping(kvs: BTreeMap<String, Ty>) -> Self {
+        Self {
+            bitmap: BitMap::new_bot(),
+            boolean: BooleanSubtype::new_bot(),
+            string: StringSubtype::new_bot(),
+            list: Bdd::False.into(),
+            mapping: MappingSubtype(vec![MappingSubtypeItem {
+                tag: MappingSubtypeTag::Open,
+                fields: MappingAtomic(kvs),
+                negs: vec![],
+            }]),
         }
     }
 
@@ -1098,8 +1190,14 @@ pub enum CF {
     StringConst(String),
     Ref(usize),
     Bot,
-    List { prefix: Vec<CF>, rest: Box<CF> },
-    Mapping { fields: BTreeMap<String, CF> },
+    List {
+        prefix: Vec<CF>,
+        rest: Box<CF>,
+    },
+    Mapping {
+        tag: MappingSubtypeTag,
+        fields: BTreeMap<String, CF>,
+    },
     MappingTop,
 }
 
@@ -1230,12 +1328,27 @@ impl CF {
             CF::StringTop => "string".to_owned(),
             CF::ListTop => "list".to_owned(),
             CF::Ref(r) => format!("ref({})", r),
-            CF::Mapping { fields } => {
+            CF::Mapping { fields, tag } => {
                 let mut acc = vec![];
                 for (k, v) in fields {
                     acc.push(format!("{}: {}", k, v.display_impl(true)));
                 }
-                format!("mapping[{}]", acc.join(", "))
+                match tag {
+                    MappingSubtypeTag::Open => {
+                        if acc.is_empty() {
+                            "mapping".to_owned()
+                        } else {
+                            format!("{{{}}}", acc.join(", "))
+                        }
+                    }
+                    MappingSubtypeTag::Closed => {
+                        if acc.is_empty() {
+                            "⊥".to_owned()
+                        } else {
+                            format!("{{|{}|}}", acc.join(", "))
+                        }
+                    }
+                }
             }
             CF::MappingTop => "mapping".to_owned(),
         }
@@ -1273,6 +1386,53 @@ mod tests {
 
         let d2 = bot.diff(&top);
         assert!(d2.is_bot());
+    }
+    #[test]
+    fn mapping_subtype2() {
+        let b = MappingSubtype(vec![MappingSubtypeItem {
+            tag: MappingSubtypeTag::Open,
+            fields: MappingAtomic(
+                vec![("b".to_string(), Ty::new_bool_top())]
+                    .into_iter()
+                    .collect(),
+            ),
+            negs: vec![],
+        }]);
+
+        assert!(!b.is_bot());
+        assert!(!b.is_top());
+
+        let c1 = b.complement();
+
+        assert!(!c1.is_bot());
+        assert!(!c1.is_top());
+
+        let c2 = c1.complement();
+
+        assert!(!c2.is_bot());
+        assert!(!c2.is_top());
+        assert!(c2.is_same_type(&b));
+    }
+
+    #[test]
+    fn mapping_tests21() {
+        let bool_ty = Ty::new_bool_top();
+        let l1 = Ty::new_mapping(vec![("a".to_string(), bool_ty)].into_iter().collect());
+
+        let string_ty = Ty::new_string_top();
+        let l2 = Ty::new_mapping(vec![("a".to_string(), string_ty)].into_iter().collect());
+
+        let u = l1.union(&l2);
+
+        let complement = u.complement();
+        insta::assert_snapshot!(complement, @"null | boolean | string | {a: (null | mapping | list)} | list");
+        let u1 = complement.union(&l1);
+        insta::assert_snapshot!(u1, @"null | boolean | string | {a: boolean} | {a: (null | mapping | list)} | list");
+        assert!(!u1.is_top());
+
+        let unionized = u1.union(&l2);
+        insta::assert_snapshot!(unionized, @"null | boolean | string | mapping | list");
+        assert!(unionized.is_top());
     }
 
     #[test]
@@ -1387,6 +1547,35 @@ mod tests {
         assert!(!l.is_top());
 
         insta::assert_snapshot!(l, @"list");
+    }
+
+    #[test]
+    fn test_mapping() {
+        let m = Ty::new_mapping(BTreeMap::new());
+        assert!(!m.is_bot());
+        assert!(!m.is_top());
+
+        insta::assert_snapshot!(m, @"mapping");
+    }
+
+    #[test]
+    fn test_mapping_with_items() {
+        let mut kvs = BTreeMap::new();
+        kvs.insert("b".to_string(), Ty::new_bool_top());
+        let m = Ty::new_mapping(kvs);
+        assert!(!m.is_bot());
+        assert!(!m.is_top());
+
+        insta::assert_snapshot!(m, @"{b: boolean}");
+
+        let complement = m.complement();
+        assert!(!complement.is_bot());
+
+        insta::assert_snapshot!(complement, @"null | boolean | string | {b: (null | string | mapping | list)} | list");
+
+        let back = complement.complement();
+        insta::assert_snapshot!(back, @"{b: boolean}");
+        assert!(back.is_same_type(&m));
     }
 
     #[test]
