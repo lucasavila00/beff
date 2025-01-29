@@ -1,6 +1,6 @@
 use std::collections::BTreeMap;
 
-use crate::mapping::MappingSubtypeTag;
+use crate::mapping::MappingTag;
 
 #[derive(Debug, Clone)]
 pub enum CF {
@@ -20,7 +20,7 @@ pub enum CF {
         rest: Box<CF>,
     },
     Mapping {
-        tag: MappingSubtypeTag,
+        tag: MappingTag,
         fields: BTreeMap<String, CF>,
     },
     MappingTop,
@@ -159,10 +159,10 @@ impl CF {
                     acc.push(format!("{}: {}", k, v.display_impl(true)));
                 }
                 match tag {
-                    MappingSubtypeTag::Open => {
+                    MappingTag::Open => {
                         format!("{{{}}}", acc.join(", "))
                     }
-                    MappingSubtypeTag::Closed => {
+                    MappingTag::Closed => {
                         format!("{{|{}|}}", acc.join(", "))
                     }
                 }

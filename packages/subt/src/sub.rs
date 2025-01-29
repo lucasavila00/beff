@@ -14,7 +14,7 @@ use crate::{
     },
     boolean::BooleanSubtype,
     cf::CF,
-    mapping::{MappingAtomic, MappingSubtype, MappingSubtypeItem, MappingSubtypeTag},
+    mapping::{MappingItem, MappingKV, MappingTag, MappingTy},
     string::StringSubtype,
 };
 
@@ -101,7 +101,7 @@ pub struct Ty {
     pub boolean: BooleanSubtype,
     pub string: StringSubtype,
     pub list: Rc<Bdd>,
-    pub mapping: MappingSubtype,
+    pub mapping: MappingTy,
 }
 impl Display for Ty {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
@@ -115,7 +115,7 @@ impl Ty {
             boolean: BooleanSubtype::new_bot(),
             string: StringSubtype::new_bot(),
             list: Bdd::False.into(),
-            mapping: MappingSubtype::new_bot(),
+            mapping: MappingTy::new_bot(),
         }
     }
     pub fn new_top() -> Ty {
@@ -124,7 +124,7 @@ impl Ty {
             boolean: BooleanSubtype::new_top(),
             string: StringSubtype::new_top(),
             list: Bdd::True.into(),
-            mapping: MappingSubtype::new_top(),
+            mapping: MappingTy::new_top(),
         }
     }
 
@@ -134,7 +134,7 @@ impl Ty {
             boolean: BooleanSubtype::new_bot(),
             string: StringSubtype::new_bot(),
             list: Bdd::False.into(),
-            mapping: MappingSubtype::new_bot(),
+            mapping: MappingTy::new_bot(),
         }
     }
 
@@ -144,7 +144,7 @@ impl Ty {
             boolean: BooleanSubtype::new_top(),
             string: StringSubtype::new_bot(),
             list: Bdd::False.into(),
-            mapping: MappingSubtype::new_bot(),
+            mapping: MappingTy::new_bot(),
         }
     }
 
@@ -154,7 +154,7 @@ impl Ty {
             boolean: BooleanSubtype::Bool(b),
             string: StringSubtype::new_bot(),
             list: Bdd::False.into(),
-            mapping: MappingSubtype::new_bot(),
+            mapping: MappingTy::new_bot(),
         }
     }
 
@@ -164,7 +164,7 @@ impl Ty {
             boolean: BooleanSubtype::new_bot(),
             string: StringSubtype::new_top(),
             list: Bdd::False.into(),
-            mapping: MappingSubtype::new_bot(),
+            mapping: MappingTy::new_bot(),
         }
     }
 
@@ -174,7 +174,7 @@ impl Ty {
             boolean: BooleanSubtype::new_bot(),
             string: StringSubtype::Pos(v),
             list: Bdd::False.into(),
-            mapping: MappingSubtype::new_bot(),
+            mapping: MappingTy::new_bot(),
         }
     }
 
@@ -184,7 +184,7 @@ impl Ty {
             boolean: BooleanSubtype::new_bot(),
             string: StringSubtype::new_bot(),
             list: Bdd::True.into(),
-            mapping: MappingSubtype::new_bot(),
+            mapping: MappingTy::new_bot(),
         }
     }
 
@@ -212,7 +212,7 @@ impl Ty {
             boolean: BooleanSubtype::new_bot(),
             string: StringSubtype::new_bot(),
             list: Bdd::from_atom(Atom::List(pos)).into(),
-            mapping: MappingSubtype::new_bot(),
+            mapping: MappingTy::new_bot(),
         }
     }
 
@@ -223,7 +223,7 @@ impl Ty {
             boolean: BooleanSubtype::new_bot(),
             string: StringSubtype::new_bot(),
             list: Bdd::from_atom(Atom::List(pos)).into(),
-            mapping: MappingSubtype::new_bot(),
+            mapping: MappingTy::new_bot(),
         }
     }
 
@@ -233,7 +233,7 @@ impl Ty {
             boolean: BooleanSubtype::new_bot(),
             string: StringSubtype::new_bot(),
             list: Bdd::from_atom(Atom::List(pos)).into(),
-            mapping: MappingSubtype::new_bot(),
+            mapping: MappingTy::new_bot(),
         }
     }
 
@@ -243,9 +243,9 @@ impl Ty {
             boolean: BooleanSubtype::new_bot(),
             string: StringSubtype::new_bot(),
             list: Bdd::False.into(),
-            mapping: MappingSubtype(vec![MappingSubtypeItem {
-                tag: MappingSubtypeTag::Open,
-                fields: MappingAtomic(kvs),
+            mapping: MappingTy(vec![MappingItem {
+                tag: MappingTag::Open,
+                fields: MappingKV(kvs),
                 negs: vec![],
             }]),
         }
@@ -719,6 +719,29 @@ mod tests {
         let back = complement.complement();
         insta::assert_snapshot!(back, @"boolean | {b: boolean}");
         assert!(back.is_same_type(&m));
+    }
+
+    #[test]
+    fn test_mapping_with_items3() {
+        let mut kvs = BTreeMap::new();
+        kvs.insert("b".to_string(), Ty::new_bool_top());
+        let m = Ty::new_mapping(kvs);
+
+        let mut kvs2 = BTreeMap::new();
+        kvs2.insert("a".to_string(), Ty::new_string_top());
+
+        let m2 = Ty::new_mapping(kvs2);
+
+        let u = m2.union(&m);
+        insta::assert_snapshot!(u, @"{a: string} | {b: boolean}");
+
+        let complement = u.complement();
+        insta::assert_snapshot!(complement, @"null | boolean | string | {a: (null | boolean | mapping | list), b: (null | string | mapping | list)} | list");
+
+        let back = complement.complement();
+        insta::assert_snapshot!(back, @"mapping & !({a: (null | boolean | mapping | list), b: (null | string | mapping | list)})");
+
+        assert!(back.is_same_type(&u));
     }
 
     #[test]
