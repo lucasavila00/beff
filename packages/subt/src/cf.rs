@@ -126,27 +126,32 @@ impl CF {
             CF::BoolConst(it) => it.to_string(),
             CF::Bot => "⊥".to_owned(),
             CF::List { prefix, rest } => {
-                if prefix.is_empty() {
-                    if !rest.is_bot() {
-                        return format!("[]{}", rest.display_impl(true));
-                    }
-                }
-                let mut prefix = prefix
-                    .iter()
-                    .map(|d| d.display_impl(true))
-                    .collect::<Vec<String>>()
-                    .join(", ");
                 if rest.is_bot() {
-                    return format!("tuple[{}]", prefix);
-                }
-                let mut rest_part = "".to_owned();
-                if !rest.is_bot() {
-                    rest_part = rest_part + rest.display_impl(true).as_str() + "...";
+                    // just tuple
+                    format!(
+                        "[{}]",
+                        prefix
+                            .iter()
+                            .map(|d| d.display_impl(true))
+                            .collect::<Vec<String>>()
+                            .join(", ")
+                    )
+                } else {
+                    let mut sep = "";
                     if !prefix.is_empty() {
-                        prefix = prefix + ", ";
+                        sep = ", ";
                     }
+                    format!(
+                        "[{}{}{}...]",
+                        prefix
+                            .iter()
+                            .map(|d| d.display_impl(true))
+                            .collect::<Vec<String>>()
+                            .join(", "),
+                        sep,
+                        rest.display_impl(true)
+                    )
                 }
-                format!("list[{}{}]", prefix, rest_part)
             }
             CF::Null => "null".to_owned(),
             CF::BoolTop => "boolean".to_owned(),

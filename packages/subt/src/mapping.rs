@@ -13,11 +13,8 @@ impl MappingKV {
     }
 
     fn to_cf(&self, tag: &MappingTag) -> CF {
-        if self.0.is_empty() {
-            match tag {
-                MappingTag::Open => CF::MappingTop,
-                MappingTag::Closed => CF::Bot,
-            }
+        if self.0.is_empty() && tag == &MappingTag::Open {
+            CF::MappingTop
         } else {
             let fields: BTreeMap<String, CF> =
                 self.0.iter().map(|(k, v)| (k.clone(), v.to_cf())).collect();
@@ -72,16 +69,20 @@ struct IsEmptyEarlyStop;
 
 impl MappingTy {
     pub fn new_bot() -> Self {
-        MappingTy(vec![MappingItem {
-            tag: MappingTag::Closed,
-            fields: MappingKV::new(),
-            negs: vec![],
-        }])
+        MappingTy(vec![])
     }
 
     pub fn new_top() -> Self {
         MappingTy(vec![MappingItem {
             tag: MappingTag::Open,
+            fields: MappingKV::new(),
+            negs: vec![],
+        }])
+    }
+
+    pub fn new_empty_map() -> Self {
+        MappingTy(vec![MappingItem {
+            tag: MappingTag::Closed,
             fields: MappingKV::new(),
             negs: vec![],
         }])
@@ -153,14 +154,10 @@ impl MappingTy {
                 negs: negs1,
             } in dnf1_acc_content.into_iter()
             {
-                let mut negs_new = if *tag2 == MappingTag::Closed && fields2.0.is_empty() {
-                    vec![]
-                } else {
-                    vec![MappingItemNeg {
-                        tag: tag2.clone(),
-                        fields: fields2.clone(),
-                    }]
-                };
+                let mut negs_new = vec![MappingItemNeg {
+                    tag: tag2.clone(),
+                    fields: fields2.clone(),
+                }];
                 negs_new.extend(negs1.clone());
                 let is_empty = Self::is_bot_impl(&tag1, &fields1, &negs_new);
                 if !is_empty {
@@ -248,14 +245,7 @@ impl MappingTy {
 
     fn is_bot_impl(tag: &MappingTag, fields: &MappingKV, negs: &[MappingItemNeg]) -> bool {
         match negs.split_first() {
-            None => {
-                if fields.0.is_empty() {
-                    // empty map, it's empty if map is closed
-                    *tag == MappingTag::Closed
-                } else {
-                    fields.0.values().any(|it| it.is_bot())
-                }
-            }
+            None => fields.0.values().any(|it| it.is_bot()),
             Some((
                 MappingItemNeg {
                     tag: neg_tag,
@@ -481,6 +471,22 @@ fn map_literal_intersection_loop(
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn test_mapping_ty() {
+        let bot = MappingTy::new_bot();
+        assert!(bot.is_bot());
+        insta::assert_snapshot!(bot.to_cf().display_impl(false), @"⊥");
+
+        let top = MappingTy::new_top();
+        assert!(!top.is_bot());
+        insta::assert_snapshot!(top.to_cf().display_impl(false), @"mapping");
+
+        let empty = MappingTy::new_empty_map();
+        assert!(!empty.is_bot());
+        assert!(!empty.is_top());
+        insta::assert_snapshot!(empty.to_cf().display_impl(false), @"{||}");
+    }
 
     #[test]
     fn mapping_subtype() {

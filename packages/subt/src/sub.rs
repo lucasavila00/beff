@@ -728,13 +728,13 @@ mod tests {
     fn list_tests() {
         let bool_ty = Ty::new_bool_top();
         let l = Ty::new_parametric_list(bool_ty);
-        insta::assert_snapshot!(l, @"[]boolean");
+        insta::assert_snapshot!(l, @"[boolean...]");
 
         let complement = l.complement();
-        insta::assert_snapshot!(complement, @"null | boolean | string | mapping | !([]boolean)");
+        insta::assert_snapshot!(complement, @"null | boolean | string | mapping | !([boolean...])");
 
         let and_back_again = complement.complement();
-        insta::assert_snapshot!(and_back_again, @"[]boolean");
+        insta::assert_snapshot!(and_back_again, @"[boolean...]");
         assert!(and_back_again.is_same_type(&l));
     }
     #[test]
@@ -746,13 +746,13 @@ mod tests {
         let l2 = Ty::new_parametric_list(string_ty);
 
         let u = l1.union(&l2);
-        insta::assert_snapshot!(u, @"[]boolean | []string");
+        insta::assert_snapshot!(u, @"[boolean...] | [string...]");
 
         let complement = u.complement();
-        insta::assert_snapshot!(complement, @"null | boolean | string | mapping | (!([]boolean) & !([]string))");
+        insta::assert_snapshot!(complement, @"null | boolean | string | mapping | (!([boolean...]) & !([string...]))");
 
         let and_back_again = complement.complement();
-        insta::assert_snapshot!(and_back_again, @"[]boolean | []string");
+        insta::assert_snapshot!(and_back_again, @"[boolean...] | [string...]");
         assert!(and_back_again.is_same_type(&u));
     }
     #[test]
@@ -766,13 +766,13 @@ mod tests {
         let u = l1.union(&l2);
 
         let complement = u.complement();
-        insta::assert_snapshot!(complement, @"null | boolean | string | mapping | (!([]boolean) & !([]string))");
+        insta::assert_snapshot!(complement, @"null | boolean | string | mapping | (!([boolean...]) & !([string...]))");
         let u1 = complement.union(&l1);
-        insta::assert_snapshot!(u1, @"null | boolean | string | mapping | []boolean | (!([]boolean) & !([]string))");
+        insta::assert_snapshot!(u1, @"null | boolean | string | mapping | [boolean...] | (!([boolean...]) & !([string...]))");
         assert!(!u1.is_top());
 
         let unionized = u1.union(&l2);
-        insta::assert_snapshot!(unionized, @"null | boolean | string | mapping | []boolean | []string | (!([]boolean) & !([]string))");
+        insta::assert_snapshot!(unionized, @"null | boolean | string | mapping | [boolean...] | [string...] | (!([boolean...]) & !([string...]))");
         assert!(unionized.is_top());
     }
     #[test]
@@ -785,13 +785,13 @@ mod tests {
 
         let u = l1.union(&l2);
         let u = Ty::new_parametric_list(u);
-        insta::assert_snapshot!(u, @"[]([]boolean | []string)");
+        insta::assert_snapshot!(u, @"[([boolean...] | [string...])...]");
 
         let complement = u.complement();
-        insta::assert_snapshot!(complement, @"null | boolean | string | mapping | !([]([]boolean | []string))");
+        insta::assert_snapshot!(complement, @"null | boolean | string | mapping | !([([boolean...] | [string...])...])");
 
         let and_back_again = complement.complement();
-        insta::assert_snapshot!(and_back_again, @"[]([]boolean | []string)");
+        insta::assert_snapshot!(and_back_again, @"[([boolean...] | [string...])...]");
         assert!(and_back_again.is_same_type(&u));
     }
 
@@ -799,7 +799,7 @@ mod tests {
     fn tuple_print() {
         let bool_ty = Ty::new_bool_top();
         let l = Ty::new_tuple(vec![bool_ty.clone()]);
-        insta::assert_snapshot!(l, @"tuple[boolean]");
+        insta::assert_snapshot!(l, @"[boolean]");
     }
     // #[test]
     // fn recursive_list() {
