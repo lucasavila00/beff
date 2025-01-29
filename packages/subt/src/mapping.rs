@@ -13,15 +13,14 @@ impl MappingKV {
     }
 
     fn to_cf(&self, tag: &MappingTag) -> CF {
-        let fields: BTreeMap<String, CF> =
-            self.0.iter().map(|(k, v)| (k.clone(), v.to_cf())).collect();
-
-        if fields.is_empty() {
+        if self.0.is_empty() {
             match tag {
                 MappingTag::Open => CF::MappingTop,
                 MappingTag::Closed => CF::Bot,
             }
         } else {
+            let fields: BTreeMap<String, CF> =
+                self.0.iter().map(|(k, v)| (k.clone(), v.to_cf())).collect();
             CF::Mapping {
                 fields,
                 tag: tag.clone(),
@@ -154,32 +153,23 @@ impl MappingTy {
                 negs: negs1,
             } in dnf1_acc_content.into_iter()
             {
-                if *tag2 == MappingTag::Closed && fields2.0.is_empty() {
+                let mut negs_new = if *tag2 == MappingTag::Closed && fields2.0.is_empty() {
+                    vec![]
+                } else {
+                    vec![MappingItemNeg {
+                        tag: tag2.clone(),
+                        fields: fields2.clone(),
+                    }]
+                };
+                negs_new.extend(negs1.clone());
+                let is_empty = Self::is_bot_impl(&tag1, &fields1, &negs_new);
+                if !is_empty {
                     acc.push(MappingItem {
                         tag: tag1.clone(),
                         fields: fields1.clone(),
-                        negs: negs1.clone(),
+                        negs: negs_new,
                     });
-                } else {
-                    let both_top = tag1 == MappingTag::Open
-                        && fields1.0.is_empty()
-                        && negs1.is_empty()
-                        && *tag2 == MappingTag::Open
-                        && fields2.0.is_empty();
-
-                    if !both_top {
-                        let mut negs1extend = vec![MappingItemNeg {
-                            tag: tag2.clone(),
-                            fields: fields2.clone(),
-                        }];
-                        negs1extend.extend(negs1.clone());
-                        acc.push(MappingItem {
-                            tag: tag1.clone(),
-                            fields: fields1.clone(),
-                            negs: negs1extend,
-                        });
-                    }
-                };
+                }
 
                 for MappingItemNeg {
                     tag: neg_tag2,
@@ -227,24 +217,23 @@ impl MappingTy {
                 negs: negs2,
             } in dnf2
             {
-                match map_literal_intersection(tag1, pos1, tag2, pos2) {
-                    Ok(MappingItemNeg { tag, fields }) => {
-                        let entry = MappingItem {
-                            tag,
-                            fields,
-                            negs: vec_union(negs1, negs2),
-                        };
+                if let Ok(MappingItemNeg { tag, fields }) =
+                    map_literal_intersection(tag1, pos1, tag2, pos2)
+                {
+                    let entry = MappingItem {
+                        tag,
+                        fields,
+                        negs: vec_union(negs1, negs2),
+                    };
 
-                        // Imagine a, b, c, where a is closed and b and c are open with
-                        // no keys in common. The result in both cases will be a and we
-                        // want to avoid adding duplicates, especially as intersection
-                        // is a cartesian product.
-                        if acc.contains(&entry) {
-                            continue;
-                        }
-                        acc.push(entry);
+                    // Imagine a, b, c, where a is closed and b and c are open with
+                    // no keys in common. The result in both cases will be a and we
+                    // want to avoid adding duplicates, especially as intersection
+                    // is a cartesian product.
+                    if acc.contains(&entry) {
+                        continue;
                     }
-                    Err(IsEmptyEarlyStop) => return MappingTy(acc),
+                    acc.push(entry);
                 }
             }
         }
@@ -252,12 +241,9 @@ impl MappingTy {
     }
 
     pub fn is_bot(&self) -> bool {
-        self.0.iter().all(|it| {
-            let res = Self::is_bot_impl(&it.tag, &it.fields, &it.negs);
-            dbg!(&res);
-            dbg!(&it);
-            res
-        })
+        self.0
+            .iter()
+            .all(|it| Self::is_bot_impl(&it.tag, &it.fields, &it.negs))
     }
 
     fn is_bot_impl(tag: &MappingTag, fields: &MappingKV, negs: &[MappingItemNeg]) -> bool {
@@ -291,9 +277,8 @@ impl MappingTy {
                     .0
                     .iter()
                     .all(|(neg_key, neg_type): (&String, &Ty)| {
-                        //
                         // Keys that are present in the negative map, but not in the positive one
-                        if is_map_key(fields, neg_key) {
+                        if fields.0.contains_key(neg_key) {
                             true
                         } else {
                             // The key is not shared between positive and negative maps,
@@ -371,10 +356,6 @@ fn is_optional_static(neg_type: &Ty) -> bool {
     // it is optional if it includes null
     // TODO: create optional type?
     neg_type.bitmap.null()
-}
-
-fn is_map_key(fields: &MappingKV, k: &str) -> bool {
-    fields.0.contains_key(k)
 }
 
 fn map_literal_intersection(
@@ -598,7 +579,7 @@ mod tests {
             ),
             negs: vec![],
         }]);
-        insta::assert_snapshot!(a.diff(&a).to_cf().display_impl(false), @"{a: string, b: boolean} & !({a: string, b: boolean})");
+        insta::assert_snapshot!(a.diff(&a).to_cf().display_impl(false), @"⊥");
 
         assert!(a.diff(&a).is_bot());
 
@@ -650,5 +631,18 @@ mod tests {
         insta::assert_snapshot!(back.to_cf().display_impl(false), @"mapping & !({a: (null | boolean | mapping | list), b: (null | string | mapping | list)})");
 
         assert!(back.is_same_type(&m2));
+
+        let u1 = complement.union(&a);
+
+        assert!(!u1.is_bot());
+
+        insta::assert_snapshot!(u1.to_cf().display_impl(false), @"{a: string} | {a: (null | boolean | mapping | list), b: (null | string | mapping | list)}");
+
+        let u2 = u1.union(&b);
+
+        insta::assert_snapshot!(u2.to_cf().display_impl(false), @"{a: string} | {a: (null | boolean | mapping | list), b: (null | string | mapping | list)} | {b: boolean}");
+
+        assert!(!u2.is_bot());
+        assert!(u2.is_top());
     }
 }
