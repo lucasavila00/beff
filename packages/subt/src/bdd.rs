@@ -265,7 +265,7 @@ pub struct ListEvidence {
 pub enum ProperSubtypeEvidence {
     Boolean(bool),
     String { allowed: bool, values: Vec<String> },
-    List(Rc<ListEvidence>),
+    List,
     Mapping,
 }
 impl ProperSubtypeEvidence {
@@ -480,21 +480,22 @@ fn list_formula_is_empty(
         }
     }
     match list_inhabited(&mut prefix_items, &items, neg, builder) {
-        ListInhabited::Yes(e, prefix) => {
-            let prefix2 = prefix
-                .into_iter()
-                .map(|it| match it.is_empty_evidence() {
-                    EvidenceResult::Evidence(e) => Rc::new(e),
-                    EvidenceResult::IsEmpty => {
-                        unreachable!("list_inhabited should have returned false")
-                    }
-                })
-                .collect::<Vec<_>>();
-            let list_evidence = ListEvidence {
-                prefix_items: prefix2,
-                items: e,
-            };
-            ProperSubtypeEvidence::List(Rc::new(list_evidence)).to_result()
+        ListInhabited::Yes(_e, _prefix) => {
+            // let prefix2 = prefix
+            //     .into_iter()
+            //     .map(|it| match it.is_empty_evidence() {
+            //         EvidenceResult::Evidence(e) => Rc::new(e),
+            //         EvidenceResult::IsEmpty => {
+            //             unreachable!("list_inhabited should have returned false")
+            //         }
+            //     })
+            //     .collect::<Vec<_>>();
+            // let list_evidence = ListEvidence {
+            //     prefix_items: prefix2,
+            //     items: e,
+            // };
+            // ProperSubtypeEvidence::List(Rc::new(list_evidence)).to_result()
+            ProperSubtypeEvidence::List.to_result()
         }
 
         ListInhabited::No => ProperSubtypeEvidenceResult::IsEmpty,

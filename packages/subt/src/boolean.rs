@@ -1,75 +1,75 @@
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord)]
-pub enum BooleanSubtype {
+pub enum BooleanTy {
     Top,
     Bot,
     Bool(bool),
 }
-impl BooleanSubtype {
-    pub fn new_bot() -> BooleanSubtype {
-        BooleanSubtype::Bot
+impl BooleanTy {
+    pub fn new_bot() -> BooleanTy {
+        BooleanTy::Bot
     }
 
-    pub fn new_top() -> BooleanSubtype {
-        BooleanSubtype::Top
+    pub fn new_top() -> BooleanTy {
+        BooleanTy::Top
     }
     pub fn is_bot(&self) -> bool {
-        matches!(self, BooleanSubtype::Bot)
+        matches!(self, BooleanTy::Bot)
     }
     pub fn is_top(&self) -> bool {
-        matches!(self, BooleanSubtype::Top)
+        matches!(self, BooleanTy::Top)
     }
 
-    pub fn complement(&self) -> BooleanSubtype {
+    pub fn complement(&self) -> BooleanTy {
         match self {
-            BooleanSubtype::Bot => BooleanSubtype::Top,
-            BooleanSubtype::Top => BooleanSubtype::Bot,
-            BooleanSubtype::Bool(b) => BooleanSubtype::Bool(!b),
+            BooleanTy::Bot => BooleanTy::Top,
+            BooleanTy::Top => BooleanTy::Bot,
+            BooleanTy::Bool(b) => BooleanTy::Bool(!b),
         }
     }
 
-    pub fn diff(&self, other: &BooleanSubtype) -> BooleanSubtype {
+    pub fn diff(&self, other: &BooleanTy) -> BooleanTy {
         match (&self, &other) {
-            (BooleanSubtype::Bot, _) => BooleanSubtype::Bot,
-            (BooleanSubtype::Top, other) => other.complement(),
-            (BooleanSubtype::Bool(_), BooleanSubtype::Top) => BooleanSubtype::Bot,
-            (BooleanSubtype::Bool(a), BooleanSubtype::Bot) => BooleanSubtype::Bool(*a),
-            (BooleanSubtype::Bool(a), BooleanSubtype::Bool(b)) => {
+            (BooleanTy::Bot, _) => BooleanTy::Bot,
+            (BooleanTy::Top, other) => other.complement(),
+            (BooleanTy::Bool(_), BooleanTy::Top) => BooleanTy::Bot,
+            (BooleanTy::Bool(a), BooleanTy::Bot) => BooleanTy::Bool(*a),
+            (BooleanTy::Bool(a), BooleanTy::Bool(b)) => {
                 if a == b {
-                    BooleanSubtype::Bot
+                    BooleanTy::Bot
                 } else {
-                    BooleanSubtype::Bool(*a)
+                    BooleanTy::Bool(*a)
                 }
             }
         }
     }
 
-    pub fn union(&self, boolean: &BooleanSubtype) -> BooleanSubtype {
+    pub fn union(&self, boolean: &BooleanTy) -> BooleanTy {
         match (self, boolean) {
-            (BooleanSubtype::Bot, _) => boolean.clone(),
-            (_, BooleanSubtype::Bot) => self.clone(),
-            (BooleanSubtype::Top, _) => BooleanSubtype::Top,
-            (_, BooleanSubtype::Top) => BooleanSubtype::Top,
-            (BooleanSubtype::Bool(a), BooleanSubtype::Bool(b)) => {
+            (BooleanTy::Bot, _) => boolean.clone(),
+            (_, BooleanTy::Bot) => self.clone(),
+            (BooleanTy::Top, _) => BooleanTy::Top,
+            (_, BooleanTy::Top) => BooleanTy::Top,
+            (BooleanTy::Bool(a), BooleanTy::Bool(b)) => {
                 if a == b {
-                    BooleanSubtype::Bool(*a)
+                    BooleanTy::Bool(*a)
                 } else {
-                    BooleanSubtype::Top
+                    BooleanTy::Top
                 }
             }
         }
     }
 
-    pub fn intersect(&self, boolean: &BooleanSubtype) -> BooleanSubtype {
+    pub fn intersect(&self, boolean: &BooleanTy) -> BooleanTy {
         match (self, boolean) {
-            (BooleanSubtype::Bot, _) => BooleanSubtype::Bot,
-            (_, BooleanSubtype::Bot) => BooleanSubtype::Bot,
-            (BooleanSubtype::Top, other) => (*other).clone(),
-            (_, BooleanSubtype::Top) => self.clone(),
-            (BooleanSubtype::Bool(a), BooleanSubtype::Bool(b)) => {
+            (BooleanTy::Bot, _) => BooleanTy::Bot,
+            (_, BooleanTy::Bot) => BooleanTy::Bot,
+            (BooleanTy::Top, other) => (*other).clone(),
+            (_, BooleanTy::Top) => self.clone(),
+            (BooleanTy::Bool(a), BooleanTy::Bool(b)) => {
                 if a == b {
-                    BooleanSubtype::Bool(*a)
+                    BooleanTy::Bool(*a)
                 } else {
-                    BooleanSubtype::Bot
+                    BooleanTy::Bot
                 }
             }
         }
