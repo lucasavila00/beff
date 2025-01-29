@@ -245,6 +245,7 @@ impl MappingTy {
 
     fn is_bot_impl(tag: &MappingTag, fields: &MappingKV, negs: &[MappingItemNeg]) -> bool {
         match negs.split_first() {
+            // No negations, so not empty unless there's an empty type
             None => fields.0.values().any(|it| it.is_bot()),
             Some((
                 MappingItemNeg {
