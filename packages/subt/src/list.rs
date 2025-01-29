@@ -6,14 +6,31 @@ use std::{
 use crate::{
     bdd::{list_is_empty, Atom, Bdd, ProperSubtypeEvidenceResult, TC},
     cf::CF,
-    sub::{ListAtomic, Ty},
+    sub::Ty,
 };
 
+#[derive(Debug)]
+pub struct ListAtomic {
+    pub prefix_items: Vec<Rc<Ty>>,
+    pub rest: Rc<Ty>,
+}
+
+impl ListAtomic {
+    pub fn to_cf(&self) -> CF {
+        let rest = self.rest.to_cf();
+        let prefix = self
+            .prefix_items
+            .iter()
+            .map(|it| it.to_cf())
+            .collect::<Vec<_>>();
+        CF::list(prefix, rest)
+    }
+}
 thread_local! {
     static SEMTYPE_CTX: Arc<Mutex<TC>> = Arc::new(Mutex::new(TC::new()));
 }
 
-pub fn local_ctx() -> Arc<Mutex<TC>> {
+fn local_ctx() -> Arc<Mutex<TC>> {
     SEMTYPE_CTX.with(|ctx| ctx.clone())
 }
 

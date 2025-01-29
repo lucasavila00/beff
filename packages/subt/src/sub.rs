@@ -1,4 +1,4 @@
-use std::{collections::BTreeMap, fmt::Display, rc::Rc};
+use std::{collections::BTreeMap, fmt::Display};
 
 use bitfield_struct::bitfield;
 
@@ -59,24 +59,6 @@ impl TyBitmap {
         let mut new = self.clone();
         new.set_null(!self.null());
         new
-    }
-}
-
-#[derive(Debug)]
-pub struct ListAtomic {
-    pub prefix_items: Vec<Rc<Ty>>,
-    pub rest: Rc<Ty>,
-}
-
-impl ListAtomic {
-    pub fn to_cf(&self) -> CF {
-        let rest = self.rest.to_cf();
-        let prefix = self
-            .prefix_items
-            .iter()
-            .map(|it| it.to_cf())
-            .collect::<Vec<_>>();
-        CF::list(prefix, rest)
     }
 }
 
@@ -304,50 +286,7 @@ impl Ty {
             mapping: self.mapping.intersect(&b.mapping),
         }
     }
-    // pub fn to_cf(&self) -> CF {
-    //     let new_name = local_ctx().lock().unwrap().seen.len();
-    //     let mut rec_seen = None;
-    //     {
-    //         let ctx = local_ctx();
-    //         let mut guard = ctx.lock().unwrap();
-    //         let seen = &mut guard.seen;
-    //         match seen.get(self).clone() {
-    //             Some(CFMemo::Schema(cf)) => return cf.clone(),
-    //             Some(CFMemo::Undefined(name)) => {
-    //                 rec_seen = Some(name.clone());
-    //             }
-    //             None => {
-    //                 seen.insert(self.clone(), CFMemo::Undefined(new_name));
-    //             }
-    //         }
-    //     }
 
-    //     if let Some(name) = rec_seen {
-    //         let ctx = local_ctx();
-    //         let mut guard = ctx.lock().unwrap();
-    //         guard.recursive_seen.insert(name.clone());
-    //         return CF::Ref(name.clone());
-    //     }
-    //     let ty = self.to_cf_no_recursive_check();
-
-    //     local_ctx()
-    //         .lock()
-    //         .unwrap()
-    //         .seen
-    //         .insert(self.clone(), CFMemo::Schema(ty.clone()));
-
-    //     {
-    //         let ctx = local_ctx();
-    //         let mut guard = ctx.lock().unwrap();
-
-    //         if guard.recursive_seen.contains(&new_name) {
-    //             guard.to_export.push((new_name.clone(), ty.clone()));
-    //             return CF::Ref(new_name);
-    //         }
-    //     }
-
-    //     ty
-    // }
     pub fn to_cf(&self) -> CF {
         let mut acc: Vec<CF> = vec![];
 
@@ -384,17 +323,11 @@ impl Ty {
             }
         }
 
-        // match &self.mapping {}
-        // acc.push(format!("mapping: {:?}", self.mapping));
         if !self.mapping.is_bot() {
-            // acc.push(CF::MappingSomething(self.mapping., ()));
             acc.push(self.mapping.to_cf());
         }
 
-        // match &self.mapping {}
-        // acc.push(format!("mapping: {:?}", self.mapping));
         if !self.list.is_bot() {
-            // acc.push(CF::MappingSomething(self.mapping., ()));
             acc.push(self.list.to_cf());
         }
 

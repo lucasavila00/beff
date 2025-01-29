@@ -1,5 +1,6 @@
 use crate::cf::CF;
-use crate::sub::{CFMemo, ListAtomic, Ty};
+use crate::list::ListAtomic;
+use crate::sub::{CFMemo, Ty};
 use std::{
     cmp::Ordering,
     collections::{BTreeMap, BTreeSet},
