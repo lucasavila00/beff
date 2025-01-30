@@ -3,50 +3,24 @@ use crate::{
     sub::{vec_union, Ty},
 };
 
-// #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord)]
-// pub enum ListKVRest {
-//     Top,
-//     Bot,
-//     Ty(Ty),
-// }
-// impl ListKVRest {
-//     fn is_bot(&self) -> bool {
-//         match self {
-//             ListKVRest::Bot => true,
-//             ListKVRest::Top => false,
-//             ListKVRest::Ty(ty) => ty.is_bot(),
-//         }
-//     }
-
-//     fn to_ty(&self) -> Ty {
-//         match self {
-//             ListKVRest::Bot => Ty::new_bot(),
-//             ListKVRest::Top => Ty::new_top(),
-//             ListKVRest::Ty(ty) => ty.clone(),
-//         }
-//     }
-// }
-
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord)]
 pub struct ListKV {
     prefix_items: Vec<Ty>,
-    // rest: ListKVRest,
 }
 
 impl ListKV {
-    fn to_cf(&self) -> CF {
-        // let prefix = self
-        //     .prefix_items
-        //     .iter()
-        //     .map(|it| it.to_cf())
-        //     .collect::<Vec<_>>();
-        // let rest = match &self.rest {
-        //     ListKVRest::Top => CF::ListTop,
-        //     ListKVRest::Bot => CF::Bot,
-        //     ListKVRest::Ty(ty) => ty.to_cf(),
-        // };
-        // CF::list(prefix, rest)
-        todo!()
+    fn to_cf(&self, tag: &ListTag) -> CF {
+        if self.prefix_items.is_empty() && tag == &ListTag::Open {
+            CF::ListTop
+        } else {
+            let prefix = self
+                .prefix_items
+                .iter()
+                .map(|it| it.to_cf())
+                .collect::<Vec<_>>();
+
+            CF::list(prefix, CF::Bot)
+        }
     }
 }
 
@@ -93,20 +67,10 @@ impl ListTy2 {
             tag: ListTag::Open,
         }])
     }
-    // pub fn new_parametric_list(t: Ty) -> ListTy2 {
-    //     ListTy2(vec![ListItem {
-    //         fields: ListKV {
-    //             // prefix_items: vec![],
-    //             // rest: ListKVRest::Ty(t),
-    //         },
-    //         negs: vec![],
-    //     }])
-    // }
     pub fn new_tuple(prefix: Vec<Ty>) -> ListTy2 {
         ListTy2(vec![ListItem {
             fields: ListKV {
                 prefix_items: prefix,
-                // rest: ListKVRest::Bot,
             },
             negs: vec![],
             tag: ListTag::Open,
@@ -132,30 +96,6 @@ impl ListTy2 {
         Self::new_top().diff(self)
     }
     pub fn diff(&self, other: &ListTy2) -> ListTy2 {
-        //     defp tuple_difference(dnf1, dnf2) do
-        //     Enum.reduce(dnf2, dnf1, fn {tag2, elements2, negs2}, dnf1 ->
-        //       Enum.reduce(dnf1, [], fn {tag1, elements1, negs1}, acc ->
-        //         # Prune negations that have no values in common
-        //         acc =
-        //           case tuple_literal_intersection(tag1, elements1, tag2, elements2) do
-        //             :empty -> [{tag1, elements1, negs1}] ++ acc
-        //             _ -> [{tag1, elements1, [{tag2, elements2} | negs1]}] ++ acc
-        //           end
-
-        //         Enum.reduce(negs2, acc, fn {neg_tag2, neg_elements2}, inner_acc ->
-        //           case tuple_literal_intersection(tag1, elements1, neg_tag2, neg_elements2) do
-        //             :empty -> inner_acc
-        //             {tag, fields} -> [{tag, fields, negs1} | inner_acc]
-        //           end
-        //         end)
-        //       end)
-        //     end)
-        //     |> case do
-        //       [] -> 0
-        //       acc -> acc
-        //     end
-        //   end
-
         let mut dnf1_acc = self.0.clone();
 
         for it in other.0.iter() {
@@ -174,11 +114,6 @@ impl ListTy2 {
             } in dnf1_acc_content.into_iter()
             {
                 // # Prune negations that have no values in common
-                // acc =
-                //   case tuple_literal_intersection(tag1, elements1, tag2, elements2) do
-                //     :empty -> [{tag1, elements1, negs1}] ++ acc
-                //     _ -> [{tag1, elements1, [{tag2, elements2} | negs1]}] ++ acc
-                //   end
 
                 match tuple_literal_intersection(&tag1, &fields1, tag2, &fields2) {
                     Err(_) => acc.push(ListItem {
@@ -225,21 +160,57 @@ impl ListTy2 {
     }
     pub fn union(&self, other: &ListTy2) -> ListTy2 {
         let mut acc = vec_union(&self.0, &other.0);
-        // acc.retain(|it| !Self::is_bot_impl(&it.tag, &it.fields, &it.negs));
+        acc.retain(|it| !Self::is_bot_impl(&it.tag, &it.fields, &it.negs));
         ListTy2(acc)
     }
     pub fn intersect(&self, other: &ListTy2) -> ListTy2 {
-        todo!()
+        let dnf1 = &self.0;
+        let dnf2 = &other.0;
+
+        let mut acc = vec![];
+        for ListItem {
+            tag: tag1,
+            fields: pos1,
+            negs: negs1,
+        } in dnf1
+        {
+            for ListItem {
+                tag: tag2,
+                fields: pos2,
+                negs: negs2,
+            } in dnf2
+            {
+                if let Ok(ListItemNeg { tag, fields }) =
+                    tuple_literal_intersection(tag1, pos1, tag2, pos2)
+                {
+                    let entry = ListItem {
+                        tag,
+                        fields,
+                        negs: vec_union(negs1, negs2),
+                    };
+
+                    // Imagine a, b, c, where a is closed and b and c are open with
+                    // no keys in common. The result in both cases will be a and we
+                    // want to avoid adding duplicates, especially as intersection
+                    // is a cartesian product.
+                    if acc.contains(&entry) {
+                        continue;
+                    }
+                    acc.push(entry);
+                }
+            }
+        }
+        ListTy2(acc)
     }
     pub fn to_cf(&self) -> CF {
         let mut acc: Vec<CF> = vec![];
 
         for it in &self.0 {
             let mut acc2 = vec![];
-            acc2.push(it.fields.to_cf());
+            acc2.push(it.fields.to_cf(&it.tag));
 
             for n in &it.negs {
-                match n.fields.to_cf() {
+                match n.fields.to_cf(&it.tag) {
                     //     CF::Bot => {}
                     it => {
                         acc2.push(CF::not(it));
@@ -290,34 +261,47 @@ struct IsEmptyEarlyStop;
 
 fn tuple_literal_intersection(
     tag1: &ListTag,
-    pos1: &ListKV,
+    elements1: &ListKV,
     tag2: &ListTag,
-    pos2: &ListKV,
+    elements2: &ListKV,
 ) -> Result<ListItemNeg, IsEmptyEarlyStop> {
-    //   defp tuple_literal_intersection(tag1, elements1, tag2, elements2) do
-    //   n = length(elements1)
-    //   m = length(elements2)
+    let n = elements1.prefix_items.len();
+    let m = elements2.prefix_items.len();
 
-    //   cond do
-    //     (tag1 == :closed and n < m) or (tag2 == :closed and n > m) ->
-    //       :empty
+    if (tag1 == &ListTag::Closed && n < m) || (tag2 == &ListTag::Closed && n > m) {
+        return Err(IsEmptyEarlyStop);
+    }
 
-    //     tag1 == :open and tag2 == :open ->
-    //       try do
-    //         {:open, zip_non_empty_intersection!(elements1, elements2, [])}
-    //       catch
-    //         :empty -> :empty
-    //       end
+    if tag1 == &ListTag::Open && tag2 == &ListTag::Open {
+        let fields = zip_non_empty_intersection(elements1, elements2, &[])?;
+        Ok(ListItemNeg {
+            tag: ListTag::Open,
+            fields,
+        })
+    } else {
+        let fields = zip_non_empty_intersection(elements1, elements2, &[])?;
+        Ok(ListItemNeg {
+            tag: ListTag::Closed,
+            fields,
+        })
+    }
+}
 
-    //     true ->
-    //       try do
-    //         {:closed, zip_non_empty_intersection!(elements1, elements2, [])}
-    //       catch
-    //         :empty -> :empty
-    //       end
-    //   end
-    // end
+fn enum_reverse<T: Clone>(enumerable: &[T], tail: &[T]) -> Vec<T> {
+    // Reverses the elements in enumerable, appends the tail, and returns it as a list.
+    let mut acc: Vec<T> = vec![];
+    for it in enumerable.iter().rev() {
+        acc.push(it.clone());
+    }
+    acc.extend_from_slice(tail);
+    acc
+}
 
+fn zip_non_empty_intersection(
+    elements1: &ListKV,
+    elements2: &ListKV,
+    acc: &[Ty],
+) -> Result<ListKV, IsEmptyEarlyStop> {
     // # Intersects two lists of types, and _appends_ the extra elements to the result.
     // defp zip_non_empty_intersection!([], types2, acc), do: Enum.reverse(acc, types2)
     // defp zip_non_empty_intersection!(types1, [], acc), do: Enum.reverse(acc, types1)
@@ -325,9 +309,14 @@ fn tuple_literal_intersection(
     // defp zip_non_empty_intersection!([type1 | rest1], [type2 | rest2], acc) do
     //   zip_non_empty_intersection!(rest1, rest2, [non_empty_intersection!(type1, type2) | acc])
     // end
-
+    if elements1.prefix_items.is_empty() {
+        return Ok(ListKV {
+            prefix_items: enum_reverse(acc, &elements2.prefix_items),
+        });
+    }
     todo!()
 }
+
 fn tuple_compatibility(
     n: usize,
     m: usize,
@@ -339,34 +328,77 @@ fn tuple_compatibility(
     // # Determines if the set difference is empty when:
     // # - Positive tuple: {tag, elements} of size n
     // # - Negative tuple: open or closed tuples of size m
-    // defp tuple_compatibility(n, m, tag, elements, neg_tag, negs) do
-    //   # The tuples to consider are all those of size n to m - 1, and if the negative tuple is
-    //   # closed, we also need to consider tuples of size greater than m + 1.
-    //   tag == :closed or
-    //     (Enum.all?(n..(m - 1)//1, &tuple_empty?(:closed, tuple_fill(elements, &1), negs)) and
-    //        (neg_tag == :open or tuple_empty?(:open, tuple_fill(elements, m + 1), negs)))
-    // end
-    todo!()
+
+    tag == &ListTag::Closed
+        || (n..m - 1).all(|i| ListTy2::is_bot_impl(&ListTag::Closed, &tuple_fill(fields, i), negs))
+            && (neg_tag == &ListTag::Open
+                || ListTy2::is_bot_impl(&ListTag::Open, &tuple_fill(fields, m + 1), negs))
+}
+
+fn tuple_fill(fields: &ListKV, i: usize) -> ListKV {
+    let pad_length = (i as i64) - (fields.prefix_items.len() as i64);
+
+    if pad_length < 0 {
+        panic!("tuple_fill: elements are longer than the desired length");
+    }
+
+    let mut prefix_items = fields.prefix_items.clone();
+
+    for _ in 0..pad_length {
+        prefix_items.push(Ty::new_top());
+    }
+
+    ListKV { prefix_items }
 }
 
 fn tuple_elements_empty(
-    arg: &[usize],
+    acc: &[Ty],
     tag: &ListTag,
-    fields: &ListKV,
+    elements: &ListKV,
     neg_fields: &ListKV,
     negs: &[ListItemNeg],
 ) -> bool {
-    if neg_fields.prefix_items.is_empty() {
-        return true;
-    }
+    let (neg_type, neg_elements) = match neg_fields.prefix_items.split_first() {
+        None => return true,
+        Some((neg_type, neg_elements)) => (neg_type, neg_elements),
+    };
 
-    // # Handles the case where {tag, elements} is an open tuple, like {:open, []}
-    // {ty, elements} = List.pop_at(elements, 0, term())
-    // diff = difference(ty, neg_type)
+    let t = Ty::new_top();
+    let r: Vec<Ty> = vec![];
+    let (ty, elements) = match elements.prefix_items.split_first() {
+        Some((ty, rest)) => (ty, rest),
+        None => (&t, r.as_slice()),
+    };
 
-    // (empty?(diff) or tuple_empty?(tag, Enum.reverse(acc, [diff | elements]), negs)) and
-    //   tuple_elements_empty?([ty | acc], tag, elements, neg_elements, negs)
-    todo!()
+    let diff = ty.diff(neg_type);
+
+    diff.is_bot()
+        || ListTy2::is_bot_impl(
+            tag,
+            &ListKV {
+                prefix_items: enum_reverse(
+                    acc,
+                    &vec![diff]
+                        .into_iter()
+                        .chain(elements.iter().cloned())
+                        .collect::<Vec<Ty>>(),
+                ),
+            },
+            negs,
+        ) && tuple_elements_empty(
+            &vec![ty.clone()]
+                .into_iter()
+                .chain(acc.iter().cloned())
+                .collect::<Vec<Ty>>(),
+            tag,
+            &ListKV {
+                prefix_items: elements.to_vec(),
+            },
+            &ListKV {
+                prefix_items: neg_elements.to_vec(),
+            },
+            negs,
+        )
 }
 
 #[cfg(test)]
@@ -386,55 +418,44 @@ mod tests {
         assert!(!top.is_bot());
     }
 
-    // #[test]
-    // fn test_list_ty_cf() {
-    //     let empty_list = ListTy2::new_empty_list();
-    //     insta::assert_snapshot!(empty_list.to_cf().display_impl(false), @"[]");
+    #[test]
+    fn test_list_ty_cf() {
+        let empty_list = ListTy2::new_empty_list();
+        insta::assert_snapshot!(empty_list.to_cf().display_impl(false), @"[]");
 
-    //     let bot = ListTy2::new_bot();
-    //     insta::assert_snapshot!(bot.to_cf().display_impl(false), @"⊥");
+        let bot = ListTy2::new_bot();
+        insta::assert_snapshot!(bot.to_cf().display_impl(false), @"⊥");
 
-    //     let top = ListTy2::new_top();
-    //     insta::assert_snapshot!(top.to_cf().display_impl(false), @"[list...]");
-    // }
+        let top = ListTy2::new_top();
+        insta::assert_snapshot!(top.to_cf().display_impl(false), @"list");
+    }
 
-    // #[test]
-    // fn test_list_ty2_diff() {
-    //     let empty_list = ListTy2::new_empty_list();
-    //     let bot = ListTy2::new_bot();
-    //     let top = ListTy2::new_top();
+    #[test]
+    fn list_subtype() {
+        let top = ListTy2::new_top();
+        let bot = ListTy2::new_bot();
 
-    //     assert!(empty_list.diff(&empty_list).is_same_type(&empty_list));
-    //     assert!(empty_list.diff(&bot).is_same_type(&empty_list));
-    //     assert!(empty_list.diff(&top).is_bot());
+        assert!(bot.is_bot());
+        assert!(!bot.is_top());
 
-    //     assert!(bot.diff(&empty_list).is_bot());
-    //     assert!(bot.diff(&bot).is_bot());
-    //     assert!(bot.diff(&top).is_bot());
+        assert!(!top.is_bot());
+        assert!(top.is_top());
 
-    //     assert!(top.diff(&empty_list).is_top());
-    //     assert!(top.diff(&bot).is_top());
-    //     assert!(top.diff(&top).is_bot());
-    // }
-    // #[test]
-    // fn test_list_ty2_diff() {
-    //     let empty_list = ListTy2::new_empty_list();
-    //     let bot = ListTy2::new_bot();
-    //     let top = ListTy2::new_top();
+        let u = top.union(&bot);
+        assert!(u.is_top());
 
-    //     assert!(empty_list.diff(&empty_list).is_same_type(&empty_list));
-    //     assert!(empty_list.diff(&bot).is_same_type(&empty_list));
-    //     assert!(empty_list.diff(&top).is_bot());
+        let i = top.intersect(&bot);
+        assert!(i.is_bot());
 
-    //     assert!(bot.diff(&empty_list).is_bot());
-    //     assert!(bot.diff(&bot).is_bot());
-    //     assert!(bot.diff(&top).is_bot());
+        let i2 = top.intersect(&top);
+        assert_eq!(i2, top);
 
-    //     assert!(top.diff(&empty_list).is_top());
-    //     assert!(top.diff(&bot).is_top());
-    //     assert!(top.diff(&top).is_bot());
-    // }
+        let d = top.diff(&bot);
+        assert!(d.is_top());
 
+        let d2 = bot.diff(&top);
+        assert!(d2.is_bot());
+    }
     // #[test]
     // fn test_parametric_list() {
     //     let t1 = ListTy2::new_parametric_list(Ty::new_string_top());
