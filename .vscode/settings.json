@@ -3,6 +3,7 @@
     "beff",
     "bindgen",
     "codegen",
+    "Complementable",
     "consts",
     "ctxt",
     "curr",
@@ -20,6 +21,7 @@
     "subtyping",
     "syntatically",
     "Unfound",
-    "Unserializeable"
+    "Unserializeable",
+    "negs"
   ]
 }

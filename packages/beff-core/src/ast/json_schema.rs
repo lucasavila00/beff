@@ -1023,22 +1023,26 @@ impl JsonSchema {
                     }),
                 })
             }
-            JsonSchema::Function => TsType::TsFnOrConstructorType(
-                swc_ecma_ast::TsFnOrConstructorType::TsFnType(TsFnType {
-                    span: DUMMY_SP,
-                    params: vec![],
-                    type_params: None,
-                    type_ann: TsTypeAnn {
+            JsonSchema::Function => TsType::TsParenthesizedType(TsParenthesizedType {
+                span: DUMMY_SP,
+                type_ann: TsType::TsFnOrConstructorType(
+                    swc_ecma_ast::TsFnOrConstructorType::TsFnType(TsFnType {
                         span: DUMMY_SP,
-                        type_ann: TsType::TsKeywordType(TsKeywordType {
+                        params: vec![],
+                        type_params: None,
+                        type_ann: TsTypeAnn {
                             span: DUMMY_SP,
-                            kind: TsKeywordTypeKind::TsVoidKeyword,
-                        })
+                            type_ann: TsType::TsKeywordType(TsKeywordType {
+                                span: DUMMY_SP,
+                                kind: TsKeywordTypeKind::TsVoidKeyword,
+                            })
+                            .into(),
+                        }
                         .into(),
-                    }
-                    .into(),
-                }),
-            ),
+                    }),
+                )
+                .into(),
+            }),
         }
     }
 }

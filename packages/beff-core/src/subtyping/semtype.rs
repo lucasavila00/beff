@@ -168,8 +168,6 @@ impl SemTypeOps for Rc<SemType> {
         let mut all = t1.all | t2.all;
         let some = (t1.some_as_bitset() | t2.some_as_bitset()) & !all;
 
-        let some = some & !all;
-
         if some == 0 {
             return SemType::new_basic(all).into();
         }
@@ -262,8 +260,8 @@ impl SemType {
     pub fn is_never(&self) -> bool {
         self.all == 0 && self.subtype_data.is_empty()
     }
-    pub fn is_any(&self) -> bool {
-        self.all == VAL
+    pub fn is_any(self: &Rc<Self>, ctx: &mut SemTypeContext) -> bool {
+        SemTypeOps::is_same_type(self, &Rc::new(SemType::new_unknown()), ctx)
     }
     pub fn new_basic(all: BasicTypeBitSet) -> SemType {
         SemType {

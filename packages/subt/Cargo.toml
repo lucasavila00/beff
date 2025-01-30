@@ -1,0 +1,8 @@
+[package]
+name = "subt"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+bitfield-struct = "0.10.1"
+insta = "1.42.1"
