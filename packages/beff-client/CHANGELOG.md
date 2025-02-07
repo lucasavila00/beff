@@ -1,5 +1,13 @@
 # @beff/client
 
+## 0.0.79
+
+### Patch Changes
+
+- fix parse adding extra props
+- Updated dependencies
+  - @beff/cli@0.0.79
+
 ## 0.0.78
 
 ### Patch Changes

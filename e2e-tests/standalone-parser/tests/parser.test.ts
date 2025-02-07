@@ -33,10 +33,19 @@ import {
   StringArrCodec,
   OnlyAKeyCodec,
   ObjectWithArrCodec,
+  PartialReproCodec,
 } from "../src/parser";
 import { Arr2 } from "../src/types";
 import { Schemas } from "../src/schema";
 
+it("PartialRepro bug", () => {
+  expect(PartialReproCodec.parse({})).toMatchInlineSnapshot('{}');
+  expect(PartialReproCodec.parse({ a: "a" })).toMatchInlineSnapshot(`
+    {
+      "a": "a",
+    }
+  `);
+});
 it("TransportedValue bug", () => {
   expect(TransportedValue.parse(null)).toEqual(null);
   expect(TransportedValue.parse(undefined)).toEqual(undefined);
@@ -447,7 +456,6 @@ it("DiscriminatedUnion", () => {
   };
   expect(DiscriminatedUnion2.parse(validD2)).toMatchInlineSnapshot(`
     {
-      "type": undefined,
       "valueD": 1,
     }
   `);
@@ -459,7 +467,6 @@ it("DiscriminatedUnion", () => {
   expect(DiscriminatedUnion.parse(valid)).toMatchInlineSnapshot(`
     {
       "a1": "a",
-      "a11": undefined,
       "subType": "a1",
       "type": "a",
     }
@@ -572,28 +579,13 @@ it("DiscriminatedUnion", () => {
   `);
 });
 it("repro1", () => {
-  expect(Repro1.parse({})).toMatchInlineSnapshot(`
-    {
-      "sizes": undefined,
-    }
-  `);
+  expect(Repro1.parse({})).toMatchInlineSnapshot('{}');
 });
 it("PartialObject", () => {
-  expect(PartialObject.parse({})).toMatchInlineSnapshot(`
-    {
-      "a": undefined,
-      "b": undefined,
-    }
-  `);
+  expect(PartialObject.parse({})).toMatchInlineSnapshot('{}');
 });
 it("PartialSettings", () => {
-  expect(PartialSettings.parse({})).toMatchInlineSnapshot(`
-    {
-      "a": undefined,
-      "d": undefined,
-      "level": undefined,
-    }
-  `);
+  expect(PartialSettings.parse({})).toMatchInlineSnapshot('{}');
 });
 it("LevelAndDSettings", () => {
   const valid: LevelAndDSettings = {
