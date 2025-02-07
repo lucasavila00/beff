@@ -1,9 +1,5 @@
 lockfileVersion: '6.0'
 
-settings:
-  autoInstallPeers: true
-  excludeLinksFromLockfile: false
-
 importers:
 
   .:
@@ -55,7 +51,7 @@ importers:
   packages/beff-client:
     dependencies:
       '@beff/cli':
-        specifier: workspace:^0.0.78
+        specifier: workspace:^0.0.79
         version: link:../beff-cli
       zod:
         specifier: ^3.23.5
@@ -89,7 +85,7 @@ importers:
         specifier: ^7.22.13
         version: 7.22.13
       '@beff/cli':
-        specifier: workspace:^0.0.78
+        specifier: workspace:^0.0.79
         version: link:../beff-cli
       '@types/babel__code-frame':
         specifier: ^7.0.4
@@ -5105,3 +5101,7 @@ packages:
   /zod@3.23.5:
     resolution: {integrity: sha512-fkwiq0VIQTksNNA131rDOsVJcns0pfVUjHzLrNBiF/O/Xxb5lQyEXkhZWcJ7npWsYlvs+h0jFWXXy4X46Em1JA==}
     dev: false
+
+settings:
+  autoInstallPeers: true
+  excludeLinksFromLockfile: false

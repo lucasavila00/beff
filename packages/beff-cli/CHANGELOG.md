@@ -1,5 +1,11 @@
 # @beff/cli
 
+## 0.0.79
+
+### Patch Changes
+
+- fix parse adding extra props
+
 ## 0.0.78
 
 ### Patch Changes

@@ -195,6 +195,8 @@ export type OnlyAKey = {
   A: string;
 };
 
+export type PartialRepro = Partial<{ a: string; b: string }>;
+
 export const {
   Version,
   Version2,
@@ -233,7 +235,9 @@ export const {
   StringArrCodec: StringArrCodec,
   OnlyAKey: OnlyAKeyCodec,
   ObjectWithArr: ObjectWithArrCodec,
+  PartialRepro: PartialReproCodec,
 } = parse.buildParsers<{
+  PartialRepro: PartialRepro;
   TransportedValue: TransportedValue;
   OnlyAKey: OnlyAKey;
   ObjectWithArr: {

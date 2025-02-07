@@ -530,12 +530,6 @@ class ObjectParser {
     let acc = {};
 
     const inputKeys = Object.keys(input);
-    const dataKeys = Object.keys(this.data);
-    const missingKeys = dataKeys.filter((k) => !inputKeys.includes(k));
-
-    for (const k of missingKeys) {
-      acc[k] = undefined;
-    }
 
     for (const k of inputKeys) {
       const v = input[k];
@@ -880,6 +874,15 @@ class TupleReporter {
 }
 
 
+function ValidatePartialRepro(ctx, input) {
+    return (hoisted_PartialRepro_10.validateObjectValidator.bind(hoisted_PartialRepro_10))(ctx, input);
+}
+function ParsePartialRepro(ctx, input) {
+    return (hoisted_PartialRepro_11.parseObjectParser.bind(hoisted_PartialRepro_11))(ctx, input);
+}
+function ReportPartialRepro(ctx, input) {
+    return (hoisted_PartialRepro_12.reportObjectReporter.bind(hoisted_PartialRepro_12))(ctx, input);
+}
 function ValidateTransportedValue(ctx, input) {
     return (hoisted_TransportedValue_9.validateAnyOfValidator.bind(hoisted_TransportedValue_9))(ctx, input);
 }
@@ -1286,6 +1289,7 @@ function ReportK(ctx, input) {
     return (hoisted_K_3.reportAnyOfReporter.bind(hoisted_K_3))(ctx, input);
 }
 const validators = {
+    PartialRepro: ValidatePartialRepro,
     TransportedValue: ValidateTransportedValue,
     OnlyAKey: ValidateOnlyAKey,
     AllTs: ValidateAllTs,
@@ -1333,6 +1337,7 @@ const validators = {
     K: ValidateK
 };
 const parsers = {
+    PartialRepro: ParsePartialRepro,
     TransportedValue: ParseTransportedValue,
     OnlyAKey: ParseOnlyAKey,
     AllTs: ParseAllTs,
@@ -1380,6 +1385,7 @@ const parsers = {
     K: ParseK
 };
 const reporters = {
+    PartialRepro: ReportPartialRepro,
     TransportedValue: ReportTransportedValue,
     OnlyAKey: ReportOnlyAKey,
     AllTs: ReportAllTs,
@@ -1426,6 +1432,46 @@ const reporters = {
     KABC: ReportKABC,
     K: ReportK
 };
+const hoisted_PartialRepro_0 = [
+    validateNull,
+    validateString
+];
+const hoisted_PartialRepro_1 = new AnyOfValidator(hoisted_PartialRepro_0);
+const hoisted_PartialRepro_2 = new AnyOfParser(hoisted_PartialRepro_0, [
+    parseIdentity,
+    parseIdentity
+]);
+const hoisted_PartialRepro_3 = new AnyOfReporter(hoisted_PartialRepro_0, [
+    reportNull,
+    reportString
+]);
+const hoisted_PartialRepro_4 = [
+    validateNull,
+    validateString
+];
+const hoisted_PartialRepro_5 = new AnyOfValidator(hoisted_PartialRepro_4);
+const hoisted_PartialRepro_6 = new AnyOfParser(hoisted_PartialRepro_4, [
+    parseIdentity,
+    parseIdentity
+]);
+const hoisted_PartialRepro_7 = new AnyOfReporter(hoisted_PartialRepro_4, [
+    reportNull,
+    reportString
+]);
+const hoisted_PartialRepro_8 = {
+    "a": hoisted_PartialRepro_1.validateAnyOfValidator.bind(hoisted_PartialRepro_1),
+    "b": hoisted_PartialRepro_5.validateAnyOfValidator.bind(hoisted_PartialRepro_5)
+};
+const hoisted_PartialRepro_9 = null;
+const hoisted_PartialRepro_10 = new ObjectValidator(hoisted_PartialRepro_8, hoisted_PartialRepro_9);
+const hoisted_PartialRepro_11 = new ObjectParser({
+    "a": hoisted_PartialRepro_2.parseAnyOfParser.bind(hoisted_PartialRepro_2),
+    "b": hoisted_PartialRepro_6.parseAnyOfParser.bind(hoisted_PartialRepro_6)
+}, null);
+const hoisted_PartialRepro_12 = new ObjectReporter(hoisted_PartialRepro_8, hoisted_PartialRepro_9, {
+    "a": hoisted_PartialRepro_3.reportAnyOfReporter.bind(hoisted_PartialRepro_3),
+    "b": hoisted_PartialRepro_7.reportAnyOfReporter.bind(hoisted_PartialRepro_7)
+}, null);
 const hoisted_TransportedValue_0 = [
     validateNull,
     validateString,

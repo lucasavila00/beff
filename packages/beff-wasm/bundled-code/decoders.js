@@ -527,12 +527,6 @@ class ObjectParser {
     let acc = {};
 
     const inputKeys = Object.keys(input);
-    const dataKeys = Object.keys(this.data);
-    const missingKeys = dataKeys.filter((k) => !inputKeys.includes(k));
-
-    for (const k of missingKeys) {
-      acc[k] = undefined;
-    }
 
     for (const k of inputKeys) {
       const v = input[k];
