@@ -39,7 +39,7 @@ import { Arr2 } from "../src/types";
 import { Schemas } from "../src/schema";
 
 it("PartialRepro bug", () => {
-  expect(PartialReproCodec.parse({})).toMatchInlineSnapshot('{}');
+  expect(PartialReproCodec.parse({})).toMatchInlineSnapshot("{}");
   expect(PartialReproCodec.parse({ a: "a" })).toMatchInlineSnapshot(`
     {
       "a": "a",
@@ -579,13 +579,13 @@ it("DiscriminatedUnion", () => {
   `);
 });
 it("repro1", () => {
-  expect(Repro1.parse({})).toMatchInlineSnapshot('{}');
+  expect(Repro1.parse({})).toMatchInlineSnapshot("{}");
 });
 it("PartialObject", () => {
-  expect(PartialObject.parse({})).toMatchInlineSnapshot('{}');
+  expect(PartialObject.parse({})).toMatchInlineSnapshot("{}");
 });
 it("PartialSettings", () => {
-  expect(PartialSettings.parse({})).toMatchInlineSnapshot('{}');
+  expect(PartialSettings.parse({})).toMatchInlineSnapshot("{}");
 });
 it("LevelAndDSettings", () => {
   const valid: LevelAndDSettings = {
