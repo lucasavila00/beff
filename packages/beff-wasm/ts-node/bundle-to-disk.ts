@@ -109,16 +109,11 @@ export const execProject = (
   const parserEntryPoint = projectJson.parser
     ? path.join(path.dirname(projectPath), projectJson.parser)
     : undefined;
-
-  const schemaEntryPoint = projectJson.schema
-    ? path.join(path.dirname(projectPath), projectJson.schema)
-    : undefined;
-
   if (verbose) {
     // eslint-disable-next-line no-console
     console.log(`JS: Parser entry point ${parserEntryPoint}`);
   }
-  const outResult = bundler.bundle(parserEntryPoint, schemaEntryPoint, projectJson.settings);
+  const outResult = bundler.bundle(parserEntryPoint, projectJson.settings);
   if (outResult == null) {
     return "failed";
   }
@@ -128,18 +123,6 @@ export const execProject = (
   }
 
   fs.writeFileSync(path.join(outputDir, "validators.js"), finalizeValidatorsCode(outResult, mod));
-  if (projectJson.schema) {
-    const exportJsonSchema =
-      projectJson.module === "cjs" ? "module.exports = {buildSchemas};" : "export default {buildSchemas};";
-    fs.writeFileSync(
-      path.join(outputDir, "schema.js"),
-      "const jsonSchema = " + outResult.json_schema + ";\n" + gen["build-schema.js"] + exportJsonSchema
-    );
-    fs.writeFileSync(
-      path.join(outputDir, "schema.d.ts"),
-      ["/* eslint-disable */\n", gen["schema.d.ts"]].join("\n")
-    );
-  }
 
   if (projectJson.parser) {
     fs.writeFileSync(

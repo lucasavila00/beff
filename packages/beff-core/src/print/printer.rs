@@ -1,4 +1,3 @@
-use crate::ast::json::Json;
 use crate::emit::emit_module;
 use crate::parser_extractor::BuiltDecoder;
 use crate::print::decoder;
@@ -43,7 +42,6 @@ pub fn const_decl(name: &str, init: Expr) -> ModuleItem {
 pub struct WritableModules {
     pub js_validators: String,
     pub js_built_parsers: Option<String>,
-    pub json_schema: Option<String>,
 }
 
 pub trait ToWritableModules {
@@ -346,25 +344,9 @@ impl ToWritableModules for ExtractResult {
             )?);
         }
 
-        let mut json_schema = None;
-        if let Some(schema) = self.schema {
-            let decoders = schema.built_decoders.unwrap_or_default();
-            let json_schema_obj = Json::object(
-                decoders
-                    .iter()
-                    .map(|it| BuiltDecoder::to_json_kv(it, &named_schemas))
-                    .collect::<Result<Vec<Vec<(String, Json)>>>>()?
-                    .into_iter()
-                    .flatten()
-                    .collect(),
-            );
-            // schema
-            json_schema = Some(json_schema_obj.to_string());
-        }
         Ok(WritableModules {
             js_validators,
             js_built_parsers,
-            json_schema,
         })
     }
 }

@@ -6,7 +6,6 @@ pub mod parse;
 pub mod parser_extractor;
 pub mod print;
 pub mod schema_changes;
-pub mod schema_extractor;
 pub mod subtyping;
 pub mod sym_reference;
 pub mod type_to_schema;
@@ -20,7 +19,6 @@ use core::fmt;
 use diag::Diagnostic;
 use parser_extractor::extract_parser;
 use parser_extractor::ParserExtractResult;
-use schema_extractor::SchemaExtractResult;
 use serde::Deserialize;
 use serde::Serialize;
 use std::collections::BTreeSet;
@@ -365,7 +363,6 @@ pub struct BeffUserSettings {
 
 pub struct EntryPoints {
     pub parser_entry_point: Option<BffFileName>,
-    pub schema_entry_point: Option<BffFileName>,
     pub settings: BeffUserSettings,
 }
 pub trait FileManager {
@@ -375,7 +372,6 @@ pub trait FileManager {
 
 pub struct ExtractResult {
     pub parser: Option<ParserExtractResult>,
-    pub schema: Option<SchemaExtractResult>,
 }
 
 impl ExtractResult {
@@ -402,17 +398,7 @@ pub fn extract<R: FileManager>(files: &mut R, entry_points: EntryPoints) -> Extr
         parser = Some(extract_parser(files, entry, &entry_points.settings));
     }
 
-    let mut schema = None;
-
-    if let Some(entry) = entry_points.schema_entry_point {
-        schema = Some(schema_extractor::extract_schema(
-            files,
-            entry,
-            &entry_points.settings,
-        ));
-    }
-
-    ExtractResult { parser, schema }
+    ExtractResult { parser }
 }
 
 #[derive(Debug, Clone)]

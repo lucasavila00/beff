@@ -221,6 +221,4 @@ type Schemas<T> = {
   [K in keyof T]: JSONSchema7;
 };
 
-export type BuildSchemaFunction = <T>() => Schemas<T>;
-
 export type TypeOf<T> = T extends BeffParser<infer U> ? U : never;
