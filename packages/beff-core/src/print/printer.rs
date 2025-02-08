@@ -323,6 +323,7 @@ impl ToWritableModules for ExtractResult {
             Expr::Object(ObjectLit {
                 span: DUMMY_SP,
                 props: schema_names
+                    .clone()
                     .into_iter()
                     .map(|it| {
                         PropOrSpread::Prop(Box::new(Prop::KeyValue(KeyValueProp {
@@ -334,6 +335,30 @@ impl ToWritableModules for ExtractResult {
                             value: Expr::Ident(Ident {
                                 span: DUMMY_SP,
                                 sym: format!("Report{}", it).into(),
+                                optional: false,
+                            })
+                            .into(),
+                        })))
+                    })
+                    .collect(),
+            }),
+        ));
+        stmt_named_schemas.push(const_decl(
+            "schemas",
+            Expr::Object(ObjectLit {
+                span: DUMMY_SP,
+                props: schema_names
+                    .into_iter()
+                    .map(|it| {
+                        PropOrSpread::Prop(Box::new(Prop::KeyValue(KeyValueProp {
+                            key: PropName::Ident(Ident {
+                                span: DUMMY_SP,
+                                sym: it.clone().into(),
+                                optional: false,
+                            }),
+                            value: Expr::Ident(Ident {
+                                span: DUMMY_SP,
+                                sym: format!("Schema{}", it).into(),
                                 optional: false,
                             })
                             .into(),

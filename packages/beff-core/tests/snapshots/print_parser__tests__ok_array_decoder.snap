@@ -24,6 +24,9 @@ const parsers = {
 const reporters = {
     Alias: ReportAlias
 };
+const schemas = {
+    Alias: SchemaAlias
+};
 const hoisted_Alias_0 = validateString;
 const hoisted_Alias_1 = new ArrayValidator(hoisted_Alias_0);
 const hoisted_Alias_2 = new ArrayParser(parseIdentity);

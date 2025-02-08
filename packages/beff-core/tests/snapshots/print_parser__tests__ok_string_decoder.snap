@@ -24,3 +24,6 @@ const parsers = {
 const reporters = {
     Alias: ReportAlias
 };
+const schemas = {
+    Alias: SchemaAlias
+};

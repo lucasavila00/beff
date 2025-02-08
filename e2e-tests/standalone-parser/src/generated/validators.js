@@ -81,12 +81,14 @@ function deepmergeConstructor(options) {
   }
 
   const isPrimitiveOrBuiltIn =
+    
     typeof Buffer !== "undefined"
       ? (value) =>
           typeof value !== "object" ||
           value === null ||
           value instanceof RegExp ||
           value instanceof Date ||
+          
           value instanceof Buffer
       : (value) =>
           typeof value !== "object" || value === null || value instanceof RegExp || value instanceof Date;
@@ -239,12 +241,24 @@ function reportString(ctx, input) {
   return buildError(ctx, "expected string", input);
 }
 
+function schemaString(ctx) {
+  return {
+    type: "string",
+  };
+}
+
 function validateNumber(ctx, input) {
   return typeof input === "number";
 }
 
 function reportNumber(ctx, input) {
   return buildError(ctx, "expected number", input);
+}
+
+function schemaNumber(ctx) {
+  return {
+    type: "number",
+  };
 }
 
 function validateBoolean(ctx, input) {
@@ -255,12 +269,22 @@ function reportBoolean(ctx, input) {
   return buildError(ctx, "expected boolean", input);
 }
 
+function schemaBoolean(ctx) {
+  return {
+    type: "boolean",
+  };
+}
+
 function validateAny(ctx, input) {
   return true;
 }
 
 function reportAny(ctx, input) {
   return buildError(ctx, "expected any", input);
+}
+
+function schemaAny(ctx) {
+  return {};
 }
 
 function validateNull(ctx, input) {
@@ -274,6 +298,12 @@ function reportNull(ctx, input) {
   return buildError(ctx, "expected nullish value", input);
 }
 
+function schemaNull(ctx) {
+  return {
+    type: "null",
+  };
+}
+
 function validateNever(ctx, input) {
   return false;
 }
@@ -282,12 +312,22 @@ function reportNever(ctx, input) {
   return buildError(ctx, "expected never", input);
 }
 
+function schemaNever(ctx) {
+  return {
+    anyOf: [],
+  };
+}
+
 function validateFunction(ctx, input) {
   return typeof input === "function";
 }
 
 function reportFunction(ctx, input) {
   return buildError(ctx, "expected function", input);
+}
+
+function schemaFunction(ctx) {
+  throw new Error("Cannot generate JSON Schema for function");
 }
 
 class ConstDecoder {
@@ -305,6 +345,12 @@ class ConstDecoder {
 
   reportConstDecoder(ctx, input) {
     return buildError(ctx, `expected ${JSON.stringify(this.value)}`, input);
+  }
+
+  schemaConstDecoder(ctx) {
+    return {
+      const: this.value,
+    };
   }
 }
 
@@ -360,6 +406,10 @@ class CodecDecoder {
     }
 
     return buildError(ctx, `expected ${this.codec}`, input);
+  }
+
+  schemaCodecDecoder(ctx) {
+    throw new Error("TODO: not implemented");
   }
 }
 
@@ -417,6 +467,11 @@ class AnyOfConstsDecoder {
   }
   reportAnyOfConstsDecoder(ctx, input) {
     return buildError(ctx, `expected one of ${limitedCommaJoinJson(this.consts)}`, input);
+  }
+  schemaAnyOfConstsDecoder(ctx) {
+    return {
+      enum: this.consts,
+    };
   }
 }
 
@@ -546,6 +601,29 @@ class ObjectParser {
   }
 }
 
+class ObjectSchema {
+  constructor(data, rest) {
+    this.data = data;
+    this.rest = rest;
+  }
+
+  schemaObjectSchema(ctx) {
+    const properties = {};
+    for (const k in this.data) {
+      properties[k] = this.data[k](ctx);
+    }
+
+    const required = Object.keys(this.data);
+
+    return {
+      type: "object",
+      properties,
+      required,
+      additionalProperties: this.rest != null ? this.rest(ctx) : false,
+    };
+  }
+}
+
 class AnyOfDiscriminatedValidator {
   constructor(discriminator, mapping) {
     this.discriminator = discriminator;
@@ -621,6 +699,17 @@ class AnyOfDiscriminatedReporter {
   }
 }
 
+class AnyOfDiscriminatedSchema {
+  constructor(discriminator, mapping) {
+    this.discriminator = discriminator;
+    this.mapping = mapping;
+  }
+
+  schemaAnyOfDiscriminatedSchema(ctx) {
+    throw new Error("TODO: not implemented");
+  }
+}
+
 class ArrayParser {
   constructor(innerParser) {
     this.innerParser = innerParser;
@@ -678,6 +767,19 @@ class ArrayReporter {
   }
 }
 
+class ArraySchema {
+  constructor(innerSchema) {
+    this.innerSchema = innerSchema;
+  }
+
+  schemaArraySchema(ctx) {
+    return {
+      type: "array",
+      items: this.innerSchema(ctx),
+    };
+  }
+}
+
 class AnyOfValidator {
   constructor(vs) {
     this.vs = vs;
@@ -721,6 +823,17 @@ class AnyOfReporter {
     }
     ctx.path = oldPaths;
     return buildUnionError(ctx, acc, input);
+  }
+}
+
+class AnyOfSchema {
+  constructor(schemas) {
+    this.schemas = schemas;
+  }
+  schemaAnyOfSchema(ctx) {
+    return {
+      anyOf: this.schemas.map((s) => s(ctx)),
+    };
   }
 }
 
@@ -773,6 +886,17 @@ class AllOfReporter {
       acc.push(...errors);
     }
     return acc;
+  }
+}
+
+class AllOfSchema {
+  constructor(schemas) {
+    this.schemas = schemas;
+  }
+  schemaAllOfSchema(ctx) {
+    return {
+      allOf: this.schemas.map((s) => s(ctx)),
+    };
   }
 }
 
@@ -870,6 +994,23 @@ class TupleReporter {
     }
 
     return acc;
+  }
+}
+
+class TupleSchema {
+  constructor(prefix, rest) {
+    this.prefix = prefix;
+    this.rest = rest;
+  }
+
+  schemaTupleSchema(ctx) {
+    const items = this.prefix.map((s) => s(ctx));
+    const additionalItems = this.rest != null ? this.rest(ctx) : false;
+    return {
+      type: "array",
+      items,
+      additionalItems,
+    };
   }
 }
 
@@ -1569,6 +1710,54 @@ const reporters = {
     ABC: ReportABC,
     KABC: ReportKABC,
     K: ReportK
+};
+const schemas = {
+    PartialRepro: SchemaPartialRepro,
+    TransportedValue: SchemaTransportedValue,
+    OnlyAKey: SchemaOnlyAKey,
+    AllTs: SchemaAllTs,
+    AObject: SchemaAObject,
+    Version: SchemaVersion,
+    Version2: SchemaVersion2,
+    AccessLevel2: SchemaAccessLevel2,
+    AccessLevelTpl2: SchemaAccessLevelTpl2,
+    AccessLevel: SchemaAccessLevel,
+    AccessLevelTpl: SchemaAccessLevelTpl,
+    Arr3: SchemaArr3,
+    OmitSettings: SchemaOmitSettings,
+    Settings: SchemaSettings,
+    PartialObject: SchemaPartialObject,
+    RequiredPartialObject: SchemaRequiredPartialObject,
+    LevelAndDSettings: SchemaLevelAndDSettings,
+    PartialSettings: SchemaPartialSettings,
+    Extra: SchemaExtra,
+    AvatarSize: SchemaAvatarSize,
+    User: SchemaUser,
+    PublicUser: SchemaPublicUser,
+    Req: SchemaReq,
+    WithOptionals: SchemaWithOptionals,
+    Repro1: SchemaRepro1,
+    Repro2: SchemaRepro2,
+    SettingsUpdate: SchemaSettingsUpdate,
+    Mapped: SchemaMapped,
+    MappedOptional: SchemaMappedOptional,
+    DiscriminatedUnion: SchemaDiscriminatedUnion,
+    DiscriminatedUnion2: SchemaDiscriminatedUnion2,
+    DiscriminatedUnion3: SchemaDiscriminatedUnion3,
+    DiscriminatedUnion4: SchemaDiscriminatedUnion4,
+    AllTypes: SchemaAllTypes,
+    OtherEnum: SchemaOtherEnum,
+    Arr2: SchemaArr2,
+    ValidCurrency: SchemaValidCurrency,
+    UnionWithEnumAccess: SchemaUnionWithEnumAccess,
+    Shape: SchemaShape,
+    T3: SchemaT3,
+    BObject: SchemaBObject,
+    DEF: SchemaDEF,
+    KDEF: SchemaKDEF,
+    ABC: SchemaABC,
+    KABC: SchemaKABC,
+    K: SchemaK
 };
 const hoisted_PartialRepro_0 = [
     validateNull,
@@ -3120,4 +3309,4 @@ const hoisted_K_4 = new AnyOfReporter(hoisted_K_0, [
 ]);
 const hoisted_K_5 = new AnyOfSchema(hoisted_K_1);
 
-export default { registerCustomFormatter, ObjectValidator, ObjectParser, ArrayParser, ArrayValidator, CodecDecoder, StringWithFormatDecoder, AnyOfValidator, AnyOfParser, AllOfValidator, AllOfParser, TupleParser, TupleValidator, RegexDecoder, ConstDecoder, AnyOfConstsDecoder, AnyOfDiscriminatedReporter, AnyOfDiscriminatedParser, AnyOfDiscriminatedValidator, validateString, validateNumber, validateFunction, validateBoolean, validateAny, validateNull, validateNever, parseIdentity, AnyOfReporter, AllOfReporter, reportString, reportNumber, reportNull, reportBoolean, reportAny, reportNever, reportFunction, ArrayReporter, ObjectReporter, TupleReporter, validators, parsers, reporters };
+export default { registerCustomFormatter, ObjectValidator, ObjectParser, ArrayParser, ArrayValidator, CodecDecoder, StringWithFormatDecoder, AnyOfValidator, AnyOfParser, AllOfValidator, AllOfParser, TupleParser, TupleValidator, RegexDecoder, ConstDecoder, AnyOfConstsDecoder, AnyOfDiscriminatedParser, AnyOfDiscriminatedValidator, validateString, validateNumber, validateFunction, validateBoolean, validateAny, validateNull, validateNever, parseIdentity, reportString, reportNumber, reportNull, reportBoolean, reportAny, reportNever, reportFunction, ArrayReporter, ObjectReporter, TupleReporter, AnyOfReporter, AllOfReporter, AnyOfDiscriminatedReporter, schemaString, schemaNumber, schemaBoolean, schemaNull, schemaAny, schemaNever, schemaFunction, ArraySchema, ObjectSchema, TupleSchema, AnyOfSchema, AllOfSchema, AnyOfDiscriminatedSchema, validators, parsers, reporters, schemas };

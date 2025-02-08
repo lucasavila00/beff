@@ -24,6 +24,9 @@ const parsers = {
 const reporters = {
     Alias: ReportAlias
 };
+const schemas = {
+    Alias: SchemaAlias
+};
 const hoisted_Alias_0 = [
     validateString,
     validateNumber

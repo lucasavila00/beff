@@ -24,6 +24,9 @@ const parsers = {
 const reporters = {
     DiscriminatedUnion4: ReportDiscriminatedUnion4
 };
+const schemas = {
+    DiscriminatedUnion4: SchemaDiscriminatedUnion4
+};
 const hoisted_DiscriminatedUnion4_0 = new ConstDecoder("a1");
 const hoisted_DiscriminatedUnion4_1 = {
     "a1": validateString,
