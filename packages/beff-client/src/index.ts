@@ -1,5 +1,12 @@
 /* eslint-disable @typescript-eslint/ban-ts-comment */
-import type { BeffParser, DecodeError, ParseOptions, RegularDecodeError, UnionDecodeError } from "@beff/cli";
+import type {
+  BeffParser,
+  DecodeError,
+  ParseOptions,
+  RegularDecodeError,
+  UnionDecodeError,
+  JSONSchema7,
+} from "@beff/cli";
 import { z } from "zod";
 
 const prettyPrintValue = (it: unknown): string => {
@@ -89,7 +96,8 @@ const buildParserFromSafeParser = <T>(
   safeParse: (
     input: any,
     options?: ParseOptions
-  ) => { success: true; data: T } | { success: false; errors: DecodeError[] }
+  ) => { success: true; data: T } | { success: false; errors: DecodeError[] },
+  jsonSchema: JSONSchema7
 ): BeffParser<T> => {
   const parse = (input: any, options?: ParseOptions) => {
     const safe = safeParse(input, options);
@@ -114,6 +122,8 @@ const buildParserFromSafeParser = <T>(
     );
   };
 
+  const schema = () => jsonSchema;
+
   return {
     safeParse,
     parse,
@@ -121,6 +131,7 @@ const buildParserFromSafeParser = <T>(
     zod,
     name,
     validate,
+    schema,
   };
 };
 
@@ -192,6 +203,15 @@ const Object_ = <T extends Record<string, BeffParser<any>>>(
         return { success: false, errors };
       }
       return { success: true, data: result };
+    },
+    {
+      type: "object",
+      properties:
+        //@ts-ignore
+        Object.fromEntries(
+          //@ts-ignore
+          Object.entries(fields).map(([key, parser]) => [key, parser.schema()])
+        ),
     }
   );
 
@@ -205,6 +225,9 @@ const String_ = (): BeffParser<string> =>
         return { success: true, data: input };
       }
       return { success: false, errors: [{ message: "Expected string", path: [], received: input }] };
+    },
+    {
+      type: "string",
     }
   );
 
@@ -218,6 +241,9 @@ const Number_ = (): BeffParser<number> =>
         return { success: true, data: input };
       }
       return { success: false, errors: [{ message: "Expected number", path: [], received: input }] };
+    },
+    {
+      type: "number",
     }
   );
 
@@ -231,6 +257,9 @@ const Boolean_ = (): BeffParser<boolean> =>
         return { success: true, data: input };
       }
       return { success: false, errors: [{ message: "Expected boolean", path: [], received: input }] };
+    },
+    {
+      type: "boolean",
     }
   );
 
@@ -243,6 +272,9 @@ const Undefined_ = (): BeffParser<undefined> =>
         return { success: true, data: input };
       }
       return { success: false, errors: [{ message: "Expected undefined", path: [], received: input }] };
+    },
+    {
+      type: "null",
     }
   );
 
@@ -256,6 +288,9 @@ const Void_ = (): BeffParser<void> =>
         return { success: true, data: input };
       }
       return { success: false, errors: [{ message: "Expected void", path: [], received: input }] };
+    },
+    {
+      type: "null",
     }
   );
 
@@ -268,6 +303,9 @@ const Null_ = (): BeffParser<undefined> =>
         return { success: true, data: input };
       }
       return { success: false, errors: [{ message: "Expected null", path: [], received: input }] };
+    },
+    {
+      type: "null",
     }
   );
 
@@ -278,7 +316,8 @@ const Any_ = (): BeffParser<any> =>
     (_input): _input is any => true,
     (input: any) => {
       return { success: true, data: input };
-    }
+    },
+    {}
   );
 
 const Unknown_ = (): BeffParser<unknown> =>
@@ -287,7 +326,8 @@ const Unknown_ = (): BeffParser<unknown> =>
     (_input): _input is unknown => true,
     (input: any) => {
       return { success: true, data: input };
-    }
+    },
+    {}
   );
 
 const Array_ = <T>(parser: BeffParser<T>): BeffParser<T[]> =>
@@ -326,6 +366,10 @@ const Array_ = <T>(parser: BeffParser<T>): BeffParser<T[]> =>
         return { success: false, errors };
       }
       return { success: true, data: results };
+    },
+    {
+      type: "array",
+      items: parser.schema(),
     }
   );
 

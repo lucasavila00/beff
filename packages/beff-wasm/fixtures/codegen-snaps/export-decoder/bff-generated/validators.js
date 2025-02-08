@@ -409,7 +409,16 @@ class CodecDecoder {
   }
 
   schemaCodecDecoder(ctx) {
-    throw new Error("TODO: not implemented");
+    switch (this.codec) {
+      case "Codec::ISO8061": {
+        throw new Error("Cannot generate JSON Schema for Date");
+      }
+      case "Codec::BigInt": {
+        throw new Error("Cannot generate JSON Schema for BigInt");
+      }
+    }
+
+    throw new Error("Unrecognized codec: " + this.codec);
   }
 }
 
@@ -436,6 +445,12 @@ class StringWithFormatDecoder {
   }
   reportStringWithFormatDecoder(ctx, input) {
     return buildError(ctx, `expected string with format "${this.format}"`, input);
+  }
+  schemaStringWithFormatDecoder(ctx) {
+    return {
+      type: "string",
+      format: this.format,
+    };
   }
 }
 const limitedCommaJoinJson = (arr) => {

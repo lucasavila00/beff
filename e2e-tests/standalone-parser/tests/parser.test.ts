@@ -36,7 +36,6 @@ import {
   PartialReproCodec,
 } from "../src/parser";
 import { Arr2 } from "../src/types";
-import { Schemas } from "../src/schema";
 
 it("PartialRepro bug", () => {
   expect(PartialReproCodec.parse({})).toMatchInlineSnapshot("{}");
@@ -245,51 +244,6 @@ it("tpl", () => {
     }
   `);
 });
-it("print schema", () => {
-  expect(Schemas.T3).toMatchInlineSnapshot(`
-    {
-      "anyOf": [
-        {
-          "additionalProperties": false,
-          "properties": {
-            "kind": {
-              "const": "square",
-            },
-            "x": {
-              "type": "number",
-            },
-          },
-          "required": [
-            "kind",
-            "x",
-          ],
-          "type": "object",
-        },
-        {
-          "additionalProperties": false,
-          "properties": {
-            "kind": {
-              "const": "triangle",
-            },
-            "x": {
-              "type": "number",
-            },
-            "y": {
-              "type": "number",
-            },
-          },
-          "required": [
-            "kind",
-            "x",
-            "y",
-          ],
-          "type": "object",
-        },
-      ],
-    }
-  `);
-});
-
 it("exclude object", () => {
   expect(
     T3.parse({

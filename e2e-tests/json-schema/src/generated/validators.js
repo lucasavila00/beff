@@ -1,9 +1,12 @@
+//@ts-nocheck
 /* eslint-disable */
-//@ts-check
 
-// based on https://github.com/TehShrike/deepmerge
-// MIT License
-// Copyright (c) 2012 - 2022 James Halliday, Josh Duff, and other contributors of deepmerge
+
+
+
+
+
+
 
 const JSON_PROTO = Object.getPrototypeOf({});
 
@@ -56,7 +59,7 @@ function deepmergeConstructor(options) {
     const result = Object.keys(value);
     const keys = Object.getOwnPropertySymbols(value);
     for (let i = 0, il = keys.length; i < il; ++i) {
-      //@ts-ignore
+      
       propertyIsEnumerable.call(value, keys[i]) && result.push(keys[i]);
     }
     return result;
@@ -78,14 +81,14 @@ function deepmergeConstructor(options) {
   }
 
   const isPrimitiveOrBuiltIn =
-    //@ts-ignore
+    
     typeof Buffer !== "undefined"
       ? (value) =>
           typeof value !== "object" ||
           value === null ||
           value instanceof RegExp ||
           value instanceof Date ||
-          //@ts-ignore
+          
           value instanceof Buffer
       : (value) =>
           typeof value !== "object" || value === null || value instanceof RegExp || value instanceof Date;
@@ -573,7 +576,7 @@ class ObjectReporter {
         const inputKeys = Object.keys(input);
         const extraKeys = inputKeys.filter((k) => !configKeys.includes(k));
         if (extraKeys.length > 0) {
-          // return buildError(ctx, `unexpected extra properties: ${limitedCommaJoinJson(extraKeys)}`, input);
+          
           return extraKeys.flatMap((k) => {
             pushPath(ctx, k);
             const err = buildError(ctx, `extra property`, input[k]);
@@ -652,7 +655,7 @@ class AnyOfDiscriminatedValidator {
     }
     const v = this.mapping[d];
     if (v == null) {
-      // not one of the known discriminators
+      
       return false;
     }
 
@@ -1025,3 +1028,134 @@ class TupleSchema {
     };
   }
 }
+
+
+function ValidateT1(ctx, input) {
+    return (hoisted_T1_3.validateObjectValidator.bind(hoisted_T1_3))(ctx, input);
+}
+function ParseT1(ctx, input) {
+    return (hoisted_T1_4.parseObjectParser.bind(hoisted_T1_4))(ctx, input);
+}
+function ReportT1(ctx, input) {
+    return (hoisted_T1_5.reportObjectReporter.bind(hoisted_T1_5))(ctx, input);
+}
+function SchemaT1(ctx, input) {
+    return (hoisted_T1_6.schemaObjectSchema.bind(hoisted_T1_6))(ctx);
+}
+function ValidateT2(ctx, input) {
+    return (hoisted_T2_3.validateObjectValidator.bind(hoisted_T2_3))(ctx, input);
+}
+function ParseT2(ctx, input) {
+    return (hoisted_T2_4.parseObjectParser.bind(hoisted_T2_4))(ctx, input);
+}
+function ReportT2(ctx, input) {
+    return (hoisted_T2_5.reportObjectReporter.bind(hoisted_T2_5))(ctx, input);
+}
+function SchemaT2(ctx, input) {
+    return (hoisted_T2_6.schemaObjectSchema.bind(hoisted_T2_6))(ctx);
+}
+function ValidateT3(ctx, input) {
+    return (hoisted_T3_8.validateObjectValidator.bind(hoisted_T3_8))(ctx, input);
+}
+function ParseT3(ctx, input) {
+    return (hoisted_T3_9.parseObjectParser.bind(hoisted_T3_9))(ctx, input);
+}
+function ReportT3(ctx, input) {
+    return (hoisted_T3_10.reportObjectReporter.bind(hoisted_T3_10))(ctx, input);
+}
+function SchemaT3(ctx, input) {
+    return (hoisted_T3_11.schemaObjectSchema.bind(hoisted_T3_11))(ctx);
+}
+function ValidateValidCurrency(ctx, input) {
+    return (hoisted_ValidCurrency_0.validateStringWithFormatDecoder.bind(hoisted_ValidCurrency_0))(ctx, input);
+}
+function ParseValidCurrency(ctx, input) {
+    return (hoisted_ValidCurrency_0.parseStringWithFormatDecoder.bind(hoisted_ValidCurrency_0))(ctx, input);
+}
+function ReportValidCurrency(ctx, input) {
+    return (hoisted_ValidCurrency_0.reportStringWithFormatDecoder.bind(hoisted_ValidCurrency_0))(ctx, input);
+}
+function SchemaValidCurrency(ctx, input) {
+    return (hoisted_ValidCurrency_0.schemaStringWithFormatDecoder.bind(hoisted_ValidCurrency_0))(ctx);
+}
+const validators = {
+    T1: ValidateT1,
+    T2: ValidateT2,
+    T3: ValidateT3,
+    ValidCurrency: ValidateValidCurrency
+};
+const parsers = {
+    T1: ParseT1,
+    T2: ParseT2,
+    T3: ParseT3,
+    ValidCurrency: ParseValidCurrency
+};
+const reporters = {
+    T1: ReportT1,
+    T2: ReportT2,
+    T3: ReportT3,
+    ValidCurrency: ReportValidCurrency
+};
+const schemas = {
+    T1: SchemaT1,
+    T2: SchemaT2,
+    T3: SchemaT3,
+    ValidCurrency: SchemaValidCurrency
+};
+const hoisted_T1_0 = {
+    "a": validateString,
+    "b": validateNumber
+};
+const hoisted_T1_1 = {
+    "a": schemaString,
+    "b": schemaNumber
+};
+const hoisted_T1_2 = null;
+const hoisted_T1_3 = new ObjectValidator(hoisted_T1_0, hoisted_T1_2);
+const hoisted_T1_4 = new ObjectParser({
+    "a": parseIdentity,
+    "b": parseIdentity
+}, null);
+const hoisted_T1_5 = new ObjectReporter(hoisted_T1_0, hoisted_T1_2, {
+    "a": reportString,
+    "b": reportNumber
+}, null);
+const hoisted_T1_6 = new ObjectSchema(hoisted_T1_1, null);
+const hoisted_T2_0 = {
+    "t1": validators.T1
+};
+const hoisted_T2_1 = {
+    "t1": schemas.T1
+};
+const hoisted_T2_2 = null;
+const hoisted_T2_3 = new ObjectValidator(hoisted_T2_0, hoisted_T2_2);
+const hoisted_T2_4 = new ObjectParser({
+    "t1": parsers.T1
+}, null);
+const hoisted_T2_5 = new ObjectReporter(hoisted_T2_0, hoisted_T2_2, {
+    "t1": reporters.T1
+}, null);
+const hoisted_T2_6 = new ObjectSchema(hoisted_T2_1, null);
+const hoisted_T3_0 = validators.T2;
+const hoisted_T3_1 = new ArrayValidator(hoisted_T3_0);
+const hoisted_T3_2 = new ArrayParser(parsers.T2);
+const hoisted_T3_3 = new ArrayReporter(hoisted_T3_0, reporters.T2);
+const hoisted_T3_4 = new ArraySchema(schemas.T2);
+const hoisted_T3_5 = {
+    "t2Array": hoisted_T3_1.validateArrayValidator.bind(hoisted_T3_1)
+};
+const hoisted_T3_6 = {
+    "t2Array": hoisted_T3_4.schemaArraySchema.bind(hoisted_T3_4)
+};
+const hoisted_T3_7 = null;
+const hoisted_T3_8 = new ObjectValidator(hoisted_T3_5, hoisted_T3_7);
+const hoisted_T3_9 = new ObjectParser({
+    "t2Array": hoisted_T3_2.parseArrayParser.bind(hoisted_T3_2)
+}, null);
+const hoisted_T3_10 = new ObjectReporter(hoisted_T3_5, hoisted_T3_7, {
+    "t2Array": hoisted_T3_3.reportArrayReporter.bind(hoisted_T3_3)
+}, null);
+const hoisted_T3_11 = new ObjectSchema(hoisted_T3_6, null);
+const hoisted_ValidCurrency_0 = new StringWithFormatDecoder("ValidCurrency");
+
+export default { registerCustomFormatter, ObjectValidator, ObjectParser, ArrayParser, ArrayValidator, CodecDecoder, StringWithFormatDecoder, AnyOfValidator, AnyOfParser, AllOfValidator, AllOfParser, TupleParser, TupleValidator, RegexDecoder, ConstDecoder, AnyOfConstsDecoder, AnyOfDiscriminatedParser, AnyOfDiscriminatedValidator, validateString, validateNumber, validateFunction, validateBoolean, validateAny, validateNull, validateNever, parseIdentity, reportString, reportNumber, reportNull, reportBoolean, reportAny, reportNever, reportFunction, ArrayReporter, ObjectReporter, TupleReporter, AnyOfReporter, AllOfReporter, AnyOfDiscriminatedReporter, schemaString, schemaNumber, schemaBoolean, schemaNull, schemaAny, schemaNever, schemaFunction, ArraySchema, ObjectSchema, TupleSchema, AnyOfSchema, AllOfSchema, AnyOfDiscriminatedSchema, validators, parsers, reporters, schemas };
