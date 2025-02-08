@@ -1,6 +1,7 @@
 ---
 source: packages/beff-core/tests/print_parser.rs
 expression: "decoder(r#\"\n        export type Alias = string;\n        parse.buildParsers<{ Dec: Alias }>();\n      \"#)"
+snapshot_kind: text
 ---
 function ValidateAlias(ctx, input) {
     return (validateString)(ctx, input);
@@ -10,6 +11,9 @@ function ParseAlias(ctx, input) {
 }
 function ReportAlias(ctx, input) {
     return (reportString)(ctx, input);
+}
+function SchemaAlias(ctx, input) {
+    return (schemaString)(ctx);
 }
 const validators = {
     Alias: ValidateAlias

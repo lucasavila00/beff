@@ -15,6 +15,9 @@ const buildParsersInput = {
 const buildReportersInput = {
     "A": reporters.A
 };
+const buildSchemaInput = {
+    "A": schemas.A
+};
 
 
 
@@ -48,6 +51,14 @@ function buildParsers(args) {
       }
       return ok;
     };
+
+    
+    const schemaFn = buildSchemaInput[k];
+    const schema = () => {
+      const ctx = {};
+      return schemaFn(ctx);
+    };
+
     const safeParse = (input, options) => {
       const disallowExtraProperties = options?.disallowExtraProperties ?? false;
       const ok = validate(input, options);
@@ -98,6 +109,7 @@ function buildParsers(args) {
       zod,
       name: k,
       validate,
+      schema,
     };
   });
   return decoders;

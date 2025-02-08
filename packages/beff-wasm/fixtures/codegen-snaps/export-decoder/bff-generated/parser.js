@@ -10,6 +10,7 @@ const hoisted_Users_0 = validators.User;
 const hoisted_Users_1 = new ArrayValidator(hoisted_Users_0);
 const hoisted_Users_2 = new ArrayParser(parsers.User);
 const hoisted_Users_3 = new ArrayReporter(hoisted_Users_0, reporters.User);
+const hoisted_Users_4 = new ArraySchema(schemas.User);
 const hoisted_float_0 = new ConstDecoder(123.456);
 const hoisted_int_0 = new ConstDecoder(123);
 const buildValidatorsInput = {
@@ -41,6 +42,16 @@ const buildReportersInput = {
     "float": hoisted_float_0.reportConstDecoder.bind(hoisted_float_0),
     "int": hoisted_int_0.reportConstDecoder.bind(hoisted_int_0),
     "union": reporters.UnionNested
+};
+const buildSchemaInput = {
+    "NotPublicRenamed": schemas.NotPublic,
+    "Password": schemas.Password,
+    "StartsWithA": schemas.StartsWithA,
+    "User": schemas.User,
+    "Users": hoisted_Users_4.schemaArraySchema.bind(hoisted_Users_4),
+    "float": hoisted_float_0.schemaConstDecoder.bind(hoisted_float_0),
+    "int": hoisted_int_0.schemaConstDecoder.bind(hoisted_int_0),
+    "union": schemas.UnionNested
 };
 
 
@@ -75,6 +86,14 @@ function buildParsers(args) {
       }
       return ok;
     };
+
+    
+    const schemaFn = buildSchemaInput[k];
+    const schema = () => {
+      const ctx = {};
+      return schemaFn(ctx);
+    };
+
     const safeParse = (input, options) => {
       const disallowExtraProperties = options?.disallowExtraProperties ?? false;
       const ok = validate(input, options);
@@ -125,6 +144,7 @@ function buildParsers(args) {
       zod,
       name: k,
       validate,
+      schema,
     };
   });
   return decoders;

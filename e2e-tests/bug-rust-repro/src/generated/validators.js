@@ -883,6 +883,9 @@ function ParseA(ctx, input) {
 function ReportA(ctx, input) {
     return (reportString)(ctx, input);
 }
+function SchemaA(ctx, input) {
+    return (schemaString)(ctx);
+}
 const validators = {
     A: ValidateA
 };

@@ -206,6 +206,7 @@ export type BeffParser<T> = {
   zod: () => ZodType<T>;
   name: string;
   validate(input: any, options?: ParseOptions): input is T;
+  schema: () => JSONSchema7;
 };
 type Parsers<T> = {
   [K in keyof T]: BeffParser<T[K]>;

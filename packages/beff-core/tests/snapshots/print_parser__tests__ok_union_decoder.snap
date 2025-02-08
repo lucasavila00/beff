@@ -1,15 +1,19 @@
 ---
 source: packages/beff-core/tests/print_parser.rs
 expression: "decoder(r#\"\n        export type Alias = string | number\n        parse.buildParsers<{ Dec: Alias }>();\n      \"#)"
+snapshot_kind: text
 ---
 function ValidateAlias(ctx, input) {
-    return (hoisted_Alias_1.validateAnyOfValidator.bind(hoisted_Alias_1))(ctx, input);
+    return (hoisted_Alias_2.validateAnyOfValidator.bind(hoisted_Alias_2))(ctx, input);
 }
 function ParseAlias(ctx, input) {
-    return (hoisted_Alias_2.parseAnyOfParser.bind(hoisted_Alias_2))(ctx, input);
+    return (hoisted_Alias_3.parseAnyOfParser.bind(hoisted_Alias_3))(ctx, input);
 }
 function ReportAlias(ctx, input) {
-    return (hoisted_Alias_3.reportAnyOfReporter.bind(hoisted_Alias_3))(ctx, input);
+    return (hoisted_Alias_4.reportAnyOfReporter.bind(hoisted_Alias_4))(ctx, input);
+}
+function SchemaAlias(ctx, input) {
+    return (hoisted_Alias_5.schemaAnyOfSchema.bind(hoisted_Alias_5))(ctx);
 }
 const validators = {
     Alias: ValidateAlias
@@ -24,12 +28,17 @@ const hoisted_Alias_0 = [
     validateString,
     validateNumber
 ];
-const hoisted_Alias_1 = new AnyOfValidator(hoisted_Alias_0);
-const hoisted_Alias_2 = new AnyOfParser(hoisted_Alias_0, [
+const hoisted_Alias_1 = [
+    schemaString,
+    schemaNumber
+];
+const hoisted_Alias_2 = new AnyOfValidator(hoisted_Alias_0);
+const hoisted_Alias_3 = new AnyOfParser(hoisted_Alias_0, [
     parseIdentity,
     parseIdentity
 ]);
-const hoisted_Alias_3 = new AnyOfReporter(hoisted_Alias_0, [
+const hoisted_Alias_4 = new AnyOfReporter(hoisted_Alias_0, [
     reportString,
     reportNumber
 ]);
+const hoisted_Alias_5 = new AnyOfSchema(hoisted_Alias_1);

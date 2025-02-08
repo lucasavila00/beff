@@ -875,22 +875,28 @@ class TupleReporter {
 
 
 function ValidateUser(ctx, input) {
-    return (hoisted_User_2.validateObjectValidator.bind(hoisted_User_2))(ctx, input);
+    return (hoisted_User_3.validateObjectValidator.bind(hoisted_User_3))(ctx, input);
 }
 function ParseUser(ctx, input) {
-    return (hoisted_User_3.parseObjectParser.bind(hoisted_User_3))(ctx, input);
+    return (hoisted_User_4.parseObjectParser.bind(hoisted_User_4))(ctx, input);
 }
 function ReportUser(ctx, input) {
-    return (hoisted_User_4.reportObjectReporter.bind(hoisted_User_4))(ctx, input);
+    return (hoisted_User_5.reportObjectReporter.bind(hoisted_User_5))(ctx, input);
+}
+function SchemaUser(ctx, input) {
+    return (hoisted_User_6.schemaObjectSchema.bind(hoisted_User_6))(ctx);
 }
 function ValidateNotPublic(ctx, input) {
-    return (hoisted_NotPublic_2.validateObjectValidator.bind(hoisted_NotPublic_2))(ctx, input);
+    return (hoisted_NotPublic_3.validateObjectValidator.bind(hoisted_NotPublic_3))(ctx, input);
 }
 function ParseNotPublic(ctx, input) {
-    return (hoisted_NotPublic_3.parseObjectParser.bind(hoisted_NotPublic_3))(ctx, input);
+    return (hoisted_NotPublic_4.parseObjectParser.bind(hoisted_NotPublic_4))(ctx, input);
 }
 function ReportNotPublic(ctx, input) {
-    return (hoisted_NotPublic_4.reportObjectReporter.bind(hoisted_NotPublic_4))(ctx, input);
+    return (hoisted_NotPublic_5.reportObjectReporter.bind(hoisted_NotPublic_5))(ctx, input);
+}
+function SchemaNotPublic(ctx, input) {
+    return (hoisted_NotPublic_6.schemaObjectSchema.bind(hoisted_NotPublic_6))(ctx);
 }
 function ValidateStartsWithA(ctx, input) {
     return (hoisted_StartsWithA_0.validateStringWithFormatDecoder.bind(hoisted_StartsWithA_0))(ctx, input);
@@ -901,6 +907,9 @@ function ParseStartsWithA(ctx, input) {
 function ReportStartsWithA(ctx, input) {
     return (hoisted_StartsWithA_0.reportStringWithFormatDecoder.bind(hoisted_StartsWithA_0))(ctx, input);
 }
+function SchemaStartsWithA(ctx, input) {
+    return (hoisted_StartsWithA_0.schemaStringWithFormatDecoder.bind(hoisted_StartsWithA_0))(ctx);
+}
 function ValidatePassword(ctx, input) {
     return (hoisted_Password_0.validateStringWithFormatDecoder.bind(hoisted_Password_0))(ctx, input);
 }
@@ -909,6 +918,9 @@ function ParsePassword(ctx, input) {
 }
 function ReportPassword(ctx, input) {
     return (hoisted_Password_0.reportStringWithFormatDecoder.bind(hoisted_Password_0))(ctx, input);
+}
+function SchemaPassword(ctx, input) {
+    return (hoisted_Password_0.schemaStringWithFormatDecoder.bind(hoisted_Password_0))(ctx);
 }
 function ValidateA(ctx, input) {
     return (hoisted_A_0.validateAnyOfConstsDecoder.bind(hoisted_A_0))(ctx, input);
@@ -919,6 +931,9 @@ function ParseA(ctx, input) {
 function ReportA(ctx, input) {
     return (hoisted_A_0.reportAnyOfConstsDecoder.bind(hoisted_A_0))(ctx, input);
 }
+function SchemaA(ctx, input) {
+    return (hoisted_A_0.schemaAnyOfConstsDecoder.bind(hoisted_A_0))(ctx);
+}
 function ValidateB(ctx, input) {
     return (hoisted_B_0.validateAnyOfConstsDecoder.bind(hoisted_B_0))(ctx, input);
 }
@@ -927,6 +942,9 @@ function ParseB(ctx, input) {
 }
 function ReportB(ctx, input) {
     return (hoisted_B_0.reportAnyOfConstsDecoder.bind(hoisted_B_0))(ctx, input);
+}
+function SchemaB(ctx, input) {
+    return (hoisted_B_0.schemaAnyOfConstsDecoder.bind(hoisted_B_0))(ctx);
 }
 function ValidateD(ctx, input) {
     return (hoisted_D_0.validateAnyOfConstsDecoder.bind(hoisted_D_0))(ctx, input);
@@ -937,6 +955,9 @@ function ParseD(ctx, input) {
 function ReportD(ctx, input) {
     return (hoisted_D_0.reportAnyOfConstsDecoder.bind(hoisted_D_0))(ctx, input);
 }
+function SchemaD(ctx, input) {
+    return (hoisted_D_0.schemaAnyOfConstsDecoder.bind(hoisted_D_0))(ctx);
+}
 function ValidateE(ctx, input) {
     return (hoisted_E_0.validateAnyOfConstsDecoder.bind(hoisted_E_0))(ctx, input);
 }
@@ -946,6 +967,9 @@ function ParseE(ctx, input) {
 function ReportE(ctx, input) {
     return (hoisted_E_0.reportAnyOfConstsDecoder.bind(hoisted_E_0))(ctx, input);
 }
+function SchemaE(ctx, input) {
+    return (hoisted_E_0.schemaAnyOfConstsDecoder.bind(hoisted_E_0))(ctx);
+}
 function ValidateUnionNested(ctx, input) {
     return (hoisted_UnionNested_0.validateAnyOfConstsDecoder.bind(hoisted_UnionNested_0))(ctx, input);
 }
@@ -954,6 +978,9 @@ function ParseUnionNested(ctx, input) {
 }
 function ReportUnionNested(ctx, input) {
     return (hoisted_UnionNested_0.reportAnyOfConstsDecoder.bind(hoisted_UnionNested_0))(ctx, input);
+}
+function SchemaUnionNested(ctx, input) {
+    return (hoisted_UnionNested_0.schemaAnyOfConstsDecoder.bind(hoisted_UnionNested_0))(ctx);
 }
 const validators = {
     User: ValidateUser,
@@ -992,27 +1019,36 @@ const hoisted_User_0 = {
     "age": validateNumber,
     "name": validateString
 };
-const hoisted_User_1 = null;
-const hoisted_User_2 = new ObjectValidator(hoisted_User_0, hoisted_User_1);
-const hoisted_User_3 = new ObjectParser({
+const hoisted_User_1 = {
+    "age": schemaNumber,
+    "name": schemaString
+};
+const hoisted_User_2 = null;
+const hoisted_User_3 = new ObjectValidator(hoisted_User_0, hoisted_User_2);
+const hoisted_User_4 = new ObjectParser({
     "age": parseIdentity,
     "name": parseIdentity
 }, null);
-const hoisted_User_4 = new ObjectReporter(hoisted_User_0, hoisted_User_1, {
+const hoisted_User_5 = new ObjectReporter(hoisted_User_0, hoisted_User_2, {
     "age": reportNumber,
     "name": reportString
 }, null);
+const hoisted_User_6 = new ObjectSchema(hoisted_User_1, null);
 const hoisted_NotPublic_0 = {
     "a": validateString
 };
-const hoisted_NotPublic_1 = null;
-const hoisted_NotPublic_2 = new ObjectValidator(hoisted_NotPublic_0, hoisted_NotPublic_1);
-const hoisted_NotPublic_3 = new ObjectParser({
+const hoisted_NotPublic_1 = {
+    "a": schemaString
+};
+const hoisted_NotPublic_2 = null;
+const hoisted_NotPublic_3 = new ObjectValidator(hoisted_NotPublic_0, hoisted_NotPublic_2);
+const hoisted_NotPublic_4 = new ObjectParser({
     "a": parseIdentity
 }, null);
-const hoisted_NotPublic_4 = new ObjectReporter(hoisted_NotPublic_0, hoisted_NotPublic_1, {
+const hoisted_NotPublic_5 = new ObjectReporter(hoisted_NotPublic_0, hoisted_NotPublic_2, {
     "a": reportString
 }, null);
+const hoisted_NotPublic_6 = new ObjectSchema(hoisted_NotPublic_1, null);
 const hoisted_StartsWithA_0 = new StringWithFormatDecoder("StartsWithA");
 const hoisted_Password_0 = new StringWithFormatDecoder("password");
 const hoisted_A_0 = new AnyOfConstsDecoder([

@@ -157,12 +157,33 @@ impl DecoderFnGenerator<'_> {
                 .collect(),
         });
 
+        let schemas_obj = Expr::Object(ObjectLit {
+            span: DUMMY_SP,
+            props: acc
+                .iter()
+                .map(|(key, value)| {
+                    PropOrSpread::Prop(
+                        Prop::KeyValue(KeyValueProp {
+                            key: PropName::Str(Str {
+                                span: DUMMY_SP,
+                                value: key.clone().into(),
+                                raw: None,
+                            }),
+                            value: value.schema.clone().into(),
+                        })
+                        .into(),
+                    )
+                })
+                .collect(),
+        });
+
         self.dynamic_schema_code(
             "AnyOfDiscriminated",
             hoisted,
             vec![d.clone(), validators_obj],
             vec![d.clone(), parsers_obj],
             vec![d.clone(), reporters_obj],
+            vec![d.clone(), schemas_obj],
         )
     }
     fn maybe_decode_any_of_discriminated(
@@ -323,6 +344,7 @@ impl DecoderFnGenerator<'_> {
                 "parseIdentity",
             ),
             reporter: SwcBuilder::ident_expr(format!("report{}", t).to_string().as_str()),
+            schema: SwcBuilder::ident_expr(format!("schema{}", t).to_string().as_str()),
         }
     }
     fn ref_schema_code(schema_ref: &str) -> SchemaCode {
@@ -368,11 +390,26 @@ impl DecoderFnGenerator<'_> {
                 optional: false,
             }),
         });
+        let schema = Expr::Member(MemberExpr {
+            span: DUMMY_SP,
+            obj: Expr::Ident(Ident {
+                span: DUMMY_SP,
+                sym: "schemas".into(),
+                optional: false,
+            })
+            .into(),
+            prop: MemberProp::Ident(Ident {
+                span: DUMMY_SP,
+                sym: schema_ref.into(),
+                optional: false,
+            }),
+        });
 
         SchemaCode {
             validator,
             parser,
             reporter,
+            schema,
         }
     }
     fn bound_method(method_name: &str, hoisted_expr: &Expr) -> Expr {
@@ -437,11 +474,13 @@ impl DecoderFnGenerator<'_> {
         let bound_validate = Self::bound_method(&format!("validate{}", class), &hoisted_expr);
         let bound_parse = Self::bound_method(&format!("parse{}", class), &hoisted_expr);
         let bound_reporter = Self::bound_method(&format!("report{}", class), &hoisted_expr);
+        let bound_schema = Self::bound_method(&format!("schema{}", class), &hoisted_expr);
 
         SchemaCode {
             validator: bound_validate,
             parser: bound_parse,
             reporter: bound_reporter,
+            schema: bound_schema,
         }
     }
 
@@ -452,6 +491,7 @@ impl DecoderFnGenerator<'_> {
         validator_args: Vec<Expr>,
         parser_args: Vec<Expr>,
         reporter_args: Vec<Expr>,
+        schema_args: Vec<Expr>,
     ) -> SchemaCode {
         let validator_fn_name = format!("{}Validator", name);
 
@@ -514,10 +554,31 @@ impl DecoderFnGenerator<'_> {
             &self.hoist_expr(hoisted, new_reporter_expr),
         );
 
+        let schema_fn_name = format!("{}Schema", name);
+        let new_schema_expr = Expr::New(NewExpr {
+            span: DUMMY_SP,
+            callee: Box::new(SwcBuilder::ident_expr(&schema_fn_name)),
+            args: Some(
+                schema_args
+                    .into_iter()
+                    .map(|it| ExprOrSpread {
+                        spread: None,
+                        expr: it.into(),
+                    })
+                    .collect(),
+            ),
+            type_args: None,
+        });
+        let bound_schema = Self::bound_method(
+            &format!("schema{}", schema_fn_name),
+            &self.hoist_expr(hoisted, new_schema_expr),
+        );
+
         SchemaCode {
             validator: bound_validate,
             parser: bound_parse,
             reporter: bound_reporter,
+            schema: bound_schema,
         }
     }
     fn decode_union_or_intersection(
@@ -529,16 +590,19 @@ impl DecoderFnGenerator<'_> {
         let mut validators: Vec<Expr> = vec![];
         let mut parsers: Vec<Expr> = vec![];
         let mut reporters: Vec<Expr> = vec![];
+        let mut schemas: Vec<Expr> = vec![];
 
         for v in vs {
             let SchemaCode {
                 validator: val,
                 parser: par,
                 reporter: rep,
+                schema: s,
             } = self.generate_schema_code(v, hoisted);
             validators.push(val);
             parsers.push(par);
             reporters.push(rep);
+            schemas.push(s);
         }
 
         let validators_arr = self.hoist_expr(
@@ -546,6 +610,22 @@ impl DecoderFnGenerator<'_> {
             Expr::Array(ArrayLit {
                 span: DUMMY_SP,
                 elems: validators
+                    .into_iter()
+                    .map(|it| {
+                        Some(ExprOrSpread {
+                            spread: None,
+                            expr: it.into(),
+                        })
+                    })
+                    .collect(),
+            }),
+        );
+
+        let schemas_arr = self.hoist_expr(
+            hoisted,
+            Expr::Array(ArrayLit {
+                span: DUMMY_SP,
+                elems: schemas
                     .into_iter()
                     .map(|it| {
                         Some(ExprOrSpread {
@@ -591,6 +671,7 @@ impl DecoderFnGenerator<'_> {
                         .collect(),
                 }),
             ],
+            vec![schemas_arr],
         )
     }
     fn generate_schema_code(
@@ -665,6 +746,7 @@ impl DecoderFnGenerator<'_> {
                     validator: inner_val,
                     parser: inner_parser,
                     reporter: inner_reporter,
+                    schema: inner_schema,
                 } = self.generate_schema_code(ty, hoisted);
                 let inner_val = self.hoist_expr(hoisted, inner_val);
                 self.dynamic_schema_code(
@@ -673,6 +755,7 @@ impl DecoderFnGenerator<'_> {
                     vec![inner_val.clone()],
                     vec![inner_parser],
                     vec![inner_val, inner_reporter],
+                    vec![inner_schema],
                 )
             }
             JsonSchema::Tuple {
@@ -682,28 +765,34 @@ impl DecoderFnGenerator<'_> {
                 let mut prefix_validators: Vec<Expr> = vec![];
                 let mut prefix_parsers: Vec<Expr> = vec![];
                 let mut prefix_reporters: Vec<Expr> = vec![];
+                let mut prefix_schemas: Vec<Expr> = vec![];
                 let mut item_validator = Expr::Lit(Lit::Null(Null { span: DUMMY_SP }));
                 let mut item_parser = Expr::Lit(Lit::Null(Null { span: DUMMY_SP }));
                 let mut item_reporter = Expr::Lit(Lit::Null(Null { span: DUMMY_SP }));
+                let mut item_schema = Expr::Lit(Lit::Null(Null { span: DUMMY_SP }));
                 for p in prefix_items {
                     let SchemaCode {
                         validator: val,
                         parser: par,
                         reporter: rep,
+                        schema: s,
                     } = self.generate_schema_code(p, hoisted);
                     prefix_validators.push(val);
                     prefix_parsers.push(par);
                     prefix_reporters.push(rep);
+                    prefix_schemas.push(s);
                 }
                 if let Some(items) = items {
                     let SchemaCode {
                         validator: val,
                         parser: par,
                         reporter: rep,
+                        schema: s,
                     } = self.generate_schema_code(items, hoisted);
                     item_validator = val;
                     item_parser = par;
                     item_reporter = rep;
+                    item_schema = s;
                 }
                 let prefix_val_arr = Expr::Array(ArrayLit {
                     span: DUMMY_SP,
@@ -741,6 +830,18 @@ impl DecoderFnGenerator<'_> {
                         })
                         .collect(),
                 });
+                let prefix_schema_arr = Expr::Array(ArrayLit {
+                    span: DUMMY_SP,
+                    elems: prefix_schemas
+                        .into_iter()
+                        .map(|it| {
+                            Some(ExprOrSpread {
+                                spread: None,
+                                expr: it.into(),
+                            })
+                        })
+                        .collect(),
+                });
                 let prefix_val_arr = self.hoist_expr(hoisted, prefix_val_arr);
                 let item_validator = self.hoist_expr(hoisted, item_validator);
                 self.dynamic_schema_code(
@@ -754,12 +855,14 @@ impl DecoderFnGenerator<'_> {
                         prefix_reporter_arr,
                         item_reporter,
                     ],
+                    vec![prefix_schema_arr, item_schema],
                 )
             }
             JsonSchema::Object { vs, rest } => {
                 let mut validator_rest = Expr::Lit(Lit::Null(Null { span: DUMMY_SP }));
                 let mut parser_rest = Expr::Lit(Lit::Null(Null { span: DUMMY_SP }));
                 let mut reporter_rest = Expr::Lit(Lit::Null(Null { span: DUMMY_SP }));
+                let mut schema_rest = Expr::Lit(Lit::Null(Null { span: DUMMY_SP }));
 
                 let mut mapped = BTreeMap::new();
 
@@ -789,6 +892,25 @@ impl DecoderFnGenerator<'_> {
                                         raw: None,
                                     }),
                                     value: value.validator.clone().into(),
+                                })
+                                .into(),
+                            )
+                        })
+                        .collect(),
+                });
+                let obj_schema = Expr::Object(ObjectLit {
+                    span: DUMMY_SP,
+                    props: mapped
+                        .iter()
+                        .map(|(key, value)| {
+                            PropOrSpread::Prop(
+                                Prop::KeyValue(KeyValueProp {
+                                    key: PropName::Str(Str {
+                                        span: DUMMY_SP,
+                                        value: key.clone().into(),
+                                        raw: None,
+                                    }),
+                                    value: value.schema.clone().into(),
                                 })
                                 .into(),
                             )
@@ -841,13 +963,16 @@ impl DecoderFnGenerator<'_> {
                         validator: val,
                         parser: par,
                         reporter: rep,
+                        schema: s,
                     } = self.generate_schema_code(rest, hoisted);
                     validator_rest = val;
                     parser_rest = par;
                     reporter_rest = rep;
+                    schema_rest = s;
                 }
 
                 let obj_validator = self.hoist_expr(hoisted, obj_validator);
+                let obj_schema = self.hoist_expr(hoisted, obj_schema);
                 let validator_rest = self.hoist_expr(hoisted, validator_rest);
 
                 self.dynamic_schema_code(
@@ -856,6 +981,7 @@ impl DecoderFnGenerator<'_> {
                     vec![obj_validator.clone(), validator_rest.clone()],
                     vec![obj_parser, parser_rest],
                     vec![obj_validator, validator_rest, obj_reporter, reporter_rest],
+                    vec![obj_schema, schema_rest],
                 )
             }
 
@@ -871,6 +997,7 @@ pub struct SchemaCode {
     pub validator: Expr,
     pub parser: Expr,
     pub reporter: Expr,
+    pub schema: Expr,
 }
 
 #[must_use]
@@ -891,6 +1018,7 @@ pub struct SchemaCodeFunctions {
     pub validator: Function,
     pub parser: Function,
     pub reporter: Function,
+    pub schema: Function,
 }
 
 #[must_use]
@@ -904,6 +1032,7 @@ pub fn func_validator_for_schema(
         validator,
         parser,
         reporter,
+        schema,
     } = validator_for_schema(schema, named_schemas, hoisted, name);
 
     let validator_fn = Function {
@@ -1074,9 +1203,60 @@ pub fn func_validator_for_schema(
         return_type: None,
     };
 
+    let schema_fn = Function {
+        params: vec![
+            Param {
+                span: DUMMY_SP,
+                decorators: vec![],
+                pat: Pat::Ident(BindingIdent {
+                    id: Ident {
+                        span: DUMMY_SP,
+                        sym: "ctx".into(),
+                        optional: false,
+                    },
+                    type_ann: None,
+                }),
+            },
+            Param {
+                span: DUMMY_SP,
+                decorators: vec![],
+                pat: Pat::Ident(BindingIdent {
+                    id: SwcBuilder::input_ident(),
+                    type_ann: None,
+                }),
+            },
+        ],
+        decorators: vec![],
+        span: DUMMY_SP,
+        body: BlockStmt {
+            span: DUMMY_SP,
+            stmts: vec![Stmt::Return(ReturnStmt {
+                span: DUMMY_SP,
+                arg: Some(Box::new(Expr::Call(CallExpr {
+                    span: DUMMY_SP,
+                    callee: Callee::Expr(Box::new(Expr::Paren(ParenExpr {
+                        span: DUMMY_SP,
+                        expr: schema.into(),
+                    }))),
+                    args: vec![ExprOrSpread {
+                        spread: None,
+                        expr: SwcBuilder::ident_expr("ctx").into(),
+                    }],
+                    type_args: None,
+                }))),
+            })],
+        }
+        .into(),
+        is_async: false,
+        is_generator: false,
+        type_params: None,
+        return_type: None,
+    };
+
     SchemaCodeFunctions {
         validator: validator_fn,
         parser: parser_fn,
         reporter: reporter_fn,
+        schema: schema_fn,
     }
 }
