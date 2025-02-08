@@ -11,10 +11,7 @@ pub mod sym_reference;
 pub mod type_to_schema;
 pub mod wasm_diag;
 
-use crate::ast::{
-    json::Json,
-    json_schema::{JsonFlatConverter, JsonSchema},
-};
+use crate::ast::json_schema::JsonSchema;
 use core::fmt;
 use diag::Diagnostic;
 use parser_extractor::extract_parser;
@@ -405,12 +402,4 @@ pub fn extract<R: FileManager>(files: &mut R, entry_points: EntryPoints) -> Extr
 pub struct NamedSchema {
     pub name: String,
     pub schema: JsonSchema,
-}
-impl NamedSchema {
-    pub fn to_json_kv(&self, validators: &[NamedSchema]) -> anyhow::Result<Vec<(String, Json)>> {
-        Ok(vec![(
-            self.name.clone(),
-            JsonFlatConverter::new(validators).to_json_flat(self.schema.clone())?,
-        )])
-    }
 }

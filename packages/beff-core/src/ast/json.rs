@@ -121,7 +121,3 @@ impl fmt::Display for Json {
 pub trait ToJson {
     fn to_json(self) -> Json;
 }
-
-pub trait ToJsonKv {
-    fn to_json_kv(self) -> Vec<(String, Json)>;
-}
