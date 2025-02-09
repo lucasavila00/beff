@@ -424,7 +424,7 @@ class CodecDecoder {
       }
     }
 
-    throw new Error("Unrecognized codec: " + this.codec);
+    throw new Error("INTERNAL ERROR: Unrecognized codec: " + this.codec);
   }
 }
 
@@ -682,7 +682,9 @@ class AnyOfDiscriminatedParser {
   parseAnyOfDiscriminatedParser(ctx, input) {
     const parser = this.mapping[input[this.discriminator]];
     if (parser == null) {
-      throw new Error("Unknown discriminator");
+      throw new Error(
+        "INTERNAL ERROR: Missing parser for discriminator " + JSON.stringify(input[this.discriminator])
+      );
     }
     return {
       ...parser(ctx, input),
@@ -896,7 +898,7 @@ class AllOfParser {
       const p = this.parsers[i];
       const parsed = p(ctx, input);
       if (typeof parsed !== "object") {
-        throw new Error("AllOfParser: Expected object");
+        throw new Error("INTERNAL ERROR: AllOfParser: Expected object");
       }
       acc = { ...acc, ...parsed };
     }
