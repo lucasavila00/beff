@@ -1,5 +1,13 @@
 # @beff/client
 
+## 0.0.80
+
+### Patch Changes
+
+- json schema for all parsers
+- Updated dependencies
+  - @beff/cli@0.0.80
+
 ## 0.0.79
 
 ### Patch Changes
