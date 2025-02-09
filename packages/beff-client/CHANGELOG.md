@@ -1,5 +1,13 @@
 # @beff/client
 
+## 0.0.81
+
+### Patch Changes
+
+- fix regex schema
+- Updated dependencies
+  - @beff/cli@0.0.81
+
 ## 0.0.80
 
 ### Patch Changes

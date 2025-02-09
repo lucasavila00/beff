@@ -380,6 +380,13 @@ class RegexDecoder {
   reportRegexDecoder(ctx, input) {
     return buildError(ctx, `expected string matching ${this.description}`, input);
   }
+
+  schemaRegexDecoder(ctx) {
+    return {
+      type: "string",
+      pattern: this.description,
+    };
+  }
 }
 
 class CodecDecoder {
@@ -1175,6 +1182,24 @@ function SchemaRecursiveTree(ctx, input) {
     delete ctx.seen["RecursiveTree"];
     return tmp;
 }
+function ValidateSemVer(ctx, input) {
+    return (hoisted_SemVer_0.validateRegexDecoder.bind(hoisted_SemVer_0))(ctx, input);
+}
+function ParseSemVer(ctx, input) {
+    return (hoisted_SemVer_0.parseRegexDecoder.bind(hoisted_SemVer_0))(ctx, input);
+}
+function ReportSemVer(ctx, input) {
+    return (hoisted_SemVer_0.reportRegexDecoder.bind(hoisted_SemVer_0))(ctx, input);
+}
+function SchemaSemVer(ctx, input) {
+    if (ctx.seen["SemVer"]) {
+        return {};
+    }
+    ctx.seen["SemVer"] = true;
+    var tmp = (hoisted_SemVer_0.schemaRegexDecoder.bind(hoisted_SemVer_0))(ctx);
+    delete ctx.seen["SemVer"];
+    return tmp;
+}
 function ValidateValidCurrency(ctx, input) {
     return (hoisted_ValidCurrency_0.validateStringWithFormatDecoder.bind(hoisted_ValidCurrency_0))(ctx, input);
 }
@@ -1201,6 +1226,7 @@ const validators = {
     InvalidSchemaWithBigInt: ValidateInvalidSchemaWithBigInt,
     DiscriminatedUnion: ValidateDiscriminatedUnion,
     RecursiveTree: ValidateRecursiveTree,
+    SemVer: ValidateSemVer,
     ValidCurrency: ValidateValidCurrency
 };
 const parsers = {
@@ -1211,6 +1237,7 @@ const parsers = {
     InvalidSchemaWithBigInt: ParseInvalidSchemaWithBigInt,
     DiscriminatedUnion: ParseDiscriminatedUnion,
     RecursiveTree: ParseRecursiveTree,
+    SemVer: ParseSemVer,
     ValidCurrency: ParseValidCurrency
 };
 const reporters = {
@@ -1221,6 +1248,7 @@ const reporters = {
     InvalidSchemaWithBigInt: ReportInvalidSchemaWithBigInt,
     DiscriminatedUnion: ReportDiscriminatedUnion,
     RecursiveTree: ReportRecursiveTree,
+    SemVer: ReportSemVer,
     ValidCurrency: ReportValidCurrency
 };
 const schemas = {
@@ -1231,6 +1259,7 @@ const schemas = {
     InvalidSchemaWithBigInt: SchemaInvalidSchemaWithBigInt,
     DiscriminatedUnion: SchemaDiscriminatedUnion,
     RecursiveTree: SchemaRecursiveTree,
+    SemVer: SchemaSemVer,
     ValidCurrency: SchemaValidCurrency
 };
 const hoisted_T1_0 = {
@@ -1632,6 +1661,7 @@ const hoisted_RecursiveTree_10 = new ObjectReporter(hoisted_RecursiveTree_5, hoi
     "value": reportNumber
 }, null);
 const hoisted_RecursiveTree_11 = new ObjectSchema(hoisted_RecursiveTree_6, null);
+const hoisted_SemVer_0 = new RegexDecoder(/(\d+(\.\d+)?)(\.)(\d+(\.\d+)?)(\.)(\d+(\.\d+)?)/, "${number}.${number}.${number}");
 const hoisted_ValidCurrency_0 = new StringWithFormatDecoder("ValidCurrency");
 
 export default { registerCustomFormatter, ObjectValidator, ObjectParser, ArrayParser, ArrayValidator, CodecDecoder, StringWithFormatDecoder, AnyOfValidator, AnyOfParser, AllOfValidator, AllOfParser, TupleParser, TupleValidator, RegexDecoder, ConstDecoder, AnyOfConstsDecoder, AnyOfDiscriminatedParser, AnyOfDiscriminatedValidator, validateString, validateNumber, validateFunction, validateBoolean, validateAny, validateNull, validateNever, parseIdentity, reportString, reportNumber, reportNull, reportBoolean, reportAny, reportNever, reportFunction, ArrayReporter, ObjectReporter, TupleReporter, AnyOfReporter, AllOfReporter, AnyOfDiscriminatedReporter, schemaString, schemaNumber, schemaBoolean, schemaNull, schemaAny, schemaNever, schemaFunction, ArraySchema, ObjectSchema, TupleSchema, AnyOfSchema, AllOfSchema, AnyOfDiscriminatedSchema, validators, parsers, reporters, schemas };

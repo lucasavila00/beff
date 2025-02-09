@@ -380,6 +380,13 @@ class RegexDecoder {
   reportRegexDecoder(ctx, input) {
     return buildError(ctx, `expected string matching ${this.description}`, input);
   }
+
+  schemaRegexDecoder(ctx) {
+    return {
+      type: "string",
+      pattern: this.description,
+    };
+  }
 }
 
 class CodecDecoder {

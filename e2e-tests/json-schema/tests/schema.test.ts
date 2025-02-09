@@ -136,7 +136,12 @@ it("works", () => {
       "type": "object",
     }
   `);
-
+  expect(Codecs.SemVer.schema()).toMatchInlineSnapshot(`
+    {
+      "pattern": "\${number}.\${number}.\${number}",
+      "type": "string",
+    }
+  `);
   expect(Codecs.DiscriminatedUnion.schema()).toMatchInlineSnapshot(`
     {
       "anyOf": [
