@@ -45,6 +45,8 @@ type RecursiveTree = {
   children: RecursiveTree[];
 };
 
+type SemVer = `${number}.${number}.${number}`;
+
 export const Codecs = parse.buildParsers<{
   // basic
   string: string;
@@ -63,6 +65,7 @@ export const Codecs = parse.buildParsers<{
   InvalidSchemaWithBigInt: InvalidSchemaWithBigInt;
   DiscriminatedUnion: DiscriminatedUnion;
   RecursiveTree: RecursiveTree;
+  SemVer: SemVer;
 
   //
   ValidCurrency: ValidCurrency;

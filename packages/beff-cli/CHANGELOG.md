@@ -1,5 +1,11 @@
 # @beff/cli
 
+## 0.0.81
+
+### Patch Changes
+
+- fix regex schema
+
 ## 0.0.80
 
 ### Patch Changes
