@@ -1060,7 +1060,7 @@ function ReportA(ctx, input) {
 }
 function SchemaA(ctx, input) {
     if (ctx.seen["A"]) {
-        throw new Error("Failed to print schema. At A: circular reference in schema");
+        return {};
     }
     ctx.seen["A"] = true;
     var tmp = (schemaString)(ctx);

@@ -9,8 +9,8 @@ use swc_ecma_ast::{
     ArrayLit, AssignExpr, AssignOp, BindingIdent, BlockStmt, Bool, CallExpr, Callee,
     ComputedPropName, Decl, Expr, ExprOrSpread, ExprStmt, Function, Ident, IfStmt, KeyValueProp,
     Lit, MemberExpr, MemberProp, ModuleItem, NewExpr, Null, ObjectLit, Param, ParenExpr, Pat, Prop,
-    PropName, PropOrSpread, Regex, ReturnStmt, Stmt, Str, ThrowStmt, UnaryExpr, UnaryOp, VarDecl,
-    VarDeclKind, VarDeclarator,
+    PropName, PropOrSpread, Regex, ReturnStmt, Stmt, Str, UnaryExpr, UnaryOp, VarDecl, VarDeclKind,
+    VarDeclarator,
 };
 struct SwcBuilder;
 
@@ -1265,30 +1265,16 @@ pub fn func_validator_for_schema(
                     test: ctx_seen_name.clone().into(),
                     cons: Stmt::Block(BlockStmt {
                         span: DUMMY_SP,
-                        stmts: vec![Stmt::Throw(ThrowStmt {
-                            span: DUMMY_SP,
-                            arg: Expr::New(NewExpr {
+                        stmts: vec![
+                            // return empty object (any) on second time a recursive type is seen
+                            Stmt::Return(ReturnStmt {
                                 span: DUMMY_SP,
-                                callee: Expr::Ident(Ident {
+                                arg: Some(Box::new(Expr::Object(ObjectLit {
                                     span: DUMMY_SP,
-                                    sym: "Error".into(),
-                                    optional: false,
-                                })
-                                .into(),
-                                args: Some(vec![ExprOrSpread {
-                                    spread: None,
-                                    expr: Expr::Lit(Lit::Str(Str {
-                                        span: DUMMY_SP,
-                                        value: format!("Failed to print schema. At {}: circular reference in schema", name)
-                                            .into(),
-                                        raw: None,
-                                    }))
-                                    .into(),
-                                }]),
-                                type_args: None,
-                            })
-                            .into(),
-                        })],
+                                    props: vec![],
+                                }))),
+                            }),
+                        ],
                     })
                     .into(),
                     alt: None,

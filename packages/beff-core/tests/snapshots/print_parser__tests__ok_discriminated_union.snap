@@ -14,7 +14,7 @@ function ReportDiscriminatedUnion4(ctx, input) {
 }
 function SchemaDiscriminatedUnion4(ctx, input) {
     if (ctx.seen["DiscriminatedUnion4"]) {
-        throw new Error("Failed to print schema. At DiscriminatedUnion4: circular reference in schema");
+        return {};
     }
     ctx.seen["DiscriminatedUnion4"] = true;
     var tmp = (hoisted_DiscriminatedUnion4_37.schemaAnyOfSchema.bind(hoisted_DiscriminatedUnion4_37))(ctx);

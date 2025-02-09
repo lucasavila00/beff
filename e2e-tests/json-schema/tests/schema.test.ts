@@ -8,9 +8,6 @@ it("throws errors", () => {
   expect(() => Codecs.InvalidSchemaWithBigInt.schema()).toThrowErrorMatchingInlineSnapshot(
     '"Failed to print schema. At x: Cannot generate JSON Schema for BigInt"'
   );
-  expect(() => Codecs.RecursiveTree.schema()).toThrowErrorMatchingInlineSnapshot(
-    '"Failed to print schema. At RecursiveTree: circular reference in schema"'
-  );
 });
 
 it("works", () => {
@@ -218,6 +215,26 @@ it("works", () => {
     {
       "format": "ValidCurrency",
       "type": "string",
+    }
+  `);
+
+  expect(Codecs.RecursiveTree.schema()).toMatchInlineSnapshot(`
+    {
+      "additionalProperties": false,
+      "properties": {
+        "children": {
+          "items": {},
+          "type": "array",
+        },
+        "value": {
+          "type": "number",
+        },
+      },
+      "required": [
+        "children",
+        "value",
+      ],
+      "type": "object",
     }
   `);
 });

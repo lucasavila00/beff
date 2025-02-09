@@ -14,7 +14,7 @@ function ReportAlias(ctx, input) {
 }
 function SchemaAlias(ctx, input) {
     if (ctx.seen["Alias"]) {
-        throw new Error("Failed to print schema. At Alias: circular reference in schema");
+        return {};
     }
     ctx.seen["Alias"] = true;
     var tmp = (hoisted_Alias_0.schemaStringWithFormatDecoder.bind(hoisted_Alias_0))(ctx);

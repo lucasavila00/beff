@@ -1060,7 +1060,7 @@ function ReportUser(ctx, input) {
 }
 function SchemaUser(ctx, input) {
     if (ctx.seen["User"]) {
-        throw new Error("Failed to print schema. At User: circular reference in schema");
+        return {};
     }
     ctx.seen["User"] = true;
     var tmp = (hoisted_User_6.schemaObjectSchema.bind(hoisted_User_6))(ctx);
@@ -1078,7 +1078,7 @@ function ReportNotPublic(ctx, input) {
 }
 function SchemaNotPublic(ctx, input) {
     if (ctx.seen["NotPublic"]) {
-        throw new Error("Failed to print schema. At NotPublic: circular reference in schema");
+        return {};
     }
     ctx.seen["NotPublic"] = true;
     var tmp = (hoisted_NotPublic_6.schemaObjectSchema.bind(hoisted_NotPublic_6))(ctx);
@@ -1096,7 +1096,7 @@ function ReportStartsWithA(ctx, input) {
 }
 function SchemaStartsWithA(ctx, input) {
     if (ctx.seen["StartsWithA"]) {
-        throw new Error("Failed to print schema. At StartsWithA: circular reference in schema");
+        return {};
     }
     ctx.seen["StartsWithA"] = true;
     var tmp = (hoisted_StartsWithA_0.schemaStringWithFormatDecoder.bind(hoisted_StartsWithA_0))(ctx);
@@ -1114,7 +1114,7 @@ function ReportPassword(ctx, input) {
 }
 function SchemaPassword(ctx, input) {
     if (ctx.seen["Password"]) {
-        throw new Error("Failed to print schema. At Password: circular reference in schema");
+        return {};
     }
     ctx.seen["Password"] = true;
     var tmp = (hoisted_Password_0.schemaStringWithFormatDecoder.bind(hoisted_Password_0))(ctx);
@@ -1132,7 +1132,7 @@ function ReportA(ctx, input) {
 }
 function SchemaA(ctx, input) {
     if (ctx.seen["A"]) {
-        throw new Error("Failed to print schema. At A: circular reference in schema");
+        return {};
     }
     ctx.seen["A"] = true;
     var tmp = (hoisted_A_0.schemaAnyOfConstsDecoder.bind(hoisted_A_0))(ctx);
@@ -1150,7 +1150,7 @@ function ReportB(ctx, input) {
 }
 function SchemaB(ctx, input) {
     if (ctx.seen["B"]) {
-        throw new Error("Failed to print schema. At B: circular reference in schema");
+        return {};
     }
     ctx.seen["B"] = true;
     var tmp = (hoisted_B_0.schemaAnyOfConstsDecoder.bind(hoisted_B_0))(ctx);
@@ -1168,7 +1168,7 @@ function ReportD(ctx, input) {
 }
 function SchemaD(ctx, input) {
     if (ctx.seen["D"]) {
-        throw new Error("Failed to print schema. At D: circular reference in schema");
+        return {};
     }
     ctx.seen["D"] = true;
     var tmp = (hoisted_D_0.schemaAnyOfConstsDecoder.bind(hoisted_D_0))(ctx);
@@ -1186,7 +1186,7 @@ function ReportE(ctx, input) {
 }
 function SchemaE(ctx, input) {
     if (ctx.seen["E"]) {
-        throw new Error("Failed to print schema. At E: circular reference in schema");
+        return {};
     }
     ctx.seen["E"] = true;
     var tmp = (hoisted_E_0.schemaAnyOfConstsDecoder.bind(hoisted_E_0))(ctx);
@@ -1204,7 +1204,7 @@ function ReportUnionNested(ctx, input) {
 }
 function SchemaUnionNested(ctx, input) {
     if (ctx.seen["UnionNested"]) {
-        throw new Error("Failed to print schema. At UnionNested: circular reference in schema");
+        return {};
     }
     ctx.seen["UnionNested"] = true;
     var tmp = (hoisted_UnionNested_0.schemaAnyOfConstsDecoder.bind(hoisted_UnionNested_0))(ctx);

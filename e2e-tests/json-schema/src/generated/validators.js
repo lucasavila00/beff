@@ -1060,7 +1060,7 @@ function ReportT1(ctx, input) {
 }
 function SchemaT1(ctx, input) {
     if (ctx.seen["T1"]) {
-        throw new Error("Failed to print schema. At T1: circular reference in schema");
+        return {};
     }
     ctx.seen["T1"] = true;
     var tmp = (hoisted_T1_6.schemaObjectSchema.bind(hoisted_T1_6))(ctx);
@@ -1078,7 +1078,7 @@ function ReportT2(ctx, input) {
 }
 function SchemaT2(ctx, input) {
     if (ctx.seen["T2"]) {
-        throw new Error("Failed to print schema. At T2: circular reference in schema");
+        return {};
     }
     ctx.seen["T2"] = true;
     var tmp = (hoisted_T2_6.schemaObjectSchema.bind(hoisted_T2_6))(ctx);
@@ -1096,7 +1096,7 @@ function ReportT3(ctx, input) {
 }
 function SchemaT3(ctx, input) {
     if (ctx.seen["T3"]) {
-        throw new Error("Failed to print schema. At T3: circular reference in schema");
+        return {};
     }
     ctx.seen["T3"] = true;
     var tmp = (hoisted_T3_11.schemaObjectSchema.bind(hoisted_T3_11))(ctx);
@@ -1114,7 +1114,7 @@ function ReportInvalidSchemaWithDate(ctx, input) {
 }
 function SchemaInvalidSchemaWithDate(ctx, input) {
     if (ctx.seen["InvalidSchemaWithDate"]) {
-        throw new Error("Failed to print schema. At InvalidSchemaWithDate: circular reference in schema");
+        return {};
     }
     ctx.seen["InvalidSchemaWithDate"] = true;
     var tmp = (hoisted_InvalidSchemaWithDate_7.schemaObjectSchema.bind(hoisted_InvalidSchemaWithDate_7))(ctx);
@@ -1132,7 +1132,7 @@ function ReportInvalidSchemaWithBigInt(ctx, input) {
 }
 function SchemaInvalidSchemaWithBigInt(ctx, input) {
     if (ctx.seen["InvalidSchemaWithBigInt"]) {
-        throw new Error("Failed to print schema. At InvalidSchemaWithBigInt: circular reference in schema");
+        return {};
     }
     ctx.seen["InvalidSchemaWithBigInt"] = true;
     var tmp = (hoisted_InvalidSchemaWithBigInt_7.schemaObjectSchema.bind(hoisted_InvalidSchemaWithBigInt_7))(ctx);
@@ -1150,7 +1150,7 @@ function ReportDiscriminatedUnion(ctx, input) {
 }
 function SchemaDiscriminatedUnion(ctx, input) {
     if (ctx.seen["DiscriminatedUnion"]) {
-        throw new Error("Failed to print schema. At DiscriminatedUnion: circular reference in schema");
+        return {};
     }
     ctx.seen["DiscriminatedUnion"] = true;
     var tmp = (hoisted_DiscriminatedUnion_95.schemaAnyOfDiscriminatedSchema.bind(hoisted_DiscriminatedUnion_95))(ctx);
@@ -1168,7 +1168,7 @@ function ReportRecursiveTree(ctx, input) {
 }
 function SchemaRecursiveTree(ctx, input) {
     if (ctx.seen["RecursiveTree"]) {
-        throw new Error("Failed to print schema. At RecursiveTree: circular reference in schema");
+        return {};
     }
     ctx.seen["RecursiveTree"] = true;
     var tmp = (hoisted_RecursiveTree_11.schemaObjectSchema.bind(hoisted_RecursiveTree_11))(ctx);
@@ -1186,7 +1186,7 @@ function ReportValidCurrency(ctx, input) {
 }
 function SchemaValidCurrency(ctx, input) {
     if (ctx.seen["ValidCurrency"]) {
-        throw new Error("Failed to print schema. At ValidCurrency: circular reference in schema");
+        return {};
     }
     ctx.seen["ValidCurrency"] = true;
     var tmp = (hoisted_ValidCurrency_0.schemaStringWithFormatDecoder.bind(hoisted_ValidCurrency_0))(ctx);
