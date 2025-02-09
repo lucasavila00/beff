@@ -19,6 +19,7 @@ const hoisted_anyArray_2 = new ArrayParser(parseIdentity);
 const hoisted_anyArray_3 = new ArrayReporter(hoisted_anyArray_0, reportAny);
 const hoisted_anyArray_4 = new ArraySchema(schemaAny);
 const buildValidatorsInput = {
+    "DiscriminatedUnion": validators.DiscriminatedUnion,
     "InvalidSchemaWithBigInt": validators.InvalidSchemaWithBigInt,
     "InvalidSchemaWithDate": validators.InvalidSchemaWithDate,
     "T1": validators.T1,
@@ -35,6 +36,7 @@ const buildValidatorsInput = {
     "undefined": validateNull
 };
 const buildParsersInput = {
+    "DiscriminatedUnion": parsers.DiscriminatedUnion,
     "InvalidSchemaWithBigInt": parsers.InvalidSchemaWithBigInt,
     "InvalidSchemaWithDate": parsers.InvalidSchemaWithDate,
     "T1": parsers.T1,
@@ -51,6 +53,7 @@ const buildParsersInput = {
     "undefined": parseIdentity
 };
 const buildReportersInput = {
+    "DiscriminatedUnion": reporters.DiscriminatedUnion,
     "InvalidSchemaWithBigInt": reporters.InvalidSchemaWithBigInt,
     "InvalidSchemaWithDate": reporters.InvalidSchemaWithDate,
     "T1": reporters.T1,
@@ -67,6 +70,7 @@ const buildReportersInput = {
     "undefined": reportNull
 };
 const buildSchemaInput = {
+    "DiscriminatedUnion": schemas.DiscriminatedUnion,
     "InvalidSchemaWithBigInt": schemas.InvalidSchemaWithBigInt,
     "InvalidSchemaWithDate": schemas.InvalidSchemaWithDate,
     "T1": schemas.T1,

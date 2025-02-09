@@ -725,13 +725,15 @@ class AnyOfDiscriminatedReporter {
 }
 
 class AnyOfDiscriminatedSchema {
-  constructor(discriminator, mapping) {
-    this.discriminator = discriminator;
-    this.mapping = mapping;
+  constructor(vs) {
+    this.vs = vs;
   }
 
   schemaAnyOfDiscriminatedSchema(ctx) {
-    throw new Error("TODO: not implemented");
+    
+    return {
+      anyOf: this.vs.map((v) => v(ctx)),
+    };
   }
 }
 
@@ -1394,16 +1396,16 @@ function SchemaMappedOptional(ctx, input) {
     return (hoisted_MappedOptional_34.schemaObjectSchema.bind(hoisted_MappedOptional_34))(ctx);
 }
 function ValidateDiscriminatedUnion(ctx, input) {
-    return (hoisted_DiscriminatedUnion_36.validateAnyOfDiscriminatedValidator.bind(hoisted_DiscriminatedUnion_36))(ctx, input);
+    return (hoisted_DiscriminatedUnion_92.validateAnyOfDiscriminatedValidator.bind(hoisted_DiscriminatedUnion_92))(ctx, input);
 }
 function ParseDiscriminatedUnion(ctx, input) {
-    return (hoisted_DiscriminatedUnion_37.parseAnyOfDiscriminatedParser.bind(hoisted_DiscriminatedUnion_37))(ctx, input);
+    return (hoisted_DiscriminatedUnion_93.parseAnyOfDiscriminatedParser.bind(hoisted_DiscriminatedUnion_93))(ctx, input);
 }
 function ReportDiscriminatedUnion(ctx, input) {
-    return (hoisted_DiscriminatedUnion_38.reportAnyOfDiscriminatedReporter.bind(hoisted_DiscriminatedUnion_38))(ctx, input);
+    return (hoisted_DiscriminatedUnion_94.reportAnyOfDiscriminatedReporter.bind(hoisted_DiscriminatedUnion_94))(ctx, input);
 }
 function SchemaDiscriminatedUnion(ctx, input) {
-    return (hoisted_DiscriminatedUnion_39.schemaAnyOfDiscriminatedSchema.bind(hoisted_DiscriminatedUnion_39))(ctx);
+    return (hoisted_DiscriminatedUnion_95.schemaAnyOfDiscriminatedSchema.bind(hoisted_DiscriminatedUnion_95))(ctx);
 }
 function ValidateDiscriminatedUnion2(ctx, input) {
     return (hoisted_DiscriminatedUnion2_48.validateAnyOfValidator.bind(hoisted_DiscriminatedUnion2_48))(ctx, input);
@@ -1418,16 +1420,16 @@ function SchemaDiscriminatedUnion2(ctx, input) {
     return (hoisted_DiscriminatedUnion2_51.schemaAnyOfSchema.bind(hoisted_DiscriminatedUnion2_51))(ctx);
 }
 function ValidateDiscriminatedUnion3(ctx, input) {
-    return (hoisted_DiscriminatedUnion3_24.validateAnyOfDiscriminatedValidator.bind(hoisted_DiscriminatedUnion3_24))(ctx, input);
+    return (hoisted_DiscriminatedUnion3_40.validateAnyOfDiscriminatedValidator.bind(hoisted_DiscriminatedUnion3_40))(ctx, input);
 }
 function ParseDiscriminatedUnion3(ctx, input) {
-    return (hoisted_DiscriminatedUnion3_25.parseAnyOfDiscriminatedParser.bind(hoisted_DiscriminatedUnion3_25))(ctx, input);
+    return (hoisted_DiscriminatedUnion3_41.parseAnyOfDiscriminatedParser.bind(hoisted_DiscriminatedUnion3_41))(ctx, input);
 }
 function ReportDiscriminatedUnion3(ctx, input) {
-    return (hoisted_DiscriminatedUnion3_26.reportAnyOfDiscriminatedReporter.bind(hoisted_DiscriminatedUnion3_26))(ctx, input);
+    return (hoisted_DiscriminatedUnion3_42.reportAnyOfDiscriminatedReporter.bind(hoisted_DiscriminatedUnion3_42))(ctx, input);
 }
 function SchemaDiscriminatedUnion3(ctx, input) {
-    return (hoisted_DiscriminatedUnion3_27.schemaAnyOfDiscriminatedSchema.bind(hoisted_DiscriminatedUnion3_27))(ctx);
+    return (hoisted_DiscriminatedUnion3_43.schemaAnyOfDiscriminatedSchema.bind(hoisted_DiscriminatedUnion3_43))(ctx);
 }
 function ValidateDiscriminatedUnion4(ctx, input) {
     return (hoisted_DiscriminatedUnion4_34.validateAnyOfValidator.bind(hoisted_DiscriminatedUnion4_34))(ctx, input);
@@ -1490,40 +1492,40 @@ function SchemaValidCurrency(ctx, input) {
     return (hoisted_ValidCurrency_0.schemaStringWithFormatDecoder.bind(hoisted_ValidCurrency_0))(ctx);
 }
 function ValidateUnionWithEnumAccess(ctx, input) {
-    return (hoisted_UnionWithEnumAccess_24.validateAnyOfDiscriminatedValidator.bind(hoisted_UnionWithEnumAccess_24))(ctx, input);
+    return (hoisted_UnionWithEnumAccess_48.validateAnyOfDiscriminatedValidator.bind(hoisted_UnionWithEnumAccess_48))(ctx, input);
 }
 function ParseUnionWithEnumAccess(ctx, input) {
-    return (hoisted_UnionWithEnumAccess_25.parseAnyOfDiscriminatedParser.bind(hoisted_UnionWithEnumAccess_25))(ctx, input);
+    return (hoisted_UnionWithEnumAccess_49.parseAnyOfDiscriminatedParser.bind(hoisted_UnionWithEnumAccess_49))(ctx, input);
 }
 function ReportUnionWithEnumAccess(ctx, input) {
-    return (hoisted_UnionWithEnumAccess_26.reportAnyOfDiscriminatedReporter.bind(hoisted_UnionWithEnumAccess_26))(ctx, input);
+    return (hoisted_UnionWithEnumAccess_50.reportAnyOfDiscriminatedReporter.bind(hoisted_UnionWithEnumAccess_50))(ctx, input);
 }
 function SchemaUnionWithEnumAccess(ctx, input) {
-    return (hoisted_UnionWithEnumAccess_27.schemaAnyOfDiscriminatedSchema.bind(hoisted_UnionWithEnumAccess_27))(ctx);
+    return (hoisted_UnionWithEnumAccess_51.schemaAnyOfDiscriminatedSchema.bind(hoisted_UnionWithEnumAccess_51))(ctx);
 }
 function ValidateShape(ctx, input) {
-    return (hoisted_Shape_24.validateAnyOfDiscriminatedValidator.bind(hoisted_Shape_24))(ctx, input);
+    return (hoisted_Shape_48.validateAnyOfDiscriminatedValidator.bind(hoisted_Shape_48))(ctx, input);
 }
 function ParseShape(ctx, input) {
-    return (hoisted_Shape_25.parseAnyOfDiscriminatedParser.bind(hoisted_Shape_25))(ctx, input);
+    return (hoisted_Shape_49.parseAnyOfDiscriminatedParser.bind(hoisted_Shape_49))(ctx, input);
 }
 function ReportShape(ctx, input) {
-    return (hoisted_Shape_26.reportAnyOfDiscriminatedReporter.bind(hoisted_Shape_26))(ctx, input);
+    return (hoisted_Shape_50.reportAnyOfDiscriminatedReporter.bind(hoisted_Shape_50))(ctx, input);
 }
 function SchemaShape(ctx, input) {
-    return (hoisted_Shape_27.schemaAnyOfDiscriminatedSchema.bind(hoisted_Shape_27))(ctx);
+    return (hoisted_Shape_51.schemaAnyOfDiscriminatedSchema.bind(hoisted_Shape_51))(ctx);
 }
 function ValidateT3(ctx, input) {
-    return (hoisted_T3_16.validateAnyOfDiscriminatedValidator.bind(hoisted_T3_16))(ctx, input);
+    return (hoisted_T3_32.validateAnyOfDiscriminatedValidator.bind(hoisted_T3_32))(ctx, input);
 }
 function ParseT3(ctx, input) {
-    return (hoisted_T3_17.parseAnyOfDiscriminatedParser.bind(hoisted_T3_17))(ctx, input);
+    return (hoisted_T3_33.parseAnyOfDiscriminatedParser.bind(hoisted_T3_33))(ctx, input);
 }
 function ReportT3(ctx, input) {
-    return (hoisted_T3_18.reportAnyOfDiscriminatedReporter.bind(hoisted_T3_18))(ctx, input);
+    return (hoisted_T3_34.reportAnyOfDiscriminatedReporter.bind(hoisted_T3_34))(ctx, input);
 }
 function SchemaT3(ctx, input) {
-    return (hoisted_T3_19.schemaAnyOfDiscriminatedSchema.bind(hoisted_T3_19))(ctx);
+    return (hoisted_T3_35.schemaAnyOfDiscriminatedSchema.bind(hoisted_T3_35))(ctx);
 }
 function ValidateBObject(ctx, input) {
     return (hoisted_BObject_4.validateObjectValidator.bind(hoisted_BObject_4))(ctx, input);
@@ -2649,58 +2651,223 @@ const hoisted_DiscriminatedUnion_22 = new ObjectReporter(hoisted_DiscriminatedUn
     "type": hoisted_DiscriminatedUnion_16.reportConstDecoder.bind(hoisted_DiscriminatedUnion_16)
 }, null);
 const hoisted_DiscriminatedUnion_23 = new ObjectSchema(hoisted_DiscriminatedUnion_18, null);
-const hoisted_DiscriminatedUnion_24 = new AnyOfDiscriminatedValidator("subType", {
+const hoisted_DiscriminatedUnion_24 = [
+    validateNull,
+    validateString
+];
+const hoisted_DiscriminatedUnion_25 = [
+    schemaNull,
+    schemaString
+];
+const hoisted_DiscriminatedUnion_26 = new AnyOfValidator(hoisted_DiscriminatedUnion_24);
+const hoisted_DiscriminatedUnion_27 = new AnyOfParser(hoisted_DiscriminatedUnion_24, [
+    parseIdentity,
+    parseIdentity
+]);
+const hoisted_DiscriminatedUnion_28 = new AnyOfReporter(hoisted_DiscriminatedUnion_24, [
+    reportNull,
+    reportString
+]);
+const hoisted_DiscriminatedUnion_29 = new AnyOfSchema(hoisted_DiscriminatedUnion_25);
+const hoisted_DiscriminatedUnion_30 = new ConstDecoder("a1");
+const hoisted_DiscriminatedUnion_31 = new ConstDecoder("a");
+const hoisted_DiscriminatedUnion_32 = {
+    "a1": validateString,
+    "a11": hoisted_DiscriminatedUnion_26.validateAnyOfValidator.bind(hoisted_DiscriminatedUnion_26),
+    "subType": hoisted_DiscriminatedUnion_30.validateConstDecoder.bind(hoisted_DiscriminatedUnion_30),
+    "type": hoisted_DiscriminatedUnion_31.validateConstDecoder.bind(hoisted_DiscriminatedUnion_31)
+};
+const hoisted_DiscriminatedUnion_33 = {
+    "a1": schemaString,
+    "a11": hoisted_DiscriminatedUnion_29.schemaAnyOfSchema.bind(hoisted_DiscriminatedUnion_29),
+    "subType": hoisted_DiscriminatedUnion_30.schemaConstDecoder.bind(hoisted_DiscriminatedUnion_30),
+    "type": hoisted_DiscriminatedUnion_31.schemaConstDecoder.bind(hoisted_DiscriminatedUnion_31)
+};
+const hoisted_DiscriminatedUnion_34 = null;
+const hoisted_DiscriminatedUnion_35 = new ObjectValidator(hoisted_DiscriminatedUnion_32, hoisted_DiscriminatedUnion_34);
+const hoisted_DiscriminatedUnion_36 = new ObjectParser({
+    "a1": parseIdentity,
+    "a11": hoisted_DiscriminatedUnion_27.parseAnyOfParser.bind(hoisted_DiscriminatedUnion_27),
+    "subType": hoisted_DiscriminatedUnion_30.parseConstDecoder.bind(hoisted_DiscriminatedUnion_30),
+    "type": hoisted_DiscriminatedUnion_31.parseConstDecoder.bind(hoisted_DiscriminatedUnion_31)
+}, null);
+const hoisted_DiscriminatedUnion_37 = new ObjectReporter(hoisted_DiscriminatedUnion_32, hoisted_DiscriminatedUnion_34, {
+    "a1": reportString,
+    "a11": hoisted_DiscriminatedUnion_28.reportAnyOfReporter.bind(hoisted_DiscriminatedUnion_28),
+    "subType": hoisted_DiscriminatedUnion_30.reportConstDecoder.bind(hoisted_DiscriminatedUnion_30),
+    "type": hoisted_DiscriminatedUnion_31.reportConstDecoder.bind(hoisted_DiscriminatedUnion_31)
+}, null);
+const hoisted_DiscriminatedUnion_38 = new ObjectSchema(hoisted_DiscriminatedUnion_33, null);
+const hoisted_DiscriminatedUnion_39 = new ConstDecoder("a2");
+const hoisted_DiscriminatedUnion_40 = new ConstDecoder("a");
+const hoisted_DiscriminatedUnion_41 = {
+    "a2": validateString,
+    "subType": hoisted_DiscriminatedUnion_39.validateConstDecoder.bind(hoisted_DiscriminatedUnion_39),
+    "type": hoisted_DiscriminatedUnion_40.validateConstDecoder.bind(hoisted_DiscriminatedUnion_40)
+};
+const hoisted_DiscriminatedUnion_42 = {
+    "a2": schemaString,
+    "subType": hoisted_DiscriminatedUnion_39.schemaConstDecoder.bind(hoisted_DiscriminatedUnion_39),
+    "type": hoisted_DiscriminatedUnion_40.schemaConstDecoder.bind(hoisted_DiscriminatedUnion_40)
+};
+const hoisted_DiscriminatedUnion_43 = null;
+const hoisted_DiscriminatedUnion_44 = new ObjectValidator(hoisted_DiscriminatedUnion_41, hoisted_DiscriminatedUnion_43);
+const hoisted_DiscriminatedUnion_45 = new ObjectParser({
+    "a2": parseIdentity,
+    "subType": hoisted_DiscriminatedUnion_39.parseConstDecoder.bind(hoisted_DiscriminatedUnion_39),
+    "type": hoisted_DiscriminatedUnion_40.parseConstDecoder.bind(hoisted_DiscriminatedUnion_40)
+}, null);
+const hoisted_DiscriminatedUnion_46 = new ObjectReporter(hoisted_DiscriminatedUnion_41, hoisted_DiscriminatedUnion_43, {
+    "a2": reportString,
+    "subType": hoisted_DiscriminatedUnion_39.reportConstDecoder.bind(hoisted_DiscriminatedUnion_39),
+    "type": hoisted_DiscriminatedUnion_40.reportConstDecoder.bind(hoisted_DiscriminatedUnion_40)
+}, null);
+const hoisted_DiscriminatedUnion_47 = new ObjectSchema(hoisted_DiscriminatedUnion_42, null);
+const hoisted_DiscriminatedUnion_48 = new AnyOfDiscriminatedValidator("subType", {
     "a1": hoisted_DiscriminatedUnion_11.validateObjectValidator.bind(hoisted_DiscriminatedUnion_11),
     "a2": hoisted_DiscriminatedUnion_20.validateObjectValidator.bind(hoisted_DiscriminatedUnion_20)
 });
-const hoisted_DiscriminatedUnion_25 = new AnyOfDiscriminatedParser("subType", {
+const hoisted_DiscriminatedUnion_49 = new AnyOfDiscriminatedParser("subType", {
     "a1": hoisted_DiscriminatedUnion_12.parseObjectParser.bind(hoisted_DiscriminatedUnion_12),
     "a2": hoisted_DiscriminatedUnion_21.parseObjectParser.bind(hoisted_DiscriminatedUnion_21)
 });
-const hoisted_DiscriminatedUnion_26 = new AnyOfDiscriminatedReporter("subType", {
+const hoisted_DiscriminatedUnion_50 = new AnyOfDiscriminatedReporter("subType", {
     "a1": hoisted_DiscriminatedUnion_13.reportObjectReporter.bind(hoisted_DiscriminatedUnion_13),
     "a2": hoisted_DiscriminatedUnion_22.reportObjectReporter.bind(hoisted_DiscriminatedUnion_22)
 });
-const hoisted_DiscriminatedUnion_27 = new AnyOfDiscriminatedSchema("subType", {
-    "a1": hoisted_DiscriminatedUnion_14.schemaObjectSchema.bind(hoisted_DiscriminatedUnion_14),
-    "a2": hoisted_DiscriminatedUnion_23.schemaObjectSchema.bind(hoisted_DiscriminatedUnion_23)
-});
-const hoisted_DiscriminatedUnion_28 = new ConstDecoder("b");
-const hoisted_DiscriminatedUnion_29 = {
-    "type": hoisted_DiscriminatedUnion_28.validateConstDecoder.bind(hoisted_DiscriminatedUnion_28),
+const hoisted_DiscriminatedUnion_51 = new AnyOfDiscriminatedSchema([
+    hoisted_DiscriminatedUnion_38.schemaObjectSchema.bind(hoisted_DiscriminatedUnion_38),
+    hoisted_DiscriminatedUnion_47.schemaObjectSchema.bind(hoisted_DiscriminatedUnion_47)
+]);
+const hoisted_DiscriminatedUnion_52 = new ConstDecoder("b");
+const hoisted_DiscriminatedUnion_53 = {
+    "type": hoisted_DiscriminatedUnion_52.validateConstDecoder.bind(hoisted_DiscriminatedUnion_52),
     "value": validateNumber
 };
-const hoisted_DiscriminatedUnion_30 = {
-    "type": hoisted_DiscriminatedUnion_28.schemaConstDecoder.bind(hoisted_DiscriminatedUnion_28),
+const hoisted_DiscriminatedUnion_54 = {
+    "type": hoisted_DiscriminatedUnion_52.schemaConstDecoder.bind(hoisted_DiscriminatedUnion_52),
     "value": schemaNumber
 };
-const hoisted_DiscriminatedUnion_31 = null;
-const hoisted_DiscriminatedUnion_32 = new ObjectValidator(hoisted_DiscriminatedUnion_29, hoisted_DiscriminatedUnion_31);
-const hoisted_DiscriminatedUnion_33 = new ObjectParser({
-    "type": hoisted_DiscriminatedUnion_28.parseConstDecoder.bind(hoisted_DiscriminatedUnion_28),
+const hoisted_DiscriminatedUnion_55 = null;
+const hoisted_DiscriminatedUnion_56 = new ObjectValidator(hoisted_DiscriminatedUnion_53, hoisted_DiscriminatedUnion_55);
+const hoisted_DiscriminatedUnion_57 = new ObjectParser({
+    "type": hoisted_DiscriminatedUnion_52.parseConstDecoder.bind(hoisted_DiscriminatedUnion_52),
     "value": parseIdentity
 }, null);
-const hoisted_DiscriminatedUnion_34 = new ObjectReporter(hoisted_DiscriminatedUnion_29, hoisted_DiscriminatedUnion_31, {
-    "type": hoisted_DiscriminatedUnion_28.reportConstDecoder.bind(hoisted_DiscriminatedUnion_28),
+const hoisted_DiscriminatedUnion_58 = new ObjectReporter(hoisted_DiscriminatedUnion_53, hoisted_DiscriminatedUnion_55, {
+    "type": hoisted_DiscriminatedUnion_52.reportConstDecoder.bind(hoisted_DiscriminatedUnion_52),
     "value": reportNumber
 }, null);
-const hoisted_DiscriminatedUnion_35 = new ObjectSchema(hoisted_DiscriminatedUnion_30, null);
-const hoisted_DiscriminatedUnion_36 = new AnyOfDiscriminatedValidator("type", {
-    "a": hoisted_DiscriminatedUnion_24.validateAnyOfDiscriminatedValidator.bind(hoisted_DiscriminatedUnion_24),
-    "b": hoisted_DiscriminatedUnion_32.validateObjectValidator.bind(hoisted_DiscriminatedUnion_32)
+const hoisted_DiscriminatedUnion_59 = new ObjectSchema(hoisted_DiscriminatedUnion_54, null);
+const hoisted_DiscriminatedUnion_60 = [
+    validateNull,
+    validateString
+];
+const hoisted_DiscriminatedUnion_61 = [
+    schemaNull,
+    schemaString
+];
+const hoisted_DiscriminatedUnion_62 = new AnyOfValidator(hoisted_DiscriminatedUnion_60);
+const hoisted_DiscriminatedUnion_63 = new AnyOfParser(hoisted_DiscriminatedUnion_60, [
+    parseIdentity,
+    parseIdentity
+]);
+const hoisted_DiscriminatedUnion_64 = new AnyOfReporter(hoisted_DiscriminatedUnion_60, [
+    reportNull,
+    reportString
+]);
+const hoisted_DiscriminatedUnion_65 = new AnyOfSchema(hoisted_DiscriminatedUnion_61);
+const hoisted_DiscriminatedUnion_66 = new ConstDecoder("a1");
+const hoisted_DiscriminatedUnion_67 = new ConstDecoder("a");
+const hoisted_DiscriminatedUnion_68 = {
+    "a1": validateString,
+    "a11": hoisted_DiscriminatedUnion_62.validateAnyOfValidator.bind(hoisted_DiscriminatedUnion_62),
+    "subType": hoisted_DiscriminatedUnion_66.validateConstDecoder.bind(hoisted_DiscriminatedUnion_66),
+    "type": hoisted_DiscriminatedUnion_67.validateConstDecoder.bind(hoisted_DiscriminatedUnion_67)
+};
+const hoisted_DiscriminatedUnion_69 = {
+    "a1": schemaString,
+    "a11": hoisted_DiscriminatedUnion_65.schemaAnyOfSchema.bind(hoisted_DiscriminatedUnion_65),
+    "subType": hoisted_DiscriminatedUnion_66.schemaConstDecoder.bind(hoisted_DiscriminatedUnion_66),
+    "type": hoisted_DiscriminatedUnion_67.schemaConstDecoder.bind(hoisted_DiscriminatedUnion_67)
+};
+const hoisted_DiscriminatedUnion_70 = null;
+const hoisted_DiscriminatedUnion_71 = new ObjectValidator(hoisted_DiscriminatedUnion_68, hoisted_DiscriminatedUnion_70);
+const hoisted_DiscriminatedUnion_72 = new ObjectParser({
+    "a1": parseIdentity,
+    "a11": hoisted_DiscriminatedUnion_63.parseAnyOfParser.bind(hoisted_DiscriminatedUnion_63),
+    "subType": hoisted_DiscriminatedUnion_66.parseConstDecoder.bind(hoisted_DiscriminatedUnion_66),
+    "type": hoisted_DiscriminatedUnion_67.parseConstDecoder.bind(hoisted_DiscriminatedUnion_67)
+}, null);
+const hoisted_DiscriminatedUnion_73 = new ObjectReporter(hoisted_DiscriminatedUnion_68, hoisted_DiscriminatedUnion_70, {
+    "a1": reportString,
+    "a11": hoisted_DiscriminatedUnion_64.reportAnyOfReporter.bind(hoisted_DiscriminatedUnion_64),
+    "subType": hoisted_DiscriminatedUnion_66.reportConstDecoder.bind(hoisted_DiscriminatedUnion_66),
+    "type": hoisted_DiscriminatedUnion_67.reportConstDecoder.bind(hoisted_DiscriminatedUnion_67)
+}, null);
+const hoisted_DiscriminatedUnion_74 = new ObjectSchema(hoisted_DiscriminatedUnion_69, null);
+const hoisted_DiscriminatedUnion_75 = new ConstDecoder("a2");
+const hoisted_DiscriminatedUnion_76 = new ConstDecoder("a");
+const hoisted_DiscriminatedUnion_77 = {
+    "a2": validateString,
+    "subType": hoisted_DiscriminatedUnion_75.validateConstDecoder.bind(hoisted_DiscriminatedUnion_75),
+    "type": hoisted_DiscriminatedUnion_76.validateConstDecoder.bind(hoisted_DiscriminatedUnion_76)
+};
+const hoisted_DiscriminatedUnion_78 = {
+    "a2": schemaString,
+    "subType": hoisted_DiscriminatedUnion_75.schemaConstDecoder.bind(hoisted_DiscriminatedUnion_75),
+    "type": hoisted_DiscriminatedUnion_76.schemaConstDecoder.bind(hoisted_DiscriminatedUnion_76)
+};
+const hoisted_DiscriminatedUnion_79 = null;
+const hoisted_DiscriminatedUnion_80 = new ObjectValidator(hoisted_DiscriminatedUnion_77, hoisted_DiscriminatedUnion_79);
+const hoisted_DiscriminatedUnion_81 = new ObjectParser({
+    "a2": parseIdentity,
+    "subType": hoisted_DiscriminatedUnion_75.parseConstDecoder.bind(hoisted_DiscriminatedUnion_75),
+    "type": hoisted_DiscriminatedUnion_76.parseConstDecoder.bind(hoisted_DiscriminatedUnion_76)
+}, null);
+const hoisted_DiscriminatedUnion_82 = new ObjectReporter(hoisted_DiscriminatedUnion_77, hoisted_DiscriminatedUnion_79, {
+    "a2": reportString,
+    "subType": hoisted_DiscriminatedUnion_75.reportConstDecoder.bind(hoisted_DiscriminatedUnion_75),
+    "type": hoisted_DiscriminatedUnion_76.reportConstDecoder.bind(hoisted_DiscriminatedUnion_76)
+}, null);
+const hoisted_DiscriminatedUnion_83 = new ObjectSchema(hoisted_DiscriminatedUnion_78, null);
+const hoisted_DiscriminatedUnion_84 = new ConstDecoder("b");
+const hoisted_DiscriminatedUnion_85 = {
+    "type": hoisted_DiscriminatedUnion_84.validateConstDecoder.bind(hoisted_DiscriminatedUnion_84),
+    "value": validateNumber
+};
+const hoisted_DiscriminatedUnion_86 = {
+    "type": hoisted_DiscriminatedUnion_84.schemaConstDecoder.bind(hoisted_DiscriminatedUnion_84),
+    "value": schemaNumber
+};
+const hoisted_DiscriminatedUnion_87 = null;
+const hoisted_DiscriminatedUnion_88 = new ObjectValidator(hoisted_DiscriminatedUnion_85, hoisted_DiscriminatedUnion_87);
+const hoisted_DiscriminatedUnion_89 = new ObjectParser({
+    "type": hoisted_DiscriminatedUnion_84.parseConstDecoder.bind(hoisted_DiscriminatedUnion_84),
+    "value": parseIdentity
+}, null);
+const hoisted_DiscriminatedUnion_90 = new ObjectReporter(hoisted_DiscriminatedUnion_85, hoisted_DiscriminatedUnion_87, {
+    "type": hoisted_DiscriminatedUnion_84.reportConstDecoder.bind(hoisted_DiscriminatedUnion_84),
+    "value": reportNumber
+}, null);
+const hoisted_DiscriminatedUnion_91 = new ObjectSchema(hoisted_DiscriminatedUnion_86, null);
+const hoisted_DiscriminatedUnion_92 = new AnyOfDiscriminatedValidator("type", {
+    "a": hoisted_DiscriminatedUnion_48.validateAnyOfDiscriminatedValidator.bind(hoisted_DiscriminatedUnion_48),
+    "b": hoisted_DiscriminatedUnion_56.validateObjectValidator.bind(hoisted_DiscriminatedUnion_56)
 });
-const hoisted_DiscriminatedUnion_37 = new AnyOfDiscriminatedParser("type", {
-    "a": hoisted_DiscriminatedUnion_25.parseAnyOfDiscriminatedParser.bind(hoisted_DiscriminatedUnion_25),
-    "b": hoisted_DiscriminatedUnion_33.parseObjectParser.bind(hoisted_DiscriminatedUnion_33)
+const hoisted_DiscriminatedUnion_93 = new AnyOfDiscriminatedParser("type", {
+    "a": hoisted_DiscriminatedUnion_49.parseAnyOfDiscriminatedParser.bind(hoisted_DiscriminatedUnion_49),
+    "b": hoisted_DiscriminatedUnion_57.parseObjectParser.bind(hoisted_DiscriminatedUnion_57)
 });
-const hoisted_DiscriminatedUnion_38 = new AnyOfDiscriminatedReporter("type", {
-    "a": hoisted_DiscriminatedUnion_26.reportAnyOfDiscriminatedReporter.bind(hoisted_DiscriminatedUnion_26),
-    "b": hoisted_DiscriminatedUnion_34.reportObjectReporter.bind(hoisted_DiscriminatedUnion_34)
+const hoisted_DiscriminatedUnion_94 = new AnyOfDiscriminatedReporter("type", {
+    "a": hoisted_DiscriminatedUnion_50.reportAnyOfDiscriminatedReporter.bind(hoisted_DiscriminatedUnion_50),
+    "b": hoisted_DiscriminatedUnion_58.reportObjectReporter.bind(hoisted_DiscriminatedUnion_58)
 });
-const hoisted_DiscriminatedUnion_39 = new AnyOfDiscriminatedSchema("type", {
-    "a": hoisted_DiscriminatedUnion_27.schemaAnyOfDiscriminatedSchema.bind(hoisted_DiscriminatedUnion_27),
-    "b": hoisted_DiscriminatedUnion_35.schemaObjectSchema.bind(hoisted_DiscriminatedUnion_35)
-});
+const hoisted_DiscriminatedUnion_95 = new AnyOfDiscriminatedSchema([
+    hoisted_DiscriminatedUnion_74.schemaObjectSchema.bind(hoisted_DiscriminatedUnion_74),
+    hoisted_DiscriminatedUnion_83.schemaObjectSchema.bind(hoisted_DiscriminatedUnion_83),
+    hoisted_DiscriminatedUnion_91.schemaObjectSchema.bind(hoisted_DiscriminatedUnion_91)
+]);
 const hoisted_DiscriminatedUnion2_0 = [
     validateNull,
     validateString
@@ -2923,26 +3090,68 @@ const hoisted_DiscriminatedUnion3_22 = new ObjectReporter(hoisted_DiscriminatedU
     "type": hoisted_DiscriminatedUnion3_16.reportAnyOfConstsDecoder.bind(hoisted_DiscriminatedUnion3_16)
 }, null);
 const hoisted_DiscriminatedUnion3_23 = new ObjectSchema(hoisted_DiscriminatedUnion3_18, null);
-const hoisted_DiscriminatedUnion3_24 = new AnyOfDiscriminatedValidator("type", {
+const hoisted_DiscriminatedUnion3_24 = new AnyOfConstsDecoder([
+    "a",
+    "c"
+]);
+const hoisted_DiscriminatedUnion3_25 = {
+    "a1": validateString,
+    "type": hoisted_DiscriminatedUnion3_24.validateAnyOfConstsDecoder.bind(hoisted_DiscriminatedUnion3_24)
+};
+const hoisted_DiscriminatedUnion3_26 = {
+    "a1": schemaString,
+    "type": hoisted_DiscriminatedUnion3_24.schemaAnyOfConstsDecoder.bind(hoisted_DiscriminatedUnion3_24)
+};
+const hoisted_DiscriminatedUnion3_27 = null;
+const hoisted_DiscriminatedUnion3_28 = new ObjectValidator(hoisted_DiscriminatedUnion3_25, hoisted_DiscriminatedUnion3_27);
+const hoisted_DiscriminatedUnion3_29 = new ObjectParser({
+    "a1": parseIdentity,
+    "type": hoisted_DiscriminatedUnion3_24.parseAnyOfConstsDecoder.bind(hoisted_DiscriminatedUnion3_24)
+}, null);
+const hoisted_DiscriminatedUnion3_30 = new ObjectReporter(hoisted_DiscriminatedUnion3_25, hoisted_DiscriminatedUnion3_27, {
+    "a1": reportString,
+    "type": hoisted_DiscriminatedUnion3_24.reportAnyOfConstsDecoder.bind(hoisted_DiscriminatedUnion3_24)
+}, null);
+const hoisted_DiscriminatedUnion3_31 = new ObjectSchema(hoisted_DiscriminatedUnion3_26, null);
+const hoisted_DiscriminatedUnion3_32 = new ConstDecoder("b");
+const hoisted_DiscriminatedUnion3_33 = {
+    "type": hoisted_DiscriminatedUnion3_32.validateConstDecoder.bind(hoisted_DiscriminatedUnion3_32),
+    "value": validateNumber
+};
+const hoisted_DiscriminatedUnion3_34 = {
+    "type": hoisted_DiscriminatedUnion3_32.schemaConstDecoder.bind(hoisted_DiscriminatedUnion3_32),
+    "value": schemaNumber
+};
+const hoisted_DiscriminatedUnion3_35 = null;
+const hoisted_DiscriminatedUnion3_36 = new ObjectValidator(hoisted_DiscriminatedUnion3_33, hoisted_DiscriminatedUnion3_35);
+const hoisted_DiscriminatedUnion3_37 = new ObjectParser({
+    "type": hoisted_DiscriminatedUnion3_32.parseConstDecoder.bind(hoisted_DiscriminatedUnion3_32),
+    "value": parseIdentity
+}, null);
+const hoisted_DiscriminatedUnion3_38 = new ObjectReporter(hoisted_DiscriminatedUnion3_33, hoisted_DiscriminatedUnion3_35, {
+    "type": hoisted_DiscriminatedUnion3_32.reportConstDecoder.bind(hoisted_DiscriminatedUnion3_32),
+    "value": reportNumber
+}, null);
+const hoisted_DiscriminatedUnion3_39 = new ObjectSchema(hoisted_DiscriminatedUnion3_34, null);
+const hoisted_DiscriminatedUnion3_40 = new AnyOfDiscriminatedValidator("type", {
     "a": hoisted_DiscriminatedUnion3_4.validateObjectValidator.bind(hoisted_DiscriminatedUnion3_4),
     "b": hoisted_DiscriminatedUnion3_12.validateObjectValidator.bind(hoisted_DiscriminatedUnion3_12),
     "c": hoisted_DiscriminatedUnion3_20.validateObjectValidator.bind(hoisted_DiscriminatedUnion3_20)
 });
-const hoisted_DiscriminatedUnion3_25 = new AnyOfDiscriminatedParser("type", {
+const hoisted_DiscriminatedUnion3_41 = new AnyOfDiscriminatedParser("type", {
     "a": hoisted_DiscriminatedUnion3_5.parseObjectParser.bind(hoisted_DiscriminatedUnion3_5),
     "b": hoisted_DiscriminatedUnion3_13.parseObjectParser.bind(hoisted_DiscriminatedUnion3_13),
     "c": hoisted_DiscriminatedUnion3_21.parseObjectParser.bind(hoisted_DiscriminatedUnion3_21)
 });
-const hoisted_DiscriminatedUnion3_26 = new AnyOfDiscriminatedReporter("type", {
+const hoisted_DiscriminatedUnion3_42 = new AnyOfDiscriminatedReporter("type", {
     "a": hoisted_DiscriminatedUnion3_6.reportObjectReporter.bind(hoisted_DiscriminatedUnion3_6),
     "b": hoisted_DiscriminatedUnion3_14.reportObjectReporter.bind(hoisted_DiscriminatedUnion3_14),
     "c": hoisted_DiscriminatedUnion3_22.reportObjectReporter.bind(hoisted_DiscriminatedUnion3_22)
 });
-const hoisted_DiscriminatedUnion3_27 = new AnyOfDiscriminatedSchema("type", {
-    "a": hoisted_DiscriminatedUnion3_7.schemaObjectSchema.bind(hoisted_DiscriminatedUnion3_7),
-    "b": hoisted_DiscriminatedUnion3_15.schemaObjectSchema.bind(hoisted_DiscriminatedUnion3_15),
-    "c": hoisted_DiscriminatedUnion3_23.schemaObjectSchema.bind(hoisted_DiscriminatedUnion3_23)
-});
+const hoisted_DiscriminatedUnion3_43 = new AnyOfDiscriminatedSchema([
+    hoisted_DiscriminatedUnion3_31.schemaObjectSchema.bind(hoisted_DiscriminatedUnion3_31),
+    hoisted_DiscriminatedUnion3_39.schemaObjectSchema.bind(hoisted_DiscriminatedUnion3_39)
+]);
 const hoisted_DiscriminatedUnion4_0 = new ConstDecoder("a1");
 const hoisted_DiscriminatedUnion4_1 = {
     "a1": validateString,
@@ -3117,26 +3326,86 @@ const hoisted_UnionWithEnumAccess_22 = new ObjectReporter(hoisted_UnionWithEnumA
     "value": reportBoolean
 }, null);
 const hoisted_UnionWithEnumAccess_23 = new ObjectSchema(hoisted_UnionWithEnumAccess_18, null);
-const hoisted_UnionWithEnumAccess_24 = new AnyOfDiscriminatedValidator("tag", {
+const hoisted_UnionWithEnumAccess_24 = new ConstDecoder("a");
+const hoisted_UnionWithEnumAccess_25 = {
+    "tag": hoisted_UnionWithEnumAccess_24.validateConstDecoder.bind(hoisted_UnionWithEnumAccess_24),
+    "value": validateString
+};
+const hoisted_UnionWithEnumAccess_26 = {
+    "tag": hoisted_UnionWithEnumAccess_24.schemaConstDecoder.bind(hoisted_UnionWithEnumAccess_24),
+    "value": schemaString
+};
+const hoisted_UnionWithEnumAccess_27 = null;
+const hoisted_UnionWithEnumAccess_28 = new ObjectValidator(hoisted_UnionWithEnumAccess_25, hoisted_UnionWithEnumAccess_27);
+const hoisted_UnionWithEnumAccess_29 = new ObjectParser({
+    "tag": hoisted_UnionWithEnumAccess_24.parseConstDecoder.bind(hoisted_UnionWithEnumAccess_24),
+    "value": parseIdentity
+}, null);
+const hoisted_UnionWithEnumAccess_30 = new ObjectReporter(hoisted_UnionWithEnumAccess_25, hoisted_UnionWithEnumAccess_27, {
+    "tag": hoisted_UnionWithEnumAccess_24.reportConstDecoder.bind(hoisted_UnionWithEnumAccess_24),
+    "value": reportString
+}, null);
+const hoisted_UnionWithEnumAccess_31 = new ObjectSchema(hoisted_UnionWithEnumAccess_26, null);
+const hoisted_UnionWithEnumAccess_32 = new ConstDecoder("b");
+const hoisted_UnionWithEnumAccess_33 = {
+    "tag": hoisted_UnionWithEnumAccess_32.validateConstDecoder.bind(hoisted_UnionWithEnumAccess_32),
+    "value": validateNumber
+};
+const hoisted_UnionWithEnumAccess_34 = {
+    "tag": hoisted_UnionWithEnumAccess_32.schemaConstDecoder.bind(hoisted_UnionWithEnumAccess_32),
+    "value": schemaNumber
+};
+const hoisted_UnionWithEnumAccess_35 = null;
+const hoisted_UnionWithEnumAccess_36 = new ObjectValidator(hoisted_UnionWithEnumAccess_33, hoisted_UnionWithEnumAccess_35);
+const hoisted_UnionWithEnumAccess_37 = new ObjectParser({
+    "tag": hoisted_UnionWithEnumAccess_32.parseConstDecoder.bind(hoisted_UnionWithEnumAccess_32),
+    "value": parseIdentity
+}, null);
+const hoisted_UnionWithEnumAccess_38 = new ObjectReporter(hoisted_UnionWithEnumAccess_33, hoisted_UnionWithEnumAccess_35, {
+    "tag": hoisted_UnionWithEnumAccess_32.reportConstDecoder.bind(hoisted_UnionWithEnumAccess_32),
+    "value": reportNumber
+}, null);
+const hoisted_UnionWithEnumAccess_39 = new ObjectSchema(hoisted_UnionWithEnumAccess_34, null);
+const hoisted_UnionWithEnumAccess_40 = new ConstDecoder("c");
+const hoisted_UnionWithEnumAccess_41 = {
+    "tag": hoisted_UnionWithEnumAccess_40.validateConstDecoder.bind(hoisted_UnionWithEnumAccess_40),
+    "value": validateBoolean
+};
+const hoisted_UnionWithEnumAccess_42 = {
+    "tag": hoisted_UnionWithEnumAccess_40.schemaConstDecoder.bind(hoisted_UnionWithEnumAccess_40),
+    "value": schemaBoolean
+};
+const hoisted_UnionWithEnumAccess_43 = null;
+const hoisted_UnionWithEnumAccess_44 = new ObjectValidator(hoisted_UnionWithEnumAccess_41, hoisted_UnionWithEnumAccess_43);
+const hoisted_UnionWithEnumAccess_45 = new ObjectParser({
+    "tag": hoisted_UnionWithEnumAccess_40.parseConstDecoder.bind(hoisted_UnionWithEnumAccess_40),
+    "value": parseIdentity
+}, null);
+const hoisted_UnionWithEnumAccess_46 = new ObjectReporter(hoisted_UnionWithEnumAccess_41, hoisted_UnionWithEnumAccess_43, {
+    "tag": hoisted_UnionWithEnumAccess_40.reportConstDecoder.bind(hoisted_UnionWithEnumAccess_40),
+    "value": reportBoolean
+}, null);
+const hoisted_UnionWithEnumAccess_47 = new ObjectSchema(hoisted_UnionWithEnumAccess_42, null);
+const hoisted_UnionWithEnumAccess_48 = new AnyOfDiscriminatedValidator("tag", {
     "a": hoisted_UnionWithEnumAccess_4.validateObjectValidator.bind(hoisted_UnionWithEnumAccess_4),
     "b": hoisted_UnionWithEnumAccess_12.validateObjectValidator.bind(hoisted_UnionWithEnumAccess_12),
     "c": hoisted_UnionWithEnumAccess_20.validateObjectValidator.bind(hoisted_UnionWithEnumAccess_20)
 });
-const hoisted_UnionWithEnumAccess_25 = new AnyOfDiscriminatedParser("tag", {
+const hoisted_UnionWithEnumAccess_49 = new AnyOfDiscriminatedParser("tag", {
     "a": hoisted_UnionWithEnumAccess_5.parseObjectParser.bind(hoisted_UnionWithEnumAccess_5),
     "b": hoisted_UnionWithEnumAccess_13.parseObjectParser.bind(hoisted_UnionWithEnumAccess_13),
     "c": hoisted_UnionWithEnumAccess_21.parseObjectParser.bind(hoisted_UnionWithEnumAccess_21)
 });
-const hoisted_UnionWithEnumAccess_26 = new AnyOfDiscriminatedReporter("tag", {
+const hoisted_UnionWithEnumAccess_50 = new AnyOfDiscriminatedReporter("tag", {
     "a": hoisted_UnionWithEnumAccess_6.reportObjectReporter.bind(hoisted_UnionWithEnumAccess_6),
     "b": hoisted_UnionWithEnumAccess_14.reportObjectReporter.bind(hoisted_UnionWithEnumAccess_14),
     "c": hoisted_UnionWithEnumAccess_22.reportObjectReporter.bind(hoisted_UnionWithEnumAccess_22)
 });
-const hoisted_UnionWithEnumAccess_27 = new AnyOfDiscriminatedSchema("tag", {
-    "a": hoisted_UnionWithEnumAccess_7.schemaObjectSchema.bind(hoisted_UnionWithEnumAccess_7),
-    "b": hoisted_UnionWithEnumAccess_15.schemaObjectSchema.bind(hoisted_UnionWithEnumAccess_15),
-    "c": hoisted_UnionWithEnumAccess_23.schemaObjectSchema.bind(hoisted_UnionWithEnumAccess_23)
-});
+const hoisted_UnionWithEnumAccess_51 = new AnyOfDiscriminatedSchema([
+    hoisted_UnionWithEnumAccess_31.schemaObjectSchema.bind(hoisted_UnionWithEnumAccess_31),
+    hoisted_UnionWithEnumAccess_39.schemaObjectSchema.bind(hoisted_UnionWithEnumAccess_39),
+    hoisted_UnionWithEnumAccess_47.schemaObjectSchema.bind(hoisted_UnionWithEnumAccess_47)
+]);
 const hoisted_Shape_0 = new ConstDecoder("circle");
 const hoisted_Shape_1 = {
     "kind": hoisted_Shape_0.validateConstDecoder.bind(hoisted_Shape_0),
@@ -3201,26 +3470,90 @@ const hoisted_Shape_22 = new ObjectReporter(hoisted_Shape_17, hoisted_Shape_19, 
     "y": reportNumber
 }, null);
 const hoisted_Shape_23 = new ObjectSchema(hoisted_Shape_18, null);
-const hoisted_Shape_24 = new AnyOfDiscriminatedValidator("kind", {
+const hoisted_Shape_24 = new ConstDecoder("circle");
+const hoisted_Shape_25 = {
+    "kind": hoisted_Shape_24.validateConstDecoder.bind(hoisted_Shape_24),
+    "radius": validateNumber
+};
+const hoisted_Shape_26 = {
+    "kind": hoisted_Shape_24.schemaConstDecoder.bind(hoisted_Shape_24),
+    "radius": schemaNumber
+};
+const hoisted_Shape_27 = null;
+const hoisted_Shape_28 = new ObjectValidator(hoisted_Shape_25, hoisted_Shape_27);
+const hoisted_Shape_29 = new ObjectParser({
+    "kind": hoisted_Shape_24.parseConstDecoder.bind(hoisted_Shape_24),
+    "radius": parseIdentity
+}, null);
+const hoisted_Shape_30 = new ObjectReporter(hoisted_Shape_25, hoisted_Shape_27, {
+    "kind": hoisted_Shape_24.reportConstDecoder.bind(hoisted_Shape_24),
+    "radius": reportNumber
+}, null);
+const hoisted_Shape_31 = new ObjectSchema(hoisted_Shape_26, null);
+const hoisted_Shape_32 = new ConstDecoder("square");
+const hoisted_Shape_33 = {
+    "kind": hoisted_Shape_32.validateConstDecoder.bind(hoisted_Shape_32),
+    "x": validateNumber
+};
+const hoisted_Shape_34 = {
+    "kind": hoisted_Shape_32.schemaConstDecoder.bind(hoisted_Shape_32),
+    "x": schemaNumber
+};
+const hoisted_Shape_35 = null;
+const hoisted_Shape_36 = new ObjectValidator(hoisted_Shape_33, hoisted_Shape_35);
+const hoisted_Shape_37 = new ObjectParser({
+    "kind": hoisted_Shape_32.parseConstDecoder.bind(hoisted_Shape_32),
+    "x": parseIdentity
+}, null);
+const hoisted_Shape_38 = new ObjectReporter(hoisted_Shape_33, hoisted_Shape_35, {
+    "kind": hoisted_Shape_32.reportConstDecoder.bind(hoisted_Shape_32),
+    "x": reportNumber
+}, null);
+const hoisted_Shape_39 = new ObjectSchema(hoisted_Shape_34, null);
+const hoisted_Shape_40 = new ConstDecoder("triangle");
+const hoisted_Shape_41 = {
+    "kind": hoisted_Shape_40.validateConstDecoder.bind(hoisted_Shape_40),
+    "x": validateNumber,
+    "y": validateNumber
+};
+const hoisted_Shape_42 = {
+    "kind": hoisted_Shape_40.schemaConstDecoder.bind(hoisted_Shape_40),
+    "x": schemaNumber,
+    "y": schemaNumber
+};
+const hoisted_Shape_43 = null;
+const hoisted_Shape_44 = new ObjectValidator(hoisted_Shape_41, hoisted_Shape_43);
+const hoisted_Shape_45 = new ObjectParser({
+    "kind": hoisted_Shape_40.parseConstDecoder.bind(hoisted_Shape_40),
+    "x": parseIdentity,
+    "y": parseIdentity
+}, null);
+const hoisted_Shape_46 = new ObjectReporter(hoisted_Shape_41, hoisted_Shape_43, {
+    "kind": hoisted_Shape_40.reportConstDecoder.bind(hoisted_Shape_40),
+    "x": reportNumber,
+    "y": reportNumber
+}, null);
+const hoisted_Shape_47 = new ObjectSchema(hoisted_Shape_42, null);
+const hoisted_Shape_48 = new AnyOfDiscriminatedValidator("kind", {
     "circle": hoisted_Shape_4.validateObjectValidator.bind(hoisted_Shape_4),
     "square": hoisted_Shape_12.validateObjectValidator.bind(hoisted_Shape_12),
     "triangle": hoisted_Shape_20.validateObjectValidator.bind(hoisted_Shape_20)
 });
-const hoisted_Shape_25 = new AnyOfDiscriminatedParser("kind", {
+const hoisted_Shape_49 = new AnyOfDiscriminatedParser("kind", {
     "circle": hoisted_Shape_5.parseObjectParser.bind(hoisted_Shape_5),
     "square": hoisted_Shape_13.parseObjectParser.bind(hoisted_Shape_13),
     "triangle": hoisted_Shape_21.parseObjectParser.bind(hoisted_Shape_21)
 });
-const hoisted_Shape_26 = new AnyOfDiscriminatedReporter("kind", {
+const hoisted_Shape_50 = new AnyOfDiscriminatedReporter("kind", {
     "circle": hoisted_Shape_6.reportObjectReporter.bind(hoisted_Shape_6),
     "square": hoisted_Shape_14.reportObjectReporter.bind(hoisted_Shape_14),
     "triangle": hoisted_Shape_22.reportObjectReporter.bind(hoisted_Shape_22)
 });
-const hoisted_Shape_27 = new AnyOfDiscriminatedSchema("kind", {
-    "circle": hoisted_Shape_7.schemaObjectSchema.bind(hoisted_Shape_7),
-    "square": hoisted_Shape_15.schemaObjectSchema.bind(hoisted_Shape_15),
-    "triangle": hoisted_Shape_23.schemaObjectSchema.bind(hoisted_Shape_23)
-});
+const hoisted_Shape_51 = new AnyOfDiscriminatedSchema([
+    hoisted_Shape_31.schemaObjectSchema.bind(hoisted_Shape_31),
+    hoisted_Shape_39.schemaObjectSchema.bind(hoisted_Shape_39),
+    hoisted_Shape_47.schemaObjectSchema.bind(hoisted_Shape_47)
+]);
 const hoisted_T3_0 = new ConstDecoder("square");
 const hoisted_T3_1 = {
     "kind": hoisted_T3_0.validateConstDecoder.bind(hoisted_T3_0),
@@ -3265,22 +3598,66 @@ const hoisted_T3_14 = new ObjectReporter(hoisted_T3_9, hoisted_T3_11, {
     "y": reportNumber
 }, null);
 const hoisted_T3_15 = new ObjectSchema(hoisted_T3_10, null);
-const hoisted_T3_16 = new AnyOfDiscriminatedValidator("kind", {
+const hoisted_T3_16 = new ConstDecoder("square");
+const hoisted_T3_17 = {
+    "kind": hoisted_T3_16.validateConstDecoder.bind(hoisted_T3_16),
+    "x": validateNumber
+};
+const hoisted_T3_18 = {
+    "kind": hoisted_T3_16.schemaConstDecoder.bind(hoisted_T3_16),
+    "x": schemaNumber
+};
+const hoisted_T3_19 = null;
+const hoisted_T3_20 = new ObjectValidator(hoisted_T3_17, hoisted_T3_19);
+const hoisted_T3_21 = new ObjectParser({
+    "kind": hoisted_T3_16.parseConstDecoder.bind(hoisted_T3_16),
+    "x": parseIdentity
+}, null);
+const hoisted_T3_22 = new ObjectReporter(hoisted_T3_17, hoisted_T3_19, {
+    "kind": hoisted_T3_16.reportConstDecoder.bind(hoisted_T3_16),
+    "x": reportNumber
+}, null);
+const hoisted_T3_23 = new ObjectSchema(hoisted_T3_18, null);
+const hoisted_T3_24 = new ConstDecoder("triangle");
+const hoisted_T3_25 = {
+    "kind": hoisted_T3_24.validateConstDecoder.bind(hoisted_T3_24),
+    "x": validateNumber,
+    "y": validateNumber
+};
+const hoisted_T3_26 = {
+    "kind": hoisted_T3_24.schemaConstDecoder.bind(hoisted_T3_24),
+    "x": schemaNumber,
+    "y": schemaNumber
+};
+const hoisted_T3_27 = null;
+const hoisted_T3_28 = new ObjectValidator(hoisted_T3_25, hoisted_T3_27);
+const hoisted_T3_29 = new ObjectParser({
+    "kind": hoisted_T3_24.parseConstDecoder.bind(hoisted_T3_24),
+    "x": parseIdentity,
+    "y": parseIdentity
+}, null);
+const hoisted_T3_30 = new ObjectReporter(hoisted_T3_25, hoisted_T3_27, {
+    "kind": hoisted_T3_24.reportConstDecoder.bind(hoisted_T3_24),
+    "x": reportNumber,
+    "y": reportNumber
+}, null);
+const hoisted_T3_31 = new ObjectSchema(hoisted_T3_26, null);
+const hoisted_T3_32 = new AnyOfDiscriminatedValidator("kind", {
     "square": hoisted_T3_4.validateObjectValidator.bind(hoisted_T3_4),
     "triangle": hoisted_T3_12.validateObjectValidator.bind(hoisted_T3_12)
 });
-const hoisted_T3_17 = new AnyOfDiscriminatedParser("kind", {
+const hoisted_T3_33 = new AnyOfDiscriminatedParser("kind", {
     "square": hoisted_T3_5.parseObjectParser.bind(hoisted_T3_5),
     "triangle": hoisted_T3_13.parseObjectParser.bind(hoisted_T3_13)
 });
-const hoisted_T3_18 = new AnyOfDiscriminatedReporter("kind", {
+const hoisted_T3_34 = new AnyOfDiscriminatedReporter("kind", {
     "square": hoisted_T3_6.reportObjectReporter.bind(hoisted_T3_6),
     "triangle": hoisted_T3_14.reportObjectReporter.bind(hoisted_T3_14)
 });
-const hoisted_T3_19 = new AnyOfDiscriminatedSchema("kind", {
-    "square": hoisted_T3_7.schemaObjectSchema.bind(hoisted_T3_7),
-    "triangle": hoisted_T3_15.schemaObjectSchema.bind(hoisted_T3_15)
-});
+const hoisted_T3_35 = new AnyOfDiscriminatedSchema([
+    hoisted_T3_23.schemaObjectSchema.bind(hoisted_T3_23),
+    hoisted_T3_31.schemaObjectSchema.bind(hoisted_T3_31)
+]);
 const hoisted_BObject_0 = new ConstDecoder("b");
 const hoisted_BObject_1 = {
     "tag": hoisted_BObject_0.validateConstDecoder.bind(hoisted_BObject_0)

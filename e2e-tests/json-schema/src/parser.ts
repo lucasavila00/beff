@@ -23,7 +23,22 @@ type InvalidSchemaWithDate = {
 type InvalidSchemaWithBigInt = {
   x: bigint;
 };
-
+type DiscriminatedUnion =
+  | {
+      type: "a";
+      subType: "a1";
+      a1: string;
+      a11?: string;
+    }
+  | {
+      type: "a";
+      subType: "a2";
+      a2: string;
+    }
+  | {
+      type: "b";
+      value: number;
+    };
 export const Codecs = parse.buildParsers<{
   // basic
   string: string;
@@ -40,6 +55,7 @@ export const Codecs = parse.buildParsers<{
   T3: T3;
   InvalidSchemaWithDate: InvalidSchemaWithDate;
   InvalidSchemaWithBigInt: InvalidSchemaWithBigInt;
+  DiscriminatedUnion: DiscriminatedUnion;
 
   //
   ValidCurrency: ValidCurrency;

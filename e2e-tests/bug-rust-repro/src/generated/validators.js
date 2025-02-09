@@ -725,13 +725,15 @@ class AnyOfDiscriminatedReporter {
 }
 
 class AnyOfDiscriminatedSchema {
-  constructor(discriminator, mapping) {
-    this.discriminator = discriminator;
-    this.mapping = mapping;
+  constructor(vs) {
+    this.vs = vs;
   }
 
   schemaAnyOfDiscriminatedSchema(ctx) {
-    throw new Error("TODO: not implemented");
+    
+    return {
+      anyOf: this.vs.map((v) => v(ctx)),
+    };
   }
 }
 

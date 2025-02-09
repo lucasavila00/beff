@@ -137,6 +137,80 @@ it("works", () => {
     }
   `);
 
+  expect(Codecs.DiscriminatedUnion.schema()).toMatchInlineSnapshot(`
+    {
+      "anyOf": [
+        {
+          "additionalProperties": false,
+          "properties": {
+            "a1": {
+              "type": "string",
+            },
+            "a11": {
+              "anyOf": [
+                {
+                  "type": "null",
+                },
+                {
+                  "type": "string",
+                },
+              ],
+            },
+            "subType": {
+              "const": "a1",
+            },
+            "type": {
+              "const": "a",
+            },
+          },
+          "required": [
+            "a1",
+            "a11",
+            "subType",
+            "type",
+          ],
+          "type": "object",
+        },
+        {
+          "additionalProperties": false,
+          "properties": {
+            "a2": {
+              "type": "string",
+            },
+            "subType": {
+              "const": "a2",
+            },
+            "type": {
+              "const": "a",
+            },
+          },
+          "required": [
+            "a2",
+            "subType",
+            "type",
+          ],
+          "type": "object",
+        },
+        {
+          "additionalProperties": false,
+          "properties": {
+            "type": {
+              "const": "b",
+            },
+            "value": {
+              "type": "number",
+            },
+          },
+          "required": [
+            "type",
+            "value",
+          ],
+          "type": "object",
+        },
+      ],
+    }
+  `);
+
   expect(Codecs.ValidCurrency.schema()).toMatchInlineSnapshot(`
     {
       "format": "ValidCurrency",

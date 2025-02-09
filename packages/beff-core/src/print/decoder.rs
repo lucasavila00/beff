@@ -55,7 +55,7 @@ impl DecoderFnGenerator<'_> {
 
     fn decode_any_of_discriminated(
         &self,
-
+        flat_values: &BTreeSet<JsonSchema>,
         discriminator: String,
         discriminator_strings: BTreeSet<String>,
         object_vs: Vec<&BTreeMap<String, Optionality<JsonSchema>>>,
@@ -157,22 +157,20 @@ impl DecoderFnGenerator<'_> {
                 .collect(),
         });
 
-        let schemas_obj = Expr::Object(ObjectLit {
+        let flat_values_schema = flat_values
+            .iter()
+            .map(|it| self.generate_schema_code(it, hoisted).schema)
+            .collect::<Vec<_>>();
+
+        let flat_values_schema_arr = Expr::Array(ArrayLit {
             span: DUMMY_SP,
-            props: acc
-                .iter()
-                .map(|(key, value)| {
-                    PropOrSpread::Prop(
-                        Prop::KeyValue(KeyValueProp {
-                            key: PropName::Str(Str {
-                                span: DUMMY_SP,
-                                value: key.clone().into(),
-                                raw: None,
-                            }),
-                            value: value.schema.clone().into(),
-                        })
-                        .into(),
-                    )
+            elems: flat_values_schema
+                .into_iter()
+                .map(|it| {
+                    Some(ExprOrSpread {
+                        spread: None,
+                        expr: it.into(),
+                    })
                 })
                 .collect(),
         });
@@ -183,7 +181,7 @@ impl DecoderFnGenerator<'_> {
             vec![d.clone(), validators_obj],
             vec![d.clone(), parsers_obj],
             vec![d.clone(), reporters_obj],
-            vec![d.clone(), schemas_obj],
+            vec![flat_values_schema_arr],
         )
     }
     fn maybe_decode_any_of_discriminated(
@@ -264,6 +262,7 @@ impl DecoderFnGenerator<'_> {
                                 .collect::<BTreeSet<_>>();
 
                             return Some(self.decode_any_of_discriminated(
+                                flat_values,
                                 discriminator,
                                 discriminator_strings,
                                 object_vs,
