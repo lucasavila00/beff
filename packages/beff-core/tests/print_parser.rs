@@ -45,7 +45,6 @@ mod tests {
         let mut man = TestFileManager { f };
         let entry = EntryPoints {
             parser_entry_point: Some(BffFileName::new("file.ts".into())),
-            schema_entry_point: None,
             settings: BeffUserSettings {
                 custom_formats: BTreeSet::from_iter(vec!["password".to_string()]),
             },
@@ -99,10 +98,7 @@ mod tests {
         }
         match p.parser {
             Some(v) => {
-                let res = ExtractResult {
-                    parser: Some(v),
-                    schema: None,
-                };
+                let res = ExtractResult { parser: Some(v) };
                 let m = res.to_module().expect("should be able to emit module");
                 m.js_validators
             }

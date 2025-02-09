@@ -5,53 +5,90 @@
 import {printErrors} from '@beff/client';
 import {z} from 'zod';
 import validatorsMod from "./validators.js"; const { registerCustomFormatter, ObjectValidator, ObjectParser, ArrayParser, ArrayValidator, CodecDecoder, StringWithFormatDecoder, AnyOfValidator, AnyOfParser, AllOfValidator, AllOfParser, TupleParser, TupleValidator, RegexDecoder, ConstDecoder, AnyOfConstsDecoder, AnyOfDiscriminatedParser, AnyOfDiscriminatedValidator, validateString, validateNumber, validateFunction, validateBoolean, validateAny, validateNull, validateNever, parseIdentity, reportString, reportNumber, reportNull, reportBoolean, reportAny, reportNever, reportFunction, ArrayReporter, ObjectReporter, TupleReporter, AnyOfReporter, AllOfReporter, AnyOfDiscriminatedReporter, schemaString, schemaNumber, schemaBoolean, schemaNull, schemaAny, schemaNever, schemaFunction, ArraySchema, ObjectSchema, TupleSchema, AnyOfSchema, AllOfSchema, AnyOfDiscriminatedSchema, validators, parsers, reporters, schemas, c } = validatorsMod;
-const RequiredCustomFormats = ["password","StartsWithA"];
-const hoisted_Users_0 = validators.User;
-const hoisted_Users_1 = new ArrayValidator(hoisted_Users_0);
-const hoisted_Users_2 = new ArrayParser(parsers.User);
-const hoisted_Users_3 = new ArrayReporter(hoisted_Users_0, reporters.User);
-const hoisted_Users_4 = new ArraySchema(schemas.User);
-const hoisted_float_0 = new ConstDecoder(123.456);
-const hoisted_int_0 = new ConstDecoder(123);
+const RequiredCustomFormats = ["ValidCurrency"];
+const hoisted_object_0 = {};
+const hoisted_object_1 = {};
+const hoisted_object_2 = validateAny;
+const hoisted_object_3 = new ObjectValidator(hoisted_object_0, hoisted_object_2);
+const hoisted_object_4 = new ObjectParser({}, parseIdentity);
+const hoisted_object_5 = new ObjectReporter(hoisted_object_0, hoisted_object_2, {}, reportAny);
+const hoisted_object_6 = new ObjectSchema(hoisted_object_1, schemaAny);
+const hoisted_anyArray_0 = validateAny;
+const hoisted_anyArray_1 = new ArrayValidator(hoisted_anyArray_0);
+const hoisted_anyArray_2 = new ArrayParser(parseIdentity);
+const hoisted_anyArray_3 = new ArrayReporter(hoisted_anyArray_0, reportAny);
+const hoisted_anyArray_4 = new ArraySchema(schemaAny);
 const buildValidatorsInput = {
-    "NotPublicRenamed": validators.NotPublic,
-    "Password": validators.Password,
-    "StartsWithA": validators.StartsWithA,
-    "User": validators.User,
-    "Users": hoisted_Users_1.validateArrayValidator.bind(hoisted_Users_1),
-    "float": hoisted_float_0.validateConstDecoder.bind(hoisted_float_0),
-    "int": hoisted_int_0.validateConstDecoder.bind(hoisted_int_0),
-    "union": validators.UnionNested
+    "DiscriminatedUnion": validators.DiscriminatedUnion,
+    "InvalidSchemaWithBigInt": validators.InvalidSchemaWithBigInt,
+    "InvalidSchemaWithDate": validators.InvalidSchemaWithDate,
+    "RecursiveTree": validators.RecursiveTree,
+    "T1": validators.T1,
+    "T2": validators.T2,
+    "T3": validators.T3,
+    "ValidCurrency": validators.ValidCurrency,
+    "any": validateAny,
+    "anyArray": hoisted_anyArray_1.validateArrayValidator.bind(hoisted_anyArray_1),
+    "boolean": validateBoolean,
+    "null": validateNull,
+    "number": validateNumber,
+    "object": hoisted_object_3.validateObjectValidator.bind(hoisted_object_3),
+    "string": validateString,
+    "undefined": validateNull
 };
 const buildParsersInput = {
-    "NotPublicRenamed": parsers.NotPublic,
-    "Password": parsers.Password,
-    "StartsWithA": parsers.StartsWithA,
-    "User": parsers.User,
-    "Users": hoisted_Users_2.parseArrayParser.bind(hoisted_Users_2),
-    "float": hoisted_float_0.parseConstDecoder.bind(hoisted_float_0),
-    "int": hoisted_int_0.parseConstDecoder.bind(hoisted_int_0),
-    "union": parsers.UnionNested
+    "DiscriminatedUnion": parsers.DiscriminatedUnion,
+    "InvalidSchemaWithBigInt": parsers.InvalidSchemaWithBigInt,
+    "InvalidSchemaWithDate": parsers.InvalidSchemaWithDate,
+    "RecursiveTree": parsers.RecursiveTree,
+    "T1": parsers.T1,
+    "T2": parsers.T2,
+    "T3": parsers.T3,
+    "ValidCurrency": parsers.ValidCurrency,
+    "any": parseIdentity,
+    "anyArray": hoisted_anyArray_2.parseArrayParser.bind(hoisted_anyArray_2),
+    "boolean": parseIdentity,
+    "null": parseIdentity,
+    "number": parseIdentity,
+    "object": hoisted_object_4.parseObjectParser.bind(hoisted_object_4),
+    "string": parseIdentity,
+    "undefined": parseIdentity
 };
 const buildReportersInput = {
-    "NotPublicRenamed": reporters.NotPublic,
-    "Password": reporters.Password,
-    "StartsWithA": reporters.StartsWithA,
-    "User": reporters.User,
-    "Users": hoisted_Users_3.reportArrayReporter.bind(hoisted_Users_3),
-    "float": hoisted_float_0.reportConstDecoder.bind(hoisted_float_0),
-    "int": hoisted_int_0.reportConstDecoder.bind(hoisted_int_0),
-    "union": reporters.UnionNested
+    "DiscriminatedUnion": reporters.DiscriminatedUnion,
+    "InvalidSchemaWithBigInt": reporters.InvalidSchemaWithBigInt,
+    "InvalidSchemaWithDate": reporters.InvalidSchemaWithDate,
+    "RecursiveTree": reporters.RecursiveTree,
+    "T1": reporters.T1,
+    "T2": reporters.T2,
+    "T3": reporters.T3,
+    "ValidCurrency": reporters.ValidCurrency,
+    "any": reportAny,
+    "anyArray": hoisted_anyArray_3.reportArrayReporter.bind(hoisted_anyArray_3),
+    "boolean": reportBoolean,
+    "null": reportNull,
+    "number": reportNumber,
+    "object": hoisted_object_5.reportObjectReporter.bind(hoisted_object_5),
+    "string": reportString,
+    "undefined": reportNull
 };
 const buildSchemaInput = {
-    "NotPublicRenamed": schemas.NotPublic,
-    "Password": schemas.Password,
-    "StartsWithA": schemas.StartsWithA,
-    "User": schemas.User,
-    "Users": hoisted_Users_4.schemaArraySchema.bind(hoisted_Users_4),
-    "float": hoisted_float_0.schemaConstDecoder.bind(hoisted_float_0),
-    "int": hoisted_int_0.schemaConstDecoder.bind(hoisted_int_0),
-    "union": schemas.UnionNested
+    "DiscriminatedUnion": schemas.DiscriminatedUnion,
+    "InvalidSchemaWithBigInt": schemas.InvalidSchemaWithBigInt,
+    "InvalidSchemaWithDate": schemas.InvalidSchemaWithDate,
+    "RecursiveTree": schemas.RecursiveTree,
+    "T1": schemas.T1,
+    "T2": schemas.T2,
+    "T3": schemas.T3,
+    "ValidCurrency": schemas.ValidCurrency,
+    "any": schemaAny,
+    "anyArray": hoisted_anyArray_4.schemaArraySchema.bind(hoisted_anyArray_4),
+    "boolean": schemaBoolean,
+    "null": schemaNull,
+    "number": schemaNumber,
+    "object": hoisted_object_6.schemaObjectSchema.bind(hoisted_object_6),
+    "string": schemaString,
+    "undefined": schemaNull
 };
 
 

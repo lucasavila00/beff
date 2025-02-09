@@ -1,6 +1,7 @@
 ---
 source: packages/beff-core/tests/print_parser.rs
 expression: "decoder(r#\"\n        export type Alias = `${number}__${number}`\n        parse.buildParsers<{ Dec: Alias }>();\n      \"#)"
+snapshot_kind: text
 ---
 function ValidateAlias(ctx, input) {
     return (hoisted_Alias_0.validateRegexDecoder.bind(hoisted_Alias_0))(ctx, input);
@@ -11,6 +12,15 @@ function ParseAlias(ctx, input) {
 function ReportAlias(ctx, input) {
     return (hoisted_Alias_0.reportRegexDecoder.bind(hoisted_Alias_0))(ctx, input);
 }
+function SchemaAlias(ctx, input) {
+    if (ctx.seen["Alias"]) {
+        return {};
+    }
+    ctx.seen["Alias"] = true;
+    var tmp = (hoisted_Alias_0.schemaRegexDecoder.bind(hoisted_Alias_0))(ctx);
+    delete ctx.seen["Alias"];
+    return tmp;
+}
 const validators = {
     Alias: ValidateAlias
 };
@@ -19,5 +29,8 @@ const parsers = {
 };
 const reporters = {
     Alias: ReportAlias
+};
+const schemas = {
+    Alias: SchemaAlias
 };
 const hoisted_Alias_0 = new RegexDecoder(/(\d+(\.\d+)?)(__)(\d+(\.\d+)?)/, "${number}__${number}");

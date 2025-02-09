@@ -81,12 +81,14 @@ function deepmergeConstructor(options) {
   }
 
   const isPrimitiveOrBuiltIn =
+    
     typeof Buffer !== "undefined"
       ? (value) =>
           typeof value !== "object" ||
           value === null ||
           value instanceof RegExp ||
           value instanceof Date ||
+          
           value instanceof Buffer
       : (value) =>
           typeof value !== "object" || value === null || value instanceof RegExp || value instanceof Date;
@@ -205,6 +207,12 @@ function pushPath(ctx, key) {
 function popPath(ctx) {
   ctx.path.pop();
 }
+function printPath(ctx) {
+  return ctx.path.join(".");
+}
+function buildSchemaErrorMessage(ctx, message) {
+  return `Failed to print schema. At ${printPath(ctx)}: ${message}`;
+}
 function buildError(ctx, message, received) {
   return [
     {
@@ -239,12 +247,24 @@ function reportString(ctx, input) {
   return buildError(ctx, "expected string", input);
 }
 
+function schemaString(ctx) {
+  return {
+    type: "string",
+  };
+}
+
 function validateNumber(ctx, input) {
   return typeof input === "number";
 }
 
 function reportNumber(ctx, input) {
   return buildError(ctx, "expected number", input);
+}
+
+function schemaNumber(ctx) {
+  return {
+    type: "number",
+  };
 }
 
 function validateBoolean(ctx, input) {
@@ -255,12 +275,22 @@ function reportBoolean(ctx, input) {
   return buildError(ctx, "expected boolean", input);
 }
 
+function schemaBoolean(ctx) {
+  return {
+    type: "boolean",
+  };
+}
+
 function validateAny(ctx, input) {
   return true;
 }
 
 function reportAny(ctx, input) {
   return buildError(ctx, "expected any", input);
+}
+
+function schemaAny(ctx) {
+  return {};
 }
 
 function validateNull(ctx, input) {
@@ -274,6 +304,12 @@ function reportNull(ctx, input) {
   return buildError(ctx, "expected nullish value", input);
 }
 
+function schemaNull(ctx) {
+  return {
+    type: "null",
+  };
+}
+
 function validateNever(ctx, input) {
   return false;
 }
@@ -282,12 +318,22 @@ function reportNever(ctx, input) {
   return buildError(ctx, "expected never", input);
 }
 
+function schemaNever(ctx) {
+  return {
+    anyOf: [],
+  };
+}
+
 function validateFunction(ctx, input) {
   return typeof input === "function";
 }
 
 function reportFunction(ctx, input) {
   return buildError(ctx, "expected function", input);
+}
+
+function schemaFunction(ctx) {
+  throw new Error(buildSchemaErrorMessage(ctx, "Cannot generate JSON Schema for function"));
 }
 
 class ConstDecoder {
@@ -305,6 +351,12 @@ class ConstDecoder {
 
   reportConstDecoder(ctx, input) {
     return buildError(ctx, `expected ${JSON.stringify(this.value)}`, input);
+  }
+
+  schemaConstDecoder(ctx) {
+    return {
+      const: this.value,
+    };
   }
 }
 
@@ -361,6 +413,19 @@ class CodecDecoder {
 
     return buildError(ctx, `expected ${this.codec}`, input);
   }
+
+  schemaCodecDecoder(ctx) {
+    switch (this.codec) {
+      case "Codec::ISO8061": {
+        throw new Error(buildSchemaErrorMessage(ctx, "Cannot generate JSON Schema for Date"));
+      }
+      case "Codec::BigInt": {
+        throw new Error(buildSchemaErrorMessage(ctx, "Cannot generate JSON Schema for BigInt"));
+      }
+    }
+
+    throw new Error("INTERNAL ERROR: Unrecognized codec: " + this.codec);
+  }
 }
 
 class StringWithFormatDecoder {
@@ -386,6 +451,12 @@ class StringWithFormatDecoder {
   }
   reportStringWithFormatDecoder(ctx, input) {
     return buildError(ctx, `expected string with format "${this.format}"`, input);
+  }
+  schemaStringWithFormatDecoder(ctx) {
+    return {
+      type: "string",
+      format: this.format,
+    };
   }
 }
 const limitedCommaJoinJson = (arr) => {
@@ -417,6 +488,11 @@ class AnyOfConstsDecoder {
   }
   reportAnyOfConstsDecoder(ctx, input) {
     return buildError(ctx, `expected one of ${limitedCommaJoinJson(this.consts)}`, input);
+  }
+  schemaAnyOfConstsDecoder(ctx) {
+    return {
+      enum: this.consts,
+    };
   }
 }
 
@@ -546,6 +622,33 @@ class ObjectParser {
   }
 }
 
+class ObjectSchema {
+  constructor(data, rest) {
+    this.data = data;
+    this.rest = rest;
+  }
+
+  schemaObjectSchema(ctx) {
+    const properties = {};
+    for (const k in this.data) {
+      pushPath(ctx, k);
+      properties[k] = this.data[k](ctx);
+      popPath(ctx);
+    }
+
+    const required = Object.keys(this.data);
+
+    const additionalProperties = this.rest != null ? this.rest(ctx) : false;
+
+    return {
+      type: "object",
+      properties,
+      required,
+      additionalProperties,
+    };
+  }
+}
+
 class AnyOfDiscriminatedValidator {
   constructor(discriminator, mapping) {
     this.discriminator = discriminator;
@@ -579,7 +682,9 @@ class AnyOfDiscriminatedParser {
   parseAnyOfDiscriminatedParser(ctx, input) {
     const parser = this.mapping[input[this.discriminator]];
     if (parser == null) {
-      throw new Error("Unknown discriminator");
+      throw new Error(
+        "INTERNAL ERROR: Missing parser for discriminator " + JSON.stringify(input[this.discriminator])
+      );
     }
     return {
       ...parser(ctx, input),
@@ -618,6 +723,19 @@ class AnyOfDiscriminatedReporter {
       return errs;
     }
     return v(ctx, input);
+  }
+}
+
+class AnyOfDiscriminatedSchema {
+  constructor(vs) {
+    this.vs = vs;
+  }
+
+  schemaAnyOfDiscriminatedSchema(ctx) {
+    
+    return {
+      anyOf: this.vs.map((v) => v(ctx)),
+    };
   }
 }
 
@@ -678,6 +796,22 @@ class ArrayReporter {
   }
 }
 
+class ArraySchema {
+  constructor(innerSchema) {
+    this.innerSchema = innerSchema;
+  }
+
+  schemaArraySchema(ctx) {
+    pushPath(ctx, "[]");
+    const items = this.innerSchema(ctx);
+    popPath(ctx);
+    return {
+      type: "array",
+      items,
+    };
+  }
+}
+
 class AnyOfValidator {
   constructor(vs) {
     this.vs = vs;
@@ -724,6 +858,17 @@ class AnyOfReporter {
   }
 }
 
+class AnyOfSchema {
+  constructor(schemas) {
+    this.schemas = schemas;
+  }
+  schemaAnyOfSchema(ctx) {
+    return {
+      anyOf: this.schemas.map((s) => s(ctx)),
+    };
+  }
+}
+
 class AllOfValidator {
   constructor(vs) {
     this.vs = vs;
@@ -753,7 +898,7 @@ class AllOfParser {
       const p = this.parsers[i];
       const parsed = p(ctx, input);
       if (typeof parsed !== "object") {
-        throw new Error("AllOfParser: Expected object");
+        throw new Error("INTERNAL ERROR: AllOfParser: Expected object");
       }
       acc = { ...acc, ...parsed };
     }
@@ -773,6 +918,17 @@ class AllOfReporter {
       acc.push(...errors);
     }
     return acc;
+  }
+}
+
+class AllOfSchema {
+  constructor(schemas) {
+    this.schemas = schemas;
+  }
+  schemaAllOfSchema(ctx) {
+    return {
+      allOf: this.schemas.map((s) => s(ctx)),
+    };
   }
 }
 
@@ -873,24 +1029,61 @@ class TupleReporter {
   }
 }
 
+class TupleSchema {
+  constructor(prefix, rest) {
+    this.prefix = prefix;
+    this.rest = rest;
+  }
+
+  schemaTupleSchema(ctx) {
+    pushPath(ctx, "[]");
+    const items = this.prefix.map((s) => s(ctx));
+    const additionalItems = this.rest != null ? this.rest(ctx) : false;
+    popPath(ctx);
+    return {
+      type: "array",
+      items,
+      additionalItems,
+    };
+  }
+}
+
 
 function ValidateUser(ctx, input) {
-    return (hoisted_User_2.validateObjectValidator.bind(hoisted_User_2))(ctx, input);
+    return (hoisted_User_3.validateObjectValidator.bind(hoisted_User_3))(ctx, input);
 }
 function ParseUser(ctx, input) {
-    return (hoisted_User_3.parseObjectParser.bind(hoisted_User_3))(ctx, input);
+    return (hoisted_User_4.parseObjectParser.bind(hoisted_User_4))(ctx, input);
 }
 function ReportUser(ctx, input) {
-    return (hoisted_User_4.reportObjectReporter.bind(hoisted_User_4))(ctx, input);
+    return (hoisted_User_5.reportObjectReporter.bind(hoisted_User_5))(ctx, input);
+}
+function SchemaUser(ctx, input) {
+    if (ctx.seen["User"]) {
+        return {};
+    }
+    ctx.seen["User"] = true;
+    var tmp = (hoisted_User_6.schemaObjectSchema.bind(hoisted_User_6))(ctx);
+    delete ctx.seen["User"];
+    return tmp;
 }
 function ValidateNotPublic(ctx, input) {
-    return (hoisted_NotPublic_2.validateObjectValidator.bind(hoisted_NotPublic_2))(ctx, input);
+    return (hoisted_NotPublic_3.validateObjectValidator.bind(hoisted_NotPublic_3))(ctx, input);
 }
 function ParseNotPublic(ctx, input) {
-    return (hoisted_NotPublic_3.parseObjectParser.bind(hoisted_NotPublic_3))(ctx, input);
+    return (hoisted_NotPublic_4.parseObjectParser.bind(hoisted_NotPublic_4))(ctx, input);
 }
 function ReportNotPublic(ctx, input) {
-    return (hoisted_NotPublic_4.reportObjectReporter.bind(hoisted_NotPublic_4))(ctx, input);
+    return (hoisted_NotPublic_5.reportObjectReporter.bind(hoisted_NotPublic_5))(ctx, input);
+}
+function SchemaNotPublic(ctx, input) {
+    if (ctx.seen["NotPublic"]) {
+        return {};
+    }
+    ctx.seen["NotPublic"] = true;
+    var tmp = (hoisted_NotPublic_6.schemaObjectSchema.bind(hoisted_NotPublic_6))(ctx);
+    delete ctx.seen["NotPublic"];
+    return tmp;
 }
 function ValidateStartsWithA(ctx, input) {
     return (hoisted_StartsWithA_0.validateStringWithFormatDecoder.bind(hoisted_StartsWithA_0))(ctx, input);
@@ -901,6 +1094,15 @@ function ParseStartsWithA(ctx, input) {
 function ReportStartsWithA(ctx, input) {
     return (hoisted_StartsWithA_0.reportStringWithFormatDecoder.bind(hoisted_StartsWithA_0))(ctx, input);
 }
+function SchemaStartsWithA(ctx, input) {
+    if (ctx.seen["StartsWithA"]) {
+        return {};
+    }
+    ctx.seen["StartsWithA"] = true;
+    var tmp = (hoisted_StartsWithA_0.schemaStringWithFormatDecoder.bind(hoisted_StartsWithA_0))(ctx);
+    delete ctx.seen["StartsWithA"];
+    return tmp;
+}
 function ValidatePassword(ctx, input) {
     return (hoisted_Password_0.validateStringWithFormatDecoder.bind(hoisted_Password_0))(ctx, input);
 }
@@ -909,6 +1111,15 @@ function ParsePassword(ctx, input) {
 }
 function ReportPassword(ctx, input) {
     return (hoisted_Password_0.reportStringWithFormatDecoder.bind(hoisted_Password_0))(ctx, input);
+}
+function SchemaPassword(ctx, input) {
+    if (ctx.seen["Password"]) {
+        return {};
+    }
+    ctx.seen["Password"] = true;
+    var tmp = (hoisted_Password_0.schemaStringWithFormatDecoder.bind(hoisted_Password_0))(ctx);
+    delete ctx.seen["Password"];
+    return tmp;
 }
 function ValidateA(ctx, input) {
     return (hoisted_A_0.validateAnyOfConstsDecoder.bind(hoisted_A_0))(ctx, input);
@@ -919,6 +1130,15 @@ function ParseA(ctx, input) {
 function ReportA(ctx, input) {
     return (hoisted_A_0.reportAnyOfConstsDecoder.bind(hoisted_A_0))(ctx, input);
 }
+function SchemaA(ctx, input) {
+    if (ctx.seen["A"]) {
+        return {};
+    }
+    ctx.seen["A"] = true;
+    var tmp = (hoisted_A_0.schemaAnyOfConstsDecoder.bind(hoisted_A_0))(ctx);
+    delete ctx.seen["A"];
+    return tmp;
+}
 function ValidateB(ctx, input) {
     return (hoisted_B_0.validateAnyOfConstsDecoder.bind(hoisted_B_0))(ctx, input);
 }
@@ -927,6 +1147,15 @@ function ParseB(ctx, input) {
 }
 function ReportB(ctx, input) {
     return (hoisted_B_0.reportAnyOfConstsDecoder.bind(hoisted_B_0))(ctx, input);
+}
+function SchemaB(ctx, input) {
+    if (ctx.seen["B"]) {
+        return {};
+    }
+    ctx.seen["B"] = true;
+    var tmp = (hoisted_B_0.schemaAnyOfConstsDecoder.bind(hoisted_B_0))(ctx);
+    delete ctx.seen["B"];
+    return tmp;
 }
 function ValidateD(ctx, input) {
     return (hoisted_D_0.validateAnyOfConstsDecoder.bind(hoisted_D_0))(ctx, input);
@@ -937,6 +1166,15 @@ function ParseD(ctx, input) {
 function ReportD(ctx, input) {
     return (hoisted_D_0.reportAnyOfConstsDecoder.bind(hoisted_D_0))(ctx, input);
 }
+function SchemaD(ctx, input) {
+    if (ctx.seen["D"]) {
+        return {};
+    }
+    ctx.seen["D"] = true;
+    var tmp = (hoisted_D_0.schemaAnyOfConstsDecoder.bind(hoisted_D_0))(ctx);
+    delete ctx.seen["D"];
+    return tmp;
+}
 function ValidateE(ctx, input) {
     return (hoisted_E_0.validateAnyOfConstsDecoder.bind(hoisted_E_0))(ctx, input);
 }
@@ -946,6 +1184,15 @@ function ParseE(ctx, input) {
 function ReportE(ctx, input) {
     return (hoisted_E_0.reportAnyOfConstsDecoder.bind(hoisted_E_0))(ctx, input);
 }
+function SchemaE(ctx, input) {
+    if (ctx.seen["E"]) {
+        return {};
+    }
+    ctx.seen["E"] = true;
+    var tmp = (hoisted_E_0.schemaAnyOfConstsDecoder.bind(hoisted_E_0))(ctx);
+    delete ctx.seen["E"];
+    return tmp;
+}
 function ValidateUnionNested(ctx, input) {
     return (hoisted_UnionNested_0.validateAnyOfConstsDecoder.bind(hoisted_UnionNested_0))(ctx, input);
 }
@@ -954,6 +1201,15 @@ function ParseUnionNested(ctx, input) {
 }
 function ReportUnionNested(ctx, input) {
     return (hoisted_UnionNested_0.reportAnyOfConstsDecoder.bind(hoisted_UnionNested_0))(ctx, input);
+}
+function SchemaUnionNested(ctx, input) {
+    if (ctx.seen["UnionNested"]) {
+        return {};
+    }
+    ctx.seen["UnionNested"] = true;
+    var tmp = (hoisted_UnionNested_0.schemaAnyOfConstsDecoder.bind(hoisted_UnionNested_0))(ctx);
+    delete ctx.seen["UnionNested"];
+    return tmp;
 }
 const validators = {
     User: ValidateUser,
@@ -988,31 +1244,51 @@ const reporters = {
     E: ReportE,
     UnionNested: ReportUnionNested
 };
+const schemas = {
+    User: SchemaUser,
+    NotPublic: SchemaNotPublic,
+    StartsWithA: SchemaStartsWithA,
+    Password: SchemaPassword,
+    A: SchemaA,
+    B: SchemaB,
+    D: SchemaD,
+    E: SchemaE,
+    UnionNested: SchemaUnionNested
+};
 const hoisted_User_0 = {
     "age": validateNumber,
     "name": validateString
 };
-const hoisted_User_1 = null;
-const hoisted_User_2 = new ObjectValidator(hoisted_User_0, hoisted_User_1);
-const hoisted_User_3 = new ObjectParser({
+const hoisted_User_1 = {
+    "age": schemaNumber,
+    "name": schemaString
+};
+const hoisted_User_2 = null;
+const hoisted_User_3 = new ObjectValidator(hoisted_User_0, hoisted_User_2);
+const hoisted_User_4 = new ObjectParser({
     "age": parseIdentity,
     "name": parseIdentity
 }, null);
-const hoisted_User_4 = new ObjectReporter(hoisted_User_0, hoisted_User_1, {
+const hoisted_User_5 = new ObjectReporter(hoisted_User_0, hoisted_User_2, {
     "age": reportNumber,
     "name": reportString
 }, null);
+const hoisted_User_6 = new ObjectSchema(hoisted_User_1, null);
 const hoisted_NotPublic_0 = {
     "a": validateString
 };
-const hoisted_NotPublic_1 = null;
-const hoisted_NotPublic_2 = new ObjectValidator(hoisted_NotPublic_0, hoisted_NotPublic_1);
-const hoisted_NotPublic_3 = new ObjectParser({
+const hoisted_NotPublic_1 = {
+    "a": schemaString
+};
+const hoisted_NotPublic_2 = null;
+const hoisted_NotPublic_3 = new ObjectValidator(hoisted_NotPublic_0, hoisted_NotPublic_2);
+const hoisted_NotPublic_4 = new ObjectParser({
     "a": parseIdentity
 }, null);
-const hoisted_NotPublic_4 = new ObjectReporter(hoisted_NotPublic_0, hoisted_NotPublic_1, {
+const hoisted_NotPublic_5 = new ObjectReporter(hoisted_NotPublic_0, hoisted_NotPublic_2, {
     "a": reportString
 }, null);
+const hoisted_NotPublic_6 = new ObjectSchema(hoisted_NotPublic_1, null);
 const hoisted_StartsWithA_0 = new StringWithFormatDecoder("StartsWithA");
 const hoisted_Password_0 = new StringWithFormatDecoder("password");
 const hoisted_A_0 = new AnyOfConstsDecoder([
@@ -1040,4 +1316,4 @@ const hoisted_UnionNested_0 = new AnyOfConstsDecoder([
     6
 ]);
 
-export default { registerCustomFormatter, ObjectValidator, ObjectParser, ArrayParser, ArrayValidator, CodecDecoder, StringWithFormatDecoder, AnyOfValidator, AnyOfParser, AllOfValidator, AllOfParser, TupleParser, TupleValidator, RegexDecoder, ConstDecoder, AnyOfConstsDecoder, AnyOfDiscriminatedReporter, AnyOfDiscriminatedParser, AnyOfDiscriminatedValidator, validateString, validateNumber, validateFunction, validateBoolean, validateAny, validateNull, validateNever, parseIdentity, AnyOfReporter, AllOfReporter, reportString, reportNumber, reportNull, reportBoolean, reportAny, reportNever, reportFunction, ArrayReporter, ObjectReporter, TupleReporter, validators, parsers, reporters };
+export default { registerCustomFormatter, ObjectValidator, ObjectParser, ArrayParser, ArrayValidator, CodecDecoder, StringWithFormatDecoder, AnyOfValidator, AnyOfParser, AllOfValidator, AllOfParser, TupleParser, TupleValidator, RegexDecoder, ConstDecoder, AnyOfConstsDecoder, AnyOfDiscriminatedParser, AnyOfDiscriminatedValidator, validateString, validateNumber, validateFunction, validateBoolean, validateAny, validateNull, validateNever, parseIdentity, reportString, reportNumber, reportNull, reportBoolean, reportAny, reportNever, reportFunction, ArrayReporter, ObjectReporter, TupleReporter, AnyOfReporter, AllOfReporter, AnyOfDiscriminatedReporter, schemaString, schemaNumber, schemaBoolean, schemaNull, schemaAny, schemaNever, schemaFunction, ArraySchema, ObjectSchema, TupleSchema, AnyOfSchema, AllOfSchema, AnyOfDiscriminatedSchema, validators, parsers, reporters, schemas };

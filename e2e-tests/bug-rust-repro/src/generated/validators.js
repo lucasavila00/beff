@@ -81,12 +81,14 @@ function deepmergeConstructor(options) {
   }
 
   const isPrimitiveOrBuiltIn =
+    
     typeof Buffer !== "undefined"
       ? (value) =>
           typeof value !== "object" ||
           value === null ||
           value instanceof RegExp ||
           value instanceof Date ||
+          
           value instanceof Buffer
       : (value) =>
           typeof value !== "object" || value === null || value instanceof RegExp || value instanceof Date;
@@ -205,6 +207,12 @@ function pushPath(ctx, key) {
 function popPath(ctx) {
   ctx.path.pop();
 }
+function printPath(ctx) {
+  return ctx.path.join(".");
+}
+function buildSchemaErrorMessage(ctx, message) {
+  return `Failed to print schema. At ${printPath(ctx)}: ${message}`;
+}
 function buildError(ctx, message, received) {
   return [
     {
@@ -239,12 +247,24 @@ function reportString(ctx, input) {
   return buildError(ctx, "expected string", input);
 }
 
+function schemaString(ctx) {
+  return {
+    type: "string",
+  };
+}
+
 function validateNumber(ctx, input) {
   return typeof input === "number";
 }
 
 function reportNumber(ctx, input) {
   return buildError(ctx, "expected number", input);
+}
+
+function schemaNumber(ctx) {
+  return {
+    type: "number",
+  };
 }
 
 function validateBoolean(ctx, input) {
@@ -255,12 +275,22 @@ function reportBoolean(ctx, input) {
   return buildError(ctx, "expected boolean", input);
 }
 
+function schemaBoolean(ctx) {
+  return {
+    type: "boolean",
+  };
+}
+
 function validateAny(ctx, input) {
   return true;
 }
 
 function reportAny(ctx, input) {
   return buildError(ctx, "expected any", input);
+}
+
+function schemaAny(ctx) {
+  return {};
 }
 
 function validateNull(ctx, input) {
@@ -274,6 +304,12 @@ function reportNull(ctx, input) {
   return buildError(ctx, "expected nullish value", input);
 }
 
+function schemaNull(ctx) {
+  return {
+    type: "null",
+  };
+}
+
 function validateNever(ctx, input) {
   return false;
 }
@@ -282,12 +318,22 @@ function reportNever(ctx, input) {
   return buildError(ctx, "expected never", input);
 }
 
+function schemaNever(ctx) {
+  return {
+    anyOf: [],
+  };
+}
+
 function validateFunction(ctx, input) {
   return typeof input === "function";
 }
 
 function reportFunction(ctx, input) {
   return buildError(ctx, "expected function", input);
+}
+
+function schemaFunction(ctx) {
+  throw new Error(buildSchemaErrorMessage(ctx, "Cannot generate JSON Schema for function"));
 }
 
 class ConstDecoder {
@@ -305,6 +351,12 @@ class ConstDecoder {
 
   reportConstDecoder(ctx, input) {
     return buildError(ctx, `expected ${JSON.stringify(this.value)}`, input);
+  }
+
+  schemaConstDecoder(ctx) {
+    return {
+      const: this.value,
+    };
   }
 }
 
@@ -361,6 +413,19 @@ class CodecDecoder {
 
     return buildError(ctx, `expected ${this.codec}`, input);
   }
+
+  schemaCodecDecoder(ctx) {
+    switch (this.codec) {
+      case "Codec::ISO8061": {
+        throw new Error(buildSchemaErrorMessage(ctx, "Cannot generate JSON Schema for Date"));
+      }
+      case "Codec::BigInt": {
+        throw new Error(buildSchemaErrorMessage(ctx, "Cannot generate JSON Schema for BigInt"));
+      }
+    }
+
+    throw new Error("INTERNAL ERROR: Unrecognized codec: " + this.codec);
+  }
 }
 
 class StringWithFormatDecoder {
@@ -386,6 +451,12 @@ class StringWithFormatDecoder {
   }
   reportStringWithFormatDecoder(ctx, input) {
     return buildError(ctx, `expected string with format "${this.format}"`, input);
+  }
+  schemaStringWithFormatDecoder(ctx) {
+    return {
+      type: "string",
+      format: this.format,
+    };
   }
 }
 const limitedCommaJoinJson = (arr) => {
@@ -417,6 +488,11 @@ class AnyOfConstsDecoder {
   }
   reportAnyOfConstsDecoder(ctx, input) {
     return buildError(ctx, `expected one of ${limitedCommaJoinJson(this.consts)}`, input);
+  }
+  schemaAnyOfConstsDecoder(ctx) {
+    return {
+      enum: this.consts,
+    };
   }
 }
 
@@ -546,6 +622,33 @@ class ObjectParser {
   }
 }
 
+class ObjectSchema {
+  constructor(data, rest) {
+    this.data = data;
+    this.rest = rest;
+  }
+
+  schemaObjectSchema(ctx) {
+    const properties = {};
+    for (const k in this.data) {
+      pushPath(ctx, k);
+      properties[k] = this.data[k](ctx);
+      popPath(ctx);
+    }
+
+    const required = Object.keys(this.data);
+
+    const additionalProperties = this.rest != null ? this.rest(ctx) : false;
+
+    return {
+      type: "object",
+      properties,
+      required,
+      additionalProperties,
+    };
+  }
+}
+
 class AnyOfDiscriminatedValidator {
   constructor(discriminator, mapping) {
     this.discriminator = discriminator;
@@ -579,7 +682,9 @@ class AnyOfDiscriminatedParser {
   parseAnyOfDiscriminatedParser(ctx, input) {
     const parser = this.mapping[input[this.discriminator]];
     if (parser == null) {
-      throw new Error("Unknown discriminator");
+      throw new Error(
+        "INTERNAL ERROR: Missing parser for discriminator " + JSON.stringify(input[this.discriminator])
+      );
     }
     return {
       ...parser(ctx, input),
@@ -618,6 +723,19 @@ class AnyOfDiscriminatedReporter {
       return errs;
     }
     return v(ctx, input);
+  }
+}
+
+class AnyOfDiscriminatedSchema {
+  constructor(vs) {
+    this.vs = vs;
+  }
+
+  schemaAnyOfDiscriminatedSchema(ctx) {
+    
+    return {
+      anyOf: this.vs.map((v) => v(ctx)),
+    };
   }
 }
 
@@ -678,6 +796,22 @@ class ArrayReporter {
   }
 }
 
+class ArraySchema {
+  constructor(innerSchema) {
+    this.innerSchema = innerSchema;
+  }
+
+  schemaArraySchema(ctx) {
+    pushPath(ctx, "[]");
+    const items = this.innerSchema(ctx);
+    popPath(ctx);
+    return {
+      type: "array",
+      items,
+    };
+  }
+}
+
 class AnyOfValidator {
   constructor(vs) {
     this.vs = vs;
@@ -724,6 +858,17 @@ class AnyOfReporter {
   }
 }
 
+class AnyOfSchema {
+  constructor(schemas) {
+    this.schemas = schemas;
+  }
+  schemaAnyOfSchema(ctx) {
+    return {
+      anyOf: this.schemas.map((s) => s(ctx)),
+    };
+  }
+}
+
 class AllOfValidator {
   constructor(vs) {
     this.vs = vs;
@@ -753,7 +898,7 @@ class AllOfParser {
       const p = this.parsers[i];
       const parsed = p(ctx, input);
       if (typeof parsed !== "object") {
-        throw new Error("AllOfParser: Expected object");
+        throw new Error("INTERNAL ERROR: AllOfParser: Expected object");
       }
       acc = { ...acc, ...parsed };
     }
@@ -773,6 +918,17 @@ class AllOfReporter {
       acc.push(...errors);
     }
     return acc;
+  }
+}
+
+class AllOfSchema {
+  constructor(schemas) {
+    this.schemas = schemas;
+  }
+  schemaAllOfSchema(ctx) {
+    return {
+      allOf: this.schemas.map((s) => s(ctx)),
+    };
   }
 }
 
@@ -873,6 +1029,25 @@ class TupleReporter {
   }
 }
 
+class TupleSchema {
+  constructor(prefix, rest) {
+    this.prefix = prefix;
+    this.rest = rest;
+  }
+
+  schemaTupleSchema(ctx) {
+    pushPath(ctx, "[]");
+    const items = this.prefix.map((s) => s(ctx));
+    const additionalItems = this.rest != null ? this.rest(ctx) : false;
+    popPath(ctx);
+    return {
+      type: "array",
+      items,
+      additionalItems,
+    };
+  }
+}
+
 
 function ValidateA(ctx, input) {
     return (validateString)(ctx, input);
@@ -883,6 +1058,15 @@ function ParseA(ctx, input) {
 function ReportA(ctx, input) {
     return (reportString)(ctx, input);
 }
+function SchemaA(ctx, input) {
+    if (ctx.seen["A"]) {
+        return {};
+    }
+    ctx.seen["A"] = true;
+    var tmp = (schemaString)(ctx);
+    delete ctx.seen["A"];
+    return tmp;
+}
 const validators = {
     A: ValidateA
 };
@@ -892,5 +1076,8 @@ const parsers = {
 const reporters = {
     A: ReportA
 };
+const schemas = {
+    A: SchemaA
+};
 
-export default { registerCustomFormatter, ObjectValidator, ObjectParser, ArrayParser, ArrayValidator, CodecDecoder, StringWithFormatDecoder, AnyOfValidator, AnyOfParser, AllOfValidator, AllOfParser, TupleParser, TupleValidator, RegexDecoder, ConstDecoder, AnyOfConstsDecoder, AnyOfDiscriminatedReporter, AnyOfDiscriminatedParser, AnyOfDiscriminatedValidator, validateString, validateNumber, validateFunction, validateBoolean, validateAny, validateNull, validateNever, parseIdentity, AnyOfReporter, AllOfReporter, reportString, reportNumber, reportNull, reportBoolean, reportAny, reportNever, reportFunction, ArrayReporter, ObjectReporter, TupleReporter, validators, parsers, reporters };
+export default { registerCustomFormatter, ObjectValidator, ObjectParser, ArrayParser, ArrayValidator, CodecDecoder, StringWithFormatDecoder, AnyOfValidator, AnyOfParser, AllOfValidator, AllOfParser, TupleParser, TupleValidator, RegexDecoder, ConstDecoder, AnyOfConstsDecoder, AnyOfDiscriminatedParser, AnyOfDiscriminatedValidator, validateString, validateNumber, validateFunction, validateBoolean, validateAny, validateNull, validateNever, parseIdentity, reportString, reportNumber, reportNull, reportBoolean, reportAny, reportNever, reportFunction, ArrayReporter, ObjectReporter, TupleReporter, AnyOfReporter, AllOfReporter, AnyOfDiscriminatedReporter, schemaString, schemaNumber, schemaBoolean, schemaNull, schemaAny, schemaNever, schemaFunction, ArraySchema, ObjectSchema, TupleSchema, AnyOfSchema, AllOfSchema, AnyOfDiscriminatedSchema, validators, parsers, reporters, schemas };

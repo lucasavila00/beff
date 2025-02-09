@@ -1,4 +1,3 @@
-use crate::ast::json::Json;
 use crate::emit::emit_module;
 use crate::parser_extractor::BuiltDecoder;
 use crate::print::decoder;
@@ -43,7 +42,6 @@ pub fn const_decl(name: &str, init: Expr) -> ModuleItem {
 pub struct WritableModules {
     pub js_validators: String,
     pub js_built_parsers: Option<String>,
-    pub json_schema: Option<String>,
 }
 
 pub trait ToWritableModules {
@@ -54,6 +52,7 @@ pub struct DecodersCode {
     pub validator: Expr,
     pub parser: Expr,
     pub reporter: Expr,
+    pub schema: Expr,
 }
 
 fn build_decoders(
@@ -64,12 +63,14 @@ fn build_decoders(
     let mut validator_exprs: Vec<_> = vec![];
     let mut parser_exprs: Vec<_> = vec![];
     let mut report_exprs: Vec<_> = vec![];
+    let mut schema_exprs: Vec<(String, Expr)> = vec![];
     for decoder in decs {
         let mut local_hoisted = vec![];
         let SchemaCode {
             validator,
             parser,
             reporter,
+            schema,
         } = decoder::validator_for_schema(
             &decoder.schema,
             validators,
@@ -79,6 +80,7 @@ fn build_decoders(
         validator_exprs.push((decoder.exported_name.clone(), validator));
         parser_exprs.push((decoder.exported_name.clone(), parser));
         report_exprs.push((decoder.exported_name.clone(), reporter));
+        schema_exprs.push((decoder.exported_name.clone(), schema));
 
         hoisted.extend(local_hoisted.into_iter());
     }
@@ -86,6 +88,7 @@ fn build_decoders(
     validator_exprs.sort_by(|(a, _), (b, _)| a.cmp(b));
     parser_exprs.sort_by(|(a, _), (b, _)| a.cmp(b));
     report_exprs.sort_by(|(a, _), (b, _)| a.cmp(b));
+    schema_exprs.sort_by(|(a, _), (b, _)| a.cmp(b));
 
     let validator = Expr::Object(ObjectLit {
         span: DUMMY_SP,
@@ -147,10 +150,31 @@ fn build_decoders(
             .collect(),
     });
 
+    let schema = Expr::Object(ObjectLit {
+        span: DUMMY_SP,
+        props: schema_exprs
+            .into_iter()
+            .map(|(key, value)| {
+                PropOrSpread::Prop(
+                    Prop::KeyValue(KeyValueProp {
+                        key: PropName::Str(Str {
+                            span: DUMMY_SP,
+                            value: key.into(),
+                            raw: None,
+                        }),
+                        value: value.into(),
+                    })
+                    .into(),
+                )
+            })
+            .collect(),
+    });
+
     DecodersCode {
         validator,
         parser,
         reporter,
+        schema,
     }
 }
 
@@ -189,6 +213,7 @@ impl ToWritableModules for ExtractResult {
                 validator,
                 parser,
                 reporter,
+                schema,
             } = decoder::func_validator_for_schema(
                 &comp.schema,
                 &named_schemas,
@@ -227,6 +252,17 @@ impl ToWritableModules for ExtractResult {
                 function: reporter.into(),
             })));
             stmt_named_schemas.push(reporter_fn_decl);
+
+            let schema_fn_decl = ModuleItem::Stmt(Stmt::Decl(Decl::Fn(FnDecl {
+                ident: Ident {
+                    span: DUMMY_SP,
+                    sym: format!("Schema{}", comp.name).into(),
+                    optional: false,
+                },
+                declare: false,
+                function: schema.into(),
+            })));
+            stmt_named_schemas.push(schema_fn_decl);
 
             hoisted.extend(local_hoisted.into_iter());
         }
@@ -287,6 +323,7 @@ impl ToWritableModules for ExtractResult {
             Expr::Object(ObjectLit {
                 span: DUMMY_SP,
                 props: schema_names
+                    .clone()
                     .into_iter()
                     .map(|it| {
                         PropOrSpread::Prop(Box::new(Prop::KeyValue(KeyValueProp {
@@ -298,6 +335,30 @@ impl ToWritableModules for ExtractResult {
                             value: Expr::Ident(Ident {
                                 span: DUMMY_SP,
                                 sym: format!("Report{}", it).into(),
+                                optional: false,
+                            })
+                            .into(),
+                        })))
+                    })
+                    .collect(),
+            }),
+        ));
+        stmt_named_schemas.push(const_decl(
+            "schemas",
+            Expr::Object(ObjectLit {
+                span: DUMMY_SP,
+                props: schema_names
+                    .into_iter()
+                    .map(|it| {
+                        PropOrSpread::Prop(Box::new(Prop::KeyValue(KeyValueProp {
+                            key: PropName::Ident(Ident {
+                                span: DUMMY_SP,
+                                sym: it.clone().into(),
+                                optional: false,
+                            }),
+                            value: Expr::Ident(Ident {
+                                span: DUMMY_SP,
+                                sym: format!("Schema{}", it).into(),
                                 optional: false,
                             })
                             .into(),
@@ -325,10 +386,12 @@ impl ToWritableModules for ExtractResult {
                 validator,
                 parser,
                 reporter,
+                schema,
             } = build_decoders(&decoders, &named_schemas, &mut parser_hoisted);
             let build_validators_input = const_decl("buildValidatorsInput", validator);
             let build_parsers_input = const_decl("buildParsersInput", parser);
             let build_reporters_input = const_decl("buildReportersInput", reporter);
+            let build_schema_input = const_decl("buildSchemaInput", schema);
 
             js_built_parsers = Some(emit_module(
                 parser_hoisted
@@ -338,6 +401,7 @@ impl ToWritableModules for ExtractResult {
                             build_validators_input,
                             build_parsers_input,
                             build_reporters_input,
+                            build_schema_input,
                         ]
                         .into_iter(),
                     )
@@ -346,25 +410,9 @@ impl ToWritableModules for ExtractResult {
             )?);
         }
 
-        let mut json_schema = None;
-        if let Some(schema) = self.schema {
-            let decoders = schema.built_decoders.unwrap_or_default();
-            let json_schema_obj = Json::object(
-                decoders
-                    .iter()
-                    .map(|it| BuiltDecoder::to_json_kv(it, &named_schemas))
-                    .collect::<Result<Vec<Vec<(String, Json)>>>>()?
-                    .into_iter()
-                    .flatten()
-                    .collect(),
-            );
-            // schema
-            json_schema = Some(json_schema_obj.to_string());
-        }
         Ok(WritableModules {
             js_validators,
             js_built_parsers,
-            json_schema,
         })
     }
 }

@@ -1,6 +1,7 @@
 ---
 source: packages/beff-core/tests/print_parser.rs
 expression: "decoder(r#\"\n        export type Alias = string[];\n        parse.buildParsers<{ Dec: Alias }>();\n      \"#)"
+snapshot_kind: text
 ---
 function ValidateAlias(ctx, input) {
     return (hoisted_Alias_1.validateArrayValidator.bind(hoisted_Alias_1))(ctx, input);
@@ -11,6 +12,15 @@ function ParseAlias(ctx, input) {
 function ReportAlias(ctx, input) {
     return (hoisted_Alias_3.reportArrayReporter.bind(hoisted_Alias_3))(ctx, input);
 }
+function SchemaAlias(ctx, input) {
+    if (ctx.seen["Alias"]) {
+        return {};
+    }
+    ctx.seen["Alias"] = true;
+    var tmp = (hoisted_Alias_4.schemaArraySchema.bind(hoisted_Alias_4))(ctx);
+    delete ctx.seen["Alias"];
+    return tmp;
+}
 const validators = {
     Alias: ValidateAlias
 };
@@ -20,7 +30,11 @@ const parsers = {
 const reporters = {
     Alias: ReportAlias
 };
+const schemas = {
+    Alias: SchemaAlias
+};
 const hoisted_Alias_0 = validateString;
 const hoisted_Alias_1 = new ArrayValidator(hoisted_Alias_0);
 const hoisted_Alias_2 = new ArrayParser(parseIdentity);
 const hoisted_Alias_3 = new ArrayReporter(hoisted_Alias_0, reportString);
+const hoisted_Alias_4 = new ArraySchema(schemaString);

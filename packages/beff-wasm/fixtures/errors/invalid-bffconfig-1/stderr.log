@@ -1,1 +1,1 @@
-Failed to parse bff.json: SyntaxError: Unexpected end of JSON input
+Failed to parse bff.json: SyntaxError: Expected property name or '}' in JSON at position 1

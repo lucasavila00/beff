@@ -1,5 +1,11 @@
 # @beff/cli
 
+## 0.0.80
+
+### Patch Changes
+
+- json schema for all parsers
+
 ## 0.0.79
 
 ### Patch Changes

@@ -1,13 +1,11 @@
-use std::rc::Rc;
-
-use crate::ast::json::Json;
-use crate::ast::json_schema::{JsonFlatConverter, JsonSchema};
+use crate::ast::json_schema::JsonSchema;
 use crate::diag::{Diagnostic, DiagnosticInfoMessage, DiagnosticInformation, Location};
 use crate::type_to_schema::TypeToSchema;
 use crate::{BeffUserSettings, ParsedModule};
 use crate::{BffFileName, FileManager, NamedSchema};
 use anyhow::anyhow;
 use anyhow::Result;
+use std::rc::Rc;
 use swc_common::{Span, DUMMY_SP};
 use swc_ecma_ast::{
     CallExpr, Callee, Expr, Ident, MemberExpr, MemberProp, TsCallSignatureDecl,
@@ -21,14 +19,6 @@ use swc_ecma_visit::Visit;
 pub struct BuiltDecoder {
     pub exported_name: String,
     pub schema: JsonSchema,
-}
-impl BuiltDecoder {
-    pub fn to_json_kv(&self, validators: &[NamedSchema]) -> anyhow::Result<Vec<(String, Json)>> {
-        Ok(vec![(
-            self.exported_name.clone(),
-            JsonFlatConverter::new(validators).to_json_flat(self.schema.clone())?,
-        )])
-    }
 }
 
 #[derive(Debug)]

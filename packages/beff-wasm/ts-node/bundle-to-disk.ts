@@ -21,7 +21,6 @@ const decodersExported = [
   "RegexDecoder",
   "ConstDecoder",
   "AnyOfConstsDecoder",
-  "AnyOfDiscriminatedReporter",
   "AnyOfDiscriminatedParser",
   "AnyOfDiscriminatedValidator",
   "validateString",
@@ -32,8 +31,7 @@ const decodersExported = [
   "validateNull",
   "validateNever",
   "parseIdentity",
-  "AnyOfReporter",
-  "AllOfReporter",
+  //
   "reportString",
   "reportNumber",
   "reportNull",
@@ -44,6 +42,23 @@ const decodersExported = [
   "ArrayReporter",
   "ObjectReporter",
   "TupleReporter",
+  "AnyOfReporter",
+  "AllOfReporter",
+  "AnyOfDiscriminatedReporter",
+  //
+  "schemaString",
+  "schemaNumber",
+  "schemaBoolean",
+  "schemaNull",
+  "schemaAny",
+  "schemaNever",
+  "schemaFunction",
+  "ArraySchema",
+  "ObjectSchema",
+  "TupleSchema",
+  "AnyOfSchema",
+  "AllOfSchema",
+  "AnyOfDiscriminatedSchema",
 ];
 
 const esmTag = (mod: ProjectModule) => {
@@ -60,7 +75,7 @@ Object.defineProperty(exports, "__esModule", {
 const exportCode = (mod: ProjectModule) => (mod === "esm" ? "export default" : "exports.default =");
 
 const finalizeValidatorsCode = (wasmCode: WritableModules, mod: ProjectModule) => {
-  const exportedItems = [...decodersExported, "validators", "parsers", "reporters"].join(", ");
+  const exportedItems = [...decodersExported, "validators", "parsers", "reporters", "schemas"].join(", ");
   const exports = [exportCode(mod), `{ ${exportedItems} };`].join(" ");
   return [
     "//@ts-nocheck\n/* eslint-disable */\n",
@@ -72,7 +87,7 @@ const finalizeValidatorsCode = (wasmCode: WritableModules, mod: ProjectModule) =
 };
 
 const importValidators = (mod: ProjectModule) => {
-  const i = [...decodersExported, "validators", "parsers", "reporters", "c"].join(", ");
+  const i = [...decodersExported, "validators", "parsers", "reporters", "schemas", "c"].join(", ");
 
   const importRest =
     mod === "esm"
@@ -109,16 +124,11 @@ export const execProject = (
   const parserEntryPoint = projectJson.parser
     ? path.join(path.dirname(projectPath), projectJson.parser)
     : undefined;
-
-  const schemaEntryPoint = projectJson.schema
-    ? path.join(path.dirname(projectPath), projectJson.schema)
-    : undefined;
-
   if (verbose) {
     // eslint-disable-next-line no-console
     console.log(`JS: Parser entry point ${parserEntryPoint}`);
   }
-  const outResult = bundler.bundle(parserEntryPoint, schemaEntryPoint, projectJson.settings);
+  const outResult = bundler.bundle(parserEntryPoint, projectJson.settings);
   if (outResult == null) {
     return "failed";
   }
@@ -128,18 +138,6 @@ export const execProject = (
   }
 
   fs.writeFileSync(path.join(outputDir, "validators.js"), finalizeValidatorsCode(outResult, mod));
-  if (projectJson.schema) {
-    const exportJsonSchema =
-      projectJson.module === "cjs" ? "module.exports = {buildSchemas};" : "export default {buildSchemas};";
-    fs.writeFileSync(
-      path.join(outputDir, "schema.js"),
-      "const jsonSchema = " + outResult.json_schema + ";\n" + gen["build-schema.js"] + exportJsonSchema
-    );
-    fs.writeFileSync(
-      path.join(outputDir, "schema.d.ts"),
-      ["/* eslint-disable */\n", gen["schema.d.ts"]].join("\n")
-    );
-  }
 
   if (projectJson.parser) {
     fs.writeFileSync(
