@@ -1041,13 +1041,13 @@ class TupleSchema {
 
   schemaTupleSchema(ctx) {
     pushPath(ctx, "[]");
-    const items = this.prefix.map((s) => s(ctx));
-    const additionalItems = this.rest != null ? this.rest(ctx) : false;
+    const prefixItems = this.prefix.map((s) => s(ctx));
+    const items = this.rest != null ? this.rest(ctx) : false;
     popPath(ctx);
     return {
       type: "array",
+      prefixItems,
       items,
-      additionalItems,
     };
   }
 }

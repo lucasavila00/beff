@@ -142,6 +142,19 @@ it("works", () => {
       "type": "string",
     }
   `);
+  expect(Codecs.NonEmptyString.schema()).toMatchInlineSnapshot(`
+    {
+      "items": {
+        "type": "string",
+      },
+      "prefixItems": [
+        {
+          "type": "string",
+        },
+      ],
+      "type": "array",
+    }
+  `);
   expect(Codecs.DiscriminatedUnion.schema()).toMatchInlineSnapshot(`
     {
       "anyOf": [

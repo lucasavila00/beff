@@ -47,6 +47,8 @@ type RecursiveTree = {
 
 type SemVer = `${number}.${number}.${number}`;
 
+type NonEmptyString = [string, ...string[]];
+
 export const Codecs = parse.buildParsers<{
   // basic
   string: string;
@@ -66,7 +68,7 @@ export const Codecs = parse.buildParsers<{
   DiscriminatedUnion: DiscriminatedUnion;
   RecursiveTree: RecursiveTree;
   SemVer: SemVer;
-
+  NonEmptyString: NonEmptyString;
   //
   ValidCurrency: ValidCurrency;
 }>({
