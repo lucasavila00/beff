@@ -1044,13 +1044,13 @@ class TupleSchema {
 
   schemaTupleSchema(ctx) {
     pushPath(ctx, "[]");
-    const items = this.prefix.map((s) => s(ctx));
-    const additionalItems = this.rest != null ? this.rest(ctx) : false;
+    const prefixItems = this.prefix.map((s) => s(ctx));
+    const items = this.rest != null ? this.rest(ctx) : false;
     popPath(ctx);
     return {
       type: "array",
+      prefixItems,
       items,
-      additionalItems,
     };
   }
 }
@@ -1200,6 +1200,24 @@ function SchemaSemVer(ctx, input) {
     delete ctx.seen["SemVer"];
     return tmp;
 }
+function ValidateNonEmptyString(ctx, input) {
+    return (hoisted_NonEmptyString_2.validateTupleValidator.bind(hoisted_NonEmptyString_2))(ctx, input);
+}
+function ParseNonEmptyString(ctx, input) {
+    return (hoisted_NonEmptyString_3.parseTupleParser.bind(hoisted_NonEmptyString_3))(ctx, input);
+}
+function ReportNonEmptyString(ctx, input) {
+    return (hoisted_NonEmptyString_4.reportTupleReporter.bind(hoisted_NonEmptyString_4))(ctx, input);
+}
+function SchemaNonEmptyString(ctx, input) {
+    if (ctx.seen["NonEmptyString"]) {
+        return {};
+    }
+    ctx.seen["NonEmptyString"] = true;
+    var tmp = (hoisted_NonEmptyString_5.schemaTupleSchema.bind(hoisted_NonEmptyString_5))(ctx);
+    delete ctx.seen["NonEmptyString"];
+    return tmp;
+}
 function ValidateValidCurrency(ctx, input) {
     return (hoisted_ValidCurrency_0.validateStringWithFormatDecoder.bind(hoisted_ValidCurrency_0))(ctx, input);
 }
@@ -1227,6 +1245,7 @@ const validators = {
     DiscriminatedUnion: ValidateDiscriminatedUnion,
     RecursiveTree: ValidateRecursiveTree,
     SemVer: ValidateSemVer,
+    NonEmptyString: ValidateNonEmptyString,
     ValidCurrency: ValidateValidCurrency
 };
 const parsers = {
@@ -1238,6 +1257,7 @@ const parsers = {
     DiscriminatedUnion: ParseDiscriminatedUnion,
     RecursiveTree: ParseRecursiveTree,
     SemVer: ParseSemVer,
+    NonEmptyString: ParseNonEmptyString,
     ValidCurrency: ParseValidCurrency
 };
 const reporters = {
@@ -1249,6 +1269,7 @@ const reporters = {
     DiscriminatedUnion: ReportDiscriminatedUnion,
     RecursiveTree: ReportRecursiveTree,
     SemVer: ReportSemVer,
+    NonEmptyString: ReportNonEmptyString,
     ValidCurrency: ReportValidCurrency
 };
 const schemas = {
@@ -1260,6 +1281,7 @@ const schemas = {
     DiscriminatedUnion: SchemaDiscriminatedUnion,
     RecursiveTree: SchemaRecursiveTree,
     SemVer: SchemaSemVer,
+    NonEmptyString: SchemaNonEmptyString,
     ValidCurrency: SchemaValidCurrency
 };
 const hoisted_T1_0 = {
@@ -1662,6 +1684,20 @@ const hoisted_RecursiveTree_10 = new ObjectReporter(hoisted_RecursiveTree_5, hoi
 }, null);
 const hoisted_RecursiveTree_11 = new ObjectSchema(hoisted_RecursiveTree_6, null);
 const hoisted_SemVer_0 = new RegexDecoder(/(\d+(\.\d+)?)(\.)(\d+(\.\d+)?)(\.)(\d+(\.\d+)?)/, "${number}.${number}.${number}");
+const hoisted_NonEmptyString_0 = [
+    validateString
+];
+const hoisted_NonEmptyString_1 = validateString;
+const hoisted_NonEmptyString_2 = new TupleValidator(hoisted_NonEmptyString_0, hoisted_NonEmptyString_1);
+const hoisted_NonEmptyString_3 = new TupleParser([
+    parseIdentity
+], parseIdentity);
+const hoisted_NonEmptyString_4 = new TupleReporter(hoisted_NonEmptyString_0, hoisted_NonEmptyString_1, [
+    reportString
+], reportString);
+const hoisted_NonEmptyString_5 = new TupleSchema([
+    schemaString
+], schemaString);
 const hoisted_ValidCurrency_0 = new StringWithFormatDecoder("ValidCurrency");
 
 export default { registerCustomFormatter, ObjectValidator, ObjectParser, ArrayParser, ArrayValidator, CodecDecoder, StringWithFormatDecoder, AnyOfValidator, AnyOfParser, AllOfValidator, AllOfParser, TupleParser, TupleValidator, RegexDecoder, ConstDecoder, AnyOfConstsDecoder, AnyOfDiscriminatedParser, AnyOfDiscriminatedValidator, validateString, validateNumber, validateFunction, validateBoolean, validateAny, validateNull, validateNever, parseIdentity, reportString, reportNumber, reportNull, reportBoolean, reportAny, reportNever, reportFunction, ArrayReporter, ObjectReporter, TupleReporter, AnyOfReporter, AllOfReporter, AnyOfDiscriminatedReporter, schemaString, schemaNumber, schemaBoolean, schemaNull, schemaAny, schemaNever, schemaFunction, ArraySchema, ObjectSchema, TupleSchema, AnyOfSchema, AllOfSchema, AnyOfDiscriminatedSchema, validators, parsers, reporters, schemas };

@@ -1,5 +1,13 @@
 # @beff/client
 
+## 0.0.83
+
+### Patch Changes
+
+- fix tuple types
+- Updated dependencies
+  - @beff/cli@0.0.83
+
 ## 0.0.82
 
 ### Patch Changes
