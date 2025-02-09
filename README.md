@@ -69,6 +69,13 @@ const user1 = Parsers.User.parse({
 });
 
 const maybeUser = Parser.User.safeParse(null);
+
+const isValid: boolean = Parser.User.validate({
+  name: "John Doe",
+  age: 42,
+});
+
+const jsonSchema = Parser.User.schema();
 ```
 
 ## CLI Options
@@ -89,42 +96,6 @@ Options:
 ```
 
 ## Features
-
-### Json Schema
-
-Generate flat JSON schema from types.
-
-Recursive types are not supported and become the equivalent of `any` in the second time they appear.
-
-Configure your `beff.json`
-
-```json
-{
-  "parser": "./src/parser.ts",
-  "outputDir": "./src/generated"
-}
-```
-
-Import the generated code and configure types that will be exported.
-
-```ts
-import s from "./generated/schema";
-
-type ProfileData = {
-  name: string;
-};
-
-type User = {
-  profile: ProfileData;
-  age: number;
-};
-
-export const Schemas = s.buildSchemas<{
-  User: User;
-}>();
-
-console.log(Schemas.User); // JSON Schema without references
-```
 
 ### Custom String Formats
 
