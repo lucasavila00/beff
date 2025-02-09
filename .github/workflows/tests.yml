@@ -24,4 +24,5 @@ jobs:
           pnpm wasm:dev
           DEBUG=true pnpm all
           git add .
+          git diff-index --cached HEAD
           git diff-index --cached --quiet HEAD || (echo "Error: There are changed files" && exit 1)
