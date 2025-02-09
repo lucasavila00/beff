@@ -55,8 +55,8 @@ it("works", () => {
       "type": "null",
     }
   `);
-  expect(b.Any().schema()).toMatchInlineSnapshot('{}');
-  expect(b.Unknown().schema()).toMatchInlineSnapshot('{}');
+  expect(b.Any().schema()).toMatchInlineSnapshot("{}");
+  expect(b.Unknown().schema()).toMatchInlineSnapshot("{}");
   expect(b.Void().schema()).toMatchInlineSnapshot(`
     {
       "type": "null",
