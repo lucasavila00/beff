@@ -55,19 +55,15 @@ function buildParsers(args) {
     
     const schemaFn = buildSchemaInput[k];
     const schema = () => {
-      const ctx = {};
+      const ctx = {
+        path: [],
+      };
       return schemaFn(ctx);
     };
 
     const safeParse = (input, options) => {
       const disallowExtraProperties = options?.disallowExtraProperties ?? false;
       const ok = validate(input, options);
-      
-      
-      
-      
-      
-      
       if (ok) {
         
         let p = buildParsersInput[k];

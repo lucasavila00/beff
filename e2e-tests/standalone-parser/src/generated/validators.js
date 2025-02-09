@@ -207,6 +207,12 @@ function pushPath(ctx, key) {
 function popPath(ctx) {
   ctx.path.pop();
 }
+function printPath(ctx) {
+  return ctx.path.join(".");
+}
+function buildSchemaErrorMessage(ctx, message) {
+  return `Failed to print schema. At ${printPath(ctx)}: ${message}`;
+}
 function buildError(ctx, message, received) {
   return [
     {
@@ -327,7 +333,7 @@ function reportFunction(ctx, input) {
 }
 
 function schemaFunction(ctx) {
-  throw new Error("Cannot generate JSON Schema for function");
+  throw new Error(buildSchemaErrorMessage(ctx, "Cannot generate JSON Schema for function"));
 }
 
 class ConstDecoder {
@@ -411,10 +417,10 @@ class CodecDecoder {
   schemaCodecDecoder(ctx) {
     switch (this.codec) {
       case "Codec::ISO8061": {
-        throw new Error("Cannot generate JSON Schema for Date");
+        throw new Error(buildSchemaErrorMessage(ctx, "Cannot generate JSON Schema for Date"));
       }
       case "Codec::BigInt": {
-        throw new Error("Cannot generate JSON Schema for BigInt");
+        throw new Error(buildSchemaErrorMessage(ctx, "Cannot generate JSON Schema for BigInt"));
       }
     }
 
@@ -625,16 +631,20 @@ class ObjectSchema {
   schemaObjectSchema(ctx) {
     const properties = {};
     for (const k in this.data) {
+      pushPath(ctx, k);
       properties[k] = this.data[k](ctx);
+      popPath(ctx);
     }
 
     const required = Object.keys(this.data);
+
+    const additionalProperties = this.rest != null ? this.rest(ctx) : false;
 
     return {
       type: "object",
       properties,
       required,
-      additionalProperties: this.rest != null ? this.rest(ctx) : false,
+      additionalProperties,
     };
   }
 }
@@ -788,9 +798,12 @@ class ArraySchema {
   }
 
   schemaArraySchema(ctx) {
+    pushPath(ctx, "[]");
+    const items = this.innerSchema(ctx);
+    popPath(ctx);
     return {
       type: "array",
-      items: this.innerSchema(ctx),
+      items,
     };
   }
 }
@@ -1019,8 +1032,10 @@ class TupleSchema {
   }
 
   schemaTupleSchema(ctx) {
+    pushPath(ctx, "[]");
     const items = this.prefix.map((s) => s(ctx));
     const additionalItems = this.rest != null ? this.rest(ctx) : false;
+    popPath(ctx);
     return {
       type: "array",
       items,

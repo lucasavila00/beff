@@ -19,6 +19,8 @@ const hoisted_anyArray_2 = new ArrayParser(parseIdentity);
 const hoisted_anyArray_3 = new ArrayReporter(hoisted_anyArray_0, reportAny);
 const hoisted_anyArray_4 = new ArraySchema(schemaAny);
 const buildValidatorsInput = {
+    "InvalidSchemaWithBigInt": validators.InvalidSchemaWithBigInt,
+    "InvalidSchemaWithDate": validators.InvalidSchemaWithDate,
     "T1": validators.T1,
     "T2": validators.T2,
     "T3": validators.T3,
@@ -33,6 +35,8 @@ const buildValidatorsInput = {
     "undefined": validateNull
 };
 const buildParsersInput = {
+    "InvalidSchemaWithBigInt": parsers.InvalidSchemaWithBigInt,
+    "InvalidSchemaWithDate": parsers.InvalidSchemaWithDate,
     "T1": parsers.T1,
     "T2": parsers.T2,
     "T3": parsers.T3,
@@ -47,6 +51,8 @@ const buildParsersInput = {
     "undefined": parseIdentity
 };
 const buildReportersInput = {
+    "InvalidSchemaWithBigInt": reporters.InvalidSchemaWithBigInt,
+    "InvalidSchemaWithDate": reporters.InvalidSchemaWithDate,
     "T1": reporters.T1,
     "T2": reporters.T2,
     "T3": reporters.T3,
@@ -61,6 +67,8 @@ const buildReportersInput = {
     "undefined": reportNull
 };
 const buildSchemaInput = {
+    "InvalidSchemaWithBigInt": schemas.InvalidSchemaWithBigInt,
+    "InvalidSchemaWithDate": schemas.InvalidSchemaWithDate,
     "T1": schemas.T1,
     "T2": schemas.T2,
     "T3": schemas.T3,
@@ -111,19 +119,15 @@ function buildParsers(args) {
     
     const schemaFn = buildSchemaInput[k];
     const schema = () => {
-      const ctx = {};
+      const ctx = {
+        path: [],
+      };
       return schemaFn(ctx);
     };
 
     const safeParse = (input, options) => {
       const disallowExtraProperties = options?.disallowExtraProperties ?? false;
       const ok = validate(input, options);
-      
-      
-      
-      
-      
-      
       if (ok) {
         
         let p = buildParsersInput[k];

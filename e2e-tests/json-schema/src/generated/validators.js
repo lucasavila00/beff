@@ -207,6 +207,12 @@ function pushPath(ctx, key) {
 function popPath(ctx) {
   ctx.path.pop();
 }
+function printPath(ctx) {
+  return ctx.path.join(".");
+}
+function buildSchemaErrorMessage(ctx, message) {
+  return `Failed to print schema. At ${printPath(ctx)}: ${message}`;
+}
 function buildError(ctx, message, received) {
   return [
     {
@@ -327,7 +333,7 @@ function reportFunction(ctx, input) {
 }
 
 function schemaFunction(ctx) {
-  throw new Error("Cannot generate JSON Schema for function");
+  throw new Error(buildSchemaErrorMessage(ctx, "Cannot generate JSON Schema for function"));
 }
 
 class ConstDecoder {
@@ -411,10 +417,10 @@ class CodecDecoder {
   schemaCodecDecoder(ctx) {
     switch (this.codec) {
       case "Codec::ISO8061": {
-        throw new Error("Cannot generate JSON Schema for Date");
+        throw new Error(buildSchemaErrorMessage(ctx, "Cannot generate JSON Schema for Date"));
       }
       case "Codec::BigInt": {
-        throw new Error("Cannot generate JSON Schema for BigInt");
+        throw new Error(buildSchemaErrorMessage(ctx, "Cannot generate JSON Schema for BigInt"));
       }
     }
 
@@ -625,16 +631,20 @@ class ObjectSchema {
   schemaObjectSchema(ctx) {
     const properties = {};
     for (const k in this.data) {
+      pushPath(ctx, k);
       properties[k] = this.data[k](ctx);
+      popPath(ctx);
     }
 
     const required = Object.keys(this.data);
+
+    const additionalProperties = this.rest != null ? this.rest(ctx) : false;
 
     return {
       type: "object",
       properties,
       required,
-      additionalProperties: this.rest != null ? this.rest(ctx) : false,
+      additionalProperties,
     };
   }
 }
@@ -788,9 +798,12 @@ class ArraySchema {
   }
 
   schemaArraySchema(ctx) {
+    pushPath(ctx, "[]");
+    const items = this.innerSchema(ctx);
+    popPath(ctx);
     return {
       type: "array",
-      items: this.innerSchema(ctx),
+      items,
     };
   }
 }
@@ -1019,8 +1032,10 @@ class TupleSchema {
   }
 
   schemaTupleSchema(ctx) {
+    pushPath(ctx, "[]");
     const items = this.prefix.map((s) => s(ctx));
     const additionalItems = this.rest != null ? this.rest(ctx) : false;
+    popPath(ctx);
     return {
       type: "array",
       items,
@@ -1066,6 +1081,30 @@ function ReportT3(ctx, input) {
 function SchemaT3(ctx, input) {
     return (hoisted_T3_11.schemaObjectSchema.bind(hoisted_T3_11))(ctx);
 }
+function ValidateInvalidSchemaWithDate(ctx, input) {
+    return (hoisted_InvalidSchemaWithDate_4.validateObjectValidator.bind(hoisted_InvalidSchemaWithDate_4))(ctx, input);
+}
+function ParseInvalidSchemaWithDate(ctx, input) {
+    return (hoisted_InvalidSchemaWithDate_5.parseObjectParser.bind(hoisted_InvalidSchemaWithDate_5))(ctx, input);
+}
+function ReportInvalidSchemaWithDate(ctx, input) {
+    return (hoisted_InvalidSchemaWithDate_6.reportObjectReporter.bind(hoisted_InvalidSchemaWithDate_6))(ctx, input);
+}
+function SchemaInvalidSchemaWithDate(ctx, input) {
+    return (hoisted_InvalidSchemaWithDate_7.schemaObjectSchema.bind(hoisted_InvalidSchemaWithDate_7))(ctx);
+}
+function ValidateInvalidSchemaWithBigInt(ctx, input) {
+    return (hoisted_InvalidSchemaWithBigInt_4.validateObjectValidator.bind(hoisted_InvalidSchemaWithBigInt_4))(ctx, input);
+}
+function ParseInvalidSchemaWithBigInt(ctx, input) {
+    return (hoisted_InvalidSchemaWithBigInt_5.parseObjectParser.bind(hoisted_InvalidSchemaWithBigInt_5))(ctx, input);
+}
+function ReportInvalidSchemaWithBigInt(ctx, input) {
+    return (hoisted_InvalidSchemaWithBigInt_6.reportObjectReporter.bind(hoisted_InvalidSchemaWithBigInt_6))(ctx, input);
+}
+function SchemaInvalidSchemaWithBigInt(ctx, input) {
+    return (hoisted_InvalidSchemaWithBigInt_7.schemaObjectSchema.bind(hoisted_InvalidSchemaWithBigInt_7))(ctx);
+}
 function ValidateValidCurrency(ctx, input) {
     return (hoisted_ValidCurrency_0.validateStringWithFormatDecoder.bind(hoisted_ValidCurrency_0))(ctx, input);
 }
@@ -1082,24 +1121,32 @@ const validators = {
     T1: ValidateT1,
     T2: ValidateT2,
     T3: ValidateT3,
+    InvalidSchemaWithDate: ValidateInvalidSchemaWithDate,
+    InvalidSchemaWithBigInt: ValidateInvalidSchemaWithBigInt,
     ValidCurrency: ValidateValidCurrency
 };
 const parsers = {
     T1: ParseT1,
     T2: ParseT2,
     T3: ParseT3,
+    InvalidSchemaWithDate: ParseInvalidSchemaWithDate,
+    InvalidSchemaWithBigInt: ParseInvalidSchemaWithBigInt,
     ValidCurrency: ParseValidCurrency
 };
 const reporters = {
     T1: ReportT1,
     T2: ReportT2,
     T3: ReportT3,
+    InvalidSchemaWithDate: ReportInvalidSchemaWithDate,
+    InvalidSchemaWithBigInt: ReportInvalidSchemaWithBigInt,
     ValidCurrency: ReportValidCurrency
 };
 const schemas = {
     T1: SchemaT1,
     T2: SchemaT2,
     T3: SchemaT3,
+    InvalidSchemaWithDate: SchemaInvalidSchemaWithDate,
+    InvalidSchemaWithBigInt: SchemaInvalidSchemaWithBigInt,
     ValidCurrency: SchemaValidCurrency
 };
 const hoisted_T1_0 = {
@@ -1156,6 +1203,38 @@ const hoisted_T3_10 = new ObjectReporter(hoisted_T3_5, hoisted_T3_7, {
     "t2Array": hoisted_T3_3.reportArrayReporter.bind(hoisted_T3_3)
 }, null);
 const hoisted_T3_11 = new ObjectSchema(hoisted_T3_6, null);
+const hoisted_InvalidSchemaWithDate_0 = new CodecDecoder("Codec::ISO8061");
+const hoisted_InvalidSchemaWithDate_1 = {
+    "x": hoisted_InvalidSchemaWithDate_0.validateCodecDecoder.bind(hoisted_InvalidSchemaWithDate_0)
+};
+const hoisted_InvalidSchemaWithDate_2 = {
+    "x": hoisted_InvalidSchemaWithDate_0.schemaCodecDecoder.bind(hoisted_InvalidSchemaWithDate_0)
+};
+const hoisted_InvalidSchemaWithDate_3 = null;
+const hoisted_InvalidSchemaWithDate_4 = new ObjectValidator(hoisted_InvalidSchemaWithDate_1, hoisted_InvalidSchemaWithDate_3);
+const hoisted_InvalidSchemaWithDate_5 = new ObjectParser({
+    "x": hoisted_InvalidSchemaWithDate_0.parseCodecDecoder.bind(hoisted_InvalidSchemaWithDate_0)
+}, null);
+const hoisted_InvalidSchemaWithDate_6 = new ObjectReporter(hoisted_InvalidSchemaWithDate_1, hoisted_InvalidSchemaWithDate_3, {
+    "x": hoisted_InvalidSchemaWithDate_0.reportCodecDecoder.bind(hoisted_InvalidSchemaWithDate_0)
+}, null);
+const hoisted_InvalidSchemaWithDate_7 = new ObjectSchema(hoisted_InvalidSchemaWithDate_2, null);
+const hoisted_InvalidSchemaWithBigInt_0 = new CodecDecoder("Codec::BigInt");
+const hoisted_InvalidSchemaWithBigInt_1 = {
+    "x": hoisted_InvalidSchemaWithBigInt_0.validateCodecDecoder.bind(hoisted_InvalidSchemaWithBigInt_0)
+};
+const hoisted_InvalidSchemaWithBigInt_2 = {
+    "x": hoisted_InvalidSchemaWithBigInt_0.schemaCodecDecoder.bind(hoisted_InvalidSchemaWithBigInt_0)
+};
+const hoisted_InvalidSchemaWithBigInt_3 = null;
+const hoisted_InvalidSchemaWithBigInt_4 = new ObjectValidator(hoisted_InvalidSchemaWithBigInt_1, hoisted_InvalidSchemaWithBigInt_3);
+const hoisted_InvalidSchemaWithBigInt_5 = new ObjectParser({
+    "x": hoisted_InvalidSchemaWithBigInt_0.parseCodecDecoder.bind(hoisted_InvalidSchemaWithBigInt_0)
+}, null);
+const hoisted_InvalidSchemaWithBigInt_6 = new ObjectReporter(hoisted_InvalidSchemaWithBigInt_1, hoisted_InvalidSchemaWithBigInt_3, {
+    "x": hoisted_InvalidSchemaWithBigInt_0.reportCodecDecoder.bind(hoisted_InvalidSchemaWithBigInt_0)
+}, null);
+const hoisted_InvalidSchemaWithBigInt_7 = new ObjectSchema(hoisted_InvalidSchemaWithBigInt_2, null);
 const hoisted_ValidCurrency_0 = new StringWithFormatDecoder("ValidCurrency");
 
 export default { registerCustomFormatter, ObjectValidator, ObjectParser, ArrayParser, ArrayValidator, CodecDecoder, StringWithFormatDecoder, AnyOfValidator, AnyOfParser, AllOfValidator, AllOfParser, TupleParser, TupleValidator, RegexDecoder, ConstDecoder, AnyOfConstsDecoder, AnyOfDiscriminatedParser, AnyOfDiscriminatedValidator, validateString, validateNumber, validateFunction, validateBoolean, validateAny, validateNull, validateNever, parseIdentity, reportString, reportNumber, reportNull, reportBoolean, reportAny, reportNever, reportFunction, ArrayReporter, ObjectReporter, TupleReporter, AnyOfReporter, AllOfReporter, AnyOfDiscriminatedReporter, schemaString, schemaNumber, schemaBoolean, schemaNull, schemaAny, schemaNever, schemaFunction, ArraySchema, ObjectSchema, TupleSchema, AnyOfSchema, AllOfSchema, AnyOfDiscriminatedSchema, validators, parsers, reporters, schemas };

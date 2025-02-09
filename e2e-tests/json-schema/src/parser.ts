@@ -16,6 +16,14 @@ type T3 = {
   t2Array: T2[];
 };
 
+type InvalidSchemaWithDate = {
+  x: Date;
+};
+
+type InvalidSchemaWithBigInt = {
+  x: bigint;
+};
+
 export const Codecs = parse.buildParsers<{
   // basic
   string: string;
@@ -30,6 +38,8 @@ export const Codecs = parse.buildParsers<{
   T1: T1;
   T2: T2;
   T3: T3;
+  InvalidSchemaWithDate: InvalidSchemaWithDate;
+  InvalidSchemaWithBigInt: InvalidSchemaWithBigInt;
 
   //
   ValidCurrency: ValidCurrency;

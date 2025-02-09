@@ -1,6 +1,15 @@
 import { it, expect } from "vitest";
 import { Codecs } from "../src/parser";
 
+it("throws errors", () => {
+  expect(() => Codecs.InvalidSchemaWithDate.schema()).toThrowErrorMatchingInlineSnapshot(
+    '"Failed to print schema. At x: Cannot generate JSON Schema for Date"'
+  );
+  expect(() => Codecs.InvalidSchemaWithBigInt.schema()).toThrowErrorMatchingInlineSnapshot(
+    '"Failed to print schema. At x: Cannot generate JSON Schema for BigInt"'
+  );
+});
+
 it("works", () => {
   expect(Codecs.string.schema()).toMatchInlineSnapshot(`
     {

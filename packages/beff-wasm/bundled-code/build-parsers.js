@@ -34,19 +34,15 @@ function buildParsers(args) {
     //@ts-ignore
     const schemaFn = buildSchemaInput[k];
     const schema = () => {
-      const ctx = {};
+      const ctx = {
+        path: [],
+      };
       return schemaFn(ctx);
     };
 
     const safeParse = (input, options) => {
       const disallowExtraProperties = options?.disallowExtraProperties ?? false;
       const ok = validate(input, options);
-      // const validation_result = validatorCtx.errors;
-      // if (validation_result == null) {
-      //   return { success: true, data: new_value };
-      // }
-      // const errorsSlice = validation_result.slice(0, 10);
-      // return { success: false, errors: errorsSlice };
       if (ok) {
         //@ts-ignore
         let p = buildParsersInput[k];
