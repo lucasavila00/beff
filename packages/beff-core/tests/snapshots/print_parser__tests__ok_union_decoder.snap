@@ -13,7 +13,13 @@ function ReportAlias(ctx, input) {
     return (hoisted_Alias_4.reportAnyOfReporter.bind(hoisted_Alias_4))(ctx, input);
 }
 function SchemaAlias(ctx, input) {
-    return (hoisted_Alias_5.schemaAnyOfSchema.bind(hoisted_Alias_5))(ctx);
+    if (ctx.seen["Alias"]) {
+        throw new Error("Failed to print schema. At Alias: circular reference in schema");
+    }
+    ctx.seen["Alias"] = true;
+    var tmp = (hoisted_Alias_5.schemaAnyOfSchema.bind(hoisted_Alias_5))(ctx);
+    delete ctx.seen["Alias"];
+    return tmp;
 }
 const validators = {
     Alias: ValidateAlias

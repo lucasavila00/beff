@@ -6,9 +6,11 @@ use crate::{
 use std::collections::{BTreeMap, BTreeSet};
 use swc_common::DUMMY_SP;
 use swc_ecma_ast::{
-    ArrayLit, BindingIdent, BlockStmt, CallExpr, Callee, Expr, ExprOrSpread, Function, Ident,
-    KeyValueProp, Lit, MemberExpr, MemberProp, ModuleItem, NewExpr, Null, ObjectLit, Param,
-    ParenExpr, Pat, Prop, PropName, PropOrSpread, Regex, ReturnStmt, Stmt, Str,
+    ArrayLit, AssignExpr, AssignOp, BindingIdent, BlockStmt, Bool, CallExpr, Callee,
+    ComputedPropName, Decl, Expr, ExprOrSpread, ExprStmt, Function, Ident, IfStmt, KeyValueProp,
+    Lit, MemberExpr, MemberProp, ModuleItem, NewExpr, Null, ObjectLit, Param, ParenExpr, Pat, Prop,
+    PropName, PropOrSpread, Regex, ReturnStmt, Stmt, Str, ThrowStmt, UnaryExpr, UnaryOp, VarDecl,
+    VarDeclKind, VarDeclarator,
 };
 struct SwcBuilder;
 
@@ -1202,6 +1204,34 @@ pub fn func_validator_for_schema(
         return_type: None,
     };
 
+    let ctx_seen_name = Expr::Member(MemberExpr {
+        span: DUMMY_SP,
+        obj: Expr::Member(MemberExpr {
+            span: DUMMY_SP,
+            obj: Expr::Ident(Ident {
+                span: DUMMY_SP,
+                sym: "ctx".into(),
+                optional: false,
+            })
+            .into(),
+            prop: MemberProp::Ident(Ident {
+                span: DUMMY_SP,
+                sym: "seen".into(),
+                optional: false,
+            }),
+        })
+        .into(),
+        prop: MemberProp::Computed(ComputedPropName {
+            span: DUMMY_SP,
+            expr: Expr::Lit(Lit::Str(Str {
+                span: DUMMY_SP,
+                value: name.into(),
+                raw: None,
+            }))
+            .into(),
+        }),
+    });
+
     let schema_fn = Function {
         params: vec![
             Param {
@@ -1229,21 +1259,103 @@ pub fn func_validator_for_schema(
         span: DUMMY_SP,
         body: BlockStmt {
             span: DUMMY_SP,
-            stmts: vec![Stmt::Return(ReturnStmt {
-                span: DUMMY_SP,
-                arg: Some(Box::new(Expr::Call(CallExpr {
+            stmts: vec![
+                Stmt::If(IfStmt {
                     span: DUMMY_SP,
-                    callee: Callee::Expr(Box::new(Expr::Paren(ParenExpr {
+                    test: ctx_seen_name.clone().into(),
+                    cons: Stmt::Block(BlockStmt {
                         span: DUMMY_SP,
-                        expr: schema.into(),
+                        stmts: vec![Stmt::Throw(ThrowStmt {
+                            span: DUMMY_SP,
+                            arg: Expr::New(NewExpr {
+                                span: DUMMY_SP,
+                                callee: Expr::Ident(Ident {
+                                    span: DUMMY_SP,
+                                    sym: "Error".into(),
+                                    optional: false,
+                                })
+                                .into(),
+                                args: Some(vec![ExprOrSpread {
+                                    spread: None,
+                                    expr: Expr::Lit(Lit::Str(Str {
+                                        span: DUMMY_SP,
+                                        value: format!("Failed to print schema. At {}: circular reference in schema", name)
+                                            .into(),
+                                        raw: None,
+                                    }))
+                                    .into(),
+                                }]),
+                                type_args: None,
+                            })
+                            .into(),
+                        })],
+                    })
+                    .into(),
+                    alt: None,
+                }),
+                Stmt::Expr(ExprStmt {
+                    span: DUMMY_SP,
+                    expr: Box::new(Expr::Assign(AssignExpr {
+                        span: DUMMY_SP,
+                        op: AssignOp::Assign,
+                        left: swc_ecma_ast::PatOrExpr::Expr(ctx_seen_name.clone().into()),
+                        right: Expr::Lit(Lit::Bool(Bool {
+                            span: DUMMY_SP,
+                            value: true,
+                        }))
+                        .into(),
+                    })),
+                }),
+                Stmt::Decl(Decl::Var(
+                    VarDecl {
+                        span: DUMMY_SP,
+                        kind: VarDeclKind::Var,
+                        declare: false,
+                        decls: vec![VarDeclarator {
+                            span: DUMMY_SP,
+                            name: Pat::Ident(BindingIdent {
+                                type_ann: None,
+                                id: Ident {
+                                    span: DUMMY_SP,
+                                    sym: "tmp".into(),
+                                    optional: false,
+                                },
+                            }),
+                            init: Some(Box::new(Expr::Call(CallExpr {
+                                span: DUMMY_SP,
+                                callee: Callee::Expr(Box::new(Expr::Paren(ParenExpr {
+                                    span: DUMMY_SP,
+                                    expr: schema.into(),
+                                }))),
+                                args: vec![ExprOrSpread {
+                                    spread: None,
+                                    expr: SwcBuilder::ident_expr("ctx").into(),
+                                }],
+                                type_args: None,
+                            }))),
+                            definite: false,
+                        }],
+                    }
+                    .into(),
+                )),
+                Stmt::Expr(ExprStmt {
+                    span: DUMMY_SP,
+                    expr: Expr::Unary(UnaryExpr {
+                        span: DUMMY_SP,
+                        op: UnaryOp::Delete,
+                        arg: ctx_seen_name.into(),
+                    })
+                    .into(),
+                }),
+                Stmt::Return(ReturnStmt {
+                    span: DUMMY_SP,
+                    arg: Some(Box::new(Expr::Ident(Ident {
+                        span: DUMMY_SP,
+                        sym: "tmp".into(),
+                        optional: false,
                     }))),
-                    args: vec![ExprOrSpread {
-                        spread: None,
-                        expr: SwcBuilder::ident_expr("ctx").into(),
-                    }],
-                    type_args: None,
-                }))),
-            })],
+                }),
+            ],
         }
         .into(),
         is_async: false,

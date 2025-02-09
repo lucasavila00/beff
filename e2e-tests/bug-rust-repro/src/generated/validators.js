@@ -1059,7 +1059,13 @@ function ReportA(ctx, input) {
     return (reportString)(ctx, input);
 }
 function SchemaA(ctx, input) {
-    return (schemaString)(ctx);
+    if (ctx.seen["A"]) {
+        throw new Error("Failed to print schema. At A: circular reference in schema");
+    }
+    ctx.seen["A"] = true;
+    var tmp = (schemaString)(ctx);
+    delete ctx.seen["A"];
+    return tmp;
 }
 const validators = {
     A: ValidateA

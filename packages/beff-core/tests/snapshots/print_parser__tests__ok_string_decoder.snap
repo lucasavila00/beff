@@ -13,7 +13,13 @@ function ReportAlias(ctx, input) {
     return (reportString)(ctx, input);
 }
 function SchemaAlias(ctx, input) {
-    return (schemaString)(ctx);
+    if (ctx.seen["Alias"]) {
+        throw new Error("Failed to print schema. At Alias: circular reference in schema");
+    }
+    ctx.seen["Alias"] = true;
+    var tmp = (schemaString)(ctx);
+    delete ctx.seen["Alias"];
+    return tmp;
 }
 const validators = {
     Alias: ValidateAlias

@@ -8,6 +8,9 @@ it("throws errors", () => {
   expect(() => Codecs.InvalidSchemaWithBigInt.schema()).toThrowErrorMatchingInlineSnapshot(
     '"Failed to print schema. At x: Cannot generate JSON Schema for BigInt"'
   );
+  expect(() => Codecs.RecursiveTree.schema()).toThrowErrorMatchingInlineSnapshot(
+    '"Failed to print schema. At RecursiveTree: circular reference in schema"'
+  );
 });
 
 it("works", () => {

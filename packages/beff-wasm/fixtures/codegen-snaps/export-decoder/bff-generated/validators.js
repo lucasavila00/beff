@@ -1059,7 +1059,13 @@ function ReportUser(ctx, input) {
     return (hoisted_User_5.reportObjectReporter.bind(hoisted_User_5))(ctx, input);
 }
 function SchemaUser(ctx, input) {
-    return (hoisted_User_6.schemaObjectSchema.bind(hoisted_User_6))(ctx);
+    if (ctx.seen["User"]) {
+        throw new Error("Failed to print schema. At User: circular reference in schema");
+    }
+    ctx.seen["User"] = true;
+    var tmp = (hoisted_User_6.schemaObjectSchema.bind(hoisted_User_6))(ctx);
+    delete ctx.seen["User"];
+    return tmp;
 }
 function ValidateNotPublic(ctx, input) {
     return (hoisted_NotPublic_3.validateObjectValidator.bind(hoisted_NotPublic_3))(ctx, input);
@@ -1071,7 +1077,13 @@ function ReportNotPublic(ctx, input) {
     return (hoisted_NotPublic_5.reportObjectReporter.bind(hoisted_NotPublic_5))(ctx, input);
 }
 function SchemaNotPublic(ctx, input) {
-    return (hoisted_NotPublic_6.schemaObjectSchema.bind(hoisted_NotPublic_6))(ctx);
+    if (ctx.seen["NotPublic"]) {
+        throw new Error("Failed to print schema. At NotPublic: circular reference in schema");
+    }
+    ctx.seen["NotPublic"] = true;
+    var tmp = (hoisted_NotPublic_6.schemaObjectSchema.bind(hoisted_NotPublic_6))(ctx);
+    delete ctx.seen["NotPublic"];
+    return tmp;
 }
 function ValidateStartsWithA(ctx, input) {
     return (hoisted_StartsWithA_0.validateStringWithFormatDecoder.bind(hoisted_StartsWithA_0))(ctx, input);
@@ -1083,7 +1095,13 @@ function ReportStartsWithA(ctx, input) {
     return (hoisted_StartsWithA_0.reportStringWithFormatDecoder.bind(hoisted_StartsWithA_0))(ctx, input);
 }
 function SchemaStartsWithA(ctx, input) {
-    return (hoisted_StartsWithA_0.schemaStringWithFormatDecoder.bind(hoisted_StartsWithA_0))(ctx);
+    if (ctx.seen["StartsWithA"]) {
+        throw new Error("Failed to print schema. At StartsWithA: circular reference in schema");
+    }
+    ctx.seen["StartsWithA"] = true;
+    var tmp = (hoisted_StartsWithA_0.schemaStringWithFormatDecoder.bind(hoisted_StartsWithA_0))(ctx);
+    delete ctx.seen["StartsWithA"];
+    return tmp;
 }
 function ValidatePassword(ctx, input) {
     return (hoisted_Password_0.validateStringWithFormatDecoder.bind(hoisted_Password_0))(ctx, input);
@@ -1095,7 +1113,13 @@ function ReportPassword(ctx, input) {
     return (hoisted_Password_0.reportStringWithFormatDecoder.bind(hoisted_Password_0))(ctx, input);
 }
 function SchemaPassword(ctx, input) {
-    return (hoisted_Password_0.schemaStringWithFormatDecoder.bind(hoisted_Password_0))(ctx);
+    if (ctx.seen["Password"]) {
+        throw new Error("Failed to print schema. At Password: circular reference in schema");
+    }
+    ctx.seen["Password"] = true;
+    var tmp = (hoisted_Password_0.schemaStringWithFormatDecoder.bind(hoisted_Password_0))(ctx);
+    delete ctx.seen["Password"];
+    return tmp;
 }
 function ValidateA(ctx, input) {
     return (hoisted_A_0.validateAnyOfConstsDecoder.bind(hoisted_A_0))(ctx, input);
@@ -1107,7 +1131,13 @@ function ReportA(ctx, input) {
     return (hoisted_A_0.reportAnyOfConstsDecoder.bind(hoisted_A_0))(ctx, input);
 }
 function SchemaA(ctx, input) {
-    return (hoisted_A_0.schemaAnyOfConstsDecoder.bind(hoisted_A_0))(ctx);
+    if (ctx.seen["A"]) {
+        throw new Error("Failed to print schema. At A: circular reference in schema");
+    }
+    ctx.seen["A"] = true;
+    var tmp = (hoisted_A_0.schemaAnyOfConstsDecoder.bind(hoisted_A_0))(ctx);
+    delete ctx.seen["A"];
+    return tmp;
 }
 function ValidateB(ctx, input) {
     return (hoisted_B_0.validateAnyOfConstsDecoder.bind(hoisted_B_0))(ctx, input);
@@ -1119,7 +1149,13 @@ function ReportB(ctx, input) {
     return (hoisted_B_0.reportAnyOfConstsDecoder.bind(hoisted_B_0))(ctx, input);
 }
 function SchemaB(ctx, input) {
-    return (hoisted_B_0.schemaAnyOfConstsDecoder.bind(hoisted_B_0))(ctx);
+    if (ctx.seen["B"]) {
+        throw new Error("Failed to print schema. At B: circular reference in schema");
+    }
+    ctx.seen["B"] = true;
+    var tmp = (hoisted_B_0.schemaAnyOfConstsDecoder.bind(hoisted_B_0))(ctx);
+    delete ctx.seen["B"];
+    return tmp;
 }
 function ValidateD(ctx, input) {
     return (hoisted_D_0.validateAnyOfConstsDecoder.bind(hoisted_D_0))(ctx, input);
@@ -1131,7 +1167,13 @@ function ReportD(ctx, input) {
     return (hoisted_D_0.reportAnyOfConstsDecoder.bind(hoisted_D_0))(ctx, input);
 }
 function SchemaD(ctx, input) {
-    return (hoisted_D_0.schemaAnyOfConstsDecoder.bind(hoisted_D_0))(ctx);
+    if (ctx.seen["D"]) {
+        throw new Error("Failed to print schema. At D: circular reference in schema");
+    }
+    ctx.seen["D"] = true;
+    var tmp = (hoisted_D_0.schemaAnyOfConstsDecoder.bind(hoisted_D_0))(ctx);
+    delete ctx.seen["D"];
+    return tmp;
 }
 function ValidateE(ctx, input) {
     return (hoisted_E_0.validateAnyOfConstsDecoder.bind(hoisted_E_0))(ctx, input);
@@ -1143,7 +1185,13 @@ function ReportE(ctx, input) {
     return (hoisted_E_0.reportAnyOfConstsDecoder.bind(hoisted_E_0))(ctx, input);
 }
 function SchemaE(ctx, input) {
-    return (hoisted_E_0.schemaAnyOfConstsDecoder.bind(hoisted_E_0))(ctx);
+    if (ctx.seen["E"]) {
+        throw new Error("Failed to print schema. At E: circular reference in schema");
+    }
+    ctx.seen["E"] = true;
+    var tmp = (hoisted_E_0.schemaAnyOfConstsDecoder.bind(hoisted_E_0))(ctx);
+    delete ctx.seen["E"];
+    return tmp;
 }
 function ValidateUnionNested(ctx, input) {
     return (hoisted_UnionNested_0.validateAnyOfConstsDecoder.bind(hoisted_UnionNested_0))(ctx, input);
@@ -1155,7 +1203,13 @@ function ReportUnionNested(ctx, input) {
     return (hoisted_UnionNested_0.reportAnyOfConstsDecoder.bind(hoisted_UnionNested_0))(ctx, input);
 }
 function SchemaUnionNested(ctx, input) {
-    return (hoisted_UnionNested_0.schemaAnyOfConstsDecoder.bind(hoisted_UnionNested_0))(ctx);
+    if (ctx.seen["UnionNested"]) {
+        throw new Error("Failed to print schema. At UnionNested: circular reference in schema");
+    }
+    ctx.seen["UnionNested"] = true;
+    var tmp = (hoisted_UnionNested_0.schemaAnyOfConstsDecoder.bind(hoisted_UnionNested_0))(ctx);
+    delete ctx.seen["UnionNested"];
+    return tmp;
 }
 const validators = {
     User: ValidateUser,

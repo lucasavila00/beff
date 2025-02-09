@@ -22,6 +22,7 @@ const buildValidatorsInput = {
     "DiscriminatedUnion": validators.DiscriminatedUnion,
     "InvalidSchemaWithBigInt": validators.InvalidSchemaWithBigInt,
     "InvalidSchemaWithDate": validators.InvalidSchemaWithDate,
+    "RecursiveTree": validators.RecursiveTree,
     "T1": validators.T1,
     "T2": validators.T2,
     "T3": validators.T3,
@@ -39,6 +40,7 @@ const buildParsersInput = {
     "DiscriminatedUnion": parsers.DiscriminatedUnion,
     "InvalidSchemaWithBigInt": parsers.InvalidSchemaWithBigInt,
     "InvalidSchemaWithDate": parsers.InvalidSchemaWithDate,
+    "RecursiveTree": parsers.RecursiveTree,
     "T1": parsers.T1,
     "T2": parsers.T2,
     "T3": parsers.T3,
@@ -56,6 +58,7 @@ const buildReportersInput = {
     "DiscriminatedUnion": reporters.DiscriminatedUnion,
     "InvalidSchemaWithBigInt": reporters.InvalidSchemaWithBigInt,
     "InvalidSchemaWithDate": reporters.InvalidSchemaWithDate,
+    "RecursiveTree": reporters.RecursiveTree,
     "T1": reporters.T1,
     "T2": reporters.T2,
     "T3": reporters.T3,
@@ -73,6 +76,7 @@ const buildSchemaInput = {
     "DiscriminatedUnion": schemas.DiscriminatedUnion,
     "InvalidSchemaWithBigInt": schemas.InvalidSchemaWithBigInt,
     "InvalidSchemaWithDate": schemas.InvalidSchemaWithDate,
+    "RecursiveTree": schemas.RecursiveTree,
     "T1": schemas.T1,
     "T2": schemas.T2,
     "T3": schemas.T3,
@@ -125,6 +129,7 @@ function buildParsers(args) {
     const schema = () => {
       const ctx = {
         path: [],
+        seen: {},
       };
       return schemaFn(ctx);
     };

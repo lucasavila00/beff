@@ -13,7 +13,13 @@ function ReportDiscriminatedUnion4(ctx, input) {
     return (hoisted_DiscriminatedUnion4_36.reportAnyOfReporter.bind(hoisted_DiscriminatedUnion4_36))(ctx, input);
 }
 function SchemaDiscriminatedUnion4(ctx, input) {
-    return (hoisted_DiscriminatedUnion4_37.schemaAnyOfSchema.bind(hoisted_DiscriminatedUnion4_37))(ctx);
+    if (ctx.seen["DiscriminatedUnion4"]) {
+        throw new Error("Failed to print schema. At DiscriminatedUnion4: circular reference in schema");
+    }
+    ctx.seen["DiscriminatedUnion4"] = true;
+    var tmp = (hoisted_DiscriminatedUnion4_37.schemaAnyOfSchema.bind(hoisted_DiscriminatedUnion4_37))(ctx);
+    delete ctx.seen["DiscriminatedUnion4"];
+    return tmp;
 }
 const validators = {
     DiscriminatedUnion4: ValidateDiscriminatedUnion4

@@ -1059,7 +1059,13 @@ function ReportT1(ctx, input) {
     return (hoisted_T1_5.reportObjectReporter.bind(hoisted_T1_5))(ctx, input);
 }
 function SchemaT1(ctx, input) {
-    return (hoisted_T1_6.schemaObjectSchema.bind(hoisted_T1_6))(ctx);
+    if (ctx.seen["T1"]) {
+        throw new Error("Failed to print schema. At T1: circular reference in schema");
+    }
+    ctx.seen["T1"] = true;
+    var tmp = (hoisted_T1_6.schemaObjectSchema.bind(hoisted_T1_6))(ctx);
+    delete ctx.seen["T1"];
+    return tmp;
 }
 function ValidateT2(ctx, input) {
     return (hoisted_T2_3.validateObjectValidator.bind(hoisted_T2_3))(ctx, input);
@@ -1071,7 +1077,13 @@ function ReportT2(ctx, input) {
     return (hoisted_T2_5.reportObjectReporter.bind(hoisted_T2_5))(ctx, input);
 }
 function SchemaT2(ctx, input) {
-    return (hoisted_T2_6.schemaObjectSchema.bind(hoisted_T2_6))(ctx);
+    if (ctx.seen["T2"]) {
+        throw new Error("Failed to print schema. At T2: circular reference in schema");
+    }
+    ctx.seen["T2"] = true;
+    var tmp = (hoisted_T2_6.schemaObjectSchema.bind(hoisted_T2_6))(ctx);
+    delete ctx.seen["T2"];
+    return tmp;
 }
 function ValidateT3(ctx, input) {
     return (hoisted_T3_8.validateObjectValidator.bind(hoisted_T3_8))(ctx, input);
@@ -1083,7 +1095,13 @@ function ReportT3(ctx, input) {
     return (hoisted_T3_10.reportObjectReporter.bind(hoisted_T3_10))(ctx, input);
 }
 function SchemaT3(ctx, input) {
-    return (hoisted_T3_11.schemaObjectSchema.bind(hoisted_T3_11))(ctx);
+    if (ctx.seen["T3"]) {
+        throw new Error("Failed to print schema. At T3: circular reference in schema");
+    }
+    ctx.seen["T3"] = true;
+    var tmp = (hoisted_T3_11.schemaObjectSchema.bind(hoisted_T3_11))(ctx);
+    delete ctx.seen["T3"];
+    return tmp;
 }
 function ValidateInvalidSchemaWithDate(ctx, input) {
     return (hoisted_InvalidSchemaWithDate_4.validateObjectValidator.bind(hoisted_InvalidSchemaWithDate_4))(ctx, input);
@@ -1095,7 +1113,13 @@ function ReportInvalidSchemaWithDate(ctx, input) {
     return (hoisted_InvalidSchemaWithDate_6.reportObjectReporter.bind(hoisted_InvalidSchemaWithDate_6))(ctx, input);
 }
 function SchemaInvalidSchemaWithDate(ctx, input) {
-    return (hoisted_InvalidSchemaWithDate_7.schemaObjectSchema.bind(hoisted_InvalidSchemaWithDate_7))(ctx);
+    if (ctx.seen["InvalidSchemaWithDate"]) {
+        throw new Error("Failed to print schema. At InvalidSchemaWithDate: circular reference in schema");
+    }
+    ctx.seen["InvalidSchemaWithDate"] = true;
+    var tmp = (hoisted_InvalidSchemaWithDate_7.schemaObjectSchema.bind(hoisted_InvalidSchemaWithDate_7))(ctx);
+    delete ctx.seen["InvalidSchemaWithDate"];
+    return tmp;
 }
 function ValidateInvalidSchemaWithBigInt(ctx, input) {
     return (hoisted_InvalidSchemaWithBigInt_4.validateObjectValidator.bind(hoisted_InvalidSchemaWithBigInt_4))(ctx, input);
@@ -1107,7 +1131,13 @@ function ReportInvalidSchemaWithBigInt(ctx, input) {
     return (hoisted_InvalidSchemaWithBigInt_6.reportObjectReporter.bind(hoisted_InvalidSchemaWithBigInt_6))(ctx, input);
 }
 function SchemaInvalidSchemaWithBigInt(ctx, input) {
-    return (hoisted_InvalidSchemaWithBigInt_7.schemaObjectSchema.bind(hoisted_InvalidSchemaWithBigInt_7))(ctx);
+    if (ctx.seen["InvalidSchemaWithBigInt"]) {
+        throw new Error("Failed to print schema. At InvalidSchemaWithBigInt: circular reference in schema");
+    }
+    ctx.seen["InvalidSchemaWithBigInt"] = true;
+    var tmp = (hoisted_InvalidSchemaWithBigInt_7.schemaObjectSchema.bind(hoisted_InvalidSchemaWithBigInt_7))(ctx);
+    delete ctx.seen["InvalidSchemaWithBigInt"];
+    return tmp;
 }
 function ValidateDiscriminatedUnion(ctx, input) {
     return (hoisted_DiscriminatedUnion_92.validateAnyOfDiscriminatedValidator.bind(hoisted_DiscriminatedUnion_92))(ctx, input);
@@ -1119,7 +1149,31 @@ function ReportDiscriminatedUnion(ctx, input) {
     return (hoisted_DiscriminatedUnion_94.reportAnyOfDiscriminatedReporter.bind(hoisted_DiscriminatedUnion_94))(ctx, input);
 }
 function SchemaDiscriminatedUnion(ctx, input) {
-    return (hoisted_DiscriminatedUnion_95.schemaAnyOfDiscriminatedSchema.bind(hoisted_DiscriminatedUnion_95))(ctx);
+    if (ctx.seen["DiscriminatedUnion"]) {
+        throw new Error("Failed to print schema. At DiscriminatedUnion: circular reference in schema");
+    }
+    ctx.seen["DiscriminatedUnion"] = true;
+    var tmp = (hoisted_DiscriminatedUnion_95.schemaAnyOfDiscriminatedSchema.bind(hoisted_DiscriminatedUnion_95))(ctx);
+    delete ctx.seen["DiscriminatedUnion"];
+    return tmp;
+}
+function ValidateRecursiveTree(ctx, input) {
+    return (hoisted_RecursiveTree_8.validateObjectValidator.bind(hoisted_RecursiveTree_8))(ctx, input);
+}
+function ParseRecursiveTree(ctx, input) {
+    return (hoisted_RecursiveTree_9.parseObjectParser.bind(hoisted_RecursiveTree_9))(ctx, input);
+}
+function ReportRecursiveTree(ctx, input) {
+    return (hoisted_RecursiveTree_10.reportObjectReporter.bind(hoisted_RecursiveTree_10))(ctx, input);
+}
+function SchemaRecursiveTree(ctx, input) {
+    if (ctx.seen["RecursiveTree"]) {
+        throw new Error("Failed to print schema. At RecursiveTree: circular reference in schema");
+    }
+    ctx.seen["RecursiveTree"] = true;
+    var tmp = (hoisted_RecursiveTree_11.schemaObjectSchema.bind(hoisted_RecursiveTree_11))(ctx);
+    delete ctx.seen["RecursiveTree"];
+    return tmp;
 }
 function ValidateValidCurrency(ctx, input) {
     return (hoisted_ValidCurrency_0.validateStringWithFormatDecoder.bind(hoisted_ValidCurrency_0))(ctx, input);
@@ -1131,7 +1185,13 @@ function ReportValidCurrency(ctx, input) {
     return (hoisted_ValidCurrency_0.reportStringWithFormatDecoder.bind(hoisted_ValidCurrency_0))(ctx, input);
 }
 function SchemaValidCurrency(ctx, input) {
-    return (hoisted_ValidCurrency_0.schemaStringWithFormatDecoder.bind(hoisted_ValidCurrency_0))(ctx);
+    if (ctx.seen["ValidCurrency"]) {
+        throw new Error("Failed to print schema. At ValidCurrency: circular reference in schema");
+    }
+    ctx.seen["ValidCurrency"] = true;
+    var tmp = (hoisted_ValidCurrency_0.schemaStringWithFormatDecoder.bind(hoisted_ValidCurrency_0))(ctx);
+    delete ctx.seen["ValidCurrency"];
+    return tmp;
 }
 const validators = {
     T1: ValidateT1,
@@ -1140,6 +1200,7 @@ const validators = {
     InvalidSchemaWithDate: ValidateInvalidSchemaWithDate,
     InvalidSchemaWithBigInt: ValidateInvalidSchemaWithBigInt,
     DiscriminatedUnion: ValidateDiscriminatedUnion,
+    RecursiveTree: ValidateRecursiveTree,
     ValidCurrency: ValidateValidCurrency
 };
 const parsers = {
@@ -1149,6 +1210,7 @@ const parsers = {
     InvalidSchemaWithDate: ParseInvalidSchemaWithDate,
     InvalidSchemaWithBigInt: ParseInvalidSchemaWithBigInt,
     DiscriminatedUnion: ParseDiscriminatedUnion,
+    RecursiveTree: ParseRecursiveTree,
     ValidCurrency: ParseValidCurrency
 };
 const reporters = {
@@ -1158,6 +1220,7 @@ const reporters = {
     InvalidSchemaWithDate: ReportInvalidSchemaWithDate,
     InvalidSchemaWithBigInt: ReportInvalidSchemaWithBigInt,
     DiscriminatedUnion: ReportDiscriminatedUnion,
+    RecursiveTree: ReportRecursiveTree,
     ValidCurrency: ReportValidCurrency
 };
 const schemas = {
@@ -1167,6 +1230,7 @@ const schemas = {
     InvalidSchemaWithDate: SchemaInvalidSchemaWithDate,
     InvalidSchemaWithBigInt: SchemaInvalidSchemaWithBigInt,
     DiscriminatedUnion: SchemaDiscriminatedUnion,
+    RecursiveTree: SchemaRecursiveTree,
     ValidCurrency: SchemaValidCurrency
 };
 const hoisted_T1_0 = {
@@ -1544,6 +1608,30 @@ const hoisted_DiscriminatedUnion_95 = new AnyOfDiscriminatedSchema([
     hoisted_DiscriminatedUnion_83.schemaObjectSchema.bind(hoisted_DiscriminatedUnion_83),
     hoisted_DiscriminatedUnion_91.schemaObjectSchema.bind(hoisted_DiscriminatedUnion_91)
 ]);
+const hoisted_RecursiveTree_0 = validators.RecursiveTree;
+const hoisted_RecursiveTree_1 = new ArrayValidator(hoisted_RecursiveTree_0);
+const hoisted_RecursiveTree_2 = new ArrayParser(parsers.RecursiveTree);
+const hoisted_RecursiveTree_3 = new ArrayReporter(hoisted_RecursiveTree_0, reporters.RecursiveTree);
+const hoisted_RecursiveTree_4 = new ArraySchema(schemas.RecursiveTree);
+const hoisted_RecursiveTree_5 = {
+    "children": hoisted_RecursiveTree_1.validateArrayValidator.bind(hoisted_RecursiveTree_1),
+    "value": validateNumber
+};
+const hoisted_RecursiveTree_6 = {
+    "children": hoisted_RecursiveTree_4.schemaArraySchema.bind(hoisted_RecursiveTree_4),
+    "value": schemaNumber
+};
+const hoisted_RecursiveTree_7 = null;
+const hoisted_RecursiveTree_8 = new ObjectValidator(hoisted_RecursiveTree_5, hoisted_RecursiveTree_7);
+const hoisted_RecursiveTree_9 = new ObjectParser({
+    "children": hoisted_RecursiveTree_2.parseArrayParser.bind(hoisted_RecursiveTree_2),
+    "value": parseIdentity
+}, null);
+const hoisted_RecursiveTree_10 = new ObjectReporter(hoisted_RecursiveTree_5, hoisted_RecursiveTree_7, {
+    "children": hoisted_RecursiveTree_3.reportArrayReporter.bind(hoisted_RecursiveTree_3),
+    "value": reportNumber
+}, null);
+const hoisted_RecursiveTree_11 = new ObjectSchema(hoisted_RecursiveTree_6, null);
 const hoisted_ValidCurrency_0 = new StringWithFormatDecoder("ValidCurrency");
 
 export default { registerCustomFormatter, ObjectValidator, ObjectParser, ArrayParser, ArrayValidator, CodecDecoder, StringWithFormatDecoder, AnyOfValidator, AnyOfParser, AllOfValidator, AllOfParser, TupleParser, TupleValidator, RegexDecoder, ConstDecoder, AnyOfConstsDecoder, AnyOfDiscriminatedParser, AnyOfDiscriminatedValidator, validateString, validateNumber, validateFunction, validateBoolean, validateAny, validateNull, validateNever, parseIdentity, reportString, reportNumber, reportNull, reportBoolean, reportAny, reportNever, reportFunction, ArrayReporter, ObjectReporter, TupleReporter, AnyOfReporter, AllOfReporter, AnyOfDiscriminatedReporter, schemaString, schemaNumber, schemaBoolean, schemaNull, schemaAny, schemaNever, schemaFunction, ArraySchema, ObjectSchema, TupleSchema, AnyOfSchema, AllOfSchema, AnyOfDiscriminatedSchema, validators, parsers, reporters, schemas };

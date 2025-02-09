@@ -39,6 +39,12 @@ type DiscriminatedUnion =
       type: "b";
       value: number;
     };
+
+type RecursiveTree = {
+  value: number;
+  children: RecursiveTree[];
+};
+
 export const Codecs = parse.buildParsers<{
   // basic
   string: string;
@@ -56,6 +62,7 @@ export const Codecs = parse.buildParsers<{
   InvalidSchemaWithDate: InvalidSchemaWithDate;
   InvalidSchemaWithBigInt: InvalidSchemaWithBigInt;
   DiscriminatedUnion: DiscriminatedUnion;
+  RecursiveTree: RecursiveTree;
 
   //
   ValidCurrency: ValidCurrency;

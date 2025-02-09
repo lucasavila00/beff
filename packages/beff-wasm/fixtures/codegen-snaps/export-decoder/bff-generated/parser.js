@@ -92,6 +92,7 @@ function buildParsers(args) {
     const schema = () => {
       const ctx = {
         path: [],
+        seen: {},
       };
       return schemaFn(ctx);
     };
