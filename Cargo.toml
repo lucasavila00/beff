@@ -1,5 +1,5 @@
 [workspace]
-members = ["packages/beff-core", "packages/beff-wasm", ]
+members = ["packages/beff-core", "packages/beff-wasm", "packages/subt", ]
 
 [profile.release]
 # Tell `rustc` to optimize for small code size.

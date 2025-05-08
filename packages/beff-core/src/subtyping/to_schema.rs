@@ -149,7 +149,7 @@ impl SemTypeResolverContext<'_> {
     }
 }
 
-struct SchemerContext<'a, 'b> {
+pub struct SchemerContext<'a, 'b> {
     ctx: SemTypeResolverContext<'a>,
 
     schemer_memo: BTreeMap<Rc<SemType>, SchemaMemo>,
@@ -160,7 +160,7 @@ struct SchemerContext<'a, 'b> {
 }
 
 impl<'a, 'b> SchemerContext<'a, 'b> {
-    fn new(ctx: &'a mut SemTypeContext, counter: &'b mut usize) -> Self {
+    pub fn new(ctx: &'a mut SemTypeContext, counter: &'b mut usize) -> Self {
         Self {
             ctx: SemTypeResolverContext(ctx),
             validators: vec![],
@@ -185,7 +185,7 @@ impl<'a, 'b> SchemerContext<'a, 'b> {
 
         let rest = if mt.rest.is_empty(self.ctx.0) {
             bail!("rest should not be empty, all records are open")
-        } else if mt.rest.is_any() {
+        } else if mt.rest.is_any(self.ctx.0) {
             None
         } else {
             let schema = self.convert_to_schema(&mt.rest, None)?;
@@ -292,7 +292,7 @@ impl<'a, 'b> SchemerContext<'a, 'b> {
 
     fn list_atom_schema(&mut self, mt: &Rc<ListAtomic>) -> anyhow::Result<JsonSchema> {
         if mt.prefix_items.is_empty() {
-            if mt.items.is_any() {
+            if mt.items.is_any(&mut self.ctx.0) {
                 return Ok(JsonSchema::AnyArrayLike);
             }
             return Ok(JsonSchema::Array(Box::new(
