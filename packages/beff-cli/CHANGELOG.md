@@ -1,5 +1,11 @@
 # @beff/cli
 
+## 0.0.84
+
+### Patch Changes
+
+- change customFormat to stringFormat
+
 ## 0.0.83
 
 ### Patch Changes
