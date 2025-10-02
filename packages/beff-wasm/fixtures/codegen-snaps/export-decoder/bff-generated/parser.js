@@ -132,7 +132,7 @@ function buildParsers(args) {
           const errors = safeParse(val).errors;
           
           return printErrors(errors, []);
-        }
+        },
       );
     };
     decoders[k] = {
