@@ -8,7 +8,7 @@ jobs:
       # Setup .npmrc file to publish to npm
       - uses: pnpm/action-setup@v2
         with:
-          version: 8
+          version: 10
       - uses: actions-rust-lang/setup-rust-toolchain@v1
         with:
           components: clippy
