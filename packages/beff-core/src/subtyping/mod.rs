@@ -2,6 +2,7 @@ use std::collections::BTreeSet;
 use std::rc::Rc;
 
 use crate::ast::json_schema::{JsonSchemaConst, Optionality};
+use crate::subtyping::subtype::NumberRepresentationOrFormat;
 use crate::{ast::json_schema::JsonSchema, NamedSchema};
 
 use self::bdd::{ListAtomic, MappingAtomic};
@@ -156,6 +157,10 @@ impl<'a> ToSemTypeConverter<'a> {
             JsonSchema::StringWithFormat(s) => {
                 Ok(SemTypeContext::string_const(StringLitOrFormat::Format(s.clone())).into())
             }
+            JsonSchema::NumberWithFormat(s) => Ok(SemTypeContext::number_const(
+                NumberRepresentationOrFormat::Format(s.clone()),
+            )
+            .into()),
             JsonSchema::TplLitType(tpl) => {
                 Ok(SemTypeContext::string_const(StringLitOrFormat::Tpl(tpl.clone())).into())
             }
@@ -201,7 +206,10 @@ impl<'a> ToSemTypeConverter<'a> {
                 JsonSchemaConst::String(s) => {
                     Ok(SemTypeContext::string_const(StringLitOrFormat::Lit(s.clone())).into())
                 }
-                JsonSchemaConst::Number(n) => Ok(SemTypeContext::number_const(n.clone()).into()),
+                JsonSchemaConst::Number(n) => Ok(SemTypeContext::number_const(
+                    NumberRepresentationOrFormat::Lit(n.clone()),
+                )
+                .into()),
             },
             JsonSchema::AnyArrayLike => {
                 self.convert_to_sem_type(&JsonSchema::Array(JsonSchema::Any.into()), builder)

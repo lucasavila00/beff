@@ -135,6 +135,41 @@ export const Parsers = parse.buildParsers<{
 });
 ```
 
+### Custom Number Formats
+
+Configure your `beff.json`
+
+```json
+{
+  "parser": "./src/parser.ts",
+  "outputDir": "./src/generated",
+  "numberFormats": [
+    {
+      "name": "ValidCurrency"
+    }
+  ]
+}
+```
+
+Use the helper `NumberFormat` to create the type. It creates a branded typescript type.
+Define the runtime validator in the build parsers call.
+
+```ts
+import parse from "./generated/parser";
+import { NumberFormat } from "@beff/cli";
+export type NonNegativeNumber = NumberFormat<"NonNegativeNumber">;
+
+export const Parsers = parse.buildParsers<{
+  NonNegativeNumber: NonNegativeNumber;
+}>({
+  numberFormats: {
+    NonNegativeNumber: (input: number) => {
+      return input >= 0;
+    },
+  },
+});
+```
+
 ### Ad-hoc, one-off validator generator
 
 Beff supports a type creation API similar to `zod`, `io-ts` and similar.

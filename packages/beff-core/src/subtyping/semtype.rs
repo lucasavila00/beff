@@ -1,4 +1,4 @@
-use crate::subtyping::evidence::Evidence;
+use crate::subtyping::{evidence::Evidence, subtype::NumberRepresentationOrFormat};
 
 use super::{
     bdd::{
@@ -6,8 +6,8 @@ use super::{
     },
     evidence::{EvidenceResult, ProperSubtypeEvidenceResult},
     subtype::{
-        BasicTypeBitSet, BasicTypeCode, NumberRepresentation, ProperSubtype, ProperSubtypeOps,
-        StringLitOrFormat, SubType, SubTypeTag, VAL,
+        BasicTypeBitSet, BasicTypeCode, ProperSubtype, ProperSubtypeOps, StringLitOrFormat,
+        SubType, SubTypeTag, VAL,
     },
 };
 use std::{collections::BTreeMap, rc::Rc};
@@ -371,7 +371,7 @@ impl SemTypeContext {
             list_json_schema_ref_memo: BTreeMap::new(),
         }
     }
-    pub fn number_const(value: NumberRepresentation) -> SemType {
+    pub fn number_const(value: NumberRepresentationOrFormat) -> SemType {
         SemType::new_complex(
             0x0,
             vec![ProperSubtype::Number {

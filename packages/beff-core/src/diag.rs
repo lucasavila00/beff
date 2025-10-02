@@ -73,7 +73,8 @@ pub enum DiagnosticInfoMessage {
     TypeQueryArgsNotSupported,
     FoundValueExpectedType,
     FoundTypeExpectedValue,
-    CustomFormatIsNotRegistered,
+    CustomStringIsNotRegistered,
+    CustomNumberIsNotRegistered,
     GetMustNotHaveBody,
     InvalidIdentifierInPatternNoExplodeAllowed,
     CloseBlockMustEndPattern,
@@ -88,6 +89,7 @@ pub enum DiagnosticInfoMessage {
     TwoCallsToBuildParsers,
     CannotResolveSomethingOfOtherFile(String),
     InvalidUsageOfStringFormatTypeParameter,
+    InvalidUsageOfNumberFormatTypeParameter,
     CannotResolveNamespaceType,
     ShouldNotResolveTsInterfaceDeclAsNamespace,
     ShouldNotResolveTsTypeAsNamespace,
@@ -200,6 +202,9 @@ impl DiagnosticInfoMessage {
             DiagnosticInfoMessage::InvalidUsageOfStringFormatTypeParameter => {
                 "Invalid usage of string format type parameter".to_string()
             }
+            DiagnosticInfoMessage::InvalidUsageOfNumberFormatTypeParameter => {
+                "Invalid usage of number format type parameter".to_string()
+            }
             DiagnosticInfoMessage::CannotResolveNamespaceType => {
                 "Cannot resolve namespace type".to_string()
             }
@@ -226,8 +231,11 @@ impl DiagnosticInfoMessage {
             DiagnosticInfoMessage::GetMustNotHaveBody => {
                 "GET methods must not have a body".to_string()
             }
-            DiagnosticInfoMessage::CustomFormatIsNotRegistered => {
-                "Custom format is not registered".to_string()
+            DiagnosticInfoMessage::CustomStringIsNotRegistered => {
+                "Custom string format is not registered".to_string()
+            }
+            DiagnosticInfoMessage::CustomNumberIsNotRegistered => {
+                "Custom number format is not registered".to_string()
             }
             DiagnosticInfoMessage::FoundTypeExpectedValue => {
                 "Found type, expected value".to_string()

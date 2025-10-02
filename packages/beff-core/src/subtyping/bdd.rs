@@ -6,7 +6,10 @@ use std::{
 
 use anyhow::bail;
 
-use crate::{ast::json::N, subtyping::semtype::SemTypeContext};
+use crate::{
+    ast::json::N,
+    subtyping::{semtype::SemTypeContext, subtype::NumberRepresentationOrFormat},
+};
 
 use super::{
     evidence::{
@@ -986,10 +989,22 @@ pub fn list_indexed_access(
         SubType::False(_) => return Ok(SemTypeContext::never().into()),
         SubType::True(_) => ListNumberKey::True,
         SubType::Proper(proper) => match proper.as_ref() {
-            ProperSubtype::Number { allowed, values } => ListNumberKey::N {
-                allowed: *allowed,
-                values: values.clone(),
-            },
+            ProperSubtype::Number { allowed, values } => {
+                let mut acc = vec![];
+                for v in values {
+                    match v {
+                        NumberRepresentationOrFormat::Lit(n) => acc.push(n.clone()),
+                        NumberRepresentationOrFormat::Format(fmt) => {
+                            bail!("format cannot be used as list index: {}", fmt)
+                        }
+                    }
+                }
+
+                ListNumberKey::N {
+                    allowed: *allowed,
+                    values: acc,
+                }
+            }
             _ => unreachable!("should be string"),
         },
     };

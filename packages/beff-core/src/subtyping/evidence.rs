@@ -1,13 +1,13 @@
 use std::{collections::BTreeMap, rc::Rc};
 
-use super::subtype::{NumberRepresentation, StringLitOrFormat, SubTypeTag};
+use super::subtype::{NumberRepresentationOrFormat, StringLitOrFormat, SubTypeTag};
 
 #[derive(PartialEq, Eq, Hash, Debug, Ord, PartialOrd, Clone)]
 pub enum ProperSubtypeEvidence {
     Boolean(bool),
     Number {
         allowed: bool,
-        values: Vec<NumberRepresentation>,
+        values: Vec<NumberRepresentationOrFormat>,
     },
     String {
         allowed: bool,

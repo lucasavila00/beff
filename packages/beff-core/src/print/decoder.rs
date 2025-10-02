@@ -704,6 +704,15 @@ impl DecoderFnGenerator<'_> {
                     raw: None,
                 }))],
             ),
+            JsonSchema::NumberWithFormat(format) => self.static_schema_code(
+                hoisted,
+                "NumberWithFormatDecoder",
+                vec![Expr::Lit(Lit::Str(Str {
+                    span: DUMMY_SP,
+                    value: format.to_string().into(),
+                    raw: None,
+                }))],
+            ),
             JsonSchema::Const(json) => self.static_schema_code(
                 hoisted,
                 "ConstDecoder",

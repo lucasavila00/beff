@@ -5,5 +5,10 @@
     {
       "name": "ValidCurrency"
     }
+  ],
+  "numberFormats": [
+    {
+      "name": "NonNegativeNumber"
+    }
   ]
 }

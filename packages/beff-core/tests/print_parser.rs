@@ -46,7 +46,8 @@ mod tests {
         let entry = EntryPoints {
             parser_entry_point: Some(BffFileName::new("file.ts".into())),
             settings: BeffUserSettings {
-                custom_formats: BTreeSet::from_iter(vec!["password".to_string()]),
+                string_formats: BTreeSet::from_iter(vec!["password".to_string()]),
+                number_formats: BTreeSet::from_iter(vec!["age".to_string()]),
             },
         };
         beff_core::extract(&mut man, entry)

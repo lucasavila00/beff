@@ -355,7 +355,8 @@ pub struct UnresolvedExport {
 
 #[derive(Serialize, Deserialize, Debug)]
 pub struct BeffUserSettings {
-    pub custom_formats: BTreeSet<String>,
+    pub string_formats: BTreeSet<String>,
+    pub number_formats: BTreeSet<String>,
 }
 
 pub struct EntryPoints {

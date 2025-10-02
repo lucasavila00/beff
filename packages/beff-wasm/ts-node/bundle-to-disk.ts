@@ -5,13 +5,15 @@ import { ProjectJson, ProjectModule } from "./project";
 import gen from "./generated/bundle";
 
 const decodersExported = [
-  "registerCustomFormatter",
+  "registerStringFormatter",
+  "registerNumberFormatter",
   "ObjectValidator",
   "ObjectParser",
   "ArrayParser",
   "ArrayValidator",
   "CodecDecoder",
   "StringWithFormatDecoder",
+  "NumberWithFormatDecoder",
   "AnyOfValidator",
   "AnyOfParser",
   "AllOfValidator",
@@ -97,16 +99,23 @@ const importValidators = (mod: ProjectModule) => {
   return [importRest].join("\n");
 };
 
-const finalizeParserFile = (wasmCode: WritableModules, mod: ProjectModule, stringFormats: string[]) => {
+const finalizeParserFile = (
+  wasmCode: WritableModules,
+  mod: ProjectModule,
+  stringFormats: string[],
+  numberFormats: string[],
+) => {
   const exportedItems = ["buildParsers"].join(", ");
   const exports = [exportCode(mod), `{ ${exportedItems} };`].join(" ");
 
   const stringFormatsCode = `const RequiredStringFormats = ${JSON.stringify(stringFormats)};`;
+  const numberFormatsCode = `const RequiredNumberFormats = ${JSON.stringify(numberFormats)};`;
   return [
     "//@ts-nocheck\n/* eslint-disable */\n",
     esmTag(mod),
     importValidators(mod),
     stringFormatsCode,
+    numberFormatsCode,
     wasmCode.js_built_parsers,
     gen["build-parsers.js"],
     exports,
@@ -142,7 +151,12 @@ export const execProject = (
   if (projectJson.parser) {
     fs.writeFileSync(
       path.join(outputDir, "parser.js"),
-      finalizeParserFile(outResult, mod, projectJson.settings.stringFormats.map((it) => it.name) ?? []),
+      finalizeParserFile(
+        outResult,
+        mod,
+        projectJson.settings.stringFormats.map((it) => it.name) ?? [],
+        projectJson.settings.numberFormats.map((it) => it.name) ?? [],
+      ),
     );
     fs.writeFileSync(
       path.join(outputDir, "parser.d.ts"),

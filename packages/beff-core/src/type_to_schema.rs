@@ -813,11 +813,11 @@ impl<'a, 'b, R: FileManager> TypeToSchema<'a, 'b, R> {
                 }) = &**head
                 {
                     let val_str = value.to_string();
-                    if self.settings.custom_formats.contains(&val_str) {
+                    if self.settings.string_formats.contains(&val_str) {
                         return Ok(JsonSchema::StringWithFormat(val_str));
                     } else {
                         return self
-                            .error(span, DiagnosticInfoMessage::CustomFormatIsNotRegistered);
+                            .error(span, DiagnosticInfoMessage::CustomStringIsNotRegistered);
                     }
                 }
             }
@@ -825,6 +825,36 @@ impl<'a, 'b, R: FileManager> TypeToSchema<'a, 'b, R> {
         self.error(
             span,
             DiagnosticInfoMessage::InvalidUsageOfStringFormatTypeParameter,
+        )
+    }
+
+    fn get_number_with_format(
+        &mut self,
+        type_params: &Option<Box<TsTypeParamInstantiation>>,
+        span: &Span,
+    ) -> Res<JsonSchema> {
+        let r = type_params.as_ref().and_then(|it| it.params.split_first());
+
+        if let Some((head, rest)) = r {
+            if rest.is_empty() {
+                if let TsType::TsLitType(TsLitType {
+                    lit: TsLit::Str(Str { value, .. }),
+                    ..
+                }) = &**head
+                {
+                    let val_str = value.to_string();
+                    if self.settings.number_formats.contains(&val_str) {
+                        return Ok(JsonSchema::NumberWithFormat(val_str));
+                    } else {
+                        return self
+                            .error(span, DiagnosticInfoMessage::CustomNumberIsNotRegistered);
+                    }
+                }
+            }
+        }
+        self.error(
+            span,
+            DiagnosticInfoMessage::InvalidUsageOfNumberFormatTypeParameter,
         )
     }
 
@@ -853,6 +883,7 @@ impl<'a, 'b, R: FileManager> TypeToSchema<'a, 'b, R> {
                 return Ok(JsonSchema::Array(JsonSchema::Any.into()));
             }
             "StringFormat" => return self.get_string_with_format(type_params, &i.span),
+            "NumberFormat" => return self.get_number_with_format(type_params, &i.span),
             _ => {}
         }
         if let ResolvedLocalSymbol::TsBuiltin(bt) =

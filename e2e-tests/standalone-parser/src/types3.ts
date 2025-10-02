@@ -1,6 +1,7 @@
-import { StringFormat } from "@beff/cli";
+import { StringFormat, NumberFormat } from "@beff/cli";
 
 export type ValidCurrency = StringFormat<"ValidCurrency">;
+export type NonNegativeNumber = NumberFormat<"NonNegativeNumber">;
 
 export enum OtherEnum2 {
   C = "c",

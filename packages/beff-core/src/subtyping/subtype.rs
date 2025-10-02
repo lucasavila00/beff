@@ -58,7 +58,7 @@ pub enum SubType {
 }
 
 impl SubType {
-    fn number_subtype(allowed: bool, values: Vec<NumberRepresentation>) -> SubType {
+    fn number_subtype(allowed: bool, values: Vec<NumberRepresentationOrFormat>) -> SubType {
         if values.is_empty() {
             if allowed {
                 return SubType::False(SubTypeTag::Number);
@@ -86,12 +86,18 @@ pub enum StringLitOrFormat {
     Tpl(Vec<TplLitTypeItem>),
 }
 
+#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
+pub enum NumberRepresentationOrFormat {
+    Lit(NumberRepresentation),
+    Format(String),
+}
+
 #[derive(PartialEq, Eq, Hash, Debug, Ord, PartialOrd)]
 pub enum ProperSubtype {
     Boolean(bool),
     Number {
         allowed: bool,
-        values: Vec<NumberRepresentation>,
+        values: Vec<NumberRepresentationOrFormat>,
     },
     String {
         allowed: bool,

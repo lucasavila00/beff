@@ -1,5 +1,6 @@
 import parse from "./generated/parser";
 import { Arr2, OtherEnum, ValidCurrency, OtherEnum2, Arr3 } from "./types";
+import { NonNegativeNumber } from "./types3";
 import * as T4 from "./types4";
 import { b } from "./types4";
 
@@ -219,6 +220,7 @@ export const {
   DiscriminatedUnion4,
   Arr2C,
   ValidCurrency: ValidCurrencyCodec,
+  NonNegativeNumber: NonNegativeNumberCodec,
   UnionWithEnumAccess,
   AccessLevelCodec,
   T3,
@@ -285,6 +287,7 @@ export const {
   KDEF: KDEF;
   KABC: KABC;
   K: K;
+  NonNegativeNumber: NonNegativeNumber;
 }>({
   stringFormats: {
     ValidCurrency: (input: string) => {
@@ -292,6 +295,11 @@ export const {
         return true;
       }
       return false;
+    },
+  },
+  numberFormats: {
+    NonNegativeNumber: (input: number) => {
+      return input >= 0;
     },
   },
 });
