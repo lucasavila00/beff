@@ -1,5 +1,13 @@
 # @beff/client
 
+## 0.0.85
+
+### Patch Changes
+
+- upgrade builder code
+- Updated dependencies
+  - @beff/cli@0.0.85
+
 ## 0.0.84
 
 ### Patch Changes
