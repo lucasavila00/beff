@@ -16,6 +16,7 @@ import {
   DiscriminatedUnion4,
   Arr2C,
   ValidCurrencyCodec,
+  NonNegativeNumberCodec,
   T3,
   AvatarSize,
   AccessLevelTpl,
@@ -360,6 +361,23 @@ it("Custom Format", () => {
     }
   `);
 });
+
+it("custom number format", () => {
+  expect(NonNegativeNumberCodec.parse(123)).toBe(123);
+  expect(NonNegativeNumberCodec.safeParse(-123)).toMatchInlineSnapshot(`
+    {
+      "errors": [
+        {
+          "message": "expected number with format \\"NonNegativeNumber\\"",
+          "path": [],
+          "received": -123,
+        },
+      ],
+      "success": false,
+    }
+  `);
+});
+
 it("Arr spread", () => {
   expect(Arr2C.parse("C" satisfies Arr2)).toMatchInlineSnapshot('"C"');
 });

@@ -192,10 +192,16 @@ function deepmergeArray(options) {
 
 const deepmerge = deepmergeConstructor({ all: true, mergeArray: deepmergeArray });
 
-const customFormatters = {};
+const stringFormatters = {};
 
-function registerCustomFormatter(name, validator) {
-  customFormatters[name] = validator;
+function registerStringFormatter(name, validator) {
+  stringFormatters[name] = validator;
+}
+
+const numberFormatters = {};
+
+function registerNumberFormatter(name, validator) {
+  numberFormatters[name] = validator;
 }
 
 function pushPath(ctx, key) {
@@ -442,7 +448,7 @@ class StringWithFormatDecoder {
       return false;
     }
 
-    const validator = customFormatters[this.format];
+    const validator = stringFormatters[this.format];
 
     if (validator == null) {
       return false;
@@ -463,6 +469,38 @@ class StringWithFormatDecoder {
     };
   }
 }
+class NumberWithFormatDecoder {
+  constructor(format) {
+    this.format = format;
+  }
+
+  validateNumberWithFormatDecoder(ctx, input) {
+    if (typeof input !== "number") {
+      return false;
+    }
+
+    const validator = numberFormatters[this.format];
+
+    if (validator == null) {
+      return false;
+    }
+
+    return validator(input);
+  }
+  parseNumberWithFormatDecoder(ctx, input) {
+    return input;
+  }
+  reportNumberWithFormatDecoder(ctx, input) {
+    return buildError(ctx, `expected number with format "${this.format}"`, input);
+  }
+  schemaNumberWithFormatDecoder(ctx) {
+    return {
+      type: "string",
+      format: this.format,
+    };
+  }
+}
+
 const limitedCommaJoinJson = (arr) => {
   const limit = 3;
   if (arr.length < limit) {

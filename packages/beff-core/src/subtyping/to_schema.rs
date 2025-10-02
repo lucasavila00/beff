@@ -13,7 +13,7 @@ use crate::{
 use super::{
     bdd::{Atom, Bdd, ListAtomic},
     semtype::{MappingAtomicType, SemType, SemTypeContext, SemTypeOps},
-    subtype::{ProperSubtype, StringLitOrFormat, SubTypeTag},
+    subtype::{NumberRepresentationOrFormat, ProperSubtype, StringLitOrFormat, SubTypeTag},
 };
 
 pub enum SchemaMemo {
@@ -454,10 +454,20 @@ impl<'a, 'b> SchemerContext<'a, 'b> {
                 }
                 ProperSubtype::Number { allowed, values } => {
                     for h in values {
-                        acc.insert(maybe_not(
-                            JsonSchema::Const(JsonSchemaConst::Number(h.clone())),
-                            !allowed,
-                        ));
+                        match h {
+                            NumberRepresentationOrFormat::Lit(n) => {
+                                acc.insert(maybe_not(
+                                    JsonSchema::Const(JsonSchemaConst::Number(n.clone())),
+                                    !allowed,
+                                ));
+                            }
+                            NumberRepresentationOrFormat::Format(fmt) => {
+                                acc.insert(maybe_not(
+                                    JsonSchema::NumberWithFormat(fmt.clone()),
+                                    !allowed,
+                                ));
+                            }
+                        }
                     }
                 }
                 ProperSubtype::String { allowed, values } => {

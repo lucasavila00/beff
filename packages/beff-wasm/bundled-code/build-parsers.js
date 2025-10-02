@@ -13,7 +13,21 @@ function buildParsers(args) {
   Object.keys(stringFormats).forEach((k) => {
     const v = stringFormats[k];
     //@ts-ignore
-    registerCustomFormatter(k, v);
+    registerStringFormatter(k, v);
+  });
+
+  const numberFormats = args?.numberFormats ?? {};
+  //@ts-ignore
+  for (const k of RequiredNumberFormats) {
+    if (numberFormats[k] == null) {
+      throw new Error(`Missing custom format ${k}`);
+    }
+  }
+
+  Object.keys(numberFormats).forEach((k) => {
+    const v = numberFormats[k];
+    //@ts-ignore
+    registerNumberFormatter(k, v);
   });
 
   let decoders = {};

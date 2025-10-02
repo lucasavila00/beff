@@ -248,6 +248,7 @@ export class Bundler {
 }
 function serializeSettings(settings: BeffUserSettings) {
   return {
-    custom_formats: settings.stringFormats.map((it) => it.name) ?? [],
+    string_formats: settings.stringFormats.map((it) => it.name) ?? [],
+    number_formats: settings.numberFormats.map((it) => it.name) ?? [],
   };
 }

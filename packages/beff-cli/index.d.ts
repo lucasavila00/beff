@@ -179,6 +179,7 @@ export interface JSONSchema7 {
 
 export type Header<T> = T;
 export type StringFormat<Tag extends string> = string & { __customType: Tag };
+export type NumberFormat<Tag extends string> = number & { __customType: Tag };
 
 export type RegularDecodeError = {
   message: string;
@@ -213,9 +214,12 @@ type Parsers<T> = {
 };
 
 export type TagOfFormat<T extends StringFormat<string>> = T extends StringFormat<infer Tag> ? Tag : never;
+export type TagOfNumberFormat<T extends NumberFormat<string>> =
+  T extends NumberFormat<infer Tag> ? Tag : never;
 
 export type BuildParserFunction = <T>(args?: {
   stringFormats?: { [key: string]: (input: string) => boolean };
+  numberFormats?: { [key: string]: (input: number) => boolean };
 }) => Parsers<T>;
 
 type Schemas<T> = {

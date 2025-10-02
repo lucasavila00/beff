@@ -84,14 +84,14 @@ function deepmergeConstructor(options) {
     
     typeof Buffer !== "undefined"
       ? (value) =>
-          typeof value !== "object" ||
-          value === null ||
-          value instanceof RegExp ||
-          value instanceof Date ||
-          
-          value instanceof Buffer
+        typeof value !== "object" ||
+        value === null ||
+        value instanceof RegExp ||
+        value instanceof Date ||
+        
+        value instanceof Buffer
       : (value) =>
-          typeof value !== "object" || value === null || value instanceof RegExp || value instanceof Date;
+        typeof value !== "object" || value === null || value instanceof RegExp || value instanceof Date;
 
   const mergeArray =
     options && typeof options.mergeArray === "function"
@@ -195,10 +195,16 @@ function deepmergeArray(options) {
 
 const deepmerge = deepmergeConstructor({ all: true, mergeArray: deepmergeArray });
 
-const customFormatters = {};
+const stringFormatters = {};
 
-function registerCustomFormatter(name, validator) {
-  customFormatters[name] = validator;
+function registerStringFormatter(name, validator) {
+  stringFormatters[name] = validator;
+}
+
+const numberFormatters = {};
+
+function registerNumberFormatter(name, validator) {
+  numberFormatters[name] = validator;
 }
 
 function pushPath(ctx, key) {
@@ -445,7 +451,7 @@ class StringWithFormatDecoder {
       return false;
     }
 
-    const validator = customFormatters[this.format];
+    const validator = stringFormatters[this.format];
 
     if (validator == null) {
       return false;
@@ -466,6 +472,40 @@ class StringWithFormatDecoder {
     };
   }
 }
+class NumberWithFormatDecoder {
+  constructor(format) {
+    this.format = format;
+  }
+
+  validateNumberWithFormatDecoder(ctx, input) {
+    if (typeof input !== "number") {
+      return false;
+    }
+
+    const validator = numberFormatters[this.format];
+
+    if (validator == null) {
+      return false;
+    }
+
+    return validator(input);
+  }
+  parseNumberWithFormatDecoder(ctx, input) {
+    return input;
+  }
+  reportNumberWithFormatDecoder(ctx, input) {
+    return buildError(ctx, `expected number with format "${this.format}"`, input);
+  }
+  schemaNumberWithFormatDecoder(ctx) {
+    return {
+      type: "string",
+      format: this.format,
+    };
+  }
+}
+
+
+
 const limitedCommaJoinJson = (arr) => {
   const limit = 3;
   if (arr.length < limit) {
@@ -721,9 +761,9 @@ class AnyOfDiscriminatedReporter {
       const errs = buildError(
         ctx,
         "expected one of " +
-          Object.keys(this.mapping)
-            .map((it) => JSON.stringify(it))
-            .join(", "),
+        Object.keys(this.mapping)
+          .map((it) => JSON.stringify(it))
+          .join(", "),
         d,
       );
       popPath(ctx);
@@ -1700,4 +1740,4 @@ const hoisted_NonEmptyString_5 = new TupleSchema([
 ], schemaString);
 const hoisted_ValidCurrency_0 = new StringWithFormatDecoder("ValidCurrency");
 
-export default { registerCustomFormatter, ObjectValidator, ObjectParser, ArrayParser, ArrayValidator, CodecDecoder, StringWithFormatDecoder, AnyOfValidator, AnyOfParser, AllOfValidator, AllOfParser, TupleParser, TupleValidator, RegexDecoder, ConstDecoder, AnyOfConstsDecoder, AnyOfDiscriminatedParser, AnyOfDiscriminatedValidator, validateString, validateNumber, validateFunction, validateBoolean, validateAny, validateNull, validateNever, parseIdentity, reportString, reportNumber, reportNull, reportBoolean, reportAny, reportNever, reportFunction, ArrayReporter, ObjectReporter, TupleReporter, AnyOfReporter, AllOfReporter, AnyOfDiscriminatedReporter, schemaString, schemaNumber, schemaBoolean, schemaNull, schemaAny, schemaNever, schemaFunction, ArraySchema, ObjectSchema, TupleSchema, AnyOfSchema, AllOfSchema, AnyOfDiscriminatedSchema, validators, parsers, reporters, schemas };
+export default { registerStringFormatter, registerNumberFormatter, ObjectValidator, ObjectParser, ArrayParser, ArrayValidator, CodecDecoder, StringWithFormatDecoder, NumberWithFormatDecoder, AnyOfValidator, AnyOfParser, AllOfValidator, AllOfParser, TupleParser, TupleValidator, RegexDecoder, ConstDecoder, AnyOfConstsDecoder, AnyOfDiscriminatedParser, AnyOfDiscriminatedValidator, validateString, validateNumber, validateFunction, validateBoolean, validateAny, validateNull, validateNever, parseIdentity, reportString, reportNumber, reportNull, reportBoolean, reportAny, reportNever, reportFunction, ArrayReporter, ObjectReporter, TupleReporter, AnyOfReporter, AllOfReporter, AnyOfDiscriminatedReporter, schemaString, schemaNumber, schemaBoolean, schemaNull, schemaAny, schemaNever, schemaFunction, ArraySchema, ObjectSchema, TupleSchema, AnyOfSchema, AllOfSchema, AnyOfDiscriminatedSchema, validators, parsers, reporters, schemas };

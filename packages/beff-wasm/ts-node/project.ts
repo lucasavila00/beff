@@ -4,6 +4,7 @@ export type BeffCustomFormat = {
 
 export type BeffUserSettings = {
   stringFormats: BeffCustomFormat[];
+  numberFormats: BeffCustomFormat[];
 };
 export type ProjectJson = {
   parser?: string;
@@ -16,6 +17,7 @@ export type ProjectModule = "cjs" | "esm";
 
 const EMPTY_SETTINGS: BeffUserSettings = {
   stringFormats: [],
+  numberFormats: [],
 };
 export const parseUserSettings = (settings: any): BeffUserSettings => {
   if (settings == null) {
@@ -23,5 +25,6 @@ export const parseUserSettings = (settings: any): BeffUserSettings => {
   }
   return {
     stringFormats: settings.stringFormats ?? [],
+    numberFormats: settings.numberFormats ?? [],
   };
 };

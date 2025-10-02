@@ -4,8 +4,9 @@
 
 import {printErrors} from '@beff/client';
 import {z} from 'zod';
-import validatorsMod from "./validators.js"; const { registerCustomFormatter, ObjectValidator, ObjectParser, ArrayParser, ArrayValidator, CodecDecoder, StringWithFormatDecoder, AnyOfValidator, AnyOfParser, AllOfValidator, AllOfParser, TupleParser, TupleValidator, RegexDecoder, ConstDecoder, AnyOfConstsDecoder, AnyOfDiscriminatedParser, AnyOfDiscriminatedValidator, validateString, validateNumber, validateFunction, validateBoolean, validateAny, validateNull, validateNever, parseIdentity, reportString, reportNumber, reportNull, reportBoolean, reportAny, reportNever, reportFunction, ArrayReporter, ObjectReporter, TupleReporter, AnyOfReporter, AllOfReporter, AnyOfDiscriminatedReporter, schemaString, schemaNumber, schemaBoolean, schemaNull, schemaAny, schemaNever, schemaFunction, ArraySchema, ObjectSchema, TupleSchema, AnyOfSchema, AllOfSchema, AnyOfDiscriminatedSchema, validators, parsers, reporters, schemas, c } = validatorsMod;
+import validatorsMod from "./validators.js"; const { registerStringFormatter, registerNumberFormatter, ObjectValidator, ObjectParser, ArrayParser, ArrayValidator, CodecDecoder, StringWithFormatDecoder, NumberWithFormatDecoder, AnyOfValidator, AnyOfParser, AllOfValidator, AllOfParser, TupleParser, TupleValidator, RegexDecoder, ConstDecoder, AnyOfConstsDecoder, AnyOfDiscriminatedParser, AnyOfDiscriminatedValidator, validateString, validateNumber, validateFunction, validateBoolean, validateAny, validateNull, validateNever, parseIdentity, reportString, reportNumber, reportNull, reportBoolean, reportAny, reportNever, reportFunction, ArrayReporter, ObjectReporter, TupleReporter, AnyOfReporter, AllOfReporter, AnyOfDiscriminatedReporter, schemaString, schemaNumber, schemaBoolean, schemaNull, schemaAny, schemaNever, schemaFunction, ArraySchema, ObjectSchema, TupleSchema, AnyOfSchema, AllOfSchema, AnyOfDiscriminatedSchema, validators, parsers, reporters, schemas, c } = validatorsMod;
 const RequiredStringFormats = ["ValidCurrency"];
+const RequiredNumberFormats = ["NonNegativeNumber"];
 const hoisted_ObjectWithArr_0 = validateString;
 const hoisted_ObjectWithArr_1 = new ArrayValidator(hoisted_ObjectWithArr_0);
 const hoisted_ObjectWithArr_2 = new ArrayParser(parseIdentity);
@@ -113,6 +114,7 @@ const buildValidatorsInput = {
     "LevelAndDSettings": validators.LevelAndDSettings,
     "Mapped": validators.Mapped,
     "MappedOptional": validators.MappedOptional,
+    "NonNegativeNumber": validators.NonNegativeNumber,
     "ObjectWithArr": hoisted_ObjectWithArr_8.validateObjectValidator.bind(hoisted_ObjectWithArr_8),
     "OmitSettings": validators.OmitSettings,
     "OnlyAKey": validators.OnlyAKey,
@@ -161,6 +163,7 @@ const buildParsersInput = {
     "LevelAndDSettings": parsers.LevelAndDSettings,
     "Mapped": parsers.Mapped,
     "MappedOptional": parsers.MappedOptional,
+    "NonNegativeNumber": parsers.NonNegativeNumber,
     "ObjectWithArr": hoisted_ObjectWithArr_9.parseObjectParser.bind(hoisted_ObjectWithArr_9),
     "OmitSettings": parsers.OmitSettings,
     "OnlyAKey": parsers.OnlyAKey,
@@ -209,6 +212,7 @@ const buildReportersInput = {
     "LevelAndDSettings": reporters.LevelAndDSettings,
     "Mapped": reporters.Mapped,
     "MappedOptional": reporters.MappedOptional,
+    "NonNegativeNumber": reporters.NonNegativeNumber,
     "ObjectWithArr": hoisted_ObjectWithArr_10.reportObjectReporter.bind(hoisted_ObjectWithArr_10),
     "OmitSettings": reporters.OmitSettings,
     "OnlyAKey": reporters.OnlyAKey,
@@ -257,6 +261,7 @@ const buildSchemaInput = {
     "LevelAndDSettings": schemas.LevelAndDSettings,
     "Mapped": schemas.Mapped,
     "MappedOptional": schemas.MappedOptional,
+    "NonNegativeNumber": schemas.NonNegativeNumber,
     "ObjectWithArr": hoisted_ObjectWithArr_11.schemaObjectSchema.bind(hoisted_ObjectWithArr_11),
     "OmitSettings": schemas.OmitSettings,
     "OnlyAKey": schemas.OnlyAKey,
@@ -296,7 +301,21 @@ function buildParsers(args) {
   Object.keys(stringFormats).forEach((k) => {
     const v = stringFormats[k];
     
-    registerCustomFormatter(k, v);
+    registerStringFormatter(k, v);
+  });
+
+  const numberFormats = args?.numberFormats ?? {};
+  
+  for (const k of RequiredNumberFormats) {
+    if (numberFormats[k] == null) {
+      throw new Error(`Missing custom format ${k}`);
+    }
+  }
+
+  Object.keys(numberFormats).forEach((k) => {
+    const v = numberFormats[k];
+    
+    registerNumberFormatter(k, v);
   });
 
   let decoders = {};
