@@ -20,7 +20,9 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "@beff/cli": "workspace:^0.0.87",
+    "@beff/cli": "workspace:^0.0.87"
+  },
+  "peerDependencies": {
     "zod": "^3.23.5"
   },
   "devDependencies": {
