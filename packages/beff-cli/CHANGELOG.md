@@ -1,5 +1,11 @@
 # @beff/cli
 
+## 0.0.87
+
+### Patch Changes
+
+- fix number format json schema
+
 ## 0.0.86
 
 ### Patch Changes

@@ -495,7 +495,7 @@ class NumberWithFormatDecoder {
   }
   schemaNumberWithFormatDecoder(ctx) {
     return {
-      type: "string",
+      type: "number",
       format: this.format,
     };
   }
