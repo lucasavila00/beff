@@ -1,5 +1,11 @@
 # @beff/cli
 
+## 0.0.85
+
+### Patch Changes
+
+- upgrade builder code
+
 ## 0.0.84
 
 ### Patch Changes
