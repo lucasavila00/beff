@@ -201,7 +201,7 @@ export type BeffParser<T> = {
   parse: (input: any, options?: ParseOptions) => T;
   safeParse: (
     input: any,
-    options?: ParseOptions
+    options?: ParseOptions,
   ) => { success: true; data: T } | { success: false; errors: DecodeError[] };
   zod: () => ZodType<T>;
   name: string;
@@ -215,7 +215,7 @@ type Parsers<T> = {
 export type TagOfFormat<T extends StringFormat<string>> = T extends StringFormat<infer Tag> ? Tag : never;
 
 export type BuildParserFunction = <T>(args?: {
-  customFormats?: { [key: string]: (input: string) => boolean };
+  stringFormats?: { [key: string]: (input: string) => boolean };
 }) => Parsers<T>;
 
 type Schemas<T> = {

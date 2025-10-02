@@ -12,8 +12,6 @@ services:
     user: devu
     networks:
       - devu_network
-    depends_on:
-      - postgresql
   # postgresql:
   #   image: postgres:14.1
   #   container_name: postgresql

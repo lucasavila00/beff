@@ -11,7 +11,7 @@ it("parse", () => {
     T3.parse({
       kind: "square",
       x: 1,
-    })
+    }),
   ).toMatchInlineSnapshot(`
     {
       "kind": "square",
@@ -23,7 +23,7 @@ it("parse", () => {
     T3.zod().parse({
       kind: "square",
       x: 1,
-    })
+    }),
   ).toMatchInlineSnapshot(`
     {
       "kind": "square",
@@ -38,8 +38,8 @@ it("parse", () => {
       },
       {
         disallowExtraProperties: true,
-      }
-    )
+      },
+    ),
   ).toMatchInlineSnapshot(`
     {
       "kind": "square",
@@ -61,8 +61,8 @@ it("disallow extra properties", () => {
       },
       {
         disallowExtraProperties: true,
-      }
-    )
+      },
+    ),
   ).toMatchInlineSnapshot(`
     {
       "errors": [
@@ -86,7 +86,7 @@ it("safe parse", () => {
   expect(
     T3.safeParse({
       kind: "square",
-    })
+    }),
   ).toMatchInlineSnapshot(`
     {
       "errors": [
@@ -109,7 +109,7 @@ it("mix", () => {
   expect(
     T3.parse({
       y: "ADMIN",
-    })
+    }),
   ).toMatchInlineSnapshot(`
     {
       "y": "ADMIN",

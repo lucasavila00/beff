@@ -50,19 +50,19 @@ const oneFuture = (subFolder) => async () => {
     }
     fs.writeFileSync(
       path.join(__dirname, "../fixtures/future", subFolder, "stderr.log"),
-      removePathFromLog(stderr)
+      removePathFromLog(stderr),
     );
 
     fs.writeFileSync(
       path.join(__dirname, "../fixtures/future", subFolder, "stdout.log"),
-      removePathFromLog(stdout)
+      removePathFromLog(stdout),
     );
   }
 };
 const oneFailure = (subFolder) => async () => {
   const bin = path.join(__dirname, binPath);
   const p = path.join(__dirname, "../fixtures/errors", subFolder, "bff.json");
-  const command = `node ${bin} -p ${p}`;
+  const command = `NO_COLOR=1 node ${bin} -p ${p}`;
   console.log(command);
   try {
     await execAsync(command);
@@ -81,12 +81,12 @@ const oneFailure = (subFolder) => async () => {
     }
     fs.writeFileSync(
       path.join(__dirname, "../fixtures/errors", subFolder, "stderr.log"),
-      removePathFromLog(stderr)
+      removePathFromLog(stderr),
     );
 
     fs.writeFileSync(
       path.join(__dirname, "../fixtures/errors", subFolder, "stdout.log"),
-      removePathFromLog(stdout)
+      removePathFromLog(stdout),
     );
   }
 };

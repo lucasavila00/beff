@@ -63,7 +63,7 @@ const resolveImportNoCache = (file_name: string, mod: string): string | undefine
   const resolved = resolveModuleName(mod, file_name, resolveCompilerOptions(), host);
   if ((globalThis as any).verbose) {
     console.log(
-      `JS: Resolved -import ? from '${mod}'- at ${file_name} => ${resolved.resolvedModule?.resolvedFileName}`
+      `JS: Resolved -import ? from '${mod}'- at ${file_name} => ${resolved.resolvedModule?.resolvedFileName}`,
     );
   }
   return resolved.resolvedModule?.resolvedFileName;
@@ -230,14 +230,14 @@ export class Bundler {
 
   public bundle(
     parser_entrypoint: string | undefined,
-    settings: BeffUserSettings
+    settings: BeffUserSettings,
   ): WritableModules | undefined {
     return wasm.bundle_to_string(parser_entrypoint ?? "", serializeSettings(settings));
   }
 
   public diagnostics(
     parser_entrypoint: string | undefined,
-    settings: BeffUserSettings
+    settings: BeffUserSettings,
   ): WasmDiagnostic | null {
     return wasm.bundle_to_diagnostics(parser_entrypoint ?? "", serializeSettings(settings));
   }
@@ -248,6 +248,6 @@ export class Bundler {
 }
 function serializeSettings(settings: BeffUserSettings) {
   return {
-    custom_formats: settings.customFormats.map((it) => it.name) ?? [],
+    custom_formats: settings.stringFormats.map((it) => it.name) ?? [],
   };
 }

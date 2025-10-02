@@ -85,7 +85,7 @@ const printErrorsPart = (it: DecodeError[], parentPath: string[], showReceived: 
 export const printErrors = (it: DecodeError[], parentPath: string[] = []): string => {
   return printErrorsPart(it, parentPath, true)
     .map((msg, idx, all) =>
-      all.length == 1 ? joinFilteredStrings([msg]) : joinFilteredStrings([`#${idx}`, msg])
+      all.length == 1 ? joinFilteredStrings([msg]) : joinFilteredStrings([`#${idx}`, msg]),
     )
     .join(" | ");
 };
@@ -95,9 +95,9 @@ const buildParserFromSafeParser = <T>(
   validate: (input: any, options?: ParseOptions) => input is T,
   safeParse: (
     input: any,
-    options?: ParseOptions
+    options?: ParseOptions,
   ) => { success: true; data: T } | { success: false; errors: DecodeError[] },
-  jsonSchema: () => JSONSchema7
+  jsonSchema: () => JSONSchema7,
 ): BeffParser<T> => {
   const parse = (input: any, options?: ParseOptions) => {
     const safe = safeParse(input, options);
@@ -118,7 +118,7 @@ const buildParserFromSafeParser = <T>(
         const errors = (safeParse(val) as any).errors;
         //@ts-ignore
         return printErrors(errors, []);
-      }
+      },
     );
   };
 
@@ -134,7 +134,7 @@ const buildParserFromSafeParser = <T>(
 };
 
 const Object_ = <T extends Record<string, BeffParser<any>>>(
-  fields: T
+  fields: T,
 ): BeffParser<{
   [K in keyof T]: T[K] extends BeffParser<infer U> ? U : never;
 }> =>
@@ -208,9 +208,9 @@ const Object_ = <T extends Record<string, BeffParser<any>>>(
         //@ts-ignore
         Object.fromEntries(
           //@ts-ignore
-          Object.entries(fields).map(([key, parser]) => [key, parser.schema()])
+          Object.entries(fields).map(([key, parser]) => [key, parser.schema()]),
         ),
-    })
+    }),
   );
 
 const String_ = (): BeffParser<string> =>
@@ -226,7 +226,7 @@ const String_ = (): BeffParser<string> =>
     },
     () => ({
       type: "string",
-    })
+    }),
   );
 
 const Number_ = (): BeffParser<number> =>
@@ -242,7 +242,7 @@ const Number_ = (): BeffParser<number> =>
     },
     () => ({
       type: "number",
-    })
+    }),
   );
 
 const Boolean_ = (): BeffParser<boolean> =>
@@ -258,7 +258,7 @@ const Boolean_ = (): BeffParser<boolean> =>
     },
     () => ({
       type: "boolean",
-    })
+    }),
   );
 
 const Undefined_ = (): BeffParser<undefined> =>
@@ -273,7 +273,7 @@ const Undefined_ = (): BeffParser<undefined> =>
     },
     () => ({
       type: "null",
-    })
+    }),
   );
 
 const Void_ = (): BeffParser<void> =>
@@ -289,7 +289,7 @@ const Void_ = (): BeffParser<void> =>
     },
     () => ({
       type: "null",
-    })
+    }),
   );
 
 const Null_ = (): BeffParser<undefined> =>
@@ -304,7 +304,7 @@ const Null_ = (): BeffParser<undefined> =>
     },
     () => ({
       type: "null",
-    })
+    }),
   );
 
 const Any_ = (): BeffParser<any> =>
@@ -315,7 +315,7 @@ const Any_ = (): BeffParser<any> =>
     (input: any) => {
       return { success: true, data: input };
     },
-    () => ({})
+    () => ({}),
   );
 
 const Unknown_ = (): BeffParser<unknown> =>
@@ -325,7 +325,7 @@ const Unknown_ = (): BeffParser<unknown> =>
     (input: any) => {
       return { success: true, data: input };
     },
-    () => ({})
+    () => ({}),
   );
 
 const Array_ = <T>(parser: BeffParser<T>): BeffParser<T[]> =>
@@ -368,7 +368,7 @@ const Array_ = <T>(parser: BeffParser<T>): BeffParser<T[]> =>
     () => ({
       type: "array",
       items: parser.schema(),
-    })
+    }),
   );
 
 export const b = {

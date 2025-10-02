@@ -72,7 +72,7 @@ export const Codecs = parse.buildParsers<{
   //
   ValidCurrency: ValidCurrency;
 }>({
-  customFormats: {
+  stringFormats: {
     ValidCurrency: (input: string) => {
       if (input === "USD") {
         return true;

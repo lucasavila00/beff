@@ -105,7 +105,7 @@ Configure your `beff.json`
 {
   "parser": "./src/parser.ts",
   "outputDir": "./src/generated",
-  "customFormats": [
+  "stringFormats": [
     {
       "name": "ValidCurrency"
     }
@@ -124,7 +124,7 @@ export type ValidCurrency = StringFormat<"ValidCurrency">;
 export const Parsers = parse.buildParsers<{
   ValidCurrency: ValidCurrency;
 }>({
-  customFormats: {
+  stringFormats: {
     ValidCurrency: (input: string) => {
       if (VALID_CURRENCIES.include(input)) {
         return true;

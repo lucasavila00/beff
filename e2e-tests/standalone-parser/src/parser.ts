@@ -286,7 +286,7 @@ export const {
   KABC: KABC;
   K: K;
 }>({
-  customFormats: {
+  stringFormats: {
     ValidCurrency: (input: string) => {
       if (input === "USD") {
         return true;
