@@ -12,7 +12,7 @@ jobs:
       - uses: actions-rust-lang/setup-rust-toolchain@v1
       - uses: actions/setup-node@v3
         with:
-          node-version: "20.x"
+          node-version: "22.x"
           registry-url: "https://registry.npmjs.org"
       - name: Tests
         run: |
@@ -21,7 +21,6 @@ jobs:
           pnpm lint
           curl https://rustwasm.github.io/wasm-pack/installer/init.sh -sSf | sh
           cargo clippy
-          pnpm wasm:dev
           DEBUG=true pnpm all
           git add .
           git diff-index --cached HEAD

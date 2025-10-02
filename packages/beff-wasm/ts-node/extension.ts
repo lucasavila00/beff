@@ -59,7 +59,7 @@ export function activate(_context: vscode.ExtensionContext) {
   const updateDiag = () => updateDiagnostics(parser_entrypoint, projectJson.settings, collection);
   updateDiag();
   const watcher = vscode.workspace.createFileSystemWatcher(
-    new vscode.RelativePattern(workspacePath, "**/*.ts")
+    new vscode.RelativePattern(workspacePath, "**/*.ts"),
   );
   const observingExtensions = [".ts", ".tsx", ".d.ts", ".cts", ".mts"];
 
@@ -105,8 +105,8 @@ const relatedInformation = (cause: WasmDiagnosticInformation): vscode.Diagnostic
         vscode.Uri.file(diag.file_name),
         new vscode.Range(
           new vscode.Position(diag.line_lo - 1, diag.col_lo),
-          new vscode.Position(diag.line_hi - 1, diag.col_hi)
-        )
+          new vscode.Position(diag.line_hi - 1, diag.col_hi),
+        ),
       ),
     };
   } else {
@@ -115,7 +115,7 @@ const relatedInformation = (cause: WasmDiagnosticInformation): vscode.Diagnostic
       message: diag.message,
       location: new vscode.Location(
         vscode.Uri.file(diag.current_file),
-        new vscode.Range(new vscode.Position(0, 0), new vscode.Position(0, 0))
+        new vscode.Range(new vscode.Position(0, 0), new vscode.Position(0, 0)),
       ),
     };
   }
@@ -124,7 +124,7 @@ const relatedInformation = (cause: WasmDiagnosticInformation): vscode.Diagnostic
 function updateDiagnostics(
   parser_entrypoint: string | undefined,
   settings: BeffUserSettings,
-  collection: vscode.DiagnosticCollection
+  collection: vscode.DiagnosticCollection,
 ): void {
   collection.clear();
   const diags = bundler?.diagnostics(parser_entrypoint, settings);
@@ -143,7 +143,7 @@ function updateDiagnostics(
         message: (data.message ? data.message + " - " : "") + diag.message,
         range: new vscode.Range(
           new vscode.Position(diag.line_lo - 1, diag.col_lo),
-          new vscode.Position(diag.line_hi - 1, diag.col_hi)
+          new vscode.Position(diag.line_hi - 1, diag.col_hi),
         ),
         severity: vscode.DiagnosticSeverity.Error,
         relatedInformation: (data.related_information ?? []).map(relatedInformation),
@@ -163,7 +163,7 @@ function updateDiagnostics(
           message: diag.message,
           range: new vscode.Range(
             new vscode.Position(diag.line_lo - 1, diag.col_lo),
-            new vscode.Position(diag.line_hi - 1, diag.col_hi)
+            new vscode.Position(diag.line_hi - 1, diag.col_hi),
           ),
           severity: vscode.DiagnosticSeverity.Warning,
         });

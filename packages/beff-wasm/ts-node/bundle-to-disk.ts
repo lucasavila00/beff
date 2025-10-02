@@ -117,7 +117,7 @@ export const execProject = (
   bundler: Bundler,
   projectPath: string,
   projectJson: ProjectJson,
-  verbose: boolean
+  verbose: boolean,
 ): "ok" | "failed" => {
   const mod = projectJson.module ?? "esm";
 
@@ -142,11 +142,11 @@ export const execProject = (
   if (projectJson.parser) {
     fs.writeFileSync(
       path.join(outputDir, "parser.js"),
-      finalizeParserFile(outResult, mod, projectJson.settings.stringFormats.map((it) => it.name) ?? [])
+      finalizeParserFile(outResult, mod, projectJson.settings.stringFormats.map((it) => it.name) ?? []),
     );
     fs.writeFileSync(
       path.join(outputDir, "parser.d.ts"),
-      ["/* eslint-disable */\n", gen["parser.d.ts"]].join("\n")
+      ["/* eslint-disable */\n", gen["parser.d.ts"]].join("\n"),
     );
   }
   return "ok";

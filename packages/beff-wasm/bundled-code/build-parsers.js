@@ -76,7 +76,7 @@ function buildParsers(args) {
           const errors = safeParse(val).errors;
           //@ts-ignore
           return printErrors(errors, []);
-        }
+        },
       );
     };
     decoders[k] = {

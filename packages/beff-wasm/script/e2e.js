@@ -50,12 +50,12 @@ const oneFuture = (subFolder) => async () => {
     }
     fs.writeFileSync(
       path.join(__dirname, "../fixtures/future", subFolder, "stderr.log"),
-      removePathFromLog(stderr)
+      removePathFromLog(stderr),
     );
 
     fs.writeFileSync(
       path.join(__dirname, "../fixtures/future", subFolder, "stdout.log"),
-      removePathFromLog(stdout)
+      removePathFromLog(stdout),
     );
   }
 };
@@ -81,12 +81,12 @@ const oneFailure = (subFolder) => async () => {
     }
     fs.writeFileSync(
       path.join(__dirname, "../fixtures/errors", subFolder, "stderr.log"),
-      removePathFromLog(stderr)
+      removePathFromLog(stderr),
     );
 
     fs.writeFileSync(
       path.join(__dirname, "../fixtures/errors", subFolder, "stdout.log"),
-      removePathFromLog(stdout)
+      removePathFromLog(stdout),
     );
   }
 };

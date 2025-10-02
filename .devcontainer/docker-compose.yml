@@ -42,7 +42,6 @@ volumes:
   devu-psql-data:
   pgadmin-data:
 
-
 networks:
   devu_network:
     driver: bridge

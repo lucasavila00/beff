@@ -8,7 +8,7 @@ it("works", () => {
         a: b.String(),
         b: b.Number(),
       })
-      .schema()
+      .schema(),
   ).toMatchInlineSnapshot(`
     {
       "properties": {

@@ -249,7 +249,7 @@ it("exclude object", () => {
     T3.parse({
       kind: "square",
       x: 1,
-    })
+    }),
   ).toMatchInlineSnapshot(`
     {
       "kind": "square",
@@ -288,8 +288,8 @@ it("disallow extra properties", () => {
       },
       {
         disallowExtraProperties: true,
-      }
-    )
+      },
+    ),
   ).toMatchInlineSnapshot(`
     {
       "kind": "square",
@@ -305,8 +305,8 @@ it("disallow extra properties", () => {
       },
       {
         disallowExtraProperties: true,
-      }
-    )
+      },
+    ),
   ).toMatchInlineSnapshot(`
     {
       "errors": [
@@ -327,7 +327,7 @@ it("exclude object", () => {
     T3.safeParse({
       kind: "circle",
       radius: 1,
-    })
+    }),
   ).toMatchInlineSnapshot(`
     {
       "errors": [
@@ -486,7 +486,7 @@ it("DiscriminatedUnion", () => {
   expect(
     DiscriminatedUnion.safeParse({
       type: "a",
-    })
+    }),
   ).toMatchInlineSnapshot(`
     {
       "errors": [
@@ -504,7 +504,7 @@ it("DiscriminatedUnion", () => {
   expect(
     DiscriminatedUnion.safeParse({
       type: "c",
-    })
+    }),
   ).toMatchInlineSnapshot(`
     {
       "errors": [

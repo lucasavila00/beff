@@ -687,7 +687,7 @@ class AnyOfDiscriminatedParser {
     const parser = this.mapping[input[this.discriminator]];
     if (parser == null) {
       throw new Error(
-        "INTERNAL ERROR: Missing parser for discriminator " + JSON.stringify(input[this.discriminator])
+        "INTERNAL ERROR: Missing parser for discriminator " + JSON.stringify(input[this.discriminator]),
       );
     }
     return {
@@ -721,7 +721,7 @@ class AnyOfDiscriminatedReporter {
           Object.keys(this.mapping)
             .map((it) => JSON.stringify(it))
             .join(", "),
-        d
+        d,
       );
       popPath(ctx);
       return errs;
