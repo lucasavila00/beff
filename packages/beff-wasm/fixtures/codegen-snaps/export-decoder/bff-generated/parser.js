@@ -5,7 +5,7 @@
 import {printErrors} from '@beff/client';
 import {z} from 'zod';
 import validatorsMod from "./validators.js"; const { registerCustomFormatter, ObjectValidator, ObjectParser, ArrayParser, ArrayValidator, CodecDecoder, StringWithFormatDecoder, AnyOfValidator, AnyOfParser, AllOfValidator, AllOfParser, TupleParser, TupleValidator, RegexDecoder, ConstDecoder, AnyOfConstsDecoder, AnyOfDiscriminatedParser, AnyOfDiscriminatedValidator, validateString, validateNumber, validateFunction, validateBoolean, validateAny, validateNull, validateNever, parseIdentity, reportString, reportNumber, reportNull, reportBoolean, reportAny, reportNever, reportFunction, ArrayReporter, ObjectReporter, TupleReporter, AnyOfReporter, AllOfReporter, AnyOfDiscriminatedReporter, schemaString, schemaNumber, schemaBoolean, schemaNull, schemaAny, schemaNever, schemaFunction, ArraySchema, ObjectSchema, TupleSchema, AnyOfSchema, AllOfSchema, AnyOfDiscriminatedSchema, validators, parsers, reporters, schemas, c } = validatorsMod;
-const RequiredCustomFormats = ["password","StartsWithA"];
+const RequiredStringFormats = ["password","StartsWithA"];
 const hoisted_Users_0 = validators.User;
 const hoisted_Users_1 = new ArrayValidator(hoisted_Users_0);
 const hoisted_Users_2 = new ArrayParser(parsers.User);
@@ -58,16 +58,16 @@ const buildSchemaInput = {
 
 
 function buildParsers(args) {
-  const customFormats = args?.customFormats ?? {};
+  const stringFormats = args?.stringFormats ?? {};
   
-  for (const k of RequiredCustomFormats) {
-    if (customFormats[k] == null) {
+  for (const k of RequiredStringFormats) {
+    if (stringFormats[k] == null) {
       throw new Error(`Missing custom format ${k}`);
     }
   }
 
-  Object.keys(customFormats).forEach((k) => {
-    const v = customFormats[k];
+  Object.keys(stringFormats).forEach((k) => {
+    const v = stringFormats[k];
     
     registerCustomFormatter(k, v);
   });

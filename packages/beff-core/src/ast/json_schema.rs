@@ -210,7 +210,7 @@ impl TplLitTypeItem {
                     values.sort();
                     let values = values
                         .into_iter()
-                        .map(|it| Self::describe_vec(&[it.clone()]))
+                        .map(|it| Self::describe_vec(std::slice::from_ref(it)))
                         .collect::<Vec<_>>()
                         .join(" | ");
                     format!("({})", values)
