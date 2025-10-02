@@ -1,5 +1,5 @@
 import parse from "./generated/parser";
-import { StringFormat } from "@beff/cli";
+import { StringFormat } from "@beff/client";
 
 export type ValidCurrency = StringFormat<"ValidCurrency">;
 
@@ -25,20 +25,20 @@ type InvalidSchemaWithBigInt = {
 };
 type DiscriminatedUnion =
   | {
-      type: "a";
-      subType: "a1";
-      a1: string;
-      a11?: string;
-    }
+    type: "a";
+    subType: "a1";
+    a1: string;
+    a11?: string;
+  }
   | {
-      type: "a";
-      subType: "a2";
-      a2: string;
-    }
+    type: "a";
+    subType: "a2";
+    a2: string;
+  }
   | {
-      type: "b";
-      value: number;
-    };
+    type: "b";
+    value: number;
+  };
 
 type RecursiveTree = {
   value: number;

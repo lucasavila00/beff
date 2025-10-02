@@ -5,12 +5,10 @@
   "bin": {
     "beff": "./bin/index.js"
   },
-  "main": "index.js",
-  "typings": "index.d.ts",
   "keywords": [],
   "author": "",
   "license": "ISC",
-  "dependencies": {
-    "zod": "^3.23.5"
+  "peerDependencies": {
+    "zod": "^3"
   }
 }

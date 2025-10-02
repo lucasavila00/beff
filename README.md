@@ -118,7 +118,7 @@ Define the runtime validator in the build parsers call.
 
 ```ts
 import parse from "./generated/parser";
-import { StringFormat } from "@beff/cli";
+import { StringFormat } from "@beff/client";
 export type ValidCurrency = StringFormat<"ValidCurrency">;
 
 export const Parsers = parse.buildParsers<{
@@ -156,7 +156,7 @@ Define the runtime validator in the build parsers call.
 
 ```ts
 import parse from "./generated/parser";
-import { NumberFormat } from "@beff/cli";
+import { NumberFormat } from "@beff/client";
 export type NonNegativeNumber = NumberFormat<"NonNegativeNumber">;
 
 export const Parsers = parse.buildParsers<{

@@ -1,5 +1,5 @@
 import parser from "./bff-generated/parser";
-import { StringFormat } from "@beff/cli";
+import { StringFormat } from "@beff/client";
 
 export type NotPublic = {
   a: string;
