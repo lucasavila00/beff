@@ -1,4 +1,5 @@
-import { ZodType } from "zod";
+/* eslint-disable @typescript-eslint/ban-ts-comment */
+import type { ZodType } from "zod";
 
 // ==================================================================================================
 // JSON Schema Draft 07
@@ -177,7 +178,6 @@ export interface JSONSchema7 {
   examples?: JSONSchema7Type | undefined;
 }
 
-export type Header<T> = T;
 export type StringFormat<Tag extends string> = string & { __customType: Tag };
 export type NumberFormat<Tag extends string> = number & { __customType: Tag };
 
@@ -221,9 +221,5 @@ export type BuildParserFunction = <T>(args?: {
   stringFormats?: { [key: string]: (input: string) => boolean };
   numberFormats?: { [key: string]: (input: number) => boolean };
 }) => Parsers<T>;
-
-type Schemas<T> = {
-  [K in keyof T]: JSONSchema7;
-};
 
 export type TypeOf<T> = T extends BeffParser<infer U> ? U : never;

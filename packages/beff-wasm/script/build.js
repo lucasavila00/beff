@@ -36,8 +36,6 @@ const main = async () => {
     "build-rust": `wasm-pack build ${mode} --target nodejs`,
     "build-cli":
       "esbuild ts-node/commandeer.ts --bundle --outfile=dist-cli/cli.js --platform=node --target=node14 --external:pnpapi --external:./pkg/beff_wasm.js --external:./pkg/beff_wasm_bg.js",
-    "build-ext":
-      "esbuild ts-node/extension.ts --bundle --outfile=dist-ext/extension.js --platform=node --target=node14 --external:pnpapi --external:vscode --external:./pkg/beff_wasm.js --external:./pkg/beff_wasm_bg.js",
     "copy-cli":
       "cp -r ./dist-cli/. ../beff-cli/dist-cli && cp -r ./pkg/. ../beff-cli/pkg/ && rm ../beff-cli/pkg/.gitignore",
   };

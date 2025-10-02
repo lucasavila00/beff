@@ -1,5 +1,5 @@
 import parse from "./generated/parser";
-import { StringFormat } from "@beff/cli";
+import { StringFormat } from "@beff/client";
 
 export type ValidCurrency = StringFormat<"ValidCurrency">;
 

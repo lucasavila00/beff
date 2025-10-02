@@ -1,4 +1,4 @@
-import { StringFormat } from "@beff/cli";
+import { StringFormat } from "@beff/client";
 
 export enum OtherEnum {
   A = "a",

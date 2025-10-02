@@ -1,35 +1,14 @@
 {
-  "name": "beff-vscode",
+  "name": "beff-wasm",
   "publisher": "beff",
   "version": "0.0.14",
   "description": "",
-  "engines": {
-    "vscode": "^1.73.0"
-  },
-  "categories": [
-    "Other"
-  ],
-  "activationEvents": [
-    "*"
-  ],
-  "contributes": {
-    "configuration": {
-      "title": "Beff",
-      "properties": {
-        "beff.configPath": {
-          "type": "string",
-          "default": "beff.json",
-          "description": "Path to the Beff config file"
-        }
-      }
-    }
-  },
   "main": "./dist-ext/extension.js",
   "scripts": {
     "build": "node script/build.js",
     "test": "node script/e2e.js",
     "do": "npm run build && node ../beff-cli/bin/index.js -v -p /workspace/packages/beff-wasm/vitest/params/bff.json",
-    "ts2": "tsc --noEmit",
+    "ts": "tsc --noEmit",
     "publish": "pnpm vsce publish --no-dependencies",
     "lint": "eslint --ext .ts,.tsx .",
     "lint:fix": "eslint --ext .ts,.tsx . --fix"
@@ -44,17 +23,14 @@
     "@beff/cli": "workspace:^0.0.87",
     "@types/babel__code-frame": "^7.0.4",
     "@types/node": "^20.6.2",
-    "@types/vscode": "^1.73.0",
     "@typescript-eslint/eslint-plugin": "^6.7.2",
     "@typescript-eslint/parser": "^6.7.2",
-    "@vscode/vsce": "^2.21.0",
     "chalk": "^4.1.2",
     "commander": "^11.0.0",
     "esbuild": "^0.19.3",
     "eslint": "^8.50.0",
     "eslint-plugin-vitest": "^0.3.1",
     "fp-ts": "^2.16.1",
-    "hono": "^3.6.3",
     "p-queue": "^6.6.2",
     "typescript": "^5.2.2",
     "vitest": "^0.34.4"

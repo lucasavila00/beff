@@ -19,11 +19,9 @@ jobs:
       - name: Publish
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
-          VSCE_PAT: ${{ secrets.VSCODE_TOKEN }}
         run: |
           pnpm install
           curl https://rustwasm.github.io/wasm-pack/installer/init.sh -sSf | sh
           pnpm build
           (cd packages/beff-cli && pnpm publish --no-git-checks --access public)
           (cd packages/beff-client && pnpm publish --no-git-checks --access public)
-          # (cd packages/beff-wasm && npm run publish)

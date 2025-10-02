@@ -1,4 +1,4 @@
-import { StringFormat, NumberFormat } from "@beff/cli";
+import { StringFormat, NumberFormat } from "@beff/client";
 
 export type ValidCurrency = StringFormat<"ValidCurrency">;
 export type NonNegativeNumber = NumberFormat<"NonNegativeNumber">;
