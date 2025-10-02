@@ -2,7 +2,7 @@
   "router": "./router.ts",
   "parser": "./parser.ts",
   "outputDir": "./bff-generated",
-  "customFormats": [
+  "stringFormats": [
     {
       "name": "password"
     },

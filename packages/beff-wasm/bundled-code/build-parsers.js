@@ -2,16 +2,16 @@
 //@ts-check
 
 function buildParsers(args) {
-  const customFormats = args?.customFormats ?? {};
+  const stringFormats = args?.stringFormats ?? {};
   //@ts-ignore
-  for (const k of RequiredCustomFormats) {
-    if (customFormats[k] == null) {
+  for (const k of RequiredStringFormats) {
+    if (stringFormats[k] == null) {
       throw new Error(`Missing custom format ${k}`);
     }
   }
 
-  Object.keys(customFormats).forEach((k) => {
-    const v = customFormats[k];
+  Object.keys(stringFormats).forEach((k) => {
+    const v = stringFormats[k];
     //@ts-ignore
     registerCustomFormatter(k, v);
   });

@@ -25,20 +25,20 @@ type InvalidSchemaWithBigInt = {
 };
 type DiscriminatedUnion =
   | {
-      type: "a";
-      subType: "a1";
-      a1: string;
-      a11?: string;
-    }
+    type: "a";
+    subType: "a1";
+    a1: string;
+    a11?: string;
+  }
   | {
-      type: "a";
-      subType: "a2";
-      a2: string;
-    }
+    type: "a";
+    subType: "a2";
+    a2: string;
+  }
   | {
-      type: "b";
-      value: number;
-    };
+    type: "b";
+    value: number;
+  };
 
 type RecursiveTree = {
   value: number;
@@ -72,7 +72,7 @@ export const Codecs = parse.buildParsers<{
   //
   ValidCurrency: ValidCurrency;
 }>({
-  customFormats: {
+  stringFormats: {
     ValidCurrency: (input: string) => {
       if (input === "USD") {
         return true;

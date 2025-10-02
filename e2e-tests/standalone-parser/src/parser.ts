@@ -86,79 +86,79 @@ export type RequiredPartialObject = Required<PartialObject>;
 
 export type DiscriminatedUnion =
   | {
-      type: "a";
-      subType: "a1";
-      a1: string;
-      a11?: string;
-    }
+    type: "a";
+    subType: "a1";
+    a1: string;
+    a11?: string;
+  }
   | {
-      type: "a";
-      subType: "a2";
-      a2: string;
-    }
+    type: "a";
+    subType: "a2";
+    a2: string;
+  }
   | {
-      type: "b";
-      value: number;
-    };
+    type: "b";
+    value: number;
+  };
 export type DiscriminatedUnion3 =
   | {
-      type: "a" | "c";
-      a1: string;
-    }
+    type: "a" | "c";
+    a1: string;
+  }
   | {
-      type: "b";
-      value: number;
-    };
+    type: "b";
+    value: number;
+  };
 export type DiscriminatedUnion2 =
   | {
-      type: "a";
-      subType: "a1";
-      a1: string;
-      a11?: string;
-    }
+    type: "a";
+    subType: "a1";
+    a1: string;
+    a11?: string;
+  }
   | {
-      type: "a";
-      subType: "a2";
-      a2: string;
-    }
+    type: "a";
+    subType: "a2";
+    a2: string;
+  }
   | {
-      type?: "d";
-      valueD: number;
-    }
+    type?: "d";
+    valueD: number;
+  }
   | {
-      type: "b";
-      value: number;
-    };
+    type: "b";
+    value: number;
+  };
 
 export type DiscriminatedUnion4 =
   | {
-      type: "a";
-      a: {
-        subType: "a1";
-        a1: string;
-      };
-    }
-  | {
-      type: "a";
-      a: {
-        subType: "a2";
-        a2: string;
-      };
+    type: "a";
+    a: {
+      subType: "a1";
+      a1: string;
     };
+  }
+  | {
+    type: "a";
+    a: {
+      subType: "a2";
+      a2: string;
+    };
+  };
 
 type UnionWithEnumAccess =
   | {
-      tag: OtherEnum.A;
-      value: string;
-    }
+    tag: OtherEnum.A;
+    value: string;
+  }
   | {
-      tag: OtherEnum.B;
-      value: number;
-    }
+    tag: OtherEnum.B;
+    value: number;
+  }
   | {
-      tag: OtherEnum2.C;
-      value: boolean;
-    };
+    tag: OtherEnum2.C;
+    value: boolean;
+  };
 type Shape =
   | { kind: "circle"; radius: number }
   | { kind: "square"; x: number }
@@ -286,7 +286,7 @@ export const {
   KABC: KABC;
   K: K;
 }>({
-  customFormats: {
+  stringFormats: {
     ValidCurrency: (input: string) => {
       if (input === "USD") {
         return true;

@@ -97,16 +97,16 @@ const importValidators = (mod: ProjectModule) => {
   return [importRest].join("\n");
 };
 
-const finalizeParserFile = (wasmCode: WritableModules, mod: ProjectModule, customFormats: string[]) => {
+const finalizeParserFile = (wasmCode: WritableModules, mod: ProjectModule, stringFormats: string[]) => {
   const exportedItems = ["buildParsers"].join(", ");
   const exports = [exportCode(mod), `{ ${exportedItems} };`].join(" ");
 
-  const customFormatsCode = `const RequiredCustomFormats = ${JSON.stringify(customFormats)};`;
+  const stringFormatsCode = `const RequiredStringFormats = ${JSON.stringify(stringFormats)};`;
   return [
     "//@ts-nocheck\n/* eslint-disable */\n",
     esmTag(mod),
     importValidators(mod),
-    customFormatsCode,
+    stringFormatsCode,
     wasmCode.js_built_parsers,
     gen["build-parsers.js"],
     exports,
@@ -142,7 +142,7 @@ export const execProject = (
   if (projectJson.parser) {
     fs.writeFileSync(
       path.join(outputDir, "parser.js"),
-      finalizeParserFile(outResult, mod, projectJson.settings.customFormats.map((it) => it.name) ?? [])
+      finalizeParserFile(outResult, mod, projectJson.settings.stringFormats.map((it) => it.name) ?? [])
     );
     fs.writeFileSync(
       path.join(outputDir, "parser.d.ts"),
