@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/ban-ts-comment */
 import { ParseOptions, DecodeError, JSONSchema7, BeffParser } from "./types";
 import { z } from "zod";
 
