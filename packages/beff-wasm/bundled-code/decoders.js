@@ -81,14 +81,14 @@ function deepmergeConstructor(options) {
     //@ts-ignore
     typeof Buffer !== "undefined"
       ? (value) =>
-        typeof value !== "object" ||
-        value === null ||
-        value instanceof RegExp ||
-        value instanceof Date ||
-        //@ts-ignore
-        value instanceof Buffer
+          typeof value !== "object" ||
+          value === null ||
+          value instanceof RegExp ||
+          value instanceof Date ||
+          //@ts-ignore
+          value instanceof Buffer
       : (value) =>
-        typeof value !== "object" || value === null || value instanceof RegExp || value instanceof Date;
+          typeof value !== "object" || value === null || value instanceof RegExp || value instanceof Date;
 
   const mergeArray =
     options && typeof options.mergeArray === "function"
@@ -756,9 +756,9 @@ class AnyOfDiscriminatedReporter {
       const errs = buildError(
         ctx,
         "expected one of " +
-        Object.keys(this.mapping)
-          .map((it) => JSON.stringify(it))
-          .join(", "),
+          Object.keys(this.mapping)
+            .map((it) => JSON.stringify(it))
+            .join(", "),
         d,
       );
       popPath(ctx);
