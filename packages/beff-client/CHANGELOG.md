@@ -1,5 +1,13 @@
 # @beff/client
 
+## 0.0.84
+
+### Patch Changes
+
+- change customFormat to stringFormat
+- Updated dependencies
+  - @beff/cli@0.0.84
+
 ## 0.0.83
 
 ### Patch Changes
