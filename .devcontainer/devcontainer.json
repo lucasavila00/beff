@@ -11,11 +11,9 @@
   "customizations": {
     "vscode": {
       "extensions": [
-        "Prisma.prisma",
         "streetsidesoftware.code-spell-checker",
         "rust-lang.rust-analyzer",
-        "esbenp.prettier-vscode",
-        "GitHub.copilot"
+        "esbenp.prettier-vscode"
       ]
     }
   }
