@@ -177,7 +177,7 @@ export const Parsers = parse.buildParsers<{
 
 Beff provides a runtime type creation API similar to `zod` and `io-ts` for simple use cases.
 
-**Note:** This API is intentionally limited and supports only basic types. For complex types, use Beff's primary feature of compiling TypeScript types.
+**Note:** This API is intentionally limited and supports only basic types to maintain fast editor performance. A more comprehensive runtime API would essentially make Beff just another re-implementation of zod, defeating its core purpose. For complex types, use Beff's primary feature of compiling TypeScript types.
 
 Validators created with the ad-hoc API have the same interface as compiled validators:
 
