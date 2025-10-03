@@ -2,8 +2,8 @@
 
 ## Requirements
 
-- Rust 1.80.0
-- Node 20
+- Rust
+- Node
 
 ### Setup
 
