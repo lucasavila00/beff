@@ -1,6 +1,4 @@
 //@ts-nocheck
-/* eslint-disable */
-
 
 import {printErrors} from '@beff/client';
 import {z} from 'zod';
@@ -99,7 +97,6 @@ const buildSchemaInput = {
     "string": schemaString,
     "undefined": schemaNull
 };
-
 
 
 

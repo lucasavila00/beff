@@ -1,6 +1,4 @@
 //@ts-nocheck
-/* eslint-disable */
-
 
 import {printErrors} from '@beff/client';
 import {z} from 'zod';
@@ -54,7 +52,6 @@ const buildSchemaInput = {
     "int": hoisted_int_0.schemaConstDecoder.bind(hoisted_int_0),
     "union": schemas.UnionNested
 };
-
 
 
 

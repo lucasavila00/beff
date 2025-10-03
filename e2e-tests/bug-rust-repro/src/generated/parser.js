@@ -1,6 +1,4 @@
 //@ts-nocheck
-/* eslint-disable */
-
 
 import {printErrors} from '@beff/client';
 import {z} from 'zod';
@@ -19,7 +17,6 @@ const buildReportersInput = {
 const buildSchemaInput = {
     "A": schemas.A
 };
-
 
 
 

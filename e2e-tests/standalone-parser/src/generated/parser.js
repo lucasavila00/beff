@@ -1,6 +1,4 @@
 //@ts-nocheck
-/* eslint-disable */
-
 
 import {printErrors} from '@beff/client';
 import {z} from 'zod';
@@ -285,7 +283,6 @@ const buildSchemaInput = {
     "Version": schemas.Version,
     "Version2": schemas.Version2
 };
-
 
 
 

@@ -1,5 +1,11 @@
 # @beff/cli
 
+## 0.0.88
+
+### Patch Changes
+
+- change package that exports type
+
 ## 0.0.87
 
 ### Patch Changes

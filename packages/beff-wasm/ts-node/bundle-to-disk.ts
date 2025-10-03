@@ -80,7 +80,8 @@ const finalizeValidatorsCode = (wasmCode: WritableModules, mod: ProjectModule) =
   const exportedItems = [...decodersExported, "validators", "parsers", "reporters", "schemas"].join(", ");
   const exports = [exportCode(mod), `{ ${exportedItems} };`].join(" ");
   return [
-    "//@ts-nocheck\n/* eslint-disable */\n",
+    //
+    "//@ts-nocheck",
     gen["decoders.js"],
     esmTag(mod),
     wasmCode.js_validators,
@@ -111,7 +112,7 @@ const finalizeParserFile = (
   const stringFormatsCode = `const RequiredStringFormats = ${JSON.stringify(stringFormats)};`;
   const numberFormatsCode = `const RequiredNumberFormats = ${JSON.stringify(numberFormats)};`;
   return [
-    "//@ts-nocheck\n/* eslint-disable */\n",
+    "//@ts-nocheck",
     esmTag(mod),
     importValidators(mod),
     stringFormatsCode,
@@ -134,7 +135,6 @@ export const execProject = (
     ? path.join(path.dirname(projectPath), projectJson.parser)
     : undefined;
   if (verbose) {
-    // eslint-disable-next-line no-console
     console.log(`JS: Parser entry point ${parserEntryPoint}`);
   }
   const outResult = bundler.bundle(parserEntryPoint, projectJson.settings);
@@ -158,10 +158,7 @@ export const execProject = (
         projectJson.settings.numberFormats.map((it) => it.name) ?? [],
       ),
     );
-    fs.writeFileSync(
-      path.join(outputDir, "parser.d.ts"),
-      ["/* eslint-disable */\n", gen["parser.d.ts"]].join("\n"),
-    );
+    fs.writeFileSync(path.join(outputDir, "parser.d.ts"), gen["parser.d.ts"]);
   }
   return "ok";
 };

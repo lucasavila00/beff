@@ -1,14 +1,11 @@
 {
   "name": "@beff/cli",
-  "version": "0.0.87",
+  "version": "0.0.88",
   "description": "",
   "bin": {
     "beff": "./bin/index.js"
   },
   "keywords": [],
   "author": "",
-  "license": "ISC",
-  "peerDependencies": {
-    "zod": "^3"
-  }
+  "license": "ISC"
 }

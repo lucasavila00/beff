@@ -7,7 +7,6 @@ import { execProject } from "./bundle-to-disk";
 import { Bundler } from "./bundler";
 import chokidar from "chokidar";
 const bail = (msg: string) => {
-  // eslint-disable-next-line no-console
   console.error(chalk.red(msg));
   process.exit(1);
 };
@@ -61,7 +60,7 @@ export const commanderExec = () => {
   const start = Date.now();
   const command = program
     .name("beff")
-    .description("Generate validators from typescript types")
+    .description("Generate validators from TypeScript types")
     .option("-p, --project <string>", "Path to the project file")
     .option("-v, --verbose", "Print verbose output")
     .option("-w, --watch", "Watch for file changes")
@@ -77,14 +76,12 @@ export const commanderExec = () => {
   // if watch mode, start watching the files that are imported by the entry point
   if (options.watch) {
     const updateFile = (path: string) => {
-      // eslint-disable-next-line no-console
       console.log(chalk.green(`File changed: ${path}`));
       try {
         const newContent = fs.readFileSync(path, "utf-8");
         bundler?.updateFileContent(path, newContent);
         exec();
       } catch (e) {
-        // eslint-disable-next-line no-console
         console.error(e);
       }
     };
@@ -105,6 +102,5 @@ export const commanderExec = () => {
 
   const end = Date.now();
   const duration = end - start;
-  // eslint-disable-next-line no-console
   console.log(chalk.green(`Finished in ${duration}ms`));
 };

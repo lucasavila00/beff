@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/ban-ts-comment */
 import { RegularDecodeError, UnionDecodeError, DecodeError } from "./types";
 
 const prettyPrintValue = (it: unknown): string => {

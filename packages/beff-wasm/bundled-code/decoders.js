@@ -1,4 +1,3 @@
-/* eslint-disable */
 //@ts-check
 
 // based on https://github.com/TehShrike/deepmerge
