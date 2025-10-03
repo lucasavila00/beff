@@ -38,7 +38,7 @@ export interface JSONSchema7Object {
 
 // Workaround for infinite type recursion
 // https://github.com/Microsoft/TypeScript/issues/3496#issuecomment-128553540
-export interface JSONSchema7Array extends Array<JSONSchema7Type> { }
+export interface JSONSchema7Array extends Array<JSONSchema7Type> {}
 
 /**
  * Meta schema
@@ -69,10 +69,10 @@ export interface JSONSchema7 {
    * @see https://datatracker.ietf.org/doc/html/draft-bhutton-json-schema-validation-00#appendix-A
    */
   $defs?:
-  | {
-    [key: string]: JSONSchema7Definition;
-  }
-  | undefined;
+    | {
+        [key: string]: JSONSchema7Definition;
+      }
+    | undefined;
 
   /**
    * @see https://tools.ietf.org/html/draft-handrews-json-schema-validation-01#section-6.1
@@ -114,21 +114,21 @@ export interface JSONSchema7 {
   minProperties?: number | undefined;
   required?: string[] | undefined;
   properties?:
-  | {
-    [key: string]: JSONSchema7Definition;
-  }
-  | undefined;
+    | {
+        [key: string]: JSONSchema7Definition;
+      }
+    | undefined;
   patternProperties?:
-  | {
-    [key: string]: JSONSchema7Definition;
-  }
-  | undefined;
+    | {
+        [key: string]: JSONSchema7Definition;
+      }
+    | undefined;
   additionalProperties?: JSONSchema7Definition | undefined;
   dependencies?:
-  | {
-    [key: string]: JSONSchema7Definition | string[];
-  }
-  | undefined;
+    | {
+        [key: string]: JSONSchema7Definition | string[];
+      }
+    | undefined;
   propertyNames?: JSONSchema7Definition | undefined;
 
   /**
@@ -161,10 +161,10 @@ export interface JSONSchema7 {
    * @see https://tools.ietf.org/html/draft-handrews-json-schema-validation-01#section-9
    */
   definitions?:
-  | {
-    [key: string]: JSONSchema7Definition;
-  }
-  | undefined;
+    | {
+        [key: string]: JSONSchema7Definition;
+      }
+    | undefined;
 
   /**
    * @see https://tools.ietf.org/html/draft-handrews-json-schema-validation-01#section-10

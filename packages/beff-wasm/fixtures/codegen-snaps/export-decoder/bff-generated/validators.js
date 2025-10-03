@@ -1,5 +1,5 @@
 //@ts-nocheck
-
+/* eslint-disable */
 
 
 
@@ -58,7 +58,7 @@ function deepmergeConstructor(options) {
     const result = Object.keys(value);
     const keys = Object.getOwnPropertySymbols(value);
     for (let i = 0, il = keys.length; i < il; ++i) {
-
+      
       propertyIsEnumerable.call(value, keys[i]) && result.push(keys[i]);
     }
     return result;
@@ -80,17 +80,17 @@ function deepmergeConstructor(options) {
   }
 
   const isPrimitiveOrBuiltIn =
-
+    
     typeof Buffer !== "undefined"
       ? (value) =>
-        typeof value !== "object" ||
-        value === null ||
-        value instanceof RegExp ||
-        value instanceof Date ||
-
-        value instanceof Buffer
+          typeof value !== "object" ||
+          value === null ||
+          value instanceof RegExp ||
+          value instanceof Date ||
+          
+          value instanceof Buffer
       : (value) =>
-        typeof value !== "object" || value === null || value instanceof RegExp || value instanceof Date;
+          typeof value !== "object" || value === null || value instanceof RegExp || value instanceof Date;
 
   const mergeArray =
     options && typeof options.mergeArray === "function"
@@ -626,7 +626,7 @@ class ObjectReporter {
         const inputKeys = Object.keys(input);
         const extraKeys = inputKeys.filter((k) => !configKeys.includes(k));
         if (extraKeys.length > 0) {
-
+          
           return extraKeys.flatMap((k) => {
             pushPath(ctx, k);
             const err = buildError(ctx, `extra property`, input[k]);
@@ -709,7 +709,7 @@ class AnyOfDiscriminatedValidator {
     }
     const v = this.mapping[d];
     if (v == null) {
-
+      
       return false;
     }
 
@@ -758,9 +758,9 @@ class AnyOfDiscriminatedReporter {
       const errs = buildError(
         ctx,
         "expected one of " +
-        Object.keys(this.mapping)
-          .map((it) => JSON.stringify(it))
-          .join(", "),
+          Object.keys(this.mapping)
+            .map((it) => JSON.stringify(it))
+            .join(", "),
         d,
       );
       popPath(ctx);
@@ -776,7 +776,7 @@ class AnyOfDiscriminatedSchema {
   }
 
   schemaAnyOfDiscriminatedSchema(ctx) {
-
+    
     return {
       anyOf: this.vs.map((v) => v(ctx)),
     };
@@ -1094,270 +1094,270 @@ class TupleSchema {
 
 
 function ValidateUser(ctx, input) {
-  return (hoisted_User_3.validateObjectValidator.bind(hoisted_User_3))(ctx, input);
+    return (hoisted_User_3.validateObjectValidator.bind(hoisted_User_3))(ctx, input);
 }
 function ParseUser(ctx, input) {
-  return (hoisted_User_4.parseObjectParser.bind(hoisted_User_4))(ctx, input);
+    return (hoisted_User_4.parseObjectParser.bind(hoisted_User_4))(ctx, input);
 }
 function ReportUser(ctx, input) {
-  return (hoisted_User_5.reportObjectReporter.bind(hoisted_User_5))(ctx, input);
+    return (hoisted_User_5.reportObjectReporter.bind(hoisted_User_5))(ctx, input);
 }
 function SchemaUser(ctx, input) {
-  if (ctx.seen["User"]) {
-    return {};
-  }
-  ctx.seen["User"] = true;
-  var tmp = (hoisted_User_6.schemaObjectSchema.bind(hoisted_User_6))(ctx);
-  delete ctx.seen["User"];
-  return tmp;
+    if (ctx.seen["User"]) {
+        return {};
+    }
+    ctx.seen["User"] = true;
+    var tmp = (hoisted_User_6.schemaObjectSchema.bind(hoisted_User_6))(ctx);
+    delete ctx.seen["User"];
+    return tmp;
 }
 function ValidateNotPublic(ctx, input) {
-  return (hoisted_NotPublic_3.validateObjectValidator.bind(hoisted_NotPublic_3))(ctx, input);
+    return (hoisted_NotPublic_3.validateObjectValidator.bind(hoisted_NotPublic_3))(ctx, input);
 }
 function ParseNotPublic(ctx, input) {
-  return (hoisted_NotPublic_4.parseObjectParser.bind(hoisted_NotPublic_4))(ctx, input);
+    return (hoisted_NotPublic_4.parseObjectParser.bind(hoisted_NotPublic_4))(ctx, input);
 }
 function ReportNotPublic(ctx, input) {
-  return (hoisted_NotPublic_5.reportObjectReporter.bind(hoisted_NotPublic_5))(ctx, input);
+    return (hoisted_NotPublic_5.reportObjectReporter.bind(hoisted_NotPublic_5))(ctx, input);
 }
 function SchemaNotPublic(ctx, input) {
-  if (ctx.seen["NotPublic"]) {
-    return {};
-  }
-  ctx.seen["NotPublic"] = true;
-  var tmp = (hoisted_NotPublic_6.schemaObjectSchema.bind(hoisted_NotPublic_6))(ctx);
-  delete ctx.seen["NotPublic"];
-  return tmp;
+    if (ctx.seen["NotPublic"]) {
+        return {};
+    }
+    ctx.seen["NotPublic"] = true;
+    var tmp = (hoisted_NotPublic_6.schemaObjectSchema.bind(hoisted_NotPublic_6))(ctx);
+    delete ctx.seen["NotPublic"];
+    return tmp;
 }
 function ValidateStartsWithA(ctx, input) {
-  return (hoisted_StartsWithA_0.validateStringWithFormatDecoder.bind(hoisted_StartsWithA_0))(ctx, input);
+    return (hoisted_StartsWithA_0.validateStringWithFormatDecoder.bind(hoisted_StartsWithA_0))(ctx, input);
 }
 function ParseStartsWithA(ctx, input) {
-  return (hoisted_StartsWithA_0.parseStringWithFormatDecoder.bind(hoisted_StartsWithA_0))(ctx, input);
+    return (hoisted_StartsWithA_0.parseStringWithFormatDecoder.bind(hoisted_StartsWithA_0))(ctx, input);
 }
 function ReportStartsWithA(ctx, input) {
-  return (hoisted_StartsWithA_0.reportStringWithFormatDecoder.bind(hoisted_StartsWithA_0))(ctx, input);
+    return (hoisted_StartsWithA_0.reportStringWithFormatDecoder.bind(hoisted_StartsWithA_0))(ctx, input);
 }
 function SchemaStartsWithA(ctx, input) {
-  if (ctx.seen["StartsWithA"]) {
-    return {};
-  }
-  ctx.seen["StartsWithA"] = true;
-  var tmp = (hoisted_StartsWithA_0.schemaStringWithFormatDecoder.bind(hoisted_StartsWithA_0))(ctx);
-  delete ctx.seen["StartsWithA"];
-  return tmp;
+    if (ctx.seen["StartsWithA"]) {
+        return {};
+    }
+    ctx.seen["StartsWithA"] = true;
+    var tmp = (hoisted_StartsWithA_0.schemaStringWithFormatDecoder.bind(hoisted_StartsWithA_0))(ctx);
+    delete ctx.seen["StartsWithA"];
+    return tmp;
 }
 function ValidatePassword(ctx, input) {
-  return (hoisted_Password_0.validateStringWithFormatDecoder.bind(hoisted_Password_0))(ctx, input);
+    return (hoisted_Password_0.validateStringWithFormatDecoder.bind(hoisted_Password_0))(ctx, input);
 }
 function ParsePassword(ctx, input) {
-  return (hoisted_Password_0.parseStringWithFormatDecoder.bind(hoisted_Password_0))(ctx, input);
+    return (hoisted_Password_0.parseStringWithFormatDecoder.bind(hoisted_Password_0))(ctx, input);
 }
 function ReportPassword(ctx, input) {
-  return (hoisted_Password_0.reportStringWithFormatDecoder.bind(hoisted_Password_0))(ctx, input);
+    return (hoisted_Password_0.reportStringWithFormatDecoder.bind(hoisted_Password_0))(ctx, input);
 }
 function SchemaPassword(ctx, input) {
-  if (ctx.seen["Password"]) {
-    return {};
-  }
-  ctx.seen["Password"] = true;
-  var tmp = (hoisted_Password_0.schemaStringWithFormatDecoder.bind(hoisted_Password_0))(ctx);
-  delete ctx.seen["Password"];
-  return tmp;
+    if (ctx.seen["Password"]) {
+        return {};
+    }
+    ctx.seen["Password"] = true;
+    var tmp = (hoisted_Password_0.schemaStringWithFormatDecoder.bind(hoisted_Password_0))(ctx);
+    delete ctx.seen["Password"];
+    return tmp;
 }
 function ValidateA(ctx, input) {
-  return (hoisted_A_0.validateAnyOfConstsDecoder.bind(hoisted_A_0))(ctx, input);
+    return (hoisted_A_0.validateAnyOfConstsDecoder.bind(hoisted_A_0))(ctx, input);
 }
 function ParseA(ctx, input) {
-  return (hoisted_A_0.parseAnyOfConstsDecoder.bind(hoisted_A_0))(ctx, input);
+    return (hoisted_A_0.parseAnyOfConstsDecoder.bind(hoisted_A_0))(ctx, input);
 }
 function ReportA(ctx, input) {
-  return (hoisted_A_0.reportAnyOfConstsDecoder.bind(hoisted_A_0))(ctx, input);
+    return (hoisted_A_0.reportAnyOfConstsDecoder.bind(hoisted_A_0))(ctx, input);
 }
 function SchemaA(ctx, input) {
-  if (ctx.seen["A"]) {
-    return {};
-  }
-  ctx.seen["A"] = true;
-  var tmp = (hoisted_A_0.schemaAnyOfConstsDecoder.bind(hoisted_A_0))(ctx);
-  delete ctx.seen["A"];
-  return tmp;
+    if (ctx.seen["A"]) {
+        return {};
+    }
+    ctx.seen["A"] = true;
+    var tmp = (hoisted_A_0.schemaAnyOfConstsDecoder.bind(hoisted_A_0))(ctx);
+    delete ctx.seen["A"];
+    return tmp;
 }
 function ValidateB(ctx, input) {
-  return (hoisted_B_0.validateAnyOfConstsDecoder.bind(hoisted_B_0))(ctx, input);
+    return (hoisted_B_0.validateAnyOfConstsDecoder.bind(hoisted_B_0))(ctx, input);
 }
 function ParseB(ctx, input) {
-  return (hoisted_B_0.parseAnyOfConstsDecoder.bind(hoisted_B_0))(ctx, input);
+    return (hoisted_B_0.parseAnyOfConstsDecoder.bind(hoisted_B_0))(ctx, input);
 }
 function ReportB(ctx, input) {
-  return (hoisted_B_0.reportAnyOfConstsDecoder.bind(hoisted_B_0))(ctx, input);
+    return (hoisted_B_0.reportAnyOfConstsDecoder.bind(hoisted_B_0))(ctx, input);
 }
 function SchemaB(ctx, input) {
-  if (ctx.seen["B"]) {
-    return {};
-  }
-  ctx.seen["B"] = true;
-  var tmp = (hoisted_B_0.schemaAnyOfConstsDecoder.bind(hoisted_B_0))(ctx);
-  delete ctx.seen["B"];
-  return tmp;
+    if (ctx.seen["B"]) {
+        return {};
+    }
+    ctx.seen["B"] = true;
+    var tmp = (hoisted_B_0.schemaAnyOfConstsDecoder.bind(hoisted_B_0))(ctx);
+    delete ctx.seen["B"];
+    return tmp;
 }
 function ValidateD(ctx, input) {
-  return (hoisted_D_0.validateAnyOfConstsDecoder.bind(hoisted_D_0))(ctx, input);
+    return (hoisted_D_0.validateAnyOfConstsDecoder.bind(hoisted_D_0))(ctx, input);
 }
 function ParseD(ctx, input) {
-  return (hoisted_D_0.parseAnyOfConstsDecoder.bind(hoisted_D_0))(ctx, input);
+    return (hoisted_D_0.parseAnyOfConstsDecoder.bind(hoisted_D_0))(ctx, input);
 }
 function ReportD(ctx, input) {
-  return (hoisted_D_0.reportAnyOfConstsDecoder.bind(hoisted_D_0))(ctx, input);
+    return (hoisted_D_0.reportAnyOfConstsDecoder.bind(hoisted_D_0))(ctx, input);
 }
 function SchemaD(ctx, input) {
-  if (ctx.seen["D"]) {
-    return {};
-  }
-  ctx.seen["D"] = true;
-  var tmp = (hoisted_D_0.schemaAnyOfConstsDecoder.bind(hoisted_D_0))(ctx);
-  delete ctx.seen["D"];
-  return tmp;
+    if (ctx.seen["D"]) {
+        return {};
+    }
+    ctx.seen["D"] = true;
+    var tmp = (hoisted_D_0.schemaAnyOfConstsDecoder.bind(hoisted_D_0))(ctx);
+    delete ctx.seen["D"];
+    return tmp;
 }
 function ValidateE(ctx, input) {
-  return (hoisted_E_0.validateAnyOfConstsDecoder.bind(hoisted_E_0))(ctx, input);
+    return (hoisted_E_0.validateAnyOfConstsDecoder.bind(hoisted_E_0))(ctx, input);
 }
 function ParseE(ctx, input) {
-  return (hoisted_E_0.parseAnyOfConstsDecoder.bind(hoisted_E_0))(ctx, input);
+    return (hoisted_E_0.parseAnyOfConstsDecoder.bind(hoisted_E_0))(ctx, input);
 }
 function ReportE(ctx, input) {
-  return (hoisted_E_0.reportAnyOfConstsDecoder.bind(hoisted_E_0))(ctx, input);
+    return (hoisted_E_0.reportAnyOfConstsDecoder.bind(hoisted_E_0))(ctx, input);
 }
 function SchemaE(ctx, input) {
-  if (ctx.seen["E"]) {
-    return {};
-  }
-  ctx.seen["E"] = true;
-  var tmp = (hoisted_E_0.schemaAnyOfConstsDecoder.bind(hoisted_E_0))(ctx);
-  delete ctx.seen["E"];
-  return tmp;
+    if (ctx.seen["E"]) {
+        return {};
+    }
+    ctx.seen["E"] = true;
+    var tmp = (hoisted_E_0.schemaAnyOfConstsDecoder.bind(hoisted_E_0))(ctx);
+    delete ctx.seen["E"];
+    return tmp;
 }
 function ValidateUnionNested(ctx, input) {
-  return (hoisted_UnionNested_0.validateAnyOfConstsDecoder.bind(hoisted_UnionNested_0))(ctx, input);
+    return (hoisted_UnionNested_0.validateAnyOfConstsDecoder.bind(hoisted_UnionNested_0))(ctx, input);
 }
 function ParseUnionNested(ctx, input) {
-  return (hoisted_UnionNested_0.parseAnyOfConstsDecoder.bind(hoisted_UnionNested_0))(ctx, input);
+    return (hoisted_UnionNested_0.parseAnyOfConstsDecoder.bind(hoisted_UnionNested_0))(ctx, input);
 }
 function ReportUnionNested(ctx, input) {
-  return (hoisted_UnionNested_0.reportAnyOfConstsDecoder.bind(hoisted_UnionNested_0))(ctx, input);
+    return (hoisted_UnionNested_0.reportAnyOfConstsDecoder.bind(hoisted_UnionNested_0))(ctx, input);
 }
 function SchemaUnionNested(ctx, input) {
-  if (ctx.seen["UnionNested"]) {
-    return {};
-  }
-  ctx.seen["UnionNested"] = true;
-  var tmp = (hoisted_UnionNested_0.schemaAnyOfConstsDecoder.bind(hoisted_UnionNested_0))(ctx);
-  delete ctx.seen["UnionNested"];
-  return tmp;
+    if (ctx.seen["UnionNested"]) {
+        return {};
+    }
+    ctx.seen["UnionNested"] = true;
+    var tmp = (hoisted_UnionNested_0.schemaAnyOfConstsDecoder.bind(hoisted_UnionNested_0))(ctx);
+    delete ctx.seen["UnionNested"];
+    return tmp;
 }
 const validators = {
-  User: ValidateUser,
-  NotPublic: ValidateNotPublic,
-  StartsWithA: ValidateStartsWithA,
-  Password: ValidatePassword,
-  A: ValidateA,
-  B: ValidateB,
-  D: ValidateD,
-  E: ValidateE,
-  UnionNested: ValidateUnionNested
+    User: ValidateUser,
+    NotPublic: ValidateNotPublic,
+    StartsWithA: ValidateStartsWithA,
+    Password: ValidatePassword,
+    A: ValidateA,
+    B: ValidateB,
+    D: ValidateD,
+    E: ValidateE,
+    UnionNested: ValidateUnionNested
 };
 const parsers = {
-  User: ParseUser,
-  NotPublic: ParseNotPublic,
-  StartsWithA: ParseStartsWithA,
-  Password: ParsePassword,
-  A: ParseA,
-  B: ParseB,
-  D: ParseD,
-  E: ParseE,
-  UnionNested: ParseUnionNested
+    User: ParseUser,
+    NotPublic: ParseNotPublic,
+    StartsWithA: ParseStartsWithA,
+    Password: ParsePassword,
+    A: ParseA,
+    B: ParseB,
+    D: ParseD,
+    E: ParseE,
+    UnionNested: ParseUnionNested
 };
 const reporters = {
-  User: ReportUser,
-  NotPublic: ReportNotPublic,
-  StartsWithA: ReportStartsWithA,
-  Password: ReportPassword,
-  A: ReportA,
-  B: ReportB,
-  D: ReportD,
-  E: ReportE,
-  UnionNested: ReportUnionNested
+    User: ReportUser,
+    NotPublic: ReportNotPublic,
+    StartsWithA: ReportStartsWithA,
+    Password: ReportPassword,
+    A: ReportA,
+    B: ReportB,
+    D: ReportD,
+    E: ReportE,
+    UnionNested: ReportUnionNested
 };
 const schemas = {
-  User: SchemaUser,
-  NotPublic: SchemaNotPublic,
-  StartsWithA: SchemaStartsWithA,
-  Password: SchemaPassword,
-  A: SchemaA,
-  B: SchemaB,
-  D: SchemaD,
-  E: SchemaE,
-  UnionNested: SchemaUnionNested
+    User: SchemaUser,
+    NotPublic: SchemaNotPublic,
+    StartsWithA: SchemaStartsWithA,
+    Password: SchemaPassword,
+    A: SchemaA,
+    B: SchemaB,
+    D: SchemaD,
+    E: SchemaE,
+    UnionNested: SchemaUnionNested
 };
 const hoisted_User_0 = {
-  "age": validateNumber,
-  "name": validateString
+    "age": validateNumber,
+    "name": validateString
 };
 const hoisted_User_1 = {
-  "age": schemaNumber,
-  "name": schemaString
+    "age": schemaNumber,
+    "name": schemaString
 };
 const hoisted_User_2 = null;
 const hoisted_User_3 = new ObjectValidator(hoisted_User_0, hoisted_User_2);
 const hoisted_User_4 = new ObjectParser({
-  "age": parseIdentity,
-  "name": parseIdentity
+    "age": parseIdentity,
+    "name": parseIdentity
 }, null);
 const hoisted_User_5 = new ObjectReporter(hoisted_User_0, hoisted_User_2, {
-  "age": reportNumber,
-  "name": reportString
+    "age": reportNumber,
+    "name": reportString
 }, null);
 const hoisted_User_6 = new ObjectSchema(hoisted_User_1, null);
 const hoisted_NotPublic_0 = {
-  "a": validateString
+    "a": validateString
 };
 const hoisted_NotPublic_1 = {
-  "a": schemaString
+    "a": schemaString
 };
 const hoisted_NotPublic_2 = null;
 const hoisted_NotPublic_3 = new ObjectValidator(hoisted_NotPublic_0, hoisted_NotPublic_2);
 const hoisted_NotPublic_4 = new ObjectParser({
-  "a": parseIdentity
+    "a": parseIdentity
 }, null);
 const hoisted_NotPublic_5 = new ObjectReporter(hoisted_NotPublic_0, hoisted_NotPublic_2, {
-  "a": reportString
+    "a": reportString
 }, null);
 const hoisted_NotPublic_6 = new ObjectSchema(hoisted_NotPublic_1, null);
 const hoisted_StartsWithA_0 = new StringWithFormatDecoder("StartsWithA");
 const hoisted_Password_0 = new StringWithFormatDecoder("password");
 const hoisted_A_0 = new AnyOfConstsDecoder([
-  1,
-  2
+    1,
+    2
 ]);
 const hoisted_B_0 = new AnyOfConstsDecoder([
-  2,
-  3
+    2,
+    3
 ]);
 const hoisted_D_0 = new AnyOfConstsDecoder([
-  4,
-  5
+    4,
+    5
 ]);
 const hoisted_E_0 = new AnyOfConstsDecoder([
-  5,
-  6
+    5,
+    6
 ]);
 const hoisted_UnionNested_0 = new AnyOfConstsDecoder([
-  1,
-  2,
-  3,
-  4,
-  5,
-  6
+    1,
+    2,
+    3,
+    4,
+    5,
+    6
 ]);
 
 export default { registerStringFormatter, registerNumberFormatter, ObjectValidator, ObjectParser, ArrayParser, ArrayValidator, CodecDecoder, StringWithFormatDecoder, NumberWithFormatDecoder, AnyOfValidator, AnyOfParser, AllOfValidator, AllOfParser, TupleParser, TupleValidator, RegexDecoder, ConstDecoder, AnyOfConstsDecoder, AnyOfDiscriminatedParser, AnyOfDiscriminatedValidator, validateString, validateNumber, validateFunction, validateBoolean, validateAny, validateNull, validateNever, parseIdentity, reportString, reportNumber, reportNull, reportBoolean, reportAny, reportNever, reportFunction, ArrayReporter, ObjectReporter, TupleReporter, AnyOfReporter, AllOfReporter, AnyOfDiscriminatedReporter, schemaString, schemaNumber, schemaBoolean, schemaNull, schemaAny, schemaNever, schemaFunction, ArraySchema, ObjectSchema, TupleSchema, AnyOfSchema, AllOfSchema, AnyOfDiscriminatedSchema, validators, parsers, reporters, schemas };
