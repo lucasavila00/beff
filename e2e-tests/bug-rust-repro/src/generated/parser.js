@@ -1,23 +1,22 @@
 //@ts-nocheck
-/* eslint-disable */
 
 
-import {printErrors} from '@beff/client';
-import {z} from 'zod';
+import { printErrors } from '@beff/client';
+import { z } from 'zod';
 import validatorsMod from "./validators.js"; const { registerStringFormatter, registerNumberFormatter, ObjectValidator, ObjectParser, ArrayParser, ArrayValidator, CodecDecoder, StringWithFormatDecoder, NumberWithFormatDecoder, AnyOfValidator, AnyOfParser, AllOfValidator, AllOfParser, TupleParser, TupleValidator, RegexDecoder, ConstDecoder, AnyOfConstsDecoder, AnyOfDiscriminatedParser, AnyOfDiscriminatedValidator, validateString, validateNumber, validateFunction, validateBoolean, validateAny, validateNull, validateNever, parseIdentity, reportString, reportNumber, reportNull, reportBoolean, reportAny, reportNever, reportFunction, ArrayReporter, ObjectReporter, TupleReporter, AnyOfReporter, AllOfReporter, AnyOfDiscriminatedReporter, schemaString, schemaNumber, schemaBoolean, schemaNull, schemaAny, schemaNever, schemaFunction, ArraySchema, ObjectSchema, TupleSchema, AnyOfSchema, AllOfSchema, AnyOfDiscriminatedSchema, validators, parsers, reporters, schemas, c } = validatorsMod;
 const RequiredStringFormats = ["ValidCurrency"];
 const RequiredNumberFormats = [];
 const buildValidatorsInput = {
-    "A": validators.A
+  "A": validators.A
 };
 const buildParsersInput = {
-    "A": parsers.A
+  "A": parsers.A
 };
 const buildReportersInput = {
-    "A": reporters.A
+  "A": reporters.A
 };
 const buildSchemaInput = {
-    "A": schemas.A
+  "A": schemas.A
 };
 
 
@@ -25,7 +24,7 @@ const buildSchemaInput = {
 
 function buildParsers(args) {
   const stringFormats = args?.stringFormats ?? {};
-  
+
   for (const k of RequiredStringFormats) {
     if (stringFormats[k] == null) {
       throw new Error(`Missing custom format ${k}`);
@@ -34,12 +33,12 @@ function buildParsers(args) {
 
   Object.keys(stringFormats).forEach((k) => {
     const v = stringFormats[k];
-    
+
     registerStringFormatter(k, v);
   });
 
   const numberFormats = args?.numberFormats ?? {};
-  
+
   for (const k of RequiredNumberFormats) {
     if (numberFormats[k] == null) {
       throw new Error(`Missing custom format ${k}`);
@@ -48,14 +47,14 @@ function buildParsers(args) {
 
   Object.keys(numberFormats).forEach((k) => {
     const v = numberFormats[k];
-    
+
     registerNumberFormatter(k, v);
   });
 
   let decoders = {};
-  
+
   Object.keys(buildValidatorsInput).forEach((k) => {
-    
+
     let v = buildValidatorsInput[k];
     const validate = (input, options) => {
       const disallowExtraProperties = options?.disallowExtraProperties ?? false;
@@ -67,7 +66,7 @@ function buildParsers(args) {
       return ok;
     };
 
-    
+
     const schemaFn = buildSchemaInput[k];
     const schema = () => {
       const ctx = {
@@ -81,13 +80,13 @@ function buildParsers(args) {
       const disallowExtraProperties = options?.disallowExtraProperties ?? false;
       const ok = validate(input, options);
       if (ok) {
-        
+
         let p = buildParsersInput[k];
         let ctx = { disallowExtraProperties };
         const parsed = p(ctx, input);
         return { success: true, data: parsed };
       }
-      
+
       let e = buildReportersInput[k];
       let ctx = { path: [], disallowExtraProperties };
       return {
@@ -100,17 +99,17 @@ function buildParsers(args) {
       if (safe.success) {
         return safe.data;
       }
-      
+
       const explained = printErrors(safe.errors, []);
       throw new Error(`Failed to parse ${k} - ${explained}`);
     };
     const zod = () => {
-      
+
       return z.custom(
         (data) => safeParse(data).success,
         (val) => {
           const errors = safeParse(val).errors;
-          
+
           return printErrors(errors, []);
         },
       );

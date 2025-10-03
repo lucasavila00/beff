@@ -1,7 +1,9 @@
 // For format details, see https://aka.ms/devcontainer.json. For config options, see the
 // README at: https://github.com/devcontainers/templates/tree/main/src/javascript-node
 {
-  "forwardPorts": [3000],
+  "forwardPorts": [
+    3000
+  ],
   "name": "Beff Dev",
   "dockerComposeFile": "./docker-compose.yml",
   "service": "dev",
@@ -13,7 +15,6 @@
       "extensions": [
         "Prisma.prisma",
         "streetsidesoftware.code-spell-checker",
-        "dbaeumer.vscode-eslint",
         "rust-lang.rust-analyzer",
         "esbenp.prettier-vscode",
         "GitHub.copilot"

@@ -134,7 +134,6 @@ export const execProject = (
     ? path.join(path.dirname(projectPath), projectJson.parser)
     : undefined;
   if (verbose) {
-    // eslint-disable-next-line no-console
     console.log(`JS: Parser entry point ${parserEntryPoint}`);
   }
   const outResult = bundler.bundle(parserEntryPoint, projectJson.settings);

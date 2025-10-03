@@ -1,4 +1,3 @@
-/* eslint-disable no-undef */
 //@ts-check
 
 function buildParsers(args) {

@@ -1,5 +1,4 @@
 //@ts-nocheck
-/* eslint-disable */
 
 
 
@@ -59,7 +58,7 @@ function deepmergeConstructor(options) {
     const result = Object.keys(value);
     const keys = Object.getOwnPropertySymbols(value);
     for (let i = 0, il = keys.length; i < il; ++i) {
-      
+
       propertyIsEnumerable.call(value, keys[i]) && result.push(keys[i]);
     }
     return result;
@@ -81,17 +80,17 @@ function deepmergeConstructor(options) {
   }
 
   const isPrimitiveOrBuiltIn =
-    
+
     typeof Buffer !== "undefined"
       ? (value) =>
-          typeof value !== "object" ||
-          value === null ||
-          value instanceof RegExp ||
-          value instanceof Date ||
-          
-          value instanceof Buffer
+        typeof value !== "object" ||
+        value === null ||
+        value instanceof RegExp ||
+        value instanceof Date ||
+
+        value instanceof Buffer
       : (value) =>
-          typeof value !== "object" || value === null || value instanceof RegExp || value instanceof Date;
+        typeof value !== "object" || value === null || value instanceof RegExp || value instanceof Date;
 
   const mergeArray =
     options && typeof options.mergeArray === "function"
@@ -627,7 +626,7 @@ class ObjectReporter {
         const inputKeys = Object.keys(input);
         const extraKeys = inputKeys.filter((k) => !configKeys.includes(k));
         if (extraKeys.length > 0) {
-          
+
           return extraKeys.flatMap((k) => {
             pushPath(ctx, k);
             const err = buildError(ctx, `extra property`, input[k]);
@@ -710,7 +709,7 @@ class AnyOfDiscriminatedValidator {
     }
     const v = this.mapping[d];
     if (v == null) {
-      
+
       return false;
     }
 
@@ -759,9 +758,9 @@ class AnyOfDiscriminatedReporter {
       const errs = buildError(
         ctx,
         "expected one of " +
-          Object.keys(this.mapping)
-            .map((it) => JSON.stringify(it))
-            .join(", "),
+        Object.keys(this.mapping)
+          .map((it) => JSON.stringify(it))
+          .join(", "),
         d,
       );
       popPath(ctx);
@@ -777,7 +776,7 @@ class AnyOfDiscriminatedSchema {
   }
 
   schemaAnyOfDiscriminatedSchema(ctx) {
-    
+
     return {
       anyOf: this.vs.map((v) => v(ctx)),
     };
@@ -1095,34 +1094,34 @@ class TupleSchema {
 
 
 function ValidateA(ctx, input) {
-    return (validateString)(ctx, input);
+  return (validateString)(ctx, input);
 }
 function ParseA(ctx, input) {
-    return (parseIdentity)(ctx, input);
+  return (parseIdentity)(ctx, input);
 }
 function ReportA(ctx, input) {
-    return (reportString)(ctx, input);
+  return (reportString)(ctx, input);
 }
 function SchemaA(ctx, input) {
-    if (ctx.seen["A"]) {
-        return {};
-    }
-    ctx.seen["A"] = true;
-    var tmp = (schemaString)(ctx);
-    delete ctx.seen["A"];
-    return tmp;
+  if (ctx.seen["A"]) {
+    return {};
+  }
+  ctx.seen["A"] = true;
+  var tmp = (schemaString)(ctx);
+  delete ctx.seen["A"];
+  return tmp;
 }
 const validators = {
-    A: ValidateA
+  A: ValidateA
 };
 const parsers = {
-    A: ParseA
+  A: ParseA
 };
 const reporters = {
-    A: ReportA
+  A: ReportA
 };
 const schemas = {
-    A: SchemaA
+  A: SchemaA
 };
 
 export default { registerStringFormatter, registerNumberFormatter, ObjectValidator, ObjectParser, ArrayParser, ArrayValidator, CodecDecoder, StringWithFormatDecoder, NumberWithFormatDecoder, AnyOfValidator, AnyOfParser, AllOfValidator, AllOfParser, TupleParser, TupleValidator, RegexDecoder, ConstDecoder, AnyOfConstsDecoder, AnyOfDiscriminatedParser, AnyOfDiscriminatedValidator, validateString, validateNumber, validateFunction, validateBoolean, validateAny, validateNull, validateNever, parseIdentity, reportString, reportNumber, reportNull, reportBoolean, reportAny, reportNever, reportFunction, ArrayReporter, ObjectReporter, TupleReporter, AnyOfReporter, AllOfReporter, AnyOfDiscriminatedReporter, schemaString, schemaNumber, schemaBoolean, schemaNull, schemaAny, schemaNever, schemaFunction, ArraySchema, ObjectSchema, TupleSchema, AnyOfSchema, AllOfSchema, AnyOfDiscriminatedSchema, validators, parsers, reporters, schemas };
