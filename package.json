@@ -19,7 +19,6 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "docsify-cli": "^4.4.4",
     "prettier": "^3.6.2"
   },
   "devDependencies": {
