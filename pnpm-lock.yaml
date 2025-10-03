@@ -66,7 +66,7 @@ importers:
   packages/beff-client:
     dependencies:
       '@beff/cli':
-        specifier: workspace:^0.0.87
+        specifier: workspace:^0.0.88
         version: link:../beff-cli
       zod:
         specifier: ^3.23.5
@@ -88,7 +88,7 @@ importers:
         specifier: ^7.22.13
         version: 7.27.1
       '@beff/cli':
-        specifier: workspace:^0.0.87
+        specifier: workspace:^0.0.88
         version: link:../beff-cli
       '@types/babel__code-frame':
         specifier: ^7.0.4

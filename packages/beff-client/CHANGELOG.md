@@ -1,5 +1,13 @@
 # @beff/client
 
+## 0.0.88
+
+### Patch Changes
+
+- change package that exports type
+- Updated dependencies
+  - @beff/cli@0.0.88
+
 ## 0.0.87
 
 ### Patch Changes
