@@ -1,6 +1,4 @@
 //@ts-nocheck
-/* eslint-disable */
-
 
 
 
