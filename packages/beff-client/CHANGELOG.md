@@ -1,5 +1,13 @@
 # @beff/client
 
+## 0.0.89
+
+### Patch Changes
+
+- fix ts export of json schema
+- Updated dependencies
+  - @beff/cli@0.0.89
+
 ## 0.0.88
 
 ### Patch Changes
