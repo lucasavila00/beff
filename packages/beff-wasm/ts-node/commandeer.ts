@@ -60,7 +60,7 @@ export const commanderExec = () => {
   const start = Date.now();
   const command = program
     .name("beff")
-    .description("Generate validators from typescript types")
+    .description("Generate validators from TypeScript types")
     .option("-p, --project <string>", "Path to the project file")
     .option("-v, --verbose", "Print verbose output")
     .option("-w, --watch", "Watch for file changes")
