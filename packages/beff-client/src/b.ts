@@ -1,4 +1,5 @@
-import { ParseOptions, DecodeError, JSONSchema7, BeffParser } from "./types";
+import { JSONSchema7 } from "./json-schema";
+import { ParseOptions, DecodeError, BeffParser } from "./types";
 import { z } from "zod";
 
 const buildParserFromSafeParser = <T>(

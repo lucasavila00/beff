@@ -1,5 +1,11 @@
 # @beff/cli
 
+## 0.0.89
+
+### Patch Changes
+
+- fix ts export of json schema
+
 ## 0.0.88
 
 ### Patch Changes
