@@ -408,7 +408,7 @@ it("Custom String Format User Hierarchy", () => {
   `);
   expect(ReadAuthorizedUserCodec.parse("user_read_write_123")).toMatchInlineSnapshot('"user_read_write_123"');
 
-    expect(WriteAuthorizedUserCodec.safeParse("read_write_123")).toMatchInlineSnapshot(`
+  expect(WriteAuthorizedUserCodec.safeParse("read_write_123")).toMatchInlineSnapshot(`
       {
         "errors": [
           {
