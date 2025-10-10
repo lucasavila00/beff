@@ -1,0 +1,81 @@
+---
+source: packages/beff-core/tests/print_parser.rs
+expression: "decoder(r#\"\n        export type User = StringFormat<\"User\">;\n        export type ReadAuthorizedUser = StringFormatExtends<User, \"ReadAuthorizedUser\">;\n        export type WriteAuthorizedUser = StringFormatExtends<ReadAuthorizedUser, \"WriteAuthorizedUser\">;\n        parse.buildParsers<{ User: User, ReadAuthorizedUser: ReadAuthorizedUser, WriteAuthorizedUser: WriteAuthorizedUser }>();\n      \"#)"
+---
+function ValidateUser(ctx, input) {
+    return (hoisted_User_0.validateStringWithFormatsDecoder.bind(hoisted_User_0))(ctx, input);
+}
+function ParseUser(ctx, input) {
+    return (hoisted_User_0.parseStringWithFormatsDecoder.bind(hoisted_User_0))(ctx, input);
+}
+function ReportUser(ctx, input) {
+    return (hoisted_User_0.reportStringWithFormatsDecoder.bind(hoisted_User_0))(ctx, input);
+}
+function SchemaUser(ctx, input) {
+    if (ctx.seen["User"]) {
+        return {};
+    }
+    ctx.seen["User"] = true;
+    var tmp = (hoisted_User_0.schemaStringWithFormatsDecoder.bind(hoisted_User_0))(ctx);
+    delete ctx.seen["User"];
+    return tmp;
+}
+function ValidateReadAuthorizedUser(ctx, input) {
+    return (hoisted_ReadAuthorizedUser_0.validateStringWithFormatsDecoder.bind(hoisted_ReadAuthorizedUser_0))(ctx, input);
+}
+function ParseReadAuthorizedUser(ctx, input) {
+    return (hoisted_ReadAuthorizedUser_0.parseStringWithFormatsDecoder.bind(hoisted_ReadAuthorizedUser_0))(ctx, input);
+}
+function ReportReadAuthorizedUser(ctx, input) {
+    return (hoisted_ReadAuthorizedUser_0.reportStringWithFormatsDecoder.bind(hoisted_ReadAuthorizedUser_0))(ctx, input);
+}
+function SchemaReadAuthorizedUser(ctx, input) {
+    if (ctx.seen["ReadAuthorizedUser"]) {
+        return {};
+    }
+    ctx.seen["ReadAuthorizedUser"] = true;
+    var tmp = (hoisted_ReadAuthorizedUser_0.schemaStringWithFormatsDecoder.bind(hoisted_ReadAuthorizedUser_0))(ctx);
+    delete ctx.seen["ReadAuthorizedUser"];
+    return tmp;
+}
+function ValidateWriteAuthorizedUser(ctx, input) {
+    return (hoisted_WriteAuthorizedUser_0.validateStringWithFormatsDecoder.bind(hoisted_WriteAuthorizedUser_0))(ctx, input);
+}
+function ParseWriteAuthorizedUser(ctx, input) {
+    return (hoisted_WriteAuthorizedUser_0.parseStringWithFormatsDecoder.bind(hoisted_WriteAuthorizedUser_0))(ctx, input);
+}
+function ReportWriteAuthorizedUser(ctx, input) {
+    return (hoisted_WriteAuthorizedUser_0.reportStringWithFormatsDecoder.bind(hoisted_WriteAuthorizedUser_0))(ctx, input);
+}
+function SchemaWriteAuthorizedUser(ctx, input) {
+    if (ctx.seen["WriteAuthorizedUser"]) {
+        return {};
+    }
+    ctx.seen["WriteAuthorizedUser"] = true;
+    var tmp = (hoisted_WriteAuthorizedUser_0.schemaStringWithFormatsDecoder.bind(hoisted_WriteAuthorizedUser_0))(ctx);
+    delete ctx.seen["WriteAuthorizedUser"];
+    return tmp;
+}
+const validators = {
+    User: ValidateUser,
+    ReadAuthorizedUser: ValidateReadAuthorizedUser,
+    WriteAuthorizedUser: ValidateWriteAuthorizedUser
+};
+const parsers = {
+    User: ParseUser,
+    ReadAuthorizedUser: ParseReadAuthorizedUser,
+    WriteAuthorizedUser: ParseWriteAuthorizedUser
+};
+const reporters = {
+    User: ReportUser,
+    ReadAuthorizedUser: ReportReadAuthorizedUser,
+    WriteAuthorizedUser: ReportWriteAuthorizedUser
+};
+const schemas = {
+    User: SchemaUser,
+    ReadAuthorizedUser: SchemaReadAuthorizedUser,
+    WriteAuthorizedUser: SchemaWriteAuthorizedUser
+};
+const hoisted_User_0 = new StringWithFormatsDecoder("User");
+const hoisted_ReadAuthorizedUser_0 = new StringWithFormatsDecoder("User", "ReadAuthorizedUser");
+const hoisted_WriteAuthorizedUser_0 = new StringWithFormatsDecoder("User", "ReadAuthorizedUser", "WriteAuthorizedUser");

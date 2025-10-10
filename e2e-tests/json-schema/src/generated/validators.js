@@ -438,65 +438,77 @@ class CodecDecoder {
   }
 }
 
-class StringWithFormatDecoder {
-  constructor(format) {
-    this.format = format;
+class StringWithFormatsDecoder {
+  constructor(...formats) {
+    this.formats = formats;
   }
 
-  validateStringWithFormatDecoder(ctx, input) {
+  validateStringWithFormatsDecoder(ctx, input) {
     if (typeof input !== "string") {
       return false;
     }
 
-    const validator = stringFormatters[this.format];
+    for (const f of this.formats) {
+      const validator = stringFormatters[f];
 
-    if (validator == null) {
-      return false;
+      if (validator == null) {
+        return false;
+      }
+
+      if (!validator(input)) {
+        return false;
+      }
     }
 
-    return validator(input);
+    return true;
   }
-  parseStringWithFormatDecoder(ctx, input) {
+  parseStringWithFormatsDecoder(ctx, input) {
     return input;
   }
-  reportStringWithFormatDecoder(ctx, input) {
-    return buildError(ctx, `expected string with format "${this.format}"`, input);
+  reportStringWithFormatsDecoder(ctx, input) {
+    return buildError(ctx, `expected string with format "${this.formats.join(" and ")}"`, input);
   }
-  schemaStringWithFormatDecoder(ctx) {
+  schemaStringWithFormatsDecoder(ctx) {
     return {
       type: "string",
-      format: this.format,
+      format: this.formats.join(" and "),
     };
   }
 }
-class NumberWithFormatDecoder {
-  constructor(format) {
-    this.format = format;
+class NumberWithFormatsDecoder {
+  constructor(...formats) {
+    this.formats = formats;
   }
 
-  validateNumberWithFormatDecoder(ctx, input) {
+  validateNumberWithFormatsDecoder(ctx, input) {
     if (typeof input !== "number") {
       return false;
     }
 
-    const validator = numberFormatters[this.format];
+    for (const f of this.formats) {
+      const validator = numberFormatters[f];
 
-    if (validator == null) {
-      return false;
+      if (validator == null) {
+        return false;
+      }
+
+      if (!validator(input)) {
+        return false;
+      }
     }
 
-    return validator(input);
+    return true;
   }
-  parseNumberWithFormatDecoder(ctx, input) {
+  parseNumberWithFormatsDecoder(ctx, input) {
     return input;
   }
-  reportNumberWithFormatDecoder(ctx, input) {
-    return buildError(ctx, `expected number with format "${this.format}"`, input);
+  reportNumberWithFormatsDecoder(ctx, input) {
+    return buildError(ctx, `expected number with format "${this.formats.join(" and ")}"`, input);
   }
-  schemaNumberWithFormatDecoder(ctx) {
+  schemaNumberWithFormatsDecoder(ctx) {
     return {
       type: "number",
-      format: this.format,
+      format: this.formats.join(" and "),
     };
   }
 }
@@ -1254,20 +1266,20 @@ function SchemaNonEmptyString(ctx, input) {
     return tmp;
 }
 function ValidateValidCurrency(ctx, input) {
-    return (hoisted_ValidCurrency_0.validateStringWithFormatDecoder.bind(hoisted_ValidCurrency_0))(ctx, input);
+    return (hoisted_ValidCurrency_0.validateStringWithFormatsDecoder.bind(hoisted_ValidCurrency_0))(ctx, input);
 }
 function ParseValidCurrency(ctx, input) {
-    return (hoisted_ValidCurrency_0.parseStringWithFormatDecoder.bind(hoisted_ValidCurrency_0))(ctx, input);
+    return (hoisted_ValidCurrency_0.parseStringWithFormatsDecoder.bind(hoisted_ValidCurrency_0))(ctx, input);
 }
 function ReportValidCurrency(ctx, input) {
-    return (hoisted_ValidCurrency_0.reportStringWithFormatDecoder.bind(hoisted_ValidCurrency_0))(ctx, input);
+    return (hoisted_ValidCurrency_0.reportStringWithFormatsDecoder.bind(hoisted_ValidCurrency_0))(ctx, input);
 }
 function SchemaValidCurrency(ctx, input) {
     if (ctx.seen["ValidCurrency"]) {
         return {};
     }
     ctx.seen["ValidCurrency"] = true;
-    var tmp = (hoisted_ValidCurrency_0.schemaStringWithFormatDecoder.bind(hoisted_ValidCurrency_0))(ctx);
+    var tmp = (hoisted_ValidCurrency_0.schemaStringWithFormatsDecoder.bind(hoisted_ValidCurrency_0))(ctx);
     delete ctx.seen["ValidCurrency"];
     return tmp;
 }
@@ -1733,6 +1745,6 @@ const hoisted_NonEmptyString_4 = new TupleReporter(hoisted_NonEmptyString_0, hoi
 const hoisted_NonEmptyString_5 = new TupleSchema([
     schemaString
 ], schemaString);
-const hoisted_ValidCurrency_0 = new StringWithFormatDecoder("ValidCurrency");
+const hoisted_ValidCurrency_0 = new StringWithFormatsDecoder("ValidCurrency");
 
-export default { registerStringFormatter, registerNumberFormatter, ObjectValidator, ObjectParser, ArrayParser, ArrayValidator, CodecDecoder, StringWithFormatDecoder, NumberWithFormatDecoder, AnyOfValidator, AnyOfParser, AllOfValidator, AllOfParser, TupleParser, TupleValidator, RegexDecoder, ConstDecoder, AnyOfConstsDecoder, AnyOfDiscriminatedParser, AnyOfDiscriminatedValidator, validateString, validateNumber, validateFunction, validateBoolean, validateAny, validateNull, validateNever, parseIdentity, reportString, reportNumber, reportNull, reportBoolean, reportAny, reportNever, reportFunction, ArrayReporter, ObjectReporter, TupleReporter, AnyOfReporter, AllOfReporter, AnyOfDiscriminatedReporter, schemaString, schemaNumber, schemaBoolean, schemaNull, schemaAny, schemaNever, schemaFunction, ArraySchema, ObjectSchema, TupleSchema, AnyOfSchema, AllOfSchema, AnyOfDiscriminatedSchema, validators, parsers, reporters, schemas };
+export default { registerStringFormatter, registerNumberFormatter, ObjectValidator, ObjectParser, ArrayParser, ArrayValidator, CodecDecoder, StringWithFormatsDecoder, NumberWithFormatsDecoder, AnyOfValidator, AnyOfParser, AllOfValidator, AllOfParser, TupleParser, TupleValidator, RegexDecoder, ConstDecoder, AnyOfConstsDecoder, AnyOfDiscriminatedParser, AnyOfDiscriminatedValidator, validateString, validateNumber, validateFunction, validateBoolean, validateAny, validateNull, validateNever, parseIdentity, reportString, reportNumber, reportNull, reportBoolean, reportAny, reportNever, reportFunction, ArrayReporter, ObjectReporter, TupleReporter, AnyOfReporter, AllOfReporter, AnyOfDiscriminatedReporter, schemaString, schemaNumber, schemaBoolean, schemaNull, schemaAny, schemaNever, schemaFunction, ArraySchema, ObjectSchema, TupleSchema, AnyOfSchema, AllOfSchema, AnyOfDiscriminatedSchema, validators, parsers, reporters, schemas };

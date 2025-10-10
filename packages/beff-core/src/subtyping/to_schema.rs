@@ -467,6 +467,12 @@ impl<'a, 'b> SchemerContext<'a, 'b> {
                                     !allowed,
                                 ));
                             }
+                            NumberRepresentationOrFormat::FormatExtends(items) => {
+                                acc.insert(maybe_not(
+                                    JsonSchema::NumberFormatExtends(items.clone()),
+                                    !allowed,
+                                ));
+                            }
                         }
                     }
                 }
@@ -482,6 +488,12 @@ impl<'a, 'b> SchemerContext<'a, 'b> {
                             StringLitOrFormat::Format(fmt) => {
                                 acc.insert(maybe_not(
                                     JsonSchema::StringWithFormat(fmt.clone()),
+                                    !allowed,
+                                ));
+                            }
+                            StringLitOrFormat::FormatExtends(items) => {
+                                acc.insert(maybe_not(
+                                    JsonSchema::StringFormatExtends(items.clone()),
                                     !allowed,
                                 ));
                             }

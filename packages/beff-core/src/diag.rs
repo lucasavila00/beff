@@ -75,6 +75,9 @@ pub enum DiagnosticInfoMessage {
     FoundTypeExpectedValue,
     CustomStringIsNotRegistered,
     CustomNumberIsNotRegistered,
+    InvalidUsageOfNumberFormatExtendsTypeParameter,
+    BaseOfNumberFormatExtendsShouldBeNumberFormat,
+    CouldNotFindBaseOfNumberFormatExtends,
     GetMustNotHaveBody,
     InvalidIdentifierInPatternNoExplodeAllowed,
     CloseBlockMustEndPattern,
@@ -89,6 +92,9 @@ pub enum DiagnosticInfoMessage {
     TwoCallsToBuildParsers,
     CannotResolveSomethingOfOtherFile(String),
     InvalidUsageOfStringFormatTypeParameter,
+    BaseOfStringFormatExtendsShouldBeStringFormat,
+    CouldNotFindBaseOfStringFormatExtends,
+    InvalidUsageOfStringFormatExtendsTypeParameter,
     InvalidUsageOfNumberFormatTypeParameter,
     CannotResolveNamespaceType,
     ShouldNotResolveTsInterfaceDeclAsNamespace,
@@ -287,7 +293,6 @@ impl DiagnosticInfoMessage {
             DiagnosticInfoMessage::OmitShouldHaveTwoTypeArguments => {
                 "Omit should have two type arguments".to_string()
             }
-
             DiagnosticInfoMessage::OmitShouldHaveObjectAsTypeArgument => {
                 "Omit should have object as first type argument".to_string()
             }
@@ -472,6 +477,24 @@ impl DiagnosticInfoMessage {
             }
             DiagnosticInfoMessage::ObjectHasConflictingKeyValueInIntersection => {
                 "Object has conflicting key value in intersection".to_string()
+            }
+            DiagnosticInfoMessage::InvalidUsageOfStringFormatExtendsTypeParameter => {
+                "Invalid usage of string format extends type parameter".to_string()
+            }
+            DiagnosticInfoMessage::BaseOfStringFormatExtendsShouldBeStringFormat => {
+                "Base of string format extends should be string format".to_string()
+            }
+            DiagnosticInfoMessage::CouldNotFindBaseOfStringFormatExtends => {
+                "Could not find base of string format extends".to_string()
+            }
+            DiagnosticInfoMessage::InvalidUsageOfNumberFormatExtendsTypeParameter => {
+                "Invalid usage of number format extends type parameter".to_string()
+            }
+            DiagnosticInfoMessage::BaseOfNumberFormatExtendsShouldBeNumberFormat => {
+                "Base of number format extends should be number format".to_string()
+            }
+            DiagnosticInfoMessage::CouldNotFindBaseOfNumberFormatExtends => {
+                "Could not find base of number format extends".to_string()
             }
         }
     }

@@ -769,6 +769,7 @@ fn mapping_atomic_applicable_member_types_inner(
                         }
                         StringLitOrFormat::Tpl(_)
                         | StringLitOrFormat::Format(_)
+                        | StringLitOrFormat::FormatExtends(_)
                         | StringLitOrFormat::Codec(_) => {
                             bail!("format or codec cannot be used as mapping key")
                         }
@@ -996,6 +997,9 @@ pub fn list_indexed_access(
                         NumberRepresentationOrFormat::Lit(n) => acc.push(n.clone()),
                         NumberRepresentationOrFormat::Format(fmt) => {
                             bail!("format cannot be used as list index: {}", fmt)
+                        }
+                        NumberRepresentationOrFormat::FormatExtends(fmt) => {
+                            bail!("format cannot be used as list index: {:?}", fmt)
                         }
                     }
                 }

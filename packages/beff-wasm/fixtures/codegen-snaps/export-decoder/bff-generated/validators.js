@@ -438,65 +438,77 @@ class CodecDecoder {
   }
 }
 
-class StringWithFormatDecoder {
-  constructor(format) {
-    this.format = format;
+class StringWithFormatsDecoder {
+  constructor(...formats) {
+    this.formats = formats;
   }
 
-  validateStringWithFormatDecoder(ctx, input) {
+  validateStringWithFormatsDecoder(ctx, input) {
     if (typeof input !== "string") {
       return false;
     }
 
-    const validator = stringFormatters[this.format];
+    for (const f of this.formats) {
+      const validator = stringFormatters[f];
 
-    if (validator == null) {
-      return false;
+      if (validator == null) {
+        return false;
+      }
+
+      if (!validator(input)) {
+        return false;
+      }
     }
 
-    return validator(input);
+    return true;
   }
-  parseStringWithFormatDecoder(ctx, input) {
+  parseStringWithFormatsDecoder(ctx, input) {
     return input;
   }
-  reportStringWithFormatDecoder(ctx, input) {
-    return buildError(ctx, `expected string with format "${this.format}"`, input);
+  reportStringWithFormatsDecoder(ctx, input) {
+    return buildError(ctx, `expected string with format "${this.formats.join(" and ")}"`, input);
   }
-  schemaStringWithFormatDecoder(ctx) {
+  schemaStringWithFormatsDecoder(ctx) {
     return {
       type: "string",
-      format: this.format,
+      format: this.formats.join(" and "),
     };
   }
 }
-class NumberWithFormatDecoder {
-  constructor(format) {
-    this.format = format;
+class NumberWithFormatsDecoder {
+  constructor(...formats) {
+    this.formats = formats;
   }
 
-  validateNumberWithFormatDecoder(ctx, input) {
+  validateNumberWithFormatsDecoder(ctx, input) {
     if (typeof input !== "number") {
       return false;
     }
 
-    const validator = numberFormatters[this.format];
+    for (const f of this.formats) {
+      const validator = numberFormatters[f];
 
-    if (validator == null) {
-      return false;
+      if (validator == null) {
+        return false;
+      }
+
+      if (!validator(input)) {
+        return false;
+      }
     }
 
-    return validator(input);
+    return true;
   }
-  parseNumberWithFormatDecoder(ctx, input) {
+  parseNumberWithFormatsDecoder(ctx, input) {
     return input;
   }
-  reportNumberWithFormatDecoder(ctx, input) {
-    return buildError(ctx, `expected number with format "${this.format}"`, input);
+  reportNumberWithFormatsDecoder(ctx, input) {
+    return buildError(ctx, `expected number with format "${this.formats.join(" and ")}"`, input);
   }
-  schemaNumberWithFormatDecoder(ctx) {
+  schemaNumberWithFormatsDecoder(ctx) {
     return {
       type: "number",
-      format: this.format,
+      format: this.formats.join(" and "),
     };
   }
 }
@@ -1128,38 +1140,38 @@ function SchemaNotPublic(ctx, input) {
     return tmp;
 }
 function ValidateStartsWithA(ctx, input) {
-    return (hoisted_StartsWithA_0.validateStringWithFormatDecoder.bind(hoisted_StartsWithA_0))(ctx, input);
+    return (hoisted_StartsWithA_0.validateStringWithFormatsDecoder.bind(hoisted_StartsWithA_0))(ctx, input);
 }
 function ParseStartsWithA(ctx, input) {
-    return (hoisted_StartsWithA_0.parseStringWithFormatDecoder.bind(hoisted_StartsWithA_0))(ctx, input);
+    return (hoisted_StartsWithA_0.parseStringWithFormatsDecoder.bind(hoisted_StartsWithA_0))(ctx, input);
 }
 function ReportStartsWithA(ctx, input) {
-    return (hoisted_StartsWithA_0.reportStringWithFormatDecoder.bind(hoisted_StartsWithA_0))(ctx, input);
+    return (hoisted_StartsWithA_0.reportStringWithFormatsDecoder.bind(hoisted_StartsWithA_0))(ctx, input);
 }
 function SchemaStartsWithA(ctx, input) {
     if (ctx.seen["StartsWithA"]) {
         return {};
     }
     ctx.seen["StartsWithA"] = true;
-    var tmp = (hoisted_StartsWithA_0.schemaStringWithFormatDecoder.bind(hoisted_StartsWithA_0))(ctx);
+    var tmp = (hoisted_StartsWithA_0.schemaStringWithFormatsDecoder.bind(hoisted_StartsWithA_0))(ctx);
     delete ctx.seen["StartsWithA"];
     return tmp;
 }
 function ValidatePassword(ctx, input) {
-    return (hoisted_Password_0.validateStringWithFormatDecoder.bind(hoisted_Password_0))(ctx, input);
+    return (hoisted_Password_0.validateStringWithFormatsDecoder.bind(hoisted_Password_0))(ctx, input);
 }
 function ParsePassword(ctx, input) {
-    return (hoisted_Password_0.parseStringWithFormatDecoder.bind(hoisted_Password_0))(ctx, input);
+    return (hoisted_Password_0.parseStringWithFormatsDecoder.bind(hoisted_Password_0))(ctx, input);
 }
 function ReportPassword(ctx, input) {
-    return (hoisted_Password_0.reportStringWithFormatDecoder.bind(hoisted_Password_0))(ctx, input);
+    return (hoisted_Password_0.reportStringWithFormatsDecoder.bind(hoisted_Password_0))(ctx, input);
 }
 function SchemaPassword(ctx, input) {
     if (ctx.seen["Password"]) {
         return {};
     }
     ctx.seen["Password"] = true;
-    var tmp = (hoisted_Password_0.schemaStringWithFormatDecoder.bind(hoisted_Password_0))(ctx);
+    var tmp = (hoisted_Password_0.schemaStringWithFormatsDecoder.bind(hoisted_Password_0))(ctx);
     delete ctx.seen["Password"];
     return tmp;
 }
@@ -1331,8 +1343,8 @@ const hoisted_NotPublic_5 = new ObjectReporter(hoisted_NotPublic_0, hoisted_NotP
     "a": reportString
 }, null);
 const hoisted_NotPublic_6 = new ObjectSchema(hoisted_NotPublic_1, null);
-const hoisted_StartsWithA_0 = new StringWithFormatDecoder("StartsWithA");
-const hoisted_Password_0 = new StringWithFormatDecoder("password");
+const hoisted_StartsWithA_0 = new StringWithFormatsDecoder("StartsWithA");
+const hoisted_Password_0 = new StringWithFormatsDecoder("password");
 const hoisted_A_0 = new AnyOfConstsDecoder([
     1,
     2
@@ -1358,4 +1370,4 @@ const hoisted_UnionNested_0 = new AnyOfConstsDecoder([
     6
 ]);
 
-export default { registerStringFormatter, registerNumberFormatter, ObjectValidator, ObjectParser, ArrayParser, ArrayValidator, CodecDecoder, StringWithFormatDecoder, NumberWithFormatDecoder, AnyOfValidator, AnyOfParser, AllOfValidator, AllOfParser, TupleParser, TupleValidator, RegexDecoder, ConstDecoder, AnyOfConstsDecoder, AnyOfDiscriminatedParser, AnyOfDiscriminatedValidator, validateString, validateNumber, validateFunction, validateBoolean, validateAny, validateNull, validateNever, parseIdentity, reportString, reportNumber, reportNull, reportBoolean, reportAny, reportNever, reportFunction, ArrayReporter, ObjectReporter, TupleReporter, AnyOfReporter, AllOfReporter, AnyOfDiscriminatedReporter, schemaString, schemaNumber, schemaBoolean, schemaNull, schemaAny, schemaNever, schemaFunction, ArraySchema, ObjectSchema, TupleSchema, AnyOfSchema, AllOfSchema, AnyOfDiscriminatedSchema, validators, parsers, reporters, schemas };
+export default { registerStringFormatter, registerNumberFormatter, ObjectValidator, ObjectParser, ArrayParser, ArrayValidator, CodecDecoder, StringWithFormatsDecoder, NumberWithFormatsDecoder, AnyOfValidator, AnyOfParser, AllOfValidator, AllOfParser, TupleParser, TupleValidator, RegexDecoder, ConstDecoder, AnyOfConstsDecoder, AnyOfDiscriminatedParser, AnyOfDiscriminatedValidator, validateString, validateNumber, validateFunction, validateBoolean, validateAny, validateNull, validateNever, parseIdentity, reportString, reportNumber, reportNull, reportBoolean, reportAny, reportNever, reportFunction, ArrayReporter, ObjectReporter, TupleReporter, AnyOfReporter, AllOfReporter, AnyOfDiscriminatedReporter, schemaString, schemaNumber, schemaBoolean, schemaNull, schemaAny, schemaNever, schemaFunction, ArraySchema, ObjectSchema, TupleSchema, AnyOfSchema, AllOfSchema, AnyOfDiscriminatedSchema, validators, parsers, reporters, schemas };

@@ -675,6 +675,45 @@ impl DecoderFnGenerator<'_> {
             vec![schemas_arr],
         )
     }
+    fn string_with_formats_decoder(
+        &self,
+        hoisted: &mut Vec<ModuleItem>,
+        vs: &[String],
+    ) -> SchemaCode {
+        self.static_schema_code(
+            hoisted,
+            "StringWithFormatsDecoder",
+            vs.iter()
+                .map(|it| {
+                    Expr::Lit(Lit::Str(Str {
+                        span: DUMMY_SP,
+                        value: it.to_string().into(),
+                        raw: None,
+                    }))
+                })
+                .collect(),
+        )
+    }
+    fn number_with_formats_decoder(
+        &self,
+        hoisted: &mut Vec<ModuleItem>,
+        vs: &[String],
+    ) -> SchemaCode {
+        self.static_schema_code(
+            hoisted,
+            "NumberWithFormatsDecoder",
+            vs.iter()
+                .map(|it| {
+                    Expr::Lit(Lit::Str(Str {
+                        span: DUMMY_SP,
+                        value: it.to_string().into(),
+                        raw: None,
+                    }))
+                })
+                .collect(),
+        )
+    }
+
     fn generate_schema_code(
         &self,
         schema: &JsonSchema,
@@ -695,24 +734,14 @@ impl DecoderFnGenerator<'_> {
             JsonSchema::Function => Self::primitive_schema_code("Function"),
             JsonSchema::Any => Self::primitive_schema_code("Any"),
             JsonSchema::Ref(r_name) => Self::ref_schema_code(r_name),
-            JsonSchema::StringWithFormat(format) => self.static_schema_code(
-                hoisted,
-                "StringWithFormatDecoder",
-                vec![Expr::Lit(Lit::Str(Str {
-                    span: DUMMY_SP,
-                    value: format.to_string().into(),
-                    raw: None,
-                }))],
-            ),
-            JsonSchema::NumberWithFormat(format) => self.static_schema_code(
-                hoisted,
-                "NumberWithFormatDecoder",
-                vec![Expr::Lit(Lit::Str(Str {
-                    span: DUMMY_SP,
-                    value: format.to_string().into(),
-                    raw: None,
-                }))],
-            ),
+            JsonSchema::StringWithFormat(format) => {
+                self.string_with_formats_decoder(hoisted, std::slice::from_ref(format))
+            }
+            JsonSchema::StringFormatExtends(vs) => self.string_with_formats_decoder(hoisted, vs),
+            JsonSchema::NumberWithFormat(format) => {
+                self.number_with_formats_decoder(hoisted, std::slice::from_ref(format))
+            }
+            JsonSchema::NumberFormatExtends(vs) => self.number_with_formats_decoder(hoisted, vs),
             JsonSchema::Const(json) => self.static_schema_code(
                 hoisted,
                 "ConstDecoder",
@@ -994,7 +1023,6 @@ impl DecoderFnGenerator<'_> {
                     vec![obj_schema, schema_rest],
                 )
             }
-
             JsonSchema::AnyOf(vs) => self.decode_any_of(vs, hoisted),
             JsonSchema::AllOf(vs) => self.decode_union_or_intersection("AllOf", vs, hoisted),
         };

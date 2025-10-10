@@ -157,8 +157,16 @@ impl<'a> ToSemTypeConverter<'a> {
             JsonSchema::StringWithFormat(s) => {
                 Ok(SemTypeContext::string_const(StringLitOrFormat::Format(s.clone())).into())
             }
+            JsonSchema::StringFormatExtends(vs) => Ok(SemTypeContext::string_const(
+                StringLitOrFormat::FormatExtends(vs.clone()),
+            )
+            .into()),
             JsonSchema::NumberWithFormat(s) => Ok(SemTypeContext::number_const(
                 NumberRepresentationOrFormat::Format(s.clone()),
+            )
+            .into()),
+            JsonSchema::NumberFormatExtends(vs) => Ok(SemTypeContext::number_const(
+                NumberRepresentationOrFormat::FormatExtends(vs.clone()),
             )
             .into()),
             JsonSchema::TplLitType(tpl) => {

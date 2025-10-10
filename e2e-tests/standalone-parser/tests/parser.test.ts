@@ -35,6 +35,11 @@ import {
   OnlyAKeyCodec,
   ObjectWithArrCodec,
   PartialReproCodec,
+  NonInfiniteNumberCodec,
+  RateCodec,
+  UserCodec,
+  ReadAuthorizedUserCodec,
+  WriteAuthorizedUserCodec,
 } from "../src/parser";
 import { Arr2 } from "../src/types";
 
@@ -361,14 +366,81 @@ it("Custom Format", () => {
     }
   `);
 });
+it("Custom String Format User Hierarchy", () => {
+  expect(UserCodec.safeParse("asdasdadasd")).toMatchInlineSnapshot(`
+    {
+      "errors": [
+        {
+          "message": "expected string with format \\"UserId\\"",
+          "path": [],
+          "received": "asdasdadasd",
+        },
+      ],
+      "success": false,
+    }
+  `);
+  expect(UserCodec.parse("user_123")).toMatchInlineSnapshot('"user_123"');
+  expect(ReadAuthorizedUserCodec.safeParse("asdasdadasd")).toMatchInlineSnapshot(`
+   {
+     "errors": [
+       {
+         "message": "expected string with format \\"UserId and ReadAuthorizedUserId\\"",
+         "path": [],
+         "received": "asdasdadasd",
+       },
+     ],
+     "success": false,
+   }
+ `);
+  expect(ReadAuthorizedUserCodec.parse("user_read_123")).toMatchInlineSnapshot('"user_read_123"');
 
+  expect(WriteAuthorizedUserCodec.safeParse("asdasdadasd")).toMatchInlineSnapshot(`
+    {
+      "errors": [
+        {
+          "message": "expected string with format \\"UserId and ReadAuthorizedUserId and WriteAuthorizedUserId\\"",
+          "path": [],
+          "received": "asdasdadasd",
+        },
+      ],
+      "success": false,
+    }
+  `);
+  expect(ReadAuthorizedUserCodec.parse("user_read_write_123")).toMatchInlineSnapshot('"user_read_write_123"');
+
+  expect(WriteAuthorizedUserCodec.safeParse("read_write_123")).toMatchInlineSnapshot(`
+      {
+        "errors": [
+          {
+            "message": "expected string with format \\"UserId and ReadAuthorizedUserId and WriteAuthorizedUserId\\"",
+            "path": [],
+            "received": "read_write_123",
+          },
+        ],
+        "success": false,
+      }
+    `);
+});
 it("custom number format", () => {
+  expect(NonInfiniteNumberCodec.parse(123)).toBe(123);
+  expect(NonInfiniteNumberCodec.safeParse(Infinity)).toMatchInlineSnapshot(`
+    {
+      "errors": [
+        {
+          "message": "expected number with format \\"NonInfiniteNumber\\"",
+          "path": [],
+          "received": Infinity,
+        },
+      ],
+      "success": false,
+    }
+  `);
   expect(NonNegativeNumberCodec.parse(123)).toBe(123);
   expect(NonNegativeNumberCodec.safeParse(-123)).toMatchInlineSnapshot(`
     {
       "errors": [
         {
-          "message": "expected number with format \\"NonNegativeNumber\\"",
+          "message": "expected number with format \\"NonInfiniteNumber and NonNegativeNumber\\"",
           "path": [],
           "received": -123,
         },
@@ -376,6 +448,44 @@ it("custom number format", () => {
       "success": false,
     }
   `);
+  expect(RateCodec.safeParse(123)).toMatchInlineSnapshot(`
+    {
+      "errors": [
+        {
+          "message": "expected number with format \\"NonInfiniteNumber and NonNegativeNumber and Rate\\"",
+          "path": [],
+          "received": 123,
+        },
+      ],
+      "success": false,
+    }
+  `);
+  expect(RateCodec.safeParse(-123)).toMatchInlineSnapshot(`
+    {
+      "errors": [
+        {
+          "message": "expected number with format \\"NonInfiniteNumber and NonNegativeNumber and Rate\\"",
+          "path": [],
+          "received": -123,
+        },
+      ],
+      "success": false,
+    }
+  `);
+  expect(RateCodec.safeParse(Infinity)).toMatchInlineSnapshot(`
+    {
+      "errors": [
+        {
+          "message": "expected number with format \\"NonInfiniteNumber and NonNegativeNumber and Rate\\"",
+          "path": [],
+          "received": Infinity,
+        },
+      ],
+      "success": false,
+    }
+  `);
+
+  expect(RateCodec.parse(0.5)).toBe(0.5);
 });
 
 it("Arr spread", () => {

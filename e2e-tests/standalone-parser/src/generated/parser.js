@@ -2,9 +2,9 @@
 
 import {printErrors} from '@beff/client';
 import {z} from 'zod';
-import validatorsMod from "./validators.js"; const { registerStringFormatter, registerNumberFormatter, ObjectValidator, ObjectParser, ArrayParser, ArrayValidator, CodecDecoder, StringWithFormatDecoder, NumberWithFormatDecoder, AnyOfValidator, AnyOfParser, AllOfValidator, AllOfParser, TupleParser, TupleValidator, RegexDecoder, ConstDecoder, AnyOfConstsDecoder, AnyOfDiscriminatedParser, AnyOfDiscriminatedValidator, validateString, validateNumber, validateFunction, validateBoolean, validateAny, validateNull, validateNever, parseIdentity, reportString, reportNumber, reportNull, reportBoolean, reportAny, reportNever, reportFunction, ArrayReporter, ObjectReporter, TupleReporter, AnyOfReporter, AllOfReporter, AnyOfDiscriminatedReporter, schemaString, schemaNumber, schemaBoolean, schemaNull, schemaAny, schemaNever, schemaFunction, ArraySchema, ObjectSchema, TupleSchema, AnyOfSchema, AllOfSchema, AnyOfDiscriminatedSchema, validators, parsers, reporters, schemas, c } = validatorsMod;
-const RequiredStringFormats = ["ValidCurrency"];
-const RequiredNumberFormats = ["NonNegativeNumber"];
+import validatorsMod from "./validators.js"; const { registerStringFormatter, registerNumberFormatter, ObjectValidator, ObjectParser, ArrayParser, ArrayValidator, CodecDecoder, StringWithFormatsDecoder, NumberWithFormatsDecoder, AnyOfValidator, AnyOfParser, AllOfValidator, AllOfParser, TupleParser, TupleValidator, RegexDecoder, ConstDecoder, AnyOfConstsDecoder, AnyOfDiscriminatedParser, AnyOfDiscriminatedValidator, validateString, validateNumber, validateFunction, validateBoolean, validateAny, validateNull, validateNever, parseIdentity, reportString, reportNumber, reportNull, reportBoolean, reportAny, reportNever, reportFunction, ArrayReporter, ObjectReporter, TupleReporter, AnyOfReporter, AllOfReporter, AnyOfDiscriminatedReporter, schemaString, schemaNumber, schemaBoolean, schemaNull, schemaAny, schemaNever, schemaFunction, ArraySchema, ObjectSchema, TupleSchema, AnyOfSchema, AllOfSchema, AnyOfDiscriminatedSchema, validators, parsers, reporters, schemas, c } = validatorsMod;
+const RequiredStringFormats = ["ValidCurrency","UserId","ReadAuthorizedUserId","WriteAuthorizedUserId"];
+const RequiredNumberFormats = ["NonNegativeNumber","NonInfiniteNumber","Rate"];
 const hoisted_ObjectWithArr_0 = validateString;
 const hoisted_ObjectWithArr_1 = new ArrayValidator(hoisted_ObjectWithArr_0);
 const hoisted_ObjectWithArr_2 = new ArrayParser(parseIdentity);
@@ -112,6 +112,7 @@ const buildValidatorsInput = {
     "LevelAndDSettings": validators.LevelAndDSettings,
     "Mapped": validators.Mapped,
     "MappedOptional": validators.MappedOptional,
+    "NonInfiniteNumber": validators.NonInfiniteNumber,
     "NonNegativeNumber": validators.NonNegativeNumber,
     "ObjectWithArr": hoisted_ObjectWithArr_8.validateObjectValidator.bind(hoisted_ObjectWithArr_8),
     "OmitSettings": validators.OmitSettings,
@@ -121,6 +122,8 @@ const buildValidatorsInput = {
     "PartialRepro": validators.PartialRepro,
     "PartialSettings": validators.PartialSettings,
     "PublicUser": validators.PublicUser,
+    "Rate": validators.Rate,
+    "ReadAuthorizedUserId": validators.ReadAuthorizedUserId,
     "Repro1": validators.Repro1,
     "Req": validators.Req,
     "RequiredPartialObject": validators.RequiredPartialObject,
@@ -132,9 +135,11 @@ const buildValidatorsInput = {
     "TupleCodecRest": hoisted_TupleCodecRest_2.validateTupleValidator.bind(hoisted_TupleCodecRest_2),
     "UnionWithEnumAccess": validators.UnionWithEnumAccess,
     "User": validators.User,
+    "UserId": validators.UserId,
     "ValidCurrency": validators.ValidCurrency,
     "Version": validators.Version,
-    "Version2": validators.Version2
+    "Version2": validators.Version2,
+    "WriteAuthorizedUserId": validators.WriteAuthorizedUserId
 };
 const buildParsersInput = {
     "AObject": parsers.AObject,
@@ -161,6 +166,7 @@ const buildParsersInput = {
     "LevelAndDSettings": parsers.LevelAndDSettings,
     "Mapped": parsers.Mapped,
     "MappedOptional": parsers.MappedOptional,
+    "NonInfiniteNumber": parsers.NonInfiniteNumber,
     "NonNegativeNumber": parsers.NonNegativeNumber,
     "ObjectWithArr": hoisted_ObjectWithArr_9.parseObjectParser.bind(hoisted_ObjectWithArr_9),
     "OmitSettings": parsers.OmitSettings,
@@ -170,6 +176,8 @@ const buildParsersInput = {
     "PartialRepro": parsers.PartialRepro,
     "PartialSettings": parsers.PartialSettings,
     "PublicUser": parsers.PublicUser,
+    "Rate": parsers.Rate,
+    "ReadAuthorizedUserId": parsers.ReadAuthorizedUserId,
     "Repro1": parsers.Repro1,
     "Req": parsers.Req,
     "RequiredPartialObject": parsers.RequiredPartialObject,
@@ -181,9 +189,11 @@ const buildParsersInput = {
     "TupleCodecRest": hoisted_TupleCodecRest_3.parseTupleParser.bind(hoisted_TupleCodecRest_3),
     "UnionWithEnumAccess": parsers.UnionWithEnumAccess,
     "User": parsers.User,
+    "UserId": parsers.UserId,
     "ValidCurrency": parsers.ValidCurrency,
     "Version": parsers.Version,
-    "Version2": parsers.Version2
+    "Version2": parsers.Version2,
+    "WriteAuthorizedUserId": parsers.WriteAuthorizedUserId
 };
 const buildReportersInput = {
     "AObject": reporters.AObject,
@@ -210,6 +220,7 @@ const buildReportersInput = {
     "LevelAndDSettings": reporters.LevelAndDSettings,
     "Mapped": reporters.Mapped,
     "MappedOptional": reporters.MappedOptional,
+    "NonInfiniteNumber": reporters.NonInfiniteNumber,
     "NonNegativeNumber": reporters.NonNegativeNumber,
     "ObjectWithArr": hoisted_ObjectWithArr_10.reportObjectReporter.bind(hoisted_ObjectWithArr_10),
     "OmitSettings": reporters.OmitSettings,
@@ -219,6 +230,8 @@ const buildReportersInput = {
     "PartialRepro": reporters.PartialRepro,
     "PartialSettings": reporters.PartialSettings,
     "PublicUser": reporters.PublicUser,
+    "Rate": reporters.Rate,
+    "ReadAuthorizedUserId": reporters.ReadAuthorizedUserId,
     "Repro1": reporters.Repro1,
     "Req": reporters.Req,
     "RequiredPartialObject": reporters.RequiredPartialObject,
@@ -230,9 +243,11 @@ const buildReportersInput = {
     "TupleCodecRest": hoisted_TupleCodecRest_4.reportTupleReporter.bind(hoisted_TupleCodecRest_4),
     "UnionWithEnumAccess": reporters.UnionWithEnumAccess,
     "User": reporters.User,
+    "UserId": reporters.UserId,
     "ValidCurrency": reporters.ValidCurrency,
     "Version": reporters.Version,
-    "Version2": reporters.Version2
+    "Version2": reporters.Version2,
+    "WriteAuthorizedUserId": reporters.WriteAuthorizedUserId
 };
 const buildSchemaInput = {
     "AObject": schemas.AObject,
@@ -259,6 +274,7 @@ const buildSchemaInput = {
     "LevelAndDSettings": schemas.LevelAndDSettings,
     "Mapped": schemas.Mapped,
     "MappedOptional": schemas.MappedOptional,
+    "NonInfiniteNumber": schemas.NonInfiniteNumber,
     "NonNegativeNumber": schemas.NonNegativeNumber,
     "ObjectWithArr": hoisted_ObjectWithArr_11.schemaObjectSchema.bind(hoisted_ObjectWithArr_11),
     "OmitSettings": schemas.OmitSettings,
@@ -268,6 +284,8 @@ const buildSchemaInput = {
     "PartialRepro": schemas.PartialRepro,
     "PartialSettings": schemas.PartialSettings,
     "PublicUser": schemas.PublicUser,
+    "Rate": schemas.Rate,
+    "ReadAuthorizedUserId": schemas.ReadAuthorizedUserId,
     "Repro1": schemas.Repro1,
     "Req": schemas.Req,
     "RequiredPartialObject": schemas.RequiredPartialObject,
@@ -279,9 +297,11 @@ const buildSchemaInput = {
     "TupleCodecRest": hoisted_TupleCodecRest_5.schemaTupleSchema.bind(hoisted_TupleCodecRest_5),
     "UnionWithEnumAccess": schemas.UnionWithEnumAccess,
     "User": schemas.User,
+    "UserId": schemas.UserId,
     "ValidCurrency": schemas.ValidCurrency,
     "Version": schemas.Version,
-    "Version2": schemas.Version2
+    "Version2": schemas.Version2,
+    "WriteAuthorizedUserId": schemas.WriteAuthorizedUserId
 };
 
 

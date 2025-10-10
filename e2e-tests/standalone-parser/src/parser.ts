@@ -1,6 +1,13 @@
 import parse from "./generated/parser";
 import { Arr2, OtherEnum, ValidCurrency, OtherEnum2, Arr3 } from "./types";
-import { NonNegativeNumber } from "./types3";
+import {
+  NonInfiniteNumber,
+  NonNegativeNumber,
+  Rate,
+  ReadAuthorizedUserId,
+  UserId,
+  WriteAuthorizedUserId,
+} from "./types3";
 import * as T4 from "./types4";
 import { b } from "./types4";
 
@@ -221,6 +228,11 @@ export const {
   Arr2C,
   ValidCurrency: ValidCurrencyCodec,
   NonNegativeNumber: NonNegativeNumberCodec,
+  NonInfiniteNumber: NonInfiniteNumberCodec,
+  UserId: UserCodec,
+  ReadAuthorizedUserId: ReadAuthorizedUserCodec,
+  WriteAuthorizedUserId: WriteAuthorizedUserCodec,
+  Rate: RateCodec,
   UnionWithEnumAccess,
   AccessLevelCodec,
   T3,
@@ -288,6 +300,11 @@ export const {
   KABC: KABC;
   K: K;
   NonNegativeNumber: NonNegativeNumber;
+  NonInfiniteNumber: NonInfiniteNumber;
+  Rate: Rate;
+  UserId: UserId;
+  ReadAuthorizedUserId: ReadAuthorizedUserId;
+  WriteAuthorizedUserId: WriteAuthorizedUserId;
 }>({
   stringFormats: {
     ValidCurrency: (input: string) => {
@@ -296,10 +313,25 @@ export const {
       }
       return false;
     },
+    UserId: (input: string) => {
+      return input.startsWith("user_");
+    },
+    ReadAuthorizedUserId: (input: string) => {
+      return input.includes("_read_");
+    },
+    WriteAuthorizedUserId: (input: string) => {
+      return input.includes("_write_");
+    },
   },
   numberFormats: {
     NonNegativeNumber: (input: number) => {
       return input >= 0;
+    },
+    NonInfiniteNumber: (input: number) => {
+      return Number.isFinite(input);
+    },
+    Rate: (input: number) => {
+      return input >= 0 && input <= 1;
     },
   },
 });

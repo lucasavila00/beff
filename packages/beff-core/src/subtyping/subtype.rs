@@ -82,6 +82,7 @@ impl SubType {
 pub enum StringLitOrFormat {
     Lit(String),
     Format(String),
+    FormatExtends(Vec<String>),
     Codec(CodecName),
     Tpl(Vec<TplLitTypeItem>),
 }
@@ -90,6 +91,7 @@ pub enum StringLitOrFormat {
 pub enum NumberRepresentationOrFormat {
     Lit(NumberRepresentation),
     Format(String),
+    FormatExtends(Vec<String>),
 }
 
 #[derive(PartialEq, Eq, Hash, Debug, Ord, PartialOrd)]

@@ -2,14 +2,14 @@ export { printErrors } from "./err";
 export { b } from "./b";
 export {
   StringFormat,
+  StringFormatExtends,
   NumberFormat,
+  NumberFormatExtends,
   RegularDecodeError,
   UnionDecodeError,
   DecodeError,
   ParseOptions,
   BeffParser,
-  TagOfFormat,
-  TagOfNumberFormat,
   BuildParserFunction,
   TypeOf,
 } from "./types";
