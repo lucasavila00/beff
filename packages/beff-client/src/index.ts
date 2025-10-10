@@ -8,8 +8,6 @@ export {
   DecodeError,
   ParseOptions,
   BeffParser,
-  TagOfFormat,
-  TagOfNumberFormat,
   BuildParserFunction,
   TypeOf,
 } from "./types";

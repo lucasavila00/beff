@@ -229,6 +229,7 @@ pub enum JsonSchema {
     Any,
     AnyArrayLike,
     StringWithFormat(String),
+    StringFormatExtends(Vec<String>),
     NumberWithFormat(String),
     TplLitType(Vec<TplLitTypeItem>),
     Object {
@@ -400,8 +401,35 @@ impl JsonSchema {
     }
 }
 
-fn ts_string_brand(brand: &str) -> TsType {
-    // string & { __customType: "brand" }
+fn ts_string_brands(brands: &[String]) -> TsType {
+    let mut members = vec![];
+
+    for (idx, brand) in brands.iter().enumerate() {
+        let n = idx + 1;
+        let member = TsTypeElement::TsPropertySignature(TsPropertySignature {
+            span: DUMMY_SP,
+            readonly: false,
+            key: format!("__customType{n}").into(),
+            computed: false,
+            optional: false,
+            init: None,
+            params: vec![],
+            type_ann: Some(Box::new(TsTypeAnn {
+                span: DUMMY_SP,
+                type_ann: Box::new(TsType::TsLitType(TsLitType {
+                    span: DUMMY_SP,
+                    lit: TsLit::Str(Str {
+                        span: DUMMY_SP,
+                        value: brand.clone().into(),
+                        raw: None,
+                    }),
+                })),
+            })),
+            type_params: None,
+        });
+        members.push(member);
+    }
+
     TsType::TsUnionOrIntersectionType(TsUnionOrIntersectionType::TsIntersectionType(
         TsIntersectionType {
             span: DUMMY_SP,
@@ -412,27 +440,7 @@ fn ts_string_brand(brand: &str) -> TsType {
                 })),
                 Box::new(TsType::TsTypeLit(TsTypeLit {
                     span: DUMMY_SP,
-                    members: vec![TsTypeElement::TsPropertySignature(TsPropertySignature {
-                        span: DUMMY_SP,
-                        readonly: false,
-                        key: "__customType".into(),
-                        computed: false,
-                        optional: false,
-                        init: None,
-                        params: vec![],
-                        type_ann: Some(Box::new(TsTypeAnn {
-                            span: DUMMY_SP,
-                            type_ann: Box::new(TsType::TsLitType(TsLitType {
-                                span: DUMMY_SP,
-                                lit: TsLit::Str(Str {
-                                    span: DUMMY_SP,
-                                    value: brand.into(),
-                                    raw: None,
-                                }),
-                            })),
-                        })),
-                        type_params: None,
-                    })],
+                    members,
                 })),
             ],
         },
@@ -622,7 +630,8 @@ impl JsonSchema {
                 }),
                 type_params: None,
             }),
-            JsonSchema::StringWithFormat(fmt) => ts_string_brand(fmt),
+            JsonSchema::StringWithFormat(fmt) => ts_string_brands(std::slice::from_ref(fmt)),
+            JsonSchema::StringFormatExtends(vs) => ts_string_brands(vs),
             JsonSchema::NumberWithFormat(fmt) => ts_number_brand(fmt),
             JsonSchema::Codec(c) => match c {
                 CodecName::ISO8061 => TsType::TsTypeRef(TsTypeRef {
@@ -639,7 +648,6 @@ impl JsonSchema {
                     kind: TsKeywordTypeKind::TsBigIntKeyword,
                 }),
             },
-
             JsonSchema::AnyOf(vs) =>
             // TsType::TsUnionOrIntersectionType(
             //     TsUnionOrIntersectionType::TsUnionType(TsUnionType {

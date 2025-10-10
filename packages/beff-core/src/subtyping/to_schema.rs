@@ -485,6 +485,12 @@ impl<'a, 'b> SchemerContext<'a, 'b> {
                                     !allowed,
                                 ));
                             }
+                            StringLitOrFormat::FormatExtends(items) => {
+                                acc.insert(maybe_not(
+                                    JsonSchema::StringFormatExtends(items.clone()),
+                                    !allowed,
+                                ));
+                            }
                             StringLitOrFormat::Codec(fmt) => {
                                 acc.insert(maybe_not(JsonSchema::Codec(fmt.clone()), !allowed));
                             }
@@ -494,6 +500,7 @@ impl<'a, 'b> SchemerContext<'a, 'b> {
                                     !allowed,
                                 ));
                             }
+                            
                         }
                     }
                 }

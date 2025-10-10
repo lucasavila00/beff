@@ -82,6 +82,7 @@ impl SubType {
 pub enum StringLitOrFormat {
     Lit(String),
     Format(String),
+    FormatExtends(Vec<String>),
     Codec(CodecName),
     Tpl(Vec<TplLitTypeItem>),
 }
