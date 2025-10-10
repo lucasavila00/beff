@@ -438,34 +438,40 @@ class CodecDecoder {
   }
 }
 
-class StringWithFormatDecoder {
-  constructor(format) {
-    this.format = format;
+class StringWithFormatsDecoder {
+  constructor(...formats) {
+    this.formats = formats;
   }
 
-  validateStringWithFormatDecoder(ctx, input) {
+  validateStringWithFormatsDecoder(ctx, input) {
     if (typeof input !== "string") {
       return false;
     }
 
-    const validator = stringFormatters[this.format];
+    for (const f of this.formats) {
+      const validator = stringFormatters[f];
 
-    if (validator == null) {
-      return false;
+      if (validator == null) {
+        return false;
+      }
+
+      if (!validator(input)) {
+        return false;
+      }
     }
 
-    return validator(input);
+    return true
   }
-  parseStringWithFormatDecoder(ctx, input) {
+  parseStringWithFormatsDecoder(ctx, input) {
     return input;
   }
-  reportStringWithFormatDecoder(ctx, input) {
-    return buildError(ctx, `expected string with format "${this.format}"`, input);
+  reportStringWithFormatsDecoder(ctx, input) {
+    return buildError(ctx, `expected string with format "${this.formats.join(", ")}"`, input);
   }
-  schemaStringWithFormatDecoder(ctx) {
+  schemaStringWithFormatsDecoder(ctx) {
     return {
       type: "string",
-      format: this.format,
+      format: this.formats.join(", "),
     };
   }
 }
@@ -1122,4 +1128,4 @@ const schemas = {
     A: SchemaA
 };
 
-export default { registerStringFormatter, registerNumberFormatter, ObjectValidator, ObjectParser, ArrayParser, ArrayValidator, CodecDecoder, StringWithFormatDecoder, NumberWithFormatDecoder, AnyOfValidator, AnyOfParser, AllOfValidator, AllOfParser, TupleParser, TupleValidator, RegexDecoder, ConstDecoder, AnyOfConstsDecoder, AnyOfDiscriminatedParser, AnyOfDiscriminatedValidator, validateString, validateNumber, validateFunction, validateBoolean, validateAny, validateNull, validateNever, parseIdentity, reportString, reportNumber, reportNull, reportBoolean, reportAny, reportNever, reportFunction, ArrayReporter, ObjectReporter, TupleReporter, AnyOfReporter, AllOfReporter, AnyOfDiscriminatedReporter, schemaString, schemaNumber, schemaBoolean, schemaNull, schemaAny, schemaNever, schemaFunction, ArraySchema, ObjectSchema, TupleSchema, AnyOfSchema, AllOfSchema, AnyOfDiscriminatedSchema, validators, parsers, reporters, schemas };
+export default { registerStringFormatter, registerNumberFormatter, ObjectValidator, ObjectParser, ArrayParser, ArrayValidator, CodecDecoder, StringWithFormatsDecoder, NumberWithFormatDecoder, AnyOfValidator, AnyOfParser, AllOfValidator, AllOfParser, TupleParser, TupleValidator, RegexDecoder, ConstDecoder, AnyOfConstsDecoder, AnyOfDiscriminatedParser, AnyOfDiscriminatedValidator, validateString, validateNumber, validateFunction, validateBoolean, validateAny, validateNull, validateNever, parseIdentity, reportString, reportNumber, reportNull, reportBoolean, reportAny, reportNever, reportFunction, ArrayReporter, ObjectReporter, TupleReporter, AnyOfReporter, AllOfReporter, AnyOfDiscriminatedReporter, schemaString, schemaNumber, schemaBoolean, schemaNull, schemaAny, schemaNever, schemaFunction, ArraySchema, ObjectSchema, TupleSchema, AnyOfSchema, AllOfSchema, AnyOfDiscriminatedSchema, validators, parsers, reporters, schemas };
