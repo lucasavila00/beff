@@ -841,12 +841,12 @@ impl<'a, 'b, R: FileManager> TypeToSchema<'a, 'b, R> {
 
                 let v = v.and_then(|it| it.clone());
                 if let Some(v) = v {
-                    return self.get_string_format_base_formats(&v.schema, span);
+                    self.get_string_format_base_formats(&v.schema, span)
                 } else {
-                    return self.error(
+                    self.error(
                         span,
                         DiagnosticInfoMessage::CouldNotFindBaseOfStringFormatExtends,
-                    );
+                    )
                 }
             }
             _ => self.error(
@@ -901,12 +901,12 @@ impl<'a, 'b, R: FileManager> TypeToSchema<'a, 'b, R> {
 
                 let v = v.and_then(|it| it.clone());
                 if let Some(v) = v {
-                    return self.get_number_format_base_formats(&v.schema, span);
+                    self.get_number_format_base_formats(&v.schema, span)
                 } else {
-                    return self.error(
+                    self.error(
                         span,
                         DiagnosticInfoMessage::CouldNotFindBaseOfNumberFormatExtends,
-                    );
+                    )
                 }
             }
             _ => self.error(
