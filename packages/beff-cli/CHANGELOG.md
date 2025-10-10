@@ -1,5 +1,11 @@
 # @beff/cli
 
+## 0.0.91
+
+### Patch Changes
+
+- fix number types
+
 ## 0.0.90
 
 ### Patch Changes
