@@ -32,12 +32,12 @@ export type StringFormatExtends<Base, TagNext extends string> =
         ? StringFormat2<T1, TagNext>
         : never;
 
-export type NumberFormat<Tag1 extends string> = string & { __customType1: Tag1 };
-type NumberFormat2<Tag1 extends string, Tag2 extends string> = string & {
+export type NumberFormat<Tag1 extends string> = number & { __customType1: Tag1 };
+type NumberFormat2<Tag1 extends string, Tag2 extends string> = number & {
   __customType1: Tag1;
   __customType2: Tag2;
 };
-type NumberFormat3<Tag1 extends string, Tag2 extends string, Tag3 extends string> = string & {
+type NumberFormat3<Tag1 extends string, Tag2 extends string, Tag3 extends string> = number & {
   __customType1: Tag1;
   __customType2: Tag2;
   __customType3: Tag3;
@@ -47,7 +47,7 @@ type NumberFormat4<
   Tag2 extends string,
   Tag3 extends string,
   Tag4 extends string,
-> = string & {
+> = number & {
   __customType1: Tag1;
   __customType2: Tag2;
   __customType3: Tag3;
