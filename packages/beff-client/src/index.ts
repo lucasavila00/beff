@@ -2,7 +2,9 @@ export { printErrors } from "./err";
 export { b } from "./b";
 export {
   StringFormat,
+  StringFormatExtends,
   NumberFormat,
+  NumberFormatExtends,
   RegularDecodeError,
   UnionDecodeError,
   DecodeError,

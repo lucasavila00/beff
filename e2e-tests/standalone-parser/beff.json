@@ -4,11 +4,26 @@
   "stringFormats": [
     {
       "name": "ValidCurrency"
+    },
+    {
+      "name": "UserId"
+    },
+    {
+      "name": "ReadAuthorizedUserId"
+    },
+    {
+      "name": "WriteAuthorizedUserId"
     }
   ],
   "numberFormats": [
     {
       "name": "NonNegativeNumber"
+    },
+    {
+      "name": "NonInfiniteNumber"
+    },
+    {
+      "name": "Rate"
     }
   ]
 }

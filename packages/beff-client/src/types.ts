@@ -62,7 +62,7 @@ export type NumberFormatExtends<Base, TagNext extends string> =
       : Base extends NumberFormat<infer T1>
         ? NumberFormat2<T1, TagNext>
         : never;
-        
+
 export type RegularDecodeError = {
   message: string;
   path: string[];

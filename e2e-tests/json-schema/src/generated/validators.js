@@ -460,18 +460,18 @@ class StringWithFormatsDecoder {
       }
     }
 
-    return true
+    return true;
   }
   parseStringWithFormatsDecoder(ctx, input) {
     return input;
   }
   reportStringWithFormatsDecoder(ctx, input) {
-    return buildError(ctx, `expected string with format "${this.formats.join(", ")}"`, input);
+    return buildError(ctx, `expected string with format "${this.formats.join(" and ")}"`, input);
   }
   schemaStringWithFormatsDecoder(ctx) {
     return {
       type: "string",
-      format: this.formats.join(", "),
+      format: this.formats.join(" and "),
     };
   }
 }
@@ -487,7 +487,7 @@ class NumberWithFormatsDecoder {
 
     for (const f of this.formats) {
       const validator = numberFormatters[f];
-      
+
       if (validator == null) {
         return false;
       }
@@ -503,12 +503,12 @@ class NumberWithFormatsDecoder {
     return input;
   }
   reportNumberWithFormatsDecoder(ctx, input) {
-    return buildError(ctx, `expected number with format "${this.formats.join(", ")}"`, input);
+    return buildError(ctx, `expected number with format "${this.formats.join(" and ")}"`, input);
   }
   schemaNumberWithFormatsDecoder(ctx) {
     return {
       type: "number",
-      format: this.formats.join(", ")
+      format: this.formats.join(" and "),
     };
   }
 }

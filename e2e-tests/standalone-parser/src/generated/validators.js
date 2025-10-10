@@ -460,18 +460,18 @@ class StringWithFormatsDecoder {
       }
     }
 
-    return true
+    return true;
   }
   parseStringWithFormatsDecoder(ctx, input) {
     return input;
   }
   reportStringWithFormatsDecoder(ctx, input) {
-    return buildError(ctx, `expected string with format "${this.formats.join(", ")}"`, input);
+    return buildError(ctx, `expected string with format "${this.formats.join(" and ")}"`, input);
   }
   schemaStringWithFormatsDecoder(ctx) {
     return {
       type: "string",
-      format: this.formats.join(", "),
+      format: this.formats.join(" and "),
     };
   }
 }
@@ -487,7 +487,7 @@ class NumberWithFormatsDecoder {
 
     for (const f of this.formats) {
       const validator = numberFormatters[f];
-      
+
       if (validator == null) {
         return false;
       }
@@ -503,12 +503,12 @@ class NumberWithFormatsDecoder {
     return input;
   }
   reportNumberWithFormatsDecoder(ctx, input) {
-    return buildError(ctx, `expected number with format "${this.formats.join(", ")}"`, input);
+    return buildError(ctx, `expected number with format "${this.formats.join(" and ")}"`, input);
   }
   schemaNumberWithFormatsDecoder(ctx) {
     return {
       type: "number",
-      format: this.formats.join(", ")
+      format: this.formats.join(" and "),
     };
   }
 }
@@ -1931,6 +1931,24 @@ function SchemaK(ctx, input) {
     delete ctx.seen["K"];
     return tmp;
 }
+function ValidateNonInfiniteNumber(ctx, input) {
+    return (hoisted_NonInfiniteNumber_0.validateNumberWithFormatsDecoder.bind(hoisted_NonInfiniteNumber_0))(ctx, input);
+}
+function ParseNonInfiniteNumber(ctx, input) {
+    return (hoisted_NonInfiniteNumber_0.parseNumberWithFormatsDecoder.bind(hoisted_NonInfiniteNumber_0))(ctx, input);
+}
+function ReportNonInfiniteNumber(ctx, input) {
+    return (hoisted_NonInfiniteNumber_0.reportNumberWithFormatsDecoder.bind(hoisted_NonInfiniteNumber_0))(ctx, input);
+}
+function SchemaNonInfiniteNumber(ctx, input) {
+    if (ctx.seen["NonInfiniteNumber"]) {
+        return {};
+    }
+    ctx.seen["NonInfiniteNumber"] = true;
+    var tmp = (hoisted_NonInfiniteNumber_0.schemaNumberWithFormatsDecoder.bind(hoisted_NonInfiniteNumber_0))(ctx);
+    delete ctx.seen["NonInfiniteNumber"];
+    return tmp;
+}
 function ValidateNonNegativeNumber(ctx, input) {
     return (hoisted_NonNegativeNumber_0.validateNumberWithFormatsDecoder.bind(hoisted_NonNegativeNumber_0))(ctx, input);
 }
@@ -1947,6 +1965,78 @@ function SchemaNonNegativeNumber(ctx, input) {
     ctx.seen["NonNegativeNumber"] = true;
     var tmp = (hoisted_NonNegativeNumber_0.schemaNumberWithFormatsDecoder.bind(hoisted_NonNegativeNumber_0))(ctx);
     delete ctx.seen["NonNegativeNumber"];
+    return tmp;
+}
+function ValidateRate(ctx, input) {
+    return (hoisted_Rate_0.validateNumberWithFormatsDecoder.bind(hoisted_Rate_0))(ctx, input);
+}
+function ParseRate(ctx, input) {
+    return (hoisted_Rate_0.parseNumberWithFormatsDecoder.bind(hoisted_Rate_0))(ctx, input);
+}
+function ReportRate(ctx, input) {
+    return (hoisted_Rate_0.reportNumberWithFormatsDecoder.bind(hoisted_Rate_0))(ctx, input);
+}
+function SchemaRate(ctx, input) {
+    if (ctx.seen["Rate"]) {
+        return {};
+    }
+    ctx.seen["Rate"] = true;
+    var tmp = (hoisted_Rate_0.schemaNumberWithFormatsDecoder.bind(hoisted_Rate_0))(ctx);
+    delete ctx.seen["Rate"];
+    return tmp;
+}
+function ValidateUserId(ctx, input) {
+    return (hoisted_UserId_0.validateStringWithFormatsDecoder.bind(hoisted_UserId_0))(ctx, input);
+}
+function ParseUserId(ctx, input) {
+    return (hoisted_UserId_0.parseStringWithFormatsDecoder.bind(hoisted_UserId_0))(ctx, input);
+}
+function ReportUserId(ctx, input) {
+    return (hoisted_UserId_0.reportStringWithFormatsDecoder.bind(hoisted_UserId_0))(ctx, input);
+}
+function SchemaUserId(ctx, input) {
+    if (ctx.seen["UserId"]) {
+        return {};
+    }
+    ctx.seen["UserId"] = true;
+    var tmp = (hoisted_UserId_0.schemaStringWithFormatsDecoder.bind(hoisted_UserId_0))(ctx);
+    delete ctx.seen["UserId"];
+    return tmp;
+}
+function ValidateReadAuthorizedUserId(ctx, input) {
+    return (hoisted_ReadAuthorizedUserId_0.validateStringWithFormatsDecoder.bind(hoisted_ReadAuthorizedUserId_0))(ctx, input);
+}
+function ParseReadAuthorizedUserId(ctx, input) {
+    return (hoisted_ReadAuthorizedUserId_0.parseStringWithFormatsDecoder.bind(hoisted_ReadAuthorizedUserId_0))(ctx, input);
+}
+function ReportReadAuthorizedUserId(ctx, input) {
+    return (hoisted_ReadAuthorizedUserId_0.reportStringWithFormatsDecoder.bind(hoisted_ReadAuthorizedUserId_0))(ctx, input);
+}
+function SchemaReadAuthorizedUserId(ctx, input) {
+    if (ctx.seen["ReadAuthorizedUserId"]) {
+        return {};
+    }
+    ctx.seen["ReadAuthorizedUserId"] = true;
+    var tmp = (hoisted_ReadAuthorizedUserId_0.schemaStringWithFormatsDecoder.bind(hoisted_ReadAuthorizedUserId_0))(ctx);
+    delete ctx.seen["ReadAuthorizedUserId"];
+    return tmp;
+}
+function ValidateWriteAuthorizedUserId(ctx, input) {
+    return (hoisted_WriteAuthorizedUserId_0.validateStringWithFormatsDecoder.bind(hoisted_WriteAuthorizedUserId_0))(ctx, input);
+}
+function ParseWriteAuthorizedUserId(ctx, input) {
+    return (hoisted_WriteAuthorizedUserId_0.parseStringWithFormatsDecoder.bind(hoisted_WriteAuthorizedUserId_0))(ctx, input);
+}
+function ReportWriteAuthorizedUserId(ctx, input) {
+    return (hoisted_WriteAuthorizedUserId_0.reportStringWithFormatsDecoder.bind(hoisted_WriteAuthorizedUserId_0))(ctx, input);
+}
+function SchemaWriteAuthorizedUserId(ctx, input) {
+    if (ctx.seen["WriteAuthorizedUserId"]) {
+        return {};
+    }
+    ctx.seen["WriteAuthorizedUserId"] = true;
+    var tmp = (hoisted_WriteAuthorizedUserId_0.schemaStringWithFormatsDecoder.bind(hoisted_WriteAuthorizedUserId_0))(ctx);
+    delete ctx.seen["WriteAuthorizedUserId"];
     return tmp;
 }
 const validators = {
@@ -1996,7 +2086,12 @@ const validators = {
     ABC: ValidateABC,
     KABC: ValidateKABC,
     K: ValidateK,
-    NonNegativeNumber: ValidateNonNegativeNumber
+    NonInfiniteNumber: ValidateNonInfiniteNumber,
+    NonNegativeNumber: ValidateNonNegativeNumber,
+    Rate: ValidateRate,
+    UserId: ValidateUserId,
+    ReadAuthorizedUserId: ValidateReadAuthorizedUserId,
+    WriteAuthorizedUserId: ValidateWriteAuthorizedUserId
 };
 const parsers = {
     PartialRepro: ParsePartialRepro,
@@ -2045,7 +2140,12 @@ const parsers = {
     ABC: ParseABC,
     KABC: ParseKABC,
     K: ParseK,
-    NonNegativeNumber: ParseNonNegativeNumber
+    NonInfiniteNumber: ParseNonInfiniteNumber,
+    NonNegativeNumber: ParseNonNegativeNumber,
+    Rate: ParseRate,
+    UserId: ParseUserId,
+    ReadAuthorizedUserId: ParseReadAuthorizedUserId,
+    WriteAuthorizedUserId: ParseWriteAuthorizedUserId
 };
 const reporters = {
     PartialRepro: ReportPartialRepro,
@@ -2094,7 +2194,12 @@ const reporters = {
     ABC: ReportABC,
     KABC: ReportKABC,
     K: ReportK,
-    NonNegativeNumber: ReportNonNegativeNumber
+    NonInfiniteNumber: ReportNonInfiniteNumber,
+    NonNegativeNumber: ReportNonNegativeNumber,
+    Rate: ReportRate,
+    UserId: ReportUserId,
+    ReadAuthorizedUserId: ReportReadAuthorizedUserId,
+    WriteAuthorizedUserId: ReportWriteAuthorizedUserId
 };
 const schemas = {
     PartialRepro: SchemaPartialRepro,
@@ -2143,7 +2248,12 @@ const schemas = {
     ABC: SchemaABC,
     KABC: SchemaKABC,
     K: SchemaK,
-    NonNegativeNumber: SchemaNonNegativeNumber
+    NonInfiniteNumber: SchemaNonInfiniteNumber,
+    NonNegativeNumber: SchemaNonNegativeNumber,
+    Rate: SchemaRate,
+    UserId: SchemaUserId,
+    ReadAuthorizedUserId: SchemaReadAuthorizedUserId,
+    WriteAuthorizedUserId: SchemaWriteAuthorizedUserId
 };
 const hoisted_PartialRepro_0 = [
     validateNull,
@@ -4069,6 +4179,11 @@ const hoisted_K_4 = new AnyOfReporter(hoisted_K_0, [
     reporters.KDEF
 ]);
 const hoisted_K_5 = new AnyOfSchema(hoisted_K_1);
-const hoisted_NonNegativeNumber_0 = new NumberWithFormatsDecoder("NonNegativeNumber");
+const hoisted_NonInfiniteNumber_0 = new NumberWithFormatsDecoder("NonInfiniteNumber");
+const hoisted_NonNegativeNumber_0 = new NumberWithFormatsDecoder("NonInfiniteNumber", "NonNegativeNumber");
+const hoisted_Rate_0 = new NumberWithFormatsDecoder("NonInfiniteNumber", "NonNegativeNumber", "Rate");
+const hoisted_UserId_0 = new StringWithFormatsDecoder("UserId");
+const hoisted_ReadAuthorizedUserId_0 = new StringWithFormatsDecoder("UserId", "ReadAuthorizedUserId");
+const hoisted_WriteAuthorizedUserId_0 = new StringWithFormatsDecoder("UserId", "ReadAuthorizedUserId", "WriteAuthorizedUserId");
 
 export default { registerStringFormatter, registerNumberFormatter, ObjectValidator, ObjectParser, ArrayParser, ArrayValidator, CodecDecoder, StringWithFormatsDecoder, NumberWithFormatsDecoder, AnyOfValidator, AnyOfParser, AllOfValidator, AllOfParser, TupleParser, TupleValidator, RegexDecoder, ConstDecoder, AnyOfConstsDecoder, AnyOfDiscriminatedParser, AnyOfDiscriminatedValidator, validateString, validateNumber, validateFunction, validateBoolean, validateAny, validateNull, validateNever, parseIdentity, reportString, reportNumber, reportNull, reportBoolean, reportAny, reportNever, reportFunction, ArrayReporter, ObjectReporter, TupleReporter, AnyOfReporter, AllOfReporter, AnyOfDiscriminatedReporter, schemaString, schemaNumber, schemaBoolean, schemaNull, schemaAny, schemaNever, schemaFunction, ArraySchema, ObjectSchema, TupleSchema, AnyOfSchema, AllOfSchema, AnyOfDiscriminatedSchema, validators, parsers, reporters, schemas };
