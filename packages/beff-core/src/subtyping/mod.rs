@@ -165,6 +165,10 @@ impl<'a> ToSemTypeConverter<'a> {
                 NumberRepresentationOrFormat::Format(s.clone()),
             )
             .into()),
+            JsonSchema::NumberFormatExtends(vs) => Ok(SemTypeContext::number_const(
+                NumberRepresentationOrFormat::FormatExtends(vs.clone()),
+            )
+            .into()),
             JsonSchema::TplLitType(tpl) => {
                 Ok(SemTypeContext::string_const(StringLitOrFormat::Tpl(tpl.clone())).into())
             }

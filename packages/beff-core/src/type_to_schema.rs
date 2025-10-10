@@ -888,6 +888,66 @@ impl<'a, 'b, R: FileManager> TypeToSchema<'a, 'b, R> {
         )
     }
 
+    fn get_number_format_base_formats(
+        &mut self,
+        schema: &JsonSchema,
+        span: &Span,
+    ) -> Res<Vec<String>> {
+        match schema {
+            JsonSchema::NumberWithFormat(v) => Ok(vec![v.clone()]),
+            JsonSchema::NumberFormatExtends(vs) => Ok(vs.clone()),
+            JsonSchema::Ref(r) => {
+                let v = self.components.get(r);
+
+                let v = v.and_then(|it| it.clone());
+                if let Some(v) = v {
+                    return self.get_number_format_base_formats(&v.schema, span);
+                } else {
+                    return self.error(
+                        span,
+                        DiagnosticInfoMessage::CouldNotFindBaseOfNumberFormatExtends,
+                    );
+                }
+            }
+            _ => self.error(
+                span,
+                DiagnosticInfoMessage::BaseOfNumberFormatExtendsShouldBeNumberFormat,
+            ),
+        }
+    }
+
+    fn get_number_format_extends(
+        &mut self,
+        type_params: &Option<Box<TsTypeParamInstantiation>>,
+        span: &Span,
+    ) -> Res<JsonSchema> {
+        if let Some(type_params) = type_params {
+            if let [base, next_str] = type_params.params.as_slice() {
+                if let TsType::TsLitType(TsLitType {
+                    lit: TsLit::Str(Str { value, .. }),
+                    ..
+                }) = &**next_str
+                {
+                    let next_str = value.to_string();
+                    if self.settings.number_formats.contains(&next_str) {
+                        let base = self.convert_ts_type(base)?;
+
+                        let mut formats = self.get_number_format_base_formats(&base, span)?;
+                        formats.push(next_str);
+                        return Ok(JsonSchema::NumberFormatExtends(formats));
+                    } else {
+                        return self
+                            .error(span, DiagnosticInfoMessage::CustomNumberIsNotRegistered);
+                    }
+                }
+            }
+        }
+        self.error(
+            span,
+            DiagnosticInfoMessage::InvalidUsageOfNumberFormatExtendsTypeParameter,
+        )
+    }
+
     fn get_number_with_format(
         &mut self,
         type_params: &Option<Box<TsTypeParamInstantiation>>,
@@ -945,6 +1005,7 @@ impl<'a, 'b, R: FileManager> TypeToSchema<'a, 'b, R> {
             "StringFormat" => return self.get_string_with_format(type_params, &i.span),
             "StringFormatExtends" => return self.get_string_format_extends(type_params, &i.span),
             "NumberFormat" => return self.get_number_with_format(type_params, &i.span),
+            "NumberFormatExtends" => return self.get_number_format_extends(type_params, &i.span),
             _ => {}
         }
         if let ResolvedLocalSymbol::TsBuiltin(bt) =

@@ -52,7 +52,12 @@ mod tests {
                     "ReadAuthorizedUser".to_string(),
                     "WriteAuthorizedUser".to_string(),
                 ]),
-                number_formats: BTreeSet::from_iter(vec!["age".to_string()]),
+                number_formats: BTreeSet::from_iter(vec![
+                    "age".to_string(),
+                    "NonInfiniteNumber".to_string(),
+                    "NonNegativeNumber".to_string(),
+                    "Rate".to_string(),
+                ]),
             },
         };
         beff_core::extract(&mut man, entry)
@@ -679,6 +684,18 @@ mod tests {
         export type ReadAuthorizedUser = StringFormatExtends<User, "ReadAuthorizedUser">;
         export type WriteAuthorizedUser = StringFormatExtends<ReadAuthorizedUser, "WriteAuthorizedUser">;
         parse.buildParsers<{ User: User, ReadAuthorizedUser: ReadAuthorizedUser, WriteAuthorizedUser: WriteAuthorizedUser }>();
+      "#
+        ));
+    }
+
+    #[test]
+    fn ok_number_with_fmt_extends_decoder() {
+        insta::assert_snapshot!(decoder(
+            r#"
+        export type NonInfiniteNumber = NumberFormat<"NonInfiniteNumber">;
+        export type NonNegativeNumber = NumberFormatExtends<NonInfiniteNumber, "NonNegativeNumber">;
+        export type Rate = NumberFormatExtends<NonNegativeNumber, "Rate">;
+        parse.buildParsers<{ NonInfiniteNumber: NonInfiniteNumber, NonNegativeNumber: NonNegativeNumber, Rate: Rate }>();
       "#
         ));
     }

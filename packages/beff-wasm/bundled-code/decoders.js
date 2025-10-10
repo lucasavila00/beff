@@ -474,34 +474,40 @@ class StringWithFormatsDecoder {
     };
   }
 }
-class NumberWithFormatDecoder {
-  constructor(format) {
-    this.format = format;
+class NumberWithFormatsDecoder {
+  constructor(...formats) {
+    this.formats = formats;
   }
 
-  validateNumberWithFormatDecoder(ctx, input) {
+  validateNumberWithFormatsDecoder(ctx, input) {
     if (typeof input !== "number") {
       return false;
     }
 
-    const validator = numberFormatters[this.format];
+    for (const f of this.formats) {
+      const validator = numberFormatters[f];
+      
+      if (validator == null) {
+        return false;
+      }
 
-    if (validator == null) {
-      return false;
+      if (!validator(input)) {
+        return false;
+      }
     }
 
-    return validator(input);
+    return true;
   }
-  parseNumberWithFormatDecoder(ctx, input) {
+  parseNumberWithFormatsDecoder(ctx, input) {
     return input;
   }
-  reportNumberWithFormatDecoder(ctx, input) {
-    return buildError(ctx, `expected number with format "${this.format}"`, input);
+  reportNumberWithFormatsDecoder(ctx, input) {
+    return buildError(ctx, `expected number with format "${this.formats.join(", ")}"`, input);
   }
-  schemaNumberWithFormatDecoder(ctx) {
+  schemaNumberWithFormatsDecoder(ctx) {
     return {
       type: "number",
-      format: this.format,
+      format: this.formats.join(", ")
     };
   }
 }

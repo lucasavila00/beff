@@ -75,6 +75,9 @@ pub enum DiagnosticInfoMessage {
     FoundTypeExpectedValue,
     CustomStringIsNotRegistered,
     CustomNumberIsNotRegistered,
+    InvalidUsageOfNumberFormatExtendsTypeParameter,
+    BaseOfNumberFormatExtendsShouldBeNumberFormat,
+    CouldNotFindBaseOfNumberFormatExtends,
     GetMustNotHaveBody,
     InvalidIdentifierInPatternNoExplodeAllowed,
     CloseBlockMustEndPattern,
@@ -483,6 +486,15 @@ impl DiagnosticInfoMessage {
             }
             DiagnosticInfoMessage::CouldNotFindBaseOfStringFormatExtends => {
                 "Could not find base of string format extends".to_string()
+            }
+            DiagnosticInfoMessage::InvalidUsageOfNumberFormatExtendsTypeParameter => {
+                "Invalid usage of number format extends type parameter".to_string()
+            }
+            DiagnosticInfoMessage::BaseOfNumberFormatExtendsShouldBeNumberFormat => {
+                "Base of number format extends should be number format".to_string()
+            }
+            DiagnosticInfoMessage::CouldNotFindBaseOfNumberFormatExtends => {
+                "Could not find base of number format extends".to_string()
             }
         }
     }

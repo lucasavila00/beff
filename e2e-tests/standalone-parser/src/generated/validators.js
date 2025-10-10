@@ -475,34 +475,40 @@ class StringWithFormatsDecoder {
     };
   }
 }
-class NumberWithFormatDecoder {
-  constructor(format) {
-    this.format = format;
+class NumberWithFormatsDecoder {
+  constructor(...formats) {
+    this.formats = formats;
   }
 
-  validateNumberWithFormatDecoder(ctx, input) {
+  validateNumberWithFormatsDecoder(ctx, input) {
     if (typeof input !== "number") {
       return false;
     }
 
-    const validator = numberFormatters[this.format];
+    for (const f of this.formats) {
+      const validator = numberFormatters[f];
+      
+      if (validator == null) {
+        return false;
+      }
 
-    if (validator == null) {
-      return false;
+      if (!validator(input)) {
+        return false;
+      }
     }
 
-    return validator(input);
+    return true;
   }
-  parseNumberWithFormatDecoder(ctx, input) {
+  parseNumberWithFormatsDecoder(ctx, input) {
     return input;
   }
-  reportNumberWithFormatDecoder(ctx, input) {
-    return buildError(ctx, `expected number with format "${this.format}"`, input);
+  reportNumberWithFormatsDecoder(ctx, input) {
+    return buildError(ctx, `expected number with format "${this.formats.join(", ")}"`, input);
   }
-  schemaNumberWithFormatDecoder(ctx) {
+  schemaNumberWithFormatsDecoder(ctx) {
     return {
       type: "number",
-      format: this.format,
+      format: this.formats.join(", ")
     };
   }
 }
@@ -1926,20 +1932,20 @@ function SchemaK(ctx, input) {
     return tmp;
 }
 function ValidateNonNegativeNumber(ctx, input) {
-    return (hoisted_NonNegativeNumber_0.validateNumberWithFormatDecoder.bind(hoisted_NonNegativeNumber_0))(ctx, input);
+    return (hoisted_NonNegativeNumber_0.validateNumberWithFormatsDecoder.bind(hoisted_NonNegativeNumber_0))(ctx, input);
 }
 function ParseNonNegativeNumber(ctx, input) {
-    return (hoisted_NonNegativeNumber_0.parseNumberWithFormatDecoder.bind(hoisted_NonNegativeNumber_0))(ctx, input);
+    return (hoisted_NonNegativeNumber_0.parseNumberWithFormatsDecoder.bind(hoisted_NonNegativeNumber_0))(ctx, input);
 }
 function ReportNonNegativeNumber(ctx, input) {
-    return (hoisted_NonNegativeNumber_0.reportNumberWithFormatDecoder.bind(hoisted_NonNegativeNumber_0))(ctx, input);
+    return (hoisted_NonNegativeNumber_0.reportNumberWithFormatsDecoder.bind(hoisted_NonNegativeNumber_0))(ctx, input);
 }
 function SchemaNonNegativeNumber(ctx, input) {
     if (ctx.seen["NonNegativeNumber"]) {
         return {};
     }
     ctx.seen["NonNegativeNumber"] = true;
-    var tmp = (hoisted_NonNegativeNumber_0.schemaNumberWithFormatDecoder.bind(hoisted_NonNegativeNumber_0))(ctx);
+    var tmp = (hoisted_NonNegativeNumber_0.schemaNumberWithFormatsDecoder.bind(hoisted_NonNegativeNumber_0))(ctx);
     delete ctx.seen["NonNegativeNumber"];
     return tmp;
 }
@@ -4063,6 +4069,6 @@ const hoisted_K_4 = new AnyOfReporter(hoisted_K_0, [
     reporters.KDEF
 ]);
 const hoisted_K_5 = new AnyOfSchema(hoisted_K_1);
-const hoisted_NonNegativeNumber_0 = new NumberWithFormatDecoder("NonNegativeNumber");
+const hoisted_NonNegativeNumber_0 = new NumberWithFormatsDecoder("NonNegativeNumber");
 
-export default { registerStringFormatter, registerNumberFormatter, ObjectValidator, ObjectParser, ArrayParser, ArrayValidator, CodecDecoder, StringWithFormatsDecoder, NumberWithFormatDecoder, AnyOfValidator, AnyOfParser, AllOfValidator, AllOfParser, TupleParser, TupleValidator, RegexDecoder, ConstDecoder, AnyOfConstsDecoder, AnyOfDiscriminatedParser, AnyOfDiscriminatedValidator, validateString, validateNumber, validateFunction, validateBoolean, validateAny, validateNull, validateNever, parseIdentity, reportString, reportNumber, reportNull, reportBoolean, reportAny, reportNever, reportFunction, ArrayReporter, ObjectReporter, TupleReporter, AnyOfReporter, AllOfReporter, AnyOfDiscriminatedReporter, schemaString, schemaNumber, schemaBoolean, schemaNull, schemaAny, schemaNever, schemaFunction, ArraySchema, ObjectSchema, TupleSchema, AnyOfSchema, AllOfSchema, AnyOfDiscriminatedSchema, validators, parsers, reporters, schemas };
+export default { registerStringFormatter, registerNumberFormatter, ObjectValidator, ObjectParser, ArrayParser, ArrayValidator, CodecDecoder, StringWithFormatsDecoder, NumberWithFormatsDecoder, AnyOfValidator, AnyOfParser, AllOfValidator, AllOfParser, TupleParser, TupleValidator, RegexDecoder, ConstDecoder, AnyOfConstsDecoder, AnyOfDiscriminatedParser, AnyOfDiscriminatedValidator, validateString, validateNumber, validateFunction, validateBoolean, validateAny, validateNull, validateNever, parseIdentity, reportString, reportNumber, reportNull, reportBoolean, reportAny, reportNever, reportFunction, ArrayReporter, ObjectReporter, TupleReporter, AnyOfReporter, AllOfReporter, AnyOfDiscriminatedReporter, schemaString, schemaNumber, schemaBoolean, schemaNull, schemaAny, schemaNever, schemaFunction, ArraySchema, ObjectSchema, TupleSchema, AnyOfSchema, AllOfSchema, AnyOfDiscriminatedSchema, validators, parsers, reporters, schemas };

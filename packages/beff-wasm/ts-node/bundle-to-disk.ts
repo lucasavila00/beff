@@ -13,7 +13,7 @@ const decodersExported = [
   "ArrayValidator",
   "CodecDecoder",
   "StringWithFormatsDecoder",
-  "NumberWithFormatDecoder",
+  "NumberWithFormatsDecoder",
   "AnyOfValidator",
   "AnyOfParser",
   "AllOfValidator",

@@ -998,6 +998,9 @@ pub fn list_indexed_access(
                         NumberRepresentationOrFormat::Format(fmt) => {
                             bail!("format cannot be used as list index: {}", fmt)
                         }
+                        NumberRepresentationOrFormat::FormatExtends(fmt) => {
+                            bail!("format cannot be used as list index: {:?}", fmt)
+                        }
                     }
                 }
 

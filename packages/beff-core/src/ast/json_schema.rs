@@ -231,6 +231,7 @@ pub enum JsonSchema {
     StringWithFormat(String),
     StringFormatExtends(Vec<String>),
     NumberWithFormat(String),
+    NumberFormatExtends(Vec<String>),
     TplLitType(Vec<TplLitTypeItem>),
     Object {
         vs: BTreeMap<String, Optionality<JsonSchema>>,
@@ -447,8 +448,35 @@ fn ts_string_brands(brands: &[String]) -> TsType {
     ))
 }
 
-fn ts_number_brand(brand: &str) -> TsType {
-    // number & { __customType: "brand" }
+fn ts_number_brands(brands: &[String]) -> TsType {
+    let mut members = vec![];
+
+    for (idx, brand) in brands.iter().enumerate() {
+        let n = idx + 1;
+        let member = TsTypeElement::TsPropertySignature(TsPropertySignature {
+            span: DUMMY_SP,
+            readonly: false,
+            key: format!("__customType{n}").into(),
+            computed: false,
+            optional: false,
+            init: None,
+            params: vec![],
+            type_ann: Some(Box::new(TsTypeAnn {
+                span: DUMMY_SP,
+                type_ann: Box::new(TsType::TsLitType(TsLitType {
+                    span: DUMMY_SP,
+                    lit: TsLit::Str(Str {
+                        span: DUMMY_SP,
+                        value: brand.clone().into(),
+                        raw: None,
+                    }),
+                })),
+            })),
+            type_params: None,
+        });
+        members.push(member);
+    }
+
     TsType::TsUnionOrIntersectionType(TsUnionOrIntersectionType::TsIntersectionType(
         TsIntersectionType {
             span: DUMMY_SP,
@@ -459,33 +487,12 @@ fn ts_number_brand(brand: &str) -> TsType {
                 })),
                 Box::new(TsType::TsTypeLit(TsTypeLit {
                     span: DUMMY_SP,
-                    members: vec![TsTypeElement::TsPropertySignature(TsPropertySignature {
-                        span: DUMMY_SP,
-                        readonly: false,
-                        key: "__customType".into(),
-                        computed: false,
-                        optional: false,
-                        init: None,
-                        params: vec![],
-                        type_ann: Some(Box::new(TsTypeAnn {
-                            span: DUMMY_SP,
-                            type_ann: Box::new(TsType::TsLitType(TsLitType {
-                                span: DUMMY_SP,
-                                lit: TsLit::Str(Str {
-                                    span: DUMMY_SP,
-                                    value: brand.into(),
-                                    raw: None,
-                                }),
-                            })),
-                        })),
-                        type_params: None,
-                    })],
+                    members,
                 })),
             ],
         },
     ))
 }
-
 impl JsonSchema {
     pub fn to_ts_type(&self) -> TsType {
         match self {
@@ -632,7 +639,8 @@ impl JsonSchema {
             }),
             JsonSchema::StringWithFormat(fmt) => ts_string_brands(std::slice::from_ref(fmt)),
             JsonSchema::StringFormatExtends(vs) => ts_string_brands(vs),
-            JsonSchema::NumberWithFormat(fmt) => ts_number_brand(fmt),
+            JsonSchema::NumberWithFormat(fmt) => ts_number_brands(std::slice::from_ref(fmt)),
+            JsonSchema::NumberFormatExtends(vs) => ts_number_brands(vs),
             JsonSchema::Codec(c) => match c {
                 CodecName::ISO8061 => TsType::TsTypeRef(TsTypeRef {
                     span: DUMMY_SP,
