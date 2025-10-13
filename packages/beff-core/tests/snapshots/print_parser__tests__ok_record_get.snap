@@ -1,0 +1,62 @@
+---
+source: packages/beff-core/tests/print_parser.rs
+expression: "decoder(r#\"\n        export type NumberRec = Record<number, string>;\n        export type NumberRecGet = NumberRec[0];\n        parse.buildParsers<{ NumberRecGet: NumberRecGet }>();\n      \"#)"
+---
+function ValidateNumberRec(ctx, input) {
+    return (hoisted_NumberRec_2.validateMappedRecordValidator.bind(hoisted_NumberRec_2))(ctx, input);
+}
+function ParseNumberRec(ctx, input) {
+    return (hoisted_NumberRec_3.parseMappedRecordParser.bind(hoisted_NumberRec_3))(ctx, input);
+}
+function ReportNumberRec(ctx, input) {
+    return (hoisted_NumberRec_4.reportMappedRecordReporter.bind(hoisted_NumberRec_4))(ctx, input);
+}
+function SchemaNumberRec(ctx, input) {
+    if (ctx.seen["NumberRec"]) {
+        return {};
+    }
+    ctx.seen["NumberRec"] = true;
+    var tmp = (hoisted_NumberRec_5.schemaMappedRecordSchema.bind(hoisted_NumberRec_5))(ctx);
+    delete ctx.seen["NumberRec"];
+    return tmp;
+}
+function ValidateNumberRecGet(ctx, input) {
+    return (validateString)(ctx, input);
+}
+function ParseNumberRecGet(ctx, input) {
+    return (parseIdentity)(ctx, input);
+}
+function ReportNumberRecGet(ctx, input) {
+    return (reportString)(ctx, input);
+}
+function SchemaNumberRecGet(ctx, input) {
+    if (ctx.seen["NumberRecGet"]) {
+        return {};
+    }
+    ctx.seen["NumberRecGet"] = true;
+    var tmp = (schemaString)(ctx);
+    delete ctx.seen["NumberRecGet"];
+    return tmp;
+}
+const validators = {
+    NumberRec: ValidateNumberRec,
+    NumberRecGet: ValidateNumberRecGet
+};
+const parsers = {
+    NumberRec: ParseNumberRec,
+    NumberRecGet: ParseNumberRecGet
+};
+const reporters = {
+    NumberRec: ReportNumberRec,
+    NumberRecGet: ReportNumberRecGet
+};
+const schemas = {
+    NumberRec: SchemaNumberRec,
+    NumberRecGet: SchemaNumberRecGet
+};
+const hoisted_NumberRec_0 = validateNumber;
+const hoisted_NumberRec_1 = validateString;
+const hoisted_NumberRec_2 = new MappedRecordValidator(hoisted_NumberRec_0, hoisted_NumberRec_1);
+const hoisted_NumberRec_3 = new MappedRecordParser(parseIdentity, parseIdentity);
+const hoisted_NumberRec_4 = new MappedRecordReporter(hoisted_NumberRec_0, hoisted_NumberRec_1, reportNumber, reportString);
+const hoisted_NumberRec_5 = new MappedRecordSchema(schemaNumber, schemaString);

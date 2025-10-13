@@ -1012,9 +1012,7 @@ pub fn mapping_indexed_access(
     };
     let b = SemTypeContext::sub_type_data(obj_st, SubTypeTag::Mapping);
     match b {
-        SubType::False(_) => {
-            bail!("not a mapping - false")
-        }
+        SubType::False(_) => Ok(SemTypeContext::never().into()),
         SubType::True(_) => {
             bail!("not a mapping - true")
         }
@@ -1140,6 +1138,79 @@ fn bdd_list_member_type_inner_val(
     }
 }
 
+fn bdd_mapped_record_member_type_inner_val(
+    ctx: &mut SemTypeContext,
+    b: Rc<Bdd>,
+    idx_st: Rc<SemType>,
+    accum: Rc<SemType>,
+) -> Rc<SemType> {
+    match b.as_ref() {
+        Bdd::True => accum,
+        Bdd::False => SemTypeContext::never().into(),
+        Bdd::Node {
+            atom,
+            left,
+            middle,
+            right,
+        } => {
+            let b_atom_type = match atom.as_ref() {
+                Atom::MappedRecord(a) => ctx.get_mapped_record_atomic(*a),
+                _ => unreachable!(),
+            };
+            // if the key type does not intersect the key, then skip this branch
+            let key_is_subtype = idx_st.is_subtype(&b_atom_type.key, ctx);
+            if !key_is_subtype {
+                return SemTypeContext::never().into();
+            }
+            let a = b_atom_type.rest.clone();
+            let a = a.intersect(&accum);
+            let a = bdd_mapped_record_member_type_inner_val(ctx, left.clone(), idx_st.clone(), a);
+
+            let b = bdd_mapped_record_member_type_inner_val(
+                ctx,
+                middle.clone(),
+                idx_st.clone(),
+                accum.clone(),
+            );
+            let c = bdd_mapped_record_member_type_inner_val(
+                ctx,
+                right.clone(),
+                idx_st.clone(),
+                accum.clone(),
+            );
+
+            a.union(&b.union(&c))
+        }
+    }
+}
+pub fn mapped_record_indexed_access(
+    ctx: &mut SemTypeContext,
+    obj_st: Rc<SemType>,
+    idx_st: Rc<SemType>,
+) -> anyhow::Result<Rc<SemType>> {
+    let b = SemTypeContext::sub_type_data(obj_st, SubTypeTag::MappedRecord);
+    match b {
+        SubType::False(_) => Ok(SemTypeContext::never().into()),
+        SubType::True(_) => {
+            bail!("not a mapped record - true")
+        }
+        SubType::Proper(proper_subtype) => {
+            let bdd = match proper_subtype.as_ref() {
+                ProperSubtype::MappedRecord(bdd) => bdd,
+                _ => {
+                    bail!("not a mapped record - proper")
+                }
+            };
+            Ok(bdd_mapped_record_member_type_inner_val(
+                ctx,
+                bdd.clone(),
+                idx_st,
+                SemTypeContext::unknown().into(),
+            ))
+        }
+    }
+}
+
 // This computes the spec operation called "member type of K in T",
 // for the case when T is a subtype of list, and K is either `int` or a singleton int.
 // This is what Castagna calls projection.
@@ -1183,9 +1254,7 @@ pub fn list_indexed_access(
     let b = SemTypeContext::sub_type_data(obj_st, SubTypeTag::List);
 
     match b {
-        SubType::False(_) => {
-            bail!("not a list - false")
-        }
+        SubType::False(_) => Ok(SemTypeContext::never().into()),
         SubType::True(_) => {
             bail!("not a list - true")
         }

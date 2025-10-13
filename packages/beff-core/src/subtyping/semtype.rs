@@ -2,7 +2,8 @@ use crate::subtyping::{evidence::Evidence, subtype::NumberRepresentationOrFormat
 
 use super::{
     bdd::{
-        keyof, list_indexed_access, mapping_indexed_access, Atom, Bdd, ListAtomic, MappingAtomic,
+        keyof, list_indexed_access, mapped_record_indexed_access, mapping_indexed_access, Atom,
+        Bdd, ListAtomic, MappingAtomic,
     },
     evidence::{EvidenceResult, ProperSubtypeEvidenceResult},
     subtype::{
@@ -420,7 +421,9 @@ impl SemTypeContext {
     pub fn mapped_record_definition_from_idx(idx: usize) -> SemType {
         SemType::new_complex(
             0x0,
-            vec![ProperSubtype::Mapping(Bdd::from_atom(Atom::MappedRecord(idx)).into()).into()],
+            vec![
+                ProperSubtype::MappedRecord(Bdd::from_atom(Atom::MappedRecord(idx)).into()).into(),
+            ],
         )
     }
     pub fn mapping_definition(&mut self, vs: Rc<MappingAtomic>, rest: Rc<SemType>) -> SemType {
@@ -508,6 +511,7 @@ impl SemTypeContext {
                 (ProperSubtype::Number { .. }, SubTypeTag::Number)
                 | (ProperSubtype::String { .. }, SubTypeTag::String)
                 | (ProperSubtype::Mapping(_), SubTypeTag::Mapping)
+                | (ProperSubtype::MappedRecord(_), SubTypeTag::MappedRecord)
                 | (ProperSubtype::List(_), SubTypeTag::List)
                 | (ProperSubtype::Boolean(_), SubTypeTag::Boolean) => {
                     return SubType::Proper(t.clone())
@@ -536,11 +540,16 @@ impl SemTypeContext {
         obj_st: Rc<SemType>,
         idx_st: Rc<SemType>,
     ) -> anyhow::Result<Rc<SemType>> {
-        let list_result = list_indexed_access(self, obj_st.clone(), idx_st.clone())?;
-        if list_result.is_empty(self) {
-            return mapping_indexed_access(self, obj_st, idx_st);
+        let mapped_record_result =
+            mapped_record_indexed_access(self, obj_st.clone(), idx_st.clone())?;
+        if mapped_record_result.is_empty(self) {
+            let list_result = list_indexed_access(self, obj_st.clone(), idx_st.clone())?;
+            if list_result.is_empty(self) {
+                return mapping_indexed_access(self, obj_st, idx_st);
+            }
+            return Ok(list_result);
         }
-        Ok(list_result)
+        Ok(mapped_record_result)
     }
 
     pub fn keyof(&mut self, st: Rc<SemType>) -> anyhow::Result<Rc<SemType>> {

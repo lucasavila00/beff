@@ -368,7 +368,9 @@ impl<'a, 'b, R: FileManager> TypeToSchema<'a, 'b, R> {
                                 rest: Some(Box::new(value)),
                             })
                         }
-                        JsonSchema::StringWithFormat(_) | JsonSchema::StringFormatExtends(_) => {
+                        JsonSchema::StringWithFormat(_)
+                        | JsonSchema::StringFormatExtends(_)
+                        | JsonSchema::Number => {
                             let value = items[1].clone();
                             Ok(JsonSchema::MappedRecord {
                                 key: key,
