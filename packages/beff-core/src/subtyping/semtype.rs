@@ -327,9 +327,18 @@ pub struct MappingAtomicType {
     pub rest: Rc<SemType>,
 }
 
+#[derive(Debug)]
+pub struct MappedRecordAtomicType {
+    pub key: Rc<SemType>,
+    pub rest: Rc<SemType>,
+}
+
 pub struct SemTypeContext {
     pub mapping_definitions: Vec<Option<Rc<MappingAtomicType>>>,
     pub mapping_memo: BTreeMap<Bdd, BddMemoEmptyRef>,
+
+    pub mapped_records_definitions: Vec<Option<Rc<MappedRecordAtomicType>>>,
+    pub mapped_records_memo: BTreeMap<Bdd, BddMemoEmptyRef>,
 
     pub list_definitions: Vec<Option<Rc<ListAtomic>>>,
     pub list_memo: BTreeMap<Bdd, BddMemoEmptyRef>,
@@ -352,6 +361,14 @@ impl SemTypeContext {
             .expect("should exist")
             .clone()
     }
+    pub fn get_mapped_record_atomic(&self, idx: usize) -> Rc<MappedRecordAtomicType> {
+        self.mapped_records_definitions
+            .get(idx)
+            .expect("should exist")
+            .as_ref()
+            .expect("should exist")
+            .clone()
+    }
     pub fn get_list_atomic(&self, idx: usize) -> Rc<ListAtomic> {
         self.list_definitions
             .get(idx)
@@ -365,8 +382,10 @@ impl SemTypeContext {
         SemTypeContext {
             list_definitions: vec![],
             mapping_definitions: vec![],
+            mapped_records_definitions: vec![],
             mapping_memo: BTreeMap::new(),
             list_memo: BTreeMap::new(),
+            mapped_records_memo: BTreeMap::new(),
             mapping_json_schema_ref_memo: BTreeMap::new(),
             list_json_schema_ref_memo: BTreeMap::new(),
         }
@@ -398,6 +417,12 @@ impl SemTypeContext {
             vec![ProperSubtype::Mapping(Bdd::from_atom(Atom::Mapping(idx)).into()).into()],
         )
     }
+    pub fn mapped_record_definition_from_idx(idx: usize) -> SemType {
+        SemType::new_complex(
+            0x0,
+            vec![ProperSubtype::Mapping(Bdd::from_atom(Atom::MappedRecord(idx)).into()).into()],
+        )
+    }
     pub fn mapping_definition(&mut self, vs: Rc<MappingAtomic>, rest: Rc<SemType>) -> SemType {
         let idx = self.mapping_definitions.len();
         self.mapping_definitions.push(Some(
@@ -410,6 +435,14 @@ impl SemTypeContext {
 
         Self::mapping_definition_from_idx(idx)
     }
+
+    pub fn mapped_record_definition(&mut self, key: Rc<SemType>, rest: Rc<SemType>) -> SemType {
+        let idx = self.mapped_records_definitions.len();
+        self.mapped_records_definitions
+            .push(Some(MappedRecordAtomicType { key: key, rest }.into()));
+        Self::mapped_record_definition_from_idx(idx)
+    }
+
     pub fn list_definition_from_idx(idx: usize) -> SemType {
         SemType::new_complex(
             0x0,

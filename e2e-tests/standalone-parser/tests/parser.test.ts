@@ -40,6 +40,7 @@ import {
   UserCodec,
   ReadAuthorizedUserCodec,
   WriteAuthorizedUserCodec,
+  CurrencyPricesCodec,
 } from "../src/parser";
 import { Arr2 } from "../src/types";
 
@@ -366,6 +367,12 @@ it("Custom Format", () => {
     }
   `);
 });
+it("Mapped Record", () => {
+  expect(CurrencyPricesCodec.parse({"USD": 0.5})).toMatchInlineSnapshot('"USD"');
+  expect(CurrencyPricesCodec.safeParse({"USD": 1.5})).toMatchInlineSnapshot('"USD"');
+  expect(CurrencyPricesCodec.safeParse({"AAAA": 0.5})).toMatchInlineSnapshot('"USD"');
+});
+
 it("Custom String Format User Hierarchy", () => {
   expect(UserCodec.safeParse("asdasdadasd")).toMatchInlineSnapshot(`
     {

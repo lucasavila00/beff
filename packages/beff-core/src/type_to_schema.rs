@@ -344,7 +344,21 @@ impl<'a, 'b, R: FileManager> TypeToSchema<'a, 'b, R> {
                         );
                     }
 
-                    let key = Box::new(items[0].clone());
+                    let mut key = Box::new(items[0].clone());
+                    let mut is_ref = matches!(&*key, JsonSchema::Ref(_));
+
+                    while is_ref {
+                        if let JsonSchema::Ref(r) = &items[0] {
+                            let map = self.components.get(r).and_then(|it| it.as_ref()).cloned();
+                            match map {
+                                Some(NamedSchema { schema, .. }) => {
+                                    key = Box::new(schema);
+                                    is_ref = matches!(&*key, JsonSchema::Ref(_));
+                                }
+                                None => {}
+                            }
+                        }
+                    }
 
                     match key.as_ref() {
                         JsonSchema::String => {
@@ -352,6 +366,13 @@ impl<'a, 'b, R: FileManager> TypeToSchema<'a, 'b, R> {
                             Ok(JsonSchema::Object {
                                 vs: BTreeMap::new(),
                                 rest: Some(Box::new(value)),
+                            })
+                        }
+                        JsonSchema::StringWithFormat(_) | JsonSchema::StringFormatExtends(_) => {
+                            let value = items[1].clone();
+                            Ok(JsonSchema::MappedRecord {
+                                key: key,
+                                rest: Box::new(value),
                             })
                         }
                         _ => {

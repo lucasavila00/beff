@@ -8,7 +8,10 @@ use anyhow::bail;
 
 use crate::{
     ast::json::N,
-    subtyping::{semtype::SemTypeContext, subtype::NumberRepresentationOrFormat},
+    subtyping::{
+        evidence::MappedRecordEvidence, semtype::SemTypeContext,
+        subtype::NumberRepresentationOrFormat,
+    },
 };
 
 use super::{
@@ -31,6 +34,7 @@ pub struct ListAtomic {
 pub enum Atom {
     Mapping(usize),
     List(usize),
+    MappedRecord(usize),
 }
 
 fn atom_cmp(a: &Atom, b: &Atom) -> Ordering {
@@ -483,6 +487,170 @@ fn mapping_formula_is_empty(
         }
     }
 }
+
+fn mapped_record_key_is_empty(
+    pos: &Option<Rc<Conjunction>>,
+    neg: &Option<Rc<Conjunction>>,
+    builder: &mut SemTypeContext,
+) -> ProperSubtypeEvidenceResult {
+    let mut t = Rc::new(SemTypeContext::unknown());
+
+    match pos {
+        None => {}
+        Some(pos_atom) => {
+            // combine all the positive keys using intersection
+            let mt = match pos_atom.atom.as_ref() {
+                Atom::MappedRecord(a) => builder.get_mapped_record_atomic(*a).clone(),
+                _ => unreachable!(),
+            };
+            t = mt.key.clone();
+
+            let mut p = pos_atom.next.clone();
+            while let Some(ref some_p) = p {
+                let d = &some_p.atom;
+                let mt = match d.as_ref() {
+                    Atom::MappedRecord(a) => builder.get_mapped_record_atomic(*a).clone(),
+                    _ => unreachable!(),
+                };
+                t = t.intersect(&mt.key);
+                p.clone_from(&some_p.next.clone());
+            }
+        }
+    }
+
+    match neg {
+        Some(neg_atom) => {
+            let mt = match neg_atom.atom.as_ref() {
+                Atom::MappedRecord(a) => builder.get_mapped_record_atomic(*a).clone(),
+                _ => unreachable!(),
+            };
+            t = t.diff(&mt.key);
+            let mut n = neg_atom.next.clone();
+            while let Some(ref some_n) = n {
+                let d = &some_n.atom;
+                let mt = match d.as_ref() {
+                    Atom::MappedRecord(a) => builder.get_mapped_record_atomic(*a).clone(),
+                    _ => unreachable!(),
+                };
+                t = t.diff(&mt.key);
+                n.clone_from(&some_n.next.clone());
+            }
+        }
+        None => {}
+    }
+
+    match t.is_empty_evidence(builder) {
+        EvidenceResult::Evidence(evidence) => ProperSubtypeEvidenceResult::Evidence(
+            ProperSubtypeEvidence::MappedRecord(MappedRecordEvidence::Key(evidence.into()).into()),
+        ),
+        EvidenceResult::IsEmpty => ProperSubtypeEvidenceResult::IsEmpty,
+    }
+}
+
+fn mapped_record_value_is_empty(
+    pos: &Option<Rc<Conjunction>>,
+    neg: &Option<Rc<Conjunction>>,
+    builder: &mut SemTypeContext,
+) -> ProperSubtypeEvidenceResult {
+    let mut t = Rc::new(SemTypeContext::unknown());
+
+    match pos {
+        None => {}
+        Some(pos_atom) => {
+            // combine all the positive rest using intersection
+            let mt = match pos_atom.atom.as_ref() {
+                Atom::MappedRecord(a) => builder.get_mapped_record_atomic(*a).clone(),
+                _ => unreachable!(),
+            };
+            t = mt.rest.clone();
+
+            let mut p = pos_atom.next.clone();
+            while let Some(ref some_p) = p {
+                let d = &some_p.atom;
+                let mt = match d.as_ref() {
+                    Atom::MappedRecord(a) => builder.get_mapped_record_atomic(*a).clone(),
+                    _ => unreachable!(),
+                };
+                t = t.intersect(&mt.rest);
+                p.clone_from(&some_p.next.clone());
+            }
+        }
+    }
+
+    match neg {
+        Some(neg_atom) => {
+            let mt = match neg_atom.atom.as_ref() {
+                Atom::MappedRecord(a) => builder.get_mapped_record_atomic(*a).clone(),
+                _ => unreachable!(),
+            };
+            t = t.diff(&mt.rest);
+            let mut n = neg_atom.next.clone();
+            while let Some(ref some_n) = n {
+                let d = &some_n.atom;
+                let mt = match d.as_ref() {
+                    Atom::MappedRecord(a) => builder.get_mapped_record_atomic(*a).clone(),
+                    _ => unreachable!(),
+                };
+                t = t.diff(&mt.rest);
+                n.clone_from(&some_n.next.clone());
+            }
+        }
+        None => {}
+    }
+
+    match t.is_empty_evidence(builder) {
+        EvidenceResult::Evidence(evidence) => ProperSubtypeEvidenceResult::Evidence(
+            ProperSubtypeEvidence::MappedRecord(MappedRecordEvidence::Key(evidence.into()).into()),
+        ),
+        EvidenceResult::IsEmpty => ProperSubtypeEvidenceResult::IsEmpty,
+    }
+}
+fn mapped_record_formula_is_empty(
+    pos_list: &Option<Rc<Conjunction>>,
+    neg_list: &Option<Rc<Conjunction>>,
+    builder: &mut SemTypeContext,
+) -> ProperSubtypeEvidenceResult {
+    let key_is_empty = mapped_record_key_is_empty(pos_list, neg_list, builder);
+    if key_is_empty.is_empty() {
+        return key_is_empty;
+    }
+    let value_is_empty = mapped_record_value_is_empty(pos_list, neg_list, builder);
+    if value_is_empty.is_empty() {
+        return key_is_empty;
+    }
+    value_is_empty
+}
+
+pub fn mapped_record_is_empty(
+    bdd: &Rc<Bdd>,
+    builder: &mut SemTypeContext,
+) -> ProperSubtypeEvidenceResult {
+    // if the key is empty of the value is empty, then it is empty
+    match builder.mapped_records_memo.get(bdd) {
+        Some(mm) => match &mm.0 {
+            MemoEmpty::True => return ProperSubtypeEvidenceResult::IsEmpty,
+            MemoEmpty::False(ev) => return ev.clone(),
+            MemoEmpty::Undefined => {
+                // we got a loop
+                return ProperSubtypeEvidenceResult::IsEmpty;
+            }
+        },
+        None => {
+            builder
+                .mapped_records_memo
+                .insert((**bdd).clone(), BddMemoEmptyRef(MemoEmpty::Undefined));
+        }
+    }
+
+    let is_empty = bdd_every(bdd, &None, &None, mapped_record_formula_is_empty, builder);
+    builder
+        .mapped_records_memo
+        .get_mut(bdd)
+        .expect("bdd should be cached by now")
+        .0 = MemoEmpty::from_bool(&is_empty);
+    is_empty
+}
+
 pub fn mapping_is_empty(
     bdd: &Rc<Bdd>,
     builder: &mut SemTypeContext,

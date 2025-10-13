@@ -7,6 +7,7 @@ use anyhow::bail;
 
 use crate::{
     ast::json_schema::{JsonSchema, JsonSchemaConst, Optionality},
+    subtyping::semtype::MappedRecordAtomicType,
     NamedSchema,
 };
 
@@ -207,6 +208,19 @@ impl<'a, 'b> SchemerContext<'a, 'b> {
     //     return JsonSchema::any_of(vs);
     // }
 
+    fn mapped_atom_schema(
+        &mut self,
+        mt: &Rc<MappedRecordAtomicType>,
+    ) -> anyhow::Result<JsonSchema> {
+        let k = self.convert_to_schema(&mt.key, None)?;
+        let r = self.convert_to_schema(&mt.rest, None)?;
+
+        Ok(JsonSchema::MappedRecord {
+            key: k.into(),
+            rest: r.into(),
+        })
+    }
+
     fn convert_to_schema_mapping_node(
         &mut self,
         atom: &Rc<Atom>,
@@ -287,6 +301,88 @@ impl<'a, 'b> SchemerContext<'a, 'b> {
                 middle,
                 right,
             } => self.convert_to_schema_mapping_node(atom, left, middle, right),
+        }
+    }
+    fn convert_to_schema_mapped_record_node(
+        &mut self,
+        atom: &Rc<Atom>,
+        left: &Rc<Bdd>,
+        middle: &Rc<Bdd>,
+        right: &Rc<Bdd>,
+    ) -> anyhow::Result<JsonSchema> {
+        let mt = match atom.as_ref() {
+            Atom::MappedRecord(a) => self.ctx.0.get_mapped_record_atomic(*a).clone(),
+            _ => unreachable!(),
+        };
+
+        let explained_sts = self.mapped_atom_schema(&mt)?;
+
+        let mut acc = vec![];
+
+        match left.as_ref() {
+            Bdd::True => {
+                acc.push(explained_sts.clone());
+            }
+            Bdd::False => {
+                // noop
+            }
+            Bdd::Node {
+                atom,
+                left,
+                middle,
+                right,
+            } => {
+                let ty = vec![explained_sts.clone()].into_iter().chain(vec![
+                    self.convert_to_schema_mapped_record_node(atom, left, middle, right)?
+                ]);
+                acc.push(JsonSchema::all_of(ty.collect()));
+            }
+        };
+        match middle.as_ref() {
+            Bdd::False => {
+                // noop
+            }
+            Bdd::True | Bdd::Node { .. } => {
+                acc.push(self.convert_to_schema_mapped_record(middle)?);
+            }
+        }
+        match right.as_ref() {
+            Bdd::True => {
+                acc.push(JsonSchema::StNot(Box::new(explained_sts)));
+            }
+            Bdd::False => {
+                // noop
+            }
+            Bdd::Node {
+                atom,
+                left,
+                middle,
+                right,
+            } => {
+                let ty = JsonSchema::all_of(vec![
+                    JsonSchema::StNot(Box::new(explained_sts)),
+                    self.convert_to_schema_mapped_record_node(atom, left, middle, right)?,
+                ]);
+                acc.push(ty)
+            }
+        }
+        Ok(JsonSchema::any_of(acc))
+    }
+
+    fn convert_to_schema_mapped_record(&mut self, bdd: &Rc<Bdd>) -> anyhow::Result<JsonSchema> {
+        match bdd.as_ref() {
+            Bdd::True => {
+                bail!("convert_to_schema_mapping - true should not be here")
+            }
+            Bdd::False => {
+                bail!("convert_to_schema_mapping - false should not be here")
+            }
+            Bdd::Node {
+                atom,
+                left,
+                middle,
+                right,
+            } => self.convert_to_schema_mapped_record_node(atom, left, middle, right),
         }
     }
 
@@ -443,6 +539,12 @@ impl<'a, 'b> SchemerContext<'a, 'b> {
                     SubTypeTag::Function => {
                         acc.insert(JsonSchema::Function);
                     }
+                    SubTypeTag::MappedRecord => {
+                        acc.insert(JsonSchema::MappedRecord {
+                            key: Box::new(JsonSchema::Any),
+                            rest: Box::new(JsonSchema::Any),
+                        });
+                    }
                 };
             }
         }
@@ -515,6 +617,9 @@ impl<'a, 'b> SchemerContext<'a, 'b> {
                 }
                 ProperSubtype::List(bdd) => {
                     acc.insert(self.convert_to_schema_list(bdd)?);
+                }
+                ProperSubtype::MappedRecord(bdd) => {
+                    acc.insert(self.convert_to_schema_mapped_record(bdd)?);
                 }
             };
         }

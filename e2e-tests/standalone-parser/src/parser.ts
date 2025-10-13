@@ -1,6 +1,7 @@
 import parse from "./generated/parser";
 import { Arr2, OtherEnum, ValidCurrency, OtherEnum2, Arr3 } from "./types";
 import {
+  CurrencyPrices,
   NonInfiniteNumber,
   NonNegativeNumber,
   Rate,
@@ -235,6 +236,7 @@ export const {
   Rate: RateCodec,
   UnionWithEnumAccess,
   AccessLevelCodec,
+  CurrencyPrices:CurrencyPricesCodec,
   T3,
   AvatarSize,
   AccessLevelTpl,
@@ -305,6 +307,7 @@ export const {
   UserId: UserId;
   ReadAuthorizedUserId: ReadAuthorizedUserId;
   WriteAuthorizedUserId: WriteAuthorizedUserId;
+  CurrencyPrices:CurrencyPrices
 }>({
   stringFormats: {
     ValidCurrency: (input: string) => {

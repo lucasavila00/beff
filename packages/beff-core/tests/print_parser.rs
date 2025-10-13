@@ -677,6 +677,17 @@ mod tests {
     }
 
     #[test]
+    fn ok_string_with_fmt_record_decoder() {
+        insta::assert_snapshot!(decoder(
+            r#"
+        export type Password = StringFormat<"password">;
+        export type PassLenghts = Record<Password, number>;
+        parse.buildParsers<{ PassLenghts: PassLenghts }>();
+      "#
+        ));
+    }
+
+    #[test]
     fn ok_string_with_fmt_extends_decoder() {
         insta::assert_snapshot!(decoder(
             r#"

@@ -6,7 +6,7 @@ use crate::ast::{
 };
 
 use super::{
-    bdd::{list_is_empty, mapping_is_empty, Bdd, BddOps},
+    bdd::{list_is_empty, mapped_record_is_empty, mapping_is_empty, Bdd, BddOps},
     evidence::{ProperSubtypeEvidence, ProperSubtypeEvidenceResult},
     semtype::SemTypeContext,
 };
@@ -26,9 +26,10 @@ pub enum SubTypeTag {
     Void = 1 << 0x6,
     List = 1 << 0x7,
     Function = 1 << 0x8,
+    MappedRecord = 1 << 0x9,
 }
 
-pub const VAL: u32 = 1 << 1 | 1 << 2 | 1 << 3 | 1 << 4 | 1 << 5 | 1 << 6 | 1 << 7 | 1 << 8;
+pub const VAL: u32 = 1 << 1 | 1 << 2 | 1 << 3 | 1 << 4 | 1 << 5 | 1 << 6 | 1 << 7 | 1 << 8 | 1 << 9;
 
 impl SubTypeTag {
     pub fn code(&self) -> BasicTypeCode {
@@ -107,6 +108,7 @@ pub enum ProperSubtype {
     },
     Mapping(Rc<Bdd>),
     List(Rc<Bdd>),
+    MappedRecord(Rc<Bdd>),
 }
 
 fn vec_union<K: PartialEq + Clone + Ord>(v1: &[K], v2: &[K]) -> Vec<K> {
@@ -151,6 +153,7 @@ impl ProperSubtypeOps for Rc<ProperSubtype> {
             .to_result(),
             ProperSubtype::Mapping(bdd) => mapping_is_empty(bdd, builder),
             ProperSubtype::List(bdd) => list_is_empty(bdd, builder),
+            ProperSubtype::MappedRecord(bdd) => mapped_record_is_empty(bdd, builder),
         }
     }
 
@@ -283,6 +286,9 @@ impl ProperSubtypeOps for Rc<ProperSubtype> {
             .into(),
             ProperSubtype::Mapping(bdd) => ProperSubtype::Mapping(bdd.complement()).into(),
             ProperSubtype::List(bdd) => ProperSubtype::List(bdd.complement()).into(),
+            ProperSubtype::MappedRecord(bdd) => {
+                ProperSubtype::MappedRecord(bdd.complement()).into()
+            }
         }
     }
 }
@@ -295,6 +301,7 @@ impl ProperSubtype {
             ProperSubtype::String { .. } => SubTypeTag::String,
             ProperSubtype::Mapping(_) => SubTypeTag::Mapping,
             ProperSubtype::List(_) => SubTypeTag::List,
+            ProperSubtype::MappedRecord(_) => SubTypeTag::MappedRecord,
         }
     }
     pub fn to_code(&self) -> BasicTypeCode {

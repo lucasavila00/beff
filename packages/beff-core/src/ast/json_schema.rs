@@ -237,6 +237,10 @@ pub enum JsonSchema {
         vs: BTreeMap<String, Optionality<JsonSchema>>,
         rest: Option<Box<JsonSchema>>,
     },
+    MappedRecord {
+        key: Box<JsonSchema>,
+        rest: Box<JsonSchema>,
+    },
     Array(Box<JsonSchema>),
     Tuple {
         prefix_items: Vec<JsonSchema>,
@@ -911,6 +915,24 @@ impl JsonSchema {
                     .into(),
                 }),
             ),
+            JsonSchema::MappedRecord { key, rest } => {
+                let k = key.to_ts_type();
+                let v = rest.to_ts_type();
+                // Record<k, v>
+                TsType::TsTypeRef(TsTypeRef {
+                    span: DUMMY_SP,
+                    type_name: Ident {
+                        span: DUMMY_SP,
+                        sym: "Record".into(),
+                        optional: false,
+                    }
+                    .into(),
+                    type_params: Some(Box::new(TsTypeParamInstantiation {
+                        span: DUMMY_SP,
+                        params: vec![k.into(), v.into()],
+                    })),
+                })
+            }
         }
     }
 }
