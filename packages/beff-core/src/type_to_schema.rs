@@ -350,12 +350,9 @@ impl<'a, 'b, R: FileManager> TypeToSchema<'a, 'b, R> {
                     while is_ref {
                         if let JsonSchema::Ref(r) = &items[0] {
                             let map = self.components.get(r).and_then(|it| it.as_ref()).cloned();
-                            match map {
-                                Some(NamedSchema { schema, .. }) => {
-                                    key = Box::new(schema);
-                                    is_ref = matches!(&*key, JsonSchema::Ref(_));
-                                }
-                                None => {}
+                            if let Some(NamedSchema { schema, .. }) = map {
+                                key = Box::new(schema);
+                                is_ref = matches!(&*key, JsonSchema::Ref(_));
                             }
                         }
                     }
@@ -373,7 +370,7 @@ impl<'a, 'b, R: FileManager> TypeToSchema<'a, 'b, R> {
                         | JsonSchema::Number => {
                             let value = items[1].clone();
                             Ok(JsonSchema::MappedRecord {
-                                key: key,
+                                key,
                                 rest: Box::new(value),
                             })
                         }

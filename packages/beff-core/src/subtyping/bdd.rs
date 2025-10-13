@@ -518,25 +518,22 @@ fn mapped_record_key_is_empty(
         }
     }
 
-    match neg {
-        Some(neg_atom) => {
-            let mt = match neg_atom.atom.as_ref() {
+    if let Some(neg_atom) = neg {
+        let mt = match neg_atom.atom.as_ref() {
+            Atom::MappedRecord(a) => builder.get_mapped_record_atomic(*a).clone(),
+            _ => unreachable!(),
+        };
+        t = t.diff(&mt.key);
+        let mut n = neg_atom.next.clone();
+        while let Some(ref some_n) = n {
+            let d = &some_n.atom;
+            let mt = match d.as_ref() {
                 Atom::MappedRecord(a) => builder.get_mapped_record_atomic(*a).clone(),
                 _ => unreachable!(),
             };
             t = t.diff(&mt.key);
-            let mut n = neg_atom.next.clone();
-            while let Some(ref some_n) = n {
-                let d = &some_n.atom;
-                let mt = match d.as_ref() {
-                    Atom::MappedRecord(a) => builder.get_mapped_record_atomic(*a).clone(),
-                    _ => unreachable!(),
-                };
-                t = t.diff(&mt.key);
-                n.clone_from(&some_n.next.clone());
-            }
+            n.clone_from(&some_n.next.clone());
         }
-        None => {}
     }
 
     match t.is_empty_evidence(builder) {
@@ -577,25 +574,22 @@ fn mapped_record_value_is_empty(
         }
     }
 
-    match neg {
-        Some(neg_atom) => {
-            let mt = match neg_atom.atom.as_ref() {
+    if let Some(neg_atom) = neg {
+        let mt = match neg_atom.atom.as_ref() {
+            Atom::MappedRecord(a) => builder.get_mapped_record_atomic(*a).clone(),
+            _ => unreachable!(),
+        };
+        t = t.diff(&mt.rest);
+        let mut n = neg_atom.next.clone();
+        while let Some(ref some_n) = n {
+            let d = &some_n.atom;
+            let mt = match d.as_ref() {
                 Atom::MappedRecord(a) => builder.get_mapped_record_atomic(*a).clone(),
                 _ => unreachable!(),
             };
             t = t.diff(&mt.rest);
-            let mut n = neg_atom.next.clone();
-            while let Some(ref some_n) = n {
-                let d = &some_n.atom;
-                let mt = match d.as_ref() {
-                    Atom::MappedRecord(a) => builder.get_mapped_record_atomic(*a).clone(),
-                    _ => unreachable!(),
-                };
-                t = t.diff(&mt.rest);
-                n.clone_from(&some_n.next.clone());
-            }
+            n.clone_from(&some_n.next.clone());
         }
-        None => {}
     }
 
     match t.is_empty_evidence(builder) {

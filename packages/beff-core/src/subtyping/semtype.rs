@@ -442,7 +442,7 @@ impl SemTypeContext {
     pub fn mapped_record_definition(&mut self, key: Rc<SemType>, rest: Rc<SemType>) -> SemType {
         let idx = self.mapped_records_definitions.len();
         self.mapped_records_definitions
-            .push(Some(MappedRecordAtomicType { key: key, rest }.into()));
+            .push(Some(MappedRecordAtomicType { key, rest }.into()));
         Self::mapped_record_definition_from_idx(idx)
     }
 
