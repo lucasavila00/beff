@@ -18,3 +18,5 @@ export type Rate = NumberFormatExtends<NonNegativeNumber, "Rate">;
 export type UserId = StringFormat<"UserId">;
 export type ReadAuthorizedUserId = StringFormatExtends<UserId, "ReadAuthorizedUserId">;
 export type WriteAuthorizedUserId = StringFormatExtends<ReadAuthorizedUserId, "WriteAuthorizedUserId">;
+
+export type CurrencyPrices = Record<ValidCurrency, Rate>;

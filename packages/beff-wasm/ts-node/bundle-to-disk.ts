@@ -9,6 +9,8 @@ const decodersExported = [
   "registerNumberFormatter",
   "ObjectValidator",
   "ObjectParser",
+  "MappedRecordParser",
+  "MappedRecordValidator",
   "ArrayParser",
   "ArrayValidator",
   "CodecDecoder",
@@ -47,6 +49,7 @@ const decodersExported = [
   "AnyOfReporter",
   "AllOfReporter",
   "AnyOfDiscriminatedReporter",
+  "MappedRecordReporter",
   //
   "schemaString",
   "schemaNumber",
@@ -61,6 +64,7 @@ const decodersExported = [
   "AnyOfSchema",
   "AllOfSchema",
   "AnyOfDiscriminatedSchema",
+  "MappedRecordSchema",
 ];
 
 const esmTag = (mod: ProjectModule) => {

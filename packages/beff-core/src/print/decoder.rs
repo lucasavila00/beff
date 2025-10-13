@@ -797,6 +797,30 @@ impl DecoderFnGenerator<'_> {
                     vec![inner_schema],
                 )
             }
+            JsonSchema::MappedRecord { key, rest } => {
+                let SchemaCode {
+                    validator: key_validator,
+                    parser: key_parser,
+                    reporter: key_reporter,
+                    schema: key_schema,
+                } = self.generate_schema_code(key, hoisted);
+                let SchemaCode {
+                    validator: rest_validator,
+                    parser: rest_parser,
+                    reporter: rest_reporter,
+                    schema: rest_schema,
+                } = self.generate_schema_code(rest, hoisted);
+                let key_validator = self.hoist_expr(hoisted, key_validator);
+                let rest_validator = self.hoist_expr(hoisted, rest_validator);
+                self.dynamic_schema_code(
+                    "MappedRecord",
+                    hoisted,
+                    vec![key_validator.clone(), rest_validator.clone()],
+                    vec![key_parser, rest_parser],
+                    vec![key_validator, rest_validator, key_reporter, rest_reporter],
+                    vec![key_schema, rest_schema],
+                )
+            }
             JsonSchema::Tuple {
                 prefix_items,
                 items,
@@ -897,6 +921,7 @@ impl DecoderFnGenerator<'_> {
                     vec![prefix_schema_arr, item_schema],
                 )
             }
+
             JsonSchema::Object { vs, rest } => {
                 let mut validator_rest = Expr::Lit(Lit::Null(Null { span: DUMMY_SP }));
                 let mut parser_rest = Expr::Lit(Lit::Null(Null { span: DUMMY_SP }));

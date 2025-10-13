@@ -677,6 +677,40 @@ mod tests {
     }
 
     #[test]
+    fn ok_string_with_fmt_record_decoder() {
+        insta::assert_snapshot!(decoder(
+            r#"
+        export type Password = StringFormat<"password">;
+        export type PassLenghts = Record<Password, number>;
+        parse.buildParsers<{ PassLenghts: PassLenghts }>();
+      "#
+        ));
+    }
+
+    #[test]
+    fn ok_string_with_fmt_record_decoder_st() {
+        insta::assert_snapshot!(decoder(
+            r#"
+        export type Password = StringFormat<"password">;
+        export type PassLenghts = Record<Password, number>;
+        export type PassLengthGet = PassLenghts[Password];
+        parse.buildParsers<{ PassLengthGet: PassLengthGet }>();
+      "#
+        ));
+    }
+
+    #[test]
+    fn ok_record_get() {
+        insta::assert_snapshot!(decoder(
+            r#"
+        export type NumberRec = Record<number, string>;
+        export type NumberRecGet = NumberRec[0];
+        parse.buildParsers<{ NumberRecGet: NumberRecGet }>();
+      "#
+        ));
+    }
+
+    #[test]
     fn ok_string_with_fmt_extends_decoder() {
         insta::assert_snapshot!(decoder(
             r#"

@@ -190,6 +190,11 @@ impl<'a> ToSemTypeConverter<'a> {
                 };
                 Ok(builder.mapping_definition(Rc::new(vs), rest).into())
             }
+            JsonSchema::MappedRecord { key, rest } => {
+                let key_st = self.convert_to_sem_type(key, builder)?;
+                let rest_st = self.convert_to_sem_type(rest, builder)?;
+                Ok(builder.mapped_record_definition(key_st, rest_st).into())
+            }
             JsonSchema::Array(items) => {
                 let items = self.convert_to_sem_type(items, builder)?;
                 Ok(builder.array(items).into())

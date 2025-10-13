@@ -703,6 +703,95 @@ class ObjectSchema {
   }
 }
 
+class MappedRecordValidator {
+  constructor(keyValidator, valueValidator) {
+    this.keyValidator = keyValidator;
+    this.valueValidator = valueValidator;
+  }
+
+  validateMappedRecordValidator(ctx, input) {
+    if (typeof input !== "object" || input == null) {
+      return false;
+    }
+
+    for (const k in input) {
+      const v = input[k];
+      if (!this.keyValidator(ctx, k) || !this.valueValidator(ctx, v)) {
+        return false;
+      }
+    }
+
+    return true;
+  }
+}
+
+class MappedRecordParser {
+  constructor(keyParser, valueParser) {
+    this.keyParser = keyParser;
+    this.valueParser = valueParser;
+  }
+
+  parseMappedRecordParser(ctx, input) {
+    const result = {};
+    for (const k in input) {
+      const parsedKey = this.keyParser(ctx, k);
+      const parsedValue = this.valueParser(ctx, input[k]);
+      result[parsedKey] = parsedValue;
+    }
+    return result;
+  }
+}
+
+class MappedRecordSchema {
+  constructor(keySchema, valueSchema) {
+    this.keySchema = keySchema;
+    this.valueSchema = valueSchema;
+  }
+
+  schemaMappedRecordSchema(ctx) {
+    return {
+      type: "object",
+      additionalProperties: this.valueSchema(ctx),
+      propertyNames: this.keySchema(ctx),
+    };
+  }
+}
+
+class MappedRecordReporter {
+  constructor(keyValidator, valueValidator, keyReporter, valueReporter) {
+    this.keyValidator = keyValidator;
+    this.valueValidator = valueValidator;
+    this.keyReporter = keyReporter;
+    this.valueReporter = valueReporter;
+  }
+
+  reportMappedRecordReporter(ctx, input) {
+    if (typeof input !== "object" || input == null) {
+      return buildError(ctx, "expected object", input);
+    }
+
+    let acc = [];
+    for (const k in input) {
+      const v = input[k];
+      const okKey = this.keyValidator(ctx, k);
+      if (!okKey) {
+        pushPath(ctx, k);
+        const errs = this.keyReporter(ctx, k);
+        acc.push(...errs);
+        popPath(ctx);
+      }
+      const okValue = this.valueValidator(ctx, v);
+      if (!okValue) {
+        pushPath(ctx, k);
+        const errs = this.valueReporter(ctx, v);
+        acc.push(...errs);
+        popPath(ctx);
+      }
+    }
+    return acc;
+  }
+}
+
 class AnyOfDiscriminatedValidator {
   constructor(discriminator, mapping) {
     this.discriminator = discriminator;
@@ -2039,6 +2128,24 @@ function SchemaWriteAuthorizedUserId(ctx, input) {
     delete ctx.seen["WriteAuthorizedUserId"];
     return tmp;
 }
+function ValidateCurrencyPrices(ctx, input) {
+    return (hoisted_CurrencyPrices_3.validateMappedRecordValidator.bind(hoisted_CurrencyPrices_3))(ctx, input);
+}
+function ParseCurrencyPrices(ctx, input) {
+    return (hoisted_CurrencyPrices_4.parseMappedRecordParser.bind(hoisted_CurrencyPrices_4))(ctx, input);
+}
+function ReportCurrencyPrices(ctx, input) {
+    return (hoisted_CurrencyPrices_5.reportMappedRecordReporter.bind(hoisted_CurrencyPrices_5))(ctx, input);
+}
+function SchemaCurrencyPrices(ctx, input) {
+    if (ctx.seen["CurrencyPrices"]) {
+        return {};
+    }
+    ctx.seen["CurrencyPrices"] = true;
+    var tmp = (hoisted_CurrencyPrices_6.schemaMappedRecordSchema.bind(hoisted_CurrencyPrices_6))(ctx);
+    delete ctx.seen["CurrencyPrices"];
+    return tmp;
+}
 const validators = {
     PartialRepro: ValidatePartialRepro,
     TransportedValue: ValidateTransportedValue,
@@ -2091,7 +2198,8 @@ const validators = {
     Rate: ValidateRate,
     UserId: ValidateUserId,
     ReadAuthorizedUserId: ValidateReadAuthorizedUserId,
-    WriteAuthorizedUserId: ValidateWriteAuthorizedUserId
+    WriteAuthorizedUserId: ValidateWriteAuthorizedUserId,
+    CurrencyPrices: ValidateCurrencyPrices
 };
 const parsers = {
     PartialRepro: ParsePartialRepro,
@@ -2145,7 +2253,8 @@ const parsers = {
     Rate: ParseRate,
     UserId: ParseUserId,
     ReadAuthorizedUserId: ParseReadAuthorizedUserId,
-    WriteAuthorizedUserId: ParseWriteAuthorizedUserId
+    WriteAuthorizedUserId: ParseWriteAuthorizedUserId,
+    CurrencyPrices: ParseCurrencyPrices
 };
 const reporters = {
     PartialRepro: ReportPartialRepro,
@@ -2199,7 +2308,8 @@ const reporters = {
     Rate: ReportRate,
     UserId: ReportUserId,
     ReadAuthorizedUserId: ReportReadAuthorizedUserId,
-    WriteAuthorizedUserId: ReportWriteAuthorizedUserId
+    WriteAuthorizedUserId: ReportWriteAuthorizedUserId,
+    CurrencyPrices: ReportCurrencyPrices
 };
 const schemas = {
     PartialRepro: SchemaPartialRepro,
@@ -2253,7 +2363,8 @@ const schemas = {
     Rate: SchemaRate,
     UserId: SchemaUserId,
     ReadAuthorizedUserId: SchemaReadAuthorizedUserId,
-    WriteAuthorizedUserId: SchemaWriteAuthorizedUserId
+    WriteAuthorizedUserId: SchemaWriteAuthorizedUserId,
+    CurrencyPrices: SchemaCurrencyPrices
 };
 const hoisted_PartialRepro_0 = [
     validateNull,
@@ -4185,5 +4296,12 @@ const hoisted_Rate_0 = new NumberWithFormatsDecoder("NonInfiniteNumber", "NonNeg
 const hoisted_UserId_0 = new StringWithFormatsDecoder("UserId");
 const hoisted_ReadAuthorizedUserId_0 = new StringWithFormatsDecoder("UserId", "ReadAuthorizedUserId");
 const hoisted_WriteAuthorizedUserId_0 = new StringWithFormatsDecoder("UserId", "ReadAuthorizedUserId", "WriteAuthorizedUserId");
+const hoisted_CurrencyPrices_0 = new StringWithFormatsDecoder("ValidCurrency");
+const hoisted_CurrencyPrices_1 = hoisted_CurrencyPrices_0.validateStringWithFormatsDecoder.bind(hoisted_CurrencyPrices_0);
+const hoisted_CurrencyPrices_2 = validators.Rate;
+const hoisted_CurrencyPrices_3 = new MappedRecordValidator(hoisted_CurrencyPrices_1, hoisted_CurrencyPrices_2);
+const hoisted_CurrencyPrices_4 = new MappedRecordParser(hoisted_CurrencyPrices_0.parseStringWithFormatsDecoder.bind(hoisted_CurrencyPrices_0), parsers.Rate);
+const hoisted_CurrencyPrices_5 = new MappedRecordReporter(hoisted_CurrencyPrices_1, hoisted_CurrencyPrices_2, hoisted_CurrencyPrices_0.reportStringWithFormatsDecoder.bind(hoisted_CurrencyPrices_0), reporters.Rate);
+const hoisted_CurrencyPrices_6 = new MappedRecordSchema(hoisted_CurrencyPrices_0.schemaStringWithFormatsDecoder.bind(hoisted_CurrencyPrices_0), schemas.Rate);
 
-export default { registerStringFormatter, registerNumberFormatter, ObjectValidator, ObjectParser, ArrayParser, ArrayValidator, CodecDecoder, StringWithFormatsDecoder, NumberWithFormatsDecoder, AnyOfValidator, AnyOfParser, AllOfValidator, AllOfParser, TupleParser, TupleValidator, RegexDecoder, ConstDecoder, AnyOfConstsDecoder, AnyOfDiscriminatedParser, AnyOfDiscriminatedValidator, validateString, validateNumber, validateFunction, validateBoolean, validateAny, validateNull, validateNever, parseIdentity, reportString, reportNumber, reportNull, reportBoolean, reportAny, reportNever, reportFunction, ArrayReporter, ObjectReporter, TupleReporter, AnyOfReporter, AllOfReporter, AnyOfDiscriminatedReporter, schemaString, schemaNumber, schemaBoolean, schemaNull, schemaAny, schemaNever, schemaFunction, ArraySchema, ObjectSchema, TupleSchema, AnyOfSchema, AllOfSchema, AnyOfDiscriminatedSchema, validators, parsers, reporters, schemas };
+export default { registerStringFormatter, registerNumberFormatter, ObjectValidator, ObjectParser, MappedRecordParser, MappedRecordValidator, ArrayParser, ArrayValidator, CodecDecoder, StringWithFormatsDecoder, NumberWithFormatsDecoder, AnyOfValidator, AnyOfParser, AllOfValidator, AllOfParser, TupleParser, TupleValidator, RegexDecoder, ConstDecoder, AnyOfConstsDecoder, AnyOfDiscriminatedParser, AnyOfDiscriminatedValidator, validateString, validateNumber, validateFunction, validateBoolean, validateAny, validateNull, validateNever, parseIdentity, reportString, reportNumber, reportNull, reportBoolean, reportAny, reportNever, reportFunction, ArrayReporter, ObjectReporter, TupleReporter, AnyOfReporter, AllOfReporter, AnyOfDiscriminatedReporter, MappedRecordReporter, schemaString, schemaNumber, schemaBoolean, schemaNull, schemaAny, schemaNever, schemaFunction, ArraySchema, ObjectSchema, TupleSchema, AnyOfSchema, AllOfSchema, AnyOfDiscriminatedSchema, MappedRecordSchema, validators, parsers, reporters, schemas };

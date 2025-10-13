@@ -1,5 +1,11 @@
 # @beff/cli
 
+## 0.0.92
+
+### Patch Changes
+
+- mapped recordf
+
 ## 0.0.91
 
 ### Patch Changes
