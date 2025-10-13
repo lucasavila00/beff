@@ -236,7 +236,7 @@ export const {
   Rate: RateCodec,
   UnionWithEnumAccess,
   AccessLevelCodec,
-  CurrencyPrices:CurrencyPricesCodec,
+  CurrencyPrices: CurrencyPricesCodec,
   T3,
   AvatarSize,
   AccessLevelTpl,
@@ -307,7 +307,7 @@ export const {
   UserId: UserId;
   ReadAuthorizedUserId: ReadAuthorizedUserId;
   WriteAuthorizedUserId: WriteAuthorizedUserId;
-  CurrencyPrices:CurrencyPrices
+  CurrencyPrices: CurrencyPrices;
 }>({
   stringFormats: {
     ValidCurrency: (input: string) => {

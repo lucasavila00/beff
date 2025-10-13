@@ -368,9 +368,41 @@ it("Custom Format", () => {
   `);
 });
 it("Mapped Record", () => {
-  expect(CurrencyPricesCodec.parse({"USD": 0.5})).toMatchInlineSnapshot('"USD"');
-  expect(CurrencyPricesCodec.safeParse({"USD": 1.5})).toMatchInlineSnapshot('"USD"');
-  expect(CurrencyPricesCodec.safeParse({"AAAA": 0.5})).toMatchInlineSnapshot('"USD"');
+  expect(CurrencyPricesCodec.parse({ USD: 0.5 })).toMatchInlineSnapshot(`
+    {
+      "USD": 0.5,
+    }
+  `);
+  expect(CurrencyPricesCodec.validate({ USD: 0.5 })).toMatchInlineSnapshot("true");
+  expect(CurrencyPricesCodec.validate({ USD: 1.5 })).toMatchInlineSnapshot("false");
+  expect(CurrencyPricesCodec.safeParse({ USD: 1.5 })).toMatchInlineSnapshot(`
+    {
+      "errors": [
+        {
+          "message": "expected number with format \\"NonInfiniteNumber and NonNegativeNumber and Rate\\"",
+          "path": [
+            "USD",
+          ],
+          "received": 1.5,
+        },
+      ],
+      "success": false,
+    }
+  `);
+  expect(CurrencyPricesCodec.safeParse({ AAAA: 0.5 })).toMatchInlineSnapshot(`
+    {
+      "errors": [
+        {
+          "message": "expected string with format \\"ValidCurrency\\"",
+          "path": [
+            "AAAA",
+          ],
+          "received": "AAAA",
+        },
+      ],
+      "success": false,
+    }
+  `);
 });
 
 it("Custom String Format User Hierarchy", () => {

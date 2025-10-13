@@ -703,6 +703,95 @@ class ObjectSchema {
   }
 }
 
+class MappedRecordValidator {
+  constructor(keyValidator, valueValidator) {
+    this.keyValidator = keyValidator;
+    this.valueValidator = valueValidator;
+  }
+
+  validateMappedRecordValidator(ctx, input) {
+    if (typeof input !== "object" || input == null) {
+      return false;
+    }
+
+    for (const k in input) {
+      const v = input[k];
+      if (!this.keyValidator(ctx, k) || !this.valueValidator(ctx, v)) {
+        return false;
+      }
+    }
+
+    return true;
+  }
+}
+
+class MappedRecordParser {
+  constructor(keyParser, valueParser) {
+    this.keyParser = keyParser;
+    this.valueParser = valueParser;
+  }
+
+  parseMappedRecordParser(ctx, input) {
+    const result = {};
+    for (const k in input) {
+      const parsedKey = this.keyParser(ctx, k);
+      const parsedValue = this.valueParser(ctx, input[k]);
+      result[parsedKey] = parsedValue;
+    }
+    return result;
+  }
+}
+
+class MappedRecordSchema {
+  constructor(keySchema, valueSchema) {
+    this.keySchema = keySchema;
+    this.valueSchema = valueSchema;
+  }
+
+  schemaMappedRecordSchema(ctx) {
+    return {
+      type: "object",
+      additionalProperties: this.valueSchema(ctx),
+      propertyNames: this.keySchema(ctx),
+    };
+  }
+}
+
+class MappedRecordReporter {
+  constructor(keyValidator, valueValidator, keyReporter, valueReporter) {
+    this.keyValidator = keyValidator;
+    this.valueValidator = valueValidator;
+    this.keyReporter = keyReporter;
+    this.valueReporter = valueReporter;
+  }
+
+  reportMappedRecordReporter(ctx, input) {
+    if (typeof input !== "object" || input == null) {
+      return buildError(ctx, "expected object", input);
+    }
+
+    let acc = [];
+    for (const k in input) {
+      const v = input[k];
+      const okKey = this.keyValidator(ctx, k);
+      if (!okKey) {
+        pushPath(ctx, k);
+        const errs = this.keyReporter(ctx, k);
+        acc.push(...errs);
+        popPath(ctx);
+      }
+      const okValue = this.valueValidator(ctx, v);
+      if (!okValue) {
+        pushPath(ctx, k);
+        const errs = this.valueReporter(ctx, v);
+        acc.push(...errs);
+        popPath(ctx);
+      }
+    }
+    return acc;
+  }
+}
+
 class AnyOfDiscriminatedValidator {
   constructor(discriminator, mapping) {
     this.discriminator = discriminator;
@@ -1747,4 +1836,4 @@ const hoisted_NonEmptyString_5 = new TupleSchema([
 ], schemaString);
 const hoisted_ValidCurrency_0 = new StringWithFormatsDecoder("ValidCurrency");
 
-export default { registerStringFormatter, registerNumberFormatter, ObjectValidator, ObjectParser, ArrayParser, ArrayValidator, CodecDecoder, StringWithFormatsDecoder, NumberWithFormatsDecoder, AnyOfValidator, AnyOfParser, AllOfValidator, AllOfParser, TupleParser, TupleValidator, RegexDecoder, ConstDecoder, AnyOfConstsDecoder, AnyOfDiscriminatedParser, AnyOfDiscriminatedValidator, validateString, validateNumber, validateFunction, validateBoolean, validateAny, validateNull, validateNever, parseIdentity, reportString, reportNumber, reportNull, reportBoolean, reportAny, reportNever, reportFunction, ArrayReporter, ObjectReporter, TupleReporter, AnyOfReporter, AllOfReporter, AnyOfDiscriminatedReporter, schemaString, schemaNumber, schemaBoolean, schemaNull, schemaAny, schemaNever, schemaFunction, ArraySchema, ObjectSchema, TupleSchema, AnyOfSchema, AllOfSchema, AnyOfDiscriminatedSchema, validators, parsers, reporters, schemas };
+export default { registerStringFormatter, registerNumberFormatter, ObjectValidator, ObjectParser, MappedRecordParser, MappedRecordValidator, ArrayParser, ArrayValidator, CodecDecoder, StringWithFormatsDecoder, NumberWithFormatsDecoder, AnyOfValidator, AnyOfParser, AllOfValidator, AllOfParser, TupleParser, TupleValidator, RegexDecoder, ConstDecoder, AnyOfConstsDecoder, AnyOfDiscriminatedParser, AnyOfDiscriminatedValidator, validateString, validateNumber, validateFunction, validateBoolean, validateAny, validateNull, validateNever, parseIdentity, reportString, reportNumber, reportNull, reportBoolean, reportAny, reportNever, reportFunction, ArrayReporter, ObjectReporter, TupleReporter, AnyOfReporter, AllOfReporter, AnyOfDiscriminatedReporter, MappedRecordReporter, schemaString, schemaNumber, schemaBoolean, schemaNull, schemaAny, schemaNever, schemaFunction, ArraySchema, ObjectSchema, TupleSchema, AnyOfSchema, AllOfSchema, AnyOfDiscriminatedSchema, MappedRecordSchema, validators, parsers, reporters, schemas };

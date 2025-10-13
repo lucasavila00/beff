@@ -2,7 +2,7 @@
 
 import {printErrors} from '@beff/client';
 import {z} from 'zod';
-import validatorsMod from "./validators.js"; const { registerStringFormatter, registerNumberFormatter, ObjectValidator, ObjectParser, ArrayParser, ArrayValidator, CodecDecoder, StringWithFormatsDecoder, NumberWithFormatsDecoder, AnyOfValidator, AnyOfParser, AllOfValidator, AllOfParser, TupleParser, TupleValidator, RegexDecoder, ConstDecoder, AnyOfConstsDecoder, AnyOfDiscriminatedParser, AnyOfDiscriminatedValidator, validateString, validateNumber, validateFunction, validateBoolean, validateAny, validateNull, validateNever, parseIdentity, reportString, reportNumber, reportNull, reportBoolean, reportAny, reportNever, reportFunction, ArrayReporter, ObjectReporter, TupleReporter, AnyOfReporter, AllOfReporter, AnyOfDiscriminatedReporter, schemaString, schemaNumber, schemaBoolean, schemaNull, schemaAny, schemaNever, schemaFunction, ArraySchema, ObjectSchema, TupleSchema, AnyOfSchema, AllOfSchema, AnyOfDiscriminatedSchema, validators, parsers, reporters, schemas, c } = validatorsMod;
+import validatorsMod from "./validators.js"; const { registerStringFormatter, registerNumberFormatter, ObjectValidator, ObjectParser, MappedRecordParser, MappedRecordValidator, ArrayParser, ArrayValidator, CodecDecoder, StringWithFormatsDecoder, NumberWithFormatsDecoder, AnyOfValidator, AnyOfParser, AllOfValidator, AllOfParser, TupleParser, TupleValidator, RegexDecoder, ConstDecoder, AnyOfConstsDecoder, AnyOfDiscriminatedParser, AnyOfDiscriminatedValidator, validateString, validateNumber, validateFunction, validateBoolean, validateAny, validateNull, validateNever, parseIdentity, reportString, reportNumber, reportNull, reportBoolean, reportAny, reportNever, reportFunction, ArrayReporter, ObjectReporter, TupleReporter, AnyOfReporter, AllOfReporter, AnyOfDiscriminatedReporter, MappedRecordReporter, schemaString, schemaNumber, schemaBoolean, schemaNull, schemaAny, schemaNever, schemaFunction, ArraySchema, ObjectSchema, TupleSchema, AnyOfSchema, AllOfSchema, AnyOfDiscriminatedSchema, MappedRecordSchema, validators, parsers, reporters, schemas, c } = validatorsMod;
 const RequiredStringFormats = ["ValidCurrency","UserId","ReadAuthorizedUserId","WriteAuthorizedUserId"];
 const RequiredNumberFormats = ["NonNegativeNumber","NonInfiniteNumber","Rate"];
 const hoisted_ObjectWithArr_0 = validateString;
@@ -100,6 +100,7 @@ const buildValidatorsInput = {
     "AvatarSize": validators.AvatarSize,
     "BObject": validators.BObject,
     "BigIntCodec": hoisted_BigIntCodec_0.validateCodecDecoder.bind(hoisted_BigIntCodec_0),
+    "CurrencyPrices": validators.CurrencyPrices,
     "DiscriminatedUnion": validators.DiscriminatedUnion,
     "DiscriminatedUnion2": validators.DiscriminatedUnion2,
     "DiscriminatedUnion3": validators.DiscriminatedUnion3,
@@ -154,6 +155,7 @@ const buildParsersInput = {
     "AvatarSize": parsers.AvatarSize,
     "BObject": parsers.BObject,
     "BigIntCodec": hoisted_BigIntCodec_0.parseCodecDecoder.bind(hoisted_BigIntCodec_0),
+    "CurrencyPrices": parsers.CurrencyPrices,
     "DiscriminatedUnion": parsers.DiscriminatedUnion,
     "DiscriminatedUnion2": parsers.DiscriminatedUnion2,
     "DiscriminatedUnion3": parsers.DiscriminatedUnion3,
@@ -208,6 +210,7 @@ const buildReportersInput = {
     "AvatarSize": reporters.AvatarSize,
     "BObject": reporters.BObject,
     "BigIntCodec": hoisted_BigIntCodec_0.reportCodecDecoder.bind(hoisted_BigIntCodec_0),
+    "CurrencyPrices": reporters.CurrencyPrices,
     "DiscriminatedUnion": reporters.DiscriminatedUnion,
     "DiscriminatedUnion2": reporters.DiscriminatedUnion2,
     "DiscriminatedUnion3": reporters.DiscriminatedUnion3,
@@ -262,6 +265,7 @@ const buildSchemaInput = {
     "AvatarSize": schemas.AvatarSize,
     "BObject": schemas.BObject,
     "BigIntCodec": hoisted_BigIntCodec_0.schemaCodecDecoder.bind(hoisted_BigIntCodec_0),
+    "CurrencyPrices": schemas.CurrencyPrices,
     "DiscriminatedUnion": schemas.DiscriminatedUnion,
     "DiscriminatedUnion2": schemas.DiscriminatedUnion2,
     "DiscriminatedUnion3": schemas.DiscriminatedUnion3,
