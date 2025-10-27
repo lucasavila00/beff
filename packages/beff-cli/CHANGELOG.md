@@ -1,5 +1,11 @@
 # @beff/cli
 
+## 0.0.93
+
+### Patch Changes
+
+- fix record keys extraction from union
+
 ## 0.0.92
 
 ### Patch Changes

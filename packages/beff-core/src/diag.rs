@@ -42,7 +42,9 @@ pub enum DiagnosticInfoMessage {
     SpreadShouldBeArray,
     RestFoundOnExtractObject,
     ShouldHaveObjectAsTypeArgument,
-    RecordKeyShouldBeString,
+    RecordKeyShouldBeStringOrUnionOfStrings,
+    RecordKeyUnionShouldBeOnlyStrings,
+    RecordKeyReferenceNotFound,
     CannotResolveRefInExtractUnion,
     PartialShouldHaveObjectAsTypeArgument,
     MissingArgumentsOnPartial,
@@ -380,9 +382,6 @@ impl DiagnosticInfoMessage {
             DiagnosticInfoMessage::CannotResolveRefInExtractUnion => {
                 "Cannot resolve ref in extract union".to_string()
             }
-            DiagnosticInfoMessage::RecordKeyShouldBeString => {
-                "Record key should be a string".to_string()
-            }
             DiagnosticInfoMessage::ShouldHaveObjectAsTypeArgument => {
                 "Should have object as type argument".to_string()
             }
@@ -495,6 +494,15 @@ impl DiagnosticInfoMessage {
             }
             DiagnosticInfoMessage::CouldNotFindBaseOfNumberFormatExtends => {
                 "Could not find base of number format extends".to_string()
+            }
+            DiagnosticInfoMessage::RecordKeyShouldBeStringOrUnionOfStrings => {
+                "Record key should be a string or a union of strings".to_string()
+            }
+            DiagnosticInfoMessage::RecordKeyUnionShouldBeOnlyStrings => {
+                "Record key union should only contain strings".to_string()
+            }
+            DiagnosticInfoMessage::RecordKeyReferenceNotFound => {
+                "Record key reference not found".to_string()
             }
         }
     }

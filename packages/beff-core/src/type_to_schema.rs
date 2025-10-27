@@ -213,7 +213,9 @@ impl<'a, 'b, R: FileManager> TypeToSchema<'a, 'b, R> {
         obj: &BTreeMap<String, Optionality<JsonSchema>>,
         keys: JsonSchema,
     ) -> Res<JsonSchema> {
-        let keys = self.extract_union(keys)?;
+        let keys = self
+            .extract_union(keys)
+            .map_err(|e| self.box_error(span, e))?;
         let str_keys = keys
             .iter()
             .map(|it| match it {
@@ -318,6 +320,47 @@ impl<'a, 'b, R: FileManager> TypeToSchema<'a, 'b, R> {
             _ => self.error(span, DiagnosticInfoMessage::ShouldHaveObjectAsTypeArgument),
         }
     }
+
+    fn collect_consts_from_union(
+        &self,
+        it: JsonSchema,
+    ) -> Result<Vec<String>, DiagnosticInfoMessage> {
+        let mut string_keys = vec![];
+
+        match self.extract_union(it) {
+            Ok(vs) => {
+                for v in vs {
+                    match v {
+                        JsonSchema::Const(JsonSchemaConst::String(str)) => {
+                            string_keys.push(str.clone());
+                        }
+                        JsonSchema::Ref(r) => {
+                            let reference =
+                                self.components.get(&r).and_then(|it| it.as_ref()).cloned();
+                            match reference {
+                                Some(NamedSchema { schema, .. }) => {
+                                    let mut out = self.collect_consts_from_union(schema)?;
+                                    string_keys.append(&mut out);
+                                }
+                                _ => {
+                                    return Err(DiagnosticInfoMessage::RecordKeyReferenceNotFound);
+                                }
+                            }
+                        }
+                        _ => {
+                            return Err(DiagnosticInfoMessage::RecordKeyUnionShouldBeOnlyStrings);
+                        }
+                    }
+                }
+            }
+            Err(_) => {
+                return Err(DiagnosticInfoMessage::RecordKeyShouldBeStringOrUnionOfStrings);
+            }
+        }
+
+        Ok(string_keys)
+    }
+
     fn convert_ts_built_in(
         &mut self,
         typ: &TsBuiltIn,
@@ -375,34 +418,19 @@ impl<'a, 'b, R: FileManager> TypeToSchema<'a, 'b, R> {
                             })
                         }
                         _ => {
-                            let union = self.extract_union(*key);
-                            if let Ok(vs) = union {
-                                let mut string_keys = vec![];
-                                for v in vs {
-                                    match v {
-                                        JsonSchema::Const(JsonSchemaConst::String(str)) => {
-                                            string_keys.push(str);
-                                        }
-                                        _ => {
-                                            return self.error(
-                                                span,
-                                                DiagnosticInfoMessage::RecordKeyShouldBeString,
-                                            );
-                                        }
-                                    }
+                            let res = self.collect_consts_from_union(*key);
+                            match res {
+                                Ok(string_keys) => {
+                                    let value = items[1].clone();
+                                    Ok(JsonSchema::Object {
+                                        vs: string_keys
+                                            .into_iter()
+                                            .map(|it| (it, value.clone().required()))
+                                            .collect(),
+                                        rest: None,
+                                    })
                                 }
-
-                                let value = items[1].clone();
-
-                                Ok(JsonSchema::Object {
-                                    vs: string_keys
-                                        .into_iter()
-                                        .map(|it| (it, value.clone().required()))
-                                        .collect(),
-                                    rest: None,
-                                })
-                            } else {
-                                self.error(span, DiagnosticInfoMessage::RecordKeyShouldBeString)
+                                Err(e) => self.error(span, e),
                             }
                         }
                     }
@@ -1943,7 +1971,7 @@ impl<'a, 'b, R: FileManager> TypeToSchema<'a, 'b, R> {
         self.convert_sem_type(keyof_st, &mut ctx, &k.span())
     }
 
-    fn extract_union(&mut self, tp: JsonSchema) -> Res<Vec<JsonSchema>> {
+    fn extract_union(&self, tp: JsonSchema) -> Result<Vec<JsonSchema>, DiagnosticInfoMessage> {
         match tp {
             JsonSchema::AnyOf(v) => {
                 let mut vs = vec![];
@@ -1958,10 +1986,7 @@ impl<'a, 'b, R: FileManager> TypeToSchema<'a, 'b, R> {
                 let v = v.and_then(|it| it.clone());
                 match v {
                     Some(v) => self.extract_union(v.schema),
-                    None => self.error(
-                        &Span::default(),
-                        DiagnosticInfoMessage::CannotResolveRefInExtractUnion,
-                    ),
+                    None => Err(DiagnosticInfoMessage::CannotResolveRefInExtractUnion),
                 }
             }
             _ => Ok(vec![tp]),
@@ -1980,7 +2005,9 @@ impl<'a, 'b, R: FileManager> TypeToSchema<'a, 'b, R> {
             }
         };
         let constraint_schema = self.convert_ts_type(constraint)?;
-        let values = self.extract_union(constraint_schema)?;
+        let values = self
+            .extract_union(constraint_schema)
+            .map_err(|e| self.box_error(&constraint.span(), e))?;
 
         let mut string_keys = vec![];
 
