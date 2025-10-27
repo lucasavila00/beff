@@ -44,7 +44,7 @@ pub enum DiagnosticInfoMessage {
     ShouldHaveObjectAsTypeArgument,
     RecordKeyUnionShouldBeOnlyStrings,
     RecordKeyReferenceNotFound,
-    CannotResolveRefInExtractUnion,
+    CannotResolveRefInExtractUnion(String),
     PartialShouldHaveObjectAsTypeArgument,
     MissingArgumentsOnPartial,
     PickShouldHaveStringAsTypeArgument,
@@ -378,8 +378,8 @@ impl DiagnosticInfoMessage {
             DiagnosticInfoMessage::MappedTypeMinusNotSupported => {
                 "Mapped type minus is not supported".to_string()
             }
-            DiagnosticInfoMessage::CannotResolveRefInExtractUnion => {
-                "Cannot resolve ref in extract union".to_string()
+            DiagnosticInfoMessage::CannotResolveRefInExtractUnion(r) => {
+                format!("Cannot resolve ref '{r}' in extract union")
             }
             DiagnosticInfoMessage::ShouldHaveObjectAsTypeArgument => {
                 "Should have object as type argument".to_string()

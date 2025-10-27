@@ -1978,7 +1978,9 @@ impl<'a, 'b, R: FileManager> TypeToSchema<'a, 'b, R> {
                 let v = v.and_then(|it| it.clone());
                 match v {
                     Some(v) => self.extract_union(v.schema),
-                    None => Err(DiagnosticInfoMessage::CannotResolveRefInExtractUnion),
+                    None => Err(DiagnosticInfoMessage::CannotResolveRefInExtractUnion(
+                        r.to_string(),
+                    )),
                 }
             }
             _ => Ok(vec![tp]),
