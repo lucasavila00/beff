@@ -410,20 +410,17 @@ impl<'a, 'b, R: FileManager> TypeToSchema<'a, 'b, R> {
                             })
                         }
                         _ => {
-                            let res = self.collect_consts_from_union(*key);
-                            match res {
-                                Ok(string_keys) => {
-                                    let value = items[1].clone();
-                                    Ok(JsonSchema::Object {
-                                        vs: string_keys
-                                            .into_iter()
-                                            .map(|it| (it, value.clone().required()))
-                                            .collect(),
-                                        rest: None,
-                                    })
-                                }
-                                Err(e) => self.error(span, e),
-                            }
+                            let res = self
+                                .collect_consts_from_union(*key)
+                                .map_err(|e| self.box_error(span, e))?;
+                            let value = items[1].clone();
+                            Ok(JsonSchema::Object {
+                                vs: res
+                                    .into_iter()
+                                    .map(|it| (it, value.clone().required()))
+                                    .collect(),
+                                rest: None,
+                            })
                         }
                     }
                 }
