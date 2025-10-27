@@ -332,18 +332,6 @@ impl<'a, 'b, R: FileManager> TypeToSchema<'a, 'b, R> {
                 JsonSchema::Const(JsonSchemaConst::String(str)) => {
                     string_keys.push(str.clone());
                 }
-                JsonSchema::Ref(r) => {
-                    let reference = self.components.get(&r).and_then(|it| it.as_ref()).cloned();
-                    match reference {
-                        Some(NamedSchema { schema, .. }) => {
-                            let mut out = self.collect_consts_from_union(schema)?;
-                            string_keys.append(&mut out);
-                        }
-                        _ => {
-                            return Err(DiagnosticInfoMessage::RecordKeyReferenceNotFound);
-                        }
-                    }
-                }
                 _ => {
                     return Err(DiagnosticInfoMessage::RecordKeyUnionShouldBeOnlyStrings);
                 }
@@ -1980,6 +1968,7 @@ impl<'a, 'b, R: FileManager> TypeToSchema<'a, 'b, R> {
                     )),
                 }
             }
+            JsonSchema::StNever => Ok(vec![]),
             _ => Ok(vec![tp]),
         }
     }

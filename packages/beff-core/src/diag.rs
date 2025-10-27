@@ -43,7 +43,6 @@ pub enum DiagnosticInfoMessage {
     RestFoundOnExtractObject,
     ShouldHaveObjectAsTypeArgument,
     RecordKeyUnionShouldBeOnlyStrings,
-    RecordKeyReferenceNotFound,
     CannotResolveRefInExtractUnion(String),
     PartialShouldHaveObjectAsTypeArgument,
     MissingArgumentsOnPartial,
@@ -496,9 +495,6 @@ impl DiagnosticInfoMessage {
             }
             DiagnosticInfoMessage::RecordKeyUnionShouldBeOnlyStrings => {
                 "Record key union should only contain strings".to_string()
-            }
-            DiagnosticInfoMessage::RecordKeyReferenceNotFound => {
-                "Record key reference not found".to_string()
             }
         }
     }

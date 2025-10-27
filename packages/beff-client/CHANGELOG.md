@@ -1,5 +1,13 @@
 # @beff/client
 
+## 0.0.94
+
+### Patch Changes
+
+- fix extract union bug
+- Updated dependencies
+  - @beff/cli@0.0.94
+
 ## 0.0.93
 
 ### Patch Changes
