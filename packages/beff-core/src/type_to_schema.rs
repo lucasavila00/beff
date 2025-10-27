@@ -327,34 +327,26 @@ impl<'a, 'b, R: FileManager> TypeToSchema<'a, 'b, R> {
     ) -> Result<Vec<String>, DiagnosticInfoMessage> {
         let mut string_keys = vec![];
 
-        match self.extract_union(it) {
-            Ok(vs) => {
-                for v in vs {
-                    match v {
-                        JsonSchema::Const(JsonSchemaConst::String(str)) => {
-                            string_keys.push(str.clone());
-                        }
-                        JsonSchema::Ref(r) => {
-                            let reference =
-                                self.components.get(&r).and_then(|it| it.as_ref()).cloned();
-                            match reference {
-                                Some(NamedSchema { schema, .. }) => {
-                                    let mut out = self.collect_consts_from_union(schema)?;
-                                    string_keys.append(&mut out);
-                                }
-                                _ => {
-                                    return Err(DiagnosticInfoMessage::RecordKeyReferenceNotFound);
-                                }
-                            }
+        for v in self.extract_union(it)? {
+            match v {
+                JsonSchema::Const(JsonSchemaConst::String(str)) => {
+                    string_keys.push(str.clone());
+                }
+                JsonSchema::Ref(r) => {
+                    let reference = self.components.get(&r).and_then(|it| it.as_ref()).cloned();
+                    match reference {
+                        Some(NamedSchema { schema, .. }) => {
+                            let mut out = self.collect_consts_from_union(schema)?;
+                            string_keys.append(&mut out);
                         }
                         _ => {
-                            return Err(DiagnosticInfoMessage::RecordKeyUnionShouldBeOnlyStrings);
+                            return Err(DiagnosticInfoMessage::RecordKeyReferenceNotFound);
                         }
                     }
                 }
-            }
-            Err(_) => {
-                return Err(DiagnosticInfoMessage::RecordKeyShouldBeStringOrUnionOfStrings);
+                _ => {
+                    return Err(DiagnosticInfoMessage::RecordKeyUnionShouldBeOnlyStrings);
+                }
             }
         }
 
