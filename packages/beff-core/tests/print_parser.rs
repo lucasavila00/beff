@@ -251,6 +251,59 @@ mod tests {
       "#));
     }
     #[test]
+    fn ok_keyof_record() {
+        insta::assert_snapshot!(ok(r#"
+
+        const a = {
+          a: "a",
+          x: "x",
+          u: "u",
+        };
+
+        type A = keyof typeof a;
+
+        const b = {
+          b: "b",
+          y: "y",
+          u: "u",
+        };
+
+        type B = keyof typeof b;
+
+        type C = A | B;
+
+        type Rec = Record<C, string>;
+
+        parse.buildParsers<{ C:C, Rec: Rec }>();
+      "#));
+    }
+
+    #[test]
+    fn ok_keyof_record2() {
+        insta::assert_snapshot!(ok(r#"
+
+        const a = {
+        };
+
+        type A = keyof typeof a;
+
+        const b = {
+          b: "b",
+          y: "y",
+          u: "u",
+        };
+
+        type B = keyof typeof b;
+
+        type C = A | B;
+
+        type Rec = Record<C, string>;
+
+        parse.buildParsers<{ C:C, Rec: Rec }>();
+      "#));
+    }
+
+    #[test]
     fn ok_interface_extends() {
         insta::assert_snapshot!(ok(r#"
 

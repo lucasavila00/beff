@@ -1,5 +1,11 @@
 # @beff/cli
 
+## 0.0.94
+
+### Patch Changes
+
+- fix extract union bug
+
 ## 0.0.93
 
 ### Patch Changes
