@@ -42,8 +42,9 @@ pub enum DiagnosticInfoMessage {
     SpreadShouldBeArray,
     RestFoundOnExtractObject,
     ShouldHaveObjectAsTypeArgument,
-    RecordKeyShouldBeString,
-    CannotResolveRefInExtractUnion,
+    RecordKeyUnionShouldBeOnlyStrings,
+    RecordKeyReferenceNotFound,
+    CannotResolveRefInExtractUnion(String),
     PartialShouldHaveObjectAsTypeArgument,
     MissingArgumentsOnPartial,
     PickShouldHaveStringAsTypeArgument,
@@ -377,11 +378,8 @@ impl DiagnosticInfoMessage {
             DiagnosticInfoMessage::MappedTypeMinusNotSupported => {
                 "Mapped type minus is not supported".to_string()
             }
-            DiagnosticInfoMessage::CannotResolveRefInExtractUnion => {
-                "Cannot resolve ref in extract union".to_string()
-            }
-            DiagnosticInfoMessage::RecordKeyShouldBeString => {
-                "Record key should be a string".to_string()
+            DiagnosticInfoMessage::CannotResolveRefInExtractUnion(r) => {
+                format!("Cannot resolve ref '{r}' in extract union")
             }
             DiagnosticInfoMessage::ShouldHaveObjectAsTypeArgument => {
                 "Should have object as type argument".to_string()
@@ -495,6 +493,12 @@ impl DiagnosticInfoMessage {
             }
             DiagnosticInfoMessage::CouldNotFindBaseOfNumberFormatExtends => {
                 "Could not find base of number format extends".to_string()
+            }
+            DiagnosticInfoMessage::RecordKeyUnionShouldBeOnlyStrings => {
+                "Record key union should only contain strings".to_string()
+            }
+            DiagnosticInfoMessage::RecordKeyReferenceNotFound => {
+                "Record key reference not found".to_string()
             }
         }
     }

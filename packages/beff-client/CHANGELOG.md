@@ -1,5 +1,13 @@
 # @beff/client
 
+## 0.0.93
+
+### Patch Changes
+
+- fix record keys extraction from union
+- Updated dependencies
+  - @beff/cli@0.0.93
+
 ## 0.0.92
 
 ### Patch Changes
