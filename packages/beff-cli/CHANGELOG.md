@@ -1,5 +1,11 @@
 # @beff/cli
 
+## 0.0.95
+
+### Patch Changes
+
+- Add b.ReadOnlyArray
+
 ## 0.0.94
 
 ### Patch Changes

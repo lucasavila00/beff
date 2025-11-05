@@ -283,6 +283,9 @@ const Array_ = <T>(parser: BeffParser<T>): BeffParser<T[]> =>
     }),
   );
 
+const ReadOnlyArray_ = <T>(parser: BeffParser<T>): BeffParser<readonly T[]> =>
+  Array_(parser) as BeffParser<readonly T[]>;
+
 export const b = {
   Object: Object_,
   String: String_,
@@ -294,4 +297,5 @@ export const b = {
   Any: Any_,
   Unknown: Unknown_,
   Void: Void_,
+  ReadOnlyArray: ReadOnlyArray_,
 };

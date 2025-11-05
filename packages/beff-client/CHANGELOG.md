@@ -1,5 +1,13 @@
 # @beff/client
 
+## 0.0.95
+
+### Patch Changes
+
+- Add b.ReadOnlyArray
+- Updated dependencies
+  - @beff/cli@0.0.95
+
 ## 0.0.94
 
 ### Patch Changes
