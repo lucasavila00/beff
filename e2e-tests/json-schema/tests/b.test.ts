@@ -45,6 +45,14 @@ it("works", () => {
       "type": "array",
     }
   `);
+  expect(b.ReadOnlyArray(b.String()).schema()).toMatchInlineSnapshot(`
+    {
+      "items": {
+        "type": "string",
+      },
+      "type": "array",
+    }
+  `);
   expect(b.Undefined().schema()).toMatchInlineSnapshot(`
     {
       "type": "null",
