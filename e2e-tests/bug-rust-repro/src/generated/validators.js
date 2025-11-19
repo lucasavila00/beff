@@ -422,7 +422,7 @@ class RegexDecoder {
     };
   }
   describeRegexDecoder(ctx) {
-    return this.description;
+    return "`" + this.description + "`";
   }
 }
 

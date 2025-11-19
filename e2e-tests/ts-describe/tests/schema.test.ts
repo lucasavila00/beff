@@ -34,7 +34,7 @@ it("works", () => {
   `,
   );
   expect(Codecs.SemVer.describe()).toMatchInlineSnapshot(`
-    "type SemVer = \${number}.\${number}.\${number};
+    "type SemVer = \`\${number}.\${number}.\${number}\`;
 
     type CodecSemVer = SemVer;"
   `);
