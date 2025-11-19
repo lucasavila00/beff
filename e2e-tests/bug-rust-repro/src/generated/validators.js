@@ -1340,7 +1340,7 @@ class TupleDescribe {
   }
   describeTupleDescribe(ctx) {
     const prefix = this.prefix.map((d) => d(ctx)).join(", ");
-    const rest = this.rest != null ? `...${this.rest(ctx)}` : null;
+    const rest = this.rest != null ? `...Array<${this.rest(ctx)}>` : null;
 
     const inner = [prefix, rest].filter((it) => it != null && it.length > 0).join(", ");
     return `[${inner}]`;

@@ -40,7 +40,7 @@ it("works", () => {
   `);
   expect(Codecs.NonEmptyString.describe()).toMatchInlineSnapshot(
     `
-    "type NonEmptyString = [string, ...string];
+    "type NonEmptyString = [string, ...Array<string>];
 
     type CodecNonEmptyString = NonEmptyString;"
   `,
