@@ -20,6 +20,9 @@ function SchemaNumberRec(ctx, input) {
     delete ctx.seen["NumberRec"];
     return tmp;
 }
+function DescribeNumberRec(ctx, input) {
+    return (hoisted_NumberRec_6.describeMappedRecordDescribe.bind(hoisted_NumberRec_6))(ctx);
+}
 function ValidateNumberRecGet(ctx, input) {
     return (validateString)(ctx, input);
 }
@@ -38,6 +41,9 @@ function SchemaNumberRecGet(ctx, input) {
     delete ctx.seen["NumberRecGet"];
     return tmp;
 }
+function DescribeNumberRecGet(ctx, input) {
+    return (describeString)(ctx);
+}
 const validators = {
     NumberRec: ValidateNumberRec,
     NumberRecGet: ValidateNumberRecGet
@@ -54,9 +60,14 @@ const schemas = {
     NumberRec: SchemaNumberRec,
     NumberRecGet: SchemaNumberRecGet
 };
+const describers = {
+    NumberRec: DescribeNumberRec,
+    NumberRecGet: DescribeNumberRecGet
+};
 const hoisted_NumberRec_0 = validateNumber;
 const hoisted_NumberRec_1 = validateString;
 const hoisted_NumberRec_2 = new MappedRecordValidator(hoisted_NumberRec_0, hoisted_NumberRec_1);
 const hoisted_NumberRec_3 = new MappedRecordParser(parseIdentity, parseIdentity);
 const hoisted_NumberRec_4 = new MappedRecordReporter(hoisted_NumberRec_0, hoisted_NumberRec_1, reportNumber, reportString);
 const hoisted_NumberRec_5 = new MappedRecordSchema(schemaNumber, schemaString);
+const hoisted_NumberRec_6 = new MappedRecordDescribe(describeNumber, describeString);

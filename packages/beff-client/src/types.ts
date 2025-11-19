@@ -90,6 +90,7 @@ export type BeffParser<T> = {
   name: string;
   validate(input: any, options?: ParseOptions): input is T;
   schema: () => JSONSchema7;
+  describe: () => string;
 };
 type Parsers<T> = {
   [K in keyof T]: BeffParser<T[K]>;

@@ -2,7 +2,7 @@
 
 import {printErrors} from '@beff/client';
 import {z} from 'zod';
-import validatorsMod from "./validators.js"; const { registerStringFormatter, registerNumberFormatter, ObjectValidator, ObjectParser, MappedRecordParser, MappedRecordValidator, ArrayParser, ArrayValidator, CodecDecoder, StringWithFormatsDecoder, NumberWithFormatsDecoder, AnyOfValidator, AnyOfParser, AllOfValidator, AllOfParser, TupleParser, TupleValidator, RegexDecoder, ConstDecoder, AnyOfConstsDecoder, AnyOfDiscriminatedParser, AnyOfDiscriminatedValidator, validateString, validateNumber, validateFunction, validateBoolean, validateAny, validateNull, validateNever, parseIdentity, reportString, reportNumber, reportNull, reportBoolean, reportAny, reportNever, reportFunction, ArrayReporter, ObjectReporter, TupleReporter, AnyOfReporter, AllOfReporter, AnyOfDiscriminatedReporter, MappedRecordReporter, schemaString, schemaNumber, schemaBoolean, schemaNull, schemaAny, schemaNever, schemaFunction, ArraySchema, ObjectSchema, TupleSchema, AnyOfSchema, AllOfSchema, AnyOfDiscriminatedSchema, MappedRecordSchema, validators, parsers, reporters, schemas, c } = validatorsMod;
+import validatorsMod from "./validators.js"; const { registerStringFormatter, registerNumberFormatter, ObjectValidator, ObjectParser, MappedRecordParser, MappedRecordValidator, ArrayParser, ArrayValidator, CodecDecoder, StringWithFormatsDecoder, NumberWithFormatsDecoder, AnyOfValidator, AnyOfParser, AllOfValidator, AllOfParser, TupleParser, TupleValidator, RegexDecoder, ConstDecoder, AnyOfConstsDecoder, AnyOfDiscriminatedParser, AnyOfDiscriminatedValidator, validateString, validateNumber, validateFunction, validateBoolean, validateAny, validateNull, validateNever, parseIdentity, reportString, reportNumber, reportNull, reportBoolean, reportAny, reportNever, reportFunction, ArrayReporter, ObjectReporter, TupleReporter, AnyOfReporter, AllOfReporter, AnyOfDiscriminatedReporter, MappedRecordReporter, schemaString, schemaNumber, schemaBoolean, schemaNull, schemaAny, schemaNever, schemaFunction, ArraySchema, ObjectSchema, TupleSchema, AnyOfSchema, AllOfSchema, AnyOfDiscriminatedSchema, MappedRecordSchema, describeString, describeNumber, describeBoolean, describeNull, describeAny, describeNever, describeFunction, ArrayDescribe, ObjectDescribe, TupleDescribe, AnyOfDescribe, AllOfDescribe, AnyOfDiscriminatedDescribe, MappedRecordDescribe, validators, parsers, reporters, schemas, describers, c } = validatorsMod;
 const RequiredStringFormats = ["ValidCurrency","UserId","ReadAuthorizedUserId","WriteAuthorizedUserId"];
 const RequiredNumberFormats = ["NonNegativeNumber","NonInfiniteNumber","Rate"];
 const hoisted_ObjectWithArr_0 = validateString;
@@ -10,21 +10,27 @@ const hoisted_ObjectWithArr_1 = new ArrayValidator(hoisted_ObjectWithArr_0);
 const hoisted_ObjectWithArr_2 = new ArrayParser(parseIdentity);
 const hoisted_ObjectWithArr_3 = new ArrayReporter(hoisted_ObjectWithArr_0, reportString);
 const hoisted_ObjectWithArr_4 = new ArraySchema(schemaString);
-const hoisted_ObjectWithArr_5 = {
+const hoisted_ObjectWithArr_5 = new ArrayDescribe(describeString);
+const hoisted_ObjectWithArr_6 = {
     "a": hoisted_ObjectWithArr_1.validateArrayValidator.bind(hoisted_ObjectWithArr_1)
 };
-const hoisted_ObjectWithArr_6 = {
+const hoisted_ObjectWithArr_7 = {
     "a": hoisted_ObjectWithArr_4.schemaArraySchema.bind(hoisted_ObjectWithArr_4)
 };
-const hoisted_ObjectWithArr_7 = null;
-const hoisted_ObjectWithArr_8 = new ObjectValidator(hoisted_ObjectWithArr_5, hoisted_ObjectWithArr_7);
-const hoisted_ObjectWithArr_9 = new ObjectParser({
+const hoisted_ObjectWithArr_8 = {
+    "a": hoisted_ObjectWithArr_5.describeArrayDescribe.bind(hoisted_ObjectWithArr_5)
+};
+const hoisted_ObjectWithArr_9 = hoisted_ObjectWithArr_8;
+const hoisted_ObjectWithArr_10 = null;
+const hoisted_ObjectWithArr_11 = new ObjectValidator(hoisted_ObjectWithArr_6, hoisted_ObjectWithArr_10);
+const hoisted_ObjectWithArr_12 = new ObjectParser({
     "a": hoisted_ObjectWithArr_2.parseArrayParser.bind(hoisted_ObjectWithArr_2)
 }, null);
-const hoisted_ObjectWithArr_10 = new ObjectReporter(hoisted_ObjectWithArr_5, hoisted_ObjectWithArr_7, {
+const hoisted_ObjectWithArr_13 = new ObjectReporter(hoisted_ObjectWithArr_6, hoisted_ObjectWithArr_10, {
     "a": hoisted_ObjectWithArr_3.reportArrayReporter.bind(hoisted_ObjectWithArr_3)
 }, null);
-const hoisted_ObjectWithArr_11 = new ObjectSchema(hoisted_ObjectWithArr_6, null);
+const hoisted_ObjectWithArr_14 = new ObjectSchema(hoisted_ObjectWithArr_7, null);
+const hoisted_ObjectWithArr_15 = new ObjectDescribe(hoisted_ObjectWithArr_9, null);
 const hoisted_BigIntCodec_0 = new CodecDecoder("Codec::BigInt");
 const hoisted_TupleCodec_0 = [
     validateNumber,
@@ -48,6 +54,11 @@ const hoisted_TupleCodec_5 = new TupleSchema([
     schemaNumber,
     schemaNumber
 ], null);
+const hoisted_TupleCodec_6 = new TupleDescribe([
+    describeNumber,
+    describeNumber,
+    describeNumber
+], null);
 const hoisted_TupleCodecRest_0 = [
     validateNumber,
     validateNumber
@@ -66,11 +77,16 @@ const hoisted_TupleCodecRest_5 = new TupleSchema([
     schemaNumber,
     schemaNumber
 ], schemaString);
+const hoisted_TupleCodecRest_6 = new TupleDescribe([
+    describeNumber,
+    describeNumber
+], describeString);
 const hoisted_StringArrCodec_0 = validateString;
 const hoisted_StringArrCodec_1 = new ArrayValidator(hoisted_StringArrCodec_0);
 const hoisted_StringArrCodec_2 = new ArrayParser(parseIdentity);
 const hoisted_StringArrCodec_3 = new ArrayReporter(hoisted_StringArrCodec_0, reportString);
 const hoisted_StringArrCodec_4 = new ArraySchema(schemaString);
+const hoisted_StringArrCodec_5 = new ArrayDescribe(describeString);
 const hoisted_ImportEnumTypeof_0 = new ConstDecoder("a");
 const hoisted_ImportEnumTypeof_1 = {
     "A": hoisted_ImportEnumTypeof_0.validateConstDecoder.bind(hoisted_ImportEnumTypeof_0)
@@ -78,15 +94,20 @@ const hoisted_ImportEnumTypeof_1 = {
 const hoisted_ImportEnumTypeof_2 = {
     "A": hoisted_ImportEnumTypeof_0.schemaConstDecoder.bind(hoisted_ImportEnumTypeof_0)
 };
-const hoisted_ImportEnumTypeof_3 = null;
-const hoisted_ImportEnumTypeof_4 = new ObjectValidator(hoisted_ImportEnumTypeof_1, hoisted_ImportEnumTypeof_3);
-const hoisted_ImportEnumTypeof_5 = new ObjectParser({
+const hoisted_ImportEnumTypeof_3 = {
+    "A": hoisted_ImportEnumTypeof_0.describeConstDecoder.bind(hoisted_ImportEnumTypeof_0)
+};
+const hoisted_ImportEnumTypeof_4 = hoisted_ImportEnumTypeof_3;
+const hoisted_ImportEnumTypeof_5 = null;
+const hoisted_ImportEnumTypeof_6 = new ObjectValidator(hoisted_ImportEnumTypeof_1, hoisted_ImportEnumTypeof_5);
+const hoisted_ImportEnumTypeof_7 = new ObjectParser({
     "A": hoisted_ImportEnumTypeof_0.parseConstDecoder.bind(hoisted_ImportEnumTypeof_0)
 }, null);
-const hoisted_ImportEnumTypeof_6 = new ObjectReporter(hoisted_ImportEnumTypeof_1, hoisted_ImportEnumTypeof_3, {
+const hoisted_ImportEnumTypeof_8 = new ObjectReporter(hoisted_ImportEnumTypeof_1, hoisted_ImportEnumTypeof_5, {
     "A": hoisted_ImportEnumTypeof_0.reportConstDecoder.bind(hoisted_ImportEnumTypeof_0)
 }, null);
-const hoisted_ImportEnumTypeof_7 = new ObjectSchema(hoisted_ImportEnumTypeof_2, null);
+const hoisted_ImportEnumTypeof_9 = new ObjectSchema(hoisted_ImportEnumTypeof_2, null);
+const hoisted_ImportEnumTypeof_10 = new ObjectDescribe(hoisted_ImportEnumTypeof_4, null);
 const buildValidatorsInput = {
     "AObject": validators.AObject,
     "AccessLevel": validators.AccessLevel,
@@ -106,7 +127,7 @@ const buildValidatorsInput = {
     "DiscriminatedUnion3": validators.DiscriminatedUnion3,
     "DiscriminatedUnion4": validators.DiscriminatedUnion4,
     "Extra": validators.Extra,
-    "ImportEnumTypeof": hoisted_ImportEnumTypeof_4.validateObjectValidator.bind(hoisted_ImportEnumTypeof_4),
+    "ImportEnumTypeof": hoisted_ImportEnumTypeof_6.validateObjectValidator.bind(hoisted_ImportEnumTypeof_6),
     "K": validators.K,
     "KABC": validators.KABC,
     "KDEF": validators.KDEF,
@@ -115,7 +136,7 @@ const buildValidatorsInput = {
     "MappedOptional": validators.MappedOptional,
     "NonInfiniteNumber": validators.NonInfiniteNumber,
     "NonNegativeNumber": validators.NonNegativeNumber,
-    "ObjectWithArr": hoisted_ObjectWithArr_8.validateObjectValidator.bind(hoisted_ObjectWithArr_8),
+    "ObjectWithArr": hoisted_ObjectWithArr_11.validateObjectValidator.bind(hoisted_ObjectWithArr_11),
     "OmitSettings": validators.OmitSettings,
     "OnlyAKey": validators.OnlyAKey,
     "OtherEnum": validators.OtherEnum,
@@ -161,7 +182,7 @@ const buildParsersInput = {
     "DiscriminatedUnion3": parsers.DiscriminatedUnion3,
     "DiscriminatedUnion4": parsers.DiscriminatedUnion4,
     "Extra": parsers.Extra,
-    "ImportEnumTypeof": hoisted_ImportEnumTypeof_5.parseObjectParser.bind(hoisted_ImportEnumTypeof_5),
+    "ImportEnumTypeof": hoisted_ImportEnumTypeof_7.parseObjectParser.bind(hoisted_ImportEnumTypeof_7),
     "K": parsers.K,
     "KABC": parsers.KABC,
     "KDEF": parsers.KDEF,
@@ -170,7 +191,7 @@ const buildParsersInput = {
     "MappedOptional": parsers.MappedOptional,
     "NonInfiniteNumber": parsers.NonInfiniteNumber,
     "NonNegativeNumber": parsers.NonNegativeNumber,
-    "ObjectWithArr": hoisted_ObjectWithArr_9.parseObjectParser.bind(hoisted_ObjectWithArr_9),
+    "ObjectWithArr": hoisted_ObjectWithArr_12.parseObjectParser.bind(hoisted_ObjectWithArr_12),
     "OmitSettings": parsers.OmitSettings,
     "OnlyAKey": parsers.OnlyAKey,
     "OtherEnum": parsers.OtherEnum,
@@ -216,7 +237,7 @@ const buildReportersInput = {
     "DiscriminatedUnion3": reporters.DiscriminatedUnion3,
     "DiscriminatedUnion4": reporters.DiscriminatedUnion4,
     "Extra": reporters.Extra,
-    "ImportEnumTypeof": hoisted_ImportEnumTypeof_6.reportObjectReporter.bind(hoisted_ImportEnumTypeof_6),
+    "ImportEnumTypeof": hoisted_ImportEnumTypeof_8.reportObjectReporter.bind(hoisted_ImportEnumTypeof_8),
     "K": reporters.K,
     "KABC": reporters.KABC,
     "KDEF": reporters.KDEF,
@@ -225,7 +246,7 @@ const buildReportersInput = {
     "MappedOptional": reporters.MappedOptional,
     "NonInfiniteNumber": reporters.NonInfiniteNumber,
     "NonNegativeNumber": reporters.NonNegativeNumber,
-    "ObjectWithArr": hoisted_ObjectWithArr_10.reportObjectReporter.bind(hoisted_ObjectWithArr_10),
+    "ObjectWithArr": hoisted_ObjectWithArr_13.reportObjectReporter.bind(hoisted_ObjectWithArr_13),
     "OmitSettings": reporters.OmitSettings,
     "OnlyAKey": reporters.OnlyAKey,
     "OtherEnum": reporters.OtherEnum,
@@ -271,7 +292,7 @@ const buildSchemaInput = {
     "DiscriminatedUnion3": schemas.DiscriminatedUnion3,
     "DiscriminatedUnion4": schemas.DiscriminatedUnion4,
     "Extra": schemas.Extra,
-    "ImportEnumTypeof": hoisted_ImportEnumTypeof_7.schemaObjectSchema.bind(hoisted_ImportEnumTypeof_7),
+    "ImportEnumTypeof": hoisted_ImportEnumTypeof_9.schemaObjectSchema.bind(hoisted_ImportEnumTypeof_9),
     "K": schemas.K,
     "KABC": schemas.KABC,
     "KDEF": schemas.KDEF,
@@ -280,7 +301,7 @@ const buildSchemaInput = {
     "MappedOptional": schemas.MappedOptional,
     "NonInfiniteNumber": schemas.NonInfiniteNumber,
     "NonNegativeNumber": schemas.NonNegativeNumber,
-    "ObjectWithArr": hoisted_ObjectWithArr_11.schemaObjectSchema.bind(hoisted_ObjectWithArr_11),
+    "ObjectWithArr": hoisted_ObjectWithArr_14.schemaObjectSchema.bind(hoisted_ObjectWithArr_14),
     "OmitSettings": schemas.OmitSettings,
     "OnlyAKey": schemas.OnlyAKey,
     "OtherEnum": schemas.OtherEnum,
@@ -306,6 +327,61 @@ const buildSchemaInput = {
     "Version": schemas.Version,
     "Version2": schemas.Version2,
     "WriteAuthorizedUserId": schemas.WriteAuthorizedUserId
+};
+const buildDescribeInput = {
+    "PartialRepro": describers.PartialRepro,
+    "TransportedValue": describers.TransportedValue,
+    "OnlyAKey": describers.OnlyAKey,
+    "ObjectWithArr": hoisted_ObjectWithArr_15.describeObjectDescribe.bind(hoisted_ObjectWithArr_15),
+    "BigIntCodec": hoisted_BigIntCodec_0.describeCodecDecoder.bind(hoisted_BigIntCodec_0),
+    "TupleCodec": hoisted_TupleCodec_6.describeTupleDescribe.bind(hoisted_TupleCodec_6),
+    "TupleCodecRest": hoisted_TupleCodecRest_6.describeTupleDescribe.bind(hoisted_TupleCodecRest_6),
+    "StringArrCodec": hoisted_StringArrCodec_5.describeArrayDescribe.bind(hoisted_StringArrCodec_5),
+    "AllTs": describers.AllTs,
+    "AObject": describers.AObject,
+    "Version": describers.Version,
+    "Version2": describers.Version2,
+    "AccessLevelTpl2": describers.AccessLevelTpl2,
+    "AccessLevelTpl": describers.AccessLevelTpl,
+    "Arr3": describers.Arr3,
+    "OmitSettings": describers.OmitSettings,
+    "RequiredPartialObject": describers.RequiredPartialObject,
+    "LevelAndDSettings": describers.LevelAndDSettings,
+    "PartialSettings": describers.PartialSettings,
+    "Extra": describers.Extra,
+    "User": describers.User,
+    "PublicUser": describers.PublicUser,
+    "Req": describers.Req,
+    "Repro1": describers.Repro1,
+    "SettingsUpdate": describers.SettingsUpdate,
+    "Mapped": describers.Mapped,
+    "MappedOptional": describers.MappedOptional,
+    "PartialObject": describers.PartialObject,
+    "DiscriminatedUnion": describers.DiscriminatedUnion,
+    "DiscriminatedUnion2": describers.DiscriminatedUnion2,
+    "DiscriminatedUnion3": describers.DiscriminatedUnion3,
+    "DiscriminatedUnion4": describers.DiscriminatedUnion4,
+    "AllTypes": describers.AllTypes,
+    "AccessLevel": describers.AccessLevel,
+    "OtherEnum": describers.OtherEnum,
+    "Arr2C": describers.Arr2,
+    "ValidCurrency": describers.ValidCurrency,
+    "UnionWithEnumAccess": describers.UnionWithEnumAccess,
+    "T3": describers.T3,
+    "AccessLevelCodec": describers.AccessLevel,
+    "AvatarSize": describers.AvatarSize,
+    "BObject": describers.BObject,
+    "ImportEnumTypeof": hoisted_ImportEnumTypeof_10.describeObjectDescribe.bind(hoisted_ImportEnumTypeof_10),
+    "KDEF": describers.KDEF,
+    "KABC": describers.KABC,
+    "K": describers.K,
+    "NonNegativeNumber": describers.NonNegativeNumber,
+    "NonInfiniteNumber": describers.NonInfiniteNumber,
+    "Rate": describers.Rate,
+    "UserId": describers.UserId,
+    "ReadAuthorizedUserId": describers.ReadAuthorizedUserId,
+    "WriteAuthorizedUserId": describers.WriteAuthorizedUserId,
+    "CurrencyPrices": describers.CurrencyPrices
 };
 
 
@@ -364,6 +440,21 @@ function buildParsers(args) {
       return schemaFn(ctx);
     };
 
+    
+    const describeFn = buildDescribeInput[k];
+    const describe = () => {
+      const ctx = {
+        deps: {}
+      };
+      const out = describeFn(ctx);
+      const sortedDepsKeys = Object.keys(ctx.deps).sort();
+      const depsPart = sortedDepsKeys.map((key) => {
+        return `type ${key} = ${ctx.deps[key]};`;
+      }).join("\n\n");
+      const outPart = `type ${k} = ${out};`
+      return [depsPart, outPart].filter(it => it!=null && it.length > 0).join("\n\n");
+    };
+
     const safeParse = (input, options) => {
       const disallowExtraProperties = options?.disallowExtraProperties ?? false;
       const ok = validate(input, options);
@@ -409,6 +500,7 @@ function buildParsers(args) {
       name: k,
       validate,
       schema,
+      describe,
     };
   });
   return decoders;

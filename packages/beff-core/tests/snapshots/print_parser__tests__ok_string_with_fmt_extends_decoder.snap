@@ -20,6 +20,9 @@ function SchemaUser(ctx, input) {
     delete ctx.seen["User"];
     return tmp;
 }
+function DescribeUser(ctx, input) {
+    return (hoisted_User_0.describeStringWithFormatsDecoder.bind(hoisted_User_0))(ctx);
+}
 function ValidateReadAuthorizedUser(ctx, input) {
     return (hoisted_ReadAuthorizedUser_0.validateStringWithFormatsDecoder.bind(hoisted_ReadAuthorizedUser_0))(ctx, input);
 }
@@ -38,6 +41,9 @@ function SchemaReadAuthorizedUser(ctx, input) {
     delete ctx.seen["ReadAuthorizedUser"];
     return tmp;
 }
+function DescribeReadAuthorizedUser(ctx, input) {
+    return (hoisted_ReadAuthorizedUser_0.describeStringWithFormatsDecoder.bind(hoisted_ReadAuthorizedUser_0))(ctx);
+}
 function ValidateWriteAuthorizedUser(ctx, input) {
     return (hoisted_WriteAuthorizedUser_0.validateStringWithFormatsDecoder.bind(hoisted_WriteAuthorizedUser_0))(ctx, input);
 }
@@ -55,6 +61,9 @@ function SchemaWriteAuthorizedUser(ctx, input) {
     var tmp = (hoisted_WriteAuthorizedUser_0.schemaStringWithFormatsDecoder.bind(hoisted_WriteAuthorizedUser_0))(ctx);
     delete ctx.seen["WriteAuthorizedUser"];
     return tmp;
+}
+function DescribeWriteAuthorizedUser(ctx, input) {
+    return (hoisted_WriteAuthorizedUser_0.describeStringWithFormatsDecoder.bind(hoisted_WriteAuthorizedUser_0))(ctx);
 }
 const validators = {
     User: ValidateUser,
@@ -75,6 +84,11 @@ const schemas = {
     User: SchemaUser,
     ReadAuthorizedUser: SchemaReadAuthorizedUser,
     WriteAuthorizedUser: SchemaWriteAuthorizedUser
+};
+const describers = {
+    User: DescribeUser,
+    ReadAuthorizedUser: DescribeReadAuthorizedUser,
+    WriteAuthorizedUser: DescribeWriteAuthorizedUser
 };
 const hoisted_User_0 = new StringWithFormatsDecoder("User");
 const hoisted_ReadAuthorizedUser_0 = new StringWithFormatsDecoder("User", "ReadAuthorizedUser");

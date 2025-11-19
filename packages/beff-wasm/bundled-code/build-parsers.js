@@ -54,6 +54,21 @@ function buildParsers(args) {
       return schemaFn(ctx);
     };
 
+    //@ts-ignore
+    const describeFn = buildDescribeInput[k];
+    const describe = () => {
+      const ctx = {
+        deps: {}
+      };
+      const out = describeFn(ctx);
+      const sortedDepsKeys = Object.keys(ctx.deps).sort();
+      const depsPart = sortedDepsKeys.map((key) => {
+        return `type ${key} = ${ctx.deps[key]};`;
+      }).join("\n\n");
+      const outPart = `type ${k} = ${out};`
+      return [depsPart, outPart].filter(it => it!=null && it.length > 0).join("\n\n");
+    };
+
     const safeParse = (input, options) => {
       const disallowExtraProperties = options?.disallowExtraProperties ?? false;
       const ok = validate(input, options);
@@ -99,6 +114,7 @@ function buildParsers(args) {
       name: k,
       validate,
       schema,
+      describe,
     };
   });
   return decoders;

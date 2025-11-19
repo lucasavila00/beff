@@ -20,6 +20,9 @@ function SchemaPassLenghts(ctx, input) {
     delete ctx.seen["PassLenghts"];
     return tmp;
 }
+function DescribePassLenghts(ctx, input) {
+    return (hoisted_PassLenghts_7.describeMappedRecordDescribe.bind(hoisted_PassLenghts_7))(ctx);
+}
 function ValidatePassLengthGet(ctx, input) {
     return (validateNumber)(ctx, input);
 }
@@ -38,6 +41,9 @@ function SchemaPassLengthGet(ctx, input) {
     delete ctx.seen["PassLengthGet"];
     return tmp;
 }
+function DescribePassLengthGet(ctx, input) {
+    return (describeNumber)(ctx);
+}
 function ValidatePassword(ctx, input) {
     return (hoisted_Password_0.validateStringWithFormatsDecoder.bind(hoisted_Password_0))(ctx, input);
 }
@@ -55,6 +61,9 @@ function SchemaPassword(ctx, input) {
     var tmp = (hoisted_Password_0.schemaStringWithFormatsDecoder.bind(hoisted_Password_0))(ctx);
     delete ctx.seen["Password"];
     return tmp;
+}
+function DescribePassword(ctx, input) {
+    return (hoisted_Password_0.describeStringWithFormatsDecoder.bind(hoisted_Password_0))(ctx);
 }
 const validators = {
     PassLenghts: ValidatePassLenghts,
@@ -76,6 +85,11 @@ const schemas = {
     PassLengthGet: SchemaPassLengthGet,
     Password: SchemaPassword
 };
+const describers = {
+    PassLenghts: DescribePassLenghts,
+    PassLengthGet: DescribePassLengthGet,
+    Password: DescribePassword
+};
 const hoisted_PassLenghts_0 = new StringWithFormatsDecoder("password");
 const hoisted_PassLenghts_1 = hoisted_PassLenghts_0.validateStringWithFormatsDecoder.bind(hoisted_PassLenghts_0);
 const hoisted_PassLenghts_2 = validateNumber;
@@ -83,4 +97,5 @@ const hoisted_PassLenghts_3 = new MappedRecordValidator(hoisted_PassLenghts_1, h
 const hoisted_PassLenghts_4 = new MappedRecordParser(hoisted_PassLenghts_0.parseStringWithFormatsDecoder.bind(hoisted_PassLenghts_0), parseIdentity);
 const hoisted_PassLenghts_5 = new MappedRecordReporter(hoisted_PassLenghts_1, hoisted_PassLenghts_2, hoisted_PassLenghts_0.reportStringWithFormatsDecoder.bind(hoisted_PassLenghts_0), reportNumber);
 const hoisted_PassLenghts_6 = new MappedRecordSchema(hoisted_PassLenghts_0.schemaStringWithFormatsDecoder.bind(hoisted_PassLenghts_0), schemaNumber);
+const hoisted_PassLenghts_7 = new MappedRecordDescribe(hoisted_PassLenghts_0.describeStringWithFormatsDecoder.bind(hoisted_PassLenghts_0), describeNumber);
 const hoisted_Password_0 = new StringWithFormatsDecoder("password");

@@ -20,6 +20,9 @@ function SchemaAlias(ctx, input) {
     delete ctx.seen["Alias"];
     return tmp;
 }
+function DescribeAlias(ctx, input) {
+    return (hoisted_Alias_0.describeStringWithFormatsDecoder.bind(hoisted_Alias_0))(ctx);
+}
 const validators = {
     Alias: ValidateAlias
 };
@@ -31,5 +34,8 @@ const reporters = {
 };
 const schemas = {
     Alias: SchemaAlias
+};
+const describers = {
+    Alias: DescribeAlias
 };
 const hoisted_Alias_0 = new StringWithFormatsDecoder("password");

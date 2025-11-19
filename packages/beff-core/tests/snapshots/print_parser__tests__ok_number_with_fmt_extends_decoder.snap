@@ -20,6 +20,9 @@ function SchemaNonInfiniteNumber(ctx, input) {
     delete ctx.seen["NonInfiniteNumber"];
     return tmp;
 }
+function DescribeNonInfiniteNumber(ctx, input) {
+    return (hoisted_NonInfiniteNumber_0.describeNumberWithFormatsDecoder.bind(hoisted_NonInfiniteNumber_0))(ctx);
+}
 function ValidateNonNegativeNumber(ctx, input) {
     return (hoisted_NonNegativeNumber_0.validateNumberWithFormatsDecoder.bind(hoisted_NonNegativeNumber_0))(ctx, input);
 }
@@ -38,6 +41,9 @@ function SchemaNonNegativeNumber(ctx, input) {
     delete ctx.seen["NonNegativeNumber"];
     return tmp;
 }
+function DescribeNonNegativeNumber(ctx, input) {
+    return (hoisted_NonNegativeNumber_0.describeNumberWithFormatsDecoder.bind(hoisted_NonNegativeNumber_0))(ctx);
+}
 function ValidateRate(ctx, input) {
     return (hoisted_Rate_0.validateNumberWithFormatsDecoder.bind(hoisted_Rate_0))(ctx, input);
 }
@@ -55,6 +61,9 @@ function SchemaRate(ctx, input) {
     var tmp = (hoisted_Rate_0.schemaNumberWithFormatsDecoder.bind(hoisted_Rate_0))(ctx);
     delete ctx.seen["Rate"];
     return tmp;
+}
+function DescribeRate(ctx, input) {
+    return (hoisted_Rate_0.describeNumberWithFormatsDecoder.bind(hoisted_Rate_0))(ctx);
 }
 const validators = {
     NonInfiniteNumber: ValidateNonInfiniteNumber,
@@ -75,6 +84,11 @@ const schemas = {
     NonInfiniteNumber: SchemaNonInfiniteNumber,
     NonNegativeNumber: SchemaNonNegativeNumber,
     Rate: SchemaRate
+};
+const describers = {
+    NonInfiniteNumber: DescribeNonInfiniteNumber,
+    NonNegativeNumber: DescribeNonNegativeNumber,
+    Rate: DescribeRate
 };
 const hoisted_NonInfiniteNumber_0 = new NumberWithFormatsDecoder("NonInfiniteNumber");
 const hoisted_NonNegativeNumber_0 = new NumberWithFormatsDecoder("NonInfiniteNumber", "NonNegativeNumber");
