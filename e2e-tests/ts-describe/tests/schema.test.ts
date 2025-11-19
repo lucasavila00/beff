@@ -10,55 +10,23 @@ it("works", () => {
   expect(Codecs.anyArray.describe()).toMatchInlineSnapshot('"type CodecanyArray = Array<any>;"');
   expect(Codecs.any.describe()).toMatchInlineSnapshot('"type Codecany = any;"');
 
-  expect(Codecs.T1.describe()).toMatchInlineSnapshot(`
-    "type T1 = { a: string, b: number };
-
-    type CodecT1 = T1;"
-  `);
-  expect(Codecs.T2.describe()).toMatchInlineSnapshot(`
-    "type T1 = { a: string, b: number };
-
-    type T2 = { t1: T1 };
-
-    type CodecT2 = T2;"
-  `);
+  expect(Codecs.T1.describe()).toMatchInlineSnapshot('"type CodecT1 = { a: string, b: number };"');
+  expect(Codecs.T2.describe()).toMatchInlineSnapshot('"type CodecT2 = { t1: { a: string, b: number } };"');
   expect(Codecs.T3.describe()).toMatchInlineSnapshot(
-    `
-    "type T1 = { a: string, b: number };
-
-    type T2 = { t1: T1 };
-
-    type T3 = { t2Array: Array<T2> };
-
-    type CodecT3 = T3;"
-  `,
+    '"type CodecT3 = { t2Array: Array<{ t1: { a: string, b: number } }> };"',
   );
-  expect(Codecs.SemVer.describe()).toMatchInlineSnapshot(`
-    "type SemVer = \`\${number}.\${number}.\${number}\`;
-
-    type CodecSemVer = SemVer;"
-  `);
+  expect(Codecs.SemVer.describe()).toMatchInlineSnapshot(
+    '"type CodecSemVer = `${number}.${number}.${number}`;"',
+  );
   expect(Codecs.NonEmptyString.describe()).toMatchInlineSnapshot(
-    `
-    "type NonEmptyString = [string, ...Array<string>];
-
-    type CodecNonEmptyString = NonEmptyString;"
-  `,
+    '"type CodecNonEmptyString = [string, ...Array<string>];"',
   );
   expect(Codecs.DiscriminatedUnion.describe()).toMatchInlineSnapshot(
-    `
-    "type DiscriminatedUnion = ({ a1: string, a11: (null | string), subType: \\"a1\\", type: \\"a\\" } | { a2: string, subType: \\"a2\\", type: \\"a\\" } | { type: \\"b\\", value: number });
-
-    type CodecDiscriminatedUnion = DiscriminatedUnion;"
-  `,
+    '"type CodecDiscriminatedUnion = ({ a1: string, a11: (null | string), subType: \\"a1\\", type: \\"a\\" } | { a2: string, subType: \\"a2\\", type: \\"a\\" } | { type: \\"b\\", value: number });"',
   );
 
   expect(Codecs.ValidCurrency.describe()).toMatchInlineSnapshot(
-    `
-    "type ValidCurrency = StringFormat<\\"ValidCurrency\\">;
-
-    type CodecValidCurrency = ValidCurrency;"
-  `,
+    '"type CodecValidCurrency = StringFormat<\\"ValidCurrency\\">;"',
   );
 
   expect(Codecs.RecursiveTree.describe()).toMatchInlineSnapshot(`

@@ -6,11 +6,11 @@ use crate::{
 use std::collections::{BTreeMap, BTreeSet};
 use swc_common::DUMMY_SP;
 use swc_ecma_ast::{
-    ArrayLit, ArrowExpr, AssignExpr, AssignOp, BindingIdent, BlockStmt, BlockStmtOrExpr, Bool,
-    CallExpr, Callee, ComputedPropName, Decl, Expr, ExprOrSpread, ExprStmt, Function, Ident,
-    IfStmt, KeyValueProp, Lit, MemberExpr, MemberProp, ModuleItem, NewExpr, Null, ObjectLit, Param,
-    ParenExpr, Pat, Prop, PropName, PropOrSpread, Regex, ReturnStmt, Stmt, Str, UnaryExpr, UnaryOp,
-    VarDecl, VarDeclKind, VarDeclarator,
+    ArrayLit, ArrowExpr, AssignExpr, AssignOp, BinExpr, BinaryOp, BindingIdent, BlockStmt,
+    BlockStmtOrExpr, Bool, CallExpr, Callee, ComputedPropName, Decl, Expr, ExprOrSpread, ExprStmt,
+    Function, Ident, IfStmt, KeyValueProp, Lit, MemberExpr, MemberProp, ModuleItem, NewExpr, Null,
+    Number, ObjectLit, Param, ParenExpr, Pat, PatOrExpr, Prop, PropName, PropOrSpread, Regex,
+    ReturnStmt, Stmt, Str, UnaryExpr, UnaryOp, VarDecl, VarDeclKind, VarDeclarator,
 };
 struct SwcBuilder;
 
@@ -467,6 +467,272 @@ impl DecoderFnGenerator<'_> {
             }),
         });
 
+        let ctx_measure = Expr::Member(MemberExpr {
+            span: DUMMY_SP,
+            obj: Expr::Ident(Ident {
+                span: DUMMY_SP,
+                sym: "ctx".into(),
+                optional: false,
+            })
+            .into(),
+            prop: MemberProp::Ident(Ident {
+                span: DUMMY_SP,
+                sym: "measure".into(),
+                optional: false,
+            }),
+        });
+        let ctx_deps_counter_name = Expr::Member(MemberExpr {
+            span: DUMMY_SP,
+            obj: Expr::Member(MemberExpr {
+                span: DUMMY_SP,
+                obj: Expr::Ident(Ident {
+                    span: DUMMY_SP,
+                    sym: "ctx".into(),
+                    optional: false,
+                })
+                .into(),
+                prop: MemberProp::Ident(Ident {
+                    span: DUMMY_SP,
+                    sym: "deps_counter".into(),
+                    optional: false,
+                }),
+            })
+            .into(),
+            prop: MemberProp::Computed(ComputedPropName {
+                span: DUMMY_SP,
+                expr: Expr::Lit(Lit::Str(Str {
+                    span: DUMMY_SP,
+                    value: schema_ref.into(),
+                    raw: None,
+                }))
+                .into(),
+            }),
+        });
+        let measure_block = Stmt::Block(BlockStmt {
+            span: DUMMY_SP,
+            stmts: vec![
+                Stmt::Expr(ExprStmt {
+                    span: DUMMY_SP,
+                    expr: Expr::Assign(AssignExpr {
+                        span: DUMMY_SP,
+                        op: AssignOp::Assign,
+                        left: PatOrExpr::Expr(ctx_deps_counter_name.clone().into()),
+                        right: Expr::Bin(BinExpr {
+                            span: DUMMY_SP,
+                            op: BinaryOp::Add,
+                            left: Expr::Paren(ParenExpr {
+                                span: DUMMY_SP,
+                                expr: Expr::Bin(BinExpr {
+                                    span: DUMMY_SP,
+                                    op: BinaryOp::LogicalOr,
+                                    left: ctx_deps_counter_name.clone().into(),
+                                    right: Expr::Lit(Lit::Num(Number {
+                                        span: DUMMY_SP,
+                                        value: 0.0,
+                                        raw: None,
+                                    }))
+                                    .into(),
+                                })
+                                .into(),
+                            })
+                            .into(),
+                            right: Expr::Lit(Lit::Num(Number {
+                                span: DUMMY_SP,
+                                value: 1.0,
+                                raw: None,
+                            }))
+                            .into(),
+                        })
+                        .into(),
+                    })
+                    .into(),
+                }),
+                Stmt::If(IfStmt {
+                    span: DUMMY_SP,
+                    test: ctx_deps_name.clone().into(),
+                    cons: Stmt::Block(BlockStmt {
+                        span: DUMMY_SP,
+                        stmts: vec![
+                            // return the name if the deps includes it
+                            Stmt::Return(ReturnStmt {
+                                span: DUMMY_SP,
+                                arg: Some(Box::new(Expr::Lit(Lit::Str(schema_ref.into())))),
+                            }),
+                        ],
+                    })
+                    .into(),
+                    alt: None,
+                }),
+                Stmt::Expr(ExprStmt {
+                    span: DUMMY_SP,
+                    expr: Box::new(Expr::Assign(AssignExpr {
+                        span: DUMMY_SP,
+                        op: AssignOp::Assign,
+                        left: swc_ecma_ast::PatOrExpr::Expr(ctx_deps_name.clone().into()),
+                        right: Expr::Lit(Lit::Bool(Bool {
+                            span: DUMMY_SP,
+                            value: true,
+                        }))
+                        .into(),
+                    })),
+                }),
+                Stmt::Expr(ExprStmt {
+                    span: DUMMY_SP,
+                    expr: Box::new(Expr::Assign(AssignExpr {
+                        span: DUMMY_SP,
+                        op: AssignOp::Assign,
+                        left: swc_ecma_ast::PatOrExpr::Expr(ctx_deps_name.clone().into()),
+                        right: Expr::Call(CallExpr {
+                            span: DUMMY_SP,
+                            callee: Callee::Expr(describe.clone().into()),
+                            args: vec![
+                                Expr::Ident(Ident {
+                                    span: DUMMY_SP,
+                                    sym: "ctx".into(),
+                                    optional: false,
+                                })
+                                .into(),
+                                ExprOrSpread {
+                                    spread: None,
+                                    expr: SwcBuilder::input_ident().into(),
+                                },
+                            ],
+                            type_args: None,
+                        })
+                        .into(),
+                    })),
+                }),
+                Stmt::Return(ReturnStmt {
+                    span: DUMMY_SP,
+                    arg: Some(Box::new(Expr::Lit(Lit::Str(schema_ref.into())))),
+                }),
+            ],
+        });
+        let final_block = Stmt::Block(BlockStmt {
+            span: DUMMY_SP,
+            stmts: vec![Stmt::If(IfStmt {
+                span: DUMMY_SP,
+                test: Expr::Bin(BinExpr {
+                    span: DUMMY_SP,
+                    op: BinaryOp::Gt,
+                    left: ctx_deps_counter_name.into(),
+                    right: Expr::Lit(Lit::Num(Number {
+                        span: DUMMY_SP,
+                        value: 1.0,
+                        raw: None,
+                    }))
+                    .into(),
+                })
+                .into(),
+                cons: Stmt::Block(BlockStmt {
+                    span: DUMMY_SP,
+                    stmts: vec![
+                        Stmt::If(IfStmt {
+                            span: DUMMY_SP,
+                            test: Expr::Unary(UnaryExpr {
+                                span: DUMMY_SP,
+                                op: UnaryOp::Bang,
+                                arg: ctx_deps_name.clone().into(),
+                            })
+                            .into(),
+                            cons: Stmt::Block(BlockStmt {
+                                span: DUMMY_SP,
+                                stmts: vec![
+                                    Stmt::Expr(ExprStmt {
+                                        span: DUMMY_SP,
+                                        expr: Box::new(Expr::Assign(AssignExpr {
+                                            span: DUMMY_SP,
+                                            op: AssignOp::Assign,
+                                            left: swc_ecma_ast::PatOrExpr::Expr(
+                                                ctx_deps_name.clone().into(),
+                                            ),
+                                            right: Expr::Lit(Lit::Bool(Bool {
+                                                span: DUMMY_SP,
+                                                value: true,
+                                            }))
+                                            .into(),
+                                        })),
+                                    }),
+                                    Stmt::Expr(ExprStmt {
+                                        span: DUMMY_SP,
+                                        expr: Box::new(Expr::Assign(AssignExpr {
+                                            span: DUMMY_SP,
+                                            op: AssignOp::Assign,
+                                            left: swc_ecma_ast::PatOrExpr::Expr(
+                                                ctx_deps_name.clone().into(),
+                                            ),
+                                            right: Expr::Call(CallExpr {
+                                                span: DUMMY_SP,
+                                                callee: Callee::Expr(describe.clone().into()),
+                                                args: vec![
+                                                    Expr::Ident(Ident {
+                                                        span: DUMMY_SP,
+                                                        sym: "ctx".into(),
+                                                        optional: false,
+                                                    })
+                                                    .into(),
+                                                    ExprOrSpread {
+                                                        spread: None,
+                                                        expr: SwcBuilder::input_ident().into(),
+                                                    },
+                                                ],
+                                                type_args: None,
+                                            })
+                                            .into(),
+                                        })),
+                                    }),
+                                ],
+                            })
+                            .into(),
+                            alt: None,
+                        }),
+                        Stmt::Return(ReturnStmt {
+                            span: DUMMY_SP,
+                            arg: Some(Box::new(Expr::Lit(Lit::Str(schema_ref.into())))),
+                        }),
+                    ],
+                })
+                .into(),
+                alt: Some(
+                    Stmt::Block(BlockStmt {
+                        span: DUMMY_SP,
+                        stmts: vec![Stmt::Return(ReturnStmt {
+                            span: DUMMY_SP,
+                            arg: Some(
+                                Expr::Call(CallExpr {
+                                    span: DUMMY_SP,
+                                    callee: Callee::Expr(describe.into()),
+                                    args: vec![
+                                        Expr::Ident(Ident {
+                                            span: DUMMY_SP,
+                                            sym: "ctx".into(),
+                                            optional: false,
+                                        })
+                                        .into(),
+                                        ExprOrSpread {
+                                            spread: None,
+                                            expr: SwcBuilder::input_ident().into(),
+                                        },
+                                    ],
+                                    type_args: None,
+                                })
+                                .into(),
+                            ),
+                        })],
+                    })
+                    .into(),
+                ),
+            })],
+        });
+        let arrow_body = BlockStmtOrExpr::BlockStmt(BlockStmt {
+            span: DUMMY_SP,
+            stmts: vec![Stmt::If(IfStmt {
+                span: DUMMY_SP,
+                test: ctx_measure.clone().into(),
+                cons: measure_block.into(),
+                alt: Some(final_block.into()),
+            })],
+        });
         let hoisted_describe_fn = self.hoist_expr(
             hoisted,
             Expr::Arrow(ArrowExpr {
@@ -485,72 +751,7 @@ impl DecoderFnGenerator<'_> {
                         type_ann: None,
                     }),
                 ],
-                body: BlockStmtOrExpr::BlockStmt(BlockStmt {
-                    span: DUMMY_SP,
-                    stmts: vec![
-                        //
-                        Stmt::If(IfStmt {
-                            span: DUMMY_SP,
-                            test: ctx_deps_name.clone().into(),
-                            cons: Stmt::Block(BlockStmt {
-                                span: DUMMY_SP,
-                                stmts: vec![
-                                    // return the name if the deps includes it
-                                    Stmt::Return(ReturnStmt {
-                                        span: DUMMY_SP,
-                                        arg: Some(Box::new(Expr::Lit(Lit::Str(schema_ref.into())))),
-                                    }),
-                                ],
-                            })
-                            .into(),
-                            alt: None,
-                        }),
-                        Stmt::Expr(ExprStmt {
-                            span: DUMMY_SP,
-                            expr: Box::new(Expr::Assign(AssignExpr {
-                                span: DUMMY_SP,
-                                op: AssignOp::Assign,
-                                left: swc_ecma_ast::PatOrExpr::Expr(ctx_deps_name.clone().into()),
-                                right: Expr::Lit(Lit::Bool(Bool {
-                                    span: DUMMY_SP,
-                                    value: true,
-                                }))
-                                .into(),
-                            })),
-                        }),
-                        Stmt::Expr(ExprStmt {
-                            span: DUMMY_SP,
-                            expr: Box::new(Expr::Assign(AssignExpr {
-                                span: DUMMY_SP,
-                                op: AssignOp::Assign,
-                                left: swc_ecma_ast::PatOrExpr::Expr(ctx_deps_name.clone().into()),
-                                right: Expr::Call(CallExpr {
-                                    span: DUMMY_SP,
-                                    callee: Callee::Expr(describe.into()),
-                                    args: vec![
-                                        Expr::Ident(Ident {
-                                            span: DUMMY_SP,
-                                            sym: "ctx".into(),
-                                            optional: false,
-                                        })
-                                        .into(),
-                                        ExprOrSpread {
-                                            spread: None,
-                                            expr: SwcBuilder::input_ident().into(),
-                                        },
-                                    ],
-                                    type_args: None,
-                                })
-                                .into(),
-                            })),
-                        }),
-                        Stmt::Return(ReturnStmt {
-                            span: DUMMY_SP,
-                            arg: Some(Box::new(Expr::Lit(Lit::Str(schema_ref.into())))),
-                        }),
-                    ],
-                })
-                .into(),
+                body: arrow_body.into(),
                 is_async: false,
                 is_generator: false,
                 type_params: None,

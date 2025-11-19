@@ -1,5 +1,13 @@
 # @beff/client
 
+## 0.0.99
+
+### Patch Changes
+
+- minimize refs in describe
+- Updated dependencies
+  - @beff/cli@0.0.99
+
 ## 0.0.98
 
 ### Patch Changes

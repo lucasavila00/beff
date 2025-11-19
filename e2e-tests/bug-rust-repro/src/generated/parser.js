@@ -6,12 +6,25 @@ import validatorsMod from "./validators.js"; const { registerStringFormatter, re
 const RequiredStringFormats = ["ValidCurrency"];
 const RequiredNumberFormats = [];
 const hoisted_A_0 = (ctx, input)=>{
-    if (ctx.deps["A"]) {
+    if (ctx.measure) {
+        ctx.deps_counter["A"] = (ctx.deps_counter["A"] || 0) + 1;
+        if (ctx.deps["A"]) {
+            return "A";
+        }
+        ctx.deps["A"] = true;
+        ctx.deps["A"] = describers.A(ctx, input);
         return "A";
+    } else {
+        if (ctx.deps_counter["A"] > 1) {
+            if (!ctx.deps["A"]) {
+                ctx.deps["A"] = true;
+                ctx.deps["A"] = describers.A(ctx, input);
+            }
+            return "A";
+        } else {
+            return describers.A(ctx, input);
+        }
     }
-    ctx.deps["A"] = true;
-    ctx.deps["A"] = describers.A(ctx, input);
-    return "A";
 };
 const buildValidatorsInput = {
     "A": validators.A
@@ -90,8 +103,13 @@ function buildParsers(args) {
     const describe = () => {
       const ctx = {
         deps: {},
+        deps_counter: {},
+        measure: true,
       };
-      const out = describeFn(ctx);
+      let out = describeFn(ctx);
+      ctx["deps"] = {};
+      ctx["measure"] = false;
+      out = describeFn(ctx);
       let sortedDepsKeys = Object.keys(ctx.deps).sort();
       
       

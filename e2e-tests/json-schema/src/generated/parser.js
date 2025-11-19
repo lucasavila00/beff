@@ -22,84 +22,214 @@ const hoisted_anyArray_3 = new ArrayReporter(hoisted_anyArray_0, reportAny);
 const hoisted_anyArray_4 = new ArraySchema(schemaAny);
 const hoisted_anyArray_5 = new ArrayDescribe(describeAny);
 const hoisted_T1_0 = (ctx, input)=>{
-    if (ctx.deps["T1"]) {
+    if (ctx.measure) {
+        ctx.deps_counter["T1"] = (ctx.deps_counter["T1"] || 0) + 1;
+        if (ctx.deps["T1"]) {
+            return "T1";
+        }
+        ctx.deps["T1"] = true;
+        ctx.deps["T1"] = describers.T1(ctx, input);
         return "T1";
+    } else {
+        if (ctx.deps_counter["T1"] > 1) {
+            if (!ctx.deps["T1"]) {
+                ctx.deps["T1"] = true;
+                ctx.deps["T1"] = describers.T1(ctx, input);
+            }
+            return "T1";
+        } else {
+            return describers.T1(ctx, input);
+        }
     }
-    ctx.deps["T1"] = true;
-    ctx.deps["T1"] = describers.T1(ctx, input);
-    return "T1";
 };
 const hoisted_T2_0 = (ctx, input)=>{
-    if (ctx.deps["T2"]) {
+    if (ctx.measure) {
+        ctx.deps_counter["T2"] = (ctx.deps_counter["T2"] || 0) + 1;
+        if (ctx.deps["T2"]) {
+            return "T2";
+        }
+        ctx.deps["T2"] = true;
+        ctx.deps["T2"] = describers.T2(ctx, input);
         return "T2";
+    } else {
+        if (ctx.deps_counter["T2"] > 1) {
+            if (!ctx.deps["T2"]) {
+                ctx.deps["T2"] = true;
+                ctx.deps["T2"] = describers.T2(ctx, input);
+            }
+            return "T2";
+        } else {
+            return describers.T2(ctx, input);
+        }
     }
-    ctx.deps["T2"] = true;
-    ctx.deps["T2"] = describers.T2(ctx, input);
-    return "T2";
 };
 const hoisted_T3_0 = (ctx, input)=>{
-    if (ctx.deps["T3"]) {
+    if (ctx.measure) {
+        ctx.deps_counter["T3"] = (ctx.deps_counter["T3"] || 0) + 1;
+        if (ctx.deps["T3"]) {
+            return "T3";
+        }
+        ctx.deps["T3"] = true;
+        ctx.deps["T3"] = describers.T3(ctx, input);
         return "T3";
+    } else {
+        if (ctx.deps_counter["T3"] > 1) {
+            if (!ctx.deps["T3"]) {
+                ctx.deps["T3"] = true;
+                ctx.deps["T3"] = describers.T3(ctx, input);
+            }
+            return "T3";
+        } else {
+            return describers.T3(ctx, input);
+        }
     }
-    ctx.deps["T3"] = true;
-    ctx.deps["T3"] = describers.T3(ctx, input);
-    return "T3";
 };
 const hoisted_InvalidSchemaWithDate_0 = (ctx, input)=>{
-    if (ctx.deps["InvalidSchemaWithDate"]) {
+    if (ctx.measure) {
+        ctx.deps_counter["InvalidSchemaWithDate"] = (ctx.deps_counter["InvalidSchemaWithDate"] || 0) + 1;
+        if (ctx.deps["InvalidSchemaWithDate"]) {
+            return "InvalidSchemaWithDate";
+        }
+        ctx.deps["InvalidSchemaWithDate"] = true;
+        ctx.deps["InvalidSchemaWithDate"] = describers.InvalidSchemaWithDate(ctx, input);
         return "InvalidSchemaWithDate";
+    } else {
+        if (ctx.deps_counter["InvalidSchemaWithDate"] > 1) {
+            if (!ctx.deps["InvalidSchemaWithDate"]) {
+                ctx.deps["InvalidSchemaWithDate"] = true;
+                ctx.deps["InvalidSchemaWithDate"] = describers.InvalidSchemaWithDate(ctx, input);
+            }
+            return "InvalidSchemaWithDate";
+        } else {
+            return describers.InvalidSchemaWithDate(ctx, input);
+        }
     }
-    ctx.deps["InvalidSchemaWithDate"] = true;
-    ctx.deps["InvalidSchemaWithDate"] = describers.InvalidSchemaWithDate(ctx, input);
-    return "InvalidSchemaWithDate";
 };
 const hoisted_InvalidSchemaWithBigInt_0 = (ctx, input)=>{
-    if (ctx.deps["InvalidSchemaWithBigInt"]) {
+    if (ctx.measure) {
+        ctx.deps_counter["InvalidSchemaWithBigInt"] = (ctx.deps_counter["InvalidSchemaWithBigInt"] || 0) + 1;
+        if (ctx.deps["InvalidSchemaWithBigInt"]) {
+            return "InvalidSchemaWithBigInt";
+        }
+        ctx.deps["InvalidSchemaWithBigInt"] = true;
+        ctx.deps["InvalidSchemaWithBigInt"] = describers.InvalidSchemaWithBigInt(ctx, input);
         return "InvalidSchemaWithBigInt";
+    } else {
+        if (ctx.deps_counter["InvalidSchemaWithBigInt"] > 1) {
+            if (!ctx.deps["InvalidSchemaWithBigInt"]) {
+                ctx.deps["InvalidSchemaWithBigInt"] = true;
+                ctx.deps["InvalidSchemaWithBigInt"] = describers.InvalidSchemaWithBigInt(ctx, input);
+            }
+            return "InvalidSchemaWithBigInt";
+        } else {
+            return describers.InvalidSchemaWithBigInt(ctx, input);
+        }
     }
-    ctx.deps["InvalidSchemaWithBigInt"] = true;
-    ctx.deps["InvalidSchemaWithBigInt"] = describers.InvalidSchemaWithBigInt(ctx, input);
-    return "InvalidSchemaWithBigInt";
 };
 const hoisted_DiscriminatedUnion_0 = (ctx, input)=>{
-    if (ctx.deps["DiscriminatedUnion"]) {
+    if (ctx.measure) {
+        ctx.deps_counter["DiscriminatedUnion"] = (ctx.deps_counter["DiscriminatedUnion"] || 0) + 1;
+        if (ctx.deps["DiscriminatedUnion"]) {
+            return "DiscriminatedUnion";
+        }
+        ctx.deps["DiscriminatedUnion"] = true;
+        ctx.deps["DiscriminatedUnion"] = describers.DiscriminatedUnion(ctx, input);
         return "DiscriminatedUnion";
+    } else {
+        if (ctx.deps_counter["DiscriminatedUnion"] > 1) {
+            if (!ctx.deps["DiscriminatedUnion"]) {
+                ctx.deps["DiscriminatedUnion"] = true;
+                ctx.deps["DiscriminatedUnion"] = describers.DiscriminatedUnion(ctx, input);
+            }
+            return "DiscriminatedUnion";
+        } else {
+            return describers.DiscriminatedUnion(ctx, input);
+        }
     }
-    ctx.deps["DiscriminatedUnion"] = true;
-    ctx.deps["DiscriminatedUnion"] = describers.DiscriminatedUnion(ctx, input);
-    return "DiscriminatedUnion";
 };
 const hoisted_RecursiveTree_0 = (ctx, input)=>{
-    if (ctx.deps["RecursiveTree"]) {
+    if (ctx.measure) {
+        ctx.deps_counter["RecursiveTree"] = (ctx.deps_counter["RecursiveTree"] || 0) + 1;
+        if (ctx.deps["RecursiveTree"]) {
+            return "RecursiveTree";
+        }
+        ctx.deps["RecursiveTree"] = true;
+        ctx.deps["RecursiveTree"] = describers.RecursiveTree(ctx, input);
         return "RecursiveTree";
+    } else {
+        if (ctx.deps_counter["RecursiveTree"] > 1) {
+            if (!ctx.deps["RecursiveTree"]) {
+                ctx.deps["RecursiveTree"] = true;
+                ctx.deps["RecursiveTree"] = describers.RecursiveTree(ctx, input);
+            }
+            return "RecursiveTree";
+        } else {
+            return describers.RecursiveTree(ctx, input);
+        }
     }
-    ctx.deps["RecursiveTree"] = true;
-    ctx.deps["RecursiveTree"] = describers.RecursiveTree(ctx, input);
-    return "RecursiveTree";
 };
 const hoisted_SemVer_0 = (ctx, input)=>{
-    if (ctx.deps["SemVer"]) {
+    if (ctx.measure) {
+        ctx.deps_counter["SemVer"] = (ctx.deps_counter["SemVer"] || 0) + 1;
+        if (ctx.deps["SemVer"]) {
+            return "SemVer";
+        }
+        ctx.deps["SemVer"] = true;
+        ctx.deps["SemVer"] = describers.SemVer(ctx, input);
         return "SemVer";
+    } else {
+        if (ctx.deps_counter["SemVer"] > 1) {
+            if (!ctx.deps["SemVer"]) {
+                ctx.deps["SemVer"] = true;
+                ctx.deps["SemVer"] = describers.SemVer(ctx, input);
+            }
+            return "SemVer";
+        } else {
+            return describers.SemVer(ctx, input);
+        }
     }
-    ctx.deps["SemVer"] = true;
-    ctx.deps["SemVer"] = describers.SemVer(ctx, input);
-    return "SemVer";
 };
 const hoisted_NonEmptyString_0 = (ctx, input)=>{
-    if (ctx.deps["NonEmptyString"]) {
+    if (ctx.measure) {
+        ctx.deps_counter["NonEmptyString"] = (ctx.deps_counter["NonEmptyString"] || 0) + 1;
+        if (ctx.deps["NonEmptyString"]) {
+            return "NonEmptyString";
+        }
+        ctx.deps["NonEmptyString"] = true;
+        ctx.deps["NonEmptyString"] = describers.NonEmptyString(ctx, input);
         return "NonEmptyString";
+    } else {
+        if (ctx.deps_counter["NonEmptyString"] > 1) {
+            if (!ctx.deps["NonEmptyString"]) {
+                ctx.deps["NonEmptyString"] = true;
+                ctx.deps["NonEmptyString"] = describers.NonEmptyString(ctx, input);
+            }
+            return "NonEmptyString";
+        } else {
+            return describers.NonEmptyString(ctx, input);
+        }
     }
-    ctx.deps["NonEmptyString"] = true;
-    ctx.deps["NonEmptyString"] = describers.NonEmptyString(ctx, input);
-    return "NonEmptyString";
 };
 const hoisted_ValidCurrency_0 = (ctx, input)=>{
-    if (ctx.deps["ValidCurrency"]) {
+    if (ctx.measure) {
+        ctx.deps_counter["ValidCurrency"] = (ctx.deps_counter["ValidCurrency"] || 0) + 1;
+        if (ctx.deps["ValidCurrency"]) {
+            return "ValidCurrency";
+        }
+        ctx.deps["ValidCurrency"] = true;
+        ctx.deps["ValidCurrency"] = describers.ValidCurrency(ctx, input);
         return "ValidCurrency";
+    } else {
+        if (ctx.deps_counter["ValidCurrency"] > 1) {
+            if (!ctx.deps["ValidCurrency"]) {
+                ctx.deps["ValidCurrency"] = true;
+                ctx.deps["ValidCurrency"] = describers.ValidCurrency(ctx, input);
+            }
+            return "ValidCurrency";
+        } else {
+            return describers.ValidCurrency(ctx, input);
+        }
     }
-    ctx.deps["ValidCurrency"] = true;
-    ctx.deps["ValidCurrency"] = describers.ValidCurrency(ctx, input);
-    return "ValidCurrency";
 };
 const buildValidatorsInput = {
     "DiscriminatedUnion": validators.DiscriminatedUnion,
@@ -263,8 +393,13 @@ function buildParsers(args) {
     const describe = () => {
       const ctx = {
         deps: {},
+        deps_counter: {},
+        measure: true,
       };
-      const out = describeFn(ctx);
+      let out = describeFn(ctx);
+      ctx["deps"] = {};
+      ctx["measure"] = false;
+      out = describeFn(ctx);
       let sortedDepsKeys = Object.keys(ctx.deps).sort();
       
       

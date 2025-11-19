@@ -59,8 +59,13 @@ function buildParsers(args) {
     const describe = () => {
       const ctx = {
         deps: {},
+        deps_counter: {},
+        measure: true,
       };
-      const out = describeFn(ctx);
+      let out = describeFn(ctx);
+      ctx["deps"] = {};
+      ctx["measure"] = false;
+      out = describeFn(ctx);
       let sortedDepsKeys = Object.keys(ctx.deps).sort();
       // if sorted deps includes k, make it last
       // if (sortedDepsKeys.includes(k)) {

@@ -1644,12 +1644,25 @@ const hoisted_T1_7 = new ObjectReporter(hoisted_T1_0, hoisted_T1_4, {
 const hoisted_T1_8 = new ObjectSchema(hoisted_T1_1, null);
 const hoisted_T1_9 = new ObjectDescribe(hoisted_T1_3, null);
 const hoisted_T2_0 = (ctx, input)=>{
-    if (ctx.deps["T1"]) {
+    if (ctx.measure) {
+        ctx.deps_counter["T1"] = (ctx.deps_counter["T1"] || 0) + 1;
+        if (ctx.deps["T1"]) {
+            return "T1";
+        }
+        ctx.deps["T1"] = true;
+        ctx.deps["T1"] = describers.T1(ctx, input);
         return "T1";
+    } else {
+        if (ctx.deps_counter["T1"] > 1) {
+            if (!ctx.deps["T1"]) {
+                ctx.deps["T1"] = true;
+                ctx.deps["T1"] = describers.T1(ctx, input);
+            }
+            return "T1";
+        } else {
+            return describers.T1(ctx, input);
+        }
     }
-    ctx.deps["T1"] = true;
-    ctx.deps["T1"] = describers.T1(ctx, input);
-    return "T1";
 };
 const hoisted_T2_1 = {
     "t1": validators.T1
@@ -1672,12 +1685,25 @@ const hoisted_T2_8 = new ObjectReporter(hoisted_T2_1, hoisted_T2_5, {
 const hoisted_T2_9 = new ObjectSchema(hoisted_T2_2, null);
 const hoisted_T2_10 = new ObjectDescribe(hoisted_T2_4, null);
 const hoisted_T3_0 = (ctx, input)=>{
-    if (ctx.deps["T2"]) {
+    if (ctx.measure) {
+        ctx.deps_counter["T2"] = (ctx.deps_counter["T2"] || 0) + 1;
+        if (ctx.deps["T2"]) {
+            return "T2";
+        }
+        ctx.deps["T2"] = true;
+        ctx.deps["T2"] = describers.T2(ctx, input);
         return "T2";
+    } else {
+        if (ctx.deps_counter["T2"] > 1) {
+            if (!ctx.deps["T2"]) {
+                ctx.deps["T2"] = true;
+                ctx.deps["T2"] = describers.T2(ctx, input);
+            }
+            return "T2";
+        } else {
+            return describers.T2(ctx, input);
+        }
     }
-    ctx.deps["T2"] = true;
-    ctx.deps["T2"] = describers.T2(ctx, input);
-    return "T2";
 };
 const hoisted_T3_1 = validators.T2;
 const hoisted_T3_2 = new ArrayValidator(hoisted_T3_1);
@@ -2328,12 +2354,25 @@ const hoisted_DiscriminatedUnion_202 = new AnyOfDiscriminatedDescribe([
     hoisted_DiscriminatedUnion_197.describeObjectDescribe.bind(hoisted_DiscriminatedUnion_197)
 ]);
 const hoisted_RecursiveTree_0 = (ctx, input)=>{
-    if (ctx.deps["RecursiveTree"]) {
+    if (ctx.measure) {
+        ctx.deps_counter["RecursiveTree"] = (ctx.deps_counter["RecursiveTree"] || 0) + 1;
+        if (ctx.deps["RecursiveTree"]) {
+            return "RecursiveTree";
+        }
+        ctx.deps["RecursiveTree"] = true;
+        ctx.deps["RecursiveTree"] = describers.RecursiveTree(ctx, input);
         return "RecursiveTree";
+    } else {
+        if (ctx.deps_counter["RecursiveTree"] > 1) {
+            if (!ctx.deps["RecursiveTree"]) {
+                ctx.deps["RecursiveTree"] = true;
+                ctx.deps["RecursiveTree"] = describers.RecursiveTree(ctx, input);
+            }
+            return "RecursiveTree";
+        } else {
+            return describers.RecursiveTree(ctx, input);
+        }
     }
-    ctx.deps["RecursiveTree"] = true;
-    ctx.deps["RecursiveTree"] = describers.RecursiveTree(ctx, input);
-    return "RecursiveTree";
 };
 const hoisted_RecursiveTree_1 = validators.RecursiveTree;
 const hoisted_RecursiveTree_2 = new ArrayValidator(hoisted_RecursiveTree_1);

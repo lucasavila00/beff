@@ -49,6 +49,11 @@ type SemVer = `${number}.${number}.${number}`;
 
 type NonEmptyString = [string, ...string[]];
 
+type ReusesRef = {
+  a: T3;
+  b: T3;
+};
+
 export const Codecs = parse.buildParsers<{
   // basic
   string: string;
@@ -71,6 +76,7 @@ export const Codecs = parse.buildParsers<{
   NonEmptyString: NonEmptyString;
   //
   ValidCurrency: ValidCurrency;
+  ReusesRef: ReusesRef;
 }>({
   stringFormats: {
     ValidCurrency: (input: string) => {

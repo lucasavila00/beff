@@ -6,20 +6,46 @@ import validatorsMod from "./validators.js"; const { registerStringFormatter, re
 const RequiredStringFormats = ["password","StartsWithA"];
 const RequiredNumberFormats = [];
 const hoisted_User_0 = (ctx, input)=>{
-    if (ctx.deps["User"]) {
+    if (ctx.measure) {
+        ctx.deps_counter["User"] = (ctx.deps_counter["User"] || 0) + 1;
+        if (ctx.deps["User"]) {
+            return "User";
+        }
+        ctx.deps["User"] = true;
+        ctx.deps["User"] = describers.User(ctx, input);
         return "User";
+    } else {
+        if (ctx.deps_counter["User"] > 1) {
+            if (!ctx.deps["User"]) {
+                ctx.deps["User"] = true;
+                ctx.deps["User"] = describers.User(ctx, input);
+            }
+            return "User";
+        } else {
+            return describers.User(ctx, input);
+        }
     }
-    ctx.deps["User"] = true;
-    ctx.deps["User"] = describers.User(ctx, input);
-    return "User";
 };
 const hoisted_Users_0 = (ctx, input)=>{
-    if (ctx.deps["User"]) {
+    if (ctx.measure) {
+        ctx.deps_counter["User"] = (ctx.deps_counter["User"] || 0) + 1;
+        if (ctx.deps["User"]) {
+            return "User";
+        }
+        ctx.deps["User"] = true;
+        ctx.deps["User"] = describers.User(ctx, input);
         return "User";
+    } else {
+        if (ctx.deps_counter["User"] > 1) {
+            if (!ctx.deps["User"]) {
+                ctx.deps["User"] = true;
+                ctx.deps["User"] = describers.User(ctx, input);
+            }
+            return "User";
+        } else {
+            return describers.User(ctx, input);
+        }
     }
-    ctx.deps["User"] = true;
-    ctx.deps["User"] = describers.User(ctx, input);
-    return "User";
 };
 const hoisted_Users_1 = validators.User;
 const hoisted_Users_2 = new ArrayValidator(hoisted_Users_1);
@@ -28,38 +54,90 @@ const hoisted_Users_4 = new ArrayReporter(hoisted_Users_1, reporters.User);
 const hoisted_Users_5 = new ArraySchema(schemas.User);
 const hoisted_Users_6 = new ArrayDescribe(hoisted_Users_0);
 const hoisted_NotPublicRenamed_0 = (ctx, input)=>{
-    if (ctx.deps["NotPublic"]) {
+    if (ctx.measure) {
+        ctx.deps_counter["NotPublic"] = (ctx.deps_counter["NotPublic"] || 0) + 1;
+        if (ctx.deps["NotPublic"]) {
+            return "NotPublic";
+        }
+        ctx.deps["NotPublic"] = true;
+        ctx.deps["NotPublic"] = describers.NotPublic(ctx, input);
         return "NotPublic";
+    } else {
+        if (ctx.deps_counter["NotPublic"] > 1) {
+            if (!ctx.deps["NotPublic"]) {
+                ctx.deps["NotPublic"] = true;
+                ctx.deps["NotPublic"] = describers.NotPublic(ctx, input);
+            }
+            return "NotPublic";
+        } else {
+            return describers.NotPublic(ctx, input);
+        }
     }
-    ctx.deps["NotPublic"] = true;
-    ctx.deps["NotPublic"] = describers.NotPublic(ctx, input);
-    return "NotPublic";
 };
 const hoisted_StartsWithA_0 = (ctx, input)=>{
-    if (ctx.deps["StartsWithA"]) {
+    if (ctx.measure) {
+        ctx.deps_counter["StartsWithA"] = (ctx.deps_counter["StartsWithA"] || 0) + 1;
+        if (ctx.deps["StartsWithA"]) {
+            return "StartsWithA";
+        }
+        ctx.deps["StartsWithA"] = true;
+        ctx.deps["StartsWithA"] = describers.StartsWithA(ctx, input);
         return "StartsWithA";
+    } else {
+        if (ctx.deps_counter["StartsWithA"] > 1) {
+            if (!ctx.deps["StartsWithA"]) {
+                ctx.deps["StartsWithA"] = true;
+                ctx.deps["StartsWithA"] = describers.StartsWithA(ctx, input);
+            }
+            return "StartsWithA";
+        } else {
+            return describers.StartsWithA(ctx, input);
+        }
     }
-    ctx.deps["StartsWithA"] = true;
-    ctx.deps["StartsWithA"] = describers.StartsWithA(ctx, input);
-    return "StartsWithA";
 };
 const hoisted_Password_0 = (ctx, input)=>{
-    if (ctx.deps["Password"]) {
+    if (ctx.measure) {
+        ctx.deps_counter["Password"] = (ctx.deps_counter["Password"] || 0) + 1;
+        if (ctx.deps["Password"]) {
+            return "Password";
+        }
+        ctx.deps["Password"] = true;
+        ctx.deps["Password"] = describers.Password(ctx, input);
         return "Password";
+    } else {
+        if (ctx.deps_counter["Password"] > 1) {
+            if (!ctx.deps["Password"]) {
+                ctx.deps["Password"] = true;
+                ctx.deps["Password"] = describers.Password(ctx, input);
+            }
+            return "Password";
+        } else {
+            return describers.Password(ctx, input);
+        }
     }
-    ctx.deps["Password"] = true;
-    ctx.deps["Password"] = describers.Password(ctx, input);
-    return "Password";
 };
 const hoisted_float_0 = new ConstDecoder(123.456);
 const hoisted_int_0 = new ConstDecoder(123);
 const hoisted_union_0 = (ctx, input)=>{
-    if (ctx.deps["UnionNested"]) {
+    if (ctx.measure) {
+        ctx.deps_counter["UnionNested"] = (ctx.deps_counter["UnionNested"] || 0) + 1;
+        if (ctx.deps["UnionNested"]) {
+            return "UnionNested";
+        }
+        ctx.deps["UnionNested"] = true;
+        ctx.deps["UnionNested"] = describers.UnionNested(ctx, input);
         return "UnionNested";
+    } else {
+        if (ctx.deps_counter["UnionNested"] > 1) {
+            if (!ctx.deps["UnionNested"]) {
+                ctx.deps["UnionNested"] = true;
+                ctx.deps["UnionNested"] = describers.UnionNested(ctx, input);
+            }
+            return "UnionNested";
+        } else {
+            return describers.UnionNested(ctx, input);
+        }
     }
-    ctx.deps["UnionNested"] = true;
-    ctx.deps["UnionNested"] = describers.UnionNested(ctx, input);
-    return "UnionNested";
 };
 const buildValidatorsInput = {
     "NotPublicRenamed": validators.NotPublic,
@@ -173,8 +251,13 @@ function buildParsers(args) {
     const describe = () => {
       const ctx = {
         deps: {},
+        deps_counter: {},
+        measure: true,
       };
-      const out = describeFn(ctx);
+      let out = describeFn(ctx);
+      ctx["deps"] = {};
+      ctx["measure"] = false;
+      out = describeFn(ctx);
       let sortedDepsKeys = Object.keys(ctx.deps).sort();
       
       
