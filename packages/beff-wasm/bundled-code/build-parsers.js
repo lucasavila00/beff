@@ -63,8 +63,8 @@ function buildParsers(args) {
         measure: true,
       };
       let out = describeFn(ctx);
-      ctx["deps"] = {}
-      ctx['measure']=false
+      ctx["deps"] = {};
+      ctx["measure"] = false;
       out = describeFn(ctx);
       let sortedDepsKeys = Object.keys(ctx.deps).sort();
       // if sorted deps includes k, make it last

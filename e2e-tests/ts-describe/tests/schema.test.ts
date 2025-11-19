@@ -15,7 +15,9 @@ it("works", () => {
   expect(Codecs.T3.describe()).toMatchInlineSnapshot(
     '"type CodecT3 = { t2Array: Array<{ t1: { a: string, b: number } }> };"',
   );
-  expect(Codecs.SemVer.describe()).toMatchInlineSnapshot('"type CodecSemVer = `${number}.${number}.${number}`;"');
+  expect(Codecs.SemVer.describe()).toMatchInlineSnapshot(
+    '"type CodecSemVer = `${number}.${number}.${number}`;"',
+  );
   expect(Codecs.NonEmptyString.describe()).toMatchInlineSnapshot(
     '"type CodecNonEmptyString = [string, ...Array<string>];"',
   );
