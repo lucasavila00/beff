@@ -172,7 +172,7 @@ function buildParsers(args) {
     const describeFn = buildDescribeInput[k];
     const describe = () => {
       const ctx = {
-        deps: {}
+        deps: {},
       };
       const out = describeFn(ctx);
       let sortedDepsKeys = Object.keys(ctx.deps).sort();
@@ -180,14 +180,16 @@ function buildParsers(args) {
       
       
       
-      const depsPart = sortedDepsKeys.map((key) => {
-        return `type ${key} = ${ctx.deps[key]};`;
-      }).join("\n\n");
+      const depsPart = sortedDepsKeys
+        .map((key) => {
+          return `type ${key} = ${ctx.deps[key]};`;
+        })
+        .join("\n\n");
       
       
       
-      const outPart = `type Codec${k} = ${out};`
-      return [depsPart, outPart].filter(it => it!=null && it.length > 0).join("\n\n");
+      const outPart = `type Codec${k} = ${out};`;
+      return [depsPart, outPart].filter((it) => it != null && it.length > 0).join("\n\n");
     };
 
     const safeParse = (input, options) => {

@@ -788,12 +788,10 @@ class ObjectDescribe {
       })
       .join(", ");
 
-      const rest = this.restDescriber != null ? `[K in string]: ${this.restDescriber(ctx)}` : null;
+    const rest = this.restDescriber != null ? `[K in string]: ${this.restDescriber(ctx)}` : null;
 
-
-
-    const content = [props, rest].filter(it=> it!=null && it.length > 0).join(", ")
-    return `{ ${content} }`
+    const content = [props, rest].filter((it) => it != null && it.length > 0).join(", ");
+    return `{ ${content} }`;
   }
 }
 
@@ -1341,11 +1339,10 @@ class TupleDescribe {
     this.rest = rest;
   }
   describeTupleDescribe(ctx) {
-
     const prefix = this.prefix.map((d) => d(ctx)).join(", ");
     const rest = this.rest != null ? `...${this.rest(ctx)}` : null;
 
-    const inner= [prefix, rest].filter(it=> it!=null && it.length > 0).join(", ");
+    const inner = [prefix, rest].filter((it) => it != null && it.length > 0).join(", ");
     return `[${inner}]`;
   }
 }
