@@ -1,5 +1,13 @@
 # @beff/client
 
+## 0.0.96
+
+### Patch Changes
+
+- add .describe
+- Updated dependencies
+  - @beff/cli@0.0.96
+
 ## 0.0.95
 
 ### Patch Changes
