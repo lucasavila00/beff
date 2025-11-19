@@ -256,6 +256,10 @@ function schemaString(ctx) {
   };
 }
 
+function describeString(ctx) {
+  return "string";
+}
+
 function validateNumber(ctx, input) {
   return typeof input === "number";
 }
@@ -268,6 +272,10 @@ function schemaNumber(ctx) {
   return {
     type: "number",
   };
+}
+
+function describeNumber(ctx) {
+  return "number";
 }
 
 function validateBoolean(ctx, input) {
@@ -284,6 +292,10 @@ function schemaBoolean(ctx) {
   };
 }
 
+function describeBoolean(ctx) {
+  return "boolean";
+}
+
 function validateAny(ctx, input) {
   return true;
 }
@@ -294,6 +306,10 @@ function reportAny(ctx, input) {
 
 function schemaAny(ctx) {
   return {};
+}
+
+function describeAny(ctx) {
+  return "any";
 }
 
 function validateNull(ctx, input) {
@@ -313,6 +329,10 @@ function schemaNull(ctx) {
   };
 }
 
+function describeNull(ctx) {
+  return "null";
+}
+
 function validateNever(ctx, input) {
   return false;
 }
@@ -327,6 +347,10 @@ function schemaNever(ctx) {
   };
 }
 
+function describeNever(ctx) {
+  return "never";
+}
+
 function validateFunction(ctx, input) {
   return typeof input === "function";
 }
@@ -337,6 +361,10 @@ function reportFunction(ctx, input) {
 
 function schemaFunction(ctx) {
   throw new Error(buildSchemaErrorMessage(ctx, "Cannot generate JSON Schema for function"));
+}
+
+function describeFunction(ctx) {
+  return "function";
 }
 
 class ConstDecoder {
@@ -360,6 +388,9 @@ class ConstDecoder {
     return {
       const: this.value,
     };
+  }
+  describeConstDecoder(ctx) {
+    return JSON.stringify(this.value);
   }
 }
 
@@ -389,6 +420,9 @@ class RegexDecoder {
       type: "string",
       pattern: this.description,
     };
+  }
+  describeRegexDecoder(ctx) {
+    return this.description;
   }
 }
 
@@ -436,6 +470,17 @@ class CodecDecoder {
 
     throw new Error("INTERNAL ERROR: Unrecognized codec: " + this.codec);
   }
+  describeCodecDecoder(ctx) {
+    switch (this.codec) {
+      case "Codec::ISO8061": {
+        return "Date";
+      }
+      case "Codec::BigInt": {
+        return "BigInt";
+      }
+    }
+    throw new Error("INTERNAL ERROR: Unrecognized codec: " + this.codec);
+  }
 }
 
 class StringWithFormatsDecoder {
@@ -474,6 +519,17 @@ class StringWithFormatsDecoder {
       format: this.formats.join(" and "),
     };
   }
+  describeStringWithFormatsDecoder(ctx) {
+    if (this.formats.length === 0) {
+      throw new Error("INTERNAL ERROR: No formats provided");
+    }
+    const [first, ...rest] = this.formats;
+    let acc = `StringFormat<"${first}">`;
+    for (const r of rest) {
+      acc = `StringFormatExtends<${acc}, "${r}">`;
+    }
+    return acc;
+  }
 }
 class NumberWithFormatsDecoder {
   constructor(...formats) {
@@ -511,6 +567,17 @@ class NumberWithFormatsDecoder {
       format: this.formats.join(" and "),
     };
   }
+  describeNumberWithFormatsDecoder(ctx) {
+    if (this.formats.length === 0) {
+      throw new Error("INTERNAL ERROR: No formats provided");
+    }
+    const [first, ...rest] = this.formats;
+    let acc = `NumberFormat<"${first}">`;
+    for (const r of rest) {
+      acc = `NumberFormatExtends<${acc}, "${r}">`;
+    }
+    return acc;
+  }
 }
 
 const limitedCommaJoinJson = (arr) => {
@@ -547,6 +614,10 @@ class AnyOfConstsDecoder {
     return {
       enum: this.consts,
     };
+  }
+  describeAnyOfConstsDecoder(ctx) {
+    const parts = this.consts.map((it) => JSON.stringify(it));
+    return parts.join(" | ");
   }
 }
 
@@ -703,6 +774,27 @@ class ObjectSchema {
   }
 }
 
+class ObjectDescribe {
+  constructor(dataDescriber, restDescriber) {
+    this.dataDescriber = dataDescriber;
+    this.restDescriber = restDescriber;
+  }
+  describeObjectDescribe(ctx) {
+    const sortedKeys = Object.keys(this.dataDescriber).sort();
+    const props = sortedKeys
+      .map((k) => {
+        const describer = this.dataDescriber[k];
+        return `${k}: ${describer(ctx)}`;
+      })
+      .join(", ");
+
+    const rest = this.restDescriber != null ? `[K in string]: ${this.restDescriber(ctx)}` : null;
+
+    const content = [props, rest].filter((it) => it != null && it.length > 0).join(", ");
+    return `{ ${content} }`;
+  }
+}
+
 class MappedRecordValidator {
   constructor(keyValidator, valueValidator) {
     this.keyValidator = keyValidator;
@@ -754,6 +846,18 @@ class MappedRecordSchema {
       additionalProperties: this.valueSchema(ctx),
       propertyNames: this.keySchema(ctx),
     };
+  }
+}
+
+class MappedRecordDescribe {
+  constructor(keyDescriber, valueDescriber) {
+    this.keyDescriber = keyDescriber;
+    this.valueDescriber = valueDescriber;
+  }
+  describeMappedRecordDescribe(ctx) {
+    const k = this.keyDescriber(ctx);
+    const v = this.valueDescriber(ctx);
+    return `Record<${k}, ${v}>`;
   }
 }
 
@@ -882,6 +986,17 @@ class AnyOfDiscriminatedSchema {
   }
 }
 
+class AnyOfDiscriminatedDescribe {
+  constructor(vs) {
+    this.vs = vs;
+  }
+
+  describeAnyOfDiscriminatedDescribe(ctx) {
+    
+    return `(${this.vs.map((v) => v(ctx)).join(" | ")})`;
+  }
+}
+
 class ArrayParser {
   constructor(innerParser) {
     this.innerParser = innerParser;
@@ -955,6 +1070,15 @@ class ArraySchema {
   }
 }
 
+class ArrayDescribe {
+  constructor(innerDescriber) {
+    this.innerDescriber = innerDescriber;
+  }
+  describeArrayDescribe(ctx) {
+    return `Array<${this.innerDescriber(ctx)}>`;
+  }
+}
+
 class AnyOfValidator {
   constructor(vs) {
     this.vs = vs;
@@ -1009,6 +1133,15 @@ class AnyOfSchema {
     return {
       anyOf: this.schemas.map((s) => s(ctx)),
     };
+  }
+}
+
+class AnyOfDescribe {
+  constructor(describers) {
+    this.describers = describers;
+  }
+  describeAnyOfDescribe(ctx) {
+    return `(${this.describers.map((v) => v(ctx)).join(" | ")})`;
   }
 }
 
@@ -1072,6 +1205,15 @@ class AllOfSchema {
     return {
       allOf: this.schemas.map((s) => s(ctx)),
     };
+  }
+}
+
+class AllOfDescribe {
+  constructor(describers) {
+    this.describers = describers;
+  }
+  describeAllOfDescribe(ctx) {
+    return `(${this.describers.map((v) => v(ctx)).join(" & ")})`;
   }
 }
 
@@ -1191,6 +1333,20 @@ class TupleSchema {
   }
 }
 
+class TupleDescribe {
+  constructor(prefix, rest) {
+    this.prefix = prefix;
+    this.rest = rest;
+  }
+  describeTupleDescribe(ctx) {
+    const prefix = this.prefix.map((d) => d(ctx)).join(", ");
+    const rest = this.rest != null ? `...${this.rest(ctx)}` : null;
+
+    const inner = [prefix, rest].filter((it) => it != null && it.length > 0).join(", ");
+    return `[${inner}]`;
+  }
+}
+
 
 function ValidateA(ctx, input) {
     return (validateString)(ctx, input);
@@ -1210,6 +1366,9 @@ function SchemaA(ctx, input) {
     delete ctx.seen["A"];
     return tmp;
 }
+function DescribeA(ctx, input) {
+    return (describeString)(ctx);
+}
 const validators = {
     A: ValidateA
 };
@@ -1222,5 +1381,8 @@ const reporters = {
 const schemas = {
     A: SchemaA
 };
+const describers = {
+    A: DescribeA
+};
 
-export default { registerStringFormatter, registerNumberFormatter, ObjectValidator, ObjectParser, MappedRecordParser, MappedRecordValidator, ArrayParser, ArrayValidator, CodecDecoder, StringWithFormatsDecoder, NumberWithFormatsDecoder, AnyOfValidator, AnyOfParser, AllOfValidator, AllOfParser, TupleParser, TupleValidator, RegexDecoder, ConstDecoder, AnyOfConstsDecoder, AnyOfDiscriminatedParser, AnyOfDiscriminatedValidator, validateString, validateNumber, validateFunction, validateBoolean, validateAny, validateNull, validateNever, parseIdentity, reportString, reportNumber, reportNull, reportBoolean, reportAny, reportNever, reportFunction, ArrayReporter, ObjectReporter, TupleReporter, AnyOfReporter, AllOfReporter, AnyOfDiscriminatedReporter, MappedRecordReporter, schemaString, schemaNumber, schemaBoolean, schemaNull, schemaAny, schemaNever, schemaFunction, ArraySchema, ObjectSchema, TupleSchema, AnyOfSchema, AllOfSchema, AnyOfDiscriminatedSchema, MappedRecordSchema, validators, parsers, reporters, schemas };
+export default { registerStringFormatter, registerNumberFormatter, ObjectValidator, ObjectParser, MappedRecordParser, MappedRecordValidator, ArrayParser, ArrayValidator, CodecDecoder, StringWithFormatsDecoder, NumberWithFormatsDecoder, AnyOfValidator, AnyOfParser, AllOfValidator, AllOfParser, TupleParser, TupleValidator, RegexDecoder, ConstDecoder, AnyOfConstsDecoder, AnyOfDiscriminatedParser, AnyOfDiscriminatedValidator, validateString, validateNumber, validateFunction, validateBoolean, validateAny, validateNull, validateNever, parseIdentity, reportString, reportNumber, reportNull, reportBoolean, reportAny, reportNever, reportFunction, ArrayReporter, ObjectReporter, TupleReporter, AnyOfReporter, AllOfReporter, AnyOfDiscriminatedReporter, MappedRecordReporter, schemaString, schemaNumber, schemaBoolean, schemaNull, schemaAny, schemaNever, schemaFunction, ArraySchema, ObjectSchema, TupleSchema, AnyOfSchema, AllOfSchema, AnyOfDiscriminatedSchema, MappedRecordSchema, describeString, describeNumber, describeBoolean, describeNull, describeAny, describeNever, describeFunction, ArrayDescribe, ObjectDescribe, TupleDescribe, AnyOfDescribe, AllOfDescribe, AnyOfDiscriminatedDescribe, MappedRecordDescribe, validators, parsers, reporters, schemas, describers };

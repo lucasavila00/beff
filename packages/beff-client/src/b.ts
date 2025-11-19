@@ -10,6 +10,7 @@ const buildParserFromSafeParser = <T>(
     options?: ParseOptions,
   ) => { success: true; data: T } | { success: false; errors: DecodeError[] },
   jsonSchema: () => JSONSchema7,
+  describe: () => string,
 ): BeffParser<T> => {
   const parse = (input: any, options?: ParseOptions) => {
     const safe = safeParse(input, options);
@@ -42,6 +43,7 @@ const buildParserFromSafeParser = <T>(
     name,
     validate,
     schema: jsonSchema,
+    describe,
   };
 };
 
@@ -123,6 +125,16 @@ const Object_ = <T extends Record<string, BeffParser<any>>>(
           Object.entries(fields).map(([key, parser]) => [key, parser.schema()]),
         ),
     }),
+    () => {
+      const sortedKeys = Object.keys(fields).sort();
+      const props = sortedKeys
+        .map((key) => {
+          const parser = fields[key];
+          return `"${key}": ${parser.describe()}`;
+        })
+        .join(", ");
+      return `{ ${props} }`;
+    },
   );
 
 const String_ = (): BeffParser<string> =>
@@ -139,6 +151,7 @@ const String_ = (): BeffParser<string> =>
     () => ({
       type: "string",
     }),
+    () => `string`,
   );
 
 const Number_ = (): BeffParser<number> =>
@@ -155,6 +168,7 @@ const Number_ = (): BeffParser<number> =>
     () => ({
       type: "number",
     }),
+    () => `number`,
   );
 
 const Boolean_ = (): BeffParser<boolean> =>
@@ -171,6 +185,7 @@ const Boolean_ = (): BeffParser<boolean> =>
     () => ({
       type: "boolean",
     }),
+    () => `boolean`,
   );
 
 const Undefined_ = (): BeffParser<undefined> =>
@@ -186,6 +201,7 @@ const Undefined_ = (): BeffParser<undefined> =>
     () => ({
       type: "null",
     }),
+    () => `null`,
   );
 
 const Void_ = (): BeffParser<void> =>
@@ -202,6 +218,7 @@ const Void_ = (): BeffParser<void> =>
     () => ({
       type: "null",
     }),
+    () => `null`,
   );
 
 const Null_ = (): BeffParser<undefined> =>
@@ -217,6 +234,7 @@ const Null_ = (): BeffParser<undefined> =>
     () => ({
       type: "null",
     }),
+    () => `null`,
   );
 
 const Any_ = (): BeffParser<any> =>
@@ -228,6 +246,7 @@ const Any_ = (): BeffParser<any> =>
       return { success: true, data: input };
     },
     () => ({}),
+    () => `any`,
   );
 
 const Unknown_ = (): BeffParser<unknown> =>
@@ -238,6 +257,7 @@ const Unknown_ = (): BeffParser<unknown> =>
       return { success: true, data: input };
     },
     () => ({}),
+    () => `unknown`,
   );
 
 const Array_ = <T>(parser: BeffParser<T>): BeffParser<T[]> =>
@@ -281,6 +301,7 @@ const Array_ = <T>(parser: BeffParser<T>): BeffParser<T[]> =>
       type: "array",
       items: parser.schema(),
     }),
+    () => `Array<${parser.describe()}>`,
   );
 
 const ReadOnlyArray_ = <T>(parser: BeffParser<T>): BeffParser<readonly T[]> =>

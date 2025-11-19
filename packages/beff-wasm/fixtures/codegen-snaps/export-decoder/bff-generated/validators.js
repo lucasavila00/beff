@@ -256,6 +256,10 @@ function schemaString(ctx) {
   };
 }
 
+function describeString(ctx) {
+  return "string";
+}
+
 function validateNumber(ctx, input) {
   return typeof input === "number";
 }
@@ -268,6 +272,10 @@ function schemaNumber(ctx) {
   return {
     type: "number",
   };
+}
+
+function describeNumber(ctx) {
+  return "number";
 }
 
 function validateBoolean(ctx, input) {
@@ -284,6 +292,10 @@ function schemaBoolean(ctx) {
   };
 }
 
+function describeBoolean(ctx) {
+  return "boolean";
+}
+
 function validateAny(ctx, input) {
   return true;
 }
@@ -294,6 +306,10 @@ function reportAny(ctx, input) {
 
 function schemaAny(ctx) {
   return {};
+}
+
+function describeAny(ctx) {
+  return "any";
 }
 
 function validateNull(ctx, input) {
@@ -313,6 +329,10 @@ function schemaNull(ctx) {
   };
 }
 
+function describeNull(ctx) {
+  return "null";
+}
+
 function validateNever(ctx, input) {
   return false;
 }
@@ -327,6 +347,10 @@ function schemaNever(ctx) {
   };
 }
 
+function describeNever(ctx) {
+  return "never";
+}
+
 function validateFunction(ctx, input) {
   return typeof input === "function";
 }
@@ -337,6 +361,10 @@ function reportFunction(ctx, input) {
 
 function schemaFunction(ctx) {
   throw new Error(buildSchemaErrorMessage(ctx, "Cannot generate JSON Schema for function"));
+}
+
+function describeFunction(ctx) {
+  return "function";
 }
 
 class ConstDecoder {
@@ -360,6 +388,9 @@ class ConstDecoder {
     return {
       const: this.value,
     };
+  }
+  describeConstDecoder(ctx) {
+    return JSON.stringify(this.value);
   }
 }
 
@@ -389,6 +420,9 @@ class RegexDecoder {
       type: "string",
       pattern: this.description,
     };
+  }
+  describeRegexDecoder(ctx) {
+    return this.description;
   }
 }
 
@@ -436,6 +470,17 @@ class CodecDecoder {
 
     throw new Error("INTERNAL ERROR: Unrecognized codec: " + this.codec);
   }
+  describeCodecDecoder(ctx) {
+    switch (this.codec) {
+      case "Codec::ISO8061": {
+        return "Date";
+      }
+      case "Codec::BigInt": {
+        return "BigInt";
+      }
+    }
+    throw new Error("INTERNAL ERROR: Unrecognized codec: " + this.codec);
+  }
 }
 
 class StringWithFormatsDecoder {
@@ -474,6 +519,17 @@ class StringWithFormatsDecoder {
       format: this.formats.join(" and "),
     };
   }
+  describeStringWithFormatsDecoder(ctx) {
+    if (this.formats.length === 0) {
+      throw new Error("INTERNAL ERROR: No formats provided");
+    }
+    const [first, ...rest] = this.formats;
+    let acc = `StringFormat<"${first}">`;
+    for (const r of rest) {
+      acc = `StringFormatExtends<${acc}, "${r}">`;
+    }
+    return acc;
+  }
 }
 class NumberWithFormatsDecoder {
   constructor(...formats) {
@@ -511,6 +567,17 @@ class NumberWithFormatsDecoder {
       format: this.formats.join(" and "),
     };
   }
+  describeNumberWithFormatsDecoder(ctx) {
+    if (this.formats.length === 0) {
+      throw new Error("INTERNAL ERROR: No formats provided");
+    }
+    const [first, ...rest] = this.formats;
+    let acc = `NumberFormat<"${first}">`;
+    for (const r of rest) {
+      acc = `NumberFormatExtends<${acc}, "${r}">`;
+    }
+    return acc;
+  }
 }
 
 const limitedCommaJoinJson = (arr) => {
@@ -547,6 +614,10 @@ class AnyOfConstsDecoder {
     return {
       enum: this.consts,
     };
+  }
+  describeAnyOfConstsDecoder(ctx) {
+    const parts = this.consts.map((it) => JSON.stringify(it));
+    return parts.join(" | ");
   }
 }
 
@@ -703,6 +774,27 @@ class ObjectSchema {
   }
 }
 
+class ObjectDescribe {
+  constructor(dataDescriber, restDescriber) {
+    this.dataDescriber = dataDescriber;
+    this.restDescriber = restDescriber;
+  }
+  describeObjectDescribe(ctx) {
+    const sortedKeys = Object.keys(this.dataDescriber).sort();
+    const props = sortedKeys
+      .map((k) => {
+        const describer = this.dataDescriber[k];
+        return `${k}: ${describer(ctx)}`;
+      })
+      .join(", ");
+
+    const rest = this.restDescriber != null ? `[K in string]: ${this.restDescriber(ctx)}` : null;
+
+    const content = [props, rest].filter((it) => it != null && it.length > 0).join(", ");
+    return `{ ${content} }`;
+  }
+}
+
 class MappedRecordValidator {
   constructor(keyValidator, valueValidator) {
     this.keyValidator = keyValidator;
@@ -754,6 +846,18 @@ class MappedRecordSchema {
       additionalProperties: this.valueSchema(ctx),
       propertyNames: this.keySchema(ctx),
     };
+  }
+}
+
+class MappedRecordDescribe {
+  constructor(keyDescriber, valueDescriber) {
+    this.keyDescriber = keyDescriber;
+    this.valueDescriber = valueDescriber;
+  }
+  describeMappedRecordDescribe(ctx) {
+    const k = this.keyDescriber(ctx);
+    const v = this.valueDescriber(ctx);
+    return `Record<${k}, ${v}>`;
   }
 }
 
@@ -882,6 +986,17 @@ class AnyOfDiscriminatedSchema {
   }
 }
 
+class AnyOfDiscriminatedDescribe {
+  constructor(vs) {
+    this.vs = vs;
+  }
+
+  describeAnyOfDiscriminatedDescribe(ctx) {
+    
+    return `(${this.vs.map((v) => v(ctx)).join(" | ")})`;
+  }
+}
+
 class ArrayParser {
   constructor(innerParser) {
     this.innerParser = innerParser;
@@ -955,6 +1070,15 @@ class ArraySchema {
   }
 }
 
+class ArrayDescribe {
+  constructor(innerDescriber) {
+    this.innerDescriber = innerDescriber;
+  }
+  describeArrayDescribe(ctx) {
+    return `Array<${this.innerDescriber(ctx)}>`;
+  }
+}
+
 class AnyOfValidator {
   constructor(vs) {
     this.vs = vs;
@@ -1009,6 +1133,15 @@ class AnyOfSchema {
     return {
       anyOf: this.schemas.map((s) => s(ctx)),
     };
+  }
+}
+
+class AnyOfDescribe {
+  constructor(describers) {
+    this.describers = describers;
+  }
+  describeAnyOfDescribe(ctx) {
+    return `(${this.describers.map((v) => v(ctx)).join(" | ")})`;
   }
 }
 
@@ -1072,6 +1205,15 @@ class AllOfSchema {
     return {
       allOf: this.schemas.map((s) => s(ctx)),
     };
+  }
+}
+
+class AllOfDescribe {
+  constructor(describers) {
+    this.describers = describers;
+  }
+  describeAllOfDescribe(ctx) {
+    return `(${this.describers.map((v) => v(ctx)).join(" & ")})`;
   }
 }
 
@@ -1191,42 +1333,62 @@ class TupleSchema {
   }
 }
 
+class TupleDescribe {
+  constructor(prefix, rest) {
+    this.prefix = prefix;
+    this.rest = rest;
+  }
+  describeTupleDescribe(ctx) {
+    const prefix = this.prefix.map((d) => d(ctx)).join(", ");
+    const rest = this.rest != null ? `...${this.rest(ctx)}` : null;
+
+    const inner = [prefix, rest].filter((it) => it != null && it.length > 0).join(", ");
+    return `[${inner}]`;
+  }
+}
+
 
 function ValidateUser(ctx, input) {
-    return (hoisted_User_3.validateObjectValidator.bind(hoisted_User_3))(ctx, input);
+    return (hoisted_User_5.validateObjectValidator.bind(hoisted_User_5))(ctx, input);
 }
 function ParseUser(ctx, input) {
-    return (hoisted_User_4.parseObjectParser.bind(hoisted_User_4))(ctx, input);
+    return (hoisted_User_6.parseObjectParser.bind(hoisted_User_6))(ctx, input);
 }
 function ReportUser(ctx, input) {
-    return (hoisted_User_5.reportObjectReporter.bind(hoisted_User_5))(ctx, input);
+    return (hoisted_User_7.reportObjectReporter.bind(hoisted_User_7))(ctx, input);
 }
 function SchemaUser(ctx, input) {
     if (ctx.seen["User"]) {
         return {};
     }
     ctx.seen["User"] = true;
-    var tmp = (hoisted_User_6.schemaObjectSchema.bind(hoisted_User_6))(ctx);
+    var tmp = (hoisted_User_8.schemaObjectSchema.bind(hoisted_User_8))(ctx);
     delete ctx.seen["User"];
     return tmp;
 }
+function DescribeUser(ctx, input) {
+    return (hoisted_User_9.describeObjectDescribe.bind(hoisted_User_9))(ctx);
+}
 function ValidateNotPublic(ctx, input) {
-    return (hoisted_NotPublic_3.validateObjectValidator.bind(hoisted_NotPublic_3))(ctx, input);
+    return (hoisted_NotPublic_5.validateObjectValidator.bind(hoisted_NotPublic_5))(ctx, input);
 }
 function ParseNotPublic(ctx, input) {
-    return (hoisted_NotPublic_4.parseObjectParser.bind(hoisted_NotPublic_4))(ctx, input);
+    return (hoisted_NotPublic_6.parseObjectParser.bind(hoisted_NotPublic_6))(ctx, input);
 }
 function ReportNotPublic(ctx, input) {
-    return (hoisted_NotPublic_5.reportObjectReporter.bind(hoisted_NotPublic_5))(ctx, input);
+    return (hoisted_NotPublic_7.reportObjectReporter.bind(hoisted_NotPublic_7))(ctx, input);
 }
 function SchemaNotPublic(ctx, input) {
     if (ctx.seen["NotPublic"]) {
         return {};
     }
     ctx.seen["NotPublic"] = true;
-    var tmp = (hoisted_NotPublic_6.schemaObjectSchema.bind(hoisted_NotPublic_6))(ctx);
+    var tmp = (hoisted_NotPublic_8.schemaObjectSchema.bind(hoisted_NotPublic_8))(ctx);
     delete ctx.seen["NotPublic"];
     return tmp;
+}
+function DescribeNotPublic(ctx, input) {
+    return (hoisted_NotPublic_9.describeObjectDescribe.bind(hoisted_NotPublic_9))(ctx);
 }
 function ValidateStartsWithA(ctx, input) {
     return (hoisted_StartsWithA_0.validateStringWithFormatsDecoder.bind(hoisted_StartsWithA_0))(ctx, input);
@@ -1246,6 +1408,9 @@ function SchemaStartsWithA(ctx, input) {
     delete ctx.seen["StartsWithA"];
     return tmp;
 }
+function DescribeStartsWithA(ctx, input) {
+    return (hoisted_StartsWithA_0.describeStringWithFormatsDecoder.bind(hoisted_StartsWithA_0))(ctx);
+}
 function ValidatePassword(ctx, input) {
     return (hoisted_Password_0.validateStringWithFormatsDecoder.bind(hoisted_Password_0))(ctx, input);
 }
@@ -1263,6 +1428,9 @@ function SchemaPassword(ctx, input) {
     var tmp = (hoisted_Password_0.schemaStringWithFormatsDecoder.bind(hoisted_Password_0))(ctx);
     delete ctx.seen["Password"];
     return tmp;
+}
+function DescribePassword(ctx, input) {
+    return (hoisted_Password_0.describeStringWithFormatsDecoder.bind(hoisted_Password_0))(ctx);
 }
 function ValidateA(ctx, input) {
     return (hoisted_A_0.validateAnyOfConstsDecoder.bind(hoisted_A_0))(ctx, input);
@@ -1282,6 +1450,9 @@ function SchemaA(ctx, input) {
     delete ctx.seen["A"];
     return tmp;
 }
+function DescribeA(ctx, input) {
+    return (hoisted_A_0.describeAnyOfConstsDecoder.bind(hoisted_A_0))(ctx);
+}
 function ValidateB(ctx, input) {
     return (hoisted_B_0.validateAnyOfConstsDecoder.bind(hoisted_B_0))(ctx, input);
 }
@@ -1299,6 +1470,9 @@ function SchemaB(ctx, input) {
     var tmp = (hoisted_B_0.schemaAnyOfConstsDecoder.bind(hoisted_B_0))(ctx);
     delete ctx.seen["B"];
     return tmp;
+}
+function DescribeB(ctx, input) {
+    return (hoisted_B_0.describeAnyOfConstsDecoder.bind(hoisted_B_0))(ctx);
 }
 function ValidateD(ctx, input) {
     return (hoisted_D_0.validateAnyOfConstsDecoder.bind(hoisted_D_0))(ctx, input);
@@ -1318,6 +1492,9 @@ function SchemaD(ctx, input) {
     delete ctx.seen["D"];
     return tmp;
 }
+function DescribeD(ctx, input) {
+    return (hoisted_D_0.describeAnyOfConstsDecoder.bind(hoisted_D_0))(ctx);
+}
 function ValidateE(ctx, input) {
     return (hoisted_E_0.validateAnyOfConstsDecoder.bind(hoisted_E_0))(ctx, input);
 }
@@ -1336,6 +1513,9 @@ function SchemaE(ctx, input) {
     delete ctx.seen["E"];
     return tmp;
 }
+function DescribeE(ctx, input) {
+    return (hoisted_E_0.describeAnyOfConstsDecoder.bind(hoisted_E_0))(ctx);
+}
 function ValidateUnionNested(ctx, input) {
     return (hoisted_UnionNested_0.validateAnyOfConstsDecoder.bind(hoisted_UnionNested_0))(ctx, input);
 }
@@ -1353,6 +1533,9 @@ function SchemaUnionNested(ctx, input) {
     var tmp = (hoisted_UnionNested_0.schemaAnyOfConstsDecoder.bind(hoisted_UnionNested_0))(ctx);
     delete ctx.seen["UnionNested"];
     return tmp;
+}
+function DescribeUnionNested(ctx, input) {
+    return (hoisted_UnionNested_0.describeAnyOfConstsDecoder.bind(hoisted_UnionNested_0))(ctx);
 }
 const validators = {
     User: ValidateUser,
@@ -1398,6 +1581,17 @@ const schemas = {
     E: SchemaE,
     UnionNested: SchemaUnionNested
 };
+const describers = {
+    User: DescribeUser,
+    NotPublic: DescribeNotPublic,
+    StartsWithA: DescribeStartsWithA,
+    Password: DescribePassword,
+    A: DescribeA,
+    B: DescribeB,
+    D: DescribeD,
+    E: DescribeE,
+    UnionNested: DescribeUnionNested
+};
 const hoisted_User_0 = {
     "age": validateNumber,
     "name": validateString
@@ -1406,32 +1600,43 @@ const hoisted_User_1 = {
     "age": schemaNumber,
     "name": schemaString
 };
-const hoisted_User_2 = null;
-const hoisted_User_3 = new ObjectValidator(hoisted_User_0, hoisted_User_2);
-const hoisted_User_4 = new ObjectParser({
+const hoisted_User_2 = {
+    "age": describeNumber,
+    "name": describeString
+};
+const hoisted_User_3 = hoisted_User_2;
+const hoisted_User_4 = null;
+const hoisted_User_5 = new ObjectValidator(hoisted_User_0, hoisted_User_4);
+const hoisted_User_6 = new ObjectParser({
     "age": parseIdentity,
     "name": parseIdentity
 }, null);
-const hoisted_User_5 = new ObjectReporter(hoisted_User_0, hoisted_User_2, {
+const hoisted_User_7 = new ObjectReporter(hoisted_User_0, hoisted_User_4, {
     "age": reportNumber,
     "name": reportString
 }, null);
-const hoisted_User_6 = new ObjectSchema(hoisted_User_1, null);
+const hoisted_User_8 = new ObjectSchema(hoisted_User_1, null);
+const hoisted_User_9 = new ObjectDescribe(hoisted_User_3, null);
 const hoisted_NotPublic_0 = {
     "a": validateString
 };
 const hoisted_NotPublic_1 = {
     "a": schemaString
 };
-const hoisted_NotPublic_2 = null;
-const hoisted_NotPublic_3 = new ObjectValidator(hoisted_NotPublic_0, hoisted_NotPublic_2);
-const hoisted_NotPublic_4 = new ObjectParser({
+const hoisted_NotPublic_2 = {
+    "a": describeString
+};
+const hoisted_NotPublic_3 = hoisted_NotPublic_2;
+const hoisted_NotPublic_4 = null;
+const hoisted_NotPublic_5 = new ObjectValidator(hoisted_NotPublic_0, hoisted_NotPublic_4);
+const hoisted_NotPublic_6 = new ObjectParser({
     "a": parseIdentity
 }, null);
-const hoisted_NotPublic_5 = new ObjectReporter(hoisted_NotPublic_0, hoisted_NotPublic_2, {
+const hoisted_NotPublic_7 = new ObjectReporter(hoisted_NotPublic_0, hoisted_NotPublic_4, {
     "a": reportString
 }, null);
-const hoisted_NotPublic_6 = new ObjectSchema(hoisted_NotPublic_1, null);
+const hoisted_NotPublic_8 = new ObjectSchema(hoisted_NotPublic_1, null);
+const hoisted_NotPublic_9 = new ObjectDescribe(hoisted_NotPublic_3, null);
 const hoisted_StartsWithA_0 = new StringWithFormatsDecoder("StartsWithA");
 const hoisted_Password_0 = new StringWithFormatsDecoder("password");
 const hoisted_A_0 = new AnyOfConstsDecoder([
@@ -1459,4 +1664,4 @@ const hoisted_UnionNested_0 = new AnyOfConstsDecoder([
     6
 ]);
 
-export default { registerStringFormatter, registerNumberFormatter, ObjectValidator, ObjectParser, MappedRecordParser, MappedRecordValidator, ArrayParser, ArrayValidator, CodecDecoder, StringWithFormatsDecoder, NumberWithFormatsDecoder, AnyOfValidator, AnyOfParser, AllOfValidator, AllOfParser, TupleParser, TupleValidator, RegexDecoder, ConstDecoder, AnyOfConstsDecoder, AnyOfDiscriminatedParser, AnyOfDiscriminatedValidator, validateString, validateNumber, validateFunction, validateBoolean, validateAny, validateNull, validateNever, parseIdentity, reportString, reportNumber, reportNull, reportBoolean, reportAny, reportNever, reportFunction, ArrayReporter, ObjectReporter, TupleReporter, AnyOfReporter, AllOfReporter, AnyOfDiscriminatedReporter, MappedRecordReporter, schemaString, schemaNumber, schemaBoolean, schemaNull, schemaAny, schemaNever, schemaFunction, ArraySchema, ObjectSchema, TupleSchema, AnyOfSchema, AllOfSchema, AnyOfDiscriminatedSchema, MappedRecordSchema, validators, parsers, reporters, schemas };
+export default { registerStringFormatter, registerNumberFormatter, ObjectValidator, ObjectParser, MappedRecordParser, MappedRecordValidator, ArrayParser, ArrayValidator, CodecDecoder, StringWithFormatsDecoder, NumberWithFormatsDecoder, AnyOfValidator, AnyOfParser, AllOfValidator, AllOfParser, TupleParser, TupleValidator, RegexDecoder, ConstDecoder, AnyOfConstsDecoder, AnyOfDiscriminatedParser, AnyOfDiscriminatedValidator, validateString, validateNumber, validateFunction, validateBoolean, validateAny, validateNull, validateNever, parseIdentity, reportString, reportNumber, reportNull, reportBoolean, reportAny, reportNever, reportFunction, ArrayReporter, ObjectReporter, TupleReporter, AnyOfReporter, AllOfReporter, AnyOfDiscriminatedReporter, MappedRecordReporter, schemaString, schemaNumber, schemaBoolean, schemaNull, schemaAny, schemaNever, schemaFunction, ArraySchema, ObjectSchema, TupleSchema, AnyOfSchema, AllOfSchema, AnyOfDiscriminatedSchema, MappedRecordSchema, describeString, describeNumber, describeBoolean, describeNull, describeAny, describeNever, describeFunction, ArrayDescribe, ObjectDescribe, TupleDescribe, AnyOfDescribe, AllOfDescribe, AnyOfDiscriminatedDescribe, MappedRecordDescribe, validators, parsers, reporters, schemas, describers };

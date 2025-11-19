@@ -2,29 +2,59 @@
 
 import {printErrors} from '@beff/client';
 import {z} from 'zod';
-import validatorsMod from "./validators.js"; const { registerStringFormatter, registerNumberFormatter, ObjectValidator, ObjectParser, MappedRecordParser, MappedRecordValidator, ArrayParser, ArrayValidator, CodecDecoder, StringWithFormatsDecoder, NumberWithFormatsDecoder, AnyOfValidator, AnyOfParser, AllOfValidator, AllOfParser, TupleParser, TupleValidator, RegexDecoder, ConstDecoder, AnyOfConstsDecoder, AnyOfDiscriminatedParser, AnyOfDiscriminatedValidator, validateString, validateNumber, validateFunction, validateBoolean, validateAny, validateNull, validateNever, parseIdentity, reportString, reportNumber, reportNull, reportBoolean, reportAny, reportNever, reportFunction, ArrayReporter, ObjectReporter, TupleReporter, AnyOfReporter, AllOfReporter, AnyOfDiscriminatedReporter, MappedRecordReporter, schemaString, schemaNumber, schemaBoolean, schemaNull, schemaAny, schemaNever, schemaFunction, ArraySchema, ObjectSchema, TupleSchema, AnyOfSchema, AllOfSchema, AnyOfDiscriminatedSchema, MappedRecordSchema, validators, parsers, reporters, schemas, c } = validatorsMod;
+import validatorsMod from "./validators.js"; const { registerStringFormatter, registerNumberFormatter, ObjectValidator, ObjectParser, MappedRecordParser, MappedRecordValidator, ArrayParser, ArrayValidator, CodecDecoder, StringWithFormatsDecoder, NumberWithFormatsDecoder, AnyOfValidator, AnyOfParser, AllOfValidator, AllOfParser, TupleParser, TupleValidator, RegexDecoder, ConstDecoder, AnyOfConstsDecoder, AnyOfDiscriminatedParser, AnyOfDiscriminatedValidator, validateString, validateNumber, validateFunction, validateBoolean, validateAny, validateNull, validateNever, parseIdentity, reportString, reportNumber, reportNull, reportBoolean, reportAny, reportNever, reportFunction, ArrayReporter, ObjectReporter, TupleReporter, AnyOfReporter, AllOfReporter, AnyOfDiscriminatedReporter, MappedRecordReporter, schemaString, schemaNumber, schemaBoolean, schemaNull, schemaAny, schemaNever, schemaFunction, ArraySchema, ObjectSchema, TupleSchema, AnyOfSchema, AllOfSchema, AnyOfDiscriminatedSchema, MappedRecordSchema, describeString, describeNumber, describeBoolean, describeNull, describeAny, describeNever, describeFunction, ArrayDescribe, ObjectDescribe, TupleDescribe, AnyOfDescribe, AllOfDescribe, AnyOfDiscriminatedDescribe, MappedRecordDescribe, validators, parsers, reporters, schemas, describers, c } = validatorsMod;
 const RequiredStringFormats = ["ValidCurrency","UserId","ReadAuthorizedUserId","WriteAuthorizedUserId"];
 const RequiredNumberFormats = ["NonNegativeNumber","NonInfiniteNumber","Rate"];
+const hoisted_PartialRepro_0 = (ctx, input)=>{
+    if (ctx.deps["PartialRepro"]) {
+        return "PartialRepro";
+    }
+    ctx.deps["PartialRepro"] = true;
+    ctx.deps["PartialRepro"] = describers.PartialRepro(ctx, input);
+    return "PartialRepro";
+};
+const hoisted_TransportedValue_0 = (ctx, input)=>{
+    if (ctx.deps["TransportedValue"]) {
+        return "TransportedValue";
+    }
+    ctx.deps["TransportedValue"] = true;
+    ctx.deps["TransportedValue"] = describers.TransportedValue(ctx, input);
+    return "TransportedValue";
+};
+const hoisted_OnlyAKey_0 = (ctx, input)=>{
+    if (ctx.deps["OnlyAKey"]) {
+        return "OnlyAKey";
+    }
+    ctx.deps["OnlyAKey"] = true;
+    ctx.deps["OnlyAKey"] = describers.OnlyAKey(ctx, input);
+    return "OnlyAKey";
+};
 const hoisted_ObjectWithArr_0 = validateString;
 const hoisted_ObjectWithArr_1 = new ArrayValidator(hoisted_ObjectWithArr_0);
 const hoisted_ObjectWithArr_2 = new ArrayParser(parseIdentity);
 const hoisted_ObjectWithArr_3 = new ArrayReporter(hoisted_ObjectWithArr_0, reportString);
 const hoisted_ObjectWithArr_4 = new ArraySchema(schemaString);
-const hoisted_ObjectWithArr_5 = {
+const hoisted_ObjectWithArr_5 = new ArrayDescribe(describeString);
+const hoisted_ObjectWithArr_6 = {
     "a": hoisted_ObjectWithArr_1.validateArrayValidator.bind(hoisted_ObjectWithArr_1)
 };
-const hoisted_ObjectWithArr_6 = {
+const hoisted_ObjectWithArr_7 = {
     "a": hoisted_ObjectWithArr_4.schemaArraySchema.bind(hoisted_ObjectWithArr_4)
 };
-const hoisted_ObjectWithArr_7 = null;
-const hoisted_ObjectWithArr_8 = new ObjectValidator(hoisted_ObjectWithArr_5, hoisted_ObjectWithArr_7);
-const hoisted_ObjectWithArr_9 = new ObjectParser({
+const hoisted_ObjectWithArr_8 = {
+    "a": hoisted_ObjectWithArr_5.describeArrayDescribe.bind(hoisted_ObjectWithArr_5)
+};
+const hoisted_ObjectWithArr_9 = hoisted_ObjectWithArr_8;
+const hoisted_ObjectWithArr_10 = null;
+const hoisted_ObjectWithArr_11 = new ObjectValidator(hoisted_ObjectWithArr_6, hoisted_ObjectWithArr_10);
+const hoisted_ObjectWithArr_12 = new ObjectParser({
     "a": hoisted_ObjectWithArr_2.parseArrayParser.bind(hoisted_ObjectWithArr_2)
 }, null);
-const hoisted_ObjectWithArr_10 = new ObjectReporter(hoisted_ObjectWithArr_5, hoisted_ObjectWithArr_7, {
+const hoisted_ObjectWithArr_13 = new ObjectReporter(hoisted_ObjectWithArr_6, hoisted_ObjectWithArr_10, {
     "a": hoisted_ObjectWithArr_3.reportArrayReporter.bind(hoisted_ObjectWithArr_3)
 }, null);
-const hoisted_ObjectWithArr_11 = new ObjectSchema(hoisted_ObjectWithArr_6, null);
+const hoisted_ObjectWithArr_14 = new ObjectSchema(hoisted_ObjectWithArr_7, null);
+const hoisted_ObjectWithArr_15 = new ObjectDescribe(hoisted_ObjectWithArr_9, null);
 const hoisted_BigIntCodec_0 = new CodecDecoder("Codec::BigInt");
 const hoisted_TupleCodec_0 = [
     validateNumber,
@@ -48,6 +78,11 @@ const hoisted_TupleCodec_5 = new TupleSchema([
     schemaNumber,
     schemaNumber
 ], null);
+const hoisted_TupleCodec_6 = new TupleDescribe([
+    describeNumber,
+    describeNumber,
+    describeNumber
+], null);
 const hoisted_TupleCodecRest_0 = [
     validateNumber,
     validateNumber
@@ -66,11 +101,288 @@ const hoisted_TupleCodecRest_5 = new TupleSchema([
     schemaNumber,
     schemaNumber
 ], schemaString);
+const hoisted_TupleCodecRest_6 = new TupleDescribe([
+    describeNumber,
+    describeNumber
+], describeString);
 const hoisted_StringArrCodec_0 = validateString;
 const hoisted_StringArrCodec_1 = new ArrayValidator(hoisted_StringArrCodec_0);
 const hoisted_StringArrCodec_2 = new ArrayParser(parseIdentity);
 const hoisted_StringArrCodec_3 = new ArrayReporter(hoisted_StringArrCodec_0, reportString);
 const hoisted_StringArrCodec_4 = new ArraySchema(schemaString);
+const hoisted_StringArrCodec_5 = new ArrayDescribe(describeString);
+const hoisted_AllTs_0 = (ctx, input)=>{
+    if (ctx.deps["AllTs"]) {
+        return "AllTs";
+    }
+    ctx.deps["AllTs"] = true;
+    ctx.deps["AllTs"] = describers.AllTs(ctx, input);
+    return "AllTs";
+};
+const hoisted_AObject_0 = (ctx, input)=>{
+    if (ctx.deps["AObject"]) {
+        return "AObject";
+    }
+    ctx.deps["AObject"] = true;
+    ctx.deps["AObject"] = describers.AObject(ctx, input);
+    return "AObject";
+};
+const hoisted_Version_0 = (ctx, input)=>{
+    if (ctx.deps["Version"]) {
+        return "Version";
+    }
+    ctx.deps["Version"] = true;
+    ctx.deps["Version"] = describers.Version(ctx, input);
+    return "Version";
+};
+const hoisted_Version2_0 = (ctx, input)=>{
+    if (ctx.deps["Version2"]) {
+        return "Version2";
+    }
+    ctx.deps["Version2"] = true;
+    ctx.deps["Version2"] = describers.Version2(ctx, input);
+    return "Version2";
+};
+const hoisted_AccessLevelTpl2_0 = (ctx, input)=>{
+    if (ctx.deps["AccessLevelTpl2"]) {
+        return "AccessLevelTpl2";
+    }
+    ctx.deps["AccessLevelTpl2"] = true;
+    ctx.deps["AccessLevelTpl2"] = describers.AccessLevelTpl2(ctx, input);
+    return "AccessLevelTpl2";
+};
+const hoisted_AccessLevelTpl_0 = (ctx, input)=>{
+    if (ctx.deps["AccessLevelTpl"]) {
+        return "AccessLevelTpl";
+    }
+    ctx.deps["AccessLevelTpl"] = true;
+    ctx.deps["AccessLevelTpl"] = describers.AccessLevelTpl(ctx, input);
+    return "AccessLevelTpl";
+};
+const hoisted_Arr3_0 = (ctx, input)=>{
+    if (ctx.deps["Arr3"]) {
+        return "Arr3";
+    }
+    ctx.deps["Arr3"] = true;
+    ctx.deps["Arr3"] = describers.Arr3(ctx, input);
+    return "Arr3";
+};
+const hoisted_OmitSettings_0 = (ctx, input)=>{
+    if (ctx.deps["OmitSettings"]) {
+        return "OmitSettings";
+    }
+    ctx.deps["OmitSettings"] = true;
+    ctx.deps["OmitSettings"] = describers.OmitSettings(ctx, input);
+    return "OmitSettings";
+};
+const hoisted_RequiredPartialObject_0 = (ctx, input)=>{
+    if (ctx.deps["RequiredPartialObject"]) {
+        return "RequiredPartialObject";
+    }
+    ctx.deps["RequiredPartialObject"] = true;
+    ctx.deps["RequiredPartialObject"] = describers.RequiredPartialObject(ctx, input);
+    return "RequiredPartialObject";
+};
+const hoisted_LevelAndDSettings_0 = (ctx, input)=>{
+    if (ctx.deps["LevelAndDSettings"]) {
+        return "LevelAndDSettings";
+    }
+    ctx.deps["LevelAndDSettings"] = true;
+    ctx.deps["LevelAndDSettings"] = describers.LevelAndDSettings(ctx, input);
+    return "LevelAndDSettings";
+};
+const hoisted_PartialSettings_0 = (ctx, input)=>{
+    if (ctx.deps["PartialSettings"]) {
+        return "PartialSettings";
+    }
+    ctx.deps["PartialSettings"] = true;
+    ctx.deps["PartialSettings"] = describers.PartialSettings(ctx, input);
+    return "PartialSettings";
+};
+const hoisted_Extra_0 = (ctx, input)=>{
+    if (ctx.deps["Extra"]) {
+        return "Extra";
+    }
+    ctx.deps["Extra"] = true;
+    ctx.deps["Extra"] = describers.Extra(ctx, input);
+    return "Extra";
+};
+const hoisted_User_0 = (ctx, input)=>{
+    if (ctx.deps["User"]) {
+        return "User";
+    }
+    ctx.deps["User"] = true;
+    ctx.deps["User"] = describers.User(ctx, input);
+    return "User";
+};
+const hoisted_PublicUser_0 = (ctx, input)=>{
+    if (ctx.deps["PublicUser"]) {
+        return "PublicUser";
+    }
+    ctx.deps["PublicUser"] = true;
+    ctx.deps["PublicUser"] = describers.PublicUser(ctx, input);
+    return "PublicUser";
+};
+const hoisted_Req_0 = (ctx, input)=>{
+    if (ctx.deps["Req"]) {
+        return "Req";
+    }
+    ctx.deps["Req"] = true;
+    ctx.deps["Req"] = describers.Req(ctx, input);
+    return "Req";
+};
+const hoisted_Repro1_0 = (ctx, input)=>{
+    if (ctx.deps["Repro1"]) {
+        return "Repro1";
+    }
+    ctx.deps["Repro1"] = true;
+    ctx.deps["Repro1"] = describers.Repro1(ctx, input);
+    return "Repro1";
+};
+const hoisted_SettingsUpdate_0 = (ctx, input)=>{
+    if (ctx.deps["SettingsUpdate"]) {
+        return "SettingsUpdate";
+    }
+    ctx.deps["SettingsUpdate"] = true;
+    ctx.deps["SettingsUpdate"] = describers.SettingsUpdate(ctx, input);
+    return "SettingsUpdate";
+};
+const hoisted_Mapped_0 = (ctx, input)=>{
+    if (ctx.deps["Mapped"]) {
+        return "Mapped";
+    }
+    ctx.deps["Mapped"] = true;
+    ctx.deps["Mapped"] = describers.Mapped(ctx, input);
+    return "Mapped";
+};
+const hoisted_MappedOptional_0 = (ctx, input)=>{
+    if (ctx.deps["MappedOptional"]) {
+        return "MappedOptional";
+    }
+    ctx.deps["MappedOptional"] = true;
+    ctx.deps["MappedOptional"] = describers.MappedOptional(ctx, input);
+    return "MappedOptional";
+};
+const hoisted_PartialObject_0 = (ctx, input)=>{
+    if (ctx.deps["PartialObject"]) {
+        return "PartialObject";
+    }
+    ctx.deps["PartialObject"] = true;
+    ctx.deps["PartialObject"] = describers.PartialObject(ctx, input);
+    return "PartialObject";
+};
+const hoisted_DiscriminatedUnion_0 = (ctx, input)=>{
+    if (ctx.deps["DiscriminatedUnion"]) {
+        return "DiscriminatedUnion";
+    }
+    ctx.deps["DiscriminatedUnion"] = true;
+    ctx.deps["DiscriminatedUnion"] = describers.DiscriminatedUnion(ctx, input);
+    return "DiscriminatedUnion";
+};
+const hoisted_DiscriminatedUnion2_0 = (ctx, input)=>{
+    if (ctx.deps["DiscriminatedUnion2"]) {
+        return "DiscriminatedUnion2";
+    }
+    ctx.deps["DiscriminatedUnion2"] = true;
+    ctx.deps["DiscriminatedUnion2"] = describers.DiscriminatedUnion2(ctx, input);
+    return "DiscriminatedUnion2";
+};
+const hoisted_DiscriminatedUnion3_0 = (ctx, input)=>{
+    if (ctx.deps["DiscriminatedUnion3"]) {
+        return "DiscriminatedUnion3";
+    }
+    ctx.deps["DiscriminatedUnion3"] = true;
+    ctx.deps["DiscriminatedUnion3"] = describers.DiscriminatedUnion3(ctx, input);
+    return "DiscriminatedUnion3";
+};
+const hoisted_DiscriminatedUnion4_0 = (ctx, input)=>{
+    if (ctx.deps["DiscriminatedUnion4"]) {
+        return "DiscriminatedUnion4";
+    }
+    ctx.deps["DiscriminatedUnion4"] = true;
+    ctx.deps["DiscriminatedUnion4"] = describers.DiscriminatedUnion4(ctx, input);
+    return "DiscriminatedUnion4";
+};
+const hoisted_AllTypes_0 = (ctx, input)=>{
+    if (ctx.deps["AllTypes"]) {
+        return "AllTypes";
+    }
+    ctx.deps["AllTypes"] = true;
+    ctx.deps["AllTypes"] = describers.AllTypes(ctx, input);
+    return "AllTypes";
+};
+const hoisted_AccessLevel_0 = (ctx, input)=>{
+    if (ctx.deps["AccessLevel"]) {
+        return "AccessLevel";
+    }
+    ctx.deps["AccessLevel"] = true;
+    ctx.deps["AccessLevel"] = describers.AccessLevel(ctx, input);
+    return "AccessLevel";
+};
+const hoisted_OtherEnum_0 = (ctx, input)=>{
+    if (ctx.deps["OtherEnum"]) {
+        return "OtherEnum";
+    }
+    ctx.deps["OtherEnum"] = true;
+    ctx.deps["OtherEnum"] = describers.OtherEnum(ctx, input);
+    return "OtherEnum";
+};
+const hoisted_Arr2C_0 = (ctx, input)=>{
+    if (ctx.deps["Arr2"]) {
+        return "Arr2";
+    }
+    ctx.deps["Arr2"] = true;
+    ctx.deps["Arr2"] = describers.Arr2(ctx, input);
+    return "Arr2";
+};
+const hoisted_ValidCurrency_0 = (ctx, input)=>{
+    if (ctx.deps["ValidCurrency"]) {
+        return "ValidCurrency";
+    }
+    ctx.deps["ValidCurrency"] = true;
+    ctx.deps["ValidCurrency"] = describers.ValidCurrency(ctx, input);
+    return "ValidCurrency";
+};
+const hoisted_UnionWithEnumAccess_0 = (ctx, input)=>{
+    if (ctx.deps["UnionWithEnumAccess"]) {
+        return "UnionWithEnumAccess";
+    }
+    ctx.deps["UnionWithEnumAccess"] = true;
+    ctx.deps["UnionWithEnumAccess"] = describers.UnionWithEnumAccess(ctx, input);
+    return "UnionWithEnumAccess";
+};
+const hoisted_T3_0 = (ctx, input)=>{
+    if (ctx.deps["T3"]) {
+        return "T3";
+    }
+    ctx.deps["T3"] = true;
+    ctx.deps["T3"] = describers.T3(ctx, input);
+    return "T3";
+};
+const hoisted_AccessLevelCodec_0 = (ctx, input)=>{
+    if (ctx.deps["AccessLevel"]) {
+        return "AccessLevel";
+    }
+    ctx.deps["AccessLevel"] = true;
+    ctx.deps["AccessLevel"] = describers.AccessLevel(ctx, input);
+    return "AccessLevel";
+};
+const hoisted_AvatarSize_0 = (ctx, input)=>{
+    if (ctx.deps["AvatarSize"]) {
+        return "AvatarSize";
+    }
+    ctx.deps["AvatarSize"] = true;
+    ctx.deps["AvatarSize"] = describers.AvatarSize(ctx, input);
+    return "AvatarSize";
+};
+const hoisted_BObject_0 = (ctx, input)=>{
+    if (ctx.deps["BObject"]) {
+        return "BObject";
+    }
+    ctx.deps["BObject"] = true;
+    ctx.deps["BObject"] = describers.BObject(ctx, input);
+    return "BObject";
+};
 const hoisted_ImportEnumTypeof_0 = new ConstDecoder("a");
 const hoisted_ImportEnumTypeof_1 = {
     "A": hoisted_ImportEnumTypeof_0.validateConstDecoder.bind(hoisted_ImportEnumTypeof_0)
@@ -78,15 +390,100 @@ const hoisted_ImportEnumTypeof_1 = {
 const hoisted_ImportEnumTypeof_2 = {
     "A": hoisted_ImportEnumTypeof_0.schemaConstDecoder.bind(hoisted_ImportEnumTypeof_0)
 };
-const hoisted_ImportEnumTypeof_3 = null;
-const hoisted_ImportEnumTypeof_4 = new ObjectValidator(hoisted_ImportEnumTypeof_1, hoisted_ImportEnumTypeof_3);
-const hoisted_ImportEnumTypeof_5 = new ObjectParser({
+const hoisted_ImportEnumTypeof_3 = {
+    "A": hoisted_ImportEnumTypeof_0.describeConstDecoder.bind(hoisted_ImportEnumTypeof_0)
+};
+const hoisted_ImportEnumTypeof_4 = hoisted_ImportEnumTypeof_3;
+const hoisted_ImportEnumTypeof_5 = null;
+const hoisted_ImportEnumTypeof_6 = new ObjectValidator(hoisted_ImportEnumTypeof_1, hoisted_ImportEnumTypeof_5);
+const hoisted_ImportEnumTypeof_7 = new ObjectParser({
     "A": hoisted_ImportEnumTypeof_0.parseConstDecoder.bind(hoisted_ImportEnumTypeof_0)
 }, null);
-const hoisted_ImportEnumTypeof_6 = new ObjectReporter(hoisted_ImportEnumTypeof_1, hoisted_ImportEnumTypeof_3, {
+const hoisted_ImportEnumTypeof_8 = new ObjectReporter(hoisted_ImportEnumTypeof_1, hoisted_ImportEnumTypeof_5, {
     "A": hoisted_ImportEnumTypeof_0.reportConstDecoder.bind(hoisted_ImportEnumTypeof_0)
 }, null);
-const hoisted_ImportEnumTypeof_7 = new ObjectSchema(hoisted_ImportEnumTypeof_2, null);
+const hoisted_ImportEnumTypeof_9 = new ObjectSchema(hoisted_ImportEnumTypeof_2, null);
+const hoisted_ImportEnumTypeof_10 = new ObjectDescribe(hoisted_ImportEnumTypeof_4, null);
+const hoisted_KDEF_0 = (ctx, input)=>{
+    if (ctx.deps["KDEF"]) {
+        return "KDEF";
+    }
+    ctx.deps["KDEF"] = true;
+    ctx.deps["KDEF"] = describers.KDEF(ctx, input);
+    return "KDEF";
+};
+const hoisted_KABC_0 = (ctx, input)=>{
+    if (ctx.deps["KABC"]) {
+        return "KABC";
+    }
+    ctx.deps["KABC"] = true;
+    ctx.deps["KABC"] = describers.KABC(ctx, input);
+    return "KABC";
+};
+const hoisted_K_0 = (ctx, input)=>{
+    if (ctx.deps["K"]) {
+        return "K";
+    }
+    ctx.deps["K"] = true;
+    ctx.deps["K"] = describers.K(ctx, input);
+    return "K";
+};
+const hoisted_NonNegativeNumber_0 = (ctx, input)=>{
+    if (ctx.deps["NonNegativeNumber"]) {
+        return "NonNegativeNumber";
+    }
+    ctx.deps["NonNegativeNumber"] = true;
+    ctx.deps["NonNegativeNumber"] = describers.NonNegativeNumber(ctx, input);
+    return "NonNegativeNumber";
+};
+const hoisted_NonInfiniteNumber_0 = (ctx, input)=>{
+    if (ctx.deps["NonInfiniteNumber"]) {
+        return "NonInfiniteNumber";
+    }
+    ctx.deps["NonInfiniteNumber"] = true;
+    ctx.deps["NonInfiniteNumber"] = describers.NonInfiniteNumber(ctx, input);
+    return "NonInfiniteNumber";
+};
+const hoisted_Rate_0 = (ctx, input)=>{
+    if (ctx.deps["Rate"]) {
+        return "Rate";
+    }
+    ctx.deps["Rate"] = true;
+    ctx.deps["Rate"] = describers.Rate(ctx, input);
+    return "Rate";
+};
+const hoisted_UserId_0 = (ctx, input)=>{
+    if (ctx.deps["UserId"]) {
+        return "UserId";
+    }
+    ctx.deps["UserId"] = true;
+    ctx.deps["UserId"] = describers.UserId(ctx, input);
+    return "UserId";
+};
+const hoisted_ReadAuthorizedUserId_0 = (ctx, input)=>{
+    if (ctx.deps["ReadAuthorizedUserId"]) {
+        return "ReadAuthorizedUserId";
+    }
+    ctx.deps["ReadAuthorizedUserId"] = true;
+    ctx.deps["ReadAuthorizedUserId"] = describers.ReadAuthorizedUserId(ctx, input);
+    return "ReadAuthorizedUserId";
+};
+const hoisted_WriteAuthorizedUserId_0 = (ctx, input)=>{
+    if (ctx.deps["WriteAuthorizedUserId"]) {
+        return "WriteAuthorizedUserId";
+    }
+    ctx.deps["WriteAuthorizedUserId"] = true;
+    ctx.deps["WriteAuthorizedUserId"] = describers.WriteAuthorizedUserId(ctx, input);
+    return "WriteAuthorizedUserId";
+};
+const hoisted_CurrencyPrices_0 = (ctx, input)=>{
+    if (ctx.deps["CurrencyPrices"]) {
+        return "CurrencyPrices";
+    }
+    ctx.deps["CurrencyPrices"] = true;
+    ctx.deps["CurrencyPrices"] = describers.CurrencyPrices(ctx, input);
+    return "CurrencyPrices";
+};
 const buildValidatorsInput = {
     "AObject": validators.AObject,
     "AccessLevel": validators.AccessLevel,
@@ -106,7 +503,7 @@ const buildValidatorsInput = {
     "DiscriminatedUnion3": validators.DiscriminatedUnion3,
     "DiscriminatedUnion4": validators.DiscriminatedUnion4,
     "Extra": validators.Extra,
-    "ImportEnumTypeof": hoisted_ImportEnumTypeof_4.validateObjectValidator.bind(hoisted_ImportEnumTypeof_4),
+    "ImportEnumTypeof": hoisted_ImportEnumTypeof_6.validateObjectValidator.bind(hoisted_ImportEnumTypeof_6),
     "K": validators.K,
     "KABC": validators.KABC,
     "KDEF": validators.KDEF,
@@ -115,7 +512,7 @@ const buildValidatorsInput = {
     "MappedOptional": validators.MappedOptional,
     "NonInfiniteNumber": validators.NonInfiniteNumber,
     "NonNegativeNumber": validators.NonNegativeNumber,
-    "ObjectWithArr": hoisted_ObjectWithArr_8.validateObjectValidator.bind(hoisted_ObjectWithArr_8),
+    "ObjectWithArr": hoisted_ObjectWithArr_11.validateObjectValidator.bind(hoisted_ObjectWithArr_11),
     "OmitSettings": validators.OmitSettings,
     "OnlyAKey": validators.OnlyAKey,
     "OtherEnum": validators.OtherEnum,
@@ -161,7 +558,7 @@ const buildParsersInput = {
     "DiscriminatedUnion3": parsers.DiscriminatedUnion3,
     "DiscriminatedUnion4": parsers.DiscriminatedUnion4,
     "Extra": parsers.Extra,
-    "ImportEnumTypeof": hoisted_ImportEnumTypeof_5.parseObjectParser.bind(hoisted_ImportEnumTypeof_5),
+    "ImportEnumTypeof": hoisted_ImportEnumTypeof_7.parseObjectParser.bind(hoisted_ImportEnumTypeof_7),
     "K": parsers.K,
     "KABC": parsers.KABC,
     "KDEF": parsers.KDEF,
@@ -170,7 +567,7 @@ const buildParsersInput = {
     "MappedOptional": parsers.MappedOptional,
     "NonInfiniteNumber": parsers.NonInfiniteNumber,
     "NonNegativeNumber": parsers.NonNegativeNumber,
-    "ObjectWithArr": hoisted_ObjectWithArr_9.parseObjectParser.bind(hoisted_ObjectWithArr_9),
+    "ObjectWithArr": hoisted_ObjectWithArr_12.parseObjectParser.bind(hoisted_ObjectWithArr_12),
     "OmitSettings": parsers.OmitSettings,
     "OnlyAKey": parsers.OnlyAKey,
     "OtherEnum": parsers.OtherEnum,
@@ -216,7 +613,7 @@ const buildReportersInput = {
     "DiscriminatedUnion3": reporters.DiscriminatedUnion3,
     "DiscriminatedUnion4": reporters.DiscriminatedUnion4,
     "Extra": reporters.Extra,
-    "ImportEnumTypeof": hoisted_ImportEnumTypeof_6.reportObjectReporter.bind(hoisted_ImportEnumTypeof_6),
+    "ImportEnumTypeof": hoisted_ImportEnumTypeof_8.reportObjectReporter.bind(hoisted_ImportEnumTypeof_8),
     "K": reporters.K,
     "KABC": reporters.KABC,
     "KDEF": reporters.KDEF,
@@ -225,7 +622,7 @@ const buildReportersInput = {
     "MappedOptional": reporters.MappedOptional,
     "NonInfiniteNumber": reporters.NonInfiniteNumber,
     "NonNegativeNumber": reporters.NonNegativeNumber,
-    "ObjectWithArr": hoisted_ObjectWithArr_10.reportObjectReporter.bind(hoisted_ObjectWithArr_10),
+    "ObjectWithArr": hoisted_ObjectWithArr_13.reportObjectReporter.bind(hoisted_ObjectWithArr_13),
     "OmitSettings": reporters.OmitSettings,
     "OnlyAKey": reporters.OnlyAKey,
     "OtherEnum": reporters.OtherEnum,
@@ -271,7 +668,7 @@ const buildSchemaInput = {
     "DiscriminatedUnion3": schemas.DiscriminatedUnion3,
     "DiscriminatedUnion4": schemas.DiscriminatedUnion4,
     "Extra": schemas.Extra,
-    "ImportEnumTypeof": hoisted_ImportEnumTypeof_7.schemaObjectSchema.bind(hoisted_ImportEnumTypeof_7),
+    "ImportEnumTypeof": hoisted_ImportEnumTypeof_9.schemaObjectSchema.bind(hoisted_ImportEnumTypeof_9),
     "K": schemas.K,
     "KABC": schemas.KABC,
     "KDEF": schemas.KDEF,
@@ -280,7 +677,7 @@ const buildSchemaInput = {
     "MappedOptional": schemas.MappedOptional,
     "NonInfiniteNumber": schemas.NonInfiniteNumber,
     "NonNegativeNumber": schemas.NonNegativeNumber,
-    "ObjectWithArr": hoisted_ObjectWithArr_11.schemaObjectSchema.bind(hoisted_ObjectWithArr_11),
+    "ObjectWithArr": hoisted_ObjectWithArr_14.schemaObjectSchema.bind(hoisted_ObjectWithArr_14),
     "OmitSettings": schemas.OmitSettings,
     "OnlyAKey": schemas.OnlyAKey,
     "OtherEnum": schemas.OtherEnum,
@@ -306,6 +703,61 @@ const buildSchemaInput = {
     "Version": schemas.Version,
     "Version2": schemas.Version2,
     "WriteAuthorizedUserId": schemas.WriteAuthorizedUserId
+};
+const buildDescribeInput = {
+    "PartialRepro": hoisted_PartialRepro_0,
+    "TransportedValue": hoisted_TransportedValue_0,
+    "OnlyAKey": hoisted_OnlyAKey_0,
+    "ObjectWithArr": hoisted_ObjectWithArr_15.describeObjectDescribe.bind(hoisted_ObjectWithArr_15),
+    "BigIntCodec": hoisted_BigIntCodec_0.describeCodecDecoder.bind(hoisted_BigIntCodec_0),
+    "TupleCodec": hoisted_TupleCodec_6.describeTupleDescribe.bind(hoisted_TupleCodec_6),
+    "TupleCodecRest": hoisted_TupleCodecRest_6.describeTupleDescribe.bind(hoisted_TupleCodecRest_6),
+    "StringArrCodec": hoisted_StringArrCodec_5.describeArrayDescribe.bind(hoisted_StringArrCodec_5),
+    "AllTs": hoisted_AllTs_0,
+    "AObject": hoisted_AObject_0,
+    "Version": hoisted_Version_0,
+    "Version2": hoisted_Version2_0,
+    "AccessLevelTpl2": hoisted_AccessLevelTpl2_0,
+    "AccessLevelTpl": hoisted_AccessLevelTpl_0,
+    "Arr3": hoisted_Arr3_0,
+    "OmitSettings": hoisted_OmitSettings_0,
+    "RequiredPartialObject": hoisted_RequiredPartialObject_0,
+    "LevelAndDSettings": hoisted_LevelAndDSettings_0,
+    "PartialSettings": hoisted_PartialSettings_0,
+    "Extra": hoisted_Extra_0,
+    "User": hoisted_User_0,
+    "PublicUser": hoisted_PublicUser_0,
+    "Req": hoisted_Req_0,
+    "Repro1": hoisted_Repro1_0,
+    "SettingsUpdate": hoisted_SettingsUpdate_0,
+    "Mapped": hoisted_Mapped_0,
+    "MappedOptional": hoisted_MappedOptional_0,
+    "PartialObject": hoisted_PartialObject_0,
+    "DiscriminatedUnion": hoisted_DiscriminatedUnion_0,
+    "DiscriminatedUnion2": hoisted_DiscriminatedUnion2_0,
+    "DiscriminatedUnion3": hoisted_DiscriminatedUnion3_0,
+    "DiscriminatedUnion4": hoisted_DiscriminatedUnion4_0,
+    "AllTypes": hoisted_AllTypes_0,
+    "AccessLevel": hoisted_AccessLevel_0,
+    "OtherEnum": hoisted_OtherEnum_0,
+    "Arr2C": hoisted_Arr2C_0,
+    "ValidCurrency": hoisted_ValidCurrency_0,
+    "UnionWithEnumAccess": hoisted_UnionWithEnumAccess_0,
+    "T3": hoisted_T3_0,
+    "AccessLevelCodec": hoisted_AccessLevelCodec_0,
+    "AvatarSize": hoisted_AvatarSize_0,
+    "BObject": hoisted_BObject_0,
+    "ImportEnumTypeof": hoisted_ImportEnumTypeof_10.describeObjectDescribe.bind(hoisted_ImportEnumTypeof_10),
+    "KDEF": hoisted_KDEF_0,
+    "KABC": hoisted_KABC_0,
+    "K": hoisted_K_0,
+    "NonNegativeNumber": hoisted_NonNegativeNumber_0,
+    "NonInfiniteNumber": hoisted_NonInfiniteNumber_0,
+    "Rate": hoisted_Rate_0,
+    "UserId": hoisted_UserId_0,
+    "ReadAuthorizedUserId": hoisted_ReadAuthorizedUserId_0,
+    "WriteAuthorizedUserId": hoisted_WriteAuthorizedUserId_0,
+    "CurrencyPrices": hoisted_CurrencyPrices_0
 };
 
 
@@ -364,6 +816,30 @@ function buildParsers(args) {
       return schemaFn(ctx);
     };
 
+    
+    const describeFn = buildDescribeInput[k];
+    const describe = () => {
+      const ctx = {
+        deps: {},
+      };
+      const out = describeFn(ctx);
+      let sortedDepsKeys = Object.keys(ctx.deps).sort();
+      
+      
+      
+      
+      const depsPart = sortedDepsKeys
+        .map((key) => {
+          return `type ${key} = ${ctx.deps[key]};`;
+        })
+        .join("\n\n");
+      
+      
+      
+      const outPart = `type Codec${k} = ${out};`;
+      return [depsPart, outPart].filter((it) => it != null && it.length > 0).join("\n\n");
+    };
+
     const safeParse = (input, options) => {
       const disallowExtraProperties = options?.disallowExtraProperties ?? false;
       const ok = validate(input, options);
@@ -409,6 +885,7 @@ function buildParsers(args) {
       name: k,
       validate,
       schema,
+      describe,
     };
   });
   return decoders;

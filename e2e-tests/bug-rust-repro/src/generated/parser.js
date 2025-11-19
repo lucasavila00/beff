@@ -2,9 +2,17 @@
 
 import {printErrors} from '@beff/client';
 import {z} from 'zod';
-import validatorsMod from "./validators.js"; const { registerStringFormatter, registerNumberFormatter, ObjectValidator, ObjectParser, MappedRecordParser, MappedRecordValidator, ArrayParser, ArrayValidator, CodecDecoder, StringWithFormatsDecoder, NumberWithFormatsDecoder, AnyOfValidator, AnyOfParser, AllOfValidator, AllOfParser, TupleParser, TupleValidator, RegexDecoder, ConstDecoder, AnyOfConstsDecoder, AnyOfDiscriminatedParser, AnyOfDiscriminatedValidator, validateString, validateNumber, validateFunction, validateBoolean, validateAny, validateNull, validateNever, parseIdentity, reportString, reportNumber, reportNull, reportBoolean, reportAny, reportNever, reportFunction, ArrayReporter, ObjectReporter, TupleReporter, AnyOfReporter, AllOfReporter, AnyOfDiscriminatedReporter, MappedRecordReporter, schemaString, schemaNumber, schemaBoolean, schemaNull, schemaAny, schemaNever, schemaFunction, ArraySchema, ObjectSchema, TupleSchema, AnyOfSchema, AllOfSchema, AnyOfDiscriminatedSchema, MappedRecordSchema, validators, parsers, reporters, schemas, c } = validatorsMod;
+import validatorsMod from "./validators.js"; const { registerStringFormatter, registerNumberFormatter, ObjectValidator, ObjectParser, MappedRecordParser, MappedRecordValidator, ArrayParser, ArrayValidator, CodecDecoder, StringWithFormatsDecoder, NumberWithFormatsDecoder, AnyOfValidator, AnyOfParser, AllOfValidator, AllOfParser, TupleParser, TupleValidator, RegexDecoder, ConstDecoder, AnyOfConstsDecoder, AnyOfDiscriminatedParser, AnyOfDiscriminatedValidator, validateString, validateNumber, validateFunction, validateBoolean, validateAny, validateNull, validateNever, parseIdentity, reportString, reportNumber, reportNull, reportBoolean, reportAny, reportNever, reportFunction, ArrayReporter, ObjectReporter, TupleReporter, AnyOfReporter, AllOfReporter, AnyOfDiscriminatedReporter, MappedRecordReporter, schemaString, schemaNumber, schemaBoolean, schemaNull, schemaAny, schemaNever, schemaFunction, ArraySchema, ObjectSchema, TupleSchema, AnyOfSchema, AllOfSchema, AnyOfDiscriminatedSchema, MappedRecordSchema, describeString, describeNumber, describeBoolean, describeNull, describeAny, describeNever, describeFunction, ArrayDescribe, ObjectDescribe, TupleDescribe, AnyOfDescribe, AllOfDescribe, AnyOfDiscriminatedDescribe, MappedRecordDescribe, validators, parsers, reporters, schemas, describers, c } = validatorsMod;
 const RequiredStringFormats = ["ValidCurrency"];
 const RequiredNumberFormats = [];
+const hoisted_A_0 = (ctx, input)=>{
+    if (ctx.deps["A"]) {
+        return "A";
+    }
+    ctx.deps["A"] = true;
+    ctx.deps["A"] = describers.A(ctx, input);
+    return "A";
+};
 const buildValidatorsInput = {
     "A": validators.A
 };
@@ -16,6 +24,9 @@ const buildReportersInput = {
 };
 const buildSchemaInput = {
     "A": schemas.A
+};
+const buildDescribeInput = {
+    "A": hoisted_A_0
 };
 
 
@@ -74,6 +85,30 @@ function buildParsers(args) {
       return schemaFn(ctx);
     };
 
+    
+    const describeFn = buildDescribeInput[k];
+    const describe = () => {
+      const ctx = {
+        deps: {},
+      };
+      const out = describeFn(ctx);
+      let sortedDepsKeys = Object.keys(ctx.deps).sort();
+      
+      
+      
+      
+      const depsPart = sortedDepsKeys
+        .map((key) => {
+          return `type ${key} = ${ctx.deps[key]};`;
+        })
+        .join("\n\n");
+      
+      
+      
+      const outPart = `type Codec${k} = ${out};`;
+      return [depsPart, outPart].filter((it) => it != null && it.length > 0).join("\n\n");
+    };
+
     const safeParse = (input, options) => {
       const disallowExtraProperties = options?.disallowExtraProperties ?? false;
       const ok = validate(input, options);
@@ -119,6 +154,7 @@ function buildParsers(args) {
       name: k,
       validate,
       schema,
+      describe,
     };
   });
   return decoders;

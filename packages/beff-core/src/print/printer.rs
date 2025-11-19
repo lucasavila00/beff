@@ -53,6 +53,7 @@ pub struct DecodersCode {
     pub parser: Expr,
     pub reporter: Expr,
     pub schema: Expr,
+    pub describe: Expr,
 }
 
 fn build_decoders(
@@ -64,6 +65,7 @@ fn build_decoders(
     let mut parser_exprs: Vec<_> = vec![];
     let mut report_exprs: Vec<_> = vec![];
     let mut schema_exprs: Vec<(String, Expr)> = vec![];
+    let mut describe_exprs: Vec<(String, Expr)> = vec![];
     for decoder in decs {
         let mut local_hoisted = vec![];
         let SchemaCode {
@@ -71,6 +73,7 @@ fn build_decoders(
             parser,
             reporter,
             schema,
+            describe,
         } = decoder::validator_for_schema(
             &decoder.schema,
             validators,
@@ -81,6 +84,7 @@ fn build_decoders(
         parser_exprs.push((decoder.exported_name.clone(), parser));
         report_exprs.push((decoder.exported_name.clone(), reporter));
         schema_exprs.push((decoder.exported_name.clone(), schema));
+        describe_exprs.push((decoder.exported_name.clone(), describe));
 
         hoisted.extend(local_hoisted.into_iter());
     }
@@ -169,12 +173,32 @@ fn build_decoders(
             })
             .collect(),
     });
+    let describe = Expr::Object(ObjectLit {
+        span: DUMMY_SP,
+        props: describe_exprs
+            .into_iter()
+            .map(|(key, value)| {
+                PropOrSpread::Prop(
+                    Prop::KeyValue(KeyValueProp {
+                        key: PropName::Str(Str {
+                            span: DUMMY_SP,
+                            value: key.into(),
+                            raw: None,
+                        }),
+                        value: value.into(),
+                    })
+                    .into(),
+                )
+            })
+            .collect(),
+    });
 
     DecodersCode {
         validator,
         parser,
         reporter,
         schema,
+        describe,
     }
 }
 
@@ -214,6 +238,7 @@ impl ToWritableModules for ExtractResult {
                 parser,
                 reporter,
                 schema,
+                describe,
             } = decoder::func_validator_for_schema(
                 &comp.schema,
                 &named_schemas,
@@ -263,6 +288,17 @@ impl ToWritableModules for ExtractResult {
                 function: schema.into(),
             })));
             stmt_named_schemas.push(schema_fn_decl);
+
+            let describe_fn_decl = ModuleItem::Stmt(Stmt::Decl(Decl::Fn(FnDecl {
+                ident: Ident {
+                    span: DUMMY_SP,
+                    sym: format!("Describe{}", comp.name).into(),
+                    optional: false,
+                },
+                declare: false,
+                function: describe.into(),
+            })));
+            stmt_named_schemas.push(describe_fn_decl);
 
             hoisted.extend(local_hoisted.into_iter());
         }
@@ -348,6 +384,7 @@ impl ToWritableModules for ExtractResult {
             Expr::Object(ObjectLit {
                 span: DUMMY_SP,
                 props: schema_names
+                    .clone()
                     .into_iter()
                     .map(|it| {
                         PropOrSpread::Prop(Box::new(Prop::KeyValue(KeyValueProp {
@@ -359,6 +396,30 @@ impl ToWritableModules for ExtractResult {
                             value: Expr::Ident(Ident {
                                 span: DUMMY_SP,
                                 sym: format!("Schema{}", it).into(),
+                                optional: false,
+                            })
+                            .into(),
+                        })))
+                    })
+                    .collect(),
+            }),
+        ));
+        stmt_named_schemas.push(const_decl(
+            "describers",
+            Expr::Object(ObjectLit {
+                span: DUMMY_SP,
+                props: schema_names
+                    .into_iter()
+                    .map(|it| {
+                        PropOrSpread::Prop(Box::new(Prop::KeyValue(KeyValueProp {
+                            key: PropName::Ident(Ident {
+                                span: DUMMY_SP,
+                                sym: it.clone().into(),
+                                optional: false,
+                            }),
+                            value: Expr::Ident(Ident {
+                                span: DUMMY_SP,
+                                sym: format!("Describe{}", it).into(),
                                 optional: false,
                             })
                             .into(),
@@ -387,11 +448,13 @@ impl ToWritableModules for ExtractResult {
                 parser,
                 reporter,
                 schema,
+                describe,
             } = build_decoders(&decoders, &named_schemas, &mut parser_hoisted);
             let build_validators_input = const_decl("buildValidatorsInput", validator);
             let build_parsers_input = const_decl("buildParsersInput", parser);
             let build_reporters_input = const_decl("buildReportersInput", reporter);
             let build_schema_input = const_decl("buildSchemaInput", schema);
+            let build_describe_input = const_decl("buildDescribeInput", describe);
 
             js_built_parsers = Some(emit_module(
                 parser_hoisted
@@ -402,6 +465,7 @@ impl ToWritableModules for ExtractResult {
                             build_parsers_input,
                             build_reporters_input,
                             build_schema_input,
+                            build_describe_input,
                         ]
                         .into_iter(),
                     )

@@ -1,5 +1,11 @@
 # @beff/cli
 
+## 0.0.96
+
+### Patch Changes
+
+- add .describe
+
 ## 0.0.95
 
 ### Patch Changes

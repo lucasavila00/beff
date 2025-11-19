@@ -65,6 +65,21 @@ const decodersExported = [
   "AllOfSchema",
   "AnyOfDiscriminatedSchema",
   "MappedRecordSchema",
+  //
+  "describeString",
+  "describeNumber",
+  "describeBoolean",
+  "describeNull",
+  "describeAny",
+  "describeNever",
+  "describeFunction",
+  "ArrayDescribe",
+  "ObjectDescribe",
+  "TupleDescribe",
+  "AnyOfDescribe",
+  "AllOfDescribe",
+  "AnyOfDiscriminatedDescribe",
+  "MappedRecordDescribe",
 ];
 
 const esmTag = (mod: ProjectModule) => {
@@ -81,7 +96,14 @@ Object.defineProperty(exports, "__esModule", {
 const exportCode = (mod: ProjectModule) => (mod === "esm" ? "export default" : "exports.default =");
 
 const finalizeValidatorsCode = (wasmCode: WritableModules, mod: ProjectModule) => {
-  const exportedItems = [...decodersExported, "validators", "parsers", "reporters", "schemas"].join(", ");
+  const exportedItems = [
+    ...decodersExported,
+    "validators",
+    "parsers",
+    "reporters",
+    "schemas",
+    "describers",
+  ].join(", ");
   const exports = [exportCode(mod), `{ ${exportedItems} };`].join(" ");
   return [
     //
@@ -94,7 +116,9 @@ const finalizeValidatorsCode = (wasmCode: WritableModules, mod: ProjectModule) =
 };
 
 const importValidators = (mod: ProjectModule) => {
-  const i = [...decodersExported, "validators", "parsers", "reporters", "schemas", "c"].join(", ");
+  const i = [...decodersExported, "validators", "parsers", "reporters", "schemas", "describers", "c"].join(
+    ", ",
+  );
 
   const importRest =
     mod === "esm"
