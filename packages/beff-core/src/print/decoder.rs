@@ -640,6 +640,7 @@ impl DecoderFnGenerator<'_> {
         }
     }
 
+    #[allow(clippy::too_many_arguments)]
     fn dynamic_schema_code(
         &self,
         name: &str,
