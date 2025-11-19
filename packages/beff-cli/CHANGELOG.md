@@ -1,5 +1,11 @@
 # @beff/cli
 
+## 0.0.99
+
+### Patch Changes
+
+- minimize refs in describe
+
 ## 0.0.98
 
 ### Patch Changes

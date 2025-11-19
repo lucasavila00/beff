@@ -1558,6 +1558,27 @@ function SchemaValidCurrency(ctx, input) {
 function DescribeValidCurrency(ctx, input) {
     return (hoisted_ValidCurrency_0.describeStringWithFormatsDecoder.bind(hoisted_ValidCurrency_0))(ctx);
 }
+function ValidateReusesRef(ctx, input) {
+    return (hoisted_ReusesRef_7.validateObjectValidator.bind(hoisted_ReusesRef_7))(ctx, input);
+}
+function ParseReusesRef(ctx, input) {
+    return (hoisted_ReusesRef_8.parseObjectParser.bind(hoisted_ReusesRef_8))(ctx, input);
+}
+function ReportReusesRef(ctx, input) {
+    return (hoisted_ReusesRef_9.reportObjectReporter.bind(hoisted_ReusesRef_9))(ctx, input);
+}
+function SchemaReusesRef(ctx, input) {
+    if (ctx.seen["ReusesRef"]) {
+        return {};
+    }
+    ctx.seen["ReusesRef"] = true;
+    var tmp = (hoisted_ReusesRef_10.schemaObjectSchema.bind(hoisted_ReusesRef_10))(ctx);
+    delete ctx.seen["ReusesRef"];
+    return tmp;
+}
+function DescribeReusesRef(ctx, input) {
+    return (hoisted_ReusesRef_11.describeObjectDescribe.bind(hoisted_ReusesRef_11))(ctx);
+}
 const validators = {
     T1: ValidateT1,
     T2: ValidateT2,
@@ -1568,7 +1589,8 @@ const validators = {
     RecursiveTree: ValidateRecursiveTree,
     SemVer: ValidateSemVer,
     NonEmptyString: ValidateNonEmptyString,
-    ValidCurrency: ValidateValidCurrency
+    ValidCurrency: ValidateValidCurrency,
+    ReusesRef: ValidateReusesRef
 };
 const parsers = {
     T1: ParseT1,
@@ -1580,7 +1602,8 @@ const parsers = {
     RecursiveTree: ParseRecursiveTree,
     SemVer: ParseSemVer,
     NonEmptyString: ParseNonEmptyString,
-    ValidCurrency: ParseValidCurrency
+    ValidCurrency: ParseValidCurrency,
+    ReusesRef: ParseReusesRef
 };
 const reporters = {
     T1: ReportT1,
@@ -1592,7 +1615,8 @@ const reporters = {
     RecursiveTree: ReportRecursiveTree,
     SemVer: ReportSemVer,
     NonEmptyString: ReportNonEmptyString,
-    ValidCurrency: ReportValidCurrency
+    ValidCurrency: ReportValidCurrency,
+    ReusesRef: ReportReusesRef
 };
 const schemas = {
     T1: SchemaT1,
@@ -1604,7 +1628,8 @@ const schemas = {
     RecursiveTree: SchemaRecursiveTree,
     SemVer: SchemaSemVer,
     NonEmptyString: SchemaNonEmptyString,
-    ValidCurrency: SchemaValidCurrency
+    ValidCurrency: SchemaValidCurrency,
+    ReusesRef: SchemaReusesRef
 };
 const describers = {
     T1: DescribeT1,
@@ -1616,7 +1641,8 @@ const describers = {
     RecursiveTree: DescribeRecursiveTree,
     SemVer: DescribeSemVer,
     NonEmptyString: DescribeNonEmptyString,
-    ValidCurrency: DescribeValidCurrency
+    ValidCurrency: DescribeValidCurrency,
+    ReusesRef: DescribeReusesRef
 };
 const hoisted_T1_0 = {
     "a": validateString,
@@ -1644,12 +1670,25 @@ const hoisted_T1_7 = new ObjectReporter(hoisted_T1_0, hoisted_T1_4, {
 const hoisted_T1_8 = new ObjectSchema(hoisted_T1_1, null);
 const hoisted_T1_9 = new ObjectDescribe(hoisted_T1_3, null);
 const hoisted_T2_0 = (ctx, input)=>{
-    if (ctx.deps["T1"]) {
+    if (ctx.measure) {
+        ctx.deps_counter["T1"] = (ctx.deps_counter["T1"] || 0) + 1;
+        if (ctx.deps["T1"]) {
+            return "T1";
+        }
+        ctx.deps["T1"] = true;
+        ctx.deps["T1"] = describers.T1(ctx, input);
         return "T1";
+    } else {
+        if (ctx.deps_counter["T1"] > 1) {
+            if (!ctx.deps["T1"]) {
+                ctx.deps["T1"] = true;
+                ctx.deps["T1"] = describers.T1(ctx, input);
+            }
+            return "T1";
+        } else {
+            return describers.T1(ctx, input);
+        }
     }
-    ctx.deps["T1"] = true;
-    ctx.deps["T1"] = describers.T1(ctx, input);
-    return "T1";
 };
 const hoisted_T2_1 = {
     "t1": validators.T1
@@ -1672,12 +1711,25 @@ const hoisted_T2_8 = new ObjectReporter(hoisted_T2_1, hoisted_T2_5, {
 const hoisted_T2_9 = new ObjectSchema(hoisted_T2_2, null);
 const hoisted_T2_10 = new ObjectDescribe(hoisted_T2_4, null);
 const hoisted_T3_0 = (ctx, input)=>{
-    if (ctx.deps["T2"]) {
+    if (ctx.measure) {
+        ctx.deps_counter["T2"] = (ctx.deps_counter["T2"] || 0) + 1;
+        if (ctx.deps["T2"]) {
+            return "T2";
+        }
+        ctx.deps["T2"] = true;
+        ctx.deps["T2"] = describers.T2(ctx, input);
         return "T2";
+    } else {
+        if (ctx.deps_counter["T2"] > 1) {
+            if (!ctx.deps["T2"]) {
+                ctx.deps["T2"] = true;
+                ctx.deps["T2"] = describers.T2(ctx, input);
+            }
+            return "T2";
+        } else {
+            return describers.T2(ctx, input);
+        }
     }
-    ctx.deps["T2"] = true;
-    ctx.deps["T2"] = describers.T2(ctx, input);
-    return "T2";
 };
 const hoisted_T3_1 = validators.T2;
 const hoisted_T3_2 = new ArrayValidator(hoisted_T3_1);
@@ -2328,12 +2380,25 @@ const hoisted_DiscriminatedUnion_202 = new AnyOfDiscriminatedDescribe([
     hoisted_DiscriminatedUnion_197.describeObjectDescribe.bind(hoisted_DiscriminatedUnion_197)
 ]);
 const hoisted_RecursiveTree_0 = (ctx, input)=>{
-    if (ctx.deps["RecursiveTree"]) {
+    if (ctx.measure) {
+        ctx.deps_counter["RecursiveTree"] = (ctx.deps_counter["RecursiveTree"] || 0) + 1;
+        if (ctx.deps["RecursiveTree"]) {
+            return "RecursiveTree";
+        }
+        ctx.deps["RecursiveTree"] = true;
+        ctx.deps["RecursiveTree"] = describers.RecursiveTree(ctx, input);
         return "RecursiveTree";
+    } else {
+        if (ctx.deps_counter["RecursiveTree"] > 1) {
+            if (!ctx.deps["RecursiveTree"]) {
+                ctx.deps["RecursiveTree"] = true;
+                ctx.deps["RecursiveTree"] = describers.RecursiveTree(ctx, input);
+            }
+            return "RecursiveTree";
+        } else {
+            return describers.RecursiveTree(ctx, input);
+        }
     }
-    ctx.deps["RecursiveTree"] = true;
-    ctx.deps["RecursiveTree"] = describers.RecursiveTree(ctx, input);
-    return "RecursiveTree";
 };
 const hoisted_RecursiveTree_1 = validators.RecursiveTree;
 const hoisted_RecursiveTree_2 = new ArrayValidator(hoisted_RecursiveTree_1);
@@ -2385,5 +2450,72 @@ const hoisted_NonEmptyString_6 = new TupleDescribe([
     describeString
 ], describeString);
 const hoisted_ValidCurrency_0 = new StringWithFormatsDecoder("ValidCurrency");
+const hoisted_ReusesRef_0 = (ctx, input)=>{
+    if (ctx.measure) {
+        ctx.deps_counter["T3"] = (ctx.deps_counter["T3"] || 0) + 1;
+        if (ctx.deps["T3"]) {
+            return "T3";
+        }
+        ctx.deps["T3"] = true;
+        ctx.deps["T3"] = describers.T3(ctx, input);
+        return "T3";
+    } else {
+        if (ctx.deps_counter["T3"] > 1) {
+            if (!ctx.deps["T3"]) {
+                ctx.deps["T3"] = true;
+                ctx.deps["T3"] = describers.T3(ctx, input);
+            }
+            return "T3";
+        } else {
+            return describers.T3(ctx, input);
+        }
+    }
+};
+const hoisted_ReusesRef_1 = (ctx, input)=>{
+    if (ctx.measure) {
+        ctx.deps_counter["T3"] = (ctx.deps_counter["T3"] || 0) + 1;
+        if (ctx.deps["T3"]) {
+            return "T3";
+        }
+        ctx.deps["T3"] = true;
+        ctx.deps["T3"] = describers.T3(ctx, input);
+        return "T3";
+    } else {
+        if (ctx.deps_counter["T3"] > 1) {
+            if (!ctx.deps["T3"]) {
+                ctx.deps["T3"] = true;
+                ctx.deps["T3"] = describers.T3(ctx, input);
+            }
+            return "T3";
+        } else {
+            return describers.T3(ctx, input);
+        }
+    }
+};
+const hoisted_ReusesRef_2 = {
+    "a": validators.T3,
+    "b": validators.T3
+};
+const hoisted_ReusesRef_3 = {
+    "a": schemas.T3,
+    "b": schemas.T3
+};
+const hoisted_ReusesRef_4 = {
+    "a": hoisted_ReusesRef_0,
+    "b": hoisted_ReusesRef_1
+};
+const hoisted_ReusesRef_5 = hoisted_ReusesRef_4;
+const hoisted_ReusesRef_6 = null;
+const hoisted_ReusesRef_7 = new ObjectValidator(hoisted_ReusesRef_2, hoisted_ReusesRef_6);
+const hoisted_ReusesRef_8 = new ObjectParser({
+    "a": parsers.T3,
+    "b": parsers.T3
+}, null);
+const hoisted_ReusesRef_9 = new ObjectReporter(hoisted_ReusesRef_2, hoisted_ReusesRef_6, {
+    "a": reporters.T3,
+    "b": reporters.T3
+}, null);
+const hoisted_ReusesRef_10 = new ObjectSchema(hoisted_ReusesRef_3, null);
+const hoisted_ReusesRef_11 = new ObjectDescribe(hoisted_ReusesRef_5, null);
 
 export default { registerStringFormatter, registerNumberFormatter, ObjectValidator, ObjectParser, MappedRecordParser, MappedRecordValidator, ArrayParser, ArrayValidator, CodecDecoder, StringWithFormatsDecoder, NumberWithFormatsDecoder, AnyOfValidator, AnyOfParser, AllOfValidator, AllOfParser, TupleParser, TupleValidator, RegexDecoder, ConstDecoder, AnyOfConstsDecoder, AnyOfDiscriminatedParser, AnyOfDiscriminatedValidator, validateString, validateNumber, validateFunction, validateBoolean, validateAny, validateNull, validateNever, parseIdentity, reportString, reportNumber, reportNull, reportBoolean, reportAny, reportNever, reportFunction, ArrayReporter, ObjectReporter, TupleReporter, AnyOfReporter, AllOfReporter, AnyOfDiscriminatedReporter, MappedRecordReporter, schemaString, schemaNumber, schemaBoolean, schemaNull, schemaAny, schemaNever, schemaFunction, ArraySchema, ObjectSchema, TupleSchema, AnyOfSchema, AllOfSchema, AnyOfDiscriminatedSchema, MappedRecordSchema, describeString, describeNumber, describeBoolean, describeNull, describeAny, describeNever, describeFunction, ArrayDescribe, ObjectDescribe, TupleDescribe, AnyOfDescribe, AllOfDescribe, AnyOfDiscriminatedDescribe, MappedRecordDescribe, validators, parsers, reporters, schemas, describers };

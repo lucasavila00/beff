@@ -6,28 +6,67 @@ import validatorsMod from "./validators.js"; const { registerStringFormatter, re
 const RequiredStringFormats = ["ValidCurrency","UserId","ReadAuthorizedUserId","WriteAuthorizedUserId"];
 const RequiredNumberFormats = ["NonNegativeNumber","NonInfiniteNumber","Rate"];
 const hoisted_PartialRepro_0 = (ctx, input)=>{
-    if (ctx.deps["PartialRepro"]) {
+    if (ctx.measure) {
+        ctx.deps_counter["PartialRepro"] = (ctx.deps_counter["PartialRepro"] || 0) + 1;
+        if (ctx.deps["PartialRepro"]) {
+            return "PartialRepro";
+        }
+        ctx.deps["PartialRepro"] = true;
+        ctx.deps["PartialRepro"] = describers.PartialRepro(ctx, input);
         return "PartialRepro";
+    } else {
+        if (ctx.deps_counter["PartialRepro"] > 1) {
+            if (!ctx.deps["PartialRepro"]) {
+                ctx.deps["PartialRepro"] = true;
+                ctx.deps["PartialRepro"] = describers.PartialRepro(ctx, input);
+            }
+            return "PartialRepro";
+        } else {
+            return describers.PartialRepro(ctx, input);
+        }
     }
-    ctx.deps["PartialRepro"] = true;
-    ctx.deps["PartialRepro"] = describers.PartialRepro(ctx, input);
-    return "PartialRepro";
 };
 const hoisted_TransportedValue_0 = (ctx, input)=>{
-    if (ctx.deps["TransportedValue"]) {
+    if (ctx.measure) {
+        ctx.deps_counter["TransportedValue"] = (ctx.deps_counter["TransportedValue"] || 0) + 1;
+        if (ctx.deps["TransportedValue"]) {
+            return "TransportedValue";
+        }
+        ctx.deps["TransportedValue"] = true;
+        ctx.deps["TransportedValue"] = describers.TransportedValue(ctx, input);
         return "TransportedValue";
+    } else {
+        if (ctx.deps_counter["TransportedValue"] > 1) {
+            if (!ctx.deps["TransportedValue"]) {
+                ctx.deps["TransportedValue"] = true;
+                ctx.deps["TransportedValue"] = describers.TransportedValue(ctx, input);
+            }
+            return "TransportedValue";
+        } else {
+            return describers.TransportedValue(ctx, input);
+        }
     }
-    ctx.deps["TransportedValue"] = true;
-    ctx.deps["TransportedValue"] = describers.TransportedValue(ctx, input);
-    return "TransportedValue";
 };
 const hoisted_OnlyAKey_0 = (ctx, input)=>{
-    if (ctx.deps["OnlyAKey"]) {
+    if (ctx.measure) {
+        ctx.deps_counter["OnlyAKey"] = (ctx.deps_counter["OnlyAKey"] || 0) + 1;
+        if (ctx.deps["OnlyAKey"]) {
+            return "OnlyAKey";
+        }
+        ctx.deps["OnlyAKey"] = true;
+        ctx.deps["OnlyAKey"] = describers.OnlyAKey(ctx, input);
         return "OnlyAKey";
+    } else {
+        if (ctx.deps_counter["OnlyAKey"] > 1) {
+            if (!ctx.deps["OnlyAKey"]) {
+                ctx.deps["OnlyAKey"] = true;
+                ctx.deps["OnlyAKey"] = describers.OnlyAKey(ctx, input);
+            }
+            return "OnlyAKey";
+        } else {
+            return describers.OnlyAKey(ctx, input);
+        }
     }
-    ctx.deps["OnlyAKey"] = true;
-    ctx.deps["OnlyAKey"] = describers.OnlyAKey(ctx, input);
-    return "OnlyAKey";
 };
 const hoisted_ObjectWithArr_0 = validateString;
 const hoisted_ObjectWithArr_1 = new ArrayValidator(hoisted_ObjectWithArr_0);
@@ -112,276 +151,718 @@ const hoisted_StringArrCodec_3 = new ArrayReporter(hoisted_StringArrCodec_0, rep
 const hoisted_StringArrCodec_4 = new ArraySchema(schemaString);
 const hoisted_StringArrCodec_5 = new ArrayDescribe(describeString);
 const hoisted_AllTs_0 = (ctx, input)=>{
-    if (ctx.deps["AllTs"]) {
+    if (ctx.measure) {
+        ctx.deps_counter["AllTs"] = (ctx.deps_counter["AllTs"] || 0) + 1;
+        if (ctx.deps["AllTs"]) {
+            return "AllTs";
+        }
+        ctx.deps["AllTs"] = true;
+        ctx.deps["AllTs"] = describers.AllTs(ctx, input);
         return "AllTs";
+    } else {
+        if (ctx.deps_counter["AllTs"] > 1) {
+            if (!ctx.deps["AllTs"]) {
+                ctx.deps["AllTs"] = true;
+                ctx.deps["AllTs"] = describers.AllTs(ctx, input);
+            }
+            return "AllTs";
+        } else {
+            return describers.AllTs(ctx, input);
+        }
     }
-    ctx.deps["AllTs"] = true;
-    ctx.deps["AllTs"] = describers.AllTs(ctx, input);
-    return "AllTs";
 };
 const hoisted_AObject_0 = (ctx, input)=>{
-    if (ctx.deps["AObject"]) {
+    if (ctx.measure) {
+        ctx.deps_counter["AObject"] = (ctx.deps_counter["AObject"] || 0) + 1;
+        if (ctx.deps["AObject"]) {
+            return "AObject";
+        }
+        ctx.deps["AObject"] = true;
+        ctx.deps["AObject"] = describers.AObject(ctx, input);
         return "AObject";
+    } else {
+        if (ctx.deps_counter["AObject"] > 1) {
+            if (!ctx.deps["AObject"]) {
+                ctx.deps["AObject"] = true;
+                ctx.deps["AObject"] = describers.AObject(ctx, input);
+            }
+            return "AObject";
+        } else {
+            return describers.AObject(ctx, input);
+        }
     }
-    ctx.deps["AObject"] = true;
-    ctx.deps["AObject"] = describers.AObject(ctx, input);
-    return "AObject";
 };
 const hoisted_Version_0 = (ctx, input)=>{
-    if (ctx.deps["Version"]) {
+    if (ctx.measure) {
+        ctx.deps_counter["Version"] = (ctx.deps_counter["Version"] || 0) + 1;
+        if (ctx.deps["Version"]) {
+            return "Version";
+        }
+        ctx.deps["Version"] = true;
+        ctx.deps["Version"] = describers.Version(ctx, input);
         return "Version";
+    } else {
+        if (ctx.deps_counter["Version"] > 1) {
+            if (!ctx.deps["Version"]) {
+                ctx.deps["Version"] = true;
+                ctx.deps["Version"] = describers.Version(ctx, input);
+            }
+            return "Version";
+        } else {
+            return describers.Version(ctx, input);
+        }
     }
-    ctx.deps["Version"] = true;
-    ctx.deps["Version"] = describers.Version(ctx, input);
-    return "Version";
 };
 const hoisted_Version2_0 = (ctx, input)=>{
-    if (ctx.deps["Version2"]) {
+    if (ctx.measure) {
+        ctx.deps_counter["Version2"] = (ctx.deps_counter["Version2"] || 0) + 1;
+        if (ctx.deps["Version2"]) {
+            return "Version2";
+        }
+        ctx.deps["Version2"] = true;
+        ctx.deps["Version2"] = describers.Version2(ctx, input);
         return "Version2";
+    } else {
+        if (ctx.deps_counter["Version2"] > 1) {
+            if (!ctx.deps["Version2"]) {
+                ctx.deps["Version2"] = true;
+                ctx.deps["Version2"] = describers.Version2(ctx, input);
+            }
+            return "Version2";
+        } else {
+            return describers.Version2(ctx, input);
+        }
     }
-    ctx.deps["Version2"] = true;
-    ctx.deps["Version2"] = describers.Version2(ctx, input);
-    return "Version2";
 };
 const hoisted_AccessLevelTpl2_0 = (ctx, input)=>{
-    if (ctx.deps["AccessLevelTpl2"]) {
+    if (ctx.measure) {
+        ctx.deps_counter["AccessLevelTpl2"] = (ctx.deps_counter["AccessLevelTpl2"] || 0) + 1;
+        if (ctx.deps["AccessLevelTpl2"]) {
+            return "AccessLevelTpl2";
+        }
+        ctx.deps["AccessLevelTpl2"] = true;
+        ctx.deps["AccessLevelTpl2"] = describers.AccessLevelTpl2(ctx, input);
         return "AccessLevelTpl2";
+    } else {
+        if (ctx.deps_counter["AccessLevelTpl2"] > 1) {
+            if (!ctx.deps["AccessLevelTpl2"]) {
+                ctx.deps["AccessLevelTpl2"] = true;
+                ctx.deps["AccessLevelTpl2"] = describers.AccessLevelTpl2(ctx, input);
+            }
+            return "AccessLevelTpl2";
+        } else {
+            return describers.AccessLevelTpl2(ctx, input);
+        }
     }
-    ctx.deps["AccessLevelTpl2"] = true;
-    ctx.deps["AccessLevelTpl2"] = describers.AccessLevelTpl2(ctx, input);
-    return "AccessLevelTpl2";
 };
 const hoisted_AccessLevelTpl_0 = (ctx, input)=>{
-    if (ctx.deps["AccessLevelTpl"]) {
+    if (ctx.measure) {
+        ctx.deps_counter["AccessLevelTpl"] = (ctx.deps_counter["AccessLevelTpl"] || 0) + 1;
+        if (ctx.deps["AccessLevelTpl"]) {
+            return "AccessLevelTpl";
+        }
+        ctx.deps["AccessLevelTpl"] = true;
+        ctx.deps["AccessLevelTpl"] = describers.AccessLevelTpl(ctx, input);
         return "AccessLevelTpl";
+    } else {
+        if (ctx.deps_counter["AccessLevelTpl"] > 1) {
+            if (!ctx.deps["AccessLevelTpl"]) {
+                ctx.deps["AccessLevelTpl"] = true;
+                ctx.deps["AccessLevelTpl"] = describers.AccessLevelTpl(ctx, input);
+            }
+            return "AccessLevelTpl";
+        } else {
+            return describers.AccessLevelTpl(ctx, input);
+        }
     }
-    ctx.deps["AccessLevelTpl"] = true;
-    ctx.deps["AccessLevelTpl"] = describers.AccessLevelTpl(ctx, input);
-    return "AccessLevelTpl";
 };
 const hoisted_Arr3_0 = (ctx, input)=>{
-    if (ctx.deps["Arr3"]) {
+    if (ctx.measure) {
+        ctx.deps_counter["Arr3"] = (ctx.deps_counter["Arr3"] || 0) + 1;
+        if (ctx.deps["Arr3"]) {
+            return "Arr3";
+        }
+        ctx.deps["Arr3"] = true;
+        ctx.deps["Arr3"] = describers.Arr3(ctx, input);
         return "Arr3";
+    } else {
+        if (ctx.deps_counter["Arr3"] > 1) {
+            if (!ctx.deps["Arr3"]) {
+                ctx.deps["Arr3"] = true;
+                ctx.deps["Arr3"] = describers.Arr3(ctx, input);
+            }
+            return "Arr3";
+        } else {
+            return describers.Arr3(ctx, input);
+        }
     }
-    ctx.deps["Arr3"] = true;
-    ctx.deps["Arr3"] = describers.Arr3(ctx, input);
-    return "Arr3";
 };
 const hoisted_OmitSettings_0 = (ctx, input)=>{
-    if (ctx.deps["OmitSettings"]) {
+    if (ctx.measure) {
+        ctx.deps_counter["OmitSettings"] = (ctx.deps_counter["OmitSettings"] || 0) + 1;
+        if (ctx.deps["OmitSettings"]) {
+            return "OmitSettings";
+        }
+        ctx.deps["OmitSettings"] = true;
+        ctx.deps["OmitSettings"] = describers.OmitSettings(ctx, input);
         return "OmitSettings";
+    } else {
+        if (ctx.deps_counter["OmitSettings"] > 1) {
+            if (!ctx.deps["OmitSettings"]) {
+                ctx.deps["OmitSettings"] = true;
+                ctx.deps["OmitSettings"] = describers.OmitSettings(ctx, input);
+            }
+            return "OmitSettings";
+        } else {
+            return describers.OmitSettings(ctx, input);
+        }
     }
-    ctx.deps["OmitSettings"] = true;
-    ctx.deps["OmitSettings"] = describers.OmitSettings(ctx, input);
-    return "OmitSettings";
 };
 const hoisted_RequiredPartialObject_0 = (ctx, input)=>{
-    if (ctx.deps["RequiredPartialObject"]) {
+    if (ctx.measure) {
+        ctx.deps_counter["RequiredPartialObject"] = (ctx.deps_counter["RequiredPartialObject"] || 0) + 1;
+        if (ctx.deps["RequiredPartialObject"]) {
+            return "RequiredPartialObject";
+        }
+        ctx.deps["RequiredPartialObject"] = true;
+        ctx.deps["RequiredPartialObject"] = describers.RequiredPartialObject(ctx, input);
         return "RequiredPartialObject";
+    } else {
+        if (ctx.deps_counter["RequiredPartialObject"] > 1) {
+            if (!ctx.deps["RequiredPartialObject"]) {
+                ctx.deps["RequiredPartialObject"] = true;
+                ctx.deps["RequiredPartialObject"] = describers.RequiredPartialObject(ctx, input);
+            }
+            return "RequiredPartialObject";
+        } else {
+            return describers.RequiredPartialObject(ctx, input);
+        }
     }
-    ctx.deps["RequiredPartialObject"] = true;
-    ctx.deps["RequiredPartialObject"] = describers.RequiredPartialObject(ctx, input);
-    return "RequiredPartialObject";
 };
 const hoisted_LevelAndDSettings_0 = (ctx, input)=>{
-    if (ctx.deps["LevelAndDSettings"]) {
+    if (ctx.measure) {
+        ctx.deps_counter["LevelAndDSettings"] = (ctx.deps_counter["LevelAndDSettings"] || 0) + 1;
+        if (ctx.deps["LevelAndDSettings"]) {
+            return "LevelAndDSettings";
+        }
+        ctx.deps["LevelAndDSettings"] = true;
+        ctx.deps["LevelAndDSettings"] = describers.LevelAndDSettings(ctx, input);
         return "LevelAndDSettings";
+    } else {
+        if (ctx.deps_counter["LevelAndDSettings"] > 1) {
+            if (!ctx.deps["LevelAndDSettings"]) {
+                ctx.deps["LevelAndDSettings"] = true;
+                ctx.deps["LevelAndDSettings"] = describers.LevelAndDSettings(ctx, input);
+            }
+            return "LevelAndDSettings";
+        } else {
+            return describers.LevelAndDSettings(ctx, input);
+        }
     }
-    ctx.deps["LevelAndDSettings"] = true;
-    ctx.deps["LevelAndDSettings"] = describers.LevelAndDSettings(ctx, input);
-    return "LevelAndDSettings";
 };
 const hoisted_PartialSettings_0 = (ctx, input)=>{
-    if (ctx.deps["PartialSettings"]) {
+    if (ctx.measure) {
+        ctx.deps_counter["PartialSettings"] = (ctx.deps_counter["PartialSettings"] || 0) + 1;
+        if (ctx.deps["PartialSettings"]) {
+            return "PartialSettings";
+        }
+        ctx.deps["PartialSettings"] = true;
+        ctx.deps["PartialSettings"] = describers.PartialSettings(ctx, input);
         return "PartialSettings";
+    } else {
+        if (ctx.deps_counter["PartialSettings"] > 1) {
+            if (!ctx.deps["PartialSettings"]) {
+                ctx.deps["PartialSettings"] = true;
+                ctx.deps["PartialSettings"] = describers.PartialSettings(ctx, input);
+            }
+            return "PartialSettings";
+        } else {
+            return describers.PartialSettings(ctx, input);
+        }
     }
-    ctx.deps["PartialSettings"] = true;
-    ctx.deps["PartialSettings"] = describers.PartialSettings(ctx, input);
-    return "PartialSettings";
 };
 const hoisted_Extra_0 = (ctx, input)=>{
-    if (ctx.deps["Extra"]) {
+    if (ctx.measure) {
+        ctx.deps_counter["Extra"] = (ctx.deps_counter["Extra"] || 0) + 1;
+        if (ctx.deps["Extra"]) {
+            return "Extra";
+        }
+        ctx.deps["Extra"] = true;
+        ctx.deps["Extra"] = describers.Extra(ctx, input);
         return "Extra";
+    } else {
+        if (ctx.deps_counter["Extra"] > 1) {
+            if (!ctx.deps["Extra"]) {
+                ctx.deps["Extra"] = true;
+                ctx.deps["Extra"] = describers.Extra(ctx, input);
+            }
+            return "Extra";
+        } else {
+            return describers.Extra(ctx, input);
+        }
     }
-    ctx.deps["Extra"] = true;
-    ctx.deps["Extra"] = describers.Extra(ctx, input);
-    return "Extra";
 };
 const hoisted_User_0 = (ctx, input)=>{
-    if (ctx.deps["User"]) {
+    if (ctx.measure) {
+        ctx.deps_counter["User"] = (ctx.deps_counter["User"] || 0) + 1;
+        if (ctx.deps["User"]) {
+            return "User";
+        }
+        ctx.deps["User"] = true;
+        ctx.deps["User"] = describers.User(ctx, input);
         return "User";
+    } else {
+        if (ctx.deps_counter["User"] > 1) {
+            if (!ctx.deps["User"]) {
+                ctx.deps["User"] = true;
+                ctx.deps["User"] = describers.User(ctx, input);
+            }
+            return "User";
+        } else {
+            return describers.User(ctx, input);
+        }
     }
-    ctx.deps["User"] = true;
-    ctx.deps["User"] = describers.User(ctx, input);
-    return "User";
 };
 const hoisted_PublicUser_0 = (ctx, input)=>{
-    if (ctx.deps["PublicUser"]) {
+    if (ctx.measure) {
+        ctx.deps_counter["PublicUser"] = (ctx.deps_counter["PublicUser"] || 0) + 1;
+        if (ctx.deps["PublicUser"]) {
+            return "PublicUser";
+        }
+        ctx.deps["PublicUser"] = true;
+        ctx.deps["PublicUser"] = describers.PublicUser(ctx, input);
         return "PublicUser";
+    } else {
+        if (ctx.deps_counter["PublicUser"] > 1) {
+            if (!ctx.deps["PublicUser"]) {
+                ctx.deps["PublicUser"] = true;
+                ctx.deps["PublicUser"] = describers.PublicUser(ctx, input);
+            }
+            return "PublicUser";
+        } else {
+            return describers.PublicUser(ctx, input);
+        }
     }
-    ctx.deps["PublicUser"] = true;
-    ctx.deps["PublicUser"] = describers.PublicUser(ctx, input);
-    return "PublicUser";
 };
 const hoisted_Req_0 = (ctx, input)=>{
-    if (ctx.deps["Req"]) {
+    if (ctx.measure) {
+        ctx.deps_counter["Req"] = (ctx.deps_counter["Req"] || 0) + 1;
+        if (ctx.deps["Req"]) {
+            return "Req";
+        }
+        ctx.deps["Req"] = true;
+        ctx.deps["Req"] = describers.Req(ctx, input);
         return "Req";
+    } else {
+        if (ctx.deps_counter["Req"] > 1) {
+            if (!ctx.deps["Req"]) {
+                ctx.deps["Req"] = true;
+                ctx.deps["Req"] = describers.Req(ctx, input);
+            }
+            return "Req";
+        } else {
+            return describers.Req(ctx, input);
+        }
     }
-    ctx.deps["Req"] = true;
-    ctx.deps["Req"] = describers.Req(ctx, input);
-    return "Req";
 };
 const hoisted_Repro1_0 = (ctx, input)=>{
-    if (ctx.deps["Repro1"]) {
+    if (ctx.measure) {
+        ctx.deps_counter["Repro1"] = (ctx.deps_counter["Repro1"] || 0) + 1;
+        if (ctx.deps["Repro1"]) {
+            return "Repro1";
+        }
+        ctx.deps["Repro1"] = true;
+        ctx.deps["Repro1"] = describers.Repro1(ctx, input);
         return "Repro1";
+    } else {
+        if (ctx.deps_counter["Repro1"] > 1) {
+            if (!ctx.deps["Repro1"]) {
+                ctx.deps["Repro1"] = true;
+                ctx.deps["Repro1"] = describers.Repro1(ctx, input);
+            }
+            return "Repro1";
+        } else {
+            return describers.Repro1(ctx, input);
+        }
     }
-    ctx.deps["Repro1"] = true;
-    ctx.deps["Repro1"] = describers.Repro1(ctx, input);
-    return "Repro1";
 };
 const hoisted_SettingsUpdate_0 = (ctx, input)=>{
-    if (ctx.deps["SettingsUpdate"]) {
+    if (ctx.measure) {
+        ctx.deps_counter["SettingsUpdate"] = (ctx.deps_counter["SettingsUpdate"] || 0) + 1;
+        if (ctx.deps["SettingsUpdate"]) {
+            return "SettingsUpdate";
+        }
+        ctx.deps["SettingsUpdate"] = true;
+        ctx.deps["SettingsUpdate"] = describers.SettingsUpdate(ctx, input);
         return "SettingsUpdate";
+    } else {
+        if (ctx.deps_counter["SettingsUpdate"] > 1) {
+            if (!ctx.deps["SettingsUpdate"]) {
+                ctx.deps["SettingsUpdate"] = true;
+                ctx.deps["SettingsUpdate"] = describers.SettingsUpdate(ctx, input);
+            }
+            return "SettingsUpdate";
+        } else {
+            return describers.SettingsUpdate(ctx, input);
+        }
     }
-    ctx.deps["SettingsUpdate"] = true;
-    ctx.deps["SettingsUpdate"] = describers.SettingsUpdate(ctx, input);
-    return "SettingsUpdate";
 };
 const hoisted_Mapped_0 = (ctx, input)=>{
-    if (ctx.deps["Mapped"]) {
+    if (ctx.measure) {
+        ctx.deps_counter["Mapped"] = (ctx.deps_counter["Mapped"] || 0) + 1;
+        if (ctx.deps["Mapped"]) {
+            return "Mapped";
+        }
+        ctx.deps["Mapped"] = true;
+        ctx.deps["Mapped"] = describers.Mapped(ctx, input);
         return "Mapped";
+    } else {
+        if (ctx.deps_counter["Mapped"] > 1) {
+            if (!ctx.deps["Mapped"]) {
+                ctx.deps["Mapped"] = true;
+                ctx.deps["Mapped"] = describers.Mapped(ctx, input);
+            }
+            return "Mapped";
+        } else {
+            return describers.Mapped(ctx, input);
+        }
     }
-    ctx.deps["Mapped"] = true;
-    ctx.deps["Mapped"] = describers.Mapped(ctx, input);
-    return "Mapped";
 };
 const hoisted_MappedOptional_0 = (ctx, input)=>{
-    if (ctx.deps["MappedOptional"]) {
+    if (ctx.measure) {
+        ctx.deps_counter["MappedOptional"] = (ctx.deps_counter["MappedOptional"] || 0) + 1;
+        if (ctx.deps["MappedOptional"]) {
+            return "MappedOptional";
+        }
+        ctx.deps["MappedOptional"] = true;
+        ctx.deps["MappedOptional"] = describers.MappedOptional(ctx, input);
         return "MappedOptional";
+    } else {
+        if (ctx.deps_counter["MappedOptional"] > 1) {
+            if (!ctx.deps["MappedOptional"]) {
+                ctx.deps["MappedOptional"] = true;
+                ctx.deps["MappedOptional"] = describers.MappedOptional(ctx, input);
+            }
+            return "MappedOptional";
+        } else {
+            return describers.MappedOptional(ctx, input);
+        }
     }
-    ctx.deps["MappedOptional"] = true;
-    ctx.deps["MappedOptional"] = describers.MappedOptional(ctx, input);
-    return "MappedOptional";
 };
 const hoisted_PartialObject_0 = (ctx, input)=>{
-    if (ctx.deps["PartialObject"]) {
+    if (ctx.measure) {
+        ctx.deps_counter["PartialObject"] = (ctx.deps_counter["PartialObject"] || 0) + 1;
+        if (ctx.deps["PartialObject"]) {
+            return "PartialObject";
+        }
+        ctx.deps["PartialObject"] = true;
+        ctx.deps["PartialObject"] = describers.PartialObject(ctx, input);
         return "PartialObject";
+    } else {
+        if (ctx.deps_counter["PartialObject"] > 1) {
+            if (!ctx.deps["PartialObject"]) {
+                ctx.deps["PartialObject"] = true;
+                ctx.deps["PartialObject"] = describers.PartialObject(ctx, input);
+            }
+            return "PartialObject";
+        } else {
+            return describers.PartialObject(ctx, input);
+        }
     }
-    ctx.deps["PartialObject"] = true;
-    ctx.deps["PartialObject"] = describers.PartialObject(ctx, input);
-    return "PartialObject";
 };
 const hoisted_DiscriminatedUnion_0 = (ctx, input)=>{
-    if (ctx.deps["DiscriminatedUnion"]) {
+    if (ctx.measure) {
+        ctx.deps_counter["DiscriminatedUnion"] = (ctx.deps_counter["DiscriminatedUnion"] || 0) + 1;
+        if (ctx.deps["DiscriminatedUnion"]) {
+            return "DiscriminatedUnion";
+        }
+        ctx.deps["DiscriminatedUnion"] = true;
+        ctx.deps["DiscriminatedUnion"] = describers.DiscriminatedUnion(ctx, input);
         return "DiscriminatedUnion";
+    } else {
+        if (ctx.deps_counter["DiscriminatedUnion"] > 1) {
+            if (!ctx.deps["DiscriminatedUnion"]) {
+                ctx.deps["DiscriminatedUnion"] = true;
+                ctx.deps["DiscriminatedUnion"] = describers.DiscriminatedUnion(ctx, input);
+            }
+            return "DiscriminatedUnion";
+        } else {
+            return describers.DiscriminatedUnion(ctx, input);
+        }
     }
-    ctx.deps["DiscriminatedUnion"] = true;
-    ctx.deps["DiscriminatedUnion"] = describers.DiscriminatedUnion(ctx, input);
-    return "DiscriminatedUnion";
 };
 const hoisted_DiscriminatedUnion2_0 = (ctx, input)=>{
-    if (ctx.deps["DiscriminatedUnion2"]) {
+    if (ctx.measure) {
+        ctx.deps_counter["DiscriminatedUnion2"] = (ctx.deps_counter["DiscriminatedUnion2"] || 0) + 1;
+        if (ctx.deps["DiscriminatedUnion2"]) {
+            return "DiscriminatedUnion2";
+        }
+        ctx.deps["DiscriminatedUnion2"] = true;
+        ctx.deps["DiscriminatedUnion2"] = describers.DiscriminatedUnion2(ctx, input);
         return "DiscriminatedUnion2";
+    } else {
+        if (ctx.deps_counter["DiscriminatedUnion2"] > 1) {
+            if (!ctx.deps["DiscriminatedUnion2"]) {
+                ctx.deps["DiscriminatedUnion2"] = true;
+                ctx.deps["DiscriminatedUnion2"] = describers.DiscriminatedUnion2(ctx, input);
+            }
+            return "DiscriminatedUnion2";
+        } else {
+            return describers.DiscriminatedUnion2(ctx, input);
+        }
     }
-    ctx.deps["DiscriminatedUnion2"] = true;
-    ctx.deps["DiscriminatedUnion2"] = describers.DiscriminatedUnion2(ctx, input);
-    return "DiscriminatedUnion2";
 };
 const hoisted_DiscriminatedUnion3_0 = (ctx, input)=>{
-    if (ctx.deps["DiscriminatedUnion3"]) {
+    if (ctx.measure) {
+        ctx.deps_counter["DiscriminatedUnion3"] = (ctx.deps_counter["DiscriminatedUnion3"] || 0) + 1;
+        if (ctx.deps["DiscriminatedUnion3"]) {
+            return "DiscriminatedUnion3";
+        }
+        ctx.deps["DiscriminatedUnion3"] = true;
+        ctx.deps["DiscriminatedUnion3"] = describers.DiscriminatedUnion3(ctx, input);
         return "DiscriminatedUnion3";
+    } else {
+        if (ctx.deps_counter["DiscriminatedUnion3"] > 1) {
+            if (!ctx.deps["DiscriminatedUnion3"]) {
+                ctx.deps["DiscriminatedUnion3"] = true;
+                ctx.deps["DiscriminatedUnion3"] = describers.DiscriminatedUnion3(ctx, input);
+            }
+            return "DiscriminatedUnion3";
+        } else {
+            return describers.DiscriminatedUnion3(ctx, input);
+        }
     }
-    ctx.deps["DiscriminatedUnion3"] = true;
-    ctx.deps["DiscriminatedUnion3"] = describers.DiscriminatedUnion3(ctx, input);
-    return "DiscriminatedUnion3";
 };
 const hoisted_DiscriminatedUnion4_0 = (ctx, input)=>{
-    if (ctx.deps["DiscriminatedUnion4"]) {
+    if (ctx.measure) {
+        ctx.deps_counter["DiscriminatedUnion4"] = (ctx.deps_counter["DiscriminatedUnion4"] || 0) + 1;
+        if (ctx.deps["DiscriminatedUnion4"]) {
+            return "DiscriminatedUnion4";
+        }
+        ctx.deps["DiscriminatedUnion4"] = true;
+        ctx.deps["DiscriminatedUnion4"] = describers.DiscriminatedUnion4(ctx, input);
         return "DiscriminatedUnion4";
+    } else {
+        if (ctx.deps_counter["DiscriminatedUnion4"] > 1) {
+            if (!ctx.deps["DiscriminatedUnion4"]) {
+                ctx.deps["DiscriminatedUnion4"] = true;
+                ctx.deps["DiscriminatedUnion4"] = describers.DiscriminatedUnion4(ctx, input);
+            }
+            return "DiscriminatedUnion4";
+        } else {
+            return describers.DiscriminatedUnion4(ctx, input);
+        }
     }
-    ctx.deps["DiscriminatedUnion4"] = true;
-    ctx.deps["DiscriminatedUnion4"] = describers.DiscriminatedUnion4(ctx, input);
-    return "DiscriminatedUnion4";
 };
 const hoisted_AllTypes_0 = (ctx, input)=>{
-    if (ctx.deps["AllTypes"]) {
+    if (ctx.measure) {
+        ctx.deps_counter["AllTypes"] = (ctx.deps_counter["AllTypes"] || 0) + 1;
+        if (ctx.deps["AllTypes"]) {
+            return "AllTypes";
+        }
+        ctx.deps["AllTypes"] = true;
+        ctx.deps["AllTypes"] = describers.AllTypes(ctx, input);
         return "AllTypes";
+    } else {
+        if (ctx.deps_counter["AllTypes"] > 1) {
+            if (!ctx.deps["AllTypes"]) {
+                ctx.deps["AllTypes"] = true;
+                ctx.deps["AllTypes"] = describers.AllTypes(ctx, input);
+            }
+            return "AllTypes";
+        } else {
+            return describers.AllTypes(ctx, input);
+        }
     }
-    ctx.deps["AllTypes"] = true;
-    ctx.deps["AllTypes"] = describers.AllTypes(ctx, input);
-    return "AllTypes";
 };
 const hoisted_AccessLevel_0 = (ctx, input)=>{
-    if (ctx.deps["AccessLevel"]) {
+    if (ctx.measure) {
+        ctx.deps_counter["AccessLevel"] = (ctx.deps_counter["AccessLevel"] || 0) + 1;
+        if (ctx.deps["AccessLevel"]) {
+            return "AccessLevel";
+        }
+        ctx.deps["AccessLevel"] = true;
+        ctx.deps["AccessLevel"] = describers.AccessLevel(ctx, input);
         return "AccessLevel";
+    } else {
+        if (ctx.deps_counter["AccessLevel"] > 1) {
+            if (!ctx.deps["AccessLevel"]) {
+                ctx.deps["AccessLevel"] = true;
+                ctx.deps["AccessLevel"] = describers.AccessLevel(ctx, input);
+            }
+            return "AccessLevel";
+        } else {
+            return describers.AccessLevel(ctx, input);
+        }
     }
-    ctx.deps["AccessLevel"] = true;
-    ctx.deps["AccessLevel"] = describers.AccessLevel(ctx, input);
-    return "AccessLevel";
 };
 const hoisted_OtherEnum_0 = (ctx, input)=>{
-    if (ctx.deps["OtherEnum"]) {
+    if (ctx.measure) {
+        ctx.deps_counter["OtherEnum"] = (ctx.deps_counter["OtherEnum"] || 0) + 1;
+        if (ctx.deps["OtherEnum"]) {
+            return "OtherEnum";
+        }
+        ctx.deps["OtherEnum"] = true;
+        ctx.deps["OtherEnum"] = describers.OtherEnum(ctx, input);
         return "OtherEnum";
+    } else {
+        if (ctx.deps_counter["OtherEnum"] > 1) {
+            if (!ctx.deps["OtherEnum"]) {
+                ctx.deps["OtherEnum"] = true;
+                ctx.deps["OtherEnum"] = describers.OtherEnum(ctx, input);
+            }
+            return "OtherEnum";
+        } else {
+            return describers.OtherEnum(ctx, input);
+        }
     }
-    ctx.deps["OtherEnum"] = true;
-    ctx.deps["OtherEnum"] = describers.OtherEnum(ctx, input);
-    return "OtherEnum";
 };
 const hoisted_Arr2C_0 = (ctx, input)=>{
-    if (ctx.deps["Arr2"]) {
+    if (ctx.measure) {
+        ctx.deps_counter["Arr2"] = (ctx.deps_counter["Arr2"] || 0) + 1;
+        if (ctx.deps["Arr2"]) {
+            return "Arr2";
+        }
+        ctx.deps["Arr2"] = true;
+        ctx.deps["Arr2"] = describers.Arr2(ctx, input);
         return "Arr2";
+    } else {
+        if (ctx.deps_counter["Arr2"] > 1) {
+            if (!ctx.deps["Arr2"]) {
+                ctx.deps["Arr2"] = true;
+                ctx.deps["Arr2"] = describers.Arr2(ctx, input);
+            }
+            return "Arr2";
+        } else {
+            return describers.Arr2(ctx, input);
+        }
     }
-    ctx.deps["Arr2"] = true;
-    ctx.deps["Arr2"] = describers.Arr2(ctx, input);
-    return "Arr2";
 };
 const hoisted_ValidCurrency_0 = (ctx, input)=>{
-    if (ctx.deps["ValidCurrency"]) {
+    if (ctx.measure) {
+        ctx.deps_counter["ValidCurrency"] = (ctx.deps_counter["ValidCurrency"] || 0) + 1;
+        if (ctx.deps["ValidCurrency"]) {
+            return "ValidCurrency";
+        }
+        ctx.deps["ValidCurrency"] = true;
+        ctx.deps["ValidCurrency"] = describers.ValidCurrency(ctx, input);
         return "ValidCurrency";
+    } else {
+        if (ctx.deps_counter["ValidCurrency"] > 1) {
+            if (!ctx.deps["ValidCurrency"]) {
+                ctx.deps["ValidCurrency"] = true;
+                ctx.deps["ValidCurrency"] = describers.ValidCurrency(ctx, input);
+            }
+            return "ValidCurrency";
+        } else {
+            return describers.ValidCurrency(ctx, input);
+        }
     }
-    ctx.deps["ValidCurrency"] = true;
-    ctx.deps["ValidCurrency"] = describers.ValidCurrency(ctx, input);
-    return "ValidCurrency";
 };
 const hoisted_UnionWithEnumAccess_0 = (ctx, input)=>{
-    if (ctx.deps["UnionWithEnumAccess"]) {
+    if (ctx.measure) {
+        ctx.deps_counter["UnionWithEnumAccess"] = (ctx.deps_counter["UnionWithEnumAccess"] || 0) + 1;
+        if (ctx.deps["UnionWithEnumAccess"]) {
+            return "UnionWithEnumAccess";
+        }
+        ctx.deps["UnionWithEnumAccess"] = true;
+        ctx.deps["UnionWithEnumAccess"] = describers.UnionWithEnumAccess(ctx, input);
         return "UnionWithEnumAccess";
+    } else {
+        if (ctx.deps_counter["UnionWithEnumAccess"] > 1) {
+            if (!ctx.deps["UnionWithEnumAccess"]) {
+                ctx.deps["UnionWithEnumAccess"] = true;
+                ctx.deps["UnionWithEnumAccess"] = describers.UnionWithEnumAccess(ctx, input);
+            }
+            return "UnionWithEnumAccess";
+        } else {
+            return describers.UnionWithEnumAccess(ctx, input);
+        }
     }
-    ctx.deps["UnionWithEnumAccess"] = true;
-    ctx.deps["UnionWithEnumAccess"] = describers.UnionWithEnumAccess(ctx, input);
-    return "UnionWithEnumAccess";
 };
 const hoisted_T3_0 = (ctx, input)=>{
-    if (ctx.deps["T3"]) {
+    if (ctx.measure) {
+        ctx.deps_counter["T3"] = (ctx.deps_counter["T3"] || 0) + 1;
+        if (ctx.deps["T3"]) {
+            return "T3";
+        }
+        ctx.deps["T3"] = true;
+        ctx.deps["T3"] = describers.T3(ctx, input);
         return "T3";
+    } else {
+        if (ctx.deps_counter["T3"] > 1) {
+            if (!ctx.deps["T3"]) {
+                ctx.deps["T3"] = true;
+                ctx.deps["T3"] = describers.T3(ctx, input);
+            }
+            return "T3";
+        } else {
+            return describers.T3(ctx, input);
+        }
     }
-    ctx.deps["T3"] = true;
-    ctx.deps["T3"] = describers.T3(ctx, input);
-    return "T3";
 };
 const hoisted_AccessLevelCodec_0 = (ctx, input)=>{
-    if (ctx.deps["AccessLevel"]) {
+    if (ctx.measure) {
+        ctx.deps_counter["AccessLevel"] = (ctx.deps_counter["AccessLevel"] || 0) + 1;
+        if (ctx.deps["AccessLevel"]) {
+            return "AccessLevel";
+        }
+        ctx.deps["AccessLevel"] = true;
+        ctx.deps["AccessLevel"] = describers.AccessLevel(ctx, input);
         return "AccessLevel";
+    } else {
+        if (ctx.deps_counter["AccessLevel"] > 1) {
+            if (!ctx.deps["AccessLevel"]) {
+                ctx.deps["AccessLevel"] = true;
+                ctx.deps["AccessLevel"] = describers.AccessLevel(ctx, input);
+            }
+            return "AccessLevel";
+        } else {
+            return describers.AccessLevel(ctx, input);
+        }
     }
-    ctx.deps["AccessLevel"] = true;
-    ctx.deps["AccessLevel"] = describers.AccessLevel(ctx, input);
-    return "AccessLevel";
 };
 const hoisted_AvatarSize_0 = (ctx, input)=>{
-    if (ctx.deps["AvatarSize"]) {
+    if (ctx.measure) {
+        ctx.deps_counter["AvatarSize"] = (ctx.deps_counter["AvatarSize"] || 0) + 1;
+        if (ctx.deps["AvatarSize"]) {
+            return "AvatarSize";
+        }
+        ctx.deps["AvatarSize"] = true;
+        ctx.deps["AvatarSize"] = describers.AvatarSize(ctx, input);
         return "AvatarSize";
+    } else {
+        if (ctx.deps_counter["AvatarSize"] > 1) {
+            if (!ctx.deps["AvatarSize"]) {
+                ctx.deps["AvatarSize"] = true;
+                ctx.deps["AvatarSize"] = describers.AvatarSize(ctx, input);
+            }
+            return "AvatarSize";
+        } else {
+            return describers.AvatarSize(ctx, input);
+        }
     }
-    ctx.deps["AvatarSize"] = true;
-    ctx.deps["AvatarSize"] = describers.AvatarSize(ctx, input);
-    return "AvatarSize";
 };
 const hoisted_BObject_0 = (ctx, input)=>{
-    if (ctx.deps["BObject"]) {
+    if (ctx.measure) {
+        ctx.deps_counter["BObject"] = (ctx.deps_counter["BObject"] || 0) + 1;
+        if (ctx.deps["BObject"]) {
+            return "BObject";
+        }
+        ctx.deps["BObject"] = true;
+        ctx.deps["BObject"] = describers.BObject(ctx, input);
         return "BObject";
+    } else {
+        if (ctx.deps_counter["BObject"] > 1) {
+            if (!ctx.deps["BObject"]) {
+                ctx.deps["BObject"] = true;
+                ctx.deps["BObject"] = describers.BObject(ctx, input);
+            }
+            return "BObject";
+        } else {
+            return describers.BObject(ctx, input);
+        }
     }
-    ctx.deps["BObject"] = true;
-    ctx.deps["BObject"] = describers.BObject(ctx, input);
-    return "BObject";
 };
 const hoisted_ImportEnumTypeof_0 = new ConstDecoder("a");
 const hoisted_ImportEnumTypeof_1 = {
@@ -405,84 +886,214 @@ const hoisted_ImportEnumTypeof_8 = new ObjectReporter(hoisted_ImportEnumTypeof_1
 const hoisted_ImportEnumTypeof_9 = new ObjectSchema(hoisted_ImportEnumTypeof_2, null);
 const hoisted_ImportEnumTypeof_10 = new ObjectDescribe(hoisted_ImportEnumTypeof_4, null);
 const hoisted_KDEF_0 = (ctx, input)=>{
-    if (ctx.deps["KDEF"]) {
+    if (ctx.measure) {
+        ctx.deps_counter["KDEF"] = (ctx.deps_counter["KDEF"] || 0) + 1;
+        if (ctx.deps["KDEF"]) {
+            return "KDEF";
+        }
+        ctx.deps["KDEF"] = true;
+        ctx.deps["KDEF"] = describers.KDEF(ctx, input);
         return "KDEF";
+    } else {
+        if (ctx.deps_counter["KDEF"] > 1) {
+            if (!ctx.deps["KDEF"]) {
+                ctx.deps["KDEF"] = true;
+                ctx.deps["KDEF"] = describers.KDEF(ctx, input);
+            }
+            return "KDEF";
+        } else {
+            return describers.KDEF(ctx, input);
+        }
     }
-    ctx.deps["KDEF"] = true;
-    ctx.deps["KDEF"] = describers.KDEF(ctx, input);
-    return "KDEF";
 };
 const hoisted_KABC_0 = (ctx, input)=>{
-    if (ctx.deps["KABC"]) {
+    if (ctx.measure) {
+        ctx.deps_counter["KABC"] = (ctx.deps_counter["KABC"] || 0) + 1;
+        if (ctx.deps["KABC"]) {
+            return "KABC";
+        }
+        ctx.deps["KABC"] = true;
+        ctx.deps["KABC"] = describers.KABC(ctx, input);
         return "KABC";
+    } else {
+        if (ctx.deps_counter["KABC"] > 1) {
+            if (!ctx.deps["KABC"]) {
+                ctx.deps["KABC"] = true;
+                ctx.deps["KABC"] = describers.KABC(ctx, input);
+            }
+            return "KABC";
+        } else {
+            return describers.KABC(ctx, input);
+        }
     }
-    ctx.deps["KABC"] = true;
-    ctx.deps["KABC"] = describers.KABC(ctx, input);
-    return "KABC";
 };
 const hoisted_K_0 = (ctx, input)=>{
-    if (ctx.deps["K"]) {
+    if (ctx.measure) {
+        ctx.deps_counter["K"] = (ctx.deps_counter["K"] || 0) + 1;
+        if (ctx.deps["K"]) {
+            return "K";
+        }
+        ctx.deps["K"] = true;
+        ctx.deps["K"] = describers.K(ctx, input);
         return "K";
+    } else {
+        if (ctx.deps_counter["K"] > 1) {
+            if (!ctx.deps["K"]) {
+                ctx.deps["K"] = true;
+                ctx.deps["K"] = describers.K(ctx, input);
+            }
+            return "K";
+        } else {
+            return describers.K(ctx, input);
+        }
     }
-    ctx.deps["K"] = true;
-    ctx.deps["K"] = describers.K(ctx, input);
-    return "K";
 };
 const hoisted_NonNegativeNumber_0 = (ctx, input)=>{
-    if (ctx.deps["NonNegativeNumber"]) {
+    if (ctx.measure) {
+        ctx.deps_counter["NonNegativeNumber"] = (ctx.deps_counter["NonNegativeNumber"] || 0) + 1;
+        if (ctx.deps["NonNegativeNumber"]) {
+            return "NonNegativeNumber";
+        }
+        ctx.deps["NonNegativeNumber"] = true;
+        ctx.deps["NonNegativeNumber"] = describers.NonNegativeNumber(ctx, input);
         return "NonNegativeNumber";
+    } else {
+        if (ctx.deps_counter["NonNegativeNumber"] > 1) {
+            if (!ctx.deps["NonNegativeNumber"]) {
+                ctx.deps["NonNegativeNumber"] = true;
+                ctx.deps["NonNegativeNumber"] = describers.NonNegativeNumber(ctx, input);
+            }
+            return "NonNegativeNumber";
+        } else {
+            return describers.NonNegativeNumber(ctx, input);
+        }
     }
-    ctx.deps["NonNegativeNumber"] = true;
-    ctx.deps["NonNegativeNumber"] = describers.NonNegativeNumber(ctx, input);
-    return "NonNegativeNumber";
 };
 const hoisted_NonInfiniteNumber_0 = (ctx, input)=>{
-    if (ctx.deps["NonInfiniteNumber"]) {
+    if (ctx.measure) {
+        ctx.deps_counter["NonInfiniteNumber"] = (ctx.deps_counter["NonInfiniteNumber"] || 0) + 1;
+        if (ctx.deps["NonInfiniteNumber"]) {
+            return "NonInfiniteNumber";
+        }
+        ctx.deps["NonInfiniteNumber"] = true;
+        ctx.deps["NonInfiniteNumber"] = describers.NonInfiniteNumber(ctx, input);
         return "NonInfiniteNumber";
+    } else {
+        if (ctx.deps_counter["NonInfiniteNumber"] > 1) {
+            if (!ctx.deps["NonInfiniteNumber"]) {
+                ctx.deps["NonInfiniteNumber"] = true;
+                ctx.deps["NonInfiniteNumber"] = describers.NonInfiniteNumber(ctx, input);
+            }
+            return "NonInfiniteNumber";
+        } else {
+            return describers.NonInfiniteNumber(ctx, input);
+        }
     }
-    ctx.deps["NonInfiniteNumber"] = true;
-    ctx.deps["NonInfiniteNumber"] = describers.NonInfiniteNumber(ctx, input);
-    return "NonInfiniteNumber";
 };
 const hoisted_Rate_0 = (ctx, input)=>{
-    if (ctx.deps["Rate"]) {
+    if (ctx.measure) {
+        ctx.deps_counter["Rate"] = (ctx.deps_counter["Rate"] || 0) + 1;
+        if (ctx.deps["Rate"]) {
+            return "Rate";
+        }
+        ctx.deps["Rate"] = true;
+        ctx.deps["Rate"] = describers.Rate(ctx, input);
         return "Rate";
+    } else {
+        if (ctx.deps_counter["Rate"] > 1) {
+            if (!ctx.deps["Rate"]) {
+                ctx.deps["Rate"] = true;
+                ctx.deps["Rate"] = describers.Rate(ctx, input);
+            }
+            return "Rate";
+        } else {
+            return describers.Rate(ctx, input);
+        }
     }
-    ctx.deps["Rate"] = true;
-    ctx.deps["Rate"] = describers.Rate(ctx, input);
-    return "Rate";
 };
 const hoisted_UserId_0 = (ctx, input)=>{
-    if (ctx.deps["UserId"]) {
+    if (ctx.measure) {
+        ctx.deps_counter["UserId"] = (ctx.deps_counter["UserId"] || 0) + 1;
+        if (ctx.deps["UserId"]) {
+            return "UserId";
+        }
+        ctx.deps["UserId"] = true;
+        ctx.deps["UserId"] = describers.UserId(ctx, input);
         return "UserId";
+    } else {
+        if (ctx.deps_counter["UserId"] > 1) {
+            if (!ctx.deps["UserId"]) {
+                ctx.deps["UserId"] = true;
+                ctx.deps["UserId"] = describers.UserId(ctx, input);
+            }
+            return "UserId";
+        } else {
+            return describers.UserId(ctx, input);
+        }
     }
-    ctx.deps["UserId"] = true;
-    ctx.deps["UserId"] = describers.UserId(ctx, input);
-    return "UserId";
 };
 const hoisted_ReadAuthorizedUserId_0 = (ctx, input)=>{
-    if (ctx.deps["ReadAuthorizedUserId"]) {
+    if (ctx.measure) {
+        ctx.deps_counter["ReadAuthorizedUserId"] = (ctx.deps_counter["ReadAuthorizedUserId"] || 0) + 1;
+        if (ctx.deps["ReadAuthorizedUserId"]) {
+            return "ReadAuthorizedUserId";
+        }
+        ctx.deps["ReadAuthorizedUserId"] = true;
+        ctx.deps["ReadAuthorizedUserId"] = describers.ReadAuthorizedUserId(ctx, input);
         return "ReadAuthorizedUserId";
+    } else {
+        if (ctx.deps_counter["ReadAuthorizedUserId"] > 1) {
+            if (!ctx.deps["ReadAuthorizedUserId"]) {
+                ctx.deps["ReadAuthorizedUserId"] = true;
+                ctx.deps["ReadAuthorizedUserId"] = describers.ReadAuthorizedUserId(ctx, input);
+            }
+            return "ReadAuthorizedUserId";
+        } else {
+            return describers.ReadAuthorizedUserId(ctx, input);
+        }
     }
-    ctx.deps["ReadAuthorizedUserId"] = true;
-    ctx.deps["ReadAuthorizedUserId"] = describers.ReadAuthorizedUserId(ctx, input);
-    return "ReadAuthorizedUserId";
 };
 const hoisted_WriteAuthorizedUserId_0 = (ctx, input)=>{
-    if (ctx.deps["WriteAuthorizedUserId"]) {
+    if (ctx.measure) {
+        ctx.deps_counter["WriteAuthorizedUserId"] = (ctx.deps_counter["WriteAuthorizedUserId"] || 0) + 1;
+        if (ctx.deps["WriteAuthorizedUserId"]) {
+            return "WriteAuthorizedUserId";
+        }
+        ctx.deps["WriteAuthorizedUserId"] = true;
+        ctx.deps["WriteAuthorizedUserId"] = describers.WriteAuthorizedUserId(ctx, input);
         return "WriteAuthorizedUserId";
+    } else {
+        if (ctx.deps_counter["WriteAuthorizedUserId"] > 1) {
+            if (!ctx.deps["WriteAuthorizedUserId"]) {
+                ctx.deps["WriteAuthorizedUserId"] = true;
+                ctx.deps["WriteAuthorizedUserId"] = describers.WriteAuthorizedUserId(ctx, input);
+            }
+            return "WriteAuthorizedUserId";
+        } else {
+            return describers.WriteAuthorizedUserId(ctx, input);
+        }
     }
-    ctx.deps["WriteAuthorizedUserId"] = true;
-    ctx.deps["WriteAuthorizedUserId"] = describers.WriteAuthorizedUserId(ctx, input);
-    return "WriteAuthorizedUserId";
 };
 const hoisted_CurrencyPrices_0 = (ctx, input)=>{
-    if (ctx.deps["CurrencyPrices"]) {
+    if (ctx.measure) {
+        ctx.deps_counter["CurrencyPrices"] = (ctx.deps_counter["CurrencyPrices"] || 0) + 1;
+        if (ctx.deps["CurrencyPrices"]) {
+            return "CurrencyPrices";
+        }
+        ctx.deps["CurrencyPrices"] = true;
+        ctx.deps["CurrencyPrices"] = describers.CurrencyPrices(ctx, input);
         return "CurrencyPrices";
+    } else {
+        if (ctx.deps_counter["CurrencyPrices"] > 1) {
+            if (!ctx.deps["CurrencyPrices"]) {
+                ctx.deps["CurrencyPrices"] = true;
+                ctx.deps["CurrencyPrices"] = describers.CurrencyPrices(ctx, input);
+            }
+            return "CurrencyPrices";
+        } else {
+            return describers.CurrencyPrices(ctx, input);
+        }
     }
-    ctx.deps["CurrencyPrices"] = true;
-    ctx.deps["CurrencyPrices"] = describers.CurrencyPrices(ctx, input);
-    return "CurrencyPrices";
 };
 const buildValidatorsInput = {
     "AObject": validators.AObject,
@@ -821,8 +1432,13 @@ function buildParsers(args) {
     const describe = () => {
       const ctx = {
         deps: {},
+        deps_counter: {},
+        measure: true,
       };
-      const out = describeFn(ctx);
+      let out = describeFn(ctx);
+      ctx["deps"] = {}
+      ctx['measure']=false
+      out = describeFn(ctx);
       let sortedDepsKeys = Object.keys(ctx.deps).sort();
       
       

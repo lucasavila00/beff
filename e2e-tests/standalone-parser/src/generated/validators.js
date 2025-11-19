@@ -3320,36 +3320,88 @@ const hoisted_Extra_8 = new ObjectSchema(hoisted_Extra_1, schemaString);
 const hoisted_Extra_9 = new ObjectDescribe(hoisted_Extra_3, describeString);
 const hoisted_AvatarSize_0 = new RegexDecoder(/(\d+(\.\d+)?)(x)(\d+(\.\d+)?)/, "${number}x${number}");
 const hoisted_User_0 = (ctx, input)=>{
-    if (ctx.deps["AccessLevel"]) {
+    if (ctx.measure) {
+        ctx.deps_counter["AccessLevel"] = (ctx.deps_counter["AccessLevel"] || 0) + 1;
+        if (ctx.deps["AccessLevel"]) {
+            return "AccessLevel";
+        }
+        ctx.deps["AccessLevel"] = true;
+        ctx.deps["AccessLevel"] = describers.AccessLevel(ctx, input);
         return "AccessLevel";
+    } else {
+        if (ctx.deps_counter["AccessLevel"] > 1) {
+            if (!ctx.deps["AccessLevel"]) {
+                ctx.deps["AccessLevel"] = true;
+                ctx.deps["AccessLevel"] = describers.AccessLevel(ctx, input);
+            }
+            return "AccessLevel";
+        } else {
+            return describers.AccessLevel(ctx, input);
+        }
     }
-    ctx.deps["AccessLevel"] = true;
-    ctx.deps["AccessLevel"] = describers.AccessLevel(ctx, input);
-    return "AccessLevel";
 };
 const hoisted_User_1 = (ctx, input)=>{
-    if (ctx.deps["AvatarSize"]) {
+    if (ctx.measure) {
+        ctx.deps_counter["AvatarSize"] = (ctx.deps_counter["AvatarSize"] || 0) + 1;
+        if (ctx.deps["AvatarSize"]) {
+            return "AvatarSize";
+        }
+        ctx.deps["AvatarSize"] = true;
+        ctx.deps["AvatarSize"] = describers.AvatarSize(ctx, input);
         return "AvatarSize";
+    } else {
+        if (ctx.deps_counter["AvatarSize"] > 1) {
+            if (!ctx.deps["AvatarSize"]) {
+                ctx.deps["AvatarSize"] = true;
+                ctx.deps["AvatarSize"] = describers.AvatarSize(ctx, input);
+            }
+            return "AvatarSize";
+        } else {
+            return describers.AvatarSize(ctx, input);
+        }
     }
-    ctx.deps["AvatarSize"] = true;
-    ctx.deps["AvatarSize"] = describers.AvatarSize(ctx, input);
-    return "AvatarSize";
 };
 const hoisted_User_2 = (ctx, input)=>{
-    if (ctx.deps["Extra"]) {
+    if (ctx.measure) {
+        ctx.deps_counter["Extra"] = (ctx.deps_counter["Extra"] || 0) + 1;
+        if (ctx.deps["Extra"]) {
+            return "Extra";
+        }
+        ctx.deps["Extra"] = true;
+        ctx.deps["Extra"] = describers.Extra(ctx, input);
         return "Extra";
+    } else {
+        if (ctx.deps_counter["Extra"] > 1) {
+            if (!ctx.deps["Extra"]) {
+                ctx.deps["Extra"] = true;
+                ctx.deps["Extra"] = describers.Extra(ctx, input);
+            }
+            return "Extra";
+        } else {
+            return describers.Extra(ctx, input);
+        }
     }
-    ctx.deps["Extra"] = true;
-    ctx.deps["Extra"] = describers.Extra(ctx, input);
-    return "Extra";
 };
 const hoisted_User_3 = (ctx, input)=>{
-    if (ctx.deps["User"]) {
+    if (ctx.measure) {
+        ctx.deps_counter["User"] = (ctx.deps_counter["User"] || 0) + 1;
+        if (ctx.deps["User"]) {
+            return "User";
+        }
+        ctx.deps["User"] = true;
+        ctx.deps["User"] = describers.User(ctx, input);
         return "User";
+    } else {
+        if (ctx.deps_counter["User"] > 1) {
+            if (!ctx.deps["User"]) {
+                ctx.deps["User"] = true;
+                ctx.deps["User"] = describers.User(ctx, input);
+            }
+            return "User";
+        } else {
+            return describers.User(ctx, input);
+        }
     }
-    ctx.deps["User"] = true;
-    ctx.deps["User"] = describers.User(ctx, input);
-    return "User";
 };
 const hoisted_User_4 = validators.User;
 const hoisted_User_5 = new ArrayValidator(hoisted_User_4);
@@ -3398,28 +3450,67 @@ const hoisted_User_17 = new ObjectReporter(hoisted_User_10, hoisted_User_14, {
 const hoisted_User_18 = new ObjectSchema(hoisted_User_11, null);
 const hoisted_User_19 = new ObjectDescribe(hoisted_User_13, null);
 const hoisted_PublicUser_0 = (ctx, input)=>{
-    if (ctx.deps["AccessLevel"]) {
+    if (ctx.measure) {
+        ctx.deps_counter["AccessLevel"] = (ctx.deps_counter["AccessLevel"] || 0) + 1;
+        if (ctx.deps["AccessLevel"]) {
+            return "AccessLevel";
+        }
+        ctx.deps["AccessLevel"] = true;
+        ctx.deps["AccessLevel"] = describers.AccessLevel(ctx, input);
         return "AccessLevel";
+    } else {
+        if (ctx.deps_counter["AccessLevel"] > 1) {
+            if (!ctx.deps["AccessLevel"]) {
+                ctx.deps["AccessLevel"] = true;
+                ctx.deps["AccessLevel"] = describers.AccessLevel(ctx, input);
+            }
+            return "AccessLevel";
+        } else {
+            return describers.AccessLevel(ctx, input);
+        }
     }
-    ctx.deps["AccessLevel"] = true;
-    ctx.deps["AccessLevel"] = describers.AccessLevel(ctx, input);
-    return "AccessLevel";
 };
 const hoisted_PublicUser_1 = (ctx, input)=>{
-    if (ctx.deps["AvatarSize"]) {
+    if (ctx.measure) {
+        ctx.deps_counter["AvatarSize"] = (ctx.deps_counter["AvatarSize"] || 0) + 1;
+        if (ctx.deps["AvatarSize"]) {
+            return "AvatarSize";
+        }
+        ctx.deps["AvatarSize"] = true;
+        ctx.deps["AvatarSize"] = describers.AvatarSize(ctx, input);
         return "AvatarSize";
+    } else {
+        if (ctx.deps_counter["AvatarSize"] > 1) {
+            if (!ctx.deps["AvatarSize"]) {
+                ctx.deps["AvatarSize"] = true;
+                ctx.deps["AvatarSize"] = describers.AvatarSize(ctx, input);
+            }
+            return "AvatarSize";
+        } else {
+            return describers.AvatarSize(ctx, input);
+        }
     }
-    ctx.deps["AvatarSize"] = true;
-    ctx.deps["AvatarSize"] = describers.AvatarSize(ctx, input);
-    return "AvatarSize";
 };
 const hoisted_PublicUser_2 = (ctx, input)=>{
-    if (ctx.deps["Extra"]) {
+    if (ctx.measure) {
+        ctx.deps_counter["Extra"] = (ctx.deps_counter["Extra"] || 0) + 1;
+        if (ctx.deps["Extra"]) {
+            return "Extra";
+        }
+        ctx.deps["Extra"] = true;
+        ctx.deps["Extra"] = describers.Extra(ctx, input);
         return "Extra";
+    } else {
+        if (ctx.deps_counter["Extra"] > 1) {
+            if (!ctx.deps["Extra"]) {
+                ctx.deps["Extra"] = true;
+                ctx.deps["Extra"] = describers.Extra(ctx, input);
+            }
+            return "Extra";
+        } else {
+            return describers.Extra(ctx, input);
+        }
     }
-    ctx.deps["Extra"] = true;
-    ctx.deps["Extra"] = describers.Extra(ctx, input);
-    return "Extra";
 };
 const hoisted_PublicUser_3 = {
     "accessLevel": validators.AccessLevel,
@@ -3520,12 +3611,25 @@ const hoisted_WithOptionals_15 = new ObjectReporter(hoisted_WithOptionals_8, hoi
 const hoisted_WithOptionals_16 = new ObjectSchema(hoisted_WithOptionals_9, null);
 const hoisted_WithOptionals_17 = new ObjectDescribe(hoisted_WithOptionals_11, null);
 const hoisted_Repro1_0 = (ctx, input)=>{
-    if (ctx.deps["Repro2"]) {
+    if (ctx.measure) {
+        ctx.deps_counter["Repro2"] = (ctx.deps_counter["Repro2"] || 0) + 1;
+        if (ctx.deps["Repro2"]) {
+            return "Repro2";
+        }
+        ctx.deps["Repro2"] = true;
+        ctx.deps["Repro2"] = describers.Repro2(ctx, input);
         return "Repro2";
+    } else {
+        if (ctx.deps_counter["Repro2"] > 1) {
+            if (!ctx.deps["Repro2"]) {
+                ctx.deps["Repro2"] = true;
+                ctx.deps["Repro2"] = describers.Repro2(ctx, input);
+            }
+            return "Repro2";
+        } else {
+            return describers.Repro2(ctx, input);
+        }
     }
-    ctx.deps["Repro2"] = true;
-    ctx.deps["Repro2"] = describers.Repro2(ctx, input);
-    return "Repro2";
 };
 const hoisted_Repro1_1 = [
     validateNull,
@@ -5731,20 +5835,46 @@ const hoisted_ABC_7 = new ObjectReporter(hoisted_ABC_0, hoisted_ABC_4, {}, null)
 const hoisted_ABC_8 = new ObjectSchema(hoisted_ABC_1, null);
 const hoisted_ABC_9 = new ObjectDescribe(hoisted_ABC_3, null);
 const hoisted_K_0 = (ctx, input)=>{
-    if (ctx.deps["KABC"]) {
+    if (ctx.measure) {
+        ctx.deps_counter["KABC"] = (ctx.deps_counter["KABC"] || 0) + 1;
+        if (ctx.deps["KABC"]) {
+            return "KABC";
+        }
+        ctx.deps["KABC"] = true;
+        ctx.deps["KABC"] = describers.KABC(ctx, input);
         return "KABC";
+    } else {
+        if (ctx.deps_counter["KABC"] > 1) {
+            if (!ctx.deps["KABC"]) {
+                ctx.deps["KABC"] = true;
+                ctx.deps["KABC"] = describers.KABC(ctx, input);
+            }
+            return "KABC";
+        } else {
+            return describers.KABC(ctx, input);
+        }
     }
-    ctx.deps["KABC"] = true;
-    ctx.deps["KABC"] = describers.KABC(ctx, input);
-    return "KABC";
 };
 const hoisted_K_1 = (ctx, input)=>{
-    if (ctx.deps["KDEF"]) {
+    if (ctx.measure) {
+        ctx.deps_counter["KDEF"] = (ctx.deps_counter["KDEF"] || 0) + 1;
+        if (ctx.deps["KDEF"]) {
+            return "KDEF";
+        }
+        ctx.deps["KDEF"] = true;
+        ctx.deps["KDEF"] = describers.KDEF(ctx, input);
         return "KDEF";
+    } else {
+        if (ctx.deps_counter["KDEF"] > 1) {
+            if (!ctx.deps["KDEF"]) {
+                ctx.deps["KDEF"] = true;
+                ctx.deps["KDEF"] = describers.KDEF(ctx, input);
+            }
+            return "KDEF";
+        } else {
+            return describers.KDEF(ctx, input);
+        }
     }
-    ctx.deps["KDEF"] = true;
-    ctx.deps["KDEF"] = describers.KDEF(ctx, input);
-    return "KDEF";
 };
 const hoisted_K_2 = [
     validators.KABC,
@@ -5777,12 +5907,25 @@ const hoisted_ReadAuthorizedUserId_0 = new StringWithFormatsDecoder("UserId", "R
 const hoisted_WriteAuthorizedUserId_0 = new StringWithFormatsDecoder("UserId", "ReadAuthorizedUserId", "WriteAuthorizedUserId");
 const hoisted_CurrencyPrices_0 = new StringWithFormatsDecoder("ValidCurrency");
 const hoisted_CurrencyPrices_1 = (ctx, input)=>{
-    if (ctx.deps["Rate"]) {
+    if (ctx.measure) {
+        ctx.deps_counter["Rate"] = (ctx.deps_counter["Rate"] || 0) + 1;
+        if (ctx.deps["Rate"]) {
+            return "Rate";
+        }
+        ctx.deps["Rate"] = true;
+        ctx.deps["Rate"] = describers.Rate(ctx, input);
         return "Rate";
+    } else {
+        if (ctx.deps_counter["Rate"] > 1) {
+            if (!ctx.deps["Rate"]) {
+                ctx.deps["Rate"] = true;
+                ctx.deps["Rate"] = describers.Rate(ctx, input);
+            }
+            return "Rate";
+        } else {
+            return describers.Rate(ctx, input);
+        }
     }
-    ctx.deps["Rate"] = true;
-    ctx.deps["Rate"] = describers.Rate(ctx, input);
-    return "Rate";
 };
 const hoisted_CurrencyPrices_2 = hoisted_CurrencyPrices_0.validateStringWithFormatsDecoder.bind(hoisted_CurrencyPrices_0);
 const hoisted_CurrencyPrices_3 = validators.Rate;
