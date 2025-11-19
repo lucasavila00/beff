@@ -5,6 +5,14 @@ import {z} from 'zod';
 import validatorsMod from "./validators.js"; const { registerStringFormatter, registerNumberFormatter, ObjectValidator, ObjectParser, MappedRecordParser, MappedRecordValidator, ArrayParser, ArrayValidator, CodecDecoder, StringWithFormatsDecoder, NumberWithFormatsDecoder, AnyOfValidator, AnyOfParser, AllOfValidator, AllOfParser, TupleParser, TupleValidator, RegexDecoder, ConstDecoder, AnyOfConstsDecoder, AnyOfDiscriminatedParser, AnyOfDiscriminatedValidator, validateString, validateNumber, validateFunction, validateBoolean, validateAny, validateNull, validateNever, parseIdentity, reportString, reportNumber, reportNull, reportBoolean, reportAny, reportNever, reportFunction, ArrayReporter, ObjectReporter, TupleReporter, AnyOfReporter, AllOfReporter, AnyOfDiscriminatedReporter, MappedRecordReporter, schemaString, schemaNumber, schemaBoolean, schemaNull, schemaAny, schemaNever, schemaFunction, ArraySchema, ObjectSchema, TupleSchema, AnyOfSchema, AllOfSchema, AnyOfDiscriminatedSchema, MappedRecordSchema, describeString, describeNumber, describeBoolean, describeNull, describeAny, describeNever, describeFunction, ArrayDescribe, ObjectDescribe, TupleDescribe, AnyOfDescribe, AllOfDescribe, AnyOfDiscriminatedDescribe, MappedRecordDescribe, validators, parsers, reporters, schemas, describers, c } = validatorsMod;
 const RequiredStringFormats = ["ValidCurrency"];
 const RequiredNumberFormats = [];
+const hoisted_A_0 = (ctx, input)=>{
+    if (ctx.deps["A"]) {
+        return "A";
+    }
+    ctx.deps["A"] = true;
+    ctx.deps["A"] = describers.A(ctx, input);
+    return "A";
+};
 const buildValidatorsInput = {
     "A": validators.A
 };
@@ -18,7 +26,7 @@ const buildSchemaInput = {
     "A": schemas.A
 };
 const buildDescribeInput = {
-    "A": describers.A
+    "A": hoisted_A_0
 };
 
 
@@ -84,11 +92,18 @@ function buildParsers(args) {
         deps: {}
       };
       const out = describeFn(ctx);
-      const sortedDepsKeys = Object.keys(ctx.deps).sort();
+      let sortedDepsKeys = Object.keys(ctx.deps).sort();
+      
+      
+      
+      
       const depsPart = sortedDepsKeys.map((key) => {
         return `type ${key} = ${ctx.deps[key]};`;
       }).join("\n\n");
-      const outPart = `type ${k} = ${out};`
+      
+      
+      
+      const outPart = `type Codec${k} = ${out};`
       return [depsPart, outPart].filter(it => it!=null && it.length > 0).join("\n\n");
     };
 

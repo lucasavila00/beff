@@ -422,7 +422,7 @@ class RegexDecoder {
     };
   }
   describeRegexDecoder(ctx) {
-    throw "todo describeRegexDecoder";
+    return this.description;
   }
 }
 
@@ -616,7 +616,8 @@ class AnyOfConstsDecoder {
     };
   }
   describeAnyOfConstsDecoder(ctx) {
-    throw "todo describeAnyOfConstsDecoder";
+    const parts = this.consts.map((it) => JSON.stringify(it));
+    return parts.join(" | ");
   }
 }
 
@@ -856,7 +857,9 @@ class MappedRecordDescribe {
     this.valueDescriber = valueDescriber;
   }
   describeMappedRecordDescribe(ctx) {
-    throw "todo describeMappedRecordDescribe";
+    const k = this.keyDescriber(ctx);
+    const v = this.valueDescriber(ctx);
+    return `Record<${k}, ${v}>`;
   }
 }
 

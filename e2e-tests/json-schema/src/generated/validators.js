@@ -422,7 +422,7 @@ class RegexDecoder {
     };
   }
   describeRegexDecoder(ctx) {
-    throw "todo describeRegexDecoder";
+    return this.description;
   }
 }
 
@@ -616,7 +616,8 @@ class AnyOfConstsDecoder {
     };
   }
   describeAnyOfConstsDecoder(ctx) {
-    throw "todo describeAnyOfConstsDecoder";
+    const parts = this.consts.map((it) => JSON.stringify(it));
+    return parts.join(" | ");
   }
 }
 
@@ -856,7 +857,9 @@ class MappedRecordDescribe {
     this.valueDescriber = valueDescriber;
   }
   describeMappedRecordDescribe(ctx) {
-    throw "todo describeMappedRecordDescribe";
+    const k = this.keyDescriber(ctx);
+    const v = this.valueDescriber(ctx);
+    return `Record<${k}, ${v}>`;
   }
 }
 
@@ -1370,46 +1373,46 @@ function DescribeT1(ctx, input) {
     return (hoisted_T1_9.describeObjectDescribe.bind(hoisted_T1_9))(ctx);
 }
 function ValidateT2(ctx, input) {
-    return (hoisted_T2_5.validateObjectValidator.bind(hoisted_T2_5))(ctx, input);
+    return (hoisted_T2_6.validateObjectValidator.bind(hoisted_T2_6))(ctx, input);
 }
 function ParseT2(ctx, input) {
-    return (hoisted_T2_6.parseObjectParser.bind(hoisted_T2_6))(ctx, input);
+    return (hoisted_T2_7.parseObjectParser.bind(hoisted_T2_7))(ctx, input);
 }
 function ReportT2(ctx, input) {
-    return (hoisted_T2_7.reportObjectReporter.bind(hoisted_T2_7))(ctx, input);
+    return (hoisted_T2_8.reportObjectReporter.bind(hoisted_T2_8))(ctx, input);
 }
 function SchemaT2(ctx, input) {
     if (ctx.seen["T2"]) {
         return {};
     }
     ctx.seen["T2"] = true;
-    var tmp = (hoisted_T2_8.schemaObjectSchema.bind(hoisted_T2_8))(ctx);
+    var tmp = (hoisted_T2_9.schemaObjectSchema.bind(hoisted_T2_9))(ctx);
     delete ctx.seen["T2"];
     return tmp;
 }
 function DescribeT2(ctx, input) {
-    return (hoisted_T2_9.describeObjectDescribe.bind(hoisted_T2_9))(ctx);
+    return (hoisted_T2_10.describeObjectDescribe.bind(hoisted_T2_10))(ctx);
 }
 function ValidateT3(ctx, input) {
-    return (hoisted_T3_11.validateObjectValidator.bind(hoisted_T3_11))(ctx, input);
+    return (hoisted_T3_12.validateObjectValidator.bind(hoisted_T3_12))(ctx, input);
 }
 function ParseT3(ctx, input) {
-    return (hoisted_T3_12.parseObjectParser.bind(hoisted_T3_12))(ctx, input);
+    return (hoisted_T3_13.parseObjectParser.bind(hoisted_T3_13))(ctx, input);
 }
 function ReportT3(ctx, input) {
-    return (hoisted_T3_13.reportObjectReporter.bind(hoisted_T3_13))(ctx, input);
+    return (hoisted_T3_14.reportObjectReporter.bind(hoisted_T3_14))(ctx, input);
 }
 function SchemaT3(ctx, input) {
     if (ctx.seen["T3"]) {
         return {};
     }
     ctx.seen["T3"] = true;
-    var tmp = (hoisted_T3_14.schemaObjectSchema.bind(hoisted_T3_14))(ctx);
+    var tmp = (hoisted_T3_15.schemaObjectSchema.bind(hoisted_T3_15))(ctx);
     delete ctx.seen["T3"];
     return tmp;
 }
 function DescribeT3(ctx, input) {
-    return (hoisted_T3_15.describeObjectDescribe.bind(hoisted_T3_15))(ctx);
+    return (hoisted_T3_16.describeObjectDescribe.bind(hoisted_T3_16))(ctx);
 }
 function ValidateInvalidSchemaWithDate(ctx, input) {
     return (hoisted_InvalidSchemaWithDate_6.validateObjectValidator.bind(hoisted_InvalidSchemaWithDate_6))(ctx, input);
@@ -1475,25 +1478,25 @@ function DescribeDiscriminatedUnion(ctx, input) {
     return (hoisted_DiscriminatedUnion_202.describeAnyOfDiscriminatedDescribe.bind(hoisted_DiscriminatedUnion_202))(ctx);
 }
 function ValidateRecursiveTree(ctx, input) {
-    return (hoisted_RecursiveTree_11.validateObjectValidator.bind(hoisted_RecursiveTree_11))(ctx, input);
+    return (hoisted_RecursiveTree_12.validateObjectValidator.bind(hoisted_RecursiveTree_12))(ctx, input);
 }
 function ParseRecursiveTree(ctx, input) {
-    return (hoisted_RecursiveTree_12.parseObjectParser.bind(hoisted_RecursiveTree_12))(ctx, input);
+    return (hoisted_RecursiveTree_13.parseObjectParser.bind(hoisted_RecursiveTree_13))(ctx, input);
 }
 function ReportRecursiveTree(ctx, input) {
-    return (hoisted_RecursiveTree_13.reportObjectReporter.bind(hoisted_RecursiveTree_13))(ctx, input);
+    return (hoisted_RecursiveTree_14.reportObjectReporter.bind(hoisted_RecursiveTree_14))(ctx, input);
 }
 function SchemaRecursiveTree(ctx, input) {
     if (ctx.seen["RecursiveTree"]) {
         return {};
     }
     ctx.seen["RecursiveTree"] = true;
-    var tmp = (hoisted_RecursiveTree_14.schemaObjectSchema.bind(hoisted_RecursiveTree_14))(ctx);
+    var tmp = (hoisted_RecursiveTree_15.schemaObjectSchema.bind(hoisted_RecursiveTree_15))(ctx);
     delete ctx.seen["RecursiveTree"];
     return tmp;
 }
 function DescribeRecursiveTree(ctx, input) {
-    return (hoisted_RecursiveTree_15.describeObjectDescribe.bind(hoisted_RecursiveTree_15))(ctx);
+    return (hoisted_RecursiveTree_16.describeObjectDescribe.bind(hoisted_RecursiveTree_16))(ctx);
 }
 function ValidateSemVer(ctx, input) {
     return (hoisted_SemVer_0.validateRegexDecoder.bind(hoisted_SemVer_0))(ctx, input);
@@ -1643,52 +1646,68 @@ const hoisted_T1_7 = new ObjectReporter(hoisted_T1_0, hoisted_T1_4, {
 }, null);
 const hoisted_T1_8 = new ObjectSchema(hoisted_T1_1, null);
 const hoisted_T1_9 = new ObjectDescribe(hoisted_T1_3, null);
-const hoisted_T2_0 = {
-    "t1": validators.T1
+const hoisted_T2_0 = (ctx, input)=>{
+    if (ctx.deps["T1"]) {
+        return "T1";
+    }
+    ctx.deps["T1"] = true;
+    ctx.deps["T1"] = describers.T1(ctx, input);
+    return "T1";
 };
 const hoisted_T2_1 = {
-    "t1": schemas.T1
+    "t1": validators.T1
 };
 const hoisted_T2_2 = {
-    "t1": describers.T1
+    "t1": schemas.T1
 };
-const hoisted_T2_3 = hoisted_T2_2;
-const hoisted_T2_4 = null;
-const hoisted_T2_5 = new ObjectValidator(hoisted_T2_0, hoisted_T2_4);
-const hoisted_T2_6 = new ObjectParser({
+const hoisted_T2_3 = {
+    "t1": hoisted_T2_0
+};
+const hoisted_T2_4 = hoisted_T2_3;
+const hoisted_T2_5 = null;
+const hoisted_T2_6 = new ObjectValidator(hoisted_T2_1, hoisted_T2_5);
+const hoisted_T2_7 = new ObjectParser({
     "t1": parsers.T1
 }, null);
-const hoisted_T2_7 = new ObjectReporter(hoisted_T2_0, hoisted_T2_4, {
+const hoisted_T2_8 = new ObjectReporter(hoisted_T2_1, hoisted_T2_5, {
     "t1": reporters.T1
 }, null);
-const hoisted_T2_8 = new ObjectSchema(hoisted_T2_1, null);
-const hoisted_T2_9 = new ObjectDescribe(hoisted_T2_3, null);
-const hoisted_T3_0 = validators.T2;
-const hoisted_T3_1 = new ArrayValidator(hoisted_T3_0);
-const hoisted_T3_2 = new ArrayParser(parsers.T2);
-const hoisted_T3_3 = new ArrayReporter(hoisted_T3_0, reporters.T2);
-const hoisted_T3_4 = new ArraySchema(schemas.T2);
-const hoisted_T3_5 = new ArrayDescribe(describers.T2);
-const hoisted_T3_6 = {
-    "t2Array": hoisted_T3_1.validateArrayValidator.bind(hoisted_T3_1)
+const hoisted_T2_9 = new ObjectSchema(hoisted_T2_2, null);
+const hoisted_T2_10 = new ObjectDescribe(hoisted_T2_4, null);
+const hoisted_T3_0 = (ctx, input)=>{
+    if (ctx.deps["T2"]) {
+        return "T2";
+    }
+    ctx.deps["T2"] = true;
+    ctx.deps["T2"] = describers.T2(ctx, input);
+    return "T2";
 };
+const hoisted_T3_1 = validators.T2;
+const hoisted_T3_2 = new ArrayValidator(hoisted_T3_1);
+const hoisted_T3_3 = new ArrayParser(parsers.T2);
+const hoisted_T3_4 = new ArrayReporter(hoisted_T3_1, reporters.T2);
+const hoisted_T3_5 = new ArraySchema(schemas.T2);
+const hoisted_T3_6 = new ArrayDescribe(hoisted_T3_0);
 const hoisted_T3_7 = {
-    "t2Array": hoisted_T3_4.schemaArraySchema.bind(hoisted_T3_4)
+    "t2Array": hoisted_T3_2.validateArrayValidator.bind(hoisted_T3_2)
 };
 const hoisted_T3_8 = {
-    "t2Array": hoisted_T3_5.describeArrayDescribe.bind(hoisted_T3_5)
+    "t2Array": hoisted_T3_5.schemaArraySchema.bind(hoisted_T3_5)
 };
-const hoisted_T3_9 = hoisted_T3_8;
-const hoisted_T3_10 = null;
-const hoisted_T3_11 = new ObjectValidator(hoisted_T3_6, hoisted_T3_10);
-const hoisted_T3_12 = new ObjectParser({
-    "t2Array": hoisted_T3_2.parseArrayParser.bind(hoisted_T3_2)
+const hoisted_T3_9 = {
+    "t2Array": hoisted_T3_6.describeArrayDescribe.bind(hoisted_T3_6)
+};
+const hoisted_T3_10 = hoisted_T3_9;
+const hoisted_T3_11 = null;
+const hoisted_T3_12 = new ObjectValidator(hoisted_T3_7, hoisted_T3_11);
+const hoisted_T3_13 = new ObjectParser({
+    "t2Array": hoisted_T3_3.parseArrayParser.bind(hoisted_T3_3)
 }, null);
-const hoisted_T3_13 = new ObjectReporter(hoisted_T3_6, hoisted_T3_10, {
-    "t2Array": hoisted_T3_3.reportArrayReporter.bind(hoisted_T3_3)
+const hoisted_T3_14 = new ObjectReporter(hoisted_T3_7, hoisted_T3_11, {
+    "t2Array": hoisted_T3_4.reportArrayReporter.bind(hoisted_T3_4)
 }, null);
-const hoisted_T3_14 = new ObjectSchema(hoisted_T3_7, null);
-const hoisted_T3_15 = new ObjectDescribe(hoisted_T3_9, null);
+const hoisted_T3_15 = new ObjectSchema(hoisted_T3_8, null);
+const hoisted_T3_16 = new ObjectDescribe(hoisted_T3_10, null);
 const hoisted_InvalidSchemaWithDate_0 = new CodecDecoder("Codec::ISO8061");
 const hoisted_InvalidSchemaWithDate_1 = {
     "x": hoisted_InvalidSchemaWithDate_0.validateCodecDecoder.bind(hoisted_InvalidSchemaWithDate_0)
@@ -2311,37 +2330,45 @@ const hoisted_DiscriminatedUnion_202 = new AnyOfDiscriminatedDescribe([
     hoisted_DiscriminatedUnion_186.describeObjectDescribe.bind(hoisted_DiscriminatedUnion_186),
     hoisted_DiscriminatedUnion_197.describeObjectDescribe.bind(hoisted_DiscriminatedUnion_197)
 ]);
-const hoisted_RecursiveTree_0 = validators.RecursiveTree;
-const hoisted_RecursiveTree_1 = new ArrayValidator(hoisted_RecursiveTree_0);
-const hoisted_RecursiveTree_2 = new ArrayParser(parsers.RecursiveTree);
-const hoisted_RecursiveTree_3 = new ArrayReporter(hoisted_RecursiveTree_0, reporters.RecursiveTree);
-const hoisted_RecursiveTree_4 = new ArraySchema(schemas.RecursiveTree);
-const hoisted_RecursiveTree_5 = new ArrayDescribe(describers.RecursiveTree);
-const hoisted_RecursiveTree_6 = {
-    "children": hoisted_RecursiveTree_1.validateArrayValidator.bind(hoisted_RecursiveTree_1),
+const hoisted_RecursiveTree_0 = (ctx, input)=>{
+    if (ctx.deps["RecursiveTree"]) {
+        return "RecursiveTree";
+    }
+    ctx.deps["RecursiveTree"] = true;
+    ctx.deps["RecursiveTree"] = describers.RecursiveTree(ctx, input);
+    return "RecursiveTree";
+};
+const hoisted_RecursiveTree_1 = validators.RecursiveTree;
+const hoisted_RecursiveTree_2 = new ArrayValidator(hoisted_RecursiveTree_1);
+const hoisted_RecursiveTree_3 = new ArrayParser(parsers.RecursiveTree);
+const hoisted_RecursiveTree_4 = new ArrayReporter(hoisted_RecursiveTree_1, reporters.RecursiveTree);
+const hoisted_RecursiveTree_5 = new ArraySchema(schemas.RecursiveTree);
+const hoisted_RecursiveTree_6 = new ArrayDescribe(hoisted_RecursiveTree_0);
+const hoisted_RecursiveTree_7 = {
+    "children": hoisted_RecursiveTree_2.validateArrayValidator.bind(hoisted_RecursiveTree_2),
     "value": validateNumber
 };
-const hoisted_RecursiveTree_7 = {
-    "children": hoisted_RecursiveTree_4.schemaArraySchema.bind(hoisted_RecursiveTree_4),
+const hoisted_RecursiveTree_8 = {
+    "children": hoisted_RecursiveTree_5.schemaArraySchema.bind(hoisted_RecursiveTree_5),
     "value": schemaNumber
 };
-const hoisted_RecursiveTree_8 = {
-    "children": hoisted_RecursiveTree_5.describeArrayDescribe.bind(hoisted_RecursiveTree_5),
+const hoisted_RecursiveTree_9 = {
+    "children": hoisted_RecursiveTree_6.describeArrayDescribe.bind(hoisted_RecursiveTree_6),
     "value": describeNumber
 };
-const hoisted_RecursiveTree_9 = hoisted_RecursiveTree_8;
-const hoisted_RecursiveTree_10 = null;
-const hoisted_RecursiveTree_11 = new ObjectValidator(hoisted_RecursiveTree_6, hoisted_RecursiveTree_10);
-const hoisted_RecursiveTree_12 = new ObjectParser({
-    "children": hoisted_RecursiveTree_2.parseArrayParser.bind(hoisted_RecursiveTree_2),
+const hoisted_RecursiveTree_10 = hoisted_RecursiveTree_9;
+const hoisted_RecursiveTree_11 = null;
+const hoisted_RecursiveTree_12 = new ObjectValidator(hoisted_RecursiveTree_7, hoisted_RecursiveTree_11);
+const hoisted_RecursiveTree_13 = new ObjectParser({
+    "children": hoisted_RecursiveTree_3.parseArrayParser.bind(hoisted_RecursiveTree_3),
     "value": parseIdentity
 }, null);
-const hoisted_RecursiveTree_13 = new ObjectReporter(hoisted_RecursiveTree_6, hoisted_RecursiveTree_10, {
-    "children": hoisted_RecursiveTree_3.reportArrayReporter.bind(hoisted_RecursiveTree_3),
+const hoisted_RecursiveTree_14 = new ObjectReporter(hoisted_RecursiveTree_7, hoisted_RecursiveTree_11, {
+    "children": hoisted_RecursiveTree_4.reportArrayReporter.bind(hoisted_RecursiveTree_4),
     "value": reportNumber
 }, null);
-const hoisted_RecursiveTree_14 = new ObjectSchema(hoisted_RecursiveTree_7, null);
-const hoisted_RecursiveTree_15 = new ObjectDescribe(hoisted_RecursiveTree_9, null);
+const hoisted_RecursiveTree_15 = new ObjectSchema(hoisted_RecursiveTree_8, null);
+const hoisted_RecursiveTree_16 = new ObjectDescribe(hoisted_RecursiveTree_10, null);
 const hoisted_SemVer_0 = new RegexDecoder(/(\d+(\.\d+)?)(\.)(\d+(\.\d+)?)(\.)(\d+(\.\d+)?)/, "${number}.${number}.${number}");
 const hoisted_NonEmptyString_0 = [
     validateString

@@ -5,20 +5,68 @@ import {z} from 'zod';
 import validatorsMod from "./validators.js"; const { registerStringFormatter, registerNumberFormatter, ObjectValidator, ObjectParser, MappedRecordParser, MappedRecordValidator, ArrayParser, ArrayValidator, CodecDecoder, StringWithFormatsDecoder, NumberWithFormatsDecoder, AnyOfValidator, AnyOfParser, AllOfValidator, AllOfParser, TupleParser, TupleValidator, RegexDecoder, ConstDecoder, AnyOfConstsDecoder, AnyOfDiscriminatedParser, AnyOfDiscriminatedValidator, validateString, validateNumber, validateFunction, validateBoolean, validateAny, validateNull, validateNever, parseIdentity, reportString, reportNumber, reportNull, reportBoolean, reportAny, reportNever, reportFunction, ArrayReporter, ObjectReporter, TupleReporter, AnyOfReporter, AllOfReporter, AnyOfDiscriminatedReporter, MappedRecordReporter, schemaString, schemaNumber, schemaBoolean, schemaNull, schemaAny, schemaNever, schemaFunction, ArraySchema, ObjectSchema, TupleSchema, AnyOfSchema, AllOfSchema, AnyOfDiscriminatedSchema, MappedRecordSchema, describeString, describeNumber, describeBoolean, describeNull, describeAny, describeNever, describeFunction, ArrayDescribe, ObjectDescribe, TupleDescribe, AnyOfDescribe, AllOfDescribe, AnyOfDiscriminatedDescribe, MappedRecordDescribe, validators, parsers, reporters, schemas, describers, c } = validatorsMod;
 const RequiredStringFormats = ["password","StartsWithA"];
 const RequiredNumberFormats = [];
-const hoisted_Users_0 = validators.User;
-const hoisted_Users_1 = new ArrayValidator(hoisted_Users_0);
-const hoisted_Users_2 = new ArrayParser(parsers.User);
-const hoisted_Users_3 = new ArrayReporter(hoisted_Users_0, reporters.User);
-const hoisted_Users_4 = new ArraySchema(schemas.User);
-const hoisted_Users_5 = new ArrayDescribe(describers.User);
+const hoisted_User_0 = (ctx, input)=>{
+    if (ctx.deps["User"]) {
+        return "User";
+    }
+    ctx.deps["User"] = true;
+    ctx.deps["User"] = describers.User(ctx, input);
+    return "User";
+};
+const hoisted_Users_0 = (ctx, input)=>{
+    if (ctx.deps["User"]) {
+        return "User";
+    }
+    ctx.deps["User"] = true;
+    ctx.deps["User"] = describers.User(ctx, input);
+    return "User";
+};
+const hoisted_Users_1 = validators.User;
+const hoisted_Users_2 = new ArrayValidator(hoisted_Users_1);
+const hoisted_Users_3 = new ArrayParser(parsers.User);
+const hoisted_Users_4 = new ArrayReporter(hoisted_Users_1, reporters.User);
+const hoisted_Users_5 = new ArraySchema(schemas.User);
+const hoisted_Users_6 = new ArrayDescribe(hoisted_Users_0);
+const hoisted_NotPublicRenamed_0 = (ctx, input)=>{
+    if (ctx.deps["NotPublic"]) {
+        return "NotPublic";
+    }
+    ctx.deps["NotPublic"] = true;
+    ctx.deps["NotPublic"] = describers.NotPublic(ctx, input);
+    return "NotPublic";
+};
+const hoisted_StartsWithA_0 = (ctx, input)=>{
+    if (ctx.deps["StartsWithA"]) {
+        return "StartsWithA";
+    }
+    ctx.deps["StartsWithA"] = true;
+    ctx.deps["StartsWithA"] = describers.StartsWithA(ctx, input);
+    return "StartsWithA";
+};
+const hoisted_Password_0 = (ctx, input)=>{
+    if (ctx.deps["Password"]) {
+        return "Password";
+    }
+    ctx.deps["Password"] = true;
+    ctx.deps["Password"] = describers.Password(ctx, input);
+    return "Password";
+};
 const hoisted_float_0 = new ConstDecoder(123.456);
 const hoisted_int_0 = new ConstDecoder(123);
+const hoisted_union_0 = (ctx, input)=>{
+    if (ctx.deps["UnionNested"]) {
+        return "UnionNested";
+    }
+    ctx.deps["UnionNested"] = true;
+    ctx.deps["UnionNested"] = describers.UnionNested(ctx, input);
+    return "UnionNested";
+};
 const buildValidatorsInput = {
     "NotPublicRenamed": validators.NotPublic,
     "Password": validators.Password,
     "StartsWithA": validators.StartsWithA,
     "User": validators.User,
-    "Users": hoisted_Users_1.validateArrayValidator.bind(hoisted_Users_1),
+    "Users": hoisted_Users_2.validateArrayValidator.bind(hoisted_Users_2),
     "float": hoisted_float_0.validateConstDecoder.bind(hoisted_float_0),
     "int": hoisted_int_0.validateConstDecoder.bind(hoisted_int_0),
     "union": validators.UnionNested
@@ -28,7 +76,7 @@ const buildParsersInput = {
     "Password": parsers.Password,
     "StartsWithA": parsers.StartsWithA,
     "User": parsers.User,
-    "Users": hoisted_Users_2.parseArrayParser.bind(hoisted_Users_2),
+    "Users": hoisted_Users_3.parseArrayParser.bind(hoisted_Users_3),
     "float": hoisted_float_0.parseConstDecoder.bind(hoisted_float_0),
     "int": hoisted_int_0.parseConstDecoder.bind(hoisted_int_0),
     "union": parsers.UnionNested
@@ -38,7 +86,7 @@ const buildReportersInput = {
     "Password": reporters.Password,
     "StartsWithA": reporters.StartsWithA,
     "User": reporters.User,
-    "Users": hoisted_Users_3.reportArrayReporter.bind(hoisted_Users_3),
+    "Users": hoisted_Users_4.reportArrayReporter.bind(hoisted_Users_4),
     "float": hoisted_float_0.reportConstDecoder.bind(hoisted_float_0),
     "int": hoisted_int_0.reportConstDecoder.bind(hoisted_int_0),
     "union": reporters.UnionNested
@@ -48,20 +96,20 @@ const buildSchemaInput = {
     "Password": schemas.Password,
     "StartsWithA": schemas.StartsWithA,
     "User": schemas.User,
-    "Users": hoisted_Users_4.schemaArraySchema.bind(hoisted_Users_4),
+    "Users": hoisted_Users_5.schemaArraySchema.bind(hoisted_Users_5),
     "float": hoisted_float_0.schemaConstDecoder.bind(hoisted_float_0),
     "int": hoisted_int_0.schemaConstDecoder.bind(hoisted_int_0),
     "union": schemas.UnionNested
 };
 const buildDescribeInput = {
-    "User": describers.User,
-    "Users": hoisted_Users_5.describeArrayDescribe.bind(hoisted_Users_5),
-    "NotPublicRenamed": describers.NotPublic,
-    "StartsWithA": describers.StartsWithA,
-    "Password": describers.Password,
+    "User": hoisted_User_0,
+    "Users": hoisted_Users_6.describeArrayDescribe.bind(hoisted_Users_6),
+    "NotPublicRenamed": hoisted_NotPublicRenamed_0,
+    "StartsWithA": hoisted_StartsWithA_0,
+    "Password": hoisted_Password_0,
     "float": hoisted_float_0.describeConstDecoder.bind(hoisted_float_0),
     "int": hoisted_int_0.describeConstDecoder.bind(hoisted_int_0),
-    "union": describers.UnionNested
+    "union": hoisted_union_0
 };
 
 
@@ -127,11 +175,18 @@ function buildParsers(args) {
         deps: {}
       };
       const out = describeFn(ctx);
-      const sortedDepsKeys = Object.keys(ctx.deps).sort();
+      let sortedDepsKeys = Object.keys(ctx.deps).sort();
+      
+      
+      
+      
       const depsPart = sortedDepsKeys.map((key) => {
         return `type ${key} = ${ctx.deps[key]};`;
       }).join("\n\n");
-      const outPart = `type ${k} = ${out};`
+      
+      
+      
+      const outPart = `type Codec${k} = ${out};`
       return [depsPart, outPart].filter(it => it!=null && it.length > 0).join("\n\n");
     };
 

@@ -21,6 +21,86 @@ const hoisted_anyArray_2 = new ArrayParser(parseIdentity);
 const hoisted_anyArray_3 = new ArrayReporter(hoisted_anyArray_0, reportAny);
 const hoisted_anyArray_4 = new ArraySchema(schemaAny);
 const hoisted_anyArray_5 = new ArrayDescribe(describeAny);
+const hoisted_T1_0 = (ctx, input)=>{
+    if (ctx.deps["T1"]) {
+        return "T1";
+    }
+    ctx.deps["T1"] = true;
+    ctx.deps["T1"] = describers.T1(ctx, input);
+    return "T1";
+};
+const hoisted_T2_0 = (ctx, input)=>{
+    if (ctx.deps["T2"]) {
+        return "T2";
+    }
+    ctx.deps["T2"] = true;
+    ctx.deps["T2"] = describers.T2(ctx, input);
+    return "T2";
+};
+const hoisted_T3_0 = (ctx, input)=>{
+    if (ctx.deps["T3"]) {
+        return "T3";
+    }
+    ctx.deps["T3"] = true;
+    ctx.deps["T3"] = describers.T3(ctx, input);
+    return "T3";
+};
+const hoisted_InvalidSchemaWithDate_0 = (ctx, input)=>{
+    if (ctx.deps["InvalidSchemaWithDate"]) {
+        return "InvalidSchemaWithDate";
+    }
+    ctx.deps["InvalidSchemaWithDate"] = true;
+    ctx.deps["InvalidSchemaWithDate"] = describers.InvalidSchemaWithDate(ctx, input);
+    return "InvalidSchemaWithDate";
+};
+const hoisted_InvalidSchemaWithBigInt_0 = (ctx, input)=>{
+    if (ctx.deps["InvalidSchemaWithBigInt"]) {
+        return "InvalidSchemaWithBigInt";
+    }
+    ctx.deps["InvalidSchemaWithBigInt"] = true;
+    ctx.deps["InvalidSchemaWithBigInt"] = describers.InvalidSchemaWithBigInt(ctx, input);
+    return "InvalidSchemaWithBigInt";
+};
+const hoisted_DiscriminatedUnion_0 = (ctx, input)=>{
+    if (ctx.deps["DiscriminatedUnion"]) {
+        return "DiscriminatedUnion";
+    }
+    ctx.deps["DiscriminatedUnion"] = true;
+    ctx.deps["DiscriminatedUnion"] = describers.DiscriminatedUnion(ctx, input);
+    return "DiscriminatedUnion";
+};
+const hoisted_RecursiveTree_0 = (ctx, input)=>{
+    if (ctx.deps["RecursiveTree"]) {
+        return "RecursiveTree";
+    }
+    ctx.deps["RecursiveTree"] = true;
+    ctx.deps["RecursiveTree"] = describers.RecursiveTree(ctx, input);
+    return "RecursiveTree";
+};
+const hoisted_SemVer_0 = (ctx, input)=>{
+    if (ctx.deps["SemVer"]) {
+        return "SemVer";
+    }
+    ctx.deps["SemVer"] = true;
+    ctx.deps["SemVer"] = describers.SemVer(ctx, input);
+    return "SemVer";
+};
+const hoisted_NonEmptyString_0 = (ctx, input)=>{
+    if (ctx.deps["NonEmptyString"]) {
+        return "NonEmptyString";
+    }
+    ctx.deps["NonEmptyString"] = true;
+    ctx.deps["NonEmptyString"] = describers.NonEmptyString(ctx, input);
+    return "NonEmptyString";
+};
+const hoisted_ValidCurrency_0 = (ctx, input)=>{
+    if (ctx.deps["ValidCurrency"]) {
+        return "ValidCurrency";
+    }
+    ctx.deps["ValidCurrency"] = true;
+    ctx.deps["ValidCurrency"] = describers.ValidCurrency(ctx, input);
+    return "ValidCurrency";
+};
 const buildValidatorsInput = {
     "DiscriminatedUnion": validators.DiscriminatedUnion,
     "InvalidSchemaWithBigInt": validators.InvalidSchemaWithBigInt,
@@ -110,16 +190,16 @@ const buildDescribeInput = {
     "object": hoisted_object_9.describeObjectDescribe.bind(hoisted_object_9),
     "anyArray": hoisted_anyArray_5.describeArrayDescribe.bind(hoisted_anyArray_5),
     "any": describeAny,
-    "T1": describers.T1,
-    "T2": describers.T2,
-    "T3": describers.T3,
-    "InvalidSchemaWithDate": describers.InvalidSchemaWithDate,
-    "InvalidSchemaWithBigInt": describers.InvalidSchemaWithBigInt,
-    "DiscriminatedUnion": describers.DiscriminatedUnion,
-    "RecursiveTree": describers.RecursiveTree,
-    "SemVer": describers.SemVer,
-    "NonEmptyString": describers.NonEmptyString,
-    "ValidCurrency": describers.ValidCurrency
+    "T1": hoisted_T1_0,
+    "T2": hoisted_T2_0,
+    "T3": hoisted_T3_0,
+    "InvalidSchemaWithDate": hoisted_InvalidSchemaWithDate_0,
+    "InvalidSchemaWithBigInt": hoisted_InvalidSchemaWithBigInt_0,
+    "DiscriminatedUnion": hoisted_DiscriminatedUnion_0,
+    "RecursiveTree": hoisted_RecursiveTree_0,
+    "SemVer": hoisted_SemVer_0,
+    "NonEmptyString": hoisted_NonEmptyString_0,
+    "ValidCurrency": hoisted_ValidCurrency_0
 };
 
 
@@ -185,11 +265,18 @@ function buildParsers(args) {
         deps: {}
       };
       const out = describeFn(ctx);
-      const sortedDepsKeys = Object.keys(ctx.deps).sort();
+      let sortedDepsKeys = Object.keys(ctx.deps).sort();
+      
+      
+      
+      
       const depsPart = sortedDepsKeys.map((key) => {
         return `type ${key} = ${ctx.deps[key]};`;
       }).join("\n\n");
-      const outPart = `type ${k} = ${out};`
+      
+      
+      
+      const outPart = `type Codec${k} = ${out};`
       return [depsPart, outPart].filter(it => it!=null && it.length > 0).join("\n\n");
     };
 

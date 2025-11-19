@@ -6,11 +6,11 @@ use crate::{
 use std::collections::{BTreeMap, BTreeSet};
 use swc_common::DUMMY_SP;
 use swc_ecma_ast::{
-    ArrayLit, AssignExpr, AssignOp, BindingIdent, BlockStmt, Bool, CallExpr, Callee,
-    ComputedPropName, Decl, Expr, ExprOrSpread, ExprStmt, Function, Ident, IfStmt, KeyValueProp,
-    Lit, MemberExpr, MemberProp, ModuleItem, NewExpr, Null, ObjectLit, Param, ParenExpr, Pat, Prop,
-    PropName, PropOrSpread, Regex, ReturnStmt, Stmt, Str, UnaryExpr, UnaryOp, VarDecl, VarDeclKind,
-    VarDeclarator,
+    ArrayLit, ArrowExpr, AssignExpr, AssignOp, BindingIdent, BlockStmt, BlockStmtOrExpr, Bool,
+    CallExpr, Callee, ComputedPropName, Decl, Expr, ExprOrSpread, ExprStmt, Function, Ident,
+    IfStmt, KeyValueProp, Lit, MemberExpr, MemberProp, ModuleItem, NewExpr, Null, ObjectLit, Param,
+    ParenExpr, Pat, Prop, PropName, PropOrSpread, Regex, ReturnStmt, Stmt, Str, UnaryExpr, UnaryOp,
+    VarDecl, VarDeclKind, VarDeclarator,
 };
 struct SwcBuilder;
 
@@ -366,7 +366,7 @@ impl DecoderFnGenerator<'_> {
             describe: SwcBuilder::ident_expr(format!("describe{}", t).to_string().as_str()),
         }
     }
-    fn ref_schema_code(schema_ref: &str) -> SchemaCode {
+    fn ref_schema_code(&self, schema_ref: &str, hoisted: &mut Vec<ModuleItem>) -> SchemaCode {
         let validator = Expr::Member(MemberExpr {
             span: DUMMY_SP,
             obj: Expr::Ident(Ident {
@@ -424,6 +424,34 @@ impl DecoderFnGenerator<'_> {
             }),
         });
 
+        let ctx_deps_name = Expr::Member(MemberExpr {
+            span: DUMMY_SP,
+            obj: Expr::Member(MemberExpr {
+                span: DUMMY_SP,
+                obj: Expr::Ident(Ident {
+                    span: DUMMY_SP,
+                    sym: "ctx".into(),
+                    optional: false,
+                })
+                .into(),
+                prop: MemberProp::Ident(Ident {
+                    span: DUMMY_SP,
+                    sym: "deps".into(),
+                    optional: false,
+                }),
+            })
+            .into(),
+            prop: MemberProp::Computed(ComputedPropName {
+                span: DUMMY_SP,
+                expr: Expr::Lit(Lit::Str(Str {
+                    span: DUMMY_SP,
+                    value: schema_ref.into(),
+                    raw: None,
+                }))
+                .into(),
+            }),
+        });
+
         let describe = Expr::Member(MemberExpr {
             span: DUMMY_SP,
             obj: Expr::Ident(Ident {
@@ -439,12 +467,103 @@ impl DecoderFnGenerator<'_> {
             }),
         });
 
+        let hoisted_describe_fn = self.hoist_expr(
+            hoisted,
+            Expr::Arrow(ArrowExpr {
+                span: DUMMY_SP,
+                params: vec![
+                    Pat::Ident(BindingIdent {
+                        id: Ident {
+                            span: DUMMY_SP,
+                            sym: "ctx".into(),
+                            optional: false,
+                        },
+                        type_ann: None,
+                    }),
+                    Pat::Ident(BindingIdent {
+                        id: SwcBuilder::input_ident(),
+                        type_ann: None,
+                    }),
+                ],
+                body: BlockStmtOrExpr::BlockStmt(BlockStmt {
+                    span: DUMMY_SP,
+                    stmts: vec![
+                        //
+                        Stmt::If(IfStmt {
+                            span: DUMMY_SP,
+                            test: ctx_deps_name.clone().into(),
+                            cons: Stmt::Block(BlockStmt {
+                                span: DUMMY_SP,
+                                stmts: vec![
+                                    // return the name if the deps includes it
+                                    Stmt::Return(ReturnStmt {
+                                        span: DUMMY_SP,
+                                        arg: Some(Box::new(Expr::Lit(Lit::Str(schema_ref.into())))),
+                                    }),
+                                ],
+                            })
+                            .into(),
+                            alt: None,
+                        }),
+                        Stmt::Expr(ExprStmt {
+                            span: DUMMY_SP,
+                            expr: Box::new(Expr::Assign(AssignExpr {
+                                span: DUMMY_SP,
+                                op: AssignOp::Assign,
+                                left: swc_ecma_ast::PatOrExpr::Expr(ctx_deps_name.clone().into()),
+                                right: Expr::Lit(Lit::Bool(Bool {
+                                    span: DUMMY_SP,
+                                    value: true,
+                                }))
+                                .into(),
+                            })),
+                        }),
+                        Stmt::Expr(ExprStmt {
+                            span: DUMMY_SP,
+                            expr: Box::new(Expr::Assign(AssignExpr {
+                                span: DUMMY_SP,
+                                op: AssignOp::Assign,
+                                left: swc_ecma_ast::PatOrExpr::Expr(ctx_deps_name.clone().into()),
+                                right: Expr::Call(CallExpr {
+                                    span: DUMMY_SP,
+                                    callee: Callee::Expr(describe.into()),
+                                    args: vec![
+                                        Expr::Ident(Ident {
+                                            span: DUMMY_SP,
+                                            sym: "ctx".into(),
+                                            optional: false,
+                                        })
+                                        .into(),
+                                        ExprOrSpread {
+                                            spread: None,
+                                            expr: SwcBuilder::input_ident().into(),
+                                        },
+                                    ],
+                                    type_args: None,
+                                })
+                                .into(),
+                            })),
+                        }),
+                        Stmt::Return(ReturnStmt {
+                            span: DUMMY_SP,
+                            arg: Some(Box::new(Expr::Lit(Lit::Str(schema_ref.into())))),
+                        }),
+                    ],
+                })
+                .into(),
+                is_async: false,
+                is_generator: false,
+                type_params: None,
+                return_type: None,
+            }),
+        );
+
         SchemaCode {
             validator,
             parser,
             reporter,
             schema,
-            describe,
+            describe: hoisted_describe_fn,
         }
     }
     fn bound_method(method_name: &str, hoisted_expr: &Expr) -> Expr {
@@ -812,7 +931,7 @@ impl DecoderFnGenerator<'_> {
             JsonSchema::Number => Self::primitive_schema_code("Number"),
             JsonSchema::Function => Self::primitive_schema_code("Function"),
             JsonSchema::Any => Self::primitive_schema_code("Any"),
-            JsonSchema::Ref(r_name) => Self::ref_schema_code(r_name),
+            JsonSchema::Ref(r_name) => self.ref_schema_code(r_name, hoisted),
             JsonSchema::StringWithFormat(format) => {
                 self.string_with_formats_decoder(hoisted, std::slice::from_ref(format))
             }

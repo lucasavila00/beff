@@ -61,11 +61,18 @@ function buildParsers(args) {
         deps: {}
       };
       const out = describeFn(ctx);
-      const sortedDepsKeys = Object.keys(ctx.deps).sort();
+      let sortedDepsKeys = Object.keys(ctx.deps).sort();
+      // if sorted deps includes k, make it last
+      // if (sortedDepsKeys.includes(k)) {
+      //   sortedDepsKeys = sortedDepsKeys.filter(it => it !== k).concat([k]);
+      // }
       const depsPart = sortedDepsKeys.map((key) => {
         return `type ${key} = ${ctx.deps[key]};`;
       }).join("\n\n");
-      const outPart = `type ${k} = ${out};`
+      // if (k in ctx.deps) {
+      //   return depsPart;
+      // }
+      const outPart = `type Codec${k} = ${out};`
       return [depsPart, outPart].filter(it => it!=null && it.length > 0).join("\n\n");
     };
 
