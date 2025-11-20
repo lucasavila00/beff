@@ -360,7 +360,7 @@ pub struct BeffUserSettings {
 }
 
 pub struct EntryPoints {
-    pub parser_entry_point: Option<BffFileName>,
+    pub parser_entry_point: BffFileName,
     pub settings: BeffUserSettings,
 }
 pub trait FileManager {
@@ -369,33 +369,23 @@ pub trait FileManager {
 }
 
 pub struct ExtractResult {
-    pub parser: Option<ParserExtractResult>,
+    pub parser: ParserExtractResult,
 }
 
 impl ExtractResult {
-    pub fn is_empty(&self) -> bool {
-        self.parser.is_none()
-    }
     pub fn errors(&self) -> Vec<&Diagnostic> {
-        self.parser
-            .as_ref()
-            .map(|it| it.errors.iter().collect::<Vec<_>>())
-            .unwrap_or_default()
+        self.parser.errors.iter().collect::<Vec<_>>()
     }
     pub fn validators(&self) -> Vec<&NamedSchema> {
-        self.parser
-            .as_ref()
-            .map(|it| it.validators.iter().collect::<Vec<_>>())
-            .unwrap_or_default()
+        self.parser.validators.iter().collect::<Vec<_>>()
     }
 }
 pub fn extract<R: FileManager>(files: &mut R, entry_points: EntryPoints) -> ExtractResult {
-    let mut parser = None;
-
-    if let Some(entry) = entry_points.parser_entry_point {
-        parser = Some(extract_parser(files, entry, &entry_points.settings));
-    }
-
+    let parser = extract_parser(
+        files,
+        entry_points.parser_entry_point,
+        &entry_points.settings,
+    );
     ExtractResult { parser }
 }
 

@@ -16,3 +16,4 @@ web-demo/demo/pkg/
 *generated/
 web-demo/demo/package-lock.json
 pnpm-lock.yaml
+packages/beff-wasm/bundled-code/codegen-v2.js

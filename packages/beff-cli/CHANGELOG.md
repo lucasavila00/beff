@@ -1,5 +1,11 @@
 # @beff/cli
 
+## 0.0.101
+
+### Patch Changes
+
+- codegen v2
+
 ## 0.0.100
 
 ### Patch Changes
