@@ -131,7 +131,7 @@ fn formats_decoder(constructor: &str, vs: &[String]) -> Expr {
     let vs_arr = Expr::Array(ArrayLit {
         span: DUMMY_SP,
         elems: vs
-            .into_iter()
+            .iter()
             .map(|it| {
                 Some(ExprOrSpread {
                     spread: None,
