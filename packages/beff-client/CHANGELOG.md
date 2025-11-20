@@ -1,5 +1,13 @@
 # @beff/client
 
+## 0.0.101
+
+### Patch Changes
+
+- codegen v2
+- Updated dependencies
+  - @beff/cli@0.0.101
+
 ## 0.0.100
 
 ### Patch Changes
