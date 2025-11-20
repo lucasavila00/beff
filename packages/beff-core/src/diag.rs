@@ -7,6 +7,7 @@ use crate::{BffFileName, ParsedModule};
 
 #[derive(Debug, Clone)]
 pub enum DiagnosticInfoMessage {
+    CannotHaveRecursiveGenericTypes,
     ObjectHasConflictingKeyValueInIntersection,
     CannotResolveNamedImport,
     EnumMemberNotFound,
@@ -495,6 +496,9 @@ impl DiagnosticInfoMessage {
             }
             DiagnosticInfoMessage::RecordKeyUnionShouldBeOnlyStrings => {
                 "Record key union should only contain strings".to_string()
+            }
+            DiagnosticInfoMessage::CannotHaveRecursiveGenericTypes => {
+                "Cannot have recursive generic types".to_string()
             }
         }
     }

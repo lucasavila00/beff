@@ -255,4 +255,11 @@ it("works", () => {
       "type": "object",
     }
   `);
+
+  // expect(Codecs.UsesGenericWrapper.schema()).toMatchInlineSnapshot(`
+  //   {
+  //     "format": "ValidCurrency",
+  //     "type": "string",
+  //   }
+  // `);
 });

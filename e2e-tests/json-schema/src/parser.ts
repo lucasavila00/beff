@@ -49,6 +49,16 @@ type SemVer = `${number}.${number}.${number}`;
 
 type NonEmptyString = [string, ...string[]];
 
+type GenericWrapper<T> = {
+  value: T;
+  value2: T | boolean;
+  other: GenericWrapper<T>;
+};
+
+type UsesGenericWrapper = {
+  wrappedString: GenericWrapper<string>;
+  wrappedNumber: GenericWrapper<number>;
+};
 export const Codecs = parse.buildParsers<{
   // basic
   string: string;
@@ -71,6 +81,7 @@ export const Codecs = parse.buildParsers<{
   NonEmptyString: NonEmptyString;
   //
   ValidCurrency: ValidCurrency;
+  // UsesGenericWrapper: UsesGenericWrapper;
 }>({
   stringFormats: {
     ValidCurrency: (input: string) => {

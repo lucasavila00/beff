@@ -32,7 +32,6 @@ const buildValidatorsInput = {
     "T1": validators.T1,
     "T2": validators.T2,
     "T3": validators.T3,
-    "UsesGenericWrapper": validators.UsesGenericWrapper,
     "ValidCurrency": validators.ValidCurrency,
     "any": validateAny,
     "anyArray": hoisted_anyArray_1.validateArrayValidator.bind(hoisted_anyArray_1),
@@ -54,7 +53,6 @@ const buildParsersInput = {
     "T1": parsers.T1,
     "T2": parsers.T2,
     "T3": parsers.T3,
-    "UsesGenericWrapper": parsers.UsesGenericWrapper,
     "ValidCurrency": parsers.ValidCurrency,
     "any": parseIdentity,
     "anyArray": hoisted_anyArray_2.parseArrayParser.bind(hoisted_anyArray_2),
@@ -76,7 +74,6 @@ const buildReportersInput = {
     "T1": reporters.T1,
     "T2": reporters.T2,
     "T3": reporters.T3,
-    "UsesGenericWrapper": reporters.UsesGenericWrapper,
     "ValidCurrency": reporters.ValidCurrency,
     "any": reportAny,
     "anyArray": hoisted_anyArray_3.reportArrayReporter.bind(hoisted_anyArray_3),
@@ -98,7 +95,6 @@ const buildSchemaInput = {
     "T1": schemas.T1,
     "T2": schemas.T2,
     "T3": schemas.T3,
-    "UsesGenericWrapper": schemas.UsesGenericWrapper,
     "ValidCurrency": schemas.ValidCurrency,
     "any": schemaAny,
     "anyArray": hoisted_anyArray_4.schemaArraySchema.bind(hoisted_anyArray_4),
@@ -128,8 +124,7 @@ const buildDescribeInput = {
     "SemVer": wrap_describe(describers.SemVer, "SemVer"),
     "NonEmptyString": wrap_describe(describers.NonEmptyString, "NonEmptyString"),
     "ValidCurrency": wrap_describe(describers.ValidCurrency, "ValidCurrency"),
-    "ReusesRef": wrap_describe(describers.ReusesRef, "ReusesRef"),
-    "UsesGenericWrapper": wrap_describe(describers.UsesGenericWrapper, "UsesGenericWrapper")
+    "ReusesRef": wrap_describe(describers.ReusesRef, "ReusesRef")
 };
 
 
