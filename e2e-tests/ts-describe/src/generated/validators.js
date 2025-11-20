@@ -1603,6 +1603,27 @@ function SchemaReusesRef(ctx, input) {
 function DescribeReusesRef(ctx, input) {
     return (hoisted_ReusesRef_9.describeObjectDescribe.bind(hoisted_ReusesRef_9))(ctx);
 }
+function ValidateUsesGenericWrapper(ctx, input) {
+    return (hoisted_UsesGenericWrapper_41.validateObjectValidator.bind(hoisted_UsesGenericWrapper_41))(ctx, input);
+}
+function ParseUsesGenericWrapper(ctx, input) {
+    return (hoisted_UsesGenericWrapper_42.parseObjectParser.bind(hoisted_UsesGenericWrapper_42))(ctx, input);
+}
+function ReportUsesGenericWrapper(ctx, input) {
+    return (hoisted_UsesGenericWrapper_43.reportObjectReporter.bind(hoisted_UsesGenericWrapper_43))(ctx, input);
+}
+function SchemaUsesGenericWrapper(ctx, input) {
+    if (ctx.seen["UsesGenericWrapper"]) {
+        return {};
+    }
+    ctx.seen["UsesGenericWrapper"] = true;
+    var tmp = (hoisted_UsesGenericWrapper_44.schemaObjectSchema.bind(hoisted_UsesGenericWrapper_44))(ctx);
+    delete ctx.seen["UsesGenericWrapper"];
+    return tmp;
+}
+function DescribeUsesGenericWrapper(ctx, input) {
+    return (hoisted_UsesGenericWrapper_45.describeObjectDescribe.bind(hoisted_UsesGenericWrapper_45))(ctx);
+}
 const validators = {
     T1: ValidateT1,
     T2: ValidateT2,
@@ -1614,7 +1635,8 @@ const validators = {
     SemVer: ValidateSemVer,
     NonEmptyString: ValidateNonEmptyString,
     ValidCurrency: ValidateValidCurrency,
-    ReusesRef: ValidateReusesRef
+    ReusesRef: ValidateReusesRef,
+    UsesGenericWrapper: ValidateUsesGenericWrapper
 };
 const parsers = {
     T1: ParseT1,
@@ -1627,7 +1649,8 @@ const parsers = {
     SemVer: ParseSemVer,
     NonEmptyString: ParseNonEmptyString,
     ValidCurrency: ParseValidCurrency,
-    ReusesRef: ParseReusesRef
+    ReusesRef: ParseReusesRef,
+    UsesGenericWrapper: ParseUsesGenericWrapper
 };
 const reporters = {
     T1: ReportT1,
@@ -1640,7 +1663,8 @@ const reporters = {
     SemVer: ReportSemVer,
     NonEmptyString: ReportNonEmptyString,
     ValidCurrency: ReportValidCurrency,
-    ReusesRef: ReportReusesRef
+    ReusesRef: ReportReusesRef,
+    UsesGenericWrapper: ReportUsesGenericWrapper
 };
 const schemas = {
     T1: SchemaT1,
@@ -1653,7 +1677,8 @@ const schemas = {
     SemVer: SchemaSemVer,
     NonEmptyString: SchemaNonEmptyString,
     ValidCurrency: SchemaValidCurrency,
-    ReusesRef: SchemaReusesRef
+    ReusesRef: SchemaReusesRef,
+    UsesGenericWrapper: SchemaUsesGenericWrapper
 };
 const describers = {
     T1: DescribeT1,
@@ -1666,7 +1691,8 @@ const describers = {
     SemVer: DescribeSemVer,
     NonEmptyString: DescribeNonEmptyString,
     ValidCurrency: DescribeValidCurrency,
-    ReusesRef: DescribeReusesRef
+    ReusesRef: DescribeReusesRef,
+    UsesGenericWrapper: DescribeUsesGenericWrapper
 };
 const hoisted_T1_0 = {
     "a": validateString,
@@ -2436,5 +2462,126 @@ const hoisted_ReusesRef_7 = new ObjectReporter(hoisted_ReusesRef_0, hoisted_Reus
 }, null);
 const hoisted_ReusesRef_8 = new ObjectSchema(hoisted_ReusesRef_1, null);
 const hoisted_ReusesRef_9 = new ObjectDescribe(hoisted_ReusesRef_3, null);
+const hoisted_UsesGenericWrapper_0 = [
+    validateBoolean,
+    validateNumber
+];
+const hoisted_UsesGenericWrapper_1 = [
+    schemaBoolean,
+    schemaNumber
+];
+const hoisted_UsesGenericWrapper_2 = [
+    describeBoolean,
+    describeNumber
+];
+const hoisted_UsesGenericWrapper_3 = new AnyOfValidator(hoisted_UsesGenericWrapper_0);
+const hoisted_UsesGenericWrapper_4 = new AnyOfParser(hoisted_UsesGenericWrapper_0, [
+    parseIdentity,
+    parseIdentity
+]);
+const hoisted_UsesGenericWrapper_5 = new AnyOfReporter(hoisted_UsesGenericWrapper_0, [
+    reportBoolean,
+    reportNumber
+]);
+const hoisted_UsesGenericWrapper_6 = new AnyOfSchema(hoisted_UsesGenericWrapper_1);
+const hoisted_UsesGenericWrapper_7 = new AnyOfDescribe(hoisted_UsesGenericWrapper_2);
+const hoisted_UsesGenericWrapper_8 = {
+    "value": validateNumber,
+    "value2": hoisted_UsesGenericWrapper_3.validateAnyOfValidator.bind(hoisted_UsesGenericWrapper_3)
+};
+const hoisted_UsesGenericWrapper_9 = {
+    "value": schemaNumber,
+    "value2": hoisted_UsesGenericWrapper_6.schemaAnyOfSchema.bind(hoisted_UsesGenericWrapper_6)
+};
+const hoisted_UsesGenericWrapper_10 = {
+    "value": describeNumber,
+    "value2": hoisted_UsesGenericWrapper_7.describeAnyOfDescribe.bind(hoisted_UsesGenericWrapper_7)
+};
+const hoisted_UsesGenericWrapper_11 = hoisted_UsesGenericWrapper_10;
+const hoisted_UsesGenericWrapper_12 = null;
+const hoisted_UsesGenericWrapper_13 = new ObjectValidator(hoisted_UsesGenericWrapper_8, hoisted_UsesGenericWrapper_12);
+const hoisted_UsesGenericWrapper_14 = new ObjectParser({
+    "value": parseIdentity,
+    "value2": hoisted_UsesGenericWrapper_4.parseAnyOfParser.bind(hoisted_UsesGenericWrapper_4)
+}, null);
+const hoisted_UsesGenericWrapper_15 = new ObjectReporter(hoisted_UsesGenericWrapper_8, hoisted_UsesGenericWrapper_12, {
+    "value": reportNumber,
+    "value2": hoisted_UsesGenericWrapper_5.reportAnyOfReporter.bind(hoisted_UsesGenericWrapper_5)
+}, null);
+const hoisted_UsesGenericWrapper_16 = new ObjectSchema(hoisted_UsesGenericWrapper_9, null);
+const hoisted_UsesGenericWrapper_17 = new ObjectDescribe(hoisted_UsesGenericWrapper_11, null);
+const hoisted_UsesGenericWrapper_18 = [
+    validateBoolean,
+    validateString
+];
+const hoisted_UsesGenericWrapper_19 = [
+    schemaBoolean,
+    schemaString
+];
+const hoisted_UsesGenericWrapper_20 = [
+    describeBoolean,
+    describeString
+];
+const hoisted_UsesGenericWrapper_21 = new AnyOfValidator(hoisted_UsesGenericWrapper_18);
+const hoisted_UsesGenericWrapper_22 = new AnyOfParser(hoisted_UsesGenericWrapper_18, [
+    parseIdentity,
+    parseIdentity
+]);
+const hoisted_UsesGenericWrapper_23 = new AnyOfReporter(hoisted_UsesGenericWrapper_18, [
+    reportBoolean,
+    reportString
+]);
+const hoisted_UsesGenericWrapper_24 = new AnyOfSchema(hoisted_UsesGenericWrapper_19);
+const hoisted_UsesGenericWrapper_25 = new AnyOfDescribe(hoisted_UsesGenericWrapper_20);
+const hoisted_UsesGenericWrapper_26 = {
+    "value": validateString,
+    "value2": hoisted_UsesGenericWrapper_21.validateAnyOfValidator.bind(hoisted_UsesGenericWrapper_21)
+};
+const hoisted_UsesGenericWrapper_27 = {
+    "value": schemaString,
+    "value2": hoisted_UsesGenericWrapper_24.schemaAnyOfSchema.bind(hoisted_UsesGenericWrapper_24)
+};
+const hoisted_UsesGenericWrapper_28 = {
+    "value": describeString,
+    "value2": hoisted_UsesGenericWrapper_25.describeAnyOfDescribe.bind(hoisted_UsesGenericWrapper_25)
+};
+const hoisted_UsesGenericWrapper_29 = hoisted_UsesGenericWrapper_28;
+const hoisted_UsesGenericWrapper_30 = null;
+const hoisted_UsesGenericWrapper_31 = new ObjectValidator(hoisted_UsesGenericWrapper_26, hoisted_UsesGenericWrapper_30);
+const hoisted_UsesGenericWrapper_32 = new ObjectParser({
+    "value": parseIdentity,
+    "value2": hoisted_UsesGenericWrapper_22.parseAnyOfParser.bind(hoisted_UsesGenericWrapper_22)
+}, null);
+const hoisted_UsesGenericWrapper_33 = new ObjectReporter(hoisted_UsesGenericWrapper_26, hoisted_UsesGenericWrapper_30, {
+    "value": reportString,
+    "value2": hoisted_UsesGenericWrapper_23.reportAnyOfReporter.bind(hoisted_UsesGenericWrapper_23)
+}, null);
+const hoisted_UsesGenericWrapper_34 = new ObjectSchema(hoisted_UsesGenericWrapper_27, null);
+const hoisted_UsesGenericWrapper_35 = new ObjectDescribe(hoisted_UsesGenericWrapper_29, null);
+const hoisted_UsesGenericWrapper_36 = {
+    "wrappedNumber": hoisted_UsesGenericWrapper_13.validateObjectValidator.bind(hoisted_UsesGenericWrapper_13),
+    "wrappedString": hoisted_UsesGenericWrapper_31.validateObjectValidator.bind(hoisted_UsesGenericWrapper_31)
+};
+const hoisted_UsesGenericWrapper_37 = {
+    "wrappedNumber": hoisted_UsesGenericWrapper_16.schemaObjectSchema.bind(hoisted_UsesGenericWrapper_16),
+    "wrappedString": hoisted_UsesGenericWrapper_34.schemaObjectSchema.bind(hoisted_UsesGenericWrapper_34)
+};
+const hoisted_UsesGenericWrapper_38 = {
+    "wrappedNumber": hoisted_UsesGenericWrapper_17.describeObjectDescribe.bind(hoisted_UsesGenericWrapper_17),
+    "wrappedString": hoisted_UsesGenericWrapper_35.describeObjectDescribe.bind(hoisted_UsesGenericWrapper_35)
+};
+const hoisted_UsesGenericWrapper_39 = hoisted_UsesGenericWrapper_38;
+const hoisted_UsesGenericWrapper_40 = null;
+const hoisted_UsesGenericWrapper_41 = new ObjectValidator(hoisted_UsesGenericWrapper_36, hoisted_UsesGenericWrapper_40);
+const hoisted_UsesGenericWrapper_42 = new ObjectParser({
+    "wrappedNumber": hoisted_UsesGenericWrapper_14.parseObjectParser.bind(hoisted_UsesGenericWrapper_14),
+    "wrappedString": hoisted_UsesGenericWrapper_32.parseObjectParser.bind(hoisted_UsesGenericWrapper_32)
+}, null);
+const hoisted_UsesGenericWrapper_43 = new ObjectReporter(hoisted_UsesGenericWrapper_36, hoisted_UsesGenericWrapper_40, {
+    "wrappedNumber": hoisted_UsesGenericWrapper_15.reportObjectReporter.bind(hoisted_UsesGenericWrapper_15),
+    "wrappedString": hoisted_UsesGenericWrapper_33.reportObjectReporter.bind(hoisted_UsesGenericWrapper_33)
+}, null);
+const hoisted_UsesGenericWrapper_44 = new ObjectSchema(hoisted_UsesGenericWrapper_37, null);
+const hoisted_UsesGenericWrapper_45 = new ObjectDescribe(hoisted_UsesGenericWrapper_39, null);
 
 export default { registerStringFormatter, registerNumberFormatter, ObjectValidator, ObjectParser, MappedRecordParser, MappedRecordValidator, ArrayParser, ArrayValidator, CodecDecoder, StringWithFormatsDecoder, NumberWithFormatsDecoder, AnyOfValidator, AnyOfParser, AllOfValidator, AllOfParser, TupleParser, TupleValidator, RegexDecoder, ConstDecoder, AnyOfConstsDecoder, AnyOfDiscriminatedParser, AnyOfDiscriminatedValidator, validateString, validateNumber, validateFunction, validateBoolean, validateAny, validateNull, validateNever, parseIdentity, reportString, reportNumber, reportNull, reportBoolean, reportAny, reportNever, reportFunction, ArrayReporter, ObjectReporter, TupleReporter, AnyOfReporter, AllOfReporter, AnyOfDiscriminatedReporter, MappedRecordReporter, schemaString, schemaNumber, schemaBoolean, schemaNull, schemaAny, schemaNever, schemaFunction, ArraySchema, ObjectSchema, TupleSchema, AnyOfSchema, AllOfSchema, AnyOfDiscriminatedSchema, MappedRecordSchema, describeString, describeNumber, describeBoolean, describeNull, describeAny, describeNever, describeFunction, ArrayDescribe, ObjectDescribe, TupleDescribe, AnyOfDescribe, AllOfDescribe, AnyOfDiscriminatedDescribe, MappedRecordDescribe, wrap_describe, validators, parsers, reporters, schemas, describers };
