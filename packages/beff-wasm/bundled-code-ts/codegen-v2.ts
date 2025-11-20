@@ -260,8 +260,6 @@ function registerNumberFormatter(name: string, validator: UserProvidedNumberVali
   numberFormatters[name] = validator;
 }
 
-let namedParsers: Record<string, BeffParserImpl> = {};
-
 type DescribeContext = {
   measure: boolean;
   deps: Record<string, boolean | string>;
@@ -373,12 +371,12 @@ class ParserNeverImpl implements BeffParserImpl {
   }
 }
 
-type Const = string | number | boolean;
+type Const = string | number | boolean | null;
 
 class ParserConstImpl implements BeffParserImpl {
   private value: Const;
   constructor(value: Const) {
-    this.value = value;
+    this.value = value ?? null;
   }
   describe(_ctx: DescribeContext): string {
     return JSON.stringify(this.value);
@@ -387,6 +385,9 @@ class ParserConstImpl implements BeffParserImpl {
     return { const: this.value };
   }
   validate(_ctx: ValidateContext, input: unknown): boolean {
+    if (this.value == null) {
+      return input == this.value;
+    }
     return input === this.value;
   }
   parseAfterValidation(_ctx: ParseContext, input: unknown): unknown {
@@ -562,8 +563,8 @@ class ParserNumberWithFormatImpl implements BeffParserImpl {
 }
 
 class ParserAnyOfConstsImpl implements BeffParserImpl {
-  private values: (Const | null)[];
-  constructor(values: (Const | null)[]) {
+  private values: Const[];
+  constructor(values: Const[]) {
     this.values = values;
   }
   describe(ctx: DescribeContext): string {
@@ -1115,6 +1116,7 @@ class ParserObjectImpl implements BeffParserImpl {
   }
 }
 
+declare var namedParsers: Record<string, BeffParserImpl>;
 class ParserRefImpl implements BeffParserImpl {
   private refName: string;
   constructor(refName: string) {
@@ -1160,7 +1162,6 @@ class ParserRefImpl implements BeffParserImpl {
     return to.reportDecodeError(ctx, input);
   }
 }
-
 declare var RequiredStringFormats: string[];
 declare var RequiredNumberFormats: string[];
 declare var buildValidatorsInput: Record<string, BeffParserImpl>;

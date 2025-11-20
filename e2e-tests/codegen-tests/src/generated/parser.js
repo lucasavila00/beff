@@ -196,7 +196,6 @@ const numberFormatters = {};
 function registerNumberFormatter(name, validator) {
   numberFormatters[name] = validator;
 }
-let namedParsers = {};
 class ParserTypeOfImpl {
   typeName;
   constructor(typeName) {
@@ -272,7 +271,7 @@ class ParserNeverImpl {
 class ParserConstImpl {
   value;
   constructor(value) {
-    this.value = value;
+    this.value = value ?? null;
   }
   describe(_ctx) {
     return JSON.stringify(this.value);
@@ -281,6 +280,9 @@ class ParserConstImpl {
     return { const: this.value };
   }
   validate(_ctx, input) {
+    if (this.value == null) {
+      return input == this.value;
+    }
     return input === this.value;
   }
   parseAfterValidation(_ctx, input) {
@@ -950,6 +952,51 @@ class ParserObjectImpl {
     return acc;
   }
 }
+class ParserRefImpl {
+  refName;
+  constructor(refName) {
+    this.refName = refName;
+  }
+  describe(ctx) {
+    const name = this.refName;
+    const to = namedParsers[this.refName];
+    if (ctx.measure) {
+      ctx.deps_counter[name] = (ctx.deps_counter[name] || 0) + 1;
+      if (ctx.deps[name]) {
+        return name;
+      }
+      ctx.deps[name] = true;
+      ctx.deps[name] = to.describe(ctx);
+      return name;
+    } else {
+      if (ctx.deps_counter[name] > 1) {
+        if (!ctx.deps[name]) {
+          ctx.deps[name] = true;
+          ctx.deps[name] = to.describe(ctx);
+        }
+        return name;
+      } else {
+        return to.describe(ctx);
+      }
+    }
+  }
+  schema(ctx) {
+    const to = namedParsers[this.refName];
+    return to.schema(ctx);
+  }
+  validate(ctx, input) {
+    const to = namedParsers[this.refName];
+    return to.validate(ctx, input);
+  }
+  parseAfterValidation(ctx, input) {
+    const to = namedParsers[this.refName];
+    return to.parseAfterValidation(ctx, input);
+  }
+  reportDecodeError(ctx, input) {
+    const to = namedParsers[this.refName];
+    return to.reportDecodeError(ctx, input);
+  }
+}
 const buildParsers = (args) => {
   const stringFormats = args?.stringFormats ?? {};
   for (const k of RequiredStringFormats) {
@@ -1054,8 +1101,22 @@ const buildParsers = (args) => {
 
 const RequiredStringFormats = [];
 const RequiredNumberFormats = [];
+const namedParsers = {
+    "AliasToString": new ParserTypeOfImpl("string"),
+    "AliasToNumber": new ParserTypeOfImpl("number"),
+    "AliasToBoolean": new ParserTypeOfImpl("boolean"),
+    "AliasToNull": new ParserNullImpl(),
+    "AliasToAny": new ParserAnyImpl(),
+    "AliasToConst": new ParserConstImpl("constant value")
+};
 const buildValidatorsInput = {
-    "Dec": new ParserTypeOfImpl("string")
+    "Dec": new ParserTypeOfImpl("string"),
+    "AliasToString": new ParserRefImpl("AliasToString"),
+    "AliasToNumber": new ParserRefImpl("AliasToNumber"),
+    "AliasToBoolean": new ParserRefImpl("AliasToBoolean"),
+    "AliasToNull": new ParserRefImpl("AliasToNull"),
+    "AliasToAny": new ParserRefImpl("AliasToAny"),
+    "AliasToConst": new ParserRefImpl("AliasToConst")
 };
 
 export default { buildParsers };
