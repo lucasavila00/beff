@@ -1345,3 +1345,27 @@ class TupleDescribe {
     return `[${inner}]`;
   }
 }
+
+function wrap_describe(fn, name) {
+  return (ctx, input)=>{
+      if (ctx.measure) {
+          ctx.deps_counter[name] = (ctx.deps_counter[name] || 0) + 1;
+          if (ctx.deps[name]) {
+              return name;
+          }
+          ctx.deps[name] = true;
+          ctx.deps[name] = fn(ctx, input);
+          return name;
+      } else {
+          if (ctx.deps_counter[name] > 1) {
+              if (!ctx.deps[name]) {
+                  ctx.deps[name] = true;
+                  ctx.deps[name] = fn(ctx, input);
+              }
+              return name;
+          } else {
+              return fn(ctx, input);
+          }
+      }
+  };
+}
