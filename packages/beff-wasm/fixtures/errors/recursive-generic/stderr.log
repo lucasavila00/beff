@@ -1,0 +1,11 @@
+Error: Cannot have recursive generic types
+ /errors/recursive-generic/src/parser.ts:6:10
+   4 |   value: T;
+   5 |   value2: T | boolean;
+ > 6 |   other: GenericWrapper<T>;
+     |          ^^^^^^^^^^^^^^ Cannot have recursive generic types
+   7 | };
+   8 |
+   9 | type UsesGenericWrapper = {
+
+Found 1 error
