@@ -199,6 +199,10 @@ export type WritableModules = {
   js_built_parsers: string | undefined;
 };
 
+export type WritableModulesV2 = {
+  js_built_parsers: string;
+};
+
 export class Bundler {
   cbs: ((path: string) => void)[];
   constructor(verbose: boolean) {
@@ -232,6 +236,13 @@ export class Bundler {
     settings: BeffUserSettings,
   ): WritableModules | undefined {
     return wasm.bundle_to_string(parser_entrypoint ?? "", serializeSettings(settings));
+  }
+
+  public bundle_v2(
+    parser_entrypoint: string | undefined,
+    settings: BeffUserSettings,
+  ): WritableModulesV2 | undefined {
+    return wasm.bundle_to_string_v2(parser_entrypoint ?? "", serializeSettings(settings));
   }
 
   public diagnostics(

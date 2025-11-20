@@ -83,12 +83,14 @@ function deepmergeConstructor(options: any) {
   }
 
   const isPrimitiveOrBuiltIn =
+    // @ts-ignore
     typeof Buffer !== "undefined"
       ? (value: any) =>
           typeof value !== "object" ||
           value === null ||
           value instanceof RegExp ||
           value instanceof Date ||
+          // @ts-ignore
           value instanceof Buffer
       : (value: any) =>
           typeof value !== "object" || value === null || value instanceof RegExp || value instanceof Date;

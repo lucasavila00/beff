@@ -1,6 +1,6 @@
 import * as fs from "fs";
 import * as path from "path";
-import { Bundler, WritableModules } from "./bundler";
+import { Bundler, WritableModules, WritableModulesV2 } from "./bundler";
 import { ProjectJson, ProjectModule } from "./project";
 import gen from "./generated/bundle";
 
@@ -152,6 +152,41 @@ const finalizeParserFile = (
   ].join("\n");
 };
 
+const V2_ESM_IMPORT = `import {
+  printErrors
+} from "@beff/client";`;
+const finalizeParserV2File = (
+  wasmCode: WritableModulesV2,
+  mod: ProjectModule,
+  stringFormats: string[],
+  numberFormats: string[],
+) => {
+  const exportedItems = ["buildParsers"].join(", ");
+  const exports = [exportCode(mod), `{ ${exportedItems} };`].join(" ");
+
+  const stringFormatsCode = `const RequiredStringFormats = ${JSON.stringify(stringFormats)};`;
+  const numberFormatsCode = `const RequiredNumberFormats = ${JSON.stringify(numberFormats)};`;
+
+  let genV2 = gen["codegen-v2.js"];
+  let zod_import = `import { z } from "zod";`;
+
+  if (mod == "cjs") {
+    zod_import = `const { z } = require("zod");`;
+    genV2 = genV2.replace(V2_ESM_IMPORT, `const { printErrors } = require("@beff/client");`);
+  }
+
+  return [
+    "//@ts-nocheck",
+    esmTag(mod),
+    stringFormatsCode,
+    numberFormatsCode,
+    wasmCode.js_built_parsers,
+    zod_import,
+    genV2,
+    exports,
+  ].join("\n");
+};
+
 export const execProject = (
   bundler: Bundler,
   projectPath: string,
@@ -166,28 +201,54 @@ export const execProject = (
   if (verbose) {
     console.log(`JS: Parser entry point ${parserEntryPoint}`);
   }
-  const outResult = bundler.bundle(parserEntryPoint, projectJson.settings);
-  if (outResult == null) {
-    return "failed";
-  }
+
   const outputDir = path.join(path.dirname(projectPath), projectJson.outputDir);
   if (!fs.existsSync(outputDir)) {
     fs.mkdirSync(outputDir);
   }
 
-  fs.writeFileSync(path.join(outputDir, "validators.js"), finalizeValidatorsCode(outResult, mod));
+  switch (projectJson.codegen) {
+    case 1: {
+      const outResult = bundler.bundle(parserEntryPoint, projectJson.settings);
+      if (outResult == null) {
+        return "failed";
+      }
 
-  if (projectJson.parser) {
-    fs.writeFileSync(
-      path.join(outputDir, "parser.js"),
-      finalizeParserFile(
-        outResult,
-        mod,
-        projectJson.settings.stringFormats.map((it) => it.name) ?? [],
-        projectJson.settings.numberFormats.map((it) => it.name) ?? [],
-      ),
-    );
-    fs.writeFileSync(path.join(outputDir, "parser.d.ts"), gen["parser.d.ts"]);
+      fs.writeFileSync(path.join(outputDir, "validators.js"), finalizeValidatorsCode(outResult, mod));
+
+      if (projectJson.parser) {
+        fs.writeFileSync(
+          path.join(outputDir, "parser.js"),
+          finalizeParserFile(
+            outResult,
+            mod,
+            projectJson.settings.stringFormats.map((it) => it.name) ?? [],
+            projectJson.settings.numberFormats.map((it) => it.name) ?? [],
+          ),
+        );
+        fs.writeFileSync(path.join(outputDir, "parser.d.ts"), gen["parser.d.ts"]);
+      }
+      return "ok";
+    }
+    case 2: {
+      const outResult = bundler.bundle_v2(parserEntryPoint, projectJson.settings);
+      if (outResult == null) {
+        return "failed";
+      }
+      fs.writeFileSync(
+        path.join(outputDir, "parser.js"),
+        finalizeParserV2File(
+          outResult,
+          mod,
+          projectJson.settings.stringFormats.map((it) => it.name) ?? [],
+          projectJson.settings.numberFormats.map((it) => it.name) ?? [],
+        ),
+      );
+      fs.writeFileSync(path.join(outputDir, "parser.d.ts"), gen["parser.d.ts"]);
+      return "ok";
+    }
+    default: {
+      throw `Unsupported codegen version: ${projectJson.codegen}`;
+    }
   }
-  return "ok";
 };

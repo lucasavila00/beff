@@ -39,6 +39,7 @@ const readProjectJson = (projectPath: string): ProjectJson => {
     outputDir: String(projectJson.outputDir),
     module: projectJson.module,
     settings: parseUserSettings(projectJson),
+    codegen: projectJson.codegen === 2 ? 2 : 1,
   };
 };
 
