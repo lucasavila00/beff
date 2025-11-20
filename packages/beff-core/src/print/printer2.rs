@@ -5,8 +5,8 @@ use serde::{Deserialize, Serialize};
 use swc_common::DUMMY_SP;
 use swc_ecma_ast::{
     ArrayLit, BindingIdent, Decl, Expr, ExprOrSpread, Ident, KeyValueProp, Lit, ModuleItem,
-    NewExpr, ObjectLit, Pat, Prop, PropName, PropOrSpread, Regex, Stmt, Str, VarDecl, VarDeclKind,
-    VarDeclarator,
+    NewExpr, Null, ObjectLit, Pat, Prop, PropName, PropOrSpread, Regex, Stmt, Str, VarDecl,
+    VarDeclKind, VarDeclarator,
 };
 
 use crate::{
@@ -385,6 +385,7 @@ fn validator_for_schema(schema: &JsonSchema, named_schemas: &[NamedSchema]) -> E
         JsonSchema::String => typeof_impl("string"),
         JsonSchema::Boolean => typeof_impl("boolean"),
         JsonSchema::Number => typeof_impl("number"),
+        JsonSchema::Function => typeof_impl("function"),
         JsonSchema::Ref(to) => ref_impl(to),
         JsonSchema::Null => no_args_parser("ParserNullImpl"),
         JsonSchema::Any => no_args_parser("ParserAnyImpl"),
@@ -438,6 +439,19 @@ fn validator_for_schema(schema: &JsonSchema, named_schemas: &[NamedSchema]) -> E
         JsonSchema::StNot(_) => {
             unreachable!("should not create decoders for semantic types")
         }
+        JsonSchema::Array(json_schema) => {
+            let item_validator = validator_for_schema(json_schema, named_schemas);
+            new_class_impl("ParserArrayImpl", vec![item_validator])
+        }
+        JsonSchema::MappedRecord { key, rest } => {
+            let key_validator = validator_for_schema(key, named_schemas);
+            let rest_validator = validator_for_schema(rest, named_schemas);
+            new_class_impl(
+                "ParserMappedRecordImpl",
+                vec![key_validator, rest_validator],
+            )
+        }
+        JsonSchema::AllOf(vs) => decode_union_or_intersection("ParserAllOfImpl", vs, named_schemas),
         JsonSchema::AnyOf(vs) => {
             if vs.is_empty() {
                 panic!("empty anyOf is not allowed")
@@ -460,15 +474,74 @@ fn validator_for_schema(schema: &JsonSchema, named_schemas: &[NamedSchema]) -> E
 
             decode_union_or_intersection("ParserAnyOfImpl", vs, named_schemas)
         }
-        JsonSchema::AllOf(vs) => decode_union_or_intersection("ParserAllOfImpl", vs, named_schemas),
-        JsonSchema::Object { vs, rest } => todo!(),
-        JsonSchema::MappedRecord { key, rest } => todo!(),
-        JsonSchema::Array(json_schema) => todo!(),
         JsonSchema::Tuple {
             prefix_items,
             items,
-        } => todo!(),
-        JsonSchema::Function => todo!(),
+        } => {
+            let prefix_item_validators = prefix_items
+                .iter()
+                .map(|it| validator_for_schema(it, named_schemas))
+                .collect::<Vec<Expr>>();
+            let prefix_arr = Expr::Array(ArrayLit {
+                span: DUMMY_SP,
+                elems: prefix_item_validators
+                    .into_iter()
+                    .map(|it| {
+                        Some(ExprOrSpread {
+                            spread: None,
+                            expr: it.into(),
+                        })
+                    })
+                    .collect(),
+            });
+
+            let items = match items {
+                Some(item_schema) => validator_for_schema(item_schema, named_schemas),
+                None => Expr::Lit(Lit::Null(Null { span: DUMMY_SP })),
+            };
+
+            new_class_impl("ParserTupleImpl", vec![prefix_arr, items])
+        }
+        JsonSchema::Object { vs, rest } => {
+            let mut mapped = BTreeMap::new();
+            for (k, v) in vs.iter() {
+                let r = match v {
+                    Optionality::Optional(schema) => {
+                        let nullable_schema = &JsonSchema::any_of(
+                            vec![JsonSchema::Null, schema.clone()].into_iter().collect(),
+                        );
+                        validator_for_schema(nullable_schema, named_schemas)
+                    }
+                    Optionality::Required(schema) => validator_for_schema(schema, named_schemas),
+                };
+                mapped.insert(k.clone(), r);
+            }
+
+            let rest = match rest {
+                Some(item_schema) => validator_for_schema(item_schema, named_schemas),
+                None => Expr::Lit(Lit::Null(Null { span: DUMMY_SP })),
+            };
+            let obj_validator = Expr::Object(ObjectLit {
+                span: DUMMY_SP,
+                props: mapped
+                    .iter()
+                    .map(|(key, value)| {
+                        PropOrSpread::Prop(
+                            Prop::KeyValue(KeyValueProp {
+                                key: PropName::Str(Str {
+                                    span: DUMMY_SP,
+                                    value: key.clone().into(),
+                                    raw: None,
+                                }),
+                                value: value.clone().into(),
+                            })
+                            .into(),
+                        )
+                    })
+                    .collect(),
+            });
+            new_class_impl("ParserObjectImpl", vec![obj_validator, rest])
+        }
     }
 }
 
