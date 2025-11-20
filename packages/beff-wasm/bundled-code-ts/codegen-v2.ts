@@ -313,7 +313,7 @@ class ParserTypeOfImpl implements BeffParserImpl {
     return input;
   }
   reportDecodeError(ctx: ReportContext, input: unknown): DecodeError[] {
-    return buildError(ctx, "expected string", input);
+    return buildError(ctx, "expected " + this.typeName, input);
   }
 }
 
@@ -1146,8 +1146,15 @@ class ParserRefImpl implements BeffParserImpl {
     }
   }
   schema(ctx: SchemaContext): JSONSchema7 {
+    const name = this.refName;
     const to = namedParsers[this.refName];
-    return to.schema(ctx);
+    if (ctx.seen[name]) {
+      return {};
+    }
+    ctx.seen[name] = true;
+    var tmp = to.schema(ctx);
+    delete ctx.seen[name];
+    return tmp;
   }
   validate(ctx: ValidateContext, input: unknown): boolean {
     const to = namedParsers[this.refName];

@@ -210,7 +210,7 @@ class ParserTypeOfImpl {
     return input;
   }
   reportDecodeError(ctx, input) {
-    return buildError(ctx, "expected string", input);
+    return buildError(ctx, "expected " + this.typeName, input);
   }
 }
 class ParserAnyImpl {
@@ -977,8 +977,15 @@ class ParserRefImpl {
     }
   }
   schema(ctx) {
+    const name = this.refName;
     const to = namedParsers[this.refName];
-    return to.schema(ctx);
+    if (ctx.seen[name]) {
+      return {};
+    }
+    ctx.seen[name] = true;
+    var tmp = to.schema(ctx);
+    delete ctx.seen[name];
+    return tmp;
   }
   validate(ctx, input) {
     const to = namedParsers[this.refName];

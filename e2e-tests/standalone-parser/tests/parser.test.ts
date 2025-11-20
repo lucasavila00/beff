@@ -629,7 +629,6 @@ it("DiscriminatedUnion", () => {
             },
           ],
           "isUnionError": true,
-          "message": "expected one of",
           "path": [
             "a11",
           ],

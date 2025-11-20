@@ -128,18 +128,24 @@ fn no_args_parser(class_name: &str) -> Expr {
     )
 }
 fn formats_decoder(constructor: &str, vs: &[String]) -> Expr {
-    new_class_impl(
-        constructor,
-        vs.iter()
+    let vs_arr = Expr::Array(ArrayLit {
+        span: DUMMY_SP,
+        elems: vs
+            .into_iter()
             .map(|it| {
-                Expr::Lit(Lit::Str(Str {
-                    span: DUMMY_SP,
-                    value: it.to_string().into(),
-                    raw: None,
-                }))
+                Some(ExprOrSpread {
+                    spread: None,
+                    expr: Expr::Lit(Lit::Str(Str {
+                        span: DUMMY_SP,
+                        value: it.clone().into(),
+                        raw: None,
+                    }))
+                    .into(),
+                })
             })
             .collect(),
-    )
+    });
+    new_class_impl(constructor, vec![vs_arr])
 }
 
 fn decode_union_or_intersection(
@@ -151,7 +157,19 @@ fn decode_union_or_intersection(
         .iter()
         .map(|schema| validator_for_schema(schema, named_schemas))
         .collect::<Vec<Expr>>();
-    new_class_impl(constructor, exprs)
+    let arr = Expr::Array(ArrayLit {
+        span: DUMMY_SP,
+        elems: exprs
+            .into_iter()
+            .map(|it| {
+                Some(ExprOrSpread {
+                    spread: None,
+                    expr: it.into(),
+                })
+            })
+            .collect(),
+    });
+    new_class_impl(constructor, vec![arr])
 }
 
 fn extract_union(it: &JsonSchema, named_schemas: &[NamedSchema]) -> Vec<JsonSchema> {
