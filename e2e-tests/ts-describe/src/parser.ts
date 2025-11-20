@@ -54,6 +54,16 @@ type ReusesRef = {
   b: T3;
 };
 
+type GenericWrapper<T> = {
+  value: T;
+  value2: T | boolean;
+};
+
+type UsesGenericWrapper = {
+  wrappedString: GenericWrapper<string>;
+  wrappedNumber: GenericWrapper<number>;
+};
+
 export const Codecs = parse.buildParsers<{
   // basic
   string: string;
@@ -77,6 +87,7 @@ export const Codecs = parse.buildParsers<{
   //
   ValidCurrency: ValidCurrency;
   ReusesRef: ReusesRef;
+  UsesGenericWrapper: UsesGenericWrapper;
 }>({
   stringFormats: {
     ValidCurrency: (input: string) => {

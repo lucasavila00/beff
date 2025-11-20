@@ -1347,6 +1347,30 @@ class TupleDescribe {
   }
 }
 
+function wrap_describe(fn, name) {
+  return (ctx, input) => {
+    if (ctx.measure) {
+      ctx.deps_counter[name] = (ctx.deps_counter[name] || 0) + 1;
+      if (ctx.deps[name]) {
+        return name;
+      }
+      ctx.deps[name] = true;
+      ctx.deps[name] = fn(ctx, input);
+      return name;
+    } else {
+      if (ctx.deps_counter[name] > 1) {
+        if (!ctx.deps[name]) {
+          ctx.deps[name] = true;
+          ctx.deps[name] = fn(ctx, input);
+        }
+        return name;
+      } else {
+        return fn(ctx, input);
+      }
+    }
+  };
+}
+
 
 function ValidatePartialRepro(ctx, input) {
     return (hoisted_PartialRepro_21.validateObjectValidator.bind(hoisted_PartialRepro_21))(ctx, input);
@@ -1769,46 +1793,46 @@ function DescribeAvatarSize(ctx, input) {
     return (hoisted_AvatarSize_0.describeRegexDecoder.bind(hoisted_AvatarSize_0))(ctx);
 }
 function ValidateUser(ctx, input) {
-    return (hoisted_User_15.validateObjectValidator.bind(hoisted_User_15))(ctx, input);
+    return (hoisted_User_11.validateObjectValidator.bind(hoisted_User_11))(ctx, input);
 }
 function ParseUser(ctx, input) {
-    return (hoisted_User_16.parseObjectParser.bind(hoisted_User_16))(ctx, input);
+    return (hoisted_User_12.parseObjectParser.bind(hoisted_User_12))(ctx, input);
 }
 function ReportUser(ctx, input) {
-    return (hoisted_User_17.reportObjectReporter.bind(hoisted_User_17))(ctx, input);
+    return (hoisted_User_13.reportObjectReporter.bind(hoisted_User_13))(ctx, input);
 }
 function SchemaUser(ctx, input) {
     if (ctx.seen["User"]) {
         return {};
     }
     ctx.seen["User"] = true;
-    var tmp = (hoisted_User_18.schemaObjectSchema.bind(hoisted_User_18))(ctx);
+    var tmp = (hoisted_User_14.schemaObjectSchema.bind(hoisted_User_14))(ctx);
     delete ctx.seen["User"];
     return tmp;
 }
 function DescribeUser(ctx, input) {
-    return (hoisted_User_19.describeObjectDescribe.bind(hoisted_User_19))(ctx);
+    return (hoisted_User_15.describeObjectDescribe.bind(hoisted_User_15))(ctx);
 }
 function ValidatePublicUser(ctx, input) {
-    return (hoisted_PublicUser_8.validateObjectValidator.bind(hoisted_PublicUser_8))(ctx, input);
+    return (hoisted_PublicUser_5.validateObjectValidator.bind(hoisted_PublicUser_5))(ctx, input);
 }
 function ParsePublicUser(ctx, input) {
-    return (hoisted_PublicUser_9.parseObjectParser.bind(hoisted_PublicUser_9))(ctx, input);
+    return (hoisted_PublicUser_6.parseObjectParser.bind(hoisted_PublicUser_6))(ctx, input);
 }
 function ReportPublicUser(ctx, input) {
-    return (hoisted_PublicUser_10.reportObjectReporter.bind(hoisted_PublicUser_10))(ctx, input);
+    return (hoisted_PublicUser_7.reportObjectReporter.bind(hoisted_PublicUser_7))(ctx, input);
 }
 function SchemaPublicUser(ctx, input) {
     if (ctx.seen["PublicUser"]) {
         return {};
     }
     ctx.seen["PublicUser"] = true;
-    var tmp = (hoisted_PublicUser_11.schemaObjectSchema.bind(hoisted_PublicUser_11))(ctx);
+    var tmp = (hoisted_PublicUser_8.schemaObjectSchema.bind(hoisted_PublicUser_8))(ctx);
     delete ctx.seen["PublicUser"];
     return tmp;
 }
 function DescribePublicUser(ctx, input) {
-    return (hoisted_PublicUser_12.describeObjectDescribe.bind(hoisted_PublicUser_12))(ctx);
+    return (hoisted_PublicUser_9.describeObjectDescribe.bind(hoisted_PublicUser_9))(ctx);
 }
 function ValidateReq(ctx, input) {
     return (hoisted_Req_5.validateObjectValidator.bind(hoisted_Req_5))(ctx, input);
@@ -1853,25 +1877,25 @@ function DescribeWithOptionals(ctx, input) {
     return (hoisted_WithOptionals_17.describeObjectDescribe.bind(hoisted_WithOptionals_17))(ctx);
 }
 function ValidateRepro1(ctx, input) {
-    return (hoisted_Repro1_14.validateObjectValidator.bind(hoisted_Repro1_14))(ctx, input);
+    return (hoisted_Repro1_13.validateObjectValidator.bind(hoisted_Repro1_13))(ctx, input);
 }
 function ParseRepro1(ctx, input) {
-    return (hoisted_Repro1_15.parseObjectParser.bind(hoisted_Repro1_15))(ctx, input);
+    return (hoisted_Repro1_14.parseObjectParser.bind(hoisted_Repro1_14))(ctx, input);
 }
 function ReportRepro1(ctx, input) {
-    return (hoisted_Repro1_16.reportObjectReporter.bind(hoisted_Repro1_16))(ctx, input);
+    return (hoisted_Repro1_15.reportObjectReporter.bind(hoisted_Repro1_15))(ctx, input);
 }
 function SchemaRepro1(ctx, input) {
     if (ctx.seen["Repro1"]) {
         return {};
     }
     ctx.seen["Repro1"] = true;
-    var tmp = (hoisted_Repro1_17.schemaObjectSchema.bind(hoisted_Repro1_17))(ctx);
+    var tmp = (hoisted_Repro1_16.schemaObjectSchema.bind(hoisted_Repro1_16))(ctx);
     delete ctx.seen["Repro1"];
     return tmp;
 }
 function DescribeRepro1(ctx, input) {
-    return (hoisted_Repro1_18.describeObjectDescribe.bind(hoisted_Repro1_18))(ctx);
+    return (hoisted_Repro1_17.describeObjectDescribe.bind(hoisted_Repro1_17))(ctx);
 }
 function ValidateRepro2(ctx, input) {
     return (hoisted_Repro2_5.validateObjectValidator.bind(hoisted_Repro2_5))(ctx, input);
@@ -2294,25 +2318,25 @@ function DescribeKABC(ctx, input) {
     return (describeNever)(ctx);
 }
 function ValidateK(ctx, input) {
-    return (hoisted_K_5.validateAnyOfValidator.bind(hoisted_K_5))(ctx, input);
+    return (hoisted_K_3.validateAnyOfValidator.bind(hoisted_K_3))(ctx, input);
 }
 function ParseK(ctx, input) {
-    return (hoisted_K_6.parseAnyOfParser.bind(hoisted_K_6))(ctx, input);
+    return (hoisted_K_4.parseAnyOfParser.bind(hoisted_K_4))(ctx, input);
 }
 function ReportK(ctx, input) {
-    return (hoisted_K_7.reportAnyOfReporter.bind(hoisted_K_7))(ctx, input);
+    return (hoisted_K_5.reportAnyOfReporter.bind(hoisted_K_5))(ctx, input);
 }
 function SchemaK(ctx, input) {
     if (ctx.seen["K"]) {
         return {};
     }
     ctx.seen["K"] = true;
-    var tmp = (hoisted_K_8.schemaAnyOfSchema.bind(hoisted_K_8))(ctx);
+    var tmp = (hoisted_K_6.schemaAnyOfSchema.bind(hoisted_K_6))(ctx);
     delete ctx.seen["K"];
     return tmp;
 }
 function DescribeK(ctx, input) {
-    return (hoisted_K_9.describeAnyOfDescribe.bind(hoisted_K_9))(ctx);
+    return (hoisted_K_7.describeAnyOfDescribe.bind(hoisted_K_7))(ctx);
 }
 function ValidateNonInfiniteNumber(ctx, input) {
     return (hoisted_NonInfiniteNumber_0.validateNumberWithFormatsDecoder.bind(hoisted_NonInfiniteNumber_0))(ctx, input);
@@ -2441,25 +2465,25 @@ function DescribeWriteAuthorizedUserId(ctx, input) {
     return (hoisted_WriteAuthorizedUserId_0.describeStringWithFormatsDecoder.bind(hoisted_WriteAuthorizedUserId_0))(ctx);
 }
 function ValidateCurrencyPrices(ctx, input) {
-    return (hoisted_CurrencyPrices_4.validateMappedRecordValidator.bind(hoisted_CurrencyPrices_4))(ctx, input);
+    return (hoisted_CurrencyPrices_3.validateMappedRecordValidator.bind(hoisted_CurrencyPrices_3))(ctx, input);
 }
 function ParseCurrencyPrices(ctx, input) {
-    return (hoisted_CurrencyPrices_5.parseMappedRecordParser.bind(hoisted_CurrencyPrices_5))(ctx, input);
+    return (hoisted_CurrencyPrices_4.parseMappedRecordParser.bind(hoisted_CurrencyPrices_4))(ctx, input);
 }
 function ReportCurrencyPrices(ctx, input) {
-    return (hoisted_CurrencyPrices_6.reportMappedRecordReporter.bind(hoisted_CurrencyPrices_6))(ctx, input);
+    return (hoisted_CurrencyPrices_5.reportMappedRecordReporter.bind(hoisted_CurrencyPrices_5))(ctx, input);
 }
 function SchemaCurrencyPrices(ctx, input) {
     if (ctx.seen["CurrencyPrices"]) {
         return {};
     }
     ctx.seen["CurrencyPrices"] = true;
-    var tmp = (hoisted_CurrencyPrices_7.schemaMappedRecordSchema.bind(hoisted_CurrencyPrices_7))(ctx);
+    var tmp = (hoisted_CurrencyPrices_6.schemaMappedRecordSchema.bind(hoisted_CurrencyPrices_6))(ctx);
     delete ctx.seen["CurrencyPrices"];
     return tmp;
 }
 function DescribeCurrencyPrices(ctx, input) {
-    return (hoisted_CurrencyPrices_8.describeMappedRecordDescribe.bind(hoisted_CurrencyPrices_8))(ctx);
+    return (hoisted_CurrencyPrices_7.describeMappedRecordDescribe.bind(hoisted_CurrencyPrices_7))(ctx);
 }
 const validators = {
     PartialRepro: ValidatePartialRepro,
@@ -3319,234 +3343,87 @@ const hoisted_Extra_7 = new ObjectReporter(hoisted_Extra_0, hoisted_Extra_4, {},
 const hoisted_Extra_8 = new ObjectSchema(hoisted_Extra_1, schemaString);
 const hoisted_Extra_9 = new ObjectDescribe(hoisted_Extra_3, describeString);
 const hoisted_AvatarSize_0 = new RegexDecoder(/(\d+(\.\d+)?)(x)(\d+(\.\d+)?)/, "${number}x${number}");
-const hoisted_User_0 = (ctx, input)=>{
-    if (ctx.measure) {
-        ctx.deps_counter["AccessLevel"] = (ctx.deps_counter["AccessLevel"] || 0) + 1;
-        if (ctx.deps["AccessLevel"]) {
-            return "AccessLevel";
-        }
-        ctx.deps["AccessLevel"] = true;
-        ctx.deps["AccessLevel"] = describers.AccessLevel(ctx, input);
-        return "AccessLevel";
-    } else {
-        if (ctx.deps_counter["AccessLevel"] > 1) {
-            if (!ctx.deps["AccessLevel"]) {
-                ctx.deps["AccessLevel"] = true;
-                ctx.deps["AccessLevel"] = describers.AccessLevel(ctx, input);
-            }
-            return "AccessLevel";
-        } else {
-            return describers.AccessLevel(ctx, input);
-        }
-    }
-};
-const hoisted_User_1 = (ctx, input)=>{
-    if (ctx.measure) {
-        ctx.deps_counter["AvatarSize"] = (ctx.deps_counter["AvatarSize"] || 0) + 1;
-        if (ctx.deps["AvatarSize"]) {
-            return "AvatarSize";
-        }
-        ctx.deps["AvatarSize"] = true;
-        ctx.deps["AvatarSize"] = describers.AvatarSize(ctx, input);
-        return "AvatarSize";
-    } else {
-        if (ctx.deps_counter["AvatarSize"] > 1) {
-            if (!ctx.deps["AvatarSize"]) {
-                ctx.deps["AvatarSize"] = true;
-                ctx.deps["AvatarSize"] = describers.AvatarSize(ctx, input);
-            }
-            return "AvatarSize";
-        } else {
-            return describers.AvatarSize(ctx, input);
-        }
-    }
-};
-const hoisted_User_2 = (ctx, input)=>{
-    if (ctx.measure) {
-        ctx.deps_counter["Extra"] = (ctx.deps_counter["Extra"] || 0) + 1;
-        if (ctx.deps["Extra"]) {
-            return "Extra";
-        }
-        ctx.deps["Extra"] = true;
-        ctx.deps["Extra"] = describers.Extra(ctx, input);
-        return "Extra";
-    } else {
-        if (ctx.deps_counter["Extra"] > 1) {
-            if (!ctx.deps["Extra"]) {
-                ctx.deps["Extra"] = true;
-                ctx.deps["Extra"] = describers.Extra(ctx, input);
-            }
-            return "Extra";
-        } else {
-            return describers.Extra(ctx, input);
-        }
-    }
-};
-const hoisted_User_3 = (ctx, input)=>{
-    if (ctx.measure) {
-        ctx.deps_counter["User"] = (ctx.deps_counter["User"] || 0) + 1;
-        if (ctx.deps["User"]) {
-            return "User";
-        }
-        ctx.deps["User"] = true;
-        ctx.deps["User"] = describers.User(ctx, input);
-        return "User";
-    } else {
-        if (ctx.deps_counter["User"] > 1) {
-            if (!ctx.deps["User"]) {
-                ctx.deps["User"] = true;
-                ctx.deps["User"] = describers.User(ctx, input);
-            }
-            return "User";
-        } else {
-            return describers.User(ctx, input);
-        }
-    }
-};
-const hoisted_User_4 = validators.User;
-const hoisted_User_5 = new ArrayValidator(hoisted_User_4);
-const hoisted_User_6 = new ArrayParser(parsers.User);
-const hoisted_User_7 = new ArrayReporter(hoisted_User_4, reporters.User);
-const hoisted_User_8 = new ArraySchema(schemas.User);
-const hoisted_User_9 = new ArrayDescribe(hoisted_User_3);
-const hoisted_User_10 = {
+const hoisted_User_0 = validators.User;
+const hoisted_User_1 = new ArrayValidator(hoisted_User_0);
+const hoisted_User_2 = new ArrayParser(parsers.User);
+const hoisted_User_3 = new ArrayReporter(hoisted_User_0, reporters.User);
+const hoisted_User_4 = new ArraySchema(schemas.User);
+const hoisted_User_5 = new ArrayDescribe(wrap_describe(describers.User, "User"));
+const hoisted_User_6 = {
     "accessLevel": validators.AccessLevel,
     "avatarSize": validators.AvatarSize,
     "extra": validators.Extra,
-    "friends": hoisted_User_5.validateArrayValidator.bind(hoisted_User_5),
+    "friends": hoisted_User_1.validateArrayValidator.bind(hoisted_User_1),
     "name": validateString
 };
-const hoisted_User_11 = {
+const hoisted_User_7 = {
     "accessLevel": schemas.AccessLevel,
     "avatarSize": schemas.AvatarSize,
     "extra": schemas.Extra,
-    "friends": hoisted_User_8.schemaArraySchema.bind(hoisted_User_8),
+    "friends": hoisted_User_4.schemaArraySchema.bind(hoisted_User_4),
     "name": schemaString
 };
-const hoisted_User_12 = {
-    "accessLevel": hoisted_User_0,
-    "avatarSize": hoisted_User_1,
-    "extra": hoisted_User_2,
-    "friends": hoisted_User_9.describeArrayDescribe.bind(hoisted_User_9),
+const hoisted_User_8 = {
+    "accessLevel": wrap_describe(describers.AccessLevel, "AccessLevel"),
+    "avatarSize": wrap_describe(describers.AvatarSize, "AvatarSize"),
+    "extra": wrap_describe(describers.Extra, "Extra"),
+    "friends": hoisted_User_5.describeArrayDescribe.bind(hoisted_User_5),
     "name": describeString
 };
-const hoisted_User_13 = hoisted_User_12;
-const hoisted_User_14 = null;
-const hoisted_User_15 = new ObjectValidator(hoisted_User_10, hoisted_User_14);
-const hoisted_User_16 = new ObjectParser({
+const hoisted_User_9 = hoisted_User_8;
+const hoisted_User_10 = null;
+const hoisted_User_11 = new ObjectValidator(hoisted_User_6, hoisted_User_10);
+const hoisted_User_12 = new ObjectParser({
     "accessLevel": parsers.AccessLevel,
     "avatarSize": parsers.AvatarSize,
     "extra": parsers.Extra,
-    "friends": hoisted_User_6.parseArrayParser.bind(hoisted_User_6),
+    "friends": hoisted_User_2.parseArrayParser.bind(hoisted_User_2),
     "name": parseIdentity
 }, null);
-const hoisted_User_17 = new ObjectReporter(hoisted_User_10, hoisted_User_14, {
+const hoisted_User_13 = new ObjectReporter(hoisted_User_6, hoisted_User_10, {
     "accessLevel": reporters.AccessLevel,
     "avatarSize": reporters.AvatarSize,
     "extra": reporters.Extra,
-    "friends": hoisted_User_7.reportArrayReporter.bind(hoisted_User_7),
+    "friends": hoisted_User_3.reportArrayReporter.bind(hoisted_User_3),
     "name": reportString
 }, null);
-const hoisted_User_18 = new ObjectSchema(hoisted_User_11, null);
-const hoisted_User_19 = new ObjectDescribe(hoisted_User_13, null);
-const hoisted_PublicUser_0 = (ctx, input)=>{
-    if (ctx.measure) {
-        ctx.deps_counter["AccessLevel"] = (ctx.deps_counter["AccessLevel"] || 0) + 1;
-        if (ctx.deps["AccessLevel"]) {
-            return "AccessLevel";
-        }
-        ctx.deps["AccessLevel"] = true;
-        ctx.deps["AccessLevel"] = describers.AccessLevel(ctx, input);
-        return "AccessLevel";
-    } else {
-        if (ctx.deps_counter["AccessLevel"] > 1) {
-            if (!ctx.deps["AccessLevel"]) {
-                ctx.deps["AccessLevel"] = true;
-                ctx.deps["AccessLevel"] = describers.AccessLevel(ctx, input);
-            }
-            return "AccessLevel";
-        } else {
-            return describers.AccessLevel(ctx, input);
-        }
-    }
-};
-const hoisted_PublicUser_1 = (ctx, input)=>{
-    if (ctx.measure) {
-        ctx.deps_counter["AvatarSize"] = (ctx.deps_counter["AvatarSize"] || 0) + 1;
-        if (ctx.deps["AvatarSize"]) {
-            return "AvatarSize";
-        }
-        ctx.deps["AvatarSize"] = true;
-        ctx.deps["AvatarSize"] = describers.AvatarSize(ctx, input);
-        return "AvatarSize";
-    } else {
-        if (ctx.deps_counter["AvatarSize"] > 1) {
-            if (!ctx.deps["AvatarSize"]) {
-                ctx.deps["AvatarSize"] = true;
-                ctx.deps["AvatarSize"] = describers.AvatarSize(ctx, input);
-            }
-            return "AvatarSize";
-        } else {
-            return describers.AvatarSize(ctx, input);
-        }
-    }
-};
-const hoisted_PublicUser_2 = (ctx, input)=>{
-    if (ctx.measure) {
-        ctx.deps_counter["Extra"] = (ctx.deps_counter["Extra"] || 0) + 1;
-        if (ctx.deps["Extra"]) {
-            return "Extra";
-        }
-        ctx.deps["Extra"] = true;
-        ctx.deps["Extra"] = describers.Extra(ctx, input);
-        return "Extra";
-    } else {
-        if (ctx.deps_counter["Extra"] > 1) {
-            if (!ctx.deps["Extra"]) {
-                ctx.deps["Extra"] = true;
-                ctx.deps["Extra"] = describers.Extra(ctx, input);
-            }
-            return "Extra";
-        } else {
-            return describers.Extra(ctx, input);
-        }
-    }
-};
-const hoisted_PublicUser_3 = {
+const hoisted_User_14 = new ObjectSchema(hoisted_User_7, null);
+const hoisted_User_15 = new ObjectDescribe(hoisted_User_9, null);
+const hoisted_PublicUser_0 = {
     "accessLevel": validators.AccessLevel,
     "avatarSize": validators.AvatarSize,
     "extra": validators.Extra,
     "name": validateString
 };
-const hoisted_PublicUser_4 = {
+const hoisted_PublicUser_1 = {
     "accessLevel": schemas.AccessLevel,
     "avatarSize": schemas.AvatarSize,
     "extra": schemas.Extra,
     "name": schemaString
 };
-const hoisted_PublicUser_5 = {
-    "accessLevel": hoisted_PublicUser_0,
-    "avatarSize": hoisted_PublicUser_1,
-    "extra": hoisted_PublicUser_2,
+const hoisted_PublicUser_2 = {
+    "accessLevel": wrap_describe(describers.AccessLevel, "AccessLevel"),
+    "avatarSize": wrap_describe(describers.AvatarSize, "AvatarSize"),
+    "extra": wrap_describe(describers.Extra, "Extra"),
     "name": describeString
 };
-const hoisted_PublicUser_6 = hoisted_PublicUser_5;
-const hoisted_PublicUser_7 = null;
-const hoisted_PublicUser_8 = new ObjectValidator(hoisted_PublicUser_3, hoisted_PublicUser_7);
-const hoisted_PublicUser_9 = new ObjectParser({
+const hoisted_PublicUser_3 = hoisted_PublicUser_2;
+const hoisted_PublicUser_4 = null;
+const hoisted_PublicUser_5 = new ObjectValidator(hoisted_PublicUser_0, hoisted_PublicUser_4);
+const hoisted_PublicUser_6 = new ObjectParser({
     "accessLevel": parsers.AccessLevel,
     "avatarSize": parsers.AvatarSize,
     "extra": parsers.Extra,
     "name": parseIdentity
 }, null);
-const hoisted_PublicUser_10 = new ObjectReporter(hoisted_PublicUser_3, hoisted_PublicUser_7, {
+const hoisted_PublicUser_7 = new ObjectReporter(hoisted_PublicUser_0, hoisted_PublicUser_4, {
     "accessLevel": reporters.AccessLevel,
     "avatarSize": reporters.AvatarSize,
     "extra": reporters.Extra,
     "name": reportString
 }, null);
-const hoisted_PublicUser_11 = new ObjectSchema(hoisted_PublicUser_4, null);
-const hoisted_PublicUser_12 = new ObjectDescribe(hoisted_PublicUser_6, null);
+const hoisted_PublicUser_8 = new ObjectSchema(hoisted_PublicUser_1, null);
+const hoisted_PublicUser_9 = new ObjectDescribe(hoisted_PublicUser_3, null);
 const hoisted_Req_0 = {
     "optional": validateString
 };
@@ -3610,70 +3487,49 @@ const hoisted_WithOptionals_15 = new ObjectReporter(hoisted_WithOptionals_8, hoi
 }, null);
 const hoisted_WithOptionals_16 = new ObjectSchema(hoisted_WithOptionals_9, null);
 const hoisted_WithOptionals_17 = new ObjectDescribe(hoisted_WithOptionals_11, null);
-const hoisted_Repro1_0 = (ctx, input)=>{
-    if (ctx.measure) {
-        ctx.deps_counter["Repro2"] = (ctx.deps_counter["Repro2"] || 0) + 1;
-        if (ctx.deps["Repro2"]) {
-            return "Repro2";
-        }
-        ctx.deps["Repro2"] = true;
-        ctx.deps["Repro2"] = describers.Repro2(ctx, input);
-        return "Repro2";
-    } else {
-        if (ctx.deps_counter["Repro2"] > 1) {
-            if (!ctx.deps["Repro2"]) {
-                ctx.deps["Repro2"] = true;
-                ctx.deps["Repro2"] = describers.Repro2(ctx, input);
-            }
-            return "Repro2";
-        } else {
-            return describers.Repro2(ctx, input);
-        }
-    }
-};
-const hoisted_Repro1_1 = [
+const hoisted_Repro1_0 = [
     validateNull,
     validators.Repro2
 ];
-const hoisted_Repro1_2 = [
+const hoisted_Repro1_1 = [
     schemaNull,
     schemas.Repro2
 ];
-const hoisted_Repro1_3 = [
+const hoisted_Repro1_2 = [
     describeNull,
-    hoisted_Repro1_0
+    wrap_describe(describers.Repro2, "Repro2")
 ];
-const hoisted_Repro1_4 = new AnyOfValidator(hoisted_Repro1_1);
-const hoisted_Repro1_5 = new AnyOfParser(hoisted_Repro1_1, [
+const hoisted_Repro1_3 = new AnyOfValidator(hoisted_Repro1_0);
+const hoisted_Repro1_4 = new AnyOfParser(hoisted_Repro1_0, [
     parseIdentity,
     parsers.Repro2
 ]);
-const hoisted_Repro1_6 = new AnyOfReporter(hoisted_Repro1_1, [
+const hoisted_Repro1_5 = new AnyOfReporter(hoisted_Repro1_0, [
     reportNull,
     reporters.Repro2
 ]);
-const hoisted_Repro1_7 = new AnyOfSchema(hoisted_Repro1_2);
-const hoisted_Repro1_8 = new AnyOfDescribe(hoisted_Repro1_3);
+const hoisted_Repro1_6 = new AnyOfSchema(hoisted_Repro1_1);
+const hoisted_Repro1_7 = new AnyOfDescribe(hoisted_Repro1_2);
+const hoisted_Repro1_8 = {
+    "sizes": hoisted_Repro1_3.validateAnyOfValidator.bind(hoisted_Repro1_3)
+};
 const hoisted_Repro1_9 = {
-    "sizes": hoisted_Repro1_4.validateAnyOfValidator.bind(hoisted_Repro1_4)
+    "sizes": hoisted_Repro1_6.schemaAnyOfSchema.bind(hoisted_Repro1_6)
 };
 const hoisted_Repro1_10 = {
-    "sizes": hoisted_Repro1_7.schemaAnyOfSchema.bind(hoisted_Repro1_7)
+    "sizes": hoisted_Repro1_7.describeAnyOfDescribe.bind(hoisted_Repro1_7)
 };
-const hoisted_Repro1_11 = {
-    "sizes": hoisted_Repro1_8.describeAnyOfDescribe.bind(hoisted_Repro1_8)
-};
-const hoisted_Repro1_12 = hoisted_Repro1_11;
-const hoisted_Repro1_13 = null;
-const hoisted_Repro1_14 = new ObjectValidator(hoisted_Repro1_9, hoisted_Repro1_13);
-const hoisted_Repro1_15 = new ObjectParser({
-    "sizes": hoisted_Repro1_5.parseAnyOfParser.bind(hoisted_Repro1_5)
+const hoisted_Repro1_11 = hoisted_Repro1_10;
+const hoisted_Repro1_12 = null;
+const hoisted_Repro1_13 = new ObjectValidator(hoisted_Repro1_8, hoisted_Repro1_12);
+const hoisted_Repro1_14 = new ObjectParser({
+    "sizes": hoisted_Repro1_4.parseAnyOfParser.bind(hoisted_Repro1_4)
 }, null);
-const hoisted_Repro1_16 = new ObjectReporter(hoisted_Repro1_9, hoisted_Repro1_13, {
-    "sizes": hoisted_Repro1_6.reportAnyOfReporter.bind(hoisted_Repro1_6)
+const hoisted_Repro1_15 = new ObjectReporter(hoisted_Repro1_8, hoisted_Repro1_12, {
+    "sizes": hoisted_Repro1_5.reportAnyOfReporter.bind(hoisted_Repro1_5)
 }, null);
-const hoisted_Repro1_17 = new ObjectSchema(hoisted_Repro1_10, null);
-const hoisted_Repro1_18 = new ObjectDescribe(hoisted_Repro1_12, null);
+const hoisted_Repro1_16 = new ObjectSchema(hoisted_Repro1_9, null);
+const hoisted_Repro1_17 = new ObjectDescribe(hoisted_Repro1_11, null);
 const hoisted_Repro2_0 = {
     "useSmallerSizes": validateBoolean
 };
@@ -5834,71 +5690,29 @@ const hoisted_ABC_6 = new ObjectParser({}, null);
 const hoisted_ABC_7 = new ObjectReporter(hoisted_ABC_0, hoisted_ABC_4, {}, null);
 const hoisted_ABC_8 = new ObjectSchema(hoisted_ABC_1, null);
 const hoisted_ABC_9 = new ObjectDescribe(hoisted_ABC_3, null);
-const hoisted_K_0 = (ctx, input)=>{
-    if (ctx.measure) {
-        ctx.deps_counter["KABC"] = (ctx.deps_counter["KABC"] || 0) + 1;
-        if (ctx.deps["KABC"]) {
-            return "KABC";
-        }
-        ctx.deps["KABC"] = true;
-        ctx.deps["KABC"] = describers.KABC(ctx, input);
-        return "KABC";
-    } else {
-        if (ctx.deps_counter["KABC"] > 1) {
-            if (!ctx.deps["KABC"]) {
-                ctx.deps["KABC"] = true;
-                ctx.deps["KABC"] = describers.KABC(ctx, input);
-            }
-            return "KABC";
-        } else {
-            return describers.KABC(ctx, input);
-        }
-    }
-};
-const hoisted_K_1 = (ctx, input)=>{
-    if (ctx.measure) {
-        ctx.deps_counter["KDEF"] = (ctx.deps_counter["KDEF"] || 0) + 1;
-        if (ctx.deps["KDEF"]) {
-            return "KDEF";
-        }
-        ctx.deps["KDEF"] = true;
-        ctx.deps["KDEF"] = describers.KDEF(ctx, input);
-        return "KDEF";
-    } else {
-        if (ctx.deps_counter["KDEF"] > 1) {
-            if (!ctx.deps["KDEF"]) {
-                ctx.deps["KDEF"] = true;
-                ctx.deps["KDEF"] = describers.KDEF(ctx, input);
-            }
-            return "KDEF";
-        } else {
-            return describers.KDEF(ctx, input);
-        }
-    }
-};
-const hoisted_K_2 = [
+const hoisted_K_0 = [
     validators.KABC,
     validators.KDEF
 ];
-const hoisted_K_3 = [
+const hoisted_K_1 = [
     schemas.KABC,
     schemas.KDEF
 ];
-const hoisted_K_4 = [
-    hoisted_K_0,
-    hoisted_K_1
+const hoisted_K_2 = [
+    wrap_describe(describers.KABC, "KABC"),
+    wrap_describe(describers.KDEF, "KDEF")
 ];
-const hoisted_K_5 = new AnyOfValidator(hoisted_K_2);
-const hoisted_K_6 = new AnyOfParser(hoisted_K_2, [
+const hoisted_K_3 = new AnyOfValidator(hoisted_K_0);
+const hoisted_K_4 = new AnyOfParser(hoisted_K_0, [
     parsers.KABC,
     parsers.KDEF
 ]);
-const hoisted_K_7 = new AnyOfReporter(hoisted_K_2, [
+const hoisted_K_5 = new AnyOfReporter(hoisted_K_0, [
     reporters.KABC,
     reporters.KDEF
 ]);
-const hoisted_K_8 = new AnyOfSchema(hoisted_K_3);
-const hoisted_K_9 = new AnyOfDescribe(hoisted_K_4);
+const hoisted_K_6 = new AnyOfSchema(hoisted_K_1);
+const hoisted_K_7 = new AnyOfDescribe(hoisted_K_2);
 const hoisted_NonInfiniteNumber_0 = new NumberWithFormatsDecoder("NonInfiniteNumber");
 const hoisted_NonNegativeNumber_0 = new NumberWithFormatsDecoder("NonInfiniteNumber", "NonNegativeNumber");
 const hoisted_Rate_0 = new NumberWithFormatsDecoder("NonInfiniteNumber", "NonNegativeNumber", "Rate");
@@ -5906,33 +5720,12 @@ const hoisted_UserId_0 = new StringWithFormatsDecoder("UserId");
 const hoisted_ReadAuthorizedUserId_0 = new StringWithFormatsDecoder("UserId", "ReadAuthorizedUserId");
 const hoisted_WriteAuthorizedUserId_0 = new StringWithFormatsDecoder("UserId", "ReadAuthorizedUserId", "WriteAuthorizedUserId");
 const hoisted_CurrencyPrices_0 = new StringWithFormatsDecoder("ValidCurrency");
-const hoisted_CurrencyPrices_1 = (ctx, input)=>{
-    if (ctx.measure) {
-        ctx.deps_counter["Rate"] = (ctx.deps_counter["Rate"] || 0) + 1;
-        if (ctx.deps["Rate"]) {
-            return "Rate";
-        }
-        ctx.deps["Rate"] = true;
-        ctx.deps["Rate"] = describers.Rate(ctx, input);
-        return "Rate";
-    } else {
-        if (ctx.deps_counter["Rate"] > 1) {
-            if (!ctx.deps["Rate"]) {
-                ctx.deps["Rate"] = true;
-                ctx.deps["Rate"] = describers.Rate(ctx, input);
-            }
-            return "Rate";
-        } else {
-            return describers.Rate(ctx, input);
-        }
-    }
-};
-const hoisted_CurrencyPrices_2 = hoisted_CurrencyPrices_0.validateStringWithFormatsDecoder.bind(hoisted_CurrencyPrices_0);
-const hoisted_CurrencyPrices_3 = validators.Rate;
-const hoisted_CurrencyPrices_4 = new MappedRecordValidator(hoisted_CurrencyPrices_2, hoisted_CurrencyPrices_3);
-const hoisted_CurrencyPrices_5 = new MappedRecordParser(hoisted_CurrencyPrices_0.parseStringWithFormatsDecoder.bind(hoisted_CurrencyPrices_0), parsers.Rate);
-const hoisted_CurrencyPrices_6 = new MappedRecordReporter(hoisted_CurrencyPrices_2, hoisted_CurrencyPrices_3, hoisted_CurrencyPrices_0.reportStringWithFormatsDecoder.bind(hoisted_CurrencyPrices_0), reporters.Rate);
-const hoisted_CurrencyPrices_7 = new MappedRecordSchema(hoisted_CurrencyPrices_0.schemaStringWithFormatsDecoder.bind(hoisted_CurrencyPrices_0), schemas.Rate);
-const hoisted_CurrencyPrices_8 = new MappedRecordDescribe(hoisted_CurrencyPrices_0.describeStringWithFormatsDecoder.bind(hoisted_CurrencyPrices_0), hoisted_CurrencyPrices_1);
+const hoisted_CurrencyPrices_1 = hoisted_CurrencyPrices_0.validateStringWithFormatsDecoder.bind(hoisted_CurrencyPrices_0);
+const hoisted_CurrencyPrices_2 = validators.Rate;
+const hoisted_CurrencyPrices_3 = new MappedRecordValidator(hoisted_CurrencyPrices_1, hoisted_CurrencyPrices_2);
+const hoisted_CurrencyPrices_4 = new MappedRecordParser(hoisted_CurrencyPrices_0.parseStringWithFormatsDecoder.bind(hoisted_CurrencyPrices_0), parsers.Rate);
+const hoisted_CurrencyPrices_5 = new MappedRecordReporter(hoisted_CurrencyPrices_1, hoisted_CurrencyPrices_2, hoisted_CurrencyPrices_0.reportStringWithFormatsDecoder.bind(hoisted_CurrencyPrices_0), reporters.Rate);
+const hoisted_CurrencyPrices_6 = new MappedRecordSchema(hoisted_CurrencyPrices_0.schemaStringWithFormatsDecoder.bind(hoisted_CurrencyPrices_0), schemas.Rate);
+const hoisted_CurrencyPrices_7 = new MappedRecordDescribe(hoisted_CurrencyPrices_0.describeStringWithFormatsDecoder.bind(hoisted_CurrencyPrices_0), wrap_describe(describers.Rate, "Rate"));
 
-export default { registerStringFormatter, registerNumberFormatter, ObjectValidator, ObjectParser, MappedRecordParser, MappedRecordValidator, ArrayParser, ArrayValidator, CodecDecoder, StringWithFormatsDecoder, NumberWithFormatsDecoder, AnyOfValidator, AnyOfParser, AllOfValidator, AllOfParser, TupleParser, TupleValidator, RegexDecoder, ConstDecoder, AnyOfConstsDecoder, AnyOfDiscriminatedParser, AnyOfDiscriminatedValidator, validateString, validateNumber, validateFunction, validateBoolean, validateAny, validateNull, validateNever, parseIdentity, reportString, reportNumber, reportNull, reportBoolean, reportAny, reportNever, reportFunction, ArrayReporter, ObjectReporter, TupleReporter, AnyOfReporter, AllOfReporter, AnyOfDiscriminatedReporter, MappedRecordReporter, schemaString, schemaNumber, schemaBoolean, schemaNull, schemaAny, schemaNever, schemaFunction, ArraySchema, ObjectSchema, TupleSchema, AnyOfSchema, AllOfSchema, AnyOfDiscriminatedSchema, MappedRecordSchema, describeString, describeNumber, describeBoolean, describeNull, describeAny, describeNever, describeFunction, ArrayDescribe, ObjectDescribe, TupleDescribe, AnyOfDescribe, AllOfDescribe, AnyOfDiscriminatedDescribe, MappedRecordDescribe, validators, parsers, reporters, schemas, describers };
+export default { registerStringFormatter, registerNumberFormatter, ObjectValidator, ObjectParser, MappedRecordParser, MappedRecordValidator, ArrayParser, ArrayValidator, CodecDecoder, StringWithFormatsDecoder, NumberWithFormatsDecoder, AnyOfValidator, AnyOfParser, AllOfValidator, AllOfParser, TupleParser, TupleValidator, RegexDecoder, ConstDecoder, AnyOfConstsDecoder, AnyOfDiscriminatedParser, AnyOfDiscriminatedValidator, validateString, validateNumber, validateFunction, validateBoolean, validateAny, validateNull, validateNever, parseIdentity, reportString, reportNumber, reportNull, reportBoolean, reportAny, reportNever, reportFunction, ArrayReporter, ObjectReporter, TupleReporter, AnyOfReporter, AllOfReporter, AnyOfDiscriminatedReporter, MappedRecordReporter, schemaString, schemaNumber, schemaBoolean, schemaNull, schemaAny, schemaNever, schemaFunction, ArraySchema, ObjectSchema, TupleSchema, AnyOfSchema, AllOfSchema, AnyOfDiscriminatedSchema, MappedRecordSchema, describeString, describeNumber, describeBoolean, describeNull, describeAny, describeNever, describeFunction, ArrayDescribe, ObjectDescribe, TupleDescribe, AnyOfDescribe, AllOfDescribe, AnyOfDiscriminatedDescribe, MappedRecordDescribe, wrap_describe, validators, parsers, reporters, schemas, describers };

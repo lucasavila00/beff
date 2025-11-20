@@ -1,5 +1,11 @@
 # @beff/cli
 
+## 0.0.100
+
+### Patch Changes
+
+- generate fewer code for describe
+
 ## 0.0.99
 
 ### Patch Changes

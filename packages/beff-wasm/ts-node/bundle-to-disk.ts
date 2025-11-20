@@ -80,6 +80,7 @@ const decodersExported = [
   "AllOfDescribe",
   "AnyOfDiscriminatedDescribe",
   "MappedRecordDescribe",
+  "wrap_describe",
 ];
 
 const esmTag = (mod: ProjectModule) => {
