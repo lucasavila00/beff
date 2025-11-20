@@ -155,6 +155,7 @@ const finalizeParserFile = (
 const V2_ESM_IMPORT = `import {
   printErrors
 } from "@beff/client";`;
+const V2_CJS_IMPORT = `const { printErrors } = require("@beff/client");`;
 const finalizeParserV2File = (
   wasmCode: WritableModulesV2,
   mod: ProjectModule,
@@ -167,22 +168,23 @@ const finalizeParserV2File = (
   const stringFormatsCode = `const RequiredStringFormats = ${JSON.stringify(stringFormats)};`;
   const numberFormatsCode = `const RequiredNumberFormats = ${JSON.stringify(numberFormats)};`;
 
-  let genV2 = gen["codegen-v2.js"];
+  let genV2 = gen["codegen-v2.js"].replace(V2_ESM_IMPORT, "");
+
   let zod_import = `import { z } from "zod";`;
 
   if (mod == "cjs") {
     zod_import = `const { z } = require("zod");`;
-    genV2 = genV2.replace(V2_ESM_IMPORT, `const { printErrors } = require("@beff/client");`);
   }
 
   return [
     "//@ts-nocheck",
     esmTag(mod),
+    zod_import,
+    mod === "esm" ? V2_ESM_IMPORT : V2_CJS_IMPORT,
+    genV2,
     stringFormatsCode,
     numberFormatsCode,
     wasmCode.js_built_parsers,
-    zod_import,
-    genV2,
     exports,
   ].join("\n");
 };

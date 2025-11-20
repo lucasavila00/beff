@@ -1,4 +1,5 @@
 {
   "parser": "./src/parser.ts",
-  "outputDir": "./src/generated"
+  "outputDir": "./src/generated",
+  "codegen": 2
 }

@@ -192,6 +192,7 @@ const numberFormatters = {};
 function registerNumberFormatter(name, validator) {
   numberFormatters[name] = validator;
 }
+let namedParsers = {};
 class ParserTypeOfImpl {
   typeName;
   constructor(typeName) {

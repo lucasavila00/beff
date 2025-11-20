@@ -260,9 +260,11 @@ function registerNumberFormatter(name: string, validator: UserProvidedNumberVali
   numberFormatters[name] = validator;
 }
 
+let namedParsers: Record<string, BeffParserImpl> = {};
+
 type DescribeContext = {
   measure: boolean;
-  deps: Record<string, boolean>;
+  deps: Record<string, boolean | string>;
   deps_counter: Record<string, number>;
 };
 
@@ -1110,6 +1112,52 @@ class ParserObjectImpl implements BeffParserImpl {
     }
 
     return acc;
+  }
+}
+
+class ParserRefImpl implements BeffParserImpl {
+  private refName: string;
+  constructor(refName: string) {
+    this.refName = refName;
+  }
+  describe(ctx: DescribeContext): string {
+    const name = this.refName;
+    const to = namedParsers[this.refName];
+    if (ctx.measure) {
+      ctx.deps_counter[name] = (ctx.deps_counter[name] || 0) + 1;
+      if (ctx.deps[name]) {
+        return name;
+      }
+      ctx.deps[name] = true;
+      ctx.deps[name] = to.describe(ctx);
+      return name;
+    } else {
+      if (ctx.deps_counter[name] > 1) {
+        if (!ctx.deps[name]) {
+          ctx.deps[name] = true;
+          ctx.deps[name] = to.describe(ctx);
+        }
+        return name;
+      } else {
+        return to.describe(ctx);
+      }
+    }
+  }
+  schema(ctx: SchemaContext): JSONSchema7 {
+    const to = namedParsers[this.refName];
+    return to.schema(ctx);
+  }
+  validate(ctx: ValidateContext, input: unknown): boolean {
+    const to = namedParsers[this.refName];
+    return to.validate(ctx, input);
+  }
+  parseAfterValidation(ctx: ParseContext, input: any): unknown {
+    const to = namedParsers[this.refName];
+    return to.parseAfterValidation(ctx, input);
+  }
+  reportDecodeError(ctx: ReportContext, input: unknown): DecodeError[] {
+    const to = namedParsers[this.refName];
+    return to.reportDecodeError(ctx, input);
   }
 }
 
