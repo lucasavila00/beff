@@ -83,16 +83,10 @@ pub fn update_file_content(file_name: &str, content: &str) {
     update_file_content_inner(file_name, content)
 }
 fn parse_entrypoints(parser_entry_point: &str, settings: JsValue) -> EntryPoints {
-    let parser_entry_point = if parser_entry_point.is_empty() {
-        None
-    } else {
-        Some(BffFileName::new(parser_entry_point.to_string()))
-    };
-
     let settings: BeffUserSettings =
         serde_wasm_bindgen::from_value(settings).expect("should be able to parse settings");
     EntryPoints {
-        parser_entry_point,
+        parser_entry_point: BffFileName::new(parser_entry_point.to_string()),
         settings,
     }
 }

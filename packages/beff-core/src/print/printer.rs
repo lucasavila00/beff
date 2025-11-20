@@ -202,21 +202,19 @@ fn build_decoders(
     }
 }
 
-fn merge_named_schema(parser: Option<&Vec<NamedSchema>>) -> Result<Vec<NamedSchema>> {
+fn merge_named_schema(parser: &[NamedSchema]) -> Result<Vec<NamedSchema>> {
     let mut acc: Vec<NamedSchema> = vec![];
 
-    if let Some(parser) = parser {
-        for d in parser {
-            let found = acc.iter_mut().find(|x| x.name == d.name);
-            if let Some(found) = found {
-                if found.schema != d.schema {
-                    // TODO: emit proper diag here?
-                    // or merge before?
-                    return Err(anyhow!("Two different types with the same name"));
-                }
-            } else {
-                acc.push(d.clone());
+    for d in parser {
+        let found = acc.iter_mut().find(|x| x.name == d.name);
+        if let Some(found) = found {
+            if found.schema != d.schema {
+                // TODO: emit proper diag here?
+                // or merge before?
+                return Err(anyhow!("Two different types with the same name"));
             }
+        } else {
+            acc.push(d.clone());
         }
     }
     Ok(acc)
@@ -228,7 +226,7 @@ impl ToWritableModules for ExtractResult {
         let mut schema_names = vec![];
         let mut hoisted: Vec<ModuleItem> = vec![];
 
-        let named_schemas = merge_named_schema(self.parser.as_ref().map(|it| &it.validators))?;
+        let named_schemas = merge_named_schema(&self.parser.validators)?;
 
         for comp in &named_schemas {
             schema_names.push(comp.name.clone());
@@ -437,42 +435,38 @@ impl ToWritableModules for ExtractResult {
             "\n",
         )?;
 
-        let mut js_built_parsers = None;
+        let mut parser_hoisted = vec![];
+        let decoders = self.parser.built_decoders.unwrap_or_default();
 
-        if let Some(parser) = self.parser {
-            let mut parser_hoisted = vec![];
-            let decoders = parser.built_decoders.unwrap_or_default();
+        let DecodersCode {
+            validator,
+            parser,
+            reporter,
+            schema,
+            describe,
+        } = build_decoders(&decoders, &named_schemas, &mut parser_hoisted);
+        let build_validators_input = const_decl("buildValidatorsInput", validator);
+        let build_parsers_input = const_decl("buildParsersInput", parser);
+        let build_reporters_input = const_decl("buildReportersInput", reporter);
+        let build_schema_input = const_decl("buildSchemaInput", schema);
+        let build_describe_input = const_decl("buildDescribeInput", describe);
 
-            let DecodersCode {
-                validator,
-                parser,
-                reporter,
-                schema,
-                describe,
-            } = build_decoders(&decoders, &named_schemas, &mut parser_hoisted);
-            let build_validators_input = const_decl("buildValidatorsInput", validator);
-            let build_parsers_input = const_decl("buildParsersInput", parser);
-            let build_reporters_input = const_decl("buildReportersInput", reporter);
-            let build_schema_input = const_decl("buildSchemaInput", schema);
-            let build_describe_input = const_decl("buildDescribeInput", describe);
-
-            js_built_parsers = Some(emit_module(
-                parser_hoisted
-                    .into_iter()
-                    .chain(
-                        vec![
-                            build_validators_input,
-                            build_parsers_input,
-                            build_reporters_input,
-                            build_schema_input,
-                            build_describe_input,
-                        ]
-                        .into_iter(),
-                    )
-                    .collect(),
-                "\n",
-            )?);
-        }
+        let js_built_parsers = Some(emit_module(
+            parser_hoisted
+                .into_iter()
+                .chain(
+                    vec![
+                        build_validators_input,
+                        build_parsers_input,
+                        build_reporters_input,
+                        build_schema_input,
+                        build_describe_input,
+                    ]
+                    .into_iter(),
+                )
+                .collect(),
+            "\n",
+        )?);
 
         Ok(WritableModules {
             js_validators,

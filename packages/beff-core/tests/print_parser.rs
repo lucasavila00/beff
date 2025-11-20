@@ -44,7 +44,7 @@ mod tests {
         let f = parse_str(it);
         let mut man = TestFileManager { f };
         let entry = EntryPoints {
-            parser_entry_point: Some(BffFileName::new("file.ts".into())),
+            parser_entry_point: BffFileName::new("file.ts".into()),
             settings: BeffUserSettings {
                 string_formats: BTreeSet::from_iter(vec![
                     "password".to_string(),
@@ -91,13 +91,10 @@ mod tests {
         if !errors.is_empty() {
             panic!("errors: {:?}", errors);
         }
-        match p.parser {
-            Some(v) => as_typescript_string_(
-                &v.validators.iter().collect::<Vec<_>>(),
-                v.built_decoders.as_ref().unwrap_or(&vec![]),
-            ),
-            None => panic!(),
-        }
+        as_typescript_string_(
+            &p.parser.validators.iter().collect::<Vec<_>>(),
+            p.parser.built_decoders.as_ref().unwrap_or(&vec![]),
+        )
     }
 
     fn decoder(from: &str) -> String {
@@ -107,14 +104,9 @@ mod tests {
         if !errors.is_empty() {
             panic!("errors: {:?}", errors);
         }
-        match p.parser {
-            Some(v) => {
-                let res = ExtractResult { parser: Some(v) };
-                let m = res.to_module().expect("should be able to emit module");
-                m.js_validators
-            }
-            None => panic!(),
-        }
+        let res = ExtractResult { parser: p.parser };
+        let m = res.to_module().expect("should be able to emit module");
+        m.js_validators
     }
 
     #[test]
