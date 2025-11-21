@@ -2,22 +2,27 @@
 source: packages/beff-core/tests/print_parser.rs
 expression: "decoder(r#\"\n        export type NonInfiniteNumber = NumberFormat<\"NonInfiniteNumber\">;\n        export type NonNegativeNumber = NumberFormatExtends<NonInfiniteNumber, \"NonNegativeNumber\">;\n        export type Rate = NumberFormatExtends<NonNegativeNumber, \"Rate\">;\n        parse.buildParsers<{ NonInfiniteNumber: NonInfiniteNumber, NonNegativeNumber: NonNegativeNumber, Rate: Rate }>();\n      \"#)"
 ---
+const hoisted_0 = new ParserRefImpl("NonInfiniteNumber");
+const hoisted_1 = new ParserRefImpl("NonNegativeNumber");
+const hoisted_2 = new ParserRefImpl("Rate");
+const hoisted_3 = new ParserNumberWithFormatImpl([
+    "NonInfiniteNumber",
+    "NonNegativeNumber"
+]);
+const hoisted_4 = new ParserNumberWithFormatImpl([
+    "NonInfiniteNumber",
+    "NonNegativeNumber",
+    "Rate"
+]);
 const namedParsers = {
     "NonInfiniteNumber": new ParserNumberWithFormatImpl([
         "NonInfiniteNumber"
     ]),
-    "NonNegativeNumber": new ParserNumberWithFormatImpl([
-        "NonInfiniteNumber",
-        "NonNegativeNumber"
-    ]),
-    "Rate": new ParserNumberWithFormatImpl([
-        "NonInfiniteNumber",
-        "NonNegativeNumber",
-        "Rate"
-    ])
+    "NonNegativeNumber": hoisted_3,
+    "Rate": hoisted_4
 };
 const buildValidatorsInput = {
-    "NonInfiniteNumber": new ParserRefImpl("NonInfiniteNumber"),
-    "NonNegativeNumber": new ParserRefImpl("NonNegativeNumber"),
-    "Rate": new ParserRefImpl("Rate")
+    "NonInfiniteNumber": hoisted_0,
+    "NonNegativeNumber": hoisted_1,
+    "Rate": hoisted_2
 };

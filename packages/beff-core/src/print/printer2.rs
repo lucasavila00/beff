@@ -17,6 +17,8 @@ use crate::{
     ExtractResult, NamedSchema,
 };
 
+type HoistedMap = BTreeMap<JsonSchema, (String, Expr)>;
+
 #[derive(Serialize, Deserialize)]
 pub struct WritableModulesV2 {
     pub js_built_parsers: String,
@@ -152,10 +154,11 @@ fn decode_union_or_intersection(
     constructor: &str,
     vs: &BTreeSet<JsonSchema>,
     named_schemas: &[NamedSchema],
+    hoisted: &mut HoistedMap,
 ) -> Expr {
     let exprs = vs
         .iter()
-        .map(|schema| validator_for_schema(schema, named_schemas))
+        .map(|schema| validator_for_schema(schema, named_schemas, hoisted))
         .collect::<Vec<Expr>>();
     let arr = Expr::Array(ArrayLit {
         span: DUMMY_SP,
@@ -195,6 +198,7 @@ fn decode_any_of_discriminated(
     discriminator_strings: BTreeSet<String>,
     object_vs: Vec<&BTreeMap<String, Optionality<JsonSchema>>>,
     named_schemas: &[NamedSchema],
+    hoisted: &mut HoistedMap,
 ) -> Expr {
     let mut acc = BTreeMap::new();
     for current_key in discriminator_strings {
@@ -222,7 +226,7 @@ fn decode_any_of_discriminated(
         }
         let schema = JsonSchema::any_of(cases);
 
-        let schema_code = validator_for_schema(&schema, named_schemas);
+        let schema_code = validator_for_schema(&schema, named_schemas, hoisted);
 
         acc.insert(current_key, schema_code);
     }
@@ -254,7 +258,7 @@ fn decode_any_of_discriminated(
 
     let flat_values_schema = flat_values
         .iter()
-        .map(|it| validator_for_schema(it, named_schemas))
+        .map(|it| validator_for_schema(it, named_schemas, hoisted))
         .collect::<Vec<_>>();
 
     let flat_values_schema_arr = Expr::Array(ArrayLit {
@@ -279,6 +283,7 @@ fn decode_any_of_discriminated(
 fn maybe_decode_any_of_discriminated(
     flat_values: &BTreeSet<JsonSchema>,
     named_schemas: &[NamedSchema],
+    hoisted: &mut HoistedMap,
 ) -> Option<Expr> {
     let all_objects_without_rest = flat_values
         .iter()
@@ -358,6 +363,7 @@ fn maybe_decode_any_of_discriminated(
                             discriminator_strings,
                             object_vs,
                             named_schemas,
+                            hoisted,
                         ));
                     }
                 }
@@ -398,8 +404,36 @@ fn maybe_decode_any_of_consts(flat_values: &BTreeSet<JsonSchema>) -> Option<Expr
     None
 }
 
-fn validator_for_schema(schema: &JsonSchema, named_schemas: &[NamedSchema]) -> Expr {
+fn should_hoist(schema: &JsonSchema) -> bool {
+    // hoist only what has no inner schemas
     match schema {
+        JsonSchema::String
+        | JsonSchema::Boolean
+        | JsonSchema::Number
+        | JsonSchema::Function
+        | JsonSchema::Ref(_)
+        | JsonSchema::Null
+        | JsonSchema::Any
+        | JsonSchema::StringFormatExtends(_)
+        | JsonSchema::NumberFormatExtends(_)
+        | JsonSchema::StNever
+        | JsonSchema::Const(_)
+        | JsonSchema::Codec(_) => true,
+        _ => false,
+    }
+}
+
+fn validator_for_schema(
+    schema: &JsonSchema,
+    named_schemas: &[NamedSchema],
+    hoisted: &mut HoistedMap,
+) -> Expr {
+    let found = hoisted.get(schema);
+    if let Some((var_name, _)) = found {
+        return Expr::Ident(identifier(var_name));
+    }
+
+    let out = match schema {
         JsonSchema::String => typeof_impl("string"),
         JsonSchema::Boolean => typeof_impl("boolean"),
         JsonSchema::Number => typeof_impl("number"),
@@ -451,25 +485,29 @@ fn validator_for_schema(schema: &JsonSchema, named_schemas: &[NamedSchema]) -> E
                 ],
             )
         }
-        JsonSchema::AnyArrayLike => {
-            validator_for_schema(&JsonSchema::Array(JsonSchema::Any.into()), named_schemas)
-        }
+        JsonSchema::AnyArrayLike => validator_for_schema(
+            &JsonSchema::Array(JsonSchema::Any.into()),
+            named_schemas,
+            hoisted,
+        ),
         JsonSchema::StNot(_) => {
             unreachable!("should not create decoders for semantic types")
         }
         JsonSchema::Array(json_schema) => {
-            let item_validator = validator_for_schema(json_schema, named_schemas);
+            let item_validator = validator_for_schema(json_schema, named_schemas, hoisted);
             new_class_impl("ParserArrayImpl", vec![item_validator])
         }
         JsonSchema::MappedRecord { key, rest } => {
-            let key_validator = validator_for_schema(key, named_schemas);
-            let rest_validator = validator_for_schema(rest, named_schemas);
+            let key_validator = validator_for_schema(key, named_schemas, hoisted);
+            let rest_validator = validator_for_schema(rest, named_schemas, hoisted);
             new_class_impl(
                 "ParserMappedRecordImpl",
                 vec![key_validator, rest_validator],
             )
         }
-        JsonSchema::AllOf(vs) => decode_union_or_intersection("ParserAllOfImpl", vs, named_schemas),
+        JsonSchema::AllOf(vs) => {
+            decode_union_or_intersection("ParserAllOfImpl", vs, named_schemas, hoisted)
+        }
         JsonSchema::AnyOf(vs) => {
             if vs.is_empty() {
                 panic!("empty anyOf is not allowed")
@@ -485,12 +523,12 @@ fn validator_for_schema(schema: &JsonSchema, named_schemas: &[NamedSchema]) -> E
             }
 
             if let Some(discriminated) =
-                maybe_decode_any_of_discriminated(&flat_values, named_schemas)
+                maybe_decode_any_of_discriminated(&flat_values, named_schemas, hoisted)
             {
                 return discriminated;
             }
 
-            decode_union_or_intersection("ParserAnyOfImpl", vs, named_schemas)
+            decode_union_or_intersection("ParserAnyOfImpl", vs, named_schemas, hoisted)
         }
         JsonSchema::Tuple {
             prefix_items,
@@ -498,7 +536,7 @@ fn validator_for_schema(schema: &JsonSchema, named_schemas: &[NamedSchema]) -> E
         } => {
             let prefix_item_validators = prefix_items
                 .iter()
-                .map(|it| validator_for_schema(it, named_schemas))
+                .map(|it| validator_for_schema(it, named_schemas, hoisted))
                 .collect::<Vec<Expr>>();
             let prefix_arr = Expr::Array(ArrayLit {
                 span: DUMMY_SP,
@@ -514,7 +552,7 @@ fn validator_for_schema(schema: &JsonSchema, named_schemas: &[NamedSchema]) -> E
             });
 
             let items = match items {
-                Some(item_schema) => validator_for_schema(item_schema, named_schemas),
+                Some(item_schema) => validator_for_schema(item_schema, named_schemas, hoisted),
                 None => Expr::Lit(Lit::Null(Null { span: DUMMY_SP })),
             };
 
@@ -528,15 +566,17 @@ fn validator_for_schema(schema: &JsonSchema, named_schemas: &[NamedSchema]) -> E
                         let nullable_schema = &JsonSchema::any_of(
                             vec![JsonSchema::Null, schema.clone()].into_iter().collect(),
                         );
-                        validator_for_schema(nullable_schema, named_schemas)
+                        validator_for_schema(nullable_schema, named_schemas, hoisted)
                     }
-                    Optionality::Required(schema) => validator_for_schema(schema, named_schemas),
+                    Optionality::Required(schema) => {
+                        validator_for_schema(schema, named_schemas, hoisted)
+                    }
                 };
                 mapped.insert(k.clone(), r);
             }
 
             let rest = match rest {
-                Some(item_schema) => validator_for_schema(item_schema, named_schemas),
+                Some(item_schema) => validator_for_schema(item_schema, named_schemas, hoisted),
                 None => Expr::Lit(Lit::Null(Null { span: DUMMY_SP })),
             };
             let obj_validator = Expr::Object(ObjectLit {
@@ -560,13 +600,24 @@ fn validator_for_schema(schema: &JsonSchema, named_schemas: &[NamedSchema]) -> E
             });
             new_class_impl("ParserObjectImpl", vec![obj_validator, rest])
         }
+    };
+    if should_hoist(schema) {
+        let new_id = format!("hoisted_{}", hoisted.len());
+        hoisted.insert(schema.clone(), (new_id.clone(), out.clone()));
+        Expr::Ident(identifier(&new_id))
+    } else {
+        out
     }
 }
 
-fn build_parsers_input(decs: &[BuiltDecoder], named_schemas: &[NamedSchema]) -> Expr {
+fn build_parsers_input(
+    decs: &[BuiltDecoder],
+    named_schemas: &[NamedSchema],
+    hoisted: &mut HoistedMap,
+) -> Expr {
     let mut validator_exprs: Vec<(String, Expr)> = vec![];
     for decoder in decs {
-        let validator = validator_for_schema(&decoder.schema, named_schemas);
+        let validator = validator_for_schema(&decoder.schema, named_schemas, hoisted);
         validator_exprs.push((decoder.exported_name.clone(), validator));
     }
 
@@ -591,10 +642,10 @@ fn build_parsers_input(decs: &[BuiltDecoder], named_schemas: &[NamedSchema]) -> 
     })
 }
 
-fn build_named_parsers(named_schemas: &[NamedSchema]) -> Expr {
+fn build_named_parsers(named_schemas: &[NamedSchema], hoisted: &mut HoistedMap) -> Expr {
     let mut validator_exprs: Vec<(String, Expr)> = vec![];
     for named_schema in named_schemas {
-        let validator = validator_for_schema(&named_schema.schema, named_schemas);
+        let validator = validator_for_schema(&named_schema.schema, named_schemas, hoisted);
         validator_exprs.push((named_schema.name.clone(), validator));
     }
 
@@ -621,23 +672,38 @@ fn build_named_parsers(named_schemas: &[NamedSchema]) -> Expr {
 
 impl ToWritableParser for ExtractResult {
     fn to_module_v2(self) -> Result<WritableModulesV2> {
+        let mut hoisted: BTreeMap<JsonSchema, (String, Expr)> = BTreeMap::new();
+
         let built_parsers = self.parser.built_decoders.unwrap_or_default();
         let named_schemas = merge_named_schema(&self.parser.validators)?;
 
         let build_parsers_input = const_decl(
             "buildValidatorsInput",
-            build_parsers_input(&built_parsers, &named_schemas),
+            build_parsers_input(&built_parsers, &named_schemas, &mut hoisted),
         );
 
-        let build_named_parsers_input =
-            const_decl("namedParsers", build_named_parsers(&named_schemas));
+        let build_named_parsers_input = const_decl(
+            "namedParsers",
+            build_named_parsers(&named_schemas, &mut hoisted),
+        );
+
+        let mut sorted_hoisted_values = hoisted.into_values().collect::<Vec<_>>();
+        sorted_hoisted_values.sort_by_key(|it| it.0.clone());
+
+        let hoisted_decls: Vec<ModuleItem> = sorted_hoisted_values
+            .into_iter()
+            .map(|(id, expr)| const_decl(&id, expr))
+            .collect();
 
         let js_built_parsers = emit_module(
-            vec![
-                //
-                build_named_parsers_input,
-                build_parsers_input,
-            ],
+            hoisted_decls
+                .into_iter()
+                .chain(vec![
+                    //
+                    build_named_parsers_input,
+                    build_parsers_input,
+                ])
+                .collect(),
             "\n",
         )?;
 

@@ -1108,13 +1108,22 @@ const buildParsers = (args) => {
 
 const RequiredStringFormats = ["password","StartsWithA"];
 const RequiredNumberFormats = [];
+const hoisted_0 = new ParserRefImpl("User");
+const hoisted_1 = new ParserRefImpl("NotPublic");
+const hoisted_2 = new ParserRefImpl("StartsWithA");
+const hoisted_3 = new ParserRefImpl("Password");
+const hoisted_4 = new ParserConstImpl(123.456);
+const hoisted_5 = new ParserConstImpl(123);
+const hoisted_6 = new ParserRefImpl("UnionNested");
+const hoisted_7 = new ParserTypeOfImpl("number");
+const hoisted_8 = new ParserTypeOfImpl("string");
 const namedParsers = {
     "User": new ParserObjectImpl({
-        "age": new ParserTypeOfImpl("number"),
-        "name": new ParserTypeOfImpl("string")
+        "age": hoisted_7,
+        "name": hoisted_8
     }, null),
     "NotPublic": new ParserObjectImpl({
-        "a": new ParserTypeOfImpl("string")
+        "a": hoisted_8
     }, null),
     "StartsWithA": new ParserStringWithFormatImpl([
         "StartsWithA"
@@ -1148,14 +1157,14 @@ const namedParsers = {
     ])
 };
 const buildValidatorsInput = {
-    "User": new ParserRefImpl("User"),
-    "Users": new ParserArrayImpl(new ParserRefImpl("User")),
-    "NotPublicRenamed": new ParserRefImpl("NotPublic"),
-    "StartsWithA": new ParserRefImpl("StartsWithA"),
-    "Password": new ParserRefImpl("Password"),
-    "float": new ParserConstImpl(123.456),
-    "int": new ParserConstImpl(123),
-    "union": new ParserRefImpl("UnionNested")
+    "User": hoisted_0,
+    "Users": new ParserArrayImpl(hoisted_0),
+    "NotPublicRenamed": hoisted_1,
+    "StartsWithA": hoisted_2,
+    "Password": hoisted_3,
+    "float": hoisted_4,
+    "int": hoisted_5,
+    "union": hoisted_6
 };
 
 export default { buildParsers };

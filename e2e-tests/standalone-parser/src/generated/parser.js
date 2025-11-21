@@ -1108,35 +1108,115 @@ const buildParsers = (args) => {
 
 const RequiredStringFormats = ["ValidCurrency","UserId","ReadAuthorizedUserId","WriteAuthorizedUserId"];
 const RequiredNumberFormats = ["NonNegativeNumber","NonInfiniteNumber","Rate"];
+const hoisted_0 = new ParserRefImpl("PartialRepro");
+const hoisted_1 = new ParserRefImpl("TransportedValue");
+const hoisted_10 = new ParserRefImpl("AccessLevelTpl2");
+const hoisted_11 = new ParserRefImpl("AccessLevelTpl");
+const hoisted_12 = new ParserRefImpl("Arr3");
+const hoisted_13 = new ParserRefImpl("OmitSettings");
+const hoisted_14 = new ParserRefImpl("RequiredPartialObject");
+const hoisted_15 = new ParserRefImpl("LevelAndDSettings");
+const hoisted_16 = new ParserRefImpl("PartialSettings");
+const hoisted_17 = new ParserRefImpl("Extra");
+const hoisted_18 = new ParserRefImpl("User");
+const hoisted_19 = new ParserRefImpl("PublicUser");
+const hoisted_2 = new ParserRefImpl("OnlyAKey");
+const hoisted_20 = new ParserRefImpl("Req");
+const hoisted_21 = new ParserRefImpl("Repro1");
+const hoisted_22 = new ParserRefImpl("SettingsUpdate");
+const hoisted_23 = new ParserRefImpl("Mapped");
+const hoisted_24 = new ParserRefImpl("MappedOptional");
+const hoisted_25 = new ParserRefImpl("PartialObject");
+const hoisted_26 = new ParserRefImpl("DiscriminatedUnion");
+const hoisted_27 = new ParserRefImpl("DiscriminatedUnion2");
+const hoisted_28 = new ParserRefImpl("DiscriminatedUnion3");
+const hoisted_29 = new ParserRefImpl("DiscriminatedUnion4");
+const hoisted_3 = new ParserTypeOfImpl("string");
+const hoisted_30 = new ParserRefImpl("AllTypes");
+const hoisted_31 = new ParserRefImpl("AccessLevel");
+const hoisted_32 = new ParserRefImpl("OtherEnum");
+const hoisted_33 = new ParserRefImpl("Arr2");
+const hoisted_34 = new ParserRefImpl("ValidCurrency");
+const hoisted_35 = new ParserRefImpl("UnionWithEnumAccess");
+const hoisted_36 = new ParserRefImpl("T3");
+const hoisted_37 = new ParserRefImpl("AvatarSize");
+const hoisted_38 = new ParserRefImpl("BObject");
+const hoisted_39 = new ParserConstImpl("a");
+const hoisted_4 = new ParserBigIntImpl();
+const hoisted_40 = new ParserRefImpl("KDEF");
+const hoisted_41 = new ParserRefImpl("KABC");
+const hoisted_42 = new ParserRefImpl("K");
+const hoisted_43 = new ParserRefImpl("NonNegativeNumber");
+const hoisted_44 = new ParserRefImpl("NonInfiniteNumber");
+const hoisted_45 = new ParserRefImpl("Rate");
+const hoisted_46 = new ParserRefImpl("UserId");
+const hoisted_47 = new ParserRefImpl("ReadAuthorizedUserId");
+const hoisted_48 = new ParserRefImpl("WriteAuthorizedUserId");
+const hoisted_49 = new ParserRefImpl("CurrencyPrices");
+const hoisted_5 = new ParserTypeOfImpl("number");
+const hoisted_50 = new ParserNullImpl();
+const hoisted_51 = new ParserConstImpl("d");
+const hoisted_52 = new ParserConstImpl("b");
+const hoisted_53 = new ParserRefImpl("Repro2");
+const hoisted_54 = new ParserTypeOfImpl("boolean");
+const hoisted_55 = new ParserConstImpl("a1");
+const hoisted_56 = new ParserConstImpl("a2");
+const hoisted_57 = new ParserConstImpl("c");
+const hoisted_58 = new ParserConstImpl("circle");
+const hoisted_59 = new ParserConstImpl("square");
+const hoisted_6 = new ParserRefImpl("AllTs");
+const hoisted_60 = new ParserConstImpl("triangle");
+const hoisted_61 = new ParserNeverImpl();
+const hoisted_62 = new ParserNumberWithFormatImpl([
+    "NonInfiniteNumber",
+    "NonNegativeNumber"
+]);
+const hoisted_63 = new ParserNumberWithFormatImpl([
+    "NonInfiniteNumber",
+    "NonNegativeNumber",
+    "Rate"
+]);
+const hoisted_64 = new ParserStringWithFormatImpl([
+    "UserId",
+    "ReadAuthorizedUserId"
+]);
+const hoisted_65 = new ParserStringWithFormatImpl([
+    "UserId",
+    "ReadAuthorizedUserId",
+    "WriteAuthorizedUserId"
+]);
+const hoisted_7 = new ParserRefImpl("AObject");
+const hoisted_8 = new ParserRefImpl("Version");
+const hoisted_9 = new ParserRefImpl("Version2");
 const namedParsers = {
     "PartialRepro": new ParserObjectImpl({
         "a": new ParserAnyOfImpl([
-            new ParserNullImpl(),
-            new ParserTypeOfImpl("string")
+            hoisted_50,
+            hoisted_3
         ]),
         "b": new ParserAnyOfImpl([
-            new ParserNullImpl(),
-            new ParserTypeOfImpl("string")
+            hoisted_50,
+            hoisted_3
         ])
     }, null),
     "TransportedValue": new ParserAnyOfImpl([
-        new ParserNullImpl(),
-        new ParserTypeOfImpl("string"),
+        hoisted_50,
+        hoisted_3,
         new ParserArrayImpl(new ParserAnyOfImpl([
-            new ParserNullImpl(),
-            new ParserTypeOfImpl("string"),
-            new ParserTypeOfImpl("number")
+            hoisted_50,
+            hoisted_3,
+            hoisted_5
         ]))
     ]),
     "OnlyAKey": new ParserObjectImpl({
-        "A": new ParserTypeOfImpl("string")
+        "A": hoisted_3
     }, null),
     "AllTs": new ParserAnyOfConstsImpl([
         "a",
         "b"
     ]),
     "AObject": new ParserObjectImpl({
-        "tag": new ParserConstImpl("a")
+        "tag": hoisted_39
     }, null),
     "Version": new ParserRegexImpl(/(\d+(\.\d+)?)(\.)(\d+(\.\d+)?)(\.)(\d+(\.\d+)?)/, "${number}.${number}.${number}"),
     "Version2": new ParserRegexImpl(/(v)(\d+(\.\d+)?)(\.)(\d+(\.\d+)?)(\.)(\d+(\.\d+)?)/, "v${number}.${number}.${number}"),
@@ -1156,7 +1236,7 @@ const namedParsers = {
     ]),
     "OmitSettings": new ParserObjectImpl({
         "d": new ParserObjectImpl({
-            "tag": new ParserConstImpl("d")
+            "tag": hoisted_51
         }, null),
         "level": new ParserAnyOfConstsImpl([
             "a",
@@ -1164,9 +1244,9 @@ const namedParsers = {
         ])
     }, null),
     "Settings": new ParserObjectImpl({
-        "a": new ParserTypeOfImpl("string"),
+        "a": hoisted_3,
         "d": new ParserObjectImpl({
-            "tag": new ParserConstImpl("d")
+            "tag": hoisted_51
         }, null),
         "level": new ParserAnyOfConstsImpl([
             "a",
@@ -1175,21 +1255,21 @@ const namedParsers = {
     }, null),
     "PartialObject": new ParserObjectImpl({
         "a": new ParserAnyOfImpl([
-            new ParserNullImpl(),
-            new ParserTypeOfImpl("string")
+            hoisted_50,
+            hoisted_3
         ]),
         "b": new ParserAnyOfImpl([
-            new ParserNullImpl(),
-            new ParserTypeOfImpl("number")
+            hoisted_50,
+            hoisted_5
         ])
     }, null),
     "RequiredPartialObject": new ParserObjectImpl({
-        "a": new ParserTypeOfImpl("string"),
-        "b": new ParserTypeOfImpl("number")
+        "a": hoisted_3,
+        "b": hoisted_5
     }, null),
     "LevelAndDSettings": new ParserObjectImpl({
         "d": new ParserObjectImpl({
-            "tag": new ParserConstImpl("d")
+            "tag": hoisted_51
         }, null),
         "level": new ParserAnyOfConstsImpl([
             "a",
@@ -1198,191 +1278,191 @@ const namedParsers = {
     }, null),
     "PartialSettings": new ParserObjectImpl({
         "a": new ParserAnyOfImpl([
-            new ParserNullImpl(),
-            new ParserTypeOfImpl("string")
+            hoisted_50,
+            hoisted_3
         ]),
         "d": new ParserAnyOfImpl([
-            new ParserNullImpl(),
+            hoisted_50,
             new ParserObjectImpl({
-                "tag": new ParserConstImpl("d")
+                "tag": hoisted_51
             }, null)
         ]),
         "level": new ParserAnyOfImpl([
-            new ParserNullImpl(),
-            new ParserConstImpl("a"),
-            new ParserConstImpl("b")
+            hoisted_50,
+            hoisted_39,
+            hoisted_52
         ])
     }, null),
-    "Extra": new ParserObjectImpl({}, new ParserTypeOfImpl("string")),
+    "Extra": new ParserObjectImpl({}, hoisted_3),
     "AvatarSize": new ParserRegexImpl(/(\d+(\.\d+)?)(x)(\d+(\.\d+)?)/, "${number}x${number}"),
     "User": new ParserObjectImpl({
-        "accessLevel": new ParserRefImpl("AccessLevel"),
-        "avatarSize": new ParserRefImpl("AvatarSize"),
-        "extra": new ParserRefImpl("Extra"),
-        "friends": new ParserArrayImpl(new ParserRefImpl("User")),
-        "name": new ParserTypeOfImpl("string")
+        "accessLevel": hoisted_31,
+        "avatarSize": hoisted_37,
+        "extra": hoisted_17,
+        "friends": new ParserArrayImpl(hoisted_18),
+        "name": hoisted_3
     }, null),
     "PublicUser": new ParserObjectImpl({
-        "accessLevel": new ParserRefImpl("AccessLevel"),
-        "avatarSize": new ParserRefImpl("AvatarSize"),
-        "extra": new ParserRefImpl("Extra"),
-        "name": new ParserTypeOfImpl("string")
+        "accessLevel": hoisted_31,
+        "avatarSize": hoisted_37,
+        "extra": hoisted_17,
+        "name": hoisted_3
     }, null),
     "Req": new ParserObjectImpl({
-        "optional": new ParserTypeOfImpl("string")
+        "optional": hoisted_3
     }, null),
     "WithOptionals": new ParserObjectImpl({
         "optional": new ParserAnyOfImpl([
-            new ParserNullImpl(),
-            new ParserTypeOfImpl("string")
+            hoisted_50,
+            hoisted_3
         ])
     }, null),
     "Repro1": new ParserObjectImpl({
         "sizes": new ParserAnyOfImpl([
-            new ParserNullImpl(),
-            new ParserRefImpl("Repro2")
+            hoisted_50,
+            hoisted_53
         ])
     }, null),
     "Repro2": new ParserObjectImpl({
-        "useSmallerSizes": new ParserTypeOfImpl("boolean")
+        "useSmallerSizes": hoisted_54
     }, null),
     "SettingsUpdate": new ParserAnyOfImpl([
-        new ParserTypeOfImpl("string"),
+        hoisted_3,
         new ParserObjectImpl({
-            "tag": new ParserConstImpl("d")
+            "tag": hoisted_51
         }, null)
     ]),
     "Mapped": new ParserObjectImpl({
         "a": new ParserObjectImpl({
-            "value": new ParserConstImpl("a")
+            "value": hoisted_39
         }, null),
         "b": new ParserObjectImpl({
-            "value": new ParserConstImpl("b")
+            "value": hoisted_52
         }, null)
     }, null),
     "MappedOptional": new ParserObjectImpl({
         "a": new ParserAnyOfImpl([
-            new ParserNullImpl(),
+            hoisted_50,
             new ParserObjectImpl({
-                "value": new ParserConstImpl("a")
+                "value": hoisted_39
             }, null)
         ]),
         "b": new ParserAnyOfImpl([
-            new ParserNullImpl(),
+            hoisted_50,
             new ParserObjectImpl({
-                "value": new ParserConstImpl("b")
+                "value": hoisted_52
             }, null)
         ])
     }, null),
     "DiscriminatedUnion": new ParserAnyOfDiscriminatedImpl([
         new ParserObjectImpl({
-            "a1": new ParserTypeOfImpl("string"),
+            "a1": hoisted_3,
             "a11": new ParserAnyOfImpl([
-                new ParserNullImpl(),
-                new ParserTypeOfImpl("string")
+                hoisted_50,
+                hoisted_3
             ]),
-            "subType": new ParserConstImpl("a1"),
-            "type": new ParserConstImpl("a")
+            "subType": hoisted_55,
+            "type": hoisted_39
         }, null),
         new ParserObjectImpl({
-            "a2": new ParserTypeOfImpl("string"),
-            "subType": new ParserConstImpl("a2"),
-            "type": new ParserConstImpl("a")
+            "a2": hoisted_3,
+            "subType": hoisted_56,
+            "type": hoisted_39
         }, null),
         new ParserObjectImpl({
-            "type": new ParserConstImpl("b"),
-            "value": new ParserTypeOfImpl("number")
+            "type": hoisted_52,
+            "value": hoisted_5
         }, null)
     ], "type", {
         "a": new ParserAnyOfDiscriminatedImpl([
             new ParserObjectImpl({
-                "a1": new ParserTypeOfImpl("string"),
+                "a1": hoisted_3,
                 "a11": new ParserAnyOfImpl([
-                    new ParserNullImpl(),
-                    new ParserTypeOfImpl("string")
+                    hoisted_50,
+                    hoisted_3
                 ]),
-                "subType": new ParserConstImpl("a1"),
-                "type": new ParserConstImpl("a")
+                "subType": hoisted_55,
+                "type": hoisted_39
             }, null),
             new ParserObjectImpl({
-                "a2": new ParserTypeOfImpl("string"),
-                "subType": new ParserConstImpl("a2"),
-                "type": new ParserConstImpl("a")
+                "a2": hoisted_3,
+                "subType": hoisted_56,
+                "type": hoisted_39
             }, null)
         ], "subType", {
             "a1": new ParserObjectImpl({
-                "a1": new ParserTypeOfImpl("string"),
+                "a1": hoisted_3,
                 "a11": new ParserAnyOfImpl([
-                    new ParserNullImpl(),
-                    new ParserTypeOfImpl("string")
+                    hoisted_50,
+                    hoisted_3
                 ]),
-                "subType": new ParserConstImpl("a1"),
-                "type": new ParserConstImpl("a")
+                "subType": hoisted_55,
+                "type": hoisted_39
             }, null),
             "a2": new ParserObjectImpl({
-                "a2": new ParserTypeOfImpl("string"),
-                "subType": new ParserConstImpl("a2"),
-                "type": new ParserConstImpl("a")
+                "a2": hoisted_3,
+                "subType": hoisted_56,
+                "type": hoisted_39
             }, null)
         }),
         "b": new ParserObjectImpl({
-            "type": new ParserConstImpl("b"),
-            "value": new ParserTypeOfImpl("number")
+            "type": hoisted_52,
+            "value": hoisted_5
         }, null)
     }),
     "DiscriminatedUnion2": new ParserAnyOfImpl([
         new ParserObjectImpl({
-            "a1": new ParserTypeOfImpl("string"),
+            "a1": hoisted_3,
             "a11": new ParserAnyOfImpl([
-                new ParserNullImpl(),
-                new ParserTypeOfImpl("string")
+                hoisted_50,
+                hoisted_3
             ]),
-            "subType": new ParserConstImpl("a1"),
-            "type": new ParserConstImpl("a")
+            "subType": hoisted_55,
+            "type": hoisted_39
         }, null),
         new ParserObjectImpl({
-            "a2": new ParserTypeOfImpl("string"),
-            "subType": new ParserConstImpl("a2"),
-            "type": new ParserConstImpl("a")
+            "a2": hoisted_3,
+            "subType": hoisted_56,
+            "type": hoisted_39
         }, null),
         new ParserObjectImpl({
             "type": new ParserAnyOfImpl([
-                new ParserNullImpl(),
-                new ParserConstImpl("d")
+                hoisted_50,
+                hoisted_51
             ]),
-            "valueD": new ParserTypeOfImpl("number")
+            "valueD": hoisted_5
         }, null),
         new ParserObjectImpl({
-            "type": new ParserConstImpl("b"),
-            "value": new ParserTypeOfImpl("number")
+            "type": hoisted_52,
+            "value": hoisted_5
         }, null)
     ]),
     "DiscriminatedUnion3": new ParserAnyOfDiscriminatedImpl([
         new ParserObjectImpl({
-            "a1": new ParserTypeOfImpl("string"),
+            "a1": hoisted_3,
             "type": new ParserAnyOfConstsImpl([
                 "a",
                 "c"
             ])
         }, null),
         new ParserObjectImpl({
-            "type": new ParserConstImpl("b"),
-            "value": new ParserTypeOfImpl("number")
+            "type": hoisted_52,
+            "value": hoisted_5
         }, null)
     ], "type", {
         "a": new ParserObjectImpl({
-            "a1": new ParserTypeOfImpl("string"),
+            "a1": hoisted_3,
             "type": new ParserAnyOfConstsImpl([
                 "a",
                 "c"
             ])
         }, null),
         "b": new ParserObjectImpl({
-            "type": new ParserConstImpl("b"),
-            "value": new ParserTypeOfImpl("number")
+            "type": hoisted_52,
+            "value": hoisted_5
         }, null),
         "c": new ParserObjectImpl({
-            "a1": new ParserTypeOfImpl("string"),
+            "a1": hoisted_3,
             "type": new ParserAnyOfConstsImpl([
                 "a",
                 "c"
@@ -1392,17 +1472,17 @@ const namedParsers = {
     "DiscriminatedUnion4": new ParserAnyOfImpl([
         new ParserObjectImpl({
             "a": new ParserObjectImpl({
-                "a1": new ParserTypeOfImpl("string"),
-                "subType": new ParserConstImpl("a1")
+                "a1": hoisted_3,
+                "subType": hoisted_55
             }, null),
-            "type": new ParserConstImpl("a")
+            "type": hoisted_39
         }, null),
         new ParserObjectImpl({
             "a": new ParserObjectImpl({
-                "a2": new ParserTypeOfImpl("string"),
-                "subType": new ParserConstImpl("a2")
+                "a2": hoisted_3,
+                "subType": hoisted_56
             }, null),
-            "type": new ParserConstImpl("a")
+            "type": hoisted_39
         }, null)
     ]),
     "AllTypes": new ParserAnyOfConstsImpl([
@@ -1425,187 +1505,173 @@ const namedParsers = {
     ]),
     "UnionWithEnumAccess": new ParserAnyOfDiscriminatedImpl([
         new ParserObjectImpl({
-            "tag": new ParserConstImpl("a"),
-            "value": new ParserTypeOfImpl("string")
+            "tag": hoisted_39,
+            "value": hoisted_3
         }, null),
         new ParserObjectImpl({
-            "tag": new ParserConstImpl("b"),
-            "value": new ParserTypeOfImpl("number")
+            "tag": hoisted_52,
+            "value": hoisted_5
         }, null),
         new ParserObjectImpl({
-            "tag": new ParserConstImpl("c"),
-            "value": new ParserTypeOfImpl("boolean")
+            "tag": hoisted_57,
+            "value": hoisted_54
         }, null)
     ], "tag", {
         "a": new ParserObjectImpl({
-            "tag": new ParserConstImpl("a"),
-            "value": new ParserTypeOfImpl("string")
+            "tag": hoisted_39,
+            "value": hoisted_3
         }, null),
         "b": new ParserObjectImpl({
-            "tag": new ParserConstImpl("b"),
-            "value": new ParserTypeOfImpl("number")
+            "tag": hoisted_52,
+            "value": hoisted_5
         }, null),
         "c": new ParserObjectImpl({
-            "tag": new ParserConstImpl("c"),
-            "value": new ParserTypeOfImpl("boolean")
+            "tag": hoisted_57,
+            "value": hoisted_54
         }, null)
     }),
     "Shape": new ParserAnyOfDiscriminatedImpl([
         new ParserObjectImpl({
-            "kind": new ParserConstImpl("circle"),
-            "radius": new ParserTypeOfImpl("number")
+            "kind": hoisted_58,
+            "radius": hoisted_5
         }, null),
         new ParserObjectImpl({
-            "kind": new ParserConstImpl("square"),
-            "x": new ParserTypeOfImpl("number")
+            "kind": hoisted_59,
+            "x": hoisted_5
         }, null),
         new ParserObjectImpl({
-            "kind": new ParserConstImpl("triangle"),
-            "x": new ParserTypeOfImpl("number"),
-            "y": new ParserTypeOfImpl("number")
+            "kind": hoisted_60,
+            "x": hoisted_5,
+            "y": hoisted_5
         }, null)
     ], "kind", {
         "circle": new ParserObjectImpl({
-            "kind": new ParserConstImpl("circle"),
-            "radius": new ParserTypeOfImpl("number")
+            "kind": hoisted_58,
+            "radius": hoisted_5
         }, null),
         "square": new ParserObjectImpl({
-            "kind": new ParserConstImpl("square"),
-            "x": new ParserTypeOfImpl("number")
+            "kind": hoisted_59,
+            "x": hoisted_5
         }, null),
         "triangle": new ParserObjectImpl({
-            "kind": new ParserConstImpl("triangle"),
-            "x": new ParserTypeOfImpl("number"),
-            "y": new ParserTypeOfImpl("number")
+            "kind": hoisted_60,
+            "x": hoisted_5,
+            "y": hoisted_5
         }, null)
     }),
     "T3": new ParserAnyOfDiscriminatedImpl([
         new ParserObjectImpl({
-            "kind": new ParserConstImpl("square"),
-            "x": new ParserTypeOfImpl("number")
+            "kind": hoisted_59,
+            "x": hoisted_5
         }, null),
         new ParserObjectImpl({
-            "kind": new ParserConstImpl("triangle"),
-            "x": new ParserTypeOfImpl("number"),
-            "y": new ParserTypeOfImpl("number")
+            "kind": hoisted_60,
+            "x": hoisted_5,
+            "y": hoisted_5
         }, null)
     ], "kind", {
         "square": new ParserObjectImpl({
-            "kind": new ParserConstImpl("square"),
-            "x": new ParserTypeOfImpl("number")
+            "kind": hoisted_59,
+            "x": hoisted_5
         }, null),
         "triangle": new ParserObjectImpl({
-            "kind": new ParserConstImpl("triangle"),
-            "x": new ParserTypeOfImpl("number"),
-            "y": new ParserTypeOfImpl("number")
+            "kind": hoisted_60,
+            "x": hoisted_5,
+            "y": hoisted_5
         }, null)
     }),
     "BObject": new ParserObjectImpl({
-        "tag": new ParserConstImpl("b")
+        "tag": hoisted_52
     }, null),
     "DEF": new ParserObjectImpl({
-        "a": new ParserTypeOfImpl("string")
+        "a": hoisted_3
     }, null),
-    "KDEF": new ParserConstImpl("a"),
+    "KDEF": hoisted_39,
     "ABC": new ParserObjectImpl({}, null),
-    "KABC": new ParserNeverImpl(),
+    "KABC": hoisted_61,
     "K": new ParserAnyOfImpl([
-        new ParserRefImpl("KABC"),
-        new ParserRefImpl("KDEF")
+        hoisted_41,
+        hoisted_40
     ]),
     "NonInfiniteNumber": new ParserNumberWithFormatImpl([
         "NonInfiniteNumber"
     ]),
-    "NonNegativeNumber": new ParserNumberWithFormatImpl([
-        "NonInfiniteNumber",
-        "NonNegativeNumber"
-    ]),
-    "Rate": new ParserNumberWithFormatImpl([
-        "NonInfiniteNumber",
-        "NonNegativeNumber",
-        "Rate"
-    ]),
+    "NonNegativeNumber": hoisted_62,
+    "Rate": hoisted_63,
     "UserId": new ParserStringWithFormatImpl([
         "UserId"
     ]),
-    "ReadAuthorizedUserId": new ParserStringWithFormatImpl([
-        "UserId",
-        "ReadAuthorizedUserId"
-    ]),
-    "WriteAuthorizedUserId": new ParserStringWithFormatImpl([
-        "UserId",
-        "ReadAuthorizedUserId",
-        "WriteAuthorizedUserId"
-    ]),
+    "ReadAuthorizedUserId": hoisted_64,
+    "WriteAuthorizedUserId": hoisted_65,
     "CurrencyPrices": new ParserMappedRecordImpl(new ParserStringWithFormatImpl([
         "ValidCurrency"
-    ]), new ParserRefImpl("Rate"))
+    ]), hoisted_45)
 };
 const buildValidatorsInput = {
-    "PartialRepro": new ParserRefImpl("PartialRepro"),
-    "TransportedValue": new ParserRefImpl("TransportedValue"),
-    "OnlyAKey": new ParserRefImpl("OnlyAKey"),
+    "PartialRepro": hoisted_0,
+    "TransportedValue": hoisted_1,
+    "OnlyAKey": hoisted_2,
     "ObjectWithArr": new ParserObjectImpl({
-        "a": new ParserArrayImpl(new ParserTypeOfImpl("string"))
+        "a": new ParserArrayImpl(hoisted_3)
     }, null),
-    "BigIntCodec": new ParserBigIntImpl(),
+    "BigIntCodec": hoisted_4,
     "TupleCodec": new ParserTupleImpl([
-        new ParserTypeOfImpl("number"),
-        new ParserTypeOfImpl("number"),
-        new ParserTypeOfImpl("number")
+        hoisted_5,
+        hoisted_5,
+        hoisted_5
     ], null),
     "TupleCodecRest": new ParserTupleImpl([
-        new ParserTypeOfImpl("number"),
-        new ParserTypeOfImpl("number")
-    ], new ParserTypeOfImpl("string")),
-    "StringArrCodec": new ParserArrayImpl(new ParserTypeOfImpl("string")),
-    "AllTs": new ParserRefImpl("AllTs"),
-    "AObject": new ParserRefImpl("AObject"),
-    "Version": new ParserRefImpl("Version"),
-    "Version2": new ParserRefImpl("Version2"),
-    "AccessLevelTpl2": new ParserRefImpl("AccessLevelTpl2"),
-    "AccessLevelTpl": new ParserRefImpl("AccessLevelTpl"),
-    "Arr3": new ParserRefImpl("Arr3"),
-    "OmitSettings": new ParserRefImpl("OmitSettings"),
-    "RequiredPartialObject": new ParserRefImpl("RequiredPartialObject"),
-    "LevelAndDSettings": new ParserRefImpl("LevelAndDSettings"),
-    "PartialSettings": new ParserRefImpl("PartialSettings"),
-    "Extra": new ParserRefImpl("Extra"),
-    "User": new ParserRefImpl("User"),
-    "PublicUser": new ParserRefImpl("PublicUser"),
-    "Req": new ParserRefImpl("Req"),
-    "Repro1": new ParserRefImpl("Repro1"),
-    "SettingsUpdate": new ParserRefImpl("SettingsUpdate"),
-    "Mapped": new ParserRefImpl("Mapped"),
-    "MappedOptional": new ParserRefImpl("MappedOptional"),
-    "PartialObject": new ParserRefImpl("PartialObject"),
-    "DiscriminatedUnion": new ParserRefImpl("DiscriminatedUnion"),
-    "DiscriminatedUnion2": new ParserRefImpl("DiscriminatedUnion2"),
-    "DiscriminatedUnion3": new ParserRefImpl("DiscriminatedUnion3"),
-    "DiscriminatedUnion4": new ParserRefImpl("DiscriminatedUnion4"),
-    "AllTypes": new ParserRefImpl("AllTypes"),
-    "AccessLevel": new ParserRefImpl("AccessLevel"),
-    "OtherEnum": new ParserRefImpl("OtherEnum"),
-    "Arr2C": new ParserRefImpl("Arr2"),
-    "ValidCurrency": new ParserRefImpl("ValidCurrency"),
-    "UnionWithEnumAccess": new ParserRefImpl("UnionWithEnumAccess"),
-    "T3": new ParserRefImpl("T3"),
-    "AccessLevelCodec": new ParserRefImpl("AccessLevel"),
-    "AvatarSize": new ParserRefImpl("AvatarSize"),
-    "BObject": new ParserRefImpl("BObject"),
+        hoisted_5,
+        hoisted_5
+    ], hoisted_3),
+    "StringArrCodec": new ParserArrayImpl(hoisted_3),
+    "AllTs": hoisted_6,
+    "AObject": hoisted_7,
+    "Version": hoisted_8,
+    "Version2": hoisted_9,
+    "AccessLevelTpl2": hoisted_10,
+    "AccessLevelTpl": hoisted_11,
+    "Arr3": hoisted_12,
+    "OmitSettings": hoisted_13,
+    "RequiredPartialObject": hoisted_14,
+    "LevelAndDSettings": hoisted_15,
+    "PartialSettings": hoisted_16,
+    "Extra": hoisted_17,
+    "User": hoisted_18,
+    "PublicUser": hoisted_19,
+    "Req": hoisted_20,
+    "Repro1": hoisted_21,
+    "SettingsUpdate": hoisted_22,
+    "Mapped": hoisted_23,
+    "MappedOptional": hoisted_24,
+    "PartialObject": hoisted_25,
+    "DiscriminatedUnion": hoisted_26,
+    "DiscriminatedUnion2": hoisted_27,
+    "DiscriminatedUnion3": hoisted_28,
+    "DiscriminatedUnion4": hoisted_29,
+    "AllTypes": hoisted_30,
+    "AccessLevel": hoisted_31,
+    "OtherEnum": hoisted_32,
+    "Arr2C": hoisted_33,
+    "ValidCurrency": hoisted_34,
+    "UnionWithEnumAccess": hoisted_35,
+    "T3": hoisted_36,
+    "AccessLevelCodec": hoisted_31,
+    "AvatarSize": hoisted_37,
+    "BObject": hoisted_38,
     "ImportEnumTypeof": new ParserObjectImpl({
-        "A": new ParserConstImpl("a")
+        "A": hoisted_39
     }, null),
-    "KDEF": new ParserRefImpl("KDEF"),
-    "KABC": new ParserRefImpl("KABC"),
-    "K": new ParserRefImpl("K"),
-    "NonNegativeNumber": new ParserRefImpl("NonNegativeNumber"),
-    "NonInfiniteNumber": new ParserRefImpl("NonInfiniteNumber"),
-    "Rate": new ParserRefImpl("Rate"),
-    "UserId": new ParserRefImpl("UserId"),
-    "ReadAuthorizedUserId": new ParserRefImpl("ReadAuthorizedUserId"),
-    "WriteAuthorizedUserId": new ParserRefImpl("WriteAuthorizedUserId"),
-    "CurrencyPrices": new ParserRefImpl("CurrencyPrices")
+    "KDEF": hoisted_40,
+    "KABC": hoisted_41,
+    "K": hoisted_42,
+    "NonNegativeNumber": hoisted_43,
+    "NonInfiniteNumber": hoisted_44,
+    "Rate": hoisted_45,
+    "UserId": hoisted_46,
+    "ReadAuthorizedUserId": hoisted_47,
+    "WriteAuthorizedUserId": hoisted_48,
+    "CurrencyPrices": hoisted_49
 };
 
 export default { buildParsers };

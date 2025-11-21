@@ -1108,110 +1108,131 @@ const buildParsers = (args) => {
 
 const RequiredStringFormats = ["ValidCurrency"];
 const RequiredNumberFormats = [];
+const hoisted_0 = new ParserTypeOfImpl("string");
+const hoisted_1 = new ParserTypeOfImpl("number");
+const hoisted_10 = new ParserRefImpl("DiscriminatedUnion");
+const hoisted_11 = new ParserRefImpl("RecursiveTree");
+const hoisted_12 = new ParserRefImpl("SemVer");
+const hoisted_13 = new ParserRefImpl("NonEmptyString");
+const hoisted_14 = new ParserRefImpl("ValidCurrency");
+const hoisted_15 = new ParserDateImpl();
+const hoisted_16 = new ParserBigIntImpl();
+const hoisted_17 = new ParserConstImpl("a1");
+const hoisted_18 = new ParserConstImpl("a");
+const hoisted_19 = new ParserConstImpl("a2");
+const hoisted_2 = new ParserTypeOfImpl("boolean");
+const hoisted_20 = new ParserConstImpl("b");
+const hoisted_3 = new ParserNullImpl();
+const hoisted_4 = new ParserAnyImpl();
+const hoisted_5 = new ParserRefImpl("T1");
+const hoisted_6 = new ParserRefImpl("T2");
+const hoisted_7 = new ParserRefImpl("T3");
+const hoisted_8 = new ParserRefImpl("InvalidSchemaWithDate");
+const hoisted_9 = new ParserRefImpl("InvalidSchemaWithBigInt");
 const namedParsers = {
     "T1": new ParserObjectImpl({
-        "a": new ParserTypeOfImpl("string"),
-        "b": new ParserTypeOfImpl("number")
+        "a": hoisted_0,
+        "b": hoisted_1
     }, null),
     "T2": new ParserObjectImpl({
-        "t1": new ParserRefImpl("T1")
+        "t1": hoisted_5
     }, null),
     "T3": new ParserObjectImpl({
-        "t2Array": new ParserArrayImpl(new ParserRefImpl("T2"))
+        "t2Array": new ParserArrayImpl(hoisted_6)
     }, null),
     "InvalidSchemaWithDate": new ParserObjectImpl({
-        "x": new ParserDateImpl()
+        "x": hoisted_15
     }, null),
     "InvalidSchemaWithBigInt": new ParserObjectImpl({
-        "x": new ParserBigIntImpl()
+        "x": hoisted_16
     }, null),
     "DiscriminatedUnion": new ParserAnyOfDiscriminatedImpl([
         new ParserObjectImpl({
-            "a1": new ParserTypeOfImpl("string"),
+            "a1": hoisted_0,
             "a11": new ParserAnyOfImpl([
-                new ParserNullImpl(),
-                new ParserTypeOfImpl("string")
+                hoisted_3,
+                hoisted_0
             ]),
-            "subType": new ParserConstImpl("a1"),
-            "type": new ParserConstImpl("a")
+            "subType": hoisted_17,
+            "type": hoisted_18
         }, null),
         new ParserObjectImpl({
-            "a2": new ParserTypeOfImpl("string"),
-            "subType": new ParserConstImpl("a2"),
-            "type": new ParserConstImpl("a")
+            "a2": hoisted_0,
+            "subType": hoisted_19,
+            "type": hoisted_18
         }, null),
         new ParserObjectImpl({
-            "type": new ParserConstImpl("b"),
-            "value": new ParserTypeOfImpl("number")
+            "type": hoisted_20,
+            "value": hoisted_1
         }, null)
     ], "type", {
         "a": new ParserAnyOfDiscriminatedImpl([
             new ParserObjectImpl({
-                "a1": new ParserTypeOfImpl("string"),
+                "a1": hoisted_0,
                 "a11": new ParserAnyOfImpl([
-                    new ParserNullImpl(),
-                    new ParserTypeOfImpl("string")
+                    hoisted_3,
+                    hoisted_0
                 ]),
-                "subType": new ParserConstImpl("a1"),
-                "type": new ParserConstImpl("a")
+                "subType": hoisted_17,
+                "type": hoisted_18
             }, null),
             new ParserObjectImpl({
-                "a2": new ParserTypeOfImpl("string"),
-                "subType": new ParserConstImpl("a2"),
-                "type": new ParserConstImpl("a")
+                "a2": hoisted_0,
+                "subType": hoisted_19,
+                "type": hoisted_18
             }, null)
         ], "subType", {
             "a1": new ParserObjectImpl({
-                "a1": new ParserTypeOfImpl("string"),
+                "a1": hoisted_0,
                 "a11": new ParserAnyOfImpl([
-                    new ParserNullImpl(),
-                    new ParserTypeOfImpl("string")
+                    hoisted_3,
+                    hoisted_0
                 ]),
-                "subType": new ParserConstImpl("a1"),
-                "type": new ParserConstImpl("a")
+                "subType": hoisted_17,
+                "type": hoisted_18
             }, null),
             "a2": new ParserObjectImpl({
-                "a2": new ParserTypeOfImpl("string"),
-                "subType": new ParserConstImpl("a2"),
-                "type": new ParserConstImpl("a")
+                "a2": hoisted_0,
+                "subType": hoisted_19,
+                "type": hoisted_18
             }, null)
         }),
         "b": new ParserObjectImpl({
-            "type": new ParserConstImpl("b"),
-            "value": new ParserTypeOfImpl("number")
+            "type": hoisted_20,
+            "value": hoisted_1
         }, null)
     }),
     "RecursiveTree": new ParserObjectImpl({
-        "children": new ParserArrayImpl(new ParserRefImpl("RecursiveTree")),
-        "value": new ParserTypeOfImpl("number")
+        "children": new ParserArrayImpl(hoisted_11),
+        "value": hoisted_1
     }, null),
     "SemVer": new ParserRegexImpl(/(\d+(\.\d+)?)(\.)(\d+(\.\d+)?)(\.)(\d+(\.\d+)?)/, "${number}.${number}.${number}"),
     "NonEmptyString": new ParserTupleImpl([
-        new ParserTypeOfImpl("string")
-    ], new ParserTypeOfImpl("string")),
+        hoisted_0
+    ], hoisted_0),
     "ValidCurrency": new ParserStringWithFormatImpl([
         "ValidCurrency"
     ])
 };
 const buildValidatorsInput = {
-    "string": new ParserTypeOfImpl("string"),
-    "number": new ParserTypeOfImpl("number"),
-    "boolean": new ParserTypeOfImpl("boolean"),
-    "null": new ParserNullImpl(),
-    "undefined": new ParserNullImpl(),
-    "object": new ParserObjectImpl({}, new ParserAnyImpl()),
-    "anyArray": new ParserArrayImpl(new ParserAnyImpl()),
-    "any": new ParserAnyImpl(),
-    "T1": new ParserRefImpl("T1"),
-    "T2": new ParserRefImpl("T2"),
-    "T3": new ParserRefImpl("T3"),
-    "InvalidSchemaWithDate": new ParserRefImpl("InvalidSchemaWithDate"),
-    "InvalidSchemaWithBigInt": new ParserRefImpl("InvalidSchemaWithBigInt"),
-    "DiscriminatedUnion": new ParserRefImpl("DiscriminatedUnion"),
-    "RecursiveTree": new ParserRefImpl("RecursiveTree"),
-    "SemVer": new ParserRefImpl("SemVer"),
-    "NonEmptyString": new ParserRefImpl("NonEmptyString"),
-    "ValidCurrency": new ParserRefImpl("ValidCurrency")
+    "string": hoisted_0,
+    "number": hoisted_1,
+    "boolean": hoisted_2,
+    "null": hoisted_3,
+    "undefined": hoisted_3,
+    "object": new ParserObjectImpl({}, hoisted_4),
+    "anyArray": new ParserArrayImpl(hoisted_4),
+    "any": hoisted_4,
+    "T1": hoisted_5,
+    "T2": hoisted_6,
+    "T3": hoisted_7,
+    "InvalidSchemaWithDate": hoisted_8,
+    "InvalidSchemaWithBigInt": hoisted_9,
+    "DiscriminatedUnion": hoisted_10,
+    "RecursiveTree": hoisted_11,
+    "SemVer": hoisted_12,
+    "NonEmptyString": hoisted_13,
+    "ValidCurrency": hoisted_14
 };
 
 export default { buildParsers };

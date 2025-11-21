@@ -1108,22 +1108,34 @@ const buildParsers = (args) => {
 
 const RequiredStringFormats = [];
 const RequiredNumberFormats = [];
+const hoisted_0 = new ParserTypeOfImpl("string");
+const hoisted_1 = new ParserRefImpl("AliasToString");
+const hoisted_10 = new ParserAnyImpl();
+const hoisted_11 = new ParserConstImpl("constant value");
+const hoisted_2 = new ParserRefImpl("AliasToNumber");
+const hoisted_3 = new ParserRefImpl("AliasToBoolean");
+const hoisted_4 = new ParserRefImpl("AliasToNull");
+const hoisted_5 = new ParserRefImpl("AliasToAny");
+const hoisted_6 = new ParserRefImpl("AliasToConst");
+const hoisted_7 = new ParserTypeOfImpl("number");
+const hoisted_8 = new ParserTypeOfImpl("boolean");
+const hoisted_9 = new ParserNullImpl();
 const namedParsers = {
-    "AliasToString": new ParserTypeOfImpl("string"),
-    "AliasToNumber": new ParserTypeOfImpl("number"),
-    "AliasToBoolean": new ParserTypeOfImpl("boolean"),
-    "AliasToNull": new ParserNullImpl(),
-    "AliasToAny": new ParserAnyImpl(),
-    "AliasToConst": new ParserConstImpl("constant value")
+    "AliasToString": hoisted_0,
+    "AliasToNumber": hoisted_7,
+    "AliasToBoolean": hoisted_8,
+    "AliasToNull": hoisted_9,
+    "AliasToAny": hoisted_10,
+    "AliasToConst": hoisted_11
 };
 const buildValidatorsInput = {
-    "Dec": new ParserTypeOfImpl("string"),
-    "AliasToString": new ParserRefImpl("AliasToString"),
-    "AliasToNumber": new ParserRefImpl("AliasToNumber"),
-    "AliasToBoolean": new ParserRefImpl("AliasToBoolean"),
-    "AliasToNull": new ParserRefImpl("AliasToNull"),
-    "AliasToAny": new ParserRefImpl("AliasToAny"),
-    "AliasToConst": new ParserRefImpl("AliasToConst")
+    "Dec": hoisted_0,
+    "AliasToString": hoisted_1,
+    "AliasToNumber": hoisted_2,
+    "AliasToBoolean": hoisted_3,
+    "AliasToNull": hoisted_4,
+    "AliasToAny": hoisted_5,
+    "AliasToConst": hoisted_6
 };
 
 export default { buildParsers };

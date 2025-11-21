@@ -2,14 +2,16 @@
 source: packages/beff-core/tests/print_parser.rs
 expression: "decoder(r#\"\n        export type Password = StringFormat<\"password\">;\n        export type PassLenghts = Record<Password, number>;\n        parse.buildParsers<{ PassLenghts: PassLenghts }>();\n      \"#)"
 ---
+const hoisted_0 = new ParserRefImpl("PassLenghts");
+const hoisted_1 = new ParserTypeOfImpl("number");
 const namedParsers = {
     "PassLenghts": new ParserMappedRecordImpl(new ParserStringWithFormatImpl([
         "password"
-    ]), new ParserTypeOfImpl("number")),
+    ]), hoisted_1),
     "Password": new ParserStringWithFormatImpl([
         "password"
     ])
 };
 const buildValidatorsInput = {
-    "PassLenghts": new ParserRefImpl("PassLenghts")
+    "PassLenghts": hoisted_0
 };
