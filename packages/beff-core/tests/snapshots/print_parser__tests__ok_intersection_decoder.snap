@@ -2,64 +2,12 @@
 source: packages/beff-core/tests/print_parser.rs
 expression: "decoder(r#\"\n        export type Alias = {a:string} & {b:number}\n        parse.buildParsers<{ Dec: Alias }>();\n      \"#)"
 ---
-function ValidateAlias(ctx, input) {
-    return (hoisted_Alias_5.validateObjectValidator.bind(hoisted_Alias_5))(ctx, input);
-}
-function ParseAlias(ctx, input) {
-    return (hoisted_Alias_6.parseObjectParser.bind(hoisted_Alias_6))(ctx, input);
-}
-function ReportAlias(ctx, input) {
-    return (hoisted_Alias_7.reportObjectReporter.bind(hoisted_Alias_7))(ctx, input);
-}
-function SchemaAlias(ctx, input) {
-    if (ctx.seen["Alias"]) {
-        return {};
-    }
-    ctx.seen["Alias"] = true;
-    var tmp = (hoisted_Alias_8.schemaObjectSchema.bind(hoisted_Alias_8))(ctx);
-    delete ctx.seen["Alias"];
-    return tmp;
-}
-function DescribeAlias(ctx, input) {
-    return (hoisted_Alias_9.describeObjectDescribe.bind(hoisted_Alias_9))(ctx);
-}
-const validators = {
-    Alias: ValidateAlias
+const namedParsers = {
+    "Alias": new ParserObjectImpl({
+        "a": new ParserTypeOfImpl("string"),
+        "b": new ParserTypeOfImpl("number")
+    }, null)
 };
-const parsers = {
-    Alias: ParseAlias
+const buildValidatorsInput = {
+    "Dec": new ParserRefImpl("Alias")
 };
-const reporters = {
-    Alias: ReportAlias
-};
-const schemas = {
-    Alias: SchemaAlias
-};
-const describers = {
-    Alias: DescribeAlias
-};
-const hoisted_Alias_0 = {
-    "a": validateString,
-    "b": validateNumber
-};
-const hoisted_Alias_1 = {
-    "a": schemaString,
-    "b": schemaNumber
-};
-const hoisted_Alias_2 = {
-    "a": describeString,
-    "b": describeNumber
-};
-const hoisted_Alias_3 = hoisted_Alias_2;
-const hoisted_Alias_4 = null;
-const hoisted_Alias_5 = new ObjectValidator(hoisted_Alias_0, hoisted_Alias_4);
-const hoisted_Alias_6 = new ObjectParser({
-    "a": parseIdentity,
-    "b": parseIdentity
-}, null);
-const hoisted_Alias_7 = new ObjectReporter(hoisted_Alias_0, hoisted_Alias_4, {
-    "a": reportString,
-    "b": reportNumber
-}, null);
-const hoisted_Alias_8 = new ObjectSchema(hoisted_Alias_1, null);
-const hoisted_Alias_9 = new ObjectDescribe(hoisted_Alias_3, null);

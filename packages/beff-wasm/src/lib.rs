@@ -8,8 +8,6 @@ use anyhow::anyhow;
 use anyhow::Result;
 use beff_core::diag::Diagnostic;
 use beff_core::import_resolver::parse_and_bind;
-use beff_core::print::printer::ToWritableModules;
-use beff_core::print::printer::WritableModules;
 use beff_core::print::printer2::ToWritableParser;
 use beff_core::print::printer2::WritableModulesV2;
 use beff_core::wasm_diag::WasmDiagnostic;
@@ -66,13 +64,6 @@ extern "C" {
 #[wasm_bindgen]
 extern "C" {
     fn emit_diagnostic(diag: JsValue);
-}
-#[wasm_bindgen]
-pub fn bundle_to_string(parser_entry_point: &str, settings: JsValue) -> JsValue {
-    match bundle_to_string_inner(parse_entrypoints(parser_entry_point, settings)) {
-        Ok(s) => serde_wasm_bindgen::to_value(&s).expect("should be able to serialize bundle"),
-        Err(_) => JsValue::null(),
-    }
 }
 
 #[wasm_bindgen]
@@ -147,19 +138,6 @@ fn print_errors(errors: Vec<&Diagnostic>) {
     let v = WasmDiagnostic::from_diagnostics(errors);
     let v = serde_wasm_bindgen::to_value(&v).expect("should be able to serialize");
     emit_diagnostic(v)
-}
-
-fn bundle_to_string_inner(entry: EntryPoints) -> Result<WritableModules> {
-    let res = run_extraction(entry);
-    let errs = res.errors();
-    if errs.is_empty() {
-        // let v = WasmDiagnostic::from_diagnostics(vec![]);
-        // let v = serde_wasm_bindgen::to_value(&v).expect("should be able to serialize");
-        // emit_diagnostic(v);
-        return res.to_module();
-    }
-    print_errors(errs);
-    Err(anyhow!("Failed to bundle"))
 }
 
 fn bundle_to_string_v2_inner(entry: EntryPoints) -> Result<WritableModulesV2> {

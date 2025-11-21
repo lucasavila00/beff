@@ -2,39 +2,9 @@
 source: packages/beff-core/tests/print_parser.rs
 expression: "decoder(r#\"\n        export type Alias = string;\n        parse.buildParsers<{ Dec: Alias }>();\n      \"#)"
 ---
-function ValidateAlias(ctx, input) {
-    return (validateString)(ctx, input);
-}
-function ParseAlias(ctx, input) {
-    return (parseIdentity)(ctx, input);
-}
-function ReportAlias(ctx, input) {
-    return (reportString)(ctx, input);
-}
-function SchemaAlias(ctx, input) {
-    if (ctx.seen["Alias"]) {
-        return {};
-    }
-    ctx.seen["Alias"] = true;
-    var tmp = (schemaString)(ctx);
-    delete ctx.seen["Alias"];
-    return tmp;
-}
-function DescribeAlias(ctx, input) {
-    return (describeString)(ctx);
-}
-const validators = {
-    Alias: ValidateAlias
+const namedParsers = {
+    "Alias": new ParserTypeOfImpl("string")
 };
-const parsers = {
-    Alias: ParseAlias
-};
-const reporters = {
-    Alias: ReportAlias
-};
-const schemas = {
-    Alias: SchemaAlias
-};
-const describers = {
-    Alias: DescribeAlias
+const buildValidatorsInput = {
+    "Dec": new ParserRefImpl("Alias")
 };
