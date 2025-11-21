@@ -2,36 +2,27 @@
 source: packages/beff-core/tests/print_parser.rs
 expression: "decoder(r#\"\n        export type DiscriminatedUnion4 =\n            | {\n                type: \"a\";\n                a: {\n                  subType: \"a1\";\n                  a1: string;\n                };\n              }\n            | {\n                type: \"a\";\n                a: {\n                  subType: \"a2\";\n                  a2: string;\n                };\n              };\n        parse.buildParsers<{ DiscriminatedUnion4: DiscriminatedUnion4 }>();\n      \"#)"
 ---
-const direct_hoist_0 = new ParserRefImpl("DiscriminatedUnion4");
-const direct_hoist_1 = new ParserTypeOfImpl("string");
-const direct_hoist_2 = new ParserConstImpl("a1");
-const direct_hoist_3 = new ParserConstImpl("a");
-const direct_hoist_4 = new ParserConstImpl("a2");
-const hoistedIndirect = [
-    new ParserObjectImpl({
-        "a1": direct_hoist_1,
-        "subType": direct_hoist_2
-    }, null),
-    new ParserObjectImpl({
-        "a": new ParserHoistedImpl(0),
-        "type": direct_hoist_3
-    }, null),
-    new ParserObjectImpl({
-        "a2": direct_hoist_1,
-        "subType": direct_hoist_4
-    }, null),
-    new ParserObjectImpl({
-        "a": new ParserHoistedImpl(2),
-        "type": direct_hoist_3
-    }, null),
-    new ParserAnyOfImpl([
-        new ParserHoistedImpl(1),
-        new ParserHoistedImpl(3)
-    ])
-];
+const direct_hoist_0 = new ParserTypeOfImpl("string");
+const direct_hoist_1 = new ParserConstImpl("a");
+const hoistedIndirect = [];
 const namedParsers = {
-    "DiscriminatedUnion4": new ParserHoistedImpl(4)
+    "DiscriminatedUnion4": new ParserAnyOfImpl([
+        new ParserObjectImpl({
+            "a": new ParserObjectImpl({
+                "a1": direct_hoist_0,
+                "subType": new ParserConstImpl("a1")
+            }, null),
+            "type": direct_hoist_1
+        }, null),
+        new ParserObjectImpl({
+            "a": new ParserObjectImpl({
+                "a2": direct_hoist_0,
+                "subType": new ParserConstImpl("a2")
+            }, null),
+            "type": direct_hoist_1
+        }, null)
+    ])
 };
 const buildValidatorsInput = {
-    "DiscriminatedUnion4": direct_hoist_0
+    "DiscriminatedUnion4": new ParserRefImpl("DiscriminatedUnion4")
 };

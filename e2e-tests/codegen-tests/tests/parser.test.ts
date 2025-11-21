@@ -20,4 +20,5 @@ it("works", () => {
   expect(Codecs.AliasToConst.describe()).toMatchInlineSnapshot(
     '"type CodecAliasToConst = \\"constant value\\";"',
   );
+  expect(Codecs.TestHoist.describe()).toMatchInlineSnapshot('"type CodecTestHoist = { a: Array<string>, b: Array<string> };"');
 });

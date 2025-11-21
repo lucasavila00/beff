@@ -1129,47 +1129,39 @@ const buildParsers = (args) => {
 
 const RequiredStringFormats = ["password","StartsWithA"];
 const RequiredNumberFormats = [];
-const direct_hoist_0 = new ParserRefImpl("User");
-const direct_hoist_1 = new ParserRefImpl("NotPublic");
-const direct_hoist_10 = new ParserStringWithFormatImpl([
-    "password"
-]);
-const direct_hoist_2 = new ParserRefImpl("StartsWithA");
-const direct_hoist_3 = new ParserRefImpl("Password");
-const direct_hoist_4 = new ParserConstImpl(123.456);
-const direct_hoist_5 = new ParserConstImpl(123);
-const direct_hoist_6 = new ParserRefImpl("UnionNested");
-const direct_hoist_7 = new ParserTypeOfImpl("number");
-const direct_hoist_8 = new ParserTypeOfImpl("string");
-const direct_hoist_9 = new ParserStringWithFormatImpl([
-    "StartsWithA"
-]);
-const hoistedIndirect = [
-    new ParserArrayImpl(direct_hoist_0),
-    new ParserObjectImpl({
-        "age": direct_hoist_7,
-        "name": direct_hoist_8
+const direct_hoist_0 = new ParserTypeOfImpl("string");
+const hoistedIndirect = [];
+const namedParsers = {
+    "User": new ParserObjectImpl({
+        "age": new ParserTypeOfImpl("number"),
+        "name": direct_hoist_0
     }, null),
-    new ParserObjectImpl({
-        "a": direct_hoist_8
+    "NotPublic": new ParserObjectImpl({
+        "a": direct_hoist_0
     }, null),
-    new ParserAnyOfConstsImpl([
+    "StartsWithA": new ParserStringWithFormatImpl([
+        "StartsWithA"
+    ]),
+    "Password": new ParserStringWithFormatImpl([
+        "password"
+    ]),
+    "A": new ParserAnyOfConstsImpl([
         1,
         2
     ]),
-    new ParserAnyOfConstsImpl([
+    "B": new ParserAnyOfConstsImpl([
         2,
         3
     ]),
-    new ParserAnyOfConstsImpl([
+    "D": new ParserAnyOfConstsImpl([
         4,
         5
     ]),
-    new ParserAnyOfConstsImpl([
+    "E": new ParserAnyOfConstsImpl([
         5,
         6
     ]),
-    new ParserAnyOfConstsImpl([
+    "UnionNested": new ParserAnyOfConstsImpl([
         1,
         2,
         3,
@@ -1177,27 +1169,16 @@ const hoistedIndirect = [
         5,
         6
     ])
-];
-const namedParsers = {
-    "User": new ParserHoistedImpl(1),
-    "NotPublic": new ParserHoistedImpl(2),
-    "StartsWithA": direct_hoist_9,
-    "Password": direct_hoist_10,
-    "A": new ParserHoistedImpl(3),
-    "B": new ParserHoistedImpl(4),
-    "D": new ParserHoistedImpl(5),
-    "E": new ParserHoistedImpl(6),
-    "UnionNested": new ParserHoistedImpl(7)
 };
 const buildValidatorsInput = {
-    "User": direct_hoist_0,
-    "Users": new ParserHoistedImpl(0),
-    "NotPublicRenamed": direct_hoist_1,
-    "StartsWithA": direct_hoist_2,
-    "Password": direct_hoist_3,
-    "float": direct_hoist_4,
-    "int": direct_hoist_5,
-    "union": direct_hoist_6
+    "User": new ParserRefImpl("User"),
+    "Users": new ParserArrayImpl(new ParserRefImpl("User")),
+    "NotPublicRenamed": new ParserRefImpl("NotPublic"),
+    "StartsWithA": new ParserRefImpl("StartsWithA"),
+    "Password": new ParserRefImpl("Password"),
+    "float": new ParserConstImpl(123.456),
+    "int": new ParserConstImpl(123),
+    "union": new ParserRefImpl("UnionNested")
 };
 
 export default { buildParsers };

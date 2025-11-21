@@ -1129,14 +1129,12 @@ const buildParsers = (args) => {
 
 const RequiredStringFormats = ["ValidCurrency"];
 const RequiredNumberFormats = [];
-const direct_hoist_0 = new ParserRefImpl("A");
-const direct_hoist_1 = new ParserTypeOfImpl("string");
 const hoistedIndirect = [];
 const namedParsers = {
-    "A": direct_hoist_1
+    "A": new ParserTypeOfImpl("string")
 };
 const buildValidatorsInput = {
-    "A": direct_hoist_0
+    "A": new ParserRefImpl("A")
 };
 
 export default { buildParsers };

@@ -21,9 +21,11 @@ use crate::{
     ExtractResult, NamedSchema,
 };
 
+type SeenCounter = BTreeMap<JsonSchema, i32>;
 struct HoistedMap {
     direct: BTreeMap<JsonSchema, (String, Expr)>,
     indirect: BTreeMap<JsonSchema, (i32, Expr)>,
+    seen: SeenCounter,
 }
 
 #[derive(Serialize, Deserialize)]
@@ -621,6 +623,12 @@ fn validator_for_schema(
             new_class_impl("ParserObjectImpl", vec![obj_validator, rest])
         }
     };
+
+    let seen_counter = hoisted.seen.get(schema).cloned().unwrap_or(0);
+    if seen_counter <= 1 {
+        return out;
+    }
+
     if should_hoist_direct(schema) {
         let new_id = format!("direct_hoist_{}", hoisted.direct.len());
         hoisted
@@ -696,15 +704,87 @@ fn build_named_parsers(named_schemas: &[NamedSchema], hoisted: &mut HoistedMap) 
     })
 }
 
+fn calculate_schema_seen(schema: &JsonSchema, seen: &mut SeenCounter) {
+    let count = seen.entry(schema.clone()).or_insert(0);
+    *count += 1;
+
+    match schema {
+        JsonSchema::StringWithFormat(_)
+        | JsonSchema::StringFormatExtends(_)
+        | JsonSchema::NumberWithFormat(_)
+        | JsonSchema::NumberFormatExtends(_)
+        | JsonSchema::AnyArrayLike
+        | JsonSchema::Any
+        | JsonSchema::Number
+        | JsonSchema::String
+        | JsonSchema::Boolean
+        | JsonSchema::StNever
+        | JsonSchema::Function
+        | JsonSchema::Codec(_)
+        | JsonSchema::TplLitType(_)
+        | JsonSchema::Ref(_)
+        | JsonSchema::Const(_)
+        | JsonSchema::Null => {}
+        JsonSchema::Object { vs, rest } => {
+            for v in vs.values() {
+                match v {
+                    Optionality::Optional(v) => calculate_schema_seen(v, seen),
+                    Optionality::Required(v) => calculate_schema_seen(v, seen),
+                }
+            }
+            if let Some(rest_schema) = rest {
+                calculate_schema_seen(rest_schema, seen);
+            }
+        }
+        JsonSchema::MappedRecord { key, rest } => {
+            calculate_schema_seen(key, seen);
+            calculate_schema_seen(rest, seen);
+        }
+        JsonSchema::Array(json_schema) => {
+            calculate_schema_seen(json_schema, seen);
+        }
+        JsonSchema::Tuple {
+            prefix_items,
+            items,
+        } => {
+            for item in prefix_items {
+                calculate_schema_seen(item, seen);
+            }
+            if let Some(items_schema) = items {
+                calculate_schema_seen(items_schema, seen);
+            }
+        }
+        JsonSchema::AnyOf(btree_set) | JsonSchema::AllOf(btree_set) => {
+            for v in btree_set {
+                calculate_schema_seen(v, seen);
+            }
+        }
+        JsonSchema::StNot(json_schema) => {
+            calculate_schema_seen(json_schema, seen);
+        }
+    }
+}
+
+fn calculated_names_seen(named_schemas: &[NamedSchema], seen: &mut SeenCounter) {
+    for named_schema in named_schemas {
+        calculate_schema_seen(&named_schema.schema, seen);
+    }
+}
+
 impl ToWritableParser for ExtractResult {
     fn to_module_v2(self) -> Result<WritableModulesV2> {
-        let mut hoisted = HoistedMap {
-            direct: BTreeMap::new(),
-            indirect: BTreeMap::new(),
-        };
+        let mut seen: SeenCounter = BTreeMap::new();
 
         let built_parsers = self.parser.built_decoders.unwrap_or_default();
         let named_schemas = merge_named_schema(&self.parser.validators)?;
+
+        calculated_names_seen(&named_schemas, &mut seen);
+
+        let mut hoisted = HoistedMap {
+            direct: BTreeMap::new(),
+            indirect: BTreeMap::new(),
+            seen,
+        };
 
         let build_parsers_input = const_decl(
             "buildValidatorsInput",
