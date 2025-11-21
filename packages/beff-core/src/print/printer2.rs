@@ -415,25 +415,25 @@ fn maybe_decode_any_of_consts(flat_values: &BTreeSet<JsonSchema>) -> Option<Expr
 
 fn should_hoist_direct(schema: &JsonSchema) -> bool {
     // hoist only what has no inner schemas
-    match schema {
+    matches!(
+        schema,
         JsonSchema::StringWithFormat(_)
-        | JsonSchema::StringFormatExtends(_)
-        | JsonSchema::NumberWithFormat(_)
-        | JsonSchema::NumberFormatExtends(_)
-        | JsonSchema::AnyArrayLike
-        | JsonSchema::Any
-        | JsonSchema::Number
-        | JsonSchema::String
-        | JsonSchema::Boolean
-        | JsonSchema::StNever
-        | JsonSchema::Function
-        | JsonSchema::Codec(_)
-        | JsonSchema::TplLitType(_)
-        | JsonSchema::Ref(_)
-        | JsonSchema::Const(_)
-        | JsonSchema::Null => true,
-        _ => false,
-    }
+            | JsonSchema::StringFormatExtends(_)
+            | JsonSchema::NumberWithFormat(_)
+            | JsonSchema::NumberFormatExtends(_)
+            | JsonSchema::AnyArrayLike
+            | JsonSchema::Any
+            | JsonSchema::Number
+            | JsonSchema::String
+            | JsonSchema::Boolean
+            | JsonSchema::StNever
+            | JsonSchema::Function
+            | JsonSchema::Codec(_)
+            | JsonSchema::TplLitType(_)
+            | JsonSchema::Ref(_)
+            | JsonSchema::Const(_)
+            | JsonSchema::Null
+    )
 }
 
 fn i32_lit(id: i32) -> Expr {
@@ -641,7 +641,7 @@ fn validator_for_schema(
         let new_id = hoisted.indirect.len() as i32;
         hoisted
             .indirect
-            .insert(schema.clone(), (new_id.clone(), out.clone()));
+            .insert(schema.clone(), (new_id, out.clone()));
         hoisted_indirect_identifier(new_id)
     }
 }
@@ -799,7 +799,7 @@ impl ToWritableParser for ExtractResult {
         );
 
         let mut sorted_indirect_hoisted_values = hoisted.indirect.into_values().collect::<Vec<_>>();
-        sorted_indirect_hoisted_values.sort_by_key(|it| it.0.clone());
+        sorted_indirect_hoisted_values.sort_by_key(|it| it.0);
 
         let hoisted_indirect_map_decl = const_decl(
             "hoistedIndirect",
