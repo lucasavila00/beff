@@ -2,6 +2,7 @@
 source: packages/beff-core/tests/print_parser.rs
 expression: "decoder(r#\"\n        export type Alias = \"some_string_const\"\n        parse.buildParsers<{ Dec: Alias }>();\n      \"#)"
 ---
+const hoistedIndirect = [];
 const namedParsers = {
     "Alias": new ParserConstImpl("some_string_const")
 };

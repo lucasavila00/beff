@@ -2,21 +2,24 @@
 source: packages/beff-core/tests/print_parser.rs
 expression: "decoder(r#\"\n        export type DiscriminatedUnion4 =\n            | {\n                type: \"a\";\n                a: {\n                  subType: \"a1\";\n                  a1: string;\n                };\n              }\n            | {\n                type: \"a\";\n                a: {\n                  subType: \"a2\";\n                  a2: string;\n                };\n              };\n        parse.buildParsers<{ DiscriminatedUnion4: DiscriminatedUnion4 }>();\n      \"#)"
 ---
+const direct_hoist_0 = new ParserTypeOfImpl("string");
+const direct_hoist_1 = new ParserConstImpl("a");
+const hoistedIndirect = [];
 const namedParsers = {
     "DiscriminatedUnion4": new ParserAnyOfImpl([
         new ParserObjectImpl({
             "a": new ParserObjectImpl({
-                "a1": new ParserTypeOfImpl("string"),
+                "a1": direct_hoist_0,
                 "subType": new ParserConstImpl("a1")
             }, null),
-            "type": new ParserConstImpl("a")
+            "type": direct_hoist_1
         }, null),
         new ParserObjectImpl({
             "a": new ParserObjectImpl({
-                "a2": new ParserTypeOfImpl("string"),
+                "a2": direct_hoist_0,
                 "subType": new ParserConstImpl("a2")
             }, null),
-            "type": new ParserConstImpl("a")
+            "type": direct_hoist_1
         }, null)
     ])
 };

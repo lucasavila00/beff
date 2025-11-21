@@ -2,6 +2,7 @@
 source: packages/beff-core/tests/print_parser.rs
 expression: "decoder(r#\"\n        export type Alias = StringFormat<\"password\">;\n        parse.buildParsers<{ Dec: Alias }>();\n      \"#)"
 ---
+const hoistedIndirect = [];
 const namedParsers = {
     "Alias": new ParserStringWithFormatImpl([
         "password"

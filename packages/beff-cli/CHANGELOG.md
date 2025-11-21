@@ -1,5 +1,11 @@
 # @beff/cli
 
+## 0.0.102
+
+### Patch Changes
+
+- smart hoist codegen
+
 ## 0.0.101
 
 ### Patch Changes

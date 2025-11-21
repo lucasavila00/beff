@@ -7,6 +7,11 @@ type AliasToNull = null;
 type AliasToAny = any;
 type AliasToConst = "constant value";
 
+type TestHoist = {
+  a: string[];
+  b: string[];
+};
+
 export const Codecs = parse.buildParsers<{
   Dec: string;
   AliasToString: AliasToString;
@@ -15,4 +20,5 @@ export const Codecs = parse.buildParsers<{
   AliasToNull: AliasToNull;
   AliasToAny: AliasToAny;
   AliasToConst: AliasToConst;
+  TestHoist: TestHoist;
 }>();

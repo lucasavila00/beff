@@ -1004,6 +1004,27 @@ class ParserRefImpl {
     return to.reportDecodeError(ctx, input);
   }
 }
+class ParserHoistedImpl {
+  hoistedIndex;
+  constructor(hoistedIndex) {
+    this.hoistedIndex = hoistedIndex;
+  }
+  describe(ctx) {
+    return hoistedIndirect[this.hoistedIndex].describe(ctx);
+  }
+  schema(ctx) {
+    return hoistedIndirect[this.hoistedIndex].schema(ctx);
+  }
+  validate(ctx, input) {
+    return hoistedIndirect[this.hoistedIndex].validate(ctx, input);
+  }
+  parseAfterValidation(ctx, input) {
+    return hoistedIndirect[this.hoistedIndex].parseAfterValidation(ctx, input);
+  }
+  reportDecodeError(ctx, input) {
+    return hoistedIndirect[this.hoistedIndex].reportDecodeError(ctx, input);
+  }
+}
 const buildParsers = (args) => {
   const stringFormats = args?.stringFormats ?? {};
   for (const k of RequiredStringFormats) {
@@ -1108,22 +1129,31 @@ const buildParsers = (args) => {
 
 const RequiredStringFormats = [];
 const RequiredNumberFormats = [];
+const direct_hoist_0 = new ParserTypeOfImpl("string");
+const hoistedIndirect = [
+    new ParserArrayImpl(direct_hoist_0)
+];
 const namedParsers = {
-    "AliasToString": new ParserTypeOfImpl("string"),
+    "AliasToString": direct_hoist_0,
     "AliasToNumber": new ParserTypeOfImpl("number"),
     "AliasToBoolean": new ParserTypeOfImpl("boolean"),
     "AliasToNull": new ParserNullImpl(),
     "AliasToAny": new ParserAnyImpl(),
-    "AliasToConst": new ParserConstImpl("constant value")
+    "AliasToConst": new ParserConstImpl("constant value"),
+    "TestHoist": new ParserObjectImpl({
+        "a": new ParserHoistedImpl(0),
+        "b": new ParserHoistedImpl(0)
+    }, null)
 };
 const buildValidatorsInput = {
-    "Dec": new ParserTypeOfImpl("string"),
+    "Dec": direct_hoist_0,
     "AliasToString": new ParserRefImpl("AliasToString"),
     "AliasToNumber": new ParserRefImpl("AliasToNumber"),
     "AliasToBoolean": new ParserRefImpl("AliasToBoolean"),
     "AliasToNull": new ParserRefImpl("AliasToNull"),
     "AliasToAny": new ParserRefImpl("AliasToAny"),
-    "AliasToConst": new ParserRefImpl("AliasToConst")
+    "AliasToConst": new ParserRefImpl("AliasToConst"),
+    "TestHoist": new ParserRefImpl("TestHoist")
 };
 
 export default { buildParsers };
