@@ -2,40 +2,11 @@
 source: packages/beff-core/tests/print_parser.rs
 expression: "decoder(r#\"\n        export type Alias = StringFormat<\"password\">;\n        parse.buildParsers<{ Dec: Alias }>();\n      \"#)"
 ---
-function ValidateAlias(ctx, input) {
-    return (hoisted_Alias_0.validateStringWithFormatsDecoder.bind(hoisted_Alias_0))(ctx, input);
-}
-function ParseAlias(ctx, input) {
-    return (hoisted_Alias_0.parseStringWithFormatsDecoder.bind(hoisted_Alias_0))(ctx, input);
-}
-function ReportAlias(ctx, input) {
-    return (hoisted_Alias_0.reportStringWithFormatsDecoder.bind(hoisted_Alias_0))(ctx, input);
-}
-function SchemaAlias(ctx, input) {
-    if (ctx.seen["Alias"]) {
-        return {};
-    }
-    ctx.seen["Alias"] = true;
-    var tmp = (hoisted_Alias_0.schemaStringWithFormatsDecoder.bind(hoisted_Alias_0))(ctx);
-    delete ctx.seen["Alias"];
-    return tmp;
-}
-function DescribeAlias(ctx, input) {
-    return (hoisted_Alias_0.describeStringWithFormatsDecoder.bind(hoisted_Alias_0))(ctx);
-}
-const validators = {
-    Alias: ValidateAlias
+const namedParsers = {
+    "Alias": new ParserStringWithFormatImpl([
+        "password"
+    ])
 };
-const parsers = {
-    Alias: ParseAlias
+const buildValidatorsInput = {
+    "Dec": new ParserRefImpl("Alias")
 };
-const reporters = {
-    Alias: ReportAlias
-};
-const schemas = {
-    Alias: SchemaAlias
-};
-const describers = {
-    Alias: DescribeAlias
-};
-const hoisted_Alias_0 = new StringWithFormatsDecoder("password");

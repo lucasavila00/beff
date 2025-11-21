@@ -2,61 +2,12 @@
 source: packages/beff-core/tests/print_parser.rs
 expression: "decoder(r#\"\n        export type Alias = [number, number]\n        parse.buildParsers<{ Dec: Alias }>();\n      \"#)"
 ---
-function ValidateAlias(ctx, input) {
-    return (hoisted_Alias_2.validateTupleValidator.bind(hoisted_Alias_2))(ctx, input);
-}
-function ParseAlias(ctx, input) {
-    return (hoisted_Alias_3.parseTupleParser.bind(hoisted_Alias_3))(ctx, input);
-}
-function ReportAlias(ctx, input) {
-    return (hoisted_Alias_4.reportTupleReporter.bind(hoisted_Alias_4))(ctx, input);
-}
-function SchemaAlias(ctx, input) {
-    if (ctx.seen["Alias"]) {
-        return {};
-    }
-    ctx.seen["Alias"] = true;
-    var tmp = (hoisted_Alias_5.schemaTupleSchema.bind(hoisted_Alias_5))(ctx);
-    delete ctx.seen["Alias"];
-    return tmp;
-}
-function DescribeAlias(ctx, input) {
-    return (hoisted_Alias_6.describeTupleDescribe.bind(hoisted_Alias_6))(ctx);
-}
-const validators = {
-    Alias: ValidateAlias
+const namedParsers = {
+    "Alias": new ParserTupleImpl([
+        new ParserTypeOfImpl("number"),
+        new ParserTypeOfImpl("number")
+    ], null)
 };
-const parsers = {
-    Alias: ParseAlias
+const buildValidatorsInput = {
+    "Dec": new ParserRefImpl("Alias")
 };
-const reporters = {
-    Alias: ReportAlias
-};
-const schemas = {
-    Alias: SchemaAlias
-};
-const describers = {
-    Alias: DescribeAlias
-};
-const hoisted_Alias_0 = [
-    validateNumber,
-    validateNumber
-];
-const hoisted_Alias_1 = null;
-const hoisted_Alias_2 = new TupleValidator(hoisted_Alias_0, hoisted_Alias_1);
-const hoisted_Alias_3 = new TupleParser([
-    parseIdentity,
-    parseIdentity
-], null);
-const hoisted_Alias_4 = new TupleReporter(hoisted_Alias_0, hoisted_Alias_1, [
-    reportNumber,
-    reportNumber
-], null);
-const hoisted_Alias_5 = new TupleSchema([
-    schemaNumber,
-    schemaNumber
-], null);
-const hoisted_Alias_6 = new TupleDescribe([
-    describeNumber,
-    describeNumber
-], null);

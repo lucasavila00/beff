@@ -2,166 +2,24 @@
 source: packages/beff-core/tests/print_parser.rs
 expression: "decoder(r#\"\n        export type DiscriminatedUnion4 =\n            | {\n                type: \"a\";\n                a: {\n                  subType: \"a1\";\n                  a1: string;\n                };\n              }\n            | {\n                type: \"a\";\n                a: {\n                  subType: \"a2\";\n                  a2: string;\n                };\n              };\n        parse.buildParsers<{ DiscriminatedUnion4: DiscriminatedUnion4 }>();\n      \"#)"
 ---
-function ValidateDiscriminatedUnion4(ctx, input) {
-    return (hoisted_DiscriminatedUnion4_47.validateAnyOfValidator.bind(hoisted_DiscriminatedUnion4_47))(ctx, input);
-}
-function ParseDiscriminatedUnion4(ctx, input) {
-    return (hoisted_DiscriminatedUnion4_48.parseAnyOfParser.bind(hoisted_DiscriminatedUnion4_48))(ctx, input);
-}
-function ReportDiscriminatedUnion4(ctx, input) {
-    return (hoisted_DiscriminatedUnion4_49.reportAnyOfReporter.bind(hoisted_DiscriminatedUnion4_49))(ctx, input);
-}
-function SchemaDiscriminatedUnion4(ctx, input) {
-    if (ctx.seen["DiscriminatedUnion4"]) {
-        return {};
-    }
-    ctx.seen["DiscriminatedUnion4"] = true;
-    var tmp = (hoisted_DiscriminatedUnion4_50.schemaAnyOfSchema.bind(hoisted_DiscriminatedUnion4_50))(ctx);
-    delete ctx.seen["DiscriminatedUnion4"];
-    return tmp;
-}
-function DescribeDiscriminatedUnion4(ctx, input) {
-    return (hoisted_DiscriminatedUnion4_51.describeAnyOfDescribe.bind(hoisted_DiscriminatedUnion4_51))(ctx);
-}
-const validators = {
-    DiscriminatedUnion4: ValidateDiscriminatedUnion4
+const namedParsers = {
+    "DiscriminatedUnion4": new ParserAnyOfImpl([
+        new ParserObjectImpl({
+            "a": new ParserObjectImpl({
+                "a1": new ParserTypeOfImpl("string"),
+                "subType": new ParserConstImpl("a1")
+            }, null),
+            "type": new ParserConstImpl("a")
+        }, null),
+        new ParserObjectImpl({
+            "a": new ParserObjectImpl({
+                "a2": new ParserTypeOfImpl("string"),
+                "subType": new ParserConstImpl("a2")
+            }, null),
+            "type": new ParserConstImpl("a")
+        }, null)
+    ])
 };
-const parsers = {
-    DiscriminatedUnion4: ParseDiscriminatedUnion4
+const buildValidatorsInput = {
+    "DiscriminatedUnion4": new ParserRefImpl("DiscriminatedUnion4")
 };
-const reporters = {
-    DiscriminatedUnion4: ReportDiscriminatedUnion4
-};
-const schemas = {
-    DiscriminatedUnion4: SchemaDiscriminatedUnion4
-};
-const describers = {
-    DiscriminatedUnion4: DescribeDiscriminatedUnion4
-};
-const hoisted_DiscriminatedUnion4_0 = new ConstDecoder("a1");
-const hoisted_DiscriminatedUnion4_1 = {
-    "a1": validateString,
-    "subType": hoisted_DiscriminatedUnion4_0.validateConstDecoder.bind(hoisted_DiscriminatedUnion4_0)
-};
-const hoisted_DiscriminatedUnion4_2 = {
-    "a1": schemaString,
-    "subType": hoisted_DiscriminatedUnion4_0.schemaConstDecoder.bind(hoisted_DiscriminatedUnion4_0)
-};
-const hoisted_DiscriminatedUnion4_3 = {
-    "a1": describeString,
-    "subType": hoisted_DiscriminatedUnion4_0.describeConstDecoder.bind(hoisted_DiscriminatedUnion4_0)
-};
-const hoisted_DiscriminatedUnion4_4 = hoisted_DiscriminatedUnion4_3;
-const hoisted_DiscriminatedUnion4_5 = null;
-const hoisted_DiscriminatedUnion4_6 = new ObjectValidator(hoisted_DiscriminatedUnion4_1, hoisted_DiscriminatedUnion4_5);
-const hoisted_DiscriminatedUnion4_7 = new ObjectParser({
-    "a1": parseIdentity,
-    "subType": hoisted_DiscriminatedUnion4_0.parseConstDecoder.bind(hoisted_DiscriminatedUnion4_0)
-}, null);
-const hoisted_DiscriminatedUnion4_8 = new ObjectReporter(hoisted_DiscriminatedUnion4_1, hoisted_DiscriminatedUnion4_5, {
-    "a1": reportString,
-    "subType": hoisted_DiscriminatedUnion4_0.reportConstDecoder.bind(hoisted_DiscriminatedUnion4_0)
-}, null);
-const hoisted_DiscriminatedUnion4_9 = new ObjectSchema(hoisted_DiscriminatedUnion4_2, null);
-const hoisted_DiscriminatedUnion4_10 = new ObjectDescribe(hoisted_DiscriminatedUnion4_4, null);
-const hoisted_DiscriminatedUnion4_11 = new ConstDecoder("a");
-const hoisted_DiscriminatedUnion4_12 = {
-    "a": hoisted_DiscriminatedUnion4_6.validateObjectValidator.bind(hoisted_DiscriminatedUnion4_6),
-    "type": hoisted_DiscriminatedUnion4_11.validateConstDecoder.bind(hoisted_DiscriminatedUnion4_11)
-};
-const hoisted_DiscriminatedUnion4_13 = {
-    "a": hoisted_DiscriminatedUnion4_9.schemaObjectSchema.bind(hoisted_DiscriminatedUnion4_9),
-    "type": hoisted_DiscriminatedUnion4_11.schemaConstDecoder.bind(hoisted_DiscriminatedUnion4_11)
-};
-const hoisted_DiscriminatedUnion4_14 = {
-    "a": hoisted_DiscriminatedUnion4_10.describeObjectDescribe.bind(hoisted_DiscriminatedUnion4_10),
-    "type": hoisted_DiscriminatedUnion4_11.describeConstDecoder.bind(hoisted_DiscriminatedUnion4_11)
-};
-const hoisted_DiscriminatedUnion4_15 = hoisted_DiscriminatedUnion4_14;
-const hoisted_DiscriminatedUnion4_16 = null;
-const hoisted_DiscriminatedUnion4_17 = new ObjectValidator(hoisted_DiscriminatedUnion4_12, hoisted_DiscriminatedUnion4_16);
-const hoisted_DiscriminatedUnion4_18 = new ObjectParser({
-    "a": hoisted_DiscriminatedUnion4_7.parseObjectParser.bind(hoisted_DiscriminatedUnion4_7),
-    "type": hoisted_DiscriminatedUnion4_11.parseConstDecoder.bind(hoisted_DiscriminatedUnion4_11)
-}, null);
-const hoisted_DiscriminatedUnion4_19 = new ObjectReporter(hoisted_DiscriminatedUnion4_12, hoisted_DiscriminatedUnion4_16, {
-    "a": hoisted_DiscriminatedUnion4_8.reportObjectReporter.bind(hoisted_DiscriminatedUnion4_8),
-    "type": hoisted_DiscriminatedUnion4_11.reportConstDecoder.bind(hoisted_DiscriminatedUnion4_11)
-}, null);
-const hoisted_DiscriminatedUnion4_20 = new ObjectSchema(hoisted_DiscriminatedUnion4_13, null);
-const hoisted_DiscriminatedUnion4_21 = new ObjectDescribe(hoisted_DiscriminatedUnion4_15, null);
-const hoisted_DiscriminatedUnion4_22 = new ConstDecoder("a2");
-const hoisted_DiscriminatedUnion4_23 = {
-    "a2": validateString,
-    "subType": hoisted_DiscriminatedUnion4_22.validateConstDecoder.bind(hoisted_DiscriminatedUnion4_22)
-};
-const hoisted_DiscriminatedUnion4_24 = {
-    "a2": schemaString,
-    "subType": hoisted_DiscriminatedUnion4_22.schemaConstDecoder.bind(hoisted_DiscriminatedUnion4_22)
-};
-const hoisted_DiscriminatedUnion4_25 = {
-    "a2": describeString,
-    "subType": hoisted_DiscriminatedUnion4_22.describeConstDecoder.bind(hoisted_DiscriminatedUnion4_22)
-};
-const hoisted_DiscriminatedUnion4_26 = hoisted_DiscriminatedUnion4_25;
-const hoisted_DiscriminatedUnion4_27 = null;
-const hoisted_DiscriminatedUnion4_28 = new ObjectValidator(hoisted_DiscriminatedUnion4_23, hoisted_DiscriminatedUnion4_27);
-const hoisted_DiscriminatedUnion4_29 = new ObjectParser({
-    "a2": parseIdentity,
-    "subType": hoisted_DiscriminatedUnion4_22.parseConstDecoder.bind(hoisted_DiscriminatedUnion4_22)
-}, null);
-const hoisted_DiscriminatedUnion4_30 = new ObjectReporter(hoisted_DiscriminatedUnion4_23, hoisted_DiscriminatedUnion4_27, {
-    "a2": reportString,
-    "subType": hoisted_DiscriminatedUnion4_22.reportConstDecoder.bind(hoisted_DiscriminatedUnion4_22)
-}, null);
-const hoisted_DiscriminatedUnion4_31 = new ObjectSchema(hoisted_DiscriminatedUnion4_24, null);
-const hoisted_DiscriminatedUnion4_32 = new ObjectDescribe(hoisted_DiscriminatedUnion4_26, null);
-const hoisted_DiscriminatedUnion4_33 = new ConstDecoder("a");
-const hoisted_DiscriminatedUnion4_34 = {
-    "a": hoisted_DiscriminatedUnion4_28.validateObjectValidator.bind(hoisted_DiscriminatedUnion4_28),
-    "type": hoisted_DiscriminatedUnion4_33.validateConstDecoder.bind(hoisted_DiscriminatedUnion4_33)
-};
-const hoisted_DiscriminatedUnion4_35 = {
-    "a": hoisted_DiscriminatedUnion4_31.schemaObjectSchema.bind(hoisted_DiscriminatedUnion4_31),
-    "type": hoisted_DiscriminatedUnion4_33.schemaConstDecoder.bind(hoisted_DiscriminatedUnion4_33)
-};
-const hoisted_DiscriminatedUnion4_36 = {
-    "a": hoisted_DiscriminatedUnion4_32.describeObjectDescribe.bind(hoisted_DiscriminatedUnion4_32),
-    "type": hoisted_DiscriminatedUnion4_33.describeConstDecoder.bind(hoisted_DiscriminatedUnion4_33)
-};
-const hoisted_DiscriminatedUnion4_37 = hoisted_DiscriminatedUnion4_36;
-const hoisted_DiscriminatedUnion4_38 = null;
-const hoisted_DiscriminatedUnion4_39 = new ObjectValidator(hoisted_DiscriminatedUnion4_34, hoisted_DiscriminatedUnion4_38);
-const hoisted_DiscriminatedUnion4_40 = new ObjectParser({
-    "a": hoisted_DiscriminatedUnion4_29.parseObjectParser.bind(hoisted_DiscriminatedUnion4_29),
-    "type": hoisted_DiscriminatedUnion4_33.parseConstDecoder.bind(hoisted_DiscriminatedUnion4_33)
-}, null);
-const hoisted_DiscriminatedUnion4_41 = new ObjectReporter(hoisted_DiscriminatedUnion4_34, hoisted_DiscriminatedUnion4_38, {
-    "a": hoisted_DiscriminatedUnion4_30.reportObjectReporter.bind(hoisted_DiscriminatedUnion4_30),
-    "type": hoisted_DiscriminatedUnion4_33.reportConstDecoder.bind(hoisted_DiscriminatedUnion4_33)
-}, null);
-const hoisted_DiscriminatedUnion4_42 = new ObjectSchema(hoisted_DiscriminatedUnion4_35, null);
-const hoisted_DiscriminatedUnion4_43 = new ObjectDescribe(hoisted_DiscriminatedUnion4_37, null);
-const hoisted_DiscriminatedUnion4_44 = [
-    hoisted_DiscriminatedUnion4_17.validateObjectValidator.bind(hoisted_DiscriminatedUnion4_17),
-    hoisted_DiscriminatedUnion4_39.validateObjectValidator.bind(hoisted_DiscriminatedUnion4_39)
-];
-const hoisted_DiscriminatedUnion4_45 = [
-    hoisted_DiscriminatedUnion4_20.schemaObjectSchema.bind(hoisted_DiscriminatedUnion4_20),
-    hoisted_DiscriminatedUnion4_42.schemaObjectSchema.bind(hoisted_DiscriminatedUnion4_42)
-];
-const hoisted_DiscriminatedUnion4_46 = [
-    hoisted_DiscriminatedUnion4_21.describeObjectDescribe.bind(hoisted_DiscriminatedUnion4_21),
-    hoisted_DiscriminatedUnion4_43.describeObjectDescribe.bind(hoisted_DiscriminatedUnion4_43)
-];
-const hoisted_DiscriminatedUnion4_47 = new AnyOfValidator(hoisted_DiscriminatedUnion4_44);
-const hoisted_DiscriminatedUnion4_48 = new AnyOfParser(hoisted_DiscriminatedUnion4_44, [
-    hoisted_DiscriminatedUnion4_18.parseObjectParser.bind(hoisted_DiscriminatedUnion4_18),
-    hoisted_DiscriminatedUnion4_40.parseObjectParser.bind(hoisted_DiscriminatedUnion4_40)
-]);
-const hoisted_DiscriminatedUnion4_49 = new AnyOfReporter(hoisted_DiscriminatedUnion4_44, [
-    hoisted_DiscriminatedUnion4_19.reportObjectReporter.bind(hoisted_DiscriminatedUnion4_19),
-    hoisted_DiscriminatedUnion4_41.reportObjectReporter.bind(hoisted_DiscriminatedUnion4_41)
-]);
-const hoisted_DiscriminatedUnion4_50 = new AnyOfSchema(hoisted_DiscriminatedUnion4_45);
-const hoisted_DiscriminatedUnion4_51 = new AnyOfDescribe(hoisted_DiscriminatedUnion4_46);

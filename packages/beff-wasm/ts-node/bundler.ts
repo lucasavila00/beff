@@ -192,12 +192,6 @@ type WasmDiagnosticItem = {
 type WasmDiagnostic = {
   diagnostics: WasmDiagnosticItem[];
 };
-export type WritableModules = {
-  js_validators: string;
-  js_server_meta: string | undefined;
-  json_schema: string | undefined;
-  js_built_parsers: string | undefined;
-};
 
 export type WritableModulesV2 = {
   js_built_parsers: string;

@@ -5,7 +5,7 @@ mod tests {
     use beff_core::{
         import_resolver::{parse_and_bind, FsModuleResolver},
         parser_extractor::BuiltDecoder,
-        print::printer::ToWritableModules,
+        print::printer2::ToWritableParser,
         schema_changes::print_ts_types,
         BeffUserSettings, BffFileName, EntryPoints, ExtractResult, FileManager, NamedSchema,
         ParsedModule,
@@ -105,8 +105,8 @@ mod tests {
             panic!("errors: {:?}", errors);
         }
         let res = ExtractResult { parser: p.parser };
-        let m = res.to_module().expect("should be able to emit module");
-        m.js_validators
+        let m = res.to_module_v2().expect("should be able to emit module");
+        m.js_built_parsers
     }
 
     #[test]

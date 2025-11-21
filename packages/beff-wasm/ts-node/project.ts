@@ -11,7 +11,6 @@ export type ProjectJson = {
   outputDir: string;
   module: ProjectModule | undefined;
   settings: BeffUserSettings;
-  codegen: 1 | 2;
 };
 
 export type ProjectModule = "cjs" | "esm";

@@ -2,40 +2,9 @@
 source: packages/beff-core/tests/print_parser.rs
 expression: "decoder(r#\"\n        export type Alias = `${number}__${number}`\n        parse.buildParsers<{ Dec: Alias }>();\n      \"#)"
 ---
-function ValidateAlias(ctx, input) {
-    return (hoisted_Alias_0.validateRegexDecoder.bind(hoisted_Alias_0))(ctx, input);
-}
-function ParseAlias(ctx, input) {
-    return (hoisted_Alias_0.parseRegexDecoder.bind(hoisted_Alias_0))(ctx, input);
-}
-function ReportAlias(ctx, input) {
-    return (hoisted_Alias_0.reportRegexDecoder.bind(hoisted_Alias_0))(ctx, input);
-}
-function SchemaAlias(ctx, input) {
-    if (ctx.seen["Alias"]) {
-        return {};
-    }
-    ctx.seen["Alias"] = true;
-    var tmp = (hoisted_Alias_0.schemaRegexDecoder.bind(hoisted_Alias_0))(ctx);
-    delete ctx.seen["Alias"];
-    return tmp;
-}
-function DescribeAlias(ctx, input) {
-    return (hoisted_Alias_0.describeRegexDecoder.bind(hoisted_Alias_0))(ctx);
-}
-const validators = {
-    Alias: ValidateAlias
+const namedParsers = {
+    "Alias": new ParserRegexImpl(/(\d+(\.\d+)?)(__)(\d+(\.\d+)?)/, "${number}__${number}")
 };
-const parsers = {
-    Alias: ParseAlias
+const buildValidatorsInput = {
+    "Dec": new ParserRefImpl("Alias")
 };
-const reporters = {
-    Alias: ReportAlias
-};
-const schemas = {
-    Alias: SchemaAlias
-};
-const describers = {
-    Alias: DescribeAlias
-};
-const hoisted_Alias_0 = new RegexDecoder(/(\d+(\.\d+)?)(__)(\d+(\.\d+)?)/, "${number}__${number}");
