@@ -416,20 +416,22 @@ fn maybe_decode_any_of_consts(flat_values: &BTreeSet<JsonSchema>) -> Option<Expr
 fn should_hoist_direct(schema: &JsonSchema) -> bool {
     // hoist only what has no inner schemas
     match schema {
-        JsonSchema::String
-        | JsonSchema::Boolean
-        | JsonSchema::Number
-        | JsonSchema::Function
-        | JsonSchema::Ref(_)
-        | JsonSchema::Null
-        | JsonSchema::Any
+        JsonSchema::StringWithFormat(_)
         | JsonSchema::StringFormatExtends(_)
-        | JsonSchema::StringWithFormat(_)
-        | JsonSchema::NumberFormatExtends(_)
         | JsonSchema::NumberWithFormat(_)
+        | JsonSchema::NumberFormatExtends(_)
+        | JsonSchema::AnyArrayLike
+        | JsonSchema::Any
+        | JsonSchema::Number
+        | JsonSchema::String
+        | JsonSchema::Boolean
         | JsonSchema::StNever
+        | JsonSchema::Function
+        | JsonSchema::Codec(_)
+        | JsonSchema::TplLitType(_)
+        | JsonSchema::Ref(_)
         | JsonSchema::Const(_)
-        | JsonSchema::Codec(_) => true,
+        | JsonSchema::Null => true,
         _ => false,
     }
 }
