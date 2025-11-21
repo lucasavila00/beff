@@ -1169,6 +1169,31 @@ class ParserRefImpl implements BeffParserImpl {
     return to.reportDecodeError(ctx, input);
   }
 }
+
+declare var hoistedIndirect: BeffParserImpl[];
+
+class ParserHoistedImpl implements BeffParserImpl {
+  private hoistedIndex: number;
+  constructor(hoistedIndex: number) {
+    this.hoistedIndex = hoistedIndex;
+  }
+  describe(ctx: DescribeContext): string {
+    return hoistedIndirect[this.hoistedIndex].describe(ctx);
+  }
+  schema(ctx: SchemaContext): JSONSchema7 {
+    return hoistedIndirect[this.hoistedIndex].schema(ctx);
+  }
+  validate(ctx: ValidateContext, input: unknown): boolean {
+    return hoistedIndirect[this.hoistedIndex].validate(ctx, input);
+  }
+  parseAfterValidation(ctx: ParseContext, input: any): unknown {
+    return hoistedIndirect[this.hoistedIndex].parseAfterValidation(ctx, input);
+  }
+  reportDecodeError(ctx: ReportContext, input: unknown): DecodeError[] {
+    return hoistedIndirect[this.hoistedIndex].reportDecodeError(ctx, input);
+  }
+}
+
 declare var RequiredStringFormats: string[];
 declare var RequiredNumberFormats: string[];
 declare var buildValidatorsInput: Record<string, BeffParserImpl>;

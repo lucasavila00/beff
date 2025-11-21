@@ -1004,6 +1004,27 @@ class ParserRefImpl {
     return to.reportDecodeError(ctx, input);
   }
 }
+class ParserHoistedImpl {
+  hoistedIndex;
+  constructor(hoistedIndex) {
+    this.hoistedIndex = hoistedIndex;
+  }
+  describe(ctx) {
+    return hoistedIndirect[this.hoistedIndex].describe(ctx);
+  }
+  schema(ctx) {
+    return hoistedIndirect[this.hoistedIndex].schema(ctx);
+  }
+  validate(ctx, input) {
+    return hoistedIndirect[this.hoistedIndex].validate(ctx, input);
+  }
+  parseAfterValidation(ctx, input) {
+    return hoistedIndirect[this.hoistedIndex].parseAfterValidation(ctx, input);
+  }
+  reportDecodeError(ctx, input) {
+    return hoistedIndirect[this.hoistedIndex].reportDecodeError(ctx, input);
+  }
+}
 const buildParsers = (args) => {
   const stringFormats = args?.stringFormats ?? {};
   for (const k of RequiredStringFormats) {
@@ -1108,34 +1129,35 @@ const buildParsers = (args) => {
 
 const RequiredStringFormats = [];
 const RequiredNumberFormats = [];
-const hoisted_0 = new ParserTypeOfImpl("string");
-const hoisted_1 = new ParserRefImpl("AliasToString");
-const hoisted_10 = new ParserAnyImpl();
-const hoisted_11 = new ParserConstImpl("constant value");
-const hoisted_2 = new ParserRefImpl("AliasToNumber");
-const hoisted_3 = new ParserRefImpl("AliasToBoolean");
-const hoisted_4 = new ParserRefImpl("AliasToNull");
-const hoisted_5 = new ParserRefImpl("AliasToAny");
-const hoisted_6 = new ParserRefImpl("AliasToConst");
-const hoisted_7 = new ParserTypeOfImpl("number");
-const hoisted_8 = new ParserTypeOfImpl("boolean");
-const hoisted_9 = new ParserNullImpl();
+const direct_hoist_0 = new ParserTypeOfImpl("string");
+const direct_hoist_1 = new ParserRefImpl("AliasToString");
+const direct_hoist_10 = new ParserAnyImpl();
+const direct_hoist_11 = new ParserConstImpl("constant value");
+const direct_hoist_2 = new ParserRefImpl("AliasToNumber");
+const direct_hoist_3 = new ParserRefImpl("AliasToBoolean");
+const direct_hoist_4 = new ParserRefImpl("AliasToNull");
+const direct_hoist_5 = new ParserRefImpl("AliasToAny");
+const direct_hoist_6 = new ParserRefImpl("AliasToConst");
+const direct_hoist_7 = new ParserTypeOfImpl("number");
+const direct_hoist_8 = new ParserTypeOfImpl("boolean");
+const direct_hoist_9 = new ParserNullImpl();
+const hoistedIndirect = [];
 const namedParsers = {
-    "AliasToString": hoisted_0,
-    "AliasToNumber": hoisted_7,
-    "AliasToBoolean": hoisted_8,
-    "AliasToNull": hoisted_9,
-    "AliasToAny": hoisted_10,
-    "AliasToConst": hoisted_11
+    "AliasToString": direct_hoist_0,
+    "AliasToNumber": direct_hoist_7,
+    "AliasToBoolean": direct_hoist_8,
+    "AliasToNull": direct_hoist_9,
+    "AliasToAny": direct_hoist_10,
+    "AliasToConst": direct_hoist_11
 };
 const buildValidatorsInput = {
-    "Dec": hoisted_0,
-    "AliasToString": hoisted_1,
-    "AliasToNumber": hoisted_2,
-    "AliasToBoolean": hoisted_3,
-    "AliasToNull": hoisted_4,
-    "AliasToAny": hoisted_5,
-    "AliasToConst": hoisted_6
+    "Dec": direct_hoist_0,
+    "AliasToString": direct_hoist_1,
+    "AliasToNumber": direct_hoist_2,
+    "AliasToBoolean": direct_hoist_3,
+    "AliasToNull": direct_hoist_4,
+    "AliasToAny": direct_hoist_5,
+    "AliasToConst": direct_hoist_6
 };
 
 export default { buildParsers };

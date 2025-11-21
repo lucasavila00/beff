@@ -1004,6 +1004,27 @@ class ParserRefImpl {
     return to.reportDecodeError(ctx, input);
   }
 }
+class ParserHoistedImpl {
+  hoistedIndex;
+  constructor(hoistedIndex) {
+    this.hoistedIndex = hoistedIndex;
+  }
+  describe(ctx) {
+    return hoistedIndirect[this.hoistedIndex].describe(ctx);
+  }
+  schema(ctx) {
+    return hoistedIndirect[this.hoistedIndex].schema(ctx);
+  }
+  validate(ctx, input) {
+    return hoistedIndirect[this.hoistedIndex].validate(ctx, input);
+  }
+  parseAfterValidation(ctx, input) {
+    return hoistedIndirect[this.hoistedIndex].parseAfterValidation(ctx, input);
+  }
+  reportDecodeError(ctx, input) {
+    return hoistedIndirect[this.hoistedIndex].reportDecodeError(ctx, input);
+  }
+}
 const buildParsers = (args) => {
   const stringFormats = args?.stringFormats ?? {};
   for (const k of RequiredStringFormats) {
@@ -1108,13 +1129,14 @@ const buildParsers = (args) => {
 
 const RequiredStringFormats = ["ValidCurrency"];
 const RequiredNumberFormats = [];
-const hoisted_0 = new ParserRefImpl("A");
-const hoisted_1 = new ParserTypeOfImpl("string");
+const direct_hoist_0 = new ParserRefImpl("A");
+const direct_hoist_1 = new ParserTypeOfImpl("string");
+const hoistedIndirect = [];
 const namedParsers = {
-    "A": hoisted_1
+    "A": direct_hoist_1
 };
 const buildValidatorsInput = {
-    "A": hoisted_0
+    "A": direct_hoist_0
 };
 
 export default { buildParsers };

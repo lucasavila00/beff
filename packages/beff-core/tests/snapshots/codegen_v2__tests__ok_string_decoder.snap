@@ -2,8 +2,9 @@
 source: packages/beff-core/tests/codegen_v2.rs
 expression: "decoder(r#\"\n        parse.buildParsers<{ Dec: string }>();\n      \"#)"
 ---
-const hoisted_0 = new ParserTypeOfImpl("string");
+const direct_hoist_0 = new ParserTypeOfImpl("string");
+const hoistedIndirect = [];
 const namedParsers = {};
 const buildValidatorsInput = {
-    "Dec": hoisted_0
+    "Dec": direct_hoist_0
 };

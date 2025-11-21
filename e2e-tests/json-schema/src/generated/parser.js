@@ -1004,6 +1004,27 @@ class ParserRefImpl {
     return to.reportDecodeError(ctx, input);
   }
 }
+class ParserHoistedImpl {
+  hoistedIndex;
+  constructor(hoistedIndex) {
+    this.hoistedIndex = hoistedIndex;
+  }
+  describe(ctx) {
+    return hoistedIndirect[this.hoistedIndex].describe(ctx);
+  }
+  schema(ctx) {
+    return hoistedIndirect[this.hoistedIndex].schema(ctx);
+  }
+  validate(ctx, input) {
+    return hoistedIndirect[this.hoistedIndex].validate(ctx, input);
+  }
+  parseAfterValidation(ctx, input) {
+    return hoistedIndirect[this.hoistedIndex].parseAfterValidation(ctx, input);
+  }
+  reportDecodeError(ctx, input) {
+    return hoistedIndirect[this.hoistedIndex].reportDecodeError(ctx, input);
+  }
+}
 const buildParsers = (args) => {
   const stringFormats = args?.stringFormats ?? {};
   for (const k of RequiredStringFormats) {
@@ -1108,131 +1129,125 @@ const buildParsers = (args) => {
 
 const RequiredStringFormats = ["ValidCurrency"];
 const RequiredNumberFormats = [];
-const hoisted_0 = new ParserTypeOfImpl("string");
-const hoisted_1 = new ParserTypeOfImpl("number");
-const hoisted_10 = new ParserRefImpl("DiscriminatedUnion");
-const hoisted_11 = new ParserRefImpl("RecursiveTree");
-const hoisted_12 = new ParserRefImpl("SemVer");
-const hoisted_13 = new ParserRefImpl("NonEmptyString");
-const hoisted_14 = new ParserRefImpl("ValidCurrency");
-const hoisted_15 = new ParserDateImpl();
-const hoisted_16 = new ParserBigIntImpl();
-const hoisted_17 = new ParserConstImpl("a1");
-const hoisted_18 = new ParserConstImpl("a");
-const hoisted_19 = new ParserConstImpl("a2");
-const hoisted_2 = new ParserTypeOfImpl("boolean");
-const hoisted_20 = new ParserConstImpl("b");
-const hoisted_3 = new ParserNullImpl();
-const hoisted_4 = new ParserAnyImpl();
-const hoisted_5 = new ParserRefImpl("T1");
-const hoisted_6 = new ParserRefImpl("T2");
-const hoisted_7 = new ParserRefImpl("T3");
-const hoisted_8 = new ParserRefImpl("InvalidSchemaWithDate");
-const hoisted_9 = new ParserRefImpl("InvalidSchemaWithBigInt");
-const namedParsers = {
-    "T1": new ParserObjectImpl({
-        "a": hoisted_0,
-        "b": hoisted_1
+const direct_hoist_0 = new ParserTypeOfImpl("string");
+const direct_hoist_1 = new ParserTypeOfImpl("number");
+const direct_hoist_10 = new ParserRefImpl("DiscriminatedUnion");
+const direct_hoist_11 = new ParserRefImpl("RecursiveTree");
+const direct_hoist_12 = new ParserRefImpl("SemVer");
+const direct_hoist_13 = new ParserRefImpl("NonEmptyString");
+const direct_hoist_14 = new ParserRefImpl("ValidCurrency");
+const direct_hoist_15 = new ParserDateImpl();
+const direct_hoist_16 = new ParserBigIntImpl();
+const direct_hoist_17 = new ParserConstImpl("a1");
+const direct_hoist_18 = new ParserConstImpl("a");
+const direct_hoist_19 = new ParserConstImpl("a2");
+const direct_hoist_2 = new ParserTypeOfImpl("boolean");
+const direct_hoist_20 = new ParserConstImpl("b");
+const direct_hoist_21 = new ParserStringWithFormatImpl([
+    "ValidCurrency"
+]);
+const direct_hoist_3 = new ParserNullImpl();
+const direct_hoist_4 = new ParserAnyImpl();
+const direct_hoist_5 = new ParserRefImpl("T1");
+const direct_hoist_6 = new ParserRefImpl("T2");
+const direct_hoist_7 = new ParserRefImpl("T3");
+const direct_hoist_8 = new ParserRefImpl("InvalidSchemaWithDate");
+const direct_hoist_9 = new ParserRefImpl("InvalidSchemaWithBigInt");
+const hoistedIndirect = [
+    new ParserObjectImpl({}, direct_hoist_4),
+    new ParserArrayImpl(direct_hoist_4),
+    new ParserObjectImpl({
+        "a": direct_hoist_0,
+        "b": direct_hoist_1
     }, null),
-    "T2": new ParserObjectImpl({
-        "t1": hoisted_5
+    new ParserObjectImpl({
+        "t1": direct_hoist_5
     }, null),
-    "T3": new ParserObjectImpl({
-        "t2Array": new ParserArrayImpl(hoisted_6)
+    new ParserArrayImpl(direct_hoist_6),
+    new ParserObjectImpl({
+        "t2Array": new ParserHoistedImpl(4)
     }, null),
-    "InvalidSchemaWithDate": new ParserObjectImpl({
-        "x": hoisted_15
+    new ParserObjectImpl({
+        "x": direct_hoist_15
     }, null),
-    "InvalidSchemaWithBigInt": new ParserObjectImpl({
-        "x": hoisted_16
+    new ParserObjectImpl({
+        "x": direct_hoist_16
     }, null),
-    "DiscriminatedUnion": new ParserAnyOfDiscriminatedImpl([
-        new ParserObjectImpl({
-            "a1": hoisted_0,
-            "a11": new ParserAnyOfImpl([
-                hoisted_3,
-                hoisted_0
-            ]),
-            "subType": hoisted_17,
-            "type": hoisted_18
-        }, null),
-        new ParserObjectImpl({
-            "a2": hoisted_0,
-            "subType": hoisted_19,
-            "type": hoisted_18
-        }, null),
-        new ParserObjectImpl({
-            "type": hoisted_20,
-            "value": hoisted_1
-        }, null)
-    ], "type", {
-        "a": new ParserAnyOfDiscriminatedImpl([
-            new ParserObjectImpl({
-                "a1": hoisted_0,
-                "a11": new ParserAnyOfImpl([
-                    hoisted_3,
-                    hoisted_0
-                ]),
-                "subType": hoisted_17,
-                "type": hoisted_18
-            }, null),
-            new ParserObjectImpl({
-                "a2": hoisted_0,
-                "subType": hoisted_19,
-                "type": hoisted_18
-            }, null)
-        ], "subType", {
-            "a1": new ParserObjectImpl({
-                "a1": hoisted_0,
-                "a11": new ParserAnyOfImpl([
-                    hoisted_3,
-                    hoisted_0
-                ]),
-                "subType": hoisted_17,
-                "type": hoisted_18
-            }, null),
-            "a2": new ParserObjectImpl({
-                "a2": hoisted_0,
-                "subType": hoisted_19,
-                "type": hoisted_18
-            }, null)
-        }),
-        "b": new ParserObjectImpl({
-            "type": hoisted_20,
-            "value": hoisted_1
-        }, null)
+    new ParserAnyOfImpl([
+        direct_hoist_3,
+        direct_hoist_0
+    ]),
+    new ParserObjectImpl({
+        "a1": direct_hoist_0,
+        "a11": new ParserHoistedImpl(8),
+        "subType": direct_hoist_17,
+        "type": direct_hoist_18
+    }, null),
+    new ParserObjectImpl({
+        "a2": direct_hoist_0,
+        "subType": direct_hoist_19,
+        "type": direct_hoist_18
+    }, null),
+    new ParserAnyOfDiscriminatedImpl([
+        new ParserHoistedImpl(9),
+        new ParserHoistedImpl(10)
+    ], "subType", {
+        "a1": new ParserHoistedImpl(9),
+        "a2": new ParserHoistedImpl(10)
     }),
-    "RecursiveTree": new ParserObjectImpl({
-        "children": new ParserArrayImpl(hoisted_11),
-        "value": hoisted_1
+    new ParserObjectImpl({
+        "type": direct_hoist_20,
+        "value": direct_hoist_1
     }, null),
-    "SemVer": new ParserRegexImpl(/(\d+(\.\d+)?)(\.)(\d+(\.\d+)?)(\.)(\d+(\.\d+)?)/, "${number}.${number}.${number}"),
-    "NonEmptyString": new ParserTupleImpl([
-        hoisted_0
-    ], hoisted_0),
-    "ValidCurrency": new ParserStringWithFormatImpl([
-        "ValidCurrency"
-    ])
+    new ParserAnyOfDiscriminatedImpl([
+        new ParserHoistedImpl(9),
+        new ParserHoistedImpl(10),
+        new ParserHoistedImpl(12)
+    ], "type", {
+        "a": new ParserHoistedImpl(11),
+        "b": new ParserHoistedImpl(12)
+    }),
+    new ParserArrayImpl(direct_hoist_11),
+    new ParserObjectImpl({
+        "children": new ParserHoistedImpl(14),
+        "value": direct_hoist_1
+    }, null),
+    new ParserRegexImpl(/(\d+(\.\d+)?)(\.)(\d+(\.\d+)?)(\.)(\d+(\.\d+)?)/, "${number}.${number}.${number}"),
+    new ParserTupleImpl([
+        direct_hoist_0
+    ], direct_hoist_0)
+];
+const namedParsers = {
+    "T1": new ParserHoistedImpl(2),
+    "T2": new ParserHoistedImpl(3),
+    "T3": new ParserHoistedImpl(5),
+    "InvalidSchemaWithDate": new ParserHoistedImpl(6),
+    "InvalidSchemaWithBigInt": new ParserHoistedImpl(7),
+    "DiscriminatedUnion": new ParserHoistedImpl(13),
+    "RecursiveTree": new ParserHoistedImpl(15),
+    "SemVer": new ParserHoistedImpl(16),
+    "NonEmptyString": new ParserHoistedImpl(17),
+    "ValidCurrency": direct_hoist_21
 };
 const buildValidatorsInput = {
-    "string": hoisted_0,
-    "number": hoisted_1,
-    "boolean": hoisted_2,
-    "null": hoisted_3,
-    "undefined": hoisted_3,
-    "object": new ParserObjectImpl({}, hoisted_4),
-    "anyArray": new ParserArrayImpl(hoisted_4),
-    "any": hoisted_4,
-    "T1": hoisted_5,
-    "T2": hoisted_6,
-    "T3": hoisted_7,
-    "InvalidSchemaWithDate": hoisted_8,
-    "InvalidSchemaWithBigInt": hoisted_9,
-    "DiscriminatedUnion": hoisted_10,
-    "RecursiveTree": hoisted_11,
-    "SemVer": hoisted_12,
-    "NonEmptyString": hoisted_13,
-    "ValidCurrency": hoisted_14
+    "string": direct_hoist_0,
+    "number": direct_hoist_1,
+    "boolean": direct_hoist_2,
+    "null": direct_hoist_3,
+    "undefined": direct_hoist_3,
+    "object": new ParserHoistedImpl(0),
+    "anyArray": new ParserHoistedImpl(1),
+    "any": direct_hoist_4,
+    "T1": direct_hoist_5,
+    "T2": direct_hoist_6,
+    "T3": direct_hoist_7,
+    "InvalidSchemaWithDate": direct_hoist_8,
+    "InvalidSchemaWithBigInt": direct_hoist_9,
+    "DiscriminatedUnion": direct_hoist_10,
+    "RecursiveTree": direct_hoist_11,
+    "SemVer": direct_hoist_12,
+    "NonEmptyString": direct_hoist_13,
+    "ValidCurrency": direct_hoist_14
 };
 
 export default { buildParsers };

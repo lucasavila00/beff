@@ -1004,6 +1004,27 @@ class ParserRefImpl {
     return to.reportDecodeError(ctx, input);
   }
 }
+class ParserHoistedImpl {
+  hoistedIndex;
+  constructor(hoistedIndex) {
+    this.hoistedIndex = hoistedIndex;
+  }
+  describe(ctx) {
+    return hoistedIndirect[this.hoistedIndex].describe(ctx);
+  }
+  schema(ctx) {
+    return hoistedIndirect[this.hoistedIndex].schema(ctx);
+  }
+  validate(ctx, input) {
+    return hoistedIndirect[this.hoistedIndex].validate(ctx, input);
+  }
+  parseAfterValidation(ctx, input) {
+    return hoistedIndirect[this.hoistedIndex].parseAfterValidation(ctx, input);
+  }
+  reportDecodeError(ctx, input) {
+    return hoistedIndirect[this.hoistedIndex].reportDecodeError(ctx, input);
+  }
+}
 const buildParsers = (args) => {
   const stringFormats = args?.stringFormats ?? {};
   for (const k of RequiredStringFormats) {
@@ -1108,46 +1129,47 @@ const buildParsers = (args) => {
 
 const RequiredStringFormats = ["password","StartsWithA"];
 const RequiredNumberFormats = [];
-const hoisted_0 = new ParserRefImpl("User");
-const hoisted_1 = new ParserRefImpl("NotPublic");
-const hoisted_2 = new ParserRefImpl("StartsWithA");
-const hoisted_3 = new ParserRefImpl("Password");
-const hoisted_4 = new ParserConstImpl(123.456);
-const hoisted_5 = new ParserConstImpl(123);
-const hoisted_6 = new ParserRefImpl("UnionNested");
-const hoisted_7 = new ParserTypeOfImpl("number");
-const hoisted_8 = new ParserTypeOfImpl("string");
-const namedParsers = {
-    "User": new ParserObjectImpl({
-        "age": hoisted_7,
-        "name": hoisted_8
+const direct_hoist_0 = new ParserRefImpl("User");
+const direct_hoist_1 = new ParserRefImpl("NotPublic");
+const direct_hoist_10 = new ParserStringWithFormatImpl([
+    "password"
+]);
+const direct_hoist_2 = new ParserRefImpl("StartsWithA");
+const direct_hoist_3 = new ParserRefImpl("Password");
+const direct_hoist_4 = new ParserConstImpl(123.456);
+const direct_hoist_5 = new ParserConstImpl(123);
+const direct_hoist_6 = new ParserRefImpl("UnionNested");
+const direct_hoist_7 = new ParserTypeOfImpl("number");
+const direct_hoist_8 = new ParserTypeOfImpl("string");
+const direct_hoist_9 = new ParserStringWithFormatImpl([
+    "StartsWithA"
+]);
+const hoistedIndirect = [
+    new ParserArrayImpl(direct_hoist_0),
+    new ParserObjectImpl({
+        "age": direct_hoist_7,
+        "name": direct_hoist_8
     }, null),
-    "NotPublic": new ParserObjectImpl({
-        "a": hoisted_8
+    new ParserObjectImpl({
+        "a": direct_hoist_8
     }, null),
-    "StartsWithA": new ParserStringWithFormatImpl([
-        "StartsWithA"
-    ]),
-    "Password": new ParserStringWithFormatImpl([
-        "password"
-    ]),
-    "A": new ParserAnyOfConstsImpl([
+    new ParserAnyOfConstsImpl([
         1,
         2
     ]),
-    "B": new ParserAnyOfConstsImpl([
+    new ParserAnyOfConstsImpl([
         2,
         3
     ]),
-    "D": new ParserAnyOfConstsImpl([
+    new ParserAnyOfConstsImpl([
         4,
         5
     ]),
-    "E": new ParserAnyOfConstsImpl([
+    new ParserAnyOfConstsImpl([
         5,
         6
     ]),
-    "UnionNested": new ParserAnyOfConstsImpl([
+    new ParserAnyOfConstsImpl([
         1,
         2,
         3,
@@ -1155,16 +1177,27 @@ const namedParsers = {
         5,
         6
     ])
+];
+const namedParsers = {
+    "User": new ParserHoistedImpl(1),
+    "NotPublic": new ParserHoistedImpl(2),
+    "StartsWithA": direct_hoist_9,
+    "Password": direct_hoist_10,
+    "A": new ParserHoistedImpl(3),
+    "B": new ParserHoistedImpl(4),
+    "D": new ParserHoistedImpl(5),
+    "E": new ParserHoistedImpl(6),
+    "UnionNested": new ParserHoistedImpl(7)
 };
 const buildValidatorsInput = {
-    "User": hoisted_0,
-    "Users": new ParserArrayImpl(hoisted_0),
-    "NotPublicRenamed": hoisted_1,
-    "StartsWithA": hoisted_2,
-    "Password": hoisted_3,
-    "float": hoisted_4,
-    "int": hoisted_5,
-    "union": hoisted_6
+    "User": direct_hoist_0,
+    "Users": new ParserHoistedImpl(0),
+    "NotPublicRenamed": direct_hoist_1,
+    "StartsWithA": direct_hoist_2,
+    "Password": direct_hoist_3,
+    "float": direct_hoist_4,
+    "int": direct_hoist_5,
+    "union": direct_hoist_6
 };
 
 export default { buildParsers };

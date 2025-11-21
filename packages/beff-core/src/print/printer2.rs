@@ -10,14 +10,21 @@ use swc_ecma_ast::{
 };
 
 use crate::{
-    ast::json_schema::{CodecName, JsonSchema, JsonSchemaConst, Optionality, TplLitTypeItem},
+    ast::{
+        js::Js,
+        json::N,
+        json_schema::{CodecName, JsonSchema, JsonSchemaConst, Optionality, TplLitTypeItem},
+    },
     emit::emit_module,
     parser_extractor::BuiltDecoder,
     print::expr::ToExpr,
     ExtractResult, NamedSchema,
 };
 
-type HoistedMap = BTreeMap<JsonSchema, (String, Expr)>;
+struct HoistedMap {
+    direct: BTreeMap<JsonSchema, (String, Expr)>,
+    indirect: BTreeMap<JsonSchema, (i32, Expr)>,
+}
 
 #[derive(Serialize, Deserialize)]
 pub struct WritableModulesV2 {
@@ -404,7 +411,7 @@ fn maybe_decode_any_of_consts(flat_values: &BTreeSet<JsonSchema>) -> Option<Expr
     None
 }
 
-fn should_hoist(schema: &JsonSchema) -> bool {
+fn should_hoist_direct(schema: &JsonSchema) -> bool {
     // hoist only what has no inner schemas
     match schema {
         JsonSchema::String
@@ -415,7 +422,9 @@ fn should_hoist(schema: &JsonSchema) -> bool {
         | JsonSchema::Null
         | JsonSchema::Any
         | JsonSchema::StringFormatExtends(_)
+        | JsonSchema::StringWithFormat(_)
         | JsonSchema::NumberFormatExtends(_)
+        | JsonSchema::NumberWithFormat(_)
         | JsonSchema::StNever
         | JsonSchema::Const(_)
         | JsonSchema::Codec(_) => true,
@@ -423,14 +432,27 @@ fn should_hoist(schema: &JsonSchema) -> bool {
     }
 }
 
+fn i32_lit(id: i32) -> Expr {
+    Js::Number(N::parse_int(id as i64)).to_expr()
+}
+fn hoisted_indirect_identifier(id: i32) -> Expr {
+    new_class_impl("ParserHoistedImpl", vec![i32_lit(id)])
+}
 fn validator_for_schema(
     schema: &JsonSchema,
     named_schemas: &[NamedSchema],
     hoisted: &mut HoistedMap,
 ) -> Expr {
-    let found = hoisted.get(schema);
-    if let Some((var_name, _)) = found {
-        return Expr::Ident(identifier(var_name));
+    if should_hoist_direct(schema) {
+        let found_direct = hoisted.direct.get(schema);
+        if let Some((var_name, _)) = found_direct {
+            return Expr::Ident(identifier(var_name));
+        }
+    } else {
+        let found_indirect = hoisted.indirect.get(schema);
+        if let Some((var_name, _)) = found_indirect {
+            return hoisted_indirect_identifier(*var_name);
+        }
     }
 
     let out = match schema {
@@ -519,16 +541,14 @@ fn validator_for_schema(
                 .collect::<BTreeSet<_>>();
 
             if let Some(consts) = maybe_decode_any_of_consts(&flat_values) {
-                return consts;
-            }
-
-            if let Some(discriminated) =
+                consts
+            } else if let Some(discriminated) =
                 maybe_decode_any_of_discriminated(&flat_values, named_schemas, hoisted)
             {
-                return discriminated;
+                discriminated
+            } else {
+                decode_union_or_intersection("ParserAnyOfImpl", vs, named_schemas, hoisted)
             }
-
-            decode_union_or_intersection("ParserAnyOfImpl", vs, named_schemas, hoisted)
         }
         JsonSchema::Tuple {
             prefix_items,
@@ -601,12 +621,18 @@ fn validator_for_schema(
             new_class_impl("ParserObjectImpl", vec![obj_validator, rest])
         }
     };
-    if should_hoist(schema) {
-        let new_id = format!("hoisted_{}", hoisted.len());
-        hoisted.insert(schema.clone(), (new_id.clone(), out.clone()));
+    if should_hoist_direct(schema) {
+        let new_id = format!("direct_hoist_{}", hoisted.direct.len());
+        hoisted
+            .direct
+            .insert(schema.clone(), (new_id.clone(), out.clone()));
         Expr::Ident(identifier(&new_id))
     } else {
-        out
+        let new_id = hoisted.indirect.len() as i32;
+        hoisted
+            .indirect
+            .insert(schema.clone(), (new_id.clone(), out.clone()));
+        hoisted_indirect_identifier(new_id)
     }
 }
 
@@ -672,7 +698,10 @@ fn build_named_parsers(named_schemas: &[NamedSchema], hoisted: &mut HoistedMap) 
 
 impl ToWritableParser for ExtractResult {
     fn to_module_v2(self) -> Result<WritableModulesV2> {
-        let mut hoisted: BTreeMap<JsonSchema, (String, Expr)> = BTreeMap::new();
+        let mut hoisted = HoistedMap {
+            direct: BTreeMap::new(),
+            indirect: BTreeMap::new(),
+        };
 
         let built_parsers = self.parser.built_decoders.unwrap_or_default();
         let named_schemas = merge_named_schema(&self.parser.validators)?;
@@ -687,19 +716,39 @@ impl ToWritableParser for ExtractResult {
             build_named_parsers(&named_schemas, &mut hoisted),
         );
 
-        let mut sorted_hoisted_values = hoisted.into_values().collect::<Vec<_>>();
-        sorted_hoisted_values.sort_by_key(|it| it.0.clone());
+        let mut sorted_indirect_hoisted_values = hoisted.indirect.into_values().collect::<Vec<_>>();
+        sorted_indirect_hoisted_values.sort_by_key(|it| it.0.clone());
 
-        let hoisted_decls: Vec<ModuleItem> = sorted_hoisted_values
+        let hoisted_indirect_map_decl = const_decl(
+            "hoistedIndirect",
+            Expr::Array(ArrayLit {
+                span: DUMMY_SP,
+                elems: sorted_indirect_hoisted_values
+                    .into_iter()
+                    .map(|(_id, expr)| {
+                        Some(ExprOrSpread {
+                            spread: None,
+                            expr: expr.into(),
+                        })
+                    })
+                    .collect(),
+            }),
+        );
+
+        let mut sorted_direct_hoisted_values = hoisted.direct.into_values().collect::<Vec<_>>();
+        sorted_direct_hoisted_values.sort_by_key(|it| it.0.clone());
+
+        let hoisted_direct_decls: Vec<ModuleItem> = sorted_direct_hoisted_values
             .into_iter()
             .map(|(id, expr)| const_decl(&id, expr))
             .collect();
 
         let js_built_parsers = emit_module(
-            hoisted_decls
+            hoisted_direct_decls
                 .into_iter()
                 .chain(vec![
                     //
+                    hoisted_indirect_map_decl,
                     build_named_parsers_input,
                     build_parsers_input,
                 ])
