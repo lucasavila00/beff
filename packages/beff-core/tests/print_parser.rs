@@ -920,6 +920,46 @@ mod tests {
       "#
         ));
     }
+
+    #[test]
+    fn ok_conditional_string_subtypes() {
+        insta::assert_snapshot!(print_types(
+            r#"
+        type A = "a";
+        type B = string;
+        type C = A extends B ? true : false;
+        type D = B extends A ? true : false;
+        // expect C to be true and D to be false
+        parse.buildParsers<{ C: C, D: D }>();
+      "#
+        ));
+    }
+    #[test]
+    fn ok_conditional_date_subtypes() {
+        insta::assert_snapshot!(print_types(
+            r#"
+        type A = Date;
+        type B = string;
+        type C = A extends B ? true : false;
+        type D = B extends A ? true : false;
+        // expect C to be false and D to be false
+        parse.buildParsers<{ C: C, D: D }>();
+      "#
+        ));
+    }
+    #[test]
+    fn ok_conditional_bigint_subtypes() {
+        insta::assert_snapshot!(print_types(
+            r#"
+        type A = bigint;
+        type B = string;
+        type C = A extends B ? true : false;
+        type D = B extends A ? true : false;
+        // expect C to be false and D to be false
+        parse.buildParsers<{ C: C, D: D }>();
+      "#
+        ));
+    }
     // #[test]
     // fn ok_recursive_generic_with_union_parser() {
     //     insta::assert_snapshot!(ok(r#"

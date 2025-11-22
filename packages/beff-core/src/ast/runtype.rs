@@ -216,25 +216,12 @@ pub enum Runtype {
     AnyOf(BTreeSet<Runtype>),
     AllOf(BTreeSet<Runtype>),
     Const(RuntypeConst),
-    PrimitiveLike(PrimitiveLike),
     // semantic types
     StNever,
     StNot(Box<Runtype>),
     Function,
-}
-
-#[derive(PartialEq, Eq, Hash, Debug, Ord, PartialOrd, Clone)]
-pub enum PrimitiveLike {
     Date,
     BigInt,
-}
-impl PrimitiveLike {
-    fn debug_print(&self) -> String {
-        match self {
-            PrimitiveLike::Date => "Date".to_string(),
-            PrimitiveLike::BigInt => "BigInt".to_string(),
-        }
-    }
 }
 
 struct UnionMerger(BTreeSet<Runtype>);
@@ -395,7 +382,8 @@ impl Runtype {
                 format!("`{}`", descr)
             }
             Runtype::Const(runtype_const) => runtype_const.clone().to_json().debug_print(),
-            Runtype::PrimitiveLike(primitive_like) => primitive_like.debug_print(),
+            Runtype::Date => "Date".to_string(),
+            Runtype::BigInt => "bigint".to_string(),
             Runtype::StNever => "never".to_string(),
             Runtype::StNot(runtype) => {
                 let inner = runtype.debug_print();

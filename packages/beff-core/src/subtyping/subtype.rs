@@ -1,9 +1,6 @@
 use std::rc::Rc;
 
-use crate::ast::{
-    json::N,
-    runtype::{PrimitiveLike, TplLitTypeItem},
-};
+use crate::ast::{json::N, runtype::TplLitTypeItem};
 
 use super::{
     bdd::{list_is_empty, mapped_record_is_empty, mapping_is_empty, Bdd, BddOps},
@@ -18,18 +15,30 @@ pub type NumberRepresentation = N;
 #[derive(Clone, Copy, PartialEq, Eq, Hash, Debug, PartialOrd, Ord)]
 
 pub enum SubTypeTag {
-    Boolean = 1 << 0x1,
-    Number = 1 << 0x2,
-    String = 1 << 0x3,
-    Null = 1 << 0x4,
-    Mapping = 1 << 0x5,
-    Void = 1 << 0x6,
-    List = 1 << 0x7,
-    Function = 1 << 0x8,
-    MappedRecord = 1 << 0x9,
+    Boolean = 1 << 1,
+    Number = 1 << 2,
+    String = 1 << 3,
+    Null = 1 << 4,
+    Mapping = 1 << 5,
+    Void = 1 << 6,
+    List = 1 << 7,
+    Function = 1 << 8,
+    MappedRecord = 1 << 9,
+    BigInt = 1 << 10,
+    Date = 1 << 11,
 }
 
-pub const VAL: u32 = 1 << 1 | 1 << 2 | 1 << 3 | 1 << 4 | 1 << 5 | 1 << 6 | 1 << 7 | 1 << 8 | 1 << 9;
+pub const VAL: u32 = 1 << 1
+    | 1 << 2
+    | 1 << 3
+    | 1 << 4
+    | 1 << 5
+    | 1 << 6
+    | 1 << 7
+    | 1 << 8
+    | 1 << 9
+    | 1 << 10
+    | 1 << 11;
 
 impl SubTypeTag {
     pub fn code(&self) -> BasicTypeCode {
@@ -47,6 +56,9 @@ impl SubTypeTag {
             SubTypeTag::Mapping,
             SubTypeTag::List,
             SubTypeTag::Function,
+            SubTypeTag::MappedRecord,
+            SubTypeTag::BigInt,
+            SubTypeTag::Date,
         ]
     }
 }
@@ -83,7 +95,6 @@ impl SubType {
 pub enum StringLitOrFormat {
     Lit(String),
     Format(String, Vec<String>),
-    Codec(PrimitiveLike),
     Tpl(Vec<TplLitTypeItem>),
 }
 

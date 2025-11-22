@@ -929,9 +929,7 @@ fn mapping_atomic_applicable_member_types_inner(
                                 break;
                             }
                         }
-                        StringLitOrFormat::Tpl(_)
-                        | StringLitOrFormat::Format(_, _)
-                        | StringLitOrFormat::Codec(_) => {
+                        StringLitOrFormat::Tpl(_) | StringLitOrFormat::Format(_, _) => {
                             bail!("format or codec cannot be used as mapping key")
                         }
                     }

@@ -17,7 +17,7 @@ use crate::parser_extractor::ParserExtractResult;
 use crate::{
     ast::{
         json::{Json, N},
-        runtype::{Optionality, PrimitiveLike, Runtype, RuntypeConst, TplLitTypeItem},
+        runtype::{Optionality, Runtype, RuntypeConst, TplLitTypeItem},
     },
     parser_extractor::BuiltDecoder,
     NamedSchema,
@@ -448,7 +448,8 @@ fn should_hoist_direct(schema: &Runtype) -> bool {
             | Runtype::Boolean
             | Runtype::StNever
             | Runtype::Function
-            | Runtype::PrimitiveLike(_)
+            | Runtype::Date
+            | Runtype::BigInt
             | Runtype::TplLitType(_)
             | Runtype::Ref(_)
             | Runtype::Const(_)
@@ -495,10 +496,8 @@ fn print_runtype(
         Runtype::NumberWithFormat(first, rest) => {
             formats_runtype("NumberWithFormatRuntype", first, rest)
         }
-        Runtype::PrimitiveLike(codec_name) => match codec_name {
-            PrimitiveLike::Date => no_args_runtype("DateRuntype"),
-            PrimitiveLike::BigInt => no_args_runtype("BigIntRuntype"),
-        },
+        Runtype::Date => no_args_runtype("DateRuntype"),
+        Runtype::BigInt => no_args_runtype("BigIntRuntype"),
         Runtype::TplLitType(items) => {
             let mut regex_exp = String::new();
 
@@ -722,7 +721,8 @@ fn calculate_schema_seen(schema: &Runtype, seen: &mut SeenCounter) {
         | Runtype::Boolean
         | Runtype::StNever
         | Runtype::Function
-        | Runtype::PrimitiveLike(_)
+        | Runtype::Date
+        | Runtype::BigInt
         | Runtype::TplLitType(_)
         | Runtype::Ref(_)
         | Runtype::Const(_)
