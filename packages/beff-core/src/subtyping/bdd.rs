@@ -1228,11 +1228,8 @@ pub fn list_indexed_access(
                 for v in values {
                     match v {
                         NumberRepresentationOrFormat::Lit(n) => acc.push(n.clone()),
-                        NumberRepresentationOrFormat::Format(fmt) => {
-                            bail!("format cannot be used as list index: {}", fmt)
-                        }
-                        NumberRepresentationOrFormat::FormatExtends(fmt) => {
-                            bail!("format cannot be used as list index: {:?}", fmt)
+                        NumberRepresentationOrFormat::Format(vs) => {
+                            bail!("format cannot be used as list index: {:?}", vs)
                         }
                     }
                 }

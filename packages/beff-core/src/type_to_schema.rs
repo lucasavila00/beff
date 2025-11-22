@@ -914,8 +914,7 @@ impl<'a, 'b, R: FileManager> TypeToSchema<'a, 'b, R> {
         span: &Span,
     ) -> Res<Vec<String>> {
         match schema {
-            Runtype::NumberWithFormat(v) => Ok(vec![v.clone()]),
-            Runtype::NumberFormatExtends(vs) => Ok(vs.clone()),
+            Runtype::NumberWithFormat(v) => Ok(v.clone()),
             Runtype::Ref(r) => {
                 let v = self.components.get(r);
 
@@ -954,7 +953,7 @@ impl<'a, 'b, R: FileManager> TypeToSchema<'a, 'b, R> {
 
                         let mut formats = self.get_number_format_base_formats(&base, span)?;
                         formats.push(next_str);
-                        return Ok(Runtype::NumberFormatExtends(formats));
+                        return Ok(Runtype::NumberWithFormat(formats));
                     } else {
                         return self
                             .error(span, DiagnosticInfoMessage::CustomNumberIsNotRegistered);
@@ -984,7 +983,7 @@ impl<'a, 'b, R: FileManager> TypeToSchema<'a, 'b, R> {
                 {
                     let val_str = value.to_string();
                     if self.settings.number_formats.contains(&val_str) {
-                        return Ok(Runtype::NumberWithFormat(val_str));
+                        return Ok(Runtype::NumberWithFormat(vec![val_str]));
                     } else {
                         return self
                             .error(span, DiagnosticInfoMessage::CustomNumberIsNotRegistered);

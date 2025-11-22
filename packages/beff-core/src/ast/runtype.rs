@@ -229,8 +229,7 @@ pub enum Runtype {
     AnyArrayLike,
     StringWithFormat(String),
     StringFormatExtends(Vec<String>),
-    NumberWithFormat(String),
-    NumberFormatExtends(Vec<String>),
+    NumberWithFormat(Vec<String>),
     TplLitType(Vec<TplLitTypeItem>),
     Object {
         vs: BTreeMap<String, Optionality<Runtype>>,
@@ -628,8 +627,7 @@ impl Runtype {
             }),
             Runtype::StringWithFormat(fmt) => ts_string_brands(std::slice::from_ref(fmt)),
             Runtype::StringFormatExtends(vs) => ts_string_brands(vs),
-            Runtype::NumberWithFormat(fmt) => ts_number_brands(std::slice::from_ref(fmt)),
-            Runtype::NumberFormatExtends(vs) => ts_number_brands(vs),
+            Runtype::NumberWithFormat(vs) => ts_number_brands(vs),
             Runtype::PrimitiveLike(c) => match c {
                 PrimitiveLike::Date => TsType::TsTypeRef(TsTypeRef {
                     span: DUMMY_SP,

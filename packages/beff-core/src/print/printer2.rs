@@ -418,7 +418,6 @@ fn should_hoist_direct(schema: &Runtype) -> bool {
         Runtype::StringWithFormat(_)
             | Runtype::StringFormatExtends(_)
             | Runtype::NumberWithFormat(_)
-            | Runtype::NumberFormatExtends(_)
             | Runtype::AnyArrayLike
             | Runtype::Any
             | Runtype::Number
@@ -471,10 +470,7 @@ fn print_runtype(
             formats_runtype("StringWithFormatRuntype", std::slice::from_ref(base))
         }
         Runtype::StringFormatExtends(items) => formats_runtype("StringWithFormatRuntype", items),
-        Runtype::NumberWithFormat(base) => {
-            formats_runtype("NumberWithFormatRuntype", std::slice::from_ref(base))
-        }
-        Runtype::NumberFormatExtends(items) => formats_runtype("NumberWithFormatRuntype", items),
+        Runtype::NumberWithFormat(vs) => formats_runtype("NumberWithFormatRuntype", vs),
         Runtype::PrimitiveLike(codec_name) => match codec_name {
             PrimitiveLike::Date => no_args_runtype("DateRuntype"),
             PrimitiveLike::BigInt => no_args_runtype("BigIntRuntype"),
@@ -698,7 +694,6 @@ fn calculate_schema_seen(schema: &Runtype, seen: &mut SeenCounter) {
         Runtype::StringWithFormat(_)
         | Runtype::StringFormatExtends(_)
         | Runtype::NumberWithFormat(_)
-        | Runtype::NumberFormatExtends(_)
         | Runtype::AnyArrayLike
         | Runtype::Any
         | Runtype::Number

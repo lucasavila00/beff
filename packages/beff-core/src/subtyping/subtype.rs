@@ -91,8 +91,7 @@ pub enum StringLitOrFormat {
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub enum NumberRepresentationOrFormat {
     Lit(NumberRepresentation),
-    Format(String),
-    FormatExtends(Vec<String>),
+    Format(Vec<String>),
 }
 
 #[derive(PartialEq, Eq, Hash, Debug, Ord, PartialOrd)]
