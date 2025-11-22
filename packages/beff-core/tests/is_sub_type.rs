@@ -313,7 +313,7 @@ mod tests {
 
         // no type is subtype of never
         let nevert = Runtype::StNever;
-        let res = rt_is_sub_type(&nevert, &t1, &definitions, &definitions);
+        let res = rt_is_sub_type(&t1, &nevert, &definitions, &definitions);
         assert!(!res);
     }
 
@@ -358,7 +358,7 @@ mod tests {
 
         // no type is subtype of never
         let nevert = Runtype::StNever;
-        let res = rt_is_sub_type(&nevert, &t1, &definitions, &definitions);
+        let res = rt_is_sub_type(&t1, &nevert, &definitions, &definitions);
         assert!(!res);
     }
 
