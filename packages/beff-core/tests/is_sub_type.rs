@@ -22,7 +22,7 @@ mod tests {
         a.is_subtype(&b, ctx)
     }
 
-    fn schema_is_sub_type(
+    fn rt_is_sub_type(
         a: &Runtype,
         b: &Runtype,
         a_validators: &[&NamedSchema],
@@ -54,14 +54,14 @@ mod tests {
             None,
         );
 
-        let res = schema_is_sub_type(
+        let res = rt_is_sub_type(
             &t1,
             &t2,
             &definitions.iter().collect::<Vec<&NamedSchema>>(),
             &definitions.iter().collect::<Vec<&NamedSchema>>(),
         );
         assert!(res);
-        let res = schema_is_sub_type(
+        let res = rt_is_sub_type(
             &t2,
             &t1,
             &definitions.iter().collect::<Vec<&NamedSchema>>(),
@@ -91,14 +91,14 @@ mod tests {
             None,
         );
 
-        let res = schema_is_sub_type(
+        let res = rt_is_sub_type(
             &t1,
             &t2,
             &definitions.iter().collect::<Vec<&NamedSchema>>(),
             &definitions.iter().collect::<Vec<&NamedSchema>>(),
         );
         assert!(res);
-        let res = schema_is_sub_type(
+        let res = rt_is_sub_type(
             &t2,
             &t1,
             &definitions.iter().collect::<Vec<&NamedSchema>>(),
@@ -128,14 +128,14 @@ mod tests {
             None,
         );
 
-        let res = schema_is_sub_type(
+        let res = rt_is_sub_type(
             &t1,
             &t2,
             &definitions.iter().collect::<Vec<&NamedSchema>>(),
             &definitions.iter().collect::<Vec<&NamedSchema>>(),
         );
         assert!(!res);
-        let res = schema_is_sub_type(
+        let res = rt_is_sub_type(
             &t2,
             &t1,
             &definitions.iter().collect::<Vec<&NamedSchema>>(),
@@ -172,14 +172,14 @@ mod tests {
             None,
         );
 
-        let res = schema_is_sub_type(
+        let res = rt_is_sub_type(
             &t1,
             &t2,
             &definitions.iter().collect::<Vec<&NamedSchema>>(),
             &definitions.iter().collect::<Vec<&NamedSchema>>(),
         );
         assert!(res);
-        let res = schema_is_sub_type(
+        let res = rt_is_sub_type(
             &t2,
             &t1,
             &definitions.iter().collect::<Vec<&NamedSchema>>(),
@@ -195,9 +195,9 @@ mod tests {
         let t1 = Runtype::object(vec![("a".into(), Runtype::String.required())], None);
         let t2 = Runtype::object(vec![("a".into(), Runtype::String.optional())], None);
 
-        let res = schema_is_sub_type(&t1, &t2, &definitions, &definitions);
+        let res = rt_is_sub_type(&t1, &t2, &definitions, &definitions);
         assert!(res);
-        let res = schema_is_sub_type(&t2, &t1, &definitions, &definitions);
+        let res = rt_is_sub_type(&t2, &t1, &definitions, &definitions);
         assert!(!res);
     }
     #[test]
@@ -219,9 +219,9 @@ mod tests {
         );
         let t2 = Runtype::object(vec![("a".into(), Runtype::String.required())], None);
 
-        let res = schema_is_sub_type(&t1, &t2, &definitions, &definitions);
+        let res = rt_is_sub_type(&t1, &t2, &definitions, &definitions);
         assert!(res);
-        let res = schema_is_sub_type(&t2, &t1, &definitions, &definitions);
+        let res = rt_is_sub_type(&t2, &t1, &definitions, &definitions);
         assert!(!res);
     }
     #[test]
@@ -237,9 +237,9 @@ mod tests {
         );
         let t2 = Runtype::object(vec![("a".into(), Runtype::String.required())], None);
 
-        let res = schema_is_sub_type(&t1, &t2, &definitions, &definitions);
+        let res = rt_is_sub_type(&t1, &t2, &definitions, &definitions);
         assert!(res);
-        let res = schema_is_sub_type(&t2, &t1, &definitions, &definitions);
+        let res = rt_is_sub_type(&t2, &t1, &definitions, &definitions);
         assert!(!res);
     }
     #[test]
@@ -249,9 +249,9 @@ mod tests {
         let t1 = Runtype::Array(Runtype::Const(RuntypeConst::String("abc".into())).into());
         let t2 = Runtype::Array(Runtype::String.into());
 
-        let res = schema_is_sub_type(&t1, &t2, &definitions, &definitions);
+        let res = rt_is_sub_type(&t1, &t2, &definitions, &definitions);
         assert!(res);
-        let res = schema_is_sub_type(&t2, &t1, &definitions, &definitions);
+        let res = rt_is_sub_type(&t2, &t1, &definitions, &definitions);
         assert!(!res);
     }
 
@@ -262,9 +262,9 @@ mod tests {
         let t1 = Runtype::Array(Runtype::String.into());
         let t2 = Runtype::Array(Runtype::String.into());
 
-        let res = schema_is_sub_type(&t1, &t2, &definitions, &definitions);
+        let res = rt_is_sub_type(&t1, &t2, &definitions, &definitions);
         assert!(res);
-        let res = schema_is_sub_type(&t2, &t1, &definitions, &definitions);
+        let res = rt_is_sub_type(&t2, &t1, &definitions, &definitions);
         assert!(res);
     }
     #[test]
@@ -277,48 +277,128 @@ mod tests {
         };
         let t2 = Runtype::Array(Runtype::String.into());
 
-        let res = schema_is_sub_type(&t1, &t2, &definitions, &definitions);
+        let res = rt_is_sub_type(&t1, &t2, &definitions, &definitions);
         assert!(res);
-        let res = schema_is_sub_type(&t2, &t1, &definitions, &definitions);
+        let res = rt_is_sub_type(&t2, &t1, &definitions, &definitions);
         assert!(!res);
     }
+    #[test]
+    fn it_works_for_date() {
+        let definitions = vec![];
+
+        let t1 = Runtype::Date;
+        let t2 = Runtype::Date;
+        let res = rt_is_sub_type(&t1, &t2, &definitions, &definitions);
+        assert!(res);
+
+        let others = vec![
+            Runtype::String,
+            Runtype::Number,
+            Runtype::Null,
+            Runtype::Boolean,
+        ];
+
+        for other in others {
+            let res = rt_is_sub_type(&t1, &other, &definitions, &definitions);
+            assert!(!res);
+            let res = rt_is_sub_type(&other, &t1, &definitions, &definitions);
+            assert!(!res);
+        }
+
+        let anyt = Runtype::Any;
+
+        // every type is subtype of any
+        let res = rt_is_sub_type(&t1, &anyt, &definitions, &definitions);
+        assert!(res);
+
+        // no type is subtype of never
+        let nevert = Runtype::StNever;
+        let res = rt_is_sub_type(&nevert, &t1, &definitions, &definitions);
+        assert!(!res);
+    }
+
+    #[test]
+    fn it_works_for_bigint_and_any() {
+        let definitions = vec![];
+
+        let t1 = Runtype::BigInt;
+
+        // any type is subtype of any
+        let anyt = Runtype::Any;
+        let res = rt_is_sub_type(&t1, &anyt, &definitions, &definitions);
+        assert!(res);
+    }
+    #[test]
+    fn it_works_for_bigint() {
+        let definitions = vec![];
+
+        let t1 = Runtype::BigInt;
+        let t2 = Runtype::BigInt;
+        let res = rt_is_sub_type(&t1, &t2, &definitions, &definitions);
+        assert!(res);
+
+        let others = vec![
+            Runtype::String,
+            Runtype::Number,
+            Runtype::Null,
+            Runtype::Boolean,
+        ];
+
+        for other in others {
+            let res = rt_is_sub_type(&t1, &other, &definitions, &definitions);
+            assert!(!res);
+            let res = rt_is_sub_type(&other, &t1, &definitions, &definitions);
+            assert!(!res);
+        }
+
+        // any type is subtype of any
+        let anyt = Runtype::Any;
+        let res = rt_is_sub_type(&t1, &anyt, &definitions, &definitions);
+        assert!(res);
+
+        // no type is subtype of never
+        let nevert = Runtype::StNever;
+        let res = rt_is_sub_type(&nevert, &t1, &definitions, &definitions);
+        assert!(!res);
+    }
+
     #[test]
     fn it_works() {
         let definitions = vec![];
 
         let t1 = Runtype::Null;
         let t2 = Runtype::Null;
-        let res = schema_is_sub_type(&t1, &t2, &definitions, &definitions);
+        let res = rt_is_sub_type(&t1, &t2, &definitions, &definitions);
         assert!(res);
 
         let t1 = Runtype::String;
         let t2 = Runtype::String;
-        let res = schema_is_sub_type(&t1, &t2, &definitions, &definitions);
+        let res = rt_is_sub_type(&t1, &t2, &definitions, &definitions);
         assert!(res);
 
         let t1 = Runtype::Number;
         let t2 = Runtype::Number;
-        let res = schema_is_sub_type(&t1, &t2, &definitions, &definitions);
+        let res = rt_is_sub_type(&t1, &t2, &definitions, &definitions);
         assert!(res);
 
         let t1 = Runtype::Const(RuntypeConst::Null);
         let t2 = Runtype::Null;
-        let res = schema_is_sub_type(&t1, &t2, &definitions, &definitions);
+        let res = rt_is_sub_type(&t1, &t2, &definitions, &definitions);
         assert!(res);
 
         let t1 = Runtype::Const(RuntypeConst::String("abc".into()));
         let t2 = Runtype::String;
-        let res = schema_is_sub_type(&t1, &t2, &definitions, &definitions);
+        let res = rt_is_sub_type(&t1, &t2, &definitions, &definitions);
         assert!(res);
 
-        let res = schema_is_sub_type(&t2, &t1, &definitions, &definitions);
+        let res = rt_is_sub_type(&t2, &t1, &definitions, &definitions);
         assert!(!res);
 
         let t1 = Runtype::String;
         let t2 = Runtype::any_of(vec![Runtype::String, Runtype::Number]);
-        let res = schema_is_sub_type(&t1, &t2, &definitions, &definitions);
+        let res = rt_is_sub_type(&t1, &t2, &definitions, &definitions);
         assert!(res);
-        let res = schema_is_sub_type(&t2, &t1, &definitions, &definitions);
+        let res = rt_is_sub_type(&t2, &t1, &definitions, &definitions);
         assert!(!res);
 
         let t1 = Runtype::Boolean;
@@ -326,17 +406,17 @@ mod tests {
             Runtype::Const(RuntypeConst::Bool(true)),
             Runtype::Const(RuntypeConst::Bool(false)),
         ]);
-        let res = schema_is_sub_type(&t1, &t2, &definitions, &definitions);
+        let res = rt_is_sub_type(&t1, &t2, &definitions, &definitions);
         assert!(res);
-        let res = schema_is_sub_type(&t2, &t1, &definitions, &definitions);
+        let res = rt_is_sub_type(&t2, &t1, &definitions, &definitions);
         assert!(res);
 
         let t1 = Runtype::StringWithFormat("password".into(), vec![]);
         let t2 = Runtype::String;
-        let res = schema_is_sub_type(&t1, &t2, &definitions, &definitions);
+        let res = rt_is_sub_type(&t1, &t2, &definitions, &definitions);
         assert!(res);
 
-        let res = schema_is_sub_type(&t2, &t1, &definitions, &definitions);
+        let res = rt_is_sub_type(&t2, &t1, &definitions, &definitions);
         assert!(!res);
     }
 }

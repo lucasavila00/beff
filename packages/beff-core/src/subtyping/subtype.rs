@@ -15,17 +15,17 @@ pub type NumberRepresentation = N;
 #[derive(Clone, Copy, PartialEq, Eq, Hash, Debug, PartialOrd, Ord)]
 
 pub enum SubTypeTag {
-    Boolean = 1 << 0x1,
-    Number = 1 << 0x2,
-    String = 1 << 0x3,
-    Null = 1 << 0x4,
-    Mapping = 1 << 0x5,
-    Void = 1 << 0x6,
-    List = 1 << 0x7,
-    Function = 1 << 0x8,
-    MappedRecord = 1 << 0x9,
-    BigInt = 1 << 0x10,
-    Date = 1 << 0x11,
+    Boolean = 1 << 1,
+    Number = 1 << 2,
+    String = 1 << 3,
+    Null = 1 << 4,
+    Mapping = 1 << 5,
+    Void = 1 << 6,
+    List = 1 << 7,
+    Function = 1 << 8,
+    MappedRecord = 1 << 9,
+    BigInt = 1 << 10,
+    Date = 1 << 11,
 }
 
 pub const VAL: u32 = 1 << 1

@@ -362,7 +362,7 @@ impl Runtype {
             Runtype::StringWithFormat(first, rest) => {
                 let mut acc = format!("StringFormat<\"{}\">", first);
 
-                for it in rest.iter() {""
+                for it in rest.iter() {
                     acc = format!("StringFormatExtends<{}, \"{}\">", acc, it);
                 }
 
