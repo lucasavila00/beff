@@ -1310,7 +1310,6 @@ const buildParsers: BuildParserFunction = (args) => {
         (data: any) => validate(data),
         (val: any) => {
           const errors = impl.reportDecodeError({ path: [], disallowExtraProperties: false }, val);
-          //@ts-ignore
           return printErrors(errors, []);
         },
       );

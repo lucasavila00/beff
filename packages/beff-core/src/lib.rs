@@ -11,6 +11,7 @@ pub mod type_to_schema;
 pub mod wasm_diag;
 
 use crate::ast::runtype::Runtype;
+use crate::parser_extractor::BuiltDecoder;
 use core::fmt;
 use diag::Diagnostic;
 use parser_extractor::extract_parser;
@@ -371,12 +372,69 @@ pub struct ExtractResult {
     pub parser: ParserExtractResult,
 }
 
+fn debug_print_type_list(vs: Vec<(String, String)>) -> String {
+    let mut acc = String::new();
+    for (name, ts_type) in vs {
+        acc.push_str(&format!("type {} = {};\n\n", name, ts_type));
+    }
+    acc
+}
+
+fn debug_print_type_object(vs: Vec<(String, String)>) -> String {
+    let mut acc = String::new();
+    acc.push_str("{\n");
+    for (name, ts_type) in vs {
+        acc.push_str(&format!("  {}: {},\n", name, ts_type));
+    }
+    acc.push_str("}\n");
+    acc
+}
+
+fn debug_print_all_types(validators: &[&NamedSchema], built_decoders: &[BuiltDecoder]) -> String {
+    let mut vs: Vec<(String, String)> = vec![];
+
+    let mut sorted_validators = validators.iter().collect::<Vec<_>>();
+    sorted_validators.sort_by(|a, b| a.name.cmp(&b.name));
+
+    for v in sorted_validators {
+        vs.push((v.name.clone(), v.schema.debug_print()));
+    }
+
+    let validators_printed = debug_print_type_list(vs.clone());
+
+    let mut decoders_vs: Vec<(String, String)> = vec![];
+    let mut sorted_decoders = built_decoders.iter().collect::<Vec<_>>();
+    sorted_decoders.sort_by(|a, b| a.exported_name.cmp(&b.exported_name));
+
+    for v in sorted_decoders {
+        decoders_vs.push((v.exported_name.clone(), v.schema.debug_print()));
+    }
+
+    let decoders_printed = debug_print_type_object(decoders_vs.clone());
+
+    let decoders_printed = format!("type BuiltParsers = {}", decoders_printed);
+
+    [validators_printed, decoders_printed]
+        .into_iter()
+        .filter(|it| it.len() > 0)
+        .collect::<Vec<String>>()
+        .join("\n")
+        .trim()
+        .to_string()
+}
+
 impl ExtractResult {
     pub fn errors(&self) -> Vec<&Diagnostic> {
         self.parser.errors.iter().collect::<Vec<_>>()
     }
     pub fn validators(&self) -> Vec<&NamedSchema> {
         self.parser.validators.iter().collect::<Vec<_>>()
+    }
+    pub fn debug_print(&self) -> String {
+        debug_print_all_types(
+            &self.parser.validators.iter().collect::<Vec<_>>(),
+            self.parser.built_decoders.as_ref().unwrap_or(&vec![]),
+        )
     }
 }
 pub fn extract<R: FileManager>(files: &mut R, entry_points: EntryPoints) -> ExtractResult {

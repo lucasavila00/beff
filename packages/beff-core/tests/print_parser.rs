@@ -4,32 +4,12 @@ mod tests {
 
     use beff_core::{
         import_resolver::{parse_and_bind, FsModuleResolver},
-        parser_extractor::BuiltDecoder,
         print::printer2::ToWritableParser,
-        BeffUserSettings, BffFileName, EntryPoints, ExtractResult, FileManager, NamedSchema,
-        ParsedModule,
+        BeffUserSettings, BffFileName, EntryPoints, ExtractResult, FileManager, ParsedModule,
     };
     use swc_common::{Globals, GLOBALS};
     struct TestFileManager {
         pub f: Rc<ParsedModule>,
-    }
-
-    fn fmt_type_list(vs: Vec<(String, String)>) -> String {
-        let mut acc = String::new();
-        for (name, ts_type) in vs {
-            acc.push_str(&format!("type {} = {};\n\n", name, ts_type));
-        }
-        acc
-    }
-
-    fn fmt_type_object(vs: Vec<(String, String)>) -> String {
-        let mut acc = String::new();
-        acc.push_str("{\n");
-        for (name, ts_type) in vs {
-            acc.push_str(&format!("  {}: {},\n", name, ts_type));
-        }
-        acc.push_str("}\n");
-        acc
     }
 
     impl FileManager for TestFileManager {
@@ -48,7 +28,7 @@ mod tests {
             None
         }
     }
-    fn parse_str(content: &str) -> Rc<ParsedModule> {
+    fn parse_module(content: &str) -> Rc<ParsedModule> {
         let mut resolver = TestResolver {};
         let file_name = BffFileName::new("file.ts".into());
         GLOBALS.set(&Globals::new(), || {
@@ -56,8 +36,8 @@ mod tests {
             res.expect("failed to parse")
         })
     }
-    fn parse_api(it: &str) -> ExtractResult {
-        let f = parse_str(it);
+    fn extract_types(it: &str) -> ExtractResult {
+        let f = parse_module(it);
         let mut man = TestFileManager { f };
         let entry = EntryPoints {
             parser_entry_point: BffFileName::new("file.ts".into()),
@@ -78,59 +58,27 @@ mod tests {
         };
         beff_core::extract(&mut man, entry)
     }
-    fn print_all_types(validators: &[&NamedSchema], built_decoders: &[BuiltDecoder]) -> String {
-        let mut vs: Vec<(String, String)> = vec![];
 
-        let mut sorted_validators = validators.iter().collect::<Vec<_>>();
-        sorted_validators.sort_by(|a, b| a.name.cmp(&b.name));
-
-        for v in sorted_validators {
-            vs.push((v.name.clone(), v.schema.debug_print()));
-        }
-
-        let validators_printed = fmt_type_list(vs.clone());
-
-        let mut decoders_vs: Vec<(String, String)> = vec![];
-        let mut sorted_decoders = built_decoders.iter().collect::<Vec<_>>();
-        sorted_decoders.sort_by(|a, b| a.exported_name.cmp(&b.exported_name));
-
-        for v in sorted_decoders {
-            decoders_vs.push((v.exported_name.clone(), v.schema.debug_print()));
-        }
-
-        let decoders_printed = fmt_type_object(decoders_vs.clone());
-
-        let decoders_printed = format!("type BuiltParsers = {}", decoders_printed);
-
-        [validators_printed, decoders_printed]
-            .into_iter()
-            .filter(|it| it.len() > 0)
-            .collect::<Vec<String>>()
-            .join("\n")
-    }
     fn print_types(from: &str) -> String {
-        let p = parse_api(from);
+        let p = extract_types(from);
         let errors = p.errors();
 
         if !errors.is_empty() {
             panic!("errors: {:?}", errors);
         }
-        print_all_types(
-            &p.parser.validators.iter().collect::<Vec<_>>(),
-            p.parser.built_decoders.as_ref().unwrap_or(&vec![]),
-        )
+        p.debug_print()
     }
 
     fn print_cgen(from: &str) -> String {
-        let p = parse_api(from);
+        let p = extract_types(from);
         let errors = p.errors();
 
         if !errors.is_empty() {
             panic!("errors: {:?}", errors);
         }
-        let res = ExtractResult { parser: p.parser };
-        let m = res.to_module_v2().expect("should be able to emit module");
-        m.js_built_parsers
+        p.to_module_v2()
+            .expect("should be able to emit module")
+            .js_built_parsers
     }
 
     #[test]
