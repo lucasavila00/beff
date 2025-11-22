@@ -49,7 +49,7 @@ fn emit_module_items(body: Vec<ModuleItem>) -> Result<String> {
 }
 
 struct HoistedMap {
-    direct: BTreeMap<Runtype, (String, Expr)>,
+    direct: BTreeMap<Runtype, (usize, Expr)>,
 }
 
 fn const_decl(name: &str, init: Expr) -> ModuleItem {
@@ -429,6 +429,13 @@ fn maybe_runtype_any_of_consts(flat_values: &BTreeSet<Runtype>) -> Option<Expr> 
     None
 }
 
+fn hoist_name(name: usize) -> String {
+    format!("direct_hoist_{}", name)
+}
+fn hoist_identifier(name: usize) -> Expr {
+    Expr::Ident(identifier(&hoist_name(name)))
+}
+
 fn print_runtype(
     schema: &Runtype,
     named_schemas: &[NamedSchema],
@@ -436,7 +443,7 @@ fn print_runtype(
 ) -> Expr {
     let found_direct = hoisted.direct.get(schema);
     if let Some((var_name, _)) = found_direct {
-        return Expr::Ident(identifier(var_name));
+        return hoist_identifier(*var_name);
     }
 
     let out = match schema {
@@ -588,11 +595,9 @@ fn print_runtype(
         }
     };
 
-    let new_id = format!("direct_hoist_{}", hoisted.direct.len());
-    hoisted
-        .direct
-        .insert(schema.clone(), (new_id.clone(), out.clone()));
-    Expr::Ident(identifier(&new_id))
+    let new_id = hoisted.direct.len();
+    hoisted.direct.insert(schema.clone(), (new_id, out.clone()));
+    hoist_identifier(new_id)
 }
 
 fn build_parsers_input(
@@ -675,14 +680,11 @@ impl ParserExtractResult {
         );
 
         let mut sorted_direct_hoisted_values = hoisted.direct.into_values().collect::<Vec<_>>();
-        sorted_direct_hoisted_values.sort_by_key(|it| {
-            let number = it.0.strip_prefix("direct_hoist_").unwrap();
-            number.parse::<i32>().unwrap()
-        });
+        sorted_direct_hoisted_values.sort_by_key(|it| it.0);
 
         let hoisted_direct_decls: Vec<ModuleItem> = sorted_direct_hoisted_values
             .into_iter()
-            .map(|(id, expr)| const_decl(&id, expr))
+            .map(|(id, expr)| const_decl(&hoist_name(id), expr))
             .collect();
 
         let module_items = hoisted_direct_decls
