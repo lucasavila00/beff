@@ -157,10 +157,6 @@ impl<'a> ToSemTypeConverter<'a> {
             Runtype::StringWithFormat(s) => {
                 Ok(SemTypeContext::string_const(StringLitOrFormat::Format(s.clone())).into())
             }
-            Runtype::StringFormatExtends(vs) => Ok(SemTypeContext::string_const(
-                StringLitOrFormat::FormatExtends(vs.clone()),
-            )
-            .into()),
             Runtype::NumberWithFormat(s) => Ok(SemTypeContext::number_const(
                 NumberRepresentationOrFormat::Format(s.clone()),
             )

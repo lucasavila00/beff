@@ -416,7 +416,6 @@ fn should_hoist_direct(schema: &Runtype) -> bool {
     matches!(
         schema,
         Runtype::StringWithFormat(_)
-            | Runtype::StringFormatExtends(_)
             | Runtype::NumberWithFormat(_)
             | Runtype::AnyArrayLike
             | Runtype::Any
@@ -466,10 +465,7 @@ fn print_runtype(
         Runtype::Any => no_args_runtype("AnyRuntype"),
         Runtype::StNever => no_args_runtype("NeverRuntype"),
         Runtype::Const(c) => new_runtype_class("ConstRuntype", vec![c.clone().to_json().to_expr()]),
-        Runtype::StringWithFormat(base) => {
-            formats_runtype("StringWithFormatRuntype", std::slice::from_ref(base))
-        }
-        Runtype::StringFormatExtends(items) => formats_runtype("StringWithFormatRuntype", items),
+        Runtype::StringWithFormat(vs) => formats_runtype("StringWithFormatRuntype", vs),
         Runtype::NumberWithFormat(vs) => formats_runtype("NumberWithFormatRuntype", vs),
         Runtype::PrimitiveLike(codec_name) => match codec_name {
             PrimitiveLike::Date => no_args_runtype("DateRuntype"),
@@ -692,7 +688,6 @@ fn calculate_schema_seen(schema: &Runtype, seen: &mut SeenCounter) {
 
     match schema {
         Runtype::StringWithFormat(_)
-        | Runtype::StringFormatExtends(_)
         | Runtype::NumberWithFormat(_)
         | Runtype::AnyArrayLike
         | Runtype::Any

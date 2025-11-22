@@ -82,8 +82,7 @@ impl SubType {
 #[derive(PartialEq, Eq, Hash, Debug, Ord, PartialOrd, Clone)]
 pub enum StringLitOrFormat {
     Lit(String),
-    Format(String),
-    FormatExtends(Vec<String>),
+    Format(Vec<String>),
     Codec(PrimitiveLike),
     Tpl(Vec<TplLitTypeItem>),
 }

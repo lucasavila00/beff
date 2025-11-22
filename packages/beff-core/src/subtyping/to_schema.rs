@@ -584,12 +584,6 @@ impl<'a, 'b> SchemerContext<'a, 'b> {
                                     !allowed,
                                 ));
                             }
-                            StringLitOrFormat::FormatExtends(items) => {
-                                acc.insert(maybe_not(
-                                    Runtype::StringFormatExtends(items.clone()),
-                                    !allowed,
-                                ));
-                            }
                             StringLitOrFormat::Codec(fmt) => {
                                 acc.insert(maybe_not(
                                     Runtype::PrimitiveLike(fmt.clone()),

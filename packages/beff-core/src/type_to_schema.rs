@@ -383,9 +383,7 @@ impl<'a, 'b, R: FileManager> TypeToSchema<'a, 'b, R> {
                                 rest: Some(Box::new(value)),
                             })
                         }
-                        Runtype::StringWithFormat(_)
-                        | Runtype::StringFormatExtends(_)
-                        | Runtype::Number => {
+                        Runtype::StringWithFormat(_) | Runtype::Number => {
                             let value = items[1].clone();
                             Ok(Runtype::MappedRecord {
                                 key,
@@ -834,7 +832,7 @@ impl<'a, 'b, R: FileManager> TypeToSchema<'a, 'b, R> {
                 {
                     let val_str = value.to_string();
                     if self.settings.string_formats.contains(&val_str) {
-                        return Ok(Runtype::StringWithFormat(val_str));
+                        return Ok(Runtype::StringWithFormat(vec![val_str]));
                     } else {
                         return self
                             .error(span, DiagnosticInfoMessage::CustomStringIsNotRegistered);
@@ -854,8 +852,7 @@ impl<'a, 'b, R: FileManager> TypeToSchema<'a, 'b, R> {
         span: &Span,
     ) -> Res<Vec<String>> {
         match schema {
-            Runtype::StringWithFormat(v) => Ok(vec![v.clone()]),
-            Runtype::StringFormatExtends(vs) => Ok(vs.clone()),
+            Runtype::StringWithFormat(vs) => Ok(vs.clone()),
             Runtype::Ref(r) => {
                 let v = self.components.get(r);
 
@@ -894,7 +891,7 @@ impl<'a, 'b, R: FileManager> TypeToSchema<'a, 'b, R> {
 
                         let mut formats = self.get_string_format_base_formats(&base, span)?;
                         formats.push(next_str);
-                        return Ok(Runtype::StringFormatExtends(formats));
+                        return Ok(Runtype::StringWithFormat(formats));
                     } else {
                         return self
                             .error(span, DiagnosticInfoMessage::CustomStringIsNotRegistered);

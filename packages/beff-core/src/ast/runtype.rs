@@ -227,8 +227,7 @@ pub enum Runtype {
     Number,
     Any,
     AnyArrayLike,
-    StringWithFormat(String),
-    StringFormatExtends(Vec<String>),
+    StringWithFormat(Vec<String>),
     NumberWithFormat(Vec<String>),
     TplLitType(Vec<TplLitTypeItem>),
     Object {
@@ -625,8 +624,7 @@ impl Runtype {
                 }),
                 type_params: None,
             }),
-            Runtype::StringWithFormat(fmt) => ts_string_brands(std::slice::from_ref(fmt)),
-            Runtype::StringFormatExtends(vs) => ts_string_brands(vs),
+            Runtype::StringWithFormat(vs) => ts_string_brands(vs),
             Runtype::NumberWithFormat(vs) => ts_number_brands(vs),
             Runtype::PrimitiveLike(c) => match c {
                 PrimitiveLike::Date => TsType::TsTypeRef(TsTypeRef {
