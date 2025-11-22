@@ -1,4 +1,3 @@
-use core::fmt;
 use std::collections::BTreeMap;
 
 use swc_common::DUMMY_SP;
@@ -163,16 +162,5 @@ impl Json {
                     .collect(),
             }),
         }
-    }
-}
-
-impl fmt::Display for Json {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(
-            f,
-            "{}",
-            serde_json::to_string_pretty(&self.to_serde())
-                .expect("should be possible to serialize json")
-        )
     }
 }
