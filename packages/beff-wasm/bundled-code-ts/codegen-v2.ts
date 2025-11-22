@@ -1170,40 +1170,6 @@ class RefRuntype implements Runtype {
   }
 }
 
-declare var hoistedIndirect: Runtype[];
-
-class HoistedRuntype implements Runtype {
-  private hoistedIndex: number;
-  private decoder: Runtype | null;
-  constructor(hoistedIndex: number) {
-    this.hoistedIndex = hoistedIndex;
-    this.decoder = null;
-  }
-
-  private getDecoder(): Runtype {
-    if (this.decoder == null) {
-      this.decoder = hoistedIndirect[this.hoistedIndex];
-    }
-    return this.decoder;
-  }
-
-  describe(ctx: DescribeContext): string {
-    return this.getDecoder().describe(ctx);
-  }
-  schema(ctx: SchemaContext): JSONSchema7 {
-    return this.getDecoder().schema(ctx);
-  }
-  validate(ctx: ValidateContext, input: unknown): boolean {
-    return this.getDecoder().validate(ctx, input);
-  }
-  parseAfterValidation(ctx: ParseContext, input: any): unknown {
-    return this.getDecoder().parseAfterValidation(ctx, input);
-  }
-  reportDecodeError(ctx: ReportContext, input: unknown): DecodeError[] {
-    return this.getDecoder().reportDecodeError(ctx, input);
-  }
-}
-
 declare var RequiredStringFormats: string[];
 declare var RequiredNumberFormats: string[];
 declare var buildParsersInput: Record<string, Runtype>;

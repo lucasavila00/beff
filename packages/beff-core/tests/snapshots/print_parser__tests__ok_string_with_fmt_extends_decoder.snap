@@ -1,24 +1,29 @@
 ---
 source: packages/beff-core/tests/print_parser.rs
-expression: "decoder(r#\"\n        export type User = StringFormat<\"User\">;\n        export type ReadAuthorizedUser = StringFormatExtends<User, \"ReadAuthorizedUser\">;\n        export type WriteAuthorizedUser = StringFormatExtends<ReadAuthorizedUser, \"WriteAuthorizedUser\">;\n        parse.buildParsers<{ User: User, ReadAuthorizedUser: ReadAuthorizedUser, WriteAuthorizedUser: WriteAuthorizedUser }>();\n      \"#)"
+expression: "print_cgen(r#\"\n        export type User = StringFormat<\"User\">;\n        export type ReadAuthorizedUser = StringFormatExtends<User, \"ReadAuthorizedUser\">;\n        export type WriteAuthorizedUser = StringFormatExtends<ReadAuthorizedUser, \"WriteAuthorizedUser\">;\n        parse.buildParsers<{ User: User, ReadAuthorizedUser: ReadAuthorizedUser, WriteAuthorizedUser: WriteAuthorizedUser }>();\n      \"#)"
 ---
-const hoistedIndirect = [];
+const direct_hoist_0 = new RefRuntype("User");
+const direct_hoist_1 = new RefRuntype("ReadAuthorizedUser");
+const direct_hoist_2 = new RefRuntype("WriteAuthorizedUser");
+const direct_hoist_3 = new StringWithFormatRuntype([
+    "User"
+]);
+const direct_hoist_4 = new StringWithFormatRuntype([
+    "User",
+    "ReadAuthorizedUser"
+]);
+const direct_hoist_5 = new StringWithFormatRuntype([
+    "User",
+    "ReadAuthorizedUser",
+    "WriteAuthorizedUser"
+]);
 const namedRuntypes = {
-    "User": new StringWithFormatRuntype([
-        "User"
-    ]),
-    "ReadAuthorizedUser": new StringWithFormatRuntype([
-        "User",
-        "ReadAuthorizedUser"
-    ]),
-    "WriteAuthorizedUser": new StringWithFormatRuntype([
-        "User",
-        "ReadAuthorizedUser",
-        "WriteAuthorizedUser"
-    ])
+    "User": direct_hoist_3,
+    "ReadAuthorizedUser": direct_hoist_4,
+    "WriteAuthorizedUser": direct_hoist_5
 };
 const buildParsersInput = {
-    "User": new RefRuntype("User"),
-    "ReadAuthorizedUser": new RefRuntype("ReadAuthorizedUser"),
-    "WriteAuthorizedUser": new RefRuntype("WriteAuthorizedUser")
+    "User": direct_hoist_0,
+    "ReadAuthorizedUser": direct_hoist_1,
+    "WriteAuthorizedUser": direct_hoist_2
 };

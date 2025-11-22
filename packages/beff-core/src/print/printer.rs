@@ -15,10 +15,7 @@ use swc_ecma_codegen::{text_writer::JsWriter, Emitter};
 
 use crate::parser_extractor::ParserExtractResult;
 use crate::{
-    ast::{
-        json::{Json, N},
-        runtype::{Optionality, Runtype, RuntypeConst, TplLitTypeItem},
-    },
+    ast::runtype::{Optionality, Runtype, RuntypeConst, TplLitTypeItem},
     parser_extractor::BuiltDecoder,
     NamedSchema,
 };
@@ -51,11 +48,8 @@ fn emit_module_items(body: Vec<ModuleItem>) -> Result<String> {
     Ok(code)
 }
 
-type SeenCounter = BTreeMap<Runtype, i32>;
 struct HoistedMap {
     direct: BTreeMap<Runtype, (String, Expr)>,
-    indirect: BTreeMap<Runtype, (i32, Expr)>,
-    seen: SeenCounter,
 }
 
 fn const_decl(name: &str, init: Expr) -> ModuleItem {
@@ -435,131 +429,14 @@ fn maybe_runtype_any_of_consts(flat_values: &BTreeSet<Runtype>) -> Option<Expr> 
     None
 }
 
-fn has_no_inner_schemas(schema: &Runtype) -> bool {
-    // hoist only what has no inner schemas
-    matches!(
-        schema,
-        Runtype::StringWithFormat(_, _)
-            | Runtype::NumberWithFormat(_, _)
-            | Runtype::AnyArrayLike
-            | Runtype::Any
-            | Runtype::Number
-            | Runtype::String
-            | Runtype::Boolean
-            | Runtype::StNever
-            | Runtype::Function
-            | Runtype::Date
-            | Runtype::BigInt
-            | Runtype::TplLitType(_)
-            | Runtype::Ref(_)
-            | Runtype::Const(_)
-            | Runtype::Null
-    )
-}
-
-// fn has_recursion_inner(schema: &Runtype, seen: &mut BTreeSet<Runtype>) -> bool {
-//     // hoist only what has no inner schemas
-//     if seen.contains(schema) {
-//         return true;
-//     }
-//     seen.insert(schema.clone());
-//     let res = match schema {
-//         Runtype::StringWithFormat(_, _)
-//         | Runtype::NumberWithFormat(_, _)
-//         | Runtype::AnyArrayLike
-//         | Runtype::Any
-//         | Runtype::Number
-//         | Runtype::String
-//         | Runtype::Boolean
-//         | Runtype::StNever
-//         | Runtype::Function
-//         | Runtype::Date
-//         | Runtype::BigInt
-//         | Runtype::TplLitType(_)
-//         | Runtype::Ref(_)
-//         | Runtype::Const(_)
-//         | Runtype::Null => false,
-//         Runtype::StNot(runtype) => has_recursion_inner(runtype, seen),
-//         Runtype::Array(runtype) => has_recursion_inner(runtype, seen),
-//         Runtype::MappedRecord { key, rest } => {
-//             has_recursion_inner(key, seen) || has_recursion_inner(rest, seen)
-//         }
-//         Runtype::AllOf(btree_set) | Runtype::AnyOf(btree_set) => {
-//             for v in btree_set {
-//                 if has_recursion_inner(v, seen) {
-//                     return true;
-//                 }
-//             }
-//             false
-//         }
-//         Runtype::Object { vs, rest } => {
-//             for v in vs.values() {
-//                 match v {
-//                     Optionality::Optional(schema) | Optionality::Required(schema) => {
-//                         if has_recursion_inner(schema, seen) {
-//                             return true;
-//                         }
-//                     }
-//                 }
-//             }
-//             if let Some(rest_schema) = rest {
-//                 if has_recursion_inner(rest_schema, seen) {
-//                     return true;
-//                 }
-//             }
-//             false
-//         }
-//         Runtype::Tuple {
-//             prefix_items,
-//             items,
-//         } => {
-//             for item in prefix_items {
-//                 if has_recursion_inner(item, seen) {
-//                     return true;
-//                 }
-//             }
-//             if let Some(items_schema) = items {
-//                 if has_recursion_inner(items_schema, seen) {
-//                     return true;
-//                 }
-//             }
-//             false
-//         }
-//     };
-//     seen.remove(schema);
-//     res
-// }
-
-// fn has_recursion(schema: &Runtype) -> bool {
-//     let mut seen = BTreeSet::new();
-//     has_recursion_inner(schema, &mut seen)
-// }
-
-fn should_hoist_direct(schema: &Runtype) -> bool {
-    has_no_inner_schemas(schema)
-}
-
-fn i32_literal(id: i32) -> Expr {
-    Json::Number(N::parse_int(id as i64)).to_expr()
-}
-fn hoisted_indirect_runtype(id: i32) -> Expr {
-    new_runtype_class("HoistedRuntype", vec![i32_literal(id)])
-}
 fn print_runtype(
     schema: &Runtype,
     named_schemas: &[NamedSchema],
     hoisted: &mut HoistedMap,
 ) -> Expr {
-    if should_hoist_direct(schema) {
-        let found_direct = hoisted.direct.get(schema);
-        if let Some((var_name, _)) = found_direct {
-            return Expr::Ident(identifier(var_name));
-        }
-    } else {
-        let found_indirect = hoisted.indirect.get(schema);
-        if let Some((var_name, _)) = found_indirect {
-            return hoisted_indirect_runtype(*var_name);
-        }
+    let found_direct = hoisted.direct.get(schema);
+    if let Some((var_name, _)) = found_direct {
+        return Expr::Ident(identifier(var_name));
     }
 
     let out = match schema {
@@ -711,22 +588,11 @@ fn print_runtype(
         }
     };
 
-    let seen_counter = hoisted.seen.get(schema).cloned().unwrap_or(0);
-    if seen_counter <= 1 {
-        out
-    } else if should_hoist_direct(schema) {
-        let new_id = format!("direct_hoist_{}", hoisted.direct.len());
-        hoisted
-            .direct
-            .insert(schema.clone(), (new_id.clone(), out.clone()));
-        Expr::Ident(identifier(&new_id))
-    } else {
-        let new_id = hoisted.indirect.len() as i32;
-        hoisted
-            .indirect
-            .insert(schema.clone(), (new_id, out.clone()));
-        hoisted_indirect_runtype(new_id)
-    }
+    let new_id = format!("direct_hoist_{}", hoisted.direct.len());
+    hoisted
+        .direct
+        .insert(schema.clone(), (new_id.clone(), out.clone()));
+    Expr::Ident(identifier(&new_id))
 }
 
 fn build_parsers_input(
@@ -789,85 +655,13 @@ fn named_runtypes(named_schemas: &[NamedSchema], hoisted: &mut HoistedMap) -> Ex
     })
 }
 
-fn calculate_schema_seen(schema: &Runtype, seen: &mut SeenCounter) {
-    let count = seen.entry(schema.clone()).or_insert(0);
-    *count += 1;
-
-    match schema {
-        Runtype::StringWithFormat(_, _)
-        | Runtype::NumberWithFormat(_, _)
-        | Runtype::AnyArrayLike
-        | Runtype::Any
-        | Runtype::Number
-        | Runtype::String
-        | Runtype::Boolean
-        | Runtype::StNever
-        | Runtype::Function
-        | Runtype::Date
-        | Runtype::BigInt
-        | Runtype::TplLitType(_)
-        | Runtype::Ref(_)
-        | Runtype::Const(_)
-        | Runtype::Null => {}
-        Runtype::Object { vs, rest } => {
-            for v in vs.values() {
-                match v {
-                    Optionality::Optional(v) => calculate_schema_seen(v, seen),
-                    Optionality::Required(v) => calculate_schema_seen(v, seen),
-                }
-            }
-            if let Some(rest_schema) = rest {
-                calculate_schema_seen(rest_schema, seen);
-            }
-        }
-        Runtype::MappedRecord { key, rest } => {
-            calculate_schema_seen(key, seen);
-            calculate_schema_seen(rest, seen);
-        }
-        Runtype::Array(json_schema) => {
-            calculate_schema_seen(json_schema, seen);
-        }
-        Runtype::Tuple {
-            prefix_items,
-            items,
-        } => {
-            for item in prefix_items {
-                calculate_schema_seen(item, seen);
-            }
-            if let Some(items_schema) = items {
-                calculate_schema_seen(items_schema, seen);
-            }
-        }
-        Runtype::AnyOf(btree_set) | Runtype::AllOf(btree_set) => {
-            for v in btree_set {
-                calculate_schema_seen(v, seen);
-            }
-        }
-        Runtype::StNot(json_schema) => {
-            calculate_schema_seen(json_schema, seen);
-        }
-    }
-}
-
-fn calculate_named_schemas_seen(named_schemas: &[NamedSchema], seen: &mut SeenCounter) {
-    for named_schema in named_schemas {
-        calculate_schema_seen(&named_schema.schema, seen);
-    }
-}
-
 impl ParserExtractResult {
     pub fn emit_code(self) -> Result<String> {
-        let mut seen: SeenCounter = BTreeMap::new();
-
         let built_parsers = self.built_decoders.unwrap_or_default();
         let named_schemas = validate_type_uniqueness(&self.validators)?;
 
-        calculate_named_schemas_seen(&named_schemas, &mut seen);
-
         let mut hoisted = HoistedMap {
             direct: BTreeMap::new(),
-            indirect: BTreeMap::new(),
-            seen,
         };
 
         let build_parsers_input: ModuleItem = const_decl(
@@ -878,25 +672,6 @@ impl ParserExtractResult {
         let build_named_parsers_input = const_decl(
             "namedRuntypes",
             named_runtypes(&named_schemas, &mut hoisted),
-        );
-
-        let mut sorted_indirect_hoisted_values = hoisted.indirect.into_values().collect::<Vec<_>>();
-        sorted_indirect_hoisted_values.sort_by_key(|it| it.0);
-
-        let hoisted_indirect_arr = const_decl(
-            "hoistedIndirect",
-            Expr::Array(ArrayLit {
-                span: DUMMY_SP,
-                elems: sorted_indirect_hoisted_values
-                    .into_iter()
-                    .map(|(_id, expr)| {
-                        Some(ExprOrSpread {
-                            spread: None,
-                            expr: expr.into(),
-                        })
-                    })
-                    .collect(),
-            }),
         );
 
         let mut sorted_direct_hoisted_values = hoisted.direct.into_values().collect::<Vec<_>>();
@@ -914,7 +689,6 @@ impl ParserExtractResult {
             .into_iter()
             .chain(vec![
                 //
-                hoisted_indirect_arr,
                 build_named_parsers_input,
                 build_parsers_input,
             ])

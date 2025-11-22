@@ -1,13 +1,15 @@
 ---
 source: packages/beff-core/tests/print_parser.rs
-expression: "decoder(r#\"\n        export type NumberRec = Record<number, string>;\n        export type NumberRecGet = NumberRec[0];\n        parse.buildParsers<{ NumberRecGet: NumberRecGet }>();\n      \"#)"
+expression: "print_cgen(r#\"\n        export type NumberRec = Record<number, string>;\n        export type NumberRecGet = NumberRec[0];\n        parse.buildParsers<{ NumberRecGet: NumberRecGet }>();\n      \"#)"
 ---
-const direct_hoist_0 = new TypeofRuntype("string");
-const hoistedIndirect = [];
+const direct_hoist_0 = new RefRuntype("NumberRecGet");
+const direct_hoist_1 = new TypeofRuntype("number");
+const direct_hoist_2 = new TypeofRuntype("string");
+const direct_hoist_3 = new MappedRecordRuntype(direct_hoist_1, direct_hoist_2);
 const namedRuntypes = {
-    "NumberRec": new MappedRecordRuntype(new TypeofRuntype("number"), direct_hoist_0),
-    "NumberRecGet": direct_hoist_0
+    "NumberRec": direct_hoist_3,
+    "NumberRecGet": direct_hoist_2
 };
 const buildParsersInput = {
-    "NumberRecGet": new RefRuntype("NumberRecGet")
+    "NumberRecGet": direct_hoist_0
 };

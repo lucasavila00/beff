@@ -1,28 +1,35 @@
 ---
 source: packages/beff-core/tests/print_parser.rs
-expression: "decoder(r#\"\n        export type DiscriminatedUnion4 =\n            | {\n                type: \"a\";\n                a: {\n                  subType: \"a1\";\n                  a1: string;\n                };\n              }\n            | {\n                type: \"a\";\n                a: {\n                  subType: \"a2\";\n                  a2: string;\n                };\n              };\n        parse.buildParsers<{ DiscriminatedUnion4: DiscriminatedUnion4 }>();\n      \"#)"
+expression: "print_cgen(r#\"\n        export type DiscriminatedUnion4 =\n            | {\n                type: \"a\";\n                a: {\n                  subType: \"a1\";\n                  a1: string;\n                };\n              }\n            | {\n                type: \"a\";\n                a: {\n                  subType: \"a2\";\n                  a2: string;\n                };\n              };\n        parse.buildParsers<{ DiscriminatedUnion4: DiscriminatedUnion4 }>();\n      \"#)"
 ---
-const direct_hoist_0 = new TypeofRuntype("string");
-const direct_hoist_1 = new ConstRuntype("a");
-const hoistedIndirect = [];
+const direct_hoist_0 = new RefRuntype("DiscriminatedUnion4");
+const direct_hoist_1 = new TypeofRuntype("string");
+const direct_hoist_2 = new ConstRuntype("a1");
+const direct_hoist_3 = new ObjectRuntype({
+    "a1": direct_hoist_1,
+    "subType": direct_hoist_2
+}, null);
+const direct_hoist_4 = new ConstRuntype("a");
+const direct_hoist_5 = new ObjectRuntype({
+    "a": direct_hoist_3,
+    "type": direct_hoist_4
+}, null);
+const direct_hoist_6 = new ConstRuntype("a2");
+const direct_hoist_7 = new ObjectRuntype({
+    "a2": direct_hoist_1,
+    "subType": direct_hoist_6
+}, null);
+const direct_hoist_8 = new ObjectRuntype({
+    "a": direct_hoist_7,
+    "type": direct_hoist_4
+}, null);
+const direct_hoist_9 = new AnyOfRuntype([
+    direct_hoist_5,
+    direct_hoist_8
+]);
 const namedRuntypes = {
-    "DiscriminatedUnion4": new AnyOfRuntype([
-        new ObjectRuntype({
-            "a": new ObjectRuntype({
-                "a1": direct_hoist_0,
-                "subType": new ConstRuntype("a1")
-            }, null),
-            "type": direct_hoist_1
-        }, null),
-        new ObjectRuntype({
-            "a": new ObjectRuntype({
-                "a2": direct_hoist_0,
-                "subType": new ConstRuntype("a2")
-            }, null),
-            "type": direct_hoist_1
-        }, null)
-    ])
+    "DiscriminatedUnion4": direct_hoist_9
 };
 const buildParsersInput = {
-    "DiscriminatedUnion4": new RefRuntype("DiscriminatedUnion4")
+    "DiscriminatedUnion4": direct_hoist_0
 };
