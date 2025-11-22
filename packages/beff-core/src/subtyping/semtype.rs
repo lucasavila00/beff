@@ -505,11 +505,11 @@ impl SemTypeContext {
     pub(crate) fn function() -> SemType {
         SemType::new_basic(SubTypeTag::Function.code())
     }
-    pub(crate) fn date() -> Rc<ComplexSemType> {
-        Rc::new(SemType::new_basic(SubTypeTag::Date.code()))
+    pub(crate) fn date() -> ComplexSemType {
+        SemType::new_basic(SubTypeTag::Date.code())
     }
-    pub(crate) fn bigint() -> Rc<ComplexSemType> {
-        Rc::new(SemType::new_basic(SubTypeTag::BigInt.code()))
+    pub(crate) fn bigint() -> ComplexSemType {
+        SemType::new_basic(SubTypeTag::BigInt.code())
     }
 
     fn get_complex_sub_type_data(s: &Vec<Rc<ProperSubtype>>, tag: SubTypeTag) -> SubType {
