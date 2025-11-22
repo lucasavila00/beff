@@ -13,13 +13,14 @@ use swc_ecma_ast::{
 use swc_ecma_codegen::Config;
 use swc_ecma_codegen::{text_writer::JsWriter, Emitter};
 
+use crate::parser_extractor::ParserExtractResult;
 use crate::{
     ast::{
         json::{Json, N},
         runtype::{Optionality, PrimitiveLike, Runtype, RuntypeConst, TplLitTypeItem},
     },
     parser_extractor::BuiltDecoder,
-    ExtractResult, NamedSchema,
+    NamedSchema,
 };
 
 fn emit_module_items(body: Vec<ModuleItem>) -> Result<String> {
@@ -768,12 +769,12 @@ fn calculate_named_schemas_seen(named_schemas: &[NamedSchema], seen: &mut SeenCo
     }
 }
 
-impl ExtractResult {
+impl ParserExtractResult {
     pub fn emit_code(self) -> Result<String> {
         let mut seen: SeenCounter = BTreeMap::new();
 
-        let built_parsers = self.parser.built_decoders.unwrap_or_default();
-        let named_schemas = validate_type_uniqueness(&self.parser.validators)?;
+        let built_parsers = self.built_decoders.unwrap_or_default();
+        let named_schemas = validate_type_uniqueness(&self.validators)?;
 
         calculate_named_schemas_seen(&named_schemas, &mut seen);
 

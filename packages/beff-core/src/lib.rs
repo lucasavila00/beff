@@ -12,7 +12,6 @@ pub mod wasm_diag;
 use crate::ast::runtype::Runtype;
 use crate::parser_extractor::BuiltDecoder;
 use core::fmt;
-use diag::Diagnostic;
 use parser_extractor::extract_parser;
 use parser_extractor::ParserExtractResult;
 use serde::Deserialize;
@@ -367,10 +366,6 @@ pub trait FileManager {
     fn get_existing_file(&self, name: &BffFileName) -> Option<Rc<ParsedModule>>;
 }
 
-pub struct ExtractResult {
-    pub parser: ParserExtractResult,
-}
-
 fn debug_print_type_list(vs: Vec<(String, String)>) -> String {
     let mut acc = String::new();
     for (name, ts_type) in vs {
@@ -422,27 +417,21 @@ fn debug_print_all_types(validators: &[&NamedSchema], built_decoders: &[BuiltDec
         .to_string()
 }
 
-impl ExtractResult {
-    pub fn errors(&self) -> Vec<&Diagnostic> {
-        self.parser.errors.iter().collect::<Vec<_>>()
-    }
-    pub fn validators(&self) -> Vec<&NamedSchema> {
-        self.parser.validators.iter().collect::<Vec<_>>()
-    }
+impl ParserExtractResult {
     pub fn debug_print(&self) -> String {
         debug_print_all_types(
-            &self.parser.validators.iter().collect::<Vec<_>>(),
-            self.parser.built_decoders.as_ref().unwrap_or(&vec![]),
+            &self.validators.iter().collect::<Vec<_>>(),
+            self.built_decoders.as_ref().unwrap_or(&vec![]),
         )
     }
 }
-pub fn extract<R: FileManager>(files: &mut R, entry_points: EntryPoints) -> ExtractResult {
+pub fn extract<R: FileManager>(files: &mut R, entry_points: EntryPoints) -> ParserExtractResult {
     let parser = extract_parser(
         files,
         entry_points.parser_entry_point,
         &entry_points.settings,
     );
-    ExtractResult { parser }
+    parser
 }
 
 #[derive(Debug, Clone)]

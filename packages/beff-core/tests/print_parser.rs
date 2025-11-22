@@ -4,7 +4,8 @@ mod tests {
 
     use beff_core::{
         import_resolver::{parse_and_bind, FsModuleResolver},
-        BeffUserSettings, BffFileName, EntryPoints, ExtractResult, FileManager, ParsedModule,
+        parser_extractor::ParserExtractResult,
+        BeffUserSettings, BffFileName, EntryPoints, FileManager, ParsedModule,
     };
     use swc_common::{Globals, GLOBALS};
     struct TestFileManager {
@@ -35,7 +36,7 @@ mod tests {
             res.expect("failed to parse")
         })
     }
-    fn extract_types(it: &str) -> ExtractResult {
+    fn extract_types(it: &str) -> ParserExtractResult {
         let f = parse_module(it);
         let mut man = TestFileManager { f };
         let entry = EntryPoints {
@@ -60,7 +61,7 @@ mod tests {
 
     fn print_types(from: &str) -> String {
         let p = extract_types(from);
-        let errors = p.errors();
+        let errors = &p.errors;
 
         if !errors.is_empty() {
             panic!("errors: {:?}", errors);
@@ -70,7 +71,7 @@ mod tests {
 
     fn print_cgen(from: &str) -> String {
         let p = extract_types(from);
-        let errors = p.errors();
+        let errors = &p.errors;
 
         if !errors.is_empty() {
             panic!("errors: {:?}", errors);
