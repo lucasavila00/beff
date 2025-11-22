@@ -1031,8 +1031,6 @@ impl<'a, 'b, R: FileManager> TypeToSchema<'a, 'b, R> {
         }
 
         let found = self.components.get(&(i.sym.to_string()));
-        dbg!("looking for component");
-        dbg!(&i.sym.to_string());
         if let Some(_found_in_map) = found {
             match type_params {
                 Some(_) => {

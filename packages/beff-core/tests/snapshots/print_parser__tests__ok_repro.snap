@@ -1,9 +1,12 @@
 ---
 source: packages/beff-core/tests/print_parser.rs
-expression: "ok(r#\"\n        export type Settings = {\n            a: string;\n            level: \"a\" | \"b\";\n            d: {\n                tag: \"d\";\n            };\n        };\n          \n        export type SettingsUpdate = Settings[\"a\" | \"level\" | \"d\"];\n        parse.buildParsers<{ SettingsUpdate: SettingsUpdate }>();\n      \"#)"
+expression: "print_types(r#\"\n        export type Settings = {\n            a: string;\n            level: \"a\" | \"b\";\n            d: {\n                tag: \"d\";\n            };\n        };\n          \n        export type SettingsUpdate = Settings[\"a\" | \"level\" | \"d\"];\n        parse.buildParsers<{ SettingsUpdate: SettingsUpdate }>();\n      \"#)"
 ---
-type Settings = { "a": Required<string>, "d": Required<{ "tag": Required<"d"> }>, "level": Required<("a" | "b")> };
+type Settings = { "a": string, "d": { "tag": "d" }, "level": ("a" | "b") };
 
-type SettingsUpdate = (string | { "tag": Required<"d"> });
+type SettingsUpdate = (string | { "tag": "d" });
 
-type SettingsUpdate = SettingsUpdate;
+
+type BuiltParsers = {
+  SettingsUpdate: SettingsUpdate,
+}

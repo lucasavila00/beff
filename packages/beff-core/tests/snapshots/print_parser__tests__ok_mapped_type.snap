@@ -1,7 +1,10 @@
 ---
 source: packages/beff-core/tests/print_parser.rs
-expression: "ok(r#\"\n        export type Mapped = {\n            [K in \"a\" | \"b\"]: {\n                value: K;\n            };\n        };\n        parse.buildParsers<{ Mapped: Mapped }>();\n      \"#)"
+expression: "print_types(r#\"\n        export type Mapped = {\n            [K in \"a\" | \"b\"]: {\n                value: K;\n            };\n        };\n        parse.buildParsers<{ Mapped: Mapped }>();\n      \"#)"
 ---
-type Mapped = { "a": Required<{ "value": Required<"a"> }>, "b": Required<{ "value": Required<"b"> }> };
+type Mapped = { "a": { "value": "a" }, "b": { "value": "b" } };
 
-type Mapped = Mapped;
+
+type BuiltParsers = {
+  Mapped: Mapped,
+}

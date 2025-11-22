@@ -380,7 +380,7 @@ impl Runtype {
                 let mut acc = format!("StringFormat<\"{}\">", first);
 
                 for it in rest.iter() {
-                    acc.push_str(&format!("StringFormatExtends<{}, \"{}\">", acc, it));
+                    acc = format!("StringFormatExtends<{}, \"{}\">", acc, it);
                 }
 
                 acc
@@ -393,7 +393,7 @@ impl Runtype {
                 let mut acc = format!("NumberFormat<\"{}\">", first);
 
                 for it in rest.iter() {
-                    acc.push_str(&format!("NumberFormatExtends<{}, \"{}\">", acc, it));
+                    acc = format!("NumberFormatExtends<{}, \"{}\">", acc, it);
                 }
 
                 acc
@@ -458,17 +458,16 @@ impl Runtype {
                 let mut acc = vec![];
 
                 for (k, v) in vs.iter() {
-                    let v = match v {
+                    match v {
                         Optionality::Optional(it) => {
-                            let inner = it.debug_print();
-                            format!("Optional<{}>", inner)
+                            let v = it.debug_print();
+                            acc.push(format!("\"{}\"?: {}", k, v));
                         }
                         Optionality::Required(it) => {
-                            let inner = it.debug_print();
-                            format!("Required<{}>", inner)
+                            let v = it.debug_print();
+                            acc.push(format!("\"{}\": {}", k, v));
                         }
                     };
-                    acc.push(format!("\"{}\": {}", k, v));
                 }
                 if let Some(rest) = rest.as_ref() {
                     let r = rest.debug_print();

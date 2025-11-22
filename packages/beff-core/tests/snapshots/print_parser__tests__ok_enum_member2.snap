@@ -1,7 +1,10 @@
 ---
 source: packages/beff-core/tests/print_parser.rs
-expression: "ok(r#\"\n        enum Enum {\n            A = \"a\",\n            B = \"b\",\n        }\n        type X = Enum.A\n\n        parse.buildParsers<{ X: X }>();\n      \"#)"
+expression: "print_types(r#\"\n        enum Enum {\n            A = \"a\",\n            B = \"b\",\n        }\n        type X = Enum.A\n\n        parse.buildParsers<{ X: X }>();\n      \"#)"
 ---
 type X = "a";
 
-type X = X;
+
+type BuiltParsers = {
+  X: X,
+}

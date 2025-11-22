@@ -1,7 +1,10 @@
 ---
 source: packages/beff-core/tests/print_parser.rs
-expression: "ok(r#\"\n        export declare const AllArr1: [\"a\", \"b\"] \n        type Arr1 = typeof AllArr1[number];\n        parse.buildParsers<{ Arr1: Arr1 }>();\n      \"#)"
+expression: "print_types(r#\"\n        export declare const AllArr1: [\"a\", \"b\"] \n        type Arr1 = typeof AllArr1[number];\n        parse.buildParsers<{ Arr1: Arr1 }>();\n      \"#)"
 ---
 type Arr1 = ("a" | "b");
 
-type Arr1 = Arr1;
+
+type BuiltParsers = {
+  Arr1: Arr1,
+}

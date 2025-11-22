@@ -1,9 +1,12 @@
 ---
 source: packages/beff-core/tests/print_parser.rs
-expression: ok(from)
+expression: print_types(from)
 ---
-type ObjWithUsers = { "a2": Optional<User2>, "enabled": Required<boolean> };
+type ObjWithUsers = { "a2"?: User2, "enabled": boolean };
 
-type User2 = { "age": Optional<number>, "email": Optional<string>, "enabled": Required<boolean>, "name": Optional<string> };
+type User2 = { "age"?: number, "email"?: string, "enabled": boolean, "name"?: string };
 
-type A = ObjWithUsers;
+
+type BuiltParsers = {
+  A: ObjWithUsers,
+}

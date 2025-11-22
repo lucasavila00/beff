@@ -1,10 +1,10 @@
 ---
 source: packages/beff-core/tests/print_parser.rs
-expression: "ok(r#\"\n        export type ABC = {}\n        export type KABC = keyof ABC\n\n        export type DEF = {\n            a: string\n        }\n        export type KDEF = keyof DEF\n\n        export type K = KABC | KDEF\n\n        parse.buildParsers<{ K: K }>();\n      \"#)"
+expression: "print_types(r#\"\n        export type ABC = {}\n        export type KABC = keyof ABC\n\n        export type DEF = {\n            a: string\n        }\n        export type KDEF = keyof DEF\n\n        export type K = KABC | KDEF\n\n        parse.buildParsers<{ K: K }>();\n      \"#)"
 ---
 type ABC = {  };
 
-type DEF = { "a": Required<string> };
+type DEF = { "a": string };
 
 type K = (KABC | KDEF);
 
@@ -12,4 +12,7 @@ type KABC = never;
 
 type KDEF = "a";
 
-type K = K;
+
+type BuiltParsers = {
+  K: K,
+}
