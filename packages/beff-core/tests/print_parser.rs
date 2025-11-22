@@ -102,7 +102,11 @@ mod tests {
 
         let decoders_printed = format!("type BuiltParsers = {}", decoders_printed);
 
-        [validators_printed, decoders_printed].join("\n")
+        [validators_printed, decoders_printed]
+            .into_iter()
+            .filter(|it| it.len() > 0)
+            .collect::<Vec<String>>()
+            .join("\n")
     }
     fn print_types(from: &str) -> String {
         let p = parse_api(from);
