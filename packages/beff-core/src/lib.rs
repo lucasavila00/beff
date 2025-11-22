@@ -417,7 +417,7 @@ impl ParserExtractResult {
 
         [validators_printed, decoders_printed]
             .into_iter()
-            .filter(|it| it.len() > 0)
+            .filter(|it| !it.is_empty())
             .collect::<Vec<String>>()
             .join("\n")
             .trim()
@@ -425,12 +425,11 @@ impl ParserExtractResult {
     }
 }
 pub fn extract<R: FileManager>(files: &mut R, entry_points: EntryPoints) -> ParserExtractResult {
-    let parser = extract_parser(
+    extract_parser(
         files,
         entry_points.parser_entry_point,
         &entry_points.settings,
-    );
-    parser
+    )
 }
 
 #[derive(Debug, Clone)]
