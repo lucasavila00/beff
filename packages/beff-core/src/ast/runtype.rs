@@ -1,6 +1,4 @@
-use std::collections::BTreeMap;
-use std::collections::BTreeSet;
-
+use super::json::N;
 use crate::ast::json::Json;
 use crate::subtyping::semtype::SemTypeContext;
 use crate::subtyping::semtype::SemTypeOps;
@@ -8,38 +6,8 @@ use crate::subtyping::ToSemType;
 use crate::NamedSchema;
 use anyhow::anyhow;
 use anyhow::Result;
-use swc_common::DUMMY_SP;
-use swc_ecma_ast::BindingIdent;
-use swc_ecma_ast::Bool;
-use swc_ecma_ast::Ident;
-use swc_ecma_ast::Str;
-use swc_ecma_ast::TplElement;
-use swc_ecma_ast::TsArrayType;
-use swc_ecma_ast::TsEntityName;
-use swc_ecma_ast::TsFnParam;
-use swc_ecma_ast::TsFnType;
-use swc_ecma_ast::TsIndexSignature;
-use swc_ecma_ast::TsIntersectionType;
-use swc_ecma_ast::TsKeywordType;
-use swc_ecma_ast::TsKeywordTypeKind;
-use swc_ecma_ast::TsLit;
-use swc_ecma_ast::TsLitType;
-use swc_ecma_ast::TsParenthesizedType;
-use swc_ecma_ast::TsPropertySignature;
-use swc_ecma_ast::TsRestType;
-use swc_ecma_ast::TsTplLitType;
-use swc_ecma_ast::TsTupleElement;
-use swc_ecma_ast::TsTupleType;
-use swc_ecma_ast::TsType;
-use swc_ecma_ast::TsTypeAnn;
-use swc_ecma_ast::TsTypeElement;
-use swc_ecma_ast::TsTypeLit;
-use swc_ecma_ast::TsTypeParamInstantiation;
-use swc_ecma_ast::TsTypeRef;
-use swc_ecma_ast::TsUnionOrIntersectionType;
-use swc_ecma_ast::TsUnionType;
-
-use super::json::N;
+use std::collections::BTreeMap;
+use std::collections::BTreeSet;
 
 #[derive(Debug, PartialEq, Eq, Clone, PartialOrd, Ord)]
 pub enum Optionality<T> {
@@ -260,6 +228,14 @@ pub enum PrimitiveLike {
     Date,
     BigInt,
 }
+impl PrimitiveLike {
+    fn debug_print(&self) -> String {
+        match self {
+            PrimitiveLike::Date => "Date".to_string(),
+            PrimitiveLike::BigInt => "BigInt".to_string(),
+        }
+    }
+}
 
 struct UnionMerger(BTreeSet<Runtype>);
 
@@ -387,532 +363,120 @@ impl Runtype {
             v => Ok(v),
         }
     }
-}
 
-fn ts_string_brands(brands: &[String]) -> TsType {
-    let mut members = vec![];
-
-    for (idx, brand) in brands.iter().enumerate() {
-        let n = idx + 1;
-        let member = TsTypeElement::TsPropertySignature(TsPropertySignature {
-            span: DUMMY_SP,
-            readonly: false,
-            key: format!("__customType{n}").into(),
-            computed: false,
-            optional: false,
-            init: None,
-            params: vec![],
-            type_ann: Some(Box::new(TsTypeAnn {
-                span: DUMMY_SP,
-                type_ann: Box::new(TsType::TsLitType(TsLitType {
-                    span: DUMMY_SP,
-                    lit: TsLit::Str(Str {
-                        span: DUMMY_SP,
-                        value: brand.clone().into(),
-                        raw: None,
-                    }),
-                })),
-            })),
-            type_params: None,
-        });
-        members.push(member);
-    }
-
-    TsType::TsUnionOrIntersectionType(TsUnionOrIntersectionType::TsIntersectionType(
-        TsIntersectionType {
-            span: DUMMY_SP,
-            types: vec![
-                Box::new(TsType::TsKeywordType(TsKeywordType {
-                    span: DUMMY_SP,
-                    kind: TsKeywordTypeKind::TsStringKeyword,
-                })),
-                Box::new(TsType::TsTypeLit(TsTypeLit {
-                    span: DUMMY_SP,
-                    members,
-                })),
-            ],
-        },
-    ))
-}
-
-fn ts_number_brands(brands: &[String]) -> TsType {
-    let mut members = vec![];
-
-    for (idx, brand) in brands.iter().enumerate() {
-        let n = idx + 1;
-        let member = TsTypeElement::TsPropertySignature(TsPropertySignature {
-            span: DUMMY_SP,
-            readonly: false,
-            key: format!("__customType{n}").into(),
-            computed: false,
-            optional: false,
-            init: None,
-            params: vec![],
-            type_ann: Some(Box::new(TsTypeAnn {
-                span: DUMMY_SP,
-                type_ann: Box::new(TsType::TsLitType(TsLitType {
-                    span: DUMMY_SP,
-                    lit: TsLit::Str(Str {
-                        span: DUMMY_SP,
-                        value: brand.clone().into(),
-                        raw: None,
-                    }),
-                })),
-            })),
-            type_params: None,
-        });
-        members.push(member);
-    }
-
-    TsType::TsUnionOrIntersectionType(TsUnionOrIntersectionType::TsIntersectionType(
-        TsIntersectionType {
-            span: DUMMY_SP,
-            types: vec![
-                Box::new(TsType::TsKeywordType(TsKeywordType {
-                    span: DUMMY_SP,
-                    kind: TsKeywordTypeKind::TsNumberKeyword,
-                })),
-                Box::new(TsType::TsTypeLit(TsTypeLit {
-                    span: DUMMY_SP,
-                    members,
-                })),
-            ],
-        },
-    ))
-}
-impl Runtype {
-    pub fn to_ts_type(&self) -> TsType {
+    pub fn debug_print(&self) -> String {
         match self {
-            Runtype::Null => TsType::TsKeywordType(TsKeywordType {
-                span: DUMMY_SP,
-                kind: TsKeywordTypeKind::TsNullKeyword,
-            }),
-            Runtype::Boolean => TsType::TsKeywordType(TsKeywordType {
-                span: DUMMY_SP,
-                kind: TsKeywordTypeKind::TsBooleanKeyword,
-            }),
-            Runtype::String => TsType::TsKeywordType(TsKeywordType {
-                span: DUMMY_SP,
-                kind: TsKeywordTypeKind::TsStringKeyword,
-            }),
-            Runtype::Number => TsType::TsKeywordType(TsKeywordType {
-                span: DUMMY_SP,
-                kind: TsKeywordTypeKind::TsNumberKeyword,
-            }),
-            Runtype::Any => TsType::TsKeywordType(TsKeywordType {
-                span: DUMMY_SP,
-                kind: TsKeywordTypeKind::TsAnyKeyword,
-            }),
-            Runtype::Object { vs, rest } => {
-                let mut members: Vec<TsTypeElement> = vs
-                    .iter()
-                    .map(|(k, v)| {
-                        TsTypeElement::TsPropertySignature(TsPropertySignature {
-                            span: DUMMY_SP,
-                            readonly: false,
-                            key: k.clone().into(),
-                            computed: false,
-                            optional: !v.is_required(),
-                            init: None,
-                            params: vec![],
-                            type_ann: Some(Box::new(TsTypeAnn {
-                                span: DUMMY_SP,
-                                type_ann: v.inner().to_ts_type().into(),
-                            })),
-                            type_params: None,
-                        })
-                    })
-                    .collect();
+            Runtype::Null => "null".to_string(),
+            Runtype::Boolean => "boolean".to_string(),
+            Runtype::String => "string".to_string(),
+            Runtype::Number => "number".to_string(),
+            Runtype::Any => "any".to_string(),
+            Runtype::AnyArrayLike => "Array<any>".to_string(),
+            Runtype::StringWithFormat(items) => {
+                let (first, rest) = match items.split_first() {
+                    Some((first, rest)) => (first, rest),
+                    None => panic!("StringWithFormat must have at least one item"),
+                };
+                let mut acc = format!("StringFormat<\"{}\">", first);
 
-                if let Some(rest) = rest {
-                    let rest = TsTypeElement::TsIndexSignature(TsIndexSignature {
-                        span: DUMMY_SP,
-                        readonly: false,
-                        params: vec![TsFnParam::Ident(BindingIdent {
-                            id: Ident {
-                                span: DUMMY_SP,
-                                sym: "key".into(),
-                                optional: false,
-                            },
-                            // string type always
-                            type_ann: Some(
-                                TsTypeAnn {
-                                    span: DUMMY_SP,
-                                    type_ann: TsType::TsKeywordType(TsKeywordType {
-                                        span: DUMMY_SP,
-                                        kind: TsKeywordTypeKind::TsStringKeyword,
-                                    })
-                                    .into(),
-                                }
-                                .into(),
-                            ),
-                        })],
-                        type_ann: Some(
-                            TsTypeAnn {
-                                span: DUMMY_SP,
-                                type_ann: rest.to_ts_type().into(),
-                            }
-                            .into(),
-                        ),
-                        is_static: false,
-                    });
-                    members.push(rest);
+                for it in rest.iter() {
+                    acc.push_str(&format!("StringFormatExtends<{}, \"{}\">", acc, it));
                 }
 
-                TsType::TsTypeLit(TsTypeLit {
-                    span: DUMMY_SP,
-                    members,
-                })
+                acc
             }
-            Runtype::Array(ty) => {
-                let ty = ty.to_ts_type();
-                TsType::TsTypeRef(TsTypeRef {
-                    span: DUMMY_SP,
-                    type_name: Ident {
-                        span: DUMMY_SP,
-                        sym: "Array".into(),
-                        optional: false,
-                    }
-                    .into(),
-                    type_params: Some(Box::new(TsTypeParamInstantiation {
-                        span: DUMMY_SP,
-                        params: vec![ty.into()],
-                    })),
-                })
+            Runtype::NumberWithFormat(items) => {
+                let (first, rest) = match items.split_first() {
+                    Some((first, rest)) => (first, rest),
+                    None => panic!("NumberWithFormat must have at least one item"),
+                };
+                let mut acc = format!("NumberFormat<\"{}\">", first);
+
+                for it in rest.iter() {
+                    acc.push_str(&format!("NumberFormatExtends<{}, \"{}\">", acc, it));
+                }
+
+                acc
+            }
+            Runtype::TplLitType(tpl_lit_type_items) => {
+                let descr = TplLitTypeItem::describe_vec(tpl_lit_type_items);
+                format!("`{}`", descr)
+            }
+            Runtype::Const(runtype_const) => runtype_const.clone().to_json().debug_print(),
+            Runtype::PrimitiveLike(primitive_like) => primitive_like.debug_print(),
+            Runtype::StNever => "never".to_string(),
+            Runtype::StNot(runtype) => {
+                let inner = runtype.debug_print();
+                format!("Not<{}>", inner)
+            }
+            Runtype::Function => "Function".to_string(),
+            Runtype::Ref(r) => r.clone(),
+            Runtype::Array(runtype) => {
+                let inner = runtype.debug_print();
+                format!("Array<{}>", inner)
             }
             Runtype::Tuple {
                 prefix_items,
                 items,
             } => {
-                let mut elem_types: Vec<TsTupleElement> = vec![];
-                for it in prefix_items {
-                    let ty = it.to_ts_type();
-                    let ty = TsTupleElement {
-                        span: DUMMY_SP,
-                        label: None,
-                        ty: ty.into(),
-                    };
-                    elem_types.push(ty);
-                }
-                if let Some(items) = items {
-                    let ty = items.to_ts_type();
-                    let ty = TsType::TsRestType(TsRestType {
-                        span: DUMMY_SP,
-                        type_ann: Box::new(TsType::TsArrayType(TsArrayType {
-                            span: DUMMY_SP,
-                            elem_type: Box::new(ty),
-                        })),
-                    });
-                    let ty = TsTupleElement {
-                        span: DUMMY_SP,
-                        label: None,
-                        ty: ty.into(),
-                    };
-                    elem_types.push(ty);
-                }
-                TsType::TsTupleType(TsTupleType {
-                    span: DUMMY_SP,
-                    elem_types,
-                })
-            }
-            Runtype::Ref(name) => TsType::TsTypeRef(TsTypeRef {
-                span: DUMMY_SP,
-                type_name: TsEntityName::Ident(Ident {
-                    span: DUMMY_SP,
-                    sym: name.clone().into(),
-                    optional: false,
-                }),
-                type_params: None,
-            }),
-            Runtype::StringWithFormat(vs) => ts_string_brands(vs),
-            Runtype::NumberWithFormat(vs) => ts_number_brands(vs),
-            Runtype::PrimitiveLike(c) => match c {
-                PrimitiveLike::Date => TsType::TsTypeRef(TsTypeRef {
-                    span: DUMMY_SP,
-                    type_name: TsEntityName::Ident(Ident {
-                        span: DUMMY_SP,
-                        sym: "Date".into(),
-                        optional: false,
-                    }),
-                    type_params: None,
-                }),
-                PrimitiveLike::BigInt => TsType::TsKeywordType(TsKeywordType {
-                    span: DUMMY_SP,
-                    kind: TsKeywordTypeKind::TsBigIntKeyword,
-                }),
-            },
-            Runtype::AnyOf(vs) =>
-            // TsType::TsUnionOrIntersectionType(
-            //     TsUnionOrIntersectionType::TsUnionType(TsUnionType {
-            //         span: DUMMY_SP,
-            //         types: vs.iter().map(|it| Box::new(it.to_ts_type())).collect(),
-            //     }),
-            // ),
-            {
-                match vs.len() {
-                    0 => TsType::TsKeywordType(TsKeywordType {
-                        span: DUMMY_SP,
-                        kind: TsKeywordTypeKind::TsVoidKeyword,
-                    }),
-                    _ => TsType::TsParenthesizedType(TsParenthesizedType {
-                        span: DUMMY_SP,
-                        type_ann: TsType::TsUnionOrIntersectionType(
-                            TsUnionOrIntersectionType::TsUnionType(TsUnionType {
-                                span: DUMMY_SP,
-                                types: vs.iter().map(|it| Box::new(it.to_ts_type())).collect(),
-                            }),
-                        )
-                        .into(),
-                    }),
-                }
-            }
-            Runtype::AllOf(vs) =>
-            // TsType::TsUnionOrIntersectionType(
-            //     TsUnionOrIntersectionType::TsIntersectionType(TsIntersectionType {
-            //         span: DUMMY_SP,
-            //         types: vs.iter().map(|it| Box::new(it.to_ts_type())).collect(),
-            //     }),
-            // ),
-            {
-                match vs.len() {
-                    0 => TsType::TsKeywordType(TsKeywordType {
-                        span: DUMMY_SP,
-                        kind: TsKeywordTypeKind::TsVoidKeyword,
-                    }),
-                    _ => TsType::TsParenthesizedType(TsParenthesizedType {
-                        span: DUMMY_SP,
-                        type_ann: TsType::TsUnionOrIntersectionType(
-                            TsUnionOrIntersectionType::TsIntersectionType(TsIntersectionType {
-                                span: DUMMY_SP,
-                                types: vs.iter().map(|it| Box::new(it.to_ts_type())).collect(),
-                            }),
-                        )
-                        .into(),
-                    }),
-                }
-            }
-            Runtype::Const(v) => match v {
-                RuntypeConst::Null => TsType::TsKeywordType(TsKeywordType {
-                    span: DUMMY_SP,
-                    kind: TsKeywordTypeKind::TsNullKeyword,
-                }),
-                RuntypeConst::Bool(b) => TsType::TsLitType(TsLitType {
-                    span: DUMMY_SP,
-                    lit: TsLit::Bool(Bool {
-                        span: DUMMY_SP,
-                        value: *b,
-                    }),
-                }),
-                RuntypeConst::Number(n) => TsType::TsLitType(TsLitType {
-                    span: DUMMY_SP,
-                    lit: TsLit::Number(swc_ecma_ast::Number {
-                        span: DUMMY_SP,
-                        value: n.to_f64(),
-                        raw: None,
-                    }),
-                }),
-                RuntypeConst::String(v) => TsType::TsLitType(TsLitType {
-                    span: DUMMY_SP,
-                    lit: TsLit::Str(Str {
-                        span: DUMMY_SP,
-                        value: v.clone().into(),
-                        raw: None,
-                    }),
-                }),
-            },
-            Runtype::StNever => TsType::TsKeywordType(TsKeywordType {
-                span: DUMMY_SP,
-                kind: TsKeywordTypeKind::TsNeverKeyword,
-            }),
-            Runtype::StNot(v) => TsType::TsTypeRef(TsTypeRef {
-                span: DUMMY_SP,
-                type_name: Ident {
-                    span: DUMMY_SP,
-                    sym: "Not".into(),
-                    optional: false,
-                }
-                .into(),
-                type_params: Some(Box::new(TsTypeParamInstantiation {
-                    span: DUMMY_SP,
-                    params: vec![
-                        // TsType::TsKeywordType(TsKeywordType {
-                        //     span: DUMMY_SP,
-                        //     kind: TsKeywordTypeKind::TsUnknownKeyword,
-                        // })
-                        // .into(),
-                        v.to_ts_type().into(),
-                    ],
-                })),
-            }),
-            Runtype::AnyArrayLike => TsType::TsTypeRef(TsTypeRef {
-                span: DUMMY_SP,
-                type_name: Ident {
-                    span: DUMMY_SP,
-                    sym: "Array".into(),
-                    optional: false,
-                }
-                .into(),
-                type_params: None,
-            }),
-            Runtype::TplLitType(items) => {
-                let mut types: Vec<Box<TsType>> = vec![];
-                let mut quasis: Vec<TplElement> = vec![];
+                let mut acc = vec![];
 
-                for item in items {
-                    match item {
-                        TplLitTypeItem::String => {
-                            types.push(
-                                TsType::TsKeywordType(TsKeywordType {
-                                    span: DUMMY_SP,
-                                    kind: TsKeywordTypeKind::TsStringKeyword,
-                                })
-                                .into(),
-                            );
-                        }
-                        TplLitTypeItem::Number => {
-                            types.push(
-                                TsType::TsKeywordType(TsKeywordType {
-                                    span: DUMMY_SP,
-                                    kind: TsKeywordTypeKind::TsNumberKeyword,
-                                })
-                                .into(),
-                            );
-                        }
-                        TplLitTypeItem::Boolean => {
-                            types.push(
-                                TsType::TsKeywordType(TsKeywordType {
-                                    span: DUMMY_SP,
-                                    kind: TsKeywordTypeKind::TsBooleanKeyword,
-                                })
-                                .into(),
-                            );
-                        }
-                        TplLitTypeItem::Quasis(str) => {
-                            quasis.push(TplElement {
-                                span: DUMMY_SP,
-                                tail: false,
-                                raw: str.clone().into(),
-                                cooked: Some(str.clone().into()),
-                            });
-                        }
-                        TplLitTypeItem::OneOf(vs) => {
-                            // do not recurse
-                            let mut types2: Vec<Box<TsType>> = vec![];
-
-                            for v in vs {
-                                match v {
-                                    TplLitTypeItem::String => {
-                                        types2.push(
-                                            TsType::TsKeywordType(TsKeywordType {
-                                                span: DUMMY_SP,
-                                                kind: TsKeywordTypeKind::TsStringKeyword,
-                                            })
-                                            .into(),
-                                        );
-                                    }
-                                    TplLitTypeItem::Number => {
-                                        types2.push(
-                                            TsType::TsKeywordType(TsKeywordType {
-                                                span: DUMMY_SP,
-                                                kind: TsKeywordTypeKind::TsNumberKeyword,
-                                            })
-                                            .into(),
-                                        );
-                                    }
-                                    TplLitTypeItem::Boolean => {
-                                        types2.push(
-                                            TsType::TsKeywordType(TsKeywordType {
-                                                span: DUMMY_SP,
-                                                kind: TsKeywordTypeKind::TsBooleanKeyword,
-                                            })
-                                            .into(),
-                                        );
-                                    }
-                                    TplLitTypeItem::StringConst(v) => {
-                                        types2.push(
-                                            TsType::TsLitType(TsLitType {
-                                                span: DUMMY_SP,
-                                                lit: TsLit::Str(Str {
-                                                    span: DUMMY_SP,
-                                                    value: v.clone().into(),
-                                                    raw: None,
-                                                }),
-                                            })
-                                            .into(),
-                                        );
-                                    }
-                                    TplLitTypeItem::Quasis(_) => unreachable!(),
-                                    TplLitTypeItem::OneOf(_) => unreachable!(),
-                                }
-                            }
-
-                            types.push(
-                                TsType::TsUnionOrIntersectionType(
-                                    TsUnionOrIntersectionType::TsUnionType(TsUnionType {
-                                        span: DUMMY_SP,
-                                        types: types2,
-                                    }),
-                                )
-                                .into(),
-                            );
-                        }
-                        TplLitTypeItem::StringConst(v) => {
-                            types.push(
-                                TsType::TsLitType(TsLitType {
-                                    span: DUMMY_SP,
-                                    lit: TsLit::Str(Str {
-                                        span: DUMMY_SP,
-                                        value: v.clone().into(),
-                                        raw: None,
-                                    }),
-                                })
-                                .into(),
-                            );
-                        }
-                    }
+                for it in prefix_items.iter() {
+                    acc.push(it.debug_print());
                 }
-                TsType::TsLitType(TsLitType {
-                    span: DUMMY_SP,
-                    lit: TsLit::Tpl(TsTplLitType {
-                        span: DUMMY_SP,
-                        types,
-                        quasis,
-                    }),
-                })
+                if let Some(items) = items.as_ref() {
+                    acc.push(format!("...{}", items.debug_print()));
+                }
+
+                let args = acc.join(", ");
+                return format!("[{}]", args);
             }
-            Runtype::Function => TsType::TsFnOrConstructorType(
-                swc_ecma_ast::TsFnOrConstructorType::TsFnType(TsFnType {
-                    span: DUMMY_SP,
-                    params: vec![],
-                    type_params: None,
-                    type_ann: TsTypeAnn {
-                        span: DUMMY_SP,
-                        type_ann: TsType::TsKeywordType(TsKeywordType {
-                            span: DUMMY_SP,
-                            kind: TsKeywordTypeKind::TsVoidKeyword,
-                        })
-                        .into(),
-                    }
-                    .into(),
-                }),
-            ),
+            Runtype::AnyOf(btree_set) => {
+                let inner = btree_set
+                    .iter()
+                    .map(|it| it.debug_print())
+                    .collect::<Vec<_>>()
+                    .join(" | ");
+
+                format!("({})", inner)
+            }
+            Runtype::AllOf(btree_set) => {
+                let inner = btree_set
+                    .iter()
+                    .map(|it| it.debug_print())
+                    .collect::<Vec<_>>()
+                    .join(" & ");
+
+                format!("({})", inner)
+            }
             Runtype::MappedRecord { key, rest } => {
-                let k = key.to_ts_type();
-                let v = rest.to_ts_type();
-                // Record<k, v>
-                TsType::TsTypeRef(TsTypeRef {
-                    span: DUMMY_SP,
-                    type_name: Ident {
-                        span: DUMMY_SP,
-                        sym: "Record".into(),
-                        optional: false,
-                    }
-                    .into(),
-                    type_params: Some(Box::new(TsTypeParamInstantiation {
-                        span: DUMMY_SP,
-                        params: vec![k.into(), v.into()],
-                    })),
-                })
+                let k = key.debug_print();
+                let r = rest.debug_print();
+                format!("Record<{}, {}>", k, r)
+            }
+            Runtype::Object { vs, rest } => {
+                let mut acc = vec![];
+
+                for (k, v) in vs.iter() {
+                    let v = match v {
+                        Optionality::Optional(it) => {
+                            let inner = it.debug_print();
+                            format!("Optional<{}>", inner)
+                        }
+                        Optionality::Required(it) => {
+                            let inner = it.debug_print();
+                            format!("Required<{}>", inner)
+                        }
+                    };
+                    acc.push(format!("\"{}\": {}", k, v));
+                }
+                if let Some(rest) = rest.as_ref() {
+                    let r = rest.debug_print();
+                    acc.push(format!("[key: string]: {}", r));
+                }
+
+                let args = acc.join(", ");
+                format!("{{ {} }}", args)
             }
         }
     }

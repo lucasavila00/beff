@@ -3,7 +3,6 @@ mod tests {
     use std::{collections::BTreeSet, rc::Rc};
 
     use beff_core::{
-        emit::emit_module,
         import_resolver::{parse_and_bind, FsModuleResolver},
         parser_extractor::BuiltDecoder,
         print::printer2::ToWritableParser,
@@ -11,52 +10,16 @@ mod tests {
         ParsedModule,
     };
     use swc_common::{Globals, GLOBALS};
-    use swc_ecma_ast::TsType;
     struct TestFileManager {
         pub f: Rc<ParsedModule>,
     }
-    use std::path::PathBuf;
 
-    use dprint_plugin_typescript::{
-        configuration::{ConfigurationBuilder, QuoteStyle},
-        *,
-    };
-    use swc_common::DUMMY_SP;
-    use swc_ecma_ast::{Decl, Ident, ModuleItem, Stmt, TsTypeAliasDecl};
-
-    pub fn print_ts_types(vs: Vec<(String, TsType)>) -> String {
-        let codes = vs
-            .iter()
-            .map(|(name, ty)| {
-                emit_module(
-                    vec![ModuleItem::Stmt(Stmt::Decl(Decl::TsTypeAlias(Box::new(
-                        TsTypeAliasDecl {
-                            span: DUMMY_SP,
-                            declare: false,
-                            id: Ident {
-                                span: DUMMY_SP,
-                                sym: name.clone().into(),
-                                optional: false,
-                            },
-                            type_params: None,
-                            type_ann: Box::new(ty.clone()),
-                        },
-                    ))))],
-                    "",
-                )
-                .expect("emitting module should work")
-            })
-            .collect::<Vec<String>>()
-            .join("\n");
-
-        let config = ConfigurationBuilder::new()
-            .line_width(80)
-            .quote_style(QuoteStyle::PreferDouble)
-            .build();
-
-        format_text(&PathBuf::from("f.ts"), &codes, &config)
-            .expect("Could not parse(1)...")
-            .expect("Could not parse(2)...")
+    pub fn print_types(vs: Vec<(String, String)>) -> String {
+        let mut acc = String::new();
+        for (name, ts_type) in vs {
+            acc.push_str(&format!("type {} = {};\n\n", name, ts_type));
+        }
+        acc
     }
 
     impl FileManager for TestFileManager {
@@ -109,23 +72,23 @@ mod tests {
         validators: &[&NamedSchema],
         built_decoders: &[BuiltDecoder],
     ) -> String {
-        let mut vs: Vec<(String, TsType)> = vec![];
+        let mut vs: Vec<(String, String)> = vec![];
 
         let mut sorted_validators = validators.iter().collect::<Vec<_>>();
         sorted_validators.sort_by(|a, b| a.name.cmp(&b.name));
 
         for v in sorted_validators {
-            vs.push((v.name.clone(), v.schema.to_ts_type()));
+            vs.push((v.name.clone(), v.schema.debug_print()));
         }
 
         let mut sorted_decoders = built_decoders.iter().collect::<Vec<_>>();
         sorted_decoders.sort_by(|a, b| a.exported_name.cmp(&b.exported_name));
 
         for v in sorted_decoders {
-            vs.push((v.exported_name.clone(), v.schema.to_ts_type()));
+            vs.push((v.exported_name.clone(), v.schema.debug_print()));
         }
 
-        print_ts_types(vs)
+        print_types(vs)
     }
     fn ok(from: &str) -> String {
         let p = parse_api(from);

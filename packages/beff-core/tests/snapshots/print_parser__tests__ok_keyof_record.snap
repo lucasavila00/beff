@@ -2,9 +2,14 @@
 source: packages/beff-core/tests/print_parser.rs
 expression: "ok(r#\"\n\n        const a = {\n          a: \"a\",\n          x: \"x\",\n          u: \"u\",\n        };\n\n        type A = keyof typeof a;\n\n        const b = {\n          b: \"b\",\n          y: \"y\",\n          u: \"u\",\n        };\n\n        type B = keyof typeof b;\n\n        type C = A | B;\n\n        type Rec = Record<C, string>;\n\n        parse.buildParsers<{ C:C, Rec: Rec }>();\n      \"#)"
 ---
-type A = "a" | "u" | "x";
-type B = "b" | "u" | "y";
-type C = A | B;
-type Rec = { "a": string; "b": string; "u": string; "x": string; "y": string };
+type A = ("a" | "u" | "x");
+
+type B = ("b" | "u" | "y");
+
+type C = (A | B);
+
+type Rec = { "a": Required<string>, "b": Required<string>, "u": Required<string>, "x": Required<string>, "y": Required<string> };
+
 type C = C;
+
 type Rec = Rec;

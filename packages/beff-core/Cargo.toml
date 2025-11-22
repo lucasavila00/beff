@@ -7,8 +7,6 @@ version = "0.1.0"
 
 [dependencies]
 anyhow = "1.0.75"
-dprint-core = "0.63.2"
-dprint-plugin-typescript = "0.87.1"
 env_logger = "0.10.0"
 insta = "1.31.0"
 jsdoc = "0.108.0"

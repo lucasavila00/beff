@@ -97,6 +97,11 @@ impl Json {
         }
     }
 
+    pub fn debug_print(&self) -> String {
+        serde_json::to_string_pretty(&self.to_serde())
+            .expect("should be possible to serialize json")
+    }
+
     pub fn from_serde(it: &serde_json::Value) -> Json {
         match it {
             serde_json::Value::Null => Json::Null,
