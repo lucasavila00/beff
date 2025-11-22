@@ -605,20 +605,18 @@ fn print_runtype(
     let seen_counter = hoisted.seen.get(schema).cloned().unwrap_or(0);
     if seen_counter <= 1 {
         out
+    } else if should_hoist_direct(schema) {
+        let new_id = format!("direct_hoist_{}", hoisted.direct.len());
+        hoisted
+            .direct
+            .insert(schema.clone(), (new_id.clone(), out.clone()));
+        Expr::Ident(identifier(&new_id))
     } else {
-        if should_hoist_direct(schema) {
-            let new_id = format!("direct_hoist_{}", hoisted.direct.len());
-            hoisted
-                .direct
-                .insert(schema.clone(), (new_id.clone(), out.clone()));
-            Expr::Ident(identifier(&new_id))
-        } else {
-            let new_id = hoisted.indirect.len() as i32;
-            hoisted
-                .indirect
-                .insert(schema.clone(), (new_id, out.clone()));
-            hoisted_indirect_runtype(new_id)
-        }
+        let new_id = hoisted.indirect.len() as i32;
+        hoisted
+            .indirect
+            .insert(schema.clone(), (new_id, out.clone()));
+        hoisted_indirect_runtype(new_id)
     }
 }
 

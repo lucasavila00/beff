@@ -429,7 +429,7 @@ impl Runtype {
                 }
 
                 let args = acc.join(", ");
-                return format!("[{}]", args);
+                format!("[{}]", args)
             }
             Runtype::AnyOf(btree_set) => {
                 let inner = btree_set
