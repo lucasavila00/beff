@@ -11,8 +11,7 @@ use swc_ecma_ast::{
 
 use crate::{
     ast::{
-        js::Js,
-        json::N,
+        json::{Json, N},
         json_schema::{CodecName, JsonSchema, JsonSchemaConst, Optionality, TplLitTypeItem},
     },
     emit::emit_module,
@@ -439,7 +438,7 @@ fn should_hoist_direct(schema: &JsonSchema) -> bool {
 }
 
 fn i32_literal(id: i32) -> Expr {
-    Js::Number(N::parse_int(id as i64)).to_expr()
+    Json::Number(N::parse_int(id as i64)).to_expr()
 }
 fn hoisted_indirect_runtype(id: i32) -> Expr {
     new_runtype_class("HoistedRuntype", vec![i32_literal(id)])
