@@ -60,7 +60,8 @@ fn const_decl(name: &str, init: Expr) -> ModuleItem {
     )))
 }
 
-fn merge_named_schema(parser: &[NamedSchema]) -> Result<Vec<NamedSchema>> {
+/// Any type with the same name must be identical
+fn validate_type_uniqueness(parser: &[NamedSchema]) -> Result<Vec<NamedSchema>> {
     let mut acc: Vec<NamedSchema> = vec![];
 
     for d in parser {
@@ -86,7 +87,7 @@ fn identifier(name: &str) -> Ident {
     }
 }
 
-fn new_class_impl(constructor: &str, args: Vec<Expr>) -> Expr {
+fn new_runtype_class(constructor: &str, args: Vec<Expr>) -> Expr {
     Expr::New(NewExpr {
         span: DUMMY_SP,
         callee: Expr::Ident(identifier(constructor)).into(),
@@ -110,9 +111,9 @@ fn string_lit(s: &str) -> Expr {
     }))
 }
 
-fn typeof_impl(t: &str) -> Expr {
-    new_class_impl(
-        "ParserTypeOfImpl",
+fn typeof_runtype(t: &str) -> Expr {
+    new_runtype_class(
+        "TypeofRuntype",
         vec![
             //
             string_lit(t),
@@ -120,9 +121,9 @@ fn typeof_impl(t: &str) -> Expr {
     )
 }
 
-fn ref_impl(to: &str) -> Expr {
-    new_class_impl(
-        "ParserRefImpl",
+fn ref_runtype(to: &str) -> Expr {
+    new_runtype_class(
+        "RefRuntype",
         vec![
             //
             string_lit(to),
@@ -130,15 +131,15 @@ fn ref_impl(to: &str) -> Expr {
     )
 }
 
-fn no_args_parser(class_name: &str) -> Expr {
-    new_class_impl(
+fn no_args_runtype(class_name: &str) -> Expr {
+    new_runtype_class(
         class_name,
         vec![
             //
         ],
     )
 }
-fn formats_decoder(constructor: &str, vs: &[String]) -> Expr {
+fn formats_runtype(constructor: &str, vs: &[String]) -> Expr {
     let vs_arr = Expr::Array(ArrayLit {
         span: DUMMY_SP,
         elems: vs
@@ -156,10 +157,10 @@ fn formats_decoder(constructor: &str, vs: &[String]) -> Expr {
             })
             .collect(),
     });
-    new_class_impl(constructor, vec![vs_arr])
+    new_runtype_class(constructor, vec![vs_arr])
 }
 
-fn decode_union_or_intersection(
+fn runtype_union_or_intersection(
     constructor: &str,
     vs: &BTreeSet<JsonSchema>,
     named_schemas: &[NamedSchema],
@@ -167,7 +168,7 @@ fn decode_union_or_intersection(
 ) -> Expr {
     let exprs = vs
         .iter()
-        .map(|schema| validator_for_schema(schema, named_schemas, hoisted))
+        .map(|schema| schema_to_runtype(schema, named_schemas, hoisted))
         .collect::<Vec<Expr>>();
     let arr = Expr::Array(ArrayLit {
         span: DUMMY_SP,
@@ -181,7 +182,7 @@ fn decode_union_or_intersection(
             })
             .collect(),
     });
-    new_class_impl(constructor, vec![arr])
+    new_runtype_class(constructor, vec![arr])
 }
 
 fn extract_union(it: &JsonSchema, named_schemas: &[NamedSchema]) -> Vec<JsonSchema> {
@@ -197,11 +198,12 @@ fn extract_union(it: &JsonSchema, named_schemas: &[NamedSchema]) -> Vec<JsonSche
                 .expect("everything should be resolved by now");
             extract_union(&v.schema, named_schemas)
         }
+        JsonSchema::StNever => vec![],
         _ => vec![it.clone()],
     }
 }
 
-fn decode_any_of_discriminated(
+fn runtype_any_of_discriminated(
     flat_values: &BTreeSet<JsonSchema>,
     discriminator: String,
     discriminator_strings: BTreeSet<String>,
@@ -235,7 +237,7 @@ fn decode_any_of_discriminated(
         }
         let schema = JsonSchema::any_of(cases);
 
-        let schema_code = validator_for_schema(&schema, named_schemas, hoisted);
+        let schema_code = schema_to_runtype(&schema, named_schemas, hoisted);
 
         acc.insert(current_key, schema_code);
     }
@@ -267,7 +269,7 @@ fn decode_any_of_discriminated(
 
     let flat_values_schema = flat_values
         .iter()
-        .map(|it| validator_for_schema(it, named_schemas, hoisted))
+        .map(|it| schema_to_runtype(it, named_schemas, hoisted))
         .collect::<Vec<_>>();
 
     let flat_values_schema_arr = Expr::Array(ArrayLit {
@@ -283,13 +285,13 @@ fn decode_any_of_discriminated(
             .collect(),
     });
 
-    new_class_impl(
-        "ParserAnyOfDiscriminatedImpl",
+    new_runtype_class(
+        "AnyOfDiscriminatedRuntype",
         vec![flat_values_schema_arr, disc.clone(), mapping_obj],
     )
 }
 
-fn maybe_decode_any_of_discriminated(
+fn maybe_runtype_any_of_discriminated(
     flat_values: &BTreeSet<JsonSchema>,
     named_schemas: &[NamedSchema],
     hoisted: &mut HoistedMap,
@@ -366,7 +368,7 @@ fn maybe_decode_any_of_discriminated(
                             })
                             .collect::<BTreeSet<_>>();
 
-                        return Some(decode_any_of_discriminated(
+                        return Some(runtype_any_of_discriminated(
                             flat_values,
                             discriminator,
                             discriminator_strings,
@@ -382,7 +384,7 @@ fn maybe_decode_any_of_discriminated(
     None
 }
 
-fn maybe_decode_any_of_consts(flat_values: &BTreeSet<JsonSchema>) -> Option<Expr> {
+fn maybe_runtype_any_of_consts(flat_values: &BTreeSet<JsonSchema>) -> Option<Expr> {
     let all_consts = flat_values
         .iter()
         .all(|it| matches!(it, JsonSchema::Const(_)));
@@ -408,7 +410,7 @@ fn maybe_decode_any_of_consts(flat_values: &BTreeSet<JsonSchema>) -> Option<Expr
                 .collect(),
         });
 
-        return Some(new_class_impl("ParserAnyOfConstsImpl", vec![consts]));
+        return Some(new_runtype_class("AnyOfConstsRuntype", vec![consts]));
     }
     None
 }
@@ -436,13 +438,13 @@ fn should_hoist_direct(schema: &JsonSchema) -> bool {
     )
 }
 
-fn i32_lit(id: i32) -> Expr {
+fn i32_literal(id: i32) -> Expr {
     Js::Number(N::parse_int(id as i64)).to_expr()
 }
-fn hoisted_indirect_identifier(id: i32) -> Expr {
-    new_class_impl("ParserHoistedImpl", vec![i32_lit(id)])
+fn hoisted_indirect_runtype(id: i32) -> Expr {
+    new_runtype_class("HoistedRuntype", vec![i32_literal(id)])
 }
-fn validator_for_schema(
+fn schema_to_runtype(
     schema: &JsonSchema,
     named_schemas: &[NamedSchema],
     hoisted: &mut HoistedMap,
@@ -455,38 +457,34 @@ fn validator_for_schema(
     } else {
         let found_indirect = hoisted.indirect.get(schema);
         if let Some((var_name, _)) = found_indirect {
-            return hoisted_indirect_identifier(*var_name);
+            return hoisted_indirect_runtype(*var_name);
         }
     }
 
     let out = match schema {
-        JsonSchema::String => typeof_impl("string"),
-        JsonSchema::Boolean => typeof_impl("boolean"),
-        JsonSchema::Number => typeof_impl("number"),
-        JsonSchema::Function => typeof_impl("function"),
-        JsonSchema::Ref(to) => ref_impl(to),
-        JsonSchema::Null => no_args_parser("ParserNullImpl"),
-        JsonSchema::Any => no_args_parser("ParserAnyImpl"),
-        JsonSchema::StNever => no_args_parser("ParserNeverImpl"),
-        JsonSchema::Const(json_schema_const) => new_class_impl(
-            "ParserConstImpl",
+        JsonSchema::String => typeof_runtype("string"),
+        JsonSchema::Boolean => typeof_runtype("boolean"),
+        JsonSchema::Number => typeof_runtype("number"),
+        JsonSchema::Function => typeof_runtype("function"),
+        JsonSchema::Ref(to) => ref_runtype(to),
+        JsonSchema::Null => no_args_runtype("NullRuntype"),
+        JsonSchema::Any => no_args_runtype("AnyRuntype"),
+        JsonSchema::StNever => no_args_runtype("NeverRuntype"),
+        JsonSchema::Const(json_schema_const) => new_runtype_class(
+            "ConstRuntype",
             vec![json_schema_const.clone().to_json().to_expr()],
         ),
         JsonSchema::StringWithFormat(base) => {
-            formats_decoder("ParserStringWithFormatImpl", std::slice::from_ref(base))
+            formats_runtype("StringWithFormatRuntype", std::slice::from_ref(base))
         }
-        JsonSchema::StringFormatExtends(items) => {
-            formats_decoder("ParserStringWithFormatImpl", items)
-        }
+        JsonSchema::StringFormatExtends(items) => formats_runtype("StringWithFormatRuntype", items),
         JsonSchema::NumberWithFormat(base) => {
-            formats_decoder("ParserNumberWithFormatImpl", std::slice::from_ref(base))
+            formats_runtype("NumberWithFormatRuntype", std::slice::from_ref(base))
         }
-        JsonSchema::NumberFormatExtends(items) => {
-            formats_decoder("ParserNumberWithFormatImpl", items)
-        }
+        JsonSchema::NumberFormatExtends(items) => formats_runtype("NumberWithFormatRuntype", items),
         JsonSchema::Codec(codec_name) => match codec_name {
-            CodecName::ISO8061 => no_args_parser("ParserDateImpl"),
-            CodecName::BigInt => no_args_parser("ParserBigIntImpl"),
+            CodecName::ISO8061 => no_args_runtype("DateRuntype"),
+            CodecName::BigInt => no_args_runtype("BigIntRuntype"),
         },
         JsonSchema::TplLitType(items) => {
             let mut regex_exp = String::new();
@@ -495,8 +493,8 @@ fn validator_for_schema(
                 regex_exp.push_str(&item.regex_expr());
             }
 
-            new_class_impl(
-                "ParserRegexImpl",
+            new_runtype_class(
+                "RegexRuntype",
                 vec![
                     Expr::Lit(Lit::Regex(Regex {
                         span: DUMMY_SP,
@@ -511,7 +509,7 @@ fn validator_for_schema(
                 ],
             )
         }
-        JsonSchema::AnyArrayLike => validator_for_schema(
+        JsonSchema::AnyArrayLike => schema_to_runtype(
             &JsonSchema::Array(JsonSchema::Any.into()),
             named_schemas,
             hoisted,
@@ -520,19 +518,16 @@ fn validator_for_schema(
             unreachable!("should not create decoders for semantic types")
         }
         JsonSchema::Array(json_schema) => {
-            let item_validator = validator_for_schema(json_schema, named_schemas, hoisted);
-            new_class_impl("ParserArrayImpl", vec![item_validator])
+            let item_validator = schema_to_runtype(json_schema, named_schemas, hoisted);
+            new_runtype_class("ArrayRuntype", vec![item_validator])
         }
         JsonSchema::MappedRecord { key, rest } => {
-            let key_validator = validator_for_schema(key, named_schemas, hoisted);
-            let rest_validator = validator_for_schema(rest, named_schemas, hoisted);
-            new_class_impl(
-                "ParserMappedRecordImpl",
-                vec![key_validator, rest_validator],
-            )
+            let key_validator = schema_to_runtype(key, named_schemas, hoisted);
+            let rest_validator = schema_to_runtype(rest, named_schemas, hoisted);
+            new_runtype_class("MappedRecordRuntype", vec![key_validator, rest_validator])
         }
         JsonSchema::AllOf(vs) => {
-            decode_union_or_intersection("ParserAllOfImpl", vs, named_schemas, hoisted)
+            runtype_union_or_intersection("AllOfRuntype", vs, named_schemas, hoisted)
         }
         JsonSchema::AnyOf(vs) => {
             if vs.is_empty() {
@@ -544,14 +539,14 @@ fn validator_for_schema(
                 .flat_map(|it: &JsonSchema| extract_union(it, named_schemas))
                 .collect::<BTreeSet<_>>();
 
-            if let Some(consts) = maybe_decode_any_of_consts(&flat_values) {
+            if let Some(consts) = maybe_runtype_any_of_consts(&flat_values) {
                 consts
             } else if let Some(discriminated) =
-                maybe_decode_any_of_discriminated(&flat_values, named_schemas, hoisted)
+                maybe_runtype_any_of_discriminated(&flat_values, named_schemas, hoisted)
             {
                 discriminated
             } else {
-                decode_union_or_intersection("ParserAnyOfImpl", vs, named_schemas, hoisted)
+                runtype_union_or_intersection("AnyOfRuntype", vs, named_schemas, hoisted)
             }
         }
         JsonSchema::Tuple {
@@ -560,7 +555,7 @@ fn validator_for_schema(
         } => {
             let prefix_item_validators = prefix_items
                 .iter()
-                .map(|it| validator_for_schema(it, named_schemas, hoisted))
+                .map(|it| schema_to_runtype(it, named_schemas, hoisted))
                 .collect::<Vec<Expr>>();
             let prefix_arr = Expr::Array(ArrayLit {
                 span: DUMMY_SP,
@@ -576,11 +571,11 @@ fn validator_for_schema(
             });
 
             let items = match items {
-                Some(item_schema) => validator_for_schema(item_schema, named_schemas, hoisted),
+                Some(item_schema) => schema_to_runtype(item_schema, named_schemas, hoisted),
                 None => Expr::Lit(Lit::Null(Null { span: DUMMY_SP })),
             };
 
-            new_class_impl("ParserTupleImpl", vec![prefix_arr, items])
+            new_runtype_class("TupleRuntype", vec![prefix_arr, items])
         }
         JsonSchema::Object { vs, rest } => {
             let mut mapped = BTreeMap::new();
@@ -590,17 +585,17 @@ fn validator_for_schema(
                         let nullable_schema = &JsonSchema::any_of(
                             vec![JsonSchema::Null, schema.clone()].into_iter().collect(),
                         );
-                        validator_for_schema(nullable_schema, named_schemas, hoisted)
+                        schema_to_runtype(nullable_schema, named_schemas, hoisted)
                     }
                     Optionality::Required(schema) => {
-                        validator_for_schema(schema, named_schemas, hoisted)
+                        schema_to_runtype(schema, named_schemas, hoisted)
                     }
                 };
                 mapped.insert(k.clone(), r);
             }
 
             let rest = match rest {
-                Some(item_schema) => validator_for_schema(item_schema, named_schemas, hoisted),
+                Some(item_schema) => schema_to_runtype(item_schema, named_schemas, hoisted),
                 None => Expr::Lit(Lit::Null(Null { span: DUMMY_SP })),
             };
             let obj_validator = Expr::Object(ObjectLit {
@@ -622,27 +617,27 @@ fn validator_for_schema(
                     })
                     .collect(),
             });
-            new_class_impl("ParserObjectImpl", vec![obj_validator, rest])
+            new_runtype_class("ObjectRuntype", vec![obj_validator, rest])
         }
     };
 
     let seen_counter = hoisted.seen.get(schema).cloned().unwrap_or(0);
     if seen_counter <= 1 {
-        return out;
-    }
-
-    if should_hoist_direct(schema) {
-        let new_id = format!("direct_hoist_{}", hoisted.direct.len());
-        hoisted
-            .direct
-            .insert(schema.clone(), (new_id.clone(), out.clone()));
-        Expr::Ident(identifier(&new_id))
+        out
     } else {
-        let new_id = hoisted.indirect.len() as i32;
-        hoisted
-            .indirect
-            .insert(schema.clone(), (new_id, out.clone()));
-        hoisted_indirect_identifier(new_id)
+        if should_hoist_direct(schema) {
+            let new_id = format!("direct_hoist_{}", hoisted.direct.len());
+            hoisted
+                .direct
+                .insert(schema.clone(), (new_id.clone(), out.clone()));
+            Expr::Ident(identifier(&new_id))
+        } else {
+            let new_id = hoisted.indirect.len() as i32;
+            hoisted
+                .indirect
+                .insert(schema.clone(), (new_id, out.clone()));
+            hoisted_indirect_runtype(new_id)
+        }
     }
 }
 
@@ -653,7 +648,7 @@ fn build_parsers_input(
 ) -> Expr {
     let mut validator_exprs: Vec<(String, Expr)> = vec![];
     for decoder in decs {
-        let validator = validator_for_schema(&decoder.schema, named_schemas, hoisted);
+        let validator = schema_to_runtype(&decoder.schema, named_schemas, hoisted);
         validator_exprs.push((decoder.exported_name.clone(), validator));
     }
 
@@ -678,10 +673,10 @@ fn build_parsers_input(
     })
 }
 
-fn build_named_parsers(named_schemas: &[NamedSchema], hoisted: &mut HoistedMap) -> Expr {
+fn named_runtypes(named_schemas: &[NamedSchema], hoisted: &mut HoistedMap) -> Expr {
     let mut validator_exprs: Vec<(String, Expr)> = vec![];
     for named_schema in named_schemas {
-        let validator = validator_for_schema(&named_schema.schema, named_schemas, hoisted);
+        let validator = schema_to_runtype(&named_schema.schema, named_schemas, hoisted);
         validator_exprs.push((named_schema.name.clone(), validator));
     }
 
@@ -767,7 +762,7 @@ fn calculate_schema_seen(schema: &JsonSchema, seen: &mut SeenCounter) {
     }
 }
 
-fn calculated_names_seen(named_schemas: &[NamedSchema], seen: &mut SeenCounter) {
+fn calculate_named_schemas_seen(named_schemas: &[NamedSchema], seen: &mut SeenCounter) {
     for named_schema in named_schemas {
         calculate_schema_seen(&named_schema.schema, seen);
     }
@@ -778,9 +773,9 @@ impl ToWritableParser for ExtractResult {
         let mut seen: SeenCounter = BTreeMap::new();
 
         let built_parsers = self.parser.built_decoders.unwrap_or_default();
-        let named_schemas = merge_named_schema(&self.parser.validators)?;
+        let named_schemas = validate_type_uniqueness(&self.parser.validators)?;
 
-        calculated_names_seen(&named_schemas, &mut seen);
+        calculate_named_schemas_seen(&named_schemas, &mut seen);
 
         let mut hoisted = HoistedMap {
             direct: BTreeMap::new(),
@@ -788,20 +783,20 @@ impl ToWritableParser for ExtractResult {
             seen,
         };
 
-        let build_parsers_input = const_decl(
-            "buildValidatorsInput",
+        let build_parsers_input: ModuleItem = const_decl(
+            "buildParsersInput",
             build_parsers_input(&built_parsers, &named_schemas, &mut hoisted),
         );
 
         let build_named_parsers_input = const_decl(
-            "namedParsers",
-            build_named_parsers(&named_schemas, &mut hoisted),
+            "namedRuntypes",
+            named_runtypes(&named_schemas, &mut hoisted),
         );
 
         let mut sorted_indirect_hoisted_values = hoisted.indirect.into_values().collect::<Vec<_>>();
         sorted_indirect_hoisted_values.sort_by_key(|it| it.0);
 
-        let hoisted_indirect_map_decl = const_decl(
+        let hoisted_indirect_arr = const_decl(
             "hoistedIndirect",
             Expr::Array(ArrayLit {
                 span: DUMMY_SP,
@@ -830,7 +825,7 @@ impl ToWritableParser for ExtractResult {
                 .into_iter()
                 .chain(vec![
                     //
-                    hoisted_indirect_map_decl,
+                    hoisted_indirect_arr,
                     build_named_parsers_input,
                     build_parsers_input,
                 ])

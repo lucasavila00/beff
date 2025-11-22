@@ -2,27 +2,27 @@
 source: packages/beff-core/tests/print_parser.rs
 expression: "decoder(r#\"\n        export type DiscriminatedUnion4 =\n            | {\n                type: \"a\";\n                a: {\n                  subType: \"a1\";\n                  a1: string;\n                };\n              }\n            | {\n                type: \"a\";\n                a: {\n                  subType: \"a2\";\n                  a2: string;\n                };\n              };\n        parse.buildParsers<{ DiscriminatedUnion4: DiscriminatedUnion4 }>();\n      \"#)"
 ---
-const direct_hoist_0 = new ParserTypeOfImpl("string");
-const direct_hoist_1 = new ParserConstImpl("a");
+const direct_hoist_0 = new TypeofRuntype("string");
+const direct_hoist_1 = new ConstRuntype("a");
 const hoistedIndirect = [];
-const namedParsers = {
-    "DiscriminatedUnion4": new ParserAnyOfImpl([
-        new ParserObjectImpl({
-            "a": new ParserObjectImpl({
+const namedRuntypes = {
+    "DiscriminatedUnion4": new AnyOfRuntype([
+        new ObjectRuntype({
+            "a": new ObjectRuntype({
                 "a1": direct_hoist_0,
-                "subType": new ParserConstImpl("a1")
+                "subType": new ConstRuntype("a1")
             }, null),
             "type": direct_hoist_1
         }, null),
-        new ParserObjectImpl({
-            "a": new ParserObjectImpl({
+        new ObjectRuntype({
+            "a": new ObjectRuntype({
                 "a2": direct_hoist_0,
-                "subType": new ParserConstImpl("a2")
+                "subType": new ConstRuntype("a2")
             }, null),
             "type": direct_hoist_1
         }, null)
     ])
 };
-const buildValidatorsInput = {
-    "DiscriminatedUnion4": new ParserRefImpl("DiscriminatedUnion4")
+const buildParsersInput = {
+    "DiscriminatedUnion4": new RefRuntype("DiscriminatedUnion4")
 };

@@ -3,22 +3,22 @@ source: packages/beff-core/tests/print_parser.rs
 expression: "decoder(r#\"\n        export type User = StringFormat<\"User\">;\n        export type ReadAuthorizedUser = StringFormatExtends<User, \"ReadAuthorizedUser\">;\n        export type WriteAuthorizedUser = StringFormatExtends<ReadAuthorizedUser, \"WriteAuthorizedUser\">;\n        parse.buildParsers<{ User: User, ReadAuthorizedUser: ReadAuthorizedUser, WriteAuthorizedUser: WriteAuthorizedUser }>();\n      \"#)"
 ---
 const hoistedIndirect = [];
-const namedParsers = {
-    "User": new ParserStringWithFormatImpl([
+const namedRuntypes = {
+    "User": new StringWithFormatRuntype([
         "User"
     ]),
-    "ReadAuthorizedUser": new ParserStringWithFormatImpl([
+    "ReadAuthorizedUser": new StringWithFormatRuntype([
         "User",
         "ReadAuthorizedUser"
     ]),
-    "WriteAuthorizedUser": new ParserStringWithFormatImpl([
+    "WriteAuthorizedUser": new StringWithFormatRuntype([
         "User",
         "ReadAuthorizedUser",
         "WriteAuthorizedUser"
     ])
 };
-const buildValidatorsInput = {
-    "User": new ParserRefImpl("User"),
-    "ReadAuthorizedUser": new ParserRefImpl("ReadAuthorizedUser"),
-    "WriteAuthorizedUser": new ParserRefImpl("WriteAuthorizedUser")
+const buildParsersInput = {
+    "User": new RefRuntype("User"),
+    "ReadAuthorizedUser": new RefRuntype("ReadAuthorizedUser"),
+    "WriteAuthorizedUser": new RefRuntype("WriteAuthorizedUser")
 };

@@ -196,7 +196,7 @@ const numberFormatters = {};
 function registerNumberFormatter(name, validator) {
   numberFormatters[name] = validator;
 }
-class ParserTypeOfImpl {
+class TypeofRuntype {
   typeName;
   constructor(typeName) {
     this.typeName = typeName;
@@ -217,7 +217,7 @@ class ParserTypeOfImpl {
     return buildError(ctx, "expected " + this.typeName, input);
   }
 }
-class ParserAnyImpl {
+class AnyRuntype {
   describe(_ctx) {
     return "any";
   }
@@ -234,7 +234,7 @@ class ParserAnyImpl {
     return buildError(ctx, "expected any", input);
   }
 }
-class ParserNullImpl {
+class NullRuntype {
   describe(_ctx) {
     return "null";
   }
@@ -251,7 +251,7 @@ class ParserNullImpl {
     return buildError(ctx, "expected nullish value", input);
   }
 }
-class ParserNeverImpl {
+class NeverRuntype {
   describe(_ctx) {
     return "never";
   }
@@ -268,7 +268,7 @@ class ParserNeverImpl {
     return buildError(ctx, "expected never", input);
   }
 }
-class ParserConstImpl {
+class ConstRuntype {
   value;
   constructor(value) {
     this.value = value ?? null;
@@ -292,7 +292,7 @@ class ParserConstImpl {
     return buildError(ctx, `expected ${JSON.stringify(this.value)}`, input);
   }
 }
-class ParserRegexImpl {
+class RegexRuntype {
   regex;
   description;
   constructor(regex, description) {
@@ -318,7 +318,7 @@ class ParserRegexImpl {
     return buildError(ctx, `expected string matching ${this.description}`, input);
   }
 }
-class ParserDateImpl {
+class DateRuntype {
   describe(_ctx) {
     return "Date";
   }
@@ -335,7 +335,7 @@ class ParserDateImpl {
     return buildError(ctx, `expected Date`, input);
   }
 }
-class ParserBigIntImpl {
+class BigIntRuntype {
   describe(_ctx) {
     return "BigInt";
   }
@@ -352,7 +352,7 @@ class ParserBigIntImpl {
     return buildError(ctx, `expected BigInt`, input);
   }
 }
-class ParserStringWithFormatImpl {
+class StringWithFormatRuntype {
   formats;
   constructor(formats) {
     this.formats = formats;
@@ -396,7 +396,7 @@ class ParserStringWithFormatImpl {
     return buildError(ctx, `expected string with format "${this.formats.join(" and ")}"`, input);
   }
 }
-class ParserNumberWithFormatImpl {
+class NumberWithFormatRuntype {
   formats;
   constructor(formats) {
     this.formats = formats;
@@ -440,7 +440,7 @@ class ParserNumberWithFormatImpl {
     return buildError(ctx, `expected number with format "${this.formats.join(" and ")}"`, input);
   }
 }
-class ParserAnyOfConstsImpl {
+class AnyOfConstsRuntype {
   values;
   constructor(values) {
     this.values = values;
@@ -469,7 +469,7 @@ class ParserAnyOfConstsImpl {
     return buildError(ctx, `expected one of ${limitedCommaJoinJson(this.values)}`, input);
   }
 }
-class ParserTupleImpl {
+class TupleRuntype {
   prefix;
   rest;
   constructor(prefix, rest) {
@@ -561,7 +561,7 @@ class ParserTupleImpl {
     return acc;
   }
 }
-class ParserAllOfImpl {
+class AllOfRuntype {
   schemas;
   constructor(schemas) {
     this.schemas = schemas;
@@ -606,7 +606,7 @@ class ParserAllOfImpl {
     return acc;
   }
 }
-class ParserAnyOfImpl {
+class AnyOfRuntype {
   schemas;
   constructor(schemas) {
     this.schemas = schemas;
@@ -648,7 +648,7 @@ class ParserAnyOfImpl {
     return `(${this.schemas.map((it) => it.describe(ctx)).join(" | ")})`;
   }
 }
-class ParserArrayImpl {
+class ArrayRuntype {
   itemParser;
   constructor(itemParser) {
     this.itemParser = itemParser;
@@ -699,7 +699,7 @@ class ParserArrayImpl {
     return `Array<${this.itemParser.describe(ctx)}>`;
   }
 }
-class ParserAnyOfDiscriminatedImpl {
+class AnyOfDiscriminatedRuntype {
   schemas;
   discriminator;
   mapping;
@@ -764,7 +764,7 @@ class ParserAnyOfDiscriminatedImpl {
     return `(${this.schemas.map((it) => it.describe(ctx)).join(" | ")})`;
   }
 }
-class ParserMappedRecordImpl {
+class MappedRecordRuntype {
   keyParser;
   valueParser;
   constructor(keyParser, valueParser) {
@@ -829,7 +829,7 @@ class ParserMappedRecordImpl {
     return acc;
   }
 }
-class ParserObjectImpl {
+class ObjectRuntype {
   properties;
   restParser;
   constructor(properties, restParser) {
@@ -952,14 +952,14 @@ class ParserObjectImpl {
     return acc;
   }
 }
-class ParserRefImpl {
+class RefRuntype {
   refName;
   constructor(refName) {
     this.refName = refName;
   }
   describe(ctx) {
     const name = this.refName;
-    const to = namedParsers[this.refName];
+    const to = namedRuntypes[this.refName];
     if (ctx.measure) {
       ctx.deps_counter[name] = (ctx.deps_counter[name] || 0) + 1;
       if (ctx.deps[name]) {
@@ -982,7 +982,7 @@ class ParserRefImpl {
   }
   schema(ctx) {
     const name = this.refName;
-    const to = namedParsers[this.refName];
+    const to = namedRuntypes[this.refName];
     if (ctx.seen[name]) {
       return {};
     }
@@ -992,37 +992,45 @@ class ParserRefImpl {
     return tmp;
   }
   validate(ctx, input) {
-    const to = namedParsers[this.refName];
+    const to = namedRuntypes[this.refName];
     return to.validate(ctx, input);
   }
   parseAfterValidation(ctx, input) {
-    const to = namedParsers[this.refName];
+    const to = namedRuntypes[this.refName];
     return to.parseAfterValidation(ctx, input);
   }
   reportDecodeError(ctx, input) {
-    const to = namedParsers[this.refName];
+    const to = namedRuntypes[this.refName];
     return to.reportDecodeError(ctx, input);
   }
 }
-class ParserHoistedImpl {
+class HoistedRuntype {
   hoistedIndex;
+  decoder;
   constructor(hoistedIndex) {
     this.hoistedIndex = hoistedIndex;
+    this.decoder = null;
+  }
+  getDecoder() {
+    if (this.decoder == null) {
+      this.decoder = hoistedIndirect[this.hoistedIndex];
+    }
+    return this.decoder;
   }
   describe(ctx) {
-    return hoistedIndirect[this.hoistedIndex].describe(ctx);
+    return this.getDecoder().describe(ctx);
   }
   schema(ctx) {
-    return hoistedIndirect[this.hoistedIndex].schema(ctx);
+    return this.getDecoder().schema(ctx);
   }
   validate(ctx, input) {
-    return hoistedIndirect[this.hoistedIndex].validate(ctx, input);
+    return this.getDecoder().validate(ctx, input);
   }
   parseAfterValidation(ctx, input) {
-    return hoistedIndirect[this.hoistedIndex].parseAfterValidation(ctx, input);
+    return this.getDecoder().parseAfterValidation(ctx, input);
   }
   reportDecodeError(ctx, input) {
-    return hoistedIndirect[this.hoistedIndex].reportDecodeError(ctx, input);
+    return this.getDecoder().reportDecodeError(ctx, input);
   }
 }
 const buildParsers = (args) => {
@@ -1047,8 +1055,8 @@ const buildParsers = (args) => {
     registerNumberFormatter(k, v);
   });
   let acc = {};
-  for (const k of Object.keys(buildValidatorsInput)) {
-    const impl = buildValidatorsInput[k];
+  for (const k of Object.keys(buildParsersInput)) {
+    const impl = buildParsersInput[k];
     const validate = (input, options) => {
       const disallowExtraProperties = options?.disallowExtraProperties ?? false;
       const ctx = { disallowExtraProperties };
@@ -1129,434 +1137,433 @@ const buildParsers = (args) => {
 
 const RequiredStringFormats = ["ValidCurrency","UserId","ReadAuthorizedUserId","WriteAuthorizedUserId"];
 const RequiredNumberFormats = ["NonNegativeNumber","NonInfiniteNumber","Rate"];
-const direct_hoist_0 = new ParserTypeOfImpl("string");
-const direct_hoist_1 = new ParserTypeOfImpl("number");
-const direct_hoist_10 = new ParserConstImpl("a1");
-const direct_hoist_11 = new ParserConstImpl("a2");
-const direct_hoist_12 = new ParserStringWithFormatImpl([
+const direct_hoist_0 = new TypeofRuntype("string");
+const direct_hoist_1 = new TypeofRuntype("number");
+const direct_hoist_10 = new ConstRuntype("a1");
+const direct_hoist_11 = new ConstRuntype("a2");
+const direct_hoist_12 = new StringWithFormatRuntype([
     "ValidCurrency"
 ]);
-const direct_hoist_13 = new ParserConstImpl("c");
-const direct_hoist_14 = new ParserConstImpl("square");
-const direct_hoist_15 = new ParserConstImpl("triangle");
-const direct_hoist_2 = new ParserRefImpl("Extra");
-const direct_hoist_3 = new ParserRefImpl("AccessLevel");
-const direct_hoist_4 = new ParserRefImpl("AvatarSize");
-const direct_hoist_5 = new ParserConstImpl("a");
-const direct_hoist_6 = new ParserNullImpl();
-const direct_hoist_7 = new ParserConstImpl("d");
-const direct_hoist_8 = new ParserConstImpl("b");
-const direct_hoist_9 = new ParserTypeOfImpl("boolean");
+const direct_hoist_13 = new ConstRuntype("c");
+const direct_hoist_14 = new ConstRuntype("square");
+const direct_hoist_15 = new ConstRuntype("triangle");
+const direct_hoist_2 = new RefRuntype("Extra");
+const direct_hoist_3 = new RefRuntype("AccessLevel");
+const direct_hoist_4 = new RefRuntype("AvatarSize");
+const direct_hoist_5 = new ConstRuntype("a");
+const direct_hoist_6 = new NullRuntype();
+const direct_hoist_7 = new ConstRuntype("d");
+const direct_hoist_8 = new ConstRuntype("b");
+const direct_hoist_9 = new TypeofRuntype("boolean");
 const hoistedIndirect = [
-    new ParserAnyOfConstsImpl([
+    new AnyOfConstsRuntype([
         "a",
         "b"
     ]),
-    new ParserObjectImpl({
+    new ObjectRuntype({
         "tag": direct_hoist_7
     }, null),
-    new ParserObjectImpl({
-        "d": new ParserHoistedImpl(1),
-        "level": new ParserHoistedImpl(0)
+    new ObjectRuntype({
+        "d": new HoistedRuntype(1),
+        "level": new HoistedRuntype(0)
     }, null),
-    new ParserObjectImpl({
+    new ObjectRuntype({
         "value": direct_hoist_5
     }, null),
-    new ParserObjectImpl({
+    new ObjectRuntype({
         "value": direct_hoist_8
     }, null),
-    new ParserObjectImpl({
+    new ObjectRuntype({
         "a1": direct_hoist_0,
-        "a11": new ParserAnyOfImpl([
+        "a11": new AnyOfRuntype([
             direct_hoist_6,
             direct_hoist_0
         ]),
         "subType": direct_hoist_10,
         "type": direct_hoist_5
     }, null),
-    new ParserObjectImpl({
+    new ObjectRuntype({
         "a2": direct_hoist_0,
         "subType": direct_hoist_11,
         "type": direct_hoist_5
     }, null),
-    new ParserObjectImpl({
+    new ObjectRuntype({
         "type": direct_hoist_8,
         "value": direct_hoist_1
     }, null),
-    new ParserObjectImpl({
+    new ObjectRuntype({
         "kind": direct_hoist_14,
         "x": direct_hoist_1
     }, null),
-    new ParserObjectImpl({
+    new ObjectRuntype({
         "kind": direct_hoist_15,
         "x": direct_hoist_1,
         "y": direct_hoist_1
     }, null)
 ];
-const namedParsers = {
-    "PartialRepro": new ParserObjectImpl({
-        "a": new ParserAnyOfImpl([
+const namedRuntypes = {
+    "PartialRepro": new ObjectRuntype({
+        "a": new AnyOfRuntype([
             direct_hoist_6,
             direct_hoist_0
         ]),
-        "b": new ParserAnyOfImpl([
+        "b": new AnyOfRuntype([
             direct_hoist_6,
             direct_hoist_0
         ])
     }, null),
-    "TransportedValue": new ParserAnyOfImpl([
+    "TransportedValue": new AnyOfRuntype([
         direct_hoist_6,
         direct_hoist_0,
-        new ParserArrayImpl(new ParserAnyOfImpl([
+        new ArrayRuntype(new AnyOfRuntype([
             direct_hoist_6,
             direct_hoist_0,
             direct_hoist_1
         ]))
     ]),
-    "OnlyAKey": new ParserObjectImpl({
+    "OnlyAKey": new ObjectRuntype({
         "A": direct_hoist_0
     }, null),
-    "AllTs": new ParserHoistedImpl(0),
-    "AObject": new ParserObjectImpl({
+    "AllTs": new HoistedRuntype(0),
+    "AObject": new ObjectRuntype({
         "tag": direct_hoist_5
     }, null),
-    "Version": new ParserRegexImpl(/(\d+(\.\d+)?)(\.)(\d+(\.\d+)?)(\.)(\d+(\.\d+)?)/, "${number}.${number}.${number}"),
-    "Version2": new ParserRegexImpl(/(v)(\d+(\.\d+)?)(\.)(\d+(\.\d+)?)(\.)(\d+(\.\d+)?)/, "v${number}.${number}.${number}"),
-    "AccessLevel2": new ParserAnyOfConstsImpl([
+    "Version": new RegexRuntype(/(\d+(\.\d+)?)(\.)(\d+(\.\d+)?)(\.)(\d+(\.\d+)?)/, "${number}.${number}.${number}"),
+    "Version2": new RegexRuntype(/(v)(\d+(\.\d+)?)(\.)(\d+(\.\d+)?)(\.)(\d+(\.\d+)?)/, "v${number}.${number}.${number}"),
+    "AccessLevel2": new AnyOfConstsRuntype([
         "ADMIN Admin",
         "USER User"
     ]),
-    "AccessLevelTpl2": new ParserRegexImpl(/((ADMIN Admin)|(USER User))/, '("ADMIN Admin" | "USER User")'),
-    "AccessLevel": new ParserAnyOfConstsImpl([
+    "AccessLevelTpl2": new RegexRuntype(/((ADMIN Admin)|(USER User))/, '("ADMIN Admin" | "USER User")'),
+    "AccessLevel": new AnyOfConstsRuntype([
         "ADMIN",
         "USER"
     ]),
-    "AccessLevelTpl": new ParserRegexImpl(/((ADMIN)|(USER))/, '("ADMIN" | "USER")'),
-    "Arr3": new ParserAnyOfConstsImpl([
+    "AccessLevelTpl": new RegexRuntype(/((ADMIN)|(USER))/, '("ADMIN" | "USER")'),
+    "Arr3": new AnyOfConstsRuntype([
         "X",
         "Y"
     ]),
-    "OmitSettings": new ParserHoistedImpl(2),
-    "Settings": new ParserObjectImpl({
+    "OmitSettings": new HoistedRuntype(2),
+    "Settings": new ObjectRuntype({
         "a": direct_hoist_0,
-        "d": new ParserHoistedImpl(1),
-        "level": new ParserHoistedImpl(0)
+        "d": new HoistedRuntype(1),
+        "level": new HoistedRuntype(0)
     }, null),
-    "PartialObject": new ParserObjectImpl({
-        "a": new ParserAnyOfImpl([
+    "PartialObject": new ObjectRuntype({
+        "a": new AnyOfRuntype([
             direct_hoist_6,
             direct_hoist_0
         ]),
-        "b": new ParserAnyOfImpl([
+        "b": new AnyOfRuntype([
             direct_hoist_6,
             direct_hoist_1
         ])
     }, null),
-    "RequiredPartialObject": new ParserObjectImpl({
+    "RequiredPartialObject": new ObjectRuntype({
         "a": direct_hoist_0,
         "b": direct_hoist_1
     }, null),
-    "LevelAndDSettings": new ParserHoistedImpl(2),
-    "PartialSettings": new ParserObjectImpl({
-        "a": new ParserAnyOfImpl([
+    "LevelAndDSettings": new HoistedRuntype(2),
+    "PartialSettings": new ObjectRuntype({
+        "a": new AnyOfRuntype([
             direct_hoist_6,
             direct_hoist_0
         ]),
-        "d": new ParserAnyOfImpl([
+        "d": new AnyOfRuntype([
             direct_hoist_6,
-            new ParserHoistedImpl(1)
+            new HoistedRuntype(1)
         ]),
-        "level": new ParserAnyOfImpl([
+        "level": new AnyOfRuntype([
             direct_hoist_6,
             direct_hoist_5,
             direct_hoist_8
         ])
     }, null),
-    "Extra": new ParserObjectImpl({}, direct_hoist_0),
-    "AvatarSize": new ParserRegexImpl(/(\d+(\.\d+)?)(x)(\d+(\.\d+)?)/, "${number}x${number}"),
-    "User": new ParserObjectImpl({
+    "Extra": new ObjectRuntype({}, direct_hoist_0),
+    "AvatarSize": new RegexRuntype(/(\d+(\.\d+)?)(x)(\d+(\.\d+)?)/, "${number}x${number}"),
+    "User": new ObjectRuntype({
         "accessLevel": direct_hoist_3,
         "avatarSize": direct_hoist_4,
         "extra": direct_hoist_2,
-        "friends": new ParserArrayImpl(new ParserRefImpl("User")),
+        "friends": new ArrayRuntype(new RefRuntype("User")),
         "name": direct_hoist_0
     }, null),
-    "PublicUser": new ParserObjectImpl({
+    "PublicUser": new ObjectRuntype({
         "accessLevel": direct_hoist_3,
         "avatarSize": direct_hoist_4,
         "extra": direct_hoist_2,
         "name": direct_hoist_0
     }, null),
-    "Req": new ParserObjectImpl({
+    "Req": new ObjectRuntype({
         "optional": direct_hoist_0
     }, null),
-    "WithOptionals": new ParserObjectImpl({
-        "optional": new ParserAnyOfImpl([
+    "WithOptionals": new ObjectRuntype({
+        "optional": new AnyOfRuntype([
             direct_hoist_6,
             direct_hoist_0
         ])
     }, null),
-    "Repro1": new ParserObjectImpl({
-        "sizes": new ParserAnyOfImpl([
+    "Repro1": new ObjectRuntype({
+        "sizes": new AnyOfRuntype([
             direct_hoist_6,
-            new ParserRefImpl("Repro2")
+            new RefRuntype("Repro2")
         ])
     }, null),
-    "Repro2": new ParserObjectImpl({
+    "Repro2": new ObjectRuntype({
         "useSmallerSizes": direct_hoist_9
     }, null),
-    "SettingsUpdate": new ParserAnyOfImpl([
+    "SettingsUpdate": new AnyOfRuntype([
         direct_hoist_0,
-        new ParserHoistedImpl(1)
+        new HoistedRuntype(1)
     ]),
-    "Mapped": new ParserObjectImpl({
-        "a": new ParserHoistedImpl(3),
-        "b": new ParserHoistedImpl(4)
+    "Mapped": new ObjectRuntype({
+        "a": new HoistedRuntype(3),
+        "b": new HoistedRuntype(4)
     }, null),
-    "MappedOptional": new ParserObjectImpl({
-        "a": new ParserAnyOfImpl([
+    "MappedOptional": new ObjectRuntype({
+        "a": new AnyOfRuntype([
             direct_hoist_6,
-            new ParserHoistedImpl(3)
+            new HoistedRuntype(3)
         ]),
-        "b": new ParserAnyOfImpl([
+        "b": new AnyOfRuntype([
             direct_hoist_6,
-            new ParserHoistedImpl(4)
+            new HoistedRuntype(4)
         ])
     }, null),
-    "DiscriminatedUnion": new ParserAnyOfDiscriminatedImpl([
-        new ParserHoistedImpl(5),
-        new ParserHoistedImpl(6),
-        new ParserHoistedImpl(7)
+    "DiscriminatedUnion": new AnyOfDiscriminatedRuntype([
+        new HoistedRuntype(5),
+        new HoistedRuntype(6),
+        new HoistedRuntype(7)
     ], "type", {
-        "a": new ParserAnyOfDiscriminatedImpl([
-            new ParserHoistedImpl(5),
-            new ParserHoistedImpl(6)
+        "a": new AnyOfDiscriminatedRuntype([
+            new HoistedRuntype(5),
+            new HoistedRuntype(6)
         ], "subType", {
-            "a1": new ParserHoistedImpl(5),
-            "a2": new ParserHoistedImpl(6)
+            "a1": new HoistedRuntype(5),
+            "a2": new HoistedRuntype(6)
         }),
-        "b": new ParserHoistedImpl(7)
+        "b": new HoistedRuntype(7)
     }),
-    "DiscriminatedUnion2": new ParserAnyOfImpl([
-        new ParserHoistedImpl(5),
-        new ParserHoistedImpl(6),
-        new ParserObjectImpl({
-            "type": new ParserAnyOfImpl([
+    "DiscriminatedUnion2": new AnyOfRuntype([
+        new HoistedRuntype(5),
+        new HoistedRuntype(6),
+        new ObjectRuntype({
+            "type": new AnyOfRuntype([
                 direct_hoist_6,
                 direct_hoist_7
             ]),
             "valueD": direct_hoist_1
         }, null),
-        new ParserHoistedImpl(7)
+        new HoistedRuntype(7)
     ]),
-    "DiscriminatedUnion3": new ParserAnyOfDiscriminatedImpl([
-        new ParserObjectImpl({
+    "DiscriminatedUnion3": new AnyOfDiscriminatedRuntype([
+        new ObjectRuntype({
             "a1": direct_hoist_0,
-            "type": new ParserAnyOfConstsImpl([
+            "type": new AnyOfConstsRuntype([
                 "a",
                 "c"
             ])
         }, null),
-        new ParserHoistedImpl(7)
+        new HoistedRuntype(7)
     ], "type", {
-        "a": new ParserObjectImpl({
+        "a": new ObjectRuntype({
             "a1": direct_hoist_0,
-            "type": new ParserAnyOfConstsImpl([
+            "type": new AnyOfConstsRuntype([
                 "a",
                 "c"
             ])
         }, null),
-        "b": new ParserHoistedImpl(7),
-        "c": new ParserObjectImpl({
+        "b": new HoistedRuntype(7),
+        "c": new ObjectRuntype({
             "a1": direct_hoist_0,
-            "type": new ParserAnyOfConstsImpl([
+            "type": new AnyOfConstsRuntype([
                 "a",
                 "c"
             ])
         }, null)
     }),
-    "DiscriminatedUnion4": new ParserAnyOfImpl([
-        new ParserObjectImpl({
-            "a": new ParserObjectImpl({
+    "DiscriminatedUnion4": new AnyOfRuntype([
+        new ObjectRuntype({
+            "a": new ObjectRuntype({
                 "a1": direct_hoist_0,
                 "subType": direct_hoist_10
             }, null),
             "type": direct_hoist_5
         }, null),
-        new ParserObjectImpl({
-            "a": new ParserObjectImpl({
+        new ObjectRuntype({
+            "a": new ObjectRuntype({
                 "a2": direct_hoist_0,
                 "subType": direct_hoist_11
             }, null),
             "type": direct_hoist_5
         }, null)
     ]),
-    "AllTypes": new ParserAnyOfConstsImpl([
+    "AllTypes": new AnyOfConstsRuntype([
         "LevelAndDSettings",
         "OmitSettings",
         "PartialSettings",
         "RequiredPartialObject"
     ]),
-    "OtherEnum": new ParserHoistedImpl(0),
-    "Arr2": new ParserAnyOfConstsImpl([
+    "OtherEnum": new HoistedRuntype(0),
+    "Arr2": new AnyOfConstsRuntype([
         "A",
         "B",
         "C"
     ]),
     "ValidCurrency": direct_hoist_12,
-    "UnionWithEnumAccess": new ParserAnyOfDiscriminatedImpl([
-        new ParserObjectImpl({
+    "UnionWithEnumAccess": new AnyOfDiscriminatedRuntype([
+        new ObjectRuntype({
             "tag": direct_hoist_5,
             "value": direct_hoist_0
         }, null),
-        new ParserObjectImpl({
+        new ObjectRuntype({
             "tag": direct_hoist_8,
             "value": direct_hoist_1
         }, null),
-        new ParserObjectImpl({
+        new ObjectRuntype({
             "tag": direct_hoist_13,
             "value": direct_hoist_9
         }, null)
     ], "tag", {
-        "a": new ParserObjectImpl({
+        "a": new ObjectRuntype({
             "tag": direct_hoist_5,
             "value": direct_hoist_0
         }, null),
-        "b": new ParserObjectImpl({
+        "b": new ObjectRuntype({
             "tag": direct_hoist_8,
             "value": direct_hoist_1
         }, null),
-        "c": new ParserObjectImpl({
+        "c": new ObjectRuntype({
             "tag": direct_hoist_13,
             "value": direct_hoist_9
         }, null)
     }),
-    "Shape": new ParserAnyOfDiscriminatedImpl([
-        new ParserObjectImpl({
-            "kind": new ParserConstImpl("circle"),
+    "Shape": new AnyOfDiscriminatedRuntype([
+        new ObjectRuntype({
+            "kind": new ConstRuntype("circle"),
             "radius": direct_hoist_1
         }, null),
-        new ParserHoistedImpl(8),
-        new ParserHoistedImpl(9)
+        new HoistedRuntype(8),
+        new HoistedRuntype(9)
     ], "kind", {
-        "circle": new ParserObjectImpl({
-            "kind": new ParserConstImpl("circle"),
+        "circle": new ObjectRuntype({
+            "kind": new ConstRuntype("circle"),
             "radius": direct_hoist_1
         }, null),
-        "square": new ParserHoistedImpl(8),
-        "triangle": new ParserHoistedImpl(9)
+        "square": new HoistedRuntype(8),
+        "triangle": new HoistedRuntype(9)
     }),
-    "T3": new ParserAnyOfDiscriminatedImpl([
-        new ParserHoistedImpl(8),
-        new ParserHoistedImpl(9)
+    "T3": new AnyOfDiscriminatedRuntype([
+        new HoistedRuntype(8),
+        new HoistedRuntype(9)
     ], "kind", {
-        "square": new ParserHoistedImpl(8),
-        "triangle": new ParserHoistedImpl(9)
+        "square": new HoistedRuntype(8),
+        "triangle": new HoistedRuntype(9)
     }),
-    "BObject": new ParserObjectImpl({
+    "BObject": new ObjectRuntype({
         "tag": direct_hoist_8
     }, null),
-    "DEF": new ParserObjectImpl({
+    "DEF": new ObjectRuntype({
         "a": direct_hoist_0
     }, null),
     "KDEF": direct_hoist_5,
-    "ABC": new ParserObjectImpl({}, null),
-    "KABC": new ParserNeverImpl(),
-    "K": new ParserAnyOfImpl([
-        new ParserRefImpl("KABC"),
-        new ParserRefImpl("KDEF")
+    "ABC": new ObjectRuntype({}, null),
+    "KABC": new NeverRuntype(),
+    "K": new AnyOfConstsRuntype([
+        "a"
     ]),
-    "NonInfiniteNumber": new ParserNumberWithFormatImpl([
+    "NonInfiniteNumber": new NumberWithFormatRuntype([
         "NonInfiniteNumber"
     ]),
-    "NonNegativeNumber": new ParserNumberWithFormatImpl([
+    "NonNegativeNumber": new NumberWithFormatRuntype([
         "NonInfiniteNumber",
         "NonNegativeNumber"
     ]),
-    "Rate": new ParserNumberWithFormatImpl([
+    "Rate": new NumberWithFormatRuntype([
         "NonInfiniteNumber",
         "NonNegativeNumber",
         "Rate"
     ]),
-    "UserId": new ParserStringWithFormatImpl([
+    "UserId": new StringWithFormatRuntype([
         "UserId"
     ]),
-    "ReadAuthorizedUserId": new ParserStringWithFormatImpl([
+    "ReadAuthorizedUserId": new StringWithFormatRuntype([
         "UserId",
         "ReadAuthorizedUserId"
     ]),
-    "WriteAuthorizedUserId": new ParserStringWithFormatImpl([
+    "WriteAuthorizedUserId": new StringWithFormatRuntype([
         "UserId",
         "ReadAuthorizedUserId",
         "WriteAuthorizedUserId"
     ]),
-    "CurrencyPrices": new ParserMappedRecordImpl(direct_hoist_12, new ParserRefImpl("Rate"))
+    "CurrencyPrices": new MappedRecordRuntype(direct_hoist_12, new RefRuntype("Rate"))
 };
-const buildValidatorsInput = {
-    "PartialRepro": new ParserRefImpl("PartialRepro"),
-    "TransportedValue": new ParserRefImpl("TransportedValue"),
-    "OnlyAKey": new ParserRefImpl("OnlyAKey"),
-    "ObjectWithArr": new ParserObjectImpl({
-        "a": new ParserArrayImpl(direct_hoist_0)
+const buildParsersInput = {
+    "PartialRepro": new RefRuntype("PartialRepro"),
+    "TransportedValue": new RefRuntype("TransportedValue"),
+    "OnlyAKey": new RefRuntype("OnlyAKey"),
+    "ObjectWithArr": new ObjectRuntype({
+        "a": new ArrayRuntype(direct_hoist_0)
     }, null),
-    "BigIntCodec": new ParserBigIntImpl(),
-    "TupleCodec": new ParserTupleImpl([
+    "BigIntCodec": new BigIntRuntype(),
+    "TupleCodec": new TupleRuntype([
         direct_hoist_1,
         direct_hoist_1,
         direct_hoist_1
     ], null),
-    "TupleCodecRest": new ParserTupleImpl([
+    "TupleCodecRest": new TupleRuntype([
         direct_hoist_1,
         direct_hoist_1
     ], direct_hoist_0),
-    "StringArrCodec": new ParserArrayImpl(direct_hoist_0),
-    "AllTs": new ParserRefImpl("AllTs"),
-    "AObject": new ParserRefImpl("AObject"),
-    "Version": new ParserRefImpl("Version"),
-    "Version2": new ParserRefImpl("Version2"),
-    "AccessLevelTpl2": new ParserRefImpl("AccessLevelTpl2"),
-    "AccessLevelTpl": new ParserRefImpl("AccessLevelTpl"),
-    "Arr3": new ParserRefImpl("Arr3"),
-    "OmitSettings": new ParserRefImpl("OmitSettings"),
-    "RequiredPartialObject": new ParserRefImpl("RequiredPartialObject"),
-    "LevelAndDSettings": new ParserRefImpl("LevelAndDSettings"),
-    "PartialSettings": new ParserRefImpl("PartialSettings"),
+    "StringArrCodec": new ArrayRuntype(direct_hoist_0),
+    "AllTs": new RefRuntype("AllTs"),
+    "AObject": new RefRuntype("AObject"),
+    "Version": new RefRuntype("Version"),
+    "Version2": new RefRuntype("Version2"),
+    "AccessLevelTpl2": new RefRuntype("AccessLevelTpl2"),
+    "AccessLevelTpl": new RefRuntype("AccessLevelTpl"),
+    "Arr3": new RefRuntype("Arr3"),
+    "OmitSettings": new RefRuntype("OmitSettings"),
+    "RequiredPartialObject": new RefRuntype("RequiredPartialObject"),
+    "LevelAndDSettings": new RefRuntype("LevelAndDSettings"),
+    "PartialSettings": new RefRuntype("PartialSettings"),
     "Extra": direct_hoist_2,
-    "User": new ParserRefImpl("User"),
-    "PublicUser": new ParserRefImpl("PublicUser"),
-    "Req": new ParserRefImpl("Req"),
-    "Repro1": new ParserRefImpl("Repro1"),
-    "SettingsUpdate": new ParserRefImpl("SettingsUpdate"),
-    "Mapped": new ParserRefImpl("Mapped"),
-    "MappedOptional": new ParserRefImpl("MappedOptional"),
-    "PartialObject": new ParserRefImpl("PartialObject"),
-    "DiscriminatedUnion": new ParserRefImpl("DiscriminatedUnion"),
-    "DiscriminatedUnion2": new ParserRefImpl("DiscriminatedUnion2"),
-    "DiscriminatedUnion3": new ParserRefImpl("DiscriminatedUnion3"),
-    "DiscriminatedUnion4": new ParserRefImpl("DiscriminatedUnion4"),
-    "AllTypes": new ParserRefImpl("AllTypes"),
+    "User": new RefRuntype("User"),
+    "PublicUser": new RefRuntype("PublicUser"),
+    "Req": new RefRuntype("Req"),
+    "Repro1": new RefRuntype("Repro1"),
+    "SettingsUpdate": new RefRuntype("SettingsUpdate"),
+    "Mapped": new RefRuntype("Mapped"),
+    "MappedOptional": new RefRuntype("MappedOptional"),
+    "PartialObject": new RefRuntype("PartialObject"),
+    "DiscriminatedUnion": new RefRuntype("DiscriminatedUnion"),
+    "DiscriminatedUnion2": new RefRuntype("DiscriminatedUnion2"),
+    "DiscriminatedUnion3": new RefRuntype("DiscriminatedUnion3"),
+    "DiscriminatedUnion4": new RefRuntype("DiscriminatedUnion4"),
+    "AllTypes": new RefRuntype("AllTypes"),
     "AccessLevel": direct_hoist_3,
-    "OtherEnum": new ParserRefImpl("OtherEnum"),
-    "Arr2C": new ParserRefImpl("Arr2"),
-    "ValidCurrency": new ParserRefImpl("ValidCurrency"),
-    "UnionWithEnumAccess": new ParserRefImpl("UnionWithEnumAccess"),
-    "T3": new ParserRefImpl("T3"),
+    "OtherEnum": new RefRuntype("OtherEnum"),
+    "Arr2C": new RefRuntype("Arr2"),
+    "ValidCurrency": new RefRuntype("ValidCurrency"),
+    "UnionWithEnumAccess": new RefRuntype("UnionWithEnumAccess"),
+    "T3": new RefRuntype("T3"),
     "AccessLevelCodec": direct_hoist_3,
     "AvatarSize": direct_hoist_4,
-    "BObject": new ParserRefImpl("BObject"),
-    "ImportEnumTypeof": new ParserObjectImpl({
+    "BObject": new RefRuntype("BObject"),
+    "ImportEnumTypeof": new ObjectRuntype({
         "A": direct_hoist_5
     }, null),
-    "KDEF": new ParserRefImpl("KDEF"),
-    "KABC": new ParserRefImpl("KABC"),
-    "K": new ParserRefImpl("K"),
-    "NonNegativeNumber": new ParserRefImpl("NonNegativeNumber"),
-    "NonInfiniteNumber": new ParserRefImpl("NonInfiniteNumber"),
-    "Rate": new ParserRefImpl("Rate"),
-    "UserId": new ParserRefImpl("UserId"),
-    "ReadAuthorizedUserId": new ParserRefImpl("ReadAuthorizedUserId"),
-    "WriteAuthorizedUserId": new ParserRefImpl("WriteAuthorizedUserId"),
-    "CurrencyPrices": new ParserRefImpl("CurrencyPrices")
+    "KDEF": new RefRuntype("KDEF"),
+    "KABC": new RefRuntype("KABC"),
+    "K": new RefRuntype("K"),
+    "NonNegativeNumber": new RefRuntype("NonNegativeNumber"),
+    "NonInfiniteNumber": new RefRuntype("NonInfiniteNumber"),
+    "Rate": new RefRuntype("Rate"),
+    "UserId": new RefRuntype("UserId"),
+    "ReadAuthorizedUserId": new RefRuntype("ReadAuthorizedUserId"),
+    "WriteAuthorizedUserId": new RefRuntype("WriteAuthorizedUserId"),
+    "CurrencyPrices": new RefRuntype("CurrencyPrices")
 };
 
 export default { buildParsers };
