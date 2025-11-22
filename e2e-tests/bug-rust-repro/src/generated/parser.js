@@ -1004,35 +1004,6 @@ class RefRuntype {
     return to.reportDecodeError(ctx, input);
   }
 }
-class HoistedRuntype {
-  hoistedIndex;
-  decoder;
-  constructor(hoistedIndex) {
-    this.hoistedIndex = hoistedIndex;
-    this.decoder = null;
-  }
-  getDecoder() {
-    if (this.decoder == null) {
-      this.decoder = hoistedIndirect[this.hoistedIndex];
-    }
-    return this.decoder;
-  }
-  describe(ctx) {
-    return this.getDecoder().describe(ctx);
-  }
-  schema(ctx) {
-    return this.getDecoder().schema(ctx);
-  }
-  validate(ctx, input) {
-    return this.getDecoder().validate(ctx, input);
-  }
-  parseAfterValidation(ctx, input) {
-    return this.getDecoder().parseAfterValidation(ctx, input);
-  }
-  reportDecodeError(ctx, input) {
-    return this.getDecoder().reportDecodeError(ctx, input);
-  }
-}
 const buildParsers = (args) => {
   const stringFormats = args?.stringFormats ?? {};
   for (const k of RequiredStringFormats) {
@@ -1137,7 +1108,6 @@ const buildParsers = (args) => {
 
 const RequiredStringFormats = ["ValidCurrency"];
 const RequiredNumberFormats = [];
-const hoistedIndirect = [];
 const namedRuntypes = {
     "A": new TypeofRuntype("string")
 };

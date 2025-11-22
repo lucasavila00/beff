@@ -1004,35 +1004,6 @@ class RefRuntype {
     return to.reportDecodeError(ctx, input);
   }
 }
-class HoistedRuntype {
-  hoistedIndex;
-  decoder;
-  constructor(hoistedIndex) {
-    this.hoistedIndex = hoistedIndex;
-    this.decoder = null;
-  }
-  getDecoder() {
-    if (this.decoder == null) {
-      this.decoder = hoistedIndirect[this.hoistedIndex];
-    }
-    return this.decoder;
-  }
-  describe(ctx) {
-    return this.getDecoder().describe(ctx);
-  }
-  schema(ctx) {
-    return this.getDecoder().schema(ctx);
-  }
-  validate(ctx, input) {
-    return this.getDecoder().validate(ctx, input);
-  }
-  parseAfterValidation(ctx, input) {
-    return this.getDecoder().parseAfterValidation(ctx, input);
-  }
-  reportDecodeError(ctx, input) {
-    return this.getDecoder().reportDecodeError(ctx, input);
-  }
-}
 const buildParsers = (args) => {
   const stringFormats = args?.stringFormats ?? {};
   for (const k of RequiredStringFormats) {
@@ -1139,13 +1110,11 @@ const RequiredStringFormats = [];
 const RequiredNumberFormats = [];
 const direct_hoist_0 = new TypeofRuntype("string");
 const direct_hoist_1 = new NullRuntype();
-const hoistedIndirect = [
-    new ArrayRuntype(direct_hoist_0),
-    new AnyOfRuntype([
-        direct_hoist_1,
-        direct_hoist_0
-    ])
-];
+const direct_hoist_2 = new ArrayRuntype(direct_hoist_0);
+const direct_hoist_3 = new AnyOfRuntype([
+    direct_hoist_1,
+    direct_hoist_0
+]);
 const namedRuntypes = {
     "AliasToString": direct_hoist_0,
     "AliasToNumber": new TypeofRuntype("number"),
@@ -1154,21 +1123,21 @@ const namedRuntypes = {
     "AliasToAny": new AnyRuntype(),
     "AliasToConst": new ConstRuntype("constant value"),
     "TestHoist": new ObjectRuntype({
-        "a": new HoistedRuntype(0),
-        "b": new HoistedRuntype(0)
+        "a": direct_hoist_2,
+        "b": direct_hoist_2
     }, null),
     "BeforeRequired": new ObjectRuntype({
         "a": direct_hoist_0,
-        "b": new HoistedRuntype(1),
-        "c": new HoistedRuntype(1),
-        "d": new HoistedRuntype(1),
-        "e": new HoistedRuntype(1)
+        "b": direct_hoist_3,
+        "c": direct_hoist_3,
+        "d": direct_hoist_3,
+        "e": direct_hoist_3
     }, null),
     "AfterRequired": new ObjectRuntype({
         "a": direct_hoist_0,
-        "b": new HoistedRuntype(1),
-        "c": new HoistedRuntype(1),
-        "d": new HoistedRuntype(1),
+        "b": direct_hoist_3,
+        "c": direct_hoist_3,
+        "d": direct_hoist_3,
         "e": direct_hoist_0
     }, null)
 };

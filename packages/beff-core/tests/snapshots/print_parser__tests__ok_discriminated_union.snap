@@ -1,10 +1,9 @@
 ---
 source: packages/beff-core/tests/print_parser.rs
-expression: "decoder(r#\"\n        export type DiscriminatedUnion4 =\n            | {\n                type: \"a\";\n                a: {\n                  subType: \"a1\";\n                  a1: string;\n                };\n              }\n            | {\n                type: \"a\";\n                a: {\n                  subType: \"a2\";\n                  a2: string;\n                };\n              };\n        parse.buildParsers<{ DiscriminatedUnion4: DiscriminatedUnion4 }>();\n      \"#)"
+expression: "print_cgen(r#\"\n        export type DiscriminatedUnion4 =\n            | {\n                type: \"a\";\n                a: {\n                  subType: \"a1\";\n                  a1: string;\n                };\n              }\n            | {\n                type: \"a\";\n                a: {\n                  subType: \"a2\";\n                  a2: string;\n                };\n              };\n        parse.buildParsers<{ DiscriminatedUnion4: DiscriminatedUnion4 }>();\n      \"#)"
 ---
 const direct_hoist_0 = new TypeofRuntype("string");
 const direct_hoist_1 = new ConstRuntype("a");
-const hoistedIndirect = [];
 const namedRuntypes = {
     "DiscriminatedUnion4": new AnyOfRuntype([
         new ObjectRuntype({

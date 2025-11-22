@@ -15,10 +15,7 @@ use swc_ecma_codegen::{text_writer::JsWriter, Emitter};
 
 use crate::parser_extractor::ParserExtractResult;
 use crate::{
-    ast::{
-        json::{Json, N},
-        runtype::{Optionality, Runtype, RuntypeConst, TplLitTypeItem},
-    },
+    ast::runtype::{Optionality, Runtype, RuntypeConst, TplLitTypeItem},
     parser_extractor::BuiltDecoder,
     NamedSchema,
 };
@@ -52,9 +49,9 @@ fn emit_module_items(body: Vec<ModuleItem>) -> Result<String> {
 }
 
 type SeenCounter = BTreeMap<Runtype, i32>;
+
 struct HoistedMap {
-    direct: BTreeMap<Runtype, (String, Expr)>,
-    indirect: BTreeMap<Runtype, (i32, Expr)>,
+    direct: BTreeMap<Runtype, (usize, Expr)>,
     seen: SeenCounter,
 }
 
@@ -435,49 +432,21 @@ fn maybe_runtype_any_of_consts(flat_values: &BTreeSet<Runtype>) -> Option<Expr> 
     None
 }
 
-fn should_hoist_direct(schema: &Runtype) -> bool {
-    // hoist only what has no inner schemas
-    matches!(
-        schema,
-        Runtype::StringWithFormat(_, _)
-            | Runtype::NumberWithFormat(_, _)
-            | Runtype::AnyArrayLike
-            | Runtype::Any
-            | Runtype::Number
-            | Runtype::String
-            | Runtype::Boolean
-            | Runtype::StNever
-            | Runtype::Function
-            | Runtype::Date
-            | Runtype::BigInt
-            | Runtype::TplLitType(_)
-            | Runtype::Ref(_)
-            | Runtype::Const(_)
-            | Runtype::Null
-    )
+fn hoist_name(name: usize) -> String {
+    format!("direct_hoist_{}", name)
+}
+fn hoist_identifier(name: usize) -> Expr {
+    Expr::Ident(identifier(&hoist_name(name)))
 }
 
-fn i32_literal(id: i32) -> Expr {
-    Json::Number(N::parse_int(id as i64)).to_expr()
-}
-fn hoisted_indirect_runtype(id: i32) -> Expr {
-    new_runtype_class("HoistedRuntype", vec![i32_literal(id)])
-}
 fn print_runtype(
     schema: &Runtype,
     named_schemas: &[NamedSchema],
     hoisted: &mut HoistedMap,
 ) -> Expr {
-    if should_hoist_direct(schema) {
-        let found_direct = hoisted.direct.get(schema);
-        if let Some((var_name, _)) = found_direct {
-            return Expr::Ident(identifier(var_name));
-        }
-    } else {
-        let found_indirect = hoisted.indirect.get(schema);
-        if let Some((var_name, _)) = found_indirect {
-            return hoisted_indirect_runtype(*var_name);
-        }
+    let found_direct = hoisted.direct.get(schema);
+    if let Some((var_name, _)) = found_direct {
+        return hoist_identifier(*var_name);
     }
 
     let out = match schema {
@@ -632,18 +601,10 @@ fn print_runtype(
     let seen_counter = hoisted.seen.get(schema).cloned().unwrap_or(0);
     if seen_counter <= 1 {
         out
-    } else if should_hoist_direct(schema) {
-        let new_id = format!("direct_hoist_{}", hoisted.direct.len());
-        hoisted
-            .direct
-            .insert(schema.clone(), (new_id.clone(), out.clone()));
-        Expr::Ident(identifier(&new_id))
     } else {
-        let new_id = hoisted.indirect.len() as i32;
-        hoisted
-            .indirect
-            .insert(schema.clone(), (new_id, out.clone()));
-        hoisted_indirect_runtype(new_id)
+        let new_id = hoisted.direct.len();
+        hoisted.direct.insert(schema.clone(), (new_id, out.clone()));
+        hoist_identifier(new_id)
     }
 }
 
@@ -776,15 +737,11 @@ fn calculate_named_schemas_seen(named_schemas: &[NamedSchema], seen: &mut SeenCo
 impl ParserExtractResult {
     pub fn emit_code(self) -> Result<String> {
         let mut seen: SeenCounter = BTreeMap::new();
-
         let built_parsers = self.built_decoders.unwrap_or_default();
         let named_schemas = validate_type_uniqueness(&self.validators)?;
-
         calculate_named_schemas_seen(&named_schemas, &mut seen);
-
         let mut hoisted = HoistedMap {
             direct: BTreeMap::new(),
-            indirect: BTreeMap::new(),
             seen,
         };
 
@@ -798,38 +755,18 @@ impl ParserExtractResult {
             named_runtypes(&named_schemas, &mut hoisted),
         );
 
-        let mut sorted_indirect_hoisted_values = hoisted.indirect.into_values().collect::<Vec<_>>();
-        sorted_indirect_hoisted_values.sort_by_key(|it| it.0);
-
-        let hoisted_indirect_arr = const_decl(
-            "hoistedIndirect",
-            Expr::Array(ArrayLit {
-                span: DUMMY_SP,
-                elems: sorted_indirect_hoisted_values
-                    .into_iter()
-                    .map(|(_id, expr)| {
-                        Some(ExprOrSpread {
-                            spread: None,
-                            expr: expr.into(),
-                        })
-                    })
-                    .collect(),
-            }),
-        );
-
         let mut sorted_direct_hoisted_values = hoisted.direct.into_values().collect::<Vec<_>>();
-        sorted_direct_hoisted_values.sort_by_key(|it| it.0.clone());
+        sorted_direct_hoisted_values.sort_by_key(|it| it.0);
 
         let hoisted_direct_decls: Vec<ModuleItem> = sorted_direct_hoisted_values
             .into_iter()
-            .map(|(id, expr)| const_decl(&id, expr))
+            .map(|(id, expr)| const_decl(&hoist_name(id), expr))
             .collect();
 
         let module_items = hoisted_direct_decls
             .into_iter()
             .chain(vec![
                 //
-                hoisted_indirect_arr,
                 build_named_parsers_input,
                 build_parsers_input,
             ])

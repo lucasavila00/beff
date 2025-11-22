@@ -1,8 +1,7 @@
 ---
 source: packages/beff-core/tests/print_parser.rs
-expression: "decoder(r#\"\n        export type User = StringFormat<\"User\">;\n        export type ReadAuthorizedUser = StringFormatExtends<User, \"ReadAuthorizedUser\">;\n        export type WriteAuthorizedUser = StringFormatExtends<ReadAuthorizedUser, \"WriteAuthorizedUser\">;\n        parse.buildParsers<{ User: User, ReadAuthorizedUser: ReadAuthorizedUser, WriteAuthorizedUser: WriteAuthorizedUser }>();\n      \"#)"
+expression: "print_cgen(r#\"\n        export type User = StringFormat<\"User\">;\n        export type ReadAuthorizedUser = StringFormatExtends<User, \"ReadAuthorizedUser\">;\n        export type WriteAuthorizedUser = StringFormatExtends<ReadAuthorizedUser, \"WriteAuthorizedUser\">;\n        parse.buildParsers<{ User: User, ReadAuthorizedUser: ReadAuthorizedUser, WriteAuthorizedUser: WriteAuthorizedUser }>();\n      \"#)"
 ---
-const hoistedIndirect = [];
 const namedRuntypes = {
     "User": new StringWithFormatRuntype([
         "User"
