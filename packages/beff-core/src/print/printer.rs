@@ -435,7 +435,7 @@ fn maybe_runtype_any_of_consts(flat_values: &BTreeSet<Runtype>) -> Option<Expr> 
     None
 }
 
-fn should_hoist_direct(schema: &Runtype) -> bool {
+fn has_no_inner_schemas(schema: &Runtype) -> bool {
     // hoist only what has no inner schemas
     matches!(
         schema,
@@ -455,6 +455,88 @@ fn should_hoist_direct(schema: &Runtype) -> bool {
             | Runtype::Const(_)
             | Runtype::Null
     )
+}
+
+// fn has_recursion_inner(schema: &Runtype, seen: &mut BTreeSet<Runtype>) -> bool {
+//     // hoist only what has no inner schemas
+//     if seen.contains(schema) {
+//         return true;
+//     }
+//     seen.insert(schema.clone());
+//     let res = match schema {
+//         Runtype::StringWithFormat(_, _)
+//         | Runtype::NumberWithFormat(_, _)
+//         | Runtype::AnyArrayLike
+//         | Runtype::Any
+//         | Runtype::Number
+//         | Runtype::String
+//         | Runtype::Boolean
+//         | Runtype::StNever
+//         | Runtype::Function
+//         | Runtype::Date
+//         | Runtype::BigInt
+//         | Runtype::TplLitType(_)
+//         | Runtype::Ref(_)
+//         | Runtype::Const(_)
+//         | Runtype::Null => false,
+//         Runtype::StNot(runtype) => has_recursion_inner(runtype, seen),
+//         Runtype::Array(runtype) => has_recursion_inner(runtype, seen),
+//         Runtype::MappedRecord { key, rest } => {
+//             has_recursion_inner(key, seen) || has_recursion_inner(rest, seen)
+//         }
+//         Runtype::AllOf(btree_set) | Runtype::AnyOf(btree_set) => {
+//             for v in btree_set {
+//                 if has_recursion_inner(v, seen) {
+//                     return true;
+//                 }
+//             }
+//             false
+//         }
+//         Runtype::Object { vs, rest } => {
+//             for v in vs.values() {
+//                 match v {
+//                     Optionality::Optional(schema) | Optionality::Required(schema) => {
+//                         if has_recursion_inner(schema, seen) {
+//                             return true;
+//                         }
+//                     }
+//                 }
+//             }
+//             if let Some(rest_schema) = rest {
+//                 if has_recursion_inner(rest_schema, seen) {
+//                     return true;
+//                 }
+//             }
+//             false
+//         }
+//         Runtype::Tuple {
+//             prefix_items,
+//             items,
+//         } => {
+//             for item in prefix_items {
+//                 if has_recursion_inner(item, seen) {
+//                     return true;
+//                 }
+//             }
+//             if let Some(items_schema) = items {
+//                 if has_recursion_inner(items_schema, seen) {
+//                     return true;
+//                 }
+//             }
+//             false
+//         }
+//     };
+//     seen.remove(schema);
+//     res
+// }
+
+// fn has_recursion(schema: &Runtype) -> bool {
+//     let mut seen = BTreeSet::new();
+//     has_recursion_inner(schema, &mut seen)
+// }
+
+fn should_hoist_direct(schema: &Runtype) -> bool {
+    has_no_inner_schemas(schema)
 }
 
 fn i32_literal(id: i32) -> Expr {
@@ -818,7 +900,10 @@ impl ParserExtractResult {
         );
 
         let mut sorted_direct_hoisted_values = hoisted.direct.into_values().collect::<Vec<_>>();
-        sorted_direct_hoisted_values.sort_by_key(|it| it.0.clone());
+        sorted_direct_hoisted_values.sort_by_key(|it| {
+            let number = it.0.strip_prefix("direct_hoist_").unwrap();
+            number.parse::<i32>().unwrap()
+        });
 
         let hoisted_direct_decls: Vec<ModuleItem> = sorted_direct_hoisted_values
             .into_iter()

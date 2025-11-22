@@ -1139,14 +1139,6 @@ const RequiredStringFormats = ["ValidCurrency","UserId","ReadAuthorizedUserId","
 const RequiredNumberFormats = ["NonNegativeNumber","NonInfiniteNumber","Rate"];
 const direct_hoist_0 = new TypeofRuntype("string");
 const direct_hoist_1 = new TypeofRuntype("number");
-const direct_hoist_10 = new ConstRuntype("a1");
-const direct_hoist_11 = new ConstRuntype("a2");
-const direct_hoist_12 = new StringWithFormatRuntype([
-    "ValidCurrency"
-]);
-const direct_hoist_13 = new ConstRuntype("c");
-const direct_hoist_14 = new ConstRuntype("square");
-const direct_hoist_15 = new ConstRuntype("triangle");
 const direct_hoist_2 = new RefRuntype("Extra");
 const direct_hoist_3 = new RefRuntype("AccessLevel");
 const direct_hoist_4 = new RefRuntype("AvatarSize");
@@ -1155,6 +1147,14 @@ const direct_hoist_6 = new NullRuntype();
 const direct_hoist_7 = new ConstRuntype("d");
 const direct_hoist_8 = new ConstRuntype("b");
 const direct_hoist_9 = new TypeofRuntype("boolean");
+const direct_hoist_10 = new ConstRuntype("a1");
+const direct_hoist_11 = new ConstRuntype("a2");
+const direct_hoist_12 = new StringWithFormatRuntype([
+    "ValidCurrency"
+]);
+const direct_hoist_13 = new ConstRuntype("c");
+const direct_hoist_14 = new ConstRuntype("square");
+const direct_hoist_15 = new ConstRuntype("triangle");
 const hoistedIndirect = [
     new AnyOfConstsRuntype([
         "a",
