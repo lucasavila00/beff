@@ -220,9 +220,8 @@ impl<'a> ToSemTypeConverter<'a> {
             Runtype::AnyArrayLike => {
                 self.convert_to_sem_type(&Runtype::Array(Runtype::Any.into()), builder)
             }
-            Runtype::PrimitiveLike(s) => {
-                Ok(SemTypeContext::string_const(StringLitOrFormat::Codec(s.clone())).into())
-            }
+            Runtype::Date => Ok(SemTypeContext::date().into()),
+            Runtype::BigInt => Ok(SemTypeContext::bigint().into()),
             Runtype::StNever => Ok(SemTypeContext::never().into()),
             Runtype::StNot(it) => {
                 let chd = self.convert_to_sem_type(it, builder)?;

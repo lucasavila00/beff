@@ -542,6 +542,12 @@ impl<'a, 'b> SchemerContext<'a, 'b> {
                             rest: Box::new(Runtype::Any),
                         });
                     }
+                    SubTypeTag::BigInt => {
+                        acc.insert(Runtype::BigInt);
+                    }
+                    SubTypeTag::Date => {
+                        acc.insert(Runtype::Date);
+                    }
                 };
             }
         }
@@ -581,12 +587,6 @@ impl<'a, 'b> SchemerContext<'a, 'b> {
                             StringLitOrFormat::Format(first, rest) => {
                                 acc.insert(maybe_not(
                                     Runtype::StringWithFormat(first.clone(), rest.clone()),
-                                    !allowed,
-                                ));
-                            }
-                            StringLitOrFormat::Codec(fmt) => {
-                                acc.insert(maybe_not(
-                                    Runtype::PrimitiveLike(fmt.clone()),
                                     !allowed,
                                 ));
                             }
