@@ -195,8 +195,8 @@ pub enum Runtype {
     Number,
     Any,
     AnyArrayLike,
-    StringWithFormat(Vec<String>),
-    NumberWithFormat(Vec<String>),
+    StringWithFormat(String, Vec<String>),
+    NumberWithFormat(String, Vec<String>),
     TplLitType(Vec<TplLitTypeItem>),
     Object {
         vs: BTreeMap<String, Optionality<Runtype>>,
@@ -372,11 +372,7 @@ impl Runtype {
             Runtype::Number => "number".to_string(),
             Runtype::Any => "any".to_string(),
             Runtype::AnyArrayLike => "Array<any>".to_string(),
-            Runtype::StringWithFormat(items) => {
-                let (first, rest) = match items.split_first() {
-                    Some((first, rest)) => (first, rest),
-                    None => panic!("StringWithFormat must have at least one item"),
-                };
+            Runtype::StringWithFormat(first, rest) => {
                 let mut acc = format!("StringFormat<\"{}\">", first);
 
                 for it in rest.iter() {
@@ -385,11 +381,7 @@ impl Runtype {
 
                 acc
             }
-            Runtype::NumberWithFormat(items) => {
-                let (first, rest) = match items.split_first() {
-                    Some((first, rest)) => (first, rest),
-                    None => panic!("NumberWithFormat must have at least one item"),
-                };
+            Runtype::NumberWithFormat(first, rest) => {
                 let mut acc = format!("NumberFormat<\"{}\">", first);
 
                 for it in rest.iter() {

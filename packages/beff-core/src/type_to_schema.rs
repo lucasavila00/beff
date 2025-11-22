@@ -383,7 +383,7 @@ impl<'a, 'b, R: FileManager> TypeToSchema<'a, 'b, R> {
                                 rest: Some(Box::new(value)),
                             })
                         }
-                        Runtype::StringWithFormat(_) | Runtype::Number => {
+                        Runtype::StringWithFormat(_, _) | Runtype::Number => {
                             let value = items[1].clone();
                             Ok(Runtype::MappedRecord {
                                 key,
@@ -832,7 +832,7 @@ impl<'a, 'b, R: FileManager> TypeToSchema<'a, 'b, R> {
                 {
                     let val_str = value.to_string();
                     if self.settings.string_formats.contains(&val_str) {
-                        return Ok(Runtype::StringWithFormat(vec![val_str]));
+                        return Ok(Runtype::StringWithFormat(val_str, vec![]));
                     } else {
                         return self
                             .error(span, DiagnosticInfoMessage::CustomStringIsNotRegistered);
@@ -850,9 +850,9 @@ impl<'a, 'b, R: FileManager> TypeToSchema<'a, 'b, R> {
         &mut self,
         schema: &Runtype,
         span: &Span,
-    ) -> Res<Vec<String>> {
+    ) -> Res<(String, Vec<String>)> {
         match schema {
-            Runtype::StringWithFormat(vs) => Ok(vs.clone()),
+            Runtype::StringWithFormat(first, rest) => Ok((first.clone(), rest.clone())),
             Runtype::Ref(r) => {
                 let v = self.components.get(r);
 
@@ -889,9 +889,9 @@ impl<'a, 'b, R: FileManager> TypeToSchema<'a, 'b, R> {
                     if self.settings.string_formats.contains(&next_str) {
                         let base = self.convert_ts_type(base)?;
 
-                        let mut formats = self.get_string_format_base_formats(&base, span)?;
-                        formats.push(next_str);
-                        return Ok(Runtype::StringWithFormat(formats));
+                        let (first, mut rest) = self.get_string_format_base_formats(&base, span)?;
+                        rest.push(next_str);
+                        return Ok(Runtype::StringWithFormat(first, rest));
                     } else {
                         return self
                             .error(span, DiagnosticInfoMessage::CustomStringIsNotRegistered);
@@ -909,9 +909,9 @@ impl<'a, 'b, R: FileManager> TypeToSchema<'a, 'b, R> {
         &mut self,
         schema: &Runtype,
         span: &Span,
-    ) -> Res<Vec<String>> {
+    ) -> Res<(String, Vec<String>)> {
         match schema {
-            Runtype::NumberWithFormat(v) => Ok(v.clone()),
+            Runtype::NumberWithFormat(first, rest) => Ok((first.clone(), rest.clone())),
             Runtype::Ref(r) => {
                 let v = self.components.get(r);
 
@@ -948,9 +948,9 @@ impl<'a, 'b, R: FileManager> TypeToSchema<'a, 'b, R> {
                     if self.settings.number_formats.contains(&next_str) {
                         let base = self.convert_ts_type(base)?;
 
-                        let mut formats = self.get_number_format_base_formats(&base, span)?;
-                        formats.push(next_str);
-                        return Ok(Runtype::NumberWithFormat(formats));
+                        let (first, mut rest) = self.get_number_format_base_formats(&base, span)?;
+                        rest.push(next_str);
+                        return Ok(Runtype::NumberWithFormat(first, rest));
                     } else {
                         return self
                             .error(span, DiagnosticInfoMessage::CustomNumberIsNotRegistered);
@@ -980,7 +980,7 @@ impl<'a, 'b, R: FileManager> TypeToSchema<'a, 'b, R> {
                 {
                     let val_str = value.to_string();
                     if self.settings.number_formats.contains(&val_str) {
-                        return Ok(Runtype::NumberWithFormat(vec![val_str]));
+                        return Ok(Runtype::NumberWithFormat(val_str, vec![]));
                     } else {
                         return self
                             .error(span, DiagnosticInfoMessage::CustomNumberIsNotRegistered);

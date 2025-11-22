@@ -161,11 +161,11 @@ fn no_args_runtype(class_name: &str) -> Expr {
         ],
     )
 }
-fn formats_runtype(constructor: &str, vs: &[String]) -> Expr {
+fn formats_runtype(constructor: &str, first: &String, rest: &[String]) -> Expr {
     let vs_arr = Expr::Array(ArrayLit {
         span: DUMMY_SP,
-        elems: vs
-            .iter()
+        elems: std::iter::once(first)
+            .chain(rest.iter())
             .map(|it| {
                 Some(ExprOrSpread {
                     spread: None,
@@ -439,8 +439,8 @@ fn should_hoist_direct(schema: &Runtype) -> bool {
     // hoist only what has no inner schemas
     matches!(
         schema,
-        Runtype::StringWithFormat(_)
-            | Runtype::NumberWithFormat(_)
+        Runtype::StringWithFormat(_, _)
+            | Runtype::NumberWithFormat(_, _)
             | Runtype::AnyArrayLike
             | Runtype::Any
             | Runtype::Number
@@ -489,8 +489,12 @@ fn print_runtype(
         Runtype::Any => no_args_runtype("AnyRuntype"),
         Runtype::StNever => no_args_runtype("NeverRuntype"),
         Runtype::Const(c) => new_runtype_class("ConstRuntype", vec![c.clone().to_json().to_expr()]),
-        Runtype::StringWithFormat(vs) => formats_runtype("StringWithFormatRuntype", vs),
-        Runtype::NumberWithFormat(vs) => formats_runtype("NumberWithFormatRuntype", vs),
+        Runtype::StringWithFormat(first, rest) => {
+            formats_runtype("StringWithFormatRuntype", first, rest)
+        }
+        Runtype::NumberWithFormat(first, rest) => {
+            formats_runtype("NumberWithFormatRuntype", first, rest)
+        }
         Runtype::PrimitiveLike(codec_name) => match codec_name {
             PrimitiveLike::Date => no_args_runtype("DateRuntype"),
             PrimitiveLike::BigInt => no_args_runtype("BigIntRuntype"),
@@ -709,8 +713,8 @@ fn calculate_schema_seen(schema: &Runtype, seen: &mut SeenCounter) {
     *count += 1;
 
     match schema {
-        Runtype::StringWithFormat(_)
-        | Runtype::NumberWithFormat(_)
+        Runtype::StringWithFormat(_, _)
+        | Runtype::NumberWithFormat(_, _)
         | Runtype::AnyArrayLike
         | Runtype::Any
         | Runtype::Number

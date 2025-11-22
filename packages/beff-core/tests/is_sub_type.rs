@@ -331,7 +331,7 @@ mod tests {
         let res = schema_is_sub_type(&t2, &t1, &definitions, &definitions);
         assert!(res);
 
-        let t1 = Runtype::StringWithFormat(vec!["password".into()]);
+        let t1 = Runtype::StringWithFormat("password".into(), vec![]);
         let t2 = Runtype::String;
         let res = schema_is_sub_type(&t1, &t2, &definitions, &definitions);
         assert!(res);
