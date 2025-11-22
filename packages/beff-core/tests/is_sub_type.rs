@@ -1,6 +1,8 @@
 #[cfg(test)]
 mod tests {
 
+    use std::collections::BTreeMap;
+
     use beff_core::{
         ast::runtype::{Runtype, RuntypeConst},
         subtyping::{
@@ -418,5 +420,55 @@ mod tests {
 
         let res = rt_is_sub_type(&t2, &t1, &definitions, &definitions);
         assert!(!res);
+    }
+
+    #[test]
+    fn all_types_have_basic_properties() {
+        let all_basic_types = vec![
+            Runtype::String,
+            Runtype::Number,
+            Runtype::Boolean,
+            Runtype::Null,
+            Runtype::BigInt,
+            Runtype::Date,
+            Runtype::AnyArrayLike,
+            Runtype::Function,
+            Runtype::Object {
+                vs: BTreeMap::new(),
+                rest: None,
+            },
+        ];
+
+        for t0 in &all_basic_types {
+            let definitions = vec![];
+
+            let t1 = t0.clone();
+            let t2 = t0.clone();
+            let res = rt_is_sub_type(&t1, &t2, &definitions, &definitions);
+            assert!(res);
+
+            let others = all_basic_types
+                .iter()
+                .filter(|x| *x != t0)
+                .cloned()
+                .collect::<Vec<Runtype>>();
+
+            for other in others {
+                let res = rt_is_sub_type(&t1, &other, &definitions, &definitions);
+                assert!(!res);
+                let res = rt_is_sub_type(&other, &t1, &definitions, &definitions);
+                assert!(!res);
+            }
+
+            // any type is subtype of any
+            let anyt = Runtype::Any;
+            let res = rt_is_sub_type(&t1, &anyt, &definitions, &definitions);
+            assert!(res);
+
+            // no type is subtype of never
+            let nevert = Runtype::StNever;
+            let res = rt_is_sub_type(&t1, &nevert, &definitions, &definitions);
+            assert!(!res);
+        }
     }
 }
