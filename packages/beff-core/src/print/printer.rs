@@ -1,37 +1,60 @@
 use std::collections::{BTreeMap, BTreeSet};
 
 use anyhow::{anyhow, Ok, Result};
-use serde::{Deserialize, Serialize};
+use swc_common::SourceMap;
 use swc_common::DUMMY_SP;
+use swc_common::{sync::Lrc, FilePathMapping};
+use swc_ecma_ast::Module;
 use swc_ecma_ast::{
     ArrayLit, BindingIdent, Decl, Expr, ExprOrSpread, Ident, KeyValueProp, Lit, ModuleItem,
     NewExpr, Null, ObjectLit, Pat, Prop, PropName, PropOrSpread, Regex, Stmt, Str, VarDecl,
     VarDeclKind, VarDeclarator,
 };
+use swc_ecma_codegen::Config;
+use swc_ecma_codegen::{text_writer::JsWriter, Emitter};
 
 use crate::{
     ast::{
         json::{Json, N},
         runtype::{Optionality, PrimitiveLike, Runtype, RuntypeConst, TplLitTypeItem},
     },
-    emit::emit_module,
     parser_extractor::BuiltDecoder,
     ExtractResult, NamedSchema,
 };
+
+fn emit_module_items(body: Vec<ModuleItem>) -> Result<String> {
+    let ast = Module {
+        span: DUMMY_SP,
+        body,
+        shebang: None,
+    };
+    let cm = Lrc::new(SourceMap::new(FilePathMapping::empty()));
+
+    let code = {
+        let mut buf = vec![];
+
+        {
+            let mut emitter = Emitter {
+                cfg: Config::default(),
+                cm: cm.clone(),
+                comments: None,
+                wr: JsWriter::new(cm, "\n", &mut buf, None),
+            };
+
+            emitter.emit_module(&ast)?;
+        }
+
+        String::from_utf8_lossy(&buf).to_string()
+    };
+
+    Ok(code)
+}
 
 type SeenCounter = BTreeMap<Runtype, i32>;
 struct HoistedMap {
     direct: BTreeMap<Runtype, (String, Expr)>,
     indirect: BTreeMap<Runtype, (i32, Expr)>,
     seen: SeenCounter,
-}
-
-#[derive(Serialize, Deserialize)]
-pub struct WritableModulesV2 {
-    pub js_built_parsers: String,
-}
-pub trait ToWritableParser {
-    fn to_module_v2(self) -> Result<WritableModulesV2>;
 }
 
 fn const_decl(name: &str, init: Expr) -> ModuleItem {
@@ -745,8 +768,8 @@ fn calculate_named_schemas_seen(named_schemas: &[NamedSchema], seen: &mut SeenCo
     }
 }
 
-impl ToWritableParser for ExtractResult {
-    fn to_module_v2(self) -> Result<WritableModulesV2> {
+impl ExtractResult {
+    pub fn emit_code(self) -> Result<String> {
         let mut seen: SeenCounter = BTreeMap::new();
 
         let built_parsers = self.parser.built_decoders.unwrap_or_default();
@@ -797,19 +820,16 @@ impl ToWritableParser for ExtractResult {
             .map(|(id, expr)| const_decl(&id, expr))
             .collect();
 
-        let js_built_parsers = emit_module(
-            hoisted_direct_decls
-                .into_iter()
-                .chain(vec![
-                    //
-                    hoisted_indirect_arr,
-                    build_named_parsers_input,
-                    build_parsers_input,
-                ])
-                .collect(),
-            "\n",
-        )?;
+        let module_items = hoisted_direct_decls
+            .into_iter()
+            .chain(vec![
+                //
+                hoisted_indirect_arr,
+                build_named_parsers_input,
+                build_parsers_input,
+            ])
+            .collect();
 
-        Ok(WritableModulesV2 { js_built_parsers })
+        Ok(emit_module_items(module_items)?)
     }
 }

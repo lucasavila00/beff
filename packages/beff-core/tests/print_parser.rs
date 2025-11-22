@@ -4,7 +4,6 @@ mod tests {
 
     use beff_core::{
         import_resolver::{parse_and_bind, FsModuleResolver},
-        print::printer2::ToWritableParser,
         BeffUserSettings, BffFileName, EntryPoints, ExtractResult, FileManager, ParsedModule,
     };
     use swc_common::{Globals, GLOBALS};
@@ -76,9 +75,7 @@ mod tests {
         if !errors.is_empty() {
             panic!("errors: {:?}", errors);
         }
-        p.to_module_v2()
-            .expect("should be able to emit module")
-            .js_built_parsers
+        p.emit_code().expect("should be able to emit module")
     }
 
     #[test]

@@ -1,6 +1,6 @@
 import * as fs from "fs";
 import * as path from "path";
-import { Bundler, WritableModulesV2 } from "./bundler";
+import { Bundler } from "./bundler";
 import { ProjectJson, ProjectModule } from "./project";
 import gen from "./generated/bundle";
 
@@ -22,7 +22,7 @@ const V2_ESM_IMPORT = `import {
 } from "@beff/client";`;
 const V2_CJS_IMPORT = `const { printErrors } = require("@beff/client");`;
 const finalizeParserV2File = (
-  wasmCode: WritableModulesV2,
+  wasmCode: string,
   mod: ProjectModule,
   stringFormats: string[],
   numberFormats: string[],
@@ -49,7 +49,7 @@ const finalizeParserV2File = (
     genV2,
     stringFormatsCode,
     numberFormatsCode,
-    wasmCode.js_built_parsers,
+    wasmCode,
     exports,
   ].join("\n");
 };
