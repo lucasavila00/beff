@@ -154,11 +154,12 @@ impl<'a> ToSemTypeConverter<'a> {
             Runtype::String => Ok(SemTypeContext::string().into()),
             Runtype::Number => Ok(SemTypeContext::number().into()),
             Runtype::Any => Ok(SemTypeContext::unknown().into()),
-            Runtype::StringWithFormat(s) => {
-                Ok(SemTypeContext::string_const(StringLitOrFormat::Format(s.clone())).into())
-            }
-            Runtype::NumberWithFormat(s) => Ok(SemTypeContext::number_const(
-                NumberRepresentationOrFormat::Format(s.clone()),
+            Runtype::StringWithFormat(first, rest) => Ok(SemTypeContext::string_const(
+                StringLitOrFormat::Format(first.clone(), rest.clone()),
+            )
+            .into()),
+            Runtype::NumberWithFormat(first, rest) => Ok(SemTypeContext::number_const(
+                NumberRepresentationOrFormat::Format(first.clone(), rest.clone()),
             )
             .into()),
             Runtype::TplLitType(tpl) => {

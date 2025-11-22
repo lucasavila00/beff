@@ -1,6 +1,5 @@
 pub mod ast;
 pub mod diag;
-pub mod emit;
 pub mod import_resolver;
 pub mod parse;
 pub mod parser_extractor;
@@ -12,7 +11,6 @@ pub mod wasm_diag;
 
 use crate::ast::runtype::Runtype;
 use core::fmt;
-use diag::Diagnostic;
 use parser_extractor::extract_parser;
 use parser_extractor::ParserExtractResult;
 use serde::Deserialize;
@@ -367,25 +365,71 @@ pub trait FileManager {
     fn get_existing_file(&self, name: &BffFileName) -> Option<Rc<ParsedModule>>;
 }
 
-pub struct ExtractResult {
-    pub parser: ParserExtractResult,
+fn debug_print_type_list(vs: Vec<(String, String)>) -> String {
+    let mut acc = String::new();
+    for (name, ts_type) in vs {
+        acc.push_str(&format!("type {} = {};\n\n", name, ts_type));
+    }
+    acc
 }
 
-impl ExtractResult {
-    pub fn errors(&self) -> Vec<&Diagnostic> {
-        self.parser.errors.iter().collect::<Vec<_>>()
+fn debug_print_type_object(vs: Vec<(String, String)>) -> String {
+    let mut acc = String::new();
+    acc.push_str("{\n");
+    for (name, ts_type) in vs {
+        acc.push_str(&format!("  {}: {},\n", name, ts_type));
     }
-    pub fn validators(&self) -> Vec<&NamedSchema> {
-        self.parser.validators.iter().collect::<Vec<_>>()
+    acc.push_str("}\n");
+    acc
+}
+
+impl ParserExtractResult {
+    pub fn debug_print(&self) -> String {
+        let mut vs: Vec<(String, String)> = vec![];
+
+        let mut sorted_validators = self.validators.iter().collect::<Vec<_>>();
+        sorted_validators.sort_by(|a, b| a.name.cmp(&b.name));
+
+        for v in sorted_validators {
+            vs.push((v.name.clone(), v.schema.debug_print()));
+        }
+
+        let validators_printed = debug_print_type_list(vs.clone());
+
+        let mut decoders_vs: Vec<(String, String)> = vec![];
+        let empty = vec![];
+        let mut sorted_decoders = self
+            .built_decoders
+            .as_ref()
+            .unwrap_or(&empty)
+            .iter()
+            .collect::<Vec<_>>();
+        sorted_decoders.sort_by(|a, b| a.exported_name.cmp(&b.exported_name));
+
+        for v in sorted_decoders {
+            decoders_vs.push((v.exported_name.clone(), v.schema.debug_print()));
+        }
+
+        let decoders_printed = format!(
+            "type BuiltParsers = {}",
+            debug_print_type_object(decoders_vs.clone())
+        );
+
+        [validators_printed, decoders_printed]
+            .into_iter()
+            .filter(|it| !it.is_empty())
+            .collect::<Vec<String>>()
+            .join("\n")
+            .trim()
+            .to_string()
     }
 }
-pub fn extract<R: FileManager>(files: &mut R, entry_points: EntryPoints) -> ExtractResult {
-    let parser = extract_parser(
+pub fn extract<R: FileManager>(files: &mut R, entry_points: EntryPoints) -> ParserExtractResult {
+    extract_parser(
         files,
         entry_points.parser_entry_point,
         &entry_points.settings,
-    );
-    ExtractResult { parser }
+    )
 }
 
 #[derive(Debug, Clone)]

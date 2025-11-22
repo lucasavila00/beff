@@ -1,11 +1,14 @@
 ---
 source: packages/beff-core/tests/print_parser.rs
-expression: "ok(r#\"\n      \n        export interface IY {\n            a: string\n        }\n        export interface IX {\n            sizes?: IY;\n        }\n        // type IX2 = Required<IX>\n        type T3 = IX[keyof IX]\n        parse.buildParsers<{ T3: T3 }>();\n      \"#)"
+expression: "print_types(r#\"\n      \n        export interface IY {\n            a: string\n        }\n        export interface IX {\n            sizes?: IY;\n        }\n        // type IX2 = Required<IX>\n        type T3 = IX[keyof IX]\n        parse.buildParsers<{ T3: T3 }>();\n      \"#)"
 ---
-type IX = { "sizes": Optional<IY> };
+type IX = { "sizes"?: IY };
 
-type IY = { "a": Required<string> };
+type IY = { "a": string };
 
-type T3 = (null | { "a": Required<string> });
+type T3 = (null | { "a": string });
 
-type T3 = T3;
+
+type BuiltParsers = {
+  T3: T3,
+}

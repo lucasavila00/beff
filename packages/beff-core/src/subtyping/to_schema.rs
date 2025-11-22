@@ -560,9 +560,9 @@ impl<'a, 'b> SchemerContext<'a, 'b> {
                                     !allowed,
                                 ));
                             }
-                            NumberRepresentationOrFormat::Format(items) => {
+                            NumberRepresentationOrFormat::Format(first, rest) => {
                                 acc.insert(maybe_not(
-                                    Runtype::NumberWithFormat(items.clone()),
+                                    Runtype::NumberWithFormat(first.clone(), rest.clone()),
                                     !allowed,
                                 ));
                             }
@@ -578,9 +578,9 @@ impl<'a, 'b> SchemerContext<'a, 'b> {
                                     !allowed,
                                 ));
                             }
-                            StringLitOrFormat::Format(fmt) => {
+                            StringLitOrFormat::Format(first, rest) => {
                                 acc.insert(maybe_not(
-                                    Runtype::StringWithFormat(fmt.clone()),
+                                    Runtype::StringWithFormat(first.clone(), rest.clone()),
                                     !allowed,
                                 ));
                             }

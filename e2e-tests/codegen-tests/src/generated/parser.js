@@ -1138,19 +1138,38 @@ const buildParsers = (args) => {
 const RequiredStringFormats = [];
 const RequiredNumberFormats = [];
 const direct_hoist_0 = new TypeofRuntype("string");
+const direct_hoist_1 = new NullRuntype();
 const hoistedIndirect = [
-    new ArrayRuntype(direct_hoist_0)
+    new ArrayRuntype(direct_hoist_0),
+    new AnyOfRuntype([
+        direct_hoist_1,
+        direct_hoist_0
+    ])
 ];
 const namedRuntypes = {
     "AliasToString": direct_hoist_0,
     "AliasToNumber": new TypeofRuntype("number"),
     "AliasToBoolean": new TypeofRuntype("boolean"),
-    "AliasToNull": new NullRuntype(),
+    "AliasToNull": direct_hoist_1,
     "AliasToAny": new AnyRuntype(),
     "AliasToConst": new ConstRuntype("constant value"),
     "TestHoist": new ObjectRuntype({
         "a": new HoistedRuntype(0),
         "b": new HoistedRuntype(0)
+    }, null),
+    "BeforeRequired": new ObjectRuntype({
+        "a": direct_hoist_0,
+        "b": new HoistedRuntype(1),
+        "c": new HoistedRuntype(1),
+        "d": new HoistedRuntype(1),
+        "e": new HoistedRuntype(1)
+    }, null),
+    "AfterRequired": new ObjectRuntype({
+        "a": direct_hoist_0,
+        "b": new HoistedRuntype(1),
+        "c": new HoistedRuntype(1),
+        "d": new HoistedRuntype(1),
+        "e": direct_hoist_0
     }, null)
 };
 const buildParsersInput = {
@@ -1161,7 +1180,9 @@ const buildParsersInput = {
     "AliasToNull": new RefRuntype("AliasToNull"),
     "AliasToAny": new RefRuntype("AliasToAny"),
     "AliasToConst": new RefRuntype("AliasToConst"),
-    "TestHoist": new RefRuntype("TestHoist")
+    "TestHoist": new RefRuntype("TestHoist"),
+    "BeforeRequired": new RefRuntype("BeforeRequired"),
+    "AfterRequired": new RefRuntype("AfterRequired")
 };
 
 export default { buildParsers };

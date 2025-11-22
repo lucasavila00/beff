@@ -49,9 +49,9 @@ pub struct WasmDiagnostic {
 }
 
 impl WasmDiagnostic {
-    pub fn from_diagnostics(diagnostics: Vec<&Diagnostic>) -> WasmDiagnostic {
+    pub fn from_diagnostics(diagnostics: &[Diagnostic]) -> WasmDiagnostic {
         WasmDiagnostic {
-            diagnostics: diagnostics.into_iter().map(diag_to_wasm).collect(),
+            diagnostics: diagnostics.iter().map(diag_to_wasm).collect(),
         }
     }
 }

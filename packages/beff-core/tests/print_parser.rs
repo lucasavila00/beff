@@ -4,22 +4,12 @@ mod tests {
 
     use beff_core::{
         import_resolver::{parse_and_bind, FsModuleResolver},
-        parser_extractor::BuiltDecoder,
-        print::printer2::ToWritableParser,
-        BeffUserSettings, BffFileName, EntryPoints, ExtractResult, FileManager, NamedSchema,
-        ParsedModule,
+        parser_extractor::ParserExtractResult,
+        BeffUserSettings, BffFileName, EntryPoints, FileManager, ParsedModule,
     };
     use swc_common::{Globals, GLOBALS};
     struct TestFileManager {
         pub f: Rc<ParsedModule>,
-    }
-
-    pub fn print_types(vs: Vec<(String, String)>) -> String {
-        let mut acc = String::new();
-        for (name, ts_type) in vs {
-            acc.push_str(&format!("type {} = {};\n\n", name, ts_type));
-        }
-        acc
     }
 
     impl FileManager for TestFileManager {
@@ -38,7 +28,7 @@ mod tests {
             None
         }
     }
-    fn parse_str(content: &str) -> Rc<ParsedModule> {
+    fn parse_module(content: &str) -> Rc<ParsedModule> {
         let mut resolver = TestResolver {};
         let file_name = BffFileName::new("file.ts".into());
         GLOBALS.set(&Globals::new(), || {
@@ -46,8 +36,8 @@ mod tests {
             res.expect("failed to parse")
         })
     }
-    fn parse_api(it: &str) -> ExtractResult {
-        let f = parse_str(it);
+    fn extract_types(it: &str) -> ParserExtractResult {
+        let f = parse_module(it);
         let mut man = TestFileManager { f };
         let entry = EntryPoints {
             parser_entry_point: BffFileName::new("file.ts".into()),
@@ -68,51 +58,25 @@ mod tests {
         };
         beff_core::extract(&mut man, entry)
     }
-    fn as_typescript_string_(
-        validators: &[&NamedSchema],
-        built_decoders: &[BuiltDecoder],
-    ) -> String {
-        let mut vs: Vec<(String, String)> = vec![];
 
-        let mut sorted_validators = validators.iter().collect::<Vec<_>>();
-        sorted_validators.sort_by(|a, b| a.name.cmp(&b.name));
-
-        for v in sorted_validators {
-            vs.push((v.name.clone(), v.schema.debug_print()));
-        }
-
-        let mut sorted_decoders = built_decoders.iter().collect::<Vec<_>>();
-        sorted_decoders.sort_by(|a, b| a.exported_name.cmp(&b.exported_name));
-
-        for v in sorted_decoders {
-            vs.push((v.exported_name.clone(), v.schema.debug_print()));
-        }
-
-        print_types(vs)
-    }
-    fn ok(from: &str) -> String {
-        let p = parse_api(from);
-        let errors = p.errors();
+    fn print_types(from: &str) -> String {
+        let p = extract_types(from);
+        let errors = &p.errors;
 
         if !errors.is_empty() {
             panic!("errors: {:?}", errors);
         }
-        as_typescript_string_(
-            &p.parser.validators.iter().collect::<Vec<_>>(),
-            p.parser.built_decoders.as_ref().unwrap_or(&vec![]),
-        )
+        p.debug_print()
     }
 
-    fn decoder(from: &str) -> String {
-        let p = parse_api(from);
-        let errors = p.errors();
+    fn print_cgen(from: &str) -> String {
+        let p = extract_types(from);
+        let errors = &p.errors;
 
         if !errors.is_empty() {
             panic!("errors: {:?}", errors);
         }
-        let res = ExtractResult { parser: p.parser };
-        let m = res.to_module_v2().expect("should be able to emit module");
-        m.js_built_parsers
+        p.emit_code().expect("should be able to emit module")
     }
 
     #[test]
@@ -143,7 +107,7 @@ mod tests {
     parse.buildParsers<{ A: Either<string, number> }>();
 
   "#;
-        insta::assert_snapshot!(ok(from));
+        insta::assert_snapshot!(print_types(from));
     }
     #[test]
     fn ok_omit() {
@@ -157,7 +121,7 @@ mod tests {
     parse.buildParsers<{ A: Omit<User, 'age'> }>();
 
   "#;
-        insta::assert_snapshot!(ok(from));
+        insta::assert_snapshot!(print_types(from));
     }
     #[test]
     fn ok_pick() {
@@ -171,7 +135,7 @@ mod tests {
     parse.buildParsers<{ A: Pick<User, 'age'> }>();
 
   "#;
-        insta::assert_snapshot!(ok(from));
+        insta::assert_snapshot!(print_types(from));
     }
     #[test]
     fn ok_omit2() {
@@ -185,7 +149,7 @@ mod tests {
     parse.buildParsers<{ A: Omit<User, 'age'|'email'> }>();
 
   "#;
-        insta::assert_snapshot!(ok(from));
+        insta::assert_snapshot!(print_types(from));
     }
     #[test]
     fn ok_partial() {
@@ -199,7 +163,7 @@ mod tests {
     parse.buildParsers<{ A: Partial<User> }>();
 
   "#;
-        insta::assert_snapshot!(ok(from));
+        insta::assert_snapshot!(print_types(from));
     }
     #[test]
     fn ok_partial2() {
@@ -213,7 +177,7 @@ mod tests {
     parse.buildParsers<{ A: User2 }>();
 
   "#;
-        insta::assert_snapshot!(ok(from));
+        insta::assert_snapshot!(print_types(from));
     }
     #[test]
     fn ok_partial3() {
@@ -229,28 +193,33 @@ mod tests {
     parse.buildParsers<{ A: ObjWithUsers }>();
 
   "#;
-        insta::assert_snapshot!(ok(from));
+        insta::assert_snapshot!(print_types(from));
     }
     #[test]
     fn ok_object() {
-        insta::assert_snapshot!(ok(r#"
+        insta::assert_snapshot!(print_types(
+            r#"
         parse.buildParsers<{ A: Object }>();
-      "#));
+      "#
+        ));
     }
     #[test]
     fn ok_required() {
-        insta::assert_snapshot!(ok(r#"
+        insta::assert_snapshot!(print_types(
+            r#"
 
         type MaybeUser = {
             name?: string,
             age?: number,
         }
         parse.buildParsers<{ A: Required<MaybeUser> }>();
-      "#));
+      "#
+        ));
     }
     #[test]
     fn ok_keyof_record() {
-        insta::assert_snapshot!(ok(r#"
+        insta::assert_snapshot!(print_types(
+            r#"
 
         const a = {
           a: "a",
@@ -273,12 +242,14 @@ mod tests {
         type Rec = Record<C, string>;
 
         parse.buildParsers<{ C:C, Rec: Rec }>();
-      "#));
+      "#
+        ));
     }
 
     #[test]
     fn ok_keyof_record2() {
-        insta::assert_snapshot!(ok(r#"
+        insta::assert_snapshot!(print_types(
+            r#"
 
         const a = {
         };
@@ -298,12 +269,14 @@ mod tests {
         type Rec = Record<C, string>;
 
         parse.buildParsers<{ C:C, Rec: Rec }>();
-      "#));
+      "#
+        ));
     }
 
     #[test]
     fn ok_interface_extends() {
-        insta::assert_snapshot!(ok(r#"
+        insta::assert_snapshot!(print_types(
+            r#"
 
         interface User {
             name: string,
@@ -313,11 +286,13 @@ mod tests {
             role: string,
         }
         parse.buildParsers<{ Admin: Admin }>();
-      "#));
+      "#
+        ));
     }
     #[test]
     fn ok_repro() {
-        insta::assert_snapshot!(ok(r#"
+        insta::assert_snapshot!(print_types(
+            r#"
         export type Settings = {
             a: string;
             level: "a" | "b";
@@ -328,96 +303,116 @@ mod tests {
           
         export type SettingsUpdate = Settings["a" | "level" | "d"];
         parse.buildParsers<{ SettingsUpdate: SettingsUpdate }>();
-      "#));
+      "#
+        ));
     }
     #[test]
     fn ok_mapped_type() {
-        insta::assert_snapshot!(ok(r#"
+        insta::assert_snapshot!(print_types(
+            r#"
         export type Mapped = {
             [K in "a" | "b"]: {
                 value: K;
             };
         };
         parse.buildParsers<{ Mapped: Mapped }>();
-      "#));
+      "#
+        ));
     }
     #[test]
     fn ok_mapped_type_optional() {
-        insta::assert_snapshot!(ok(r#"
+        insta::assert_snapshot!(print_types(
+            r#"
         export type Mapped = {
             [K in "a" | "b"]?: {
                 value: K;
             };
         };
         parse.buildParsers<{ Mapped: Mapped }>();
-      "#));
+      "#
+        ));
     }
     #[test]
     fn ok_mapped_type_repro() {
-        insta::assert_snapshot!(ok(r#"
+        insta::assert_snapshot!(print_types(
+            r#"
         type Obj = { a: string } & {d: string}
         type MappedKeys = keyof Obj;
         parse.buildParsers<{ MappedKeys: MappedKeys }>();
-      "#));
+      "#
+        ));
     }
     #[test]
     fn ok_record_access() {
-        insta::assert_snapshot!(ok(r#"
+        insta::assert_snapshot!(print_types(
+            r#"
         export type Extra = Record<string, string>;
         type ExtraValue = Extra[string];
 
         parse.buildParsers<{ ExtraValue: ExtraValue }>();
-      "#));
+      "#
+        ));
     }
     #[test]
     fn ok_record_union() {
-        insta::assert_snapshot!(ok(r#"
+        insta::assert_snapshot!(print_types(
+            r#"
         export type Extra = Record<'a'|'b', string>;
 
         parse.buildParsers<{ Extra: Extra }>();
-      "#));
+      "#
+        ));
     }
     #[test]
     fn ok_array_spread() {
-        insta::assert_snapshot!(ok(r#"
+        insta::assert_snapshot!(print_types(
+            r#"
         const Arr1 = ["a", "b"] as const
         const Arr2 = [...Arr1, "c"] as const
 
         type Arr2C = typeof Arr2[number];
 
         parse.buildParsers<{ Arr2C: Arr2C }>();
-      "#));
+      "#
+        ));
     }
     #[test]
     fn ok_array_spread_declare() {
-        insta::assert_snapshot!(ok(r#"
+        insta::assert_snapshot!(print_types(
+            r#"
         declare const Arr1 = ["a", "b"] as const
         declare const Arr2 = [...Arr1, "c"] as const
 
         type Arr2C = typeof Arr2[number];
 
         parse.buildParsers<{ Arr2C: Arr2C }>();
-      "#));
+      "#
+        ));
     }
     #[test]
     fn ok_array_spread_declare2() {
-        insta::assert_snapshot!(ok(r#"
+        insta::assert_snapshot!(print_types(
+            r#"
         declare const AllArr1: ["a", "b"] 
         type Arr1 = typeof AllArr1[number];
         parse.buildParsers<{ Arr1: Arr1 }>();
-      "#));
+      "#
+        ));
     }
     #[test]
     fn ok_array_spread_declare3() {
-        insta::assert_snapshot!(ok(r#"
+        insta::assert_snapshot!(print_types(
+            r#"
         export declare const AllArr1: ["a", "b"] 
         type Arr1 = typeof AllArr1[number];
         parse.buildParsers<{ Arr1: Arr1 }>();
-      "#));
+      "#
+        ));
     }
     #[test]
     fn ok_array_spread2() {
-        insta::assert_snapshot!(ok(r#"
+        insta::assert_snapshot!(print_types(
+            r#"
         export const Arr1 = ["a", "b"] as const
         export type Arr1 = typeof Arr1[number]
         export const Arr2 = [...Arr1, "c"] as const
@@ -425,11 +420,13 @@ mod tests {
         type Arr2C = typeof Arr2[number];
 
         parse.buildParsers<{ Arr2C: Arr2C }>();
-      "#));
+      "#
+        ));
     }
     #[test]
     fn ok_enum_member() {
-        insta::assert_snapshot!(ok(r#"
+        insta::assert_snapshot!(print_types(
+            r#"
         export enum Enum {
             A = "a",
             B = "b",
@@ -437,11 +434,13 @@ mod tests {
         export type X = Enum.A
 
         parse.buildParsers<{ X: X }>();
-      "#));
+      "#
+        ));
     }
     #[test]
     fn ok_enum_member2() {
-        insta::assert_snapshot!(ok(r#"
+        insta::assert_snapshot!(print_types(
+            r#"
         enum Enum {
             A = "a",
             B = "b",
@@ -449,11 +448,12 @@ mod tests {
         type X = Enum.A
 
         parse.buildParsers<{ X: X }>();
-      "#));
+      "#
+        ));
     }
     #[test]
     fn ok_discriminated_union() {
-        insta::assert_snapshot!(decoder(
+        insta::assert_snapshot!(print_cgen(
             r#"
         export type DiscriminatedUnion4 =
             | {
@@ -476,7 +476,8 @@ mod tests {
     }
     #[test]
     fn ok_exclude() {
-        insta::assert_snapshot!(ok(r#"
+        insta::assert_snapshot!(print_types(
+            r#"
         type A = "a" | "b";
 
         type B = "b" | "c";
@@ -484,11 +485,13 @@ mod tests {
         type X = Exclude<A, B>;
 
         parse.buildParsers<{ X: X }>();
-      "#));
+      "#
+        ));
     }
     #[test]
     fn ok_exclude2() {
-        insta::assert_snapshot!(ok(r#"
+        insta::assert_snapshot!(print_types(
+            r#"
         type Shape =
         | { kind: "circle"; radius: number }
         | { kind: "square"; x: number }
@@ -496,11 +499,13 @@ mod tests {
        
         type T3 = Exclude<Shape, { kind: "circle" }>
         parse.buildParsers<{ T3: T3 }>();
-      "#));
+      "#
+        ));
     }
     #[test]
     fn ok_repro_3() {
-        insta::assert_snapshot!(ok(r#"
+        insta::assert_snapshot!(print_types(
+            r#"
       
         export interface IY {
             a: string
@@ -511,46 +516,56 @@ mod tests {
         // type IX2 = Required<IX>
         type T3 = IX[keyof IX]
         parse.buildParsers<{ T3: T3 }>();
-      "#));
+      "#
+        ));
     }
     #[test]
     fn ok_recursive_tuple() {
-        insta::assert_snapshot!(ok(r#"
+        insta::assert_snapshot!(print_types(
+            r#"
         export type IX = [string, IX]
         type IX2 = IX[0]
         parse.buildParsers<{ IX2: IX2 }>();
-      "#));
+      "#
+        ));
     }
     #[test]
     fn ok_conditional_type() {
-        insta::assert_snapshot!(ok(r#"
+        insta::assert_snapshot!(print_types(
+            r#"
         export type IX<T> = T extends true ? number : string
         type IX2 = IX<true>
         type IX3 = IX<false>
         parse.buildParsers<{ IX2: IX2, IX3: IX3 }>();
-      "#));
+      "#
+        ));
     }
     #[test]
     fn ok_tpl_lit1() {
-        insta::assert_snapshot!(ok(r#"
+        insta::assert_snapshot!(print_types(
+            r#"
         export type IX = `a${string}b${number}c`
         parse.buildParsers<{ IX: IX }>();
-      "#));
+      "#
+        ));
     }
     #[test]
     fn ok_tpl_lit2() {
-        insta::assert_snapshot!(ok(r#"
+        insta::assert_snapshot!(print_types(
+            r#"
         enum Abc {
             A = "A",
             B = "B",
         }
         export type IX = `${Abc}`
         parse.buildParsers<{ IX: IX }>();
-      "#));
+      "#
+        ));
     }
     #[test]
     fn ok_repro4() {
-        insta::assert_snapshot!(ok(r#"
+        insta::assert_snapshot!(print_types(
+            r#"
         export const a = "a" as const;
         export const b = "b" as const;
         
@@ -558,60 +573,72 @@ mod tests {
         export type AllTs = (typeof AllTs)[number];
         
         parse.buildParsers<{ AllTs: AllTs }>();
-      "#));
+      "#
+        ));
     }
     #[test]
     fn ok_repro5() {
-        insta::assert_snapshot!(ok(r#"
+        insta::assert_snapshot!(print_types(
+            r#"
         export const ABC = {a: "b", c: "d"} as const satisfies Record<string, string>;
         export type AllTs = (keyof typeof ABC);
 
         parse.buildParsers<{ AllTs: AllTs }>();
-      "#));
+      "#
+        ));
     }
     #[test]
     fn ok_repro6() {
-        insta::assert_snapshot!(ok(r#"
+        insta::assert_snapshot!(print_types(
+            r#"
         const x = (it: string) => it;
         export const ABC = {a: `b`, c: `d${x("d")}d`};
         export type AllTs = (keyof typeof ABC);
 
         parse.buildParsers<{ AllTs: AllTs }>();
-      "#));
+      "#
+        ));
     }
     #[test]
     fn ok_repro7() {
-        insta::assert_snapshot!(ok(r#"
+        insta::assert_snapshot!(print_types(
+            r#"
         const x = (it: string) => it;
         export const ABC = {a: `b`, c: `d${x("d")}d`} as const satisfies Record<string, string>;
         export type AllTs = (keyof typeof ABC);
 
         parse.buildParsers<{ AllTs: AllTs }>();
-      "#));
+      "#
+        ));
     }
     #[test]
     fn ok_repro8() {
-        insta::assert_snapshot!(ok(r#"
+        insta::assert_snapshot!(print_types(
+            r#"
         const x = (it: string) => it;
         const def = "def";
         export const ABC = {a: `b`, c: `d${x("d")}d`, def ,} as const satisfies Record<string, string>;
         export type AllTs = (keyof typeof ABC);
 
         parse.buildParsers<{ AllTs: AllTs }>();
-      "#));
+      "#
+        ));
     }
     #[test]
     fn ok_repro9() {
-        insta::assert_snapshot!(ok(r#"
+        insta::assert_snapshot!(print_types(
+            r#"
         export const ABC = {a: x=>x+1, } as const satisfies Record<string, string>;
         export type AllTs = (keyof typeof ABC);
 
         parse.buildParsers<{ AllTs: AllTs }>();
-      "#));
+      "#
+        ));
     }
     #[test]
     fn ok_repro10() {
-        insta::assert_snapshot!(ok(r#"
+        insta::assert_snapshot!(print_types(
+            r#"
         enum E {
           A="A",
           B="B"
@@ -620,11 +647,13 @@ mod tests {
         export type AllTs = (keyof typeof ABC);
 
         parse.buildParsers<{ AllTs: AllTs }>();
-      "#));
+      "#
+        ));
     }
     #[test]
     fn ok_repro11() {
-        insta::assert_snapshot!(ok(r#"
+        insta::assert_snapshot!(print_types(
+            r#"
         enum E {
           A="A",
           B="B"
@@ -633,37 +662,45 @@ mod tests {
         export type AllTs = typeof val;
 
         parse.buildParsers<{ AllTs: AllTs }>();
-      "#));
+      "#
+        ));
     }
     #[test]
     fn ok_repro12() {
-        insta::assert_snapshot!(ok(r#"
+        insta::assert_snapshot!(print_types(
+            r#"
         const val = 1 + 1;
         export type AllTs = typeof val;
 
         parse.buildParsers<{ AllTs: AllTs }>();
-      "#));
+      "#
+        ));
     }
     #[test]
     fn ok_repro13() {
-        insta::assert_snapshot!(ok(r#"
+        insta::assert_snapshot!(print_types(
+            r#"
         const val = {a: 1} as const;
         const spread = {...val, b: 2} as const;
         export type AllTs = typeof spread;
 
         parse.buildParsers<{ AllTs: AllTs }>();
-      "#));
+      "#
+        ));
     }
     #[test]
     fn ok_void() {
-        insta::assert_snapshot!(ok(r#"
+        insta::assert_snapshot!(print_types(
+            r#"
         export type IX = void
         parse.buildParsers<{ IX: IX }>();
-      "#));
+      "#
+        ));
     }
     #[test]
     fn ok_never() {
-        insta::assert_snapshot!(ok(r#"
+        insta::assert_snapshot!(print_types(
+            r#"
         export type ABC = {}
         export type KABC = keyof ABC
 
@@ -675,32 +712,37 @@ mod tests {
         export type K = KABC | KDEF
 
         parse.buildParsers<{ K: K }>();
-      "#));
+      "#
+        ));
     }
     #[test]
     fn ok_never2() {
-        insta::assert_snapshot!(ok(r#"
+        insta::assert_snapshot!(print_types(
+            r#"
         export type ABC = {}
         export type KABC = keyof ABC
      
         parse.buildParsers<{ KABC: KABC }>();
-      "#));
+      "#
+        ));
     }
     #[test]
     fn ok_omit_intersection() {
-        insta::assert_snapshot!(ok(r#"
+        insta::assert_snapshot!(print_types(
+            r#"
         export type A = {a: string}
         export type B = {b: string}
 
         export type KABC = Omit<A & B, 'a'>
      
         parse.buildParsers<{ KABC: KABC }>();
-      "#));
+      "#
+        ));
     }
 
     #[test]
     fn ok_string_decoder() {
-        insta::assert_snapshot!(decoder(
+        insta::assert_snapshot!(print_cgen(
             r#"
         export type Alias = string;
         parse.buildParsers<{ Dec: Alias }>();
@@ -710,7 +752,7 @@ mod tests {
 
     #[test]
     fn ok_array_decoder() {
-        insta::assert_snapshot!(decoder(
+        insta::assert_snapshot!(print_cgen(
             r#"
         export type Alias = string[];
         parse.buildParsers<{ Dec: Alias }>();
@@ -719,7 +761,7 @@ mod tests {
     }
     #[test]
     fn ok_string_with_fmt_decoder() {
-        insta::assert_snapshot!(decoder(
+        insta::assert_snapshot!(print_cgen(
             r#"
         export type Alias = StringFormat<"password">;
         parse.buildParsers<{ Dec: Alias }>();
@@ -729,7 +771,7 @@ mod tests {
 
     #[test]
     fn ok_string_with_fmt_record_decoder() {
-        insta::assert_snapshot!(decoder(
+        insta::assert_snapshot!(print_cgen(
             r#"
         export type Password = StringFormat<"password">;
         export type PassLenghts = Record<Password, number>;
@@ -740,7 +782,7 @@ mod tests {
 
     #[test]
     fn ok_string_with_fmt_record_decoder_st() {
-        insta::assert_snapshot!(decoder(
+        insta::assert_snapshot!(print_cgen(
             r#"
         export type Password = StringFormat<"password">;
         export type PassLenghts = Record<Password, number>;
@@ -752,7 +794,7 @@ mod tests {
 
     #[test]
     fn ok_record_get() {
-        insta::assert_snapshot!(decoder(
+        insta::assert_snapshot!(print_cgen(
             r#"
         export type NumberRec = Record<number, string>;
         export type NumberRecGet = NumberRec[0];
@@ -763,7 +805,7 @@ mod tests {
 
     #[test]
     fn ok_string_with_fmt_extends_decoder() {
-        insta::assert_snapshot!(decoder(
+        insta::assert_snapshot!(print_cgen(
             r#"
         export type User = StringFormat<"User">;
         export type ReadAuthorizedUser = StringFormatExtends<User, "ReadAuthorizedUser">;
@@ -775,7 +817,19 @@ mod tests {
 
     #[test]
     fn ok_number_with_fmt_extends_decoder() {
-        insta::assert_snapshot!(decoder(
+        insta::assert_snapshot!(print_cgen(
+            r#"
+        export type NonInfiniteNumber = NumberFormat<"NonInfiniteNumber">;
+        export type NonNegativeNumber = NumberFormatExtends<NonInfiniteNumber, "NonNegativeNumber">;
+        export type Rate = NumberFormatExtends<NonNegativeNumber, "Rate">;
+        parse.buildParsers<{ NonInfiniteNumber: NonInfiniteNumber, NonNegativeNumber: NonNegativeNumber, Rate: Rate }>();
+      "#
+        ));
+    }
+
+    #[test]
+    fn print_number_with_fmt_extends_decoder() {
+        insta::assert_snapshot!(print_types(
             r#"
         export type NonInfiniteNumber = NumberFormat<"NonInfiniteNumber">;
         export type NonNegativeNumber = NumberFormatExtends<NonInfiniteNumber, "NonNegativeNumber">;
@@ -787,7 +841,7 @@ mod tests {
 
     #[test]
     fn ok_const_decoder() {
-        insta::assert_snapshot!(decoder(
+        insta::assert_snapshot!(print_cgen(
             r#"
         export type Alias = "some_string_const"
         parse.buildParsers<{ Dec: Alias }>();
@@ -796,7 +850,7 @@ mod tests {
     }
     #[test]
     fn ok_codec_decoder() {
-        insta::assert_snapshot!(decoder(
+        insta::assert_snapshot!(print_cgen(
             r#"
         export type Alias = Date
         parse.buildParsers<{ Dec: Alias }>();
@@ -805,7 +859,7 @@ mod tests {
     }
     #[test]
     fn ok_template_lit_decoder() {
-        insta::assert_snapshot!(decoder(
+        insta::assert_snapshot!(print_cgen(
             r#"
         export type Alias = `${number}__${number}`
         parse.buildParsers<{ Dec: Alias }>();
@@ -814,7 +868,7 @@ mod tests {
     }
     #[test]
     fn ok_tuple_decoder() {
-        insta::assert_snapshot!(decoder(
+        insta::assert_snapshot!(print_cgen(
             r#"
         export type Alias = [number, number]
         parse.buildParsers<{ Dec: Alias }>();
@@ -823,7 +877,7 @@ mod tests {
     }
     #[test]
     fn ok_object_decoder() {
-        insta::assert_snapshot!(decoder(
+        insta::assert_snapshot!(print_cgen(
             r#"
         export type Alias = {a:string}
         parse.buildParsers<{ Dec: Alias }>();
@@ -832,7 +886,7 @@ mod tests {
     }
     #[test]
     fn ok_union_decoder() {
-        insta::assert_snapshot!(decoder(
+        insta::assert_snapshot!(print_cgen(
             r#"
         export type Alias = string | number
         parse.buildParsers<{ Dec: Alias }>();
@@ -841,14 +895,31 @@ mod tests {
     }
     #[test]
     fn ok_intersection_decoder() {
-        insta::assert_snapshot!(decoder(
+        insta::assert_snapshot!(print_cgen(
             r#"
         export type Alias = {a:string} & {b:number}
         parse.buildParsers<{ Dec: Alias }>();
       "#
         ));
     }
+    #[test]
+    fn ok_string_decoder2() {
+        insta::assert_snapshot!(print_cgen(
+            r#"
+        parse.buildParsers<{ Dec: string }>();
+      "#
+        ));
+    }
 
+    #[test]
+    fn ok_string_alias_decoder() {
+        insta::assert_snapshot!(print_cgen(
+            r#"
+        export type Alias = string;
+        parse.buildParsers<{ Dec: Alias }>();
+      "#
+        ));
+    }
     // #[test]
     // fn ok_recursive_generic_with_union_parser() {
     //     insta::assert_snapshot!(ok(r#"

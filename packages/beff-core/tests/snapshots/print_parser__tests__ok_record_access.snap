@@ -1,9 +1,12 @@
 ---
 source: packages/beff-core/tests/print_parser.rs
-expression: "ok(r#\"\n        export type Extra = Record<string, string>;\n        type ExtraValue = Extra[string];\n\n        parse.buildParsers<{ ExtraValue: ExtraValue }>();\n      \"#)"
+expression: "print_types(r#\"\n        export type Extra = Record<string, string>;\n        type ExtraValue = Extra[string];\n\n        parse.buildParsers<{ ExtraValue: ExtraValue }>();\n      \"#)"
 ---
 type Extra = { [key: string]: string };
 
 type ExtraValue = string;
 
-type ExtraValue = ExtraValue;
+
+type BuiltParsers = {
+  ExtraValue: ExtraValue,
+}

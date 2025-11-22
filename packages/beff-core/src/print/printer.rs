@@ -1,37 +1,61 @@
 use std::collections::{BTreeMap, BTreeSet};
 
 use anyhow::{anyhow, Ok, Result};
-use serde::{Deserialize, Serialize};
+use swc_common::SourceMap;
 use swc_common::DUMMY_SP;
+use swc_common::{sync::Lrc, FilePathMapping};
+use swc_ecma_ast::Module;
 use swc_ecma_ast::{
     ArrayLit, BindingIdent, Decl, Expr, ExprOrSpread, Ident, KeyValueProp, Lit, ModuleItem,
     NewExpr, Null, ObjectLit, Pat, Prop, PropName, PropOrSpread, Regex, Stmt, Str, VarDecl,
     VarDeclKind, VarDeclarator,
 };
+use swc_ecma_codegen::Config;
+use swc_ecma_codegen::{text_writer::JsWriter, Emitter};
 
+use crate::parser_extractor::ParserExtractResult;
 use crate::{
     ast::{
         json::{Json, N},
         runtype::{Optionality, PrimitiveLike, Runtype, RuntypeConst, TplLitTypeItem},
     },
-    emit::emit_module,
     parser_extractor::BuiltDecoder,
-    ExtractResult, NamedSchema,
+    NamedSchema,
 };
+
+fn emit_module_items(body: Vec<ModuleItem>) -> Result<String> {
+    let ast = Module {
+        span: DUMMY_SP,
+        body,
+        shebang: None,
+    };
+    let cm = Lrc::new(SourceMap::new(FilePathMapping::empty()));
+
+    let code = {
+        let mut buf = vec![];
+
+        {
+            let mut emitter = Emitter {
+                cfg: Config::default(),
+                cm: cm.clone(),
+                comments: None,
+                wr: JsWriter::new(cm, "\n", &mut buf, None),
+            };
+
+            emitter.emit_module(&ast)?;
+        }
+
+        String::from_utf8_lossy(&buf).to_string()
+    };
+
+    Ok(code)
+}
 
 type SeenCounter = BTreeMap<Runtype, i32>;
 struct HoistedMap {
     direct: BTreeMap<Runtype, (String, Expr)>,
     indirect: BTreeMap<Runtype, (i32, Expr)>,
     seen: SeenCounter,
-}
-
-#[derive(Serialize, Deserialize)]
-pub struct WritableModulesV2 {
-    pub js_built_parsers: String,
-}
-pub trait ToWritableParser {
-    fn to_module_v2(self) -> Result<WritableModulesV2>;
 }
 
 fn const_decl(name: &str, init: Expr) -> ModuleItem {
@@ -137,11 +161,11 @@ fn no_args_runtype(class_name: &str) -> Expr {
         ],
     )
 }
-fn formats_runtype(constructor: &str, vs: &[String]) -> Expr {
+fn formats_runtype(constructor: &str, first: &String, rest: &[String]) -> Expr {
     let vs_arr = Expr::Array(ArrayLit {
         span: DUMMY_SP,
-        elems: vs
-            .iter()
+        elems: std::iter::once(first)
+            .chain(rest.iter())
             .map(|it| {
                 Some(ExprOrSpread {
                     spread: None,
@@ -415,8 +439,8 @@ fn should_hoist_direct(schema: &Runtype) -> bool {
     // hoist only what has no inner schemas
     matches!(
         schema,
-        Runtype::StringWithFormat(_)
-            | Runtype::NumberWithFormat(_)
+        Runtype::StringWithFormat(_, _)
+            | Runtype::NumberWithFormat(_, _)
             | Runtype::AnyArrayLike
             | Runtype::Any
             | Runtype::Number
@@ -465,8 +489,12 @@ fn print_runtype(
         Runtype::Any => no_args_runtype("AnyRuntype"),
         Runtype::StNever => no_args_runtype("NeverRuntype"),
         Runtype::Const(c) => new_runtype_class("ConstRuntype", vec![c.clone().to_json().to_expr()]),
-        Runtype::StringWithFormat(vs) => formats_runtype("StringWithFormatRuntype", vs),
-        Runtype::NumberWithFormat(vs) => formats_runtype("NumberWithFormatRuntype", vs),
+        Runtype::StringWithFormat(first, rest) => {
+            formats_runtype("StringWithFormatRuntype", first, rest)
+        }
+        Runtype::NumberWithFormat(first, rest) => {
+            formats_runtype("NumberWithFormatRuntype", first, rest)
+        }
         Runtype::PrimitiveLike(codec_name) => match codec_name {
             PrimitiveLike::Date => no_args_runtype("DateRuntype"),
             PrimitiveLike::BigInt => no_args_runtype("BigIntRuntype"),
@@ -685,8 +713,8 @@ fn calculate_schema_seen(schema: &Runtype, seen: &mut SeenCounter) {
     *count += 1;
 
     match schema {
-        Runtype::StringWithFormat(_)
-        | Runtype::NumberWithFormat(_)
+        Runtype::StringWithFormat(_, _)
+        | Runtype::NumberWithFormat(_, _)
         | Runtype::AnyArrayLike
         | Runtype::Any
         | Runtype::Number
@@ -745,12 +773,12 @@ fn calculate_named_schemas_seen(named_schemas: &[NamedSchema], seen: &mut SeenCo
     }
 }
 
-impl ToWritableParser for ExtractResult {
-    fn to_module_v2(self) -> Result<WritableModulesV2> {
+impl ParserExtractResult {
+    pub fn emit_code(self) -> Result<String> {
         let mut seen: SeenCounter = BTreeMap::new();
 
-        let built_parsers = self.parser.built_decoders.unwrap_or_default();
-        let named_schemas = validate_type_uniqueness(&self.parser.validators)?;
+        let built_parsers = self.built_decoders.unwrap_or_default();
+        let named_schemas = validate_type_uniqueness(&self.validators)?;
 
         calculate_named_schemas_seen(&named_schemas, &mut seen);
 
@@ -797,19 +825,16 @@ impl ToWritableParser for ExtractResult {
             .map(|(id, expr)| const_decl(&id, expr))
             .collect();
 
-        let js_built_parsers = emit_module(
-            hoisted_direct_decls
-                .into_iter()
-                .chain(vec![
-                    //
-                    hoisted_indirect_arr,
-                    build_named_parsers_input,
-                    build_parsers_input,
-                ])
-                .collect(),
-            "\n",
-        )?;
+        let module_items = hoisted_direct_decls
+            .into_iter()
+            .chain(vec![
+                //
+                hoisted_indirect_arr,
+                build_named_parsers_input,
+                build_parsers_input,
+            ])
+            .collect();
 
-        Ok(WritableModulesV2 { js_built_parsers })
+        Ok(emit_module_items(module_items)?)
     }
 }

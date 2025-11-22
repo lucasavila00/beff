@@ -1,6 +1,7 @@
 ---
 source: packages/beff-core/tests/print_parser.rs
-expression: "ok(r#\"\n        parse.buildParsers<{ A: Object }>();\n      \"#)"
+expression: "print_types(r#\"\n        parse.buildParsers<{ A: Object }>();\n      \"#)"
 ---
-type A = { [key: string]: any };
-
+type BuiltParsers = {
+  A: { [key: string]: any },
+}

@@ -8,13 +8,11 @@ use anyhow::anyhow;
 use anyhow::Result;
 use beff_core::diag::Diagnostic;
 use beff_core::import_resolver::parse_and_bind;
-use beff_core::print::printer2::ToWritableParser;
-use beff_core::print::printer2::WritableModulesV2;
+use beff_core::parser_extractor::ParserExtractResult;
 use beff_core::wasm_diag::WasmDiagnostic;
 use beff_core::BeffUserSettings;
 use beff_core::BffFileName;
 use beff_core::EntryPoints;
-use beff_core::ExtractResult;
 use beff_core::FileManager;
 use beff_core::ParsedModule;
 use log::Level;
@@ -68,8 +66,8 @@ extern "C" {
 
 #[wasm_bindgen]
 pub fn bundle_to_string_v2(parser_entry_point: &str, settings: JsValue) -> JsValue {
-    match bundle_to_string_v2_inner(parse_entrypoints(parser_entry_point, settings)) {
-        Ok(s) => serde_wasm_bindgen::to_value(&s).expect("should be able to serialize bundle"),
+    match bundle_to_string_inner(parse_entrypoints(parser_entry_point, settings)) {
+        Ok(s) => JsValue::from_str(&s),
         Err(_) => JsValue::null(),
     }
 }
@@ -121,7 +119,7 @@ impl FileManager for LazyFileManager<'_> {
     }
 }
 
-fn run_extraction(entry: EntryPoints) -> ExtractResult {
+fn run_extraction(entry: EntryPoints) -> ParserExtractResult {
     GLOBALS.set(&SWC_GLOBALS, || {
         BUNDLER.with(|b| {
             let mut b = b.borrow_mut();
@@ -134,27 +132,23 @@ fn run_extraction(entry: EntryPoints) -> ExtractResult {
         })
     })
 }
-fn print_errors(errors: Vec<&Diagnostic>) {
+fn print_errors(errors: &[Diagnostic]) {
     let v = WasmDiagnostic::from_diagnostics(errors);
     let v = serde_wasm_bindgen::to_value(&v).expect("should be able to serialize");
     emit_diagnostic(v)
 }
 
-fn bundle_to_string_v2_inner(entry: EntryPoints) -> Result<WritableModulesV2> {
+fn bundle_to_string_inner(entry: EntryPoints) -> Result<String> {
     let res = run_extraction(entry);
-    let errs = res.errors();
-    if errs.is_empty() {
-        // let v = WasmDiagnostic::from_diagnostics(vec![]);
-        // let v = serde_wasm_bindgen::to_value(&v).expect("should be able to serialize");
-        // emit_diagnostic(v);
-        return res.to_module_v2();
+    if res.errors.is_empty() {
+        return res.emit_code();
     }
-    print_errors(errs);
+    print_errors(&res.errors);
     Err(anyhow!("Failed to bundle"))
 }
 
 fn bundle_to_diagnostics_inner(entry: EntryPoints) -> WasmDiagnostic {
-    WasmDiagnostic::from_diagnostics(run_extraction(entry).errors())
+    WasmDiagnostic::from_diagnostics(&run_extraction(entry).errors)
 }
 
 fn update_file_content_inner(file_name: &str, content: &str) {
