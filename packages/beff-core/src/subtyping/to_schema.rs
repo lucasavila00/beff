@@ -597,7 +597,10 @@ impl<'a, 'b> SchemerContext<'a, 'b> {
                                 ));
                             }
                             StringLitOrFormat::Codec(fmt) => {
-                                acc.insert(maybe_not(Runtype::Codec(fmt.clone()), !allowed));
+                                acc.insert(maybe_not(
+                                    Runtype::PrimitiveLike(fmt.clone()),
+                                    !allowed,
+                                ));
                             }
                             StringLitOrFormat::Tpl(items) => {
                                 acc.insert(maybe_not(Runtype::TplLitType(items.clone()), !allowed));

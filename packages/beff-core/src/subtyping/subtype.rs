@@ -2,7 +2,7 @@ use std::rc::Rc;
 
 use crate::ast::{
     json::N,
-    runtype::{CodecName, TplLitTypeItem},
+    runtype::{PrimitiveLike, TplLitTypeItem},
 };
 
 use super::{
@@ -84,7 +84,7 @@ pub enum StringLitOrFormat {
     Lit(String),
     Format(String),
     FormatExtends(Vec<String>),
-    Codec(CodecName),
+    Codec(PrimitiveLike),
     Tpl(Vec<TplLitTypeItem>),
 }
 

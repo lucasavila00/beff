@@ -1,4 +1,4 @@
-use crate::ast::runtype::{CodecName, Optionality, Runtype, RuntypeConst, TplLitTypeItem};
+use crate::ast::runtype::{Optionality, PrimitiveLike, Runtype, RuntypeConst, TplLitTypeItem};
 use crate::diag::{
     Diagnostic, DiagnosticInfoMessage, DiagnosticInformation, DiagnosticParentMessage, Location,
 };
@@ -70,7 +70,7 @@ impl<'a, 'b, R: FileManager> TypeToSchema<'a, 'b, R> {
             | TsKeywordTypeKind::TsUndefinedKeyword
             | TsKeywordTypeKind::TsNullKeyword => Ok(Runtype::Null),
 
-            TsKeywordTypeKind::TsBigIntKeyword => Ok(Runtype::Codec(CodecName::BigInt)),
+            TsKeywordTypeKind::TsBigIntKeyword => Ok(Runtype::PrimitiveLike(PrimitiveLike::BigInt)),
             TsKeywordTypeKind::TsAnyKeyword | TsKeywordTypeKind::TsUnknownKeyword => {
                 Ok(Runtype::Any)
             }
@@ -1013,7 +1013,7 @@ impl<'a, 'b, R: FileManager> TypeToSchema<'a, 'b, R> {
         }
 
         match i.sym.to_string().as_str() {
-            "Date" => return Ok(Runtype::Codec(CodecName::ISO8061)),
+            "Date" => return Ok(Runtype::PrimitiveLike(PrimitiveLike::Date)),
             "Array" => {
                 let type_params = type_params.as_ref().and_then(|it| it.params.split_first());
                 if let Some((ty, [])) = type_params {
@@ -1429,7 +1429,7 @@ impl<'a, 'b, R: FileManager> TypeToSchema<'a, 'b, R> {
                         Ok(Runtype::Number)
                     }
                 }
-                Lit::BigInt(_) => Ok(Runtype::Codec(CodecName::BigInt)),
+                Lit::BigInt(_) => Ok(Runtype::PrimitiveLike(PrimitiveLike::BigInt)),
                 Lit::Regex(_) => {
                     self.error(&e.span(), DiagnosticInfoMessage::TypeOfRegexNotSupported)
                 }
@@ -2175,7 +2175,7 @@ impl<'a, 'b, R: FileManager> TypeToSchema<'a, 'b, R> {
                     s.value.to_string().clone(),
                 ))),
                 TsLit::Bool(b) => Ok(Runtype::Const(RuntypeConst::Bool(b.value))),
-                TsLit::BigInt(_) => Ok(Runtype::Codec(CodecName::BigInt)),
+                TsLit::BigInt(_) => Ok(Runtype::PrimitiveLike(PrimitiveLike::BigInt)),
                 TsLit::Tpl(it) => self.convert_ts_tpl_lit_type(it),
             },
             TsType::TsParenthesizedType(TsParenthesizedType { type_ann, .. }) => {

@@ -1,4 +1,3 @@
-use core::fmt;
 use std::collections::BTreeMap;
 use std::collections::BTreeSet;
 
@@ -251,7 +250,7 @@ pub enum Runtype {
     AnyOf(BTreeSet<Runtype>),
     AllOf(BTreeSet<Runtype>),
     Const(RuntypeConst),
-    Codec(CodecName),
+    PrimitiveLike(PrimitiveLike),
     // semantic types
     StNever,
     StNot(Box<Runtype>),
@@ -259,20 +258,9 @@ pub enum Runtype {
 }
 
 #[derive(PartialEq, Eq, Hash, Debug, Ord, PartialOrd, Clone)]
-pub enum CodecName {
-    ISO8061,
+pub enum PrimitiveLike {
+    Date,
     BigInt,
-}
-
-impl fmt::Display for CodecName {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        let extra = match self {
-            CodecName::ISO8061 => "ISO8061",
-            CodecName::BigInt => "BigInt",
-        };
-        let e = "Codec::".to_string() + extra;
-        write!(f, "{}", e)
-    }
 }
 
 struct UnionMerger(BTreeSet<Runtype>);
@@ -642,8 +630,8 @@ impl Runtype {
             Runtype::StringFormatExtends(vs) => ts_string_brands(vs),
             Runtype::NumberWithFormat(fmt) => ts_number_brands(std::slice::from_ref(fmt)),
             Runtype::NumberFormatExtends(vs) => ts_number_brands(vs),
-            Runtype::Codec(c) => match c {
-                CodecName::ISO8061 => TsType::TsTypeRef(TsTypeRef {
+            Runtype::PrimitiveLike(c) => match c {
+                PrimitiveLike::Date => TsType::TsTypeRef(TsTypeRef {
                     span: DUMMY_SP,
                     type_name: TsEntityName::Ident(Ident {
                         span: DUMMY_SP,
@@ -652,7 +640,7 @@ impl Runtype {
                     }),
                     type_params: None,
                 }),
-                CodecName::BigInt => TsType::TsKeywordType(TsKeywordType {
+                PrimitiveLike::BigInt => TsType::TsKeywordType(TsKeywordType {
                     span: DUMMY_SP,
                     kind: TsKeywordTypeKind::TsBigIntKeyword,
                 }),

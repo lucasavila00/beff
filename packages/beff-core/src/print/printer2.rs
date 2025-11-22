@@ -12,7 +12,7 @@ use swc_ecma_ast::{
 use crate::{
     ast::{
         json::{Json, N},
-        runtype::{CodecName, Optionality, Runtype, RuntypeConst, TplLitTypeItem},
+        runtype::{Optionality, PrimitiveLike, Runtype, RuntypeConst, TplLitTypeItem},
     },
     emit::emit_module,
     parser_extractor::BuiltDecoder,
@@ -426,7 +426,7 @@ fn should_hoist_direct(schema: &Runtype) -> bool {
             | Runtype::Boolean
             | Runtype::StNever
             | Runtype::Function
-            | Runtype::Codec(_)
+            | Runtype::PrimitiveLike(_)
             | Runtype::TplLitType(_)
             | Runtype::Ref(_)
             | Runtype::Const(_)
@@ -475,9 +475,9 @@ fn print_runtype(
             formats_runtype("NumberWithFormatRuntype", std::slice::from_ref(base))
         }
         Runtype::NumberFormatExtends(items) => formats_runtype("NumberWithFormatRuntype", items),
-        Runtype::Codec(codec_name) => match codec_name {
-            CodecName::ISO8061 => no_args_runtype("DateRuntype"),
-            CodecName::BigInt => no_args_runtype("BigIntRuntype"),
+        Runtype::PrimitiveLike(codec_name) => match codec_name {
+            PrimitiveLike::Date => no_args_runtype("DateRuntype"),
+            PrimitiveLike::BigInt => no_args_runtype("BigIntRuntype"),
         },
         Runtype::TplLitType(items) => {
             let mut regex_exp = String::new();
@@ -706,7 +706,7 @@ fn calculate_schema_seen(schema: &Runtype, seen: &mut SeenCounter) {
         | Runtype::Boolean
         | Runtype::StNever
         | Runtype::Function
-        | Runtype::Codec(_)
+        | Runtype::PrimitiveLike(_)
         | Runtype::TplLitType(_)
         | Runtype::Ref(_)
         | Runtype::Const(_)

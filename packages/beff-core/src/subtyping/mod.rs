@@ -227,7 +227,7 @@ impl<'a> ToSemTypeConverter<'a> {
             Runtype::AnyArrayLike => {
                 self.convert_to_sem_type(&Runtype::Array(Runtype::Any.into()), builder)
             }
-            Runtype::Codec(s) => {
+            Runtype::PrimitiveLike(s) => {
                 Ok(SemTypeContext::string_const(StringLitOrFormat::Codec(s.clone())).into())
             }
             Runtype::StNever => Ok(SemTypeContext::never().into()),
