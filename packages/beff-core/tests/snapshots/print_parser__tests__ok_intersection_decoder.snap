@@ -2,16 +2,12 @@
 source: packages/beff-core/tests/print_parser.rs
 expression: "print_cgen(r#\"\n        export type Alias = {a:string} & {b:number}\n        parse.buildParsers<{ Dec: Alias }>();\n      \"#)"
 ---
-const direct_hoist_0 = new RefRuntype("Alias");
-const direct_hoist_1 = new TypeofRuntype("string");
-const direct_hoist_2 = new TypeofRuntype("number");
-const direct_hoist_3 = new ObjectRuntype({
-    "a": direct_hoist_1,
-    "b": direct_hoist_2
-}, null);
 const namedRuntypes = {
-    "Alias": direct_hoist_3
+    "Alias": new ObjectRuntype({
+        "a": new TypeofRuntype("string"),
+        "b": new TypeofRuntype("number")
+    }, null)
 };
 const buildParsersInput = {
-    "Dec": direct_hoist_0
+    "Dec": new RefRuntype("Alias")
 };

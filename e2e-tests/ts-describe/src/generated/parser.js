@@ -1110,128 +1110,117 @@ const RequiredStringFormats = ["ValidCurrency"];
 const RequiredNumberFormats = [];
 const direct_hoist_0 = new TypeofRuntype("string");
 const direct_hoist_1 = new TypeofRuntype("number");
-const direct_hoist_2 = new TypeofRuntype("boolean");
-const direct_hoist_3 = new NullRuntype();
-const direct_hoist_4 = new AnyRuntype();
-const direct_hoist_5 = new ObjectRuntype({}, direct_hoist_4);
-const direct_hoist_6 = new ArrayRuntype(direct_hoist_4);
-const direct_hoist_7 = new RefRuntype("T1");
-const direct_hoist_8 = new RefRuntype("T2");
-const direct_hoist_9 = new RefRuntype("T3");
-const direct_hoist_10 = new RefRuntype("InvalidSchemaWithDate");
-const direct_hoist_11 = new RefRuntype("InvalidSchemaWithBigInt");
-const direct_hoist_12 = new RefRuntype("DiscriminatedUnion");
-const direct_hoist_13 = new RefRuntype("RecursiveTree");
-const direct_hoist_14 = new RefRuntype("SemVer");
-const direct_hoist_15 = new RefRuntype("NonEmptyString");
-const direct_hoist_16 = new RefRuntype("ValidCurrency");
-const direct_hoist_17 = new RefRuntype("ReusesRef");
-const direct_hoist_18 = new ObjectRuntype({
-    "a": direct_hoist_0,
-    "b": direct_hoist_1
-}, null);
-const direct_hoist_19 = new ObjectRuntype({
-    "t1": direct_hoist_7
-}, null);
-const direct_hoist_20 = new ArrayRuntype(direct_hoist_8);
-const direct_hoist_21 = new ObjectRuntype({
-    "t2Array": direct_hoist_20
-}, null);
-const direct_hoist_22 = new DateRuntype();
-const direct_hoist_23 = new ObjectRuntype({
-    "x": direct_hoist_22
-}, null);
-const direct_hoist_24 = new BigIntRuntype();
-const direct_hoist_25 = new ObjectRuntype({
-    "x": direct_hoist_24
-}, null);
-const direct_hoist_26 = new AnyOfRuntype([
-    direct_hoist_3,
-    direct_hoist_0
-]);
-const direct_hoist_27 = new ConstRuntype("a1");
-const direct_hoist_28 = new ConstRuntype("a");
-const direct_hoist_29 = new ObjectRuntype({
-    "a1": direct_hoist_0,
-    "a11": direct_hoist_26,
-    "subType": direct_hoist_27,
-    "type": direct_hoist_28
-}, null);
-const direct_hoist_30 = new ConstRuntype("a2");
-const direct_hoist_31 = new ObjectRuntype({
-    "a2": direct_hoist_0,
-    "subType": direct_hoist_30,
-    "type": direct_hoist_28
-}, null);
-const direct_hoist_32 = new AnyOfDiscriminatedRuntype([
-    direct_hoist_29,
-    direct_hoist_31
-], "subType", {
-    "a1": direct_hoist_29,
-    "a2": direct_hoist_31
-});
-const direct_hoist_33 = new ConstRuntype("b");
-const direct_hoist_34 = new ObjectRuntype({
-    "type": direct_hoist_33,
-    "value": direct_hoist_1
-}, null);
-const direct_hoist_35 = new AnyOfDiscriminatedRuntype([
-    direct_hoist_29,
-    direct_hoist_31,
-    direct_hoist_34
-], "type", {
-    "a": direct_hoist_32,
-    "b": direct_hoist_34
-});
-const direct_hoist_36 = new ArrayRuntype(direct_hoist_13);
-const direct_hoist_37 = new ObjectRuntype({
-    "children": direct_hoist_36,
-    "value": direct_hoist_1
-}, null);
-const direct_hoist_38 = new RegexRuntype(/(\d+(\.\d+)?)(\.)(\d+(\.\d+)?)(\.)(\d+(\.\d+)?)/, "${number}.${number}.${number}");
-const direct_hoist_39 = new TupleRuntype([
-    direct_hoist_0
-], direct_hoist_0);
-const direct_hoist_40 = new StringWithFormatRuntype([
-    "ValidCurrency"
-]);
-const direct_hoist_41 = new ObjectRuntype({
-    "a": direct_hoist_9,
-    "b": direct_hoist_9
-}, null);
+const direct_hoist_2 = new RefRuntype("T3");
+const direct_hoist_3 = new ConstRuntype("a");
 const namedRuntypes = {
-    "T1": direct_hoist_18,
-    "T2": direct_hoist_19,
-    "T3": direct_hoist_21,
-    "InvalidSchemaWithDate": direct_hoist_23,
-    "InvalidSchemaWithBigInt": direct_hoist_25,
-    "DiscriminatedUnion": direct_hoist_35,
-    "RecursiveTree": direct_hoist_37,
-    "SemVer": direct_hoist_38,
-    "NonEmptyString": direct_hoist_39,
-    "ValidCurrency": direct_hoist_40,
-    "ReusesRef": direct_hoist_41
+    "T1": new ObjectRuntype({
+        "a": direct_hoist_0,
+        "b": direct_hoist_1
+    }, null),
+    "T2": new ObjectRuntype({
+        "t1": new RefRuntype("T1")
+    }, null),
+    "T3": new ObjectRuntype({
+        "t2Array": new ArrayRuntype(new RefRuntype("T2"))
+    }, null),
+    "InvalidSchemaWithDate": new ObjectRuntype({
+        "x": new DateRuntype()
+    }, null),
+    "InvalidSchemaWithBigInt": new ObjectRuntype({
+        "x": new BigIntRuntype()
+    }, null),
+    "DiscriminatedUnion": new AnyOfDiscriminatedRuntype([
+        new ObjectRuntype({
+            "a1": direct_hoist_0,
+            "a11": new AnyOfRuntype([
+                new NullRuntype(),
+                direct_hoist_0
+            ]),
+            "subType": new ConstRuntype("a1"),
+            "type": direct_hoist_3
+        }, null),
+        new ObjectRuntype({
+            "a2": direct_hoist_0,
+            "subType": new ConstRuntype("a2"),
+            "type": direct_hoist_3
+        }, null),
+        new ObjectRuntype({
+            "type": new ConstRuntype("b"),
+            "value": direct_hoist_1
+        }, null)
+    ], "type", {
+        "a": new AnyOfDiscriminatedRuntype([
+            new ObjectRuntype({
+                "a1": direct_hoist_0,
+                "a11": new AnyOfRuntype([
+                    new NullRuntype(),
+                    direct_hoist_0
+                ]),
+                "subType": new ConstRuntype("a1"),
+                "type": direct_hoist_3
+            }, null),
+            new ObjectRuntype({
+                "a2": direct_hoist_0,
+                "subType": new ConstRuntype("a2"),
+                "type": direct_hoist_3
+            }, null)
+        ], "subType", {
+            "a1": new ObjectRuntype({
+                "a1": direct_hoist_0,
+                "a11": new AnyOfRuntype([
+                    new NullRuntype(),
+                    direct_hoist_0
+                ]),
+                "subType": new ConstRuntype("a1"),
+                "type": direct_hoist_3
+            }, null),
+            "a2": new ObjectRuntype({
+                "a2": direct_hoist_0,
+                "subType": new ConstRuntype("a2"),
+                "type": direct_hoist_3
+            }, null)
+        }),
+        "b": new ObjectRuntype({
+            "type": new ConstRuntype("b"),
+            "value": direct_hoist_1
+        }, null)
+    }),
+    "RecursiveTree": new ObjectRuntype({
+        "children": new ArrayRuntype(new RefRuntype("RecursiveTree")),
+        "value": direct_hoist_1
+    }, null),
+    "SemVer": new RegexRuntype(/(\d+(\.\d+)?)(\.)(\d+(\.\d+)?)(\.)(\d+(\.\d+)?)/, "${number}.${number}.${number}"),
+    "NonEmptyString": new TupleRuntype([
+        direct_hoist_0
+    ], direct_hoist_0),
+    "ValidCurrency": new StringWithFormatRuntype([
+        "ValidCurrency"
+    ]),
+    "ReusesRef": new ObjectRuntype({
+        "a": direct_hoist_2,
+        "b": direct_hoist_2
+    }, null)
 };
 const buildParsersInput = {
     "string": direct_hoist_0,
     "number": direct_hoist_1,
-    "boolean": direct_hoist_2,
-    "null": direct_hoist_3,
-    "undefined": direct_hoist_3,
-    "object": direct_hoist_5,
-    "anyArray": direct_hoist_6,
-    "any": direct_hoist_4,
-    "T1": direct_hoist_7,
-    "T2": direct_hoist_8,
-    "T3": direct_hoist_9,
-    "InvalidSchemaWithDate": direct_hoist_10,
-    "InvalidSchemaWithBigInt": direct_hoist_11,
-    "DiscriminatedUnion": direct_hoist_12,
-    "RecursiveTree": direct_hoist_13,
-    "SemVer": direct_hoist_14,
-    "NonEmptyString": direct_hoist_15,
-    "ValidCurrency": direct_hoist_16,
-    "ReusesRef": direct_hoist_17
+    "boolean": new TypeofRuntype("boolean"),
+    "null": new NullRuntype(),
+    "undefined": new NullRuntype(),
+    "object": new ObjectRuntype({}, new AnyRuntype()),
+    "anyArray": new ArrayRuntype(new AnyRuntype()),
+    "any": new AnyRuntype(),
+    "T1": new RefRuntype("T1"),
+    "T2": new RefRuntype("T2"),
+    "T3": direct_hoist_2,
+    "InvalidSchemaWithDate": new RefRuntype("InvalidSchemaWithDate"),
+    "InvalidSchemaWithBigInt": new RefRuntype("InvalidSchemaWithBigInt"),
+    "DiscriminatedUnion": new RefRuntype("DiscriminatedUnion"),
+    "RecursiveTree": new RefRuntype("RecursiveTree"),
+    "SemVer": new RefRuntype("SemVer"),
+    "NonEmptyString": new RefRuntype("NonEmptyString"),
+    "ValidCurrency": new RefRuntype("ValidCurrency"),
+    "ReusesRef": new RefRuntype("ReusesRef")
 };
 
 export default { buildParsers };

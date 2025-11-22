@@ -2,28 +2,22 @@
 source: packages/beff-core/tests/print_parser.rs
 expression: "print_cgen(r#\"\n        export type NonInfiniteNumber = NumberFormat<\"NonInfiniteNumber\">;\n        export type NonNegativeNumber = NumberFormatExtends<NonInfiniteNumber, \"NonNegativeNumber\">;\n        export type Rate = NumberFormatExtends<NonNegativeNumber, \"Rate\">;\n        parse.buildParsers<{ NonInfiniteNumber: NonInfiniteNumber, NonNegativeNumber: NonNegativeNumber, Rate: Rate }>();\n      \"#)"
 ---
-const direct_hoist_0 = new RefRuntype("NonInfiniteNumber");
-const direct_hoist_1 = new RefRuntype("NonNegativeNumber");
-const direct_hoist_2 = new RefRuntype("Rate");
-const direct_hoist_3 = new NumberWithFormatRuntype([
-    "NonInfiniteNumber"
-]);
-const direct_hoist_4 = new NumberWithFormatRuntype([
-    "NonInfiniteNumber",
-    "NonNegativeNumber"
-]);
-const direct_hoist_5 = new NumberWithFormatRuntype([
-    "NonInfiniteNumber",
-    "NonNegativeNumber",
-    "Rate"
-]);
 const namedRuntypes = {
-    "NonInfiniteNumber": direct_hoist_3,
-    "NonNegativeNumber": direct_hoist_4,
-    "Rate": direct_hoist_5
+    "NonInfiniteNumber": new NumberWithFormatRuntype([
+        "NonInfiniteNumber"
+    ]),
+    "NonNegativeNumber": new NumberWithFormatRuntype([
+        "NonInfiniteNumber",
+        "NonNegativeNumber"
+    ]),
+    "Rate": new NumberWithFormatRuntype([
+        "NonInfiniteNumber",
+        "NonNegativeNumber",
+        "Rate"
+    ])
 };
 const buildParsersInput = {
-    "NonInfiniteNumber": direct_hoist_0,
-    "NonNegativeNumber": direct_hoist_1,
-    "Rate": direct_hoist_2
+    "NonInfiniteNumber": new RefRuntype("NonInfiniteNumber"),
+    "NonNegativeNumber": new RefRuntype("NonNegativeNumber"),
+    "Rate": new RefRuntype("Rate")
 };

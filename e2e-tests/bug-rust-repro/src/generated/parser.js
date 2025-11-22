@@ -1108,13 +1108,11 @@ const buildParsers = (args) => {
 
 const RequiredStringFormats = ["ValidCurrency"];
 const RequiredNumberFormats = [];
-const direct_hoist_0 = new RefRuntype("A");
-const direct_hoist_1 = new TypeofRuntype("string");
 const namedRuntypes = {
-    "A": direct_hoist_1
+    "A": new TypeofRuntype("string")
 };
 const buildParsersInput = {
-    "A": direct_hoist_0
+    "A": new RefRuntype("A")
 };
 
 export default { buildParsers };

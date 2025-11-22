@@ -2,13 +2,11 @@
 source: packages/beff-core/tests/print_parser.rs
 expression: "print_cgen(r#\"\n        export type Alias = StringFormat<\"password\">;\n        parse.buildParsers<{ Dec: Alias }>();\n      \"#)"
 ---
-const direct_hoist_0 = new RefRuntype("Alias");
-const direct_hoist_1 = new StringWithFormatRuntype([
-    "password"
-]);
 const namedRuntypes = {
-    "Alias": direct_hoist_1
+    "Alias": new StringWithFormatRuntype([
+        "password"
+    ])
 };
 const buildParsersInput = {
-    "Dec": direct_hoist_0
+    "Dec": new RefRuntype("Alias")
 };
