@@ -5,13 +5,12 @@ pub mod import_resolver;
 pub mod parse;
 pub mod parser_extractor;
 pub mod print;
-pub mod schema_changes;
 pub mod subtyping;
 pub mod sym_reference;
 pub mod type_to_schema;
 pub mod wasm_diag;
 
-use crate::ast::json_schema::JsonSchema;
+use crate::ast::runtype::Runtype;
 use core::fmt;
 use diag::Diagnostic;
 use parser_extractor::extract_parser;
@@ -392,5 +391,5 @@ pub fn extract<R: FileManager>(files: &mut R, entry_points: EntryPoints) -> Extr
 #[derive(Debug, Clone)]
 pub struct NamedSchema {
     pub name: String,
-    pub schema: JsonSchema,
+    pub schema: Runtype,
 }

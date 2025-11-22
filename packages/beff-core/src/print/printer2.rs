@@ -12,18 +12,17 @@ use swc_ecma_ast::{
 use crate::{
     ast::{
         json::{Json, N},
-        json_schema::{CodecName, JsonSchema, JsonSchemaConst, Optionality, TplLitTypeItem},
+        runtype::{CodecName, Optionality, Runtype, RuntypeConst, TplLitTypeItem},
     },
     emit::emit_module,
     parser_extractor::BuiltDecoder,
-    print::expr::ToExpr,
     ExtractResult, NamedSchema,
 };
 
-type SeenCounter = BTreeMap<JsonSchema, i32>;
+type SeenCounter = BTreeMap<Runtype, i32>;
 struct HoistedMap {
-    direct: BTreeMap<JsonSchema, (String, Expr)>,
-    indirect: BTreeMap<JsonSchema, (i32, Expr)>,
+    direct: BTreeMap<Runtype, (String, Expr)>,
+    indirect: BTreeMap<Runtype, (i32, Expr)>,
     seen: SeenCounter,
 }
 
@@ -161,13 +160,13 @@ fn formats_runtype(constructor: &str, vs: &[String]) -> Expr {
 
 fn runtype_union_or_intersection(
     constructor: &str,
-    vs: &BTreeSet<JsonSchema>,
+    vs: &BTreeSet<Runtype>,
     named_schemas: &[NamedSchema],
     hoisted: &mut HoistedMap,
 ) -> Expr {
     let exprs = vs
         .iter()
-        .map(|schema| schema_to_runtype(schema, named_schemas, hoisted))
+        .map(|schema| print_runtype(schema, named_schemas, hoisted))
         .collect::<Vec<Expr>>();
     let arr = Expr::Array(ArrayLit {
         span: DUMMY_SP,
@@ -184,29 +183,29 @@ fn runtype_union_or_intersection(
     new_runtype_class(constructor, vec![arr])
 }
 
-fn extract_union(it: &JsonSchema, named_schemas: &[NamedSchema]) -> Vec<JsonSchema> {
+fn extract_union(it: &Runtype, named_schemas: &[NamedSchema]) -> Vec<Runtype> {
     match it {
-        JsonSchema::AnyOf(vs) => vs
+        Runtype::AnyOf(vs) => vs
             .iter()
             .flat_map(|it| extract_union(it, named_schemas))
             .collect(),
-        JsonSchema::Ref(r) => {
+        Runtype::Ref(r) => {
             let v = named_schemas
                 .iter()
                 .find(|it| it.name == *r)
                 .expect("everything should be resolved by now");
             extract_union(&v.schema, named_schemas)
         }
-        JsonSchema::StNever => vec![],
+        Runtype::StNever => vec![],
         _ => vec![it.clone()],
     }
 }
 
 fn runtype_any_of_discriminated(
-    flat_values: &BTreeSet<JsonSchema>,
+    flat_values: &BTreeSet<Runtype>,
     discriminator: String,
     discriminator_strings: BTreeSet<String>,
-    object_vs: Vec<&BTreeMap<String, Optionality<JsonSchema>>>,
+    object_vs: Vec<&BTreeMap<String, Optionality<Runtype>>>,
     named_schemas: &[NamedSchema],
     hoisted: &mut HoistedMap,
 ) -> Expr {
@@ -221,22 +220,22 @@ fn runtype_any_of_discriminated(
 
             let all_values = extract_union(value, named_schemas);
             for s in all_values {
-                if let JsonSchema::Const(JsonSchemaConst::String(s)) = s {
+                if let Runtype::Const(RuntypeConst::String(s)) = s {
                     if s == current_key {
-                        let new_obj_vs: Vec<(String, Optionality<JsonSchema>)> = vs
+                        let new_obj_vs: Vec<(String, Optionality<Runtype>)> = vs
                             .iter()
                             // .filter(|it| it.0 != &discriminator)
                             .map(|it| (it.0.clone(), it.1.clone()))
                             .collect();
-                        let new_obj = JsonSchema::object(new_obj_vs, None);
+                        let new_obj = Runtype::object(new_obj_vs, None);
                         cases.push(new_obj);
                     }
                 }
             }
         }
-        let schema = JsonSchema::any_of(cases);
+        let schema = Runtype::any_of(cases);
 
-        let schema_code = schema_to_runtype(&schema, named_schemas, hoisted);
+        let schema_code = print_runtype(&schema, named_schemas, hoisted);
 
         acc.insert(current_key, schema_code);
     }
@@ -268,7 +267,7 @@ fn runtype_any_of_discriminated(
 
     let flat_values_schema = flat_values
         .iter()
-        .map(|it| schema_to_runtype(it, named_schemas, hoisted))
+        .map(|it| print_runtype(it, named_schemas, hoisted))
         .collect::<Vec<_>>();
 
     let flat_values_schema_arr = Expr::Array(ArrayLit {
@@ -291,18 +290,18 @@ fn runtype_any_of_discriminated(
 }
 
 fn maybe_runtype_any_of_discriminated(
-    flat_values: &BTreeSet<JsonSchema>,
+    flat_values: &BTreeSet<Runtype>,
     named_schemas: &[NamedSchema],
     hoisted: &mut HoistedMap,
 ) -> Option<Expr> {
     let all_objects_without_rest = flat_values
         .iter()
-        .all(|it| matches!(it, JsonSchema::Object { rest: None, .. }));
+        .all(|it| matches!(it, Runtype::Object { rest: None, .. }));
 
     let object_vs = flat_values
         .iter()
         .filter_map(|it| match it {
-            JsonSchema::Object { vs, rest: _ } => Some(vs),
+            Runtype::Object { vs, rest: _ } => Some(vs),
             _ => None,
         })
         .collect::<Vec<_>>();
@@ -356,13 +355,13 @@ fn maybe_runtype_any_of_discriminated(
 
                     let all_string_consts = flat_discriminator_values
                         .iter()
-                        .all(|it| matches!(it, JsonSchema::Const(JsonSchemaConst::String(_))));
+                        .all(|it| matches!(it, Runtype::Const(RuntypeConst::String(_))));
 
                     if all_string_consts {
                         let discriminator_strings: BTreeSet<String> = flat_discriminator_values
                             .iter()
                             .map(|it| match it {
-                                JsonSchema::Const(JsonSchemaConst::String(s)) => s.clone(),
+                                Runtype::Const(RuntypeConst::String(s)) => s.clone(),
                                 _ => unreachable!(),
                             })
                             .collect::<BTreeSet<_>>();
@@ -383,15 +382,13 @@ fn maybe_runtype_any_of_discriminated(
     None
 }
 
-fn maybe_runtype_any_of_consts(flat_values: &BTreeSet<JsonSchema>) -> Option<Expr> {
-    let all_consts = flat_values
-        .iter()
-        .all(|it| matches!(it, JsonSchema::Const(_)));
+fn maybe_runtype_any_of_consts(flat_values: &BTreeSet<Runtype>) -> Option<Expr> {
+    let all_consts = flat_values.iter().all(|it| matches!(it, Runtype::Const(_)));
     if all_consts {
         let consts: Vec<Expr> = flat_values
             .iter()
             .map(|it| match it {
-                JsonSchema::Const(json) => json.clone().to_json().to_expr(),
+                Runtype::Const(c) => c.clone().to_json().to_expr(),
                 _ => unreachable!(),
             })
             .collect();
@@ -414,26 +411,26 @@ fn maybe_runtype_any_of_consts(flat_values: &BTreeSet<JsonSchema>) -> Option<Exp
     None
 }
 
-fn should_hoist_direct(schema: &JsonSchema) -> bool {
+fn should_hoist_direct(schema: &Runtype) -> bool {
     // hoist only what has no inner schemas
     matches!(
         schema,
-        JsonSchema::StringWithFormat(_)
-            | JsonSchema::StringFormatExtends(_)
-            | JsonSchema::NumberWithFormat(_)
-            | JsonSchema::NumberFormatExtends(_)
-            | JsonSchema::AnyArrayLike
-            | JsonSchema::Any
-            | JsonSchema::Number
-            | JsonSchema::String
-            | JsonSchema::Boolean
-            | JsonSchema::StNever
-            | JsonSchema::Function
-            | JsonSchema::Codec(_)
-            | JsonSchema::TplLitType(_)
-            | JsonSchema::Ref(_)
-            | JsonSchema::Const(_)
-            | JsonSchema::Null
+        Runtype::StringWithFormat(_)
+            | Runtype::StringFormatExtends(_)
+            | Runtype::NumberWithFormat(_)
+            | Runtype::NumberFormatExtends(_)
+            | Runtype::AnyArrayLike
+            | Runtype::Any
+            | Runtype::Number
+            | Runtype::String
+            | Runtype::Boolean
+            | Runtype::StNever
+            | Runtype::Function
+            | Runtype::Codec(_)
+            | Runtype::TplLitType(_)
+            | Runtype::Ref(_)
+            | Runtype::Const(_)
+            | Runtype::Null
     )
 }
 
@@ -443,8 +440,8 @@ fn i32_literal(id: i32) -> Expr {
 fn hoisted_indirect_runtype(id: i32) -> Expr {
     new_runtype_class("HoistedRuntype", vec![i32_literal(id)])
 }
-fn schema_to_runtype(
-    schema: &JsonSchema,
+fn print_runtype(
+    schema: &Runtype,
     named_schemas: &[NamedSchema],
     hoisted: &mut HoistedMap,
 ) -> Expr {
@@ -461,31 +458,28 @@ fn schema_to_runtype(
     }
 
     let out = match schema {
-        JsonSchema::String => typeof_runtype("string"),
-        JsonSchema::Boolean => typeof_runtype("boolean"),
-        JsonSchema::Number => typeof_runtype("number"),
-        JsonSchema::Function => typeof_runtype("function"),
-        JsonSchema::Ref(to) => ref_runtype(to),
-        JsonSchema::Null => no_args_runtype("NullRuntype"),
-        JsonSchema::Any => no_args_runtype("AnyRuntype"),
-        JsonSchema::StNever => no_args_runtype("NeverRuntype"),
-        JsonSchema::Const(json_schema_const) => new_runtype_class(
-            "ConstRuntype",
-            vec![json_schema_const.clone().to_json().to_expr()],
-        ),
-        JsonSchema::StringWithFormat(base) => {
+        Runtype::String => typeof_runtype("string"),
+        Runtype::Boolean => typeof_runtype("boolean"),
+        Runtype::Number => typeof_runtype("number"),
+        Runtype::Function => typeof_runtype("function"),
+        Runtype::Ref(to) => ref_runtype(to),
+        Runtype::Null => no_args_runtype("NullRuntype"),
+        Runtype::Any => no_args_runtype("AnyRuntype"),
+        Runtype::StNever => no_args_runtype("NeverRuntype"),
+        Runtype::Const(c) => new_runtype_class("ConstRuntype", vec![c.clone().to_json().to_expr()]),
+        Runtype::StringWithFormat(base) => {
             formats_runtype("StringWithFormatRuntype", std::slice::from_ref(base))
         }
-        JsonSchema::StringFormatExtends(items) => formats_runtype("StringWithFormatRuntype", items),
-        JsonSchema::NumberWithFormat(base) => {
+        Runtype::StringFormatExtends(items) => formats_runtype("StringWithFormatRuntype", items),
+        Runtype::NumberWithFormat(base) => {
             formats_runtype("NumberWithFormatRuntype", std::slice::from_ref(base))
         }
-        JsonSchema::NumberFormatExtends(items) => formats_runtype("NumberWithFormatRuntype", items),
-        JsonSchema::Codec(codec_name) => match codec_name {
+        Runtype::NumberFormatExtends(items) => formats_runtype("NumberWithFormatRuntype", items),
+        Runtype::Codec(codec_name) => match codec_name {
             CodecName::ISO8061 => no_args_runtype("DateRuntype"),
             CodecName::BigInt => no_args_runtype("BigIntRuntype"),
         },
-        JsonSchema::TplLitType(items) => {
+        Runtype::TplLitType(items) => {
             let mut regex_exp = String::new();
 
             for item in items {
@@ -508,34 +502,32 @@ fn schema_to_runtype(
                 ],
             )
         }
-        JsonSchema::AnyArrayLike => schema_to_runtype(
-            &JsonSchema::Array(JsonSchema::Any.into()),
-            named_schemas,
-            hoisted,
-        ),
-        JsonSchema::StNot(_) => {
+        Runtype::AnyArrayLike => {
+            print_runtype(&Runtype::Array(Runtype::Any.into()), named_schemas, hoisted)
+        }
+        Runtype::StNot(_) => {
             unreachable!("should not create decoders for semantic types")
         }
-        JsonSchema::Array(json_schema) => {
-            let item_validator = schema_to_runtype(json_schema, named_schemas, hoisted);
+        Runtype::Array(json_schema) => {
+            let item_validator = print_runtype(json_schema, named_schemas, hoisted);
             new_runtype_class("ArrayRuntype", vec![item_validator])
         }
-        JsonSchema::MappedRecord { key, rest } => {
-            let key_validator = schema_to_runtype(key, named_schemas, hoisted);
-            let rest_validator = schema_to_runtype(rest, named_schemas, hoisted);
+        Runtype::MappedRecord { key, rest } => {
+            let key_validator = print_runtype(key, named_schemas, hoisted);
+            let rest_validator = print_runtype(rest, named_schemas, hoisted);
             new_runtype_class("MappedRecordRuntype", vec![key_validator, rest_validator])
         }
-        JsonSchema::AllOf(vs) => {
+        Runtype::AllOf(vs) => {
             runtype_union_or_intersection("AllOfRuntype", vs, named_schemas, hoisted)
         }
-        JsonSchema::AnyOf(vs) => {
+        Runtype::AnyOf(vs) => {
             if vs.is_empty() {
                 panic!("empty anyOf is not allowed")
             }
 
             let flat_values = vs
                 .iter()
-                .flat_map(|it: &JsonSchema| extract_union(it, named_schemas))
+                .flat_map(|it: &Runtype| extract_union(it, named_schemas))
                 .collect::<BTreeSet<_>>();
 
             if let Some(consts) = maybe_runtype_any_of_consts(&flat_values) {
@@ -548,13 +540,13 @@ fn schema_to_runtype(
                 runtype_union_or_intersection("AnyOfRuntype", vs, named_schemas, hoisted)
             }
         }
-        JsonSchema::Tuple {
+        Runtype::Tuple {
             prefix_items,
             items,
         } => {
             let prefix_item_validators = prefix_items
                 .iter()
-                .map(|it| schema_to_runtype(it, named_schemas, hoisted))
+                .map(|it| print_runtype(it, named_schemas, hoisted))
                 .collect::<Vec<Expr>>();
             let prefix_arr = Expr::Array(ArrayLit {
                 span: DUMMY_SP,
@@ -570,31 +562,29 @@ fn schema_to_runtype(
             });
 
             let items = match items {
-                Some(item_schema) => schema_to_runtype(item_schema, named_schemas, hoisted),
+                Some(item_schema) => print_runtype(item_schema, named_schemas, hoisted),
                 None => Expr::Lit(Lit::Null(Null { span: DUMMY_SP })),
             };
 
             new_runtype_class("TupleRuntype", vec![prefix_arr, items])
         }
-        JsonSchema::Object { vs, rest } => {
+        Runtype::Object { vs, rest } => {
             let mut mapped = BTreeMap::new();
             for (k, v) in vs.iter() {
                 let r = match v {
                     Optionality::Optional(schema) => {
-                        let nullable_schema = &JsonSchema::any_of(
-                            vec![JsonSchema::Null, schema.clone()].into_iter().collect(),
+                        let nullable_schema = &Runtype::any_of(
+                            vec![Runtype::Null, schema.clone()].into_iter().collect(),
                         );
-                        schema_to_runtype(nullable_schema, named_schemas, hoisted)
+                        print_runtype(nullable_schema, named_schemas, hoisted)
                     }
-                    Optionality::Required(schema) => {
-                        schema_to_runtype(schema, named_schemas, hoisted)
-                    }
+                    Optionality::Required(schema) => print_runtype(schema, named_schemas, hoisted),
                 };
                 mapped.insert(k.clone(), r);
             }
 
             let rest = match rest {
-                Some(item_schema) => schema_to_runtype(item_schema, named_schemas, hoisted),
+                Some(item_schema) => print_runtype(item_schema, named_schemas, hoisted),
                 None => Expr::Lit(Lit::Null(Null { span: DUMMY_SP })),
             };
             let obj_validator = Expr::Object(ObjectLit {
@@ -647,7 +637,7 @@ fn build_parsers_input(
 ) -> Expr {
     let mut validator_exprs: Vec<(String, Expr)> = vec![];
     for decoder in decs {
-        let validator = schema_to_runtype(&decoder.schema, named_schemas, hoisted);
+        let validator = print_runtype(&decoder.schema, named_schemas, hoisted);
         validator_exprs.push((decoder.exported_name.clone(), validator));
     }
 
@@ -675,7 +665,7 @@ fn build_parsers_input(
 fn named_runtypes(named_schemas: &[NamedSchema], hoisted: &mut HoistedMap) -> Expr {
     let mut validator_exprs: Vec<(String, Expr)> = vec![];
     for named_schema in named_schemas {
-        let validator = schema_to_runtype(&named_schema.schema, named_schemas, hoisted);
+        let validator = print_runtype(&named_schema.schema, named_schemas, hoisted);
         validator_exprs.push((named_schema.name.clone(), validator));
     }
 
@@ -700,28 +690,28 @@ fn named_runtypes(named_schemas: &[NamedSchema], hoisted: &mut HoistedMap) -> Ex
     })
 }
 
-fn calculate_schema_seen(schema: &JsonSchema, seen: &mut SeenCounter) {
+fn calculate_schema_seen(schema: &Runtype, seen: &mut SeenCounter) {
     let count = seen.entry(schema.clone()).or_insert(0);
     *count += 1;
 
     match schema {
-        JsonSchema::StringWithFormat(_)
-        | JsonSchema::StringFormatExtends(_)
-        | JsonSchema::NumberWithFormat(_)
-        | JsonSchema::NumberFormatExtends(_)
-        | JsonSchema::AnyArrayLike
-        | JsonSchema::Any
-        | JsonSchema::Number
-        | JsonSchema::String
-        | JsonSchema::Boolean
-        | JsonSchema::StNever
-        | JsonSchema::Function
-        | JsonSchema::Codec(_)
-        | JsonSchema::TplLitType(_)
-        | JsonSchema::Ref(_)
-        | JsonSchema::Const(_)
-        | JsonSchema::Null => {}
-        JsonSchema::Object { vs, rest } => {
+        Runtype::StringWithFormat(_)
+        | Runtype::StringFormatExtends(_)
+        | Runtype::NumberWithFormat(_)
+        | Runtype::NumberFormatExtends(_)
+        | Runtype::AnyArrayLike
+        | Runtype::Any
+        | Runtype::Number
+        | Runtype::String
+        | Runtype::Boolean
+        | Runtype::StNever
+        | Runtype::Function
+        | Runtype::Codec(_)
+        | Runtype::TplLitType(_)
+        | Runtype::Ref(_)
+        | Runtype::Const(_)
+        | Runtype::Null => {}
+        Runtype::Object { vs, rest } => {
             for v in vs.values() {
                 match v {
                     Optionality::Optional(v) => calculate_schema_seen(v, seen),
@@ -732,14 +722,14 @@ fn calculate_schema_seen(schema: &JsonSchema, seen: &mut SeenCounter) {
                 calculate_schema_seen(rest_schema, seen);
             }
         }
-        JsonSchema::MappedRecord { key, rest } => {
+        Runtype::MappedRecord { key, rest } => {
             calculate_schema_seen(key, seen);
             calculate_schema_seen(rest, seen);
         }
-        JsonSchema::Array(json_schema) => {
+        Runtype::Array(json_schema) => {
             calculate_schema_seen(json_schema, seen);
         }
-        JsonSchema::Tuple {
+        Runtype::Tuple {
             prefix_items,
             items,
         } => {
@@ -750,12 +740,12 @@ fn calculate_schema_seen(schema: &JsonSchema, seen: &mut SeenCounter) {
                 calculate_schema_seen(items_schema, seen);
             }
         }
-        JsonSchema::AnyOf(btree_set) | JsonSchema::AllOf(btree_set) => {
+        Runtype::AnyOf(btree_set) | Runtype::AllOf(btree_set) => {
             for v in btree_set {
                 calculate_schema_seen(v, seen);
             }
         }
-        JsonSchema::StNot(json_schema) => {
+        Runtype::StNot(json_schema) => {
             calculate_schema_seen(json_schema, seen);
         }
     }

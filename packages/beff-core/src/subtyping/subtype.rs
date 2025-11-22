@@ -2,7 +2,7 @@ use std::rc::Rc;
 
 use crate::ast::{
     json::N,
-    json_schema::{CodecName, TplLitTypeItem},
+    runtype::{CodecName, TplLitTypeItem},
 };
 
 use super::{

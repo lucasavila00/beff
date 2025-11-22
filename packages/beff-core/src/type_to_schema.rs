@@ -1,6 +1,4 @@
-use crate::ast::json_schema::{
-    CodecName, JsonSchema, JsonSchemaConst, Optionality, TplLitTypeItem,
-};
+use crate::ast::runtype::{CodecName, Optionality, Runtype, RuntypeConst, TplLitTypeItem};
 use crate::diag::{
     Diagnostic, DiagnosticInfoMessage, DiagnosticInformation, DiagnosticParentMessage, Location,
 };
@@ -31,14 +29,14 @@ pub struct TypeToSchema<'a, 'b, R: FileManager> {
     pub current_file: BffFileName,
     pub components: HashMap<String, Option<NamedSchema>>,
     pub ref_stack: Vec<DiagnosticInformation>,
-    pub type_param_stack: Vec<BTreeMap<String, JsonSchema>>,
+    pub type_param_stack: Vec<BTreeMap<String, Runtype>>,
     pub settings: &'a BeffUserSettings,
     pub counter: &'b mut usize,
 }
 
-fn extract_items_from_array(it: JsonSchema) -> JsonSchema {
+fn extract_items_from_array(it: Runtype) -> Runtype {
     match it {
-        JsonSchema::Array(items) => *items,
+        Runtype::Array(items) => *items,
         _ => it,
     }
 }
@@ -66,18 +64,18 @@ impl<'a, 'b, R: FileManager> TypeToSchema<'a, 'b, R> {
         &mut self,
         kind: TsKeywordTypeKind,
         span: &Span,
-    ) -> Res<JsonSchema> {
+    ) -> Res<Runtype> {
         match kind {
             TsKeywordTypeKind::TsVoidKeyword
             | TsKeywordTypeKind::TsUndefinedKeyword
-            | TsKeywordTypeKind::TsNullKeyword => Ok(JsonSchema::Null),
+            | TsKeywordTypeKind::TsNullKeyword => Ok(Runtype::Null),
 
-            TsKeywordTypeKind::TsBigIntKeyword => Ok(JsonSchema::Codec(CodecName::BigInt)),
+            TsKeywordTypeKind::TsBigIntKeyword => Ok(Runtype::Codec(CodecName::BigInt)),
             TsKeywordTypeKind::TsAnyKeyword | TsKeywordTypeKind::TsUnknownKeyword => {
-                Ok(JsonSchema::Any)
+                Ok(Runtype::Any)
             }
             TsKeywordTypeKind::TsObjectKeyword => {
-                Ok(JsonSchema::object(vec![], Some(JsonSchema::Any.into())))
+                Ok(Runtype::object(vec![], Some(Runtype::Any.into())))
             }
             TsKeywordTypeKind::TsNeverKeyword
             | TsKeywordTypeKind::TsSymbolKeyword
@@ -85,15 +83,15 @@ impl<'a, 'b, R: FileManager> TypeToSchema<'a, 'b, R> {
                 span,
                 DiagnosticInfoMessage::KeywordNonSerializableToJsonSchema,
             ),
-            TsKeywordTypeKind::TsNumberKeyword => Ok(JsonSchema::Number),
-            TsKeywordTypeKind::TsBooleanKeyword => Ok(JsonSchema::Boolean),
-            TsKeywordTypeKind::TsStringKeyword => Ok(JsonSchema::String),
+            TsKeywordTypeKind::TsNumberKeyword => Ok(Runtype::Number),
+            TsKeywordTypeKind::TsBooleanKeyword => Ok(Runtype::Boolean),
+            TsKeywordTypeKind::TsStringKeyword => Ok(Runtype::String),
         }
     }
     fn convert_ts_type_element(
         &mut self,
         prop: &TsTypeElement,
-    ) -> Res<(String, Optionality<JsonSchema>)> {
+    ) -> Res<(String, Optionality<Runtype>)> {
         match prop {
             TsTypeElement::TsPropertySignature(prop) => {
                 let key = match &*prop.key {
@@ -134,39 +132,39 @@ impl<'a, 'b, R: FileManager> TypeToSchema<'a, 'b, R> {
         }
     }
     fn convert_pick_keys(
-        obj: &BTreeMap<String, Optionality<JsonSchema>>,
+        obj: &BTreeMap<String, Optionality<Runtype>>,
         keys: Vec<String>,
-    ) -> JsonSchema {
+    ) -> Runtype {
         let mut acc = vec![];
         for (k, v) in obj {
             if keys.contains(k) {
                 acc.push((k.clone(), v.clone()));
             }
         }
-        JsonSchema::object(acc, None)
+        Runtype::object(acc, None)
     }
     fn convert_pick(
         &mut self,
         span: &Span,
-        obj: &BTreeMap<String, Optionality<JsonSchema>>,
-        keys: JsonSchema,
-    ) -> Res<JsonSchema> {
+        obj: &BTreeMap<String, Optionality<Runtype>>,
+        keys: Runtype,
+    ) -> Res<Runtype> {
         match keys {
-            JsonSchema::Const(JsonSchemaConst::String(str)) => {
+            Runtype::Const(RuntypeConst::String(str)) => {
                 Ok(Self::convert_pick_keys(obj, vec![str]))
             }
-            JsonSchema::AnyOf(rms) => {
+            Runtype::AnyOf(rms) => {
                 let mut keys = vec![];
                 for rm in rms {
                     match rm {
-                        JsonSchema::Const(JsonSchemaConst::String(str)) => {
+                        Runtype::Const(RuntypeConst::String(str)) => {
                             keys.push(str);
                         }
-                        JsonSchema::Ref(n) => {
+                        Runtype::Ref(n) => {
                             let map = self.components.get(&n).and_then(|it| it.as_ref()).cloned();
                             match map {
                                 Some(NamedSchema {
-                                    schema: JsonSchema::Const(JsonSchemaConst::String(str)),
+                                    schema: Runtype::Const(RuntypeConst::String(str)),
                                     ..
                                 }) => keys.push(str),
                                 _ => {
@@ -195,31 +193,31 @@ impl<'a, 'b, R: FileManager> TypeToSchema<'a, 'b, R> {
     }
 
     fn convert_omit_keys(
-        obj: &BTreeMap<String, Optionality<JsonSchema>>,
+        obj: &BTreeMap<String, Optionality<Runtype>>,
         keys: Vec<String>,
-    ) -> JsonSchema {
+    ) -> Runtype {
         let mut acc = vec![];
         for (k, v) in obj {
             if !keys.contains(k) {
                 acc.push((k.clone(), v.clone()));
             }
         }
-        JsonSchema::object(acc, None)
+        Runtype::object(acc, None)
     }
 
     fn convert_omit(
         &mut self,
         span: &Span,
-        obj: &BTreeMap<String, Optionality<JsonSchema>>,
-        keys: JsonSchema,
-    ) -> Res<JsonSchema> {
+        obj: &BTreeMap<String, Optionality<Runtype>>,
+        keys: Runtype,
+    ) -> Res<Runtype> {
         let keys = self
             .extract_union(keys)
             .map_err(|e| self.box_error(span, e))?;
         let str_keys = keys
             .iter()
             .map(|it| match it {
-                JsonSchema::Const(JsonSchemaConst::String(str)) => Ok(str.clone()),
+                Runtype::Const(RuntypeConst::String(str)) => Ok(str.clone()),
                 _ => self.error(
                     span,
                     DiagnosticInfoMessage::OmitShouldHaveStringAsTypeArgument,
@@ -228,25 +226,25 @@ impl<'a, 'b, R: FileManager> TypeToSchema<'a, 'b, R> {
             .collect::<Res<Vec<_>>>()?;
         Ok(Self::convert_omit_keys(obj, str_keys))
     }
-    fn convert_required(&mut self, obj: &BTreeMap<String, Optionality<JsonSchema>>) -> JsonSchema {
+    fn convert_required(&mut self, obj: &BTreeMap<String, Optionality<Runtype>>) -> Runtype {
         let mut acc = vec![];
         for (k, v) in obj {
             acc.push((k.clone(), v.clone().to_required()));
         }
-        JsonSchema::object(acc, None)
+        Runtype::object(acc, None)
     }
-    fn convert_partial(&mut self, obj: &BTreeMap<String, Optionality<JsonSchema>>) -> JsonSchema {
+    fn convert_partial(&mut self, obj: &BTreeMap<String, Optionality<Runtype>>) -> Runtype {
         let mut acc = vec![];
         for (k, v) in obj {
             acc.push((k.clone(), v.clone().to_optional()));
         }
-        JsonSchema::object(acc, None)
+        Runtype::object(acc, None)
     }
 
-    fn extract_array(&mut self, arr: JsonSchema, span: Span) -> Res<JsonSchema> {
+    fn extract_array(&mut self, arr: Runtype, span: Span) -> Res<Runtype> {
         match arr {
-            JsonSchema::Array(items) => Ok(*items),
-            JsonSchema::Ref(n) => {
+            Runtype::Array(items) => Ok(*items),
+            Runtype::Ref(n) => {
                 let map = self.components.get(&n).and_then(|it| it.as_ref()).cloned();
                 match map {
                     Some(NamedSchema { schema, .. }) => self.extract_array(schema, span),
@@ -256,9 +254,9 @@ impl<'a, 'b, R: FileManager> TypeToSchema<'a, 'b, R> {
             _ => self.error(&span, DiagnosticInfoMessage::ExpectedArray),
         }
     }
-    fn extract_tuple(&mut self, arr: JsonSchema, span: Span) -> Res<Vec<JsonSchema>> {
+    fn extract_tuple(&mut self, arr: Runtype, span: Span) -> Res<Vec<Runtype>> {
         match arr {
-            JsonSchema::Tuple {
+            Runtype::Tuple {
                 mut prefix_items,
                 items,
             } => {
@@ -267,7 +265,7 @@ impl<'a, 'b, R: FileManager> TypeToSchema<'a, 'b, R> {
                 }
                 Ok(prefix_items)
             }
-            JsonSchema::Ref(n) => {
+            Runtype::Ref(n) => {
                 let map = self.components.get(&n).and_then(|it| it.as_ref()).cloned();
                 match map {
                     Some(NamedSchema { schema, .. }) => self.extract_tuple(schema, span),
@@ -280,22 +278,22 @@ impl<'a, 'b, R: FileManager> TypeToSchema<'a, 'b, R> {
 
     fn extract_object(
         &mut self,
-        obj: &JsonSchema,
+        obj: &Runtype,
         span: &Span,
-    ) -> Res<BTreeMap<String, Optionality<JsonSchema>>> {
+    ) -> Res<BTreeMap<String, Optionality<Runtype>>> {
         match obj {
-            JsonSchema::Object { vs, rest } => match rest {
+            Runtype::Object { vs, rest } => match rest {
                 Some(_) => self.error(span, DiagnosticInfoMessage::RestFoundOnExtractObject),
                 None => Ok(vs.clone()),
             },
-            JsonSchema::Ref(r) => {
+            Runtype::Ref(r) => {
                 let map = self.components.get(r).and_then(|it| it.as_ref()).cloned();
                 match map {
                     Some(NamedSchema { schema, .. }) => self.extract_object(&schema, span),
                     None => self.error(span, DiagnosticInfoMessage::ShouldHaveObjectAsTypeArgument),
                 }
             }
-            JsonSchema::AllOf(vs) => {
+            Runtype::AllOf(vs) => {
                 let mut acc = BTreeMap::new();
 
                 for v in vs {
@@ -321,15 +319,12 @@ impl<'a, 'b, R: FileManager> TypeToSchema<'a, 'b, R> {
         }
     }
 
-    fn collect_consts_from_union(
-        &self,
-        it: JsonSchema,
-    ) -> Result<Vec<String>, DiagnosticInfoMessage> {
+    fn collect_consts_from_union(&self, it: Runtype) -> Result<Vec<String>, DiagnosticInfoMessage> {
         let mut string_keys = vec![];
 
         for v in self.extract_union(it)? {
             match v {
-                JsonSchema::Const(JsonSchemaConst::String(str)) => {
+                Runtype::Const(RuntypeConst::String(str)) => {
                     string_keys.push(str.clone());
                 }
                 _ => {
@@ -345,11 +340,11 @@ impl<'a, 'b, R: FileManager> TypeToSchema<'a, 'b, R> {
         &mut self,
         typ: &TsBuiltIn,
         type_args: &Option<Box<TsTypeParamInstantiation>>,
-    ) -> Res<JsonSchema> {
+    ) -> Res<Runtype> {
         match typ {
-            TsBuiltIn::TsObject(_) => Ok(JsonSchema::Object {
+            TsBuiltIn::TsObject(_) => Ok(Runtype::Object {
                 vs: BTreeMap::new(),
-                rest: Some(Box::new(JsonSchema::Any)),
+                rest: Some(Box::new(Runtype::Any)),
             }),
 
             TsBuiltIn::TsRecord(span) => match type_args {
@@ -368,31 +363,31 @@ impl<'a, 'b, R: FileManager> TypeToSchema<'a, 'b, R> {
                     }
 
                     let mut key = Box::new(items[0].clone());
-                    let mut is_ref = matches!(&*key, JsonSchema::Ref(_));
+                    let mut is_ref = matches!(&*key, Runtype::Ref(_));
 
                     while is_ref {
-                        if let JsonSchema::Ref(r) = &items[0] {
+                        if let Runtype::Ref(r) = &items[0] {
                             let map = self.components.get(r).and_then(|it| it.as_ref()).cloned();
                             if let Some(NamedSchema { schema, .. }) = map {
                                 key = Box::new(schema);
-                                is_ref = matches!(&*key, JsonSchema::Ref(_));
+                                is_ref = matches!(&*key, Runtype::Ref(_));
                             }
                         }
                     }
 
                     match key.as_ref() {
-                        JsonSchema::String => {
+                        Runtype::String => {
                             let value = items[1].clone();
-                            Ok(JsonSchema::Object {
+                            Ok(Runtype::Object {
                                 vs: BTreeMap::new(),
                                 rest: Some(Box::new(value)),
                             })
                         }
-                        JsonSchema::StringWithFormat(_)
-                        | JsonSchema::StringFormatExtends(_)
-                        | JsonSchema::Number => {
+                        Runtype::StringWithFormat(_)
+                        | Runtype::StringFormatExtends(_)
+                        | Runtype::Number => {
                             let value = items[1].clone();
-                            Ok(JsonSchema::MappedRecord {
+                            Ok(Runtype::MappedRecord {
                                 key,
                                 rest: Box::new(value),
                             })
@@ -402,7 +397,7 @@ impl<'a, 'b, R: FileManager> TypeToSchema<'a, 'b, R> {
                                 .collect_consts_from_union(*key)
                                 .map_err(|e| self.box_error(span, e))?;
                             let value = items[1].clone();
-                            Ok(JsonSchema::Object {
+                            Ok(Runtype::Object {
                                 vs: res
                                     .into_iter()
                                     .map(|it| (it, value.clone().required()))
@@ -547,7 +542,7 @@ impl<'a, 'b, R: FileManager> TypeToSchema<'a, 'b, R> {
             },
         }
     }
-    fn convert_enum_decl(&mut self, typ: &TsEnumDecl) -> Res<JsonSchema> {
+    fn convert_enum_decl(&mut self, typ: &TsEnumDecl) -> Res<Runtype> {
         let mut values = vec![];
 
         for member in &typ.members {
@@ -576,10 +571,10 @@ impl<'a, 'b, R: FileManager> TypeToSchema<'a, 'b, R> {
             }
         }
 
-        Ok(JsonSchema::any_of(values))
+        Ok(Runtype::any_of(values))
     }
 
-    fn convert_interface_extends(&mut self, typ: &Vec<TsExprWithTypeArgs>) -> Res<Vec<JsonSchema>> {
+    fn convert_interface_extends(&mut self, typ: &Vec<TsExprWithTypeArgs>) -> Res<Vec<Runtype>> {
         let mut vs = vec![];
 
         for it in typ {
@@ -606,15 +601,15 @@ impl<'a, 'b, R: FileManager> TypeToSchema<'a, 'b, R> {
     fn convert_ts_interface_decl(
         &mut self,
         typ: &TsInterfaceDecl,
-        type_args: Option<Vec<JsonSchema>>,
-    ) -> Res<JsonSchema> {
+        type_args: Option<Vec<Runtype>>,
+    ) -> Res<Runtype> {
         let params = typ.type_params.as_ref().map(|it| &it.params);
 
         let map = self.get_type_params_stack_map(type_args, params)?;
 
         self.type_param_stack.push(map);
 
-        let r = Ok(JsonSchema::object(
+        let r = Ok(Runtype::object(
             typ.body
                 .body
                 .iter()
@@ -628,7 +623,7 @@ impl<'a, 'b, R: FileManager> TypeToSchema<'a, 'b, R> {
             r
         } else {
             let ext = self.convert_interface_extends(&typ.extends)?;
-            Ok(JsonSchema::all_of(
+            Ok(Runtype::all_of(
                 ext.into_iter().chain(std::iter::once(r?)).collect(),
             ))
         }
@@ -638,8 +633,8 @@ impl<'a, 'b, R: FileManager> TypeToSchema<'a, 'b, R> {
         &mut self,
         exported: &SymbolExport,
         from_file: &BffFileName,
-        type_args: Option<Vec<JsonSchema>>,
-    ) -> Res<JsonSchema> {
+        type_args: Option<Vec<Runtype>>,
+    ) -> Res<Runtype> {
         let store_current_file = self.current_file.clone();
         self.current_file = from_file.clone();
         let ty = match exported {
@@ -719,10 +714,10 @@ impl<'a, 'b, R: FileManager> TypeToSchema<'a, 'b, R> {
 
     fn get_type_params_stack_map(
         &mut self,
-        type_args: Option<Vec<JsonSchema>>,
+        type_args: Option<Vec<Runtype>>,
         params: Option<&Vec<TsTypeParam>>,
-    ) -> Res<BTreeMap<String, JsonSchema>> {
-        let mut map: BTreeMap<String, JsonSchema> = BTreeMap::new();
+    ) -> Res<BTreeMap<String, Runtype>> {
+        let mut map: BTreeMap<String, Runtype> = BTreeMap::new();
         if let Some(params) = params {
             let empty_args = vec![];
             let args_vec = type_args.unwrap_or(empty_args);
@@ -763,10 +758,10 @@ impl<'a, 'b, R: FileManager> TypeToSchema<'a, 'b, R> {
 
     fn apply_type_params(
         &mut self,
-        type_args: Option<Vec<JsonSchema>>,
+        type_args: Option<Vec<Runtype>>,
         decl: &Option<Rc<TsTypeParamDecl>>,
         ty: &TsType,
-    ) -> Res<JsonSchema> {
+    ) -> Res<Runtype> {
         let params = decl.as_ref().map(|it| &it.params);
 
         let map = self.get_type_params_stack_map(type_args, params)?;
@@ -780,7 +775,7 @@ impl<'a, 'b, R: FileManager> TypeToSchema<'a, 'b, R> {
         &mut self,
         i: &Ident,
         type_args: &Option<Box<TsTypeParamInstantiation>>,
-    ) -> Res<JsonSchema> {
+    ) -> Res<Runtype> {
         let type_args = type_args
             .as_ref()
             .map(|it| {
@@ -809,7 +804,7 @@ impl<'a, 'b, R: FileManager> TypeToSchema<'a, 'b, R> {
         }
     }
 
-    fn insert_definition(&mut self, name: String, schema: JsonSchema) -> Res<JsonSchema> {
+    fn insert_definition(&mut self, name: String, schema: Runtype) -> Res<Runtype> {
         if let Some(Some(v)) = self.components.get(&name) {
             assert_eq!(v.schema, schema);
         }
@@ -820,14 +815,14 @@ impl<'a, 'b, R: FileManager> TypeToSchema<'a, 'b, R> {
                 schema,
             }),
         );
-        Ok(JsonSchema::Ref(name))
+        Ok(Runtype::Ref(name))
     }
 
     fn get_string_with_format(
         &mut self,
         type_params: &Option<Box<TsTypeParamInstantiation>>,
         span: &Span,
-    ) -> Res<JsonSchema> {
+    ) -> Res<Runtype> {
         let r = type_params.as_ref().and_then(|it| it.params.split_first());
 
         if let Some((head, rest)) = r {
@@ -839,7 +834,7 @@ impl<'a, 'b, R: FileManager> TypeToSchema<'a, 'b, R> {
                 {
                     let val_str = value.to_string();
                     if self.settings.string_formats.contains(&val_str) {
-                        return Ok(JsonSchema::StringWithFormat(val_str));
+                        return Ok(Runtype::StringWithFormat(val_str));
                     } else {
                         return self
                             .error(span, DiagnosticInfoMessage::CustomStringIsNotRegistered);
@@ -855,13 +850,13 @@ impl<'a, 'b, R: FileManager> TypeToSchema<'a, 'b, R> {
 
     fn get_string_format_base_formats(
         &mut self,
-        schema: &JsonSchema,
+        schema: &Runtype,
         span: &Span,
     ) -> Res<Vec<String>> {
         match schema {
-            JsonSchema::StringWithFormat(v) => Ok(vec![v.clone()]),
-            JsonSchema::StringFormatExtends(vs) => Ok(vs.clone()),
-            JsonSchema::Ref(r) => {
+            Runtype::StringWithFormat(v) => Ok(vec![v.clone()]),
+            Runtype::StringFormatExtends(vs) => Ok(vs.clone()),
+            Runtype::Ref(r) => {
                 let v = self.components.get(r);
 
                 let v = v.and_then(|it| it.clone());
@@ -885,7 +880,7 @@ impl<'a, 'b, R: FileManager> TypeToSchema<'a, 'b, R> {
         &mut self,
         type_params: &Option<Box<TsTypeParamInstantiation>>,
         span: &Span,
-    ) -> Res<JsonSchema> {
+    ) -> Res<Runtype> {
         if let Some(type_params) = type_params {
             if let [base, next_str] = type_params.params.as_slice() {
                 if let TsType::TsLitType(TsLitType {
@@ -899,7 +894,7 @@ impl<'a, 'b, R: FileManager> TypeToSchema<'a, 'b, R> {
 
                         let mut formats = self.get_string_format_base_formats(&base, span)?;
                         formats.push(next_str);
-                        return Ok(JsonSchema::StringFormatExtends(formats));
+                        return Ok(Runtype::StringFormatExtends(formats));
                     } else {
                         return self
                             .error(span, DiagnosticInfoMessage::CustomStringIsNotRegistered);
@@ -915,13 +910,13 @@ impl<'a, 'b, R: FileManager> TypeToSchema<'a, 'b, R> {
 
     fn get_number_format_base_formats(
         &mut self,
-        schema: &JsonSchema,
+        schema: &Runtype,
         span: &Span,
     ) -> Res<Vec<String>> {
         match schema {
-            JsonSchema::NumberWithFormat(v) => Ok(vec![v.clone()]),
-            JsonSchema::NumberFormatExtends(vs) => Ok(vs.clone()),
-            JsonSchema::Ref(r) => {
+            Runtype::NumberWithFormat(v) => Ok(vec![v.clone()]),
+            Runtype::NumberFormatExtends(vs) => Ok(vs.clone()),
+            Runtype::Ref(r) => {
                 let v = self.components.get(r);
 
                 let v = v.and_then(|it| it.clone());
@@ -945,7 +940,7 @@ impl<'a, 'b, R: FileManager> TypeToSchema<'a, 'b, R> {
         &mut self,
         type_params: &Option<Box<TsTypeParamInstantiation>>,
         span: &Span,
-    ) -> Res<JsonSchema> {
+    ) -> Res<Runtype> {
         if let Some(type_params) = type_params {
             if let [base, next_str] = type_params.params.as_slice() {
                 if let TsType::TsLitType(TsLitType {
@@ -959,7 +954,7 @@ impl<'a, 'b, R: FileManager> TypeToSchema<'a, 'b, R> {
 
                         let mut formats = self.get_number_format_base_formats(&base, span)?;
                         formats.push(next_str);
-                        return Ok(JsonSchema::NumberFormatExtends(formats));
+                        return Ok(Runtype::NumberFormatExtends(formats));
                     } else {
                         return self
                             .error(span, DiagnosticInfoMessage::CustomNumberIsNotRegistered);
@@ -977,7 +972,7 @@ impl<'a, 'b, R: FileManager> TypeToSchema<'a, 'b, R> {
         &mut self,
         type_params: &Option<Box<TsTypeParamInstantiation>>,
         span: &Span,
-    ) -> Res<JsonSchema> {
+    ) -> Res<Runtype> {
         let r = type_params.as_ref().and_then(|it| it.params.split_first());
 
         if let Some((head, rest)) = r {
@@ -989,7 +984,7 @@ impl<'a, 'b, R: FileManager> TypeToSchema<'a, 'b, R> {
                 {
                     let val_str = value.to_string();
                     if self.settings.number_formats.contains(&val_str) {
-                        return Ok(JsonSchema::NumberWithFormat(val_str));
+                        return Ok(Runtype::NumberWithFormat(val_str));
                     } else {
                         return self
                             .error(span, DiagnosticInfoMessage::CustomNumberIsNotRegistered);
@@ -1007,7 +1002,7 @@ impl<'a, 'b, R: FileManager> TypeToSchema<'a, 'b, R> {
         &mut self,
         i: &Ident,
         type_params: &Option<Box<TsTypeParamInstantiation>>,
-    ) -> Res<JsonSchema> {
+    ) -> Res<Runtype> {
         for map in self.type_param_stack.iter().rev() {
             if let Some(ty) = map.get(&i.sym.to_string()) {
                 if type_params.is_some() {
@@ -1018,14 +1013,14 @@ impl<'a, 'b, R: FileManager> TypeToSchema<'a, 'b, R> {
         }
 
         match i.sym.to_string().as_str() {
-            "Date" => return Ok(JsonSchema::Codec(CodecName::ISO8061)),
+            "Date" => return Ok(Runtype::Codec(CodecName::ISO8061)),
             "Array" => {
                 let type_params = type_params.as_ref().and_then(|it| it.params.split_first());
                 if let Some((ty, [])) = type_params {
                     let ty = self.convert_ts_type(ty)?;
-                    return Ok(JsonSchema::Array(ty.into()));
+                    return Ok(Runtype::Array(ty.into()));
                 }
-                return Ok(JsonSchema::Array(JsonSchema::Any.into()));
+                return Ok(Runtype::Array(Runtype::Any.into()));
             }
             "StringFormat" => return self.get_string_with_format(type_params, &i.span),
             "StringFormatExtends" => return self.get_string_format_extends(type_params, &i.span),
@@ -1052,7 +1047,7 @@ impl<'a, 'b, R: FileManager> TypeToSchema<'a, 'b, R> {
                     );
                 }
                 None => {
-                    return Ok(JsonSchema::Ref(i.sym.to_string()));
+                    return Ok(Runtype::Ref(i.sym.to_string()));
                 }
             }
         }
@@ -1069,27 +1064,27 @@ impl<'a, 'b, R: FileManager> TypeToSchema<'a, 'b, R> {
                 }
             }
             Err(e) => {
-                self.insert_definition(i.sym.to_string(), JsonSchema::Any)?;
+                self.insert_definition(i.sym.to_string(), Runtype::Any)?;
                 Err(e)
             }
         }
     }
 
-    fn union(&mut self, types: &[Box<TsType>]) -> Res<JsonSchema> {
-        let vs: Vec<JsonSchema> = types
+    fn union(&mut self, types: &[Box<TsType>]) -> Res<Runtype> {
+        let vs: Vec<Runtype> = types
             .iter()
             .map(|it| self.convert_ts_type(it))
             .collect::<Res<_>>()?;
-        Ok(JsonSchema::any_of(vs))
+        Ok(Runtype::any_of(vs))
     }
 
-    fn intersection(&mut self, types: &[Box<TsType>], _span: &Span) -> Res<JsonSchema> {
-        let vs: Vec<JsonSchema> = types
+    fn intersection(&mut self, types: &[Box<TsType>], _span: &Span) -> Res<Runtype> {
+        let vs: Vec<Runtype> = types
             .iter()
             .map(|it| self.convert_ts_type(it))
             .collect::<Res<_>>()?;
 
-        Ok(JsonSchema::all_of(vs))
+        Ok(Runtype::all_of(vs))
     }
 
     fn cannot_serialize_error<T>(&mut self, span: &Span, msg: DiagnosticInfoMessage) -> Res<T> {
@@ -1244,7 +1239,7 @@ impl<'a, 'b, R: FileManager> TypeToSchema<'a, 'b, R> {
         &mut self,
         q: &TsQualifiedName,
         type_args: &Option<Box<TsTypeParamInstantiation>>,
-    ) -> Res<JsonSchema> {
+    ) -> Res<Runtype> {
         match &q.left {
             TsEntityName::TsQualifiedName(_) => {}
             TsEntityName::Ident(i) => {
@@ -1306,7 +1301,7 @@ impl<'a, 'b, R: FileManager> TypeToSchema<'a, 'b, R> {
 
         let found = self.components.get(&(q.right.sym.to_string()));
         if let Some(_found) = found {
-            return Ok(JsonSchema::Ref(q.right.sym.to_string()));
+            return Ok(Runtype::Ref(q.right.sym.to_string()));
         }
 
         let (exported, from_file, name) = self.__convert_ts_type_qual_inner(q)?;
@@ -1334,7 +1329,7 @@ impl<'a, 'b, R: FileManager> TypeToSchema<'a, 'b, R> {
         &mut self,
         q: &TsQualifiedName,
         type_args: &Option<Box<TsTypeParamInstantiation>>,
-    ) -> Res<JsonSchema> {
+    ) -> Res<Runtype> {
         match &q.left {
             TsEntityName::TsQualifiedName(_) => {}
             TsEntityName::Ident(i) => {
@@ -1378,7 +1373,7 @@ impl<'a, 'b, R: FileManager> TypeToSchema<'a, 'b, R> {
         &mut self,
         i: &Ident,
         type_params: &Option<Box<TsTypeParamInstantiation>>,
-    ) -> Res<JsonSchema> {
+    ) -> Res<Runtype> {
         let current_ref = self.get_identifier_diag_info(i);
         let did_push = current_ref.is_some();
         if let Some(current_ref) = current_ref {
@@ -1391,7 +1386,7 @@ impl<'a, 'b, R: FileManager> TypeToSchema<'a, 'b, R> {
         v
     }
 
-    pub fn typeof_expr(&mut self, e: &Expr, as_const: bool) -> Res<JsonSchema> {
+    pub fn typeof_expr(&mut self, e: &Expr, as_const: bool) -> Res<Runtype> {
         match e {
             Expr::Tpl(s) => {
                 if as_const {
@@ -1399,44 +1394,42 @@ impl<'a, 'b, R: FileManager> TypeToSchema<'a, 'b, R> {
 
                     for it in &s.exprs {
                         let ty = match it.as_ref() {
-                            Expr::Call(_) => Ok(JsonSchema::String),
+                            Expr::Call(_) => Ok(Runtype::String),
                             _ => self.typeof_expr(it, as_const),
                         }?;
                         let res = self.json_schema_to_tpl_lit(&it.span(), &ty)?;
                         acc.push(res);
                     }
 
-                    Ok(JsonSchema::TplLitType(acc))
+                    Ok(Runtype::TplLitType(acc))
                 } else {
-                    Ok(JsonSchema::String)
+                    Ok(Runtype::String)
                 }
             }
             Expr::Lit(l) => match l {
                 Lit::Str(s) => {
                     if as_const {
-                        Ok(JsonSchema::Const(JsonSchemaConst::String(
-                            s.value.to_string(),
-                        )))
+                        Ok(Runtype::Const(RuntypeConst::String(s.value.to_string())))
                     } else {
-                        Ok(JsonSchema::String)
+                        Ok(Runtype::String)
                     }
                 }
                 Lit::Bool(b) => {
                     if as_const {
-                        Ok(JsonSchema::Const(JsonSchemaConst::Bool(b.value)))
+                        Ok(Runtype::Const(RuntypeConst::Bool(b.value)))
                     } else {
-                        Ok(JsonSchema::Boolean)
+                        Ok(Runtype::Boolean)
                     }
                 }
-                Lit::Null(_) => Ok(JsonSchema::Null),
+                Lit::Null(_) => Ok(Runtype::Null),
                 Lit::Num(n) => {
                     if as_const {
-                        Ok(JsonSchema::Const(JsonSchemaConst::parse_f64(n.value)))
+                        Ok(Runtype::Const(RuntypeConst::parse_f64(n.value)))
                     } else {
-                        Ok(JsonSchema::Number)
+                        Ok(Runtype::Number)
                     }
                 }
-                Lit::BigInt(_) => Ok(JsonSchema::Codec(CodecName::BigInt)),
+                Lit::BigInt(_) => Ok(Runtype::Codec(CodecName::BigInt)),
                 Lit::Regex(_) => {
                     self.error(&e.span(), DiagnosticInfoMessage::TypeOfRegexNotSupported)
                 }
@@ -1467,7 +1460,7 @@ impl<'a, 'b, R: FileManager> TypeToSchema<'a, 'b, R> {
                         }
                     }
                 }
-                Ok(JsonSchema::Tuple {
+                Ok(Runtype::Tuple {
                     prefix_items,
                     items: None,
                 })
@@ -1480,7 +1473,7 @@ impl<'a, 'b, R: FileManager> TypeToSchema<'a, 'b, R> {
                         PropOrSpread::Spread(sp) => {
                             let spread_ty = self.typeof_expr(&sp.expr, as_const)?;
 
-                            if let JsonSchema::Object { vs: spread_vs, .. } = spread_ty {
+                            if let Runtype::Object { vs: spread_vs, .. } = spread_ty {
                                 for (k, v) in spread_vs {
                                     vs.insert(k, v);
                                 }
@@ -1532,7 +1525,7 @@ impl<'a, 'b, R: FileManager> TypeToSchema<'a, 'b, R> {
                     }
                 }
 
-                Ok(JsonSchema::Object { vs, rest: None })
+                Ok(Runtype::Object { vs, rest: None })
             }
             Expr::Ident(i) => {
                 let s = TypeResolver::new(self.files, &self.current_file).resolve_local_value(i)?;
@@ -1545,7 +1538,7 @@ impl<'a, 'b, R: FileManager> TypeToSchema<'a, 'b, R> {
                 let k = match &m.prop {
                     MemberProp::Ident(i) => Some(i.sym.to_string()),
                     MemberProp::Computed(c) => match self.typeof_expr(&c.expr, as_const)? {
-                        JsonSchema::Const(JsonSchemaConst::String(s)) => Some(s.clone()),
+                        Runtype::Const(RuntypeConst::String(s)) => Some(s.clone()),
                         _ => None,
                     },
                     MemberProp::PrivateName(_) => None,
@@ -1627,7 +1620,7 @@ impl<'a, 'b, R: FileManager> TypeToSchema<'a, 'b, R> {
                 }
                 let obj = self.typeof_expr(&m.obj, as_const)?;
                 if let Some(key) = k {
-                    if let JsonSchema::Object { vs, rest: _ } = &obj {
+                    if let Runtype::Object { vs, rest: _ } = &obj {
                         // try to do it syntatically to preserve aliases
                         if let Some(Optionality::Required(v)) = vs.get(&key) {
                             return Ok(v.clone());
@@ -1666,14 +1659,14 @@ impl<'a, 'b, R: FileManager> TypeToSchema<'a, 'b, R> {
                 })?;
                 self.convert_sem_type(access_st, &mut ctx, &m.prop.span())
             }
-            Expr::Arrow(_a) => Ok(JsonSchema::Function),
+            Expr::Arrow(_a) => Ok(Runtype::Function),
             Expr::Bin(e) => {
                 let left = self.typeof_expr(&e.left, as_const)?;
                 let right = self.typeof_expr(&e.right, as_const)?;
 
                 match (left, right) {
-                    (JsonSchema::Number, JsonSchema::Number) => Ok(JsonSchema::Number),
-                    (JsonSchema::String, JsonSchema::String) => Ok(JsonSchema::String),
+                    (Runtype::Number, Runtype::Number) => Ok(Runtype::Number),
+                    (Runtype::String, Runtype::String) => Ok(Runtype::String),
                     _ => self.error(&e.span(), DiagnosticInfoMessage::CannotConvertExprToSchema),
                 }
             }
@@ -1688,7 +1681,7 @@ impl<'a, 'b, R: FileManager> TypeToSchema<'a, 'b, R> {
         &mut self,
         exported: Rc<SymbolExport>,
         from_file: Rc<ImportReference>,
-    ) -> Res<JsonSchema> {
+    ) -> Res<Runtype> {
         let old_file = self.current_file.clone();
         self.current_file = from_file.file_name().clone();
         let ty = match exported.as_ref() {
@@ -1715,7 +1708,7 @@ impl<'a, 'b, R: FileManager> TypeToSchema<'a, 'b, R> {
     fn collect_value_exports(
         &mut self,
         file_name: &BffFileName,
-        acc: &mut Vec<(String, Optionality<JsonSchema>)>,
+        acc: &mut Vec<(String, Optionality<Runtype>)>,
     ) -> Res<()> {
         let store_current_file = self.current_file.clone();
         self.current_file = file_name.clone();
@@ -1727,7 +1720,7 @@ impl<'a, 'b, R: FileManager> TypeToSchema<'a, 'b, R> {
     fn collect_value_exports_no_curr_file_update____(
         &mut self,
         file_name: &BffFileName,
-        acc: &mut Vec<(String, Optionality<JsonSchema>)>,
+        acc: &mut Vec<(String, Optionality<Runtype>)>,
     ) -> Res<()> {
         let file = self.files.get_or_fetch_file(file_name);
         if let Some(pm) = file {
@@ -1748,7 +1741,7 @@ impl<'a, 'b, R: FileManager> TypeToSchema<'a, 'b, R> {
                         ImportReference::Star { file_name, .. } => {
                             let mut acc2 = vec![];
                             self.collect_value_exports(file_name, &mut acc2)?;
-                            let v = JsonSchema::object(acc2, None);
+                            let v = Runtype::object(acc2, None);
                             acc.push((k.to_string(), v.required()));
                         }
                         ImportReference::Default { .. } => {
@@ -1791,7 +1784,7 @@ impl<'a, 'b, R: FileManager> TypeToSchema<'a, 'b, R> {
         Ok(())
     }
 
-    pub fn typeof_symbol(&mut self, s: ResolvedLocalSymbol, span: &Span) -> Res<JsonSchema> {
+    pub fn typeof_symbol(&mut self, s: ResolvedLocalSymbol, span: &Span) -> Res<Runtype> {
         match s {
             ResolvedLocalSymbol::TsType(_, _) | ResolvedLocalSymbol::TsInterfaceDecl(_) => {
                 self.error(span, DiagnosticInfoMessage::FoundTypeExpectedValue)
@@ -1805,7 +1798,7 @@ impl<'a, 'b, R: FileManager> TypeToSchema<'a, 'b, R> {
             ResolvedLocalSymbol::Star(file_name) => {
                 let mut acc = vec![];
                 self.collect_value_exports(&file_name, &mut acc)?;
-                Ok(JsonSchema::object(acc, None))
+                Ok(Runtype::object(acc, None))
             }
             ResolvedLocalSymbol::TsEnumDecl(enum_decl) => self.convert_enum_decl(&enum_decl),
             ResolvedLocalSymbol::TsBuiltin(_) => {
@@ -1813,8 +1806,8 @@ impl<'a, 'b, R: FileManager> TypeToSchema<'a, 'b, R> {
             }
         }
     }
-    fn get_kv_from_schema(&mut self, schema: JsonSchema, key: &str, span: Span) -> Res<JsonSchema> {
-        if let JsonSchema::Object { vs: kvs, rest: _ } = schema {
+    fn get_kv_from_schema(&mut self, schema: Runtype, key: &str, span: Span) -> Res<Runtype> {
+        if let Runtype::Object { vs: kvs, rest: _ } = schema {
             if let Some(Optionality::Required(v)) = kvs.get(key) {
                 return Ok(v.clone());
             }
@@ -1824,7 +1817,7 @@ impl<'a, 'b, R: FileManager> TypeToSchema<'a, 'b, R> {
             DiagnosticInfoMessage::CannotResolveKey(key.to_string()),
         )
     }
-    fn convert_type_query_qualified(&mut self, q: &TsQualifiedName) -> Res<JsonSchema> {
+    fn convert_type_query_qualified(&mut self, q: &TsQualifiedName) -> Res<Runtype> {
         match &q.left {
             TsEntityName::TsQualifiedName(q) => {
                 let t = self.convert_type_query_qualified(q)?;
@@ -1839,7 +1832,7 @@ impl<'a, 'b, R: FileManager> TypeToSchema<'a, 'b, R> {
         }
     }
 
-    pub fn convert_type_query(&mut self, q: &TsTypeQuery) -> Res<JsonSchema> {
+    pub fn convert_type_query(&mut self, q: &TsTypeQuery) -> Res<Runtype> {
         if q.type_args.is_some() {
             return self.error(&q.span, DiagnosticInfoMessage::TypeQueryArgsNotSupported);
         }
@@ -1881,9 +1874,9 @@ impl<'a, 'b, R: FileManager> TypeToSchema<'a, 'b, R> {
         access_st: Rc<SemType>,
         ctx: &mut SemTypeContext,
         span: &Span,
-    ) -> Res<JsonSchema> {
+    ) -> Res<Runtype> {
         if access_st.is_empty(ctx) {
-            return Ok(JsonSchema::StNever);
+            return Ok(Runtype::StNever);
         }
         let (head, tail) =
             to_validators(ctx, &access_st, "AnyName", self.counter).map_err(|any| {
@@ -1896,12 +1889,12 @@ impl<'a, 'b, R: FileManager> TypeToSchema<'a, 'b, R> {
     }
     fn convert_indexed_access_syntatically(
         &mut self,
-        obj: &JsonSchema,
-        index: &JsonSchema,
-    ) -> Res<Option<JsonSchema>> {
+        obj: &Runtype,
+        index: &Runtype,
+    ) -> Res<Option<Runtype>> {
         // try to resolve syntatically
         match (obj, index) {
-            (JsonSchema::Ref(r), _) => {
+            (Runtype::Ref(r), _) => {
                 let v = self.components.get(r);
 
                 let v = v.and_then(|it| it.clone());
@@ -1909,7 +1902,7 @@ impl<'a, 'b, R: FileManager> TypeToSchema<'a, 'b, R> {
                     return self.convert_indexed_access_syntatically(&v.schema, index);
                 }
             }
-            (JsonSchema::Object { vs, rest: _ }, JsonSchema::Const(JsonSchemaConst::String(s))) => {
+            (Runtype::Object { vs, rest: _ }, Runtype::Const(RuntypeConst::String(s))) => {
                 let v = vs.get(s);
                 if let Some(Optionality::Required(v)) = v {
                     return Ok(Some(v.clone()));
@@ -1919,7 +1912,7 @@ impl<'a, 'b, R: FileManager> TypeToSchema<'a, 'b, R> {
         }
         Ok(None)
     }
-    fn convert_indexed_access(&mut self, i: &TsIndexedAccessType) -> Res<JsonSchema> {
+    fn convert_indexed_access(&mut self, i: &TsIndexedAccessType) -> Res<Runtype> {
         let obj = self.convert_ts_type(&i.obj_type)?;
         let index = self.convert_ts_type(&i.index_type)?;
 
@@ -1945,7 +1938,7 @@ impl<'a, 'b, R: FileManager> TypeToSchema<'a, 'b, R> {
         })?;
         self.convert_sem_type(access_st, &mut ctx, &i.span())
     }
-    fn convert_keyof(&mut self, k: &TsType) -> Res<JsonSchema> {
+    fn convert_keyof(&mut self, k: &TsType) -> Res<Runtype> {
         let json_schema = self.convert_ts_type(k)?;
         let mut ctx = SemTypeContext::new();
         let st = json_schema
@@ -1961,9 +1954,9 @@ impl<'a, 'b, R: FileManager> TypeToSchema<'a, 'b, R> {
         self.convert_sem_type(keyof_st, &mut ctx, &k.span())
     }
 
-    fn extract_union(&self, tp: JsonSchema) -> Result<Vec<JsonSchema>, DiagnosticInfoMessage> {
+    fn extract_union(&self, tp: Runtype) -> Result<Vec<Runtype>, DiagnosticInfoMessage> {
         match tp {
-            JsonSchema::AnyOf(v) => {
+            Runtype::AnyOf(v) => {
                 let mut vs = vec![];
                 for item in v {
                     let extracted = self.extract_union(item)?;
@@ -1971,7 +1964,7 @@ impl<'a, 'b, R: FileManager> TypeToSchema<'a, 'b, R> {
                 }
                 Ok(vs)
             }
-            JsonSchema::Ref(r) => {
+            Runtype::Ref(r) => {
                 let v = self.components.get(&r);
                 let v = v.and_then(|it| it.clone());
                 match v {
@@ -1981,12 +1974,12 @@ impl<'a, 'b, R: FileManager> TypeToSchema<'a, 'b, R> {
                     )),
                 }
             }
-            JsonSchema::StNever => Ok(vec![]),
+            Runtype::StNever => Ok(vec![]),
             _ => Ok(vec![tp]),
         }
     }
 
-    fn convert_mapped_type(&mut self, k: &TsMappedType) -> Res<JsonSchema> {
+    fn convert_mapped_type(&mut self, k: &TsMappedType) -> Res<Runtype> {
         let name = k.type_param.name.sym.to_string();
         let constraint = match k.type_param.constraint {
             Some(ref it) => it.as_ref(),
@@ -2006,7 +1999,7 @@ impl<'a, 'b, R: FileManager> TypeToSchema<'a, 'b, R> {
 
         for v in values {
             match v {
-                JsonSchema::Const(JsonSchemaConst::String(s)) => {
+                Runtype::Const(RuntypeConst::String(s)) => {
                     string_keys.push(s);
                 }
                 _ => return self.error(&k.span, DiagnosticInfoMessage::NonStringKeyInMappedType),
@@ -2024,7 +2017,7 @@ impl<'a, 'b, R: FileManager> TypeToSchema<'a, 'b, R> {
         for key in string_keys.into_iter() {
             self.type_param_stack.push(BTreeMap::from_iter(vec![(
                 name.clone(),
-                JsonSchema::Const(JsonSchemaConst::String(key.clone())),
+                Runtype::Const(RuntypeConst::String(key.clone())),
             )]));
             let ty = self.convert_ts_type(type_ann)?;
             self.type_param_stack.pop();
@@ -2043,18 +2036,18 @@ impl<'a, 'b, R: FileManager> TypeToSchema<'a, 'b, R> {
             vs.push((key, ty));
         }
 
-        Ok(JsonSchema::object(vs, None))
+        Ok(Runtype::object(vs, None))
     }
 
-    fn json_schema_to_tpl_lit(&mut self, span: &Span, schema: &JsonSchema) -> Res<TplLitTypeItem> {
+    fn json_schema_to_tpl_lit(&mut self, span: &Span, schema: &Runtype) -> Res<TplLitTypeItem> {
         match schema {
-            JsonSchema::Boolean => Ok(TplLitTypeItem::Boolean),
-            JsonSchema::String => Ok(TplLitTypeItem::String),
-            JsonSchema::Number => Ok(TplLitTypeItem::Number),
-            JsonSchema::Const(JsonSchemaConst::String(txt)) => {
+            Runtype::Boolean => Ok(TplLitTypeItem::Boolean),
+            Runtype::String => Ok(TplLitTypeItem::String),
+            Runtype::Number => Ok(TplLitTypeItem::Number),
+            Runtype::Const(RuntypeConst::String(txt)) => {
                 Ok(TplLitTypeItem::StringConst(txt.to_string()))
             }
-            JsonSchema::AnyOf(vs) => {
+            Runtype::AnyOf(vs) => {
                 let mut acc = vec![];
                 for v in vs {
                     let item = self.json_schema_to_tpl_lit(span, v)?;
@@ -2062,7 +2055,7 @@ impl<'a, 'b, R: FileManager> TypeToSchema<'a, 'b, R> {
                 }
                 Ok(TplLitTypeItem::one_of(acc))
             }
-            JsonSchema::Ref(name) => {
+            Runtype::Ref(name) => {
                 let v = self.components.get(name);
                 let v = v.and_then(|it| it.clone());
                 match v {
@@ -2080,7 +2073,7 @@ impl<'a, 'b, R: FileManager> TypeToSchema<'a, 'b, R> {
         }
     }
 
-    fn convert_ts_tpl_lit_type_non_trivial(&mut self, it: &TsTplLitType) -> Res<JsonSchema> {
+    fn convert_ts_tpl_lit_type_non_trivial(&mut self, it: &TsTplLitType) -> Res<Runtype> {
         let mut quasis_idx = 0;
         let mut types_idx = 0;
         let mut selecting_quasis = true;
@@ -2104,13 +2097,13 @@ impl<'a, 'b, R: FileManager> TypeToSchema<'a, 'b, R> {
             }
         }
 
-        Ok(JsonSchema::TplLitType(acc))
+        Ok(Runtype::TplLitType(acc))
     }
-    fn convert_ts_tpl_lit_type(&mut self, it: &TsTplLitType) -> Res<JsonSchema> {
+    fn convert_ts_tpl_lit_type(&mut self, it: &TsTplLitType) -> Res<Runtype> {
         if !it.types.is_empty() || it.quasis.len() != 1 {
             self.convert_ts_tpl_lit_type_non_trivial(it)
         } else {
-            Ok(JsonSchema::Const(JsonSchemaConst::String(
+            Ok(Runtype::Const(RuntypeConst::String(
                 it.quasis
                     .iter()
                     .map(|it| it.raw.to_string())
@@ -2119,7 +2112,7 @@ impl<'a, 'b, R: FileManager> TypeToSchema<'a, 'b, R> {
         }
     }
 
-    pub fn convert_ts_type(&mut self, typ: &TsType) -> Res<JsonSchema> {
+    pub fn convert_ts_type(&mut self, typ: &TsType) -> Res<Runtype> {
         match typ {
             TsType::TsKeywordType(TsKeywordType { kind, span, .. }) => {
                 self.ts_keyword_type_kind_to_json_schema(*kind, span)
@@ -2132,7 +2125,7 @@ impl<'a, 'b, R: FileManager> TypeToSchema<'a, 'b, R> {
                 TsEntityName::Ident(i) => self.convert_ts_type_ident(i, type_params),
                 TsEntityName::TsQualifiedName(q) => self.convert_ts_type_qual(q, type_params),
             },
-            TsType::TsTypeLit(TsTypeLit { members, .. }) => Ok(JsonSchema::object(
+            TsType::TsTypeLit(TsTypeLit { members, .. }) => Ok(Runtype::object(
                 members
                     .iter()
                     .map(|prop| self.convert_ts_type_element(prop))
@@ -2140,7 +2133,7 @@ impl<'a, 'b, R: FileManager> TypeToSchema<'a, 'b, R> {
                 None,
             )),
             TsType::TsArrayType(TsArrayType { elem_type, .. }) => {
-                Ok(JsonSchema::Array(self.convert_ts_type(elem_type)?.into()))
+                Ok(Runtype::Array(self.convert_ts_type(elem_type)?.into()))
             }
             TsType::TsTypeQuery(q) => self.convert_type_query(q),
             TsType::TsUnionOrIntersectionType(it) => match &it {
@@ -2171,18 +2164,18 @@ impl<'a, 'b, R: FileManager> TypeToSchema<'a, 'b, R> {
                         prefix_items.push(ty_schema);
                     }
                 }
-                Ok(JsonSchema::Tuple {
+                Ok(Runtype::Tuple {
                     prefix_items,
                     items,
                 })
             }
             TsType::TsLitType(TsLitType { lit, .. }) => match lit {
-                TsLit::Number(n) => Ok(JsonSchema::Const(JsonSchemaConst::parse_f64(n.value))),
-                TsLit::Str(s) => Ok(JsonSchema::Const(JsonSchemaConst::String(
+                TsLit::Number(n) => Ok(Runtype::Const(RuntypeConst::parse_f64(n.value))),
+                TsLit::Str(s) => Ok(Runtype::Const(RuntypeConst::String(
                     s.value.to_string().clone(),
                 ))),
-                TsLit::Bool(b) => Ok(JsonSchema::Const(JsonSchemaConst::Bool(b.value))),
-                TsLit::BigInt(_) => Ok(JsonSchema::Codec(CodecName::BigInt)),
+                TsLit::Bool(b) => Ok(Runtype::Const(RuntypeConst::Bool(b.value))),
+                TsLit::BigInt(_) => Ok(Runtype::Codec(CodecName::BigInt)),
                 TsLit::Tpl(it) => self.convert_ts_tpl_lit_type(it),
             },
             TsType::TsParenthesizedType(TsParenthesizedType { type_ann, .. }) => {
@@ -2229,7 +2222,7 @@ impl<'a, 'b, R: FileManager> TypeToSchema<'a, 'b, R> {
         }
     }
 
-    fn convert_conditional_type(&mut self, t: &TsConditionalType) -> Res<JsonSchema> {
+    fn convert_conditional_type(&mut self, t: &TsConditionalType) -> Res<Runtype> {
         let check_type_schema = self.convert_ts_type(&t.check_type)?;
         let extends_type_schema = self.convert_ts_type(&t.extends_type)?;
 

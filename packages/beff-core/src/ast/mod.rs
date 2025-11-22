@@ -1,2 +1,2 @@
 pub mod json;
-pub mod json_schema;
+pub mod runtype;

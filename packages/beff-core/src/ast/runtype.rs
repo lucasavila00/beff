@@ -79,45 +79,45 @@ impl<T> Optionality<T> {
     }
 }
 
-impl Optionality<JsonSchema> {
-    pub fn negated(self) -> Optionality<JsonSchema> {
+impl Optionality<Runtype> {
+    pub fn negated(self) -> Optionality<Runtype> {
         match self {
-            Optionality::Optional(it) => JsonSchema::StNot(it.into()).optional(),
-            Optionality::Required(it) => JsonSchema::StNot(it.into()).required(),
+            Optionality::Optional(it) => Runtype::StNot(it.into()).optional(),
+            Optionality::Required(it) => Runtype::StNot(it.into()).required(),
         }
     }
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord)]
-pub enum JsonSchemaConst {
+pub enum RuntypeConst {
     Null,
     Bool(bool),
     Number(N),
     String(String),
 }
 
-impl JsonSchemaConst {
+impl RuntypeConst {
     pub fn to_json(self) -> Json {
         match self {
-            JsonSchemaConst::Null => Json::Null,
-            JsonSchemaConst::Bool(b) => Json::Bool(b),
-            JsonSchemaConst::Number(n) => Json::Number(n),
-            JsonSchemaConst::String(s) => Json::String(s),
+            RuntypeConst::Null => Json::Null,
+            RuntypeConst::Bool(b) => Json::Bool(b),
+            RuntypeConst::Number(n) => Json::Number(n),
+            RuntypeConst::String(s) => Json::String(s),
         }
     }
     pub fn from_json(it: &Json) -> Result<Self> {
         match it {
-            Json::Null => Ok(JsonSchemaConst::Null),
-            Json::Bool(b) => Ok(JsonSchemaConst::Bool(*b)),
-            Json::Number(n) => Ok(JsonSchemaConst::Number(n.clone())),
-            Json::String(s) => Ok(JsonSchemaConst::String(s.clone())),
+            Json::Null => Ok(RuntypeConst::Null),
+            Json::Bool(b) => Ok(RuntypeConst::Bool(*b)),
+            Json::Number(n) => Ok(RuntypeConst::Number(n.clone())),
+            Json::String(s) => Ok(RuntypeConst::String(s.clone())),
             _ => Err(anyhow!("not a const")),
         }
     }
     pub fn parse_int(it: i64) -> Self {
         Self::Number(N::parse_int(it))
     }
-    pub fn parse_f64(value: f64) -> JsonSchemaConst {
+    pub fn parse_f64(value: f64) -> RuntypeConst {
         Self::Number(N::parse_f64(value))
     }
 }
@@ -221,7 +221,7 @@ impl TplLitTypeItem {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord)]
-pub enum JsonSchema {
+pub enum Runtype {
     Null,
     Boolean,
     String,
@@ -234,27 +234,27 @@ pub enum JsonSchema {
     NumberFormatExtends(Vec<String>),
     TplLitType(Vec<TplLitTypeItem>),
     Object {
-        vs: BTreeMap<String, Optionality<JsonSchema>>,
-        rest: Option<Box<JsonSchema>>,
+        vs: BTreeMap<String, Optionality<Runtype>>,
+        rest: Option<Box<Runtype>>,
     },
     MappedRecord {
-        key: Box<JsonSchema>,
-        rest: Box<JsonSchema>,
+        key: Box<Runtype>,
+        rest: Box<Runtype>,
     },
-    Array(Box<JsonSchema>),
+    Array(Box<Runtype>),
     Tuple {
-        prefix_items: Vec<JsonSchema>,
-        items: Option<Box<JsonSchema>>,
+        prefix_items: Vec<Runtype>,
+        items: Option<Box<Runtype>>,
     },
     Ref(String),
 
-    AnyOf(BTreeSet<JsonSchema>),
-    AllOf(BTreeSet<JsonSchema>),
-    Const(JsonSchemaConst),
+    AnyOf(BTreeSet<Runtype>),
+    AllOf(BTreeSet<Runtype>),
+    Const(RuntypeConst),
     Codec(CodecName),
     // semantic types
     StNever,
-    StNot(Box<JsonSchema>),
+    StNot(Box<Runtype>),
     Function,
 }
 
@@ -275,16 +275,16 @@ impl fmt::Display for CodecName {
     }
 }
 
-struct UnionMerger(BTreeSet<JsonSchema>);
+struct UnionMerger(BTreeSet<Runtype>);
 
 impl UnionMerger {
     fn new() -> Self {
         Self(BTreeSet::new())
     }
-    fn consume(&mut self, vs: Vec<JsonSchema>) {
+    fn consume(&mut self, vs: Vec<Runtype>) {
         for it in vs.into_iter() {
             match it {
-                JsonSchema::AnyOf(vs) => self.consume(vs.into_iter().collect()),
+                Runtype::AnyOf(vs) => self.consume(vs.into_iter().collect()),
                 _ => {
                     self.0.insert(it);
                 }
@@ -292,49 +292,46 @@ impl UnionMerger {
         }
     }
 
-    pub fn schema(vs: Vec<JsonSchema>) -> JsonSchema {
+    pub fn schema(vs: Vec<Runtype>) -> Runtype {
         let mut acc = Self::new();
         acc.consume(vs);
-        JsonSchema::AnyOf(acc.0)
+        Runtype::AnyOf(acc.0)
     }
 }
 
-impl JsonSchema {
-    pub fn object(
-        vs: Vec<(String, Optionality<JsonSchema>)>,
-        rest: Option<Box<JsonSchema>>,
-    ) -> Self {
+impl Runtype {
+    pub fn object(vs: Vec<(String, Optionality<Runtype>)>, rest: Option<Box<Runtype>>) -> Self {
         Self::Object {
             vs: vs.into_iter().collect(),
             rest,
         }
     }
 
-    pub fn required(self) -> Optionality<JsonSchema> {
+    pub fn required(self) -> Optionality<Runtype> {
         Optionality::Required(self)
     }
-    pub fn optional(self) -> Optionality<JsonSchema> {
+    pub fn optional(self) -> Optionality<Runtype> {
         Optionality::Optional(self)
     }
 
-    pub fn any_of(vs: Vec<JsonSchema>) -> Self {
+    pub fn any_of(vs: Vec<Runtype>) -> Self {
         match vs.len() {
-            0 => JsonSchema::StNever,
+            0 => Runtype::StNever,
             1 => vs.into_iter().next().expect("we just checked len"),
             _ => UnionMerger::schema(vs),
         }
     }
-    pub fn all_of(vs: Vec<JsonSchema>) -> Self {
+    pub fn all_of(vs: Vec<Runtype>) -> Self {
         match vs.len() {
             1 => vs.into_iter().next().expect("we just checked len"),
             _ => {
-                let mut obj_kvs: Vec<(String, Optionality<JsonSchema>)> = vec![];
+                let mut obj_kvs: Vec<(String, Optionality<Runtype>)> = vec![];
                 let mut all_objects = true;
                 let mut rest_is_none = true;
 
                 for v in vs.iter() {
                     match v {
-                        JsonSchema::Object { vs, rest } => {
+                        Runtype::Object { vs, rest } => {
                             if rest.is_some() {
                                 rest_is_none = false;
                                 break;
@@ -349,7 +346,7 @@ impl JsonSchema {
                 }
 
                 if rest_is_none && all_objects && vs.len() > 1 {
-                    JsonSchema::object(obj_kvs, None)
+                    Runtype::object(obj_kvs, None)
                 } else {
                     Self::AllOf(BTreeSet::from_iter(vs))
                 }
@@ -361,13 +358,13 @@ impl JsonSchema {
         self,
         validators: &[&NamedSchema],
         ctx: &mut SemTypeContext,
-    ) -> anyhow::Result<JsonSchema> {
+    ) -> anyhow::Result<Runtype> {
         match self {
-            JsonSchema::AllOf(vs) => {
-                let semantic = JsonSchema::AllOf(vs.clone()).to_sem_type(validators, ctx)?;
+            Runtype::AllOf(vs) => {
+                let semantic = Runtype::AllOf(vs.clone()).to_sem_type(validators, ctx)?;
                 let is_empty = semantic.is_empty(ctx);
                 if is_empty {
-                    return Ok(JsonSchema::StNever);
+                    return Ok(Runtype::StNever);
                 }
 
                 let vs = vs
@@ -377,16 +374,16 @@ impl JsonSchema {
 
                 let vs = vs
                     .into_iter()
-                    .filter(|it| !matches!(it, JsonSchema::StNot(_)))
+                    .filter(|it| !matches!(it, Runtype::StNot(_)))
                     .collect();
-                Ok(JsonSchema::all_of(vs))
+                Ok(Runtype::all_of(vs))
             }
-            JsonSchema::AnyOf(vs) => {
+            Runtype::AnyOf(vs) => {
                 let vs = vs
                     .into_iter()
                     .map(|it| it.to_sem_type(validators, ctx).map(|r| (it, r)))
                     .collect::<Result<Vec<_>>>()?;
-                let vs: Vec<JsonSchema> = vs
+                let vs: Vec<Runtype> = vs
                     .into_iter()
                     .filter(|(_, semantic)| {
                         let is_empty = semantic.is_empty(ctx);
@@ -399,7 +396,7 @@ impl JsonSchema {
                     .into_iter()
                     .map(|it| it.remove_nots_of_intersections_and_empty_of_union(validators, ctx))
                     .collect::<Result<Vec<_>>>()?;
-                Ok(JsonSchema::any_of(vs))
+                Ok(Runtype::any_of(vs))
             }
             v => Ok(v),
         }
@@ -497,30 +494,30 @@ fn ts_number_brands(brands: &[String]) -> TsType {
         },
     ))
 }
-impl JsonSchema {
+impl Runtype {
     pub fn to_ts_type(&self) -> TsType {
         match self {
-            JsonSchema::Null => TsType::TsKeywordType(TsKeywordType {
+            Runtype::Null => TsType::TsKeywordType(TsKeywordType {
                 span: DUMMY_SP,
                 kind: TsKeywordTypeKind::TsNullKeyword,
             }),
-            JsonSchema::Boolean => TsType::TsKeywordType(TsKeywordType {
+            Runtype::Boolean => TsType::TsKeywordType(TsKeywordType {
                 span: DUMMY_SP,
                 kind: TsKeywordTypeKind::TsBooleanKeyword,
             }),
-            JsonSchema::String => TsType::TsKeywordType(TsKeywordType {
+            Runtype::String => TsType::TsKeywordType(TsKeywordType {
                 span: DUMMY_SP,
                 kind: TsKeywordTypeKind::TsStringKeyword,
             }),
-            JsonSchema::Number => TsType::TsKeywordType(TsKeywordType {
+            Runtype::Number => TsType::TsKeywordType(TsKeywordType {
                 span: DUMMY_SP,
                 kind: TsKeywordTypeKind::TsNumberKeyword,
             }),
-            JsonSchema::Any => TsType::TsKeywordType(TsKeywordType {
+            Runtype::Any => TsType::TsKeywordType(TsKeywordType {
                 span: DUMMY_SP,
                 kind: TsKeywordTypeKind::TsAnyKeyword,
             }),
-            JsonSchema::Object { vs, rest } => {
+            Runtype::Object { vs, rest } => {
                 let mut members: Vec<TsTypeElement> = vs
                     .iter()
                     .map(|(k, v)| {
@@ -581,7 +578,7 @@ impl JsonSchema {
                     members,
                 })
             }
-            JsonSchema::Array(ty) => {
+            Runtype::Array(ty) => {
                 let ty = ty.to_ts_type();
                 TsType::TsTypeRef(TsTypeRef {
                     span: DUMMY_SP,
@@ -597,7 +594,7 @@ impl JsonSchema {
                     })),
                 })
             }
-            JsonSchema::Tuple {
+            Runtype::Tuple {
                 prefix_items,
                 items,
             } => {
@@ -632,7 +629,7 @@ impl JsonSchema {
                     elem_types,
                 })
             }
-            JsonSchema::Ref(name) => TsType::TsTypeRef(TsTypeRef {
+            Runtype::Ref(name) => TsType::TsTypeRef(TsTypeRef {
                 span: DUMMY_SP,
                 type_name: TsEntityName::Ident(Ident {
                     span: DUMMY_SP,
@@ -641,11 +638,11 @@ impl JsonSchema {
                 }),
                 type_params: None,
             }),
-            JsonSchema::StringWithFormat(fmt) => ts_string_brands(std::slice::from_ref(fmt)),
-            JsonSchema::StringFormatExtends(vs) => ts_string_brands(vs),
-            JsonSchema::NumberWithFormat(fmt) => ts_number_brands(std::slice::from_ref(fmt)),
-            JsonSchema::NumberFormatExtends(vs) => ts_number_brands(vs),
-            JsonSchema::Codec(c) => match c {
+            Runtype::StringWithFormat(fmt) => ts_string_brands(std::slice::from_ref(fmt)),
+            Runtype::StringFormatExtends(vs) => ts_string_brands(vs),
+            Runtype::NumberWithFormat(fmt) => ts_number_brands(std::slice::from_ref(fmt)),
+            Runtype::NumberFormatExtends(vs) => ts_number_brands(vs),
+            Runtype::Codec(c) => match c {
                 CodecName::ISO8061 => TsType::TsTypeRef(TsTypeRef {
                     span: DUMMY_SP,
                     type_name: TsEntityName::Ident(Ident {
@@ -660,7 +657,7 @@ impl JsonSchema {
                     kind: TsKeywordTypeKind::TsBigIntKeyword,
                 }),
             },
-            JsonSchema::AnyOf(vs) =>
+            Runtype::AnyOf(vs) =>
             // TsType::TsUnionOrIntersectionType(
             //     TsUnionOrIntersectionType::TsUnionType(TsUnionType {
             //         span: DUMMY_SP,
@@ -685,7 +682,7 @@ impl JsonSchema {
                     }),
                 }
             }
-            JsonSchema::AllOf(vs) =>
+            Runtype::AllOf(vs) =>
             // TsType::TsUnionOrIntersectionType(
             //     TsUnionOrIntersectionType::TsIntersectionType(TsIntersectionType {
             //         span: DUMMY_SP,
@@ -710,19 +707,19 @@ impl JsonSchema {
                     }),
                 }
             }
-            JsonSchema::Const(v) => match v {
-                JsonSchemaConst::Null => TsType::TsKeywordType(TsKeywordType {
+            Runtype::Const(v) => match v {
+                RuntypeConst::Null => TsType::TsKeywordType(TsKeywordType {
                     span: DUMMY_SP,
                     kind: TsKeywordTypeKind::TsNullKeyword,
                 }),
-                JsonSchemaConst::Bool(b) => TsType::TsLitType(TsLitType {
+                RuntypeConst::Bool(b) => TsType::TsLitType(TsLitType {
                     span: DUMMY_SP,
                     lit: TsLit::Bool(Bool {
                         span: DUMMY_SP,
                         value: *b,
                     }),
                 }),
-                JsonSchemaConst::Number(n) => TsType::TsLitType(TsLitType {
+                RuntypeConst::Number(n) => TsType::TsLitType(TsLitType {
                     span: DUMMY_SP,
                     lit: TsLit::Number(swc_ecma_ast::Number {
                         span: DUMMY_SP,
@@ -730,7 +727,7 @@ impl JsonSchema {
                         raw: None,
                     }),
                 }),
-                JsonSchemaConst::String(v) => TsType::TsLitType(TsLitType {
+                RuntypeConst::String(v) => TsType::TsLitType(TsLitType {
                     span: DUMMY_SP,
                     lit: TsLit::Str(Str {
                         span: DUMMY_SP,
@@ -739,11 +736,11 @@ impl JsonSchema {
                     }),
                 }),
             },
-            JsonSchema::StNever => TsType::TsKeywordType(TsKeywordType {
+            Runtype::StNever => TsType::TsKeywordType(TsKeywordType {
                 span: DUMMY_SP,
                 kind: TsKeywordTypeKind::TsNeverKeyword,
             }),
-            JsonSchema::StNot(v) => TsType::TsTypeRef(TsTypeRef {
+            Runtype::StNot(v) => TsType::TsTypeRef(TsTypeRef {
                 span: DUMMY_SP,
                 type_name: Ident {
                     span: DUMMY_SP,
@@ -763,7 +760,7 @@ impl JsonSchema {
                     ],
                 })),
             }),
-            JsonSchema::AnyArrayLike => TsType::TsTypeRef(TsTypeRef {
+            Runtype::AnyArrayLike => TsType::TsTypeRef(TsTypeRef {
                 span: DUMMY_SP,
                 type_name: Ident {
                     span: DUMMY_SP,
@@ -773,7 +770,7 @@ impl JsonSchema {
                 .into(),
                 type_params: None,
             }),
-            JsonSchema::TplLitType(items) => {
+            Runtype::TplLitType(items) => {
                 let mut types: Vec<Box<TsType>> = vec![];
                 let mut quasis: Vec<TplElement> = vec![];
 
@@ -899,7 +896,7 @@ impl JsonSchema {
                     }),
                 })
             }
-            JsonSchema::Function => TsType::TsFnOrConstructorType(
+            Runtype::Function => TsType::TsFnOrConstructorType(
                 swc_ecma_ast::TsFnOrConstructorType::TsFnType(TsFnType {
                     span: DUMMY_SP,
                     params: vec![],
@@ -915,7 +912,7 @@ impl JsonSchema {
                     .into(),
                 }),
             ),
-            JsonSchema::MappedRecord { key, rest } => {
+            Runtype::MappedRecord { key, rest } => {
                 let k = key.to_ts_type();
                 let v = rest.to_ts_type();
                 // Record<k, v>
