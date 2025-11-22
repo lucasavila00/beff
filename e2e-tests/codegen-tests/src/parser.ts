@@ -12,6 +12,16 @@ type TestHoist = {
   b: string[];
 };
 
+export type BeforeRequired = {
+  a: string;
+  b: string | undefined;
+  c: string | void;
+  d: string | null;
+  e?: string;
+};
+
+export type AfterRequired = Required<BeforeRequired>;
+
 export const Codecs = parse.buildParsers<{
   Dec: string;
   AliasToString: AliasToString;
@@ -21,4 +31,6 @@ export const Codecs = parse.buildParsers<{
   AliasToAny: AliasToAny;
   AliasToConst: AliasToConst;
   TestHoist: TestHoist;
+  BeforeRequired: BeforeRequired;
+  AfterRequired: AfterRequired;
 }>();
