@@ -196,7 +196,7 @@ const numberFormatters = {};
 function registerNumberFormatter(name, validator) {
   numberFormatters[name] = validator;
 }
-class ParserTypeOfImpl {
+class TypeofRuntype {
   typeName;
   constructor(typeName) {
     this.typeName = typeName;
@@ -217,7 +217,7 @@ class ParserTypeOfImpl {
     return buildError(ctx, "expected " + this.typeName, input);
   }
 }
-class ParserAnyImpl {
+class AnyRuntype {
   describe(_ctx) {
     return "any";
   }
@@ -234,7 +234,7 @@ class ParserAnyImpl {
     return buildError(ctx, "expected any", input);
   }
 }
-class ParserNullImpl {
+class NullRuntype {
   describe(_ctx) {
     return "null";
   }
@@ -251,7 +251,7 @@ class ParserNullImpl {
     return buildError(ctx, "expected nullish value", input);
   }
 }
-class ParserNeverImpl {
+class NeverRuntype {
   describe(_ctx) {
     return "never";
   }
@@ -268,7 +268,7 @@ class ParserNeverImpl {
     return buildError(ctx, "expected never", input);
   }
 }
-class ParserConstImpl {
+class ConstRuntype {
   value;
   constructor(value) {
     this.value = value ?? null;
@@ -292,7 +292,7 @@ class ParserConstImpl {
     return buildError(ctx, `expected ${JSON.stringify(this.value)}`, input);
   }
 }
-class ParserRegexImpl {
+class RegexRuntype {
   regex;
   description;
   constructor(regex, description) {
@@ -318,7 +318,7 @@ class ParserRegexImpl {
     return buildError(ctx, `expected string matching ${this.description}`, input);
   }
 }
-class ParserDateImpl {
+class DateRuntype {
   describe(_ctx) {
     return "Date";
   }
@@ -335,7 +335,7 @@ class ParserDateImpl {
     return buildError(ctx, `expected Date`, input);
   }
 }
-class ParserBigIntImpl {
+class BigIntRuntype {
   describe(_ctx) {
     return "BigInt";
   }
@@ -352,7 +352,7 @@ class ParserBigIntImpl {
     return buildError(ctx, `expected BigInt`, input);
   }
 }
-class ParserStringWithFormatImpl {
+class StringWithFormatRuntype {
   formats;
   constructor(formats) {
     this.formats = formats;
@@ -396,7 +396,7 @@ class ParserStringWithFormatImpl {
     return buildError(ctx, `expected string with format "${this.formats.join(" and ")}"`, input);
   }
 }
-class ParserNumberWithFormatImpl {
+class NumberWithFormatRuntype {
   formats;
   constructor(formats) {
     this.formats = formats;
@@ -440,7 +440,7 @@ class ParserNumberWithFormatImpl {
     return buildError(ctx, `expected number with format "${this.formats.join(" and ")}"`, input);
   }
 }
-class ParserAnyOfConstsImpl {
+class AnyOfConstsRuntype {
   values;
   constructor(values) {
     this.values = values;
@@ -469,7 +469,7 @@ class ParserAnyOfConstsImpl {
     return buildError(ctx, `expected one of ${limitedCommaJoinJson(this.values)}`, input);
   }
 }
-class ParserTupleImpl {
+class TupleRuntype {
   prefix;
   rest;
   constructor(prefix, rest) {
@@ -561,7 +561,7 @@ class ParserTupleImpl {
     return acc;
   }
 }
-class ParserAllOfImpl {
+class AllOfRuntype {
   schemas;
   constructor(schemas) {
     this.schemas = schemas;
@@ -606,7 +606,7 @@ class ParserAllOfImpl {
     return acc;
   }
 }
-class ParserAnyOfImpl {
+class AnyOfRuntype {
   schemas;
   constructor(schemas) {
     this.schemas = schemas;
@@ -648,7 +648,7 @@ class ParserAnyOfImpl {
     return `(${this.schemas.map((it) => it.describe(ctx)).join(" | ")})`;
   }
 }
-class ParserArrayImpl {
+class ArrayRuntype {
   itemParser;
   constructor(itemParser) {
     this.itemParser = itemParser;
@@ -699,7 +699,7 @@ class ParserArrayImpl {
     return `Array<${this.itemParser.describe(ctx)}>`;
   }
 }
-class ParserAnyOfDiscriminatedImpl {
+class AnyOfDiscriminatedRuntype {
   schemas;
   discriminator;
   mapping;
@@ -764,7 +764,7 @@ class ParserAnyOfDiscriminatedImpl {
     return `(${this.schemas.map((it) => it.describe(ctx)).join(" | ")})`;
   }
 }
-class ParserMappedRecordImpl {
+class MappedRecordRuntype {
   keyParser;
   valueParser;
   constructor(keyParser, valueParser) {
@@ -829,7 +829,7 @@ class ParserMappedRecordImpl {
     return acc;
   }
 }
-class ParserObjectImpl {
+class ObjectRuntype {
   properties;
   restParser;
   constructor(properties, restParser) {
@@ -952,14 +952,14 @@ class ParserObjectImpl {
     return acc;
   }
 }
-class ParserRefImpl {
+class RefRuntype {
   refName;
   constructor(refName) {
     this.refName = refName;
   }
   describe(ctx) {
     const name = this.refName;
-    const to = namedParsers[this.refName];
+    const to = namedRuntypes[this.refName];
     if (ctx.measure) {
       ctx.deps_counter[name] = (ctx.deps_counter[name] || 0) + 1;
       if (ctx.deps[name]) {
@@ -982,7 +982,7 @@ class ParserRefImpl {
   }
   schema(ctx) {
     const name = this.refName;
-    const to = namedParsers[this.refName];
+    const to = namedRuntypes[this.refName];
     if (ctx.seen[name]) {
       return {};
     }
@@ -992,37 +992,45 @@ class ParserRefImpl {
     return tmp;
   }
   validate(ctx, input) {
-    const to = namedParsers[this.refName];
+    const to = namedRuntypes[this.refName];
     return to.validate(ctx, input);
   }
   parseAfterValidation(ctx, input) {
-    const to = namedParsers[this.refName];
+    const to = namedRuntypes[this.refName];
     return to.parseAfterValidation(ctx, input);
   }
   reportDecodeError(ctx, input) {
-    const to = namedParsers[this.refName];
+    const to = namedRuntypes[this.refName];
     return to.reportDecodeError(ctx, input);
   }
 }
-class ParserHoistedImpl {
+class HoistedRuntype {
   hoistedIndex;
+  decoder;
   constructor(hoistedIndex) {
     this.hoistedIndex = hoistedIndex;
+    this.decoder = null;
+  }
+  getDecoder() {
+    if (this.decoder == null) {
+      this.decoder = hoistedIndirect[this.hoistedIndex];
+    }
+    return this.decoder;
   }
   describe(ctx) {
-    return hoistedIndirect[this.hoistedIndex].describe(ctx);
+    return this.getDecoder().describe(ctx);
   }
   schema(ctx) {
-    return hoistedIndirect[this.hoistedIndex].schema(ctx);
+    return this.getDecoder().schema(ctx);
   }
   validate(ctx, input) {
-    return hoistedIndirect[this.hoistedIndex].validate(ctx, input);
+    return this.getDecoder().validate(ctx, input);
   }
   parseAfterValidation(ctx, input) {
-    return hoistedIndirect[this.hoistedIndex].parseAfterValidation(ctx, input);
+    return this.getDecoder().parseAfterValidation(ctx, input);
   }
   reportDecodeError(ctx, input) {
-    return hoistedIndirect[this.hoistedIndex].reportDecodeError(ctx, input);
+    return this.getDecoder().reportDecodeError(ctx, input);
   }
 }
 const buildParsers = (args) => {
@@ -1047,8 +1055,8 @@ const buildParsers = (args) => {
     registerNumberFormatter(k, v);
   });
   let acc = {};
-  for (const k of Object.keys(buildValidatorsInput)) {
-    const impl = buildValidatorsInput[k];
+  for (const k of Object.keys(buildParsersInput)) {
+    const impl = buildParsersInput[k];
     const validate = (input, options) => {
       const disallowExtraProperties = options?.disallowExtraProperties ?? false;
       const ctx = { disallowExtraProperties };
@@ -1129,114 +1137,114 @@ const buildParsers = (args) => {
 
 const RequiredStringFormats = ["ValidCurrency"];
 const RequiredNumberFormats = [];
-const direct_hoist_0 = new ParserTypeOfImpl("string");
-const direct_hoist_1 = new ParserTypeOfImpl("number");
-const direct_hoist_2 = new ParserConstImpl("a");
+const direct_hoist_0 = new TypeofRuntype("string");
+const direct_hoist_1 = new TypeofRuntype("number");
+const direct_hoist_2 = new ConstRuntype("a");
 const hoistedIndirect = [];
-const namedParsers = {
-    "T1": new ParserObjectImpl({
+const namedRuntypes = {
+    "T1": new ObjectRuntype({
         "a": direct_hoist_0,
         "b": direct_hoist_1
     }, null),
-    "T2": new ParserObjectImpl({
-        "t1": new ParserRefImpl("T1")
+    "T2": new ObjectRuntype({
+        "t1": new RefRuntype("T1")
     }, null),
-    "T3": new ParserObjectImpl({
-        "t2Array": new ParserArrayImpl(new ParserRefImpl("T2"))
+    "T3": new ObjectRuntype({
+        "t2Array": new ArrayRuntype(new RefRuntype("T2"))
     }, null),
-    "InvalidSchemaWithDate": new ParserObjectImpl({
-        "x": new ParserDateImpl()
+    "InvalidSchemaWithDate": new ObjectRuntype({
+        "x": new DateRuntype()
     }, null),
-    "InvalidSchemaWithBigInt": new ParserObjectImpl({
-        "x": new ParserBigIntImpl()
+    "InvalidSchemaWithBigInt": new ObjectRuntype({
+        "x": new BigIntRuntype()
     }, null),
-    "DiscriminatedUnion": new ParserAnyOfDiscriminatedImpl([
-        new ParserObjectImpl({
+    "DiscriminatedUnion": new AnyOfDiscriminatedRuntype([
+        new ObjectRuntype({
             "a1": direct_hoist_0,
-            "a11": new ParserAnyOfImpl([
-                new ParserNullImpl(),
+            "a11": new AnyOfRuntype([
+                new NullRuntype(),
                 direct_hoist_0
             ]),
-            "subType": new ParserConstImpl("a1"),
+            "subType": new ConstRuntype("a1"),
             "type": direct_hoist_2
         }, null),
-        new ParserObjectImpl({
+        new ObjectRuntype({
             "a2": direct_hoist_0,
-            "subType": new ParserConstImpl("a2"),
+            "subType": new ConstRuntype("a2"),
             "type": direct_hoist_2
         }, null),
-        new ParserObjectImpl({
-            "type": new ParserConstImpl("b"),
+        new ObjectRuntype({
+            "type": new ConstRuntype("b"),
             "value": direct_hoist_1
         }, null)
     ], "type", {
-        "a": new ParserAnyOfDiscriminatedImpl([
-            new ParserObjectImpl({
+        "a": new AnyOfDiscriminatedRuntype([
+            new ObjectRuntype({
                 "a1": direct_hoist_0,
-                "a11": new ParserAnyOfImpl([
-                    new ParserNullImpl(),
+                "a11": new AnyOfRuntype([
+                    new NullRuntype(),
                     direct_hoist_0
                 ]),
-                "subType": new ParserConstImpl("a1"),
+                "subType": new ConstRuntype("a1"),
                 "type": direct_hoist_2
             }, null),
-            new ParserObjectImpl({
+            new ObjectRuntype({
                 "a2": direct_hoist_0,
-                "subType": new ParserConstImpl("a2"),
+                "subType": new ConstRuntype("a2"),
                 "type": direct_hoist_2
             }, null)
         ], "subType", {
-            "a1": new ParserObjectImpl({
+            "a1": new ObjectRuntype({
                 "a1": direct_hoist_0,
-                "a11": new ParserAnyOfImpl([
-                    new ParserNullImpl(),
+                "a11": new AnyOfRuntype([
+                    new NullRuntype(),
                     direct_hoist_0
                 ]),
-                "subType": new ParserConstImpl("a1"),
+                "subType": new ConstRuntype("a1"),
                 "type": direct_hoist_2
             }, null),
-            "a2": new ParserObjectImpl({
+            "a2": new ObjectRuntype({
                 "a2": direct_hoist_0,
-                "subType": new ParserConstImpl("a2"),
+                "subType": new ConstRuntype("a2"),
                 "type": direct_hoist_2
             }, null)
         }),
-        "b": new ParserObjectImpl({
-            "type": new ParserConstImpl("b"),
+        "b": new ObjectRuntype({
+            "type": new ConstRuntype("b"),
             "value": direct_hoist_1
         }, null)
     }),
-    "RecursiveTree": new ParserObjectImpl({
-        "children": new ParserArrayImpl(new ParserRefImpl("RecursiveTree")),
+    "RecursiveTree": new ObjectRuntype({
+        "children": new ArrayRuntype(new RefRuntype("RecursiveTree")),
         "value": direct_hoist_1
     }, null),
-    "SemVer": new ParserRegexImpl(/(\d+(\.\d+)?)(\.)(\d+(\.\d+)?)(\.)(\d+(\.\d+)?)/, "${number}.${number}.${number}"),
-    "NonEmptyString": new ParserTupleImpl([
+    "SemVer": new RegexRuntype(/(\d+(\.\d+)?)(\.)(\d+(\.\d+)?)(\.)(\d+(\.\d+)?)/, "${number}.${number}.${number}"),
+    "NonEmptyString": new TupleRuntype([
         direct_hoist_0
     ], direct_hoist_0),
-    "ValidCurrency": new ParserStringWithFormatImpl([
+    "ValidCurrency": new StringWithFormatRuntype([
         "ValidCurrency"
     ])
 };
-const buildValidatorsInput = {
+const buildParsersInput = {
     "string": direct_hoist_0,
     "number": direct_hoist_1,
-    "boolean": new ParserTypeOfImpl("boolean"),
-    "null": new ParserNullImpl(),
-    "undefined": new ParserNullImpl(),
-    "object": new ParserObjectImpl({}, new ParserAnyImpl()),
-    "anyArray": new ParserArrayImpl(new ParserAnyImpl()),
-    "any": new ParserAnyImpl(),
-    "T1": new ParserRefImpl("T1"),
-    "T2": new ParserRefImpl("T2"),
-    "T3": new ParserRefImpl("T3"),
-    "InvalidSchemaWithDate": new ParserRefImpl("InvalidSchemaWithDate"),
-    "InvalidSchemaWithBigInt": new ParserRefImpl("InvalidSchemaWithBigInt"),
-    "DiscriminatedUnion": new ParserRefImpl("DiscriminatedUnion"),
-    "RecursiveTree": new ParserRefImpl("RecursiveTree"),
-    "SemVer": new ParserRefImpl("SemVer"),
-    "NonEmptyString": new ParserRefImpl("NonEmptyString"),
-    "ValidCurrency": new ParserRefImpl("ValidCurrency")
+    "boolean": new TypeofRuntype("boolean"),
+    "null": new NullRuntype(),
+    "undefined": new NullRuntype(),
+    "object": new ObjectRuntype({}, new AnyRuntype()),
+    "anyArray": new ArrayRuntype(new AnyRuntype()),
+    "any": new AnyRuntype(),
+    "T1": new RefRuntype("T1"),
+    "T2": new RefRuntype("T2"),
+    "T3": new RefRuntype("T3"),
+    "InvalidSchemaWithDate": new RefRuntype("InvalidSchemaWithDate"),
+    "InvalidSchemaWithBigInt": new RefRuntype("InvalidSchemaWithBigInt"),
+    "DiscriminatedUnion": new RefRuntype("DiscriminatedUnion"),
+    "RecursiveTree": new RefRuntype("RecursiveTree"),
+    "SemVer": new RefRuntype("SemVer"),
+    "NonEmptyString": new RefRuntype("NonEmptyString"),
+    "ValidCurrency": new RefRuntype("ValidCurrency")
 };
 
 export default { buildParsers };

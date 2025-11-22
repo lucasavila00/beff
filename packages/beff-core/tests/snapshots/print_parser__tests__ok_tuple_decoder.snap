@@ -2,14 +2,14 @@
 source: packages/beff-core/tests/print_parser.rs
 expression: "decoder(r#\"\n        export type Alias = [number, number]\n        parse.buildParsers<{ Dec: Alias }>();\n      \"#)"
 ---
-const direct_hoist_0 = new ParserTypeOfImpl("number");
+const direct_hoist_0 = new TypeofRuntype("number");
 const hoistedIndirect = [];
-const namedParsers = {
-    "Alias": new ParserTupleImpl([
+const namedRuntypes = {
+    "Alias": new TupleRuntype([
         direct_hoist_0,
         direct_hoist_0
     ], null)
 };
-const buildValidatorsInput = {
-    "Dec": new ParserRefImpl("Alias")
+const buildParsersInput = {
+    "Dec": new RefRuntype("Alias")
 };

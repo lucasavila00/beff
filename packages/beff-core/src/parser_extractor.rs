@@ -1,4 +1,4 @@
-use crate::ast::json_schema::JsonSchema;
+use crate::ast::runtype::Runtype;
 use crate::diag::{Diagnostic, DiagnosticInfoMessage, DiagnosticInformation, Location};
 use crate::type_to_schema::TypeToSchema;
 use crate::{BeffUserSettings, ParsedModule};
@@ -18,7 +18,7 @@ use swc_ecma_visit::Visit;
 #[derive(Debug)]
 pub struct BuiltDecoder {
     pub exported_name: String,
-    pub schema: JsonSchema,
+    pub schema: Runtype,
 }
 
 #[derive(Debug)]
@@ -122,7 +122,7 @@ impl<R: FileManager> ExtractParserVisitor<'_, R> {
             }
         }
     }
-    fn convert_to_json_schema(&mut self, ty: &TsType, span: &Span) -> JsonSchema {
+    fn convert_to_json_schema(&mut self, ty: &TsType, span: &Span) -> Runtype {
         let mut to_schema = TypeToSchema::new(
             self.files,
             self.current_file.clone(),
@@ -154,7 +154,7 @@ impl<R: FileManager> ExtractParserVisitor<'_, R> {
             }
             Err(diag) => {
                 self.errors.push(*diag);
-                JsonSchema::Any
+                Runtype::Any
             }
         }
     }

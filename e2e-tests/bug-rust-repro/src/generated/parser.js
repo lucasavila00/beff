@@ -196,7 +196,7 @@ const numberFormatters = {};
 function registerNumberFormatter(name, validator) {
   numberFormatters[name] = validator;
 }
-class ParserTypeOfImpl {
+class TypeofRuntype {
   typeName;
   constructor(typeName) {
     this.typeName = typeName;
@@ -217,7 +217,7 @@ class ParserTypeOfImpl {
     return buildError(ctx, "expected " + this.typeName, input);
   }
 }
-class ParserAnyImpl {
+class AnyRuntype {
   describe(_ctx) {
     return "any";
   }
@@ -234,7 +234,7 @@ class ParserAnyImpl {
     return buildError(ctx, "expected any", input);
   }
 }
-class ParserNullImpl {
+class NullRuntype {
   describe(_ctx) {
     return "null";
   }
@@ -251,7 +251,7 @@ class ParserNullImpl {
     return buildError(ctx, "expected nullish value", input);
   }
 }
-class ParserNeverImpl {
+class NeverRuntype {
   describe(_ctx) {
     return "never";
   }
@@ -268,7 +268,7 @@ class ParserNeverImpl {
     return buildError(ctx, "expected never", input);
   }
 }
-class ParserConstImpl {
+class ConstRuntype {
   value;
   constructor(value) {
     this.value = value ?? null;
@@ -292,7 +292,7 @@ class ParserConstImpl {
     return buildError(ctx, `expected ${JSON.stringify(this.value)}`, input);
   }
 }
-class ParserRegexImpl {
+class RegexRuntype {
   regex;
   description;
   constructor(regex, description) {
@@ -318,7 +318,7 @@ class ParserRegexImpl {
     return buildError(ctx, `expected string matching ${this.description}`, input);
   }
 }
-class ParserDateImpl {
+class DateRuntype {
   describe(_ctx) {
     return "Date";
   }
@@ -335,7 +335,7 @@ class ParserDateImpl {
     return buildError(ctx, `expected Date`, input);
   }
 }
-class ParserBigIntImpl {
+class BigIntRuntype {
   describe(_ctx) {
     return "BigInt";
   }
@@ -352,7 +352,7 @@ class ParserBigIntImpl {
     return buildError(ctx, `expected BigInt`, input);
   }
 }
-class ParserStringWithFormatImpl {
+class StringWithFormatRuntype {
   formats;
   constructor(formats) {
     this.formats = formats;
@@ -396,7 +396,7 @@ class ParserStringWithFormatImpl {
     return buildError(ctx, `expected string with format "${this.formats.join(" and ")}"`, input);
   }
 }
-class ParserNumberWithFormatImpl {
+class NumberWithFormatRuntype {
   formats;
   constructor(formats) {
     this.formats = formats;
@@ -440,7 +440,7 @@ class ParserNumberWithFormatImpl {
     return buildError(ctx, `expected number with format "${this.formats.join(" and ")}"`, input);
   }
 }
-class ParserAnyOfConstsImpl {
+class AnyOfConstsRuntype {
   values;
   constructor(values) {
     this.values = values;
@@ -469,7 +469,7 @@ class ParserAnyOfConstsImpl {
     return buildError(ctx, `expected one of ${limitedCommaJoinJson(this.values)}`, input);
   }
 }
-class ParserTupleImpl {
+class TupleRuntype {
   prefix;
   rest;
   constructor(prefix, rest) {
@@ -561,7 +561,7 @@ class ParserTupleImpl {
     return acc;
   }
 }
-class ParserAllOfImpl {
+class AllOfRuntype {
   schemas;
   constructor(schemas) {
     this.schemas = schemas;
@@ -606,7 +606,7 @@ class ParserAllOfImpl {
     return acc;
   }
 }
-class ParserAnyOfImpl {
+class AnyOfRuntype {
   schemas;
   constructor(schemas) {
     this.schemas = schemas;
@@ -648,7 +648,7 @@ class ParserAnyOfImpl {
     return `(${this.schemas.map((it) => it.describe(ctx)).join(" | ")})`;
   }
 }
-class ParserArrayImpl {
+class ArrayRuntype {
   itemParser;
   constructor(itemParser) {
     this.itemParser = itemParser;
@@ -699,7 +699,7 @@ class ParserArrayImpl {
     return `Array<${this.itemParser.describe(ctx)}>`;
   }
 }
-class ParserAnyOfDiscriminatedImpl {
+class AnyOfDiscriminatedRuntype {
   schemas;
   discriminator;
   mapping;
@@ -764,7 +764,7 @@ class ParserAnyOfDiscriminatedImpl {
     return `(${this.schemas.map((it) => it.describe(ctx)).join(" | ")})`;
   }
 }
-class ParserMappedRecordImpl {
+class MappedRecordRuntype {
   keyParser;
   valueParser;
   constructor(keyParser, valueParser) {
@@ -829,7 +829,7 @@ class ParserMappedRecordImpl {
     return acc;
   }
 }
-class ParserObjectImpl {
+class ObjectRuntype {
   properties;
   restParser;
   constructor(properties, restParser) {
@@ -952,14 +952,14 @@ class ParserObjectImpl {
     return acc;
   }
 }
-class ParserRefImpl {
+class RefRuntype {
   refName;
   constructor(refName) {
     this.refName = refName;
   }
   describe(ctx) {
     const name = this.refName;
-    const to = namedParsers[this.refName];
+    const to = namedRuntypes[this.refName];
     if (ctx.measure) {
       ctx.deps_counter[name] = (ctx.deps_counter[name] || 0) + 1;
       if (ctx.deps[name]) {
@@ -982,7 +982,7 @@ class ParserRefImpl {
   }
   schema(ctx) {
     const name = this.refName;
-    const to = namedParsers[this.refName];
+    const to = namedRuntypes[this.refName];
     if (ctx.seen[name]) {
       return {};
     }
@@ -992,37 +992,45 @@ class ParserRefImpl {
     return tmp;
   }
   validate(ctx, input) {
-    const to = namedParsers[this.refName];
+    const to = namedRuntypes[this.refName];
     return to.validate(ctx, input);
   }
   parseAfterValidation(ctx, input) {
-    const to = namedParsers[this.refName];
+    const to = namedRuntypes[this.refName];
     return to.parseAfterValidation(ctx, input);
   }
   reportDecodeError(ctx, input) {
-    const to = namedParsers[this.refName];
+    const to = namedRuntypes[this.refName];
     return to.reportDecodeError(ctx, input);
   }
 }
-class ParserHoistedImpl {
+class HoistedRuntype {
   hoistedIndex;
+  decoder;
   constructor(hoistedIndex) {
     this.hoistedIndex = hoistedIndex;
+    this.decoder = null;
+  }
+  getDecoder() {
+    if (this.decoder == null) {
+      this.decoder = hoistedIndirect[this.hoistedIndex];
+    }
+    return this.decoder;
   }
   describe(ctx) {
-    return hoistedIndirect[this.hoistedIndex].describe(ctx);
+    return this.getDecoder().describe(ctx);
   }
   schema(ctx) {
-    return hoistedIndirect[this.hoistedIndex].schema(ctx);
+    return this.getDecoder().schema(ctx);
   }
   validate(ctx, input) {
-    return hoistedIndirect[this.hoistedIndex].validate(ctx, input);
+    return this.getDecoder().validate(ctx, input);
   }
   parseAfterValidation(ctx, input) {
-    return hoistedIndirect[this.hoistedIndex].parseAfterValidation(ctx, input);
+    return this.getDecoder().parseAfterValidation(ctx, input);
   }
   reportDecodeError(ctx, input) {
-    return hoistedIndirect[this.hoistedIndex].reportDecodeError(ctx, input);
+    return this.getDecoder().reportDecodeError(ctx, input);
   }
 }
 const buildParsers = (args) => {
@@ -1047,8 +1055,8 @@ const buildParsers = (args) => {
     registerNumberFormatter(k, v);
   });
   let acc = {};
-  for (const k of Object.keys(buildValidatorsInput)) {
-    const impl = buildValidatorsInput[k];
+  for (const k of Object.keys(buildParsersInput)) {
+    const impl = buildParsersInput[k];
     const validate = (input, options) => {
       const disallowExtraProperties = options?.disallowExtraProperties ?? false;
       const ctx = { disallowExtraProperties };
@@ -1130,11 +1138,11 @@ const buildParsers = (args) => {
 const RequiredStringFormats = ["ValidCurrency"];
 const RequiredNumberFormats = [];
 const hoistedIndirect = [];
-const namedParsers = {
-    "A": new ParserTypeOfImpl("string")
+const namedRuntypes = {
+    "A": new TypeofRuntype("string")
 };
-const buildValidatorsInput = {
-    "A": new ParserRefImpl("A")
+const buildParsersInput = {
+    "A": new RefRuntype("A")
 };
 
 export default { buildParsers };

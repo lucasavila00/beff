@@ -2,12 +2,12 @@
 source: packages/beff-core/tests/print_parser.rs
 expression: "decoder(r#\"\n        export type NumberRec = Record<number, string>;\n        export type NumberRecGet = NumberRec[0];\n        parse.buildParsers<{ NumberRecGet: NumberRecGet }>();\n      \"#)"
 ---
-const direct_hoist_0 = new ParserTypeOfImpl("string");
+const direct_hoist_0 = new TypeofRuntype("string");
 const hoistedIndirect = [];
-const namedParsers = {
-    "NumberRec": new ParserMappedRecordImpl(new ParserTypeOfImpl("number"), direct_hoist_0),
+const namedRuntypes = {
+    "NumberRec": new MappedRecordRuntype(new TypeofRuntype("number"), direct_hoist_0),
     "NumberRecGet": direct_hoist_0
 };
-const buildValidatorsInput = {
-    "NumberRecGet": new ParserRefImpl("NumberRecGet")
+const buildParsersInput = {
+    "NumberRecGet": new RefRuntype("NumberRecGet")
 };

@@ -2,7 +2,7 @@
 mod tests {
 
     use beff_core::{
-        ast::json_schema::{JsonSchema, JsonSchemaConst},
+        ast::runtype::{Runtype, RuntypeConst},
         subtyping::{
             semtype::{SemTypeContext, SemTypeOps},
             ToSemType,
@@ -11,8 +11,8 @@ mod tests {
     };
 
     pub fn is_sub_type(
-        a: &JsonSchema,
-        b: &JsonSchema,
+        a: &Runtype,
+        b: &Runtype,
         a_validators: &[&NamedSchema],
         b_validators: &[&NamedSchema],
         ctx: &mut SemTypeContext,
@@ -23,8 +23,8 @@ mod tests {
     }
 
     fn schema_is_sub_type(
-        a: &JsonSchema,
-        b: &JsonSchema,
+        a: &Runtype,
+        b: &Runtype,
         a_validators: &[&NamedSchema],
         b_validators: &[&NamedSchema],
     ) -> bool {
@@ -36,23 +36,20 @@ mod tests {
     fn ref2() {
         let definitions = [NamedSchema {
             name: "User".into(),
-            schema: JsonSchema::object(
+            schema: Runtype::object(
                 vec![
-                    ("id".into(), JsonSchema::String.required()),
-                    (
-                        "bestFriend".into(),
-                        JsonSchema::Ref("User".into()).required(),
-                    ),
+                    ("id".into(), Runtype::String.required()),
+                    ("bestFriend".into(), Runtype::Ref("User".into()).required()),
                 ],
                 None,
             ),
         }];
 
-        let t1 = JsonSchema::Ref("User".into());
-        let t2 = JsonSchema::object(
+        let t1 = Runtype::Ref("User".into());
+        let t2 = Runtype::object(
             vec![
-                ("id".into(), JsonSchema::String.required()),
-                ("bestFriend".into(), JsonSchema::Null.required()),
+                ("id".into(), Runtype::String.required()),
+                ("bestFriend".into(), Runtype::Null.required()),
             ],
             None,
         );
@@ -76,26 +73,20 @@ mod tests {
     fn ref1() {
         let definitions = [NamedSchema {
             name: "User".into(),
-            schema: JsonSchema::object(
+            schema: Runtype::object(
                 vec![
-                    ("id".into(), JsonSchema::String.required()),
-                    (
-                        "bestFriend".into(),
-                        JsonSchema::Ref("User".into()).optional(),
-                    ),
+                    ("id".into(), Runtype::String.required()),
+                    ("bestFriend".into(), Runtype::Ref("User".into()).optional()),
                 ],
                 None,
             ),
         }];
 
-        let t1 = JsonSchema::Ref("User".into());
-        let t2 = JsonSchema::object(
+        let t1 = Runtype::Ref("User".into());
+        let t2 = Runtype::object(
             vec![
-                ("id".into(), JsonSchema::String.required()),
-                (
-                    "bestFriend".into(),
-                    JsonSchema::Ref("User".into()).optional(),
-                ),
+                ("id".into(), Runtype::String.required()),
+                ("bestFriend".into(), Runtype::Ref("User".into()).optional()),
             ],
             None,
         );
@@ -119,26 +110,20 @@ mod tests {
     fn ref3() {
         let definitions = [NamedSchema {
             name: "User".into(),
-            schema: JsonSchema::object(
+            schema: Runtype::object(
                 vec![
-                    ("id".into(), JsonSchema::String.required()),
-                    (
-                        "bestFriend".into(),
-                        JsonSchema::Ref("User".into()).optional(),
-                    ),
+                    ("id".into(), Runtype::String.required()),
+                    ("bestFriend".into(), Runtype::Ref("User".into()).optional()),
                 ],
                 None,
             ),
         }];
 
-        let t1 = JsonSchema::Ref("User".into());
-        let t2 = JsonSchema::object(
+        let t1 = Runtype::Ref("User".into());
+        let t2 = Runtype::object(
             vec![
-                ("id".into(), JsonSchema::Number.required()),
-                (
-                    "bestFriend".into(),
-                    JsonSchema::Ref("User".into()).optional(),
-                ),
+                ("id".into(), Runtype::Number.required()),
+                ("bestFriend".into(), Runtype::Ref("User".into()).optional()),
             ],
             None,
         );
@@ -163,29 +148,26 @@ mod tests {
     fn mappings4() {
         let definitions = [NamedSchema {
             name: "User".into(),
-            schema: JsonSchema::object(
+            schema: Runtype::object(
                 vec![
-                    ("id".into(), JsonSchema::String.required()),
-                    (
-                        "bestFriend".into(),
-                        JsonSchema::Ref("User".into()).optional(),
-                    ),
+                    ("id".into(), Runtype::String.required()),
+                    ("bestFriend".into(), Runtype::Ref("User".into()).optional()),
                 ],
                 None,
             ),
         }];
 
-        let t1 = JsonSchema::object(
+        let t1 = Runtype::object(
             vec![
-                ("a".into(), JsonSchema::String.required()),
-                ("b".into(), JsonSchema::Ref("User".into()).required()),
+                ("a".into(), Runtype::String.required()),
+                ("b".into(), Runtype::Ref("User".into()).required()),
             ],
             None,
         );
-        let t2 = JsonSchema::object(
+        let t2 = Runtype::object(
             vec![
-                ("a".into(), JsonSchema::String.required()),
-                ("b".into(), JsonSchema::Ref("User".into()).optional()),
+                ("a".into(), Runtype::String.required()),
+                ("b".into(), Runtype::Ref("User".into()).optional()),
             ],
             None,
         );
@@ -210,8 +192,8 @@ mod tests {
     fn mappings3() {
         let definitions = vec![];
 
-        let t1 = JsonSchema::object(vec![("a".into(), JsonSchema::String.required())], None);
-        let t2 = JsonSchema::object(vec![("a".into(), JsonSchema::String.optional())], None);
+        let t1 = Runtype::object(vec![("a".into(), Runtype::String.required())], None);
+        let t2 = Runtype::object(vec![("a".into(), Runtype::String.optional())], None);
 
         let res = schema_is_sub_type(&t1, &t2, &definitions, &definitions);
         assert!(res);
@@ -222,20 +204,20 @@ mod tests {
     fn mappings2() {
         let definitions = vec![];
 
-        let t1 = JsonSchema::object(
+        let t1 = Runtype::object(
             vec![
                 (
                     "a".into(),
-                    JsonSchema::Const(JsonSchemaConst::String("abc".into())).required(),
+                    Runtype::Const(RuntypeConst::String("abc".into())).required(),
                 ),
                 (
                     "b".into(),
-                    JsonSchema::Const(JsonSchemaConst::String("def".into())).required(),
+                    Runtype::Const(RuntypeConst::String("def".into())).required(),
                 ),
             ],
             None,
         );
-        let t2 = JsonSchema::object(vec![("a".into(), JsonSchema::String.required())], None);
+        let t2 = Runtype::object(vec![("a".into(), Runtype::String.required())], None);
 
         let res = schema_is_sub_type(&t1, &t2, &definitions, &definitions);
         assert!(res);
@@ -246,14 +228,14 @@ mod tests {
     fn mappings() {
         let definitions = vec![];
 
-        let t1 = JsonSchema::object(
+        let t1 = Runtype::object(
             vec![(
                 "a".into(),
-                JsonSchema::Const(JsonSchemaConst::String("abc".into())).required(),
+                Runtype::Const(RuntypeConst::String("abc".into())).required(),
             )],
             None,
         );
-        let t2 = JsonSchema::object(vec![("a".into(), JsonSchema::String.required())], None);
+        let t2 = Runtype::object(vec![("a".into(), Runtype::String.required())], None);
 
         let res = schema_is_sub_type(&t1, &t2, &definitions, &definitions);
         assert!(res);
@@ -264,8 +246,8 @@ mod tests {
     fn array2() {
         let definitions = vec![];
 
-        let t1 = JsonSchema::Array(JsonSchema::Const(JsonSchemaConst::String("abc".into())).into());
-        let t2 = JsonSchema::Array(JsonSchema::String.into());
+        let t1 = Runtype::Array(Runtype::Const(RuntypeConst::String("abc".into())).into());
+        let t2 = Runtype::Array(Runtype::String.into());
 
         let res = schema_is_sub_type(&t1, &t2, &definitions, &definitions);
         assert!(res);
@@ -277,8 +259,8 @@ mod tests {
     fn array() {
         let definitions = vec![];
 
-        let t1 = JsonSchema::Array(JsonSchema::String.into());
-        let t2 = JsonSchema::Array(JsonSchema::String.into());
+        let t1 = Runtype::Array(Runtype::String.into());
+        let t2 = Runtype::Array(Runtype::String.into());
 
         let res = schema_is_sub_type(&t1, &t2, &definitions, &definitions);
         assert!(res);
@@ -289,11 +271,11 @@ mod tests {
     fn array_and_tuple() {
         let definitions = vec![];
 
-        let t1 = JsonSchema::Tuple {
-            prefix_items: vec![JsonSchema::String],
+        let t1 = Runtype::Tuple {
+            prefix_items: vec![Runtype::String],
             items: None,
         };
-        let t2 = JsonSchema::Array(JsonSchema::String.into());
+        let t2 = Runtype::Array(Runtype::String.into());
 
         let res = schema_is_sub_type(&t1, &t2, &definitions, &definitions);
         assert!(res);
@@ -304,53 +286,53 @@ mod tests {
     fn it_works() {
         let definitions = vec![];
 
-        let t1 = JsonSchema::Null;
-        let t2 = JsonSchema::Null;
+        let t1 = Runtype::Null;
+        let t2 = Runtype::Null;
         let res = schema_is_sub_type(&t1, &t2, &definitions, &definitions);
         assert!(res);
 
-        let t1 = JsonSchema::String;
-        let t2 = JsonSchema::String;
+        let t1 = Runtype::String;
+        let t2 = Runtype::String;
         let res = schema_is_sub_type(&t1, &t2, &definitions, &definitions);
         assert!(res);
 
-        let t1 = JsonSchema::Number;
-        let t2 = JsonSchema::Number;
+        let t1 = Runtype::Number;
+        let t2 = Runtype::Number;
         let res = schema_is_sub_type(&t1, &t2, &definitions, &definitions);
         assert!(res);
 
-        let t1 = JsonSchema::Const(JsonSchemaConst::Null);
-        let t2 = JsonSchema::Null;
+        let t1 = Runtype::Const(RuntypeConst::Null);
+        let t2 = Runtype::Null;
         let res = schema_is_sub_type(&t1, &t2, &definitions, &definitions);
         assert!(res);
 
-        let t1 = JsonSchema::Const(JsonSchemaConst::String("abc".into()));
-        let t2 = JsonSchema::String;
+        let t1 = Runtype::Const(RuntypeConst::String("abc".into()));
+        let t2 = Runtype::String;
         let res = schema_is_sub_type(&t1, &t2, &definitions, &definitions);
         assert!(res);
 
         let res = schema_is_sub_type(&t2, &t1, &definitions, &definitions);
         assert!(!res);
 
-        let t1 = JsonSchema::String;
-        let t2 = JsonSchema::any_of(vec![JsonSchema::String, JsonSchema::Number]);
+        let t1 = Runtype::String;
+        let t2 = Runtype::any_of(vec![Runtype::String, Runtype::Number]);
         let res = schema_is_sub_type(&t1, &t2, &definitions, &definitions);
         assert!(res);
         let res = schema_is_sub_type(&t2, &t1, &definitions, &definitions);
         assert!(!res);
 
-        let t1 = JsonSchema::Boolean;
-        let t2 = JsonSchema::any_of(vec![
-            JsonSchema::Const(JsonSchemaConst::Bool(true)),
-            JsonSchema::Const(JsonSchemaConst::Bool(false)),
+        let t1 = Runtype::Boolean;
+        let t2 = Runtype::any_of(vec![
+            Runtype::Const(RuntypeConst::Bool(true)),
+            Runtype::Const(RuntypeConst::Bool(false)),
         ]);
         let res = schema_is_sub_type(&t1, &t2, &definitions, &definitions);
         assert!(res);
         let res = schema_is_sub_type(&t2, &t1, &definitions, &definitions);
         assert!(res);
 
-        let t1 = JsonSchema::StringWithFormat("password".into());
-        let t2 = JsonSchema::String;
+        let t1 = Runtype::StringWithFormat(vec!["password".into()]);
+        let t2 = Runtype::String;
         let res = schema_is_sub_type(&t1, &t2, &definitions, &definitions);
         assert!(res);
 

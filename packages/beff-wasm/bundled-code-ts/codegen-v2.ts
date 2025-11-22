@@ -284,7 +284,7 @@ type ReportContext = {
   path: string[];
 };
 
-interface BeffParserImpl {
+interface Runtype {
   describe(ctx: DescribeContext): string;
   schema(ctx: SchemaContext): JSONSchema7;
   validate(ctx: ValidateContext, input: unknown): boolean;
@@ -293,7 +293,7 @@ interface BeffParserImpl {
 }
 
 type TypeOfSupported = "string" | "number" | "boolean";
-class ParserTypeOfImpl implements BeffParserImpl {
+class TypeofRuntype implements Runtype {
   private typeName: TypeOfSupported;
 
   constructor(typeName: TypeOfSupported) {
@@ -317,7 +317,7 @@ class ParserTypeOfImpl implements BeffParserImpl {
   }
 }
 
-class ParserAnyImpl implements BeffParserImpl {
+class AnyRuntype implements Runtype {
   describe(_ctx: DescribeContext): string {
     return "any";
   }
@@ -335,7 +335,7 @@ class ParserAnyImpl implements BeffParserImpl {
   }
 }
 
-class ParserNullImpl implements BeffParserImpl {
+class NullRuntype implements Runtype {
   describe(_ctx: DescribeContext): string {
     return "null";
   }
@@ -353,7 +353,7 @@ class ParserNullImpl implements BeffParserImpl {
   }
 }
 
-class ParserNeverImpl implements BeffParserImpl {
+class NeverRuntype implements Runtype {
   describe(_ctx: DescribeContext): string {
     return "never";
   }
@@ -373,7 +373,7 @@ class ParserNeverImpl implements BeffParserImpl {
 
 type Const = string | number | boolean | null;
 
-class ParserConstImpl implements BeffParserImpl {
+class ConstRuntype implements Runtype {
   private value: Const;
   constructor(value: Const) {
     this.value = value ?? null;
@@ -398,7 +398,7 @@ class ParserConstImpl implements BeffParserImpl {
   }
 }
 
-class ParserRegexImpl implements BeffParserImpl {
+class RegexRuntype implements Runtype {
   private regex: RegExp;
   private description: string;
 
@@ -427,7 +427,7 @@ class ParserRegexImpl implements BeffParserImpl {
   }
 }
 
-class ParserDateImpl implements BeffParserImpl {
+class DateRuntype implements Runtype {
   describe(_ctx: DescribeContext): string {
     return "Date";
   }
@@ -445,7 +445,7 @@ class ParserDateImpl implements BeffParserImpl {
   }
 }
 
-class ParserBigIntImpl implements BeffParserImpl {
+class BigIntRuntype implements Runtype {
   describe(_ctx: DescribeContext): string {
     return "BigInt";
   }
@@ -463,7 +463,7 @@ class ParserBigIntImpl implements BeffParserImpl {
   }
 }
 
-class ParserStringWithFormatImpl implements BeffParserImpl {
+class StringWithFormatRuntype implements Runtype {
   private formats: string[];
 
   constructor(formats: string[]) {
@@ -513,7 +513,7 @@ class ParserStringWithFormatImpl implements BeffParserImpl {
   }
 }
 
-class ParserNumberWithFormatImpl implements BeffParserImpl {
+class NumberWithFormatRuntype implements Runtype {
   private formats: string[];
   constructor(formats: string[]) {
     this.formats = formats;
@@ -562,7 +562,7 @@ class ParserNumberWithFormatImpl implements BeffParserImpl {
   }
 }
 
-class ParserAnyOfConstsImpl implements BeffParserImpl {
+class AnyOfConstsRuntype implements Runtype {
   private values: Const[];
   constructor(values: Const[]) {
     this.values = values;
@@ -592,10 +592,10 @@ class ParserAnyOfConstsImpl implements BeffParserImpl {
   }
 }
 
-class ParserTupleImpl implements BeffParserImpl {
-  private prefix: BeffParserImpl[];
-  private rest: BeffParserImpl | null;
-  constructor(prefix: BeffParserImpl[], rest: BeffParserImpl | null) {
+class TupleRuntype implements Runtype {
+  private prefix: Runtype[];
+  private rest: Runtype | null;
+  constructor(prefix: Runtype[], rest: Runtype | null) {
     this.prefix = prefix;
     this.rest = rest;
   }
@@ -691,9 +691,9 @@ class ParserTupleImpl implements BeffParserImpl {
   }
 }
 
-class ParserAllOfImpl implements BeffParserImpl {
-  private schemas: BeffParserImpl[];
-  constructor(schemas: BeffParserImpl[]) {
+class AllOfRuntype implements Runtype {
+  private schemas: Runtype[];
+  constructor(schemas: Runtype[]) {
     this.schemas = schemas;
   }
   describe(ctx: DescribeContext): string {
@@ -737,9 +737,9 @@ class ParserAllOfImpl implements BeffParserImpl {
   }
 }
 
-class ParserAnyOfImpl implements BeffParserImpl {
-  private schemas: BeffParserImpl[];
-  constructor(schemas: BeffParserImpl[]) {
+class AnyOfRuntype implements Runtype {
+  private schemas: Runtype[];
+  constructor(schemas: Runtype[]) {
     this.schemas = schemas;
   }
   schema(ctx: SchemaContext): JSONSchema7 {
@@ -780,9 +780,9 @@ class ParserAnyOfImpl implements BeffParserImpl {
   }
 }
 
-class ParserArrayImpl implements BeffParserImpl {
-  private itemParser: BeffParserImpl;
-  constructor(itemParser: BeffParserImpl) {
+class ArrayRuntype implements Runtype {
+  private itemParser: Runtype;
+  constructor(itemParser: Runtype) {
     this.itemParser = itemParser;
   }
   schema(ctx: SchemaContext): JSONSchema7 {
@@ -834,11 +834,11 @@ class ParserArrayImpl implements BeffParserImpl {
   }
 }
 
-class ParserAnyOfDiscriminatedImpl implements BeffParserImpl {
-  private schemas: BeffParserImpl[];
+class AnyOfDiscriminatedRuntype implements Runtype {
+  private schemas: Runtype[];
   private discriminator: string;
-  private mapping: Record<string, BeffParserImpl>;
-  constructor(schemas: BeffParserImpl[], discriminator: string, mapping: Record<string, BeffParserImpl>) {
+  private mapping: Record<string, Runtype>;
+  constructor(schemas: Runtype[], discriminator: string, mapping: Record<string, Runtype>) {
     this.schemas = schemas;
     this.discriminator = discriminator;
     this.mapping = mapping;
@@ -905,10 +905,10 @@ class ParserAnyOfDiscriminatedImpl implements BeffParserImpl {
   }
 }
 
-class ParserMappedRecordImpl implements BeffParserImpl {
-  private keyParser: BeffParserImpl;
-  private valueParser: BeffParserImpl;
-  constructor(keyParser: BeffParserImpl, valueParser: BeffParserImpl) {
+class MappedRecordRuntype implements Runtype {
+  private keyParser: Runtype;
+  private valueParser: Runtype;
+  constructor(keyParser: Runtype, valueParser: Runtype) {
     this.keyParser = keyParser;
     this.valueParser = valueParser;
   }
@@ -974,10 +974,10 @@ class ParserMappedRecordImpl implements BeffParserImpl {
   }
 }
 
-class ParserObjectImpl implements BeffParserImpl {
-  private properties: Record<string, BeffParserImpl>;
-  private restParser: BeffParserImpl | null;
-  constructor(properties: Record<string, BeffParserImpl>, restParser: BeffParserImpl | null) {
+class ObjectRuntype implements Runtype {
+  private properties: Record<string, Runtype>;
+  private restParser: Runtype | null;
+  constructor(properties: Record<string, Runtype>, restParser: Runtype | null) {
     this.properties = properties;
     this.restParser = restParser;
   }
@@ -1116,15 +1116,15 @@ class ParserObjectImpl implements BeffParserImpl {
   }
 }
 
-declare var namedParsers: Record<string, BeffParserImpl>;
-class ParserRefImpl implements BeffParserImpl {
+declare var namedRuntypes: Record<string, Runtype>;
+class RefRuntype implements Runtype {
   private refName: string;
   constructor(refName: string) {
     this.refName = refName;
   }
   describe(ctx: DescribeContext): string {
     const name = this.refName;
-    const to = namedParsers[this.refName];
+    const to = namedRuntypes[this.refName];
     if (ctx.measure) {
       ctx.deps_counter[name] = (ctx.deps_counter[name] || 0) + 1;
       if (ctx.deps[name]) {
@@ -1147,7 +1147,7 @@ class ParserRefImpl implements BeffParserImpl {
   }
   schema(ctx: SchemaContext): JSONSchema7 {
     const name = this.refName;
-    const to = namedParsers[this.refName];
+    const to = namedRuntypes[this.refName];
     if (ctx.seen[name]) {
       return {};
     }
@@ -1157,46 +1157,56 @@ class ParserRefImpl implements BeffParserImpl {
     return tmp;
   }
   validate(ctx: ValidateContext, input: unknown): boolean {
-    const to = namedParsers[this.refName];
+    const to = namedRuntypes[this.refName];
     return to.validate(ctx, input);
   }
   parseAfterValidation(ctx: ParseContext, input: any): unknown {
-    const to = namedParsers[this.refName];
+    const to = namedRuntypes[this.refName];
     return to.parseAfterValidation(ctx, input);
   }
   reportDecodeError(ctx: ReportContext, input: unknown): DecodeError[] {
-    const to = namedParsers[this.refName];
+    const to = namedRuntypes[this.refName];
     return to.reportDecodeError(ctx, input);
   }
 }
 
-declare var hoistedIndirect: BeffParserImpl[];
+declare var hoistedIndirect: Runtype[];
 
-class ParserHoistedImpl implements BeffParserImpl {
+class HoistedRuntype implements Runtype {
   private hoistedIndex: number;
+  private decoder: Runtype | null;
   constructor(hoistedIndex: number) {
     this.hoistedIndex = hoistedIndex;
+    this.decoder = null;
   }
+
+  private getDecoder(): Runtype {
+    if (this.decoder == null) {
+      this.decoder = hoistedIndirect[this.hoistedIndex];
+    }
+    return this.decoder;
+  }
+
   describe(ctx: DescribeContext): string {
-    return hoistedIndirect[this.hoistedIndex].describe(ctx);
+    return this.getDecoder().describe(ctx);
   }
   schema(ctx: SchemaContext): JSONSchema7 {
-    return hoistedIndirect[this.hoistedIndex].schema(ctx);
+    return this.getDecoder().schema(ctx);
   }
   validate(ctx: ValidateContext, input: unknown): boolean {
-    return hoistedIndirect[this.hoistedIndex].validate(ctx, input);
+    return this.getDecoder().validate(ctx, input);
   }
   parseAfterValidation(ctx: ParseContext, input: any): unknown {
-    return hoistedIndirect[this.hoistedIndex].parseAfterValidation(ctx, input);
+    return this.getDecoder().parseAfterValidation(ctx, input);
   }
   reportDecodeError(ctx: ReportContext, input: unknown): DecodeError[] {
-    return hoistedIndirect[this.hoistedIndex].reportDecodeError(ctx, input);
+    return this.getDecoder().reportDecodeError(ctx, input);
   }
 }
 
 declare var RequiredStringFormats: string[];
 declare var RequiredNumberFormats: string[];
-declare var buildValidatorsInput: Record<string, BeffParserImpl>;
+declare var buildParsersInput: Record<string, Runtype>;
 
 const buildParsers: BuildParserFunction = (args) => {
   const stringFormats = args?.stringFormats ?? {};
@@ -1225,8 +1235,8 @@ const buildParsers: BuildParserFunction = (args) => {
 
   let acc: ReturnType<BuildParserFunction> = {};
 
-  for (const k of Object.keys(buildValidatorsInput)) {
-    const impl = buildValidatorsInput[k];
+  for (const k of Object.keys(buildParsersInput)) {
+    const impl = buildParsersInput[k];
     const validate: BeffParser<any>["validate"] = ((input: any, options: ParseOptions) => {
       const disallowExtraProperties = options?.disallowExtraProperties ?? false;
       const ctx = { disallowExtraProperties };

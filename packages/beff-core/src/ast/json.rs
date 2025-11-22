@@ -1,5 +1,10 @@
-use core::fmt;
 use std::collections::BTreeMap;
+
+use swc_common::DUMMY_SP;
+use swc_ecma_ast::{
+    ArrayLit, Bool, Expr, ExprOrSpread, KeyValueProp, Lit, Null, Number, ObjectLit, Prop, PropName,
+    PropOrSpread, Str,
+};
 
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct N {
@@ -91,6 +96,11 @@ impl Json {
         }
     }
 
+    pub fn debug_print(&self) -> String {
+        serde_json::to_string_pretty(&self.to_serde())
+            .expect("should be possible to serialize json")
+    }
+
     pub fn from_serde(it: &serde_json::Value) -> Json {
         match it {
             serde_json::Value::Null => Json::Null,
@@ -105,19 +115,52 @@ impl Json {
             ),
         }
     }
-}
 
-impl fmt::Display for Json {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(
-            f,
-            "{}",
-            serde_json::to_string_pretty(&self.to_serde())
-                .expect("should be possible to serialize json")
-        )
+    pub fn to_expr(self) -> Expr {
+        match self {
+            Json::Null => Expr::Lit(Lit::Null(Null { span: DUMMY_SP })),
+            Json::Bool(v) => Expr::Lit(Lit::Bool(Bool {
+                span: DUMMY_SP,
+                value: v,
+            })),
+            Json::Number(n) => Expr::Lit(Lit::Num(Number {
+                span: DUMMY_SP,
+                value: n.to_f64(),
+                raw: None,
+            })),
+            Json::String(v) => Expr::Lit(Lit::Str(Str {
+                span: DUMMY_SP,
+                value: v.into(),
+                raw: None,
+            })),
+            Json::Array(els) => Expr::Array(ArrayLit {
+                span: DUMMY_SP,
+                elems: els
+                    .into_iter()
+                    .map(|it| {
+                        Some(ExprOrSpread {
+                            spread: None,
+                            expr: Box::new(it.to_expr()),
+                        })
+                    })
+                    .collect(),
+            }),
+            Json::Object(kvs) => Expr::Object(ObjectLit {
+                span: DUMMY_SP,
+                props: kvs
+                    .into_iter()
+                    .map(|(key, value)| {
+                        PropOrSpread::Prop(Box::new(Prop::KeyValue(KeyValueProp {
+                            key: PropName::Str(Str {
+                                span: DUMMY_SP,
+                                value: key.into(),
+                                raw: None,
+                            }),
+                            value: Box::new(value.to_expr()),
+                        })))
+                    })
+                    .collect(),
+            }),
+        }
     }
-}
-
-pub trait ToJson {
-    fn to_json(self) -> Json;
 }

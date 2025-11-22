@@ -2,6 +2,6 @@
 source: packages/beff-core/tests/print_parser.rs
 expression: ok(from)
 ---
-type User = { "age": number; "email": string; "name": string };
-type A = { "email": string; "name": string };
+type User = { "age": Required<number>, "email": Required<string>, "name": Required<string> };
 
+type A = { "email": Required<string>, "name": Required<string> };

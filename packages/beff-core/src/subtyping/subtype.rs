@@ -2,7 +2,7 @@ use std::rc::Rc;
 
 use crate::ast::{
     json::N,
-    json_schema::{CodecName, TplLitTypeItem},
+    runtype::{PrimitiveLike, TplLitTypeItem},
 };
 
 use super::{
@@ -82,17 +82,15 @@ impl SubType {
 #[derive(PartialEq, Eq, Hash, Debug, Ord, PartialOrd, Clone)]
 pub enum StringLitOrFormat {
     Lit(String),
-    Format(String),
-    FormatExtends(Vec<String>),
-    Codec(CodecName),
+    Format(Vec<String>),
+    Codec(PrimitiveLike),
     Tpl(Vec<TplLitTypeItem>),
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub enum NumberRepresentationOrFormat {
     Lit(NumberRepresentation),
-    Format(String),
-    FormatExtends(Vec<String>),
+    Format(Vec<String>),
 }
 
 #[derive(PartialEq, Eq, Hash, Debug, Ord, PartialOrd)]

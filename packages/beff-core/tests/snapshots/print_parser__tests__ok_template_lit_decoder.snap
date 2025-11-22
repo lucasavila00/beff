@@ -3,9 +3,9 @@ source: packages/beff-core/tests/print_parser.rs
 expression: "decoder(r#\"\n        export type Alias = `${number}__${number}`\n        parse.buildParsers<{ Dec: Alias }>();\n      \"#)"
 ---
 const hoistedIndirect = [];
-const namedParsers = {
-    "Alias": new ParserRegexImpl(/(\d+(\.\d+)?)(__)(\d+(\.\d+)?)/, "${number}__${number}")
+const namedRuntypes = {
+    "Alias": new RegexRuntype(/(\d+(\.\d+)?)(__)(\d+(\.\d+)?)/, "${number}__${number}")
 };
-const buildValidatorsInput = {
-    "Dec": new ParserRefImpl("Alias")
+const buildParsersInput = {
+    "Dec": new RefRuntype("Alias")
 };

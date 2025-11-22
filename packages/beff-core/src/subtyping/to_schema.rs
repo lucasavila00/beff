@@ -6,7 +6,7 @@ use std::{
 use anyhow::bail;
 
 use crate::{
-    ast::json_schema::{JsonSchema, JsonSchemaConst, Optionality},
+    ast::runtype::{Optionality, Runtype, RuntypeConst},
     subtyping::semtype::MappedRecordAtomicType,
     NamedSchema,
 };
@@ -18,7 +18,7 @@ use super::{
 };
 
 pub enum SchemaMemo {
-    Schema(JsonSchema),
+    Schema(Runtype),
     Undefined(String),
 }
 
@@ -171,8 +171,8 @@ impl<'a, 'b> SchemerContext<'a, 'b> {
         }
     }
 
-    fn mapping_atom_schema(&mut self, mt: &Rc<MappingAtomicType>) -> anyhow::Result<JsonSchema> {
-        let mut acc: Vec<(String, Optionality<JsonSchema>)> = vec![];
+    fn mapping_atom_schema(&mut self, mt: &Rc<MappingAtomicType>) -> anyhow::Result<Runtype> {
+        let mut acc: Vec<(String, Optionality<Runtype>)> = vec![];
 
         for (k, v) in mt.vs.iter() {
             let schema = self.convert_to_schema(v, None)?;
@@ -193,7 +193,7 @@ impl<'a, 'b> SchemerContext<'a, 'b> {
             Some(Box::new(schema))
         };
 
-        Ok(JsonSchema::Object {
+        Ok(Runtype::Object {
             vs: BTreeMap::from_iter(acc),
             rest,
         })
@@ -208,14 +208,11 @@ impl<'a, 'b> SchemerContext<'a, 'b> {
     //     return JsonSchema::any_of(vs);
     // }
 
-    fn mapped_atom_schema(
-        &mut self,
-        mt: &Rc<MappedRecordAtomicType>,
-    ) -> anyhow::Result<JsonSchema> {
+    fn mapped_atom_schema(&mut self, mt: &Rc<MappedRecordAtomicType>) -> anyhow::Result<Runtype> {
         let k = self.convert_to_schema(&mt.key, None)?;
         let r = self.convert_to_schema(&mt.rest, None)?;
 
-        Ok(JsonSchema::MappedRecord {
+        Ok(Runtype::MappedRecord {
             key: k.into(),
             rest: r.into(),
         })
@@ -227,7 +224,7 @@ impl<'a, 'b> SchemerContext<'a, 'b> {
         left: &Rc<Bdd>,
         middle: &Rc<Bdd>,
         right: &Rc<Bdd>,
-    ) -> anyhow::Result<JsonSchema> {
+    ) -> anyhow::Result<Runtype> {
         let mt = match atom.as_ref() {
             Atom::Mapping(a) => self.ctx.0.get_mapping_atomic(*a).clone(),
             _ => unreachable!(),
@@ -253,7 +250,7 @@ impl<'a, 'b> SchemerContext<'a, 'b> {
                 let ty = vec![explained_sts.clone()].into_iter().chain(vec![
                     self.convert_to_schema_mapping_node(atom, left, middle, right)?
                 ]);
-                acc.push(JsonSchema::all_of(ty.collect()));
+                acc.push(Runtype::all_of(ty.collect()));
             }
         };
         match middle.as_ref() {
@@ -266,7 +263,7 @@ impl<'a, 'b> SchemerContext<'a, 'b> {
         }
         match right.as_ref() {
             Bdd::True => {
-                acc.push(JsonSchema::StNot(Box::new(explained_sts)));
+                acc.push(Runtype::StNot(Box::new(explained_sts)));
             }
             Bdd::False => {
                 // noop
@@ -277,17 +274,17 @@ impl<'a, 'b> SchemerContext<'a, 'b> {
                 middle,
                 right,
             } => {
-                let ty = JsonSchema::all_of(vec![
-                    JsonSchema::StNot(Box::new(explained_sts)),
+                let ty = Runtype::all_of(vec![
+                    Runtype::StNot(Box::new(explained_sts)),
                     self.convert_to_schema_mapping_node(atom, left, middle, right)?,
                 ]);
                 acc.push(ty)
             }
         }
-        Ok(JsonSchema::any_of(acc))
+        Ok(Runtype::any_of(acc))
     }
 
-    fn convert_to_schema_mapping(&mut self, bdd: &Rc<Bdd>) -> anyhow::Result<JsonSchema> {
+    fn convert_to_schema_mapping(&mut self, bdd: &Rc<Bdd>) -> anyhow::Result<Runtype> {
         match bdd.as_ref() {
             Bdd::True => {
                 bail!("convert_to_schema_mapping - true should not be here")
@@ -309,7 +306,7 @@ impl<'a, 'b> SchemerContext<'a, 'b> {
         left: &Rc<Bdd>,
         middle: &Rc<Bdd>,
         right: &Rc<Bdd>,
-    ) -> anyhow::Result<JsonSchema> {
+    ) -> anyhow::Result<Runtype> {
         let mt = match atom.as_ref() {
             Atom::MappedRecord(a) => self.ctx.0.get_mapped_record_atomic(*a).clone(),
             _ => unreachable!(),
@@ -335,7 +332,7 @@ impl<'a, 'b> SchemerContext<'a, 'b> {
                 let ty = vec![explained_sts.clone()].into_iter().chain(vec![
                     self.convert_to_schema_mapped_record_node(atom, left, middle, right)?
                 ]);
-                acc.push(JsonSchema::all_of(ty.collect()));
+                acc.push(Runtype::all_of(ty.collect()));
             }
         };
         match middle.as_ref() {
@@ -348,7 +345,7 @@ impl<'a, 'b> SchemerContext<'a, 'b> {
         }
         match right.as_ref() {
             Bdd::True => {
-                acc.push(JsonSchema::StNot(Box::new(explained_sts)));
+                acc.push(Runtype::StNot(Box::new(explained_sts)));
             }
             Bdd::False => {
                 // noop
@@ -359,17 +356,17 @@ impl<'a, 'b> SchemerContext<'a, 'b> {
                 middle,
                 right,
             } => {
-                let ty = JsonSchema::all_of(vec![
-                    JsonSchema::StNot(Box::new(explained_sts)),
+                let ty = Runtype::all_of(vec![
+                    Runtype::StNot(Box::new(explained_sts)),
                     self.convert_to_schema_mapped_record_node(atom, left, middle, right)?,
                 ]);
                 acc.push(ty)
             }
         }
-        Ok(JsonSchema::any_of(acc))
+        Ok(Runtype::any_of(acc))
     }
 
-    fn convert_to_schema_mapped_record(&mut self, bdd: &Rc<Bdd>) -> anyhow::Result<JsonSchema> {
+    fn convert_to_schema_mapped_record(&mut self, bdd: &Rc<Bdd>) -> anyhow::Result<Runtype> {
         match bdd.as_ref() {
             Bdd::True => {
                 bail!("convert_to_schema_mapping - true should not be here")
@@ -386,12 +383,12 @@ impl<'a, 'b> SchemerContext<'a, 'b> {
         }
     }
 
-    fn list_atom_schema(&mut self, mt: &Rc<ListAtomic>) -> anyhow::Result<JsonSchema> {
+    fn list_atom_schema(&mut self, mt: &Rc<ListAtomic>) -> anyhow::Result<Runtype> {
         if mt.prefix_items.is_empty() {
             if mt.items.is_any() {
-                return Ok(JsonSchema::AnyArrayLike);
+                return Ok(Runtype::AnyArrayLike);
             }
-            return Ok(JsonSchema::Array(Box::new(
+            return Ok(Runtype::Array(Box::new(
                 self.convert_to_schema(&mt.items, None)?,
             )));
         }
@@ -407,7 +404,7 @@ impl<'a, 'b> SchemerContext<'a, 'b> {
         } else {
             Some(Box::new(self.convert_to_schema(&mt.items, None)?))
         };
-        Ok(JsonSchema::Tuple {
+        Ok(Runtype::Tuple {
             prefix_items,
             items,
         })
@@ -428,7 +425,7 @@ impl<'a, 'b> SchemerContext<'a, 'b> {
         left: &Rc<Bdd>,
         middle: &Rc<Bdd>,
         right: &Rc<Bdd>,
-    ) -> anyhow::Result<JsonSchema> {
+    ) -> anyhow::Result<Runtype> {
         let lt = match atom.as_ref() {
             Atom::List(a) => self.ctx.0.get_list_atomic(*a).clone(),
             _ => unreachable!(),
@@ -454,7 +451,7 @@ impl<'a, 'b> SchemerContext<'a, 'b> {
                 let ty = vec![explained_sts.clone()].into_iter().chain(vec![
                     self.convert_to_schema_list_node(atom, left, middle, right)?
                 ]);
-                acc.push(JsonSchema::all_of(ty.collect()));
+                acc.push(Runtype::all_of(ty.collect()));
             }
         };
 
@@ -468,7 +465,7 @@ impl<'a, 'b> SchemerContext<'a, 'b> {
         }
         match right.as_ref() {
             Bdd::True => {
-                acc.push(JsonSchema::StNot(Box::new(explained_sts)));
+                acc.push(Runtype::StNot(Box::new(explained_sts)));
             }
             Bdd::False => {
                 // noop
@@ -479,16 +476,16 @@ impl<'a, 'b> SchemerContext<'a, 'b> {
                 middle,
                 right,
             } => {
-                let ty = JsonSchema::all_of(vec![
-                    JsonSchema::StNot(Box::new(explained_sts)),
+                let ty = Runtype::all_of(vec![
+                    Runtype::StNot(Box::new(explained_sts)),
                     self.convert_to_schema_list_node(atom, left, middle, right)?,
                 ]);
                 acc.push(ty)
             }
         }
-        Ok(JsonSchema::any_of(acc))
+        Ok(Runtype::any_of(acc))
     }
-    fn convert_to_schema_list(&mut self, bdd: &Rc<Bdd>) -> anyhow::Result<JsonSchema> {
+    fn convert_to_schema_list(&mut self, bdd: &Rc<Bdd>) -> anyhow::Result<Runtype> {
         match bdd.as_ref() {
             Bdd::True => {
                 bail!("convert_to_schema_list - true should not be here")
@@ -505,9 +502,9 @@ impl<'a, 'b> SchemerContext<'a, 'b> {
         }
     }
 
-    fn convert_to_schema_no_cache(&mut self, ty: &SemType) -> anyhow::Result<JsonSchema> {
+    fn convert_to_schema_no_cache(&mut self, ty: &SemType) -> anyhow::Result<Runtype> {
         if ty.all == 0 && ty.subtype_data.is_empty() {
-            return Ok(JsonSchema::StNever);
+            return Ok(Runtype::StNever);
         }
 
         let mut acc = BTreeSet::new();
@@ -516,33 +513,33 @@ impl<'a, 'b> SchemerContext<'a, 'b> {
             if (ty.all & t.code()) != 0 {
                 match t {
                     SubTypeTag::Null => {
-                        acc.insert(JsonSchema::Null);
+                        acc.insert(Runtype::Null);
                     }
                     SubTypeTag::Boolean => {
-                        acc.insert(JsonSchema::Boolean);
+                        acc.insert(Runtype::Boolean);
                     }
                     SubTypeTag::Number => {
-                        acc.insert(JsonSchema::Number);
+                        acc.insert(Runtype::Number);
                     }
                     SubTypeTag::String => {
-                        acc.insert(JsonSchema::String);
+                        acc.insert(Runtype::String);
                     }
                     SubTypeTag::Void => {
-                        acc.insert(JsonSchema::Null);
+                        acc.insert(Runtype::Null);
                     }
                     SubTypeTag::Mapping => {
-                        acc.insert(JsonSchema::object(vec![], Some(JsonSchema::Any.into())));
+                        acc.insert(Runtype::object(vec![], Some(Runtype::Any.into())));
                     }
                     SubTypeTag::List => {
-                        acc.insert(JsonSchema::AnyArrayLike);
+                        acc.insert(Runtype::AnyArrayLike);
                     }
                     SubTypeTag::Function => {
-                        acc.insert(JsonSchema::Function);
+                        acc.insert(Runtype::Function);
                     }
                     SubTypeTag::MappedRecord => {
-                        acc.insert(JsonSchema::MappedRecord {
-                            key: Box::new(JsonSchema::Any),
-                            rest: Box::new(JsonSchema::Any),
+                        acc.insert(Runtype::MappedRecord {
+                            key: Box::new(Runtype::Any),
+                            rest: Box::new(Runtype::Any),
                         });
                     }
                 };
@@ -552,26 +549,20 @@ impl<'a, 'b> SchemerContext<'a, 'b> {
         for s in &ty.subtype_data {
             match s.as_ref() {
                 ProperSubtype::Boolean(v) => {
-                    acc.insert(JsonSchema::Const(JsonSchemaConst::Bool(*v)));
+                    acc.insert(Runtype::Const(RuntypeConst::Bool(*v)));
                 }
                 ProperSubtype::Number { allowed, values } => {
                     for h in values {
                         match h {
                             NumberRepresentationOrFormat::Lit(n) => {
                                 acc.insert(maybe_not(
-                                    JsonSchema::Const(JsonSchemaConst::Number(n.clone())),
+                                    Runtype::Const(RuntypeConst::Number(n.clone())),
                                     !allowed,
                                 ));
                             }
-                            NumberRepresentationOrFormat::Format(fmt) => {
+                            NumberRepresentationOrFormat::Format(items) => {
                                 acc.insert(maybe_not(
-                                    JsonSchema::NumberWithFormat(fmt.clone()),
-                                    !allowed,
-                                ));
-                            }
-                            NumberRepresentationOrFormat::FormatExtends(items) => {
-                                acc.insert(maybe_not(
-                                    JsonSchema::NumberFormatExtends(items.clone()),
+                                    Runtype::NumberWithFormat(items.clone()),
                                     !allowed,
                                 ));
                             }
@@ -583,30 +574,24 @@ impl<'a, 'b> SchemerContext<'a, 'b> {
                         match h {
                             StringLitOrFormat::Lit(st) => {
                                 acc.insert(maybe_not(
-                                    JsonSchema::Const(JsonSchemaConst::String(st.clone())),
+                                    Runtype::Const(RuntypeConst::String(st.clone())),
                                     !allowed,
                                 ));
                             }
                             StringLitOrFormat::Format(fmt) => {
                                 acc.insert(maybe_not(
-                                    JsonSchema::StringWithFormat(fmt.clone()),
-                                    !allowed,
-                                ));
-                            }
-                            StringLitOrFormat::FormatExtends(items) => {
-                                acc.insert(maybe_not(
-                                    JsonSchema::StringFormatExtends(items.clone()),
+                                    Runtype::StringWithFormat(fmt.clone()),
                                     !allowed,
                                 ));
                             }
                             StringLitOrFormat::Codec(fmt) => {
-                                acc.insert(maybe_not(JsonSchema::Codec(fmt.clone()), !allowed));
-                            }
-                            StringLitOrFormat::Tpl(items) => {
                                 acc.insert(maybe_not(
-                                    JsonSchema::TplLitType(items.clone()),
+                                    Runtype::PrimitiveLike(fmt.clone()),
                                     !allowed,
                                 ));
+                            }
+                            StringLitOrFormat::Tpl(items) => {
+                                acc.insert(maybe_not(Runtype::TplLitType(items.clone()), !allowed));
                             }
                         }
                     }
@@ -624,13 +609,13 @@ impl<'a, 'b> SchemerContext<'a, 'b> {
             };
         }
 
-        Ok(JsonSchema::any_of(acc.into_iter().collect()))
+        Ok(Runtype::any_of(acc.into_iter().collect()))
     }
     pub fn convert_to_schema(
         &mut self,
         ty: &Rc<SemType>,
         name: Option<&str>,
-    ) -> anyhow::Result<JsonSchema> {
+    ) -> anyhow::Result<Runtype> {
         let new_name = match name {
             Some(n) => n.to_string(),
             None => {
@@ -643,7 +628,7 @@ impl<'a, 'b> SchemerContext<'a, 'b> {
                 SchemaMemo::Schema(mater) => return Ok(mater.clone()),
                 SchemaMemo::Undefined(ref_name) => {
                     self.recursive_validators.insert(ref_name.clone());
-                    return Ok(JsonSchema::Ref(ref_name.into()));
+                    return Ok(Runtype::Ref(ref_name.into()));
                 }
             }
         } else {
@@ -685,9 +670,9 @@ pub fn to_validators(
         vs,
     ))
 }
-fn maybe_not(it: JsonSchema, add_not: bool) -> JsonSchema {
+fn maybe_not(it: Runtype, add_not: bool) -> Runtype {
     if add_not {
-        JsonSchema::StNot(Box::new(it))
+        Runtype::StNot(Box::new(it))
     } else {
         it
     }

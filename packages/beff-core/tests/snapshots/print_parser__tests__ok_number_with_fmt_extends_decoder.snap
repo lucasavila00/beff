@@ -3,22 +3,22 @@ source: packages/beff-core/tests/print_parser.rs
 expression: "decoder(r#\"\n        export type NonInfiniteNumber = NumberFormat<\"NonInfiniteNumber\">;\n        export type NonNegativeNumber = NumberFormatExtends<NonInfiniteNumber, \"NonNegativeNumber\">;\n        export type Rate = NumberFormatExtends<NonNegativeNumber, \"Rate\">;\n        parse.buildParsers<{ NonInfiniteNumber: NonInfiniteNumber, NonNegativeNumber: NonNegativeNumber, Rate: Rate }>();\n      \"#)"
 ---
 const hoistedIndirect = [];
-const namedParsers = {
-    "NonInfiniteNumber": new ParserNumberWithFormatImpl([
+const namedRuntypes = {
+    "NonInfiniteNumber": new NumberWithFormatRuntype([
         "NonInfiniteNumber"
     ]),
-    "NonNegativeNumber": new ParserNumberWithFormatImpl([
+    "NonNegativeNumber": new NumberWithFormatRuntype([
         "NonInfiniteNumber",
         "NonNegativeNumber"
     ]),
-    "Rate": new ParserNumberWithFormatImpl([
+    "Rate": new NumberWithFormatRuntype([
         "NonInfiniteNumber",
         "NonNegativeNumber",
         "Rate"
     ])
 };
-const buildValidatorsInput = {
-    "NonInfiniteNumber": new ParserRefImpl("NonInfiniteNumber"),
-    "NonNegativeNumber": new ParserRefImpl("NonNegativeNumber"),
-    "Rate": new ParserRefImpl("Rate")
+const buildParsersInput = {
+    "NonInfiniteNumber": new RefRuntype("NonInfiniteNumber"),
+    "NonNegativeNumber": new RefRuntype("NonNegativeNumber"),
+    "Rate": new RefRuntype("Rate")
 };

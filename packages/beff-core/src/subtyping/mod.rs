@@ -1,9 +1,9 @@
 use std::collections::BTreeSet;
 use std::rc::Rc;
 
-use crate::ast::json_schema::{JsonSchemaConst, Optionality};
+use crate::ast::runtype::{Optionality, RuntypeConst};
 use crate::subtyping::subtype::NumberRepresentationOrFormat;
-use crate::{ast::json_schema::JsonSchema, NamedSchema};
+use crate::{ast::runtype::Runtype, NamedSchema};
 
 use self::bdd::{ListAtomic, MappingAtomic};
 use self::semtype::{ComplexSemType, MappingAtomicType, SemType, SemTypeContext, SemTypeOps};
@@ -29,7 +29,7 @@ impl<'a> ToSemTypeConverter<'a> {
         }
     }
 
-    fn get_reference(&self, name: &str) -> Result<&JsonSchema> {
+    fn get_reference(&self, name: &str) -> Result<&Runtype> {
         for validator in self.validators {
             if validator.name == name {
                 return Ok(&validator.schema);
@@ -40,15 +40,15 @@ impl<'a> ToSemTypeConverter<'a> {
 
     fn convert_to_sem_type(
         &mut self,
-        schema: &JsonSchema,
+        schema: &Runtype,
         builder: &mut SemTypeContext,
     ) -> Result<Rc<SemType>> {
         match schema {
-            JsonSchema::Ref(name) => {
+            Runtype::Ref(name) => {
                 let schema = self.get_reference(name)?.clone();
 
                 // handle recursive types
-                if let JsonSchema::Tuple {
+                if let Runtype::Tuple {
                     prefix_items,
                     items,
                 } = schema
@@ -87,7 +87,7 @@ impl<'a> ToSemTypeConverter<'a> {
                     }
                 }
                 // handle recursive types
-                if let JsonSchema::Object { vs, rest } = schema {
+                if let Runtype::Object { vs, rest } = schema {
                     match builder.mapping_json_schema_ref_memo.get(name) {
                         Some(idx) => {
                             let ty = Rc::new(SemTypeContext::mapping_definition_from_idx(*idx));
@@ -134,14 +134,14 @@ impl<'a> ToSemTypeConverter<'a> {
                 self.seen_refs.remove(name);
                 Ok(ty?)
             }
-            JsonSchema::AnyOf(vs) => {
+            Runtype::AnyOf(vs) => {
                 let mut acc = Rc::new(SemTypeContext::never());
                 for v in vs {
                     acc = acc.union(&self.convert_to_sem_type(v, builder)?);
                 }
                 Ok(acc)
             }
-            JsonSchema::AllOf(vs) => {
+            Runtype::AllOf(vs) => {
                 let mut acc = Rc::new(SemTypeContext::unknown());
                 for v in vs {
                     let ty = self.convert_to_sem_type(v, builder)?;
@@ -149,30 +149,22 @@ impl<'a> ToSemTypeConverter<'a> {
                 }
                 Ok(acc)
             }
-            JsonSchema::Null => Ok(SemTypeContext::null().into()),
-            JsonSchema::Boolean => Ok(SemTypeContext::boolean().into()),
-            JsonSchema::String => Ok(SemTypeContext::string().into()),
-            JsonSchema::Number => Ok(SemTypeContext::number().into()),
-            JsonSchema::Any => Ok(SemTypeContext::unknown().into()),
-            JsonSchema::StringWithFormat(s) => {
+            Runtype::Null => Ok(SemTypeContext::null().into()),
+            Runtype::Boolean => Ok(SemTypeContext::boolean().into()),
+            Runtype::String => Ok(SemTypeContext::string().into()),
+            Runtype::Number => Ok(SemTypeContext::number().into()),
+            Runtype::Any => Ok(SemTypeContext::unknown().into()),
+            Runtype::StringWithFormat(s) => {
                 Ok(SemTypeContext::string_const(StringLitOrFormat::Format(s.clone())).into())
             }
-            JsonSchema::StringFormatExtends(vs) => Ok(SemTypeContext::string_const(
-                StringLitOrFormat::FormatExtends(vs.clone()),
-            )
-            .into()),
-            JsonSchema::NumberWithFormat(s) => Ok(SemTypeContext::number_const(
+            Runtype::NumberWithFormat(s) => Ok(SemTypeContext::number_const(
                 NumberRepresentationOrFormat::Format(s.clone()),
             )
             .into()),
-            JsonSchema::NumberFormatExtends(vs) => Ok(SemTypeContext::number_const(
-                NumberRepresentationOrFormat::FormatExtends(vs.clone()),
-            )
-            .into()),
-            JsonSchema::TplLitType(tpl) => {
+            Runtype::TplLitType(tpl) => {
                 Ok(SemTypeContext::string_const(StringLitOrFormat::Tpl(tpl.clone())).into())
             }
-            JsonSchema::Object { vs, rest } => {
+            Runtype::Object { vs, rest } => {
                 let vs = vs
                     .iter()
                     .map(|(k, v)| match v {
@@ -190,16 +182,16 @@ impl<'a> ToSemTypeConverter<'a> {
                 };
                 Ok(builder.mapping_definition(Rc::new(vs), rest).into())
             }
-            JsonSchema::MappedRecord { key, rest } => {
+            Runtype::MappedRecord { key, rest } => {
                 let key_st = self.convert_to_sem_type(key, builder)?;
                 let rest_st = self.convert_to_sem_type(rest, builder)?;
                 Ok(builder.mapped_record_definition(key_st, rest_st).into())
             }
-            JsonSchema::Array(items) => {
+            Runtype::Array(items) => {
                 let items = self.convert_to_sem_type(items, builder)?;
                 Ok(builder.array(items).into())
             }
-            JsonSchema::Tuple {
+            Runtype::Tuple {
                 prefix_items,
                 items,
             } => {
@@ -213,29 +205,29 @@ impl<'a> ToSemTypeConverter<'a> {
                     .collect::<Result<_>>()?;
                 Ok(builder.tuple(prefix_items, items).into())
             }
-            JsonSchema::Const(cons) => match cons {
-                JsonSchemaConst::Null => Ok(SemTypeContext::null().into()),
-                JsonSchemaConst::Bool(b) => Ok(SemTypeContext::boolean_const(*b).into()),
-                JsonSchemaConst::String(s) => {
+            Runtype::Const(cons) => match cons {
+                RuntypeConst::Null => Ok(SemTypeContext::null().into()),
+                RuntypeConst::Bool(b) => Ok(SemTypeContext::boolean_const(*b).into()),
+                RuntypeConst::String(s) => {
                     Ok(SemTypeContext::string_const(StringLitOrFormat::Lit(s.clone())).into())
                 }
-                JsonSchemaConst::Number(n) => Ok(SemTypeContext::number_const(
+                RuntypeConst::Number(n) => Ok(SemTypeContext::number_const(
                     NumberRepresentationOrFormat::Lit(n.clone()),
                 )
                 .into()),
             },
-            JsonSchema::AnyArrayLike => {
-                self.convert_to_sem_type(&JsonSchema::Array(JsonSchema::Any.into()), builder)
+            Runtype::AnyArrayLike => {
+                self.convert_to_sem_type(&Runtype::Array(Runtype::Any.into()), builder)
             }
-            JsonSchema::Codec(s) => {
+            Runtype::PrimitiveLike(s) => {
                 Ok(SemTypeContext::string_const(StringLitOrFormat::Codec(s.clone())).into())
             }
-            JsonSchema::StNever => Ok(SemTypeContext::never().into()),
-            JsonSchema::StNot(it) => {
+            Runtype::StNever => Ok(SemTypeContext::never().into()),
+            Runtype::StNot(it) => {
                 let chd = self.convert_to_sem_type(it, builder)?;
                 Ok(chd.complement())
             }
-            JsonSchema::Function => Ok(SemTypeContext::function().into()),
+            Runtype::Function => Ok(SemTypeContext::function().into()),
         }
     }
 }
@@ -248,7 +240,7 @@ pub trait ToSemType {
     ) -> Result<Rc<SemType>>;
 }
 
-impl ToSemType for JsonSchema {
+impl ToSemType for Runtype {
     fn to_sem_type(
         &self,
         validators: &[&NamedSchema],
