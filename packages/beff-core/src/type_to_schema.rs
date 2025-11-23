@@ -1,4 +1,4 @@
-use crate::ast::runtype::{Optionality, Runtype, RuntypeConst, TplLitTypeItem};
+use crate::ast::runtype::{CustomFormat, Optionality, Runtype, RuntypeConst, TplLitTypeItem};
 use crate::diag::{
     Diagnostic, DiagnosticInfoMessage, DiagnosticInformation, DiagnosticParentMessage, Location,
 };
@@ -383,7 +383,7 @@ impl<'a, 'b, R: FileManager> TypeToSchema<'a, 'b, R> {
                                 rest: Some(Box::new(value)),
                             })
                         }
-                        Runtype::StringWithFormat(_, _) | Runtype::Number => {
+                        Runtype::StringWithFormat(_) | Runtype::Number => {
                             let value = items[1].clone();
                             Ok(Runtype::MappedRecord {
                                 key,
@@ -832,7 +832,7 @@ impl<'a, 'b, R: FileManager> TypeToSchema<'a, 'b, R> {
                 {
                     let val_str = value.to_string();
                     if self.settings.string_formats.contains(&val_str) {
-                        return Ok(Runtype::StringWithFormat(val_str, vec![]));
+                        return Ok(Runtype::StringWithFormat(CustomFormat(val_str, vec![])));
                     } else {
                         return self
                             .error(span, DiagnosticInfoMessage::CustomStringIsNotRegistered);
@@ -852,7 +852,9 @@ impl<'a, 'b, R: FileManager> TypeToSchema<'a, 'b, R> {
         span: &Span,
     ) -> Res<(String, Vec<String>)> {
         match schema {
-            Runtype::StringWithFormat(first, rest) => Ok((first.clone(), rest.clone())),
+            Runtype::StringWithFormat(CustomFormat(first, rest)) => {
+                Ok((first.clone(), rest.clone()))
+            }
             Runtype::Ref(r) => {
                 let v = self.components.get(r);
 
@@ -891,7 +893,7 @@ impl<'a, 'b, R: FileManager> TypeToSchema<'a, 'b, R> {
 
                         let (first, mut rest) = self.get_string_format_base_formats(&base, span)?;
                         rest.push(next_str);
-                        return Ok(Runtype::StringWithFormat(first, rest));
+                        return Ok(Runtype::StringWithFormat(CustomFormat(first, rest)));
                     } else {
                         return self
                             .error(span, DiagnosticInfoMessage::CustomStringIsNotRegistered);
@@ -911,7 +913,9 @@ impl<'a, 'b, R: FileManager> TypeToSchema<'a, 'b, R> {
         span: &Span,
     ) -> Res<(String, Vec<String>)> {
         match schema {
-            Runtype::NumberWithFormat(first, rest) => Ok((first.clone(), rest.clone())),
+            Runtype::NumberWithFormat(CustomFormat(first, rest)) => {
+                Ok((first.clone(), rest.clone()))
+            }
             Runtype::Ref(r) => {
                 let v = self.components.get(r);
 
@@ -950,7 +954,7 @@ impl<'a, 'b, R: FileManager> TypeToSchema<'a, 'b, R> {
 
                         let (first, mut rest) = self.get_number_format_base_formats(&base, span)?;
                         rest.push(next_str);
-                        return Ok(Runtype::NumberWithFormat(first, rest));
+                        return Ok(Runtype::NumberWithFormat(CustomFormat(first, rest)));
                     } else {
                         return self
                             .error(span, DiagnosticInfoMessage::CustomNumberIsNotRegistered);
@@ -980,7 +984,7 @@ impl<'a, 'b, R: FileManager> TypeToSchema<'a, 'b, R> {
                 {
                     let val_str = value.to_string();
                     if self.settings.number_formats.contains(&val_str) {
-                        return Ok(Runtype::NumberWithFormat(val_str, vec![]));
+                        return Ok(Runtype::NumberWithFormat(CustomFormat(val_str, vec![])));
                     } else {
                         return self
                             .error(span, DiagnosticInfoMessage::CustomNumberIsNotRegistered);

@@ -7,11 +7,10 @@ use std::{
 use anyhow::bail;
 
 use crate::{
-    ast::json::N,
+    ast::{json::N, runtype::CustomFormat},
     subtyping::{
-        evidence::MappedRecordEvidence,
-        semtype::SemTypeContext,
-        subtype::{CustomFormat, NumberRepresentationOrFormat},
+        evidence::MappedRecordEvidence, semtype::SemTypeContext,
+        subtype::NumberRepresentationOrFormat,
     },
 };
 

@@ -187,6 +187,9 @@ impl TplLitTypeItem {
     }
 }
 
+#[derive(PartialEq, Eq, Hash, Debug, Ord, PartialOrd, Clone)]
+pub struct CustomFormat(pub String, pub Vec<String>);
+
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord)]
 pub enum Runtype {
     Null,
@@ -195,8 +198,8 @@ pub enum Runtype {
     Number,
     Any,
     AnyArrayLike,
-    StringWithFormat(String, Vec<String>),
-    NumberWithFormat(String, Vec<String>),
+    StringWithFormat(CustomFormat),
+    NumberWithFormat(CustomFormat),
     TplLitType(Vec<TplLitTypeItem>),
     Object {
         vs: BTreeMap<String, Optionality<Runtype>>,
@@ -359,7 +362,7 @@ impl Runtype {
             Runtype::Number => "number".to_string(),
             Runtype::Any => "any".to_string(),
             Runtype::AnyArrayLike => "Array<any>".to_string(),
-            Runtype::StringWithFormat(first, rest) => {
+            Runtype::StringWithFormat(CustomFormat(first, rest)) => {
                 let mut acc = format!("StringFormat<\"{}\">", first);
 
                 for it in rest.iter() {
@@ -368,7 +371,7 @@ impl Runtype {
 
                 acc
             }
-            Runtype::NumberWithFormat(first, rest) => {
+            Runtype::NumberWithFormat(CustomFormat(first, rest)) => {
                 let mut acc = format!("NumberFormat<\"{}\">", first);
 
                 for it in rest.iter() {

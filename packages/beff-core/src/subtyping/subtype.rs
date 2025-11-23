@@ -1,6 +1,9 @@
 use std::rc::Rc;
 
-use crate::ast::{json::N, runtype::TplLitTypeItem};
+use crate::ast::{
+    json::N,
+    runtype::{CustomFormat, TplLitTypeItem},
+};
 
 use super::{
     bdd::{list_is_empty, mapped_record_is_empty, mapping_is_empty, Bdd, BddOps},
@@ -90,9 +93,6 @@ impl SubType {
         SubType::Proper(ProperSubtype::String { allowed, values }.into())
     }
 }
-
-#[derive(PartialEq, Eq, Hash, Debug, Ord, PartialOrd, Clone)]
-pub struct CustomFormat(pub String, pub Vec<String>);
 
 impl CustomFormat {
     fn is_subtype(&self, other: &CustomFormat) -> bool {

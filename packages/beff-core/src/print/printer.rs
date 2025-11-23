@@ -13,6 +13,7 @@ use swc_ecma_ast::{
 use swc_ecma_codegen::Config;
 use swc_ecma_codegen::{text_writer::JsWriter, Emitter};
 
+use crate::ast::runtype::CustomFormat;
 use crate::parser_extractor::ParserExtractResult;
 use crate::{
     ast::runtype::{Optionality, Runtype, RuntypeConst, TplLitTypeItem},
@@ -459,10 +460,10 @@ fn print_runtype(
         Runtype::Any => no_args_runtype("AnyRuntype"),
         Runtype::StNever => no_args_runtype("NeverRuntype"),
         Runtype::Const(c) => new_runtype_class("ConstRuntype", vec![c.clone().to_json().to_expr()]),
-        Runtype::StringWithFormat(first, rest) => {
+        Runtype::StringWithFormat(CustomFormat(first, rest)) => {
             formats_runtype("StringWithFormatRuntype", first, rest)
         }
-        Runtype::NumberWithFormat(first, rest) => {
+        Runtype::NumberWithFormat(CustomFormat(first, rest)) => {
             formats_runtype("NumberWithFormatRuntype", first, rest)
         }
         Runtype::Date => no_args_runtype("DateRuntype"),
@@ -673,8 +674,8 @@ fn calculate_schema_seen(schema: &Runtype, seen: &mut SeenCounter) {
     *count += 1;
 
     match schema {
-        Runtype::StringWithFormat(_, _)
-        | Runtype::NumberWithFormat(_, _)
+        Runtype::StringWithFormat(_)
+        | Runtype::NumberWithFormat(_)
         | Runtype::AnyArrayLike
         | Runtype::Any
         | Runtype::Number

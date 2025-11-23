@@ -4,7 +4,7 @@ mod tests {
     use std::collections::BTreeMap;
 
     use beff_core::{
-        ast::runtype::{Runtype, RuntypeConst},
+        ast::runtype::{CustomFormat, Runtype, RuntypeConst},
         subtyping::{
             semtype::{SemTypeContext, SemTypeOps},
             ToSemType,
@@ -413,7 +413,7 @@ mod tests {
         let res = rt_is_sub_type(&t2, &t1, &definitions, &definitions);
         assert!(res);
 
-        let t1 = Runtype::StringWithFormat("password".into(), vec![]);
+        let t1 = Runtype::StringWithFormat(CustomFormat("password".into(), vec![]));
         let t2 = Runtype::String;
         let res = rt_is_sub_type(&t1, &t2, &definitions, &definitions);
         assert!(res);
@@ -426,8 +426,8 @@ mod tests {
     fn string_format_subtyping() {
         let definitions = vec![];
 
-        let user_id_type = Runtype::StringWithFormat("user_id".into(), vec![]);
-        let post_id_type = Runtype::StringWithFormat("post_id".into(), vec![]);
+        let user_id_type = Runtype::StringWithFormat(CustomFormat("user_id".into(), vec![]));
+        let post_id_type = Runtype::StringWithFormat(CustomFormat("post_id".into(), vec![]));
 
         let res = rt_is_sub_type(&user_id_type, &Runtype::String, &definitions, &definitions);
         assert!(res);
@@ -439,7 +439,7 @@ mod tests {
         assert!(!res);
 
         let authorized_user_id_type =
-            Runtype::StringWithFormat("user_id".into(), vec!["authorized".into()]);
+            Runtype::StringWithFormat(CustomFormat("user_id".into(), vec!["authorized".into()]));
         let res = rt_is_sub_type(
             &authorized_user_id_type,
             &user_id_type,
@@ -476,15 +476,17 @@ mod tests {
     fn string_format_extends_subtyping() {
         let definitions = vec![];
 
-        let user_id_type = Runtype::StringWithFormat("user_id".into(), vec![]);
+        let user_id_type = Runtype::StringWithFormat(CustomFormat("user_id".into(), vec![]));
 
-        let read_authorized_user_id_type =
-            Runtype::StringWithFormat("user_id".into(), vec!["read_authorized".into()]);
+        let read_authorized_user_id_type = Runtype::StringWithFormat(CustomFormat(
+            "user_id".into(),
+            vec!["read_authorized".into()],
+        ));
 
-        let write_authorized_user_id_type = Runtype::StringWithFormat(
+        let write_authorized_user_id_type = Runtype::StringWithFormat(CustomFormat(
             "user_id".into(),
             vec!["read_authorized".into(), "write_authorized".into()],
-        );
+        ));
 
         let mut ctx = SemTypeContext::new();
 
@@ -604,16 +606,17 @@ mod tests {
         let definitions = vec![];
 
         // Create a complex permission hierarchy
-        let base_id = Runtype::StringWithFormat("resource_id".into(), vec![]);
-        let read_id = Runtype::StringWithFormat("resource_id".into(), vec!["read".to_string()]);
-        let write_id = Runtype::StringWithFormat(
+        let base_id = Runtype::StringWithFormat(CustomFormat("resource_id".into(), vec![]));
+        let read_id =
+            Runtype::StringWithFormat(CustomFormat("resource_id".into(), vec!["read".to_string()]));
+        let write_id = Runtype::StringWithFormat(CustomFormat(
             "resource_id".into(),
             vec!["read".to_string(), "write".to_string()],
-        );
-        let admin_id = Runtype::StringWithFormat(
+        ));
+        let admin_id = Runtype::StringWithFormat(CustomFormat(
             "resource_id".into(),
             vec!["read".to_string(), "write".to_string(), "admin".to_string()],
-        );
+        ));
 
         // Test the hierarchy: admin_id ⊆ write_id ⊆ read_id ⊆ base_id
         assert!(rt_is_sub_type(
@@ -680,10 +683,12 @@ mod tests {
     fn string_format_cross_type_interactions() {
         let definitions = vec![];
 
-        let user_id = Runtype::StringWithFormat("user_id".into(), vec![]);
-        let post_id = Runtype::StringWithFormat("post_id".into(), vec![]);
-        let user_read = Runtype::StringWithFormat("user_id".into(), vec!["read".to_string()]);
-        let post_read = Runtype::StringWithFormat("post_id".into(), vec!["read".to_string()]);
+        let user_id = Runtype::StringWithFormat(CustomFormat("user_id".into(), vec![]));
+        let post_id = Runtype::StringWithFormat(CustomFormat("post_id".into(), vec![]));
+        let user_read =
+            Runtype::StringWithFormat(CustomFormat("user_id".into(), vec!["read".to_string()]));
+        let post_read =
+            Runtype::StringWithFormat(CustomFormat("post_id".into(), vec!["read".to_string()]));
 
         // Different base types should not be subtypes regardless of permissions
         assert!(!rt_is_sub_type(
@@ -755,13 +760,14 @@ mod tests {
         let definitions = vec![];
         let mut ctx = SemTypeContext::new();
 
-        let base_id = Runtype::StringWithFormat("entity_id".into(), vec![]);
-        let read_id = Runtype::StringWithFormat("entity_id".into(), vec!["read".to_string()]);
-        let write_id = Runtype::StringWithFormat(
+        let base_id = Runtype::StringWithFormat(CustomFormat("entity_id".into(), vec![]));
+        let read_id =
+            Runtype::StringWithFormat(CustomFormat("entity_id".into(), vec!["read".to_string()]));
+        let write_id = Runtype::StringWithFormat(CustomFormat(
             "entity_id".into(),
             vec!["read".to_string(), "write".to_string()],
-        );
-        let other_base = Runtype::StringWithFormat("other_id".into(), vec![]);
+        ));
+        let other_base = Runtype::StringWithFormat(CustomFormat("other_id".into(), vec![]));
 
         let base_sem = base_id
             .to_sem_type(&definitions, &mut ctx)
@@ -805,7 +811,7 @@ mod tests {
         let definitions = vec![];
         let mut ctx = SemTypeContext::new();
 
-        let format_id = Runtype::StringWithFormat("id".into(), vec![]);
+        let format_id = Runtype::StringWithFormat(CustomFormat("id".into(), vec![]));
         let literal_abc = Runtype::Const(RuntypeConst::String("abc".into()));
         let literal_def = Runtype::Const(RuntypeConst::String("def".into()));
 
@@ -843,17 +849,19 @@ mod tests {
         let definitions = vec![];
 
         // Create branching permission structure
-        let base = Runtype::StringWithFormat("resource".into(), vec![]);
-        let read_branch = Runtype::StringWithFormat("resource".into(), vec!["read".to_string()]);
-        let write_branch = Runtype::StringWithFormat("resource".into(), vec!["write".to_string()]);
-        let read_write = Runtype::StringWithFormat(
+        let base = Runtype::StringWithFormat(CustomFormat("resource".into(), vec![]));
+        let read_branch =
+            Runtype::StringWithFormat(CustomFormat("resource".into(), vec!["read".to_string()]));
+        let write_branch =
+            Runtype::StringWithFormat(CustomFormat("resource".into(), vec!["write".to_string()]));
+        let read_write = Runtype::StringWithFormat(CustomFormat(
             "resource".into(),
             vec!["read".to_string(), "write".to_string()],
-        );
-        let write_read = Runtype::StringWithFormat(
+        ));
+        let write_read = Runtype::StringWithFormat(CustomFormat(
             "resource".into(),
             vec!["write".to_string(), "read".to_string()],
-        );
+        ));
 
         // Both read_write and write_read should be subtypes of base
         assert!(rt_is_sub_type(
@@ -917,13 +925,14 @@ mod tests {
         let definitions = vec![];
         let mut ctx = SemTypeContext::new();
 
-        let base_amount = Runtype::NumberWithFormat("amount".into(), vec![]);
-        let usd_amount = Runtype::NumberWithFormat("amount".into(), vec!["USD".to_string()]);
-        let precise_usd = Runtype::NumberWithFormat(
+        let base_amount = Runtype::NumberWithFormat(CustomFormat("amount".into(), vec![]));
+        let usd_amount =
+            Runtype::NumberWithFormat(CustomFormat("amount".into(), vec!["USD".to_string()]));
+        let precise_usd = Runtype::NumberWithFormat(CustomFormat(
             "amount".into(),
             vec!["USD".to_string(), "precise".to_string()],
-        );
-        let other_format = Runtype::NumberWithFormat("price".into(), vec![]);
+        ));
+        let other_format = Runtype::NumberWithFormat(CustomFormat("price".into(), vec![]));
 
         // Test subtype relationships
         assert!(rt_is_sub_type(
@@ -1017,7 +1026,7 @@ mod tests {
         let definitions = vec![];
         let mut ctx = SemTypeContext::new();
 
-        let format_amount = Runtype::NumberWithFormat("amount".into(), vec![]);
+        let format_amount = Runtype::NumberWithFormat(CustomFormat("amount".into(), vec![]));
         let literal_42 = Runtype::Const(RuntypeConst::Number(beff_core::ast::json::N::parse_f64(
             42.0,
         )));

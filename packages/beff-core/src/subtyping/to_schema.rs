@@ -6,8 +6,8 @@ use std::{
 use anyhow::bail;
 
 use crate::{
-    ast::runtype::{Optionality, Runtype, RuntypeConst},
-    subtyping::{semtype::MappedRecordAtomicType, subtype::CustomFormat},
+    ast::runtype::{CustomFormat, Optionality, Runtype, RuntypeConst},
+    subtyping::semtype::MappedRecordAtomicType,
     NamedSchema,
 };
 
@@ -568,7 +568,10 @@ impl<'a, 'b> SchemerContext<'a, 'b> {
                             }
                             NumberRepresentationOrFormat::Format(CustomFormat(first, rest)) => {
                                 acc.insert(maybe_not(
-                                    Runtype::NumberWithFormat(first.clone(), rest.clone()),
+                                    Runtype::NumberWithFormat(CustomFormat(
+                                        first.clone(),
+                                        rest.clone(),
+                                    )),
                                     !allowed,
                                 ));
                             }
@@ -586,7 +589,10 @@ impl<'a, 'b> SchemerContext<'a, 'b> {
                             }
                             StringLitOrFormat::Format(CustomFormat(first, rest)) => {
                                 acc.insert(maybe_not(
-                                    Runtype::StringWithFormat(first.clone(), rest.clone()),
+                                    Runtype::StringWithFormat(CustomFormat(
+                                        first.clone(),
+                                        rest.clone(),
+                                    )),
                                     !allowed,
                                 ));
                             }
