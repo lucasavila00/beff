@@ -5,7 +5,7 @@ expression: "print_cgen(r#\"\n        export type Alias = {a:string}\n        pa
 const namedRuntypes = {
     "Alias": new ObjectRuntype({
         "a": new TypeofRuntype("string")
-    }, null)
+    }, [])
 };
 const buildParsersInput = {
     "Dec": new RefRuntype("Alias")

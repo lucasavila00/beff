@@ -10,16 +10,16 @@ const namedRuntypes = {
             "a": new ObjectRuntype({
                 "a1": direct_hoist_0,
                 "subType": new ConstRuntype("a1")
-            }, null),
+            }, []),
             "type": direct_hoist_1
-        }, null),
+        }, []),
         new ObjectRuntype({
             "a": new ObjectRuntype({
                 "a2": direct_hoist_0,
                 "subType": new ConstRuntype("a2")
-            }, null),
+            }, []),
             "type": direct_hoist_1
-        }, null)
+        }, [])
     ])
 };
 const buildParsersInput = {

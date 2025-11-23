@@ -491,7 +491,7 @@ impl Runtype {
                 for (k, v) in vs.iter() {
                     let value = v.inner().debug_print();
                     let optionality = if v.is_required() { "" } else { "?" };
-                    acc.push(format!("{}{}: {}", k, optionality, value));
+                    acc.push(format!("\"{}\"{}: {}", k, optionality, value));
                 }
                 for indexed_property in indexed_properties.iter() {
                     let key = indexed_property.key.debug_print();
