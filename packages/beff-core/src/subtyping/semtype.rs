@@ -321,6 +321,7 @@ impl MemoEmpty {
 #[derive(Clone, Debug)]
 pub struct BddMemoEmptyRef(pub MemoEmpty);
 
+// TODO: unify the MappingAtomicType and MappedRecordAtomicType structs
 #[derive(Debug)]
 
 pub struct MappingAtomicType {

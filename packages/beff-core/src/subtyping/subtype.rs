@@ -115,13 +115,7 @@ impl CustomFormat {
 
 impl TplLitType {
     fn is_subtype(&self, other: &TplLitType) -> bool {
-        // let self_regex = self.regex_expr();
-        // let other_regex = other.regex_expr();
-
-        // let self_dfa = try_parse(&self_regex).unwrap();
-        // let other_dfa = try_parse(&other_regex).unwrap();
-
-        // self_dfa.is_subset_of(&other_dfa)
+        // TODO: this doesn't match typescript types
         self == other
     }
 }
