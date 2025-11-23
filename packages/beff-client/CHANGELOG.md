@@ -1,5 +1,13 @@
 # @beff/client
 
+## 0.0.104
+
+### Patch Changes
+
+- fix semtypes
+- Updated dependencies
+  - @beff/cli@0.0.104
+
 ## 0.0.103
 
 ### Patch Changes
