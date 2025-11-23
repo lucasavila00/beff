@@ -16,7 +16,7 @@ use swc_ecma_codegen::{text_writer::JsWriter, Emitter};
 use crate::ast::runtype::CustomFormat;
 use crate::parser_extractor::ParserExtractResult;
 use crate::{
-    ast::runtype::{Optionality, Runtype, RuntypeConst, TplLitTypeItem},
+    ast::runtype::{Optionality, Runtype, RuntypeConst},
     parser_extractor::BuiltDecoder,
     NamedSchema,
 };
@@ -468,29 +468,21 @@ fn print_runtype(
         }
         Runtype::Date => no_args_runtype("DateRuntype"),
         Runtype::BigInt => no_args_runtype("BigIntRuntype"),
-        Runtype::TplLitType(items) => {
-            let mut regex_exp = String::new();
-
-            for item in items {
-                regex_exp.push_str(&item.regex_expr());
-            }
-
-            new_runtype_class(
-                "RegexRuntype",
-                vec![
-                    Expr::Lit(Lit::Regex(Regex {
-                        span: DUMMY_SP,
-                        exp: regex_exp.into(),
-                        flags: "".into(),
-                    })),
-                    Expr::Lit(Lit::Str(Str {
-                        span: DUMMY_SP,
-                        value: TplLitTypeItem::describe_vec(items).into(),
-                        raw: None,
-                    })),
-                ],
-            )
-        }
+        Runtype::TplLitType(t) => new_runtype_class(
+            "RegexRuntype",
+            vec![
+                Expr::Lit(Lit::Regex(Regex {
+                    span: DUMMY_SP,
+                    exp: t.regex_expr().into(),
+                    flags: "".into(),
+                })),
+                Expr::Lit(Lit::Str(Str {
+                    span: DUMMY_SP,
+                    value: t.describe().into(),
+                    raw: None,
+                })),
+            ],
+        ),
         Runtype::AnyArrayLike => {
             print_runtype(&Runtype::Array(Runtype::Any.into()), named_schemas, hoisted)
         }

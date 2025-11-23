@@ -161,9 +161,18 @@ impl TplLitTypeItem {
             }
         }
     }
+}
 
-    pub fn describe_vec(vs: &[Self]) -> String {
-        vs.iter()
+#[derive(PartialEq, Eq, Hash, Debug, Ord, PartialOrd, Clone)]
+pub struct CustomFormat(pub String, pub Vec<String>);
+
+#[derive(PartialEq, Eq, Hash, Debug, Ord, PartialOrd, Clone)]
+pub struct TplLitType(pub Vec<TplLitTypeItem>);
+
+impl TplLitType {
+    pub fn describe(&self) -> String {
+        self.0
+            .iter()
             .map(|it| match it {
                 TplLitTypeItem::String => "${string}".to_string(),
                 TplLitTypeItem::Number => "${number}".to_string(),
@@ -177,7 +186,7 @@ impl TplLitTypeItem {
                     values.sort();
                     let values = values
                         .into_iter()
-                        .map(|it| Self::describe_vec(std::slice::from_ref(it)))
+                        .map(|it| TplLitType(vec![it.clone()]).describe())
                         .collect::<Vec<_>>()
                         .join(" | ");
                     format!("({})", values)
@@ -185,10 +194,15 @@ impl TplLitTypeItem {
             })
             .collect()
     }
-}
+    pub fn regex_expr(&self) -> String {
+        let mut regex_exp = String::new();
 
-#[derive(PartialEq, Eq, Hash, Debug, Ord, PartialOrd, Clone)]
-pub struct CustomFormat(pub String, pub Vec<String>);
+        for item in &self.0 {
+            regex_exp.push_str(&item.regex_expr());
+        }
+        regex_exp
+    }
+}
 
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord)]
 pub enum Runtype {
@@ -200,7 +214,7 @@ pub enum Runtype {
     AnyArrayLike,
     StringWithFormat(CustomFormat),
     NumberWithFormat(CustomFormat),
-    TplLitType(Vec<TplLitTypeItem>),
+    TplLitType(TplLitType),
     Object {
         vs: BTreeMap<String, Optionality<Runtype>>,
         rest: Option<Box<Runtype>>,
@@ -381,8 +395,7 @@ impl Runtype {
                 acc
             }
             Runtype::TplLitType(tpl_lit_type_items) => {
-                let descr = TplLitTypeItem::describe_vec(tpl_lit_type_items);
-                format!("`{}`", descr)
+                format!("`{}`", tpl_lit_type_items.describe())
             }
             Runtype::Const(runtype_const) => runtype_const.clone().to_json().debug_print(),
             Runtype::Date => "Date".to_string(),

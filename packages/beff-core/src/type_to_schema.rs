@@ -1,4 +1,6 @@
-use crate::ast::runtype::{CustomFormat, Optionality, Runtype, RuntypeConst, TplLitTypeItem};
+use crate::ast::runtype::{
+    CustomFormat, Optionality, Runtype, RuntypeConst, TplLitType, TplLitTypeItem,
+};
 use crate::diag::{
     Diagnostic, DiagnosticInfoMessage, DiagnosticInformation, DiagnosticParentMessage, Location,
 };
@@ -1399,7 +1401,7 @@ impl<'a, 'b, R: FileManager> TypeToSchema<'a, 'b, R> {
                         acc.push(res);
                     }
 
-                    Ok(Runtype::TplLitType(acc))
+                    Ok(Runtype::TplLitType(TplLitType(acc)))
                 } else {
                     Ok(Runtype::String)
                 }
@@ -2095,7 +2097,7 @@ impl<'a, 'b, R: FileManager> TypeToSchema<'a, 'b, R> {
             }
         }
 
-        Ok(Runtype::TplLitType(acc))
+        Ok(Runtype::TplLitType(TplLitType(acc)))
     }
     fn convert_ts_tpl_lit_type(&mut self, it: &TsTplLitType) -> Res<Runtype> {
         if !it.types.is_empty() || it.quasis.len() != 1 {

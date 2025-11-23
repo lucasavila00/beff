@@ -1,8 +1,7 @@
 use std::rc::Rc;
-
 use crate::ast::{
     json::N,
-    runtype::{CustomFormat, TplLitTypeItem},
+    runtype::{CustomFormat, TplLitType},
 };
 
 use super::{
@@ -114,11 +113,24 @@ impl CustomFormat {
     }
 }
 
+impl TplLitType {
+    fn is_subtype(&self, other: &TplLitType) -> bool {
+        // let self_regex = self.regex_expr();
+        // let other_regex = other.regex_expr();
+
+        // let self_dfa = try_parse(&self_regex).unwrap();
+        // let other_dfa = try_parse(&other_regex).unwrap();
+
+        // self_dfa.is_subset_of(&other_dfa)
+        self == other
+    }
+}
+
 #[derive(PartialEq, Eq, Hash, Debug, Ord, PartialOrd, Clone)]
 pub enum StringLitOrFormat {
     Lit(String),
     Format(CustomFormat),
-    Tpl(Vec<TplLitTypeItem>),
+    Tpl(TplLitType),
 }
 
 trait SubtypeCheck {
@@ -129,6 +141,7 @@ impl SubtypeCheck for StringLitOrFormat {
     fn is_subtype(&self, other: &StringLitOrFormat) -> bool {
         match (self, other) {
             (StringLitOrFormat::Format(a), StringLitOrFormat::Format(b)) => a.is_subtype(b),
+            (StringLitOrFormat::Tpl(a), StringLitOrFormat::Tpl(b)) => a.is_subtype(b),
             _ => self == other,
         }
     }
@@ -672,18 +685,18 @@ mod tests {
     fn test_string_template_types() {
         use crate::ast::runtype::TplLitTypeItem;
 
-        let tpl1 = StringLitOrFormat::Tpl(vec![
+        let tpl1 = StringLitOrFormat::Tpl(TplLitType(vec![
             TplLitTypeItem::Quasis("hello_".into()),
             TplLitTypeItem::String,
-        ]);
-        let tpl2 = StringLitOrFormat::Tpl(vec![
+        ]));
+        let tpl2 = StringLitOrFormat::Tpl(TplLitType(vec![
             TplLitTypeItem::Quasis("hello_".into()),
             TplLitTypeItem::String,
-        ]);
-        let tpl3 = StringLitOrFormat::Tpl(vec![
+        ]));
+        let tpl3 = StringLitOrFormat::Tpl(TplLitType(vec![
             TplLitTypeItem::Quasis("hi_".into()),
             TplLitTypeItem::String,
-        ]);
+        ]));
 
         // Identical template literals should be subtypes
         assert!(tpl1.is_subtype(&tpl2));
