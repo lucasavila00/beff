@@ -605,4 +605,186 @@ mod tests {
         assert!(union.contains(&a_const));
         assert!(union.contains(&b_const));
     }
+
+    #[test]
+    fn test_string_format_extends_complex() {
+        let base_format = CustomFormat("resource_id".into(), vec![]);
+        let read_format = CustomFormat("resource_id".into(), vec!["read".to_string()]);
+        let write_format = CustomFormat(
+            "resource_id".into(),
+            vec!["read".to_string(), "write".to_string()],
+        );
+        let admin_format = CustomFormat(
+            "resource_id".into(),
+            vec!["read".to_string(), "write".to_string(), "admin".to_string()],
+        );
+
+        // Test subtype relationships
+        assert!(read_format.is_subtype(&base_format));
+        assert!(!base_format.is_subtype(&read_format));
+
+        assert!(write_format.is_subtype(&base_format));
+        assert!(write_format.is_subtype(&read_format));
+        assert!(!read_format.is_subtype(&write_format));
+
+        assert!(admin_format.is_subtype(&base_format));
+        assert!(admin_format.is_subtype(&read_format));
+        assert!(admin_format.is_subtype(&write_format));
+        assert!(!write_format.is_subtype(&admin_format));
+    }
+
+    #[test]
+    fn test_string_format_different_bases() {
+        let user_id = CustomFormat("user_id".into(), vec![]);
+        let post_id = CustomFormat("post_id".into(), vec![]);
+        let user_read = CustomFormat("user_id".into(), vec!["read".to_string()]);
+        let post_read = CustomFormat("post_id".into(), vec!["read".to_string()]);
+
+        // Different base formats should not be subtypes of each other
+        assert!(!user_id.is_subtype(&post_id));
+        assert!(!post_id.is_subtype(&user_id));
+        assert!(!user_read.is_subtype(&post_read));
+        assert!(!post_read.is_subtype(&user_read));
+        assert!(!user_read.is_subtype(&post_id));
+        assert!(!post_read.is_subtype(&user_id));
+    }
+
+    #[test]
+    fn test_string_literal_and_format_interaction() {
+        let literal_a = StringLitOrFormat::Lit("a".into());
+        let literal_b = StringLitOrFormat::Lit("b".into());
+        let format_id = StringLitOrFormat::Format(CustomFormat("id".into(), vec![]));
+        let format_read_id =
+            StringLitOrFormat::Format(CustomFormat("id".into(), vec!["read".to_string()]));
+
+        // Literals should not be subtypes of formats and vice versa
+        assert!(!literal_a.is_subtype(&format_id));
+        assert!(!format_id.is_subtype(&literal_a));
+        assert!(!literal_b.is_subtype(&format_read_id));
+        assert!(!format_read_id.is_subtype(&literal_b));
+
+        // Literals should only be subtypes of identical literals
+        assert!(literal_a.is_subtype(&literal_a));
+        assert!(!literal_a.is_subtype(&literal_b));
+    }
+
+    #[test]
+    fn test_string_template_types() {
+        use crate::ast::runtype::TplLitTypeItem;
+
+        let tpl1 = StringLitOrFormat::Tpl(vec![
+            TplLitTypeItem::Quasis("hello_".into()),
+            TplLitTypeItem::String,
+        ]);
+        let tpl2 = StringLitOrFormat::Tpl(vec![
+            TplLitTypeItem::Quasis("hello_".into()),
+            TplLitTypeItem::String,
+        ]);
+        let tpl3 = StringLitOrFormat::Tpl(vec![
+            TplLitTypeItem::Quasis("hi_".into()),
+            TplLitTypeItem::String,
+        ]);
+
+        // Identical template literals should be subtypes
+        assert!(tpl1.is_subtype(&tpl2));
+        assert!(tpl2.is_subtype(&tpl1));
+
+        // Different template literals should not be subtypes
+        assert!(!tpl1.is_subtype(&tpl3));
+        assert!(!tpl3.is_subtype(&tpl1));
+    }
+
+    #[test]
+    fn test_string_format_edge_cases() {
+        let empty_args1 = CustomFormat("format".into(), vec![]);
+        let empty_args2 = CustomFormat("format".into(), vec![]);
+        let single_arg = CustomFormat("format".into(), vec!["arg1".to_string()]);
+
+        // Empty args should be identical
+        assert!(empty_args1.is_subtype(&empty_args2));
+        assert!(empty_args2.is_subtype(&empty_args1));
+
+        // Single arg should extend empty args
+        assert!(single_arg.is_subtype(&empty_args1));
+        assert!(!empty_args1.is_subtype(&single_arg));
+    }
+
+    #[test]
+    fn test_number_format_subtyping() {
+        let base_number =
+            NumberRepresentationOrFormat::Format(CustomFormat("amount".into(), vec![]));
+        let currency_number = NumberRepresentationOrFormat::Format(CustomFormat(
+            "amount".into(),
+            vec!["USD".to_string()],
+        ));
+        let precise_currency = NumberRepresentationOrFormat::Format(CustomFormat(
+            "amount".into(),
+            vec!["USD".to_string(), "precise".to_string()],
+        ));
+
+        // Test subtype relationships
+        assert!(currency_number.is_subtype(&base_number));
+        assert!(!base_number.is_subtype(&currency_number));
+
+        assert!(precise_currency.is_subtype(&base_number));
+        assert!(precise_currency.is_subtype(&currency_number));
+        assert!(!currency_number.is_subtype(&precise_currency));
+    }
+
+    #[test]
+    fn test_number_literal_and_format() {
+        use crate::ast::json::N;
+
+        let literal_42 = NumberRepresentationOrFormat::Lit(N::parse_int(42));
+        let literal_100 = NumberRepresentationOrFormat::Lit(N::parse_int(100));
+        let format_amount =
+            NumberRepresentationOrFormat::Format(CustomFormat("amount".into(), vec![]));
+
+        // Literals should not be subtypes of formats
+        assert!(!literal_42.is_subtype(&format_amount));
+        assert!(!format_amount.is_subtype(&literal_42));
+
+        // Literals should only be subtypes of identical literals
+        assert!(literal_42.is_subtype(&literal_42));
+        assert!(!literal_42.is_subtype(&literal_100));
+    }
+
+    #[test]
+    fn test_complex_string_operations() {
+        let base = StringLitOrFormat::Format(CustomFormat("entity".into(), vec![]));
+        let read =
+            StringLitOrFormat::Format(CustomFormat("entity".into(), vec!["read".to_string()]));
+        let write = StringLitOrFormat::Format(CustomFormat(
+            "entity".into(),
+            vec!["read".to_string(), "write".to_string()],
+        ));
+        let different_base = StringLitOrFormat::Format(CustomFormat("other".into(), vec![]));
+        let literal = StringLitOrFormat::Lit("constant".into());
+
+        let v1 = vec![base.clone(), read.clone(), write.clone()];
+        let v2 = vec![read.clone(), different_base.clone()];
+        let v3 = vec![literal.clone()];
+
+        // Test union operations
+        let union_1_2 = sub_vec_union(&v1, &v2);
+        assert!(union_1_2.contains(&base)); // Most general form should be in union
+        assert!(union_1_2.contains(&different_base)); // Different base should be included
+
+        // Test intersection operations
+        let intersect_1_2 = sub_vec_intersect(&v1, &v2);
+        // The intersection should contain the write element, which is more specific than read
+        // write (["read", "write"]) is a subtype of read (["read"]), so write is in the intersection
+        assert!(intersect_1_2.contains(&write));
+        assert_eq!(intersect_1_2.len(), 1); // Only one element should be in the intersection
+
+        // Test difference operations
+        let diff_1_2 = sub_vec_diff(&v1, &v2);
+        assert!(diff_1_2.contains(&base)); // base is in v1 but not subtype of anything in v2
+        assert!(!diff_1_2.contains(&read)); // read is subtype of read in v2, so removed
+        assert!(!diff_1_2.contains(&write)); // write is subtype of read in v2, so removed
+
+        // Test union with literals
+        let union_1_3 = sub_vec_union(&v1, &v3);
+        assert_eq!(union_1_3.len(), 4); // All elements should be preserved (no subtype relationships)
+    }
 }
