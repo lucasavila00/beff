@@ -96,10 +96,10 @@ pub type SemType = ComplexSemType;
 pub trait SemTypeOps {
     fn is_empty(&self, ctx: &mut SemTypeContext) -> Result<bool>;
     fn is_empty_evidence(&self, ctx: &mut SemTypeContext) -> Result<EvidenceResult>;
-    fn intersect(&self, t2: &Rc<SemType>) -> Rc<SemType>;
-    fn union(&self, t2: &Rc<SemType>) -> Rc<SemType>;
-    fn diff(&self, t2: &Rc<SemType>) -> Rc<SemType>;
-    fn complement(&self) -> Rc<SemType>;
+    fn intersect(&self, t2: &Rc<SemType>) -> Result<Rc<SemType>>;
+    fn union(&self, t2: &Rc<SemType>) -> Result<Rc<SemType>>;
+    fn diff(&self, t2: &Rc<SemType>) -> Result<Rc<SemType>>;
+    fn complement(&self) -> Result<Rc<SemType>>;
     fn is_subtype(&self, t2: &Rc<SemType>, ctx: &mut SemTypeContext) -> Result<bool>;
     fn is_same_type(&self, t2: &Rc<SemType>, ctx: &mut SemTypeContext) -> Result<bool>;
 }
@@ -131,7 +131,7 @@ impl SemTypeOps for Rc<SemType> {
         ))
     }
 
-    fn intersect(&self, t2: &Rc<SemType>) -> Rc<SemType> {
+    fn intersect(&self, t2: &Rc<SemType>) -> Result<Rc<SemType>> {
         let t1 = self;
         let all = t1.all & t2.all;
         let some = (t1.some_as_bitset() | t1.all) & (t2.some_as_bitset() | t2.all);
@@ -139,7 +139,7 @@ impl SemTypeOps for Rc<SemType> {
         let some = some & !all;
 
         if some == 0 {
-            return SemType::new_basic(all).into();
+            return Ok(SemType::new_basic(all).into());
         }
         let mut subtypes: Vec<Rc<ProperSubtype>> = vec![];
 
@@ -155,7 +155,7 @@ impl SemTypeOps for Rc<SemType> {
             let data = match (data1, data2) {
                 (Some(data1), None) => Some(Rc::new(SubType::Proper(data1))),
                 (None, Some(data2)) => Some(Rc::new(SubType::Proper(data2))),
-                (Some(data1), Some(data2)) => Some(data1.intersect(&data2)),
+                (Some(data1), Some(data2)) => Some(data1.intersect(&data2)?),
                 _ => None,
             };
 
@@ -166,10 +166,10 @@ impl SemTypeOps for Rc<SemType> {
             }
         }
 
-        SemType::new_complex(all, subtypes).into()
+        Ok(SemType::new_complex(all, subtypes).into())
     }
 
-    fn union(&self, t2: &Rc<SemType>) -> Rc<SemType> {
+    fn union(&self, t2: &Rc<SemType>) -> Result<Rc<SemType>> {
         let t1 = self;
         let mut all = t1.all | t2.all;
         let some = (t1.some_as_bitset() | t2.some_as_bitset()) & !all;
@@ -177,7 +177,7 @@ impl SemTypeOps for Rc<SemType> {
         let some = some & !all;
 
         if some == 0 {
-            return SemType::new_basic(all).into();
+            return Ok(SemType::new_basic(all).into());
         }
         let mut subtypes: Vec<Rc<ProperSubtype>> = vec![];
 
@@ -193,7 +193,7 @@ impl SemTypeOps for Rc<SemType> {
             let data = match (data1, data2) {
                 (Some(data1), None) => Some(Rc::new(SubType::Proper(data1))),
                 (None, Some(data2)) => Some(Rc::new(SubType::Proper(data2))),
-                (Some(data1), Some(data2)) => Some(data1.union(&data2)),
+                (Some(data1), Some(data2)) => Some(data1.union(&data2)?),
                 _ => None,
             };
             if let Some(data) = data {
@@ -205,17 +205,17 @@ impl SemTypeOps for Rc<SemType> {
             }
         }
 
-        SemType::new_complex(all, subtypes).into()
+        Ok(SemType::new_complex(all, subtypes).into())
     }
 
-    fn diff(&self, t2: &Rc<SemType>) -> Rc<SemType> {
+    fn diff(&self, t2: &Rc<SemType>) -> Result<Rc<SemType>> {
         let t1 = self;
 
         let mut all = t1.all & !(t2.all | t2.some_as_bitset());
         let mut some = (t1.all | t1.some_as_bitset()) & !(t2.all);
         some &= !all;
         if some == 0 {
-            return SemType::new_basic(all).into();
+            return Ok(SemType::new_basic(all).into());
         }
         let mut subtypes: Vec<Rc<ProperSubtype>> = vec![];
 
@@ -231,7 +231,7 @@ impl SemTypeOps for Rc<SemType> {
             let data = match (data1, data2) {
                 (None, Some(data2)) => Some(Rc::new(SubType::Proper(data2.complement()))),
                 (Some(data1), None) => Some(Rc::new(SubType::Proper(data1))),
-                (Some(data1), Some(data2)) => Some(data1.diff(&data2)),
+                (Some(data1), Some(data2)) => Some(data1.diff(&data2)?),
                 _ => None,
             };
 
@@ -244,15 +244,15 @@ impl SemTypeOps for Rc<SemType> {
             }
         }
 
-        SemType::new_complex(all, subtypes).into()
+        Ok(SemType::new_complex(all, subtypes).into())
     }
 
-    fn complement(&self) -> Rc<SemType> {
+    fn complement(&self) -> Result<Rc<SemType>> {
         Rc::new(SemTypeContext::unknown()).diff(self)
     }
 
     fn is_subtype(&self, t2: &Rc<SemType>, ctx: &mut SemTypeContext) -> Result<bool> {
-        self.diff(t2).is_empty(ctx)
+        self.diff(t2)?.is_empty(ctx)
     }
 
     fn is_same_type(&self, t2: &Rc<SemType>, ctx: &mut SemTypeContext) -> Result<bool> {
@@ -473,7 +473,7 @@ impl SemTypeContext {
     pub fn void() -> SemType {
         SemType::new_basic(SubTypeTag::Void.code())
     }
-    pub fn optional(it: Rc<SemType>) -> Rc<SemType> {
+    pub fn optional(it: Rc<SemType>) -> Result<Rc<SemType>> {
         let t2 = Self::void();
         Rc::new(it).union(&Rc::new(t2))
     }
@@ -531,7 +531,7 @@ impl SemTypeContext {
         let list_result = list_indexed_access(self, obj_st.clone(), idx_st.clone())?;
         let mapping_result = mapping_indexed_access(self, obj_st, idx_st)?;
 
-        Ok(list_result.union(&mapping_result))
+        Ok(list_result.union(&mapping_result)?)
     }
 
     pub fn keyof(&mut self, st: Rc<SemType>) -> anyhow::Result<Rc<SemType>> {

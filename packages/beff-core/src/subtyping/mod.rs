@@ -105,9 +105,11 @@ impl<'a> ToSemTypeConverter<'a> {
                             let vs: BTreeMap<String, Rc<SemType>> = vs
                                 .iter()
                                 .map(|(k, v)| match v {
-                                    Optionality::Optional(v) => self
-                                        .convert_to_sem_type(v, builder)
-                                        .map(|v| (k.clone(), SemTypeContext::optional(v))),
+                                    Optionality::Optional(v) => {
+                                        self.convert_to_sem_type(v, builder).and_then(|v| {
+                                            SemTypeContext::optional(v).map(|v| (k.clone(), v))
+                                        })
+                                    }
                                     Optionality::Required(v) => {
                                         self.convert_to_sem_type(v, builder).map(|v| (k.clone(), v))
                                     }
@@ -118,7 +120,7 @@ impl<'a> ToSemTypeConverter<'a> {
                                 let v = match &it.value {
                                     Optionality::Optional(v) => self
                                         .convert_to_sem_type(v, builder)
-                                        .map(|v| SemTypeContext::optional(v))?,
+                                        .and_then(|v| SemTypeContext::optional(v))?,
                                     Optionality::Required(v) => {
                                         self.convert_to_sem_type(v, builder)?
                                     }
@@ -150,7 +152,7 @@ impl<'a> ToSemTypeConverter<'a> {
             Runtype::AnyOf(vs) => {
                 let mut acc = Rc::new(SemTypeContext::never());
                 for v in vs {
-                    acc = acc.union(&self.convert_to_sem_type(v, builder)?);
+                    acc = acc.union(&self.convert_to_sem_type(v, builder)?)?;
                 }
                 Ok(acc)
             }
@@ -158,7 +160,7 @@ impl<'a> ToSemTypeConverter<'a> {
                 let mut acc = Rc::new(SemTypeContext::unknown());
                 for v in vs {
                     let ty = self.convert_to_sem_type(v, builder)?;
-                    acc = acc.intersect(&ty);
+                    acc = acc.intersect(&ty)?;
                 }
                 Ok(acc)
             }
@@ -193,7 +195,7 @@ impl<'a> ToSemTypeConverter<'a> {
                     .map(|(k, v)| match v {
                         Optionality::Optional(v) => self
                             .convert_to_sem_type(v, builder)
-                            .map(|v| (k.clone(), SemTypeContext::optional(v))),
+                            .and_then(|v| SemTypeContext::optional(v).map(|v| (k.clone(), v))),
                         Optionality::Required(v) => {
                             self.convert_to_sem_type(v, builder).map(|v| (k.clone(), v))
                         }
@@ -204,7 +206,7 @@ impl<'a> ToSemTypeConverter<'a> {
                     let v = match &it.value {
                         Optionality::Optional(v) => self
                             .convert_to_sem_type(v, builder)
-                            .map(|v| SemTypeContext::optional(v))?,
+                            .and_then(|v| SemTypeContext::optional(v))?,
                         Optionality::Required(v) => self.convert_to_sem_type(v, builder)?,
                     };
                     let k = self.convert_to_sem_type(&it.key, builder)?;
@@ -247,7 +249,7 @@ impl<'a> ToSemTypeConverter<'a> {
             Runtype::StNever => Ok(SemTypeContext::never().into()),
             Runtype::StNot(it) => {
                 let chd = self.convert_to_sem_type(it, builder)?;
-                Ok(chd.complement())
+                Ok(chd.complement()?)
             }
             Runtype::Function => Ok(SemTypeContext::function().into()),
         }

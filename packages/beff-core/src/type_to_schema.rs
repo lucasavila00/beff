@@ -513,7 +513,9 @@ impl<'a, 'b, R: FileManager> TypeToSchema<'a, 'b, R> {
                             self.box_error(span, DiagnosticInfoMessage::AnyhowError(e.to_string()))
                         })?;
 
-                    let subtracted_ty = left_st.diff(&right_st);
+                    let subtracted_ty = left_st.diff(&right_st).map_err(|e| {
+                        self.box_error(span, DiagnosticInfoMessage::AnyhowError(e.to_string()))
+                    })?;
                     let res = self
                         .convert_sem_type(subtracted_ty, &mut ctx, span)?
                         .remove_nots_of_intersections_and_empty_of_union(

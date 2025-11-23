@@ -386,7 +386,7 @@ fn intersect_mapping(
             .get(*name)
             .cloned()
             .unwrap_or_else(|| Rc::new(SemTypeContext::unknown()));
-        let t = type1.intersect(&type2);
+        let t = type1.intersect(&type2)?;
         if t.is_never() {
             return Ok(None);
         }
@@ -456,7 +456,7 @@ fn mapping_inhabited(
                     .cloned()
                     .unwrap_or_else(|| Rc::new(SemTypeContext::unknown()));
 
-                let d = pos_type.diff(&neg_type);
+                let d = pos_type.diff(&neg_type)?;
                 if !d.is_empty(builder)? {
                     let mut mt = pos.as_ref().clone();
                     mt.vs.insert(name.to_string(), d);
@@ -652,7 +652,7 @@ fn list_inhabited(
                 } else {
                     nt.items.clone()
                 };
-                let d = prefix_items[i].diff(&ntm);
+                let d = prefix_items[i].diff(&ntm)?;
                 if !d.is_empty(builder)? {
                     let mut s = prefix_items.clone();
                     s[i] = d;
@@ -664,7 +664,7 @@ fn list_inhabited(
                 }
             }
 
-            let diff = items.diff(&nt.items);
+            let diff = items.diff(&nt.items)?;
             if let EvidenceResult::Evidence(e) = diff.is_empty_evidence(builder)? {
                 return Ok(ListInhabited::Yes(Some(e.into()), prefix_items.clone()));
             }
@@ -713,17 +713,17 @@ fn list_formula_is_empty(
                     }
                 }
                 for i in 0..lt.prefix_items.len() {
-                    prefix_items[i] = prefix_items[i].intersect(&lt.prefix_items[i]);
+                    prefix_items[i] = prefix_items[i].intersect(&lt.prefix_items[i])?;
                 }
                 if lt.prefix_items.len() < new_len {
                     if lt.items.is_never() {
                         return Ok(ProperSubtypeEvidenceResult::IsEmpty);
                     }
                     for i in lt.prefix_items.len()..new_len {
-                        prefix_items[i] = prefix_items[i].intersect(&lt.items);
+                        prefix_items[i] = prefix_items[i].intersect(&lt.items)?;
                     }
                 }
-                items = items.intersect(&lt.items);
+                items = items.intersect(&lt.items)?;
                 p.clone_from(&some_p.next.clone());
             }
 
@@ -805,13 +805,13 @@ pub fn bdd_mapping_member_type_inner(
                 _ => unreachable!(),
             };
             let a = mapping_member_type_inner(b_atom_type.clone(), key.clone())?;
-            let a = a.intersect(&accum);
+            let a = a.intersect(&accum)?;
             let a = bdd_mapping_member_type_inner(ctx, left.clone(), key.clone(), a.clone())?;
 
             let b = bdd_mapping_member_type_inner(ctx, middle.clone(), key.clone(), accum.clone())?;
             let c = bdd_mapping_member_type_inner(ctx, right.clone(), key, accum.clone())?;
 
-            Ok(a.union(&b.union(&c)))
+            Ok(a.union(&b.union(&c)?)?)
         }
     }
 }
@@ -880,7 +880,7 @@ fn mapping_member_type_inner(
     for ty in mapping_atomic_applicable_member_types_inner(atomic, key)? {
         match member_type {
             Some(mt) => {
-                member_type = Some(mt.union(&ty));
+                member_type = Some(mt.union(&ty)?);
             }
             None => {
                 member_type = Some(ty);
@@ -928,7 +928,7 @@ fn bdd_mapped_record_member_type_inner_val(
                 }
                 Some(p) => p.value.clone(),
             };
-            let a = a.intersect(&accum);
+            let a = a.intersect(&accum)?;
             let a = bdd_mapped_record_member_type_inner_val(ctx, left.clone(), idx_st.clone(), a)?;
 
             let b = bdd_mapped_record_member_type_inner_val(
@@ -944,7 +944,7 @@ fn bdd_mapped_record_member_type_inner_val(
                 accum.clone(),
             )?;
 
-            Ok(a.union(&b.union(&c)))
+            Ok(a.union(&b.union(&c)?)?)
         }
     }
 }
@@ -1071,7 +1071,7 @@ fn list_atomic_member_type_at_inner(
     prefix_items: &[Rc<SemType>],
     items: &Rc<SemType>,
     key: ListNumberKey,
-) -> Rc<SemType> {
+) -> Result<Rc<SemType>> {
     match key {
         ListNumberKey::N { allowed, values } => {
             let mut m = Rc::new(SemTypeContext::never());
@@ -1080,31 +1080,34 @@ fn list_atomic_member_type_at_inner(
             if init_len > 0 {
                 for (i, v) in prefix_items.iter().enumerate() {
                     if int_subtype_contains(allowed, &values, i) {
-                        m = m.union(v);
+                        m = m.union(v)?;
                     }
                 }
             }
             if init_len == 0 || int_subtype_max(allowed, &values) > (init_len as i64) - 1 {
-                m = m.union(items);
+                m = m.union(items)?;
             }
-            m
+            Ok(m)
         }
         ListNumberKey::True => {
             let mut m = items.clone();
             for it in prefix_items.iter() {
-                m = m.union(it);
+                m = m.union(it)?;
             }
-            m
+            Ok(m)
         }
     }
 }
 
-fn list_atomic_member_type_inner(atomic: Rc<ListAtomic>, key: ListNumberKey) -> Rc<SemType> {
+fn list_atomic_member_type_inner(
+    atomic: Rc<ListAtomic>,
+    key: ListNumberKey,
+) -> Result<Rc<SemType>> {
     list_atomic_member_type_at_inner(&atomic.prefix_items, &atomic.items, key)
 }
 
-fn list_member_type_inner_val(atomic: Rc<ListAtomic>, key: ListNumberKey) -> Rc<SemType> {
-    let a = list_atomic_member_type_inner(atomic, key);
+fn list_member_type_inner_val(atomic: Rc<ListAtomic>, key: ListNumberKey) -> Result<Rc<SemType>> {
+    let a = list_atomic_member_type_inner(atomic, key)?;
     a.diff(&Rc::new(SemTypeContext::void()))
 }
 
@@ -1113,10 +1116,10 @@ fn bdd_list_member_type_inner_val(
     b: Rc<Bdd>,
     key: ListNumberKey,
     accum: Rc<SemType>,
-) -> Rc<SemType> {
+) -> Result<Rc<SemType>> {
     match b.as_ref() {
-        Bdd::True => accum,
-        Bdd::False => SemTypeContext::never().into(),
+        Bdd::True => Ok(accum),
+        Bdd::False => Ok(SemTypeContext::never().into()),
         Bdd::Node {
             atom,
             left,
@@ -1127,14 +1130,15 @@ fn bdd_list_member_type_inner_val(
                 Atom::List(a) => ctx.get_list_atomic(*a),
                 _ => unreachable!(),
             };
-            let a = list_member_type_inner_val(b_atom_type, key.clone());
-            let a = a.intersect(&accum);
-            let a = bdd_list_member_type_inner_val(ctx, left.clone(), key.clone(), a.clone());
+            let a = list_member_type_inner_val(b_atom_type, key.clone())?;
+            let a = a.intersect(&accum)?;
+            let a = bdd_list_member_type_inner_val(ctx, left.clone(), key.clone(), a.clone())?;
 
-            let b = bdd_list_member_type_inner_val(ctx, middle.clone(), key.clone(), accum.clone());
-            let c = bdd_list_member_type_inner_val(ctx, right.clone(), key, accum.clone());
+            let b =
+                bdd_list_member_type_inner_val(ctx, middle.clone(), key.clone(), accum.clone())?;
+            let c = bdd_list_member_type_inner_val(ctx, right.clone(), key, accum.clone())?;
 
-            a.union(&b.union(&c))
+            a.union(&b.union(&c)?)
         }
     }
 }
@@ -1194,12 +1198,7 @@ pub fn list_indexed_access(
                     bail!("not a list - proper")
                 }
             };
-            Ok(bdd_list_member_type_inner_val(
-                ctx,
-                bdd.clone(),
-                k,
-                SemTypeContext::unknown().into(),
-            ))
+            bdd_list_member_type_inner_val(ctx, bdd.clone(), k, SemTypeContext::unknown().into())
         }
     }
 }
@@ -1240,7 +1239,7 @@ pub fn keyof(ctx: &mut SemTypeContext, st: Rc<SemType>) -> anyhow::Result<Rc<Sem
                             let ty_at_key =
                                 mapping_indexed_access(ctx, st.clone(), key_ty.clone())?;
                             if !ty_at_key.is_empty(ctx)? {
-                                acc = acc.union(&key_ty)
+                                acc = acc.union(&key_ty)?
                             }
                         }
                     };
@@ -1250,7 +1249,7 @@ pub fn keyof(ctx: &mut SemTypeContext, st: Rc<SemType>) -> anyhow::Result<Rc<Sem
                 let idx_st = Rc::new(SemTypeContext::number());
                 let ty_at_key = list_indexed_access(ctx, st.clone(), idx_st.clone())?;
                 if !ty_at_key.is_empty(ctx)? {
-                    acc = acc.union(&idx_st)
+                    acc = acc.union(&idx_st)?
                 }
             }
             _ => (),

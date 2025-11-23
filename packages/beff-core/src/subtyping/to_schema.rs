@@ -3,7 +3,7 @@ use std::{
     rc::Rc,
 };
 
-use anyhow::bail;
+use anyhow::{bail, Result};
 
 use crate::{
     ast::runtype::{
@@ -27,13 +27,11 @@ pub enum SchemaMemo {
 pub struct SemTypeResolverContext<'a>(pub &'a mut SemTypeContext);
 
 impl SemTypeResolverContext<'_> {
-    fn intersect_list_atomics(it: Vec<Rc<ListAtomic>>) -> Rc<ListAtomic> {
-        let items = it
-            .iter()
-            .map(|it| it.items.clone())
-            .fold(Rc::new(SemType::new_unknown()), |acc, it| {
-                acc.intersect(&it)
-            });
+    fn intersect_list_atomics(it: Vec<Rc<ListAtomic>>) -> Result<Rc<ListAtomic>> {
+        let mut items_acc = Rc::new(SemType::new_unknown());
+        for it in it.iter() {
+            items_acc = items_acc.intersect(&it.items)?;
+        }
 
         let mut prefix_items: Vec<Rc<SemType>> = vec![];
         let max_len = it.iter().map(|it| it.prefix_items.len()).max().unwrap_or(0);
@@ -42,26 +40,30 @@ impl SemTypeResolverContext<'_> {
 
             for atom in &it {
                 if i < atom.prefix_items.len() {
-                    acc = acc.intersect(&atom.prefix_items[i]);
+                    acc = acc.intersect(&atom.prefix_items[i])?;
                 }
             }
 
             prefix_items.push(acc);
         }
 
-        Rc::new(ListAtomic {
-            items,
+        Ok(Rc::new(ListAtomic {
+            items: items_acc,
             prefix_items,
-        })
+        }))
     }
 
-    fn list_atomic_complement(it: Rc<ListAtomic>) -> Rc<ListAtomic> {
-        let items = it.items.complement();
-        let prefix_items = it.prefix_items.iter().map(|it| it.complement()).collect();
-        Rc::new(ListAtomic {
+    fn list_atomic_complement(it: Rc<ListAtomic>) -> Result<Rc<ListAtomic>> {
+        let items = it.items.complement()?;
+        let prefix_items = it
+            .prefix_items
+            .iter()
+            .map(|it| it.complement())
+            .collect::<Result<Vec<_>>>()?;
+        Ok(Rc::new(ListAtomic {
             items,
             prefix_items,
-        })
+        }))
     }
 
     fn convert_to_schema_list_node_bdd_vec(
@@ -95,7 +97,7 @@ impl SemTypeResolverContext<'_> {
                     .into_iter()
                     .chain(self.convert_to_schema_list_node_bdd_vec(atom, left, middle, right)?);
 
-                acc.push(Self::intersect_list_atomics(ty.collect()));
+                acc.push(Self::intersect_list_atomics(ty.collect())?);
             }
         };
 
@@ -109,7 +111,7 @@ impl SemTypeResolverContext<'_> {
         }
         match right.as_ref() {
             Bdd::True => {
-                acc.push(Self::list_atomic_complement(mt.clone()));
+                acc.push(Self::list_atomic_complement(mt.clone())?);
             }
             Bdd::False => {
                 // noop
@@ -120,11 +122,11 @@ impl SemTypeResolverContext<'_> {
                 middle,
                 right,
             } => {
-                let ty = vec![Self::list_atomic_complement(mt.clone())]
+                let ty = vec![Self::list_atomic_complement(mt.clone())?]
                     .into_iter()
                     .chain(self.convert_to_schema_list_node_bdd_vec(atom, left, middle, right)?);
 
-                acc.push(Self::intersect_list_atomics(ty.collect()));
+                acc.push(Self::intersect_list_atomics(ty.collect())?);
             }
         }
         Ok(acc)

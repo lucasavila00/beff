@@ -439,11 +439,11 @@ mod tests {
             .to_sem_type(&definitions, &mut ctx)
             .expect("should work");
 
-        let diff = const_a_st.diff(&all_strings_st);
+        let diff = const_a_st.diff(&all_strings_st).unwrap();
 
         assert!(diff.is_never());
 
-        let union = all_strings_st.union(&const_a_st);
+        let union = all_strings_st.union(&const_a_st).unwrap();
         assert!(union.is_same_type(&all_strings_st, &mut ctx).unwrap());
     }
 
@@ -477,40 +477,60 @@ mod tests {
             .to_sem_type(&definitions, &mut ctx)
             .expect("should work");
 
-        let diff1 = read_authorized_user_id_sem_type.diff(&user_id_sem_type);
+        let diff1 = read_authorized_user_id_sem_type
+            .diff(&user_id_sem_type)
+            .unwrap();
 
         assert!(diff1.is_never());
 
-        let diff2 = user_id_sem_type.diff(&read_authorized_user_id_sem_type);
+        let diff2 = user_id_sem_type
+            .diff(&read_authorized_user_id_sem_type)
+            .unwrap();
 
         assert!(!diff2.is_never());
 
-        let union = user_id_sem_type.union(&read_authorized_user_id_sem_type);
+        let union = user_id_sem_type
+            .union(&read_authorized_user_id_sem_type)
+            .unwrap();
         assert!(union.is_same_type(&user_id_sem_type, &mut ctx).unwrap());
 
-        let intersection = user_id_sem_type.intersect(&read_authorized_user_id_sem_type);
+        let intersection = user_id_sem_type
+            .intersect(&read_authorized_user_id_sem_type)
+            .unwrap();
         assert!(intersection
             .is_same_type(&read_authorized_user_id_sem_type, &mut ctx)
             .unwrap());
 
-        let intersection2 = read_authorized_user_id_sem_type.intersect(&user_id_sem_type);
+        let intersection2 = read_authorized_user_id_sem_type
+            .intersect(&user_id_sem_type)
+            .unwrap();
         assert!(intersection2
             .is_same_type(&read_authorized_user_id_sem_type, &mut ctx)
             .unwrap());
 
-        let diff3 = write_authorized_user_id_sem_type.diff(&user_id_sem_type);
+        let diff3 = write_authorized_user_id_sem_type
+            .diff(&user_id_sem_type)
+            .unwrap();
         assert!(diff3.is_never());
 
-        let diff4 = user_id_sem_type.diff(&write_authorized_user_id_sem_type);
+        let diff4 = user_id_sem_type
+            .diff(&write_authorized_user_id_sem_type)
+            .unwrap();
         assert!(!diff4.is_never());
 
-        let diff5 = write_authorized_user_id_sem_type.diff(&read_authorized_user_id_sem_type);
+        let diff5 = write_authorized_user_id_sem_type
+            .diff(&read_authorized_user_id_sem_type)
+            .unwrap();
         assert!(diff5.is_never());
 
-        let diff6 = read_authorized_user_id_sem_type.diff(&write_authorized_user_id_sem_type);
+        let diff6 = read_authorized_user_id_sem_type
+            .diff(&write_authorized_user_id_sem_type)
+            .unwrap();
         assert!(!diff6.is_never());
 
-        let union2 = user_id_sem_type.union(&write_authorized_user_id_sem_type);
+        let union2 = user_id_sem_type
+            .union(&write_authorized_user_id_sem_type)
+            .unwrap();
         assert!(union2.is_same_type(&user_id_sem_type, &mut ctx).unwrap());
 
         let res = rt_is_sub_type(
@@ -759,30 +779,30 @@ mod tests {
             .expect("should work");
 
         // Union of specific with general should be general
-        let union_read_base = read_sem.union(&base_sem);
+        let union_read_base = read_sem.union(&base_sem).unwrap();
         assert!(union_read_base.is_same_type(&base_sem, &mut ctx).unwrap());
 
-        let union_write_base = write_sem.union(&base_sem);
+        let union_write_base = write_sem.union(&base_sem).unwrap();
         assert!(union_write_base.is_same_type(&base_sem, &mut ctx).unwrap());
 
         // Intersection of specific with general should be specific
-        let intersect_read_base = read_sem.intersect(&base_sem);
+        let intersect_read_base = read_sem.intersect(&base_sem).unwrap();
         assert!(intersect_read_base
             .is_same_type(&read_sem, &mut ctx)
             .unwrap());
 
-        let intersect_write_base = write_sem.intersect(&base_sem);
+        let intersect_write_base = write_sem.intersect(&base_sem).unwrap();
         assert!(intersect_write_base
             .is_same_type(&write_sem, &mut ctx)
             .unwrap());
 
         // Union of unrelated formats should contain both
-        let union_base_other = base_sem.union(&other_sem);
+        let union_base_other = base_sem.union(&other_sem).unwrap();
         assert!(!union_base_other.is_same_type(&base_sem, &mut ctx).unwrap());
         assert!(!union_base_other.is_same_type(&other_sem, &mut ctx).unwrap());
 
         // Intersection of unrelated formats should be never
-        let intersect_base_other = base_sem.intersect(&other_sem);
+        let intersect_base_other = base_sem.intersect(&other_sem).unwrap();
         assert!(intersect_base_other.is_never());
     }
 
@@ -810,16 +830,16 @@ mod tests {
         assert!(!format_sem.is_subtype(&literal_abc_sem, &mut ctx).unwrap());
 
         // Union should contain both
-        let union = format_sem.union(&literal_abc_sem);
+        let union = format_sem.union(&literal_abc_sem).unwrap();
         assert!(!union.is_same_type(&format_sem, &mut ctx).unwrap());
         assert!(!union.is_same_type(&literal_abc_sem, &mut ctx).unwrap());
 
         // Intersection should be never
-        let intersection = format_sem.intersect(&literal_abc_sem);
+        let intersection = format_sem.intersect(&literal_abc_sem).unwrap();
         assert!(intersection.is_never());
 
         // Union of two literals
-        let literal_union = literal_abc_sem.union(&literal_def_sem);
+        let literal_union = literal_abc_sem.union(&literal_def_sem).unwrap();
         assert!(!literal_union
             .is_same_type(&literal_abc_sem, &mut ctx)
             .unwrap());
@@ -997,11 +1017,11 @@ mod tests {
             .expect("should work");
 
         // Union of specific with general should be general
-        let union = usd_sem.union(&base_sem);
+        let union = usd_sem.union(&base_sem).unwrap();
         assert!(union.is_same_type(&base_sem, &mut ctx).unwrap());
 
         // Intersection of different formats should be never
-        let intersection = base_sem.intersect(&other_sem);
+        let intersection = base_sem.intersect(&other_sem).unwrap();
         assert!(intersection.is_never());
     }
 
@@ -1033,16 +1053,16 @@ mod tests {
         assert!(!format_sem.is_subtype(&literal_42_sem, &mut ctx).unwrap());
 
         // Union should contain both
-        let union = format_sem.union(&literal_42_sem);
+        let union = format_sem.union(&literal_42_sem).unwrap();
         assert!(!union.is_same_type(&format_sem, &mut ctx).unwrap());
         assert!(!union.is_same_type(&literal_42_sem, &mut ctx).unwrap());
 
         // Intersection should be never
-        let intersection = format_sem.intersect(&literal_42_sem);
+        let intersection = format_sem.intersect(&literal_42_sem).unwrap();
         assert!(intersection.is_never());
 
         // Union of two literals
-        let literal_union = literal_42_sem.union(&literal_100_sem);
+        let literal_union = literal_42_sem.union(&literal_100_sem).unwrap();
         assert!(!literal_union
             .is_same_type(&literal_42_sem, &mut ctx)
             .unwrap());
