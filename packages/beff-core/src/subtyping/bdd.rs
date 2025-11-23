@@ -743,10 +743,7 @@ pub fn bdd_mapping_member_type_inner(
 
 #[derive(Debug, Clone)]
 pub enum MappingStrKey {
-    Str {
-        allowed: bool,
-        values: Vec<StringLitOrFormat>,
-    },
+    Str { allowed: bool, values: Vec<String> },
     True,
 }
 
@@ -763,22 +760,10 @@ fn mapping_atomic_applicable_member_types_inner(
             for (k, ty) in atomic.vs.iter() {
                 let mut found = false;
 
-                for it in &values {
-                    match it {
-                        StringLitOrFormat::Tpl(vs) => match vs.0.as_slice() {
-                            [TplLitTypeItem::StringConst(l)] => {
-                                if l == k {
-                                    found = true;
-                                    break;
-                                }
-                            }
-                            _ => {
-                                bail!("template literal cannot be used as mapping key")
-                            }
-                        },
-                        StringLitOrFormat::Format(_) => {
-                            bail!("format or codec cannot be used as mapping key")
-                        }
+                for l in &values {
+                    if l == k {
+                        found = true;
+                        break;
                     }
                 }
 
@@ -790,7 +775,7 @@ fn mapping_atomic_applicable_member_types_inner(
             let is_subtype = member_types.len() == atomic.vs.len();
             if !is_subtype {
                 for v in &atomic.indexed_properties {
-                    if v.key.is_subtype_of_string() {
+                    if v.key.is_all_strings() {
                         member_types.push(v.value.clone());
                     }
                 }
@@ -802,7 +787,7 @@ fn mapping_atomic_applicable_member_types_inner(
             let mut vs: Vec<Rc<SemType>> = atomic.vs.values().cloned().collect();
 
             for v in &atomic.indexed_properties {
-                if v.key.is_subtype_of_string() {
+                if v.key.is_all_strings() {
                     vs.push(v.value.clone());
                 }
             }
@@ -915,30 +900,56 @@ pub fn mapping_indexed_access(
                 }
             };
             let idx_clone = idx_st.clone();
-            let string_key: MappingStrKey = match SemTypeContext::string_sub_type(idx_st) {
-                SubType::False(_) => {
-                    return Ok(bdd_mapped_record_member_type_inner_val(
-                        ctx,
-                        bdd.clone(),
-                        idx_clone,
-                        SemTypeContext::unknown().into(),
-                    ))
-                }
-                SubType::True(_) => MappingStrKey::True,
+            let string_key: Option<MappingStrKey> = match SemTypeContext::string_sub_type(idx_st) {
+                SubType::False(_) => None,
+                SubType::True(_) => Some(MappingStrKey::True),
                 SubType::Proper(proper) => match proper.as_ref() {
-                    ProperSubtype::String { allowed, values } => MappingStrKey::Str {
-                        allowed: *allowed,
-                        values: values.clone(),
-                    },
+                    ProperSubtype::String { allowed, values } => {
+                        let mut consts = vec![];
+                        let mut all_string_const = true;
+                        for v in values {
+                            match v {
+                                StringLitOrFormat::Format(_custom_format) => {
+                                    all_string_const = false;
+                                }
+                                StringLitOrFormat::Tpl(tpl_lit_type) => {
+                                    match tpl_lit_type.0.as_slice() {
+                                        [TplLitTypeItem::StringConst(s)] => {
+                                            consts.push(s.clone());
+                                        }
+                                        _ => {
+                                            all_string_const = false;
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                        if all_string_const {
+                            Some(MappingStrKey::Str {
+                                allowed: *allowed,
+                                values: consts,
+                            })
+                        } else {
+                            None
+                        }
+                    }
                     _ => unreachable!("should be string"),
                 },
             };
-            bdd_mapping_member_type_inner(
-                ctx,
-                bdd.clone(),
-                string_key,
-                SemTypeContext::unknown().into(),
-            )
+            match string_key {
+                Some(sk) => bdd_mapping_member_type_inner(
+                    ctx,
+                    bdd.clone(),
+                    sk,
+                    SemTypeContext::unknown().into(),
+                ),
+                None => Ok(bdd_mapped_record_member_type_inner_val(
+                    ctx,
+                    bdd.clone(),
+                    idx_clone,
+                    SemTypeContext::unknown().into(),
+                )),
+            }
         }
     }
 }

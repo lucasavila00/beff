@@ -268,6 +268,9 @@ impl SemType {
 
         is_string || only_string_sub
     }
+    pub fn is_all_strings(&self) -> bool {
+        self.all == SubTypeTag::String.code()
+    }
 
     pub fn is_never(&self) -> bool {
         self.all == 0 && self.subtype_data.is_empty()

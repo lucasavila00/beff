@@ -6,7 +6,7 @@ it("works", () => {
   expect(Codecs.boolean.describe()).toMatchInlineSnapshot('"type Codecboolean = boolean;"');
   expect(Codecs.null.describe()).toMatchInlineSnapshot('"type Codecnull = null;"');
   expect(Codecs.undefined.describe()).toMatchInlineSnapshot('"type Codecundefined = null;"');
-  expect(Codecs.object.describe()).toMatchInlineSnapshot('"type Codecobject = { [K in string]: any };"');
+  expect(Codecs.object.describe()).toMatchInlineSnapshot('"type Codecobject = { [K in (string | number)]: any };"');
   expect(Codecs.anyArray.describe()).toMatchInlineSnapshot('"type CodecanyArray = Array<any>;"');
   expect(Codecs.any.describe()).toMatchInlineSnapshot('"type Codecany = any;"');
 

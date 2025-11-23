@@ -961,29 +961,11 @@ class ObjectRuntype implements Runtype {
       const valueSchema = value.schema(ctx);
       popPath(ctx);
 
-      if (keySchema.type === "string") {
-        return {
-          type: "object",
-          additionalProperties: valueSchema,
-        };
-      } else if (keySchema.type === "number") {
-        return {
-          type: "object",
-          additionalProperties: valueSchema,
-        };
-      } else if (keySchema.enum != null) {
-        const props: any = {};
-        for (const enumVal of keySchema.enum) {
-          props[enumVal as string] = valueSchema;
-        }
-        return {
-          type: "object",
-          properties: props,
-          additionalProperties: false,
-        };
-      } else {
-        throw new Error(buildSchemaErrorMessage(ctx, "Unsupported index key schema in object"));
-      }
+      return {
+        type: "object",
+        additionalProperties: valueSchema,
+        propertyNames: keySchema,
+      };
     });
 
     if (indexSchemas.length === 0) {
