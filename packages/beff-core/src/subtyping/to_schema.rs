@@ -6,7 +6,7 @@ use std::{
 use anyhow::bail;
 
 use crate::{
-    ast::runtype::{Optionality, Runtype, RuntypeConst},
+    ast::runtype::{CustomFormat, Optionality, Runtype, RuntypeConst, TplLitTypeItem},
     subtyping::semtype::MappedRecordAtomicType,
     NamedSchema,
 };
@@ -566,9 +566,12 @@ impl<'a, 'b> SchemerContext<'a, 'b> {
                                     !allowed,
                                 ));
                             }
-                            NumberRepresentationOrFormat::Format(first, rest) => {
+                            NumberRepresentationOrFormat::Format(CustomFormat(first, rest)) => {
                                 acc.insert(maybe_not(
-                                    Runtype::NumberWithFormat(first.clone(), rest.clone()),
+                                    Runtype::NumberWithFormat(CustomFormat(
+                                        first.clone(),
+                                        rest.clone(),
+                                    )),
                                     !allowed,
                                 ));
                             }
@@ -578,20 +581,27 @@ impl<'a, 'b> SchemerContext<'a, 'b> {
                 ProperSubtype::String { allowed, values } => {
                     for h in values {
                         match h {
-                            StringLitOrFormat::Lit(st) => {
+                            StringLitOrFormat::Format(CustomFormat(first, rest)) => {
                                 acc.insert(maybe_not(
-                                    Runtype::Const(RuntypeConst::String(st.clone())),
-                                    !allowed,
-                                ));
-                            }
-                            StringLitOrFormat::Format(first, rest) => {
-                                acc.insert(maybe_not(
-                                    Runtype::StringWithFormat(first.clone(), rest.clone()),
+                                    Runtype::StringWithFormat(CustomFormat(
+                                        first.clone(),
+                                        rest.clone(),
+                                    )),
                                     !allowed,
                                 ));
                             }
                             StringLitOrFormat::Tpl(items) => {
-                                acc.insert(maybe_not(Runtype::TplLitType(items.clone()), !allowed));
+                                //
+                                match items.0.first() {
+                                    Some(TplLitTypeItem::StringConst(c)) => acc.insert(maybe_not(
+                                        Runtype::single_string_const(c),
+                                        !allowed,
+                                    )),
+                                    _ => acc.insert(maybe_not(
+                                        Runtype::TplLitType(items.clone()),
+                                        !allowed,
+                                    )),
+                                };
                             }
                         }
                     }

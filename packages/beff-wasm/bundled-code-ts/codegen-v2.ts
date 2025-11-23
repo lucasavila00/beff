@@ -408,7 +408,7 @@ class RegexRuntype implements Runtype {
   }
 
   describe(_ctx: DescribeContext): string {
-    return "`" + this.description + "`";
+    return this.description;
   }
   schema(_ctx: SchemaContext): JSONSchema7 {
     return { type: "string", pattern: this.description };

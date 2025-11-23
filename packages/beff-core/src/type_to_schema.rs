@@ -1,4 +1,6 @@
-use crate::ast::runtype::{Optionality, Runtype, RuntypeConst, TplLitTypeItem};
+use crate::ast::runtype::{
+    CustomFormat, Optionality, Runtype, RuntypeConst, TplLitType, TplLitTypeItem,
+};
 use crate::diag::{
     Diagnostic, DiagnosticInfoMessage, DiagnosticInformation, DiagnosticParentMessage, Location,
 };
@@ -149,46 +151,44 @@ impl<'a, 'b, R: FileManager> TypeToSchema<'a, 'b, R> {
         obj: &BTreeMap<String, Optionality<Runtype>>,
         keys: Runtype,
     ) -> Res<Runtype> {
-        match keys {
-            Runtype::Const(RuntypeConst::String(str)) => {
-                Ok(Self::convert_pick_keys(obj, vec![str]))
-            }
-            Runtype::AnyOf(rms) => {
-                let mut keys = vec![];
-                for rm in rms {
-                    match rm {
-                        Runtype::Const(RuntypeConst::String(str)) => {
-                            keys.push(str);
-                        }
-                        Runtype::Ref(n) => {
-                            let map = self.components.get(&n).and_then(|it| it.as_ref()).cloned();
-                            match map {
-                                Some(NamedSchema {
-                                    schema: Runtype::Const(RuntypeConst::String(str)),
-                                    ..
-                                }) => keys.push(str),
+        match keys.extract_single_string_const() {
+            Some(str) => Ok(Self::convert_pick_keys(obj, vec![str])),
+            None => match keys {
+                Runtype::AnyOf(rms) => {
+                    let mut keys = vec![];
+                    for rm in rms {
+                        match rm.extract_single_string_const() {
+                            Some(str) => {
+                                keys.push(str);
+                            }
+                            None => match rm {
+                                Runtype::Ref(n) => {
+                                    let map =
+                                        self.components.get(&n).and_then(|it| it.as_ref()).cloned();
+                                    match map.and_then(|it|it.schema.extract_single_string_const()) {
+                                    Some(str) => keys.push(str),
+                                    _ => return self.error(
+                                        span,
+                                        DiagnosticInfoMessage::PickShouldHaveStringAsTypeArgument,
+                                    ),
+                                }
+                                }
                                 _ => {
                                     return self.error(
                                         span,
                                         DiagnosticInfoMessage::PickShouldHaveStringAsTypeArgument,
                                     )
                                 }
-                            }
-                        }
-                        _ => {
-                            return self.error(
-                                span,
-                                DiagnosticInfoMessage::PickShouldHaveStringAsTypeArgument,
-                            )
+                            },
                         }
                     }
+                    Ok(Self::convert_pick_keys(obj, keys))
                 }
-                Ok(Self::convert_pick_keys(obj, keys))
-            }
-            _ => self.error(
-                span,
-                DiagnosticInfoMessage::PickShouldHaveStringOrStringArrayAsTypeArgument,
-            ),
+                _ => self.error(
+                    span,
+                    DiagnosticInfoMessage::PickShouldHaveStringOrStringArrayAsTypeArgument,
+                ),
+            },
         }
     }
 
@@ -216,8 +216,8 @@ impl<'a, 'b, R: FileManager> TypeToSchema<'a, 'b, R> {
             .map_err(|e| self.box_error(span, e))?;
         let str_keys = keys
             .iter()
-            .map(|it| match it {
-                Runtype::Const(RuntypeConst::String(str)) => Ok(str.clone()),
+            .map(|it| match it.extract_single_string_const() {
+                Some(str) => Ok(str.clone()),
                 _ => self.error(
                     span,
                     DiagnosticInfoMessage::OmitShouldHaveStringAsTypeArgument,
@@ -323,8 +323,8 @@ impl<'a, 'b, R: FileManager> TypeToSchema<'a, 'b, R> {
         let mut string_keys = vec![];
 
         for v in self.extract_union(it)? {
-            match v {
-                Runtype::Const(RuntypeConst::String(str)) => {
+            match v.extract_single_string_const() {
+                Some(str) => {
                     string_keys.push(str.clone());
                 }
                 _ => {
@@ -383,7 +383,7 @@ impl<'a, 'b, R: FileManager> TypeToSchema<'a, 'b, R> {
                                 rest: Some(Box::new(value)),
                             })
                         }
-                        Runtype::StringWithFormat(_, _) | Runtype::Number => {
+                        Runtype::StringWithFormat(_) | Runtype::Number => {
                             let value = items[1].clone();
                             Ok(Runtype::MappedRecord {
                                 key,
@@ -832,7 +832,7 @@ impl<'a, 'b, R: FileManager> TypeToSchema<'a, 'b, R> {
                 {
                     let val_str = value.to_string();
                     if self.settings.string_formats.contains(&val_str) {
-                        return Ok(Runtype::StringWithFormat(val_str, vec![]));
+                        return Ok(Runtype::StringWithFormat(CustomFormat(val_str, vec![])));
                     } else {
                         return self
                             .error(span, DiagnosticInfoMessage::CustomStringIsNotRegistered);
@@ -852,7 +852,9 @@ impl<'a, 'b, R: FileManager> TypeToSchema<'a, 'b, R> {
         span: &Span,
     ) -> Res<(String, Vec<String>)> {
         match schema {
-            Runtype::StringWithFormat(first, rest) => Ok((first.clone(), rest.clone())),
+            Runtype::StringWithFormat(CustomFormat(first, rest)) => {
+                Ok((first.clone(), rest.clone()))
+            }
             Runtype::Ref(r) => {
                 let v = self.components.get(r);
 
@@ -891,7 +893,7 @@ impl<'a, 'b, R: FileManager> TypeToSchema<'a, 'b, R> {
 
                         let (first, mut rest) = self.get_string_format_base_formats(&base, span)?;
                         rest.push(next_str);
-                        return Ok(Runtype::StringWithFormat(first, rest));
+                        return Ok(Runtype::StringWithFormat(CustomFormat(first, rest)));
                     } else {
                         return self
                             .error(span, DiagnosticInfoMessage::CustomStringIsNotRegistered);
@@ -911,7 +913,9 @@ impl<'a, 'b, R: FileManager> TypeToSchema<'a, 'b, R> {
         span: &Span,
     ) -> Res<(String, Vec<String>)> {
         match schema {
-            Runtype::NumberWithFormat(first, rest) => Ok((first.clone(), rest.clone())),
+            Runtype::NumberWithFormat(CustomFormat(first, rest)) => {
+                Ok((first.clone(), rest.clone()))
+            }
             Runtype::Ref(r) => {
                 let v = self.components.get(r);
 
@@ -950,7 +954,7 @@ impl<'a, 'b, R: FileManager> TypeToSchema<'a, 'b, R> {
 
                         let (first, mut rest) = self.get_number_format_base_formats(&base, span)?;
                         rest.push(next_str);
-                        return Ok(Runtype::NumberWithFormat(first, rest));
+                        return Ok(Runtype::NumberWithFormat(CustomFormat(first, rest)));
                     } else {
                         return self
                             .error(span, DiagnosticInfoMessage::CustomNumberIsNotRegistered);
@@ -980,7 +984,7 @@ impl<'a, 'b, R: FileManager> TypeToSchema<'a, 'b, R> {
                 {
                     let val_str = value.to_string();
                     if self.settings.number_formats.contains(&val_str) {
-                        return Ok(Runtype::NumberWithFormat(val_str, vec![]));
+                        return Ok(Runtype::NumberWithFormat(CustomFormat(val_str, vec![])));
                     } else {
                         return self
                             .error(span, DiagnosticInfoMessage::CustomNumberIsNotRegistered);
@@ -1395,7 +1399,7 @@ impl<'a, 'b, R: FileManager> TypeToSchema<'a, 'b, R> {
                         acc.push(res);
                     }
 
-                    Ok(Runtype::TplLitType(acc))
+                    Ok(Runtype::TplLitType(TplLitType(acc)))
                 } else {
                     Ok(Runtype::String)
                 }
@@ -1403,7 +1407,7 @@ impl<'a, 'b, R: FileManager> TypeToSchema<'a, 'b, R> {
             Expr::Lit(l) => match l {
                 Lit::Str(s) => {
                     if as_const {
-                        Ok(Runtype::Const(RuntypeConst::String(s.value.to_string())))
+                        Ok(Runtype::single_string_const(&s.value))
                     } else {
                         Ok(Runtype::String)
                     }
@@ -1531,10 +1535,9 @@ impl<'a, 'b, R: FileManager> TypeToSchema<'a, 'b, R> {
                 let mut ctx = SemTypeContext::new();
                 let k = match &m.prop {
                     MemberProp::Ident(i) => Some(i.sym.to_string()),
-                    MemberProp::Computed(c) => match self.typeof_expr(&c.expr, as_const)? {
-                        Runtype::Const(RuntypeConst::String(s)) => Some(s.clone()),
-                        _ => None,
-                    },
+                    MemberProp::Computed(c) => self
+                        .typeof_expr(&c.expr, as_const)?
+                        .extract_single_string_const(),
                     MemberProp::PrivateName(_) => None,
                 };
                 if let Some(key) = &k {
@@ -1623,9 +1626,11 @@ impl<'a, 'b, R: FileManager> TypeToSchema<'a, 'b, R> {
                 }
                 // fall back to semantic types if it cannot be done syntatically
                 let key: Rc<SemType> = match &m.prop {
-                    MemberProp::Ident(i) => Rc::new(SemTypeContext::string_const(
-                        StringLitOrFormat::Lit(i.sym.to_string()),
-                    )),
+                    MemberProp::Ident(i) => {
+                        Rc::new(SemTypeContext::string_const(StringLitOrFormat::Tpl(
+                            TplLitType(vec![TplLitTypeItem::StringConst(i.sym.to_string())]),
+                        )))
+                    }
                     MemberProp::PrivateName(_) => {
                         return self.error(
                             &m.prop.span(),
@@ -1896,10 +1901,12 @@ impl<'a, 'b, R: FileManager> TypeToSchema<'a, 'b, R> {
                     return self.convert_indexed_access_syntatically(&v.schema, index);
                 }
             }
-            (Runtype::Object { vs, rest: _ }, Runtype::Const(RuntypeConst::String(s))) => {
-                let v = vs.get(s);
-                if let Some(Optionality::Required(v)) = v {
-                    return Ok(Some(v.clone()));
+            (Runtype::Object { vs, rest: _ }, other) => {
+                if let Some(s) = other.extract_single_string_const() {
+                    let v = vs.get(&s);
+                    if let Some(Optionality::Required(v)) = v {
+                        return Ok(Some(v.clone()));
+                    }
                 }
             }
             _ => {}
@@ -1992,8 +1999,8 @@ impl<'a, 'b, R: FileManager> TypeToSchema<'a, 'b, R> {
         let mut string_keys = vec![];
 
         for v in values {
-            match v {
-                Runtype::Const(RuntypeConst::String(s)) => {
+            match v.extract_single_string_const() {
+                Some(s) => {
                     string_keys.push(s);
                 }
                 _ => return self.error(&k.span, DiagnosticInfoMessage::NonStringKeyInMappedType),
@@ -2011,7 +2018,7 @@ impl<'a, 'b, R: FileManager> TypeToSchema<'a, 'b, R> {
         for key in string_keys.into_iter() {
             self.type_param_stack.push(BTreeMap::from_iter(vec![(
                 name.clone(),
-                Runtype::Const(RuntypeConst::String(key.clone())),
+                Runtype::single_string_const(&key),
             )]));
             let ty = self.convert_ts_type(type_ann)?;
             self.type_param_stack.pop();
@@ -2038,9 +2045,6 @@ impl<'a, 'b, R: FileManager> TypeToSchema<'a, 'b, R> {
             Runtype::Boolean => Ok(TplLitTypeItem::Boolean),
             Runtype::String => Ok(TplLitTypeItem::String),
             Runtype::Number => Ok(TplLitTypeItem::Number),
-            Runtype::Const(RuntypeConst::String(txt)) => {
-                Ok(TplLitTypeItem::StringConst(txt.to_string()))
-            }
             Runtype::AnyOf(vs) => {
                 let mut acc = vec![];
                 for v in vs {
@@ -2060,6 +2064,13 @@ impl<'a, 'b, R: FileManager> TypeToSchema<'a, 'b, R> {
                     ),
                 }
             }
+            Runtype::TplLitType(it) => match it.0.as_slice() {
+                [single] => Ok(single.clone()),
+                _ => self.error(
+                    span,
+                    DiagnosticInfoMessage::NestedTplLitInJsonSchemaToTplLit,
+                ),
+            },
             _ => self.error(
                 span,
                 DiagnosticInfoMessage::TplLitTypeNonStringNonNumberNonBoolean,
@@ -2078,7 +2089,7 @@ impl<'a, 'b, R: FileManager> TypeToSchema<'a, 'b, R> {
             if selecting_quasis {
                 let quasis = &it.quasis[quasis_idx];
                 quasis_idx += 1;
-                acc.push(TplLitTypeItem::Quasis(quasis.raw.to_string()));
+                acc.push(TplLitTypeItem::StringConst(quasis.raw.to_string()));
                 selecting_quasis = false;
             } else {
                 let type_ = &it.types[types_idx];
@@ -2091,18 +2102,18 @@ impl<'a, 'b, R: FileManager> TypeToSchema<'a, 'b, R> {
             }
         }
 
-        Ok(Runtype::TplLitType(acc))
+        Ok(Runtype::TplLitType(TplLitType(acc)))
     }
     fn convert_ts_tpl_lit_type(&mut self, it: &TsTplLitType) -> Res<Runtype> {
         if !it.types.is_empty() || it.quasis.len() != 1 {
             self.convert_ts_tpl_lit_type_non_trivial(it)
         } else {
-            Ok(Runtype::Const(RuntypeConst::String(
-                it.quasis
+            Ok(Runtype::single_string_const(
+                &it.quasis
                     .iter()
                     .map(|it| it.raw.to_string())
                     .collect::<String>(),
-            )))
+            ))
         }
     }
 
@@ -2165,9 +2176,7 @@ impl<'a, 'b, R: FileManager> TypeToSchema<'a, 'b, R> {
             }
             TsType::TsLitType(TsLitType { lit, .. }) => match lit {
                 TsLit::Number(n) => Ok(Runtype::Const(RuntypeConst::parse_f64(n.value))),
-                TsLit::Str(s) => Ok(Runtype::Const(RuntypeConst::String(
-                    s.value.to_string().clone(),
-                ))),
+                TsLit::Str(s) => Ok(Runtype::single_string_const(&s.value)),
                 TsLit::Bool(b) => Ok(Runtype::Const(RuntypeConst::Bool(b.value))),
                 TsLit::BigInt(_) => Ok(Runtype::BigInt),
                 TsLit::Tpl(it) => self.convert_ts_tpl_lit_type(it),

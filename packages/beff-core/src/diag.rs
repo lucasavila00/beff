@@ -30,6 +30,7 @@ pub enum DiagnosticInfoMessage {
     TypeOfTsBuiltinNotSupported,
     TypeofTsEnumNotSupported,
     TplLitTypeNonStringNonNumberNonBoolean,
+    NestedTplLitInJsonSchemaToTplLit,
     ExcludeShouldHaveTwoTypeArguments,
     MissingArgumentsOnExclude,
     PartialShouldHaveOneTypeArgument,
@@ -499,6 +500,9 @@ impl DiagnosticInfoMessage {
             }
             DiagnosticInfoMessage::CannotHaveRecursiveGenericTypes => {
                 "Cannot have recursive generic types".to_string()
+            }
+            DiagnosticInfoMessage::NestedTplLitInJsonSchemaToTplLit => {
+                "Nested template literal types are not supported when converting from JSON schema to template literal".to_string()
             }
         }
     }

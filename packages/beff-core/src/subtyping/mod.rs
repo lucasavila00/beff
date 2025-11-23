@@ -1,7 +1,7 @@
 use std::collections::BTreeSet;
 use std::rc::Rc;
 
-use crate::ast::runtype::{Optionality, RuntypeConst};
+use crate::ast::runtype::{CustomFormat, Optionality, RuntypeConst};
 use crate::subtyping::subtype::NumberRepresentationOrFormat;
 use crate::{ast::runtype::Runtype, NamedSchema};
 
@@ -154,14 +154,20 @@ impl<'a> ToSemTypeConverter<'a> {
             Runtype::String => Ok(SemTypeContext::string().into()),
             Runtype::Number => Ok(SemTypeContext::number().into()),
             Runtype::Any => Ok(SemTypeContext::unknown().into()),
-            Runtype::StringWithFormat(first, rest) => Ok(SemTypeContext::string_const(
-                StringLitOrFormat::Format(first.clone(), rest.clone()),
-            )
-            .into()),
-            Runtype::NumberWithFormat(first, rest) => Ok(SemTypeContext::number_const(
-                NumberRepresentationOrFormat::Format(first.clone(), rest.clone()),
-            )
-            .into()),
+            Runtype::StringWithFormat(CustomFormat(first, rest)) => Ok(
+                SemTypeContext::string_const(StringLitOrFormat::Format(CustomFormat(
+                    first.clone(),
+                    rest.clone(),
+                )))
+                .into(),
+            ),
+            Runtype::NumberWithFormat(CustomFormat(first, rest)) => Ok(
+                SemTypeContext::number_const(NumberRepresentationOrFormat::Format(CustomFormat(
+                    first.clone(),
+                    rest.clone(),
+                )))
+                .into(),
+            ),
             Runtype::TplLitType(tpl) => {
                 Ok(SemTypeContext::string_const(StringLitOrFormat::Tpl(tpl.clone())).into())
             }
@@ -207,11 +213,7 @@ impl<'a> ToSemTypeConverter<'a> {
                 Ok(builder.tuple(prefix_items, items).into())
             }
             Runtype::Const(cons) => match cons {
-                RuntypeConst::Null => Ok(SemTypeContext::null().into()),
                 RuntypeConst::Bool(b) => Ok(SemTypeContext::boolean_const(*b).into()),
-                RuntypeConst::String(s) => {
-                    Ok(SemTypeContext::string_const(StringLitOrFormat::Lit(s.clone())).into())
-                }
                 RuntypeConst::Number(n) => Ok(SemTypeContext::number_const(
                     NumberRepresentationOrFormat::Lit(n.clone()),
                 )

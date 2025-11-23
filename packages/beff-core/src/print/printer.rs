@@ -13,9 +13,12 @@ use swc_ecma_ast::{
 use swc_ecma_codegen::Config;
 use swc_ecma_codegen::{text_writer::JsWriter, Emitter};
 
+use crate::ast::json::Json;
+use crate::ast::runtype::CustomFormat;
+use crate::ast::runtype::TplLitTypeItem;
 use crate::parser_extractor::ParserExtractResult;
 use crate::{
-    ast::runtype::{Optionality, Runtype, RuntypeConst, TplLitTypeItem},
+    ast::runtype::{Optionality, Runtype},
     parser_extractor::BuiltDecoder,
     NamedSchema,
 };
@@ -241,7 +244,7 @@ fn runtype_any_of_discriminated(
 
             let all_values = extract_union(value, named_schemas);
             for s in all_values {
-                if let Runtype::Const(RuntypeConst::String(s)) = s {
+                if let Some(s) = s.extract_single_string_const() {
                     if s == current_key {
                         let new_obj_vs: Vec<(String, Optionality<Runtype>)> = vs
                             .iter()
@@ -376,14 +379,14 @@ fn maybe_runtype_any_of_discriminated(
 
                     let all_string_consts = flat_discriminator_values
                         .iter()
-                        .all(|it| matches!(it, Runtype::Const(RuntypeConst::String(_))));
+                        .all(|it| it.extract_single_string_const().is_some());
 
                     if all_string_consts {
                         let discriminator_strings: BTreeSet<String> = flat_discriminator_values
                             .iter()
-                            .map(|it| match it {
-                                Runtype::Const(RuntypeConst::String(s)) => s.clone(),
-                                _ => unreachable!(),
+                            .map(|it| {
+                                it.extract_single_string_const()
+                                    .expect("we already checked")
                             })
                             .collect::<BTreeSet<_>>();
 
@@ -404,13 +407,18 @@ fn maybe_runtype_any_of_discriminated(
 }
 
 fn maybe_runtype_any_of_consts(flat_values: &BTreeSet<Runtype>) -> Option<Expr> {
-    let all_consts = flat_values.iter().all(|it| matches!(it, Runtype::Const(_)));
+    let all_consts = flat_values
+        .iter()
+        .all(|it| it.extract_single_string_const().is_some() || matches!(it, Runtype::Const(_)));
     if all_consts {
         let consts: Vec<Expr> = flat_values
             .iter()
-            .map(|it| match it {
-                Runtype::Const(c) => c.clone().to_json().to_expr(),
-                _ => unreachable!(),
+            .map(|it| match it.extract_single_string_const() {
+                Some(s) => Json::String(s).to_expr(),
+                None => match it {
+                    Runtype::Const(c) => c.clone().to_json().to_expr(),
+                    _ => unreachable!(),
+                },
             })
             .collect();
 
@@ -459,37 +467,34 @@ fn print_runtype(
         Runtype::Any => no_args_runtype("AnyRuntype"),
         Runtype::StNever => no_args_runtype("NeverRuntype"),
         Runtype::Const(c) => new_runtype_class("ConstRuntype", vec![c.clone().to_json().to_expr()]),
-        Runtype::StringWithFormat(first, rest) => {
+        Runtype::StringWithFormat(CustomFormat(first, rest)) => {
             formats_runtype("StringWithFormatRuntype", first, rest)
         }
-        Runtype::NumberWithFormat(first, rest) => {
+        Runtype::NumberWithFormat(CustomFormat(first, rest)) => {
             formats_runtype("NumberWithFormatRuntype", first, rest)
         }
         Runtype::Date => no_args_runtype("DateRuntype"),
         Runtype::BigInt => no_args_runtype("BigIntRuntype"),
-        Runtype::TplLitType(items) => {
-            let mut regex_exp = String::new();
-
-            for item in items {
-                regex_exp.push_str(&item.regex_expr());
+        Runtype::TplLitType(t) => match t.0.as_slice() {
+            [TplLitTypeItem::StringConst(c)] => {
+                new_runtype_class("ConstRuntype", vec![Json::String(c.clone()).to_expr()])
             }
-
-            new_runtype_class(
+            _ => new_runtype_class(
                 "RegexRuntype",
                 vec![
                     Expr::Lit(Lit::Regex(Regex {
                         span: DUMMY_SP,
-                        exp: regex_exp.into(),
+                        exp: t.regex_expr().into(),
                         flags: "".into(),
                     })),
                     Expr::Lit(Lit::Str(Str {
                         span: DUMMY_SP,
-                        value: TplLitTypeItem::describe_vec(items).into(),
+                        value: t.describe().into(),
                         raw: None,
                     })),
                 ],
-            )
-        }
+            ),
+        },
         Runtype::AnyArrayLike => {
             print_runtype(&Runtype::Array(Runtype::Any.into()), named_schemas, hoisted)
         }
@@ -673,8 +678,8 @@ fn calculate_schema_seen(schema: &Runtype, seen: &mut SeenCounter) {
     *count += 1;
 
     match schema {
-        Runtype::StringWithFormat(_, _)
-        | Runtype::NumberWithFormat(_, _)
+        Runtype::StringWithFormat(_)
+        | Runtype::NumberWithFormat(_)
         | Runtype::AnyArrayLike
         | Runtype::Any
         | Runtype::Number

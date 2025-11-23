@@ -300,7 +300,7 @@ class RegexRuntype {
     this.description = description;
   }
   describe(_ctx) {
-    return "`" + this.description + "`";
+    return this.description;
   }
   schema(_ctx) {
     return { type: "string", pattern: this.description };
@@ -1188,7 +1188,7 @@ const namedRuntypes = {
         "children": new ArrayRuntype(new RefRuntype("RecursiveTree")),
         "value": direct_hoist_1
     }, null),
-    "SemVer": new RegexRuntype(/(\d+(\.\d+)?)(\.)(\d+(\.\d+)?)(\.)(\d+(\.\d+)?)/, "${number}.${number}.${number}"),
+    "SemVer": new RegexRuntype(/(\d+(\.\d+)?)(\.)(\d+(\.\d+)?)(\.)(\d+(\.\d+)?)/, "`${number}.${number}.${number}`"),
     "NonEmptyString": new TupleRuntype([
         direct_hoist_0
     ], direct_hoist_0),
