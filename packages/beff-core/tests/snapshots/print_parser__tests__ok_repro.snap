@@ -4,7 +4,7 @@ expression: "print_types(r#\"\n        export type Settings = {\n            a: 
 ---
 type Settings = { "a": string, "d": { "tag": "d" }, "level": ("a" | "b") };
 
-type SettingsUpdate = (string | { "tag": "d" });
+type SettingsUpdate = (string | "a" | "b" | { "tag": "d" });
 
 
 type BuiltParsers = {

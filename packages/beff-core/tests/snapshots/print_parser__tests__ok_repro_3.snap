@@ -6,7 +6,7 @@ type IX = { "sizes"?: IY };
 
 type IY = { "a": string };
 
-type T3 = (null | { "a": string });
+type T3 = (null | IY);
 
 
 type BuiltParsers = {
