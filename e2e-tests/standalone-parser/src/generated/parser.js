@@ -1271,6 +1271,8 @@ const namedRuntypes = {
     }, []),
     "SettingsUpdate": new AnyOfRuntype([
         direct_hoist_0,
+        direct_hoist_5,
+        direct_hoist_11,
         direct_hoist_9
     ]),
     "Mapped": new ObjectRuntype({

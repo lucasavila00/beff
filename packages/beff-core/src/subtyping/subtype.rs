@@ -107,7 +107,10 @@ impl TplLitType {
     fn is_subtype(&self, other: &TplLitType) -> Result<bool> {
         match (self.0.as_slice(), other.0.as_slice()) {
             ([a], [b]) => Ok(a == b),
-            _ => bail!("only single-item tuple literals are supported for subtype checking"),
+            _ => bail!(format!(
+                "only single-item TplLitType subtype checks are supported, but we received: {:?} vs {:?}",
+                self, other
+            )),
         }
     }
 }

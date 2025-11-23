@@ -1,9 +1,9 @@
-Error: Error: recursive type: IX
+Error: Internal Error: recursive type: IX
  /errors/recursive-failure/src/parser.ts:4:12
    2 |
    3 | export type IX = string | IX[];
  > 4 | type IX2 = IX[0];
-     |            ^^^^^ Error: recursive type: IX
+     |            ^^^^^ Internal Error: recursive type: IX
    5 | parse.buildParsers<{ IX2: IX2 }>();
    6 |
 
