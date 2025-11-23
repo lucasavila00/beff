@@ -165,7 +165,7 @@ impl<'a, 'b, R: FileManager> TypeToSchema<'a, 'b, R> {
                                 Runtype::Ref(n) => {
                                     let map =
                                         self.components.get(&n).and_then(|it| it.as_ref()).cloned();
-                                    match map.map(|it|it.schema.extract_single_string_const()).flatten() {
+                                    match map.and_then(|it|it.schema.extract_single_string_const()) {
                                     Some(str) => keys.push(str),
                                     _ => return self.error(
                                         span,
@@ -1535,13 +1535,9 @@ impl<'a, 'b, R: FileManager> TypeToSchema<'a, 'b, R> {
                 let mut ctx = SemTypeContext::new();
                 let k = match &m.prop {
                     MemberProp::Ident(i) => Some(i.sym.to_string()),
-                    MemberProp::Computed(c) => match self
+                    MemberProp::Computed(c) => self
                         .typeof_expr(&c.expr, as_const)?
-                        .extract_single_string_const()
-                    {
-                        Some(s) => Some(s.clone()),
-                        _ => None,
-                    },
+                        .extract_single_string_const(),
                     MemberProp::PrivateName(_) => None,
                 };
                 if let Some(key) = &k {
