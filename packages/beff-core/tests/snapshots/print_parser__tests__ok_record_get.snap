@@ -4,7 +4,12 @@ expression: "print_cgen(r#\"\n        export type NumberRec = Record<number, str
 ---
 const direct_hoist_0 = new TypeofRuntype("string");
 const namedRuntypes = {
-    "NumberRec": new MappedRecordRuntype(new TypeofRuntype("number"), direct_hoist_0),
+    "NumberRec": new ObjectRuntype({}, [
+        {
+            "key": new TypeofRuntype("number"),
+            "value": direct_hoist_0
+        }
+    ]),
     "NumberRecGet": direct_hoist_0
 };
 const buildParsersInput = {

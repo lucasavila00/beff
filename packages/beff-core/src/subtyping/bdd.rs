@@ -34,7 +34,6 @@ pub struct ListAtomic {
 pub enum Atom {
     Mapping(usize),
     List(usize),
-    MappedRecord(usize),
 }
 
 fn atom_cmp(a: &Atom, b: &Atom) -> Ordering {
@@ -835,11 +834,66 @@ fn mapping_member_type_inner(
     }
 }
 
+fn bdd_mapped_record_member_type_inner_val(
+    ctx: &mut SemTypeContext,
+    b: Rc<Bdd>,
+    idx_st: Rc<SemType>,
+    accum: Rc<SemType>,
+) -> Rc<SemType> {
+    match b.as_ref() {
+        Bdd::True => accum,
+        Bdd::False => SemTypeContext::never().into(),
+        Bdd::Node {
+            atom,
+            left,
+            middle,
+            right,
+        } => {
+            let b_atom_type = match atom.as_ref() {
+                Atom::Mapping(a) => ctx.get_mapping_atomic(*a),
+                _ => unreachable!(),
+            };
+            let mut found = None;
+            for p in &b_atom_type.indexed_properties {
+                let key_is_subtype = idx_st.is_subtype(&p.key, ctx);
+                if key_is_subtype {
+                    found = Some(p);
+                    break;
+                }
+            }
+            // if the key type does not intersect the key, then skip this branch
+            let a = match found {
+                None => {
+                    return SemTypeContext::never().into();
+                }
+                Some(p) => p.value.clone(),
+            };
+            let a = a.intersect(&accum);
+            let a = bdd_mapped_record_member_type_inner_val(ctx, left.clone(), idx_st.clone(), a);
+
+            let b = bdd_mapped_record_member_type_inner_val(
+                ctx,
+                middle.clone(),
+                idx_st.clone(),
+                accum.clone(),
+            );
+            let c = bdd_mapped_record_member_type_inner_val(
+                ctx,
+                right.clone(),
+                idx_st.clone(),
+                accum.clone(),
+            );
+
+            a.union(&b.union(&c))
+        }
+    }
+}
+
 // This computes the spec operation called "member type of K in T",
 // for when T is a subtype of mapping, and K is either `string` or a singleton string.
 // This is what Castagna calls projection.
 pub fn mapping_indexed_access(
-    ctx: &SemTypeContext,
+    ctx: &mut SemTypeContext,
     obj_st: Rc<SemType>,
     idx_st: Rc<SemType>,
 ) -> anyhow::Result<Rc<SemType>> {
@@ -847,17 +901,6 @@ pub fn mapping_indexed_access(
     //         return (t & MAPPING) != 0 ? VAL : UNDEF;
     //     }
 
-    let k: MappingStrKey = match SemTypeContext::string_sub_type(idx_st) {
-        SubType::False(_) => return Ok(SemTypeContext::never().into()),
-        SubType::True(_) => MappingStrKey::True,
-        SubType::Proper(proper) => match proper.as_ref() {
-            ProperSubtype::String { allowed, values } => MappingStrKey::Str {
-                allowed: *allowed,
-                values: values.clone(),
-            },
-            _ => unreachable!("should be string"),
-        },
-    };
     let b = SemTypeContext::sub_type_data(obj_st, SubTypeTag::Mapping);
     match b {
         SubType::False(_) => Ok(SemTypeContext::never().into()),
@@ -871,7 +914,31 @@ pub fn mapping_indexed_access(
                     bail!("not a mapping - proper")
                 }
             };
-            bdd_mapping_member_type_inner(ctx, bdd.clone(), k, SemTypeContext::unknown().into())
+            let idx_clone = idx_st.clone();
+            let string_key: MappingStrKey = match SemTypeContext::string_sub_type(idx_st) {
+                SubType::False(_) => {
+                    return Ok(bdd_mapped_record_member_type_inner_val(
+                        ctx,
+                        bdd.clone(),
+                        idx_clone,
+                        SemTypeContext::unknown().into(),
+                    ))
+                }
+                SubType::True(_) => MappingStrKey::True,
+                SubType::Proper(proper) => match proper.as_ref() {
+                    ProperSubtype::String { allowed, values } => MappingStrKey::Str {
+                        allowed: *allowed,
+                        values: values.clone(),
+                    },
+                    _ => unreachable!("should be string"),
+                },
+            };
+            bdd_mapping_member_type_inner(
+                ctx,
+                bdd.clone(),
+                string_key,
+                SemTypeContext::unknown().into(),
+            )
         }
     }
 }
