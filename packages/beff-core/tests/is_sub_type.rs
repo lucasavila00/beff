@@ -1,8 +1,6 @@
 #[cfg(test)]
 mod tests {
 
-    use std::collections::BTreeMap;
-
     use beff_core::{
         ast::runtype::{CustomFormat, Runtype, RuntypeConst, TplLitType, TplLitTypeItem},
         subtyping::{
@@ -38,23 +36,17 @@ mod tests {
     fn ref2() {
         let definitions = [NamedSchema {
             name: "User".into(),
-            schema: Runtype::object(
-                vec![
-                    ("id".into(), Runtype::String.required()),
-                    ("bestFriend".into(), Runtype::Ref("User".into()).required()),
-                ],
-                None,
-            ),
+            schema: Runtype::no_index_object(vec![
+                ("id".into(), Runtype::String.required()),
+                ("bestFriend".into(), Runtype::Ref("User".into()).required()),
+            ]),
         }];
 
         let t1 = Runtype::Ref("User".into());
-        let t2 = Runtype::object(
-            vec![
-                ("id".into(), Runtype::String.required()),
-                ("bestFriend".into(), Runtype::Null.required()),
-            ],
-            None,
-        );
+        let t2 = Runtype::no_index_object(vec![
+            ("id".into(), Runtype::String.required()),
+            ("bestFriend".into(), Runtype::Null.required()),
+        ]);
 
         let res = rt_is_sub_type(
             &t1,
@@ -75,23 +67,17 @@ mod tests {
     fn ref1() {
         let definitions = [NamedSchema {
             name: "User".into(),
-            schema: Runtype::object(
-                vec![
-                    ("id".into(), Runtype::String.required()),
-                    ("bestFriend".into(), Runtype::Ref("User".into()).optional()),
-                ],
-                None,
-            ),
+            schema: Runtype::no_index_object(vec![
+                ("id".into(), Runtype::String.required()),
+                ("bestFriend".into(), Runtype::Ref("User".into()).optional()),
+            ]),
         }];
 
         let t1 = Runtype::Ref("User".into());
-        let t2 = Runtype::object(
-            vec![
-                ("id".into(), Runtype::String.required()),
-                ("bestFriend".into(), Runtype::Ref("User".into()).optional()),
-            ],
-            None,
-        );
+        let t2 = Runtype::no_index_object(vec![
+            ("id".into(), Runtype::String.required()),
+            ("bestFriend".into(), Runtype::Ref("User".into()).optional()),
+        ]);
 
         let res = rt_is_sub_type(
             &t1,
@@ -112,23 +98,17 @@ mod tests {
     fn ref3() {
         let definitions = [NamedSchema {
             name: "User".into(),
-            schema: Runtype::object(
-                vec![
-                    ("id".into(), Runtype::String.required()),
-                    ("bestFriend".into(), Runtype::Ref("User".into()).optional()),
-                ],
-                None,
-            ),
+            schema: Runtype::no_index_object(vec![
+                ("id".into(), Runtype::String.required()),
+                ("bestFriend".into(), Runtype::Ref("User".into()).optional()),
+            ]),
         }];
 
         let t1 = Runtype::Ref("User".into());
-        let t2 = Runtype::object(
-            vec![
-                ("id".into(), Runtype::Number.required()),
-                ("bestFriend".into(), Runtype::Ref("User".into()).optional()),
-            ],
-            None,
-        );
+        let t2 = Runtype::no_index_object(vec![
+            ("id".into(), Runtype::Number.required()),
+            ("bestFriend".into(), Runtype::Ref("User".into()).optional()),
+        ]);
 
         let res = rt_is_sub_type(
             &t1,
@@ -150,29 +130,20 @@ mod tests {
     fn mappings4() {
         let definitions = [NamedSchema {
             name: "User".into(),
-            schema: Runtype::object(
-                vec![
-                    ("id".into(), Runtype::String.required()),
-                    ("bestFriend".into(), Runtype::Ref("User".into()).optional()),
-                ],
-                None,
-            ),
+            schema: Runtype::no_index_object(vec![
+                ("id".into(), Runtype::String.required()),
+                ("bestFriend".into(), Runtype::Ref("User".into()).optional()),
+            ]),
         }];
 
-        let t1 = Runtype::object(
-            vec![
-                ("a".into(), Runtype::String.required()),
-                ("b".into(), Runtype::Ref("User".into()).required()),
-            ],
-            None,
-        );
-        let t2 = Runtype::object(
-            vec![
-                ("a".into(), Runtype::String.required()),
-                ("b".into(), Runtype::Ref("User".into()).optional()),
-            ],
-            None,
-        );
+        let t1 = Runtype::no_index_object(vec![
+            ("a".into(), Runtype::String.required()),
+            ("b".into(), Runtype::Ref("User".into()).required()),
+        ]);
+        let t2 = Runtype::no_index_object(vec![
+            ("a".into(), Runtype::String.required()),
+            ("b".into(), Runtype::Ref("User".into()).optional()),
+        ]);
 
         let res = rt_is_sub_type(
             &t1,
@@ -194,8 +165,8 @@ mod tests {
     fn mappings3() {
         let definitions = vec![];
 
-        let t1 = Runtype::object(vec![("a".into(), Runtype::String.required())], None);
-        let t2 = Runtype::object(vec![("a".into(), Runtype::String.optional())], None);
+        let t1 = Runtype::no_index_object(vec![("a".into(), Runtype::String.required())]);
+        let t2 = Runtype::no_index_object(vec![("a".into(), Runtype::String.optional())]);
 
         let res = rt_is_sub_type(&t1, &t2, &definitions, &definitions);
         assert!(res);
@@ -206,20 +177,17 @@ mod tests {
     fn mappings2() {
         let definitions = vec![];
 
-        let t1 = Runtype::object(
-            vec![
-                (
-                    "a".into(),
-                    Runtype::single_string_const("abc".into()).required(),
-                ),
-                (
-                    "b".into(),
-                    Runtype::single_string_const("def".into()).required(),
-                ),
-            ],
-            None,
-        );
-        let t2 = Runtype::object(vec![("a".into(), Runtype::String.required())], None);
+        let t1 = Runtype::no_index_object(vec![
+            (
+                "a".into(),
+                Runtype::single_string_const("abc".into()).required(),
+            ),
+            (
+                "b".into(),
+                Runtype::single_string_const("def".into()).required(),
+            ),
+        ]);
+        let t2 = Runtype::no_index_object(vec![("a".into(), Runtype::String.required())]);
 
         let res = rt_is_sub_type(&t1, &t2, &definitions, &definitions);
         assert!(res);
@@ -230,14 +198,11 @@ mod tests {
     fn mappings() {
         let definitions = vec![];
 
-        let t1 = Runtype::object(
-            vec![(
-                "a".into(),
-                Runtype::single_string_const("abc".into()).required(),
-            )],
-            None,
-        );
-        let t2 = Runtype::object(vec![("a".into(), Runtype::String.required())], None);
+        let t1 = Runtype::no_index_object(vec![(
+            "a".into(),
+            Runtype::single_string_const("abc".into()).required(),
+        )]);
+        let t2 = Runtype::no_index_object(vec![("a".into(), Runtype::String.required())]);
 
         let res = rt_is_sub_type(&t1, &t2, &definitions, &definitions);
         assert!(res);
@@ -572,10 +537,7 @@ mod tests {
             Runtype::Date,
             Runtype::AnyArrayLike,
             Runtype::Function,
-            Runtype::Object {
-                vs: BTreeMap::new(),
-                rest: None,
-            },
+            Runtype::no_index_object(vec![]),
         ];
 
         for t0 in &all_basic_types {

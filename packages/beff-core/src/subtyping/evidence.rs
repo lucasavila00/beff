@@ -15,13 +15,6 @@ pub enum ProperSubtypeEvidence {
     },
     List(Rc<ListEvidence>),
     Mapping(Rc<MappingEvidence>),
-    MappedRecord(Rc<MappedRecordEvidence>),
-}
-
-#[derive(PartialEq, Eq, Hash, Debug, Ord, PartialOrd, Clone)]
-pub enum MappedRecordEvidence {
-    Key(Rc<Evidence>),
-    Rest(Rc<Evidence>),
 }
 
 pub type MappingEvidence = BTreeMap<String, Rc<Evidence>>;

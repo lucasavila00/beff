@@ -2,8 +2,7 @@ use crate::subtyping::{evidence::Evidence, subtype::NumberRepresentationOrFormat
 
 use super::{
     bdd::{
-        keyof, list_indexed_access, mapped_record_indexed_access, mapping_indexed_access, Atom,
-        Bdd, ListAtomic, MappingAtomic,
+        keyof, list_indexed_access, mapping_indexed_access, Atom, Bdd, ListAtomic, MappingAtomic,
     },
     evidence::{EvidenceResult, ProperSubtypeEvidenceResult},
     subtype::{
@@ -259,6 +258,16 @@ impl SemType {
     pub fn has_void(&self) -> bool {
         (self.all & SubTypeTag::Void.code()) != 0
     }
+    pub fn is_subtype_of_string(&self) -> bool {
+        let only_string_sub = self.all == 0
+            && self
+                .subtype_data
+                .iter()
+                .any(|it| it.tag() == SubTypeTag::String);
+        let is_string = (self.all & SubTypeTag::String.code()) != 0;
+
+        is_string || only_string_sub
+    }
 
     pub fn is_never(&self) -> bool {
         self.all == 0 && self.subtype_data.is_empty()
@@ -321,26 +330,21 @@ impl MemoEmpty {
 #[derive(Clone, Debug)]
 pub struct BddMemoEmptyRef(pub MemoEmpty);
 
-// TODO: unify the MappingAtomicType and MappedRecordAtomicType structs
+#[derive(Debug)]
+pub struct IndexedPropertiesAtomic {
+    pub key: Rc<SemType>,
+    pub value: Rc<SemType>,
+}
 #[derive(Debug)]
 
 pub struct MappingAtomicType {
     pub vs: Rc<MappingAtomic>,
-    pub rest: Rc<SemType>,
-}
-
-#[derive(Debug)]
-pub struct MappedRecordAtomicType {
-    pub key: Rc<SemType>,
-    pub rest: Rc<SemType>,
+    pub indexed_properties: Vec<IndexedPropertiesAtomic>,
 }
 
 pub struct SemTypeContext {
     pub mapping_definitions: Vec<Option<Rc<MappingAtomicType>>>,
     pub mapping_memo: BTreeMap<Bdd, BddMemoEmptyRef>,
-
-    pub mapped_records_definitions: Vec<Option<Rc<MappedRecordAtomicType>>>,
-    pub mapped_records_memo: BTreeMap<Bdd, BddMemoEmptyRef>,
 
     pub list_definitions: Vec<Option<Rc<ListAtomic>>>,
     pub list_memo: BTreeMap<Bdd, BddMemoEmptyRef>,
@@ -363,14 +367,6 @@ impl SemTypeContext {
             .expect("should exist")
             .clone()
     }
-    pub fn get_mapped_record_atomic(&self, idx: usize) -> Rc<MappedRecordAtomicType> {
-        self.mapped_records_definitions
-            .get(idx)
-            .expect("should exist")
-            .as_ref()
-            .expect("should exist")
-            .clone()
-    }
     pub fn get_list_atomic(&self, idx: usize) -> Rc<ListAtomic> {
         self.list_definitions
             .get(idx)
@@ -384,10 +380,8 @@ impl SemTypeContext {
         SemTypeContext {
             list_definitions: vec![],
             mapping_definitions: vec![],
-            mapped_records_definitions: vec![],
             mapping_memo: BTreeMap::new(),
             list_memo: BTreeMap::new(),
-            mapped_records_memo: BTreeMap::new(),
             mapping_json_schema_ref_memo: BTreeMap::new(),
             list_json_schema_ref_memo: BTreeMap::new(),
         }
@@ -419,32 +413,22 @@ impl SemTypeContext {
             vec![ProperSubtype::Mapping(Bdd::from_atom(Atom::Mapping(idx)).into()).into()],
         )
     }
-    pub fn mapped_record_definition_from_idx(idx: usize) -> SemType {
-        SemType::new_complex(
-            0x0,
-            vec![
-                ProperSubtype::MappedRecord(Bdd::from_atom(Atom::MappedRecord(idx)).into()).into(),
-            ],
-        )
-    }
-    pub fn mapping_definition(&mut self, vs: Rc<MappingAtomic>, rest: Rc<SemType>) -> SemType {
+
+    pub fn mapping_definition(
+        &mut self,
+        vs: Rc<MappingAtomic>,
+        indexed_properties: Vec<IndexedPropertiesAtomic>,
+    ) -> SemType {
         let idx = self.mapping_definitions.len();
         self.mapping_definitions.push(Some(
             MappingAtomicType {
                 vs: vs.clone(),
-                rest,
+                indexed_properties,
             }
             .into(),
         ));
 
         Self::mapping_definition_from_idx(idx)
-    }
-
-    pub fn mapped_record_definition(&mut self, key: Rc<SemType>, rest: Rc<SemType>) -> SemType {
-        let idx = self.mapped_records_definitions.len();
-        self.mapped_records_definitions
-            .push(Some(MappedRecordAtomicType { key, rest }.into()));
-        Self::mapped_record_definition_from_idx(idx)
     }
 
     pub fn list_definition_from_idx(idx: usize) -> SemType {
@@ -519,7 +503,6 @@ impl SemTypeContext {
                 (ProperSubtype::Number { .. }, SubTypeTag::Number)
                 | (ProperSubtype::String { .. }, SubTypeTag::String)
                 | (ProperSubtype::Mapping(_), SubTypeTag::Mapping)
-                | (ProperSubtype::MappedRecord(_), SubTypeTag::MappedRecord)
                 | (ProperSubtype::List(_), SubTypeTag::List)
                 | (ProperSubtype::Boolean(_), SubTypeTag::Boolean) => {
                     return SubType::Proper(t.clone())
@@ -548,14 +531,10 @@ impl SemTypeContext {
         obj_st: Rc<SemType>,
         idx_st: Rc<SemType>,
     ) -> anyhow::Result<Rc<SemType>> {
-        let mapped_record_result =
-            mapped_record_indexed_access(self, obj_st.clone(), idx_st.clone())?;
         let list_result = list_indexed_access(self, obj_st.clone(), idx_st.clone())?;
         let mapping_result = mapping_indexed_access(self, obj_st, idx_st)?;
 
-        Ok(mapped_record_result
-            .union(&list_result)
-            .union(&mapping_result))
+        Ok(list_result.union(&mapping_result))
     }
 
     pub fn keyof(&mut self, st: Rc<SemType>) -> anyhow::Result<Rc<SemType>> {

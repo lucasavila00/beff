@@ -5,7 +5,7 @@ use crate::ast::{
 use std::rc::Rc;
 
 use super::{
-    bdd::{list_is_empty, mapped_record_is_empty, mapping_is_empty, Bdd, BddOps},
+    bdd::{list_is_empty, mapping_is_empty, Bdd, BddOps},
     evidence::{ProperSubtypeEvidence, ProperSubtypeEvidenceResult},
     semtype::SemTypeContext,
 };
@@ -25,22 +25,12 @@ pub enum SubTypeTag {
     Void = 1 << 6,
     List = 1 << 7,
     Function = 1 << 8,
-    MappedRecord = 1 << 9,
-    BigInt = 1 << 10,
-    Date = 1 << 11,
+    BigInt = 1 << 9,
+    Date = 1 << 10,
 }
 
-pub const VAL: u32 = 1 << 1
-    | 1 << 2
-    | 1 << 3
-    | 1 << 4
-    | 1 << 5
-    | 1 << 6
-    | 1 << 7
-    | 1 << 8
-    | 1 << 9
-    | 1 << 10
-    | 1 << 11;
+pub const VAL: u32 =
+    1 << 1 | 1 << 2 | 1 << 3 | 1 << 4 | 1 << 5 | 1 << 6 | 1 << 7 | 1 << 8 | 1 << 9 | 1 << 10;
 
 impl SubTypeTag {
     pub fn code(&self) -> BasicTypeCode {
@@ -58,7 +48,6 @@ impl SubTypeTag {
             SubTypeTag::Mapping,
             SubTypeTag::List,
             SubTypeTag::Function,
-            SubTypeTag::MappedRecord,
             SubTypeTag::BigInt,
             SubTypeTag::Date,
         ]
@@ -170,7 +159,6 @@ pub enum ProperSubtype {
     },
     Mapping(Rc<Bdd>),
     List(Rc<Bdd>),
-    MappedRecord(Rc<Bdd>),
 }
 
 fn sub_vec_union<K: SubtypeCheck + Clone + Ord>(v1: &[K], v2: &[K]) -> Vec<K> {
@@ -301,7 +289,6 @@ impl ProperSubtypeOps for Rc<ProperSubtype> {
             .to_result(),
             ProperSubtype::Mapping(bdd) => mapping_is_empty(bdd, builder),
             ProperSubtype::List(bdd) => list_is_empty(bdd, builder),
-            ProperSubtype::MappedRecord(bdd) => mapped_record_is_empty(bdd, builder),
         }
     }
 
@@ -434,9 +421,6 @@ impl ProperSubtypeOps for Rc<ProperSubtype> {
             .into(),
             ProperSubtype::Mapping(bdd) => ProperSubtype::Mapping(bdd.complement()).into(),
             ProperSubtype::List(bdd) => ProperSubtype::List(bdd.complement()).into(),
-            ProperSubtype::MappedRecord(bdd) => {
-                ProperSubtype::MappedRecord(bdd.complement()).into()
-            }
         }
     }
 }
@@ -449,7 +433,6 @@ impl ProperSubtype {
             ProperSubtype::String { .. } => SubTypeTag::String,
             ProperSubtype::Mapping(_) => SubTypeTag::Mapping,
             ProperSubtype::List(_) => SubTypeTag::List,
-            ProperSubtype::MappedRecord(_) => SubTypeTag::MappedRecord,
         }
     }
     pub fn to_code(&self) -> BasicTypeCode {

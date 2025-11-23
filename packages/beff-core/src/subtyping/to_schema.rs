@@ -6,8 +6,9 @@ use std::{
 use anyhow::bail;
 
 use crate::{
-    ast::runtype::{CustomFormat, Optionality, Runtype, RuntypeConst, TplLitTypeItem},
-    subtyping::semtype::MappedRecordAtomicType,
+    ast::runtype::{
+        CustomFormat, IndexedProperty, Optionality, Runtype, RuntypeConst, TplLitTypeItem,
+    },
     NamedSchema,
 };
 
@@ -184,18 +185,22 @@ impl<'a, 'b> SchemerContext<'a, 'b> {
             acc.push((k.clone(), ty));
         }
 
-        let rest = if mt.rest.is_empty(self.ctx.0) {
-            bail!("rest should not be empty, all records are open")
-        } else if mt.rest.is_any() {
-            None
-        } else {
-            let schema = self.convert_to_schema(&mt.rest, None)?;
-            Some(Box::new(schema))
-        };
+        let mut indexed_properties_acc = vec![];
+
+        for it in &mt.indexed_properties {
+            let k = self.convert_to_schema(&it.key, None)?;
+            let schema = self.convert_to_schema(&it.value, None)?;
+            let ty = if it.value.has_void() {
+                schema.optional()
+            } else {
+                schema.required()
+            };
+            indexed_properties_acc.push(IndexedProperty { key: k, value: ty });
+        }
 
         Ok(Runtype::Object {
             vs: BTreeMap::from_iter(acc),
-            rest,
+            indexed_properties: indexed_properties_acc,
         })
     }
 
@@ -207,16 +212,6 @@ impl<'a, 'b> SchemerContext<'a, 'b> {
     //         .collect();
     //     return JsonSchema::any_of(vs);
     // }
-
-    fn mapped_atom_schema(&mut self, mt: &Rc<MappedRecordAtomicType>) -> anyhow::Result<Runtype> {
-        let k = self.convert_to_schema(&mt.key, None)?;
-        let r = self.convert_to_schema(&mt.rest, None)?;
-
-        Ok(Runtype::MappedRecord {
-            key: k.into(),
-            rest: r.into(),
-        })
-    }
 
     fn convert_to_schema_mapping_node(
         &mut self,
@@ -298,88 +293,6 @@ impl<'a, 'b> SchemerContext<'a, 'b> {
                 middle,
                 right,
             } => self.convert_to_schema_mapping_node(atom, left, middle, right),
-        }
-    }
-    fn convert_to_schema_mapped_record_node(
-        &mut self,
-        atom: &Rc<Atom>,
-        left: &Rc<Bdd>,
-        middle: &Rc<Bdd>,
-        right: &Rc<Bdd>,
-    ) -> anyhow::Result<Runtype> {
-        let mt = match atom.as_ref() {
-            Atom::MappedRecord(a) => self.ctx.0.get_mapped_record_atomic(*a).clone(),
-            _ => unreachable!(),
-        };
-
-        let explained_sts = self.mapped_atom_schema(&mt)?;
-
-        let mut acc = vec![];
-
-        match left.as_ref() {
-            Bdd::True => {
-                acc.push(explained_sts.clone());
-            }
-            Bdd::False => {
-                // noop
-            }
-            Bdd::Node {
-                atom,
-                left,
-                middle,
-                right,
-            } => {
-                let ty = vec![explained_sts.clone()].into_iter().chain(vec![
-                    self.convert_to_schema_mapped_record_node(atom, left, middle, right)?
-                ]);
-                acc.push(Runtype::all_of(ty.collect()));
-            }
-        };
-        match middle.as_ref() {
-            Bdd::False => {
-                // noop
-            }
-            Bdd::True | Bdd::Node { .. } => {
-                acc.push(self.convert_to_schema_mapped_record(middle)?);
-            }
-        }
-        match right.as_ref() {
-            Bdd::True => {
-                acc.push(Runtype::StNot(Box::new(explained_sts)));
-            }
-            Bdd::False => {
-                // noop
-            }
-            Bdd::Node {
-                atom,
-                left,
-                middle,
-                right,
-            } => {
-                let ty = Runtype::all_of(vec![
-                    Runtype::StNot(Box::new(explained_sts)),
-                    self.convert_to_schema_mapped_record_node(atom, left, middle, right)?,
-                ]);
-                acc.push(ty)
-            }
-        }
-        Ok(Runtype::any_of(acc))
-    }
-
-    fn convert_to_schema_mapped_record(&mut self, bdd: &Rc<Bdd>) -> anyhow::Result<Runtype> {
-        match bdd.as_ref() {
-            Bdd::True => {
-                bail!("convert_to_schema_mapping - true should not be here")
-            }
-            Bdd::False => {
-                bail!("convert_to_schema_mapping - false should not be here")
-            }
-            Bdd::Node {
-                atom,
-                left,
-                middle,
-                right,
-            } => self.convert_to_schema_mapped_record_node(atom, left, middle, right),
         }
     }
 
@@ -528,19 +441,13 @@ impl<'a, 'b> SchemerContext<'a, 'b> {
                         acc.insert(Runtype::Null);
                     }
                     SubTypeTag::Mapping => {
-                        acc.insert(Runtype::object(vec![], Some(Runtype::Any.into())));
+                        acc.insert(Runtype::any_object());
                     }
                     SubTypeTag::List => {
                         acc.insert(Runtype::AnyArrayLike);
                     }
                     SubTypeTag::Function => {
                         acc.insert(Runtype::Function);
-                    }
-                    SubTypeTag::MappedRecord => {
-                        acc.insert(Runtype::MappedRecord {
-                            key: Box::new(Runtype::Any),
-                            rest: Box::new(Runtype::Any),
-                        });
                     }
                     SubTypeTag::BigInt => {
                         acc.insert(Runtype::BigInt);
@@ -612,9 +519,6 @@ impl<'a, 'b> SchemerContext<'a, 'b> {
                 }
                 ProperSubtype::List(bdd) => {
                     acc.insert(self.convert_to_schema_list(bdd)?);
-                }
-                ProperSubtype::MappedRecord(bdd) => {
-                    acc.insert(self.convert_to_schema_mapped_record(bdd)?);
                 }
             };
         }
