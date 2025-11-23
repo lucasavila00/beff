@@ -1981,7 +1981,7 @@ impl<'a, 'b, R: FileManager> TypeToSchema<'a, 'b, R> {
             let keys = object_schema.keys();
             let mut vs = vec![];
             for key in keys {
-                vs.push(Runtype::single_string_const(&key));
+                vs.push(Runtype::single_string_const(key));
             }
             return Ok(Runtype::any_of(vs));
         }
