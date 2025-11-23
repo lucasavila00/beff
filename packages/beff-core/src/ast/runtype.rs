@@ -57,7 +57,6 @@ impl Optionality<Runtype> {
 
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord)]
 pub enum RuntypeConst {
-    Null,
     Bool(bool),
     Number(N),
     String(String),
@@ -66,7 +65,6 @@ pub enum RuntypeConst {
 impl RuntypeConst {
     pub fn to_json(self) -> Json {
         match self {
-            RuntypeConst::Null => Json::Null,
             RuntypeConst::Bool(b) => Json::Bool(b),
             RuntypeConst::Number(n) => Json::Number(n),
             RuntypeConst::String(s) => Json::String(s),
@@ -74,7 +72,6 @@ impl RuntypeConst {
     }
     pub fn from_json(it: &Json) -> Result<Self> {
         match it {
-            Json::Null => Ok(RuntypeConst::Null),
             Json::Bool(b) => Ok(RuntypeConst::Bool(*b)),
             Json::Number(n) => Ok(RuntypeConst::Number(n.clone())),
             Json::String(s) => Ok(RuntypeConst::String(s.clone())),

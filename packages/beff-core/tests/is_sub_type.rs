@@ -4,7 +4,7 @@ mod tests {
     use std::collections::BTreeMap;
 
     use beff_core::{
-        ast::runtype::{CustomFormat, Runtype, RuntypeConst},
+        ast::runtype::{CustomFormat, Runtype, RuntypeConst, TplLitType, TplLitTypeItem},
         subtyping::{
             semtype::{SemTypeContext, SemTypeOps},
             ToSemType,
@@ -331,6 +331,21 @@ mod tests {
         assert!(res);
     }
     #[test]
+    fn strings_repr() {
+        let definitions = vec![];
+
+        let t1 = Runtype::Const(RuntypeConst::String("a".into()));
+        let t2 = Runtype::TplLitType(TplLitType(vec![TplLitTypeItem::StringConst("a".into())]));
+
+        let mut ctx = SemTypeContext::new();
+
+        // t1 and t2 are equal
+        let t1_st = t1.to_sem_type(&definitions, &mut ctx).expect("should work");
+        let t2_st = t2.to_sem_type(&definitions, &mut ctx).expect("should work");
+
+        assert!(t1_st.is_same_type(&t2_st, &mut ctx));
+    }
+    #[test]
     fn it_works_for_bigint() {
         let definitions = vec![];
 
@@ -380,11 +395,6 @@ mod tests {
 
         let t1 = Runtype::Number;
         let t2 = Runtype::Number;
-        let res = rt_is_sub_type(&t1, &t2, &definitions, &definitions);
-        assert!(res);
-
-        let t1 = Runtype::Const(RuntypeConst::Null);
-        let t2 = Runtype::Null;
         let res = rt_is_sub_type(&t1, &t2, &definitions, &definitions);
         assert!(res);
 

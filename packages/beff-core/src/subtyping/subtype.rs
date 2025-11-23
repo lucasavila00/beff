@@ -1,8 +1,8 @@
-use std::rc::Rc;
 use crate::ast::{
     json::N,
     runtype::{CustomFormat, TplLitType},
 };
+use std::rc::Rc;
 
 use super::{
     bdd::{list_is_empty, mapped_record_is_empty, mapping_is_empty, Bdd, BddOps},
@@ -128,7 +128,6 @@ impl TplLitType {
 
 #[derive(PartialEq, Eq, Hash, Debug, Ord, PartialOrd, Clone)]
 pub enum StringLitOrFormat {
-    Lit(String),
     Format(CustomFormat),
     Tpl(TplLitType),
 }
@@ -466,6 +465,8 @@ impl ProperSubtype {
 
 #[cfg(test)]
 mod tests {
+    use crate::ast::runtype::TplLitTypeItem;
+
     use super::*;
 
     #[test]
@@ -607,8 +608,10 @@ mod tests {
 
     #[test]
     fn test_string_subtype_union2() {
-        let a_const = StringLitOrFormat::Lit("a".into());
-        let b_const = StringLitOrFormat::Lit("b".into());
+        let a_const =
+            StringLitOrFormat::Tpl(TplLitType(vec![TplLitTypeItem::StringConst("a".into())]));
+        let b_const =
+            StringLitOrFormat::Tpl(TplLitType(vec![TplLitTypeItem::StringConst("b".into())]));
 
         let v1 = vec![a_const.clone()];
         let v2 = vec![b_const.clone()];
@@ -664,8 +667,10 @@ mod tests {
 
     #[test]
     fn test_string_literal_and_format_interaction() {
-        let literal_a = StringLitOrFormat::Lit("a".into());
-        let literal_b = StringLitOrFormat::Lit("b".into());
+        let literal_a =
+            StringLitOrFormat::Tpl(TplLitType(vec![TplLitTypeItem::StringConst("a".into())]));
+        let literal_b =
+            StringLitOrFormat::Tpl(TplLitType(vec![TplLitTypeItem::StringConst("b".into())]));
         let format_id = StringLitOrFormat::Format(CustomFormat("id".into(), vec![]));
         let format_read_id =
             StringLitOrFormat::Format(CustomFormat("id".into(), vec!["read".to_string()]));
@@ -772,7 +777,9 @@ mod tests {
             vec!["read".to_string(), "write".to_string()],
         ));
         let different_base = StringLitOrFormat::Format(CustomFormat("other".into(), vec![]));
-        let literal = StringLitOrFormat::Lit("constant".into());
+        let literal = StringLitOrFormat::Tpl(TplLitType(vec![TplLitTypeItem::StringConst(
+            "constant".into(),
+        )]));
 
         let v1 = vec![base.clone(), read.clone(), write.clone()];
         let v2 = vec![read.clone(), different_base.clone()];

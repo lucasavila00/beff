@@ -6,7 +6,7 @@ use std::{
 use anyhow::bail;
 
 use crate::{
-    ast::runtype::{CustomFormat, Optionality, Runtype, RuntypeConst},
+    ast::runtype::{CustomFormat, Optionality, Runtype, RuntypeConst, TplLitTypeItem},
     subtyping::semtype::MappedRecordAtomicType,
     NamedSchema,
 };
@@ -581,12 +581,6 @@ impl<'a, 'b> SchemerContext<'a, 'b> {
                 ProperSubtype::String { allowed, values } => {
                     for h in values {
                         match h {
-                            StringLitOrFormat::Lit(st) => {
-                                acc.insert(maybe_not(
-                                    Runtype::Const(RuntypeConst::String(st.clone())),
-                                    !allowed,
-                                ));
-                            }
                             StringLitOrFormat::Format(CustomFormat(first, rest)) => {
                                 acc.insert(maybe_not(
                                     Runtype::StringWithFormat(CustomFormat(
@@ -597,7 +591,17 @@ impl<'a, 'b> SchemerContext<'a, 'b> {
                                 ));
                             }
                             StringLitOrFormat::Tpl(items) => {
-                                acc.insert(maybe_not(Runtype::TplLitType(items.clone()), !allowed));
+                                //
+                                match items.0.first() {
+                                    Some(TplLitTypeItem::StringConst(c)) => acc.insert(maybe_not(
+                                        Runtype::Const(RuntypeConst::String(c.clone())),
+                                        !allowed,
+                                    )),
+                                    _ => acc.insert(maybe_not(
+                                        Runtype::TplLitType(items.clone()),
+                                        !allowed,
+                                    )),
+                                };
                             }
                         }
                     }

@@ -7,7 +7,10 @@ use std::{
 use anyhow::bail;
 
 use crate::{
-    ast::{json::N, runtype::CustomFormat},
+    ast::{
+        json::N,
+        runtype::{CustomFormat, TplLitType, TplLitTypeItem},
+    },
     subtyping::{
         evidence::MappedRecordEvidence, semtype::SemTypeContext,
         subtype::NumberRepresentationOrFormat,
@@ -923,13 +926,18 @@ fn mapping_atomic_applicable_member_types_inner(
 
                 for it in &values {
                     match it {
-                        StringLitOrFormat::Lit(l) => {
-                            if l == k {
-                                found = true;
-                                break;
+                        StringLitOrFormat::Tpl(vs) => {
+                            let first = vs.0.first();
+                            if let Some(TplLitTypeItem::StringConst(l)) = first {
+                                if l == k {
+                                    found = true;
+                                    break;
+                                }
+                            } else {
+                                bail!("tuple with format cannot be used as mapping key")
                             }
                         }
-                        StringLitOrFormat::Tpl(_) | StringLitOrFormat::Format(_) => {
+                        StringLitOrFormat::Format(_) => {
                             bail!("format or codec cannot be used as mapping key")
                         }
                     }
@@ -1296,9 +1304,10 @@ pub fn keyof(ctx: &mut SemTypeContext, st: Rc<SemType>) -> anyhow::Result<Rc<Sem
                         let a = ctx.get_mapping_atomic(*a);
 
                         for k in a.vs.keys() {
-                            let key_ty = Rc::new(SemTypeContext::string_const(
-                                StringLitOrFormat::Lit(k.clone()),
-                            ));
+                            let key_ty =
+                                Rc::new(SemTypeContext::string_const(StringLitOrFormat::Tpl(
+                                    TplLitType(vec![TplLitTypeItem::StringConst(k.clone())]),
+                                )));
                             let ty_at_key =
                                 mapping_indexed_access(ctx, st.clone(), key_ty.clone())?;
                             if !ty_at_key.is_empty(ctx) {

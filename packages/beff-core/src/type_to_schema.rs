@@ -1629,9 +1629,11 @@ impl<'a, 'b, R: FileManager> TypeToSchema<'a, 'b, R> {
                 }
                 // fall back to semantic types if it cannot be done syntatically
                 let key: Rc<SemType> = match &m.prop {
-                    MemberProp::Ident(i) => Rc::new(SemTypeContext::string_const(
-                        StringLitOrFormat::Lit(i.sym.to_string()),
-                    )),
+                    MemberProp::Ident(i) => {
+                        Rc::new(SemTypeContext::string_const(StringLitOrFormat::Tpl(
+                            TplLitType(vec![TplLitTypeItem::StringConst(i.sym.to_string())]),
+                        )))
+                    }
                     MemberProp::PrivateName(_) => {
                         return self.error(
                             &m.prop.span(),
