@@ -1,5 +1,13 @@
 # @beff/client
 
+## 0.0.106
+
+### Patch Changes
+
+- fix schema gen bug
+- Updated dependencies
+  - @beff/cli@0.0.106
+
 ## 0.0.105
 
 ### Patch Changes

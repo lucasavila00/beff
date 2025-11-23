@@ -74,6 +74,7 @@ it("works2", () => {
 it("works3", () => {
   expect(Codecs.T1.schema()).toMatchInlineSnapshot(`
     {
+      "additionalProperties": false,
       "properties": {
         "a": {
           "type": "string",
@@ -91,8 +92,10 @@ it("works3", () => {
   `);
   expect(Codecs.T2.schema()).toMatchInlineSnapshot(`
     {
+      "additionalProperties": false,
       "properties": {
         "t1": {
+          "additionalProperties": false,
           "properties": {
             "a": {
               "type": "string",
@@ -116,11 +119,14 @@ it("works3", () => {
   `);
   expect(Codecs.T3.schema()).toMatchInlineSnapshot(`
     {
+      "additionalProperties": false,
       "properties": {
         "t2Array": {
           "items": {
+            "additionalProperties": false,
             "properties": {
               "t1": {
+                "additionalProperties": false,
                 "properties": {
                   "a": {
                     "type": "string",
@@ -173,6 +179,7 @@ it("works3", () => {
     {
       "anyOf": [
         {
+          "additionalProperties": false,
           "properties": {
             "a1": {
               "type": "string",
@@ -203,6 +210,7 @@ it("works3", () => {
           "type": "object",
         },
         {
+          "additionalProperties": false,
           "properties": {
             "a2": {
               "type": "string",
@@ -222,6 +230,7 @@ it("works3", () => {
           "type": "object",
         },
         {
+          "additionalProperties": false,
           "properties": {
             "type": {
               "const": "b",
@@ -249,6 +258,7 @@ it("works3", () => {
 
   expect(Codecs.RecursiveTree.schema()).toMatchInlineSnapshot(`
     {
+      "additionalProperties": false,
       "properties": {
         "children": {
           "items": {},
