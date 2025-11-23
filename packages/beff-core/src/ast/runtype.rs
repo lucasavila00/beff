@@ -89,7 +89,6 @@ pub enum TplLitTypeItem {
     Number,
     Boolean,
     StringConst(String),
-    Quasis(String),
     OneOf(BTreeSet<TplLitTypeItem>),
 }
 
@@ -128,13 +127,6 @@ impl TplLitTypeItem {
             TplLitTypeItem::String => "(.*)".to_string(),
             TplLitTypeItem::Number => r"(\d+(\.\d+)?)".to_string(),
             TplLitTypeItem::Boolean => "(true|false)".to_string(),
-            TplLitTypeItem::Quasis(lit) => {
-                if lit.is_empty() {
-                    return "".to_string();
-                }
-                let escaped_lit = escape_regex(lit);
-                format!("({})", escaped_lit)
-            }
             TplLitTypeItem::OneOf(vs) => {
                 let mut vs = vs.iter().collect::<Vec<_>>();
                 vs.sort();
@@ -178,10 +170,7 @@ impl TplLitType {
                         TplLitTypeItem::String => "${string}".to_string(),
                         TplLitTypeItem::Number => "${number}".to_string(),
                         TplLitTypeItem::Boolean => "${boolean}".to_string(),
-                        TplLitTypeItem::StringConst(v) => {
-                            format!("{}", v)
-                        }
-                        TplLitTypeItem::Quasis(s) => s.clone(),
+                        TplLitTypeItem::StringConst(v) => v.clone(),
                         TplLitTypeItem::OneOf(values) => {
                             let mut values = values.iter().collect::<Vec<_>>();
                             values.sort();

@@ -1,9 +1,9 @@
-Error: Error: tuple with format cannot be used as mapping key
+Error: Error: template literal cannot be used as mapping key
  /errors/tpl-indexing/src/parser.ts:5:12
    3 | type IX2 = { a: string };
    4 | //@ts-ignore
  > 5 | type IX3 = IX2[IX];
-     |            ^^^^^^^ Error: tuple with format cannot be used as mapping key
+     |            ^^^^^^^ Error: template literal cannot be used as mapping key
    6 | parse.buildParsers<{ IX3: IX3 }>();
    7 |
 

@@ -691,15 +691,15 @@ mod tests {
         use crate::ast::runtype::TplLitTypeItem;
 
         let tpl1 = StringLitOrFormat::Tpl(TplLitType(vec![
-            TplLitTypeItem::Quasis("hello_".into()),
+            TplLitTypeItem::StringConst("hello_".into()),
             TplLitTypeItem::String,
         ]));
         let tpl2 = StringLitOrFormat::Tpl(TplLitType(vec![
-            TplLitTypeItem::Quasis("hello_".into()),
+            TplLitTypeItem::StringConst("hello_".into()),
             TplLitTypeItem::String,
         ]));
         let tpl3 = StringLitOrFormat::Tpl(TplLitType(vec![
-            TplLitTypeItem::Quasis("hi_".into()),
+            TplLitTypeItem::StringConst("hi_".into()),
             TplLitTypeItem::String,
         ]));
 

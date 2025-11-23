@@ -2093,7 +2093,7 @@ impl<'a, 'b, R: FileManager> TypeToSchema<'a, 'b, R> {
             if selecting_quasis {
                 let quasis = &it.quasis[quasis_idx];
                 quasis_idx += 1;
-                acc.push(TplLitTypeItem::Quasis(quasis.raw.to_string()));
+                acc.push(TplLitTypeItem::StringConst(quasis.raw.to_string()));
                 selecting_quasis = false;
             } else {
                 let type_ = &it.types[types_idx];

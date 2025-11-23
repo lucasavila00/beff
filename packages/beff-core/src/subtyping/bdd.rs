@@ -926,17 +926,17 @@ fn mapping_atomic_applicable_member_types_inner(
 
                 for it in &values {
                     match it {
-                        StringLitOrFormat::Tpl(vs) => {
-                            let first = vs.0.first();
-                            if let Some(TplLitTypeItem::StringConst(l)) = first {
+                        StringLitOrFormat::Tpl(vs) => match vs.0.as_slice() {
+                            [TplLitTypeItem::StringConst(l)] => {
                                 if l == k {
                                     found = true;
                                     break;
                                 }
-                            } else {
-                                bail!("tuple with format cannot be used as mapping key")
                             }
-                        }
+                            _ => {
+                                bail!("template literal cannot be used as mapping key")
+                            }
+                        },
                         StringLitOrFormat::Format(_) => {
                             bail!("format or codec cannot be used as mapping key")
                         }
