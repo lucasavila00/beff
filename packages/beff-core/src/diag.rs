@@ -287,7 +287,7 @@ impl DiagnosticInfoMessage {
                 "Record should have two type arguments".to_string()
             }
             DiagnosticInfoMessage::AnyhowError(err) => {
-                format!("Error: {err}")
+                format!("Internal Error: {err}")
             }
             DiagnosticInfoMessage::IndexSignatureNonSerializableToJsonSchema => {
                 "Index signature cannot be converted to JSON schema - Use Record<x,y>".to_string()

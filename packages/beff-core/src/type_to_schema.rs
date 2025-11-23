@@ -612,9 +612,12 @@ impl<'a, 'b, R: FileManager> TypeToSchema<'a, 'b, R> {
             r
         } else {
             let ext = self.convert_interface_extends(&typ.extends)?;
-            Ok(Runtype::all_of(
-                ext.into_iter().chain(std::iter::once(r?)).collect(),
-            ))
+            let merged = Runtype::all_of(ext.into_iter().chain(std::iter::once(r?)).collect());
+            let res = self.extract_object(&merged, &typ.span);
+            match res {
+                Ok(vs) => Ok(Runtype::no_index_object(vs.into_iter().collect())),
+                Err(_) => Ok(merged),
+            }
         }
     }
 
@@ -1916,6 +1919,29 @@ impl<'a, 'b, R: FileManager> TypeToSchema<'a, 'b, R> {
                         return Ok(Some(v.clone()));
                     }
                 }
+                if let Ok(u) = self.extract_union(other.clone()) {
+                    let mut acc = vec![];
+                    for key in u {
+                        if let Some(s) = key.extract_single_string_const() {
+                            let v = vs.get(&s);
+                            if let Some(v) = v {
+                                match v {
+                                    Optionality::Optional(o) => acc.push(Runtype::AnyOf(
+                                        vec![o.clone(), Runtype::Null].into_iter().collect(),
+                                    )),
+                                    Optionality::Required(r) => {
+                                        acc.push(r.clone());
+                                    }
+                                }
+                            } else {
+                                // noop (same as pushing never)
+                            }
+                        } else {
+                            return Ok(None);
+                        }
+                    }
+                    return Ok(Some(Runtype::any_of(acc)));
+                };
             }
             _ => {}
         }
@@ -1949,6 +1975,17 @@ impl<'a, 'b, R: FileManager> TypeToSchema<'a, 'b, R> {
     }
     fn convert_keyof(&mut self, k: &TsType) -> Res<Runtype> {
         let json_schema = self.convert_ts_type(k)?;
+
+        let object_extracted = self.extract_object(&json_schema, &k.span());
+        if let Ok(object_schema) = object_extracted {
+            let keys = object_schema.keys();
+            let mut vs = vec![];
+            for key in keys {
+                vs.push(Runtype::single_string_const(&key));
+            }
+            return Ok(Runtype::any_of(vs));
+        }
+
         let mut ctx = SemTypeContext::new();
         let st = json_schema
             .to_sem_type(&self.validators_ref(), &mut ctx)
