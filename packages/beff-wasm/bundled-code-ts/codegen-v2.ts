@@ -905,81 +905,21 @@ class AnyOfDiscriminatedRuntype implements Runtype {
   }
 }
 
-class MappedRecordRuntype implements Runtype {
-  private keyParser: Runtype;
-  private valueParser: Runtype;
-  constructor(keyParser: Runtype, valueParser: Runtype) {
-    this.keyParser = keyParser;
-    this.valueParser = valueParser;
-  }
-  describe(ctx: DescribeContext): string {
-    const k = this.keyParser.describe(ctx);
-    const v = this.valueParser.describe(ctx);
-    return `Record<${k}, ${v}>`;
-  }
-  schema(ctx: SchemaContext): JSONSchema7 {
-    return {
-      type: "object",
-      additionalProperties: this.valueParser.schema(ctx),
-      propertyNames: this.keyParser.schema(ctx),
-    };
-  }
-  validate(ctx: ValidateContext, input: unknown): boolean {
-    if (typeof input !== "object" || input == null) {
-      return false;
-    }
-
-    for (const k in input) {
-      const v = (input as any)[k];
-      if (!this.keyParser.validate(ctx, k) || !this.valueParser.validate(ctx, v)) {
-        return false;
-      }
-    }
-
-    return true;
-  }
-  parseAfterValidation(ctx: ParseContext, input: any): unknown {
-    const result: any = {};
-    for (const k in input) {
-      const parsedKey: any = this.keyParser.parseAfterValidation(ctx, k);
-      const parsedValue = this.valueParser.parseAfterValidation(ctx, (input as any)[k]);
-      result[parsedKey] = parsedValue;
-    }
-    return result;
-  }
-  reportDecodeError(ctx: ReportContext, input: unknown): DecodeError[] {
-    if (typeof input !== "object" || input == null) {
-      return buildError(ctx, "expected object", input);
-    }
-
-    let acc = [];
-    for (const k in input) {
-      const v = (input as any)[k];
-      const okKey = this.keyParser.validate(ctx, k);
-      if (!okKey) {
-        pushPath(ctx, k);
-        const errs = this.keyParser.reportDecodeError(ctx, k);
-        acc.push(...errs);
-        popPath(ctx);
-      }
-      const okValue = this.valueParser.validate(ctx, v);
-      if (!okValue) {
-        pushPath(ctx, k);
-        const errs = this.valueParser.reportDecodeError(ctx, v);
-        acc.push(...errs);
-        popPath(ctx);
-      }
-    }
-    return acc;
-  }
-}
-
 class ObjectRuntype implements Runtype {
   private properties: Record<string, Runtype>;
-  private restParser: Runtype | null;
-  constructor(properties: Record<string, Runtype>, restParser: Runtype | null) {
+  private indexedPropertiesParser: Array<{
+    key: Runtype;
+    value: Runtype;
+  }>;
+  constructor(
+    properties: Record<string, Runtype>,
+    indexedPropertiesParser: Array<{
+      key: Runtype;
+      value: Runtype;
+    }>,
+  ) {
     this.properties = properties;
-    this.restParser = restParser;
+    this.indexedPropertiesParser = indexedPropertiesParser;
   }
   describe(ctx: DescribeContext): string {
     const sortedKeys = Object.keys(this.properties).sort();
@@ -990,7 +930,10 @@ class ObjectRuntype implements Runtype {
       })
       .join(", ");
 
-    const rest = this.restParser != null ? `[K in string]: ${this.restParser.describe(ctx)}` : null;
+    const indexPropsParats = this.indexedPropertiesParser.map(({ key, value }) => {
+      return `[K in ${key.describe(ctx)}]: ${value.describe(ctx)}`;
+    });
+    const rest = indexPropsParats.join(", ");
 
     const content = [props, rest].filter((it) => it != null && it.length > 0).join(", ");
     return `{ ${content} }`;
@@ -1004,14 +947,32 @@ class ObjectRuntype implements Runtype {
     }
 
     const required = Object.keys(this.properties);
-
-    const additionalProperties = this.restParser != null ? this.restParser.schema(ctx) : false;
-
-    return {
+    const base: JSONSchema7 = {
       type: "object",
       properties,
       required,
-      additionalProperties,
+    };
+
+    const indexSchemas = this.indexedPropertiesParser.map(({ key, value }): JSONSchema7 => {
+      pushPath(ctx, "[key]");
+      const keySchema = key.schema(ctx);
+      popPath(ctx);
+      pushPath(ctx, "[value]");
+      const valueSchema = value.schema(ctx);
+      popPath(ctx);
+
+      return {
+        type: "object",
+        additionalProperties: valueSchema,
+        propertyNames: keySchema,
+      };
+    });
+
+    if (indexSchemas.length === 0) {
+      return base;
+    }
+    return {
+      allOf: [base, ...indexSchemas],
     };
   }
   validate(ctx: ValidateContext, input: any): boolean {
@@ -1024,12 +985,23 @@ class ObjectRuntype implements Runtype {
         }
       }
 
-      if (this.restParser != null) {
+      if (this.indexedPropertiesParser.length > 0) {
         const inputKeys = Object.keys(input);
         const extraKeys = inputKeys.filter((k) => !configKeys.includes(k));
         for (const k of extraKeys) {
-          const v = input[k];
-          if (!this.restParser.validate(ctx, v)) {
+          let isValid = false;
+          for (const p of this.indexedPropertiesParser) {
+            if (!p.key.validate(ctx, k)) {
+              continue;
+            }
+            const v = input[k];
+            if (!p.value.validate(ctx, v)) {
+              continue;
+            }
+            isValid = true;
+            break;
+          }
+          if (!isValid) {
             return false;
           }
         }
@@ -1058,9 +1030,15 @@ class ObjectRuntype implements Runtype {
       if (k in this.properties) {
         const itemParsed = this.properties[k].parseAfterValidation(ctx, v);
         acc[k] = itemParsed;
-      } else if (this.restParser != null) {
-        const restParsed = this.restParser.parseAfterValidation(ctx, v);
-        acc[k] = restParsed;
+      } else if (this.indexedPropertiesParser.length > 0) {
+        for (const p of this.indexedPropertiesParser) {
+          const isValid = p.key.validate(ctx, k) && p.value.validate(ctx, v);
+          if (isValid) {
+            const itemParsed = p.value.parseAfterValidation(ctx, v);
+            const keyParsed = p.key.parseAfterValidation(ctx, k);
+            acc[keyParsed as any] = itemParsed;
+          }
+        }
       }
     }
 
@@ -1085,16 +1063,26 @@ class ObjectRuntype implements Runtype {
       }
     }
 
-    if (this.restParser != null) {
+    if (this.indexedPropertiesParser.length > 0) {
       const inputKeys = Object.keys(input);
       const extraKeys = inputKeys.filter((k) => !configKeys.includes(k));
       for (const k of extraKeys) {
-        const ok = this.restParser.validate(ctx, input[k]);
-        if (!ok) {
-          pushPath(ctx, k);
-          const arr2 = this.restParser.reportDecodeError(ctx, input[k]);
-          acc.push(...arr2);
-          popPath(ctx);
+        for (const p of this.indexedPropertiesParser) {
+          const keyOk = p.key.validate(ctx, k);
+          const valueOk = p.value.validate(ctx, input[k]);
+          const ok = keyOk && valueOk;
+          if (!ok) {
+            pushPath(ctx, k);
+            if (!keyOk) {
+              const keyReported = p.key.reportDecodeError(ctx, k);
+              acc.push(...keyReported);
+            }
+            if (!valueOk) {
+              const valueReported = p.value.reportDecodeError(ctx, input[k]);
+              acc.push(...valueReported);
+            }
+            popPath(ctx);
+          }
         }
       }
     } else {

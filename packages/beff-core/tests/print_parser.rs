@@ -960,6 +960,21 @@ mod tests {
       "#
         ));
     }
+
+    #[test]
+    fn ok_record_extends() {
+        insta::assert_snapshot!(print_types(
+            r#"
+        export type Obj1 = {a:string}
+        export type Obj2 = {a:string, b:string}
+        export type Obj3 = Obj1 extends Obj2 ? true : false
+        export type Obj4 = Obj2 extends Obj1 ? true : false
+        // expect Obj3 to be false and Obj4 to be true
+        parse.buildParsers<{ Obj3: Obj3, Obj4: Obj4 }>();
+      "#
+        ));
+    }
+
     // #[test]
     // fn ok_recursive_generic_with_union_parser() {
     //     insta::assert_snapshot!(ok(r#"

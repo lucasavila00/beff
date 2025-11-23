@@ -1,5 +1,5 @@
 use crate::ast::runtype::{
-    CustomFormat, Optionality, Runtype, RuntypeConst, TplLitType, TplLitTypeItem,
+    CustomFormat, IndexedProperty, Optionality, Runtype, RuntypeConst, TplLitType, TplLitTypeItem,
 };
 use crate::diag::{
     Diagnostic, DiagnosticInfoMessage, DiagnosticInformation, DiagnosticParentMessage, Location,
@@ -62,6 +62,7 @@ impl<'a, 'b, R: FileManager> TypeToSchema<'a, 'b, R> {
             counter,
         }
     }
+
     fn ts_keyword_type_kind_to_json_schema(
         &mut self,
         kind: TsKeywordTypeKind,
@@ -76,9 +77,7 @@ impl<'a, 'b, R: FileManager> TypeToSchema<'a, 'b, R> {
             TsKeywordTypeKind::TsAnyKeyword | TsKeywordTypeKind::TsUnknownKeyword => {
                 Ok(Runtype::Any)
             }
-            TsKeywordTypeKind::TsObjectKeyword => {
-                Ok(Runtype::object(vec![], Some(Runtype::Any.into())))
-            }
+            TsKeywordTypeKind::TsObjectKeyword => Ok(Runtype::any_object()),
             TsKeywordTypeKind::TsNeverKeyword
             | TsKeywordTypeKind::TsSymbolKeyword
             | TsKeywordTypeKind::TsIntrinsicKeyword => self.cannot_serialize_error(
@@ -143,7 +142,7 @@ impl<'a, 'b, R: FileManager> TypeToSchema<'a, 'b, R> {
                 acc.push((k.clone(), v.clone()));
             }
         }
-        Runtype::object(acc, None)
+        Runtype::no_index_object(acc)
     }
     fn convert_pick(
         &mut self,
@@ -202,7 +201,7 @@ impl<'a, 'b, R: FileManager> TypeToSchema<'a, 'b, R> {
                 acc.push((k.clone(), v.clone()));
             }
         }
-        Runtype::object(acc, None)
+        Runtype::no_index_object(acc)
     }
 
     fn convert_omit(
@@ -231,14 +230,14 @@ impl<'a, 'b, R: FileManager> TypeToSchema<'a, 'b, R> {
         for (k, v) in obj {
             acc.push((k.clone(), v.clone().to_required()));
         }
-        Runtype::object(acc, None)
+        Runtype::no_index_object(acc)
     }
     fn convert_partial(&mut self, obj: &BTreeMap<String, Optionality<Runtype>>) -> Runtype {
         let mut acc = vec![];
         for (k, v) in obj {
             acc.push((k.clone(), v.clone().to_optional()));
         }
-        Runtype::object(acc, None)
+        Runtype::no_index_object(acc)
     }
 
     fn extract_array(&mut self, arr: Runtype, span: Span) -> Res<Runtype> {
@@ -282,9 +281,12 @@ impl<'a, 'b, R: FileManager> TypeToSchema<'a, 'b, R> {
         span: &Span,
     ) -> Res<BTreeMap<String, Optionality<Runtype>>> {
         match obj {
-            Runtype::Object { vs, rest } => match rest {
-                Some(_) => self.error(span, DiagnosticInfoMessage::RestFoundOnExtractObject),
-                None => Ok(vs.clone()),
+            Runtype::Object {
+                vs,
+                indexed_properties,
+            } => match indexed_properties.is_empty() {
+                true => Ok(vs.clone()),
+                false => self.error(span, DiagnosticInfoMessage::RestFoundOnExtractObject),
             },
             Runtype::Ref(r) => {
                 let map = self.components.get(r).and_then(|it| it.as_ref()).cloned();
@@ -342,10 +344,7 @@ impl<'a, 'b, R: FileManager> TypeToSchema<'a, 'b, R> {
         type_args: &Option<Box<TsTypeParamInstantiation>>,
     ) -> Res<Runtype> {
         match typ {
-            TsBuiltIn::TsObject(_) => Ok(Runtype::Object {
-                vs: BTreeMap::new(),
-                rest: Some(Box::new(Runtype::Any)),
-            }),
+            TsBuiltIn::TsObject(_) => Ok(Runtype::any_object()),
 
             TsBuiltIn::TsRecord(span) => match type_args {
                 Some(vs) => {
@@ -362,45 +361,36 @@ impl<'a, 'b, R: FileManager> TypeToSchema<'a, 'b, R> {
                         );
                     }
 
-                    let mut key = Box::new(items[0].clone());
-                    let mut is_ref = matches!(&*key, Runtype::Ref(_));
+                    let mut key = items[0].clone();
+                    let mut is_ref = matches!(key, Runtype::Ref(_));
 
                     while is_ref {
                         if let Runtype::Ref(r) = &items[0] {
                             let map = self.components.get(r).and_then(|it| it.as_ref()).cloned();
                             if let Some(NamedSchema { schema, .. }) = map {
-                                key = Box::new(schema);
-                                is_ref = matches!(&*key, Runtype::Ref(_));
+                                key = schema;
+                                is_ref = matches!(key, Runtype::Ref(_));
                             }
                         }
                     }
-
-                    match key.as_ref() {
-                        Runtype::String => {
+                    let key_clone = key.clone();
+                    match self.collect_consts_from_union(key) {
+                        Ok(res) => {
+                            let value = items[1].clone();
+                            Ok(Runtype::no_index_object(
+                                res.into_iter()
+                                    .map(|it| (it, value.clone().required()))
+                                    .collect(),
+                            ))
+                        }
+                        Err(_) => {
                             let value = items[1].clone();
                             Ok(Runtype::Object {
                                 vs: BTreeMap::new(),
-                                rest: Some(Box::new(value)),
-                            })
-                        }
-                        Runtype::StringWithFormat(_) | Runtype::Number => {
-                            let value = items[1].clone();
-                            Ok(Runtype::MappedRecord {
-                                key,
-                                rest: Box::new(value),
-                            })
-                        }
-                        _ => {
-                            let res = self
-                                .collect_consts_from_union(*key)
-                                .map_err(|e| self.box_error(span, e))?;
-                            let value = items[1].clone();
-                            Ok(Runtype::Object {
-                                vs: res
-                                    .into_iter()
-                                    .map(|it| (it, value.clone().required()))
-                                    .collect(),
-                                rest: None,
+                                indexed_properties: vec![IndexedProperty {
+                                    key: key_clone,
+                                    value: value.required(),
+                                }],
                             })
                         }
                     }
@@ -523,7 +513,9 @@ impl<'a, 'b, R: FileManager> TypeToSchema<'a, 'b, R> {
                             self.box_error(span, DiagnosticInfoMessage::AnyhowError(e.to_string()))
                         })?;
 
-                    let subtracted_ty = left_st.diff(&right_st);
+                    let subtracted_ty = left_st.diff(&right_st).map_err(|e| {
+                        self.box_error(span, DiagnosticInfoMessage::AnyhowError(e.to_string()))
+                    })?;
                     let res = self
                         .convert_sem_type(subtracted_ty, &mut ctx, span)?
                         .remove_nots_of_intersections_and_empty_of_union(
@@ -607,13 +599,12 @@ impl<'a, 'b, R: FileManager> TypeToSchema<'a, 'b, R> {
 
         self.type_param_stack.push(map);
 
-        let r = Ok(Runtype::object(
+        let r = Ok(Runtype::no_index_object(
             typ.body
                 .body
                 .iter()
                 .map(|x| self.convert_ts_type_element(x))
                 .collect::<Res<_>>()?,
-            None,
         ));
         self.type_param_stack.pop();
 
@@ -1464,7 +1455,7 @@ impl<'a, 'b, R: FileManager> TypeToSchema<'a, 'b, R> {
                 })
             }
             Expr::Object(lit) => {
-                let mut vs = BTreeMap::new();
+                let mut vs = vec![];
 
                 for it in &lit.props {
                     match it {
@@ -1473,7 +1464,7 @@ impl<'a, 'b, R: FileManager> TypeToSchema<'a, 'b, R> {
 
                             if let Runtype::Object { vs: spread_vs, .. } = spread_ty {
                                 for (k, v) in spread_vs {
-                                    vs.insert(k, v);
+                                    vs.push((k, v));
                                 }
                             } else {
                                 return self.error(
@@ -1503,12 +1494,12 @@ impl<'a, 'b, R: FileManager> TypeToSchema<'a, 'b, R> {
                                     ),
                                 };
                                 let value = self.typeof_expr(&p.value, as_const)?;
-                                vs.insert(key, value.required());
+                                vs.push((key, value.required()));
                             }
                             Prop::Shorthand(p) => {
                                 let key: String = p.sym.to_string();
                                 let value = self.typeof_expr(&Expr::Ident(p.clone()), as_const)?;
-                                vs.insert(key, value.required());
+                                vs.push((key, value.required()));
                             }
                             Prop::Assign(_)
                             | Prop::Getter(_)
@@ -1523,7 +1514,7 @@ impl<'a, 'b, R: FileManager> TypeToSchema<'a, 'b, R> {
                     }
                 }
 
-                Ok(Runtype::Object { vs, rest: None })
+                Ok(Runtype::no_index_object(vs))
             }
             Expr::Ident(i) => {
                 let s = TypeResolver::new(self.files, &self.current_file).resolve_local_value(i)?;
@@ -1617,7 +1608,11 @@ impl<'a, 'b, R: FileManager> TypeToSchema<'a, 'b, R> {
                 }
                 let obj = self.typeof_expr(&m.obj, as_const)?;
                 if let Some(key) = k {
-                    if let Runtype::Object { vs, rest: _ } = &obj {
+                    if let Runtype::Object {
+                        vs,
+                        indexed_properties: _,
+                    } = &obj
+                    {
                         // try to do it syntatically to preserve aliases
                         if let Some(Optionality::Required(v)) = vs.get(&key) {
                             return Ok(v.clone());
@@ -1740,7 +1735,7 @@ impl<'a, 'b, R: FileManager> TypeToSchema<'a, 'b, R> {
                         ImportReference::Star { file_name, .. } => {
                             let mut acc2 = vec![];
                             self.collect_value_exports(file_name, &mut acc2)?;
-                            let v = Runtype::object(acc2, None);
+                            let v = Runtype::no_index_object(acc2);
                             acc.push((k.to_string(), v.required()));
                         }
                         ImportReference::Default { .. } => {
@@ -1797,7 +1792,7 @@ impl<'a, 'b, R: FileManager> TypeToSchema<'a, 'b, R> {
             ResolvedLocalSymbol::Star(file_name) => {
                 let mut acc = vec![];
                 self.collect_value_exports(&file_name, &mut acc)?;
-                Ok(Runtype::object(acc, None))
+                Ok(Runtype::no_index_object(acc))
             }
             ResolvedLocalSymbol::TsEnumDecl(enum_decl) => self.convert_enum_decl(&enum_decl),
             ResolvedLocalSymbol::TsBuiltin(_) => {
@@ -1806,7 +1801,11 @@ impl<'a, 'b, R: FileManager> TypeToSchema<'a, 'b, R> {
         }
     }
     fn get_kv_from_schema(&mut self, schema: Runtype, key: &str, span: Span) -> Res<Runtype> {
-        if let Runtype::Object { vs: kvs, rest: _ } = schema {
+        if let Runtype::Object {
+            vs: kvs,
+            indexed_properties: _,
+        } = schema
+        {
             if let Some(Optionality::Required(v)) = kvs.get(key) {
                 return Ok(v.clone());
             }
@@ -1874,7 +1873,10 @@ impl<'a, 'b, R: FileManager> TypeToSchema<'a, 'b, R> {
         ctx: &mut SemTypeContext,
         span: &Span,
     ) -> Res<Runtype> {
-        if access_st.is_empty(ctx) {
+        if access_st
+            .is_empty(ctx)
+            .map_err(|e| self.box_error(span, DiagnosticInfoMessage::AnyhowError(e.to_string())))?
+        {
             return Ok(Runtype::StNever);
         }
         let (head, tail) =
@@ -1901,7 +1903,13 @@ impl<'a, 'b, R: FileManager> TypeToSchema<'a, 'b, R> {
                     return self.convert_indexed_access_syntatically(&v.schema, index);
                 }
             }
-            (Runtype::Object { vs, rest: _ }, other) => {
+            (
+                Runtype::Object {
+                    vs,
+                    indexed_properties: _,
+                },
+                other,
+            ) => {
                 if let Some(s) = other.extract_single_string_const() {
                     let v = vs.get(&s);
                     if let Some(Optionality::Required(v)) = v {
@@ -2037,7 +2045,7 @@ impl<'a, 'b, R: FileManager> TypeToSchema<'a, 'b, R> {
             vs.push((key, ty));
         }
 
-        Ok(Runtype::object(vs, None))
+        Ok(Runtype::no_index_object(vs))
     }
 
     fn json_schema_to_tpl_lit(&mut self, span: &Span, schema: &Runtype) -> Res<TplLitTypeItem> {
@@ -2130,12 +2138,11 @@ impl<'a, 'b, R: FileManager> TypeToSchema<'a, 'b, R> {
                 TsEntityName::Ident(i) => self.convert_ts_type_ident(i, type_params),
                 TsEntityName::TsQualifiedName(q) => self.convert_ts_type_qual(q, type_params),
             },
-            TsType::TsTypeLit(TsTypeLit { members, .. }) => Ok(Runtype::object(
+            TsType::TsTypeLit(TsTypeLit { members, .. }) => Ok(Runtype::no_index_object(
                 members
                     .iter()
                     .map(|prop| self.convert_ts_type_element(prop))
                     .collect::<Res<_>>()?,
-                None,
             )),
             TsType::TsArrayType(TsArrayType { elem_type, .. }) => {
                 Ok(Runtype::Array(self.convert_ts_type(elem_type)?.into()))
@@ -2249,7 +2256,11 @@ impl<'a, 'b, R: FileManager> TypeToSchema<'a, 'b, R> {
                 )
             })?;
 
-        let is_true = check_type_st.is_subtype(&extends_type_st, &mut ctx);
+        let is_true = check_type_st
+            .is_subtype(&extends_type_st, &mut ctx)
+            .map_err(|e| {
+                self.box_error(&t.span, DiagnosticInfoMessage::AnyhowError(e.to_string()))
+            })?;
 
         if is_true {
             self.convert_ts_type(&t.true_type)

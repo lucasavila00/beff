@@ -1,8 +1,6 @@
 #[cfg(test)]
 mod tests {
 
-    use std::collections::BTreeMap;
-
     use beff_core::{
         ast::runtype::{CustomFormat, Runtype, RuntypeConst, TplLitType, TplLitTypeItem},
         subtyping::{
@@ -21,7 +19,7 @@ mod tests {
     ) -> bool {
         let a = a.to_sem_type(a_validators, ctx).expect("should work");
         let b = b.to_sem_type(b_validators, ctx).expect("should work");
-        a.is_subtype(&b, ctx)
+        a.is_subtype(&b, ctx).unwrap()
     }
 
     fn rt_is_sub_type(
@@ -38,23 +36,17 @@ mod tests {
     fn ref2() {
         let definitions = [NamedSchema {
             name: "User".into(),
-            schema: Runtype::object(
-                vec![
-                    ("id".into(), Runtype::String.required()),
-                    ("bestFriend".into(), Runtype::Ref("User".into()).required()),
-                ],
-                None,
-            ),
+            schema: Runtype::no_index_object(vec![
+                ("id".into(), Runtype::String.required()),
+                ("bestFriend".into(), Runtype::Ref("User".into()).required()),
+            ]),
         }];
 
         let t1 = Runtype::Ref("User".into());
-        let t2 = Runtype::object(
-            vec![
-                ("id".into(), Runtype::String.required()),
-                ("bestFriend".into(), Runtype::Null.required()),
-            ],
-            None,
-        );
+        let t2 = Runtype::no_index_object(vec![
+            ("id".into(), Runtype::String.required()),
+            ("bestFriend".into(), Runtype::Null.required()),
+        ]);
 
         let res = rt_is_sub_type(
             &t1,
@@ -75,23 +67,17 @@ mod tests {
     fn ref1() {
         let definitions = [NamedSchema {
             name: "User".into(),
-            schema: Runtype::object(
-                vec![
-                    ("id".into(), Runtype::String.required()),
-                    ("bestFriend".into(), Runtype::Ref("User".into()).optional()),
-                ],
-                None,
-            ),
+            schema: Runtype::no_index_object(vec![
+                ("id".into(), Runtype::String.required()),
+                ("bestFriend".into(), Runtype::Ref("User".into()).optional()),
+            ]),
         }];
 
         let t1 = Runtype::Ref("User".into());
-        let t2 = Runtype::object(
-            vec![
-                ("id".into(), Runtype::String.required()),
-                ("bestFriend".into(), Runtype::Ref("User".into()).optional()),
-            ],
-            None,
-        );
+        let t2 = Runtype::no_index_object(vec![
+            ("id".into(), Runtype::String.required()),
+            ("bestFriend".into(), Runtype::Ref("User".into()).optional()),
+        ]);
 
         let res = rt_is_sub_type(
             &t1,
@@ -112,23 +98,17 @@ mod tests {
     fn ref3() {
         let definitions = [NamedSchema {
             name: "User".into(),
-            schema: Runtype::object(
-                vec![
-                    ("id".into(), Runtype::String.required()),
-                    ("bestFriend".into(), Runtype::Ref("User".into()).optional()),
-                ],
-                None,
-            ),
+            schema: Runtype::no_index_object(vec![
+                ("id".into(), Runtype::String.required()),
+                ("bestFriend".into(), Runtype::Ref("User".into()).optional()),
+            ]),
         }];
 
         let t1 = Runtype::Ref("User".into());
-        let t2 = Runtype::object(
-            vec![
-                ("id".into(), Runtype::Number.required()),
-                ("bestFriend".into(), Runtype::Ref("User".into()).optional()),
-            ],
-            None,
-        );
+        let t2 = Runtype::no_index_object(vec![
+            ("id".into(), Runtype::Number.required()),
+            ("bestFriend".into(), Runtype::Ref("User".into()).optional()),
+        ]);
 
         let res = rt_is_sub_type(
             &t1,
@@ -150,29 +130,20 @@ mod tests {
     fn mappings4() {
         let definitions = [NamedSchema {
             name: "User".into(),
-            schema: Runtype::object(
-                vec![
-                    ("id".into(), Runtype::String.required()),
-                    ("bestFriend".into(), Runtype::Ref("User".into()).optional()),
-                ],
-                None,
-            ),
+            schema: Runtype::no_index_object(vec![
+                ("id".into(), Runtype::String.required()),
+                ("bestFriend".into(), Runtype::Ref("User".into()).optional()),
+            ]),
         }];
 
-        let t1 = Runtype::object(
-            vec![
-                ("a".into(), Runtype::String.required()),
-                ("b".into(), Runtype::Ref("User".into()).required()),
-            ],
-            None,
-        );
-        let t2 = Runtype::object(
-            vec![
-                ("a".into(), Runtype::String.required()),
-                ("b".into(), Runtype::Ref("User".into()).optional()),
-            ],
-            None,
-        );
+        let t1 = Runtype::no_index_object(vec![
+            ("a".into(), Runtype::String.required()),
+            ("b".into(), Runtype::Ref("User".into()).required()),
+        ]);
+        let t2 = Runtype::no_index_object(vec![
+            ("a".into(), Runtype::String.required()),
+            ("b".into(), Runtype::Ref("User".into()).optional()),
+        ]);
 
         let res = rt_is_sub_type(
             &t1,
@@ -194,8 +165,8 @@ mod tests {
     fn mappings3() {
         let definitions = vec![];
 
-        let t1 = Runtype::object(vec![("a".into(), Runtype::String.required())], None);
-        let t2 = Runtype::object(vec![("a".into(), Runtype::String.optional())], None);
+        let t1 = Runtype::no_index_object(vec![("a".into(), Runtype::String.required())]);
+        let t2 = Runtype::no_index_object(vec![("a".into(), Runtype::String.optional())]);
 
         let res = rt_is_sub_type(&t1, &t2, &definitions, &definitions);
         assert!(res);
@@ -206,20 +177,17 @@ mod tests {
     fn mappings2() {
         let definitions = vec![];
 
-        let t1 = Runtype::object(
-            vec![
-                (
-                    "a".into(),
-                    Runtype::single_string_const("abc".into()).required(),
-                ),
-                (
-                    "b".into(),
-                    Runtype::single_string_const("def".into()).required(),
-                ),
-            ],
-            None,
-        );
-        let t2 = Runtype::object(vec![("a".into(), Runtype::String.required())], None);
+        let t1 = Runtype::no_index_object(vec![
+            (
+                "a".into(),
+                Runtype::single_string_const("abc".into()).required(),
+            ),
+            (
+                "b".into(),
+                Runtype::single_string_const("def".into()).required(),
+            ),
+        ]);
+        let t2 = Runtype::no_index_object(vec![("a".into(), Runtype::String.required())]);
 
         let res = rt_is_sub_type(&t1, &t2, &definitions, &definitions);
         assert!(res);
@@ -230,14 +198,11 @@ mod tests {
     fn mappings() {
         let definitions = vec![];
 
-        let t1 = Runtype::object(
-            vec![(
-                "a".into(),
-                Runtype::single_string_const("abc".into()).required(),
-            )],
-            None,
-        );
-        let t2 = Runtype::object(vec![("a".into(), Runtype::String.required())], None);
+        let t1 = Runtype::no_index_object(vec![(
+            "a".into(),
+            Runtype::single_string_const("abc".into()).required(),
+        )]);
+        let t2 = Runtype::no_index_object(vec![("a".into(), Runtype::String.required())]);
 
         let res = rt_is_sub_type(&t1, &t2, &definitions, &definitions);
         assert!(res);
@@ -343,7 +308,7 @@ mod tests {
         let t1_st = t1.to_sem_type(&definitions, &mut ctx).expect("should work");
         let t2_st = t2.to_sem_type(&definitions, &mut ctx).expect("should work");
 
-        assert!(t1_st.is_same_type(&t2_st, &mut ctx));
+        assert!(t1_st.is_same_type(&t2_st, &mut ctx).unwrap());
     }
     #[test]
     fn it_works_for_bigint() {
@@ -474,12 +439,12 @@ mod tests {
             .to_sem_type(&definitions, &mut ctx)
             .expect("should work");
 
-        let diff = const_a_st.diff(&all_strings_st);
+        let diff = const_a_st.diff(&all_strings_st).unwrap();
 
         assert!(diff.is_never());
 
-        let union = all_strings_st.union(&const_a_st);
-        assert!(union.is_same_type(&all_strings_st, &mut ctx));
+        let union = all_strings_st.union(&const_a_st).unwrap();
+        assert!(union.is_same_type(&all_strings_st, &mut ctx).unwrap());
     }
 
     #[test]
@@ -512,37 +477,61 @@ mod tests {
             .to_sem_type(&definitions, &mut ctx)
             .expect("should work");
 
-        let diff1 = read_authorized_user_id_sem_type.diff(&user_id_sem_type);
+        let diff1 = read_authorized_user_id_sem_type
+            .diff(&user_id_sem_type)
+            .unwrap();
 
         assert!(diff1.is_never());
 
-        let diff2 = user_id_sem_type.diff(&read_authorized_user_id_sem_type);
+        let diff2 = user_id_sem_type
+            .diff(&read_authorized_user_id_sem_type)
+            .unwrap();
 
         assert!(!diff2.is_never());
 
-        let union = user_id_sem_type.union(&read_authorized_user_id_sem_type);
-        assert!(union.is_same_type(&user_id_sem_type, &mut ctx));
+        let union = user_id_sem_type
+            .union(&read_authorized_user_id_sem_type)
+            .unwrap();
+        assert!(union.is_same_type(&user_id_sem_type, &mut ctx).unwrap());
 
-        let intersection = user_id_sem_type.intersect(&read_authorized_user_id_sem_type);
-        assert!(intersection.is_same_type(&read_authorized_user_id_sem_type, &mut ctx));
+        let intersection = user_id_sem_type
+            .intersect(&read_authorized_user_id_sem_type)
+            .unwrap();
+        assert!(intersection
+            .is_same_type(&read_authorized_user_id_sem_type, &mut ctx)
+            .unwrap());
 
-        let intersection2 = read_authorized_user_id_sem_type.intersect(&user_id_sem_type);
-        assert!(intersection2.is_same_type(&read_authorized_user_id_sem_type, &mut ctx));
+        let intersection2 = read_authorized_user_id_sem_type
+            .intersect(&user_id_sem_type)
+            .unwrap();
+        assert!(intersection2
+            .is_same_type(&read_authorized_user_id_sem_type, &mut ctx)
+            .unwrap());
 
-        let diff3 = write_authorized_user_id_sem_type.diff(&user_id_sem_type);
+        let diff3 = write_authorized_user_id_sem_type
+            .diff(&user_id_sem_type)
+            .unwrap();
         assert!(diff3.is_never());
 
-        let diff4 = user_id_sem_type.diff(&write_authorized_user_id_sem_type);
+        let diff4 = user_id_sem_type
+            .diff(&write_authorized_user_id_sem_type)
+            .unwrap();
         assert!(!diff4.is_never());
 
-        let diff5 = write_authorized_user_id_sem_type.diff(&read_authorized_user_id_sem_type);
+        let diff5 = write_authorized_user_id_sem_type
+            .diff(&read_authorized_user_id_sem_type)
+            .unwrap();
         assert!(diff5.is_never());
 
-        let diff6 = read_authorized_user_id_sem_type.diff(&write_authorized_user_id_sem_type);
+        let diff6 = read_authorized_user_id_sem_type
+            .diff(&write_authorized_user_id_sem_type)
+            .unwrap();
         assert!(!diff6.is_never());
 
-        let union2 = user_id_sem_type.union(&write_authorized_user_id_sem_type);
-        assert!(union2.is_same_type(&user_id_sem_type, &mut ctx));
+        let union2 = user_id_sem_type
+            .union(&write_authorized_user_id_sem_type)
+            .unwrap();
+        assert!(union2.is_same_type(&user_id_sem_type, &mut ctx).unwrap());
 
         let res = rt_is_sub_type(
             &read_authorized_user_id_type,
@@ -572,10 +561,7 @@ mod tests {
             Runtype::Date,
             Runtype::AnyArrayLike,
             Runtype::Function,
-            Runtype::Object {
-                vs: BTreeMap::new(),
-                rest: None,
-            },
+            Runtype::no_index_object(vec![]),
         ];
 
         for t0 in &all_basic_types {
@@ -793,26 +779,30 @@ mod tests {
             .expect("should work");
 
         // Union of specific with general should be general
-        let union_read_base = read_sem.union(&base_sem);
-        assert!(union_read_base.is_same_type(&base_sem, &mut ctx));
+        let union_read_base = read_sem.union(&base_sem).unwrap();
+        assert!(union_read_base.is_same_type(&base_sem, &mut ctx).unwrap());
 
-        let union_write_base = write_sem.union(&base_sem);
-        assert!(union_write_base.is_same_type(&base_sem, &mut ctx));
+        let union_write_base = write_sem.union(&base_sem).unwrap();
+        assert!(union_write_base.is_same_type(&base_sem, &mut ctx).unwrap());
 
         // Intersection of specific with general should be specific
-        let intersect_read_base = read_sem.intersect(&base_sem);
-        assert!(intersect_read_base.is_same_type(&read_sem, &mut ctx));
+        let intersect_read_base = read_sem.intersect(&base_sem).unwrap();
+        assert!(intersect_read_base
+            .is_same_type(&read_sem, &mut ctx)
+            .unwrap());
 
-        let intersect_write_base = write_sem.intersect(&base_sem);
-        assert!(intersect_write_base.is_same_type(&write_sem, &mut ctx));
+        let intersect_write_base = write_sem.intersect(&base_sem).unwrap();
+        assert!(intersect_write_base
+            .is_same_type(&write_sem, &mut ctx)
+            .unwrap());
 
         // Union of unrelated formats should contain both
-        let union_base_other = base_sem.union(&other_sem);
-        assert!(!union_base_other.is_same_type(&base_sem, &mut ctx));
-        assert!(!union_base_other.is_same_type(&other_sem, &mut ctx));
+        let union_base_other = base_sem.union(&other_sem).unwrap();
+        assert!(!union_base_other.is_same_type(&base_sem, &mut ctx).unwrap());
+        assert!(!union_base_other.is_same_type(&other_sem, &mut ctx).unwrap());
 
         // Intersection of unrelated formats should be never
-        let intersect_base_other = base_sem.intersect(&other_sem);
+        let intersect_base_other = base_sem.intersect(&other_sem).unwrap();
         assert!(intersect_base_other.is_never());
     }
 
@@ -836,22 +826,26 @@ mod tests {
             .expect("should work");
 
         // Literals should not be subtypes of formats (they're different string types)
-        assert!(!literal_abc_sem.is_subtype(&format_sem, &mut ctx));
-        assert!(!format_sem.is_subtype(&literal_abc_sem, &mut ctx));
+        assert!(!literal_abc_sem.is_subtype(&format_sem, &mut ctx).unwrap());
+        assert!(!format_sem.is_subtype(&literal_abc_sem, &mut ctx).unwrap());
 
         // Union should contain both
-        let union = format_sem.union(&literal_abc_sem);
-        assert!(!union.is_same_type(&format_sem, &mut ctx));
-        assert!(!union.is_same_type(&literal_abc_sem, &mut ctx));
+        let union = format_sem.union(&literal_abc_sem).unwrap();
+        assert!(!union.is_same_type(&format_sem, &mut ctx).unwrap());
+        assert!(!union.is_same_type(&literal_abc_sem, &mut ctx).unwrap());
 
         // Intersection should be never
-        let intersection = format_sem.intersect(&literal_abc_sem);
+        let intersection = format_sem.intersect(&literal_abc_sem).unwrap();
         assert!(intersection.is_never());
 
         // Union of two literals
-        let literal_union = literal_abc_sem.union(&literal_def_sem);
-        assert!(!literal_union.is_same_type(&literal_abc_sem, &mut ctx));
-        assert!(!literal_union.is_same_type(&literal_def_sem, &mut ctx));
+        let literal_union = literal_abc_sem.union(&literal_def_sem).unwrap();
+        assert!(!literal_union
+            .is_same_type(&literal_abc_sem, &mut ctx)
+            .unwrap());
+        assert!(!literal_union
+            .is_same_type(&literal_def_sem, &mut ctx)
+            .unwrap());
     }
 
     #[test]
@@ -1023,11 +1017,11 @@ mod tests {
             .expect("should work");
 
         // Union of specific with general should be general
-        let union = usd_sem.union(&base_sem);
-        assert!(union.is_same_type(&base_sem, &mut ctx));
+        let union = usd_sem.union(&base_sem).unwrap();
+        assert!(union.is_same_type(&base_sem, &mut ctx).unwrap());
 
         // Intersection of different formats should be never
-        let intersection = base_sem.intersect(&other_sem);
+        let intersection = base_sem.intersect(&other_sem).unwrap();
         assert!(intersection.is_never());
     }
 
@@ -1055,21 +1049,297 @@ mod tests {
             .expect("should work");
 
         // Literals should not be subtypes of formats
-        assert!(!literal_42_sem.is_subtype(&format_sem, &mut ctx));
-        assert!(!format_sem.is_subtype(&literal_42_sem, &mut ctx));
+        assert!(!literal_42_sem.is_subtype(&format_sem, &mut ctx).unwrap());
+        assert!(!format_sem.is_subtype(&literal_42_sem, &mut ctx).unwrap());
 
         // Union should contain both
-        let union = format_sem.union(&literal_42_sem);
-        assert!(!union.is_same_type(&format_sem, &mut ctx));
-        assert!(!union.is_same_type(&literal_42_sem, &mut ctx));
+        let union = format_sem.union(&literal_42_sem).unwrap();
+        assert!(!union.is_same_type(&format_sem, &mut ctx).unwrap());
+        assert!(!union.is_same_type(&literal_42_sem, &mut ctx).unwrap());
 
         // Intersection should be never
-        let intersection = format_sem.intersect(&literal_42_sem);
+        let intersection = format_sem.intersect(&literal_42_sem).unwrap();
         assert!(intersection.is_never());
 
         // Union of two literals
-        let literal_union = literal_42_sem.union(&literal_100_sem);
-        assert!(!literal_union.is_same_type(&literal_42_sem, &mut ctx));
-        assert!(!literal_union.is_same_type(&literal_100_sem, &mut ctx));
+        let literal_union = literal_42_sem.union(&literal_100_sem).unwrap();
+        assert!(!literal_union
+            .is_same_type(&literal_42_sem, &mut ctx)
+            .unwrap());
+        assert!(!literal_union
+            .is_same_type(&literal_100_sem, &mut ctx)
+            .unwrap());
     }
+
+    // #[test]
+    // fn object_is_subtype_of_record_string_string() {
+    //     let definitions = vec![];
+
+    //     // {a: string} should be a subtype of Record<string, string>
+    //     let obj = Runtype::no_index_object(vec![("a".into(), Runtype::String.required())]);
+    //     let record = Runtype::single_index_object(Runtype::String, Runtype::String.required());
+
+    //     let res = rt_is_sub_type(&obj, &record, &definitions, &definitions);
+    //     assert!(res);
+
+    //     // Record<string, string> should NOT be a subtype of {a: string}
+    //     let res = rt_is_sub_type(&record, &obj, &definitions, &definitions);
+    //     assert!(!res);
+    // }
+
+    // #[test]
+    // fn object_with_multiple_properties_is_subtype_of_record() {
+    //     let definitions = vec![];
+
+    //     // {a: string, b: string, c: string} should be a subtype of Record<string, string>
+    //     let obj = Runtype::no_index_object(vec![
+    //         ("a".into(), Runtype::String.required()),
+    //         ("b".into(), Runtype::String.required()),
+    //         ("c".into(), Runtype::String.required()),
+    //     ]);
+    //     let record = Runtype::single_index_object(Runtype::String, Runtype::String.required());
+
+    //     let res = rt_is_sub_type(&obj, &record, &definitions, &definitions);
+    //     assert!(res);
+    // }
+
+    // #[test]
+    // fn object_is_not_subtype_of_record_with_different_value_type() {
+    //     let definitions = vec![];
+
+    //     // {a: string} should NOT be a subtype of Record<string, number>
+    //     let obj = Runtype::no_index_object(vec![("a".into(), Runtype::String.required())]);
+    //     let record = Runtype::single_index_object(Runtype::String, Runtype::Number.required());
+
+    //     let res = rt_is_sub_type(&obj, &record, &definitions, &definitions);
+    //     assert!(!res);
+
+    //     // {a: number} should be a subtype of Record<string, number>
+    //     let obj_number = Runtype::no_index_object(vec![("a".into(), Runtype::Number.required())]);
+    //     let res = rt_is_sub_type(&obj_number, &record, &definitions, &definitions);
+    //     assert!(res);
+    // }
+
+    // #[test]
+    // fn object_with_optional_property_subtyping() {
+    //     let definitions = vec![];
+
+    //     // {a?: string} should be a subtype of Record<string, string>
+    //     let obj = Runtype::no_index_object(vec![("a".into(), Runtype::String.optional())]);
+    //     let record = Runtype::single_index_object(Runtype::String, Runtype::String.optional());
+
+    //     let res = rt_is_sub_type(&obj, &record, &definitions, &definitions);
+    //     assert!(res);
+
+    //     // {a?: string} should NOT be a subtype of Record<string, string> (required)
+    //     let record_required =
+    //         Runtype::single_index_object(Runtype::String, Runtype::String.required());
+    //     let res = rt_is_sub_type(&obj, &record_required, &definitions, &definitions);
+    //     assert!(!res);
+    // }
+
+    // #[test]
+    // fn empty_object_is_subtype_of_record() {
+    //     let definitions = vec![];
+
+    //     // {} should be a subtype of Record<string, string>
+    //     let empty_obj = Runtype::no_index_object(vec![]);
+    //     let record = Runtype::single_index_object(Runtype::String, Runtype::String.required());
+
+    //     let res = rt_is_sub_type(&empty_obj, &record, &definitions, &definitions);
+    //     assert!(res);
+    // }
+
+    // #[test]
+    // fn object_with_mixed_types_not_subtype_of_uniform_record() {
+    //     let definitions = vec![];
+
+    //     // {a: string, b: number} should NOT be a subtype of Record<string, string>
+    //     let obj = Runtype::no_index_object(vec![
+    //         ("a".into(), Runtype::String.required()),
+    //         ("b".into(), Runtype::Number.required()),
+    //     ]);
+    //     let record = Runtype::single_index_object(Runtype::String, Runtype::String.required());
+
+    //     let res = rt_is_sub_type(&obj, &record, &definitions, &definitions);
+    //     assert!(!res);
+
+    //     // But it should be a subtype of Record<string, string | number>
+    //     let record_union = Runtype::single_index_object(
+    //         Runtype::String,
+    //         Runtype::any_of(vec![Runtype::String, Runtype::Number]).required(),
+    //     );
+    //     let res = rt_is_sub_type(&obj, &record_union, &definitions, &definitions);
+    //     assert!(res);
+    // }
+
+    // #[test]
+    // fn record_with_specific_keys_subtyping() {
+    //     let definitions = vec![];
+
+    //     // Record<"a" | "b", string> should be a subtype of Record<string, string>
+    //     let specific_record = Runtype::single_index_object(
+    //         Runtype::any_of(vec![
+    //             Runtype::single_string_const("a"),
+    //             Runtype::single_string_const("b"),
+    //         ]),
+    //         Runtype::String.required(),
+    //     );
+    //     let general_record =
+    //         Runtype::single_index_object(Runtype::String, Runtype::String.required());
+
+    //     let res = rt_is_sub_type(
+    //         &specific_record,
+    //         &general_record,
+    //         &definitions,
+    //         &definitions,
+    //     );
+    //     assert!(res);
+
+    //     // General record should NOT be a subtype of specific record
+    //     let res = rt_is_sub_type(
+    //         &general_record,
+    //         &specific_record,
+    //         &definitions,
+    //         &definitions,
+    //     );
+    //     assert!(!res);
+    // }
+
+    // #[test]
+    // fn object_with_extra_properties_is_subtype_of_record() {
+    //     let definitions = vec![];
+
+    //     // {a: string, b: string} should be a subtype of Record<"a", string>
+    //     let obj = Runtype::no_index_object(vec![
+    //         ("a".into(), Runtype::String.required()),
+    //         ("b".into(), Runtype::String.required()),
+    //     ]);
+    //     let record = Runtype::single_index_object(
+    //         Runtype::single_string_const("a"),
+    //         Runtype::String.required(),
+    //     );
+
+    //     let res = rt_is_sub_type(&obj, &record, &definitions, &definitions);
+    //     assert!(res);
+    // }
+
+    // #[test]
+    // fn object_and_record_intersection() {
+    //     let definitions = vec![];
+    //     let mut ctx = SemTypeContext::new();
+
+    //     // {a: string} ∩ Record<string, string> = {a: string}
+    //     let obj = Runtype::no_index_object(vec![("a".into(), Runtype::String.required())]);
+    //     let record = Runtype::single_index_object(Runtype::String, Runtype::String.required());
+
+    //     let obj_st = obj
+    //         .to_sem_type(&definitions, &mut ctx)
+    //         .expect("should work");
+    //     let record_st = record
+    //         .to_sem_type(&definitions, &mut ctx)
+    //         .expect("should work");
+
+    //     let intersection = obj_st.intersect(&record_st);
+    //     assert!(intersection.is_same_type(&obj_st, &mut ctx).unwrap());
+    // }
+
+    // #[test]
+    // fn object_subtyping_with_string_formats() {
+    //     let definitions = vec![];
+
+    //     // {a: StringWithFormat("user_id")} should be a subtype of Record<string, string>
+    //     let obj = Runtype::no_index_object(vec![(
+    //         "a".into(),
+    //         Runtype::StringWithFormat(CustomFormat("user_id".into(), vec![])).required(),
+    //     )]);
+    //     let record = Runtype::single_index_object(Runtype::String, Runtype::String.required());
+
+    //     let res = rt_is_sub_type(&obj, &record, &definitions, &definitions);
+    //     assert!(res);
+
+    //     // {a: StringWithFormat("user_id")} should be a subtype of Record<string, StringWithFormat("user_id")>
+    //     let record_with_format = Runtype::single_index_object(
+    //         Runtype::String,
+    //         Runtype::StringWithFormat(CustomFormat("user_id".into(), vec![])).required(),
+    //     );
+    //     let res = rt_is_sub_type(&obj, &record_with_format, &definitions, &definitions);
+    //     assert!(res);
+    // }
+
+    // #[test]
+    // fn nested_objects_and_records() {
+    //     let definitions = vec![];
+
+    //     // {a: {b: string}} should be a subtype of Record<string, {b: string}>
+    //     let inner_obj = Runtype::no_index_object(vec![("b".into(), Runtype::String.required())]);
+    //     let outer_obj = Runtype::no_index_object(vec![("a".into(), inner_obj.clone().required())]);
+    //     let record = Runtype::single_index_object(Runtype::String, inner_obj.clone().required());
+
+    //     let res = rt_is_sub_type(&outer_obj, &record, &definitions, &definitions);
+    //     assert!(res);
+    // }
+
+    // #[test]
+    // fn record_number_keys() {
+    //     let definitions = vec![];
+
+    //     // {1: string} (if represented as object) should work with Record<number | string, string>
+    //     // Note: In JSON, object keys are always strings, so numeric keys become string keys
+    //     let obj = Runtype::no_index_object(vec![("1".into(), Runtype::String.required())]);
+    //     let record = Runtype::single_index_object(
+    //         Runtype::any_of(vec![Runtype::Number, Runtype::String]),
+    //         Runtype::String.required(),
+    //     );
+
+    //     let res = rt_is_sub_type(&obj, &record, &definitions, &definitions);
+    //     assert!(res);
+    // }
+
+    // #[test]
+    // fn object_with_const_string_keys() {
+    //     let definitions = vec![];
+
+    //     // {a: string} with explicit string literal key
+    //     let obj = Runtype::no_index_object(vec![("a".into(), Runtype::String.required())]);
+    //     let record = Runtype::single_index_object(
+    //         Runtype::single_string_const("a"),
+    //         Runtype::String.required(),
+    //     );
+
+    //     // Object should be a subtype of the specific record
+    //     let res = rt_is_sub_type(&obj, &record, &definitions, &definitions);
+    //     assert!(res);
+
+    //     // Object with key "b" should NOT be a subtype
+    //     let obj_b = Runtype::no_index_object(vec![("b".into(), Runtype::String.required())]);
+    //     let res = rt_is_sub_type(&obj_b, &record, &definitions, &definitions);
+    //     assert!(!res);
+    // }
+
+    // #[test]
+    // fn complex_record_subtyping() {
+    //     let definitions = vec![];
+
+    //     // {a: string, b: number} is a subtype of Record<string, string | number>
+    //     let obj = Runtype::no_index_object(vec![
+    //         ("a".into(), Runtype::String.required()),
+    //         ("b".into(), Runtype::Number.required()),
+    //     ]);
+    //     let record = Runtype::single_index_object(
+    //         Runtype::String,
+    //         Runtype::any_of(vec![Runtype::String, Runtype::Number]).required(),
+    //     );
+
+    //     let res = rt_is_sub_type(&obj, &record, &definitions, &definitions);
+    //     assert!(res);
+
+    //     // But {a: string, b: boolean} should NOT be
+    //     let obj_with_bool = Runtype::no_index_object(vec![
+    //         ("a".into(), Runtype::String.required()),
+    //         ("b".into(), Runtype::Boolean.required()),
+    //     ]);
+    //     let res = rt_is_sub_type(&obj_with_bool, &record, &definitions, &definitions);
+    //     assert!(!res);
+    // }
 }

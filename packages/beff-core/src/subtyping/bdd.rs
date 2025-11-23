@@ -4,7 +4,7 @@ use std::{
     rc::Rc,
 };
 
-use anyhow::bail;
+use anyhow::{bail, Result};
 
 use crate::{
     ast::{
@@ -12,7 +12,8 @@ use crate::{
         runtype::{CustomFormat, TplLitType, TplLitTypeItem},
     },
     subtyping::{
-        evidence::MappedRecordEvidence, semtype::SemTypeContext,
+        evidence::{IndexedPropertiesEvidence, MappingEvidence},
+        semtype::SemTypeContext,
         subtype::NumberRepresentationOrFormat,
     },
 };
@@ -21,11 +22,28 @@ use super::{
     evidence::{
         Evidence, EvidenceResult, ListEvidence, ProperSubtypeEvidence, ProperSubtypeEvidenceResult,
     },
-    semtype::{BddMemoEmptyRef, MappingAtomicType, MemoEmpty, SemType, SemTypeOps},
+    semtype::{BddMemoEmptyRef, MemoEmpty, SemType, SemTypeOps},
     subtype::{ProperSubtype, StringLitOrFormat, SubType, SubTypeTag},
 };
+#[derive(Debug, Clone)]
+pub struct IndexedPropertiesAtomic {
+    pub key: Rc<SemType>,
+    pub value: Rc<SemType>,
+}
+#[derive(Debug, Clone)]
 
-pub type MappingAtomic = BTreeMap<String, Rc<SemType>>;
+pub struct MappingAtomicType {
+    pub vs: BTreeMap<String, Rc<SemType>>,
+    pub indexed_properties: Vec<IndexedPropertiesAtomic>,
+}
+impl MappingAtomicType {
+    fn new() -> Self {
+        Self {
+            vs: BTreeMap::new(),
+            indexed_properties: vec![],
+        }
+    }
+}
 
 #[derive(PartialEq, Eq, Hash, Debug, Ord, PartialOrd, Clone)]
 pub struct ListAtomic {
@@ -37,7 +55,6 @@ pub struct ListAtomic {
 pub enum Atom {
     Mapping(usize),
     List(usize),
-    MappedRecord(usize),
 }
 
 fn atom_cmp(a: &Atom, b: &Atom) -> Ordering {
@@ -290,12 +307,6 @@ fn and(atom: Rc<Atom>, next: Option<Rc<Conjunction>>) -> Option<Rc<Conjunction>>
 
 // type BddPredicate function(TypeCheckContext tc, Conjunction? pos, Conjunction? neg) returns boolean;
 
-type BddPredicate = fn(
-    pos: &Option<Rc<Conjunction>>,
-    neg: &Option<Rc<Conjunction>>,
-    builder: &mut SemTypeContext,
-) -> ProperSubtypeEvidenceResult;
-
 fn and_evidence(
     a: ProperSubtypeEvidenceResult,
     b: ProperSubtypeEvidenceResult,
@@ -309,97 +320,120 @@ fn and_evidence(
     }
 }
 
+type BddPredicateResult = fn(
+    pos: &Option<Rc<Conjunction>>,
+    neg: &Option<Rc<Conjunction>>,
+    builder: &mut SemTypeContext,
+) -> Result<ProperSubtypeEvidenceResult>;
+
 // A Bdd represents a disjunction of conjunctions of atoms, where each atom is either positive or
 // negative (negated). Each path from the root to a leaf that is true represents one of the conjunctions
 // We walk the tree, accumulating the positive and negative conjunctions for a path as we go.
 // When we get to a leaf that is true, we apply the predicate to the accumulated conjunctions.
-fn bdd_every(
+fn bdd_every_result(
     bdd: &Rc<Bdd>,
     pos: &Option<Rc<Conjunction>>,
     neg: &Option<Rc<Conjunction>>,
-    predicate: BddPredicate,
+    predicate: BddPredicateResult,
     builder: &mut SemTypeContext,
-) -> ProperSubtypeEvidenceResult {
+) -> Result<ProperSubtypeEvidenceResult> {
     match &**bdd {
-        Bdd::False => ProperSubtypeEvidenceResult::IsEmpty,
+        Bdd::False => Ok(ProperSubtypeEvidenceResult::IsEmpty),
         Bdd::True => predicate(pos, neg, builder),
         Bdd::Node {
             atom,
             left,
             middle,
             right,
-        } => and_evidence(
-            bdd_every(
+        } => Ok(and_evidence(
+            bdd_every_result(
                 right,
                 pos,
                 &and(atom.clone(), neg.clone()),
                 predicate,
                 builder,
-            ),
+            )?,
             and_evidence(
-                bdd_every(middle, pos, neg, predicate, builder),
-                bdd_every(
+                bdd_every_result(middle, pos, neg, predicate, builder)?,
+                bdd_every_result(
                     left,
                     &and(atom.clone(), pos.clone()),
                     neg,
                     predicate,
                     builder,
-                ),
+                )?,
             ),
-        ),
+        )),
     }
 }
-fn intersect_mapping(m1: Rc<MappingAtomic>, m2: Rc<MappingAtomic>) -> Option<Rc<MappingAtomic>> {
-    let m1_names = BTreeSet::from_iter(m1.keys());
-    let m2_names = BTreeSet::from_iter(m2.keys());
+
+fn intersect_mapping(
+    m1: Rc<MappingAtomicType>,
+    m2: Rc<MappingAtomicType>,
+) -> Result<Option<Rc<MappingAtomicType>>> {
+    let m1_names = BTreeSet::from_iter(m1.vs.keys());
+    let m2_names = BTreeSet::from_iter(m2.vs.keys());
     let all_names = m1_names.union(&m2_names).collect::<BTreeSet<_>>();
     let mut acc = vec![];
     for name in all_names {
         let type1 = m1
+            .vs
             .get(*name)
             .cloned()
             .unwrap_or_else(|| Rc::new(SemTypeContext::unknown()));
         let type2 = m2
+            .vs
             .get(*name)
             .cloned()
             .unwrap_or_else(|| Rc::new(SemTypeContext::unknown()));
-        let t = type1.intersect(&type2);
+        let t = type1.intersect(&type2)?;
         if t.is_never() {
-            return None;
+            return Ok(None);
         }
         acc.push((name.to_string(), t))
     }
-    Some(Rc::new(MappingAtomic::from_iter(acc)))
+
+    if !m1.indexed_properties.is_empty() || !m2.indexed_properties.is_empty() {
+        bail!("indexed properties intersection not implemented yet");
+    }
+
+    Ok(Some(Rc::new(MappingAtomicType {
+        vs: acc.into_iter().collect(),
+        indexed_properties: vec![],
+    })))
 }
 
 enum MappingInhabited {
-    Yes(Rc<MappingAtomic>),
+    Yes(Rc<MappingAtomicType>),
     No,
 }
 
 fn mapping_inhabited(
-    pos: Rc<MappingAtomic>,
+    pos: Rc<MappingAtomicType>,
     neg_list: &Option<Rc<Conjunction>>,
     builder: &mut SemTypeContext,
-) -> MappingInhabited {
+) -> Result<MappingInhabited> {
     match neg_list {
-        None => MappingInhabited::Yes(pos.clone()),
+        None => Ok(MappingInhabited::Yes(pos.clone())),
         Some(neg_list) => {
             let neg = match &*neg_list.atom {
                 Atom::Mapping(a) => builder.get_mapping_atomic(*a),
                 _ => unreachable!(),
             };
 
-            // TODO: fixme, add rest support
+            if !neg.indexed_properties.is_empty() {
+                bail!("indexed properties not supported yet in mapping_inhabited");
+            }
             let neg = &neg.vs;
 
-            let pos_names = BTreeSet::from_iter(pos.keys());
+            let pos_names = BTreeSet::from_iter(pos.vs.keys());
             let neg_names = BTreeSet::from_iter(neg.keys());
 
             let all_names = pos_names.union(&neg_names).collect::<BTreeSet<_>>();
 
             for name in all_names.iter() {
                 let pos_type = pos
+                    .vs
                     .get(**name)
                     .cloned()
                     .unwrap_or_else(|| Rc::new(SemTypeContext::unknown()));
@@ -413,6 +447,7 @@ fn mapping_inhabited(
             }
             for name in all_names {
                 let pos_type = pos
+                    .vs
                     .get(*name)
                     .cloned()
                     .unwrap_or_else(|| Rc::new(SemTypeContext::unknown()));
@@ -421,19 +456,19 @@ fn mapping_inhabited(
                     .cloned()
                     .unwrap_or_else(|| Rc::new(SemTypeContext::unknown()));
 
-                let d = pos_type.diff(&neg_type);
-                if !d.is_empty(builder) {
+                let d = pos_type.diff(&neg_type)?;
+                if !d.is_empty(builder)? {
                     let mut mt = pos.as_ref().clone();
-                    mt.insert(name.to_string(), d);
-                    if let MappingInhabited::Yes(a) =
+                    mt.vs.insert(name.to_string(), d);
+                    if let Ok(MappingInhabited::Yes(a)) =
                         mapping_inhabited(Rc::new(mt), &neg_list.next, builder)
                     {
-                        return MappingInhabited::Yes(a);
+                        return Ok(MappingInhabited::Yes(a));
                     }
                 }
             }
 
-            MappingInhabited::No
+            Ok(MappingInhabited::No)
         }
     }
 }
@@ -442,14 +477,13 @@ fn mapping_formula_is_empty(
     pos_list: &Option<Rc<Conjunction>>,
     neg_list: &Option<Rc<Conjunction>>,
     builder: &mut SemTypeContext,
-) -> ProperSubtypeEvidenceResult {
-    let mut combined: Rc<MappingAtomic> = Rc::new(BTreeMap::new());
+) -> Result<ProperSubtypeEvidenceResult> {
+    let mut combined: Rc<MappingAtomicType> = Rc::new(MappingAtomicType::new());
     match pos_list {
         None => {}
         Some(pos_atom) => {
             match pos_atom.atom.as_ref() {
-                // TODO: fixme, add rest support
-                Atom::Mapping(a) => combined = builder.get_mapping_atomic(*a).vs.clone(),
+                Atom::Mapping(a) => combined = builder.get_mapping_atomic(*a).clone(),
                 _ => unreachable!(),
             };
             let mut p = pos_atom.next.clone();
@@ -458,207 +492,83 @@ fn mapping_formula_is_empty(
                     Atom::Mapping(a) => builder.get_mapping_atomic(*a),
                     _ => unreachable!(),
                 };
-                // TODO: fixme, add rest support
-                let m = intersect_mapping(combined.clone(), p_atom.vs.clone());
+                let m = intersect_mapping(combined.clone(), p_atom.clone())?;
                 match m {
-                    None => return ProperSubtypeEvidenceResult::IsEmpty,
+                    None => return Ok(ProperSubtypeEvidenceResult::IsEmpty),
                     Some(m) => combined = m,
                 }
                 p.clone_from(&some_p.next.clone());
             }
-            for t in combined.values() {
-                if let EvidenceResult::IsEmpty = t.is_empty_evidence(builder) {
-                    return ProperSubtypeEvidenceResult::IsEmpty;
+            for t in combined.vs.values() {
+                if let EvidenceResult::IsEmpty = t.is_empty_evidence(builder)? {
+                    return Ok(ProperSubtypeEvidenceResult::IsEmpty);
+                }
+            }
+            for p in combined.indexed_properties.iter() {
+                if let EvidenceResult::IsEmpty = p.key.is_empty_evidence(builder)? {
+                    return Ok(ProperSubtypeEvidenceResult::IsEmpty);
+                }
+                if let EvidenceResult::IsEmpty = p.value.is_empty_evidence(builder)? {
+                    return Ok(ProperSubtypeEvidenceResult::IsEmpty);
                 }
             }
         }
     }
-    match mapping_inhabited(combined.clone(), neg_list, builder) {
-        MappingInhabited::No => ProperSubtypeEvidenceResult::IsEmpty,
+    match mapping_inhabited(combined.clone(), neg_list, builder)? {
+        MappingInhabited::No => Ok(ProperSubtypeEvidenceResult::IsEmpty),
         MappingInhabited::Yes(ev) => {
-            let ev2 = ev
-                .iter()
-                .map(|(k, it)| match it.is_empty_evidence(builder) {
+            let mut new_props = vec![];
+            for (k, it) in ev.vs.iter() {
+                let t = match it.is_empty_evidence(builder)? {
                     EvidenceResult::Evidence(e) => (k.clone(), Rc::new(e)),
                     EvidenceResult::IsEmpty => {
                         unreachable!("mapping_inhabited should have returned false")
                     }
-                })
-                .collect::<Vec<_>>();
-
-            ProperSubtypeEvidence::Mapping(BTreeMap::from_iter(ev2).into()).to_result()
-        }
-    }
-}
-
-fn mapped_record_key_is_empty(
-    pos: &Option<Rc<Conjunction>>,
-    neg: &Option<Rc<Conjunction>>,
-    builder: &mut SemTypeContext,
-) -> ProperSubtypeEvidenceResult {
-    let mut t = Rc::new(SemTypeContext::unknown());
-
-    match pos {
-        None => {}
-        Some(pos_atom) => {
-            // combine all the positive keys using intersection
-            let mt = match pos_atom.atom.as_ref() {
-                Atom::MappedRecord(a) => builder.get_mapped_record_atomic(*a).clone(),
-                _ => unreachable!(),
-            };
-            t = mt.key.clone();
-
-            let mut p = pos_atom.next.clone();
-            while let Some(ref some_p) = p {
-                let d = &some_p.atom;
-                let mt = match d.as_ref() {
-                    Atom::MappedRecord(a) => builder.get_mapped_record_atomic(*a).clone(),
-                    _ => unreachable!(),
                 };
-                t = t.intersect(&mt.key);
-                p.clone_from(&some_p.next.clone());
+                new_props.push(t);
             }
-        }
-    }
 
-    if let Some(neg_atom) = neg {
-        let mt = match neg_atom.atom.as_ref() {
-            Atom::MappedRecord(a) => builder.get_mapped_record_atomic(*a).clone(),
-            _ => unreachable!(),
-        };
-        t = t.diff(&mt.key);
-        let mut n = neg_atom.next.clone();
-        while let Some(ref some_n) = n {
-            let d = &some_n.atom;
-            let mt = match d.as_ref() {
-                Atom::MappedRecord(a) => builder.get_mapped_record_atomic(*a).clone(),
-                _ => unreachable!(),
-            };
-            t = t.diff(&mt.key);
-            n.clone_from(&some_n.next.clone());
-        }
-    }
-
-    match t.is_empty_evidence(builder) {
-        EvidenceResult::Evidence(evidence) => ProperSubtypeEvidenceResult::Evidence(
-            ProperSubtypeEvidence::MappedRecord(MappedRecordEvidence::Key(evidence.into()).into()),
-        ),
-        EvidenceResult::IsEmpty => ProperSubtypeEvidenceResult::IsEmpty,
-    }
-}
-
-fn mapped_record_value_is_empty(
-    pos: &Option<Rc<Conjunction>>,
-    neg: &Option<Rc<Conjunction>>,
-    builder: &mut SemTypeContext,
-) -> ProperSubtypeEvidenceResult {
-    let mut t = Rc::new(SemTypeContext::unknown());
-
-    match pos {
-        None => {}
-        Some(pos_atom) => {
-            // combine all the positive rest using intersection
-            let mt = match pos_atom.atom.as_ref() {
-                Atom::MappedRecord(a) => builder.get_mapped_record_atomic(*a).clone(),
-                _ => unreachable!(),
-            };
-            t = mt.rest.clone();
-
-            let mut p = pos_atom.next.clone();
-            while let Some(ref some_p) = p {
-                let d = &some_p.atom;
-                let mt = match d.as_ref() {
-                    Atom::MappedRecord(a) => builder.get_mapped_record_atomic(*a).clone(),
-                    _ => unreachable!(),
+            let mut new_idx = vec![];
+            for p in &ev.indexed_properties {
+                let key = match p.key.is_empty_evidence(builder)? {
+                    EvidenceResult::Evidence(e) => Rc::new(e),
+                    EvidenceResult::IsEmpty => {
+                        unreachable!("mapping_inhabited should have returned false")
+                    }
                 };
-                t = t.intersect(&mt.rest);
-                p.clone_from(&some_p.next.clone());
+                let value = match p.value.is_empty_evidence(builder)? {
+                    EvidenceResult::Evidence(e) => Rc::new(e),
+                    EvidenceResult::IsEmpty => {
+                        unreachable!("mapping_inhabited should have returned false")
+                    }
+                };
+
+                new_idx.push(IndexedPropertiesEvidence { key, value });
             }
+
+            Ok(ProperSubtypeEvidence::Mapping(
+                MappingEvidence {
+                    vs: new_props.into_iter().collect(),
+                    indexed_properties: new_idx.into_iter().collect(),
+                }
+                .into(),
+            )
+            .to_result())
         }
     }
-
-    if let Some(neg_atom) = neg {
-        let mt = match neg_atom.atom.as_ref() {
-            Atom::MappedRecord(a) => builder.get_mapped_record_atomic(*a).clone(),
-            _ => unreachable!(),
-        };
-        t = t.diff(&mt.rest);
-        let mut n = neg_atom.next.clone();
-        while let Some(ref some_n) = n {
-            let d = &some_n.atom;
-            let mt = match d.as_ref() {
-                Atom::MappedRecord(a) => builder.get_mapped_record_atomic(*a).clone(),
-                _ => unreachable!(),
-            };
-            t = t.diff(&mt.rest);
-            n.clone_from(&some_n.next.clone());
-        }
-    }
-
-    match t.is_empty_evidence(builder) {
-        EvidenceResult::Evidence(evidence) => ProperSubtypeEvidenceResult::Evidence(
-            ProperSubtypeEvidence::MappedRecord(MappedRecordEvidence::Key(evidence.into()).into()),
-        ),
-        EvidenceResult::IsEmpty => ProperSubtypeEvidenceResult::IsEmpty,
-    }
-}
-fn mapped_record_formula_is_empty(
-    pos_list: &Option<Rc<Conjunction>>,
-    neg_list: &Option<Rc<Conjunction>>,
-    builder: &mut SemTypeContext,
-) -> ProperSubtypeEvidenceResult {
-    let key_is_empty = mapped_record_key_is_empty(pos_list, neg_list, builder);
-    if key_is_empty.is_empty() {
-        return key_is_empty;
-    }
-    let value_is_empty = mapped_record_value_is_empty(pos_list, neg_list, builder);
-    if value_is_empty.is_empty() {
-        return key_is_empty;
-    }
-    value_is_empty
-}
-
-pub fn mapped_record_is_empty(
-    bdd: &Rc<Bdd>,
-    builder: &mut SemTypeContext,
-) -> ProperSubtypeEvidenceResult {
-    // if the key is empty of the value is empty, then it is empty
-    match builder.mapped_records_memo.get(bdd) {
-        Some(mm) => match &mm.0 {
-            MemoEmpty::True => return ProperSubtypeEvidenceResult::IsEmpty,
-            MemoEmpty::False(ev) => return ev.clone(),
-            MemoEmpty::Undefined => {
-                // we got a loop
-                return ProperSubtypeEvidenceResult::IsEmpty;
-            }
-        },
-        None => {
-            builder
-                .mapped_records_memo
-                .insert((**bdd).clone(), BddMemoEmptyRef(MemoEmpty::Undefined));
-        }
-    }
-
-    let is_empty = bdd_every(bdd, &None, &None, mapped_record_formula_is_empty, builder);
-    builder
-        .mapped_records_memo
-        .get_mut(bdd)
-        .expect("bdd should be cached by now")
-        .0 = MemoEmpty::from_bool(&is_empty);
-    is_empty
 }
 
 pub fn mapping_is_empty(
     bdd: &Rc<Bdd>,
     builder: &mut SemTypeContext,
-) -> ProperSubtypeEvidenceResult {
+) -> Result<ProperSubtypeEvidenceResult> {
     match builder.mapping_memo.get(bdd) {
         Some(mm) => match &mm.0 {
-            MemoEmpty::True => return ProperSubtypeEvidenceResult::IsEmpty,
-            MemoEmpty::False(ev) => return ev.clone(),
+            MemoEmpty::True => return Ok(ProperSubtypeEvidenceResult::IsEmpty),
+            MemoEmpty::False(ev) => return Ok(ev.clone()),
             MemoEmpty::Undefined => {
                 // we got a loop
-                return ProperSubtypeEvidenceResult::IsEmpty;
+                return Ok(ProperSubtypeEvidenceResult::IsEmpty);
             }
         },
         None => {
@@ -668,13 +578,13 @@ pub fn mapping_is_empty(
         }
     }
 
-    let is_empty = bdd_every(bdd, &None, &None, mapping_formula_is_empty, builder);
+    let is_empty = bdd_every_result(bdd, &None, &None, mapping_formula_is_empty, builder)?;
     builder
         .mapping_memo
         .get_mut(bdd)
         .expect("bdd should be cached by now")
         .0 = MemoEmpty::from_bool(&is_empty);
-    is_empty
+    Ok(is_empty)
 }
 enum ListInhabited {
     Yes(Option<Rc<Evidence>>, Vec<Rc<SemType>>),
@@ -692,9 +602,9 @@ fn list_inhabited(
     items: &Rc<SemType>,
     neg: &Option<Rc<Conjunction>>,
     builder: &mut SemTypeContext,
-) -> ListInhabited {
+) -> Result<ListInhabited> {
     match neg {
-        None => ListInhabited::Yes(None, prefix_items.clone()),
+        None => Ok(ListInhabited::Yes(None, prefix_items.clone())),
         Some(neg) => {
             let mut len = prefix_items.len();
             let nt = match &*neg.atom {
@@ -742,26 +652,26 @@ fn list_inhabited(
                 } else {
                     nt.items.clone()
                 };
-                let d = prefix_items[i].diff(&ntm);
-                if !d.is_empty(builder) {
+                let d = prefix_items[i].diff(&ntm)?;
+                if !d.is_empty(builder)? {
                     let mut s = prefix_items.clone();
                     s[i] = d;
                     if let ListInhabited::Yes(a, _b) =
-                        list_inhabited(&mut s, items, &neg.next, builder)
+                        list_inhabited(&mut s, items, &neg.next, builder)?
                     {
-                        return ListInhabited::Yes(a, s.clone());
+                        return Ok(ListInhabited::Yes(a, s.clone()));
                     }
                 }
             }
 
-            let diff = items.diff(&nt.items);
-            if let EvidenceResult::Evidence(e) = diff.is_empty_evidence(builder) {
-                return ListInhabited::Yes(Some(e.into()), prefix_items.clone());
+            let diff = items.diff(&nt.items)?;
+            if let EvidenceResult::Evidence(e) = diff.is_empty_evidence(builder)? {
+                return Ok(ListInhabited::Yes(Some(e.into()), prefix_items.clone()));
             }
 
             // This is correct for length 0, because we know that the length of the
             // negative is 0, and [] - [] is empty.
-            ListInhabited::No
+            Ok(ListInhabited::No)
         }
     }
 }
@@ -770,7 +680,7 @@ fn list_formula_is_empty(
     pos: &Option<Rc<Conjunction>>,
     neg: &Option<Rc<Conjunction>>,
     builder: &mut SemTypeContext,
-) -> ProperSubtypeEvidenceResult {
+) -> Result<ProperSubtypeEvidenceResult> {
     let mut prefix_items = vec![];
     let mut items = Rc::new(SemTypeContext::unknown());
 
@@ -796,63 +706,67 @@ fn list_formula_is_empty(
                 let new_len = std::cmp::max(prefix_items.len(), lt.prefix_items.len());
                 if prefix_items.len() < new_len {
                     if lt.items.is_never() {
-                        return ProperSubtypeEvidenceResult::IsEmpty;
+                        return Ok(ProperSubtypeEvidenceResult::IsEmpty);
                     }
                     for _i in prefix_items.len()..new_len {
                         prefix_items.push(lt.items.clone());
                     }
                 }
                 for i in 0..lt.prefix_items.len() {
-                    prefix_items[i] = prefix_items[i].intersect(&lt.prefix_items[i]);
+                    prefix_items[i] = prefix_items[i].intersect(&lt.prefix_items[i])?;
                 }
                 if lt.prefix_items.len() < new_len {
                     if lt.items.is_never() {
-                        return ProperSubtypeEvidenceResult::IsEmpty;
+                        return Ok(ProperSubtypeEvidenceResult::IsEmpty);
                     }
                     for i in lt.prefix_items.len()..new_len {
-                        prefix_items[i] = prefix_items[i].intersect(&lt.items);
+                        prefix_items[i] = prefix_items[i].intersect(&lt.items)?;
                     }
                 }
-                items = items.intersect(&lt.items);
+                items = items.intersect(&lt.items)?;
                 p.clone_from(&some_p.next.clone());
             }
 
             for m in prefix_items.iter() {
-                if let EvidenceResult::IsEmpty = m.is_empty_evidence(builder) {
-                    return ProperSubtypeEvidenceResult::IsEmpty;
+                if let EvidenceResult::IsEmpty = m.is_empty_evidence(builder)? {
+                    return Ok(ProperSubtypeEvidenceResult::IsEmpty);
                 }
             }
         }
     }
-    match list_inhabited(&mut prefix_items, &items, neg, builder) {
+    match list_inhabited(&mut prefix_items, &items, neg, builder)? {
         ListInhabited::Yes(e, prefix) => {
-            let prefix2 = prefix
-                .into_iter()
-                .map(|it| match it.is_empty_evidence(builder) {
+            let mut prefix2 = vec![];
+            for it in prefix.into_iter() {
+                let t = match it.is_empty_evidence(builder)? {
                     EvidenceResult::Evidence(e) => Rc::new(e),
                     EvidenceResult::IsEmpty => {
                         unreachable!("list_inhabited should have returned false")
                     }
-                })
-                .collect::<Vec<_>>();
+                };
+                prefix2.push(t);
+            }
             let list_evidence = ListEvidence {
                 prefix_items: prefix2,
                 items: e,
             };
-            ProperSubtypeEvidence::List(Rc::new(list_evidence)).to_result()
+            Ok(ProperSubtypeEvidence::List(Rc::new(list_evidence)).to_result())
         }
 
-        ListInhabited::No => ProperSubtypeEvidenceResult::IsEmpty,
+        ListInhabited::No => Ok(ProperSubtypeEvidenceResult::IsEmpty),
     }
 }
-pub fn list_is_empty(bdd: &Rc<Bdd>, builder: &mut SemTypeContext) -> ProperSubtypeEvidenceResult {
+pub fn list_is_empty(
+    bdd: &Rc<Bdd>,
+    builder: &mut SemTypeContext,
+) -> Result<ProperSubtypeEvidenceResult> {
     match builder.list_memo.get(bdd) {
         Some(mm) => match &mm.0 {
-            MemoEmpty::True => return ProperSubtypeEvidenceResult::IsEmpty,
-            MemoEmpty::False(ev) => return ev.clone(),
+            MemoEmpty::True => return Ok(ProperSubtypeEvidenceResult::IsEmpty),
+            MemoEmpty::False(ev) => return Ok(ev.clone()),
             MemoEmpty::Undefined => {
                 // we got a loop
-                return ProperSubtypeEvidenceResult::IsEmpty;
+                return Ok(ProperSubtypeEvidenceResult::IsEmpty);
             }
         },
         None => {
@@ -862,13 +776,13 @@ pub fn list_is_empty(bdd: &Rc<Bdd>, builder: &mut SemTypeContext) -> ProperSubty
         }
     }
 
-    let is_empty = bdd_every(bdd, &None, &None, list_formula_is_empty, builder);
+    let is_empty = bdd_every_result(bdd, &None, &None, list_formula_is_empty, builder)?;
     builder
         .list_memo
         .get_mut(bdd)
         .expect("bdd should be cached by now")
         .0 = MemoEmpty::from_bool(&is_empty);
-    is_empty
+    Ok(is_empty)
 }
 
 pub fn bdd_mapping_member_type_inner(
@@ -891,23 +805,20 @@ pub fn bdd_mapping_member_type_inner(
                 _ => unreachable!(),
             };
             let a = mapping_member_type_inner(b_atom_type.clone(), key.clone())?;
-            let a = a.intersect(&accum);
+            let a = a.intersect(&accum)?;
             let a = bdd_mapping_member_type_inner(ctx, left.clone(), key.clone(), a.clone())?;
 
             let b = bdd_mapping_member_type_inner(ctx, middle.clone(), key.clone(), accum.clone())?;
             let c = bdd_mapping_member_type_inner(ctx, right.clone(), key, accum.clone())?;
 
-            Ok(a.union(&b.union(&c)))
+            Ok(a.union(&b.union(&c)?)?)
         }
     }
 }
 
 #[derive(Debug, Clone)]
 pub enum MappingStrKey {
-    Str {
-        allowed: bool,
-        values: Vec<StringLitOrFormat>,
-    },
+    Str { allowed: bool, values: Vec<String> },
     True,
 }
 
@@ -924,22 +835,10 @@ fn mapping_atomic_applicable_member_types_inner(
             for (k, ty) in atomic.vs.iter() {
                 let mut found = false;
 
-                for it in &values {
-                    match it {
-                        StringLitOrFormat::Tpl(vs) => match vs.0.as_slice() {
-                            [TplLitTypeItem::StringConst(l)] => {
-                                if l == k {
-                                    found = true;
-                                    break;
-                                }
-                            }
-                            _ => {
-                                bail!("template literal cannot be used as mapping key")
-                            }
-                        },
-                        StringLitOrFormat::Format(_) => {
-                            bail!("format or codec cannot be used as mapping key")
-                        }
+                for l in &values {
+                    if l == k {
+                        found = true;
+                        break;
                     }
                 }
 
@@ -950,14 +849,23 @@ fn mapping_atomic_applicable_member_types_inner(
 
             let is_subtype = member_types.len() == atomic.vs.len();
             if !is_subtype {
-                member_types.push(atomic.rest.clone());
+                for v in &atomic.indexed_properties {
+                    if v.key.is_all_strings() {
+                        member_types.push(v.value.clone());
+                    }
+                }
             }
 
             Ok(member_types)
         }
         MappingStrKey::True => {
             let mut vs: Vec<Rc<SemType>> = atomic.vs.values().cloned().collect();
-            vs.push(atomic.rest.clone());
+
+            for v in &atomic.indexed_properties {
+                if v.key.is_all_strings() {
+                    vs.push(v.value.clone());
+                }
+            }
             Ok(vs)
         }
     }
@@ -972,7 +880,7 @@ fn mapping_member_type_inner(
     for ty in mapping_atomic_applicable_member_types_inner(atomic, key)? {
         match member_type {
             Some(mt) => {
-                member_type = Some(mt.union(&ty));
+                member_type = Some(mt.union(&ty)?);
             }
             None => {
                 member_type = Some(ty);
@@ -986,11 +894,66 @@ fn mapping_member_type_inner(
     }
 }
 
+fn bdd_mapped_record_member_type_inner_val(
+    ctx: &mut SemTypeContext,
+    b: Rc<Bdd>,
+    idx_st: Rc<SemType>,
+    accum: Rc<SemType>,
+) -> Result<Rc<SemType>> {
+    match b.as_ref() {
+        Bdd::True => Ok(accum),
+        Bdd::False => Ok(SemTypeContext::never().into()),
+        Bdd::Node {
+            atom,
+            left,
+            middle,
+            right,
+        } => {
+            let b_atom_type = match atom.as_ref() {
+                Atom::Mapping(a) => ctx.get_mapping_atomic(*a),
+                _ => unreachable!(),
+            };
+            let mut found = None;
+            for p in &b_atom_type.indexed_properties {
+                let key_is_subtype = idx_st.is_subtype(&p.key, ctx)?;
+                if key_is_subtype {
+                    found = Some(p);
+                    break;
+                }
+            }
+            // if the key type does not intersect the key, then skip this branch
+            let a = match found {
+                None => {
+                    return Ok(SemTypeContext::never().into());
+                }
+                Some(p) => p.value.clone(),
+            };
+            let a = a.intersect(&accum)?;
+            let a = bdd_mapped_record_member_type_inner_val(ctx, left.clone(), idx_st.clone(), a)?;
+
+            let b = bdd_mapped_record_member_type_inner_val(
+                ctx,
+                middle.clone(),
+                idx_st.clone(),
+                accum.clone(),
+            )?;
+            let c = bdd_mapped_record_member_type_inner_val(
+                ctx,
+                right.clone(),
+                idx_st.clone(),
+                accum.clone(),
+            )?;
+
+            Ok(a.union(&b.union(&c)?)?)
+        }
+    }
+}
+
 // This computes the spec operation called "member type of K in T",
 // for when T is a subtype of mapping, and K is either `string` or a singleton string.
 // This is what Castagna calls projection.
 pub fn mapping_indexed_access(
-    ctx: &SemTypeContext,
+    ctx: &mut SemTypeContext,
     obj_st: Rc<SemType>,
     idx_st: Rc<SemType>,
 ) -> anyhow::Result<Rc<SemType>> {
@@ -998,17 +961,6 @@ pub fn mapping_indexed_access(
     //         return (t & MAPPING) != 0 ? VAL : UNDEF;
     //     }
 
-    let k: MappingStrKey = match SemTypeContext::string_sub_type(idx_st) {
-        SubType::False(_) => return Ok(SemTypeContext::never().into()),
-        SubType::True(_) => MappingStrKey::True,
-        SubType::Proper(proper) => match proper.as_ref() {
-            ProperSubtype::String { allowed, values } => MappingStrKey::Str {
-                allowed: *allowed,
-                values: values.clone(),
-            },
-            _ => unreachable!("should be string"),
-        },
-    };
     let b = SemTypeContext::sub_type_data(obj_st, SubTypeTag::Mapping);
     match b {
         SubType::False(_) => Ok(SemTypeContext::never().into()),
@@ -1022,7 +974,57 @@ pub fn mapping_indexed_access(
                     bail!("not a mapping - proper")
                 }
             };
-            bdd_mapping_member_type_inner(ctx, bdd.clone(), k, SemTypeContext::unknown().into())
+            let idx_clone = idx_st.clone();
+            let string_key: Option<MappingStrKey> = match SemTypeContext::string_sub_type(idx_st) {
+                SubType::False(_) => None,
+                SubType::True(_) => Some(MappingStrKey::True),
+                SubType::Proper(proper) => match proper.as_ref() {
+                    ProperSubtype::String { allowed, values } => {
+                        let mut consts = vec![];
+                        let mut all_string_const = true;
+                        for v in values {
+                            match v {
+                                StringLitOrFormat::Format(_custom_format) => {
+                                    all_string_const = false;
+                                }
+                                StringLitOrFormat::Tpl(tpl_lit_type) => {
+                                    match tpl_lit_type.0.as_slice() {
+                                        [TplLitTypeItem::StringConst(s)] => {
+                                            consts.push(s.clone());
+                                        }
+                                        _ => {
+                                            all_string_const = false;
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                        if all_string_const {
+                            Some(MappingStrKey::Str {
+                                allowed: *allowed,
+                                values: consts,
+                            })
+                        } else {
+                            None
+                        }
+                    }
+                    _ => unreachable!("should be string"),
+                },
+            };
+            match string_key {
+                Some(sk) => bdd_mapping_member_type_inner(
+                    ctx,
+                    bdd.clone(),
+                    sk,
+                    SemTypeContext::unknown().into(),
+                ),
+                None => bdd_mapped_record_member_type_inner_val(
+                    ctx,
+                    bdd.clone(),
+                    idx_clone,
+                    SemTypeContext::unknown().into(),
+                ),
+            }
         }
     }
 }
@@ -1069,7 +1071,7 @@ fn list_atomic_member_type_at_inner(
     prefix_items: &[Rc<SemType>],
     items: &Rc<SemType>,
     key: ListNumberKey,
-) -> Rc<SemType> {
+) -> Result<Rc<SemType>> {
     match key {
         ListNumberKey::N { allowed, values } => {
             let mut m = Rc::new(SemTypeContext::never());
@@ -1078,31 +1080,34 @@ fn list_atomic_member_type_at_inner(
             if init_len > 0 {
                 for (i, v) in prefix_items.iter().enumerate() {
                     if int_subtype_contains(allowed, &values, i) {
-                        m = m.union(v);
+                        m = m.union(v)?;
                     }
                 }
             }
             if init_len == 0 || int_subtype_max(allowed, &values) > (init_len as i64) - 1 {
-                m = m.union(items);
+                m = m.union(items)?;
             }
-            m
+            Ok(m)
         }
         ListNumberKey::True => {
             let mut m = items.clone();
             for it in prefix_items.iter() {
-                m = m.union(it);
+                m = m.union(it)?;
             }
-            m
+            Ok(m)
         }
     }
 }
 
-fn list_atomic_member_type_inner(atomic: Rc<ListAtomic>, key: ListNumberKey) -> Rc<SemType> {
+fn list_atomic_member_type_inner(
+    atomic: Rc<ListAtomic>,
+    key: ListNumberKey,
+) -> Result<Rc<SemType>> {
     list_atomic_member_type_at_inner(&atomic.prefix_items, &atomic.items, key)
 }
 
-fn list_member_type_inner_val(atomic: Rc<ListAtomic>, key: ListNumberKey) -> Rc<SemType> {
-    let a = list_atomic_member_type_inner(atomic, key);
+fn list_member_type_inner_val(atomic: Rc<ListAtomic>, key: ListNumberKey) -> Result<Rc<SemType>> {
+    let a = list_atomic_member_type_inner(atomic, key)?;
     a.diff(&Rc::new(SemTypeContext::void()))
 }
 
@@ -1111,10 +1116,10 @@ fn bdd_list_member_type_inner_val(
     b: Rc<Bdd>,
     key: ListNumberKey,
     accum: Rc<SemType>,
-) -> Rc<SemType> {
+) -> Result<Rc<SemType>> {
     match b.as_ref() {
-        Bdd::True => accum,
-        Bdd::False => SemTypeContext::never().into(),
+        Bdd::True => Ok(accum),
+        Bdd::False => Ok(SemTypeContext::never().into()),
         Bdd::Node {
             atom,
             left,
@@ -1125,87 +1130,15 @@ fn bdd_list_member_type_inner_val(
                 Atom::List(a) => ctx.get_list_atomic(*a),
                 _ => unreachable!(),
             };
-            let a = list_member_type_inner_val(b_atom_type, key.clone());
-            let a = a.intersect(&accum);
-            let a = bdd_list_member_type_inner_val(ctx, left.clone(), key.clone(), a.clone());
+            let a = list_member_type_inner_val(b_atom_type, key.clone())?;
+            let a = a.intersect(&accum)?;
+            let a = bdd_list_member_type_inner_val(ctx, left.clone(), key.clone(), a.clone())?;
 
-            let b = bdd_list_member_type_inner_val(ctx, middle.clone(), key.clone(), accum.clone());
-            let c = bdd_list_member_type_inner_val(ctx, right.clone(), key, accum.clone());
+            let b =
+                bdd_list_member_type_inner_val(ctx, middle.clone(), key.clone(), accum.clone())?;
+            let c = bdd_list_member_type_inner_val(ctx, right.clone(), key, accum.clone())?;
 
-            a.union(&b.union(&c))
-        }
-    }
-}
-
-fn bdd_mapped_record_member_type_inner_val(
-    ctx: &mut SemTypeContext,
-    b: Rc<Bdd>,
-    idx_st: Rc<SemType>,
-    accum: Rc<SemType>,
-) -> Rc<SemType> {
-    match b.as_ref() {
-        Bdd::True => accum,
-        Bdd::False => SemTypeContext::never().into(),
-        Bdd::Node {
-            atom,
-            left,
-            middle,
-            right,
-        } => {
-            let b_atom_type = match atom.as_ref() {
-                Atom::MappedRecord(a) => ctx.get_mapped_record_atomic(*a),
-                _ => unreachable!(),
-            };
-            // if the key type does not intersect the key, then skip this branch
-            let key_is_subtype = idx_st.is_subtype(&b_atom_type.key, ctx);
-            if !key_is_subtype {
-                return SemTypeContext::never().into();
-            }
-            let a = b_atom_type.rest.clone();
-            let a = a.intersect(&accum);
-            let a = bdd_mapped_record_member_type_inner_val(ctx, left.clone(), idx_st.clone(), a);
-
-            let b = bdd_mapped_record_member_type_inner_val(
-                ctx,
-                middle.clone(),
-                idx_st.clone(),
-                accum.clone(),
-            );
-            let c = bdd_mapped_record_member_type_inner_val(
-                ctx,
-                right.clone(),
-                idx_st.clone(),
-                accum.clone(),
-            );
-
-            a.union(&b.union(&c))
-        }
-    }
-}
-pub fn mapped_record_indexed_access(
-    ctx: &mut SemTypeContext,
-    obj_st: Rc<SemType>,
-    idx_st: Rc<SemType>,
-) -> anyhow::Result<Rc<SemType>> {
-    let b = SemTypeContext::sub_type_data(obj_st, SubTypeTag::MappedRecord);
-    match b {
-        SubType::False(_) => Ok(SemTypeContext::never().into()),
-        SubType::True(_) => {
-            bail!("not a mapped record - true")
-        }
-        SubType::Proper(proper_subtype) => {
-            let bdd = match proper_subtype.as_ref() {
-                ProperSubtype::MappedRecord(bdd) => bdd,
-                _ => {
-                    bail!("not a mapped record - proper")
-                }
-            };
-            Ok(bdd_mapped_record_member_type_inner_val(
-                ctx,
-                bdd.clone(),
-                idx_st,
-                SemTypeContext::unknown().into(),
-            ))
+            a.union(&b.union(&c)?)
         }
     }
 }
@@ -1265,12 +1198,7 @@ pub fn list_indexed_access(
                     bail!("not a list - proper")
                 }
             };
-            Ok(bdd_list_member_type_inner_val(
-                ctx,
-                bdd.clone(),
-                k,
-                SemTypeContext::unknown().into(),
-            ))
+            bdd_list_member_type_inner_val(ctx, bdd.clone(), k, SemTypeContext::unknown().into())
         }
     }
 }
@@ -1310,8 +1238,8 @@ pub fn keyof(ctx: &mut SemTypeContext, st: Rc<SemType>) -> anyhow::Result<Rc<Sem
                                 )));
                             let ty_at_key =
                                 mapping_indexed_access(ctx, st.clone(), key_ty.clone())?;
-                            if !ty_at_key.is_empty(ctx) {
-                                acc = acc.union(&key_ty)
+                            if !ty_at_key.is_empty(ctx)? {
+                                acc = acc.union(&key_ty)?
                             }
                         }
                     };
@@ -1320,8 +1248,8 @@ pub fn keyof(ctx: &mut SemTypeContext, st: Rc<SemType>) -> anyhow::Result<Rc<Sem
             ProperSubtype::List(_) => {
                 let idx_st = Rc::new(SemTypeContext::number());
                 let ty_at_key = list_indexed_access(ctx, st.clone(), idx_st.clone())?;
-                if !ty_at_key.is_empty(ctx) {
-                    acc = acc.union(&idx_st)
+                if !ty_at_key.is_empty(ctx)? {
+                    acc = acc.union(&idx_st)?
                 }
             }
             _ => (),

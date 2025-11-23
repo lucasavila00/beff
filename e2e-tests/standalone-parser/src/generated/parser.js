@@ -764,77 +764,12 @@ class AnyOfDiscriminatedRuntype {
     return `(${this.schemas.map((it) => it.describe(ctx)).join(" | ")})`;
   }
 }
-class MappedRecordRuntype {
-  keyParser;
-  valueParser;
-  constructor(keyParser, valueParser) {
-    this.keyParser = keyParser;
-    this.valueParser = valueParser;
-  }
-  describe(ctx) {
-    const k = this.keyParser.describe(ctx);
-    const v = this.valueParser.describe(ctx);
-    return `Record<${k}, ${v}>`;
-  }
-  schema(ctx) {
-    return {
-      type: "object",
-      additionalProperties: this.valueParser.schema(ctx),
-      propertyNames: this.keyParser.schema(ctx)
-    };
-  }
-  validate(ctx, input) {
-    if (typeof input !== "object" || input == null) {
-      return false;
-    }
-    for (const k in input) {
-      const v = input[k];
-      if (!this.keyParser.validate(ctx, k) || !this.valueParser.validate(ctx, v)) {
-        return false;
-      }
-    }
-    return true;
-  }
-  parseAfterValidation(ctx, input) {
-    const result = {};
-    for (const k in input) {
-      const parsedKey = this.keyParser.parseAfterValidation(ctx, k);
-      const parsedValue = this.valueParser.parseAfterValidation(ctx, input[k]);
-      result[parsedKey] = parsedValue;
-    }
-    return result;
-  }
-  reportDecodeError(ctx, input) {
-    if (typeof input !== "object" || input == null) {
-      return buildError(ctx, "expected object", input);
-    }
-    let acc = [];
-    for (const k in input) {
-      const v = input[k];
-      const okKey = this.keyParser.validate(ctx, k);
-      if (!okKey) {
-        pushPath(ctx, k);
-        const errs = this.keyParser.reportDecodeError(ctx, k);
-        acc.push(...errs);
-        popPath(ctx);
-      }
-      const okValue = this.valueParser.validate(ctx, v);
-      if (!okValue) {
-        pushPath(ctx, k);
-        const errs = this.valueParser.reportDecodeError(ctx, v);
-        acc.push(...errs);
-        popPath(ctx);
-      }
-    }
-    return acc;
-  }
-}
 class ObjectRuntype {
   properties;
-  restParser;
-  constructor(properties, restParser) {
+  indexedPropertiesParser;
+  constructor(properties, indexedPropertiesParser) {
     this.properties = properties;
-    this.restParser = restParser;
+    this.indexedPropertiesParser = indexedPropertiesParser;
   }
   describe(ctx) {
     const sortedKeys = Object.keys(this.properties).sort();
@@ -842,7 +777,10 @@ class ObjectRuntype {
       const it = this.properties[k];
       return `${k}: ${it.describe(ctx)}`;
     }).join(", ");
-    const rest = this.restParser != null ? `[K in string]: ${this.restParser.describe(ctx)}` : null;
+    const indexPropsParats = this.indexedPropertiesParser.map(({ key, value }) => {
+      return `[K in ${key.describe(ctx)}]: ${value.describe(ctx)}`;
+    });
+    const rest = indexPropsParats.join(", ");
     const content = [props, rest].filter((it) => it != null && it.length > 0).join(", ");
     return `{ ${content} }`;
   }
@@ -854,12 +792,29 @@ class ObjectRuntype {
       popPath(ctx);
     }
     const required = Object.keys(this.properties);
-    const additionalProperties = this.restParser != null ? this.restParser.schema(ctx) : false;
-    return {
+    const base = {
       type: "object",
       properties,
-      required,
-      additionalProperties
+      required
+    };
+    const indexSchemas = this.indexedPropertiesParser.map(({ key, value }) => {
+      pushPath(ctx, "[key]");
+      const keySchema = key.schema(ctx);
+      popPath(ctx);
+      pushPath(ctx, "[value]");
+      const valueSchema = value.schema(ctx);
+      popPath(ctx);
+      return {
+        type: "object",
+        additionalProperties: valueSchema,
+        propertyNames: keySchema
+      };
+    });
+    if (indexSchemas.length === 0) {
+      return base;
+    }
+    return {
+      allOf: [base, ...indexSchemas]
     };
   }
   validate(ctx, input) {
@@ -871,12 +826,23 @@ class ObjectRuntype {
           return false;
         }
       }
-      if (this.restParser != null) {
+      if (this.indexedPropertiesParser.length > 0) {
         const inputKeys = Object.keys(input);
         const extraKeys = inputKeys.filter((k) => !configKeys.includes(k));
         for (const k of extraKeys) {
-          const v = input[k];
-          if (!this.restParser.validate(ctx, v)) {
+          let isValid = false;
+          for (const p of this.indexedPropertiesParser) {
+            if (!p.key.validate(ctx, k)) {
+              continue;
+            }
+            const v = input[k];
+            if (!p.value.validate(ctx, v)) {
+              continue;
+            }
+            isValid = true;
+            break;
+          }
+          if (!isValid) {
             return false;
           }
         }
@@ -901,9 +867,15 @@ class ObjectRuntype {
       if (k in this.properties) {
         const itemParsed = this.properties[k].parseAfterValidation(ctx, v);
         acc[k] = itemParsed;
-      } else if (this.restParser != null) {
-        const restParsed = this.restParser.parseAfterValidation(ctx, v);
-        acc[k] = restParsed;
+      } else if (this.indexedPropertiesParser.length > 0) {
+        for (const p of this.indexedPropertiesParser) {
+          const isValid = p.key.validate(ctx, k) && p.value.validate(ctx, v);
+          if (isValid) {
+            const itemParsed = p.value.parseAfterValidation(ctx, v);
+            const keyParsed = p.key.parseAfterValidation(ctx, k);
+            acc[keyParsed] = itemParsed;
+          }
+        }
       }
     }
     return acc;
@@ -923,16 +895,26 @@ class ObjectRuntype {
         popPath(ctx);
       }
     }
-    if (this.restParser != null) {
+    if (this.indexedPropertiesParser.length > 0) {
       const inputKeys = Object.keys(input);
       const extraKeys = inputKeys.filter((k) => !configKeys.includes(k));
       for (const k of extraKeys) {
-        const ok = this.restParser.validate(ctx, input[k]);
-        if (!ok) {
-          pushPath(ctx, k);
-          const arr2 = this.restParser.reportDecodeError(ctx, input[k]);
-          acc.push(...arr2);
-          popPath(ctx);
+        for (const p of this.indexedPropertiesParser) {
+          const keyOk = p.key.validate(ctx, k);
+          const valueOk = p.value.validate(ctx, input[k]);
+          const ok = keyOk && valueOk;
+          if (!ok) {
+            pushPath(ctx, k);
+            if (!keyOk) {
+              const keyReported = p.key.reportDecodeError(ctx, k);
+              acc.push(...keyReported);
+            }
+            if (!valueOk) {
+              const valueReported = p.value.reportDecodeError(ctx, input[k]);
+              acc.push(...valueReported);
+            }
+            popPath(ctx);
+          }
         }
       }
     } else {
@@ -1122,19 +1104,19 @@ const direct_hoist_7 = new AnyOfConstsRuntype([
 const direct_hoist_8 = new ConstRuntype("d");
 const direct_hoist_9 = new ObjectRuntype({
     "tag": direct_hoist_8
-}, null);
+}, []);
 const direct_hoist_10 = new ObjectRuntype({
     "d": direct_hoist_9,
     "level": direct_hoist_7
-}, null);
+}, []);
 const direct_hoist_11 = new ConstRuntype("b");
 const direct_hoist_12 = new TypeofRuntype("boolean");
 const direct_hoist_13 = new ObjectRuntype({
     "value": direct_hoist_5
-}, null);
+}, []);
 const direct_hoist_14 = new ObjectRuntype({
     "value": direct_hoist_11
-}, null);
+}, []);
 const direct_hoist_15 = new ConstRuntype("a1");
 const direct_hoist_16 = new ObjectRuntype({
     "a1": direct_hoist_0,
@@ -1144,17 +1126,17 @@ const direct_hoist_16 = new ObjectRuntype({
     ]),
     "subType": direct_hoist_15,
     "type": direct_hoist_5
-}, null);
+}, []);
 const direct_hoist_17 = new ConstRuntype("a2");
 const direct_hoist_18 = new ObjectRuntype({
     "a2": direct_hoist_0,
     "subType": direct_hoist_17,
     "type": direct_hoist_5
-}, null);
+}, []);
 const direct_hoist_19 = new ObjectRuntype({
     "type": direct_hoist_11,
     "value": direct_hoist_1
-}, null);
+}, []);
 const direct_hoist_20 = new StringWithFormatRuntype([
     "ValidCurrency"
 ]);
@@ -1163,13 +1145,13 @@ const direct_hoist_22 = new ConstRuntype("square");
 const direct_hoist_23 = new ObjectRuntype({
     "kind": direct_hoist_22,
     "x": direct_hoist_1
-}, null);
+}, []);
 const direct_hoist_24 = new ConstRuntype("triangle");
 const direct_hoist_25 = new ObjectRuntype({
     "kind": direct_hoist_24,
     "x": direct_hoist_1,
     "y": direct_hoist_1
-}, null);
+}, []);
 const namedRuntypes = {
     "PartialRepro": new ObjectRuntype({
         "a": new AnyOfRuntype([
@@ -1180,7 +1162,7 @@ const namedRuntypes = {
             direct_hoist_6,
             direct_hoist_0
         ])
-    }, null),
+    }, []),
     "TransportedValue": new AnyOfRuntype([
         direct_hoist_6,
         direct_hoist_0,
@@ -1192,11 +1174,11 @@ const namedRuntypes = {
     ]),
     "OnlyAKey": new ObjectRuntype({
         "A": direct_hoist_0
-    }, null),
+    }, []),
     "AllTs": direct_hoist_7,
     "AObject": new ObjectRuntype({
         "tag": direct_hoist_5
-    }, null),
+    }, []),
     "Version": new RegexRuntype(/(\d+(\.\d+)?)(\.)(\d+(\.\d+)?)(\.)(\d+(\.\d+)?)/, "`${number}.${number}.${number}`"),
     "Version2": new RegexRuntype(/(v)(\d+(\.\d+)?)(\.)(\d+(\.\d+)?)(\.)(\d+(\.\d+)?)/, "`v${number}.${number}.${number}`"),
     "AccessLevel2": new AnyOfConstsRuntype([
@@ -1218,7 +1200,7 @@ const namedRuntypes = {
         "a": direct_hoist_0,
         "d": direct_hoist_9,
         "level": direct_hoist_7
-    }, null),
+    }, []),
     "PartialObject": new ObjectRuntype({
         "a": new AnyOfRuntype([
             direct_hoist_6,
@@ -1228,11 +1210,11 @@ const namedRuntypes = {
             direct_hoist_6,
             direct_hoist_1
         ])
-    }, null),
+    }, []),
     "RequiredPartialObject": new ObjectRuntype({
         "a": direct_hoist_0,
         "b": direct_hoist_1
-    }, null),
+    }, []),
     "LevelAndDSettings": direct_hoist_10,
     "PartialSettings": new ObjectRuntype({
         "a": new AnyOfRuntype([
@@ -1248,8 +1230,13 @@ const namedRuntypes = {
             direct_hoist_5,
             direct_hoist_11
         ])
-    }, null),
-    "Extra": new ObjectRuntype({}, direct_hoist_0),
+    }, []),
+    "Extra": new ObjectRuntype({}, [
+        {
+            "key": direct_hoist_0,
+            "value": direct_hoist_0
+        }
+    ]),
     "AvatarSize": new RegexRuntype(/(\d+(\.\d+)?)(x)(\d+(\.\d+)?)/, "`${number}x${number}`"),
     "User": new ObjectRuntype({
         "accessLevel": direct_hoist_3,
@@ -1257,31 +1244,31 @@ const namedRuntypes = {
         "extra": direct_hoist_2,
         "friends": new ArrayRuntype(new RefRuntype("User")),
         "name": direct_hoist_0
-    }, null),
+    }, []),
     "PublicUser": new ObjectRuntype({
         "accessLevel": direct_hoist_3,
         "avatarSize": direct_hoist_4,
         "extra": direct_hoist_2,
         "name": direct_hoist_0
-    }, null),
+    }, []),
     "Req": new ObjectRuntype({
         "optional": direct_hoist_0
-    }, null),
+    }, []),
     "WithOptionals": new ObjectRuntype({
         "optional": new AnyOfRuntype([
             direct_hoist_6,
             direct_hoist_0
         ])
-    }, null),
+    }, []),
     "Repro1": new ObjectRuntype({
         "sizes": new AnyOfRuntype([
             direct_hoist_6,
             new RefRuntype("Repro2")
         ])
-    }, null),
+    }, []),
     "Repro2": new ObjectRuntype({
         "useSmallerSizes": direct_hoist_12
-    }, null),
+    }, []),
     "SettingsUpdate": new AnyOfRuntype([
         direct_hoist_0,
         direct_hoist_9
@@ -1289,7 +1276,7 @@ const namedRuntypes = {
     "Mapped": new ObjectRuntype({
         "a": direct_hoist_13,
         "b": direct_hoist_14
-    }, null),
+    }, []),
     "MappedOptional": new ObjectRuntype({
         "a": new AnyOfRuntype([
             direct_hoist_6,
@@ -1299,7 +1286,7 @@ const namedRuntypes = {
             direct_hoist_6,
             direct_hoist_14
         ])
-    }, null),
+    }, []),
     "DiscriminatedUnion": new AnyOfDiscriminatedRuntype([
         direct_hoist_16,
         direct_hoist_18,
@@ -1323,7 +1310,7 @@ const namedRuntypes = {
                 direct_hoist_8
             ]),
             "valueD": direct_hoist_1
-        }, null),
+        }, []),
         direct_hoist_19
     ]),
     "DiscriminatedUnion3": new AnyOfDiscriminatedRuntype([
@@ -1333,7 +1320,7 @@ const namedRuntypes = {
                 "a",
                 "c"
             ])
-        }, null),
+        }, []),
         direct_hoist_19
     ], "type", {
         "a": new ObjectRuntype({
@@ -1342,7 +1329,7 @@ const namedRuntypes = {
                 "a",
                 "c"
             ])
-        }, null),
+        }, []),
         "b": direct_hoist_19,
         "c": new ObjectRuntype({
             "a1": direct_hoist_0,
@@ -1350,23 +1337,23 @@ const namedRuntypes = {
                 "a",
                 "c"
             ])
-        }, null)
+        }, [])
     }),
     "DiscriminatedUnion4": new AnyOfRuntype([
         new ObjectRuntype({
             "a": new ObjectRuntype({
                 "a1": direct_hoist_0,
                 "subType": direct_hoist_15
-            }, null),
+            }, []),
             "type": direct_hoist_5
-        }, null),
+        }, []),
         new ObjectRuntype({
             "a": new ObjectRuntype({
                 "a2": direct_hoist_0,
                 "subType": direct_hoist_17
-            }, null),
+            }, []),
             "type": direct_hoist_5
-        }, null)
+        }, [])
     ]),
     "AllTypes": new AnyOfConstsRuntype([
         "LevelAndDSettings",
@@ -1385,41 +1372,41 @@ const namedRuntypes = {
         new ObjectRuntype({
             "tag": direct_hoist_5,
             "value": direct_hoist_0
-        }, null),
+        }, []),
         new ObjectRuntype({
             "tag": direct_hoist_11,
             "value": direct_hoist_1
-        }, null),
+        }, []),
         new ObjectRuntype({
             "tag": direct_hoist_21,
             "value": direct_hoist_12
-        }, null)
+        }, [])
     ], "tag", {
         "a": new ObjectRuntype({
             "tag": direct_hoist_5,
             "value": direct_hoist_0
-        }, null),
+        }, []),
         "b": new ObjectRuntype({
             "tag": direct_hoist_11,
             "value": direct_hoist_1
-        }, null),
+        }, []),
         "c": new ObjectRuntype({
             "tag": direct_hoist_21,
             "value": direct_hoist_12
-        }, null)
+        }, [])
     }),
     "Shape": new AnyOfDiscriminatedRuntype([
         new ObjectRuntype({
             "kind": new ConstRuntype("circle"),
             "radius": direct_hoist_1
-        }, null),
+        }, []),
         direct_hoist_23,
         direct_hoist_25
     ], "kind", {
         "circle": new ObjectRuntype({
             "kind": new ConstRuntype("circle"),
             "radius": direct_hoist_1
-        }, null),
+        }, []),
         "square": direct_hoist_23,
         "triangle": direct_hoist_25
     }),
@@ -1432,12 +1419,12 @@ const namedRuntypes = {
     }),
     "BObject": new ObjectRuntype({
         "tag": direct_hoist_11
-    }, null),
+    }, []),
     "DEF": new ObjectRuntype({
         "a": direct_hoist_0
-    }, null),
+    }, []),
     "KDEF": direct_hoist_5,
-    "ABC": new ObjectRuntype({}, null),
+    "ABC": new ObjectRuntype({}, []),
     "KABC": new NeverRuntype(),
     "K": new AnyOfConstsRuntype([
         "a"
@@ -1466,7 +1453,12 @@ const namedRuntypes = {
         "ReadAuthorizedUserId",
         "WriteAuthorizedUserId"
     ]),
-    "CurrencyPrices": new MappedRecordRuntype(direct_hoist_20, new RefRuntype("Rate"))
+    "CurrencyPrices": new ObjectRuntype({}, [
+        {
+            "key": direct_hoist_20,
+            "value": new RefRuntype("Rate")
+        }
+    ])
 };
 const buildParsersInput = {
     "PartialRepro": new RefRuntype("PartialRepro"),
@@ -1474,7 +1466,7 @@ const buildParsersInput = {
     "OnlyAKey": new RefRuntype("OnlyAKey"),
     "ObjectWithArr": new ObjectRuntype({
         "a": new ArrayRuntype(direct_hoist_0)
-    }, null),
+    }, []),
     "BigIntCodec": new BigIntRuntype(),
     "TupleCodec": new TupleRuntype([
         direct_hoist_1,
@@ -1522,7 +1514,7 @@ const buildParsersInput = {
     "BObject": new RefRuntype("BObject"),
     "ImportEnumTypeof": new ObjectRuntype({
         "A": direct_hoist_5
-    }, null),
+    }, []),
     "KDEF": new RefRuntype("KDEF"),
     "KABC": new RefRuntype("KABC"),
     "K": new RefRuntype("K"),

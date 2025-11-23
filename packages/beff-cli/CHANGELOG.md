@@ -1,5 +1,11 @@
 # @beff/cli
 
+## 0.0.104
+
+### Patch Changes
+
+- fix semtypes
+
 ## 0.0.103
 
 ### Patch Changes

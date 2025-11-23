@@ -6,7 +6,7 @@ const namedRuntypes = {
     "Alias": new ObjectRuntype({
         "a": new TypeofRuntype("string"),
         "b": new TypeofRuntype("number")
-    }, null)
+    }, [])
 };
 const buildParsersInput = {
     "Dec": new RefRuntype("Alias")

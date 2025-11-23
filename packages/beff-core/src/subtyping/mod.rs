@@ -1,13 +1,12 @@
-use std::collections::BTreeSet;
-use std::rc::Rc;
-
+use self::bdd::ListAtomic;
+use self::semtype::{ComplexSemType, SemType, SemTypeContext, SemTypeOps};
+use self::subtype::StringLitOrFormat;
 use crate::ast::runtype::{CustomFormat, Optionality, RuntypeConst};
+use crate::subtyping::bdd::{IndexedPropertiesAtomic, MappingAtomicType};
 use crate::subtyping::subtype::NumberRepresentationOrFormat;
 use crate::{ast::runtype::Runtype, NamedSchema};
-
-use self::bdd::{ListAtomic, MappingAtomic};
-use self::semtype::{ComplexSemType, MappingAtomicType, SemType, SemTypeContext, SemTypeOps};
-use self::subtype::StringLitOrFormat;
+use std::collections::{BTreeMap, BTreeSet};
+use std::rc::Rc;
 pub mod bdd;
 pub mod evidence;
 pub mod semtype;
@@ -87,7 +86,11 @@ impl<'a> ToSemTypeConverter<'a> {
                     }
                 }
                 // handle recursive types
-                if let Runtype::Object { vs, rest } = schema {
+                if let Runtype::Object {
+                    vs,
+                    indexed_properties,
+                } = schema
+                {
                     match builder.mapping_json_schema_ref_memo.get(name) {
                         Some(idx) => {
                             let ty = Rc::new(SemTypeContext::mapping_definition_from_idx(*idx));
@@ -99,25 +102,37 @@ impl<'a> ToSemTypeConverter<'a> {
                                 .mapping_json_schema_ref_memo
                                 .insert(name.to_string(), idx);
                             builder.mapping_definitions.push(None);
-                            let vs: MappingAtomic = vs
+                            let vs: BTreeMap<String, Rc<SemType>> = vs
                                 .iter()
                                 .map(|(k, v)| match v {
-                                    Optionality::Optional(v) => self
-                                        .convert_to_sem_type(v, builder)
-                                        .map(|v| (k.clone(), SemTypeContext::optional(v))),
+                                    Optionality::Optional(v) => {
+                                        self.convert_to_sem_type(v, builder).and_then(|v| {
+                                            SemTypeContext::optional(v).map(|v| (k.clone(), v))
+                                        })
+                                    }
                                     Optionality::Required(v) => {
                                         self.convert_to_sem_type(v, builder).map(|v| (k.clone(), v))
                                     }
                                 })
                                 .collect::<Result<_>>()?;
-                            let rest = match rest {
-                                Some(r) => self.convert_to_sem_type(&r, builder)?,
-                                None => SemTypeContext::unknown().into(),
-                            };
+                            let mut indexed_props_acc = vec![];
+                            for it in indexed_properties {
+                                let v = match &it.value {
+                                    Optionality::Optional(v) => self
+                                        .convert_to_sem_type(v, builder)
+                                        .and_then(SemTypeContext::optional)?,
+                                    Optionality::Required(v) => {
+                                        self.convert_to_sem_type(v, builder)?
+                                    }
+                                };
+                                let k = self.convert_to_sem_type(&it.key, builder)?;
+                                let t = IndexedPropertiesAtomic { key: k, value: v };
+                                indexed_props_acc.push(t);
+                            }
 
                             builder.mapping_definitions[idx] = Some(Rc::new(MappingAtomicType {
-                                vs: vs.into(),
-                                rest,
+                                vs,
+                                indexed_properties: indexed_props_acc,
                             }));
                             let ty = Rc::new(SemTypeContext::mapping_definition_from_idx(idx));
                             return Ok(ty);
@@ -137,7 +152,7 @@ impl<'a> ToSemTypeConverter<'a> {
             Runtype::AnyOf(vs) => {
                 let mut acc = Rc::new(SemTypeContext::never());
                 for v in vs {
-                    acc = acc.union(&self.convert_to_sem_type(v, builder)?);
+                    acc = acc.union(&self.convert_to_sem_type(v, builder)?)?;
                 }
                 Ok(acc)
             }
@@ -145,7 +160,7 @@ impl<'a> ToSemTypeConverter<'a> {
                 let mut acc = Rc::new(SemTypeContext::unknown());
                 for v in vs {
                     let ty = self.convert_to_sem_type(v, builder)?;
-                    acc = acc.intersect(&ty);
+                    acc = acc.intersect(&ty)?;
                 }
                 Ok(acc)
             }
@@ -171,28 +186,35 @@ impl<'a> ToSemTypeConverter<'a> {
             Runtype::TplLitType(tpl) => {
                 Ok(SemTypeContext::string_const(StringLitOrFormat::Tpl(tpl.clone())).into())
             }
-            Runtype::Object { vs, rest } => {
+            Runtype::Object {
+                vs,
+                indexed_properties,
+            } => {
                 let vs = vs
                     .iter()
                     .map(|(k, v)| match v {
                         Optionality::Optional(v) => self
                             .convert_to_sem_type(v, builder)
-                            .map(|v| (k.clone(), SemTypeContext::optional(v))),
+                            .and_then(|v| SemTypeContext::optional(v).map(|v| (k.clone(), v))),
                         Optionality::Required(v) => {
                             self.convert_to_sem_type(v, builder).map(|v| (k.clone(), v))
                         }
                     })
                     .collect::<Result<_>>()?;
-                let rest = match rest {
-                    Some(r) => self.convert_to_sem_type(r, builder)?,
-                    None => SemTypeContext::unknown().into(),
-                };
-                Ok(builder.mapping_definition(Rc::new(vs), rest).into())
-            }
-            Runtype::MappedRecord { key, rest } => {
-                let key_st = self.convert_to_sem_type(key, builder)?;
-                let rest_st = self.convert_to_sem_type(rest, builder)?;
-                Ok(builder.mapped_record_definition(key_st, rest_st).into())
+                let mut indexed_props_acc = vec![];
+                for it in indexed_properties {
+                    let v = match &it.value {
+                        Optionality::Optional(v) => self
+                            .convert_to_sem_type(v, builder)
+                            .and_then(SemTypeContext::optional)?,
+                        Optionality::Required(v) => self.convert_to_sem_type(v, builder)?,
+                    };
+                    let k = self.convert_to_sem_type(&it.key, builder)?;
+                    let t = IndexedPropertiesAtomic { key: k, value: v };
+                    indexed_props_acc.push(t);
+                }
+
+                Ok(builder.mapping_definition(vs, indexed_props_acc).into())
             }
             Runtype::Array(items) => {
                 let items = self.convert_to_sem_type(items, builder)?;
@@ -227,7 +249,7 @@ impl<'a> ToSemTypeConverter<'a> {
             Runtype::StNever => Ok(SemTypeContext::never().into()),
             Runtype::StNot(it) => {
                 let chd = self.convert_to_sem_type(it, builder)?;
-                Ok(chd.complement())
+                Ok(chd.complement()?)
             }
             Runtype::Function => Ok(SemTypeContext::function().into()),
         }

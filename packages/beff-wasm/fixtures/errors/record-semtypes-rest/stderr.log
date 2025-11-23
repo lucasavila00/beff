@@ -1,0 +1,11 @@
+Error: Error: indexed properties not supported yet in mapping_inhabited
+ /errors/record-semtypes-rest/src/parser.ts:8:10
+    6 | export type User = {
+    7 |   data1: X extends Y ? string : number;
+ >  8 |   data2: Y extends X ? string : number;
+      |          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ Error: indexed properties not supported yet in mapping_inhabited
+    9 | };
+   10 |
+   11 | export const { User } = parse.buildParsers<{ User: User }>();
+
+Found 1 error

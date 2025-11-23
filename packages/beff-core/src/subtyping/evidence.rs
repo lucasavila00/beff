@@ -15,16 +15,19 @@ pub enum ProperSubtypeEvidence {
     },
     List(Rc<ListEvidence>),
     Mapping(Rc<MappingEvidence>),
-    MappedRecord(Rc<MappedRecordEvidence>),
 }
 
 #[derive(PartialEq, Eq, Hash, Debug, Ord, PartialOrd, Clone)]
-pub enum MappedRecordEvidence {
-    Key(Rc<Evidence>),
-    Rest(Rc<Evidence>),
+pub struct IndexedPropertiesEvidence {
+    pub key: Rc<Evidence>,
+    pub value: Rc<Evidence>,
 }
 
-pub type MappingEvidence = BTreeMap<String, Rc<Evidence>>;
+#[derive(PartialEq, Eq, Hash, Debug, Ord, PartialOrd, Clone)]
+pub struct MappingEvidence {
+    pub vs: BTreeMap<String, Rc<Evidence>>,
+    pub indexed_properties: Vec<IndexedPropertiesEvidence>,
+}
 #[derive(PartialEq, Eq, Hash, Debug, Ord, PartialOrd, Clone)]
 pub struct ListEvidence {
     pub prefix_items: Vec<Rc<Evidence>>,

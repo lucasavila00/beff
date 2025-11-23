@@ -198,6 +198,12 @@ impl TplLitType {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord)]
+pub struct IndexedProperty {
+    pub key: Runtype,
+    pub value: Optionality<Runtype>,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord)]
 pub enum Runtype {
     Null,
     Boolean,
@@ -210,11 +216,7 @@ pub enum Runtype {
     TplLitType(TplLitType),
     Object {
         vs: BTreeMap<String, Optionality<Runtype>>,
-        rest: Option<Box<Runtype>>,
-    },
-    MappedRecord {
-        key: Box<Runtype>,
-        rest: Box<Runtype>,
+        indexed_properties: Vec<IndexedProperty>,
     },
     Array(Box<Runtype>),
     Tuple {
@@ -259,13 +261,24 @@ impl UnionMerger {
 }
 
 impl Runtype {
-    pub fn object(vs: Vec<(String, Optionality<Runtype>)>, rest: Option<Box<Runtype>>) -> Self {
+    pub fn no_index_object(vs: Vec<(String, Optionality<Runtype>)>) -> Self {
         Self::Object {
             vs: vs.into_iter().collect(),
-            rest,
+            indexed_properties: vec![],
         }
     }
-
+    pub fn single_index_object(key: Runtype, value: Optionality<Runtype>) -> Self {
+        Self::Object {
+            vs: BTreeMap::new(),
+            indexed_properties: vec![IndexedProperty { key, value }],
+        }
+    }
+    pub fn any_object() -> Runtype {
+        let mut vs = BTreeSet::new();
+        vs.insert(Runtype::Number);
+        vs.insert(Runtype::String);
+        Runtype::single_index_object(Runtype::AnyOf(vs), Optionality::Required(Runtype::Any))
+    }
     pub fn extract_single_string_const(&self) -> Option<String> {
         match self {
             Runtype::TplLitType(TplLitType(items)) => match items.as_slice() {
@@ -296,21 +309,38 @@ impl Runtype {
             _ => UnionMerger::schema(vs),
         }
     }
-    pub fn all_of(vs: Vec<Runtype>) -> Self {
-        match vs.len() {
-            1 => vs.into_iter().next().expect("we just checked len"),
+    pub fn all_of(all_of_items: Vec<Runtype>) -> Self {
+        match all_of_items.len() {
+            1 => all_of_items
+                .into_iter()
+                .next()
+                .expect("we just checked len"),
             _ => {
                 let mut obj_kvs: Vec<(String, Optionality<Runtype>)> = vec![];
                 let mut all_objects = true;
-                let mut rest_is_none = true;
+                let mut rest_is_empty = true;
 
-                for v in vs.iter() {
+                for v in all_of_items.iter() {
                     match v {
-                        Runtype::Object { vs, rest } => {
-                            if rest.is_some() {
-                                rest_is_none = false;
+                        Runtype::Object {
+                            vs,
+                            indexed_properties,
+                        } => {
+                            if !indexed_properties.is_empty() {
+                                rest_is_empty = false;
                                 break;
                             }
+
+                            // if it has the key but type is not the same, it is a conflict
+                            let has_conflicts = obj_kvs.iter().any(|(k, v)| match vs.get(k) {
+                                Some(other_v) => other_v != v,
+                                None => false,
+                            });
+
+                            if has_conflicts {
+                                return Self::AllOf(BTreeSet::from_iter(all_of_items));
+                            }
+
                             obj_kvs.extend(vs.iter().map(|it| (it.0.clone(), it.1.clone())));
                         }
                         _ => {
@@ -320,10 +350,10 @@ impl Runtype {
                     }
                 }
 
-                if rest_is_none && all_objects && vs.len() > 1 {
-                    Runtype::object(obj_kvs, None)
+                if rest_is_empty && all_objects && all_of_items.len() > 1 {
+                    Runtype::no_index_object(obj_kvs)
                 } else {
-                    Self::AllOf(BTreeSet::from_iter(vs))
+                    Self::AllOf(BTreeSet::from_iter(all_of_items))
                 }
             }
         }
@@ -337,7 +367,7 @@ impl Runtype {
         match self {
             Runtype::AllOf(vs) => {
                 let semantic = Runtype::AllOf(vs.clone()).to_sem_type(validators, ctx)?;
-                let is_empty = semantic.is_empty(ctx);
+                let is_empty = semantic.is_empty(ctx)?;
                 if is_empty {
                     return Ok(Runtype::StNever);
                 }
@@ -358,16 +388,16 @@ impl Runtype {
                     .into_iter()
                     .map(|it| it.to_sem_type(validators, ctx).map(|r| (it, r)))
                     .collect::<Result<Vec<_>>>()?;
-                let vs: Vec<Runtype> = vs
-                    .into_iter()
-                    .filter(|(_, semantic)| {
-                        let is_empty = semantic.is_empty(ctx);
-                        !is_empty
-                    })
-                    .map(|(it, _)| it)
-                    .collect();
+                let mut new_vs = vec![];
+                for v in vs.into_iter() {
+                    let is_empty = v.1.is_empty(ctx)?;
+                    if is_empty {
+                        continue;
+                    }
+                    new_vs.push(v.0);
+                }
 
-                let vs = vs
+                let vs = new_vs
                     .into_iter()
                     .map(|it| it.remove_nots_of_intersections_and_empty_of_union(validators, ctx))
                     .collect::<Result<Vec<_>>>()?;
@@ -452,29 +482,26 @@ impl Runtype {
 
                 format!("({})", inner)
             }
-            Runtype::MappedRecord { key, rest } => {
-                let k = key.debug_print();
-                let r = rest.debug_print();
-                format!("Record<{}, {}>", k, r)
-            }
-            Runtype::Object { vs, rest } => {
+            Runtype::Object {
+                vs,
+                indexed_properties,
+            } => {
                 let mut acc = vec![];
 
                 for (k, v) in vs.iter() {
-                    match v {
-                        Optionality::Optional(it) => {
-                            let v = it.debug_print();
-                            acc.push(format!("\"{}\"?: {}", k, v));
-                        }
-                        Optionality::Required(it) => {
-                            let v = it.debug_print();
-                            acc.push(format!("\"{}\": {}", k, v));
-                        }
-                    };
+                    let value = v.inner().debug_print();
+                    let optionality = if v.is_required() { "" } else { "?" };
+                    acc.push(format!("\"{}\"{}: {}", k, optionality, value));
                 }
-                if let Some(rest) = rest.as_ref() {
-                    let r = rest.debug_print();
-                    acc.push(format!("[key: string]: {}", r));
+                for indexed_property in indexed_properties.iter() {
+                    let key = indexed_property.key.debug_print();
+                    let value = indexed_property.value.inner().debug_print();
+                    let optionality = if indexed_property.value.is_required() {
+                        ""
+                    } else {
+                        "?"
+                    };
+                    acc.push(format!("[key{}: {}]: {}", optionality, key, value));
                 }
 
                 let args = acc.join(", ");

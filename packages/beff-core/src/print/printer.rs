@@ -251,7 +251,7 @@ fn runtype_any_of_discriminated(
                             // .filter(|it| it.0 != &discriminator)
                             .map(|it| (it.0.clone(), it.1.clone()))
                             .collect();
-                        let new_obj = Runtype::object(new_obj_vs, None);
+                        let new_obj = Runtype::no_index_object(new_obj_vs);
                         cases.push(new_obj);
                     }
                 }
@@ -318,18 +318,25 @@ fn maybe_runtype_any_of_discriminated(
     named_schemas: &[NamedSchema],
     hoisted: &mut HoistedMap,
 ) -> Option<Expr> {
-    let all_objects_without_rest = flat_values
-        .iter()
-        .all(|it| matches!(it, Runtype::Object { rest: None, .. }));
+    let all_objects_without_idx_props = flat_values.iter().all(|it| match it {
+        Runtype::Object {
+            vs: _,
+            indexed_properties,
+        } => indexed_properties.is_empty(),
+        _ => false,
+    });
 
     let object_vs = flat_values
         .iter()
         .filter_map(|it| match it {
-            Runtype::Object { vs, rest: _ } => Some(vs),
+            Runtype::Object {
+                vs,
+                indexed_properties: _,
+            } => Some(vs),
             _ => None,
         })
         .collect::<Vec<_>>();
-    if all_objects_without_rest {
+    if all_objects_without_idx_props {
         let mut keys = vec![];
         for vs in &object_vs {
             for key in vs.keys() {
@@ -505,11 +512,6 @@ fn print_runtype(
             let item_validator = print_runtype(json_schema, named_schemas, hoisted);
             new_runtype_class("ArrayRuntype", vec![item_validator])
         }
-        Runtype::MappedRecord { key, rest } => {
-            let key_validator = print_runtype(key, named_schemas, hoisted);
-            let rest_validator = print_runtype(rest, named_schemas, hoisted);
-            new_runtype_class("MappedRecordRuntype", vec![key_validator, rest_validator])
-        }
         Runtype::AllOf(vs) => {
             runtype_union_or_intersection("AllOfRuntype", vs, named_schemas, hoisted)
         }
@@ -561,7 +563,10 @@ fn print_runtype(
 
             new_runtype_class("TupleRuntype", vec![prefix_arr, items])
         }
-        Runtype::Object { vs, rest } => {
+        Runtype::Object {
+            vs,
+            indexed_properties,
+        } => {
             let mut mapped = BTreeMap::new();
             for (k, v) in vs.iter() {
                 let r = match v {
@@ -576,10 +581,52 @@ fn print_runtype(
                 mapped.insert(k.clone(), r);
             }
 
-            let rest = match rest {
-                Some(item_schema) => print_runtype(item_schema, named_schemas, hoisted),
-                None => Expr::Lit(Lit::Null(Null { span: DUMMY_SP })),
-            };
+            let indexed_properties_props: Vec<Expr> = indexed_properties
+                .iter()
+                .map(|it| {
+                    let value_rt = match &it.value {
+                        Optionality::Optional(schema) => {
+                            let nullable_schema = &Runtype::any_of(
+                                vec![Runtype::Null, schema.clone()].into_iter().collect(),
+                            );
+                            print_runtype(nullable_schema, named_schemas, hoisted)
+                        }
+                        Optionality::Required(schema) => {
+                            print_runtype(schema, named_schemas, hoisted)
+                        }
+                    };
+
+                    Expr::Object(ObjectLit {
+                        span: DUMMY_SP,
+                        props: vec![
+                            //
+                            PropOrSpread::Prop(
+                                Prop::KeyValue(KeyValueProp {
+                                    key: PropName::Str(Str {
+                                        span: DUMMY_SP,
+                                        value: "key".into(),
+                                        raw: None,
+                                    }),
+                                    value: print_runtype(&it.key, named_schemas, hoisted).into(),
+                                })
+                                .into(),
+                            ),
+                            PropOrSpread::Prop(
+                                Prop::KeyValue(KeyValueProp {
+                                    key: PropName::Str(Str {
+                                        span: DUMMY_SP,
+                                        value: "value".into(),
+                                        raw: None,
+                                    }),
+                                    value: value_rt.into(),
+                                })
+                                .into(),
+                            ),
+                        ],
+                    })
+                })
+                .collect();
+
             let obj_validator = Expr::Object(ObjectLit {
                 span: DUMMY_SP,
                 props: mapped
@@ -599,7 +646,21 @@ fn print_runtype(
                     })
                     .collect(),
             });
-            new_runtype_class("ObjectRuntype", vec![obj_validator, rest])
+
+            let indexed_properties_arr = Expr::Array(ArrayLit {
+                span: DUMMY_SP,
+                elems: indexed_properties_props
+                    .into_iter()
+                    .map(|it| {
+                        Some(ExprOrSpread {
+                            spread: None,
+                            expr: it.into(),
+                        })
+                    })
+                    .collect(),
+            });
+
+            new_runtype_class("ObjectRuntype", vec![obj_validator, indexed_properties_arr])
         }
     };
 
@@ -693,20 +754,17 @@ fn calculate_schema_seen(schema: &Runtype, seen: &mut SeenCounter) {
         | Runtype::Ref(_)
         | Runtype::Const(_)
         | Runtype::Null => {}
-        Runtype::Object { vs, rest } => {
+        Runtype::Object {
+            vs,
+            indexed_properties,
+        } => {
             for v in vs.values() {
-                match v {
-                    Optionality::Optional(v) => calculate_schema_seen(v, seen),
-                    Optionality::Required(v) => calculate_schema_seen(v, seen),
-                }
+                calculate_schema_seen(v.inner(), seen)
             }
-            if let Some(rest_schema) = rest {
-                calculate_schema_seen(rest_schema, seen);
+            for p in indexed_properties {
+                calculate_schema_seen(&p.key, seen);
+                calculate_schema_seen(p.value.inner(), seen);
             }
-        }
-        Runtype::MappedRecord { key, rest } => {
-            calculate_schema_seen(key, seen);
-            calculate_schema_seen(rest, seen);
         }
         Runtype::Array(json_schema) => {
             calculate_schema_seen(json_schema, seen);
