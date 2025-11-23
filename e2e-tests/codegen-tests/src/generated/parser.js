@@ -300,7 +300,7 @@ class RegexRuntype {
     this.description = description;
   }
   describe(_ctx) {
-    return "`" + this.description + "`";
+    return this.description;
   }
   schema(_ctx) {
     return { type: "string", pattern: this.description };

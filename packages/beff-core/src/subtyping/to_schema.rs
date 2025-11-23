@@ -594,7 +594,7 @@ impl<'a, 'b> SchemerContext<'a, 'b> {
                                 //
                                 match items.0.first() {
                                     Some(TplLitTypeItem::StringConst(c)) => acc.insert(maybe_not(
-                                        Runtype::Const(RuntypeConst::String(c.clone())),
+                                        Runtype::single_string_const(c),
                                         !allowed,
                                     )),
                                     _ => acc.insert(maybe_not(

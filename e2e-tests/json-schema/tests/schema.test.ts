@@ -138,7 +138,7 @@ it("works", () => {
   `);
   expect(Codecs.SemVer.schema()).toMatchInlineSnapshot(`
     {
-      "pattern": "\${number}.\${number}.\${number}",
+      "pattern": "\`\${number}.\${number}.\${number}\`",
       "type": "string",
     }
   `);

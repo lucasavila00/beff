@@ -1,7 +1,7 @@
 use std::collections::BTreeSet;
 use std::rc::Rc;
 
-use crate::ast::runtype::{CustomFormat, Optionality, RuntypeConst, TplLitType, TplLitTypeItem};
+use crate::ast::runtype::{CustomFormat, Optionality, RuntypeConst};
 use crate::subtyping::subtype::NumberRepresentationOrFormat;
 use crate::{ast::runtype::Runtype, NamedSchema};
 
@@ -214,12 +214,6 @@ impl<'a> ToSemTypeConverter<'a> {
             }
             Runtype::Const(cons) => match cons {
                 RuntypeConst::Bool(b) => Ok(SemTypeContext::boolean_const(*b).into()),
-                RuntypeConst::String(s) => Ok(SemTypeContext::string_const(
-                    StringLitOrFormat::Tpl(TplLitType(vec![TplLitTypeItem::StringConst(
-                        s.clone(),
-                    )])),
-                )
-                .into()),
                 RuntypeConst::Number(n) => Ok(SemTypeContext::number_const(
                     NumberRepresentationOrFormat::Lit(n.clone()),
                 )

@@ -300,7 +300,7 @@ class RegexRuntype {
     this.description = description;
   }
   describe(_ctx) {
-    return "`" + this.description + "`";
+    return this.description;
   }
   schema(_ctx) {
     return { type: "string", pattern: this.description };
@@ -1197,18 +1197,18 @@ const namedRuntypes = {
     "AObject": new ObjectRuntype({
         "tag": direct_hoist_5
     }, null),
-    "Version": new RegexRuntype(/(\d+(\.\d+)?)(\.)(\d+(\.\d+)?)(\.)(\d+(\.\d+)?)/, "${number}.${number}.${number}"),
-    "Version2": new RegexRuntype(/(v)(\d+(\.\d+)?)(\.)(\d+(\.\d+)?)(\.)(\d+(\.\d+)?)/, "v${number}.${number}.${number}"),
+    "Version": new RegexRuntype(/(\d+(\.\d+)?)(\.)(\d+(\.\d+)?)(\.)(\d+(\.\d+)?)/, "`${number}.${number}.${number}`"),
+    "Version2": new RegexRuntype(/(v)(\d+(\.\d+)?)(\.)(\d+(\.\d+)?)(\.)(\d+(\.\d+)?)/, "`v${number}.${number}.${number}`"),
     "AccessLevel2": new AnyOfConstsRuntype([
         "ADMIN Admin",
         "USER User"
     ]),
-    "AccessLevelTpl2": new RegexRuntype(/((ADMIN Admin)|(USER User))/, '("ADMIN Admin" | "USER User")'),
+    "AccessLevelTpl2": new RegexRuntype(/((ADMIN Admin)|(USER User))/, '`("ADMIN Admin" | "USER User")`'),
     "AccessLevel": new AnyOfConstsRuntype([
         "ADMIN",
         "USER"
     ]),
-    "AccessLevelTpl": new RegexRuntype(/((ADMIN)|(USER))/, '("ADMIN" | "USER")'),
+    "AccessLevelTpl": new RegexRuntype(/((ADMIN)|(USER))/, '`("ADMIN" | "USER")`'),
     "Arr3": new AnyOfConstsRuntype([
         "X",
         "Y"
@@ -1250,7 +1250,7 @@ const namedRuntypes = {
         ])
     }, null),
     "Extra": new ObjectRuntype({}, direct_hoist_0),
-    "AvatarSize": new RegexRuntype(/(\d+(\.\d+)?)(x)(\d+(\.\d+)?)/, "${number}x${number}"),
+    "AvatarSize": new RegexRuntype(/(\d+(\.\d+)?)(x)(\d+(\.\d+)?)/, "`${number}x${number}`"),
     "User": new ObjectRuntype({
         "accessLevel": direct_hoist_3,
         "avatarSize": direct_hoist_4,

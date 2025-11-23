@@ -151,46 +151,44 @@ impl<'a, 'b, R: FileManager> TypeToSchema<'a, 'b, R> {
         obj: &BTreeMap<String, Optionality<Runtype>>,
         keys: Runtype,
     ) -> Res<Runtype> {
-        match keys {
-            Runtype::Const(RuntypeConst::String(str)) => {
-                Ok(Self::convert_pick_keys(obj, vec![str]))
-            }
-            Runtype::AnyOf(rms) => {
-                let mut keys = vec![];
-                for rm in rms {
-                    match rm {
-                        Runtype::Const(RuntypeConst::String(str)) => {
-                            keys.push(str);
-                        }
-                        Runtype::Ref(n) => {
-                            let map = self.components.get(&n).and_then(|it| it.as_ref()).cloned();
-                            match map {
-                                Some(NamedSchema {
-                                    schema: Runtype::Const(RuntypeConst::String(str)),
-                                    ..
-                                }) => keys.push(str),
+        match keys.extract_single_string_const() {
+            Some(str) => Ok(Self::convert_pick_keys(obj, vec![str])),
+            None => match keys {
+                Runtype::AnyOf(rms) => {
+                    let mut keys = vec![];
+                    for rm in rms {
+                        match rm.extract_single_string_const() {
+                            Some(str) => {
+                                keys.push(str);
+                            }
+                            None => match rm {
+                                Runtype::Ref(n) => {
+                                    let map =
+                                        self.components.get(&n).and_then(|it| it.as_ref()).cloned();
+                                    match map.map(|it|it.schema.extract_single_string_const()).flatten() {
+                                    Some(str) => keys.push(str),
+                                    _ => return self.error(
+                                        span,
+                                        DiagnosticInfoMessage::PickShouldHaveStringAsTypeArgument,
+                                    ),
+                                }
+                                }
                                 _ => {
                                     return self.error(
                                         span,
                                         DiagnosticInfoMessage::PickShouldHaveStringAsTypeArgument,
                                     )
                                 }
-                            }
-                        }
-                        _ => {
-                            return self.error(
-                                span,
-                                DiagnosticInfoMessage::PickShouldHaveStringAsTypeArgument,
-                            )
+                            },
                         }
                     }
+                    Ok(Self::convert_pick_keys(obj, keys))
                 }
-                Ok(Self::convert_pick_keys(obj, keys))
-            }
-            _ => self.error(
-                span,
-                DiagnosticInfoMessage::PickShouldHaveStringOrStringArrayAsTypeArgument,
-            ),
+                _ => self.error(
+                    span,
+                    DiagnosticInfoMessage::PickShouldHaveStringOrStringArrayAsTypeArgument,
+                ),
+            },
         }
     }
 
@@ -218,8 +216,8 @@ impl<'a, 'b, R: FileManager> TypeToSchema<'a, 'b, R> {
             .map_err(|e| self.box_error(span, e))?;
         let str_keys = keys
             .iter()
-            .map(|it| match it {
-                Runtype::Const(RuntypeConst::String(str)) => Ok(str.clone()),
+            .map(|it| match it.extract_single_string_const() {
+                Some(str) => Ok(str.clone()),
                 _ => self.error(
                     span,
                     DiagnosticInfoMessage::OmitShouldHaveStringAsTypeArgument,
@@ -325,8 +323,8 @@ impl<'a, 'b, R: FileManager> TypeToSchema<'a, 'b, R> {
         let mut string_keys = vec![];
 
         for v in self.extract_union(it)? {
-            match v {
-                Runtype::Const(RuntypeConst::String(str)) => {
+            match v.extract_single_string_const() {
+                Some(str) => {
                     string_keys.push(str.clone());
                 }
                 _ => {
@@ -1409,7 +1407,7 @@ impl<'a, 'b, R: FileManager> TypeToSchema<'a, 'b, R> {
             Expr::Lit(l) => match l {
                 Lit::Str(s) => {
                     if as_const {
-                        Ok(Runtype::Const(RuntypeConst::String(s.value.to_string())))
+                        Ok(Runtype::single_string_const(&s.value))
                     } else {
                         Ok(Runtype::String)
                     }
@@ -1537,8 +1535,11 @@ impl<'a, 'b, R: FileManager> TypeToSchema<'a, 'b, R> {
                 let mut ctx = SemTypeContext::new();
                 let k = match &m.prop {
                     MemberProp::Ident(i) => Some(i.sym.to_string()),
-                    MemberProp::Computed(c) => match self.typeof_expr(&c.expr, as_const)? {
-                        Runtype::Const(RuntypeConst::String(s)) => Some(s.clone()),
+                    MemberProp::Computed(c) => match self
+                        .typeof_expr(&c.expr, as_const)?
+                        .extract_single_string_const()
+                    {
+                        Some(s) => Some(s.clone()),
                         _ => None,
                     },
                     MemberProp::PrivateName(_) => None,
@@ -1904,10 +1905,12 @@ impl<'a, 'b, R: FileManager> TypeToSchema<'a, 'b, R> {
                     return self.convert_indexed_access_syntatically(&v.schema, index);
                 }
             }
-            (Runtype::Object { vs, rest: _ }, Runtype::Const(RuntypeConst::String(s))) => {
-                let v = vs.get(s);
-                if let Some(Optionality::Required(v)) = v {
-                    return Ok(Some(v.clone()));
+            (Runtype::Object { vs, rest: _ }, other) => {
+                if let Some(s) = other.extract_single_string_const() {
+                    let v = vs.get(&s);
+                    if let Some(Optionality::Required(v)) = v {
+                        return Ok(Some(v.clone()));
+                    }
                 }
             }
             _ => {}
@@ -2000,8 +2003,8 @@ impl<'a, 'b, R: FileManager> TypeToSchema<'a, 'b, R> {
         let mut string_keys = vec![];
 
         for v in values {
-            match v {
-                Runtype::Const(RuntypeConst::String(s)) => {
+            match v.extract_single_string_const() {
+                Some(s) => {
                     string_keys.push(s);
                 }
                 _ => return self.error(&k.span, DiagnosticInfoMessage::NonStringKeyInMappedType),
@@ -2019,7 +2022,7 @@ impl<'a, 'b, R: FileManager> TypeToSchema<'a, 'b, R> {
         for key in string_keys.into_iter() {
             self.type_param_stack.push(BTreeMap::from_iter(vec![(
                 name.clone(),
-                Runtype::Const(RuntypeConst::String(key.clone())),
+                Runtype::single_string_const(&key),
             )]));
             let ty = self.convert_ts_type(type_ann)?;
             self.type_param_stack.pop();
@@ -2046,9 +2049,6 @@ impl<'a, 'b, R: FileManager> TypeToSchema<'a, 'b, R> {
             Runtype::Boolean => Ok(TplLitTypeItem::Boolean),
             Runtype::String => Ok(TplLitTypeItem::String),
             Runtype::Number => Ok(TplLitTypeItem::Number),
-            Runtype::Const(RuntypeConst::String(txt)) => {
-                Ok(TplLitTypeItem::StringConst(txt.to_string()))
-            }
             Runtype::AnyOf(vs) => {
                 let mut acc = vec![];
                 for v in vs {
@@ -2068,6 +2068,13 @@ impl<'a, 'b, R: FileManager> TypeToSchema<'a, 'b, R> {
                     ),
                 }
             }
+            Runtype::TplLitType(it) => match it.0.as_slice() {
+                [single] => Ok(single.clone()),
+                _ => self.error(
+                    span,
+                    DiagnosticInfoMessage::NestedTplLitInJsonSchemaToTplLit,
+                ),
+            },
             _ => self.error(
                 span,
                 DiagnosticInfoMessage::TplLitTypeNonStringNonNumberNonBoolean,
@@ -2105,12 +2112,12 @@ impl<'a, 'b, R: FileManager> TypeToSchema<'a, 'b, R> {
         if !it.types.is_empty() || it.quasis.len() != 1 {
             self.convert_ts_tpl_lit_type_non_trivial(it)
         } else {
-            Ok(Runtype::Const(RuntypeConst::String(
-                it.quasis
+            Ok(Runtype::single_string_const(
+                &it.quasis
                     .iter()
                     .map(|it| it.raw.to_string())
                     .collect::<String>(),
-            )))
+            ))
         }
     }
 
@@ -2173,9 +2180,7 @@ impl<'a, 'b, R: FileManager> TypeToSchema<'a, 'b, R> {
             }
             TsType::TsLitType(TsLitType { lit, .. }) => match lit {
                 TsLit::Number(n) => Ok(Runtype::Const(RuntypeConst::parse_f64(n.value))),
-                TsLit::Str(s) => Ok(Runtype::Const(RuntypeConst::String(
-                    s.value.to_string().clone(),
-                ))),
+                TsLit::Str(s) => Ok(Runtype::single_string_const(&s.value)),
                 TsLit::Bool(b) => Ok(Runtype::Const(RuntypeConst::Bool(b.value))),
                 TsLit::BigInt(_) => Ok(Runtype::BigInt),
                 TsLit::Tpl(it) => self.convert_ts_tpl_lit_type(it),

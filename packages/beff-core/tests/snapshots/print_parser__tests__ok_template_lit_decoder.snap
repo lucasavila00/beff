@@ -3,7 +3,7 @@ source: packages/beff-core/tests/print_parser.rs
 expression: "print_cgen(r#\"\n        export type Alias = `${number}__${number}`\n        parse.buildParsers<{ Dec: Alias }>();\n      \"#)"
 ---
 const namedRuntypes = {
-    "Alias": new RegexRuntype(/(\d+(\.\d+)?)(__)(\d+(\.\d+)?)/, "${number}__${number}")
+    "Alias": new RegexRuntype(/(\d+(\.\d+)?)(__)(\d+(\.\d+)?)/, "`${number}__${number}`")
 };
 const buildParsersInput = {
     "Dec": new RefRuntype("Alias")

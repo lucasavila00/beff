@@ -59,7 +59,6 @@ impl Optionality<Runtype> {
 pub enum RuntypeConst {
     Bool(bool),
     Number(N),
-    String(String),
 }
 
 impl RuntypeConst {
@@ -67,14 +66,12 @@ impl RuntypeConst {
         match self {
             RuntypeConst::Bool(b) => Json::Bool(b),
             RuntypeConst::Number(n) => Json::Number(n),
-            RuntypeConst::String(s) => Json::String(s),
         }
     }
     pub fn from_json(it: &Json) -> Result<Self> {
         match it {
             Json::Bool(b) => Ok(RuntypeConst::Bool(*b)),
             Json::Number(n) => Ok(RuntypeConst::Number(n.clone())),
-            Json::String(s) => Ok(RuntypeConst::String(s.clone())),
             _ => Err(anyhow!("not a const")),
         }
     }
@@ -168,28 +165,38 @@ pub struct TplLitType(pub Vec<TplLitTypeItem>);
 
 impl TplLitType {
     pub fn describe(&self) -> String {
-        self.0
-            .iter()
-            .map(|it| match it {
-                TplLitTypeItem::String => "${string}".to_string(),
-                TplLitTypeItem::Number => "${number}".to_string(),
-                TplLitTypeItem::Boolean => "${boolean}".to_string(),
-                TplLitTypeItem::StringConst(v) => {
-                    format!("\"{}\"", v)
-                }
-                TplLitTypeItem::Quasis(s) => s.clone(),
-                TplLitTypeItem::OneOf(values) => {
-                    let mut values = values.iter().collect::<Vec<_>>();
-                    values.sort();
-                    let values = values
-                        .into_iter()
-                        .map(|it| TplLitType(vec![it.clone()]).describe())
-                        .collect::<Vec<_>>()
-                        .join(" | ");
-                    format!("({})", values)
-                }
-            })
-            .collect()
+        match self.0.as_slice() {
+            [TplLitTypeItem::StringConst(single_str)] => {
+                let inner = single_str.clone();
+                format!("\"{}\"", inner)
+            }
+            _ => {
+                let inner = self
+                    .0
+                    .iter()
+                    .map(|it| match it {
+                        TplLitTypeItem::String => "${string}".to_string(),
+                        TplLitTypeItem::Number => "${number}".to_string(),
+                        TplLitTypeItem::Boolean => "${boolean}".to_string(),
+                        TplLitTypeItem::StringConst(v) => {
+                            format!("{}", v)
+                        }
+                        TplLitTypeItem::Quasis(s) => s.clone(),
+                        TplLitTypeItem::OneOf(values) => {
+                            let mut values = values.iter().collect::<Vec<_>>();
+                            values.sort();
+                            let values = values
+                                .into_iter()
+                                .map(|it| TplLitType(vec![it.clone()]).describe())
+                                .collect::<Vec<_>>()
+                                .join(" | ");
+                            format!("({})", values)
+                        }
+                    })
+                    .collect::<String>();
+                format!("`{}`", inner)
+            }
+        }
     }
     pub fn regex_expr(&self) -> String {
         let mut regex_exp = String::new();
@@ -268,6 +275,22 @@ impl Runtype {
             vs: vs.into_iter().collect(),
             rest,
         }
+    }
+
+    pub fn extract_single_string_const(&self) -> Option<String> {
+        match self {
+            Runtype::TplLitType(TplLitType(items)) => match items.as_slice() {
+                [TplLitTypeItem::StringConst(s)] => Some(s.clone()),
+                _ => None,
+            },
+            _ => None,
+        }
+    }
+
+    pub fn single_string_const(it: &str) -> Self {
+        Runtype::TplLitType(TplLitType(vec![TplLitTypeItem::StringConst(
+            it.to_string(),
+        )]))
     }
 
     pub fn required(self) -> Optionality<Runtype> {
@@ -391,9 +414,7 @@ impl Runtype {
 
                 acc
             }
-            Runtype::TplLitType(tpl_lit_type_items) => {
-                format!("`{}`", tpl_lit_type_items.describe())
-            }
+            Runtype::TplLitType(tpl_lit_type_items) => tpl_lit_type_items.describe(),
             Runtype::Const(runtype_const) => runtype_const.clone().to_json().debug_print(),
             Runtype::Date => "Date".to_string(),
             Runtype::BigInt => "bigint".to_string(),

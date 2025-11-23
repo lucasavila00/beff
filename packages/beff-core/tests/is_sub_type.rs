@@ -210,11 +210,11 @@ mod tests {
             vec![
                 (
                     "a".into(),
-                    Runtype::Const(RuntypeConst::String("abc".into())).required(),
+                    Runtype::single_string_const("abc".into()).required(),
                 ),
                 (
                     "b".into(),
-                    Runtype::Const(RuntypeConst::String("def".into())).required(),
+                    Runtype::single_string_const("def".into()).required(),
                 ),
             ],
             None,
@@ -233,7 +233,7 @@ mod tests {
         let t1 = Runtype::object(
             vec![(
                 "a".into(),
-                Runtype::Const(RuntypeConst::String("abc".into())).required(),
+                Runtype::single_string_const("abc".into()).required(),
             )],
             None,
         );
@@ -248,7 +248,7 @@ mod tests {
     fn array2() {
         let definitions = vec![];
 
-        let t1 = Runtype::Array(Runtype::Const(RuntypeConst::String("abc".into())).into());
+        let t1 = Runtype::Array(Runtype::single_string_const("abc".into()).into());
         let t2 = Runtype::Array(Runtype::String.into());
 
         let res = rt_is_sub_type(&t1, &t2, &definitions, &definitions);
@@ -334,7 +334,7 @@ mod tests {
     fn strings_repr() {
         let definitions = vec![];
 
-        let t1 = Runtype::Const(RuntypeConst::String("a".into()));
+        let t1 = Runtype::single_string_const("a".into());
         let t2 = Runtype::TplLitType(TplLitType(vec![TplLitTypeItem::StringConst("a".into())]));
 
         let mut ctx = SemTypeContext::new();
@@ -398,7 +398,7 @@ mod tests {
         let res = rt_is_sub_type(&t1, &t2, &definitions, &definitions);
         assert!(res);
 
-        let t1 = Runtype::Const(RuntypeConst::String("abc".into()));
+        let t1 = Runtype::single_string_const("abc".into());
         let t2 = Runtype::String;
         let res = rt_is_sub_type(&t1, &t2, &definitions, &definitions);
         assert!(res);
@@ -463,7 +463,7 @@ mod tests {
     fn string_const_subtyping() {
         let definitions = vec![];
 
-        let const_a = Runtype::Const(RuntypeConst::String("a".into()));
+        let const_a = Runtype::single_string_const("a".into());
         let all_strings = Runtype::String;
         let mut ctx = SemTypeContext::new();
 
@@ -822,8 +822,8 @@ mod tests {
         let mut ctx = SemTypeContext::new();
 
         let format_id = Runtype::StringWithFormat(CustomFormat("id".into(), vec![]));
-        let literal_abc = Runtype::Const(RuntypeConst::String("abc".into()));
-        let literal_def = Runtype::Const(RuntypeConst::String("def".into()));
+        let literal_abc = Runtype::single_string_const("abc".into());
+        let literal_def = Runtype::single_string_const("def".into());
 
         let format_sem = format_id
             .to_sem_type(&definitions, &mut ctx)
