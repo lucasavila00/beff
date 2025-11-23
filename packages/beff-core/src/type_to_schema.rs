@@ -377,21 +377,21 @@ impl<'a, 'b, R: FileManager> TypeToSchema<'a, 'b, R> {
                     match self.collect_consts_from_union(key) {
                         Ok(res) => {
                             let value = items[1].clone();
-                            return Ok(Runtype::no_index_object(
+                            Ok(Runtype::no_index_object(
                                 res.into_iter()
                                     .map(|it| (it, value.clone().required()))
                                     .collect(),
-                            ));
+                            ))
                         }
                         Err(_) => {
                             let value = items[1].clone();
-                            return Ok(Runtype::Object {
+                            Ok(Runtype::Object {
                                 vs: BTreeMap::new(),
                                 indexed_properties: vec![IndexedProperty {
                                     key: key_clone,
                                     value: value.required(),
                                 }],
-                            });
+                            })
                         }
                     }
                 }

@@ -120,7 +120,7 @@ impl<'a> ToSemTypeConverter<'a> {
                                 let v = match &it.value {
                                     Optionality::Optional(v) => self
                                         .convert_to_sem_type(v, builder)
-                                        .and_then(|v| SemTypeContext::optional(v))?,
+                                        .and_then(SemTypeContext::optional)?,
                                     Optionality::Required(v) => {
                                         self.convert_to_sem_type(v, builder)?
                                     }
@@ -131,7 +131,7 @@ impl<'a> ToSemTypeConverter<'a> {
                             }
 
                             builder.mapping_definitions[idx] = Some(Rc::new(MappingAtomicType {
-                                vs: vs.into(),
+                                vs,
                                 indexed_properties: indexed_props_acc,
                             }));
                             let ty = Rc::new(SemTypeContext::mapping_definition_from_idx(idx));
@@ -206,7 +206,7 @@ impl<'a> ToSemTypeConverter<'a> {
                     let v = match &it.value {
                         Optionality::Optional(v) => self
                             .convert_to_sem_type(v, builder)
-                            .and_then(|v| SemTypeContext::optional(v))?,
+                            .and_then(SemTypeContext::optional)?,
                         Optionality::Required(v) => self.convert_to_sem_type(v, builder)?,
                     };
                     let k = self.convert_to_sem_type(&it.key, builder)?;

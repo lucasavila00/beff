@@ -531,7 +531,7 @@ impl SemTypeContext {
         let list_result = list_indexed_access(self, obj_st.clone(), idx_st.clone())?;
         let mapping_result = mapping_indexed_access(self, obj_st, idx_st)?;
 
-        Ok(list_result.union(&mapping_result)?)
+        list_result.union(&mapping_result)
     }
 
     pub fn keyof(&mut self, st: Rc<SemType>) -> anyhow::Result<Rc<SemType>> {
