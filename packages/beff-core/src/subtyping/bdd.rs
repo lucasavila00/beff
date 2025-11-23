@@ -9,8 +9,9 @@ use anyhow::bail;
 use crate::{
     ast::json::N,
     subtyping::{
-        evidence::MappedRecordEvidence, semtype::SemTypeContext,
-        subtype::NumberRepresentationOrFormat,
+        evidence::MappedRecordEvidence,
+        semtype::SemTypeContext,
+        subtype::{CustomFormat, NumberRepresentationOrFormat},
     },
 };
 
@@ -929,7 +930,7 @@ fn mapping_atomic_applicable_member_types_inner(
                                 break;
                             }
                         }
-                        StringLitOrFormat::Tpl(_) | StringLitOrFormat::Format(_, _) => {
+                        StringLitOrFormat::Tpl(_) | StringLitOrFormat::Format(_) => {
                             bail!("format or codec cannot be used as mapping key")
                         }
                     }
@@ -1225,7 +1226,7 @@ pub fn list_indexed_access(
                 for v in values {
                     match v {
                         NumberRepresentationOrFormat::Lit(n) => acc.push(n.clone()),
-                        NumberRepresentationOrFormat::Format(first, rest) => {
+                        NumberRepresentationOrFormat::Format(CustomFormat(first, rest)) => {
                             bail!(
                                 "format cannot be used as list index: {},{}",
                                 first,
