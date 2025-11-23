@@ -98,6 +98,29 @@ pub enum StringLitOrFormat {
     Tpl(Vec<TplLitTypeItem>),
 }
 
+impl StringLitOrFormat {
+    pub fn is_subtype(&self, other: &StringLitOrFormat) -> bool {
+        match (self, other) {
+            (StringLitOrFormat::Format(f1, args1), StringLitOrFormat::Format(f2, args2)) => {
+                // f1 == f2 and args2 is a prefix of args1
+                if f1 != f2 {
+                    return false;
+                }
+                if args2.len() > args1.len() {
+                    return false;
+                }
+                for (a1, a2) in args1.iter().zip(args2.iter()) {
+                    if a1 != a2 {
+                        return false;
+                    }
+                }
+                true
+            }
+            _ => self == other,
+        }
+    }
+}
+
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub enum NumberRepresentationOrFormat {
     Lit(NumberRepresentation),
@@ -133,6 +156,92 @@ fn vec_intersect<K: PartialEq + Clone + Ord>(v1: &[K], v2: &[K]) -> Vec<K> {
 
 fn vec_diff<K: PartialEq + Clone + Ord>(v1: &[K], v2: &[K]) -> Vec<K> {
     v1.iter().filter(|v| !v2.contains(v)).cloned().collect()
+}
+
+fn string_union(v1: &[StringLitOrFormat], v2: &[StringLitOrFormat]) -> Vec<StringLitOrFormat> {
+    let mut acc = vec![];
+    'outer: for v1_item in v1 {
+        for v2_item in v2 {
+            if v1_item.is_subtype(v2_item) {
+                acc.push(v2_item.clone());
+                continue 'outer;
+            } else if v2_item.is_subtype(v1_item) {
+                acc.push(v1_item.clone());
+                continue 'outer;
+            } else {
+                continue;
+            }
+        }
+        acc.push(v1_item.clone());
+    }
+    acc
+}
+
+fn string_intersect(v1: &[StringLitOrFormat], v2: &[StringLitOrFormat]) -> Vec<StringLitOrFormat> {
+    let mut acc = vec![];
+
+    // For each item in v1, check if there's a compatible item in v2
+    for v1_item in v1 {
+        for v2_item in v2 {
+            if v1_item == v2_item {
+                // Exact match
+                acc.push(v1_item.clone());
+            } else if v1_item.is_subtype(v2_item) {
+                // v1_item is more specific than v2_item, so v1_item is in the intersection
+                acc.push(v1_item.clone());
+            } else if v2_item.is_subtype(v1_item) {
+                // v2_item is more specific than v1_item, so v2_item is in the intersection
+                acc.push(v2_item.clone());
+            }
+        }
+    }
+
+    // Remove duplicates and keep only the most specific items
+    let mut deduped_acc = vec![];
+    for item in acc {
+        let mut should_add = true;
+        let mut indices_to_remove = vec![];
+
+        for (idx, existing_item) in deduped_acc.iter().enumerate() {
+            if item == *existing_item {
+                // exact duplicate
+                should_add = false;
+                break;
+            } else if item.is_subtype(existing_item) {
+                // item is more specific, remove existing_item
+                indices_to_remove.push(idx);
+            } else if existing_item.is_subtype(&item) {
+                // existing_item is more specific, don't add item
+                should_add = false;
+                break;
+            }
+        }
+
+        // Remove items that are less specific than the current item
+        for &idx in indices_to_remove.iter().rev() {
+            deduped_acc.remove(idx);
+        }
+
+        if should_add {
+            deduped_acc.push(item);
+        }
+    }
+
+    deduped_acc
+}
+fn string_diff(v1: &[StringLitOrFormat], v2: &[StringLitOrFormat]) -> Vec<StringLitOrFormat> {
+    let mut acc = vec![];
+
+    'outer: for v1_item in v1 {
+        for v2_item in v2 {
+            if v1_item.is_subtype(v2_item) {
+                continue 'outer;
+            }
+        }
+        acc.push(v1_item.clone());
+    }
+
+    acc
 }
 
 pub trait ProperSubtypeOps {
@@ -199,10 +308,10 @@ impl ProperSubtypeOps for Rc<ProperSubtype> {
                     values: v2,
                 },
             ) => match (*a1, *a2) {
-                (true, true) => SubType::string_subtype(true, vec_intersect(v1, v2)).into(),
-                (false, false) => SubType::string_subtype(false, vec_union(v1, v2)).into(),
-                (true, false) => SubType::string_subtype(true, vec_diff(v1, v2)).into(),
-                (false, true) => SubType::string_subtype(true, vec_diff(v2, v1)).into(),
+                (true, true) => SubType::string_subtype(true, string_intersect(v1, v2)).into(),
+                (false, false) => SubType::string_subtype(false, string_union(v1, v2)).into(),
+                (true, false) => SubType::string_subtype(true, string_diff(v1, v2)).into(),
+                (false, true) => SubType::string_subtype(true, string_diff(v2, v1)).into(),
             },
             (ProperSubtype::Mapping(b1), ProperSubtype::Mapping(b2)) => {
                 SubType::Proper(ProperSubtype::Mapping(b1.intersect(b2)).into()).into()
@@ -247,10 +356,10 @@ impl ProperSubtypeOps for Rc<ProperSubtype> {
                     values: v2,
                 },
             ) => match (*a1, *a2) {
-                (true, true) => SubType::string_subtype(true, vec_union(v1, v2)).into(),
-                (false, false) => SubType::string_subtype(false, vec_intersect(v1, v2)).into(),
-                (true, false) => SubType::string_subtype(false, vec_diff(v2, v1)).into(),
-                (false, true) => SubType::string_subtype(false, vec_diff(v1, v2)).into(),
+                (true, true) => SubType::string_subtype(true, string_union(v1, v2)).into(),
+                (false, false) => SubType::string_subtype(false, string_intersect(v1, v2)).into(),
+                (true, false) => SubType::string_subtype(false, string_diff(v2, v1)).into(),
+                (false, true) => SubType::string_subtype(false, string_diff(v1, v2)).into(),
             },
             (ProperSubtype::Mapping(b1), ProperSubtype::Mapping(b2)) => {
                 SubType::Proper(ProperSubtype::Mapping(b1.union(b2)).into()).into()
@@ -315,5 +424,138 @@ impl ProperSubtype {
     }
     pub fn to_code(&self) -> BasicTypeCode {
         self.tag().code()
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_string_is_subtype() {
+        let user_id = StringLitOrFormat::Format("user_id".into(), vec![]);
+        let read_authorized_user_id =
+            StringLitOrFormat::Format("user_id".into(), vec!["read_auhtorized".to_string()]);
+        let write_authorized_user_id = StringLitOrFormat::Format(
+            "user_id".into(),
+            vec![
+                "read_auhtorized".to_string(),
+                "write_authorized".to_string(),
+            ],
+        );
+
+        assert!(read_authorized_user_id.is_subtype(&user_id));
+        assert!(!user_id.is_subtype(&read_authorized_user_id));
+
+        assert!(write_authorized_user_id.is_subtype(&user_id));
+        assert!(!user_id.is_subtype(&write_authorized_user_id));
+
+        assert!(write_authorized_user_id.is_subtype(&read_authorized_user_id));
+        assert!(!read_authorized_user_id.is_subtype(&write_authorized_user_id));
+    }
+
+    #[test]
+    fn test_string_subtype_diff() {
+        let user_id = StringLitOrFormat::Format("user_id".into(), vec![]);
+        let read_authorized_user_id =
+            StringLitOrFormat::Format("user_id".into(), vec!["read_auhtorized".to_string()]);
+        let write_authorized_user_id = StringLitOrFormat::Format(
+            "user_id".into(),
+            vec![
+                "read_auhtorized".to_string(),
+                "write_authorized".to_string(),
+            ],
+        );
+
+        let v1 = vec![
+            user_id.clone(),
+            read_authorized_user_id.clone(),
+            write_authorized_user_id.clone(),
+        ];
+        let v2 = vec![read_authorized_user_id.clone()];
+
+        let diff = string_diff(&v1, &v2);
+        assert_eq!(diff.len(), 1);
+        assert_eq!(diff[0], user_id);
+    }
+
+    #[test]
+    fn test_string_subtype_intersect() {
+        let user_id = StringLitOrFormat::Format("user_id".into(), vec![]);
+        let read_authorized_user_id =
+            StringLitOrFormat::Format("user_id".into(), vec!["read_auhtorized".to_string()]);
+
+        let v1 = vec![user_id.clone(), read_authorized_user_id.clone()];
+        let v2 = vec![read_authorized_user_id.clone()];
+
+        // Only `read_authorized_user_id` should be present in the intersection,
+        // because it is the only value in both vectors according to the `is_subtype` logic.
+        let intersect = string_intersect(&v1, &v2);
+        assert_eq!(intersect.len(), 1);
+        assert_eq!(intersect[0], read_authorized_user_id);
+        assert!(intersect.contains(&read_authorized_user_id));
+    }
+
+    #[test]
+    fn test_string_subtype_format_intersect_comprehensive() {
+        let user_id = StringLitOrFormat::Format("user_id".into(), vec![]);
+        let read_authorized_user_id =
+            StringLitOrFormat::Format("user_id".into(), vec!["read_auhtorized".to_string()]);
+        let write_authorized_user_id = StringLitOrFormat::Format(
+            "user_id".into(),
+            vec![
+                "read_auhtorized".to_string(),
+                "write_authorized".to_string(),
+            ],
+        );
+
+        // Test intersection where v2 has more specific types
+        let v1 = vec![user_id.clone()];
+        let v2 = vec![read_authorized_user_id.clone()];
+        let v3 = vec![write_authorized_user_id.clone()];
+
+        let intersect = string_intersect(&v1, &v2);
+
+        assert_eq!(intersect.len(), 1);
+        assert!(intersect.contains(&read_authorized_user_id));
+
+        let intersect_more = string_intersect(&v1, &v3);
+        assert_eq!(intersect_more.len(), 1);
+        assert!(intersect_more.contains(&write_authorized_user_id));
+
+        // Test intersection with no overlap
+        let other_format = StringLitOrFormat::Format("other_id".into(), vec![]);
+        let v1 = vec![user_id.clone()];
+        let v2 = vec![other_format.clone()];
+
+        let intersect2 = string_intersect(&v1, &v2);
+        assert_eq!(intersect2.len(), 0);
+    }
+
+    #[test]
+    fn test_string_subtype_union() {
+        let user_id = StringLitOrFormat::Format("user_id".into(), vec![]);
+        let read_authorized_user_id =
+            StringLitOrFormat::Format("user_id".into(), vec!["read_auhtorized".to_string()]);
+        let write_authorized_user_id = StringLitOrFormat::Format(
+            "user_id".into(),
+            vec![
+                "read_auhtorized".to_string(),
+                "write_authorized".to_string(),
+            ],
+        );
+
+        let v1 = vec![read_authorized_user_id.clone()];
+        let v2 = vec![
+            user_id.clone(),
+            read_authorized_user_id.clone(),
+            write_authorized_user_id.clone(),
+        ];
+
+        let union = string_union(&v1, &v2);
+        assert_eq!(union.len(), 3);
+        assert!(union.contains(&user_id));
+        assert!(union.contains(&read_authorized_user_id));
+        assert!(union.contains(&write_authorized_user_id));
     }
 }

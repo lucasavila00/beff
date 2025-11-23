@@ -423,6 +423,133 @@ mod tests {
     }
 
     #[test]
+    fn string_format_subtyping() {
+        let definitions = vec![];
+
+        let user_id_type = Runtype::StringWithFormat("user_id".into(), vec![]);
+        let post_id_type = Runtype::StringWithFormat("post_id".into(), vec![]);
+
+        let res = rt_is_sub_type(&user_id_type, &Runtype::String, &definitions, &definitions);
+        assert!(res);
+
+        let res = rt_is_sub_type(&post_id_type, &Runtype::String, &definitions, &definitions);
+        assert!(res);
+
+        let res = rt_is_sub_type(&user_id_type, &post_id_type, &definitions, &definitions);
+        assert!(!res);
+
+        let authorized_user_id_type =
+            Runtype::StringWithFormat("user_id".into(), vec!["authorized".into()]);
+        let res = rt_is_sub_type(
+            &authorized_user_id_type,
+            &user_id_type,
+            &definitions,
+            &definitions,
+        );
+        assert!(res);
+    }
+
+    #[test]
+    fn string_const_subtyping() {
+        let definitions = vec![];
+
+        let const_a = Runtype::Const(RuntypeConst::String("a".into()));
+        let all_strings = Runtype::String;
+        let mut ctx = SemTypeContext::new();
+
+        let const_a_st = const_a
+            .to_sem_type(&definitions, &mut ctx)
+            .expect("should work");
+        let all_strings_st = all_strings
+            .to_sem_type(&definitions, &mut ctx)
+            .expect("should work");
+
+        let diff = const_a_st.diff(&all_strings_st);
+
+        assert!(diff.is_never());
+
+        let union = all_strings_st.union(&const_a_st);
+        assert!(union.is_same_type(&all_strings_st, &mut ctx));
+    }
+
+    #[test]
+    fn string_format_extends_subtyping() {
+        let definitions = vec![];
+
+        let user_id_type = Runtype::StringWithFormat("user_id".into(), vec![]);
+
+        let read_authorized_user_id_type =
+            Runtype::StringWithFormat("user_id".into(), vec!["read_authorized".into()]);
+
+        let write_authorized_user_id_type = Runtype::StringWithFormat(
+            "user_id".into(),
+            vec!["read_authorized".into(), "write_authorized".into()],
+        );
+
+        let mut ctx = SemTypeContext::new();
+
+        let user_id_sem_type = user_id_type
+            .to_sem_type(&definitions, &mut ctx)
+            .expect("should work");
+
+        let read_authorized_user_id_sem_type = read_authorized_user_id_type
+            .to_sem_type(&definitions, &mut ctx)
+            .expect("should work");
+
+        let write_authorized_user_id_sem_type = write_authorized_user_id_type
+            .to_sem_type(&definitions, &mut ctx)
+            .expect("should work");
+
+        let diff1 = read_authorized_user_id_sem_type.diff(&user_id_sem_type);
+
+        assert!(diff1.is_never());
+
+        let diff2 = user_id_sem_type.diff(&read_authorized_user_id_sem_type);
+
+        assert!(!diff2.is_never());
+
+        let union = user_id_sem_type.union(&read_authorized_user_id_sem_type);
+        assert!(union.is_same_type(&user_id_sem_type, &mut ctx));
+
+        let intersection = user_id_sem_type.intersect(&read_authorized_user_id_sem_type);
+        assert!(intersection.is_same_type(&read_authorized_user_id_sem_type, &mut ctx));
+
+        let intersection2 = read_authorized_user_id_sem_type.intersect(&user_id_sem_type);
+        assert!(intersection2.is_same_type(&read_authorized_user_id_sem_type, &mut ctx));
+
+        let diff3 = write_authorized_user_id_sem_type.diff(&user_id_sem_type);
+        assert!(diff3.is_never());
+
+        let diff4 = user_id_sem_type.diff(&write_authorized_user_id_sem_type);
+        assert!(!diff4.is_never());
+
+        let diff5 = write_authorized_user_id_sem_type.diff(&read_authorized_user_id_sem_type);
+        assert!(diff5.is_never());
+
+        let diff6 = read_authorized_user_id_sem_type.diff(&write_authorized_user_id_sem_type);
+        assert!(!diff6.is_never());
+
+        let union2 = user_id_sem_type.union(&write_authorized_user_id_sem_type);
+        assert!(union2.is_same_type(&user_id_sem_type, &mut ctx));
+
+        let res = rt_is_sub_type(
+            &read_authorized_user_id_type,
+            &user_id_type,
+            &definitions,
+            &definitions,
+        );
+        assert!(res);
+
+        let res = rt_is_sub_type(
+            &user_id_type,
+            &read_authorized_user_id_type,
+            &definitions,
+            &definitions,
+        );
+        assert!(!res);
+    }
+
+    #[test]
     fn all_types_have_basic_properties() {
         let all_basic_types = vec![
             Runtype::String,
