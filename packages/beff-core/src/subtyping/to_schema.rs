@@ -9,12 +9,13 @@ use crate::{
     ast::runtype::{
         CustomFormat, IndexedProperty, Optionality, Runtype, RuntypeConst, TplLitTypeItem,
     },
+    subtyping::bdd::MappingAtomicType,
     NamedSchema,
 };
 
 use super::{
     bdd::{Atom, Bdd, ListAtomic},
-    semtype::{MappingAtomicType, SemType, SemTypeContext, SemTypeOps},
+    semtype::{SemType, SemTypeContext, SemTypeOps},
     subtype::{NumberRepresentationOrFormat, ProperSubtype, StringLitOrFormat, SubTypeTag},
 };
 

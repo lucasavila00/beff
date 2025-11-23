@@ -1,14 +1,12 @@
-use std::collections::BTreeSet;
-use std::rc::Rc;
-
+use self::bdd::ListAtomic;
+use self::semtype::{ComplexSemType, SemType, SemTypeContext, SemTypeOps};
+use self::subtype::StringLitOrFormat;
 use crate::ast::runtype::{CustomFormat, Optionality, RuntypeConst};
-use crate::subtyping::semtype::IndexedPropertiesAtomic;
+use crate::subtyping::bdd::{IndexedPropertiesAtomic, MappingAtomicType};
 use crate::subtyping::subtype::NumberRepresentationOrFormat;
 use crate::{ast::runtype::Runtype, NamedSchema};
-
-use self::bdd::{ListAtomic, MappingAtomic};
-use self::semtype::{ComplexSemType, MappingAtomicType, SemType, SemTypeContext, SemTypeOps};
-use self::subtype::StringLitOrFormat;
+use std::collections::{BTreeMap, BTreeSet};
+use std::rc::Rc;
 pub mod bdd;
 pub mod evidence;
 pub mod semtype;
@@ -104,7 +102,7 @@ impl<'a> ToSemTypeConverter<'a> {
                                 .mapping_json_schema_ref_memo
                                 .insert(name.to_string(), idx);
                             builder.mapping_definitions.push(None);
-                            let vs: MappingAtomic = vs
+                            let vs: BTreeMap<String, Rc<SemType>> = vs
                                 .iter()
                                 .map(|(k, v)| match v {
                                     Optionality::Optional(v) => self
@@ -214,9 +212,7 @@ impl<'a> ToSemTypeConverter<'a> {
                     indexed_props_acc.push(t);
                 }
 
-                Ok(builder
-                    .mapping_definition(Rc::new(vs), indexed_props_acc)
-                    .into())
+                Ok(builder.mapping_definition(vs, indexed_props_acc).into())
             }
             Runtype::Array(items) => {
                 let items = self.convert_to_sem_type(items, builder)?;

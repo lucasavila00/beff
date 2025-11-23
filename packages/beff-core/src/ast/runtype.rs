@@ -367,7 +367,7 @@ impl Runtype {
         match self {
             Runtype::AllOf(vs) => {
                 let semantic = Runtype::AllOf(vs.clone()).to_sem_type(validators, ctx)?;
-                let is_empty = semantic.is_empty(ctx);
+                let is_empty = semantic.is_empty(ctx)?;
                 if is_empty {
                     return Ok(Runtype::StNever);
                 }
@@ -388,16 +388,16 @@ impl Runtype {
                     .into_iter()
                     .map(|it| it.to_sem_type(validators, ctx).map(|r| (it, r)))
                     .collect::<Result<Vec<_>>>()?;
-                let vs: Vec<Runtype> = vs
-                    .into_iter()
-                    .filter(|(_, semantic)| {
-                        let is_empty = semantic.is_empty(ctx);
-                        !is_empty
-                    })
-                    .map(|(it, _)| it)
-                    .collect();
+                let mut new_vs = vec![];
+                for v in vs.into_iter() {
+                    let is_empty = v.1.is_empty(ctx)?;
+                    if is_empty {
+                        continue;
+                    }
+                    new_vs.push(v.0);
+                }
 
-                let vs = vs
+                let vs = new_vs
                     .into_iter()
                     .map(|it| it.remove_nots_of_intersections_and_empty_of_union(validators, ctx))
                     .collect::<Result<Vec<_>>>()?;

@@ -2,6 +2,7 @@ use crate::ast::{
     json::N,
     runtype::{CustomFormat, TplLitType},
 };
+use anyhow::Result;
 use std::rc::Rc;
 
 use super::{
@@ -264,7 +265,10 @@ fn sub_vec_diff<K: SubtypeCheck + Clone + Ord>(v1: &[K], v2: &[K]) -> Vec<K> {
 
 pub trait ProperSubtypeOps {
     // fn is_empty(&self, builder: &mut SemTypeContext) -> bool;
-    fn is_empty_evidence(&self, builder: &mut SemTypeContext) -> ProperSubtypeEvidenceResult;
+    fn is_empty_evidence(
+        &self,
+        builder: &mut SemTypeContext,
+    ) -> Result<ProperSubtypeEvidenceResult>;
     fn intersect(&self, t2: &Rc<ProperSubtype>) -> Rc<SubType>;
     fn union(&self, t2: &Rc<ProperSubtype>) -> Rc<SubType>;
     fn diff(&self, t2: &Rc<ProperSubtype>) -> Rc<SubType>;
@@ -272,21 +276,24 @@ pub trait ProperSubtypeOps {
 }
 
 impl ProperSubtypeOps for Rc<ProperSubtype> {
-    fn is_empty_evidence(&self, builder: &mut SemTypeContext) -> ProperSubtypeEvidenceResult {
+    fn is_empty_evidence(
+        &self,
+        builder: &mut SemTypeContext,
+    ) -> Result<ProperSubtypeEvidenceResult> {
         match &**self {
-            ProperSubtype::Boolean(b) => ProperSubtypeEvidence::Boolean(*b).to_result(),
+            ProperSubtype::Boolean(b) => Ok(ProperSubtypeEvidence::Boolean(*b).to_result()),
             // Empty number sets don't use subtype representation.
-            ProperSubtype::Number { allowed, values } => ProperSubtypeEvidence::Number {
+            ProperSubtype::Number { allowed, values } => Ok(ProperSubtypeEvidence::Number {
                 allowed: *allowed,
                 values: values.clone(),
             }
-            .to_result(),
+            .to_result()),
             // Empty string sets don't use subtype representation.
-            ProperSubtype::String { allowed, values } => ProperSubtypeEvidence::String {
+            ProperSubtype::String { allowed, values } => Ok(ProperSubtypeEvidence::String {
                 allowed: *allowed,
                 values: values.clone(),
             }
-            .to_result(),
+            .to_result()),
             ProperSubtype::Mapping(bdd) => mapping_is_empty(bdd, builder),
             ProperSubtype::List(bdd) => list_is_empty(bdd, builder),
         }

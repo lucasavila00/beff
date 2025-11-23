@@ -1871,7 +1871,10 @@ impl<'a, 'b, R: FileManager> TypeToSchema<'a, 'b, R> {
         ctx: &mut SemTypeContext,
         span: &Span,
     ) -> Res<Runtype> {
-        if access_st.is_empty(ctx) {
+        if access_st
+            .is_empty(ctx)
+            .map_err(|e| self.box_error(span, DiagnosticInfoMessage::AnyhowError(e.to_string())))?
+        {
             return Ok(Runtype::StNever);
         }
         let (head, tail) =
@@ -2251,7 +2254,11 @@ impl<'a, 'b, R: FileManager> TypeToSchema<'a, 'b, R> {
                 )
             })?;
 
-        let is_true = check_type_st.is_subtype(&extends_type_st, &mut ctx);
+        let is_true = check_type_st
+            .is_subtype(&extends_type_st, &mut ctx)
+            .map_err(|e| {
+                self.box_error(&t.span, DiagnosticInfoMessage::AnyhowError(e.to_string()))
+            })?;
 
         if is_true {
             self.convert_ts_type(&t.true_type)

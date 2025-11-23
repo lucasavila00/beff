@@ -1,9 +1,12 @@
-use crate::subtyping::{evidence::Evidence, subtype::NumberRepresentationOrFormat};
+use crate::subtyping::{
+    bdd::{IndexedPropertiesAtomic, MappingAtomicType},
+    evidence::Evidence,
+    subtype::NumberRepresentationOrFormat,
+};
+use anyhow::Result;
 
 use super::{
-    bdd::{
-        keyof, list_indexed_access, mapping_indexed_access, Atom, Bdd, ListAtomic, MappingAtomic,
-    },
+    bdd::{keyof, list_indexed_access, mapping_indexed_access, Atom, Bdd, ListAtomic},
     evidence::{EvidenceResult, ProperSubtypeEvidenceResult},
     subtype::{
         BasicTypeBitSet, BasicTypeCode, ProperSubtype, ProperSubtypeOps, StringLitOrFormat,
@@ -91,38 +94,41 @@ pub struct ComplexSemType {
 pub type SemType = ComplexSemType;
 
 pub trait SemTypeOps {
-    fn is_empty(&self, ctx: &mut SemTypeContext) -> bool;
-    fn is_empty_evidence(&self, ctx: &mut SemTypeContext) -> EvidenceResult;
+    fn is_empty(&self, ctx: &mut SemTypeContext) -> Result<bool>;
+    fn is_empty_evidence(&self, ctx: &mut SemTypeContext) -> Result<EvidenceResult>;
     fn intersect(&self, t2: &Rc<SemType>) -> Rc<SemType>;
     fn union(&self, t2: &Rc<SemType>) -> Rc<SemType>;
     fn diff(&self, t2: &Rc<SemType>) -> Rc<SemType>;
     fn complement(&self) -> Rc<SemType>;
-    fn is_subtype(&self, t2: &Rc<SemType>, ctx: &mut SemTypeContext) -> bool;
-    fn is_same_type(&self, t2: &Rc<SemType>, ctx: &mut SemTypeContext) -> bool;
+    fn is_subtype(&self, t2: &Rc<SemType>, ctx: &mut SemTypeContext) -> Result<bool>;
+    fn is_same_type(&self, t2: &Rc<SemType>, ctx: &mut SemTypeContext) -> Result<bool>;
 }
 
 impl SemTypeOps for Rc<SemType> {
-    fn is_empty_evidence(&self, builder: &mut SemTypeContext) -> EvidenceResult {
+    fn is_empty_evidence(&self, builder: &mut SemTypeContext) -> Result<EvidenceResult> {
         if self.all != 0 {
             for i in SubTypeTag::all() {
                 if (self.all & i.code()) != 0 {
-                    return Evidence::All(i).to_result();
+                    return Ok(Evidence::All(i).to_result());
                 }
             }
             unreachable!("should have found a tag")
         }
         for st in self.subtype_data.iter() {
-            match st.is_empty_evidence(builder) {
+            match st.is_empty_evidence(builder)? {
                 ProperSubtypeEvidenceResult::IsEmpty => {}
                 ProperSubtypeEvidenceResult::Evidence(st) => {
-                    return Evidence::Proper(st).to_result()
+                    return Ok(Evidence::Proper(st).to_result())
                 }
             }
         }
-        EvidenceResult::IsEmpty
+        Ok(EvidenceResult::IsEmpty)
     }
-    fn is_empty(&self, builder: &mut SemTypeContext) -> bool {
-        matches!(self.is_empty_evidence(builder), EvidenceResult::IsEmpty)
+    fn is_empty(&self, builder: &mut SemTypeContext) -> Result<bool> {
+        Ok(matches!(
+            self.is_empty_evidence(builder)?,
+            EvidenceResult::IsEmpty
+        ))
     }
 
     fn intersect(&self, t2: &Rc<SemType>) -> Rc<SemType> {
@@ -245,12 +251,12 @@ impl SemTypeOps for Rc<SemType> {
         Rc::new(SemTypeContext::unknown()).diff(self)
     }
 
-    fn is_subtype(&self, t2: &Rc<SemType>, ctx: &mut SemTypeContext) -> bool {
+    fn is_subtype(&self, t2: &Rc<SemType>, ctx: &mut SemTypeContext) -> Result<bool> {
         self.diff(t2).is_empty(ctx)
     }
 
-    fn is_same_type(&self, t2: &Rc<SemType>, ctx: &mut SemTypeContext) -> bool {
-        self.is_subtype(t2, ctx) && t2.is_subtype(self, ctx)
+    fn is_same_type(&self, t2: &Rc<SemType>, ctx: &mut SemTypeContext) -> Result<bool> {
+        Ok(self.is_subtype(t2, ctx)? && t2.is_subtype(self, ctx)?)
     }
 }
 
@@ -333,18 +339,6 @@ impl MemoEmpty {
 #[derive(Clone, Debug)]
 pub struct BddMemoEmptyRef(pub MemoEmpty);
 
-#[derive(Debug)]
-pub struct IndexedPropertiesAtomic {
-    pub key: Rc<SemType>,
-    pub value: Rc<SemType>,
-}
-#[derive(Debug)]
-
-pub struct MappingAtomicType {
-    pub vs: Rc<MappingAtomic>,
-    pub indexed_properties: Vec<IndexedPropertiesAtomic>,
-}
-
 pub struct SemTypeContext {
     pub mapping_definitions: Vec<Option<Rc<MappingAtomicType>>>,
     pub mapping_memo: BTreeMap<Bdd, BddMemoEmptyRef>,
@@ -419,7 +413,7 @@ impl SemTypeContext {
 
     pub fn mapping_definition(
         &mut self,
-        vs: Rc<MappingAtomic>,
+        vs: BTreeMap<String, Rc<SemType>>,
         indexed_properties: Vec<IndexedPropertiesAtomic>,
     ) -> SemType {
         let idx = self.mapping_definitions.len();
