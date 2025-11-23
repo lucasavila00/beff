@@ -969,7 +969,7 @@ class ObjectRuntype implements Runtype {
     });
 
     if (indexSchemas.length === 0) {
-      return base;
+      return { ...base, additionalProperties: false };
     }
     return {
       allOf: [base, ...indexSchemas],

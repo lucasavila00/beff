@@ -1,5 +1,11 @@
 # @beff/cli
 
+## 0.0.106
+
+### Patch Changes
+
+- fix schema gen bug
+
 ## 0.0.105
 
 ### Patch Changes
