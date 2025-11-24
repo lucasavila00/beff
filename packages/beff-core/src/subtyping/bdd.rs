@@ -427,23 +427,20 @@ enum MappingInhabited {
 fn mapping_inhabited(
     pos: Rc<MappingAtomicType>,
     neg_list: &Option<Rc<Conjunction>>,
-    builder: &mut SemTypeContext,
+    ctx: &mut SemTypeContext,
 ) -> Result<MappingInhabited> {
     match neg_list {
         None => Ok(MappingInhabited::Yes(pos.clone())),
         Some(neg_list) => {
             let neg = match &*neg_list.atom {
-                Atom::Mapping(a) => builder.get_mapping_atomic(*a),
+                Atom::Mapping(a) => ctx.get_mapping_atomic(*a),
                 _ => unreachable!(),
             };
 
-            if neg.indexed_properties.is_some() || pos.indexed_properties.is_some() {
-                bail!("indexed properties not supported yet in mapping_inhabited");
-            }
-            let neg = &neg.vs;
+            let neg_vs = &neg.vs;
 
             let pos_names = BTreeSet::from_iter(pos.vs.keys());
-            let neg_names = BTreeSet::from_iter(neg.keys());
+            let neg_names = BTreeSet::from_iter(neg_vs.keys());
 
             let all_names = pos_names.union(&neg_names).collect::<BTreeSet<_>>();
 
@@ -453,12 +450,12 @@ fn mapping_inhabited(
                     .get(**name)
                     .cloned()
                     .unwrap_or_else(|| Rc::new(SemTypeContext::unknown()));
-                let neg_type = neg
+                let neg_type = neg_vs
                     .get(**name)
                     .cloned()
                     .unwrap_or_else(|| Rc::new(SemTypeContext::unknown()));
                 if pos_type.is_never() || neg_type.is_never() {
-                    return mapping_inhabited(pos, &neg_list.next, builder);
+                    return mapping_inhabited(pos, &neg_list.next, ctx);
                 }
             }
             for name in all_names {
@@ -467,21 +464,39 @@ fn mapping_inhabited(
                     .get(*name)
                     .cloned()
                     .unwrap_or_else(|| Rc::new(SemTypeContext::unknown()));
-                let neg_type = neg
+                let neg_type = neg_vs
                     .get(*name)
                     .cloned()
                     .unwrap_or_else(|| Rc::new(SemTypeContext::unknown()));
 
                 let d = pos_type.diff(&neg_type)?;
-                if !d.is_empty(builder)? {
+                if !d.is_empty(ctx)? {
                     let mut mt = pos.as_ref().clone();
                     mt.vs.insert(name.to_string(), d);
                     if let Ok(MappingInhabited::Yes(a)) =
-                        mapping_inhabited(Rc::new(mt), &neg_list.next, builder)
+                        mapping_inhabited(Rc::new(mt), &neg_list.next, ctx)
                     {
                         return Ok(MappingInhabited::Yes(a));
                     }
                 }
+            }
+
+            match (&pos.indexed_properties, &neg.indexed_properties) {
+                (Some(p), Some(n)) => {
+                    let key_is_same_type = p.key.is_same_type(&n.key, ctx)?;
+                    if key_is_same_type {
+                        bail!("indexed properties in complex types are not supported (1)");
+                    } else {
+                        bail!("indexed properties with different key types are not supported");
+                    }
+                }
+                (Some(_p), None) => {
+                    bail!("indexed properties in complex types are not supported (2)");
+                }
+                (None, Some(_n)) => {
+                    bail!("indexed properties in complex types are not supported (3)");
+                }
+                (None, None) => {}
             }
 
             Ok(MappingInhabited::No)
