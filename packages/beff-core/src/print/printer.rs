@@ -322,7 +322,7 @@ fn maybe_runtype_any_of_discriminated(
         Runtype::Object {
             vs: _,
             indexed_properties,
-        } => indexed_properties.is_empty(),
+        } => indexed_properties.is_none(),
         _ => false,
     });
 
@@ -761,7 +761,7 @@ fn calculate_schema_seen(schema: &Runtype, seen: &mut SeenCounter) {
             for v in vs.values() {
                 calculate_schema_seen(v.inner(), seen)
             }
-            for p in indexed_properties {
+            if let Some(p) = indexed_properties {
                 calculate_schema_seen(&p.key, seen);
                 calculate_schema_seen(p.value.inner(), seen);
             }

@@ -6,7 +6,7 @@ use crate::diag::{
 };
 use crate::subtyping::semtype::{SemType, SemTypeContext, SemTypeOps};
 use crate::subtyping::subtype::StringLitOrFormat;
-use crate::subtyping::to_schema::to_validators;
+use crate::subtyping::to_schema::semtype_to_runtypes;
 use crate::subtyping::ToSemType;
 use crate::sym_reference::{ResolvedLocalSymbol, TsBuiltIn, TypeResolver};
 use crate::NamedSchema;
@@ -284,7 +284,7 @@ impl<'a, 'b, R: FileManager> TypeToSchema<'a, 'b, R> {
             Runtype::Object {
                 vs,
                 indexed_properties,
-            } => match indexed_properties.is_empty() {
+            } => match indexed_properties.is_none() {
                 true => Ok(vs.clone()),
                 false => self.error(span, DiagnosticInfoMessage::RestFoundOnExtractObject),
             },
@@ -387,10 +387,13 @@ impl<'a, 'b, R: FileManager> TypeToSchema<'a, 'b, R> {
                             let value = items[1].clone();
                             Ok(Runtype::Object {
                                 vs: BTreeMap::new(),
-                                indexed_properties: vec![IndexedProperty {
-                                    key: key_clone,
-                                    value: value.required(),
-                                }],
+                                indexed_properties: Some(
+                                    IndexedProperty {
+                                        key: key_clone,
+                                        value: value.required(),
+                                    }
+                                    .into(),
+                                ),
                             })
                         }
                     }
@@ -517,7 +520,7 @@ impl<'a, 'b, R: FileManager> TypeToSchema<'a, 'b, R> {
                         self.box_error(span, DiagnosticInfoMessage::AnyhowError(e.to_string()))
                     })?;
                     let res = self
-                        .convert_sem_type(subtracted_ty, &mut ctx, span)?
+                        .to_runtype(subtracted_ty, &mut ctx, span)?
                         .remove_nots_of_intersections_and_empty_of_union(
                             &self.validators_ref(),
                             &mut ctx,
@@ -1654,7 +1657,7 @@ impl<'a, 'b, R: FileManager> TypeToSchema<'a, 'b, R> {
                 let access_st: Rc<SemType> = ctx.indexed_access(st, key).map_err(|e| {
                     self.box_error(&m.span, DiagnosticInfoMessage::AnyhowError(e.to_string()))
                 })?;
-                self.convert_sem_type(access_st, &mut ctx, &m.prop.span())
+                self.to_runtype(access_st, &mut ctx, &m.prop.span())
             }
             Expr::Arrow(_a) => Ok(Runtype::Function),
             Expr::Bin(e) => {
@@ -1870,7 +1873,7 @@ impl<'a, 'b, R: FileManager> TypeToSchema<'a, 'b, R> {
             .collect()
     }
 
-    fn convert_sem_type(
+    fn to_runtype(
         &mut self,
         access_st: Rc<SemType>,
         ctx: &mut SemTypeContext,
@@ -1883,7 +1886,7 @@ impl<'a, 'b, R: FileManager> TypeToSchema<'a, 'b, R> {
             return Ok(Runtype::StNever);
         }
         let (head, tail) =
-            to_validators(ctx, &access_st, "AnyName", self.counter).map_err(|any| {
+            semtype_to_runtypes(ctx, &access_st, "AnyName", self.counter).map_err(|any| {
                 self.box_error(span, DiagnosticInfoMessage::AnyhowError(any.to_string()))
             })?;
         for t in tail {
@@ -1971,7 +1974,7 @@ impl<'a, 'b, R: FileManager> TypeToSchema<'a, 'b, R> {
         let access_st: Rc<SemType> = ctx.indexed_access(obj_st, idx_st).map_err(|e| {
             self.box_error(&i.span, DiagnosticInfoMessage::AnyhowError(e.to_string()))
         })?;
-        self.convert_sem_type(access_st, &mut ctx, &i.span())
+        self.to_runtype(access_st, &mut ctx, &i.span())
     }
     fn convert_keyof(&mut self, k: &TsType) -> Res<Runtype> {
         let json_schema = self.convert_ts_type(k)?;
@@ -1997,7 +2000,7 @@ impl<'a, 'b, R: FileManager> TypeToSchema<'a, 'b, R> {
             self.box_error(&k.span(), DiagnosticInfoMessage::AnyhowError(e.to_string()))
         })?;
 
-        self.convert_sem_type(keyof_st, &mut ctx, &k.span())
+        self.to_runtype(keyof_st, &mut ctx, &k.span())
     }
 
     fn extract_union(&self, tp: Runtype) -> Result<Vec<Runtype>, DiagnosticInfoMessage> {

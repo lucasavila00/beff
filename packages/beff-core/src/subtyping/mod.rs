@@ -115,8 +115,8 @@ impl<'a> ToSemTypeConverter<'a> {
                                     }
                                 })
                                 .collect::<Result<_>>()?;
-                            let mut indexed_props_acc = vec![];
-                            for it in indexed_properties {
+                            let mut indexed_props_acc = None;
+                            if let Some(it) = indexed_properties {
                                 let v = match &it.value {
                                     Optionality::Optional(v) => self
                                         .convert_to_sem_type(v, builder)
@@ -127,7 +127,7 @@ impl<'a> ToSemTypeConverter<'a> {
                                 };
                                 let k = self.convert_to_sem_type(&it.key, builder)?;
                                 let t = IndexedPropertiesAtomic { key: k, value: v };
-                                indexed_props_acc.push(t);
+                                indexed_props_acc = Some(t);
                             }
 
                             builder.mapping_definitions[idx] = Some(Rc::new(MappingAtomicType {
@@ -201,8 +201,8 @@ impl<'a> ToSemTypeConverter<'a> {
                         }
                     })
                     .collect::<Result<_>>()?;
-                let mut indexed_props_acc = vec![];
-                for it in indexed_properties {
+                let mut indexed_props_acc = None;
+                if let Some(it) = indexed_properties {
                     let v = match &it.value {
                         Optionality::Optional(v) => self
                             .convert_to_sem_type(v, builder)
@@ -211,7 +211,7 @@ impl<'a> ToSemTypeConverter<'a> {
                     };
                     let k = self.convert_to_sem_type(&it.key, builder)?;
                     let t = IndexedPropertiesAtomic { key: k, value: v };
-                    indexed_props_acc.push(t);
+                    indexed_props_acc = Some(t);
                 }
 
                 Ok(builder.mapping_definition(vs, indexed_props_acc).into())

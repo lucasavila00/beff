@@ -2,7 +2,9 @@
 mod tests {
 
     use beff_core::{
-        ast::runtype::{CustomFormat, Runtype, RuntypeConst, TplLitType, TplLitTypeItem},
+        ast::runtype::{
+            CustomFormat, IndexedProperty, Runtype, RuntypeConst, TplLitType, TplLitTypeItem,
+        },
         subtyping::{
             semtype::{SemTypeContext, SemTypeOps},
             ToSemType,
@@ -1069,6 +1071,44 @@ mod tests {
         assert!(!literal_union
             .is_same_type(&literal_100_sem, &mut ctx)
             .unwrap());
+    }
+
+    #[test]
+    fn object_rest_intersection() {
+        let definitions = vec![];
+        let mut ctx = SemTypeContext::new();
+
+        // {a: string} should be a subtype of Record<string, string>
+        let obj = Runtype::no_index_object(vec![("a".into(), Runtype::String.required())]);
+        let record = Runtype::single_index_object(Runtype::String, Runtype::String.required());
+
+        let obj_st = obj
+            .to_sem_type(&definitions, &mut ctx)
+            .expect("should work");
+        let record_st = record
+            .to_sem_type(&definitions, &mut ctx)
+            .expect("should work");
+
+        let intersection = obj_st.intersect(&record_st).unwrap();
+
+        let expected = Runtype::Object {
+            vs: vec![("a".into(), Runtype::String.required())]
+                .into_iter()
+                .collect(),
+            indexed_properties: Some(
+                IndexedProperty {
+                    key: Runtype::String.into(),
+                    value: Runtype::String.required().into(),
+                }
+                .into(),
+            ),
+        };
+
+        let expected_st = expected
+            .to_sem_type(&definitions, &mut ctx)
+            .expect("should work");
+
+        assert!(intersection.is_same_type(&expected_st, &mut ctx).unwrap());
     }
 
     // #[test]
