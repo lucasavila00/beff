@@ -1,5 +1,11 @@
 # @beff/cli
 
+## 0.0.107
+
+### Patch Changes
+
+- improve extends format types
+
 ## 0.0.106
 
 ### Patch Changes
