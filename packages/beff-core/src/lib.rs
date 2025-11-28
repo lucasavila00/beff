@@ -352,9 +352,18 @@ pub struct UnresolvedExport {
 }
 
 #[derive(Serialize, Deserialize, Debug)]
+pub enum FrontendVersion {
+    #[serde(rename = "v1")]
+    V1,
+    #[serde(rename = "v2")]
+    V2,
+}
+
+#[derive(Serialize, Deserialize, Debug)]
 pub struct BeffUserSettings {
     pub string_formats: BTreeSet<String>,
     pub number_formats: BTreeSet<String>,
+    pub frontend: FrontendVersion,
 }
 
 pub struct EntryPoints {

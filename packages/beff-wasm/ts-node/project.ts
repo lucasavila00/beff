@@ -5,6 +5,7 @@ export type BeffCustomFormat = {
 export type BeffUserSettings = {
   stringFormats: BeffCustomFormat[];
   numberFormats: BeffCustomFormat[];
+  frontendVersion: "v1" | "v2";
 };
 export type ProjectJson = {
   parser?: string;
@@ -18,6 +19,7 @@ export type ProjectModule = "cjs" | "esm";
 const EMPTY_SETTINGS: BeffUserSettings = {
   stringFormats: [],
   numberFormats: [],
+  frontendVersion: "v1",
 };
 export const parseUserSettings = (settings: any): BeffUserSettings => {
   if (settings == null) {
@@ -26,5 +28,6 @@ export const parseUserSettings = (settings: any): BeffUserSettings => {
   return {
     stringFormats: settings.stringFormats ?? [],
     numberFormats: settings.numberFormats ?? [],
+    frontendVersion: settings.frontendVersion ?? "v1",
   };
 };

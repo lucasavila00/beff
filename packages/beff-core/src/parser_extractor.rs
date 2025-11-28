@@ -1,7 +1,7 @@
 use crate::ast::runtype::Runtype;
 use crate::diag::{Diagnostic, DiagnosticInfoMessage, DiagnosticInformation, Location};
 use crate::type_to_schema::TypeToSchema;
-use crate::{BeffUserSettings, ParsedModule};
+use crate::{BeffUserSettings, FrontendVersion, ParsedModule};
 use crate::{BffFileName, FileManager, NamedSchema};
 use anyhow::anyhow;
 use anyhow::Result;
@@ -158,6 +158,14 @@ impl<R: FileManager> ExtractParserVisitor<'_, R> {
             }
         }
     }
+
+    fn extract_built_parser(&mut self, ty: &TsType, span: &Span) -> Runtype {
+        match self.settings.frontend {
+            FrontendVersion::V1 => self.convert_to_json_schema(ty, span),
+            FrontendVersion::V2 => todo!(),
+        }
+    }
+
     fn extract_one_built_decoder(&mut self, prop: &TsTypeElement) -> Result<BuiltDecoder> {
         match prop {
             TsTypeElement::TsPropertySignature(TsPropertySignature {
@@ -180,7 +188,7 @@ impl<R: FileManager> ExtractParserVisitor<'_, R> {
                 match type_ann.as_ref().map(|it| &it.type_ann) {
                     Some(ann) => Ok(BuiltDecoder {
                         exported_name: key,
-                        schema: self.convert_to_json_schema(ann, span),
+                        schema: self.extract_built_parser(ann, span),
                     }),
                     None => self.error(span, DiagnosticInfoMessage::DecoderMustHaveTypeAnnotation),
                 }
