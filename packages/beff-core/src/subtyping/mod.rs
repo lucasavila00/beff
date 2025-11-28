@@ -9,12 +9,24 @@ use std::collections::{BTreeMap, BTreeSet};
 use std::rc::Rc;
 pub mod bdd;
 pub mod dnf;
-pub mod evidence;
+pub mod mapping;
 pub mod semtype;
 pub mod subtype;
 pub mod to_schema;
 use anyhow::Result;
 use anyhow::{anyhow, bail};
+
+#[derive(PartialEq, Eq, Hash, Debug, Ord, PartialOrd, Clone, Copy)]
+pub enum IsEmptyStatus {
+    NotEmpty,
+    IsEmpty,
+}
+
+impl IsEmptyStatus {
+    pub fn is_empty(&self) -> bool {
+        matches!(self, IsEmptyStatus::IsEmpty)
+    }
+}
 
 struct ToSemTypeConverter<'a> {
     validators: &'a [&'a NamedSchema],

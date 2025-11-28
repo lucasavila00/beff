@@ -3,14 +3,13 @@ use crate::{
         json::N,
         runtype::{CustomFormat, TplLitType},
     },
-    subtyping::dnf::dnf_mapping_is_empty,
+    subtyping::{dnf::dnf_mapping_is_empty, IsEmptyStatus},
 };
 use anyhow::{bail, Result};
 use std::{collections::BTreeSet, rc::Rc};
 
 use super::{
     bdd::{list_is_empty, Bdd, BddOps},
-    evidence::{ProperSubtypeEvidence, ProperSubtypeEvidenceResult},
     semtype::SemTypeContext,
 };
 
@@ -319,10 +318,7 @@ fn sub_vec_diff<K: SubtypeCheck + Clone + Ord>(v1: &[K], v2: &[K]) -> Result<Vec
 
 pub trait ProperSubtypeOps {
     // fn is_empty(&self, builder: &mut SemTypeContext) -> bool;
-    fn is_empty_evidence(
-        &self,
-        builder: &mut SemTypeContext,
-    ) -> Result<ProperSubtypeEvidenceResult>;
+    fn is_empty_status(&self, builder: &mut SemTypeContext) -> Result<IsEmptyStatus>;
     fn intersect(&self, t2: &Rc<ProperSubtype>) -> Result<Rc<SubType>>;
     fn union(&self, t2: &Rc<ProperSubtype>) -> Result<Rc<SubType>>;
     fn diff(&self, t2: &Rc<ProperSubtype>) -> Result<Rc<SubType>>;
@@ -330,27 +326,14 @@ pub trait ProperSubtypeOps {
 }
 
 impl ProperSubtypeOps for Rc<ProperSubtype> {
-    fn is_empty_evidence(
-        &self,
-        builder: &mut SemTypeContext,
-    ) -> Result<ProperSubtypeEvidenceResult> {
+    fn is_empty_status(&self, builder: &mut SemTypeContext) -> Result<IsEmptyStatus> {
         match &**self {
-            ProperSubtype::Boolean(b) => Ok(ProperSubtypeEvidence::Boolean(*b).to_result()),
-            ProperSubtype::Number { allowed, values } => Ok(ProperSubtypeEvidence::Number {
-                allowed: *allowed,
-                values: values.clone(),
-            }
-            .to_result()),
-            ProperSubtype::String { allowed, values } => Ok(ProperSubtypeEvidence::String {
-                allowed: *allowed,
-                values: values.clone(),
-            }
-            .to_result()),
+            ProperSubtype::Boolean(..) => Ok(IsEmptyStatus::NotEmpty),
+            ProperSubtype::Number { .. } => Ok(IsEmptyStatus::NotEmpty),
+            ProperSubtype::String { .. } => Ok(IsEmptyStatus::NotEmpty),
             ProperSubtype::Mapping(bdd) => dnf_mapping_is_empty(bdd, builder),
             ProperSubtype::List(bdd) => list_is_empty(bdd, builder),
-            ProperSubtype::VoidUndefined { .. } => {
-                Ok(ProperSubtypeEvidence::VoidUndefined.to_result())
-            }
+            ProperSubtype::VoidUndefined { .. } => Ok(IsEmptyStatus::NotEmpty),
         }
     }
 

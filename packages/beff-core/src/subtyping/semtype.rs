@@ -1,14 +1,13 @@
 use crate::subtyping::{
     bdd::{IndexedPropertiesAtomic, MappingAtomicType},
     dnf::Dnf,
-    evidence::Evidence,
     subtype::{NumberRepresentationOrFormat, VoidUndefinedSubtype},
+    IsEmptyStatus,
 };
 use anyhow::Result;
 
 use super::{
     bdd::{keyof, list_indexed_access, mapping_indexed_access, Atom, Bdd, ListAtomic},
-    evidence::{EvidenceResult, ProperSubtypeEvidenceResult},
     subtype::{
         BasicTypeBitSet, BasicTypeCode, ProperSubtype, ProperSubtypeOps, StringLitOrFormat,
         SubType, SubTypeTag, VAL,
@@ -96,7 +95,7 @@ pub type SemType = ComplexSemType;
 
 pub trait SemTypeOps {
     fn is_empty(&self, ctx: &mut SemTypeContext) -> Result<bool>;
-    fn is_empty_evidence(&self, ctx: &mut SemTypeContext) -> Result<EvidenceResult>;
+    fn is_empty_status(&self, ctx: &mut SemTypeContext) -> Result<IsEmptyStatus>;
     fn intersect(&self, t2: &Rc<SemType>) -> Result<Rc<SemType>>;
     fn union(&self, t2: &Rc<SemType>) -> Result<Rc<SemType>>;
     fn diff(&self, t2: &Rc<SemType>) -> Result<Rc<SemType>>;
@@ -106,29 +105,27 @@ pub trait SemTypeOps {
 }
 
 impl SemTypeOps for Rc<SemType> {
-    fn is_empty_evidence(&self, builder: &mut SemTypeContext) -> Result<EvidenceResult> {
+    fn is_empty_status(&self, builder: &mut SemTypeContext) -> Result<IsEmptyStatus> {
         if self.all != 0 {
             for i in SubTypeTag::all() {
                 if (self.all & i.code()) != 0 {
-                    return Ok(Evidence::All(i).to_result());
+                    return Ok(IsEmptyStatus::NotEmpty);
                 }
             }
             unreachable!("should have found a tag")
         }
         for st in self.subtype_data.iter() {
-            match st.is_empty_evidence(builder)? {
-                ProperSubtypeEvidenceResult::IsEmpty => {}
-                ProperSubtypeEvidenceResult::Evidence(st) => {
-                    return Ok(Evidence::Proper(st).to_result())
-                }
+            match st.is_empty_status(builder)? {
+                IsEmptyStatus::IsEmpty => {}
+                IsEmptyStatus::NotEmpty => return Ok(IsEmptyStatus::NotEmpty),
             }
         }
-        Ok(EvidenceResult::IsEmpty)
+        Ok(IsEmptyStatus::IsEmpty)
     }
     fn is_empty(&self, builder: &mut SemTypeContext) -> Result<bool> {
         Ok(matches!(
-            self.is_empty_evidence(builder)?,
-            EvidenceResult::IsEmpty
+            self.is_empty_status(builder)?,
+            IsEmptyStatus::IsEmpty
         ))
     }
 
@@ -324,15 +321,15 @@ impl SemType {
 #[derive(Debug, Clone)]
 pub enum MemoEmpty {
     True,
-    False(ProperSubtypeEvidenceResult),
+    False(IsEmptyStatus),
     Undefined,
 }
 
 impl MemoEmpty {
-    pub fn from_bool(b: &ProperSubtypeEvidenceResult) -> MemoEmpty {
+    pub fn from_bool(b: &IsEmptyStatus) -> MemoEmpty {
         match b {
-            ProperSubtypeEvidenceResult::IsEmpty => MemoEmpty::True,
-            ProperSubtypeEvidenceResult::Evidence(_) => MemoEmpty::False(b.clone()),
+            IsEmptyStatus::IsEmpty => MemoEmpty::True,
+            IsEmptyStatus::NotEmpty => MemoEmpty::False(b.clone()),
         }
     }
 }
