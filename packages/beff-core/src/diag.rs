@@ -3,7 +3,7 @@ use core::fmt;
 use std::{rc::Rc, sync::Arc};
 use swc_common::{BytePos, Loc, SourceMap, Span};
 
-use crate::{BffFileName, ParsedModule, RuntypeName};
+use crate::{BffFileName, ModuleItemAddress, ParsedModule, RuntypeName};
 
 #[derive(Debug, Clone)]
 pub enum DiagnosticInfoMessage {
@@ -135,6 +135,7 @@ pub enum DiagnosticInfoMessage {
     NoTypeAnnotationInMappedType,
     CannotConvertExprToSchema,
     MappedTypeMinusNotSupported,
+    CannotResolveAddress(ModuleItemAddress),
 }
 
 #[allow(clippy::inherent_to_string)]
@@ -506,6 +507,10 @@ impl DiagnosticInfoMessage {
             }
             DiagnosticInfoMessage::NestedTplLitInJsonSchemaToTplLit => {
                 "Nested template literal types are not supported when converting from JSON schema to template literal".to_string()
+            }
+            DiagnosticInfoMessage::CannotResolveAddress(module_item_address) => {
+                let name = module_item_address.debug_print();
+                format!("Cannot resolve address '{name}'")
             }
         }
     }

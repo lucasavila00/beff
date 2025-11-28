@@ -1,5 +1,6 @@
 pub mod ast;
 pub mod diag;
+pub mod frontend;
 pub mod import_resolver;
 pub mod parse;
 pub mod parser_extractor;
@@ -442,11 +443,10 @@ pub fn extract<R: FileManager>(files: &mut R, entry_points: EntryPoints) -> Pars
     )
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, Hash, PartialOrd, Ord)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash, PartialOrd, Ord, Copy)]
 pub enum TsNamespace {
     Type,
     Value,
-    Both,
 }
 
 impl Display for TsNamespace {
@@ -454,7 +454,6 @@ impl Display for TsNamespace {
         match self {
             TsNamespace::Type => write!(f, "type"),
             TsNamespace::Value => write!(f, "value"),
-            TsNamespace::Both => write!(f, "type+value"),
         }
     }
 }
@@ -462,8 +461,27 @@ impl Display for TsNamespace {
 #[derive(Debug, Clone, PartialEq, Eq, Hash, PartialOrd, Ord)]
 pub struct ModuleItemAddress {
     pub file: BffFileName,
-    pub name: String,
+    pub key: (JsWord, SyntaxContext),
     pub namespace: TsNamespace,
+}
+
+impl ModuleItemAddress {
+    pub fn from_ident(
+        ident: &swc_ecma_ast::Ident,
+        file: BffFileName,
+        namespace: TsNamespace,
+    ) -> ModuleItemAddress {
+        ModuleItemAddress {
+            file,
+            key: (ident.sym.clone(), ident.span.ctxt),
+            namespace,
+        }
+    }
+
+    fn debug_print(&self) -> String {
+        let (word, _ctx) = &self.key;
+        format!("{}::[{}]{}", self.file.as_str(), self.namespace, word,)
+    }
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash, PartialOrd, Ord)]
@@ -477,9 +495,7 @@ impl RuntypeName {
     fn debug_print(&self) -> String {
         match self {
             RuntypeName::Name(name) => name.clone(),
-            RuntypeName::Address(addr) => {
-                format!("{}::[{}]{}", addr.file.as_str(), addr.namespace, addr.name,)
-            }
+            RuntypeName::Address(addr) => addr.debug_print(),
             RuntypeName::SemtypeRecursiveGenerated(n) => format!("RecursiveGenerated{}", n),
         }
     }

@@ -1,5 +1,6 @@
 use crate::ast::runtype::Runtype;
 use crate::diag::{Diagnostic, DiagnosticInfoMessage, DiagnosticInformation, Location};
+use crate::frontend::FrontendCtx;
 use crate::type_to_schema::TypeToSchema;
 use crate::{BeffUserSettings, FrontendVersion, ParsedModule};
 use crate::{BffFileName, FileManager, NamedSchema};
@@ -159,13 +160,6 @@ impl<R: FileManager> ExtractParserVisitor<'_, R> {
         }
     }
 
-    fn extract_built_parser(&mut self, ty: &TsType, span: &Span) -> Runtype {
-        match self.settings.frontend {
-            FrontendVersion::V1 => self.convert_to_json_schema(ty, span),
-            FrontendVersion::V2 => todo!(),
-        }
-    }
-
     fn extract_one_built_decoder(&mut self, prop: &TsTypeElement) -> Result<BuiltDecoder> {
         match prop {
             TsTypeElement::TsPropertySignature(TsPropertySignature {
@@ -188,7 +182,7 @@ impl<R: FileManager> ExtractParserVisitor<'_, R> {
                 match type_ann.as_ref().map(|it| &it.type_ann) {
                     Some(ann) => Ok(BuiltDecoder {
                         exported_name: key,
-                        schema: self.extract_built_parser(ann, span),
+                        schema: self.convert_to_json_schema(ann, span),
                     }),
                     None => self.error(span, DiagnosticInfoMessage::DecoderMustHaveTypeAnnotation),
                 }
@@ -203,6 +197,7 @@ impl<R: FileManager> ExtractParserVisitor<'_, R> {
             }
         }
     }
+
     fn extract_built_decoders_from_call(
         &mut self,
         params: &TsTypeParamInstantiation,
@@ -240,8 +235,28 @@ impl<R: FileManager> ExtractParserVisitor<'_, R> {
                 Some(_) => self.push_error(span, DiagnosticInfoMessage::TwoCallsToBuildParsers),
                 None => {
                     if let Some(ref params) = n.type_args {
-                        if let Ok(x) = self.extract_built_decoders_from_call(params.as_ref()) {
-                            self.built_decoders = Some(x)
+                        match self.settings.frontend {
+                            FrontendVersion::V1 => {
+                                if let Ok(x) =
+                                    self.extract_built_decoders_from_call(params.as_ref())
+                                {
+                                    self.built_decoders = Some(x)
+                                }
+                            }
+                            FrontendVersion::V2 => {
+                                let mut ctx = FrontendCtx::new(
+                                    self.files,
+                                    self.current_file.clone(),
+                                    self.settings,
+                                );
+
+                                if let Ok(x) =
+                                    ctx.extract_built_decoders_from_call_v2(params.as_ref())
+                                {
+                                    self.built_decoders = Some(x)
+                                }
+                                self.errors.extend(ctx.errors);
+                            }
                         }
                     }
                 }
