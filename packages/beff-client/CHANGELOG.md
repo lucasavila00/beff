@@ -1,5 +1,13 @@
 # @beff/client
 
+## 0.0.107
+
+### Patch Changes
+
+- improve extends format types
+- Updated dependencies
+  - @beff/cli@0.0.107
+
 ## 0.0.106
 
 ### Patch Changes
