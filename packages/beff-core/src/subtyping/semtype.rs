@@ -1,5 +1,6 @@
 use crate::subtyping::{
     bdd::{IndexedPropertiesAtomic, MappingAtomicType},
+    dnf::Dnf,
     evidence::Evidence,
     subtype::NumberRepresentationOrFormat,
 };
@@ -342,6 +343,7 @@ pub struct BddMemoEmptyRef(pub MemoEmpty);
 pub struct SemTypeContext {
     pub mapping_definitions: Vec<Option<Rc<MappingAtomicType>>>,
     pub mapping_memo: BTreeMap<Bdd, BddMemoEmptyRef>,
+    pub mapping_memo_dnf: BTreeMap<Rc<Dnf>, BddMemoEmptyRef>,
 
     pub list_definitions: Vec<Option<Rc<ListAtomic>>>,
     pub list_memo: BTreeMap<Bdd, BddMemoEmptyRef>,
@@ -378,6 +380,7 @@ impl SemTypeContext {
             list_definitions: vec![],
             mapping_definitions: vec![],
             mapping_memo: BTreeMap::new(),
+            mapping_memo_dnf: BTreeMap::new(),
             list_memo: BTreeMap::new(),
             mapping_json_schema_ref_memo: BTreeMap::new(),
             list_json_schema_ref_memo: BTreeMap::new(),

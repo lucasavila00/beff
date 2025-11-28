@@ -37,7 +37,7 @@ pub struct MappingAtomicType {
     pub indexed_properties: Option<IndexedPropertiesAtomic>,
 }
 impl MappingAtomicType {
-    fn new() -> Self {
+    pub fn new() -> Self {
         Self {
             vs: BTreeMap::new(),
             indexed_properties: None,
@@ -51,7 +51,7 @@ pub struct ListAtomic {
     pub items: Rc<SemType>,
 }
 
-#[derive(PartialEq, Eq, Hash, Debug, Ord, PartialOrd)]
+#[derive(PartialEq, Eq, Hash, Debug, Ord, PartialOrd, Clone, Copy)]
 pub enum Atom {
     Mapping(usize),
     List(usize),
@@ -66,7 +66,7 @@ pub enum Bdd {
     True,
     False,
     Node {
-        atom: Rc<Atom>,
+        atom: Atom,
         left: Rc<Bdd>,
         middle: Rc<Bdd>,
         right: Rc<Bdd>,
@@ -76,14 +76,14 @@ pub enum Bdd {
 impl Bdd {
     pub fn from_atom(atom: Atom) -> Bdd {
         Bdd::Node {
-            atom: atom.into(),
+            atom: atom,
             left: Bdd::True.into(),
             middle: Bdd::False.into(),
             right: Bdd::False.into(),
         }
     }
 
-    pub fn from_node(atom: Rc<Atom>, left: Rc<Bdd>, middle: Rc<Bdd>, right: Rc<Bdd>) -> Rc<Bdd> {
+    pub fn from_node(atom: Atom, left: Rc<Bdd>, middle: Rc<Bdd>, right: Rc<Bdd>) -> Rc<Bdd> {
         if *middle == Bdd::True {
             return Bdd::True.into();
         }
@@ -134,19 +134,19 @@ impl BddOps for Rc<Bdd> {
                 },
             ) => match atom_cmp(b1_atom, b2_atom) {
                 Ordering::Less => Bdd::from_node(
-                    b1_atom.clone(),
+                    *b1_atom,
                     b1_left.intersect(b2),
                     b1_middle.intersect(b2),
                     b1_right.intersect(b2),
                 ),
                 Ordering::Greater => Bdd::from_node(
-                    b2_atom.clone(),
+                    *b2_atom,
                     b1.intersect(b2_left),
                     b1.intersect(b2_middle),
                     b1.intersect(b2_right),
                 ),
                 Ordering::Equal => Bdd::from_node(
-                    b1_atom.clone(),
+                    *b1_atom,
                     b1_left
                         .union(b1_middle)
                         .intersect(&b2_left.union(b2_middle)),
@@ -185,19 +185,19 @@ impl BddOps for Rc<Bdd> {
                 },
             ) => match atom_cmp(b1_atom, b2_atom) {
                 Ordering::Less => Bdd::from_node(
-                    b1_atom.clone(),
+                    *b1_atom,
                     b1_left.clone(),
                     b1_middle.union(b2),
                     b1_right.clone(),
                 ),
                 Ordering::Greater => Bdd::from_node(
-                    b2_atom.clone(),
+                    *b2_atom,
                     b2_left.clone(),
                     b1.union(b2_middle),
                     b2_right.clone(),
                 ),
                 Ordering::Equal => Bdd::from_node(
-                    b1_atom.clone(),
+                    *b1_atom,
                     b1_left.union(b2_left),
                     b1_middle.union(b2_middle),
                     b1_right.union(b2_right),
@@ -232,19 +232,19 @@ impl BddOps for Rc<Bdd> {
                 },
             ) => match atom_cmp(b1_atom, b2_atom) {
                 Ordering::Less => Bdd::from_node(
-                    b1_atom.clone(),
+                    *b1_atom,
                     b1_left.union(b1_middle).diff(b2),
                     Bdd::False.into(),
                     b1_right.union(b1_middle).diff(b2),
                 ),
                 Ordering::Greater => Bdd::from_node(
-                    b2_atom.clone(),
+                    *b2_atom,
                     b1.diff(&b2_left.union(b2_middle)),
                     Bdd::False.into(),
                     b1.diff(&b2_right.union(b2_middle)),
                 ),
                 Ordering::Equal => Bdd::from_node(
-                    b1_atom.clone(),
+                    *b1_atom,
                     b1_left.union(b1_middle).diff(&b2_left.union(b2_middle)),
                     Bdd::False.into(),
                     b1_right.union(b1_middle).diff(&b2_right.union(b2_middle)),
@@ -265,28 +265,28 @@ impl BddOps for Rc<Bdd> {
             } => {
                 if **right == Bdd::False {
                     return Bdd::from_node(
-                        atom.clone(),
+                        *atom,
                         Bdd::False.into(),
                         left.union(middle).complement(),
                         middle.complement(),
                     );
                 } else if **left == Bdd::False {
                     return Bdd::from_node(
-                        atom.clone(),
+                        *atom,
                         middle.complement(),
                         right.union(middle).complement(),
                         Bdd::False.into(),
                     );
                 } else if **middle == Bdd::False {
                     return Bdd::from_node(
-                        atom.clone(),
+                        *atom,
                         left.complement(),
                         left.union(right).complement(),
                         right.complement(),
                     );
                 }
                 Bdd::from_node(
-                    atom.clone(),
+                    *atom,
                     left.union(middle).complement(),
                     Bdd::False.into(),
                     right.union(middle).complement(),
@@ -298,10 +298,10 @@ impl BddOps for Rc<Bdd> {
 
 #[derive(Debug)]
 struct Conjunction {
-    atom: Rc<Atom>,
+    atom: Atom,
     next: Option<Rc<Conjunction>>,
 }
-fn and(atom: Rc<Atom>, next: Option<Rc<Conjunction>>) -> Option<Rc<Conjunction>> {
+fn and(atom: Atom, next: Option<Rc<Conjunction>>) -> Option<Rc<Conjunction>> {
     Some(Rc::new(Conjunction { atom, next }))
 }
 
@@ -346,28 +346,16 @@ fn bdd_every_result(
             middle,
             right,
         } => Ok(and_evidence(
-            bdd_every_result(
-                right,
-                pos,
-                &and(atom.clone(), neg.clone()),
-                predicate,
-                builder,
-            )?,
+            bdd_every_result(right, pos, &and(*atom, neg.clone()), predicate, builder)?,
             and_evidence(
                 bdd_every_result(middle, pos, neg, predicate, builder)?,
-                bdd_every_result(
-                    left,
-                    &and(atom.clone(), pos.clone()),
-                    neg,
-                    predicate,
-                    builder,
-                )?,
+                bdd_every_result(left, &and(*atom, pos.clone()), neg, predicate, builder)?,
             ),
         )),
     }
 }
 
-fn intersect_mapping(
+pub fn intersect_mapping(
     m1: Rc<MappingAtomicType>,
     m2: Rc<MappingAtomicType>,
     ctx: &mut SemTypeContext,
@@ -432,8 +420,8 @@ fn mapping_inhabited(
     match neg_list {
         None => Ok(MappingInhabited::Yes(pos.clone())),
         Some(neg_list) => {
-            let neg = match &*neg_list.atom {
-                Atom::Mapping(a) => ctx.get_mapping_atomic(*a),
+            let neg = match neg_list.atom {
+                Atom::Mapping(a) => ctx.get_mapping_atomic(a),
                 _ => unreachable!(),
             };
 
@@ -504,6 +492,49 @@ fn mapping_inhabited(
     }
 }
 
+pub fn build_mapping_evidence(
+    ev: Rc<MappingAtomicType>,
+    ctx: &mut SemTypeContext,
+) -> Result<ProperSubtypeEvidenceResult> {
+    let mut new_props = vec![];
+    for (k, it) in ev.vs.iter() {
+        let t = match it.is_empty_evidence(ctx)? {
+            EvidenceResult::Evidence(e) => (k.clone(), Rc::new(e)),
+            EvidenceResult::IsEmpty => {
+                unreachable!("mapping_inhabited should have returned false")
+            }
+        };
+        new_props.push(t);
+    }
+
+    let mut new_idx = vec![];
+    if let Some(p) = &ev.indexed_properties {
+        let key = match p.key.is_empty_evidence(ctx)? {
+            EvidenceResult::Evidence(e) => Rc::new(e),
+            EvidenceResult::IsEmpty => {
+                unreachable!("mapping_inhabited should have returned false")
+            }
+        };
+        let value = match p.value.is_empty_evidence(ctx)? {
+            EvidenceResult::Evidence(e) => Rc::new(e),
+            EvidenceResult::IsEmpty => {
+                unreachable!("mapping_inhabited should have returned false")
+            }
+        };
+
+        new_idx.push(IndexedPropertiesEvidence { key, value });
+    }
+
+    Ok(ProperSubtypeEvidence::Mapping(
+        MappingEvidence {
+            vs: new_props.into_iter().collect(),
+            indexed_properties: new_idx.into_iter().collect(),
+        }
+        .into(),
+    )
+    .to_result())
+}
+
 fn mapping_formula_is_empty(
     pos_list: &Option<Rc<Conjunction>>,
     neg_list: &Option<Rc<Conjunction>>,
@@ -513,14 +544,14 @@ fn mapping_formula_is_empty(
     match pos_list {
         None => {}
         Some(pos_atom) => {
-            match pos_atom.atom.as_ref() {
-                Atom::Mapping(a) => combined = ctx.get_mapping_atomic(*a).clone(),
+            match pos_atom.atom {
+                Atom::Mapping(a) => combined = ctx.get_mapping_atomic(a).clone(),
                 _ => unreachable!(),
             };
             let mut p = pos_atom.next.clone();
             while let Some(ref some_p) = p {
-                let p_atom = match &*some_p.atom {
-                    Atom::Mapping(a) => ctx.get_mapping_atomic(*a),
+                let p_atom = match some_p.atom {
+                    Atom::Mapping(a) => ctx.get_mapping_atomic(a),
                     _ => unreachable!(),
                 };
                 let m = intersect_mapping(combined.clone(), p_atom.clone(), ctx)?;
@@ -547,53 +578,15 @@ fn mapping_formula_is_empty(
     }
     match mapping_inhabited(combined.clone(), neg_list, ctx)? {
         MappingInhabited::No => Ok(ProperSubtypeEvidenceResult::IsEmpty),
-        MappingInhabited::Yes(ev) => {
-            let mut new_props = vec![];
-            for (k, it) in ev.vs.iter() {
-                let t = match it.is_empty_evidence(ctx)? {
-                    EvidenceResult::Evidence(e) => (k.clone(), Rc::new(e)),
-                    EvidenceResult::IsEmpty => {
-                        unreachable!("mapping_inhabited should have returned false")
-                    }
-                };
-                new_props.push(t);
-            }
-
-            let mut new_idx = vec![];
-            if let Some(p) = &ev.indexed_properties {
-                let key = match p.key.is_empty_evidence(ctx)? {
-                    EvidenceResult::Evidence(e) => Rc::new(e),
-                    EvidenceResult::IsEmpty => {
-                        unreachable!("mapping_inhabited should have returned false")
-                    }
-                };
-                let value = match p.value.is_empty_evidence(ctx)? {
-                    EvidenceResult::Evidence(e) => Rc::new(e),
-                    EvidenceResult::IsEmpty => {
-                        unreachable!("mapping_inhabited should have returned false")
-                    }
-                };
-
-                new_idx.push(IndexedPropertiesEvidence { key, value });
-            }
-
-            Ok(ProperSubtypeEvidence::Mapping(
-                MappingEvidence {
-                    vs: new_props.into_iter().collect(),
-                    indexed_properties: new_idx.into_iter().collect(),
-                }
-                .into(),
-            )
-            .to_result())
-        }
+        MappingInhabited::Yes(ev) => build_mapping_evidence(ev, ctx),
     }
 }
 
 pub fn mapping_is_empty(
     bdd: &Rc<Bdd>,
-    builder: &mut SemTypeContext,
+    ctx: &mut SemTypeContext,
 ) -> Result<ProperSubtypeEvidenceResult> {
-    match builder.mapping_memo.get(bdd) {
+    match ctx.mapping_memo.get(bdd) {
         Some(mm) => match &mm.0 {
             MemoEmpty::True => return Ok(ProperSubtypeEvidenceResult::IsEmpty),
             MemoEmpty::False(ev) => return Ok(ev.clone()),
@@ -603,15 +596,13 @@ pub fn mapping_is_empty(
             }
         },
         None => {
-            builder
-                .mapping_memo
+            ctx.mapping_memo
                 .insert((**bdd).clone(), BddMemoEmptyRef(MemoEmpty::Undefined));
         }
     }
 
-    let is_empty = bdd_every_result(bdd, &None, &None, mapping_formula_is_empty, builder)?;
-    builder
-        .mapping_memo
+    let is_empty = bdd_every_result(bdd, &None, &None, mapping_formula_is_empty, ctx)?;
+    ctx.mapping_memo
         .get_mut(bdd)
         .expect("bdd should be cached by now")
         .0 = MemoEmpty::from_bool(&is_empty);
@@ -638,8 +629,8 @@ fn list_inhabited(
         None => Ok(ListInhabited::Yes(None, prefix_items.clone())),
         Some(neg) => {
             let mut len = prefix_items.len();
-            let nt = match &*neg.atom {
-                Atom::List(a) => builder.get_list_atomic(*a),
+            let nt = match neg.atom {
+                Atom::List(a) => builder.get_list_atomic(a),
                 _ => unreachable!(),
             };
             let neg_len = nt.prefix_items.len();
@@ -719,8 +710,8 @@ fn list_formula_is_empty(
         None => {}
         Some(pos_atom) => {
             // combine all the positive tuples using intersection
-            let lt = match pos_atom.atom.as_ref() {
-                Atom::List(a) => builder.get_list_atomic(*a).clone(),
+            let lt = match pos_atom.atom {
+                Atom::List(a) => builder.get_list_atomic(a).clone(),
                 _ => unreachable!(),
             };
             prefix_items.clone_from(&lt.prefix_items);
@@ -730,7 +721,7 @@ fn list_formula_is_empty(
 
             while let Some(ref some_p) = p {
                 let d = &some_p.atom;
-                let lt = match d.as_ref() {
+                let lt = match d {
                     Atom::List(a) => builder.get_list_atomic(*a).clone(),
                     _ => unreachable!(),
                 };
@@ -831,7 +822,7 @@ pub fn bdd_mapping_member_type_inner(
             middle,
             right,
         } => {
-            let b_atom_type = match atom.as_ref() {
+            let b_atom_type = match atom {
                 Atom::Mapping(a) => ctx.get_mapping_atomic(*a),
                 _ => unreachable!(),
             };
@@ -940,7 +931,7 @@ fn bdd_mapped_record_member_type_inner_val(
             middle,
             right,
         } => {
-            let b_atom_type = match atom.as_ref() {
+            let b_atom_type = match atom {
                 Atom::Mapping(a) => ctx.get_mapping_atomic(*a),
                 _ => unreachable!(),
             };
@@ -1156,7 +1147,7 @@ fn bdd_list_member_type_inner_val(
             middle,
             right,
         } => {
-            let b_atom_type = match atom.as_ref() {
+            let b_atom_type = match atom {
                 Atom::List(a) => ctx.get_list_atomic(*a),
                 _ => unreachable!(),
             };
@@ -1233,7 +1224,7 @@ pub fn list_indexed_access(
     }
 }
 
-pub fn to_bdd_atoms(it: &Rc<Bdd>) -> Vec<Rc<Atom>> {
+pub fn to_bdd_atoms(it: &Rc<Bdd>) -> Vec<Atom> {
     match it.as_ref() {
         Bdd::True => vec![],
         Bdd::False => vec![],
@@ -1243,7 +1234,7 @@ pub fn to_bdd_atoms(it: &Rc<Bdd>) -> Vec<Rc<Atom>> {
             middle,
             right,
         } => {
-            let mut acc = vec![atom.clone()];
+            let mut acc = vec![*atom];
             acc.extend(to_bdd_atoms(left));
             acc.extend(to_bdd_atoms(middle));
             acc.extend(to_bdd_atoms(right));
@@ -1258,8 +1249,8 @@ pub fn keyof(ctx: &mut SemTypeContext, st: Rc<SemType>) -> anyhow::Result<Rc<Sem
         match it.as_ref() {
             ProperSubtype::Mapping(it) => {
                 for atom in to_bdd_atoms(it) {
-                    if let Atom::Mapping(a) = atom.as_ref() {
-                        let a = ctx.get_mapping_atomic(*a);
+                    if let Atom::Mapping(a) = atom {
+                        let a = ctx.get_mapping_atomic(a);
 
                         for k in a.vs.keys() {
                             let key_ty =

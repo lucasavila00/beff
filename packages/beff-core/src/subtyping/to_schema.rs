@@ -68,13 +68,13 @@ impl SemTypeResolverContext<'_> {
 
     fn convert_to_schema_list_node_bdd_vec(
         &mut self,
-        atom: &Rc<Atom>,
+        atom: Atom,
         left: &Rc<Bdd>,
         middle: &Rc<Bdd>,
         right: &Rc<Bdd>,
     ) -> anyhow::Result<Vec<Rc<ListAtomic>>> {
-        let mt = match atom.as_ref() {
-            Atom::List(a) => self.0.get_list_atomic(*a).clone(),
+        let mt = match atom {
+            Atom::List(a) => self.0.get_list_atomic(a).clone(),
             _ => unreachable!(),
         };
 
@@ -95,7 +95,7 @@ impl SemTypeResolverContext<'_> {
             } => {
                 let ty = vec![mt.clone()]
                     .into_iter()
-                    .chain(self.convert_to_schema_list_node_bdd_vec(atom, left, middle, right)?);
+                    .chain(self.convert_to_schema_list_node_bdd_vec(*atom, left, middle, right)?);
 
                 acc.push(Self::intersect_list_atomics(ty.collect())?);
             }
@@ -124,7 +124,7 @@ impl SemTypeResolverContext<'_> {
             } => {
                 let ty = vec![Self::list_atomic_complement(mt.clone())?]
                     .into_iter()
-                    .chain(self.convert_to_schema_list_node_bdd_vec(atom, left, middle, right)?);
+                    .chain(self.convert_to_schema_list_node_bdd_vec(*atom, left, middle, right)?);
 
                 acc.push(Self::intersect_list_atomics(ty.collect())?);
             }
@@ -149,7 +149,7 @@ impl SemTypeResolverContext<'_> {
                 left,
                 middle,
                 right,
-            } => self.convert_to_schema_list_node_bdd_vec(atom, left, middle, right),
+            } => self.convert_to_schema_list_node_bdd_vec(*atom, left, middle, right),
         }
     }
 }
@@ -218,13 +218,13 @@ impl<'a, 'b> SchemerContext<'a, 'b> {
 
     fn convert_to_schema_mapping_node(
         &mut self,
-        atom: &Rc<Atom>,
+        atom: Atom,
         left: &Rc<Bdd>,
         middle: &Rc<Bdd>,
         right: &Rc<Bdd>,
     ) -> anyhow::Result<Runtype> {
-        let mt = match atom.as_ref() {
-            Atom::Mapping(a) => self.ctx.0.get_mapping_atomic(*a).clone(),
+        let mt = match atom {
+            Atom::Mapping(a) => self.ctx.0.get_mapping_atomic(a).clone(),
             _ => unreachable!(),
         };
 
@@ -246,7 +246,7 @@ impl<'a, 'b> SchemerContext<'a, 'b> {
                 right,
             } => {
                 let ty = vec![explained_sts.clone()].into_iter().chain(vec![
-                    self.convert_to_schema_mapping_node(atom, left, middle, right)?
+                    self.convert_to_schema_mapping_node(*atom, left, middle, right)?
                 ]);
                 acc.push(Runtype::all_of(ty.collect()));
             }
@@ -274,7 +274,7 @@ impl<'a, 'b> SchemerContext<'a, 'b> {
             } => {
                 let ty = Runtype::all_of(vec![
                     Runtype::StNot(Box::new(explained_sts)),
-                    self.convert_to_schema_mapping_node(atom, left, middle, right)?,
+                    self.convert_to_schema_mapping_node(*atom, left, middle, right)?,
                 ]);
                 acc.push(ty)
             }
@@ -295,7 +295,7 @@ impl<'a, 'b> SchemerContext<'a, 'b> {
                 left,
                 middle,
                 right,
-            } => self.convert_to_schema_mapping_node(atom, left, middle, right),
+            } => self.convert_to_schema_mapping_node(*atom, left, middle, right),
         }
     }
 
@@ -337,13 +337,13 @@ impl<'a, 'b> SchemerContext<'a, 'b> {
 
     fn convert_to_schema_list_node(
         &mut self,
-        atom: &Rc<Atom>,
+        atom: Atom,
         left: &Rc<Bdd>,
         middle: &Rc<Bdd>,
         right: &Rc<Bdd>,
     ) -> anyhow::Result<Runtype> {
-        let lt = match atom.as_ref() {
-            Atom::List(a) => self.ctx.0.get_list_atomic(*a).clone(),
+        let lt = match atom {
+            Atom::List(a) => self.ctx.0.get_list_atomic(a).clone(),
             _ => unreachable!(),
         };
 
@@ -365,7 +365,7 @@ impl<'a, 'b> SchemerContext<'a, 'b> {
                 right,
             } => {
                 let ty = vec![explained_sts.clone()].into_iter().chain(vec![
-                    self.convert_to_schema_list_node(atom, left, middle, right)?
+                    self.convert_to_schema_list_node(*atom, left, middle, right)?
                 ]);
                 acc.push(Runtype::all_of(ty.collect()));
             }
@@ -394,7 +394,7 @@ impl<'a, 'b> SchemerContext<'a, 'b> {
             } => {
                 let ty = Runtype::all_of(vec![
                     Runtype::StNot(Box::new(explained_sts)),
-                    self.convert_to_schema_list_node(atom, left, middle, right)?,
+                    self.convert_to_schema_list_node(*atom, left, middle, right)?,
                 ]);
                 acc.push(ty)
             }
@@ -414,7 +414,7 @@ impl<'a, 'b> SchemerContext<'a, 'b> {
                 left,
                 middle,
                 right,
-            } => self.convert_to_schema_list_node(atom, left, middle, right),
+            } => self.convert_to_schema_list_node(*atom, left, middle, right),
         }
     }
 

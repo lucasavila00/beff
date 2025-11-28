@@ -8,6 +8,7 @@ use crate::{ast::runtype::Runtype, NamedSchema};
 use std::collections::{BTreeMap, BTreeSet};
 use std::rc::Rc;
 pub mod bdd;
+pub mod dnf;
 pub mod evidence;
 pub mod semtype;
 pub mod subtype;

@@ -15,6 +15,7 @@ pub enum ProperSubtypeEvidence {
     },
     List(Rc<ListEvidence>),
     Mapping(Rc<MappingEvidence>),
+    MappingDnf, // TODO: can we get evidence here?
 }
 
 #[derive(PartialEq, Eq, Hash, Debug, Ord, PartialOrd, Clone)]
