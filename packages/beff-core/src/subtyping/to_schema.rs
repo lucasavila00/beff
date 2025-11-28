@@ -1,22 +1,22 @@
-use std::{
-    collections::{BTreeMap, BTreeSet},
-    rc::Rc,
+use super::{
+    bdd::{Atom, Bdd, ListAtomic},
+    semtype::{SemType, SemTypeContext},
+    subtype::{NumberRepresentationOrFormat, ProperSubtype, StringLitOrFormat, SubTypeTag},
 };
-
-use anyhow::{bail, Result};
-
 use crate::{
     ast::runtype::{
         CustomFormat, IndexedProperty, Optionality, Runtype, RuntypeConst, TplLitTypeItem,
     },
-    subtyping::{bdd::MappingAtomicType, subtype::VoidUndefinedSubtype},
+    subtyping::{
+        bdd::MappingAtomicType,
+        dnf::{bdd_to_dnf, Conjunction},
+        subtype::VoidUndefinedSubtype,
+    },
     NamedSchema,
 };
-
-use super::{
-    bdd::{Atom, Bdd, ListAtomic},
-    semtype::{SemType, SemTypeContext, SemTypeOps},
-    subtype::{NumberRepresentationOrFormat, ProperSubtype, StringLitOrFormat, SubTypeTag},
+use std::{
+    collections::{BTreeMap, BTreeSet},
+    rc::Rc,
 };
 
 pub enum SchemaMemo {
@@ -25,134 +25,6 @@ pub enum SchemaMemo {
 }
 
 pub struct SemTypeResolverContext<'a>(pub &'a mut SemTypeContext);
-
-impl SemTypeResolverContext<'_> {
-    fn intersect_list_atomics(it: Vec<Rc<ListAtomic>>) -> Result<Rc<ListAtomic>> {
-        let mut items_acc = Rc::new(SemType::new_unknown());
-        for it in it.iter() {
-            items_acc = items_acc.intersect(&it.items)?;
-        }
-
-        let mut prefix_items: Vec<Rc<SemType>> = vec![];
-        let max_len = it.iter().map(|it| it.prefix_items.len()).max().unwrap_or(0);
-        for i in 0..max_len {
-            let mut acc = Rc::new(SemType::new_unknown());
-
-            for atom in &it {
-                if i < atom.prefix_items.len() {
-                    acc = acc.intersect(&atom.prefix_items[i])?;
-                }
-            }
-
-            prefix_items.push(acc);
-        }
-
-        Ok(Rc::new(ListAtomic {
-            items: items_acc,
-            prefix_items,
-        }))
-    }
-
-    fn list_atomic_complement(it: Rc<ListAtomic>) -> Result<Rc<ListAtomic>> {
-        let items = it.items.complement()?;
-        let prefix_items = it
-            .prefix_items
-            .iter()
-            .map(|it| it.complement())
-            .collect::<Result<Vec<_>>>()?;
-        Ok(Rc::new(ListAtomic {
-            items,
-            prefix_items,
-        }))
-    }
-
-    fn convert_to_schema_list_node_bdd_vec(
-        &mut self,
-        atom: Atom,
-        left: &Rc<Bdd>,
-        middle: &Rc<Bdd>,
-        right: &Rc<Bdd>,
-    ) -> anyhow::Result<Vec<Rc<ListAtomic>>> {
-        let mt = match atom {
-            Atom::List(a) => self.0.get_list_atomic(a).clone(),
-            _ => unreachable!(),
-        };
-
-        let mut acc: Vec<Rc<ListAtomic>> = vec![];
-
-        match left.as_ref() {
-            Bdd::True => {
-                acc.push(mt.clone());
-            }
-            Bdd::False => {
-                // noop
-            }
-            Bdd::Node {
-                atom,
-                left,
-                middle,
-                right,
-            } => {
-                let ty = vec![mt.clone()]
-                    .into_iter()
-                    .chain(self.convert_to_schema_list_node_bdd_vec(*atom, left, middle, right)?);
-
-                acc.push(Self::intersect_list_atomics(ty.collect())?);
-            }
-        };
-
-        match middle.as_ref() {
-            Bdd::False => {
-                // noop
-            }
-            Bdd::True | Bdd::Node { .. } => {
-                acc.extend(self.to_schema_list_bdd_vec(middle)?);
-            }
-        }
-        match right.as_ref() {
-            Bdd::True => {
-                acc.push(Self::list_atomic_complement(mt.clone())?);
-            }
-            Bdd::False => {
-                // noop
-            }
-            Bdd::Node {
-                atom,
-                left,
-                middle,
-                right,
-            } => {
-                let ty = vec![Self::list_atomic_complement(mt.clone())?]
-                    .into_iter()
-                    .chain(self.convert_to_schema_list_node_bdd_vec(*atom, left, middle, right)?);
-
-                acc.push(Self::intersect_list_atomics(ty.collect())?);
-            }
-        }
-        Ok(acc)
-    }
-    pub fn to_schema_list_bdd_vec(&mut self, bdd: &Rc<Bdd>) -> anyhow::Result<Vec<Rc<ListAtomic>>> {
-        match bdd.as_ref() {
-            Bdd::True => {
-                // vec![Rc::new(ListAtomic {
-                //     prefix_items: vec![],
-                //     items: Rc::new(SemType::new_unknown()),
-                // })]
-                bail!("to_schema_list_bdd_vec - true should not be here")
-            }
-            Bdd::False => Ok(vec![Rc::new(ListAtomic {
-                prefix_items: vec![],
-                items: Rc::new(SemType::new_never()),
-            })]),
-            Bdd::Node {
-                atom,
-                left,
-                middle,
-                right,
-            } => self.convert_to_schema_list_node_bdd_vec(*atom, left, middle, right),
-        }
-    }
-}
 
 struct SchemerContext<'a, 'b> {
     ctx: SemTypeResolverContext<'a>,
@@ -207,96 +79,40 @@ impl<'a, 'b> SchemerContext<'a, 'b> {
         })
     }
 
-    // fn to_schema_mapping(&mut self, bdd: &Rc<Bdd>) -> JsonSchema {
-    //     let vs = self.ctx.to_schema_mapping_bdd_vec(bdd);
-    //     let vs = vs
-    //         .into_iter()
-    //         .map(|it| self.mapping_atom_schema(&it))
-    //         .collect();
-    //     return JsonSchema::any_of(vs);
-    // }
-
-    fn convert_to_schema_mapping_node(
-        &mut self,
-        atom: Atom,
-        left: &Rc<Bdd>,
-        middle: &Rc<Bdd>,
-        right: &Rc<Bdd>,
-    ) -> anyhow::Result<Runtype> {
-        let mt = match atom {
-            Atom::Mapping(a) => self.ctx.0.get_mapping_atomic(a).clone(),
-            _ => unreachable!(),
-        };
-
-        let explained_sts = self.mapping_atom_schema(&mt)?;
-
+    fn mapping_conjunction_to_schema(&mut self, clause: &Conjunction) -> anyhow::Result<Runtype> {
         let mut acc = vec![];
 
-        match left.as_ref() {
-            Bdd::True => {
-                acc.push(explained_sts.clone());
-            }
-            Bdd::False => {
-                // noop
-            }
-            Bdd::Node {
-                atom,
-                left,
-                middle,
-                right,
-            } => {
-                let ty = vec![explained_sts.clone()].into_iter().chain(vec![
-                    self.convert_to_schema_mapping_node(*atom, left, middle, right)?
-                ]);
-                acc.push(Runtype::all_of(ty.collect()));
-            }
-        };
-        match middle.as_ref() {
-            Bdd::False => {
-                // noop
-            }
-            Bdd::True | Bdd::Node { .. } => {
-                acc.push(self.convert_to_schema_mapping(middle)?);
-            }
+        for atom in &clause.positive {
+            let mt = match atom {
+                Atom::Mapping(a) => self.ctx.0.get_mapping_atomic(*a).clone(),
+                _ => unreachable!(),
+            };
+            let explained_sts = self.mapping_atom_schema(&mt)?;
+            acc.push(explained_sts);
         }
-        match right.as_ref() {
-            Bdd::True => {
-                acc.push(Runtype::StNot(Box::new(explained_sts)));
-            }
-            Bdd::False => {
-                // noop
-            }
-            Bdd::Node {
-                atom,
-                left,
-                middle,
-                right,
-            } => {
-                let ty = Runtype::all_of(vec![
-                    Runtype::StNot(Box::new(explained_sts)),
-                    self.convert_to_schema_mapping_node(*atom, left, middle, right)?,
-                ]);
-                acc.push(ty)
-            }
+        for atom in &clause.negative {
+            let mt = match atom {
+                Atom::Mapping(a) => self.ctx.0.get_mapping_atomic(*a).clone(),
+                _ => unreachable!(),
+            };
+            let explained_sts = self.mapping_atom_schema(&mt)?;
+            acc.push(Runtype::StNot(Box::new(explained_sts)));
         }
-        Ok(Runtype::any_of(acc))
+
+        Ok(Runtype::AllOf(acc.into_iter().collect()))
     }
 
-    fn convert_to_schema_mapping(&mut self, bdd: &Rc<Bdd>) -> anyhow::Result<Runtype> {
-        match bdd.as_ref() {
-            Bdd::True => {
-                bail!("convert_to_schema_mapping - true should not be here")
-            }
-            Bdd::False => {
-                bail!("convert_to_schema_mapping - false should not be here")
-            }
-            Bdd::Node {
-                atom,
-                left,
-                middle,
-                right,
-            } => self.convert_to_schema_mapping_node(*atom, left, middle, right),
+    fn mapping_to_schema(&mut self, bdd: &Rc<Bdd>) -> anyhow::Result<Runtype> {
+        let dnf = bdd_to_dnf(bdd);
+        let mut acc = vec![];
+
+        // The DNF is a disjunction (OR/union) of conjunctions (AND/intersect)
+        for clause in dnf.iter() {
+            let conj = self.mapping_conjunction_to_schema(clause)?;
+            acc.push(conj);
         }
+
+        Ok(Runtype::AnyOf(acc.into_iter().collect()))
     }
 
     fn list_atom_schema(&mut self, mt: &Rc<ListAtomic>) -> anyhow::Result<Runtype> {
@@ -326,96 +142,42 @@ impl<'a, 'b> SchemerContext<'a, 'b> {
         })
     }
 
-    // fn to_schema_list(&mut self, bdd: &Rc<Bdd>) -> JsonSchema {
-    //     let vs = self.ctx.to_schema_list_bdd_vec(bdd);
-    //     let vs = vs
-    //         .into_iter()
-    //         .map(|it| self.list_atom_schema(&it))
-    //         .collect();
-    //     return JsonSchema::any_of(vs);
-    // }
-
-    fn convert_to_schema_list_node(
-        &mut self,
-        atom: Atom,
-        left: &Rc<Bdd>,
-        middle: &Rc<Bdd>,
-        right: &Rc<Bdd>,
-    ) -> anyhow::Result<Runtype> {
-        let lt = match atom {
-            Atom::List(a) => self.ctx.0.get_list_atomic(a).clone(),
-            _ => unreachable!(),
-        };
-
-        let explained_sts = self.list_atom_schema(&lt)?;
-
+    fn list_conjunction_to_schema(&mut self, clause: &Conjunction) -> anyhow::Result<Runtype> {
         let mut acc = vec![];
 
-        match left.as_ref() {
-            Bdd::True => {
-                acc.push(explained_sts.clone());
-            }
-            Bdd::False => {
-                // noop
-            }
-            Bdd::Node {
-                atom,
-                left,
-                middle,
-                right,
-            } => {
-                let ty = vec![explained_sts.clone()].into_iter().chain(vec![
-                    self.convert_to_schema_list_node(*atom, left, middle, right)?
-                ]);
-                acc.push(Runtype::all_of(ty.collect()));
-            }
-        };
+        for atom in &clause.positive {
+            let lt = match atom {
+                Atom::List(a) => self.ctx.0.get_list_atomic(*a).clone(),
+                _ => unreachable!(),
+            };
 
-        match middle.as_ref() {
-            Bdd::False => {
-                // noop
-            }
-            Bdd::True | Bdd::Node { .. } => {
-                acc.push(self.convert_to_schema_list(middle)?);
-            }
+            let explained_sts = self.list_atom_schema(&lt)?;
+            acc.push(explained_sts);
         }
-        match right.as_ref() {
-            Bdd::True => {
-                acc.push(Runtype::StNot(Box::new(explained_sts)));
-            }
-            Bdd::False => {
-                // noop
-            }
-            Bdd::Node {
-                atom,
-                left,
-                middle,
-                right,
-            } => {
-                let ty = Runtype::all_of(vec![
-                    Runtype::StNot(Box::new(explained_sts)),
-                    self.convert_to_schema_list_node(*atom, left, middle, right)?,
-                ]);
-                acc.push(ty)
-            }
+        for atom in &clause.negative {
+            let lt = match atom {
+                Atom::List(a) => self.ctx.0.get_list_atomic(*a).clone(),
+                _ => unreachable!(),
+            };
+
+            let explained_sts = self.list_atom_schema(&lt)?;
+            acc.push(Runtype::StNot(Box::new(explained_sts)));
         }
-        Ok(Runtype::any_of(acc))
+
+        Ok(Runtype::AllOf(acc.into_iter().collect()))
     }
-    fn convert_to_schema_list(&mut self, bdd: &Rc<Bdd>) -> anyhow::Result<Runtype> {
-        match bdd.as_ref() {
-            Bdd::True => {
-                bail!("convert_to_schema_list - true should not be here")
-            }
-            Bdd::False => {
-                bail!("convert_to_schema_list - false should not be here")
-            }
-            Bdd::Node {
-                atom,
-                left,
-                middle,
-                right,
-            } => self.convert_to_schema_list_node(*atom, left, middle, right),
+
+    fn list_to_schema(&mut self, bdd: &Rc<Bdd>) -> anyhow::Result<Runtype> {
+        let dnf = bdd_to_dnf(bdd);
+        let mut acc = vec![];
+
+        // The DNF is a disjunction (OR/union) of conjunctions (AND/intersect)
+        for clause in dnf.iter() {
+            let conj = self.list_conjunction_to_schema(clause)?;
+            acc.push(conj);
         }
+
+        Ok(Runtype::AnyOf(acc.into_iter().collect()))
     }
 
     fn convert_to_schema_no_cache(&mut self, ty: &SemType) -> anyhow::Result<Runtype> {
@@ -520,11 +282,11 @@ impl<'a, 'b> SchemerContext<'a, 'b> {
                     }
                 }
                 ProperSubtype::Mapping(bdd) => {
-                    let mapping_ty = self.convert_to_schema_mapping(bdd)?;
+                    let mapping_ty = self.mapping_to_schema(bdd)?;
                     acc.insert(mapping_ty);
                 }
                 ProperSubtype::List(bdd) => {
-                    acc.insert(self.convert_to_schema_list(bdd)?);
+                    acc.insert(self.list_to_schema(bdd)?);
                 }
                 ProperSubtype::VoidUndefined {
                     allowed,

@@ -53,16 +53,14 @@ impl<'a> ToSemTypeConverter<'a> {
                     items,
                 } = schema
                 {
-                    match builder.list_json_schema_ref_memo.get(name) {
+                    match builder.list_runtype_ref_memo.get(name) {
                         Some(idx) => {
                             let ty = Rc::new(SemTypeContext::mapping_definition_from_idx(*idx));
                             return Ok(ty);
                         }
                         None => {
                             let idx = builder.list_definitions.len();
-                            builder
-                                .list_json_schema_ref_memo
-                                .insert(name.to_string(), idx);
+                            builder.list_runtype_ref_memo.insert(name.to_string(), idx);
                             builder.list_definitions.push(None);
 
                             let items = match items {
@@ -92,7 +90,7 @@ impl<'a> ToSemTypeConverter<'a> {
                     indexed_properties,
                 } = schema
                 {
-                    match builder.mapping_json_schema_ref_memo.get(name) {
+                    match builder.mapping_runtype_ref_memo.get(name) {
                         Some(idx) => {
                             let ty = Rc::new(SemTypeContext::mapping_definition_from_idx(*idx));
                             return Ok(ty);
@@ -100,7 +98,7 @@ impl<'a> ToSemTypeConverter<'a> {
                         None => {
                             let idx = builder.mapping_definitions.len();
                             builder
-                                .mapping_json_schema_ref_memo
+                                .mapping_runtype_ref_memo
                                 .insert(name.to_string(), idx);
                             builder.mapping_definitions.push(None);
                             let vs: BTreeMap<String, Rc<SemType>> = vs

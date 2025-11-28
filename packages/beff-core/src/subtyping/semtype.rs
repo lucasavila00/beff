@@ -348,8 +348,8 @@ pub struct SemTypeContext {
     pub list_definitions: Vec<Option<Rc<ListAtomic>>>,
     pub list_memo: BTreeMap<Bdd, BddMemoEmptyRef>,
 
-    pub mapping_json_schema_ref_memo: BTreeMap<String, usize>,
-    pub list_json_schema_ref_memo: BTreeMap<String, usize>,
+    pub mapping_runtype_ref_memo: BTreeMap<String, usize>,
+    pub list_runtype_ref_memo: BTreeMap<String, usize>,
 }
 impl Default for SemTypeContext {
     fn default() -> Self {
@@ -382,8 +382,8 @@ impl SemTypeContext {
             mapping_memo: BTreeMap::new(),
             mapping_memo_dnf: BTreeMap::new(),
             list_memo: BTreeMap::new(),
-            mapping_json_schema_ref_memo: BTreeMap::new(),
-            list_json_schema_ref_memo: BTreeMap::new(),
+            mapping_runtype_ref_memo: BTreeMap::new(),
+            list_runtype_ref_memo: BTreeMap::new(),
         }
     }
     pub fn number_const(value: NumberRepresentationOrFormat) -> SemType {
