@@ -520,7 +520,7 @@ impl<'a, 'b, R: FileManager> TypeToSchema<'a, 'b, R> {
                         self.box_error(span, DiagnosticInfoMessage::AnyhowError(e.to_string()))
                     })?;
                     let res = self
-                        .to_runtype(subtracted_ty, &mut ctx, span)?
+                        .semtype_to_runtype(subtracted_ty, &mut ctx, span)?
                         .remove_nots_of_intersections_and_empty_of_union(
                             &self.validators_ref(),
                             &mut ctx,
@@ -1657,7 +1657,7 @@ impl<'a, 'b, R: FileManager> TypeToSchema<'a, 'b, R> {
                 let access_st: Rc<SemType> = ctx.indexed_access(st, key).map_err(|e| {
                     self.box_error(&m.span, DiagnosticInfoMessage::AnyhowError(e.to_string()))
                 })?;
-                self.to_runtype(access_st, &mut ctx, &m.prop.span())
+                self.semtype_to_runtype(access_st, &mut ctx, &m.prop.span())
             }
             Expr::Arrow(_a) => Ok(Runtype::Function),
             Expr::Bin(e) => {
@@ -1873,7 +1873,7 @@ impl<'a, 'b, R: FileManager> TypeToSchema<'a, 'b, R> {
             .collect()
     }
 
-    fn to_runtype(
+    fn semtype_to_runtype(
         &mut self,
         access_st: Rc<SemType>,
         ctx: &mut SemTypeContext,
@@ -1974,7 +1974,7 @@ impl<'a, 'b, R: FileManager> TypeToSchema<'a, 'b, R> {
         let access_st: Rc<SemType> = ctx.indexed_access(obj_st, idx_st).map_err(|e| {
             self.box_error(&i.span, DiagnosticInfoMessage::AnyhowError(e.to_string()))
         })?;
-        self.to_runtype(access_st, &mut ctx, &i.span())
+        self.semtype_to_runtype(access_st, &mut ctx, &i.span())
     }
     fn convert_keyof(&mut self, k: &TsType) -> Res<Runtype> {
         let json_schema = self.convert_ts_type(k)?;
@@ -2000,7 +2000,7 @@ impl<'a, 'b, R: FileManager> TypeToSchema<'a, 'b, R> {
             self.box_error(&k.span(), DiagnosticInfoMessage::AnyhowError(e.to_string()))
         })?;
 
-        self.to_runtype(keyof_st, &mut ctx, &k.span())
+        self.semtype_to_runtype(keyof_st, &mut ctx, &k.span())
     }
 
     fn extract_union(&self, tp: Runtype) -> Result<Vec<Runtype>, DiagnosticInfoMessage> {
