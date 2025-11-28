@@ -6,7 +6,7 @@ use crate::{
     subtyping::dnf::dnf_mapping_is_empty,
 };
 use anyhow::{bail, Result};
-use std::rc::Rc;
+use std::{collections::BTreeSet, rc::Rc};
 
 use super::{
     bdd::{list_is_empty, Bdd, BddOps},
@@ -90,19 +90,17 @@ impl CustomFormat {
     fn is_subtype(&self, other: &CustomFormat) -> bool {
         let CustomFormat(f1, args1) = self;
         let CustomFormat(f2, args2) = other;
-        // f1 == f2 and args2 is a prefix of args1
-        if f1 != f2 {
-            return false;
-        }
-        if args2.len() > args1.len() {
-            return false;
-        }
-        for (a1, a2) in args1.iter().zip(args2.iter()) {
-            if a1 != a2 {
-                return false;
-            }
-        }
-        true
+
+        let mut set1 = BTreeSet::new();
+        set1.insert(f1);
+        set1.extend(args1.iter());
+
+        let mut set2 = BTreeSet::new();
+        set2.insert(f2);
+        set2.extend(args2.iter());
+
+        // set2 is a subset of set1
+        set2.is_subset(&set1)
     }
 }
 

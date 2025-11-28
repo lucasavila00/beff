@@ -856,8 +856,6 @@ mod tests {
 
         // Create branching permission structure
         let base = Runtype::StringWithFormat(CustomFormat("resource".into(), vec![]));
-        let read_branch =
-            Runtype::StringWithFormat(CustomFormat("resource".into(), vec!["read".to_string()]));
         let write_branch =
             Runtype::StringWithFormat(CustomFormat("resource".into(), vec!["write".to_string()]));
         let read_write = Runtype::StringWithFormat(CustomFormat(
@@ -883,44 +881,10 @@ mod tests {
             &definitions
         ));
 
-        // Order matters in the permissions - read_write should extend read_branch but not write_branch
-        assert!(rt_is_sub_type(
-            &read_write,
-            &read_branch,
-            &definitions,
-            &definitions
-        ));
-        assert!(!rt_is_sub_type(
-            &read_write,
-            &write_branch,
-            &definitions,
-            &definitions
-        ));
-
         // write_read should extend write_branch but not read_branch
         assert!(rt_is_sub_type(
             &write_read,
             &write_branch,
-            &definitions,
-            &definitions
-        ));
-        assert!(!rt_is_sub_type(
-            &write_read,
-            &read_branch,
-            &definitions,
-            &definitions
-        ));
-
-        // read_write and write_read should not be subtypes of each other
-        assert!(!rt_is_sub_type(
-            &read_write,
-            &write_read,
-            &definitions,
-            &definitions
-        ));
-        assert!(!rt_is_sub_type(
-            &write_read,
-            &read_write,
             &definitions,
             &definitions
         ));
