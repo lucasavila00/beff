@@ -1,14 +1,6 @@
-type A = { a: string };
-type R = Record<string, string>;
+type A = Record<"a" | "b", string>;
 
-const receivesA = (arg: A) => {};
-const receivesR = (arg: R) => {};
+type B = Record<string, string>;
 
-const a: A = { a: "hello" };
-const r: R = { a: "hello", b: "world" };
-
-receivesA(a); // OK
-receivesA(r); // OK
-
-type X1 = A extends R ? true : false; // true
-type X2 = R extends A ? true : false; // false
+type R1 = A extends B ? true : false; // true
+type R2 = B extends A ? true : false; // false

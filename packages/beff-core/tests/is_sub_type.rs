@@ -1159,22 +1159,22 @@ mod tests {
         assert!(res);
     }
 
-    // #[test]
-    // fn object_with_optional_property_subtyping() {
-    //     let definitions = vec![];
+    #[test]
+    fn object_with_optional_property_subtyping() {
+        let definitions = vec![];
 
-    //     // {a?: string} should be a subtype of Record<string, string>
-    //     let obj = Runtype::object(vec![("a".into(), Runtype::String.optional())]);
-    //     let record = Runtype::record(Runtype::String, Runtype::String.optional());
+        // {a?: string} should be a subtype of { [key: string]?: string  }
+        let obj = Runtype::object(vec![("a".into(), Runtype::String.optional())]);
+        let record = Runtype::record(Runtype::String, Runtype::String.optional());
 
-    //     let res = rt_is_sub_type(&obj, &record, &definitions, &definitions);
-    //     assert!(res);
+        let res = rt_is_sub_type(&obj, &record, &definitions, &definitions);
+        assert!(res);
 
-    //     // {a?: string} should NOT be a subtype of Record<string, string> (required)
-    //     let record_required = Runtype::record(Runtype::String, Runtype::String.required());
-    //     let res = rt_is_sub_type(&obj, &record_required, &definitions, &definitions);
-    //     assert!(!res);
-    // }
+        // {a?: string} should be a subtype of { [key: string]: string  } (required)
+        let record_required = Runtype::record(Runtype::String, Runtype::String.required());
+        let res = rt_is_sub_type(&obj, &record_required, &definitions, &definitions);
+        assert!(res);
+    }
 
     #[test]
     fn empty_object_is_subtype_of_record() {
@@ -1211,37 +1211,37 @@ mod tests {
         assert!(res);
     }
 
-    // #[test]
-    // fn record_with_specific_keys_subtyping() {
-    //     let definitions = vec![];
+    #[test]
+    fn record_with_specific_keys_subtyping() {
+        let definitions = vec![];
 
-    //     // Record<"a" | "b", string> should be a subtype of Record<string, string>
-    //     let specific_record = Runtype::record(
-    //         Runtype::any_of(vec![
-    //             Runtype::single_string_const("a"),
-    //             Runtype::single_string_const("b"),
-    //         ]),
-    //         Runtype::String.required(),
-    //     );
-    //     let general_record = Runtype::record(Runtype::String, Runtype::String.required());
+        // Record<"a" | "b", string> should be a subtype of Record<string, string>
+        let specific_record = Runtype::record(
+            Runtype::any_of(vec![
+                Runtype::single_string_const("a"),
+                Runtype::single_string_const("b"),
+            ]),
+            Runtype::String.required(),
+        );
+        let general_record = Runtype::record(Runtype::String, Runtype::String.required());
 
-    //     let res = rt_is_sub_type(
-    //         &specific_record,
-    //         &general_record,
-    //         &definitions,
-    //         &definitions,
-    //     );
-    //     assert!(res);
+        let res = rt_is_sub_type(
+            &specific_record,
+            &general_record,
+            &definitions,
+            &definitions,
+        );
+        assert!(res);
 
-    //     // General record should NOT be a subtype of specific record
-    //     let res = rt_is_sub_type(
-    //         &general_record,
-    //         &specific_record,
-    //         &definitions,
-    //         &definitions,
-    //     );
-    //     assert!(!res);
-    // }
+        // General record should NOT be a subtype of specific record
+        let res = rt_is_sub_type(
+            &general_record,
+            &specific_record,
+            &definitions,
+            &definitions,
+        );
+        assert!(!res);
+    }
 
     #[test]
     fn object_with_extra_properties_is_subtype_of_record() {
@@ -1333,26 +1333,26 @@ mod tests {
         assert!(res);
     }
 
-    // #[test]
-    // fn object_with_const_string_keys() {
-    //     let definitions = vec![];
+    #[test]
+    fn object_with_const_string_keys() {
+        let definitions = vec![];
 
-    //     // {a: string} with explicit string literal key
-    //     let obj = Runtype::object(vec![("a".into(), Runtype::String.required())]);
-    //     let record = Runtype::record(
-    //         Runtype::single_string_const("a"),
-    //         Runtype::String.required(),
-    //     );
+        // {a: string} with explicit string literal key
+        let obj = Runtype::object(vec![("a".into(), Runtype::String.required())]);
+        let record = Runtype::record(
+            Runtype::single_string_const("a"),
+            Runtype::String.required(),
+        );
 
-    //     // Object should be a subtype of the specific record
-    //     let res = rt_is_sub_type(&obj, &record, &definitions, &definitions);
-    //     assert!(res);
+        // Object should be a subtype of the specific record
+        let res = rt_is_sub_type(&obj, &record, &definitions, &definitions);
+        assert!(res);
 
-    //     // Object with key "b" should NOT be a subtype
-    //     let obj_b = Runtype::object(vec![("b".into(), Runtype::String.required())]);
-    //     let res = rt_is_sub_type(&obj_b, &record, &definitions, &definitions);
-    //     assert!(!res);
-    // }
+        // Object with key "b" should NOT be a subtype
+        let obj_b = Runtype::object(vec![("b".into(), Runtype::String.required())]);
+        let res = rt_is_sub_type(&obj_b, &record, &definitions, &definitions);
+        assert!(!res);
+    }
 
     #[test]
     fn complex_record_subtyping() {
