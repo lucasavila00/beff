@@ -1,5 +1,11 @@
 # @beff/cli
 
+## 0.0.110
+
+### Patch Changes
+
+- improve semtypes of objects
+
 ## 0.0.109
 
 ### Patch Changes

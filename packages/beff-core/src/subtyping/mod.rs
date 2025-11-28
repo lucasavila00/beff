@@ -8,12 +8,25 @@ use crate::{ast::runtype::Runtype, NamedSchema};
 use std::collections::{BTreeMap, BTreeSet};
 use std::rc::Rc;
 pub mod bdd;
-pub mod evidence;
+pub mod dnf;
+pub mod mapping;
 pub mod semtype;
 pub mod subtype;
 pub mod to_schema;
 use anyhow::Result;
 use anyhow::{anyhow, bail};
+
+#[derive(PartialEq, Eq, Hash, Debug, Ord, PartialOrd, Clone, Copy)]
+pub enum IsEmptyStatus {
+    NotEmpty,
+    IsEmpty,
+}
+
+impl IsEmptyStatus {
+    pub fn is_empty(&self) -> bool {
+        matches!(self, IsEmptyStatus::IsEmpty)
+    }
+}
 
 struct ToSemTypeConverter<'a> {
     validators: &'a [&'a NamedSchema],
@@ -52,16 +65,14 @@ impl<'a> ToSemTypeConverter<'a> {
                     items,
                 } = schema
                 {
-                    match builder.list_json_schema_ref_memo.get(name) {
+                    match builder.list_runtype_ref_memo.get(name) {
                         Some(idx) => {
                             let ty = Rc::new(SemTypeContext::mapping_definition_from_idx(*idx));
                             return Ok(ty);
                         }
                         None => {
                             let idx = builder.list_definitions.len();
-                            builder
-                                .list_json_schema_ref_memo
-                                .insert(name.to_string(), idx);
+                            builder.list_runtype_ref_memo.insert(name.to_string(), idx);
                             builder.list_definitions.push(None);
 
                             let items = match items {
@@ -91,7 +102,7 @@ impl<'a> ToSemTypeConverter<'a> {
                     indexed_properties,
                 } = schema
                 {
-                    match builder.mapping_json_schema_ref_memo.get(name) {
+                    match builder.mapping_runtype_ref_memo.get(name) {
                         Some(idx) => {
                             let ty = Rc::new(SemTypeContext::mapping_definition_from_idx(*idx));
                             return Ok(ty);
@@ -99,7 +110,7 @@ impl<'a> ToSemTypeConverter<'a> {
                         None => {
                             let idx = builder.mapping_definitions.len();
                             builder
-                                .mapping_json_schema_ref_memo
+                                .mapping_runtype_ref_memo
                                 .insert(name.to_string(), idx);
                             builder.mapping_definitions.push(None);
                             let vs: BTreeMap<String, Rc<SemType>> = vs
@@ -107,7 +118,7 @@ impl<'a> ToSemTypeConverter<'a> {
                                 .map(|(k, v)| match v {
                                     Optionality::Optional(v) => {
                                         self.convert_to_sem_type(v, builder).and_then(|v| {
-                                            SemTypeContext::optional(v).map(|v| (k.clone(), v))
+                                            SemTypeContext::make_optional(v).map(|v| (k.clone(), v))
                                         })
                                     }
                                     Optionality::Required(v) => {
@@ -120,7 +131,7 @@ impl<'a> ToSemTypeConverter<'a> {
                                 let v = match &it.value {
                                     Optionality::Optional(v) => self
                                         .convert_to_sem_type(v, builder)
-                                        .and_then(SemTypeContext::optional)?,
+                                        .and_then(SemTypeContext::make_optional)?,
                                     Optionality::Required(v) => {
                                         self.convert_to_sem_type(v, builder)?
                                     }
@@ -195,7 +206,7 @@ impl<'a> ToSemTypeConverter<'a> {
                     .map(|(k, v)| match v {
                         Optionality::Optional(v) => self
                             .convert_to_sem_type(v, builder)
-                            .and_then(|v| SemTypeContext::optional(v).map(|v| (k.clone(), v))),
+                            .and_then(|v| SemTypeContext::make_optional(v).map(|v| (k.clone(), v))),
                         Optionality::Required(v) => {
                             self.convert_to_sem_type(v, builder).map(|v| (k.clone(), v))
                         }
@@ -206,7 +217,7 @@ impl<'a> ToSemTypeConverter<'a> {
                     let v = match &it.value {
                         Optionality::Optional(v) => self
                             .convert_to_sem_type(v, builder)
-                            .and_then(SemTypeContext::optional)?,
+                            .and_then(SemTypeContext::make_optional)?,
                         Optionality::Required(v) => self.convert_to_sem_type(v, builder)?,
                     };
                     let k = self.convert_to_sem_type(&it.key, builder)?;
@@ -252,6 +263,8 @@ impl<'a> ToSemTypeConverter<'a> {
                 Ok(chd.complement()?)
             }
             Runtype::Function => Ok(SemTypeContext::function().into()),
+            Runtype::Undefined => Ok(SemTypeContext::undefined().into()),
+            Runtype::Void => Ok(SemTypeContext::void().into()),
         }
     }
 }

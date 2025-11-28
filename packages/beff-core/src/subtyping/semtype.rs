@@ -1,13 +1,13 @@
 use crate::subtyping::{
     bdd::{IndexedPropertiesAtomic, MappingAtomicType},
-    evidence::Evidence,
-    subtype::NumberRepresentationOrFormat,
+    dnf::Dnf,
+    subtype::{NumberRepresentationOrFormat, VoidUndefinedSubtype},
+    IsEmptyStatus,
 };
 use anyhow::Result;
 
 use super::{
     bdd::{keyof, list_indexed_access, mapping_indexed_access, Atom, Bdd, ListAtomic},
-    evidence::{EvidenceResult, ProperSubtypeEvidenceResult},
     subtype::{
         BasicTypeBitSet, BasicTypeCode, ProperSubtype, ProperSubtypeOps, StringLitOrFormat,
         SubType, SubTypeTag, VAL,
@@ -95,7 +95,7 @@ pub type SemType = ComplexSemType;
 
 pub trait SemTypeOps {
     fn is_empty(&self, ctx: &mut SemTypeContext) -> Result<bool>;
-    fn is_empty_evidence(&self, ctx: &mut SemTypeContext) -> Result<EvidenceResult>;
+    fn is_empty_status(&self, ctx: &mut SemTypeContext) -> Result<IsEmptyStatus>;
     fn intersect(&self, t2: &Rc<SemType>) -> Result<Rc<SemType>>;
     fn union(&self, t2: &Rc<SemType>) -> Result<Rc<SemType>>;
     fn diff(&self, t2: &Rc<SemType>) -> Result<Rc<SemType>>;
@@ -105,29 +105,27 @@ pub trait SemTypeOps {
 }
 
 impl SemTypeOps for Rc<SemType> {
-    fn is_empty_evidence(&self, builder: &mut SemTypeContext) -> Result<EvidenceResult> {
+    fn is_empty_status(&self, builder: &mut SemTypeContext) -> Result<IsEmptyStatus> {
         if self.all != 0 {
             for i in SubTypeTag::all() {
                 if (self.all & i.code()) != 0 {
-                    return Ok(Evidence::All(i).to_result());
+                    return Ok(IsEmptyStatus::NotEmpty);
                 }
             }
             unreachable!("should have found a tag")
         }
         for st in self.subtype_data.iter() {
-            match st.is_empty_evidence(builder)? {
-                ProperSubtypeEvidenceResult::IsEmpty => {}
-                ProperSubtypeEvidenceResult::Evidence(st) => {
-                    return Ok(Evidence::Proper(st).to_result())
-                }
+            match st.is_empty_status(builder)? {
+                IsEmptyStatus::IsEmpty => {}
+                IsEmptyStatus::NotEmpty => return Ok(IsEmptyStatus::NotEmpty),
             }
         }
-        Ok(EvidenceResult::IsEmpty)
+        Ok(IsEmptyStatus::IsEmpty)
     }
     fn is_empty(&self, builder: &mut SemTypeContext) -> Result<bool> {
         Ok(matches!(
-            self.is_empty_evidence(builder)?,
-            EvidenceResult::IsEmpty
+            self.is_empty_status(builder)?,
+            IsEmptyStatus::IsEmpty
         ))
     }
 
@@ -261,8 +259,8 @@ impl SemTypeOps for Rc<SemType> {
 }
 
 impl SemType {
-    pub fn has_void(&self) -> bool {
-        (self.all & SubTypeTag::Void.code()) != 0
+    pub fn has_optional(&self) -> bool {
+        (self.all & SubTypeTag::OptionalProp.code()) != 0
     }
     pub fn is_subtype_of_string(&self) -> bool {
         let only_string_sub = self.all == 0
@@ -274,6 +272,18 @@ impl SemType {
 
         is_string || only_string_sub
     }
+
+    pub fn is_subtype_of_number(&self) -> bool {
+        let only_number_sub = self.all == 0
+            && self
+                .subtype_data
+                .iter()
+                .any(|it| it.tag() == SubTypeTag::Number);
+        let is_number = (self.all & SubTypeTag::Number.code()) != 0;
+
+        is_number || only_number_sub
+    }
+
     pub fn is_all_strings(&self) -> bool {
         self.all == SubTypeTag::String.code()
     }
@@ -323,15 +333,15 @@ impl SemType {
 #[derive(Debug, Clone)]
 pub enum MemoEmpty {
     True,
-    False(ProperSubtypeEvidenceResult),
+    False(IsEmptyStatus),
     Undefined,
 }
 
 impl MemoEmpty {
-    pub fn from_bool(b: &ProperSubtypeEvidenceResult) -> MemoEmpty {
+    pub fn from_bool(b: &IsEmptyStatus) -> MemoEmpty {
         match b {
-            ProperSubtypeEvidenceResult::IsEmpty => MemoEmpty::True,
-            ProperSubtypeEvidenceResult::Evidence(_) => MemoEmpty::False(b.clone()),
+            IsEmptyStatus::IsEmpty => MemoEmpty::True,
+            IsEmptyStatus::NotEmpty => MemoEmpty::False(*b),
         }
     }
 }
@@ -342,12 +352,13 @@ pub struct BddMemoEmptyRef(pub MemoEmpty);
 pub struct SemTypeContext {
     pub mapping_definitions: Vec<Option<Rc<MappingAtomicType>>>,
     pub mapping_memo: BTreeMap<Bdd, BddMemoEmptyRef>,
+    pub mapping_memo_dnf: BTreeMap<Rc<Dnf>, BddMemoEmptyRef>,
 
     pub list_definitions: Vec<Option<Rc<ListAtomic>>>,
     pub list_memo: BTreeMap<Bdd, BddMemoEmptyRef>,
 
-    pub mapping_json_schema_ref_memo: BTreeMap<String, usize>,
-    pub list_json_schema_ref_memo: BTreeMap<String, usize>,
+    pub mapping_runtype_ref_memo: BTreeMap<String, usize>,
+    pub list_runtype_ref_memo: BTreeMap<String, usize>,
 }
 impl Default for SemTypeContext {
     fn default() -> Self {
@@ -378,9 +389,10 @@ impl SemTypeContext {
             list_definitions: vec![],
             mapping_definitions: vec![],
             mapping_memo: BTreeMap::new(),
+            mapping_memo_dnf: BTreeMap::new(),
             list_memo: BTreeMap::new(),
-            mapping_json_schema_ref_memo: BTreeMap::new(),
-            list_json_schema_ref_memo: BTreeMap::new(),
+            mapping_runtype_ref_memo: BTreeMap::new(),
+            list_runtype_ref_memo: BTreeMap::new(),
         }
     }
     pub fn number_const(value: NumberRepresentationOrFormat) -> SemType {
@@ -470,11 +482,31 @@ impl SemTypeContext {
     pub fn null() -> SemType {
         SemType::new_basic(SubTypeTag::Null.code())
     }
-    pub fn void() -> SemType {
-        SemType::new_basic(SubTypeTag::Void.code())
+    pub fn undefined() -> SemType {
+        SemType::new_complex(
+            0x0,
+            vec![ProperSubtype::VoidUndefined {
+                allowed: true,
+                values: vec![VoidUndefinedSubtype::Undefined],
+            }
+            .into()],
+        )
     }
-    pub fn optional(it: Rc<SemType>) -> Result<Rc<SemType>> {
-        let t2 = Self::void();
+    pub fn void() -> SemType {
+        SemType::new_complex(
+            0x0,
+            vec![ProperSubtype::VoidUndefined {
+                allowed: true,
+                values: vec![VoidUndefinedSubtype::Void],
+            }
+            .into()],
+        )
+    }
+    pub fn optional_prop() -> SemType {
+        SemType::new_basic(SubTypeTag::OptionalProp.code())
+    }
+    pub fn make_optional(it: Rc<SemType>) -> Result<Rc<SemType>> {
+        let t2 = Self::optional_prop();
         Rc::new(it).union(&Rc::new(t2))
     }
     pub fn never() -> SemType {
@@ -529,9 +561,13 @@ impl SemTypeContext {
         idx_st: Rc<SemType>,
     ) -> anyhow::Result<Rc<SemType>> {
         let list_result = list_indexed_access(self, obj_st.clone(), idx_st.clone())?;
-        let mapping_result = mapping_indexed_access(self, obj_st, idx_st)?;
+        let mapping_result = mapping_indexed_access(self, obj_st.clone(), idx_st.clone())?;
+        let mut acc = list_result.union(&mapping_result)?;
 
-        list_result.union(&mapping_result)
+        if idx_st.is_subtype_of_number() && obj_st.is_subtype_of_string() {
+            acc = acc.union(&Rc::new(SemTypeContext::string()))?;
+        }
+        Ok(acc)
     }
 
     pub fn keyof(&mut self, st: Rc<SemType>) -> anyhow::Result<Rc<SemType>> {

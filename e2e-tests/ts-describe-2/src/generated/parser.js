@@ -1127,114 +1127,58 @@ const buildParsers = (args) => {
   return acc;
 };
 
-const RequiredStringFormats = ["ValidCurrency"];
+const RequiredStringFormats = [];
 const RequiredNumberFormats = [];
 const direct_hoist_0 = new TypeofRuntype("string");
-const direct_hoist_1 = new TypeofRuntype("number");
-const direct_hoist_2 = new ConstRuntype("a");
+const direct_hoist_1 = new NullishRuntype("undefined");
+const direct_hoist_2 = new AnyOfRuntype([
+    direct_hoist_1,
+    direct_hoist_0
+]);
+const direct_hoist_3 = new NullishRuntype("void");
+const direct_hoist_4 = new AnyOfRuntype([
+    direct_hoist_3,
+    direct_hoist_0
+]);
+const direct_hoist_5 = new NullishRuntype("null");
+const direct_hoist_6 = new AnyOfRuntype([
+    direct_hoist_5,
+    direct_hoist_0
+]);
+const direct_hoist_7 = new AnyOfConstsRuntype([
+    "a",
+    "b",
+    "c",
+    "d",
+    "e"
+]);
 const namedRuntypes = {
-    "T1": new ObjectRuntype({
+    "BeforeRequired": new ObjectRuntype({
         "a": direct_hoist_0,
-        "b": direct_hoist_1
+        "b": direct_hoist_2,
+        "c": direct_hoist_4,
+        "d": direct_hoist_6,
+        "e": new OptionalField(direct_hoist_0)
     }, []),
-    "T2": new ObjectRuntype({
-        "t1": new RefRuntype("T1")
+    "KeyofBeforeRequired": direct_hoist_7,
+    "AfterRequired": new ObjectRuntype({
+        "a": direct_hoist_0,
+        "b": direct_hoist_2,
+        "c": direct_hoist_4,
+        "d": direct_hoist_6,
+        "e": direct_hoist_0
     }, []),
-    "T3": new ObjectRuntype({
-        "t2Array": new ArrayRuntype(new RefRuntype("T2"))
-    }, []),
-    "InvalidSchemaWithDate": new ObjectRuntype({
-        "x": new DateRuntype()
-    }, []),
-    "InvalidSchemaWithBigInt": new ObjectRuntype({
-        "x": new BigIntRuntype()
-    }, []),
-    "DiscriminatedUnion": new AnyOfDiscriminatedRuntype([
-        new ObjectRuntype({
-            "a1": direct_hoist_0,
-            "a11": new OptionalField(direct_hoist_0),
-            "subType": new ConstRuntype("a1"),
-            "type": direct_hoist_2
-        }, []),
-        new ObjectRuntype({
-            "a2": direct_hoist_0,
-            "subType": new ConstRuntype("a2"),
-            "type": direct_hoist_2
-        }, []),
-        new ObjectRuntype({
-            "type": new ConstRuntype("b"),
-            "value": direct_hoist_1
-        }, [])
-    ], "type", {
-        "a": new AnyOfDiscriminatedRuntype([
-            new ObjectRuntype({
-                "a1": direct_hoist_0,
-                "a11": new OptionalField(direct_hoist_0),
-                "subType": new ConstRuntype("a1"),
-                "type": direct_hoist_2
-            }, []),
-            new ObjectRuntype({
-                "a2": direct_hoist_0,
-                "subType": new ConstRuntype("a2"),
-                "type": direct_hoist_2
-            }, [])
-        ], "subType", {
-            "a1": new ObjectRuntype({
-                "a1": direct_hoist_0,
-                "a11": new OptionalField(direct_hoist_0),
-                "subType": new ConstRuntype("a1"),
-                "type": direct_hoist_2
-            }, []),
-            "a2": new ObjectRuntype({
-                "a2": direct_hoist_0,
-                "subType": new ConstRuntype("a2"),
-                "type": direct_hoist_2
-            }, [])
-        }),
-        "b": new ObjectRuntype({
-            "type": new ConstRuntype("b"),
-            "value": direct_hoist_1
-        }, [])
-    }),
-    "RecursiveTree": new ObjectRuntype({
-        "children": new ArrayRuntype(new RefRuntype("RecursiveTree")),
-        "value": direct_hoist_1
-    }, []),
-    "SemVer": new RegexRuntype(/(\d+(\.\d+)?)(\.)(\d+(\.\d+)?)(\.)(\d+(\.\d+)?)/, "`${number}.${number}.${number}`"),
-    "NonEmptyString": new TupleRuntype([
-        direct_hoist_0
-    ], direct_hoist_0),
-    "ValidCurrency": new StringWithFormatRuntype([
-        "ValidCurrency"
-    ])
+    "KeyofAfterRequired": direct_hoist_7,
+    "SomeString": direct_hoist_0,
+    "SomeChar": direct_hoist_0
 };
 const buildParsersInput = {
-    "string": direct_hoist_0,
-    "number": direct_hoist_1,
-    "boolean": new TypeofRuntype("boolean"),
-    "null": new NullishRuntype("null"),
-    "undefined": new NullishRuntype("undefined"),
-    "object": new ObjectRuntype({}, [
-        {
-            "key": new AnyOfRuntype([
-                direct_hoist_0,
-                direct_hoist_1
-            ]),
-            "value": new AnyRuntype()
-        }
-    ]),
-    "anyArray": new ArrayRuntype(new AnyRuntype()),
-    "any": new AnyRuntype(),
-    "T1": new RefRuntype("T1"),
-    "T2": new RefRuntype("T2"),
-    "T3": new RefRuntype("T3"),
-    "InvalidSchemaWithDate": new RefRuntype("InvalidSchemaWithDate"),
-    "InvalidSchemaWithBigInt": new RefRuntype("InvalidSchemaWithBigInt"),
-    "DiscriminatedUnion": new RefRuntype("DiscriminatedUnion"),
-    "RecursiveTree": new RefRuntype("RecursiveTree"),
-    "SemVer": new RefRuntype("SemVer"),
-    "NonEmptyString": new RefRuntype("NonEmptyString"),
-    "ValidCurrency": new RefRuntype("ValidCurrency")
+    "BeforeRequired": new RefRuntype("BeforeRequired"),
+    "KeyofBeforeRequired": new RefRuntype("KeyofBeforeRequired"),
+    "AfterRequired": new RefRuntype("AfterRequired"),
+    "KeyofAfterRequired": new RefRuntype("KeyofAfterRequired"),
+    "SomeString": new RefRuntype("SomeString"),
+    "SomeChar": new RefRuntype("SomeChar")
 };
 
 export default { buildParsers };

@@ -251,7 +251,7 @@ fn runtype_any_of_discriminated(
                             // .filter(|it| it.0 != &discriminator)
                             .map(|it| (it.0.clone(), it.1.clone()))
                             .collect();
-                        let new_obj = Runtype::no_index_object(new_obj_vs);
+                        let new_obj = Runtype::object(new_obj_vs);
                         cases.push(new_obj);
                     }
                 }
@@ -454,41 +454,8 @@ fn hoist_identifier(name: usize) -> Expr {
     Expr::Ident(identifier(&hoist_name(name)))
 }
 
-fn optionality_wrapper(tag: &str, inner: Expr) -> Expr {
-    Expr::Object(ObjectLit {
-        span: DUMMY_SP,
-        props: vec![
-            // _tag: "tag"
-            PropOrSpread::Prop(
-                Prop::KeyValue(KeyValueProp {
-                    key: PropName::Str(Str {
-                        span: DUMMY_SP,
-                        value: "_tag".into(),
-                        raw: None,
-                    }),
-                    value: Expr::Lit(Lit::Str(Str {
-                        span: DUMMY_SP,
-                        value: tag.into(),
-                        raw: None,
-                    }))
-                    .into(),
-                })
-                .into(),
-            ),
-            // t: inner
-            PropOrSpread::Prop(
-                Prop::KeyValue(KeyValueProp {
-                    key: PropName::Str(Str {
-                        span: DUMMY_SP,
-                        value: "t".into(),
-                        raw: None,
-                    }),
-                    value: inner.into(),
-                })
-                .into(),
-            ),
-        ],
-    })
+fn optionality_wrapper(inner: Expr) -> Expr {
+    new_runtype_class("OptionalField", vec![inner])
 }
 
 fn print_runtype(
@@ -507,7 +474,6 @@ fn print_runtype(
         Runtype::Number => typeof_runtype("number"),
         Runtype::Function => typeof_runtype("function"),
         Runtype::Ref(to) => ref_runtype(to),
-        Runtype::Null => no_args_runtype("NullRuntype"),
         Runtype::Any => no_args_runtype("AnyRuntype"),
         Runtype::StNever => no_args_runtype("NeverRuntype"),
         Runtype::Const(c) => new_runtype_class("ConstRuntype", vec![c.clone().to_json().to_expr()]),
@@ -608,29 +574,9 @@ fn print_runtype(
             for (k, v) in vs.iter() {
                 let r = match v {
                     Optionality::Optional(schema) => {
-                        let nullable_schema = &Runtype::any_of(
-                            vec![Runtype::Null, schema.clone()].into_iter().collect(),
-                        );
-                        optionality_wrapper(
-                            "Optional",
-                            print_runtype(nullable_schema, named_schemas, hoisted),
-                        )
+                        optionality_wrapper(print_runtype(schema, named_schemas, hoisted))
                     }
-                    Optionality::Required(schema) => {
-                        let includes_null =
-                            extract_union(schema, named_schemas).contains(&Runtype::Null);
-                        if includes_null {
-                            optionality_wrapper(
-                                "Optional",
-                                print_runtype(schema, named_schemas, hoisted),
-                            )
-                        } else {
-                            optionality_wrapper(
-                                "Required",
-                                print_runtype(schema, named_schemas, hoisted),
-                            )
-                        }
-                    }
+                    Optionality::Required(schema) => print_runtype(schema, named_schemas, hoisted),
                 };
                 mapped.insert(k.clone(), r);
             }
@@ -716,6 +662,9 @@ fn print_runtype(
 
             new_runtype_class("ObjectRuntype", vec![obj_validator, indexed_properties_arr])
         }
+        Runtype::Null => new_runtype_class("NullishRuntype", vec![string_lit("null")]),
+        Runtype::Undefined => new_runtype_class("NullishRuntype", vec![string_lit("undefined")]),
+        Runtype::Void => new_runtype_class("NullishRuntype", vec![string_lit("void")]),
     };
 
     let seen_counter = hoisted.seen.get(schema).cloned().unwrap_or(0);
@@ -807,7 +756,9 @@ fn calculate_schema_seen(schema: &Runtype, seen: &mut SeenCounter) {
         | Runtype::TplLitType(_)
         | Runtype::Ref(_)
         | Runtype::Const(_)
-        | Runtype::Null => {}
+        | Runtype::Null
+        | Runtype::Void
+        | Runtype::Undefined => {}
         Runtype::Object {
             vs,
             indexed_properties,

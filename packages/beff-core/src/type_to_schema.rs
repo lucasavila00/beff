@@ -69,10 +69,9 @@ impl<'a, 'b, R: FileManager> TypeToSchema<'a, 'b, R> {
         span: &Span,
     ) -> Res<Runtype> {
         match kind {
-            TsKeywordTypeKind::TsVoidKeyword
-            | TsKeywordTypeKind::TsUndefinedKeyword
-            | TsKeywordTypeKind::TsNullKeyword => Ok(Runtype::Null),
-
+            TsKeywordTypeKind::TsVoidKeyword => Ok(Runtype::Void),
+            TsKeywordTypeKind::TsUndefinedKeyword => Ok(Runtype::Undefined),
+            TsKeywordTypeKind::TsNullKeyword => Ok(Runtype::Null),
             TsKeywordTypeKind::TsBigIntKeyword => Ok(Runtype::BigInt),
             TsKeywordTypeKind::TsAnyKeyword | TsKeywordTypeKind::TsUnknownKeyword => {
                 Ok(Runtype::Any)
@@ -142,7 +141,7 @@ impl<'a, 'b, R: FileManager> TypeToSchema<'a, 'b, R> {
                 acc.push((k.clone(), v.clone()));
             }
         }
-        Runtype::no_index_object(acc)
+        Runtype::object(acc)
     }
     fn convert_pick(
         &mut self,
@@ -201,7 +200,7 @@ impl<'a, 'b, R: FileManager> TypeToSchema<'a, 'b, R> {
                 acc.push((k.clone(), v.clone()));
             }
         }
-        Runtype::no_index_object(acc)
+        Runtype::object(acc)
     }
 
     fn convert_omit(
@@ -230,14 +229,14 @@ impl<'a, 'b, R: FileManager> TypeToSchema<'a, 'b, R> {
         for (k, v) in obj {
             acc.push((k.clone(), v.clone().to_required()));
         }
-        Runtype::no_index_object(acc)
+        Runtype::object(acc)
     }
     fn convert_partial(&mut self, obj: &BTreeMap<String, Optionality<Runtype>>) -> Runtype {
         let mut acc = vec![];
         for (k, v) in obj {
             acc.push((k.clone(), v.clone().to_optional()));
         }
-        Runtype::no_index_object(acc)
+        Runtype::object(acc)
     }
 
     fn extract_array(&mut self, arr: Runtype, span: Span) -> Res<Runtype> {
@@ -377,7 +376,7 @@ impl<'a, 'b, R: FileManager> TypeToSchema<'a, 'b, R> {
                     match self.collect_consts_from_union(key) {
                         Ok(res) => {
                             let value = items[1].clone();
-                            Ok(Runtype::no_index_object(
+                            Ok(Runtype::object(
                                 res.into_iter()
                                     .map(|it| (it, value.clone().required()))
                                     .collect(),
@@ -602,7 +601,7 @@ impl<'a, 'b, R: FileManager> TypeToSchema<'a, 'b, R> {
 
         self.type_param_stack.push(map);
 
-        let r = Ok(Runtype::no_index_object(
+        let r = Ok(Runtype::object(
             typ.body
                 .body
                 .iter()
@@ -618,7 +617,7 @@ impl<'a, 'b, R: FileManager> TypeToSchema<'a, 'b, R> {
             let merged = Runtype::all_of(ext.into_iter().chain(std::iter::once(r?)).collect());
             let res = self.extract_object(&merged, &typ.span);
             match res {
-                Ok(vs) => Ok(Runtype::no_index_object(vs.into_iter().collect())),
+                Ok(vs) => Ok(Runtype::object(vs.into_iter().collect())),
                 Err(_) => Ok(merged),
             }
         }
@@ -1520,7 +1519,7 @@ impl<'a, 'b, R: FileManager> TypeToSchema<'a, 'b, R> {
                     }
                 }
 
-                Ok(Runtype::no_index_object(vs))
+                Ok(Runtype::object(vs))
             }
             Expr::Ident(i) => {
                 let s = TypeResolver::new(self.files, &self.current_file).resolve_local_value(i)?;
@@ -1741,7 +1740,7 @@ impl<'a, 'b, R: FileManager> TypeToSchema<'a, 'b, R> {
                         ImportReference::Star { file_name, .. } => {
                             let mut acc2 = vec![];
                             self.collect_value_exports(file_name, &mut acc2)?;
-                            let v = Runtype::no_index_object(acc2);
+                            let v = Runtype::object(acc2);
                             acc.push((k.to_string(), v.required()));
                         }
                         ImportReference::Default { .. } => {
@@ -1798,7 +1797,7 @@ impl<'a, 'b, R: FileManager> TypeToSchema<'a, 'b, R> {
             ResolvedLocalSymbol::Star(file_name) => {
                 let mut acc = vec![];
                 self.collect_value_exports(&file_name, &mut acc)?;
-                Ok(Runtype::no_index_object(acc))
+                Ok(Runtype::object(acc))
             }
             ResolvedLocalSymbol::TsEnumDecl(enum_decl) => self.convert_enum_decl(&enum_decl),
             ResolvedLocalSymbol::TsBuiltin(_) => {
@@ -2085,7 +2084,7 @@ impl<'a, 'b, R: FileManager> TypeToSchema<'a, 'b, R> {
             vs.push((key, ty));
         }
 
-        Ok(Runtype::no_index_object(vs))
+        Ok(Runtype::object(vs))
     }
 
     fn json_schema_to_tpl_lit(&mut self, span: &Span, schema: &Runtype) -> Res<TplLitTypeItem> {
@@ -2178,7 +2177,7 @@ impl<'a, 'b, R: FileManager> TypeToSchema<'a, 'b, R> {
                 TsEntityName::Ident(i) => self.convert_ts_type_ident(i, type_params),
                 TsEntityName::TsQualifiedName(q) => self.convert_ts_type_qual(q, type_params),
             },
-            TsType::TsTypeLit(TsTypeLit { members, .. }) => Ok(Runtype::no_index_object(
+            TsType::TsTypeLit(TsTypeLit { members, .. }) => Ok(Runtype::object(
                 members
                     .iter()
                     .map(|prop| self.convert_ts_type_element(prop))

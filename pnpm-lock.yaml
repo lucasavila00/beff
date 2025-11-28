@@ -91,12 +91,27 @@ importers:
         specifier: ^3.23.5
         version: 3.25.76
 
+  e2e-tests/ts-describe-2:
+    dependencies:
+      '@beff/cli':
+        specifier: workspace:^
+        version: link:../../packages/beff-cli
+      '@beff/client':
+        specifier: workspace:^
+        version: link:../../packages/beff-client
+      vitest:
+        specifier: ^0.34.4
+        version: 0.34.6
+      zod:
+        specifier: ^3.23.5
+        version: 3.25.76
+
   packages/beff-cli: {}
 
   packages/beff-client:
     dependencies:
       '@beff/cli':
-        specifier: workspace:^0.0.109
+        specifier: workspace:^0.0.110
         version: link:../beff-cli
       zod:
         specifier: ^3.23.5
@@ -118,10 +133,10 @@ importers:
         specifier: ^7.22.13
         version: 7.27.1
       '@beff/cli':
-        specifier: workspace:^0.0.109
+        specifier: workspace:^0.0.110
         version: link:../beff-cli
       '@beff/client':
-        specifier: workspace:^0.0.109
+        specifier: workspace:^0.0.110
         version: link:../beff-client
       '@types/babel__code-frame':
         specifier: ^7.0.4

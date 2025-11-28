@@ -206,6 +206,8 @@ pub struct IndexedProperty {
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord)]
 pub enum Runtype {
     Null,
+    Undefined,
+    Void,
     Boolean,
     String,
     Number,
@@ -261,13 +263,13 @@ impl UnionMerger {
 }
 
 impl Runtype {
-    pub fn no_index_object(vs: Vec<(String, Optionality<Runtype>)>) -> Self {
+    pub fn object(vs: Vec<(String, Optionality<Runtype>)>) -> Self {
         Self::Object {
             vs: vs.into_iter().collect(),
             indexed_properties: None,
         }
     }
-    pub fn single_index_object(key: Runtype, value: Optionality<Runtype>) -> Self {
+    pub fn record(key: Runtype, value: Optionality<Runtype>) -> Self {
         Self::Object {
             vs: BTreeMap::new(),
             indexed_properties: Some(Box::new(IndexedProperty { key, value })),
@@ -277,7 +279,7 @@ impl Runtype {
         let mut vs = BTreeSet::new();
         vs.insert(Runtype::Number);
         vs.insert(Runtype::String);
-        Runtype::single_index_object(Runtype::AnyOf(vs), Optionality::Required(Runtype::Any))
+        Runtype::record(Runtype::AnyOf(vs), Optionality::Required(Runtype::Any))
     }
     pub fn extract_single_string_const(&self) -> Option<String> {
         match self {
@@ -351,7 +353,7 @@ impl Runtype {
                 }
 
                 if rest_is_empty && all_objects && all_of_items.len() > 1 {
-                    Runtype::no_index_object(obj_kvs)
+                    Runtype::object(obj_kvs)
                 } else {
                     Self::AllOf(BTreeSet::from_iter(all_of_items))
                 }
@@ -409,8 +411,10 @@ impl Runtype {
 
     pub fn debug_print(&self) -> String {
         match self {
+            Runtype::Undefined => "undefined".to_string(),
             Runtype::Null => "null".to_string(),
             Runtype::Boolean => "boolean".to_string(),
+            Runtype::Void => "void".to_string(),
             Runtype::String => "string".to_string(),
             Runtype::Number => "number".to_string(),
             Runtype::Any => "any".to_string(),

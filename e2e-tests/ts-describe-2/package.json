@@ -1,5 +1,5 @@
 {
-  "name": "standalone-parser",
+  "name": "json-schema-generator",
   "version": "1.0.107",
   "description": "",
   "main": "index.js",

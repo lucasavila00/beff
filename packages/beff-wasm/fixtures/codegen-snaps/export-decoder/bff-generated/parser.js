@@ -234,9 +234,13 @@ class AnyRuntype {
     return buildError(ctx, "expected any", input);
   }
 }
-class NullRuntype {
+class NullishRuntype {
+  description;
+  constructor(description) {
+    this.description = description;
+  }
   describe(_ctx) {
-    return "(null | undefined)";
+    return this.description;
   }
   schema(_ctx) {
     return { type: "null" };
@@ -765,6 +769,38 @@ class AnyOfDiscriminatedRuntype {
     return `(${this.schemas.map((it) => it.describe(ctx)).join(" | ")})`;
   }
 }
+class OptionalField {
+  t;
+  constructor(t) {
+    this.t = t;
+  }
+  schema(ctx) {
+    const inner = this.t.schema(ctx);
+    return {
+      anyOf: [inner, { type: "null" }]
+    };
+  }
+  validate(ctx, input) {
+    if (input == null) {
+      return true;
+    }
+    return this.t.validate(ctx, input);
+  }
+  parseAfterValidation(ctx, input) {
+    if (input == null) {
+      return input;
+    }
+    return this.t.parseAfterValidation(ctx, input);
+  }
+  reportDecodeError(ctx, input) {
+    const acc = [];
+    acc.push(...buildError(ctx, "expected nullish value", input));
+    return [...acc, ...this.t.reportDecodeError(ctx, input)];
+  }
+  describe(ctx) {
+    return this.t.describe(ctx);
+  }
+}
 class ObjectRuntype {
   properties;
   indexedPropertiesParser;
@@ -776,8 +812,8 @@ class ObjectRuntype {
     const sortedKeys = Object.keys(this.properties).sort();
     const props = sortedKeys.map((k) => {
       const it = this.properties[k];
-      const optionalMark = it._tag === "Optional" ? "?" : "";
-      return `${k}${optionalMark}: ${it.t.describe(ctx)}`;
+      const optionalMark = it instanceof OptionalField ? "?" : "";
+      return `${k}${optionalMark}: ${it.describe(ctx)}`;
     }).join(", ");
     const indexPropsParats = this.indexedPropertiesParser.map(({ key, value }) => {
       return `[K in ${key.describe(ctx)}]: ${value.describe(ctx)}`;
@@ -790,7 +826,8 @@ class ObjectRuntype {
     const properties = {};
     for (const k in this.properties) {
       pushPath(ctx, k);
-      properties[k] = this.properties[k].t.schema(ctx);
+      const item = this.properties[k];
+      properties[k] = item.schema(ctx);
       popPath(ctx);
     }
     const required = Object.keys(this.properties);
@@ -824,7 +861,7 @@ class ObjectRuntype {
       const configKeys = Object.keys(this.properties);
       for (const k of configKeys) {
         const validator = this.properties[k];
-        if (!validator.t.validate(ctx, input[k])) {
+        if (!validator.validate(ctx, input[k])) {
           return false;
         }
       }
@@ -867,7 +904,7 @@ class ObjectRuntype {
     for (const k of inputKeys) {
       const v = input[k];
       if (k in this.properties) {
-        const itemParsed = this.properties[k].t.parseAfterValidation(ctx, v);
+        const itemParsed = this.properties[k].parseAfterValidation(ctx, v);
         acc[k] = itemParsed;
       } else if (this.indexedPropertiesParser.length > 0) {
         for (const p of this.indexedPropertiesParser) {
@@ -889,10 +926,10 @@ class ObjectRuntype {
     let acc = [];
     const configKeys = Object.keys(this.properties);
     for (const k of configKeys) {
-      const ok = this.properties[k].t.validate(ctx, input[k]);
+      const ok = this.properties[k].validate(ctx, input[k]);
       if (!ok) {
         pushPath(ctx, k);
-        const arr2 = this.properties[k].t.reportDecodeError(ctx, input[k]);
+        const arr2 = this.properties[k].reportDecodeError(ctx, input[k]);
         acc.push(...arr2);
         popPath(ctx);
       }
@@ -1095,20 +1132,11 @@ const RequiredNumberFormats = [];
 const direct_hoist_0 = new TypeofRuntype("string");
 const namedRuntypes = {
     "User": new ObjectRuntype({
-        "age": {
-            "_tag": "Required",
-            "t": new TypeofRuntype("number")
-        },
-        "name": {
-            "_tag": "Required",
-            "t": direct_hoist_0
-        }
+        "age": new TypeofRuntype("number"),
+        "name": direct_hoist_0
     }, []),
     "NotPublic": new ObjectRuntype({
-        "a": {
-            "_tag": "Required",
-            "t": direct_hoist_0
-        }
+        "a": direct_hoist_0
     }, []),
     "StartsWithA": new StringWithFormatRuntype([
         "StartsWithA"

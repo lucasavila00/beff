@@ -616,19 +616,14 @@ it("DiscriminatedUnion", () => {
     {
       "errors": [
         {
-          "errors": [
-            {
-              "message": "expected nullish value",
-              "path": [],
-              "received": 123,
-            },
-            {
-              "message": "expected string",
-              "path": [],
-              "received": 123,
-            },
+          "message": "expected nullish value",
+          "path": [
+            "a11",
           ],
-          "isUnionError": true,
+          "received": 123,
+        },
+        {
+          "message": "expected string",
           "path": [
             "a11",
           ],
