@@ -341,7 +341,7 @@ impl MemoEmpty {
     pub fn from_bool(b: &IsEmptyStatus) -> MemoEmpty {
         match b {
             IsEmptyStatus::IsEmpty => MemoEmpty::True,
-            IsEmptyStatus::NotEmpty => MemoEmpty::False(b.clone()),
+            IsEmptyStatus::NotEmpty => MemoEmpty::False(*b),
         }
     }
 }

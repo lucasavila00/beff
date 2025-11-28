@@ -104,11 +104,11 @@ pub fn dnf_to_bdd(dnf: &Dnf) -> Rc<Bdd> {
     for conj in dnf {
         let mut conj_bdd = Rc::new(Bdd::True);
         for pos in &conj.positive {
-            let atom_bdd = Rc::new(Bdd::from_atom(pos.clone()));
+            let atom_bdd = Rc::new(Bdd::from_atom(*pos));
             conj_bdd = conj_bdd.intersect(&atom_bdd);
         }
         for neg in &conj.negative {
-            let atom_bdd = Rc::new(Bdd::from_atom(neg.clone()));
+            let atom_bdd = Rc::new(Bdd::from_atom(*neg));
             let not_atom_bdd = Rc::new(atom_bdd.complement());
             conj_bdd = conj_bdd.intersect(&not_atom_bdd);
         }
@@ -125,7 +125,7 @@ fn mapping_is_empty_handle_recusrsion(
     match ctx.mapping_memo_dnf.get(&dnf) {
         Some(mm) => match &mm.0 {
             MemoEmpty::True => return Ok(IsEmptyStatus::IsEmpty),
-            MemoEmpty::False(ev) => return Ok(ev.clone()),
+            MemoEmpty::False(ev) => return Ok(*ev),
             MemoEmpty::Undefined => {
                 // we got a loop
                 return Ok(IsEmptyStatus::IsEmpty);

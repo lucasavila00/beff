@@ -25,6 +25,12 @@ pub struct MappingAtomicType {
     pub vs: BTreeMap<String, Rc<SemType>>,
     pub indexed_properties: Option<IndexedPropertiesAtomic>,
 }
+impl Default for MappingAtomicType {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl MappingAtomicType {
     pub fn new() -> Self {
         Self {
@@ -65,7 +71,7 @@ pub enum Bdd {
 impl Bdd {
     pub fn from_atom(atom: Atom) -> Bdd {
         Bdd::Node {
-            atom: atom,
+            atom,
             left: Bdd::True.into(),
             middle: Bdd::False.into(),
             right: Bdd::False.into(),
@@ -497,7 +503,7 @@ pub fn list_is_empty(bdd: &Rc<Bdd>, builder: &mut SemTypeContext) -> Result<IsEm
     match builder.list_memo.get(bdd) {
         Some(mm) => match &mm.0 {
             MemoEmpty::True => return Ok(IsEmptyStatus::IsEmpty),
-            MemoEmpty::False(ev) => return Ok(ev.clone()),
+            MemoEmpty::False(ev) => return Ok(*ev),
             MemoEmpty::Undefined => {
                 // we got a loop
                 return Ok(IsEmptyStatus::IsEmpty);
