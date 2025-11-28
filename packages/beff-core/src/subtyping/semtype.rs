@@ -262,8 +262,8 @@ impl SemTypeOps for Rc<SemType> {
 }
 
 impl SemType {
-    pub fn has_void(&self) -> bool {
-        (self.all & SubTypeTag::Void.code()) != 0
+    pub fn has_optional(&self) -> bool {
+        (self.all & SubTypeTag::OptionalProp.code()) != 0
     }
     pub fn is_subtype_of_string(&self) -> bool {
         let only_string_sub = self.all == 0
@@ -473,11 +473,14 @@ impl SemTypeContext {
     pub fn null() -> SemType {
         SemType::new_basic(SubTypeTag::Null.code())
     }
-    pub fn void() -> SemType {
-        SemType::new_basic(SubTypeTag::Void.code())
+    pub fn undefined() -> SemType {
+        SemType::new_basic(SubTypeTag::Undefined.code())
     }
-    pub fn optional(it: Rc<SemType>) -> Result<Rc<SemType>> {
-        let t2 = Self::void();
+    pub fn optional_prop() -> SemType {
+        SemType::new_basic(SubTypeTag::OptionalProp.code())
+    }
+    pub fn make_optional(it: Rc<SemType>) -> Result<Rc<SemType>> {
+        let t2 = Self::optional_prop();
         Rc::new(it).union(&Rc::new(t2))
     }
     pub fn never() -> SemType {

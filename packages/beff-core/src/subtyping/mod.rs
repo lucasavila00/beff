@@ -108,7 +108,7 @@ impl<'a> ToSemTypeConverter<'a> {
                                 .map(|(k, v)| match v {
                                     Optionality::Optional(v) => {
                                         self.convert_to_sem_type(v, builder).and_then(|v| {
-                                            SemTypeContext::optional(v).map(|v| (k.clone(), v))
+                                            SemTypeContext::make_optional(v).map(|v| (k.clone(), v))
                                         })
                                     }
                                     Optionality::Required(v) => {
@@ -121,7 +121,7 @@ impl<'a> ToSemTypeConverter<'a> {
                                 let v = match &it.value {
                                     Optionality::Optional(v) => self
                                         .convert_to_sem_type(v, builder)
-                                        .and_then(SemTypeContext::optional)?,
+                                        .and_then(SemTypeContext::make_optional)?,
                                     Optionality::Required(v) => {
                                         self.convert_to_sem_type(v, builder)?
                                     }
@@ -196,7 +196,7 @@ impl<'a> ToSemTypeConverter<'a> {
                     .map(|(k, v)| match v {
                         Optionality::Optional(v) => self
                             .convert_to_sem_type(v, builder)
-                            .and_then(|v| SemTypeContext::optional(v).map(|v| (k.clone(), v))),
+                            .and_then(|v| SemTypeContext::make_optional(v).map(|v| (k.clone(), v))),
                         Optionality::Required(v) => {
                             self.convert_to_sem_type(v, builder).map(|v| (k.clone(), v))
                         }
@@ -207,7 +207,7 @@ impl<'a> ToSemTypeConverter<'a> {
                     let v = match &it.value {
                         Optionality::Optional(v) => self
                             .convert_to_sem_type(v, builder)
-                            .and_then(SemTypeContext::optional)?,
+                            .and_then(SemTypeContext::make_optional)?,
                         Optionality::Required(v) => self.convert_to_sem_type(v, builder)?,
                     };
                     let k = self.convert_to_sem_type(&it.key, builder)?;
@@ -253,6 +253,7 @@ impl<'a> ToSemTypeConverter<'a> {
                 Ok(chd.complement()?)
             }
             Runtype::Function => Ok(SemTypeContext::function().into()),
+            Runtype::Undefined => Ok(SemTypeContext::undefined().into()),
         }
     }
 }

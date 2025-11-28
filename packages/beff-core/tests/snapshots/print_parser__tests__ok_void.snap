@@ -2,7 +2,7 @@
 source: packages/beff-core/tests/print_parser.rs
 expression: "print_types(r#\"\n        export type IX = void\n        parse.buildParsers<{ IX: IX }>();\n      \"#)"
 ---
-type IX = null;
+type IX = undefined;
 
 
 type BuiltParsers = {

@@ -616,21 +616,10 @@ fn print_runtype(
                             print_runtype(nullable_schema, named_schemas, hoisted),
                         )
                     }
-                    Optionality::Required(schema) => {
-                        let includes_null =
-                            extract_union(schema, named_schemas).contains(&Runtype::Null);
-                        if includes_null {
-                            optionality_wrapper(
-                                "Optional",
-                                print_runtype(schema, named_schemas, hoisted),
-                            )
-                        } else {
-                            optionality_wrapper(
-                                "Required",
-                                print_runtype(schema, named_schemas, hoisted),
-                            )
-                        }
-                    }
+                    Optionality::Required(schema) => optionality_wrapper(
+                        "Required",
+                        print_runtype(schema, named_schemas, hoisted),
+                    ),
                 };
                 mapped.insert(k.clone(), r);
             }
@@ -716,6 +705,7 @@ fn print_runtype(
 
             new_runtype_class("ObjectRuntype", vec![obj_validator, indexed_properties_arr])
         }
+        Runtype::Undefined => no_args_runtype("UndefinedRuntype"),
     };
 
     let seen_counter = hoisted.seen.get(schema).cloned().unwrap_or(0);
@@ -807,7 +797,8 @@ fn calculate_schema_seen(schema: &Runtype, seen: &mut SeenCounter) {
         | Runtype::TplLitType(_)
         | Runtype::Ref(_)
         | Runtype::Const(_)
-        | Runtype::Null => {}
+        | Runtype::Null
+        | Runtype::Undefined => {}
         Runtype::Object {
             vs,
             indexed_properties,

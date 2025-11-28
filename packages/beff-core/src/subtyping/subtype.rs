@@ -26,15 +26,25 @@ pub enum SubTypeTag {
     String = 1 << 3,
     Null = 1 << 4,
     Mapping = 1 << 5,
-    Void = 1 << 6,
+    OptionalProp = 1 << 6,
     List = 1 << 7,
     Function = 1 << 8,
     BigInt = 1 << 9,
     Date = 1 << 10,
+    Undefined = 1 << 11,
 }
 
-pub const VAL: u32 =
-    1 << 1 | 1 << 2 | 1 << 3 | 1 << 4 | 1 << 5 | 1 << 6 | 1 << 7 | 1 << 8 | 1 << 9 | 1 << 10;
+pub const VAL: u32 = 1 << 1
+    | 1 << 2
+    | 1 << 3
+    | 1 << 4
+    | 1 << 5
+    | 1 << 6
+    | 1 << 7
+    | 1 << 8
+    | 1 << 9
+    | 1 << 10
+    | 1 << 11;
 
 impl SubTypeTag {
     pub fn code(&self) -> BasicTypeCode {
@@ -47,13 +57,14 @@ impl SubTypeTag {
             SubTypeTag::String,
             SubTypeTag::Boolean,
             SubTypeTag::Number,
-            SubTypeTag::Void,
+            SubTypeTag::OptionalProp,
             SubTypeTag::Null,
             SubTypeTag::Mapping,
             SubTypeTag::List,
             SubTypeTag::Function,
             SubTypeTag::BigInt,
             SubTypeTag::Date,
+            SubTypeTag::Undefined,
         ]
     }
 }

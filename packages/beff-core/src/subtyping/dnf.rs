@@ -242,12 +242,12 @@ fn get_value_exact(
             if is_finite_string_set(&idx.key) {
                 return Ok(idx.value.clone());
             } else {
-                return SemTypeContext::optional(idx.value.clone());
+                return SemTypeContext::make_optional(idx.value.clone());
             }
         }
     }
 
-    Ok(Rc::new(SemTypeContext::void()))
+    Ok(Rc::new(SemTypeContext::optional_prop()))
 }
 
 fn get_value_open(m: &MappingAtomicType, k: &str, ctx: &mut SemTypeContext) -> Result<Rc<SemType>> {
@@ -264,7 +264,7 @@ fn get_value_open(m: &MappingAtomicType, k: &str, ctx: &mut SemTypeContext) -> R
             if is_finite_string_set(&idx.key) {
                 return Ok(idx.value.clone());
             } else {
-                return SemTypeContext::optional(idx.value.clone());
+                return SemTypeContext::make_optional(idx.value.clone());
             }
         }
     }
@@ -276,7 +276,7 @@ fn get_index_value_exact(m: &MappingAtomicType) -> Rc<SemType> {
     if let Some(idx) = &m.indexed_properties {
         idx.value.clone()
     } else {
-        Rc::new(SemTypeContext::void())
+        Rc::new(SemTypeContext::optional_prop())
     }
 }
 
@@ -314,7 +314,7 @@ fn get_effective_index_value(
 
     if pos_key.is_subtype(&neg_key, ctx)? {
         let val = get_index_value_open(neg);
-        SemTypeContext::optional(val)
+        SemTypeContext::make_optional(val)
     } else {
         Ok(Rc::new(SemTypeContext::unknown()))
     }

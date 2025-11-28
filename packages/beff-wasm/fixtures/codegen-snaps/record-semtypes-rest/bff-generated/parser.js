@@ -236,7 +236,24 @@ class AnyRuntype {
 }
 class NullRuntype {
   describe(_ctx) {
-    return "(null | undefined)";
+    return "null";
+  }
+  schema(_ctx) {
+    return { type: "null" };
+  }
+  validate(_ctx, input) {
+    return input == null;
+  }
+  parseAfterValidation(_ctx, input) {
+    return input;
+  }
+  reportDecodeError(ctx, input) {
+    return buildError(ctx, "expected nullish value", input);
+  }
+}
+class UndefinedRuntype {
+  describe(_ctx) {
+    return "undefined";
   }
   schema(_ctx) {
     return { type: "null" };

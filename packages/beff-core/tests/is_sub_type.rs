@@ -1470,39 +1470,6 @@ mod tests {
         ));
     }
 
-    // #[test]
-    // fn optional_property_vs_required_null() {
-    //     let definitions = vec![];
-
-    //     // { a?: string }
-    //     let optional_a = Runtype::object(vec![("a".into(), Runtype::String.optional())]);
-
-    //     // { a: string | null }
-    //     let required_nullable_a = Runtype::object(vec![(
-    //         "a".into(),
-    //         Runtype::any_of(vec![Runtype::String, Runtype::Null]).required(),
-    //     )]);
-
-    //     // { a: string | null } extends { a?: string }
-    //     // Because required property extends optional property (if types are compatible)
-    //     // And string | null extends string | undefined (assuming null~undefined)
-    //     assert!(rt_is_sub_type(
-    //         &required_nullable_a,
-    //         &optional_a,
-    //         &definitions,
-    //         &definitions
-    //     ));
-
-    //     // { a?: string } does NOT extend { a: string | null }
-    //     // Because 'a' can be missing in the first, but is required in the second.
-    //     assert!(!rt_is_sub_type(
-    //         &optional_a,
-    //         &required_nullable_a,
-    //         &definitions,
-    //         &definitions
-    //     ));
-    // }
-
     #[test]
     fn tuple_length_and_variadic() {
         let definitions = vec![];

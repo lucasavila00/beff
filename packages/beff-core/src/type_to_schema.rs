@@ -69,9 +69,10 @@ impl<'a, 'b, R: FileManager> TypeToSchema<'a, 'b, R> {
         span: &Span,
     ) -> Res<Runtype> {
         match kind {
-            TsKeywordTypeKind::TsVoidKeyword
-            | TsKeywordTypeKind::TsUndefinedKeyword
-            | TsKeywordTypeKind::TsNullKeyword => Ok(Runtype::Null),
+            TsKeywordTypeKind::TsVoidKeyword | TsKeywordTypeKind::TsUndefinedKeyword => {
+                Ok(Runtype::Undefined)
+            }
+            TsKeywordTypeKind::TsNullKeyword => Ok(Runtype::Null),
 
             TsKeywordTypeKind::TsBigIntKeyword => Ok(Runtype::BigInt),
             TsKeywordTypeKind::TsAnyKeyword | TsKeywordTypeKind::TsUnknownKeyword => {

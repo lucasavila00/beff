@@ -707,7 +707,7 @@ fn mapping_member_type_inner(
 
     match member_type {
         Some(it) => Ok(it),
-        None => Ok(SemTypeContext::void().into()),
+        None => Ok(SemTypeContext::optional_prop().into()),
     }
 }
 
@@ -924,7 +924,7 @@ fn list_atomic_member_type_inner(
 
 fn list_member_type_inner_val(atomic: Rc<ListAtomic>, key: ListNumberKey) -> Result<Rc<SemType>> {
     let a = list_atomic_member_type_inner(atomic, key)?;
-    a.diff(&Rc::new(SemTypeContext::void()))
+    a.diff(&Rc::new(SemTypeContext::optional_prop()))
 }
 
 fn bdd_list_member_type_inner_val(

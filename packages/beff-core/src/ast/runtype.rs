@@ -206,6 +206,7 @@ pub struct IndexedProperty {
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord)]
 pub enum Runtype {
     Null,
+    Undefined,
     Boolean,
     String,
     Number,
@@ -409,6 +410,7 @@ impl Runtype {
 
     pub fn debug_print(&self) -> String {
         match self {
+            Runtype::Undefined => "undefined".to_string(),
             Runtype::Null => "null".to_string(),
             Runtype::Boolean => "boolean".to_string(),
             Runtype::String => "string".to_string(),

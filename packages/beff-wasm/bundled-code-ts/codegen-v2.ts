@@ -337,7 +337,24 @@ class AnyRuntype implements Runtype {
 
 class NullRuntype implements Runtype {
   describe(_ctx: DescribeContext): string {
-    return "(null | undefined)";
+    return "null";
+  }
+  schema(_ctx: SchemaContext): JSONSchema7 {
+    return { type: "null" };
+  }
+  validate(_ctx: ValidateContext, input: unknown): boolean {
+    return input == null;
+  }
+  parseAfterValidation(_ctx: ParseContext, input: unknown): unknown {
+    return input;
+  }
+  reportDecodeError(ctx: ReportContext, input: unknown): DecodeError[] {
+    return buildError(ctx, "expected nullish value", input);
+  }
+}
+class UndefinedRuntype implements Runtype {
+  describe(_ctx: DescribeContext): string {
+    return "undefined";
   }
   schema(_ctx: SchemaContext): JSONSchema7 {
     return { type: "null" };

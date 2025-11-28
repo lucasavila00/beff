@@ -180,7 +180,7 @@ impl<'a, 'b> SchemerContext<'a, 'b> {
 
         for (k, v) in mt.vs.iter() {
             let schema = self.convert_to_schema(v, None)?;
-            let ty = if v.has_void() {
+            let ty = if v.has_optional() {
                 schema.optional()
             } else {
                 schema.required()
@@ -193,7 +193,7 @@ impl<'a, 'b> SchemerContext<'a, 'b> {
         if let Some(it) = &mt.indexed_properties {
             let k = self.convert_to_schema(&it.key, None)?;
             let schema = self.convert_to_schema(&it.value, None)?;
-            let ty = if it.value.has_void() {
+            let ty = if it.value.has_optional() {
                 schema.optional()
             } else {
                 schema.required()
@@ -440,7 +440,7 @@ impl<'a, 'b> SchemerContext<'a, 'b> {
                     SubTypeTag::String => {
                         acc.insert(Runtype::String);
                     }
-                    SubTypeTag::Void => {
+                    SubTypeTag::OptionalProp => {
                         acc.insert(Runtype::Null);
                     }
                     SubTypeTag::Mapping => {
@@ -457,6 +457,9 @@ impl<'a, 'b> SchemerContext<'a, 'b> {
                     }
                     SubTypeTag::Date => {
                         acc.insert(Runtype::Date);
+                    }
+                    SubTypeTag::Undefined => {
+                        acc.insert(Runtype::Undefined);
                     }
                 };
             }

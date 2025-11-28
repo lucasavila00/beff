@@ -236,7 +236,24 @@ class AnyRuntype {
 }
 class NullRuntype {
   describe(_ctx) {
-    return "(null | undefined)";
+    return "null";
+  }
+  schema(_ctx) {
+    return { type: "null" };
+  }
+  validate(_ctx, input) {
+    return input == null;
+  }
+  parseAfterValidation(_ctx, input) {
+    return input;
+  }
+  reportDecodeError(ctx, input) {
+    return buildError(ctx, "expected nullish value", input);
+  }
+}
+class UndefinedRuntype {
+  describe(_ctx) {
+    return "undefined";
   }
   schema(_ctx) {
     return { type: "null" };
@@ -1095,7 +1112,12 @@ const RequiredNumberFormats = [];
 const direct_hoist_0 = new TypeofRuntype("string");
 const direct_hoist_1 = new NullRuntype();
 const direct_hoist_2 = new ArrayRuntype(direct_hoist_0);
-const direct_hoist_3 = new AnyOfRuntype([
+const direct_hoist_3 = new UndefinedRuntype();
+const direct_hoist_4 = new AnyOfRuntype([
+    direct_hoist_3,
+    direct_hoist_0
+]);
+const direct_hoist_5 = new AnyOfRuntype([
     direct_hoist_1,
     direct_hoist_0
 ]);
@@ -1122,20 +1144,20 @@ const namedRuntypes = {
             "t": direct_hoist_0
         },
         "b": {
-            "_tag": "Optional",
-            "t": direct_hoist_3
+            "_tag": "Required",
+            "t": direct_hoist_4
         },
         "c": {
-            "_tag": "Optional",
-            "t": direct_hoist_3
+            "_tag": "Required",
+            "t": direct_hoist_4
         },
         "d": {
-            "_tag": "Optional",
-            "t": direct_hoist_3
+            "_tag": "Required",
+            "t": direct_hoist_5
         },
         "e": {
             "_tag": "Optional",
-            "t": direct_hoist_3
+            "t": direct_hoist_5
         }
     }, []),
     "AfterRequired": new ObjectRuntype({
@@ -1144,16 +1166,16 @@ const namedRuntypes = {
             "t": direct_hoist_0
         },
         "b": {
-            "_tag": "Optional",
-            "t": direct_hoist_3
+            "_tag": "Required",
+            "t": direct_hoist_4
         },
         "c": {
-            "_tag": "Optional",
-            "t": direct_hoist_3
+            "_tag": "Required",
+            "t": direct_hoist_4
         },
         "d": {
-            "_tag": "Optional",
-            "t": direct_hoist_3
+            "_tag": "Required",
+            "t": direct_hoist_5
         },
         "e": {
             "_tag": "Required",
