@@ -454,6 +454,43 @@ fn hoist_identifier(name: usize) -> Expr {
     Expr::Ident(identifier(&hoist_name(name)))
 }
 
+fn optionality_wrapper(tag: &str, inner: Expr) -> Expr {
+    Expr::Object(ObjectLit {
+        span: DUMMY_SP,
+        props: vec![
+            // _tag: "tag"
+            PropOrSpread::Prop(
+                Prop::KeyValue(KeyValueProp {
+                    key: PropName::Str(Str {
+                        span: DUMMY_SP,
+                        value: "_tag".into(),
+                        raw: None,
+                    }),
+                    value: Expr::Lit(Lit::Str(Str {
+                        span: DUMMY_SP,
+                        value: tag.into(),
+                        raw: None,
+                    }))
+                    .into(),
+                })
+                .into(),
+            ),
+            // t: inner
+            PropOrSpread::Prop(
+                Prop::KeyValue(KeyValueProp {
+                    key: PropName::Str(Str {
+                        span: DUMMY_SP,
+                        value: "t".into(),
+                        raw: None,
+                    }),
+                    value: inner.into(),
+                })
+                .into(),
+            ),
+        ],
+    })
+}
+
 fn print_runtype(
     schema: &Runtype,
     named_schemas: &[NamedSchema],
@@ -574,9 +611,26 @@ fn print_runtype(
                         let nullable_schema = &Runtype::any_of(
                             vec![Runtype::Null, schema.clone()].into_iter().collect(),
                         );
-                        print_runtype(nullable_schema, named_schemas, hoisted)
+                        optionality_wrapper(
+                            "Optional",
+                            print_runtype(nullable_schema, named_schemas, hoisted),
+                        )
                     }
-                    Optionality::Required(schema) => print_runtype(schema, named_schemas, hoisted),
+                    Optionality::Required(schema) => {
+                        let includes_null =
+                            extract_union(schema, named_schemas).contains(&Runtype::Null);
+                        if includes_null {
+                            optionality_wrapper(
+                                "Optional",
+                                print_runtype(schema, named_schemas, hoisted),
+                            )
+                        } else {
+                            optionality_wrapper(
+                                "Required",
+                                print_runtype(schema, named_schemas, hoisted),
+                            )
+                        }
+                    }
                 };
                 mapped.insert(k.clone(), r);
             }
