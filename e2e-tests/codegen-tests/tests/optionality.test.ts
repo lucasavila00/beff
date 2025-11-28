@@ -33,7 +33,7 @@ it("optionality", () => {
     }
   `);
   expect(Codecs.BeforeRequired.describe()).toMatchInlineSnapshot(
-    '"type CodecBeforeRequired = { a: string, b: (undefined | string), c: (undefined | string), d: (null | string), e?: (null | string) };"',
+    '"type CodecBeforeRequired = { a: string, b: (undefined | string), c: (void | string), d: (null | string), e?: string };"',
   );
   expect(
     Codecs.BeforeRequired.safeParse({
@@ -65,7 +65,7 @@ it("optionality", () => {
     }
   `);
   expect(Codecs.AfterRequired.describe()).toMatchInlineSnapshot(
-    '"type CodecAfterRequired = { a: string, b: (undefined | string), c: (undefined | string), d: (null | string), e: string };"',
+    '"type CodecAfterRequired = { a: string, b: (undefined | string), c: (void | string), d: (null | string), e: string };"',
   );
 
   expect(

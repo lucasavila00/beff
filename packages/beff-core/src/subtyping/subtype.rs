@@ -31,7 +31,7 @@ pub enum SubTypeTag {
     Function = 1 << 8,
     BigInt = 1 << 9,
     Date = 1 << 10,
-    Undefined = 1 << 11,
+    VoidUndefined = 1 << 11,
 }
 
 pub const VAL: u32 = 1 << 1
@@ -64,7 +64,7 @@ impl SubTypeTag {
             SubTypeTag::Function,
             SubTypeTag::BigInt,
             SubTypeTag::Date,
-            SubTypeTag::Undefined,
+            SubTypeTag::VoidUndefined,
         ]
     }
 }
@@ -94,6 +94,21 @@ impl SubType {
             return SubType::True(SubTypeTag::String);
         }
         SubType::Proper(ProperSubtype::String { allowed, values }.into())
+    }
+    fn void_undefined_subtype(allowed: bool, value: Vec<VoidUndefinedSubtype>) -> SubType {
+        if value.is_empty() {
+            if allowed {
+                return SubType::False(SubTypeTag::VoidUndefined);
+            }
+            return SubType::True(SubTypeTag::VoidUndefined);
+        }
+        SubType::Proper(
+            ProperSubtype::VoidUndefined {
+                allowed,
+                values: value,
+            }
+            .into(),
+        )
     }
 }
 
@@ -163,6 +178,22 @@ impl SubtypeCheck for NumberRepresentationOrFormat {
     }
 }
 
+#[derive(PartialEq, Eq, Hash, Debug, Ord, PartialOrd, Clone, Copy)]
+pub enum VoidUndefinedSubtype {
+    // if it has both, then it's the full type
+    Void,
+    Undefined,
+}
+
+impl SubtypeCheck for VoidUndefinedSubtype {
+    fn is_subtype(&self, other: &Self) -> Result<bool> {
+        // in typescritp type system void is a supertype of undefined
+        match (self, other) {
+            (VoidUndefinedSubtype::Undefined, VoidUndefinedSubtype::Void) => Ok(true),
+            _ => Ok(self == other),
+        }
+    }
+}
 #[derive(PartialEq, Eq, Hash, Debug, Ord, PartialOrd)]
 pub enum ProperSubtype {
     Boolean(bool),
@@ -176,6 +207,10 @@ pub enum ProperSubtype {
     },
     Mapping(Rc<Bdd>),
     List(Rc<Bdd>),
+    VoidUndefined {
+        allowed: bool,
+        values: Vec<VoidUndefinedSubtype>,
+    },
 }
 
 fn sub_vec_union<K: SubtypeCheck + Clone + Ord>(v1: &[K], v2: &[K]) -> Result<Vec<K>> {
@@ -301,13 +336,11 @@ impl ProperSubtypeOps for Rc<ProperSubtype> {
     ) -> Result<ProperSubtypeEvidenceResult> {
         match &**self {
             ProperSubtype::Boolean(b) => Ok(ProperSubtypeEvidence::Boolean(*b).to_result()),
-            // Empty number sets don't use subtype representation.
             ProperSubtype::Number { allowed, values } => Ok(ProperSubtypeEvidence::Number {
                 allowed: *allowed,
                 values: values.clone(),
             }
             .to_result()),
-            // Empty string sets don't use subtype representation.
             ProperSubtype::String { allowed, values } => Ok(ProperSubtypeEvidence::String {
                 allowed: *allowed,
                 values: values.clone(),
@@ -315,6 +348,9 @@ impl ProperSubtypeOps for Rc<ProperSubtype> {
             .to_result()),
             ProperSubtype::Mapping(bdd) => dnf_mapping_is_empty(bdd, builder),
             ProperSubtype::List(bdd) => list_is_empty(bdd, builder),
+            ProperSubtype::VoidUndefined { .. } => {
+                Ok(ProperSubtypeEvidence::VoidUndefined.to_result())
+            }
         }
     }
 
@@ -326,6 +362,29 @@ impl ProperSubtypeOps for Rc<ProperSubtype> {
                 }
                 Ok(SubType::False(SubTypeTag::Boolean).into())
             }
+            (
+                ProperSubtype::VoidUndefined {
+                    allowed: a1,
+                    values: v1,
+                },
+                ProperSubtype::VoidUndefined {
+                    allowed: a2,
+                    values: v2,
+                },
+            ) => match (*a1, *a2) {
+                (true, true) => {
+                    Ok(SubType::void_undefined_subtype(true, sub_vec_intersect(v1, v2)?).into())
+                }
+                (false, false) => {
+                    Ok(SubType::void_undefined_subtype(false, sub_vec_union(v1, v2)?).into())
+                }
+                (true, false) => {
+                    Ok(SubType::void_undefined_subtype(true, sub_vec_diff(v1, v2)?).into())
+                }
+                (false, true) => {
+                    Ok(SubType::void_undefined_subtype(true, sub_vec_diff(v2, v1)?).into())
+                }
+            },
             (
                 ProperSubtype::Number {
                     allowed: a1,
@@ -366,6 +425,7 @@ impl ProperSubtypeOps for Rc<ProperSubtype> {
             (ProperSubtype::List(b1), ProperSubtype::List(b2)) => {
                 Ok(SubType::Proper(ProperSubtype::List(b1.intersect(b2)).into()).into())
             }
+
             _ => unreachable!("intersect should not compare types of different tags"),
         }
     }
@@ -378,6 +438,29 @@ impl ProperSubtypeOps for Rc<ProperSubtype> {
                 }
                 Ok(SubType::True(SubTypeTag::Boolean).into())
             }
+            (
+                ProperSubtype::VoidUndefined {
+                    allowed: a1,
+                    values: v1,
+                },
+                ProperSubtype::VoidUndefined {
+                    allowed: a2,
+                    values: v2,
+                },
+            ) => match (*a1, *a2) {
+                (true, true) => {
+                    Ok(SubType::void_undefined_subtype(true, sub_vec_union(v1, v2)?).into())
+                }
+                (false, false) => {
+                    Ok(SubType::void_undefined_subtype(false, sub_vec_intersect(v1, v2)?).into())
+                }
+                (true, false) => {
+                    Ok(SubType::void_undefined_subtype(false, sub_vec_diff(v2, v1)?).into())
+                }
+                (false, true) => {
+                    Ok(SubType::void_undefined_subtype(false, sub_vec_diff(v1, v2)?).into())
+                }
+            },
             (
                 ProperSubtype::Number {
                     allowed: a1,
@@ -455,6 +538,11 @@ impl ProperSubtypeOps for Rc<ProperSubtype> {
             .into(),
             ProperSubtype::Mapping(bdd) => ProperSubtype::Mapping(bdd.complement()).into(),
             ProperSubtype::List(bdd) => ProperSubtype::List(bdd.complement()).into(),
+            ProperSubtype::VoidUndefined { allowed, values } => ProperSubtype::VoidUndefined {
+                allowed: !allowed,
+                values: values.clone(),
+            }
+            .into(),
         }
     }
 }
@@ -467,6 +555,7 @@ impl ProperSubtype {
             ProperSubtype::String { .. } => SubTypeTag::String,
             ProperSubtype::Mapping(_) => SubTypeTag::Mapping,
             ProperSubtype::List(_) => SubTypeTag::List,
+            ProperSubtype::VoidUndefined { .. } => SubTypeTag::VoidUndefined,
         }
     }
     pub fn to_code(&self) -> BasicTypeCode {

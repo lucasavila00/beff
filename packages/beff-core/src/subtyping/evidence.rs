@@ -14,7 +14,8 @@ pub enum ProperSubtypeEvidence {
         values: Vec<StringLitOrFormat>,
     },
     List(Rc<ListEvidence>),
-    MappingDnf, // TODO: can we get evidence here?
+    MappingDnf,    // TODO: can we get evidence here?
+    VoidUndefined, // TODO: can we get evidence here?
 }
 
 #[derive(PartialEq, Eq, Hash, Debug, Ord, PartialOrd, Clone)]

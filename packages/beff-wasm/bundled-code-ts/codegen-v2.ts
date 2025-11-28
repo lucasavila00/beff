@@ -335,26 +335,14 @@ class AnyRuntype implements Runtype {
   }
 }
 
-class NullRuntype implements Runtype {
+class NullishRuntype implements Runtype {
+  description: string;
+  constructor(description: string) {
+    this.description = description;
+  }
+
   describe(_ctx: DescribeContext): string {
-    return "null";
-  }
-  schema(_ctx: SchemaContext): JSONSchema7 {
-    return { type: "null" };
-  }
-  validate(_ctx: ValidateContext, input: unknown): boolean {
-    return input == null;
-  }
-  parseAfterValidation(_ctx: ParseContext, input: unknown): unknown {
-    return input;
-  }
-  reportDecodeError(ctx: ReportContext, input: unknown): DecodeError[] {
-    return buildError(ctx, "expected nullish value", input);
-  }
-}
-class UndefinedRuntype implements Runtype {
-  describe(_ctx: DescribeContext): string {
-    return "undefined";
+    return this.description;
   }
   schema(_ctx: SchemaContext): JSONSchema7 {
     return { type: "null" };
@@ -923,16 +911,58 @@ class AnyOfDiscriminatedRuntype implements Runtype {
   }
 }
 
-type Optionality<T> = { _tag: "Required"; t: T } | { _tag: "Optional"; t: T };
+class OptionalField implements Runtype {
+  private t: Runtype;
+  private tag: "Required" | "Optional";
+  constructor(t: Runtype, tag: "Required" | "Optional") {
+    this.t = t;
+    this.tag = tag;
+  }
+  isOptional(): boolean {
+    return this.tag === "Optional";
+  }
+
+  schema(ctx: SchemaContext): JSONSchema7 {
+    const inner = this.t.schema(ctx);
+    if (this.isOptional()) {
+      return {
+        anyOf: [inner, { type: "null" }],
+      };
+    }
+    return inner;
+  }
+  validate(ctx: ValidateContext, input: unknown): boolean {
+    if (this.isOptional() && input == null) {
+      return true;
+    }
+    return this.t.validate(ctx, input);
+  }
+  parseAfterValidation(ctx: ParseContext, input: any): unknown {
+    if (this.isOptional() && input == null) {
+      return input;
+    }
+    return this.t.parseAfterValidation(ctx, input);
+  }
+  reportDecodeError(ctx: ReportContext, input: unknown): DecodeError[] {
+    const acc: DecodeError[] = [];
+    if (this.isOptional()) {
+      acc.push(...buildError(ctx, "expected nullish value", input));
+    }
+    return [...acc, ...this.t.reportDecodeError(ctx, input)];
+  }
+  describe(ctx: DescribeContext): string {
+    return this.t.describe(ctx);
+  }
+}
 
 class ObjectRuntype implements Runtype {
-  private properties: Record<string, Optionality<Runtype>>;
+  private properties: Record<string, OptionalField>;
   private indexedPropertiesParser: Array<{
     key: Runtype;
     value: Runtype;
   }>;
   constructor(
-    properties: Record<string, Optionality<Runtype>>,
+    properties: Record<string, OptionalField>,
     indexedPropertiesParser: Array<{
       key: Runtype;
       value: Runtype;
@@ -946,8 +976,8 @@ class ObjectRuntype implements Runtype {
     const props = sortedKeys
       .map((k) => {
         const it = this.properties[k];
-        const optionalMark = it._tag === "Optional" ? "?" : "";
-        return `${k}${optionalMark}: ${it.t.describe(ctx)}`;
+        const optionalMark = it.isOptional() ? "?" : "";
+        return `${k}${optionalMark}: ${it.describe(ctx)}`;
       })
       .join(", ");
 
@@ -963,7 +993,8 @@ class ObjectRuntype implements Runtype {
     const properties: any = {};
     for (const k in this.properties) {
       pushPath(ctx, k);
-      properties[k] = this.properties[k].t.schema(ctx);
+      const item = this.properties[k];
+      properties[k] = item.schema(ctx);
       popPath(ctx);
     }
 
@@ -1001,7 +1032,7 @@ class ObjectRuntype implements Runtype {
       const configKeys = Object.keys(this.properties);
       for (const k of configKeys) {
         const validator = this.properties[k];
-        if (!validator.t.validate(ctx, input[k])) {
+        if (!validator.validate(ctx, input[k])) {
           return false;
         }
       }
@@ -1049,7 +1080,7 @@ class ObjectRuntype implements Runtype {
     for (const k of inputKeys) {
       const v = input[k];
       if (k in this.properties) {
-        const itemParsed = this.properties[k].t.parseAfterValidation(ctx, v);
+        const itemParsed = this.properties[k].parseAfterValidation(ctx, v);
         acc[k] = itemParsed;
       } else if (this.indexedPropertiesParser.length > 0) {
         for (const p of this.indexedPropertiesParser) {
@@ -1075,10 +1106,10 @@ class ObjectRuntype implements Runtype {
     const configKeys = Object.keys(this.properties);
 
     for (const k of configKeys) {
-      const ok = this.properties[k].t.validate(ctx, input[k]);
+      const ok = this.properties[k].validate(ctx, input[k]);
       if (!ok) {
         pushPath(ctx, k);
-        const arr2 = this.properties[k].t.reportDecodeError(ctx, input[k]);
+        const arr2 = this.properties[k].reportDecodeError(ctx, input[k]);
         acc.push(...arr2);
         popPath(ctx);
       }

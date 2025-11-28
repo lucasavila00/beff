@@ -4,14 +4,8 @@ expression: "print_cgen(r#\"\n        export type Alias = {a:string} & {b:number
 ---
 const namedRuntypes = {
     "Alias": new ObjectRuntype({
-        "a": {
-            "_tag": "Required",
-            "t": new TypeofRuntype("string")
-        },
-        "b": {
-            "_tag": "Required",
-            "t": new TypeofRuntype("number")
-        }
+        "a": new OptionalField(new TypeofRuntype("string"), "Required"),
+        "b": new OptionalField(new TypeofRuntype("number"), "Required")
     }, [])
 };
 const buildParsersInput = {

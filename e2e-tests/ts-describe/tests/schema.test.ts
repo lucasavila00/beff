@@ -24,7 +24,7 @@ it("works", () => {
     '"type CodecNonEmptyString = [string, ...Array<string>];"',
   );
   expect(Codecs.DiscriminatedUnion.describe()).toMatchInlineSnapshot(
-    '"type CodecDiscriminatedUnion = ({ a1: string, a11?: (null | string), subType: \\"a1\\", type: \\"a\\" } | { a2: string, subType: \\"a2\\", type: \\"a\\" } | { type: \\"b\\", value: number });"',
+    '"type CodecDiscriminatedUnion = ({ a1: string, a11?: string, subType: \\"a1\\", type: \\"a\\" } | { a2: string, subType: \\"a2\\", type: \\"a\\" } | { type: \\"b\\", value: number });"',
   );
 
   expect(Codecs.ValidCurrency.describe()).toMatchInlineSnapshot(

@@ -254,6 +254,7 @@ impl<'a> ToSemTypeConverter<'a> {
             }
             Runtype::Function => Ok(SemTypeContext::function().into()),
             Runtype::Undefined => Ok(SemTypeContext::undefined().into()),
+            Runtype::Void => Ok(SemTypeContext::void().into()),
         }
     }
 }

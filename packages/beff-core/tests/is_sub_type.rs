@@ -1568,4 +1568,28 @@ mod tests {
         assert!(rt_is_sub_type(&ref_a, &struct_a, &defs_refs, &defs_refs));
         assert!(rt_is_sub_type(&struct_a, &ref_a, &defs_refs, &defs_refs));
     }
+
+    #[test]
+    fn void_undefined_subtyping() {
+        // in typescript type system undefined is a subtype of void
+
+        let definitions = vec![];
+
+        let void_type = Runtype::Void;
+        let undefined_type = Runtype::Undefined;
+
+        assert!(rt_is_sub_type(
+            &undefined_type,
+            &void_type,
+            &definitions,
+            &definitions
+        ));
+
+        assert!(!rt_is_sub_type(
+            &void_type,
+            &undefined_type,
+            &definitions,
+            &definitions
+        ));
+    }
 }

@@ -9,7 +9,7 @@ use crate::{
     ast::runtype::{
         CustomFormat, IndexedProperty, Optionality, Runtype, RuntypeConst, TplLitTypeItem,
     },
-    subtyping::bdd::MappingAtomicType,
+    subtyping::{bdd::MappingAtomicType, subtype::VoidUndefinedSubtype},
     NamedSchema,
 };
 
@@ -458,7 +458,7 @@ impl<'a, 'b> SchemerContext<'a, 'b> {
                     SubTypeTag::Date => {
                         acc.insert(Runtype::Date);
                     }
-                    SubTypeTag::Undefined => {
+                    SubTypeTag::VoidUndefined => {
                         acc.insert(Runtype::Undefined);
                     }
                 };
@@ -525,6 +525,21 @@ impl<'a, 'b> SchemerContext<'a, 'b> {
                 }
                 ProperSubtype::List(bdd) => {
                     acc.insert(self.convert_to_schema_list(bdd)?);
+                }
+                ProperSubtype::VoidUndefined {
+                    allowed,
+                    values: value,
+                } => {
+                    for v in value {
+                        match v {
+                            VoidUndefinedSubtype::Void => {
+                                acc.insert(maybe_not(Runtype::Void, !allowed));
+                            }
+                            VoidUndefinedSubtype::Undefined => {
+                                acc.insert(maybe_not(Runtype::Undefined, !allowed));
+                            }
+                        }
+                    }
                 }
             };
         }

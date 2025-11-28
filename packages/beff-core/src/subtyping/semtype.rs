@@ -2,7 +2,7 @@ use crate::subtyping::{
     bdd::{IndexedPropertiesAtomic, MappingAtomicType},
     dnf::Dnf,
     evidence::Evidence,
-    subtype::NumberRepresentationOrFormat,
+    subtype::{NumberRepresentationOrFormat, VoidUndefinedSubtype},
 };
 use anyhow::Result;
 
@@ -474,7 +474,24 @@ impl SemTypeContext {
         SemType::new_basic(SubTypeTag::Null.code())
     }
     pub fn undefined() -> SemType {
-        SemType::new_basic(SubTypeTag::Undefined.code())
+        SemType::new_complex(
+            0x0,
+            vec![ProperSubtype::VoidUndefined {
+                allowed: true,
+                values: vec![VoidUndefinedSubtype::Undefined],
+            }
+            .into()],
+        )
+    }
+    pub fn void() -> SemType {
+        SemType::new_complex(
+            0x0,
+            vec![ProperSubtype::VoidUndefined {
+                allowed: true,
+                values: vec![VoidUndefinedSubtype::Void],
+            }
+            .into()],
+        )
     }
     pub fn optional_prop() -> SemType {
         SemType::new_basic(SubTypeTag::OptionalProp.code())

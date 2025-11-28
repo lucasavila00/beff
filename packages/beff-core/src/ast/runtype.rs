@@ -207,6 +207,7 @@ pub struct IndexedProperty {
 pub enum Runtype {
     Null,
     Undefined,
+    Void,
     Boolean,
     String,
     Number,
@@ -413,6 +414,7 @@ impl Runtype {
             Runtype::Undefined => "undefined".to_string(),
             Runtype::Null => "null".to_string(),
             Runtype::Boolean => "boolean".to_string(),
+            Runtype::Void => "void".to_string(),
             Runtype::String => "string".to_string(),
             Runtype::Number => "number".to_string(),
             Runtype::Any => "any".to_string(),

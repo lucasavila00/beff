@@ -455,40 +455,7 @@ fn hoist_identifier(name: usize) -> Expr {
 }
 
 fn optionality_wrapper(tag: &str, inner: Expr) -> Expr {
-    Expr::Object(ObjectLit {
-        span: DUMMY_SP,
-        props: vec![
-            // _tag: "tag"
-            PropOrSpread::Prop(
-                Prop::KeyValue(KeyValueProp {
-                    key: PropName::Str(Str {
-                        span: DUMMY_SP,
-                        value: "_tag".into(),
-                        raw: None,
-                    }),
-                    value: Expr::Lit(Lit::Str(Str {
-                        span: DUMMY_SP,
-                        value: tag.into(),
-                        raw: None,
-                    }))
-                    .into(),
-                })
-                .into(),
-            ),
-            // t: inner
-            PropOrSpread::Prop(
-                Prop::KeyValue(KeyValueProp {
-                    key: PropName::Str(Str {
-                        span: DUMMY_SP,
-                        value: "t".into(),
-                        raw: None,
-                    }),
-                    value: inner.into(),
-                })
-                .into(),
-            ),
-        ],
-    })
+    new_runtype_class("OptionalField", vec![inner, string_lit(tag)])
 }
 
 fn print_runtype(
@@ -507,7 +474,6 @@ fn print_runtype(
         Runtype::Number => typeof_runtype("number"),
         Runtype::Function => typeof_runtype("function"),
         Runtype::Ref(to) => ref_runtype(to),
-        Runtype::Null => no_args_runtype("NullRuntype"),
         Runtype::Any => no_args_runtype("AnyRuntype"),
         Runtype::StNever => no_args_runtype("NeverRuntype"),
         Runtype::Const(c) => new_runtype_class("ConstRuntype", vec![c.clone().to_json().to_expr()]),
@@ -607,15 +573,10 @@ fn print_runtype(
             let mut mapped = BTreeMap::new();
             for (k, v) in vs.iter() {
                 let r = match v {
-                    Optionality::Optional(schema) => {
-                        let nullable_schema = &Runtype::any_of(
-                            vec![Runtype::Null, schema.clone()].into_iter().collect(),
-                        );
-                        optionality_wrapper(
-                            "Optional",
-                            print_runtype(nullable_schema, named_schemas, hoisted),
-                        )
-                    }
+                    Optionality::Optional(schema) => optionality_wrapper(
+                        "Optional",
+                        print_runtype(schema, named_schemas, hoisted),
+                    ),
                     Optionality::Required(schema) => optionality_wrapper(
                         "Required",
                         print_runtype(schema, named_schemas, hoisted),
@@ -705,7 +666,9 @@ fn print_runtype(
 
             new_runtype_class("ObjectRuntype", vec![obj_validator, indexed_properties_arr])
         }
-        Runtype::Undefined => no_args_runtype("UndefinedRuntype"),
+        Runtype::Null => new_runtype_class("NullishRuntype", vec![string_lit("null")]),
+        Runtype::Undefined => new_runtype_class("NullishRuntype", vec![string_lit("undefined")]),
+        Runtype::Void => new_runtype_class("NullishRuntype", vec![string_lit("void")]),
     };
 
     let seen_counter = hoisted.seen.get(schema).cloned().unwrap_or(0);
@@ -798,6 +761,7 @@ fn calculate_schema_seen(schema: &Runtype, seen: &mut SeenCounter) {
         | Runtype::Ref(_)
         | Runtype::Const(_)
         | Runtype::Null
+        | Runtype::Void
         | Runtype::Undefined => {}
         Runtype::Object {
             vs,

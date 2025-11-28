@@ -187,10 +187,10 @@ it("works3", () => {
             "a11": {
               "anyOf": [
                 {
-                  "type": "null",
+                  "type": "string",
                 },
                 {
-                  "type": "string",
+                  "type": "null",
                 },
               ],
             },
