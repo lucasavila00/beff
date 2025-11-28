@@ -1,12 +1,15 @@
-use crate::ast::{
-    json::N,
-    runtype::{CustomFormat, TplLitType},
+use crate::{
+    ast::{
+        json::N,
+        runtype::{CustomFormat, TplLitType},
+    },
+    subtyping::dnf::dnf_mapping_is_empty,
 };
 use anyhow::{bail, Result};
 use std::rc::Rc;
 
 use super::{
-    bdd::{list_is_empty, mapping_is_empty, Bdd, BddOps},
+    bdd::{list_is_empty, Bdd, BddOps},
     evidence::{ProperSubtypeEvidence, ProperSubtypeEvidenceResult},
     semtype::SemTypeContext,
 };
@@ -302,7 +305,7 @@ impl ProperSubtypeOps for Rc<ProperSubtype> {
                 values: values.clone(),
             }
             .to_result()),
-            ProperSubtype::Mapping(bdd) => mapping_is_empty(bdd, builder),
+            ProperSubtype::Mapping(bdd) => dnf_mapping_is_empty(bdd, builder),
             ProperSubtype::List(bdd) => list_is_empty(bdd, builder),
         }
     }

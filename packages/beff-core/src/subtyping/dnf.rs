@@ -1,10 +1,13 @@
+use crate::ast::runtype::{TplLitType, TplLitTypeItem};
+use crate::subtyping::subtype::StringLitOrFormat;
 use crate::subtyping::{
-    bdd::{intersect_mapping, Atom, Bdd, BddOps, MappingAtomicType},
-    evidence::{MappingEvidence, ProperSubtypeEvidence, ProperSubtypeEvidenceResult},
-    semtype::{BddMemoEmptyRef, MemoEmpty, SemTypeContext, SemTypeOps},
+    bdd::{intersect_mapping, Atom, Bdd, BddOps, IndexedPropertiesAtomic, MappingAtomicType},
+    evidence::{ProperSubtypeEvidence, ProperSubtypeEvidenceResult},
+    semtype::{BddMemoEmptyRef, MemoEmpty, SemType, SemTypeContext, SemTypeOps},
 };
 use anyhow::Result;
-use std::{collections::BTreeMap, rc::Rc};
+use std::collections::BTreeSet;
+use std::rc::Rc;
 // A DNF is a disjunction (OR) of Conjunctions
 // An empty DNF represents false (bottom, never)
 pub type Dnf = Vec<Conjunction>;
@@ -145,14 +148,144 @@ fn mapping_atomic_type_is_empty(
     neg: &[Atom],
     ctx: &mut SemTypeContext,
 ) -> Result<bool> {
-    // first check if any field in atom is empty
-    for (_k, v) in atom.vs.iter() {
+    let mut neg_mappings = vec![];
+    for n in neg {
+        if let Atom::Mapping(idx) = n {
+            neg_mappings.push(ctx.get_mapping_atomic(*idx).clone());
+        }
+    }
+
+    check_mapping_empty(atom, &neg_mappings, ctx)
+}
+
+fn get_value(m: &MappingAtomicType, k: &str, ctx: &mut SemTypeContext) -> Result<Rc<SemType>> {
+    if let Some(v) = m.vs.get(k) {
+        return Ok(v.clone());
+    }
+
+    if let Some(idx) = &m.indexed_properties {
+        let k_type = Rc::new(SemTypeContext::string_const(StringLitOrFormat::Tpl(
+            TplLitType(vec![TplLitTypeItem::StringConst(k.to_string())]),
+        )));
+
+        if k_type.is_subtype(&idx.key, ctx)? {
+            return Ok(idx.value.clone());
+        }
+    }
+
+    Ok(Rc::new(SemTypeContext::unknown()))
+}
+
+fn get_index_value(m: &MappingAtomicType) -> Rc<SemType> {
+    if let Some(idx) = &m.indexed_properties {
+        idx.value.clone()
+    } else {
+        Rc::new(SemTypeContext::unknown())
+    }
+}
+
+fn get_effective_index_value(
+    pos: &MappingAtomicType,
+    neg: &MappingAtomicType,
+    ctx: &mut SemTypeContext,
+) -> Result<Rc<SemType>> {
+    let pos_key = if let Some(idx) = &pos.indexed_properties {
+        idx.key.clone()
+    } else {
+        Rc::new(SemTypeContext::unknown())
+    };
+
+    let neg_key = if let Some(idx) = &neg.indexed_properties {
+        idx.key.clone()
+    } else {
+        Rc::new(SemTypeContext::unknown())
+    };
+
+    if pos_key.is_subtype(&neg_key, ctx)? {
+        Ok(get_index_value(neg))
+    } else {
+        Ok(Rc::new(SemTypeContext::unknown()))
+    }
+}
+
+fn check_mapping_empty(
+    pos: Rc<MappingAtomicType>,
+    negs: &[Rc<MappingAtomicType>],
+    ctx: &mut SemTypeContext,
+) -> Result<bool> {
+    // 1. Check if pos is empty (any field is empty)
+    for v in pos.vs.values() {
         if v.is_empty(ctx)? {
             return Ok(true);
         }
     }
+    if let Some(idx) = &pos.indexed_properties {
+        if idx.key.is_empty(ctx)? {
+            return Ok(true);
+        }
+        if idx.value.is_empty(ctx)? {
+            return Ok(true);
+        }
+    }
 
-    todo!()
+    // 2. If no negs, not empty (unless pos is empty, checked above)
+    if negs.is_empty() {
+        return Ok(false);
+    }
+
+    let current_neg = &negs[0];
+    let rest_negs = &negs[1..];
+
+    // 3. Collect all keys
+    let mut all_keys = BTreeSet::new();
+    for k in pos.vs.keys() {
+        all_keys.insert(k.clone());
+    }
+    for k in current_neg.vs.keys() {
+        all_keys.insert(k.clone());
+    }
+
+    // 4. Check each key dimension
+    for k in all_keys {
+        let v_p = get_value(&pos, &k, ctx)?;
+        let v_n = get_value(current_neg, &k, ctx)?;
+
+        let diff = v_p.diff(&v_n)?;
+        if !diff.is_empty(ctx)? {
+            let mut new_pos = (*pos).clone();
+            new_pos.vs.insert(k, diff);
+            if !check_mapping_empty(Rc::new(new_pos), rest_negs, ctx)? {
+                return Ok(false);
+            }
+        }
+    }
+
+    // 5. Check index signature dimension
+    let v_p_idx = get_index_value(&pos);
+    let v_n_idx = get_effective_index_value(&pos, current_neg, ctx)?;
+
+    let diff_idx = v_p_idx.diff(&v_n_idx)?;
+    if !diff_idx.is_empty(ctx)? {
+        let mut new_pos = (*pos).clone();
+        // Update indexed_properties value
+        // We need to preserve the key type of pos
+        let key_type = if let Some(idx) = &pos.indexed_properties {
+            idx.key.clone()
+        } else {
+            Rc::new(SemTypeContext::unknown())
+        };
+
+        new_pos.indexed_properties = Some(IndexedPropertiesAtomic {
+            key: key_type,
+            value: diff_idx,
+        });
+
+        if !check_mapping_empty(Rc::new(new_pos), rest_negs, ctx)? {
+            return Ok(false);
+        }
+    }
+
+    Ok(true)
 }
 
 fn mapping_is_empty_impl(
@@ -178,7 +311,10 @@ fn mapping_is_empty_impl(
     })
 }
 
-fn mapping_is_empty(dnf: Rc<Dnf>, ctx: &mut SemTypeContext) -> Result<ProperSubtypeEvidenceResult> {
+fn mapping_is_empty_handle_recusrsion(
+    dnf: Rc<Dnf>,
+    ctx: &mut SemTypeContext,
+) -> Result<ProperSubtypeEvidenceResult> {
     // use memoization to handle recursive types
     match ctx.mapping_memo_dnf.get(&dnf) {
         Some(mm) => match &mm.0 {
@@ -208,7 +344,7 @@ pub fn dnf_mapping_is_empty(
     ctx: &mut SemTypeContext,
 ) -> Result<ProperSubtypeEvidenceResult> {
     let dnf = Rc::new(bdd_to_dnf(bdd));
-    mapping_is_empty(dnf, ctx)
+    mapping_is_empty_handle_recusrsion(dnf, ctx)
 }
 
 #[cfg(test)]

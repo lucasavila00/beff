@@ -14,7 +14,6 @@ pub enum ProperSubtypeEvidence {
         values: Vec<StringLitOrFormat>,
     },
     List(Rc<ListEvidence>),
-    Mapping(Rc<MappingEvidence>),
     MappingDnf, // TODO: can we get evidence here?
 }
 
