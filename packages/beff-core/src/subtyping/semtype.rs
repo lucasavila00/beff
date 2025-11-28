@@ -414,7 +414,7 @@ impl SemTypeContext {
     pub fn mapping_definition(
         &mut self,
         vs: BTreeMap<String, Rc<SemType>>,
-        indexed_properties: Vec<IndexedPropertiesAtomic>,
+        indexed_properties: Option<IndexedPropertiesAtomic>,
     ) -> SemType {
         let idx = self.mapping_definitions.len();
         self.mapping_definitions.push(Some(

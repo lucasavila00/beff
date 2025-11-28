@@ -216,7 +216,7 @@ pub enum Runtype {
     TplLitType(TplLitType),
     Object {
         vs: BTreeMap<String, Optionality<Runtype>>,
-        indexed_properties: Vec<IndexedProperty>,
+        indexed_properties: Option<Box<IndexedProperty>>,
     },
     Array(Box<Runtype>),
     Tuple {
@@ -264,13 +264,13 @@ impl Runtype {
     pub fn no_index_object(vs: Vec<(String, Optionality<Runtype>)>) -> Self {
         Self::Object {
             vs: vs.into_iter().collect(),
-            indexed_properties: vec![],
+            indexed_properties: None,
         }
     }
     pub fn single_index_object(key: Runtype, value: Optionality<Runtype>) -> Self {
         Self::Object {
             vs: BTreeMap::new(),
-            indexed_properties: vec![IndexedProperty { key, value }],
+            indexed_properties: Some(Box::new(IndexedProperty { key, value })),
         }
     }
     pub fn any_object() -> Runtype {
@@ -326,7 +326,7 @@ impl Runtype {
                             vs,
                             indexed_properties,
                         } => {
-                            if !indexed_properties.is_empty() {
+                            if !indexed_properties.is_none() {
                                 rest_is_empty = false;
                                 break;
                             }

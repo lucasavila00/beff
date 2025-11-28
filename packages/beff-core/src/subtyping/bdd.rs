@@ -34,13 +34,13 @@ pub struct IndexedPropertiesAtomic {
 
 pub struct MappingAtomicType {
     pub vs: BTreeMap<String, Rc<SemType>>,
-    pub indexed_properties: Vec<IndexedPropertiesAtomic>,
+    pub indexed_properties: Option<IndexedPropertiesAtomic>,
 }
 impl MappingAtomicType {
     fn new() -> Self {
         Self {
             vs: BTreeMap::new(),
-            indexed_properties: vec![],
+            indexed_properties: None,
         }
     }
 }
@@ -370,6 +370,7 @@ fn bdd_every_result(
 fn intersect_mapping(
     m1: Rc<MappingAtomicType>,
     m2: Rc<MappingAtomicType>,
+    ctx: &mut SemTypeContext,
 ) -> Result<Option<Rc<MappingAtomicType>>> {
     let m1_names = BTreeSet::from_iter(m1.vs.keys());
     let m2_names = BTreeSet::from_iter(m2.vs.keys());
@@ -393,13 +394,28 @@ fn intersect_mapping(
         acc.push((name.to_string(), t))
     }
 
-    if !m1.indexed_properties.is_empty() || !m2.indexed_properties.is_empty() {
-        bail!("indexed properties intersection not implemented yet");
+    let mut indexed_properties_acc = None;
+
+    match (&m1.indexed_properties, &m2.indexed_properties) {
+        (Some(p1), Some(p2)) => {
+            let keys_are_same_type = p1.key.is_same_type(&p2.key, ctx)?;
+            if !keys_are_same_type {
+                bail!("intersection of indexed properties of different key types is not supported");
+            }
+            indexed_properties_acc = Some(IndexedPropertiesAtomic {
+                key: p1.key.clone(),
+                value: p1.value.intersect(&p2.value)?,
+            });
+        }
+        (None, Some(p)) | (Some(p), None) => {
+            indexed_properties_acc = Some(p.clone());
+        }
+        (None, None) => {}
     }
 
     Ok(Some(Rc::new(MappingAtomicType {
         vs: acc.into_iter().collect(),
-        indexed_properties: vec![],
+        indexed_properties: indexed_properties_acc,
     })))
 }
 
@@ -411,23 +427,20 @@ enum MappingInhabited {
 fn mapping_inhabited(
     pos: Rc<MappingAtomicType>,
     neg_list: &Option<Rc<Conjunction>>,
-    builder: &mut SemTypeContext,
+    ctx: &mut SemTypeContext,
 ) -> Result<MappingInhabited> {
     match neg_list {
         None => Ok(MappingInhabited::Yes(pos.clone())),
         Some(neg_list) => {
             let neg = match &*neg_list.atom {
-                Atom::Mapping(a) => builder.get_mapping_atomic(*a),
+                Atom::Mapping(a) => ctx.get_mapping_atomic(*a),
                 _ => unreachable!(),
             };
 
-            if !neg.indexed_properties.is_empty() {
-                bail!("indexed properties not supported yet in mapping_inhabited");
-            }
-            let neg = &neg.vs;
+            let neg_vs = &neg.vs;
 
             let pos_names = BTreeSet::from_iter(pos.vs.keys());
-            let neg_names = BTreeSet::from_iter(neg.keys());
+            let neg_names = BTreeSet::from_iter(neg_vs.keys());
 
             let all_names = pos_names.union(&neg_names).collect::<BTreeSet<_>>();
 
@@ -437,12 +450,12 @@ fn mapping_inhabited(
                     .get(**name)
                     .cloned()
                     .unwrap_or_else(|| Rc::new(SemTypeContext::unknown()));
-                let neg_type = neg
+                let neg_type = neg_vs
                     .get(**name)
                     .cloned()
                     .unwrap_or_else(|| Rc::new(SemTypeContext::unknown()));
                 if pos_type.is_never() || neg_type.is_never() {
-                    return mapping_inhabited(pos, &neg_list.next, builder);
+                    return mapping_inhabited(pos, &neg_list.next, ctx);
                 }
             }
             for name in all_names {
@@ -451,21 +464,39 @@ fn mapping_inhabited(
                     .get(*name)
                     .cloned()
                     .unwrap_or_else(|| Rc::new(SemTypeContext::unknown()));
-                let neg_type = neg
+                let neg_type = neg_vs
                     .get(*name)
                     .cloned()
                     .unwrap_or_else(|| Rc::new(SemTypeContext::unknown()));
 
                 let d = pos_type.diff(&neg_type)?;
-                if !d.is_empty(builder)? {
+                if !d.is_empty(ctx)? {
                     let mut mt = pos.as_ref().clone();
                     mt.vs.insert(name.to_string(), d);
                     if let Ok(MappingInhabited::Yes(a)) =
-                        mapping_inhabited(Rc::new(mt), &neg_list.next, builder)
+                        mapping_inhabited(Rc::new(mt), &neg_list.next, ctx)
                     {
                         return Ok(MappingInhabited::Yes(a));
                     }
                 }
+            }
+
+            match (&pos.indexed_properties, &neg.indexed_properties) {
+                (Some(p), Some(n)) => {
+                    let key_is_same_type = p.key.is_same_type(&n.key, ctx)?;
+                    if key_is_same_type {
+                        bail!("indexed properties in complex types are not supported (1)");
+                    } else {
+                        bail!("indexed properties with different key types are not supported");
+                    }
+                }
+                (Some(_p), None) => {
+                    bail!("indexed properties in complex types are not supported (2)");
+                }
+                (None, Some(_n)) => {
+                    bail!("indexed properties in complex types are not supported (3)");
+                }
+                (None, None) => {}
             }
 
             Ok(MappingInhabited::No)
@@ -476,23 +507,23 @@ fn mapping_inhabited(
 fn mapping_formula_is_empty(
     pos_list: &Option<Rc<Conjunction>>,
     neg_list: &Option<Rc<Conjunction>>,
-    builder: &mut SemTypeContext,
+    ctx: &mut SemTypeContext,
 ) -> Result<ProperSubtypeEvidenceResult> {
     let mut combined: Rc<MappingAtomicType> = Rc::new(MappingAtomicType::new());
     match pos_list {
         None => {}
         Some(pos_atom) => {
             match pos_atom.atom.as_ref() {
-                Atom::Mapping(a) => combined = builder.get_mapping_atomic(*a).clone(),
+                Atom::Mapping(a) => combined = ctx.get_mapping_atomic(*a).clone(),
                 _ => unreachable!(),
             };
             let mut p = pos_atom.next.clone();
             while let Some(ref some_p) = p {
                 let p_atom = match &*some_p.atom {
-                    Atom::Mapping(a) => builder.get_mapping_atomic(*a),
+                    Atom::Mapping(a) => ctx.get_mapping_atomic(*a),
                     _ => unreachable!(),
                 };
-                let m = intersect_mapping(combined.clone(), p_atom.clone())?;
+                let m = intersect_mapping(combined.clone(), p_atom.clone(), ctx)?;
                 match m {
                     None => return Ok(ProperSubtypeEvidenceResult::IsEmpty),
                     Some(m) => combined = m,
@@ -500,26 +531,26 @@ fn mapping_formula_is_empty(
                 p.clone_from(&some_p.next.clone());
             }
             for t in combined.vs.values() {
-                if let EvidenceResult::IsEmpty = t.is_empty_evidence(builder)? {
+                if let EvidenceResult::IsEmpty = t.is_empty_evidence(ctx)? {
                     return Ok(ProperSubtypeEvidenceResult::IsEmpty);
                 }
             }
             for p in combined.indexed_properties.iter() {
-                if let EvidenceResult::IsEmpty = p.key.is_empty_evidence(builder)? {
+                if let EvidenceResult::IsEmpty = p.key.is_empty_evidence(ctx)? {
                     return Ok(ProperSubtypeEvidenceResult::IsEmpty);
                 }
-                if let EvidenceResult::IsEmpty = p.value.is_empty_evidence(builder)? {
+                if let EvidenceResult::IsEmpty = p.value.is_empty_evidence(ctx)? {
                     return Ok(ProperSubtypeEvidenceResult::IsEmpty);
                 }
             }
         }
     }
-    match mapping_inhabited(combined.clone(), neg_list, builder)? {
+    match mapping_inhabited(combined.clone(), neg_list, ctx)? {
         MappingInhabited::No => Ok(ProperSubtypeEvidenceResult::IsEmpty),
         MappingInhabited::Yes(ev) => {
             let mut new_props = vec![];
             for (k, it) in ev.vs.iter() {
-                let t = match it.is_empty_evidence(builder)? {
+                let t = match it.is_empty_evidence(ctx)? {
                     EvidenceResult::Evidence(e) => (k.clone(), Rc::new(e)),
                     EvidenceResult::IsEmpty => {
                         unreachable!("mapping_inhabited should have returned false")
@@ -529,14 +560,14 @@ fn mapping_formula_is_empty(
             }
 
             let mut new_idx = vec![];
-            for p in &ev.indexed_properties {
-                let key = match p.key.is_empty_evidence(builder)? {
+            if let Some(p) = &ev.indexed_properties {
+                let key = match p.key.is_empty_evidence(ctx)? {
                     EvidenceResult::Evidence(e) => Rc::new(e),
                     EvidenceResult::IsEmpty => {
                         unreachable!("mapping_inhabited should have returned false")
                     }
                 };
-                let value = match p.value.is_empty_evidence(builder)? {
+                let value = match p.value.is_empty_evidence(ctx)? {
                     EvidenceResult::Evidence(e) => Rc::new(e),
                     EvidenceResult::IsEmpty => {
                         unreachable!("mapping_inhabited should have returned false")
@@ -849,7 +880,7 @@ fn mapping_atomic_applicable_member_types_inner(
 
             let is_subtype = member_types.len() == atomic.vs.len();
             if !is_subtype {
-                for v in &atomic.indexed_properties {
+                if let Some(v) = &atomic.indexed_properties {
                     if v.key.is_all_strings() {
                         member_types.push(v.value.clone());
                     }
@@ -861,7 +892,7 @@ fn mapping_atomic_applicable_member_types_inner(
         MappingStrKey::True => {
             let mut vs: Vec<Rc<SemType>> = atomic.vs.values().cloned().collect();
 
-            for v in &atomic.indexed_properties {
+            if let Some(v) = &atomic.indexed_properties {
                 if v.key.is_all_strings() {
                     vs.push(v.value.clone());
                 }
@@ -914,11 +945,10 @@ fn bdd_mapped_record_member_type_inner_val(
                 _ => unreachable!(),
             };
             let mut found = None;
-            for p in &b_atom_type.indexed_properties {
+            if let Some(p) = &b_atom_type.indexed_properties {
                 let key_is_subtype = idx_st.is_subtype(&p.key, ctx)?;
                 if key_is_subtype {
                     found = Some(p);
-                    break;
                 }
             }
             // if the key type does not intersect the key, then skip this branch

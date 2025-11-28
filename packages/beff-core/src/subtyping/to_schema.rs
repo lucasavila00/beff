@@ -188,9 +188,9 @@ impl<'a, 'b> SchemerContext<'a, 'b> {
             acc.push((k.clone(), ty));
         }
 
-        let mut indexed_properties_acc = vec![];
+        let mut indexed_properties_acc = None;
 
-        for it in &mt.indexed_properties {
+        if let Some(it) = &mt.indexed_properties {
             let k = self.convert_to_schema(&it.key, None)?;
             let schema = self.convert_to_schema(&it.value, None)?;
             let ty = if it.value.has_void() {
@@ -198,7 +198,7 @@ impl<'a, 'b> SchemerContext<'a, 'b> {
             } else {
                 schema.required()
             };
-            indexed_properties_acc.push(IndexedProperty { key: k, value: ty });
+            indexed_properties_acc = Some(Box::new(IndexedProperty { key: k, value: ty }));
         }
 
         Ok(Runtype::Object {
@@ -564,7 +564,7 @@ impl<'a, 'b> SchemerContext<'a, 'b> {
     }
 }
 
-pub fn to_validators(
+pub fn semtype_to_runtypes(
     ctx: &mut SemTypeContext,
     ty: &Rc<SemType>,
     name: &str,
