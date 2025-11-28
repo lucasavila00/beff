@@ -272,6 +272,18 @@ impl SemType {
 
         is_string || only_string_sub
     }
+
+    pub fn is_subtype_of_number(&self) -> bool {
+        let only_number_sub = self.all == 0
+            && self
+                .subtype_data
+                .iter()
+                .any(|it| it.tag() == SubTypeTag::Number);
+        let is_number = (self.all & SubTypeTag::Number.code()) != 0;
+
+        is_number || only_number_sub
+    }
+
     pub fn is_all_strings(&self) -> bool {
         self.all == SubTypeTag::String.code()
     }
@@ -549,9 +561,13 @@ impl SemTypeContext {
         idx_st: Rc<SemType>,
     ) -> anyhow::Result<Rc<SemType>> {
         let list_result = list_indexed_access(self, obj_st.clone(), idx_st.clone())?;
-        let mapping_result = mapping_indexed_access(self, obj_st, idx_st)?;
+        let mapping_result = mapping_indexed_access(self, obj_st.clone(), idx_st.clone())?;
+        let mut acc = list_result.union(&mapping_result)?;
 
-        list_result.union(&mapping_result)
+        if idx_st.is_subtype_of_number() && obj_st.is_subtype_of_string() {
+            acc = acc.union(&Rc::new(SemTypeContext::string()))?;
+        }
+        Ok(acc)
     }
 
     pub fn keyof(&mut self, st: Rc<SemType>) -> anyhow::Result<Rc<SemType>> {

@@ -165,6 +165,11 @@ fn mapping_atomic_type_is_empty(
     check_mapping_empty(atom, &neg_mappings, ctx)
 }
 
+// Used for the positive side (`pos`).
+// We treat `pos` as a specific type definition (Closed).
+// If a key is not present in `pos` (and not covered by an index signature),
+// it is considered missing (`void`).
+// This is because we are asking: "Does the specific type `pos` have a value for `k`?"
 fn get_value_exact(
     m: &MappingAtomicType,
     k: &str,
@@ -191,6 +196,10 @@ fn get_value_exact(
     Ok(Rc::new(SemTypeContext::optional_prop()))
 }
 
+// Used for the negative side (`neg`).
+// We treat `neg` as a constraint or a pattern (Open).
+// In structural subtyping, if a type does not mention a property, it allows anything for that property (`unknown`).
+// So if `neg` does not mention `k`, it places no constraint on `k`.
 fn get_value_open(m: &MappingAtomicType, k: &str, ctx: &mut SemTypeContext) -> Result<Rc<SemType>> {
     if let Some(v) = m.vs.get(k) {
         return Ok(v.clone());
@@ -213,6 +222,9 @@ fn get_value_open(m: &MappingAtomicType, k: &str, ctx: &mut SemTypeContext) -> R
     Ok(Rc::new(SemTypeContext::unknown()))
 }
 
+// Used for `pos`.
+// Returns the index signature value of `pos`.
+// If `pos` has no index signature, it implies no extra properties are present (they are `void`).
 fn get_index_value_exact(m: &MappingAtomicType) -> Rc<SemType> {
     if let Some(idx) = &m.indexed_properties {
         idx.value.clone()
@@ -221,6 +233,9 @@ fn get_index_value_exact(m: &MappingAtomicType) -> Rc<SemType> {
     }
 }
 
+// Used for `neg`.
+// Returns the index signature value of `neg`.
+// If `neg` has no index signature, it implies no constraint on extra properties (`unknown`).
 fn get_index_value_open(m: &MappingAtomicType) -> Rc<SemType> {
     if let Some(idx) = &m.indexed_properties {
         idx.value.clone()
@@ -229,6 +244,9 @@ fn get_index_value_open(m: &MappingAtomicType) -> Rc<SemType> {
     }
 }
 
+// Used for `pos`.
+// The domain of keys covered by `pos`'s index signature.
+// If none, it's `never` (no keys covered).
 fn get_key_type_exact(m: &MappingAtomicType) -> Rc<SemType> {
     if let Some(idx) = &m.indexed_properties {
         idx.key.clone()
@@ -237,6 +255,10 @@ fn get_key_type_exact(m: &MappingAtomicType) -> Rc<SemType> {
     }
 }
 
+// Used for `neg`.
+// The domain of keys covered by `neg`'s index signature.
+// If none, it defaults to `string` (all keys) but with `unknown` value
+// (see `get_index_value_open`), effectively implementing the "Open" nature of structural types.
 fn get_key_type_open(m: &MappingAtomicType) -> Rc<SemType> {
     if let Some(idx) = &m.indexed_properties {
         idx.key.clone()
@@ -245,6 +267,10 @@ fn get_key_type_open(m: &MappingAtomicType) -> Rc<SemType> {
     }
 }
 
+// Determines the constraint imposed by `neg`'s index signature on the "rest" of `pos`.
+// If `pos`'s index keys are covered by `neg`'s index keys, then `neg` imposes its index value constraint.
+// Crucially, since index signatures in `neg` represent "if a key exists, it must match X",
+// but don't enforce existence, the effective constraint is `X | void` (optional).
 fn get_effective_index_value(
     pos: &MappingAtomicType,
     neg: &MappingAtomicType,
@@ -261,12 +287,33 @@ fn get_effective_index_value(
     }
 }
 
+// Checks if `pos` is a subtype of the union of `negs`.
+// Equivalently, checks if `pos - (neg_1 | neg_2 | ...)` is empty.
+//
+// The algorithm relies on the decomposition of the difference of two record types:
+// A \ B = U_{k in keys(A, B)} (A where k is restricted to A[k] \ B[k])
+//
+// For example:
+// { a: string, b: number } \ { a: "foo", b: 42 }
+// =
+// { a: string \ "foo", b: number }  (Cases where 'a' doesn't match)
+// U
+// { a: string, b: number \ 42 }     (Cases where 'b' doesn't match)
+//
+// If A \ B is empty, it means A is a subtype of B.
+//
+// When checking `pos \ (neg_1 | neg_2 | ...)`, we first compute `pos \ neg_1`.
+// This results in a union of refined `pos` types (let's call them `pos_fragments`).
+// Then we recursively check if each `pos_fragment` is covered by `(neg_2 | ... | neg_n)`.
+//
+// If all fragments are covered, then `pos` is covered.
 fn check_mapping_empty(
     pos: Rc<MappingAtomicType>,
     negs: &[Rc<MappingAtomicType>],
     ctx: &mut SemTypeContext,
 ) -> Result<bool> {
     // 1. Check if pos is empty (any field is empty)
+    // If any required field in `pos` is empty (Never), then the whole object type is empty.
     for v in pos.vs.values() {
         if v.is_empty(ctx)? {
             return Ok(true);
@@ -282,6 +329,8 @@ fn check_mapping_empty(
     }
 
     // 2. If no negs, not empty (unless pos is empty, checked above)
+    // If we have no negative constraints left to subtract, and `pos` is not empty,
+    // then the result is not empty.
     if negs.is_empty() {
         return Ok(false);
     }
@@ -290,6 +339,8 @@ fn check_mapping_empty(
     let rest_negs = &negs[1..];
 
     // 3. Collect all keys
+    // We need to check all dimensions where `pos` and `current_neg` might differ.
+    // This includes explicit keys in both, and keys implied by finite index signatures.
     let mut all_keys = BTreeSet::new();
     for k in pos.vs.keys() {
         all_keys.insert(k.clone());
@@ -309,6 +360,10 @@ fn check_mapping_empty(
     }
 
     // 4. Check each key dimension
+    // For each key `k`, we calculate the difference `pos[k] \ current_neg[k]`.
+    // If this difference is non-empty, it generates a "fragment" of `pos` that is NOT covered by `current_neg`.
+    // This fragment is `pos` but with the key `k` restricted to `diff`.
+    // We then recursively check if this fragment is covered by the remaining `negs`.
     for k in all_keys {
         let v_p = get_value_exact(&pos, &k, ctx)?;
         let v_n = get_value_open(current_neg, &k, ctx)?;
@@ -324,6 +379,9 @@ fn check_mapping_empty(
     }
 
     // 5. Check index signature dimension
+    // Finally, we check the "rest" of the keys (those not explicitly listed).
+    // If the index signature of `pos` is not covered by the index signature of `current_neg`,
+    // we generate a fragment where the index signature is restricted.
     let v_p_idx = get_index_value_exact(&pos);
     let v_n_idx = get_effective_index_value(&pos, current_neg, ctx)?;
 

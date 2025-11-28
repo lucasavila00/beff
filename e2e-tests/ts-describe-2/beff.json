@@ -1,0 +1,5 @@
+{
+  "parser": "./src/parser.ts",
+  "outputDir": "./src/generated",
+  "stringFormats": []
+}

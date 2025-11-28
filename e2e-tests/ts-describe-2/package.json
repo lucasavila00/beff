@@ -1,0 +1,19 @@
+{
+  "name": "json-schema-generator",
+  "version": "1.0.106",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "beff": "beff -p beff.json",
+    "test": "vitest --run --update"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "@beff/cli": "workspace:^",
+    "@beff/client": "workspace:^",
+    "vitest": "^0.34.4",
+    "zod": "^3.23.5"
+  }
+}
