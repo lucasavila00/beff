@@ -1008,7 +1008,7 @@ impl<'a, 'b, R: FileManager> TypeToSchema<'a, 'b, R> {
 
         match i.sym.to_string().as_str() {
             "Date" => return Ok(Runtype::Date),
-            "Array" => {
+            "ReadonlyArray" | "Array" => {
                 let type_params = type_params.as_ref().and_then(|it| it.params.split_first());
                 if let Some((ty, [])) = type_params {
                     let ty = self.convert_ts_type(ty)?;

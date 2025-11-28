@@ -974,6 +974,18 @@ mod tests {
       "#
         ));
     }
+    #[test]
+    fn ok_readonly_array() {
+        insta::assert_snapshot!(print_types(
+            r#"
+        type T1 = readonly string[]
+        type T2 = T1[number]
+        type T3 = ReadonlyArray<number>
+        type T4 = T3[number]
+        parse.buildParsers<{ T1: T1, T2: T2, T3: T3, T4: T4 }>();
+      "#
+        ));
+    }
 
     // #[test]
     // fn ok_recursive_generic_with_union_parser() {
