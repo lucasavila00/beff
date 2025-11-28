@@ -12,7 +12,7 @@ use crate::{
         dnf::{bdd_to_dnf, Conjunction},
         subtype::VoidUndefinedSubtype,
     },
-    NamedSchema,
+    NamedSchema, RuntypeName,
 };
 use std::{
     collections::{BTreeMap, BTreeSet},
@@ -21,7 +21,7 @@ use std::{
 
 pub enum SchemaMemo {
     Schema(Runtype),
-    Undefined(String),
+    Undefined(RuntypeName),
 }
 
 pub struct SemTypeResolverContext<'a>(pub &'a mut SemTypeContext);
@@ -32,7 +32,7 @@ struct SchemerContext<'a, 'b> {
     schemer_memo: BTreeMap<Rc<SemType>, SchemaMemo>,
     validators: Vec<NamedSchema>,
 
-    recursive_validators: BTreeSet<String>,
+    recursive_validators: BTreeSet<RuntypeName>,
     counter: &'b mut usize,
 }
 
@@ -311,13 +311,13 @@ impl<'a, 'b> SchemerContext<'a, 'b> {
     pub fn convert_to_schema(
         &mut self,
         ty: &Rc<SemType>,
-        name: Option<&str>,
+        name: Option<&RuntypeName>,
     ) -> anyhow::Result<Runtype> {
         let new_name = match name {
-            Some(n) => n.to_string(),
+            Some(n) => n.clone(),
             None => {
                 *self.counter += 1;
-                format!("t_{}", self.counter)
+                RuntypeName::SemtypeRecursiveGenerated(*self.counter)
             }
         };
         if let Some(mater) = self.schemer_memo.get(ty) {
@@ -325,7 +325,7 @@ impl<'a, 'b> SchemerContext<'a, 'b> {
                 SchemaMemo::Schema(mater) => return Ok(mater.clone()),
                 SchemaMemo::Undefined(ref_name) => {
                     self.recursive_validators.insert(ref_name.clone());
-                    return Ok(Runtype::Ref(ref_name.into()));
+                    return Ok(Runtype::Ref(ref_name.clone()));
                 }
             }
         } else {
@@ -347,7 +347,7 @@ impl<'a, 'b> SchemerContext<'a, 'b> {
 pub fn semtype_to_runtypes(
     ctx: &mut SemTypeContext,
     ty: &Rc<SemType>,
-    name: &str,
+    name: &RuntypeName,
     counter: &mut usize,
 ) -> anyhow::Result<(NamedSchema, Vec<NamedSchema>)> {
     let mut schemer = SchemerContext::new(ctx, counter);
@@ -358,10 +358,10 @@ pub fn semtype_to_runtypes(
         .filter(|it| schemer.recursive_validators.contains(&it.name))
         .collect();
 
-    let vs = vs.into_iter().filter(|it| it.name != name).collect();
+    let vs = vs.into_iter().filter(|it| &it.name != name).collect();
     Ok((
         NamedSchema {
-            name: name.into(),
+            name: name.clone(),
             schema: out,
         },
         vs,

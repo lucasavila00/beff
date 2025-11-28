@@ -9,7 +9,7 @@ mod tests {
             semtype::{SemTypeContext, SemTypeOps},
             ToSemType,
         },
-        NamedSchema,
+        NamedSchema, RuntypeName,
     };
 
     pub fn is_sub_type(
@@ -37,14 +37,17 @@ mod tests {
     #[test]
     fn ref2() {
         let definitions = [NamedSchema {
-            name: "User".into(),
+            name: RuntypeName::Name("User".into()),
             schema: Runtype::object(vec![
                 ("id".into(), Runtype::String.required()),
-                ("bestFriend".into(), Runtype::Ref("User".into()).required()),
+                (
+                    "bestFriend".into(),
+                    Runtype::Ref(RuntypeName::Name("User".into())).required(),
+                ),
             ]),
         }];
 
-        let t1 = Runtype::Ref("User".into());
+        let t1 = Runtype::Ref(RuntypeName::Name("User".into()));
         let t2 = Runtype::object(vec![
             ("id".into(), Runtype::String.required()),
             ("bestFriend".into(), Runtype::Null.required()),
@@ -68,17 +71,23 @@ mod tests {
     #[test]
     fn ref1() {
         let definitions = [NamedSchema {
-            name: "User".into(),
+            name: RuntypeName::Name("User".into()),
             schema: Runtype::object(vec![
                 ("id".into(), Runtype::String.required()),
-                ("bestFriend".into(), Runtype::Ref("User".into()).optional()),
+                (
+                    "bestFriend".into(),
+                    Runtype::Ref(RuntypeName::Name("User".into())).optional(),
+                ),
             ]),
         }];
 
-        let t1 = Runtype::Ref("User".into());
+        let t1 = Runtype::Ref(RuntypeName::Name("User".into()));
         let t2 = Runtype::object(vec![
             ("id".into(), Runtype::String.required()),
-            ("bestFriend".into(), Runtype::Ref("User".into()).optional()),
+            (
+                "bestFriend".into(),
+                Runtype::Ref(RuntypeName::Name("User".into())).optional(),
+            ),
         ]);
 
         let res = rt_is_sub_type(
@@ -99,17 +108,23 @@ mod tests {
     #[test]
     fn ref3() {
         let definitions = [NamedSchema {
-            name: "User".into(),
+            name: RuntypeName::Name("User".into()),
             schema: Runtype::object(vec![
                 ("id".into(), Runtype::String.required()),
-                ("bestFriend".into(), Runtype::Ref("User".into()).optional()),
+                (
+                    "bestFriend".into(),
+                    Runtype::Ref(RuntypeName::Name("User".into())).optional(),
+                ),
             ]),
         }];
 
-        let t1 = Runtype::Ref("User".into());
+        let t1 = Runtype::Ref(RuntypeName::Name("User".into()));
         let t2 = Runtype::object(vec![
             ("id".into(), Runtype::Number.required()),
-            ("bestFriend".into(), Runtype::Ref("User".into()).optional()),
+            (
+                "bestFriend".into(),
+                Runtype::Ref(RuntypeName::Name("User".into())).optional(),
+            ),
         ]);
 
         let res = rt_is_sub_type(
@@ -131,20 +146,29 @@ mod tests {
     #[test]
     fn mappings4() {
         let definitions = [NamedSchema {
-            name: "User".into(),
+            name: RuntypeName::Name("User".into()),
             schema: Runtype::object(vec![
                 ("id".into(), Runtype::String.required()),
-                ("bestFriend".into(), Runtype::Ref("User".into()).optional()),
+                (
+                    "bestFriend".into(),
+                    Runtype::Ref(RuntypeName::Name("User".into())).optional(),
+                ),
             ]),
         }];
 
         let t1 = Runtype::object(vec![
             ("a".into(), Runtype::String.required()),
-            ("b".into(), Runtype::Ref("User".into()).required()),
+            (
+                "b".into(),
+                Runtype::Ref(RuntypeName::Name("User".into())).required(),
+            ),
         ]);
         let t2 = Runtype::object(vec![
             ("a".into(), Runtype::String.required()),
-            ("b".into(), Runtype::Ref("User".into()).optional()),
+            (
+                "b".into(),
+                Runtype::Ref(RuntypeName::Name("User".into())).optional(),
+            ),
         ]);
 
         let res = rt_is_sub_type(
@@ -1547,22 +1571,32 @@ mod tests {
         // type B = { a: A }
         let definitions = vec![
             NamedSchema {
-                name: "A".into(),
-                schema: Runtype::object(vec![("b".into(), Runtype::Ref("B".into()).required())]),
+                name: RuntypeName::Name("A".into()),
+                schema: Runtype::object(vec![(
+                    "b".into(),
+                    Runtype::Ref(RuntypeName::Name("B".into())).required(),
+                )]),
             },
             NamedSchema {
-                name: "B".into(),
-                schema: Runtype::object(vec![("a".into(), Runtype::Ref("A".into()).required())]),
+                name: RuntypeName::Name("B".into()),
+                schema: Runtype::object(vec![(
+                    "a".into(),
+                    Runtype::Ref(RuntypeName::Name("A".into())).required(),
+                )]),
             },
         ];
         let defs_refs: Vec<&NamedSchema> = definitions.iter().collect();
 
-        let ref_a = Runtype::Ref("A".into());
+        let ref_a = Runtype::Ref(RuntypeName::Name("A".into()));
 
         // Structural equivalent of A: { b: { a: A } }
         let struct_a = Runtype::object(vec![(
             "b".into(),
-            Runtype::object(vec![("a".into(), Runtype::Ref("A".into()).required())]).required(),
+            Runtype::object(vec![(
+                "a".into(),
+                Runtype::Ref(RuntypeName::Name("A".into())).required(),
+            )])
+            .required(),
         )]);
 
         assert!(rt_is_sub_type(&ref_a, &struct_a, &defs_refs, &defs_refs));

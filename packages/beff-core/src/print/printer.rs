@@ -17,6 +17,7 @@ use crate::ast::json::Json;
 use crate::ast::runtype::CustomFormat;
 use crate::ast::runtype::TplLitTypeItem;
 use crate::parser_extractor::ParserExtractResult;
+use crate::RuntypeName;
 use crate::{
     ast::runtype::{Optionality, Runtype},
     parser_extractor::BuiltDecoder,
@@ -53,9 +54,19 @@ fn emit_module_items(body: Vec<ModuleItem>) -> Result<String> {
 
 type SeenCounter = BTreeMap<Runtype, i32>;
 
-struct HoistedMap {
+struct PrintContext {
     direct: BTreeMap<Runtype, (usize, Expr)>,
     seen: SeenCounter,
+}
+
+impl PrintContext {
+    pub fn print_rt_name(&mut self, name: &RuntypeName) -> String {
+        match name {
+            RuntypeName::Name(n) => n.to_string(),
+            RuntypeName::SemtypeRecursiveGenerated(n) => format!("RecursiveGenerated{}", n),
+            RuntypeName::Address(_) => todo!(),
+        }
+    }
 }
 
 fn const_decl(name: &str, init: Expr) -> ModuleItem {
@@ -143,12 +154,12 @@ fn typeof_runtype(t: &str) -> Expr {
     )
 }
 
-fn ref_runtype(to: &str) -> Expr {
+fn ref_runtype(to: &RuntypeName, ctx: &mut PrintContext) -> Expr {
     new_runtype_class(
         "RefRuntype",
         vec![
             //
-            string_lit(to),
+            string_lit(&ctx.print_rt_name(to)),
         ],
     )
 }
@@ -186,11 +197,11 @@ fn runtype_union_or_intersection(
     constructor: &str,
     vs: &BTreeSet<Runtype>,
     named_schemas: &[NamedSchema],
-    hoisted: &mut HoistedMap,
+    ctx: &mut PrintContext,
 ) -> Expr {
     let exprs = vs
         .iter()
-        .map(|schema| print_runtype(schema, named_schemas, hoisted))
+        .map(|schema| print_runtype(schema, named_schemas, ctx))
         .collect::<Vec<Expr>>();
     let arr = Expr::Array(ArrayLit {
         span: DUMMY_SP,
@@ -231,7 +242,7 @@ fn runtype_any_of_discriminated(
     discriminator_strings: BTreeSet<String>,
     object_vs: Vec<&BTreeMap<String, Optionality<Runtype>>>,
     named_schemas: &[NamedSchema],
-    hoisted: &mut HoistedMap,
+    ctx: &mut PrintContext,
 ) -> Expr {
     let mut acc = BTreeMap::new();
     for current_key in discriminator_strings {
@@ -259,7 +270,7 @@ fn runtype_any_of_discriminated(
         }
         let schema = Runtype::any_of(cases);
 
-        let schema_code = print_runtype(&schema, named_schemas, hoisted);
+        let schema_code = print_runtype(&schema, named_schemas, ctx);
 
         acc.insert(current_key, schema_code);
     }
@@ -291,7 +302,7 @@ fn runtype_any_of_discriminated(
 
     let flat_values_schema = flat_values
         .iter()
-        .map(|it| print_runtype(it, named_schemas, hoisted))
+        .map(|it| print_runtype(it, named_schemas, ctx))
         .collect::<Vec<_>>();
 
     let flat_values_schema_arr = Expr::Array(ArrayLit {
@@ -316,7 +327,7 @@ fn runtype_any_of_discriminated(
 fn maybe_runtype_any_of_discriminated(
     flat_values: &BTreeSet<Runtype>,
     named_schemas: &[NamedSchema],
-    hoisted: &mut HoistedMap,
+    ctx: &mut PrintContext,
 ) -> Option<Expr> {
     let all_objects_without_idx_props = flat_values.iter().all(|it| match it {
         Runtype::Object {
@@ -403,7 +414,7 @@ fn maybe_runtype_any_of_discriminated(
                             discriminator_strings,
                             object_vs,
                             named_schemas,
-                            hoisted,
+                            ctx,
                         ));
                     }
                 }
@@ -458,12 +469,8 @@ fn optionality_wrapper(inner: Expr) -> Expr {
     new_runtype_class("OptionalField", vec![inner])
 }
 
-fn print_runtype(
-    schema: &Runtype,
-    named_schemas: &[NamedSchema],
-    hoisted: &mut HoistedMap,
-) -> Expr {
-    let found_direct = hoisted.direct.get(schema);
+fn print_runtype(schema: &Runtype, named_schemas: &[NamedSchema], ctx: &mut PrintContext) -> Expr {
+    let found_direct = ctx.direct.get(schema);
     if let Some((var_name, _)) = found_direct {
         return hoist_identifier(*var_name);
     }
@@ -473,7 +480,7 @@ fn print_runtype(
         Runtype::Boolean => typeof_runtype("boolean"),
         Runtype::Number => typeof_runtype("number"),
         Runtype::Function => typeof_runtype("function"),
-        Runtype::Ref(to) => ref_runtype(to),
+        Runtype::Ref(to) => ref_runtype(to, ctx),
         Runtype::Any => no_args_runtype("AnyRuntype"),
         Runtype::StNever => no_args_runtype("NeverRuntype"),
         Runtype::Const(c) => new_runtype_class("ConstRuntype", vec![c.clone().to_json().to_expr()]),
@@ -506,18 +513,16 @@ fn print_runtype(
             ),
         },
         Runtype::AnyArrayLike => {
-            print_runtype(&Runtype::Array(Runtype::Any.into()), named_schemas, hoisted)
+            print_runtype(&Runtype::Array(Runtype::Any.into()), named_schemas, ctx)
         }
         Runtype::StNot(_) => {
             unreachable!("should not create decoders for semantic types")
         }
         Runtype::Array(json_schema) => {
-            let item_validator = print_runtype(json_schema, named_schemas, hoisted);
+            let item_validator = print_runtype(json_schema, named_schemas, ctx);
             new_runtype_class("ArrayRuntype", vec![item_validator])
         }
-        Runtype::AllOf(vs) => {
-            runtype_union_or_intersection("AllOfRuntype", vs, named_schemas, hoisted)
-        }
+        Runtype::AllOf(vs) => runtype_union_or_intersection("AllOfRuntype", vs, named_schemas, ctx),
         Runtype::AnyOf(vs) => {
             if vs.is_empty() {
                 panic!("empty anyOf is not allowed")
@@ -531,11 +536,11 @@ fn print_runtype(
             if let Some(consts) = maybe_runtype_any_of_consts(&flat_values) {
                 consts
             } else if let Some(discriminated) =
-                maybe_runtype_any_of_discriminated(&flat_values, named_schemas, hoisted)
+                maybe_runtype_any_of_discriminated(&flat_values, named_schemas, ctx)
             {
                 discriminated
             } else {
-                runtype_union_or_intersection("AnyOfRuntype", vs, named_schemas, hoisted)
+                runtype_union_or_intersection("AnyOfRuntype", vs, named_schemas, ctx)
             }
         }
         Runtype::Tuple {
@@ -544,7 +549,7 @@ fn print_runtype(
         } => {
             let prefix_item_validators = prefix_items
                 .iter()
-                .map(|it| print_runtype(it, named_schemas, hoisted))
+                .map(|it| print_runtype(it, named_schemas, ctx))
                 .collect::<Vec<Expr>>();
             let prefix_arr = Expr::Array(ArrayLit {
                 span: DUMMY_SP,
@@ -560,7 +565,7 @@ fn print_runtype(
             });
 
             let items = match items {
-                Some(item_schema) => print_runtype(item_schema, named_schemas, hoisted),
+                Some(item_schema) => print_runtype(item_schema, named_schemas, ctx),
                 None => Expr::Lit(Lit::Null(Null { span: DUMMY_SP })),
             };
 
@@ -574,9 +579,9 @@ fn print_runtype(
             for (k, v) in vs.iter() {
                 let r = match v {
                     Optionality::Optional(schema) => {
-                        optionality_wrapper(print_runtype(schema, named_schemas, hoisted))
+                        optionality_wrapper(print_runtype(schema, named_schemas, ctx))
                     }
-                    Optionality::Required(schema) => print_runtype(schema, named_schemas, hoisted),
+                    Optionality::Required(schema) => print_runtype(schema, named_schemas, ctx),
                 };
                 mapped.insert(k.clone(), r);
             }
@@ -589,11 +594,9 @@ fn print_runtype(
                             let nullable_schema = &Runtype::any_of(
                                 vec![Runtype::Null, schema.clone()].into_iter().collect(),
                             );
-                            print_runtype(nullable_schema, named_schemas, hoisted)
+                            print_runtype(nullable_schema, named_schemas, ctx)
                         }
-                        Optionality::Required(schema) => {
-                            print_runtype(schema, named_schemas, hoisted)
-                        }
+                        Optionality::Required(schema) => print_runtype(schema, named_schemas, ctx),
                     };
 
                     Expr::Object(ObjectLit {
@@ -607,7 +610,7 @@ fn print_runtype(
                                         value: "key".into(),
                                         raw: None,
                                     }),
-                                    value: print_runtype(&it.key, named_schemas, hoisted).into(),
+                                    value: print_runtype(&it.key, named_schemas, ctx).into(),
                                 })
                                 .into(),
                             ),
@@ -667,12 +670,12 @@ fn print_runtype(
         Runtype::Void => new_runtype_class("NullishRuntype", vec![string_lit("void")]),
     };
 
-    let seen_counter = hoisted.seen.get(schema).cloned().unwrap_or(0);
+    let seen_counter = ctx.seen.get(schema).cloned().unwrap_or(0);
     if seen_counter <= 1 {
         out
     } else {
-        let new_id = hoisted.direct.len();
-        hoisted.direct.insert(schema.clone(), (new_id, out.clone()));
+        let new_id = ctx.direct.len();
+        ctx.direct.insert(schema.clone(), (new_id, out.clone()));
         hoist_identifier(new_id)
     }
 }
@@ -680,11 +683,11 @@ fn print_runtype(
 fn build_parsers_input(
     decs: &[BuiltDecoder],
     named_schemas: &[NamedSchema],
-    hoisted: &mut HoistedMap,
+    ctx: &mut PrintContext,
 ) -> Expr {
     let mut validator_exprs: Vec<(String, Expr)> = vec![];
     for decoder in decs {
-        let validator = print_runtype(&decoder.schema, named_schemas, hoisted);
+        let validator = print_runtype(&decoder.schema, named_schemas, ctx);
         validator_exprs.push((decoder.exported_name.clone(), validator));
     }
 
@@ -709,10 +712,10 @@ fn build_parsers_input(
     })
 }
 
-fn named_runtypes(named_schemas: &[NamedSchema], hoisted: &mut HoistedMap) -> Expr {
-    let mut validator_exprs: Vec<(String, Expr)> = vec![];
+fn named_runtypes(named_schemas: &[NamedSchema], ctx: &mut PrintContext) -> Expr {
+    let mut validator_exprs: Vec<(RuntypeName, Expr)> = vec![];
     for named_schema in named_schemas {
-        let validator = print_runtype(&named_schema.schema, named_schemas, hoisted);
+        let validator = print_runtype(&named_schema.schema, named_schemas, ctx);
         validator_exprs.push((named_schema.name.clone(), validator));
     }
 
@@ -725,7 +728,7 @@ fn named_runtypes(named_schemas: &[NamedSchema], hoisted: &mut HoistedMap) -> Ex
                     Prop::KeyValue(KeyValueProp {
                         key: PropName::Str(Str {
                             span: DUMMY_SP,
-                            value: key.into(),
+                            value: ctx.print_rt_name(&key).into(),
                             raw: None,
                         }),
                         value: value.into(),
@@ -808,7 +811,7 @@ impl ParserExtractResult {
         let built_parsers = self.built_decoders.unwrap_or_default();
         let named_schemas = validate_type_uniqueness(&self.validators)?;
         calculate_named_schemas_seen(&named_schemas, &mut seen);
-        let mut hoisted = HoistedMap {
+        let mut hoisted = PrintContext {
             direct: BTreeMap::new(),
             seen,
         };

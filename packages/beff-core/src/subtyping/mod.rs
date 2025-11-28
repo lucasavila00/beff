@@ -4,6 +4,7 @@ use self::subtype::StringLitOrFormat;
 use crate::ast::runtype::{CustomFormat, Optionality, RuntypeConst};
 use crate::subtyping::bdd::{IndexedPropertiesAtomic, MappingAtomicType};
 use crate::subtyping::subtype::NumberRepresentationOrFormat;
+use crate::RuntypeName;
 use crate::{ast::runtype::Runtype, NamedSchema};
 use std::collections::{BTreeMap, BTreeSet};
 use std::rc::Rc;
@@ -30,7 +31,7 @@ impl IsEmptyStatus {
 
 struct ToSemTypeConverter<'a> {
     validators: &'a [&'a NamedSchema],
-    seen_refs: BTreeSet<String>,
+    seen_refs: BTreeSet<RuntypeName>,
 }
 
 impl<'a> ToSemTypeConverter<'a> {
@@ -41,13 +42,13 @@ impl<'a> ToSemTypeConverter<'a> {
         }
     }
 
-    fn get_reference(&self, name: &str) -> Result<&Runtype> {
+    fn get_reference(&self, name: &RuntypeName) -> Result<&Runtype> {
         for validator in self.validators {
-            if validator.name == name {
+            if &validator.name == name {
                 return Ok(&validator.schema);
             }
         }
-        Err(anyhow!("reference not found: {}", name))
+        Err(anyhow!("reference not found: {}", name.debug_print()))
     }
 
     fn convert_to_sem_type(
@@ -72,7 +73,7 @@ impl<'a> ToSemTypeConverter<'a> {
                         }
                         None => {
                             let idx = builder.list_definitions.len();
-                            builder.list_runtype_ref_memo.insert(name.to_string(), idx);
+                            builder.list_runtype_ref_memo.insert(name.clone(), idx);
                             builder.list_definitions.push(None);
 
                             let items = match items {
@@ -109,9 +110,7 @@ impl<'a> ToSemTypeConverter<'a> {
                         }
                         None => {
                             let idx = builder.mapping_definitions.len();
-                            builder
-                                .mapping_runtype_ref_memo
-                                .insert(name.to_string(), idx);
+                            builder.mapping_runtype_ref_memo.insert(name.clone(), idx);
                             builder.mapping_definitions.push(None);
                             let vs: BTreeMap<String, Rc<SemType>> = vs
                                 .iter()
@@ -152,7 +151,7 @@ impl<'a> ToSemTypeConverter<'a> {
                 };
 
                 if self.seen_refs.contains(name) {
-                    bail!("recursive type: {}", name)
+                    bail!("recursive type: {}", name.debug_print())
                 }
 
                 self.seen_refs.insert(name.clone());

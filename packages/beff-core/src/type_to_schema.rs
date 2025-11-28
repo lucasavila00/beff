@@ -9,8 +9,8 @@ use crate::subtyping::subtype::StringLitOrFormat;
 use crate::subtyping::to_schema::semtype_to_runtypes;
 use crate::subtyping::ToSemType;
 use crate::sym_reference::{ResolvedLocalSymbol, TsBuiltIn, TypeResolver};
-use crate::NamedSchema;
 use crate::{BeffUserSettings, BffFileName, FileManager, ImportReference, SymbolExport};
+use crate::{NamedSchema, RuntypeName};
 use std::collections::{BTreeMap, HashMap};
 use std::rc::Rc;
 use swc_atoms::JsWord;
@@ -29,7 +29,7 @@ use swc_ecma_ast::{
 pub struct TypeToSchema<'a, 'b, R: FileManager> {
     pub files: &'a mut R,
     pub current_file: BffFileName,
-    pub components: HashMap<String, Option<NamedSchema>>,
+    pub components: HashMap<RuntypeName, Option<NamedSchema>>,
     pub ref_stack: Vec<DiagnosticInformation>,
     pub type_param_stack: Vec<BTreeMap<String, Runtype>>,
     pub settings: &'a BeffUserSettings,
@@ -798,7 +798,7 @@ impl<'a, 'b, R: FileManager> TypeToSchema<'a, 'b, R> {
         }
     }
 
-    fn insert_definition(&mut self, name: String, schema: Runtype) -> Res<Runtype> {
+    fn insert_definition(&mut self, name: RuntypeName, schema: Runtype) -> Res<Runtype> {
         if let Some(Some(v)) = self.components.get(&name) {
             assert_eq!(v.schema, schema);
         }
@@ -1030,7 +1030,7 @@ impl<'a, 'b, R: FileManager> TypeToSchema<'a, 'b, R> {
             return self.convert_ts_built_in(&bt, type_params);
         }
 
-        let found = self.components.get(&(i.sym.to_string()));
+        let found = self.components.get(&RuntypeName::Name(i.sym.to_string()));
         if let Some(_found_in_map) = found {
             match type_params {
                 Some(_) => {
@@ -1041,24 +1041,26 @@ impl<'a, 'b, R: FileManager> TypeToSchema<'a, 'b, R> {
                     );
                 }
                 None => {
-                    return Ok(Runtype::Ref(i.sym.to_string()));
+                    return Ok(Runtype::Ref(RuntypeName::Name(i.sym.to_string())));
                 }
             }
         }
-        self.components.insert(i.sym.to_string(), None);
+        self.components
+            .insert(RuntypeName::Name(i.sym.to_string()), None);
 
         let ty = self.get_type_ref_of_user_identifier(i, type_params);
         match ty {
             Ok(ty) => {
                 if type_params.is_some() {
-                    self.components.remove(&i.sym.to_string());
+                    self.components
+                        .remove(&RuntypeName::Name(i.sym.to_string()));
                     Ok(ty)
                 } else {
-                    self.insert_definition(i.sym.to_string(), ty)
+                    self.insert_definition(RuntypeName::Name(i.sym.to_string()), ty)
                 }
             }
             Err(e) => {
-                self.insert_definition(i.sym.to_string(), Runtype::Any)?;
+                self.insert_definition(RuntypeName::Name(i.sym.to_string()), Runtype::Any)?;
                 Err(e)
             }
         }
@@ -1293,9 +1295,11 @@ impl<'a, 'b, R: FileManager> TypeToSchema<'a, 'b, R> {
             }
         }
 
-        let found = self.components.get(&(q.right.sym.to_string()));
+        let found = self
+            .components
+            .get(&RuntypeName::Name(q.right.sym.to_string()));
         if let Some(_found) = found {
-            return Ok(Runtype::Ref(q.right.sym.to_string()));
+            return Ok(Runtype::Ref(RuntypeName::Name(q.right.sym.to_string())));
         }
 
         let (exported, from_file, name) = self.__convert_ts_type_qual_inner(q)?;
@@ -1313,10 +1317,10 @@ impl<'a, 'b, R: FileManager> TypeToSchema<'a, 'b, R> {
         let ty =
             self.convert_type_export(exported.as_ref(), from_file.file_name(), type_args_schema)?;
         if type_args.is_some() {
-            self.components.remove(&name);
+            self.components.remove(&RuntypeName::Name(name));
             Ok(ty)
         } else {
-            self.insert_definition(name, ty)
+            self.insert_definition(RuntypeName::Name(name), ty)
         }
     }
     fn convert_ts_type_qual(
@@ -1884,10 +1888,13 @@ impl<'a, 'b, R: FileManager> TypeToSchema<'a, 'b, R> {
         {
             return Ok(Runtype::StNever);
         }
-        let (head, tail) =
-            semtype_to_runtypes(ctx, &access_st, "AnyName", self.counter).map_err(|any| {
-                self.box_error(span, DiagnosticInfoMessage::AnyhowError(any.to_string()))
-            })?;
+        let (head, tail) = semtype_to_runtypes(
+            ctx,
+            &access_st,
+            &RuntypeName::Name("AnyName".to_string()),
+            self.counter,
+        )
+        .map_err(|any| self.box_error(span, DiagnosticInfoMessage::AnyhowError(any.to_string())))?;
         for t in tail {
             self.insert_definition(t.name.clone(), t.schema)?;
         }
@@ -2017,9 +2024,7 @@ impl<'a, 'b, R: FileManager> TypeToSchema<'a, 'b, R> {
                 let v = v.and_then(|it| it.clone());
                 match v {
                     Some(v) => self.extract_union(v.schema),
-                    None => Err(DiagnosticInfoMessage::CannotResolveRefInExtractUnion(
-                        r.to_string(),
-                    )),
+                    None => Err(DiagnosticInfoMessage::CannotResolveRefInExtractUnion(r)),
                 }
             }
             Runtype::StNever => Ok(vec![]),

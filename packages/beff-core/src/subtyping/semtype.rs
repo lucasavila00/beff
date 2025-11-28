@@ -1,8 +1,11 @@
-use crate::subtyping::{
-    bdd::{IndexedPropertiesAtomic, MappingAtomicType},
-    dnf::Dnf,
-    subtype::{NumberRepresentationOrFormat, VoidUndefinedSubtype},
-    IsEmptyStatus,
+use crate::{
+    subtyping::{
+        bdd::{IndexedPropertiesAtomic, MappingAtomicType},
+        dnf::Dnf,
+        subtype::{NumberRepresentationOrFormat, VoidUndefinedSubtype},
+        IsEmptyStatus,
+    },
+    RuntypeName,
 };
 use anyhow::Result;
 
@@ -357,8 +360,8 @@ pub struct SemTypeContext {
     pub list_definitions: Vec<Option<Rc<ListAtomic>>>,
     pub list_memo: BTreeMap<Bdd, BddMemoEmptyRef>,
 
-    pub mapping_runtype_ref_memo: BTreeMap<String, usize>,
-    pub list_runtype_ref_memo: BTreeMap<String, usize>,
+    pub mapping_runtype_ref_memo: BTreeMap<RuntypeName, usize>,
+    pub list_runtype_ref_memo: BTreeMap<RuntypeName, usize>,
 }
 impl Default for SemTypeContext {
     fn default() -> Self {

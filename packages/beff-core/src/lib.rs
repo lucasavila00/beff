@@ -17,6 +17,7 @@ use serde::Deserialize;
 use serde::Serialize;
 use std::collections::BTreeSet;
 use std::collections::HashMap;
+use std::fmt::Display;
 use std::rc::Rc;
 use std::sync::Arc;
 use swc_atoms::JsWord;
@@ -99,7 +100,7 @@ pub struct BffModuleData {
     pub module: Module,
 }
 
-#[derive(Debug, Clone, Eq, PartialEq, Hash)]
+#[derive(Debug, Clone, Eq, PartialEq, Hash, PartialOrd, Ord)]
 pub struct BffFileName(Rc<String>);
 
 impl fmt::Display for BffFileName {
@@ -365,10 +366,10 @@ pub trait FileManager {
     fn get_existing_file(&self, name: &BffFileName) -> Option<Rc<ParsedModule>>;
 }
 
-fn debug_print_type_list(vs: Vec<(String, String)>) -> String {
+fn debug_print_type_list(vs: Vec<(RuntypeName, String)>) -> String {
     let mut acc = String::new();
     for (name, ts_type) in vs {
-        acc.push_str(&format!("type {} = {};\n\n", name, ts_type));
+        acc.push_str(&format!("type {} = {};\n\n", name.debug_print(), ts_type));
     }
     acc
 }
@@ -385,7 +386,7 @@ fn debug_print_type_object(vs: Vec<(String, String)>) -> String {
 
 impl ParserExtractResult {
     pub fn debug_print(&self) -> String {
-        let mut vs: Vec<(String, String)> = vec![];
+        let mut vs: Vec<(RuntypeName, String)> = vec![];
 
         let mut sorted_validators = self.validators.iter().collect::<Vec<_>>();
         sorted_validators.sort_by(|a, b| a.name.cmp(&b.name));
@@ -432,8 +433,51 @@ pub fn extract<R: FileManager>(files: &mut R, entry_points: EntryPoints) -> Pars
     )
 }
 
+#[derive(Debug, Clone, PartialEq, Eq, Hash, PartialOrd, Ord)]
+pub enum TsNamespace {
+    Type,
+    Value,
+    Both,
+}
+
+impl Display for TsNamespace {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        match self {
+            TsNamespace::Type => write!(f, "type"),
+            TsNamespace::Value => write!(f, "value"),
+            TsNamespace::Both => write!(f, "type+value"),
+        }
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Hash, PartialOrd, Ord)]
+pub struct ModuleItemAddress {
+    pub file: BffFileName,
+    pub name: String,
+    pub namespace: TsNamespace,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Hash, PartialOrd, Ord)]
+pub enum RuntypeName {
+    Name(String),
+    Address(ModuleItemAddress),
+    SemtypeRecursiveGenerated(usize),
+}
+
+impl RuntypeName {
+    fn debug_print(&self) -> String {
+        match self {
+            RuntypeName::Name(name) => name.clone(),
+            RuntypeName::Address(addr) => {
+                format!("{}::[{}]{}", addr.file.as_str(), addr.namespace, addr.name,)
+            }
+            RuntypeName::SemtypeRecursiveGenerated(n) => format!("RecursiveGenerated{}", n),
+        }
+    }
+}
+
 #[derive(Debug, Clone)]
 pub struct NamedSchema {
-    pub name: String,
+    pub name: RuntypeName,
     pub schema: Runtype,
 }

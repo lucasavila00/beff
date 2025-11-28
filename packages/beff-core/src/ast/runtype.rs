@@ -4,6 +4,7 @@ use crate::subtyping::semtype::SemTypeContext;
 use crate::subtyping::semtype::SemTypeOps;
 use crate::subtyping::ToSemType;
 use crate::NamedSchema;
+use crate::RuntypeName;
 use anyhow::anyhow;
 use anyhow::Result;
 use std::collections::BTreeMap;
@@ -225,7 +226,7 @@ pub enum Runtype {
         prefix_items: Vec<Runtype>,
         items: Option<Box<Runtype>>,
     },
-    Ref(String),
+    Ref(RuntypeName),
 
     AnyOf(BTreeSet<Runtype>),
     AllOf(BTreeSet<Runtype>),
@@ -447,7 +448,7 @@ impl Runtype {
                 format!("Not<{}>", inner)
             }
             Runtype::Function => "Function".to_string(),
-            Runtype::Ref(r) => r.clone(),
+            Runtype::Ref(r) => r.debug_print(),
             Runtype::Array(runtype) => {
                 let inner = runtype.debug_print();
                 format!("Array<{}>", inner)

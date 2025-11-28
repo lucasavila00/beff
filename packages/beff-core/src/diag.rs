@@ -3,7 +3,7 @@ use core::fmt;
 use std::{rc::Rc, sync::Arc};
 use swc_common::{BytePos, Loc, SourceMap, Span};
 
-use crate::{BffFileName, ParsedModule};
+use crate::{BffFileName, ParsedModule, RuntypeName};
 
 #[derive(Debug, Clone)]
 pub enum DiagnosticInfoMessage {
@@ -45,7 +45,7 @@ pub enum DiagnosticInfoMessage {
     RestFoundOnExtractObject,
     ShouldHaveObjectAsTypeArgument,
     RecordKeyUnionShouldBeOnlyStrings,
-    CannotResolveRefInExtractUnion(String),
+    CannotResolveRefInExtractUnion(RuntypeName),
     PartialShouldHaveObjectAsTypeArgument,
     MissingArgumentsOnPartial,
     PickShouldHaveStringAsTypeArgument,
@@ -124,9 +124,9 @@ pub enum DiagnosticInfoMessage {
     OptionalTypeIsNotSupported,
     PropShouldHaveTypeAnnotation,
     PropKeyShouldBeIdent,
-    CannotResolveTypeReferenceOnExtracting(String),
+    CannotResolveTypeReferenceOnExtracting(RuntypeName),
     TsInterfaceExtendsNotSupported,
-    TwoDifferentTypesWithTheSameName(String),
+    TwoDifferentTypesWithTheSameName(RuntypeName),
     CannotFindFileWhenConvertingToSchema(BffFileName),
     ThisRefersToSomethingThatCannotBeSerialized(String),
     CannotResolveLocalSymbol(String),
@@ -170,9 +170,11 @@ impl DiagnosticInfoMessage {
                 "Property name should be an identifier".to_string()
             }
             DiagnosticInfoMessage::CannotResolveTypeReferenceOnExtracting(name) => {
+                let name = name.debug_print();
                 format!("Failed to resolve type reference '{name}' when extracting")
             }
             DiagnosticInfoMessage::TwoDifferentTypesWithTheSameName(name) => {
+                let name= name.debug_print();
                 format!("This includes two different types with the same name '{name}'")
             }
             DiagnosticInfoMessage::CannotFindFileWhenConvertingToSchema(f) => {
@@ -380,7 +382,8 @@ impl DiagnosticInfoMessage {
                 "Mapped type minus is not supported".to_string()
             }
             DiagnosticInfoMessage::CannotResolveRefInExtractUnion(r) => {
-                format!("Cannot resolve ref '{r}' in extract union")
+                let name =r.debug_print();
+                format!("Cannot resolve ref '{name}' in extract union")
             }
             DiagnosticInfoMessage::ShouldHaveObjectAsTypeArgument => {
                 "Should have object as type argument".to_string()
