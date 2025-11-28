@@ -447,7 +447,8 @@ class AnyOfConstsRuntype {
   }
   describe(ctx) {
     const parts = this.values.map((it) => JSON.stringify(it));
-    return parts.join(" | ");
+    const inner = parts.join(" | ");
+    return `(${inner})`;
   }
   schema(ctx) {
     return {

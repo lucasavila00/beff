@@ -1,5 +1,13 @@
 # @beff/client
 
+## 0.0.109
+
+### Patch Changes
+
+- fix union paren
+- Updated dependencies
+  - @beff/cli@0.0.109
+
 ## 0.0.108
 
 ### Patch Changes
