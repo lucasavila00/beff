@@ -251,7 +251,7 @@ fn runtype_any_of_discriminated(
                             // .filter(|it| it.0 != &discriminator)
                             .map(|it| (it.0.clone(), it.1.clone()))
                             .collect();
-                        let new_obj = Runtype::no_index_object(new_obj_vs);
+                        let new_obj = Runtype::object(new_obj_vs);
                         cases.push(new_obj);
                     }
                 }

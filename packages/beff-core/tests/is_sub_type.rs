@@ -2,7 +2,9 @@
 mod tests {
 
     use beff_core::{
-        ast::runtype::{CustomFormat, Runtype, RuntypeConst, TplLitType, TplLitTypeItem},
+        ast::runtype::{
+            CustomFormat, IndexedProperty, Runtype, RuntypeConst, TplLitType, TplLitTypeItem,
+        },
         subtyping::{
             semtype::{SemTypeContext, SemTypeOps},
             ToSemType,
@@ -36,14 +38,14 @@ mod tests {
     fn ref2() {
         let definitions = [NamedSchema {
             name: "User".into(),
-            schema: Runtype::no_index_object(vec![
+            schema: Runtype::object(vec![
                 ("id".into(), Runtype::String.required()),
                 ("bestFriend".into(), Runtype::Ref("User".into()).required()),
             ]),
         }];
 
         let t1 = Runtype::Ref("User".into());
-        let t2 = Runtype::no_index_object(vec![
+        let t2 = Runtype::object(vec![
             ("id".into(), Runtype::String.required()),
             ("bestFriend".into(), Runtype::Null.required()),
         ]);
@@ -67,14 +69,14 @@ mod tests {
     fn ref1() {
         let definitions = [NamedSchema {
             name: "User".into(),
-            schema: Runtype::no_index_object(vec![
+            schema: Runtype::object(vec![
                 ("id".into(), Runtype::String.required()),
                 ("bestFriend".into(), Runtype::Ref("User".into()).optional()),
             ]),
         }];
 
         let t1 = Runtype::Ref("User".into());
-        let t2 = Runtype::no_index_object(vec![
+        let t2 = Runtype::object(vec![
             ("id".into(), Runtype::String.required()),
             ("bestFriend".into(), Runtype::Ref("User".into()).optional()),
         ]);
@@ -98,14 +100,14 @@ mod tests {
     fn ref3() {
         let definitions = [NamedSchema {
             name: "User".into(),
-            schema: Runtype::no_index_object(vec![
+            schema: Runtype::object(vec![
                 ("id".into(), Runtype::String.required()),
                 ("bestFriend".into(), Runtype::Ref("User".into()).optional()),
             ]),
         }];
 
         let t1 = Runtype::Ref("User".into());
-        let t2 = Runtype::no_index_object(vec![
+        let t2 = Runtype::object(vec![
             ("id".into(), Runtype::Number.required()),
             ("bestFriend".into(), Runtype::Ref("User".into()).optional()),
         ]);
@@ -130,17 +132,17 @@ mod tests {
     fn mappings4() {
         let definitions = [NamedSchema {
             name: "User".into(),
-            schema: Runtype::no_index_object(vec![
+            schema: Runtype::object(vec![
                 ("id".into(), Runtype::String.required()),
                 ("bestFriend".into(), Runtype::Ref("User".into()).optional()),
             ]),
         }];
 
-        let t1 = Runtype::no_index_object(vec![
+        let t1 = Runtype::object(vec![
             ("a".into(), Runtype::String.required()),
             ("b".into(), Runtype::Ref("User".into()).required()),
         ]);
-        let t2 = Runtype::no_index_object(vec![
+        let t2 = Runtype::object(vec![
             ("a".into(), Runtype::String.required()),
             ("b".into(), Runtype::Ref("User".into()).optional()),
         ]);
@@ -165,8 +167,8 @@ mod tests {
     fn mappings3() {
         let definitions = vec![];
 
-        let t1 = Runtype::no_index_object(vec![("a".into(), Runtype::String.required())]);
-        let t2 = Runtype::no_index_object(vec![("a".into(), Runtype::String.optional())]);
+        let t1 = Runtype::object(vec![("a".into(), Runtype::String.required())]);
+        let t2 = Runtype::object(vec![("a".into(), Runtype::String.optional())]);
 
         let res = rt_is_sub_type(&t1, &t2, &definitions, &definitions);
         assert!(res);
@@ -177,7 +179,7 @@ mod tests {
     fn mappings2() {
         let definitions = vec![];
 
-        let t1 = Runtype::no_index_object(vec![
+        let t1 = Runtype::object(vec![
             (
                 "a".into(),
                 Runtype::single_string_const("abc".into()).required(),
@@ -187,7 +189,7 @@ mod tests {
                 Runtype::single_string_const("def".into()).required(),
             ),
         ]);
-        let t2 = Runtype::no_index_object(vec![("a".into(), Runtype::String.required())]);
+        let t2 = Runtype::object(vec![("a".into(), Runtype::String.required())]);
 
         let res = rt_is_sub_type(&t1, &t2, &definitions, &definitions);
         assert!(res);
@@ -198,11 +200,11 @@ mod tests {
     fn mappings() {
         let definitions = vec![];
 
-        let t1 = Runtype::no_index_object(vec![(
+        let t1 = Runtype::object(vec![(
             "a".into(),
             Runtype::single_string_const("abc".into()).required(),
         )]);
-        let t2 = Runtype::no_index_object(vec![("a".into(), Runtype::String.required())]);
+        let t2 = Runtype::object(vec![("a".into(), Runtype::String.required())]);
 
         let res = rt_is_sub_type(&t1, &t2, &definitions, &definitions);
         assert!(res);
@@ -561,7 +563,7 @@ mod tests {
             Runtype::Date,
             Runtype::AnyArrayLike,
             Runtype::Function,
-            Runtype::no_index_object(vec![]),
+            Runtype::object(vec![]),
         ];
 
         for t0 in &all_basic_types {
@@ -1071,160 +1073,157 @@ mod tests {
             .unwrap());
     }
 
-    // #[test]
-    // fn object_rest_intersection() {
-    //     let definitions = vec![];
-    //     let mut ctx = SemTypeContext::new();
+    #[test]
+    fn object_rest_intersection() {
+        let definitions = vec![];
+        let mut ctx = SemTypeContext::new();
 
-    //     // {a: string} should be a subtype of Record<string, string>
-    //     let obj = Runtype::no_index_object(vec![("a".into(), Runtype::String.required())]);
-    //     let record = Runtype::single_index_object(Runtype::String, Runtype::String.required());
+        let obj = Runtype::object(vec![("a".into(), Runtype::String.required())]);
+        let record = Runtype::record(Runtype::String, Runtype::String.required());
 
-    //     let obj_st = obj
-    //         .to_sem_type(&definitions, &mut ctx)
-    //         .expect("should work");
-    //     let record_st = record
-    //         .to_sem_type(&definitions, &mut ctx)
-    //         .expect("should work");
+        let obj_st = obj
+            .to_sem_type(&definitions, &mut ctx)
+            .expect("should work");
+        let record_st = record
+            .to_sem_type(&definitions, &mut ctx)
+            .expect("should work");
 
-    //     let intersection = obj_st.intersect(&record_st).unwrap();
+        let intersection = obj_st.intersect(&record_st).unwrap();
 
-    //     let expected = Runtype::Object {
-    //         vs: vec![("a".into(), Runtype::String.required())]
-    //             .into_iter()
-    //             .collect(),
-    //         indexed_properties: Some(
-    //             IndexedProperty {
-    //                 key: Runtype::String.into(),
-    //                 value: Runtype::String.required().into(),
-    //             }
-    //             .into(),
-    //         ),
-    //     };
+        let expected = Runtype::Object {
+            vs: vec![("a".into(), Runtype::String.required())]
+                .into_iter()
+                .collect(),
+            indexed_properties: Some(
+                IndexedProperty {
+                    key: Runtype::String.into(),
+                    value: Runtype::String.required().into(),
+                }
+                .into(),
+            ),
+        };
 
-    //     let expected_st = expected
-    //         .to_sem_type(&definitions, &mut ctx)
-    //         .expect("should work");
+        let expected_st = expected
+            .to_sem_type(&definitions, &mut ctx)
+            .expect("should work");
 
-    //     assert!(intersection.is_same_type(&expected_st, &mut ctx).unwrap());
-    // }
+        assert!(intersection.is_same_type(&expected_st, &mut ctx).unwrap());
+    }
 
-    // #[test]
-    // fn object_is_subtype_of_record_string_string() {
-    //     let definitions = vec![];
+    #[test]
+    fn object_is_subtype_of_record_string_string() {
+        let definitions = vec![];
 
-    //     // {a: string} should be a subtype of Record<string, string>
-    //     let obj = Runtype::no_index_object(vec![("a".into(), Runtype::String.required())]);
-    //     let record = Runtype::single_index_object(Runtype::String, Runtype::String.required());
+        // {a: string} should be a subtype of Record<string, string>
+        let obj = Runtype::object(vec![("a".into(), Runtype::String.required())]);
+        let record = Runtype::record(Runtype::String, Runtype::String.required());
 
-    //     let res = rt_is_sub_type(&obj, &record, &definitions, &definitions);
-    //     assert!(res);
+        let res = rt_is_sub_type(&obj, &record, &definitions, &definitions);
+        assert!(res);
 
-    //     // Record<string, string> should NOT be a subtype of {a: string}
-    //     let res = rt_is_sub_type(&record, &obj, &definitions, &definitions);
-    //     assert!(!res);
-    // }
+        // Record<string, string> should NOT be a subtype of {a: string}
+        let res = rt_is_sub_type(&record, &obj, &definitions, &definitions);
+        assert!(!res);
+    }
 
-    // #[test]
-    // fn object_with_multiple_properties_is_subtype_of_record() {
-    //     let definitions = vec![];
+    #[test]
+    fn object_with_multiple_properties_is_subtype_of_record() {
+        let definitions = vec![];
 
-    //     // {a: string, b: string, c: string} should be a subtype of Record<string, string>
-    //     let obj = Runtype::no_index_object(vec![
-    //         ("a".into(), Runtype::String.required()),
-    //         ("b".into(), Runtype::String.required()),
-    //         ("c".into(), Runtype::String.required()),
-    //     ]);
-    //     let record = Runtype::single_index_object(Runtype::String, Runtype::String.required());
+        // {a: string, b: string, c: string} should be a subtype of Record<string, string>
+        let obj = Runtype::object(vec![
+            ("a".into(), Runtype::String.required()),
+            ("b".into(), Runtype::String.required()),
+            ("c".into(), Runtype::String.required()),
+        ]);
+        let record = Runtype::record(Runtype::String, Runtype::String.required());
 
-    //     let res = rt_is_sub_type(&obj, &record, &definitions, &definitions);
-    //     assert!(res);
-    // }
+        let res = rt_is_sub_type(&obj, &record, &definitions, &definitions);
+        assert!(res);
+    }
 
-    // #[test]
-    // fn object_is_not_subtype_of_record_with_different_value_type() {
-    //     let definitions = vec![];
+    #[test]
+    fn object_is_not_subtype_of_record_with_different_value_type() {
+        let definitions = vec![];
 
-    //     // {a: string} should NOT be a subtype of Record<string, number>
-    //     let obj = Runtype::no_index_object(vec![("a".into(), Runtype::String.required())]);
-    //     let record = Runtype::single_index_object(Runtype::String, Runtype::Number.required());
+        // {a: string} should NOT be a subtype of Record<string, number>
+        let obj = Runtype::object(vec![("a".into(), Runtype::String.required())]);
+        let record = Runtype::record(Runtype::String, Runtype::Number.required());
 
-    //     let res = rt_is_sub_type(&obj, &record, &definitions, &definitions);
-    //     assert!(!res);
+        let res = rt_is_sub_type(&obj, &record, &definitions, &definitions);
+        assert!(!res);
 
-    //     // {a: number} should be a subtype of Record<string, number>
-    //     let obj_number = Runtype::no_index_object(vec![("a".into(), Runtype::Number.required())]);
-    //     let res = rt_is_sub_type(&obj_number, &record, &definitions, &definitions);
-    //     assert!(res);
-    // }
+        // {a: number} should be a subtype of Record<string, number>
+        let obj_number = Runtype::object(vec![("a".into(), Runtype::Number.required())]);
+        let res = rt_is_sub_type(&obj_number, &record, &definitions, &definitions);
+        assert!(res);
+    }
 
     // #[test]
     // fn object_with_optional_property_subtyping() {
     //     let definitions = vec![];
 
     //     // {a?: string} should be a subtype of Record<string, string>
-    //     let obj = Runtype::no_index_object(vec![("a".into(), Runtype::String.optional())]);
-    //     let record = Runtype::single_index_object(Runtype::String, Runtype::String.optional());
+    //     let obj = Runtype::object(vec![("a".into(), Runtype::String.optional())]);
+    //     let record = Runtype::record(Runtype::String, Runtype::String.optional());
 
     //     let res = rt_is_sub_type(&obj, &record, &definitions, &definitions);
     //     assert!(res);
 
     //     // {a?: string} should NOT be a subtype of Record<string, string> (required)
-    //     let record_required =
-    //         Runtype::single_index_object(Runtype::String, Runtype::String.required());
+    //     let record_required = Runtype::record(Runtype::String, Runtype::String.required());
     //     let res = rt_is_sub_type(&obj, &record_required, &definitions, &definitions);
     //     assert!(!res);
     // }
 
-    // #[test]
-    // fn empty_object_is_subtype_of_record() {
-    //     let definitions = vec![];
+    #[test]
+    fn empty_object_is_subtype_of_record() {
+        let definitions = vec![];
 
-    //     // {} should be a subtype of Record<string, string>
-    //     let empty_obj = Runtype::no_index_object(vec![]);
-    //     let record = Runtype::single_index_object(Runtype::String, Runtype::String.required());
+        // {} should be a subtype of Record<string, string>
+        let empty_obj = Runtype::object(vec![]);
+        let record = Runtype::record(Runtype::String, Runtype::String.required());
 
-    //     let res = rt_is_sub_type(&empty_obj, &record, &definitions, &definitions);
-    //     assert!(res);
-    // }
+        let res = rt_is_sub_type(&empty_obj, &record, &definitions, &definitions);
+        assert!(res);
+    }
 
-    // #[test]
-    // fn object_with_mixed_types_not_subtype_of_uniform_record() {
-    //     let definitions = vec![];
+    #[test]
+    fn object_with_mixed_types_not_subtype_of_uniform_record() {
+        let definitions = vec![];
 
-    //     // {a: string, b: number} should NOT be a subtype of Record<string, string>
-    //     let obj = Runtype::no_index_object(vec![
-    //         ("a".into(), Runtype::String.required()),
-    //         ("b".into(), Runtype::Number.required()),
-    //     ]);
-    //     let record = Runtype::single_index_object(Runtype::String, Runtype::String.required());
+        // {a: string, b: number} should NOT be a subtype of Record<string, string>
+        let obj = Runtype::object(vec![
+            ("a".into(), Runtype::String.required()),
+            ("b".into(), Runtype::Number.required()),
+        ]);
+        let record = Runtype::record(Runtype::String, Runtype::String.required());
 
-    //     let res = rt_is_sub_type(&obj, &record, &definitions, &definitions);
-    //     assert!(!res);
+        let res = rt_is_sub_type(&obj, &record, &definitions, &definitions);
+        assert!(!res);
 
-    //     // But it should be a subtype of Record<string, string | number>
-    //     let record_union = Runtype::single_index_object(
-    //         Runtype::String,
-    //         Runtype::any_of(vec![Runtype::String, Runtype::Number]).required(),
-    //     );
-    //     let res = rt_is_sub_type(&obj, &record_union, &definitions, &definitions);
-    //     assert!(res);
-    // }
+        // But it should be a subtype of Record<string, string | number>
+        let record_union = Runtype::record(
+            Runtype::String,
+            Runtype::any_of(vec![Runtype::String, Runtype::Number]).required(),
+        );
+        let res = rt_is_sub_type(&obj, &record_union, &definitions, &definitions);
+        assert!(res);
+    }
 
     // #[test]
     // fn record_with_specific_keys_subtyping() {
     //     let definitions = vec![];
 
     //     // Record<"a" | "b", string> should be a subtype of Record<string, string>
-    //     let specific_record = Runtype::single_index_object(
+    //     let specific_record = Runtype::record(
     //         Runtype::any_of(vec![
     //             Runtype::single_string_const("a"),
     //             Runtype::single_string_const("b"),
     //         ]),
     //         Runtype::String.required(),
     //     );
-    //     let general_record =
-    //         Runtype::single_index_object(Runtype::String, Runtype::String.required());
+    //     let general_record = Runtype::record(Runtype::String, Runtype::String.required());
 
     //     let res = rt_is_sub_type(
     //         &specific_record,
@@ -1244,103 +1243,103 @@ mod tests {
     //     assert!(!res);
     // }
 
-    // #[test]
-    // fn object_with_extra_properties_is_subtype_of_record() {
-    //     let definitions = vec![];
+    #[test]
+    fn object_with_extra_properties_is_subtype_of_record() {
+        let definitions = vec![];
 
-    //     // {a: string, b: string} should be a subtype of Record<"a", string>
-    //     let obj = Runtype::no_index_object(vec![
-    //         ("a".into(), Runtype::String.required()),
-    //         ("b".into(), Runtype::String.required()),
-    //     ]);
-    //     let record = Runtype::single_index_object(
-    //         Runtype::single_string_const("a"),
-    //         Runtype::String.required(),
-    //     );
+        // {a: string, b: string} should be a subtype of Record<"a", string>
+        let obj = Runtype::object(vec![
+            ("a".into(), Runtype::String.required()),
+            ("b".into(), Runtype::String.required()),
+        ]);
+        let record = Runtype::record(
+            Runtype::single_string_const("a"),
+            Runtype::String.required(),
+        );
 
-    //     let res = rt_is_sub_type(&obj, &record, &definitions, &definitions);
-    //     assert!(res);
-    // }
+        let res = rt_is_sub_type(&obj, &record, &definitions, &definitions);
+        assert!(res);
+    }
 
-    // #[test]
-    // fn object_and_record_intersection() {
-    //     let definitions = vec![];
-    //     let mut ctx = SemTypeContext::new();
+    #[test]
+    fn object_and_record_intersection() {
+        let definitions = vec![];
+        let mut ctx = SemTypeContext::new();
 
-    //     // {a: string} ∩ Record<string, string> = {a: string}
-    //     let obj = Runtype::no_index_object(vec![("a".into(), Runtype::String.required())]);
-    //     let record = Runtype::single_index_object(Runtype::String, Runtype::String.required());
+        // {a: string} ∩ Record<string, string> = {a: string}
+        let obj = Runtype::object(vec![("a".into(), Runtype::String.required())]);
+        let record = Runtype::record(Runtype::String, Runtype::String.required());
 
-    //     let obj_st = obj
-    //         .to_sem_type(&definitions, &mut ctx)
-    //         .expect("should work");
-    //     let record_st = record
-    //         .to_sem_type(&definitions, &mut ctx)
-    //         .expect("should work");
+        let obj_st = obj
+            .to_sem_type(&definitions, &mut ctx)
+            .expect("should work");
+        let record_st = record
+            .to_sem_type(&definitions, &mut ctx)
+            .expect("should work");
 
-    //     let intersection = obj_st.intersect(&record_st);
-    //     assert!(intersection.is_same_type(&obj_st, &mut ctx).unwrap());
-    // }
+        let intersection = obj_st.intersect(&record_st).unwrap();
+        assert!(intersection.is_same_type(&obj_st, &mut ctx).unwrap());
+    }
 
-    // #[test]
-    // fn object_subtyping_with_string_formats() {
-    //     let definitions = vec![];
+    #[test]
+    fn object_subtyping_with_string_formats() {
+        let definitions = vec![];
 
-    //     // {a: StringWithFormat("user_id")} should be a subtype of Record<string, string>
-    //     let obj = Runtype::no_index_object(vec![(
-    //         "a".into(),
-    //         Runtype::StringWithFormat(CustomFormat("user_id".into(), vec![])).required(),
-    //     )]);
-    //     let record = Runtype::single_index_object(Runtype::String, Runtype::String.required());
+        // {a: StringWithFormat("user_id")} should be a subtype of Record<string, string>
+        let obj = Runtype::object(vec![(
+            "a".into(),
+            Runtype::StringWithFormat(CustomFormat("user_id".into(), vec![])).required(),
+        )]);
+        let record = Runtype::record(Runtype::String, Runtype::String.required());
 
-    //     let res = rt_is_sub_type(&obj, &record, &definitions, &definitions);
-    //     assert!(res);
+        let res = rt_is_sub_type(&obj, &record, &definitions, &definitions);
+        assert!(res);
 
-    //     // {a: StringWithFormat("user_id")} should be a subtype of Record<string, StringWithFormat("user_id")>
-    //     let record_with_format = Runtype::single_index_object(
-    //         Runtype::String,
-    //         Runtype::StringWithFormat(CustomFormat("user_id".into(), vec![])).required(),
-    //     );
-    //     let res = rt_is_sub_type(&obj, &record_with_format, &definitions, &definitions);
-    //     assert!(res);
-    // }
+        // {a: StringWithFormat("user_id")} should be a subtype of Record<string, StringWithFormat("user_id")>
+        let record_with_format = Runtype::record(
+            Runtype::String,
+            Runtype::StringWithFormat(CustomFormat("user_id".into(), vec![])).required(),
+        );
+        let res = rt_is_sub_type(&obj, &record_with_format, &definitions, &definitions);
+        assert!(res);
+    }
 
-    // #[test]
-    // fn nested_objects_and_records() {
-    //     let definitions = vec![];
+    #[test]
+    fn nested_objects_and_records() {
+        let definitions = vec![];
 
-    //     // {a: {b: string}} should be a subtype of Record<string, {b: string}>
-    //     let inner_obj = Runtype::no_index_object(vec![("b".into(), Runtype::String.required())]);
-    //     let outer_obj = Runtype::no_index_object(vec![("a".into(), inner_obj.clone().required())]);
-    //     let record = Runtype::single_index_object(Runtype::String, inner_obj.clone().required());
+        // {a: {b: string}} should be a subtype of Record<string, {b: string}>
+        let inner_obj = Runtype::object(vec![("b".into(), Runtype::String.required())]);
+        let outer_obj = Runtype::object(vec![("a".into(), inner_obj.clone().required())]);
+        let record = Runtype::record(Runtype::String, inner_obj.clone().required());
 
-    //     let res = rt_is_sub_type(&outer_obj, &record, &definitions, &definitions);
-    //     assert!(res);
-    // }
+        let res = rt_is_sub_type(&outer_obj, &record, &definitions, &definitions);
+        assert!(res);
+    }
 
-    // #[test]
-    // fn record_number_keys() {
-    //     let definitions = vec![];
+    #[test]
+    fn record_number_keys() {
+        let definitions = vec![];
 
-    //     // {1: string} (if represented as object) should work with Record<number | string, string>
-    //     // Note: In JSON, object keys are always strings, so numeric keys become string keys
-    //     let obj = Runtype::no_index_object(vec![("1".into(), Runtype::String.required())]);
-    //     let record = Runtype::single_index_object(
-    //         Runtype::any_of(vec![Runtype::Number, Runtype::String]),
-    //         Runtype::String.required(),
-    //     );
+        // {1: string} (if represented as object) should work with Record<number | string, string>
+        // Note: In JSON, object keys are always strings, so numeric keys become string keys
+        let obj = Runtype::object(vec![("1".into(), Runtype::String.required())]);
+        let record = Runtype::record(
+            Runtype::any_of(vec![Runtype::Number, Runtype::String]),
+            Runtype::String.required(),
+        );
 
-    //     let res = rt_is_sub_type(&obj, &record, &definitions, &definitions);
-    //     assert!(res);
-    // }
+        let res = rt_is_sub_type(&obj, &record, &definitions, &definitions);
+        assert!(res);
+    }
 
     // #[test]
     // fn object_with_const_string_keys() {
     //     let definitions = vec![];
 
     //     // {a: string} with explicit string literal key
-    //     let obj = Runtype::no_index_object(vec![("a".into(), Runtype::String.required())]);
-    //     let record = Runtype::single_index_object(
+    //     let obj = Runtype::object(vec![("a".into(), Runtype::String.required())]);
+    //     let record = Runtype::record(
     //         Runtype::single_string_const("a"),
     //         Runtype::String.required(),
     //     );
@@ -1350,34 +1349,34 @@ mod tests {
     //     assert!(res);
 
     //     // Object with key "b" should NOT be a subtype
-    //     let obj_b = Runtype::no_index_object(vec![("b".into(), Runtype::String.required())]);
+    //     let obj_b = Runtype::object(vec![("b".into(), Runtype::String.required())]);
     //     let res = rt_is_sub_type(&obj_b, &record, &definitions, &definitions);
     //     assert!(!res);
     // }
 
-    // #[test]
-    // fn complex_record_subtyping() {
-    //     let definitions = vec![];
+    #[test]
+    fn complex_record_subtyping() {
+        let definitions = vec![];
 
-    //     // {a: string, b: number} is a subtype of Record<string, string | number>
-    //     let obj = Runtype::no_index_object(vec![
-    //         ("a".into(), Runtype::String.required()),
-    //         ("b".into(), Runtype::Number.required()),
-    //     ]);
-    //     let record = Runtype::single_index_object(
-    //         Runtype::String,
-    //         Runtype::any_of(vec![Runtype::String, Runtype::Number]).required(),
-    //     );
+        // {a: string, b: number} is a subtype of Record<string, string | number>
+        let obj = Runtype::object(vec![
+            ("a".into(), Runtype::String.required()),
+            ("b".into(), Runtype::Number.required()),
+        ]);
+        let record = Runtype::record(
+            Runtype::String,
+            Runtype::any_of(vec![Runtype::String, Runtype::Number]).required(),
+        );
 
-    //     let res = rt_is_sub_type(&obj, &record, &definitions, &definitions);
-    //     assert!(res);
+        let res = rt_is_sub_type(&obj, &record, &definitions, &definitions);
+        assert!(res);
 
-    //     // But {a: string, b: boolean} should NOT be
-    //     let obj_with_bool = Runtype::no_index_object(vec![
-    //         ("a".into(), Runtype::String.required()),
-    //         ("b".into(), Runtype::Boolean.required()),
-    //     ]);
-    //     let res = rt_is_sub_type(&obj_with_bool, &record, &definitions, &definitions);
-    //     assert!(!res);
-    // }
+        // But {a: string, b: boolean} should NOT be
+        let obj_with_bool = Runtype::object(vec![
+            ("a".into(), Runtype::String.required()),
+            ("b".into(), Runtype::Boolean.required()),
+        ]);
+        let res = rt_is_sub_type(&obj_with_bool, &record, &definitions, &definitions);
+        assert!(!res);
+    }
 }

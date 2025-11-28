@@ -158,7 +158,11 @@ fn mapping_atomic_type_is_empty(
     check_mapping_empty(atom, &neg_mappings, ctx)
 }
 
-fn get_value(m: &MappingAtomicType, k: &str, ctx: &mut SemTypeContext) -> Result<Rc<SemType>> {
+fn get_value_exact(
+    m: &MappingAtomicType,
+    k: &str,
+    ctx: &mut SemTypeContext,
+) -> Result<Rc<SemType>> {
     if let Some(v) = m.vs.get(k) {
         return Ok(v.clone());
     }
@@ -169,18 +173,60 @@ fn get_value(m: &MappingAtomicType, k: &str, ctx: &mut SemTypeContext) -> Result
         )));
 
         if k_type.is_subtype(&idx.key, ctx)? {
-            return Ok(idx.value.clone());
+            return SemTypeContext::optional(idx.value.clone());
+        }
+    }
+
+    Ok(Rc::new(SemTypeContext::void()))
+}
+
+fn get_value_open(m: &MappingAtomicType, k: &str, ctx: &mut SemTypeContext) -> Result<Rc<SemType>> {
+    if let Some(v) = m.vs.get(k) {
+        return Ok(v.clone());
+    }
+
+    if let Some(idx) = &m.indexed_properties {
+        let k_type = Rc::new(SemTypeContext::string_const(StringLitOrFormat::Tpl(
+            TplLitType(vec![TplLitTypeItem::StringConst(k.to_string())]),
+        )));
+
+        if k_type.is_subtype(&idx.key, ctx)? {
+            return SemTypeContext::optional(idx.value.clone());
         }
     }
 
     Ok(Rc::new(SemTypeContext::unknown()))
 }
 
-fn get_index_value(m: &MappingAtomicType) -> Rc<SemType> {
+fn get_index_value_exact(m: &MappingAtomicType) -> Rc<SemType> {
+    if let Some(idx) = &m.indexed_properties {
+        idx.value.clone()
+    } else {
+        Rc::new(SemTypeContext::void())
+    }
+}
+
+fn get_index_value_open(m: &MappingAtomicType) -> Rc<SemType> {
     if let Some(idx) = &m.indexed_properties {
         idx.value.clone()
     } else {
         Rc::new(SemTypeContext::unknown())
+    }
+}
+
+fn get_key_type_exact(m: &MappingAtomicType) -> Rc<SemType> {
+    if let Some(idx) = &m.indexed_properties {
+        idx.key.clone()
+    } else {
+        Rc::new(SemTypeContext::never())
+    }
+}
+
+fn get_key_type_open(m: &MappingAtomicType) -> Rc<SemType> {
+    if let Some(idx) = &m.indexed_properties {
+        idx.key.clone()
+    } else {
+        Rc::new(SemTypeContext::string())
     }
 }
 
@@ -189,20 +235,12 @@ fn get_effective_index_value(
     neg: &MappingAtomicType,
     ctx: &mut SemTypeContext,
 ) -> Result<Rc<SemType>> {
-    let pos_key = if let Some(idx) = &pos.indexed_properties {
-        idx.key.clone()
-    } else {
-        Rc::new(SemTypeContext::unknown())
-    };
-
-    let neg_key = if let Some(idx) = &neg.indexed_properties {
-        idx.key.clone()
-    } else {
-        Rc::new(SemTypeContext::unknown())
-    };
+    let pos_key = get_key_type_exact(pos);
+    let neg_key = get_key_type_open(neg);
 
     if pos_key.is_subtype(&neg_key, ctx)? {
-        Ok(get_index_value(neg))
+        let val = get_index_value_open(neg);
+        SemTypeContext::optional(val)
     } else {
         Ok(Rc::new(SemTypeContext::unknown()))
     }
@@ -247,8 +285,8 @@ fn check_mapping_empty(
 
     // 4. Check each key dimension
     for k in all_keys {
-        let v_p = get_value(&pos, &k, ctx)?;
-        let v_n = get_value(current_neg, &k, ctx)?;
+        let v_p = get_value_exact(&pos, &k, ctx)?;
+        let v_n = get_value_open(current_neg, &k, ctx)?;
 
         let diff = v_p.diff(&v_n)?;
         if !diff.is_empty(ctx)? {
@@ -261,7 +299,7 @@ fn check_mapping_empty(
     }
 
     // 5. Check index signature dimension
-    let v_p_idx = get_index_value(&pos);
+    let v_p_idx = get_index_value_exact(&pos);
     let v_n_idx = get_effective_index_value(&pos, current_neg, ctx)?;
 
     let diff_idx = v_p_idx.diff(&v_n_idx)?;
