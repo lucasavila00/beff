@@ -1244,6 +1244,42 @@ mod tests {
     }
 
     #[test]
+    fn record_with_specific_keys_subtyping_equality() {
+        let definitions = vec![];
+
+        // Record<"a" | "b", string> should be the same type as {a:string, b:string}
+        let t1 = Runtype::record(
+            Runtype::any_of(vec![
+                Runtype::single_string_const("a"),
+                Runtype::single_string_const("b"),
+            ]),
+            Runtype::String.required(),
+        );
+
+        let t2 = Runtype::object(vec![
+            ("a".into(), Runtype::String.required()),
+            ("b".into(), Runtype::String.required()),
+        ]);
+
+        let res = rt_is_sub_type(&t1, &t2, &definitions, &definitions);
+        assert!(res);
+
+        let res = rt_is_sub_type(&t2, &t1, &definitions, &definitions);
+        assert!(res);
+
+        let t1_st = t1
+            .to_sem_type(&definitions, &mut SemTypeContext::new())
+            .expect("should work");
+        let t2_st = t2
+            .to_sem_type(&definitions, &mut SemTypeContext::new())
+            .expect("should work");
+
+        assert!(t1_st
+            .is_same_type(&t2_st, &mut SemTypeContext::new())
+            .unwrap());
+    }
+
+    #[test]
     fn object_with_extra_properties_is_subtype_of_record() {
         let definitions = vec![];
 

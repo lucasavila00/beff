@@ -1,5 +1,5 @@
 use crate::ast::runtype::{TplLitType, TplLitTypeItem};
-use crate::subtyping::subtype::StringLitOrFormat;
+use crate::subtyping::subtype::{ProperSubtype, StringLitOrFormat, SubTypeTag};
 use crate::subtyping::{
     bdd::{intersect_mapping, Atom, Bdd, BddOps, IndexedPropertiesAtomic, MappingAtomicType},
     evidence::{ProperSubtypeEvidence, ProperSubtypeEvidenceResult},
@@ -8,6 +8,72 @@ use crate::subtyping::{
 use anyhow::Result;
 use std::collections::BTreeSet;
 use std::rc::Rc;
+
+fn is_finite_tpl_item(item: &TplLitTypeItem) -> bool {
+    match item {
+        TplLitTypeItem::StringConst(_) => true,
+        TplLitTypeItem::OneOf(items) => items.iter().all(is_finite_tpl_item),
+        _ => false,
+    }
+}
+
+fn is_finite_string_set(ty: &Rc<SemType>) -> bool {
+    if (ty.all & SubTypeTag::String.code()) != 0 {
+        return false;
+    }
+
+    for subtype in &ty.subtype_data {
+        if let ProperSubtype::String { allowed, values } = subtype.as_ref() {
+            if !allowed {
+                return false;
+            }
+            for val in values {
+                match val {
+                    StringLitOrFormat::Format(_) => return false,
+                    StringLitOrFormat::Tpl(tpl) => {
+                        for item in &tpl.0 {
+                            if !is_finite_tpl_item(item) {
+                                return false;
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+    true
+}
+
+fn extract_keys_from_tpl_item(item: &TplLitTypeItem, acc: &mut Vec<String>) {
+    match item {
+        TplLitTypeItem::StringConst(s) => acc.push(s.clone()),
+        TplLitTypeItem::OneOf(items) => {
+            for it in items {
+                extract_keys_from_tpl_item(it, acc);
+            }
+        }
+        _ => {}
+    }
+}
+
+fn extract_keys_from_type(ty: &Rc<SemType>) -> Vec<String> {
+    let mut keys = vec![];
+    for subtype in &ty.subtype_data {
+        if let ProperSubtype::String { allowed, values } = subtype.as_ref() {
+            if *allowed {
+                for val in values {
+                    if let StringLitOrFormat::Tpl(tpl) = val {
+                        if tpl.0.len() == 1 {
+                            extract_keys_from_tpl_item(&tpl.0[0], &mut keys);
+                        }
+                    }
+                }
+            }
+        }
+    }
+    keys
+}
+
 // A DNF is a disjunction (OR) of Conjunctions
 // An empty DNF represents false (bottom, never)
 pub type Dnf = Vec<Conjunction>;
@@ -173,7 +239,11 @@ fn get_value_exact(
         )));
 
         if k_type.is_subtype(&idx.key, ctx)? {
-            return SemTypeContext::optional(idx.value.clone());
+            if is_finite_string_set(&idx.key) {
+                return Ok(idx.value.clone());
+            } else {
+                return SemTypeContext::optional(idx.value.clone());
+            }
         }
     }
 
@@ -191,7 +261,11 @@ fn get_value_open(m: &MappingAtomicType, k: &str, ctx: &mut SemTypeContext) -> R
         )));
 
         if k_type.is_subtype(&idx.key, ctx)? {
-            return SemTypeContext::optional(idx.value.clone());
+            if is_finite_string_set(&idx.key) {
+                return Ok(idx.value.clone());
+            } else {
+                return SemTypeContext::optional(idx.value.clone());
+            }
         }
     }
 
@@ -281,6 +355,16 @@ fn check_mapping_empty(
     }
     for k in current_neg.vs.keys() {
         all_keys.insert(k.clone());
+    }
+
+    // Add keys from finite index signatures in neg
+    if let Some(idx) = &current_neg.indexed_properties {
+        if is_finite_string_set(&idx.key) {
+            let keys = extract_keys_from_type(&idx.key);
+            for k in keys {
+                all_keys.insert(k);
+            }
+        }
     }
 
     // 4. Check each key dimension
