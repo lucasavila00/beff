@@ -1379,4 +1379,226 @@ mod tests {
         let res = rt_is_sub_type(&obj_with_bool, &record, &definitions, &definitions);
         assert!(!res);
     }
+
+    #[test]
+    fn null_and_undefined_equivalence() {
+        let definitions = vec![];
+        // Since we don't have explicit Undefined, we assume Null covers it.
+        // Test that Null is a subtype of a union containing Null
+        let t1 = Runtype::Null;
+        let t2 = Runtype::any_of(vec![Runtype::String, Runtype::Null]);
+        assert!(rt_is_sub_type(&t1, &t2, &definitions, &definitions));
+
+        // Test that a union containing Null is NOT a subtype of just String
+        assert!(!rt_is_sub_type(
+            &t2,
+            &Runtype::String,
+            &definitions,
+            &definitions
+        ));
+    }
+
+    #[test]
+    fn never_behavior() {
+        let definitions = vec![];
+        let never = Runtype::StNever;
+        let types = vec![
+            Runtype::String,
+            Runtype::Number,
+            Runtype::Null,
+            Runtype::object(vec![]),
+            Runtype::Any,
+        ];
+
+        for t in types {
+            // Never is subtype of everything
+            assert!(rt_is_sub_type(&never, &t, &definitions, &definitions));
+
+            // Nothing (except Never) is subtype of Never
+            if t != Runtype::StNever {
+                // (though t is not never here)
+                assert!(!rt_is_sub_type(&t, &never, &definitions, &definitions));
+            }
+        }
+    }
+
+    #[test]
+    fn boolean_literals() {
+        let definitions = vec![];
+        let true_type = Runtype::Const(RuntypeConst::Bool(true));
+        let false_type = Runtype::Const(RuntypeConst::Bool(false));
+        let bool_type = Runtype::Boolean;
+
+        assert!(rt_is_sub_type(
+            &true_type,
+            &bool_type,
+            &definitions,
+            &definitions
+        ));
+        assert!(rt_is_sub_type(
+            &false_type,
+            &bool_type,
+            &definitions,
+            &definitions
+        ));
+
+        assert!(!rt_is_sub_type(
+            &bool_type,
+            &true_type,
+            &definitions,
+            &definitions
+        ));
+        assert!(!rt_is_sub_type(
+            &true_type,
+            &false_type,
+            &definitions,
+            &definitions
+        ));
+
+        let true_or_false = Runtype::any_of(vec![true_type.clone(), false_type.clone()]);
+        assert!(rt_is_sub_type(
+            &true_or_false,
+            &bool_type,
+            &definitions,
+            &definitions
+        ));
+        assert!(rt_is_sub_type(
+            &bool_type,
+            &true_or_false,
+            &definitions,
+            &definitions
+        ));
+    }
+
+    // #[test]
+    // fn optional_property_vs_required_null() {
+    //     let definitions = vec![];
+
+    //     // { a?: string }
+    //     let optional_a = Runtype::object(vec![("a".into(), Runtype::String.optional())]);
+
+    //     // { a: string | null }
+    //     let required_nullable_a = Runtype::object(vec![(
+    //         "a".into(),
+    //         Runtype::any_of(vec![Runtype::String, Runtype::Null]).required(),
+    //     )]);
+
+    //     // { a: string | null } extends { a?: string }
+    //     // Because required property extends optional property (if types are compatible)
+    //     // And string | null extends string | undefined (assuming null~undefined)
+    //     assert!(rt_is_sub_type(
+    //         &required_nullable_a,
+    //         &optional_a,
+    //         &definitions,
+    //         &definitions
+    //     ));
+
+    //     // { a?: string } does NOT extend { a: string | null }
+    //     // Because 'a' can be missing in the first, but is required in the second.
+    //     assert!(!rt_is_sub_type(
+    //         &optional_a,
+    //         &required_nullable_a,
+    //         &definitions,
+    //         &definitions
+    //     ));
+    // }
+
+    #[test]
+    fn tuple_length_and_variadic() {
+        let definitions = vec![];
+
+        // [string, number]
+        let tuple2 = Runtype::Tuple {
+            prefix_items: vec![Runtype::String, Runtype::Number],
+            items: None,
+        };
+
+        // [string, number, boolean]
+        let tuple3 = Runtype::Tuple {
+            prefix_items: vec![Runtype::String, Runtype::Number, Runtype::Boolean],
+            items: None,
+        };
+
+        // [string, ...number[]]
+        let tuple_variadic = Runtype::Tuple {
+            prefix_items: vec![Runtype::String],
+            items: Some(Box::new(Runtype::Number)),
+        };
+
+        // [string, number] is NOT subtype of [string, number, boolean]
+        assert!(!rt_is_sub_type(
+            &tuple2,
+            &tuple3,
+            &definitions,
+            &definitions
+        ));
+
+        // [string, number, boolean] is NOT subtype of [string, number]
+        assert!(!rt_is_sub_type(
+            &tuple3,
+            &tuple2,
+            &definitions,
+            &definitions
+        ));
+
+        // [string, number] IS subtype of [string, ...number[]]
+        assert!(rt_is_sub_type(
+            &tuple2,
+            &tuple_variadic,
+            &definitions,
+            &definitions
+        ));
+
+        // [string, number, number] IS subtype of [string, ...number[]]
+        let tuple3_nums = Runtype::Tuple {
+            prefix_items: vec![Runtype::String, Runtype::Number, Runtype::Number],
+            items: None,
+        };
+        assert!(rt_is_sub_type(
+            &tuple3_nums,
+            &tuple_variadic,
+            &definitions,
+            &definitions
+        ));
+
+        // [string, boolean] is NOT subtype of [string, ...number[]]
+        let tuple_bad = Runtype::Tuple {
+            prefix_items: vec![Runtype::String, Runtype::Boolean],
+            items: None,
+        };
+        assert!(!rt_is_sub_type(
+            &tuple_bad,
+            &tuple_variadic,
+            &definitions,
+            &definitions
+        ));
+    }
+
+    #[test]
+    fn recursive_types_mutual() {
+        // type A = { b: B }
+        // type B = { a: A }
+        let definitions = vec![
+            NamedSchema {
+                name: "A".into(),
+                schema: Runtype::object(vec![("b".into(), Runtype::Ref("B".into()).required())]),
+            },
+            NamedSchema {
+                name: "B".into(),
+                schema: Runtype::object(vec![("a".into(), Runtype::Ref("A".into()).required())]),
+            },
+        ];
+        let defs_refs: Vec<&NamedSchema> = definitions.iter().collect();
+
+        let ref_a = Runtype::Ref("A".into());
+
+        // Structural equivalent of A: { b: { a: A } }
+        let struct_a = Runtype::object(vec![(
+            "b".into(),
+            Runtype::object(vec![("a".into(), Runtype::Ref("A".into()).required())]).required(),
+        )]);
+
+        assert!(rt_is_sub_type(&ref_a, &struct_a, &defs_refs, &defs_refs));
+        assert!(rt_is_sub_type(&struct_a, &ref_a, &defs_refs, &defs_refs));
+    }
 }
