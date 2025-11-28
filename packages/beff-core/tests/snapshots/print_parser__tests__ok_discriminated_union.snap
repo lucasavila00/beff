@@ -7,18 +7,42 @@ const direct_hoist_1 = new ConstRuntype("a");
 const namedRuntypes = {
     "DiscriminatedUnion4": new AnyOfRuntype([
         new ObjectRuntype({
-            "a": new ObjectRuntype({
-                "a1": direct_hoist_0,
-                "subType": new ConstRuntype("a1")
-            }, []),
-            "type": direct_hoist_1
+            "a": {
+                "_tag": "Required",
+                "t": new ObjectRuntype({
+                    "a1": {
+                        "_tag": "Required",
+                        "t": direct_hoist_0
+                    },
+                    "subType": {
+                        "_tag": "Required",
+                        "t": new ConstRuntype("a1")
+                    }
+                }, [])
+            },
+            "type": {
+                "_tag": "Required",
+                "t": direct_hoist_1
+            }
         }, []),
         new ObjectRuntype({
-            "a": new ObjectRuntype({
-                "a2": direct_hoist_0,
-                "subType": new ConstRuntype("a2")
-            }, []),
-            "type": direct_hoist_1
+            "a": {
+                "_tag": "Required",
+                "t": new ObjectRuntype({
+                    "a2": {
+                        "_tag": "Required",
+                        "t": direct_hoist_0
+                    },
+                    "subType": {
+                        "_tag": "Required",
+                        "t": new ConstRuntype("a2")
+                    }
+                }, [])
+            },
+            "type": {
+                "_tag": "Required",
+                "t": direct_hoist_1
+            }
         }, [])
     ])
 };

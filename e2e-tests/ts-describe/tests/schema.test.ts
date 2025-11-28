@@ -4,8 +4,8 @@ it("works", () => {
   expect(Codecs.string.describe()).toMatchInlineSnapshot('"type Codecstring = string;"');
   expect(Codecs.number.describe()).toMatchInlineSnapshot('"type Codecnumber = number;"');
   expect(Codecs.boolean.describe()).toMatchInlineSnapshot('"type Codecboolean = boolean;"');
-  expect(Codecs.null.describe()).toMatchInlineSnapshot('"type Codecnull = null;"');
-  expect(Codecs.undefined.describe()).toMatchInlineSnapshot('"type Codecundefined = null;"');
+  expect(Codecs.null.describe()).toMatchInlineSnapshot('"type Codecnull = (null | undefined);"');
+  expect(Codecs.undefined.describe()).toMatchInlineSnapshot('"type Codecundefined = (null | undefined);"');
   expect(Codecs.object.describe()).toMatchInlineSnapshot(
     '"type Codecobject = { [K in (string | number)]: any };"',
   );
@@ -24,7 +24,7 @@ it("works", () => {
     '"type CodecNonEmptyString = [string, ...Array<string>];"',
   );
   expect(Codecs.DiscriminatedUnion.describe()).toMatchInlineSnapshot(
-    '"type CodecDiscriminatedUnion = ({ a1: string, a11: (null | string), subType: \\"a1\\", type: \\"a\\" } | { a2: string, subType: \\"a2\\", type: \\"a\\" } | { type: \\"b\\", value: number });"',
+    '"type CodecDiscriminatedUnion = ({ a1: string, a11?: ((null | undefined) | string), subType: \\"a1\\", type: \\"a\\" } | { a2: string, subType: \\"a2\\", type: \\"a\\" } | { type: \\"b\\", value: number });"',
   );
 
   expect(Codecs.ValidCurrency.describe()).toMatchInlineSnapshot(

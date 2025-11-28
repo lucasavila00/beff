@@ -236,7 +236,7 @@ class AnyRuntype {
 }
 class NullRuntype {
   describe(_ctx) {
-    return "null";
+    return "(null | undefined)";
   }
   schema(_ctx) {
     return { type: "null" };
@@ -775,7 +775,8 @@ class ObjectRuntype {
     const sortedKeys = Object.keys(this.properties).sort();
     const props = sortedKeys.map((k) => {
       const it = this.properties[k];
-      return `${k}: ${it.describe(ctx)}`;
+      const optionalMark = it._tag === "Optional" ? "?" : "";
+      return `${k}${optionalMark}: ${it.t.describe(ctx)}`;
     }).join(", ");
     const indexPropsParats = this.indexedPropertiesParser.map(({ key, value }) => {
       return `[K in ${key.describe(ctx)}]: ${value.describe(ctx)}`;
@@ -788,7 +789,7 @@ class ObjectRuntype {
     const properties = {};
     for (const k in this.properties) {
       pushPath(ctx, k);
-      properties[k] = this.properties[k].schema(ctx);
+      properties[k] = this.properties[k].t.schema(ctx);
       popPath(ctx);
     }
     const required = Object.keys(this.properties);
@@ -822,7 +823,7 @@ class ObjectRuntype {
       const configKeys = Object.keys(this.properties);
       for (const k of configKeys) {
         const validator = this.properties[k];
-        if (!validator.validate(ctx, input[k])) {
+        if (!validator.t.validate(ctx, input[k])) {
           return false;
         }
       }
@@ -865,7 +866,7 @@ class ObjectRuntype {
     for (const k of inputKeys) {
       const v = input[k];
       if (k in this.properties) {
-        const itemParsed = this.properties[k].parseAfterValidation(ctx, v);
+        const itemParsed = this.properties[k].t.parseAfterValidation(ctx, v);
         acc[k] = itemParsed;
       } else if (this.indexedPropertiesParser.length > 0) {
         for (const p of this.indexedPropertiesParser) {
@@ -887,10 +888,10 @@ class ObjectRuntype {
     let acc = [];
     const configKeys = Object.keys(this.properties);
     for (const k of configKeys) {
-      const ok = this.properties[k].validate(ctx, input[k]);
+      const ok = this.properties[k].t.validate(ctx, input[k]);
       if (!ok) {
         pushPath(ctx, k);
-        const arr2 = this.properties[k].reportDecodeError(ctx, input[k]);
+        const arr2 = this.properties[k].t.reportDecodeError(ctx, input[k]);
         acc.push(...arr2);
         popPath(ctx);
       }
@@ -1105,22 +1106,58 @@ const namedRuntypes = {
     "AliasToAny": new AnyRuntype(),
     "AliasToConst": new ConstRuntype("constant value"),
     "TestHoist": new ObjectRuntype({
-        "a": direct_hoist_2,
-        "b": direct_hoist_2
+        "a": {
+            "_tag": "Required",
+            "t": direct_hoist_2
+        },
+        "b": {
+            "_tag": "Required",
+            "t": direct_hoist_2
+        }
     }, []),
     "BeforeRequired": new ObjectRuntype({
-        "a": direct_hoist_0,
-        "b": direct_hoist_3,
-        "c": direct_hoist_3,
-        "d": direct_hoist_3,
-        "e": direct_hoist_3
+        "a": {
+            "_tag": "Required",
+            "t": direct_hoist_0
+        },
+        "b": {
+            "_tag": "Optional",
+            "t": direct_hoist_3
+        },
+        "c": {
+            "_tag": "Optional",
+            "t": direct_hoist_3
+        },
+        "d": {
+            "_tag": "Optional",
+            "t": direct_hoist_3
+        },
+        "e": {
+            "_tag": "Optional",
+            "t": direct_hoist_3
+        }
     }, []),
     "AfterRequired": new ObjectRuntype({
-        "a": direct_hoist_0,
-        "b": direct_hoist_3,
-        "c": direct_hoist_3,
-        "d": direct_hoist_3,
-        "e": direct_hoist_0
+        "a": {
+            "_tag": "Required",
+            "t": direct_hoist_0
+        },
+        "b": {
+            "_tag": "Optional",
+            "t": direct_hoist_3
+        },
+        "c": {
+            "_tag": "Optional",
+            "t": direct_hoist_3
+        },
+        "d": {
+            "_tag": "Optional",
+            "t": direct_hoist_3
+        },
+        "e": {
+            "_tag": "Required",
+            "t": direct_hoist_0
+        }
     }, [])
 };
 const buildParsersInput = {

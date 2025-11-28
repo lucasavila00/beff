@@ -1,5 +1,11 @@
 # @beff/cli
 
+## 0.0.108
+
+### Patch Changes
+
+- describe precisel
+
 ## 0.0.107
 
 ### Patch Changes

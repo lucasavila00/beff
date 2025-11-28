@@ -1,5 +1,13 @@
 # @beff/client
 
+## 0.0.108
+
+### Patch Changes
+
+- describe precisel
+- Updated dependencies
+  - @beff/cli@0.0.108
+
 ## 0.0.107
 
 ### Patch Changes

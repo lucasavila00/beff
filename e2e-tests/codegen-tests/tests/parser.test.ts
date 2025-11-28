@@ -15,7 +15,9 @@ it("works", () => {
   expect(Codecs.AliasToNumber.describe()).toMatchInlineSnapshot('"type CodecAliasToNumber = number;"');
 
   expect(Codecs.AliasToBoolean.describe()).toMatchInlineSnapshot('"type CodecAliasToBoolean = boolean;"');
-  expect(Codecs.AliasToNull.describe()).toMatchInlineSnapshot('"type CodecAliasToNull = null;"');
+  expect(Codecs.AliasToNull.describe()).toMatchInlineSnapshot(
+    '"type CodecAliasToNull = (null | undefined);"',
+  );
   expect(Codecs.AliasToAny.describe()).toMatchInlineSnapshot('"type CodecAliasToAny = any;"');
   expect(Codecs.AliasToConst.describe()).toMatchInlineSnapshot(
     '"type CodecAliasToConst = \\"constant value\\";"',

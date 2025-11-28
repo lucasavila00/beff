@@ -4,7 +4,10 @@ expression: "print_cgen(r#\"\n        export type Alias = {a:string}\n        pa
 ---
 const namedRuntypes = {
     "Alias": new ObjectRuntype({
-        "a": new TypeofRuntype("string")
+        "a": {
+            "_tag": "Required",
+            "t": new TypeofRuntype("string")
+        }
     }, [])
 };
 const buildParsersInput = {
