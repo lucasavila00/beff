@@ -454,8 +454,8 @@ fn hoist_identifier(name: usize) -> Expr {
     Expr::Ident(identifier(&hoist_name(name)))
 }
 
-fn optionality_wrapper(tag: &str, inner: Expr) -> Expr {
-    new_runtype_class("OptionalField", vec![inner, string_lit(tag)])
+fn optionality_wrapper(inner: Expr) -> Expr {
+    new_runtype_class("OptionalField", vec![inner])
 }
 
 fn print_runtype(
@@ -573,14 +573,10 @@ fn print_runtype(
             let mut mapped = BTreeMap::new();
             for (k, v) in vs.iter() {
                 let r = match v {
-                    Optionality::Optional(schema) => optionality_wrapper(
-                        "Optional",
-                        print_runtype(schema, named_schemas, hoisted),
-                    ),
-                    Optionality::Required(schema) => optionality_wrapper(
-                        "Required",
-                        print_runtype(schema, named_schemas, hoisted),
-                    ),
+                    Optionality::Optional(schema) => {
+                        optionality_wrapper(print_runtype(schema, named_schemas, hoisted))
+                    }
+                    Optionality::Required(schema) => print_runtype(schema, named_schemas, hoisted),
                 };
                 mapped.insert(k.clone(), r);
             }

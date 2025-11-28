@@ -771,40 +771,30 @@ class AnyOfDiscriminatedRuntype {
 }
 class OptionalField {
   t;
-  tag;
-  constructor(t, tag) {
+  constructor(t) {
     this.t = t;
-    this.tag = tag;
-  }
-  isOptional() {
-    return this.tag === "Optional";
   }
   schema(ctx) {
     const inner = this.t.schema(ctx);
-    if (this.isOptional()) {
-      return {
-        anyOf: [inner, { type: "null" }]
-      };
-    }
-    return inner;
+    return {
+      anyOf: [inner, { type: "null" }]
+    };
   }
   validate(ctx, input) {
-    if (this.isOptional() && input == null) {
+    if (input == null) {
       return true;
     }
     return this.t.validate(ctx, input);
   }
   parseAfterValidation(ctx, input) {
-    if (this.isOptional() && input == null) {
+    if (input == null) {
       return input;
     }
     return this.t.parseAfterValidation(ctx, input);
   }
   reportDecodeError(ctx, input) {
     const acc = [];
-    if (this.isOptional()) {
-      acc.push(...buildError(ctx, "expected nullish value", input));
-    }
+    acc.push(...buildError(ctx, "expected nullish value", input));
     return [...acc, ...this.t.reportDecodeError(ctx, input)];
   }
   describe(ctx) {
@@ -822,7 +812,7 @@ class ObjectRuntype {
     const sortedKeys = Object.keys(this.properties).sort();
     const props = sortedKeys.map((k) => {
       const it = this.properties[k];
-      const optionalMark = it.isOptional() ? "?" : "";
+      const optionalMark = it instanceof OptionalField ? "?" : "";
       return `${k}${optionalMark}: ${it.describe(ctx)}`;
     }).join(", ");
     const indexPropsParats = this.indexedPropertiesParser.map(({ key, value }) => {
@@ -1142,8 +1132,8 @@ const RequiredNumberFormats = [];
 const direct_hoist_0 = new TypeofRuntype("string");
 const namedRuntypes = {
     "User": new ObjectRuntype({
-        "data1": new OptionalField(new TypeofRuntype("number"), "Required"),
-        "data2": new OptionalField(direct_hoist_0, "Required")
+        "data1": new TypeofRuntype("number"),
+        "data2": direct_hoist_0
     }, []),
     "X": new ObjectRuntype({}, [
         {
@@ -1152,7 +1142,7 @@ const namedRuntypes = {
         }
     ]),
     "Y": new ObjectRuntype({
-        "a": new OptionalField(direct_hoist_0, "Required")
+        "a": direct_hoist_0
     }, [])
 };
 const buildParsersInput = {

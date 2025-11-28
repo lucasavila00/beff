@@ -913,41 +913,32 @@ class AnyOfDiscriminatedRuntype implements Runtype {
 
 class OptionalField implements Runtype {
   private t: Runtype;
-  private tag: "Required" | "Optional";
-  constructor(t: Runtype, tag: "Required" | "Optional") {
+
+  constructor(t: Runtype) {
     this.t = t;
-    this.tag = tag;
-  }
-  isOptional(): boolean {
-    return this.tag === "Optional";
   }
 
   schema(ctx: SchemaContext): JSONSchema7 {
     const inner = this.t.schema(ctx);
-    if (this.isOptional()) {
-      return {
-        anyOf: [inner, { type: "null" }],
-      };
-    }
-    return inner;
+    return {
+      anyOf: [inner, { type: "null" }],
+    };
   }
   validate(ctx: ValidateContext, input: unknown): boolean {
-    if (this.isOptional() && input == null) {
+    if (input == null) {
       return true;
     }
     return this.t.validate(ctx, input);
   }
   parseAfterValidation(ctx: ParseContext, input: any): unknown {
-    if (this.isOptional() && input == null) {
+    if (input == null) {
       return input;
     }
     return this.t.parseAfterValidation(ctx, input);
   }
   reportDecodeError(ctx: ReportContext, input: unknown): DecodeError[] {
     const acc: DecodeError[] = [];
-    if (this.isOptional()) {
-      acc.push(...buildError(ctx, "expected nullish value", input));
-    }
+    acc.push(...buildError(ctx, "expected nullish value", input));
     return [...acc, ...this.t.reportDecodeError(ctx, input)];
   }
   describe(ctx: DescribeContext): string {
@@ -956,13 +947,13 @@ class OptionalField implements Runtype {
 }
 
 class ObjectRuntype implements Runtype {
-  private properties: Record<string, OptionalField>;
+  private properties: Record<string, Runtype>;
   private indexedPropertiesParser: Array<{
     key: Runtype;
     value: Runtype;
   }>;
   constructor(
-    properties: Record<string, OptionalField>,
+    properties: Record<string, Runtype>,
     indexedPropertiesParser: Array<{
       key: Runtype;
       value: Runtype;
@@ -976,7 +967,7 @@ class ObjectRuntype implements Runtype {
     const props = sortedKeys
       .map((k) => {
         const it = this.properties[k];
-        const optionalMark = it.isOptional() ? "?" : "";
+        const optionalMark = it instanceof OptionalField ? "?" : "";
         return `${k}${optionalMark}: ${it.describe(ctx)}`;
       })
       .join(", ");
