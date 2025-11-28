@@ -109,8 +109,7 @@ impl TplLitType {
         match (self.0.as_slice(), other.0.as_slice()) {
             ([a], [b]) => Ok(a == b),
             _ => bail!(format!(
-                "only single-item TplLitType subtype checks are supported, but we received: {:?} vs {:?}",
-                self, other
+                "only single-item TplLitType subtype checks are supported",
             )),
         }
     }
