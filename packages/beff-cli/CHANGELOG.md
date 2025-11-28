@@ -1,5 +1,11 @@
 # @beff/cli
 
+## 0.0.109
+
+### Patch Changes
+
+- fix union paren
+
 ## 0.0.108
 
 ### Patch Changes

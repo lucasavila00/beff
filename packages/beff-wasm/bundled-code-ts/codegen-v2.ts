@@ -569,7 +569,8 @@ class AnyOfConstsRuntype implements Runtype {
   }
   describe(ctx: DescribeContext): string {
     const parts = this.values.map((it) => JSON.stringify(it));
-    return parts.join(" | ");
+    const inner = parts.join(" | ");
+    return `(${inner})`;
   }
   schema(ctx: SchemaContext): JSONSchema7 {
     return {
