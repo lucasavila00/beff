@@ -1010,51 +1010,51 @@ mod tests {
         ]));
     }
 
-    // #[test]
-    // fn import_type_only() {
-    //     insta::assert_snapshot!(print_types_multifile(&[
-    //         (
-    //             "t.ts",
-    //             r#"
-    //                 export type T = string;
-    //             "#,
-    //         ),
-    //         (
-    //             "entry.ts",
-    //             r#"
-    //                 import type { T } from "./t";
-    //                 type X = T;
-    //                 parse.buildParsers<{ X: X }>();
-    //             "#
-    //         )
-    //     ]));
-    // }
+    #[test]
+    fn import_type_only() {
+        insta::assert_snapshot!(print_types_multifile(&[
+            (
+                "t.ts",
+                r#"
+                    export type T = string;
+                "#,
+            ),
+            (
+                "entry.ts",
+                r#"
+                    import type { T } from "./t";
+                    type X = T;
+                    parse.buildParsers<{ X: X }>();
+                "#
+            )
+        ]));
+    }
 
-    // #[test]
-    // fn export_type_only() {
-    //     insta::assert_snapshot!(print_types_multifile(&[
-    //         (
-    //             "a.ts",
-    //             r#"
-    //                 export type T = string;
-    //             "#,
-    //         ),
-    //         (
-    //             "b.ts",
-    //             r#"
-    //                 export type { T } from "./a";
-    //             "#,
-    //         ),
-    //         (
-    //             "entry.ts",
-    //             r#"
-    //                 import { T } from "./b";
-    //                 type X = T;
-    //                 parse.buildParsers<{ X: X }>();
-    //             "#
-    //         )
-    //     ]));
-    // }
+    #[test]
+    fn export_type_only() {
+        insta::assert_snapshot!(print_types_multifile(&[
+            (
+                "a.ts",
+                r#"
+                    export type T = string;
+                "#,
+            ),
+            (
+                "b.ts",
+                r#"
+                    export type { T } from "./a";
+                "#,
+            ),
+            (
+                "entry.ts",
+                r#"
+                    import { T } from "./b";
+                    type X = T;
+                    parse.buildParsers<{ X: X }>();
+                "#
+            )
+        ]));
+    }
 
     // #[test]
     // fn import_inline_type() {
