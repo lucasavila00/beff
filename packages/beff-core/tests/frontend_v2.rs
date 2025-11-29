@@ -328,4 +328,129 @@ mod tests {
             )
         ]));
     }
+
+    #[test]
+    fn type_snd_value_export_from_other_file() {
+        insta::assert_snapshot!(print_types_multifile(&[
+            //
+            (
+                "a.ts",
+                r#"
+                    export type abc = "abc";
+                    export const abc = 123 as const;
+                "#,
+            ),
+            (
+                "b.ts",
+                r#"
+                    export { abc } from "./a";
+                "#,
+            ),
+            (
+                "entry.ts",
+                r#"
+                    import { abc } from "./b";
+                    type X = abc;
+                    type Y = typeof abc;
+                    parse.buildParsers<{ X: X, Y: Y }>();
+                "#
+            )
+        ]));
+    }
+
+    #[test]
+    fn import_star_type() {
+        insta::assert_snapshot!(print_types_multifile(&[
+            //
+            (
+                "t.ts",
+                r#"
+                    export type Y1 = string;
+                "#,
+            ),
+            (
+                "entry.ts",
+                r#"
+                    import * as Y2 from "./t";
+                    type Z = Y2.Y1;
+                    parse.buildParsers<{ Z: Z }>();
+                "#
+            )
+        ]));
+    }
+
+    #[test]
+    fn export_star_type_from_other_file() {
+        insta::assert_snapshot!(print_types_multifile(&[
+            //
+            (
+                "a.ts",
+                r#"
+                    export type Y1 = string;
+                "#,
+            ),
+            (
+                "b.ts",
+                r#"
+                    export * from "./a";
+                "#,
+            ),
+            (
+                "entry.ts",
+                r#"
+                    import { Y1 } from "./b";
+                    type Z = Y1;
+                    parse.buildParsers<{ Z: Z }>();
+                "#
+            )
+        ]));
+    }
+
+    #[test]
+    fn import_star_type_from_other_file() {
+        insta::assert_snapshot!(print_types_multifile(&[
+            //
+            (
+                "a.ts",
+                r#"
+                    export type Y1 = string;
+                "#,
+            ),
+            (
+                "b.ts",
+                r#"
+                    export * from "./a";
+                "#,
+            ),
+            (
+                "entry.ts",
+                r#"
+                    import * as Y2 from "./b";
+                    type Z = Y2.Y1;
+                    parse.buildParsers<{ Z: Z }>();
+                "#
+            )
+        ]));
+    }
+
+    #[test]
+    fn import_star_value() {
+        insta::assert_snapshot!(print_types_multifile(&[
+            //
+            (
+                "t.ts",
+                r#"
+                    export const Y1 = "abc" as const;
+                "#,
+            ),
+            (
+                "entry.ts",
+                r#"
+                    import * as Y2 from "./t";
+                    type Z = typeof Y2.Y1;
+                    parse.buildParsers<{ Z: Z }>();
+                "#
+            )
+        ]));
+    }
 }

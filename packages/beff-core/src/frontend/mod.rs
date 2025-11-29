@@ -1,5 +1,12 @@
+use crate::{
+    ast::runtype::{Runtype, RuntypeConst},
+    diag::{Diagnostic, DiagnosticInfoMessage, DiagnosticInformation, Location},
+    parser_extractor::BuiltDecoder,
+    BeffUserSettings, BffFileName, FileManager, ImportReference, ModuleItemAddress, ParsedModule,
+    SymbolExport, Visibility,
+};
+use anyhow::{anyhow, Result};
 use std::rc::Rc;
-
 use swc_common::{Span, Spanned};
 use swc_ecma_ast::{
     Expr, Ident, Lit, TsCallSignatureDecl, TsConstructSignatureDecl, TsEntityName, TsEnumDecl,
@@ -9,14 +16,6 @@ use swc_ecma_ast::{
     TsTypeQueryExpr, TsTypeRef,
 };
 
-use crate::{
-    ast::runtype::{Runtype, RuntypeConst},
-    diag::{Diagnostic, DiagnosticInfoMessage, DiagnosticInformation, Location},
-    parser_extractor::BuiltDecoder,
-    BeffUserSettings, BffFileName, FileManager, ImportReference, ModuleItemAddress, ParsedModule,
-    SymbolExport, Visibility,
-};
-use anyhow::{anyhow, Result};
 pub struct FrontendCtx<'a, R: FileManager> {
     pub files: &'a mut R,
     pub settings: &'a BeffUserSettings,
@@ -30,9 +29,17 @@ pub enum AddressedType {
     TsInterfaceDecl(Rc<TsInterfaceDecl>),
     TsEnumDecl(Rc<TsEnumDecl>),
 }
-#[derive(Debug)]
+
+pub enum AddressedQualifiedType {
+    StarExports(BffFileName),
+}
+
 pub enum AddressedValue {
     ValueExpr(Rc<Expr>, BffFileName),
+}
+
+pub enum AddressedQualifiedValue {
+    StarExports(BffFileName),
 }
 
 type Res<T> = Result<T, Box<Diagnostic>>;
@@ -109,6 +116,29 @@ impl<'a, R: FileManager> FrontendCtx<'a, R> {
         Ok(parsed_module)
     }
 
+    fn get_addressed_qualified_type(
+        &mut self,
+        addr: &ModuleItemAddress,
+        span: &Span,
+    ) -> Res<AddressedQualifiedType> {
+        let parsed_module = self.get_or_fetch_adressed_file(addr, span)?;
+        match addr.visibility {
+            Visibility::Local => {
+                if let Some(imported) = parsed_module.imports.get(&addr.key) {
+                    match imported.as_ref() {
+                        ImportReference::Named { .. } => todo!(),
+                        ImportReference::Star { file_name, span: _ } => {
+                            return Ok(AddressedQualifiedType::StarExports(file_name.clone()));
+                        }
+                        ImportReference::Default { .. } => todo!(),
+                    }
+                }
+                todo!()
+            }
+            Visibility::Export => todo!(),
+        }
+    }
+
     fn get_addressed_type(&mut self, addr: &ModuleItemAddress, span: &Span) -> Res<AddressedType> {
         let parsed_module = self.get_or_fetch_adressed_file(addr, span)?;
         match addr.visibility {
@@ -133,7 +163,10 @@ impl<'a, R: FileManager> FrontendCtx<'a, R> {
                             };
                             return self.get_addressed_type(&new_addr, span);
                         }
-                        ImportReference::Star { .. } => todo!(),
+                        ImportReference::Star { .. } => {
+                            // this should have called get_addressed_qualified_type
+                            todo!()
+                        }
                         ImportReference::Default { file_name } => {
                             match &self.get_or_fetch_file(file_name, span)?.export_default {
                                 Some(export_default_symbol) => {
@@ -191,6 +224,28 @@ impl<'a, R: FileManager> FrontendCtx<'a, R> {
         }
     }
 
+    fn get_addressed_qualified_value(
+        &mut self,
+        addr: &ModuleItemAddress,
+        span: &Span,
+    ) -> Res<AddressedQualifiedValue> {
+        let parsed_module = self.get_or_fetch_adressed_file(addr, span)?;
+        match addr.visibility {
+            Visibility::Local => {
+                if let Some(imported) = parsed_module.imports.get(&addr.key) {
+                    match imported.as_ref() {
+                        ImportReference::Named { .. } => todo!(),
+                        ImportReference::Star { file_name, span: _ } => {
+                            return Ok(AddressedQualifiedValue::StarExports(file_name.clone()));
+                        }
+                        ImportReference::Default { .. } => todo!(),
+                    }
+                }
+                todo!()
+            }
+            Visibility::Export => todo!(),
+        }
+    }
     fn get_addressed_value(
         &mut self,
         addr: &ModuleItemAddress,
@@ -216,7 +271,9 @@ impl<'a, R: FileManager> FrontendCtx<'a, R> {
                             };
                             return self.get_addressed_value(&new_addr, span);
                         }
-                        ImportReference::Star { .. } => todo!(),
+                        ImportReference::Star { .. } => {
+                            todo!()
+                        }
                         ImportReference::Default { file_name } => {
                             match &self.get_or_fetch_file(file_name, span)?.export_default {
                                 Some(export_default_symbol) => {
@@ -265,14 +322,8 @@ impl<'a, R: FileManager> FrontendCtx<'a, R> {
             }
         }
     }
-    fn resolve_ident_type(
-        &mut self,
-        i: &Ident,
-        file: BffFileName,
-        visibility: Visibility,
-    ) -> Res<Runtype> {
-        let address = ModuleItemAddress::from_ident(i, file, visibility);
-        let addressed_type = self.get_addressed_type(&address, &i.span)?;
+    fn extract_addressed_type(&mut self, address: &ModuleItemAddress, span: &Span) -> Res<Runtype> {
+        let addressed_type = self.get_addressed_type(address, span)?;
         match addressed_type {
             AddressedType::TsType(decl) => {
                 assert!(
@@ -280,12 +331,21 @@ impl<'a, R: FileManager> FrontendCtx<'a, R> {
                     "generic types not supported yet"
                 );
                 let runtype =
-                    self.extract_type(&decl.type_ann, address.file.clone(), visibility)?;
+                    self.extract_type(&decl.type_ann, address.file.clone(), address.visibility)?;
                 Ok(runtype)
             }
-            AddressedType::TsInterfaceDecl(ts_interface_decl) => todo!(),
-            AddressedType::TsEnumDecl(ts_enum_decl) => todo!(),
+            AddressedType::TsInterfaceDecl(_) => todo!(),
+            AddressedType::TsEnumDecl(_) => todo!(),
         }
+    }
+    fn resolve_ident_type(
+        &mut self,
+        i: &Ident,
+        file: BffFileName,
+        visibility: Visibility,
+    ) -> Res<Runtype> {
+        let address = ModuleItemAddress::from_ident(i, file, visibility);
+        self.extract_addressed_type(&address, &i.span)
     }
 
     fn extract_type_ident(
@@ -306,7 +366,24 @@ impl<'a, R: FileManager> FrontendCtx<'a, R> {
         type_args: &Option<Box<TsTypeParamInstantiation>>,
         file: BffFileName,
     ) -> Res<Runtype> {
-        todo!()
+        assert!(type_args.is_none(), "generic types not supported yet");
+        match &q.left {
+            TsEntityName::TsQualifiedName(_) => todo!(),
+            TsEntityName::Ident(ident) => {
+                let addr = ModuleItemAddress::from_ident(ident, file.clone(), Visibility::Local);
+                let type_addressed = self.get_addressed_qualified_type(&addr, &q.span())?;
+                match type_addressed {
+                    AddressedQualifiedType::StarExports(bff_file_name) => {
+                        let new_addr = ModuleItemAddress {
+                            file: bff_file_name.clone(),
+                            key: q.right.sym.to_string(),
+                            visibility: Visibility::Export,
+                        };
+                        return self.extract_addressed_type(&new_addr, &q.span());
+                    }
+                }
+            }
+        }
     }
 
     fn extract_type_ref(
@@ -359,12 +436,32 @@ impl<'a, R: FileManager> FrontendCtx<'a, R> {
                         Ok(Runtype::String)
                     }
                 }
-                Lit::Bool(bool) => todo!(),
-                Lit::Null(null) => todo!(),
-                Lit::Num(number) => todo!(),
-                Lit::BigInt(big_int) => todo!(),
-                Lit::Regex(regex) => todo!(),
-                Lit::JSXText(jsxtext) => todo!(),
+                Lit::Bool(b) => {
+                    if as_const {
+                        Ok(Runtype::Const(RuntypeConst::Bool(b.value)))
+                    } else {
+                        Ok(Runtype::Boolean)
+                    }
+                }
+                Lit::Null(_) => Ok(Runtype::Null),
+                Lit::Num(n) => {
+                    if as_const {
+                        Ok(Runtype::Const(RuntypeConst::parse_f64(n.value)))
+                    } else {
+                        Ok(Runtype::Number)
+                    }
+                }
+                Lit::BigInt(_) => Ok(Runtype::BigInt),
+                Lit::Regex(_) => self.error(
+                    &e.span(),
+                    DiagnosticInfoMessage::TypeOfRegexNotSupported,
+                    file,
+                ),
+                Lit::JSXText(_) => self.error(
+                    &e.span(),
+                    DiagnosticInfoMessage::TypeOfJSXTextNotSupported,
+                    file,
+                ),
             },
             Expr::Ident(i) => {
                 dbg!(&i);
@@ -374,7 +471,6 @@ impl<'a, R: FileManager> FrontendCtx<'a, R> {
                     visibility: Visibility::Local,
                 };
                 let addressed_value = self.get_addressed_value(&new_addr, &i.span)?;
-                dbg!(&addressed_value);
                 match addressed_value {
                     AddressedValue::ValueExpr(expr, expr_file) => {
                         self.typeof_expr(expr.as_ref(), as_const, expr_file)
@@ -391,6 +487,20 @@ impl<'a, R: FileManager> FrontendCtx<'a, R> {
             }
         }
     }
+
+    fn extract_addressed_value(
+        &mut self,
+        address: &ModuleItemAddress,
+        span: &Span,
+    ) -> Res<Runtype> {
+        let addressed_value = self.get_addressed_value(address, span)?;
+        match addressed_value {
+            AddressedValue::ValueExpr(expr, expr_file) => {
+                self.typeof_expr(expr.as_ref(), false, expr_file)
+            }
+        }
+    }
+
     fn extract_type_query(
         &mut self,
         ty: &TsTypeQuery,
@@ -410,14 +520,27 @@ impl<'a, R: FileManager> FrontendCtx<'a, R> {
                 TsEntityName::Ident(ident) => {
                     //
                     let addr = ModuleItemAddress::from_ident(ident, file.clone(), visibility);
-                    let addressed_value = self.get_addressed_value(&addr, &ty.span)?;
-                    match addressed_value {
-                        AddressedValue::ValueExpr(expr, expr_file) => {
-                            self.typeof_expr(expr.as_ref(), false, expr_file)
+                    return self.extract_addressed_value(&addr, &ty.span);
+                }
+                TsEntityName::TsQualifiedName(ts_qualified_name) => match &ts_qualified_name.left {
+                    TsEntityName::TsQualifiedName(_) => todo!(),
+                    TsEntityName::Ident(ident) => {
+                        let addr =
+                            ModuleItemAddress::from_ident(ident, file.clone(), Visibility::Local);
+                        let addressed_qualified_value =
+                            self.get_addressed_qualified_value(&addr, &ty.span)?;
+                        match addressed_qualified_value {
+                            AddressedQualifiedValue::StarExports(bff_file_name) => {
+                                let new_addr = ModuleItemAddress {
+                                    file: bff_file_name.clone(),
+                                    key: ts_qualified_name.right.sym.to_string(),
+                                    visibility: Visibility::Export,
+                                };
+                                return self.extract_addressed_value(&new_addr, &ty.span);
+                            }
                         }
                     }
-                }
-                TsEntityName::TsQualifiedName(ts_qualified_name) => todo!(),
+                },
             },
             TsTypeQueryExpr::Import(ts_import_type) => self.error(
                 &ts_import_type.span,
@@ -439,29 +562,29 @@ impl<'a, R: FileManager> FrontendCtx<'a, R> {
             TsType::TsTypeQuery(ts_type_query) => {
                 self.extract_type_query(ts_type_query, file, visibility)
             }
-            TsType::TsThisType(ts_this_type) => todo!(),
-            TsType::TsFnOrConstructorType(ts_fn_or_constructor_type) => todo!(),
-            TsType::TsTypeLit(ts_type_lit) => todo!(),
-            TsType::TsArrayType(ts_array_type) => todo!(),
-            TsType::TsTupleType(ts_tuple_type) => todo!(),
-            TsType::TsOptionalType(ts_optional_type) => todo!(),
-            TsType::TsRestType(ts_rest_type) => todo!(),
-            TsType::TsUnionOrIntersectionType(ts_union_or_intersection_type) => todo!(),
-            TsType::TsConditionalType(ts_conditional_type) => todo!(),
-            TsType::TsInferType(ts_infer_type) => todo!(),
-            TsType::TsParenthesizedType(ts_parenthesized_type) => todo!(),
-            TsType::TsTypeOperator(ts_type_operator) => todo!(),
-            TsType::TsIndexedAccessType(ts_indexed_access_type) => todo!(),
-            TsType::TsMappedType(ts_mapped_type) => todo!(),
+            TsType::TsThisType(_) => todo!(),
+            TsType::TsFnOrConstructorType(_) => todo!(),
+            TsType::TsTypeLit(_) => todo!(),
+            TsType::TsArrayType(_) => todo!(),
+            TsType::TsTupleType(_) => todo!(),
+            TsType::TsOptionalType(_) => todo!(),
+            TsType::TsRestType(_) => todo!(),
+            TsType::TsUnionOrIntersectionType(_) => todo!(),
+            TsType::TsConditionalType(_) => todo!(),
+            TsType::TsInferType(_) => todo!(),
+            TsType::TsParenthesizedType(_) => todo!(),
+            TsType::TsTypeOperator(_) => todo!(),
+            TsType::TsIndexedAccessType(_) => todo!(),
+            TsType::TsMappedType(_) => todo!(),
             TsType::TsLitType(TsLitType { lit, .. }) => match lit {
                 TsLit::Number(n) => Ok(Runtype::Const(RuntypeConst::parse_f64(n.value))),
                 TsLit::Str(s) => Ok(Runtype::single_string_const(&s.value)),
                 TsLit::Bool(b) => Ok(Runtype::Const(RuntypeConst::Bool(b.value))),
                 TsLit::BigInt(_) => Ok(Runtype::BigInt),
-                TsLit::Tpl(it) => todo!(),
+                TsLit::Tpl(_) => todo!(),
             },
-            TsType::TsTypePredicate(ts_type_predicate) => todo!(),
-            TsType::TsImportType(ts_import_type) => todo!(),
+            TsType::TsTypePredicate(_) => todo!(),
+            TsType::TsImportType(_) => todo!(),
         }
     }
     fn extract_one_built_decoder_v2(&mut self, prop: &TsTypeElement) -> Result<BuiltDecoder> {
