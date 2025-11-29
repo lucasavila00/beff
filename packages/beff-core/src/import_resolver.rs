@@ -99,7 +99,7 @@ impl<R: FsModuleResolver> Visit for ImportsVisitor<'_, R> {
     fn visit_export_default_expr(&mut self, n: &ExportDefaultExpr) {
         self.symbol_exports.set_default_export(
             SymbolExportDefault::Expr {
-                symbol_export: Rc::new(*n.expr.clone()),
+                export_expr: Rc::new(*n.expr.clone()),
                 span: n.span,
                 file_name: self.current_file.clone(),
             }

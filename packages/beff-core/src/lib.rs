@@ -239,7 +239,7 @@ impl SymbolsExportsModule {
 #[derive(Debug)]
 pub enum SymbolExportDefault {
     Expr {
-        symbol_export: Rc<Expr>,
+        export_expr: Rc<Expr>,
         span: Span,
         file_name: BffFileName,
     },

@@ -956,6 +956,226 @@ mod tests {
         ]));
     }
 
+    #[test]
+    fn qualified_access_via_named_reexport_of_namespace() {
+        insta::assert_snapshot!(print_types_multifile(&[
+            (
+                "a.ts",
+                r#"
+                    export const A = "a" as const;
+                "#,
+            ),
+            (
+                "b.ts",
+                r#"
+                    import * as N from "./a";
+                    export { N };
+                "#,
+            ),
+            (
+                "entry.ts",
+                r#"
+                    import { N } from "./b";
+                    type X = typeof N.A;
+                    parse.buildParsers<{ X: X }>();
+                "#
+            )
+        ]));
+    }
+
+    #[test]
+    fn qualified_access_via_default_reexport_of_namespace() {
+        insta::assert_snapshot!(print_types_multifile(&[
+            (
+                "a.ts",
+                r#"
+                    export const A = "a" as const;
+                "#,
+            ),
+            (
+                "b.ts",
+                r#"
+                    import * as N from "./a";
+                    export default N;
+                "#,
+            ),
+            (
+                "entry.ts",
+                r#"
+                    import N from "./b";
+                    type X = typeof N.A;
+                    parse.buildParsers<{ X: X }>();
+                "#
+            )
+        ]));
+    }
+
+    // #[test]
+    // fn import_type_only() {
+    //     insta::assert_snapshot!(print_types_multifile(&[
+    //         (
+    //             "t.ts",
+    //             r#"
+    //                 export type T = string;
+    //             "#,
+    //         ),
+    //         (
+    //             "entry.ts",
+    //             r#"
+    //                 import type { T } from "./t";
+    //                 type X = T;
+    //                 parse.buildParsers<{ X: X }>();
+    //             "#
+    //         )
+    //     ]));
+    // }
+
+    // #[test]
+    // fn export_type_only() {
+    //     insta::assert_snapshot!(print_types_multifile(&[
+    //         (
+    //             "a.ts",
+    //             r#"
+    //                 export type T = string;
+    //             "#,
+    //         ),
+    //         (
+    //             "b.ts",
+    //             r#"
+    //                 export type { T } from "./a";
+    //             "#,
+    //         ),
+    //         (
+    //             "entry.ts",
+    //             r#"
+    //                 import { T } from "./b";
+    //                 type X = T;
+    //                 parse.buildParsers<{ X: X }>();
+    //             "#
+    //         )
+    //     ]));
+    // }
+
+    // #[test]
+    // fn import_inline_type() {
+    //     insta::assert_snapshot!(print_types_multifile(&[
+    //         (
+    //             "t.ts",
+    //             r#"
+    //                 export type T = string;
+    //             "#,
+    //         ),
+    //         (
+    //             "entry.ts",
+    //             r#"
+    //                 import { type T } from "./t";
+    //                 type X = T;
+    //                 parse.buildParsers<{ X: X }>();
+    //             "#
+    //         )
+    //     ]));
+    // }
+
+    // #[test]
+    // fn export_inline_type() {
+    //     insta::assert_snapshot!(print_types_multifile(&[
+    //         (
+    //             "a.ts",
+    //             r#"
+    //                 export type T = string;
+    //             "#,
+    //         ),
+    //         (
+    //             "b.ts",
+    //             r#"
+    //                 export { type T } from "./a";
+    //             "#,
+    //         ),
+    //         (
+    //             "entry.ts",
+    //             r#"
+    //                 import { T } from "./b";
+    //                 type X = T;
+    //                 parse.buildParsers<{ X: X }>();
+    //             "#
+    //         )
+    //     ]));
+    // }
+
+    // #[test]
+    // fn export_star_conflict() {
+    //     insta::assert_snapshot!(print_types_multifile(&[
+    //         (
+    //             "a.ts",
+    //             r#"
+    //                 export const X = "a" as const;
+    //             "#,
+    //         ),
+    //         (
+    //             "b.ts",
+    //             r#"
+    //                 export const X = "b" as const;
+    //             "#,
+    //         ),
+    //         (
+    //             "all.ts",
+    //             r#"
+    //                 export * from "./a";
+    //                 export * from "./b";
+    //             "#,
+    //         ),
+    //         (
+    //             "entry.ts",
+    //             r#"
+    //                 import { X } from "./all";
+    //                 type T = typeof X;
+    //                 parse.buildParsers<{ T: T }>();
+    //             "#
+    //         )
+    //     ]));
+    // }
+
+    // #[test]
+    // fn qualified_access_via_named_import_object() {
+    //     insta::assert_snapshot!(print_types_multifile(&[
+    //         (
+    //             "t.ts",
+    //             r#"
+    //                 export const N = { A: "a" as const };
+    //             "#,
+    //         ),
+    //         (
+    //             "entry.ts",
+    //             r#"
+    //                 import { N } from "./t";
+    //                 type X = typeof N.A;
+    //                 parse.buildParsers<{ X: X }>();
+    //             "#
+    //         )
+    //     ]));
+    // }
+
+    // #[test]
+    // fn qualified_access_via_default_import_object() {
+    //     insta::assert_snapshot!(print_types_multifile(&[
+    //         (
+    //             "t.ts",
+    //             r#"
+    //                 const N = { A: "a" as const };
+    //                 export default N;
+    //             "#,
+    //         ),
+    //         (
+    //             "entry.ts",
+    //             r#"
+    //                 import N from "./t";
+    //                 type X = typeof N.A;
+    //                 parse.buildParsers<{ X: X }>();
+    //             "#
+    //         )
+    //     ]));
+    // }
+
     // #[test]
     // fn interface_export() {
     //     insta::assert_snapshot!(print_types_multifile(&[

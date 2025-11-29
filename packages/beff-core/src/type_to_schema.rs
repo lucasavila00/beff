@@ -1813,7 +1813,7 @@ impl<'a, 'b, R: FileManager> TypeToSchema<'a, 'b, R> {
             } => self.typeof_symbol_export(exported, from_file),
             ResolvedLocalSymbol::SymbolExportDefault(e) => match e.as_ref() {
                 SymbolExportDefault::Expr {
-                    symbol_export,
+                    export_expr: symbol_export,
                     span: _,
                     file_name: _,
                 } => self.typeof_expr(&symbol_export, true),
