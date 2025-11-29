@@ -2,7 +2,7 @@ use crate::ast::runtype::Runtype;
 use crate::diag::{Diagnostic, DiagnosticInfoMessage, DiagnosticInformation, Location};
 use crate::frontend::FrontendCtx;
 use crate::type_to_schema::TypeToSchema;
-use crate::{BeffUserSettings, FrontendVersion, ParsedModule, RuntypeName};
+use crate::{BeffUserSettings, FrontendVersion, ParsedModule};
 use crate::{BffFileName, FileManager, NamedSchema};
 use anyhow::Result;
 use anyhow::anyhow;

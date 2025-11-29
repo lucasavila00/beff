@@ -266,6 +266,15 @@ pub struct DebugPrintCtx<'a> {
     pub all_names: &'a [&'a RuntypeName],
 }
 impl Runtype {
+    pub fn as_string_const(&self) -> Option<&str> {
+        match self {
+            Runtype::TplLitType(TplLitType(items)) => match items.as_slice() {
+                [TplLitTypeItem::StringConst(s)] => Some(s),
+                _ => None,
+            },
+            _ => None,
+        }
+    }
     pub fn object(vs: Vec<(String, Optionality<Runtype>)>) -> Self {
         Self::Object {
             vs: vs.into_iter().collect(),

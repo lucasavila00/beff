@@ -13,18 +13,19 @@ use crate::{
 };
 use anyhow::{Result, anyhow};
 use core::fmt;
+use std::collections::BTreeMap;
 use std::{collections::HashMap, rc::Rc};
 use swc_common::{Span, Spanned};
 use swc_ecma_ast::{
-    Expr, Ident, Lit, Prop, PropName, PropOrSpread, Str, TsArrayType, TsCallSignatureDecl,
-    TsConstructSignatureDecl, TsConstructorType, TsEntityName, TsEnumDecl, TsFnOrConstructorType,
-    TsFnType, TsGetterSignature, TsImportType, TsIndexSignature, TsIndexedAccessType, TsInferType,
-    TsInterfaceDecl, TsIntersectionType, TsKeywordType, TsKeywordTypeKind, TsLit, TsLitType,
-    TsMethodSignature, TsOptionalType, TsParenthesizedType, TsPropertySignature, TsQualifiedName,
-    TsRestType, TsSetterSignature, TsThisType, TsTplLitType, TsTupleType, TsType, TsTypeAliasDecl,
-    TsTypeElement, TsTypeLit, TsTypeOperator, TsTypeOperatorOp, TsTypeParamInstantiation,
-    TsTypePredicate, TsTypeQuery, TsTypeQueryExpr, TsTypeRef, TsUnionOrIntersectionType,
-    TsUnionType,
+    Expr, Ident, Lit, Prop, PropName, PropOrSpread, TsArrayType, TsCallSignatureDecl,
+    TsConstructSignatureDecl, TsConstructorType, TsEntityName, TsEnumDecl, TsExprWithTypeArgs,
+    TsFnOrConstructorType, TsFnType, TsGetterSignature, TsImportType, TsIndexSignature,
+    TsIndexedAccessType, TsInferType, TsInterfaceDecl, TsIntersectionType, TsKeywordType,
+    TsKeywordTypeKind, TsLit, TsLitType, TsMethodSignature, TsOptionalType, TsParenthesizedType,
+    TsPropertySignature, TsQualifiedName, TsRestType, TsSetterSignature, TsThisType, TsTplLitType,
+    TsTupleType, TsType, TsTypeAliasDecl, TsTypeElement, TsTypeLit, TsTypeOperator,
+    TsTypeOperatorOp, TsTypeParamInstantiation, TsTypePredicate, TsTypeQuery, TsTypeQueryExpr,
+    TsTypeRef, TsUnionOrIntersectionType, TsUnionType,
 };
 type Res<T> = Result<T, Box<Diagnostic>>;
 
@@ -115,7 +116,7 @@ pub enum AddressedQualifiedValue {
 }
 
 #[derive(Debug)]
-pub enum FinalTypeAddress {
+enum FinalTypeAddress {
     TsType { addressed_type: AddressedType },
     SomethingOfStarOfFile { address: ModuleItemAddress },
 }
@@ -160,6 +161,12 @@ trait TypeModuleWalker<'a, R: FileManager + 'a, U> {
     fn get_addressed_item_from_local_ts_enum(
         &mut self,
         ts_enum: &Rc<TsEnumDecl>,
+        file: BffFileName,
+        name: String,
+    ) -> Res<U>;
+    fn get_addressed_item_from_local_ts_interface(
+        &mut self,
+        ts_interface: &Rc<TsInterfaceDecl>,
         file: BffFileName,
         name: String,
     ) -> Res<U>;
@@ -249,11 +256,11 @@ trait TypeModuleWalker<'a, R: FileManager + 'a, U> {
                 }
 
                 if let Some(interface) = parsed_module.locals.interfaces.get(&addr.name) {
-                    // return Ok(AddressedType::TsInterface(
-                    //     interface.clone(),
-                    //     addr.file.clone(),
-                    // ));
-                    todo!()
+                    return Ok(self.get_addressed_item_from_local_ts_interface(
+                        interface,
+                        addr.file.clone(),
+                        addr.name.clone(),
+                    )?);
                 }
 
                 if let Some(imported) = parsed_module.imports.get(&addr.name) {
@@ -311,12 +318,18 @@ impl<'a, 'b, R: FileManager> TypeModuleWalker<'a, R, AddressedType> for TypeWalk
                     },
                 });
             }
-            SymbolExport::TsInterfaceDecl { .. } => {
-                // return Ok(AddressedType::TsInterfaceDecl(
-                //     decl.clone(),
-                //     original_file.clone(),
-                // ));
-                todo!()
+            SymbolExport::TsInterfaceDecl {
+                decl,
+                original_file,
+            } => {
+                return Ok(AddressedType::TsInterface {
+                    t: decl.clone(),
+                    address: ModuleItemAddress {
+                        file: original_file.clone(),
+                        name: decl.id.sym.to_string(),
+                        visibility: Visibility::Export,
+                    },
+                });
             }
             SymbolExport::TsEnumDecl { .. } => {
                 // return Ok(AddressedType::TsEnumDecl(
@@ -379,6 +392,22 @@ impl<'a, 'b, R: FileManager> TypeModuleWalker<'a, R, AddressedType> for TypeWalk
             },
         })
     }
+
+    fn get_addressed_item_from_local_ts_interface(
+        &mut self,
+        ts_interface: &Rc<TsInterfaceDecl>,
+        file: BffFileName,
+        name: String,
+    ) -> Res<AddressedType> {
+        Ok(AddressedType::TsInterface {
+            t: ts_interface.clone(),
+            address: ModuleItemAddress {
+                file,
+                name,
+                visibility: Visibility::Local,
+            },
+        })
+    }
 }
 
 impl<'a, 'b, R: FileManager> TypeModuleWalker<'a, R, AddressedQualifiedType>
@@ -425,9 +454,18 @@ impl<'a, 'b, R: FileManager> TypeModuleWalker<'a, R, AddressedQualifiedType>
 
     fn get_addressed_item_from_local_ts_enum(
         &mut self,
-        ts_enum: &Rc<TsEnumDecl>,
-        file: BffFileName,
-        name: String,
+        _ts_enum: &Rc<TsEnumDecl>,
+        _file: BffFileName,
+        _name: String,
+    ) -> Res<AddressedQualifiedType> {
+        todo!()
+    }
+
+    fn get_addressed_item_from_local_ts_interface(
+        &mut self,
+        _ts_interface: &Rc<TsInterfaceDecl>,
+        _file: BffFileName,
+        _name: String,
     ) -> Res<AddressedQualifiedType> {
         todo!()
     }
@@ -857,7 +895,137 @@ impl<'a, R: FileManager> FrontendCtx<'a, R> {
 
         Ok(Runtype::any_of(values))
     }
+    fn extract_object_from_runtype(
+        &mut self,
+        obj: &Runtype,
+        span: &Span,
+        file: BffFileName,
+    ) -> Res<BTreeMap<String, Optionality<Runtype>>> {
+        match obj {
+            Runtype::Object {
+                vs,
+                indexed_properties,
+            } => match indexed_properties.is_none() {
+                true => Ok(vs.clone()),
+                false => self.error(
+                    span,
+                    DiagnosticInfoMessage::RestFoundOnExtractObject,
+                    file.clone(),
+                ),
+            },
+            Runtype::Ref(r) => {
+                let map = self
+                    .partial_validators
+                    .get(r)
+                    .and_then(|it| it.as_ref())
+                    .cloned();
+                match map {
+                    Some(schema) => self.extract_object_from_runtype(&schema, span, file.clone()),
+                    None => self.error(
+                        span,
+                        DiagnosticInfoMessage::ShouldHaveObjectAsTypeArgument,
+                        file.clone(),
+                    ),
+                }
+            }
+            Runtype::AllOf(vs) => {
+                let mut acc = BTreeMap::new();
 
+                for v in vs {
+                    let extracted = self.extract_object_from_runtype(v, span, file.clone())?;
+
+                    // check that if items have the same key, they have the same value
+
+                    for (k, v) in &extracted {
+                        if let Some(existing) = acc.get(k) {
+                            if existing != v {
+                                return self
+                                    .error(span, DiagnosticInfoMessage::ObjectHasConflictingKeyValueInIntersection, file.clone());
+                            }
+                        }
+                    }
+
+                    acc.extend(extracted);
+                }
+
+                Ok(acc)
+            }
+            _ => self.error(
+                span,
+                DiagnosticInfoMessage::ShouldHaveObjectAsTypeArgument,
+                file.clone(),
+            ),
+        }
+    }
+    fn extract_interface_extends(
+        &mut self,
+        typ: &Vec<TsExprWithTypeArgs>,
+        file: BffFileName,
+    ) -> Res<Vec<Runtype>> {
+        let mut vs = vec![];
+
+        for it in typ {
+            match it.type_args {
+                Some(_) => {
+                    return self.error(
+                        &it.span,
+                        DiagnosticInfoMessage::TypeArgsInExtendsUnsupported,
+                        file.clone(),
+                    );
+                }
+                None => match it.expr.as_ref() {
+                    Expr::Ident(id) => {
+                        let addr =
+                            ModuleItemAddress::from_ident(id, file.clone(), Visibility::Local);
+                        let id_ty = self.extract_addressed_type(&addr, vec![], &it.span)?;
+
+                        vs.push(id_ty);
+                    }
+                    _ => {
+                        return self.error(
+                            &it.span,
+                            DiagnosticInfoMessage::ExtendsShouldBeIdent,
+                            file.clone(),
+                        );
+                    }
+                },
+            }
+        }
+
+        Ok(vs)
+    }
+    fn extract_interface_decl(
+        &mut self,
+        typ: &TsInterfaceDecl,
+        type_args: Vec<Runtype>,
+        file: BffFileName,
+    ) -> Res<Runtype> {
+        assert!(
+            typ.type_params.is_none(),
+            "generic interfaces not supported yet"
+        );
+        assert!(type_args.is_empty(), "generic interfaces not supported yet");
+
+        let r = Ok(Runtype::object(
+            typ.body
+                .body
+                .iter()
+                .map(|x| self.extract_ts_type_element(x, file.clone()))
+                .collect::<Res<_>>()?,
+        ));
+
+        if typ.extends.is_empty() {
+            r
+        } else {
+            let ext = self.extract_interface_extends(&typ.extends, file.clone())?;
+            let merged = Runtype::all_of(ext.into_iter().chain(std::iter::once(r?)).collect());
+            let res = self.extract_object_from_runtype(&merged, &typ.span, file.clone());
+            match res {
+                Ok(vs) => Ok(Runtype::object(vs.into_iter().collect())),
+                Err(_) => Ok(merged),
+            }
+        }
+    }
     fn extract_addressed_type(
         &mut self,
         address: &ModuleItemAddress,
@@ -874,35 +1042,16 @@ impl<'a, R: FileManager> FrontendCtx<'a, R> {
                 let runtype = self.extract_type(&decl.type_ann, address.file.clone())?;
                 Ok(runtype)
             }
-            AddressedType::TsInterface { t, address } => {
+            AddressedType::TsInterface { t, address: _ } => {
                 assert!(t.type_params.is_none(), "generic types not supported yet");
-                todo!()
+                let runtype = self.extract_interface_decl(&t, type_args, address.file.clone())?;
+                Ok(runtype)
             }
             AddressedType::TsEnum { t, address } => {
                 let runtype = self.extract_enum_decl(&t, address.file.clone())?;
                 Ok(runtype)
             }
             AddressedType::TsBuiltIn { t, address } => match t {
-                //         "ReadonlyArray" | "Array" => {
-                //             let type_params = type_params.as_ref().and_then(|it| it.params.split_first());
-                //             if let Some((ty, [])) = type_params {
-                //                 let ty = self.extract_type(ty, file.clone())?;
-                //                 return Ok(Runtype::Array(ty.into()));
-                //             }
-                //             return Ok(Runtype::Array(Runtype::Any.into()));
-                //         }
-                //         "StringFormat" => {
-                //             return self.get_string_with_format(type_params, &i.span, file.clone());
-                //         }
-                //         "StringFormatExtends" => {
-                //             return self.get_string_format_extends(&type_args, &i.span, file.clone());
-                //         }
-                //         "NumberFormat" => {
-                //             return self.get_number_with_format(&type_args, &i.span, file.clone());
-                //         }
-                //         "NumberFormatExtends" => {
-                //             return self.get_number_format_extends(&type_args, &i.span, file.clone());
-                //         }
                 TsBuiltIn::Date => Ok(Runtype::Date),
                 TsBuiltIn::Array => match type_args.as_slice() {
                     [ty] => Ok(Runtype::Array(ty.clone().into())),
@@ -921,7 +1070,9 @@ impl<'a, R: FileManager> FrontendCtx<'a, R> {
                 TsBuiltIn::NumberFormat => {
                     self.get_number_with_format(&type_args, span, address.file.clone())
                 }
-                TsBuiltIn::NumberFormatExtends => todo!(),
+                TsBuiltIn::NumberFormatExtends => {
+                    self.get_number_format_extends(&type_args, span, address.file.clone())
+                }
             },
         }
     }
@@ -1030,8 +1181,7 @@ impl<'a, R: FileManager> FrontendCtx<'a, R> {
         file: BffFileName,
     ) -> Res<Runtype> {
         if let [head] = type_args
-            && let Runtype::TplLitType(TplLitType(items)) = head
-            && let [TplLitTypeItem::StringConst(value)] = items.as_slice()
+            && let Some(value) = head.as_string_const()
         {
             let val_str = value.to_string();
             if self.settings.string_formats.contains(&val_str) {
@@ -1089,8 +1239,7 @@ impl<'a, R: FileManager> FrontendCtx<'a, R> {
         file: BffFileName,
     ) -> Res<Runtype> {
         if let [base, next_str] = type_params
-            && let Runtype::TplLitType(TplLitType(items)) = next_str
-            && let [TplLitTypeItem::StringConst(value)] = items.as_slice()
+            && let Some(value) = next_str.as_string_const()
         {
             let next_str = value.to_string();
             if self.settings.string_formats.contains(&next_str) {
@@ -1119,8 +1268,7 @@ impl<'a, R: FileManager> FrontendCtx<'a, R> {
         file: BffFileName,
     ) -> Res<Runtype> {
         if let [head] = type_args
-            && let Runtype::TplLitType(TplLitType(items)) = head
-            && let [TplLitTypeItem::StringConst(value)] = items.as_slice()
+            && let Some(value) = head.as_string_const()
         {
             let val_str = value.to_string();
             if self.settings.number_formats.contains(&val_str) {
@@ -1138,34 +1286,6 @@ impl<'a, R: FileManager> FrontendCtx<'a, R> {
             DiagnosticInfoMessage::InvalidUsageOfNumberFormatTypeParameter,
             file,
         )
-
-        // let r = type_params.as_ref().and_then(|it| it.params.split_first());
-
-        // if let Some((head, rest)) = r {
-        //     if rest.is_empty() {
-        //         if let TsType::TsLitType(TsLitType {
-        //             lit: TsLit::Str(Str { value, .. }),
-        //             ..
-        //         }) = &**head
-        //         {
-        //             let val_str = value.to_string();
-        //             if self.settings.number_formats.contains(&val_str) {
-        //                 return Ok(Runtype::NumberWithFormat(CustomFormat(val_str, vec![])));
-        //             } else {
-        //                 return self.error(
-        //                     span,
-        //                     DiagnosticInfoMessage::CustomNumberIsNotRegistered,
-        //                     file,
-        //                 );
-        //             }
-        //         }
-        //     }
-        // }
-        // self.error(
-        //     span,
-        //     DiagnosticInfoMessage::InvalidUsageOfNumberFormatTypeParameter,
-        //     file,
-        // )
     }
     fn get_number_format_base_formats(
         &mut self,
@@ -1200,39 +1320,31 @@ impl<'a, R: FileManager> FrontendCtx<'a, R> {
     }
     fn get_number_format_extends(
         &mut self,
-        type_params: &Option<Box<TsTypeParamInstantiation>>,
+        type_params: &[Runtype],
         span: &Span,
         file: BffFileName,
     ) -> Res<Runtype> {
-        if let Some(type_params) = type_params {
-            if let [base, next_str] = type_params.params.as_slice() {
-                if let TsType::TsLitType(TsLitType {
-                    lit: TsLit::Str(Str { value, .. }),
-                    ..
-                }) = &**next_str
-                {
-                    let next_str = value.to_string();
-                    if self.settings.number_formats.contains(&next_str) {
-                        let base = self.extract_type(base, file.clone())?;
-
-                        let (first, mut rest) =
-                            self.get_number_format_base_formats(&base, span, file.clone())?;
-                        rest.push(next_str);
-                        return Ok(Runtype::NumberWithFormat(CustomFormat(first, rest)));
-                    } else {
-                        return self.error(
-                            span,
-                            DiagnosticInfoMessage::CustomNumberIsNotRegistered,
-                            file.clone(),
-                        );
-                    }
-                }
+        if let [base, next_str] = type_params
+            && let Some(value) = next_str.as_string_const()
+        {
+            let next_str = value.to_string();
+            if self.settings.number_formats.contains(&next_str) {
+                let (first, mut rest) =
+                    self.get_number_format_base_formats(&base, span, file.clone())?;
+                rest.push(next_str);
+                return Ok(Runtype::NumberWithFormat(CustomFormat(first, rest)));
+            } else {
+                return self.error(
+                    span,
+                    DiagnosticInfoMessage::CustomNumberIsNotRegistered,
+                    file.clone(),
+                );
             }
         }
         self.error(
             span,
             DiagnosticInfoMessage::InvalidUsageOfNumberFormatExtendsTypeParameter,
-            file.clone(),
+            file,
         )
     }
 

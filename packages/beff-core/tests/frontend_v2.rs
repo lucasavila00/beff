@@ -1546,6 +1546,64 @@ mod tests {
         insta::assert_snapshot!(print_types_multifile(&[("entry.ts", from)]));
     }
 
+    #[test]
+    fn number_fmt_builtin() {
+        let from = r#"
+    export type X = NumberFormat<"Rate">;
+    parse.buildParsers<{ X: X }>();
+    "#;
+        insta::assert_snapshot!(print_types_multifile(&[("entry.ts", from)]));
+    }
+    #[test]
+    fn number_fmt_extends_builtin() {
+        let from = r#"
+    export type NonInfiniteNumber = NumberFormat<"NonInfiniteNumber">;
+    export type Rate = NumberFormatExtends<NonInfiniteNumber, "Rate">;
+    parse.buildParsers<{ NonInfiniteNumber: NonInfiniteNumber, Rate: Rate }>();
+    "#;
+        insta::assert_snapshot!(print_types_multifile(&[("entry.ts", from)]));
+    }
+    #[test]
+    fn type_ref_obj() {
+        insta::assert_snapshot!(print_types_multifile(&[
+            //
+            (
+                "t.ts",
+                r#"
+                    export type X = {a:string};
+                "#,
+            ),
+            (
+                "entry.ts",
+                r#"
+                    import { X } from "./t";
+                    type Y = {b:number};
+                    parse.buildParsers<{ X: X, Y: Y }>();
+                "#
+            )
+        ]));
+    }
+    #[test]
+    fn interface_ref_obj() {
+        insta::assert_snapshot!(print_types_multifile(&[
+            //
+            (
+                "t.ts",
+                r#"
+                    export interface X { a: string; };
+                "#,
+            ),
+            (
+                "entry.ts",
+                r#"
+                    import { X } from "./t";
+                    interface Y { b: number; };
+                    parse.buildParsers<{ X: X, Y: Y }>();
+                "#
+            )
+        ]));
+    }
+
     // #[test]
     // fn export_destructuring_array() {
     //     insta::assert_snapshot!(print_types_multifile(&[

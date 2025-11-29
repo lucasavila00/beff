@@ -1,0 +1,13 @@
+---
+source: packages/beff-core/tests/frontend_v2.rs
+expression: "print_types_multifile(&[(\"entry.ts\", from)])"
+---
+type NonInfiniteNumber = NumberFormat<"NonInfiniteNumber">;
+
+type Rate = NumberFormatExtends<NumberFormat<"NonInfiniteNumber">, "Rate">;
+
+
+type BuiltParsers = {
+  NonInfiniteNumber: NonInfiniteNumber,
+  Rate: Rate,
+}
