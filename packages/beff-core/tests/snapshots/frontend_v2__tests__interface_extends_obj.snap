@@ -1,0 +1,13 @@
+---
+source: packages/beff-core/tests/frontend_v2.rs
+expression: "print_types_multifile(&[(\"t.ts\",\nr#\"\n                    export interface X0 { z: boolean; };\n                    export interface X extends X0 { a: string; };\n                \"#,),\n(\"entry.ts\",\nr#\"\n                    import { X , X0 } from \"./t\";\n                    interface Y extends X0 { b: number; };\n                    parse.buildParsers<{ X: X, Y: Y }>();\n                \"#)])"
+---
+type Y = { "b": number, "z": boolean };
+
+type X = { "a": string, "z": boolean };
+
+
+type BuiltParsers = {
+  X: X,
+  Y: Y,
+}

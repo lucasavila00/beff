@@ -1604,6 +1604,28 @@ mod tests {
         ]));
     }
 
+    #[test]
+    fn interface_extends_obj() {
+        insta::assert_snapshot!(print_types_multifile(&[
+            //
+            (
+                "t.ts",
+                r#"
+                    export interface X0 { z: boolean; };
+                    export interface X extends X0 { a: string; };
+                "#,
+            ),
+            (
+                "entry.ts",
+                r#"
+                    import { X , X0 } from "./t";
+                    interface Y extends X0 { b: number; };
+                    parse.buildParsers<{ X: X, Y: Y }>();
+                "#
+            )
+        ]));
+    }
+
     // #[test]
     // fn export_destructuring_array() {
     //     insta::assert_snapshot!(print_types_multifile(&[
