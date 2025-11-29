@@ -184,4 +184,148 @@ mod tests {
             )
         ]));
     }
+
+    #[test]
+    fn exort_default_type_ref() {
+        insta::assert_snapshot!(print_types_multifile(&[
+            //
+            (
+                "t.ts",
+                r#"
+                    type Y = string;
+                    export default Y;
+                "#,
+            ),
+            (
+                "entry.ts",
+                r#"
+                    import Y from "./t";
+                    type X = Y;
+                    parse.buildParsers<{ X: X }>();
+                "#
+            )
+        ]));
+    }
+
+    #[test]
+    fn exort_default_value_identifier() {
+        insta::assert_snapshot!(print_types_multifile(&[
+            //
+            (
+                "t.ts",
+                r#"
+                    const Y1 = "abc" as const;
+                    export default Y1;
+                "#,
+            ),
+            (
+                "entry.ts",
+                r#"
+                    import Y2 from "./t";
+                    type Z = typeof Y2;
+                    parse.buildParsers<{  Z: Z }>();
+                "#
+            )
+        ]));
+    }
+
+    #[test]
+    fn exort_default_value_identifier_same_name() {
+        insta::assert_snapshot!(print_types_multifile(&[
+            //
+            (
+                "t.ts",
+                r#"
+                    const Y = "abc" as const;
+                    export default Y;
+                "#,
+            ),
+            (
+                "entry.ts",
+                r#"
+                    import Y from "./t";
+                    type Z = typeof Y;
+                    parse.buildParsers<{  Z: Z }>();
+                "#
+            )
+        ]));
+    }
+
+    #[test]
+    fn exort_default_type_and_value() {
+        insta::assert_snapshot!(print_types_multifile(&[
+            //
+            (
+                "t.ts",
+                r#"
+                    type Y = number;
+                    const Y = "abc" as const;
+                    export default Y;
+                "#,
+            ),
+            (
+                "entry.ts",
+                r#"
+                    import Y from "./t";
+                    type X = Y;
+                    type Z = typeof Y;
+                    parse.buildParsers<{ X: X, Z: Z }>();
+                "#
+            )
+        ]));
+    }
+
+    #[test]
+    fn typeof_export_from_other_file() {
+        insta::assert_snapshot!(print_types_multifile(&[
+            //
+            (
+                "a.ts",
+                r#"
+                    export const abc = "abc" as const;
+                "#,
+            ),
+            (
+                "b.ts",
+                r#"
+                    export { abc } from "./a";
+                "#,
+            ),
+            (
+                "entry.ts",
+                r#"
+                    import { abc } from "./b";
+                    type X = typeof abc;
+                    parse.buildParsers<{ X: X }>();
+                "#
+            )
+        ]));
+    }
+
+    #[test]
+    fn type_export_from_other_file() {
+        insta::assert_snapshot!(print_types_multifile(&[
+            //
+            (
+                "a.ts",
+                r#"
+                    export type abc = "abc";
+                "#,
+            ),
+            (
+                "b.ts",
+                r#"
+                    export { abc } from "./a";
+                "#,
+            ),
+            (
+                "entry.ts",
+                r#"
+                    import { abc } from "./b";
+                    type X = abc;
+                    parse.buildParsers<{ X: X }>();
+                "#
+            )
+        ]));
+    }
 }

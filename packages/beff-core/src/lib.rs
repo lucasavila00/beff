@@ -220,6 +220,7 @@ impl SymbolsExportsModule {
     }
 }
 
+#[derive(Debug)]
 pub struct SymbolExportDefault {
     pub symbol_export: Rc<Expr>,
     pub span: Span,

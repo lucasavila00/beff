@@ -3,14 +3,14 @@ use std::rc::Rc;
 use swc_common::{Span, Spanned};
 use swc_ecma_ast::{
     Expr, Ident, Lit, TsCallSignatureDecl, TsConstructSignatureDecl, TsEntityName, TsEnumDecl,
-    TsGetterSignature, TsIndexSignature, TsInterfaceDecl, TsKeywordType, TsKeywordTypeKind,
-    TsMethodSignature, TsPropertySignature, TsQualifiedName, TsSetterSignature, TsType,
+    TsGetterSignature, TsIndexSignature, TsInterfaceDecl, TsKeywordType, TsKeywordTypeKind, TsLit,
+    TsLitType, TsMethodSignature, TsPropertySignature, TsQualifiedName, TsSetterSignature, TsType,
     TsTypeElement, TsTypeLit, TsTypeParamDecl, TsTypeParamInstantiation, TsTypeQuery,
     TsTypeQueryExpr, TsTypeRef,
 };
 
 use crate::{
-    ast::runtype::Runtype,
+    ast::runtype::{Runtype, RuntypeConst},
     diag::{Diagnostic, DiagnosticInfoMessage, DiagnosticInformation, Location},
     parser_extractor::BuiltDecoder,
     BeffUserSettings, BffFileName, FileManager, ImportReference, ModuleItemAddress, ParsedModule,
@@ -30,8 +30,9 @@ pub enum AddressedType {
     TsInterfaceDecl(Rc<TsInterfaceDecl>),
     TsEnumDecl(Rc<TsEnumDecl>),
 }
+#[derive(Debug)]
 pub enum AddressedValue {
-    ValueExpr(Rc<Expr>),
+    ValueExpr(Rc<Expr>, BffFileName),
 }
 
 type Res<T> = Result<T, Box<Diagnostic>>;
@@ -138,7 +139,24 @@ impl<'a, R: FileManager> FrontendCtx<'a, R> {
                             return self.get_addressed_type(&new_addr, span);
                         }
                         ImportReference::Star { .. } => todo!(),
-                        ImportReference::Default { .. } => todo!(),
+                        ImportReference::Default { file_name } => {
+                            match &self.get_or_fetch_file(file_name, span)?.export_default {
+                                Some(export_default_symbol) => {
+                                    match export_default_symbol.symbol_export.as_ref() {
+                                        Expr::Ident(i) => {
+                                            let new_addr = ModuleItemAddress {
+                                                file: file_name.clone(),
+                                                key: i.sym.to_string(),
+                                                visibility: Visibility::Local,
+                                            };
+                                            return self.get_addressed_type(&new_addr, span);
+                                        }
+                                        _ => todo!(),
+                                    }
+                                }
+                                None => todo!(),
+                            }
+                        }
                     }
                 }
 
@@ -159,7 +177,18 @@ impl<'a, R: FileManager> FrontendCtx<'a, R> {
                         SymbolExport::ValueExpr { .. } => todo!(),
                         SymbolExport::ExprDecl { .. } => todo!(),
                         SymbolExport::StarOfOtherFile { .. } => todo!(),
-                        SymbolExport::SomethingOfOtherFile { .. } => todo!(),
+                        SymbolExport::SomethingOfOtherFile {
+                            something,
+                            file,
+                            span,
+                        } => {
+                            let new_addr = ModuleItemAddress {
+                                file: file.clone(),
+                                key: something.clone(),
+                                visibility: Visibility::Export,
+                            };
+                            return self.get_addressed_type(&new_addr, span);
+                        }
                     }
                 }
                 todo!()
@@ -176,7 +205,7 @@ impl<'a, R: FileManager> FrontendCtx<'a, R> {
         match addr.visibility {
             Visibility::Local => {
                 if let Some(expr) = parsed_module.locals.exprs.get(&addr.key) {
-                    return Ok(AddressedValue::ValueExpr(expr.clone()));
+                    return Ok(AddressedValue::ValueExpr(expr.clone(), addr.file.clone()));
                 }
                 if let Some(imported) = parsed_module.imports.get(&addr.key) {
                     match imported.as_ref() {
@@ -194,11 +223,11 @@ impl<'a, R: FileManager> FrontendCtx<'a, R> {
                         }
                         ImportReference::Star { .. } => todo!(),
                         ImportReference::Default { file_name } => {
-                            let file2 = self.get_or_fetch_file(file_name, span)?;
-                            match &file2.export_default {
+                            match &self.get_or_fetch_file(file_name, span)?.export_default {
                                 Some(export_default_symbol) => {
                                     return Ok(AddressedValue::ValueExpr(
                                         export_default_symbol.symbol_export.clone(),
+                                        export_default_symbol.file_name.clone(),
                                     ));
                                 }
                                 None => todo!(),
@@ -215,22 +244,33 @@ impl<'a, R: FileManager> FrontendCtx<'a, R> {
                     .get_value(&addr.key, self.files)
                 {
                     match x.as_ref() {
-                        SymbolExport::TsType { .. } => todo!(),
-                        SymbolExport::TsInterfaceDecl { .. } => todo!(),
-                        SymbolExport::TsEnumDecl { .. } => todo!(),
+                        SymbolExport::TsType { .. }
+                        | SymbolExport::TsInterfaceDecl { .. }
+                        | SymbolExport::TsEnumDecl { .. } => todo!(),
                         SymbolExport::ValueExpr { expr, .. } => {
-                            return Ok(AddressedValue::ValueExpr(expr.clone()));
+                            return Ok(AddressedValue::ValueExpr(expr.clone(), addr.file.clone()));
                         }
                         SymbolExport::ExprDecl { .. } => todo!(),
                         SymbolExport::StarOfOtherFile { .. } => todo!(),
-                        SymbolExport::SomethingOfOtherFile { .. } => todo!(),
+                        SymbolExport::SomethingOfOtherFile {
+                            something,
+                            file,
+                            span,
+                        } => {
+                            let new_addr = ModuleItemAddress {
+                                file: file.clone(),
+                                key: something.clone(),
+                                visibility: Visibility::Export,
+                            };
+                            return self.get_addressed_value(&new_addr, span);
+                        }
                     }
                 }
                 todo!()
             }
         }
     }
-    fn resolve_ident(
+    fn resolve_ident_type(
         &mut self,
         i: &Ident,
         file: BffFileName,
@@ -260,7 +300,7 @@ impl<'a, R: FileManager> FrontendCtx<'a, R> {
         visibility: Visibility,
     ) -> Res<Runtype> {
         assert!(type_args.is_none(), "generic types not supported yet");
-        let resolved = self.resolve_ident(i, file.clone(), visibility)?;
+        let resolved = self.resolve_ident_type(i, file.clone(), visibility)?;
         Ok(resolved)
     }
 
@@ -297,9 +337,9 @@ impl<'a, R: FileManager> FrontendCtx<'a, R> {
     fn extract_ts_keyword_type(&mut self, ty: &TsKeywordType) -> Res<Runtype> {
         match ty.kind {
             TsKeywordTypeKind::TsStringKeyword => Ok(Runtype::String),
+            TsKeywordTypeKind::TsNumberKeyword => Ok(Runtype::Number),
             TsKeywordTypeKind::TsAnyKeyword => todo!(),
             TsKeywordTypeKind::TsUnknownKeyword => todo!(),
-            TsKeywordTypeKind::TsNumberKeyword => todo!(),
             TsKeywordTypeKind::TsObjectKeyword => todo!(),
             TsKeywordTypeKind::TsBooleanKeyword => todo!(),
             TsKeywordTypeKind::TsBigIntKeyword => todo!(),
@@ -330,6 +370,21 @@ impl<'a, R: FileManager> FrontendCtx<'a, R> {
                 Lit::Regex(regex) => todo!(),
                 Lit::JSXText(jsxtext) => todo!(),
             },
+            Expr::Ident(i) => {
+                dbg!(&i);
+                let new_addr = ModuleItemAddress {
+                    file: file.clone(),
+                    key: i.sym.to_string(),
+                    visibility: Visibility::Local,
+                };
+                let addressed_value = self.get_addressed_value(&new_addr, &i.span)?;
+                dbg!(&addressed_value);
+                match addressed_value {
+                    AddressedValue::ValueExpr(expr, expr_file) => {
+                        self.typeof_expr(expr.as_ref(), as_const, expr_file)
+                    }
+                }
+            }
             _ => {
                 dbg!(&e);
                 self.error(
@@ -361,8 +416,8 @@ impl<'a, R: FileManager> FrontendCtx<'a, R> {
                     let addr = ModuleItemAddress::from_ident(ident, file.clone(), visibility);
                     let addressed_value = self.get_addressed_value(&addr, &ty.span)?;
                     match addressed_value {
-                        AddressedValue::ValueExpr(expr) => {
-                            self.typeof_expr(expr.as_ref(), false, file)
+                        AddressedValue::ValueExpr(expr, expr_file) => {
+                            self.typeof_expr(expr.as_ref(), false, expr_file)
                         }
                     }
                 }
@@ -402,7 +457,13 @@ impl<'a, R: FileManager> FrontendCtx<'a, R> {
             TsType::TsTypeOperator(ts_type_operator) => todo!(),
             TsType::TsIndexedAccessType(ts_indexed_access_type) => todo!(),
             TsType::TsMappedType(ts_mapped_type) => todo!(),
-            TsType::TsLitType(ts_lit_type) => todo!(),
+            TsType::TsLitType(TsLitType { lit, .. }) => match lit {
+                TsLit::Number(n) => Ok(Runtype::Const(RuntypeConst::parse_f64(n.value))),
+                TsLit::Str(s) => Ok(Runtype::single_string_const(&s.value)),
+                TsLit::Bool(b) => Ok(Runtype::Const(RuntypeConst::Bool(b.value))),
+                TsLit::BigInt(_) => Ok(Runtype::BigInt),
+                TsLit::Tpl(it) => todo!(),
+            },
             TsType::TsTypePredicate(ts_type_predicate) => todo!(),
             TsType::TsImportType(ts_import_type) => todo!(),
         }
