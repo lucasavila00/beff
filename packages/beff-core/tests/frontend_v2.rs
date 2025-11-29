@@ -112,20 +112,74 @@ mod tests {
     }
 
     #[test]
+    fn typeof_local() {
+        let from = r#"
+
+    const abc = "abc" as const;
+    type X = typeof abc;
+    parse.buildParsers<{ X: X }>();
+
+  "#;
+        insta::assert_snapshot!(print_types(from));
+    }
+
+    #[test]
     fn type_ref_multifile() {
         insta::assert_snapshot!(print_types_multifile(&[
             //
             (
                 "t.ts",
                 r#"
-                    export type UserId = string;
+                    export type X = string;
                 "#,
             ),
             (
                 "entry.ts",
                 r#"
-                    import { UserId } from "./t";
-                    parse.buildParsers<{ UserId: UserId }>();
+                    import { X } from "./t";
+                    parse.buildParsers<{ X: X }>();
+                "#
+            )
+        ]));
+    }
+
+    #[test]
+    fn typeof_multifile() {
+        insta::assert_snapshot!(print_types_multifile(&[
+            //
+            (
+                "t.ts",
+                r#"
+                    export const abc = "abc" as const;
+                "#,
+            ),
+            (
+                "entry.ts",
+                r#"
+                    import { abc } from "./t";
+                    type X = typeof abc;
+                    parse.buildParsers<{ X: X }>();
+                "#
+            )
+        ]));
+    }
+
+    #[test]
+    fn typeof_multifile_default_export() {
+        insta::assert_snapshot!(print_types_multifile(&[
+            //
+            (
+                "t.ts",
+                r#"
+                    export default "abc" as const;
+                "#,
+            ),
+            (
+                "entry.ts",
+                r#"
+                    import abc from "./t";
+                    type X = typeof abc;
+                    parse.buildParsers<{ X: X }>();
                 "#
             )
         ]));

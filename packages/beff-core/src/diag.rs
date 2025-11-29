@@ -136,6 +136,7 @@ pub enum DiagnosticInfoMessage {
     CannotConvertExprToSchema,
     MappedTypeMinusNotSupported,
     CannotResolveAddress(ModuleItemAddress),
+    CouldNotResolveAddressesSymbol(ModuleItemAddress),
 }
 
 #[allow(clippy::inherent_to_string)]
@@ -512,6 +513,10 @@ impl DiagnosticInfoMessage {
                 let name = module_item_address.debug_print();
                 format!("Cannot resolve address '{name}'")
             }
+            DiagnosticInfoMessage::CouldNotResolveAddressesSymbol(module_item_address) => {
+                let name = module_item_address.debug_print();
+                format!("Could not resolve addressed value '{name}'")
+            },
         }
     }
 }

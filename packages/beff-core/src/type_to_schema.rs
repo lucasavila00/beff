@@ -1137,7 +1137,11 @@ impl<'a, 'b, R: FileManager> TypeToSchema<'a, 'b, R> {
         let exported = self
             .files
             .get_or_fetch_file(from_file.file_name())
-            .and_then(|module| module.symbol_exports.get_type(right, self.files));
+            .and_then(|module| {
+                module
+                    .symbol_exports
+                    .get_type(&right.to_string(), self.files)
+            });
         match exported {
             Some(exported) => {
                 let name = match &*exported {
@@ -1858,7 +1862,9 @@ impl<'a, 'b, R: FileManager> TypeToSchema<'a, 'b, R> {
                             return self.convert_ts_type(expr_decl);
                         }
 
-                        if let Some(exported) = f.symbol_exports.named_values.get(&n.sym) {
+                        if let Some(exported) =
+                            f.symbol_exports.named_values.get(&n.sym.to_string())
+                        {
                             if let SymbolExport::ExprDecl { ty, .. } = exported.as_ref() {
                                 return self.convert_ts_type(ty);
                             }

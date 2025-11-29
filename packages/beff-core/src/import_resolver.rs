@@ -67,7 +67,7 @@ impl<'a, R: FsModuleResolver> ImportsVisitor<'a, R> {
             self.imports.insert(
                 local.sym.to_string(),
                 Rc::new(ImportReference::Named {
-                    original_name: Rc::new(orig.clone()),
+                    original_name: Rc::new(orig.to_string()),
                     file_name: v,
                     span: local.span,
                 }),
@@ -116,7 +116,7 @@ impl<R: FsModuleResolver> Visit for ImportsVisitor<'_, R> {
             Decl::TsInterface(n) => {
                 let TsInterfaceDecl { id, .. } = &**n;
                 self.symbol_exports.insert_type(
-                    id.sym.clone(),
+                    id.sym.to_string(),
                     Rc::new(SymbolExport::TsInterfaceDecl {
                         decl: Rc::new(*n.clone()),
                         span: n.span,
@@ -127,7 +127,7 @@ impl<R: FsModuleResolver> Visit for ImportsVisitor<'_, R> {
             Decl::TsEnum(decl) => {
                 let TsEnumDecl { id, .. } = &**decl;
                 self.symbol_exports.insert_type(
-                    id.sym.clone(),
+                    id.sym.to_string(),
                     Rc::new(SymbolExport::TsEnumDecl {
                         decl: Rc::new(*decl.clone()),
                         span: decl.span,
@@ -135,7 +135,7 @@ impl<R: FsModuleResolver> Visit for ImportsVisitor<'_, R> {
                     }),
                 );
                 self.symbol_exports.insert_value(
-                    id.sym.clone(),
+                    id.sym.to_string(),
                     Rc::new(SymbolExport::TsEnumDecl {
                         decl: Rc::new(*decl.clone()),
                         span: decl.span,
@@ -152,7 +152,7 @@ impl<R: FsModuleResolver> Visit for ImportsVisitor<'_, R> {
                     ..
                 } = &**a;
                 self.symbol_exports.insert_type(
-                    id.sym.clone(),
+                    id.sym.to_string(),
                     Rc::new(SymbolExport::TsType {
                         ty: Rc::new(*type_ann.clone()),
                         name: id.sym.clone(),
@@ -173,7 +173,7 @@ impl<R: FsModuleResolver> Visit for ImportsVisitor<'_, R> {
                                 span: it.span,
                                 original_file: self.current_file.clone(),
                             });
-                            self.symbol_exports.insert_value(name, export);
+                            self.symbol_exports.insert_value(it.sym.to_string(), export);
                         }
                     }
 
@@ -187,7 +187,7 @@ impl<R: FsModuleResolver> Visit for ImportsVisitor<'_, R> {
                                     span: it.span,
                                     original_file: self.current_file.clone(),
                                 });
-                                self.symbol_exports.insert_value(name, export);
+                                self.symbol_exports.insert_value(it.sym.to_string(), export);
                             }
                         }
                     }
@@ -209,7 +209,7 @@ impl<R: FsModuleResolver> Visit for ImportsVisitor<'_, R> {
                             if let ModuleExportName::Ident(id) = name {
                                 if let Some(file_name) = self.resolve_import(&src.value) {
                                     self.symbol_exports.insert_unknown(
-                                        id.sym.clone(),
+                                        id.sym.to_string(),
                                         Rc::new(SymbolExport::StarOfOtherFile {
                                             reference: ImportReference::Star {
                                                 file_name: file_name.clone(),
@@ -231,9 +231,9 @@ impl<R: FsModuleResolver> Visit for ImportsVisitor<'_, R> {
                                 };
                                 if let Some(file_name) = self.resolve_import(&src.value) {
                                     self.symbol_exports.insert_unknown(
-                                        name,
+                                        name.to_string(),
                                         Rc::new(SymbolExport::SomethingOfOtherFile {
-                                            something: id.sym.clone(),
+                                            something: id.sym.to_string(),
                                             file: file_name.clone(),
                                             span: id.span,
                                         }),
@@ -330,7 +330,7 @@ pub fn parse_and_bind<R: FsModuleResolver>(
         let k = unresolved.name.to_string();
         if let Some((params, ty)) = locals.content.type_aliases.get(&k) {
             symbol_exports.insert_type(
-                renamed.clone(),
+                renamed.to_string(),
                 Rc::new(SymbolExport::TsType {
                     ty: ty.clone(),
                     name: unresolved.name.clone(),
@@ -344,7 +344,7 @@ pub fn parse_and_bind<R: FsModuleResolver>(
 
         if let Some(enum_) = locals.content.enums.get(&k) {
             symbol_exports.insert_type(
-                renamed,
+                renamed.to_string(),
                 Rc::new(SymbolExport::TsEnumDecl {
                     decl: enum_.clone(),
                     span: enum_.span(),
@@ -356,7 +356,7 @@ pub fn parse_and_bind<R: FsModuleResolver>(
 
         if let Some(intf) = locals.content.interfaces.get(&k) {
             symbol_exports.insert_type(
-                renamed,
+                renamed.to_string(),
                 Rc::new(SymbolExport::TsInterfaceDecl {
                     decl: intf.clone(),
                     span: intf.span(),
@@ -373,16 +373,16 @@ pub fn parse_and_bind<R: FsModuleResolver>(
                     ..
                 } => {
                     let it = Rc::new(SymbolExport::SomethingOfOtherFile {
-                        something: orig.as_ref().clone(),
+                        something: orig.as_ref().to_string(),
                         file: file_name.clone(),
                         span: *span,
                     });
-                    symbol_exports.insert_unknown(renamed, it);
+                    symbol_exports.insert_unknown(renamed.to_string(), it);
                     continue;
                 }
                 ImportReference::Star { span, .. } => {
                     symbol_exports.insert_unknown(
-                        renamed,
+                        renamed.to_string(),
                         Rc::new(SymbolExport::StarOfOtherFile {
                             reference: import.clone(),
                             span: *span,

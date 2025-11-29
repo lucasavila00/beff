@@ -107,7 +107,7 @@ impl<'a, R: FileManager> TypeResolver<'a, R> {
                 .into()),
             SymbolExport::TsEnumDecl { span, .. } => Ok(ResolvedNamespaceSymbol {
                 from_file: ImportReference::Named {
-                    original_name: i.sym.clone().into(),
+                    original_name: i.sym.clone().to_string().into(),
                     file_name: at_file.clone(),
                     span: *span,
                 }
@@ -256,7 +256,7 @@ impl<'a, R: FileManager> TypeResolver<'a, R> {
             .get_current_file()
             .symbol_exports
             .named_values
-            .get(&i.sym)
+            .get(&i.sym.to_string())
         {
             match exported.as_ref() {
                 SymbolExport::ValueExpr { expr, .. } => {

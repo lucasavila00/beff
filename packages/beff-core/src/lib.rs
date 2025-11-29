@@ -18,7 +18,6 @@ use serde::Deserialize;
 use serde::Serialize;
 use std::collections::BTreeSet;
 use std::collections::HashMap;
-use std::fmt::Display;
 use std::rc::Rc;
 use std::sync::Arc;
 use swc_atoms::JsWord;
@@ -74,7 +73,7 @@ pub enum SymbolExport {
         span: Span,
     },
     SomethingOfOtherFile {
-        something: JsWord,
+        something: String,
         file: BffFileName,
         span: Span,
     },
@@ -121,7 +120,7 @@ impl BffFileName {
 #[derive(Debug, Clone)]
 pub enum ImportReference {
     Named {
-        original_name: Rc<JsWord>,
+        original_name: Rc<String>,
         file_name: BffFileName,
         span: Span,
     },
@@ -145,10 +144,10 @@ impl ImportReference {
 }
 #[derive(Debug, Clone)]
 pub struct SymbolsExportsModule {
-    named_types: HashMap<JsWord, Rc<SymbolExport>>,
-    named_values: HashMap<JsWord, Rc<SymbolExport>>,
+    named_types: HashMap<String, Rc<SymbolExport>>,
+    named_values: HashMap<String, Rc<SymbolExport>>,
 
-    named_unknown: HashMap<JsWord, Rc<SymbolExport>>,
+    named_unknown: HashMap<String, Rc<SymbolExport>>,
 
     extends: Vec<BffFileName>,
 }
@@ -166,13 +165,13 @@ impl SymbolsExportsModule {
             extends: Vec::new(),
         }
     }
-    pub fn insert_value(&mut self, name: JsWord, export: Rc<SymbolExport>) {
+    pub fn insert_value(&mut self, name: String, export: Rc<SymbolExport>) {
         self.named_values.insert(name, export);
     }
 
     pub fn get_value<R: FileManager>(
         &self,
-        name: &JsWord,
+        name: &String,
         files: &mut R,
     ) -> Option<Rc<SymbolExport>> {
         let known = self.named_values.get(name).cloned().or_else(|| {
@@ -189,17 +188,17 @@ impl SymbolsExportsModule {
         known.or_else(|| self.named_unknown.get(name).cloned())
     }
 
-    pub fn insert_type(&mut self, name: JsWord, export: Rc<SymbolExport>) {
+    pub fn insert_type(&mut self, name: String, export: Rc<SymbolExport>) {
         self.named_types.insert(name, export);
     }
 
-    pub fn insert_unknown(&mut self, name: JsWord, export: Rc<SymbolExport>) {
+    pub fn insert_unknown(&mut self, name: String, export: Rc<SymbolExport>) {
         self.named_unknown.insert(name, export);
     }
 
     pub fn get_type<R: FileManager>(
         &self,
-        name: &JsWord,
+        name: &String,
         files: &mut R,
     ) -> Option<Rc<SymbolExport>> {
         let known = self.named_types.get(name).cloned().or_else(|| {
@@ -443,21 +442,6 @@ pub fn extract<R: FileManager>(files: &mut R, entry_points: EntryPoints) -> Pars
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash, PartialOrd, Ord, Copy)]
-pub enum TsNamespace {
-    Type,
-    Value,
-}
-
-impl Display for TsNamespace {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        match self {
-            TsNamespace::Type => write!(f, "type"),
-            TsNamespace::Value => write!(f, "value"),
-        }
-    }
-}
-
-#[derive(Debug, Clone, PartialEq, Eq, Hash, PartialOrd, Ord, Copy)]
 pub enum Visibility {
     Local,
     Export,
@@ -467,7 +451,6 @@ pub enum Visibility {
 pub struct ModuleItemAddress {
     pub file: BffFileName,
     pub key: String,
-    pub namespace: TsNamespace,
     pub visibility: Visibility,
 }
 
@@ -475,19 +458,17 @@ impl ModuleItemAddress {
     pub fn from_ident(
         ident: &swc_ecma_ast::Ident,
         file: BffFileName,
-        namespace: TsNamespace,
         visibility: Visibility,
     ) -> ModuleItemAddress {
         ModuleItemAddress {
             file,
             key: ident.sym.to_string(),
-            namespace,
             visibility,
         }
     }
 
     fn debug_print(&self) -> String {
-        format!("{}::[{}]{}", self.file.as_str(), self.namespace, self.key,)
+        format!("{}::{}", self.file.as_str(), self.key,)
     }
 }
 

@@ -1,7 +1,7 @@
 ---
 source: packages/beff-core/tests/frontend_v2.rs
-expression: "print_types_multifile(&[(\"entry.ts\",\nr#\"\n                    type UserId = string;\n                    parse.buildParsers<{ UserId: UserId }>();\n                \"#)])"
+expression: "print_types_multifile(&[(\"t.ts\",\nr#\"\n                    export type X = string;\n                \"#,),\n(\"entry.ts\",\nr#\"\n                    import { X } from \"./t\";\n                    parse.buildParsers<{ X: X }>();\n                \"#)])"
 ---
 type BuiltParsers = {
-  UserId: string,
+  X: string,
 }
