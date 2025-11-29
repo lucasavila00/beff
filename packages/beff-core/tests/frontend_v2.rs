@@ -1056,84 +1056,84 @@ mod tests {
         ]));
     }
 
-    // #[test]
-    // fn import_inline_type() {
-    //     insta::assert_snapshot!(print_types_multifile(&[
-    //         (
-    //             "t.ts",
-    //             r#"
-    //                 export type T = string;
-    //             "#,
-    //         ),
-    //         (
-    //             "entry.ts",
-    //             r#"
-    //                 import { type T } from "./t";
-    //                 type X = T;
-    //                 parse.buildParsers<{ X: X }>();
-    //             "#
-    //         )
-    //     ]));
-    // }
+    #[test]
+    fn import_inline_type() {
+        insta::assert_snapshot!(print_types_multifile(&[
+            (
+                "t.ts",
+                r#"
+                    export type T = string;
+                "#,
+            ),
+            (
+                "entry.ts",
+                r#"
+                    import { type T } from "./t";
+                    type X = T;
+                    parse.buildParsers<{ X: X }>();
+                "#
+            )
+        ]));
+    }
 
-    // #[test]
-    // fn export_inline_type() {
-    //     insta::assert_snapshot!(print_types_multifile(&[
-    //         (
-    //             "a.ts",
-    //             r#"
-    //                 export type T = string;
-    //             "#,
-    //         ),
-    //         (
-    //             "b.ts",
-    //             r#"
-    //                 export { type T } from "./a";
-    //             "#,
-    //         ),
-    //         (
-    //             "entry.ts",
-    //             r#"
-    //                 import { T } from "./b";
-    //                 type X = T;
-    //                 parse.buildParsers<{ X: X }>();
-    //             "#
-    //         )
-    //     ]));
-    // }
+    #[test]
+    fn export_inline_type() {
+        insta::assert_snapshot!(print_types_multifile(&[
+            (
+                "a.ts",
+                r#"
+                    export type T = string;
+                "#,
+            ),
+            (
+                "b.ts",
+                r#"
+                    export { type T } from "./a";
+                "#,
+            ),
+            (
+                "entry.ts",
+                r#"
+                    import { T } from "./b";
+                    type X = T;
+                    parse.buildParsers<{ X: X }>();
+                "#
+            )
+        ]));
+    }
 
-    // #[test]
-    // fn export_star_conflict() {
-    //     insta::assert_snapshot!(print_types_multifile(&[
-    //         (
-    //             "a.ts",
-    //             r#"
-    //                 export const X = "a" as const;
-    //             "#,
-    //         ),
-    //         (
-    //             "b.ts",
-    //             r#"
-    //                 export const X = "b" as const;
-    //             "#,
-    //         ),
-    //         (
-    //             "all.ts",
-    //             r#"
-    //                 export * from "./a";
-    //                 export * from "./b";
-    //             "#,
-    //         ),
-    //         (
-    //             "entry.ts",
-    //             r#"
-    //                 import { X } from "./all";
-    //                 type T = typeof X;
-    //                 parse.buildParsers<{ T: T }>();
-    //             "#
-    //         )
-    //     ]));
-    // }
+    #[test]
+    fn export_star_conflict() {
+        insta::assert_snapshot!(print_types_multifile(&[
+            (
+                "a.ts",
+                r#"
+                    export const X = "a" as const;
+                "#,
+            ),
+            (
+                "b.ts",
+                r#"
+                    export const X = "b" as const;
+                "#,
+            ),
+            (
+                "all.ts",
+                r#"
+                    export * from "./a";
+                    export * from "./b";
+                "#,
+            ),
+            (
+                "entry.ts",
+                r#"
+                    import { X } from "./all";
+                    type T = typeof X;
+                    parse.buildParsers<{ T: T }>();
+                "#
+            )
+        ]));
+    }
 
     // #[test]
     // fn qualified_access_via_named_import_object() {
