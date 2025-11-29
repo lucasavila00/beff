@@ -1,6 +1,6 @@
 use crate::{
-    BeffUserSettings, BffFileName, FileManager, ImportReference, ModuleItemAddress, ParsedModule,
-    SymbolExport, SymbolExportDefault, Visibility,
+    BeffUserSettings, BffFileName, FileManager, ImportReference, ModuleItemAddress, NamedSchema,
+    ParsedModule, SymbolExport, SymbolExportDefault, Visibility,
     ast::runtype::{Optionality, Runtype, RuntypeConst},
     diag::{
         Diagnostic, DiagnosticInfoMessage, DiagnosticInformation, DiagnosticParentMessage, Location,
@@ -27,6 +27,7 @@ pub struct FrontendCtx<'a, R: FileManager> {
 
     pub parser_file: BffFileName,
     pub errors: Vec<Diagnostic>,
+    pub validators: Vec<NamedSchema>,
 }
 
 pub enum AddressedType {
@@ -578,6 +579,7 @@ impl<'a, R: FileManager> FrontendCtx<'a, R> {
             parser_file,
             settings,
             errors: vec![],
+            validators: vec![],
         }
     }
 
@@ -801,6 +803,9 @@ impl<'a, R: FileManager> FrontendCtx<'a, R> {
             type_params,
             span: _,
         } = ty;
+
+        assert!(type_params.is_none(), "generic types not supported yet");
+
         self.extract_type_from_ts_entity_name(type_name, type_params, file, visibility)
     }
 

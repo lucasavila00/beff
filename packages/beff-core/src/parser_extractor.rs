@@ -4,10 +4,10 @@ use crate::frontend::FrontendCtx;
 use crate::type_to_schema::TypeToSchema;
 use crate::{BeffUserSettings, FrontendVersion, ParsedModule};
 use crate::{BffFileName, FileManager, NamedSchema};
-use anyhow::anyhow;
 use anyhow::Result;
+use anyhow::anyhow;
 use std::rc::Rc;
-use swc_common::{Span, DUMMY_SP};
+use swc_common::{DUMMY_SP, Span};
 use swc_ecma_ast::{
     CallExpr, Callee, Expr, Ident, MemberExpr, MemberProp, TsCallSignatureDecl,
     TsConstructSignatureDecl, TsGetterSignature, TsIndexSignature, TsMethodSignature,
@@ -256,6 +256,7 @@ impl<R: FileManager> ExtractParserVisitor<'_, R> {
                                     self.built_decoders = Some(x)
                                 }
                                 self.errors.extend(ctx.errors);
+                                self.validators.extend(ctx.validators);
                             }
                         }
                     }
