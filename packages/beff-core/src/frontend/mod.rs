@@ -1,6 +1,6 @@
 use crate::{
-    BeffUserSettings, BffFileName, FileManager, ImportReference, ModuleItemAddress, NamedSchema,
-    ParsedModule, SymbolExport, SymbolExportDefault, Visibility,
+    BeffUserSettings, BffFileName, FileManager, ImportReference, ModuleItemAddress, ParsedModule,
+    RuntypeName, SymbolExport, SymbolExportDefault, Visibility,
     ast::runtype::{Optionality, Runtype, RuntypeConst},
     diag::{
         Diagnostic, DiagnosticInfoMessage, DiagnosticInformation, DiagnosticParentMessage, Location,
@@ -8,7 +8,7 @@ use crate::{
     parser_extractor::BuiltDecoder,
 };
 use anyhow::{Result, anyhow};
-use std::rc::Rc;
+use std::{collections::HashMap, rc::Rc};
 use swc_common::{Span, Spanned};
 use swc_ecma_ast::{
     Expr, Ident, Lit, Prop, PropName, PropOrSpread, TsArrayType, TsCallSignatureDecl,
@@ -27,7 +27,7 @@ pub struct FrontendCtx<'a, R: FileManager> {
 
     pub parser_file: BffFileName,
     pub errors: Vec<Diagnostic>,
-    pub validators: Vec<NamedSchema>,
+    pub partial_validators: HashMap<ModuleItemAddress, Option<Runtype>>,
 }
 
 pub enum AddressedType {
@@ -617,7 +617,7 @@ impl<'a, R: FileManager> FrontendCtx<'a, R> {
             parser_file,
             settings,
             errors: vec![],
-            validators: vec![],
+            partial_validators: HashMap::new(),
         }
     }
 
@@ -800,7 +800,13 @@ impl<'a, R: FileManager> FrontendCtx<'a, R> {
             }
         }
     }
-
+    fn insert_definition(&mut self, addr: ModuleItemAddress, schema: Runtype) -> Res<Runtype> {
+        if let Some(Some(v)) = self.partial_validators.get(&addr) {
+            assert_eq!(v, &schema);
+        }
+        self.partial_validators.insert(addr.clone(), Some(schema));
+        Ok(Runtype::Ref(RuntypeName::Address(addr)))
+    }
     fn extract_type_from_ts_entity_name(
         &mut self,
         type_name: &TsEntityName,
@@ -808,9 +814,46 @@ impl<'a, R: FileManager> FrontendCtx<'a, R> {
         file: BffFileName,
         visibility: Visibility,
     ) -> Res<Runtype> {
-        let fat =
-            self.get_final_address_from_ts_entity_name(type_name, type_params, file, visibility)?;
-        self.extract_addressed_type(&fat.addr(), &type_name.span())
+        let fat = self.get_final_address_from_ts_entity_name(
+            type_name,
+            type_params,
+            file.clone(),
+            visibility,
+        )?;
+        let found = self.partial_validators.get(fat.addr());
+        if let Some(_found_in_map) = found {
+            match type_params {
+                Some(_) => {
+                    // return an error, cannot have recursive generic types for now
+                    return self.error(
+                        &type_name.span(),
+                        DiagnosticInfoMessage::CannotHaveRecursiveGenericTypes,
+                        file,
+                    );
+                }
+                None => {
+                    return Ok(Runtype::Ref(RuntypeName::Address(fat.addr().clone())));
+                }
+            }
+        }
+        self.partial_validators.insert(fat.addr().clone(), None);
+
+        let ty = self.extract_addressed_type(&fat.addr(), &type_name.span());
+        match ty {
+            Ok(ty) => match type_params {
+                None => self.insert_definition(fat.addr().clone(), ty),
+                Some(_) => {
+                    // TODO: remove component?
+                    // if the validators are keyed just by the address
+                    // each call with different type params will overwrite the previous one
+                    todo!()
+                }
+            },
+            Err(e) => {
+                self.insert_definition(fat.addr().clone(), Runtype::Any)?;
+                Err(e)
+            }
+        }
     }
 
     fn extract_type_ref(&mut self, ty: &TsTypeRef, file: BffFileName) -> Res<Runtype> {

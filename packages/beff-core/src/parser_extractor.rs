@@ -2,7 +2,7 @@ use crate::ast::runtype::Runtype;
 use crate::diag::{Diagnostic, DiagnosticInfoMessage, DiagnosticInformation, Location};
 use crate::frontend::FrontendCtx;
 use crate::type_to_schema::TypeToSchema;
-use crate::{BeffUserSettings, FrontendVersion, ParsedModule};
+use crate::{BeffUserSettings, FrontendVersion, ParsedModule, RuntypeName};
 use crate::{BffFileName, FileManager, NamedSchema};
 use anyhow::Result;
 use anyhow::anyhow;
@@ -256,7 +256,31 @@ impl<R: FileManager> ExtractParserVisitor<'_, R> {
                                     self.built_decoders = Some(x)
                                 }
                                 self.errors.extend(ctx.errors);
-                                self.validators.extend(ctx.validators);
+                                let mut kvs = vec![];
+                                for (k, v) in ctx.partial_validators {
+                                    // We store type in an Option to support self-recursion.
+                                    // When we encounter the type while transforming it we return string with the type name.
+                                    // And we need the option to allow a type to refer to itself before it has been resolved.
+                                    match v {
+                                        Some(s) => kvs.push((k, s)),
+                                        None => self.push_error(
+                                            span,
+                                            DiagnosticInfoMessage::CannotResolveTypeReferenceOnExtracting(
+                                                RuntypeName::Address(k)
+                                            ),
+                                        ),
+                                    }
+                                }
+
+                                kvs.sort_by(|(ka, _), (kb, _)| ka.cmp(kb));
+                                let mut ext: Vec<NamedSchema> = vec![];
+                                for (k, b) in kvs.into_iter() {
+                                    ext.push(NamedSchema {
+                                        name: RuntypeName::Address(k),
+                                        schema: b,
+                                    });
+                                }
+                                self.extend_components(ext, span);
                             }
                         }
                     }

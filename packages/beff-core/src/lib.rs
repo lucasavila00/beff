@@ -485,7 +485,13 @@ impl ModuleItemAddress {
     }
 
     fn debug_print(&self) -> String {
-        format!("{}::{}", self.file.as_str(), self.name,)
+        //format!("{}::{}", self.file.as_str(), self.name,)
+        // should be a valid typescript identifier
+        format!(
+            "{}__{}",
+            self.file.as_str().replace(".", "_").replace("/", "_"),
+            self.name
+        )
     }
 }
 
