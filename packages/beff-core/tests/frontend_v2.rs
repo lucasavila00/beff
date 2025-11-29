@@ -763,93 +763,93 @@ mod tests {
         ]));
     }
 
-    // #[test]
-    // fn re_export_default_as_named() {
-    //     insta::assert_snapshot!(print_types_multifile(&[
-    //         (
-    //             "a.ts",
-    //             r#"
-    //                 export default "a" as const;
-    //             "#,
-    //         ),
-    //         (
-    //             "b.ts",
-    //             r#"
-    //                 export { default as A } from "./a";
-    //             "#,
-    //         ),
-    //         (
-    //             "entry.ts",
-    //             r#"
-    //                 import { A } from "./b";
-    //                 type X = typeof A;
-    //                 parse.buildParsers<{ X: X }>();
-    //             "#
-    //         )
-    //     ]));
-    // }
+    #[test]
+    fn re_export_default_as_named() {
+        insta::assert_snapshot!(print_types_multifile(&[
+            (
+                "a.ts",
+                r#"
+                    export default "a" as const;
+                "#,
+            ),
+            (
+                "b.ts",
+                r#"
+                    export { default as A } from "./a";
+                "#,
+            ),
+            (
+                "entry.ts",
+                r#"
+                    import { A } from "./b";
+                    type X = typeof A;
+                    parse.buildParsers<{ X: X }>();
+                "#
+            )
+        ]));
+    }
 
-    // #[test]
-    // fn export_star_aggregation() {
-    //     insta::assert_snapshot!(print_types_multifile(&[
-    //         (
-    //             "a.ts",
-    //             r#"
-    //                 export type A = "a";
-    //             "#,
-    //         ),
-    //         (
-    //             "b.ts",
-    //             r#"
-    //                 export type B = "b";
-    //             "#,
-    //         ),
-    //         (
-    //             "all.ts",
-    //             r#"
-    //                 export * from "./a";
-    //                 export * from "./b";
-    //             "#,
-    //         ),
-    //         (
-    //             "entry.ts",
-    //             r#"
-    //                 import { A, B } from "./all";
-    //                 type X = A;
-    //                 type Y = B;
-    //                 parse.buildParsers<{ X: X, Y: Y }>();
-    //             "#
-    //         )
-    //     ]));
-    // }
+    #[test]
+    fn export_star_aggregation() {
+        insta::assert_snapshot!(print_types_multifile(&[
+            (
+                "a.ts",
+                r#"
+                    export type A = "a";
+                "#,
+            ),
+            (
+                "b.ts",
+                r#"
+                    export type B = "b";
+                "#,
+            ),
+            (
+                "all.ts",
+                r#"
+                    export * from "./a";
+                    export * from "./b";
+                "#,
+            ),
+            (
+                "entry.ts",
+                r#"
+                    import { A, B } from "./all";
+                    type X = A;
+                    type Y = B;
+                    parse.buildParsers<{ X: X, Y: Y }>();
+                "#
+            )
+        ]));
+    }
 
-    // #[test]
-    // fn circular_dependency_imports_unused() {
-    //     insta::assert_snapshot!(print_types_multifile(&[
-    //         (
-    //             "a.ts",
-    //             r#"
-    //                 import { B } from "./b";
-    //                 export type A = string;
-    //             "#,
-    //         ),
-    //         (
-    //             "b.ts",
-    //             r#"
-    //                 import { A } from "./a";
-    //                 export type B = string;
-    //             "#,
-    //         ),
-    //         (
-    //             "entry.ts",
-    //             r#"
-    //                 import { A } from "./a";
-    //                 type X = A;
-    //                 parse.buildParsers<{ X: X }>();
-    //             "#
-    //         )
-    //     ]));
-    // }
+    #[test]
+    fn circular_dependency_imports_unused() {
+        insta::assert_snapshot!(print_types_multifile(&[
+            (
+                "a.ts",
+                r#"
+                    import { B } from "./b";
+                    export type A = string;
+                "#,
+            ),
+            (
+                "b.ts",
+                r#"
+                    import { A } from "./a";
+                    export type B = string;
+                "#,
+            ),
+            (
+                "entry.ts",
+                r#"
+                    import { A } from "./a";
+                    type X = A;
+                    parse.buildParsers<{ X: X }>();
+                "#
+            )
+        ]));
+    }
 
     // #[test]
     // fn interface_export() {
