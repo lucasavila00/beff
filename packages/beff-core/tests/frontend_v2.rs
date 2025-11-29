@@ -790,6 +790,59 @@ mod tests {
     }
 
     #[test]
+    fn re_export_named_type_as_default() {
+        insta::assert_snapshot!(print_types_multifile(&[
+            (
+                "a.ts",
+                r#"
+                    export type A = "a";
+                "#,
+            ),
+            (
+                "b.ts",
+                r#"
+                    export { A as default } from "./a";
+                "#,
+            ),
+            (
+                "entry.ts",
+                r#"
+                    import A from "./b";
+                    type X = A;
+                    parse.buildParsers<{ X: X }>();
+                "#
+            )
+        ]));
+    }
+
+    #[test]
+    fn re_export_default_type_as_named() {
+        insta::assert_snapshot!(print_types_multifile(&[
+            (
+                "a.ts",
+                r#"
+                    type A = "a";
+                    export default A;
+                "#,
+            ),
+            (
+                "b.ts",
+                r#"
+                    export { default as A } from "./a";
+                "#,
+            ),
+            (
+                "entry.ts",
+                r#"
+                    import { A } from "./b";
+                    type X = A;
+                    parse.buildParsers<{ X: X }>();
+                "#
+            )
+        ]));
+    }
+
+    #[test]
     fn export_star_aggregation() {
         insta::assert_snapshot!(print_types_multifile(&[
             (

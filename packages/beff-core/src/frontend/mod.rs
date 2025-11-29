@@ -117,6 +117,40 @@ impl<'a, R: FileManager> FrontendCtx<'a, R> {
         Ok(parsed_module)
     }
 
+    fn get_addressed_type_from_default_import(
+        &mut self,
+        file_name: BffFileName,
+        span: &Span,
+    ) -> Res<AddressedType> {
+        match &self
+            .get_or_fetch_file(&file_name, span)?
+            .symbol_exports
+            .export_default
+        {
+            Some(export_default_symbol) => match export_default_symbol.as_ref() {
+                SymbolExportDefault::Expr {
+                    symbol_export,
+                    span,
+                    file_name,
+                } => match symbol_export.as_ref() {
+                    Expr::Ident(i) => {
+                        let new_addr = ModuleItemAddress {
+                            file: file_name.clone(),
+                            key: i.sym.to_string(),
+                            visibility: Visibility::Local,
+                        };
+                        return self.get_addressed_type(&new_addr, span);
+                    }
+                    _ => todo!(),
+                },
+                SymbolExportDefault::Renamed { export } => {
+                    return self.get_addressed_type_from_symbol_exports(&export);
+                }
+            },
+            None => todo!(),
+        }
+    }
+
     fn get_addressed_type_from_import_reference(
         &mut self,
         imported: &ImportReference,
@@ -140,31 +174,54 @@ impl<'a, R: FileManager> FrontendCtx<'a, R> {
                 todo!()
             }
             ImportReference::Default { file_name } => {
-                match &self
-                    .get_or_fetch_file(file_name, span)?
-                    .symbol_exports
-                    .export_default
-                {
-                    Some(export_default_symbol) => match export_default_symbol.as_ref() {
-                        SymbolExportDefault::Expr {
-                            symbol_export,
-                            span,
-                            file_name,
-                        } => match symbol_export.as_ref() {
-                            Expr::Ident(i) => {
-                                let new_addr = ModuleItemAddress {
-                                    file: file_name.clone(),
-                                    key: i.sym.to_string(),
-                                    visibility: Visibility::Local,
-                                };
-                                return self.get_addressed_type(&new_addr, span);
-                            }
-                            _ => todo!(),
-                        },
-                        SymbolExportDefault::Renamed { .. } => todo!(),
-                    },
-                    None => todo!(),
-                }
+                return self.get_addressed_type_from_default_import(file_name.clone(), span);
+            }
+        }
+    }
+
+    fn get_addressed_type_from_symbol_exports(
+        &mut self,
+        export: &SymbolExport,
+    ) -> Res<AddressedType> {
+        match export {
+            SymbolExport::TsType {
+                decl,
+                original_file,
+            } => {
+                return Ok(AddressedType::TsType(decl.clone(), original_file.clone()));
+            }
+            SymbolExport::TsInterfaceDecl {
+                decl,
+                original_file,
+            } => {
+                return Ok(AddressedType::TsInterfaceDecl(
+                    decl.clone(),
+                    original_file.clone(),
+                ));
+            }
+            SymbolExport::TsEnumDecl {
+                decl,
+                original_file,
+            } => {
+                return Ok(AddressedType::TsEnumDecl(
+                    decl.clone(),
+                    original_file.clone(),
+                ));
+            }
+            SymbolExport::ValueExpr { .. } => todo!(),
+            SymbolExport::ExprDecl { .. } => todo!(),
+            SymbolExport::StarOfOtherFile { .. } => todo!(),
+            SymbolExport::SomethingOfOtherFile {
+                something,
+                file,
+                span,
+            } => {
+                let new_addr = ModuleItemAddress {
+                    file: file.clone(),
+                    key: something.clone(),
+                    visibility: Visibility::Export,
+                };
+                return self.get_addressed_type(&new_addr, span);
             }
         }
     }
@@ -190,48 +247,12 @@ impl<'a, R: FileManager> FrontendCtx<'a, R> {
                 )
             }
             Visibility::Export => {
+                if addr.key == "default" {
+                    return self.get_addressed_type_from_default_import(addr.file.clone(), span);
+                }
+
                 if let Some(export) = parsed_module.symbol_exports.get_type(&addr.key, self.files) {
-                    match export.as_ref() {
-                        SymbolExport::TsType {
-                            decl,
-                            original_file,
-                        } => {
-                            return Ok(AddressedType::TsType(decl.clone(), original_file.clone()));
-                        }
-                        SymbolExport::TsInterfaceDecl {
-                            decl,
-                            original_file,
-                        } => {
-                            return Ok(AddressedType::TsInterfaceDecl(
-                                decl.clone(),
-                                original_file.clone(),
-                            ));
-                        }
-                        SymbolExport::TsEnumDecl {
-                            decl,
-                            original_file,
-                        } => {
-                            return Ok(AddressedType::TsEnumDecl(
-                                decl.clone(),
-                                original_file.clone(),
-                            ));
-                        }
-                        SymbolExport::ValueExpr { .. } => todo!(),
-                        SymbolExport::ExprDecl { .. } => todo!(),
-                        SymbolExport::StarOfOtherFile { .. } => todo!(),
-                        SymbolExport::SomethingOfOtherFile {
-                            something,
-                            file,
-                            span,
-                        } => {
-                            let new_addr = ModuleItemAddress {
-                                file: file.clone(),
-                                key: something.clone(),
-                                visibility: Visibility::Export,
-                            };
-                            return self.get_addressed_type(&new_addr, span);
-                        }
-                    }
+                    return self.get_addressed_type_from_symbol_exports(&export);
                 }
                 todo!()
             }
@@ -296,7 +317,7 @@ impl<'a, R: FileManager> FrontendCtx<'a, R> {
         }
     }
 
-    fn addressed_value_from_symbol_export(
+    fn get_addressed_value_from_symbol_export(
         &mut self,
         exports: &SymbolExport,
     ) -> Res<AddressedValue> {
@@ -336,7 +357,7 @@ impl<'a, R: FileManager> FrontendCtx<'a, R> {
         }
     }
 
-    fn addressed_value_from_default_import(
+    fn get_addressed_value_from_default_import(
         &mut self,
         file_name: BffFileName,
         span: &Span,
@@ -358,7 +379,7 @@ impl<'a, R: FileManager> FrontendCtx<'a, R> {
                     ));
                 }
                 SymbolExportDefault::Renamed { export } => {
-                    return self.addressed_value_from_symbol_export(export);
+                    return self.get_addressed_value_from_symbol_export(export);
                 }
             },
             None => todo!(),
@@ -395,7 +416,7 @@ impl<'a, R: FileManager> FrontendCtx<'a, R> {
                         }
                         ImportReference::Default { file_name } => {
                             return self
-                                .addressed_value_from_default_import(file_name.clone(), span);
+                                .get_addressed_value_from_default_import(file_name.clone(), span);
                         }
                     }
                 }
@@ -404,14 +425,14 @@ impl<'a, R: FileManager> FrontendCtx<'a, R> {
             }
             Visibility::Export => {
                 if addr.key == "default" {
-                    return self.addressed_value_from_default_import(addr.file.clone(), span);
+                    return self.get_addressed_value_from_default_import(addr.file.clone(), span);
                 }
 
                 if let Some(exports) = parsed_module
                     .symbol_exports
                     .get_value(&addr.key, self.files)
                 {
-                    return self.addressed_value_from_symbol_export(&exports);
+                    return self.get_addressed_value_from_symbol_export(&exports);
                 }
 
                 todo!()
