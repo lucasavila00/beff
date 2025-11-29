@@ -37,6 +37,7 @@ pub enum AddressedQualifiedType {
 
 pub enum AddressedValue {
     ValueExpr(Rc<Expr>, BffFileName),
+    TsTypeDecl(Rc<TsType>, BffFileName),
 }
 
 pub enum AddressedQualifiedValue {
@@ -336,7 +337,17 @@ impl<'a, R: FileManager> FrontendCtx<'a, R> {
                     original_file.clone(),
                 ));
             }
-            SymbolExport::ExprDecl { .. } => todo!(),
+            SymbolExport::ExprDecl {
+                name: _,
+                span: _,
+                original_file,
+                ty,
+            } => {
+                return Ok(AddressedValue::TsTypeDecl(
+                    ty.clone(),
+                    original_file.clone(),
+                ))
+            }
 
             SymbolExport::StarOfOtherFile { .. } => {
                 // star of other file should be already resolved by the "get_value" function
@@ -396,6 +407,12 @@ impl<'a, R: FileManager> FrontendCtx<'a, R> {
             Visibility::Local => {
                 if let Some(expr) = parsed_module.locals.exprs.get(&addr.key) {
                     return Ok(AddressedValue::ValueExpr(expr.clone(), addr.file.clone()));
+                }
+                if let Some(decl_expr) = parsed_module.locals.exprs_decls.get(&addr.key) {
+                    return Ok(AddressedValue::TsTypeDecl(
+                        decl_expr.clone(),
+                        addr.file.clone(),
+                    ));
                 }
                 if let Some(imported) = parsed_module.imports.get(&addr.key) {
                     match imported.as_ref() {
@@ -677,18 +694,12 @@ impl<'a, R: FileManager> FrontendCtx<'a, R> {
                 ),
             },
             Expr::Ident(i) => {
-                dbg!(&i);
                 let new_addr = ModuleItemAddress {
                     file: file.clone(),
                     key: i.sym.to_string(),
                     visibility: Visibility::Local,
                 };
-                let addressed_value = self.get_addressed_value(&new_addr, &i.span)?;
-                match addressed_value {
-                    AddressedValue::ValueExpr(expr, expr_file) => {
-                        self.typeof_expr(expr.as_ref(), as_const, expr_file)
-                    }
-                }
+                return self.extract_addressed_value(&new_addr, &e.span());
             }
             _ => {
                 dbg!(&e);
@@ -710,6 +721,9 @@ impl<'a, R: FileManager> FrontendCtx<'a, R> {
         match addressed_value {
             AddressedValue::ValueExpr(expr, expr_file) => {
                 self.typeof_expr(expr.as_ref(), false, expr_file)
+            }
+            AddressedValue::TsTypeDecl(ts_type, bff_file_name) => {
+                self.extract_type(&ts_type, bff_file_name, address.visibility)
             }
         }
     }
