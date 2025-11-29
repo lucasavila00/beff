@@ -599,6 +599,258 @@ mod tests {
         ]));
     }
 
+    #[test]
+    fn nested_qualified_type_access() {
+        insta::assert_snapshot!(print_types_multifile(&[
+            (
+                "c.ts",
+                r#"
+                    export type C = string;
+                "#,
+            ),
+            (
+                "b.ts",
+                r#"
+                    export * as B from "./c";
+                "#,
+            ),
+            (
+                "a.ts",
+                r#"
+                    export * as A from "./b";
+                "#,
+            ),
+            (
+                "entry.ts",
+                r#"
+                    import { A } from "./a";
+                    type X = A.B.C;
+                    parse.buildParsers<{ X: X }>();
+                "#
+            )
+        ]));
+    }
+
+    // #[test]
+    // fn nested_qualified_value_access() {
+    //     insta::assert_snapshot!(print_types_multifile(&[
+    //         (
+    //             "c.ts",
+    //             r#"
+    //                 export const C = "c" as const;
+    //             "#,
+    //         ),
+    //         (
+    //             "b.ts",
+    //             r#"
+    //                 export * as B from "./c";
+    //             "#,
+    //         ),
+    //         (
+    //             "a.ts",
+    //             r#"
+    //                 export * as A from "./b";
+    //             "#,
+    //         ),
+    //         (
+    //             "entry.ts",
+    //             r#"
+    //                 import { A } from "./a";
+    //                 type X = typeof A.B.C;
+    //                 parse.buildParsers<{ X: X }>();
+    //             "#
+    //         )
+    //     ]));
+    // }
+
+    // #[test]
+    // fn import_star_nested_access() {
+    //     insta::assert_snapshot!(print_types_multifile(&[
+    //         (
+    //             "c.ts",
+    //             r#"
+    //                 export type C = string;
+    //             "#,
+    //         ),
+    //         (
+    //             "b.ts",
+    //             r#"
+    //                 export * as B from "./c";
+    //             "#,
+    //         ),
+    //         (
+    //             "entry.ts",
+    //             r#"
+    //                 import * as A from "./b";
+    //                 type X = A.B.C;
+    //                 parse.buildParsers<{ X: X }>();
+    //             "#
+    //         )
+    //     ]));
+    // }
+
+    // #[test]
+    // fn import_star_nested_value_access() {
+    //     insta::assert_snapshot!(print_types_multifile(&[
+    //         (
+    //             "c.ts",
+    //             r#"
+    //                 export const C = "c" as const;
+    //             "#,
+    //         ),
+    //         (
+    //             "b.ts",
+    //             r#"
+    //                 export * as B from "./c";
+    //             "#,
+    //         ),
+    //         (
+    //             "entry.ts",
+    //             r#"
+    //                 import * as A from "./b";
+    //                 type X = typeof A.B.C;
+    //                 parse.buildParsers<{ X: X }>();
+    //             "#
+    //         )
+    //     ]));
+    // }
+
+    // #[test]
+    // fn namespace_export_type_and_value_collision() {
+    //     insta::assert_snapshot!(print_types_multifile(&[
+    //         (
+    //             "t.ts",
+    //             r#"
+    //                 export type A = string;
+    //                 export const A = "value" as const;
+    //             "#,
+    //         ),
+    //         (
+    //             "entry.ts",
+    //             r#"
+    //                 import * as NS from "./t";
+    //                 type T = NS.A;
+    //                 type V = typeof NS.A;
+    //                 parse.buildParsers<{ T: T, V: V }>();
+    //             "#
+    //         )
+    //     ]));
+    // }
+
+    // #[test]
+    // fn re_export_named_as_default() {
+    //     insta::assert_snapshot!(print_types_multifile(&[
+    //         (
+    //             "a.ts",
+    //             r#"
+    //                 export const A = "a" as const;
+    //             "#,
+    //         ),
+    //         (
+    //             "b.ts",
+    //             r#"
+    //                 export { A as default } from "./a";
+    //             "#,
+    //         ),
+    //         (
+    //             "entry.ts",
+    //             r#"
+    //                 import A from "./b";
+    //                 type X = typeof A;
+    //                 parse.buildParsers<{ X: X }>();
+    //             "#
+    //         )
+    //     ]));
+    // }
+
+    // #[test]
+    // fn re_export_default_as_named() {
+    //     insta::assert_snapshot!(print_types_multifile(&[
+    //         (
+    //             "a.ts",
+    //             r#"
+    //                 export default "a" as const;
+    //             "#,
+    //         ),
+    //         (
+    //             "b.ts",
+    //             r#"
+    //                 export { default as A } from "./a";
+    //             "#,
+    //         ),
+    //         (
+    //             "entry.ts",
+    //             r#"
+    //                 import { A } from "./b";
+    //                 type X = typeof A;
+    //                 parse.buildParsers<{ X: X }>();
+    //             "#
+    //         )
+    //     ]));
+    // }
+
+    // #[test]
+    // fn export_star_aggregation() {
+    //     insta::assert_snapshot!(print_types_multifile(&[
+    //         (
+    //             "a.ts",
+    //             r#"
+    //                 export type A = "a";
+    //             "#,
+    //         ),
+    //         (
+    //             "b.ts",
+    //             r#"
+    //                 export type B = "b";
+    //             "#,
+    //         ),
+    //         (
+    //             "all.ts",
+    //             r#"
+    //                 export * from "./a";
+    //                 export * from "./b";
+    //             "#,
+    //         ),
+    //         (
+    //             "entry.ts",
+    //             r#"
+    //                 import { A, B } from "./all";
+    //                 type X = A;
+    //                 type Y = B;
+    //                 parse.buildParsers<{ X: X, Y: Y }>();
+    //             "#
+    //         )
+    //     ]));
+    // }
+
+    // #[test]
+    // fn circular_dependency_imports_unused() {
+    //     insta::assert_snapshot!(print_types_multifile(&[
+    //         (
+    //             "a.ts",
+    //             r#"
+    //                 import { B } from "./b";
+    //                 export type A = string;
+    //             "#,
+    //         ),
+    //         (
+    //             "b.ts",
+    //             r#"
+    //                 import { A } from "./a";
+    //                 export type B = string;
+    //             "#,
+    //         ),
+    //         (
+    //             "entry.ts",
+    //             r#"
+    //                 import { A } from "./a";
+    //                 type X = A;
+    //                 parse.buildParsers<{ X: X }>();
+    //             "#
+    //         )
+    //     ]));
+    // }
+
     // #[test]
     // fn interface_export() {
     //     insta::assert_snapshot!(print_types_multifile(&[
