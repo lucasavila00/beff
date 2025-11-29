@@ -12,13 +12,13 @@ use std::rc::Rc;
 use swc_common::{Span, Spanned};
 use swc_ecma_ast::{
     Expr, Ident, Lit, Prop, PropName, PropOrSpread, TsArrayType, TsCallSignatureDecl,
-    TsConstructSignatureDecl, TsConstructorType, TsEntityName, TsEnumDecl, TsFnOrConstructorType,
-    TsFnType, TsGetterSignature, TsImportType, TsIndexSignature, TsInferType, TsInterfaceDecl,
-    TsIntersectionType, TsKeywordType, TsKeywordTypeKind, TsLit, TsLitType, TsMethodSignature,
-    TsOptionalType, TsParenthesizedType, TsPropertySignature, TsQualifiedName, TsRestType,
-    TsSetterSignature, TsThisType, TsTupleType, TsType, TsTypeAliasDecl, TsTypeElement, TsTypeLit,
-    TsTypeOperator, TsTypeOperatorOp, TsTypeParamInstantiation, TsTypePredicate, TsTypeQuery,
-    TsTypeQueryExpr, TsTypeRef, TsUnionOrIntersectionType, TsUnionType,
+    TsConstructSignatureDecl, TsConstructorType, TsEntityName, TsFnOrConstructorType, TsFnType,
+    TsGetterSignature, TsImportType, TsIndexSignature, TsInferType, TsIntersectionType,
+    TsKeywordType, TsKeywordTypeKind, TsLit, TsLitType, TsMethodSignature, TsOptionalType,
+    TsParenthesizedType, TsPropertySignature, TsQualifiedName, TsRestType, TsSetterSignature,
+    TsThisType, TsTupleType, TsType, TsTypeAliasDecl, TsTypeElement, TsTypeLit, TsTypeOperator,
+    TsTypeOperatorOp, TsTypeParamInstantiation, TsTypePredicate, TsTypeQuery, TsTypeQueryExpr,
+    TsTypeRef, TsUnionOrIntersectionType, TsUnionType,
 };
 
 pub struct FrontendCtx<'a, R: FileManager> {
@@ -33,8 +33,7 @@ pub struct FrontendCtx<'a, R: FileManager> {
 pub enum AddressedType {
     TsType {
         t: Rc<TsTypeAliasDecl>,
-        file_name: BffFileName,
-        name: String,
+        address: ModuleItemAddress,
     },
 }
 
@@ -53,16 +52,24 @@ pub enum AddressedQualifiedValue {
     ValueExpr(Rc<Expr>, BffFileName),
 }
 
-#[derive(Eq, PartialEq, PartialOrd, Ord, Hash, Clone)]
-pub enum FinalAddressedType {
+#[derive(Debug)]
+pub enum FinalTypeAddress {
     TsType {
-        file_name: BffFileName,
-        name: String,
+        t: Rc<TsTypeAliasDecl>,
+        address: ModuleItemAddress,
     },
-    ItemOfStar {
-        file_name: BffFileName,
-        key: String,
+    SomethingOfStarOfFile {
+        address: ModuleItemAddress,
     },
+}
+
+impl FinalTypeAddress {
+    pub fn addr(&self) -> &ModuleItemAddress {
+        match self {
+            FinalTypeAddress::TsType { t: _, address } => address,
+            FinalTypeAddress::SomethingOfStarOfFile { address } => address,
+        }
+    }
 }
 
 type Res<T> = Result<T, Box<Diagnostic>>;
@@ -212,24 +219,21 @@ impl<'a, 'b, R: FileManager> TypeModuleWalker<'a, R, AddressedType> for TypeWalk
             } => {
                 return Ok(AddressedType::TsType {
                     t: decl.clone(),
-                    file_name: original_file.clone(),
-                    name: name.clone(),
+                    address: ModuleItemAddress {
+                        file: original_file.clone(),
+                        name: name.clone(),
+                        visibility: Visibility::Export,
+                    },
                 });
             }
-            SymbolExport::TsInterfaceDecl {
-                decl,
-                original_file,
-            } => {
+            SymbolExport::TsInterfaceDecl { .. } => {
                 // return Ok(AddressedType::TsInterfaceDecl(
                 //     decl.clone(),
                 //     original_file.clone(),
                 // ));
                 todo!()
             }
-            SymbolExport::TsEnumDecl {
-                decl,
-                original_file,
-            } => {
+            SymbolExport::TsEnumDecl { .. } => {
                 // return Ok(AddressedType::TsEnumDecl(
                 //     decl.clone(),
                 //     original_file.clone(),
@@ -262,8 +266,11 @@ impl<'a, 'b, R: FileManager> TypeModuleWalker<'a, R, AddressedType> for TypeWalk
     ) -> Res<Option<AddressedType>> {
         Ok(Some(AddressedType::TsType {
             t: ts_type.clone(),
-            file_name: file.clone(),
-            name: name,
+            address: ModuleItemAddress {
+                file,
+                name,
+                visibility: Visibility::Local,
+            },
         }))
     }
 
@@ -711,40 +718,15 @@ impl<'a, R: FileManager> FrontendCtx<'a, R> {
     fn extract_addressed_type(&mut self, address: &ModuleItemAddress, span: &Span) -> Res<Runtype> {
         let addressed_type = self.get_addressed_type(address, span)?;
         match addressed_type {
-            AddressedType::TsType {
-                t: decl,
-                file_name: original_file,
-                name,
-            } => {
+            AddressedType::TsType { t: decl, address } => {
                 assert!(
                     decl.type_params.is_none(),
                     "generic types not supported yet"
                 );
-                let runtype = self.extract_type(&decl.type_ann, original_file.clone())?;
+                let runtype = self.extract_type(&decl.type_ann, address.file.clone())?;
                 Ok(runtype)
             }
         }
-    }
-    fn resolve_ident_type(
-        &mut self,
-        i: &Ident,
-        file: BffFileName,
-        visibility: Visibility,
-    ) -> Res<Runtype> {
-        let address = ModuleItemAddress::from_ident(i, file, visibility);
-        self.extract_addressed_type(&address, &i.span)
-    }
-
-    fn extract_type_ident(
-        &mut self,
-        i: &Ident,
-        type_args: &Option<Box<TsTypeParamInstantiation>>,
-        file: BffFileName,
-        visibility: Visibility,
-    ) -> Res<Runtype> {
-        assert!(type_args.is_none(), "generic types not supported yet");
-        let resolved = self.resolve_ident_type(i, file.clone(), visibility)?;
-        Ok(resolved)
     }
 
     fn get_adressed_qualified_type_from_entity_name(
@@ -783,23 +765,38 @@ impl<'a, R: FileManager> FrontendCtx<'a, R> {
         }
     }
 
-    fn extract_type_qualified_name(
+    fn get_final_address_from_ts_entity_name(
         &mut self,
-        q: &TsQualifiedName,
-        type_args: &Option<Box<TsTypeParamInstantiation>>,
+        type_name: &TsEntityName,
+        type_params: &Option<Box<TsTypeParamInstantiation>>,
         file: BffFileName,
         visibility: Visibility,
-    ) -> Res<Runtype> {
-        assert!(type_args.is_none(), "generic types not supported yet");
-        let type_addressed = self.get_adressed_qualified_type_from_entity_name(&q.left, file)?;
-        match type_addressed {
-            AddressedQualifiedType::StarImport(bff_file_name) => {
-                let new_addr = ModuleItemAddress {
-                    file: bff_file_name.clone(),
-                    name: q.right.sym.to_string(),
-                    visibility,
-                };
-                return self.extract_addressed_type(&new_addr, &q.span());
+    ) -> Res<FinalTypeAddress> {
+        assert!(type_params.is_none(), "generic types not supported yet");
+        match type_name {
+            TsEntityName::Ident(ident) => {
+                let addr = ModuleItemAddress::from_ident(ident, file, visibility);
+                let addressed = self.get_addressed_type(&addr, &ident.span)?;
+                match addressed {
+                    AddressedType::TsType { t, address } => {
+                        Ok(FinalTypeAddress::TsType { t: t, address })
+                    }
+                }
+            }
+            TsEntityName::TsQualifiedName(ts_qualified_name) => {
+                let type_addressed = self
+                    .get_adressed_qualified_type_from_entity_name(&ts_qualified_name.left, file)?;
+                match type_addressed {
+                    AddressedQualifiedType::StarImport(bff_file_name) => {
+                        Ok(FinalTypeAddress::SomethingOfStarOfFile {
+                            address: ModuleItemAddress {
+                                file: bff_file_name,
+                                name: ts_qualified_name.right.sym.to_string(),
+                                visibility: Visibility::Export,
+                            },
+                        })
+                    }
+                }
             }
         }
     }
@@ -811,107 +808,12 @@ impl<'a, R: FileManager> FrontendCtx<'a, R> {
         file: BffFileName,
         visibility: Visibility,
     ) -> Res<Runtype> {
-        match type_name {
-            TsEntityName::Ident(ident) => {
-                self.extract_type_ident(ident, type_params, file, visibility)
-            }
-            TsEntityName::TsQualifiedName(ts_qualified_name) => self.extract_type_qualified_name(
-                ts_qualified_name,
-                type_params,
-                file,
-                // TODO: is the visibility correct here?
-                Visibility::Export,
-            ),
-        }
-    }
-
-    fn get_addressed_type_from_ts_entity_name(
-        &mut self,
-        type_name: &TsEntityName,
-        type_params: &Option<Box<TsTypeParamInstantiation>>,
-        file: BffFileName,
-        visibility: Visibility,
-    ) -> Res<FinalAddressedType> {
-        assert!(type_params.is_none(), "generic types not supported yet");
-        match type_name {
-            TsEntityName::Ident(ident) => {
-                let addr = ModuleItemAddress::from_ident(ident, file, visibility);
-                let addressed = self.get_addressed_type(&addr, &ident.span)?;
-                match addressed {
-                    AddressedType::TsType {
-                        t: _,
-                        file_name: original_file,
-                        name,
-                    } => Ok(FinalAddressedType::TsType {
-                        file_name: original_file,
-                        name,
-                    }),
-                }
-            }
-            TsEntityName::TsQualifiedName(ts_qualified_name) => {
-                let type_addressed = self
-                    .get_adressed_qualified_type_from_entity_name(&ts_qualified_name.left, file)?;
-                match type_addressed {
-                    AddressedQualifiedType::StarImport(bff_file_name) => {
-                        Ok(FinalAddressedType::ItemOfStar {
-                            file_name: bff_file_name,
-                            key: ts_qualified_name.right.sym.to_string(),
-                        })
-                    }
-                }
-            }
-        }
-    }
-
-    fn extract_final_addressed_type(
-        &mut self,
-        fat: &FinalAddressedType,
-        span: &Span,
-    ) -> Res<Runtype> {
-        match fat {
-            FinalAddressedType::TsType { file_name, name } => {
-                let address = ModuleItemAddress {
-                    file: file_name.clone(),
-                    name: name.clone(),
-                    visibility: Visibility::Export,
-                };
-                self.extract_addressed_type(&address, span)
-            }
-            FinalAddressedType::ItemOfStar { file_name, key } => {
-                let address = ModuleItemAddress {
-                    file: file_name.clone(),
-                    name: key.clone(),
-                    visibility: Visibility::Export,
-                };
-                self.extract_addressed_type(&address, span)
-            }
-        }
-    }
-
-    fn extract_type_ref_caching(
-        &mut self,
-        ty: &TsTypeRef,
-        file: BffFileName,
-        visibility: Visibility,
-    ) -> Res<Runtype> {
-        let TsTypeRef {
-            type_name,
-            type_params,
-            span: _,
-        } = ty;
-
-        assert!(type_params.is_none(), "generic types not supported yet");
         let fat =
-            self.get_addressed_type_from_ts_entity_name(type_name, type_params, file, visibility)?;
-        self.extract_final_addressed_type(&fat, &ty.span)
+            self.get_final_address_from_ts_entity_name(type_name, type_params, file, visibility)?;
+        self.extract_addressed_type(&fat.addr(), &type_name.span())
     }
 
-    fn extract_type_ref(
-        &mut self,
-        ty: &TsTypeRef,
-        file: BffFileName,
-        visibility: Visibility,
-    ) -> Res<Runtype> {
+    fn extract_type_ref(&mut self, ty: &TsTypeRef, file: BffFileName) -> Res<Runtype> {
         let TsTypeRef {
             type_name,
             type_params,
@@ -920,8 +822,7 @@ impl<'a, R: FileManager> FrontendCtx<'a, R> {
 
         assert!(type_params.is_none(), "generic types not supported yet");
 
-        self.extract_type_from_ts_entity_name(type_name, type_params, file, visibility)
-        //self.extract_type_ref_caching(ty, file, visibility)
+        self.extract_type_from_ts_entity_name(type_name, type_params, file, Visibility::Local)
     }
 
     fn extract_ts_keyword_type(&mut self, ty: &TsKeywordType) -> Res<Runtype> {
@@ -1266,9 +1167,7 @@ impl<'a, R: FileManager> FrontendCtx<'a, R> {
 
     fn extract_type(&mut self, ty: &TsType, file: BffFileName) -> Res<Runtype> {
         match ty {
-            TsType::TsTypeRef(ts_type_ref) => {
-                self.extract_type_ref(ts_type_ref, file, Visibility::Local)
-            }
+            TsType::TsTypeRef(ts_type_ref) => self.extract_type_ref(ts_type_ref, file),
             TsType::TsKeywordType(ts_keyword_type) => self.extract_ts_keyword_type(ts_keyword_type),
             TsType::TsTypeQuery(ts_type_query) => {
                 self.extract_type_query(ts_type_query, file, Visibility::Local)
