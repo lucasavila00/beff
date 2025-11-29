@@ -663,79 +663,79 @@ mod tests {
         ]));
     }
 
-    // #[test]
-    // fn import_star_nested_access() {
-    //     insta::assert_snapshot!(print_types_multifile(&[
-    //         (
-    //             "c.ts",
-    //             r#"
-    //                 export type C = string;
-    //             "#,
-    //         ),
-    //         (
-    //             "b.ts",
-    //             r#"
-    //                 export * as B from "./c";
-    //             "#,
-    //         ),
-    //         (
-    //             "entry.ts",
-    //             r#"
-    //                 import * as A from "./b";
-    //                 type X = A.B.C;
-    //                 parse.buildParsers<{ X: X }>();
-    //             "#
-    //         )
-    //     ]));
-    // }
+    #[test]
+    fn import_star_nested_access() {
+        insta::assert_snapshot!(print_types_multifile(&[
+            (
+                "c.ts",
+                r#"
+                    export type C = string;
+                "#,
+            ),
+            (
+                "b.ts",
+                r#"
+                    export * as B from "./c";
+                "#,
+            ),
+            (
+                "entry.ts",
+                r#"
+                    import * as A from "./b";
+                    type X = A.B.C;
+                    parse.buildParsers<{ X: X }>();
+                "#
+            )
+        ]));
+    }
 
-    // #[test]
-    // fn import_star_nested_value_access() {
-    //     insta::assert_snapshot!(print_types_multifile(&[
-    //         (
-    //             "c.ts",
-    //             r#"
-    //                 export const C = "c" as const;
-    //             "#,
-    //         ),
-    //         (
-    //             "b.ts",
-    //             r#"
-    //                 export * as B from "./c";
-    //             "#,
-    //         ),
-    //         (
-    //             "entry.ts",
-    //             r#"
-    //                 import * as A from "./b";
-    //                 type X = typeof A.B.C;
-    //                 parse.buildParsers<{ X: X }>();
-    //             "#
-    //         )
-    //     ]));
-    // }
+    #[test]
+    fn import_star_nested_value_access() {
+        insta::assert_snapshot!(print_types_multifile(&[
+            (
+                "c.ts",
+                r#"
+                    export const C = "c" as const;
+                "#,
+            ),
+            (
+                "b.ts",
+                r#"
+                    export * as B from "./c";
+                "#,
+            ),
+            (
+                "entry.ts",
+                r#"
+                    import * as A from "./b";
+                    type X = typeof A.B.C;
+                    parse.buildParsers<{ X: X }>();
+                "#
+            )
+        ]));
+    }
 
-    // #[test]
-    // fn namespace_export_type_and_value_collision() {
-    //     insta::assert_snapshot!(print_types_multifile(&[
-    //         (
-    //             "t.ts",
-    //             r#"
-    //                 export type A = string;
-    //                 export const A = "value" as const;
-    //             "#,
-    //         ),
-    //         (
-    //             "entry.ts",
-    //             r#"
-    //                 import * as NS from "./t";
-    //                 type T = NS.A;
-    //                 type V = typeof NS.A;
-    //                 parse.buildParsers<{ T: T, V: V }>();
-    //             "#
-    //         )
-    //     ]));
-    // }
+    #[test]
+    fn namespace_export_type_and_value_collision() {
+        insta::assert_snapshot!(print_types_multifile(&[
+            (
+                "t.ts",
+                r#"
+                    export type A = string;
+                    export const A = "value" as const;
+                "#,
+            ),
+            (
+                "entry.ts",
+                r#"
+                    import * as NS from "./t";
+                    type T = NS.A;
+                    type V = typeof NS.A;
+                    parse.buildParsers<{ T: T, V: V }>();
+                "#
+            )
+        ]));
+    }
 
     // #[test]
     // fn re_export_named_as_default() {
