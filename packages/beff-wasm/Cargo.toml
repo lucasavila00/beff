@@ -1,6 +1,6 @@
 [package]
 authors = ["Lucas Avila <lucaxx@gmail.com>"]
-edition = "2018"
+edition = "2024"
 name = "beff_wasm"
 version = "0.1.0"
 

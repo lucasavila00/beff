@@ -1,19 +1,19 @@
 use crate::{
+    BeffUserSettings, BffFileName, FileManager, ImportReference, ModuleItemAddress, ParsedModule,
+    SymbolExport, SymbolExportDefault, Visibility,
     ast::runtype::{Runtype, RuntypeConst},
     diag::{Diagnostic, DiagnosticInfoMessage, DiagnosticInformation, Location},
     parser_extractor::BuiltDecoder,
-    BeffUserSettings, BffFileName, FileManager, ImportReference, ModuleItemAddress, ParsedModule,
-    SymbolExport, SymbolExportDefault, Visibility,
 };
-use anyhow::{anyhow, Result};
+use anyhow::{Result, anyhow};
 use std::rc::Rc;
 use swc_common::{Span, Spanned};
 use swc_ecma_ast::{
-    Expr, Ident, Lit, TsCallSignatureDecl, TsConstructSignatureDecl, TsEntityName, TsEnumDecl,
-    TsGetterSignature, TsIndexSignature, TsInterfaceDecl, TsKeywordType, TsKeywordTypeKind, TsLit,
-    TsLitType, TsMethodSignature, TsPropertySignature, TsQualifiedName, TsSetterSignature, TsType,
-    TsTypeAliasDecl, TsTypeElement, TsTypeLit, TsTypeParamInstantiation, TsTypeQuery,
-    TsTypeQueryExpr, TsTypeRef,
+    Expr, Ident, Lit, Prop, PropName, PropOrSpread, TsCallSignatureDecl, TsConstructSignatureDecl,
+    TsEntityName, TsEnumDecl, TsGetterSignature, TsIndexSignature, TsInterfaceDecl, TsKeywordType,
+    TsKeywordTypeKind, TsLit, TsLitType, TsMethodSignature, TsPropertySignature, TsQualifiedName,
+    TsSetterSignature, TsType, TsTypeAliasDecl, TsTypeElement, TsTypeLit, TsTypeParamInstantiation,
+    TsTypeQuery, TsTypeQueryExpr, TsTypeRef,
 };
 
 pub struct FrontendCtx<'a, R: FileManager> {
@@ -42,6 +42,7 @@ pub enum AddressedValue {
 
 pub enum AddressedQualifiedValue {
     StarOfFile(BffFileName),
+    ValueExpr(Rc<Expr>, BffFileName),
 }
 
 type Res<T> = Result<T, Box<Diagnostic>>;
@@ -394,7 +395,7 @@ impl<'a, R: FileManager> FrontendCtx<'a, R> {
                 return Ok(AddressedValue::TsTypeDecl(
                     ty.clone(),
                     original_file.clone(),
-                ))
+                ));
             }
 
             SymbolExport::StarOfOtherFile { .. } => {
@@ -579,7 +580,17 @@ impl<'a, R: FileManager> FrontendCtx<'a, R> {
             SymbolExport::TsType { .. } => todo!(),
             SymbolExport::TsInterfaceDecl { .. } => todo!(),
             SymbolExport::TsEnumDecl { .. } => todo!(),
-            SymbolExport::ValueExpr { .. } => todo!(),
+            SymbolExport::ValueExpr {
+                expr,
+                name: _,
+                span: _,
+                original_file,
+            } => {
+                return Ok(AddressedQualifiedValue::ValueExpr(
+                    expr.clone(),
+                    original_file.clone(),
+                ));
+            }
             SymbolExport::ExprDecl { .. } => todo!(),
             SymbolExport::SomethingOfOtherFile { .. } => todo!(),
         }
@@ -596,6 +607,12 @@ impl<'a, R: FileManager> FrontendCtx<'a, R> {
                 if let Some(imported) = parsed_module.imports.get(&addr.key) {
                     return self
                         .get_addressed_qualified_value_from_import_reference(imported, span);
+                }
+                if let Some(local) = parsed_module.locals.exprs.get(&addr.key) {
+                    return Ok(AddressedQualifiedValue::ValueExpr(
+                        local.clone(),
+                        addr.file.clone(),
+                    ));
                 }
                 todo!()
             }
@@ -828,14 +845,14 @@ impl<'a, R: FileManager> FrontendCtx<'a, R> {
         }
     }
 
-    fn get_adressed_qualified_value_from_entity_name(
+    fn get_addressed_qualified_value_from_entity_name(
         &mut self,
         q: &TsEntityName,
         file: BffFileName,
     ) -> Res<AddressedQualifiedValue> {
         match q {
             TsEntityName::TsQualifiedName(ts_qualified_name) => {
-                let left_part = self.get_adressed_qualified_value_from_entity_name(
+                let left_part = self.get_addressed_qualified_value_from_entity_name(
                     &ts_qualified_name.left,
                     file.clone(),
                 )?;
@@ -849,6 +866,7 @@ impl<'a, R: FileManager> FrontendCtx<'a, R> {
                         };
                         return self.get_addressed_qualified_value(&new_addr, &q.span());
                     }
+                    AddressedQualifiedValue::ValueExpr(_, _) => todo!(),
                 }
             }
             TsEntityName::Ident(ident) => {
@@ -864,17 +882,43 @@ impl<'a, R: FileManager> FrontendCtx<'a, R> {
         }
     }
 
-    fn extract_value_ts_qualified_name(
+    fn typeof_expr_keyed_access(
+        &mut self,
+        expr: &Expr,
+        key: &Ident,
+        file: BffFileName,
+    ) -> Res<Runtype> {
+        // TODO: infer the whole expr and do an indexed access?
+        match expr {
+            Expr::Object(object_lit) => {
+                for prop in &object_lit.props {
+                    if let PropOrSpread::Prop(boxed_prop) = prop
+                        && let Prop::KeyValue(key_value_prop) = boxed_prop.as_ref()
+                        && let PropName::Ident(ident) = &key_value_prop.key
+                        && ident.sym == key.sym
+                    {
+                        return self.typeof_expr(key_value_prop.value.as_ref(), false, file);
+                    }
+                }
+                todo!()
+            }
+            _ => todo!(),
+        }
+    }
+
+    fn extract_value_from_ts_qualified_name(
         &mut self,
         ts_qualified_name: &TsQualifiedName,
         file: BffFileName,
         visibility: Visibility,
         span: &Span,
     ) -> Res<Runtype> {
-        let value_addressed = self
-            .get_adressed_qualified_value_from_entity_name(&ts_qualified_name.left, file.clone())?;
+        let left_value = self.get_addressed_qualified_value_from_entity_name(
+            &ts_qualified_name.left,
+            file.clone(),
+        )?;
 
-        match value_addressed {
+        match left_value {
             AddressedQualifiedValue::StarOfFile(bff_file_name) => {
                 let new_addr = ModuleItemAddress {
                     file: bff_file_name.clone(),
@@ -883,6 +927,8 @@ impl<'a, R: FileManager> FrontendCtx<'a, R> {
                 };
                 return self.extract_addressed_value(&new_addr, &span);
             }
+            AddressedQualifiedValue::ValueExpr(expr, bff_file_name) => self
+                .typeof_expr_keyed_access(expr.as_ref(), &ts_qualified_name.right, bff_file_name),
         }
     }
 
@@ -899,7 +945,7 @@ impl<'a, R: FileManager> FrontendCtx<'a, R> {
                 self.extract_addressed_value(&addr, &span)
             }
             TsEntityName::TsQualifiedName(ts_qualified_name) => self
-                .extract_value_ts_qualified_name(
+                .extract_value_from_ts_qualified_name(
                     ts_qualified_name,
                     file,
                     // TODO: is the visibility correct here?

@@ -6,11 +6,11 @@ mod tests {
     };
 
     use beff_core::{
-        import_resolver::{parse_and_bind, FsModuleResolver},
-        parser_extractor::ParserExtractResult,
         BeffUserSettings, BffFileName, EntryPoints, FileManager, ParsedModule,
+        import_resolver::{FsModuleResolver, parse_and_bind},
+        parser_extractor::ParserExtractResult,
     };
-    use swc_common::{Globals, GLOBALS};
+    use swc_common::{GLOBALS, Globals};
     struct TestFileManager {
         pub fs: BTreeMap<BffFileName, Rc<ParsedModule>>,
     }
@@ -1189,46 +1189,46 @@ mod tests {
         ]));
     }
 
-    // #[test]
-    // fn qualified_access_via_named_import_object() {
-    //     insta::assert_snapshot!(print_types_multifile(&[
-    //         (
-    //             "t.ts",
-    //             r#"
-    //                 export const N = { A: "a" as const };
-    //             "#,
-    //         ),
-    //         (
-    //             "entry.ts",
-    //             r#"
-    //                 import { N } from "./t";
-    //                 type X = typeof N.A;
-    //                 parse.buildParsers<{ X: X }>();
-    //             "#
-    //         )
-    //     ]));
-    // }
+    #[test]
+    fn qualified_access_via_named_import_object() {
+        insta::assert_snapshot!(print_types_multifile(&[
+            (
+                "t.ts",
+                r#"
+                    export const N = { A: "a" as const };
+                "#,
+            ),
+            (
+                "entry.ts",
+                r#"
+                    import { N } from "./t";
+                    type X = typeof N.A;
+                    parse.buildParsers<{ X: X }>();
+                "#
+            )
+        ]));
+    }
 
-    // #[test]
-    // fn qualified_access_via_default_import_object() {
-    //     insta::assert_snapshot!(print_types_multifile(&[
-    //         (
-    //             "t.ts",
-    //             r#"
-    //                 const N = { A: "a" as const };
-    //                 export default N;
-    //             "#,
-    //         ),
-    //         (
-    //             "entry.ts",
-    //             r#"
-    //                 import N from "./t";
-    //                 type X = typeof N.A;
-    //                 parse.buildParsers<{ X: X }>();
-    //             "#
-    //         )
-    //     ]));
-    // }
+    #[test]
+    fn qualified_access_via_default_import_object() {
+        insta::assert_snapshot!(print_types_multifile(&[
+            (
+                "t.ts",
+                r#"
+                    const Y = { A: "a" as const };
+                    export default Y;
+                "#,
+            ),
+            (
+                "entry.ts",
+                r#"
+                    import N from "./t";
+                    type X = typeof N.A;
+                    parse.buildParsers<{ X: X }>();
+                "#
+            )
+        ]));
+    }
 
     // #[test]
     // fn interface_export() {

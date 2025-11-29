@@ -4,10 +4,10 @@ use crate::ast::runtype::{
 use crate::diag::{
     Diagnostic, DiagnosticInfoMessage, DiagnosticInformation, DiagnosticParentMessage, Location,
 };
+use crate::subtyping::ToSemType;
 use crate::subtyping::semtype::{SemType, SemTypeContext, SemTypeOps};
 use crate::subtyping::subtype::StringLitOrFormat;
 use crate::subtyping::to_schema::semtype_to_runtypes;
-use crate::subtyping::ToSemType;
 use crate::sym_reference::{ResolvedLocalSymbol, TsBuiltIn, TypeResolver};
 use crate::{
     BeffUserSettings, BffFileName, FileManager, ImportReference, SymbolExport, SymbolExportDefault,
@@ -100,7 +100,7 @@ impl<'a, 'b, R: FileManager> TypeToSchema<'a, 'b, R> {
                     Expr::Ident(ident) => ident.sym.to_string(),
                     Expr::Lit(Lit::Str(st)) => st.value.to_string(),
                     _ => {
-                        return self.error(&prop.span, DiagnosticInfoMessage::PropKeyShouldBeIdent)
+                        return self.error(&prop.span, DiagnosticInfoMessage::PropKeyShouldBeIdent);
                     }
                 };
                 match &prop.type_ann.as_ref() {
@@ -177,7 +177,7 @@ impl<'a, 'b, R: FileManager> TypeToSchema<'a, 'b, R> {
                                     return self.error(
                                         span,
                                         DiagnosticInfoMessage::PickShouldHaveStringAsTypeArgument,
-                                    )
+                                    );
                                 }
                             },
                         }
@@ -577,7 +577,7 @@ impl<'a, 'b, R: FileManager> TypeToSchema<'a, 'b, R> {
                     return self.error(
                         &it.span,
                         DiagnosticInfoMessage::TypeArgsInExtendsUnsupported,
-                    )
+                    );
                 }
                 None => match it.expr.as_ref() {
                     Expr::Ident(id) => {
@@ -746,7 +746,7 @@ impl<'a, 'b, R: FileManager> TypeToSchema<'a, 'b, R> {
                         return self.cannot_serialize_error(
                             &param.span,
                             DiagnosticInfoMessage::NoArgumentInTypeApplication,
-                        )
+                        );
                     }
                 }
             }
@@ -1159,12 +1159,12 @@ impl<'a, 'b, R: FileManager> TypeToSchema<'a, 'b, R> {
                         something: that, ..
                     } => that.to_string(),
                     SymbolExport::ValueExpr { .. } => {
-                        return self.error(span, DiagnosticInfoMessage::FoundValueExpectedType)
+                        return self.error(span, DiagnosticInfoMessage::FoundValueExpectedType);
                     }
                     SymbolExport::TsEnumDecl { decl, .. } => decl.id.sym.to_string(),
                     SymbolExport::ExprDecl { span, .. } => {
                         return self
-                            .error(span, DiagnosticInfoMessage::CannotUseExprDeclAsQualified)
+                            .error(span, DiagnosticInfoMessage::CannotUseExprDeclAsQualified);
                     }
                 };
                 Ok((exported, from_file.clone(), name))
@@ -1505,7 +1505,7 @@ impl<'a, 'b, R: FileManager> TypeToSchema<'a, 'b, R> {
                                         return self.error(
                                             &p.key.span(),
                                             DiagnosticInfoMessage::TypeofObjectUnsupportedPropNum,
-                                        )
+                                        );
                                     }
                                     PropName::Computed(_) => return self.error(
                                         &p.key.span(),
@@ -1531,7 +1531,7 @@ impl<'a, 'b, R: FileManager> TypeToSchema<'a, 'b, R> {
                                 return self.error(
                                     &p.span(),
                                     DiagnosticInfoMessage::TypeofObjectUnsupportedProp,
-                                )
+                                );
                             }
                         },
                     }
@@ -1653,7 +1653,7 @@ impl<'a, 'b, R: FileManager> TypeToSchema<'a, 'b, R> {
                         return self.error(
                             &m.prop.span(),
                             DiagnosticInfoMessage::TypeofPrivateNameNotSupported,
-                        )
+                        );
                     }
                     MemberProp::Computed(c) => {
                         let v = self.typeof_expr(&c.expr, as_const)?;
@@ -1753,7 +1753,7 @@ impl<'a, 'b, R: FileManager> TypeToSchema<'a, 'b, R> {
                     SymbolExport::StarOfOtherFile { reference, .. } => match reference.as_ref() {
                         ImportReference::Named { .. } => {
                             return self
-                                .error(&v.span(), DiagnosticInfoMessage::CannotUseNamedAsStar)
+                                .error(&v.span(), DiagnosticInfoMessage::CannotUseNamedAsStar);
                         }
                         ImportReference::Star { file_name, .. } => {
                             let mut acc2 = vec![];
@@ -1763,7 +1763,7 @@ impl<'a, 'b, R: FileManager> TypeToSchema<'a, 'b, R> {
                         }
                         ImportReference::Default { .. } => {
                             return self
-                                .error(&v.span(), DiagnosticInfoMessage::CannotUseDefaultAsStar)
+                                .error(&v.span(), DiagnosticInfoMessage::CannotUseDefaultAsStar);
                         }
                     },
                     SymbolExport::SomethingOfOtherFile {
@@ -1784,7 +1784,7 @@ impl<'a, 'b, R: FileManager> TypeToSchema<'a, 'b, R> {
                                     DiagnosticInfoMessage::CouldNotFindSomethingOfOtherFile(
                                         something.to_string(),
                                     ),
-                                )
+                                );
                             }
                         }
                     }
@@ -2062,7 +2062,7 @@ impl<'a, 'b, R: FileManager> TypeToSchema<'a, 'b, R> {
                 return self.error(
                     &k.type_param.span,
                     DiagnosticInfoMessage::NoConstraintInMappedType,
-                )
+                );
             }
         };
         let constraint_schema = self.convert_ts_type(constraint)?;
@@ -2082,9 +2082,9 @@ impl<'a, 'b, R: FileManager> TypeToSchema<'a, 'b, R> {
         }
 
         let type_ann = match &k.type_ann {
-            Some(ref type_ann) => type_ann.as_ref(),
+            Some(type_ann) => type_ann.as_ref(),
             None => {
-                return self.error(&k.span, DiagnosticInfoMessage::NoTypeAnnotationInMappedType)
+                return self.error(&k.span, DiagnosticInfoMessage::NoTypeAnnotationInMappedType);
             }
         };
 
@@ -2103,7 +2103,7 @@ impl<'a, 'b, R: FileManager> TypeToSchema<'a, 'b, R> {
                     TruePlusMinus::Plus => Optionality::Required(ty),
                     TruePlusMinus::Minus => {
                         return self
-                            .error(&k.span, DiagnosticInfoMessage::MappedTypeMinusNotSupported)
+                            .error(&k.span, DiagnosticInfoMessage::MappedTypeMinusNotSupported);
                     }
                 },
                 None => Optionality::Required(ty),
