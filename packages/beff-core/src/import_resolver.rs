@@ -147,6 +147,7 @@ impl<R: FsModuleResolver> Visit for ImportsVisitor<'_, R> {
                     Rc::new(SymbolExport::TsType {
                         decl: Rc::new(*alias.clone()),
                         original_file: self.current_file.clone(),
+                        name: alias.id.sym.to_string(),
                     }),
                 );
             }
@@ -323,6 +324,7 @@ pub fn parse_and_bind<R: FsModuleResolver>(
                 Rc::new(SymbolExport::TsType {
                     decl: ts_type.clone(),
                     original_file: file_name.clone(),
+                    name: k,
                 }),
             );
             continue;

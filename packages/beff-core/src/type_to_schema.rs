@@ -637,6 +637,7 @@ impl<'a, 'b, R: FileManager> TypeToSchema<'a, 'b, R> {
             SymbolExport::TsType {
                 original_file,
                 decl,
+                name: _,
             } => {
                 let store_current_file = self.current_file.clone();
                 self.current_file = original_file.clone();

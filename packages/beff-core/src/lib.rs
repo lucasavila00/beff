@@ -41,6 +41,7 @@ pub enum SymbolExport {
     TsType {
         decl: Rc<TsTypeAliasDecl>,
         original_file: BffFileName,
+        name: String,
     },
     TsInterfaceDecl {
         decl: Rc<TsInterfaceDecl>,
@@ -466,7 +467,7 @@ pub enum Visibility {
 #[derive(Debug, Clone, PartialEq, Eq, Hash, PartialOrd, Ord)]
 pub struct ModuleItemAddress {
     pub file: BffFileName,
-    pub key: String,
+    pub name: String,
     pub visibility: Visibility,
 }
 
@@ -478,13 +479,13 @@ impl ModuleItemAddress {
     ) -> ModuleItemAddress {
         ModuleItemAddress {
             file,
-            key: ident.sym.to_string(),
+            name: ident.sym.to_string(),
             visibility,
         }
     }
 
     fn debug_print(&self) -> String {
-        format!("{}::{}", self.file.as_str(), self.key,)
+        format!("{}::{}", self.file.as_str(), self.name,)
     }
 }
 
