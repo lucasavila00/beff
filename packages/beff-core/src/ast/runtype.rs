@@ -232,7 +232,7 @@ pub enum Runtype {
     AllOf(BTreeSet<Runtype>),
     Const(RuntypeConst),
     // semantic types
-    StNever,
+    Never,
     StNot(Box<Runtype>),
     Function,
     Date,
@@ -309,7 +309,7 @@ impl Runtype {
 
     pub fn any_of(vs: Vec<Runtype>) -> Self {
         match vs.len() {
-            0 => Runtype::StNever,
+            0 => Runtype::Never,
             1 => vs.into_iter().next().expect("we just checked len"),
             _ => UnionMerger::schema(vs),
         }
@@ -374,7 +374,7 @@ impl Runtype {
                 let semantic = Runtype::AllOf(vs.clone()).to_sem_type(validators, ctx)?;
                 let is_empty = semantic.is_empty(ctx)?;
                 if is_empty {
-                    return Ok(Runtype::StNever);
+                    return Ok(Runtype::Never);
                 }
 
                 let vs = vs
@@ -444,7 +444,7 @@ impl Runtype {
             Runtype::Const(runtype_const) => runtype_const.clone().to_json().debug_print(),
             Runtype::Date => "Date".to_string(),
             Runtype::BigInt => "bigint".to_string(),
-            Runtype::StNever => "never".to_string(),
+            Runtype::Never => "never".to_string(),
             Runtype::StNot(runtype) => {
                 let inner = runtype.debug_print(ctx);
                 format!("Not<{}>", inner)

@@ -2,14 +2,14 @@
 mod tests {
 
     use beff_core::{
+        NamedSchema, RuntypeName,
         ast::runtype::{
             CustomFormat, IndexedProperty, Runtype, RuntypeConst, TplLitType, TplLitTypeItem,
         },
         subtyping::{
-            semtype::{SemTypeContext, SemTypeOps},
             ToSemType,
+            semtype::{SemTypeContext, SemTypeOps},
         },
-        NamedSchema, RuntypeName,
     };
 
     pub fn is_sub_type(
@@ -305,7 +305,7 @@ mod tests {
         assert!(res);
 
         // no type is subtype of never
-        let nevert = Runtype::StNever;
+        let nevert = Runtype::Never;
         let res = rt_is_sub_type(&t1, &nevert, &definitions, &definitions);
         assert!(!res);
     }
@@ -365,7 +365,7 @@ mod tests {
         assert!(res);
 
         // no type is subtype of never
-        let nevert = Runtype::StNever;
+        let nevert = Runtype::Never;
         let res = rt_is_sub_type(&t1, &nevert, &definitions, &definitions);
         assert!(!res);
     }
@@ -523,16 +523,20 @@ mod tests {
         let intersection = user_id_sem_type
             .intersect(&read_authorized_user_id_sem_type)
             .unwrap();
-        assert!(intersection
-            .is_same_type(&read_authorized_user_id_sem_type, &mut ctx)
-            .unwrap());
+        assert!(
+            intersection
+                .is_same_type(&read_authorized_user_id_sem_type, &mut ctx)
+                .unwrap()
+        );
 
         let intersection2 = read_authorized_user_id_sem_type
             .intersect(&user_id_sem_type)
             .unwrap();
-        assert!(intersection2
-            .is_same_type(&read_authorized_user_id_sem_type, &mut ctx)
-            .unwrap());
+        assert!(
+            intersection2
+                .is_same_type(&read_authorized_user_id_sem_type, &mut ctx)
+                .unwrap()
+        );
 
         let diff3 = write_authorized_user_id_sem_type
             .diff(&user_id_sem_type)
@@ -617,7 +621,7 @@ mod tests {
             assert!(res);
 
             // no type is subtype of never
-            let nevert = Runtype::StNever;
+            let nevert = Runtype::Never;
             let res = rt_is_sub_type(&t1, &nevert, &definitions, &definitions);
             assert!(!res);
         }
@@ -813,14 +817,18 @@ mod tests {
 
         // Intersection of specific with general should be specific
         let intersect_read_base = read_sem.intersect(&base_sem).unwrap();
-        assert!(intersect_read_base
-            .is_same_type(&read_sem, &mut ctx)
-            .unwrap());
+        assert!(
+            intersect_read_base
+                .is_same_type(&read_sem, &mut ctx)
+                .unwrap()
+        );
 
         let intersect_write_base = write_sem.intersect(&base_sem).unwrap();
-        assert!(intersect_write_base
-            .is_same_type(&write_sem, &mut ctx)
-            .unwrap());
+        assert!(
+            intersect_write_base
+                .is_same_type(&write_sem, &mut ctx)
+                .unwrap()
+        );
 
         // Union of unrelated formats should contain both
         let union_base_other = base_sem.union(&other_sem).unwrap();
@@ -866,12 +874,16 @@ mod tests {
 
         // Union of two literals
         let literal_union = literal_abc_sem.union(&literal_def_sem).unwrap();
-        assert!(!literal_union
-            .is_same_type(&literal_abc_sem, &mut ctx)
-            .unwrap());
-        assert!(!literal_union
-            .is_same_type(&literal_def_sem, &mut ctx)
-            .unwrap());
+        assert!(
+            !literal_union
+                .is_same_type(&literal_abc_sem, &mut ctx)
+                .unwrap()
+        );
+        assert!(
+            !literal_union
+                .is_same_type(&literal_def_sem, &mut ctx)
+                .unwrap()
+        );
     }
 
     #[test]
@@ -1053,12 +1065,16 @@ mod tests {
 
         // Union of two literals
         let literal_union = literal_42_sem.union(&literal_100_sem).unwrap();
-        assert!(!literal_union
-            .is_same_type(&literal_42_sem, &mut ctx)
-            .unwrap());
-        assert!(!literal_union
-            .is_same_type(&literal_100_sem, &mut ctx)
-            .unwrap());
+        assert!(
+            !literal_union
+                .is_same_type(&literal_42_sem, &mut ctx)
+                .unwrap()
+        );
+        assert!(
+            !literal_union
+                .is_same_type(&literal_100_sem, &mut ctx)
+                .unwrap()
+        );
     }
 
     #[test]
@@ -1262,9 +1278,11 @@ mod tests {
             .to_sem_type(&definitions, &mut SemTypeContext::new())
             .expect("should work");
 
-        assert!(t1_st
-            .is_same_type(&t2_st, &mut SemTypeContext::new())
-            .unwrap());
+        assert!(
+            t1_st
+                .is_same_type(&t2_st, &mut SemTypeContext::new())
+                .unwrap()
+        );
     }
 
     #[test]
@@ -1425,7 +1443,7 @@ mod tests {
     #[test]
     fn never_behavior() {
         let definitions = vec![];
-        let never = Runtype::StNever;
+        let never = Runtype::Never;
         let types = vec![
             Runtype::String,
             Runtype::Number,
@@ -1439,7 +1457,7 @@ mod tests {
             assert!(rt_is_sub_type(&never, &t, &definitions, &definitions));
 
             // Nothing (except Never) is subtype of Never
-            if t != Runtype::StNever {
+            if t != Runtype::Never {
                 // (though t is not never here)
                 assert!(!rt_is_sub_type(&t, &never, &definitions, &definitions));
             }

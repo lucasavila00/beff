@@ -1909,7 +1909,7 @@ impl<'a, 'b, R: FileManager> TypeToSchema<'a, 'b, R> {
             .is_empty(ctx)
             .map_err(|e| self.box_error(span, DiagnosticInfoMessage::AnyhowError(e.to_string())))?
         {
-            return Ok(Runtype::StNever);
+            return Ok(Runtype::Never);
         }
         let (head, tail) = semtype_to_runtypes(
             ctx,
@@ -2050,7 +2050,7 @@ impl<'a, 'b, R: FileManager> TypeToSchema<'a, 'b, R> {
                     None => Err(DiagnosticInfoMessage::CannotResolveRefInExtractUnion(r)),
                 }
             }
-            Runtype::StNever => Ok(vec![]),
+            Runtype::Never => Ok(vec![]),
             _ => Ok(vec![tp]),
         }
     }

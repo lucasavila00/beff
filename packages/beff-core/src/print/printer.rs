@@ -1,9 +1,9 @@
 use std::collections::{BTreeMap, BTreeSet};
 
-use anyhow::{anyhow, Ok, Result};
-use swc_common::SourceMap;
+use anyhow::{Ok, Result, anyhow};
 use swc_common::DUMMY_SP;
-use swc_common::{sync::Lrc, FilePathMapping};
+use swc_common::SourceMap;
+use swc_common::{FilePathMapping, sync::Lrc};
 use swc_ecma_ast::Module;
 use swc_ecma_ast::{
     ArrayLit, BindingIdent, Decl, Expr, ExprOrSpread, Ident, KeyValueProp, Lit, ModuleItem,
@@ -11,17 +11,17 @@ use swc_ecma_ast::{
     VarDeclKind, VarDeclarator,
 };
 use swc_ecma_codegen::Config;
-use swc_ecma_codegen::{text_writer::JsWriter, Emitter};
+use swc_ecma_codegen::{Emitter, text_writer::JsWriter};
 
+use crate::RuntypeName;
 use crate::ast::json::Json;
 use crate::ast::runtype::CustomFormat;
 use crate::ast::runtype::TplLitTypeItem;
 use crate::parser_extractor::ParserExtractResult;
-use crate::RuntypeName;
 use crate::{
+    NamedSchema,
     ast::runtype::{Optionality, Runtype},
     parser_extractor::BuiltDecoder,
-    NamedSchema,
 };
 
 fn emit_module_items(body: Vec<ModuleItem>) -> Result<String> {
@@ -55,8 +55,9 @@ fn emit_module_items(body: Vec<ModuleItem>) -> Result<String> {
 type SeenCounter = BTreeMap<Runtype, i32>;
 
 struct PrintContext {
-    direct: BTreeMap<Runtype, (usize, Expr)>,
+    hoisted: BTreeMap<Runtype, (usize, Expr)>,
     seen: SeenCounter,
+    all_names: Vec<RuntypeName>,
 }
 
 impl PrintContext {
@@ -64,7 +65,9 @@ impl PrintContext {
         match name {
             RuntypeName::Name(n) => n.to_string(),
             RuntypeName::SemtypeRecursiveGenerated(n) => format!("RecursiveGenerated{}", n),
-            RuntypeName::Address(_) => todo!(),
+            RuntypeName::Address(addr) => {
+                addr.ts_identifier(&self.all_names.iter().collect::<Vec<_>>())
+            }
         }
     }
 }
@@ -231,7 +234,7 @@ fn extract_union(it: &Runtype, named_schemas: &[NamedSchema]) -> Vec<Runtype> {
                 .expect("everything should be resolved by now");
             extract_union(&v.schema, named_schemas)
         }
-        Runtype::StNever => vec![],
+        Runtype::Never => vec![],
         _ => vec![it.clone()],
     }
 }
@@ -470,7 +473,7 @@ fn optionality_wrapper(inner: Expr) -> Expr {
 }
 
 fn print_runtype(schema: &Runtype, named_schemas: &[NamedSchema], ctx: &mut PrintContext) -> Expr {
-    let found_direct = ctx.direct.get(schema);
+    let found_direct = ctx.hoisted.get(schema);
     if let Some((var_name, _)) = found_direct {
         return hoist_identifier(*var_name);
     }
@@ -482,7 +485,7 @@ fn print_runtype(schema: &Runtype, named_schemas: &[NamedSchema], ctx: &mut Prin
         Runtype::Function => typeof_runtype("function"),
         Runtype::Ref(to) => ref_runtype(to, ctx),
         Runtype::Any => no_args_runtype("AnyRuntype"),
-        Runtype::StNever => no_args_runtype("NeverRuntype"),
+        Runtype::Never => no_args_runtype("NeverRuntype"),
         Runtype::Const(c) => new_runtype_class("ConstRuntype", vec![c.clone().to_json().to_expr()]),
         Runtype::StringWithFormat(CustomFormat(first, rest)) => {
             formats_runtype("StringWithFormatRuntype", first, rest)
@@ -674,8 +677,8 @@ fn print_runtype(schema: &Runtype, named_schemas: &[NamedSchema], ctx: &mut Prin
     if seen_counter <= 1 {
         out
     } else {
-        let new_id = ctx.direct.len();
-        ctx.direct.insert(schema.clone(), (new_id, out.clone()));
+        let new_id = ctx.hoisted.len();
+        ctx.hoisted.insert(schema.clone(), (new_id, out.clone()));
         hoist_identifier(new_id)
     }
 }
@@ -752,7 +755,7 @@ fn calculate_schema_seen(schema: &Runtype, seen: &mut SeenCounter) {
         | Runtype::Number
         | Runtype::String
         | Runtype::Boolean
-        | Runtype::StNever
+        | Runtype::Never
         | Runtype::Function
         | Runtype::Date
         | Runtype::BigInt
@@ -810,10 +813,15 @@ impl ParserExtractResult {
         let mut seen: SeenCounter = BTreeMap::new();
         let built_parsers = self.built_decoders.unwrap_or_default();
         let named_schemas = validate_type_uniqueness(&self.validators)?;
+        let all_names = named_schemas
+            .iter()
+            .map(|it| it.name.clone())
+            .collect::<Vec<RuntypeName>>();
         calculate_named_schemas_seen(&named_schemas, &mut seen);
         let mut hoisted = PrintContext {
-            direct: BTreeMap::new(),
+            hoisted: BTreeMap::new(),
             seen,
+            all_names,
         };
 
         let build_parsers_input: ModuleItem = const_decl(
@@ -826,7 +834,7 @@ impl ParserExtractResult {
             named_runtypes(&named_schemas, &mut hoisted),
         );
 
-        let mut sorted_direct_hoisted_values = hoisted.direct.into_values().collect::<Vec<_>>();
+        let mut sorted_direct_hoisted_values = hoisted.hoisted.into_values().collect::<Vec<_>>();
         sorted_direct_hoisted_values.sort_by_key(|it| it.0);
 
         let hoisted_direct_decls: Vec<ModuleItem> = sorted_direct_hoisted_values

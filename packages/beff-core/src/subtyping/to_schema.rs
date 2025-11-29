@@ -4,15 +4,15 @@ use super::{
     subtype::{NumberRepresentationOrFormat, ProperSubtype, StringLitOrFormat, SubTypeTag},
 };
 use crate::{
+    NamedSchema, RuntypeName,
     ast::runtype::{
         CustomFormat, IndexedProperty, Optionality, Runtype, RuntypeConst, TplLitTypeItem,
     },
     subtyping::{
         bdd::MappingAtomicType,
-        dnf::{bdd_to_dnf, Conjunction},
+        dnf::{Conjunction, bdd_to_dnf},
         subtype::VoidUndefinedSubtype,
     },
-    NamedSchema, RuntypeName,
 };
 use std::{
     collections::{BTreeMap, BTreeSet},
@@ -182,7 +182,7 @@ impl<'a, 'b> SchemerContext<'a, 'b> {
 
     fn convert_to_schema_no_cache(&mut self, ty: &SemType) -> anyhow::Result<Runtype> {
         if ty.all == 0 && ty.subtype_data.is_empty() {
-            return Ok(Runtype::StNever);
+            return Ok(Runtype::Never);
         }
 
         let mut acc = BTreeSet::new();

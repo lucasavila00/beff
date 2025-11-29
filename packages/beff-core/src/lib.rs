@@ -501,7 +501,7 @@ impl ModuleItemAddress {
         }
     }
 
-    fn debug_print(&self, all_names: &[&RuntypeName]) -> String {
+    fn ts_identifier(&self, all_names: &[&RuntypeName]) -> String {
         let mut this_name_count = 0;
         for name in all_names {
             match name {
@@ -557,7 +557,7 @@ impl RuntypeName {
     fn debug_print(&self, all_names: &[&RuntypeName]) -> String {
         match self {
             RuntypeName::Name(name) => name.clone(),
-            RuntypeName::Address(addr) => addr.debug_print(all_names),
+            RuntypeName::Address(addr) => addr.ts_identifier(all_names),
             RuntypeName::SemtypeRecursiveGenerated(n) => format!("RecursiveGenerated{}", n),
         }
     }

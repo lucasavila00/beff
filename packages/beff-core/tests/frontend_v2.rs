@@ -1503,6 +1503,15 @@ mod tests {
         ]));
     }
 
+    #[test]
+    fn recursive_local_type() {
+        let from = r#"
+    export type X = { a: X };
+    parse.buildParsers<{ X: X }>();
+    "#;
+        insta::assert_snapshot!(print_types_multifile(&[("entry.ts", from)]));
+    }
+
     // #[test]
     // fn export_destructuring_array() {
     //     insta::assert_snapshot!(print_types_multifile(&[

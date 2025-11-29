@@ -256,7 +256,7 @@ impl<'a> ToSemTypeConverter<'a> {
             }
             Runtype::Date => Ok(SemTypeContext::date().into()),
             Runtype::BigInt => Ok(SemTypeContext::bigint().into()),
-            Runtype::StNever => Ok(SemTypeContext::never().into()),
+            Runtype::Never => Ok(SemTypeContext::never().into()),
             Runtype::StNot(it) => {
                 let chd = self.convert_to_sem_type(it, builder)?;
                 Ok(chd.complement()?)
