@@ -1,7 +1,7 @@
 use crate::{
     BeffUserSettings, BffFileName, FileManager, ImportReference, ModuleItemAddress, ParsedModule,
     RuntypeName, SymbolExport, SymbolExportDefault, Visibility,
-    ast::runtype::{Optionality, Runtype, RuntypeConst},
+    ast::runtype::{CustomFormat, Optionality, Runtype, RuntypeConst, TplLitType, TplLitTypeItem},
     diag::{
         Diagnostic, DiagnosticInfoMessage, DiagnosticInformation, DiagnosticParentMessage, Location,
     },
@@ -11,14 +11,14 @@ use anyhow::{Result, anyhow};
 use std::{collections::HashMap, rc::Rc};
 use swc_common::{Span, Spanned};
 use swc_ecma_ast::{
-    Expr, Ident, Lit, Prop, PropName, PropOrSpread, TsArrayType, TsCallSignatureDecl,
+    Expr, Ident, Lit, Prop, PropName, PropOrSpread, Str, TsArrayType, TsCallSignatureDecl,
     TsConstructSignatureDecl, TsConstructorType, TsEntityName, TsFnOrConstructorType, TsFnType,
     TsGetterSignature, TsImportType, TsIndexSignature, TsInferType, TsIntersectionType,
     TsKeywordType, TsKeywordTypeKind, TsLit, TsLitType, TsMethodSignature, TsOptionalType,
     TsParenthesizedType, TsPropertySignature, TsQualifiedName, TsRestType, TsSetterSignature,
-    TsThisType, TsTupleType, TsType, TsTypeAliasDecl, TsTypeElement, TsTypeLit, TsTypeOperator,
-    TsTypeOperatorOp, TsTypeParamInstantiation, TsTypePredicate, TsTypeQuery, TsTypeQueryExpr,
-    TsTypeRef, TsUnionOrIntersectionType, TsUnionType,
+    TsThisType, TsTplLitType, TsTupleType, TsType, TsTypeAliasDecl, TsTypeElement, TsTypeLit,
+    TsTypeOperator, TsTypeOperatorOp, TsTypeParamInstantiation, TsTypePredicate, TsTypeQuery,
+    TsTypeQueryExpr, TsTypeRef, TsUnionOrIntersectionType, TsUnionType,
 };
 
 pub struct FrontendCtx<'a, R: FileManager> {
@@ -807,6 +807,225 @@ impl<'a, R: FileManager> FrontendCtx<'a, R> {
         self.partial_validators.insert(addr.clone(), Some(schema));
         Ok(Runtype::Ref(RuntypeName::Address(addr)))
     }
+
+    fn get_string_with_format(
+        &mut self,
+        type_params: &Option<Box<TsTypeParamInstantiation>>,
+        span: &Span,
+        file: BffFileName,
+    ) -> Res<Runtype> {
+        let r = type_params.as_ref().and_then(|it| it.params.split_first());
+
+        if let Some((head, rest)) = r {
+            if rest.is_empty() {
+                if let TsType::TsLitType(TsLitType {
+                    lit: TsLit::Str(Str { value, .. }),
+                    ..
+                }) = &**head
+                {
+                    let val_str = value.to_string();
+                    if self.settings.string_formats.contains(&val_str) {
+                        return Ok(Runtype::StringWithFormat(CustomFormat(val_str, vec![])));
+                    } else {
+                        return self.error(
+                            span,
+                            DiagnosticInfoMessage::CustomStringIsNotRegistered,
+                            file.clone(),
+                        );
+                    }
+                }
+            }
+        }
+        self.error(
+            span,
+            DiagnosticInfoMessage::InvalidUsageOfStringFormatTypeParameter,
+            file,
+        )
+    }
+    fn get_string_format_base_formats(
+        &mut self,
+        schema: &Runtype,
+        span: &Span,
+        file: BffFileName,
+    ) -> Res<(String, Vec<String>)> {
+        match schema {
+            Runtype::StringWithFormat(CustomFormat(first, rest)) => {
+                Ok((first.clone(), rest.clone()))
+            }
+            Runtype::Ref(r) => {
+                let v = match r {
+                    RuntypeName::Name(_) => todo!(),
+                    RuntypeName::Address(module_item_address) => {
+                        self.partial_validators.get(module_item_address)
+                    }
+                    RuntypeName::SemtypeRecursiveGenerated(_) => todo!(),
+                };
+
+                let v = v.and_then(|it| it.clone());
+                if let Some(v) = v {
+                    self.get_string_format_base_formats(&v, span, file)
+                } else {
+                    self.error(
+                        span,
+                        DiagnosticInfoMessage::CouldNotFindBaseOfStringFormatExtends,
+                        file,
+                    )
+                }
+            }
+            _ => self.error(
+                span,
+                DiagnosticInfoMessage::BaseOfStringFormatExtendsShouldBeStringFormat,
+                file,
+            ),
+        }
+    }
+
+    fn get_string_format_extends(
+        &mut self,
+        type_params: &Option<Box<TsTypeParamInstantiation>>,
+        span: &Span,
+        file: BffFileName,
+    ) -> Res<Runtype> {
+        if let Some(type_params) = type_params {
+            if let [base, next_str] = type_params.params.as_slice() {
+                if let TsType::TsLitType(TsLitType {
+                    lit: TsLit::Str(Str { value, .. }),
+                    ..
+                }) = &**next_str
+                {
+                    let next_str = value.to_string();
+                    if self.settings.string_formats.contains(&next_str) {
+                        let base = self.extract_type(base, file.clone())?;
+
+                        let (first, mut rest) =
+                            self.get_string_format_base_formats(&base, span, file.clone())?;
+                        rest.push(next_str);
+                        return Ok(Runtype::StringWithFormat(CustomFormat(first, rest)));
+                    } else {
+                        return self.error(
+                            span,
+                            DiagnosticInfoMessage::CustomStringIsNotRegistered,
+                            file.clone(),
+                        );
+                    }
+                }
+            }
+        }
+        self.error(
+            span,
+            DiagnosticInfoMessage::InvalidUsageOfStringFormatExtendsTypeParameter,
+            file,
+        )
+    }
+    fn get_number_with_format(
+        &mut self,
+        type_params: &Option<Box<TsTypeParamInstantiation>>,
+        span: &Span,
+        file: BffFileName,
+    ) -> Res<Runtype> {
+        let r = type_params.as_ref().and_then(|it| it.params.split_first());
+
+        if let Some((head, rest)) = r {
+            if rest.is_empty() {
+                if let TsType::TsLitType(TsLitType {
+                    lit: TsLit::Str(Str { value, .. }),
+                    ..
+                }) = &**head
+                {
+                    let val_str = value.to_string();
+                    if self.settings.number_formats.contains(&val_str) {
+                        return Ok(Runtype::NumberWithFormat(CustomFormat(val_str, vec![])));
+                    } else {
+                        return self.error(
+                            span,
+                            DiagnosticInfoMessage::CustomNumberIsNotRegistered,
+                            file,
+                        );
+                    }
+                }
+            }
+        }
+        self.error(
+            span,
+            DiagnosticInfoMessage::InvalidUsageOfNumberFormatTypeParameter,
+            file,
+        )
+    }
+    fn get_number_format_base_formats(
+        &mut self,
+        schema: &Runtype,
+        span: &Span,
+        file: BffFileName,
+    ) -> Res<(String, Vec<String>)> {
+        match schema {
+            Runtype::NumberWithFormat(CustomFormat(first, rest)) => {
+                Ok((first.clone(), rest.clone()))
+            }
+            Runtype::Ref(r) => {
+                let v = match r {
+                    RuntypeName::Name(_) => todo!(),
+                    RuntypeName::Address(module_item_address) => {
+                        self.partial_validators.get(module_item_address)
+                    }
+                    RuntypeName::SemtypeRecursiveGenerated(_) => todo!(),
+                };
+
+                let v = v.and_then(|it| it.clone());
+                if let Some(v) = v {
+                    self.get_number_format_base_formats(&v, span, file.clone())
+                } else {
+                    self.error(
+                        span,
+                        DiagnosticInfoMessage::CouldNotFindBaseOfNumberFormatExtends,
+                        file.clone(),
+                    )
+                }
+            }
+            _ => self.error(
+                span,
+                DiagnosticInfoMessage::BaseOfNumberFormatExtendsShouldBeNumberFormat,
+                file.clone(),
+            ),
+        }
+    }
+    fn get_number_format_extends(
+        &mut self,
+        type_params: &Option<Box<TsTypeParamInstantiation>>,
+        span: &Span,
+        file: BffFileName,
+    ) -> Res<Runtype> {
+        if let Some(type_params) = type_params {
+            if let [base, next_str] = type_params.params.as_slice() {
+                if let TsType::TsLitType(TsLitType {
+                    lit: TsLit::Str(Str { value, .. }),
+                    ..
+                }) = &**next_str
+                {
+                    let next_str = value.to_string();
+                    if self.settings.number_formats.contains(&next_str) {
+                        let base = self.extract_type(base, file.clone())?;
+
+                        let (first, mut rest) =
+                            self.get_number_format_base_formats(&base, span, file.clone())?;
+                        rest.push(next_str);
+                        return Ok(Runtype::NumberWithFormat(CustomFormat(first, rest)));
+                    } else {
+                        return self.error(
+                            span,
+                            DiagnosticInfoMessage::CustomNumberIsNotRegistered,
+                            file.clone(),
+                        );
+                    }
+                }
+            }
+        }
+        self.error(
+            span,
+            DiagnosticInfoMessage::InvalidUsageOfNumberFormatExtendsTypeParameter,
+            file.clone(),
+        )
+    }
+
     fn extract_type_from_ts_entity_name(
         &mut self,
         type_name: &TsEntityName,
@@ -814,6 +1033,34 @@ impl<'a, R: FileManager> FrontendCtx<'a, R> {
         file: BffFileName,
         visibility: Visibility,
     ) -> Res<Runtype> {
+        if let TsEntityName::Ident(i) = type_name {
+            match i.sym.to_string().as_str() {
+                "Date" => return Ok(Runtype::Date),
+                "ReadonlyArray" | "Array" => {
+                    let type_params = type_params.as_ref().and_then(|it| it.params.split_first());
+                    if let Some((ty, [])) = type_params {
+                        let ty = self.extract_type(ty, file.clone())?;
+                        return Ok(Runtype::Array(ty.into()));
+                    }
+                    return Ok(Runtype::Array(Runtype::Any.into()));
+                }
+                "StringFormat" => {
+                    return self.get_string_with_format(type_params, &i.span, file.clone());
+                }
+                "StringFormatExtends" => {
+                    return self.get_string_format_extends(type_params, &i.span, file.clone());
+                }
+                "NumberFormat" => {
+                    return self.get_number_with_format(type_params, &i.span, file.clone());
+                }
+                "NumberFormatExtends" => {
+                    return self.get_number_format_extends(type_params, &i.span, file.clone());
+                }
+                _ => {}
+            }
+        }
+
+        assert!(type_params.is_none(), "generic types not supported yet");
         let fat = self.get_final_address_from_ts_entity_name(
             type_name,
             type_params,
@@ -862,8 +1109,6 @@ impl<'a, R: FileManager> FrontendCtx<'a, R> {
             type_params,
             span: _,
         } = ty;
-
-        assert!(type_params.is_none(), "generic types not supported yet");
 
         self.extract_type_from_ts_entity_name(type_name, type_params, file, Visibility::Local)
     }
@@ -1208,6 +1453,110 @@ impl<'a, R: FileManager> FrontendCtx<'a, R> {
         }
     }
 
+    fn runtype_to_tpl_lit(
+        &mut self,
+        span: &Span,
+        schema: &Runtype,
+        file_name: BffFileName,
+    ) -> Res<TplLitTypeItem> {
+        match schema {
+            Runtype::Boolean => Ok(TplLitTypeItem::Boolean),
+            Runtype::String => Ok(TplLitTypeItem::String),
+            Runtype::Number => Ok(TplLitTypeItem::Number),
+            Runtype::AnyOf(vs) => {
+                let mut acc = vec![];
+                for v in vs {
+                    let item = self.runtype_to_tpl_lit(span, v, file_name.clone())?;
+                    acc.push(item);
+                }
+                Ok(TplLitTypeItem::one_of(acc))
+            }
+            Runtype::Ref(name) => {
+                let v = match name {
+                    RuntypeName::Name(_) => {
+                        unreachable!("name shouldnt be used concurrently with addr")
+                    }
+                    RuntypeName::Address(addr) => self.partial_validators.get(addr),
+                    RuntypeName::SemtypeRecursiveGenerated(_) => {
+                        // TODO: is this reaaally impossible?
+                        unreachable!(
+                            "at this point we're just inferring types which couldn't have been generated by semantic typing"
+                        )
+                    }
+                };
+                let v = v.and_then(|it| it.clone());
+                match v {
+                    Some(v) => self.runtype_to_tpl_lit(span, &v, file_name.clone()),
+                    None => self.error(
+                        span,
+                        DiagnosticInfoMessage::CannotResolveRefInJsonSchemaToTplLit,
+                        file_name,
+                    ),
+                }
+            }
+            Runtype::TplLitType(it) => match it.0.as_slice() {
+                [single] => Ok(single.clone()),
+                _ => self.error(
+                    span,
+                    DiagnosticInfoMessage::NestedTplLitInJsonSchemaToTplLit,
+                    file_name,
+                ),
+            },
+            _ => self.error(
+                span,
+                DiagnosticInfoMessage::TplLitTypeNonStringNonNumberNonBoolean,
+                file_name,
+            ),
+        }
+    }
+
+    fn convert_ts_tpl_lit_type_non_trivial(
+        &mut self,
+        it: &TsTplLitType,
+        file_name: BffFileName,
+    ) -> Res<Runtype> {
+        let mut quasis_idx = 0;
+        let mut types_idx = 0;
+        let mut selecting_quasis = true;
+
+        let mut acc: Vec<TplLitTypeItem> = vec![];
+        let iter_count = it.quasis.len() + it.types.len();
+        for _ in 0..iter_count {
+            if selecting_quasis {
+                let quasis = &it.quasis[quasis_idx];
+                quasis_idx += 1;
+                acc.push(TplLitTypeItem::StringConst(quasis.raw.to_string()));
+                selecting_quasis = false;
+            } else {
+                let type_ = &it.types[types_idx];
+                types_idx += 1;
+
+                let ty = self.extract_type(type_, file_name.clone())?;
+                acc.push(self.runtype_to_tpl_lit(&it.span, &ty, file_name.clone())?);
+
+                selecting_quasis = true;
+            }
+        }
+
+        Ok(Runtype::TplLitType(TplLitType(acc)))
+    }
+
+    fn convert_ts_tpl_lit_type(
+        &mut self,
+        it: &TsTplLitType,
+        file_name: BffFileName,
+    ) -> Res<Runtype> {
+        if !it.types.is_empty() || it.quasis.len() != 1 {
+            self.convert_ts_tpl_lit_type_non_trivial(it, file_name)
+        } else {
+            Ok(Runtype::single_string_const(
+                &it.quasis
+                    .iter()
+                    .map(|it| it.raw.to_string())
+                    .collect::<String>(),
+            ))
+        }
+    }
     fn extract_type(&mut self, ty: &TsType, file: BffFileName) -> Res<Runtype> {
         match ty {
             TsType::TsTypeRef(ts_type_ref) => self.extract_type_ref(ts_type_ref, file),
@@ -1223,7 +1572,7 @@ impl<'a, R: FileManager> FrontendCtx<'a, R> {
                 TsLit::Str(s) => Ok(Runtype::single_string_const(&s.value)),
                 TsLit::Bool(b) => Ok(Runtype::Const(RuntypeConst::Bool(b.value))),
                 TsLit::BigInt(_) => Ok(Runtype::BigInt),
-                TsLit::Tpl(_) => todo!(),
+                TsLit::Tpl(it) => self.convert_ts_tpl_lit_type(it, file.clone()),
             },
             TsType::TsArrayType(TsArrayType { elem_type, .. }) => Ok(Runtype::Array(
                 self.extract_type(elem_type, file.clone())?.into(),
