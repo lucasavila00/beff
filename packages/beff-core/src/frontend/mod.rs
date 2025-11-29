@@ -1,3 +1,6 @@
+use crate::NamedSchema;
+use crate::subtyping::ToSemType;
+use crate::subtyping::to_schema::semtype_to_runtypes;
 use crate::{
     BeffUserSettings, BffFileName, FileManager, ImportReference, ModuleItemAddress, ParsedModule,
     RuntypeName, SymbolExport, SymbolExportDefault, Visibility,
@@ -6,19 +9,21 @@ use crate::{
         Diagnostic, DiagnosticInfoMessage, DiagnosticInformation, DiagnosticParentMessage, Location,
     },
     parser_extractor::BuiltDecoder,
+    subtyping::semtype::{SemType, SemTypeContext},
 };
 use anyhow::{Result, anyhow};
 use std::{collections::HashMap, rc::Rc};
 use swc_common::{Span, Spanned};
 use swc_ecma_ast::{
     Expr, Ident, Lit, Prop, PropName, PropOrSpread, Str, TsArrayType, TsCallSignatureDecl,
-    TsConstructSignatureDecl, TsConstructorType, TsEntityName, TsFnOrConstructorType, TsFnType,
-    TsGetterSignature, TsImportType, TsIndexSignature, TsInferType, TsIntersectionType,
-    TsKeywordType, TsKeywordTypeKind, TsLit, TsLitType, TsMethodSignature, TsOptionalType,
-    TsParenthesizedType, TsPropertySignature, TsQualifiedName, TsRestType, TsSetterSignature,
-    TsThisType, TsTplLitType, TsTupleType, TsType, TsTypeAliasDecl, TsTypeElement, TsTypeLit,
-    TsTypeOperator, TsTypeOperatorOp, TsTypeParamInstantiation, TsTypePredicate, TsTypeQuery,
-    TsTypeQueryExpr, TsTypeRef, TsUnionOrIntersectionType, TsUnionType,
+    TsConstructSignatureDecl, TsConstructorType, TsEntityName, TsEnumDecl, TsFnOrConstructorType,
+    TsFnType, TsGetterSignature, TsImportType, TsIndexSignature, TsIndexedAccessType, TsInferType,
+    TsInterfaceDecl, TsIntersectionType, TsKeywordType, TsKeywordTypeKind, TsLit, TsLitType,
+    TsMethodSignature, TsOptionalType, TsParenthesizedType, TsPropertySignature, TsQualifiedName,
+    TsRestType, TsSetterSignature, TsThisType, TsTplLitType, TsTupleType, TsType, TsTypeAliasDecl,
+    TsTypeElement, TsTypeLit, TsTypeOperator, TsTypeOperatorOp, TsTypeParamInstantiation,
+    TsTypePredicate, TsTypeQuery, TsTypeQueryExpr, TsTypeRef, TsUnionOrIntersectionType,
+    TsUnionType,
 };
 
 pub struct FrontendCtx<'a, R: FileManager> {
@@ -30,11 +35,29 @@ pub struct FrontendCtx<'a, R: FileManager> {
     pub partial_validators: HashMap<ModuleItemAddress, Option<Runtype>>,
 }
 
+#[derive(Debug)]
 pub enum AddressedType {
     TsType {
         t: Rc<TsTypeAliasDecl>,
         address: ModuleItemAddress,
     },
+    TsInterface {
+        t: Rc<TsInterfaceDecl>,
+        address: ModuleItemAddress,
+    },
+    TsEnum {
+        t: Rc<TsEnumDecl>,
+        address: ModuleItemAddress,
+    },
+}
+impl AddressedType {
+    fn addr(&self) -> ModuleItemAddress {
+        match self {
+            AddressedType::TsType { t: _, address } => address.clone(),
+            AddressedType::TsInterface { t: _, address } => address.clone(),
+            AddressedType::TsEnum { t: _, address } => address.clone(),
+        }
+    }
 }
 
 #[derive(PartialEq, PartialOrd)]
@@ -55,7 +78,7 @@ pub enum AddressedQualifiedValue {
 #[derive(Debug)]
 pub enum FinalTypeAddress {
     TsType {
-        t: Rc<TsTypeAliasDecl>,
+        addressed_type: AddressedType,
         address: ModuleItemAddress,
     },
     SomethingOfStarOfFile {
@@ -66,7 +89,10 @@ pub enum FinalTypeAddress {
 impl FinalTypeAddress {
     pub fn addr(&self) -> &ModuleItemAddress {
         match self {
-            FinalTypeAddress::TsType { t: _, address } => address,
+            FinalTypeAddress::TsType {
+                addressed_type: _,
+                address,
+            } => address,
             FinalTypeAddress::SomethingOfStarOfFile { address } => address,
         }
     }
@@ -84,12 +110,20 @@ trait TypeModuleWalker<'a, R: FileManager + 'a, U> {
         export: &SymbolExport,
         span: &Span,
     ) -> Res<U>;
-    fn maybe_get_addressed_item_from_local_ts_type(
+
+    fn get_addressed_item_from_local_ts_type(
         &mut self,
         ts_type: &Rc<TsTypeAliasDecl>,
         file: BffFileName,
         name: String,
-    ) -> Res<Option<U>>;
+    ) -> Res<U>;
+
+    fn get_addressed_item_from_local_ts_enum(
+        &mut self,
+        ts_enum: &Rc<TsEnumDecl>,
+        file: BffFileName,
+        name: String,
+    ) -> Res<U>;
 
     fn get_addressed_item_from_default_import(
         &mut self,
@@ -159,17 +193,29 @@ trait TypeModuleWalker<'a, R: FileManager + 'a, U> {
         let parsed_module = self.get_ctx().get_or_fetch_adressed_file(addr, span)?;
         match addr.visibility {
             Visibility::Local => {
-                if let Some(ts_type) = parsed_module.locals.type_aliases.get(&addr.name)
-                    && let Some(res) = self.maybe_get_addressed_item_from_local_ts_type(
+                if let Some(ts_type) = parsed_module.locals.type_aliases.get(&addr.name) {
+                    return Ok(self.get_addressed_item_from_local_ts_type(
                         ts_type,
                         addr.file.clone(),
                         addr.name.clone(),
-                    )?
-                {
-                    return Ok(res);
+                    )?);
                 }
 
-                // TODO: interfaces,  enums
+                if let Some(enum_) = parsed_module.locals.enums.get(&addr.name) {
+                    return Ok(self.get_addressed_item_from_local_ts_enum(
+                        enum_,
+                        addr.file.clone(),
+                        addr.name.clone(),
+                    )?);
+                }
+
+                if let Some(interface) = parsed_module.locals.interfaces.get(&addr.name) {
+                    // return Ok(AddressedType::TsInterface(
+                    //     interface.clone(),
+                    //     addr.file.clone(),
+                    // ));
+                    todo!()
+                }
 
                 if let Some(imported) = parsed_module.imports.get(&addr.name) {
                     return self.get_addressed_item_from_import_reference(imported, span);
@@ -258,25 +304,41 @@ impl<'a, 'b, R: FileManager> TypeModuleWalker<'a, R, AddressedType> for TypeWalk
         }
     }
 
-    fn maybe_get_addressed_item_from_local_ts_type(
+    fn get_addressed_item_from_local_ts_type(
         &mut self,
         ts_type: &Rc<TsTypeAliasDecl>,
         file: BffFileName,
         name: String,
-    ) -> Res<Option<AddressedType>> {
-        Ok(Some(AddressedType::TsType {
+    ) -> Res<AddressedType> {
+        Ok(AddressedType::TsType {
             t: ts_type.clone(),
             address: ModuleItemAddress {
                 file,
                 name,
                 visibility: Visibility::Local,
             },
-        }))
+        })
     }
 
     fn handle_import_star(&mut self, _file_name: BffFileName, _span: &Span) -> Res<AddressedType> {
         // should have called get_addressed_qualified_type
         todo!()
+    }
+
+    fn get_addressed_item_from_local_ts_enum(
+        &mut self,
+        ts_enum: &Rc<TsEnumDecl>,
+        file: BffFileName,
+        name: String,
+    ) -> Res<AddressedType> {
+        Ok(AddressedType::TsEnum {
+            t: ts_enum.clone(),
+            address: ModuleItemAddress {
+                file,
+                name,
+                visibility: Visibility::Local,
+            },
+        })
     }
 }
 
@@ -305,13 +367,13 @@ impl<'a, 'b, R: FileManager> TypeModuleWalker<'a, R, AddressedQualifiedType>
         }
     }
 
-    fn maybe_get_addressed_item_from_local_ts_type(
+    fn get_addressed_item_from_local_ts_type(
         &mut self,
         _ts_type: &Rc<TsTypeAliasDecl>,
         _file: BffFileName,
         _name: String,
-    ) -> Res<Option<AddressedQualifiedType>> {
-        Ok(None)
+    ) -> Res<AddressedQualifiedType> {
+        todo!()
     }
 
     fn handle_import_star(
@@ -320,6 +382,15 @@ impl<'a, 'b, R: FileManager> TypeModuleWalker<'a, R, AddressedQualifiedType>
         _span: &Span,
     ) -> Res<AddressedQualifiedType> {
         Ok(AddressedQualifiedType::StarImport(file_name))
+    }
+
+    fn get_addressed_item_from_local_ts_enum(
+        &mut self,
+        ts_enum: &Rc<TsEnumDecl>,
+        file: BffFileName,
+        name: String,
+    ) -> Res<AddressedQualifiedType> {
+        todo!()
     }
 }
 
@@ -655,7 +726,15 @@ impl<'a, R: FileManager> FrontendCtx<'a, R> {
         let e = self.build_error(span, msg, file_name).to_diag(None);
         Err(Box::new(e))
     }
-
+    fn box_error(
+        &mut self,
+        span: &Span,
+        msg: DiagnosticInfoMessage,
+        file: BffFileName,
+    ) -> Box<Diagnostic> {
+        let err = self.build_error(span, msg, file);
+        err.to_diag(None).into()
+    }
     fn get_or_fetch_adressed_file(
         &mut self,
         addr: &ModuleItemAddress,
@@ -715,6 +794,28 @@ impl<'a, R: FileManager> FrontendCtx<'a, R> {
         walker.get_addressed_item(addr, span)
     }
 
+    fn extract_enum_decl(&mut self, typ: &TsEnumDecl, file: BffFileName) -> Res<Runtype> {
+        let mut values = vec![];
+
+        for member in &typ.members {
+            match &member.init {
+                Some(init) => {
+                    let expr_ty = self.typeof_expr(init, true, file.clone())?;
+                    values.push(expr_ty);
+                }
+                None => {
+                    return self.cannot_serialize_error(
+                        &typ.span,
+                        DiagnosticInfoMessage::EnumMemberNoInit,
+                        file,
+                    )?;
+                }
+            }
+        }
+
+        Ok(Runtype::any_of(values))
+    }
+
     fn extract_addressed_type(&mut self, address: &ModuleItemAddress, span: &Span) -> Res<Runtype> {
         let addressed_type = self.get_addressed_type(address, span)?;
         match addressed_type {
@@ -724,6 +825,14 @@ impl<'a, R: FileManager> FrontendCtx<'a, R> {
                     "generic types not supported yet"
                 );
                 let runtype = self.extract_type(&decl.type_ann, address.file.clone())?;
+                Ok(runtype)
+            }
+            AddressedType::TsInterface { t, address } => {
+                assert!(t.type_params.is_none(), "generic types not supported yet");
+                todo!()
+            }
+            AddressedType::TsEnum { t, address } => {
+                let runtype = self.extract_enum_decl(&t, address.file.clone())?;
                 Ok(runtype)
             }
         }
@@ -777,11 +886,10 @@ impl<'a, R: FileManager> FrontendCtx<'a, R> {
             TsEntityName::Ident(ident) => {
                 let addr = ModuleItemAddress::from_ident(ident, file, visibility);
                 let addressed = self.get_addressed_type(&addr, &ident.span)?;
-                match addressed {
-                    AddressedType::TsType { t, address } => {
-                        Ok(FinalTypeAddress::TsType { t: t, address })
-                    }
-                }
+                Ok(FinalTypeAddress::TsType {
+                    address: addressed.addr().clone(),
+                    addressed_type: addressed,
+                })
             }
             TsEntityName::TsQualifiedName(ts_qualified_name) => {
                 let type_addressed = self
@@ -1557,6 +1665,173 @@ impl<'a, R: FileManager> FrontendCtx<'a, R> {
             ))
         }
     }
+    fn extract_union(&self, tp: Runtype) -> Result<Vec<Runtype>, DiagnosticInfoMessage> {
+        match tp {
+            Runtype::AnyOf(v) => {
+                let mut vs = vec![];
+                for item in v {
+                    let extracted = self.extract_union(item)?;
+                    vs.extend(extracted);
+                }
+                Ok(vs)
+            }
+            Runtype::Ref(r) => {
+                let v = match &r {
+                    RuntypeName::Name(_) => todo!(),
+                    RuntypeName::Address(module_item_address) => {
+                        self.partial_validators.get(&module_item_address)
+                    }
+                    RuntypeName::SemtypeRecursiveGenerated(_) => todo!(),
+                };
+                let v = v.and_then(|it| it.clone());
+                match v {
+                    Some(v) => self.extract_union(v),
+                    None => Err(DiagnosticInfoMessage::CannotResolveRefInExtractUnion(r)),
+                }
+            }
+            Runtype::Never => Ok(vec![]),
+            _ => Ok(vec![tp]),
+        }
+    }
+
+    fn semtype_to_runtype(
+        &mut self,
+        access_st: Rc<SemType>,
+        ctx: &mut SemTypeContext,
+        span: &Span,
+    ) -> Res<Runtype> {
+        // if access_st
+        //     .is_empty(ctx)
+        //     .map_err(|e| self.box_error(span, DiagnosticInfoMessage::AnyhowError(e.to_string())))?
+        // {
+        //     return Ok(Runtype::Never);
+        // }
+        // let (head, tail) = semtype_to_runtypes(
+        //     ctx,
+        //     &access_st,
+        //     &RuntypeName::Name("AnyName".to_string()),
+        //     self.counter,
+        // )
+        // .map_err(|any| self.box_error(span, DiagnosticInfoMessage::AnyhowError(any.to_string())))?;
+        // for t in tail {
+        //     self.insert_definition(t.name.clone(), t.schema)?;
+        // }
+        // Ok(head.schema)
+        todo!()
+    }
+
+    fn convert_indexed_access_syntatically(
+        &mut self,
+        obj: &Runtype,
+        index: &Runtype,
+    ) -> Res<Option<Runtype>> {
+        // try to resolve syntatically
+        match (obj, index) {
+            (Runtype::Ref(r), _) => {
+                let v = match r {
+                    RuntypeName::Name(_) => todo!(),
+                    RuntypeName::Address(module_item_address) => {
+                        self.partial_validators.get(module_item_address)
+                    }
+                    RuntypeName::SemtypeRecursiveGenerated(_) => todo!(),
+                };
+
+                let v = v.and_then(|it| it.clone());
+                if let Some(v) = v {
+                    return self.convert_indexed_access_syntatically(&v, index);
+                }
+            }
+            (
+                Runtype::Object {
+                    vs,
+                    indexed_properties: _,
+                },
+                other,
+            ) => {
+                if let Some(s) = other.extract_single_string_const() {
+                    let v = vs.get(&s);
+                    if let Some(Optionality::Required(v)) = v {
+                        return Ok(Some(v.clone()));
+                    }
+                }
+                if let Ok(u) = self.extract_union(other.clone()) {
+                    let mut acc = vec![];
+                    for key in u {
+                        if let Some(s) = key.extract_single_string_const() {
+                            let v = vs.get(&s);
+                            if let Some(v) = v {
+                                match v {
+                                    Optionality::Optional(o) => acc.push(Runtype::AnyOf(
+                                        vec![o.clone(), Runtype::Null].into_iter().collect(),
+                                    )),
+                                    Optionality::Required(r) => {
+                                        acc.push(r.clone());
+                                    }
+                                }
+                            } else {
+                                // noop (same as pushing never)
+                            }
+                        } else {
+                            return Ok(None);
+                        }
+                    }
+                    return Ok(Some(Runtype::any_of(acc)));
+                };
+            }
+            _ => {}
+        }
+        Ok(None)
+    }
+    fn validators_ref(&self) -> Vec<&NamedSchema> {
+        // self.partial_validators
+        //     .values()
+        //     .filter_map(|it| it.as_ref())
+        //     .collect()
+        todo!()
+    }
+    fn extract_indexed_access_type(
+        &mut self,
+        i: &TsIndexedAccessType,
+        file: BffFileName,
+    ) -> Res<Runtype> {
+        let obj = self.extract_type(&i.obj_type, file.clone())?;
+        let index = self.extract_type(&i.index_type, file.clone())?;
+
+        if let Some(res) = self.convert_indexed_access_syntatically(&obj, &index)? {
+            return Ok(res);
+        }
+        // fallback to semantic
+        let mut ctx = SemTypeContext::new();
+
+        let obj_st = obj
+            .to_sem_type(&self.validators_ref(), &mut ctx)
+            .map_err(|e| {
+                self.box_error(
+                    &i.span,
+                    DiagnosticInfoMessage::AnyhowError(e.to_string()),
+                    file.clone(),
+                )
+            })?;
+        let idx_st = index
+            .to_sem_type(&self.validators_ref(), &mut ctx)
+            .map_err(|e| {
+                self.box_error(
+                    &i.span,
+                    DiagnosticInfoMessage::AnyhowError(e.to_string()),
+                    file.clone(),
+                )
+            })?;
+
+        let access_st: Rc<SemType> = ctx.indexed_access(obj_st, idx_st).map_err(|e| {
+            self.box_error(
+                &i.span,
+                DiagnosticInfoMessage::AnyhowError(e.to_string()),
+                file.clone(),
+            )
+        })?;
+        self.semtype_to_runtype(access_st, &mut ctx, &i.span())
+    }
+
     fn extract_type(&mut self, ty: &TsType, file: BffFileName) -> Res<Runtype> {
         match ty {
             TsType::TsTypeRef(ts_type_ref) => self.extract_type_ref(ts_type_ref, file),
@@ -1622,7 +1897,9 @@ impl<'a, R: FileManager> FrontendCtx<'a, R> {
                     .collect::<Res<_>>()?,
             )),
 
-            TsType::TsIndexedAccessType(_ts_indexed_access_type) => todo!(),
+            TsType::TsIndexedAccessType(ts_indexed_access_type) => {
+                self.extract_indexed_access_type(ts_indexed_access_type, file)
+            }
             TsType::TsMappedType(_ts_mapped_type) => todo!(),
             TsType::TsConditionalType(_ts_conditional_type) => todo!(),
             TsType::TsTypeOperator(TsTypeOperator {
