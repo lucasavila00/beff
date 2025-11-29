@@ -259,10 +259,62 @@ impl<'a, R: FileManager> FrontendCtx<'a, R> {
             }
         }
     }
+    fn get_addressed_qualified_type_from_symbol_exports(
+        &mut self,
+        export: &SymbolExport,
+        span: &Span,
+    ) -> Res<AddressedQualifiedType> {
+        match export {
+            SymbolExport::StarOfOtherFile { reference, span: _ } => {
+                return self.get_addressed_qualified_type_from_import_reference(&reference, span);
+            }
+            SymbolExport::TsType { .. } => todo!(),
+            SymbolExport::TsInterfaceDecl { .. } => todo!(),
+            SymbolExport::TsEnumDecl { .. } => todo!(),
+            SymbolExport::ValueExpr { .. } => todo!(),
+            SymbolExport::ExprDecl { .. } => todo!(),
+            SymbolExport::SomethingOfOtherFile { .. } => todo!(),
+        }
+    }
+
+    fn get_addressed_qualified_type_from_default_import(
+        &mut self,
+        file_name: BffFileName,
+        span: &Span,
+    ) -> Res<AddressedQualifiedType> {
+        match &self
+            .get_or_fetch_file(&file_name, span)?
+            .symbol_exports
+            .export_default
+        {
+            Some(export_default_symbol) => match export_default_symbol.as_ref() {
+                SymbolExportDefault::Expr {
+                    export_expr,
+                    span,
+                    file_name,
+                } => match export_expr.as_ref() {
+                    Expr::Ident(i) => {
+                        let new_addr = ModuleItemAddress {
+                            file: file_name.clone(),
+                            key: i.sym.to_string(),
+                            visibility: Visibility::Local,
+                        };
+                        return self.get_addressed_qualified_type(&new_addr, span);
+                    }
+                    _ => todo!(),
+                },
+                SymbolExportDefault::Renamed { export } => {
+                    return self.get_addressed_qualified_type_from_symbol_exports(export, span);
+                }
+            },
+            None => todo!(),
+        }
+    }
 
     fn get_addressed_qualified_type_from_import_reference(
         &mut self,
         imported: &ImportReference,
+        span: &Span,
     ) -> Res<AddressedQualifiedType> {
         match imported {
             ImportReference::Named {
@@ -280,7 +332,10 @@ impl<'a, R: FileManager> FrontendCtx<'a, R> {
             ImportReference::Star { file_name, span: _ } => {
                 return Ok(AddressedQualifiedType::StarImport(file_name.clone()));
             }
-            ImportReference::Default { .. } => todo!(),
+            ImportReference::Default { file_name } => {
+                return self
+                    .get_addressed_qualified_type_from_default_import(file_name.clone(), span);
+            }
         }
     }
 
@@ -293,27 +348,17 @@ impl<'a, R: FileManager> FrontendCtx<'a, R> {
         match addr.visibility {
             Visibility::Local => {
                 if let Some(imported) = parsed_module.imports.get(&addr.key) {
-                    return self.get_addressed_qualified_type_from_import_reference(imported);
+                    return self.get_addressed_qualified_type_from_import_reference(imported, span);
                 }
                 todo!()
             }
             Visibility::Export => {
                 if addr.key == "default" {
-                    todo!()
+                    return self
+                        .get_addressed_qualified_type_from_default_import(addr.file.clone(), span);
                 }
                 if let Some(export) = parsed_module.symbol_exports.get_type(&addr.key, self.files) {
-                    match export.as_ref() {
-                        SymbolExport::StarOfOtherFile { reference, span: _ } => {
-                            return self
-                                .get_addressed_qualified_type_from_import_reference(&reference);
-                        }
-                        SymbolExport::TsType { .. } => todo!(),
-                        SymbolExport::TsInterfaceDecl { .. } => todo!(),
-                        SymbolExport::TsEnumDecl { .. } => todo!(),
-                        SymbolExport::ValueExpr { .. } => todo!(),
-                        SymbolExport::ExprDecl { .. } => todo!(),
-                        SymbolExport::SomethingOfOtherFile { .. } => todo!(),
-                    }
+                    return self.get_addressed_qualified_type_from_symbol_exports(&export, span);
                 }
 
                 todo!()

@@ -1103,6 +1103,60 @@ mod tests {
     }
 
     #[test]
+    fn qualified_type_from_default_import() {
+        insta::assert_snapshot!(print_types_multifile(&[
+            (
+                "a.ts",
+                r#"
+                    export type A = string;
+                "#,
+            ),
+            (
+                "b.ts",
+                r#"
+                    import * as N from "./a";
+                    export default N;
+                "#,
+            ),
+            (
+                "entry.ts",
+                r#"
+                    import N from "./b";
+                    type X = N.A;
+                    parse.buildParsers<{ X: X }>();
+                "#
+            )
+        ]));
+    }
+
+    #[test]
+    fn qualified_type_from_default_import_renamed() {
+        insta::assert_snapshot!(print_types_multifile(&[
+            (
+                "a.ts",
+                r#"
+                    export type A = string;
+                "#,
+            ),
+            (
+                "b.ts",
+                r#"
+                    import * as N from "./a";
+                    export { N as default };
+                "#,
+            ),
+            (
+                "entry.ts",
+                r#"
+                    import N from "./b";
+                    type X = N.A;
+                    parse.buildParsers<{ X: X }>();
+                "#
+            )
+        ]));
+    }
+
+    #[test]
     fn export_star_conflict() {
         insta::assert_snapshot!(print_types_multifile(&[
             (
