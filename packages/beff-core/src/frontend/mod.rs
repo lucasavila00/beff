@@ -5,7 +5,7 @@ use swc_ecma_ast::{
     Expr, Ident, Lit, TsCallSignatureDecl, TsConstructSignatureDecl, TsEntityName, TsEnumDecl,
     TsGetterSignature, TsIndexSignature, TsInterfaceDecl, TsKeywordType, TsKeywordTypeKind, TsLit,
     TsLitType, TsMethodSignature, TsPropertySignature, TsQualifiedName, TsSetterSignature, TsType,
-    TsTypeElement, TsTypeLit, TsTypeParamDecl, TsTypeParamInstantiation, TsTypeQuery,
+    TsTypeAliasDecl, TsTypeElement, TsTypeLit, TsTypeParamInstantiation, TsTypeQuery,
     TsTypeQueryExpr, TsTypeRef,
 };
 
@@ -26,7 +26,7 @@ pub struct FrontendCtx<'a, R: FileManager> {
 }
 
 pub enum AddressedType {
-    TsType(Option<Rc<TsTypeParamDecl>>, Rc<TsType>),
+    TsType(Rc<TsTypeAliasDecl>),
     TsInterfaceDecl(Rc<TsInterfaceDecl>),
     TsEnumDecl(Rc<TsEnumDecl>),
 }
@@ -113,13 +113,8 @@ impl<'a, R: FileManager> FrontendCtx<'a, R> {
         let parsed_module = self.get_or_fetch_adressed_file(addr, span)?;
         match addr.visibility {
             Visibility::Local => {
-                if let Some((type_params, type_)) = parsed_module.locals.type_aliases.get(&addr.key)
-                {
-                    assert!(
-                        type_params.is_none(),
-                        "generic type aliases not supported yet"
-                    );
-                    return Ok(AddressedType::TsType(type_params.clone(), type_.clone()));
+                if let Some(ts_type) = parsed_module.locals.type_aliases.get(&addr.key) {
+                    return Ok(AddressedType::TsType(ts_type.clone()));
                 }
 
                 // TODO: interfaces,  enums
@@ -169,8 +164,8 @@ impl<'a, R: FileManager> FrontendCtx<'a, R> {
             Visibility::Export => {
                 if let Some(x) = parsed_module.symbol_exports.get_type(&addr.key, self.files) {
                     match x.as_ref() {
-                        SymbolExport::TsType { params, ty, .. } => {
-                            return Ok(AddressedType::TsType(params.clone(), ty.clone()));
+                        SymbolExport::TsType { decl, .. } => {
+                            return Ok(AddressedType::TsType(decl.clone()));
                         }
                         SymbolExport::TsInterfaceDecl { .. } => todo!(),
                         SymbolExport::TsEnumDecl { .. } => todo!(),
@@ -279,12 +274,13 @@ impl<'a, R: FileManager> FrontendCtx<'a, R> {
         let address = ModuleItemAddress::from_ident(i, file, visibility);
         let addressed_type = self.get_addressed_type(&address, &i.span)?;
         match addressed_type {
-            AddressedType::TsType(ts_type_param_decl, ts_type) => {
+            AddressedType::TsType(decl) => {
                 assert!(
-                    ts_type_param_decl.is_none(),
+                    decl.type_params.is_none(),
                     "generic types not supported yet"
                 );
-                let runtype = self.extract_type(&ts_type, address.file.clone(), visibility)?;
+                let runtype =
+                    self.extract_type(&decl.type_ann, address.file.clone(), visibility)?;
                 Ok(runtype)
             }
             AddressedType::TsInterfaceDecl(ts_interface_decl) => todo!(),

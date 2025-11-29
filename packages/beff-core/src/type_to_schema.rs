@@ -633,14 +633,19 @@ impl<'a, 'b, R: FileManager> TypeToSchema<'a, 'b, R> {
         self.current_file = from_file.clone();
         let ty = match exported {
             SymbolExport::TsType {
-                ty: alias,
-                params,
                 original_file,
-                ..
+                decl,
             } => {
                 let store_current_file = self.current_file.clone();
                 self.current_file = original_file.clone();
-                let res = self.apply_type_params(type_args, params, alias);
+                let res = self.apply_type_params(
+                    type_args,
+                    &decl
+                        .type_params
+                        .as_ref()
+                        .map(|it| it.as_ref().clone().into()),
+                    &decl.type_ann,
+                );
                 self.current_file = store_current_file;
                 res
             }
@@ -1145,7 +1150,7 @@ impl<'a, 'b, R: FileManager> TypeToSchema<'a, 'b, R> {
         match exported {
             Some(exported) => {
                 let name = match &*exported {
-                    SymbolExport::TsType { name, .. } => name.to_string(),
+                    SymbolExport::TsType { decl, .. } => decl.id.sym.to_string(),
                     SymbolExport::TsInterfaceDecl { decl: it, .. } => it.id.sym.to_string(),
                     SymbolExport::StarOfOtherFile { .. } => right.to_string(),
                     SymbolExport::SomethingOfOtherFile {

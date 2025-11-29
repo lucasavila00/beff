@@ -31,7 +31,6 @@ use swc_ecma_ast::ModuleItem;
 use swc_ecma_ast::Pat;
 use swc_ecma_ast::Stmt;
 use swc_ecma_ast::TsEnumDecl;
-use swc_ecma_ast::TsTypeParamDecl;
 use swc_ecma_ast::{Module, TsType};
 use swc_ecma_ast::{TsInterfaceDecl, TsTypeAliasDecl};
 use swc_ecma_visit::Visit;
@@ -40,10 +39,7 @@ use swc_node_comments::SwcComments;
 #[derive(Debug, Clone)]
 pub enum SymbolExport {
     TsType {
-        params: Option<Rc<TsTypeParamDecl>>,
-        ty: Rc<TsType>,
-        name: JsWord,
-        span: Span,
+        decl: Rc<TsTypeAliasDecl>,
         original_file: BffFileName,
     },
     TsInterfaceDecl {
@@ -82,8 +78,8 @@ pub enum SymbolExport {
 impl SymbolExport {
     pub fn span(&self) -> Span {
         match self {
-            SymbolExport::TsType { span, .. }
-            | SymbolExport::TsInterfaceDecl { span, .. }
+            SymbolExport::TsType { decl, .. } => decl.span,
+            SymbolExport::TsInterfaceDecl { span, .. }
             | SymbolExport::ValueExpr { span, .. }
             | SymbolExport::StarOfOtherFile { span, .. }
             | SymbolExport::SomethingOfOtherFile { span, .. }
@@ -236,11 +232,9 @@ pub struct ParsedModule {
     pub export_default: Option<Rc<SymbolExportDefault>>,
 }
 
-type TypeAliasMap = HashMap<String, (Option<Rc<TsTypeParamDecl>>, Rc<TsType>)>;
-
 #[derive(Debug)]
 pub struct ParsedModuleLocals {
-    pub type_aliases: TypeAliasMap,
+    pub type_aliases: HashMap<String, Rc<TsTypeAliasDecl>>,
     pub interfaces: HashMap<String, Rc<TsInterfaceDecl>>,
     pub enums: HashMap<String, Rc<TsEnumDecl>>,
 
@@ -316,19 +310,10 @@ impl ParserOfModuleLocals {
 
 impl Visit for ParserOfModuleLocals {
     fn visit_ts_type_alias_decl(&mut self, n: &TsTypeAliasDecl) {
-        let TsTypeAliasDecl {
-            id,
-            type_ann,
-            type_params,
-            ..
-        } = n;
-        self.content.type_aliases.insert(
-            id.sym.to_string(),
-            (
-                type_params.as_ref().map(|it| it.as_ref().clone().into()),
-                Rc::new(*type_ann.clone()),
-            ),
-        );
+        let TsTypeAliasDecl { id, .. } = n;
+        self.content
+            .type_aliases
+            .insert(id.sym.to_string(), Rc::new(n.clone()));
     }
     fn visit_ts_interface_decl(&mut self, n: &TsInterfaceDecl) {
         let TsInterfaceDecl { id, .. } = n;

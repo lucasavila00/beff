@@ -1,7 +1,9 @@
 use std::rc::Rc;
 
 use swc_common::Span;
-use swc_ecma_ast::{Expr, Ident, TsEnumDecl, TsInterfaceDecl, TsType, TsTypeParamDecl};
+use swc_ecma_ast::{
+    Expr, Ident, TsEnumDecl, TsInterfaceDecl, TsType, TsTypeAliasDecl, TsTypeParamDecl,
+};
 
 use crate::{
     diag::{Diagnostic, DiagnosticInfoMessage, Location},
@@ -274,13 +276,21 @@ impl<'a, R: FileManager> TypeResolver<'a, R> {
         self.resolve_local_import(i, false)
     }
     pub fn resolve_local_type(&mut self, i: &Ident) -> Res<ResolvedLocalSymbol> {
-        if let Some((a, b)) = self
+        if let Some(ts_type) = self
             .get_current_file()
             .locals
             .type_aliases
             .get(&i.sym.to_string())
         {
-            return Ok(ResolvedLocalSymbol::TsType(a.clone(), b.clone()));
+            let TsTypeAliasDecl {
+                type_ann: ty,
+                type_params: params,
+                ..
+            } = ts_type.as_ref();
+            return Ok(ResolvedLocalSymbol::TsType(
+                params.clone().as_ref().map(|it| it.as_ref().clone().into()),
+                ty.clone().into(),
+            ));
         }
 
         if let Some(intf) = self

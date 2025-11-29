@@ -29,9 +29,7 @@ use swc_ecma_ast::ModuleExportName;
 use swc_ecma_ast::NamedExport;
 use swc_ecma_ast::Pat;
 use swc_ecma_ast::TsEnumDecl;
-use swc_ecma_ast::{
-    ImportDecl, ImportNamedSpecifier, ImportSpecifier, TsInterfaceDecl, TsTypeAliasDecl,
-};
+use swc_ecma_ast::{ImportDecl, ImportNamedSpecifier, ImportSpecifier, TsInterfaceDecl};
 use swc_ecma_visit::Visit;
 
 pub trait FsModuleResolver {
@@ -143,21 +141,11 @@ impl<R: FsModuleResolver> Visit for ImportsVisitor<'_, R> {
                     }),
                 );
             }
-            Decl::TsTypeAlias(a) => {
-                let TsTypeAliasDecl {
-                    id,
-                    type_ann,
-                    type_params,
-                    span,
-                    ..
-                } = &**a;
+            Decl::TsTypeAlias(alias) => {
                 self.symbol_exports.insert_type(
-                    id.sym.to_string(),
+                    alias.id.sym.to_string(),
                     Rc::new(SymbolExport::TsType {
-                        ty: Rc::new(*type_ann.clone()),
-                        name: id.sym.clone(),
-                        params: type_params.as_ref().map(|it| it.as_ref().clone().into()),
-                        span: *span,
+                        decl: Rc::new(*alias.clone()),
                         original_file: self.current_file.clone(),
                     }),
                 );
@@ -328,14 +316,11 @@ pub fn parse_and_bind<R: FsModuleResolver>(
     for unresolved in v.unresolved_exports {
         let renamed = unresolved.renamed;
         let k = unresolved.name.to_string();
-        if let Some((params, ty)) = locals.content.type_aliases.get(&k) {
+        if let Some(ts_type) = locals.content.type_aliases.get(&k) {
             symbol_exports.insert_type(
                 renamed.to_string(),
                 Rc::new(SymbolExport::TsType {
-                    ty: ty.clone(),
-                    name: unresolved.name.clone(),
-                    params: params.clone(),
-                    span: ty.span(),
+                    decl: ts_type.clone(),
                     original_file: file_name.clone(),
                 }),
             );
