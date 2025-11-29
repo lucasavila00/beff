@@ -1244,7 +1244,9 @@ impl<'a, 'b, R: FileManager> TypeToSchema<'a, 'b, R> {
                 if let Ok(resolved) = ns {
                     match resolved.from_file.as_ref() {
                         ImportReference::Named {
-                            orig, file_name, ..
+                            original_name: orig,
+                            file_name,
+                            ..
                         } => {
                             let from_file =
                                 self.files.get_or_fetch_file(file_name).and_then(|module| {
@@ -1331,11 +1333,12 @@ impl<'a, 'b, R: FileManager> TypeToSchema<'a, 'b, R> {
         match &q.left {
             TsEntityName::TsQualifiedName(_) => {}
             TsEntityName::Ident(i) => {
-                let k = &(i.sym.clone(), i.span.ctxt);
-                let local_enum = self
-                    .files
-                    .get_existing_file(&self.current_file)
-                    .and_then(|current_file| current_file.locals.enums.get(k).cloned());
+                let local_enum =
+                    self.files
+                        .get_existing_file(&self.current_file)
+                        .and_then(|current_file| {
+                            current_file.locals.enums.get(&i.sym.to_string()).cloned()
+                        });
                 if let Some(local) = local_enum {
                     let found = local.members.iter().find(|it| match &it.id {
                         TsEnumMemberId::Ident(i2) => i2.sym == q.right.sym,
@@ -1547,7 +1550,7 @@ impl<'a, 'b, R: FileManager> TypeToSchema<'a, 'b, R> {
                         {
                             match decl.from_file.as_ref() {
                                 ImportReference::Named {
-                                    orig,
+                                    original_name: orig,
                                     file_name,
                                     span,
                                 } => {
@@ -1851,8 +1854,7 @@ impl<'a, 'b, R: FileManager> TypeToSchema<'a, 'b, R> {
                 TsEntityName::TsQualifiedName(q) => self.convert_type_query_qualified(q),
                 TsEntityName::Ident(n) => {
                     if let Some(f) = self.files.get_or_fetch_file(&self.current_file) {
-                        let k = &(n.sym.clone(), n.span.ctxt);
-                        if let Some(expr_decl) = f.locals.exprs_decls.get(k) {
+                        if let Some(expr_decl) = f.locals.exprs_decls.get(&n.sym.to_string()) {
                             return self.convert_ts_type(expr_decl);
                         }
 

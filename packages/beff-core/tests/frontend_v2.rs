@@ -28,13 +28,20 @@ mod tests {
     struct TestResolver {}
     impl FsModuleResolver for TestResolver {
         fn resolve_import(&mut self, module_specifier: &str) -> Option<BffFileName> {
-            dbg!(module_specifier);
-            todo!()
+            // assert the module specifier is something like "./mod"
+            let starts_with_dot = module_specifier.starts_with("./");
+            if !starts_with_dot {
+                panic!(
+                    "Only relative imports are supported in tests, got: {}",
+                    module_specifier
+                );
+            }
+            let replaced = module_specifier.replace("./", "");
+            Some(BffFileName::new(format!("{}.ts", replaced)))
         }
     }
-    fn parse_module(content: &str) -> Rc<ParsedModule> {
+    fn parse_module(file_name: BffFileName, content: &str) -> Rc<ParsedModule> {
         let mut resolver = TestResolver {};
-        let file_name = BffFileName::new("file.ts".into());
         GLOBALS.set(&Globals::new(), || {
             let res = parse_and_bind(&mut resolver, &file_name, content);
             res.expect("failed to parse")
@@ -44,7 +51,7 @@ mod tests {
         let mut map = BTreeMap::new();
         for (name, content) in fs {
             let file_name = BffFileName::new((*name).into());
-            let parsed = parse_module(content);
+            let parsed = parse_module(file_name.clone(), content);
             map.insert(file_name, parsed);
         }
         map
@@ -54,7 +61,7 @@ mod tests {
             fs: parse_modules(fs),
         };
         let entry = EntryPoints {
-            parser_entry_point: BffFileName::new("file.ts".into()),
+            parser_entry_point: BffFileName::new("entry.ts".into()),
             settings: BeffUserSettings {
                 string_formats: BTreeSet::from_iter(vec![
                     "password".to_string(),
@@ -75,7 +82,7 @@ mod tests {
     }
 
     fn print_types(from: &str) -> String {
-        let p = extract_types(&[("file.ts", from)]);
+        let p = extract_types(&[("entry.ts", from)]);
         let errors = &p.errors;
 
         if !errors.is_empty() {
@@ -102,5 +109,25 @@ mod tests {
 
   "#;
         insta::assert_snapshot!(print_types(from));
+    }
+
+    #[test]
+    fn type_ref_multifile() {
+        insta::assert_snapshot!(print_types_multifile(&[
+            //
+            (
+                "t.ts",
+                r#"
+                    export type UserId = string;
+                "#,
+            ),
+            (
+                "entry.ts",
+                r#"
+                    import { UserId } from "./t";
+                    parse.buildParsers<{ UserId: UserId }>();
+                "#
+            )
+        ]));
     }
 }

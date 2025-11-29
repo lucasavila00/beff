@@ -1,0 +1,7 @@
+---
+source: packages/beff-core/tests/frontend_v2.rs
+expression: "print_types_multifile(&[(\"entry.ts\",\nr#\"\n                    type UserId = string;\n                    parse.buildParsers<{ UserId: UserId }>();\n                \"#)])"
+---
+type BuiltParsers = {
+  UserId: string,
+}

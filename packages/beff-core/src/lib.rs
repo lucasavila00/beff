@@ -121,7 +121,7 @@ impl BffFileName {
 #[derive(Debug, Clone)]
 pub enum ImportReference {
     Named {
-        orig: Rc<JsWord>,
+        original_name: Rc<JsWord>,
         file_name: BffFileName,
         span: Span,
     },
@@ -230,22 +230,22 @@ pub struct SymbolExportDefault {
 pub struct ParsedModule {
     pub locals: ParsedModuleLocals,
     pub module: BffModuleData,
-    pub imports: HashMap<(JsWord, SyntaxContext), Rc<ImportReference>>,
+    pub imports: HashMap<String, Rc<ImportReference>>,
     pub comments: SwcComments,
     pub symbol_exports: SymbolsExportsModule,
     pub export_default: Option<Rc<SymbolExportDefault>>,
 }
 
-type TypeAliasMap = HashMap<(JsWord, SyntaxContext), (Option<Rc<TsTypeParamDecl>>, Rc<TsType>)>;
+type TypeAliasMap = HashMap<String, (Option<Rc<TsTypeParamDecl>>, Rc<TsType>)>;
 
 #[derive(Debug)]
 pub struct ParsedModuleLocals {
     pub type_aliases: TypeAliasMap,
-    pub interfaces: HashMap<(JsWord, SyntaxContext), Rc<TsInterfaceDecl>>,
-    pub enums: HashMap<(JsWord, SyntaxContext), Rc<TsEnumDecl>>,
+    pub interfaces: HashMap<String, Rc<TsInterfaceDecl>>,
+    pub enums: HashMap<String, Rc<TsEnumDecl>>,
 
-    pub exprs: HashMap<(JsWord, SyntaxContext), Rc<Expr>>,
-    pub exprs_decls: HashMap<(JsWord, SyntaxContext), Rc<TsType>>,
+    pub exprs: HashMap<String, Rc<Expr>>,
+    pub exprs_decls: HashMap<String, Rc<TsType>>,
 }
 impl ParsedModuleLocals {
     pub fn new() -> ParsedModuleLocals {
@@ -288,10 +288,9 @@ impl ParserOfModuleLocals {
                         for it in &var_decl.decls {
                             if let Some(expr) = &it.init {
                                 if let Pat::Ident(id) = &it.name {
-                                    self.content.exprs.insert(
-                                        (id.sym.clone(), id.span.ctxt),
-                                        Rc::new(*expr.clone()),
-                                    );
+                                    self.content
+                                        .exprs
+                                        .insert(id.sym.to_string(), Rc::new(*expr.clone()));
                                 }
                             }
 
@@ -299,7 +298,7 @@ impl ParserOfModuleLocals {
                                 if let Pat::Ident(id) = &it.name {
                                     if let Some(ann) = &id.type_ann {
                                         self.content.exprs_decls.insert(
-                                            (id.sym.clone(), id.span.ctxt),
+                                            id.sym.to_string(),
                                             Rc::new(*ann.type_ann.clone()),
                                         );
                                     }
@@ -324,7 +323,7 @@ impl Visit for ParserOfModuleLocals {
             ..
         } = n;
         self.content.type_aliases.insert(
-            (id.sym.clone(), id.span.ctxt),
+            id.sym.to_string(),
             (
                 type_params.as_ref().map(|it| it.as_ref().clone().into()),
                 Rc::new(*type_ann.clone()),
@@ -335,14 +334,14 @@ impl Visit for ParserOfModuleLocals {
         let TsInterfaceDecl { id, .. } = n;
         self.content
             .interfaces
-            .insert((id.sym.clone(), id.span.ctxt), Rc::new(n.clone()));
+            .insert(id.sym.to_string(), Rc::new(n.clone()));
     }
 
     fn visit_ts_enum_decl(&mut self, n: &swc_ecma_ast::TsEnumDecl) {
         let TsEnumDecl { id, .. } = n;
         self.content
             .enums
-            .insert((id.sym.clone(), id.span.ctxt), Rc::new(n.clone()));
+            .insert(id.sym.to_string(), Rc::new(n.clone()));
     }
 }
 
@@ -458,11 +457,18 @@ impl Display for TsNamespace {
     }
 }
 
+#[derive(Debug, Clone, PartialEq, Eq, Hash, PartialOrd, Ord, Copy)]
+pub enum Visibility {
+    Local,
+    Export,
+}
+
 #[derive(Debug, Clone, PartialEq, Eq, Hash, PartialOrd, Ord)]
 pub struct ModuleItemAddress {
     pub file: BffFileName,
-    pub key: (JsWord, SyntaxContext),
+    pub key: String,
     pub namespace: TsNamespace,
+    pub visibility: Visibility,
 }
 
 impl ModuleItemAddress {
@@ -470,17 +476,18 @@ impl ModuleItemAddress {
         ident: &swc_ecma_ast::Ident,
         file: BffFileName,
         namespace: TsNamespace,
+        visibility: Visibility,
     ) -> ModuleItemAddress {
         ModuleItemAddress {
             file,
-            key: (ident.sym.clone(), ident.span.ctxt),
+            key: ident.sym.to_string(),
             namespace,
+            visibility,
         }
     }
 
     fn debug_print(&self) -> String {
-        let (word, _ctx) = &self.key;
-        format!("{}::[{}]{}", self.file.as_str(), self.namespace, word,)
+        format!("{}::[{}]{}", self.file.as_str(), self.namespace, self.key,)
     }
 }
 

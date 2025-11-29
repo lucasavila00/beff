@@ -12,9 +12,9 @@ use anyhow::Result;
 use std::collections::HashMap;
 use std::rc::Rc;
 use swc_atoms::JsWord;
+use swc_common::FileName;
 use swc_common::SourceMap;
 use swc_common::Spanned;
-use swc_common::{FileName, SyntaxContext};
 use swc_ecma_ast::Decl;
 use swc_ecma_ast::ExportAll;
 use swc_ecma_ast::ExportDecl;
@@ -39,7 +39,7 @@ pub trait FsModuleResolver {
 }
 pub struct ImportsVisitor<'a, R: FsModuleResolver> {
     pub resolver: &'a mut R,
-    pub imports: HashMap<(JsWord, SyntaxContext), Rc<ImportReference>>,
+    pub imports: HashMap<String, Rc<ImportReference>>,
     pub symbol_exports: SymbolsExportsModule,
     pub current_file: BffFileName,
     pub unresolved_exports: Vec<UnresolvedExport>,
@@ -61,14 +61,13 @@ impl<'a, R: FsModuleResolver> ImportsVisitor<'a, R> {
     }
 
     fn insert_import_named(&mut self, local: &Ident, module_specifier: &str, orig: &JsWord) {
-        let k = (local.sym.clone(), local.span.ctxt);
         let v = self.resolve_import(module_specifier);
 
         if let Some(v) = v {
             self.imports.insert(
-                k,
+                local.sym.to_string(),
                 Rc::new(ImportReference::Named {
-                    orig: Rc::new(orig.clone()),
+                    original_name: Rc::new(orig.clone()),
                     file_name: v,
                     span: local.span,
                 }),
@@ -76,21 +75,21 @@ impl<'a, R: FsModuleResolver> ImportsVisitor<'a, R> {
         }
     }
     fn insert_import_default(&mut self, local: &Ident, module_specifier: &str) {
-        let k = (local.sym.clone(), local.span.ctxt);
-        let v = self.resolve_import(module_specifier);
-
-        if let Some(v) = v {
-            self.imports
-                .insert(k, Rc::new(ImportReference::Default { file_name: v }));
-        }
-    }
-    fn insert_import_star(&mut self, local: &Ident, module_specifier: &str) {
-        let k = (local.sym.clone(), local.span.ctxt);
         let v = self.resolve_import(module_specifier);
 
         if let Some(v) = v {
             self.imports.insert(
-                k,
+                local.sym.to_string(),
+                Rc::new(ImportReference::Default { file_name: v }),
+            );
+        }
+    }
+    fn insert_import_star(&mut self, local: &Ident, module_specifier: &str) {
+        let v = self.resolve_import(module_specifier);
+
+        if let Some(v) = v {
+            self.imports.insert(
+                local.sym.to_string(),
                 Rc::new(ImportReference::Star {
                     file_name: v,
                     span: local.span,
@@ -328,13 +327,13 @@ pub fn parse_and_bind<R: FsModuleResolver>(
     let mut symbol_exports = v.symbol_exports;
     for unresolved in v.unresolved_exports {
         let renamed = unresolved.renamed;
-        let k = (unresolved.name.clone(), unresolved.span);
+        let k = unresolved.name.to_string();
         if let Some((params, ty)) = locals.content.type_aliases.get(&k) {
             symbol_exports.insert_type(
                 renamed.clone(),
                 Rc::new(SymbolExport::TsType {
                     ty: ty.clone(),
-                    name: k.0,
+                    name: unresolved.name.clone(),
                     params: params.clone(),
                     span: ty.span(),
                     original_file: file_name.clone(),
@@ -368,7 +367,11 @@ pub fn parse_and_bind<R: FsModuleResolver>(
         }
         if let Some(import) = v.imports.get(&k) {
             match &**import {
-                ImportReference::Named { orig, span, .. } => {
+                ImportReference::Named {
+                    original_name: orig,
+                    span,
+                    ..
+                } => {
                     let it = Rc::new(SymbolExport::SomethingOfOtherFile {
                         something: orig.as_ref().clone(),
                         file: file_name.clone(),

@@ -1,16 +1,19 @@
+use std::rc::Rc;
+
 use swc_common::Span;
 use swc_ecma_ast::{
-    Expr, Ident, TsCallSignatureDecl, TsConstructSignatureDecl, TsEntityName, TsGetterSignature,
-    TsIndexSignature, TsKeywordType, TsKeywordTypeKind, TsMethodSignature, TsPropertySignature,
-    TsQualifiedName, TsSetterSignature, TsType, TsTypeElement, TsTypeLit, TsTypeParamInstantiation,
-    TsTypeRef,
+    Expr, Ident, TsCallSignatureDecl, TsConstructSignatureDecl, TsEntityName, TsEnumDecl,
+    TsGetterSignature, TsIndexSignature, TsInterfaceDecl, TsKeywordType, TsKeywordTypeKind,
+    TsMethodSignature, TsPropertySignature, TsQualifiedName, TsSetterSignature, TsType,
+    TsTypeElement, TsTypeLit, TsTypeParamDecl, TsTypeParamInstantiation, TsTypeRef,
 };
 
 use crate::{
     ast::runtype::Runtype,
     diag::{Diagnostic, DiagnosticInfoMessage, DiagnosticInformation, Location},
     parser_extractor::BuiltDecoder,
-    BeffUserSettings, BffFileName, FileManager, ModuleItemAddress, TsNamespace,
+    BeffUserSettings, BffFileName, FileManager, ImportReference, ModuleItemAddress, TsNamespace,
+    Visibility,
 };
 use anyhow::{anyhow, Result};
 pub struct FrontendCtx<'a, R: FileManager> {
@@ -19,6 +22,12 @@ pub struct FrontendCtx<'a, R: FileManager> {
 
     pub parser_file: BffFileName,
     pub errors: Vec<Diagnostic>,
+}
+
+pub enum AddressedType {
+    TsType(Option<Rc<TsTypeParamDecl>>, Rc<TsType>),
+    TsInterfaceDecl(Rc<TsInterfaceDecl>),
+    TsEnumDecl(Rc<TsEnumDecl>),
 }
 
 type Res<T> = Result<T, Box<Diagnostic>>;
@@ -68,7 +77,7 @@ impl<'a, R: FileManager> FrontendCtx<'a, R> {
         Err(Box::new(e))
     }
 
-    fn get_addressed_type(&mut self, addr: &ModuleItemAddress, span: &Span) -> Res<Runtype> {
+    fn get_addressed_type(&mut self, addr: &ModuleItemAddress, span: &Span) -> Res<AddressedType> {
         let parsed_module = self
             .files
             .get_existing_file(&addr.file)
@@ -82,10 +91,30 @@ impl<'a, R: FileManager> FrontendCtx<'a, R> {
                         type_params.is_none(),
                         "generic type aliases not supported yet"
                     );
-                    return Ok(self.extract_type(type_, addr.file.clone())?);
+                    return Ok(AddressedType::TsType(type_params.clone(), type_.clone()));
                 }
 
-                // TODO: interfaces, classes, enums
+                // TODO: interfaces,  enums
+
+                if let Some(imported) = parsed_module.imports.get(&addr.key) {
+                    match imported.as_ref() {
+                        ImportReference::Named {
+                            original_name,
+                            file_name,
+                            span,
+                        } => {
+                            let new_addr = ModuleItemAddress {
+                                file: file_name.clone(),
+                                key: (*original_name).to_string(),
+                                namespace: addr.namespace,
+                                visibility: Visibility::Export,
+                            };
+                            return self.get_addressed_type(&new_addr, span);
+                        }
+                        ImportReference::Star { file_name, span } => todo!(),
+                        ImportReference::Default { file_name } => todo!(),
+                    }
+                }
 
                 self.res_error(
                     span,
@@ -96,10 +125,27 @@ impl<'a, R: FileManager> FrontendCtx<'a, R> {
             TsNamespace::Value => todo!(),
         }
     }
-    fn resolve_ident(&mut self, i: &Ident, file: BffFileName, ns: TsNamespace) -> Res<Runtype> {
-        let address = ModuleItemAddress::from_ident(i, file, ns);
-        let ty = self.get_addressed_type(&address, &i.span)?;
-        Ok(ty)
+    fn resolve_ident(
+        &mut self,
+        i: &Ident,
+        file: BffFileName,
+        ns: TsNamespace,
+        visibility: Visibility,
+    ) -> Res<Runtype> {
+        let address = ModuleItemAddress::from_ident(i, file, ns, visibility);
+        let addressed_type = self.get_addressed_type(&address, &i.span)?;
+        match addressed_type {
+            AddressedType::TsType(ts_type_param_decl, ts_type) => {
+                assert!(
+                    ts_type_param_decl.is_none(),
+                    "generic types not supported yet"
+                );
+                let runtype = self.extract_type(&ts_type, address.file.clone(), visibility)?;
+                Ok(runtype)
+            }
+            AddressedType::TsInterfaceDecl(ts_interface_decl) => todo!(),
+            AddressedType::TsEnumDecl(ts_enum_decl) => todo!(),
+        }
     }
 
     fn extract_type_ident(
@@ -107,9 +153,10 @@ impl<'a, R: FileManager> FrontendCtx<'a, R> {
         i: &Ident,
         type_args: &Option<Box<TsTypeParamInstantiation>>,
         file: BffFileName,
+        visibility: Visibility,
     ) -> Res<Runtype> {
         assert!(type_args.is_none(), "generic types not supported yet");
-        let resolved = self.resolve_ident(i, file.clone(), TsNamespace::Type)?;
+        let resolved = self.resolve_ident(i, file.clone(), TsNamespace::Type, visibility)?;
         Ok(resolved)
     }
 
@@ -122,14 +169,21 @@ impl<'a, R: FileManager> FrontendCtx<'a, R> {
         todo!()
     }
 
-    fn extract_type_ref(&mut self, ty: &TsTypeRef, file: BffFileName) -> Res<Runtype> {
+    fn extract_type_ref(
+        &mut self,
+        ty: &TsTypeRef,
+        file: BffFileName,
+        visibility: Visibility,
+    ) -> Res<Runtype> {
         let TsTypeRef {
             type_name,
             type_params,
             span: _,
         } = ty;
         match type_name {
-            TsEntityName::Ident(ident) => self.extract_type_ident(ident, type_params, file),
+            TsEntityName::Ident(ident) => {
+                self.extract_type_ident(ident, type_params, file, visibility)
+            }
             TsEntityName::TsQualifiedName(ts_qualified_name) => {
                 self.extract_type_qualified_name(ts_qualified_name, type_params, file)
             }
@@ -154,9 +208,14 @@ impl<'a, R: FileManager> FrontendCtx<'a, R> {
         }
     }
 
-    fn extract_type(&mut self, ty: &TsType, file: BffFileName) -> Res<Runtype> {
+    fn extract_type(
+        &mut self,
+        ty: &TsType,
+        file: BffFileName,
+        visibility: Visibility,
+    ) -> Res<Runtype> {
         match ty {
-            TsType::TsTypeRef(ts_type_ref) => self.extract_type_ref(ts_type_ref, file),
+            TsType::TsTypeRef(ts_type_ref) => self.extract_type_ref(ts_type_ref, file, visibility),
             TsType::TsKeywordType(ts_keyword_type) => self.extract_ts_keyword_type(ts_keyword_type),
             TsType::TsThisType(ts_this_type) => todo!(),
             TsType::TsFnOrConstructorType(ts_fn_or_constructor_type) => todo!(),
@@ -207,7 +266,11 @@ impl<'a, R: FileManager> FrontendCtx<'a, R> {
                 };
                 match type_ann.as_ref().map(|it| &it.type_ann) {
                     Some(ann) => {
-                        let schema = match self.extract_type(ann, self.parser_file.clone()) {
+                        let schema = match self.extract_type(
+                            ann,
+                            self.parser_file.clone(),
+                            Visibility::Local,
+                        ) {
                             Ok(s) => s,
                             Err(diag) => {
                                 self.errors.push(*diag);
