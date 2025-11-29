@@ -171,7 +171,8 @@ impl SymbolsExportsModule {
 
     pub fn insert_value(&mut self, name: String, export: Rc<SymbolExport>) {
         if name == "default" {
-            panic!("'default' is a reserved name for default exports");
+            self.set_default_export(SymbolExportDefault::Renamed { export: export }.into());
+            return;
         }
         self.named_values.insert(name, export);
     }
@@ -197,14 +198,16 @@ impl SymbolsExportsModule {
 
     pub fn insert_type(&mut self, name: String, export: Rc<SymbolExport>) {
         if name == "default" {
-            panic!("'default' is a reserved name for default exports");
+            self.set_default_export(SymbolExportDefault::Renamed { export: export }.into());
+            return;
         }
         self.named_types.insert(name, export);
     }
 
     pub fn insert_unknown(&mut self, name: String, export: Rc<SymbolExport>) {
         if name == "default" {
-            panic!("'default' is a reserved name for default exports");
+            self.set_default_export(SymbolExportDefault::Renamed { export: export }.into());
+            return;
         }
         self.named_unknown.insert(name, export);
     }
@@ -239,6 +242,9 @@ pub enum SymbolExportDefault {
         symbol_export: Rc<Expr>,
         span: Span,
         file_name: BffFileName,
+    },
+    Renamed {
+        export: Rc<SymbolExport>,
     },
 }
 pub struct ParsedModule {

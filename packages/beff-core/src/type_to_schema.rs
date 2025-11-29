@@ -1817,6 +1817,7 @@ impl<'a, 'b, R: FileManager> TypeToSchema<'a, 'b, R> {
                     span: _,
                     file_name: _,
                 } => self.typeof_expr(&symbol_export, true),
+                SymbolExportDefault::Renamed { .. } => todo!(),
             },
             ResolvedLocalSymbol::Star(file_name) => {
                 let mut acc = vec![];

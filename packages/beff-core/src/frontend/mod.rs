@@ -161,6 +161,7 @@ impl<'a, R: FileManager> FrontendCtx<'a, R> {
                             }
                             _ => todo!(),
                         },
+                        SymbolExportDefault::Renamed { .. } => todo!(),
                     },
                     None => todo!(),
                 }
@@ -294,6 +295,47 @@ impl<'a, R: FileManager> FrontendCtx<'a, R> {
             }
         }
     }
+
+    fn addressed_value_from_symbol_export(
+        &mut self,
+        exports: &SymbolExport,
+    ) -> Res<AddressedValue> {
+        match exports {
+            SymbolExport::TsType { .. }
+            | SymbolExport::TsInterfaceDecl { .. }
+            | SymbolExport::TsEnumDecl { .. } => todo!(),
+            SymbolExport::ValueExpr {
+                expr,
+                original_file,
+                span: _,
+                name: _,
+            } => {
+                return Ok(AddressedValue::ValueExpr(
+                    expr.clone(),
+                    original_file.clone(),
+                ));
+            }
+            SymbolExport::ExprDecl { .. } => todo!(),
+
+            SymbolExport::StarOfOtherFile { .. } => {
+                // star of other file should be already resolved by the "get_value" function
+                todo!()
+            }
+            SymbolExport::SomethingOfOtherFile {
+                something,
+                file,
+                span,
+            } => {
+                let new_addr = ModuleItemAddress {
+                    file: file.clone(),
+                    key: something.clone(),
+                    visibility: Visibility::Export,
+                };
+                return self.get_addressed_value(&new_addr, span);
+            }
+        }
+    }
+
     fn get_addressed_value(
         &mut self,
         addr: &ModuleItemAddress,
@@ -340,6 +382,9 @@ impl<'a, R: FileManager> FrontendCtx<'a, R> {
                                             file_name.clone(),
                                         ));
                                     }
+                                    SymbolExportDefault::Renamed { export } => {
+                                        return self.addressed_value_from_symbol_export(export);
+                                    }
                                 },
                                 None => todo!(),
                             }
@@ -354,28 +399,7 @@ impl<'a, R: FileManager> FrontendCtx<'a, R> {
                     .symbol_exports
                     .get_value(&addr.key, self.files)
                 {
-                    match exports.as_ref() {
-                        SymbolExport::TsType { .. }
-                        | SymbolExport::TsInterfaceDecl { .. }
-                        | SymbolExport::TsEnumDecl { .. } => todo!(),
-                        SymbolExport::ValueExpr { expr, .. } => {
-                            return Ok(AddressedValue::ValueExpr(expr.clone(), addr.file.clone()));
-                        }
-                        SymbolExport::ExprDecl { .. } => todo!(),
-                        SymbolExport::StarOfOtherFile { .. } => todo!(),
-                        SymbolExport::SomethingOfOtherFile {
-                            something,
-                            file,
-                            span,
-                        } => {
-                            let new_addr = ModuleItemAddress {
-                                file: file.clone(),
-                                key: something.clone(),
-                                visibility: Visibility::Export,
-                            };
-                            return self.get_addressed_value(&new_addr, span);
-                        }
-                    }
+                    return self.addressed_value_from_symbol_export(&exports);
                 }
                 todo!()
             }
