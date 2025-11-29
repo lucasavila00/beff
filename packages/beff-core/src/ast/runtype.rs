@@ -1,12 +1,12 @@
 use super::json::N;
-use crate::ast::json::Json;
-use crate::subtyping::semtype::SemTypeContext;
-use crate::subtyping::semtype::SemTypeOps;
-use crate::subtyping::ToSemType;
 use crate::NamedSchema;
 use crate::RuntypeName;
-use anyhow::anyhow;
+use crate::ast::json::Json;
+use crate::subtyping::ToSemType;
+use crate::subtyping::semtype::SemTypeContext;
+use crate::subtyping::semtype::SemTypeOps;
 use anyhow::Result;
+use anyhow::anyhow;
 use std::collections::BTreeMap;
 use std::collections::BTreeSet;
 
@@ -262,7 +262,9 @@ impl UnionMerger {
         Runtype::AnyOf(acc.0)
     }
 }
-
+pub struct DebugPrintCtx<'a> {
+    pub all_names: &'a [&'a RuntypeName],
+}
 impl Runtype {
     pub fn object(vs: Vec<(String, Optionality<Runtype>)>) -> Self {
         Self::Object {
@@ -410,7 +412,7 @@ impl Runtype {
         }
     }
 
-    pub fn debug_print(&self) -> String {
+    pub fn debug_print(&self, ctx: &DebugPrintCtx) -> String {
         match self {
             Runtype::Undefined => "undefined".to_string(),
             Runtype::Null => "null".to_string(),
@@ -444,13 +446,13 @@ impl Runtype {
             Runtype::BigInt => "bigint".to_string(),
             Runtype::StNever => "never".to_string(),
             Runtype::StNot(runtype) => {
-                let inner = runtype.debug_print();
+                let inner = runtype.debug_print(ctx);
                 format!("Not<{}>", inner)
             }
             Runtype::Function => "Function".to_string(),
-            Runtype::Ref(r) => r.debug_print(),
+            Runtype::Ref(r) => r.debug_print(ctx.all_names),
             Runtype::Array(runtype) => {
-                let inner = runtype.debug_print();
+                let inner = runtype.debug_print(ctx);
                 format!("Array<{}>", inner)
             }
             Runtype::Tuple {
@@ -460,10 +462,10 @@ impl Runtype {
                 let mut acc = vec![];
 
                 for it in prefix_items.iter() {
-                    acc.push(it.debug_print());
+                    acc.push(it.debug_print(ctx));
                 }
                 if let Some(items) = items.as_ref() {
-                    acc.push(format!("...{}", items.debug_print()));
+                    acc.push(format!("...{}", items.debug_print(ctx)));
                 }
 
                 let args = acc.join(", ");
@@ -472,7 +474,7 @@ impl Runtype {
             Runtype::AnyOf(btree_set) => {
                 let inner = btree_set
                     .iter()
-                    .map(|it| it.debug_print())
+                    .map(|it| it.debug_print(ctx))
                     .collect::<Vec<_>>()
                     .join(" | ");
 
@@ -481,7 +483,7 @@ impl Runtype {
             Runtype::AllOf(btree_set) => {
                 let inner = btree_set
                     .iter()
-                    .map(|it| it.debug_print())
+                    .map(|it| it.debug_print(ctx))
                     .collect::<Vec<_>>()
                     .join(" & ");
 
@@ -494,13 +496,13 @@ impl Runtype {
                 let mut acc = vec![];
 
                 for (k, v) in vs.iter() {
-                    let value = v.inner().debug_print();
+                    let value = v.inner().debug_print(ctx);
                     let optionality = if v.is_required() { "" } else { "?" };
                     acc.push(format!("\"{}\"{}: {}", k, optionality, value));
                 }
                 for indexed_property in indexed_properties.iter() {
-                    let key = indexed_property.key.debug_print();
-                    let value = indexed_property.value.inner().debug_print();
+                    let key = indexed_property.key.debug_print(ctx);
+                    let value = indexed_property.value.inner().debug_print(ctx);
                     let optionality = if indexed_property.value.is_required() {
                         ""
                     } else {

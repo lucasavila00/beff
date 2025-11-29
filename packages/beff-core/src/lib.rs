@@ -10,6 +10,7 @@ pub mod sym_reference;
 pub mod type_to_schema;
 pub mod wasm_diag;
 
+use crate::ast::runtype::DebugPrintCtx;
 use crate::ast::runtype::Runtype;
 use core::fmt;
 use parser_extractor::ParserExtractResult;
@@ -393,8 +394,13 @@ pub trait FileManager {
 
 fn debug_print_type_list(vs: Vec<(RuntypeName, String)>) -> String {
     let mut acc = String::new();
-    for (name, ts_type) in vs {
-        acc.push_str(&format!("type {} = {};\n\n", name.debug_print(), ts_type));
+    let all_names = vs.iter().map(|(name, _)| name).collect::<Vec<_>>();
+    for (name, ts_type) in vs.iter() {
+        acc.push_str(&format!(
+            "type {} = {};\n\n",
+            name.debug_print(&all_names),
+            ts_type
+        ));
     }
     acc
 }
@@ -416,8 +422,16 @@ impl ParserExtractResult {
         let mut sorted_validators = self.validators.iter().collect::<Vec<_>>();
         sorted_validators.sort_by(|a, b| a.name.cmp(&b.name));
 
+        let all_names = sorted_validators
+            .iter()
+            .map(|it| &it.name)
+            .collect::<Vec<_>>();
+        let debug_print_ctx = DebugPrintCtx {
+            all_names: &all_names,
+        };
+
         for v in sorted_validators {
-            vs.push((v.name.clone(), v.schema.debug_print()));
+            vs.push((v.name.clone(), v.schema.debug_print(&debug_print_ctx)));
         }
 
         let validators_printed = debug_print_type_list(vs.clone());
@@ -433,7 +447,10 @@ impl ParserExtractResult {
         sorted_decoders.sort_by(|a, b| a.exported_name.cmp(&b.exported_name));
 
         for v in sorted_decoders {
-            decoders_vs.push((v.exported_name.clone(), v.schema.debug_print()));
+            decoders_vs.push((
+                v.exported_name.clone(),
+                v.schema.debug_print(&debug_print_ctx),
+            ));
         }
 
         let decoders_printed = format!(
@@ -484,14 +501,39 @@ impl ModuleItemAddress {
         }
     }
 
-    fn debug_print(&self) -> String {
-        //format!("{}::{}", self.file.as_str(), self.name,)
+    fn debug_print(&self, all_names: &[&RuntypeName]) -> String {
+        let mut this_name_count = 0;
+        for name in all_names {
+            match name {
+                RuntypeName::Address(module_item_address) => {
+                    if module_item_address == self {
+                        continue;
+                    }
+                    if module_item_address.name == self.name {
+                        this_name_count += 1;
+                    }
+                }
+                RuntypeName::Name(_) => unreachable!("name shouldnt be used with address"),
+                RuntypeName::SemtypeRecursiveGenerated(_) => {}
+            }
+        }
+
+        if this_name_count == 0 {
+            // no conflict, just print name
+            return self.name.clone();
+        }
+
         // should be a valid typescript identifier
         format!(
             "{}__{}",
             self.file.as_str().replace(".", "_").replace("/", "_"),
             self.name
         )
+    }
+
+    fn diag_print(&self) -> String {
+        // printing for error messages
+        format!("{}::{}", self.file.as_str(), self.name,)
     }
 }
 
@@ -503,10 +545,19 @@ pub enum RuntypeName {
 }
 
 impl RuntypeName {
-    fn debug_print(&self) -> String {
+    fn diag_print(&self) -> String {
+        // printing for error messages
         match self {
             RuntypeName::Name(name) => name.clone(),
-            RuntypeName::Address(addr) => addr.debug_print(),
+            RuntypeName::Address(addr) => addr.diag_print(),
+            RuntypeName::SemtypeRecursiveGenerated(n) => format!("RecursiveGenerated{}", n),
+        }
+    }
+
+    fn debug_print(&self, all_names: &[&RuntypeName]) -> String {
+        match self {
+            RuntypeName::Name(name) => name.clone(),
+            RuntypeName::Address(addr) => addr.debug_print(all_names),
             RuntypeName::SemtypeRecursiveGenerated(n) => format!("RecursiveGenerated{}", n),
         }
     }

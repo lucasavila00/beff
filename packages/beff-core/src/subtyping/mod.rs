@@ -1,11 +1,11 @@
 use self::bdd::ListAtomic;
 use self::semtype::{ComplexSemType, SemType, SemTypeContext, SemTypeOps};
 use self::subtype::StringLitOrFormat;
+use crate::RuntypeName;
 use crate::ast::runtype::{CustomFormat, Optionality, RuntypeConst};
 use crate::subtyping::bdd::{IndexedPropertiesAtomic, MappingAtomicType};
 use crate::subtyping::subtype::NumberRepresentationOrFormat;
-use crate::RuntypeName;
-use crate::{ast::runtype::Runtype, NamedSchema};
+use crate::{NamedSchema, ast::runtype::Runtype};
 use std::collections::{BTreeMap, BTreeSet};
 use std::rc::Rc;
 pub mod bdd;
@@ -48,7 +48,7 @@ impl<'a> ToSemTypeConverter<'a> {
                 return Ok(&validator.schema);
             }
         }
-        Err(anyhow!("reference not found: {}", name.debug_print()))
+        Err(anyhow!("reference not found: {}", name.diag_print()))
     }
 
     fn convert_to_sem_type(
@@ -151,7 +151,7 @@ impl<'a> ToSemTypeConverter<'a> {
                 };
 
                 if self.seen_refs.contains(name) {
-                    bail!("recursive type: {}", name.debug_print())
+                    bail!("recursive type: {}", name.diag_print())
                 }
 
                 self.seen_refs.insert(name.clone());

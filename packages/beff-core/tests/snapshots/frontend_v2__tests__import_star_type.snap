@@ -2,11 +2,11 @@
 source: packages/beff-core/tests/frontend_v2.rs
 expression: "print_types_multifile(&[(\"t.ts\",\nr#\"\n                    export type Y1 = string;\n                \"#,),\n(\"entry.ts\",\nr#\"\n                    import * as Y2 from \"./t\";\n                    type Z = Y2.Y1;\n                    parse.buildParsers<{ Z: Z }>();\n                \"#)])"
 ---
-type entry_ts__Z = t_ts__Y1;
+type Z = Y1;
 
-type t_ts__Y1 = string;
+type Y1 = string;
 
 
 type BuiltParsers = {
-  Z: entry_ts__Z,
+  Z: Z,
 }

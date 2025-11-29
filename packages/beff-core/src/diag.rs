@@ -1,4 +1,4 @@
-use anyhow::{anyhow, Result};
+use anyhow::{Result, anyhow};
 use core::fmt;
 use std::{rc::Rc, sync::Arc};
 use swc_common::{BytePos, Loc, SourceMap, Span};
@@ -172,11 +172,11 @@ impl DiagnosticInfoMessage {
                 "Property name should be an identifier".to_string()
             }
             DiagnosticInfoMessage::CannotResolveTypeReferenceOnExtracting(name) => {
-                let name = name.debug_print();
+                let name = name.diag_print();
                 format!("Failed to resolve type reference '{name}' when extracting")
             }
             DiagnosticInfoMessage::TwoDifferentTypesWithTheSameName(name) => {
-                let name= name.debug_print();
+                let name= name.diag_print();
                 format!("This includes two different types with the same name '{name}'")
             }
             DiagnosticInfoMessage::CannotFindFileWhenConvertingToSchema(f) => {
@@ -384,7 +384,7 @@ impl DiagnosticInfoMessage {
                 "Mapped type minus is not supported".to_string()
             }
             DiagnosticInfoMessage::CannotResolveRefInExtractUnion(r) => {
-                let name =r.debug_print();
+                let name =r.diag_print();
                 format!("Cannot resolve ref '{name}' in extract union")
             }
             DiagnosticInfoMessage::ShouldHaveObjectAsTypeArgument => {
@@ -510,11 +510,11 @@ impl DiagnosticInfoMessage {
                 "Nested template literal types are not supported when converting from JSON schema to template literal".to_string()
             }
             DiagnosticInfoMessage::CannotResolveAddress(module_item_address) => {
-                let name = module_item_address.debug_print();
+                let name = module_item_address.diag_print();
                 format!("Cannot resolve address '{name}'")
             }
             DiagnosticInfoMessage::CouldNotResolveAddressesSymbol(module_item_address) => {
-                let name = module_item_address.debug_print();
+                let name = module_item_address.diag_print();
                 format!("Could not resolve addressed value '{name}'")
             },
         }
