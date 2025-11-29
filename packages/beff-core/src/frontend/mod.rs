@@ -12,6 +12,7 @@ use crate::{
     parser_extractor::BuiltDecoder,
 };
 use anyhow::{Result, anyhow};
+use core::fmt;
 use std::{collections::HashMap, rc::Rc};
 use swc_common::{Span, Spanned};
 use swc_ecma_ast::{
@@ -25,6 +26,7 @@ use swc_ecma_ast::{
     TsTypePredicate, TsTypeQuery, TsTypeQueryExpr, TsTypeRef, TsUnionOrIntersectionType,
     TsUnionType,
 };
+type Res<T> = Result<T, Box<Diagnostic>>;
 
 pub struct FrontendCtx<'a, R: FileManager> {
     pub files: &'a mut R,
@@ -35,10 +37,40 @@ pub struct FrontendCtx<'a, R: FileManager> {
     pub partial_validators: HashMap<RuntypeName, Option<Runtype>>,
 
     pub counter: usize,
+    pub builtin_file: BffFileName,
 }
 
 #[derive(Debug)]
-pub enum AddressedType {
+enum TsBuiltIn {
+    Date,
+    Array,
+    StringFormat,
+    StringFormatExtends,
+    NumberFormat,
+    NumberFormatExtends,
+}
+impl fmt::Display for TsBuiltIn {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "{:?}", self)
+    }
+}
+
+impl TsBuiltIn {
+    fn to_res(self, builtin_file: BffFileName) -> Res<Option<AddressedType>> {
+        let name = self.to_string();
+        Ok(Some(AddressedType::TsBuiltIn {
+            t: self,
+            address: ModuleItemAddress {
+                file: builtin_file,
+                name,
+                visibility: Visibility::Export,
+            },
+        }))
+    }
+}
+
+#[derive(Debug)]
+enum AddressedType {
     TsType {
         t: Rc<TsTypeAliasDecl>,
         address: ModuleItemAddress,
@@ -51,6 +83,10 @@ pub enum AddressedType {
         t: Rc<TsEnumDecl>,
         address: ModuleItemAddress,
     },
+    TsBuiltIn {
+        t: TsBuiltIn,
+        address: ModuleItemAddress,
+    },
 }
 impl AddressedType {
     fn addr(&self) -> ModuleItemAddress {
@@ -58,6 +94,7 @@ impl AddressedType {
             AddressedType::TsType { t: _, address } => address.clone(),
             AddressedType::TsInterface { t: _, address } => address.clone(),
             AddressedType::TsEnum { t: _, address } => address.clone(),
+            AddressedType::TsBuiltIn { t: _, address } => address.clone(),
         }
     }
 }
@@ -79,28 +116,28 @@ pub enum AddressedQualifiedValue {
 
 #[derive(Debug)]
 pub enum FinalTypeAddress {
-    TsType {
-        addressed_type: AddressedType,
-        address: ModuleItemAddress,
-    },
-    SomethingOfStarOfFile {
-        address: ModuleItemAddress,
-    },
+    TsType { addressed_type: AddressedType },
+    SomethingOfStarOfFile { address: ModuleItemAddress },
 }
 
 impl FinalTypeAddress {
-    pub fn addr(&self) -> &ModuleItemAddress {
+    pub fn is_builtin(&self) -> bool {
         match self {
-            FinalTypeAddress::TsType {
-                addressed_type: _,
-                address,
-            } => address,
-            FinalTypeAddress::SomethingOfStarOfFile { address } => address,
+            FinalTypeAddress::TsType { addressed_type } => matches!(
+                addressed_type,
+                AddressedType::TsBuiltIn { t: _, address: _ }
+            ),
+            FinalTypeAddress::SomethingOfStarOfFile { address: _ } => false,
+        }
+    }
+
+    pub fn addr(&self) -> ModuleItemAddress {
+        match self {
+            FinalTypeAddress::TsType { addressed_type } => addressed_type.addr(),
+            FinalTypeAddress::SomethingOfStarOfFile { address } => address.clone(),
         }
     }
 }
-
-type Res<T> = Result<T, Box<Diagnostic>>;
 
 trait TypeModuleWalker<'a, R: FileManager + 'a, U> {
     fn get_ctx<'b>(&'b mut self) -> &'b mut FrontendCtx<'a, R>;
@@ -480,16 +517,10 @@ trait ValueModuleWalker<'a, R: FileManager + 'a, U> {
                 if let Some(imported) = parsed_module.imports.get(&addr.name) {
                     return self.get_addressed_item_from_import_reference(imported, span);
                 }
-
                 if let Some(expr) = parsed_module.locals.exprs.get(&addr.name) {
-                    //    return Ok(AddressedValue::ValueExpr(expr.clone(), addr.file.clone()));
                     return self.handle_symbol_export_expr(expr, &addr.file);
                 }
                 if let Some(decl_expr) = parsed_module.locals.exprs_decls.get(&addr.name) {
-                    // return Ok(AddressedValue::TsTypeDecl(
-                    //     decl_expr.clone(),
-                    //     addr.file.clone(),
-                    // ));
                     return self.handle_symbol_export_expr_decl(decl_expr, &addr.file);
                 }
                 if let Some(imported) = parsed_module.imports.get(&addr.name) {
@@ -692,6 +723,7 @@ impl<'a, R: FileManager> FrontendCtx<'a, R> {
             errors: vec![],
             partial_validators: HashMap::new(),
             counter: 0,
+            builtin_file: BffFileName("______builtin.ts".to_string().into()),
         }
     }
 
@@ -738,6 +770,7 @@ impl<'a, R: FileManager> FrontendCtx<'a, R> {
         let err = self.build_error(span, msg, file);
         err.to_diag(None).into()
     }
+
     fn get_or_fetch_adressed_file(
         &mut self,
         addr: &ModuleItemAddress,
@@ -766,6 +799,12 @@ impl<'a, R: FileManager> FrontendCtx<'a, R> {
     }
 
     fn get_addressed_type(&mut self, addr: &ModuleItemAddress, span: &Span) -> Res<AddressedType> {
+        if addr.file == self.builtin_file {
+            match self.maybe_generate_ts_builtin(&addr.name)? {
+                Some(it) => return Ok(it),
+                None => unreachable!("the builtin type {} does not exist", addr.name),
+            }
+        }
         let mut walker = TypeWalker { ctx: self };
         walker.get_addressed_item(addr, span)
     }
@@ -838,6 +877,36 @@ impl<'a, R: FileManager> FrontendCtx<'a, R> {
                 let runtype = self.extract_enum_decl(&t, address.file.clone())?;
                 Ok(runtype)
             }
+            AddressedType::TsBuiltIn { t, address } => match t {
+                //         "ReadonlyArray" | "Array" => {
+                //             let type_params = type_params.as_ref().and_then(|it| it.params.split_first());
+                //             if let Some((ty, [])) = type_params {
+                //                 let ty = self.extract_type(ty, file.clone())?;
+                //                 return Ok(Runtype::Array(ty.into()));
+                //             }
+                //             return Ok(Runtype::Array(Runtype::Any.into()));
+                //         }
+                //         "StringFormat" => {
+                //             return self.get_string_with_format(type_params, &i.span, file.clone());
+                //         }
+                //         "StringFormatExtends" => {
+                //             return self.get_string_format_extends(type_params, &i.span, file.clone());
+                //         }
+                //         "NumberFormat" => {
+                //             return self.get_number_with_format(type_params, &i.span, file.clone());
+                //         }
+                //         "NumberFormatExtends" => {
+                //             return self.get_number_format_extends(type_params, &i.span, file.clone());
+                //         }
+                TsBuiltIn::Date => Ok(Runtype::Date),
+                TsBuiltIn::Array => {
+                    todo!()
+                }
+                TsBuiltIn::StringFormat => todo!(),
+                TsBuiltIn::StringFormatExtends => todo!(),
+                TsBuiltIn::NumberFormat => todo!(),
+                TsBuiltIn::NumberFormatExtends => todo!(),
+            },
         }
     }
 
@@ -877,20 +946,39 @@ impl<'a, R: FileManager> FrontendCtx<'a, R> {
         }
     }
 
+    fn maybe_generate_ts_builtin(&mut self, name: &str) -> Res<Option<AddressedType>> {
+        let bt = match name {
+            "Date" => Some(TsBuiltIn::Date),
+            "Array" | "ReadonlyArray" => Some(TsBuiltIn::Array),
+            "StringFormat" => Some(TsBuiltIn::StringFormat),
+            "StringFormatExtends" => Some(TsBuiltIn::StringFormatExtends),
+            "NumberFormat" => Some(TsBuiltIn::NumberFormat),
+            "NumberFormatExtends" => Some(TsBuiltIn::NumberFormatExtends),
+            _ => None,
+        };
+        match bt {
+            Some(bt) => bt.to_res(self.builtin_file.clone()),
+            None => Ok(None),
+        }
+    }
+
     fn get_final_address_from_ts_entity_name(
         &mut self,
         type_name: &TsEntityName,
-        type_params: &Option<Box<TsTypeParamInstantiation>>,
         file: BffFileName,
         visibility: Visibility,
     ) -> Res<FinalTypeAddress> {
-        assert!(type_params.is_none(), "generic types not supported yet");
         match type_name {
             TsEntityName::Ident(ident) => {
+                if let Some(builtin) = self.maybe_generate_ts_builtin(&ident.sym)? {
+                    return Ok(FinalTypeAddress::TsType {
+                        addressed_type: builtin,
+                    });
+                }
+
                 let addr = ModuleItemAddress::from_ident(ident, file, visibility);
                 let addressed = self.get_addressed_type(&addr, &ident.span)?;
                 Ok(FinalTypeAddress::TsType {
-                    address: addressed.addr().clone(),
                     addressed_type: addressed,
                 })
             }
@@ -1132,40 +1220,14 @@ impl<'a, R: FileManager> FrontendCtx<'a, R> {
         file: BffFileName,
         visibility: Visibility,
     ) -> Res<Runtype> {
-        if let TsEntityName::Ident(i) = type_name {
-            match i.sym.to_string().as_str() {
-                "Date" => return Ok(Runtype::Date),
-                "ReadonlyArray" | "Array" => {
-                    let type_params = type_params.as_ref().and_then(|it| it.params.split_first());
-                    if let Some((ty, [])) = type_params {
-                        let ty = self.extract_type(ty, file.clone())?;
-                        return Ok(Runtype::Array(ty.into()));
-                    }
-                    return Ok(Runtype::Array(Runtype::Any.into()));
-                }
-                "StringFormat" => {
-                    return self.get_string_with_format(type_params, &i.span, file.clone());
-                }
-                "StringFormatExtends" => {
-                    return self.get_string_format_extends(type_params, &i.span, file.clone());
-                }
-                "NumberFormat" => {
-                    return self.get_number_with_format(type_params, &i.span, file.clone());
-                }
-                "NumberFormatExtends" => {
-                    return self.get_number_format_extends(type_params, &i.span, file.clone());
-                }
-                _ => {}
-            }
+        let fat =
+            self.get_final_address_from_ts_entity_name(type_name, file.clone(), visibility)?;
+        if fat.is_builtin() {
+            // it won't be recursive if it's builtin, and we don't need to write it to the map too
+            // TODO: it needs generic type support too, so we need to handle that later
+            return self.extract_addressed_type(&fat.addr(), &type_name.span());
         }
-
         assert!(type_params.is_none(), "generic types not supported yet");
-        let fat = self.get_final_address_from_ts_entity_name(
-            type_name,
-            type_params,
-            file.clone(),
-            visibility,
-        )?;
         let rt_name = RuntypeName::Address(fat.addr().clone());
         let found = self.partial_validators.get(&rt_name);
         if let Some(_found_in_map) = found {

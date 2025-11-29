@@ -1512,6 +1512,23 @@ mod tests {
         insta::assert_snapshot!(print_types_multifile(&[("entry.ts", from)]));
     }
 
+    #[test]
+    fn date_builtin() {
+        let from = r#"
+    export type X = Date;
+    parse.buildParsers<{ X: X }>();
+    "#;
+        insta::assert_snapshot!(print_types_multifile(&[("entry.ts", from)]));
+    }
+    #[test]
+    fn array_builtin() {
+        let from = r#"
+    export type X = Array<string>;
+    parse.buildParsers<{ X: X }>();
+    "#;
+        insta::assert_snapshot!(print_types_multifile(&[("entry.ts", from)]));
+    }
+
     // #[test]
     // fn export_destructuring_array() {
     //     insta::assert_snapshot!(print_types_multifile(&[
