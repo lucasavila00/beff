@@ -1413,6 +1413,96 @@ mod tests {
         ]));
     }
 
+    #[test]
+    fn local_named_export_as_default() {
+        insta::assert_snapshot!(print_types_multifile(&[
+            (
+                "t.ts",
+                r#"
+                    const A = "a" as const;
+                    export { A as default };
+                "#,
+            ),
+            (
+                "entry.ts",
+                r#"
+                    import D from "./t";
+                    type X = typeof D;
+                    parse.buildParsers<{ X: X }>();
+                "#
+            )
+        ]));
+    }
+
+    #[test]
+    fn namespace_import_access_default() {
+        insta::assert_snapshot!(print_types_multifile(&[
+            (
+                "t.ts",
+                r#"
+                    export default "d" as const;
+                    export const A = "a" as const;
+                "#,
+            ),
+            (
+                "entry.ts",
+                r#"
+                    import * as ns from "./t";
+                    type X = typeof ns.default;
+                    type Y = typeof ns.A;
+                    parse.buildParsers<{ X: X, Y: Y }>();
+                "#
+            )
+        ]));
+    }
+
+    #[test]
+    fn export_star_shadowed_by_local() {
+        insta::assert_snapshot!(print_types_multifile(&[
+            (
+                "a.ts",
+                r#"
+                    export const A = "shadowed" as const;
+                "#,
+            ),
+            (
+                "b.ts",
+                r#"
+                    export * from "./a";
+                    export const A = "local" as const;
+                "#,
+            ),
+            (
+                "entry.ts",
+                r#"
+                    import { A } from "./b";
+                    type X = typeof A;
+                    parse.buildParsers<{ X: X }>();
+                "#
+            )
+        ]));
+    }
+
+    #[test]
+    fn import_type_of_default_export() {
+        insta::assert_snapshot!(print_types_multifile(&[
+            (
+                "t.ts",
+                r#"
+                    type T = string;
+                    export default T;
+                "#,
+            ),
+            (
+                "entry.ts",
+                r#"
+                    type X = import("./t").default;
+                    parse.buildParsers<{ X: X }>();
+                "#
+            )
+        ]));
+    }
+
     // #[test]
     // fn export_destructuring_object() {
     //     insta::assert_snapshot!(print_types_multifile(&[

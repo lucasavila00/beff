@@ -2,18 +2,22 @@ use crate::{
     BeffUserSettings, BffFileName, FileManager, ImportReference, ModuleItemAddress, ParsedModule,
     SymbolExport, SymbolExportDefault, Visibility,
     ast::runtype::{Runtype, RuntypeConst},
-    diag::{Diagnostic, DiagnosticInfoMessage, DiagnosticInformation, Location},
+    diag::{
+        Diagnostic, DiagnosticInfoMessage, DiagnosticInformation, DiagnosticParentMessage, Location,
+    },
     parser_extractor::BuiltDecoder,
 };
 use anyhow::{Result, anyhow};
 use std::rc::Rc;
 use swc_common::{Span, Spanned};
 use swc_ecma_ast::{
-    Expr, Ident, Lit, Prop, PropName, PropOrSpread, TsCallSignatureDecl, TsConstructSignatureDecl,
-    TsEntityName, TsEnumDecl, TsGetterSignature, TsImportType, TsIndexSignature, TsInterfaceDecl,
-    TsKeywordType, TsKeywordTypeKind, TsLit, TsLitType, TsMethodSignature, TsPropertySignature,
-    TsQualifiedName, TsSetterSignature, TsType, TsTypeAliasDecl, TsTypeElement, TsTypeLit,
-    TsTypeParamInstantiation, TsTypeQuery, TsTypeQueryExpr, TsTypeRef,
+    Expr, Ident, Lit, Prop, PropName, PropOrSpread, TsArrayType, TsCallSignatureDecl,
+    TsConstructSignatureDecl, TsConstructorType, TsEntityName, TsEnumDecl, TsFnOrConstructorType,
+    TsFnType, TsGetterSignature, TsImportType, TsIndexSignature, TsInferType, TsInterfaceDecl,
+    TsIntersectionType, TsKeywordType, TsKeywordTypeKind, TsLit, TsLitType, TsMethodSignature,
+    TsPropertySignature, TsQualifiedName, TsSetterSignature, TsThisType, TsType, TsTypeAliasDecl,
+    TsTypeElement, TsTypeLit, TsTypeParamInstantiation, TsTypePredicate, TsTypeQuery,
+    TsTypeQueryExpr, TsTypeRef, TsUnionOrIntersectionType, TsUnionType,
 };
 
 pub struct FrontendCtx<'a, R: FileManager> {
@@ -1072,6 +1076,32 @@ impl<'a, R: FileManager> FrontendCtx<'a, R> {
         todo!()
     }
 
+    fn union(
+        &mut self,
+        types: &[Box<TsType>],
+        file: BffFileName,
+        visibility: Visibility,
+    ) -> Res<Runtype> {
+        let vs: Vec<Runtype> = types
+            .iter()
+            .map(|it| self.extract_type(it, file.clone(), visibility))
+            .collect::<Res<_>>()?;
+        Ok(Runtype::any_of(vs))
+    }
+
+    fn intersection(
+        &mut self,
+        types: &[Box<TsType>],
+        file: BffFileName,
+        visibility: Visibility,
+    ) -> Res<Runtype> {
+        let vs: Vec<Runtype> = types
+            .iter()
+            .map(|it| self.extract_type(it, file.clone(), visibility))
+            .collect::<Res<_>>()?;
+
+        Ok(Runtype::all_of(vs))
+    }
     fn extract_type(
         &mut self,
         ty: &TsType,
@@ -1087,7 +1117,6 @@ impl<'a, R: FileManager> FrontendCtx<'a, R> {
             TsType::TsImportType(ts_import_type) => {
                 self.extract_ts_import_type(ts_import_type, file)
             }
-
             TsType::TsLitType(TsLitType { lit, .. }) => match lit {
                 TsLit::Number(n) => Ok(Runtype::Const(RuntypeConst::parse_f64(n.value))),
                 TsLit::Str(s) => Ok(Runtype::single_string_const(&s.value)),
@@ -1095,23 +1124,69 @@ impl<'a, R: FileManager> FrontendCtx<'a, R> {
                 TsLit::BigInt(_) => Ok(Runtype::BigInt),
                 TsLit::Tpl(_) => todo!(),
             },
-            TsType::TsThisType(_) => todo!(),
-            TsType::TsFnOrConstructorType(_) => todo!(),
-            TsType::TsTypeLit(_) => todo!(),
-            TsType::TsArrayType(_) => todo!(),
-            TsType::TsTupleType(_) => todo!(),
-            TsType::TsOptionalType(_) => todo!(),
-            TsType::TsRestType(_) => todo!(),
-            TsType::TsUnionOrIntersectionType(_) => todo!(),
-            TsType::TsConditionalType(_) => todo!(),
-            TsType::TsInferType(_) => todo!(),
-            TsType::TsParenthesizedType(_) => todo!(),
-            TsType::TsTypeOperator(_) => todo!(),
-            TsType::TsIndexedAccessType(_) => todo!(),
-            TsType::TsMappedType(_) => todo!(),
-            TsType::TsTypePredicate(_) => todo!(),
+            TsType::TsArrayType(TsArrayType { elem_type, .. }) => Ok(Runtype::Array(
+                self.extract_type(elem_type, file.clone(), visibility)?
+                    .into(),
+            )),
+            TsType::TsUnionOrIntersectionType(it) => match &it {
+                TsUnionOrIntersectionType::TsUnionType(TsUnionType { types, .. }) => {
+                    self.union(types, file, visibility)
+                }
+                TsUnionOrIntersectionType::TsIntersectionType(TsIntersectionType {
+                    types, ..
+                }) => self.intersection(types, file, visibility),
+            },
+            TsType::TsTypeLit(_ts_type_lit) => todo!(),
+            TsType::TsTupleType(_ts_tuple_type) => todo!(),
+            TsType::TsOptionalType(_ts_optional_type) => todo!(),
+            TsType::TsRestType(_ts_rest_type) => todo!(),
+            TsType::TsConditionalType(_ts_conditional_type) => todo!(),
+            TsType::TsParenthesizedType(_ts_parenthesized_type) => todo!(),
+            TsType::TsTypeOperator(_ts_type_operator) => todo!(),
+            TsType::TsIndexedAccessType(_ts_indexed_access_type) => todo!(),
+            TsType::TsMappedType(_ts_mapped_type) => todo!(),
+            TsType::TsThisType(TsThisType { span, .. }) => self.cannot_serialize_error(
+                span,
+                DiagnosticInfoMessage::ThisTypeNonSerializableToJsonSchema,
+                file,
+            ),
+            TsType::TsFnOrConstructorType(
+                TsFnOrConstructorType::TsConstructorType(TsConstructorType { span, .. })
+                | TsFnOrConstructorType::TsFnType(TsFnType { span, .. }),
+            ) => self.cannot_serialize_error(
+                span,
+                DiagnosticInfoMessage::TsFnOrConstructorTypeNonSerializableToJsonSchema,
+                file,
+            ),
+            TsType::TsInferType(TsInferType { span, .. }) => self.cannot_serialize_error(
+                span,
+                DiagnosticInfoMessage::TsInferTypeNonSerializableToJsonSchema,
+                file,
+            ),
+            TsType::TsTypePredicate(TsTypePredicate { span, .. }) => self.cannot_serialize_error(
+                span,
+                DiagnosticInfoMessage::TsTypePredicateNonSerializableToJsonSchema,
+                file,
+            ),
         }
     }
+
+    fn cannot_serialize_error<T>(
+        &mut self,
+        span: &Span,
+        msg: DiagnosticInfoMessage,
+        file_name: BffFileName,
+    ) -> Res<T> {
+        let cause = self.build_error(span, msg, file_name);
+
+        Err(Diagnostic {
+            parent_big_message: Some(DiagnosticParentMessage::CannotConvertToSchema),
+            cause,
+            related_information: None,
+        }
+        .into())
+    }
+
     fn extract_one_built_decoder_v2(&mut self, prop: &TsTypeElement) -> Result<BuiltDecoder> {
         match prop {
             TsTypeElement::TsPropertySignature(TsPropertySignature {
