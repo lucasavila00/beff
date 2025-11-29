@@ -50,6 +50,19 @@ type Res<T> = Result<T, Box<Diagnostic>>;
 trait TypeModuleWalker<'a, R: FileManager + 'a, U> {
     fn get_ctx<'b>(&'b mut self) -> &'b mut FrontendCtx<'a, R>;
 
+    fn get_item_from_star_import(&mut self, file_name: BffFileName, span: &Span) -> Res<U>;
+
+    fn get_addressed_item_from_symbol_exports(
+        &mut self,
+        export: &SymbolExport,
+        span: &Span,
+    ) -> Res<U>;
+    fn maybe_get_addressed_item_from_local_ts_type(
+        &mut self,
+        ts_type: &Rc<TsTypeAliasDecl>,
+        file: BffFileName,
+    ) -> Res<Option<U>>;
+
     fn get_addressed_item_from_default_import(
         &mut self,
         file_name: BffFileName,
@@ -75,7 +88,9 @@ trait TypeModuleWalker<'a, R: FileManager + 'a, U> {
                         };
                         return self.get_addressed_item(&new_addr, span);
                     }
-                    _ => todo!(),
+                    _ => {
+                        todo!()
+                    }
                 },
                 SymbolExportDefault::Renamed { export } => {
                     return self.get_addressed_item_from_symbol_exports(&export, span);
@@ -111,19 +126,6 @@ trait TypeModuleWalker<'a, R: FileManager + 'a, U> {
             }
         }
     }
-
-    fn get_item_from_star_import(&mut self, file_name: BffFileName, span: &Span) -> Res<U>;
-
-    fn get_addressed_item_from_symbol_exports(
-        &mut self,
-        export: &SymbolExport,
-        span: &Span,
-    ) -> Res<U>;
-    fn maybe_get_addressed_item_from_local_ts_type(
-        &mut self,
-        ts_type: &Rc<TsTypeAliasDecl>,
-        file: BffFileName,
-    ) -> Res<Option<U>>;
 
     fn get_addressed_item(&mut self, addr: &ModuleItemAddress, span: &Span) -> Res<U> {
         let parsed_module = self.get_ctx().get_or_fetch_adressed_file(addr, span)?;
@@ -291,12 +293,6 @@ trait ValueModuleWalker<'a, R: FileManager + 'a, U> {
         file_name: &BffFileName,
     ) -> Res<U>;
 
-    fn handle_symbol_export_default_expr(
-        &mut self,
-        symbol_export: &Rc<Expr>,
-        file_name: &BffFileName,
-    ) -> Res<U>;
-
     fn handle_symbol_export_expr_decl(
         &mut self,
         symbol_export: &Rc<TsType>,
@@ -320,9 +316,17 @@ trait ValueModuleWalker<'a, R: FileManager + 'a, U> {
                     export_expr: symbol_export,
                     span: _,
                     file_name,
-                } => {
-                    return self.handle_symbol_export_default_expr(symbol_export, file_name);
-                }
+                } => match symbol_export.as_ref() {
+                    Expr::Ident(i) => {
+                        let new_addr = ModuleItemAddress {
+                            file: file_name.clone(),
+                            key: i.sym.to_string(),
+                            visibility: Visibility::Local,
+                        };
+                        return self.get_addressed_item(&new_addr, &i.span);
+                    }
+                    _ => return self.handle_symbol_export_expr(&symbol_export.clone(), file_name),
+                },
                 SymbolExportDefault::Renamed { export } => {
                     return self.get_addressed_value_from_symbol_export(export);
                 }
@@ -504,17 +508,6 @@ impl<'a, 'b, R: FileManager> ValueModuleWalker<'a, R, AddressedValue> for ValueW
         // should call qualified version insteaed, it's an error
         todo!()
     }
-
-    fn handle_symbol_export_default_expr(
-        &mut self,
-        symbol_export: &Rc<Expr>,
-        file_name: &BffFileName,
-    ) -> Res<AddressedValue> {
-        return Ok(AddressedValue::ValueExpr(
-            symbol_export.clone(),
-            file_name.clone(),
-        ));
-    }
 }
 struct QaulifiedValueWalker<'a, 'b, R: FileManager> {
     pub ctx: &'b mut FrontendCtx<'a, R>,
@@ -575,24 +568,6 @@ impl<'a, 'b, R: FileManager> ValueModuleWalker<'a, R, AddressedQualifiedValue>
 
     fn handle_import_star(&mut self, file_name: BffFileName) -> Res<AddressedQualifiedValue> {
         return Ok(AddressedQualifiedValue::StarOfFile(file_name));
-    }
-
-    fn handle_symbol_export_default_expr(
-        &mut self,
-        symbol_export: &Rc<Expr>,
-        file_name: &BffFileName,
-    ) -> Res<AddressedQualifiedValue> {
-        match symbol_export.as_ref() {
-            Expr::Ident(i) => {
-                let new_addr = ModuleItemAddress {
-                    file: file_name.clone(),
-                    key: i.sym.to_string(),
-                    visibility: Visibility::Local,
-                };
-                return self.get_addressed_item(&new_addr, &i.span);
-            }
-            _ => todo!(),
-        }
     }
 }
 impl<'a, R: FileManager> FrontendCtx<'a, R> {
