@@ -9,7 +9,9 @@ use crate::subtyping::subtype::StringLitOrFormat;
 use crate::subtyping::to_schema::semtype_to_runtypes;
 use crate::subtyping::ToSemType;
 use crate::sym_reference::{ResolvedLocalSymbol, TsBuiltIn, TypeResolver};
-use crate::{BeffUserSettings, BffFileName, FileManager, ImportReference, SymbolExport};
+use crate::{
+    BeffUserSettings, BffFileName, FileManager, ImportReference, SymbolExport, SymbolExportDefault,
+};
 use crate::{NamedSchema, RuntypeName};
 use std::collections::{BTreeMap, HashMap};
 use std::rc::Rc;
@@ -1809,7 +1811,13 @@ impl<'a, 'b, R: FileManager> TypeToSchema<'a, 'b, R> {
                 exported,
                 from_file,
             } => self.typeof_symbol_export(exported, from_file),
-            ResolvedLocalSymbol::SymbolExportDefault(e) => self.typeof_expr(&e.symbol_export, true),
+            ResolvedLocalSymbol::SymbolExportDefault(e) => match e.as_ref() {
+                SymbolExportDefault::Expr {
+                    symbol_export,
+                    span: _,
+                    file_name: _,
+                } => self.typeof_expr(&symbol_export, true),
+            },
             ResolvedLocalSymbol::Star(file_name) => {
                 let mut acc = vec![];
                 self.collect_value_exports(&file_name, &mut acc)?;

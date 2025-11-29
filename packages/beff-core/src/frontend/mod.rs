@@ -3,7 +3,7 @@ use crate::{
     diag::{Diagnostic, DiagnosticInfoMessage, DiagnosticInformation, Location},
     parser_extractor::BuiltDecoder,
     BeffUserSettings, BffFileName, FileManager, ImportReference, ModuleItemAddress, ParsedModule,
-    SymbolExport, Visibility,
+    SymbolExport, SymbolExportDefault, Visibility,
 };
 use anyhow::{anyhow, Result};
 use std::rc::Rc;
@@ -140,9 +140,17 @@ impl<'a, R: FileManager> FrontendCtx<'a, R> {
                 todo!()
             }
             ImportReference::Default { file_name } => {
-                match &self.get_or_fetch_file(file_name, span)?.export_default {
-                    Some(export_default_symbol) => {
-                        match export_default_symbol.symbol_export.as_ref() {
+                match &self
+                    .get_or_fetch_file(file_name, span)?
+                    .symbol_exports
+                    .export_default
+                {
+                    Some(export_default_symbol) => match export_default_symbol.as_ref() {
+                        SymbolExportDefault::Expr {
+                            symbol_export,
+                            span,
+                            file_name,
+                        } => match symbol_export.as_ref() {
                             Expr::Ident(i) => {
                                 let new_addr = ModuleItemAddress {
                                     file: file_name.clone(),
@@ -152,8 +160,8 @@ impl<'a, R: FileManager> FrontendCtx<'a, R> {
                                 return self.get_addressed_type(&new_addr, span);
                             }
                             _ => todo!(),
-                        }
-                    }
+                        },
+                    },
                     None => todo!(),
                 }
             }
@@ -315,13 +323,24 @@ impl<'a, R: FileManager> FrontendCtx<'a, R> {
                             todo!()
                         }
                         ImportReference::Default { file_name } => {
-                            match &self.get_or_fetch_file(file_name, span)?.export_default {
-                                Some(export_default_symbol) => {
-                                    return Ok(AddressedValue::ValueExpr(
-                                        export_default_symbol.symbol_export.clone(),
-                                        export_default_symbol.file_name.clone(),
-                                    ));
-                                }
+                            match &self
+                                .get_or_fetch_file(file_name, span)?
+                                .symbol_exports
+                                .export_default
+                            {
+                                Some(export_default_symbol) => match export_default_symbol.as_ref()
+                                {
+                                    SymbolExportDefault::Expr {
+                                        symbol_export,
+                                        span: _,
+                                        file_name,
+                                    } => {
+                                        return Ok(AddressedValue::ValueExpr(
+                                            symbol_export.clone(),
+                                            file_name.clone(),
+                                        ));
+                                    }
+                                },
                                 None => todo!(),
                             }
                         }

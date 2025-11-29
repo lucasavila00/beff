@@ -198,7 +198,7 @@ impl<'a, R: FileManager> TypeResolver<'a, R> {
                 }
                 ImportReference::Default { file_name } => {
                     let file = self.files.get_or_fetch_file(file_name);
-                    let df = file.and_then(|file| file.export_default.clone());
+                    let df = file.and_then(|file| file.symbol_exports.export_default.clone());
                     match df {
                         Some(d) => return Ok(ResolvedLocalSymbol::SymbolExportDefault(d.clone())),
                         None => {

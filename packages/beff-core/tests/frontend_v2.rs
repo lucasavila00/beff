@@ -737,31 +737,31 @@ mod tests {
         ]));
     }
 
-    // #[test]
-    // fn re_export_named_as_default() {
-    //     insta::assert_snapshot!(print_types_multifile(&[
-    //         (
-    //             "a.ts",
-    //             r#"
-    //                 export const A = "a" as const;
-    //             "#,
-    //         ),
-    //         (
-    //             "b.ts",
-    //             r#"
-    //                 export { A as default } from "./a";
-    //             "#,
-    //         ),
-    //         (
-    //             "entry.ts",
-    //             r#"
-    //                 import A from "./b";
-    //                 type X = typeof A;
-    //                 parse.buildParsers<{ X: X }>();
-    //             "#
-    //         )
-    //     ]));
-    // }
+    #[test]
+    fn re_export_named_as_default() {
+        insta::assert_snapshot!(print_types_multifile(&[
+            (
+                "a.ts",
+                r#"
+                    export const A = "a" as const;
+                "#,
+            ),
+            (
+                "b.ts",
+                r#"
+                    export { A as default } from "./a";
+                "#,
+            ),
+            (
+                "entry.ts",
+                r#"
+                    import A from "./b";
+                    type X = typeof A;
+                    parse.buildParsers<{ X: X }>();
+                "#
+            )
+        ]));
+    }
 
     // #[test]
     // fn re_export_default_as_named() {

@@ -41,7 +41,6 @@ pub struct ImportsVisitor<'a, R: FsModuleResolver> {
     pub symbol_exports: SymbolsExportsModule,
     pub current_file: BffFileName,
     pub unresolved_exports: Vec<UnresolvedExport>,
-    pub export_default: Option<Rc<SymbolExportDefault>>,
 }
 impl<'a, R: FsModuleResolver> ImportsVisitor<'a, R> {
     pub fn from_file(current_file: BffFileName, resolver: &'a mut R) -> ImportsVisitor<'a, R> {
@@ -51,7 +50,6 @@ impl<'a, R: FsModuleResolver> ImportsVisitor<'a, R> {
             current_file,
             unresolved_exports: Vec::new(),
             resolver,
-            export_default: None,
         }
     }
     fn resolve_import(&mut self, module_specifier: &str) -> Option<BffFileName> {
@@ -99,8 +97,8 @@ impl<'a, R: FsModuleResolver> ImportsVisitor<'a, R> {
 
 impl<R: FsModuleResolver> Visit for ImportsVisitor<'_, R> {
     fn visit_export_default_expr(&mut self, n: &ExportDefaultExpr) {
-        self.export_default = Some(
-            SymbolExportDefault {
+        self.symbol_exports.set_default_export(
+            SymbolExportDefault::Expr {
                 symbol_export: Rc::new(*n.expr.clone()),
                 span: n.span,
                 file_name: self.current_file.clone(),
@@ -411,7 +409,6 @@ pub fn parse_and_bind<R: FsModuleResolver>(
         imports: v.imports,
         comments,
         locals: locals.content,
-        export_default: v.export_default,
     });
     Ok(f)
 }

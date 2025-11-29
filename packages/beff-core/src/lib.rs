@@ -144,6 +144,8 @@ pub struct SymbolsExportsModule {
     named_unknown: HashMap<String, Rc<SymbolExport>>,
 
     extends: Vec<BffFileName>,
+
+    export_default: Option<Rc<SymbolExportDefault>>,
 }
 impl Default for SymbolsExportsModule {
     fn default() -> Self {
@@ -157,9 +159,20 @@ impl SymbolsExportsModule {
             named_values: HashMap::new(),
             named_unknown: HashMap::new(),
             extends: Vec::new(),
+            export_default: None,
         }
     }
+    pub fn set_default_export(&mut self, export: Rc<SymbolExportDefault>) {
+        if self.export_default.is_some() {
+            panic!("Default export already set");
+        }
+        self.export_default = Some(export);
+    }
+
     pub fn insert_value(&mut self, name: String, export: Rc<SymbolExport>) {
+        if name == "default" {
+            panic!("'default' is a reserved name for default exports");
+        }
         self.named_values.insert(name, export);
     }
 
@@ -183,10 +196,16 @@ impl SymbolsExportsModule {
     }
 
     pub fn insert_type(&mut self, name: String, export: Rc<SymbolExport>) {
+        if name == "default" {
+            panic!("'default' is a reserved name for default exports");
+        }
         self.named_types.insert(name, export);
     }
 
     pub fn insert_unknown(&mut self, name: String, export: Rc<SymbolExport>) {
+        if name == "default" {
+            panic!("'default' is a reserved name for default exports");
+        }
         self.named_unknown.insert(name, export);
     }
 
@@ -215,10 +234,12 @@ impl SymbolsExportsModule {
 }
 
 #[derive(Debug)]
-pub struct SymbolExportDefault {
-    pub symbol_export: Rc<Expr>,
-    pub span: Span,
-    pub file_name: BffFileName,
+pub enum SymbolExportDefault {
+    Expr {
+        symbol_export: Rc<Expr>,
+        span: Span,
+        file_name: BffFileName,
+    },
 }
 pub struct ParsedModule {
     pub locals: ParsedModuleLocals,
@@ -226,7 +247,6 @@ pub struct ParsedModule {
     pub imports: HashMap<String, Rc<ImportReference>>,
     pub comments: SwcComments,
     pub symbol_exports: SymbolsExportsModule,
-    pub export_default: Option<Rc<SymbolExportDefault>>,
 }
 
 #[derive(Debug)]
