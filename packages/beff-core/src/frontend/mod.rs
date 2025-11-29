@@ -31,7 +31,7 @@ pub enum AddressedType {
 }
 
 pub enum AddressedQualifiedType {
-    StarExports(BffFileName),
+    StarImport(BffFileName),
 }
 
 pub enum AddressedValue {
@@ -39,7 +39,7 @@ pub enum AddressedValue {
 }
 
 pub enum AddressedQualifiedValue {
-    StarExports(BffFileName),
+    StarImport(BffFileName),
 }
 
 type Res<T> = Result<T, Box<Diagnostic>>;
@@ -128,7 +128,7 @@ impl<'a, R: FileManager> FrontendCtx<'a, R> {
                     match imported.as_ref() {
                         ImportReference::Named { .. } => todo!(),
                         ImportReference::Star { file_name, span: _ } => {
-                            return Ok(AddressedQualifiedType::StarExports(file_name.clone()));
+                            return Ok(AddressedQualifiedType::StarImport(file_name.clone()));
                         }
                         ImportReference::Default { .. } => todo!(),
                     }
@@ -195,8 +195,8 @@ impl<'a, R: FileManager> FrontendCtx<'a, R> {
                 )
             }
             Visibility::Export => {
-                if let Some(x) = parsed_module.symbol_exports.get_type(&addr.key, self.files) {
-                    match x.as_ref() {
+                if let Some(export) = parsed_module.symbol_exports.get_type(&addr.key, self.files) {
+                    match export.as_ref() {
                         SymbolExport::TsType { decl, .. } => {
                             return Ok(AddressedType::TsType(decl.clone()));
                         }
@@ -236,7 +236,7 @@ impl<'a, R: FileManager> FrontendCtx<'a, R> {
                     match imported.as_ref() {
                         ImportReference::Named { .. } => todo!(),
                         ImportReference::Star { file_name, span: _ } => {
-                            return Ok(AddressedQualifiedValue::StarExports(file_name.clone()));
+                            return Ok(AddressedQualifiedValue::StarImport(file_name.clone()));
                         }
                         ImportReference::Default { .. } => todo!(),
                     }
@@ -373,7 +373,7 @@ impl<'a, R: FileManager> FrontendCtx<'a, R> {
                 let addr = ModuleItemAddress::from_ident(ident, file.clone(), Visibility::Local);
                 let type_addressed = self.get_addressed_qualified_type(&addr, &q.span())?;
                 match type_addressed {
-                    AddressedQualifiedType::StarExports(bff_file_name) => {
+                    AddressedQualifiedType::StarImport(bff_file_name) => {
                         let new_addr = ModuleItemAddress {
                             file: bff_file_name.clone(),
                             key: q.right.sym.to_string(),
@@ -530,7 +530,7 @@ impl<'a, R: FileManager> FrontendCtx<'a, R> {
                         let addressed_qualified_value =
                             self.get_addressed_qualified_value(&addr, &ty.span)?;
                         match addressed_qualified_value {
-                            AddressedQualifiedValue::StarExports(bff_file_name) => {
+                            AddressedQualifiedValue::StarImport(bff_file_name) => {
                                 let new_addr = ModuleItemAddress {
                                     file: bff_file_name.clone(),
                                     key: ts_qualified_name.right.sym.to_string(),
@@ -562,6 +562,13 @@ impl<'a, R: FileManager> FrontendCtx<'a, R> {
             TsType::TsTypeQuery(ts_type_query) => {
                 self.extract_type_query(ts_type_query, file, visibility)
             }
+            TsType::TsLitType(TsLitType { lit, .. }) => match lit {
+                TsLit::Number(n) => Ok(Runtype::Const(RuntypeConst::parse_f64(n.value))),
+                TsLit::Str(s) => Ok(Runtype::single_string_const(&s.value)),
+                TsLit::Bool(b) => Ok(Runtype::Const(RuntypeConst::Bool(b.value))),
+                TsLit::BigInt(_) => Ok(Runtype::BigInt),
+                TsLit::Tpl(_) => todo!(),
+            },
             TsType::TsThisType(_) => todo!(),
             TsType::TsFnOrConstructorType(_) => todo!(),
             TsType::TsTypeLit(_) => todo!(),
@@ -576,13 +583,6 @@ impl<'a, R: FileManager> FrontendCtx<'a, R> {
             TsType::TsTypeOperator(_) => todo!(),
             TsType::TsIndexedAccessType(_) => todo!(),
             TsType::TsMappedType(_) => todo!(),
-            TsType::TsLitType(TsLitType { lit, .. }) => match lit {
-                TsLit::Number(n) => Ok(Runtype::Const(RuntypeConst::parse_f64(n.value))),
-                TsLit::Str(s) => Ok(Runtype::single_string_const(&s.value)),
-                TsLit::Bool(b) => Ok(Runtype::Const(RuntypeConst::Bool(b.value))),
-                TsLit::BigInt(_) => Ok(Runtype::BigInt),
-                TsLit::Tpl(_) => todo!(),
-            },
             TsType::TsTypePredicate(_) => todo!(),
             TsType::TsImportType(_) => todo!(),
         }
