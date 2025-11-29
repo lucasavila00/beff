@@ -1,7 +1,7 @@
 use crate::{
     BeffUserSettings, BffFileName, FileManager, ImportReference, ModuleItemAddress, ParsedModule,
     SymbolExport, SymbolExportDefault, Visibility,
-    ast::runtype::{Runtype, RuntypeConst},
+    ast::runtype::{Optionality, Runtype, RuntypeConst},
     diag::{
         Diagnostic, DiagnosticInfoMessage, DiagnosticInformation, DiagnosticParentMessage, Location,
     },
@@ -15,8 +15,9 @@ use swc_ecma_ast::{
     TsConstructSignatureDecl, TsConstructorType, TsEntityName, TsEnumDecl, TsFnOrConstructorType,
     TsFnType, TsGetterSignature, TsImportType, TsIndexSignature, TsInferType, TsInterfaceDecl,
     TsIntersectionType, TsKeywordType, TsKeywordTypeKind, TsLit, TsLitType, TsMethodSignature,
-    TsPropertySignature, TsQualifiedName, TsSetterSignature, TsThisType, TsType, TsTypeAliasDecl,
-    TsTypeElement, TsTypeLit, TsTypeParamInstantiation, TsTypePredicate, TsTypeQuery,
+    TsOptionalType, TsParenthesizedType, TsPropertySignature, TsQualifiedName, TsRestType,
+    TsSetterSignature, TsThisType, TsTupleType, TsType, TsTypeAliasDecl, TsTypeElement, TsTypeLit,
+    TsTypeOperator, TsTypeOperatorOp, TsTypeParamInstantiation, TsTypePredicate, TsTypeQuery,
     TsTypeQueryExpr, TsTypeRef, TsUnionOrIntersectionType, TsUnionType,
 };
 
@@ -682,8 +683,7 @@ impl<'a, R: FileManager> FrontendCtx<'a, R> {
                     decl.type_params.is_none(),
                     "generic types not supported yet"
                 );
-                let runtype =
-                    self.extract_type(&decl.type_ann, original_file.clone(), address.visibility)?;
+                let runtype = self.extract_type(&decl.type_ann, original_file.clone())?;
                 Ok(runtype)
             }
             AddressedType::TsInterfaceDecl(_, _) => todo!(),
@@ -890,7 +890,7 @@ impl<'a, R: FileManager> FrontendCtx<'a, R> {
                 self.typeof_expr(expr.as_ref(), false, expr_file)
             }
             AddressedValue::TsTypeDecl(ts_type, bff_file_name) => {
-                self.extract_type(&ts_type, bff_file_name, address.visibility)
+                self.extract_type(&ts_type, bff_file_name)
             }
         }
     }
@@ -1076,43 +1076,82 @@ impl<'a, R: FileManager> FrontendCtx<'a, R> {
         todo!()
     }
 
-    fn union(
-        &mut self,
-        types: &[Box<TsType>],
-        file: BffFileName,
-        visibility: Visibility,
-    ) -> Res<Runtype> {
+    fn union(&mut self, types: &[Box<TsType>], file: BffFileName) -> Res<Runtype> {
         let vs: Vec<Runtype> = types
             .iter()
-            .map(|it| self.extract_type(it, file.clone(), visibility))
+            .map(|it| self.extract_type(it, file.clone()))
             .collect::<Res<_>>()?;
         Ok(Runtype::any_of(vs))
     }
 
-    fn intersection(
-        &mut self,
-        types: &[Box<TsType>],
-        file: BffFileName,
-        visibility: Visibility,
-    ) -> Res<Runtype> {
+    fn intersection(&mut self, types: &[Box<TsType>], file: BffFileName) -> Res<Runtype> {
         let vs: Vec<Runtype> = types
             .iter()
-            .map(|it| self.extract_type(it, file.clone(), visibility))
+            .map(|it| self.extract_type(it, file.clone()))
             .collect::<Res<_>>()?;
 
         Ok(Runtype::all_of(vs))
     }
-    fn extract_type(
+    fn extract_ts_type_element(
         &mut self,
-        ty: &TsType,
+        prop: &TsTypeElement,
         file: BffFileName,
-        visibility: Visibility,
-    ) -> Res<Runtype> {
+    ) -> Res<(String, Optionality<Runtype>)> {
+        match prop {
+            TsTypeElement::TsPropertySignature(prop) => {
+                let key = match &*prop.key {
+                    Expr::Ident(ident) => ident.sym.to_string(),
+                    Expr::Lit(Lit::Str(st)) => st.value.to_string(),
+                    _ => {
+                        return self.error(
+                            &prop.span,
+                            DiagnosticInfoMessage::PropKeyShouldBeIdent,
+                            file.clone(),
+                        );
+                    }
+                };
+                match &prop.type_ann.as_ref() {
+                    Some(val) => {
+                        let value = self.extract_type(&val.type_ann, file.clone())?;
+                        let value = if prop.optional {
+                            value.optional()
+                        } else {
+                            value.required()
+                        };
+                        Ok((key, value))
+                    }
+                    None => self.error(
+                        &prop.span,
+                        DiagnosticInfoMessage::PropShouldHaveTypeAnnotation,
+                        file.clone(),
+                    ),
+                }
+            }
+            TsTypeElement::TsIndexSignature(_) => self.cannot_serialize_error(
+                &prop.span(),
+                DiagnosticInfoMessage::IndexSignatureNonSerializableToJsonSchema,
+                file.clone(),
+            ),
+            TsTypeElement::TsGetterSignature(_)
+            | TsTypeElement::TsSetterSignature(_)
+            | TsTypeElement::TsMethodSignature(_)
+            | TsTypeElement::TsCallSignatureDecl(_)
+            | TsTypeElement::TsConstructSignatureDecl(_) => self.cannot_serialize_error(
+                &prop.span(),
+                DiagnosticInfoMessage::PropertyNonSerializableToJsonSchema,
+                file.clone(),
+            ),
+        }
+    }
+
+    fn extract_type(&mut self, ty: &TsType, file: BffFileName) -> Res<Runtype> {
         match ty {
-            TsType::TsTypeRef(ts_type_ref) => self.extract_type_ref(ts_type_ref, file, visibility),
+            TsType::TsTypeRef(ts_type_ref) => {
+                self.extract_type_ref(ts_type_ref, file, Visibility::Local)
+            }
             TsType::TsKeywordType(ts_keyword_type) => self.extract_ts_keyword_type(ts_keyword_type),
             TsType::TsTypeQuery(ts_type_query) => {
-                self.extract_type_query(ts_type_query, file, visibility)
+                self.extract_type_query(ts_type_query, file, Visibility::Local)
             }
             TsType::TsImportType(ts_import_type) => {
                 self.extract_ts_import_type(ts_import_type, file)
@@ -1125,26 +1164,71 @@ impl<'a, R: FileManager> FrontendCtx<'a, R> {
                 TsLit::Tpl(_) => todo!(),
             },
             TsType::TsArrayType(TsArrayType { elem_type, .. }) => Ok(Runtype::Array(
-                self.extract_type(elem_type, file.clone(), visibility)?
-                    .into(),
+                self.extract_type(elem_type, file.clone())?.into(),
             )),
             TsType::TsUnionOrIntersectionType(it) => match &it {
                 TsUnionOrIntersectionType::TsUnionType(TsUnionType { types, .. }) => {
-                    self.union(types, file, visibility)
+                    self.union(types, file)
                 }
                 TsUnionOrIntersectionType::TsIntersectionType(TsIntersectionType {
                     types, ..
-                }) => self.intersection(types, file, visibility),
+                }) => self.intersection(types, file),
             },
-            TsType::TsTypeLit(_ts_type_lit) => todo!(),
-            TsType::TsTupleType(_ts_tuple_type) => todo!(),
-            TsType::TsOptionalType(_ts_optional_type) => todo!(),
-            TsType::TsRestType(_ts_rest_type) => todo!(),
-            TsType::TsConditionalType(_ts_conditional_type) => todo!(),
-            TsType::TsParenthesizedType(_ts_parenthesized_type) => todo!(),
-            TsType::TsTypeOperator(_ts_type_operator) => todo!(),
+            TsType::TsParenthesizedType(TsParenthesizedType { type_ann, .. }) => {
+                self.extract_type(type_ann, file)
+            }
+            TsType::TsTupleType(TsTupleType { elem_types, .. }) => {
+                let mut prefix_items = vec![];
+                let mut items = None;
+                for it in elem_types {
+                    if let TsType::TsRestType(TsRestType { type_ann, .. }) = &*it.ty {
+                        if items.is_some() {
+                            return self.cannot_serialize_error(
+                                &it.span,
+                                DiagnosticInfoMessage::DuplicatedRestNonSerializableToJsonSchema,
+                                file.clone(),
+                            );
+                        }
+                        let ann = match self.extract_type(type_ann, file.clone())? {
+                            Runtype::Array(items) => *items,
+                            _ => todo!(),
+                        };
+                        items = Some(ann.into());
+                    } else {
+                        let ty_schema = self.extract_type(&it.ty, file.clone())?;
+                        prefix_items.push(ty_schema);
+                    }
+                }
+                Ok(Runtype::Tuple {
+                    prefix_items,
+                    items,
+                })
+            }
+            TsType::TsTypeLit(TsTypeLit { members, .. }) => Ok(Runtype::object(
+                members
+                    .iter()
+                    .map(|prop| self.extract_ts_type_element(prop, file.clone()))
+                    .collect::<Res<_>>()?,
+            )),
+
             TsType::TsIndexedAccessType(_ts_indexed_access_type) => todo!(),
             TsType::TsMappedType(_ts_mapped_type) => todo!(),
+            TsType::TsConditionalType(_ts_conditional_type) => todo!(),
+            TsType::TsTypeOperator(TsTypeOperator {
+                span: _,
+                op,
+                type_ann: _,
+            }) => match op {
+                TsTypeOperatorOp::KeyOf => todo!(),
+                TsTypeOperatorOp::Unique => todo!(),
+                TsTypeOperatorOp::ReadOnly => todo!(),
+            },
+
+            TsType::TsOptionalType(TsOptionalType { span, .. }) => self.error(
+                span,
+                DiagnosticInfoMessage::OptionalTypeIsNotSupported,
+                file,
+            ),
             TsType::TsThisType(TsThisType { span, .. }) => self.cannot_serialize_error(
                 span,
                 DiagnosticInfoMessage::ThisTypeNonSerializableToJsonSchema,
@@ -1166,6 +1250,13 @@ impl<'a, R: FileManager> FrontendCtx<'a, R> {
             TsType::TsTypePredicate(TsTypePredicate { span, .. }) => self.cannot_serialize_error(
                 span,
                 DiagnosticInfoMessage::TsTypePredicateNonSerializableToJsonSchema,
+                file,
+            ),
+            TsType::TsRestType(ty) => self.error(
+                &ty.span,
+                DiagnosticInfoMessage::AnyhowError(
+                    "should have been handled by parent node".to_string(),
+                ),
                 file,
             ),
         }
@@ -1216,11 +1307,7 @@ impl<'a, R: FileManager> FrontendCtx<'a, R> {
                 };
                 match type_ann.as_ref().map(|it| &it.type_ann) {
                     Some(ann) => {
-                        let schema = match self.extract_type(
-                            ann,
-                            self.parser_file.clone(),
-                            Visibility::Local,
-                        ) {
+                        let schema = match self.extract_type(ann, self.parser_file.clone()) {
                             Ok(s) => s,
                             Err(diag) => {
                                 self.errors.push(*diag);
