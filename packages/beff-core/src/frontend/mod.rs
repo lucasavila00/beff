@@ -477,6 +477,7 @@ impl<'a, R: FileManager> FrontendCtx<'a, R> {
                         let new_addr = ModuleItemAddress {
                             file: bff_file_name.clone(),
                             key: ts_qualified_name.right.sym.to_string(),
+                            // TODO: is visibility correct here?
                             visibility: Visibility::Export,
                         };
                         return self.get_addressed_qualified_type(&new_addr, &q.span());
@@ -484,7 +485,12 @@ impl<'a, R: FileManager> FrontendCtx<'a, R> {
                 }
             }
             TsEntityName::Ident(ident) => {
-                let addr = ModuleItemAddress::from_ident(ident, file.clone(), Visibility::Local);
+                let addr = ModuleItemAddress::from_ident(
+                    ident,
+                    file.clone(),
+                    // TODO: is visibility correct here?
+                    Visibility::Local,
+                );
                 let type_addressed = self.get_addressed_qualified_type(&addr, &q.span())?;
                 Ok(type_addressed)
             }
@@ -496,6 +502,7 @@ impl<'a, R: FileManager> FrontendCtx<'a, R> {
         q: &TsQualifiedName,
         type_args: &Option<Box<TsTypeParamInstantiation>>,
         file: BffFileName,
+        visibility: Visibility,
     ) -> Res<Runtype> {
         assert!(type_args.is_none(), "generic types not supported yet");
         let type_addressed = self.get_adressed_qualified_type_from_entity_name(&q.left, file)?;
@@ -504,7 +511,7 @@ impl<'a, R: FileManager> FrontendCtx<'a, R> {
                 let new_addr = ModuleItemAddress {
                     file: bff_file_name.clone(),
                     key: q.right.sym.to_string(),
-                    visibility: Visibility::Export,
+                    visibility,
                 };
                 return self.extract_addressed_type(&new_addr, &q.span());
             }
@@ -526,9 +533,13 @@ impl<'a, R: FileManager> FrontendCtx<'a, R> {
             TsEntityName::Ident(ident) => {
                 self.extract_type_ident(ident, type_params, file, visibility)
             }
-            TsEntityName::TsQualifiedName(ts_qualified_name) => {
-                self.extract_type_qualified_name(ts_qualified_name, type_params, file)
-            }
+            TsEntityName::TsQualifiedName(ts_qualified_name) => self.extract_type_qualified_name(
+                ts_qualified_name,
+                type_params,
+                file,
+                // TODO: is the visibility correct here?
+                Visibility::Export,
+            ),
         }
     }
 
@@ -626,6 +637,87 @@ impl<'a, R: FileManager> FrontendCtx<'a, R> {
         }
     }
 
+    fn get_adressed_qualified_value_from_entity_name(
+        &mut self,
+        q: &TsEntityName,
+        file: BffFileName,
+    ) -> Res<AddressedQualifiedValue> {
+        match q {
+            TsEntityName::TsQualifiedName(ts_qualified_name) => {
+                let left_part = self.get_adressed_qualified_value_from_entity_name(
+                    &ts_qualified_name.left,
+                    file.clone(),
+                )?;
+                match left_part {
+                    AddressedQualifiedValue::StarOfFile(bff_file_name) => {
+                        let new_addr = ModuleItemAddress {
+                            file: bff_file_name.clone(),
+                            key: ts_qualified_name.right.sym.to_string(),
+                            // TODO: is visibility correct here?
+                            visibility: Visibility::Export,
+                        };
+                        return self.get_addressed_qualified_value(&new_addr, &q.span());
+                    }
+                }
+            }
+            TsEntityName::Ident(ident) => {
+                let addr = ModuleItemAddress::from_ident(
+                    ident,
+                    file.clone(),
+                    // TODO: is visibility correct here?
+                    Visibility::Local,
+                );
+                let value_addressed = self.get_addressed_qualified_value(&addr, &q.span())?;
+                Ok(value_addressed)
+            }
+        }
+    }
+
+    fn extract_value_ts_qualified_name(
+        &mut self,
+        ts_qualified_name: &TsQualifiedName,
+        file: BffFileName,
+        visibility: Visibility,
+        span: &Span,
+    ) -> Res<Runtype> {
+        let value_addressed = self
+            .get_adressed_qualified_value_from_entity_name(&ts_qualified_name.left, file.clone())?;
+
+        match value_addressed {
+            AddressedQualifiedValue::StarOfFile(bff_file_name) => {
+                let new_addr = ModuleItemAddress {
+                    file: bff_file_name.clone(),
+                    key: ts_qualified_name.right.sym.to_string(),
+                    visibility,
+                };
+                return self.extract_addressed_value(&new_addr, &span);
+            }
+        }
+    }
+
+    fn extract_value_ts_entity_name(
+        &mut self,
+        ts_entity_name: &TsEntityName,
+        file: BffFileName,
+        visibility: Visibility,
+        span: &Span,
+    ) -> Res<Runtype> {
+        match ts_entity_name {
+            TsEntityName::Ident(ident) => {
+                let addr = ModuleItemAddress::from_ident(ident, file.clone(), visibility);
+                self.extract_addressed_value(&addr, &span)
+            }
+            TsEntityName::TsQualifiedName(ts_qualified_name) => self
+                .extract_value_ts_qualified_name(
+                    ts_qualified_name,
+                    file,
+                    // TODO: is the visibility correct here?
+                    Visibility::Export,
+                    span,
+                ),
+        }
+    }
+
     fn extract_type_query(
         &mut self,
         ty: &TsTypeQuery,
@@ -641,32 +733,9 @@ impl<'a, R: FileManager> FrontendCtx<'a, R> {
         }
 
         match &ty.expr_name {
-            TsTypeQueryExpr::TsEntityName(ts_entity_name) => match ts_entity_name {
-                TsEntityName::Ident(ident) => {
-                    //
-                    let addr = ModuleItemAddress::from_ident(ident, file.clone(), visibility);
-                    return self.extract_addressed_value(&addr, &ty.span);
-                }
-                TsEntityName::TsQualifiedName(ts_qualified_name) => match &ts_qualified_name.left {
-                    TsEntityName::TsQualifiedName(_) => todo!(),
-                    TsEntityName::Ident(ident) => {
-                        let addr =
-                            ModuleItemAddress::from_ident(ident, file.clone(), Visibility::Local);
-                        let addressed_qualified_value =
-                            self.get_addressed_qualified_value(&addr, &ty.span)?;
-                        match addressed_qualified_value {
-                            AddressedQualifiedValue::StarOfFile(bff_file_name) => {
-                                let new_addr = ModuleItemAddress {
-                                    file: bff_file_name.clone(),
-                                    key: ts_qualified_name.right.sym.to_string(),
-                                    visibility: Visibility::Export,
-                                };
-                                return self.extract_addressed_value(&new_addr, &ty.span);
-                            }
-                        }
-                    }
-                },
-            },
+            TsTypeQueryExpr::TsEntityName(ts_entity_name) => {
+                self.extract_value_ts_entity_name(ts_entity_name, file, visibility, &ty.span)
+            }
             TsTypeQueryExpr::Import(ts_import_type) => self.error(
                 &ts_import_type.span,
                 DiagnosticInfoMessage::TypeofImportNotSupported,

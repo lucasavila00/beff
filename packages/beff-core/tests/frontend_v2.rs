@@ -631,37 +631,37 @@ mod tests {
         ]));
     }
 
-    // #[test]
-    // fn nested_qualified_value_access() {
-    //     insta::assert_snapshot!(print_types_multifile(&[
-    //         (
-    //             "c.ts",
-    //             r#"
-    //                 export const C = "c" as const;
-    //             "#,
-    //         ),
-    //         (
-    //             "b.ts",
-    //             r#"
-    //                 export * as B from "./c";
-    //             "#,
-    //         ),
-    //         (
-    //             "a.ts",
-    //             r#"
-    //                 export * as A from "./b";
-    //             "#,
-    //         ),
-    //         (
-    //             "entry.ts",
-    //             r#"
-    //                 import { A } from "./a";
-    //                 type X = typeof A.B.C;
-    //                 parse.buildParsers<{ X: X }>();
-    //             "#
-    //         )
-    //     ]));
-    // }
+    #[test]
+    fn nested_qualified_value_access() {
+        insta::assert_snapshot!(print_types_multifile(&[
+            (
+                "c.ts",
+                r#"
+                    export const C = "c" as const;
+                "#,
+            ),
+            (
+                "b.ts",
+                r#"
+                    export * as B from "./c";
+                "#,
+            ),
+            (
+                "a.ts",
+                r#"
+                    export * as A from "./b";
+                "#,
+            ),
+            (
+                "entry.ts",
+                r#"
+                    import { A } from "./a";
+                    type X = typeof A.B.C;
+                    parse.buildParsers<{ X: X }>();
+                "#
+            )
+        ]));
+    }
 
     // #[test]
     // fn import_star_nested_access() {
