@@ -1,5 +1,6 @@
 use crate::NamedSchema;
 use crate::subtyping::ToSemType;
+use crate::subtyping::semtype::{SemType, SemTypeContext, SemTypeOps};
 use crate::subtyping::to_schema::semtype_to_runtypes;
 use crate::{
     BeffUserSettings, BffFileName, FileManager, ImportReference, ModuleItemAddress, ParsedModule,
@@ -9,7 +10,6 @@ use crate::{
         Diagnostic, DiagnosticInfoMessage, DiagnosticInformation, DiagnosticParentMessage, Location,
     },
     parser_extractor::BuiltDecoder,
-    subtyping::semtype::{SemType, SemTypeContext},
 };
 use anyhow::{Result, anyhow};
 use std::{collections::HashMap, rc::Rc};
@@ -32,7 +32,9 @@ pub struct FrontendCtx<'a, R: FileManager> {
 
     pub parser_file: BffFileName,
     pub errors: Vec<Diagnostic>,
-    pub partial_validators: HashMap<ModuleItemAddress, Option<Runtype>>,
+    pub partial_validators: HashMap<RuntypeName, Option<Runtype>>,
+
+    pub counter: usize,
 }
 
 #[derive(Debug)]
@@ -689,6 +691,7 @@ impl<'a, R: FileManager> FrontendCtx<'a, R> {
             settings,
             errors: vec![],
             partial_validators: HashMap::new(),
+            counter: 0,
         }
     }
 
@@ -908,12 +911,12 @@ impl<'a, R: FileManager> FrontendCtx<'a, R> {
             }
         }
     }
-    fn insert_definition(&mut self, addr: ModuleItemAddress, schema: Runtype) -> Res<Runtype> {
+    fn insert_definition(&mut self, addr: RuntypeName, schema: Runtype) -> Res<Runtype> {
         if let Some(Some(v)) = self.partial_validators.get(&addr) {
             assert_eq!(v, &schema);
         }
         self.partial_validators.insert(addr.clone(), Some(schema));
-        Ok(Runtype::Ref(RuntypeName::Address(addr)))
+        Ok(Runtype::Ref(addr))
     }
 
     fn get_string_with_format(
@@ -961,13 +964,7 @@ impl<'a, R: FileManager> FrontendCtx<'a, R> {
                 Ok((first.clone(), rest.clone()))
             }
             Runtype::Ref(r) => {
-                let v = match r {
-                    RuntypeName::Name(_) => todo!(),
-                    RuntypeName::Address(module_item_address) => {
-                        self.partial_validators.get(module_item_address)
-                    }
-                    RuntypeName::SemtypeRecursiveGenerated(_) => todo!(),
-                };
+                let v = self.partial_validators.get(r);
 
                 let v = v.and_then(|it| it.clone());
                 if let Some(v) = v {
@@ -1070,13 +1067,7 @@ impl<'a, R: FileManager> FrontendCtx<'a, R> {
                 Ok((first.clone(), rest.clone()))
             }
             Runtype::Ref(r) => {
-                let v = match r {
-                    RuntypeName::Name(_) => todo!(),
-                    RuntypeName::Address(module_item_address) => {
-                        self.partial_validators.get(module_item_address)
-                    }
-                    RuntypeName::SemtypeRecursiveGenerated(_) => todo!(),
-                };
+                let v = self.partial_validators.get(r);
 
                 let v = v.and_then(|it| it.clone());
                 if let Some(v) = v {
@@ -1175,7 +1166,8 @@ impl<'a, R: FileManager> FrontendCtx<'a, R> {
             file.clone(),
             visibility,
         )?;
-        let found = self.partial_validators.get(fat.addr());
+        let rt_name = RuntypeName::Address(fat.addr().clone());
+        let found = self.partial_validators.get(&rt_name);
         if let Some(_found_in_map) = found {
             match type_params {
                 Some(_) => {
@@ -1191,12 +1183,12 @@ impl<'a, R: FileManager> FrontendCtx<'a, R> {
                 }
             }
         }
-        self.partial_validators.insert(fat.addr().clone(), None);
+        self.partial_validators.insert(rt_name.clone(), None);
 
         let ty = self.extract_addressed_type(&fat.addr(), &type_name.span());
         match ty {
             Ok(ty) => match type_params {
-                None => self.insert_definition(fat.addr().clone(), ty),
+                None => self.insert_definition(rt_name.clone(), ty),
                 Some(_) => {
                     // TODO: remove component?
                     // if the validators are keyed just by the address
@@ -1205,7 +1197,7 @@ impl<'a, R: FileManager> FrontendCtx<'a, R> {
                 }
             },
             Err(e) => {
-                self.insert_definition(fat.addr().clone(), Runtype::Any)?;
+                self.insert_definition(rt_name, Runtype::Any)?;
                 Err(e)
             }
         }
@@ -1580,18 +1572,7 @@ impl<'a, R: FileManager> FrontendCtx<'a, R> {
                 Ok(TplLitTypeItem::one_of(acc))
             }
             Runtype::Ref(name) => {
-                let v = match name {
-                    RuntypeName::Name(_) => {
-                        unreachable!("name shouldnt be used concurrently with addr")
-                    }
-                    RuntypeName::Address(addr) => self.partial_validators.get(addr),
-                    RuntypeName::SemtypeRecursiveGenerated(_) => {
-                        // TODO: is this reaaally impossible?
-                        unreachable!(
-                            "at this point we're just inferring types which couldn't have been generated by semantic typing"
-                        )
-                    }
-                };
+                let v = self.partial_validators.get(name);
                 let v = v.and_then(|it| it.clone());
                 match v {
                     Some(v) => self.runtype_to_tpl_lit(span, &v, file_name.clone()),
@@ -1676,13 +1657,7 @@ impl<'a, R: FileManager> FrontendCtx<'a, R> {
                 Ok(vs)
             }
             Runtype::Ref(r) => {
-                let v = match &r {
-                    RuntypeName::Name(_) => todo!(),
-                    RuntypeName::Address(module_item_address) => {
-                        self.partial_validators.get(&module_item_address)
-                    }
-                    RuntypeName::SemtypeRecursiveGenerated(_) => todo!(),
-                };
+                let v = self.partial_validators.get(&r);
                 let v = v.and_then(|it| it.clone());
                 match v {
                     Some(v) => self.extract_union(v),
@@ -1699,25 +1674,34 @@ impl<'a, R: FileManager> FrontendCtx<'a, R> {
         access_st: Rc<SemType>,
         ctx: &mut SemTypeContext,
         span: &Span,
+        file: BffFileName,
     ) -> Res<Runtype> {
-        // if access_st
-        //     .is_empty(ctx)
-        //     .map_err(|e| self.box_error(span, DiagnosticInfoMessage::AnyhowError(e.to_string())))?
-        // {
-        //     return Ok(Runtype::Never);
-        // }
-        // let (head, tail) = semtype_to_runtypes(
-        //     ctx,
-        //     &access_st,
-        //     &RuntypeName::Name("AnyName".to_string()),
-        //     self.counter,
-        // )
-        // .map_err(|any| self.box_error(span, DiagnosticInfoMessage::AnyhowError(any.to_string())))?;
-        // for t in tail {
-        //     self.insert_definition(t.name.clone(), t.schema)?;
-        // }
-        // Ok(head.schema)
-        todo!()
+        if access_st.is_empty(ctx).map_err(|e| {
+            self.box_error(
+                span,
+                DiagnosticInfoMessage::AnyhowError(e.to_string()),
+                file.clone(),
+            )
+        })? {
+            return Ok(Runtype::Never);
+        }
+        let (head, tail) = semtype_to_runtypes(
+            ctx,
+            &access_st,
+            &RuntypeName::Name("AnyName".to_string()),
+            &mut self.counter,
+        )
+        .map_err(|any| {
+            self.box_error(
+                span,
+                DiagnosticInfoMessage::AnyhowError(any.to_string()),
+                file.clone(),
+            )
+        })?;
+        for t in tail {
+            self.insert_definition(t.name.clone(), t.schema)?;
+        }
+        Ok(head.schema)
     }
 
     fn convert_indexed_access_syntatically(
@@ -1728,13 +1712,7 @@ impl<'a, R: FileManager> FrontendCtx<'a, R> {
         // try to resolve syntatically
         match (obj, index) {
             (Runtype::Ref(r), _) => {
-                let v = match r {
-                    RuntypeName::Name(_) => todo!(),
-                    RuntypeName::Address(module_item_address) => {
-                        self.partial_validators.get(module_item_address)
-                    }
-                    RuntypeName::SemtypeRecursiveGenerated(_) => todo!(),
-                };
+                let v = self.partial_validators.get(r);
 
                 let v = v.and_then(|it| it.clone());
                 if let Some(v) = v {
@@ -1782,12 +1760,18 @@ impl<'a, R: FileManager> FrontendCtx<'a, R> {
         }
         Ok(None)
     }
-    fn validators_ref(&self) -> Vec<&NamedSchema> {
-        // self.partial_validators
-        //     .values()
-        //     .filter_map(|it| it.as_ref())
-        //     .collect()
-        todo!()
+    fn validators_vec(&self) -> Vec<NamedSchema> {
+        // TODO: this is very inefficient, optimize it
+        let mut acc = vec![];
+        for (name, schema_opt) in &self.partial_validators {
+            if let Some(schema) = schema_opt {
+                acc.push(NamedSchema {
+                    name: name.clone(),
+                    schema: schema.clone(),
+                });
+            }
+        }
+        acc
     }
     fn extract_indexed_access_type(
         &mut self,
@@ -1803,8 +1787,10 @@ impl<'a, R: FileManager> FrontendCtx<'a, R> {
         // fallback to semantic
         let mut ctx = SemTypeContext::new();
 
+        let validators_vec = self.validators_vec();
+
         let obj_st = obj
-            .to_sem_type(&self.validators_ref(), &mut ctx)
+            .to_sem_type(&validators_vec.iter().collect::<Vec<_>>(), &mut ctx)
             .map_err(|e| {
                 self.box_error(
                     &i.span,
@@ -1813,7 +1799,7 @@ impl<'a, R: FileManager> FrontendCtx<'a, R> {
                 )
             })?;
         let idx_st = index
-            .to_sem_type(&self.validators_ref(), &mut ctx)
+            .to_sem_type(&validators_vec.iter().collect::<Vec<_>>(), &mut ctx)
             .map_err(|e| {
                 self.box_error(
                     &i.span,
@@ -1829,7 +1815,7 @@ impl<'a, R: FileManager> FrontendCtx<'a, R> {
                 file.clone(),
             )
         })?;
-        self.semtype_to_runtype(access_st, &mut ctx, &i.span())
+        self.semtype_to_runtype(access_st, &mut ctx, &i.span(), file.clone())
     }
 
     fn extract_type(&mut self, ty: &TsType, file: BffFileName) -> Res<Runtype> {

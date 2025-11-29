@@ -266,7 +266,7 @@ impl<R: FileManager> ExtractParserVisitor<'_, R> {
                                         None => self.push_error(
                                             span,
                                             DiagnosticInfoMessage::CannotResolveTypeReferenceOnExtracting(
-                                                RuntypeName::Address(k)
+                                                k
                                             ),
                                         ),
                                     }
@@ -275,10 +275,7 @@ impl<R: FileManager> ExtractParserVisitor<'_, R> {
                                 kvs.sort_by(|(ka, _), (kb, _)| ka.cmp(kb));
                                 let mut ext: Vec<NamedSchema> = vec![];
                                 for (k, b) in kvs.into_iter() {
-                                    ext.push(NamedSchema {
-                                        name: RuntypeName::Address(k),
-                                        schema: b,
-                                    });
+                                    ext.push(NamedSchema { name: k, schema: b });
                                 }
                                 self.extend_components(ext, span);
                             }
