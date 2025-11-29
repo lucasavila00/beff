@@ -10,10 +10,10 @@ use std::rc::Rc;
 use swc_common::{Span, Spanned};
 use swc_ecma_ast::{
     Expr, Ident, Lit, Prop, PropName, PropOrSpread, TsCallSignatureDecl, TsConstructSignatureDecl,
-    TsEntityName, TsEnumDecl, TsGetterSignature, TsIndexSignature, TsInterfaceDecl, TsKeywordType,
-    TsKeywordTypeKind, TsLit, TsLitType, TsMethodSignature, TsPropertySignature, TsQualifiedName,
-    TsSetterSignature, TsType, TsTypeAliasDecl, TsTypeElement, TsTypeLit, TsTypeParamInstantiation,
-    TsTypeQuery, TsTypeQueryExpr, TsTypeRef,
+    TsEntityName, TsEnumDecl, TsGetterSignature, TsImportType, TsIndexSignature, TsInterfaceDecl,
+    TsKeywordType, TsKeywordTypeKind, TsLit, TsLitType, TsMethodSignature, TsPropertySignature,
+    TsQualifiedName, TsSetterSignature, TsType, TsTypeAliasDecl, TsTypeElement, TsTypeLit,
+    TsTypeParamInstantiation, TsTypeQuery, TsTypeQueryExpr, TsTypeRef,
 };
 
 pub struct FrontendCtx<'a, R: FileManager> {
@@ -765,17 +765,13 @@ impl<'a, R: FileManager> FrontendCtx<'a, R> {
         }
     }
 
-    fn extract_type_ref(
+    fn extract_type_from_ts_entity_name(
         &mut self,
-        ty: &TsTypeRef,
+        type_name: &TsEntityName,
+        type_params: &Option<Box<TsTypeParamInstantiation>>,
         file: BffFileName,
         visibility: Visibility,
     ) -> Res<Runtype> {
-        let TsTypeRef {
-            type_name,
-            type_params,
-            span: _,
-        } = ty;
         match type_name {
             TsEntityName::Ident(ident) => {
                 self.extract_type_ident(ident, type_params, file, visibility)
@@ -788,6 +784,20 @@ impl<'a, R: FileManager> FrontendCtx<'a, R> {
                 Visibility::Export,
             ),
         }
+    }
+
+    fn extract_type_ref(
+        &mut self,
+        ty: &TsTypeRef,
+        file: BffFileName,
+        visibility: Visibility,
+    ) -> Res<Runtype> {
+        let TsTypeRef {
+            type_name,
+            type_params,
+            span: _,
+        } = ty;
+        self.extract_type_from_ts_entity_name(type_name, type_params, file, visibility)
     }
 
     fn extract_ts_keyword_type(&mut self, ty: &TsKeywordType) -> Res<Runtype> {
@@ -1012,12 +1022,54 @@ impl<'a, R: FileManager> FrontendCtx<'a, R> {
             TsTypeQueryExpr::TsEntityName(ts_entity_name) => {
                 self.extract_value_ts_entity_name(ts_entity_name, file, visibility, &ty.span)
             }
-            TsTypeQueryExpr::Import(ts_import_type) => self.error(
-                &ts_import_type.span,
-                DiagnosticInfoMessage::TypeofImportNotSupported,
-                file.clone(),
-            ),
+            TsTypeQueryExpr::Import(import_type) => {
+                assert!(
+                    import_type.type_args.is_none(),
+                    "generic types not supported yet"
+                );
+                if let Some(resolved) = self
+                    .files
+                    .resolve_import(file.clone(), &import_type.arg.value)
+                {
+                    match &import_type.qualifier {
+                        Some(ts_entity_name) => {
+                            return self.extract_value_ts_entity_name(
+                                &ts_entity_name,
+                                resolved,
+                                Visibility::Export,
+                                &import_type.span,
+                            );
+                        }
+                        None => todo!(),
+                    }
+                }
+                todo!()
+            }
         }
+    }
+
+    fn extract_ts_import_type(
+        &mut self,
+        import_type: &TsImportType,
+        file: BffFileName,
+    ) -> Res<Runtype> {
+        if let Some(resolved) = self
+            .files
+            .resolve_import(file.clone(), &import_type.arg.value)
+        {
+            match &import_type.qualifier {
+                Some(ts_entity_name) => {
+                    return self.extract_type_from_ts_entity_name(
+                        ts_entity_name,
+                        &import_type.type_args,
+                        resolved,
+                        Visibility::Export,
+                    );
+                }
+                None => todo!(),
+            }
+        };
+        todo!()
     }
 
     fn extract_type(
@@ -1032,6 +1084,10 @@ impl<'a, R: FileManager> FrontendCtx<'a, R> {
             TsType::TsTypeQuery(ts_type_query) => {
                 self.extract_type_query(ts_type_query, file, visibility)
             }
+            TsType::TsImportType(ts_import_type) => {
+                self.extract_ts_import_type(ts_import_type, file)
+            }
+
             TsType::TsLitType(TsLitType { lit, .. }) => match lit {
                 TsLit::Number(n) => Ok(Runtype::Const(RuntypeConst::parse_f64(n.value))),
                 TsLit::Str(s) => Ok(Runtype::single_string_const(&s.value)),
@@ -1054,7 +1110,6 @@ impl<'a, R: FileManager> FrontendCtx<'a, R> {
             TsType::TsIndexedAccessType(_) => todo!(),
             TsType::TsMappedType(_) => todo!(),
             TsType::TsTypePredicate(_) => todo!(),
-            TsType::TsImportType(_) => todo!(),
         }
     }
     fn extract_one_built_decoder_v2(&mut self, prop: &TsTypeElement) -> Result<BuiltDecoder> {

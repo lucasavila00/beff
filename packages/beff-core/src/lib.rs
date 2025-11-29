@@ -12,8 +12,8 @@ pub mod wasm_diag;
 
 use crate::ast::runtype::Runtype;
 use core::fmt;
-use parser_extractor::extract_parser;
 use parser_extractor::ParserExtractResult;
+use parser_extractor::extract_parser;
 use serde::Deserialize;
 use serde::Serialize;
 use std::collections::BTreeSet;
@@ -382,6 +382,12 @@ pub struct EntryPoints {
 pub trait FileManager {
     fn get_or_fetch_file(&mut self, name: &BffFileName) -> Option<Rc<ParsedModule>>;
     fn get_existing_file(&self, name: &BffFileName) -> Option<Rc<ParsedModule>>;
+
+    fn resolve_import(
+        &mut self,
+        current_file: BffFileName,
+        module_specifier: &str,
+    ) -> Option<BffFileName>;
 }
 
 fn debug_print_type_list(vs: Vec<(RuntypeName, String)>) -> String {

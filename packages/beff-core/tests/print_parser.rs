@@ -3,11 +3,11 @@ mod tests {
     use std::{collections::BTreeSet, rc::Rc};
 
     use beff_core::{
-        import_resolver::{parse_and_bind, FsModuleResolver},
-        parser_extractor::ParserExtractResult,
         BeffUserSettings, BffFileName, EntryPoints, FileManager, ParsedModule,
+        import_resolver::{FsModuleResolver, parse_and_bind},
+        parser_extractor::ParserExtractResult,
     };
-    use swc_common::{Globals, GLOBALS};
+    use swc_common::{GLOBALS, Globals};
     struct TestFileManager {
         pub f: Rc<ParsedModule>,
     }
@@ -20,11 +20,22 @@ mod tests {
         fn get_existing_file(&self, _name: &BffFileName) -> Option<Rc<ParsedModule>> {
             Some(self.f.clone())
         }
+        fn resolve_import(
+            &mut self,
+            _file_name: BffFileName,
+            _module_specifier: &str,
+        ) -> Option<BffFileName> {
+            None
+        }
     }
 
     struct TestResolver {}
     impl FsModuleResolver for TestResolver {
-        fn resolve_import(&mut self, _module_specifier: &str) -> Option<BffFileName> {
+        fn resolve_import(
+            &mut self,
+            _file_name: BffFileName,
+            _module_specifier: &str,
+        ) -> Option<BffFileName> {
             None
         }
     }

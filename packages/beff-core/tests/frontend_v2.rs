@@ -15,6 +15,19 @@ mod tests {
         pub fs: BTreeMap<BffFileName, Rc<ParsedModule>>,
     }
 
+    fn mock_resolve_import(module_specifier: &str) -> Option<BffFileName> {
+        // assert the module specifier is something like "./mod"
+        let starts_with_dot = module_specifier.starts_with("./");
+        if !starts_with_dot {
+            panic!(
+                "Only relative imports are supported in tests, got: {}",
+                module_specifier
+            );
+        }
+        let replaced = module_specifier.replace("./", "");
+        Some(BffFileName::new(format!("{}.ts", replaced)))
+    }
+
     impl FileManager for TestFileManager {
         fn get_or_fetch_file(&mut self, name: &BffFileName) -> Option<Rc<ParsedModule>> {
             self.fs.get(name).cloned()
@@ -23,21 +36,23 @@ mod tests {
         fn get_existing_file(&self, name: &BffFileName) -> Option<Rc<ParsedModule>> {
             self.fs.get(name).cloned()
         }
+        fn resolve_import(
+            &mut self,
+            _current_file: BffFileName,
+            module_specifier: &str,
+        ) -> Option<BffFileName> {
+            mock_resolve_import(module_specifier)
+        }
     }
 
     struct TestResolver {}
     impl FsModuleResolver for TestResolver {
-        fn resolve_import(&mut self, module_specifier: &str) -> Option<BffFileName> {
-            // assert the module specifier is something like "./mod"
-            let starts_with_dot = module_specifier.starts_with("./");
-            if !starts_with_dot {
-                panic!(
-                    "Only relative imports are supported in tests, got: {}",
-                    module_specifier
-                );
-            }
-            let replaced = module_specifier.replace("./", "");
-            Some(BffFileName::new(format!("{}.ts", replaced)))
+        fn resolve_import(
+            &mut self,
+            _current_file: BffFileName,
+            module_specifier: &str,
+        ) -> Option<BffFileName> {
+            mock_resolve_import(module_specifier)
         }
     }
     fn parse_module(file_name: BffFileName, content: &str) -> Rc<ParsedModule> {
@@ -1230,6 +1245,44 @@ mod tests {
         ]));
     }
 
+    #[test]
+    fn import_type_syntax() {
+        insta::assert_snapshot!(print_types_multifile(&[
+            (
+                "t.ts",
+                r#"
+                    export type A = string;
+                "#,
+            ),
+            (
+                "entry.ts",
+                r#"
+                    type X = import("./t").A;
+                    parse.buildParsers<{ X: X }>();
+                "#
+            )
+        ]));
+    }
+
+    #[test]
+    fn typeof_import_syntax() {
+        insta::assert_snapshot!(print_types_multifile(&[
+            (
+                "t.ts",
+                r#"
+                    export const A = "a" as const;
+                "#,
+            ),
+            (
+                "entry.ts",
+                r#"
+                    type X = typeof import("./t").A;
+                    parse.buildParsers<{ X: X }>();
+                "#
+            )
+        ]));
+    }
+
     // #[test]
     // fn interface_export() {
     //     insta::assert_snapshot!(print_types_multifile(&[
@@ -1266,44 +1319,6 @@ mod tests {
     //             r#"
     //                 import { E } from "./t";
     //                 type X = E;
-    //                 parse.buildParsers<{ X: X }>();
-    //             "#
-    //         )
-    //     ]));
-    // }
-
-    // #[test]
-    // fn import_type_syntax() {
-    //     insta::assert_snapshot!(print_types_multifile(&[
-    //         (
-    //             "t.ts",
-    //             r#"
-    //                 export type A = string;
-    //             "#,
-    //         ),
-    //         (
-    //             "entry.ts",
-    //             r#"
-    //                 type X = import("./t").A;
-    //                 parse.buildParsers<{ X: X }>();
-    //             "#
-    //         )
-    //     ]));
-    // }
-
-    // #[test]
-    // fn typeof_import_syntax() {
-    //     insta::assert_snapshot!(print_types_multifile(&[
-    //         (
-    //             "t.ts",
-    //             r#"
-    //                 export const A = "a" as const;
-    //             "#,
-    //         ),
-    //         (
-    //             "entry.ts",
-    //             r#"
-    //                 type X = typeof import("./t").A;
     //                 parse.buildParsers<{ X: X }>();
     //             "#
     //         )

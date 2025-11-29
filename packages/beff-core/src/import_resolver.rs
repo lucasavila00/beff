@@ -1,4 +1,3 @@
-use crate::parse::parse_with_swc;
 use crate::BffFileName;
 use crate::ImportReference;
 use crate::ParsedModule;
@@ -8,6 +7,7 @@ use crate::SymbolExport;
 use crate::SymbolExportDefault;
 use crate::SymbolsExportsModule;
 use crate::UnresolvedExport;
+use crate::parse::parse_with_swc;
 use anyhow::Result;
 use std::collections::HashMap;
 use std::rc::Rc;
@@ -33,7 +33,11 @@ use swc_ecma_ast::{ImportDecl, ImportNamedSpecifier, ImportSpecifier, TsInterfac
 use swc_ecma_visit::Visit;
 
 pub trait FsModuleResolver {
-    fn resolve_import(&mut self, module_specifier: &str) -> Option<BffFileName>;
+    fn resolve_import(
+        &mut self,
+        current_file: BffFileName,
+        module_specifier: &str,
+    ) -> Option<BffFileName>;
 }
 pub struct ImportsVisitor<'a, R: FsModuleResolver> {
     pub resolver: &'a mut R,
@@ -53,7 +57,8 @@ impl<'a, R: FsModuleResolver> ImportsVisitor<'a, R> {
         }
     }
     fn resolve_import(&mut self, module_specifier: &str) -> Option<BffFileName> {
-        self.resolver.resolve_import(module_specifier)
+        self.resolver
+            .resolve_import(self.current_file.clone(), module_specifier)
     }
 
     fn insert_import_named(&mut self, local: &Ident, module_specifier: &str, orig: &JsWord) {
