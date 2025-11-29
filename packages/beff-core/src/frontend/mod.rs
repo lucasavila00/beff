@@ -50,7 +50,7 @@ type Res<T> = Result<T, Box<Diagnostic>>;
 trait TypeModuleWalker<'a, R: FileManager + 'a, U> {
     fn get_ctx<'b>(&'b mut self) -> &'b mut FrontendCtx<'a, R>;
 
-    fn get_item_from_star_import(&mut self, file_name: BffFileName, span: &Span) -> Res<U>;
+    fn handle_import_star(&mut self, file_name: BffFileName, span: &Span) -> Res<U>;
 
     fn get_addressed_item_from_symbol_exports(
         &mut self,
@@ -119,7 +119,7 @@ trait TypeModuleWalker<'a, R: FileManager + 'a, U> {
                 return self.get_addressed_item(&new_addr, span);
             }
             ImportReference::Star { file_name, span } => {
-                return self.get_item_from_star_import(file_name.clone(), span);
+                return self.handle_import_star(file_name.clone(), span);
             }
             ImportReference::Default { file_name } => {
                 return self.get_addressed_item_from_default_import(file_name.clone(), span);
@@ -231,11 +231,7 @@ impl<'a, 'b, R: FileManager> TypeModuleWalker<'a, R, AddressedType> for TypeWalk
         Ok(Some(AddressedType::TsType(ts_type.clone(), file)))
     }
 
-    fn get_item_from_star_import(
-        &mut self,
-        _file_name: BffFileName,
-        _span: &Span,
-    ) -> Res<AddressedType> {
+    fn handle_import_star(&mut self, _file_name: BffFileName, _span: &Span) -> Res<AddressedType> {
         // should have called get_addressed_qualified_type
         todo!()
     }
@@ -274,7 +270,7 @@ impl<'a, 'b, R: FileManager> TypeModuleWalker<'a, R, AddressedQualifiedType>
         Ok(None)
     }
 
-    fn get_item_from_star_import(
+    fn handle_import_star(
         &mut self,
         file_name: BffFileName,
         _span: &Span,
@@ -286,7 +282,7 @@ impl<'a, 'b, R: FileManager> TypeModuleWalker<'a, R, AddressedQualifiedType>
 trait ValueModuleWalker<'a, R: FileManager + 'a, U> {
     fn get_ctx<'b>(&'b mut self) -> &'b mut FrontendCtx<'a, R>;
 
-    fn get_addressed_value_from_symbol_export(&mut self, exports: &SymbolExport) -> Res<U>;
+    fn get_addressed_item_from_symbol_export(&mut self, exports: &SymbolExport) -> Res<U>;
     fn handle_symbol_export_expr(
         &mut self,
         symbol_export: &Rc<Expr>,
@@ -328,7 +324,7 @@ trait ValueModuleWalker<'a, R: FileManager + 'a, U> {
                     _ => return self.handle_symbol_export_expr(&symbol_export.clone(), file_name),
                 },
                 SymbolExportDefault::Renamed { export } => {
-                    return self.get_addressed_value_from_symbol_export(export);
+                    return self.get_addressed_item_from_symbol_export(export);
                 }
             },
             None => todo!(),
@@ -414,7 +410,7 @@ trait ValueModuleWalker<'a, R: FileManager + 'a, U> {
                     .symbol_exports
                     .get_value(&addr.key, self.get_ctx().files)
                 {
-                    return self.get_addressed_value_from_symbol_export(&exports);
+                    return self.get_addressed_item_from_symbol_export(&exports);
                 }
 
                 todo!()
@@ -432,7 +428,7 @@ impl<'a, 'b, R: FileManager> ValueModuleWalker<'a, R, AddressedValue> for ValueW
         self.ctx
     }
 
-    fn get_addressed_value_from_symbol_export(
+    fn get_addressed_item_from_symbol_export(
         &mut self,
         exports: &SymbolExport,
     ) -> Res<AddressedValue> {
@@ -520,7 +516,7 @@ impl<'a, 'b, R: FileManager> ValueModuleWalker<'a, R, AddressedQualifiedValue>
         self.ctx
     }
 
-    fn get_addressed_value_from_symbol_export(
+    fn get_addressed_item_from_symbol_export(
         &mut self,
         exports: &SymbolExport,
     ) -> Res<AddressedQualifiedValue> {
