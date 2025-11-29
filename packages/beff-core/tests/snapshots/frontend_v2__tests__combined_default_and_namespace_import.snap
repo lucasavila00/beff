@@ -1,0 +1,8 @@
+---
+source: packages/beff-core/tests/frontend_v2.rs
+expression: "print_types_multifile(&[(\"t.ts\",\nr#\"\n                    export const A = \"a\" as const;\n                    const D = \"d\" as const;\n                    export default D;\n                \"#,),\n(\"entry.ts\",\nr#\"\n                    import D, * as ns from \"./t\";\n                    type X = typeof D;\n                    type Y = typeof ns.A;\n                    parse.buildParsers<{ X: X, Y: Y }>();\n                \"#)])"
+---
+type BuiltParsers = {
+  X: "d",
+  Y: "a",
+}

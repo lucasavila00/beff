@@ -44,12 +44,10 @@ pub enum SymbolExport {
     },
     TsInterfaceDecl {
         decl: Rc<TsInterfaceDecl>,
-        span: Span,
         original_file: BffFileName,
     },
     TsEnumDecl {
         decl: Rc<TsEnumDecl>,
-        span: Span,
         original_file: BffFileName,
     },
     ValueExpr {
@@ -79,11 +77,11 @@ impl SymbolExport {
     pub fn span(&self) -> Span {
         match self {
             SymbolExport::TsType { decl, .. } => decl.span,
-            SymbolExport::TsInterfaceDecl { span, .. }
-            | SymbolExport::ValueExpr { span, .. }
+            SymbolExport::TsInterfaceDecl { decl, .. } => decl.span,
+            SymbolExport::TsEnumDecl { decl, .. } => decl.span,
+            SymbolExport::ValueExpr { span, .. }
             | SymbolExport::StarOfOtherFile { span, .. }
             | SymbolExport::SomethingOfOtherFile { span, .. }
-            | SymbolExport::TsEnumDecl { span, .. }
             | SymbolExport::ExprDecl { span, .. } => *span,
         }
     }
@@ -329,6 +327,7 @@ impl Visit for ParserOfModuleLocals {
     }
 }
 
+#[derive(Debug)]
 pub struct UnresolvedExport {
     pub name: JsWord,
     pub span: SyntaxContext,

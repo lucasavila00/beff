@@ -107,11 +107,11 @@ impl<'a, R: FileManager> TypeResolver<'a, R> {
                     DiagnosticInfoMessage::CannotResolveNamespaceTypeValueExpr,
                 )
                 .into()),
-            SymbolExport::TsEnumDecl { span, .. } => Ok(ResolvedNamespaceSymbol {
+            SymbolExport::TsEnumDecl { decl, .. } => Ok(ResolvedNamespaceSymbol {
                 from_file: ImportReference::Named {
                     original_name: i.sym.clone().to_string().into(),
                     file_name: at_file.clone(),
-                    span: *span,
+                    span: decl.span,
                 }
                 .into(),
             }),

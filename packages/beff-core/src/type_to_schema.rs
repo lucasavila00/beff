@@ -1215,9 +1215,10 @@ impl<'a, 'b, R: FileManager> TypeToSchema<'a, 'b, R> {
             SymbolExport::ValueExpr { span, .. } => {
                 self.error(span, DiagnosticInfoMessage::FoundValueExpectedType)
             }
-            SymbolExport::TsEnumDecl { span, .. } => {
-                self.error(span, DiagnosticInfoMessage::CannotUseTsEnumAsQualified)
-            }
+            SymbolExport::TsEnumDecl { decl, .. } => self.error(
+                &decl.span,
+                DiagnosticInfoMessage::CannotUseTsEnumAsQualified,
+            ),
             SymbolExport::ExprDecl { span, .. } => {
                 self.error(span, DiagnosticInfoMessage::CannotUseExprDeclAsQualified)
             }
@@ -1265,7 +1266,6 @@ impl<'a, 'b, R: FileManager> TypeToSchema<'a, 'b, R> {
                             if let Some(symbol_export) = from_file {
                                 if let SymbolExport::TsEnumDecl {
                                     decl,
-                                    span,
                                     original_file,
                                 } = symbol_export.as_ref()
                                 {
@@ -1287,12 +1287,12 @@ impl<'a, 'b, R: FileManager> TypeToSchema<'a, 'b, R> {
                                                 Ok(expr_ty)
                                             }
                                             None => self.cannot_serialize_error(
-                                                span,
+                                                &decl.span,
                                                 DiagnosticInfoMessage::EnumMemberNoInit,
                                             ),
                                         },
                                         None => self.cannot_serialize_error(
-                                            span,
+                                            &decl.span,
                                             DiagnosticInfoMessage::EnumMemberNoInit,
                                         ),
                                     };

@@ -453,4 +453,191 @@ mod tests {
             )
         ]));
     }
+
+    #[test]
+    fn named_export_with_renaming() {
+        insta::assert_snapshot!(print_types_multifile(&[
+            //
+            (
+                "t.ts",
+                r#"
+                    const A = "a" as const;
+                    export { A as B };
+                "#,
+            ),
+            (
+                "entry.ts",
+                r#"
+                    import { B } from "./t";
+                    type X = typeof B;
+                    parse.buildParsers<{ X: X }>();
+                "#
+            )
+        ]));
+    }
+
+    #[test]
+    fn named_import_with_renaming() {
+        insta::assert_snapshot!(print_types_multifile(&[
+            //
+            (
+                "t.ts",
+                r#"
+                    export const A = "a" as const;
+                "#,
+            ),
+            (
+                "entry.ts",
+                r#"
+                    import { A as B } from "./t";
+                    type X = typeof B;
+                    parse.buildParsers<{ X: X }>();
+                "#
+            )
+        ]));
+    }
+
+    #[test]
+    fn re_export_with_renaming() {
+        insta::assert_snapshot!(print_types_multifile(&[
+            //
+            (
+                "a.ts",
+                r#"
+                    export const A = "a" as const;
+                "#,
+            ),
+            (
+                "b.ts",
+                r#"
+                    export { A as B } from "./a";
+                "#,
+            ),
+            (
+                "entry.ts",
+                r#"
+                    import { B } from "./b";
+                    type X = typeof B;
+                    parse.buildParsers<{ X: X }>();
+                "#
+            )
+        ]));
+    }
+
+    #[test]
+    fn namespace_re_export() {
+        insta::assert_snapshot!(print_types_multifile(&[
+            //
+            (
+                "a.ts",
+                r#"
+                    export const A = "a" as const;
+                "#,
+            ),
+            (
+                "b.ts",
+                r#"
+                    export * as ns from "./a";
+                "#,
+            ),
+            (
+                "entry.ts",
+                r#"
+                    import { ns } from "./b";
+                    type X = typeof ns.A;
+                    parse.buildParsers<{ X: X }>();
+                "#
+            )
+        ]));
+    }
+
+    #[test]
+    fn combined_default_and_named_import() {
+        insta::assert_snapshot!(print_types_multifile(&[
+            //
+            (
+                "t.ts",
+                r#"
+                    export const A = "a" as const;
+                    const D = "d" as const;
+                    export default D;
+                "#,
+            ),
+            (
+                "entry.ts",
+                r#"
+                    import D, { A } from "./t";
+                    type X = typeof D;
+                    type Y = typeof A;
+                    parse.buildParsers<{ X: X, Y: Y }>();
+                "#
+            )
+        ]));
+    }
+
+    #[test]
+    fn combined_default_and_namespace_import() {
+        insta::assert_snapshot!(print_types_multifile(&[
+            //
+            (
+                "t.ts",
+                r#"
+                    export const A = "a" as const;
+                    const D = "d" as const;
+                    export default D;
+                "#,
+            ),
+            (
+                "entry.ts",
+                r#"
+                    import D, * as ns from "./t";
+                    type X = typeof D;
+                    type Y = typeof ns.A;
+                    parse.buildParsers<{ X: X, Y: Y }>();
+                "#
+            )
+        ]));
+    }
+
+    // #[test]
+    // fn interface_export() {
+    //     insta::assert_snapshot!(print_types_multifile(&[
+    //         //
+    //         (
+    //             "t.ts",
+    //             r#"
+    //                 export interface I { a: string; }
+    //             "#,
+    //         ),
+    //         (
+    //             "entry.ts",
+    //             r#"
+    //                 import { I } from "./t";
+    //                 type X = I;
+    //                 parse.buildParsers<{ X: X }>();
+    //             "#
+    //         )
+    //     ]));
+    // }
+
+    // #[test]
+    // fn enum_export() {
+    //     insta::assert_snapshot!(print_types_multifile(&[
+    //         //
+    //         (
+    //             "t.ts",
+    //             r#"
+    //                 export enum E { A = "a" }
+    //             "#,
+    //         ),
+    //         (
+    //             "entry.ts",
+    //             r#"
+    //                 import { E } from "./t";
+    //                 type X = E;
+    //                 parse.buildParsers<{ X: X }>();
+    //             "#
+    //         )
+    //     ]));
+    // }
 }

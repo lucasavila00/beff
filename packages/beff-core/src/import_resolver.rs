@@ -117,7 +117,6 @@ impl<R: FsModuleResolver> Visit for ImportsVisitor<'_, R> {
                     id.sym.to_string(),
                     Rc::new(SymbolExport::TsInterfaceDecl {
                         decl: Rc::new(*n.clone()),
-                        span: n.span,
                         original_file: self.current_file.clone(),
                     }),
                 );
@@ -128,7 +127,6 @@ impl<R: FsModuleResolver> Visit for ImportsVisitor<'_, R> {
                     id.sym.to_string(),
                     Rc::new(SymbolExport::TsEnumDecl {
                         decl: Rc::new(*decl.clone()),
-                        span: decl.span,
                         original_file: self.current_file.clone(),
                     }),
                 );
@@ -136,7 +134,6 @@ impl<R: FsModuleResolver> Visit for ImportsVisitor<'_, R> {
                     id.sym.to_string(),
                     Rc::new(SymbolExport::TsEnumDecl {
                         decl: Rc::new(*decl.clone()),
-                        span: decl.span,
                         original_file: self.current_file.clone(),
                     }),
                 );
@@ -315,6 +312,7 @@ pub fn parse_and_bind<R: FsModuleResolver>(
     let mut symbol_exports = v.symbol_exports;
     for unresolved in v.unresolved_exports {
         let renamed = unresolved.renamed;
+        let js_word = unresolved.name.clone();
         let k = unresolved.name.to_string();
         if let Some(ts_type) = locals.content.type_aliases.get(&k) {
             symbol_exports.insert_type(
@@ -332,7 +330,6 @@ pub fn parse_and_bind<R: FsModuleResolver>(
                 renamed.to_string(),
                 Rc::new(SymbolExport::TsEnumDecl {
                     decl: enum_.clone(),
-                    span: enum_.span(),
                     original_file: file_name.clone(),
                 }),
             );
@@ -344,12 +341,38 @@ pub fn parse_and_bind<R: FsModuleResolver>(
                 renamed.to_string(),
                 Rc::new(SymbolExport::TsInterfaceDecl {
                     decl: intf.clone(),
-                    span: intf.span(),
                     original_file: file_name.clone(),
                 }),
             );
             continue;
         }
+
+        if let Some(v) = locals.content.exprs.get(&k) {
+            symbol_exports.insert_value(
+                renamed.to_string(),
+                Rc::new(SymbolExport::ValueExpr {
+                    expr: v.clone(),
+                    name: js_word.clone(),
+                    span: v.span(),
+                    original_file: file_name.clone(),
+                }),
+            );
+            continue;
+        }
+
+        if let Some(v) = locals.content.exprs_decls.get(&k) {
+            symbol_exports.insert_value(
+                renamed.to_string(),
+                Rc::new(SymbolExport::ExprDecl {
+                    ty: v.clone(),
+                    name: js_word.clone(),
+                    span: v.span(),
+                    original_file: file_name.clone(),
+                }),
+            );
+            continue;
+        }
+
         if let Some(import) = v.imports.get(&k) {
             match &**import {
                 ImportReference::Named {
