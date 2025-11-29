@@ -290,11 +290,19 @@ trait ValueModuleWalker<'a, R: FileManager + 'a, U> {
         symbol_export: &Rc<Expr>,
         file_name: &BffFileName,
     ) -> Res<U>;
+
+    fn handle_symbol_export_default_expr(
+        &mut self,
+        symbol_export: &Rc<Expr>,
+        file_name: &BffFileName,
+    ) -> Res<U>;
+
     fn handle_symbol_export_expr_decl(
         &mut self,
         symbol_export: &Rc<TsType>,
         file_name: &BffFileName,
     ) -> Res<U>;
+    fn handle_import_star(&mut self, file_name: BffFileName) -> Res<U>;
 
     fn get_addressed_item_from_default_import(
         &mut self,
@@ -313,7 +321,7 @@ trait ValueModuleWalker<'a, R: FileManager + 'a, U> {
                     span: _,
                     file_name,
                 } => {
-                    return self.handle_symbol_export_expr(symbol_export, file_name);
+                    return self.handle_symbol_export_default_expr(symbol_export, file_name);
                 }
                 SymbolExportDefault::Renamed { export } => {
                     return self.get_addressed_value_from_symbol_export(export);
@@ -322,11 +330,40 @@ trait ValueModuleWalker<'a, R: FileManager + 'a, U> {
             None => todo!(),
         }
     }
-
+    fn get_addressed_item_from_import_reference(
+        &mut self,
+        imported: &ImportReference,
+        span: &Span,
+    ) -> Res<U> {
+        match imported {
+            ImportReference::Named {
+                original_name,
+                file_name,
+                span,
+            } => {
+                let new_addr = ModuleItemAddress {
+                    file: file_name.clone(),
+                    key: (*original_name).to_string(),
+                    visibility: Visibility::Export,
+                };
+                return self.get_addressed_item(&new_addr, span);
+            }
+            ImportReference::Star { file_name, span: _ } => {
+                return self.handle_import_star(file_name.clone());
+            }
+            ImportReference::Default { file_name } => {
+                return self.get_addressed_item_from_default_import(file_name.clone(), span);
+            }
+        }
+    }
     fn get_addressed_item(&mut self, addr: &ModuleItemAddress, span: &Span) -> Res<U> {
         let parsed_module = self.get_ctx().get_or_fetch_adressed_file(addr, span)?;
         match addr.visibility {
             Visibility::Local => {
+                if let Some(imported) = parsed_module.imports.get(&addr.key) {
+                    return self.get_addressed_item_from_import_reference(imported, span);
+                }
+
                 if let Some(expr) = parsed_module.locals.exprs.get(&addr.key) {
                     //    return Ok(AddressedValue::ValueExpr(expr.clone(), addr.file.clone()));
                     return self.handle_symbol_export_expr(expr, &addr.file);
@@ -462,8 +499,102 @@ impl<'a, 'b, R: FileManager> ValueModuleWalker<'a, R, AddressedValue> for ValueW
             file_name.clone(),
         ));
     }
+
+    fn handle_import_star(&mut self, _file_name: BffFileName) -> Res<AddressedValue> {
+        // should call qualified version insteaed, it's an error
+        todo!()
+    }
+
+    fn handle_symbol_export_default_expr(
+        &mut self,
+        symbol_export: &Rc<Expr>,
+        file_name: &BffFileName,
+    ) -> Res<AddressedValue> {
+        return Ok(AddressedValue::ValueExpr(
+            symbol_export.clone(),
+            file_name.clone(),
+        ));
+    }
+}
+struct QaulifiedValueWalker<'a, 'b, R: FileManager> {
+    pub ctx: &'b mut FrontendCtx<'a, R>,
 }
 
+impl<'a, 'b, R: FileManager> ValueModuleWalker<'a, R, AddressedQualifiedValue>
+    for QaulifiedValueWalker<'a, 'b, R>
+{
+    fn get_ctx<'c>(&'c mut self) -> &'c mut FrontendCtx<'a, R> {
+        self.ctx
+    }
+
+    fn get_addressed_value_from_symbol_export(
+        &mut self,
+        exports: &SymbolExport,
+    ) -> Res<AddressedQualifiedValue> {
+        match exports {
+            SymbolExport::StarOfOtherFile { reference, span } => {
+                return self.get_addressed_item_from_import_reference(reference.as_ref(), span);
+            }
+            SymbolExport::TsType { .. } => todo!(),
+            SymbolExport::TsInterfaceDecl { .. } => todo!(),
+            SymbolExport::TsEnumDecl { .. } => todo!(),
+            SymbolExport::ValueExpr {
+                expr,
+                name: _,
+                span: _,
+                original_file,
+            } => {
+                return Ok(AddressedQualifiedValue::ValueExpr(
+                    expr.clone(),
+                    original_file.clone(),
+                ));
+            }
+            SymbolExport::ExprDecl { .. } => todo!(),
+            SymbolExport::SomethingOfOtherFile { .. } => todo!(),
+        }
+    }
+
+    fn handle_symbol_export_expr(
+        &mut self,
+        symbol_export: &Rc<Expr>,
+        file_name: &BffFileName,
+    ) -> Res<AddressedQualifiedValue> {
+        return Ok(AddressedQualifiedValue::ValueExpr(
+            symbol_export.clone(),
+            file_name.clone(),
+        ));
+    }
+
+    fn handle_symbol_export_expr_decl(
+        &mut self,
+        _symbol_export: &Rc<TsType>,
+        _file_name: &BffFileName,
+    ) -> Res<AddressedQualifiedValue> {
+        todo!()
+    }
+
+    fn handle_import_star(&mut self, file_name: BffFileName) -> Res<AddressedQualifiedValue> {
+        return Ok(AddressedQualifiedValue::StarOfFile(file_name));
+    }
+
+    fn handle_symbol_export_default_expr(
+        &mut self,
+        symbol_export: &Rc<Expr>,
+        file_name: &BffFileName,
+    ) -> Res<AddressedQualifiedValue> {
+        match symbol_export.as_ref() {
+            Expr::Ident(i) => {
+                let new_addr = ModuleItemAddress {
+                    file: file_name.clone(),
+                    key: i.sym.to_string(),
+                    visibility: Visibility::Local,
+                };
+                return self.get_addressed_item(&new_addr, &i.span);
+            }
+            _ => todo!(),
+        }
+    }
+}
 impl<'a, R: FileManager> FrontendCtx<'a, R> {
     pub fn new(files: &'a mut R, parser_file: BffFileName, settings: &'a BeffUserSettings) -> Self {
         FrontendCtx {
@@ -559,132 +690,13 @@ impl<'a, R: FileManager> FrontendCtx<'a, R> {
         walker.get_addressed_item(addr, span)
     }
 
-    fn get_addressed_qualified_value_from_default_import(
-        &mut self,
-        file_name: BffFileName,
-        span: &Span,
-    ) -> Res<AddressedQualifiedValue> {
-        match &self
-            .get_or_fetch_file(&file_name, span)?
-            .symbol_exports
-            .export_default
-        {
-            Some(export_default_symbol) => match export_default_symbol.as_ref() {
-                SymbolExportDefault::Expr {
-                    export_expr,
-                    span,
-                    file_name,
-                } => match export_expr.as_ref() {
-                    Expr::Ident(i) => {
-                        let new_addr = ModuleItemAddress {
-                            file: file_name.clone(),
-                            key: i.sym.to_string(),
-                            visibility: Visibility::Local,
-                        };
-                        return self.get_addressed_qualified_value(&new_addr, span);
-                    }
-                    _ => todo!(),
-                },
-                SymbolExportDefault::Renamed { export } => {
-                    return self.get_addressed_qualified_value_from_symbol_exports(export);
-                }
-            },
-            None => todo!(),
-        }
-    }
-
-    fn get_addressed_qualified_value_from_import_reference(
-        &mut self,
-        imported: &ImportReference,
-        span: &Span,
-    ) -> Res<AddressedQualifiedValue> {
-        match imported {
-            ImportReference::Named {
-                original_name,
-                file_name,
-                span,
-            } => {
-                let new_addr = ModuleItemAddress {
-                    file: file_name.clone(),
-                    key: (*original_name).to_string(),
-                    visibility: Visibility::Export,
-                };
-                return self.get_addressed_qualified_value(&new_addr, span);
-            }
-            ImportReference::Star { file_name, span: _ } => {
-                return Ok(AddressedQualifiedValue::StarOfFile(file_name.clone()));
-            }
-            ImportReference::Default { file_name } => {
-                return self
-                    .get_addressed_qualified_value_from_default_import(file_name.clone(), span);
-            }
-        }
-    }
-
-    fn get_addressed_qualified_value_from_symbol_exports(
-        &mut self,
-        exports: &SymbolExport,
-    ) -> Res<AddressedQualifiedValue> {
-        match exports {
-            SymbolExport::StarOfOtherFile { reference, span } => {
-                return self
-                    .get_addressed_qualified_value_from_import_reference(reference.as_ref(), span);
-            }
-            SymbolExport::TsType { .. } => todo!(),
-            SymbolExport::TsInterfaceDecl { .. } => todo!(),
-            SymbolExport::TsEnumDecl { .. } => todo!(),
-            SymbolExport::ValueExpr {
-                expr,
-                name: _,
-                span: _,
-                original_file,
-            } => {
-                return Ok(AddressedQualifiedValue::ValueExpr(
-                    expr.clone(),
-                    original_file.clone(),
-                ));
-            }
-            SymbolExport::ExprDecl { .. } => todo!(),
-            SymbolExport::SomethingOfOtherFile { .. } => todo!(),
-        }
-    }
-
     fn get_addressed_qualified_value(
         &mut self,
         addr: &ModuleItemAddress,
         span: &Span,
     ) -> Res<AddressedQualifiedValue> {
-        let parsed_module = self.get_or_fetch_adressed_file(addr, span)?;
-        match addr.visibility {
-            Visibility::Local => {
-                if let Some(imported) = parsed_module.imports.get(&addr.key) {
-                    return self
-                        .get_addressed_qualified_value_from_import_reference(imported, span);
-                }
-                if let Some(local) = parsed_module.locals.exprs.get(&addr.key) {
-                    return Ok(AddressedQualifiedValue::ValueExpr(
-                        local.clone(),
-                        addr.file.clone(),
-                    ));
-                }
-                todo!()
-            }
-            Visibility::Export => {
-                if addr.key == "default" {
-                    return self.get_addressed_qualified_value_from_default_import(
-                        addr.file.clone(),
-                        span,
-                    );
-                }
-                if let Some(exports) = parsed_module
-                    .symbol_exports
-                    .get_value(&addr.key, self.files)
-                {
-                    return self.get_addressed_qualified_value_from_symbol_exports(&exports);
-                }
-                todo!()
-            }
-        }
+        let mut walker = QaulifiedValueWalker { ctx: self };
+        walker.get_addressed_item(addr, span)
     }
 
     fn extract_addressed_type(&mut self, address: &ModuleItemAddress, span: &Span) -> Res<Runtype> {
@@ -955,7 +967,10 @@ impl<'a, R: FileManager> FrontendCtx<'a, R> {
                 }
                 todo!()
             }
-            _ => todo!(),
+            _ => {
+                dbg!(&expr);
+                todo!()
+            }
         }
     }
 
