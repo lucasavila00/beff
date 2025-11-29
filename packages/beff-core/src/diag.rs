@@ -7,6 +7,7 @@ use crate::{BffFileName, ModuleItemAddress, ParsedModule, RuntypeName};
 
 #[derive(Debug, Clone)]
 pub enum DiagnosticInfoMessage {
+    InvalidNumberOfTypeParametersForArray,
     CannotHaveRecursiveGenericTypes,
     ObjectHasConflictingKeyValueInIntersection,
     CannotResolveNamedImport,
@@ -517,6 +518,9 @@ impl DiagnosticInfoMessage {
                 let name = module_item_address.diag_print();
                 format!("Could not resolve addressed value '{name}'")
             },
+            DiagnosticInfoMessage::InvalidNumberOfTypeParametersForArray => {
+                "Invalid number of type parameters for Array".to_string()
+            }
         }
     }
 }

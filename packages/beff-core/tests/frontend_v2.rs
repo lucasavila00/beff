@@ -1528,6 +1528,23 @@ mod tests {
     "#;
         insta::assert_snapshot!(print_types_multifile(&[("entry.ts", from)]));
     }
+    #[test]
+    fn string_fmt_builtin() {
+        let from = r#"
+    export type X = StringFormat<"password">;
+    parse.buildParsers<{ X: X }>();
+    "#;
+        insta::assert_snapshot!(print_types_multifile(&[("entry.ts", from)]));
+    }
+    #[test]
+    fn string_fmt_extends_builtin() {
+        let from = r#"
+    export type User = StringFormat<"User">;
+    export type ReadAuthorizedUser = StringFormatExtends<User, "ReadAuthorizedUser">;
+    parse.buildParsers<{ User: User, ReadAuthorizedUser: ReadAuthorizedUser }>();
+    "#;
+        insta::assert_snapshot!(print_types_multifile(&[("entry.ts", from)]));
+    }
 
     // #[test]
     // fn export_destructuring_array() {

@@ -858,7 +858,12 @@ impl<'a, R: FileManager> FrontendCtx<'a, R> {
         Ok(Runtype::any_of(values))
     }
 
-    fn extract_addressed_type(&mut self, address: &ModuleItemAddress, span: &Span) -> Res<Runtype> {
+    fn extract_addressed_type(
+        &mut self,
+        address: &ModuleItemAddress,
+        type_args: Vec<Runtype>,
+        span: &Span,
+    ) -> Res<Runtype> {
         let addressed_type = self.get_addressed_type(address, span)?;
         match addressed_type {
             AddressedType::TsType { t: decl, address } => {
@@ -890,21 +895,32 @@ impl<'a, R: FileManager> FrontendCtx<'a, R> {
                 //             return self.get_string_with_format(type_params, &i.span, file.clone());
                 //         }
                 //         "StringFormatExtends" => {
-                //             return self.get_string_format_extends(type_params, &i.span, file.clone());
+                //             return self.get_string_format_extends(&type_args, &i.span, file.clone());
                 //         }
                 //         "NumberFormat" => {
-                //             return self.get_number_with_format(type_params, &i.span, file.clone());
+                //             return self.get_number_with_format(&type_args, &i.span, file.clone());
                 //         }
                 //         "NumberFormatExtends" => {
-                //             return self.get_number_format_extends(type_params, &i.span, file.clone());
+                //             return self.get_number_format_extends(&type_args, &i.span, file.clone());
                 //         }
                 TsBuiltIn::Date => Ok(Runtype::Date),
-                TsBuiltIn::Array => {
-                    todo!()
+                TsBuiltIn::Array => match type_args.as_slice() {
+                    [ty] => Ok(Runtype::Array(ty.clone().into())),
+                    _ => self.error(
+                        span,
+                        DiagnosticInfoMessage::InvalidNumberOfTypeParametersForArray,
+                        address.file.clone(),
+                    ),
+                },
+                TsBuiltIn::StringFormat => {
+                    self.get_string_with_format(&type_args, span, address.file.clone())
                 }
-                TsBuiltIn::StringFormat => todo!(),
-                TsBuiltIn::StringFormatExtends => todo!(),
-                TsBuiltIn::NumberFormat => todo!(),
+                TsBuiltIn::StringFormatExtends => {
+                    self.get_string_format_extends(&type_args, span, address.file.clone())
+                }
+                TsBuiltIn::NumberFormat => {
+                    self.get_number_with_format(&type_args, span, address.file.clone())
+                }
                 TsBuiltIn::NumberFormatExtends => todo!(),
             },
         }
@@ -1009,30 +1025,23 @@ impl<'a, R: FileManager> FrontendCtx<'a, R> {
 
     fn get_string_with_format(
         &mut self,
-        type_params: &Option<Box<TsTypeParamInstantiation>>,
+        type_args: &[Runtype],
         span: &Span,
         file: BffFileName,
     ) -> Res<Runtype> {
-        let r = type_params.as_ref().and_then(|it| it.params.split_first());
-
-        if let Some((head, rest)) = r {
-            if rest.is_empty() {
-                if let TsType::TsLitType(TsLitType {
-                    lit: TsLit::Str(Str { value, .. }),
-                    ..
-                }) = &**head
-                {
-                    let val_str = value.to_string();
-                    if self.settings.string_formats.contains(&val_str) {
-                        return Ok(Runtype::StringWithFormat(CustomFormat(val_str, vec![])));
-                    } else {
-                        return self.error(
-                            span,
-                            DiagnosticInfoMessage::CustomStringIsNotRegistered,
-                            file.clone(),
-                        );
-                    }
-                }
+        if let [head] = type_args
+            && let Runtype::TplLitType(TplLitType(items)) = head
+            && let [TplLitTypeItem::StringConst(value)] = items.as_slice()
+        {
+            let val_str = value.to_string();
+            if self.settings.string_formats.contains(&val_str) {
+                return Ok(Runtype::StringWithFormat(CustomFormat(val_str, vec![])));
+            } else {
+                return self.error(
+                    span,
+                    DiagnosticInfoMessage::CustomStringIsNotRegistered,
+                    file.clone(),
+                );
             }
         }
         self.error(
@@ -1075,33 +1084,26 @@ impl<'a, R: FileManager> FrontendCtx<'a, R> {
 
     fn get_string_format_extends(
         &mut self,
-        type_params: &Option<Box<TsTypeParamInstantiation>>,
+        type_params: &[Runtype],
         span: &Span,
         file: BffFileName,
     ) -> Res<Runtype> {
-        if let Some(type_params) = type_params {
-            if let [base, next_str] = type_params.params.as_slice() {
-                if let TsType::TsLitType(TsLitType {
-                    lit: TsLit::Str(Str { value, .. }),
-                    ..
-                }) = &**next_str
-                {
-                    let next_str = value.to_string();
-                    if self.settings.string_formats.contains(&next_str) {
-                        let base = self.extract_type(base, file.clone())?;
-
-                        let (first, mut rest) =
-                            self.get_string_format_base_formats(&base, span, file.clone())?;
-                        rest.push(next_str);
-                        return Ok(Runtype::StringWithFormat(CustomFormat(first, rest)));
-                    } else {
-                        return self.error(
-                            span,
-                            DiagnosticInfoMessage::CustomStringIsNotRegistered,
-                            file.clone(),
-                        );
-                    }
-                }
+        if let [base, next_str] = type_params
+            && let Runtype::TplLitType(TplLitType(items)) = next_str
+            && let [TplLitTypeItem::StringConst(value)] = items.as_slice()
+        {
+            let next_str = value.to_string();
+            if self.settings.string_formats.contains(&next_str) {
+                let (first, mut rest) =
+                    self.get_string_format_base_formats(&base, span, file.clone())?;
+                rest.push(next_str);
+                return Ok(Runtype::StringWithFormat(CustomFormat(first, rest)));
+            } else {
+                return self.error(
+                    span,
+                    DiagnosticInfoMessage::CustomStringIsNotRegistered,
+                    file.clone(),
+                );
             }
         }
         self.error(
@@ -1112,30 +1114,23 @@ impl<'a, R: FileManager> FrontendCtx<'a, R> {
     }
     fn get_number_with_format(
         &mut self,
-        type_params: &Option<Box<TsTypeParamInstantiation>>,
+        type_args: &[Runtype],
         span: &Span,
         file: BffFileName,
     ) -> Res<Runtype> {
-        let r = type_params.as_ref().and_then(|it| it.params.split_first());
-
-        if let Some((head, rest)) = r {
-            if rest.is_empty() {
-                if let TsType::TsLitType(TsLitType {
-                    lit: TsLit::Str(Str { value, .. }),
-                    ..
-                }) = &**head
-                {
-                    let val_str = value.to_string();
-                    if self.settings.number_formats.contains(&val_str) {
-                        return Ok(Runtype::NumberWithFormat(CustomFormat(val_str, vec![])));
-                    } else {
-                        return self.error(
-                            span,
-                            DiagnosticInfoMessage::CustomNumberIsNotRegistered,
-                            file,
-                        );
-                    }
-                }
+        if let [head] = type_args
+            && let Runtype::TplLitType(TplLitType(items)) = head
+            && let [TplLitTypeItem::StringConst(value)] = items.as_slice()
+        {
+            let val_str = value.to_string();
+            if self.settings.number_formats.contains(&val_str) {
+                return Ok(Runtype::NumberWithFormat(CustomFormat(val_str, vec![])));
+            } else {
+                return self.error(
+                    span,
+                    DiagnosticInfoMessage::CustomNumberIsNotRegistered,
+                    file.clone(),
+                );
             }
         }
         self.error(
@@ -1143,6 +1138,34 @@ impl<'a, R: FileManager> FrontendCtx<'a, R> {
             DiagnosticInfoMessage::InvalidUsageOfNumberFormatTypeParameter,
             file,
         )
+
+        // let r = type_params.as_ref().and_then(|it| it.params.split_first());
+
+        // if let Some((head, rest)) = r {
+        //     if rest.is_empty() {
+        //         if let TsType::TsLitType(TsLitType {
+        //             lit: TsLit::Str(Str { value, .. }),
+        //             ..
+        //         }) = &**head
+        //         {
+        //             let val_str = value.to_string();
+        //             if self.settings.number_formats.contains(&val_str) {
+        //                 return Ok(Runtype::NumberWithFormat(CustomFormat(val_str, vec![])));
+        //             } else {
+        //                 return self.error(
+        //                     span,
+        //                     DiagnosticInfoMessage::CustomNumberIsNotRegistered,
+        //                     file,
+        //                 );
+        //             }
+        //         }
+        //     }
+        // }
+        // self.error(
+        //     span,
+        //     DiagnosticInfoMessage::InvalidUsageOfNumberFormatTypeParameter,
+        //     file,
+        // )
     }
     fn get_number_format_base_formats(
         &mut self,
@@ -1216,22 +1239,33 @@ impl<'a, R: FileManager> FrontendCtx<'a, R> {
     fn extract_type_from_ts_entity_name(
         &mut self,
         type_name: &TsEntityName,
-        type_params: &Option<Box<TsTypeParamInstantiation>>,
+        ts_type_args: &Option<Box<TsTypeParamInstantiation>>,
         file: BffFileName,
         visibility: Visibility,
     ) -> Res<Runtype> {
+        let type_args = match ts_type_args {
+            Some(its) => {
+                let mut args = vec![];
+                for ty in &its.params {
+                    let arg_ty = self.extract_type(ty, file.clone())?;
+                    args.push(arg_ty);
+                }
+                args
+            }
+            None => vec![],
+        };
+
         let fat =
             self.get_final_address_from_ts_entity_name(type_name, file.clone(), visibility)?;
         if fat.is_builtin() {
             // it won't be recursive if it's builtin, and we don't need to write it to the map too
             // TODO: it needs generic type support too, so we need to handle that later
-            return self.extract_addressed_type(&fat.addr(), &type_name.span());
+            return self.extract_addressed_type(&fat.addr(), type_args, &type_name.span());
         }
-        assert!(type_params.is_none(), "generic types not supported yet");
         let rt_name = RuntypeName::Address(fat.addr().clone());
         let found = self.partial_validators.get(&rt_name);
         if let Some(_found_in_map) = found {
-            match type_params {
+            match ts_type_args {
                 Some(_) => {
                     // return an error, cannot have recursive generic types for now
                     return self.error(
@@ -1247,9 +1281,9 @@ impl<'a, R: FileManager> FrontendCtx<'a, R> {
         }
         self.partial_validators.insert(rt_name.clone(), None);
 
-        let ty = self.extract_addressed_type(&fat.addr(), &type_name.span());
+        let ty = self.extract_addressed_type(&fat.addr(), type_args, &type_name.span());
         match ty {
-            Ok(ty) => match type_params {
+            Ok(ty) => match ts_type_args {
                 None => self.insert_definition(rt_name.clone(), ty),
                 Some(_) => {
                     // TODO: remove component?
