@@ -1384,10 +1384,7 @@ impl<'a, R: FileManager> FrontendCtx<'a, R> {
             if let Some(_) = ts_type_args {
                 self.recursive_generic_uuids.insert(rt_uuid.clone());
             }
-            return Ok(Runtype::Ref(RuntypeUUID {
-                ty: RuntypeName::Address(fat.addr().clone()),
-                type_arguments: type_args.clone(),
-            }));
+            return Ok(Runtype::Ref(rt_uuid));
         }
         self.partial_validators.insert(rt_uuid.clone(), None);
 
@@ -1396,7 +1393,7 @@ impl<'a, R: FileManager> FrontendCtx<'a, R> {
             Ok(ty) => match ts_type_args {
                 None => self.insert_definition(rt_uuid.clone(), ty),
                 Some(_) => {
-                    // We don't need to store a named type for each type application, just return the type
+                    // We don't need to store a named type for each type application, just return the type.
                     // Unless it's recursive generic, then we need to keep the named type
                     // TODO: it might be good for performance to re-use the named type too
                     if self.recursive_generic_uuids.contains(&rt_uuid) {
@@ -1439,6 +1436,53 @@ impl<'a, R: FileManager> FrontendCtx<'a, R> {
             TsKeywordTypeKind::TsNullKeyword => Ok(Runtype::Null),
             TsKeywordTypeKind::TsNeverKeyword => Ok(Runtype::Never),
             TsKeywordTypeKind::TsIntrinsicKeyword => todo!(),
+        }
+    }
+    fn extract_array_value(&mut self, arr: Runtype, span: Span, file: BffFileName) -> Res<Runtype> {
+        match arr {
+            Runtype::Array(items) => Ok(*items),
+            Runtype::Ref(n) => {
+                let map = self
+                    .partial_validators
+                    .get(&n)
+                    .and_then(|it| it.as_ref())
+                    .cloned();
+                match map {
+                    Some(schema) => self.extract_array_value(schema, span, file.clone()),
+                    _ => self.error(&span, DiagnosticInfoMessage::ExpectedArray, file.clone()),
+                }
+            }
+            _ => self.error(&span, DiagnosticInfoMessage::ExpectedArray, file.clone()),
+        }
+    }
+    fn extract_tuple_value(
+        &mut self,
+        arr: Runtype,
+        span: Span,
+        file: BffFileName,
+    ) -> Res<Vec<Runtype>> {
+        match arr {
+            Runtype::Tuple {
+                mut prefix_items,
+                items,
+            } => {
+                if let Some(r) = items {
+                    prefix_items.push(*r);
+                }
+                Ok(prefix_items)
+            }
+            Runtype::Ref(n) => {
+                let map = self
+                    .partial_validators
+                    .get(&n)
+                    .and_then(|it| it.as_ref())
+                    .cloned();
+                match map {
+                    Some(schema) => self.extract_tuple_value(schema, span, file.clone()),
+                    _ => self.error(&span, DiagnosticInfoMessage::ExpectedTuple, file.clone()),
+                }
+            }
+            _ => self.error(&span, DiagnosticInfoMessage::ExpectedTuple, file.clone()),
         }
     }
 
@@ -1487,6 +1531,244 @@ impl<'a, R: FileManager> FrontendCtx<'a, R> {
                     visibility: Visibility::Local,
                 };
                 return self.extract_addressed_value(&new_addr, &e.span());
+            }
+            Expr::Array(lit) => {
+                let mut prefix_items = vec![];
+                for it in lit.elems.iter().flatten() {
+                    match it.spread {
+                        Some(span) => {
+                            let ty_schema = self.typeof_expr(&it.expr, as_const, file.clone())?;
+
+                            match self.extract_tuple_value(ty_schema.clone(), span, file.clone()) {
+                                Ok(vs) => {
+                                    prefix_items.extend(vs);
+                                }
+                                Err(_) => {
+                                    let inner_schema =
+                                        self.extract_array_value(ty_schema, span, file.clone())?;
+                                    prefix_items.push(inner_schema);
+                                }
+                            }
+                        }
+                        None => {
+                            let ty_schema = self.typeof_expr(&it.expr, as_const, file.clone())?;
+                            prefix_items.push(ty_schema);
+                        }
+                    }
+                }
+                Ok(Runtype::Tuple {
+                    prefix_items,
+                    items: None,
+                })
+            }
+            // Expr::Object(lit) => {
+            //     let mut vs = vec![];
+
+            //     for it in &lit.props {
+            //         match it {
+            //             PropOrSpread::Spread(sp) => {
+            //                 let spread_ty = self.typeof_expr(&sp.expr, as_const)?;
+
+            //                 if let Runtype::Object { vs: spread_vs, .. } = spread_ty {
+            //                     for (k, v) in spread_vs {
+            //                         vs.push((k, v));
+            //                     }
+            //                 } else {
+            //                     return self.error(
+            //                         &it.span(),
+            //                         DiagnosticInfoMessage::TypeofObjectUnsupportedSpread,
+            //                     );
+            //                 }
+            //             }
+            //             PropOrSpread::Prop(p) => match p.as_ref() {
+            //                 Prop::KeyValue(p) => {
+            //                     let key: String = match &p.key {
+            //                         PropName::Ident(id) => id.sym.to_string(),
+            //                         PropName::Str(st) => st.value.to_string(),
+            //                         PropName::Num(_) => {
+            //                             return self.error(
+            //                                 &p.key.span(),
+            //                                 DiagnosticInfoMessage::TypeofObjectUnsupportedPropNum,
+            //                             );
+            //                         }
+            //                         PropName::Computed(_) => return self.error(
+            //                             &p.key.span(),
+            //                             DiagnosticInfoMessage::TypeofObjectUnsupportedPropComputed,
+            //                         ),
+            //                         PropName::BigInt(_) => return self.error(
+            //                             &p.key.span(),
+            //                             DiagnosticInfoMessage::TypeofObjectUnsupportedPropBigInt,
+            //                         ),
+            //                     };
+            //                     let value = self.typeof_expr(&p.value, as_const)?;
+            //                     vs.push((key, value.required()));
+            //                 }
+            //                 Prop::Shorthand(p) => {
+            //                     let key: String = p.sym.to_string();
+            //                     let value = self.typeof_expr(&Expr::Ident(p.clone()), as_const)?;
+            //                     vs.push((key, value.required()));
+            //                 }
+            //                 Prop::Assign(_)
+            //                 | Prop::Getter(_)
+            //                 | Prop::Setter(_)
+            //                 | Prop::Method(_) => {
+            //                     return self.error(
+            //                         &p.span(),
+            //                         DiagnosticInfoMessage::TypeofObjectUnsupportedProp,
+            //                     );
+            //                 }
+            //             },
+            //         }
+            //     }
+
+            //     Ok(Runtype::object(vs))
+            // }
+            Expr::TsSatisfies(c) => self.typeof_expr(&c.expr, as_const, file.clone()),
+            // Expr::Member(m) => {
+            //     let mut ctx = SemTypeContext::new();
+            //     let k = match &m.prop {
+            //         MemberProp::Ident(i) => Some(i.sym.to_string()),
+            //         MemberProp::Computed(c) => self
+            //             .typeof_expr(&c.expr, as_const)?
+            //             .extract_single_string_const(),
+            //         MemberProp::PrivateName(_) => None,
+            //     };
+            //     if let Some(key) = &k {
+            //         let from_enum = if let Expr::Ident(i) = &m.obj.as_ref() {
+            //             if let Ok(decl) = TypeResolver::new(self.files, &self.current_file)
+            //                 .resolve_namespace_symbol(i, false)
+            //             {
+            //                 match decl.from_file.as_ref() {
+            //                     ImportReference::Named {
+            //                         orig,
+            //                         file_name,
+            //                         span,
+            //                     } => {
+            //                         let Some(from_file) = self
+            //                             .files
+            //                             .get_or_fetch_file(file_name)
+            //                             .and_then(|module| {
+            //                                 module.symbol_exports.get_type(orig, self.files)
+            //                             })
+            //                         else {
+            //                             return self.error(
+            //                                 span,
+            //                                 DiagnosticInfoMessage::CannotResolveNamedImport,
+            //                             );
+            //                         };
+            //                         match from_file.as_ref() {
+            //                             SymbolExport::TsEnumDecl { decl, .. } => Some(decl.clone()),
+            //                             _ => {
+            //                                 return self.error(
+            //                                     span,
+            //                                     DiagnosticInfoMessage::CannotResolveNamedImport,
+            //                                 );
+            //                             }
+            //                         }
+            //                     }
+            //                     ImportReference::Star { .. } => {
+            //                         return self.error(
+            //                             &i.span,
+            //                             DiagnosticInfoMessage::CannotResolveNamedImport,
+            //                         );
+            //                     }
+            //                     ImportReference::Default { .. } => {
+            //                         return self.error(
+            //                             &i.span,
+            //                             DiagnosticInfoMessage::CannotResolveNamedImport,
+            //                         );
+            //                     }
+            //                 }
+            //             } else if let Ok(ResolvedLocalSymbol::TsEnumDecl(decl)) =
+            //                 TypeResolver::new(self.files, &self.current_file).resolve_local_value(i)
+            //             {
+            //                 Some(decl)
+            //             } else {
+            //                 None
+            //             }
+            //         } else {
+            //             None
+            //         };
+            //         if let Some(from_enum) = from_enum {
+            //             if !as_const {
+            //                 return self.convert_enum_decl(&from_enum);
+            //             }
+            //             let Some(enum_value) = from_enum.members.iter().find(|it| match &it.id {
+            //                 TsEnumMemberId::Ident(i) => i.sym == *key,
+            //                 TsEnumMemberId::Str(_) => unreachable!(),
+            //             }) else {
+            //                 return self
+            //                     .error(&m.prop.span(), DiagnosticInfoMessage::EnumMemberNotFound);
+            //             };
+            //             let Some(init) = &enum_value.init else {
+            //                 return self
+            //                     .error(&m.prop.span(), DiagnosticInfoMessage::EnumMemberNoInit);
+            //             };
+
+            //             return self.typeof_expr(init, true);
+            //         }
+            //     }
+            //     let obj = self.typeof_expr(&m.obj, as_const)?;
+            //     if let Some(key) = k {
+            //         if let Runtype::Object {
+            //             vs,
+            //             indexed_properties: _,
+            //         } = &obj
+            //         {
+            //             // try to do it syntatically to preserve aliases
+            //             if let Some(Optionality::Required(v)) = vs.get(&key) {
+            //                 return Ok(v.clone());
+            //             };
+            //         }
+            //     }
+            //     // fall back to semantic types if it cannot be done syntatically
+            //     let key: Rc<SemType> = match &m.prop {
+            //         MemberProp::Ident(i) => {
+            //             Rc::new(SemTypeContext::string_const(StringLitOrFormat::Tpl(
+            //                 TplLitType(vec![TplLitTypeItem::StringConst(i.sym.to_string())]),
+            //             )))
+            //         }
+            //         MemberProp::PrivateName(_) => {
+            //             return self.error(
+            //                 &m.prop.span(),
+            //                 DiagnosticInfoMessage::TypeofPrivateNameNotSupported,
+            //             );
+            //         }
+            //         MemberProp::Computed(c) => {
+            //             let v = self.typeof_expr(&c.expr, as_const)?;
+            //             v.to_sem_type(&self.validators_ref(), &mut ctx)
+            //                 .map_err(|e| {
+            //                     self.box_error(
+            //                         &m.span,
+            //                         DiagnosticInfoMessage::AnyhowError(e.to_string()),
+            //                     )
+            //                 })?
+            //         }
+            //     };
+            //     let st = obj
+            //         .to_sem_type(&self.validators_ref(), &mut ctx)
+            //         .map_err(|e| {
+            //             self.box_error(&m.span, DiagnosticInfoMessage::AnyhowError(e.to_string()))
+            //         })?;
+            //     let access_st: Rc<SemType> = ctx.indexed_access(st, key).map_err(|e| {
+            //         self.box_error(&m.span, DiagnosticInfoMessage::AnyhowError(e.to_string()))
+            //     })?;
+            //     self.semtype_to_runtype(access_st, &mut ctx, &m.prop.span())
+            // }
+            Expr::Arrow(_a) => Ok(Runtype::Function),
+            Expr::Bin(e) => {
+                let left = self.typeof_expr(&e.left, as_const, file.clone())?;
+                let right = self.typeof_expr(&e.right, as_const, file.clone())?;
+
+                match (left, right) {
+                    (Runtype::Number, Runtype::Number) => Ok(Runtype::Number),
+                    (Runtype::String, Runtype::String) => Ok(Runtype::String),
+                    _ => self.error(
+                        &e.span(),
+                        DiagnosticInfoMessage::CannotConvertExprToSchema,
+                        file.clone(),
+                    ),
+                }
             }
             _ => {
                 dbg!(&e);
