@@ -99,7 +99,7 @@ impl<'a, 'b> SchemerContext<'a, 'b> {
             acc.push(Runtype::StNot(Box::new(explained_sts)));
         }
 
-        Ok(Runtype::AllOf(acc.into_iter().collect()))
+        Ok(Runtype::all_of(acc.into_iter().collect()))
     }
 
     fn mapping_to_schema(&mut self, bdd: &Rc<Bdd>) -> anyhow::Result<Runtype> {
@@ -112,7 +112,7 @@ impl<'a, 'b> SchemerContext<'a, 'b> {
             acc.push(conj);
         }
 
-        Ok(Runtype::AnyOf(acc.into_iter().collect()))
+        Ok(Runtype::any_of(acc.into_iter().collect()))
     }
 
     fn list_atom_schema(&mut self, mt: &Rc<ListAtomic>) -> anyhow::Result<Runtype> {
@@ -164,7 +164,7 @@ impl<'a, 'b> SchemerContext<'a, 'b> {
             acc.push(Runtype::StNot(Box::new(explained_sts)));
         }
 
-        Ok(Runtype::AllOf(acc.into_iter().collect()))
+        Ok(Runtype::all_of(acc.into_iter().collect()))
     }
 
     fn list_to_schema(&mut self, bdd: &Rc<Bdd>) -> anyhow::Result<Runtype> {
@@ -177,7 +177,7 @@ impl<'a, 'b> SchemerContext<'a, 'b> {
             acc.push(conj);
         }
 
-        Ok(Runtype::AnyOf(acc.into_iter().collect()))
+        Ok(Runtype::any_of(acc.into_iter().collect()))
     }
 
     fn convert_to_schema_no_cache(&mut self, ty: &SemType) -> anyhow::Result<Runtype> {

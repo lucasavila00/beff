@@ -1,7 +1,6 @@
 use crate::ast::runtype::IndexedProperty;
 use crate::subtyping::ToSemType;
 use crate::subtyping::semtype::{SemType, SemTypeContext, SemTypeOps};
-use crate::subtyping::subtype::StringLitOrFormat;
 use crate::subtyping::to_schema::semtype_to_runtypes;
 use crate::swc_tools::{SymbolExport, SymbolExportDefault};
 use crate::{Anchor, NamedSchema, RuntypeUUID, TsBuiltIn, TypeAddress};
@@ -17,7 +16,7 @@ use std::collections::{BTreeMap, BTreeSet};
 use std::rc::Rc;
 use swc_common::{Span, Spanned};
 use swc_ecma_ast::{
-    Expr, Ident, Lit, MemberProp, Prop, PropName, PropOrSpread, TruePlusMinus, TsArrayType,
+    Expr, Lit, MemberProp, Prop, PropName, PropOrSpread, TruePlusMinus, TsArrayType,
     TsCallSignatureDecl, TsConditionalType, TsConstructSignatureDecl, TsConstructorType,
     TsEntityName, TsEnumDecl, TsEnumMemberId, TsExprWithTypeArgs, TsFnOrConstructorType, TsFnType,
     TsGetterSignature, TsImportType, TsIndexSignature, TsIndexedAccessType, TsInferType,
@@ -92,9 +91,15 @@ pub enum AddressedValue {
     Enum(Rc<TsEnumDecl>, BffFileName),
 }
 
+#[derive(Debug)]
 pub enum AddressedQualifiedValue {
     StarOfFile(BffFileName),
     ValueExpr(Rc<Expr>, BffFileName),
+    MemberExpr {
+        base: Rc<Expr>,
+        base_file: BffFileName,
+        member: String,
+    },
 }
 
 trait TypeModuleWalker<'a, R: FileManager + 'a, U> {
@@ -2000,7 +2005,6 @@ impl<'a, R: FileManager> FrontendCtx<'a, R> {
             }
             Expr::TsSatisfies(c) => self.typeof_expr(&c.expr, as_const, file.clone()),
             Expr::Member(m) => {
-                let mut ctx = SemTypeContext::new();
                 let k = match &m.prop {
                     MemberProp::Ident(i) => Some(i.sym.to_string()),
                     MemberProp::Computed(c) => self
@@ -2044,26 +2048,9 @@ impl<'a, R: FileManager> FrontendCtx<'a, R> {
                     }
                 }
                 let obj = self.typeof_expr(&m.obj, as_const, file.clone())?;
-                if let Some(key) = k
-                    && let Runtype::Object {
-                        vs,
-                        indexed_properties: _,
-                    } = &obj
-                {
-                    // try to do it syntatically to preserve aliases
-                    if let Some(Optionality::Required(v)) = vs.get(&key) {
-                        return Ok(v.clone());
-                    };
-                }
-                let validators_vec = self.validators_vec();
-                let validators_reference_vec: Vec<&NamedSchema> = validators_vec.iter().collect();
-                // fall back to semantic types if it cannot be done syntatically
-                let key: Rc<SemType> = match &m.prop {
-                    MemberProp::Ident(i) => {
-                        Rc::new(SemTypeContext::string_const(StringLitOrFormat::Tpl(
-                            TplLitType(vec![TplLitTypeItem::StringConst(i.sym.to_string())]),
-                        )))
-                    }
+
+                let key: Runtype = match &m.prop {
+                    MemberProp::Ident(i) => Runtype::single_string_const(&i.sym),
                     MemberProp::PrivateName(_) => {
                         return self.error(
                             &anchor,
@@ -2072,25 +2059,10 @@ impl<'a, R: FileManager> FrontendCtx<'a, R> {
                     }
                     MemberProp::Computed(c) => {
                         let v = self.typeof_expr(&c.expr, as_const, file.clone())?;
-                        v.to_sem_type(&validators_reference_vec, &mut ctx)
-                            .map_err(|e| {
-                                self.box_error(
-                                    &anchor,
-                                    DiagnosticInfoMessage::AnyhowError(e.to_string()),
-                                )
-                            })?
+                        v
                     }
                 };
-                let st = obj
-                    .to_sem_type(&validators_reference_vec, &mut ctx)
-                    .map_err(|e| {
-                        self.box_error(&anchor, DiagnosticInfoMessage::AnyhowError(e.to_string()))
-                    })?;
-                let access_st: Rc<SemType> = ctx.indexed_access(st, key).map_err(|e| {
-                    self.box_error(&anchor, DiagnosticInfoMessage::AnyhowError(e.to_string()))
-                })?;
-
-                self.semtype_to_runtype(access_st, &mut ctx, &anchor)
+                self.do_indexed_access_on_types(&obj, &key, &anchor)
             }
             Expr::Arrow(_a) => Ok(Runtype::Function),
             Expr::Bin(e) => {
@@ -2154,7 +2126,14 @@ impl<'a, R: FileManager> FrontendCtx<'a, R> {
                         };
                         self.get_addressed_qualified_value(&new_addr, &anchor)
                     }
-                    AddressedQualifiedValue::ValueExpr(_, _) => todo!(),
+                    AddressedQualifiedValue::ValueExpr(value_expr, from_file) => {
+                        Ok(AddressedQualifiedValue::MemberExpr {
+                            base: value_expr,
+                            base_file: from_file,
+                            member: ts_qualified_name.right.sym.to_string(),
+                        })
+                    }
+                    AddressedQualifiedValue::MemberExpr { .. } => todo!(),
                 }
             }
             TsEntityName::Ident(ident) => {
@@ -2173,33 +2152,14 @@ impl<'a, R: FileManager> FrontendCtx<'a, R> {
     fn typeof_expr_keyed_access(
         &mut self,
         expr: &Expr,
-        key: &Ident,
+        key: &str,
         file: BffFileName,
         anchor: &Anchor,
     ) -> Res<Runtype> {
         let base_ty = self.typeof_expr(expr, false, file.clone())?;
-        let validators_vec = self.validators_vec();
-        let validators_reference_vec: Vec<&NamedSchema> = validators_vec.iter().collect();
-        let mut ctx = SemTypeContext::new();
-        let base_st = base_ty
-            .to_sem_type(&validators_reference_vec, &mut ctx)
-            .map_err(|e| {
-                self.box_error(&anchor, DiagnosticInfoMessage::AnyhowError(e.to_string()))
-            })?;
-        let key_rc = Rc::new(SemTypeContext::string_const(StringLitOrFormat::Tpl(
-            TplLitType(vec![TplLitTypeItem::StringConst(key.sym.to_string())]),
-        )));
+        let key_ty = Runtype::single_string_const(key);
 
-        let access_st: Rc<SemType> = ctx.indexed_access(base_st, key_rc).map_err(|e| {
-            self.box_error(&anchor, DiagnosticInfoMessage::AnyhowError(e.to_string()))
-        })?;
-        if access_st.is_never() {
-            return self.error(
-                &anchor,
-                DiagnosticInfoMessage::KeyedAccessResultsInNeverType,
-            );
-        }
-        self.semtype_to_runtype(access_st, &mut ctx, &anchor)
+        self.do_indexed_access_on_types(&base_ty, &key_ty, anchor)
     }
 
     fn extract_value_from_ts_qualified_name(
@@ -2209,10 +2169,13 @@ impl<'a, R: FileManager> FrontendCtx<'a, R> {
         visibility: Visibility,
         anchor: &Anchor,
     ) -> Res<Runtype> {
+        dbg!("extract_value_from_ts_qualified_name", ts_qualified_name);
         let left_value = self.get_addressed_qualified_value_from_entity_name(
             &ts_qualified_name.left,
             file.clone(),
         )?;
+
+        dbg!("left_value", &left_value);
 
         match left_value {
             AddressedQualifiedValue::StarOfFile(bff_file_name) => {
@@ -2226,10 +2189,24 @@ impl<'a, R: FileManager> FrontendCtx<'a, R> {
             AddressedQualifiedValue::ValueExpr(expr, bff_file_name) => self
                 .typeof_expr_keyed_access(
                     expr.as_ref(),
-                    &ts_qualified_name.right,
+                    &ts_qualified_name.right.sym,
                     bff_file_name,
                     anchor,
                 ),
+            AddressedQualifiedValue::MemberExpr {
+                base,
+                base_file,
+                member,
+            } => {
+                let base =
+                    self.typeof_expr_keyed_access(base.as_ref(), &member, base_file, anchor)?;
+                // now get the ts_qualified_name.right.sym access
+                self.do_indexed_access_on_types(
+                    &base,
+                    &Runtype::single_string_const(&ts_qualified_name.right.sym),
+                    anchor,
+                )
+            }
         }
     }
 
@@ -2640,18 +2617,13 @@ impl<'a, R: FileManager> FrontendCtx<'a, R> {
         }
         acc
     }
-    fn extract_indexed_access_type(
-        &mut self,
-        i: &TsIndexedAccessType,
-        file: BffFileName,
-    ) -> Res<Runtype> {
-        let anchor = Anchor {
-            f: file.clone(),
-            s: i.span,
-        };
-        let obj = self.extract_type(&i.obj_type, file.clone())?;
-        let index = self.extract_type(&i.index_type, file.clone())?;
 
+    fn do_indexed_access_on_types(
+        &mut self,
+        obj: &Runtype,
+        index: &Runtype,
+        anchor: &Anchor,
+    ) -> Res<Runtype> {
         if let Some(res) = self.convert_indexed_access_syntatically(&obj, &index, &anchor)? {
             return Ok(res);
         }
@@ -2682,6 +2654,21 @@ impl<'a, R: FileManager> FrontendCtx<'a, R> {
         }
 
         self.semtype_to_runtype(access_st, &mut ctx, &anchor)
+    }
+
+    fn extract_indexed_access_type(
+        &mut self,
+        i: &TsIndexedAccessType,
+        file: BffFileName,
+    ) -> Res<Runtype> {
+        let anchor = Anchor {
+            f: file.clone(),
+            s: i.span,
+        };
+        let obj = self.extract_type(&i.obj_type, file.clone())?;
+        let index = self.extract_type(&i.index_type, file.clone())?;
+
+        self.do_indexed_access_on_types(&obj, &index, &anchor)
     }
     fn convert_keyof(&mut self, k: &TsType, file_name: BffFileName) -> Res<Runtype> {
         let anchor = Anchor {

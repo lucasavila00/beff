@@ -1,6 +1,6 @@
 #[cfg(test)]
 mod tests {
-    use beff_core::test_tools::{print_types, print_types_multifile};
+    use beff_core::test_tools::{print_cgen, print_types, print_types_multifile};
 
     #[test]
     fn type_ref() {
@@ -375,12 +375,81 @@ mod tests {
         "#);
     }
 
-    // #[test]
-    // fn typeof_nested_object_literal_prop() {
-    //     insta::assert_snapshot!(print_types(r#"
-    //         const obj = { a: { b: "hello" } };
-    //         export type T = typeof obj.a.b;
-    //         parse.buildParsers<{ T: T }>();
-    //     "#), @r"");
-    // }
+    #[test]
+    fn typeof_nested_object_literal_prop() {
+        insta::assert_snapshot!(print_types(r#"
+            const obj = { a: { b: "hello" } };
+            export type T = typeof obj.a.b;
+            parse.buildParsers<{ T: T }>();
+        "#), @r"
+        type T = string;
+
+
+        type BuiltParsers = {
+          T: T,
+        }
+        ");
+    }
+
+    #[test]
+    fn typeof_nested_object_literal_prop_as_const1() {
+        insta::assert_snapshot!(print_types(r#"
+            const obj = { a: { b: "hello" as const } };
+            export type T = typeof obj.a.b;
+            parse.buildParsers<{ T: T }>();
+        "#), @r#"
+        type T = "hello";
+
+
+        type BuiltParsers = {
+          T: T,
+        }
+        "#);
+    }
+    #[test]
+    fn typeof_nested_object_literal_prop_as_const2() {
+        insta::assert_snapshot!(print_types(r#"
+            const obj = { a: { b: "hello"  } as const };
+            export type T = typeof obj.a.b;
+            parse.buildParsers<{ T: T }>();
+        "#), @r#"
+        type T = "hello";
+
+
+        type BuiltParsers = {
+          T: T,
+        }
+        "#);
+    }
+    #[test]
+    fn typeof_nested_object_literal_prop_as_const3() {
+        insta::assert_snapshot!(print_types(r#"
+            const obj = { a: { b: "hello"  }  }as const ;
+            export type T = typeof obj.a.b;
+            parse.buildParsers<{ T: T }>();
+        "#), @r#"
+        type T = "hello";
+
+
+        type BuiltParsers = {
+          T: T,
+        }
+        "#);
+    }
+
+    #[test]
+    fn typeof_nested_object_literal_prop_cgen() {
+        insta::assert_snapshot!(print_cgen(r#"
+            const obj = { a: { b: "hello" } };
+            export type T = typeof obj.a.b;
+            parse.buildParsers<{ T: T }>();
+        "#), @r#"
+        const namedRuntypes = {
+            "T": new TypeofRuntype("string")
+        };
+        const buildParsersInput = {
+            "T": new RefRuntype("T")
+        };
+        "#);
+    }
 }

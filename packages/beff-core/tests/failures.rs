@@ -697,12 +697,20 @@ mod tests {
         ");
     }
 
-    // #[test]
-    // fn typeof_qualified_value_expr_deep_failure() {
-    //     insta::assert_snapshot!(failure(r#"
-    //         const obj = { a: { b: 1 } };
-    //         export type T = typeof obj.a.c;
-    //         parse.buildParsers<{ T: T }>();
-    //     "#), @r"");
-    // }
+    #[test]
+    fn typeof_qualified_value_expr_deep_failure() {
+        insta::assert_snapshot!(failure(r#"
+            const obj = { a: { b: 1 } };
+            export type T = typeof obj.a.c;
+            parse.buildParsers<{ T: T }>();
+        "#), @r"
+        Error: Keyed access results in 'never' type
+           ╭─[entry.ts:3:30]
+           │
+         3 │             export type T = typeof obj.a.c;
+           │                             ───────┬──────  
+           │                                    ╰──────── Keyed access results in 'never' type
+        ───╯
+        ");
+    }
 }

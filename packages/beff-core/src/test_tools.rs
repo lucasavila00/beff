@@ -138,6 +138,7 @@ pub fn failure_multifile(sources: &[(&str, &str)]) -> String {
     let errors = &p.errors;
 
     if errors.is_empty() {
+        dbg!(&p);
         panic!("expected errors, but none found");
     }
     let mut out = String::new();
