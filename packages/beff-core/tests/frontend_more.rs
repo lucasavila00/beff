@@ -278,4 +278,30 @@ mod tests {
         }
         ");
     }
+
+    #[test]
+    fn typeof_import_no_qualifier() {
+        insta::assert_snapshot!(print_types_multifile(&[
+            (
+                "t.ts",
+                r#"
+                    export default "abc" as const;
+                "#,
+            ),
+            (
+                "entry.ts",
+                r#"
+                    export type T = typeof import("./t");
+                    parse.buildParsers<{ T: T }>();
+                "#
+            )
+        ]), @r#"
+        type T = "abc";
+
+
+        type BuiltParsers = {
+          T: T,
+        }
+        "#);
+    }
 }

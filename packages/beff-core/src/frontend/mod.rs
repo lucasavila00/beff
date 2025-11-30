@@ -2293,7 +2293,14 @@ impl<'a, R: FileManager> FrontendCtx<'a, R> {
                                 &anchor,
                             );
                         }
-                        None => todo!(),
+                        None => {
+                            let new_addr = ModuleItemAddress {
+                                file: resolved.clone(),
+                                name: "default".to_string(),
+                                visibility: Visibility::Export,
+                            };
+                            return self.extract_addressed_value(&new_addr, &anchor);
+                        }
                     }
                 }
                 todo!()
@@ -2326,12 +2333,6 @@ impl<'a, R: FileManager> FrontendCtx<'a, R> {
                     );
                 }
                 None => {
-                    let new_addr = ModuleItemAddress {
-                        file: resolved.clone(),
-                        name: "default".to_string(),
-                        visibility: Visibility::Export,
-                    };
-                    let resolved_addr = self.get_addressed_type(&new_addr, &anchor)?;
                     let type_args = match &import_type.type_args {
                         Some(its) => {
                             let mut args = vec![];
@@ -2343,6 +2344,12 @@ impl<'a, R: FileManager> FrontendCtx<'a, R> {
                         }
                         None => vec![],
                     };
+                    let new_addr = ModuleItemAddress {
+                        file: resolved.clone(),
+                        name: "default".to_string(),
+                        visibility: Visibility::Export,
+                    };
+                    let resolved_addr = self.get_addressed_type(&new_addr, &anchor)?;
                     let rt_name = RuntypeName::Address(resolved_addr.type_address());
                     return self.extract_addressed_type(&rt_name, type_args, &anchor);
                 }

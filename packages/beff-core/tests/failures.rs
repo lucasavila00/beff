@@ -546,24 +546,32 @@ mod tests {
         ");
     }
 
-    // #[test]
-    // fn typeof_import_no_qualifier() {
-    //     insta::assert_snapshot!(failure_multifile(&[
-    //         (
-    //             "t.ts",
-    //             r#"
-    //                 export const A = "a";
-    //             "#,
-    //         ),
-    //         (
-    //             "entry.ts",
-    //             r#"
-    //                 export type T = typeof import("./t");
-    //                 parse.buildParsers<{ T: T }>();
-    //             "#
-    //         )
-    //     ]), @r"");
-    // }
+    #[test]
+    fn typeof_import_no_qualifier() {
+        insta::assert_snapshot!(failure_multifile(&[
+            (
+                "t.ts",
+                r#"
+                    export const A = "a";
+                "#,
+            ),
+            (
+                "entry.ts",
+                r#"
+                    export type T = typeof import("./t");
+                    parse.buildParsers<{ T: T }>();
+                "#
+            )
+        ]), @r#"
+        Error: Cannot resolve value 't.ts::default'
+           ╭─[entry.ts:2:38]
+           │
+         2 │                     export type T = typeof import("./t");
+           │                                     ──────────┬─────────  
+           │                                               ╰─────────── Cannot resolve value 't.ts::default'
+        ───╯
+        "#);
+    }
 
     // #[test]
     // fn tuple_rest_not_array() {
