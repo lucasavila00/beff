@@ -1,4 +1,4 @@
-import parse from "./generated/parser";
+import parse from "./bff-generated/parser";
 
 type GenericWrapper<T> = {
   value: T;

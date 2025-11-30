@@ -1,4 +1,4 @@
-import parse from "./generated/parser";
+import parse from "./bff-generated/parser";
 import { UserList } from "./types";
 type User = {
   a: string;
