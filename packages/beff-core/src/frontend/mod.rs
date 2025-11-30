@@ -43,7 +43,6 @@ pub struct FrontendCtx<'a, R: FileManager> {
     pub recursive_generic_uuids: BTreeSet<RuntypeUUID>,
 
     pub counter: usize,
-    pub builtin_file: BffFileName,
 
     pub type_application_stack: Vec<(String, Runtype)>,
 }
@@ -72,16 +71,14 @@ impl fmt::Display for TsBuiltIn {
 }
 
 impl TsBuiltIn {
-    fn to_res(self, builtin_file: BffFileName) -> Res<Option<AddressedType>> {
+    fn to_addr(&self, builtin_file: BffFileName) -> ModuleItemAddress {
         let name = self.to_string();
-        Ok(Some(AddressedType::TsBuiltIn {
-            t: self,
-            address: ModuleItemAddress {
-                file: builtin_file,
-                name,
-                visibility: Visibility::Export,
-            },
-        }))
+
+        ModuleItemAddress {
+            file: builtin_file,
+            name,
+            visibility: Visibility::Export,
+        }
     }
 }
 
@@ -99,10 +96,6 @@ enum AddressedType {
         t: Rc<TsEnumDecl>,
         address: ModuleItemAddress,
     },
-    TsBuiltIn {
-        t: TsBuiltIn,
-        address: ModuleItemAddress,
-    },
 }
 impl AddressedType {
     fn addr(&self) -> ModuleItemAddress {
@@ -110,14 +103,6 @@ impl AddressedType {
             AddressedType::TsType { t: _, address } => address.clone(),
             AddressedType::TsInterface { t: _, address } => address.clone(),
             AddressedType::TsEnum { t: _, address } => address.clone(),
-            AddressedType::TsBuiltIn { t: _, address } => address.clone(),
-        }
-    }
-
-    fn is_builtin(&self) -> bool {
-        match self {
-            AddressedType::TsBuiltIn { .. } => true,
-            _ => false,
         }
     }
 }
@@ -128,11 +113,13 @@ enum FinalAddressedType {
         address: ModuleItemAddress,
         member_name: String,
     },
+    BuiltIn(TsBuiltIn),
 }
 impl FinalAddressedType {
     fn is_builtin(&self) -> bool {
         match self {
-            FinalAddressedType::AddressedType(t) => t.is_builtin(),
+            FinalAddressedType::BuiltIn(_) => true,
+            FinalAddressedType::AddressedType(_) => false,
             FinalAddressedType::EnumItem { .. } => false,
         }
     }
@@ -147,6 +134,9 @@ impl FinalAddressedType {
                 address: enum_address.clone(),
                 member_name: member_name.clone(),
             },
+            FinalAddressedType::BuiltIn(ts_built_in) => {
+                RuntypeName::Address(ts_built_in.to_addr(new_builtin_file()))
+            }
         }
     }
 }
@@ -815,6 +805,9 @@ impl<'a, 'b, R: FileManager> ValueModuleWalker<'a, R, AddressedQualifiedValue>
         todo!()
     }
 }
+fn new_builtin_file() -> BffFileName {
+    BffFileName("______builtin.ts".to_string().into())
+}
 impl<'a, R: FileManager> FrontendCtx<'a, R> {
     pub fn new(files: &'a mut R, parser_file: BffFileName, settings: &'a BeffUserSettings) -> Self {
         FrontendCtx {
@@ -824,7 +817,6 @@ impl<'a, R: FileManager> FrontendCtx<'a, R> {
             errors: vec![],
             partial_validators: BTreeMap::new(),
             counter: 0,
-            builtin_file: BffFileName("______builtin.ts".to_string().into()),
 
             type_application_stack: vec![],
             recursive_generic_uuids: BTreeSet::new(),
@@ -903,12 +895,6 @@ impl<'a, R: FileManager> FrontendCtx<'a, R> {
     }
 
     fn get_addressed_type(&mut self, addr: &ModuleItemAddress, span: &Span) -> Res<AddressedType> {
-        if addr.file == self.builtin_file {
-            match self.maybe_generate_ts_builtin(&addr.name)? {
-                Some(it) => return Ok(it),
-                None => unreachable!("the builtin type {} does not exist", addr.name),
-            }
-        }
         let mut walker = TypeWalker { ctx: self };
         walker.get_addressed_item(addr, span)
     }
@@ -1225,6 +1211,211 @@ impl<'a, R: FileManager> FrontendCtx<'a, R> {
             .collect::<Res<Vec<_>>>()?;
         Ok(Self::convert_omit_keys(obj, str_keys))
     }
+
+    fn extract_fat(
+        &mut self,
+        fat: &FinalAddressedType,
+        type_args: Vec<Runtype>,
+        span: &Span,
+        file: BffFileName,
+    ) -> Res<Runtype> {
+        match fat {
+            FinalAddressedType::AddressedType(addressed_type) => {
+                let rt_name = RuntypeName::Address(addressed_type.addr().clone());
+                self.extract_addressed_type(&rt_name, type_args, span)
+            }
+            FinalAddressedType::EnumItem {
+                address,
+                member_name,
+            } => {
+                let rt_name = RuntypeName::EnumItem {
+                    address: address.clone(),
+                    member_name: member_name.clone(),
+                };
+                self.extract_addressed_type(&rt_name, type_args, span)
+            }
+            FinalAddressedType::BuiltIn(ts_built_in) => match ts_built_in {
+                TsBuiltIn::Date => Ok(Runtype::Date),
+                TsBuiltIn::Array => match type_args.as_slice() {
+                    [ty] => Ok(Runtype::Array(ty.clone().into())),
+                    _ => self.error(
+                        span,
+                        DiagnosticInfoMessage::InvalidNumberOfTypeParametersForArray,
+                        file.clone(),
+                    ),
+                },
+                TsBuiltIn::StringFormat => {
+                    self.get_string_with_format(&type_args, span, file.clone())
+                }
+                TsBuiltIn::StringFormatExtends => {
+                    self.get_string_format_extends(&type_args, span, file.clone())
+                }
+                TsBuiltIn::NumberFormat => {
+                    self.get_number_with_format(&type_args, span, file.clone())
+                }
+                TsBuiltIn::NumberFormatExtends => {
+                    self.get_number_format_extends(&type_args, span, file.clone())
+                }
+                TsBuiltIn::Object => Ok(Runtype::any_object()),
+
+                TsBuiltIn::Record => {
+                    if type_args.len() != 2 {
+                        return self.error(
+                            span,
+                            DiagnosticInfoMessage::RecordShouldHaveTwoTypeArguments,
+                            file.clone(),
+                        );
+                    }
+
+                    let mut key = type_args[0].clone();
+                    let mut is_ref = matches!(key, Runtype::Ref(_));
+
+                    while is_ref {
+                        if let Runtype::Ref(r) = &type_args[0] {
+                            let map = self
+                                .partial_validators
+                                .get(r)
+                                .and_then(|it| it.as_ref())
+                                .cloned();
+                            if let Some(schema) = map {
+                                key = schema;
+                                is_ref = matches!(key, Runtype::Ref(_));
+                            }
+                        }
+                    }
+                    let key_clone = key.clone();
+                    match self.collect_consts_from_union(key) {
+                        Ok(res) => {
+                            let value = type_args[1].clone();
+                            Ok(Runtype::object(
+                                res.into_iter()
+                                    .map(|it| (it, value.clone().required()))
+                                    .collect(),
+                            ))
+                        }
+                        Err(_) => {
+                            let value = type_args[1].clone();
+                            Ok(Runtype::Object {
+                                vs: BTreeMap::new(),
+                                indexed_properties: Some(
+                                    IndexedProperty {
+                                        key: key_clone,
+                                        value: value.required(),
+                                    }
+                                    .into(),
+                                ),
+                            })
+                        }
+                    }
+                }
+                TsBuiltIn::Pick => match type_args.as_slice() {
+                    [obj, keys] => {
+                        let vs = self.extract_object_from_runtype(obj, span, file.clone())?;
+                        self.convert_pick(span, &vs, keys.clone(), file.clone())
+                    }
+                    _ => self.error(
+                        span,
+                        DiagnosticInfoMessage::PickShouldHaveTwoTypeArguments,
+                        file.clone(),
+                    ),
+                },
+                TsBuiltIn::Omit => match type_args.as_slice() {
+                    [obj, keys] => {
+                        let vs = self.extract_object_from_runtype(obj, span, file.clone())?;
+                        self.convert_omit(span, &vs, keys.clone(), file.clone())
+                    }
+                    _ => self.error(
+                        span,
+                        DiagnosticInfoMessage::OmitShouldHaveTwoTypeArguments,
+                        file.clone(),
+                    ),
+                },
+                TsBuiltIn::Exclude => match type_args.as_slice() {
+                    [left, right] => {
+                        let mut ctx = SemTypeContext::new();
+
+                        let left_ty = left.clone();
+
+                        let validators_vec = self.validators_vec();
+                        let validators_reference_vec: Vec<&NamedSchema> =
+                            validators_vec.iter().collect();
+
+                        let left_st = left_ty
+                            .to_sem_type(&validators_reference_vec, &mut ctx)
+                            .map_err(|e| {
+                                self.box_error(
+                                    span,
+                                    DiagnosticInfoMessage::AnyhowError(e.to_string()),
+                                    file.clone(),
+                                )
+                            })?;
+
+                        let right_ty = right.clone();
+
+                        let right_st = right_ty
+                            .to_sem_type(&validators_reference_vec, &mut ctx)
+                            .map_err(|e| {
+                                self.box_error(
+                                    span,
+                                    DiagnosticInfoMessage::AnyhowError(e.to_string()),
+                                    file.clone(),
+                                )
+                            })?;
+
+                        let subtracted_ty = left_st.diff(&right_st).map_err(|e| {
+                            self.box_error(
+                                span,
+                                DiagnosticInfoMessage::AnyhowError(e.to_string()),
+                                file.clone(),
+                            )
+                        })?;
+                        let res = self
+                            .semtype_to_runtype(subtracted_ty, &mut ctx, span, file.clone())?
+                            .remove_nots_of_intersections_and_empty_of_union(
+                                &validators_reference_vec,
+                                &mut ctx,
+                            )
+                            .map_err(|e| {
+                                self.box_error(
+                                    span,
+                                    DiagnosticInfoMessage::AnyhowError(e.to_string()),
+                                    file.clone(),
+                                )
+                            })?;
+                        Ok(res)
+                    }
+                    _ => self.error(
+                        span,
+                        DiagnosticInfoMessage::ExcludeShouldHaveTwoTypeArguments,
+                        file.clone(),
+                    ),
+                },
+                TsBuiltIn::Required => match type_args.as_slice() {
+                    [obj] => {
+                        let vs = self.extract_object_from_runtype(obj, span, file.clone())?;
+                        Ok(self.convert_required(&vs))
+                    }
+                    _ => self.error(
+                        span,
+                        DiagnosticInfoMessage::RequiredShouldHaveTwoTypeArguments,
+                        file.clone(),
+                    ),
+                },
+                TsBuiltIn::Partial => match type_args.as_slice() {
+                    [obj] => {
+                        let vs = self.extract_object_from_runtype(obj, span, file.clone())?;
+                        Ok(self.convert_partial(&vs))
+                    }
+                    _ => self.error(
+                        span,
+                        DiagnosticInfoMessage::PartialShouldHaveTwoTypeArguments,
+                        file.clone(),
+                    ),
+                },
+            },
+        }
+    }
+
     fn extract_addressed_type(
         &mut self,
         runtype_name: &RuntypeName,
@@ -1268,206 +1459,6 @@ impl<'a, R: FileManager> FrontendCtx<'a, R> {
                         let runtype = self.extract_enum_decl(&t, address.file.clone())?;
                         Ok(runtype)
                     }
-                    AddressedType::TsBuiltIn { t, address } => match t {
-                        TsBuiltIn::Date => Ok(Runtype::Date),
-                        TsBuiltIn::Array => match type_args.as_slice() {
-                            [ty] => Ok(Runtype::Array(ty.clone().into())),
-                            _ => self.error(
-                                span,
-                                DiagnosticInfoMessage::InvalidNumberOfTypeParametersForArray,
-                                address.file.clone(),
-                            ),
-                        },
-                        TsBuiltIn::StringFormat => {
-                            self.get_string_with_format(&type_args, span, address.file.clone())
-                        }
-                        TsBuiltIn::StringFormatExtends => {
-                            self.get_string_format_extends(&type_args, span, address.file.clone())
-                        }
-                        TsBuiltIn::NumberFormat => {
-                            self.get_number_with_format(&type_args, span, address.file.clone())
-                        }
-                        TsBuiltIn::NumberFormatExtends => {
-                            self.get_number_format_extends(&type_args, span, address.file.clone())
-                        }
-                        TsBuiltIn::Object => Ok(Runtype::any_object()),
-
-                        TsBuiltIn::Record => {
-                            if type_args.len() != 2 {
-                                return self.error(
-                                    span,
-                                    DiagnosticInfoMessage::RecordShouldHaveTwoTypeArguments,
-                                    address.file.clone(),
-                                );
-                            }
-
-                            let mut key = type_args[0].clone();
-                            let mut is_ref = matches!(key, Runtype::Ref(_));
-
-                            while is_ref {
-                                if let Runtype::Ref(r) = &type_args[0] {
-                                    let map = self
-                                        .partial_validators
-                                        .get(r)
-                                        .and_then(|it| it.as_ref())
-                                        .cloned();
-                                    if let Some(schema) = map {
-                                        key = schema;
-                                        is_ref = matches!(key, Runtype::Ref(_));
-                                    }
-                                }
-                            }
-                            let key_clone = key.clone();
-                            match self.collect_consts_from_union(key) {
-                                Ok(res) => {
-                                    let value = type_args[1].clone();
-                                    Ok(Runtype::object(
-                                        res.into_iter()
-                                            .map(|it| (it, value.clone().required()))
-                                            .collect(),
-                                    ))
-                                }
-                                Err(_) => {
-                                    let value = type_args[1].clone();
-                                    Ok(Runtype::Object {
-                                        vs: BTreeMap::new(),
-                                        indexed_properties: Some(
-                                            IndexedProperty {
-                                                key: key_clone,
-                                                value: value.required(),
-                                            }
-                                            .into(),
-                                        ),
-                                    })
-                                }
-                            }
-                        }
-                        TsBuiltIn::Pick => match type_args.as_slice() {
-                            [obj, keys] => {
-                                let vs = self.extract_object_from_runtype(
-                                    obj,
-                                    span,
-                                    address.file.clone(),
-                                )?;
-                                self.convert_pick(span, &vs, keys.clone(), address.file.clone())
-                            }
-                            _ => self.error(
-                                span,
-                                DiagnosticInfoMessage::PickShouldHaveTwoTypeArguments,
-                                address.file.clone(),
-                            ),
-                        },
-                        TsBuiltIn::Omit => match type_args.as_slice() {
-                            [obj, keys] => {
-                                let vs = self.extract_object_from_runtype(
-                                    obj,
-                                    span,
-                                    address.file.clone(),
-                                )?;
-                                self.convert_omit(span, &vs, keys.clone(), address.file.clone())
-                            }
-                            _ => self.error(
-                                span,
-                                DiagnosticInfoMessage::OmitShouldHaveTwoTypeArguments,
-                                address.file.clone(),
-                            ),
-                        },
-                        TsBuiltIn::Exclude => match type_args.as_slice() {
-                            [left, right] => {
-                                let mut ctx = SemTypeContext::new();
-
-                                let left_ty = left.clone();
-
-                                let validators_vec = self.validators_vec();
-                                let validators_reference_vec: Vec<&NamedSchema> =
-                                    validators_vec.iter().collect();
-
-                                let left_st = left_ty
-                                    .to_sem_type(&validators_reference_vec, &mut ctx)
-                                    .map_err(|e| {
-                                        self.box_error(
-                                            span,
-                                            DiagnosticInfoMessage::AnyhowError(e.to_string()),
-                                            address.file.clone(),
-                                        )
-                                    })?;
-
-                                let right_ty = right.clone();
-
-                                let right_st = right_ty
-                                    .to_sem_type(&validators_reference_vec, &mut ctx)
-                                    .map_err(|e| {
-                                        self.box_error(
-                                            span,
-                                            DiagnosticInfoMessage::AnyhowError(e.to_string()),
-                                            address.file.clone(),
-                                        )
-                                    })?;
-
-                                let subtracted_ty = left_st.diff(&right_st).map_err(|e| {
-                                    self.box_error(
-                                        span,
-                                        DiagnosticInfoMessage::AnyhowError(e.to_string()),
-                                        address.file.clone(),
-                                    )
-                                })?;
-                                let res = self
-                                    .semtype_to_runtype(
-                                        subtracted_ty,
-                                        &mut ctx,
-                                        span,
-                                        address.file.clone(),
-                                    )?
-                                    .remove_nots_of_intersections_and_empty_of_union(
-                                        &validators_reference_vec,
-                                        &mut ctx,
-                                    )
-                                    .map_err(|e| {
-                                        self.box_error(
-                                            span,
-                                            DiagnosticInfoMessage::AnyhowError(e.to_string()),
-                                            address.file.clone(),
-                                        )
-                                    })?;
-                                Ok(res)
-                            }
-                            _ => self.error(
-                                span,
-                                DiagnosticInfoMessage::ExcludeShouldHaveTwoTypeArguments,
-                                address.file.clone(),
-                            ),
-                        },
-                        TsBuiltIn::Required => match type_args.as_slice() {
-                            [obj] => {
-                                let vs = self.extract_object_from_runtype(
-                                    obj,
-                                    span,
-                                    address.file.clone(),
-                                )?;
-                                Ok(self.convert_required(&vs))
-                            }
-                            _ => self.error(
-                                span,
-                                DiagnosticInfoMessage::RequiredShouldHaveTwoTypeArguments,
-                                address.file.clone(),
-                            ),
-                        },
-                        TsBuiltIn::Partial => match type_args.as_slice() {
-                            [obj] => {
-                                let vs = self.extract_object_from_runtype(
-                                    obj,
-                                    span,
-                                    address.file.clone(),
-                                )?;
-                                Ok(self.convert_partial(&vs))
-                            }
-                            _ => self.error(
-                                span,
-                                DiagnosticInfoMessage::PartialShouldHaveTwoTypeArguments,
-                                address.file.clone(),
-                            ),
-                        },
-                    },
                 }
             }
             RuntypeName::EnumItem {
@@ -1536,7 +1527,7 @@ impl<'a, R: FileManager> FrontendCtx<'a, R> {
         }
     }
 
-    fn maybe_generate_ts_builtin(&mut self, name: &str) -> Res<Option<AddressedType>> {
+    fn maybe_generate_ts_builtin(&mut self, name: &str) -> Res<Option<TsBuiltIn>> {
         let bt = match name {
             "Date" => Some(TsBuiltIn::Date),
             "Array" | "ReadonlyArray" => Some(TsBuiltIn::Array),
@@ -1553,10 +1544,7 @@ impl<'a, R: FileManager> FrontendCtx<'a, R> {
             "Exclude" => Some(TsBuiltIn::Exclude),
             _ => None,
         };
-        match bt {
-            Some(bt) => bt.to_res(self.builtin_file.clone()),
-            None => Ok(None),
-        }
+        Ok(bt)
     }
 
     fn get_final_address_from_ts_entity_name(
@@ -1568,7 +1556,7 @@ impl<'a, R: FileManager> FrontendCtx<'a, R> {
         match type_name {
             TsEntityName::Ident(ident) => {
                 if let Some(builtin) = self.maybe_generate_ts_builtin(&ident.sym)? {
-                    Ok(FinalAddressedType::AddressedType(builtin))
+                    Ok(FinalAddressedType::BuiltIn(builtin))
                 } else {
                     let addr = ModuleItemAddress::from_ident(ident, file, visibility);
                     Ok(FinalAddressedType::AddressedType(
@@ -1818,7 +1806,7 @@ impl<'a, R: FileManager> FrontendCtx<'a, R> {
         if fat.is_builtin() {
             // it won't be recursive if it's builtin, and we don't need to write it to the map too
             // TODO: it needs generic type support too, so we need to handle that later
-            return self.extract_addressed_type(&fat.addr(), type_args, &type_name.span());
+            return self.extract_fat(&fat, type_args, &type_name.span(), file.clone());
         }
         let rt_uuid = RuntypeUUID {
             ty: fat.addr(),
@@ -1833,7 +1821,7 @@ impl<'a, R: FileManager> FrontendCtx<'a, R> {
         }
         self.partial_validators.insert(rt_uuid.clone(), None);
 
-        let ty = self.extract_addressed_type(&fat.addr(), type_args, &type_name.span());
+        let ty = self.extract_fat(&fat, type_args, &type_name.span(), file.clone());
         match ty {
             Ok(ty) => match ts_type_args {
                 None => self.insert_definition(rt_uuid.clone(), ty),
