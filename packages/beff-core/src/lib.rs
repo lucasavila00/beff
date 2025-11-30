@@ -26,6 +26,7 @@ use std::sync::Arc;
 use swc_atoms::JsWord;
 use swc_common::SourceFile;
 use swc_common::SourceMap;
+use swc_common::Span;
 use swc_common::SyntaxContext;
 use swc_ecma_ast::Module;
 use swc_node_comments::SwcComments;
@@ -39,6 +40,17 @@ pub struct BffModuleData {
 
 #[derive(Debug, Clone, Eq, PartialEq, Hash, PartialOrd, Ord)]
 pub struct BffFileName(Rc<String>);
+
+#[derive(Debug, Clone)]
+pub struct Anchor {
+    f: BffFileName,
+    s: Span,
+}
+impl Anchor {
+    fn new(f: BffFileName, s: Span) -> Self {
+        Anchor { f, s }
+    }
+}
 
 impl fmt::Display for BffFileName {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {

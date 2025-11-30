@@ -44,6 +44,26 @@ mod tests {
         ");
     }
 
+    #[test]
+    fn import_named_none() {
+        insta::assert_snapshot!(failure_multifile(&[
+            (
+                "t.ts",
+                r#"
+                    export const A = "a";
+                "#,
+            ),
+            (
+                "entry.ts",
+                r#"
+                    import { B } from "./t";
+                    export type T = typeof B;
+                    parse.buildParsers<{ T: T }>();
+                "#
+            )
+        ]), @r"");
+    }
+
     // #[test]
     // fn import_default_none() {
     //     insta::assert_snapshot!(failure_multifile(&[
@@ -58,26 +78,6 @@ mod tests {
     //             r#"
     //                 import D from "./t";
     //                 export type T = typeof D;
-    //                 parse.buildParsers<{ T: T }>();
-    //             "#
-    //         )
-    //     ]), @r"");
-    // }
-
-    // #[test]
-    // fn import_named_none() {
-    //     insta::assert_snapshot!(failure_multifile(&[
-    //         (
-    //             "t.ts",
-    //             r#"
-    //                 export const A = "a";
-    //             "#,
-    //         ),
-    //         (
-    //             "entry.ts",
-    //             r#"
-    //                 import { B } from "./t";
-    //                 export type T = typeof B;
     //                 parse.buildParsers<{ T: T }>();
     //             "#
     //         )

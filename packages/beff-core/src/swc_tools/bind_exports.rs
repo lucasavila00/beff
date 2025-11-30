@@ -1,3 +1,4 @@
+use crate::Anchor;
 use crate::BffFileName;
 use crate::ImportReference;
 use crate::ParsedModule;
@@ -69,8 +70,7 @@ impl<'a, R: FsModuleResolver> ImportsVisitor<'a, R> {
                 local.sym.to_string(),
                 Rc::new(ImportReference::Named {
                     original_name: Rc::new(orig.to_string()),
-                    file_name: v,
-                    span: local.span,
+                    anchor: Anchor::new(v, local.span),
                 }),
             );
         }
@@ -92,8 +92,7 @@ impl<'a, R: FsModuleResolver> ImportsVisitor<'a, R> {
             self.imports.insert(
                 local.sym.to_string(),
                 Rc::new(ImportReference::Star {
-                    file_name: v,
-                    span: local.span,
+                    anchor: Anchor::new(v, local.span),
                 }),
             );
         }
@@ -105,8 +104,7 @@ impl<R: FsModuleResolver> Visit for ImportsVisitor<'_, R> {
         self.symbol_exports.set_default_export(
             SymbolExportDefault::Expr {
                 export_expr: Rc::new(*n.expr.clone()),
-                span: n.span,
-                file_name: self.current_file.clone(),
+                anchor: Anchor::new(self.current_file.clone(), n.span),
             }
             .into(),
         );
@@ -154,29 +152,31 @@ impl<R: FsModuleResolver> Visit for ImportsVisitor<'_, R> {
             Decl::Var(var_decl) => {
                 for it in &var_decl.decls {
                     if let Some(expr) = &it.init
-                        && let Pat::Ident(it) = &it.name {
-                            let name = it.sym.clone();
-                            let export = Rc::new(SymbolExport::ValueExpr {
-                                expr: Rc::new(*expr.clone()),
-                                name: name.clone(),
-                                span: it.span,
-                                original_file: self.current_file.clone(),
-                            });
-                            self.symbol_exports.insert_value(it.sym.to_string(), export);
-                        }
+                        && let Pat::Ident(it) = &it.name
+                    {
+                        let name = it.sym.clone();
+                        let export = Rc::new(SymbolExport::ValueExpr {
+                            expr: Rc::new(*expr.clone()),
+                            name: name.clone(),
+                            span: it.span,
+                            original_file: self.current_file.clone(),
+                        });
+                        self.symbol_exports.insert_value(it.sym.to_string(), export);
+                    }
 
                     if var_decl.declare
                         && let Pat::Ident(it) = &it.name
-                            && let Some(ann) = &it.type_ann {
-                                let name = it.sym.clone();
-                                let export = Rc::new(SymbolExport::ExprDecl {
-                                    ty: Rc::new(*ann.type_ann.clone()),
-                                    name: name.clone(),
-                                    span: it.span,
-                                    original_file: self.current_file.clone(),
-                                });
-                                self.symbol_exports.insert_value(it.sym.to_string(), export);
-                            }
+                        && let Some(ann) = &it.type_ann
+                    {
+                        let name = it.sym.clone();
+                        let export = Rc::new(SymbolExport::ExprDecl {
+                            ty: Rc::new(*ann.type_ann.clone()),
+                            name: name.clone(),
+                            span: it.span,
+                            original_file: self.current_file.clone(),
+                        });
+                        self.symbol_exports.insert_value(it.sym.to_string(), export);
+                    }
                 }
             }
 
@@ -193,19 +193,18 @@ impl<R: FsModuleResolver> Visit for ImportsVisitor<'_, R> {
                         ExportSpecifier::Default(_) => {}
                         ExportSpecifier::Namespace(ExportNamespaceSpecifier { name, .. }) => {
                             if let ModuleExportName::Ident(id) = name
-                                && let Some(file_name) = self.resolve_import(&src.value) {
-                                    self.symbol_exports.insert_unknown(
-                                        id.sym.to_string(),
-                                        Rc::new(SymbolExport::StarOfOtherFile {
-                                            reference: ImportReference::Star {
-                                                file_name: file_name.clone(),
-                                                span: id.span,
-                                            }
-                                            .into(),
-                                            span: id.span,
-                                        }),
-                                    )
-                                }
+                                && let Some(file_name) = self.resolve_import(&src.value)
+                            {
+                                self.symbol_exports.insert_unknown(
+                                    id.sym.to_string(),
+                                    Rc::new(SymbolExport::StarOfOtherFile {
+                                        reference: ImportReference::Star {
+                                            anchor: Anchor::new(file_name.clone(), id.span),
+                                        }
+                                        .into(),
+                                    }),
+                                )
+                            }
                         }
                         ExportSpecifier::Named(ExportNamedSpecifier { orig, exported, .. }) => {
                             if let ModuleExportName::Ident(id) = orig {
@@ -220,7 +219,6 @@ impl<R: FsModuleResolver> Visit for ImportsVisitor<'_, R> {
                                         Rc::new(SymbolExport::SomethingOfOtherFile {
                                             something: id.sym.to_string(),
                                             file: file_name.clone(),
-                                            span: id.span,
                                         }),
                                     )
                                 }
@@ -378,23 +376,20 @@ pub fn parse_and_bind<R: FsModuleResolver>(
             match &**import {
                 ImportReference::Named {
                     original_name: orig,
-                    span,
                     ..
                 } => {
                     let it = Rc::new(SymbolExport::SomethingOfOtherFile {
                         something: orig.as_ref().to_string(),
                         file: file_name.clone(),
-                        span: *span,
                     });
                     symbol_exports.insert_unknown(renamed.to_string(), it);
                     continue;
                 }
-                ImportReference::Star { span, .. } => {
+                ImportReference::Star { .. } => {
                     symbol_exports.insert_unknown(
                         renamed.to_string(),
                         Rc::new(SymbolExport::StarOfOtherFile {
                             reference: import.clone(),
-                            span: *span,
                         }),
                     );
                 }

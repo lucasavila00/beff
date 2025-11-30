@@ -4,6 +4,7 @@ use crate::subtyping::semtype::{SemType, SemTypeContext, SemTypeOps};
 use crate::subtyping::subtype::StringLitOrFormat;
 use crate::subtyping::to_schema::semtype_to_runtypes;
 use crate::swc_tools::{SymbolExport, SymbolExportDefault};
+use crate::{Anchor, NamedSchema, RuntypeUUID, TsBuiltIn, TypeAddress};
 use crate::{
     BeffUserSettings, BffFileName, FileManager, ImportReference, ModuleItemAddress, ParsedModule,
     RuntypeName, Visibility,
@@ -11,7 +12,6 @@ use crate::{
     diag::{DiagnosticInfoMessage, DiagnosticInformation, Location},
     parser_extractor::BuiltDecoder,
 };
-use crate::{NamedSchema, RuntypeUUID, TsBuiltIn, TypeAddress};
 use anyhow::{Result, anyhow};
 use std::collections::{BTreeMap, BTreeSet};
 use std::rc::Rc;
@@ -100,12 +100,12 @@ pub enum AddressedQualifiedValue {
 trait TypeModuleWalker<'a, R: FileManager + 'a, U> {
     fn get_ctx<'b>(&'b mut self) -> &'b mut FrontendCtx<'a, R>;
 
-    fn handle_import_star(&mut self, file_name: BffFileName, span: &Span) -> Res<U>;
+    fn handle_import_star(&mut self, anchor: &Anchor) -> Res<U>;
 
     fn get_addressed_item_from_symbol_export(
         &mut self,
         export: &SymbolExport,
-        span: &Span,
+        err_anchor: &Anchor,
     ) -> Res<U>;
 
     fn get_addressed_item_from_local_ts_type(
@@ -131,34 +131,33 @@ trait TypeModuleWalker<'a, R: FileManager + 'a, U> {
     fn get_addressed_item_from_default_import(
         &mut self,
         file_name: BffFileName,
-        span: &Span,
+        err_anchor: &Anchor,
     ) -> Res<U> {
         match &self
             .get_ctx()
-            .get_or_fetch_file(&file_name, span)?
+            .get_or_fetch_file(&file_name, err_anchor)?
             .symbol_exports
             .export_default
         {
             Some(export_default_symbol) => match export_default_symbol.as_ref() {
                 SymbolExportDefault::Expr {
                     export_expr: symbol_export,
-                    span,
-                    file_name,
+                    anchor,
                 } => match symbol_export.as_ref() {
                     Expr::Ident(i) => {
                         let new_addr = ModuleItemAddress {
-                            file: file_name.clone(),
+                            file: anchor.f.clone(),
                             name: i.sym.to_string(),
                             visibility: Visibility::Local,
                         };
-                        self.get_addressed_item(&new_addr, span)
+                        self.get_addressed_item(&new_addr, &anchor)
                     }
                     _ => {
                         todo!()
                     }
                 },
                 SymbolExportDefault::Renamed { export } => {
-                    self.get_addressed_item_from_symbol_export(export, span)
+                    self.get_addressed_item_from_symbol_export(export, err_anchor)
                 }
             },
             None => todo!(),
@@ -168,32 +167,31 @@ trait TypeModuleWalker<'a, R: FileManager + 'a, U> {
     fn get_addressed_item_from_import_reference(
         &mut self,
         imported: &ImportReference,
-        span: &Span,
+        err_anchor: &Anchor,
     ) -> Res<U> {
         match imported {
             ImportReference::Named {
                 original_name,
-                file_name,
-                span,
+                anchor,
             } => {
                 let new_addr = ModuleItemAddress {
-                    file: file_name.clone(),
+                    file: anchor.f.clone(),
                     name: (*original_name).to_string(),
                     visibility: Visibility::Export,
                 };
-                self.get_addressed_item(&new_addr, span)
+                self.get_addressed_item(&new_addr, anchor)
             }
-            ImportReference::Star { file_name, span } => {
-                self.handle_import_star(file_name.clone(), span)
-            }
+            ImportReference::Star { anchor } => self.handle_import_star(anchor),
             ImportReference::Default { file_name } => {
-                self.get_addressed_item_from_default_import(file_name.clone(), span)
+                self.get_addressed_item_from_default_import(file_name.clone(), err_anchor)
             }
         }
     }
 
-    fn get_addressed_item(&mut self, addr: &ModuleItemAddress, span: &Span) -> Res<U> {
-        let parsed_module = self.get_ctx().get_or_fetch_adressed_file(addr, span)?;
+    fn get_addressed_item(&mut self, addr: &ModuleItemAddress, err_anchor: &Anchor) -> Res<U> {
+        let parsed_module = self
+            .get_ctx()
+            .get_or_fetch_adressed_file(addr, err_anchor)?;
         match addr.visibility {
             Visibility::Local => {
                 if let Some(ts_type) = parsed_module.locals.type_aliases.get(&addr.name) {
@@ -221,25 +219,25 @@ trait TypeModuleWalker<'a, R: FileManager + 'a, U> {
                 }
 
                 if let Some(imported) = parsed_module.imports.get(&addr.name) {
-                    return self.get_addressed_item_from_import_reference(imported, span);
+                    return self.get_addressed_item_from_import_reference(imported, err_anchor);
                 }
 
                 Err(self.get_ctx().box_error(
-                    span,
+                    err_anchor,
                     DiagnosticInfoMessage::CouldNotResolveType(addr.clone()),
-                    addr.file.clone(),
                 ))
             }
             Visibility::Export => {
                 if addr.name == "default" {
-                    return self.get_addressed_item_from_default_import(addr.file.clone(), span);
+                    return self
+                        .get_addressed_item_from_default_import(addr.file.clone(), err_anchor);
                 }
 
                 if let Some(export) = parsed_module
                     .symbol_exports
                     .get_type(&addr.name, self.get_ctx().files)
                 {
-                    return self.get_addressed_item_from_symbol_export(&export, span);
+                    return self.get_addressed_item_from_symbol_export(&export, err_anchor);
                 }
                 dbg!(&addr);
                 todo!()
@@ -263,7 +261,7 @@ impl<'a, 'b, R: FileManager> TypeModuleWalker<'a, R, AddressedType> for TypeWalk
     fn get_addressed_item_from_symbol_export(
         &mut self,
         export: &SymbolExport,
-        _span: &Span,
+        anchor: &Anchor,
     ) -> Res<AddressedType> {
         match export {
             SymbolExport::TsType {
@@ -300,17 +298,13 @@ impl<'a, 'b, R: FileManager> TypeModuleWalker<'a, R, AddressedType> for TypeWalk
             SymbolExport::ValueExpr { .. } => todo!(),
             SymbolExport::ExprDecl { .. } => todo!(),
             SymbolExport::StarOfOtherFile { .. } => todo!(),
-            SymbolExport::SomethingOfOtherFile {
-                something,
-                file,
-                span,
-            } => {
+            SymbolExport::SomethingOfOtherFile { something, file } => {
                 let new_addr = ModuleItemAddress {
                     file: file.clone(),
                     name: something.clone(),
                     visibility: Visibility::Export,
                 };
-                self.get_addressed_item(&new_addr, span)
+                self.get_addressed_item(&new_addr, anchor)
             }
         }
     }
@@ -327,7 +321,7 @@ impl<'a, 'b, R: FileManager> TypeModuleWalker<'a, R, AddressedType> for TypeWalk
         })
     }
 
-    fn handle_import_star(&mut self, _file_name: BffFileName, _span: &Span) -> Res<AddressedType> {
+    fn handle_import_star(&mut self, _anchor: &Anchor) -> Res<AddressedType> {
         // should have called get_addressed_qualified_type
         todo!()
     }
@@ -367,11 +361,11 @@ impl<'a, 'b, R: FileManager> TypeModuleWalker<'a, R, AddressedQualifiedType>
     fn get_addressed_item_from_symbol_export(
         &mut self,
         export: &SymbolExport,
-        span: &Span,
+        anchor: &Anchor,
     ) -> Res<AddressedQualifiedType> {
         match export {
-            SymbolExport::StarOfOtherFile { reference, span: _ } => {
-                self.get_addressed_item_from_import_reference(reference, span)
+            SymbolExport::StarOfOtherFile { reference } => {
+                self.get_addressed_item_from_import_reference(reference, anchor)
             }
             SymbolExport::TsEnumDecl {
                 decl,
@@ -381,18 +375,14 @@ impl<'a, 'b, R: FileManager> TypeModuleWalker<'a, R, AddressedQualifiedType>
                 original_file.clone(),
                 decl.id.sym.to_string(),
             ),
-            SymbolExport::SomethingOfOtherFile {
-                something,
-                file,
-                span,
-            } => {
+            SymbolExport::SomethingOfOtherFile { something, file } => {
                 // TODO: test this without just the JS test
                 let new_addr = ModuleItemAddress {
                     file: file.clone(),
                     name: something.clone(),
                     visibility: Visibility::Export,
                 };
-                self.get_addressed_item(&new_addr, span)
+                self.get_addressed_item(&new_addr, anchor)
             }
             SymbolExport::TsType { .. } => todo!(),
             SymbolExport::TsInterfaceDecl { .. } => todo!(),
@@ -410,12 +400,8 @@ impl<'a, 'b, R: FileManager> TypeModuleWalker<'a, R, AddressedQualifiedType>
         todo!()
     }
 
-    fn handle_import_star(
-        &mut self,
-        file_name: BffFileName,
-        _span: &Span,
-    ) -> Res<AddressedQualifiedType> {
-        Ok(AddressedQualifiedType::StarImport(file_name))
+    fn handle_import_star(&mut self, anchor: &Anchor) -> Res<AddressedQualifiedType> {
+        Ok(AddressedQualifiedType::StarImport(anchor.f.clone()))
     }
 
     fn get_addressed_item_from_local_ts_enum(
@@ -443,7 +429,11 @@ impl<'a, 'b, R: FileManager> TypeModuleWalker<'a, R, AddressedQualifiedType>
 trait ValueModuleWalker<'a, R: FileManager + 'a, U> {
     fn get_ctx<'b>(&'b mut self) -> &'b mut FrontendCtx<'a, R>;
 
-    fn get_addressed_item_from_symbol_export(&mut self, exports: &SymbolExport) -> Res<U>;
+    fn get_addressed_item_from_symbol_export(
+        &mut self,
+        exports: &SymbolExport,
+        anchor: &Anchor,
+    ) -> Res<U>;
     fn handle_symbol_expr(&mut self, symbol_export: &Rc<Expr>, file_name: &BffFileName) -> Res<U>;
     fn handle_symbol_enum(
         &mut self,
@@ -461,32 +451,31 @@ trait ValueModuleWalker<'a, R: FileManager + 'a, U> {
     fn get_addressed_item_from_default_import(
         &mut self,
         file_name: BffFileName,
-        span: &Span,
+        anchor: &Anchor,
     ) -> Res<U> {
         match &self
             .get_ctx()
-            .get_or_fetch_file(&file_name, span)?
+            .get_or_fetch_file(&file_name, anchor)?
             .symbol_exports
             .export_default
         {
             Some(export_default_symbol) => match export_default_symbol.as_ref() {
                 SymbolExportDefault::Expr {
                     export_expr: symbol_export,
-                    span: _,
-                    file_name,
+                    anchor,
                 } => match symbol_export.as_ref() {
                     Expr::Ident(i) => {
                         let new_addr = ModuleItemAddress {
-                            file: file_name.clone(),
+                            file: anchor.f.clone(),
                             name: i.sym.to_string(),
                             visibility: Visibility::Local,
                         };
-                        self.get_addressed_item(&new_addr, &i.span)
+                        self.get_addressed_item(&new_addr, anchor)
                     }
-                    _ => self.handle_symbol_expr(&symbol_export.clone(), file_name),
+                    _ => self.handle_symbol_expr(&symbol_export.clone(), &anchor.f),
                 },
                 SymbolExportDefault::Renamed { export } => {
-                    self.get_addressed_item_from_symbol_export(export)
+                    self.get_addressed_item_from_symbol_export(export, anchor)
                 }
             },
             None => todo!(),
@@ -495,35 +484,32 @@ trait ValueModuleWalker<'a, R: FileManager + 'a, U> {
     fn get_addressed_item_from_import_reference(
         &mut self,
         imported: &ImportReference,
-        span: &Span,
+        anchor: &Anchor,
     ) -> Res<U> {
         match imported {
             ImportReference::Named {
                 original_name,
-                file_name,
-                span,
+                anchor,
             } => {
                 let new_addr = ModuleItemAddress {
-                    file: file_name.clone(),
+                    file: anchor.f.clone(),
                     name: (*original_name).to_string(),
                     visibility: Visibility::Export,
                 };
-                self.get_addressed_item(&new_addr, span)
+                self.get_addressed_item(&new_addr, anchor)
             }
-            ImportReference::Star { file_name, span: _ } => {
-                self.handle_import_star(file_name.clone())
-            }
+            ImportReference::Star { anchor } => self.handle_import_star(anchor.f.clone()),
             ImportReference::Default { file_name } => {
-                self.get_addressed_item_from_default_import(file_name.clone(), span)
+                self.get_addressed_item_from_default_import(file_name.clone(), anchor)
             }
         }
     }
-    fn get_addressed_item(&mut self, addr: &ModuleItemAddress, span: &Span) -> Res<U> {
-        let parsed_module = self.get_ctx().get_or_fetch_adressed_file(addr, span)?;
+    fn get_addressed_item(&mut self, addr: &ModuleItemAddress, anchor: &Anchor) -> Res<U> {
+        let parsed_module = self.get_ctx().get_or_fetch_adressed_file(addr, anchor)?;
         match addr.visibility {
             Visibility::Local => {
                 if let Some(imported) = parsed_module.imports.get(&addr.name) {
-                    return self.get_addressed_item_from_import_reference(imported, span);
+                    return self.get_addressed_item_from_import_reference(imported, anchor);
                 }
                 if let Some(expr) = parsed_module.locals.exprs.get(&addr.name) {
                     return self.handle_symbol_expr(expr, &addr.file);
@@ -538,22 +524,21 @@ trait ValueModuleWalker<'a, R: FileManager + 'a, U> {
                     match imported.as_ref() {
                         ImportReference::Named {
                             original_name,
-                            file_name,
-                            span,
+                            anchor,
                         } => {
                             let new_addr = ModuleItemAddress {
-                                file: file_name.clone(),
+                                file: anchor.f.clone(),
                                 name: (*original_name).to_string(),
                                 visibility: Visibility::Export,
                             };
-                            return self.get_addressed_item(&new_addr, span);
+                            return self.get_addressed_item(&new_addr, anchor);
                         }
                         ImportReference::Star { .. } => {
                             todo!()
                         }
                         ImportReference::Default { file_name } => {
                             return self
-                                .get_addressed_item_from_default_import(file_name.clone(), span);
+                                .get_addressed_item_from_default_import(file_name.clone(), anchor);
                         }
                     }
                 }
@@ -564,20 +549,19 @@ trait ValueModuleWalker<'a, R: FileManager + 'a, U> {
             }
             Visibility::Export => {
                 if addr.name == "default" {
-                    return self.get_addressed_item_from_default_import(addr.file.clone(), span);
+                    return self.get_addressed_item_from_default_import(addr.file.clone(), anchor);
                 }
 
                 if let Some(exports) = parsed_module
                     .symbol_exports
                     .get_value(&addr.name, self.get_ctx().files)
                 {
-                    return self.get_addressed_item_from_symbol_export(&exports);
+                    return self.get_addressed_item_from_symbol_export(&exports, anchor);
                 }
 
                 self.get_ctx().error(
-                    span,
+                    anchor,
                     DiagnosticInfoMessage::CouldNotResolveValue(addr.clone()),
-                    addr.file.clone(),
                 )
             }
         }
@@ -596,6 +580,7 @@ impl<'a, 'b, R: FileManager> ValueModuleWalker<'a, R, AddressedValue> for ValueW
     fn get_addressed_item_from_symbol_export(
         &mut self,
         exports: &SymbolExport,
+        anchor: &Anchor,
     ) -> Res<AddressedValue> {
         match exports {
             SymbolExport::TsType { .. } | SymbolExport::TsInterfaceDecl { .. } => todo!(),
@@ -623,17 +608,13 @@ impl<'a, 'b, R: FileManager> ValueModuleWalker<'a, R, AddressedValue> for ValueW
                 // star of other file should be already resolved by the "get_value" function
                 todo!()
             }
-            SymbolExport::SomethingOfOtherFile {
-                something,
-                file,
-                span,
-            } => {
+            SymbolExport::SomethingOfOtherFile { something, file } => {
                 let new_addr = ModuleItemAddress {
                     file: file.clone(),
                     name: something.clone(),
                     visibility: Visibility::Export,
                 };
-                self.get_addressed_item(&new_addr, span)
+                self.get_addressed_item(&new_addr, anchor)
             }
         }
     }
@@ -690,10 +671,11 @@ impl<'a, 'b, R: FileManager> ValueModuleWalker<'a, R, AddressedQualifiedValue>
     fn get_addressed_item_from_symbol_export(
         &mut self,
         exports: &SymbolExport,
+        anchor: &Anchor,
     ) -> Res<AddressedQualifiedValue> {
         match exports {
-            SymbolExport::StarOfOtherFile { reference, span } => {
-                self.get_addressed_item_from_import_reference(reference.as_ref(), span)
+            SymbolExport::StarOfOtherFile { reference } => {
+                self.get_addressed_item_from_import_reference(reference.as_ref(), anchor)
             }
             SymbolExport::TsType { .. } => todo!(),
             SymbolExport::TsInterfaceDecl { .. } => todo!(),
@@ -759,104 +741,94 @@ impl<'a, R: FileManager> FrontendCtx<'a, R> {
         }
     }
 
-    fn build_error(
-        &self,
-        span: &Span,
-        msg: DiagnosticInfoMessage,
-        file_name: BffFileName,
-    ) -> DiagnosticInformation {
-        let file_content = self.files.get_existing_file(&file_name);
-        Location::build(file_content, span, &file_name).to_info(msg)
+    fn build_error(&self, anchor: &Anchor, msg: DiagnosticInfoMessage) -> DiagnosticInformation {
+        let file_content = self.files.get_existing_file(&anchor.f);
+        Location::build(file_content, &anchor.s, &anchor.f).to_info(msg)
     }
-    fn push_error(&mut self, span: &Span, msg: DiagnosticInfoMessage, file_name: BffFileName) {
-        self.errors.push(self.build_error(span, msg, file_name));
+    fn push_error(&mut self, anchor: &Anchor, msg: DiagnosticInfoMessage) {
+        self.errors.push(self.build_error(anchor, msg));
     }
 
-    fn anyhow_error<T>(
-        &mut self,
-        span: &Span,
-        msg: DiagnosticInfoMessage,
-        file_name: BffFileName,
-    ) -> Result<T> {
+    fn anyhow_error<T>(&mut self, anchor: &Anchor, msg: DiagnosticInfoMessage) -> Result<T> {
         let e = anyhow!("{:?}", &msg);
-        self.push_error(span, msg, file_name);
+        self.push_error(anchor, msg);
         Err(e)
     }
 
-    fn error<T>(
-        &mut self,
-        span: &Span,
-        msg: DiagnosticInfoMessage,
-        file_name: BffFileName,
-    ) -> Res<T> {
-        let e = self.build_error(span, msg, file_name);
+    fn error<T>(&mut self, anchor: &Anchor, msg: DiagnosticInfoMessage) -> Res<T> {
+        let e = self.build_error(anchor, msg);
         Err(Box::new(e))
     }
     fn box_error(
         &mut self,
-        span: &Span,
+        anchor: &Anchor,
         msg: DiagnosticInfoMessage,
-        file: BffFileName,
     ) -> Box<DiagnosticInformation> {
-        let err = self.build_error(span, msg, file);
+        let err = self.build_error(anchor, msg);
         err.into()
     }
 
     fn get_or_fetch_adressed_file(
         &mut self,
         addr: &ModuleItemAddress,
-        span: &Span,
+        anchor: &Anchor,
     ) -> Res<Rc<ParsedModule>> {
         let parsed_module = self.files.get_or_fetch_file(&addr.file).ok_or_else(|| {
             Box::new(self.build_error(
-                span,
+                anchor,
                 DiagnosticInfoMessage::CouldNotResolveFile(addr.clone()),
-                addr.file.clone(),
             ))
         })?;
         Ok(parsed_module)
     }
-    fn get_or_fetch_file(&mut self, file: &BffFileName, span: &Span) -> Res<Rc<ParsedModule>> {
+    fn get_or_fetch_file(
+        &mut self,
+        file: &BffFileName,
+        err_anchor: &Anchor,
+    ) -> Res<Rc<ParsedModule>> {
         let parsed_module = self.files.get_or_fetch_file(file).ok_or_else(|| {
             Box::new(self.build_error(
-                span,
+                err_anchor,
                 DiagnosticInfoMessage::CannotFindFileWhenConvertingToSchema(file.clone()),
-                file.clone(),
             ))
         })?;
         Ok(parsed_module)
     }
 
-    fn get_addressed_type(&mut self, addr: &ModuleItemAddress, span: &Span) -> Res<AddressedType> {
+    fn get_addressed_type(
+        &mut self,
+        addr: &ModuleItemAddress,
+        anchor: &Anchor,
+    ) -> Res<AddressedType> {
         let mut walker = TypeWalker { ctx: self };
-        walker.get_addressed_item(addr, span)
+        walker.get_addressed_item(addr, anchor)
     }
 
     fn get_addressed_qualified_type(
         &mut self,
         addr: &ModuleItemAddress,
-        span: &Span,
+        anchor: &Anchor,
     ) -> Res<AddressedQualifiedType> {
         let mut walker = QualifiedTypeWalker { ctx: self };
-        walker.get_addressed_item(addr, span)
+        walker.get_addressed_item(addr, anchor)
     }
 
     fn get_addressed_value(
         &mut self,
         addr: &ModuleItemAddress,
-        span: &Span,
+        anchor: &Anchor,
     ) -> Res<AddressedValue> {
         let mut walker = ValueWalker { ctx: self };
-        walker.get_addressed_item(addr, span)
+        walker.get_addressed_item(addr, anchor)
     }
 
     fn get_addressed_qualified_value(
         &mut self,
         addr: &ModuleItemAddress,
-        span: &Span,
+        anchor: &Anchor,
     ) -> Res<AddressedQualifiedValue> {
         let mut walker = QaulifiedValueWalker { ctx: self };
-        walker.get_addressed_item(addr, span)
+        walker.get_addressed_item(addr, anchor)
     }
 
     fn extract_enum_decl(&mut self, typ: &TsEnumDecl, file: BffFileName) -> Res<Runtype> {
@@ -869,7 +841,11 @@ impl<'a, R: FileManager> FrontendCtx<'a, R> {
                     values.push(expr_ty);
                 }
                 None => {
-                    return self.error(&typ.span, DiagnosticInfoMessage::EnumMemberNoInit, file)?;
+                    let anchor = Anchor {
+                        f: file.clone(),
+                        s: member.span,
+                    };
+                    return self.error(&anchor, DiagnosticInfoMessage::EnumMemberNoInit)?;
                 }
             }
         }
@@ -882,17 +858,17 @@ impl<'a, R: FileManager> FrontendCtx<'a, R> {
         span: &Span,
         file: BffFileName,
     ) -> Res<BTreeMap<String, Optionality<Runtype>>> {
+        let anchor = Anchor {
+            f: file.clone(),
+            s: *span,
+        };
         match obj {
             Runtype::Object {
                 vs,
                 indexed_properties,
             } => match indexed_properties.is_none() {
                 true => Ok(vs.clone()),
-                false => self.error(
-                    span,
-                    DiagnosticInfoMessage::RestFoundOnExtractObject,
-                    file.clone(),
-                ),
+                false => self.error(&anchor, DiagnosticInfoMessage::RestFoundOnExtractObject),
             },
             Runtype::Ref(r) => {
                 let map = self
@@ -903,9 +879,8 @@ impl<'a, R: FileManager> FrontendCtx<'a, R> {
                 match map {
                     Some(schema) => self.extract_object_from_runtype(&schema, span, file.clone()),
                     None => self.error(
-                        span,
+                        &anchor,
                         DiagnosticInfoMessage::ShouldHaveObjectAsTypeArgument,
-                        file.clone(),
                     ),
                 }
             }
@@ -922,9 +897,8 @@ impl<'a, R: FileManager> FrontendCtx<'a, R> {
                             && existing != v
                         {
                             return self.error(
-                                span,
+                                &anchor,
                                 DiagnosticInfoMessage::ObjectHasConflictingKeyValueInIntersection,
-                                file.clone(),
                             );
                         }
                     }
@@ -935,9 +909,8 @@ impl<'a, R: FileManager> FrontendCtx<'a, R> {
                 Ok(acc)
             }
             _ => self.error(
-                span,
+                &anchor,
                 DiagnosticInfoMessage::ShouldHaveObjectAsTypeArgument,
-                file.clone(),
             ),
         }
     }
@@ -949,13 +922,14 @@ impl<'a, R: FileManager> FrontendCtx<'a, R> {
         let mut vs = vec![];
 
         for it in typ {
+            let anchor = Anchor {
+                f: file.clone(),
+                s: it.span,
+            };
             match it.type_args {
                 Some(_) => {
-                    return self.error(
-                        &it.span,
-                        DiagnosticInfoMessage::TypeArgsInExtendsUnsupported,
-                        file.clone(),
-                    );
+                    return self
+                        .error(&anchor, DiagnosticInfoMessage::TypeArgsInExtendsUnsupported);
                 }
                 None => match it.expr.as_ref() {
                     Expr::Ident(id) => {
@@ -970,11 +944,7 @@ impl<'a, R: FileManager> FrontendCtx<'a, R> {
                         vs.push(id_ty);
                     }
                     _ => {
-                        return self.error(
-                            &it.span,
-                            DiagnosticInfoMessage::ExtendsShouldBeIdent,
-                            file.clone(),
-                        );
+                        return self.error(&anchor, DiagnosticInfoMessage::ExtendsShouldBeIdent);
                     }
                 },
             }
@@ -1064,6 +1034,10 @@ impl<'a, R: FileManager> FrontendCtx<'a, R> {
         keys: Runtype,
         file_name: BffFileName,
     ) -> Res<Runtype> {
+        let anchor = Anchor {
+            f: file_name.clone(),
+            s: *span,
+        };
         match keys.extract_single_string_const() {
             Some(str) => Ok(Self::convert_pick_keys(obj, vec![str])),
             None => match keys {
@@ -1083,18 +1057,13 @@ impl<'a, R: FileManager> FrontendCtx<'a, R> {
                                         .cloned();
                                     match map.and_then(|it|it.extract_single_string_const()) {
                                     Some(str) => keys.push(str),
-                                    _ => return self.error(
-                                        span,
-                                        DiagnosticInfoMessage::PickShouldHaveStringAsTypeArgument,
-                                        file_name.clone()
-                                    ),
+                                    _ => return self.error(                             &anchor,                                        DiagnosticInfoMessage::PickShouldHaveStringAsTypeArgument),
                                 }
                                 }
                                 _ => {
                                     return self.error(
-                                        span,
+                                        &anchor,
                                         DiagnosticInfoMessage::PickShouldHaveStringAsTypeArgument,
-                                        file_name.clone(),
                                     );
                                 }
                             },
@@ -1103,9 +1072,8 @@ impl<'a, R: FileManager> FrontendCtx<'a, R> {
                     Ok(Self::convert_pick_keys(obj, keys))
                 }
                 _ => self.error(
-                    span,
+                    &anchor,
                     DiagnosticInfoMessage::PickShouldHaveStringOrStringArrayAsTypeArgument,
-                    file_name.clone(),
                 ),
             },
         }
@@ -1130,17 +1098,20 @@ impl<'a, R: FileManager> FrontendCtx<'a, R> {
         keys: Runtype,
         file_name: BffFileName,
     ) -> Res<Runtype> {
+        let anchor = Anchor {
+            f: file_name.clone(),
+            s: *span,
+        };
         let keys = self
             .extract_union(keys)
-            .map_err(|e| self.box_error(span, e, file_name.clone()))?;
+            .map_err(|e| self.box_error(&anchor, e))?;
         let str_keys = keys
             .iter()
             .map(|it| match it.extract_single_string_const() {
                 Some(str) => Ok(str.clone()),
                 _ => self.error(
-                    span,
+                    &anchor,
                     DiagnosticInfoMessage::OmitShouldHaveStringAsTypeArgument,
-                    file_name.clone(),
                 ),
             })
             .collect::<Res<Vec<_>>>()?;
@@ -1154,10 +1125,14 @@ impl<'a, R: FileManager> FrontendCtx<'a, R> {
         span: &Span,
         file: BffFileName,
     ) -> Res<Runtype> {
+        let anchor = Anchor {
+            f: file.clone(),
+            s: *span,
+        };
         match runtype_name {
             RuntypeName::Address(module_item_address) => {
                 let addressed_type =
-                    self.get_addressed_type(&module_item_address.to_module_item_addr(), span)?;
+                    self.get_addressed_type(&module_item_address.to_module_item_addr(), &anchor)?;
                 match addressed_type {
                     AddressedType::Type {
                         t: decl,
@@ -1207,7 +1182,7 @@ impl<'a, R: FileManager> FrontendCtx<'a, R> {
                 member_name,
             } => {
                 let ty =
-                    self.get_addressed_qualified_type(&enum_type.to_module_item_addr(), span)?;
+                    self.get_addressed_qualified_type(&enum_type.to_module_item_addr(), &anchor)?;
                 if let AddressedQualifiedType::EnumItem { enum_type, address } = ty {
                     let found = enum_type.members.iter().find(|it| match &it.id {
                         TsEnumMemberId::Ident(ident) => &ident.sym == member_name,
@@ -1215,18 +1190,10 @@ impl<'a, R: FileManager> FrontendCtx<'a, R> {
                     });
                     return match found.and_then(|it| it.init.clone()) {
                         Some(init) => self.typeof_expr(&init, true, address.file.clone()),
-                        None => self.error(
-                            span,
-                            DiagnosticInfoMessage::EnumMemberNoInit,
-                            address.file.clone(),
-                        ),
+                        None => self.error(&anchor, DiagnosticInfoMessage::EnumMemberNoInit),
                     };
                 };
-                self.error(
-                    span,
-                    DiagnosticInfoMessage::EnumItemShouldBeFromEnumType,
-                    enum_type.file.clone(),
-                )
+                self.error(&anchor, DiagnosticInfoMessage::EnumItemShouldBeFromEnumType)
             }
             RuntypeName::SemtypeRecursiveGenerated(_) => todo!(),
             RuntypeName::BuiltIn(ts_built_in) => match ts_built_in {
@@ -1234,9 +1201,8 @@ impl<'a, R: FileManager> FrontendCtx<'a, R> {
                 TsBuiltIn::Array => match type_args.as_slice() {
                     [ty] => Ok(Runtype::Array(ty.clone().into())),
                     _ => self.error(
-                        span,
+                        &anchor,
                         DiagnosticInfoMessage::InvalidNumberOfTypeParametersForArray,
-                        file.clone(),
                     ),
                 },
                 TsBuiltIn::StringFormat => {
@@ -1256,9 +1222,8 @@ impl<'a, R: FileManager> FrontendCtx<'a, R> {
                 TsBuiltIn::Record => {
                     if type_args.len() != 2 {
                         return self.error(
-                            span,
+                            &anchor,
                             DiagnosticInfoMessage::RecordShouldHaveTwoTypeArguments,
-                            file.clone(),
                         );
                     }
 
@@ -1309,9 +1274,8 @@ impl<'a, R: FileManager> FrontendCtx<'a, R> {
                         self.convert_pick(span, &vs, keys.clone(), file.clone())
                     }
                     _ => self.error(
-                        span,
+                        &anchor,
                         DiagnosticInfoMessage::PickShouldHaveTwoTypeArguments,
-                        file.clone(),
                     ),
                 },
                 TsBuiltIn::Omit => match type_args.as_slice() {
@@ -1320,9 +1284,8 @@ impl<'a, R: FileManager> FrontendCtx<'a, R> {
                         self.convert_omit(span, &vs, keys.clone(), file.clone())
                     }
                     _ => self.error(
-                        span,
+                        &anchor,
                         DiagnosticInfoMessage::OmitShouldHaveTwoTypeArguments,
-                        file.clone(),
                     ),
                 },
                 TsBuiltIn::Exclude => match type_args.as_slice() {
@@ -1339,9 +1302,8 @@ impl<'a, R: FileManager> FrontendCtx<'a, R> {
                             .to_sem_type(&validators_reference_vec, &mut ctx)
                             .map_err(|e| {
                                 self.box_error(
-                                    span,
+                                    &anchor,
                                     DiagnosticInfoMessage::AnyhowError(e.to_string()),
-                                    file.clone(),
                                 )
                             })?;
 
@@ -1351,17 +1313,15 @@ impl<'a, R: FileManager> FrontendCtx<'a, R> {
                             .to_sem_type(&validators_reference_vec, &mut ctx)
                             .map_err(|e| {
                                 self.box_error(
-                                    span,
+                                    &anchor,
                                     DiagnosticInfoMessage::AnyhowError(e.to_string()),
-                                    file.clone(),
                                 )
                             })?;
 
                         let subtracted_ty = left_st.diff(&right_st).map_err(|e| {
                             self.box_error(
-                                span,
+                                &anchor,
                                 DiagnosticInfoMessage::AnyhowError(e.to_string()),
-                                file.clone(),
                             )
                         })?;
                         let res = self
@@ -1372,17 +1332,15 @@ impl<'a, R: FileManager> FrontendCtx<'a, R> {
                             )
                             .map_err(|e| {
                                 self.box_error(
-                                    span,
+                                    &anchor,
                                     DiagnosticInfoMessage::AnyhowError(e.to_string()),
-                                    file.clone(),
                                 )
                             })?;
                         Ok(res)
                     }
                     _ => self.error(
-                        span,
+                        &anchor,
                         DiagnosticInfoMessage::ExcludeShouldHaveTwoTypeArguments,
-                        file.clone(),
                     ),
                 },
                 TsBuiltIn::Required => match type_args.as_slice() {
@@ -1391,9 +1349,8 @@ impl<'a, R: FileManager> FrontendCtx<'a, R> {
                         Ok(self.convert_required(&vs))
                     }
                     _ => self.error(
-                        span,
+                        &anchor,
                         DiagnosticInfoMessage::RequiredShouldHaveTwoTypeArguments,
-                        file.clone(),
                     ),
                 },
                 TsBuiltIn::Partial => match type_args.as_slice() {
@@ -1402,9 +1359,8 @@ impl<'a, R: FileManager> FrontendCtx<'a, R> {
                         Ok(self.convert_partial(&vs))
                     }
                     _ => self.error(
-                        span,
+                        &anchor,
                         DiagnosticInfoMessage::PartialShouldHaveTwoTypeArguments,
-                        file.clone(),
                     ),
                 },
             },
@@ -1422,6 +1378,10 @@ impl<'a, R: FileManager> FrontendCtx<'a, R> {
                     &ts_qualified_name.left,
                     file.clone(),
                 )?;
+                let anchor = Anchor {
+                    f: file.clone(),
+                    s: ts_qualified_name.span(),
+                };
                 match left_part {
                     AddressedQualifiedType::StarImport(bff_file_name) => {
                         let new_addr = ModuleItemAddress {
@@ -1429,7 +1389,7 @@ impl<'a, R: FileManager> FrontendCtx<'a, R> {
                             name: ts_qualified_name.right.sym.to_string(),
                             visibility: Visibility::Export,
                         };
-                        self.get_addressed_qualified_type(&new_addr, &q.span())
+                        self.get_addressed_qualified_type(&new_addr, &anchor)
                     }
                     it @ AddressedQualifiedType::EnumItem { .. } => Ok(it),
                 }
@@ -1441,7 +1401,11 @@ impl<'a, R: FileManager> FrontendCtx<'a, R> {
                     // TODO: is visibility correct here?
                     Visibility::Local,
                 );
-                let type_addressed = self.get_addressed_qualified_type(&addr, &q.span())?;
+                let anchor = Anchor {
+                    f: file.clone(),
+                    s: ident.span,
+                };
+                let type_addressed = self.get_addressed_qualified_type(&addr, &anchor)?;
                 Ok(type_addressed)
             }
         }
@@ -1480,14 +1444,24 @@ impl<'a, R: FileManager> FrontendCtx<'a, R> {
                 } else {
                     let addr: ModuleItemAddress =
                         ModuleItemAddress::from_ident(ident, file, visibility);
+                    let anchor = Anchor {
+                        f: addr.file.clone(),
+                        s: ident.span,
+                    };
                     Ok(RuntypeName::Address(
-                        self.get_addressed_type(&addr, &ident.span)?.type_address(),
+                        self.get_addressed_type(&addr, &anchor)?.type_address(),
                     ))
                 }
             }
             TsEntityName::TsQualifiedName(ts_qualified_name) => {
-                let qualified_type = self
-                    .get_adressed_qualified_type_from_entity_name(&ts_qualified_name.left, file)?;
+                let qualified_type = self.get_adressed_qualified_type_from_entity_name(
+                    &ts_qualified_name.left,
+                    file.clone(),
+                )?;
+                let anchor = Anchor {
+                    f: file.clone(),
+                    s: ts_qualified_name.span(),
+                };
                 let new_addr = match qualified_type {
                     AddressedQualifiedType::StarImport(bff_file_name) => ModuleItemAddress {
                         file: bff_file_name,
@@ -1505,8 +1479,7 @@ impl<'a, R: FileManager> FrontendCtx<'a, R> {
                     }
                 };
                 Ok(RuntypeName::Address(
-                    self.get_addressed_type(&new_addr, &ts_qualified_name.span())?
-                        .type_address(),
+                    self.get_addressed_type(&new_addr, &anchor)?.type_address(),
                 ))
             }
         }
@@ -1526,6 +1499,10 @@ impl<'a, R: FileManager> FrontendCtx<'a, R> {
         span: &Span,
         file: BffFileName,
     ) -> Res<Runtype> {
+        let anchor = Anchor {
+            f: file.clone(),
+            s: *span,
+        };
         if let [head] = type_args
             && let Some(value) = head.as_string_const()
         {
@@ -1533,17 +1510,12 @@ impl<'a, R: FileManager> FrontendCtx<'a, R> {
             if self.settings.string_formats.contains(&val_str) {
                 return Ok(Runtype::StringWithFormat(CustomFormat(val_str, vec![])));
             } else {
-                return self.error(
-                    span,
-                    DiagnosticInfoMessage::CustomStringIsNotRegistered,
-                    file.clone(),
-                );
+                return self.error(&anchor, DiagnosticInfoMessage::CustomStringIsNotRegistered);
             }
         }
         self.error(
-            span,
+            &anchor,
             DiagnosticInfoMessage::InvalidUsageOfStringFormatTypeParameter,
-            file,
         )
     }
     fn get_string_format_base_formats(
@@ -1552,6 +1524,10 @@ impl<'a, R: FileManager> FrontendCtx<'a, R> {
         span: &Span,
         file: BffFileName,
     ) -> Res<(String, Vec<String>)> {
+        let anchor = Anchor {
+            f: file.clone(),
+            s: *span,
+        };
         match schema {
             Runtype::StringWithFormat(CustomFormat(first, rest)) => {
                 Ok((first.clone(), rest.clone()))
@@ -1564,16 +1540,14 @@ impl<'a, R: FileManager> FrontendCtx<'a, R> {
                     self.get_string_format_base_formats(&v, span, file)
                 } else {
                     self.error(
-                        span,
+                        &anchor,
                         DiagnosticInfoMessage::CouldNotFindBaseOfStringFormatExtends,
-                        file,
                     )
                 }
             }
             _ => self.error(
-                span,
+                &anchor,
                 DiagnosticInfoMessage::BaseOfStringFormatExtendsShouldBeStringFormat,
-                file,
             ),
         }
     }
@@ -1584,6 +1558,10 @@ impl<'a, R: FileManager> FrontendCtx<'a, R> {
         span: &Span,
         file: BffFileName,
     ) -> Res<Runtype> {
+        let anchor = Anchor {
+            f: file.clone(),
+            s: *span,
+        };
         if let [base, next_str] = type_params
             && let Some(value) = next_str.as_string_const()
         {
@@ -1594,17 +1572,12 @@ impl<'a, R: FileManager> FrontendCtx<'a, R> {
                 rest.push(next_str);
                 return Ok(Runtype::StringWithFormat(CustomFormat(first, rest)));
             } else {
-                return self.error(
-                    span,
-                    DiagnosticInfoMessage::CustomStringIsNotRegistered,
-                    file.clone(),
-                );
+                return self.error(&anchor, DiagnosticInfoMessage::CustomStringIsNotRegistered);
             }
         }
         self.error(
-            span,
+            &anchor,
             DiagnosticInfoMessage::InvalidUsageOfStringFormatExtendsTypeParameter,
-            file,
         )
     }
     fn get_number_with_format(
@@ -1613,6 +1586,10 @@ impl<'a, R: FileManager> FrontendCtx<'a, R> {
         span: &Span,
         file: BffFileName,
     ) -> Res<Runtype> {
+        let anchor = Anchor {
+            f: file.clone(),
+            s: *span,
+        };
         if let [head] = type_args
             && let Some(value) = head.as_string_const()
         {
@@ -1620,17 +1597,12 @@ impl<'a, R: FileManager> FrontendCtx<'a, R> {
             if self.settings.number_formats.contains(&val_str) {
                 return Ok(Runtype::NumberWithFormat(CustomFormat(val_str, vec![])));
             } else {
-                return self.error(
-                    span,
-                    DiagnosticInfoMessage::CustomNumberIsNotRegistered,
-                    file.clone(),
-                );
+                return self.error(&anchor, DiagnosticInfoMessage::CustomNumberIsNotRegistered);
             }
         }
         self.error(
-            span,
+            &anchor,
             DiagnosticInfoMessage::InvalidUsageOfNumberFormatTypeParameter,
-            file,
         )
     }
     fn get_number_format_base_formats(
@@ -1639,6 +1611,10 @@ impl<'a, R: FileManager> FrontendCtx<'a, R> {
         span: &Span,
         file: BffFileName,
     ) -> Res<(String, Vec<String>)> {
+        let anchor = Anchor {
+            f: file.clone(),
+            s: *span,
+        };
         match schema {
             Runtype::NumberWithFormat(CustomFormat(first, rest)) => {
                 Ok((first.clone(), rest.clone()))
@@ -1651,16 +1627,14 @@ impl<'a, R: FileManager> FrontendCtx<'a, R> {
                     self.get_number_format_base_formats(&v, span, file.clone())
                 } else {
                     self.error(
-                        span,
+                        &anchor,
                         DiagnosticInfoMessage::CouldNotFindBaseOfNumberFormatExtends,
-                        file.clone(),
                     )
                 }
             }
             _ => self.error(
-                span,
+                &anchor,
                 DiagnosticInfoMessage::BaseOfNumberFormatExtendsShouldBeNumberFormat,
-                file.clone(),
             ),
         }
     }
@@ -1670,6 +1644,10 @@ impl<'a, R: FileManager> FrontendCtx<'a, R> {
         span: &Span,
         file: BffFileName,
     ) -> Res<Runtype> {
+        let anchor = Anchor {
+            f: file.clone(),
+            s: *span,
+        };
         if let [base, next_str] = type_params
             && let Some(value) = next_str.as_string_const()
         {
@@ -1680,17 +1658,12 @@ impl<'a, R: FileManager> FrontendCtx<'a, R> {
                 rest.push(next_str);
                 return Ok(Runtype::NumberWithFormat(CustomFormat(first, rest)));
             } else {
-                return self.error(
-                    span,
-                    DiagnosticInfoMessage::CustomNumberIsNotRegistered,
-                    file.clone(),
-                );
+                return self.error(&anchor, DiagnosticInfoMessage::CustomNumberIsNotRegistered);
             }
         }
         self.error(
-            span,
+            &anchor,
             DiagnosticInfoMessage::InvalidUsageOfNumberFormatExtendsTypeParameter,
-            file,
         )
     }
 
@@ -1774,6 +1747,10 @@ impl<'a, R: FileManager> FrontendCtx<'a, R> {
     }
 
     fn extract_ts_keyword_type(&mut self, ty: &TsKeywordType, file: BffFileName) -> Res<Runtype> {
+        let anchor = Anchor {
+            f: file.clone(),
+            s: ty.span,
+        };
         match ty.kind {
             TsKeywordTypeKind::TsStringKeyword => Ok(Runtype::String),
             TsKeywordTypeKind::TsNumberKeyword => Ok(Runtype::Number),
@@ -1789,13 +1766,16 @@ impl<'a, R: FileManager> FrontendCtx<'a, R> {
             TsKeywordTypeKind::TsNeverKeyword => Ok(Runtype::Never),
             TsKeywordTypeKind::TsSymbolKeyword | TsKeywordTypeKind::TsIntrinsicKeyword => self
                 .error(
-                    &ty.span,
+                    &anchor,
                     DiagnosticInfoMessage::KeywordNonSerializableToJsonSchema,
-                    file,
                 ),
         }
     }
     fn extract_array_value(&mut self, arr: Runtype, span: Span, file: BffFileName) -> Res<Runtype> {
+        let anchor = Anchor {
+            f: file.clone(),
+            s: span,
+        };
         match arr {
             Runtype::Array(items) => Ok(*items),
             Runtype::Ref(n) => {
@@ -1806,10 +1786,10 @@ impl<'a, R: FileManager> FrontendCtx<'a, R> {
                     .cloned();
                 match map {
                     Some(schema) => self.extract_array_value(schema, span, file.clone()),
-                    _ => self.error(&span, DiagnosticInfoMessage::ExpectedArray, file.clone()),
+                    _ => self.error(&anchor, DiagnosticInfoMessage::ExpectedArray),
                 }
             }
-            _ => self.error(&span, DiagnosticInfoMessage::ExpectedArray, file.clone()),
+            _ => self.error(&anchor, DiagnosticInfoMessage::ExpectedArray),
         }
     }
     fn extract_tuple_value(
@@ -1818,6 +1798,10 @@ impl<'a, R: FileManager> FrontendCtx<'a, R> {
         span: Span,
         file: BffFileName,
     ) -> Res<Vec<Runtype>> {
+        let anchor = Anchor {
+            f: file.clone(),
+            s: span,
+        };
         match arr {
             Runtype::Tuple {
                 mut prefix_items,
@@ -1836,14 +1820,18 @@ impl<'a, R: FileManager> FrontendCtx<'a, R> {
                     .cloned();
                 match map {
                     Some(schema) => self.extract_tuple_value(schema, span, file.clone()),
-                    _ => self.error(&span, DiagnosticInfoMessage::ExpectedTuple, file.clone()),
+                    _ => self.error(&anchor, DiagnosticInfoMessage::ExpectedTuple),
                 }
             }
-            _ => self.error(&span, DiagnosticInfoMessage::ExpectedTuple, file.clone()),
+            _ => self.error(&anchor, DiagnosticInfoMessage::ExpectedTuple),
         }
     }
 
     pub fn typeof_expr(&mut self, e: &Expr, as_const: bool, file: BffFileName) -> Res<Runtype> {
+        let anchor = Anchor {
+            f: file.clone(),
+            s: e.span(),
+        };
         match e {
             Expr::Tpl(s) => {
                 if as_const {
@@ -1888,16 +1876,12 @@ impl<'a, R: FileManager> FrontendCtx<'a, R> {
                     }
                 }
                 Lit::BigInt(_) => Ok(Runtype::BigInt),
-                Lit::Regex(_) => self.error(
-                    &e.span(),
-                    DiagnosticInfoMessage::TypeOfRegexNotSupported,
-                    file,
-                ),
-                Lit::JSXText(_) => self.error(
-                    &e.span(),
-                    DiagnosticInfoMessage::TypeOfJSXTextNotSupported,
-                    file,
-                ),
+                Lit::Regex(_) => {
+                    self.error(&anchor, DiagnosticInfoMessage::TypeOfRegexNotSupported)
+                }
+                Lit::JSXText(_) => {
+                    self.error(&anchor, DiagnosticInfoMessage::TypeOfJSXTextNotSupported)
+                }
             },
             Expr::Ident(i) => {
                 let new_addr = ModuleItemAddress {
@@ -1950,9 +1934,8 @@ impl<'a, R: FileManager> FrontendCtx<'a, R> {
                                 }
                             } else {
                                 return self.error(
-                                    &it.span(),
+                                    &anchor,
                                     DiagnosticInfoMessage::TypeofObjectUnsupportedSpread,
-                                    file.clone(),
                                 );
                             }
                         }
@@ -1963,20 +1946,17 @@ impl<'a, R: FileManager> FrontendCtx<'a, R> {
                                     PropName::Str(st) => st.value.to_string(),
                                     PropName::Num(_) => {
                                         return self.error(
-                                            &p.key.span(),
+                                            &anchor,
                                             DiagnosticInfoMessage::TypeofObjectUnsupportedPropNum,
-                                            file.clone(),
                                         );
                                     }
                                     PropName::Computed(_) => return self.error(
-                                        &p.key.span(),
+                                        &anchor,
                                         DiagnosticInfoMessage::TypeofObjectUnsupportedPropComputed,
-                                        file.clone(),
                                     ),
                                     PropName::BigInt(_) => return self.error(
-                                        &p.key.span(),
+                                        &anchor,
                                         DiagnosticInfoMessage::TypeofObjectUnsupportedPropBigInt,
-                                        file.clone(),
                                     ),
                                 };
                                 let value = self.typeof_expr(&p.value, as_const, file.clone())?;
@@ -1996,9 +1976,8 @@ impl<'a, R: FileManager> FrontendCtx<'a, R> {
                             | Prop::Setter(_)
                             | Prop::Method(_) => {
                                 return self.error(
-                                    &p.span(),
+                                    &anchor,
                                     DiagnosticInfoMessage::TypeofObjectUnsupportedProp,
-                                    file.clone(),
                                 );
                             }
                         },
@@ -2024,7 +2003,7 @@ impl<'a, R: FileManager> FrontendCtx<'a, R> {
                             name: i.sym.to_string(),
                             visibility: Visibility::Local,
                         };
-                        let decl = self.get_addressed_value(&new_addr, &i.span)?;
+                        let decl = self.get_addressed_value(&new_addr, &anchor)?;
                         match decl {
                             AddressedValue::ValueExpr { .. } => None,
                             AddressedValue::TypeDecl { .. } => None,
@@ -2043,18 +2022,10 @@ impl<'a, R: FileManager> FrontendCtx<'a, R> {
                             TsEnumMemberId::Ident(i) => i.sym == *key,
                             TsEnumMemberId::Str(_) => unreachable!(),
                         }) else {
-                            return self.error(
-                                &m.prop.span(),
-                                DiagnosticInfoMessage::EnumMemberNotFound,
-                                enum_file_name.clone(),
-                            );
+                            return self.error(&anchor, DiagnosticInfoMessage::EnumMemberNotFound);
                         };
                         let Some(init) = &enum_value.init else {
-                            return self.error(
-                                &m.prop.span(),
-                                DiagnosticInfoMessage::EnumMemberNoInit,
-                                enum_file_name.clone(),
-                            );
+                            return self.error(&anchor, DiagnosticInfoMessage::EnumMemberNoInit);
                         };
 
                         return self.typeof_expr(init, true, enum_file_name.clone());
@@ -2083,9 +2054,8 @@ impl<'a, R: FileManager> FrontendCtx<'a, R> {
                     }
                     MemberProp::PrivateName(_) => {
                         return self.error(
-                            &m.prop.span(),
+                            &anchor,
                             DiagnosticInfoMessage::TypeofPrivateNameNotSupported,
-                            file.clone(),
                         );
                     }
                     MemberProp::Computed(c) => {
@@ -2093,9 +2063,8 @@ impl<'a, R: FileManager> FrontendCtx<'a, R> {
                         v.to_sem_type(&validators_reference_vec, &mut ctx)
                             .map_err(|e| {
                                 self.box_error(
-                                    &m.span,
+                                    &anchor,
                                     DiagnosticInfoMessage::AnyhowError(e.to_string()),
-                                    file.clone(),
                                 )
                             })?
                     }
@@ -2103,18 +2072,10 @@ impl<'a, R: FileManager> FrontendCtx<'a, R> {
                 let st = obj
                     .to_sem_type(&validators_reference_vec, &mut ctx)
                     .map_err(|e| {
-                        self.box_error(
-                            &m.span,
-                            DiagnosticInfoMessage::AnyhowError(e.to_string()),
-                            file.clone(),
-                        )
+                        self.box_error(&anchor, DiagnosticInfoMessage::AnyhowError(e.to_string()))
                     })?;
                 let access_st: Rc<SemType> = ctx.indexed_access(st, key).map_err(|e| {
-                    self.box_error(
-                        &m.span,
-                        DiagnosticInfoMessage::AnyhowError(e.to_string()),
-                        file.clone(),
-                    )
+                    self.box_error(&anchor, DiagnosticInfoMessage::AnyhowError(e.to_string()))
                 })?;
                 self.semtype_to_runtype(access_st, &mut ctx, &m.prop.span(), file.clone())
             }
@@ -2126,20 +2087,12 @@ impl<'a, R: FileManager> FrontendCtx<'a, R> {
                 match (left, right) {
                     (Runtype::Number, Runtype::Number) => Ok(Runtype::Number),
                     (Runtype::String, Runtype::String) => Ok(Runtype::String),
-                    _ => self.error(
-                        &e.span(),
-                        DiagnosticInfoMessage::CannotConvertExprToSchema,
-                        file.clone(),
-                    ),
+                    _ => self.error(&anchor, DiagnosticInfoMessage::CannotConvertExprToSchema),
                 }
             }
             _ => {
                 dbg!(&e);
-                self.error(
-                    &e.span(),
-                    DiagnosticInfoMessage::CannotConvertExprToSchema,
-                    file,
-                )
+                self.error(&anchor, DiagnosticInfoMessage::CannotConvertExprToSchema)
             }
         }
     }
@@ -2149,7 +2102,11 @@ impl<'a, R: FileManager> FrontendCtx<'a, R> {
         address: &ModuleItemAddress,
         span: &Span,
     ) -> Res<Runtype> {
-        let addressed_value = self.get_addressed_value(address, span)?;
+        let anchor = Anchor {
+            f: address.file.clone(),
+            s: *span,
+        };
+        let addressed_value = self.get_addressed_value(address, &anchor)?;
         match addressed_value {
             AddressedValue::ValueExpr(expr, expr_file) => {
                 self.typeof_expr(expr.as_ref(), false, expr_file)
@@ -2168,6 +2125,10 @@ impl<'a, R: FileManager> FrontendCtx<'a, R> {
         q: &TsEntityName,
         file: BffFileName,
     ) -> Res<AddressedQualifiedValue> {
+        let anchor = Anchor {
+            f: file.clone(),
+            s: q.span(),
+        };
         match q {
             TsEntityName::TsQualifiedName(ts_qualified_name) => {
                 let left_part = self.get_addressed_qualified_value_from_entity_name(
@@ -2182,7 +2143,7 @@ impl<'a, R: FileManager> FrontendCtx<'a, R> {
                             // TODO: is visibility correct here?
                             visibility: Visibility::Export,
                         };
-                        self.get_addressed_qualified_value(&new_addr, &q.span())
+                        self.get_addressed_qualified_value(&new_addr, &anchor)
                     }
                     AddressedQualifiedValue::ValueExpr(_, _) => todo!(),
                 }
@@ -2194,7 +2155,7 @@ impl<'a, R: FileManager> FrontendCtx<'a, R> {
                     // TODO: is visibility correct here?
                     Visibility::Local,
                 );
-                let value_addressed = self.get_addressed_qualified_value(&addr, &q.span())?;
+                let value_addressed = self.get_addressed_qualified_value(&addr, &anchor)?;
                 Ok(value_addressed)
             }
         }
@@ -2282,12 +2243,12 @@ impl<'a, R: FileManager> FrontendCtx<'a, R> {
         file: BffFileName,
         visibility: Visibility,
     ) -> Res<Runtype> {
+        let anchor = Anchor {
+            f: file.clone(),
+            s: ty.span,
+        };
         if ty.type_args.is_some() {
-            return self.error(
-                &ty.span,
-                DiagnosticInfoMessage::TypeQueryArgsNotSupported,
-                file.clone(),
-            );
+            return self.error(&anchor, DiagnosticInfoMessage::TypeQueryArgsNotSupported);
         }
 
         match &ty.expr_name {
@@ -2365,17 +2326,17 @@ impl<'a, R: FileManager> FrontendCtx<'a, R> {
         prop: &TsTypeElement,
         file: BffFileName,
     ) -> Res<(String, Optionality<Runtype>)> {
+        let anchor = Anchor {
+            f: file.clone(),
+            s: prop.span(),
+        };
         match prop {
             TsTypeElement::TsPropertySignature(prop) => {
                 let key = match &*prop.key {
                     Expr::Ident(ident) => ident.sym.to_string(),
                     Expr::Lit(Lit::Str(st)) => st.value.to_string(),
                     _ => {
-                        return self.error(
-                            &prop.span,
-                            DiagnosticInfoMessage::PropKeyShouldBeIdent,
-                            file.clone(),
-                        );
+                        return self.error(&anchor, DiagnosticInfoMessage::PropKeyShouldBeIdent);
                     }
                 };
                 match &prop.type_ann.as_ref() {
@@ -2388,26 +2349,22 @@ impl<'a, R: FileManager> FrontendCtx<'a, R> {
                         };
                         Ok((key, value))
                     }
-                    None => self.error(
-                        &prop.span,
-                        DiagnosticInfoMessage::PropShouldHaveTypeAnnotation,
-                        file.clone(),
-                    ),
+                    None => {
+                        self.error(&anchor, DiagnosticInfoMessage::PropShouldHaveTypeAnnotation)
+                    }
                 }
             }
             TsTypeElement::TsIndexSignature(_) => self.error(
-                &prop.span(),
+                &anchor,
                 DiagnosticInfoMessage::IndexSignatureNonSerializableToJsonSchema,
-                file.clone(),
             ),
             TsTypeElement::TsGetterSignature(_)
             | TsTypeElement::TsSetterSignature(_)
             | TsTypeElement::TsMethodSignature(_)
             | TsTypeElement::TsCallSignatureDecl(_)
             | TsTypeElement::TsConstructSignatureDecl(_) => self.error(
-                &prop.span(),
+                &anchor,
                 DiagnosticInfoMessage::PropertyNonSerializableToJsonSchema,
-                file.clone(),
             ),
         }
     }
@@ -2418,6 +2375,10 @@ impl<'a, R: FileManager> FrontendCtx<'a, R> {
         schema: &Runtype,
         file_name: BffFileName,
     ) -> Res<TplLitTypeItem> {
+        let anchor = Anchor {
+            f: file_name.clone(),
+            s: *span,
+        };
         match schema {
             Runtype::Boolean => Ok(TplLitTypeItem::Boolean),
             Runtype::String => Ok(TplLitTypeItem::String),
@@ -2436,24 +2397,21 @@ impl<'a, R: FileManager> FrontendCtx<'a, R> {
                 match v {
                     Some(v) => self.runtype_to_tpl_lit(span, &v, file_name.clone()),
                     None => self.error(
-                        span,
+                        &anchor,
                         DiagnosticInfoMessage::CannotResolveRefInJsonSchemaToTplLit,
-                        file_name,
                     ),
                 }
             }
             Runtype::TplLitType(it) => match it.0.as_slice() {
                 [single] => Ok(single.clone()),
                 _ => self.error(
-                    span,
+                    &anchor,
                     DiagnosticInfoMessage::NestedTplLitInJsonSchemaToTplLit,
-                    file_name,
                 ),
             },
             _ => self.error(
-                span,
+                &anchor,
                 DiagnosticInfoMessage::TplLitTypeNonStringNonNumberNonBoolean,
-                file_name,
             ),
         }
     }
@@ -2535,12 +2493,12 @@ impl<'a, R: FileManager> FrontendCtx<'a, R> {
         span: &Span,
         file: BffFileName,
     ) -> Res<Runtype> {
+        let anchor = Anchor {
+            f: file.clone(),
+            s: *span,
+        };
         if access_st.is_empty(ctx).map_err(|e| {
-            self.box_error(
-                span,
-                DiagnosticInfoMessage::AnyhowError(e.to_string()),
-                file.clone(),
-            )
+            self.box_error(&anchor, DiagnosticInfoMessage::AnyhowError(e.to_string()))
         })? {
             return Ok(Runtype::Never);
         }
@@ -2557,11 +2515,7 @@ impl<'a, R: FileManager> FrontendCtx<'a, R> {
             &mut self.counter,
         )
         .map_err(|any| {
-            self.box_error(
-                span,
-                DiagnosticInfoMessage::AnyhowError(any.to_string()),
-                file.clone(),
-            )
+            self.box_error(&anchor, DiagnosticInfoMessage::AnyhowError(any.to_string()))
         })?;
         for t in tail {
             self.insert_definition(t.name.clone(), t.schema)?;
@@ -2643,6 +2597,10 @@ impl<'a, R: FileManager> FrontendCtx<'a, R> {
         i: &TsIndexedAccessType,
         file: BffFileName,
     ) -> Res<Runtype> {
+        let anchor = Anchor {
+            f: file.clone(),
+            s: i.span,
+        };
         let obj = self.extract_type(&i.obj_type, file.clone())?;
         let index = self.extract_type(&i.index_type, file.clone())?;
 
@@ -2657,32 +2615,24 @@ impl<'a, R: FileManager> FrontendCtx<'a, R> {
         let obj_st = obj
             .to_sem_type(&validators_vec.iter().collect::<Vec<_>>(), &mut ctx)
             .map_err(|e| {
-                self.box_error(
-                    &i.span,
-                    DiagnosticInfoMessage::AnyhowError(e.to_string()),
-                    file.clone(),
-                )
+                self.box_error(&anchor, DiagnosticInfoMessage::AnyhowError(e.to_string()))
             })?;
         let idx_st = index
             .to_sem_type(&validators_vec.iter().collect::<Vec<_>>(), &mut ctx)
             .map_err(|e| {
-                self.box_error(
-                    &i.span,
-                    DiagnosticInfoMessage::AnyhowError(e.to_string()),
-                    file.clone(),
-                )
+                self.box_error(&anchor, DiagnosticInfoMessage::AnyhowError(e.to_string()))
             })?;
 
         let access_st: Rc<SemType> = ctx.indexed_access(obj_st, idx_st).map_err(|e| {
-            self.box_error(
-                &i.span,
-                DiagnosticInfoMessage::AnyhowError(e.to_string()),
-                file.clone(),
-            )
+            self.box_error(&anchor, DiagnosticInfoMessage::AnyhowError(e.to_string()))
         })?;
         self.semtype_to_runtype(access_st, &mut ctx, &i.span(), file.clone())
     }
     fn convert_keyof(&mut self, k: &TsType, file_name: BffFileName) -> Res<Runtype> {
+        let anchor = Anchor {
+            f: file_name.clone(),
+            s: k.span(),
+        };
         let json_schema = self.extract_type(k, file_name.clone())?;
 
         let object_extracted =
@@ -2701,39 +2651,31 @@ impl<'a, R: FileManager> FrontendCtx<'a, R> {
         let st = json_schema
             .to_sem_type(&vs.iter().collect::<Vec<_>>(), &mut ctx)
             .map_err(|e| {
-                self.box_error(
-                    &k.span(),
-                    DiagnosticInfoMessage::AnyhowError(e.to_string()),
-                    file_name.clone(),
-                )
+                self.box_error(&anchor, DiagnosticInfoMessage::AnyhowError(e.to_string()))
             })?;
 
         let keyof_st: Rc<SemType> = ctx.keyof(st).map_err(|e| {
-            self.box_error(
-                &k.span(),
-                DiagnosticInfoMessage::AnyhowError(e.to_string()),
-                file_name.clone(),
-            )
+            self.box_error(&anchor, DiagnosticInfoMessage::AnyhowError(e.to_string()))
         })?;
 
         self.semtype_to_runtype(keyof_st, &mut ctx, &k.span(), file_name.clone())
     }
     fn convert_mapped_type(&mut self, k: &TsMappedType, file_name: BffFileName) -> Res<Runtype> {
+        let anchor = Anchor {
+            f: file_name.clone(),
+            s: k.span,
+        };
         let name = k.type_param.name.sym.to_string();
         let constraint = match k.type_param.constraint {
             Some(ref it) => it.as_ref(),
             None => {
-                return self.error(
-                    &k.type_param.span,
-                    DiagnosticInfoMessage::NoConstraintInMappedType,
-                    file_name.clone(),
-                );
+                return self.error(&anchor, DiagnosticInfoMessage::NoConstraintInMappedType);
             }
         };
         let constraint_schema = self.extract_type(constraint, file_name.clone())?;
         let values = self
             .extract_union(constraint_schema)
-            .map_err(|e| self.box_error(&constraint.span(), e, file_name.clone()))?;
+            .map_err(|e| self.box_error(&anchor, e))?;
 
         let mut string_keys = vec![];
 
@@ -2743,11 +2685,7 @@ impl<'a, R: FileManager> FrontendCtx<'a, R> {
                     string_keys.push(s);
                 }
                 _ => {
-                    return self.error(
-                        &k.span,
-                        DiagnosticInfoMessage::NonStringKeyInMappedType,
-                        file_name.clone(),
-                    );
+                    return self.error(&anchor, DiagnosticInfoMessage::NonStringKeyInMappedType);
                 }
             }
         }
@@ -2755,11 +2693,7 @@ impl<'a, R: FileManager> FrontendCtx<'a, R> {
         let type_ann = match &k.type_ann {
             Some(type_ann) => type_ann.as_ref(),
             None => {
-                return self.error(
-                    &k.span,
-                    DiagnosticInfoMessage::NoTypeAnnotationInMappedType,
-                    file_name.clone(),
-                );
+                return self.error(&anchor, DiagnosticInfoMessage::NoTypeAnnotationInMappedType);
             }
         };
 
@@ -2776,11 +2710,8 @@ impl<'a, R: FileManager> FrontendCtx<'a, R> {
                     TruePlusMinus::True => Optionality::Optional(ty),
                     TruePlusMinus::Plus => Optionality::Required(ty),
                     TruePlusMinus::Minus => {
-                        return self.error(
-                            &k.span,
-                            DiagnosticInfoMessage::MappedTypeMinusNotSupported,
-                            file_name.clone(),
-                        );
+                        return self
+                            .error(&anchor, DiagnosticInfoMessage::MappedTypeMinusNotSupported);
                     }
                 },
                 None => Optionality::Required(ty),
@@ -2795,6 +2726,10 @@ impl<'a, R: FileManager> FrontendCtx<'a, R> {
         t: &TsConditionalType,
         file_name: BffFileName,
     ) -> Res<Runtype> {
+        let anchor = Anchor {
+            f: file_name.clone(),
+            s: t.span,
+        };
         let check_type_schema = self.extract_type(&t.check_type, file_name.clone())?;
         let extends_type_schema = self.extract_type(&t.extends_type, file_name.clone())?;
 
@@ -2805,31 +2740,19 @@ impl<'a, R: FileManager> FrontendCtx<'a, R> {
         let check_type_st = check_type_schema
             .to_sem_type(&validators_reference_vec, &mut ctx)
             .map_err(|e| {
-                self.box_error(
-                    &t.check_type.span(),
-                    DiagnosticInfoMessage::AnyhowError(e.to_string()),
-                    file_name.clone(),
-                )
+                self.box_error(&anchor, DiagnosticInfoMessage::AnyhowError(e.to_string()))
             })?;
 
         let extends_type_st = extends_type_schema
             .to_sem_type(&validators_reference_vec, &mut ctx)
             .map_err(|e| {
-                self.box_error(
-                    &t.extends_type.span(),
-                    DiagnosticInfoMessage::AnyhowError(e.to_string()),
-                    file_name.clone(),
-                )
+                self.box_error(&anchor, DiagnosticInfoMessage::AnyhowError(e.to_string()))
             })?;
 
         let is_true = check_type_st
             .is_subtype(&extends_type_st, &mut ctx)
             .map_err(|e| {
-                self.box_error(
-                    &t.span,
-                    DiagnosticInfoMessage::AnyhowError(e.to_string()),
-                    file_name.clone(),
-                )
+                self.box_error(&anchor, DiagnosticInfoMessage::AnyhowError(e.to_string()))
             })?;
 
         if is_true {
@@ -2840,6 +2763,10 @@ impl<'a, R: FileManager> FrontendCtx<'a, R> {
     }
 
     fn extract_type(&mut self, ty: &TsType, file: BffFileName) -> Res<Runtype> {
+        let anchor = Anchor {
+            f: file.clone(),
+            s: ty.span(),
+        };
         match ty {
             TsType::TsTypeRef(ts_type_ref) => self.extract_type_ref(ts_type_ref, file),
             TsType::TsKeywordType(ts_keyword_type) => {
@@ -2879,9 +2806,8 @@ impl<'a, R: FileManager> FrontendCtx<'a, R> {
                     if let TsType::TsRestType(TsRestType { type_ann, .. }) = &*it.ty {
                         if items.is_some() {
                             return self.error(
-                                &it.span,
+                                &anchor,
                                 DiagnosticInfoMessage::DuplicatedRestNonSerializableToJsonSchema,
-                                file.clone(),
                             );
                         }
                         let ann = match self.extract_type(type_ann, file.clone())? {
@@ -2913,79 +2839,74 @@ impl<'a, R: FileManager> FrontendCtx<'a, R> {
             TsType::TsConditionalType(ts_conditional_type) => {
                 self.convert_conditional_type(ts_conditional_type, file)
             }
-            TsType::TsTypeOperator(TsTypeOperator { span, op, type_ann }) => match op {
+            TsType::TsTypeOperator(TsTypeOperator {
+                span: _,
+                op,
+                type_ann,
+            }) => match op {
                 TsTypeOperatorOp::KeyOf => self.convert_keyof(type_ann, file.clone()),
                 TsTypeOperatorOp::Unique => self.error(
-                    span,
+                    &anchor,
                     DiagnosticInfoMessage::UniqueNonSerializableToJsonSchema,
-                    file,
                 ),
                 TsTypeOperatorOp::ReadOnly => self.extract_type(type_ann, file.clone()),
             },
 
-            TsType::TsOptionalType(TsOptionalType { span, .. }) => self.error(
-                span,
-                DiagnosticInfoMessage::OptionalTypeIsNotSupported,
-                file,
-            ),
-            TsType::TsThisType(TsThisType { span, .. }) => self.error(
-                span,
+            TsType::TsOptionalType(TsOptionalType { .. }) => {
+                self.error(&anchor, DiagnosticInfoMessage::OptionalTypeIsNotSupported)
+            }
+            TsType::TsThisType(TsThisType { .. }) => self.error(
+                &anchor,
                 DiagnosticInfoMessage::ThisTypeNonSerializableToJsonSchema,
-                file,
             ),
             TsType::TsFnOrConstructorType(
-                TsFnOrConstructorType::TsConstructorType(TsConstructorType { span, .. })
-                | TsFnOrConstructorType::TsFnType(TsFnType { span, .. }),
+                TsFnOrConstructorType::TsConstructorType(TsConstructorType { .. })
+                | TsFnOrConstructorType::TsFnType(TsFnType { .. }),
             ) => self.error(
-                span,
+                &anchor,
                 DiagnosticInfoMessage::TsFnOrConstructorTypeNonSerializableToJsonSchema,
-                file,
             ),
-            TsType::TsInferType(TsInferType { span, .. }) => self.error(
-                span,
+            TsType::TsInferType(TsInferType { .. }) => self.error(
+                &anchor,
                 DiagnosticInfoMessage::TsInferTypeNonSerializableToJsonSchema,
-                file,
             ),
-            TsType::TsTypePredicate(TsTypePredicate { span, .. }) => self.error(
-                span,
+            TsType::TsTypePredicate(TsTypePredicate { .. }) => self.error(
+                &anchor,
                 DiagnosticInfoMessage::TsTypePredicateNonSerializableToJsonSchema,
-                file,
             ),
-            TsType::TsRestType(ty) => self.error(
-                &ty.span,
+            TsType::TsRestType(_) => self.error(
+                &anchor,
                 DiagnosticInfoMessage::AnyhowError(
                     "should have been handled by parent node".to_string(),
                 ),
-                file,
             ),
         }
     }
 
     fn extract_one_built_decoder_v2(&mut self, prop: &TsTypeElement) -> Result<BuiltDecoder> {
+        let anchor = Anchor {
+            f: self.parser_file.clone(),
+            s: prop.span(),
+        };
         match prop {
             TsTypeElement::TsPropertySignature(TsPropertySignature {
                 key,
                 type_ann,
                 type_params,
-                span,
                 ..
             }) => {
                 if type_params.is_some() {
                     return self.anyhow_error(
-                        span,
+                        &anchor,
                         DiagnosticInfoMessage::GenericDecoderIsNotSupported,
-                        self.parser_file.clone(),
                     );
                 }
 
                 let key = match &**key {
                     Expr::Ident(ident) => ident.sym.to_string(),
                     _ => {
-                        return self.anyhow_error(
-                            span,
-                            DiagnosticInfoMessage::InvalidDecoderKey,
-                            self.parser_file.clone(),
-                        );
+                        return self
+                            .anyhow_error(&anchor, DiagnosticInfoMessage::InvalidDecoderKey);
                     }
                 };
                 match type_ann.as_ref().map(|it| &it.type_ann) {
@@ -3005,23 +2926,18 @@ impl<'a, R: FileManager> FrontendCtx<'a, R> {
                         })
                     }
                     None => self.anyhow_error(
-                        span,
+                        &anchor,
                         DiagnosticInfoMessage::DecoderMustHaveTypeAnnotation,
-                        self.parser_file.clone(),
                     ),
                 }
             }
-            TsTypeElement::TsGetterSignature(TsGetterSignature { span, .. })
-            | TsTypeElement::TsSetterSignature(TsSetterSignature { span, .. })
-            | TsTypeElement::TsMethodSignature(TsMethodSignature { span, .. })
-            | TsTypeElement::TsIndexSignature(TsIndexSignature { span, .. })
-            | TsTypeElement::TsCallSignatureDecl(TsCallSignatureDecl { span, .. })
-            | TsTypeElement::TsConstructSignatureDecl(TsConstructSignatureDecl { span, .. }) => {
-                self.anyhow_error(
-                    span,
-                    DiagnosticInfoMessage::InvalidDecoderProperty,
-                    self.parser_file.clone(),
-                )
+            TsTypeElement::TsGetterSignature(TsGetterSignature { .. })
+            | TsTypeElement::TsSetterSignature(TsSetterSignature { .. })
+            | TsTypeElement::TsMethodSignature(TsMethodSignature { .. })
+            | TsTypeElement::TsIndexSignature(TsIndexSignature { .. })
+            | TsTypeElement::TsCallSignatureDecl(TsCallSignatureDecl { .. })
+            | TsTypeElement::TsConstructSignatureDecl(TsConstructSignatureDecl { .. }) => {
+                self.anyhow_error(&anchor, DiagnosticInfoMessage::InvalidDecoderProperty)
             }
         }
     }
@@ -3029,14 +2945,19 @@ impl<'a, R: FileManager> FrontendCtx<'a, R> {
         &mut self,
         params: &TsTypeParamInstantiation,
     ) -> Result<Vec<BuiltDecoder>> {
+        let anchor = Anchor {
+            f: self.parser_file.clone(),
+            s: params.span,
+        };
         match params.params.split_first() {
             Some((head, tail)) => {
+                let anchor = Anchor {
+                    f: self.parser_file.clone(),
+                    s: head.span(),
+                };
                 if !tail.is_empty() {
-                    return self.anyhow_error(
-                        &params.span,
-                        DiagnosticInfoMessage::TooManyTypeParamsOnDecoder,
-                        self.parser_file.clone(),
-                    );
+                    return self
+                        .anyhow_error(&anchor, DiagnosticInfoMessage::TooManyTypeParamsOnDecoder);
                 }
                 match &**head {
                     TsType::TsTypeLit(TsTypeLit { members, .. }) => members
@@ -3044,17 +2965,12 @@ impl<'a, R: FileManager> FrontendCtx<'a, R> {
                         .map(|prop| self.extract_one_built_decoder_v2(prop))
                         .collect(),
                     _ => self.anyhow_error(
-                        &params.span,
+                        &anchor,
                         DiagnosticInfoMessage::DecoderShouldBeObjectWithTypesAndNames,
-                        self.parser_file.clone(),
                     ),
                 }
             }
-            None => self.anyhow_error(
-                &params.span,
-                DiagnosticInfoMessage::TooFewTypeParamsOnDecoder,
-                self.parser_file.clone(),
-            ),
+            None => self.anyhow_error(&anchor, DiagnosticInfoMessage::TooFewTypeParamsOnDecoder),
         }
     }
 }

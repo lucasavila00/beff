@@ -4,7 +4,7 @@ use swc_atoms::JsWord;
 use swc_common::Span;
 use swc_ecma_ast::{Expr, TsEnumDecl, TsInterfaceDecl, TsType, TsTypeAliasDecl};
 
-use crate::{BffFileName, FileManager};
+use crate::{Anchor, BffFileName, FileManager};
 
 pub mod bind_exports;
 pub mod bind_locals;
@@ -39,39 +39,21 @@ pub enum SymbolExport {
     },
     StarOfOtherFile {
         reference: Rc<ImportReference>,
-        span: Span,
     },
     SomethingOfOtherFile {
         something: String,
         file: BffFileName,
-        span: Span,
     },
-}
-
-impl SymbolExport {
-    pub fn span(&self) -> Span {
-        match self {
-            SymbolExport::TsType { decl, .. } => decl.span,
-            SymbolExport::TsInterfaceDecl { decl, .. } => decl.span,
-            SymbolExport::TsEnumDecl { decl, .. } => decl.span,
-            SymbolExport::ValueExpr { span, .. }
-            | SymbolExport::StarOfOtherFile { span, .. }
-            | SymbolExport::SomethingOfOtherFile { span, .. }
-            | SymbolExport::ExprDecl { span, .. } => *span,
-        }
-    }
 }
 
 #[derive(Debug, Clone)]
 pub enum ImportReference {
     Named {
         original_name: Rc<String>,
-        file_name: BffFileName,
-        span: Span,
+        anchor: Anchor,
     },
     Star {
-        file_name: BffFileName,
-        span: Span,
+        anchor: Anchor,
     },
     Default {
         file_name: BffFileName,
@@ -81,8 +63,8 @@ pub enum ImportReference {
 impl ImportReference {
     pub fn file_name(&self) -> &BffFileName {
         match self {
-            ImportReference::Named { file_name, .. } => file_name,
-            ImportReference::Star { file_name, .. } => file_name,
+            ImportReference::Named { anchor, .. } => &anchor.f,
+            ImportReference::Star { anchor, .. } => &anchor.f,
             ImportReference::Default { file_name, .. } => file_name,
         }
     }
@@ -191,8 +173,7 @@ impl SymbolsExportsModule {
 pub enum SymbolExportDefault {
     Expr {
         export_expr: Rc<Expr>,
-        span: Span,
-        file_name: BffFileName,
+        anchor: Anchor,
     },
     Renamed {
         export: Rc<SymbolExport>,
