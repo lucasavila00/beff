@@ -7,6 +7,8 @@ use crate::{BffFileName, ModuleItemAddress, ParsedModule, RuntypeUUID};
 
 #[derive(Debug, Clone)]
 pub enum DiagnosticInfoMessage {
+    PartialShouldHaveTwoTypeArguments,
+    RequiredShouldHaveTwoTypeArguments,
     InvalidNumberOfTypeParametersForArray,
     CannotHaveRecursiveGenericTypes,
     ObjectHasConflictingKeyValueInIntersection,
@@ -520,6 +522,12 @@ impl DiagnosticInfoMessage {
             },
             DiagnosticInfoMessage::InvalidNumberOfTypeParametersForArray => {
                 "Invalid number of type parameters for Array".to_string()
+            }
+            DiagnosticInfoMessage::RequiredShouldHaveTwoTypeArguments => {
+                "Required should have two type arguments".to_string()
+            }
+            DiagnosticInfoMessage::PartialShouldHaveTwoTypeArguments => {
+                "Partial should have two type arguments".to_string()
             }
         }
     }

@@ -1054,7 +1054,121 @@ impl<'a, R: FileManager> FrontendCtx<'a, R> {
 
         Ok(string_keys)
     }
+    fn convert_required(&mut self, obj: &BTreeMap<String, Optionality<Runtype>>) -> Runtype {
+        let mut acc = vec![];
+        for (k, v) in obj {
+            acc.push((k.clone(), v.clone().to_required()));
+        }
+        Runtype::object(acc)
+    }
+    fn convert_partial(&mut self, obj: &BTreeMap<String, Optionality<Runtype>>) -> Runtype {
+        let mut acc = vec![];
+        for (k, v) in obj {
+            acc.push((k.clone(), v.clone().to_optional()));
+        }
+        Runtype::object(acc)
+    }
+    fn convert_pick_keys(
+        obj: &BTreeMap<String, Optionality<Runtype>>,
+        keys: Vec<String>,
+    ) -> Runtype {
+        let mut acc = vec![];
+        for (k, v) in obj {
+            if keys.contains(k) {
+                acc.push((k.clone(), v.clone()));
+            }
+        }
+        Runtype::object(acc)
+    }
+    fn convert_pick(
+        &mut self,
+        span: &Span,
+        obj: &BTreeMap<String, Optionality<Runtype>>,
+        keys: Runtype,
+        file_name: BffFileName,
+    ) -> Res<Runtype> {
+        match keys.extract_single_string_const() {
+            Some(str) => Ok(Self::convert_pick_keys(obj, vec![str])),
+            None => match keys {
+                Runtype::AnyOf(rms) => {
+                    let mut keys = vec![];
+                    for rm in rms {
+                        match rm.extract_single_string_const() {
+                            Some(str) => {
+                                keys.push(str);
+                            }
+                            None => match rm {
+                                Runtype::Ref(n) => {
+                                    let map = self
+                                        .partial_validators
+                                        .get(&n)
+                                        .and_then(|it| it.as_ref())
+                                        .cloned();
+                                    match map.and_then(|it|it.extract_single_string_const()) {
+                                    Some(str) => keys.push(str),
+                                    _ => return self.error(
+                                        span,
+                                        DiagnosticInfoMessage::PickShouldHaveStringAsTypeArgument,
+                                        file_name.clone()
+                                    ),
+                                }
+                                }
+                                _ => {
+                                    return self.error(
+                                        span,
+                                        DiagnosticInfoMessage::PickShouldHaveStringAsTypeArgument,
+                                        file_name.clone(),
+                                    );
+                                }
+                            },
+                        }
+                    }
+                    Ok(Self::convert_pick_keys(obj, keys))
+                }
+                _ => self.error(
+                    span,
+                    DiagnosticInfoMessage::PickShouldHaveStringOrStringArrayAsTypeArgument,
+                    file_name.clone(),
+                ),
+            },
+        }
+    }
+    fn convert_omit_keys(
+        obj: &BTreeMap<String, Optionality<Runtype>>,
+        keys: Vec<String>,
+    ) -> Runtype {
+        let mut acc = vec![];
+        for (k, v) in obj {
+            if !keys.contains(k) {
+                acc.push((k.clone(), v.clone()));
+            }
+        }
+        Runtype::object(acc)
+    }
 
+    fn convert_omit(
+        &mut self,
+        span: &Span,
+        obj: &BTreeMap<String, Optionality<Runtype>>,
+        keys: Runtype,
+        file_name: BffFileName,
+    ) -> Res<Runtype> {
+        let keys = self
+            .extract_union(keys)
+            .map_err(|e| self.box_error(span, e, file_name.clone()))?;
+        let str_keys = keys
+            .iter()
+            .map(|it| match it.extract_single_string_const() {
+                Some(str) => Ok(str.clone()),
+                _ => self.error(
+                    span,
+                    DiagnosticInfoMessage::OmitShouldHaveStringAsTypeArgument,
+                    file_name.clone(),
+                ),
+            })
+            .collect::<Res<Vec<_>>>()?;
+        Ok(Self::convert_omit_keys(obj, str_keys))
+    }
     fn extract_addressed_type(
         &mut self,
         address: &ModuleItemAddress,
@@ -1166,164 +1280,119 @@ impl<'a, R: FileManager> FrontendCtx<'a, R> {
                         }
                     }
                 }
-                // TsBuiltIn::TsPick(span) => match type_args {
-                //     Some(vs) => {
-                //         let items = vs
-                //             .params
-                //             .iter()
-                //             .map(|it| self.convert_ts_type(it))
-                //             .collect::<Res<Vec<_>>>()?;
+                TsBuiltIn::Pick => match type_args.as_slice() {
+                    [obj, keys] => {
+                        let vs =
+                            self.extract_object_from_runtype(obj, span, address.file.clone())?;
+                        self.convert_pick(span, &vs, keys.clone(), address.file.clone())
+                    }
+                    _ => self.error(
+                        span,
+                        DiagnosticInfoMessage::PickShouldHaveTwoTypeArguments,
+                        address.file.clone(),
+                    ),
+                },
+                TsBuiltIn::Omit => match type_args.as_slice() {
+                    [obj, keys] => {
+                        let vs =
+                            self.extract_object_from_runtype(obj, span, address.file.clone())?;
+                        self.convert_omit(span, &vs, keys.clone(), address.file.clone())
+                    }
+                    _ => self.error(
+                        span,
+                        DiagnosticInfoMessage::OmitShouldHaveTwoTypeArguments,
+                        address.file.clone(),
+                    ),
+                },
+                TsBuiltIn::Exclude => match type_args.as_slice() {
+                    [left, right] => {
+                        let mut ctx = SemTypeContext::new();
 
-                //         if items.len() != 2 {
-                //             return self.error(
-                //                 span,
-                //                 DiagnosticInfoMessage::PickShouldHaveTwoTypeArguments,
-                //             );
-                //         }
-                //         let obj = items[0].clone();
-                //         let k = items[1].clone();
-                //         let vs = self.extract_object(&obj, span)?;
-                //         self.convert_pick(span, &vs, k)
-                //     }
-                //     None => self.cannot_serialize_error(
-                //         span,
-                //         DiagnosticInfoMessage::MissingArgumentsOnPick,
-                //     ),
-                // },
-                // TsBuiltIn::TsOmit(span) => match type_args {
-                //     Some(vs) => {
-                //         let items = vs
-                //             .params
-                //             .iter()
-                //             .map(|it| self.convert_ts_type(it))
-                //             .collect::<Res<Vec<_>>>()?;
+                        let left_ty = left.clone();
 
-                //         if items.len() != 2 {
-                //             return self.error(
-                //                 span,
-                //                 DiagnosticInfoMessage::OmitShouldHaveTwoTypeArguments,
-                //             );
-                //         }
-                //         let obj = items[0].clone();
-                //         let k = items[1].clone();
-                //         let vs = self.extract_object(&obj, span)?;
-                //         self.convert_omit(span, &vs, k)
-                //     }
-                //     None => self.cannot_serialize_error(
-                //         span,
-                //         DiagnosticInfoMessage::MissingArgumentsOnOmit,
-                //     ),
-                // },
-                // TsBuiltIn::TsRequired(span) => match type_args {
-                //     Some(vs) => {
-                //         let items = vs
-                //             .params
-                //             .iter()
-                //             .map(|it| self.convert_ts_type(it))
-                //             .collect::<Res<Vec<_>>>()?;
+                        let validators_vec = self.validators_vec();
+                        let validators_reference_vec: Vec<&NamedSchema> =
+                            validators_vec.iter().collect();
 
-                //         if items.len() != 1 {
-                //             return self.error(
-                //                 span,
-                //                 DiagnosticInfoMessage::OmitShouldHaveTwoTypeArguments,
-                //             );
-                //         }
-                //         let obj = items[0].clone();
-                //         let vs = self.extract_object(&obj, span)?;
-                //         Ok(self.convert_required(&vs))
-                //     }
-                //     None => self.cannot_serialize_error(
-                //         span,
-                //         DiagnosticInfoMessage::MissingArgumentsOnRequired,
-                //     ),
-                // },
-                // TsBuiltIn::TsPartial(span) => match type_args {
-                //     Some(vs) => {
-                //         let items = vs
-                //             .params
-                //             .iter()
-                //             .map(|it| self.convert_ts_type(it))
-                //             .collect::<Res<Vec<_>>>()?;
+                        let left_st = left_ty
+                            .to_sem_type(&validators_reference_vec, &mut ctx)
+                            .map_err(|e| {
+                                self.box_error(
+                                    span,
+                                    DiagnosticInfoMessage::AnyhowError(e.to_string()),
+                                    address.file.clone(),
+                                )
+                            })?;
 
-                //         if items.len() != 1 {
-                //             return self.error(
-                //                 span,
-                //                 DiagnosticInfoMessage::PartialShouldHaveOneTypeArgument,
-                //             );
-                //         }
-                //         let obj = items[0].clone();
-                //         let vs = self.extract_object(&obj, span)?;
-                //         Ok(self.convert_partial(&vs))
-                //     }
-                //     None => self.cannot_serialize_error(
-                //         span,
-                //         DiagnosticInfoMessage::MissingArgumentsOnPartial,
-                //     ),
-                // },
-                // TsBuiltIn::TsExclude(span) => match type_args {
-                //     Some(vs) => {
-                //         let items = vs
-                //             .params
-                //             .iter()
-                //             .map(|it| self.convert_ts_type(it))
-                //             .collect::<Res<Vec<_>>>()?;
-                //         if items.len() != 2 {
-                //             return self.error(
-                //                 span,
-                //                 DiagnosticInfoMessage::ExcludeShouldHaveTwoTypeArguments,
-                //             );
-                //         }
-                //         let mut ctx = SemTypeContext::new();
+                        let right_ty = right.clone();
 
-                //         let left_ty = items[0].clone();
+                        let right_st = right_ty
+                            .to_sem_type(&validators_reference_vec, &mut ctx)
+                            .map_err(|e| {
+                                self.box_error(
+                                    span,
+                                    DiagnosticInfoMessage::AnyhowError(e.to_string()),
+                                    address.file.clone(),
+                                )
+                            })?;
 
-                //         let left_st = left_ty
-                //             .to_sem_type(&self.validators_ref(), &mut ctx)
-                //             .map_err(|e| {
-                //                 self.box_error(
-                //                     span,
-                //                     DiagnosticInfoMessage::AnyhowError(e.to_string()),
-                //                 )
-                //             })?;
-
-                //         let right_ty = items[1].clone();
-
-                //         let right_st = right_ty
-                //             .to_sem_type(&self.validators_ref(), &mut ctx)
-                //             .map_err(|e| {
-                //                 self.box_error(
-                //                     span,
-                //                     DiagnosticInfoMessage::AnyhowError(e.to_string()),
-                //                 )
-                //             })?;
-
-                //         let subtracted_ty = left_st.diff(&right_st).map_err(|e| {
-                //             self.box_error(span, DiagnosticInfoMessage::AnyhowError(e.to_string()))
-                //         })?;
-                //         let res = self
-                //             .semtype_to_runtype(subtracted_ty, &mut ctx, span)?
-                //             .remove_nots_of_intersections_and_empty_of_union(
-                //                 &self.validators_ref(),
-                //                 &mut ctx,
-                //             )
-                //             .map_err(|e| {
-                //                 self.box_error(
-                //                     span,
-                //                     DiagnosticInfoMessage::AnyhowError(e.to_string()),
-                //                 )
-                //             })?;
-                //         Ok(res)
-                //     }
-                //     None => self.cannot_serialize_error(
-                //         span,
-                //         DiagnosticInfoMessage::MissingArgumentsOnExclude,
-                //     ),
-                // },
-                TsBuiltIn::Omit => todo!(),
-                TsBuiltIn::Required => todo!(),
-                TsBuiltIn::Partial => todo!(),
-                TsBuiltIn::Pick => todo!(),
-                TsBuiltIn::Exclude => todo!(),
+                        let subtracted_ty = left_st.diff(&right_st).map_err(|e| {
+                            self.box_error(
+                                span,
+                                DiagnosticInfoMessage::AnyhowError(e.to_string()),
+                                address.file.clone(),
+                            )
+                        })?;
+                        let res = self
+                            .semtype_to_runtype(
+                                subtracted_ty,
+                                &mut ctx,
+                                span,
+                                address.file.clone(),
+                            )?
+                            .remove_nots_of_intersections_and_empty_of_union(
+                                &validators_reference_vec,
+                                &mut ctx,
+                            )
+                            .map_err(|e| {
+                                self.box_error(
+                                    span,
+                                    DiagnosticInfoMessage::AnyhowError(e.to_string()),
+                                    address.file.clone(),
+                                )
+                            })?;
+                        Ok(res)
+                    }
+                    _ => self.error(
+                        span,
+                        DiagnosticInfoMessage::ExcludeShouldHaveTwoTypeArguments,
+                        address.file.clone(),
+                    ),
+                },
+                TsBuiltIn::Required => match type_args.as_slice() {
+                    [obj] => {
+                        let vs =
+                            self.extract_object_from_runtype(obj, span, address.file.clone())?;
+                        Ok(self.convert_required(&vs))
+                    }
+                    _ => self.error(
+                        span,
+                        DiagnosticInfoMessage::RequiredShouldHaveTwoTypeArguments,
+                        address.file.clone(),
+                    ),
+                },
+                TsBuiltIn::Partial => match type_args.as_slice() {
+                    [obj] => {
+                        let vs =
+                            self.extract_object_from_runtype(obj, span, address.file.clone())?;
+                        Ok(self.convert_partial(&vs))
+                    }
+                    _ => self.error(
+                        span,
+                        DiagnosticInfoMessage::PartialShouldHaveTwoTypeArguments,
+                        address.file.clone(),
+                    ),
+                },
             },
         }
     }
@@ -2575,31 +2644,40 @@ impl<'a, R: FileManager> FrontendCtx<'a, R> {
         self.semtype_to_runtype(access_st, &mut ctx, &i.span(), file.clone())
     }
     fn convert_keyof(&mut self, k: &TsType, file_name: BffFileName) -> Res<Runtype> {
-        // let json_schema = self.convert_ts_type(k)?;
+        let json_schema = self.extract_type(k, file_name.clone())?;
 
-        // let object_extracted = self.extract_object(&json_schema, &k.span());
-        // if let Ok(object_schema) = object_extracted {
-        //     let keys = object_schema.keys();
-        //     let mut vs = vec![];
-        //     for key in keys {
-        //         vs.push(Runtype::single_string_const(key));
-        //     }
-        //     return Ok(Runtype::any_of(vs));
-        // }
+        let object_extracted =
+            self.extract_object_from_runtype(&json_schema, &k.span(), file_name.clone());
+        if let Ok(object_schema) = object_extracted {
+            let keys = object_schema.keys();
+            let mut vs = vec![];
+            for key in keys {
+                vs.push(Runtype::single_string_const(key));
+            }
+            return Ok(Runtype::any_of(vs));
+        }
 
-        // let mut ctx = SemTypeContext::new();
-        // let st = json_schema
-        //     .to_sem_type(&self.validators_ref(), &mut ctx)
-        //     .map_err(|e| {
-        //         self.box_error(&k.span(), DiagnosticInfoMessage::AnyhowError(e.to_string()))
-        //     })?;
+        let mut ctx = SemTypeContext::new();
+        let vs = self.validators_vec();
+        let st = json_schema
+            .to_sem_type(&vs.iter().collect::<Vec<_>>(), &mut ctx)
+            .map_err(|e| {
+                self.box_error(
+                    &k.span(),
+                    DiagnosticInfoMessage::AnyhowError(e.to_string()),
+                    file_name.clone(),
+                )
+            })?;
 
-        // let keyof_st: Rc<SemType> = ctx.keyof(st).map_err(|e| {
-        //     self.box_error(&k.span(), DiagnosticInfoMessage::AnyhowError(e.to_string()))
-        // })?;
+        let keyof_st: Rc<SemType> = ctx.keyof(st).map_err(|e| {
+            self.box_error(
+                &k.span(),
+                DiagnosticInfoMessage::AnyhowError(e.to_string()),
+                file_name.clone(),
+            )
+        })?;
 
-        // self.semtype_to_runtype(keyof_st, &mut ctx, &k.span())
-        todo!()
+        self.semtype_to_runtype(keyof_st, &mut ctx, &k.span(), file_name.clone())
     }
 
     fn extract_type(&mut self, ty: &TsType, file: BffFileName) -> Res<Runtype> {
