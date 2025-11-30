@@ -350,6 +350,10 @@ impl RuntypeName {
             RuntypeName::BuiltIn(ts_built_in) => ts_built_in.to_string(),
         }
     }
+
+    fn is_builtin(&self) -> bool {
+        matches!(self, RuntypeName::BuiltIn(_))
+    }
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord)]

@@ -80,38 +80,6 @@ impl AddressedType {
     }
 }
 
-enum FinalAddressedType {
-    AddressedType(AddressedType),
-    EnumItem {
-        address: TypeAddress,
-        member_name: String,
-    },
-    BuiltIn(TsBuiltIn),
-}
-impl FinalAddressedType {
-    fn is_builtin(&self) -> bool {
-        match self {
-            FinalAddressedType::BuiltIn(_) => true,
-            FinalAddressedType::AddressedType(_) => false,
-            FinalAddressedType::EnumItem { .. } => false,
-        }
-    }
-
-    fn to_runtype_name(&self) -> RuntypeName {
-        match self {
-            FinalAddressedType::AddressedType(t) => RuntypeName::Address(t.type_address()),
-            FinalAddressedType::EnumItem {
-                address: enum_address,
-                member_name,
-            } => RuntypeName::EnumItem {
-                address: enum_address.clone(),
-                member_name: member_name.clone(),
-            },
-            FinalAddressedType::BuiltIn(ts_built_in) => RuntypeName::BuiltIn(*ts_built_in),
-        }
-    }
-}
-
 pub enum AddressedQualifiedType {
     StarImport(BffFileName),
     EnumItem {
@@ -1519,15 +1487,16 @@ impl<'a, R: FileManager> FrontendCtx<'a, R> {
         type_name: &TsEntityName,
         file: BffFileName,
         visibility: Visibility,
-    ) -> Res<FinalAddressedType> {
+    ) -> Res<RuntypeName> {
         match type_name {
             TsEntityName::Ident(ident) => {
                 if let Some(builtin) = self.maybe_generate_ts_builtin(&ident.sym)? {
-                    Ok(FinalAddressedType::BuiltIn(builtin))
+                    Ok(RuntypeName::BuiltIn(builtin))
                 } else {
-                    let addr = ModuleItemAddress::from_ident(ident, file, visibility);
-                    Ok(FinalAddressedType::AddressedType(
-                        self.get_addressed_type(&addr, &ident.span)?,
+                    let addr: ModuleItemAddress =
+                        ModuleItemAddress::from_ident(ident, file, visibility);
+                    Ok(RuntypeName::Address(
+                        self.get_addressed_type(&addr, &ident.span)?.type_address(),
                     ))
                 }
             }
@@ -1544,16 +1513,16 @@ impl<'a, R: FileManager> FrontendCtx<'a, R> {
                         enum_type: _,
                         address,
                     } => {
-                        return Ok(FinalAddressedType::EnumItem {
+                        return Ok(RuntypeName::EnumItem {
                             member_name: ts_qualified_name.right.sym.to_string(),
                             address,
                         });
                     }
                 };
-                Ok(FinalAddressedType::AddressedType(self.get_addressed_type(
-                    &new_addr,
-                    &ts_qualified_name.span(),
-                )?))
+                Ok(RuntypeName::Address(
+                    self.get_addressed_type(&new_addr, &ts_qualified_name.span())?
+                        .type_address(),
+                ))
             }
         }
     }
@@ -1773,15 +1742,10 @@ impl<'a, R: FileManager> FrontendCtx<'a, R> {
             // it won't be recursive if it's builtin, and we don't need to write it to the map too
             // TODO: it needs generic type support too, so we need to handle that later
 
-            return self.extract_addressed_type(
-                &fat.to_runtype_name(),
-                type_args,
-                &type_name.span(),
-                file.clone(),
-            );
+            return self.extract_addressed_type(&fat, type_args, &type_name.span(), file.clone());
         }
         let rt_uuid = RuntypeUUID {
-            ty: fat.to_runtype_name(),
+            ty: fat.clone(),
             type_arguments: type_args.clone(),
         };
         let found = self.partial_validators.get(&rt_uuid);
@@ -1793,12 +1757,7 @@ impl<'a, R: FileManager> FrontendCtx<'a, R> {
         }
         self.partial_validators.insert(rt_uuid.clone(), None);
 
-        let ty = self.extract_addressed_type(
-            &fat.to_runtype_name(),
-            type_args,
-            &type_name.span(),
-            file.clone(),
-        );
+        let ty = self.extract_addressed_type(&fat, type_args, &type_name.span(), file.clone());
         match ty {
             Ok(ty) => match ts_type_args {
                 None => self.insert_definition(rt_uuid.clone(), ty),
