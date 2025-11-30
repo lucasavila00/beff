@@ -1,4 +1,4 @@
-Error: Exposing a type that cannot be converted to JSON schema
+Error: Index signature cannot be converted to JSON schema - Use Record<x,y>
  /errors/record-semtypes2/src/parser.ts:10:3
     8 | type AvatarSize = `${number}x${number}`;
     9 | type Extra = {

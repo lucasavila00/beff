@@ -1,4 +1,4 @@
-use crate::diag::{Diagnostic, DiagnosticInformation, Location};
+use crate::diag::{DiagnosticInformation, Location};
 use serde::{Deserialize, Serialize};
 
 #[derive(Serialize, Deserialize)]
@@ -38,26 +38,17 @@ impl WasmDiagnosticInformation {
 }
 
 #[derive(Serialize, Deserialize)]
-pub struct WasmDiagnosticItem {
-    cause: WasmDiagnosticInformation,
-    message: Option<String>,
-}
-#[derive(Serialize, Deserialize)]
 pub struct WasmDiagnostic {
-    diagnostics: Vec<WasmDiagnosticItem>,
+    diagnostics: Vec<WasmDiagnosticInformation>,
 }
 
 impl WasmDiagnostic {
-    pub fn from_diagnostics(diagnostics: &[Diagnostic]) -> WasmDiagnostic {
+    pub fn from_diagnostics(diagnostics: &[DiagnosticInformation]) -> WasmDiagnostic {
         WasmDiagnostic {
-            diagnostics: diagnostics.iter().map(diag_to_wasm).collect(),
+            diagnostics: diagnostics
+                .iter()
+                .map(WasmDiagnosticInformation::from_diagnostic_info)
+                .collect(),
         }
-    }
-}
-
-fn diag_to_wasm(diag: &Diagnostic) -> WasmDiagnosticItem {
-    WasmDiagnosticItem {
-        cause: WasmDiagnosticInformation::from_diagnostic_info(&diag.cause),
-        message: diag.parent_big_message.as_ref().map(|it| it.to_string()),
     }
 }

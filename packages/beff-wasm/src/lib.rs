@@ -11,7 +11,7 @@ use beff_core::BffFileName;
 use beff_core::EntryPoints;
 use beff_core::FileManager;
 use beff_core::ParsedModule;
-use beff_core::diag::Diagnostic;
+use beff_core::diag::DiagnosticInformation;
 use beff_core::parser_extractor::ParserExtractResult;
 use beff_core::swc_tools::bind_exports::FsModuleResolver;
 use beff_core::swc_tools::bind_exports::parse_and_bind;
@@ -142,7 +142,7 @@ fn run_extraction(entry: EntryPoints) -> ParserExtractResult {
         })
     })
 }
-fn print_errors(errors: &[Diagnostic]) {
+fn print_errors(errors: &[DiagnosticInformation]) {
     let v = WasmDiagnostic::from_diagnostics(errors);
     let v = serde_wasm_bindgen::to_value(&v).expect("should be able to serialize");
     emit_diagnostic(v)

@@ -1,5 +1,5 @@
 use crate::ast::runtype::Runtype;
-use crate::diag::{Diagnostic, DiagnosticInfoMessage, DiagnosticInformation, Location};
+use crate::diag::{DiagnosticInfoMessage, DiagnosticInformation, Location};
 use crate::frontend::FrontendCtx;
 use crate::{BeffUserSettings, ParsedModule};
 use crate::{BffFileName, FileManager, NamedSchema};
@@ -18,7 +18,7 @@ pub struct BuiltDecoder {
 
 #[derive(Debug)]
 pub struct ParserExtractResult {
-    pub errors: Vec<Diagnostic>,
+    pub errors: Vec<DiagnosticInformation>,
     pub entry_file_name: BffFileName,
     pub validators: Vec<NamedSchema>,
     pub built_decoders: Option<Vec<BuiltDecoder>>,
@@ -29,7 +29,7 @@ struct ExtractParserVisitor<'a, R: FileManager> {
     files: &'a mut R,
     current_file: BffFileName,
     validators: Vec<NamedSchema>,
-    errors: Vec<Diagnostic>,
+    errors: Vec<DiagnosticInformation>,
     built_decoders: Option<Vec<BuiltDecoder>>,
     settings: &'a BeffUserSettings,
     counter: usize,
@@ -58,7 +58,7 @@ impl<R: FileManager> ExtractParserVisitor<'_, R> {
         Location::build(file, span, &self.current_file).to_info(msg)
     }
     fn push_error(&mut self, span: &Span, msg: DiagnosticInfoMessage) {
-        self.errors.push(self.build_error(span, msg).to_diag());
+        self.errors.push(self.build_error(span, msg));
     }
 
     fn get_current_file(&mut self) -> Result<Rc<ParsedModule>> {
@@ -67,15 +67,12 @@ impl<R: FileManager> ExtractParserVisitor<'_, R> {
         match res {
             Some(it) => Ok(it),
             None => {
-                self.errors.push(
-                    self.build_error(
-                        &DUMMY_SP,
-                        DiagnosticInfoMessage::CannotFindFileWhenConvertingToSchema(
-                            self.current_file.clone(),
-                        ),
-                    )
-                    .to_diag(),
-                );
+                self.errors.push(self.build_error(
+                    &DUMMY_SP,
+                    DiagnosticInfoMessage::CannotFindFileWhenConvertingToSchema(
+                        self.current_file.clone(),
+                    ),
+                ));
                 Err(anyhow!("cannot find file: {}", self.current_file.0))
             }
         }

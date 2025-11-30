@@ -8,9 +8,7 @@ use crate::{
     BeffUserSettings, BffFileName, FileManager, ImportReference, ModuleItemAddress, ParsedModule,
     RuntypeName, Visibility,
     ast::runtype::{CustomFormat, Optionality, Runtype, RuntypeConst, TplLitType, TplLitTypeItem},
-    diag::{
-        Diagnostic, DiagnosticInfoMessage, DiagnosticInformation, DiagnosticParentMessage, Location,
-    },
+    diag::{DiagnosticInfoMessage, DiagnosticInformation, Location},
     parser_extractor::BuiltDecoder,
 };
 use crate::{NamedSchema, RuntypeUUID, TsBuiltIn, TypeAddress};
@@ -30,14 +28,14 @@ use swc_ecma_ast::{
     TsTypeParamInstantiation, TsTypePredicate, TsTypeQuery, TsTypeQueryExpr, TsTypeRef,
     TsUnionOrIntersectionType, TsUnionType,
 };
-type Res<T> = Result<T, Box<Diagnostic>>;
+type Res<T> = Result<T, Box<DiagnosticInformation>>;
 
 pub struct FrontendCtx<'a, R: FileManager> {
     pub files: &'a mut R,
     pub settings: &'a BeffUserSettings,
 
     pub parser_file: BffFileName,
-    pub errors: Vec<Diagnostic>,
+    pub errors: Vec<DiagnosticInformation>,
     pub partial_validators: BTreeMap<RuntypeUUID, Option<Runtype>>,
     pub recursive_generic_uuids: BTreeSet<RuntypeUUID>,
 
@@ -767,8 +765,7 @@ impl<'a, R: FileManager> FrontendCtx<'a, R> {
         Location::build(file_content, span, &file_name).to_info(msg)
     }
     fn push_error(&mut self, span: &Span, msg: DiagnosticInfoMessage, file_name: BffFileName) {
-        self.errors
-            .push(self.build_error(span, msg, file_name).to_diag());
+        self.errors.push(self.build_error(span, msg, file_name));
     }
 
     fn anyhow_error<T>(
@@ -788,7 +785,7 @@ impl<'a, R: FileManager> FrontendCtx<'a, R> {
         msg: DiagnosticInfoMessage,
         file_name: BffFileName,
     ) -> Res<T> {
-        let e = self.build_error(span, msg, file_name).to_diag();
+        let e = self.build_error(span, msg, file_name);
         Err(Box::new(e))
     }
     fn box_error(
@@ -796,9 +793,9 @@ impl<'a, R: FileManager> FrontendCtx<'a, R> {
         span: &Span,
         msg: DiagnosticInfoMessage,
         file: BffFileName,
-    ) -> Box<Diagnostic> {
+    ) -> Box<DiagnosticInformation> {
         let err = self.build_error(span, msg, file);
-        err.to_diag().into()
+        err.into()
     }
 
     fn get_or_fetch_adressed_file(
@@ -812,7 +809,6 @@ impl<'a, R: FileManager> FrontendCtx<'a, R> {
                 DiagnosticInfoMessage::CouldNotResolveAddressesSymbol(addr.clone()),
                 addr.file.clone(),
             ))
-            .to_diag()
         })?;
         Ok(parsed_module)
     }
@@ -823,7 +819,6 @@ impl<'a, R: FileManager> FrontendCtx<'a, R> {
                 DiagnosticInfoMessage::CannotFindFileWhenConvertingToSchema(file.clone()),
                 file.clone(),
             ))
-            .to_diag()
         })?;
         Ok(parsed_module)
     }
@@ -870,11 +865,7 @@ impl<'a, R: FileManager> FrontendCtx<'a, R> {
                     values.push(expr_ty);
                 }
                 None => {
-                    return self.cannot_serialize_error(
-                        &typ.span,
-                        DiagnosticInfoMessage::EnumMemberNoInit,
-                        file,
-                    )?;
+                    return self.error(&typ.span, DiagnosticInfoMessage::EnumMemberNoInit, file)?;
                 }
             }
         }
@@ -1220,7 +1211,7 @@ impl<'a, R: FileManager> FrontendCtx<'a, R> {
                     });
                     return match found.and_then(|it| it.init.clone()) {
                         Some(init) => self.typeof_expr(&init, true, address.file.clone()),
-                        None => self.cannot_serialize_error(
+                        None => self.error(
                             span,
                             DiagnosticInfoMessage::EnumMemberNoInit,
                             address.file.clone(),
@@ -1794,7 +1785,7 @@ impl<'a, R: FileManager> FrontendCtx<'a, R> {
             TsKeywordTypeKind::TsNullKeyword => Ok(Runtype::Null),
             TsKeywordTypeKind::TsNeverKeyword => Ok(Runtype::Never),
             TsKeywordTypeKind::TsSymbolKeyword | TsKeywordTypeKind::TsIntrinsicKeyword => self
-                .cannot_serialize_error(
+                .error(
                     &ty.span,
                     DiagnosticInfoMessage::KeywordNonSerializableToJsonSchema,
                     file,
@@ -2401,7 +2392,7 @@ impl<'a, R: FileManager> FrontendCtx<'a, R> {
                     ),
                 }
             }
-            TsTypeElement::TsIndexSignature(_) => self.cannot_serialize_error(
+            TsTypeElement::TsIndexSignature(_) => self.error(
                 &prop.span(),
                 DiagnosticInfoMessage::IndexSignatureNonSerializableToJsonSchema,
                 file.clone(),
@@ -2410,7 +2401,7 @@ impl<'a, R: FileManager> FrontendCtx<'a, R> {
             | TsTypeElement::TsSetterSignature(_)
             | TsTypeElement::TsMethodSignature(_)
             | TsTypeElement::TsCallSignatureDecl(_)
-            | TsTypeElement::TsConstructSignatureDecl(_) => self.cannot_serialize_error(
+            | TsTypeElement::TsConstructSignatureDecl(_) => self.error(
                 &prop.span(),
                 DiagnosticInfoMessage::PropertyNonSerializableToJsonSchema,
                 file.clone(),
@@ -2884,7 +2875,7 @@ impl<'a, R: FileManager> FrontendCtx<'a, R> {
                 for it in elem_types {
                     if let TsType::TsRestType(TsRestType { type_ann, .. }) = &*it.ty {
                         if items.is_some() {
-                            return self.cannot_serialize_error(
+                            return self.error(
                                 &it.span,
                                 DiagnosticInfoMessage::DuplicatedRestNonSerializableToJsonSchema,
                                 file.clone(),
@@ -2921,7 +2912,7 @@ impl<'a, R: FileManager> FrontendCtx<'a, R> {
             }
             TsType::TsTypeOperator(TsTypeOperator { span, op, type_ann }) => match op {
                 TsTypeOperatorOp::KeyOf => self.convert_keyof(type_ann, file.clone()),
-                TsTypeOperatorOp::Unique => self.cannot_serialize_error(
+                TsTypeOperatorOp::Unique => self.error(
                     span,
                     DiagnosticInfoMessage::UniqueNonSerializableToJsonSchema,
                     file,
@@ -2934,7 +2925,7 @@ impl<'a, R: FileManager> FrontendCtx<'a, R> {
                 DiagnosticInfoMessage::OptionalTypeIsNotSupported,
                 file,
             ),
-            TsType::TsThisType(TsThisType { span, .. }) => self.cannot_serialize_error(
+            TsType::TsThisType(TsThisType { span, .. }) => self.error(
                 span,
                 DiagnosticInfoMessage::ThisTypeNonSerializableToJsonSchema,
                 file,
@@ -2942,17 +2933,17 @@ impl<'a, R: FileManager> FrontendCtx<'a, R> {
             TsType::TsFnOrConstructorType(
                 TsFnOrConstructorType::TsConstructorType(TsConstructorType { span, .. })
                 | TsFnOrConstructorType::TsFnType(TsFnType { span, .. }),
-            ) => self.cannot_serialize_error(
+            ) => self.error(
                 span,
                 DiagnosticInfoMessage::TsFnOrConstructorTypeNonSerializableToJsonSchema,
                 file,
             ),
-            TsType::TsInferType(TsInferType { span, .. }) => self.cannot_serialize_error(
+            TsType::TsInferType(TsInferType { span, .. }) => self.error(
                 span,
                 DiagnosticInfoMessage::TsInferTypeNonSerializableToJsonSchema,
                 file,
             ),
-            TsType::TsTypePredicate(TsTypePredicate { span, .. }) => self.cannot_serialize_error(
+            TsType::TsTypePredicate(TsTypePredicate { span, .. }) => self.error(
                 span,
                 DiagnosticInfoMessage::TsTypePredicateNonSerializableToJsonSchema,
                 file,
@@ -2965,21 +2956,6 @@ impl<'a, R: FileManager> FrontendCtx<'a, R> {
                 file,
             ),
         }
-    }
-
-    fn cannot_serialize_error<T>(
-        &mut self,
-        span: &Span,
-        msg: DiagnosticInfoMessage,
-        file_name: BffFileName,
-    ) -> Res<T> {
-        let cause = self.build_error(span, msg, file_name);
-
-        Err(Diagnostic {
-            parent_big_message: Some(DiagnosticParentMessage::CannotConvertToSchema),
-            cause,
-        }
-        .into())
     }
 
     fn extract_one_built_decoder_v2(&mut self, prop: &TsTypeElement) -> Result<BuiltDecoder> {

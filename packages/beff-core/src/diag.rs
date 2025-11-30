@@ -569,9 +569,6 @@ pub struct FullLocation {
 }
 
 impl FullLocation {
-    pub fn to_diag(self, message: DiagnosticInfoMessage) -> Diagnostic {
-        self.to_info(message).to_diag()
-    }
     pub fn to_info(self, message: DiagnosticInfoMessage) -> DiagnosticInformation {
         DiagnosticInformation {
             message,
@@ -637,21 +634,6 @@ impl Location {
 pub struct DiagnosticInformation {
     pub message: DiagnosticInfoMessage,
     pub loc: Location,
-}
-
-impl DiagnosticInformation {
-    pub fn to_diag(self) -> Diagnostic {
-        Diagnostic {
-            parent_big_message: None,
-            cause: self,
-        }
-    }
-}
-
-#[derive(Debug)]
-pub struct Diagnostic {
-    pub parent_big_message: Option<DiagnosticParentMessage>,
-    pub cause: DiagnosticInformation,
 }
 
 fn span_to_loc(span: &Span, source_map: &Arc<SourceMap>, curr_file_end: BytePos) -> (Loc, Loc) {
