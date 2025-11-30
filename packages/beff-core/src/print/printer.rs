@@ -68,7 +68,7 @@ impl PrintContext {
             all_names: &self.all_names.iter().collect::<Vec<_>>(),
             recursive_generic_count_map: &mut self.recursive_generic_count_map,
         };
-        name.print_name_for_ts_codegen(&mut ctx)
+        name.print_name_for_js_codegen(&mut ctx)
     }
 }
 

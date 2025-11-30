@@ -1,0 +1,24 @@
+---
+source: packages/beff-core/tests/frontend_v2.rs
+assertion_line: 59
+expression: "print_types_multifile(&[(\"t1.ts\",\nr#\"\n                    export type X = string;\n                    export type Z = {a:X}\n                \"#,),\n(\"t2.ts\",\nr#\"\n                    export type X = boolean;\n                    export type W = {a:X}\n                \"#,),\n(\"entry.ts\",\nr#\"\n                    import { X, Z } from \"./t1\";\n                    import { X as X2, W } from \"./t2\";\n                    parse.buildParsers<{ X: X, Z: Z, X2: X2, W: W }>();\n                \"#)])"
+---
+type t1_ts__X = string;
+
+type t1_ts__X = string;
+
+type Z = { "a": t1_ts__X };
+
+type W = { "a": t2_ts__X };
+
+type t2_ts__X = boolean;
+
+type t2_ts__X = boolean;
+
+
+type BuiltParsers = {
+  W: W,
+  X: t1_ts__X,
+  X2: t2_ts__X,
+  Z: Z,
+}

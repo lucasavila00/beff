@@ -55,6 +55,35 @@ mod tests {
     }
 
     #[test]
+    fn type_ref_multifile_same_name() {
+        insta::assert_snapshot!(print_types_multifile(&[
+            //
+            (
+                "t1.ts",
+                r#"
+                    export type X = string;
+                    export type Z = {a:X}
+                "#,
+            ),
+            (
+                "t2.ts",
+                r#"
+                    export type X = boolean;
+                    export type W = {a:X}
+                "#,
+            ),
+            (
+                "entry.ts",
+                r#"
+                    import { X, Z } from "./t1";
+                    import { X as X2, W } from "./t2";
+                    parse.buildParsers<{ X: X, Z: Z, X2: X2, W: W }>();
+                "#
+            )
+        ]));
+    }
+
+    #[test]
     fn typeof_multifile() {
         insta::assert_snapshot!(print_types_multifile(&[
             //

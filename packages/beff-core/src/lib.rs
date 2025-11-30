@@ -235,7 +235,11 @@ impl ModuleItemAddress {
         // should be a valid typescript identifier
         format!(
             "{}__{}",
-            self.file.as_str().replace(".", "_").replace("/", "_"),
+            self.file
+                .as_str()
+                .replace(".", "_")
+                .replace("/", "_")
+                .replace("-", "_"),
             self.name
         )
     }
@@ -257,7 +261,7 @@ pub enum RuntypeName {
 }
 
 impl RuntypeName {
-    fn print_name_for_ts_codegen(&self, all_names: &[&RuntypeUUID]) -> String {
+    fn print_name_for_js_codegen(&self, all_names: &[&RuntypeUUID]) -> String {
         match self {
             RuntypeName::Address(addr) => addr.ts_identifier(all_names),
             RuntypeName::SemtypeRecursiveGenerated(n) => format!("RecursiveGenerated{}", n),
@@ -280,7 +284,7 @@ pub struct RuntypeUUID {
 impl RuntypeUUID {
     fn debug_print(&self, ctx: &mut DebugPrintCtx) -> String {
         let mut acc = String::new();
-        acc.push_str(&self.ty.print_name_for_ts_codegen(ctx.all_names));
+        acc.push_str(&self.ty.print_name_for_js_codegen(ctx.all_names));
         if !self.type_arguments.is_empty() {
             let rest = format!(
                 "<{}>",
@@ -307,9 +311,9 @@ impl RuntypeUUID {
         format!("_type_application_instance_{}", it)
     }
 
-    fn print_name_for_ts_codegen(&self, ctx: &mut DebugPrintCtx<'_>) -> String {
+    fn print_name_for_js_codegen(&self, ctx: &mut DebugPrintCtx<'_>) -> String {
         let mut acc = String::new();
-        acc.push_str(&self.ty.print_name_for_ts_codegen(ctx.all_names));
+        acc.push_str(&self.ty.print_name_for_js_codegen(ctx.all_names));
         if !self.type_arguments.is_empty() {
             let tap_counter = match ctx.recursive_generic_count_map.get(self) {
                 Some(count) => Self::tap_str(*count),
