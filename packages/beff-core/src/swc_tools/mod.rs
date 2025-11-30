@@ -55,6 +55,7 @@ pub enum ImportReference {
     },
     Star {
         file_name: BffFileName,
+        import_statement_anchor: Anchor,
     },
     Default {
         file_name: BffFileName,

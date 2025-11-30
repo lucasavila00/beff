@@ -100,7 +100,7 @@ pub enum AddressedQualifiedValue {
 trait TypeModuleWalker<'a, R: FileManager + 'a, U> {
     fn get_ctx<'b>(&'b mut self) -> &'b mut FrontendCtx<'a, R>;
 
-    fn handle_import_star(&mut self, file_name: BffFileName) -> Res<U>;
+    fn handle_import_star(&mut self, file_name: BffFileName, anchor: &Anchor) -> Res<U>;
 
     fn get_addressed_item_from_symbol_export(
         &mut self,
@@ -166,7 +166,11 @@ trait TypeModuleWalker<'a, R: FileManager + 'a, U> {
         }
     }
 
-    fn get_addressed_item_from_import_reference(&mut self, imported: &ImportReference) -> Res<U> {
+    fn get_addressed_item_from_import_reference(
+        &mut self,
+        imported: &ImportReference,
+        err_anchor: &Anchor,
+    ) -> Res<U> {
         match imported {
             ImportReference::Named {
                 original_name,
@@ -180,7 +184,10 @@ trait TypeModuleWalker<'a, R: FileManager + 'a, U> {
                 };
                 self.get_addressed_item(&new_addr, import_st_anchor)
             }
-            ImportReference::Star { file_name } => self.handle_import_star(file_name.clone()),
+            ImportReference::Star {
+                file_name,
+                import_statement_anchor: _,
+            } => self.handle_import_star(file_name.clone(), err_anchor),
             ImportReference::Default {
                 file_name,
                 import_statement_anchor,
@@ -222,7 +229,7 @@ trait TypeModuleWalker<'a, R: FileManager + 'a, U> {
                 }
 
                 if let Some(imported) = parsed_module.imports.get(&addr.name) {
-                    return self.get_addressed_item_from_import_reference(imported);
+                    return self.get_addressed_item_from_import_reference(imported, err_anchor);
                 }
 
                 Err(self.get_ctx().box_error(
@@ -325,9 +332,15 @@ impl<'a, 'b, R: FileManager> TypeModuleWalker<'a, R, AddressedType> for TypeWalk
         })
     }
 
-    fn handle_import_star(&mut self, _file_name: BffFileName) -> Res<AddressedType> {
-        // should have called get_addressed_qualified_type
-        todo!()
+    fn handle_import_star(
+        &mut self,
+        _file_name: BffFileName,
+        anchor: &Anchor,
+    ) -> Res<AddressedType> {
+        self.ctx.error(
+            anchor,
+            DiagnosticInfoMessage::CannotUseStarImportInTypePosition,
+        )
     }
 
     fn get_addressed_item_from_local_ts_enum(
@@ -370,7 +383,7 @@ impl<'a, 'b, R: FileManager> TypeModuleWalker<'a, R, AddressedQualifiedType>
     ) -> Res<AddressedQualifiedType> {
         match export {
             SymbolExport::StarOfOtherFile { reference } => {
-                self.get_addressed_item_from_import_reference(reference)
+                self.get_addressed_item_from_import_reference(reference, anchor)
             }
             SymbolExport::TsEnumDecl {
                 decl,
@@ -409,7 +422,11 @@ impl<'a, 'b, R: FileManager> TypeModuleWalker<'a, R, AddressedQualifiedType>
         ))
     }
 
-    fn handle_import_star(&mut self, file_name: BffFileName) -> Res<AddressedQualifiedType> {
+    fn handle_import_star(
+        &mut self,
+        file_name: BffFileName,
+        _anchor: &Anchor,
+    ) -> Res<AddressedQualifiedType> {
         Ok(AddressedQualifiedType::StarImport(file_name))
     }
 
@@ -515,7 +532,10 @@ trait ValueModuleWalker<'a, R: FileManager + 'a, U> {
                 };
                 self.get_addressed_item(&new_addr, import_st_anchor)
             }
-            ImportReference::Star { file_name } => self.handle_import_star(file_name.clone()),
+            ImportReference::Star {
+                file_name,
+                import_statement_anchor: _,
+            } => self.handle_import_star(file_name.clone()),
             ImportReference::Default {
                 file_name,
                 import_statement_anchor,

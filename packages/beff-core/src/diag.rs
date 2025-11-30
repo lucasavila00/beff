@@ -7,6 +7,7 @@ use crate::{BffFileName, ModuleItemAddress, ParsedModule, RuntypeUUID};
 
 #[derive(Debug, Clone)]
 pub enum DiagnosticInfoMessage {
+    CannotUseStarImportInTypePosition,
     CannotUseTypeInQualifiedTypePosition,
     CannotUseInterfaceInQualifiedTypePosition,
     PickNeedsString,
@@ -545,6 +546,9 @@ impl DiagnosticInfoMessage {
             }
             DiagnosticInfoMessage::CannotUseTypeInQualifiedTypePosition => {
                 "Cannot use type in qualified type position".to_string()
+            }
+            DiagnosticInfoMessage::CannotUseStarImportInTypePosition => {
+                "Cannot use star import in type position".to_string()
             }
         }
     }
