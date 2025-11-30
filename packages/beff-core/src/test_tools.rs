@@ -144,7 +144,7 @@ pub fn failure_multifile(sources: &[(&str, &str)]) -> String {
 
     for err in errors {
         out.push_str(&print_diag(err, sources));
-        out.push_str("\n");
+        out.push('\n');
     }
     out
 }
