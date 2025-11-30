@@ -397,4 +397,118 @@ mod tests {
         ───╯
         "#);
     }
+
+    #[test]
+    fn nested_resolution_error_array() {
+        insta::assert_snapshot!(failure(r#"
+            type T = Missing[];
+            parse.buildParsers<{ T: T }>();
+        "#), @r"
+        Error: Cannot resolve type 'entry.ts::Missing'
+           ╭─[entry.ts:2:23]
+           │
+         2 │             type T = Missing[];
+           │                      ───┬───  
+           │                         ╰───── Cannot resolve type 'entry.ts::Missing'
+        ───╯
+        ");
+    }
+
+    #[test]
+    fn nested_resolution_error_tuple() {
+        insta::assert_snapshot!(failure(r#"
+            type T = [string, Missing];
+            parse.buildParsers<{ T: T }>();
+        "#), @r"
+        Error: Cannot resolve type 'entry.ts::Missing'
+           ╭─[entry.ts:2:32]
+           │
+         2 │             type T = [string, Missing];
+           │                               ───┬───  
+           │                                  ╰───── Cannot resolve type 'entry.ts::Missing'
+        ───╯
+        ");
+    }
+
+    #[test]
+    fn nested_resolution_error_object() {
+        insta::assert_snapshot!(failure(r#"
+            type T = { a: Missing };
+            parse.buildParsers<{ T: T }>();
+        "#), @r"
+        Error: Cannot resolve type 'entry.ts::Missing'
+           ╭─[entry.ts:2:28]
+           │
+         2 │             type T = { a: Missing };
+           │                           ───┬───  
+           │                              ╰───── Cannot resolve type 'entry.ts::Missing'
+        ───╯
+        ");
+    }
+
+    #[test]
+    fn nested_resolution_error_union() {
+        insta::assert_snapshot!(failure(r#"
+            type T = string | Missing;
+            parse.buildParsers<{ T: T }>();
+        "#), @r"
+        Error: Cannot resolve type 'entry.ts::Missing'
+           ╭─[entry.ts:2:32]
+           │
+         2 │             type T = string | Missing;
+           │                               ───┬───  
+           │                                  ╰───── Cannot resolve type 'entry.ts::Missing'
+        ───╯
+        ");
+    }
+
+    #[test]
+    fn nested_resolution_error_intersection() {
+        insta::assert_snapshot!(failure(r#"
+            type T = string & Missing;
+            parse.buildParsers<{ T: T }>();
+        "#), @r"
+        Error: Cannot resolve type 'entry.ts::Missing'
+           ╭─[entry.ts:2:32]
+           │
+         2 │             type T = string & Missing;
+           │                               ───┬───  
+           │                                  ╰───── Cannot resolve type 'entry.ts::Missing'
+        ───╯
+        ");
+    }
+
+    #[test]
+    fn nested_resolution_error_generic() {
+        insta::assert_snapshot!(failure(r#"
+            type Box<T> = { item: T };
+            type T = Box<Missing>;
+            parse.buildParsers<{ T: T }>();
+        "#), @r"
+        Error: Cannot resolve type 'entry.ts::Missing'
+           ╭─[entry.ts:3:27]
+           │
+         3 │             type T = Box<Missing>;
+           │                          ───┬───  
+           │                             ╰───── Cannot resolve type 'entry.ts::Missing'
+        ───╯
+        ");
+    }
+
+    #[test]
+    fn extends_resolution_error() {
+        insta::assert_snapshot!(failure(r#"
+            interface I extends Missing {}
+            type T = I;
+            parse.buildParsers<{ T: T }>();
+        "#), @r"
+        Error: Cannot resolve type 'entry.ts::Missing'
+           ╭─[entry.ts:2:34]
+           │
+         2 │             interface I extends Missing {}
+           │                                 ───┬───  
+           │                                    ╰───── Cannot resolve type 'entry.ts::Missing'
+        ───╯
+        ");
+    }
 }
