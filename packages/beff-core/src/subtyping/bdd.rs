@@ -1,13 +1,13 @@
 use std::{cmp::Ordering, collections::BTreeMap, rc::Rc};
 
-use anyhow::{bail, Result};
+use anyhow::{Result, bail};
 
 use crate::{
     ast::{
         json::N,
         runtype::{CustomFormat, TplLitType, TplLitTypeItem},
     },
-    subtyping::{semtype::SemTypeContext, subtype::NumberRepresentationOrFormat, IsEmptyStatus},
+    subtyping::{IsEmptyStatus, semtype::SemTypeContext, subtype::NumberRepresentationOrFormat},
 };
 
 use super::{
@@ -590,9 +590,10 @@ fn mapping_atomic_applicable_member_types_inner(
             let is_subtype = member_types.len() == atomic.vs.len();
             if !is_subtype
                 && let Some(v) = &atomic.indexed_properties
-                    && v.key.is_all_strings() {
-                        member_types.push(v.value.clone());
-                    }
+                && v.key.is_all_strings()
+            {
+                member_types.push(v.value.clone());
+            }
 
             Ok(member_types)
         }
@@ -600,9 +601,10 @@ fn mapping_atomic_applicable_member_types_inner(
             let mut vs: Vec<Rc<SemType>> = atomic.vs.values().cloned().collect();
 
             if let Some(v) = &atomic.indexed_properties
-                && v.key.is_all_strings() {
-                    vs.push(v.value.clone());
-                }
+                && v.key.is_all_strings()
+            {
+                vs.push(v.value.clone());
+            }
             Ok(vs)
         }
     }
@@ -627,7 +629,8 @@ fn mapping_member_type_inner(
 
     match member_type {
         Some(it) => Ok(it),
-        None => Ok(SemTypeContext::optional_prop().into()),
+        //None => Ok(SemTypeContext::optional_prop().into()),
+        None => Ok(SemTypeContext::never().into()),
     }
 }
 

@@ -2243,14 +2243,13 @@ impl<'a, R: FileManager> FrontendCtx<'a, R> {
         let access_st: Rc<SemType> = ctx.indexed_access(base_st, key_rc).map_err(|e| {
             self.box_error(&anchor, DiagnosticInfoMessage::AnyhowError(e.to_string()))
         })?;
-        dbg!(&access_st);
         if access_st.is_never() {
             return self.error(
                 &anchor,
                 DiagnosticInfoMessage::KeyedAccessResultsInNeverType,
             );
         }
-        dbg!(self.semtype_to_runtype(access_st, &mut ctx, &key.span, file))
+        self.semtype_to_runtype(access_st, &mut ctx, &key.span, file)
     }
 
     fn extract_value_from_ts_qualified_name(

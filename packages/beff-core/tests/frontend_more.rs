@@ -212,13 +212,12 @@ mod tests {
     }
 
     #[test]
-    fn access_missing_property_on_object() {
+    fn circular_type_alias() {
         insta::assert_snapshot!(print_types(r#"
-            const A = { x: 1 };
-            export type T = typeof A.y;
+            type T = T;
             parse.buildParsers<{ T: T }>();
         "#), @r"
-        type T = undefined;
+        type T = T;
 
 
         type BuiltParsers = {

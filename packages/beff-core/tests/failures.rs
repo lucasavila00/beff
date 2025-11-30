@@ -265,4 +265,112 @@ mod tests {
         ───╯
         ");
     }
+
+    #[test]
+    fn import_star_missing_export() {
+        insta::assert_snapshot!(failure_multifile(&[
+            (
+                "t.ts",
+                r#"
+                    export const A = 1;
+                "#,
+            ),
+            (
+                "entry.ts",
+                r#"
+                    import * as Ns from "./t";
+                    export type T = typeof Ns.B;
+                    parse.buildParsers<{ T: T }>();
+                "#
+            )
+        ]), @r"
+        Error: Cannot resolve value 't.ts::B'
+           ╭─[entry.ts:3:38]
+           │
+         3 │                     export type T = typeof Ns.B;
+           │                                     ─────┬─────  
+           │                                          ╰─────── Cannot resolve value 't.ts::B'
+        ───╯
+        ");
+    }
+
+    #[test]
+    fn qualified_access_on_value_in_type_position() {
+        insta::assert_snapshot!(failure(r#"
+            const A = {};
+            export type T = A.B;
+            parse.buildParsers<{ T: T }>();
+        "#), @r"
+        Error: Cannot resolve type 'entry.ts::A'
+           ╭─[entry.ts:3:30]
+           │
+         3 │             export type T = A.B;
+           │                             ┬  
+           │                             ╰── Cannot resolve type 'entry.ts::A'
+        ───╯
+        ");
+    }
+    #[test]
+    fn access_missing_property_on_object() {
+        insta::assert_snapshot!(failure(r#"
+            const A = { x: 1 };
+            export type T = typeof A.y;
+            parse.buildParsers<{ T: T }>();
+        "#), @r"
+        Error: Keyed access results in 'never' type
+           ╭─[entry.ts:3:30]
+           │
+         3 │             export type T = typeof A.y;
+           │                             ─────┬────  
+           │                                  ╰────── Keyed access results in 'never' type
+        ───╯
+        ");
+    }
+
+    // #[test]
+    // fn qualified_access_on_type_in_typeof_position() {
+    //     insta::assert_snapshot!(failure(r#"
+    //         type A = { b: string };
+    //         export type T = typeof A.b;
+    //         parse.buildParsers<{ T: T }>();
+    //     "#), @r"");
+    // }
+
+    // #[test]
+    // fn import_type_missing_named() {
+    //     insta::assert_snapshot!(failure_multifile(&[
+    //         (
+    //             "t.ts",
+    //             r#"
+    //                 export type A = string;
+    //             "#,
+    //         ),
+    //         (
+    //             "entry.ts",
+    //             r#"
+    //                 export type T = import("./t").B;
+    //                 parse.buildParsers<{ T: T }>();
+    //             "#
+    //         )
+    //     ]), @r"");
+    // }
+
+    // #[test]
+    // fn import_type_on_value() {
+    //     insta::assert_snapshot!(failure_multifile(&[
+    //         (
+    //             "t.ts",
+    //             r#"
+    //                 export const A = 1;
+    //             "#,
+    //         ),
+    //         (
+    //             "entry.ts",
+    //             r#"
+    //                 export type T = import("./t").A;
+    //                 parse.buildParsers<{ T: T }>();
+    //             "#
+    //         )
+    //     ]), @r"");
+    // }
 }
