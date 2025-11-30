@@ -260,7 +260,7 @@ impl TypeAddress {
                         has_same_name.push(type_address.clone());
                     }
                 }
-                RuntypeName::SemtypeRecursiveGenerated(_) => {}
+                RuntypeName::SemtypeRecursiveGenerated(_) | RuntypeName::BuiltIn(_) => {}
             }
         }
 
@@ -302,9 +302,33 @@ impl ModuleItemAddress {
     }
 }
 
+#[derive(Debug, Clone, PartialEq, Eq, Hash, PartialOrd, Ord, Copy)]
+pub enum TsBuiltIn {
+    Date,
+    Array,
+    StringFormat,
+    StringFormatExtends,
+    NumberFormat,
+    NumberFormatExtends,
+
+    Record,
+    Omit,
+    Object,
+    Required,
+    Partial,
+    Pick,
+    Exclude,
+}
+impl fmt::Display for TsBuiltIn {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "{:?}", self)
+    }
+}
+
 #[derive(Debug, Clone, PartialEq, Eq, Hash, PartialOrd, Ord)]
 pub enum RuntypeName {
     Address(TypeAddress),
+    BuiltIn(TsBuiltIn),
     EnumItem {
         address: TypeAddress,
         member_name: String,
@@ -323,6 +347,7 @@ impl RuntypeName {
             } => {
                 format!("{}__{}", enum_type.ts_identifier(all_names), member_name)
             }
+            RuntypeName::BuiltIn(ts_built_in) => ts_built_in.to_string(),
         }
     }
 }
