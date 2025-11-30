@@ -9,6 +9,7 @@ pub mod wasm_diag;
 
 use crate::ast::runtype::DebugPrintCtx;
 use crate::ast::runtype::Runtype;
+use crate::swc::bind_locals::ParsedModuleLocals;
 use core::fmt;
 use parser_extractor::ParserExtractResult;
 use parser_extractor::extract_parser;
@@ -23,15 +24,10 @@ use swc_common::SourceFile;
 use swc_common::SourceMap;
 use swc_common::Span;
 use swc_common::SyntaxContext;
-use swc_ecma_ast::Decl;
 use swc_ecma_ast::Expr;
-use swc_ecma_ast::ModuleItem;
-use swc_ecma_ast::Pat;
-use swc_ecma_ast::Stmt;
 use swc_ecma_ast::TsEnumDecl;
 use swc_ecma_ast::{Module, TsType};
 use swc_ecma_ast::{TsInterfaceDecl, TsTypeAliasDecl};
-use swc_ecma_visit::Visit;
 use swc_node_comments::SwcComments;
 
 #[derive(Debug, Clone)]
@@ -252,104 +248,6 @@ pub struct ParsedModule {
     pub imports: HashMap<String, Rc<ImportReference>>,
     pub comments: SwcComments,
     pub symbol_exports: SymbolsExportsModule,
-}
-
-#[derive(Debug)]
-pub struct ParsedModuleLocals {
-    pub type_aliases: HashMap<String, Rc<TsTypeAliasDecl>>,
-    pub interfaces: HashMap<String, Rc<TsInterfaceDecl>>,
-    pub enums: HashMap<String, Rc<TsEnumDecl>>,
-
-    pub exprs: HashMap<String, Rc<Expr>>,
-    pub exprs_decls: HashMap<String, Rc<TsType>>,
-}
-impl ParsedModuleLocals {
-    pub fn new() -> ParsedModuleLocals {
-        ParsedModuleLocals {
-            type_aliases: HashMap::new(),
-            interfaces: HashMap::new(),
-            enums: HashMap::new(),
-            exprs: HashMap::new(),
-            exprs_decls: HashMap::new(),
-        }
-    }
-}
-
-impl Default for ParsedModuleLocals {
-    fn default() -> Self {
-        Self::new()
-    }
-}
-pub struct ParserOfModuleLocals {
-    content: ParsedModuleLocals,
-}
-impl Default for ParserOfModuleLocals {
-    fn default() -> Self {
-        Self::new()
-    }
-}
-impl ParserOfModuleLocals {
-    pub fn new() -> ParserOfModuleLocals {
-        ParserOfModuleLocals {
-            content: ParsedModuleLocals::new(),
-        }
-    }
-
-    pub fn visit_module_item_list(&mut self, it: &[ModuleItem]) {
-        for it in it {
-            match it {
-                ModuleItem::Stmt(Stmt::Decl(decl)) => {
-                    // add expr to self.content
-                    if let Decl::Var(var_decl) = decl {
-                        for it in &var_decl.decls {
-                            if let Some(expr) = &it.init {
-                                if let Pat::Ident(id) = &it.name {
-                                    self.content
-                                        .exprs
-                                        .insert(id.sym.to_string(), Rc::new(*expr.clone()));
-                                }
-                            }
-
-                            if var_decl.declare {
-                                if let Pat::Ident(id) = &it.name {
-                                    if let Some(ann) = &id.type_ann {
-                                        self.content.exprs_decls.insert(
-                                            id.sym.to_string(),
-                                            Rc::new(*ann.type_ann.clone()),
-                                        );
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-                ModuleItem::ModuleDecl(_) => {}
-                ModuleItem::Stmt(_) => {}
-            }
-        }
-    }
-}
-
-impl Visit for ParserOfModuleLocals {
-    fn visit_ts_type_alias_decl(&mut self, n: &TsTypeAliasDecl) {
-        let TsTypeAliasDecl { id, .. } = n;
-        self.content
-            .type_aliases
-            .insert(id.sym.to_string(), Rc::new(n.clone()));
-    }
-    fn visit_ts_interface_decl(&mut self, n: &TsInterfaceDecl) {
-        let TsInterfaceDecl { id, .. } = n;
-        self.content
-            .interfaces
-            .insert(id.sym.to_string(), Rc::new(n.clone()));
-    }
-
-    fn visit_ts_enum_decl(&mut self, n: &swc_ecma_ast::TsEnumDecl) {
-        let TsEnumDecl { id, .. } = n;
-        self.content
-            .enums
-            .insert(id.sym.to_string(), Rc::new(n.clone()));
-    }
 }
 
 #[derive(Debug)]

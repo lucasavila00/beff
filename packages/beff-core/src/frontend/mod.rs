@@ -296,14 +296,6 @@ trait TypeModuleWalker<'a, R: FileManager + 'a, U> {
                     return self.get_addressed_item_from_import_reference(imported, span);
                 }
 
-                // TODO: should not get exports here, they should come from locals as exports can rename them!!!
-                if let Some(symbol_export) = parsed_module
-                    .symbol_exports
-                    .get_type(&addr.name, self.get_ctx().files)
-                {
-                    return self.get_addressed_item_from_symbol_export(&symbol_export, span);
-                }
-
                 dbg!(&addr);
                 todo!()
             }
@@ -632,14 +624,6 @@ trait ValueModuleWalker<'a, R: FileManager + 'a, U> {
                                 .get_addressed_item_from_default_import(file_name.clone(), span);
                         }
                     }
-                }
-
-                // TODO: should not get exports here, they should come from locals as exports can rename them!!!
-                if let Some(symbol_export) = parsed_module
-                    .symbol_exports
-                    .get_value(&addr.name, self.get_ctx().files)
-                {
-                    return self.get_addressed_item_from_symbol_export(&symbol_export);
                 }
 
                 dbg!(&addr);
