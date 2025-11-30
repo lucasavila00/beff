@@ -1778,11 +1778,9 @@ impl<'a, R: FileManager> FrontendCtx<'a, R> {
             TsKeywordTypeKind::TsUndefinedKeyword => Ok(Runtype::Undefined),
             TsKeywordTypeKind::TsNullKeyword => Ok(Runtype::Null),
             TsKeywordTypeKind::TsNeverKeyword => Ok(Runtype::Never),
-            TsKeywordTypeKind::TsSymbolKeyword | TsKeywordTypeKind::TsIntrinsicKeyword => self
-                .error(
-                    &anchor,
-                    DiagnosticInfoMessage::KeywordNonSerializableToJsonSchema,
-                ),
+            TsKeywordTypeKind::TsSymbolKeyword | TsKeywordTypeKind::TsIntrinsicKeyword => {
+                self.error(&anchor, DiagnosticInfoMessage::KeywordNonSerializable)
+            }
         }
     }
     fn extract_array_value(&mut self, arr: Runtype, span: Span, file: BffFileName) -> Res<Runtype> {
@@ -2101,12 +2099,12 @@ impl<'a, R: FileManager> FrontendCtx<'a, R> {
                 match (left, right) {
                     (Runtype::Number, Runtype::Number) => Ok(Runtype::Number),
                     (Runtype::String, Runtype::String) => Ok(Runtype::String),
-                    _ => self.error(&anchor, DiagnosticInfoMessage::CannotConvertExprToSchema),
+                    _ => self.error(&anchor, DiagnosticInfoMessage::CannotConvertExpr),
                 }
             }
             _ => {
                 dbg!(&e);
-                self.error(&anchor, DiagnosticInfoMessage::CannotConvertExprToSchema)
+                self.error(&anchor, DiagnosticInfoMessage::CannotConvertExpr)
             }
         }
     }
@@ -2409,16 +2407,15 @@ impl<'a, R: FileManager> FrontendCtx<'a, R> {
             }
             TsTypeElement::TsIndexSignature(_) => self.error(
                 &anchor,
-                DiagnosticInfoMessage::IndexSignatureNonSerializableToJsonSchema,
+                DiagnosticInfoMessage::IndexSignatureNonSerializable,
             ),
             TsTypeElement::TsGetterSignature(_)
             | TsTypeElement::TsSetterSignature(_)
             | TsTypeElement::TsMethodSignature(_)
             | TsTypeElement::TsCallSignatureDecl(_)
-            | TsTypeElement::TsConstructSignatureDecl(_) => self.error(
-                &anchor,
-                DiagnosticInfoMessage::PropertyNonSerializableToJsonSchema,
-            ),
+            | TsTypeElement::TsConstructSignatureDecl(_) => {
+                self.error(&anchor, DiagnosticInfoMessage::PropertyNonSerializable)
+            }
         }
     }
 
@@ -2449,18 +2446,12 @@ impl<'a, R: FileManager> FrontendCtx<'a, R> {
                 let v = v.and_then(|it| it.clone());
                 match v {
                     Some(v) => self.runtype_to_tpl_lit(span, &v, file_name.clone()),
-                    None => self.error(
-                        &anchor,
-                        DiagnosticInfoMessage::CannotResolveRefInJsonSchemaToTplLit,
-                    ),
+                    None => self.error(&anchor, DiagnosticInfoMessage::CannotResolveRefToTplLit),
                 }
             }
             Runtype::TplLitType(it) => match it.0.as_slice() {
                 [single] => Ok(single.clone()),
-                _ => self.error(
-                    &anchor,
-                    DiagnosticInfoMessage::NestedTplLitInJsonSchemaToTplLit,
-                ),
+                _ => self.error(&anchor, DiagnosticInfoMessage::NestedTplLitToTplLit),
             },
             _ => self.error(
                 &anchor,
@@ -2855,12 +2846,17 @@ impl<'a, R: FileManager> FrontendCtx<'a, R> {
                         if items.is_some() {
                             return self.error(
                                 &anchor,
-                                DiagnosticInfoMessage::DuplicatedRestNonSerializableToJsonSchema,
+                                DiagnosticInfoMessage::DuplicatedRestNonSerializable,
                             );
                         }
                         let ann = match self.extract_type(type_ann, file.clone())? {
                             Runtype::Array(items) => *items,
-                            _ => todo!(),
+                            _ => {
+                                return self.error(
+                                    &anchor,
+                                    DiagnosticInfoMessage::TupleRestTypeMustBeArray,
+                                );
+                            }
                         };
                         items = Some(ann.into());
                     } else {
@@ -2893,34 +2889,31 @@ impl<'a, R: FileManager> FrontendCtx<'a, R> {
                 type_ann,
             }) => match op {
                 TsTypeOperatorOp::KeyOf => self.convert_keyof(type_ann, file.clone()),
-                TsTypeOperatorOp::Unique => self.error(
-                    &anchor,
-                    DiagnosticInfoMessage::UniqueNonSerializableToJsonSchema,
-                ),
+                TsTypeOperatorOp::Unique => {
+                    self.error(&anchor, DiagnosticInfoMessage::UniqueNonSerializable)
+                }
                 TsTypeOperatorOp::ReadOnly => self.extract_type(type_ann, file.clone()),
             },
 
             TsType::TsOptionalType(TsOptionalType { .. }) => {
                 self.error(&anchor, DiagnosticInfoMessage::OptionalTypeIsNotSupported)
             }
-            TsType::TsThisType(TsThisType { .. }) => self.error(
-                &anchor,
-                DiagnosticInfoMessage::ThisTypeNonSerializableToJsonSchema,
-            ),
+            TsType::TsThisType(TsThisType { .. }) => {
+                self.error(&anchor, DiagnosticInfoMessage::ThisTypeNonSerializable)
+            }
             TsType::TsFnOrConstructorType(
                 TsFnOrConstructorType::TsConstructorType(TsConstructorType { .. })
                 | TsFnOrConstructorType::TsFnType(TsFnType { .. }),
             ) => self.error(
                 &anchor,
-                DiagnosticInfoMessage::TsFnOrConstructorTypeNonSerializableToJsonSchema,
+                DiagnosticInfoMessage::TsFnOrConstructorTypeNonSerializable,
             ),
-            TsType::TsInferType(TsInferType { .. }) => self.error(
-                &anchor,
-                DiagnosticInfoMessage::TsInferTypeNonSerializableToJsonSchema,
-            ),
+            TsType::TsInferType(TsInferType { .. }) => {
+                self.error(&anchor, DiagnosticInfoMessage::TsInferTypeNonSerializable)
+            }
             TsType::TsTypePredicate(TsTypePredicate { .. }) => self.error(
                 &anchor,
-                DiagnosticInfoMessage::TsTypePredicateNonSerializableToJsonSchema,
+                DiagnosticInfoMessage::TsTypePredicateNonSerializable,
             ),
             TsType::TsRestType(_) => self.error(
                 &anchor,

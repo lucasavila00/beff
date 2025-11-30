@@ -573,13 +573,21 @@ mod tests {
         "#);
     }
 
-    // #[test]
-    // fn tuple_rest_not_array() {
-    //     insta::assert_snapshot!(failure(r#"
-    //         type T = [string, ...number];
-    //         parse.buildParsers<{ T: T }>();
-    //     "#), @r"");
-    // }
+    #[test]
+    fn tuple_rest_not_array() {
+        insta::assert_snapshot!(failure(r#"
+            type T = [string, ...number];
+            parse.buildParsers<{ T: T }>();
+        "#), @r"
+        Error: Rest type in tuple must be an array type
+           ╭─[entry.ts:2:23]
+           │
+         2 │             type T = [string, ...number];
+           │                      ─────────┬─────────  
+           │                               ╰─────────── Rest type in tuple must be an array type
+        ───╯
+        ");
+    }
 
     // #[test]
     // fn typeof_keyed_access_on_non_object() {
