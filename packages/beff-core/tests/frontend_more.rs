@@ -304,4 +304,83 @@ mod tests {
         }
         "#);
     }
+
+    #[test]
+    fn typeof_object_literal_prop() {
+        insta::assert_snapshot!(print_types(r#"
+            const obj = { a: "hello" };
+            export type T = typeof obj.a;
+            parse.buildParsers<{ T: T }>();
+        "#), @r"
+        type T = string;
+
+
+        type BuiltParsers = {
+          T: T,
+        }
+        ");
+    }
+
+    #[test]
+    fn export_default_object() {
+        insta::assert_snapshot!(print_types_multifile(&[
+            (
+                "t.ts",
+                r#"
+                    export default { a: "hello" };
+                "#,
+            ),
+            (
+                "entry.ts",
+                r#"
+                    import D from "./t";
+                    type T = typeof D.a;
+                    parse.buildParsers<{ T: T }>();
+                "#
+            )
+        ]), @r"
+        type T = string;
+
+
+        type BuiltParsers = {
+          T: T,
+        }
+        ");
+    }
+
+    #[test]
+    fn typeof_enum_in_namespace() {
+        insta::assert_snapshot!(print_types_multifile(&[
+            (
+                "t.ts",
+                r#"
+                    export enum E { A = "a" }
+                "#,
+            ),
+            (
+                "entry.ts",
+                r#"
+                    import * as Ns from "./t";
+                    export type T = typeof Ns.E;
+                    parse.buildParsers<{ T: T }>();
+                "#
+            )
+        ]), @r#"
+        type T = "a";
+
+
+        type BuiltParsers = {
+          T: T,
+        }
+        "#);
+    }
+
+    // #[test]
+    // fn typeof_nested_object_literal_prop() {
+    //     insta::assert_snapshot!(print_types(r#"
+    //         const obj = { a: { b: "hello" } };
+    //         export type T = typeof obj.a.b;
+    //         parse.buildParsers<{ T: T }>();
+    //     "#), @r"");
+    // }
 }

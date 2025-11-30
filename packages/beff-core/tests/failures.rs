@@ -622,4 +622,87 @@ mod tests {
         ───╯
         "#);
     }
+
+    #[test]
+    fn type_alias_as_value() {
+        insta::assert_snapshot!(failure(r#"
+            type A = string;
+            const v = A;
+            export type T = typeof v;
+            parse.buildParsers<{ T: T }>();
+        "#), @r"
+        Error: Cannot resolve value 'entry.ts::A'
+           ╭─[entry.ts:3:24]
+           │
+         3 │             const v = A;
+           │                       ┬  
+           │                       ╰── Cannot resolve value 'entry.ts::A'
+        ───╯
+        ");
+    }
+
+    #[test]
+    fn typeof_namespace_type_export() {
+        insta::assert_snapshot!(failure_multifile(&[
+            (
+                "t.ts",
+                r#"
+                    export type T = string;
+                "#,
+            ),
+            (
+                "entry.ts",
+                r#"
+                    import * as Ns from "./t";
+                    export type T = typeof Ns.T;
+                    parse.buildParsers<{ T: T }>();
+                "#
+            )
+        ]), @r"
+        Error: Cannot resolve value 't.ts::T'
+           ╭─[entry.ts:3:38]
+           │
+         3 │                     export type T = typeof Ns.T;
+           │                                     ─────┬─────  
+           │                                          ╰─────── Cannot resolve value 't.ts::T'
+        ───╯
+        ");
+    }
+
+    #[test]
+    fn typeof_namespace_interface_export() {
+        insta::assert_snapshot!(failure_multifile(&[
+            (
+                "t.ts",
+                r#"
+                    export interface I {}
+                "#,
+            ),
+            (
+                "entry.ts",
+                r#"
+                    import * as Ns from "./t";
+                    export type T = typeof Ns.I;
+                    parse.buildParsers<{ T: T }>();
+                "#
+            )
+        ]), @r"
+        Error: Cannot resolve value 't.ts::I'
+           ╭─[entry.ts:3:38]
+           │
+         3 │                     export type T = typeof Ns.I;
+           │                                     ─────┬─────  
+           │                                          ╰─────── Cannot resolve value 't.ts::I'
+        ───╯
+        ");
+    }
+
+    // #[test]
+    // fn typeof_qualified_value_expr_deep_failure() {
+    //     insta::assert_snapshot!(failure(r#"
+    //         const obj = { a: { b: 1 } };
+    //         export type T = typeof obj.a.c;
+    //         parse.buildParsers<{ T: T }>();
+    //     "#), @r"");
+    // }
 }
