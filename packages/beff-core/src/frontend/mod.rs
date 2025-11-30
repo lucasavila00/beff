@@ -162,7 +162,8 @@ pub enum AddressedQualifiedType {
 
 pub enum AddressedValue {
     ValueExpr(Rc<Expr>, BffFileName),
-    TsTypeDecl(Rc<TsType>, BffFileName),
+    TypeDecl(Rc<TsType>, BffFileName),
+    Enum(Rc<TsEnumDecl>, BffFileName),
 }
 
 pub enum AddressedQualifiedValue {
@@ -521,13 +522,14 @@ trait ValueModuleWalker<'a, R: FileManager + 'a, U> {
     fn get_ctx<'b>(&'b mut self) -> &'b mut FrontendCtx<'a, R>;
 
     fn get_addressed_item_from_symbol_export(&mut self, exports: &SymbolExport) -> Res<U>;
-    fn handle_symbol_export_expr(
+    fn handle_symbol_expr(&mut self, symbol_export: &Rc<Expr>, file_name: &BffFileName) -> Res<U>;
+    fn handle_symbol_enum(
         &mut self,
-        symbol_export: &Rc<Expr>,
+        symbol_export: &Rc<TsEnumDecl>,
         file_name: &BffFileName,
     ) -> Res<U>;
 
-    fn handle_symbol_export_expr_decl(
+    fn handle_symbol_expr_decl(
         &mut self,
         symbol_export: &Rc<TsType>,
         file_name: &BffFileName,
@@ -559,7 +561,7 @@ trait ValueModuleWalker<'a, R: FileManager + 'a, U> {
                         };
                         return self.get_addressed_item(&new_addr, &i.span);
                     }
-                    _ => return self.handle_symbol_export_expr(&symbol_export.clone(), file_name),
+                    _ => return self.handle_symbol_expr(&symbol_export.clone(), file_name),
                 },
                 SymbolExportDefault::Renamed { export } => {
                     return self.get_addressed_item_from_symbol_export(export);
@@ -602,10 +604,13 @@ trait ValueModuleWalker<'a, R: FileManager + 'a, U> {
                     return self.get_addressed_item_from_import_reference(imported, span);
                 }
                 if let Some(expr) = parsed_module.locals.exprs.get(&addr.name) {
-                    return self.handle_symbol_export_expr(expr, &addr.file);
+                    return self.handle_symbol_expr(expr, &addr.file);
+                }
+                if let Some(enum_) = parsed_module.locals.enums.get(&addr.name) {
+                    return self.handle_symbol_enum(enum_, &addr.file);
                 }
                 if let Some(decl_expr) = parsed_module.locals.exprs_decls.get(&addr.name) {
-                    return self.handle_symbol_export_expr_decl(decl_expr, &addr.file);
+                    return self.handle_symbol_expr_decl(decl_expr, &addr.file);
                 }
                 if let Some(imported) = parsed_module.imports.get(&addr.name) {
                     match imported.as_ref() {
@@ -695,10 +700,7 @@ impl<'a, 'b, R: FileManager> ValueModuleWalker<'a, R, AddressedValue> for ValueW
                 original_file,
                 ty,
             } => {
-                return Ok(AddressedValue::TsTypeDecl(
-                    ty.clone(),
-                    original_file.clone(),
-                ));
+                return Ok(AddressedValue::TypeDecl(ty.clone(), original_file.clone()));
             }
 
             SymbolExport::StarOfOtherFile { .. } => {
@@ -720,7 +722,7 @@ impl<'a, 'b, R: FileManager> ValueModuleWalker<'a, R, AddressedValue> for ValueW
         }
     }
 
-    fn handle_symbol_export_expr(
+    fn handle_symbol_expr(
         &mut self,
         symbol_export: &Rc<Expr>,
         file_name: &BffFileName,
@@ -731,12 +733,12 @@ impl<'a, 'b, R: FileManager> ValueModuleWalker<'a, R, AddressedValue> for ValueW
         ));
     }
 
-    fn handle_symbol_export_expr_decl(
+    fn handle_symbol_expr_decl(
         &mut self,
         symbol_export: &Rc<TsType>,
         file_name: &BffFileName,
     ) -> Res<AddressedValue> {
-        return Ok(AddressedValue::TsTypeDecl(
+        return Ok(AddressedValue::TypeDecl(
             symbol_export.clone(),
             file_name.clone(),
         ));
@@ -745,6 +747,17 @@ impl<'a, 'b, R: FileManager> ValueModuleWalker<'a, R, AddressedValue> for ValueW
     fn handle_import_star(&mut self, _file_name: BffFileName) -> Res<AddressedValue> {
         // should call qualified version insteaed, it's an error
         todo!()
+    }
+
+    fn handle_symbol_enum(
+        &mut self,
+        symbol_export: &Rc<TsEnumDecl>,
+        file_name: &BffFileName,
+    ) -> Res<AddressedValue> {
+        return Ok(AddressedValue::Enum(
+            symbol_export.clone(),
+            file_name.clone(),
+        ));
     }
 }
 struct QaulifiedValueWalker<'a, 'b, R: FileManager> {
@@ -785,7 +798,7 @@ impl<'a, 'b, R: FileManager> ValueModuleWalker<'a, R, AddressedQualifiedValue>
         }
     }
 
-    fn handle_symbol_export_expr(
+    fn handle_symbol_expr(
         &mut self,
         symbol_export: &Rc<Expr>,
         file_name: &BffFileName,
@@ -796,7 +809,7 @@ impl<'a, 'b, R: FileManager> ValueModuleWalker<'a, R, AddressedQualifiedValue>
         ));
     }
 
-    fn handle_symbol_export_expr_decl(
+    fn handle_symbol_expr_decl(
         &mut self,
         _symbol_export: &Rc<TsType>,
         _file_name: &BffFileName,
@@ -806,6 +819,14 @@ impl<'a, 'b, R: FileManager> ValueModuleWalker<'a, R, AddressedQualifiedValue>
 
     fn handle_import_star(&mut self, file_name: BffFileName) -> Res<AddressedQualifiedValue> {
         return Ok(AddressedQualifiedValue::StarOfFile(file_name));
+    }
+
+    fn handle_symbol_enum(
+        &mut self,
+        _symbol_export: &Rc<TsEnumDecl>,
+        _file_name: &BffFileName,
+    ) -> Res<AddressedQualifiedValue> {
+        todo!()
     }
 }
 impl<'a, R: FileManager> FrontendCtx<'a, R> {
@@ -2102,50 +2123,40 @@ impl<'a, R: FileManager> FrontendCtx<'a, R> {
                             visibility: Visibility::Local,
                         };
                         let decl = self.get_addressed_value(&new_addr, &i.span)?;
-                        Some(decl)
+                        match decl {
+                            AddressedValue::ValueExpr { .. } => None,
+                            AddressedValue::TypeDecl { .. } => None,
+                            AddressedValue::Enum(ts_enum_decl, bff_file_name) => {
+                                Some((ts_enum_decl.clone(), bff_file_name.clone()))
+                            }
+                        }
                     } else {
                         None
                     };
-                    if let Some(from_enum) = from_enum {
-                        // if !as_const {
-                        //     return self.extract_enum_decl(&from_enum, file.clone());
-                        // }
-                        // let Some(enum_value) = from_enum.members.iter().find(|it| match &it.id {
-                        //     TsEnumMemberId::Ident(i) => i.sym == *key,
-                        //     TsEnumMemberId::Str(_) => unreachable!(),
-                        // }) else {
-                        //     return self
-                        //         .error(&m.prop.span(), DiagnosticInfoMessage::EnumMemberNotFound);
-                        // };
-                        // let Some(init) = &enum_value.init else {
-                        //     return self
-                        //         .error(&m.prop.span(), DiagnosticInfoMessage::EnumMemberNoInit);
-                        // };
+                    if let Some((from_enum, enum_file_name)) = from_enum {
+                        if !as_const {
+                            return self.extract_enum_decl(&from_enum, enum_file_name.clone());
+                        }
+                        let Some(enum_value) = from_enum.members.iter().find(|it| match &it.id {
+                            TsEnumMemberId::Ident(i) => i.sym == *key,
+                            TsEnumMemberId::Str(_) => unreachable!(),
+                        }) else {
+                            return self.error(
+                                &m.prop.span(),
+                                DiagnosticInfoMessage::EnumMemberNotFound,
+                                enum_file_name.clone(),
+                            );
+                        };
+                        let Some(init) = &enum_value.init else {
+                            return self.error(
+                                &m.prop.span(),
+                                DiagnosticInfoMessage::EnumMemberNoInit,
+                                enum_file_name.clone(),
+                            );
+                        };
 
-                        // return self.typeof_expr(init, true);
-                        todo!()
+                        return self.typeof_expr(init, true, enum_file_name.clone());
                     }
-
-                    todo!()
-
-                    // if let Some(from_enum) = from_enum {
-                    //     if !as_const {
-                    //         return self.convert_enum_decl(&from_enum);
-                    //     }
-                    //     let Some(enum_value) = from_enum.members.iter().find(|it| match &it.id {
-                    //         TsEnumMemberId::Ident(i) => i.sym == *key,
-                    //         TsEnumMemberId::Str(_) => unreachable!(),
-                    //     }) else {
-                    //         return self
-                    //             .error(&m.prop.span(), DiagnosticInfoMessage::EnumMemberNotFound);
-                    //     };
-                    //     let Some(init) = &enum_value.init else {
-                    //         return self
-                    //             .error(&m.prop.span(), DiagnosticInfoMessage::EnumMemberNoInit);
-                    //     };
-
-                    //     return self.typeof_expr(init, true);
-                    // }
                 }
                 let obj = self.typeof_expr(&m.obj, as_const, file.clone())?;
                 if let Some(key) = k {
@@ -2242,8 +2253,11 @@ impl<'a, R: FileManager> FrontendCtx<'a, R> {
             AddressedValue::ValueExpr(expr, expr_file) => {
                 self.typeof_expr(expr.as_ref(), false, expr_file)
             }
-            AddressedValue::TsTypeDecl(ts_type, bff_file_name) => {
+            AddressedValue::TypeDecl(ts_type, bff_file_name) => {
                 self.extract_type(&ts_type, bff_file_name)
+            }
+            AddressedValue::Enum(ts_enum_decl, bff_file_name) => {
+                self.extract_enum_decl(&ts_enum_decl, bff_file_name)
             }
         }
     }
