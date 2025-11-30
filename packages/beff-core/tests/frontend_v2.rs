@@ -124,7 +124,16 @@ mod tests {
   "#;
         insta::assert_snapshot!(print_types(from));
     }
+    #[test]
+    fn builtin_type_ref() {
+        let from = r#"
 
+    type X = Array<string>;
+    parse.buildParsers<{ X: X }>();
+
+  "#;
+        insta::assert_snapshot!(print_types(from));
+    }
     #[test]
     fn typeof_local() {
         let from = r#"
@@ -1625,6 +1634,16 @@ mod tests {
         ]));
     }
 
+    #[test]
+    fn generic_type() {
+        let from = r#"
+    type W<T> = { a: T };
+    type X = W<string>;
+    parse.buildParsers<{ X: X }>();
+
+  "#;
+        insta::assert_snapshot!(print_types(from));
+    }
     // #[test]
     // fn export_destructuring_array() {
     //     insta::assert_snapshot!(print_types_multifile(&[

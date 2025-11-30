@@ -998,23 +998,25 @@ mod tests {
         ));
     }
 
-    // #[test]
-    // fn ok_recursive_generic_with_union_parser() {
-    //     insta::assert_snapshot!(ok(r#"
-    //         type GenericWrapper<T> = {
-    //           value: T;
-    //           value2: T | boolean;
-    //           other: null | GenericWrapper<T>;
-    //         };
+    #[test]
+    fn ok_recursive_generic_with_union_parser() {
+        insta::assert_snapshot!(print_types(
+            r#"
+            type GenericWrapper<T> = {
+              value: T;
+              value2: T | boolean;
+              other: null | GenericWrapper<T>;
+            };
 
-    //         type UsesGenericWrapper = {
-    //           wrappedString: GenericWrapper<string>;
-    //           wrappedNumber: GenericWrapper<number>;
-    //         };
+            type UsesGenericWrapper = {
+              wrappedString: GenericWrapper<string>;
+              wrappedNumber: GenericWrapper<number>;
+            };
 
-    //         parse.buildParsers<{ UsesGenericWrapper: UsesGenericWrapper }>();
-    //   "#));
-    // }
+            parse.buildParsers<{ UsesGenericWrapper: UsesGenericWrapper }>();
+      "#
+        ));
+    }
 
     // #[test]
     // fn ok_recursive_generic_parser() {

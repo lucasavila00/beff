@@ -13,7 +13,7 @@ use crate::{
 use crate::{NamedSchema, RuntypeUUID};
 use anyhow::{Result, anyhow};
 use core::fmt;
-use std::collections::BTreeMap;
+use std::collections::{BTreeMap, BTreeSet};
 use std::rc::Rc;
 use swc_common::{Span, Spanned};
 use swc_ecma_ast::{
@@ -36,9 +36,12 @@ pub struct FrontendCtx<'a, R: FileManager> {
     pub parser_file: BffFileName,
     pub errors: Vec<Diagnostic>,
     pub partial_validators: BTreeMap<RuntypeUUID, Option<Runtype>>,
+    pub recursive_generic_uuids: BTreeSet<RuntypeUUID>,
 
     pub counter: usize,
     pub builtin_file: BffFileName,
+
+    pub type_application_stack: Vec<(String, Runtype)>,
 }
 
 #[derive(Debug)]
@@ -249,6 +252,7 @@ trait TypeModuleWalker<'a, R: FileManager + 'a, U> {
                     return self.get_addressed_item_from_import_reference(imported, span);
                 }
 
+                dbg!(&addr);
                 todo!()
             }
             Visibility::Export => {
@@ -744,6 +748,9 @@ impl<'a, R: FileManager> FrontendCtx<'a, R> {
             partial_validators: BTreeMap::new(),
             counter: 0,
             builtin_file: BffFileName("______builtin.ts".to_string().into()),
+
+            type_application_stack: vec![],
+            recursive_generic_uuids: BTreeSet::new(),
         }
     }
 
@@ -1017,12 +1024,24 @@ impl<'a, R: FileManager> FrontendCtx<'a, R> {
         let addressed_type = self.get_addressed_type(address, span)?;
         match addressed_type {
             AddressedType::TsType { t: decl, address } => {
-                assert!(
-                    decl.type_params.is_none(),
-                    "generic types not supported yet"
-                );
-                let runtype = self.extract_type(&decl.type_ann, address.file.clone())?;
-                Ok(runtype)
+                let mut count = 0;
+
+                let type_params = match &decl.type_params {
+                    Some(p) => {
+                        //
+                        p.params.iter().map(|tp| tp.name.sym.to_string()).collect()
+                    }
+                    None => vec![],
+                };
+                for (param, arg) in type_params.into_iter().zip(type_args.iter()) {
+                    self.type_application_stack.push((param, arg.clone()));
+                    count += 1;
+                }
+                let runtype = self.extract_type(&decl.type_ann, address.file.clone());
+                for _ in 0..count {
+                    self.type_application_stack.pop();
+                }
+                Ok(runtype?)
             }
             AddressedType::TsInterface { t, address: _ } => {
                 assert!(t.type_params.is_none(), "generic types not supported yet");
@@ -1329,6 +1348,14 @@ impl<'a, R: FileManager> FrontendCtx<'a, R> {
         file: BffFileName,
         visibility: Visibility,
     ) -> Res<Runtype> {
+        if let TsEntityName::Ident(ident) = type_name {
+            for (n, t) in self.type_application_stack.iter() {
+                if ident.sym.to_string() == *n {
+                    return Ok(t.clone());
+                }
+            }
+        }
+
         let type_args = match ts_type_args {
             Some(its) => {
                 let mut args = vec![];
@@ -1354,22 +1381,13 @@ impl<'a, R: FileManager> FrontendCtx<'a, R> {
         };
         let found = self.partial_validators.get(&rt_uuid);
         if let Some(_found_in_map) = found {
-            match ts_type_args {
-                Some(_) => {
-                    // return an error, cannot have recursive generic types for now
-                    return self.error(
-                        &type_name.span(),
-                        DiagnosticInfoMessage::CannotHaveRecursiveGenericTypes,
-                        file,
-                    );
-                }
-                None => {
-                    return Ok(Runtype::Ref(RuntypeUUID {
-                        ty: RuntypeName::Address(fat.addr().clone()),
-                        type_arguments: type_args.clone(),
-                    }));
-                }
+            if let Some(_) = ts_type_args {
+                self.recursive_generic_uuids.insert(rt_uuid.clone());
             }
+            return Ok(Runtype::Ref(RuntypeUUID {
+                ty: RuntypeName::Address(fat.addr().clone()),
+                type_arguments: type_args.clone(),
+            }));
         }
         self.partial_validators.insert(rt_uuid.clone(), None);
 
@@ -1378,10 +1396,15 @@ impl<'a, R: FileManager> FrontendCtx<'a, R> {
             Ok(ty) => match ts_type_args {
                 None => self.insert_definition(rt_uuid.clone(), ty),
                 Some(_) => {
-                    // TODO: remove component?
-                    // if the validators are keyed just by the address
-                    // each call with different type params will overwrite the previous one
-                    todo!()
+                    // We don't need to store a named type for each type application, just return the type
+                    // Unless it's recursive generic, then we need to keep the named type
+                    // TODO: it might be good for performance to re-use the named type too
+                    if self.recursive_generic_uuids.contains(&rt_uuid) {
+                        self.insert_definition(rt_uuid, ty)
+                    } else {
+                        self.partial_validators.remove(&rt_uuid);
+                        Ok(ty)
+                    }
                 }
             },
             Err(e) => {

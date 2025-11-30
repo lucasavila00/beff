@@ -495,10 +495,6 @@ impl ModuleItemAddress {
     fn ts_identifier(&self, all_names: &[&RuntypeUUID]) -> String {
         let mut this_name_count = 0;
         for name in all_names {
-            assert!(
-                name.type_arguments.is_empty(),
-                "type arguments not implemented"
-            );
             match &name.ty {
                 RuntypeName::Address(module_item_address) => {
                     if module_item_address == self {
@@ -557,14 +553,14 @@ impl RuntypeUUID {
         let mut acc = String::new();
         acc.push_str(&self.ty.debug_print(ctx.all_names));
         if !self.type_arguments.is_empty() {
-            acc.push_str("<");
+            acc.push_str("__");
             for (i, arg) in self.type_arguments.iter().enumerate() {
                 if i > 0 {
-                    acc.push_str(", ");
+                    acc.push_str("_");
                 }
                 acc.push_str(&arg.debug_print(&ctx));
             }
-            acc.push_str(">");
+            acc.push_str("__");
         }
         acc
     }
