@@ -98,6 +98,13 @@ impl AddressedType {
             AddressedType::TsBuiltIn { t: _, address } => address.clone(),
         }
     }
+
+    fn is_builtin(&self) -> bool {
+        match self {
+            AddressedType::TsBuiltIn { .. } => true,
+            _ => false,
+        }
+    }
 }
 
 #[derive(PartialEq, PartialOrd)]
@@ -113,30 +120,6 @@ pub enum AddressedValue {
 pub enum AddressedQualifiedValue {
     StarOfFile(BffFileName),
     ValueExpr(Rc<Expr>, BffFileName),
-}
-
-#[derive(Debug)]
-enum FinalTypeAddress {
-    TsType { addressed_type: AddressedType },
-    // SomethingOfStarOfFile is not fully resolved, figure out a way of fixing it
-    //SomethingOfStarOfFile { address: ModuleItemAddress },
-}
-
-impl FinalTypeAddress {
-    pub fn is_builtin(&self) -> bool {
-        match self {
-            FinalTypeAddress::TsType { addressed_type } => matches!(
-                addressed_type,
-                AddressedType::TsBuiltIn { t: _, address: _ }
-            ),
-        }
-    }
-
-    pub fn addr(&self) -> ModuleItemAddress {
-        match self {
-            FinalTypeAddress::TsType { addressed_type } => addressed_type.addr(),
-        }
-    }
 }
 
 trait TypeModuleWalker<'a, R: FileManager + 'a, U> {
@@ -1133,14 +1116,14 @@ impl<'a, R: FileManager> FrontendCtx<'a, R> {
         type_name: &TsEntityName,
         file: BffFileName,
         visibility: Visibility,
-    ) -> Res<FinalTypeAddress> {
-        let addressed = match type_name {
+    ) -> Res<AddressedType> {
+        match type_name {
             TsEntityName::Ident(ident) => {
                 if let Some(builtin) = self.maybe_generate_ts_builtin(&ident.sym)? {
-                    builtin
+                    Ok(builtin)
                 } else {
                     let addr = ModuleItemAddress::from_ident(ident, file, visibility);
-                    self.get_addressed_type(&addr, &ident.span)?
+                    self.get_addressed_type(&addr, &ident.span)
                 }
             }
             TsEntityName::TsQualifiedName(ts_qualified_name) => {
@@ -1153,12 +1136,9 @@ impl<'a, R: FileManager> FrontendCtx<'a, R> {
                         visibility: Visibility::Export,
                     },
                 };
-                self.get_addressed_type(&new_addr, &ts_qualified_name.span())?
+                self.get_addressed_type(&new_addr, &ts_qualified_name.span())
             }
-        };
-        Ok(FinalTypeAddress::TsType {
-            addressed_type: addressed,
-        })
+        }
     }
     fn insert_definition(&mut self, addr: RuntypeName, schema: Runtype) -> Res<Runtype> {
         if let Some(Some(v)) = self.partial_validators.get(&addr) {
