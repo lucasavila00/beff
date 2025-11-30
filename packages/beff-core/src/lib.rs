@@ -18,6 +18,7 @@ use parser_extractor::ParserExtractResult;
 use parser_extractor::extract_parser;
 use serde::Deserialize;
 use serde::Serialize;
+use std::collections::BTreeMap;
 use std::collections::BTreeSet;
 use std::collections::HashMap;
 use std::rc::Rc;
@@ -92,13 +93,16 @@ pub trait FileManager {
 fn debug_print_type_list(vs: Vec<(RuntypeUUID, String)>) -> String {
     let mut acc = String::new();
     let all_names = vs.iter().map(|(name, _)| name).collect::<Vec<_>>();
+    let mut recursive_generic_count = BTreeMap::new();
+    let mut ctx = DebugPrintCtx {
+        all_names: &all_names,
+        recursive_generic_count_map: &mut recursive_generic_count,
+    };
+
     for (name, ts_type) in vs.iter() {
-        let ctx = DebugPrintCtx {
-            all_names: &all_names,
-        };
         acc.push_str(&format!(
             "type {} = {};\n\n",
-            name.debug_print(&ctx),
+            name.debug_print(&mut ctx),
             ts_type
         ));
     }
@@ -126,12 +130,14 @@ impl ParserExtractResult {
             .iter()
             .map(|it| &it.name)
             .collect::<Vec<_>>();
-        let debug_print_ctx = DebugPrintCtx {
+        let mut recursive_generic_count = BTreeMap::new();
+        let mut debug_print_ctx = DebugPrintCtx {
             all_names: &all_names,
+            recursive_generic_count_map: &mut recursive_generic_count,
         };
 
         for v in sorted_validators {
-            vs.push((v.name.clone(), v.schema.debug_print(&debug_print_ctx)));
+            vs.push((v.name.clone(), v.schema.debug_print(&mut debug_print_ctx)));
         }
 
         let validators_printed = debug_print_type_list(vs.clone());
@@ -149,7 +155,7 @@ impl ParserExtractResult {
         for v in sorted_decoders {
             decoders_vs.push((
                 v.exported_name.clone(),
-                v.schema.debug_print(&debug_print_ctx),
+                v.schema.debug_print(&mut debug_print_ctx),
             ));
         }
 
@@ -251,7 +257,7 @@ pub enum RuntypeName {
 }
 
 impl RuntypeName {
-    fn debug_print(&self, all_names: &[&RuntypeUUID]) -> String {
+    fn print_name_for_ts_codegen(&self, all_names: &[&RuntypeUUID]) -> String {
         match self {
             RuntypeName::Address(addr) => addr.ts_identifier(all_names),
             RuntypeName::SemtypeRecursiveGenerated(n) => format!("RecursiveGenerated{}", n),
@@ -272,24 +278,52 @@ pub struct RuntypeUUID {
 }
 
 impl RuntypeUUID {
-    fn debug_print(&self, ctx: &DebugPrintCtx) -> String {
+    fn debug_print(&self, ctx: &mut DebugPrintCtx) -> String {
         let mut acc = String::new();
-        acc.push_str(&self.ty.debug_print(ctx.all_names));
+        acc.push_str(&self.ty.print_name_for_ts_codegen(ctx.all_names));
         if !self.type_arguments.is_empty() {
-            acc.push_str("__");
-            for (i, arg) in self.type_arguments.iter().enumerate() {
-                if i > 0 {
-                    acc.push_str("_");
-                }
-                acc.push_str(&arg.debug_print(&ctx));
-            }
-            acc.push_str("__");
+            let rest = format!(
+                "<{}>",
+                self.type_arguments
+                    .iter()
+                    .map(|it| it.debug_print(ctx))
+                    .collect::<Vec<_>>()
+                    .join(", ")
+            );
+            acc.push_str(&rest);
         }
         acc
     }
     fn diag_print(&self) -> String {
-        let empty_ctx = DebugPrintCtx { all_names: &[] };
-        self.debug_print(&empty_ctx)
+        let mut recursive_generic_count = BTreeMap::new();
+        let mut empty_ctx = DebugPrintCtx {
+            all_names: &[],
+            recursive_generic_count_map: &mut recursive_generic_count,
+        };
+        self.debug_print(&mut empty_ctx)
+    }
+
+    fn tap_str(it: usize) -> String {
+        format!("_type_application_instance_{}", it)
+    }
+
+    fn print_name_for_ts_codegen(&self, ctx: &mut DebugPrintCtx<'_>) -> String {
+        let mut acc = String::new();
+        acc.push_str(&self.ty.print_name_for_ts_codegen(ctx.all_names));
+        if !self.type_arguments.is_empty() {
+            let tap_counter = match ctx.recursive_generic_count_map.get(self) {
+                Some(count) => Self::tap_str(*count),
+                None => {
+                    let recursive_generic_count = ctx.recursive_generic_count_map.len();
+                    let it = Self::tap_str(recursive_generic_count);
+                    ctx.recursive_generic_count_map
+                        .insert(self.clone(), recursive_generic_count);
+                    it
+                }
+            };
+            acc.push_str(&tap_counter);
+        }
+        acc
     }
 }
 

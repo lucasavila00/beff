@@ -264,6 +264,7 @@ impl UnionMerger {
 }
 pub struct DebugPrintCtx<'a> {
     pub all_names: &'a [&'a RuntypeUUID],
+    pub recursive_generic_count_map: &'a mut BTreeMap<RuntypeUUID, usize>,
 }
 impl Runtype {
     pub fn as_string_const(&self) -> Option<&str> {
@@ -421,7 +422,7 @@ impl Runtype {
         }
     }
 
-    pub fn debug_print(&self, ctx: &DebugPrintCtx) -> String {
+    pub fn debug_print(&self, ctx: &mut DebugPrintCtx) -> String {
         match self {
             Runtype::Undefined => "undefined".to_string(),
             Runtype::Null => "null".to_string(),

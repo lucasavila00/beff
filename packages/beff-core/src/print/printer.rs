@@ -59,14 +59,16 @@ struct PrintContext {
     hoisted: BTreeMap<Runtype, (usize, Expr)>,
     seen: SeenCounter,
     all_names: Vec<RuntypeUUID>,
+    recursive_generic_count_map: BTreeMap<RuntypeUUID, usize>,
 }
 
 impl PrintContext {
     pub fn print_rt_name(&mut self, name: &RuntypeUUID) -> String {
-        let ctx = &DebugPrintCtx {
+        let mut ctx = DebugPrintCtx {
             all_names: &self.all_names.iter().collect::<Vec<_>>(),
+            recursive_generic_count_map: &mut self.recursive_generic_count_map,
         };
-        name.debug_print(ctx)
+        name.print_name_for_ts_codegen(&mut ctx)
     }
 }
 
@@ -820,6 +822,7 @@ impl ParserExtractResult {
             hoisted: BTreeMap::new(),
             seen,
             all_names,
+            recursive_generic_count_map: BTreeMap::new(),
         };
 
         let build_parsers_input: ModuleItem = const_decl(
