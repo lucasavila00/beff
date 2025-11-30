@@ -160,11 +160,10 @@ impl SemTypeOps for Rc<SemType> {
                 _ => None,
             };
 
-            if let Some(data) = data {
-                if let SubType::Proper(data) = &*data {
+            if let Some(data) = data
+                && let SubType::Proper(data) = &*data {
                     subtypes.push(data.clone());
                 }
-            }
         }
 
         Ok(SemType::new_complex(all, subtypes).into())

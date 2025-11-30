@@ -62,23 +62,20 @@ impl ParserOfModuleLocals {
     }
     fn handle_var_decl(&mut self, var_decl: &swc_ecma_ast::VarDecl) {
         for it in &var_decl.decls {
-            if let Some(expr) = &it.init {
-                if let Pat::Ident(id) = &it.name {
+            if let Some(expr) = &it.init
+                && let Pat::Ident(id) = &it.name {
                     self.content
                         .exprs
                         .insert(id.sym.to_string(), Rc::new(*expr.clone()));
                 }
-            }
 
-            if var_decl.declare {
-                if let Pat::Ident(id) = &it.name {
-                    if let Some(ann) = &id.type_ann {
+            if var_decl.declare
+                && let Pat::Ident(id) = &it.name
+                    && let Some(ann) = &id.type_ann {
                         self.content
                             .exprs_decls
                             .insert(id.sym.to_string(), Rc::new(*ann.type_ann.clone()));
                     }
-                }
-            }
         }
     }
     fn handle_type_alias(&mut self, n: &TsTypeAliasDecl) {

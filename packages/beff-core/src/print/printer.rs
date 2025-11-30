@@ -258,8 +258,8 @@ fn runtype_any_of_discriminated(
 
             let all_values = extract_union(value, named_schemas);
             for s in all_values {
-                if let Some(s) = s.extract_single_string_const() {
-                    if s == current_key {
+                if let Some(s) = s.extract_single_string_const()
+                    && s == current_key {
                         let new_obj_vs: Vec<(String, Optionality<Runtype>)> = vs
                             .iter()
                             // .filter(|it| it.0 != &discriminator)
@@ -268,7 +268,6 @@ fn runtype_any_of_discriminated(
                         let new_obj = Runtype::object(new_obj_vs);
                         cases.push(new_obj);
                     }
-                }
             }
         }
         let schema = Runtype::any_of(cases);

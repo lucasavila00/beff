@@ -122,7 +122,7 @@ impl SymbolsExportsModule {
 
     pub fn insert_value(&mut self, name: String, export: Rc<SymbolExport>) {
         if name == "default" {
-            self.set_default_export(SymbolExportDefault::Renamed { export: export }.into());
+            self.set_default_export(SymbolExportDefault::Renamed { export }.into());
             return;
         }
         self.named_values.insert(name, export);
@@ -149,7 +149,7 @@ impl SymbolsExportsModule {
 
     pub fn insert_type(&mut self, name: String, export: Rc<SymbolExport>) {
         if name == "default" {
-            self.set_default_export(SymbolExportDefault::Renamed { export: export }.into());
+            self.set_default_export(SymbolExportDefault::Renamed { export }.into());
             return;
         }
         self.named_types.insert(name, export);
@@ -157,7 +157,7 @@ impl SymbolsExportsModule {
 
     pub fn insert_unknown(&mut self, name: String, export: Rc<SymbolExport>) {
         if name == "default" {
-            self.set_default_export(SymbolExportDefault::Renamed { export: export }.into());
+            self.set_default_export(SymbolExportDefault::Renamed { export }.into());
             return;
         }
         self.named_unknown.insert(name, export);

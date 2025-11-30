@@ -125,7 +125,7 @@ impl FileManager for LazyFileManager<'_> {
         module_specifier: &str,
     ) -> Option<BffFileName> {
         let mut resolver = WasmModuleResolver::new();
-        return resolver.resolve_import(current_file.clone(), module_specifier);
+        resolver.resolve_import(current_file.clone(), module_specifier)
     }
 }
 

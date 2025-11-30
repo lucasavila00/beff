@@ -153,8 +153,8 @@ impl<R: FsModuleResolver> Visit for ImportsVisitor<'_, R> {
             }
             Decl::Var(var_decl) => {
                 for it in &var_decl.decls {
-                    if let Some(expr) = &it.init {
-                        if let Pat::Ident(it) = &it.name {
+                    if let Some(expr) = &it.init
+                        && let Pat::Ident(it) = &it.name {
                             let name = it.sym.clone();
                             let export = Rc::new(SymbolExport::ValueExpr {
                                 expr: Rc::new(*expr.clone()),
@@ -164,11 +164,10 @@ impl<R: FsModuleResolver> Visit for ImportsVisitor<'_, R> {
                             });
                             self.symbol_exports.insert_value(it.sym.to_string(), export);
                         }
-                    }
 
-                    if var_decl.declare {
-                        if let Pat::Ident(it) = &it.name {
-                            if let Some(ann) = &it.type_ann {
+                    if var_decl.declare
+                        && let Pat::Ident(it) = &it.name
+                            && let Some(ann) = &it.type_ann {
                                 let name = it.sym.clone();
                                 let export = Rc::new(SymbolExport::ExprDecl {
                                     ty: Rc::new(*ann.type_ann.clone()),
@@ -178,8 +177,6 @@ impl<R: FsModuleResolver> Visit for ImportsVisitor<'_, R> {
                                 });
                                 self.symbol_exports.insert_value(it.sym.to_string(), export);
                             }
-                        }
-                    }
                 }
             }
 
@@ -195,8 +192,8 @@ impl<R: FsModuleResolver> Visit for ImportsVisitor<'_, R> {
                     match s {
                         ExportSpecifier::Default(_) => {}
                         ExportSpecifier::Namespace(ExportNamespaceSpecifier { name, .. }) => {
-                            if let ModuleExportName::Ident(id) = name {
-                                if let Some(file_name) = self.resolve_import(&src.value) {
+                            if let ModuleExportName::Ident(id) = name
+                                && let Some(file_name) = self.resolve_import(&src.value) {
                                     self.symbol_exports.insert_unknown(
                                         id.sym.to_string(),
                                         Rc::new(SymbolExport::StarOfOtherFile {
@@ -209,7 +206,6 @@ impl<R: FsModuleResolver> Visit for ImportsVisitor<'_, R> {
                                         }),
                                     )
                                 }
-                            }
                         }
                         ExportSpecifier::Named(ExportNamedSpecifier { orig, exported, .. }) => {
                             if let ModuleExportName::Ident(id) = orig {

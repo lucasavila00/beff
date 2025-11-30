@@ -588,24 +588,21 @@ fn mapping_atomic_applicable_member_types_inner(
             }
 
             let is_subtype = member_types.len() == atomic.vs.len();
-            if !is_subtype {
-                if let Some(v) = &atomic.indexed_properties {
-                    if v.key.is_all_strings() {
+            if !is_subtype
+                && let Some(v) = &atomic.indexed_properties
+                    && v.key.is_all_strings() {
                         member_types.push(v.value.clone());
                     }
-                }
-            }
 
             Ok(member_types)
         }
         MappingStrKey::True => {
             let mut vs: Vec<Rc<SemType>> = atomic.vs.values().cloned().collect();
 
-            if let Some(v) = &atomic.indexed_properties {
-                if v.key.is_all_strings() {
+            if let Some(v) = &atomic.indexed_properties
+                && v.key.is_all_strings() {
                     vs.push(v.value.clone());
                 }
-            }
             Ok(vs)
         }
     }

@@ -48,15 +48,15 @@ pub struct FrontendCtx<'a, R: FileManager> {
 
 #[derive(Debug)]
 enum AddressedType {
-    TsType {
+    Type {
         t: Rc<TsTypeAliasDecl>,
         local_address: TypeAddress,
     },
-    TsInterface {
+    Interface {
         t: Rc<TsInterfaceDecl>,
         local_address: TypeAddress,
     },
-    TsEnum {
+    Enum {
         t: Rc<TsEnumDecl>,
         local_address: TypeAddress,
     },
@@ -64,15 +64,15 @@ enum AddressedType {
 impl AddressedType {
     fn type_address(&self) -> TypeAddress {
         match self {
-            AddressedType::TsType {
+            AddressedType::Type {
                 t: _,
                 local_address: address,
             } => address.clone(),
-            AddressedType::TsInterface {
+            AddressedType::Interface {
                 t: _,
                 local_address: address,
             } => address.clone(),
-            AddressedType::TsEnum {
+            AddressedType::Enum {
                 t: _,
                 local_address: address,
             } => address.clone(),
@@ -153,14 +153,14 @@ trait TypeModuleWalker<'a, R: FileManager + 'a, U> {
                             name: i.sym.to_string(),
                             visibility: Visibility::Local,
                         };
-                        return self.get_addressed_item(&new_addr, span);
+                        self.get_addressed_item(&new_addr, span)
                     }
                     _ => {
                         todo!()
                     }
                 },
                 SymbolExportDefault::Renamed { export } => {
-                    return self.get_addressed_item_from_symbol_export(&export, span);
+                    self.get_addressed_item_from_symbol_export(export, span)
                 }
             },
             None => todo!(),
@@ -183,13 +183,13 @@ trait TypeModuleWalker<'a, R: FileManager + 'a, U> {
                     name: (*original_name).to_string(),
                     visibility: Visibility::Export,
                 };
-                return self.get_addressed_item(&new_addr, span);
+                self.get_addressed_item(&new_addr, span)
             }
             ImportReference::Star { file_name, span } => {
-                return self.handle_import_star(file_name.clone(), span);
+                self.handle_import_star(file_name.clone(), span)
             }
             ImportReference::Default { file_name } => {
-                return self.get_addressed_item_from_default_import(file_name.clone(), span);
+                self.get_addressed_item_from_default_import(file_name.clone(), span)
             }
         }
     }
@@ -199,27 +199,27 @@ trait TypeModuleWalker<'a, R: FileManager + 'a, U> {
         match addr.visibility {
             Visibility::Local => {
                 if let Some(ts_type) = parsed_module.locals.type_aliases.get(&addr.name) {
-                    return Ok(self.get_addressed_item_from_local_ts_type(
+                    return self.get_addressed_item_from_local_ts_type(
                         ts_type,
                         addr.file.clone(),
                         addr.name.clone(),
-                    )?);
+                    );
                 }
 
                 if let Some(enum_) = parsed_module.locals.enums.get(&addr.name) {
-                    return Ok(self.get_addressed_item_from_local_ts_enum(
+                    return self.get_addressed_item_from_local_ts_enum(
                         enum_,
                         addr.file.clone(),
                         addr.name.clone(),
-                    )?);
+                    );
                 }
 
                 if let Some(interface) = parsed_module.locals.interfaces.get(&addr.name) {
-                    return Ok(self.get_addressed_item_from_local_ts_interface(
+                    return self.get_addressed_item_from_local_ts_interface(
                         interface,
                         addr.file.clone(),
                         addr.name.clone(),
-                    )?);
+                    );
                 }
 
                 if let Some(imported) = parsed_module.imports.get(&addr.name) {
@@ -269,39 +269,33 @@ impl<'a, 'b, R: FileManager> TypeModuleWalker<'a, R, AddressedType> for TypeWalk
                 decl,
                 original_file,
                 name,
-            } => {
-                return Ok(AddressedType::TsType {
-                    t: decl.clone(),
-                    local_address: TypeAddress {
-                        file: original_file.clone(),
-                        name: name.clone(),
-                    },
-                });
-            }
+            } => Ok(AddressedType::Type {
+                t: decl.clone(),
+                local_address: TypeAddress {
+                    file: original_file.clone(),
+                    name: name.clone(),
+                },
+            }),
             SymbolExport::TsInterfaceDecl {
                 decl,
                 original_file,
-            } => {
-                return Ok(AddressedType::TsInterface {
-                    t: decl.clone(),
-                    local_address: TypeAddress {
-                        file: original_file.clone(),
-                        name: decl.id.sym.to_string(),
-                    },
-                });
-            }
+            } => Ok(AddressedType::Interface {
+                t: decl.clone(),
+                local_address: TypeAddress {
+                    file: original_file.clone(),
+                    name: decl.id.sym.to_string(),
+                },
+            }),
             SymbolExport::TsEnumDecl {
                 decl,
                 original_file,
-            } => {
-                return Ok(AddressedType::TsEnum {
-                    t: decl.clone(),
-                    local_address: TypeAddress {
-                        file: original_file.clone(),
-                        name: decl.id.sym.to_string(),
-                    },
-                });
-            }
+            } => Ok(AddressedType::Enum {
+                t: decl.clone(),
+                local_address: TypeAddress {
+                    file: original_file.clone(),
+                    name: decl.id.sym.to_string(),
+                },
+            }),
             SymbolExport::ValueExpr { .. } => todo!(),
             SymbolExport::ExprDecl { .. } => todo!(),
             SymbolExport::StarOfOtherFile { .. } => todo!(),
@@ -315,7 +309,7 @@ impl<'a, 'b, R: FileManager> TypeModuleWalker<'a, R, AddressedType> for TypeWalk
                     name: something.clone(),
                     visibility: Visibility::Export,
                 };
-                return self.get_addressed_item(&new_addr, span);
+                self.get_addressed_item(&new_addr, span)
             }
         }
     }
@@ -326,7 +320,7 @@ impl<'a, 'b, R: FileManager> TypeModuleWalker<'a, R, AddressedType> for TypeWalk
         file: BffFileName,
         name: String,
     ) -> Res<AddressedType> {
-        Ok(AddressedType::TsType {
+        Ok(AddressedType::Type {
             t: ts_type.clone(),
             local_address: TypeAddress { file, name },
         })
@@ -343,7 +337,7 @@ impl<'a, 'b, R: FileManager> TypeModuleWalker<'a, R, AddressedType> for TypeWalk
         file: BffFileName,
         name: String,
     ) -> Res<AddressedType> {
-        Ok(AddressedType::TsEnum {
+        Ok(AddressedType::Enum {
             t: ts_enum.clone(),
             local_address: TypeAddress { file, name },
         })
@@ -355,7 +349,7 @@ impl<'a, 'b, R: FileManager> TypeModuleWalker<'a, R, AddressedType> for TypeWalk
         file: BffFileName,
         name: String,
     ) -> Res<AddressedType> {
-        Ok(AddressedType::TsInterface {
+        Ok(AddressedType::Interface {
             t: ts_interface.clone(),
             local_address: TypeAddress { file, name },
         })
@@ -376,18 +370,16 @@ impl<'a, 'b, R: FileManager> TypeModuleWalker<'a, R, AddressedQualifiedType>
     ) -> Res<AddressedQualifiedType> {
         match export {
             SymbolExport::StarOfOtherFile { reference, span: _ } => {
-                return self.get_addressed_item_from_import_reference(&reference, span);
+                self.get_addressed_item_from_import_reference(reference, span)
             }
             SymbolExport::TsEnumDecl {
                 decl,
                 original_file,
-            } => {
-                return self.get_addressed_item_from_local_ts_enum(
-                    decl,
-                    original_file.clone(),
-                    decl.id.sym.to_string(),
-                );
-            }
+            } => self.get_addressed_item_from_local_ts_enum(
+                decl,
+                original_file.clone(),
+                decl.id.sym.to_string(),
+            ),
             SymbolExport::SomethingOfOtherFile {
                 something,
                 file,
@@ -399,7 +391,7 @@ impl<'a, 'b, R: FileManager> TypeModuleWalker<'a, R, AddressedQualifiedType>
                     name: something.clone(),
                     visibility: Visibility::Export,
                 };
-                return self.get_addressed_item(&new_addr, span);
+                self.get_addressed_item(&new_addr, span)
             }
             SymbolExport::TsType { .. } => todo!(),
             SymbolExport::TsInterfaceDecl { .. } => todo!(),
@@ -488,12 +480,12 @@ trait ValueModuleWalker<'a, R: FileManager + 'a, U> {
                             name: i.sym.to_string(),
                             visibility: Visibility::Local,
                         };
-                        return self.get_addressed_item(&new_addr, &i.span);
+                        self.get_addressed_item(&new_addr, &i.span)
                     }
-                    _ => return self.handle_symbol_expr(&symbol_export.clone(), file_name),
+                    _ => self.handle_symbol_expr(&symbol_export.clone(), file_name),
                 },
                 SymbolExportDefault::Renamed { export } => {
-                    return self.get_addressed_item_from_symbol_export(export);
+                    self.get_addressed_item_from_symbol_export(export)
                 }
             },
             None => todo!(),
@@ -515,13 +507,13 @@ trait ValueModuleWalker<'a, R: FileManager + 'a, U> {
                     name: (*original_name).to_string(),
                     visibility: Visibility::Export,
                 };
-                return self.get_addressed_item(&new_addr, span);
+                self.get_addressed_item(&new_addr, span)
             }
             ImportReference::Star { file_name, span: _ } => {
-                return self.handle_import_star(file_name.clone());
+                self.handle_import_star(file_name.clone())
             }
             ImportReference::Default { file_name } => {
-                return self.get_addressed_item_from_default_import(file_name.clone(), span);
+                self.get_addressed_item_from_default_import(file_name.clone(), span)
             }
         }
     }
@@ -605,28 +597,22 @@ impl<'a, 'b, R: FileManager> ValueModuleWalker<'a, R, AddressedValue> for ValueW
             SymbolExport::TsEnumDecl {
                 decl,
                 original_file,
-            } => {
-                return Ok(AddressedValue::Enum(decl.clone(), original_file.clone()));
-            }
+            } => Ok(AddressedValue::Enum(decl.clone(), original_file.clone())),
             SymbolExport::ValueExpr {
                 expr,
                 original_file,
                 span: _,
                 name: _,
-            } => {
-                return Ok(AddressedValue::ValueExpr(
-                    expr.clone(),
-                    original_file.clone(),
-                ));
-            }
+            } => Ok(AddressedValue::ValueExpr(
+                expr.clone(),
+                original_file.clone(),
+            )),
             SymbolExport::ExprDecl {
                 name: _,
                 span: _,
                 original_file,
                 ty,
-            } => {
-                return Ok(AddressedValue::TypeDecl(ty.clone(), original_file.clone()));
-            }
+            } => Ok(AddressedValue::TypeDecl(ty.clone(), original_file.clone())),
 
             SymbolExport::StarOfOtherFile { .. } => {
                 // star of other file should be already resolved by the "get_value" function
@@ -642,7 +628,7 @@ impl<'a, 'b, R: FileManager> ValueModuleWalker<'a, R, AddressedValue> for ValueW
                     name: something.clone(),
                     visibility: Visibility::Export,
                 };
-                return self.get_addressed_item(&new_addr, span);
+                self.get_addressed_item(&new_addr, span)
             }
         }
     }
@@ -652,10 +638,10 @@ impl<'a, 'b, R: FileManager> ValueModuleWalker<'a, R, AddressedValue> for ValueW
         symbol_export: &Rc<Expr>,
         file_name: &BffFileName,
     ) -> Res<AddressedValue> {
-        return Ok(AddressedValue::ValueExpr(
+        Ok(AddressedValue::ValueExpr(
             symbol_export.clone(),
             file_name.clone(),
-        ));
+        ))
     }
 
     fn handle_symbol_expr_decl(
@@ -663,10 +649,10 @@ impl<'a, 'b, R: FileManager> ValueModuleWalker<'a, R, AddressedValue> for ValueW
         symbol_export: &Rc<TsType>,
         file_name: &BffFileName,
     ) -> Res<AddressedValue> {
-        return Ok(AddressedValue::TypeDecl(
+        Ok(AddressedValue::TypeDecl(
             symbol_export.clone(),
             file_name.clone(),
-        ));
+        ))
     }
 
     fn handle_import_star(&mut self, _file_name: BffFileName) -> Res<AddressedValue> {
@@ -679,10 +665,10 @@ impl<'a, 'b, R: FileManager> ValueModuleWalker<'a, R, AddressedValue> for ValueW
         symbol_export: &Rc<TsEnumDecl>,
         file_name: &BffFileName,
     ) -> Res<AddressedValue> {
-        return Ok(AddressedValue::Enum(
+        Ok(AddressedValue::Enum(
             symbol_export.clone(),
             file_name.clone(),
-        ));
+        ))
     }
 }
 struct QaulifiedValueWalker<'a, 'b, R: FileManager> {
@@ -702,7 +688,7 @@ impl<'a, 'b, R: FileManager> ValueModuleWalker<'a, R, AddressedQualifiedValue>
     ) -> Res<AddressedQualifiedValue> {
         match exports {
             SymbolExport::StarOfOtherFile { reference, span } => {
-                return self.get_addressed_item_from_import_reference(reference.as_ref(), span);
+                self.get_addressed_item_from_import_reference(reference.as_ref(), span)
             }
             SymbolExport::TsType { .. } => todo!(),
             SymbolExport::TsInterfaceDecl { .. } => todo!(),
@@ -712,12 +698,10 @@ impl<'a, 'b, R: FileManager> ValueModuleWalker<'a, R, AddressedQualifiedValue>
                 name: _,
                 span: _,
                 original_file,
-            } => {
-                return Ok(AddressedQualifiedValue::ValueExpr(
-                    expr.clone(),
-                    original_file.clone(),
-                ));
-            }
+            } => Ok(AddressedQualifiedValue::ValueExpr(
+                expr.clone(),
+                original_file.clone(),
+            )),
             SymbolExport::ExprDecl { .. } => todo!(),
             SymbolExport::SomethingOfOtherFile { .. } => todo!(),
         }
@@ -728,10 +712,10 @@ impl<'a, 'b, R: FileManager> ValueModuleWalker<'a, R, AddressedQualifiedValue>
         symbol_export: &Rc<Expr>,
         file_name: &BffFileName,
     ) -> Res<AddressedQualifiedValue> {
-        return Ok(AddressedQualifiedValue::ValueExpr(
+        Ok(AddressedQualifiedValue::ValueExpr(
             symbol_export.clone(),
             file_name.clone(),
-        ));
+        ))
     }
 
     fn handle_symbol_expr_decl(
@@ -743,7 +727,7 @@ impl<'a, 'b, R: FileManager> ValueModuleWalker<'a, R, AddressedQualifiedValue>
     }
 
     fn handle_import_star(&mut self, file_name: BffFileName) -> Res<AddressedQualifiedValue> {
-        return Ok(AddressedQualifiedValue::StarOfFile(file_name));
+        Ok(AddressedQualifiedValue::StarOfFile(file_name))
     }
 
     fn handle_symbol_enum(
@@ -830,7 +814,7 @@ impl<'a, R: FileManager> FrontendCtx<'a, R> {
         Ok(parsed_module)
     }
     fn get_or_fetch_file(&mut self, file: &BffFileName, span: &Span) -> Res<Rc<ParsedModule>> {
-        let parsed_module = self.files.get_or_fetch_file(&file).ok_or_else(|| {
+        let parsed_module = self.files.get_or_fetch_file(file).ok_or_else(|| {
             Box::new(self.build_error(
                 span,
                 DiagnosticInfoMessage::CannotFindFileWhenConvertingToSchema(file.clone()),
@@ -936,11 +920,14 @@ impl<'a, R: FileManager> FrontendCtx<'a, R> {
                     // check that if items have the same key, they have the same value
 
                     for (k, v) in &extracted {
-                        if let Some(existing) = acc.get(k) {
-                            if existing != v {
-                                return self
-                                    .error(span, DiagnosticInfoMessage::ObjectHasConflictingKeyValueInIntersection, file.clone());
-                            }
+                        if let Some(existing) = acc.get(k)
+                            && existing != v
+                        {
+                            return self.error(
+                                span,
+                                DiagnosticInfoMessage::ObjectHasConflictingKeyValueInIntersection,
+                                file.clone(),
+                            );
                         }
                     }
 
@@ -1174,7 +1161,7 @@ impl<'a, R: FileManager> FrontendCtx<'a, R> {
                 let addressed_type =
                     self.get_addressed_type(&module_item_address.to_module_item_addr(), span)?;
                 match addressed_type {
-                    AddressedType::TsType {
+                    AddressedType::Type {
                         t: decl,
                         local_address: address,
                     } => {
@@ -1197,7 +1184,7 @@ impl<'a, R: FileManager> FrontendCtx<'a, R> {
                         }
                         Ok(runtype?)
                     }
-                    AddressedType::TsInterface {
+                    AddressedType::Interface {
                         t,
                         local_address: _,
                     } => {
@@ -1208,7 +1195,7 @@ impl<'a, R: FileManager> FrontendCtx<'a, R> {
                         )?;
                         Ok(runtype)
                     }
-                    AddressedType::TsEnum {
+                    AddressedType::Enum {
                         t,
                         local_address: address,
                     } => {
@@ -1237,11 +1224,11 @@ impl<'a, R: FileManager> FrontendCtx<'a, R> {
                         ),
                     };
                 };
-                return self.error(
+                self.error(
                     span,
                     DiagnosticInfoMessage::EnumItemShouldBeFromEnumType,
                     enum_type.file.clone(),
-                );
+                )
             }
             RuntypeName::SemtypeRecursiveGenerated(_) => todo!(),
             RuntypeName::BuiltIn(ts_built_in) => match ts_built_in {
@@ -1444,9 +1431,9 @@ impl<'a, R: FileManager> FrontendCtx<'a, R> {
                             name: ts_qualified_name.right.sym.to_string(),
                             visibility: Visibility::Export,
                         };
-                        return self.get_addressed_qualified_type(&new_addr, &q.span());
+                        self.get_addressed_qualified_type(&new_addr, &q.span())
                     }
-                    it @ AddressedQualifiedType::EnumItem { .. } => return Ok(it),
+                    it @ AddressedQualifiedType::EnumItem { .. } => Ok(it),
                 }
             }
             TsEntityName::Ident(ident) => {
@@ -1605,7 +1592,7 @@ impl<'a, R: FileManager> FrontendCtx<'a, R> {
             let next_str = value.to_string();
             if self.settings.string_formats.contains(&next_str) {
                 let (first, mut rest) =
-                    self.get_string_format_base_formats(&base, span, file.clone())?;
+                    self.get_string_format_base_formats(base, span, file.clone())?;
                 rest.push(next_str);
                 return Ok(Runtype::StringWithFormat(CustomFormat(first, rest)));
             } else {
@@ -1691,7 +1678,7 @@ impl<'a, R: FileManager> FrontendCtx<'a, R> {
             let next_str = value.to_string();
             if self.settings.number_formats.contains(&next_str) {
                 let (first, mut rest) =
-                    self.get_number_format_base_formats(&base, span, file.clone())?;
+                    self.get_number_format_base_formats(base, span, file.clone())?;
                 rest.push(next_str);
                 return Ok(Runtype::NumberWithFormat(CustomFormat(first, rest)));
             } else {
@@ -1718,7 +1705,7 @@ impl<'a, R: FileManager> FrontendCtx<'a, R> {
     ) -> Res<Runtype> {
         if let TsEntityName::Ident(ident) = type_name {
             for (n, t) in self.type_application_stack.iter() {
-                if ident.sym.to_string() == *n {
+                if ident.sym == *n {
                     return Ok(t.clone());
                 }
             }
@@ -1749,7 +1736,7 @@ impl<'a, R: FileManager> FrontendCtx<'a, R> {
         };
         let found = self.partial_validators.get(&rt_uuid);
         if let Some(_found_in_map) = found {
-            if let Some(_) = ts_type_args {
+            if ts_type_args.is_some() {
                 self.recursive_generic_uuids.insert(rt_uuid.clone());
             }
             return Ok(Runtype::Ref(rt_uuid));
@@ -1921,7 +1908,7 @@ impl<'a, R: FileManager> FrontendCtx<'a, R> {
                     name: i.sym.to_string(),
                     visibility: Visibility::Local,
                 };
-                return self.extract_addressed_value(&new_addr, &e.span());
+                self.extract_addressed_value(&new_addr, &e.span())
             }
             Expr::Array(lit) => {
                 let mut prefix_items = vec![];
@@ -2077,17 +2064,16 @@ impl<'a, R: FileManager> FrontendCtx<'a, R> {
                     }
                 }
                 let obj = self.typeof_expr(&m.obj, as_const, file.clone())?;
-                if let Some(key) = k {
-                    if let Runtype::Object {
+                if let Some(key) = k
+                    && let Runtype::Object {
                         vs,
                         indexed_properties: _,
                     } = &obj
-                    {
-                        // try to do it syntatically to preserve aliases
-                        if let Some(Optionality::Required(v)) = vs.get(&key) {
-                            return Ok(v.clone());
-                        };
-                    }
+                {
+                    // try to do it syntatically to preserve aliases
+                    if let Some(Optionality::Required(v)) = vs.get(&key) {
+                        return Ok(v.clone());
+                    };
                 }
                 let validators_vec = self.validators_vec();
                 let validators_reference_vec: Vec<&NamedSchema> = validators_vec.iter().collect();
@@ -2199,7 +2185,7 @@ impl<'a, R: FileManager> FrontendCtx<'a, R> {
                             // TODO: is visibility correct here?
                             visibility: Visibility::Export,
                         };
-                        return self.get_addressed_qualified_value(&new_addr, &q.span());
+                        self.get_addressed_qualified_value(&new_addr, &q.span())
                     }
                     AddressedQualifiedValue::ValueExpr(_, _) => todo!(),
                 }
@@ -2263,7 +2249,7 @@ impl<'a, R: FileManager> FrontendCtx<'a, R> {
                     name: ts_qualified_name.right.sym.to_string(),
                     visibility,
                 };
-                return self.extract_addressed_value(&new_addr, &span);
+                self.extract_addressed_value(&new_addr, span)
             }
             AddressedQualifiedValue::ValueExpr(expr, bff_file_name) => self
                 .typeof_expr_keyed_access(expr.as_ref(), &ts_qualified_name.right, bff_file_name),
@@ -2280,7 +2266,7 @@ impl<'a, R: FileManager> FrontendCtx<'a, R> {
         match ts_entity_name {
             TsEntityName::Ident(ident) => {
                 let addr = ModuleItemAddress::from_ident(ident, file.clone(), visibility);
-                self.extract_addressed_value(&addr, &span)
+                self.extract_addressed_value(&addr, span)
             }
             TsEntityName::TsQualifiedName(ts_qualified_name) => self
                 .extract_value_from_ts_qualified_name(
@@ -2323,7 +2309,7 @@ impl<'a, R: FileManager> FrontendCtx<'a, R> {
                     match &import_type.qualifier {
                         Some(ts_entity_name) => {
                             return self.extract_value_ts_entity_name(
-                                &ts_entity_name,
+                                ts_entity_name,
                                 resolved,
                                 Visibility::Export,
                                 &import_type.span,
@@ -2937,7 +2923,7 @@ impl<'a, R: FileManager> FrontendCtx<'a, R> {
                     DiagnosticInfoMessage::UniqueNonSerializableToJsonSchema,
                     file,
                 ),
-                TsTypeOperatorOp::ReadOnly => self.extract_type(&type_ann, file.clone()),
+                TsTypeOperatorOp::ReadOnly => self.extract_type(type_ann, file.clone()),
             },
 
             TsType::TsOptionalType(TsOptionalType { span, .. }) => self.error(
@@ -3034,7 +3020,7 @@ impl<'a, R: FileManager> FrontendCtx<'a, R> {
                         //
                         Ok(BuiltDecoder {
                             exported_name: key,
-                            schema: schema,
+                            schema,
                         })
                     }
                     None => self.anyhow_error(
