@@ -622,6 +622,15 @@ mod tests {
         ));
     }
     #[test]
+    fn ok_object_builtin() {
+        insta::assert_snapshot!(print_types(
+            r#"
+        export type IX = object
+        parse.buildParsers<{ IX: IX }>();
+      "#
+        ));
+    }
+    #[test]
     fn ok_never() {
         insta::assert_snapshot!(print_types(
             r#"

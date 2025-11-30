@@ -1875,21 +1875,26 @@ impl<'a, R: FileManager> FrontendCtx<'a, R> {
         self.extract_type_from_ts_entity_name(type_name, type_params, file, Visibility::Local)
     }
 
-    fn extract_ts_keyword_type(&mut self, ty: &TsKeywordType) -> Res<Runtype> {
+    fn extract_ts_keyword_type(&mut self, ty: &TsKeywordType, file: BffFileName) -> Res<Runtype> {
         match ty.kind {
             TsKeywordTypeKind::TsStringKeyword => Ok(Runtype::String),
             TsKeywordTypeKind::TsNumberKeyword => Ok(Runtype::Number),
             TsKeywordTypeKind::TsAnyKeyword => Ok(Runtype::Any),
             TsKeywordTypeKind::TsUnknownKeyword => Ok(Runtype::Any),
-            TsKeywordTypeKind::TsObjectKeyword => todo!(),
+            TsKeywordTypeKind::TsObjectKeyword => Ok(Runtype::any_object()),
             TsKeywordTypeKind::TsBooleanKeyword => Ok(Runtype::Boolean),
             TsKeywordTypeKind::TsBigIntKeyword => Ok(Runtype::BigInt),
-            TsKeywordTypeKind::TsSymbolKeyword => todo!(),
+
             TsKeywordTypeKind::TsVoidKeyword => Ok(Runtype::Void),
             TsKeywordTypeKind::TsUndefinedKeyword => Ok(Runtype::Undefined),
             TsKeywordTypeKind::TsNullKeyword => Ok(Runtype::Null),
             TsKeywordTypeKind::TsNeverKeyword => Ok(Runtype::Never),
-            TsKeywordTypeKind::TsIntrinsicKeyword => todo!(),
+            TsKeywordTypeKind::TsSymbolKeyword | TsKeywordTypeKind::TsIntrinsicKeyword => self
+                .cannot_serialize_error(
+                    &ty.span,
+                    DiagnosticInfoMessage::KeywordNonSerializableToJsonSchema,
+                    file,
+                ),
         }
     }
     fn extract_array_value(&mut self, arr: Runtype, span: Span, file: BffFileName) -> Res<Runtype> {
@@ -2941,7 +2946,9 @@ impl<'a, R: FileManager> FrontendCtx<'a, R> {
     fn extract_type(&mut self, ty: &TsType, file: BffFileName) -> Res<Runtype> {
         match ty {
             TsType::TsTypeRef(ts_type_ref) => self.extract_type_ref(ts_type_ref, file),
-            TsType::TsKeywordType(ts_keyword_type) => self.extract_ts_keyword_type(ts_keyword_type),
+            TsType::TsKeywordType(ts_keyword_type) => {
+                self.extract_ts_keyword_type(ts_keyword_type, file.clone())
+            }
             TsType::TsTypeQuery(ts_type_query) => {
                 self.extract_type_query(ts_type_query, file, Visibility::Local)
             }
