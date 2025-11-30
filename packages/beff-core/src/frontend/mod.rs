@@ -249,6 +249,7 @@ trait TypeModuleWalker<'a, R: FileManager + 'a, U> {
                 file_name,
                 span,
             } => {
+                dbg!(&original_name, &file_name);
                 let new_addr = ModuleItemAddress {
                     file: file_name.clone(),
                     name: (*original_name).to_string(),
@@ -311,6 +312,7 @@ trait TypeModuleWalker<'a, R: FileManager + 'a, U> {
                 {
                     return self.get_addressed_item_from_symbol_export(&export, span);
                 }
+                dbg!(&addr);
                 todo!()
             }
         }
@@ -334,6 +336,7 @@ impl<'a, 'b, R: FileManager> TypeModuleWalker<'a, R, AddressedType> for TypeWalk
         export: &SymbolExport,
         _span: &Span,
     ) -> Res<AddressedType> {
+        dbg!(&export);
         match export {
             SymbolExport::TsType {
                 decl,
@@ -345,7 +348,7 @@ impl<'a, 'b, R: FileManager> TypeModuleWalker<'a, R, AddressedType> for TypeWalk
                     address: ModuleItemAddress {
                         file: original_file.clone(),
                         name: name.clone(),
-                        visibility: Visibility::Export,
+                        visibility: Visibility::Local,
                     },
                 });
             }
@@ -358,7 +361,7 @@ impl<'a, 'b, R: FileManager> TypeModuleWalker<'a, R, AddressedType> for TypeWalk
                     address: ModuleItemAddress {
                         file: original_file.clone(),
                         name: decl.id.sym.to_string(),
-                        visibility: Visibility::Export,
+                        visibility: Visibility::Local,
                     },
                 });
             }
@@ -1600,8 +1603,10 @@ impl<'a, R: FileManager> FrontendCtx<'a, R> {
         }
     }
     fn insert_definition(&mut self, addr: RuntypeUUID, schema: Runtype) -> Res<Runtype> {
+        dbg!((&addr, &schema, &self.partial_validators));
         if let Some(Some(v)) = self.partial_validators.get(&addr) {
             assert_eq!(v, &schema);
+            return Ok(Runtype::Ref(addr));
         }
         self.partial_validators.insert(addr.clone(), Some(schema));
         Ok(Runtype::Ref(addr))

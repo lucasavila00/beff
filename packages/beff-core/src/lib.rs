@@ -234,13 +234,17 @@ impl ModuleItemAddress {
 
         // should be a valid typescript identifier
         format!(
-            "{}__{}",
+            "{}__{}__{}",
             self.file
                 .as_str()
                 .replace(".", "_")
                 .replace("/", "_")
                 .replace("-", "_"),
-            self.name
+            self.name,
+            match self.visibility {
+                Visibility::Local => "local",
+                Visibility::Export => "export",
+            }
         )
     }
 

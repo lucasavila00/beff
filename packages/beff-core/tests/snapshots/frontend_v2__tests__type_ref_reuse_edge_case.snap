@@ -1,0 +1,15 @@
+---
+source: packages/beff-core/tests/frontend_v2.rs
+expression: "print_types_multifile(&[(\"t1.ts\",\nr#\"\n                    type X1 = string;\n                    export type Z = { a:X1 }\n                    type X2 = boolean;\n                    export { X2 as X1 };\n                \"#,),\n(\"entry.ts\",\nr#\"\n                    import { X1, Z } from \"./t1\";\n                    parse.buildParsers<{ X1: X1, Z: Z }>();\n                \"#)])"
+---
+type X1 = string;
+
+type X2 = boolean;
+
+type Z = { "a": X1 };
+
+
+type BuiltParsers = {
+  X1: X2,
+  Z: Z,
+}

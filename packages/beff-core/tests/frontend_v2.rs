@@ -55,6 +55,78 @@ mod tests {
     }
 
     #[test]
+    fn type_ref_reuse_edge_case() {
+        insta::assert_snapshot!(print_types_multifile(&[
+            //
+            (
+                "t1.ts",
+                r#"
+                    type X1 = string;
+                    export type Z = { a:X1 }
+                    type X2 = boolean;
+                    export { X2 as X1 };
+                "#,
+            ),
+            (
+                "entry.ts",
+                r#"
+                    import { X1, Z } from "./t1";
+                    parse.buildParsers<{ X1: X1, Z: Z }>();
+                "#
+            )
+        ]));
+    }
+    #[test]
+    fn type_ref_reuse() {
+        insta::assert_snapshot!(print_types_multifile(&[
+            //
+            (
+                "t1.ts",
+                r#"
+                    export type X1 = string;
+                    export type Z = {a:X1}
+                "#,
+            ),
+            (
+                "entry.ts",
+                r#"
+                    import { X1, Z } from "./t1";
+                    parse.buildParsers<{ X1: X1, Z: Z }>();
+                "#
+            )
+        ]));
+    }
+
+    #[test]
+    fn type_ref_multifile_diff_name() {
+        insta::assert_snapshot!(print_types_multifile(&[
+            //
+            (
+                "t1.ts",
+                r#"
+                    export type X1 = string;
+                    export type Z = {a:X1}
+                "#,
+            ),
+            (
+                "t2.ts",
+                r#"
+                    export type X2 = boolean;
+                    export type W = {a:X2}
+                "#,
+            ),
+            (
+                "entry.ts",
+                r#"
+                    import { X1, Z } from "./t1";
+                    import { X2, W } from "./t2";
+                    parse.buildParsers<{ X1: X1, Z: Z, X2: X2, W: W }>();
+                "#
+            )
+        ]));
+    }
+
+    #[test]
     fn type_ref_multifile_same_name() {
         insta::assert_snapshot!(print_types_multifile(&[
             //
