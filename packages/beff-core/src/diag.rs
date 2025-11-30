@@ -7,6 +7,8 @@ use crate::{BffFileName, ModuleItemAddress, ParsedModule, RuntypeUUID};
 
 #[derive(Debug, Clone)]
 pub enum DiagnosticInfoMessage {
+    KeyedAccessResultsInNeverType,
+    CannotUseStarImportInValuePosition,
     CannotUseStarImportInTypePosition,
     CannotUseTypeInQualifiedTypePosition,
     CannotUseInterfaceInQualifiedTypePosition,
@@ -549,6 +551,12 @@ impl DiagnosticInfoMessage {
             }
             DiagnosticInfoMessage::CannotUseStarImportInTypePosition => {
                 "Cannot use star import in type position".to_string()
+            }
+            DiagnosticInfoMessage::CannotUseStarImportInValuePosition => {
+                "Cannot use star import in value position".to_string()
+            }
+            DiagnosticInfoMessage::KeyedAccessResultsInNeverType => {
+                "Keyed access results in 'never' type".to_string()
             }
         }
     }

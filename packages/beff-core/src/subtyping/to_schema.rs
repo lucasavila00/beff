@@ -203,7 +203,7 @@ impl<'a, 'b> SchemerContext<'a, 'b> {
                         acc.insert(Runtype::String);
                     }
                     SubTypeTag::OptionalProp => {
-                        acc.insert(Runtype::Null);
+                        acc.insert(Runtype::Undefined);
                     }
                     SubTypeTag::Mapping => {
                         acc.insert(Runtype::any_object());

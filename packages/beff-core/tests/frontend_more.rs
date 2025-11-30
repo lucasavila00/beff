@@ -210,4 +210,20 @@ mod tests {
         }
         ");
     }
+
+    #[test]
+    fn access_missing_property_on_object() {
+        insta::assert_snapshot!(print_types(r#"
+            const A = { x: 1 };
+            export type T = typeof A.y;
+            parse.buildParsers<{ T: T }>();
+        "#), @r"
+        type T = undefined;
+
+
+        type BuiltParsers = {
+          T: T,
+        }
+        ");
+    }
 }

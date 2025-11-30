@@ -192,70 +192,77 @@ mod tests {
         "#);
     }
 
-    // #[test]
-    // fn namespace_as_type() {
-    //     insta::assert_snapshot!(failure_multifile(&[
-    //         (
-    //             "t.ts",
-    //             r#"
-    //                 export const A = "a";
-    //             "#,
-    //         ),
-    //         (
-    //             "entry.ts",
-    //             r#"
-    //                 import * as Ns from "./t";
-    //                 export type T = Ns;
-    //                 parse.buildParsers<{ T: T }>();
-    //             "#
-    //         )
-    //     ]), @r"
-    //     Error: Cannot use star import in type position
-    //        ╭─[entry.ts:3:38]
-    //        │
-    //      3 │                     export type T = Ns;
-    //        │                                     ─┬
-    //        │                                      ╰── Cannot use star import in type position
-    //     ───╯
-    //     ");
-    // }
+    #[test]
+    fn namespace_as_type() {
+        insta::assert_snapshot!(failure_multifile(&[
+            (
+                "t.ts",
+                r#"
+                    export const A = "a";
+                "#,
+            ),
+            (
+                "entry.ts",
+                r#"
+                    import * as Ns from "./t";
+                    export type T = Ns;
+                    parse.buildParsers<{ T: T }>();
+                "#
+            )
+        ]), @r"
+        Error: Cannot use star import in type position
+           ╭─[entry.ts:3:38]
+           │
+         3 │                     export type T = Ns;
+           │                                     ─┬  
+           │                                      ╰── Cannot use star import in type position
+        ───╯
+        ");
+    }
 
-    // #[test]
-    // fn namespace_as_value() {
-    //     insta::assert_snapshot!(failure_multifile(&[
-    //         (
-    //             "t.ts",
-    //             r#"
-    //                 export const A = "a";
-    //             "#,
-    //         ),
-    //         (
-    //             "entry.ts",
-    //             r#"
-    //                 import * as Ns from "./t";
-    //                 const v = Ns;
-    //                 export type T = typeof v;
-    //                 parse.buildParsers<{ T: T }>();
-    //             "#
-    //         )
-    //     ]), @r"");
-    // }
+    #[test]
+    fn namespace_as_value() {
+        insta::assert_snapshot!(failure_multifile(&[
+            (
+                "t.ts",
+                r#"
+                    export const A = "a";
+                "#,
+            ),
+            (
+                "entry.ts",
+                r#"
+                    import * as Ns from "./t";
+                    const v = Ns;
+                    export type T = typeof v;
+                    parse.buildParsers<{ T: T }>();
+                "#
+            )
+        ]), @r"
+        Error: Cannot use star import in value position
+           ╭─[entry.ts:3:32]
+           │
+         3 │                     const v = Ns;
+           │                               ─┬  
+           │                                ╰── Cannot use star import in value position
+        ───╯
+        ");
+    }
 
-    // #[test]
-    // fn access_property_on_primitive() {
-    //     insta::assert_snapshot!(failure(r#"
-    //         const A = 1;
-    //         export type T = typeof A.B;
-    //         parse.buildParsers<{ T: T }>();
-    //     "#), @r"");
-    // }
-
-    // #[test]
-    // fn access_missing_property_on_object() {
-    //     insta::assert_snapshot!(failure(r#"
-    //         const A = { x: 1 };
-    //         export type T = typeof A.y;
-    //         parse.buildParsers<{ T: T }>();
-    //     "#), @r"");
-    // }
+    #[test]
+    fn access_property_on_primitive() {
+        insta::assert_snapshot!(failure(r#"
+            const A = 1;
+            export type T = typeof A.B;
+            parse.buildParsers<{ T: T }>();
+        "#), @r"
+        Error: Keyed access results in 'never' type
+           ╭─[entry.ts:3:30]
+           │
+         3 │             export type T = typeof A.B;
+           │                             ─────┬────  
+           │                                  ╰────── Keyed access results in 'never' type
+        ───╯
+        ");
+    }
 }

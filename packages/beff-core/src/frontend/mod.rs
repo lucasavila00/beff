@@ -476,7 +476,7 @@ trait ValueModuleWalker<'a, R: FileManager + 'a, U> {
         symbol_export: &Rc<TsType>,
         file_name: &BffFileName,
     ) -> Res<U>;
-    fn handle_import_star(&mut self, file_name: BffFileName) -> Res<U>;
+    fn handle_import_star(&mut self, file_name: BffFileName, anchor: &Anchor) -> Res<U>;
 
     fn get_addressed_item_from_default_import(
         &mut self,
@@ -518,7 +518,11 @@ trait ValueModuleWalker<'a, R: FileManager + 'a, U> {
             ),
         }
     }
-    fn get_addressed_item_from_import_reference(&mut self, imported: &ImportReference) -> Res<U> {
+    fn get_addressed_item_from_import_reference(
+        &mut self,
+        imported: &ImportReference,
+        anchor: &Anchor,
+    ) -> Res<U> {
         match imported {
             ImportReference::Named {
                 original_name,
@@ -535,7 +539,7 @@ trait ValueModuleWalker<'a, R: FileManager + 'a, U> {
             ImportReference::Star {
                 file_name,
                 import_statement_anchor: _,
-            } => self.handle_import_star(file_name.clone()),
+            } => self.handle_import_star(file_name.clone(), anchor),
             ImportReference::Default {
                 file_name,
                 import_statement_anchor,
@@ -548,7 +552,7 @@ trait ValueModuleWalker<'a, R: FileManager + 'a, U> {
         match addr.visibility {
             Visibility::Local => {
                 if let Some(imported) = parsed_module.imports.get(&addr.name) {
-                    return self.get_addressed_item_from_import_reference(imported);
+                    return self.get_addressed_item_from_import_reference(imported, anchor);
                 }
                 if let Some(expr) = parsed_module.locals.exprs.get(&addr.name) {
                     return self.handle_symbol_expr(expr, &addr.file);
@@ -686,9 +690,15 @@ impl<'a, 'b, R: FileManager> ValueModuleWalker<'a, R, AddressedValue> for ValueW
         ))
     }
 
-    fn handle_import_star(&mut self, _file_name: BffFileName) -> Res<AddressedValue> {
-        // should call qualified version insteaed, it's an error
-        todo!()
+    fn handle_import_star(
+        &mut self,
+        _file_name: BffFileName,
+        anchor: &Anchor,
+    ) -> Res<AddressedValue> {
+        self.ctx.error(
+            anchor,
+            DiagnosticInfoMessage::CannotUseStarImportInValuePosition,
+        )
     }
 
     fn handle_symbol_enum(
@@ -716,11 +726,11 @@ impl<'a, 'b, R: FileManager> ValueModuleWalker<'a, R, AddressedQualifiedValue>
     fn get_addressed_item_from_symbol_export(
         &mut self,
         exports: &SymbolExport,
-        _anchor: &Anchor,
+        anchor: &Anchor,
     ) -> Res<AddressedQualifiedValue> {
         match exports {
             SymbolExport::StarOfOtherFile { reference } => {
-                self.get_addressed_item_from_import_reference(reference.as_ref())
+                self.get_addressed_item_from_import_reference(reference.as_ref(), anchor)
             }
             SymbolExport::TsType { .. } => todo!(),
             SymbolExport::TsInterfaceDecl { .. } => todo!(),
@@ -758,7 +768,11 @@ impl<'a, 'b, R: FileManager> ValueModuleWalker<'a, R, AddressedQualifiedValue>
         todo!()
     }
 
-    fn handle_import_star(&mut self, file_name: BffFileName) -> Res<AddressedQualifiedValue> {
+    fn handle_import_star(
+        &mut self,
+        file_name: BffFileName,
+        _anchor: &Anchor,
+    ) -> Res<AddressedQualifiedValue> {
         Ok(AddressedQualifiedValue::StarOfFile(file_name))
     }
 
@@ -2211,26 +2225,32 @@ impl<'a, R: FileManager> FrontendCtx<'a, R> {
         expr: &Expr,
         key: &Ident,
         file: BffFileName,
+        anchor: &Anchor,
     ) -> Res<Runtype> {
-        // TODO: infer the whole expr and do an indexed access?
-        match expr {
-            Expr::Object(object_lit) => {
-                for prop in &object_lit.props {
-                    if let PropOrSpread::Prop(boxed_prop) = prop
-                        && let Prop::KeyValue(key_value_prop) = boxed_prop.as_ref()
-                        && let PropName::Ident(ident) = &key_value_prop.key
-                        && ident.sym == key.sym
-                    {
-                        return self.typeof_expr(key_value_prop.value.as_ref(), false, file);
-                    }
-                }
-                todo!()
-            }
-            _ => {
-                dbg!(&expr);
-                todo!()
-            }
+        let base_ty = self.typeof_expr(expr, false, file.clone())?;
+        let validators_vec = self.validators_vec();
+        let validators_reference_vec: Vec<&NamedSchema> = validators_vec.iter().collect();
+        let mut ctx = SemTypeContext::new();
+        let base_st = base_ty
+            .to_sem_type(&validators_reference_vec, &mut ctx)
+            .map_err(|e| {
+                self.box_error(&anchor, DiagnosticInfoMessage::AnyhowError(e.to_string()))
+            })?;
+        let key_rc = Rc::new(SemTypeContext::string_const(StringLitOrFormat::Tpl(
+            TplLitType(vec![TplLitTypeItem::StringConst(key.sym.to_string())]),
+        )));
+
+        let access_st: Rc<SemType> = ctx.indexed_access(base_st, key_rc).map_err(|e| {
+            self.box_error(&anchor, DiagnosticInfoMessage::AnyhowError(e.to_string()))
+        })?;
+        dbg!(&access_st);
+        if access_st.is_never() {
+            return self.error(
+                &anchor,
+                DiagnosticInfoMessage::KeyedAccessResultsInNeverType,
+            );
         }
+        dbg!(self.semtype_to_runtype(access_st, &mut ctx, &key.span, file))
     }
 
     fn extract_value_from_ts_qualified_name(
@@ -2255,7 +2275,12 @@ impl<'a, R: FileManager> FrontendCtx<'a, R> {
                 self.extract_addressed_value(&new_addr, anchor)
             }
             AddressedQualifiedValue::ValueExpr(expr, bff_file_name) => self
-                .typeof_expr_keyed_access(expr.as_ref(), &ts_qualified_name.right, bff_file_name),
+                .typeof_expr_keyed_access(
+                    expr.as_ref(),
+                    &ts_qualified_name.right,
+                    bff_file_name,
+                    anchor,
+                ),
         }
     }
 
