@@ -8,12 +8,12 @@ mod tests {
     parse.buildParsers<{ UserId: UserId }>();
   "#;
         insta::assert_snapshot!(failure(from),@r"
-        Error: Could not resolve addressed value 'entry.ts::UserId'
+        Error: Cannot resolve type 'entry.ts::UserId'
            ╭─[entry.ts:2:35]
            │
          2 │     parse.buildParsers<{ UserId: UserId }>();
            │                                  ───┬──  
-           │                                     ╰──── Could not resolve addressed value 'entry.ts::UserId'
+           │                                     ╰──── Cannot resolve type 'entry.ts::UserId'
         ───╯
         ");
     }
@@ -34,13 +34,92 @@ mod tests {
                 "#
             )
         ]),@r"
-        Error: Could not resolve addressed value 't.ts::UserId'
+        Error: Cannot resolve type 't.ts::UserId'
            ╭─[t.ts:2:38]
            │
          2 │                     export type X = UserId;
            │                                     ───┬──  
-           │                                        ╰──── Could not resolve addressed value 't.ts::UserId'
+           │                                        ╰──── Cannot resolve type 't.ts::UserId'
         ───╯
         ");
     }
+
+    // #[test]
+    // fn import_default_none() {
+    //     insta::assert_snapshot!(failure_multifile(&[
+    //         (
+    //             "t.ts",
+    //             r#"
+    //                 export const A = "a";
+    //             "#,
+    //         ),
+    //         (
+    //             "entry.ts",
+    //             r#"
+    //                 import D from "./t";
+    //                 export type T = typeof D;
+    //                 parse.buildParsers<{ T: T }>();
+    //             "#
+    //         )
+    //     ]), @r"");
+    // }
+
+    // #[test]
+    // fn import_named_none() {
+    //     insta::assert_snapshot!(failure_multifile(&[
+    //         (
+    //             "t.ts",
+    //             r#"
+    //                 export const A = "a";
+    //             "#,
+    //         ),
+    //         (
+    //             "entry.ts",
+    //             r#"
+    //                 import { B } from "./t";
+    //                 export type T = typeof B;
+    //                 parse.buildParsers<{ T: T }>();
+    //             "#
+    //         )
+    //     ]), @r"");
+    // }
+
+    // #[test]
+    // fn type_as_value() {
+    //     insta::assert_snapshot!(failure_multifile(&[
+    //         (
+    //             "t.ts",
+    //             r#"
+    //                 export type A = string;
+    //             "#,
+    //         ),
+    //         (
+    //             "entry.ts",
+    //             r#"
+    //                 import { A } from "./t";
+    //                 const v = A;
+    //                 export type T = typeof v;
+    //                 parse.buildParsers<{ T: T }>();
+    //             "#
+    //         )
+    //     ]), @r"");
+    // }
+
+    // #[test]
+    // fn qualified_type_on_interface() {
+    //     insta::assert_snapshot!(failure(r#"
+    //         interface I { a: string }
+    //         export type T = I.a;
+    //         parse.buildParsers<{ T: T }>();
+    //     "#), @r"");
+    // }
+
+    // #[test]
+    // fn qualified_type_on_type_alias() {
+    //     insta::assert_snapshot!(failure(r#"
+    //         type A = { a: string };
+    //         export type T = A.a;
+    //         parse.buildParsers<{ T: T }>();
+    //     "#), @r"");
+    // }
 }

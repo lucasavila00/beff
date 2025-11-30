@@ -226,7 +226,7 @@ trait TypeModuleWalker<'a, R: FileManager + 'a, U> {
 
                 Err(self.get_ctx().box_error(
                     span,
-                    DiagnosticInfoMessage::CouldNotResolveAddressesSymbol(addr.clone()),
+                    DiagnosticInfoMessage::CouldNotResolveType(addr.clone()),
                     addr.file.clone(),
                 ))
             }
@@ -574,7 +574,11 @@ trait ValueModuleWalker<'a, R: FileManager + 'a, U> {
                     return self.get_addressed_item_from_symbol_export(&exports);
                 }
 
-                todo!()
+                self.get_ctx().error(
+                    span,
+                    DiagnosticInfoMessage::CouldNotResolveValue(addr.clone()),
+                    addr.file.clone(),
+                )
             }
         }
     }
@@ -806,7 +810,7 @@ impl<'a, R: FileManager> FrontendCtx<'a, R> {
         let parsed_module = self.files.get_or_fetch_file(&addr.file).ok_or_else(|| {
             Box::new(self.build_error(
                 span,
-                DiagnosticInfoMessage::CouldNotResolveAddressesSymbol(addr.clone()),
+                DiagnosticInfoMessage::CouldNotResolveFile(addr.clone()),
                 addr.file.clone(),
             ))
         })?;
