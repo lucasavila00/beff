@@ -5,6 +5,7 @@ pub mod parser_extractor;
 pub mod print;
 pub mod subtyping;
 pub mod swc_tools;
+pub mod test_tools;
 pub mod wasm_diag;
 
 use crate::ast::runtype::DebugPrintCtx;
