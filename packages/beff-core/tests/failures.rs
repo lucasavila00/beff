@@ -61,7 +61,15 @@ mod tests {
                     parse.buildParsers<{ T: T }>();
                 "#
             )
-        ]), @r"");
+        ]), @r#"
+        Error: Cannot resolve value 't.ts::B'
+           ╭─[entry.ts:2:31]
+           │
+         2 │                     import { B } from "./t";
+           │                              ┬  
+           │                              ╰── Cannot resolve value 't.ts::B'
+        ───╯
+        "#);
     }
 
     // #[test]

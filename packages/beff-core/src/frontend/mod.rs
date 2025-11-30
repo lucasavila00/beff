@@ -100,7 +100,7 @@ pub enum AddressedQualifiedValue {
 trait TypeModuleWalker<'a, R: FileManager + 'a, U> {
     fn get_ctx<'b>(&'b mut self) -> &'b mut FrontendCtx<'a, R>;
 
-    fn handle_import_star(&mut self, anchor: &Anchor) -> Res<U>;
+    fn handle_import_star(&mut self, file_name: BffFileName) -> Res<U>;
 
     fn get_addressed_item_from_symbol_export(
         &mut self,
@@ -172,16 +172,17 @@ trait TypeModuleWalker<'a, R: FileManager + 'a, U> {
         match imported {
             ImportReference::Named {
                 original_name,
-                anchor,
+                file_name,
+                import_st_anchor,
             } => {
                 let new_addr = ModuleItemAddress {
-                    file: anchor.f.clone(),
+                    file: file_name.clone(),
                     name: (*original_name).to_string(),
                     visibility: Visibility::Export,
                 };
-                self.get_addressed_item(&new_addr, anchor)
+                self.get_addressed_item(&new_addr, import_st_anchor)
             }
-            ImportReference::Star { anchor } => self.handle_import_star(anchor),
+            ImportReference::Star { file_name } => self.handle_import_star(file_name.clone()),
             ImportReference::Default { file_name } => {
                 self.get_addressed_item_from_default_import(file_name.clone(), err_anchor)
             }
@@ -321,7 +322,7 @@ impl<'a, 'b, R: FileManager> TypeModuleWalker<'a, R, AddressedType> for TypeWalk
         })
     }
 
-    fn handle_import_star(&mut self, _anchor: &Anchor) -> Res<AddressedType> {
+    fn handle_import_star(&mut self, _file_name: BffFileName) -> Res<AddressedType> {
         // should have called get_addressed_qualified_type
         todo!()
     }
@@ -400,8 +401,8 @@ impl<'a, 'b, R: FileManager> TypeModuleWalker<'a, R, AddressedQualifiedType>
         todo!()
     }
 
-    fn handle_import_star(&mut self, anchor: &Anchor) -> Res<AddressedQualifiedType> {
-        Ok(AddressedQualifiedType::StarImport(anchor.f.clone()))
+    fn handle_import_star(&mut self, file_name: BffFileName) -> Res<AddressedQualifiedType> {
+        Ok(AddressedQualifiedType::StarImport(file_name))
     }
 
     fn get_addressed_item_from_local_ts_enum(
@@ -489,16 +490,17 @@ trait ValueModuleWalker<'a, R: FileManager + 'a, U> {
         match imported {
             ImportReference::Named {
                 original_name,
-                anchor,
+                file_name,
+                import_st_anchor,
             } => {
                 let new_addr = ModuleItemAddress {
-                    file: anchor.f.clone(),
+                    file: file_name.clone(),
                     name: (*original_name).to_string(),
                     visibility: Visibility::Export,
                 };
-                self.get_addressed_item(&new_addr, anchor)
+                self.get_addressed_item(&new_addr, import_st_anchor)
             }
-            ImportReference::Star { anchor } => self.handle_import_star(anchor.f.clone()),
+            ImportReference::Star { file_name } => self.handle_import_star(file_name.clone()),
             ImportReference::Default { file_name } => {
                 self.get_addressed_item_from_default_import(file_name.clone(), anchor)
             }
@@ -524,14 +526,15 @@ trait ValueModuleWalker<'a, R: FileManager + 'a, U> {
                     match imported.as_ref() {
                         ImportReference::Named {
                             original_name,
-                            anchor,
+                            file_name,
+                            import_st_anchor,
                         } => {
                             let new_addr = ModuleItemAddress {
-                                file: anchor.f.clone(),
+                                file: file_name.clone(),
                                 name: (*original_name).to_string(),
                                 visibility: Visibility::Export,
                             };
-                            return self.get_addressed_item(&new_addr, anchor);
+                            return self.get_addressed_item(&new_addr, import_st_anchor);
                         }
                         ImportReference::Star { .. } => {
                             todo!()
@@ -1055,16 +1058,20 @@ impl<'a, R: FileManager> FrontendCtx<'a, R> {
                                         .get(&n)
                                         .and_then(|it| it.as_ref())
                                         .cloned();
-                                    match map.and_then(|it|it.extract_single_string_const()) {
-                                    Some(str) => keys.push(str),
-                                    _ => return self.error(                             &anchor,                                        DiagnosticInfoMessage::PickShouldHaveStringAsTypeArgument),
-                                }
+                                    let k = map.and_then(|it| it.extract_single_string_const());
+                                    match k {
+                                        Some(str) => keys.push(str),
+                                        _ => {
+                                            return self.error(
+                                                &anchor,
+                                                DiagnosticInfoMessage::PickNeedsString,
+                                            );
+                                        }
+                                    }
                                 }
                                 _ => {
-                                    return self.error(
-                                        &anchor,
-                                        DiagnosticInfoMessage::PickShouldHaveStringAsTypeArgument,
-                                    );
+                                    return self
+                                        .error(&anchor, DiagnosticInfoMessage::PickNeedsString);
                                 }
                             },
                         }
@@ -1889,7 +1896,7 @@ impl<'a, R: FileManager> FrontendCtx<'a, R> {
                     name: i.sym.to_string(),
                     visibility: Visibility::Local,
                 };
-                self.extract_addressed_value(&new_addr, &e.span())
+                self.extract_addressed_value(&new_addr, &anchor)
             }
             Expr::Array(lit) => {
                 let mut prefix_items = vec![];
@@ -2100,12 +2107,8 @@ impl<'a, R: FileManager> FrontendCtx<'a, R> {
     fn extract_addressed_value(
         &mut self,
         address: &ModuleItemAddress,
-        span: &Span,
+        anchor: &Anchor,
     ) -> Res<Runtype> {
-        let anchor = Anchor {
-            f: address.file.clone(),
-            s: *span,
-        };
         let addressed_value = self.get_addressed_value(address, &anchor)?;
         match addressed_value {
             AddressedValue::ValueExpr(expr, expr_file) => {
@@ -2193,7 +2196,7 @@ impl<'a, R: FileManager> FrontendCtx<'a, R> {
         ts_qualified_name: &TsQualifiedName,
         file: BffFileName,
         visibility: Visibility,
-        span: &Span,
+        anchor: &Anchor,
     ) -> Res<Runtype> {
         let left_value = self.get_addressed_qualified_value_from_entity_name(
             &ts_qualified_name.left,
@@ -2207,7 +2210,7 @@ impl<'a, R: FileManager> FrontendCtx<'a, R> {
                     name: ts_qualified_name.right.sym.to_string(),
                     visibility,
                 };
-                self.extract_addressed_value(&new_addr, span)
+                self.extract_addressed_value(&new_addr, anchor)
             }
             AddressedQualifiedValue::ValueExpr(expr, bff_file_name) => self
                 .typeof_expr_keyed_access(expr.as_ref(), &ts_qualified_name.right, bff_file_name),
@@ -2219,12 +2222,12 @@ impl<'a, R: FileManager> FrontendCtx<'a, R> {
         ts_entity_name: &TsEntityName,
         file: BffFileName,
         visibility: Visibility,
-        span: &Span,
+        anchor: &Anchor,
     ) -> Res<Runtype> {
         match ts_entity_name {
             TsEntityName::Ident(ident) => {
                 let addr = ModuleItemAddress::from_ident(ident, file.clone(), visibility);
-                self.extract_addressed_value(&addr, span)
+                self.extract_addressed_value(&addr, anchor)
             }
             TsEntityName::TsQualifiedName(ts_qualified_name) => self
                 .extract_value_from_ts_qualified_name(
@@ -2232,7 +2235,7 @@ impl<'a, R: FileManager> FrontendCtx<'a, R> {
                     file,
                     // TODO: is the visibility correct here?
                     Visibility::Export,
-                    span,
+                    anchor,
                 ),
         }
     }
@@ -2253,7 +2256,7 @@ impl<'a, R: FileManager> FrontendCtx<'a, R> {
 
         match &ty.expr_name {
             TsTypeQueryExpr::TsEntityName(ts_entity_name) => {
-                self.extract_value_ts_entity_name(ts_entity_name, file, visibility, &ty.span)
+                self.extract_value_ts_entity_name(ts_entity_name, file, visibility, &anchor)
             }
             TsTypeQueryExpr::Import(import_type) => {
                 assert!(
@@ -2270,7 +2273,7 @@ impl<'a, R: FileManager> FrontendCtx<'a, R> {
                                 ts_entity_name,
                                 resolved,
                                 Visibility::Export,
-                                &import_type.span,
+                                &anchor,
                             );
                         }
                         None => todo!(),

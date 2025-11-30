@@ -70,7 +70,8 @@ impl<'a, R: FsModuleResolver> ImportsVisitor<'a, R> {
                 local.sym.to_string(),
                 Rc::new(ImportReference::Named {
                     original_name: Rc::new(orig.to_string()),
-                    anchor: Anchor::new(v, local.span),
+                    file_name: v,
+                    import_st_anchor: Anchor::new(self.current_file.clone(), local.span),
                 }),
             );
         }
@@ -91,9 +92,7 @@ impl<'a, R: FsModuleResolver> ImportsVisitor<'a, R> {
         if let Some(v) = v {
             self.imports.insert(
                 local.sym.to_string(),
-                Rc::new(ImportReference::Star {
-                    anchor: Anchor::new(v, local.span),
-                }),
+                Rc::new(ImportReference::Star { file_name: v }),
             );
         }
     }
@@ -199,7 +198,7 @@ impl<R: FsModuleResolver> Visit for ImportsVisitor<'_, R> {
                                     id.sym.to_string(),
                                     Rc::new(SymbolExport::StarOfOtherFile {
                                         reference: ImportReference::Star {
-                                            anchor: Anchor::new(file_name.clone(), id.span),
+                                            file_name: file_name.clone(),
                                         }
                                         .into(),
                                     }),

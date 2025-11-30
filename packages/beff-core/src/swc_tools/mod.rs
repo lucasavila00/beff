@@ -50,10 +50,11 @@ pub enum SymbolExport {
 pub enum ImportReference {
     Named {
         original_name: Rc<String>,
-        anchor: Anchor,
+        file_name: BffFileName,
+        import_st_anchor: Anchor,
     },
     Star {
-        anchor: Anchor,
+        file_name: BffFileName,
     },
     Default {
         file_name: BffFileName,
@@ -63,8 +64,12 @@ pub enum ImportReference {
 impl ImportReference {
     pub fn file_name(&self) -> &BffFileName {
         match self {
-            ImportReference::Named { anchor, .. } => &anchor.f,
-            ImportReference::Star { anchor, .. } => &anchor.f,
+            ImportReference::Named {
+                file_name: file, ..
+            } => file,
+            ImportReference::Star {
+                file_name: file, ..
+            } => file,
             ImportReference::Default { file_name, .. } => file_name,
         }
     }

@@ -7,6 +7,7 @@ use crate::{BffFileName, ModuleItemAddress, ParsedModule, RuntypeUUID};
 
 #[derive(Debug, Clone)]
 pub enum DiagnosticInfoMessage {
+    PickNeedsString,
     EnumItemShouldBeFromEnumType,
     PartialShouldHaveTwoTypeArguments,
     RequiredShouldHaveTwoTypeArguments,
@@ -52,7 +53,6 @@ pub enum DiagnosticInfoMessage {
     CannotResolveRefInExtractUnion(RuntypeUUID),
     PartialShouldHaveObjectAsTypeArgument,
     MissingArgumentsOnPartial,
-    PickShouldHaveStringAsTypeArgument,
     PickShouldHaveStringOrStringArrayAsTypeArgument,
     MissingArgumentsOnOmit,
     MissingArgumentsOnPick,
@@ -337,7 +337,7 @@ impl DiagnosticInfoMessage {
             DiagnosticInfoMessage::PickShouldHaveObjectAsTypeArgument => {
                 "Pick should have object as type argument".to_string()
             }
-            DiagnosticInfoMessage::PickShouldHaveStringAsTypeArgument => {
+            DiagnosticInfoMessage::PickNeedsString => {
                 "Pick should have string as type argument".to_string()
             }
             DiagnosticInfoMessage::PickShouldHaveStringOrStringArrayAsTypeArgument => {
