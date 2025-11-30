@@ -82,7 +82,10 @@ impl<'a, R: FsModuleResolver> ImportsVisitor<'a, R> {
         if let Some(v) = v {
             self.imports.insert(
                 local.sym.to_string(),
-                Rc::new(ImportReference::Default { file_name: v }),
+                Rc::new(ImportReference::Default {
+                    file_name: v,
+                    import_statement_anchor: Anchor::new(self.current_file.clone(), local.span),
+                }),
             );
         }
     }

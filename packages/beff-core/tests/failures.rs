@@ -72,62 +72,94 @@ mod tests {
         "#);
     }
 
-    // #[test]
-    // fn import_default_none() {
-    //     insta::assert_snapshot!(failure_multifile(&[
-    //         (
-    //             "t.ts",
-    //             r#"
-    //                 export const A = "a";
-    //             "#,
-    //         ),
-    //         (
-    //             "entry.ts",
-    //             r#"
-    //                 import D from "./t";
-    //                 export type T = typeof D;
-    //                 parse.buildParsers<{ T: T }>();
-    //             "#
-    //         )
-    //     ]), @r"");
-    // }
+    #[test]
+    fn import_default_none() {
+        insta::assert_snapshot!(failure_multifile(&[
+            (
+                "t.ts",
+                r#"
+                    export const A = "a";
+                "#,
+            ),
+            (
+                "entry.ts",
+                r#"
+                    import D from "./t";
+                    export type T = typeof D;
+                    parse.buildParsers<{ T: T }>();
+                "#
+            )
+        ]), @r#"
+        Error: Cannot resolve value 't.ts::default'
+           ╭─[entry.ts:2:29]
+           │
+         2 │                     import D from "./t";
+           │                            ┬  
+           │                            ╰── Cannot resolve value 't.ts::default'
+        ───╯
+        "#);
+    }
 
-    // #[test]
-    // fn type_as_value() {
-    //     insta::assert_snapshot!(failure_multifile(&[
-    //         (
-    //             "t.ts",
-    //             r#"
-    //                 export type A = string;
-    //             "#,
-    //         ),
-    //         (
-    //             "entry.ts",
-    //             r#"
-    //                 import { A } from "./t";
-    //                 const v = A;
-    //                 export type T = typeof v;
-    //                 parse.buildParsers<{ T: T }>();
-    //             "#
-    //         )
-    //     ]), @r"");
-    // }
+    #[test]
+    fn type_as_value() {
+        insta::assert_snapshot!(failure_multifile(&[
+            (
+                "t.ts",
+                r#"
+                    export type A = string;
+                "#,
+            ),
+            (
+                "entry.ts",
+                r#"
+                    import { A } from "./t";
+                    const v = A;
+                    export type T = typeof v;
+                    parse.buildParsers<{ T: T }>();
+                "#
+            )
+        ]), @r#"
+        Error: Cannot resolve value 't.ts::A'
+           ╭─[entry.ts:2:31]
+           │
+         2 │                     import { A } from "./t";
+           │                              ┬  
+           │                              ╰── Cannot resolve value 't.ts::A'
+        ───╯
+        "#);
+    }
 
-    // #[test]
-    // fn qualified_type_on_interface() {
-    //     insta::assert_snapshot!(failure(r#"
-    //         interface I { a: string }
-    //         export type T = I.a;
-    //         parse.buildParsers<{ T: T }>();
-    //     "#), @r"");
-    // }
+    #[test]
+    fn qualified_type_on_interface() {
+        insta::assert_snapshot!(failure(r#"
+            interface I { a: string }
+            export type T = I.a;
+            parse.buildParsers<{ T: T }>();
+        "#), @r"
+        Error: Cannot use interface in qualified type position
+           ╭─[entry.ts:3:30]
+           │
+         3 │             export type T = I.a;
+           │                             ┬  
+           │                             ╰── Cannot use interface in qualified type position
+        ───╯
+        ");
+    }
 
-    // #[test]
-    // fn qualified_type_on_type_alias() {
-    //     insta::assert_snapshot!(failure(r#"
-    //         type A = { a: string };
-    //         export type T = A.a;
-    //         parse.buildParsers<{ T: T }>();
-    //     "#), @r"");
-    // }
+    #[test]
+    fn qualified_type_on_type_alias() {
+        insta::assert_snapshot!(failure(r#"
+            type A = { a: string };
+            export type T = A.a;
+            parse.buildParsers<{ T: T }>();
+        "#), @r"
+        Error: Cannot use type in qualified type position
+           ╭─[entry.ts:3:30]
+           │
+         3 │             export type T = A.a;
+           │                             ┬  
+           │                             ╰── Cannot use type in qualified type position
+        ───╯
+        ");
+    }
 }

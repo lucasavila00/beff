@@ -80,7 +80,7 @@ impl AddressedType {
 
 pub enum AddressedQualifiedType {
     StarImport(BffFileName),
-    EnumItem {
+    WillBeUsedForEnumItem {
         enum_type: Rc<TsEnumDecl>,
         address: TypeAddress,
     },
@@ -113,6 +113,7 @@ trait TypeModuleWalker<'a, R: FileManager + 'a, U> {
         ts_type: &Rc<TsTypeAliasDecl>,
         file: BffFileName,
         name: String,
+        anchor: &Anchor,
     ) -> Res<U>;
 
     fn get_addressed_item_from_local_ts_enum(
@@ -126,6 +127,7 @@ trait TypeModuleWalker<'a, R: FileManager + 'a, U> {
         ts_interface: &Rc<TsInterfaceDecl>,
         file: BffFileName,
         name: String,
+        anchor: &Anchor,
     ) -> Res<U>;
 
     fn get_addressed_item_from_default_import(
@@ -164,11 +166,7 @@ trait TypeModuleWalker<'a, R: FileManager + 'a, U> {
         }
     }
 
-    fn get_addressed_item_from_import_reference(
-        &mut self,
-        imported: &ImportReference,
-        err_anchor: &Anchor,
-    ) -> Res<U> {
+    fn get_addressed_item_from_import_reference(&mut self, imported: &ImportReference) -> Res<U> {
         match imported {
             ImportReference::Named {
                 original_name,
@@ -183,9 +181,11 @@ trait TypeModuleWalker<'a, R: FileManager + 'a, U> {
                 self.get_addressed_item(&new_addr, import_st_anchor)
             }
             ImportReference::Star { file_name } => self.handle_import_star(file_name.clone()),
-            ImportReference::Default { file_name } => {
-                self.get_addressed_item_from_default_import(file_name.clone(), err_anchor)
-            }
+            ImportReference::Default {
+                file_name,
+                import_statement_anchor,
+            } => self
+                .get_addressed_item_from_default_import(file_name.clone(), import_statement_anchor),
         }
     }
 
@@ -200,6 +200,7 @@ trait TypeModuleWalker<'a, R: FileManager + 'a, U> {
                         ts_type,
                         addr.file.clone(),
                         addr.name.clone(),
+                        err_anchor,
                     );
                 }
 
@@ -216,11 +217,12 @@ trait TypeModuleWalker<'a, R: FileManager + 'a, U> {
                         interface,
                         addr.file.clone(),
                         addr.name.clone(),
+                        err_anchor,
                     );
                 }
 
                 if let Some(imported) = parsed_module.imports.get(&addr.name) {
-                    return self.get_addressed_item_from_import_reference(imported, err_anchor);
+                    return self.get_addressed_item_from_import_reference(imported);
                 }
 
                 Err(self.get_ctx().box_error(
@@ -315,6 +317,7 @@ impl<'a, 'b, R: FileManager> TypeModuleWalker<'a, R, AddressedType> for TypeWalk
         ts_type: &Rc<TsTypeAliasDecl>,
         file: BffFileName,
         name: String,
+        _anchor: &Anchor,
     ) -> Res<AddressedType> {
         Ok(AddressedType::Type {
             t: ts_type.clone(),
@@ -344,6 +347,7 @@ impl<'a, 'b, R: FileManager> TypeModuleWalker<'a, R, AddressedType> for TypeWalk
         ts_interface: &Rc<TsInterfaceDecl>,
         file: BffFileName,
         name: String,
+        _anchor: &Anchor,
     ) -> Res<AddressedType> {
         Ok(AddressedType::Interface {
             t: ts_interface.clone(),
@@ -366,7 +370,7 @@ impl<'a, 'b, R: FileManager> TypeModuleWalker<'a, R, AddressedQualifiedType>
     ) -> Res<AddressedQualifiedType> {
         match export {
             SymbolExport::StarOfOtherFile { reference } => {
-                self.get_addressed_item_from_import_reference(reference, anchor)
+                self.get_addressed_item_from_import_reference(reference)
             }
             SymbolExport::TsEnumDecl {
                 decl,
@@ -397,8 +401,12 @@ impl<'a, 'b, R: FileManager> TypeModuleWalker<'a, R, AddressedQualifiedType>
         _ts_type: &Rc<TsTypeAliasDecl>,
         _file: BffFileName,
         _name: String,
+        anchor: &Anchor,
     ) -> Res<AddressedQualifiedType> {
-        todo!()
+        Err(self.get_ctx().box_error(
+            &anchor,
+            DiagnosticInfoMessage::CannotUseTypeInQualifiedTypePosition,
+        ))
     }
 
     fn handle_import_star(&mut self, file_name: BffFileName) -> Res<AddressedQualifiedType> {
@@ -411,7 +419,7 @@ impl<'a, 'b, R: FileManager> TypeModuleWalker<'a, R, AddressedQualifiedType>
         file: BffFileName,
         name: String,
     ) -> Res<AddressedQualifiedType> {
-        Ok(AddressedQualifiedType::EnumItem {
+        Ok(AddressedQualifiedType::WillBeUsedForEnumItem {
             enum_type: ts_enum.clone(),
             address: TypeAddress { file, name },
         })
@@ -422,8 +430,12 @@ impl<'a, 'b, R: FileManager> TypeModuleWalker<'a, R, AddressedQualifiedType>
         _ts_interface: &Rc<TsInterfaceDecl>,
         _file: BffFileName,
         _name: String,
+        anchor: &Anchor,
     ) -> Res<AddressedQualifiedType> {
-        todo!()
+        Err(self.get_ctx().box_error(
+            &anchor,
+            DiagnosticInfoMessage::CannotUseInterfaceInQualifiedTypePosition,
+        ))
     }
 }
 
@@ -479,14 +491,17 @@ trait ValueModuleWalker<'a, R: FileManager + 'a, U> {
                     self.get_addressed_item_from_symbol_export(export, anchor)
                 }
             },
-            None => todo!(),
+            None => self.get_ctx().error(
+                anchor,
+                DiagnosticInfoMessage::CouldNotResolveValue(ModuleItemAddress {
+                    file: file_name,
+                    name: "default".to_string(),
+                    visibility: Visibility::Export,
+                }),
+            ),
         }
     }
-    fn get_addressed_item_from_import_reference(
-        &mut self,
-        imported: &ImportReference,
-        anchor: &Anchor,
-    ) -> Res<U> {
+    fn get_addressed_item_from_import_reference(&mut self, imported: &ImportReference) -> Res<U> {
         match imported {
             ImportReference::Named {
                 original_name,
@@ -501,9 +516,11 @@ trait ValueModuleWalker<'a, R: FileManager + 'a, U> {
                 self.get_addressed_item(&new_addr, import_st_anchor)
             }
             ImportReference::Star { file_name } => self.handle_import_star(file_name.clone()),
-            ImportReference::Default { file_name } => {
-                self.get_addressed_item_from_default_import(file_name.clone(), anchor)
-            }
+            ImportReference::Default {
+                file_name,
+                import_statement_anchor,
+            } => self
+                .get_addressed_item_from_default_import(file_name.clone(), import_statement_anchor),
         }
     }
     fn get_addressed_item(&mut self, addr: &ModuleItemAddress, anchor: &Anchor) -> Res<U> {
@@ -511,7 +528,7 @@ trait ValueModuleWalker<'a, R: FileManager + 'a, U> {
         match addr.visibility {
             Visibility::Local => {
                 if let Some(imported) = parsed_module.imports.get(&addr.name) {
-                    return self.get_addressed_item_from_import_reference(imported, anchor);
+                    return self.get_addressed_item_from_import_reference(imported);
                 }
                 if let Some(expr) = parsed_module.locals.exprs.get(&addr.name) {
                     return self.handle_symbol_expr(expr, &addr.file);
@@ -539,9 +556,14 @@ trait ValueModuleWalker<'a, R: FileManager + 'a, U> {
                         ImportReference::Star { .. } => {
                             todo!()
                         }
-                        ImportReference::Default { file_name } => {
-                            return self
-                                .get_addressed_item_from_default_import(file_name.clone(), anchor);
+                        ImportReference::Default {
+                            file_name,
+                            import_statement_anchor,
+                        } => {
+                            return self.get_addressed_item_from_default_import(
+                                file_name.clone(),
+                                import_statement_anchor,
+                            );
                         }
                     }
                 }
@@ -674,11 +696,11 @@ impl<'a, 'b, R: FileManager> ValueModuleWalker<'a, R, AddressedQualifiedValue>
     fn get_addressed_item_from_symbol_export(
         &mut self,
         exports: &SymbolExport,
-        anchor: &Anchor,
+        _anchor: &Anchor,
     ) -> Res<AddressedQualifiedValue> {
         match exports {
             SymbolExport::StarOfOtherFile { reference } => {
-                self.get_addressed_item_from_import_reference(reference.as_ref(), anchor)
+                self.get_addressed_item_from_import_reference(reference.as_ref())
             }
             SymbolExport::TsType { .. } => todo!(),
             SymbolExport::TsInterfaceDecl { .. } => todo!(),
@@ -1190,7 +1212,7 @@ impl<'a, R: FileManager> FrontendCtx<'a, R> {
             } => {
                 let ty =
                     self.get_addressed_qualified_type(&enum_type.to_module_item_addr(), &anchor)?;
-                if let AddressedQualifiedType::EnumItem { enum_type, address } = ty {
+                if let AddressedQualifiedType::WillBeUsedForEnumItem { enum_type, address } = ty {
                     let found = enum_type.members.iter().find(|it| match &it.id {
                         TsEnumMemberId::Ident(ident) => &ident.sym == member_name,
                         TsEnumMemberId::Str(_) => unreachable!(),
@@ -1398,7 +1420,7 @@ impl<'a, R: FileManager> FrontendCtx<'a, R> {
                         };
                         self.get_addressed_qualified_type(&new_addr, &anchor)
                     }
-                    it @ AddressedQualifiedType::EnumItem { .. } => Ok(it),
+                    it @ AddressedQualifiedType::WillBeUsedForEnumItem { .. } => Ok(it),
                 }
             }
             TsEntityName::Ident(ident) => {
@@ -1475,7 +1497,7 @@ impl<'a, R: FileManager> FrontendCtx<'a, R> {
                         name: ts_qualified_name.right.sym.to_string(),
                         visibility: Visibility::Export,
                     },
-                    AddressedQualifiedType::EnumItem {
+                    AddressedQualifiedType::WillBeUsedForEnumItem {
                         enum_type: _,
                         address,
                     } => {

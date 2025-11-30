@@ -7,6 +7,8 @@ use crate::{BffFileName, ModuleItemAddress, ParsedModule, RuntypeUUID};
 
 #[derive(Debug, Clone)]
 pub enum DiagnosticInfoMessage {
+    CannotUseTypeInQualifiedTypePosition,
+    CannotUseInterfaceInQualifiedTypePosition,
     PickNeedsString,
     EnumItemShouldBeFromEnumType,
     PartialShouldHaveTwoTypeArguments,
@@ -537,6 +539,12 @@ impl DiagnosticInfoMessage {
             }
             DiagnosticInfoMessage::EnumItemShouldBeFromEnumType => {
                 "Enum item should be from enum type".to_string()
+            }
+            DiagnosticInfoMessage::CannotUseInterfaceInQualifiedTypePosition => {
+                "Cannot use interface in qualified type position".to_string()
+            }
+            DiagnosticInfoMessage::CannotUseTypeInQualifiedTypePosition => {
+                "Cannot use type in qualified type position".to_string()
             }
         }
     }
