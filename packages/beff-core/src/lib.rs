@@ -496,7 +496,11 @@ impl ModuleItemAddress {
         let mut this_name_count = 0;
         for name in all_names {
             match &name.ty {
-                RuntypeName::Address(module_item_address) => {
+                RuntypeName::EnumItem {
+                    address: module_item_address,
+                    ..
+                }
+                | RuntypeName::Address(module_item_address) => {
                     if module_item_address == self {
                         continue;
                     }
@@ -530,6 +534,10 @@ impl ModuleItemAddress {
 #[derive(Debug, Clone, PartialEq, Eq, Hash, PartialOrd, Ord)]
 pub enum RuntypeName {
     Address(ModuleItemAddress),
+    EnumItem {
+        address: ModuleItemAddress,
+        member_name: String,
+    },
     SemtypeRecursiveGenerated(usize),
 }
 
@@ -538,6 +546,12 @@ impl RuntypeName {
         match self {
             RuntypeName::Address(addr) => addr.ts_identifier(all_names),
             RuntypeName::SemtypeRecursiveGenerated(n) => format!("RecursiveGenerated{}", n),
+            RuntypeName::EnumItem {
+                address: enum_type,
+                member_name,
+            } => {
+                format!("{}__{}", enum_type.ts_identifier(all_names), member_name)
+            }
         }
     }
 }

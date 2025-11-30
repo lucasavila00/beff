@@ -7,6 +7,7 @@ use crate::{BffFileName, ModuleItemAddress, ParsedModule, RuntypeUUID};
 
 #[derive(Debug, Clone)]
 pub enum DiagnosticInfoMessage {
+    EnumItemShouldBeFromEnumType,
     PartialShouldHaveTwoTypeArguments,
     RequiredShouldHaveTwoTypeArguments,
     InvalidNumberOfTypeParametersForArray,
@@ -528,6 +529,9 @@ impl DiagnosticInfoMessage {
             }
             DiagnosticInfoMessage::PartialShouldHaveTwoTypeArguments => {
                 "Partial should have two type arguments".to_string()
+            }
+            DiagnosticInfoMessage::EnumItemShouldBeFromEnumType => {
+                "Enum item should be from enum type".to_string()
             }
         }
     }
