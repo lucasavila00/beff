@@ -1,3 +1,4 @@
+use crate::ast::runtype::IndexedProperty;
 use crate::subtyping::ToSemType;
 use crate::subtyping::semtype::{SemType, SemTypeContext, SemTypeOps};
 use crate::subtyping::to_schema::semtype_to_runtypes;
@@ -52,6 +53,14 @@ enum TsBuiltIn {
     StringFormatExtends,
     NumberFormat,
     NumberFormatExtends,
+
+    Record,
+    Omit,
+    Object,
+    Required,
+    Partial,
+    Pick,
+    Exclude,
 }
 impl fmt::Display for TsBuiltIn {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
@@ -130,7 +139,7 @@ trait TypeModuleWalker<'a, R: FileManager + 'a, U> {
 
     fn handle_import_star(&mut self, file_name: BffFileName, span: &Span) -> Res<U>;
 
-    fn get_addressed_item_from_symbol_exports(
+    fn get_addressed_item_from_symbol_export(
         &mut self,
         export: &SymbolExport,
         span: &Span,
@@ -186,7 +195,7 @@ trait TypeModuleWalker<'a, R: FileManager + 'a, U> {
                     }
                 },
                 SymbolExportDefault::Renamed { export } => {
-                    return self.get_addressed_item_from_symbol_exports(&export, span);
+                    return self.get_addressed_item_from_symbol_export(&export, span);
                 }
             },
             None => todo!(),
@@ -252,6 +261,13 @@ trait TypeModuleWalker<'a, R: FileManager + 'a, U> {
                     return self.get_addressed_item_from_import_reference(imported, span);
                 }
 
+                if let Some(symbol_export) = parsed_module
+                    .symbol_exports
+                    .get_type(&addr.name, self.get_ctx().files)
+                {
+                    return self.get_addressed_item_from_symbol_export(&symbol_export, span);
+                }
+
                 dbg!(&addr);
                 todo!()
             }
@@ -264,7 +280,7 @@ trait TypeModuleWalker<'a, R: FileManager + 'a, U> {
                     .symbol_exports
                     .get_type(&addr.name, self.get_ctx().files)
                 {
-                    return self.get_addressed_item_from_symbol_exports(&export, span);
+                    return self.get_addressed_item_from_symbol_export(&export, span);
                 }
                 todo!()
             }
@@ -284,7 +300,7 @@ impl<'a, 'b, R: FileManager> TypeModuleWalker<'a, R, AddressedType> for TypeWalk
         self.ctx
     }
 
-    fn get_addressed_item_from_symbol_exports(
+    fn get_addressed_item_from_symbol_export(
         &mut self,
         export: &SymbolExport,
         _span: &Span,
@@ -403,7 +419,7 @@ impl<'a, 'b, R: FileManager> TypeModuleWalker<'a, R, AddressedQualifiedType>
         self.ctx
     }
 
-    fn get_addressed_item_from_symbol_exports(
+    fn get_addressed_item_from_symbol_export(
         &mut self,
         export: &SymbolExport,
         span: &Span,
@@ -569,6 +585,12 @@ trait ValueModuleWalker<'a, R: FileManager + 'a, U> {
                                 .get_addressed_item_from_default_import(file_name.clone(), span);
                         }
                     }
+                }
+                if let Some(symbol_export) = parsed_module
+                    .symbol_exports
+                    .get_value(&addr.name, self.get_ctx().files)
+                {
+                    return self.get_addressed_item_from_symbol_export(&symbol_export);
                 }
                 //
                 todo!()
@@ -1015,6 +1037,24 @@ impl<'a, R: FileManager> FrontendCtx<'a, R> {
             }
         }
     }
+
+    fn collect_consts_from_union(&self, it: Runtype) -> Result<Vec<String>, DiagnosticInfoMessage> {
+        let mut string_keys = vec![];
+
+        for v in self.extract_union(it)? {
+            match v.extract_single_string_const() {
+                Some(str) => {
+                    string_keys.push(str.clone());
+                }
+                _ => {
+                    return Err(DiagnosticInfoMessage::RecordKeyUnionShouldBeOnlyStrings);
+                }
+            }
+        }
+
+        Ok(string_keys)
+    }
+
     fn extract_addressed_type(
         &mut self,
         address: &ModuleItemAddress,
@@ -1074,6 +1114,216 @@ impl<'a, R: FileManager> FrontendCtx<'a, R> {
                 TsBuiltIn::NumberFormatExtends => {
                     self.get_number_format_extends(&type_args, span, address.file.clone())
                 }
+                TsBuiltIn::Object => Ok(Runtype::any_object()),
+
+                TsBuiltIn::Record => {
+                    if type_args.len() != 2 {
+                        return self.error(
+                            span,
+                            DiagnosticInfoMessage::RecordShouldHaveTwoTypeArguments,
+                            address.file.clone(),
+                        );
+                    }
+
+                    let mut key = type_args[0].clone();
+                    let mut is_ref = matches!(key, Runtype::Ref(_));
+
+                    while is_ref {
+                        if let Runtype::Ref(r) = &type_args[0] {
+                            let map = self
+                                .partial_validators
+                                .get(r)
+                                .and_then(|it| it.as_ref())
+                                .cloned();
+                            if let Some(schema) = map {
+                                key = schema;
+                                is_ref = matches!(key, Runtype::Ref(_));
+                            }
+                        }
+                    }
+                    let key_clone = key.clone();
+                    match self.collect_consts_from_union(key) {
+                        Ok(res) => {
+                            let value = type_args[1].clone();
+                            Ok(Runtype::object(
+                                res.into_iter()
+                                    .map(|it| (it, value.clone().required()))
+                                    .collect(),
+                            ))
+                        }
+                        Err(_) => {
+                            let value = type_args[1].clone();
+                            Ok(Runtype::Object {
+                                vs: BTreeMap::new(),
+                                indexed_properties: Some(
+                                    IndexedProperty {
+                                        key: key_clone,
+                                        value: value.required(),
+                                    }
+                                    .into(),
+                                ),
+                            })
+                        }
+                    }
+                }
+                // TsBuiltIn::TsPick(span) => match type_args {
+                //     Some(vs) => {
+                //         let items = vs
+                //             .params
+                //             .iter()
+                //             .map(|it| self.convert_ts_type(it))
+                //             .collect::<Res<Vec<_>>>()?;
+
+                //         if items.len() != 2 {
+                //             return self.error(
+                //                 span,
+                //                 DiagnosticInfoMessage::PickShouldHaveTwoTypeArguments,
+                //             );
+                //         }
+                //         let obj = items[0].clone();
+                //         let k = items[1].clone();
+                //         let vs = self.extract_object(&obj, span)?;
+                //         self.convert_pick(span, &vs, k)
+                //     }
+                //     None => self.cannot_serialize_error(
+                //         span,
+                //         DiagnosticInfoMessage::MissingArgumentsOnPick,
+                //     ),
+                // },
+                // TsBuiltIn::TsOmit(span) => match type_args {
+                //     Some(vs) => {
+                //         let items = vs
+                //             .params
+                //             .iter()
+                //             .map(|it| self.convert_ts_type(it))
+                //             .collect::<Res<Vec<_>>>()?;
+
+                //         if items.len() != 2 {
+                //             return self.error(
+                //                 span,
+                //                 DiagnosticInfoMessage::OmitShouldHaveTwoTypeArguments,
+                //             );
+                //         }
+                //         let obj = items[0].clone();
+                //         let k = items[1].clone();
+                //         let vs = self.extract_object(&obj, span)?;
+                //         self.convert_omit(span, &vs, k)
+                //     }
+                //     None => self.cannot_serialize_error(
+                //         span,
+                //         DiagnosticInfoMessage::MissingArgumentsOnOmit,
+                //     ),
+                // },
+                // TsBuiltIn::TsRequired(span) => match type_args {
+                //     Some(vs) => {
+                //         let items = vs
+                //             .params
+                //             .iter()
+                //             .map(|it| self.convert_ts_type(it))
+                //             .collect::<Res<Vec<_>>>()?;
+
+                //         if items.len() != 1 {
+                //             return self.error(
+                //                 span,
+                //                 DiagnosticInfoMessage::OmitShouldHaveTwoTypeArguments,
+                //             );
+                //         }
+                //         let obj = items[0].clone();
+                //         let vs = self.extract_object(&obj, span)?;
+                //         Ok(self.convert_required(&vs))
+                //     }
+                //     None => self.cannot_serialize_error(
+                //         span,
+                //         DiagnosticInfoMessage::MissingArgumentsOnRequired,
+                //     ),
+                // },
+                // TsBuiltIn::TsPartial(span) => match type_args {
+                //     Some(vs) => {
+                //         let items = vs
+                //             .params
+                //             .iter()
+                //             .map(|it| self.convert_ts_type(it))
+                //             .collect::<Res<Vec<_>>>()?;
+
+                //         if items.len() != 1 {
+                //             return self.error(
+                //                 span,
+                //                 DiagnosticInfoMessage::PartialShouldHaveOneTypeArgument,
+                //             );
+                //         }
+                //         let obj = items[0].clone();
+                //         let vs = self.extract_object(&obj, span)?;
+                //         Ok(self.convert_partial(&vs))
+                //     }
+                //     None => self.cannot_serialize_error(
+                //         span,
+                //         DiagnosticInfoMessage::MissingArgumentsOnPartial,
+                //     ),
+                // },
+                // TsBuiltIn::TsExclude(span) => match type_args {
+                //     Some(vs) => {
+                //         let items = vs
+                //             .params
+                //             .iter()
+                //             .map(|it| self.convert_ts_type(it))
+                //             .collect::<Res<Vec<_>>>()?;
+                //         if items.len() != 2 {
+                //             return self.error(
+                //                 span,
+                //                 DiagnosticInfoMessage::ExcludeShouldHaveTwoTypeArguments,
+                //             );
+                //         }
+                //         let mut ctx = SemTypeContext::new();
+
+                //         let left_ty = items[0].clone();
+
+                //         let left_st = left_ty
+                //             .to_sem_type(&self.validators_ref(), &mut ctx)
+                //             .map_err(|e| {
+                //                 self.box_error(
+                //                     span,
+                //                     DiagnosticInfoMessage::AnyhowError(e.to_string()),
+                //                 )
+                //             })?;
+
+                //         let right_ty = items[1].clone();
+
+                //         let right_st = right_ty
+                //             .to_sem_type(&self.validators_ref(), &mut ctx)
+                //             .map_err(|e| {
+                //                 self.box_error(
+                //                     span,
+                //                     DiagnosticInfoMessage::AnyhowError(e.to_string()),
+                //                 )
+                //             })?;
+
+                //         let subtracted_ty = left_st.diff(&right_st).map_err(|e| {
+                //             self.box_error(span, DiagnosticInfoMessage::AnyhowError(e.to_string()))
+                //         })?;
+                //         let res = self
+                //             .semtype_to_runtype(subtracted_ty, &mut ctx, span)?
+                //             .remove_nots_of_intersections_and_empty_of_union(
+                //                 &self.validators_ref(),
+                //                 &mut ctx,
+                //             )
+                //             .map_err(|e| {
+                //                 self.box_error(
+                //                     span,
+                //                     DiagnosticInfoMessage::AnyhowError(e.to_string()),
+                //                 )
+                //             })?;
+                //         Ok(res)
+                //     }
+                //     None => self.cannot_serialize_error(
+                //         span,
+                //         DiagnosticInfoMessage::MissingArgumentsOnExclude,
+                //     ),
+                // },
+                TsBuiltIn::Omit => todo!(),
+                TsBuiltIn::Required => todo!(),
+                TsBuiltIn::Partial => todo!(),
+                TsBuiltIn::Pick => todo!(),
+                TsBuiltIn::Exclude => todo!(),
             },
         }
     }
@@ -1122,6 +1372,13 @@ impl<'a, R: FileManager> FrontendCtx<'a, R> {
             "StringFormatExtends" => Some(TsBuiltIn::StringFormatExtends),
             "NumberFormat" => Some(TsBuiltIn::NumberFormat),
             "NumberFormatExtends" => Some(TsBuiltIn::NumberFormatExtends),
+            "Record" => Some(TsBuiltIn::Record),
+            "Omit" => Some(TsBuiltIn::Omit),
+            "Object" => Some(TsBuiltIn::Object),
+            "Required" => Some(TsBuiltIn::Required),
+            "Partial" => Some(TsBuiltIn::Partial),
+            "Pick" => Some(TsBuiltIn::Pick),
+            "Exclude" => Some(TsBuiltIn::Exclude),
             _ => None,
         };
         match bt {
@@ -2317,6 +2574,33 @@ impl<'a, R: FileManager> FrontendCtx<'a, R> {
         })?;
         self.semtype_to_runtype(access_st, &mut ctx, &i.span(), file.clone())
     }
+    fn convert_keyof(&mut self, k: &TsType, file_name: BffFileName) -> Res<Runtype> {
+        // let json_schema = self.convert_ts_type(k)?;
+
+        // let object_extracted = self.extract_object(&json_schema, &k.span());
+        // if let Ok(object_schema) = object_extracted {
+        //     let keys = object_schema.keys();
+        //     let mut vs = vec![];
+        //     for key in keys {
+        //         vs.push(Runtype::single_string_const(key));
+        //     }
+        //     return Ok(Runtype::any_of(vs));
+        // }
+
+        // let mut ctx = SemTypeContext::new();
+        // let st = json_schema
+        //     .to_sem_type(&self.validators_ref(), &mut ctx)
+        //     .map_err(|e| {
+        //         self.box_error(&k.span(), DiagnosticInfoMessage::AnyhowError(e.to_string()))
+        //     })?;
+
+        // let keyof_st: Rc<SemType> = ctx.keyof(st).map_err(|e| {
+        //     self.box_error(&k.span(), DiagnosticInfoMessage::AnyhowError(e.to_string()))
+        // })?;
+
+        // self.semtype_to_runtype(keyof_st, &mut ctx, &k.span())
+        todo!()
+    }
 
     fn extract_type(&mut self, ty: &TsType, file: BffFileName) -> Res<Runtype> {
         match ty {
@@ -2388,14 +2672,14 @@ impl<'a, R: FileManager> FrontendCtx<'a, R> {
             }
             TsType::TsMappedType(_ts_mapped_type) => todo!(),
             TsType::TsConditionalType(_ts_conditional_type) => todo!(),
-            TsType::TsTypeOperator(TsTypeOperator {
-                span: _,
-                op,
-                type_ann: _,
-            }) => match op {
-                TsTypeOperatorOp::KeyOf => todo!(),
-                TsTypeOperatorOp::Unique => todo!(),
-                TsTypeOperatorOp::ReadOnly => todo!(),
+            TsType::TsTypeOperator(TsTypeOperator { span, op, type_ann }) => match op {
+                TsTypeOperatorOp::KeyOf => self.convert_keyof(type_ann, file.clone()),
+                TsTypeOperatorOp::Unique => self.cannot_serialize_error(
+                    span,
+                    DiagnosticInfoMessage::UniqueNonSerializableToJsonSchema,
+                    file,
+                ),
+                TsTypeOperatorOp::ReadOnly => self.extract_type(&type_ann, file.clone()),
             },
 
             TsType::TsOptionalType(TsOptionalType { span, .. }) => self.error(
