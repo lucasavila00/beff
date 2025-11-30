@@ -1,19 +1,13 @@
 use crate::ast::runtype::Runtype;
 use crate::diag::{Diagnostic, DiagnosticInfoMessage, DiagnosticInformation, Location};
 use crate::frontend::FrontendCtx;
-use crate::type_to_schema::TypeToSchema;
 use crate::{BeffUserSettings, FrontendVersion, ParsedModule};
 use crate::{BffFileName, FileManager, NamedSchema};
 use anyhow::Result;
 use anyhow::anyhow;
 use std::rc::Rc;
 use swc_common::{DUMMY_SP, Span};
-use swc_ecma_ast::{
-    CallExpr, Callee, Expr, Ident, MemberExpr, MemberProp, TsCallSignatureDecl,
-    TsConstructSignatureDecl, TsGetterSignature, TsIndexSignature, TsMethodSignature,
-    TsPropertySignature, TsSetterSignature, TsType, TsTypeElement, TsTypeLit,
-    TsTypeParamInstantiation,
-};
+use swc_ecma_ast::{CallExpr, Callee, Expr, Ident, MemberExpr, MemberProp};
 use swc_ecma_visit::Visit;
 
 #[derive(Debug)]
@@ -67,12 +61,6 @@ impl<R: FileManager> ExtractParserVisitor<'_, R> {
         self.errors.push(self.build_error(span, msg).to_diag(None));
     }
 
-    fn error<T>(&mut self, span: &Span, msg: DiagnosticInfoMessage) -> Result<T> {
-        let e = anyhow!("{:?}", &msg);
-        self.errors.push(self.build_error(span, msg).to_diag(None));
-        Err(e)
-    }
-
     fn get_current_file(&mut self) -> Result<Rc<ParsedModule>> {
         let res = self.files.get_or_fetch_file(&self.current_file);
 
@@ -123,112 +111,7 @@ impl<R: FileManager> ExtractParserVisitor<'_, R> {
             }
         }
     }
-    fn convert_to_json_schema(&mut self, ty: &TsType, span: &Span) -> Runtype {
-        let mut to_schema = TypeToSchema::new(
-            self.files,
-            self.current_file.clone(),
-            self.settings,
-            &mut self.counter,
-        );
-        let res = to_schema.convert_ts_type(ty);
-        match res {
-            Ok(res) => {
-                let mut kvs = vec![];
-                for (k, v) in to_schema.components {
-                    // We store type in an Option to support self-recursion.
-                    // When we encounter the type while transforming it we return string with the type name.
-                    // And we need the option to allow a type to refer to itself before it has been resolved.
-                    match v {
-                        Some(s) => kvs.push((k, s)),
-                        None => self.push_error(
-                            span,
-                            DiagnosticInfoMessage::CannotResolveTypeReferenceOnExtracting(k),
-                        ),
-                    }
-                }
-
-                kvs.sort_by(|(ka, _), (kb, _)| ka.cmp(kb));
-                let ext: Vec<NamedSchema> = kvs.into_iter().map(|(_k, v)| v).collect();
-                self.extend_components(ext, span);
-
-                res
-            }
-            Err(diag) => {
-                self.errors.push(*diag);
-                Runtype::Any
-            }
-        }
-    }
-
-    fn extract_one_built_decoder(&mut self, prop: &TsTypeElement) -> Result<BuiltDecoder> {
-        match prop {
-            TsTypeElement::TsPropertySignature(TsPropertySignature {
-                key,
-                type_ann,
-                type_params,
-                span,
-                ..
-            }) => {
-                if type_params.is_some() {
-                    return self.error(span, DiagnosticInfoMessage::GenericDecoderIsNotSupported);
-                }
-
-                let key = match &**key {
-                    Expr::Ident(ident) => ident.sym.to_string(),
-                    _ => {
-                        return self.error(span, DiagnosticInfoMessage::InvalidDecoderKey);
-                    }
-                };
-                match type_ann.as_ref().map(|it| &it.type_ann) {
-                    Some(ann) => Ok(BuiltDecoder {
-                        exported_name: key,
-                        schema: self.convert_to_json_schema(ann, span),
-                    }),
-                    None => self.error(span, DiagnosticInfoMessage::DecoderMustHaveTypeAnnotation),
-                }
-            }
-            TsTypeElement::TsGetterSignature(TsGetterSignature { span, .. })
-            | TsTypeElement::TsSetterSignature(TsSetterSignature { span, .. })
-            | TsTypeElement::TsMethodSignature(TsMethodSignature { span, .. })
-            | TsTypeElement::TsIndexSignature(TsIndexSignature { span, .. })
-            | TsTypeElement::TsCallSignatureDecl(TsCallSignatureDecl { span, .. })
-            | TsTypeElement::TsConstructSignatureDecl(TsConstructSignatureDecl { span, .. }) => {
-                self.error(span, DiagnosticInfoMessage::InvalidDecoderProperty)
-            }
-        }
-    }
-
-    fn extract_built_decoders_from_call(
-        &mut self,
-        params: &TsTypeParamInstantiation,
-    ) -> Result<Vec<BuiltDecoder>> {
-        match params.params.split_first() {
-            Some((head, tail)) => {
-                if !tail.is_empty() {
-                    return self.error(
-                        &params.span,
-                        DiagnosticInfoMessage::TooManyTypeParamsOnDecoder,
-                    );
-                }
-                match &**head {
-                    TsType::TsTypeLit(TsTypeLit { members, .. }) => members
-                        .iter()
-                        .map(|prop| self.extract_one_built_decoder(prop))
-                        .collect(),
-                    _ => self.error(
-                        &params.span,
-                        DiagnosticInfoMessage::DecoderShouldBeObjectWithTypesAndNames,
-                    ),
-                }
-            }
-            None => self.error(
-                &params.span,
-                DiagnosticInfoMessage::TooFewTypeParamsOnDecoder,
-            ),
-        }
-    }
-
-    pub fn extract_special_calls(&mut self, id: &Ident, n: &CallExpr) {
+    fn extract_special_calls(&mut self, id: &Ident, n: &CallExpr) {
         let Ident { sym, span, .. } = id;
         if sym == "buildParsers" {
             match self.built_decoders {
@@ -237,11 +120,7 @@ impl<R: FileManager> ExtractParserVisitor<'_, R> {
                     if let Some(ref params) = n.type_args {
                         match self.settings.frontend {
                             FrontendVersion::V1 => {
-                                if let Ok(x) =
-                                    self.extract_built_decoders_from_call(params.as_ref())
-                                {
-                                    self.built_decoders = Some(x)
-                                }
+                                todo!()
                             }
                             FrontendVersion::V2 => {
                                 let mut ctx = FrontendCtx::new(

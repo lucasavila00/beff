@@ -1,6 +1,6 @@
 use super::json::N;
 use crate::NamedSchema;
-use crate::RuntypeName;
+use crate::RuntypeUUID;
 use crate::ast::json::Json;
 use crate::subtyping::ToSemType;
 use crate::subtyping::semtype::SemTypeContext;
@@ -226,7 +226,7 @@ pub enum Runtype {
         prefix_items: Vec<Runtype>,
         items: Option<Box<Runtype>>,
     },
-    Ref(RuntypeName),
+    Ref(RuntypeUUID),
 
     AnyOf(BTreeSet<Runtype>),
     AllOf(BTreeSet<Runtype>),
@@ -263,7 +263,7 @@ impl UnionMerger {
     }
 }
 pub struct DebugPrintCtx<'a> {
-    pub all_names: &'a [&'a RuntypeName],
+    pub all_names: &'a [&'a RuntypeUUID],
 }
 impl Runtype {
     pub fn as_string_const(&self) -> Option<&str> {
@@ -459,7 +459,7 @@ impl Runtype {
                 format!("Not<{}>", inner)
             }
             Runtype::Function => "Function".to_string(),
-            Runtype::Ref(r) => r.debug_print(ctx.all_names),
+            Runtype::Ref(r) => r.debug_print(ctx),
             Runtype::Array(runtype) => {
                 let inner = runtype.debug_print(ctx);
                 format!("Array<{}>", inner)

@@ -4,7 +4,7 @@ use super::{
     subtype::{NumberRepresentationOrFormat, ProperSubtype, StringLitOrFormat, SubTypeTag},
 };
 use crate::{
-    NamedSchema, RuntypeName,
+    NamedSchema, RuntypeName, RuntypeUUID,
     ast::runtype::{
         CustomFormat, IndexedProperty, Optionality, Runtype, RuntypeConst, TplLitTypeItem,
     },
@@ -21,7 +21,7 @@ use std::{
 
 pub enum SchemaMemo {
     Schema(Runtype),
-    Undefined(RuntypeName),
+    Undefined(RuntypeUUID),
 }
 
 pub struct SemTypeResolverContext<'a>(pub &'a mut SemTypeContext);
@@ -32,7 +32,7 @@ struct SchemerContext<'a, 'b> {
     schemer_memo: BTreeMap<Rc<SemType>, SchemaMemo>,
     validators: Vec<NamedSchema>,
 
-    recursive_validators: BTreeSet<RuntypeName>,
+    recursive_validators: BTreeSet<RuntypeUUID>,
     counter: &'b mut usize,
 }
 
@@ -311,13 +311,16 @@ impl<'a, 'b> SchemerContext<'a, 'b> {
     pub fn convert_to_schema(
         &mut self,
         ty: &Rc<SemType>,
-        name: Option<&RuntypeName>,
+        name: Option<&RuntypeUUID>,
     ) -> anyhow::Result<Runtype> {
         let new_name = match name {
             Some(n) => n.clone(),
             None => {
                 *self.counter += 1;
-                RuntypeName::SemtypeRecursiveGenerated(*self.counter)
+                RuntypeUUID {
+                    ty: RuntypeName::SemtypeRecursiveGenerated(*self.counter),
+                    type_arguments: vec![],
+                }
             }
         };
         if let Some(mater) = self.schemer_memo.get(ty) {
@@ -347,7 +350,7 @@ impl<'a, 'b> SchemerContext<'a, 'b> {
 pub fn semtype_to_runtypes(
     ctx: &mut SemTypeContext,
     ty: &Rc<SemType>,
-    name: &RuntypeName,
+    name: &RuntypeUUID,
     counter: &mut usize,
 ) -> anyhow::Result<(NamedSchema, Vec<NamedSchema>)> {
     let mut schemer = SchemerContext::new(ctx, counter);

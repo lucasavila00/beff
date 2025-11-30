@@ -1,7 +1,7 @@
 use self::bdd::ListAtomic;
 use self::semtype::{ComplexSemType, SemType, SemTypeContext, SemTypeOps};
 use self::subtype::StringLitOrFormat;
-use crate::RuntypeName;
+use crate::RuntypeUUID;
 use crate::ast::runtype::{CustomFormat, Optionality, RuntypeConst};
 use crate::subtyping::bdd::{IndexedPropertiesAtomic, MappingAtomicType};
 use crate::subtyping::subtype::NumberRepresentationOrFormat;
@@ -31,7 +31,7 @@ impl IsEmptyStatus {
 
 struct ToSemTypeConverter<'a> {
     validators: &'a [&'a NamedSchema],
-    seen_refs: BTreeSet<RuntypeName>,
+    seen_refs: BTreeSet<RuntypeUUID>,
 }
 
 impl<'a> ToSemTypeConverter<'a> {
@@ -42,7 +42,7 @@ impl<'a> ToSemTypeConverter<'a> {
         }
     }
 
-    fn get_reference(&self, name: &RuntypeName) -> Result<&Runtype> {
+    fn get_reference(&self, name: &RuntypeUUID) -> Result<&Runtype> {
         for validator in self.validators {
             if &validator.name == name {
                 return Ok(&validator.schema);

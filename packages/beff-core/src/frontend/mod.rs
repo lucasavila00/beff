@@ -1,4 +1,3 @@
-use crate::NamedSchema;
 use crate::subtyping::ToSemType;
 use crate::subtyping::semtype::{SemType, SemTypeContext, SemTypeOps};
 use crate::subtyping::to_schema::semtype_to_runtypes;
@@ -11,10 +10,11 @@ use crate::{
     },
     parser_extractor::BuiltDecoder,
 };
+use crate::{NamedSchema, RuntypeUUID};
 use anyhow::{Result, anyhow};
 use core::fmt;
 use std::collections::BTreeMap;
-use std::{collections::HashMap, rc::Rc};
+use std::rc::Rc;
 use swc_common::{Span, Spanned};
 use swc_ecma_ast::{
     Expr, Ident, Lit, Prop, PropName, PropOrSpread, TsArrayType, TsCallSignatureDecl,
@@ -35,7 +35,7 @@ pub struct FrontendCtx<'a, R: FileManager> {
 
     pub parser_file: BffFileName,
     pub errors: Vec<Diagnostic>,
-    pub partial_validators: HashMap<RuntypeName, Option<Runtype>>,
+    pub partial_validators: BTreeMap<RuntypeUUID, Option<Runtype>>,
 
     pub counter: usize,
     pub builtin_file: BffFileName,
@@ -741,7 +741,7 @@ impl<'a, R: FileManager> FrontendCtx<'a, R> {
             parser_file,
             settings,
             errors: vec![],
-            partial_validators: HashMap::new(),
+            partial_validators: BTreeMap::new(),
             counter: 0,
             builtin_file: BffFileName("______builtin.ts".to_string().into()),
         }
@@ -1140,7 +1140,7 @@ impl<'a, R: FileManager> FrontendCtx<'a, R> {
             }
         }
     }
-    fn insert_definition(&mut self, addr: RuntypeName, schema: Runtype) -> Res<Runtype> {
+    fn insert_definition(&mut self, addr: RuntypeUUID, schema: Runtype) -> Res<Runtype> {
         if let Some(Some(v)) = self.partial_validators.get(&addr) {
             assert_eq!(v, &schema);
         }
@@ -1348,8 +1348,11 @@ impl<'a, R: FileManager> FrontendCtx<'a, R> {
             // TODO: it needs generic type support too, so we need to handle that later
             return self.extract_addressed_type(&fat.addr(), type_args, &type_name.span());
         }
-        let rt_name = RuntypeName::Address(fat.addr().clone());
-        let found = self.partial_validators.get(&rt_name);
+        let rt_uuid = RuntypeUUID {
+            ty: RuntypeName::Address(fat.addr().clone()),
+            type_arguments: type_args.clone(),
+        };
+        let found = self.partial_validators.get(&rt_uuid);
         if let Some(_found_in_map) = found {
             match ts_type_args {
                 Some(_) => {
@@ -1361,16 +1364,19 @@ impl<'a, R: FileManager> FrontendCtx<'a, R> {
                     );
                 }
                 None => {
-                    return Ok(Runtype::Ref(RuntypeName::Address(fat.addr().clone())));
+                    return Ok(Runtype::Ref(RuntypeUUID {
+                        ty: RuntypeName::Address(fat.addr().clone()),
+                        type_arguments: type_args.clone(),
+                    }));
                 }
             }
         }
-        self.partial_validators.insert(rt_name.clone(), None);
+        self.partial_validators.insert(rt_uuid.clone(), None);
 
         let ty = self.extract_addressed_type(&fat.addr(), type_args, &type_name.span());
         match ty {
             Ok(ty) => match ts_type_args {
-                None => self.insert_definition(rt_name.clone(), ty),
+                None => self.insert_definition(rt_uuid.clone(), ty),
                 Some(_) => {
                     // TODO: remove component?
                     // if the validators are keyed just by the address
@@ -1379,7 +1385,7 @@ impl<'a, R: FileManager> FrontendCtx<'a, R> {
                 }
             },
             Err(e) => {
-                self.insert_definition(rt_name, Runtype::Any)?;
+                self.insert_definition(rt_uuid, Runtype::Any)?;
                 Err(e)
             }
         }
@@ -1870,7 +1876,14 @@ impl<'a, R: FileManager> FrontendCtx<'a, R> {
         let (head, tail) = semtype_to_runtypes(
             ctx,
             &access_st,
-            &RuntypeName::Name("AnyName".to_string()),
+            &RuntypeUUID {
+                ty: RuntypeName::Address(ModuleItemAddress {
+                    file: file.clone(),
+                    name: "AnyName".into(),
+                    visibility: Visibility::Local,
+                }),
+                type_arguments: vec![],
+            },
             &mut self.counter,
         )
         .map_err(|any| {

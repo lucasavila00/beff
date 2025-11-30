@@ -3,7 +3,7 @@ use core::fmt;
 use std::{rc::Rc, sync::Arc};
 use swc_common::{BytePos, Loc, SourceMap, Span};
 
-use crate::{BffFileName, ModuleItemAddress, ParsedModule, RuntypeName};
+use crate::{BffFileName, ModuleItemAddress, ParsedModule, RuntypeUUID};
 
 #[derive(Debug, Clone)]
 pub enum DiagnosticInfoMessage {
@@ -46,7 +46,7 @@ pub enum DiagnosticInfoMessage {
     RestFoundOnExtractObject,
     ShouldHaveObjectAsTypeArgument,
     RecordKeyUnionShouldBeOnlyStrings,
-    CannotResolveRefInExtractUnion(RuntypeName),
+    CannotResolveRefInExtractUnion(RuntypeUUID),
     PartialShouldHaveObjectAsTypeArgument,
     MissingArgumentsOnPartial,
     PickShouldHaveStringAsTypeArgument,
@@ -125,9 +125,9 @@ pub enum DiagnosticInfoMessage {
     OptionalTypeIsNotSupported,
     PropShouldHaveTypeAnnotation,
     PropKeyShouldBeIdent,
-    CannotResolveTypeReferenceOnExtracting(RuntypeName),
+    CannotResolveTypeReferenceOnExtracting(RuntypeUUID),
     TsInterfaceExtendsNotSupported,
-    TwoDifferentTypesWithTheSameName(RuntypeName),
+    TwoDifferentTypesWithTheSameName(RuntypeUUID),
     CannotFindFileWhenConvertingToSchema(BffFileName),
     ThisRefersToSomethingThatCannotBeSerialized(String),
     CannotResolveLocalSymbol(String),

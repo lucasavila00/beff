@@ -2,7 +2,7 @@
 mod tests {
 
     use beff_core::{
-        NamedSchema, RuntypeName,
+        BffFileName, ModuleItemAddress, NamedSchema, RuntypeName, RuntypeUUID, Visibility,
         ast::runtype::{
             CustomFormat, IndexedProperty, Runtype, RuntypeConst, TplLitType, TplLitTypeItem,
         },
@@ -34,20 +34,31 @@ mod tests {
         is_sub_type(a, b, a_validators, b_validators, &mut ctx)
     }
 
+    fn rt_uuid(name: String) -> RuntypeUUID {
+        RuntypeUUID {
+            ty: RuntypeName::Address(ModuleItemAddress {
+                file: BffFileName::new("any_file.bff".into()),
+                name: name,
+                visibility: Visibility::Local,
+            }),
+            type_arguments: vec![],
+        }
+    }
+
     #[test]
     fn ref2() {
         let definitions = [NamedSchema {
-            name: RuntypeName::Name("User".into()),
+            name: rt_uuid("User".into()),
             schema: Runtype::object(vec![
                 ("id".into(), Runtype::String.required()),
                 (
                     "bestFriend".into(),
-                    Runtype::Ref(RuntypeName::Name("User".into())).required(),
+                    Runtype::Ref(rt_uuid("User".into())).required(),
                 ),
             ]),
         }];
 
-        let t1 = Runtype::Ref(RuntypeName::Name("User".into()));
+        let t1 = Runtype::Ref(rt_uuid("User".into()));
         let t2 = Runtype::object(vec![
             ("id".into(), Runtype::String.required()),
             ("bestFriend".into(), Runtype::Null.required()),
@@ -71,22 +82,22 @@ mod tests {
     #[test]
     fn ref1() {
         let definitions = [NamedSchema {
-            name: RuntypeName::Name("User".into()),
+            name: rt_uuid("User".into()),
             schema: Runtype::object(vec![
                 ("id".into(), Runtype::String.required()),
                 (
                     "bestFriend".into(),
-                    Runtype::Ref(RuntypeName::Name("User".into())).optional(),
+                    Runtype::Ref(rt_uuid("User".into())).optional(),
                 ),
             ]),
         }];
 
-        let t1 = Runtype::Ref(RuntypeName::Name("User".into()));
+        let t1 = Runtype::Ref(rt_uuid("User".into()));
         let t2 = Runtype::object(vec![
             ("id".into(), Runtype::String.required()),
             (
                 "bestFriend".into(),
-                Runtype::Ref(RuntypeName::Name("User".into())).optional(),
+                Runtype::Ref(rt_uuid("User".into())).optional(),
             ),
         ]);
 
@@ -108,22 +119,22 @@ mod tests {
     #[test]
     fn ref3() {
         let definitions = [NamedSchema {
-            name: RuntypeName::Name("User".into()),
+            name: rt_uuid("User".into()),
             schema: Runtype::object(vec![
                 ("id".into(), Runtype::String.required()),
                 (
                     "bestFriend".into(),
-                    Runtype::Ref(RuntypeName::Name("User".into())).optional(),
+                    Runtype::Ref(rt_uuid("User".into())).optional(),
                 ),
             ]),
         }];
 
-        let t1 = Runtype::Ref(RuntypeName::Name("User".into()));
+        let t1 = Runtype::Ref(rt_uuid("User".into()));
         let t2 = Runtype::object(vec![
             ("id".into(), Runtype::Number.required()),
             (
                 "bestFriend".into(),
-                Runtype::Ref(RuntypeName::Name("User".into())).optional(),
+                Runtype::Ref(rt_uuid("User".into())).optional(),
             ),
         ]);
 
@@ -146,29 +157,23 @@ mod tests {
     #[test]
     fn mappings4() {
         let definitions = [NamedSchema {
-            name: RuntypeName::Name("User".into()),
+            name: rt_uuid("User".into()),
             schema: Runtype::object(vec![
                 ("id".into(), Runtype::String.required()),
                 (
                     "bestFriend".into(),
-                    Runtype::Ref(RuntypeName::Name("User".into())).optional(),
+                    Runtype::Ref(rt_uuid("User".into())).optional(),
                 ),
             ]),
         }];
 
         let t1 = Runtype::object(vec![
             ("a".into(), Runtype::String.required()),
-            (
-                "b".into(),
-                Runtype::Ref(RuntypeName::Name("User".into())).required(),
-            ),
+            ("b".into(), Runtype::Ref(rt_uuid("User".into())).required()),
         ]);
         let t2 = Runtype::object(vec![
             ("a".into(), Runtype::String.required()),
-            (
-                "b".into(),
-                Runtype::Ref(RuntypeName::Name("User".into())).optional(),
-            ),
+            ("b".into(), Runtype::Ref(rt_uuid("User".into())).optional()),
         ]);
 
         let res = rt_is_sub_type(
@@ -1589,30 +1594,30 @@ mod tests {
         // type B = { a: A }
         let definitions = vec![
             NamedSchema {
-                name: RuntypeName::Name("A".into()),
+                name: rt_uuid("A".into()),
                 schema: Runtype::object(vec![(
                     "b".into(),
-                    Runtype::Ref(RuntypeName::Name("B".into())).required(),
+                    Runtype::Ref(rt_uuid("B".into())).required(),
                 )]),
             },
             NamedSchema {
-                name: RuntypeName::Name("B".into()),
+                name: rt_uuid("B".into()),
                 schema: Runtype::object(vec![(
                     "a".into(),
-                    Runtype::Ref(RuntypeName::Name("A".into())).required(),
+                    Runtype::Ref(rt_uuid("A".into())).required(),
                 )]),
             },
         ];
         let defs_refs: Vec<&NamedSchema> = definitions.iter().collect();
 
-        let ref_a = Runtype::Ref(RuntypeName::Name("A".into()));
+        let ref_a = Runtype::Ref(rt_uuid("A".into()));
 
         // Structural equivalent of A: { b: { a: A } }
         let struct_a = Runtype::object(vec![(
             "b".into(),
             Runtype::object(vec![(
                 "a".into(),
-                Runtype::Ref(RuntypeName::Name("A".into())).required(),
+                Runtype::Ref(rt_uuid("A".into())).required(),
             )])
             .required(),
         )]);

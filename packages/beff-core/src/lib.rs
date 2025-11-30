@@ -6,8 +6,6 @@ pub mod parse;
 pub mod parser_extractor;
 pub mod print;
 pub mod subtyping;
-pub mod sym_reference;
-pub mod type_to_schema;
 pub mod wasm_diag;
 
 use crate::ast::runtype::DebugPrintCtx;
@@ -392,13 +390,16 @@ pub trait FileManager {
     ) -> Option<BffFileName>;
 }
 
-fn debug_print_type_list(vs: Vec<(RuntypeName, String)>) -> String {
+fn debug_print_type_list(vs: Vec<(RuntypeUUID, String)>) -> String {
     let mut acc = String::new();
     let all_names = vs.iter().map(|(name, _)| name).collect::<Vec<_>>();
     for (name, ts_type) in vs.iter() {
+        let ctx = DebugPrintCtx {
+            all_names: &all_names,
+        };
         acc.push_str(&format!(
             "type {} = {};\n\n",
-            name.debug_print(&all_names),
+            name.debug_print(&ctx),
             ts_type
         ));
     }
@@ -417,7 +418,7 @@ fn debug_print_type_object(vs: Vec<(String, String)>) -> String {
 
 impl ParserExtractResult {
     pub fn debug_print(&self) -> String {
-        let mut vs: Vec<(RuntypeName, String)> = vec![];
+        let mut vs: Vec<(RuntypeUUID, String)> = vec![];
 
         let mut sorted_validators = self.validators.iter().collect::<Vec<_>>();
         sorted_validators.sort_by(|a, b| a.name.cmp(&b.name));
@@ -501,10 +502,14 @@ impl ModuleItemAddress {
         }
     }
 
-    fn ts_identifier(&self, all_names: &[&RuntypeName]) -> String {
+    fn ts_identifier(&self, all_names: &[&RuntypeUUID]) -> String {
         let mut this_name_count = 0;
         for name in all_names {
-            match name {
+            assert!(
+                name.type_arguments.is_empty(),
+                "type arguments not implemented"
+            );
+            match &name.ty {
                 RuntypeName::Address(module_item_address) => {
                     if module_item_address == self {
                         continue;
@@ -513,7 +518,6 @@ impl ModuleItemAddress {
                         this_name_count += 1;
                     }
                 }
-                RuntypeName::Name(_) => unreachable!("name shouldnt be used with address"),
                 RuntypeName::SemtypeRecursiveGenerated(_) => {}
             }
         }
@@ -539,32 +543,49 @@ impl ModuleItemAddress {
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash, PartialOrd, Ord)]
 pub enum RuntypeName {
-    Name(String),
     Address(ModuleItemAddress),
     SemtypeRecursiveGenerated(usize),
 }
 
 impl RuntypeName {
-    fn diag_print(&self) -> String {
-        // printing for error messages
+    fn debug_print(&self, all_names: &[&RuntypeUUID]) -> String {
         match self {
-            RuntypeName::Name(name) => name.clone(),
-            RuntypeName::Address(addr) => addr.diag_print(),
-            RuntypeName::SemtypeRecursiveGenerated(n) => format!("RecursiveGenerated{}", n),
-        }
-    }
-
-    fn debug_print(&self, all_names: &[&RuntypeName]) -> String {
-        match self {
-            RuntypeName::Name(name) => name.clone(),
             RuntypeName::Address(addr) => addr.ts_identifier(all_names),
             RuntypeName::SemtypeRecursiveGenerated(n) => format!("RecursiveGenerated{}", n),
         }
     }
 }
 
+#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord)]
+pub struct RuntypeUUID {
+    pub ty: RuntypeName,
+    pub type_arguments: Vec<Runtype>,
+}
+
+impl RuntypeUUID {
+    fn debug_print(&self, ctx: &DebugPrintCtx) -> String {
+        let mut acc = String::new();
+        acc.push_str(&self.ty.debug_print(ctx.all_names));
+        if !self.type_arguments.is_empty() {
+            acc.push_str("<");
+            for (i, arg) in self.type_arguments.iter().enumerate() {
+                if i > 0 {
+                    acc.push_str(", ");
+                }
+                acc.push_str(&arg.debug_print(&ctx));
+            }
+            acc.push_str(">");
+        }
+        acc
+    }
+    fn diag_print(&self) -> String {
+        let empty_ctx = DebugPrintCtx { all_names: &[] };
+        self.debug_print(&empty_ctx)
+    }
+}
+
 #[derive(Debug, Clone)]
 pub struct NamedSchema {
-    pub name: RuntypeName,
+    pub name: RuntypeUUID,
     pub schema: Runtype,
 }

@@ -13,9 +13,10 @@ use swc_ecma_ast::{
 use swc_ecma_codegen::Config;
 use swc_ecma_codegen::{Emitter, text_writer::JsWriter};
 
-use crate::RuntypeName;
+use crate::RuntypeUUID;
 use crate::ast::json::Json;
 use crate::ast::runtype::CustomFormat;
+use crate::ast::runtype::DebugPrintCtx;
 use crate::ast::runtype::TplLitTypeItem;
 use crate::parser_extractor::ParserExtractResult;
 use crate::{
@@ -57,18 +58,15 @@ type SeenCounter = BTreeMap<Runtype, i32>;
 struct PrintContext {
     hoisted: BTreeMap<Runtype, (usize, Expr)>,
     seen: SeenCounter,
-    all_names: Vec<RuntypeName>,
+    all_names: Vec<RuntypeUUID>,
 }
 
 impl PrintContext {
-    pub fn print_rt_name(&mut self, name: &RuntypeName) -> String {
-        match name {
-            RuntypeName::Name(n) => n.to_string(),
-            RuntypeName::SemtypeRecursiveGenerated(n) => format!("RecursiveGenerated{}", n),
-            RuntypeName::Address(addr) => {
-                addr.ts_identifier(&self.all_names.iter().collect::<Vec<_>>())
-            }
-        }
+    pub fn print_rt_name(&mut self, name: &RuntypeUUID) -> String {
+        let ctx = &DebugPrintCtx {
+            all_names: &self.all_names.iter().collect::<Vec<_>>(),
+        };
+        name.debug_print(ctx)
     }
 }
 
@@ -157,7 +155,7 @@ fn typeof_runtype(t: &str) -> Expr {
     )
 }
 
-fn ref_runtype(to: &RuntypeName, ctx: &mut PrintContext) -> Expr {
+fn ref_runtype(to: &RuntypeUUID, ctx: &mut PrintContext) -> Expr {
     new_runtype_class(
         "RefRuntype",
         vec![
@@ -716,7 +714,7 @@ fn build_parsers_input(
 }
 
 fn named_runtypes(named_schemas: &[NamedSchema], ctx: &mut PrintContext) -> Expr {
-    let mut validator_exprs: Vec<(RuntypeName, Expr)> = vec![];
+    let mut validator_exprs: Vec<(RuntypeUUID, Expr)> = vec![];
     for named_schema in named_schemas {
         let validator = print_runtype(&named_schema.schema, named_schemas, ctx);
         validator_exprs.push((named_schema.name.clone(), validator));
@@ -816,7 +814,7 @@ impl ParserExtractResult {
         let all_names = named_schemas
             .iter()
             .map(|it| it.name.clone())
-            .collect::<Vec<RuntypeName>>();
+            .collect::<Vec<RuntypeUUID>>();
         calculate_named_schemas_seen(&named_schemas, &mut seen);
         let mut hoisted = PrintContext {
             hoisted: BTreeMap::new(),
