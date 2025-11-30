@@ -71,7 +71,7 @@ impl<'a, R: FsModuleResolver> ImportsVisitor<'a, R> {
                 Rc::new(ImportReference::Named {
                     original_name: Rc::new(orig.to_string()),
                     file_name: v,
-                    import_st_anchor: Anchor::new(self.current_file.clone(), local.span),
+                    import_statement_anchor: Anchor::new(self.current_file.clone(), local.span),
                 }),
             );
         }

@@ -51,7 +51,7 @@ pub enum ImportReference {
     Named {
         original_name: Rc<String>,
         file_name: BffFileName,
-        import_st_anchor: Anchor,
+        import_statement_anchor: Anchor,
     },
     Star {
         file_name: BffFileName,

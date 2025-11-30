@@ -173,7 +173,7 @@ trait TypeModuleWalker<'a, R: FileManager + 'a, U> {
             ImportReference::Named {
                 original_name,
                 file_name,
-                import_st_anchor,
+                import_statement_anchor: import_st_anchor,
             } => {
                 let new_addr = ModuleItemAddress {
                     file: file_name.clone(),
@@ -491,7 +491,7 @@ trait ValueModuleWalker<'a, R: FileManager + 'a, U> {
             ImportReference::Named {
                 original_name,
                 file_name,
-                import_st_anchor,
+                import_statement_anchor: import_st_anchor,
             } => {
                 let new_addr = ModuleItemAddress {
                     file: file_name.clone(),
@@ -527,7 +527,7 @@ trait ValueModuleWalker<'a, R: FileManager + 'a, U> {
                         ImportReference::Named {
                             original_name,
                             file_name,
-                            import_st_anchor,
+                            import_statement_anchor: import_st_anchor,
                         } => {
                             let new_addr = ModuleItemAddress {
                                 file: file_name.clone(),
