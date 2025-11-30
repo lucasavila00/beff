@@ -124,7 +124,6 @@ impl AddressedType {
 enum FinalAddressedType {
     AddressedType(AddressedType),
     EnumItem {
-        enum_type: Rc<TsEnumDecl>,
         address: ModuleItemAddress,
         member_name: String,
     },
@@ -141,7 +140,6 @@ impl FinalAddressedType {
         match self {
             FinalAddressedType::AddressedType(t) => RuntypeName::Address(t.addr()),
             FinalAddressedType::EnumItem {
-                enum_type: _,
                 address: enum_address,
                 member_name,
             } => RuntypeName::EnumItem {
@@ -1599,9 +1597,11 @@ impl<'a, R: FileManager> FrontendCtx<'a, R> {
                         name: ts_qualified_name.right.sym.to_string(),
                         visibility: Visibility::Export,
                     },
-                    AddressedQualifiedType::EnumItem { enum_type, address } => {
+                    AddressedQualifiedType::EnumItem {
+                        enum_type: _,
+                        address,
+                    } => {
                         return Ok(FinalAddressedType::EnumItem {
-                            enum_type,
                             member_name: ts_qualified_name.right.sym.to_string(),
                             address,
                         });
