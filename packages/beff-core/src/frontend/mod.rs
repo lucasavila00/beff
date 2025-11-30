@@ -1719,9 +1719,7 @@ impl<'a, R: FileManager> FrontendCtx<'a, R> {
 
         let fat = self.get_runtype_name_from_ts_entity_name(type_name, file.clone(), visibility)?;
         if fat.is_builtin() {
-            // it won't be recursive if it's builtin, and we don't need to write it to the map too
-            // TODO: it needs generic type support too, so we need to handle that later
-
+            // it won't be recursive if it's builtin, and we don't need to write it's definition
             return self.extract_addressed_type(&fat, type_args, &type_name.span(), file.clone());
         }
         let rt_uuid = RuntypeUUID {
@@ -1739,20 +1737,21 @@ impl<'a, R: FileManager> FrontendCtx<'a, R> {
 
         let ty = self.extract_addressed_type(&fat, type_args, &type_name.span(), file.clone());
         match ty {
-            Ok(ty) => match ts_type_args {
-                None => self.insert_definition(rt_uuid.clone(), ty),
-                Some(_) => {
-                    // We don't need to store a named type for each type application, just return the type.
-                    // Unless it's recursive generic, then we need to keep the named type
-                    // TODO: it might be good for performance to re-use the named type too
-                    if self.recursive_generic_uuids.contains(&rt_uuid) {
-                        self.insert_definition(rt_uuid, ty)
-                    } else {
-                        self.partial_validators.remove(&rt_uuid);
-                        Ok(ty)
-                    }
-                }
-            },
+            // Ok(ty) => match ts_type_args {
+            //     None => self.insert_definition(rt_uuid.clone(), ty),
+            //     Some(_) => {
+            //         // We don't need to store a named type for each type application, just return the type.
+            //         // Unless it's recursive generic, then we need to keep the named type
+            //         // TODO: it might be good for performance to re-use the named type too
+            //         if self.recursive_generic_uuids.contains(&rt_uuid) {
+            //             self.insert_definition(rt_uuid, ty)
+            //         } else {
+            //             self.partial_validators.remove(&rt_uuid);
+            //             Ok(ty)
+            //         }
+            //     }
+            // },
+            Ok(ty) => self.insert_definition(rt_uuid.clone(), ty),
             Err(e) => {
                 self.insert_definition(rt_uuid, Runtype::Any)?;
                 Err(e)

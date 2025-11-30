@@ -200,6 +200,18 @@ pub struct TypeAddress {
     pub name: String,
 }
 
+pub fn valid_ts_identifier(p: &str) -> String {
+    let mut acc = String::new();
+    for c in p.chars() {
+        if c.is_ascii_alphanumeric() || c == '_' {
+            acc.push(c);
+        } else {
+            acc.push('_');
+        }
+    }
+    acc
+}
+
 impl TypeAddress {
     pub fn to_module_item_addr(&self) -> ModuleItemAddress {
         ModuleItemAddress {
@@ -232,18 +244,6 @@ impl TypeAddress {
         this_parts[min_index..].join("/")
     }
 
-    fn valid_ts_identifier_from_path(p: &str) -> String {
-        let mut acc = String::new();
-        for c in p.chars() {
-            if c.is_ascii_alphanumeric() || c == '_' {
-                acc.push(c);
-            } else {
-                acc.push('_');
-            }
-        }
-        acc
-    }
-
     fn ts_identifier(&self, all_names: &[&RuntypeUUID]) -> String {
         let mut has_same_name = vec![];
         for name in all_names {
@@ -272,7 +272,7 @@ impl TypeAddress {
         // should be a valid typescript identifier
         let acc = format!(
             "{}__{}",
-            Self::valid_ts_identifier_from_path(&Self::min_file_path_that_differs(
+            valid_ts_identifier(&Self::min_file_path_that_differs(
                 &self.file,
                 &has_same_name
             )),
@@ -368,12 +368,12 @@ impl RuntypeUUID {
         acc.push_str(&self.ty.print_name_for_js_codegen(ctx.all_names));
         if !self.type_arguments.is_empty() {
             let rest = format!(
-                "<{}>",
+                "__{}__",
                 self.type_arguments
                     .iter()
-                    .map(|it| it.debug_print(ctx))
+                    .map(|it| valid_ts_identifier(&it.debug_print(ctx)))
                     .collect::<Vec<_>>()
-                    .join(", ")
+                    .join("_")
             );
             acc.push_str(&rest);
         }

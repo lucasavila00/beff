@@ -2290,7 +2290,9 @@ mod tests {
 
   "#;
         insta::assert_snapshot!(print_types(from), @r#"
-        type X = { "a": string };
+        type W__string__ = { "a": string };
+
+        type X = W__string__;
 
 
         type BuiltParsers = {

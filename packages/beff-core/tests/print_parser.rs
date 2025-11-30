@@ -32,8 +32,15 @@ mod tests {
 
   "#;
         insta::assert_snapshot!(print_types(from), @r#"
+        type Either__string_number__ = (Left__string__ | Right__number__);
+
+        type Left__string__ = { "_tag": "Left", "left": string };
+
+        type Right__number__ = { "_tag": "Right", "right": number };
+
+
         type BuiltParsers = {
-          A: ({ "_tag": "Left", "left": string } | { "_tag": "Right", "right": number }),
+          A: Either__string_number__,
         }
         "#);
     }
@@ -722,9 +729,13 @@ mod tests {
         parse.buildParsers<{ IX2: IX2, IX3: IX3 }>();
       "#
         ), @r"
-        type IX2 = number;
+        type IX__false__ = string;
 
-        type IX3 = string;
+        type IX__true__ = number;
+
+        type IX2 = IX__true__;
+
+        type IX3 = IX__false__;
 
 
         type BuiltParsers = {
@@ -1611,11 +1622,11 @@ mod tests {
             parse.buildParsers<{ UsesGenericWrapper: UsesGenericWrapper }>();
       "#
         ), @r#"
-        type GenericWrapper<string> = { "other": (null | GenericWrapper<string>), "value": string, "value2": (boolean | string) };
+        type GenericWrapper__string__ = { "other": (null | GenericWrapper__string__), "value": string, "value2": (boolean | string) };
 
-        type GenericWrapper<number> = { "other": (null | GenericWrapper<number>), "value": number, "value2": (boolean | number) };
+        type GenericWrapper__number__ = { "other": (null | GenericWrapper__number__), "value": number, "value2": (boolean | number) };
 
-        type UsesGenericWrapper = { "wrappedNumber": GenericWrapper<number>, "wrappedString": GenericWrapper<string> };
+        type UsesGenericWrapper = { "wrappedNumber": GenericWrapper__number__, "wrappedString": GenericWrapper__string__ };
 
 
         type BuiltParsers = {
@@ -1643,11 +1654,11 @@ mod tests {
             parse.buildParsers<{ UsesGenericWrapper: UsesGenericWrapper }>();
       "#
         ), @r#"
-        type GenericWrapper<string> = { "other": GenericWrapper<string>, "value": string, "value2": (boolean | string) };
+        type GenericWrapper__string__ = { "other": GenericWrapper__string__, "value": string, "value2": (boolean | string) };
 
-        type GenericWrapper<number> = { "other": GenericWrapper<number>, "value": number, "value2": (boolean | number) };
+        type GenericWrapper__number__ = { "other": GenericWrapper__number__, "value": number, "value2": (boolean | number) };
 
-        type UsesGenericWrapper = { "wrappedNumber": GenericWrapper<number>, "wrappedString": GenericWrapper<string> };
+        type UsesGenericWrapper = { "wrappedNumber": GenericWrapper__number__, "wrappedString": GenericWrapper__string__ };
 
 
         type BuiltParsers = {
