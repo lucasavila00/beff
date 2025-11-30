@@ -8,7 +8,7 @@ mod tests {
     use beff_core::{
         BeffUserSettings, BffFileName, EntryPoints, FileManager, ParsedModule,
         parser_extractor::ParserExtractResult,
-        swc::bind_exports::{FsModuleResolver, parse_and_bind},
+        swc_tools::bind_exports::{FsModuleResolver, parse_and_bind},
     };
     use swc_common::{GLOBALS, Globals};
     struct TestFileManager {

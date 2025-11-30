@@ -3,9 +3,10 @@ use crate::subtyping::ToSemType;
 use crate::subtyping::semtype::{SemType, SemTypeContext, SemTypeOps};
 use crate::subtyping::subtype::StringLitOrFormat;
 use crate::subtyping::to_schema::semtype_to_runtypes;
+use crate::swc_tools::{SymbolExport, SymbolExportDefault};
 use crate::{
     BeffUserSettings, BffFileName, FileManager, ImportReference, ModuleItemAddress, ParsedModule,
-    RuntypeName, SymbolExport, SymbolExportDefault, Visibility,
+    RuntypeName, Visibility,
     ast::runtype::{CustomFormat, Optionality, Runtype, RuntypeConst, TplLitType, TplLitTypeItem},
     diag::{
         Diagnostic, DiagnosticInfoMessage, DiagnosticInformation, DiagnosticParentMessage, Location,

@@ -1,4 +1,4 @@
-use beff_core::{BffFileName, swc::bind_exports::FsModuleResolver};
+use beff_core::{BffFileName, swc_tools::bind_exports::FsModuleResolver};
 use std::collections::HashMap;
 
 pub struct WasmModuleResolver {

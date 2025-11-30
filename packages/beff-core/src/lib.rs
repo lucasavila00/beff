@@ -4,12 +4,14 @@ pub mod frontend;
 pub mod parser_extractor;
 pub mod print;
 pub mod subtyping;
-pub mod swc;
+pub mod swc_tools;
 pub mod wasm_diag;
 
 use crate::ast::runtype::DebugPrintCtx;
 use crate::ast::runtype::Runtype;
-use crate::swc::bind_locals::ParsedModuleLocals;
+use crate::swc_tools::ImportReference;
+use crate::swc_tools::SymbolsExportsModule;
+use crate::swc_tools::bind_locals::ParsedModuleLocals;
 use core::fmt;
 use parser_extractor::ParserExtractResult;
 use parser_extractor::extract_parser;
@@ -22,65 +24,9 @@ use std::sync::Arc;
 use swc_atoms::JsWord;
 use swc_common::SourceFile;
 use swc_common::SourceMap;
-use swc_common::Span;
 use swc_common::SyntaxContext;
-use swc_ecma_ast::Expr;
-use swc_ecma_ast::TsEnumDecl;
-use swc_ecma_ast::{Module, TsType};
-use swc_ecma_ast::{TsInterfaceDecl, TsTypeAliasDecl};
+use swc_ecma_ast::Module;
 use swc_node_comments::SwcComments;
-
-#[derive(Debug, Clone)]
-pub enum SymbolExport {
-    TsType {
-        decl: Rc<TsTypeAliasDecl>,
-        original_file: BffFileName,
-        name: String,
-    },
-    TsInterfaceDecl {
-        decl: Rc<TsInterfaceDecl>,
-        original_file: BffFileName,
-    },
-    TsEnumDecl {
-        decl: Rc<TsEnumDecl>,
-        original_file: BffFileName,
-    },
-    ValueExpr {
-        expr: Rc<Expr>,
-        name: JsWord,
-        span: Span,
-        original_file: BffFileName,
-    },
-    ExprDecl {
-        name: JsWord,
-        span: Span,
-        original_file: BffFileName,
-        ty: Rc<TsType>,
-    },
-    StarOfOtherFile {
-        reference: Rc<ImportReference>,
-        span: Span,
-    },
-    SomethingOfOtherFile {
-        something: String,
-        file: BffFileName,
-        span: Span,
-    },
-}
-
-impl SymbolExport {
-    pub fn span(&self) -> Span {
-        match self {
-            SymbolExport::TsType { decl, .. } => decl.span,
-            SymbolExport::TsInterfaceDecl { decl, .. } => decl.span,
-            SymbolExport::TsEnumDecl { decl, .. } => decl.span,
-            SymbolExport::ValueExpr { span, .. }
-            | SymbolExport::StarOfOtherFile { span, .. }
-            | SymbolExport::SomethingOfOtherFile { span, .. }
-            | SymbolExport::ExprDecl { span, .. } => *span,
-        }
-    }
-}
 
 pub struct BffModuleData {
     pub bff_fname: BffFileName,
@@ -106,142 +52,6 @@ impl BffFileName {
     }
 }
 
-#[derive(Debug, Clone)]
-pub enum ImportReference {
-    Named {
-        original_name: Rc<String>,
-        file_name: BffFileName,
-        span: Span,
-    },
-    Star {
-        file_name: BffFileName,
-        span: Span,
-    },
-    Default {
-        file_name: BffFileName,
-    },
-}
-
-impl ImportReference {
-    pub fn file_name(&self) -> &BffFileName {
-        match self {
-            ImportReference::Named { file_name, .. } => file_name,
-            ImportReference::Star { file_name, .. } => file_name,
-            ImportReference::Default { file_name, .. } => file_name,
-        }
-    }
-}
-#[derive(Debug, Clone)]
-pub struct SymbolsExportsModule {
-    named_types: HashMap<String, Rc<SymbolExport>>,
-    named_values: HashMap<String, Rc<SymbolExport>>,
-
-    named_unknown: HashMap<String, Rc<SymbolExport>>,
-
-    extends: Vec<BffFileName>,
-
-    export_default: Option<Rc<SymbolExportDefault>>,
-}
-impl Default for SymbolsExportsModule {
-    fn default() -> Self {
-        Self::new()
-    }
-}
-impl SymbolsExportsModule {
-    pub fn new() -> SymbolsExportsModule {
-        SymbolsExportsModule {
-            named_types: HashMap::new(),
-            named_values: HashMap::new(),
-            named_unknown: HashMap::new(),
-            extends: Vec::new(),
-            export_default: None,
-        }
-    }
-    pub fn set_default_export(&mut self, export: Rc<SymbolExportDefault>) {
-        if self.export_default.is_some() {
-            panic!("Default export already set");
-        }
-        self.export_default = Some(export);
-    }
-
-    pub fn insert_value(&mut self, name: String, export: Rc<SymbolExport>) {
-        if name == "default" {
-            self.set_default_export(SymbolExportDefault::Renamed { export: export }.into());
-            return;
-        }
-        self.named_values.insert(name, export);
-    }
-
-    pub fn get_value<R: FileManager>(
-        &self,
-        name: &String,
-        files: &mut R,
-    ) -> Option<Rc<SymbolExport>> {
-        let known = self.named_values.get(name).cloned().or_else(|| {
-            for it in &self.extends {
-                let file = files.get_or_fetch_file(it)?;
-                let res = file.symbol_exports.get_value(name, files);
-                if let Some(it) = res {
-                    return Some(it.clone());
-                }
-            }
-            None
-        });
-
-        known.or_else(|| self.named_unknown.get(name).cloned())
-    }
-
-    pub fn insert_type(&mut self, name: String, export: Rc<SymbolExport>) {
-        if name == "default" {
-            self.set_default_export(SymbolExportDefault::Renamed { export: export }.into());
-            return;
-        }
-        self.named_types.insert(name, export);
-    }
-
-    pub fn insert_unknown(&mut self, name: String, export: Rc<SymbolExport>) {
-        if name == "default" {
-            self.set_default_export(SymbolExportDefault::Renamed { export: export }.into());
-            return;
-        }
-        self.named_unknown.insert(name, export);
-    }
-
-    pub fn get_type<R: FileManager>(
-        &self,
-        name: &String,
-        files: &mut R,
-    ) -> Option<Rc<SymbolExport>> {
-        let known = self.named_types.get(name).cloned().or_else(|| {
-            for it in &self.extends {
-                let file = files.get_or_fetch_file(it)?;
-                let res = file.symbol_exports.get_type(name, files);
-                if let Some(it) = res {
-                    return Some(it.clone());
-                }
-            }
-            None
-        });
-
-        known.or_else(|| self.named_unknown.get(name).cloned())
-    }
-
-    pub fn extend(&mut self, other: BffFileName) {
-        self.extends.push(other);
-    }
-}
-
-#[derive(Debug)]
-pub enum SymbolExportDefault {
-    Expr {
-        export_expr: Rc<Expr>,
-        span: Span,
-        file_name: BffFileName,
-    },
-    Renamed {
-        export: Rc<SymbolExport>,
-    },
-}
 pub struct ParsedModule {
     pub locals: ParsedModuleLocals,
     pub module: BffModuleData,
