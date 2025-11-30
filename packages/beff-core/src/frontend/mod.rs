@@ -1887,68 +1887,77 @@ impl<'a, R: FileManager> FrontendCtx<'a, R> {
                     items: None,
                 })
             }
-            // Expr::Object(lit) => {
-            //     let mut vs = vec![];
+            Expr::Object(lit) => {
+                let mut vs = vec![];
 
-            //     for it in &lit.props {
-            //         match it {
-            //             PropOrSpread::Spread(sp) => {
-            //                 let spread_ty = self.typeof_expr(&sp.expr, as_const)?;
+                for it in &lit.props {
+                    match it {
+                        PropOrSpread::Spread(sp) => {
+                            let spread_ty = self.typeof_expr(&sp.expr, as_const, file.clone())?;
 
-            //                 if let Runtype::Object { vs: spread_vs, .. } = spread_ty {
-            //                     for (k, v) in spread_vs {
-            //                         vs.push((k, v));
-            //                     }
-            //                 } else {
-            //                     return self.error(
-            //                         &it.span(),
-            //                         DiagnosticInfoMessage::TypeofObjectUnsupportedSpread,
-            //                     );
-            //                 }
-            //             }
-            //             PropOrSpread::Prop(p) => match p.as_ref() {
-            //                 Prop::KeyValue(p) => {
-            //                     let key: String = match &p.key {
-            //                         PropName::Ident(id) => id.sym.to_string(),
-            //                         PropName::Str(st) => st.value.to_string(),
-            //                         PropName::Num(_) => {
-            //                             return self.error(
-            //                                 &p.key.span(),
-            //                                 DiagnosticInfoMessage::TypeofObjectUnsupportedPropNum,
-            //                             );
-            //                         }
-            //                         PropName::Computed(_) => return self.error(
-            //                             &p.key.span(),
-            //                             DiagnosticInfoMessage::TypeofObjectUnsupportedPropComputed,
-            //                         ),
-            //                         PropName::BigInt(_) => return self.error(
-            //                             &p.key.span(),
-            //                             DiagnosticInfoMessage::TypeofObjectUnsupportedPropBigInt,
-            //                         ),
-            //                     };
-            //                     let value = self.typeof_expr(&p.value, as_const)?;
-            //                     vs.push((key, value.required()));
-            //                 }
-            //                 Prop::Shorthand(p) => {
-            //                     let key: String = p.sym.to_string();
-            //                     let value = self.typeof_expr(&Expr::Ident(p.clone()), as_const)?;
-            //                     vs.push((key, value.required()));
-            //                 }
-            //                 Prop::Assign(_)
-            //                 | Prop::Getter(_)
-            //                 | Prop::Setter(_)
-            //                 | Prop::Method(_) => {
-            //                     return self.error(
-            //                         &p.span(),
-            //                         DiagnosticInfoMessage::TypeofObjectUnsupportedProp,
-            //                     );
-            //                 }
-            //             },
-            //         }
-            //     }
+                            if let Runtype::Object { vs: spread_vs, .. } = spread_ty {
+                                for (k, v) in spread_vs {
+                                    vs.push((k, v));
+                                }
+                            } else {
+                                return self.error(
+                                    &it.span(),
+                                    DiagnosticInfoMessage::TypeofObjectUnsupportedSpread,
+                                    file.clone(),
+                                );
+                            }
+                        }
+                        PropOrSpread::Prop(p) => match p.as_ref() {
+                            Prop::KeyValue(p) => {
+                                let key: String = match &p.key {
+                                    PropName::Ident(id) => id.sym.to_string(),
+                                    PropName::Str(st) => st.value.to_string(),
+                                    PropName::Num(_) => {
+                                        return self.error(
+                                            &p.key.span(),
+                                            DiagnosticInfoMessage::TypeofObjectUnsupportedPropNum,
+                                            file.clone(),
+                                        );
+                                    }
+                                    PropName::Computed(_) => return self.error(
+                                        &p.key.span(),
+                                        DiagnosticInfoMessage::TypeofObjectUnsupportedPropComputed,
+                                        file.clone(),
+                                    ),
+                                    PropName::BigInt(_) => return self.error(
+                                        &p.key.span(),
+                                        DiagnosticInfoMessage::TypeofObjectUnsupportedPropBigInt,
+                                        file.clone(),
+                                    ),
+                                };
+                                let value = self.typeof_expr(&p.value, as_const, file.clone())?;
+                                vs.push((key, value.required()));
+                            }
+                            Prop::Shorthand(p) => {
+                                let key: String = p.sym.to_string();
+                                let value = self.typeof_expr(
+                                    &Expr::Ident(p.clone()),
+                                    as_const,
+                                    file.clone(),
+                                )?;
+                                vs.push((key, value.required()));
+                            }
+                            Prop::Assign(_)
+                            | Prop::Getter(_)
+                            | Prop::Setter(_)
+                            | Prop::Method(_) => {
+                                return self.error(
+                                    &p.span(),
+                                    DiagnosticInfoMessage::TypeofObjectUnsupportedProp,
+                                    file.clone(),
+                                );
+                            }
+                        },
+                    }
+                }
 
-            //     Ok(Runtype::object(vs))
-            // }
+                Ok(Runtype::object(vs))
+            }
             Expr::TsSatisfies(c) => self.typeof_expr(&c.expr, as_const, file.clone()),
             // Expr::Member(m) => {
             //     let mut ctx = SemTypeContext::new();
