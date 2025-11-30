@@ -1,9 +1,9 @@
-Error: Index signature cannot be converted to JSON schema - Use Record<x,y>
+Error: Index signature cannot be extracted - Use Record<x,y>
  /errors/record-semtypes2/src/parser.ts:10:3
     8 | type AvatarSize = `${number}x${number}`;
     9 | type Extra = {
  > 10 |   [key: string]: string;
-      |   ^^^^^^^^^^^^^^^^^^^^^^ Index signature cannot be converted to JSON schema - Use Record<x,y>
+      |   ^^^^^^^^^^^^^^^^^^^^^^ Index signature cannot be extracted - Use Record<x,y>
    11 | };
    12 |
    13 | export type User = {

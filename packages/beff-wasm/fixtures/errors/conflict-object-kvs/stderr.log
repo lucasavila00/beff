@@ -3,7 +3,7 @@ Error: Object has conflicting key value in intersection
    4 | type IX3 = A & A2;
    5 |
  > 6 | parse.buildParsers<{ IX3: Omit<IX3, "a"> }>();
-     |                           ^^^^ Object has conflicting key value in intersection
+     |                           ^^^^^^^^^^^^^^ Object has conflicting key value in intersection
    7 |
 
 Found 1 error
