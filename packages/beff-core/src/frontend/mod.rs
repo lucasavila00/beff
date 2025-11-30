@@ -118,7 +118,8 @@ pub enum AddressedQualifiedValue {
 #[derive(Debug)]
 enum FinalTypeAddress {
     TsType { addressed_type: AddressedType },
-    SomethingOfStarOfFile { address: ModuleItemAddress },
+    // SomethingOfStarOfFile is not fully resolved, figure out a way of fixing it
+    //SomethingOfStarOfFile { address: ModuleItemAddress },
 }
 
 impl FinalTypeAddress {
@@ -128,14 +129,12 @@ impl FinalTypeAddress {
                 addressed_type,
                 AddressedType::TsBuiltIn { t: _, address: _ }
             ),
-            FinalTypeAddress::SomethingOfStarOfFile { address: _ } => false,
         }
     }
 
     pub fn addr(&self) -> ModuleItemAddress {
         match self {
             FinalTypeAddress::TsType { addressed_type } => addressed_type.addr(),
-            FinalTypeAddress::SomethingOfStarOfFile { address } => address.clone(),
         }
     }
 }
@@ -1152,17 +1151,17 @@ impl<'a, R: FileManager> FrontendCtx<'a, R> {
             TsEntityName::TsQualifiedName(ts_qualified_name) => {
                 let type_addressed = self
                     .get_adressed_qualified_type_from_entity_name(&ts_qualified_name.left, file)?;
-                match type_addressed {
-                    AddressedQualifiedType::StarImport(bff_file_name) => {
-                        Ok(FinalTypeAddress::SomethingOfStarOfFile {
-                            address: ModuleItemAddress {
-                                file: bff_file_name,
-                                name: ts_qualified_name.right.sym.to_string(),
-                                visibility: Visibility::Export,
-                            },
-                        })
-                    }
-                }
+                let new_addr = match type_addressed {
+                    AddressedQualifiedType::StarImport(bff_file_name) => ModuleItemAddress {
+                        file: bff_file_name,
+                        name: ts_qualified_name.right.sym.to_string(),
+                        visibility: Visibility::Export,
+                    },
+                };
+                let out = self.get_addressed_type(&new_addr, &ts_qualified_name.span())?;
+                Ok(FinalTypeAddress::TsType {
+                    addressed_type: out,
+                })
             }
         }
     }
