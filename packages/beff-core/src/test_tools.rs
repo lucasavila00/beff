@@ -96,18 +96,7 @@ fn extract_types(fs: &[(&str, &str)]) -> ParserExtractResult {
 
 pub fn print_types(from: &str) -> String {
     let sources = [("entry.ts", from)];
-    let p = extract_types(&sources);
-    let errors = &p.errors;
-
-    if !errors.is_empty() {
-        panic!("errors: {:?}", errors);
-    }
-
-    let mut out = String::new();
-
-    let ts = p.debug_print();
-    out.push_str(&ts);
-    out
+    print_types_multifile(&sources)
 }
 pub fn print_types_multifile(sources: &[(&str, &str)]) -> String {
     let p = extract_types(sources);
@@ -141,7 +130,11 @@ pub fn print_cgen(from: &str) -> String {
 
 pub fn failure(from: &str) -> String {
     let sources = [("entry.ts", from)];
-    let p = extract_types(&sources);
+    failure_multifile(&sources)
+}
+
+pub fn failure_multifile(sources: &[(&str, &str)]) -> String {
+    let p = extract_types(sources);
     let errors = &p.errors;
 
     if errors.is_empty() {
@@ -150,11 +143,12 @@ pub fn failure(from: &str) -> String {
     let mut out = String::new();
 
     for err in errors {
-        out.push_str(&print_diag(err, &sources));
+        out.push_str(&print_diag(err, sources));
         out.push_str("\n");
     }
     out
 }
+
 fn print_diag(it: &DiagnosticInformation, sources: &[(&str, &str)]) -> String {
     match &it.loc {
         Location::Full(full_location) => {
