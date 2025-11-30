@@ -194,20 +194,21 @@ pub struct ModuleItemAddress {
     pub visibility: Visibility,
 }
 
-impl ModuleItemAddress {
-    pub fn from_ident(
-        ident: &swc_ecma_ast::Ident,
-        file: BffFileName,
-        visibility: Visibility,
-    ) -> ModuleItemAddress {
+#[derive(Debug, Clone, PartialEq, Eq, Hash, PartialOrd, Ord)]
+pub struct TypeAddress {
+    pub file: BffFileName,
+    pub name: String,
+}
+
+impl TypeAddress {
+    pub fn to_module_item_addr(&self) -> ModuleItemAddress {
         ModuleItemAddress {
-            file,
-            name: ident.sym.to_string(),
-            visibility,
+            file: self.file.clone(),
+            name: self.name.clone(),
+            visibility: Visibility::Local,
         }
     }
-
-    fn min_file_path_that_differs(this: &BffFileName, others: &[ModuleItemAddress]) -> String {
+    fn min_file_path_that_differs(this: &BffFileName, others: &[TypeAddress]) -> String {
         let this_parts: Vec<&str> = this.as_str().split('/').collect();
         let others_parts: Vec<Vec<&str>> = others
             .iter()
@@ -248,15 +249,15 @@ impl ModuleItemAddress {
         for name in all_names {
             match &name.ty {
                 RuntypeName::EnumItem {
-                    address: module_item_address,
+                    address: type_address,
                     ..
                 }
-                | RuntypeName::Address(module_item_address) => {
-                    if module_item_address == self {
+                | RuntypeName::Address(type_address) => {
+                    if type_address == self {
                         continue;
                     }
-                    if module_item_address.name == self.name {
-                        has_same_name.push(module_item_address.clone());
+                    if type_address.name == self.name {
+                        has_same_name.push(type_address.clone());
                     }
                 }
                 RuntypeName::SemtypeRecursiveGenerated(_) => {}
@@ -278,17 +279,20 @@ impl ModuleItemAddress {
             self.name
         );
 
-        let visibility_matters = has_same_name
-            .iter()
-            .any(|it| it.file == self.file && it.visibility != self.visibility);
+        acc
+    }
+}
 
-        if visibility_matters {
-            match self.visibility {
-                Visibility::Local => acc + "__local",
-                Visibility::Export => acc + "__export",
-            }
-        } else {
-            acc
+impl ModuleItemAddress {
+    pub fn from_ident(
+        ident: &swc_ecma_ast::Ident,
+        file: BffFileName,
+        visibility: Visibility,
+    ) -> ModuleItemAddress {
+        ModuleItemAddress {
+            file,
+            name: ident.sym.to_string(),
+            visibility,
         }
     }
 
@@ -300,9 +304,9 @@ impl ModuleItemAddress {
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash, PartialOrd, Ord)]
 pub enum RuntypeName {
-    Address(ModuleItemAddress),
+    Address(TypeAddress),
     EnumItem {
-        address: ModuleItemAddress,
+        address: TypeAddress,
         member_name: String,
     },
     SemtypeRecursiveGenerated(usize),

@@ -13,7 +13,7 @@ use crate::{
     },
     parser_extractor::BuiltDecoder,
 };
-use crate::{NamedSchema, RuntypeUUID};
+use crate::{NamedSchema, RuntypeUUID, TypeAddress};
 use anyhow::{Result, anyhow};
 use core::fmt;
 use std::collections::{BTreeMap, BTreeSet};
@@ -71,29 +71,12 @@ impl fmt::Display for TsBuiltIn {
 }
 
 impl TsBuiltIn {
-    fn to_addr(&self, builtin_file: BffFileName) -> ModuleItemAddress {
+    fn to_type_addr(&self, builtin_file: BffFileName) -> TypeAddress {
         let name = self.to_string();
 
-        ModuleItemAddress {
+        TypeAddress {
             file: builtin_file,
             name,
-            visibility: Visibility::Export,
-        }
-    }
-}
-
-#[derive(Debug, Clone, PartialEq, Eq, Hash, PartialOrd, Ord)]
-pub struct TypeAddress {
-    file: BffFileName,
-    name: String,
-}
-
-impl TypeAddress {
-    pub fn to_addr(&self) -> ModuleItemAddress {
-        ModuleItemAddress {
-            file: self.file.clone(),
-            name: self.name.clone(),
-            visibility: Visibility::Local,
         }
     }
 }
@@ -114,20 +97,20 @@ enum AddressedType {
     },
 }
 impl AddressedType {
-    fn addr(&self) -> ModuleItemAddress {
+    fn type_address(&self) -> TypeAddress {
         match self {
             AddressedType::TsType {
                 t: _,
                 local_address: address,
-            } => address.to_addr(),
+            } => address.clone(),
             AddressedType::TsInterface {
                 t: _,
                 local_address: address,
-            } => address.to_addr(),
+            } => address.clone(),
             AddressedType::TsEnum {
                 t: _,
                 local_address: address,
-            } => address.to_addr(),
+            } => address.clone(),
         }
     }
 }
@@ -135,7 +118,7 @@ impl AddressedType {
 enum FinalAddressedType {
     AddressedType(AddressedType),
     EnumItem {
-        address: ModuleItemAddress,
+        address: TypeAddress,
         member_name: String,
     },
     BuiltIn(TsBuiltIn),
@@ -151,7 +134,7 @@ impl FinalAddressedType {
 
     fn addr(&self) -> RuntypeName {
         match self {
-            FinalAddressedType::AddressedType(t) => RuntypeName::Address(t.addr()),
+            FinalAddressedType::AddressedType(t) => RuntypeName::Address(t.type_address()),
             FinalAddressedType::EnumItem {
                 address: enum_address,
                 member_name,
@@ -160,7 +143,7 @@ impl FinalAddressedType {
                 member_name: member_name.clone(),
             },
             FinalAddressedType::BuiltIn(ts_built_in) => {
-                RuntypeName::Address(ts_built_in.to_addr(new_builtin_file()))
+                RuntypeName::Address(ts_built_in.to_type_addr(new_builtin_file()))
             }
         }
     }
@@ -170,7 +153,7 @@ pub enum AddressedQualifiedType {
     StarImport(BffFileName),
     EnumItem {
         enum_type: Rc<TsEnumDecl>,
-        address: ModuleItemAddress,
+        address: TypeAddress,
     },
 }
 
@@ -264,7 +247,6 @@ trait TypeModuleWalker<'a, R: FileManager + 'a, U> {
                 file_name,
                 span,
             } => {
-                dbg!(&original_name, &file_name);
                 let new_addr = ModuleItemAddress {
                     file: file_name.clone(),
                     name: (*original_name).to_string(),
@@ -351,7 +333,6 @@ impl<'a, 'b, R: FileManager> TypeModuleWalker<'a, R, AddressedType> for TypeWalk
         export: &SymbolExport,
         _span: &Span,
     ) -> Res<AddressedType> {
-        dbg!(&export);
         match export {
             SymbolExport::TsType {
                 decl,
@@ -521,11 +502,7 @@ impl<'a, 'b, R: FileManager> TypeModuleWalker<'a, R, AddressedQualifiedType>
     ) -> Res<AddressedQualifiedType> {
         Ok(AddressedQualifiedType::EnumItem {
             enum_type: ts_enum.clone(),
-            address: ModuleItemAddress {
-                file,
-                name,
-                visibility: Visibility::Local,
-            },
+            address: TypeAddress { file, name },
         })
     }
 
@@ -1068,8 +1045,10 @@ impl<'a, R: FileManager> FrontendCtx<'a, R> {
                 }
                 None => match it.expr.as_ref() {
                     Expr::Ident(id) => {
-                        let addr =
-                            ModuleItemAddress::from_ident(id, file.clone(), Visibility::Local);
+                        let addr = TypeAddress {
+                            file: file.clone(),
+                            name: id.sym.to_string(),
+                        };
                         let rt_name = RuntypeName::Address(addr.clone());
                         let id_ty = self.extract_addressed_type(&rt_name, vec![], &it.span)?;
 
@@ -1262,7 +1241,7 @@ impl<'a, R: FileManager> FrontendCtx<'a, R> {
     ) -> Res<Runtype> {
         match fat {
             FinalAddressedType::AddressedType(addressed_type) => {
-                let rt_name = RuntypeName::Address(addressed_type.addr().clone());
+                let rt_name = RuntypeName::Address(addressed_type.type_address().clone());
                 self.extract_addressed_type(&rt_name, type_args, span)
             }
             FinalAddressedType::EnumItem {
@@ -1465,7 +1444,8 @@ impl<'a, R: FileManager> FrontendCtx<'a, R> {
     ) -> Res<Runtype> {
         match runtype_name {
             RuntypeName::Address(module_item_address) => {
-                let addressed_type = self.get_addressed_type(module_item_address, span)?;
+                let addressed_type =
+                    self.get_addressed_type(&module_item_address.to_module_item_addr(), span)?;
                 match addressed_type {
                     AddressedType::TsType {
                         t: decl,
@@ -1484,8 +1464,10 @@ impl<'a, R: FileManager> FrontendCtx<'a, R> {
                             self.type_application_stack.push((param, arg.clone()));
                             count += 1;
                         }
-                        let runtype =
-                            self.extract_type(&decl.type_ann, address.to_addr().file.clone());
+                        let runtype = self.extract_type(
+                            &decl.type_ann,
+                            address.to_module_item_addr().file.clone(),
+                        );
                         for _ in 0..count {
                             self.type_application_stack.pop();
                         }
@@ -1507,7 +1489,8 @@ impl<'a, R: FileManager> FrontendCtx<'a, R> {
                         t,
                         local_address: address,
                     } => {
-                        let runtype = self.extract_enum_decl(&t, address.to_addr().file.clone())?;
+                        let runtype =
+                            self.extract_enum_decl(&t, address.to_module_item_addr().file.clone())?;
                         Ok(runtype)
                     }
                 }
@@ -1516,7 +1499,8 @@ impl<'a, R: FileManager> FrontendCtx<'a, R> {
                 address: enum_type,
                 member_name,
             } => {
-                let ty = self.get_addressed_qualified_type(enum_type, span)?;
+                let ty =
+                    self.get_addressed_qualified_type(&enum_type.to_module_item_addr(), span)?;
                 if let AddressedQualifiedType::EnumItem { enum_type, address } = ty {
                     let found = enum_type.members.iter().find(|it| match &it.id {
                         TsEnumMemberId::Ident(ident) => &ident.sym == member_name,
@@ -1642,7 +1626,6 @@ impl<'a, R: FileManager> FrontendCtx<'a, R> {
         }
     }
     fn insert_definition(&mut self, addr: RuntypeUUID, schema: Runtype) -> Res<Runtype> {
-        dbg!((&addr, &schema, &self.partial_validators));
         if let Some(Some(v)) = self.partial_validators.get(&addr) {
             assert_eq!(v, &schema);
             return Ok(Runtype::Ref(addr));
@@ -2681,10 +2664,9 @@ impl<'a, R: FileManager> FrontendCtx<'a, R> {
             ctx,
             &access_st,
             &RuntypeUUID {
-                ty: RuntypeName::Address(ModuleItemAddress {
+                ty: RuntypeName::Address(TypeAddress {
                     file: file.clone(),
                     name: "AnyName".into(),
-                    visibility: Visibility::Local,
                 }),
                 type_arguments: vec![],
             },

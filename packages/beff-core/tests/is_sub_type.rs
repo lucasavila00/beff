@@ -2,7 +2,7 @@
 mod tests {
 
     use beff_core::{
-        BffFileName, ModuleItemAddress, NamedSchema, RuntypeName, RuntypeUUID, Visibility,
+        BffFileName, NamedSchema, RuntypeName, RuntypeUUID, TypeAddress,
         ast::runtype::{
             CustomFormat, IndexedProperty, Runtype, RuntypeConst, TplLitType, TplLitTypeItem,
         },
@@ -36,10 +36,9 @@ mod tests {
 
     fn rt_uuid(name: String) -> RuntypeUUID {
         RuntypeUUID {
-            ty: RuntypeName::Address(ModuleItemAddress {
+            ty: RuntypeName::Address(TypeAddress {
                 file: BffFileName::new("any_file.bff".into()),
                 name: name,
-                visibility: Visibility::Local,
             }),
             type_arguments: vec![],
         }
