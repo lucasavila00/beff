@@ -1,6 +1,7 @@
 use crate::ast::runtype::IndexedProperty;
 use crate::subtyping::ToSemType;
 use crate::subtyping::semtype::{SemType, SemTypeContext, SemTypeOps};
+use crate::subtyping::subtype::StringLitOrFormat;
 use crate::subtyping::to_schema::semtype_to_runtypes;
 use crate::{
     BeffUserSettings, BffFileName, FileManager, ImportReference, ModuleItemAddress, ParsedModule,
@@ -18,15 +19,16 @@ use std::collections::{BTreeMap, BTreeSet};
 use std::rc::Rc;
 use swc_common::{Span, Spanned};
 use swc_ecma_ast::{
-    Expr, Ident, Lit, Prop, PropName, PropOrSpread, TsArrayType, TsCallSignatureDecl,
-    TsConstructSignatureDecl, TsConstructorType, TsEntityName, TsEnumDecl, TsExprWithTypeArgs,
-    TsFnOrConstructorType, TsFnType, TsGetterSignature, TsImportType, TsIndexSignature,
-    TsIndexedAccessType, TsInferType, TsInterfaceDecl, TsIntersectionType, TsKeywordType,
-    TsKeywordTypeKind, TsLit, TsLitType, TsMethodSignature, TsOptionalType, TsParenthesizedType,
-    TsPropertySignature, TsQualifiedName, TsRestType, TsSetterSignature, TsThisType, TsTplLitType,
-    TsTupleType, TsType, TsTypeAliasDecl, TsTypeElement, TsTypeLit, TsTypeOperator,
-    TsTypeOperatorOp, TsTypeParamInstantiation, TsTypePredicate, TsTypeQuery, TsTypeQueryExpr,
-    TsTypeRef, TsUnionOrIntersectionType, TsUnionType,
+    Expr, Ident, Lit, MemberProp, Prop, PropName, PropOrSpread, TruePlusMinus, TsArrayType,
+    TsCallSignatureDecl, TsConditionalType, TsConstructSignatureDecl, TsConstructorType,
+    TsEntityName, TsEnumDecl, TsExprWithTypeArgs, TsFnOrConstructorType, TsFnType,
+    TsGetterSignature, TsImportType, TsIndexSignature, TsIndexedAccessType, TsInferType,
+    TsInterfaceDecl, TsIntersectionType, TsKeywordType, TsKeywordTypeKind, TsLit, TsLitType,
+    TsMappedType, TsMethodSignature, TsOptionalType, TsParenthesizedType, TsPropertySignature,
+    TsQualifiedName, TsRestType, TsSetterSignature, TsThisType, TsTplLitType, TsTupleType, TsType,
+    TsTypeAliasDecl, TsTypeElement, TsTypeLit, TsTypeOperator, TsTypeOperatorOp,
+    TsTypeParamInstantiation, TsTypePredicate, TsTypeQuery, TsTypeQueryExpr, TsTypeRef,
+    TsUnionOrIntersectionType, TsUnionType,
 };
 type Res<T> = Result<T, Box<Diagnostic>>;
 
@@ -1814,6 +1816,24 @@ impl<'a, R: FileManager> FrontendCtx<'a, R> {
 
     pub fn typeof_expr(&mut self, e: &Expr, as_const: bool, file: BffFileName) -> Res<Runtype> {
         match e {
+            Expr::Tpl(s) => {
+                if as_const {
+                    let mut acc: Vec<TplLitTypeItem> = vec![];
+
+                    for it in &s.exprs {
+                        let ty = match it.as_ref() {
+                            Expr::Call(_) => Ok(Runtype::String),
+                            _ => self.typeof_expr(it, as_const, file.clone()),
+                        }?;
+                        let res = self.runtype_to_tpl_lit(&it.span(), &ty, file.clone())?;
+                        acc.push(res);
+                    }
+
+                    Ok(Runtype::TplLitType(TplLitType(acc)))
+                } else {
+                    Ok(Runtype::String)
+                }
+            }
             Expr::TsConstAssertion(e) => self.typeof_expr(&e.expr, true, file),
             Expr::Lit(l) => match l {
                 Lit::Str(s) => {
@@ -1959,137 +1979,150 @@ impl<'a, R: FileManager> FrontendCtx<'a, R> {
                 Ok(Runtype::object(vs))
             }
             Expr::TsSatisfies(c) => self.typeof_expr(&c.expr, as_const, file.clone()),
-            // Expr::Member(m) => {
-            //     let mut ctx = SemTypeContext::new();
-            //     let k = match &m.prop {
-            //         MemberProp::Ident(i) => Some(i.sym.to_string()),
-            //         MemberProp::Computed(c) => self
-            //             .typeof_expr(&c.expr, as_const)?
-            //             .extract_single_string_const(),
-            //         MemberProp::PrivateName(_) => None,
-            //     };
-            //     if let Some(key) = &k {
-            //         let from_enum = if let Expr::Ident(i) = &m.obj.as_ref() {
-            //             if let Ok(decl) = TypeResolver::new(self.files, &self.current_file)
-            //                 .resolve_namespace_symbol(i, false)
-            //             {
-            //                 match decl.from_file.as_ref() {
-            //                     ImportReference::Named {
-            //                         orig,
-            //                         file_name,
-            //                         span,
-            //                     } => {
-            //                         let Some(from_file) = self
-            //                             .files
-            //                             .get_or_fetch_file(file_name)
-            //                             .and_then(|module| {
-            //                                 module.symbol_exports.get_type(orig, self.files)
-            //                             })
-            //                         else {
-            //                             return self.error(
-            //                                 span,
-            //                                 DiagnosticInfoMessage::CannotResolveNamedImport,
-            //                             );
-            //                         };
-            //                         match from_file.as_ref() {
-            //                             SymbolExport::TsEnumDecl { decl, .. } => Some(decl.clone()),
-            //                             _ => {
-            //                                 return self.error(
-            //                                     span,
-            //                                     DiagnosticInfoMessage::CannotResolveNamedImport,
-            //                                 );
-            //                             }
-            //                         }
-            //                     }
-            //                     ImportReference::Star { .. } => {
-            //                         return self.error(
-            //                             &i.span,
-            //                             DiagnosticInfoMessage::CannotResolveNamedImport,
-            //                         );
-            //                     }
-            //                     ImportReference::Default { .. } => {
-            //                         return self.error(
-            //                             &i.span,
-            //                             DiagnosticInfoMessage::CannotResolveNamedImport,
-            //                         );
-            //                     }
-            //                 }
-            //             } else if let Ok(ResolvedLocalSymbol::TsEnumDecl(decl)) =
-            //                 TypeResolver::new(self.files, &self.current_file).resolve_local_value(i)
-            //             {
-            //                 Some(decl)
-            //             } else {
-            //                 None
-            //             }
-            //         } else {
-            //             None
-            //         };
-            //         if let Some(from_enum) = from_enum {
-            //             if !as_const {
-            //                 return self.convert_enum_decl(&from_enum);
-            //             }
-            //             let Some(enum_value) = from_enum.members.iter().find(|it| match &it.id {
-            //                 TsEnumMemberId::Ident(i) => i.sym == *key,
-            //                 TsEnumMemberId::Str(_) => unreachable!(),
-            //             }) else {
-            //                 return self
-            //                     .error(&m.prop.span(), DiagnosticInfoMessage::EnumMemberNotFound);
-            //             };
-            //             let Some(init) = &enum_value.init else {
-            //                 return self
-            //                     .error(&m.prop.span(), DiagnosticInfoMessage::EnumMemberNoInit);
-            //             };
+            Expr::Member(m) => {
+                let mut ctx = SemTypeContext::new();
+                let k = match &m.prop {
+                    MemberProp::Ident(i) => Some(i.sym.to_string()),
+                    MemberProp::Computed(c) => self
+                        .typeof_expr(&c.expr, as_const, file.clone())?
+                        .extract_single_string_const(),
+                    MemberProp::PrivateName(_) => None,
+                };
+                if let Some(key) = &k {
+                    todo!()
+                    // let from_enum = if let Expr::Ident(i) = &m.obj.as_ref() {
+                    //     if let Ok(decl) = TypeResolver::new(self.files, &self.current_file)
+                    //         .resolve_namespace_symbol(i, false)
+                    //     {
+                    //         match decl.from_file.as_ref() {
+                    //             ImportReference::Named {
+                    //                 orig,
+                    //                 file_name,
+                    //                 span,
+                    //             } => {
+                    //                 let Some(from_file) = self
+                    //                     .files
+                    //                     .get_or_fetch_file(file_name)
+                    //                     .and_then(|module| {
+                    //                         module.symbol_exports.get_type(orig, self.files)
+                    //                     })
+                    //                 else {
+                    //                     return self.error(
+                    //                         span,
+                    //                         DiagnosticInfoMessage::CannotResolveNamedImport,
+                    //                     );
+                    //                 };
+                    //                 match from_file.as_ref() {
+                    //                     SymbolExport::TsEnumDecl { decl, .. } => Some(decl.clone()),
+                    //                     _ => {
+                    //                         return self.error(
+                    //                             span,
+                    //                             DiagnosticInfoMessage::CannotResolveNamedImport,
+                    //                         );
+                    //                     }
+                    //                 }
+                    //             }
+                    //             ImportReference::Star { .. } => {
+                    //                 return self.error(
+                    //                     &i.span,
+                    //                     DiagnosticInfoMessage::CannotResolveNamedImport,
+                    //                 );
+                    //             }
+                    //             ImportReference::Default { .. } => {
+                    //                 return self.error(
+                    //                     &i.span,
+                    //                     DiagnosticInfoMessage::CannotResolveNamedImport,
+                    //                 );
+                    //             }
+                    //         }
+                    //     } else if let Ok(ResolvedLocalSymbol::TsEnumDecl(decl)) =
+                    //         TypeResolver::new(self.files, &self.current_file).resolve_local_value(i)
+                    //     {
+                    //         Some(decl)
+                    //     } else {
+                    //         None
+                    //     }
+                    // } else {
+                    //     None
+                    // };
+                    // if let Some(from_enum) = from_enum {
+                    //     if !as_const {
+                    //         return self.convert_enum_decl(&from_enum);
+                    //     }
+                    //     let Some(enum_value) = from_enum.members.iter().find(|it| match &it.id {
+                    //         TsEnumMemberId::Ident(i) => i.sym == *key,
+                    //         TsEnumMemberId::Str(_) => unreachable!(),
+                    //     }) else {
+                    //         return self
+                    //             .error(&m.prop.span(), DiagnosticInfoMessage::EnumMemberNotFound);
+                    //     };
+                    //     let Some(init) = &enum_value.init else {
+                    //         return self
+                    //             .error(&m.prop.span(), DiagnosticInfoMessage::EnumMemberNoInit);
+                    //     };
 
-            //             return self.typeof_expr(init, true);
-            //         }
-            //     }
-            //     let obj = self.typeof_expr(&m.obj, as_const)?;
-            //     if let Some(key) = k {
-            //         if let Runtype::Object {
-            //             vs,
-            //             indexed_properties: _,
-            //         } = &obj
-            //         {
-            //             // try to do it syntatically to preserve aliases
-            //             if let Some(Optionality::Required(v)) = vs.get(&key) {
-            //                 return Ok(v.clone());
-            //             };
-            //         }
-            //     }
-            //     // fall back to semantic types if it cannot be done syntatically
-            //     let key: Rc<SemType> = match &m.prop {
-            //         MemberProp::Ident(i) => {
-            //             Rc::new(SemTypeContext::string_const(StringLitOrFormat::Tpl(
-            //                 TplLitType(vec![TplLitTypeItem::StringConst(i.sym.to_string())]),
-            //             )))
-            //         }
-            //         MemberProp::PrivateName(_) => {
-            //             return self.error(
-            //                 &m.prop.span(),
-            //                 DiagnosticInfoMessage::TypeofPrivateNameNotSupported,
-            //             );
-            //         }
-            //         MemberProp::Computed(c) => {
-            //             let v = self.typeof_expr(&c.expr, as_const)?;
-            //             v.to_sem_type(&self.validators_ref(), &mut ctx)
-            //                 .map_err(|e| {
-            //                     self.box_error(
-            //                         &m.span,
-            //                         DiagnosticInfoMessage::AnyhowError(e.to_string()),
-            //                     )
-            //                 })?
-            //         }
-            //     };
-            //     let st = obj
-            //         .to_sem_type(&self.validators_ref(), &mut ctx)
-            //         .map_err(|e| {
-            //             self.box_error(&m.span, DiagnosticInfoMessage::AnyhowError(e.to_string()))
-            //         })?;
-            //     let access_st: Rc<SemType> = ctx.indexed_access(st, key).map_err(|e| {
-            //         self.box_error(&m.span, DiagnosticInfoMessage::AnyhowError(e.to_string()))
-            //     })?;
-            //     self.semtype_to_runtype(access_st, &mut ctx, &m.prop.span())
-            // }
+                    //     return self.typeof_expr(init, true);
+                    // }
+                }
+                let obj = self.typeof_expr(&m.obj, as_const, file.clone())?;
+                if let Some(key) = k {
+                    if let Runtype::Object {
+                        vs,
+                        indexed_properties: _,
+                    } = &obj
+                    {
+                        // try to do it syntatically to preserve aliases
+                        if let Some(Optionality::Required(v)) = vs.get(&key) {
+                            return Ok(v.clone());
+                        };
+                    }
+                }
+                let validators_vec = self.validators_vec();
+                let validators_reference_vec: Vec<&NamedSchema> = validators_vec.iter().collect();
+                // fall back to semantic types if it cannot be done syntatically
+                let key: Rc<SemType> = match &m.prop {
+                    MemberProp::Ident(i) => {
+                        Rc::new(SemTypeContext::string_const(StringLitOrFormat::Tpl(
+                            TplLitType(vec![TplLitTypeItem::StringConst(i.sym.to_string())]),
+                        )))
+                    }
+                    MemberProp::PrivateName(_) => {
+                        return self.error(
+                            &m.prop.span(),
+                            DiagnosticInfoMessage::TypeofPrivateNameNotSupported,
+                            file.clone(),
+                        );
+                    }
+                    MemberProp::Computed(c) => {
+                        let v = self.typeof_expr(&c.expr, as_const, file.clone())?;
+                        v.to_sem_type(&validators_reference_vec, &mut ctx)
+                            .map_err(|e| {
+                                self.box_error(
+                                    &m.span,
+                                    DiagnosticInfoMessage::AnyhowError(e.to_string()),
+                                    file.clone(),
+                                )
+                            })?
+                    }
+                };
+                let st = obj
+                    .to_sem_type(&validators_reference_vec, &mut ctx)
+                    .map_err(|e| {
+                        self.box_error(
+                            &m.span,
+                            DiagnosticInfoMessage::AnyhowError(e.to_string()),
+                            file.clone(),
+                        )
+                    })?;
+                let access_st: Rc<SemType> = ctx.indexed_access(st, key).map_err(|e| {
+                    self.box_error(
+                        &m.span,
+                        DiagnosticInfoMessage::AnyhowError(e.to_string()),
+                        file.clone(),
+                    )
+                })?;
+                self.semtype_to_runtype(access_st, &mut ctx, &m.prop.span(), file.clone())
+            }
             Expr::Arrow(_a) => Ok(Runtype::Function),
             Expr::Bin(e) => {
                 let left = self.typeof_expr(&e.left, as_const, file.clone())?;
@@ -2688,6 +2721,126 @@ impl<'a, R: FileManager> FrontendCtx<'a, R> {
 
         self.semtype_to_runtype(keyof_st, &mut ctx, &k.span(), file_name.clone())
     }
+    fn convert_mapped_type(&mut self, k: &TsMappedType, file_name: BffFileName) -> Res<Runtype> {
+        let name = k.type_param.name.sym.to_string();
+        let constraint = match k.type_param.constraint {
+            Some(ref it) => it.as_ref(),
+            None => {
+                return self.error(
+                    &k.type_param.span,
+                    DiagnosticInfoMessage::NoConstraintInMappedType,
+                    file_name.clone(),
+                );
+            }
+        };
+        let constraint_schema = self.extract_type(constraint, file_name.clone())?;
+        let values = self
+            .extract_union(constraint_schema)
+            .map_err(|e| self.box_error(&constraint.span(), e, file_name.clone()))?;
+
+        let mut string_keys = vec![];
+
+        for v in values {
+            match v.extract_single_string_const() {
+                Some(s) => {
+                    string_keys.push(s);
+                }
+                _ => {
+                    return self.error(
+                        &k.span,
+                        DiagnosticInfoMessage::NonStringKeyInMappedType,
+                        file_name.clone(),
+                    );
+                }
+            }
+        }
+
+        let type_ann = match &k.type_ann {
+            Some(type_ann) => type_ann.as_ref(),
+            None => {
+                return self.error(
+                    &k.span,
+                    DiagnosticInfoMessage::NoTypeAnnotationInMappedType,
+                    file_name.clone(),
+                );
+            }
+        };
+
+        let mut vs = vec![];
+        for key in string_keys.into_iter() {
+            self.type_application_stack
+                .push((name.clone(), Runtype::single_string_const(&key)));
+
+            let ty = self.extract_type(type_ann, file_name.clone())?;
+            self.type_application_stack.pop();
+
+            let ty = match k.optional {
+                Some(opt) => match opt {
+                    TruePlusMinus::True => Optionality::Optional(ty),
+                    TruePlusMinus::Plus => Optionality::Required(ty),
+                    TruePlusMinus::Minus => {
+                        return self.error(
+                            &k.span,
+                            DiagnosticInfoMessage::MappedTypeMinusNotSupported,
+                            file_name.clone(),
+                        );
+                    }
+                },
+                None => Optionality::Required(ty),
+            };
+            vs.push((key, ty));
+        }
+
+        Ok(Runtype::object(vs))
+    }
+    fn convert_conditional_type(
+        &mut self,
+        t: &TsConditionalType,
+        file_name: BffFileName,
+    ) -> Res<Runtype> {
+        let check_type_schema = self.extract_type(&t.check_type, file_name.clone())?;
+        let extends_type_schema = self.extract_type(&t.extends_type, file_name.clone())?;
+
+        let mut ctx = SemTypeContext::new();
+        let validators_vec = self.validators_vec();
+        let validators_reference_vec: Vec<&NamedSchema> = validators_vec.iter().collect();
+
+        let check_type_st = check_type_schema
+            .to_sem_type(&validators_reference_vec, &mut ctx)
+            .map_err(|e| {
+                self.box_error(
+                    &t.check_type.span(),
+                    DiagnosticInfoMessage::AnyhowError(e.to_string()),
+                    file_name.clone(),
+                )
+            })?;
+
+        let extends_type_st = extends_type_schema
+            .to_sem_type(&validators_reference_vec, &mut ctx)
+            .map_err(|e| {
+                self.box_error(
+                    &t.extends_type.span(),
+                    DiagnosticInfoMessage::AnyhowError(e.to_string()),
+                    file_name.clone(),
+                )
+            })?;
+
+        let is_true = check_type_st
+            .is_subtype(&extends_type_st, &mut ctx)
+            .map_err(|e| {
+                self.box_error(
+                    &t.span,
+                    DiagnosticInfoMessage::AnyhowError(e.to_string()),
+                    file_name.clone(),
+                )
+            })?;
+
+        if is_true {
+            self.extract_type(&t.true_type, file_name.clone())
+        } else {
+            self.extract_type(&t.false_type, file_name.clone())
+        }
+    }
 
     fn extract_type(&mut self, ty: &TsType, file: BffFileName) -> Res<Runtype> {
         match ty {
@@ -2757,8 +2910,10 @@ impl<'a, R: FileManager> FrontendCtx<'a, R> {
             TsType::TsIndexedAccessType(ts_indexed_access_type) => {
                 self.extract_indexed_access_type(ts_indexed_access_type, file)
             }
-            TsType::TsMappedType(_ts_mapped_type) => todo!(),
-            TsType::TsConditionalType(_ts_conditional_type) => todo!(),
+            TsType::TsMappedType(ts_mapped_type) => self.convert_mapped_type(ts_mapped_type, file),
+            TsType::TsConditionalType(ts_conditional_type) => {
+                self.convert_conditional_type(ts_conditional_type, file)
+            }
             TsType::TsTypeOperator(TsTypeOperator { span, op, type_ann }) => match op {
                 TsTypeOperatorOp::KeyOf => self.convert_keyof(type_ann, file.clone()),
                 TsTypeOperatorOp::Unique => self.cannot_serialize_error(
