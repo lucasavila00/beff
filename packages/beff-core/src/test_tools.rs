@@ -94,42 +94,6 @@ fn extract_types(fs: &[(&str, &str)]) -> ParserExtractResult {
     crate::extract(&mut man, entry)
 }
 
-fn dedent(s: &str) -> String {
-    let lines: Vec<&str> = s.lines().collect();
-    let first_non_empty = lines
-        .iter()
-        .position(|line| !line.trim().is_empty())
-        .unwrap_or(0);
-    let indent = lines[first_non_empty]
-        .chars()
-        .take_while(|c| c.is_whitespace())
-        .count();
-
-    lines
-        .iter()
-        .map(|line| {
-            if line.len() >= indent {
-                &line[indent..]
-            } else {
-                *line
-            }
-        })
-        .collect::<Vec<&str>>()
-        .join("\n")
-        .trim()
-        .to_string()
-}
-
-fn print_sources(sources: &[(&str, &str)]) -> String {
-    let mut out = String::new();
-    for (name, content) in sources {
-        out.push_str(&format!("--- {} ---\n", name));
-        out.push_str(&dedent(content));
-        out.push_str("\n");
-    }
-    out
-}
-
 pub fn print_types(from: &str) -> String {
     let sources = [("entry.ts", from)];
     let p = extract_types(&sources);

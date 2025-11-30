@@ -10,7 +10,14 @@ mod tests {
     parse.buildParsers<{ UserId: UserId }>();
 
   "#;
-        insta::assert_snapshot!(print_types(from));
+        insta::assert_snapshot!(print_types(from), @r"
+        type UserId = string;
+
+
+        type BuiltParsers = {
+          UserId: UserId,
+        }
+        ");
     }
     #[test]
     fn builtin_type_ref() {
@@ -20,7 +27,14 @@ mod tests {
     parse.buildParsers<{ X: X }>();
 
   "#;
-        insta::assert_snapshot!(print_types(from));
+        insta::assert_snapshot!(print_types(from), @r"
+        type X = Array<string>;
+
+
+        type BuiltParsers = {
+          X: X,
+        }
+        ");
     }
     #[test]
     fn typeof_local() {
@@ -31,7 +45,14 @@ mod tests {
     parse.buildParsers<{ X: X }>();
 
   "#;
-        insta::assert_snapshot!(print_types(from));
+        insta::assert_snapshot!(print_types(from), @r#"
+        type X = "abc";
+
+
+        type BuiltParsers = {
+          X: X,
+        }
+        "#);
     }
 
     #[test]
@@ -51,7 +72,14 @@ mod tests {
                     parse.buildParsers<{ X: X }>();
                 "#
             )
-        ]));
+        ]), @r"
+        type X = string;
+
+
+        type BuiltParsers = {
+          X: X,
+        }
+        ");
     }
 
     #[test]
@@ -74,7 +102,19 @@ mod tests {
                     parse.buildParsers<{ X1: X1, Z: Z }>();
                 "#
             )
-        ]));
+        ]), @r#"
+        type X1 = string;
+
+        type X2 = boolean;
+
+        type Z = { "a": X1 };
+
+
+        type BuiltParsers = {
+          X1: X2,
+          Z: Z,
+        }
+        "#);
     }
 
     #[test]
@@ -95,7 +135,17 @@ mod tests {
                     parse.buildParsers<{ X1: X1, Z: Z }>();
                 "#
             )
-        ]));
+        ]), @r#"
+        type X1 = string;
+
+        type Z = { "a": X1 };
+
+
+        type BuiltParsers = {
+          X1: X1,
+          Z: Z,
+        }
+        "#);
     }
 
     #[test]
@@ -119,7 +169,17 @@ mod tests {
                     parse.buildParsers<{ OtherEnum: OtherEnum, OtherEnumA:OtherEnum.A }>();
                 "#
             )
-        ]));
+        ]), @r#"
+        type OtherEnum = ("a" | "b");
+
+        type OtherEnum__A = "a";
+
+
+        type BuiltParsers = {
+          OtherEnum: OtherEnum,
+          OtherEnumA: OtherEnum__A,
+        }
+        "#);
     }
 
     #[test]
@@ -148,7 +208,23 @@ mod tests {
                     parse.buildParsers<{ X1: X1, Z: Z, X2: X2, W: W }>();
                 "#
             )
-        ]));
+        ]), @r#"
+        type X1 = string;
+
+        type Z = { "a": X1 };
+
+        type W = { "a": X2 };
+
+        type X2 = boolean;
+
+
+        type BuiltParsers = {
+          W: W,
+          X1: X1,
+          X2: X2,
+          Z: Z,
+        }
+        "#);
     }
 
     #[test]
@@ -177,7 +253,23 @@ mod tests {
                     parse.buildParsers<{ X: X, Z: Z, X2: X2, W: W }>();
                 "#
             )
-        ]));
+        ]), @r#"
+        type t1_ts__X = string;
+
+        type Z = { "a": t1_ts__X };
+
+        type W = { "a": t2_ts__X };
+
+        type t2_ts__X = boolean;
+
+
+        type BuiltParsers = {
+          W: W,
+          X: t1_ts__X,
+          X2: t2_ts__X,
+          Z: Z,
+        }
+        "#);
     }
     #[test]
     fn type_ref_multifile_same_name_visibility_collision() {
@@ -209,9 +301,28 @@ mod tests {
                     parse.buildParsers<{ X: X, Z: Z, X2: X2, Z2: Z2 }>();
                 "#
             )
-        ]));
-    }
+        ]), @r"
+        type t1_ts__X = string;
 
+        type t1_ts__Y = number;
+
+        type t1_ts__Z = Array<t1_ts__X>;
+
+        type t2_ts__X = boolean;
+
+        type t2_ts__Y = null;
+
+        type t2_ts__Z = Array<t2_ts__X>;
+
+
+        type BuiltParsers = {
+          X: t1_ts__Y,
+          X2: t2_ts__Y,
+          Z: t1_ts__Z,
+          Z2: t2_ts__Z,
+        }
+        ");
+    }
     #[test]
     fn typeof_multifile() {
         insta::assert_snapshot!(print_types_multifile(&[
@@ -230,9 +341,15 @@ mod tests {
                     parse.buildParsers<{ X: X }>();
                 "#
             )
-        ]));
-    }
+        ]), @r#"
+        type X = "abc";
 
+
+        type BuiltParsers = {
+          X: X,
+        }
+        "#);
+    }
     #[test]
     fn typeof_multifile_default_export() {
         insta::assert_snapshot!(print_types_multifile(&[
@@ -251,9 +368,15 @@ mod tests {
                     parse.buildParsers<{ X: X }>();
                 "#
             )
-        ]));
-    }
+        ]), @r#"
+        type X = "abc";
 
+
+        type BuiltParsers = {
+          X: X,
+        }
+        "#);
+    }
     #[test]
     fn exort_default_type_ref() {
         insta::assert_snapshot!(print_types_multifile(&[
@@ -273,9 +396,17 @@ mod tests {
                     parse.buildParsers<{ X: X }>();
                 "#
             )
-        ]));
-    }
+        ]), @r"
+        type X = Y;
 
+        type Y = string;
+
+
+        type BuiltParsers = {
+          X: X,
+        }
+        ");
+    }
     #[test]
     fn exort_default_value_identifier() {
         insta::assert_snapshot!(print_types_multifile(&[
@@ -295,9 +426,15 @@ mod tests {
                     parse.buildParsers<{  Z: Z }>();
                 "#
             )
-        ]));
-    }
+        ]), @r#"
+        type Z = "abc";
 
+
+        type BuiltParsers = {
+          Z: Z,
+        }
+        "#);
+    }
     #[test]
     fn exort_default_value_identifier_same_name() {
         insta::assert_snapshot!(print_types_multifile(&[
@@ -317,9 +454,15 @@ mod tests {
                     parse.buildParsers<{  Z: Z }>();
                 "#
             )
-        ]));
-    }
+        ]), @r#"
+        type Z = "abc";
 
+
+        type BuiltParsers = {
+          Z: Z,
+        }
+        "#);
+    }
     #[test]
     fn exort_default_type_and_value() {
         insta::assert_snapshot!(print_types_multifile(&[
@@ -341,9 +484,20 @@ mod tests {
                     parse.buildParsers<{ X: X, Z: Z }>();
                 "#
             )
-        ]));
-    }
+        ]), @r#"
+        type X = Y;
 
+        type Z = "abc";
+
+        type Y = number;
+
+
+        type BuiltParsers = {
+          X: X,
+          Z: Z,
+        }
+        "#);
+    }
     #[test]
     fn typeof_export_from_other_file() {
         insta::assert_snapshot!(print_types_multifile(&[
@@ -368,9 +522,15 @@ mod tests {
                     parse.buildParsers<{ X: X }>();
                 "#
             )
-        ]));
-    }
+        ]), @r#"
+        type X = "abc";
 
+
+        type BuiltParsers = {
+          X: X,
+        }
+        "#);
+    }
     #[test]
     fn type_export_from_other_file() {
         insta::assert_snapshot!(print_types_multifile(&[
@@ -395,9 +555,17 @@ mod tests {
                     parse.buildParsers<{ X: X }>();
                 "#
             )
-        ]));
-    }
+        ]), @r#"
+        type abc = "abc";
 
+        type X = abc;
+
+
+        type BuiltParsers = {
+          X: X,
+        }
+        "#);
+    }
     #[test]
     fn type_snd_value_export_from_other_file() {
         insta::assert_snapshot!(print_types_multifile(&[
@@ -424,9 +592,20 @@ mod tests {
                     parse.buildParsers<{ X: X, Y: Y }>();
                 "#
             )
-        ]));
-    }
+        ]), @r#"
+        type abc = "abc";
 
+        type X = abc;
+
+        type Y = 123;
+
+
+        type BuiltParsers = {
+          X: X,
+          Y: Y,
+        }
+        "#);
+    }
     #[test]
     fn import_star_type() {
         insta::assert_snapshot!(print_types_multifile(&[
@@ -445,9 +624,17 @@ mod tests {
                     parse.buildParsers<{ Z: Z }>();
                 "#
             )
-        ]));
-    }
+        ]), @r"
+        type Z = Y1;
 
+        type Y1 = string;
+
+
+        type BuiltParsers = {
+          Z: Z,
+        }
+        ");
+    }
     #[test]
     fn export_star_type_from_other_file() {
         insta::assert_snapshot!(print_types_multifile(&[
@@ -472,9 +659,17 @@ mod tests {
                     parse.buildParsers<{ Z: Z }>();
                 "#
             )
-        ]));
-    }
+        ]), @r"
+        type Y1 = string;
 
+        type Z = Y1;
+
+
+        type BuiltParsers = {
+          Z: Z,
+        }
+        ");
+    }
     #[test]
     fn import_star_type_from_other_file() {
         insta::assert_snapshot!(print_types_multifile(&[
@@ -499,9 +694,17 @@ mod tests {
                     parse.buildParsers<{ Z: Z }>();
                 "#
             )
-        ]));
-    }
+        ]), @r"
+        type Y1 = string;
 
+        type Z = Y1;
+
+
+        type BuiltParsers = {
+          Z: Z,
+        }
+        ");
+    }
     #[test]
     fn import_star_value() {
         insta::assert_snapshot!(print_types_multifile(&[
@@ -520,9 +723,15 @@ mod tests {
                     parse.buildParsers<{ Z: Z }>();
                 "#
             )
-        ]));
-    }
+        ]), @r#"
+        type Z = "abc";
 
+
+        type BuiltParsers = {
+          Z: Z,
+        }
+        "#);
+    }
     #[test]
     fn named_export_with_renaming() {
         insta::assert_snapshot!(print_types_multifile(&[
@@ -542,9 +751,15 @@ mod tests {
                     parse.buildParsers<{ X: X }>();
                 "#
             )
-        ]));
-    }
+        ]), @r#"
+        type X = "a";
 
+
+        type BuiltParsers = {
+          X: X,
+        }
+        "#);
+    }
     #[test]
     fn named_import_with_renaming() {
         insta::assert_snapshot!(print_types_multifile(&[
@@ -563,9 +778,15 @@ mod tests {
                     parse.buildParsers<{ X: X }>();
                 "#
             )
-        ]));
-    }
+        ]), @r#"
+        type X = "a";
 
+
+        type BuiltParsers = {
+          X: X,
+        }
+        "#);
+    }
     #[test]
     fn re_export_with_renaming() {
         insta::assert_snapshot!(print_types_multifile(&[
@@ -590,9 +811,15 @@ mod tests {
                     parse.buildParsers<{ X: X }>();
                 "#
             )
-        ]));
-    }
+        ]), @r#"
+        type X = "a";
 
+
+        type BuiltParsers = {
+          X: X,
+        }
+        "#);
+    }
     #[test]
     fn namespace_re_export() {
         insta::assert_snapshot!(print_types_multifile(&[
@@ -617,9 +844,15 @@ mod tests {
                     parse.buildParsers<{ X: X }>();
                 "#
             )
-        ]));
-    }
+        ]), @r#"
+        type X = "a";
 
+
+        type BuiltParsers = {
+          X: X,
+        }
+        "#);
+    }
     #[test]
     fn combined_default_and_named_import() {
         insta::assert_snapshot!(print_types_multifile(&[
@@ -641,9 +874,18 @@ mod tests {
                     parse.buildParsers<{ X: X, Y: Y }>();
                 "#
             )
-        ]));
-    }
+        ]), @r#"
+        type X = "d";
 
+        type Y = "a";
+
+
+        type BuiltParsers = {
+          X: X,
+          Y: Y,
+        }
+        "#);
+    }
     #[test]
     fn combined_default_and_namespace_import() {
         insta::assert_snapshot!(print_types_multifile(&[
@@ -665,9 +907,18 @@ mod tests {
                     parse.buildParsers<{ X: X, Y: Y }>();
                 "#
             )
-        ]));
-    }
+        ]), @r#"
+        type X = "d";
 
+        type Y = "a";
+
+
+        type BuiltParsers = {
+          X: X,
+          Y: Y,
+        }
+        "#);
+    }
     #[test]
     fn nested_qualified_type_access() {
         insta::assert_snapshot!(print_types_multifile(&[
@@ -697,9 +948,17 @@ mod tests {
                     parse.buildParsers<{ X: X }>();
                 "#
             )
-        ]));
-    }
+        ]), @r"
+        type C = string;
 
+        type X = C;
+
+
+        type BuiltParsers = {
+          X: X,
+        }
+        ");
+    }
     #[test]
     fn nested_qualified_value_access() {
         insta::assert_snapshot!(print_types_multifile(&[
@@ -729,9 +988,15 @@ mod tests {
                     parse.buildParsers<{ X: X }>();
                 "#
             )
-        ]));
-    }
+        ]), @r#"
+        type X = "c";
 
+
+        type BuiltParsers = {
+          X: X,
+        }
+        "#);
+    }
     #[test]
     fn import_star_nested_access() {
         insta::assert_snapshot!(print_types_multifile(&[
@@ -755,9 +1020,17 @@ mod tests {
                     parse.buildParsers<{ X: X }>();
                 "#
             )
-        ]));
-    }
+        ]), @r"
+        type C = string;
 
+        type X = C;
+
+
+        type BuiltParsers = {
+          X: X,
+        }
+        ");
+    }
     #[test]
     fn import_star_nested_value_access() {
         insta::assert_snapshot!(print_types_multifile(&[
@@ -781,9 +1054,15 @@ mod tests {
                     parse.buildParsers<{ X: X }>();
                 "#
             )
-        ]));
-    }
+        ]), @r#"
+        type X = "c";
 
+
+        type BuiltParsers = {
+          X: X,
+        }
+        "#);
+    }
     #[test]
     fn namespace_export_type_and_value_collision() {
         insta::assert_snapshot!(print_types_multifile(&[
@@ -803,9 +1082,20 @@ mod tests {
                     parse.buildParsers<{ T: T, V: V }>();
                 "#
             )
-        ]));
-    }
+        ]), @r#"
+        type T = A;
 
+        type V = "value";
+
+        type A = string;
+
+
+        type BuiltParsers = {
+          T: T,
+          V: V,
+        }
+        "#);
+    }
     #[test]
     fn re_export_named_as_default() {
         insta::assert_snapshot!(print_types_multifile(&[
@@ -829,9 +1119,15 @@ mod tests {
                     parse.buildParsers<{ X: X }>();
                 "#
             )
-        ]));
-    }
+        ]), @r#"
+        type X = "a";
 
+
+        type BuiltParsers = {
+          X: X,
+        }
+        "#);
+    }
     #[test]
     fn re_export_default_as_named() {
         insta::assert_snapshot!(print_types_multifile(&[
@@ -855,9 +1151,15 @@ mod tests {
                     parse.buildParsers<{ X: X }>();
                 "#
             )
-        ]));
-    }
+        ]), @r#"
+        type X = "a";
 
+
+        type BuiltParsers = {
+          X: X,
+        }
+        "#);
+    }
     #[test]
     fn re_export_named_type_as_default() {
         insta::assert_snapshot!(print_types_multifile(&[
@@ -881,9 +1183,17 @@ mod tests {
                     parse.buildParsers<{ X: X }>();
                 "#
             )
-        ]));
-    }
+        ]), @r#"
+        type A = "a";
 
+        type X = A;
+
+
+        type BuiltParsers = {
+          X: X,
+        }
+        "#);
+    }
     #[test]
     fn re_export_default_type_as_named() {
         insta::assert_snapshot!(print_types_multifile(&[
@@ -908,9 +1218,17 @@ mod tests {
                     parse.buildParsers<{ X: X }>();
                 "#
             )
-        ]));
-    }
+        ]), @r#"
+        type A = "a";
 
+        type X = A;
+
+
+        type BuiltParsers = {
+          X: X,
+        }
+        "#);
+    }
     #[test]
     fn export_star_aggregation() {
         insta::assert_snapshot!(print_types_multifile(&[
@@ -942,9 +1260,22 @@ mod tests {
                     parse.buildParsers<{ X: X, Y: Y }>();
                 "#
             )
-        ]));
-    }
+        ]), @r#"
+        type A = "a";
 
+        type B = "b";
+
+        type X = A;
+
+        type Y = B;
+
+
+        type BuiltParsers = {
+          X: X,
+          Y: Y,
+        }
+        "#);
+    }
     #[test]
     fn circular_dependency_imports_unused() {
         insta::assert_snapshot!(print_types_multifile(&[
@@ -970,9 +1301,17 @@ mod tests {
                     parse.buildParsers<{ X: X }>();
                 "#
             )
-        ]));
-    }
+        ]), @r"
+        type A = string;
 
+        type X = A;
+
+
+        type BuiltParsers = {
+          X: X,
+        }
+        ");
+    }
     #[test]
     fn export_multi_variable_decl() {
         insta::assert_snapshot!(print_types_multifile(&[
@@ -991,9 +1330,18 @@ mod tests {
                     parse.buildParsers<{ X: X, Y: Y }>();
                 "#
             )
-        ]));
-    }
+        ]), @r#"
+        type X = "a";
 
+        type Y = "b";
+
+
+        type BuiltParsers = {
+          X: X,
+          Y: Y,
+        }
+        "#);
+    }
     #[test]
     fn typeof_declare_local() {
         let from = r#"
@@ -1002,7 +1350,14 @@ mod tests {
     parse.buildParsers<{ X: X }>();
 
   "#;
-        insta::assert_snapshot!(print_types(from));
+        insta::assert_snapshot!(print_types(from), @r#"
+        type X = "abc";
+
+
+        type BuiltParsers = {
+          X: X,
+        }
+        "#);
     }
 
     #[test]
@@ -1022,9 +1377,15 @@ mod tests {
                     parse.buildParsers<{ X: X }>();
                 "#
             )
-        ]));
-    }
+        ]), @r#"
+        type X = "a";
 
+
+        type BuiltParsers = {
+          X: X,
+        }
+        "#);
+    }
     #[test]
     fn qualified_access_via_named_reexport_of_namespace() {
         insta::assert_snapshot!(print_types_multifile(&[
@@ -1049,9 +1410,15 @@ mod tests {
                     parse.buildParsers<{ X: X }>();
                 "#
             )
-        ]));
-    }
+        ]), @r#"
+        type X = "a";
 
+
+        type BuiltParsers = {
+          X: X,
+        }
+        "#);
+    }
     #[test]
     fn qualified_access_via_default_reexport_of_namespace() {
         insta::assert_snapshot!(print_types_multifile(&[
@@ -1076,9 +1443,15 @@ mod tests {
                     parse.buildParsers<{ X: X }>();
                 "#
             )
-        ]));
-    }
+        ]), @r#"
+        type X = "a";
 
+
+        type BuiltParsers = {
+          X: X,
+        }
+        "#);
+    }
     #[test]
     fn import_type_only() {
         insta::assert_snapshot!(print_types_multifile(&[
@@ -1096,9 +1469,17 @@ mod tests {
                     parse.buildParsers<{ X: X }>();
                 "#
             )
-        ]));
-    }
+        ]), @r"
+        type X = T;
 
+        type T = string;
+
+
+        type BuiltParsers = {
+          X: X,
+        }
+        ");
+    }
     #[test]
     fn export_type_only() {
         insta::assert_snapshot!(print_types_multifile(&[
@@ -1122,9 +1503,17 @@ mod tests {
                     parse.buildParsers<{ X: X }>();
                 "#
             )
-        ]));
-    }
+        ]), @r"
+        type T = string;
 
+        type X = T;
+
+
+        type BuiltParsers = {
+          X: X,
+        }
+        ");
+    }
     #[test]
     fn import_inline_type() {
         insta::assert_snapshot!(print_types_multifile(&[
@@ -1142,9 +1531,17 @@ mod tests {
                     parse.buildParsers<{ X: X }>();
                 "#
             )
-        ]));
-    }
+        ]), @r"
+        type X = T;
 
+        type T = string;
+
+
+        type BuiltParsers = {
+          X: X,
+        }
+        ");
+    }
     #[test]
     fn export_inline_type() {
         insta::assert_snapshot!(print_types_multifile(&[
@@ -1168,9 +1565,17 @@ mod tests {
                     parse.buildParsers<{ X: X }>();
                 "#
             )
-        ]));
-    }
+        ]), @r"
+        type T = string;
 
+        type X = T;
+
+
+        type BuiltParsers = {
+          X: X,
+        }
+        ");
+    }
     #[test]
     fn qualified_type_from_default_import() {
         insta::assert_snapshot!(print_types_multifile(&[
@@ -1195,9 +1600,17 @@ mod tests {
                     parse.buildParsers<{ X: X }>();
                 "#
             )
-        ]));
-    }
+        ]), @r"
+        type A = string;
 
+        type X = A;
+
+
+        type BuiltParsers = {
+          X: X,
+        }
+        ");
+    }
     #[test]
     fn qualified_type_from_default_import_renamed() {
         insta::assert_snapshot!(print_types_multifile(&[
@@ -1222,9 +1635,17 @@ mod tests {
                     parse.buildParsers<{ X: X }>();
                 "#
             )
-        ]));
-    }
+        ]), @r"
+        type A = string;
 
+        type X = A;
+
+
+        type BuiltParsers = {
+          X: X,
+        }
+        ");
+    }
     #[test]
     fn export_star_conflict() {
         insta::assert_snapshot!(print_types_multifile(&[
@@ -1255,9 +1676,15 @@ mod tests {
                     parse.buildParsers<{ T: T }>();
                 "#
             )
-        ]));
-    }
+        ]), @r#"
+        type T = "a";
 
+
+        type BuiltParsers = {
+          T: T,
+        }
+        "#);
+    }
     #[test]
     fn qualified_access_via_named_import_object() {
         insta::assert_snapshot!(print_types_multifile(&[
@@ -1275,9 +1702,15 @@ mod tests {
                     parse.buildParsers<{ X: X }>();
                 "#
             )
-        ]));
-    }
+        ]), @r#"
+        type X = "a";
 
+
+        type BuiltParsers = {
+          X: X,
+        }
+        "#);
+    }
     #[test]
     fn qualified_access_via_default_import_object() {
         insta::assert_snapshot!(print_types_multifile(&[
@@ -1296,9 +1729,15 @@ mod tests {
                     parse.buildParsers<{ X: X }>();
                 "#
             )
-        ]));
-    }
+        ]), @r#"
+        type X = "a";
 
+
+        type BuiltParsers = {
+          X: X,
+        }
+        "#);
+    }
     #[test]
     fn import_type_literal_default() {
         insta::assert_snapshot!(print_types_multifile(&[
@@ -1315,9 +1754,15 @@ mod tests {
                     parse.buildParsers<{ X: X }>();
                 "#
             )
-        ]));
-    }
+        ]), @r#"
+        type X = "a";
 
+
+        type BuiltParsers = {
+          X: X,
+        }
+        "#);
+    }
     #[test]
     fn import_type_literal_named() {
         insta::assert_snapshot!(print_types_multifile(&[
@@ -1334,9 +1779,17 @@ mod tests {
                     parse.buildParsers<{ X: X }>();
                 "#
             )
-        ]));
-    }
+        ]), @r#"
+        type X = A;
 
+        type A = "a";
+
+
+        type BuiltParsers = {
+          X: X,
+        }
+        "#);
+    }
     #[test]
     fn re_export_default_as_default() {
         insta::assert_snapshot!(print_types_multifile(&[
@@ -1360,9 +1813,15 @@ mod tests {
                     parse.buildParsers<{ X: X }>();
                 "#
             )
-        ]));
-    }
+        ]), @r#"
+        type X = "a";
 
+
+        type BuiltParsers = {
+          X: X,
+        }
+        "#);
+    }
     #[test]
     fn export_namespace_as_default() {
         insta::assert_snapshot!(print_types_multifile(&[
@@ -1386,9 +1845,15 @@ mod tests {
                     parse.buildParsers<{ X: X }>();
                 "#
             )
-        ]));
-    }
+        ]), @r#"
+        type X = "a";
 
+
+        type BuiltParsers = {
+          X: X,
+        }
+        "#);
+    }
     #[test]
     fn import_default_as_named() {
         insta::assert_snapshot!(print_types_multifile(&[
@@ -1406,9 +1871,15 @@ mod tests {
                     parse.buildParsers<{ X: X }>();
                 "#
             )
-        ]));
-    }
+        ]), @r#"
+        type X = "a";
 
+
+        type BuiltParsers = {
+          X: X,
+        }
+        "#);
+    }
     #[test]
     fn export_default_object_expression() {
         insta::assert_snapshot!(print_types_multifile(&[
@@ -1426,9 +1897,15 @@ mod tests {
                     parse.buildParsers<{ X: X }>();
                 "#
             )
-        ]));
-    }
+        ]), @r#"
+        type X = "a";
 
+
+        type BuiltParsers = {
+          X: X,
+        }
+        "#);
+    }
     #[test]
     fn import_type_syntax() {
         insta::assert_snapshot!(print_types_multifile(&[
@@ -1445,9 +1922,17 @@ mod tests {
                     parse.buildParsers<{ X: X }>();
                 "#
             )
-        ]));
-    }
+        ]), @r"
+        type X = A;
 
+        type A = string;
+
+
+        type BuiltParsers = {
+          X: X,
+        }
+        ");
+    }
     #[test]
     fn typeof_import_syntax() {
         insta::assert_snapshot!(print_types_multifile(&[
@@ -1464,9 +1949,15 @@ mod tests {
                     parse.buildParsers<{ X: X }>();
                 "#
             )
-        ]));
-    }
+        ]), @r#"
+        type X = "a";
 
+
+        type BuiltParsers = {
+          X: X,
+        }
+        "#);
+    }
     #[test]
     fn local_named_export_as_default() {
         insta::assert_snapshot!(print_types_multifile(&[
@@ -1485,9 +1976,15 @@ mod tests {
                     parse.buildParsers<{ X: X }>();
                 "#
             )
-        ]));
-    }
+        ]), @r#"
+        type X = "a";
 
+
+        type BuiltParsers = {
+          X: X,
+        }
+        "#);
+    }
     #[test]
     fn namespace_import_access_default() {
         insta::assert_snapshot!(print_types_multifile(&[
@@ -1507,9 +2004,18 @@ mod tests {
                     parse.buildParsers<{ X: X, Y: Y }>();
                 "#
             )
-        ]));
-    }
+        ]), @r#"
+        type X = "d";
 
+        type Y = "a";
+
+
+        type BuiltParsers = {
+          X: X,
+          Y: Y,
+        }
+        "#);
+    }
     #[test]
     fn export_star_shadowed_by_local() {
         insta::assert_snapshot!(print_types_multifile(&[
@@ -1534,9 +2040,15 @@ mod tests {
                     parse.buildParsers<{ X: X }>();
                 "#
             )
-        ]));
-    }
+        ]), @r#"
+        type X = "local";
 
+
+        type BuiltParsers = {
+          X: X,
+        }
+        "#);
+    }
     #[test]
     fn import_type_of_default_export() {
         insta::assert_snapshot!(print_types_multifile(&[
@@ -1554,25 +2066,46 @@ mod tests {
                     parse.buildParsers<{ X: X }>();
                 "#
             )
-        ]));
-    }
+        ]), @r"
+        type X = T;
 
+        type T = string;
+
+
+        type BuiltParsers = {
+          X: X,
+        }
+        ");
+    }
     #[test]
     fn recursive_local_type() {
         let from = r#"
     export type X = { a: X };
     parse.buildParsers<{ X: X }>();
     "#;
-        insta::assert_snapshot!(print_types_multifile(&[("entry.ts", from)]));
-    }
+        insta::assert_snapshot!(print_types_multifile(&[("entry.ts", from)]), @r#"
+        type X = { "a": X };
 
+
+        type BuiltParsers = {
+          X: X,
+        }
+        "#);
+    }
     #[test]
     fn date_builtin() {
         let from = r#"
     export type X = Date;
     parse.buildParsers<{ X: X }>();
     "#;
-        insta::assert_snapshot!(print_types_multifile(&[("entry.ts", from)]));
+        insta::assert_snapshot!(print_types_multifile(&[("entry.ts", from)]), @r"
+        type X = Date;
+
+
+        type BuiltParsers = {
+          X: X,
+        }
+        ");
     }
     #[test]
     fn array_builtin() {
@@ -1580,7 +2113,14 @@ mod tests {
     export type X = Array<string>;
     parse.buildParsers<{ X: X }>();
     "#;
-        insta::assert_snapshot!(print_types_multifile(&[("entry.ts", from)]));
+        insta::assert_snapshot!(print_types_multifile(&[("entry.ts", from)]), @r"
+        type X = Array<string>;
+
+
+        type BuiltParsers = {
+          X: X,
+        }
+        ");
     }
     #[test]
     fn string_fmt_builtin() {
@@ -1588,7 +2128,14 @@ mod tests {
     export type X = StringFormat<"password">;
     parse.buildParsers<{ X: X }>();
     "#;
-        insta::assert_snapshot!(print_types_multifile(&[("entry.ts", from)]));
+        insta::assert_snapshot!(print_types_multifile(&[("entry.ts", from)]), @r#"
+        type X = StringFormat<"password">;
+
+
+        type BuiltParsers = {
+          X: X,
+        }
+        "#);
     }
     #[test]
     fn string_fmt_extends_builtin() {
@@ -1597,16 +2144,32 @@ mod tests {
     export type ReadAuthorizedUser = StringFormatExtends<User, "ReadAuthorizedUser">;
     parse.buildParsers<{ User: User, ReadAuthorizedUser: ReadAuthorizedUser }>();
     "#;
-        insta::assert_snapshot!(print_types_multifile(&[("entry.ts", from)]));
-    }
+        insta::assert_snapshot!(print_types_multifile(&[("entry.ts", from)]), @r#"
+        type ReadAuthorizedUser = StringFormatExtends<StringFormat<"User">, "ReadAuthorizedUser">;
 
+        type User = StringFormat<"User">;
+
+
+        type BuiltParsers = {
+          ReadAuthorizedUser: ReadAuthorizedUser,
+          User: User,
+        }
+        "#);
+    }
     #[test]
     fn number_fmt_builtin() {
         let from = r#"
     export type X = NumberFormat<"Rate">;
     parse.buildParsers<{ X: X }>();
     "#;
-        insta::assert_snapshot!(print_types_multifile(&[("entry.ts", from)]));
+        insta::assert_snapshot!(print_types_multifile(&[("entry.ts", from)]), @r#"
+        type X = NumberFormat<"Rate">;
+
+
+        type BuiltParsers = {
+          X: X,
+        }
+        "#);
     }
     #[test]
     fn number_fmt_extends_builtin() {
@@ -1615,7 +2178,17 @@ mod tests {
     export type Rate = NumberFormatExtends<NonInfiniteNumber, "Rate">;
     parse.buildParsers<{ NonInfiniteNumber: NonInfiniteNumber, Rate: Rate }>();
     "#;
-        insta::assert_snapshot!(print_types_multifile(&[("entry.ts", from)]));
+        insta::assert_snapshot!(print_types_multifile(&[("entry.ts", from)]), @r#"
+        type NonInfiniteNumber = NumberFormat<"NonInfiniteNumber">;
+
+        type Rate = NumberFormatExtends<NumberFormat<"NonInfiniteNumber">, "Rate">;
+
+
+        type BuiltParsers = {
+          NonInfiniteNumber: NonInfiniteNumber,
+          Rate: Rate,
+        }
+        "#);
     }
     #[test]
     fn type_ref_obj() {
@@ -1635,7 +2208,17 @@ mod tests {
                     parse.buildParsers<{ X: X, Y: Y }>();
                 "#
             )
-        ]));
+        ]), @r#"
+        type Y = { "b": number };
+
+        type X = { "a": string };
+
+
+        type BuiltParsers = {
+          X: X,
+          Y: Y,
+        }
+        "#);
     }
     #[test]
     fn interface_ref_obj() {
@@ -1655,9 +2238,18 @@ mod tests {
                     parse.buildParsers<{ X: X, Y: Y }>();
                 "#
             )
-        ]));
-    }
+        ]), @r#"
+        type Y = { "b": number };
 
+        type X = { "a": string };
+
+
+        type BuiltParsers = {
+          X: X,
+          Y: Y,
+        }
+        "#);
+    }
     #[test]
     fn interface_extends_obj() {
         insta::assert_snapshot!(print_types_multifile(&[
@@ -1677,9 +2269,18 @@ mod tests {
                     parse.buildParsers<{ X: X, Y: Y }>();
                 "#
             )
-        ]));
-    }
+        ]), @r#"
+        type Y = { "b": number, "z": boolean };
 
+        type X = { "a": string, "z": boolean };
+
+
+        type BuiltParsers = {
+          X: X,
+          Y: Y,
+        }
+        "#);
+    }
     #[test]
     fn generic_type() {
         let from = r#"
@@ -1688,7 +2289,14 @@ mod tests {
     parse.buildParsers<{ X: X }>();
 
   "#;
-        insta::assert_snapshot!(print_types(from));
+        insta::assert_snapshot!(print_types(from), @r#"
+        type X = { "a": string };
+
+
+        type BuiltParsers = {
+          X: X,
+        }
+        "#);
     }
     // #[test]
     // fn export_destructuring_array() {
