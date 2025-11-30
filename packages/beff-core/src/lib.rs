@@ -207,8 +207,44 @@ impl ModuleItemAddress {
         }
     }
 
+    fn min_file_path_that_differs(this: &BffFileName, others: &[BffFileName]) -> String {
+        let this_parts: Vec<&str> = this.as_str().split('/').collect();
+        let others_parts: Vec<Vec<&str>> = others
+            .iter()
+            .map(|it| it.as_str().split('/').collect())
+            .collect();
+
+        let mut min_index = this_parts.len();
+        for other_parts in &others_parts {
+            let mut index = 0;
+            while index < this_parts.len()
+                && index < other_parts.len()
+                && this_parts[index] == other_parts[index]
+            {
+                index += 1;
+            }
+            if index < min_index {
+                min_index = index;
+            }
+        }
+
+        this_parts[min_index..].join("/")
+    }
+
+    fn valid_ts_identifier_from_path(p: &str) -> String {
+        let mut acc = String::new();
+        for c in p.chars() {
+            if c.is_ascii_alphanumeric() || c == '_' {
+                acc.push(c);
+            } else {
+                acc.push('_');
+            }
+        }
+        acc
+    }
+
     fn ts_identifier(&self, all_names: &[&RuntypeUUID]) -> String {
-        let mut this_name_count = 0;
+        let mut has_same_name = vec![];
         for name in all_names {
             match &name.ty {
                 RuntypeName::EnumItem {
@@ -220,14 +256,14 @@ impl ModuleItemAddress {
                         continue;
                     }
                     if module_item_address.name == self.name {
-                        this_name_count += 1;
+                        has_same_name.push(module_item_address.file.clone());
                     }
                 }
                 RuntypeName::SemtypeRecursiveGenerated(_) => {}
             }
         }
 
-        if this_name_count == 0 {
+        if has_same_name.is_empty() {
             // no conflict, just print name
             return self.name.clone();
         }
@@ -235,11 +271,10 @@ impl ModuleItemAddress {
         // should be a valid typescript identifier
         format!(
             "{}__{}__{}",
-            self.file
-                .as_str()
-                .replace(".", "_")
-                .replace("/", "_")
-                .replace("-", "_"),
+            Self::valid_ts_identifier_from_path(&Self::min_file_path_that_differs(
+                &self.file,
+                &has_same_name
+            )),
             self.name,
             match self.visibility {
                 Visibility::Local => "local",

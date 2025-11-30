@@ -1130,16 +1130,16 @@ const buildParsers = (args) => {
 const RequiredStringFormats = [];
 const RequiredNumberFormats = [];
 const namedRuntypes = {
-    "_home_lucas_fluff_beff_packages_beff_wasm_fixtures_codegen_snaps_duplicate_type_src_parser_ts__User__local": new ObjectRuntype({
+    "parser_ts__User__local": new ObjectRuntype({
         "a": new TypeofRuntype("string")
     }, []),
     "UserObj": new ObjectRuntype({
-        "x": new RefRuntype("_home_lucas_fluff_beff_packages_beff_wasm_fixtures_codegen_snaps_duplicate_type_src_parser_ts__User__local")
+        "x": new RefRuntype("parser_ts__User__local")
     }, []),
-    "_home_lucas_fluff_beff_packages_beff_wasm_fixtures_codegen_snaps_duplicate_type_src_types_ts__User__local": new ObjectRuntype({
+    "types_ts__User__local": new ObjectRuntype({
         "b": new TypeofRuntype("number")
     }, []),
-    "UserList": new ArrayRuntype(new RefRuntype("_home_lucas_fluff_beff_packages_beff_wasm_fixtures_codegen_snaps_duplicate_type_src_types_ts__User__local"))
+    "UserList": new ArrayRuntype(new RefRuntype("types_ts__User__local"))
 };
 const buildParsersInput = {
     "UserObj": new RefRuntype("UserObj"),
