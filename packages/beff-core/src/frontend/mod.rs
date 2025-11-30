@@ -1482,7 +1482,7 @@ impl<'a, R: FileManager> FrontendCtx<'a, R> {
         Ok(bt)
     }
 
-    fn get_final_address_from_ts_entity_name(
+    fn get_runtype_name_from_ts_entity_name(
         &mut self,
         type_name: &TsEntityName,
         file: BffFileName,
@@ -1736,8 +1736,7 @@ impl<'a, R: FileManager> FrontendCtx<'a, R> {
             None => vec![],
         };
 
-        let fat =
-            self.get_final_address_from_ts_entity_name(type_name, file.clone(), visibility)?;
+        let fat = self.get_runtype_name_from_ts_entity_name(type_name, file.clone(), visibility)?;
         if fat.is_builtin() {
             // it won't be recursive if it's builtin, and we don't need to write it to the map too
             // TODO: it needs generic type support too, so we need to handle that later
