@@ -76,6 +76,7 @@ mod tests {
             )
         ]));
     }
+
     #[test]
     fn type_ref_reuse() {
         insta::assert_snapshot!(print_types_multifile(&[

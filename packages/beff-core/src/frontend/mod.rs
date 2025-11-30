@@ -82,27 +82,52 @@ impl TsBuiltIn {
     }
 }
 
+#[derive(Debug, Clone, PartialEq, Eq, Hash, PartialOrd, Ord)]
+pub struct TypeAddress {
+    file: BffFileName,
+    name: String,
+}
+
+impl TypeAddress {
+    pub fn to_addr(&self) -> ModuleItemAddress {
+        ModuleItemAddress {
+            file: self.file.clone(),
+            name: self.name.clone(),
+            visibility: Visibility::Local,
+        }
+    }
+}
+
 #[derive(Debug)]
 enum AddressedType {
     TsType {
         t: Rc<TsTypeAliasDecl>,
-        address: ModuleItemAddress,
+        local_address: TypeAddress,
     },
     TsInterface {
         t: Rc<TsInterfaceDecl>,
-        address: ModuleItemAddress,
+        local_address: TypeAddress,
     },
     TsEnum {
         t: Rc<TsEnumDecl>,
-        address: ModuleItemAddress,
+        local_address: TypeAddress,
     },
 }
 impl AddressedType {
     fn addr(&self) -> ModuleItemAddress {
         match self {
-            AddressedType::TsType { t: _, address } => address.clone(),
-            AddressedType::TsInterface { t: _, address } => address.clone(),
-            AddressedType::TsEnum { t: _, address } => address.clone(),
+            AddressedType::TsType {
+                t: _,
+                local_address: address,
+            } => address.to_addr(),
+            AddressedType::TsInterface {
+                t: _,
+                local_address: address,
+            } => address.to_addr(),
+            AddressedType::TsEnum {
+                t: _,
+                local_address: address,
+            } => address.to_addr(),
         }
     }
 }
@@ -335,10 +360,9 @@ impl<'a, 'b, R: FileManager> TypeModuleWalker<'a, R, AddressedType> for TypeWalk
             } => {
                 return Ok(AddressedType::TsType {
                     t: decl.clone(),
-                    address: ModuleItemAddress {
+                    local_address: TypeAddress {
                         file: original_file.clone(),
                         name: name.clone(),
-                        visibility: Visibility::Local,
                     },
                 });
             }
@@ -348,10 +372,9 @@ impl<'a, 'b, R: FileManager> TypeModuleWalker<'a, R, AddressedType> for TypeWalk
             } => {
                 return Ok(AddressedType::TsInterface {
                     t: decl.clone(),
-                    address: ModuleItemAddress {
+                    local_address: TypeAddress {
                         file: original_file.clone(),
                         name: decl.id.sym.to_string(),
-                        visibility: Visibility::Local,
                     },
                 });
             }
@@ -388,11 +411,7 @@ impl<'a, 'b, R: FileManager> TypeModuleWalker<'a, R, AddressedType> for TypeWalk
     ) -> Res<AddressedType> {
         Ok(AddressedType::TsType {
             t: ts_type.clone(),
-            address: ModuleItemAddress {
-                file,
-                name,
-                visibility: Visibility::Local,
-            },
+            local_address: TypeAddress { file, name },
         })
     }
 
@@ -409,11 +428,7 @@ impl<'a, 'b, R: FileManager> TypeModuleWalker<'a, R, AddressedType> for TypeWalk
     ) -> Res<AddressedType> {
         Ok(AddressedType::TsEnum {
             t: ts_enum.clone(),
-            address: ModuleItemAddress {
-                file,
-                name,
-                visibility: Visibility::Local,
-            },
+            local_address: TypeAddress { file, name },
         })
     }
 
@@ -425,11 +440,7 @@ impl<'a, 'b, R: FileManager> TypeModuleWalker<'a, R, AddressedType> for TypeWalk
     ) -> Res<AddressedType> {
         Ok(AddressedType::TsInterface {
             t: ts_interface.clone(),
-            address: ModuleItemAddress {
-                file,
-                name,
-                visibility: Visibility::Local,
-            },
+            local_address: TypeAddress { file, name },
         })
     }
 }
@@ -1426,7 +1437,10 @@ impl<'a, R: FileManager> FrontendCtx<'a, R> {
             RuntypeName::Address(module_item_address) => {
                 let addressed_type = self.get_addressed_type(module_item_address, span)?;
                 match addressed_type {
-                    AddressedType::TsType { t: decl, address } => {
+                    AddressedType::TsType {
+                        t: decl,
+                        local_address: address,
+                    } => {
                         let mut count = 0;
 
                         let type_params = match &decl.type_params {
@@ -1440,13 +1454,17 @@ impl<'a, R: FileManager> FrontendCtx<'a, R> {
                             self.type_application_stack.push((param, arg.clone()));
                             count += 1;
                         }
-                        let runtype = self.extract_type(&decl.type_ann, address.file.clone());
+                        let runtype =
+                            self.extract_type(&decl.type_ann, address.to_addr().file.clone());
                         for _ in 0..count {
                             self.type_application_stack.pop();
                         }
                         Ok(runtype?)
                     }
-                    AddressedType::TsInterface { t, address: _ } => {
+                    AddressedType::TsInterface {
+                        t,
+                        local_address: _,
+                    } => {
                         assert!(t.type_params.is_none(), "generic types not supported yet");
                         let runtype = self.extract_interface_decl(
                             &t,
@@ -1455,8 +1473,11 @@ impl<'a, R: FileManager> FrontendCtx<'a, R> {
                         )?;
                         Ok(runtype)
                     }
-                    AddressedType::TsEnum { t, address } => {
-                        let runtype = self.extract_enum_decl(&t, address.file.clone())?;
+                    AddressedType::TsEnum {
+                        t,
+                        local_address: address,
+                    } => {
+                        let runtype = self.extract_enum_decl(&t, address.to_addr().file.clone())?;
                         Ok(runtype)
                     }
                 }
