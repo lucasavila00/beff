@@ -145,15 +145,6 @@ const emitDiagnosticItem = (data: WasmDiagnosticItem) => {
     }
   }
   emitDiagnosticInfo(data.cause, " ".repeat(1));
-
-  const inf = data.related_information ?? [];
-  if (inf.length == 0) {
-    return;
-  }
-  inf.forEach((data) => {
-    console.error(chalk.yellow(" ".repeat(4) + "Caused by:"));
-    emitDiagnosticInfo(data, " ".repeat(5));
-  });
 };
 const emitDiagnostics = (diag: WasmDiagnostic) => {
   diag.diagnostics.forEach((data) => {

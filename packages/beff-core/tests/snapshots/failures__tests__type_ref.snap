@@ -1,0 +1,5 @@
+---
+source: packages/beff-core/tests/failures.rs
+expression: failure(from)
+---
+Diagnostic { parent_big_message: None, cause: DiagnosticInformation { message: CouldNotResolveAddressesSymbol(ModuleItemAddress { file: BffFileName("entry.ts"), name: "UserId", visibility: Local }), loc: Full(FullLocation { file_name: BffFileName("entry.ts"), loc_lo: Loc { file: SourceFile(entry.ts), line: 2, col: CharPos(33), col_display: 33 }, loc_hi: Loc { file: SourceFile(entry.ts), line: 2, col: CharPos(39), col_display: 39 }, offset_lo: 35, offset_hi: 41 }) } }

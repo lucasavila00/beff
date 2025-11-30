@@ -58,7 +58,7 @@ impl<R: FileManager> ExtractParserVisitor<'_, R> {
         Location::build(file, span, &self.current_file).to_info(msg)
     }
     fn push_error(&mut self, span: &Span, msg: DiagnosticInfoMessage) {
-        self.errors.push(self.build_error(span, msg).to_diag(None));
+        self.errors.push(self.build_error(span, msg).to_diag());
     }
 
     fn get_current_file(&mut self) -> Result<Rc<ParsedModule>> {
@@ -74,7 +74,7 @@ impl<R: FileManager> ExtractParserVisitor<'_, R> {
                             self.current_file.clone(),
                         ),
                     )
-                    .to_diag(None),
+                    .to_diag(),
                 );
                 Err(anyhow!("cannot find file: {}", self.current_file.0))
             }

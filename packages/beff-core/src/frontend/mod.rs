@@ -226,8 +226,11 @@ trait TypeModuleWalker<'a, R: FileManager + 'a, U> {
                     return self.get_addressed_item_from_import_reference(imported, span);
                 }
 
-                dbg!(&addr);
-                todo!()
+                Err(self.get_ctx().box_error(
+                    span,
+                    DiagnosticInfoMessage::CouldNotResolveAddressesSymbol(addr.clone()),
+                    addr.file.clone(),
+                ))
             }
             Visibility::Export => {
                 if addr.name == "default" {
@@ -765,7 +768,7 @@ impl<'a, R: FileManager> FrontendCtx<'a, R> {
     }
     fn push_error(&mut self, span: &Span, msg: DiagnosticInfoMessage, file_name: BffFileName) {
         self.errors
-            .push(self.build_error(span, msg, file_name).to_diag(None));
+            .push(self.build_error(span, msg, file_name).to_diag());
     }
 
     fn anyhow_error<T>(
@@ -785,7 +788,7 @@ impl<'a, R: FileManager> FrontendCtx<'a, R> {
         msg: DiagnosticInfoMessage,
         file_name: BffFileName,
     ) -> Res<T> {
-        let e = self.build_error(span, msg, file_name).to_diag(None);
+        let e = self.build_error(span, msg, file_name).to_diag();
         Err(Box::new(e))
     }
     fn box_error(
@@ -795,7 +798,7 @@ impl<'a, R: FileManager> FrontendCtx<'a, R> {
         file: BffFileName,
     ) -> Box<Diagnostic> {
         let err = self.build_error(span, msg, file);
-        err.to_diag(None).into()
+        err.to_diag().into()
     }
 
     fn get_or_fetch_adressed_file(
@@ -809,7 +812,7 @@ impl<'a, R: FileManager> FrontendCtx<'a, R> {
                 DiagnosticInfoMessage::CouldNotResolveAddressesSymbol(addr.clone()),
                 addr.file.clone(),
             ))
-            .to_diag(None)
+            .to_diag()
         })?;
         Ok(parsed_module)
     }
@@ -820,7 +823,7 @@ impl<'a, R: FileManager> FrontendCtx<'a, R> {
                 DiagnosticInfoMessage::CannotFindFileWhenConvertingToSchema(file.clone()),
                 file.clone(),
             ))
-            .to_diag(None)
+            .to_diag()
         })?;
         Ok(parsed_module)
     }
@@ -2975,7 +2978,6 @@ impl<'a, R: FileManager> FrontendCtx<'a, R> {
         Err(Diagnostic {
             parent_big_message: Some(DiagnosticParentMessage::CannotConvertToSchema),
             cause,
-            related_information: None,
         }
         .into())
     }

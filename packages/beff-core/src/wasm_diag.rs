@@ -40,7 +40,6 @@ impl WasmDiagnosticInformation {
 #[derive(Serialize, Deserialize)]
 pub struct WasmDiagnosticItem {
     cause: WasmDiagnosticInformation,
-    related_information: Option<Vec<WasmDiagnosticInformation>>,
     message: Option<String>,
 }
 #[derive(Serialize, Deserialize)]
@@ -59,11 +58,6 @@ impl WasmDiagnostic {
 fn diag_to_wasm(diag: &Diagnostic) -> WasmDiagnosticItem {
     WasmDiagnosticItem {
         cause: WasmDiagnosticInformation::from_diagnostic_info(&diag.cause),
-        related_information: diag.related_information.as_ref().map(|it| {
-            it.iter()
-                .map(WasmDiagnosticInformation::from_diagnostic_info)
-                .collect()
-        }),
         message: diag.parent_big_message.as_ref().map(|it| it.to_string()),
     }
 }

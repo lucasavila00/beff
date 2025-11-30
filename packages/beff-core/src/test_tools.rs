@@ -120,3 +120,17 @@ pub fn print_cgen(from: &str) -> String {
     }
     p.emit_code().expect("should be able to emit module")
 }
+
+pub fn failure(from: &str) -> String {
+    let p = extract_types(&[("entry.ts", from)]);
+    let errors = &p.errors;
+
+    if errors.is_empty() {
+        panic!("expected errors, but none found");
+    }
+    let mut out = String::new();
+    for err in errors {
+        out.push_str(&format!("{:?}\n", err));
+    }
+    out
+}

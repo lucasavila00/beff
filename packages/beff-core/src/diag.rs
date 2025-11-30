@@ -570,7 +570,7 @@ pub struct FullLocation {
 
 impl FullLocation {
     pub fn to_diag(self, message: DiagnosticInfoMessage) -> Diagnostic {
-        self.to_info(message).to_diag(None)
+        self.to_info(message).to_diag()
     }
     pub fn to_info(self, message: DiagnosticInfoMessage) -> DiagnosticInformation {
         DiagnosticInformation {
@@ -640,11 +640,10 @@ pub struct DiagnosticInformation {
 }
 
 impl DiagnosticInformation {
-    pub fn to_diag(self, parent_big_message: Option<DiagnosticParentMessage>) -> Diagnostic {
+    pub fn to_diag(self) -> Diagnostic {
         Diagnostic {
-            parent_big_message,
+            parent_big_message: None,
             cause: self,
-            related_information: None,
         }
     }
 }
@@ -653,7 +652,6 @@ impl DiagnosticInformation {
 pub struct Diagnostic {
     pub parent_big_message: Option<DiagnosticParentMessage>,
     pub cause: DiagnosticInformation,
-    pub related_information: Option<Vec<DiagnosticInformation>>,
 }
 
 fn span_to_loc(span: &Span, source_map: &Arc<SourceMap>, curr_file_end: BytePos) -> (Loc, Loc) {
