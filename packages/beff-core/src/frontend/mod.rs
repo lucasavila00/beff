@@ -1134,36 +1134,31 @@ impl<'a, R: FileManager> FrontendCtx<'a, R> {
         file: BffFileName,
         visibility: Visibility,
     ) -> Res<FinalTypeAddress> {
-        match type_name {
+        let addressed = match type_name {
             TsEntityName::Ident(ident) => {
                 if let Some(builtin) = self.maybe_generate_ts_builtin(&ident.sym)? {
-                    return Ok(FinalTypeAddress::TsType {
-                        addressed_type: builtin,
-                    });
+                    builtin
+                } else {
+                    let addr = ModuleItemAddress::from_ident(ident, file, visibility);
+                    self.get_addressed_type(&addr, &ident.span)?
                 }
-
-                let addr = ModuleItemAddress::from_ident(ident, file, visibility);
-                let addressed = self.get_addressed_type(&addr, &ident.span)?;
-                Ok(FinalTypeAddress::TsType {
-                    addressed_type: addressed,
-                })
             }
             TsEntityName::TsQualifiedName(ts_qualified_name) => {
-                let type_addressed = self
+                let qualified_type = self
                     .get_adressed_qualified_type_from_entity_name(&ts_qualified_name.left, file)?;
-                let new_addr = match type_addressed {
+                let new_addr = match qualified_type {
                     AddressedQualifiedType::StarImport(bff_file_name) => ModuleItemAddress {
                         file: bff_file_name,
                         name: ts_qualified_name.right.sym.to_string(),
                         visibility: Visibility::Export,
                     },
                 };
-                let out = self.get_addressed_type(&new_addr, &ts_qualified_name.span())?;
-                Ok(FinalTypeAddress::TsType {
-                    addressed_type: out,
-                })
+                self.get_addressed_type(&new_addr, &ts_qualified_name.span())?
             }
-        }
+        };
+        Ok(FinalTypeAddress::TsType {
+            addressed_type: addressed,
+        })
     }
     fn insert_definition(&mut self, addr: RuntypeName, schema: Runtype) -> Res<Runtype> {
         if let Some(Some(v)) = self.partial_validators.get(&addr) {
