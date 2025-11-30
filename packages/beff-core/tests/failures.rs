@@ -511,4 +511,83 @@ mod tests {
         ───╯
         ");
     }
+
+    #[test]
+    fn local_value_not_found() {
+        insta::assert_snapshot!(failure(r#"
+            const v = Missing;
+            export type T = typeof v;
+            parse.buildParsers<{ T: T }>();
+        "#), @r"
+        Error: Cannot resolve value 'entry.ts::Missing'
+           ╭─[entry.ts:2:24]
+           │
+         2 │             const v = Missing;
+           │                       ───┬───  
+           │                          ╰───── Cannot resolve value 'entry.ts::Missing'
+        ───╯
+        ");
+    }
+
+    #[test]
+    fn qualified_access_on_interface_in_typeof_position() {
+        insta::assert_snapshot!(failure(r#"
+            interface I { a: string }
+            export type T = typeof I.a;
+            parse.buildParsers<{ T: T }>();
+        "#), @r"
+        Error: Cannot resolve value 'entry.ts::I'
+           ╭─[entry.ts:3:37]
+           │
+         3 │             export type T = typeof I.a;
+           │                                    ┬  
+           │                                    ╰── Cannot resolve value 'entry.ts::I'
+        ───╯
+        ");
+    }
+
+    // #[test]
+    // fn typeof_import_no_qualifier() {
+    //     insta::assert_snapshot!(failure_multifile(&[
+    //         (
+    //             "t.ts",
+    //             r#"
+    //                 export const A = "a";
+    //             "#,
+    //         ),
+    //         (
+    //             "entry.ts",
+    //             r#"
+    //                 export type T = typeof import("./t");
+    //                 parse.buildParsers<{ T: T }>();
+    //             "#
+    //         )
+    //     ]), @r"");
+    // }
+
+    // #[test]
+    // fn tuple_rest_not_array() {
+    //     insta::assert_snapshot!(failure(r#"
+    //         type T = [string, ...number];
+    //         parse.buildParsers<{ T: T }>();
+    //     "#), @r"");
+    // }
+
+    // #[test]
+    // fn typeof_keyed_access_on_non_object() {
+    //     insta::assert_snapshot!(failure(r#"
+    //         const A = 1;
+    //         export type T = typeof A["a"];
+    //         parse.buildParsers<{ T: T }>();
+    //     "#), @r"");
+    // }
+
+    // #[test]
+    // fn typeof_keyed_access_missing_key() {
+    //     insta::assert_snapshot!(failure(r#"
+    //         const A = { x: 1 };
+    //         export type T = typeof A["y"];
+    //         parse.buildParsers<{ T: T }>();
+    //     "#), @r"");
+    // }
 }

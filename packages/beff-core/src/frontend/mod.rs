@@ -918,13 +918,8 @@ impl<'a, R: FileManager> FrontendCtx<'a, R> {
     fn extract_object_from_runtype(
         &mut self,
         obj: &Runtype,
-        span: &Span,
-        file: BffFileName,
+        anchor: &Anchor,
     ) -> Res<BTreeMap<String, Optionality<Runtype>>> {
-        let anchor = Anchor {
-            f: file.clone(),
-            s: *span,
-        };
         match obj {
             Runtype::Object {
                 vs,
@@ -940,7 +935,7 @@ impl<'a, R: FileManager> FrontendCtx<'a, R> {
                     .and_then(|it| it.as_ref())
                     .cloned();
                 match map {
-                    Some(schema) => self.extract_object_from_runtype(&schema, span, file.clone()),
+                    Some(schema) => self.extract_object_from_runtype(&schema, anchor),
                     None => self.error(
                         &anchor,
                         DiagnosticInfoMessage::ShouldHaveObjectAsTypeArgument,
@@ -951,7 +946,7 @@ impl<'a, R: FileManager> FrontendCtx<'a, R> {
                 let mut acc = BTreeMap::new();
 
                 for v in vs {
-                    let extracted = self.extract_object_from_runtype(v, span, file.clone())?;
+                    let extracted = self.extract_object_from_runtype(v, anchor)?;
 
                     // check that if items have the same key, they have the same value
 
@@ -1001,8 +996,7 @@ impl<'a, R: FileManager> FrontendCtx<'a, R> {
                             name: id.sym.to_string(),
                         };
                         let rt_name = RuntypeName::Address(addr.clone());
-                        let id_ty =
-                            self.extract_addressed_type(&rt_name, vec![], &it.span, file.clone())?;
+                        let id_ty = self.extract_addressed_type(&rt_name, vec![], &anchor)?;
 
                         vs.push(id_ty);
                     }
@@ -1021,6 +1015,10 @@ impl<'a, R: FileManager> FrontendCtx<'a, R> {
         type_args: Vec<Runtype>,
         file: BffFileName,
     ) -> Res<Runtype> {
+        let anchor = Anchor {
+            f: file.clone(),
+            s: typ.span,
+        };
         assert!(
             typ.type_params.is_none(),
             "generic interfaces not supported yet"
@@ -1040,7 +1038,7 @@ impl<'a, R: FileManager> FrontendCtx<'a, R> {
         } else {
             let ext = self.extract_interface_extends(&typ.extends, file.clone())?;
             let merged = Runtype::all_of(ext.into_iter().chain(std::iter::once(r?)).collect());
-            let res = self.extract_object_from_runtype(&merged, &typ.span, file.clone());
+            let res = self.extract_object_from_runtype(&merged, &anchor);
             match res {
                 Ok(vs) => Ok(Runtype::object(vs.into_iter().collect())),
                 Err(_) => Ok(merged),
@@ -1092,15 +1090,10 @@ impl<'a, R: FileManager> FrontendCtx<'a, R> {
     }
     fn convert_pick(
         &mut self,
-        span: &Span,
         obj: &BTreeMap<String, Optionality<Runtype>>,
         keys: Runtype,
-        file_name: BffFileName,
+        anchor: &Anchor,
     ) -> Res<Runtype> {
-        let anchor = Anchor {
-            f: file_name.clone(),
-            s: *span,
-        };
         match keys.extract_single_string_const() {
             Some(str) => Ok(Self::convert_pick_keys(obj, vec![str])),
             None => match keys {
@@ -1160,15 +1153,10 @@ impl<'a, R: FileManager> FrontendCtx<'a, R> {
 
     fn convert_omit(
         &mut self,
-        span: &Span,
         obj: &BTreeMap<String, Optionality<Runtype>>,
         keys: Runtype,
-        file_name: BffFileName,
+        anchor: &Anchor,
     ) -> Res<Runtype> {
-        let anchor = Anchor {
-            f: file_name.clone(),
-            s: *span,
-        };
         let keys = self
             .extract_union(keys)
             .map_err(|e| self.box_error(&anchor, e))?;
@@ -1189,13 +1177,8 @@ impl<'a, R: FileManager> FrontendCtx<'a, R> {
         &mut self,
         runtype_name: &RuntypeName,
         type_args: Vec<Runtype>,
-        span: &Span,
-        file: BffFileName,
+        anchor: &Anchor,
     ) -> Res<Runtype> {
-        let anchor = Anchor {
-            f: file.clone(),
-            s: *span,
-        };
         match runtype_name {
             RuntypeName::Address(module_item_address) => {
                 let addressed_type =
@@ -1272,17 +1255,13 @@ impl<'a, R: FileManager> FrontendCtx<'a, R> {
                         DiagnosticInfoMessage::InvalidNumberOfTypeParametersForArray,
                     ),
                 },
-                TsBuiltIn::StringFormat => {
-                    self.get_string_with_format(&type_args, span, file.clone())
-                }
+                TsBuiltIn::StringFormat => self.get_string_with_format(&type_args, &anchor),
                 TsBuiltIn::StringFormatExtends => {
-                    self.get_string_format_extends(&type_args, span, file.clone())
+                    self.get_string_format_extends(&type_args, anchor)
                 }
-                TsBuiltIn::NumberFormat => {
-                    self.get_number_with_format(&type_args, span, file.clone())
-                }
+                TsBuiltIn::NumberFormat => self.get_number_with_format(&type_args, anchor),
                 TsBuiltIn::NumberFormatExtends => {
-                    self.get_number_format_extends(&type_args, span, file.clone())
+                    self.get_number_format_extends(&type_args, anchor)
                 }
                 TsBuiltIn::Object => Ok(Runtype::any_object()),
 
@@ -1337,8 +1316,8 @@ impl<'a, R: FileManager> FrontendCtx<'a, R> {
                 }
                 TsBuiltIn::Pick => match type_args.as_slice() {
                     [obj, keys] => {
-                        let vs = self.extract_object_from_runtype(obj, span, file.clone())?;
-                        self.convert_pick(span, &vs, keys.clone(), file.clone())
+                        let vs = self.extract_object_from_runtype(obj, anchor)?;
+                        self.convert_pick(&vs, keys.clone(), anchor)
                     }
                     _ => self.error(
                         &anchor,
@@ -1347,8 +1326,8 @@ impl<'a, R: FileManager> FrontendCtx<'a, R> {
                 },
                 TsBuiltIn::Omit => match type_args.as_slice() {
                     [obj, keys] => {
-                        let vs = self.extract_object_from_runtype(obj, span, file.clone())?;
-                        self.convert_omit(span, &vs, keys.clone(), file.clone())
+                        let vs = self.extract_object_from_runtype(obj, anchor)?;
+                        self.convert_omit(&vs, keys.clone(), anchor)
                     }
                     _ => self.error(
                         &anchor,
@@ -1392,7 +1371,7 @@ impl<'a, R: FileManager> FrontendCtx<'a, R> {
                             )
                         })?;
                         let res = self
-                            .semtype_to_runtype(subtracted_ty, &mut ctx, span, file.clone())?
+                            .semtype_to_runtype(subtracted_ty, &mut ctx, &anchor)?
                             .remove_nots_of_intersections_and_empty_of_union(
                                 &validators_reference_vec,
                                 &mut ctx,
@@ -1412,7 +1391,7 @@ impl<'a, R: FileManager> FrontendCtx<'a, R> {
                 },
                 TsBuiltIn::Required => match type_args.as_slice() {
                     [obj] => {
-                        let vs = self.extract_object_from_runtype(obj, span, file.clone())?;
+                        let vs = self.extract_object_from_runtype(obj, &anchor)?;
                         Ok(self.convert_required(&vs))
                     }
                     _ => self.error(
@@ -1422,7 +1401,7 @@ impl<'a, R: FileManager> FrontendCtx<'a, R> {
                 },
                 TsBuiltIn::Partial => match type_args.as_slice() {
                     [obj] => {
-                        let vs = self.extract_object_from_runtype(obj, span, file.clone())?;
+                        let vs = self.extract_object_from_runtype(obj, &anchor)?;
                         Ok(self.convert_partial(&vs))
                     }
                     _ => self.error(
@@ -1555,16 +1534,7 @@ impl<'a, R: FileManager> FrontendCtx<'a, R> {
         Ok(Runtype::Ref(addr))
     }
 
-    fn get_string_with_format(
-        &mut self,
-        type_args: &[Runtype],
-        span: &Span,
-        file: BffFileName,
-    ) -> Res<Runtype> {
-        let anchor = Anchor {
-            f: file.clone(),
-            s: *span,
-        };
+    fn get_string_with_format(&mut self, type_args: &[Runtype], anchor: &Anchor) -> Res<Runtype> {
         if let [head] = type_args
             && let Some(value) = head.as_string_const()
         {
@@ -1583,13 +1553,8 @@ impl<'a, R: FileManager> FrontendCtx<'a, R> {
     fn get_string_format_base_formats(
         &mut self,
         schema: &Runtype,
-        span: &Span,
-        file: BffFileName,
+        anchor: &Anchor,
     ) -> Res<(String, Vec<String>)> {
-        let anchor = Anchor {
-            f: file.clone(),
-            s: *span,
-        };
         match schema {
             Runtype::StringWithFormat(CustomFormat(first, rest)) => {
                 Ok((first.clone(), rest.clone()))
@@ -1599,7 +1564,7 @@ impl<'a, R: FileManager> FrontendCtx<'a, R> {
 
                 let v = v.and_then(|it| it.clone());
                 if let Some(v) = v {
-                    self.get_string_format_base_formats(&v, span, file)
+                    self.get_string_format_base_formats(&v, anchor)
                 } else {
                     self.error(
                         &anchor,
@@ -1617,20 +1582,14 @@ impl<'a, R: FileManager> FrontendCtx<'a, R> {
     fn get_string_format_extends(
         &mut self,
         type_params: &[Runtype],
-        span: &Span,
-        file: BffFileName,
+        anchor: &Anchor,
     ) -> Res<Runtype> {
-        let anchor = Anchor {
-            f: file.clone(),
-            s: *span,
-        };
         if let [base, next_str] = type_params
             && let Some(value) = next_str.as_string_const()
         {
             let next_str = value.to_string();
             if self.settings.string_formats.contains(&next_str) {
-                let (first, mut rest) =
-                    self.get_string_format_base_formats(base, span, file.clone())?;
+                let (first, mut rest) = self.get_string_format_base_formats(base, anchor)?;
                 rest.push(next_str);
                 return Ok(Runtype::StringWithFormat(CustomFormat(first, rest)));
             } else {
@@ -1642,16 +1601,7 @@ impl<'a, R: FileManager> FrontendCtx<'a, R> {
             DiagnosticInfoMessage::InvalidUsageOfStringFormatExtendsTypeParameter,
         )
     }
-    fn get_number_with_format(
-        &mut self,
-        type_args: &[Runtype],
-        span: &Span,
-        file: BffFileName,
-    ) -> Res<Runtype> {
-        let anchor = Anchor {
-            f: file.clone(),
-            s: *span,
-        };
+    fn get_number_with_format(&mut self, type_args: &[Runtype], anchor: &Anchor) -> Res<Runtype> {
         if let [head] = type_args
             && let Some(value) = head.as_string_const()
         {
@@ -1670,13 +1620,8 @@ impl<'a, R: FileManager> FrontendCtx<'a, R> {
     fn get_number_format_base_formats(
         &mut self,
         schema: &Runtype,
-        span: &Span,
-        file: BffFileName,
+        anchor: &Anchor,
     ) -> Res<(String, Vec<String>)> {
-        let anchor = Anchor {
-            f: file.clone(),
-            s: *span,
-        };
         match schema {
             Runtype::NumberWithFormat(CustomFormat(first, rest)) => {
                 Ok((first.clone(), rest.clone()))
@@ -1686,7 +1631,7 @@ impl<'a, R: FileManager> FrontendCtx<'a, R> {
 
                 let v = v.and_then(|it| it.clone());
                 if let Some(v) = v {
-                    self.get_number_format_base_formats(&v, span, file.clone())
+                    self.get_number_format_base_formats(&v, anchor)
                 } else {
                     self.error(
                         &anchor,
@@ -1703,20 +1648,14 @@ impl<'a, R: FileManager> FrontendCtx<'a, R> {
     fn get_number_format_extends(
         &mut self,
         type_params: &[Runtype],
-        span: &Span,
-        file: BffFileName,
+        anchor: &Anchor,
     ) -> Res<Runtype> {
-        let anchor = Anchor {
-            f: file.clone(),
-            s: *span,
-        };
         if let [base, next_str] = type_params
             && let Some(value) = next_str.as_string_const()
         {
             let next_str = value.to_string();
             if self.settings.number_formats.contains(&next_str) {
-                let (first, mut rest) =
-                    self.get_number_format_base_formats(base, span, file.clone())?;
+                let (first, mut rest) = self.get_number_format_base_formats(base, anchor)?;
                 rest.push(next_str);
                 return Ok(Runtype::NumberWithFormat(CustomFormat(first, rest)));
             } else {
@@ -1761,7 +1700,7 @@ impl<'a, R: FileManager> FrontendCtx<'a, R> {
             self.get_runtype_name_from_ts_entity_name(type_name, file.clone(), visibility, anchor)?;
         if fat.is_builtin() {
             // it won't be recursive if it's builtin, and we don't need to write it's definition
-            return self.extract_addressed_type(&fat, type_args, &type_name.span(), file.clone());
+            return self.extract_addressed_type(&fat, type_args, anchor);
         }
         let rt_uuid = RuntypeUUID {
             ty: fat.clone(),
@@ -1776,7 +1715,7 @@ impl<'a, R: FileManager> FrontendCtx<'a, R> {
         }
         self.partial_validators.insert(rt_uuid.clone(), None);
 
-        let ty = self.extract_addressed_type(&fat, type_args, &type_name.span(), file.clone());
+        let ty = self.extract_addressed_type(&fat, type_args, anchor);
         match ty {
             // Ok(ty) => match ts_type_args {
             //     None => self.insert_definition(rt_uuid.clone(), ty),
@@ -2152,7 +2091,7 @@ impl<'a, R: FileManager> FrontendCtx<'a, R> {
                 let access_st: Rc<SemType> = ctx.indexed_access(st, key).map_err(|e| {
                     self.box_error(&anchor, DiagnosticInfoMessage::AnyhowError(e.to_string()))
                 })?;
-                self.semtype_to_runtype(access_st, &mut ctx, &m.prop.span(), file.clone())
+                self.semtype_to_runtype(access_st, &mut ctx, &anchor)
             }
             Expr::Arrow(_a) => Ok(Runtype::Function),
             Expr::Bin(e) => {
@@ -2261,7 +2200,7 @@ impl<'a, R: FileManager> FrontendCtx<'a, R> {
                 DiagnosticInfoMessage::KeyedAccessResultsInNeverType,
             );
         }
-        self.semtype_to_runtype(access_st, &mut ctx, &key.span, file)
+        self.semtype_to_runtype(access_st, &mut ctx, &anchor)
     }
 
     fn extract_value_from_ts_qualified_name(
@@ -2386,7 +2325,27 @@ impl<'a, R: FileManager> FrontendCtx<'a, R> {
                         &anchor,
                     );
                 }
-                None => todo!(),
+                None => {
+                    let new_addr = ModuleItemAddress {
+                        file: resolved.clone(),
+                        name: "default".to_string(),
+                        visibility: Visibility::Export,
+                    };
+                    let resolved_addr = self.get_addressed_type(&new_addr, &anchor)?;
+                    let type_args = match &import_type.type_args {
+                        Some(its) => {
+                            let mut args = vec![];
+                            for ty in &its.params {
+                                let arg_ty = self.extract_type(ty, resolved.clone())?;
+                                args.push(arg_ty);
+                            }
+                            args
+                        }
+                        None => vec![],
+                    };
+                    let rt_name = RuntypeName::Address(resolved_addr.type_address());
+                    return self.extract_addressed_type(&rt_name, type_args, &anchor);
+                }
             }
         };
         todo!()
@@ -2577,13 +2536,8 @@ impl<'a, R: FileManager> FrontendCtx<'a, R> {
         &mut self,
         access_st: Rc<SemType>,
         ctx: &mut SemTypeContext,
-        span: &Span,
-        file: BffFileName,
+        anchor: &Anchor,
     ) -> Res<Runtype> {
-        let anchor = Anchor {
-            f: file.clone(),
-            s: *span,
-        };
         if access_st.is_empty(ctx).map_err(|e| {
             self.box_error(&anchor, DiagnosticInfoMessage::AnyhowError(e.to_string()))
         })? {
@@ -2592,9 +2546,10 @@ impl<'a, R: FileManager> FrontendCtx<'a, R> {
         let (head, tail) = semtype_to_runtypes(
             ctx,
             &access_st,
+            // TODO: do we need this?
             &RuntypeUUID {
                 ty: RuntypeName::Address(TypeAddress {
-                    file: file.clone(),
+                    file: anchor.f.clone(),
                     name: "AnyName".into(),
                 }),
                 type_arguments: vec![],
@@ -2713,7 +2668,7 @@ impl<'a, R: FileManager> FrontendCtx<'a, R> {
         let access_st: Rc<SemType> = ctx.indexed_access(obj_st, idx_st).map_err(|e| {
             self.box_error(&anchor, DiagnosticInfoMessage::AnyhowError(e.to_string()))
         })?;
-        self.semtype_to_runtype(access_st, &mut ctx, &i.span(), file.clone())
+        self.semtype_to_runtype(access_st, &mut ctx, &anchor)
     }
     fn convert_keyof(&mut self, k: &TsType, file_name: BffFileName) -> Res<Runtype> {
         let anchor = Anchor {
@@ -2722,8 +2677,7 @@ impl<'a, R: FileManager> FrontendCtx<'a, R> {
         };
         let json_schema = self.extract_type(k, file_name.clone())?;
 
-        let object_extracted =
-            self.extract_object_from_runtype(&json_schema, &k.span(), file_name.clone());
+        let object_extracted = self.extract_object_from_runtype(&json_schema, &anchor);
         if let Ok(object_schema) = object_extracted {
             let keys = object_schema.keys();
             let mut vs = vec![];
@@ -2745,7 +2699,7 @@ impl<'a, R: FileManager> FrontendCtx<'a, R> {
             self.box_error(&anchor, DiagnosticInfoMessage::AnyhowError(e.to_string()))
         })?;
 
-        self.semtype_to_runtype(keyof_st, &mut ctx, &k.span(), file_name.clone())
+        self.semtype_to_runtype(keyof_st, &mut ctx, &anchor)
     }
     fn convert_mapped_type(&mut self, k: &TsMappedType, file_name: BffFileName) -> Res<Runtype> {
         let anchor = Anchor {

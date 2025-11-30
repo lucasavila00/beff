@@ -225,4 +225,57 @@ mod tests {
         }
         ");
     }
+    #[test]
+    fn import_default_type() {
+        insta::assert_snapshot!(print_types_multifile(&[
+            (
+                "t.ts",
+                r#"
+                    export type A = string;
+                    export default A;
+                "#,
+            ),
+            (
+                "entry.ts",
+                r#"
+                    import T from "./t";
+                    parse.buildParsers<{ T: T }>();
+                "#
+            )
+        ]), @r"
+        type A = string;
+
+
+        type BuiltParsers = {
+          T: A,
+        }
+        ");
+    }
+
+    #[test]
+    fn import_type_no_qualifier() {
+        insta::assert_snapshot!(print_types_multifile(&[
+            (
+                "t.ts",
+                r#"
+                    export type A = string;
+                    export default A;
+                "#,
+            ),
+            (
+                "entry.ts",
+                r#"
+                    type T = import("./t");
+                    parse.buildParsers<{ T: T }>();
+                "#
+            )
+        ]), @r"
+        type T = string;
+
+
+        type BuiltParsers = {
+          T: T,
+        }
+        ");
+    }
 }
