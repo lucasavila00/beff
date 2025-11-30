@@ -2298,6 +2298,65 @@ mod tests {
         }
         "#);
     }
+    #[test]
+    fn interface_export() {
+        insta::assert_snapshot!(print_types_multifile(&[
+            //
+            (
+                "t.ts",
+                r#"
+                    export interface I { a: string; }
+                "#,
+            ),
+            (
+                "entry.ts",
+                r#"
+                    import { I } from "./t";
+                    type X = I;
+                    parse.buildParsers<{ X: X }>();
+                "#
+            )
+        ]), @r#"
+        type X = I;
+
+        type I = { "a": string };
+
+
+        type BuiltParsers = {
+          X: X,
+        }
+        "#);
+    }
+
+    #[test]
+    fn enum_export() {
+        insta::assert_snapshot!(print_types_multifile(&[
+            //
+            (
+                "t.ts",
+                r#"
+                    export enum E { A = "a" }
+                "#,
+            ),
+            (
+                "entry.ts",
+                r#"
+                    import { E } from "./t";
+                    type X = E;
+                    parse.buildParsers<{ X: X }>();
+                "#
+            )
+        ]), @r#"
+        type X = E;
+
+        type E = "a";
+
+
+        type BuiltParsers = {
+          X: X,
+        }
+        "#);
+    }
     // #[test]
     // fn export_destructuring_array() {
     //     insta::assert_snapshot!(print_types_multifile(&[
@@ -2332,48 +2391,6 @@ mod tests {
     //             r#"
     //                 import { A } from "./t";
     //                 type X = typeof A;
-    //                 parse.buildParsers<{ X: X }>();
-    //             "#
-    //         )
-    //     ]));
-    // }
-
-    // #[test]
-    // fn interface_export() {
-    //     insta::assert_snapshot!(print_types_multifile(&[
-    //         //
-    //         (
-    //             "t.ts",
-    //             r#"
-    //                 export interface I { a: string; }
-    //             "#,
-    //         ),
-    //         (
-    //             "entry.ts",
-    //             r#"
-    //                 import { I } from "./t";
-    //                 type X = I;
-    //                 parse.buildParsers<{ X: X }>();
-    //             "#
-    //         )
-    //     ]));
-    // }
-
-    // #[test]
-    // fn enum_export() {
-    //     insta::assert_snapshot!(print_types_multifile(&[
-    //         //
-    //         (
-    //             "t.ts",
-    //             r#"
-    //                 export enum E { A = "a" }
-    //             "#,
-    //         ),
-    //         (
-    //             "entry.ts",
-    //             r#"
-    //                 import { E } from "./t";
-    //                 type X = E;
     //                 parse.buildParsers<{ X: X }>();
     //             "#
     //         )
