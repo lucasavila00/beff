@@ -207,11 +207,11 @@ impl ModuleItemAddress {
         }
     }
 
-    fn min_file_path_that_differs(this: &BffFileName, others: &[BffFileName]) -> String {
+    fn min_file_path_that_differs(this: &BffFileName, others: &[ModuleItemAddress]) -> String {
         let this_parts: Vec<&str> = this.as_str().split('/').collect();
         let others_parts: Vec<Vec<&str>> = others
             .iter()
-            .map(|it| it.as_str().split('/').collect())
+            .map(|it| it.file.as_str().split('/').collect())
             .collect();
 
         let mut min_index = this_parts.len();
@@ -256,7 +256,7 @@ impl ModuleItemAddress {
                         continue;
                     }
                     if module_item_address.name == self.name {
-                        has_same_name.push(module_item_address.file.clone());
+                        has_same_name.push(module_item_address.clone());
                     }
                 }
                 RuntypeName::SemtypeRecursiveGenerated(_) => {}
@@ -269,18 +269,27 @@ impl ModuleItemAddress {
         }
 
         // should be a valid typescript identifier
-        format!(
-            "{}__{}__{}",
+        let acc = format!(
+            "{}__{}",
             Self::valid_ts_identifier_from_path(&Self::min_file_path_that_differs(
                 &self.file,
                 &has_same_name
             )),
-            self.name,
+            self.name
+        );
+
+        let visibility_matters = has_same_name
+            .iter()
+            .any(|it| it.file == self.file && it.visibility != self.visibility);
+
+        if visibility_matters {
             match self.visibility {
-                Visibility::Local => "local",
-                Visibility::Export => "export",
+                Visibility::Local => acc + "__local",
+                Visibility::Export => acc + "__export",
             }
-        )
+        } else {
+            acc
+        }
     }
 
     fn diag_print(&self) -> String {

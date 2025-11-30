@@ -1130,16 +1130,16 @@ const buildParsers = (args) => {
 const RequiredStringFormats = [];
 const RequiredNumberFormats = [];
 const namedRuntypes = {
-    "parser_ts__User__local": new ObjectRuntype({
+    "parser_ts__User": new ObjectRuntype({
         "a": new TypeofRuntype("string")
     }, []),
     "UserObj": new ObjectRuntype({
-        "x": new RefRuntype("parser_ts__User__local")
+        "x": new RefRuntype("parser_ts__User")
     }, []),
-    "types_ts__User__local": new ObjectRuntype({
+    "types_ts__User": new ObjectRuntype({
         "b": new TypeofRuntype("number")
     }, []),
-    "UserList": new ArrayRuntype(new RefRuntype("types_ts__User__local"))
+    "UserList": new ArrayRuntype(new RefRuntype("types_ts__User"))
 };
 const buildParsersInput = {
     "UserObj": new RefRuntype("UserObj"),

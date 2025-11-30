@@ -179,6 +179,38 @@ mod tests {
             )
         ]));
     }
+    #[test]
+    fn type_ref_multifile_same_name_visibility_collision() {
+        insta::assert_snapshot!(print_types_multifile(&[
+            //
+            (
+                "t1.ts",
+                r#"
+                    type X = string;
+                    export type Z = X[];
+                    type Y = number;
+                    export { Y as X };
+                "#,
+            ),
+            (
+                "t2.ts",
+                r#"
+                    type X = boolean;
+                    export type Z = X[];
+                    type Y = null;
+                    export { Y as X };
+                "#,
+            ),
+            (
+                "entry.ts",
+                r#"
+                    import { X, Z } from "./t1";
+                    import { X as X2, Z as Z2 } from "./t2";
+                    parse.buildParsers<{ X: X, Z: Z, X2: X2, Z2: Z2 }>();
+                "#
+            )
+        ]));
+    }
 
     #[test]
     fn typeof_multifile() {
