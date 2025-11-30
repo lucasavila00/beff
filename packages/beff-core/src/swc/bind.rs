@@ -7,7 +7,7 @@ use crate::SymbolExport;
 use crate::SymbolExportDefault;
 use crate::SymbolsExportsModule;
 use crate::UnresolvedExport;
-use crate::parse::parse_with_swc;
+use crate::swc::parse::parse_with_swc;
 use anyhow::Result;
 use std::collections::HashMap;
 use std::rc::Rc;

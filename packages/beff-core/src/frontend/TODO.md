@@ -1,1 +1,0 @@
-- [ ] store named types with names, handle recursion with this approach

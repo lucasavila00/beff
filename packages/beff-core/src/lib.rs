@@ -1,11 +1,10 @@
 pub mod ast;
 pub mod diag;
 pub mod frontend;
-pub mod import_resolver;
-pub mod parse;
 pub mod parser_extractor;
 pub mod print;
 pub mod subtyping;
+pub mod swc;
 pub mod wasm_diag;
 
 use crate::ast::runtype::DebugPrintCtx;
