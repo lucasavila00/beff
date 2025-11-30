@@ -327,50 +327,74 @@ mod tests {
         ");
     }
 
-    // #[test]
-    // fn qualified_access_on_type_in_typeof_position() {
-    //     insta::assert_snapshot!(failure(r#"
-    //         type A = { b: string };
-    //         export type T = typeof A.b;
-    //         parse.buildParsers<{ T: T }>();
-    //     "#), @r"");
-    // }
+    #[test]
+    fn qualified_access_on_type_in_typeof_position() {
+        insta::assert_snapshot!(failure(r#"
+            type A = { b: string };
+            export type T = typeof A.b;
+            parse.buildParsers<{ T: T }>();
+        "#), @r"
+        Error: Cannot resolve value 'entry.ts::A'
+           ╭─[entry.ts:3:37]
+           │
+         3 │             export type T = typeof A.b;
+           │                                    ┬  
+           │                                    ╰── Cannot resolve value 'entry.ts::A'
+        ───╯
+        ");
+    }
 
-    // #[test]
-    // fn import_type_missing_named() {
-    //     insta::assert_snapshot!(failure_multifile(&[
-    //         (
-    //             "t.ts",
-    //             r#"
-    //                 export type A = string;
-    //             "#,
-    //         ),
-    //         (
-    //             "entry.ts",
-    //             r#"
-    //                 export type T = import("./t").B;
-    //                 parse.buildParsers<{ T: T }>();
-    //             "#
-    //         )
-    //     ]), @r"");
-    // }
+    #[test]
+    fn import_type_missing_named() {
+        insta::assert_snapshot!(failure_multifile(&[
+            (
+                "t.ts",
+                r#"
+                    export type A = string;
+                "#,
+            ),
+            (
+                "entry.ts",
+                r#"
+                    export type T = import("./t").B;
+                    parse.buildParsers<{ T: T }>();
+                "#
+            )
+        ]), @r#"
+        Error: Cannot resolve type 't.ts::B'
+           ╭─[entry.ts:2:38]
+           │
+         2 │                     export type T = import("./t").B;
+           │                                     ───────┬───────  
+           │                                            ╰───────── Cannot resolve type 't.ts::B'
+        ───╯
+        "#);
+    }
 
-    // #[test]
-    // fn import_type_on_value() {
-    //     insta::assert_snapshot!(failure_multifile(&[
-    //         (
-    //             "t.ts",
-    //             r#"
-    //                 export const A = 1;
-    //             "#,
-    //         ),
-    //         (
-    //             "entry.ts",
-    //             r#"
-    //                 export type T = import("./t").A;
-    //                 parse.buildParsers<{ T: T }>();
-    //             "#
-    //         )
-    //     ]), @r"");
-    // }
+    #[test]
+    fn import_type_on_value() {
+        insta::assert_snapshot!(failure_multifile(&[
+            (
+                "t.ts",
+                r#"
+                    export const A = 1;
+                "#,
+            ),
+            (
+                "entry.ts",
+                r#"
+                    export type T = import("./t").A;
+                    parse.buildParsers<{ T: T }>();
+                "#
+            )
+        ]), @r#"
+        Error: Cannot resolve type 't.ts::A'
+           ╭─[entry.ts:2:38]
+           │
+         2 │                     export type T = import("./t").A;
+           │                                     ───────┬───────  
+           │                                            ╰───────── Cannot resolve type 't.ts::A'
+        ───╯
+        "#);
+    }
 }

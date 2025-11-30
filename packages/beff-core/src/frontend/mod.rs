@@ -249,8 +249,11 @@ trait TypeModuleWalker<'a, R: FileManager + 'a, U> {
                 {
                     return self.get_addressed_item_from_symbol_export(&export, err_anchor);
                 }
-                dbg!(&addr);
-                todo!()
+
+                Err(self.get_ctx().box_error(
+                    err_anchor,
+                    DiagnosticInfoMessage::CouldNotResolveType(addr.clone()),
+                ))
             }
         }
     }
@@ -592,9 +595,10 @@ trait ValueModuleWalker<'a, R: FileManager + 'a, U> {
                     }
                 }
 
-                dbg!(&addr);
-                //
-                todo!()
+                self.get_ctx().error(
+                    anchor,
+                    DiagnosticInfoMessage::CouldNotResolveValue(addr.clone()),
+                )
             }
             Visibility::Export => {
                 if addr.name == "default" {
@@ -1499,6 +1503,7 @@ impl<'a, R: FileManager> FrontendCtx<'a, R> {
         type_name: &TsEntityName,
         file: BffFileName,
         visibility: Visibility,
+        anchor: &Anchor,
     ) -> Res<RuntypeName> {
         match type_name {
             TsEntityName::Ident(ident) => {
@@ -1507,10 +1512,7 @@ impl<'a, R: FileManager> FrontendCtx<'a, R> {
                 } else {
                     let addr: ModuleItemAddress =
                         ModuleItemAddress::from_ident(ident, file, visibility);
-                    let anchor = Anchor {
-                        f: addr.file.clone(),
-                        s: ident.span,
-                    };
+
                     Ok(RuntypeName::Address(
                         self.get_addressed_type(&addr, &anchor)?.type_address(),
                     ))
@@ -1521,10 +1523,7 @@ impl<'a, R: FileManager> FrontendCtx<'a, R> {
                     &ts_qualified_name.left,
                     file.clone(),
                 )?;
-                let anchor = Anchor {
-                    f: file.clone(),
-                    s: ts_qualified_name.span(),
-                };
+
                 let new_addr = match qualified_type {
                     AddressedQualifiedType::StarImport(bff_file_name) => ModuleItemAddress {
                         file: bff_file_name,
@@ -1736,6 +1735,7 @@ impl<'a, R: FileManager> FrontendCtx<'a, R> {
         ts_type_args: &Option<Box<TsTypeParamInstantiation>>,
         file: BffFileName,
         visibility: Visibility,
+        anchor: &Anchor,
     ) -> Res<Runtype> {
         if let TsEntityName::Ident(ident) = type_name {
             for (n, t) in self.type_application_stack.iter() {
@@ -1757,7 +1757,8 @@ impl<'a, R: FileManager> FrontendCtx<'a, R> {
             None => vec![],
         };
 
-        let fat = self.get_runtype_name_from_ts_entity_name(type_name, file.clone(), visibility)?;
+        let fat =
+            self.get_runtype_name_from_ts_entity_name(type_name, file.clone(), visibility, anchor)?;
         if fat.is_builtin() {
             // it won't be recursive if it's builtin, and we don't need to write it's definition
             return self.extract_addressed_type(&fat, type_args, &type_name.span(), file.clone());
@@ -1806,7 +1807,18 @@ impl<'a, R: FileManager> FrontendCtx<'a, R> {
             span: _,
         } = ty;
 
-        self.extract_type_from_ts_entity_name(type_name, type_params, file, Visibility::Local)
+        let anchor = Anchor {
+            f: file.clone(),
+            s: ty.span,
+        };
+
+        self.extract_type_from_ts_entity_name(
+            type_name,
+            type_params,
+            file,
+            Visibility::Local,
+            &anchor,
+        )
     }
 
     fn extract_ts_keyword_type(&mut self, ty: &TsKeywordType, file: BffFileName) -> Res<Runtype> {
@@ -2355,6 +2367,11 @@ impl<'a, R: FileManager> FrontendCtx<'a, R> {
         import_type: &TsImportType,
         file: BffFileName,
     ) -> Res<Runtype> {
+        let anchor = Anchor {
+            f: file.clone(),
+            s: import_type.span,
+        };
+
         if let Some(resolved) = self
             .files
             .resolve_import(file.clone(), &import_type.arg.value)
@@ -2366,6 +2383,7 @@ impl<'a, R: FileManager> FrontendCtx<'a, R> {
                         &import_type.type_args,
                         resolved,
                         Visibility::Export,
+                        &anchor,
                     );
                 }
                 None => todo!(),
