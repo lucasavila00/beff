@@ -99,6 +99,30 @@ mod tests {
     }
 
     #[test]
+    fn export_enum() {
+        insta::assert_snapshot!(print_types_multifile(&[
+            //
+            (
+                "t1.ts",
+                r#"
+                export enum OtherEnum {
+                    A = "a",
+                    B = "b",
+                }
+
+                "#,
+            ),
+            (
+                "entry.ts",
+                r#"
+                    import { OtherEnum } from "./t1";
+                    parse.buildParsers<{ OtherEnum: OtherEnum, OtherEnumA:OtherEnum.A }>();
+                "#
+            )
+        ]));
+    }
+
+    #[test]
     fn type_ref_multifile_diff_name() {
         insta::assert_snapshot!(print_types_multifile(&[
             //

@@ -378,12 +378,17 @@ impl<'a, 'b, R: FileManager> TypeModuleWalker<'a, R, AddressedType> for TypeWalk
                     },
                 });
             }
-            SymbolExport::TsEnumDecl { .. } => {
-                // return Ok(AddressedType::TsEnumDecl(
-                //     decl.clone(),
-                //     original_file.clone(),
-                // ));
-                todo!()
+            SymbolExport::TsEnumDecl {
+                decl,
+                original_file,
+            } => {
+                return Ok(AddressedType::TsEnum {
+                    t: decl.clone(),
+                    local_address: TypeAddress {
+                        file: original_file.clone(),
+                        name: decl.id.sym.to_string(),
+                    },
+                });
             }
             SymbolExport::ValueExpr { .. } => todo!(),
             SymbolExport::ExprDecl { .. } => todo!(),
@@ -461,9 +466,18 @@ impl<'a, 'b, R: FileManager> TypeModuleWalker<'a, R, AddressedQualifiedType>
             SymbolExport::StarOfOtherFile { reference, span: _ } => {
                 return self.get_addressed_item_from_import_reference(&reference, span);
             }
+            SymbolExport::TsEnumDecl {
+                decl,
+                original_file,
+            } => {
+                return self.get_addressed_item_from_local_ts_enum(
+                    decl,
+                    original_file.clone(),
+                    decl.id.sym.to_string(),
+                );
+            }
             SymbolExport::TsType { .. } => todo!(),
             SymbolExport::TsInterfaceDecl { .. } => todo!(),
-            SymbolExport::TsEnumDecl { .. } => todo!(),
             SymbolExport::ValueExpr { .. } => todo!(),
             SymbolExport::ExprDecl { .. } => todo!(),
             SymbolExport::SomethingOfOtherFile { .. } => todo!(),
