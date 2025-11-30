@@ -2,14 +2,6 @@
 source: packages/beff-core/tests/print_parser.rs
 expression: "print_types(r#\"\n        export type A = {a: string}\n        export type B = {b: string}\n\n        export type KABC = Omit<A & B, 'a'>\n     \n        parse.buildParsers<{ KABC: KABC }>();\n      \"#)"
 ---
---- entry.ts ---
-export type A = {a: string}
-export type B = {b: string}
-
-export type KABC = Omit<A & B, 'a'>
-     
-parse.buildParsers<{ KABC: KABC }>();
---------------------------------
 type A = { "a": string };
 
 type B = { "b": string };

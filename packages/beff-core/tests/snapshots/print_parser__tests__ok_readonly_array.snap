@@ -2,13 +2,6 @@
 source: packages/beff-core/tests/print_parser.rs
 expression: "print_types(r#\"\n        type T1 = readonly string[]\n        type T2 = T1[number]\n        type T3 = ReadonlyArray<number>\n        type T4 = T3[number]\n        parse.buildParsers<{ T1: T1, T2: T2, T3: T3, T4: T4 }>();\n      \"#)"
 ---
---- entry.ts ---
-type T1 = readonly string[]
-type T2 = T1[number]
-type T3 = ReadonlyArray<number>
-type T4 = T3[number]
-parse.buildParsers<{ T1: T1, T2: T2, T3: T3, T4: T4 }>();
---------------------------------
 type T1 = Array<string>;
 
 type T2 = string;

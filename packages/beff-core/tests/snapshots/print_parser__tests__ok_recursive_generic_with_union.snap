@@ -2,20 +2,6 @@
 source: packages/beff-core/tests/print_parser.rs
 expression: "print_cgen(r#\"\n            type GenericWrapper<T> = {\n              value: T;\n              value2: T | boolean;\n              other: null | GenericWrapper<T>;\n            };\n\n            type UsesGenericWrapper = {\n              wrappedString: GenericWrapper<string>;\n              wrappedNumber: GenericWrapper<number>;\n            };\n\n            parse.buildParsers<{ UsesGenericWrapper: UsesGenericWrapper }>();\n      \"#)"
 ---
---- entry.ts ---
-type GenericWrapper<T> = {
-  value: T;
-  value2: T | boolean;
-  other: null | GenericWrapper<T>;
-};
-
-type UsesGenericWrapper = {
-  wrappedString: GenericWrapper<string>;
-  wrappedNumber: GenericWrapper<number>;
-};
-
-parse.buildParsers<{ UsesGenericWrapper: UsesGenericWrapper }>();
---------------------------------
 const direct_hoist_0 = new NullishRuntype("null");
 const direct_hoist_1 = new RefRuntype("GenericWrapper_type_application_instance_0");
 const direct_hoist_2 = new TypeofRuntype("string");

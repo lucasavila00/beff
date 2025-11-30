@@ -2,14 +2,6 @@
 source: packages/beff-core/tests/print_parser.rs
 expression: print_types(from)
 ---
---- entry.ts ---
-type User = {
-    name: string,
-    age: number,
-    email: string,
-}
-parse.buildParsers<{ A: Omit<User, 'age'> }>();
---------------------------------
 type User = { "age": number, "email": string, "name": string };
 
 

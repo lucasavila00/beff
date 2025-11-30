@@ -2,11 +2,6 @@
 source: packages/beff-core/tests/frontend_v2.rs
 expression: "print_types_multifile(&[(\"entry.ts\", from)])"
 ---
---- entry.ts ---
-export type User = StringFormat<"User">;
-export type ReadAuthorizedUser = StringFormatExtends<User, "ReadAuthorizedUser">;
-parse.buildParsers<{ User: User, ReadAuthorizedUser: ReadAuthorizedUser }>();
---------------------------------
 type ReadAuthorizedUser = StringFormatExtends<StringFormat<"User">, "ReadAuthorizedUser">;
 
 type User = StringFormat<"User">;

@@ -2,13 +2,6 @@
 source: packages/beff-core/tests/print_parser.rs
 expression: "print_types(r#\"\n\n        type MaybeUser = {\n            name?: string,\n            age?: number,\n        }\n        parse.buildParsers<{ A: Required<MaybeUser> }>();\n      \"#)"
 ---
---- entry.ts ---
-type MaybeUser = {
-    name?: string,
-    age?: number,
-}
-parse.buildParsers<{ A: Required<MaybeUser> }>();
---------------------------------
 type MaybeUser = { "age"?: number, "name"?: string };
 
 

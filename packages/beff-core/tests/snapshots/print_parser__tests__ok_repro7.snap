@@ -2,13 +2,6 @@
 source: packages/beff-core/tests/print_parser.rs
 expression: "print_types(r#\"\n        const x = (it: string) => it;\n        export const ABC = {a: `b`, c: `d${x(\"d\")}d`} as const satisfies Record<string, string>;\n        export type AllTs = (keyof typeof ABC);\n\n        parse.buildParsers<{ AllTs: AllTs }>();\n      \"#)"
 ---
---- entry.ts ---
-const x = (it: string) => it;
-export const ABC = {a: `b`, c: `d${x("d")}d`} as const satisfies Record<string, string>;
-export type AllTs = (keyof typeof ABC);
-
-parse.buildParsers<{ AllTs: AllTs }>();
---------------------------------
 type AllTs = ("a" | "c");
 
 

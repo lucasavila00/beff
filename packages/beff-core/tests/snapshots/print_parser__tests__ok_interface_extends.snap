@@ -2,16 +2,6 @@
 source: packages/beff-core/tests/print_parser.rs
 expression: "print_types(r#\"\n\n        interface User {\n            name: string,\n            age: number,\n        }\n        interface Admin extends User {\n            role: string,\n        }\n        parse.buildParsers<{ Admin: Admin }>();\n      \"#)"
 ---
---- entry.ts ---
-interface User {
-    name: string,
-    age: number,
-}
-interface Admin extends User {
-    role: string,
-}
-parse.buildParsers<{ Admin: Admin }>();
---------------------------------
 type Admin = { "age": number, "name": string, "role": string };
 
 

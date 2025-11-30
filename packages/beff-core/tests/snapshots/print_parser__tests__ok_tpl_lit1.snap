@@ -2,10 +2,6 @@
 source: packages/beff-core/tests/print_parser.rs
 expression: "print_types(r#\"\n        export type IX = `a${string}b${number}c`\n        parse.buildParsers<{ IX: IX }>();\n      \"#)"
 ---
---- entry.ts ---
-export type IX = `a${string}b${number}c`
-parse.buildParsers<{ IX: IX }>();
---------------------------------
 type IX = `a${string}b${number}c`;
 
 

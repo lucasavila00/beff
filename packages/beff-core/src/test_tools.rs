@@ -140,8 +140,6 @@ pub fn print_types(from: &str) -> String {
     }
 
     let mut out = String::new();
-    out.push_str(&print_sources(&sources));
-    out.push_str("--------------------------------\n");
 
     let ts = p.debug_print();
     out.push_str(&ts);
@@ -156,8 +154,6 @@ pub fn print_types_multifile(sources: &[(&str, &str)]) -> String {
     }
 
     let mut out = String::new();
-    out.push_str(&print_sources(&sources));
-    out.push_str("--------------------------------\n");
 
     let ts = p.debug_print();
     out.push_str(&ts);
@@ -173,8 +169,6 @@ pub fn print_cgen(from: &str) -> String {
     }
 
     let mut out = String::new();
-    out.push_str(&print_sources(&sources));
-    out.push_str("--------------------------------\n");
 
     let code = p.emit_code().expect("should be able to emit module");
     out.push_str(&code);
@@ -190,9 +184,6 @@ pub fn failure(from: &str) -> String {
         panic!("expected errors, but none found");
     }
     let mut out = String::new();
-
-    out.push_str(&print_sources(&sources));
-    out.push_str("--------------------------------\n");
 
     for err in errors {
         out.push_str(&print_diag(err, &sources));

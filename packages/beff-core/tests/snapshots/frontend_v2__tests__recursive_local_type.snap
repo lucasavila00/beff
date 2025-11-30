@@ -2,10 +2,6 @@
 source: packages/beff-core/tests/frontend_v2.rs
 expression: "print_types_multifile(&[(\"entry.ts\", from)])"
 ---
---- entry.ts ---
-export type X = { a: X };
-parse.buildParsers<{ X: X }>();
---------------------------------
 type X = { "a": X };
 
 

@@ -2,11 +2,6 @@
 source: packages/beff-core/tests/print_parser.rs
 expression: "print_types(r#\"\n        type Obj = { a: string } & {d: string}\n        type MappedKeys = keyof Obj;\n        parse.buildParsers<{ MappedKeys: MappedKeys }>();\n      \"#)"
 ---
---- entry.ts ---
-type Obj = { a: string } & {d: string}
-type MappedKeys = keyof Obj;
-parse.buildParsers<{ MappedKeys: MappedKeys }>();
---------------------------------
 type MappedKeys = ("a" | "d");
 
 type Obj = { "a": string, "d": string };

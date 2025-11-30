@@ -2,14 +2,6 @@
 source: packages/beff-core/tests/print_parser.rs
 expression: "print_types(r#\"\n        export type Mapped = {\n            [K in \"a\" | \"b\"]?: {\n                value: K;\n            };\n        };\n        parse.buildParsers<{ Mapped: Mapped }>();\n      \"#)"
 ---
---- entry.ts ---
-export type Mapped = {
-    [K in "a" | "b"]?: {
-        value: K;
-    };
-};
-parse.buildParsers<{ Mapped: Mapped }>();
---------------------------------
 type Mapped = { "a"?: { "value": "a" }, "b"?: { "value": "b" } };
 
 

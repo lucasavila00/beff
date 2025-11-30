@@ -2,15 +2,6 @@
 source: packages/beff-core/tests/print_parser.rs
 expression: "print_types(r#\"\n        type Shape =\n        | { kind: \"circle\"; radius: number }\n        | { kind: \"square\"; x: number }\n        | { kind: \"triangle\"; x: number; y: number };\n       \n        type T3 = Exclude<Shape, { kind: \"circle\" }>\n        parse.buildParsers<{ T3: T3 }>();\n      \"#)"
 ---
---- entry.ts ---
-type Shape =
-| { kind: "circle"; radius: number }
-| { kind: "square"; x: number }
-| { kind: "triangle"; x: number; y: number };
-       
-type T3 = Exclude<Shape, { kind: "circle" }>
-parse.buildParsers<{ T3: T3 }>();
---------------------------------
 type Shape = ({ "kind": "circle", "radius": number } | { "kind": "square", "x": number } | { "kind": "triangle", "x": number, "y": number });
 
 type T3 = ({ "kind": "square", "x": number } | { "kind": "triangle", "x": number, "y": number });

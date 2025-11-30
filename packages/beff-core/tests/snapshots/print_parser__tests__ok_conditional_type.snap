@@ -2,12 +2,6 @@
 source: packages/beff-core/tests/print_parser.rs
 expression: "print_types(r#\"\n        export type IX<T> = T extends true ? number : string\n        type IX2 = IX<true>\n        type IX3 = IX<false>\n        parse.buildParsers<{ IX2: IX2, IX3: IX3 }>();\n      \"#)"
 ---
---- entry.ts ---
-export type IX<T> = T extends true ? number : string
-type IX2 = IX<true>
-type IX3 = IX<false>
-parse.buildParsers<{ IX2: IX2, IX3: IX3 }>();
---------------------------------
 type IX2 = number;
 
 type IX3 = string;

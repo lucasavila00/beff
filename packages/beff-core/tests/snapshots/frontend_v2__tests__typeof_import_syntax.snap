@@ -2,12 +2,6 @@
 source: packages/beff-core/tests/frontend_v2.rs
 expression: "print_types_multifile(&[(\"t.ts\",\nr#\"\n                    export const A = \"a\" as const;\n                \"#,),\n(\"entry.ts\",\nr#\"\n                    type X = typeof import(\"./t\").A;\n                    parse.buildParsers<{ X: X }>();\n                \"#)])"
 ---
---- t.ts ---
-export const A = "a" as const;
---- entry.ts ---
-type X = typeof import("./t").A;
-parse.buildParsers<{ X: X }>();
---------------------------------
 type X = "a";
 
 

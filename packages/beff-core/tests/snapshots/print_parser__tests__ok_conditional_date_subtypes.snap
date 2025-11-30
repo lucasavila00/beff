@@ -2,14 +2,6 @@
 source: packages/beff-core/tests/print_parser.rs
 expression: "print_types(r#\"\n        type A = Date;\n        type B = string;\n        type C = A extends B ? true : false;\n        type D = B extends A ? true : false;\n        // expect C to be false and D to be false\n        parse.buildParsers<{ C: C, D: D }>();\n      \"#)"
 ---
---- entry.ts ---
-type A = Date;
-type B = string;
-type C = A extends B ? true : false;
-type D = B extends A ? true : false;
-// expect C to be false and D to be false
-parse.buildParsers<{ C: C, D: D }>();
---------------------------------
 type A = Date;
 
 type B = string;

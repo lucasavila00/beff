@@ -2,24 +2,6 @@
 source: packages/beff-core/tests/print_parser.rs
 expression: "print_cgen(r#\"\n        export type DiscriminatedUnion4 =\n            | {\n                type: \"a\";\n                a: {\n                  subType: \"a1\";\n                  a1: string;\n                };\n              }\n            | {\n                type: \"a\";\n                a: {\n                  subType: \"a2\";\n                  a2: string;\n                };\n              };\n        parse.buildParsers<{ DiscriminatedUnion4: DiscriminatedUnion4 }>();\n      \"#)"
 ---
---- entry.ts ---
-export type DiscriminatedUnion4 =
-    | {
-        type: "a";
-        a: {
-          subType: "a1";
-          a1: string;
-        };
-      }
-    | {
-        type: "a";
-        a: {
-          subType: "a2";
-          a2: string;
-        };
-      };
-parse.buildParsers<{ DiscriminatedUnion4: DiscriminatedUnion4 }>();
---------------------------------
 const direct_hoist_0 = new TypeofRuntype("string");
 const direct_hoist_1 = new ConstRuntype("a");
 const namedRuntypes = {
