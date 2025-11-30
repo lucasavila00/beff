@@ -2089,6 +2089,7 @@ impl<'a, R: FileManager> FrontendCtx<'a, R> {
                 let access_st: Rc<SemType> = ctx.indexed_access(st, key).map_err(|e| {
                     self.box_error(&anchor, DiagnosticInfoMessage::AnyhowError(e.to_string()))
                 })?;
+
                 self.semtype_to_runtype(access_st, &mut ctx, &anchor)
             }
             Expr::Arrow(_a) => Ok(Runtype::Function),
@@ -2567,6 +2568,7 @@ impl<'a, R: FileManager> FrontendCtx<'a, R> {
         &mut self,
         obj: &Runtype,
         index: &Runtype,
+        anchor: &Anchor,
     ) -> Res<Option<Runtype>> {
         // try to resolve syntatically
         match (obj, index) {
@@ -2575,7 +2577,7 @@ impl<'a, R: FileManager> FrontendCtx<'a, R> {
 
                 let v = v.and_then(|it| it.clone());
                 if let Some(v) = v {
-                    return self.convert_indexed_access_syntatically(&v, index);
+                    return self.convert_indexed_access_syntatically(&v, index, anchor);
                 }
             }
             (
@@ -2612,6 +2614,12 @@ impl<'a, R: FileManager> FrontendCtx<'a, R> {
                             return Ok(None);
                         }
                     }
+                    if acc.is_empty() {
+                        return self.error(
+                            &anchor,
+                            DiagnosticInfoMessage::KeyedAccessResultsInNeverType,
+                        );
+                    }
                     return Ok(Some(Runtype::any_of(acc)));
                 };
             }
@@ -2644,7 +2652,7 @@ impl<'a, R: FileManager> FrontendCtx<'a, R> {
         let obj = self.extract_type(&i.obj_type, file.clone())?;
         let index = self.extract_type(&i.index_type, file.clone())?;
 
-        if let Some(res) = self.convert_indexed_access_syntatically(&obj, &index)? {
+        if let Some(res) = self.convert_indexed_access_syntatically(&obj, &index, &anchor)? {
             return Ok(res);
         }
         // fallback to semantic
@@ -2666,6 +2674,13 @@ impl<'a, R: FileManager> FrontendCtx<'a, R> {
         let access_st: Rc<SemType> = ctx.indexed_access(obj_st, idx_st).map_err(|e| {
             self.box_error(&anchor, DiagnosticInfoMessage::AnyhowError(e.to_string()))
         })?;
+        if access_st.is_never() {
+            return self.error(
+                &anchor,
+                DiagnosticInfoMessage::KeyedAccessResultsInNeverType,
+            );
+        }
+
         self.semtype_to_runtype(access_st, &mut ctx, &anchor)
     }
     fn convert_keyof(&mut self, k: &TsType, file_name: BffFileName) -> Res<Runtype> {
