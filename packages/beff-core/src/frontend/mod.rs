@@ -476,11 +476,23 @@ impl<'a, 'b, R: FileManager> TypeModuleWalker<'a, R, AddressedQualifiedType>
                     decl.id.sym.to_string(),
                 );
             }
+            SymbolExport::SomethingOfOtherFile {
+                something,
+                file,
+                span,
+            } => {
+                // TODO: test this without just the JS test
+                let new_addr = ModuleItemAddress {
+                    file: file.clone(),
+                    name: something.clone(),
+                    visibility: Visibility::Export,
+                };
+                return self.get_addressed_item(&new_addr, span);
+            }
             SymbolExport::TsType { .. } => todo!(),
             SymbolExport::TsInterfaceDecl { .. } => todo!(),
             SymbolExport::ValueExpr { .. } => todo!(),
             SymbolExport::ExprDecl { .. } => todo!(),
-            SymbolExport::SomethingOfOtherFile { .. } => todo!(),
         }
     }
 
@@ -681,9 +693,13 @@ impl<'a, 'b, R: FileManager> ValueModuleWalker<'a, R, AddressedValue> for ValueW
         exports: &SymbolExport,
     ) -> Res<AddressedValue> {
         match exports {
-            SymbolExport::TsType { .. }
-            | SymbolExport::TsInterfaceDecl { .. }
-            | SymbolExport::TsEnumDecl { .. } => todo!(),
+            SymbolExport::TsType { .. } | SymbolExport::TsInterfaceDecl { .. } => todo!(),
+            SymbolExport::TsEnumDecl {
+                decl,
+                original_file,
+            } => {
+                return Ok(AddressedValue::Enum(decl.clone(), original_file.clone()));
+            }
             SymbolExport::ValueExpr {
                 expr,
                 original_file,

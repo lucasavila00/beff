@@ -1,9 +1,0 @@
-Error: This includes two different types with the same name 'User'
- /errors/duplicate-type/src/parser.ts:11:62
-    9 | };
-   10 |
- > 11 | export const Codecs = parse.buildParsers<{ UserObj: UserObj; UserList: UserList }>();
-      |                                                              ^^^^^^^^^^^^^^^^^^ This includes two different types with the same name 'User'
-   12 |
-
-Found 1 error

@@ -1134,22 +1134,6 @@ const direct_hoist_1 = new TypeofRuntype("number");
 const direct_hoist_2 = new RefRuntype("T3");
 const direct_hoist_3 = new ConstRuntype("a");
 const namedRuntypes = {
-    "T1": new ObjectRuntype({
-        "a": direct_hoist_0,
-        "b": direct_hoist_1
-    }, []),
-    "T2": new ObjectRuntype({
-        "t1": new RefRuntype("T1")
-    }, []),
-    "T3": new ObjectRuntype({
-        "t2Array": new ArrayRuntype(new RefRuntype("T2"))
-    }, []),
-    "InvalidSchemaWithDate": new ObjectRuntype({
-        "x": new DateRuntype()
-    }, []),
-    "InvalidSchemaWithBigInt": new ObjectRuntype({
-        "x": new BigIntRuntype()
-    }, []),
     "DiscriminatedUnion": new AnyOfDiscriminatedRuntype([
         new ObjectRuntype({
             "a1": direct_hoist_0,
@@ -1197,21 +1181,37 @@ const namedRuntypes = {
             "value": direct_hoist_1
         }, [])
     }),
+    "InvalidSchemaWithBigInt": new ObjectRuntype({
+        "x": new BigIntRuntype()
+    }, []),
+    "InvalidSchemaWithDate": new ObjectRuntype({
+        "x": new DateRuntype()
+    }, []),
+    "NonEmptyString": new TupleRuntype([
+        direct_hoist_0
+    ], direct_hoist_0),
     "RecursiveTree": new ObjectRuntype({
         "children": new ArrayRuntype(new RefRuntype("RecursiveTree")),
         "value": direct_hoist_1
     }, []),
-    "SemVer": new RegexRuntype(/(\d+(\.\d+)?)(\.)(\d+(\.\d+)?)(\.)(\d+(\.\d+)?)/, "`${number}.${number}.${number}`"),
-    "NonEmptyString": new TupleRuntype([
-        direct_hoist_0
-    ], direct_hoist_0),
-    "ValidCurrency": new StringWithFormatRuntype([
-        "ValidCurrency"
-    ]),
     "ReusesRef": new ObjectRuntype({
         "a": direct_hoist_2,
         "b": direct_hoist_2
-    }, [])
+    }, []),
+    "SemVer": new RegexRuntype(/(\d+(\.\d+)?)(\.)(\d+(\.\d+)?)(\.)(\d+(\.\d+)?)/, "`${number}.${number}.${number}`"),
+    "T1": new ObjectRuntype({
+        "a": direct_hoist_0,
+        "b": direct_hoist_1
+    }, []),
+    "T2": new ObjectRuntype({
+        "t1": new RefRuntype("T1")
+    }, []),
+    "T3": new ObjectRuntype({
+        "t2Array": new ArrayRuntype(new RefRuntype("T2"))
+    }, []),
+    "ValidCurrency": new StringWithFormatRuntype([
+        "ValidCurrency"
+    ])
 };
 const buildParsersInput = {
     "string": direct_hoist_0,

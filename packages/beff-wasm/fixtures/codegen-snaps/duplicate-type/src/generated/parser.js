@@ -1127,57 +1127,23 @@ const buildParsers = (args) => {
   return acc;
 };
 
-const RequiredStringFormats = ["password","StartsWithA"];
+const RequiredStringFormats = [];
 const RequiredNumberFormats = [];
-const direct_hoist_0 = new TypeofRuntype("string");
 const namedRuntypes = {
-    "A": new AnyOfConstsRuntype([
-        1,
-        2
-    ]),
-    "B": new AnyOfConstsRuntype([
-        2,
-        3
-    ]),
-    "D": new AnyOfConstsRuntype([
-        4,
-        5
-    ]),
-    "E": new AnyOfConstsRuntype([
-        5,
-        6
-    ]),
-    "NotPublic": new ObjectRuntype({
-        "a": direct_hoist_0
+    "_home_lucas_fluff_beff_packages_beff_wasm_fixtures_codegen_snaps_duplicate_type_src_parser_ts__User__local": new ObjectRuntype({
+        "a": new TypeofRuntype("string")
     }, []),
-    "Password": new StringWithFormatRuntype([
-        "password"
-    ]),
-    "StartsWithA": new StringWithFormatRuntype([
-        "StartsWithA"
-    ]),
-    "UnionNested": new AnyOfConstsRuntype([
-        1,
-        2,
-        3,
-        4,
-        5,
-        6
-    ]),
-    "User": new ObjectRuntype({
-        "age": new TypeofRuntype("number"),
-        "name": direct_hoist_0
-    }, [])
+    "UserObj": new ObjectRuntype({
+        "x": new RefRuntype("_home_lucas_fluff_beff_packages_beff_wasm_fixtures_codegen_snaps_duplicate_type_src_parser_ts__User__local")
+    }, []),
+    "_home_lucas_fluff_beff_packages_beff_wasm_fixtures_codegen_snaps_duplicate_type_src_types_ts__User__local": new ObjectRuntype({
+        "b": new TypeofRuntype("number")
+    }, []),
+    "UserList": new ArrayRuntype(new RefRuntype("_home_lucas_fluff_beff_packages_beff_wasm_fixtures_codegen_snaps_duplicate_type_src_types_ts__User__local"))
 };
 const buildParsersInput = {
-    "User": new RefRuntype("User"),
-    "Users": new ArrayRuntype(new RefRuntype("User")),
-    "NotPublicRenamed": new RefRuntype("NotPublic"),
-    "StartsWithA": new RefRuntype("StartsWithA"),
-    "Password": new RefRuntype("Password"),
-    "float": new ConstRuntype(123.456),
-    "int": new ConstRuntype(123),
-    "union": new RefRuntype("UnionNested")
+    "UserObj": new RefRuntype("UserObj"),
+    "UserList": new RefRuntype("UserList")
 };
 
 export default { buildParsers };

@@ -1127,57 +1127,37 @@ const buildParsers = (args) => {
   return acc;
 };
 
-const RequiredStringFormats = ["password","StartsWithA"];
+const RequiredStringFormats = [];
 const RequiredNumberFormats = [];
-const direct_hoist_0 = new TypeofRuntype("string");
+const direct_hoist_0 = new RefRuntype("GenericWrapper_type_application_instance_0");
+const direct_hoist_1 = new TypeofRuntype("string");
+const direct_hoist_2 = new TypeofRuntype("boolean");
+const direct_hoist_3 = new RefRuntype("GenericWrapper_type_application_instance_1");
+const direct_hoist_4 = new TypeofRuntype("number");
 const namedRuntypes = {
-    "A": new AnyOfConstsRuntype([
-        1,
-        2
-    ]),
-    "B": new AnyOfConstsRuntype([
-        2,
-        3
-    ]),
-    "D": new AnyOfConstsRuntype([
-        4,
-        5
-    ]),
-    "E": new AnyOfConstsRuntype([
-        5,
-        6
-    ]),
-    "NotPublic": new ObjectRuntype({
-        "a": direct_hoist_0
+    "GenericWrapper_type_application_instance_0": new ObjectRuntype({
+        "other": direct_hoist_0,
+        "value": direct_hoist_1,
+        "value2": new AnyOfRuntype([
+            direct_hoist_2,
+            direct_hoist_1
+        ])
     }, []),
-    "Password": new StringWithFormatRuntype([
-        "password"
-    ]),
-    "StartsWithA": new StringWithFormatRuntype([
-        "StartsWithA"
-    ]),
-    "UnionNested": new AnyOfConstsRuntype([
-        1,
-        2,
-        3,
-        4,
-        5,
-        6
-    ]),
-    "User": new ObjectRuntype({
-        "age": new TypeofRuntype("number"),
-        "name": direct_hoist_0
+    "GenericWrapper_type_application_instance_1": new ObjectRuntype({
+        "other": direct_hoist_3,
+        "value": direct_hoist_4,
+        "value2": new AnyOfRuntype([
+            direct_hoist_2,
+            direct_hoist_4
+        ])
+    }, []),
+    "UsesGenericWrapper": new ObjectRuntype({
+        "wrappedNumber": direct_hoist_3,
+        "wrappedString": direct_hoist_0
     }, [])
 };
 const buildParsersInput = {
-    "User": new RefRuntype("User"),
-    "Users": new ArrayRuntype(new RefRuntype("User")),
-    "NotPublicRenamed": new RefRuntype("NotPublic"),
-    "StartsWithA": new RefRuntype("StartsWithA"),
-    "Password": new RefRuntype("Password"),
-    "float": new ConstRuntype(123.456),
-    "int": new ConstRuntype(123),
-    "union": new RefRuntype("UnionNested")
+    "UsesGenericWrapper": new RefRuntype("UsesGenericWrapper")
 };
 
 export default { buildParsers };
