@@ -172,7 +172,7 @@ fn print_diag(it: &DiagnosticInformation, sources: &[(&str, &str)]) -> String {
             .with_label(
                 ariadne::Label::new((
                     full_location.file_name.0.to_string(),
-                    full_location.offset_lo..full_location.offset_hi,
+                    full_location.offset_lo - 1..full_location.offset_hi - 1,
                 ))
                 .with_message(it.message.to_string())
                 .with_color(ariadne::Color::Red),

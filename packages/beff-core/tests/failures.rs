@@ -12,8 +12,8 @@ mod tests {
            ╭─[entry.ts:2:35]
            │
          2 │     parse.buildParsers<{ UserId: UserId }>();
-           │                                   ───┬──  
-           │                                      ╰──── Could not resolve addressed value 'entry.ts::UserId'
+           │                                  ───┬──  
+           │                                     ╰──── Could not resolve addressed value 'entry.ts::UserId'
         ───╯
         ");
     }
@@ -38,8 +38,8 @@ mod tests {
            ╭─[t.ts:2:38]
            │
          2 │                     export type X = UserId;
-           │                                      ───┬──  
-           │                                         ╰──── Could not resolve addressed value 't.ts::UserId'
+           │                                     ───┬──  
+           │                                        ╰──── Could not resolve addressed value 't.ts::UserId'
         ───╯
         ");
     }
