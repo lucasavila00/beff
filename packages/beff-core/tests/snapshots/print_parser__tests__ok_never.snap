@@ -2,6 +2,19 @@
 source: packages/beff-core/tests/print_parser.rs
 expression: "print_types(r#\"\n        export type ABC = {}\n        export type KABC = keyof ABC\n\n        export type DEF = {\n            a: string\n        }\n        export type KDEF = keyof DEF\n\n        export type K = KABC | KDEF\n\n        parse.buildParsers<{ K: K }>();\n      \"#)"
 ---
+--- entry.ts ---
+export type ABC = {}
+export type KABC = keyof ABC
+
+export type DEF = {
+    a: string
+}
+export type KDEF = keyof DEF
+
+export type K = KABC | KDEF
+
+parse.buildParsers<{ K: K }>();
+--------------------------------
 type ABC = {  };
 
 type DEF = { "a": string };

@@ -2,6 +2,19 @@
 source: packages/beff-core/tests/frontend_v2.rs
 expression: "print_types_multifile(&[(\"a.ts\",\nr#\"\n                    export type A = \"a\";\n                \"#,),\n(\"b.ts\", r#\"\n                    export type B = \"b\";\n                \"#,),\n(\"all.ts\",\nr#\"\n                    export * from \"./a\";\n                    export * from \"./b\";\n                \"#,),\n(\"entry.ts\",\nr#\"\n                    import { A, B } from \"./all\";\n                    type X = A;\n                    type Y = B;\n                    parse.buildParsers<{ X: X, Y: Y }>();\n                \"#)])"
 ---
+--- a.ts ---
+export type A = "a";
+--- b.ts ---
+export type B = "b";
+--- all.ts ---
+export * from "./a";
+export * from "./b";
+--- entry.ts ---
+import { A, B } from "./all";
+type X = A;
+type Y = B;
+parse.buildParsers<{ X: X, Y: Y }>();
+--------------------------------
 type A = "a";
 
 type B = "b";

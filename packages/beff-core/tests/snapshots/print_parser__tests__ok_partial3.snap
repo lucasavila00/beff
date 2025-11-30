@@ -2,6 +2,16 @@
 source: packages/beff-core/tests/print_parser.rs
 expression: print_types(from)
 ---
+--- entry.ts ---
+type User2 ={enabled: boolean} &Partial< {
+    name: string,
+    age: number,
+    email: string,
+}>
+
+type ObjWithUsers = {enabled: boolean} & Partial<{a2: User2}>
+parse.buildParsers<{ A: ObjWithUsers }>();
+--------------------------------
 type ObjWithUsers = { "a2"?: User2, "enabled": boolean };
 
 type User2 = { "age"?: number, "email"?: string, "enabled": boolean, "name"?: string };

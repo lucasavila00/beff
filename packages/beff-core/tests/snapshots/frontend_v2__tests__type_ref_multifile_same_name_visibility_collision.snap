@@ -2,6 +2,21 @@
 source: packages/beff-core/tests/frontend_v2.rs
 expression: "print_types_multifile(&[(\"t1.ts\",\nr#\"\n                    type X = string;\n                    export type Z = X[];\n                    type Y = number;\n                    export { Y as X };\n                \"#,),\n(\"t2.ts\",\nr#\"\n                    type X = boolean;\n                    export type Z = X[];\n                    type Y = null;\n                    export { Y as X };\n                \"#,),\n(\"entry.ts\",\nr#\"\n                    import { X, Z } from \"./t1\";\n                    import { X as X2, Z as Z2 } from \"./t2\";\n                    parse.buildParsers<{ X: X, Z: Z, X2: X2, Z2: Z2 }>();\n                \"#)])"
 ---
+--- t1.ts ---
+type X = string;
+export type Z = X[];
+type Y = number;
+export { Y as X };
+--- t2.ts ---
+type X = boolean;
+export type Z = X[];
+type Y = null;
+export { Y as X };
+--- entry.ts ---
+import { X, Z } from "./t1";
+import { X as X2, Z as Z2 } from "./t2";
+parse.buildParsers<{ X: X, Z: Z, X2: X2, Z2: Z2 }>();
+--------------------------------
 type t1_ts__X = string;
 
 type t1_ts__Y = number;

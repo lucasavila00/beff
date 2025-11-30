@@ -21,12 +21,10 @@ swc_ecma_parser = "0.139.0"
 swc_ecma_transforms_base = "0.132.1"
 swc_ecma_visit = "0.95.0"
 swc_node_comments = "0.19.0"
+ariadne = "0.2.0"
 
 [dependencies.web-sys]
 version = "0.3"
 features = [
   "console",
 ]
-
-[dev-dependencies]
-ariadne = "0.2.0"

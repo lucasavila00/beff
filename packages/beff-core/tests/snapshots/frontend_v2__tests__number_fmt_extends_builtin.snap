@@ -2,6 +2,11 @@
 source: packages/beff-core/tests/frontend_v2.rs
 expression: "print_types_multifile(&[(\"entry.ts\", from)])"
 ---
+--- entry.ts ---
+export type NonInfiniteNumber = NumberFormat<"NonInfiniteNumber">;
+export type Rate = NumberFormatExtends<NonInfiniteNumber, "Rate">;
+parse.buildParsers<{ NonInfiniteNumber: NonInfiniteNumber, Rate: Rate }>();
+--------------------------------
 type NonInfiniteNumber = NumberFormat<"NonInfiniteNumber">;
 
 type Rate = NumberFormatExtends<NumberFormat<"NonInfiniteNumber">, "Rate">;

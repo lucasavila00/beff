@@ -2,6 +2,11 @@
 source: packages/beff-core/tests/print_parser.rs
 expression: "print_types(r#\"\n        export type Extra = Record<'a'|'b', string>;\n\n        parse.buildParsers<{ Extra: Extra }>();\n      \"#)"
 ---
+--- entry.ts ---
+export type Extra = Record<'a'|'b', string>;
+
+parse.buildParsers<{ Extra: Extra }>();
+--------------------------------
 type Extra = { "a": string, "b": string };
 
 

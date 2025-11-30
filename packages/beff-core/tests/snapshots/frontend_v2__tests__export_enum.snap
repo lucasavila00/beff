@@ -2,6 +2,15 @@
 source: packages/beff-core/tests/frontend_v2.rs
 expression: "print_types_multifile(&[(\"t1.ts\",\nr#\"\n                export enum OtherEnum {\n                    A = \"a\",\n                    B = \"b\",\n                }\n\n                \"#,),\n(\"entry.ts\",\nr#\"\n                    import { OtherEnum } from \"./t1\";\n                    parse.buildParsers<{ OtherEnum: OtherEnum, OtherEnumA:OtherEnum.A }>();\n                \"#)])"
 ---
+--- t1.ts ---
+export enum OtherEnum {
+    A = "a",
+    B = "b",
+}
+--- entry.ts ---
+import { OtherEnum } from "./t1";
+parse.buildParsers<{ OtherEnum: OtherEnum, OtherEnumA:OtherEnum.A }>();
+--------------------------------
 type OtherEnum = ("a" | "b");
 
 type OtherEnum__A = "a";

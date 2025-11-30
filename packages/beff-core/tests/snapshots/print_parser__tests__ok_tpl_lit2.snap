@@ -2,6 +2,14 @@
 source: packages/beff-core/tests/print_parser.rs
 expression: "print_types(r#\"\n        enum Abc {\n            A = \"A\",\n            B = \"B\",\n        }\n        export type IX = `${Abc}`\n        parse.buildParsers<{ IX: IX }>();\n      \"#)"
 ---
+--- entry.ts ---
+enum Abc {
+    A = "A",
+    B = "B",
+}
+export type IX = `${Abc}`
+parse.buildParsers<{ IX: IX }>();
+--------------------------------
 type Abc = ("A" | "B");
 
 type IX = `("A" | "B")`;

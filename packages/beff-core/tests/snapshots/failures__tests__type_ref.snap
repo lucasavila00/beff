@@ -2,4 +2,13 @@
 source: packages/beff-core/tests/failures.rs
 expression: failure(from)
 ---
-DiagnosticInformation { message: CouldNotResolveAddressesSymbol(ModuleItemAddress { file: BffFileName("entry.ts"), name: "UserId", visibility: Local }), loc: Full(FullLocation { file_name: BffFileName("entry.ts"), loc_lo: Loc { file: SourceFile(entry.ts), line: 2, col: CharPos(33), col_display: 33 }, loc_hi: Loc { file: SourceFile(entry.ts), line: 2, col: CharPos(39), col_display: 39 }, offset_lo: 35, offset_hi: 41 }) }
+--- entry.ts ---
+parse.buildParsers<{ UserId: UserId }>();
+--------------------------------
+Error: Could not resolve addressed value 'entry.ts::UserId'
+   ╭─[entry.ts:2:35]
+   │
+ 2 │     parse.buildParsers<{ UserId: UserId }>();
+   │                                   ───┬──  
+   │                                      ╰──── Could not resolve addressed value 'entry.ts::UserId'
+───╯

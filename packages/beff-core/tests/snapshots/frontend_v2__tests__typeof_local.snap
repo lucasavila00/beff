@@ -2,6 +2,11 @@
 source: packages/beff-core/tests/frontend_v2.rs
 expression: print_types(from)
 ---
+--- entry.ts ---
+const abc = "abc" as const;
+type X = typeof abc;
+parse.buildParsers<{ X: X }>();
+--------------------------------
 type X = "abc";
 
 

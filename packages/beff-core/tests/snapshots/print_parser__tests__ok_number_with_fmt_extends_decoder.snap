@@ -2,6 +2,12 @@
 source: packages/beff-core/tests/print_parser.rs
 expression: "print_cgen(r#\"\n        export type NonInfiniteNumber = NumberFormat<\"NonInfiniteNumber\">;\n        export type NonNegativeNumber = NumberFormatExtends<NonInfiniteNumber, \"NonNegativeNumber\">;\n        export type Rate = NumberFormatExtends<NonNegativeNumber, \"Rate\">;\n        parse.buildParsers<{ NonInfiniteNumber: NonInfiniteNumber, NonNegativeNumber: NonNegativeNumber, Rate: Rate }>();\n      \"#)"
 ---
+--- entry.ts ---
+export type NonInfiniteNumber = NumberFormat<"NonInfiniteNumber">;
+export type NonNegativeNumber = NumberFormatExtends<NonInfiniteNumber, "NonNegativeNumber">;
+export type Rate = NumberFormatExtends<NonNegativeNumber, "Rate">;
+parse.buildParsers<{ NonInfiniteNumber: NonInfiniteNumber, NonNegativeNumber: NonNegativeNumber, Rate: Rate }>();
+--------------------------------
 const namedRuntypes = {
     "NonInfiniteNumber": new NumberWithFormatRuntype([
         "NonInfiniteNumber"

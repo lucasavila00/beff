@@ -2,6 +2,12 @@
 source: packages/beff-core/tests/print_parser.rs
 expression: "print_cgen(r#\"\n        export type Password = StringFormat<\"password\">;\n        export type PassLenghts = Record<Password, number>;\n        export type PassLengthGet = PassLenghts[Password];\n        parse.buildParsers<{ PassLengthGet: PassLengthGet }>();\n      \"#)"
 ---
+--- entry.ts ---
+export type Password = StringFormat<"password">;
+export type PassLenghts = Record<Password, number>;
+export type PassLengthGet = PassLenghts[Password];
+parse.buildParsers<{ PassLengthGet: PassLengthGet }>();
+--------------------------------
 const direct_hoist_0 = new TypeofRuntype("number");
 const direct_hoist_1 = new StringWithFormatRuntype([
     "password"

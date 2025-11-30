@@ -2,6 +2,31 @@
 source: packages/beff-core/tests/print_parser.rs
 expression: print_types(from)
 ---
+--- entry.ts ---
+/**
+ * @category model
+ * @since 2.0.0
+ */
+type Left<E1> = {
+     _tag: 'Left',
+     left: E1,
+}
+/**
+ * @category model
+ * @since 2.0.0
+ */
+type Right<A1> = {
+     _tag: 'Right',
+     right: A1,
+}
+/**
+ * @category model
+ * @since 2.0.0
+ */
+type Either<E, A> = Left<E> | Right<A>
+
+parse.buildParsers<{ A: Either<string, number> }>();
+--------------------------------
 type BuiltParsers = {
   A: ({ "_tag": "Left", "left": string } | { "_tag": "Right", "right": number }),
 }

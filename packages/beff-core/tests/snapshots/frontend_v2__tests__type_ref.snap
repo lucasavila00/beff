@@ -2,6 +2,10 @@
 source: packages/beff-core/tests/frontend_v2.rs
 expression: print_types(from)
 ---
+--- entry.ts ---
+type UserId = string;
+parse.buildParsers<{ UserId: UserId }>();
+--------------------------------
 type UserId = string;
 
 

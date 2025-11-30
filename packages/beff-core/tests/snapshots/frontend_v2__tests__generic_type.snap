@@ -2,6 +2,11 @@
 source: packages/beff-core/tests/frontend_v2.rs
 expression: print_types(from)
 ---
+--- entry.ts ---
+type W<T> = { a: T };
+type X = W<string>;
+parse.buildParsers<{ X: X }>();
+--------------------------------
 type X = { "a": string };
 
 

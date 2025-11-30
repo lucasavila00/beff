@@ -2,6 +2,13 @@
 source: packages/beff-core/tests/print_parser.rs
 expression: "print_types(r#\"\n        const val = {a: 1} as const;\n        const spread = {...val, b: 2} as const;\n        export type AllTs = typeof spread;\n\n        parse.buildParsers<{ AllTs: AllTs }>();\n      \"#)"
 ---
+--- entry.ts ---
+const val = {a: 1} as const;
+const spread = {...val, b: 2} as const;
+export type AllTs = typeof spread;
+
+parse.buildParsers<{ AllTs: AllTs }>();
+--------------------------------
 type AllTs = { "a": 1, "b": 2 };
 
 

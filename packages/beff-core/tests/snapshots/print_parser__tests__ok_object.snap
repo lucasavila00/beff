@@ -2,6 +2,9 @@
 source: packages/beff-core/tests/print_parser.rs
 expression: "print_types(r#\"\n        parse.buildParsers<{ A: Object }>();\n      \"#)"
 ---
+--- entry.ts ---
+parse.buildParsers<{ A: Object }>();
+--------------------------------
 type BuiltParsers = {
   A: { [key: (string | number)]: any },
 }

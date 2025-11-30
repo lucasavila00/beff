@@ -1,5 +1,6 @@
 use crate::{
     BeffUserSettings, BffFileName, EntryPoints, FileManager, ParsedModule,
+    diag::{DiagnosticInformation, Location},
     parser_extractor::ParserExtractResult,
     swc_tools::bind_exports::{FsModuleResolver, parse_and_bind},
 };
@@ -93,44 +94,153 @@ fn extract_types(fs: &[(&str, &str)]) -> ParserExtractResult {
     crate::extract(&mut man, entry)
 }
 
-pub fn print_types(from: &str) -> String {
-    let p = extract_types(&[("entry.ts", from)]);
-    let errors = &p.errors;
+fn dedent(s: &str) -> String {
+    let lines: Vec<&str> = s.lines().collect();
+    let first_non_empty = lines
+        .iter()
+        .position(|line| !line.trim().is_empty())
+        .unwrap_or(0);
+    let indent = lines[first_non_empty]
+        .chars()
+        .take_while(|c| c.is_whitespace())
+        .count();
 
-    if !errors.is_empty() {
-        panic!("errors: {:?}", errors);
-    }
-    p.debug_print()
+    lines
+        .iter()
+        .map(|line| {
+            if line.len() >= indent {
+                &line[indent..]
+            } else {
+                *line
+            }
+        })
+        .collect::<Vec<&str>>()
+        .join("\n")
+        .trim()
+        .to_string()
 }
-pub fn print_types_multifile(fs: &[(&str, &str)]) -> String {
-    let p = extract_types(fs);
+
+fn print_sources(sources: &[(&str, &str)]) -> String {
+    let mut out = String::new();
+    for (name, content) in sources {
+        out.push_str(&format!("--- {} ---\n", name));
+        out.push_str(&dedent(content));
+        out.push_str("\n");
+    }
+    out
+}
+
+pub fn print_types(from: &str) -> String {
+    let sources = [("entry.ts", from)];
+    let p = extract_types(&sources);
     let errors = &p.errors;
 
     if !errors.is_empty() {
         panic!("errors: {:?}", errors);
     }
-    p.debug_print()
+
+    let mut out = String::new();
+    out.push_str(&print_sources(&sources));
+    out.push_str("--------------------------------\n");
+
+    let ts = p.debug_print();
+    out.push_str(&ts);
+    out
+}
+pub fn print_types_multifile(sources: &[(&str, &str)]) -> String {
+    let p = extract_types(sources);
+    let errors = &p.errors;
+
+    if !errors.is_empty() {
+        panic!("errors: {:?}", errors);
+    }
+
+    let mut out = String::new();
+    out.push_str(&print_sources(&sources));
+    out.push_str("--------------------------------\n");
+
+    let ts = p.debug_print();
+    out.push_str(&ts);
+    out
 }
 pub fn print_cgen(from: &str) -> String {
-    let p = extract_types(&[("entry.ts", from)]);
+    let sources = [("entry.ts", from)];
+    let p = extract_types(&sources);
     let errors = &p.errors;
 
     if !errors.is_empty() {
         panic!("errors: {:?}", errors);
     }
-    p.emit_code().expect("should be able to emit module")
+
+    let mut out = String::new();
+    out.push_str(&print_sources(&sources));
+    out.push_str("--------------------------------\n");
+
+    let code = p.emit_code().expect("should be able to emit module");
+    out.push_str(&code);
+    out
 }
 
 pub fn failure(from: &str) -> String {
-    let p = extract_types(&[("entry.ts", from)]);
+    let sources = [("entry.ts", from)];
+    let p = extract_types(&sources);
     let errors = &p.errors;
 
     if errors.is_empty() {
         panic!("expected errors, but none found");
     }
     let mut out = String::new();
+
+    out.push_str(&print_sources(&sources));
+    out.push_str("--------------------------------\n");
+
     for err in errors {
-        out.push_str(&format!("{:?}\n", err));
+        out.push_str(&print_diag(err, &sources));
+        out.push_str("\n");
     }
     out
+}
+fn print_diag(it: &DiagnosticInformation, sources: &[(&str, &str)]) -> String {
+    match &it.loc {
+        Location::Full(full_location) => {
+            let mut ws = Vec::new();
+            let mut sources_vec: Vec<(String, String)> = vec![
+                //
+                //(full_location.file_name.0.to_string(), "todo".to_string()),
+            ];
+            for (name, content) in sources {
+                sources_vec.push((name.to_string(), content.to_string()));
+            }
+            let cache = ariadne::sources(sources_vec);
+            //
+            ariadne::Report::build(
+                ariadne::ReportKind::Error,
+                full_location.file_name.0.to_string(),
+                full_location.offset_lo,
+            )
+            .with_message(it.message.to_string())
+            .with_config(ariadne::Config::default().with_color(false))
+            .with_label(
+                ariadne::Label::new((
+                    full_location.file_name.0.to_string(),
+                    full_location.offset_lo..full_location.offset_hi,
+                ))
+                .with_message(it.message.to_string())
+                .with_color(ariadne::Color::Red),
+            )
+            .finish()
+            .write(cache, &mut ws)
+            .unwrap();
+
+            // vec<u8> to string
+            String::from_utf8(ws).unwrap()
+        }
+        Location::Unknown(unknown_location) => {
+            format!(
+                "In file '{}': {}\n",
+                unknown_location.current_file.0,
+                it.message.to_string()
+            )
+        }
+    }
 }

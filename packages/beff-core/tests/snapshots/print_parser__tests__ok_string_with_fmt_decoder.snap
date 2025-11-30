@@ -2,6 +2,10 @@
 source: packages/beff-core/tests/print_parser.rs
 expression: "print_cgen(r#\"\n        export type Alias = StringFormat<\"password\">;\n        parse.buildParsers<{ Dec: Alias }>();\n      \"#)"
 ---
+--- entry.ts ---
+export type Alias = StringFormat<"password">;
+parse.buildParsers<{ Dec: Alias }>();
+--------------------------------
 const namedRuntypes = {
     "Alias": new StringWithFormatRuntype([
         "password"

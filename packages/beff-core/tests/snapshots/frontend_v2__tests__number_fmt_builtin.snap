@@ -2,6 +2,10 @@
 source: packages/beff-core/tests/frontend_v2.rs
 expression: "print_types_multifile(&[(\"entry.ts\", from)])"
 ---
+--- entry.ts ---
+export type X = NumberFormat<"Rate">;
+parse.buildParsers<{ X: X }>();
+--------------------------------
 type X = NumberFormat<"Rate">;
 
 

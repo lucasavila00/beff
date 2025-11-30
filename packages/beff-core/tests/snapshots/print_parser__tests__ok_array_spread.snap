@@ -2,6 +2,14 @@
 source: packages/beff-core/tests/print_parser.rs
 expression: "print_types(r#\"\n        const Arr1 = [\"a\", \"b\"] as const\n        const Arr2 = [...Arr1, \"c\"] as const\n\n        type Arr2C = typeof Arr2[number];\n\n        parse.buildParsers<{ Arr2C: Arr2C }>();\n      \"#)"
 ---
+--- entry.ts ---
+const Arr1 = ["a", "b"] as const
+const Arr2 = [...Arr1, "c"] as const
+
+type Arr2C = typeof Arr2[number];
+
+parse.buildParsers<{ Arr2C: Arr2C }>();
+--------------------------------
 type Arr2C = ("a" | "b" | "c");
 
 

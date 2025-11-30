@@ -2,6 +2,15 @@
 source: packages/beff-core/tests/print_parser.rs
 expression: "print_types(r#\"\n        export const a = \"a\" as const;\n        export const b = \"b\" as const;\n        \n        export const AllTs = [a, b] as const;\n        export type AllTs = (typeof AllTs)[number];\n        \n        parse.buildParsers<{ AllTs: AllTs }>();\n      \"#)"
 ---
+--- entry.ts ---
+export const a = "a" as const;
+export const b = "b" as const;
+
+export const AllTs = [a, b] as const;
+export type AllTs = (typeof AllTs)[number];
+
+parse.buildParsers<{ AllTs: AllTs }>();
+--------------------------------
 type AllTs = ("a" | "b");
 
 

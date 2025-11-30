@@ -2,6 +2,17 @@
 source: packages/beff-core/tests/print_parser.rs
 expression: "print_types(r#\"\n      \n        export interface IY {\n            a: string\n        }\n        export interface IX {\n            sizes?: IY;\n        }\n        // type IX2 = Required<IX>\n        type T3 = IX[keyof IX]\n        parse.buildParsers<{ T3: T3 }>();\n      \"#)"
 ---
+--- entry.ts ---
+export interface IY {
+    a: string
+}
+export interface IX {
+    sizes?: IY;
+}
+// type IX2 = Required<IX>
+type T3 = IX[keyof IX]
+parse.buildParsers<{ T3: T3 }>();
+--------------------------------
 type IX = { "sizes"?: IY };
 
 type IY = { "a": string };
