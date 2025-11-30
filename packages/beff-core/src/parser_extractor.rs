@@ -1,7 +1,7 @@
 use crate::ast::runtype::Runtype;
 use crate::diag::{Diagnostic, DiagnosticInfoMessage, DiagnosticInformation, Location};
 use crate::frontend::FrontendCtx;
-use crate::{BeffUserSettings, FrontendVersion, ParsedModule};
+use crate::{BeffUserSettings, ParsedModule};
 use crate::{BffFileName, FileManager, NamedSchema};
 use anyhow::Result;
 use anyhow::anyhow;
@@ -118,47 +118,35 @@ impl<R: FileManager> ExtractParserVisitor<'_, R> {
                 Some(_) => self.push_error(span, DiagnosticInfoMessage::TwoCallsToBuildParsers),
                 None => {
                     if let Some(ref params) = n.type_args {
-                        match self.settings.frontend {
-                            FrontendVersion::V1 => {
-                                todo!()
-                            }
-                            FrontendVersion::V2 => {
-                                let mut ctx = FrontendCtx::new(
-                                    self.files,
-                                    self.current_file.clone(),
-                                    self.settings,
-                                );
+                        let mut ctx =
+                            FrontendCtx::new(self.files, self.current_file.clone(), self.settings);
 
-                                if let Ok(x) =
-                                    ctx.extract_built_decoders_from_call_v2(params.as_ref())
-                                {
-                                    self.built_decoders = Some(x)
-                                }
-                                self.errors.extend(ctx.errors);
-                                let mut kvs = vec![];
-                                for (k, v) in ctx.partial_validators {
-                                    // We store type in an Option to support self-recursion.
-                                    // When we encounter the type while transforming it we return string with the type name.
-                                    // And we need the option to allow a type to refer to itself before it has been resolved.
-                                    match v {
-                                        Some(s) => kvs.push((k, s)),
-                                        None => self.push_error(
-                                            span,
-                                            DiagnosticInfoMessage::CannotResolveTypeReferenceOnExtracting(
-                                                k
-                                            ),
-                                        ),
-                                    }
-                                }
-
-                                kvs.sort_by(|(ka, _), (kb, _)| ka.cmp(kb));
-                                let mut ext: Vec<NamedSchema> = vec![];
-                                for (k, b) in kvs.into_iter() {
-                                    ext.push(NamedSchema { name: k, schema: b });
-                                }
-                                self.extend_components(ext, span);
+                        if let Ok(x) = ctx.extract_built_decoders_from_call_v2(params.as_ref()) {
+                            self.built_decoders = Some(x)
+                        }
+                        self.errors.extend(ctx.errors);
+                        let mut kvs = vec![];
+                        for (k, v) in ctx.partial_validators {
+                            // We store type in an Option to support self-recursion.
+                            // When we encounter the type while transforming it we return string with the type name.
+                            // And we need the option to allow a type to refer to itself before it has been resolved.
+                            match v {
+                                Some(s) => kvs.push((k, s)),
+                                None => self.push_error(
+                                    span,
+                                    DiagnosticInfoMessage::CannotResolveTypeReferenceOnExtracting(
+                                        k,
+                                    ),
+                                ),
                             }
                         }
+
+                        kvs.sort_by(|(ka, _), (kb, _)| ka.cmp(kb));
+                        let mut ext: Vec<NamedSchema> = vec![];
+                        for (k, b) in kvs.into_iter() {
+                            ext.push(NamedSchema { name: k, schema: b });
+                        }
+                        self.extend_components(ext, span);
                     }
                 }
             }

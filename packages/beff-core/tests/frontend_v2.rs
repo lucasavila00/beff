@@ -90,7 +90,6 @@ mod tests {
                     "NonNegativeNumber".to_string(),
                     "Rate".to_string(),
                 ]),
-                frontend: beff_core::FrontendVersion::V2,
             },
         };
         beff_core::extract(&mut man, entry)
