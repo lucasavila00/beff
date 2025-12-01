@@ -940,4 +940,27 @@ mod tests {
         }
         "#);
     }
+
+    #[test]
+    fn import_star_as_value_direct() {
+        insta::assert_snapshot!(print_types_multifile(&[
+            (
+                "t.ts",
+                r#"
+                    export const A = 1;
+                "#,
+            ),
+            (
+                "entry.ts",
+                r#"
+                    import * as Ns from "./t";
+                    parse.buildParsers<{ x: typeof Ns }>();
+                "#
+            )
+        ]), @r#"
+        type BuiltParsers = {
+          x: { "A": number },
+        }
+        "#);
+    }
 }

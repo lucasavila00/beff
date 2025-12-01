@@ -606,41 +606,6 @@ trait ValueModuleWalker<'a, R: FileManager + 'a, U> {
                 if let Some(decl_expr) = parsed_module.locals.exprs_decls.get(&addr.name) {
                     return self.handle_symbol_expr_decl(decl_expr, &addr.file);
                 }
-                if let Some(imported) = parsed_module.imports.get(&addr.name) {
-                    match imported.as_ref() {
-                        ImportReference::Named {
-                            original_name,
-                            file_name,
-                            import_statement_anchor: import_st_anchor,
-                        } => {
-                            let new_addr = ModuleItemAddress {
-                                file: file_name.clone(),
-                                name: (*original_name).to_string(),
-                                visibility: Visibility::Export,
-                            };
-                            return self.get_addressed_item(&new_addr, import_st_anchor);
-                        }
-                        ImportReference::Star {
-                            file_name,
-                            import_statement_anchor,
-                        } => {
-                            // // TODO: is this correct? can it be covered?
-                            // return self
-                            //     .handle_import_star(file_name.clone(), import_statement_anchor);
-                            todo!()
-                        }
-                        ImportReference::Default {
-                            file_name,
-                            import_statement_anchor,
-                        } => {
-                            return self.get_addressed_item_from_default_import(
-                                file_name.clone(),
-                                anchor,
-                                import_statement_anchor,
-                            );
-                        }
-                    }
-                }
 
                 self.get_ctx().error(
                     anchor,
