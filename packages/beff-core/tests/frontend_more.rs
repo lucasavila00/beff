@@ -652,4 +652,89 @@ mod tests {
         }
         "#);
     }
+
+    #[test]
+    fn re_export_star_type() {
+        insta::assert_snapshot!(print_types_multifile(&[
+            (
+                "a.ts",
+                r#"
+                    export type T = string;
+                "#,
+            ),
+            (
+                "b.ts",
+                r#"
+                    export * from "./a";
+                "#,
+            ),
+            (
+                "entry.ts",
+                r#"
+                    import { T } from "./b";
+                    type X = T;
+                    parse.buildParsers<{ X: X }>();
+                "#
+            )
+        ]), @r"
+        type T = string;
+
+        type X = T;
+
+
+        type BuiltParsers = {
+          X: X,
+        }
+        ");
+    }
+
+    #[test]
+    fn typeof_import_qualifier() {
+        insta::assert_snapshot!(print_types_multifile(&[
+            (
+                "t.ts",
+                r#"
+                    export const A = "a";
+                "#,
+            ),
+            (
+                "entry.ts",
+                r#"
+                    type T = typeof import("./t").A;
+                    parse.buildParsers<{ T: T }>();
+                "#
+            )
+        ]), @r"
+        type T = string;
+
+
+        type BuiltParsers = {
+          T: T,
+        }
+        ");
+    }
+
+    #[test]
+    fn qualified_enum_as_value() {
+        insta::assert_snapshot!(print_types_multifile(&[
+            (
+                "t.ts",
+                r#"
+                    export enum E { A = "a" }
+                "#,
+            ),
+            (
+                "entry.ts",
+                r#"
+                    import * as Ns from "./t";
+                    const x = Ns.E;
+                    parse.buildParsers<{ x: typeof x }>();
+                "#
+            )
+        ]), @r#"
+        type BuiltParsers = {
+          x: "a",
+        }
+        "#);
+    }
 }

@@ -1028,4 +1028,193 @@ mod tests {
         ───╯
         "#);
     }
+
+    #[test]
+    fn class_is_not_supported() {
+        let from = r#"
+        class C {}
+    parse.buildParsers<{ C: C }>();
+  "#;
+        insta::assert_snapshot!(failure(from),@r"
+        Error: Cannot resolve type 'entry.ts::C'
+           ╭─[entry.ts:3:30]
+           │
+         3 │     parse.buildParsers<{ C: C }>();
+           │                             ┬  
+           │                             ╰── Cannot resolve type 'entry.ts::C'
+        ───╯
+        ");
+    }
+    #[test]
+    fn class_is_not_supported2() {
+        let from = r#"
+        class C {}
+    parse.buildParsers<{ C: typeof C }>();
+  "#;
+        insta::assert_snapshot!(failure(from),@r"
+        Error: Cannot resolve value 'entry.ts::C'
+           ╭─[entry.ts:3:30]
+           │
+         3 │     parse.buildParsers<{ C: typeof C }>();
+           │                             ────┬───  
+           │                                 ╰───── Cannot resolve value 'entry.ts::C'
+        ───╯
+        ");
+    }
+
+    #[test]
+    fn qualified_value_as_type() {
+        insta::assert_snapshot!(failure_multifile(&[
+            (
+                "t.ts",
+                r#"
+                    export const A = { Sub: 1 };
+                "#,
+            ),
+            (
+                "entry.ts",
+                r#"
+                    import * as Ns from "./t";
+                    type T = Ns.A.Sub;
+                    parse.buildParsers<{ T: T }>();
+                "#
+            )
+        ]), @r"
+        Error: Cannot resolve type 't.ts::A'
+           ╭─[entry.ts:3:31]
+           │
+         3 │                     type T = Ns.A.Sub;
+           │                              ──┬─  
+           │                                ╰─── Cannot resolve type 't.ts::A'
+        ───╯
+        ");
+    }
+
+    #[test]
+    fn qualified_type_as_value() {
+        insta::assert_snapshot!(failure_multifile(&[
+            (
+                "t.ts",
+                r#"
+                    export type T = {};
+                "#,
+            ),
+            (
+                "entry.ts",
+                r#"
+                    import * as Ns from "./t";
+                    const x = Ns.T;
+                    parse.buildParsers<{ x: typeof x }>();
+                "#
+            )
+        ]), @r"
+        Error: Cannot use star import in value position
+           ╭─[entry.ts:3:32]
+           │
+         3 │                     const x = Ns.T;
+           │                               ──┬─  
+           │                                 ╰─── Cannot use star import in value position
+        ───╯
+        ");
+    }
+
+    #[test]
+    fn qualified_interface_as_value() {
+        insta::assert_snapshot!(failure_multifile(&[
+            (
+                "t.ts",
+                r#"
+                    export interface I {}
+                "#,
+            ),
+            (
+                "entry.ts",
+                r#"
+                    import * as Ns from "./t";
+                    const x = Ns.I;
+                    parse.buildParsers<{ x: typeof x }>();
+                "#
+            )
+        ]), @r"
+        Error: Cannot use star import in value position
+           ╭─[entry.ts:3:32]
+           │
+         3 │                     const x = Ns.I;
+           │                               ──┬─  
+           │                                 ╰─── Cannot use star import in value position
+        ───╯
+        ");
+    }
+
+    #[test]
+    fn import_type_non_existent() {
+        insta::assert_snapshot!(failure(r#"
+            type T = import("./non-existent");
+            parse.buildParsers<{ T: T }>();
+        "#), @r#"
+        Error: Cannot resolve file 'non-existent.ts'
+           ╭─[entry.ts:2:23]
+           │
+         2 │             type T = import("./non-existent");
+           │                      ────────────┬───────────  
+           │                                  ╰───────────── Cannot resolve file 'non-existent.ts'
+        ───╯
+        "#);
+    }
+
+    #[test]
+    fn import_default_expr_as_type() {
+        insta::assert_snapshot!(failure_multifile(&[
+            (
+                "t.ts",
+                r#"
+                    export default { a: 1 };
+                "#,
+            ),
+            (
+                "entry.ts",
+                r#"
+                    import D from "./t";
+                    type T = D;
+                    parse.buildParsers<{ T: T }>();
+                "#
+            )
+        ]), @r"
+        Error: Expression is not a type
+           ╭─[t.ts:2:22]
+           │
+         2 │                     export default { a: 1 };
+           │                     ────────────┬───────────  
+           │                                 ╰───────────── Expression is not a type
+        ───╯
+        ");
+    }
+
+    #[test]
+    fn import_default_none_as_type() {
+        insta::assert_snapshot!(failure_multifile(&[
+            (
+                "t.ts",
+                r#"
+                    export const a = 1;
+                "#,
+            ),
+            (
+                "entry.ts",
+                r#"
+                    import D from "./t";
+                    type T = D;
+                    parse.buildParsers<{ T: T }>();
+                "#
+            )
+        ]), @r#"
+        Error: Cannot resolve type 't.ts::default'
+           ╭─[entry.ts:2:29]
+           │
+         2 │                     import D from "./t";
+           │                            ┬  
+           │                            ╰── Cannot resolve type 't.ts::default'
+        ───╯
+        "#);
+    }
 }

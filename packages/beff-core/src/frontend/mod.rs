@@ -161,15 +161,22 @@ trait TypeModuleWalker<'a, R: FileManager + 'a, U> {
                         };
                         self.get_addressed_item(&new_addr, &anchor)
                     }
-                    _ => {
-                        todo!()
-                    }
+                    _ => self
+                        .get_ctx()
+                        .error(anchor, DiagnosticInfoMessage::ExpressionIsNotAType),
                 },
                 SymbolExportDefault::Renamed { export } => {
                     self.get_addressed_item_from_symbol_export(export, err_anchor)
                 }
             },
-            None => todo!(),
+            None => self.get_ctx().error(
+                err_anchor,
+                DiagnosticInfoMessage::CouldNotResolveType(ModuleItemAddress {
+                    file: file_name,
+                    name: "default".to_string(),
+                    visibility: Visibility::Export,
+                }),
+            ),
         }
     }
 
@@ -2048,6 +2055,11 @@ impl<'a, R: FileManager> FrontendCtx<'a, R> {
                             name: i.sym.to_string(),
                             visibility: Visibility::Local,
                         };
+                        // let q = self.get_addressed_qualified_value(&new_addr, &anchor);
+                        // if let Ok(q) = q {
+                        //     return self.member_access_qualified_value(&q, key, &anchor);
+                        // }
+                        // HERE it should do a qualified value lookup
                         let decl = self.get_addressed_value(&new_addr, &anchor)?;
                         match decl {
                             AddressedValue::ValueExpr { .. } => None,

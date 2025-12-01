@@ -6,6 +6,7 @@ use crate::{BffFileName, ModuleItemAddress, ParsedModule, RuntypeUUID};
 
 #[derive(Debug, Clone)]
 pub enum DiagnosticInfoMessage {
+    ExpressionIsNotAType,
     TupleRestTypeMustBeArray,
     KeyedAccessResultsInNeverType,
     CannotUseStarImportInValuePosition,
@@ -560,6 +561,9 @@ impl DiagnosticInfoMessage {
             }
             DiagnosticInfoMessage::TupleRestTypeMustBeArray => {
                 "Rest type in tuple must be an array type".to_string()
+            }
+            DiagnosticInfoMessage::ExpressionIsNotAType => {
+                "Expression is not a type".to_string()
             }
         }
     }
