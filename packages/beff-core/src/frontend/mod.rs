@@ -96,10 +96,20 @@ pub enum AddressedQualifiedValue {
     StarOfFile(BffFileName),
     ValueExpr(Rc<Expr>, BffFileName),
     MemberExpr {
-        base: Rc<Expr>,
-        base_file: BffFileName,
+        base: Box<AddressedQualifiedValue>,
         member: String,
+        file_name: BffFileName,
     },
+}
+
+impl AddressedQualifiedValue {
+    pub fn file_name(&self) -> BffFileName {
+        match self {
+            AddressedQualifiedValue::StarOfFile(f) => f.clone(),
+            AddressedQualifiedValue::ValueExpr(_, f) => f.clone(),
+            AddressedQualifiedValue::MemberExpr { file_name, .. } => file_name.clone(),
+        }
+    }
 }
 
 trait TypeModuleWalker<'a, R: FileManager + 'a, U> {
@@ -2126,14 +2136,14 @@ impl<'a, R: FileManager> FrontendCtx<'a, R> {
                         };
                         self.get_addressed_qualified_value(&new_addr, &anchor)
                     }
-                    AddressedQualifiedValue::ValueExpr(value_expr, from_file) => {
+                    base @ AddressedQualifiedValue::MemberExpr { .. }
+                    | base @ AddressedQualifiedValue::ValueExpr(_, _) => {
                         Ok(AddressedQualifiedValue::MemberExpr {
-                            base: value_expr,
-                            base_file: from_file,
+                            base: Box::new(base),
                             member: ts_qualified_name.right.sym.to_string(),
+                            file_name: file.clone(),
                         })
                     }
-                    AddressedQualifiedValue::MemberExpr { .. } => todo!(),
                 }
             }
             TsEntityName::Ident(ident) => {
@@ -2149,65 +2159,50 @@ impl<'a, R: FileManager> FrontendCtx<'a, R> {
         }
     }
 
-    fn typeof_expr_keyed_access(
+    fn access_qualified_value(
         &mut self,
-        expr: &Expr,
-        key: &str,
-        file: BffFileName,
+        base: &AddressedQualifiedValue,
+        member: &str,
         anchor: &Anchor,
     ) -> Res<Runtype> {
-        let base_ty = self.typeof_expr(expr, false, file.clone())?;
-        let key_ty = Runtype::single_string_const(key);
-
-        self.do_indexed_access_on_types(&base_ty, &key_ty, anchor)
+        match base {
+            AddressedQualifiedValue::StarOfFile(bff_file_name) => {
+                let new_addr = ModuleItemAddress {
+                    file: bff_file_name.clone(),
+                    name: member.to_string(),
+                    visibility: Visibility::Export,
+                };
+                self.extract_addressed_value(&new_addr, anchor)
+            }
+            AddressedQualifiedValue::ValueExpr(expr, bff_file_name) => {
+                let base_ty = self.typeof_expr(expr, false, bff_file_name.clone())?;
+                let key_ty = Runtype::single_string_const(member);
+                self.do_indexed_access_on_types(&base_ty, &key_ty, anchor)
+            }
+            AddressedQualifiedValue::MemberExpr {
+                base: inner,
+                member: member2,
+                file_name: _,
+            } => {
+                let obj = self.access_qualified_value(inner, member2, anchor)?;
+                let key = Runtype::single_string_const(member);
+                self.do_indexed_access_on_types(&obj, &key, anchor)
+            }
+        }
     }
 
     fn extract_value_from_ts_qualified_name(
         &mut self,
         ts_qualified_name: &TsQualifiedName,
         file: BffFileName,
-        visibility: Visibility,
         anchor: &Anchor,
     ) -> Res<Runtype> {
-        dbg!("extract_value_from_ts_qualified_name", ts_qualified_name);
         let left_value = self.get_addressed_qualified_value_from_entity_name(
             &ts_qualified_name.left,
             file.clone(),
         )?;
 
-        dbg!("left_value", &left_value);
-
-        match left_value {
-            AddressedQualifiedValue::StarOfFile(bff_file_name) => {
-                let new_addr = ModuleItemAddress {
-                    file: bff_file_name.clone(),
-                    name: ts_qualified_name.right.sym.to_string(),
-                    visibility,
-                };
-                self.extract_addressed_value(&new_addr, anchor)
-            }
-            AddressedQualifiedValue::ValueExpr(expr, bff_file_name) => self
-                .typeof_expr_keyed_access(
-                    expr.as_ref(),
-                    &ts_qualified_name.right.sym,
-                    bff_file_name,
-                    anchor,
-                ),
-            AddressedQualifiedValue::MemberExpr {
-                base,
-                base_file,
-                member,
-            } => {
-                let base =
-                    self.typeof_expr_keyed_access(base.as_ref(), &member, base_file, anchor)?;
-                // now get the ts_qualified_name.right.sym access
-                self.do_indexed_access_on_types(
-                    &base,
-                    &Runtype::single_string_const(&ts_qualified_name.right.sym),
-                    anchor,
-                )
-            }
-        }
+        self.access_qualified_value(&left_value, &ts_qualified_name.right.sym, anchor)
     }
 
     fn extract_value_ts_entity_name(
@@ -2222,14 +2217,9 @@ impl<'a, R: FileManager> FrontendCtx<'a, R> {
                 let addr = ModuleItemAddress::from_ident(ident, file.clone(), visibility);
                 self.extract_addressed_value(&addr, anchor)
             }
-            TsEntityName::TsQualifiedName(ts_qualified_name) => self
-                .extract_value_from_ts_qualified_name(
-                    ts_qualified_name,
-                    file,
-                    // TODO: is the visibility correct here?
-                    Visibility::Export,
-                    anchor,
-                ),
+            TsEntityName::TsQualifiedName(ts_qualified_name) => {
+                self.extract_value_from_ts_qualified_name(ts_qualified_name, file, anchor)
+            }
         }
     }
 

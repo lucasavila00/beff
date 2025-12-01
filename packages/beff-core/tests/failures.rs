@@ -713,4 +713,20 @@ mod tests {
         ───╯
         ");
     }
+    #[test]
+    fn typeof_qualified_value_expr_deeper_failure() {
+        insta::assert_snapshot!(failure(r#"
+            const obj = {a:{b:{c:{d:{x: 123}}}}}
+            export type T = typeof obj.a.b.c.d.e;
+            parse.buildParsers<{ T: T }>();
+        "#), @r"
+        Error: Keyed access results in 'never' type
+           ╭─[entry.ts:3:30]
+           │
+         3 │             export type T = typeof obj.a.b.c.d.e;
+           │                             ──────────┬─────────  
+           │                                       ╰─────────── Keyed access results in 'never' type
+        ───╯
+        ");
+    }
 }
