@@ -69,9 +69,7 @@ impl<R: FileManager> ExtractParserVisitor<'_, R> {
             None => {
                 self.errors.push(self.build_error(
                     &DUMMY_SP,
-                    DiagnosticInfoMessage::CannotFindFileWhenConvertingToSchema(
-                        self.current_file.clone(),
-                    ),
+                    DiagnosticInfoMessage::CannotNotFindFile(self.current_file.clone()),
                 ));
                 Err(anyhow!("cannot find file: {}", self.current_file.0))
             }

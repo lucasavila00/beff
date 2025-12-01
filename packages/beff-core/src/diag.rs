@@ -1,4 +1,3 @@
-use anyhow::{Result, anyhow};
 use std::{rc::Rc, sync::Arc};
 use swc_common::{BytePos, Loc, SourceMap, Span};
 
@@ -78,7 +77,7 @@ pub enum DiagnosticInfoMessage {
     IndexSignatureNonSerializable,
     AnyhowError(String),
     CannotResolveKey(String),
-    CouldNotFindSomethingOfOtherFile(String),
+    CannotNotFindSomethingOfOtherFile(String),
     EnumMemberNoInit,
     TypeofImportNotSupported,
     NoArgumentInTypeApplication,
@@ -92,7 +91,7 @@ pub enum DiagnosticInfoMessage {
     CustomNumberIsNotRegistered,
     InvalidUsageOfNumberFormatExtendsTypeParameter,
     BaseOfNumberFormatExtendsShouldBeNumberFormat,
-    CouldNotFindBaseOfNumberFormatExtends,
+    CannotNotFindBaseOfNumberFormatExtends,
     GetMustNotHaveBody,
     InvalidIdentifierInPatternNoExplodeAllowed,
     CloseBlockMustEndPattern,
@@ -108,7 +107,7 @@ pub enum DiagnosticInfoMessage {
     CannotResolveSomethingOfOtherFile(String),
     InvalidUsageOfStringFormatTypeParameter,
     BaseOfStringFormatExtendsShouldBeStringFormat,
-    CouldNotFindBaseOfStringFormatExtends,
+    CannotNotFindBaseOfStringFormatExtends,
     InvalidUsageOfStringFormatExtendsTypeParameter,
     InvalidUsageOfNumberFormatTypeParameter,
     CannotResolveNamespaceType,
@@ -140,7 +139,6 @@ pub enum DiagnosticInfoMessage {
     CannotResolveTypeReferenceOnExtracting(RuntypeUUID),
     TsInterfaceExtendsNotSupported,
     TwoDifferentTypesWithTheSameName(RuntypeUUID),
-    CannotFindFileWhenConvertingToSchema(BffFileName),
     ThisRefersToSomethingThatCannotBeSerialized(String),
     CannotResolveLocalSymbol(String),
     NoConstraintInMappedType,
@@ -148,9 +146,9 @@ pub enum DiagnosticInfoMessage {
     NoTypeAnnotationInMappedType,
     CannotConvertExpr,
     MappedTypeMinusNotSupported,
-    CouldNotResolveType(ModuleItemAddress),
-    CouldNotResolveValue(ModuleItemAddress),
-    CouldNotFindFile(ModuleItemAddress),
+    CannotNotResolveType(ModuleItemAddress),
+    CannotNotResolveValue(ModuleItemAddress),
+    CannotNotFindFile(BffFileName),
     CannotResolveImport(String),
 }
 
@@ -193,10 +191,6 @@ impl DiagnosticInfoMessage {
             DiagnosticInfoMessage::TwoDifferentTypesWithTheSameName(name) => {
                 let name= name.diag_print();
                 format!("This includes two different types with the same name '{name}'")
-            }
-            DiagnosticInfoMessage::CannotFindFileWhenConvertingToSchema(f) => {
-                let name = &f.0;
-                format!("Cannot find file '{name}' when converting to schema")
             }
             DiagnosticInfoMessage::InvalidIdentifierInPatternNoExplodeAllowed => {
                 "Invalid pattern content".to_string()
@@ -286,8 +280,8 @@ impl DiagnosticInfoMessage {
             DiagnosticInfoMessage::TypeofImportNotSupported => {
                 "typeof import is not supported".to_string()
             }
-            DiagnosticInfoMessage::CouldNotFindSomethingOfOtherFile(something) => {
-                format!("Could not find '{something}' of other file")
+            DiagnosticInfoMessage::CannotNotFindSomethingOfOtherFile(something) => {
+                format!("Cannot not find '{something}' of other file")
             }
             DiagnosticInfoMessage::CannotResolveKey(key) => {
                 format!("Cannot resolve key '{key}' of non-object")
@@ -503,8 +497,8 @@ impl DiagnosticInfoMessage {
             DiagnosticInfoMessage::BaseOfStringFormatExtendsShouldBeStringFormat => {
                 "Base of string format extends should be string format".to_string()
             }
-            DiagnosticInfoMessage::CouldNotFindBaseOfStringFormatExtends => {
-                "Could not find base of string format extends".to_string()
+            DiagnosticInfoMessage::CannotNotFindBaseOfStringFormatExtends => {
+                "Cannot find base of string format extends".to_string()
             }
             DiagnosticInfoMessage::InvalidUsageOfNumberFormatExtendsTypeParameter => {
                 "Invalid usage of number format extends type parameter".to_string()
@@ -512,8 +506,8 @@ impl DiagnosticInfoMessage {
             DiagnosticInfoMessage::BaseOfNumberFormatExtendsShouldBeNumberFormat => {
                 "Base of number format extends should be number format".to_string()
             }
-            DiagnosticInfoMessage::CouldNotFindBaseOfNumberFormatExtends => {
-                "Could not find base of number format extends".to_string()
+            DiagnosticInfoMessage::CannotNotFindBaseOfNumberFormatExtends => {
+                "Cannot find base of number format extends".to_string()
             }
             DiagnosticInfoMessage::RecordKeyUnionShouldBeOnlyStrings => {
                 "Record key union should only contain strings".to_string()
@@ -524,17 +518,16 @@ impl DiagnosticInfoMessage {
             DiagnosticInfoMessage::NestedTplLitToTplLit => {
                 "Nested template literal types are not supported when converting to template literal".to_string()
             }
-            DiagnosticInfoMessage::CouldNotResolveValue(module_item_address) => {
+            DiagnosticInfoMessage::CannotNotResolveValue(module_item_address) => {
                 let name = module_item_address.diag_print();
                 format!("Cannot resolve value '{name}'")
             }
-            DiagnosticInfoMessage::CouldNotResolveType(module_item_address) => {
+            DiagnosticInfoMessage::CannotNotResolveType(module_item_address) => {
                 let name = module_item_address.diag_print();
                 format!("Cannot resolve type '{name}'")
             },
-            DiagnosticInfoMessage::CouldNotFindFile(module_item_address) => {
-                let name = module_item_address.file.to_string();
-                format!("Cannot find file '{name}'")
+            DiagnosticInfoMessage::CannotNotFindFile(file) => {
+                format!("Cannot find file '{file}'")
             }
             DiagnosticInfoMessage::InvalidNumberOfTypeParametersForArray => {
                 "Invalid number of type parameters for Array".to_string()
@@ -594,15 +587,6 @@ pub struct FullLocation {
     pub offset_hi: usize,
 }
 
-impl FullLocation {
-    pub fn to_info(self, message: DiagnosticInfoMessage) -> DiagnosticInformation {
-        DiagnosticInformation {
-            message,
-            loc: Location::Full(self),
-        }
-    }
-}
-
 #[derive(Clone, Debug)]
 pub struct UnknownLocation {
     pub current_file: BffFileName,
@@ -640,19 +624,6 @@ impl Location {
 
     pub fn to_info(self, message: DiagnosticInfoMessage) -> DiagnosticInformation {
         DiagnosticInformation { message, loc: self }
-    }
-
-    pub fn unknown(current_file: &BffFileName) -> Location {
-        Location::Unknown(UnknownLocation {
-            current_file: current_file.clone(),
-        })
-    }
-
-    pub fn result_full(self) -> Result<FullLocation> {
-        match self {
-            Location::Full(loc) => Ok(loc),
-            Location::Unknown(loc) => Err(anyhow!("Expected full location, got {:?}", loc)),
-        }
     }
 }
 

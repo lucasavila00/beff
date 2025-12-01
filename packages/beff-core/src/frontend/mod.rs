@@ -173,7 +173,7 @@ trait TypeModuleWalker<'a, R: FileManager + 'a, U> {
             },
             None => self.get_ctx().error(
                 import_statement_anchor,
-                DiagnosticInfoMessage::CouldNotResolveType(ModuleItemAddress {
+                DiagnosticInfoMessage::CannotNotResolveType(ModuleItemAddress {
                     file: file_name,
                     name: "default".to_string(),
                     visibility: Visibility::Export,
@@ -216,9 +216,7 @@ trait TypeModuleWalker<'a, R: FileManager + 'a, U> {
     }
 
     fn get_addressed_item(&mut self, addr: &ModuleItemAddress, err_anchor: &Anchor) -> Res<U> {
-        let parsed_module = self
-            .get_ctx()
-            .get_or_fetch_adressed_file(addr, err_anchor)?;
+        let parsed_module = self.get_ctx().get_or_fetch_file(&addr.file, err_anchor)?;
         match addr.visibility {
             Visibility::Local => {
                 if let Some(ts_type) = parsed_module.locals.type_aliases.get(&addr.name) {
@@ -253,7 +251,7 @@ trait TypeModuleWalker<'a, R: FileManager + 'a, U> {
 
                 Err(self.get_ctx().box_error(
                     err_anchor,
-                    DiagnosticInfoMessage::CouldNotResolveType(addr.clone()),
+                    DiagnosticInfoMessage::CannotNotResolveType(addr.clone()),
                 ))
             }
             Visibility::Export => {
@@ -274,7 +272,7 @@ trait TypeModuleWalker<'a, R: FileManager + 'a, U> {
 
                 Err(self.get_ctx().box_error(
                     err_anchor,
-                    DiagnosticInfoMessage::CouldNotResolveType(addr.clone()),
+                    DiagnosticInfoMessage::CannotNotResolveType(addr.clone()),
                 ))
             }
         }
@@ -550,7 +548,7 @@ trait ValueModuleWalker<'a, R: FileManager + 'a, U> {
             },
             None => self.get_ctx().error(
                 import_statement_anchor,
-                DiagnosticInfoMessage::CouldNotResolveValue(ModuleItemAddress {
+                DiagnosticInfoMessage::CannotNotResolveValue(ModuleItemAddress {
                     file: file_name,
                     name: "default".to_string(),
                     visibility: Visibility::Export,
@@ -591,7 +589,7 @@ trait ValueModuleWalker<'a, R: FileManager + 'a, U> {
         }
     }
     fn get_addressed_item(&mut self, addr: &ModuleItemAddress, anchor: &Anchor) -> Res<U> {
-        let parsed_module = self.get_ctx().get_or_fetch_adressed_file(addr, anchor)?;
+        let parsed_module = self.get_ctx().get_or_fetch_file(&addr.file, anchor)?;
         match addr.visibility {
             Visibility::Local => {
                 if let Some(imported) = parsed_module.imports.get(&addr.name) {
@@ -609,7 +607,7 @@ trait ValueModuleWalker<'a, R: FileManager + 'a, U> {
 
                 self.get_ctx().error(
                     anchor,
-                    DiagnosticInfoMessage::CouldNotResolveValue(addr.clone()),
+                    DiagnosticInfoMessage::CannotNotResolveValue(addr.clone()),
                 )
             }
             Visibility::Export => {
@@ -630,7 +628,7 @@ trait ValueModuleWalker<'a, R: FileManager + 'a, U> {
 
                 self.get_ctx().error(
                     anchor,
-                    DiagnosticInfoMessage::CouldNotResolveValue(addr.clone()),
+                    DiagnosticInfoMessage::CannotNotResolveValue(addr.clone()),
                 )
             }
         }
@@ -878,19 +876,6 @@ impl<'a, R: FileManager> FrontendCtx<'a, R> {
         err.into()
     }
 
-    fn get_or_fetch_adressed_file(
-        &mut self,
-        addr: &ModuleItemAddress,
-        anchor: &Anchor,
-    ) -> Res<Rc<ParsedModule>> {
-        let parsed_module = self.files.get_or_fetch_file(&addr.file).ok_or_else(|| {
-            Box::new(self.build_error(
-                anchor,
-                DiagnosticInfoMessage::CouldNotFindFile(addr.clone()),
-            ))
-        })?;
-        Ok(parsed_module)
-    }
     fn get_or_fetch_file(
         &mut self,
         file: &BffFileName,
@@ -899,7 +884,7 @@ impl<'a, R: FileManager> FrontendCtx<'a, R> {
         let parsed_module = self.files.get_or_fetch_file(file).ok_or_else(|| {
             Box::new(self.build_error(
                 err_anchor,
-                DiagnosticInfoMessage::CannotFindFileWhenConvertingToSchema(file.clone()),
+                DiagnosticInfoMessage::CannotNotFindFile(file.clone()),
             ))
         })?;
         Ok(parsed_module)
@@ -1617,7 +1602,7 @@ impl<'a, R: FileManager> FrontendCtx<'a, R> {
                 } else {
                     self.error(
                         &anchor,
-                        DiagnosticInfoMessage::CouldNotFindBaseOfStringFormatExtends,
+                        DiagnosticInfoMessage::CannotNotFindBaseOfStringFormatExtends,
                     )
                 }
             }
@@ -1684,7 +1669,7 @@ impl<'a, R: FileManager> FrontendCtx<'a, R> {
                 } else {
                     self.error(
                         &anchor,
-                        DiagnosticInfoMessage::CouldNotFindBaseOfNumberFormatExtends,
+                        DiagnosticInfoMessage::CannotNotFindBaseOfNumberFormatExtends,
                     )
                 }
             }
