@@ -678,9 +678,8 @@ impl<'a, 'b, R: FileManager> ValueModuleWalker<'a, R, AddressedValue> for ValueW
                 ty,
             } => Ok(AddressedValue::TypeDecl(ty.clone(), original_file.clone())),
 
-            SymbolExport::StarOfOtherFile { .. } => {
-                // star of other file should be already resolved by the "get_value" function
-                todo!()
+            SymbolExport::StarOfOtherFile { reference } => {
+                self.get_addressed_item_from_import_reference(reference.as_ref(), anchor)
             }
             SymbolExport::SomethingOfOtherFile { something, file } => {
                 let new_addr = ModuleItemAddress {

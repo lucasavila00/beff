@@ -888,4 +888,56 @@ mod tests {
         }
         ");
     }
+    #[test]
+    fn import_star_as_value_todo() {
+        insta::assert_snapshot!(print_types_multifile(&[
+            (
+                "t.ts",
+                r#"
+                    export const A = 1;
+                "#,
+            ),
+            (
+                "entry.ts",
+                r#"
+                    import * as Ns from "./t";
+                    const x = Ns;
+                    parse.buildParsers<{ x: typeof x }>();
+                "#
+            )
+        ]), @r#"
+        type BuiltParsers = {
+          x: { "A": number },
+        }
+        "#);
+    }
+    #[test]
+    fn reexport_star_as_value_todo() {
+        insta::assert_snapshot!(print_types_multifile(&[
+            (
+                "other.ts",
+                r#"
+                    export const A = 1;
+                "#,
+            ),
+            (
+                "t.ts",
+                r#"
+                    export * as Ns from "./other";
+                "#,
+            ),
+            (
+                "entry.ts",
+                r#"
+                    import { Ns } from "./t";
+                    const x = Ns;
+                    parse.buildParsers<{ x: typeof x }>();
+                "#
+            )
+        ]), @r#"
+        type BuiltParsers = {
+          x: { "A": number },
+        }
+        "#);
+    }
 }
