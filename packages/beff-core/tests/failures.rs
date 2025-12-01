@@ -1246,4 +1246,116 @@ mod tests {
         ───╯
         "#);
     }
+
+    #[test]
+    fn value_export_as_type() {
+        insta::assert_snapshot!(failure_multifile(&[
+            (
+                "t.ts",
+                r#"
+                    export const A = 1;
+                "#,
+            ),
+            (
+                "entry.ts",
+                r#"
+                    import { A } from "./t";
+                    type T = A;
+                    parse.buildParsers<{ T: T }>();
+                "#
+            )
+        ]), @r#"
+        Error: Cannot resolve type 't.ts::A'
+           ╭─[entry.ts:2:31]
+           │
+         2 │                     import { A } from "./t";
+           │                              ┬  
+           │                              ╰── Cannot resolve type 't.ts::A'
+        ───╯
+        "#);
+    }
+
+    #[test]
+    fn declare_const_as_type() {
+        insta::assert_snapshot!(failure_multifile(&[
+            (
+                "t.ts",
+                r#"
+                    export declare const A: number;
+                "#,
+            ),
+            (
+                "entry.ts",
+                r#"
+                    import { A } from "./t";
+                    type T = A;
+                    parse.buildParsers<{ T: T }>();
+                "#
+            )
+        ]), @r#"
+        Error: Cannot resolve type 't.ts::A'
+           ╭─[entry.ts:2:31]
+           │
+         2 │                     import { A } from "./t";
+           │                              ┬  
+           │                              ╰── Cannot resolve type 't.ts::A'
+        ───╯
+        "#);
+    }
+
+    #[test]
+    fn qualified_declare_const_as_type() {
+        insta::assert_snapshot!(failure_multifile(&[
+            (
+                "t.ts",
+                r#"
+                    export declare const A: { B: number };
+                "#,
+            ),
+            (
+                "entry.ts",
+                r#"
+                    import * as Ns from "./t";
+                    type T = Ns.A;
+                    parse.buildParsers<{ T: T }>();
+                "#
+            )
+        ]), @r"
+        Error: Cannot resolve type 't.ts::A'
+           ╭─[entry.ts:3:31]
+           │
+         3 │                     type T = Ns.A;
+           │                              ──┬─  
+           │                                ╰─── Cannot resolve type 't.ts::A'
+        ───╯
+        ");
+    }
+
+    #[test]
+    fn type_export_as_value() {
+        insta::assert_snapshot!(failure_multifile(&[
+            (
+                "t.ts",
+                r#"
+                    export type T = string;
+                "#,
+            ),
+            (
+                "entry.ts",
+                r#"
+                    import { T } from "./t";
+                    const x = T;
+                    parse.buildParsers<{ x: typeof x }>();
+                "#
+            )
+        ]), @r#"
+        Error: Cannot resolve value 't.ts::T'
+           ╭─[entry.ts:2:31]
+           │
+         2 │                     import { T } from "./t";
+           │                              ┬  
+           │                              ╰── Cannot resolve value 't.ts::T'
+        ───╯
+        "#);
+    }
 }
