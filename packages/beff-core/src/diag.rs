@@ -150,7 +150,8 @@ pub enum DiagnosticInfoMessage {
     MappedTypeMinusNotSupported,
     CouldNotResolveType(ModuleItemAddress),
     CouldNotResolveValue(ModuleItemAddress),
-    CouldNotResolveFile(ModuleItemAddress),
+    CouldNotFindFile(ModuleItemAddress),
+    CannotResolveImport(String),
 }
 
 #[allow(clippy::inherent_to_string)]
@@ -531,9 +532,9 @@ impl DiagnosticInfoMessage {
                 let name = module_item_address.diag_print();
                 format!("Cannot resolve type '{name}'")
             },
-            DiagnosticInfoMessage::CouldNotResolveFile(module_item_address) => {
+            DiagnosticInfoMessage::CouldNotFindFile(module_item_address) => {
                 let name = module_item_address.file.to_string();
-                format!("Cannot resolve file '{name}'")
+                format!("Cannot find file '{name}'")
             }
             DiagnosticInfoMessage::InvalidNumberOfTypeParametersForArray => {
                 "Invalid number of type parameters for Array".to_string()
@@ -576,6 +577,9 @@ impl DiagnosticInfoMessage {
             }
             DiagnosticInfoMessage::CannotUseValueInTypePosition => {
                 "Cannot use value in type position".to_string()
+            }
+            DiagnosticInfoMessage::CannotResolveImport(at) => {
+                format!("Cannot resolve import '{at}'")
             }
         }
     }

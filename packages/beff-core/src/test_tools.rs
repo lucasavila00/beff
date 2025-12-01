@@ -24,6 +24,9 @@ fn mock_resolve_import(module_specifier: &str) -> Option<BffFileName> {
         );
     }
     let replaced = module_specifier.replace("./", "");
+    if replaced == "mock_could_not_resolve" {
+        return None;
+    }
     Some(BffFileName::new(format!("{}.ts", replaced)))
 }
 

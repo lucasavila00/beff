@@ -821,12 +821,12 @@ mod tests {
             export type T = typeof import("./non-existent");
             parse.buildParsers<{ T: T }>();
         "#), @r#"
-        Error: Cannot resolve file 'non-existent.ts'
+        Error: Cannot find file 'non-existent.ts'
            ╭─[entry.ts:2:30]
            │
          2 │             export type T = typeof import("./non-existent");
            │                             ───────────────┬───────────────  
-           │                                            ╰───────────────── Cannot resolve file 'non-existent.ts'
+           │                                            ╰───────────────── Cannot find file 'non-existent.ts'
         ───╯
         "#);
     }
@@ -1094,12 +1094,12 @@ mod tests {
             type T = import("./non-existent");
             parse.buildParsers<{ T: T }>();
         "#), @r#"
-        Error: Cannot resolve file 'non-existent.ts'
+        Error: Cannot find file 'non-existent.ts'
            ╭─[entry.ts:2:23]
            │
          2 │             type T = import("./non-existent");
            │                      ────────────┬───────────  
-           │                                  ╰───────────── Cannot resolve file 'non-existent.ts'
+           │                                  ╰───────────── Cannot find file 'non-existent.ts'
         ───╯
         "#);
     }
@@ -1221,12 +1221,12 @@ mod tests {
             type T = import("./missing").T;
             parse.buildParsers<{ T: T }>();
         "#), @r#"
-        Error: Cannot resolve file 'missing.ts'
+        Error: Cannot find file 'missing.ts'
            ╭─[entry.ts:2:23]
            │
          2 │             type T = import("./missing").T;
            │                      ──────────┬──────────  
-           │                                ╰──────────── Cannot resolve file 'missing.ts'
+           │                                ╰──────────── Cannot find file 'missing.ts'
         ───╯
         "#);
     }
@@ -1237,12 +1237,12 @@ mod tests {
             type T = typeof import("./missing");
             parse.buildParsers<{ T: T }>();
         "#), @r#"
-        Error: Cannot resolve file 'missing.ts'
+        Error: Cannot find file 'missing.ts'
            ╭─[entry.ts:2:23]
            │
          2 │             type T = typeof import("./missing");
            │                      ─────────────┬────────────  
-           │                                   ╰────────────── Cannot resolve file 'missing.ts'
+           │                                   ╰────────────── Cannot find file 'missing.ts'
         ───╯
         "#);
     }
@@ -1478,5 +1478,138 @@ mod tests {
            │                               ╰── Cannot use star import in type position
         ───╯
         "#);
+    }
+
+    #[test]
+    fn typeof_import_unresolved_with_qualifier() {
+        insta::assert_snapshot!(failure(r#"
+            type T = typeof import("./mock_could_not_resolve").A;
+            parse.buildParsers<{ T: T }>();
+        "#), @r#"
+        Error: Cannot resolve import './mock_could_not_resolve'
+           ╭─[entry.ts:2:23]
+           │
+         2 │             type T = typeof import("./mock_could_not_resolve").A;
+           │                      ─────────────────────┬─────────────────────  
+           │                                           ╰─────────────────────── Cannot resolve import './mock_could_not_resolve'
+        ───╯
+        "#);
+    }
+
+    #[test]
+    fn type_import_unresolved_with_qualifier() {
+        insta::assert_snapshot!(failure(r#"
+            type T =  import("./mock_could_not_resolve").A;
+            parse.buildParsers<{ T: T }>();
+        "#), @r#"
+        Error: Cannot resolve import './mock_could_not_resolve'
+           ╭─[entry.ts:2:24]
+           │
+         2 │             type T =  import("./mock_could_not_resolve").A;
+           │                       ──────────────────┬─────────────────  
+           │                                         ╰─────────────────── Cannot resolve import './mock_could_not_resolve'
+        ───╯
+        "#);
+    }
+    #[test]
+    fn reexport_value_as_type_via_named_export() {
+        insta::assert_snapshot!(failure_multifile(&[
+            (
+                "val.ts",
+                r#"
+                    export const A = 1;
+                "#,
+            ),
+            (
+                "t.ts",
+                r#"
+                    export { A } from "./val";
+                "#,
+            ),
+            (
+                "entry.ts",
+                r#"
+                    import { A } from "./t";
+                    type T = A;
+                    parse.buildParsers<{ T: T }>();
+                "#
+            )
+        ]), @r#"
+        Error: Cannot resolve type 'val.ts::A'
+           ╭─[entry.ts:2:31]
+           │
+         2 │                     import { A } from "./t";
+           │                              ┬  
+           │                              ╰── Cannot resolve type 'val.ts::A'
+        ───╯
+        "#);
+    }
+
+    #[test]
+    fn reexport_declare_const_as_type_via_named_export() {
+        insta::assert_snapshot!(failure_multifile(&[
+            (
+                "val.ts",
+                r#"
+                    export declare const A: number;
+                "#,
+            ),
+            (
+                "t.ts",
+                r#"
+                    export { A } from "./val";
+                "#,
+            ),
+            (
+                "entry.ts",
+                r#"
+                    import { A } from "./t";
+                    type T = A;
+                    parse.buildParsers<{ T: T }>();
+                "#
+            )
+        ]), @r#"
+        Error: Cannot resolve type 'val.ts::A'
+           ╭─[entry.ts:2:31]
+           │
+         2 │                     import { A } from "./t";
+           │                              ┬  
+           │                              ╰── Cannot resolve type 'val.ts::A'
+        ───╯
+        "#);
+    }
+
+    #[test]
+    fn reexport_value_as_qualified_type() {
+        insta::assert_snapshot!(failure_multifile(&[
+            (
+                "val.ts",
+                r#"
+                    export const A = { B: 1 };
+                "#,
+            ),
+            (
+                "t.ts",
+                r#"
+                    export { A } from "./val";
+                "#,
+            ),
+            (
+                "entry.ts",
+                r#"
+                    import * as Ns from "./t";
+                    type T = Ns.A.B;
+                    parse.buildParsers<{ T: T }>();
+                "#
+            )
+        ]), @r"
+        Error: Cannot resolve type 'val.ts::A'
+           ╭─[entry.ts:3:31]
+           │
+         3 │                     type T = Ns.A.B;
+           │                              ──┬─  
+           │                                ╰─── Cannot resolve type 'val.ts::A'
+        ───╯
+        ");
     }
 }

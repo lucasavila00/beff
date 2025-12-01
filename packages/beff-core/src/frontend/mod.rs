@@ -330,10 +330,9 @@ impl<'a, 'b, R: FileManager> TypeModuleWalker<'a, R, AddressedType> for TypeWalk
                     name: decl.id.sym.to_string(),
                 },
             }),
-            SymbolExport::ValueExpr { .. } => self
+            SymbolExport::ExprDecl { .. } | SymbolExport::ValueExpr { .. } => self
                 .get_ctx()
                 .error(anchor, DiagnosticInfoMessage::CannotUseValueInTypePosition),
-            SymbolExport::ExprDecl { .. } => todo!(),
             SymbolExport::StarOfOtherFile { .. } => self.get_ctx().error(
                 anchor,
                 DiagnosticInfoMessage::CannotUseStarImportInTypePosition,
@@ -440,8 +439,12 @@ impl<'a, 'b, R: FileManager> TypeModuleWalker<'a, R, AddressedQualifiedType>
                 anchor,
                 DiagnosticInfoMessage::CannotUseInterfaceInQualifiedTypePosition,
             ),
-            SymbolExport::ValueExpr { .. } => todo!(),
-            SymbolExport::ExprDecl { .. } => todo!(),
+            SymbolExport::ValueExpr { .. } => {
+                unreachable!("we use get_type which filters these out")
+            }
+            SymbolExport::ExprDecl { .. } => {
+                unreachable!("we use get_type which filters these out")
+            }
         }
     }
 
@@ -617,7 +620,13 @@ trait ValueModuleWalker<'a, R: FileManager + 'a, U> {
                             };
                             return self.get_addressed_item(&new_addr, import_st_anchor);
                         }
-                        ImportReference::Star { .. } => {
+                        ImportReference::Star {
+                            file_name,
+                            import_statement_anchor,
+                        } => {
+                            // // TODO: is this correct? can it be covered?
+                            // return self
+                            //     .handle_import_star(file_name.clone(), import_statement_anchor);
                             todo!()
                         }
                         ImportReference::Default {
@@ -780,8 +789,10 @@ impl<'a, 'b, R: FileManager> ValueModuleWalker<'a, R, AddressedQualifiedValue>
             SymbolExport::StarOfOtherFile { reference } => {
                 self.get_addressed_item_from_import_reference(reference.as_ref(), anchor)
             }
-            SymbolExport::TsType { .. } => todo!(),
-            SymbolExport::TsInterfaceDecl { .. } => todo!(),
+            SymbolExport::TsType { .. } => unreachable!("we use get_value wich filters these out"),
+            SymbolExport::TsInterfaceDecl { .. } => {
+                unreachable!("we use get_value wich filters these out")
+            }
             SymbolExport::TsEnumDecl {
                 decl,
                 original_file,
@@ -910,7 +921,7 @@ impl<'a, R: FileManager> FrontendCtx<'a, R> {
         let parsed_module = self.files.get_or_fetch_file(&addr.file).ok_or_else(|| {
             Box::new(self.build_error(
                 anchor,
-                DiagnosticInfoMessage::CouldNotResolveFile(addr.clone()),
+                DiagnosticInfoMessage::CouldNotFindFile(addr.clone()),
             ))
         })?;
         Ok(parsed_module)
@@ -1316,7 +1327,9 @@ impl<'a, R: FileManager> FrontendCtx<'a, R> {
                 };
                 self.error(&anchor, DiagnosticInfoMessage::EnumItemShouldBeFromEnumType)
             }
-            RuntypeName::SemtypeRecursiveGenerated(_) => todo!(),
+            RuntypeName::SemtypeRecursiveGenerated(_) => unreachable!(
+                "SemtypeRecursiveGenerated types are generated only by type queries and cannot be used for runtype extraction"
+            ),
             RuntypeName::BuiltIn(ts_built_in) => match ts_built_in {
                 TsBuiltIn::Date => Ok(Runtype::Date),
                 TsBuiltIn::Array => match type_args.as_slice() {
@@ -2384,7 +2397,10 @@ impl<'a, R: FileManager> FrontendCtx<'a, R> {
                         }
                     }
                 }
-                todo!()
+                self.error(
+                    &anchor,
+                    DiagnosticInfoMessage::CannotResolveImport(import_type.arg.value.to_string()),
+                )
             }
         }
     }
@@ -2436,7 +2452,10 @@ impl<'a, R: FileManager> FrontendCtx<'a, R> {
                 }
             }
         };
-        todo!()
+        self.error(
+            &anchor,
+            DiagnosticInfoMessage::CannotResolveImport(import_type.arg.value.to_string()),
+        )
     }
 
     fn union(&mut self, types: &[Box<TsType>], file: BffFileName) -> Res<Runtype> {
