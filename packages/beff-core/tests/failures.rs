@@ -1108,12 +1108,12 @@ mod tests {
                 "#
             )
         ]), @r"
-        Error: Cannot use star import in value position
+        Error: Cannot resolve value 't.ts::T'
            ╭─[entry.ts:3:32]
            │
          3 │                     const x = Ns.T;
            │                               ──┬─  
-           │                                 ╰─── Cannot use star import in value position
+           │                                 ╰─── Cannot resolve value 't.ts::T'
         ───╯
         ");
     }
@@ -1136,12 +1136,12 @@ mod tests {
                 "#
             )
         ]), @r"
-        Error: Cannot use star import in value position
+        Error: Cannot resolve value 't.ts::I'
            ╭─[entry.ts:3:32]
            │
          3 │                     const x = Ns.I;
            │                               ──┬─  
-           │                                 ╰─── Cannot use star import in value position
+           │                                 ╰─── Cannot resolve value 't.ts::I'
         ───╯
         ");
     }

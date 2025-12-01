@@ -823,10 +823,13 @@ impl<'a, 'b, R: FileManager> ValueModuleWalker<'a, R, AddressedQualifiedValue>
 
     fn handle_symbol_enum(
         &mut self,
-        _symbol_export: &Rc<TsEnumDecl>,
-        _file_name: &BffFileName,
+        symbol_export: &Rc<TsEnumDecl>,
+        file_name: &BffFileName,
     ) -> Res<AddressedQualifiedValue> {
-        todo!()
+        Ok(AddressedQualifiedValue::Enum(
+            symbol_export.clone(),
+            file_name.clone(),
+        ))
     }
 }
 
@@ -2055,10 +2058,10 @@ impl<'a, R: FileManager> FrontendCtx<'a, R> {
                             name: i.sym.to_string(),
                             visibility: Visibility::Local,
                         };
-                        // let q = self.get_addressed_qualified_value(&new_addr, &anchor);
-                        // if let Ok(q) = q {
-                        //     return self.member_access_qualified_value(&q, key, &anchor);
-                        // }
+                        let q = self.get_addressed_qualified_value(&new_addr, &anchor);
+                        if let Ok(q) = q {
+                            return self.member_access_qualified_value(&q, key, &anchor);
+                        }
                         // HERE it should do a qualified value lookup
                         let decl = self.get_addressed_value(&new_addr, &anchor)?;
                         match decl {
