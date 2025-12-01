@@ -95,6 +95,7 @@ pub enum AddressedValue {
 pub enum AddressedQualifiedValue {
     StarOfFile(BffFileName),
     ValueExpr(Rc<Expr>, BffFileName),
+    ExprDecl(Rc<TsType>, BffFileName),
     MemberExpr {
         base: Box<AddressedQualifiedValue>,
         member: String,
@@ -110,6 +111,7 @@ impl AddressedQualifiedValue {
             AddressedQualifiedValue::ValueExpr(_, f) => f.clone(),
             AddressedQualifiedValue::MemberExpr { file_name, .. } => file_name.clone(),
             AddressedQualifiedValue::Enum(_, f) => f.clone(),
+            AddressedQualifiedValue::ExprDecl(_, f) => f.clone(),
         }
     }
 }
@@ -422,8 +424,14 @@ impl<'a, 'b, R: FileManager> TypeModuleWalker<'a, R, AddressedQualifiedType>
                 };
                 self.get_addressed_item(&new_addr, anchor)
             }
-            SymbolExport::TsType { .. } => todo!(),
-            SymbolExport::TsInterfaceDecl { .. } => todo!(),
+            SymbolExport::TsType { .. } => self.ctx.error(
+                anchor,
+                DiagnosticInfoMessage::CannotUseTypeInQualifiedTypePosition,
+            ),
+            SymbolExport::TsInterfaceDecl { .. } => self.ctx.error(
+                anchor,
+                DiagnosticInfoMessage::CannotUseInterfaceInQualifiedTypePosition,
+            ),
             SymbolExport::ValueExpr { .. } => todo!(),
             SymbolExport::ExprDecl { .. } => todo!(),
         }
@@ -771,8 +779,23 @@ impl<'a, 'b, R: FileManager> ValueModuleWalker<'a, R, AddressedQualifiedValue>
                 expr.clone(),
                 original_file.clone(),
             )),
-            SymbolExport::ExprDecl { .. } => todo!(),
-            SymbolExport::SomethingOfOtherFile { .. } => todo!(),
+            SymbolExport::ExprDecl {
+                name: _,
+                span: _,
+                original_file,
+                ty,
+            } => Ok(AddressedQualifiedValue::ExprDecl(
+                ty.clone(),
+                original_file.clone(),
+            )),
+            SymbolExport::SomethingOfOtherFile { something, file } => {
+                let new_addr = ModuleItemAddress {
+                    file: file.clone(),
+                    name: something.clone(),
+                    visibility: Visibility::Export,
+                };
+                self.get_addressed_item(&new_addr, anchor)
+            }
         }
     }
 
@@ -2178,6 +2201,11 @@ impl<'a, R: FileManager> FrontendCtx<'a, R> {
             }
             AddressedQualifiedValue::ValueExpr(expr, bff_file_name) => {
                 let base_ty = self.typeof_expr(expr, false, bff_file_name.clone())?;
+                let key_ty = Runtype::single_string_const(member);
+                self.do_indexed_access_on_types(&base_ty, &key_ty, anchor)
+            }
+            AddressedQualifiedValue::ExprDecl(ts_type, bff_file_name) => {
+                let base_ty = self.extract_type(&ts_type, bff_file_name.clone())?;
                 let key_ty = Runtype::single_string_const(member);
                 self.do_indexed_access_on_types(&base_ty, &key_ty, anchor)
             }

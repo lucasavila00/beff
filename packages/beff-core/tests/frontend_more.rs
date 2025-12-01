@@ -592,4 +592,64 @@ mod tests {
         }
         "#);
     }
+
+    #[test]
+    fn typeof_on_type_decl_property() {
+        insta::assert_snapshot!(print_types_multifile(&[
+            (
+                "t.ts",
+                r#"
+                    export declare const A: { b: string };
+                "#,
+            ),
+            (
+                "entry.ts",
+                r#"
+                    import { A } from "./t";
+                    type T = typeof A.b;
+                    parse.buildParsers<{ T: T }>();
+                "#
+            )
+        ]), @r"
+        type T = string;
+
+
+        type BuiltParsers = {
+          T: T,
+        }
+        ");
+    }
+
+    #[test]
+    fn re_export_named_value_qualified() {
+        insta::assert_snapshot!(print_types_multifile(&[
+            (
+                "a.ts",
+                r#"
+                    export const A = { b: "hello" } as const;
+                "#,
+            ),
+            (
+                "t.ts",
+                r#"
+                    export { A } from "./a";
+                "#,
+            ),
+            (
+                "entry.ts",
+                r#"
+                    import * as Ns from "./t";
+                    type T = typeof Ns.A.b;
+                    parse.buildParsers<{ T: T }>();
+                "#
+            )
+        ]), @r#"
+        type T = "hello";
+
+
+        type BuiltParsers = {
+          T: T,
+        }
+        "#);
+    }
 }

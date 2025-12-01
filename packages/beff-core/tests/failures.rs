@@ -888,4 +888,144 @@ mod tests {
         ───╯
         "#);
     }
+
+    #[test]
+    fn type_alias_as_namespace() {
+        insta::assert_snapshot!(failure_multifile(&[
+            (
+                "t.ts",
+                r#"
+                    export type T = {};
+                "#,
+            ),
+            (
+                "entry.ts",
+                r#"
+                    import * as Ns from "./t";
+                    type X = Ns.T.Sub;
+                    parse.buildParsers<{ X: X }>();
+                "#
+            )
+        ]), @r"
+        Error: Cannot use type in qualified type position
+           ╭─[entry.ts:3:31]
+           │
+         3 │                     type X = Ns.T.Sub;
+           │                              ──┬─  
+           │                                ╰─── Cannot use type in qualified type position
+        ───╯
+        ");
+    }
+
+    #[test]
+    fn interface_as_namespace() {
+        insta::assert_snapshot!(failure_multifile(&[
+            (
+                "t.ts",
+                r#"
+                    export interface I {}
+                "#,
+            ),
+            (
+                "entry.ts",
+                r#"
+                    import * as Ns from "./t";
+                    type X = Ns.I.Sub;
+                    parse.buildParsers<{ X: X }>();
+                "#
+            )
+        ]), @r"
+        Error: Cannot use interface in qualified type position
+           ╭─[entry.ts:3:31]
+           │
+         3 │                     type X = Ns.I.Sub;
+           │                              ──┬─  
+           │                                ╰─── Cannot use interface in qualified type position
+        ───╯
+        ");
+    }
+
+    #[test]
+    fn value_as_namespace_in_type_pos() {
+        insta::assert_snapshot!(failure_multifile(&[
+            (
+                "t.ts",
+                r#"
+                    export const A = {};
+                "#,
+            ),
+            (
+                "entry.ts",
+                r#"
+                    import * as Ns from "./t";
+                    type X = Ns.A.Sub;
+                    parse.buildParsers<{ X: X }>();
+                "#
+            )
+        ]), @r"
+        Error: Cannot resolve type 't.ts::A'
+           ╭─[entry.ts:3:31]
+           │
+         3 │                     type X = Ns.A.Sub;
+           │                              ──┬─  
+           │                                ╰─── Cannot resolve type 't.ts::A'
+        ───╯
+        ");
+    }
+
+    #[test]
+    fn value_import_resolves_to_type() {
+        insta::assert_snapshot!(failure_multifile(&[
+            (
+                "t.ts",
+                r#"
+                    export type T = string;
+                "#,
+            ),
+            (
+                "entry.ts",
+                r#"
+                    import { T } from "./t";
+                    const x = T;
+                    parse.buildParsers<{ x: typeof x }>();
+                "#
+            )
+        ]), @r#"
+        Error: Cannot resolve value 't.ts::T'
+           ╭─[entry.ts:2:31]
+           │
+         2 │                     import { T } from "./t";
+           │                              ┬  
+           │                              ╰── Cannot resolve value 't.ts::T'
+        ───╯
+        "#);
+    }
+
+    #[test]
+    fn value_import_resolves_to_interface() {
+        insta::assert_snapshot!(failure_multifile(&[
+            (
+                "t.ts",
+                r#"
+                    export interface I {}
+                "#,
+            ),
+            (
+                "entry.ts",
+                r#"
+                    import { I } from "./t";
+                    const x = I;
+                    parse.buildParsers<{ x: typeof x }>();
+                "#
+            )
+        ]), @r#"
+        Error: Cannot resolve value 't.ts::I'
+           ╭─[entry.ts:2:31]
+           │
+         2 │                     import { I } from "./t";
+           │                              ┬  
+           │                              ╰── Cannot resolve value 't.ts::I'
+        ───╯
+        "#);
+    }
 }
