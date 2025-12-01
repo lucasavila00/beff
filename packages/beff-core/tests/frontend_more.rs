@@ -570,4 +570,26 @@ mod tests {
         }
         ");
     }
+    #[test]
+    fn qualified_access_on_enum() {
+        insta::assert_snapshot!(print_types_multifile(&[
+            (
+                "t.ts",
+                r#"
+                    export enum E { A = "a" }
+                "#,
+            ),
+            (
+                "entry.ts",
+                r#"
+                    import { E } from "./t";
+                    parse.buildParsers<{ T: typeof E.A }>();
+                "#
+            )
+        ]), @r#"
+        type BuiltParsers = {
+          T: "a",
+        }
+        "#);
+    }
 }

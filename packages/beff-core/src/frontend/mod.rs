@@ -100,6 +100,7 @@ pub enum AddressedQualifiedValue {
         member: String,
         file_name: BffFileName,
     },
+    Enum(Rc<TsEnumDecl>, BffFileName),
 }
 
 impl AddressedQualifiedValue {
@@ -108,6 +109,7 @@ impl AddressedQualifiedValue {
             AddressedQualifiedValue::StarOfFile(f) => f.clone(),
             AddressedQualifiedValue::ValueExpr(_, f) => f.clone(),
             AddressedQualifiedValue::MemberExpr { file_name, .. } => file_name.clone(),
+            AddressedQualifiedValue::Enum(_, f) => f.clone(),
         }
     }
 }
@@ -753,7 +755,13 @@ impl<'a, 'b, R: FileManager> ValueModuleWalker<'a, R, AddressedQualifiedValue>
             }
             SymbolExport::TsType { .. } => todo!(),
             SymbolExport::TsInterfaceDecl { .. } => todo!(),
-            SymbolExport::TsEnumDecl { .. } => todo!(),
+            SymbolExport::TsEnumDecl {
+                decl,
+                original_file,
+            } => Ok(AddressedQualifiedValue::Enum(
+                decl.clone(),
+                original_file.clone(),
+            )),
             SymbolExport::ValueExpr {
                 expr,
                 name: _,
@@ -2126,25 +2134,19 @@ impl<'a, R: FileManager> FrontendCtx<'a, R> {
                     &ts_qualified_name.left,
                     file.clone(),
                 )?;
-                match left_part {
-                    AddressedQualifiedValue::StarOfFile(bff_file_name) => {
-                        let new_addr = ModuleItemAddress {
-                            file: bff_file_name.clone(),
-                            name: ts_qualified_name.right.sym.to_string(),
-                            // TODO: is visibility correct here?
-                            visibility: Visibility::Export,
-                        };
-                        self.get_addressed_qualified_value(&new_addr, &anchor)
-                    }
-                    base @ AddressedQualifiedValue::MemberExpr { .. }
-                    | base @ AddressedQualifiedValue::ValueExpr(_, _) => {
-                        Ok(AddressedQualifiedValue::MemberExpr {
-                            base: Box::new(base),
-                            member: ts_qualified_name.right.sym.to_string(),
-                            file_name: file.clone(),
-                        })
-                    }
+                if let AddressedQualifiedValue::StarOfFile(other_file) = left_part {
+                    let new_addr = ModuleItemAddress {
+                        file: other_file.clone(),
+                        name: ts_qualified_name.right.sym.to_string(),
+                        visibility: Visibility::Export,
+                    };
+                    return self.get_addressed_qualified_value(&new_addr, &anchor);
                 }
+                Ok(AddressedQualifiedValue::MemberExpr {
+                    file_name: left_part.file_name(),
+                    base: Box::new(left_part),
+                    member: ts_qualified_name.right.sym.to_string(),
+                })
             }
             TsEntityName::Ident(ident) => {
                 let addr = ModuleItemAddress::from_ident(
@@ -2187,6 +2189,19 @@ impl<'a, R: FileManager> FrontendCtx<'a, R> {
                 let obj = self.access_qualified_value(inner, member2, anchor)?;
                 let key = Runtype::single_string_const(member);
                 self.do_indexed_access_on_types(&obj, &key, anchor)
+            }
+            AddressedQualifiedValue::Enum(ts_enum_decl, bff_file_name) => {
+                let Some(enum_value) = ts_enum_decl.members.iter().find(|it| match &it.id {
+                    TsEnumMemberId::Ident(i) => i.sym == *member,
+                    TsEnumMemberId::Str(_) => unreachable!(),
+                }) else {
+                    return self.error(&anchor, DiagnosticInfoMessage::EnumMemberNotFound);
+                };
+                let Some(init) = &enum_value.init else {
+                    return self.error(&anchor, DiagnosticInfoMessage::EnumMemberNoInit);
+                };
+
+                self.typeof_expr(init, true, bff_file_name.clone())
             }
         }
     }
