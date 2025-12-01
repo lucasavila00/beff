@@ -6,6 +6,9 @@ use crate::{BffFileName, ModuleItemAddress, ParsedModule, RuntypeUUID};
 
 #[derive(Debug, Clone)]
 pub enum DiagnosticInfoMessage {
+    CannotUseValueInTypePosition,
+    CannotUseTypeInValuePosition,
+    CannotUseInterfaceInValuePosition,
     ExpressionIsNotAType,
     TupleRestTypeMustBeArray,
     KeyedAccessResultsInNeverType,
@@ -564,6 +567,15 @@ impl DiagnosticInfoMessage {
             }
             DiagnosticInfoMessage::ExpressionIsNotAType => {
                 "Expression is not a type".to_string()
+            }
+            DiagnosticInfoMessage::CannotUseTypeInValuePosition => {
+                "Cannot use type in value position".to_string()
+            }
+            DiagnosticInfoMessage::CannotUseInterfaceInValuePosition => {
+                "Cannot use interface in value position".to_string()
+            }
+            DiagnosticInfoMessage::CannotUseValueInTypePosition => {
+                "Cannot use value in type position".to_string()
             }
         }
     }

@@ -1358,4 +1358,118 @@ mod tests {
         ───╯
         "#);
     }
+
+    #[test]
+    fn export_renamed_default_value_as_type() {
+        insta::assert_snapshot!(failure_multifile(&[
+            (
+                "t.ts",
+                r#"
+                    const A = 1;
+                    export { A as default };
+                "#,
+            ),
+            (
+                "entry.ts",
+                r#"
+                    import D from "./t";
+                    type T = D;
+                    parse.buildParsers<{ T: T }>();
+                "#
+            )
+        ]), @r"
+        Error: Cannot use value in type position
+           ╭─[entry.ts:3:31]
+           │
+         3 │                     type T = D;
+           │                              ┬  
+           │                              ╰── Cannot use value in type position
+        ───╯
+        ");
+    }
+
+    #[test]
+    fn export_renamed_default_type_as_value() {
+        insta::assert_snapshot!(failure_multifile(&[
+            (
+                "t.ts",
+                r#"
+                    type A = string;
+                    export { A as default };
+                "#,
+            ),
+            (
+                "entry.ts",
+                r#"
+                    import D from "./t";
+                    const x = D;
+                    parse.buildParsers<{ x: typeof x }>();
+                "#
+            )
+        ]), @r"
+        Error: Cannot use type in value position
+           ╭─[entry.ts:3:32]
+           │
+         3 │                     const x = D;
+           │                               ┬  
+           │                               ╰── Cannot use type in value position
+        ───╯
+        ");
+    }
+
+    #[test]
+    fn export_renamed_default_interface_as_value() {
+        insta::assert_snapshot!(failure_multifile(&[
+            (
+                "t.ts",
+                r#"
+                    interface I {}
+                    export { I as default };
+                "#,
+            ),
+            (
+                "entry.ts",
+                r#"
+                    import D from "./t";
+                    const x = D;
+                    parse.buildParsers<{ x: typeof x }>();
+                "#
+            )
+        ]), @r"
+        Error: Cannot use interface in value position
+           ╭─[entry.ts:3:32]
+           │
+         3 │                     const x = D;
+           │                               ┬  
+           │                               ╰── Cannot use interface in value position
+        ───╯
+        ");
+    }
+
+    #[test]
+    fn export_star_as_ns_used_as_type() {
+        insta::assert_snapshot!(failure_multifile(&[
+            (
+                "other.ts",
+                r#"
+                    export const A = 1;
+                "#,
+            ),
+            (
+                "t.ts",
+                r#"
+                    export * as Ns from "./other";
+                "#,
+            ),
+            (
+                "entry.ts",
+                r#"
+                    import { Ns } from "./t";
+                    type T = Ns;
+                    parse.buildParsers<{ T: T }>();
+                "#
+            )
+        ]), @r#"
+        "#);
+    }
 }

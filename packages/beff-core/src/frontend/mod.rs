@@ -142,6 +142,7 @@ trait TypeModuleWalker<'a, R: FileManager + 'a, U> {
         &mut self,
         file_name: BffFileName,
         err_anchor: &Anchor,
+        import_statement_anchor: &Anchor,
     ) -> Res<U> {
         match &self
             .get_ctx()
@@ -171,7 +172,7 @@ trait TypeModuleWalker<'a, R: FileManager + 'a, U> {
                 }
             },
             None => self.get_ctx().error(
-                err_anchor,
+                import_statement_anchor,
                 DiagnosticInfoMessage::CouldNotResolveType(ModuleItemAddress {
                     file: file_name,
                     name: "default".to_string(),
@@ -206,8 +207,11 @@ trait TypeModuleWalker<'a, R: FileManager + 'a, U> {
             ImportReference::Default {
                 file_name,
                 import_statement_anchor,
-            } => self
-                .get_addressed_item_from_default_import(file_name.clone(), import_statement_anchor),
+            } => self.get_addressed_item_from_default_import(
+                file_name.clone(),
+                err_anchor,
+                import_statement_anchor,
+            ),
         }
     }
 
@@ -254,8 +258,11 @@ trait TypeModuleWalker<'a, R: FileManager + 'a, U> {
             }
             Visibility::Export => {
                 if addr.name == "default" {
-                    return self
-                        .get_addressed_item_from_default_import(addr.file.clone(), err_anchor);
+                    return self.get_addressed_item_from_default_import(
+                        addr.file.clone(),
+                        err_anchor,
+                        err_anchor,
+                    );
                 }
 
                 if let Some(export) = parsed_module
@@ -323,7 +330,9 @@ impl<'a, 'b, R: FileManager> TypeModuleWalker<'a, R, AddressedType> for TypeWalk
                     name: decl.id.sym.to_string(),
                 },
             }),
-            SymbolExport::ValueExpr { .. } => todo!(),
+            SymbolExport::ValueExpr { .. } => self
+                .get_ctx()
+                .error(anchor, DiagnosticInfoMessage::CannotUseValueInTypePosition),
             SymbolExport::ExprDecl { .. } => todo!(),
             SymbolExport::StarOfOtherFile { .. } => todo!(),
             SymbolExport::SomethingOfOtherFile { something, file } => {
@@ -506,6 +515,7 @@ trait ValueModuleWalker<'a, R: FileManager + 'a, U> {
         &mut self,
         file_name: BffFileName,
         anchor: &Anchor,
+        import_statement_anchor: &Anchor,
     ) -> Res<U> {
         match &self
             .get_ctx()
@@ -533,7 +543,7 @@ trait ValueModuleWalker<'a, R: FileManager + 'a, U> {
                 }
             },
             None => self.get_ctx().error(
-                anchor,
+                import_statement_anchor,
                 DiagnosticInfoMessage::CouldNotResolveValue(ModuleItemAddress {
                     file: file_name,
                     name: "default".to_string(),
@@ -567,8 +577,11 @@ trait ValueModuleWalker<'a, R: FileManager + 'a, U> {
             ImportReference::Default {
                 file_name,
                 import_statement_anchor,
-            } => self
-                .get_addressed_item_from_default_import(file_name.clone(), import_statement_anchor),
+            } => self.get_addressed_item_from_default_import(
+                file_name.clone(),
+                anchor,
+                import_statement_anchor,
+            ),
         }
     }
     fn get_addressed_item(&mut self, addr: &ModuleItemAddress, anchor: &Anchor) -> Res<U> {
@@ -610,6 +623,7 @@ trait ValueModuleWalker<'a, R: FileManager + 'a, U> {
                         } => {
                             return self.get_addressed_item_from_default_import(
                                 file_name.clone(),
+                                anchor,
                                 import_statement_anchor,
                             );
                         }
@@ -623,7 +637,11 @@ trait ValueModuleWalker<'a, R: FileManager + 'a, U> {
             }
             Visibility::Export => {
                 if addr.name == "default" {
-                    return self.get_addressed_item_from_default_import(addr.file.clone(), anchor);
+                    return self.get_addressed_item_from_default_import(
+                        addr.file.clone(),
+                        anchor,
+                        anchor,
+                    );
                 }
 
                 if let Some(exports) = parsed_module
@@ -657,7 +675,13 @@ impl<'a, 'b, R: FileManager> ValueModuleWalker<'a, R, AddressedValue> for ValueW
         anchor: &Anchor,
     ) -> Res<AddressedValue> {
         match exports {
-            SymbolExport::TsType { .. } | SymbolExport::TsInterfaceDecl { .. } => todo!(),
+            SymbolExport::TsType { .. } => self
+                .get_ctx()
+                .error(anchor, DiagnosticInfoMessage::CannotUseTypeInValuePosition),
+            SymbolExport::TsInterfaceDecl { .. } => self.get_ctx().error(
+                anchor,
+                DiagnosticInfoMessage::CannotUseInterfaceInValuePosition,
+            ),
             SymbolExport::TsEnumDecl {
                 decl,
                 original_file,
