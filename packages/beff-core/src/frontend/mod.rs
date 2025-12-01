@@ -104,18 +104,6 @@ pub enum AddressedQualifiedValue {
     Enum(Rc<TsEnumDecl>, BffFileName),
 }
 
-impl AddressedQualifiedValue {
-    pub fn file_name(&self) -> BffFileName {
-        match self {
-            AddressedQualifiedValue::StarOfFile(f) => f.clone(),
-            AddressedQualifiedValue::ValueExpr(_, f) => f.clone(),
-            AddressedQualifiedValue::MemberExpr { file_name, .. } => file_name.clone(),
-            AddressedQualifiedValue::Enum(_, f) => f.clone(),
-            AddressedQualifiedValue::ExprDecl(_, f) => f.clone(),
-        }
-    }
-}
-
 trait TypeModuleWalker<'a, R: FileManager + 'a, U> {
     fn get_ctx<'b>(&'b mut self) -> &'b mut FrontendCtx<'a, R>;
 
@@ -2166,7 +2154,7 @@ impl<'a, R: FileManager> FrontendCtx<'a, R> {
                     return self.get_addressed_qualified_value(&new_addr, &anchor);
                 }
                 Ok(AddressedQualifiedValue::MemberExpr {
-                    file_name: left_part.file_name(),
+                    file_name: file.clone(),
                     base: Box::new(left_part),
                     member: ts_qualified_name.right.sym.to_string(),
                 })
