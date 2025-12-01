@@ -334,7 +334,10 @@ impl<'a, 'b, R: FileManager> TypeModuleWalker<'a, R, AddressedType> for TypeWalk
                 .get_ctx()
                 .error(anchor, DiagnosticInfoMessage::CannotUseValueInTypePosition),
             SymbolExport::ExprDecl { .. } => todo!(),
-            SymbolExport::StarOfOtherFile { .. } => todo!(),
+            SymbolExport::StarOfOtherFile { .. } => self.get_ctx().error(
+                anchor,
+                DiagnosticInfoMessage::CannotUseStarImportInTypePosition,
+            ),
             SymbolExport::SomethingOfOtherFile { something, file } => {
                 let new_addr = ModuleItemAddress {
                     file: file.clone(),

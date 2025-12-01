@@ -1470,6 +1470,13 @@ mod tests {
                 "#
             )
         ]), @r#"
+        Error: Cannot use star import in type position
+           ╭─[entry.ts:2:31]
+           │
+         2 │                     import { Ns } from "./t";
+           │                              ─┬  
+           │                               ╰── Cannot use star import in type position
+        ───╯
         "#);
     }
 }
