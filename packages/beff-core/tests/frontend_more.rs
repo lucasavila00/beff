@@ -889,7 +889,7 @@ mod tests {
         ");
     }
     #[test]
-    fn import_star_as_value_todo() {
+    fn import_star_as_value() {
         insta::assert_snapshot!(print_types_multifile(&[
             (
                 "t.ts",
@@ -912,7 +912,7 @@ mod tests {
         "#);
     }
     #[test]
-    fn reexport_star_as_value_todo() {
+    fn reexport_star_as_value() {
         insta::assert_snapshot!(print_types_multifile(&[
             (
                 "other.ts",
