@@ -2161,7 +2161,7 @@ impl<'a, R: FileManager> FrontendCtx<'a, R> {
         }
     }
 
-    fn access_qualified_value(
+    fn member_access_qualified_value(
         &mut self,
         base: &AddressedQualifiedValue,
         member: &str,
@@ -2186,7 +2186,7 @@ impl<'a, R: FileManager> FrontendCtx<'a, R> {
                 member: member2,
                 file_name: _,
             } => {
-                let obj = self.access_qualified_value(inner, member2, anchor)?;
+                let obj = self.member_access_qualified_value(inner, member2, anchor)?;
                 let key = Runtype::single_string_const(member);
                 self.do_indexed_access_on_types(&obj, &key, anchor)
             }
@@ -2217,7 +2217,7 @@ impl<'a, R: FileManager> FrontendCtx<'a, R> {
             file.clone(),
         )?;
 
-        self.access_qualified_value(&left_value, &ts_qualified_name.right.sym, anchor)
+        self.member_access_qualified_value(&left_value, &ts_qualified_name.right.sym, anchor)
     }
 
     fn extract_value_ts_entity_name(
