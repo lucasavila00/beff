@@ -861,4 +861,31 @@ mod tests {
         }
         "#);
     }
+
+    #[test]
+    fn qualified_declare_const() {
+        insta::assert_snapshot!(print_types_multifile(&[
+            (
+                "t.ts",
+                r#"
+                    export declare const A: { b: string };
+                "#,
+            ),
+            (
+                "entry.ts",
+                r#"
+                    import * as Ns from "./t";
+                    type T = typeof Ns.A.b;
+                    parse.buildParsers<{ T: T }>();
+                "#
+            )
+        ]), @r"
+        type T = string;
+
+
+        type BuiltParsers = {
+          T: T,
+        }
+        ");
+    }
 }

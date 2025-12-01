@@ -1214,4 +1214,36 @@ mod tests {
         ───╯
         "#);
     }
+
+    #[test]
+    fn import_type_unresolved() {
+        insta::assert_snapshot!(failure(r#"
+            type T = import("./missing").T;
+            parse.buildParsers<{ T: T }>();
+        "#), @r#"
+        Error: Cannot resolve file 'missing.ts'
+           ╭─[entry.ts:2:23]
+           │
+         2 │             type T = import("./missing").T;
+           │                      ──────────┬──────────  
+           │                                ╰──────────── Cannot resolve file 'missing.ts'
+        ───╯
+        "#);
+    }
+
+    #[test]
+    fn typeof_import_unresolved() {
+        insta::assert_snapshot!(failure(r#"
+            type T = typeof import("./missing");
+            parse.buildParsers<{ T: T }>();
+        "#), @r#"
+        Error: Cannot resolve file 'missing.ts'
+           ╭─[entry.ts:2:23]
+           │
+         2 │             type T = typeof import("./missing");
+           │                      ─────────────┬────────────  
+           │                                   ╰────────────── Cannot resolve file 'missing.ts'
+        ───╯
+        "#);
+    }
 }
