@@ -737,4 +737,128 @@ mod tests {
         }
         "#);
     }
+
+    #[test]
+    fn typeof_qualified_local_declared_value() {
+        insta::assert_snapshot!(print_types(r#"
+            declare const A: { b: string };
+            type T = typeof A.b;
+            parse.buildParsers<{ T: T }>();
+        "#), @r"
+        type T = string;
+
+
+        type BuiltParsers = {
+          T: T,
+        }
+        ");
+    }
+
+    #[test]
+    fn value_walker_import_star() {
+        insta::assert_snapshot!(print_types_multifile(&[
+            (
+                "t.ts",
+                r#"
+                    export const A = "a";
+                "#,
+            ),
+            (
+                "entry.ts",
+                r#"
+                    import * as Ns from "./t";
+                    const x = Ns;
+                    type T = typeof x.A;
+                    parse.buildParsers<{ T: T }>();
+                "#
+            )
+        ]), @r"
+        type T = string;
+
+
+        type BuiltParsers = {
+          T: T,
+        }
+        ");
+    }
+
+    #[test]
+    fn namespace_as_value() {
+        insta::assert_snapshot!(print_types_multifile(&[
+            (
+                "t.ts",
+                r#"
+                    export const A = "a";
+                "#,
+            ),
+            (
+                "entry.ts",
+                r#"
+                    import * as Ns from "./t";
+                    const v = Ns;
+                    export type T = typeof v;
+                    parse.buildParsers<{ T: T }>();
+                "#
+            )
+        ]), @r#"
+        type T = { "A": string };
+
+
+        type BuiltParsers = {
+          T: T,
+        }
+        "#);
+    }
+
+    #[test]
+    fn namespace_as_value_ref() {
+        insta::assert_snapshot!(print_types_multifile(&[
+            (
+                "t.ts",
+                r#"
+                    export const A = 1;
+                "#,
+            ),
+            (
+                "entry.ts",
+                r#"
+                    import * as Ns from "./t";
+                    const v = Ns;
+                    export type T = typeof v;
+                    parse.buildParsers<{ T: T }>();
+                "#
+            )
+        ]), @r#"
+        type T = { "A": number };
+
+
+        type BuiltParsers = {
+          T: T,
+        }
+        "#);
+    }
+
+    #[test]
+    fn star_import_as_value() {
+        insta::assert_snapshot!(print_types_multifile(&[
+            (
+                "t.ts",
+                r#"
+                    export const A = 1;
+                "#,
+            ),
+            (
+                "entry.ts",
+                r#"
+                    import * as Ns from "./t";
+                    const V = Ns;
+                    parse.buildParsers<{ V: typeof V }>();
+                "#
+            )
+        ]), @r#"
+        type BuiltParsers = {
+          V: { "A": number },
+        }
+        "#);
+    }
 }

@@ -221,35 +221,6 @@ mod tests {
     }
 
     #[test]
-    fn namespace_as_value() {
-        insta::assert_snapshot!(failure_multifile(&[
-            (
-                "t.ts",
-                r#"
-                    export const A = "a";
-                "#,
-            ),
-            (
-                "entry.ts",
-                r#"
-                    import * as Ns from "./t";
-                    const v = Ns;
-                    export type T = typeof v;
-                    parse.buildParsers<{ T: T }>();
-                "#
-            )
-        ]), @r"
-        Error: Cannot use star import in value position
-           ╭─[entry.ts:3:32]
-           │
-         3 │                     const v = Ns;
-           │                               ─┬  
-           │                                ╰── Cannot use star import in value position
-        ───╯
-        ");
-    }
-
-    #[test]
     fn access_property_on_primitive() {
         insta::assert_snapshot!(failure(r#"
             const A = 1;
@@ -787,35 +758,6 @@ mod tests {
     }
 
     #[test]
-    fn namespace_as_value_ref() {
-        insta::assert_snapshot!(failure_multifile(&[
-            (
-                "t.ts",
-                r#"
-                    export const A = 1;
-                "#,
-            ),
-            (
-                "entry.ts",
-                r#"
-                    import * as Ns from "./t";
-                    const v = Ns;
-                    export type T = typeof v;
-                    parse.buildParsers<{ T: T }>();
-                "#
-            )
-        ]), @r"
-        Error: Cannot use star import in value position
-           ╭─[entry.ts:3:32]
-           │
-         3 │                     const v = Ns;
-           │                               ─┬  
-           │                                ╰── Cannot use star import in value position
-        ───╯
-        ");
-    }
-
-    #[test]
     fn value_alias_to_type_export() {
         insta::assert_snapshot!(failure_multifile(&[
             (
@@ -1214,6 +1156,61 @@ mod tests {
          2 │                     import D from "./t";
            │                            ┬  
            │                            ╰── Cannot resolve type 't.ts::default'
+        ───╯
+        "#);
+    }
+
+    #[test]
+    fn import_default_missing_export() {
+        insta::assert_snapshot!(failure_multifile(&[
+            (
+                "t.ts",
+                r#"
+                    export const a = 1;
+                "#,
+            ),
+            (
+                "entry.ts",
+                r#"
+                    import D from "./t";
+                    parse.buildParsers<{ D: typeof D }>();
+                "#
+            )
+        ]), @r#"
+        Error: Cannot resolve value 't.ts::default'
+           ╭─[entry.ts:2:29]
+           │
+         2 │                     import D from "./t";
+           │                            ┬  
+           │                            ╰── Cannot resolve value 't.ts::default'
+        ───╯
+        "#);
+    }
+
+    #[test]
+    fn value_as_type() {
+        insta::assert_snapshot!(failure_multifile(&[
+            (
+                "t.ts",
+                r#"
+                    export const A = 1;
+                "#,
+            ),
+            (
+                "entry.ts",
+                r#"
+                    import { A } from "./t";
+                    export type T = A;
+                    parse.buildParsers<{ T: T }>();
+                "#
+            )
+        ]), @r#"
+        Error: Cannot resolve type 't.ts::A'
+           ╭─[entry.ts:2:31]
+           │
+         2 │                     import { A } from "./t";
+           │                              ┬  
+           │                              ╰── Cannot resolve type 't.ts::A'
         ───╯
         "#);
     }

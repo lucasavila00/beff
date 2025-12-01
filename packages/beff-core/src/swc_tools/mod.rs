@@ -78,12 +78,12 @@ impl ImportReference {
 }
 #[derive(Debug, Clone)]
 pub struct SymbolsExportsModule {
-    named_types: HashMap<String, Rc<SymbolExport>>,
-    named_values: HashMap<String, Rc<SymbolExport>>,
+    pub named_types: HashMap<String, Rc<SymbolExport>>,
+    pub named_values: HashMap<String, Rc<SymbolExport>>,
 
-    named_unknown: HashMap<String, Rc<SymbolExport>>,
+    pub named_unknown: HashMap<String, Rc<SymbolExport>>,
 
-    extends: Vec<BffFileName>,
+    pub extends: Vec<BffFileName>,
 
     pub export_default: Option<Rc<SymbolExportDefault>>,
 }

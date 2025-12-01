@@ -89,6 +89,7 @@ pub enum AddressedValue {
     ValueExpr(Rc<Expr>, BffFileName),
     TypeDecl(Rc<TsType>, BffFileName),
     Enum(Rc<TsEnumDecl>, BffFileName),
+    StarOfFile(BffFileName),
 }
 
 #[derive(Debug)]
@@ -716,13 +717,10 @@ impl<'a, 'b, R: FileManager> ValueModuleWalker<'a, R, AddressedValue> for ValueW
 
     fn handle_import_star(
         &mut self,
-        _file_name: BffFileName,
-        anchor: &Anchor,
+        file_name: BffFileName,
+        _anchor: &Anchor,
     ) -> Res<AddressedValue> {
-        self.ctx.error(
-            anchor,
-            DiagnosticInfoMessage::CannotUseStarImportInValuePosition,
-        )
+        Ok(AddressedValue::StarOfFile(file_name))
     }
 
     fn handle_symbol_enum(
@@ -807,10 +805,13 @@ impl<'a, 'b, R: FileManager> ValueModuleWalker<'a, R, AddressedQualifiedValue>
 
     fn handle_symbol_expr_decl(
         &mut self,
-        _symbol_export: &Rc<TsType>,
-        _file_name: &BffFileName,
+        symbol_export: &Rc<TsType>,
+        file_name: &BffFileName,
     ) -> Res<AddressedQualifiedValue> {
-        todo!()
+        Ok(AddressedQualifiedValue::ExprDecl(
+            symbol_export.clone(),
+            file_name.clone(),
+        ))
     }
 
     fn handle_import_star(
@@ -1945,7 +1946,7 @@ impl<'a, R: FileManager> FrontendCtx<'a, R> {
                     name: i.sym.to_string(),
                     visibility: Visibility::Local,
                 };
-                self.extract_addressed_value(&new_addr, &anchor)
+                self.extract_addressed_value_from_address(&new_addr, &anchor)
             }
             Expr::Array(lit) => {
                 let mut prefix_items = vec![];
@@ -2062,11 +2063,19 @@ impl<'a, R: FileManager> FrontendCtx<'a, R> {
                         if let Ok(q) = q {
                             return self.member_access_qualified_value(&q, key, &anchor);
                         }
-                        // HERE it should do a qualified value lookup
                         let decl = self.get_addressed_value(&new_addr, &anchor)?;
                         match decl {
                             AddressedValue::ValueExpr { .. } => None,
                             AddressedValue::TypeDecl { .. } => None,
+                            AddressedValue::StarOfFile(bff_file_name) => {
+                                let new_addr = ModuleItemAddress {
+                                    file: bff_file_name.clone(),
+                                    name: key.clone(),
+                                    visibility: Visibility::Export,
+                                };
+                                return self
+                                    .extract_addressed_value_from_address(&new_addr, &anchor);
+                            }
                             AddressedValue::Enum(ts_enum_decl, bff_file_name) => {
                                 Some((ts_enum_decl.clone(), bff_file_name.clone()))
                             }
@@ -2126,12 +2135,48 @@ impl<'a, R: FileManager> FrontendCtx<'a, R> {
         }
     }
 
-    fn extract_addressed_value(
+    fn extract_sym_export_as_value(
         &mut self,
-        address: &ModuleItemAddress,
+        sym_export: &SymbolExport,
+        anchor: &Anchor,
+    ) -> Res<Option<Runtype>> {
+        let mut walker = ValueWalker { ctx: self };
+        let res = walker.get_addressed_item_from_symbol_export(sym_export, anchor);
+        if let Ok(res) = res {
+            let value = self.extract_addressed_value(res, anchor)?;
+            return Ok(Some(value));
+        }
+        Ok(None)
+    }
+
+    fn extract_whole_file_as_value(
+        &mut self,
+        bff_file_name: &BffFileName,
         anchor: &Anchor,
     ) -> Res<Runtype> {
-        let addressed_value = self.get_addressed_value(address, &anchor)?;
+        let mut vs = vec![];
+        let module = self.get_or_fetch_file(bff_file_name, &anchor)?;
+        for (name, sym) in &module.symbol_exports.named_values {
+            let v = self.extract_sym_export_as_value(sym, anchor)?;
+            if let Some(v) = v {
+                vs.push((name.clone(), v.required()));
+            }
+        }
+        for (name, sym) in &module.symbol_exports.named_unknown {
+            let v = self.extract_sym_export_as_value(sym, anchor)?;
+            if let Some(v) = v {
+                vs.push((name.clone(), v.required()));
+            }
+        }
+
+        Ok(Runtype::object(vs))
+    }
+
+    fn extract_addressed_value(
+        &mut self,
+        addressed_value: AddressedValue,
+        anchor: &Anchor,
+    ) -> Res<Runtype> {
         match addressed_value {
             AddressedValue::ValueExpr(expr, expr_file) => {
                 self.typeof_expr(expr.as_ref(), false, expr_file)
@@ -2142,7 +2187,19 @@ impl<'a, R: FileManager> FrontendCtx<'a, R> {
             AddressedValue::Enum(ts_enum_decl, bff_file_name) => {
                 self.extract_enum_decl(&ts_enum_decl, bff_file_name)
             }
+            AddressedValue::StarOfFile(bff_file_name) => {
+                self.extract_whole_file_as_value(&bff_file_name, anchor)
+            }
         }
+    }
+
+    fn extract_addressed_value_from_address(
+        &mut self,
+        address: &ModuleItemAddress,
+        anchor: &Anchor,
+    ) -> Res<Runtype> {
+        let addressed_value = self.get_addressed_value(address, &anchor)?;
+        self.extract_addressed_value(addressed_value, anchor)
     }
 
     fn get_addressed_qualified_value_from_entity_name(
@@ -2200,7 +2257,7 @@ impl<'a, R: FileManager> FrontendCtx<'a, R> {
                     name: member.to_string(),
                     visibility: Visibility::Export,
                 };
-                self.extract_addressed_value(&new_addr, anchor)
+                self.extract_addressed_value_from_address(&new_addr, anchor)
             }
             AddressedQualifiedValue::ValueExpr(expr, bff_file_name) => {
                 let base_ty = self.typeof_expr(expr, false, bff_file_name.clone())?;
@@ -2261,7 +2318,7 @@ impl<'a, R: FileManager> FrontendCtx<'a, R> {
         match ts_entity_name {
             TsEntityName::Ident(ident) => {
                 let addr = ModuleItemAddress::from_ident(ident, file.clone(), visibility);
-                self.extract_addressed_value(&addr, anchor)
+                self.extract_addressed_value_from_address(&addr, anchor)
             }
             TsEntityName::TsQualifiedName(ts_qualified_name) => {
                 self.extract_value_from_ts_qualified_name(ts_qualified_name, file, anchor)
@@ -2311,7 +2368,7 @@ impl<'a, R: FileManager> FrontendCtx<'a, R> {
                                 name: "default".to_string(),
                                 visibility: Visibility::Export,
                             };
-                            return self.extract_addressed_value(&new_addr, &anchor);
+                            return self.extract_addressed_value_from_address(&new_addr, &anchor);
                         }
                     }
                 }
