@@ -719,7 +719,7 @@ mod tests {
             const obj = {a:{b:{c:{d:{x: 123}}}}}
             export type T = typeof obj.a.b.c.d.e;
             parse.buildParsers<{ T: T }>();
-        "#), @r"
+        "#), @r#"
         Error: Keyed access results in 'never' type
            ╭─[entry.ts:3:30]
            │
@@ -727,6 +727,165 @@ mod tests {
            │                             ──────────┬─────────  
            │                                       ╰─────────── Keyed access results in 'never' type
         ───╯
+        "#);
+    }
+
+    #[test]
+    fn import_default_missing_in_file() {
+        insta::assert_snapshot!(failure_multifile(&[
+            (
+                "t.ts",
+                r#"
+                    export const A = 1;
+                "#,
+            ),
+            (
+                "entry.ts",
+                r#"
+                    import D from "./t";
+                    export type T = typeof D;
+                    parse.buildParsers<{ T: T }>();
+                "#
+            )
+        ]), @r#"
+        Error: Cannot resolve value 't.ts::default'
+           ╭─[entry.ts:2:29]
+           │
+         2 │                     import D from "./t";
+           │                            ┬  
+           │                            ╰── Cannot resolve value 't.ts::default'
+        ───╯
+        "#);
+    }
+
+    #[test]
+    fn type_alias_to_value_export() {
+        insta::assert_snapshot!(failure_multifile(&[
+            (
+                "t.ts",
+                r#"
+                    export const A = 1;
+                "#,
+            ),
+            (
+                "entry.ts",
+                r#"
+                    import { A } from "./t";
+                    export type T = A;
+                    parse.buildParsers<{ T: T }>();
+                "#
+            )
+        ]), @r#"
+        Error: Cannot resolve type 't.ts::A'
+           ╭─[entry.ts:2:31]
+           │
+         2 │                     import { A } from "./t";
+           │                              ┬  
+           │                              ╰── Cannot resolve type 't.ts::A'
+        ───╯
+        "#);
+    }
+
+    #[test]
+    fn namespace_as_value_ref() {
+        insta::assert_snapshot!(failure_multifile(&[
+            (
+                "t.ts",
+                r#"
+                    export const A = 1;
+                "#,
+            ),
+            (
+                "entry.ts",
+                r#"
+                    import * as Ns from "./t";
+                    const v = Ns;
+                    export type T = typeof v;
+                    parse.buildParsers<{ T: T }>();
+                "#
+            )
+        ]), @r"
+        Error: Cannot use star import in value position
+           ╭─[entry.ts:3:32]
+           │
+         3 │                     const v = Ns;
+           │                               ─┬  
+           │                                ╰── Cannot use star import in value position
+        ───╯
         ");
+    }
+
+    #[test]
+    fn value_alias_to_type_export() {
+        insta::assert_snapshot!(failure_multifile(&[
+            (
+                "t.ts",
+                r#"
+                    export type A = string;
+                "#,
+            ),
+            (
+                "entry.ts",
+                r#"
+                    import { A } from "./t";
+                    const v = A;
+                    export type T = typeof v;
+                    parse.buildParsers<{ T: T }>();
+                "#
+            )
+        ]), @r#"
+        Error: Cannot resolve value 't.ts::A'
+           ╭─[entry.ts:2:31]
+           │
+         2 │                     import { A } from "./t";
+           │                              ┬  
+           │                              ╰── Cannot resolve value 't.ts::A'
+        ───╯
+        "#);
+    }
+
+    #[test]
+    fn value_alias_to_interface_export() {
+        insta::assert_snapshot!(failure_multifile(&[
+            (
+                "t.ts",
+                r#"
+                    export interface I {}
+                "#,
+            ),
+            (
+                "entry.ts",
+                r#"
+                    import { I } from "./t";
+                    const v = I;
+                    export type T = typeof v;
+                    parse.buildParsers<{ T: T }>();
+                "#
+            )
+        ]), @r#"
+        Error: Cannot resolve value 't.ts::I'
+           ╭─[entry.ts:2:31]
+           │
+         2 │                     import { I } from "./t";
+           │                              ┬  
+           │                              ╰── Cannot resolve value 't.ts::I'
+        ───╯
+        "#);
+    }
+
+    #[test]
+    fn typeof_import_non_existent() {
+        insta::assert_snapshot!(failure(r#"
+            export type T = typeof import("./non-existent");
+            parse.buildParsers<{ T: T }>();
+        "#), @r#"
+        Error: Cannot resolve file 'non-existent.ts'
+           ╭─[entry.ts:2:30]
+           │
+         2 │             export type T = typeof import("./non-existent");
+           │                             ───────────────┬───────────────  
+           │                                            ╰───────────────── Cannot resolve file 'non-existent.ts'
+        ───╯
+        "#);
     }
 }

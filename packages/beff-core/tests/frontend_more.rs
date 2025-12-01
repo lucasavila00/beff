@@ -452,4 +452,122 @@ mod tests {
         };
         "#);
     }
+
+    #[test]
+    fn qualified_access_type_alias() {
+        insta::assert_snapshot!(print_types_multifile(&[
+            (
+                "t.ts",
+                r#"
+                    export type A = string;
+                "#,
+            ),
+            (
+                "entry.ts",
+                r#"
+                    import * as Ns from "./t";
+                    export type T = Ns.A;
+                    parse.buildParsers<{ T: T }>();
+                "#
+            )
+        ]), @r"
+        type T = A;
+
+        type A = string;
+
+
+        type BuiltParsers = {
+          T: T,
+        }
+        ");
+    }
+
+    #[test]
+    fn qualified_access_interface() {
+        insta::assert_snapshot!(print_types_multifile(&[
+            (
+                "t.ts",
+                r#"
+                    export interface I { a: string }
+                "#,
+            ),
+            (
+                "entry.ts",
+                r#"
+                    import * as Ns from "./t";
+                    export type T = Ns.I;
+                    parse.buildParsers<{ T: T }>();
+                "#
+            )
+        ]), @r#"
+        type T = I;
+
+        type I = { "a": string };
+
+
+        type BuiltParsers = {
+          T: T,
+        }
+        "#);
+    }
+
+    #[test]
+    fn typeof_qualified_export_const() {
+        insta::assert_snapshot!(print_types_multifile(&[
+            (
+                "t.ts",
+                r#"
+                    export const C = "c";
+                "#,
+            ),
+            (
+                "entry.ts",
+                r#"
+                    import * as Ns from "./t";
+                    export type T = typeof Ns.C;
+                    parse.buildParsers<{ T: T }>();
+                "#
+            )
+        ]), @r"
+        type T = string;
+
+
+        type BuiltParsers = {
+          T: T,
+        }
+        ");
+    }
+
+    #[test]
+    fn typeof_qualified_reexport() {
+        insta::assert_snapshot!(print_types_multifile(&[
+            (
+                "a.ts",
+                r#"
+                    export const A = "a";
+                "#,
+            ),
+            (
+                "t.ts",
+                r#"
+                    export { A } from "./a";
+                "#,
+            ),
+            (
+                "entry.ts",
+                r#"
+                    import * as Ns from "./t";
+                    export type T = typeof Ns.A;
+                    parse.buildParsers<{ T: T }>();
+                "#
+            )
+        ]), @r"
+        type T = string;
+
+
+        type BuiltParsers = {
+          T: T,
+        }
+        ");
+    }
 }
