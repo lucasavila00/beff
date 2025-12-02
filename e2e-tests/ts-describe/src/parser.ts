@@ -65,6 +65,21 @@ type UsesGenericWrapper = {
   wrappedNumber: GenericWrapper<number>;
 };
 
+type DataWrapper<T> = {
+  value: T;
+};
+type StringWrapped = DataWrapper<string>;
+type NumberWrapped = DataWrapper<number>;
+
+type UsesWrappeds = {
+  x1: StringWrapped;
+  x2: NumberWrapped;
+  x3: DataWrapper<boolean>;
+  x4: StringWrapped;
+  x5: NumberWrapped;
+  x6: DataWrapper<boolean>;
+};
+
 export const Codecs = parse.buildParsers<{
   // basic
   string: string;
@@ -88,7 +103,10 @@ export const Codecs = parse.buildParsers<{
   //
   ValidCurrency: ValidCurrency;
   ReusesRef: ReusesRef;
-  // UsesGenericWrapper: UsesGenericWrapper;
+  UsesGenericWrapper: UsesGenericWrapper;
+  StringWrapped: StringWrapped;
+  NumberWrapped: NumberWrapped;
+  UsesWrappeds: UsesWrappeds;
 }>({
   stringFormats: {
     ValidCurrency: (input: string) => {

@@ -59,14 +59,16 @@ struct PrintContext {
     hoisted: BTreeMap<Runtype, (usize, Expr)>,
     seen: SeenCounter,
     all_names: Vec<RuntypeUUID>,
-    recursive_generic_count_map: BTreeMap<RuntypeUUID, usize>,
+    type_with_args_counter: BTreeMap<RuntypeUUID, usize>,
+    recursive_generic_uuids: BTreeSet<RuntypeUUID>,
+    inlined: BTreeSet<RuntypeUUID>,
 }
 
 impl PrintContext {
     pub fn print_rt_name(&mut self, name: &RuntypeUUID) -> String {
         let mut ctx = DebugPrintCtx {
             all_names: &self.all_names.iter().collect::<Vec<_>>(),
-            recursive_generic_count_map: &mut self.recursive_generic_count_map,
+            type_with_args_counter: &mut self.type_with_args_counter,
         };
         name.print_name_for_js_codegen(&mut ctx)
     }
@@ -259,15 +261,16 @@ fn runtype_any_of_discriminated(
             let all_values = extract_union(value, named_schemas);
             for s in all_values {
                 if let Some(s) = s.extract_single_string_const()
-                    && s == current_key {
-                        let new_obj_vs: Vec<(String, Optionality<Runtype>)> = vs
-                            .iter()
-                            // .filter(|it| it.0 != &discriminator)
-                            .map(|it| (it.0.clone(), it.1.clone()))
-                            .collect();
-                        let new_obj = Runtype::object(new_obj_vs);
-                        cases.push(new_obj);
-                    }
+                    && s == current_key
+                {
+                    let new_obj_vs: Vec<(String, Optionality<Runtype>)> = vs
+                        .iter()
+                        // .filter(|it| it.0 != &discriminator)
+                        .map(|it| (it.0.clone(), it.1.clone()))
+                        .collect();
+                    let new_obj = Runtype::object(new_obj_vs);
+                    cases.push(new_obj);
+                }
             }
         }
         let schema = Runtype::any_of(cases);
@@ -482,7 +485,30 @@ fn print_runtype(schema: &Runtype, named_schemas: &[NamedSchema], ctx: &mut Prin
         Runtype::Boolean => typeof_runtype("boolean"),
         Runtype::Number => typeof_runtype("number"),
         Runtype::Function => typeof_runtype("function"),
-        Runtype::Ref(to) => ref_runtype(to, ctx),
+        Runtype::Ref(to) => {
+            let is_type_application = !to.type_arguments.is_empty();
+            let is_recusrive_generic = ctx.recursive_generic_uuids.contains(to);
+            if is_type_application && !is_recusrive_generic {
+                // Inline type applications that are not recursive.
+                //
+                // Type applications are named by the beff program and not by the user,
+                // so we produce better output by inlining the applications when possible.
+                //
+                // Regular type references are kept as references, as they were defined by the user,
+                // and they are useful when reporting errors or describing types.
+                //
+                // Performance-wise we would hoist duplicated types anyway, so inlining more wouldn't
+                // be a performance issue.
+                //
+                // Generic recursive types cannot be inlined, as they would produce infinite types.
+                let found = named_schemas.iter().find(|it| it.name == *to);
+                if let Some(found) = found {
+                    ctx.inlined.insert(to.clone());
+                    return print_runtype(&found.schema, named_schemas, ctx);
+                }
+            }
+            return ref_runtype(to, ctx);
+        }
         Runtype::Any => no_args_runtype("AnyRuntype"),
         Runtype::Never => no_args_runtype("NeverRuntype"),
         Runtype::Const(c) => new_runtype_class("ConstRuntype", vec![c.clone().to_json().to_expr()]),
@@ -720,6 +746,11 @@ fn named_runtypes(named_schemas: &[NamedSchema], ctx: &mut PrintContext) -> Expr
         let validator = print_runtype(&named_schema.schema, named_schemas, ctx);
         validator_exprs.push((named_schema.name.clone(), validator));
     }
+    // filter out the inlined ones
+    let validator_exprs: Vec<(RuntypeUUID, Expr)> = validator_exprs
+        .into_iter()
+        .filter(|(name, _)| !ctx.inlined.contains(name))
+        .collect();
 
     Expr::Object(ObjectLit {
         span: DUMMY_SP,
@@ -821,7 +852,9 @@ impl ParserExtractResult {
             hoisted: BTreeMap::new(),
             seen,
             all_names,
-            recursive_generic_count_map: BTreeMap::new(),
+            type_with_args_counter: BTreeMap::new(),
+            recursive_generic_uuids: self.recursive_generic_uuids,
+            inlined: BTreeSet::new(),
         };
 
         let build_parsers_input: ModuleItem = const_decl(

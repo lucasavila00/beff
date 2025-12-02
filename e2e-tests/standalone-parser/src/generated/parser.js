@@ -1131,68 +1131,65 @@ const RequiredStringFormats = ["ValidCurrency","UserId","ReadAuthorizedUserId","
 const RequiredNumberFormats = ["NonNegativeNumber","NonInfiniteNumber","Rate"];
 const direct_hoist_0 = new TypeofRuntype("string");
 const direct_hoist_1 = new TypeofRuntype("number");
-const direct_hoist_2 = new RefRuntype("Extra");
-const direct_hoist_3 = new RefRuntype("AccessLevel");
-const direct_hoist_4 = new RefRuntype("AvatarSize");
-const direct_hoist_5 = new ConstRuntype("a");
-const direct_hoist_6 = new ConstRuntype("b");
-const direct_hoist_7 = new ConstRuntype("a1");
-const direct_hoist_8 = new ObjectRuntype({
+const direct_hoist_2 = new ConstRuntype("a");
+const direct_hoist_3 = new ConstRuntype("b");
+const direct_hoist_4 = new ConstRuntype("a1");
+const direct_hoist_5 = new ObjectRuntype({
     "a1": direct_hoist_0,
     "a11": new OptionalField(direct_hoist_0),
-    "subType": direct_hoist_7,
-    "type": direct_hoist_5
+    "subType": direct_hoist_4,
+    "type": direct_hoist_2
 }, []);
-const direct_hoist_9 = new ConstRuntype("a2");
-const direct_hoist_10 = new ObjectRuntype({
+const direct_hoist_6 = new ConstRuntype("a2");
+const direct_hoist_7 = new ObjectRuntype({
     "a2": direct_hoist_0,
-    "subType": direct_hoist_9,
-    "type": direct_hoist_5
+    "subType": direct_hoist_6,
+    "type": direct_hoist_2
 }, []);
-const direct_hoist_11 = new ObjectRuntype({
-    "type": direct_hoist_6,
+const direct_hoist_8 = new ObjectRuntype({
+    "type": direct_hoist_3,
     "value": direct_hoist_1
 }, []);
-const direct_hoist_12 = new ConstRuntype("d");
-const direct_hoist_13 = new ObjectRuntype({
-    "tag": direct_hoist_12
+const direct_hoist_9 = new ConstRuntype("d");
+const direct_hoist_10 = new ObjectRuntype({
+    "tag": direct_hoist_9
 }, []);
-const direct_hoist_14 = new AnyOfConstsRuntype([
+const direct_hoist_11 = new AnyOfConstsRuntype([
     "a",
     "b"
 ]);
-const direct_hoist_15 = new ObjectRuntype({
-    "d": direct_hoist_13,
-    "level": direct_hoist_14
+const direct_hoist_12 = new ObjectRuntype({
+    "d": direct_hoist_10,
+    "level": direct_hoist_11
 }, []);
-const direct_hoist_16 = new ObjectRuntype({
-    "value": direct_hoist_5
+const direct_hoist_13 = new ObjectRuntype({
+    "value": direct_hoist_2
 }, []);
+const direct_hoist_14 = new ObjectRuntype({
+    "value": direct_hoist_3
+}, []);
+const direct_hoist_15 = new TypeofRuntype("boolean");
+const direct_hoist_16 = new ConstRuntype("square");
 const direct_hoist_17 = new ObjectRuntype({
-    "value": direct_hoist_6
-}, []);
-const direct_hoist_18 = new TypeofRuntype("boolean");
-const direct_hoist_19 = new ConstRuntype("square");
-const direct_hoist_20 = new ObjectRuntype({
-    "kind": direct_hoist_19,
+    "kind": direct_hoist_16,
     "x": direct_hoist_1
 }, []);
-const direct_hoist_21 = new ConstRuntype("triangle");
-const direct_hoist_22 = new ObjectRuntype({
-    "kind": direct_hoist_21,
+const direct_hoist_18 = new ConstRuntype("triangle");
+const direct_hoist_19 = new ObjectRuntype({
+    "kind": direct_hoist_18,
     "x": direct_hoist_1,
     "y": direct_hoist_1
 }, []);
-const direct_hoist_23 = new NullishRuntype("null");
-const direct_hoist_24 = new NullishRuntype("undefined");
-const direct_hoist_25 = new StringWithFormatRuntype([
+const direct_hoist_20 = new NullishRuntype("null");
+const direct_hoist_21 = new NullishRuntype("undefined");
+const direct_hoist_22 = new StringWithFormatRuntype([
     "ValidCurrency"
 ]);
-const direct_hoist_26 = new ConstRuntype("c");
+const direct_hoist_23 = new ConstRuntype("c");
 const namedRuntypes = {
     "ABC": new ObjectRuntype({}, []),
     "AObject": new ObjectRuntype({
-        "tag": direct_hoist_5
+        "tag": direct_hoist_2
     }, []),
     "AccessLevel": new AnyOfConstsRuntype([
         "ADMIN",
@@ -1212,33 +1209,33 @@ const namedRuntypes = {
     ]),
     "AvatarSize": new RegexRuntype(/(\d+(\.\d+)?)(x)(\d+(\.\d+)?)/, "`${number}x${number}`"),
     "BObject": new ObjectRuntype({
-        "tag": direct_hoist_6
+        "tag": direct_hoist_3
     }, []),
     "DEF": new ObjectRuntype({
         "a": direct_hoist_0
     }, []),
     "DiscriminatedUnion": new AnyOfDiscriminatedRuntype([
-        direct_hoist_8,
-        direct_hoist_10,
-        direct_hoist_11
+        direct_hoist_5,
+        direct_hoist_7,
+        direct_hoist_8
     ], "type", {
         "a": new AnyOfDiscriminatedRuntype([
-            direct_hoist_8,
-            direct_hoist_10
+            direct_hoist_5,
+            direct_hoist_7
         ], "subType", {
-            "a1": direct_hoist_8,
-            "a2": direct_hoist_10
+            "a1": direct_hoist_5,
+            "a2": direct_hoist_7
         }),
-        "b": direct_hoist_11
+        "b": direct_hoist_8
     }),
     "DiscriminatedUnion2": new AnyOfRuntype([
-        direct_hoist_8,
-        direct_hoist_10,
+        direct_hoist_5,
+        direct_hoist_7,
         new ObjectRuntype({
-            "type": new OptionalField(direct_hoist_12),
+            "type": new OptionalField(direct_hoist_9),
             "valueD": direct_hoist_1
         }, []),
-        direct_hoist_11
+        direct_hoist_8
     ]),
     "DiscriminatedUnion3": new AnyOfDiscriminatedRuntype([
         new ObjectRuntype({
@@ -1248,7 +1245,7 @@ const namedRuntypes = {
                 "c"
             ])
         }, []),
-        direct_hoist_11
+        direct_hoist_8
     ], "type", {
         "a": new ObjectRuntype({
             "a1": direct_hoist_0,
@@ -1257,7 +1254,7 @@ const namedRuntypes = {
                 "c"
             ])
         }, []),
-        "b": direct_hoist_11,
+        "b": direct_hoist_8,
         "c": new ObjectRuntype({
             "a1": direct_hoist_0,
             "type": new AnyOfConstsRuntype([
@@ -1270,16 +1267,16 @@ const namedRuntypes = {
         new ObjectRuntype({
             "a": new ObjectRuntype({
                 "a1": direct_hoist_0,
-                "subType": direct_hoist_7
+                "subType": direct_hoist_4
             }, []),
-            "type": direct_hoist_5
+            "type": direct_hoist_2
         }, []),
         new ObjectRuntype({
             "a": new ObjectRuntype({
                 "a2": direct_hoist_0,
-                "subType": direct_hoist_9
+                "subType": direct_hoist_6
             }, []),
-            "type": direct_hoist_5
+            "type": direct_hoist_2
         }, [])
     ]),
     "Extra": new ObjectRuntype({}, [
@@ -1292,17 +1289,17 @@ const namedRuntypes = {
         "a"
     ]),
     "KABC": new NeverRuntype(),
-    "KDEF": direct_hoist_5,
-    "LevelAndDSettings": direct_hoist_15,
+    "KDEF": direct_hoist_2,
+    "LevelAndDSettings": direct_hoist_12,
     "Mapped": new ObjectRuntype({
-        "a": direct_hoist_16,
-        "b": direct_hoist_17
+        "a": direct_hoist_13,
+        "b": direct_hoist_14
     }, []),
     "MappedOptional": new ObjectRuntype({
-        "a": new OptionalField(direct_hoist_16),
-        "b": new OptionalField(direct_hoist_17)
+        "a": new OptionalField(direct_hoist_13),
+        "b": new OptionalField(direct_hoist_14)
     }, []),
-    "OmitSettings": direct_hoist_15,
+    "OmitSettings": direct_hoist_12,
     "OnlyAKey": new ObjectRuntype({
         "A": direct_hoist_0
     }, []),
@@ -1316,20 +1313,20 @@ const namedRuntypes = {
     }, []),
     "PartialSettings": new ObjectRuntype({
         "a": new OptionalField(direct_hoist_0),
-        "d": new OptionalField(direct_hoist_13),
-        "level": new OptionalField(direct_hoist_14)
+        "d": new OptionalField(direct_hoist_10),
+        "level": new OptionalField(direct_hoist_11)
     }, []),
     "PublicUser": new ObjectRuntype({
-        "accessLevel": direct_hoist_3,
-        "avatarSize": direct_hoist_4,
-        "extra": direct_hoist_2,
+        "accessLevel": new RefRuntype("AccessLevel"),
+        "avatarSize": new RefRuntype("AvatarSize"),
+        "extra": new RefRuntype("Extra"),
         "name": direct_hoist_0
     }, []),
     "Repro1": new ObjectRuntype({
         "sizes": new OptionalField(new RefRuntype("Repro2"))
     }, []),
     "Repro2": new ObjectRuntype({
-        "useSmallerSizes": direct_hoist_18
+        "useSmallerSizes": direct_hoist_15
     }, []),
     "Req": new ObjectRuntype({
         "optional": direct_hoist_0
@@ -1340,44 +1337,44 @@ const namedRuntypes = {
     }, []),
     "Settings": new ObjectRuntype({
         "a": direct_hoist_0,
-        "d": direct_hoist_13,
-        "level": direct_hoist_14
+        "d": direct_hoist_10,
+        "level": direct_hoist_11
     }, []),
     "SettingsUpdate": new AnyOfRuntype([
         direct_hoist_0,
-        direct_hoist_5,
-        direct_hoist_6,
-        direct_hoist_13
+        direct_hoist_2,
+        direct_hoist_3,
+        direct_hoist_10
     ]),
     "Shape": new AnyOfDiscriminatedRuntype([
         new ObjectRuntype({
             "kind": new ConstRuntype("circle"),
             "radius": direct_hoist_1
         }, []),
-        direct_hoist_20,
-        direct_hoist_22
+        direct_hoist_17,
+        direct_hoist_19
     ], "kind", {
         "circle": new ObjectRuntype({
             "kind": new ConstRuntype("circle"),
             "radius": direct_hoist_1
         }, []),
-        "square": direct_hoist_20,
-        "triangle": direct_hoist_22
+        "square": direct_hoist_17,
+        "triangle": direct_hoist_19
     }),
     "T3": new AnyOfDiscriminatedRuntype([
-        direct_hoist_20,
-        direct_hoist_22
+        direct_hoist_17,
+        direct_hoist_19
     ], "kind", {
-        "square": direct_hoist_20,
-        "triangle": direct_hoist_22
+        "square": direct_hoist_17,
+        "triangle": direct_hoist_19
     }),
     "TransportedValue": new AnyOfRuntype([
-        direct_hoist_23,
-        direct_hoist_24,
+        direct_hoist_20,
+        direct_hoist_21,
         direct_hoist_0,
         new ArrayRuntype(new AnyOfRuntype([
-            direct_hoist_23,
-            direct_hoist_24,
+            direct_hoist_20,
+            direct_hoist_21,
             direct_hoist_0,
             direct_hoist_1
         ]))
@@ -1393,7 +1390,7 @@ const namedRuntypes = {
         }, []),
         new ObjectRuntype({
             "tag": new RefRuntype("OtherEnum2__C"),
-            "value": direct_hoist_18
+            "value": direct_hoist_15
         }, [])
     ], "tag", {
         "a": new ObjectRuntype({
@@ -1406,13 +1403,13 @@ const namedRuntypes = {
         }, []),
         "c": new ObjectRuntype({
             "tag": new RefRuntype("OtherEnum2__C"),
-            "value": direct_hoist_18
+            "value": direct_hoist_15
         }, [])
     }),
     "User": new ObjectRuntype({
-        "accessLevel": direct_hoist_3,
-        "avatarSize": direct_hoist_4,
-        "extra": direct_hoist_2,
+        "accessLevel": new RefRuntype("AccessLevel"),
+        "avatarSize": new RefRuntype("AvatarSize"),
+        "extra": new RefRuntype("Extra"),
         "friends": new ArrayRuntype(new RefRuntype("User")),
         "name": direct_hoist_0
     }, []),
@@ -1426,14 +1423,14 @@ const namedRuntypes = {
         "B",
         "C"
     ]),
-    "OtherEnum": direct_hoist_14,
+    "OtherEnum": direct_hoist_11,
     "Arr3": new AnyOfConstsRuntype([
         "X",
         "Y"
     ]),
     "CurrencyPrices": new ObjectRuntype({}, [
         {
-            "key": direct_hoist_25,
+            "key": direct_hoist_22,
             "value": new RefRuntype("Rate")
         }
     ]),
@@ -1456,16 +1453,16 @@ const namedRuntypes = {
     "UserId": new StringWithFormatRuntype([
         "UserId"
     ]),
-    "ValidCurrency": direct_hoist_25,
+    "ValidCurrency": direct_hoist_22,
     "WriteAuthorizedUserId": new StringWithFormatRuntype([
         "UserId",
         "ReadAuthorizedUserId",
         "WriteAuthorizedUserId"
     ]),
-    "AllTs": direct_hoist_14,
-    "OtherEnum__A": direct_hoist_5,
-    "OtherEnum__B": direct_hoist_6,
-    "OtherEnum2__C": direct_hoist_26
+    "AllTs": direct_hoist_11,
+    "OtherEnum__A": direct_hoist_2,
+    "OtherEnum__B": direct_hoist_3,
+    "OtherEnum2__C": direct_hoist_23
 };
 const buildParsersInput = {
     "PartialRepro": new RefRuntype("PartialRepro"),
@@ -1496,7 +1493,7 @@ const buildParsersInput = {
     "RequiredPartialObject": new RefRuntype("RequiredPartialObject"),
     "LevelAndDSettings": new RefRuntype("LevelAndDSettings"),
     "PartialSettings": new RefRuntype("PartialSettings"),
-    "Extra": direct_hoist_2,
+    "Extra": new RefRuntype("Extra"),
     "User": new RefRuntype("User"),
     "PublicUser": new RefRuntype("PublicUser"),
     "Req": new RefRuntype("Req"),
@@ -1510,17 +1507,17 @@ const buildParsersInput = {
     "DiscriminatedUnion3": new RefRuntype("DiscriminatedUnion3"),
     "DiscriminatedUnion4": new RefRuntype("DiscriminatedUnion4"),
     "AllTypes": new RefRuntype("AllTypes"),
-    "AccessLevel": direct_hoist_3,
+    "AccessLevel": new RefRuntype("AccessLevel"),
     "OtherEnum": new RefRuntype("OtherEnum"),
     "Arr2C": new RefRuntype("Arr2"),
     "ValidCurrency": new RefRuntype("ValidCurrency"),
     "UnionWithEnumAccess": new RefRuntype("UnionWithEnumAccess"),
     "T3": new RefRuntype("T3"),
-    "AccessLevelCodec": direct_hoist_3,
-    "AvatarSize": direct_hoist_4,
+    "AccessLevelCodec": new RefRuntype("AccessLevel"),
+    "AvatarSize": new RefRuntype("AvatarSize"),
     "BObject": new RefRuntype("BObject"),
     "ImportEnumTypeof": new ObjectRuntype({
-        "A": direct_hoist_5
+        "A": direct_hoist_2
     }, []),
     "KDEF": new RefRuntype("KDEF"),
     "KABC": new RefRuntype("KABC"),

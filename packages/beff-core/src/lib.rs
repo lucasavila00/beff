@@ -105,10 +105,10 @@ pub trait FileManager {
 fn debug_print_type_list(vs: Vec<(RuntypeUUID, String)>) -> String {
     let mut acc = String::new();
     let all_names = vs.iter().map(|(name, _)| name).collect::<Vec<_>>();
-    let mut recursive_generic_count = BTreeMap::new();
+    let mut type_with_args_counter = BTreeMap::new();
     let mut ctx = DebugPrintCtx {
         all_names: &all_names,
-        recursive_generic_count_map: &mut recursive_generic_count,
+        type_with_args_counter: &mut type_with_args_counter,
     };
 
     for (name, ts_type) in vs.iter() {
@@ -142,10 +142,10 @@ impl ParserExtractResult {
             .iter()
             .map(|it| &it.name)
             .collect::<Vec<_>>();
-        let mut recursive_generic_count = BTreeMap::new();
+        let mut type_with_args_counter = BTreeMap::new();
         let mut debug_print_ctx = DebugPrintCtx {
             all_names: &all_names,
-            recursive_generic_count_map: &mut recursive_generic_count,
+            type_with_args_counter: &mut type_with_args_counter,
         };
 
         for v in sorted_validators {
@@ -392,10 +392,10 @@ impl RuntypeUUID {
         acc
     }
     fn diag_print(&self) -> String {
-        let mut recursive_generic_count = BTreeMap::new();
+        let mut type_with_args_counter = BTreeMap::new();
         let mut empty_ctx = DebugPrintCtx {
             all_names: &[],
-            recursive_generic_count_map: &mut recursive_generic_count,
+            type_with_args_counter: &mut type_with_args_counter,
         };
         self.debug_print(&mut empty_ctx)
     }
@@ -408,13 +408,13 @@ impl RuntypeUUID {
         let mut acc = String::new();
         acc.push_str(&self.ty.print_name_for_js_codegen(ctx.all_names));
         if !self.type_arguments.is_empty() {
-            let tap_counter = match ctx.recursive_generic_count_map.get(self) {
+            let tap_counter = match ctx.type_with_args_counter.get(self) {
                 Some(count) => Self::tap_str(*count),
                 None => {
-                    let recursive_generic_count = ctx.recursive_generic_count_map.len();
-                    let it = Self::tap_str(recursive_generic_count);
-                    ctx.recursive_generic_count_map
-                        .insert(self.clone(), recursive_generic_count);
+                    let type_with_args_count = ctx.type_with_args_counter.len();
+                    let it = Self::tap_str(type_with_args_count);
+                    ctx.type_with_args_counter
+                        .insert(self.clone(), type_with_args_count);
                     it
                 }
             };

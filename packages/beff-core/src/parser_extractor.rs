@@ -1,10 +1,11 @@
 use crate::ast::runtype::Runtype;
 use crate::diag::{DiagnosticInfoMessage, DiagnosticInformation, Location};
 use crate::frontend::FrontendCtx;
-use crate::{BeffUserSettings, ParsedModule};
+use crate::{BeffUserSettings, ParsedModule, RuntypeUUID};
 use crate::{BffFileName, FileManager, NamedSchema};
 use anyhow::Result;
 use anyhow::anyhow;
+use std::collections::BTreeSet;
 use std::rc::Rc;
 use swc_common::{DUMMY_SP, Span};
 use swc_ecma_ast::{CallExpr, Callee, Expr, Ident, MemberExpr, MemberProp};
@@ -23,6 +24,7 @@ pub struct ParserExtractResult {
     pub validators: Vec<NamedSchema>,
     pub built_decoders: Option<Vec<BuiltDecoder>>,
     pub counter: usize,
+    pub recursive_generic_uuids: BTreeSet<RuntypeUUID>,
 }
 
 struct ExtractParserVisitor<'a, R: FileManager> {
@@ -33,6 +35,7 @@ struct ExtractParserVisitor<'a, R: FileManager> {
     built_decoders: Option<Vec<BuiltDecoder>>,
     settings: &'a BeffUserSettings,
     counter: usize,
+    recursive_generic_uuids: BTreeSet<RuntypeUUID>,
 }
 impl<'a, R: FileManager> ExtractParserVisitor<'a, R> {
     fn new(
@@ -48,6 +51,7 @@ impl<'a, R: FileManager> ExtractParserVisitor<'a, R> {
             built_decoders: None,
             settings,
             counter: 0,
+            recursive_generic_uuids: BTreeSet::new(),
         }
     }
 }
@@ -119,6 +123,7 @@ impl<R: FileManager> ExtractParserVisitor<'_, R> {
                         if let Ok(x) = ctx.extract_built_decoders_from_call_v2(params.as_ref()) {
                             self.built_decoders = Some(x)
                         }
+                        self.recursive_generic_uuids = ctx.recursive_generic_uuids;
                         self.errors.extend(ctx.errors);
                         let mut kvs = vec![];
                         for (k, v) in ctx.partial_validators {
@@ -176,7 +181,7 @@ pub fn extract_parser<R: FileManager>(
     entry_file_name: BffFileName,
     settings: &BeffUserSettings,
 ) -> ParserExtractResult {
-    let (errors, validators, built_decoders, counter) = {
+    let (errors, validators, built_decoders, counter, recursive_generic_uuids) = {
         let mut visitor = ExtractParserVisitor::new(files, entry_file_name.clone(), settings);
         let _ = visitor.visit_current_file();
         (
@@ -184,6 +189,7 @@ pub fn extract_parser<R: FileManager>(
             visitor.validators,
             visitor.built_decoders,
             visitor.counter,
+            visitor.recursive_generic_uuids,
         )
     };
 
@@ -193,5 +199,6 @@ pub fn extract_parser<R: FileManager>(
         validators,
         built_decoders,
         counter,
+        recursive_generic_uuids,
     }
 }
