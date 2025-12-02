@@ -1129,55 +1129,73 @@ const buildParsers = (args) => {
 
 const RequiredStringFormats = ["password","StartsWithA"];
 const RequiredNumberFormats = [];
-const direct_hoist_0 = new TypeofRuntype("string");
+const direct_hoist_0 = new RefRuntype("User");
+const direct_hoist_1 = new ArrayRuntype(direct_hoist_0);
+const direct_hoist_2 = new RefRuntype("NotPublic");
+const direct_hoist_3 = new RefRuntype("StartsWithA");
+const direct_hoist_4 = new RefRuntype("Password");
+const direct_hoist_5 = new ConstRuntype(123.456);
+const direct_hoist_6 = new ConstRuntype(123);
+const direct_hoist_7 = new RefRuntype("UnionNested");
+const direct_hoist_8 = new AnyOfConstsRuntype([
+    1,
+    2
+]);
+const direct_hoist_9 = new AnyOfConstsRuntype([
+    2,
+    3
+]);
+const direct_hoist_10 = new AnyOfConstsRuntype([
+    4,
+    5
+]);
+const direct_hoist_11 = new AnyOfConstsRuntype([
+    5,
+    6
+]);
+const direct_hoist_12 = new TypeofRuntype("string");
+const direct_hoist_13 = new ObjectRuntype({
+    "a": direct_hoist_12
+}, []);
+const direct_hoist_14 = new StringWithFormatRuntype([
+    "password"
+]);
+const direct_hoist_15 = new StringWithFormatRuntype([
+    "StartsWithA"
+]);
+const direct_hoist_16 = new AnyOfConstsRuntype([
+    1,
+    2,
+    3,
+    4,
+    5,
+    6
+]);
+const direct_hoist_17 = new TypeofRuntype("number");
+const direct_hoist_18 = new ObjectRuntype({
+    "age": direct_hoist_17,
+    "name": direct_hoist_12
+}, []);
 const namedRuntypes = {
-    "A": new AnyOfConstsRuntype([
-        1,
-        2
-    ]),
-    "B": new AnyOfConstsRuntype([
-        2,
-        3
-    ]),
-    "D": new AnyOfConstsRuntype([
-        4,
-        5
-    ]),
-    "E": new AnyOfConstsRuntype([
-        5,
-        6
-    ]),
-    "NotPublic": new ObjectRuntype({
-        "a": direct_hoist_0
-    }, []),
-    "Password": new StringWithFormatRuntype([
-        "password"
-    ]),
-    "StartsWithA": new StringWithFormatRuntype([
-        "StartsWithA"
-    ]),
-    "UnionNested": new AnyOfConstsRuntype([
-        1,
-        2,
-        3,
-        4,
-        5,
-        6
-    ]),
-    "User": new ObjectRuntype({
-        "age": new TypeofRuntype("number"),
-        "name": direct_hoist_0
-    }, [])
+    "A": direct_hoist_8,
+    "B": direct_hoist_9,
+    "D": direct_hoist_10,
+    "E": direct_hoist_11,
+    "NotPublic": direct_hoist_13,
+    "Password": direct_hoist_14,
+    "StartsWithA": direct_hoist_15,
+    "UnionNested": direct_hoist_16,
+    "User": direct_hoist_18
 };
 const buildParsersInput = {
-    "User": new RefRuntype("User"),
-    "Users": new ArrayRuntype(new RefRuntype("User")),
-    "NotPublicRenamed": new RefRuntype("NotPublic"),
-    "StartsWithA": new RefRuntype("StartsWithA"),
-    "Password": new RefRuntype("Password"),
-    "float": new ConstRuntype(123.456),
-    "int": new ConstRuntype(123),
-    "union": new RefRuntype("UnionNested")
+    "User": direct_hoist_0,
+    "Users": direct_hoist_1,
+    "NotPublicRenamed": direct_hoist_2,
+    "StartsWithA": direct_hoist_3,
+    "Password": direct_hoist_4,
+    "float": direct_hoist_5,
+    "int": direct_hoist_6,
+    "union": direct_hoist_7
 };
 
 export default { buildParsers };

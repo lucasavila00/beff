@@ -1129,35 +1129,41 @@ const buildParsers = (args) => {
 
 const RequiredStringFormats = [];
 const RequiredNumberFormats = [];
-const direct_hoist_0 = new RefRuntype("GenericWrapper_string");
-const direct_hoist_1 = new TypeofRuntype("string");
-const direct_hoist_2 = new TypeofRuntype("boolean");
-const direct_hoist_3 = new RefRuntype("GenericWrapper_number");
-const direct_hoist_4 = new TypeofRuntype("number");
+const direct_hoist_0 = new RefRuntype("UsesGenericWrapper");
+const direct_hoist_1 = new RefRuntype("GenericWrapper_string");
+const direct_hoist_2 = new TypeofRuntype("string");
+const direct_hoist_3 = new TypeofRuntype("boolean");
+const direct_hoist_4 = new AnyOfRuntype([
+    direct_hoist_3,
+    direct_hoist_2
+]);
+const direct_hoist_5 = new ObjectRuntype({
+    "other": direct_hoist_1,
+    "value": direct_hoist_2,
+    "value2": direct_hoist_4
+}, []);
+const direct_hoist_6 = new RefRuntype("GenericWrapper_number");
+const direct_hoist_7 = new TypeofRuntype("number");
+const direct_hoist_8 = new AnyOfRuntype([
+    direct_hoist_3,
+    direct_hoist_7
+]);
+const direct_hoist_9 = new ObjectRuntype({
+    "other": direct_hoist_6,
+    "value": direct_hoist_7,
+    "value2": direct_hoist_8
+}, []);
+const direct_hoist_10 = new ObjectRuntype({
+    "wrappedNumber": direct_hoist_6,
+    "wrappedString": direct_hoist_1
+}, []);
 const namedRuntypes = {
-    "GenericWrapper_string": new ObjectRuntype({
-        "other": direct_hoist_0,
-        "value": direct_hoist_1,
-        "value2": new AnyOfRuntype([
-            direct_hoist_2,
-            direct_hoist_1
-        ])
-    }, []),
-    "GenericWrapper_number": new ObjectRuntype({
-        "other": direct_hoist_3,
-        "value": direct_hoist_4,
-        "value2": new AnyOfRuntype([
-            direct_hoist_2,
-            direct_hoist_4
-        ])
-    }, []),
-    "UsesGenericWrapper": new ObjectRuntype({
-        "wrappedNumber": direct_hoist_3,
-        "wrappedString": direct_hoist_0
-    }, [])
+    "GenericWrapper_string": direct_hoist_5,
+    "GenericWrapper_number": direct_hoist_9,
+    "UsesGenericWrapper": direct_hoist_10
 };
 const buildParsersInput = {
-    "UsesGenericWrapper": new RefRuntype("UsesGenericWrapper")
+    "UsesGenericWrapper": direct_hoist_0
 };
 
 export default { buildParsers };

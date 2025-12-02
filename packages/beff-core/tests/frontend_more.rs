@@ -528,11 +528,13 @@ mod tests {
             export type T = typeof obj.a.b;
             parse.buildParsers<{ T: T }>();
         "#), @r#"
+        const direct_hoist_0 = new RefRuntype("T");
+        const direct_hoist_1 = new TypeofRuntype("string");
         const namedRuntypes = {
-            "T": new TypeofRuntype("string")
+            "T": direct_hoist_1
         };
         const buildParsersInput = {
-            "T": new RefRuntype("T")
+            "T": direct_hoist_0
         };
         "#);
     }
