@@ -963,4 +963,57 @@ mod tests {
         }
         "#);
     }
+    #[test]
+    fn import_type_generic() {
+        insta::assert_snapshot!(print_types_multifile(&[
+            (
+                "t.ts",
+                r#"
+                    export type User<T> = { id: T };
+                "#,
+            ),
+            (
+                "entry.ts",
+                r#"
+                    export type T = import("./t").User<string>;
+                    parse.buildParsers<{ T: T }>();
+                "#
+            )
+        ]), @r#"
+        type T = User__string__;
+
+        type User__string__ = { "id": string };
+
+
+        type BuiltParsers = {
+          T: T,
+        }
+        "#);
+    }
+    #[test]
+    fn import_type_generic2() {
+        insta::assert_snapshot!(print_types_multifile(&[
+            (
+                "t.ts",
+                r#"
+                    type User<T> = { id: T };
+                    export default User;
+                "#,
+            ),
+            (
+                "entry.ts",
+                r#"
+                    export type T = import("./t")<string>;
+                    parse.buildParsers<{ T: T }>();
+                "#
+            )
+        ]), @r#"
+        type T = { "id": string };
+
+
+        type BuiltParsers = {
+          T: T,
+        }
+        "#);
+    }
 }

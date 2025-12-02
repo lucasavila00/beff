@@ -17,6 +17,25 @@ mod tests {
         ───╯
         ");
     }
+
+    #[test]
+    fn type_query_args() {
+        let from = r#"
+        type User<T> = { id: T };
+        type UserId = typeof User<string>;
+    parse.buildParsers<{ UserId: UserId }>();
+  "#;
+        insta::assert_snapshot!(failure(from),@r"
+        Error: Type query args are not supported
+           ╭─[entry.ts:3:24]
+           │
+         3 │         type UserId = typeof User<string>;
+           │                       ─────────┬─────────  
+           │                                ╰─────────── Type query args are not supported
+        ───╯
+        ");
+    }
+
     #[test]
     fn type_ref_multifile() {
         insta::assert_snapshot!(failure_multifile(&[
@@ -313,6 +332,34 @@ mod tests {
            │                                    ╰── Cannot resolve value 'entry.ts::A'
         ───╯
         ");
+    }
+
+    #[test]
+    fn import_type_generic() {
+        insta::assert_snapshot!(failure_multifile(&[
+            (
+                "t.ts",
+                r#"
+                    type User<T> = { id: T };
+                    export default User;
+                "#,
+            ),
+            (
+                "entry.ts",
+                r#"
+                    export type T = typeof import("./t")<string>;
+                    parse.buildParsers<{ T: T }>();
+                "#
+            )
+        ]), @r#"
+        Error: Type query args are not supported
+           ╭─[entry.ts:2:38]
+           │
+         2 │                     export type T = typeof import("./t")<string>;
+           │                                     ──────────────┬─────────────  
+           │                                                   ╰─────────────── Type query args are not supported
+        ───╯
+        "#);
     }
 
     #[test]

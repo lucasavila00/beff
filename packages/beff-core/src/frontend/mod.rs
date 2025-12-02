@@ -2320,10 +2320,9 @@ impl<'a, R: FileManager> FrontendCtx<'a, R> {
                 self.extract_value_ts_entity_name(ts_entity_name, file, visibility, &anchor)
             }
             TsTypeQueryExpr::Import(import_type) => {
-                assert!(
-                    import_type.type_args.is_none(),
-                    "generic types not supported yet"
-                );
+                if import_type.type_args.is_some() {
+                    return self.error(&anchor, DiagnosticInfoMessage::TypeQueryArgsNotSupported);
+                }
                 if let Some(resolved) = self
                     .files
                     .resolve_import(file.clone(), &import_type.arg.value)
