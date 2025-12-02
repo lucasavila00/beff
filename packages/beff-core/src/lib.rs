@@ -23,11 +23,9 @@ use std::collections::BTreeSet;
 use std::collections::HashMap;
 use std::rc::Rc;
 use std::sync::Arc;
-use swc_atoms::JsWord;
 use swc_common::SourceFile;
 use swc_common::SourceMap;
 use swc_common::Span;
-use swc_common::SyntaxContext;
 use swc_ecma_ast::Module;
 use swc_node_comments::SwcComments;
 
@@ -76,9 +74,9 @@ pub struct ParsedModule {
 
 #[derive(Debug)]
 pub struct UnresolvedExport {
-    pub name: JsWord,
-    pub span: SyntaxContext,
-    pub renamed: JsWord,
+    pub name: String,
+    pub span: Span,
+    pub renamed: String,
 }
 
 #[derive(Serialize, Deserialize, Debug)]

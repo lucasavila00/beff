@@ -152,7 +152,7 @@ const emitDiagnostics = (diag: WasmDiagnostic) => {
 };
 
 (globalThis as any).resolve_import = resolveImport;
-(globalThis as any).emit_diagnostic = emitDiagnostics;
+(globalThis as any).emit_diagnostic = (str: string) => emitDiagnostics(JSON.parse(str));
 
 type KnownFile = {
   message: string;
@@ -204,14 +204,16 @@ export class Bundler {
   }
 
   public bundle_v2(parser_entrypoint: string | undefined, settings: BeffUserSettings): string | undefined {
-    return wasm.bundle_to_string_v2(parser_entrypoint ?? "", serializeSettings(settings));
+    return wasm.bundle_to_string_v2(parser_entrypoint ?? "", JSON.stringify(serializeSettings(settings)));
   }
 
   public diagnostics(
     parser_entrypoint: string | undefined,
     settings: BeffUserSettings,
   ): WasmDiagnostic | null {
-    return wasm.bundle_to_diagnostics(parser_entrypoint ?? "", serializeSettings(settings));
+    return JSON.parse(
+      wasm.bundle_to_diagnostics(parser_entrypoint ?? "", JSON.stringify(serializeSettings(settings))),
+    );
   }
 
   public updateFileContent(file_name: string, content: string) {

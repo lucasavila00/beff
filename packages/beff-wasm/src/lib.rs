@@ -76,15 +76,17 @@ pub fn bundle_to_string_v2(parser_entry_point: &str, settings: JsValue) -> JsVal
 #[wasm_bindgen]
 pub fn bundle_to_diagnostics(parser_entry_point: &str, settings: JsValue) -> JsValue {
     let v = bundle_to_diagnostics_inner(parse_entrypoints(parser_entry_point, settings));
-    serde_wasm_bindgen::to_value(&v).expect("should be able to serialize diagnostics")
+    let json_str = serde_json::to_string(&v).expect("should be able to serialize diagnostics");
+    JsValue::from_str(&json_str)
 }
 #[wasm_bindgen]
 pub fn update_file_content(file_name: &str, content: &str) {
     update_file_content_inner(file_name, content)
 }
 fn parse_entrypoints(parser_entry_point: &str, settings: JsValue) -> EntryPoints {
+    let settings_str = settings.as_string().expect("settings should be a string");
     let settings: BeffUserSettings =
-        serde_wasm_bindgen::from_value(settings).expect("should be able to parse settings");
+        serde_json::from_str(&settings_str).expect("should be able to parse settings");
     EntryPoints {
         parser_entry_point: BffFileName::new(parser_entry_point.to_string()),
         settings,
@@ -144,7 +146,8 @@ fn run_extraction(entry: EntryPoints) -> ParserExtractResult {
 }
 fn print_errors(errors: &[DiagnosticInformation]) {
     let v = WasmDiagnostic::from_diagnostics(errors);
-    let v = serde_wasm_bindgen::to_value(&v).expect("should be able to serialize");
+    let v = serde_json::to_string(&v).expect("should be able to serialize diagnostics");
+    let v = JsValue::from_str(&v);
     emit_diagnostic(v)
 }
 

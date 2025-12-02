@@ -1900,7 +1900,7 @@ impl<'a, R: FileManager> FrontendCtx<'a, R> {
             Expr::Lit(l) => match l {
                 Lit::Str(s) => {
                     if as_const {
-                        Ok(Runtype::single_string_const(&s.value))
+                        Ok(Runtype::single_string_const(&s.value.to_string_lossy()))
                     } else {
                         Ok(Runtype::String)
                     }
@@ -1988,7 +1988,7 @@ impl<'a, R: FileManager> FrontendCtx<'a, R> {
                             Prop::KeyValue(p) => {
                                 let key: String = match &p.key {
                                     PropName::Ident(id) => id.sym.to_string(),
-                                    PropName::Str(st) => st.value.to_string(),
+                                    PropName::Str(st) => st.value.to_string_lossy().to_string(),
                                     PropName::Num(_) => {
                                         return self.error(
                                             &anchor,
@@ -2335,7 +2335,7 @@ impl<'a, R: FileManager> FrontendCtx<'a, R> {
                 }
                 if let Some(resolved) = self
                     .files
-                    .resolve_import(file.clone(), &import_type.arg.value)
+                    .resolve_import(file.clone(), &import_type.arg.value.to_string_lossy())
                 {
                     match &import_type.qualifier {
                         Some(ts_entity_name) => {
@@ -2358,7 +2358,9 @@ impl<'a, R: FileManager> FrontendCtx<'a, R> {
                 }
                 self.error(
                     &anchor,
-                    DiagnosticInfoMessage::CannotResolveImport(import_type.arg.value.to_string()),
+                    DiagnosticInfoMessage::CannotResolveImport(
+                        import_type.arg.value.to_string_lossy().to_string(),
+                    ),
                 )
             }
         }
@@ -2376,7 +2378,7 @@ impl<'a, R: FileManager> FrontendCtx<'a, R> {
 
         if let Some(resolved) = self
             .files
-            .resolve_import(file.clone(), &import_type.arg.value)
+            .resolve_import(file.clone(), &import_type.arg.value.to_string_lossy())
         {
             match &import_type.qualifier {
                 Some(ts_entity_name) => {
@@ -2413,7 +2415,9 @@ impl<'a, R: FileManager> FrontendCtx<'a, R> {
         };
         self.error(
             &anchor,
-            DiagnosticInfoMessage::CannotResolveImport(import_type.arg.value.to_string()),
+            DiagnosticInfoMessage::CannotResolveImport(
+                import_type.arg.value.to_string_lossy().to_string(),
+            ),
         )
     }
 
@@ -2446,7 +2450,7 @@ impl<'a, R: FileManager> FrontendCtx<'a, R> {
             TsTypeElement::TsPropertySignature(prop) => {
                 let key = match &*prop.key {
                     Expr::Ident(ident) => ident.sym.to_string(),
-                    Expr::Lit(Lit::Str(st)) => st.value.to_string(),
+                    Expr::Lit(Lit::Str(st)) => st.value.to_string_lossy().to_string(),
                     _ => {
                         return self.error(&anchor, DiagnosticInfoMessage::PropKeyShouldBeIdent);
                     }
@@ -2893,7 +2897,7 @@ impl<'a, R: FileManager> FrontendCtx<'a, R> {
             }
             TsType::TsLitType(TsLitType { lit, .. }) => match lit {
                 TsLit::Number(n) => Ok(Runtype::Const(RuntypeConst::parse_f64(n.value))),
-                TsLit::Str(s) => Ok(Runtype::single_string_const(&s.value)),
+                TsLit::Str(s) => Ok(Runtype::single_string_const(&s.value.to_string_lossy())),
                 TsLit::Bool(b) => Ok(Runtype::Const(RuntypeConst::Bool(b.value))),
                 TsLit::BigInt(_) => Ok(Runtype::BigInt),
                 TsLit::Tpl(it) => self.convert_ts_tpl_lit_type(it, file.clone()),
@@ -3004,19 +3008,7 @@ impl<'a, R: FileManager> FrontendCtx<'a, R> {
             s: prop.span(),
         };
         match prop {
-            TsTypeElement::TsPropertySignature(TsPropertySignature {
-                key,
-                type_ann,
-                type_params,
-                ..
-            }) => {
-                if type_params.is_some() {
-                    return self.anyhow_error(
-                        &anchor,
-                        DiagnosticInfoMessage::GenericDecoderIsNotSupported,
-                    );
-                }
-
+            TsTypeElement::TsPropertySignature(TsPropertySignature { key, type_ann, .. }) => {
                 let key = match &**key {
                     Expr::Ident(ident) => ident.sym.to_string(),
                     _ => {

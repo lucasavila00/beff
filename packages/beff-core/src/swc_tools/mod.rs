@@ -1,6 +1,5 @@
 use std::{collections::HashMap, rc::Rc};
 
-use swc_atoms::JsWord;
 use swc_common::Span;
 use swc_ecma_ast::{Expr, TsEnumDecl, TsInterfaceDecl, TsType, TsTypeAliasDecl};
 
@@ -27,12 +26,12 @@ pub enum SymbolExport {
     },
     ValueExpr {
         expr: Rc<Expr>,
-        name: JsWord,
+        name: String,
         span: Span,
         original_file: BffFileName,
     },
     ExprDecl {
-        name: JsWord,
+        name: String,
         span: Span,
         original_file: BffFileName,
         ty: Rc<TsType>,
