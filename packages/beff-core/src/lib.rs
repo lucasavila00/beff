@@ -418,22 +418,38 @@ impl RuntypeUUID {
     }
 
     fn print_name_for_js_codegen(&self, ctx: &mut DebugPrintCtx<'_>) -> String {
-        let mut acc = String::new();
-        acc.push_str(&self.ty.print_name_for_js_codegen(ctx.all_names));
+        let base = self.ty.print_name_for_js_codegen(ctx.all_names);
+
         if !self.type_arguments.is_empty() {
-            let tap_counter = match ctx.type_with_args_names.get(self) {
+            let with_tap_counter = match ctx.type_with_args_names.get(self) {
                 Some(name) => name.clone(),
                 None => {
                     let type_with_args_count = ctx.type_with_args_names.len();
-                    let it =
+                    let final_suffix =
                         Self::type_with_args_str(type_with_args_count, &self.type_arguments, ctx);
-                    ctx.type_with_args_names.insert(self.clone(), it.clone());
-                    it
+                    let final_name = format!("{}{}", base, final_suffix);
+                    for (uuid, name) in ctx.type_with_args_names.iter() {
+                        let has_same_name = name == &final_name;
+                        if has_same_name {
+                            dbg!(&uuid);
+                            dbg!(&self);
+                            dbg!(uuid == self);
+                            panic!(
+                                "Internal error: type with args name conflict: {} vs {}",
+                                uuid.diag_print(),
+                                self.diag_print()
+                            );
+                        }
+                    }
+
+                    ctx.type_with_args_names
+                        .insert(self.clone(), final_name.clone());
+                    final_name
                 }
             };
-            acc.push_str(&tap_counter);
+            return with_tap_counter;
         }
-        acc
+        return base;
     }
 }
 
