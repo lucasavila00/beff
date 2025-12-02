@@ -1813,4 +1813,95 @@ mod tests {
         };
         "#);
     }
+
+    #[test]
+    fn ok_type_application_repro() {
+        insta::assert_snapshot!(print_cgen(
+            r#"
+            export type LogicalOp = "AND" | "OR";
+
+            export type EditableLogicalConditionsAst<T> = { _tag: "none" } | EditableLogicalConditionsAstLogicalOp<T>;
+            export type EditableLogicalConditionsAstLogicalOp<T> = {
+                _tag: "logical";
+                op: LogicalOp;
+                nodes: readonly EditableLogicalConditionsAstNode<T>[];
+            };
+            export type EditableLogicalConditionsAstNode<T> =
+                | EditableLogicalConditionsAstLogicalOp<T>
+                | EditableLogicalConditionsAstCustom<T>
+                | {
+                      _tag: "none";
+                  };
+            export type EditableLogicalConditionsAstCustom<T> = {
+                _tag: "custom";
+                data: T;
+            };
+
+            type X = EditableLogicalConditionsAst<string>;
+            parse.buildParsers<{ X: X, }>();
+      "#
+        ), @r#"
+        const direct_hoist_0 = new ConstRuntype("none");
+        const direct_hoist_1 = new ObjectRuntype({
+            "_tag": direct_hoist_0
+        }, []);
+        const namedRuntypes = {
+            "EditableLogicalConditionsAst_string": new AnyOfDiscriminatedRuntype([
+                new ObjectRuntype({
+                    "_tag": new ConstRuntype("logical"),
+                    "nodes": new ArrayRuntype(new RefRuntype("EditableLogicalConditionsAstNode_string")),
+                    "op": new RefRuntype("LogicalOp")
+                }, []),
+                direct_hoist_1
+            ], "_tag", {
+                "logical": new ObjectRuntype({
+                    "_tag": new ConstRuntype("logical"),
+                    "nodes": new ArrayRuntype(new RefRuntype("EditableLogicalConditionsAstNode_string")),
+                    "op": new RefRuntype("LogicalOp")
+                }, []),
+                "none": direct_hoist_1
+            }),
+            "EditableLogicalConditionsAstCustom_string": new ObjectRuntype({
+                "_tag": new ConstRuntype("custom"),
+                "data": new TypeofRuntype("string")
+            }, []),
+            "EditableLogicalConditionsAstLogicalOp_string": new ObjectRuntype({
+                "_tag": new ConstRuntype("logical"),
+                "nodes": new ArrayRuntype(new RefRuntype("EditableLogicalConditionsAstNode_string")),
+                "op": new RefRuntype("LogicalOp")
+            }, []),
+            "EditableLogicalConditionsAstNode_string": new AnyOfDiscriminatedRuntype([
+                new ObjectRuntype({
+                    "_tag": new ConstRuntype("custom"),
+                    "data": new TypeofRuntype("string")
+                }, []),
+                new ObjectRuntype({
+                    "_tag": new ConstRuntype("logical"),
+                    "nodes": new ArrayRuntype(new RefRuntype("EditableLogicalConditionsAstNode_string")),
+                    "op": new RefRuntype("LogicalOp")
+                }, []),
+                direct_hoist_1
+            ], "_tag", {
+                "custom": new ObjectRuntype({
+                    "_tag": new ConstRuntype("custom"),
+                    "data": new TypeofRuntype("string")
+                }, []),
+                "logical": new ObjectRuntype({
+                    "_tag": new ConstRuntype("logical"),
+                    "nodes": new ArrayRuntype(new RefRuntype("EditableLogicalConditionsAstNode_string")),
+                    "op": new RefRuntype("LogicalOp")
+                }, []),
+                "none": direct_hoist_1
+            }),
+            "LogicalOp": new AnyOfConstsRuntype([
+                "AND",
+                "OR"
+            ]),
+            "X": new RefRuntype("EditableLogicalConditionsAst_string")
+        };
+        const buildParsersInput = {
+            "X": new RefRuntype("X")
+        };
+        "#);
+    }
 }
