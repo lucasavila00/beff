@@ -19,6 +19,31 @@ mod tests {
         }
         ");
     }
+
+    #[test]
+    fn type_app_stack() {
+        let from = r#"
+
+    type Wrapper1<T> = {a:T};
+    type Wrapper2<T> = {b:T};
+    type X = Wrapper1<Wrapper2<string>>;
+    parse.buildParsers<{ X: X }>();
+
+  "#;
+        insta::assert_snapshot!(print_types(from), @r#"
+        type Wrapper1__Wrapper2__string____ = { "a": Wrapper2__string__ };
+
+        type Wrapper2__string__ = { "b": string };
+
+        type X = Wrapper1__Wrapper2__string____;
+
+
+        type BuiltParsers = {
+          X: X,
+        }
+        "#);
+    }
+
     #[test]
     fn builtin_type_ref() {
         let from = r#"

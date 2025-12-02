@@ -1,6 +1,6 @@
 {
   "name": "json-schema-generator",
-  "version": "1.0.108",
+  "version": "1.0.109",
   "description": "",
   "main": "index.js",
   "scripts": {
