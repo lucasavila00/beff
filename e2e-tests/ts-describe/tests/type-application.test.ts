@@ -9,11 +9,27 @@ it("works", () => {
   );
   expect(Codecs.UsesWrappeds.describe()).toMatchInlineSnapshot(
     `
-    "type NumberWrapped = { value: number };
+    "type DataWrapper_boolean = { value: boolean };
+
+    type NumberWrapped = { value: number };
 
     type StringWrapped = { value: string };
 
-    type CodecUsesWrappeds = { x1: StringWrapped, x2: NumberWrapped, x3: DataWrapper<boolean>, x4: StringWrapped, x5: NumberWrapped, x6: DataWrapper<boolean> };"
+    type CodecUsesWrappeds = { x1: StringWrapped, x2: NumberWrapped, x3: DataWrapper_boolean, x4: StringWrapped, x5: NumberWrapped, x6: DataWrapper_boolean };"
+  `,
+  );
+  expect(Codecs.UsesWrappedsComplex.describe()).toMatchInlineSnapshot(
+    `
+    "type DataWrapper_instance_3 = { value: { a: boolean } };
+
+    type CodecUsesWrappedsComplex = { x3: DataWrapper_instance_3, x6: DataWrapper_instance_3 };"
+  `,
+  );
+  expect(Codecs.UsesWrappedsComplexRef.describe()).toMatchInlineSnapshot(
+    `
+    "type DataWrapper_ABool = { value: { a: boolean } };
+
+    type CodecUsesWrappedsComplexRef = { x3: DataWrapper_ABool, x6: DataWrapper_ABool };"
   `,
   );
 });

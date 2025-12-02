@@ -971,10 +971,8 @@ class ObjectRuntype {
 }
 class RefRuntype {
   refName;
-  typeArgsIfRecursiveGeneric;
-  constructor(refName, typeArgsIfRecursiveGeneric) {
+  constructor(refName) {
     this.refName = refName;
-    this.typeArgsIfRecursiveGeneric = typeArgsIfRecursiveGeneric;
   }
   describe(ctx) {
     const name = this.refName;
@@ -988,11 +986,6 @@ class RefRuntype {
       ctx.deps[name] = to.describe(ctx);
       return name;
     } else {
-      if (this.typeArgsIfRecursiveGeneric != null) {
-        const [baseName, typeArgs] = this.typeArgsIfRecursiveGeneric;
-        const typeArgsStr = typeArgs.map((it) => it.describe(ctx)).join(", ");
-        return `${baseName}<${typeArgsStr}>`;
-      }
       if (ctx.deps_counter[name] > 1) {
         if (!ctx.deps[name]) {
           ctx.deps[name] = true;

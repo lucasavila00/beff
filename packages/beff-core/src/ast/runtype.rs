@@ -264,7 +264,7 @@ impl UnionMerger {
 }
 pub struct DebugPrintCtx<'a> {
     pub all_names: &'a [&'a RuntypeUUID],
-    pub type_with_args_counter: &'a mut BTreeMap<RuntypeUUID, usize>,
+    pub type_with_args_names: &'a mut BTreeMap<RuntypeUUID, String>,
 }
 impl Runtype {
     pub fn as_string_const(&self) -> Option<&str> {

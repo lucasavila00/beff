@@ -79,7 +79,15 @@ type UsesWrappeds = {
   x5: NumberWrapped;
   x6: DataWrapper<boolean>;
 };
-
+type UsesWrappedsComplex = {
+  x3: DataWrapper<{ a: boolean }>;
+  x6: DataWrapper<{ a: boolean }>;
+};
+type ABool = { a: boolean };
+type UsesWrappedsComplexRef = {
+  x3: DataWrapper<ABool>;
+  x6: DataWrapper<ABool>;
+};
 export const Codecs = parse.buildParsers<{
   // basic
   string: string;
@@ -107,6 +115,8 @@ export const Codecs = parse.buildParsers<{
   StringWrapped: StringWrapped;
   NumberWrapped: NumberWrapped;
   UsesWrappeds: UsesWrappeds;
+  UsesWrappedsComplex: UsesWrappedsComplex;
+  UsesWrappedsComplexRef: UsesWrappedsComplexRef;
 }>({
   stringFormats: {
     ValidCurrency: (input: string) => {

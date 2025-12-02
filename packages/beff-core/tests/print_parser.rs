@@ -1692,15 +1692,10 @@ mod tests {
         const direct_hoist_2 = new TypeofRuntype("boolean");
         const direct_hoist_3 = new TypeofRuntype("number");
         const namedRuntypes = {
-            "GenericWrapper_type_application_instance_0": new ObjectRuntype({
+            "GenericWrapper_string": new ObjectRuntype({
                 "other": new AnyOfRuntype([
                     direct_hoist_0,
-                    new RefRuntype("GenericWrapper_type_application_instance_0", [
-                        "GenericWrapper",
-                        [
-                            direct_hoist_1
-                        ]
-                    ])
+                    new RefRuntype("GenericWrapper_string")
                 ]),
                 "value": direct_hoist_1,
                 "value2": new AnyOfRuntype([
@@ -1708,15 +1703,10 @@ mod tests {
                     direct_hoist_1
                 ])
             }, []),
-            "GenericWrapper_type_application_instance_1": new ObjectRuntype({
+            "GenericWrapper_number": new ObjectRuntype({
                 "other": new AnyOfRuntype([
                     direct_hoist_0,
-                    new RefRuntype("GenericWrapper_type_application_instance_1", [
-                        "GenericWrapper",
-                        [
-                            direct_hoist_3
-                        ]
-                    ])
+                    new RefRuntype("GenericWrapper_number")
                 ]),
                 "value": direct_hoist_3,
                 "value2": new AnyOfRuntype([
@@ -1725,18 +1715,8 @@ mod tests {
                 ])
             }, []),
             "UsesGenericWrapper": new ObjectRuntype({
-                "wrappedNumber": new RefRuntype("GenericWrapper_type_application_instance_1", [
-                    "GenericWrapper",
-                    [
-                        direct_hoist_3
-                    ]
-                ]),
-                "wrappedString": new RefRuntype("GenericWrapper_type_application_instance_0", [
-                    "GenericWrapper",
-                    [
-                        direct_hoist_1
-                    ]
-                ])
+                "wrappedNumber": new RefRuntype("GenericWrapper_number"),
+                "wrappedString": new RefRuntype("GenericWrapper_string")
             }, [])
         };
         const buildParsersInput = {
@@ -1768,26 +1748,16 @@ mod tests {
         const direct_hoist_1 = new TypeofRuntype("boolean");
         const direct_hoist_2 = new TypeofRuntype("number");
         const namedRuntypes = {
-            "GenericWrapper_type_application_instance_0": new ObjectRuntype({
-                "other": new RefRuntype("GenericWrapper_type_application_instance_0", [
-                    "GenericWrapper",
-                    [
-                        direct_hoist_0
-                    ]
-                ]),
+            "GenericWrapper_string": new ObjectRuntype({
+                "other": new RefRuntype("GenericWrapper_string"),
                 "value": direct_hoist_0,
                 "value2": new AnyOfRuntype([
                     direct_hoist_1,
                     direct_hoist_0
                 ])
             }, []),
-            "GenericWrapper_type_application_instance_1": new ObjectRuntype({
-                "other": new RefRuntype("GenericWrapper_type_application_instance_1", [
-                    "GenericWrapper",
-                    [
-                        direct_hoist_2
-                    ]
-                ]),
+            "GenericWrapper_number": new ObjectRuntype({
+                "other": new RefRuntype("GenericWrapper_number"),
                 "value": direct_hoist_2,
                 "value2": new AnyOfRuntype([
                     direct_hoist_1,
@@ -1795,18 +1765,8 @@ mod tests {
                 ])
             }, []),
             "UsesGenericWrapper": new ObjectRuntype({
-                "wrappedNumber": new RefRuntype("GenericWrapper_type_application_instance_1", [
-                    "GenericWrapper",
-                    [
-                        direct_hoist_2
-                    ]
-                ]),
-                "wrappedString": new RefRuntype("GenericWrapper_type_application_instance_0", [
-                    "GenericWrapper",
-                    [
-                        direct_hoist_0
-                    ]
-                ])
+                "wrappedNumber": new RefRuntype("GenericWrapper_number"),
+                "wrappedString": new RefRuntype("GenericWrapper_string")
             }, [])
         };
         const buildParsersInput = {

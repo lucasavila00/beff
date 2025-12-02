@@ -108,7 +108,7 @@ fn debug_print_type_list(vs: Vec<(RuntypeUUID, String)>) -> String {
     let mut type_with_args_counter = BTreeMap::new();
     let mut ctx = DebugPrintCtx {
         all_names: &all_names,
-        type_with_args_counter: &mut type_with_args_counter,
+        type_with_args_names: &mut type_with_args_counter,
     };
 
     for (name, ts_type) in vs.iter() {
@@ -145,7 +145,7 @@ impl ParserExtractResult {
         let mut type_with_args_counter = BTreeMap::new();
         let mut debug_print_ctx = DebugPrintCtx {
             all_names: &all_names,
-            type_with_args_counter: &mut type_with_args_counter,
+            type_with_args_names: &mut type_with_args_counter,
         };
 
         for v in sorted_validators {
@@ -212,7 +212,7 @@ pub struct TypeAddress {
     pub name: String,
 }
 
-pub fn valid_ts_identifier(p: &str) -> String {
+pub fn to_valid_ts_identifier(p: &str) -> String {
     let mut acc = String::new();
     for c in p.chars() {
         if c.is_ascii_alphanumeric() || c == '_' {
@@ -222,6 +222,11 @@ pub fn valid_ts_identifier(p: &str) -> String {
         }
     }
     acc
+}
+
+fn is_valid_ts_identifier(s: &str) -> bool {
+    let after = to_valid_ts_identifier(s);
+    after == s
 }
 
 impl TypeAddress {
@@ -284,7 +289,7 @@ impl TypeAddress {
         // should be a valid typescript identifier
         let acc = format!(
             "{}__{}",
-            valid_ts_identifier(&Self::min_file_path_that_differs(
+            to_valid_ts_identifier(&Self::min_file_path_that_differs(
                 &self.file,
                 &has_same_name
             )),
@@ -349,13 +354,6 @@ pub enum RuntypeName {
 }
 
 impl RuntypeName {
-    fn print_simple_base_name(&self) -> Option<String> {
-        match self {
-            RuntypeName::Address(addr) => Some(addr.name.clone()),
-            _ => None,
-        }
-    }
-
     fn print_name_for_js_codegen(&self, all_names: &[&RuntypeUUID]) -> String {
         match self {
             RuntypeName::Address(addr) => addr.ts_identifier(all_names),
@@ -390,7 +388,7 @@ impl RuntypeUUID {
                 "__{}__",
                 self.type_arguments
                     .iter()
-                    .map(|it| valid_ts_identifier(&it.debug_print(ctx)))
+                    .map(|it| to_valid_ts_identifier(&it.debug_print(ctx)))
                     .collect::<Vec<_>>()
                     .join("_")
             );
@@ -402,26 +400,36 @@ impl RuntypeUUID {
         let mut type_with_args_counter = BTreeMap::new();
         let mut empty_ctx = DebugPrintCtx {
             all_names: &[],
-            type_with_args_counter: &mut type_with_args_counter,
+            type_with_args_names: &mut type_with_args_counter,
         };
         self.debug_print(&mut empty_ctx)
     }
 
-    fn tap_str(it: usize) -> String {
-        format!("_type_application_instance_{}", it)
+    fn type_with_args_str(it: usize, args: &[Runtype], ctx: &mut DebugPrintCtx<'_>) -> String {
+        match args {
+            [single] => {
+                let printed = single.debug_print(ctx);
+                if is_valid_ts_identifier(&printed) {
+                    format!("_{}", printed)
+                } else {
+                    format!("_instance_{}", it)
+                }
+            }
+            _ => format!("_instance_{}", it),
+        }
     }
 
     fn print_name_for_js_codegen(&self, ctx: &mut DebugPrintCtx<'_>) -> String {
         let mut acc = String::new();
         acc.push_str(&self.ty.print_name_for_js_codegen(ctx.all_names));
         if !self.type_arguments.is_empty() {
-            let tap_counter = match ctx.type_with_args_counter.get(self) {
-                Some(count) => Self::tap_str(*count),
+            let tap_counter = match ctx.type_with_args_names.get(self) {
+                Some(name) => name.clone(),
                 None => {
-                    let type_with_args_count = ctx.type_with_args_counter.len();
-                    let it = Self::tap_str(type_with_args_count);
-                    ctx.type_with_args_counter
-                        .insert(self.clone(), type_with_args_count);
+                    let type_with_args_count = ctx.type_with_args_names.len();
+                    let it =
+                        Self::type_with_args_str(type_with_args_count, &self.type_arguments, ctx);
+                    ctx.type_with_args_names.insert(self.clone(), it.clone());
                     it
                 }
             };

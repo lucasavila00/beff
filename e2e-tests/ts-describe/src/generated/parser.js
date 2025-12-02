@@ -975,10 +975,8 @@ class ObjectRuntype {
 }
 class RefRuntype {
   refName;
-  typeArgsIfRecursiveGeneric;
-  constructor(refName, typeArgsIfRecursiveGeneric) {
+  constructor(refName) {
     this.refName = refName;
-    this.typeArgsIfRecursiveGeneric = typeArgsIfRecursiveGeneric;
   }
   describe(ctx) {
     const name = this.refName;
@@ -992,11 +990,6 @@ class RefRuntype {
       ctx.deps[name] = to.describe(ctx);
       return name;
     } else {
-      if (this.typeArgsIfRecursiveGeneric != null) {
-        const [baseName, typeArgs] = this.typeArgsIfRecursiveGeneric;
-        const typeArgsStr = typeArgs.map((it) => it.describe(ctx)).join(", ");
-        return `${baseName}<${typeArgsStr}>`;
-      }
       if (ctx.deps_counter[name] > 1) {
         if (!ctx.deps[name]) {
           ctx.deps[name] = true;
@@ -1139,22 +1132,32 @@ const RequiredNumberFormats = [];
 const direct_hoist_0 = new TypeofRuntype("string");
 const direct_hoist_1 = new TypeofRuntype("number");
 const direct_hoist_2 = new TypeofRuntype("boolean");
-const direct_hoist_3 = new ConstRuntype("a");
+const direct_hoist_3 = new ObjectRuntype({
+    "a": direct_hoist_2
+}, []);
+const direct_hoist_4 = new ConstRuntype("a");
 const namedRuntypes = {
-    "DataWrapper_type_application_instance_2": new ObjectRuntype({
+    "ABool": direct_hoist_3,
+    "DataWrapper_boolean": new ObjectRuntype({
         "value": direct_hoist_2
+    }, []),
+    "DataWrapper_instance_3": new ObjectRuntype({
+        "value": direct_hoist_3
+    }, []),
+    "DataWrapper_ABool": new ObjectRuntype({
+        "value": new RefRuntype("ABool")
     }, []),
     "DiscriminatedUnion": new AnyOfDiscriminatedRuntype([
         new ObjectRuntype({
             "a1": direct_hoist_0,
             "a11": new OptionalField(direct_hoist_0),
             "subType": new ConstRuntype("a1"),
-            "type": direct_hoist_3
+            "type": direct_hoist_4
         }, []),
         new ObjectRuntype({
             "a2": direct_hoist_0,
             "subType": new ConstRuntype("a2"),
-            "type": direct_hoist_3
+            "type": direct_hoist_4
         }, []),
         new ObjectRuntype({
             "type": new ConstRuntype("b"),
@@ -1166,24 +1169,24 @@ const namedRuntypes = {
                 "a1": direct_hoist_0,
                 "a11": new OptionalField(direct_hoist_0),
                 "subType": new ConstRuntype("a1"),
-                "type": direct_hoist_3
+                "type": direct_hoist_4
             }, []),
             new ObjectRuntype({
                 "a2": direct_hoist_0,
                 "subType": new ConstRuntype("a2"),
-                "type": direct_hoist_3
+                "type": direct_hoist_4
             }, [])
         ], "subType", {
             "a1": new ObjectRuntype({
                 "a1": direct_hoist_0,
                 "a11": new OptionalField(direct_hoist_0),
                 "subType": new ConstRuntype("a1"),
-                "type": direct_hoist_3
+                "type": direct_hoist_4
             }, []),
             "a2": new ObjectRuntype({
                 "a2": direct_hoist_0,
                 "subType": new ConstRuntype("a2"),
-                "type": direct_hoist_3
+                "type": direct_hoist_4
             }, [])
         }),
         "b": new ObjectRuntype({
@@ -1191,26 +1194,16 @@ const namedRuntypes = {
             "value": direct_hoist_1
         }, [])
     }),
-    "GenericWrapper_type_application_instance_0": new ObjectRuntype({
-        "other": new RefRuntype("GenericWrapper_type_application_instance_0", [
-            "GenericWrapper",
-            [
-                direct_hoist_0
-            ]
-        ]),
+    "GenericWrapper_string": new ObjectRuntype({
+        "other": new RefRuntype("GenericWrapper_string"),
         "value": direct_hoist_0,
         "value2": new AnyOfRuntype([
             direct_hoist_2,
             direct_hoist_0
         ])
     }, []),
-    "GenericWrapper_type_application_instance_1": new ObjectRuntype({
-        "other": new RefRuntype("GenericWrapper_type_application_instance_1", [
-            "GenericWrapper",
-            [
-                direct_hoist_1
-            ]
-        ]),
+    "GenericWrapper_number": new ObjectRuntype({
+        "other": new RefRuntype("GenericWrapper_number"),
         "value": direct_hoist_1,
         "value2": new AnyOfRuntype([
             direct_hoist_2,
@@ -1252,36 +1245,24 @@ const namedRuntypes = {
         "t2Array": new ArrayRuntype(new RefRuntype("T2"))
     }, []),
     "UsesGenericWrapper": new ObjectRuntype({
-        "wrappedNumber": new RefRuntype("GenericWrapper_type_application_instance_1", [
-            "GenericWrapper",
-            [
-                direct_hoist_1
-            ]
-        ]),
-        "wrappedString": new RefRuntype("GenericWrapper_type_application_instance_0", [
-            "GenericWrapper",
-            [
-                direct_hoist_0
-            ]
-        ])
+        "wrappedNumber": new RefRuntype("GenericWrapper_number"),
+        "wrappedString": new RefRuntype("GenericWrapper_string")
     }, []),
     "UsesWrappeds": new ObjectRuntype({
         "x1": new RefRuntype("StringWrapped"),
         "x2": new RefRuntype("NumberWrapped"),
-        "x3": new RefRuntype("DataWrapper_type_application_instance_2", [
-            "DataWrapper",
-            [
-                direct_hoist_2
-            ]
-        ]),
+        "x3": new RefRuntype("DataWrapper_boolean"),
         "x4": new RefRuntype("StringWrapped"),
         "x5": new RefRuntype("NumberWrapped"),
-        "x6": new RefRuntype("DataWrapper_type_application_instance_2", [
-            "DataWrapper",
-            [
-                direct_hoist_2
-            ]
-        ])
+        "x6": new RefRuntype("DataWrapper_boolean")
+    }, []),
+    "UsesWrappedsComplex": new ObjectRuntype({
+        "x3": new RefRuntype("DataWrapper_instance_3"),
+        "x6": new RefRuntype("DataWrapper_instance_3")
+    }, []),
+    "UsesWrappedsComplexRef": new ObjectRuntype({
+        "x3": new RefRuntype("DataWrapper_ABool"),
+        "x6": new RefRuntype("DataWrapper_ABool")
     }, []),
     "ValidCurrency": new StringWithFormatRuntype([
         "ValidCurrency"
@@ -1318,7 +1299,9 @@ const buildParsersInput = {
     "UsesGenericWrapper": new RefRuntype("UsesGenericWrapper"),
     "StringWrapped": new RefRuntype("StringWrapped"),
     "NumberWrapped": new RefRuntype("NumberWrapped"),
-    "UsesWrappeds": new RefRuntype("UsesWrappeds")
+    "UsesWrappeds": new RefRuntype("UsesWrappeds"),
+    "UsesWrappedsComplex": new RefRuntype("UsesWrappedsComplex"),
+    "UsesWrappedsComplexRef": new RefRuntype("UsesWrappedsComplexRef")
 };
 
 export default { buildParsers };

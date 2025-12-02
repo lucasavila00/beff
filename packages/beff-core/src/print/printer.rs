@@ -59,7 +59,7 @@ struct PrintContext {
     hoisted: BTreeMap<Runtype, (usize, Expr)>,
     seen: SeenCounter,
     all_names: Vec<RuntypeUUID>,
-    type_with_args_counter: BTreeMap<RuntypeUUID, usize>,
+    type_with_args_names: BTreeMap<RuntypeUUID, String>,
     recursive_generic_uuids: BTreeSet<RuntypeUUID>,
     inlined: BTreeSet<RuntypeUUID>,
 }
@@ -68,7 +68,7 @@ impl PrintContext {
     pub fn print_rt_name(&mut self, name: &RuntypeUUID) -> String {
         let mut ctx = DebugPrintCtx {
             all_names: &self.all_names.iter().collect::<Vec<_>>(),
-            type_with_args_counter: &mut self.type_with_args_counter,
+            type_with_args_names: &mut self.type_with_args_names,
         };
         name.print_name_for_js_codegen(&mut ctx)
     }
@@ -159,47 +159,14 @@ fn typeof_runtype(t: &str) -> Expr {
     )
 }
 
-fn ref_runtype(
-    to: &RuntypeUUID,
-    ctx: &mut PrintContext,
-    is_recursive_generic: bool,
-    type_args: Vec<Expr>,
-) -> Expr {
-    let mut x = vec![
-        //
-        string_lit(&ctx.print_rt_name(to)),
-    ];
-    if let Some(base_name) = to.ty.print_simple_base_name()
-        && is_recursive_generic
-    {
-        let args = Expr::Array(ArrayLit {
-            span: DUMMY_SP,
-            elems: type_args
-                .into_iter()
-                .map(|it| {
-                    Some(ExprOrSpread {
-                        spread: None,
-                        expr: it.into(),
-                    })
-                })
-                .collect(),
-        });
-        x.push(Expr::Array(ArrayLit {
-            span: DUMMY_SP,
-            elems: vec![
-                Some(ExprOrSpread {
-                    spread: None,
-                    expr: string_lit(&base_name).into(),
-                }),
-                Some(ExprOrSpread {
-                    spread: None,
-                    expr: args.into(),
-                }),
-            ],
-        }))
-    }
-
-    new_runtype_class("RefRuntype", x)
+fn ref_runtype(to: &RuntypeUUID, ctx: &mut PrintContext) -> Expr {
+    new_runtype_class(
+        "RefRuntype",
+        vec![
+            //
+            string_lit(&ctx.print_rt_name(to)),
+        ],
+    )
 }
 
 fn no_args_runtype(class_name: &str) -> Expr {
@@ -540,12 +507,7 @@ fn print_runtype(schema: &Runtype, named_schemas: &[NamedSchema], ctx: &mut Prin
                     return print_runtype(&found.schema, named_schemas, ctx);
                 }
             }
-            let printed_args = to
-                .type_arguments
-                .iter()
-                .map(|it| print_runtype(it, named_schemas, ctx))
-                .collect::<Vec<_>>();
-            return ref_runtype(to, ctx, is_recursive_generic, printed_args);
+            return ref_runtype(to, ctx);
         }
         Runtype::Any => no_args_runtype("AnyRuntype"),
         Runtype::Never => no_args_runtype("NeverRuntype"),
@@ -890,7 +852,7 @@ impl ParserExtractResult {
             hoisted: BTreeMap::new(),
             seen,
             all_names,
-            type_with_args_counter: BTreeMap::new(),
+            type_with_args_names: BTreeMap::new(),
             recursive_generic_uuids: self.recursive_generic_uuids,
             inlined: BTreeSet::new(),
         };

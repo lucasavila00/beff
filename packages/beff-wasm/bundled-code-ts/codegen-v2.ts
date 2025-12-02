@@ -1150,10 +1150,8 @@ class ObjectRuntype implements Runtype {
 declare var namedRuntypes: Record<string, Runtype>;
 class RefRuntype implements Runtype {
   private refName: string;
-  private typeArgsIfRecursiveGeneric: [string, Runtype[]] | undefined;
-  constructor(refName: string, typeArgsIfRecursiveGeneric: [string, Runtype[]] | undefined) {
+  constructor(refName: string) {
     this.refName = refName;
-    this.typeArgsIfRecursiveGeneric = typeArgsIfRecursiveGeneric;
   }
   describe(ctx: DescribeContext): string {
     const name = this.refName;
@@ -1167,12 +1165,6 @@ class RefRuntype implements Runtype {
       ctx.deps[name] = to.describe(ctx);
       return name;
     } else {
-      if (this.typeArgsIfRecursiveGeneric != null) {
-        const [baseName, typeArgs] = this.typeArgsIfRecursiveGeneric;
-        const typeArgsStr = typeArgs.map((it) => it.describe(ctx)).join(", ");
-        return `${baseName}<${typeArgsStr}>`;
-      }
-
       if (ctx.deps_counter[name] > 1) {
         if (!ctx.deps[name]) {
           ctx.deps[name] = true;
