@@ -1231,8 +1231,6 @@ impl<'a, R: FileManager> FrontendCtx<'a, R> {
                         t: decl,
                         local_address: address,
                     } => {
-                        let mut count = 0;
-
                         let type_params = match &decl.type_params {
                             Some(p) => {
                                 //
@@ -1247,10 +1245,9 @@ impl<'a, R: FileManager> FrontendCtx<'a, R> {
 
                         for (param, arg) in type_params.into_iter().zip(type_args.iter()) {
                             self.type_application_stack.push((param, arg.clone()));
-                            count += 1;
                         }
                         let runtype = self.extract_type(&decl.type_ann, address.file.clone());
-                        for _ in 0..count {
+                        for _ in type_args {
                             self.type_application_stack.pop();
                         }
                         Ok(runtype?)
@@ -1727,7 +1724,7 @@ impl<'a, R: FileManager> FrontendCtx<'a, R> {
         anchor: &Anchor,
     ) -> Res<Runtype> {
         if let TsEntityName::Ident(ident) = type_name {
-            for (n, t) in self.type_application_stack.iter() {
+            for (n, t) in self.type_application_stack.iter().rev() {
                 if ident.sym == *n {
                     return Ok(t.clone());
                 }
@@ -2817,8 +2814,9 @@ impl<'a, R: FileManager> FrontendCtx<'a, R> {
             self.type_application_stack
                 .push((name.clone(), Runtype::single_string_const(&key)));
 
-            let ty = self.extract_type(type_ann, file_name.clone())?;
+            let ty = self.extract_type(type_ann, file_name.clone());
             self.type_application_stack.pop();
+            let ty = ty?;
 
             let ty = match k.optional {
                 Some(opt) => match opt {
