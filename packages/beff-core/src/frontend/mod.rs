@@ -2631,7 +2631,6 @@ impl<'a, R: FileManager> FrontendCtx<'a, R> {
         &mut self,
         obj: &Runtype,
         index: &Runtype,
-        anchor: &Anchor,
     ) -> Res<Option<Runtype>> {
         // try to resolve syntatically
         match (obj, index) {
@@ -2640,7 +2639,7 @@ impl<'a, R: FileManager> FrontendCtx<'a, R> {
 
                 let v = v.and_then(|it| it.clone());
                 if let Some(v) = v {
-                    return self.convert_indexed_access_syntatically(&v, index, anchor);
+                    return self.convert_indexed_access_syntatically(&v, index);
                 }
             }
             (
@@ -2705,7 +2704,7 @@ impl<'a, R: FileManager> FrontendCtx<'a, R> {
         index: &Runtype,
         anchor: &Anchor,
     ) -> Res<Runtype> {
-        if let Some(res) = self.convert_indexed_access_syntatically(obj, index, anchor)? {
+        if let Some(res) = self.convert_indexed_access_syntatically(obj, index)? {
             return Ok(res);
         }
         // fallback to semantic
