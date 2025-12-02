@@ -61,7 +61,6 @@ struct PrintContext {
     seen: SeenCounter,
     all_names: Vec<RuntypeUUID>,
     type_with_args_names: BTreeMap<RuntypeUUID, String>,
-    recursive_generic_uuids: BTreeSet<RuntypeUUID>,
     inlined: BTreeSet<RuntypeUUID>,
 }
 
@@ -490,30 +489,7 @@ fn print_runtype(schema: &Runtype, named_schemas: &[NamedSchema], ctx: &mut Prin
         Runtype::Boolean => typeof_runtype("boolean"),
         Runtype::Number => typeof_runtype("number"),
         Runtype::Function => typeof_runtype("function"),
-        Runtype::Ref(to) => {
-            let is_type_application = !to.type_arguments.is_empty();
-            let is_recursive_generic = ctx.recursive_generic_uuids.contains(to);
-            if is_type_application && !is_recursive_generic {
-                // Inline type applications that are not recursive.
-                //
-                // Type applications are named by the beff program and not by the user,
-                // so we produce better output by inlining the applications when possible.
-                //
-                // Regular type references are kept as references, as they were defined by the user,
-                // and they are useful when reporting errors or describing types.
-                //
-                // Performance-wise we would hoist duplicated types anyway, so inlining more wouldn't
-                // be a performance issue.
-                //
-                // Generic recursive types cannot be inlined, as they would produce infinite types.
-                let found = named_schemas.iter().find(|it| it.name == *to);
-                if let Some(found) = found {
-                    ctx.inlined.insert(to.clone());
-                    return print_runtype(&found.schema, named_schemas, ctx);
-                }
-            }
-            return ref_runtype(to, ctx);
-        }
+        Runtype::Ref(to) => ref_runtype(to, ctx),
         Runtype::Any => no_args_runtype("AnyRuntype"),
         Runtype::Never => no_args_runtype("NeverRuntype"),
         Runtype::Const(c) => new_runtype_class("ConstRuntype", vec![c.clone().to_json().to_expr()]),
@@ -858,7 +834,6 @@ impl ParserExtractResult {
             seen,
             all_names,
             type_with_args_names: BTreeMap::new(),
-            recursive_generic_uuids: self.recursive_generic_uuids,
             inlined: BTreeSet::new(),
         };
 
