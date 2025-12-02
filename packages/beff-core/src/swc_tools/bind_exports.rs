@@ -259,7 +259,7 @@ impl<R: FsModuleResolver> Visit for ImportsVisitor<'_, R> {
                                 self.unresolved_exports.push(UnresolvedExport {
                                     name: id.sym.to_string(),
                                     span: id.span,
-                                    renamed: renamed,
+                                    renamed,
                                 });
                             }
                         }

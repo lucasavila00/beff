@@ -85,7 +85,7 @@ pub fn update_file_content(file_name: &str, content: &str) {
 }
 fn parse_entrypoints(parser_entry_point: &str, settings: &str) -> EntryPoints {
     let settings: BeffUserSettings =
-        serde_json::from_str(&settings).expect("should be able to parse settings");
+        serde_json::from_str(settings).expect("should be able to parse settings");
     EntryPoints {
         parser_entry_point: BffFileName::new(parser_entry_point.to_string()),
         settings,
