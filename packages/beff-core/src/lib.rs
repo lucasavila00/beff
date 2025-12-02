@@ -449,7 +449,7 @@ impl RuntypeUUID {
             };
             return with_tap_counter;
         }
-        return base;
+        base
     }
 }
 
