@@ -1141,7 +1141,13 @@ const namedRuntypes = {
     "DataWrapper_boolean": new ObjectRuntype({
         "value": direct_hoist_2
     }, []),
-    "DataWrapper_instance_3": new ObjectRuntype({
+    "DataWrapper_string": new ObjectRuntype({
+        "value": direct_hoist_0
+    }, []),
+    "DataWrapper_number": new ObjectRuntype({
+        "value": direct_hoist_1
+    }, []),
+    "DataWrapper_instance_5": new ObjectRuntype({
         "value": direct_hoist_3
     }, []),
     "DataWrapper_ABool": new ObjectRuntype({
@@ -1219,9 +1225,7 @@ const namedRuntypes = {
     "NonEmptyString": new TupleRuntype([
         direct_hoist_0
     ], direct_hoist_0),
-    "NumberWrapped": new ObjectRuntype({
-        "value": direct_hoist_1
-    }, []),
+    "NumberWrapped": new RefRuntype("DataWrapper_number"),
     "RecursiveTree": new ObjectRuntype({
         "children": new ArrayRuntype(new RefRuntype("RecursiveTree")),
         "value": direct_hoist_1
@@ -1231,9 +1235,7 @@ const namedRuntypes = {
         "b": new RefRuntype("T3")
     }, []),
     "SemVer": new RegexRuntype(/(\d+(\.\d+)?)(\.)(\d+(\.\d+)?)(\.)(\d+(\.\d+)?)/, "`${number}.${number}.${number}`"),
-    "StringWrapped": new ObjectRuntype({
-        "value": direct_hoist_0
-    }, []),
+    "StringWrapped": new RefRuntype("DataWrapper_string"),
     "T1": new ObjectRuntype({
         "a": direct_hoist_0,
         "b": direct_hoist_1
@@ -1257,8 +1259,8 @@ const namedRuntypes = {
         "x6": new RefRuntype("DataWrapper_boolean")
     }, []),
     "UsesWrappedsComplex": new ObjectRuntype({
-        "x3": new RefRuntype("DataWrapper_instance_3"),
-        "x6": new RefRuntype("DataWrapper_instance_3")
+        "x3": new RefRuntype("DataWrapper_instance_5"),
+        "x6": new RefRuntype("DataWrapper_instance_5")
     }, []),
     "UsesWrappedsComplexRef": new ObjectRuntype({
         "x3": new RefRuntype("DataWrapper_ABool"),

@@ -20,9 +20,9 @@ it("works", () => {
   );
   expect(Codecs.UsesWrappedsComplex.describe()).toMatchInlineSnapshot(
     `
-    "type DataWrapper_instance_3 = { value: { a: boolean } };
+    "type DataWrapper_instance_5 = { value: { a: boolean } };
 
-    type CodecUsesWrappedsComplex = { x3: DataWrapper_instance_3, x6: DataWrapper_instance_3 };"
+    type CodecUsesWrappedsComplex = { x3: DataWrapper_instance_5, x6: DataWrapper_instance_5 };"
   `,
   );
   expect(Codecs.UsesWrappedsComplexRef.describe()).toMatchInlineSnapshot(

@@ -1793,13 +1793,15 @@ mod tests {
       "#
         ), @r#"
         const namedRuntypes = {
+            "GenericWrapper_string": new ObjectRuntype({
+                "value": new TypeofRuntype("string")
+            }, []),
+            "GenericWrapper_number": new ObjectRuntype({
+                "value": new TypeofRuntype("number")
+            }, []),
             "UsesGenericWrapper": new ObjectRuntype({
-                "wrappedNumber": new ObjectRuntype({
-                    "value": new TypeofRuntype("number")
-                }, []),
-                "wrappedString": new ObjectRuntype({
-                    "value": new TypeofRuntype("string")
-                }, [])
+                "wrappedNumber": new RefRuntype("GenericWrapper_number"),
+                "wrappedString": new RefRuntype("GenericWrapper_string")
             }, [])
         };
         const buildParsersInput = {
