@@ -66,15 +66,15 @@ extern "C" {
 }
 
 #[wasm_bindgen]
-pub fn bundle_to_string_v2(parser_entry_point: &str, settings: JsValue) -> JsValue {
+pub fn bundle_to_string_v2(parser_entry_point: &str, settings: &str) -> JsValue {
     match bundle_to_string_inner(parse_entrypoints(parser_entry_point, settings)) {
         Ok(s) => JsValue::from_str(&s),
-        Err(_) => JsValue::null(),
+        Err(_) => JsValue::undefined(),
     }
 }
 
 #[wasm_bindgen]
-pub fn bundle_to_diagnostics(parser_entry_point: &str, settings: JsValue) -> JsValue {
+pub fn bundle_to_diagnostics(parser_entry_point: &str, settings: &str) -> JsValue {
     let v = bundle_to_diagnostics_inner(parse_entrypoints(parser_entry_point, settings));
     let json_str = serde_json::to_string(&v).expect("should be able to serialize diagnostics");
     JsValue::from_str(&json_str)
@@ -83,10 +83,9 @@ pub fn bundle_to_diagnostics(parser_entry_point: &str, settings: JsValue) -> JsV
 pub fn update_file_content(file_name: &str, content: &str) {
     update_file_content_inner(file_name, content)
 }
-fn parse_entrypoints(parser_entry_point: &str, settings: JsValue) -> EntryPoints {
-    let settings_str = settings.as_string().expect("settings should be a string");
+fn parse_entrypoints(parser_entry_point: &str, settings: &str) -> EntryPoints {
     let settings: BeffUserSettings =
-        serde_json::from_str(&settings_str).expect("should be able to parse settings");
+        serde_json::from_str(&settings).expect("should be able to parse settings");
     EntryPoints {
         parser_entry_point: BffFileName::new(parser_entry_point.to_string()),
         settings,
