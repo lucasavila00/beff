@@ -159,14 +159,47 @@ fn typeof_runtype(t: &str) -> Expr {
     )
 }
 
-fn ref_runtype(to: &RuntypeUUID, ctx: &mut PrintContext) -> Expr {
-    new_runtype_class(
-        "RefRuntype",
-        vec![
-            //
-            string_lit(&ctx.print_rt_name(to)),
-        ],
-    )
+fn ref_runtype(
+    to: &RuntypeUUID,
+    ctx: &mut PrintContext,
+    is_recursive_generic: bool,
+    type_args: Vec<Expr>,
+) -> Expr {
+    let mut x = vec![
+        //
+        string_lit(&ctx.print_rt_name(to)),
+    ];
+    if let Some(base_name) = to.ty.print_simple_base_name()
+        && is_recursive_generic
+    {
+        let args = Expr::Array(ArrayLit {
+            span: DUMMY_SP,
+            elems: type_args
+                .into_iter()
+                .map(|it| {
+                    Some(ExprOrSpread {
+                        spread: None,
+                        expr: it.into(),
+                    })
+                })
+                .collect(),
+        });
+        x.push(Expr::Array(ArrayLit {
+            span: DUMMY_SP,
+            elems: vec![
+                Some(ExprOrSpread {
+                    spread: None,
+                    expr: string_lit(&base_name).into(),
+                }),
+                Some(ExprOrSpread {
+                    spread: None,
+                    expr: args.into(),
+                }),
+            ],
+        }))
+    }
+
+    new_runtype_class("RefRuntype", x)
 }
 
 fn no_args_runtype(class_name: &str) -> Expr {
@@ -487,8 +520,8 @@ fn print_runtype(schema: &Runtype, named_schemas: &[NamedSchema], ctx: &mut Prin
         Runtype::Function => typeof_runtype("function"),
         Runtype::Ref(to) => {
             let is_type_application = !to.type_arguments.is_empty();
-            let is_recusrive_generic = ctx.recursive_generic_uuids.contains(to);
-            if is_type_application && !is_recusrive_generic {
+            let is_recursive_generic = ctx.recursive_generic_uuids.contains(to);
+            if is_type_application && !is_recursive_generic {
                 // Inline type applications that are not recursive.
                 //
                 // Type applications are named by the beff program and not by the user,
@@ -507,7 +540,12 @@ fn print_runtype(schema: &Runtype, named_schemas: &[NamedSchema], ctx: &mut Prin
                     return print_runtype(&found.schema, named_schemas, ctx);
                 }
             }
-            return ref_runtype(to, ctx);
+            let printed_args = to
+                .type_arguments
+                .iter()
+                .map(|it| print_runtype(it, named_schemas, ctx))
+                .collect::<Vec<_>>();
+            return ref_runtype(to, ctx, is_recursive_generic, printed_args);
         }
         Runtype::Any => no_args_runtype("AnyRuntype"),
         Runtype::Never => no_args_runtype("NeverRuntype"),

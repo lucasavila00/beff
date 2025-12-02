@@ -349,6 +349,13 @@ pub enum RuntypeName {
 }
 
 impl RuntypeName {
+    fn print_simple_base_name(&self) -> Option<String> {
+        match self {
+            RuntypeName::Address(addr) => Some(addr.name.clone()),
+            _ => None,
+        }
+    }
+
     fn print_name_for_js_codegen(&self, all_names: &[&RuntypeUUID]) -> String {
         match self {
             RuntypeName::Address(addr) => addr.ts_identifier(all_names),

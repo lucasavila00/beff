@@ -975,8 +975,10 @@ class ObjectRuntype {
 }
 class RefRuntype {
   refName;
-  constructor(refName) {
+  typeArgsIfRecursiveGeneric;
+  constructor(refName, typeArgsIfRecursiveGeneric) {
     this.refName = refName;
+    this.typeArgsIfRecursiveGeneric = typeArgsIfRecursiveGeneric;
   }
   describe(ctx) {
     const name = this.refName;
@@ -990,6 +992,11 @@ class RefRuntype {
       ctx.deps[name] = to.describe(ctx);
       return name;
     } else {
+      if (this.typeArgsIfRecursiveGeneric != null) {
+        const [baseName, typeArgs] = this.typeArgsIfRecursiveGeneric;
+        const typeArgsStr = typeArgs.map((it) => it.describe(ctx)).join(", ");
+        return `${baseName}<${typeArgsStr}>`;
+      }
       if (ctx.deps_counter[name] > 1) {
         if (!ctx.deps[name]) {
           ctx.deps[name] = true;
@@ -1134,7 +1141,12 @@ const direct_hoist_1 = new TypeofRuntype("boolean");
 const direct_hoist_2 = new TypeofRuntype("number");
 const namedRuntypes = {
     "GenericWrapper_type_application_instance_0": new ObjectRuntype({
-        "other": new RefRuntype("GenericWrapper_type_application_instance_0"),
+        "other": new RefRuntype("GenericWrapper_type_application_instance_0", [
+            "GenericWrapper",
+            [
+                direct_hoist_0
+            ]
+        ]),
         "value": direct_hoist_0,
         "value2": new AnyOfRuntype([
             direct_hoist_1,
@@ -1142,7 +1154,12 @@ const namedRuntypes = {
         ])
     }, []),
     "GenericWrapper_type_application_instance_1": new ObjectRuntype({
-        "other": new RefRuntype("GenericWrapper_type_application_instance_1"),
+        "other": new RefRuntype("GenericWrapper_type_application_instance_1", [
+            "GenericWrapper",
+            [
+                direct_hoist_2
+            ]
+        ]),
         "value": direct_hoist_2,
         "value2": new AnyOfRuntype([
             direct_hoist_1,
@@ -1150,8 +1167,18 @@ const namedRuntypes = {
         ])
     }, []),
     "UsesGenericWrapper": new ObjectRuntype({
-        "wrappedNumber": new RefRuntype("GenericWrapper_type_application_instance_1"),
-        "wrappedString": new RefRuntype("GenericWrapper_type_application_instance_0")
+        "wrappedNumber": new RefRuntype("GenericWrapper_type_application_instance_1", [
+            "GenericWrapper",
+            [
+                direct_hoist_2
+            ]
+        ]),
+        "wrappedString": new RefRuntype("GenericWrapper_type_application_instance_0", [
+            "GenericWrapper",
+            [
+                direct_hoist_0
+            ]
+        ])
     }, [])
 };
 const buildParsersInput = {

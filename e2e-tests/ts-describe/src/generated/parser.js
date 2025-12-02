@@ -975,8 +975,10 @@ class ObjectRuntype {
 }
 class RefRuntype {
   refName;
-  constructor(refName) {
+  typeArgsIfRecursiveGeneric;
+  constructor(refName, typeArgsIfRecursiveGeneric) {
     this.refName = refName;
+    this.typeArgsIfRecursiveGeneric = typeArgsIfRecursiveGeneric;
   }
   describe(ctx) {
     const name = this.refName;
@@ -990,6 +992,11 @@ class RefRuntype {
       ctx.deps[name] = to.describe(ctx);
       return name;
     } else {
+      if (this.typeArgsIfRecursiveGeneric != null) {
+        const [baseName, typeArgs] = this.typeArgsIfRecursiveGeneric;
+        const typeArgsStr = typeArgs.map((it) => it.describe(ctx)).join(", ");
+        return `${baseName}<${typeArgsStr}>`;
+      }
       if (ctx.deps_counter[name] > 1) {
         if (!ctx.deps[name]) {
           ctx.deps[name] = true;
@@ -1185,7 +1192,12 @@ const namedRuntypes = {
         }, [])
     }),
     "GenericWrapper_type_application_instance_0": new ObjectRuntype({
-        "other": new RefRuntype("GenericWrapper_type_application_instance_0"),
+        "other": new RefRuntype("GenericWrapper_type_application_instance_0", [
+            "GenericWrapper",
+            [
+                direct_hoist_0
+            ]
+        ]),
         "value": direct_hoist_0,
         "value2": new AnyOfRuntype([
             direct_hoist_2,
@@ -1193,7 +1205,12 @@ const namedRuntypes = {
         ])
     }, []),
     "GenericWrapper_type_application_instance_1": new ObjectRuntype({
-        "other": new RefRuntype("GenericWrapper_type_application_instance_1"),
+        "other": new RefRuntype("GenericWrapper_type_application_instance_1", [
+            "GenericWrapper",
+            [
+                direct_hoist_1
+            ]
+        ]),
         "value": direct_hoist_1,
         "value2": new AnyOfRuntype([
             direct_hoist_2,
@@ -1235,16 +1252,36 @@ const namedRuntypes = {
         "t2Array": new ArrayRuntype(new RefRuntype("T2"))
     }, []),
     "UsesGenericWrapper": new ObjectRuntype({
-        "wrappedNumber": new RefRuntype("GenericWrapper_type_application_instance_1"),
-        "wrappedString": new RefRuntype("GenericWrapper_type_application_instance_0")
+        "wrappedNumber": new RefRuntype("GenericWrapper_type_application_instance_1", [
+            "GenericWrapper",
+            [
+                direct_hoist_1
+            ]
+        ]),
+        "wrappedString": new RefRuntype("GenericWrapper_type_application_instance_0", [
+            "GenericWrapper",
+            [
+                direct_hoist_0
+            ]
+        ])
     }, []),
     "UsesWrappeds": new ObjectRuntype({
         "x1": new RefRuntype("StringWrapped"),
         "x2": new RefRuntype("NumberWrapped"),
-        "x3": new RefRuntype("DataWrapper_type_application_instance_2"),
+        "x3": new RefRuntype("DataWrapper_type_application_instance_2", [
+            "DataWrapper",
+            [
+                direct_hoist_2
+            ]
+        ]),
         "x4": new RefRuntype("StringWrapped"),
         "x5": new RefRuntype("NumberWrapped"),
-        "x6": new RefRuntype("DataWrapper_type_application_instance_2")
+        "x6": new RefRuntype("DataWrapper_type_application_instance_2", [
+            "DataWrapper",
+            [
+                direct_hoist_2
+            ]
+        ])
     }, []),
     "ValidCurrency": new StringWithFormatRuntype([
         "ValidCurrency"

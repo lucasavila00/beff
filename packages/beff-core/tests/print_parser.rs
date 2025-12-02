@@ -1695,7 +1695,12 @@ mod tests {
             "GenericWrapper_type_application_instance_0": new ObjectRuntype({
                 "other": new AnyOfRuntype([
                     direct_hoist_0,
-                    new RefRuntype("GenericWrapper_type_application_instance_0")
+                    new RefRuntype("GenericWrapper_type_application_instance_0", [
+                        "GenericWrapper",
+                        [
+                            direct_hoist_1
+                        ]
+                    ])
                 ]),
                 "value": direct_hoist_1,
                 "value2": new AnyOfRuntype([
@@ -1706,7 +1711,12 @@ mod tests {
             "GenericWrapper_type_application_instance_1": new ObjectRuntype({
                 "other": new AnyOfRuntype([
                     direct_hoist_0,
-                    new RefRuntype("GenericWrapper_type_application_instance_1")
+                    new RefRuntype("GenericWrapper_type_application_instance_1", [
+                        "GenericWrapper",
+                        [
+                            direct_hoist_3
+                        ]
+                    ])
                 ]),
                 "value": direct_hoist_3,
                 "value2": new AnyOfRuntype([
@@ -1715,8 +1725,18 @@ mod tests {
                 ])
             }, []),
             "UsesGenericWrapper": new ObjectRuntype({
-                "wrappedNumber": new RefRuntype("GenericWrapper_type_application_instance_1"),
-                "wrappedString": new RefRuntype("GenericWrapper_type_application_instance_0")
+                "wrappedNumber": new RefRuntype("GenericWrapper_type_application_instance_1", [
+                    "GenericWrapper",
+                    [
+                        direct_hoist_3
+                    ]
+                ]),
+                "wrappedString": new RefRuntype("GenericWrapper_type_application_instance_0", [
+                    "GenericWrapper",
+                    [
+                        direct_hoist_1
+                    ]
+                ])
             }, [])
         };
         const buildParsersInput = {
@@ -1749,7 +1769,12 @@ mod tests {
         const direct_hoist_2 = new TypeofRuntype("number");
         const namedRuntypes = {
             "GenericWrapper_type_application_instance_0": new ObjectRuntype({
-                "other": new RefRuntype("GenericWrapper_type_application_instance_0"),
+                "other": new RefRuntype("GenericWrapper_type_application_instance_0", [
+                    "GenericWrapper",
+                    [
+                        direct_hoist_0
+                    ]
+                ]),
                 "value": direct_hoist_0,
                 "value2": new AnyOfRuntype([
                     direct_hoist_1,
@@ -1757,7 +1782,12 @@ mod tests {
                 ])
             }, []),
             "GenericWrapper_type_application_instance_1": new ObjectRuntype({
-                "other": new RefRuntype("GenericWrapper_type_application_instance_1"),
+                "other": new RefRuntype("GenericWrapper_type_application_instance_1", [
+                    "GenericWrapper",
+                    [
+                        direct_hoist_2
+                    ]
+                ]),
                 "value": direct_hoist_2,
                 "value2": new AnyOfRuntype([
                     direct_hoist_1,
@@ -1765,8 +1795,18 @@ mod tests {
                 ])
             }, []),
             "UsesGenericWrapper": new ObjectRuntype({
-                "wrappedNumber": new RefRuntype("GenericWrapper_type_application_instance_1"),
-                "wrappedString": new RefRuntype("GenericWrapper_type_application_instance_0")
+                "wrappedNumber": new RefRuntype("GenericWrapper_type_application_instance_1", [
+                    "GenericWrapper",
+                    [
+                        direct_hoist_2
+                    ]
+                ]),
+                "wrappedString": new RefRuntype("GenericWrapper_type_application_instance_0", [
+                    "GenericWrapper",
+                    [
+                        direct_hoist_0
+                    ]
+                ])
             }, [])
         };
         const buildParsersInput = {
