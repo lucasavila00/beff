@@ -240,23 +240,6 @@ mod tests {
     }
 
     #[test]
-    fn access_property_on_primitive() {
-        insta::assert_snapshot!(failure(r#"
-            const A = 1;
-            export type T = typeof A.B;
-            parse.buildParsers<{ T: T }>();
-        "#), @r"
-        Error: Keyed access results in 'never' type
-           ╭─[entry.ts:3:30]
-           │
-         3 │             export type T = typeof A.B;
-           │                             ─────┬────  
-           │                                  ╰────── Keyed access results in 'never' type
-        ───╯
-        ");
-    }
-
-    #[test]
     fn import_star_missing_export() {
         insta::assert_snapshot!(failure_multifile(&[
             (
@@ -300,23 +283,6 @@ mod tests {
         ───╯
         ");
     }
-    #[test]
-    fn access_missing_property_on_object() {
-        insta::assert_snapshot!(failure(r#"
-            const A = { x: 1 };
-            export type T = typeof A.y;
-            parse.buildParsers<{ T: T }>();
-        "#), @r"
-        Error: Keyed access results in 'never' type
-           ╭─[entry.ts:3:30]
-           │
-         3 │             export type T = typeof A.y;
-           │                             ─────┬────  
-           │                                  ╰────── Keyed access results in 'never' type
-        ───╯
-        ");
-    }
-
     #[test]
     fn qualified_access_on_type_in_typeof_position() {
         insta::assert_snapshot!(failure(r#"
@@ -608,40 +574,6 @@ mod tests {
     }
 
     #[test]
-    fn typeof_keyed_access_on_non_object() {
-        insta::assert_snapshot!(failure(r#"
-            const A = 1;
-            export type T = typeof A["a"];
-            parse.buildParsers<{ T: T }>();
-        "#), @r#"
-        Error: Keyed access results in 'never' type
-           ╭─[entry.ts:3:30]
-           │
-         3 │             export type T = typeof A["a"];
-           │                             ──────┬──────  
-           │                                   ╰──────── Keyed access results in 'never' type
-        ───╯
-        "#);
-    }
-
-    #[test]
-    fn typeof_keyed_access_missing_key() {
-        insta::assert_snapshot!(failure(r#"
-            const A = { x: 1 };
-            export type T = typeof A["y"];
-            parse.buildParsers<{ T: T }>();
-        "#), @r#"
-        Error: Keyed access results in 'never' type
-           ╭─[entry.ts:3:30]
-           │
-         3 │             export type T = typeof A["y"];
-           │                             ──────┬──────  
-           │                                   ╰──────── Keyed access results in 'never' type
-        ───╯
-        "#);
-    }
-
-    #[test]
     fn type_alias_as_value() {
         insta::assert_snapshot!(failure(r#"
             type A = string;
@@ -713,39 +645,6 @@ mod tests {
            │                                          ╰─────── Cannot resolve value 't.ts::I'
         ───╯
         ");
-    }
-
-    #[test]
-    fn typeof_qualified_value_expr_deep_failure() {
-        insta::assert_snapshot!(failure(r#"
-            const obj = { a: { b: 1 } };
-            export type T = typeof obj.a.c;
-            parse.buildParsers<{ T: T }>();
-        "#), @r"
-        Error: Keyed access results in 'never' type
-           ╭─[entry.ts:3:30]
-           │
-         3 │             export type T = typeof obj.a.c;
-           │                             ───────┬──────  
-           │                                    ╰──────── Keyed access results in 'never' type
-        ───╯
-        ");
-    }
-    #[test]
-    fn typeof_qualified_value_expr_deeper_failure() {
-        insta::assert_snapshot!(failure(r#"
-            const obj = {a:{b:{c:{d:{x: 123}}}}}
-            export type T = typeof obj.a.b.c.d.e;
-            parse.buildParsers<{ T: T }>();
-        "#), @r#"
-        Error: Keyed access results in 'never' type
-           ╭─[entry.ts:3:30]
-           │
-         3 │             export type T = typeof obj.a.b.c.d.e;
-           │                             ──────────┬─────────  
-           │                                       ╰─────────── Keyed access results in 'never' type
-        ───╯
-        "#);
     }
 
     #[test]

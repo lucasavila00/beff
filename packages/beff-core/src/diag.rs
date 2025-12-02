@@ -11,7 +11,6 @@ pub enum DiagnosticInfoMessage {
     CannotUseInterfaceInValuePosition,
     ExpressionIsNotAType,
     TupleRestTypeMustBeArray,
-    KeyedAccessResultsInNeverType,
     CannotUseStarImportInValuePosition,
     CannotUseStarImportInTypePosition,
     CannotUseTypeInQualifiedTypePosition,
@@ -553,9 +552,6 @@ impl DiagnosticInfoMessage {
             }
             DiagnosticInfoMessage::CannotUseStarImportInValuePosition => {
                 "Cannot use star import in value position".to_string()
-            }
-            DiagnosticInfoMessage::KeyedAccessResultsInNeverType => {
-                "Keyed access results in 'never' type".to_string()
             }
             DiagnosticInfoMessage::TupleRestTypeMustBeArray => {
                 "Rest type in tuple must be an array type".to_string()

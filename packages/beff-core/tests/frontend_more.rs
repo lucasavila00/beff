@@ -996,6 +996,97 @@ mod tests {
         "#);
     }
     #[test]
+    fn typeof_qualified_value_expr_deeper_failure() {
+        insta::assert_snapshot!(print_types(r#"
+            const obj = {a:{b:{c:{d:{x: 123}}}}}
+            export type T = typeof obj.a.b.c.d.e;
+            parse.buildParsers<{ T: T }>();
+        "#), @r"
+        type T = never;
+
+
+        type BuiltParsers = {
+          T: T,
+        }
+        ");
+    }
+    #[test]
+    fn typeof_qualified_value_expr_deep_failure() {
+        insta::assert_snapshot!(print_types(r#"
+            const obj = { a: { b: 1 } };
+            export type T = typeof obj.a.c;
+            parse.buildParsers<{ T: T }>();
+        "#), @r"
+        type T = never;
+
+
+        type BuiltParsers = {
+          T: T,
+        }
+        ");
+    }
+    #[test]
+    fn typeof_keyed_access_on_non_object() {
+        insta::assert_snapshot!(print_types(r#"
+            const A = 1;
+            export type T = typeof A["a"];
+            parse.buildParsers<{ T: T }>();
+        "#), @r"
+        type T = never;
+
+
+        type BuiltParsers = {
+          T: T,
+        }
+        ");
+    }
+    #[test]
+    fn typeof_keyed_access_missing_key() {
+        insta::assert_snapshot!(print_types(r#"
+            const A = { x: 1 };
+            export type T = typeof A["y"];
+            parse.buildParsers<{ T: T }>();
+        "#), @r"
+        type T = never;
+
+
+        type BuiltParsers = {
+          T: T,
+        }
+        ");
+    }
+    #[test]
+    fn access_property_on_primitive() {
+        insta::assert_snapshot!(print_types(r#"
+            const A = 1;
+            export type T = typeof A.B;
+            parse.buildParsers<{ T: T }>();
+        "#), @r"
+        type T = never;
+
+
+        type BuiltParsers = {
+          T: T,
+        }
+        ");
+    }
+    #[test]
+    fn access_missing_property_on_object() {
+        insta::assert_snapshot!(print_types(r#"
+            const A = { x: 1 };
+            export type T = typeof A.y;
+            parse.buildParsers<{ T: T }>();
+        "#), @r"
+        type T = never;
+
+
+        type BuiltParsers = {
+          T: T,
+        }
+        ");
+    }
+
+    #[test]
     fn reexport_star_as_value() {
         insta::assert_snapshot!(print_types_multifile(&[
             (

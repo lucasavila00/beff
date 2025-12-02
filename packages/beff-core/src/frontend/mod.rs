@@ -2101,10 +2101,7 @@ impl<'a, R: FileManager> FrontendCtx<'a, R> {
                             DiagnosticInfoMessage::TypeofPrivateNameNotSupported,
                         );
                     }
-                    MemberProp::Computed(c) => {
-                        
-                        self.typeof_expr(&c.expr, as_const, file.clone())?
-                    }
+                    MemberProp::Computed(c) => self.typeof_expr(&c.expr, as_const, file.clone())?,
                 };
                 self.do_indexed_access_on_types(&obj, &key, &anchor)
             }
@@ -2680,12 +2677,7 @@ impl<'a, R: FileManager> FrontendCtx<'a, R> {
                             return Ok(None);
                         }
                     }
-                    if acc.is_empty() {
-                        return self.error(
-                            anchor,
-                            DiagnosticInfoMessage::KeyedAccessResultsInNeverType,
-                        );
-                    }
+
                     return Ok(Some(Runtype::any_of(acc)));
                 };
             }
@@ -2735,12 +2727,6 @@ impl<'a, R: FileManager> FrontendCtx<'a, R> {
         let access_st: Rc<SemType> = ctx.indexed_access(obj_st, idx_st).map_err(|e| {
             self.box_error(anchor, DiagnosticInfoMessage::AnyhowError(e.to_string()))
         })?;
-        if access_st.is_never() {
-            return self.error(
-                anchor,
-                DiagnosticInfoMessage::KeyedAccessResultsInNeverType,
-            );
-        }
 
         self.semtype_to_runtype(access_st, &mut ctx, anchor)
     }

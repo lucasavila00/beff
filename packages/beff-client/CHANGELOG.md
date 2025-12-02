@@ -1,5 +1,13 @@
 # @beff/client
 
+## 0.0.111
+
+### Patch Changes
+
+- new frontend
+- Updated dependencies
+  - @beff/cli@0.0.111
+
 ## 0.0.110
 
 ### Patch Changes
