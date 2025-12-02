@@ -161,7 +161,7 @@ trait TypeModuleWalker<'a, R: FileManager + 'a, U> {
                             name: i.sym.to_string(),
                             visibility: Visibility::Local,
                         };
-                        self.get_addressed_item(&new_addr, &anchor)
+                        self.get_addressed_item(&new_addr, anchor)
                     }
                     _ => self
                         .get_ctx()
@@ -454,7 +454,7 @@ impl<'a, 'b, R: FileManager> TypeModuleWalker<'a, R, AddressedQualifiedType>
         anchor: &Anchor,
     ) -> Res<AddressedQualifiedType> {
         Err(self.get_ctx().box_error(
-            &anchor,
+            anchor,
             DiagnosticInfoMessage::CannotUseTypeInQualifiedTypePosition,
         ))
     }
@@ -487,7 +487,7 @@ impl<'a, 'b, R: FileManager> TypeModuleWalker<'a, R, AddressedQualifiedType>
         anchor: &Anchor,
     ) -> Res<AddressedQualifiedType> {
         Err(self.get_ctx().box_error(
-            &anchor,
+            anchor,
             DiagnosticInfoMessage::CannotUseInterfaceInQualifiedTypePosition,
         ))
     }
@@ -958,7 +958,7 @@ impl<'a, R: FileManager> FrontendCtx<'a, R> {
                 indexed_properties,
             } => match indexed_properties.is_none() {
                 true => Ok(vs.clone()),
-                false => self.error(&anchor, DiagnosticInfoMessage::RestFoundOnExtractObject),
+                false => self.error(anchor, DiagnosticInfoMessage::RestFoundOnExtractObject),
             },
             Runtype::Ref(r) => {
                 let map = self
@@ -969,7 +969,7 @@ impl<'a, R: FileManager> FrontendCtx<'a, R> {
                 match map {
                     Some(schema) => self.extract_object_from_runtype(&schema, anchor),
                     None => self.error(
-                        &anchor,
+                        anchor,
                         DiagnosticInfoMessage::ShouldHaveObjectAsTypeArgument,
                     ),
                 }
@@ -987,7 +987,7 @@ impl<'a, R: FileManager> FrontendCtx<'a, R> {
                             && existing != v
                         {
                             return self.error(
-                                &anchor,
+                                anchor,
                                 DiagnosticInfoMessage::ObjectHasConflictingKeyValueInIntersection,
                             );
                         }
@@ -999,7 +999,7 @@ impl<'a, R: FileManager> FrontendCtx<'a, R> {
                 Ok(acc)
             }
             _ => self.error(
-                &anchor,
+                anchor,
                 DiagnosticInfoMessage::ShouldHaveObjectAsTypeArgument,
             ),
         }
@@ -1159,7 +1159,7 @@ impl<'a, R: FileManager> FrontendCtx<'a, R> {
                                         Some(str) => keys.push(str),
                                         _ => {
                                             return self.error(
-                                                &anchor,
+                                                anchor,
                                                 DiagnosticInfoMessage::PickNeedsString,
                                             );
                                         }
@@ -1167,7 +1167,7 @@ impl<'a, R: FileManager> FrontendCtx<'a, R> {
                                 }
                                 _ => {
                                     return self
-                                        .error(&anchor, DiagnosticInfoMessage::PickNeedsString);
+                                        .error(anchor, DiagnosticInfoMessage::PickNeedsString);
                                 }
                             },
                         }
@@ -1175,7 +1175,7 @@ impl<'a, R: FileManager> FrontendCtx<'a, R> {
                     Ok(Self::convert_pick_keys(obj, keys))
                 }
                 _ => self.error(
-                    &anchor,
+                    anchor,
                     DiagnosticInfoMessage::PickShouldHaveStringOrStringArrayAsTypeArgument,
                 ),
             },
@@ -1202,13 +1202,13 @@ impl<'a, R: FileManager> FrontendCtx<'a, R> {
     ) -> Res<Runtype> {
         let keys = self
             .extract_union(keys)
-            .map_err(|e| self.box_error(&anchor, e))?;
+            .map_err(|e| self.box_error(anchor, e))?;
         let str_keys = keys
             .iter()
             .map(|it| match it.extract_single_string_const() {
                 Some(str) => Ok(str.clone()),
                 _ => self.error(
-                    &anchor,
+                    anchor,
                     DiagnosticInfoMessage::OmitShouldHaveStringAsTypeArgument,
                 ),
             })
@@ -1225,7 +1225,7 @@ impl<'a, R: FileManager> FrontendCtx<'a, R> {
         match runtype_name {
             RuntypeName::Address(module_item_address) => {
                 let addressed_type =
-                    self.get_addressed_type(&module_item_address.to_module_item_addr(), &anchor)?;
+                    self.get_addressed_type(&module_item_address.to_module_item_addr(), anchor)?;
                 match addressed_type {
                     AddressedType::Type {
                         t: decl,
@@ -1242,7 +1242,7 @@ impl<'a, R: FileManager> FrontendCtx<'a, R> {
                         };
                         if type_params.len() != type_args.len() {
                             return self
-                                .error(&anchor, DiagnosticInfoMessage::TypeArgumentCountMismatch);
+                                .error(anchor, DiagnosticInfoMessage::TypeArgumentCountMismatch);
                         }
 
                         for (param, arg) in type_params.into_iter().zip(type_args.iter()) {
@@ -1280,7 +1280,7 @@ impl<'a, R: FileManager> FrontendCtx<'a, R> {
                 member_name,
             } => {
                 let ty =
-                    self.get_addressed_qualified_type(&enum_type.to_module_item_addr(), &anchor)?;
+                    self.get_addressed_qualified_type(&enum_type.to_module_item_addr(), anchor)?;
                 if let AddressedQualifiedType::WillBeUsedForEnumItem { enum_type, address } = ty {
                     let found = enum_type.members.iter().find(|it| match &it.id {
                         TsEnumMemberId::Ident(ident) => &ident.sym == member_name,
@@ -1288,10 +1288,10 @@ impl<'a, R: FileManager> FrontendCtx<'a, R> {
                     });
                     return match found.and_then(|it| it.init.clone()) {
                         Some(init) => self.typeof_expr(&init, true, address.file.clone()),
-                        None => self.error(&anchor, DiagnosticInfoMessage::EnumMemberNoInit),
+                        None => self.error(anchor, DiagnosticInfoMessage::EnumMemberNoInit),
                     };
                 };
-                self.error(&anchor, DiagnosticInfoMessage::EnumItemShouldBeFromEnumType)
+                self.error(anchor, DiagnosticInfoMessage::EnumItemShouldBeFromEnumType)
             }
             RuntypeName::SemtypeRecursiveGenerated(_) => unreachable!(
                 "SemtypeRecursiveGenerated types are generated only by type queries and cannot be used for runtype extraction"
@@ -1301,11 +1301,11 @@ impl<'a, R: FileManager> FrontendCtx<'a, R> {
                 TsBuiltIn::Array => match type_args.as_slice() {
                     [ty] => Ok(Runtype::Array(ty.clone().into())),
                     _ => self.error(
-                        &anchor,
+                        anchor,
                         DiagnosticInfoMessage::InvalidNumberOfTypeParametersForArray,
                     ),
                 },
-                TsBuiltIn::StringFormat => self.get_string_with_format(&type_args, &anchor),
+                TsBuiltIn::StringFormat => self.get_string_with_format(&type_args, anchor),
                 TsBuiltIn::StringFormatExtends => {
                     self.get_string_format_extends(&type_args, anchor)
                 }
@@ -1318,7 +1318,7 @@ impl<'a, R: FileManager> FrontendCtx<'a, R> {
                 TsBuiltIn::Record => {
                     if type_args.len() != 2 {
                         return self.error(
-                            &anchor,
+                            anchor,
                             DiagnosticInfoMessage::RecordShouldHaveTwoTypeArguments,
                         );
                     }
@@ -1370,7 +1370,7 @@ impl<'a, R: FileManager> FrontendCtx<'a, R> {
                         self.convert_pick(&vs, keys.clone(), anchor)
                     }
                     _ => self.error(
-                        &anchor,
+                        anchor,
                         DiagnosticInfoMessage::PickShouldHaveTwoTypeArguments,
                     ),
                 },
@@ -1380,7 +1380,7 @@ impl<'a, R: FileManager> FrontendCtx<'a, R> {
                         self.convert_omit(&vs, keys.clone(), anchor)
                     }
                     _ => self.error(
-                        &anchor,
+                        anchor,
                         DiagnosticInfoMessage::OmitShouldHaveTwoTypeArguments,
                     ),
                 },
@@ -1398,7 +1398,7 @@ impl<'a, R: FileManager> FrontendCtx<'a, R> {
                             .to_sem_type(&validators_reference_vec, &mut ctx)
                             .map_err(|e| {
                                 self.box_error(
-                                    &anchor,
+                                    anchor,
                                     DiagnosticInfoMessage::AnyhowError(e.to_string()),
                                 )
                             })?;
@@ -1409,53 +1409,53 @@ impl<'a, R: FileManager> FrontendCtx<'a, R> {
                             .to_sem_type(&validators_reference_vec, &mut ctx)
                             .map_err(|e| {
                                 self.box_error(
-                                    &anchor,
+                                    anchor,
                                     DiagnosticInfoMessage::AnyhowError(e.to_string()),
                                 )
                             })?;
 
                         let subtracted_ty = left_st.diff(&right_st).map_err(|e| {
                             self.box_error(
-                                &anchor,
+                                anchor,
                                 DiagnosticInfoMessage::AnyhowError(e.to_string()),
                             )
                         })?;
                         let res = self
-                            .semtype_to_runtype(subtracted_ty, &mut ctx, &anchor)?
+                            .semtype_to_runtype(subtracted_ty, &mut ctx, anchor)?
                             .remove_nots_of_intersections_and_empty_of_union(
                                 &validators_reference_vec,
                                 &mut ctx,
                             )
                             .map_err(|e| {
                                 self.box_error(
-                                    &anchor,
+                                    anchor,
                                     DiagnosticInfoMessage::AnyhowError(e.to_string()),
                                 )
                             })?;
                         Ok(res)
                     }
                     _ => self.error(
-                        &anchor,
+                        anchor,
                         DiagnosticInfoMessage::ExcludeShouldHaveTwoTypeArguments,
                     ),
                 },
                 TsBuiltIn::Required => match type_args.as_slice() {
                     [obj] => {
-                        let vs = self.extract_object_from_runtype(obj, &anchor)?;
+                        let vs = self.extract_object_from_runtype(obj, anchor)?;
                         Ok(self.convert_required(&vs))
                     }
                     _ => self.error(
-                        &anchor,
+                        anchor,
                         DiagnosticInfoMessage::RequiredShouldHaveTwoTypeArguments,
                     ),
                 },
                 TsBuiltIn::Partial => match type_args.as_slice() {
                     [obj] => {
-                        let vs = self.extract_object_from_runtype(obj, &anchor)?;
+                        let vs = self.extract_object_from_runtype(obj, anchor)?;
                         Ok(self.convert_partial(&vs))
                     }
                     _ => self.error(
-                        &anchor,
+                        anchor,
                         DiagnosticInfoMessage::PartialShouldHaveTwoTypeArguments,
                     ),
                 },
@@ -1543,7 +1543,7 @@ impl<'a, R: FileManager> FrontendCtx<'a, R> {
                         ModuleItemAddress::from_ident(ident, file, visibility);
 
                     Ok(RuntypeName::Address(
-                        self.get_addressed_type(&addr, &anchor)?.type_address(),
+                        self.get_addressed_type(&addr, anchor)?.type_address(),
                     ))
                 }
             }
@@ -1570,7 +1570,7 @@ impl<'a, R: FileManager> FrontendCtx<'a, R> {
                     }
                 };
                 Ok(RuntypeName::Address(
-                    self.get_addressed_type(&new_addr, &anchor)?.type_address(),
+                    self.get_addressed_type(&new_addr, anchor)?.type_address(),
                 ))
             }
         }
@@ -1592,11 +1592,11 @@ impl<'a, R: FileManager> FrontendCtx<'a, R> {
             if self.settings.string_formats.contains(&val_str) {
                 return Ok(Runtype::StringWithFormat(CustomFormat(val_str, vec![])));
             } else {
-                return self.error(&anchor, DiagnosticInfoMessage::CustomStringIsNotRegistered);
+                return self.error(anchor, DiagnosticInfoMessage::CustomStringIsNotRegistered);
             }
         }
         self.error(
-            &anchor,
+            anchor,
             DiagnosticInfoMessage::InvalidUsageOfStringFormatTypeParameter,
         )
     }
@@ -1617,13 +1617,13 @@ impl<'a, R: FileManager> FrontendCtx<'a, R> {
                     self.get_string_format_base_formats(&v, anchor)
                 } else {
                     self.error(
-                        &anchor,
+                        anchor,
                         DiagnosticInfoMessage::CannotNotFindBaseOfStringFormatExtends,
                     )
                 }
             }
             _ => self.error(
-                &anchor,
+                anchor,
                 DiagnosticInfoMessage::BaseOfStringFormatExtendsShouldBeStringFormat,
             ),
         }
@@ -1643,11 +1643,11 @@ impl<'a, R: FileManager> FrontendCtx<'a, R> {
                 rest.push(next_str);
                 return Ok(Runtype::StringWithFormat(CustomFormat(first, rest)));
             } else {
-                return self.error(&anchor, DiagnosticInfoMessage::CustomStringIsNotRegistered);
+                return self.error(anchor, DiagnosticInfoMessage::CustomStringIsNotRegistered);
             }
         }
         self.error(
-            &anchor,
+            anchor,
             DiagnosticInfoMessage::InvalidUsageOfStringFormatExtendsTypeParameter,
         )
     }
@@ -1659,11 +1659,11 @@ impl<'a, R: FileManager> FrontendCtx<'a, R> {
             if self.settings.number_formats.contains(&val_str) {
                 return Ok(Runtype::NumberWithFormat(CustomFormat(val_str, vec![])));
             } else {
-                return self.error(&anchor, DiagnosticInfoMessage::CustomNumberIsNotRegistered);
+                return self.error(anchor, DiagnosticInfoMessage::CustomNumberIsNotRegistered);
             }
         }
         self.error(
-            &anchor,
+            anchor,
             DiagnosticInfoMessage::InvalidUsageOfNumberFormatTypeParameter,
         )
     }
@@ -1684,13 +1684,13 @@ impl<'a, R: FileManager> FrontendCtx<'a, R> {
                     self.get_number_format_base_formats(&v, anchor)
                 } else {
                     self.error(
-                        &anchor,
+                        anchor,
                         DiagnosticInfoMessage::CannotNotFindBaseOfNumberFormatExtends,
                     )
                 }
             }
             _ => self.error(
-                &anchor,
+                anchor,
                 DiagnosticInfoMessage::BaseOfNumberFormatExtendsShouldBeNumberFormat,
             ),
         }
@@ -1709,11 +1709,11 @@ impl<'a, R: FileManager> FrontendCtx<'a, R> {
                 rest.push(next_str);
                 return Ok(Runtype::NumberWithFormat(CustomFormat(first, rest)));
             } else {
-                return self.error(&anchor, DiagnosticInfoMessage::CustomNumberIsNotRegistered);
+                return self.error(anchor, DiagnosticInfoMessage::CustomNumberIsNotRegistered);
             }
         }
         self.error(
-            &anchor,
+            anchor,
             DiagnosticInfoMessage::InvalidUsageOfNumberFormatExtendsTypeParameter,
         )
     }
@@ -2102,8 +2102,8 @@ impl<'a, R: FileManager> FrontendCtx<'a, R> {
                         );
                     }
                     MemberProp::Computed(c) => {
-                        let v = self.typeof_expr(&c.expr, as_const, file.clone())?;
-                        v
+                        
+                        self.typeof_expr(&c.expr, as_const, file.clone())?
                     }
                 };
                 self.do_indexed_access_on_types(&obj, &key, &anchor)
@@ -2146,7 +2146,7 @@ impl<'a, R: FileManager> FrontendCtx<'a, R> {
         anchor: &Anchor,
     ) -> Res<Runtype> {
         let mut vs = vec![];
-        let module = self.get_or_fetch_file(bff_file_name, &anchor)?;
+        let module = self.get_or_fetch_file(bff_file_name, anchor)?;
         for (name, sym) in &module.symbol_exports.named_values {
             let v = self.extract_sym_export_as_value(sym, anchor)?;
             if let Some(v) = v {
@@ -2189,7 +2189,7 @@ impl<'a, R: FileManager> FrontendCtx<'a, R> {
         address: &ModuleItemAddress,
         anchor: &Anchor,
     ) -> Res<Runtype> {
-        let addressed_value = self.get_addressed_value(address, &anchor)?;
+        let addressed_value = self.get_addressed_value(address, anchor)?;
         self.extract_addressed_value(addressed_value, anchor)
     }
 
@@ -2256,7 +2256,7 @@ impl<'a, R: FileManager> FrontendCtx<'a, R> {
                 self.do_indexed_access_on_types(&base_ty, &key_ty, anchor)
             }
             AddressedQualifiedValue::ExprDecl(ts_type, bff_file_name) => {
-                let base_ty = self.extract_type(&ts_type, bff_file_name.clone())?;
+                let base_ty = self.extract_type(ts_type, bff_file_name.clone())?;
                 let key_ty = Runtype::single_string_const(member);
                 self.do_indexed_access_on_types(&base_ty, &key_ty, anchor)
             }
@@ -2274,10 +2274,10 @@ impl<'a, R: FileManager> FrontendCtx<'a, R> {
                     TsEnumMemberId::Ident(i) => i.sym == *member,
                     TsEnumMemberId::Str(_) => unreachable!(),
                 }) else {
-                    return self.error(&anchor, DiagnosticInfoMessage::EnumMemberNotFound);
+                    return self.error(anchor, DiagnosticInfoMessage::EnumMemberNotFound);
                 };
                 let Some(init) = &enum_value.init else {
-                    return self.error(&anchor, DiagnosticInfoMessage::EnumMemberNoInit);
+                    return self.error(anchor, DiagnosticInfoMessage::EnumMemberNoInit);
                 };
 
                 self.typeof_expr(init, true, bff_file_name.clone())
@@ -2604,7 +2604,7 @@ impl<'a, R: FileManager> FrontendCtx<'a, R> {
         anchor: &Anchor,
     ) -> Res<Runtype> {
         if access_st.is_empty(ctx).map_err(|e| {
-            self.box_error(&anchor, DiagnosticInfoMessage::AnyhowError(e.to_string()))
+            self.box_error(anchor, DiagnosticInfoMessage::AnyhowError(e.to_string()))
         })? {
             return Ok(Runtype::Never);
         }
@@ -2622,7 +2622,7 @@ impl<'a, R: FileManager> FrontendCtx<'a, R> {
             &mut self.counter,
         )
         .map_err(|any| {
-            self.box_error(&anchor, DiagnosticInfoMessage::AnyhowError(any.to_string()))
+            self.box_error(anchor, DiagnosticInfoMessage::AnyhowError(any.to_string()))
         })?;
         for t in tail {
             self.insert_definition(t.name.clone(), t.schema)?;
@@ -2682,7 +2682,7 @@ impl<'a, R: FileManager> FrontendCtx<'a, R> {
                     }
                     if acc.is_empty() {
                         return self.error(
-                            &anchor,
+                            anchor,
                             DiagnosticInfoMessage::KeyedAccessResultsInNeverType,
                         );
                     }
@@ -2713,7 +2713,7 @@ impl<'a, R: FileManager> FrontendCtx<'a, R> {
         index: &Runtype,
         anchor: &Anchor,
     ) -> Res<Runtype> {
-        if let Some(res) = self.convert_indexed_access_syntatically(&obj, &index, &anchor)? {
+        if let Some(res) = self.convert_indexed_access_syntatically(obj, index, anchor)? {
             return Ok(res);
         }
         // fallback to semantic
@@ -2724,25 +2724,25 @@ impl<'a, R: FileManager> FrontendCtx<'a, R> {
         let obj_st = obj
             .to_sem_type(&validators_vec.iter().collect::<Vec<_>>(), &mut ctx)
             .map_err(|e| {
-                self.box_error(&anchor, DiagnosticInfoMessage::AnyhowError(e.to_string()))
+                self.box_error(anchor, DiagnosticInfoMessage::AnyhowError(e.to_string()))
             })?;
         let idx_st = index
             .to_sem_type(&validators_vec.iter().collect::<Vec<_>>(), &mut ctx)
             .map_err(|e| {
-                self.box_error(&anchor, DiagnosticInfoMessage::AnyhowError(e.to_string()))
+                self.box_error(anchor, DiagnosticInfoMessage::AnyhowError(e.to_string()))
             })?;
 
         let access_st: Rc<SemType> = ctx.indexed_access(obj_st, idx_st).map_err(|e| {
-            self.box_error(&anchor, DiagnosticInfoMessage::AnyhowError(e.to_string()))
+            self.box_error(anchor, DiagnosticInfoMessage::AnyhowError(e.to_string()))
         })?;
         if access_st.is_never() {
             return self.error(
-                &anchor,
+                anchor,
                 DiagnosticInfoMessage::KeyedAccessResultsInNeverType,
             );
         }
 
-        self.semtype_to_runtype(access_st, &mut ctx, &anchor)
+        self.semtype_to_runtype(access_st, &mut ctx, anchor)
     }
 
     fn extract_indexed_access_type(
