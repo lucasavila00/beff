@@ -1131,19 +1131,6 @@ const RequiredStringFormats = ["password","StartsWithA"];
 const RequiredNumberFormats = [];
 const direct_hoist_0 = new TypeofRuntype("string");
 const namedRuntypes = {
-    "User": new ObjectRuntype({
-        "age": new TypeofRuntype("number"),
-        "name": direct_hoist_0
-    }, []),
-    "NotPublic": new ObjectRuntype({
-        "a": direct_hoist_0
-    }, []),
-    "StartsWithA": new StringWithFormatRuntype([
-        "StartsWithA"
-    ]),
-    "Password": new StringWithFormatRuntype([
-        "password"
-    ]),
     "A": new AnyOfConstsRuntype([
         1,
         2
@@ -1160,6 +1147,15 @@ const namedRuntypes = {
         5,
         6
     ]),
+    "NotPublic": new ObjectRuntype({
+        "a": direct_hoist_0
+    }, []),
+    "Password": new StringWithFormatRuntype([
+        "password"
+    ]),
+    "StartsWithA": new StringWithFormatRuntype([
+        "StartsWithA"
+    ]),
     "UnionNested": new AnyOfConstsRuntype([
         1,
         2,
@@ -1167,7 +1163,11 @@ const namedRuntypes = {
         4,
         5,
         6
-    ])
+    ]),
+    "User": new ObjectRuntype({
+        "age": new TypeofRuntype("number"),
+        "name": direct_hoist_0
+    }, [])
 };
 const buildParsersInput = {
     "User": new RefRuntype("User"),

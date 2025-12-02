@@ -1131,36 +1131,33 @@ const RequiredStringFormats = ["ValidCurrency"];
 const RequiredNumberFormats = [];
 const direct_hoist_0 = new TypeofRuntype("string");
 const direct_hoist_1 = new TypeofRuntype("number");
-const direct_hoist_2 = new RefRuntype("T3");
-const direct_hoist_3 = new ConstRuntype("a");
+const direct_hoist_2 = new TypeofRuntype("boolean");
+const direct_hoist_3 = new ObjectRuntype({
+    "a": direct_hoist_2
+}, []);
+const direct_hoist_4 = new ConstRuntype("a");
 const namedRuntypes = {
-    "T1": new ObjectRuntype({
-        "a": direct_hoist_0,
-        "b": direct_hoist_1
+    "ABool": direct_hoist_3,
+    "DataWrapper_boolean": new ObjectRuntype({
+        "value": direct_hoist_2
     }, []),
-    "T2": new ObjectRuntype({
-        "t1": new RefRuntype("T1")
+    "DataWrapper_instance_3": new ObjectRuntype({
+        "value": direct_hoist_3
     }, []),
-    "T3": new ObjectRuntype({
-        "t2Array": new ArrayRuntype(new RefRuntype("T2"))
-    }, []),
-    "InvalidSchemaWithDate": new ObjectRuntype({
-        "x": new DateRuntype()
-    }, []),
-    "InvalidSchemaWithBigInt": new ObjectRuntype({
-        "x": new BigIntRuntype()
+    "DataWrapper_ABool": new ObjectRuntype({
+        "value": new RefRuntype("ABool")
     }, []),
     "DiscriminatedUnion": new AnyOfDiscriminatedRuntype([
         new ObjectRuntype({
             "a1": direct_hoist_0,
             "a11": new OptionalField(direct_hoist_0),
             "subType": new ConstRuntype("a1"),
-            "type": direct_hoist_3
+            "type": direct_hoist_4
         }, []),
         new ObjectRuntype({
             "a2": direct_hoist_0,
             "subType": new ConstRuntype("a2"),
-            "type": direct_hoist_3
+            "type": direct_hoist_4
         }, []),
         new ObjectRuntype({
             "type": new ConstRuntype("b"),
@@ -1172,24 +1169,24 @@ const namedRuntypes = {
                 "a1": direct_hoist_0,
                 "a11": new OptionalField(direct_hoist_0),
                 "subType": new ConstRuntype("a1"),
-                "type": direct_hoist_3
+                "type": direct_hoist_4
             }, []),
             new ObjectRuntype({
                 "a2": direct_hoist_0,
                 "subType": new ConstRuntype("a2"),
-                "type": direct_hoist_3
+                "type": direct_hoist_4
             }, [])
         ], "subType", {
             "a1": new ObjectRuntype({
                 "a1": direct_hoist_0,
                 "a11": new OptionalField(direct_hoist_0),
                 "subType": new ConstRuntype("a1"),
-                "type": direct_hoist_3
+                "type": direct_hoist_4
             }, []),
             "a2": new ObjectRuntype({
                 "a2": direct_hoist_0,
                 "subType": new ConstRuntype("a2"),
-                "type": direct_hoist_3
+                "type": direct_hoist_4
             }, [])
         }),
         "b": new ObjectRuntype({
@@ -1197,26 +1194,84 @@ const namedRuntypes = {
             "value": direct_hoist_1
         }, [])
     }),
+    "GenericWrapper_string": new ObjectRuntype({
+        "other": new RefRuntype("GenericWrapper_string"),
+        "value": direct_hoist_0,
+        "value2": new AnyOfRuntype([
+            direct_hoist_2,
+            direct_hoist_0
+        ])
+    }, []),
+    "GenericWrapper_number": new ObjectRuntype({
+        "other": new RefRuntype("GenericWrapper_number"),
+        "value": direct_hoist_1,
+        "value2": new AnyOfRuntype([
+            direct_hoist_2,
+            direct_hoist_1
+        ])
+    }, []),
+    "InvalidSchemaWithBigInt": new ObjectRuntype({
+        "x": new BigIntRuntype()
+    }, []),
+    "InvalidSchemaWithDate": new ObjectRuntype({
+        "x": new DateRuntype()
+    }, []),
+    "NonEmptyString": new TupleRuntype([
+        direct_hoist_0
+    ], direct_hoist_0),
+    "NumberWrapped": new ObjectRuntype({
+        "value": direct_hoist_1
+    }, []),
     "RecursiveTree": new ObjectRuntype({
         "children": new ArrayRuntype(new RefRuntype("RecursiveTree")),
         "value": direct_hoist_1
     }, []),
+    "ReusesRef": new ObjectRuntype({
+        "a": new RefRuntype("T3"),
+        "b": new RefRuntype("T3")
+    }, []),
     "SemVer": new RegexRuntype(/(\d+(\.\d+)?)(\.)(\d+(\.\d+)?)(\.)(\d+(\.\d+)?)/, "`${number}.${number}.${number}`"),
-    "NonEmptyString": new TupleRuntype([
-        direct_hoist_0
-    ], direct_hoist_0),
+    "StringWrapped": new ObjectRuntype({
+        "value": direct_hoist_0
+    }, []),
+    "T1": new ObjectRuntype({
+        "a": direct_hoist_0,
+        "b": direct_hoist_1
+    }, []),
+    "T2": new ObjectRuntype({
+        "t1": new RefRuntype("T1")
+    }, []),
+    "T3": new ObjectRuntype({
+        "t2Array": new ArrayRuntype(new RefRuntype("T2"))
+    }, []),
+    "UsesGenericWrapper": new ObjectRuntype({
+        "wrappedNumber": new RefRuntype("GenericWrapper_number"),
+        "wrappedString": new RefRuntype("GenericWrapper_string")
+    }, []),
+    "UsesWrappeds": new ObjectRuntype({
+        "x1": new RefRuntype("StringWrapped"),
+        "x2": new RefRuntype("NumberWrapped"),
+        "x3": new RefRuntype("DataWrapper_boolean"),
+        "x4": new RefRuntype("StringWrapped"),
+        "x5": new RefRuntype("NumberWrapped"),
+        "x6": new RefRuntype("DataWrapper_boolean")
+    }, []),
+    "UsesWrappedsComplex": new ObjectRuntype({
+        "x3": new RefRuntype("DataWrapper_instance_3"),
+        "x6": new RefRuntype("DataWrapper_instance_3")
+    }, []),
+    "UsesWrappedsComplexRef": new ObjectRuntype({
+        "x3": new RefRuntype("DataWrapper_ABool"),
+        "x6": new RefRuntype("DataWrapper_ABool")
+    }, []),
     "ValidCurrency": new StringWithFormatRuntype([
         "ValidCurrency"
-    ]),
-    "ReusesRef": new ObjectRuntype({
-        "a": direct_hoist_2,
-        "b": direct_hoist_2
-    }, [])
+    ])
 };
 const buildParsersInput = {
     "string": direct_hoist_0,
     "number": direct_hoist_1,
-    "boolean": new TypeofRuntype("boolean"),
+    "boolean": direct_hoist_2,
     "null": new NullishRuntype("null"),
     "undefined": new NullishRuntype("undefined"),
     "object": new ObjectRuntype({}, [
@@ -1232,7 +1287,7 @@ const buildParsersInput = {
     "any": new AnyRuntype(),
     "T1": new RefRuntype("T1"),
     "T2": new RefRuntype("T2"),
-    "T3": direct_hoist_2,
+    "T3": new RefRuntype("T3"),
     "InvalidSchemaWithDate": new RefRuntype("InvalidSchemaWithDate"),
     "InvalidSchemaWithBigInt": new RefRuntype("InvalidSchemaWithBigInt"),
     "DiscriminatedUnion": new RefRuntype("DiscriminatedUnion"),
@@ -1240,7 +1295,13 @@ const buildParsersInput = {
     "SemVer": new RefRuntype("SemVer"),
     "NonEmptyString": new RefRuntype("NonEmptyString"),
     "ValidCurrency": new RefRuntype("ValidCurrency"),
-    "ReusesRef": new RefRuntype("ReusesRef")
+    "ReusesRef": new RefRuntype("ReusesRef"),
+    "UsesGenericWrapper": new RefRuntype("UsesGenericWrapper"),
+    "StringWrapped": new RefRuntype("StringWrapped"),
+    "NumberWrapped": new RefRuntype("NumberWrapped"),
+    "UsesWrappeds": new RefRuntype("UsesWrappeds"),
+    "UsesWrappedsComplex": new RefRuntype("UsesWrappedsComplex"),
+    "UsesWrappedsComplexRef": new RefRuntype("UsesWrappedsComplexRef")
 };
 
 export default { buildParsers };

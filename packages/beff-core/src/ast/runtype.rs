@@ -1,11 +1,12 @@
 use super::json::N;
+use crate::NamedSchema;
+use crate::RuntypeUUID;
 use crate::ast::json::Json;
+use crate::subtyping::ToSemType;
 use crate::subtyping::semtype::SemTypeContext;
 use crate::subtyping::semtype::SemTypeOps;
-use crate::subtyping::ToSemType;
-use crate::NamedSchema;
-use anyhow::anyhow;
 use anyhow::Result;
+use anyhow::anyhow;
 use std::collections::BTreeMap;
 use std::collections::BTreeSet;
 
@@ -225,13 +226,13 @@ pub enum Runtype {
         prefix_items: Vec<Runtype>,
         items: Option<Box<Runtype>>,
     },
-    Ref(String),
+    Ref(RuntypeUUID),
 
     AnyOf(BTreeSet<Runtype>),
     AllOf(BTreeSet<Runtype>),
     Const(RuntypeConst),
     // semantic types
-    StNever,
+    Never,
     StNot(Box<Runtype>),
     Function,
     Date,
@@ -261,8 +262,20 @@ impl UnionMerger {
         Runtype::AnyOf(acc.0)
     }
 }
-
+pub struct DebugPrintCtx<'a> {
+    pub all_names: &'a [&'a RuntypeUUID],
+    pub type_with_args_names: &'a mut BTreeMap<RuntypeUUID, String>,
+}
 impl Runtype {
+    pub fn as_string_const(&self) -> Option<&str> {
+        match self {
+            Runtype::TplLitType(TplLitType(items)) => match items.as_slice() {
+                [TplLitTypeItem::StringConst(s)] => Some(s),
+                _ => None,
+            },
+            _ => None,
+        }
+    }
     pub fn object(vs: Vec<(String, Optionality<Runtype>)>) -> Self {
         Self::Object {
             vs: vs.into_iter().collect(),
@@ -306,7 +319,7 @@ impl Runtype {
 
     pub fn any_of(vs: Vec<Runtype>) -> Self {
         match vs.len() {
-            0 => Runtype::StNever,
+            0 => Runtype::Never,
             1 => vs.into_iter().next().expect("we just checked len"),
             _ => UnionMerger::schema(vs),
         }
@@ -371,7 +384,7 @@ impl Runtype {
                 let semantic = Runtype::AllOf(vs.clone()).to_sem_type(validators, ctx)?;
                 let is_empty = semantic.is_empty(ctx)?;
                 if is_empty {
-                    return Ok(Runtype::StNever);
+                    return Ok(Runtype::Never);
                 }
 
                 let vs = vs
@@ -409,7 +422,7 @@ impl Runtype {
         }
     }
 
-    pub fn debug_print(&self) -> String {
+    pub fn debug_print(&self, ctx: &mut DebugPrintCtx) -> String {
         match self {
             Runtype::Undefined => "undefined".to_string(),
             Runtype::Null => "null".to_string(),
@@ -441,15 +454,15 @@ impl Runtype {
             Runtype::Const(runtype_const) => runtype_const.clone().to_json().debug_print(),
             Runtype::Date => "Date".to_string(),
             Runtype::BigInt => "bigint".to_string(),
-            Runtype::StNever => "never".to_string(),
+            Runtype::Never => "never".to_string(),
             Runtype::StNot(runtype) => {
-                let inner = runtype.debug_print();
+                let inner = runtype.debug_print(ctx);
                 format!("Not<{}>", inner)
             }
             Runtype::Function => "Function".to_string(),
-            Runtype::Ref(r) => r.clone(),
+            Runtype::Ref(r) => r.debug_print(ctx),
             Runtype::Array(runtype) => {
-                let inner = runtype.debug_print();
+                let inner = runtype.debug_print(ctx);
                 format!("Array<{}>", inner)
             }
             Runtype::Tuple {
@@ -459,10 +472,10 @@ impl Runtype {
                 let mut acc = vec![];
 
                 for it in prefix_items.iter() {
-                    acc.push(it.debug_print());
+                    acc.push(it.debug_print(ctx));
                 }
                 if let Some(items) = items.as_ref() {
-                    acc.push(format!("...{}", items.debug_print()));
+                    acc.push(format!("...{}", items.debug_print(ctx)));
                 }
 
                 let args = acc.join(", ");
@@ -471,7 +484,7 @@ impl Runtype {
             Runtype::AnyOf(btree_set) => {
                 let inner = btree_set
                     .iter()
-                    .map(|it| it.debug_print())
+                    .map(|it| it.debug_print(ctx))
                     .collect::<Vec<_>>()
                     .join(" | ");
 
@@ -480,7 +493,7 @@ impl Runtype {
             Runtype::AllOf(btree_set) => {
                 let inner = btree_set
                     .iter()
-                    .map(|it| it.debug_print())
+                    .map(|it| it.debug_print(ctx))
                     .collect::<Vec<_>>()
                     .join(" & ");
 
@@ -493,13 +506,13 @@ impl Runtype {
                 let mut acc = vec![];
 
                 for (k, v) in vs.iter() {
-                    let value = v.inner().debug_print();
+                    let value = v.inner().debug_print(ctx);
                     let optionality = if v.is_required() { "" } else { "?" };
                     acc.push(format!("\"{}\"{}: {}", k, optionality, value));
                 }
                 for indexed_property in indexed_properties.iter() {
-                    let key = indexed_property.key.debug_print();
-                    let value = indexed_property.value.inner().debug_print();
+                    let key = indexed_property.key.debug_print(ctx);
+                    let value = indexed_property.value.inner().debug_print(ctx);
                     let optionality = if indexed_property.value.is_required() {
                         ""
                     } else {

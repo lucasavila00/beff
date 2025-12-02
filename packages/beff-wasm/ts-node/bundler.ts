@@ -134,26 +134,13 @@ const emitDiagnosticInfo = (data: WasmDiagnosticInformation, padding: string) =>
   console.error("");
 };
 
-const emitDiagnosticItem = (data: WasmDiagnosticItem) => {
-  if ((data.message ?? "").length > 0) {
-    console.error(chalk.red.bold("Error: " + data.message));
+const emitDiagnosticItem = (data: WasmDiagnosticInformation) => {
+  if (data.UnknownFile) {
+    console.error(chalk.red.bold("Error"));
   } else {
-    if (data.cause.UnknownFile) {
-      console.error(chalk.red.bold("Error"));
-    } else {
-      console.error(chalk.red.bold("Error: " + data.cause.KnownFile.message));
-    }
+    console.error(chalk.red.bold("Error: " + data.KnownFile.message));
   }
-  emitDiagnosticInfo(data.cause, " ".repeat(1));
-
-  const inf = data.related_information ?? [];
-  if (inf.length == 0) {
-    return;
-  }
-  inf.forEach((data) => {
-    console.error(chalk.yellow(" ".repeat(4) + "Caused by:"));
-    emitDiagnosticInfo(data, " ".repeat(5));
-  });
+  emitDiagnosticInfo(data, " ".repeat(1));
 };
 const emitDiagnostics = (diag: WasmDiagnostic) => {
   diag.diagnostics.forEach((data) => {
@@ -184,13 +171,8 @@ export type WasmDiagnosticInformation =
   | { KnownFile: KnownFile; UnknownFile?: never }
   | { UnknownFile: UnknownFile; KnownFile?: never };
 
-type WasmDiagnosticItem = {
-  cause: WasmDiagnosticInformation;
-  related_information: WasmDiagnosticInformation[] | undefined;
-  message?: string;
-};
 type WasmDiagnostic = {
-  diagnostics: WasmDiagnosticItem[];
+  diagnostics: WasmDiagnosticInformation[];
 };
 
 export class Bundler {

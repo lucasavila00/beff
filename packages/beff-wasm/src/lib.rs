@@ -4,24 +4,25 @@ extern crate lazy_static;
 mod module_resolver;
 mod utils;
 
-use anyhow::anyhow;
 use anyhow::Result;
-use beff_core::diag::Diagnostic;
-use beff_core::import_resolver::parse_and_bind;
-use beff_core::parser_extractor::ParserExtractResult;
-use beff_core::wasm_diag::WasmDiagnostic;
+use anyhow::anyhow;
 use beff_core::BeffUserSettings;
 use beff_core::BffFileName;
 use beff_core::EntryPoints;
 use beff_core::FileManager;
 use beff_core::ParsedModule;
+use beff_core::diag::DiagnosticInformation;
+use beff_core::parser_extractor::ParserExtractResult;
+use beff_core::swc_tools::bind_exports::FsModuleResolver;
+use beff_core::swc_tools::bind_exports::parse_and_bind;
+use beff_core::wasm_diag::WasmDiagnostic;
 use log::Level;
 use module_resolver::WasmModuleResolver;
 use std::rc::Rc;
 use std::{cell::RefCell, collections::HashMap};
-use swc_common::{Globals, GLOBALS};
-use wasm_bindgen::prelude::wasm_bindgen;
+use swc_common::{GLOBALS, Globals};
 use wasm_bindgen::JsValue;
+use wasm_bindgen::prelude::wasm_bindgen;
 
 struct Bundler {
     pub files: HashMap<BffFileName, Rc<ParsedModule>>,
@@ -100,7 +101,7 @@ impl FileManager for LazyFileManager<'_> {
         }
         let content = read_file_content(file_name.to_string().as_str())?;
 
-        let mut resolver = WasmModuleResolver::new(file_name.clone());
+        let mut resolver = WasmModuleResolver::new();
         let res = parse_and_bind(&mut resolver, file_name, &content);
         match res {
             Ok(f) => {
@@ -117,6 +118,15 @@ impl FileManager for LazyFileManager<'_> {
     fn get_existing_file(&self, name: &BffFileName) -> Option<Rc<ParsedModule>> {
         self.files.get(name).cloned()
     }
+
+    fn resolve_import(
+        &mut self,
+        current_file: BffFileName,
+        module_specifier: &str,
+    ) -> Option<BffFileName> {
+        let mut resolver = WasmModuleResolver::new();
+        resolver.resolve_import(current_file.clone(), module_specifier)
+    }
 }
 
 fn run_extraction(entry: EntryPoints) -> ParserExtractResult {
@@ -132,7 +142,7 @@ fn run_extraction(entry: EntryPoints) -> ParserExtractResult {
         })
     })
 }
-fn print_errors(errors: &[Diagnostic]) {
+fn print_errors(errors: &[DiagnosticInformation]) {
     let v = WasmDiagnostic::from_diagnostics(errors);
     let v = serde_wasm_bindgen::to_value(&v).expect("should be able to serialize");
     emit_diagnostic(v)
@@ -154,7 +164,7 @@ fn bundle_to_diagnostics_inner(entry: EntryPoints) -> WasmDiagnostic {
 fn update_file_content_inner(file_name: &str, content: &str) {
     let file_name = BffFileName::new(file_name.to_string());
     let res = GLOBALS.set(&SWC_GLOBALS, || {
-        let mut resolver = WasmModuleResolver::new(file_name.clone());
+        let mut resolver = WasmModuleResolver::new();
         parse_and_bind(&mut resolver, &file_name, content)
     });
     if let Ok(f) = res {

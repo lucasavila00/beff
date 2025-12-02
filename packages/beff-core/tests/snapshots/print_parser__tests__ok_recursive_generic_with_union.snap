@@ -1,9 +1,0 @@
----
-source: packages/beff-core/tests/print_parser.rs
-expression: "decoder(r#\"\n            type GenericWrapper<T> = {\n              value: T;\n              value2: T | boolean;\n              other: null | GenericWrapper<T>;\n            };\n\n            type UsesGenericWrapper = {\n              wrappedString: GenericWrapper<string>;\n              wrappedNumber: GenericWrapper<number>;\n            };\n      \"#)"
----
-const validators = {};
-const parsers = {};
-const reporters = {};
-const schemas = {};
-const describers = {};

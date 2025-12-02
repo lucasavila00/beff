@@ -1,5 +1,11 @@
 # @beff/cli
 
+## 0.0.111
+
+### Patch Changes
+
+- new frontend
+
 ## 0.0.110
 
 ### Patch Changes

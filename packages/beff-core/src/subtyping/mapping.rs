@@ -111,17 +111,15 @@ fn extract_keys_from_tpl_item(item: &TplLitTypeItem, acc: &mut Vec<String>) {
 fn extract_keys_from_type(ty: &Rc<SemType>) -> Vec<String> {
     let mut keys = vec![];
     for subtype in &ty.subtype_data {
-        if let ProperSubtype::String { allowed, values } = subtype.as_ref() {
-            if *allowed {
+        if let ProperSubtype::String { allowed, values } = subtype.as_ref()
+            && *allowed {
                 for val in values {
-                    if let StringLitOrFormat::Tpl(tpl) = val {
-                        if tpl.0.len() == 1 {
+                    if let StringLitOrFormat::Tpl(tpl) = val
+                        && tpl.0.len() == 1 {
                             extract_keys_from_tpl_item(&tpl.0[0], &mut keys);
                         }
-                    }
                 }
             }
-        }
     }
     keys
 }
@@ -350,14 +348,13 @@ fn check_mapping_empty(
     }
 
     // Add keys from finite index signatures in neg
-    if let Some(idx) = &current_neg.indexed_properties {
-        if is_finite_string_set(&idx.key) {
+    if let Some(idx) = &current_neg.indexed_properties
+        && is_finite_string_set(&idx.key) {
             let keys = extract_keys_from_type(&idx.key);
             for k in keys {
                 all_keys.insert(k);
             }
         }
-    }
 
     // 4. Check each key dimension
     // For each key `k`, we calculate the difference `pos[k] \ current_neg[k]`.

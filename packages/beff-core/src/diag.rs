@@ -1,19 +1,32 @@
-use anyhow::{anyhow, Result};
-use core::fmt;
 use std::{rc::Rc, sync::Arc};
 use swc_common::{BytePos, Loc, SourceMap, Span};
 
-use crate::{BffFileName, ParsedModule};
+use crate::{BffFileName, ModuleItemAddress, ParsedModule, RuntypeUUID};
 
 #[derive(Debug, Clone)]
 pub enum DiagnosticInfoMessage {
+    TypeArgumentCountMismatch,
+    CannotUseValueInTypePosition,
+    CannotUseTypeInValuePosition,
+    CannotUseInterfaceInValuePosition,
+    ExpressionIsNotAType,
+    TupleRestTypeMustBeArray,
+    CannotUseStarImportInValuePosition,
+    CannotUseStarImportInTypePosition,
+    CannotUseTypeInQualifiedTypePosition,
+    CannotUseInterfaceInQualifiedTypePosition,
+    PickNeedsString,
+    EnumItemShouldBeFromEnumType,
+    PartialShouldHaveTwoTypeArguments,
+    RequiredShouldHaveTwoTypeArguments,
+    InvalidNumberOfTypeParametersForArray,
     CannotHaveRecursiveGenericTypes,
     ObjectHasConflictingKeyValueInIntersection,
     CannotResolveNamedImport,
     EnumMemberNotFound,
     TplLitTypeUnsupported,
     TwoCallsToBuildSchemas,
-    CannotResolveRefInJsonSchemaToTplLit,
+    CannotResolveRefToTplLit,
     TypeOfJSXTextNotSupported,
     TypeOfRegexNotSupported,
     TypeofObjectUnsupportedPropNum,
@@ -30,7 +43,7 @@ pub enum DiagnosticInfoMessage {
     TypeOfTsBuiltinNotSupported,
     TypeofTsEnumNotSupported,
     TplLitTypeNonStringNonNumberNonBoolean,
-    NestedTplLitInJsonSchemaToTplLit,
+    NestedTplLitToTplLit,
     ExcludeShouldHaveTwoTypeArguments,
     MissingArgumentsOnExclude,
     PartialShouldHaveOneTypeArgument,
@@ -45,10 +58,9 @@ pub enum DiagnosticInfoMessage {
     RestFoundOnExtractObject,
     ShouldHaveObjectAsTypeArgument,
     RecordKeyUnionShouldBeOnlyStrings,
-    CannotResolveRefInExtractUnion(String),
+    CannotResolveRefInExtractUnion(RuntypeUUID),
     PartialShouldHaveObjectAsTypeArgument,
     MissingArgumentsOnPartial,
-    PickShouldHaveStringAsTypeArgument,
     PickShouldHaveStringOrStringArrayAsTypeArgument,
     MissingArgumentsOnOmit,
     MissingArgumentsOnPick,
@@ -62,10 +74,10 @@ pub enum DiagnosticInfoMessage {
     OmitShouldHaveTwoTypeArguments,
     OmitShouldHaveStringAsTypeArgument,
     OmitShouldHaveObjectAsTypeArgument,
-    IndexSignatureNonSerializableToJsonSchema,
+    IndexSignatureNonSerializable,
     AnyhowError(String),
     CannotResolveKey(String),
-    CouldNotFindSomethingOfOtherFile(String),
+    CannotNotFindSomethingOfOtherFile(String),
     EnumMemberNoInit,
     TypeofImportNotSupported,
     NoArgumentInTypeApplication,
@@ -79,7 +91,7 @@ pub enum DiagnosticInfoMessage {
     CustomNumberIsNotRegistered,
     InvalidUsageOfNumberFormatExtendsTypeParameter,
     BaseOfNumberFormatExtendsShouldBeNumberFormat,
-    CouldNotFindBaseOfNumberFormatExtends,
+    CannotNotFindBaseOfNumberFormatExtends,
     GetMustNotHaveBody,
     InvalidIdentifierInPatternNoExplodeAllowed,
     CloseBlockMustEndPattern,
@@ -95,7 +107,7 @@ pub enum DiagnosticInfoMessage {
     CannotResolveSomethingOfOtherFile(String),
     InvalidUsageOfStringFormatTypeParameter,
     BaseOfStringFormatExtendsShouldBeStringFormat,
-    CouldNotFindBaseOfStringFormatExtends,
+    CannotNotFindBaseOfStringFormatExtends,
     InvalidUsageOfStringFormatExtendsTypeParameter,
     InvalidUsageOfNumberFormatTypeParameter,
     CannotResolveNamespaceType,
@@ -108,33 +120,36 @@ pub enum DiagnosticInfoMessage {
     GenericDecoderIsNotSupported,
     InvalidDecoderKey,
     InvalidDecoderProperty,
-    KeywordNonSerializableToJsonSchema,
-    PropertyNonSerializableToJsonSchema,
+    KeywordNonSerializable,
+    PropertyNonSerializable,
     MissingArgumentsOnRecord,
     RecordShouldHaveTwoTypeArguments,
-    DuplicatedRestNonSerializableToJsonSchema,
-    UniqueNonSerializableToJsonSchema,
-    ReadonlyNonSerializableToJsonSchema,
-    ThisTypeNonSerializableToJsonSchema,
-    TsFnOrConstructorTypeNonSerializableToJsonSchema,
-    TsConditionalTypeNonSerializableToJsonSchema,
-    TsInferTypeNonSerializableToJsonSchema,
-    TsTypePredicateNonSerializableToJsonSchema,
-    TsImportTypeNonSerializableToJsonSchema,
+    DuplicatedRestNonSerializable,
+    UniqueNonSerializable,
+    ReadonlyNonSerializable,
+    ThisTypeNonSerializable,
+    TsFnOrConstructorTypeNonSerializable,
+    TsConditionalTypeNonSerializable,
+    TsInferTypeNonSerializable,
+    TsTypePredicateNonSerializable,
+    TsImportTypeNonSerializable,
     OptionalTypeIsNotSupported,
     PropShouldHaveTypeAnnotation,
     PropKeyShouldBeIdent,
-    CannotResolveTypeReferenceOnExtracting(String),
+    CannotResolveTypeReferenceOnExtracting(RuntypeUUID),
     TsInterfaceExtendsNotSupported,
-    TwoDifferentTypesWithTheSameName(String),
-    CannotFindFileWhenConvertingToSchema(BffFileName),
+    TwoDifferentTypesWithTheSameName(RuntypeUUID),
     ThisRefersToSomethingThatCannotBeSerialized(String),
     CannotResolveLocalSymbol(String),
     NoConstraintInMappedType,
     NonStringKeyInMappedType,
     NoTypeAnnotationInMappedType,
-    CannotConvertExprToSchema,
+    CannotConvertExpr,
     MappedTypeMinusNotSupported,
+    CannotNotResolveType(ModuleItemAddress),
+    CannotNotResolveValue(ModuleItemAddress),
+    CannotNotFindFile(BffFileName),
+    CannotResolveImport(String),
 }
 
 #[allow(clippy::inherent_to_string)]
@@ -145,17 +160,17 @@ impl DiagnosticInfoMessage {
             DiagnosticInfoMessage::CannotResolveLocalSymbol(name) => {
                 format!("Cannot find symbol '{name}'")
             }
-            DiagnosticInfoMessage::KeywordNonSerializableToJsonSchema => {
-                "This keyword cannot be converted to JSON schema".to_string()
+            DiagnosticInfoMessage::KeywordNonSerializable => {
+                "This keyword cannot be extracted".to_string()
             }
-            DiagnosticInfoMessage::PropertyNonSerializableToJsonSchema => {
-                "This property cannot be converted to JSON schema".to_string()
+            DiagnosticInfoMessage::PropertyNonSerializable => {
+                "This property cannot be extracted".to_string()
             }
-            DiagnosticInfoMessage::DuplicatedRestNonSerializableToJsonSchema => {
-                "This rest parameter cannot be converted to JSON schema".to_string()
+            DiagnosticInfoMessage::DuplicatedRestNonSerializable => {
+                "This rest parameter cannot be extracted".to_string()
             }
             DiagnosticInfoMessage::ThisRefersToSomethingThatCannotBeSerialized(this) => {
-                format!("`{this}` cannot be converted to JSON schema")
+                format!("`{this}` cannot be extracted")
             }
             DiagnosticInfoMessage::TsInterfaceExtendsNotSupported => {
                 "Interface extends are not supported".to_string()
@@ -170,14 +185,12 @@ impl DiagnosticInfoMessage {
                 "Property name should be an identifier".to_string()
             }
             DiagnosticInfoMessage::CannotResolveTypeReferenceOnExtracting(name) => {
+                let name = name.diag_print();
                 format!("Failed to resolve type reference '{name}' when extracting")
             }
             DiagnosticInfoMessage::TwoDifferentTypesWithTheSameName(name) => {
+                let name= name.diag_print();
                 format!("This includes two different types with the same name '{name}'")
-            }
-            DiagnosticInfoMessage::CannotFindFileWhenConvertingToSchema(f) => {
-                let name = &f.0;
-                format!("Cannot find file '{name}' when converting to schema")
             }
             DiagnosticInfoMessage::InvalidIdentifierInPatternNoExplodeAllowed => {
                 "Invalid pattern content".to_string()
@@ -267,8 +280,8 @@ impl DiagnosticInfoMessage {
             DiagnosticInfoMessage::TypeofImportNotSupported => {
                 "typeof import is not supported".to_string()
             }
-            DiagnosticInfoMessage::CouldNotFindSomethingOfOtherFile(something) => {
-                format!("Could not find '{something}' of other file")
+            DiagnosticInfoMessage::CannotNotFindSomethingOfOtherFile(something) => {
+                format!("Cannot not find '{something}' of other file")
             }
             DiagnosticInfoMessage::CannotResolveKey(key) => {
                 format!("Cannot resolve key '{key}' of non-object")
@@ -289,8 +302,8 @@ impl DiagnosticInfoMessage {
             DiagnosticInfoMessage::AnyhowError(err) => {
                 format!("Internal Error: {err}")
             }
-            DiagnosticInfoMessage::IndexSignatureNonSerializableToJsonSchema => {
-                "Index signature cannot be converted to JSON schema - Use Record<x,y>".to_string()
+            DiagnosticInfoMessage::IndexSignatureNonSerializable => {
+                "Index signature cannot be extracted - Use Record<x,y>".to_string()
             }
             DiagnosticInfoMessage::OmitShouldHaveTwoTypeArguments => {
                 "Omit should have two type arguments".to_string()
@@ -328,7 +341,7 @@ impl DiagnosticInfoMessage {
             DiagnosticInfoMessage::PickShouldHaveObjectAsTypeArgument => {
                 "Pick should have object as type argument".to_string()
             }
-            DiagnosticInfoMessage::PickShouldHaveStringAsTypeArgument => {
+            DiagnosticInfoMessage::PickNeedsString => {
                 "Pick should have string as type argument".to_string()
             }
             DiagnosticInfoMessage::PickShouldHaveStringOrStringArrayAsTypeArgument => {
@@ -340,29 +353,29 @@ impl DiagnosticInfoMessage {
             DiagnosticInfoMessage::MissingArgumentsOnPartial => {
                 "Missing arguments on partial".to_string()
             }
-            DiagnosticInfoMessage::UniqueNonSerializableToJsonSchema => {
-                "Unique cannot be converted to JSON schema".to_string()
+            DiagnosticInfoMessage::UniqueNonSerializable => {
+                "Unique cannot be extracted".to_string()
             }
-            DiagnosticInfoMessage::ReadonlyNonSerializableToJsonSchema => {
-                "Readonly cannot be converted to JSON schema".to_string()
+            DiagnosticInfoMessage::ReadonlyNonSerializable => {
+                "Readonly cannot be extracted".to_string()
             }
-            DiagnosticInfoMessage::ThisTypeNonSerializableToJsonSchema => {
-                "'This' type cannot be converted to JSON schema".to_string()
+            DiagnosticInfoMessage::ThisTypeNonSerializable => {
+                "'This' type cannot be extracted".to_string()
             }
-            DiagnosticInfoMessage::TsFnOrConstructorTypeNonSerializableToJsonSchema => {
-                "Function or constructor type cannot be converted to JSON schema".to_string()
+            DiagnosticInfoMessage::TsFnOrConstructorTypeNonSerializable => {
+                "Function or constructor type cannot be extracted".to_string()
             }
-            DiagnosticInfoMessage::TsConditionalTypeNonSerializableToJsonSchema => {
-                "Conditional type cannot be converted to JSON schema".to_string()
+            DiagnosticInfoMessage::TsConditionalTypeNonSerializable => {
+                "Conditional type cannot be extracted".to_string()
             }
-            DiagnosticInfoMessage::TsInferTypeNonSerializableToJsonSchema => {
-                "Infer type cannot be converted to JSON schema".to_string()
+            DiagnosticInfoMessage::TsInferTypeNonSerializable => {
+                "Infer type cannot be extracted".to_string()
             }
-            DiagnosticInfoMessage::TsTypePredicateNonSerializableToJsonSchema => {
-                "Type predicate cannot be converted to JSON schema".to_string()
+            DiagnosticInfoMessage::TsTypePredicateNonSerializable => {
+                "Type predicate cannot be extracted".to_string()
             }
-            DiagnosticInfoMessage::TsImportTypeNonSerializableToJsonSchema => {
-                "Import type cannot be converted to JSON schema".to_string()
+            DiagnosticInfoMessage::TsImportTypeNonSerializable => {
+                "Import type cannot be extracted".to_string()
             }
             DiagnosticInfoMessage::NoConstraintInMappedType => {
                 "No constraint in mapped type".to_string()
@@ -373,14 +386,15 @@ impl DiagnosticInfoMessage {
             DiagnosticInfoMessage::NoTypeAnnotationInMappedType => {
                 "No type annotation in mapped type".to_string()
             }
-            DiagnosticInfoMessage::CannotConvertExprToSchema => {
-                "Cannot convert expression to JSON schema".to_string()
+            DiagnosticInfoMessage::CannotConvertExpr => {
+                "Cannot convert expression".to_string()
             }
             DiagnosticInfoMessage::MappedTypeMinusNotSupported => {
                 "Mapped type minus is not supported".to_string()
             }
             DiagnosticInfoMessage::CannotResolveRefInExtractUnion(r) => {
-                format!("Cannot resolve ref '{r}' in extract union")
+                let name =r.diag_print();
+                format!("Cannot resolve ref '{name}' in extract union")
             }
             DiagnosticInfoMessage::ShouldHaveObjectAsTypeArgument => {
                 "Should have object as type argument".to_string()
@@ -461,8 +475,8 @@ impl DiagnosticInfoMessage {
             DiagnosticInfoMessage::TypeOfJSXTextNotSupported => {
                 "typeof on JSX text is not supported".to_string()
             }
-            DiagnosticInfoMessage::CannotResolveRefInJsonSchemaToTplLit => {
-                "Cannot resolve ref in JSON schema to template literal".to_string()
+            DiagnosticInfoMessage::CannotResolveRefToTplLit => {
+                "Cannot resolve ref to template literal".to_string()
             }
             DiagnosticInfoMessage::TwoCallsToBuildSchemas => {
                 "buildSchemas can only be called once".to_string()
@@ -483,8 +497,8 @@ impl DiagnosticInfoMessage {
             DiagnosticInfoMessage::BaseOfStringFormatExtendsShouldBeStringFormat => {
                 "Base of string format extends should be string format".to_string()
             }
-            DiagnosticInfoMessage::CouldNotFindBaseOfStringFormatExtends => {
-                "Could not find base of string format extends".to_string()
+            DiagnosticInfoMessage::CannotNotFindBaseOfStringFormatExtends => {
+                "Cannot find base of string format extends".to_string()
             }
             DiagnosticInfoMessage::InvalidUsageOfNumberFormatExtendsTypeParameter => {
                 "Invalid usage of number format extends type parameter".to_string()
@@ -492,8 +506,8 @@ impl DiagnosticInfoMessage {
             DiagnosticInfoMessage::BaseOfNumberFormatExtendsShouldBeNumberFormat => {
                 "Base of number format extends should be number format".to_string()
             }
-            DiagnosticInfoMessage::CouldNotFindBaseOfNumberFormatExtends => {
-                "Could not find base of number format extends".to_string()
+            DiagnosticInfoMessage::CannotNotFindBaseOfNumberFormatExtends => {
+                "Cannot find base of number format extends".to_string()
             }
             DiagnosticInfoMessage::RecordKeyUnionShouldBeOnlyStrings => {
                 "Record key union should only contain strings".to_string()
@@ -501,30 +515,64 @@ impl DiagnosticInfoMessage {
             DiagnosticInfoMessage::CannotHaveRecursiveGenericTypes => {
                 "Cannot have recursive generic types".to_string()
             }
-            DiagnosticInfoMessage::NestedTplLitInJsonSchemaToTplLit => {
-                "Nested template literal types are not supported when converting from JSON schema to template literal".to_string()
+            DiagnosticInfoMessage::NestedTplLitToTplLit => {
+                "Nested template literal types are not supported when converting to template literal".to_string()
             }
-        }
-    }
-}
-#[derive(Debug, Clone)]
-pub enum DiagnosticParentMessage {
-    CannotConvertToSchema,
-    ComplexPathParam,
-    InvalidContextPosition,
-}
-
-impl fmt::Display for DiagnosticParentMessage {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        match self {
-            DiagnosticParentMessage::CannotConvertToSchema => {
-                write!(f, "Exposing a type that cannot be converted to JSON schema")
+            DiagnosticInfoMessage::CannotNotResolveValue(module_item_address) => {
+                let name = module_item_address.diag_print();
+                format!("Cannot resolve value '{name}'")
             }
-            DiagnosticParentMessage::ComplexPathParam => {
-                write!(f, "Complex path parameter")
+            DiagnosticInfoMessage::CannotNotResolveType(module_item_address) => {
+                let name = module_item_address.diag_print();
+                format!("Cannot resolve type '{name}'")
+            },
+            DiagnosticInfoMessage::CannotNotFindFile(file) => {
+                format!("Cannot find file '{file}'")
             }
-            DiagnosticParentMessage::InvalidContextPosition => {
-                write!(f, "Invalid context usage")
+            DiagnosticInfoMessage::InvalidNumberOfTypeParametersForArray => {
+                "Invalid number of type parameters for Array".to_string()
+            }
+            DiagnosticInfoMessage::RequiredShouldHaveTwoTypeArguments => {
+                "Required should have two type arguments".to_string()
+            }
+            DiagnosticInfoMessage::PartialShouldHaveTwoTypeArguments => {
+                "Partial should have two type arguments".to_string()
+            }
+            DiagnosticInfoMessage::EnumItemShouldBeFromEnumType => {
+                "Enum item should be from enum type".to_string()
+            }
+            DiagnosticInfoMessage::CannotUseInterfaceInQualifiedTypePosition => {
+                "Cannot use interface in qualified type position".to_string()
+            }
+            DiagnosticInfoMessage::CannotUseTypeInQualifiedTypePosition => {
+                "Cannot use type in qualified type position".to_string()
+            }
+            DiagnosticInfoMessage::CannotUseStarImportInTypePosition => {
+                "Cannot use star import in type position".to_string()
+            }
+            DiagnosticInfoMessage::CannotUseStarImportInValuePosition => {
+                "Cannot use star import in value position".to_string()
+            }
+            DiagnosticInfoMessage::TupleRestTypeMustBeArray => {
+                "Rest type in tuple must be an array type".to_string()
+            }
+            DiagnosticInfoMessage::ExpressionIsNotAType => {
+                "Expression is not a type".to_string()
+            }
+            DiagnosticInfoMessage::CannotUseTypeInValuePosition => {
+                "Cannot use type in value position".to_string()
+            }
+            DiagnosticInfoMessage::CannotUseInterfaceInValuePosition => {
+                "Cannot use interface in value position".to_string()
+            }
+            DiagnosticInfoMessage::CannotUseValueInTypePosition => {
+                "Cannot use value in type position".to_string()
+            }
+            DiagnosticInfoMessage::CannotResolveImport(at) => {
+                format!("Cannot resolve import '{at}'")
+            }
+            DiagnosticInfoMessage::TypeArgumentCountMismatch => {
+                "Type argument count mismatch".to_string()
             }
         }
     }
@@ -537,18 +585,6 @@ pub struct FullLocation {
     pub loc_hi: Loc,
     pub offset_lo: usize,
     pub offset_hi: usize,
-}
-
-impl FullLocation {
-    pub fn to_diag(self, message: DiagnosticInfoMessage) -> Diagnostic {
-        self.to_info(message).to_diag(None)
-    }
-    pub fn to_info(self, message: DiagnosticInfoMessage) -> DiagnosticInformation {
-        DiagnosticInformation {
-            message,
-            loc: Location::Full(self),
-        }
-    }
 }
 
 #[derive(Clone, Debug)]
@@ -589,42 +625,12 @@ impl Location {
     pub fn to_info(self, message: DiagnosticInfoMessage) -> DiagnosticInformation {
         DiagnosticInformation { message, loc: self }
     }
-
-    pub fn unknown(current_file: &BffFileName) -> Location {
-        Location::Unknown(UnknownLocation {
-            current_file: current_file.clone(),
-        })
-    }
-
-    pub fn result_full(self) -> Result<FullLocation> {
-        match self {
-            Location::Full(loc) => Ok(loc),
-            Location::Unknown(loc) => Err(anyhow!("Expected full location, got {:?}", loc)),
-        }
-    }
 }
 
 #[derive(Clone, Debug)]
 pub struct DiagnosticInformation {
     pub message: DiagnosticInfoMessage,
     pub loc: Location,
-}
-
-impl DiagnosticInformation {
-    pub fn to_diag(self, parent_big_message: Option<DiagnosticParentMessage>) -> Diagnostic {
-        Diagnostic {
-            parent_big_message,
-            cause: self,
-            related_information: None,
-        }
-    }
-}
-
-#[derive(Debug)]
-pub struct Diagnostic {
-    pub parent_big_message: Option<DiagnosticParentMessage>,
-    pub cause: DiagnosticInformation,
-    pub related_information: Option<Vec<DiagnosticInformation>>,
 }
 
 fn span_to_loc(span: &Span, source_map: &Arc<SourceMap>, curr_file_end: BytePos) -> (Loc, Loc) {

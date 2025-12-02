@@ -1153,14 +1153,6 @@ const direct_hoist_7 = new AnyOfConstsRuntype([
     "e"
 ]);
 const namedRuntypes = {
-    "BeforeRequired": new ObjectRuntype({
-        "a": direct_hoist_0,
-        "b": direct_hoist_2,
-        "c": direct_hoist_4,
-        "d": direct_hoist_6,
-        "e": new OptionalField(direct_hoist_0)
-    }, []),
-    "KeyofBeforeRequired": direct_hoist_7,
     "AfterRequired": new ObjectRuntype({
         "a": direct_hoist_0,
         "b": direct_hoist_2,
@@ -1168,9 +1160,17 @@ const namedRuntypes = {
         "d": direct_hoist_6,
         "e": direct_hoist_0
     }, []),
+    "BeforeRequired": new ObjectRuntype({
+        "a": direct_hoist_0,
+        "b": direct_hoist_2,
+        "c": direct_hoist_4,
+        "d": direct_hoist_6,
+        "e": new OptionalField(direct_hoist_0)
+    }, []),
     "KeyofAfterRequired": direct_hoist_7,
-    "SomeString": direct_hoist_0,
-    "SomeChar": direct_hoist_0
+    "KeyofBeforeRequired": direct_hoist_7,
+    "SomeChar": direct_hoist_0,
+    "SomeString": direct_hoist_0
 };
 const buildParsersInput = {
     "BeforeRequired": new RefRuntype("BeforeRequired"),

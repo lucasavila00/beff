@@ -4,15 +4,15 @@ use super::{
     subtype::{NumberRepresentationOrFormat, ProperSubtype, StringLitOrFormat, SubTypeTag},
 };
 use crate::{
+    NamedSchema, RuntypeName, RuntypeUUID,
     ast::runtype::{
         CustomFormat, IndexedProperty, Optionality, Runtype, RuntypeConst, TplLitTypeItem,
     },
     subtyping::{
         bdd::MappingAtomicType,
-        dnf::{bdd_to_dnf, Conjunction},
+        dnf::{Conjunction, bdd_to_dnf},
         subtype::VoidUndefinedSubtype,
     },
-    NamedSchema,
 };
 use std::{
     collections::{BTreeMap, BTreeSet},
@@ -21,7 +21,7 @@ use std::{
 
 pub enum SchemaMemo {
     Schema(Runtype),
-    Undefined(String),
+    Undefined(RuntypeUUID),
 }
 
 pub struct SemTypeResolverContext<'a>(pub &'a mut SemTypeContext);
@@ -32,7 +32,7 @@ struct SchemerContext<'a, 'b> {
     schemer_memo: BTreeMap<Rc<SemType>, SchemaMemo>,
     validators: Vec<NamedSchema>,
 
-    recursive_validators: BTreeSet<String>,
+    recursive_validators: BTreeSet<RuntypeUUID>,
     counter: &'b mut usize,
 }
 
@@ -99,7 +99,7 @@ impl<'a, 'b> SchemerContext<'a, 'b> {
             acc.push(Runtype::StNot(Box::new(explained_sts)));
         }
 
-        Ok(Runtype::AllOf(acc.into_iter().collect()))
+        Ok(Runtype::all_of(acc.into_iter().collect()))
     }
 
     fn mapping_to_schema(&mut self, bdd: &Rc<Bdd>) -> anyhow::Result<Runtype> {
@@ -112,7 +112,7 @@ impl<'a, 'b> SchemerContext<'a, 'b> {
             acc.push(conj);
         }
 
-        Ok(Runtype::AnyOf(acc.into_iter().collect()))
+        Ok(Runtype::any_of(acc.into_iter().collect()))
     }
 
     fn list_atom_schema(&mut self, mt: &Rc<ListAtomic>) -> anyhow::Result<Runtype> {
@@ -164,7 +164,7 @@ impl<'a, 'b> SchemerContext<'a, 'b> {
             acc.push(Runtype::StNot(Box::new(explained_sts)));
         }
 
-        Ok(Runtype::AllOf(acc.into_iter().collect()))
+        Ok(Runtype::all_of(acc.into_iter().collect()))
     }
 
     fn list_to_schema(&mut self, bdd: &Rc<Bdd>) -> anyhow::Result<Runtype> {
@@ -177,12 +177,12 @@ impl<'a, 'b> SchemerContext<'a, 'b> {
             acc.push(conj);
         }
 
-        Ok(Runtype::AnyOf(acc.into_iter().collect()))
+        Ok(Runtype::any_of(acc.into_iter().collect()))
     }
 
     fn convert_to_schema_no_cache(&mut self, ty: &SemType) -> anyhow::Result<Runtype> {
         if ty.all == 0 && ty.subtype_data.is_empty() {
-            return Ok(Runtype::StNever);
+            return Ok(Runtype::Never);
         }
 
         let mut acc = BTreeSet::new();
@@ -203,7 +203,7 @@ impl<'a, 'b> SchemerContext<'a, 'b> {
                         acc.insert(Runtype::String);
                     }
                     SubTypeTag::OptionalProp => {
-                        acc.insert(Runtype::Null);
+                        acc.insert(Runtype::Undefined);
                     }
                     SubTypeTag::Mapping => {
                         acc.insert(Runtype::any_object());
@@ -311,13 +311,16 @@ impl<'a, 'b> SchemerContext<'a, 'b> {
     pub fn convert_to_schema(
         &mut self,
         ty: &Rc<SemType>,
-        name: Option<&str>,
+        name: Option<&RuntypeUUID>,
     ) -> anyhow::Result<Runtype> {
         let new_name = match name {
-            Some(n) => n.to_string(),
+            Some(n) => n.clone(),
             None => {
                 *self.counter += 1;
-                format!("t_{}", self.counter)
+                RuntypeUUID {
+                    ty: RuntypeName::SemtypeRecursiveGenerated(*self.counter),
+                    type_arguments: vec![],
+                }
             }
         };
         if let Some(mater) = self.schemer_memo.get(ty) {
@@ -325,7 +328,7 @@ impl<'a, 'b> SchemerContext<'a, 'b> {
                 SchemaMemo::Schema(mater) => return Ok(mater.clone()),
                 SchemaMemo::Undefined(ref_name) => {
                     self.recursive_validators.insert(ref_name.clone());
-                    return Ok(Runtype::Ref(ref_name.into()));
+                    return Ok(Runtype::Ref(ref_name.clone()));
                 }
             }
         } else {
@@ -347,7 +350,7 @@ impl<'a, 'b> SchemerContext<'a, 'b> {
 pub fn semtype_to_runtypes(
     ctx: &mut SemTypeContext,
     ty: &Rc<SemType>,
-    name: &str,
+    name: &RuntypeUUID,
     counter: &mut usize,
 ) -> anyhow::Result<(NamedSchema, Vec<NamedSchema>)> {
     let mut schemer = SchemerContext::new(ctx, counter);
@@ -358,10 +361,10 @@ pub fn semtype_to_runtypes(
         .filter(|it| schemer.recursive_validators.contains(&it.name))
         .collect();
 
-    let vs = vs.into_iter().filter(|it| it.name != name).collect();
+    let vs = vs.into_iter().filter(|it| &it.name != name).collect();
     Ok((
         NamedSchema {
-            name: name.into(),
+            name: name.clone(),
             schema: out,
         },
         vs,

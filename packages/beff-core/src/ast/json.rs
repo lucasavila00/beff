@@ -164,3 +164,57 @@ impl Json {
         }
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    #[test]
+    fn test_json_conversion() {
+        let original = Json::object(vec![
+            ("name".to_string(), Json::String("Alice".to_string())),
+            ("age".to_string(), Json::Number(N::parse_int(30))),
+            ("height".to_string(), Json::Number(N::parse_f64(5.7))),
+            ("married".to_string(), Json::Bool(true)),
+            ("children".to_string(), Json::Null),
+            (
+                "pets".to_string(),
+                Json::Array(vec![
+                    Json::String("Dog".to_string()),
+                    Json::String("Cat".to_string()),
+                ]),
+            ),
+        ]);
+
+        let serde_value = original.to_serde();
+        let reconstructed = Json::from_serde(&serde_value);
+        assert_eq!(original, reconstructed);
+    }
+
+    #[test]
+    fn test_number_conversion() {
+        let num1 = N::parse_f64(42.0);
+        assert_eq!(num1.integral, 42);
+        assert_eq!(num1.fractional, None);
+
+        let json1 = Json::parse_f64(42.0);
+        assert_eq!(json1, Json::Number(num1));
+
+        let num2 = N::parse_f64(3.14159);
+        assert_eq!(num2.integral, 3);
+        assert_eq!(num2.fractional, Some(141589999));
+
+        let json2 = Json::parse_f64(3.14159);
+
+        let f64_value = num2.to_f64();
+        assert!((f64_value - 3.14159).abs() < 1e-6);
+
+        assert_eq!(json2, Json::Number(num2));
+
+        let num3 = N::parse_int(100);
+        assert_eq!(num3.integral, 100);
+        assert_eq!(num3.fractional, None);
+
+        let json3 = Json::parse_int(100);
+        assert_eq!(json3, Json::Number(num3));
+    }
+}

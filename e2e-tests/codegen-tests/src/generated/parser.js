@@ -1130,46 +1130,46 @@ const buildParsers = (args) => {
 const RequiredStringFormats = [];
 const RequiredNumberFormats = [];
 const direct_hoist_0 = new TypeofRuntype("string");
-const direct_hoist_1 = new NullishRuntype("null");
-const direct_hoist_2 = new ArrayRuntype(direct_hoist_0);
-const direct_hoist_3 = new NullishRuntype("undefined");
+const direct_hoist_1 = new NullishRuntype("undefined");
+const direct_hoist_2 = new AnyOfRuntype([
+    direct_hoist_1,
+    direct_hoist_0
+]);
+const direct_hoist_3 = new NullishRuntype("void");
 const direct_hoist_4 = new AnyOfRuntype([
     direct_hoist_3,
     direct_hoist_0
 ]);
-const direct_hoist_5 = new NullishRuntype("void");
+const direct_hoist_5 = new NullishRuntype("null");
 const direct_hoist_6 = new AnyOfRuntype([
     direct_hoist_5,
     direct_hoist_0
 ]);
-const direct_hoist_7 = new AnyOfRuntype([
-    direct_hoist_1,
-    direct_hoist_0
-]);
+const direct_hoist_7 = new ArrayRuntype(direct_hoist_0);
 const namedRuntypes = {
-    "AliasToString": direct_hoist_0,
-    "AliasToNumber": new TypeofRuntype("number"),
-    "AliasToBoolean": new TypeofRuntype("boolean"),
-    "AliasToNull": direct_hoist_1,
-    "AliasToAny": new AnyRuntype(),
-    "AliasToConst": new ConstRuntype("constant value"),
-    "TestHoist": new ObjectRuntype({
-        "a": direct_hoist_2,
-        "b": direct_hoist_2
-    }, []),
-    "BeforeRequired": new ObjectRuntype({
-        "a": direct_hoist_0,
-        "b": direct_hoist_4,
-        "c": direct_hoist_6,
-        "d": direct_hoist_7,
-        "e": new OptionalField(direct_hoist_0)
-    }, []),
     "AfterRequired": new ObjectRuntype({
         "a": direct_hoist_0,
-        "b": direct_hoist_4,
-        "c": direct_hoist_6,
-        "d": direct_hoist_7,
+        "b": direct_hoist_2,
+        "c": direct_hoist_4,
+        "d": direct_hoist_6,
         "e": direct_hoist_0
+    }, []),
+    "AliasToAny": new AnyRuntype(),
+    "AliasToBoolean": new TypeofRuntype("boolean"),
+    "AliasToConst": new ConstRuntype("constant value"),
+    "AliasToNull": direct_hoist_5,
+    "AliasToNumber": new TypeofRuntype("number"),
+    "AliasToString": direct_hoist_0,
+    "BeforeRequired": new ObjectRuntype({
+        "a": direct_hoist_0,
+        "b": direct_hoist_2,
+        "c": direct_hoist_4,
+        "d": direct_hoist_6,
+        "e": new OptionalField(direct_hoist_0)
+    }, []),
+    "TestHoist": new ObjectRuntype({
+        "a": direct_hoist_7,
+        "b": direct_hoist_7
     }, [])
 };
 const buildParsersInput = {

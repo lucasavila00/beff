@@ -1,19 +1,11 @@
-Error: Exposing a type that cannot be converted to JSON schema
- /errors/record-semtypes/src/parser.ts:19:52
+Error: Function or constructor type cannot be extracted
+ /errors/record-semtypes/src/parser.ts:16:10
+   14 |   friends: User[];
+   15 |   avatarSize: AvatarSize;
+ > 16 |   extra: () => null;
+      |          ^^^^^^^^^^ Function or constructor type cannot be extracted
    17 | };
    18 |
- > 19 | export const { User } = parse.buildParsers<{ User: User }>();
-      |                                                    ^^^^ `User` cannot be converted to JSON schema
-   20 |
-
-    Caused by:
-     /errors/record-semtypes/src/parser.ts:16:10
-       14 |   friends: User[];
-       15 |   avatarSize: AvatarSize;
-     > 16 |   extra: () => null;
-          |          ^^^^^^^^^^ Function or constructor type cannot be converted to JSON schema
-       17 | };
-       18 |
-       19 | export const { User } = parse.buildParsers<{ User: User }>();
+   19 | export const { User } = parse.buildParsers<{ User: User }>();
 
 Found 1 error

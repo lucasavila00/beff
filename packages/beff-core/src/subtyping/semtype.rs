@@ -1,13 +1,16 @@
-use crate::subtyping::{
-    bdd::{IndexedPropertiesAtomic, MappingAtomicType},
-    dnf::Dnf,
-    subtype::{NumberRepresentationOrFormat, VoidUndefinedSubtype},
-    IsEmptyStatus,
+use crate::{
+    RuntypeUUID,
+    subtyping::{
+        IsEmptyStatus,
+        bdd::{IndexedPropertiesAtomic, MappingAtomicType},
+        dnf::Dnf,
+        subtype::{NumberRepresentationOrFormat, VoidUndefinedSubtype},
+    },
 };
 use anyhow::Result;
 
 use super::{
-    bdd::{keyof, list_indexed_access, mapping_indexed_access, Atom, Bdd, ListAtomic},
+    bdd::{Atom, Bdd, ListAtomic, keyof, list_indexed_access, mapping_indexed_access},
     subtype::{
         BasicTypeBitSet, BasicTypeCode, ProperSubtype, ProperSubtypeOps, StringLitOrFormat,
         SubType, SubTypeTag, VAL,
@@ -157,11 +160,10 @@ impl SemTypeOps for Rc<SemType> {
                 _ => None,
             };
 
-            if let Some(data) = data {
-                if let SubType::Proper(data) = &*data {
+            if let Some(data) = data
+                && let SubType::Proper(data) = &*data {
                     subtypes.push(data.clone());
                 }
-            }
         }
 
         Ok(SemType::new_complex(all, subtypes).into())
@@ -357,8 +359,8 @@ pub struct SemTypeContext {
     pub list_definitions: Vec<Option<Rc<ListAtomic>>>,
     pub list_memo: BTreeMap<Bdd, BddMemoEmptyRef>,
 
-    pub mapping_runtype_ref_memo: BTreeMap<String, usize>,
-    pub list_runtype_ref_memo: BTreeMap<String, usize>,
+    pub mapping_runtype_ref_memo: BTreeMap<RuntypeUUID, usize>,
+    pub list_runtype_ref_memo: BTreeMap<RuntypeUUID, usize>,
 }
 impl Default for SemTypeContext {
     fn default() -> Self {
@@ -398,22 +400,26 @@ impl SemTypeContext {
     pub fn number_const(value: NumberRepresentationOrFormat) -> SemType {
         SemType::new_complex(
             0x0,
-            vec![ProperSubtype::Number {
-                allowed: true,
-                values: vec![value],
-            }
-            .into()],
+            vec![
+                ProperSubtype::Number {
+                    allowed: true,
+                    values: vec![value],
+                }
+                .into(),
+            ],
         )
     }
 
     pub fn string_const(value: StringLitOrFormat) -> SemType {
         SemType::new_complex(
             0x0,
-            vec![ProperSubtype::String {
-                allowed: true,
-                values: vec![value],
-            }
-            .into()],
+            vec![
+                ProperSubtype::String {
+                    allowed: true,
+                    values: vec![value],
+                }
+                .into(),
+            ],
         )
     }
     pub fn mapping_definition_from_idx(idx: usize) -> SemType {
@@ -485,21 +491,25 @@ impl SemTypeContext {
     pub fn undefined() -> SemType {
         SemType::new_complex(
             0x0,
-            vec![ProperSubtype::VoidUndefined {
-                allowed: true,
-                values: vec![VoidUndefinedSubtype::Undefined],
-            }
-            .into()],
+            vec![
+                ProperSubtype::VoidUndefined {
+                    allowed: true,
+                    values: vec![VoidUndefinedSubtype::Undefined],
+                }
+                .into(),
+            ],
         )
     }
     pub fn void() -> SemType {
         SemType::new_complex(
             0x0,
-            vec![ProperSubtype::VoidUndefined {
-                allowed: true,
-                values: vec![VoidUndefinedSubtype::Void],
-            }
-            .into()],
+            vec![
+                ProperSubtype::VoidUndefined {
+                    allowed: true,
+                    values: vec![VoidUndefinedSubtype::Void],
+                }
+                .into(),
+            ],
         )
     }
     pub fn optional_prop() -> SemType {
@@ -534,7 +544,7 @@ impl SemTypeContext {
                 | (ProperSubtype::Mapping(_), SubTypeTag::Mapping)
                 | (ProperSubtype::List(_), SubTypeTag::List)
                 | (ProperSubtype::Boolean(_), SubTypeTag::Boolean) => {
-                    return SubType::Proper(t.clone())
+                    return SubType::Proper(t.clone());
                 }
                 _ => {}
             }
