@@ -54,11 +54,8 @@ fn emit_module_items(body: Vec<ModuleItem>) -> Result<String> {
     Ok(code)
 }
 
-type SeenCounter = BTreeMap<Runtype, i32>;
-
 struct PrintContext {
     hoisted: BTreeMap<Runtype, (usize, Expr)>,
-    seen: SeenCounter,
     all_names: Vec<RuntypeUUID>,
     type_with_args_names: BTreeMap<RuntypeUUID, String>,
     inlined: BTreeSet<RuntypeUUID>,
@@ -679,14 +676,9 @@ fn print_runtype(schema: &Runtype, named_schemas: &[NamedSchema], ctx: &mut Prin
         Runtype::Void => new_runtype_class("NullishRuntype", vec![string_lit("void")]),
     };
 
-    let seen_counter = ctx.seen.get(schema).cloned().unwrap_or(0);
-    if seen_counter <= 1 {
-        out
-    } else {
-        let new_id = ctx.hoisted.len();
-        ctx.hoisted.insert(schema.clone(), (new_id, out.clone()));
-        hoist_identifier(new_id)
-    }
+    let new_id = ctx.hoisted.len();
+    ctx.hoisted.insert(schema.clone(), (new_id, out.clone()));
+    hoist_identifier(new_id)
 }
 
 fn build_parsers_input(
@@ -754,84 +746,16 @@ fn named_runtypes(named_schemas: &[NamedSchema], ctx: &mut PrintContext) -> Expr
     })
 }
 
-fn calculate_schema_seen(schema: &Runtype, seen: &mut SeenCounter) {
-    let count = seen.entry(schema.clone()).or_insert(0);
-    *count += 1;
-
-    match schema {
-        Runtype::StringWithFormat(_)
-        | Runtype::NumberWithFormat(_)
-        | Runtype::AnyArrayLike
-        | Runtype::Any
-        | Runtype::Number
-        | Runtype::String
-        | Runtype::Boolean
-        | Runtype::Never
-        | Runtype::Function
-        | Runtype::Date
-        | Runtype::BigInt
-        | Runtype::TplLitType(_)
-        | Runtype::Ref(_)
-        | Runtype::Const(_)
-        | Runtype::Null
-        | Runtype::Void
-        | Runtype::Undefined => {}
-        Runtype::Object {
-            vs,
-            indexed_properties,
-        } => {
-            for v in vs.values() {
-                calculate_schema_seen(v.inner(), seen)
-            }
-            if let Some(p) = indexed_properties {
-                calculate_schema_seen(&p.key, seen);
-                calculate_schema_seen(p.value.inner(), seen);
-            }
-        }
-        Runtype::Array(json_schema) => {
-            calculate_schema_seen(json_schema, seen);
-        }
-        Runtype::Tuple {
-            prefix_items,
-            items,
-        } => {
-            for item in prefix_items {
-                calculate_schema_seen(item, seen);
-            }
-            if let Some(items_schema) = items {
-                calculate_schema_seen(items_schema, seen);
-            }
-        }
-        Runtype::AnyOf(btree_set) | Runtype::AllOf(btree_set) => {
-            for v in btree_set {
-                calculate_schema_seen(v, seen);
-            }
-        }
-        Runtype::StNot(json_schema) => {
-            calculate_schema_seen(json_schema, seen);
-        }
-    }
-}
-
-fn calculate_named_schemas_seen(named_schemas: &[NamedSchema], seen: &mut SeenCounter) {
-    for named_schema in named_schemas {
-        calculate_schema_seen(&named_schema.schema, seen);
-    }
-}
-
 impl ParserExtractResult {
     pub fn emit_code(self) -> Result<String> {
-        let mut seen: SeenCounter = BTreeMap::new();
         let built_parsers = self.built_decoders.unwrap_or_default();
         let named_schemas = validate_type_uniqueness(&self.validators)?;
         let all_names = named_schemas
             .iter()
             .map(|it| it.name.clone())
             .collect::<Vec<RuntypeUUID>>();
-        calculate_named_schemas_seen(&named_schemas, &mut seen);
         let mut hoisted = PrintContext {
             hoisted: BTreeMap::new(),
-            seen,
             all_names,
             type_with_args_names: BTreeMap::new(),
             inlined: BTreeSet::new(),

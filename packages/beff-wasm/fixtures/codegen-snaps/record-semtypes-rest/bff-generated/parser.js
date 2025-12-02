@@ -1129,24 +1129,29 @@ const buildParsers = (args) => {
 
 const RequiredStringFormats = ["password","StartsWithA"];
 const RequiredNumberFormats = [];
-const direct_hoist_0 = new TypeofRuntype("string");
+const direct_hoist_0 = new RefRuntype("User");
+const direct_hoist_1 = new TypeofRuntype("number");
+const direct_hoist_2 = new TypeofRuntype("string");
+const direct_hoist_3 = new ObjectRuntype({
+    "data1": direct_hoist_1,
+    "data2": direct_hoist_2
+}, []);
+const direct_hoist_4 = new ObjectRuntype({}, [
+    {
+        "key": direct_hoist_2,
+        "value": direct_hoist_2
+    }
+]);
+const direct_hoist_5 = new ObjectRuntype({
+    "a": direct_hoist_2
+}, []);
 const namedRuntypes = {
-    "User": new ObjectRuntype({
-        "data1": new TypeofRuntype("number"),
-        "data2": direct_hoist_0
-    }, []),
-    "X": new ObjectRuntype({}, [
-        {
-            "key": direct_hoist_0,
-            "value": direct_hoist_0
-        }
-    ]),
-    "Y": new ObjectRuntype({
-        "a": direct_hoist_0
-    }, [])
+    "User": direct_hoist_3,
+    "X": direct_hoist_4,
+    "Y": direct_hoist_5
 };
 const buildParsersInput = {
-    "User": new RefRuntype("User")
+    "User": direct_hoist_0
 };
 
 export default { buildParsers };

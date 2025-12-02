@@ -1129,23 +1129,43 @@ const buildParsers = (args) => {
 
 const RequiredStringFormats = [];
 const RequiredNumberFormats = [];
-const direct_hoist_0 = new TypeofRuntype("string");
-const direct_hoist_1 = new NullishRuntype("undefined");
-const direct_hoist_2 = new AnyOfRuntype([
-    direct_hoist_1,
-    direct_hoist_0
+const direct_hoist_0 = new RefRuntype("BeforeRequired");
+const direct_hoist_1 = new RefRuntype("KeyofBeforeRequired");
+const direct_hoist_2 = new RefRuntype("AfterRequired");
+const direct_hoist_3 = new RefRuntype("KeyofAfterRequired");
+const direct_hoist_4 = new RefRuntype("SomeString");
+const direct_hoist_5 = new RefRuntype("SomeChar");
+const direct_hoist_6 = new TypeofRuntype("string");
+const direct_hoist_7 = new NullishRuntype("undefined");
+const direct_hoist_8 = new AnyOfRuntype([
+    direct_hoist_7,
+    direct_hoist_6
 ]);
-const direct_hoist_3 = new NullishRuntype("void");
-const direct_hoist_4 = new AnyOfRuntype([
-    direct_hoist_3,
-    direct_hoist_0
+const direct_hoist_9 = new NullishRuntype("void");
+const direct_hoist_10 = new AnyOfRuntype([
+    direct_hoist_9,
+    direct_hoist_6
 ]);
-const direct_hoist_5 = new NullishRuntype("null");
-const direct_hoist_6 = new AnyOfRuntype([
-    direct_hoist_5,
-    direct_hoist_0
+const direct_hoist_11 = new NullishRuntype("null");
+const direct_hoist_12 = new AnyOfRuntype([
+    direct_hoist_11,
+    direct_hoist_6
 ]);
-const direct_hoist_7 = new AnyOfConstsRuntype([
+const direct_hoist_13 = new ObjectRuntype({
+    "a": direct_hoist_6,
+    "b": direct_hoist_8,
+    "c": direct_hoist_10,
+    "d": direct_hoist_12,
+    "e": direct_hoist_6
+}, []);
+const direct_hoist_14 = new ObjectRuntype({
+    "a": direct_hoist_6,
+    "b": direct_hoist_8,
+    "c": direct_hoist_10,
+    "d": direct_hoist_12,
+    "e": new OptionalField(direct_hoist_6)
+}, []);
+const direct_hoist_15 = new AnyOfConstsRuntype([
     "a",
     "b",
     "c",
@@ -1153,32 +1173,20 @@ const direct_hoist_7 = new AnyOfConstsRuntype([
     "e"
 ]);
 const namedRuntypes = {
-    "AfterRequired": new ObjectRuntype({
-        "a": direct_hoist_0,
-        "b": direct_hoist_2,
-        "c": direct_hoist_4,
-        "d": direct_hoist_6,
-        "e": direct_hoist_0
-    }, []),
-    "BeforeRequired": new ObjectRuntype({
-        "a": direct_hoist_0,
-        "b": direct_hoist_2,
-        "c": direct_hoist_4,
-        "d": direct_hoist_6,
-        "e": new OptionalField(direct_hoist_0)
-    }, []),
-    "KeyofAfterRequired": direct_hoist_7,
-    "KeyofBeforeRequired": direct_hoist_7,
-    "SomeChar": direct_hoist_0,
-    "SomeString": direct_hoist_0
+    "AfterRequired": direct_hoist_13,
+    "BeforeRequired": direct_hoist_14,
+    "KeyofAfterRequired": direct_hoist_15,
+    "KeyofBeforeRequired": direct_hoist_15,
+    "SomeChar": direct_hoist_6,
+    "SomeString": direct_hoist_6
 };
 const buildParsersInput = {
-    "BeforeRequired": new RefRuntype("BeforeRequired"),
-    "KeyofBeforeRequired": new RefRuntype("KeyofBeforeRequired"),
-    "AfterRequired": new RefRuntype("AfterRequired"),
-    "KeyofAfterRequired": new RefRuntype("KeyofAfterRequired"),
-    "SomeString": new RefRuntype("SomeString"),
-    "SomeChar": new RefRuntype("SomeChar")
+    "BeforeRequired": direct_hoist_0,
+    "KeyofBeforeRequired": direct_hoist_1,
+    "AfterRequired": direct_hoist_2,
+    "KeyofAfterRequired": direct_hoist_3,
+    "SomeString": direct_hoist_4,
+    "SomeChar": direct_hoist_5
 };
 
 export default { buildParsers };
