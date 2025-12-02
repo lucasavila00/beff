@@ -4,3 +4,10 @@ members = ["packages/beff-core", "packages/beff-wasm", ]
 [profile.release]
 # Tell `rustc` to optimize for small code size.
 opt-level = "s"
+
+[workspace.dependencies]
+serde = {version = "1.0.188", features = ["derive"]}
+serde_json = "1.0.105"
+swc_common = "18.0.0"
+anyhow = "1.0.75"
+log = "0.4.20"

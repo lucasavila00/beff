@@ -3,6 +3,7 @@ use std::collections::{BTreeMap, BTreeSet};
 use anyhow::{Ok, Result, anyhow};
 use swc_common::DUMMY_SP;
 use swc_common::SourceMap;
+use swc_common::SyntaxContext;
 use swc_common::{FilePathMapping, sync::Lrc};
 use swc_ecma_ast::Module;
 use swc_ecma_ast::{
@@ -78,6 +79,7 @@ fn const_decl(name: &str, init: Expr) -> ModuleItem {
     ModuleItem::Stmt(Stmt::Decl(Decl::Var(
         VarDecl {
             span: DUMMY_SP,
+            ctxt: SyntaxContext::empty(),
             kind: VarDeclKind::Const,
             declare: false,
             decls: vec![VarDeclarator {
@@ -87,6 +89,7 @@ fn const_decl(name: &str, init: Expr) -> ModuleItem {
                         span: DUMMY_SP,
                         sym: name.into(),
                         optional: false,
+                        ctxt: SyntaxContext::empty(),
                     },
                     type_ann: None,
                 }),
@@ -122,11 +125,13 @@ fn identifier(name: &str) -> Ident {
         span: DUMMY_SP,
         sym: name.into(),
         optional: false,
+        ctxt: SyntaxContext::empty(),
     }
 }
 
 fn new_runtype_class(constructor: &str, args: Vec<Expr>) -> Expr {
     Expr::New(NewExpr {
+        ctxt: SyntaxContext::empty(),
         span: DUMMY_SP,
         callee: Expr::Ident(identifier(constructor)).into(),
         args: Some(

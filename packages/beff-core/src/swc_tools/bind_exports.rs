@@ -12,7 +12,6 @@ use crate::swc_tools::parse::parse_with_swc;
 use anyhow::Result;
 use std::collections::HashMap;
 use std::rc::Rc;
-use swc_atoms::JsWord;
 use swc_common::FileName;
 use swc_common::SourceMap;
 use swc_common::Spanned;
@@ -62,7 +61,7 @@ impl<'a, R: FsModuleResolver> ImportsVisitor<'a, R> {
             .resolve_import(self.current_file.clone(), module_specifier)
     }
 
-    fn insert_import_named(&mut self, local: &Ident, module_specifier: &str, orig: &JsWord) {
+    fn insert_import_named(&mut self, local: &Ident, module_specifier: &str, orig: &str) {
         let v = self.resolve_import(module_specifier);
 
         if let Some(v) = v {
@@ -162,7 +161,7 @@ impl<R: FsModuleResolver> Visit for ImportsVisitor<'_, R> {
                         let name = it.sym.clone();
                         let export = Rc::new(SymbolExport::ValueExpr {
                             expr: Rc::new(*expr.clone()),
-                            name: name.clone(),
+                            name: name.to_string(),
                             span: it.span,
                             original_file: self.current_file.clone(),
                         });
@@ -176,7 +175,7 @@ impl<R: FsModuleResolver> Visit for ImportsVisitor<'_, R> {
                         let name = it.sym.clone();
                         let export = Rc::new(SymbolExport::ExprDecl {
                             ty: Rc::new(*ann.type_ann.clone()),
-                            name: name.clone(),
+                            name: name.to_string(),
                             span: it.span,
                             original_file: self.current_file.clone(),
                         });
@@ -198,7 +197,8 @@ impl<R: FsModuleResolver> Visit for ImportsVisitor<'_, R> {
                         ExportSpecifier::Default(_) => {}
                         ExportSpecifier::Namespace(ExportNamespaceSpecifier { name, .. }) => {
                             if let ModuleExportName::Ident(id) = name
-                                && let Some(file_name) = self.resolve_import(&src.value)
+                                && let Some(file_name) =
+                                    self.resolve_import(&src.value.to_string_lossy())
                             {
                                 self.symbol_exports.insert_unknown(
                                     id.sym.to_string(),
@@ -218,11 +218,15 @@ impl<R: FsModuleResolver> Visit for ImportsVisitor<'_, R> {
                         ExportSpecifier::Named(ExportNamedSpecifier { orig, exported, .. }) => {
                             if let ModuleExportName::Ident(id) = orig {
                                 let name = match exported {
-                                    Some(ModuleExportName::Ident(ex)) => ex.sym.clone(),
-                                    Some(ModuleExportName::Str(st)) => st.value.clone(),
-                                    None => id.sym.clone(),
+                                    Some(ModuleExportName::Ident(ex)) => ex.sym.clone().to_string(),
+                                    Some(ModuleExportName::Str(st)) => {
+                                        st.value.clone().to_string_lossy().to_string()
+                                    }
+                                    None => id.sym.clone().to_string(),
                                 };
-                                if let Some(file_name) = self.resolve_import(&src.value) {
+                                if let Some(file_name) =
+                                    self.resolve_import(&src.value.to_string_lossy())
+                                {
                                     self.symbol_exports.insert_unknown(
                                         name.to_string(),
                                         Rc::new(SymbolExport::SomethingOfOtherFile {
@@ -246,13 +250,15 @@ impl<R: FsModuleResolver> Visit for ImportsVisitor<'_, R> {
                         ExportSpecifier::Named(ExportNamedSpecifier { orig, exported, .. }) => {
                             if let ModuleExportName::Ident(id) = orig {
                                 let renamed = match exported {
-                                    Some(ModuleExportName::Ident(ex)) => ex.sym.clone(),
-                                    Some(ModuleExportName::Str(st)) => st.value.clone(),
-                                    None => id.sym.clone(),
+                                    Some(ModuleExportName::Ident(ex)) => ex.sym.to_string(),
+                                    Some(ModuleExportName::Str(st)) => {
+                                        st.value.to_string_lossy().to_string()
+                                    }
+                                    None => id.sym.to_string(),
                                 };
                                 self.unresolved_exports.push(UnresolvedExport {
-                                    name: id.sym.clone(),
-                                    span: id.span.ctxt,
+                                    name: id.sym.to_string(),
+                                    span: id.span,
                                     renamed,
                                 });
                             }
@@ -263,12 +269,12 @@ impl<R: FsModuleResolver> Visit for ImportsVisitor<'_, R> {
         }
     }
     fn visit_export_all(&mut self, n: &ExportAll) {
-        if let Some(file_name) = self.resolve_import(&n.src.value) {
+        if let Some(file_name) = self.resolve_import(&n.src.value.to_string_lossy()) {
             self.symbol_exports.extend(file_name);
         }
     }
     fn visit_import_decl(&mut self, node: &ImportDecl) {
-        let module_specifier = node.src.value.to_string();
+        let module_specifier = node.src.value.to_string_lossy();
 
         for x in &node.specifiers {
             match x {
@@ -302,7 +308,7 @@ pub fn parse_and_bind<R: FsModuleResolver>(
     log::debug!("RUST: Parsing file {file_name:?}");
     let cm: SourceMap = SourceMap::default();
     let source_file = cm.new_source_file(
-        FileName::Real(file_name.to_string().into()),
+        FileName::Real(file_name.to_string().into()).into(),
         content.to_owned(),
     );
     let (module, comments) = parse_with_swc(&source_file, cm, file_name)?;

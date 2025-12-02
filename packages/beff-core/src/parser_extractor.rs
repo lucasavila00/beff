@@ -7,8 +7,9 @@ use anyhow::Result;
 use anyhow::anyhow;
 use std::collections::BTreeSet;
 use std::rc::Rc;
+use swc_atoms::Atom;
 use swc_common::{DUMMY_SP, Span};
-use swc_ecma_ast::{CallExpr, Callee, Expr, Ident, MemberExpr, MemberProp};
+use swc_ecma_ast::{CallExpr, Callee, Expr, MemberExpr, MemberProp};
 use swc_ecma_visit::Visit;
 
 #[derive(Debug)]
@@ -110,8 +111,7 @@ impl<R: FileManager> ExtractParserVisitor<'_, R> {
             }
         }
     }
-    fn extract_special_calls(&mut self, id: &Ident, n: &CallExpr) {
-        let Ident { sym, span, .. } = id;
+    fn extract_special_calls(&mut self, sym: &Atom, span: &Span, n: &CallExpr) {
         if sym == "buildParsers" {
             match self.built_decoders {
                 Some(_) => self.push_error(span, DiagnosticInfoMessage::TwoCallsToBuildParsers),
@@ -161,12 +161,12 @@ impl<R: FileManager> Visit for ExtractParserVisitor<'_, R> {
             Callee::Import(_) => {}
             Callee::Expr(ref expr) => {
                 if let Expr::Ident(id) = &**expr {
-                    self.extract_special_calls(id, n)
+                    self.extract_special_calls(&id.sym, &id.span, n)
                 }
 
                 if let Expr::Member(MemberExpr { prop, .. }) = &**expr {
                     match prop {
-                        MemberProp::Ident(id) => self.extract_special_calls(id, n),
+                        MemberProp::Ident(id) => self.extract_special_calls(&id.sym, &id.span, n),
                         MemberProp::PrivateName(_) => {}
                         MemberProp::Computed(_) => {}
                     }
