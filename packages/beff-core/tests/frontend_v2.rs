@@ -2274,6 +2274,8 @@ mod tests {
 
         type X = { "a": string, "z": boolean };
 
+        type X0 = { "z": boolean };
+
 
         type BuiltParsers = {
           X: X,

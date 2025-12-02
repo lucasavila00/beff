@@ -5,6 +5,7 @@ use crate::{BffFileName, ModuleItemAddress, ParsedModule, RuntypeUUID};
 
 #[derive(Debug, Clone)]
 pub enum DiagnosticInfoMessage {
+    TypeArgumentCountMismatch,
     CannotUseValueInTypePosition,
     CannotUseTypeInValuePosition,
     CannotUseInterfaceInValuePosition,
@@ -573,6 +574,9 @@ impl DiagnosticInfoMessage {
             }
             DiagnosticInfoMessage::CannotResolveImport(at) => {
                 format!("Cannot resolve import '{at}'")
+            }
+            DiagnosticInfoMessage::TypeArgumentCountMismatch => {
+                "Type argument count mismatch".to_string()
             }
         }
     }

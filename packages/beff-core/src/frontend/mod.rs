@@ -1016,26 +1016,22 @@ impl<'a, R: FileManager> FrontendCtx<'a, R> {
                 f: file.clone(),
                 s: it.span,
             };
-            match it.type_args {
-                Some(_) => {
-                    return self
-                        .error(&anchor, DiagnosticInfoMessage::TypeArgsInExtendsUnsupported);
-                }
-                None => match it.expr.as_ref() {
-                    Expr::Ident(id) => {
-                        let addr = TypeAddress {
-                            file: file.clone(),
-                            name: id.sym.to_string(),
-                        };
-                        let rt_name = RuntypeName::Address(addr.clone());
-                        let id_ty = self.extract_addressed_type(&rt_name, vec![], &anchor)?;
 
-                        vs.push(id_ty);
-                    }
-                    _ => {
-                        return self.error(&anchor, DiagnosticInfoMessage::ExtendsShouldBeIdent);
-                    }
-                },
+            match it.expr.as_ref() {
+                Expr::Ident(id) => {
+                    let id_ty = self.extract_type_from_ts_entity_name(
+                        &TsEntityName::Ident(id.clone()),
+                        &it.type_args,
+                        file.clone(),
+                        Visibility::Local,
+                        &anchor,
+                    )?;
+
+                    vs.push(id_ty);
+                }
+                _ => {
+                    return self.error(&anchor, DiagnosticInfoMessage::ExtendsShouldBeIdent);
+                }
             }
         }
 
@@ -1051,19 +1047,34 @@ impl<'a, R: FileManager> FrontendCtx<'a, R> {
             f: file.clone(),
             s: typ.span,
         };
-        assert!(
-            typ.type_params.is_none(),
-            "generic interfaces not supported yet"
-        );
-        assert!(type_args.is_empty(), "generic interfaces not supported yet");
 
-        let r = Ok(Runtype::object(
-            typ.body
-                .body
-                .iter()
-                .map(|x| self.extract_ts_type_element(x, file.clone()))
-                .collect::<Res<_>>()?,
-        ));
+        let empty = vec![];
+        let type_params = match typ.type_params.as_ref() {
+            Some(tps) => tps.params.as_ref(),
+            None => &empty,
+        };
+
+        if type_params.len() != type_args.len() {
+            return self.error(&anchor, DiagnosticInfoMessage::TypeArgumentCountMismatch);
+        }
+
+        for (k, v) in type_params.iter().zip(type_args.iter()) {
+            self.type_application_stack
+                .push((k.name.sym.to_string(), v.clone()));
+        }
+
+        let inferred = typ
+            .body
+            .body
+            .iter()
+            .map(|x| self.extract_ts_type_element(x, file.clone()))
+            .collect::<Res<_>>();
+
+        for _ in type_params {
+            self.type_application_stack.pop();
+        }
+
+        let r = Ok(Runtype::object(inferred?));
 
         if typ.extends.is_empty() {
             r
@@ -1229,6 +1240,11 @@ impl<'a, R: FileManager> FrontendCtx<'a, R> {
                             }
                             None => vec![],
                         };
+                        if type_params.len() != type_args.len() {
+                            return self
+                                .error(&anchor, DiagnosticInfoMessage::TypeArgumentCountMismatch);
+                        }
+
                         for (param, arg) in type_params.into_iter().zip(type_args.iter()) {
                             self.type_application_stack.push((param, arg.clone()));
                             count += 1;

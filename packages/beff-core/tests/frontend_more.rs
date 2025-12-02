@@ -19,6 +19,90 @@ mod tests {
         }
         ");
     }
+    #[test]
+    fn interface_generic() {
+        let from = r#"
+
+    interface User<T> { id: T }
+    type UserStringId = User<string>;
+    parse.buildParsers<{ UserStringId: UserStringId }>();
+
+  "#;
+        insta::assert_snapshot!(print_types(from), @r#"
+        type User__string__ = { "id": string };
+
+        type UserStringId = User__string__;
+
+
+        type BuiltParsers = {
+          UserStringId: UserStringId,
+        }
+        "#);
+    }
+
+    #[test]
+    fn interface_extends_generic() {
+        let from = r#"
+
+    interface Identified<T> { id: T }
+
+    interface Dated<T> {
+      createdAt: T;
+      updatedAt: T;
+    }
+
+    interface UserWithData extends Identified<string>, Dated<Date> {
+      data: string;
+    }
+    parse.buildParsers<{ UserWithData: UserWithData }>();
+
+  "#;
+        insta::assert_snapshot!(print_types(from), @r#"
+        type Dated__Date__ = { "createdAt": Date, "updatedAt": Date };
+
+        type Identified__string__ = { "id": string };
+
+        type UserWithData = { "createdAt": Date, "data": string, "id": string, "updatedAt": Date };
+
+
+        type BuiltParsers = {
+          UserWithData: UserWithData,
+        }
+        "#);
+    }
+
+    #[test]
+    fn interface_extends_generic_recursive() {
+        let from = r#"
+
+    interface Identified<T> { id: T, next: Identified<T> | null }
+
+    interface Dated<T> {
+      createdAt: T;
+      updatedAt: T;
+      next: Dated<T> | null;
+    }
+
+    interface UserWithData<D> extends Identified<string>, Dated<Date> {
+      data: D;
+      next: UserWithData<D> | null;
+    }
+    parse.buildParsers<{ UserWithData: UserWithData<{x: boolean}> }>();
+
+  "#;
+        insta::assert_snapshot!(print_types(from), @r#"
+        type Dated__Date__ = { "createdAt": Date, "next": (null | Dated__Date__), "updatedAt": Date };
+
+        type Identified__string__ = { "id": string, "next": (null | Identified__string__) };
+
+        type UserWithData_____x___boolean____ = ({ "data": { "x": boolean }, "next": (null | UserWithData_____x___boolean____) } & Dated__Date__ & Identified__string__);
+
+
+        type BuiltParsers = {
+          UserWithData: UserWithData_____x___boolean____,
+        }
+        "#);
+    }
 
     #[test]
     fn type_ref_multifile() {

@@ -308,6 +308,8 @@ mod tests {
         ), @r#"
         type Admin = { "age": number, "name": string, "role": string };
 
+        type User = { "age": number, "name": string };
+
 
         type BuiltParsers = {
           Admin: Admin,
