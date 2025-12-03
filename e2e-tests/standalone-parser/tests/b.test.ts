@@ -67,7 +67,7 @@ it("disallow extra properties", () => {
     {
       "errors": [
         {
-          "message": "Extra property",
+          "message": "extra property",
           "path": [
             "d",
           ],
@@ -91,7 +91,7 @@ it("safe parse", () => {
     {
       "errors": [
         {
-          "message": "Expected number",
+          "message": "expected number",
           "path": [
             "x",
           ],

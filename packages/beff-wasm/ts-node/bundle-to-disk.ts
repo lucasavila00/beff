@@ -33,7 +33,7 @@ const finalizeParserV2File = (
   if (mod === "cjs") {
     genV2 = genV2
       .replace("import {", "const {")
-      .replace('} from "@beff/client";', '} = require("@beff/client");');
+      .replace('} from "@beff/client/codegen-v2";', '} = require("@beff/client/codegen-v2");');
   }
 
   let zod_import = `import { z } from "zod";`;

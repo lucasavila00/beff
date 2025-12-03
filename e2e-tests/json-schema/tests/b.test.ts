@@ -11,6 +11,7 @@ it("works", () => {
       .schema(),
   ).toMatchInlineSnapshot(`
     {
+      "additionalProperties": false,
       "properties": {
         "a": {
           "type": "string",
@@ -19,6 +20,10 @@ it("works", () => {
           "type": "number",
         },
       },
+      "required": [
+        "a",
+        "b",
+      ],
       "type": "object",
     }
   `);

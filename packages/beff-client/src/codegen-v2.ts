@@ -1,12 +1,12 @@
 import {
-  printErrors,
   type BeffParser,
-  type BuildParserFunction,
   type DecodeError,
-  type JSONSchema7,
   type ParseOptions,
   type RegularDecodeError,
   type UnionDecodeError,
+} from "./types";
+import { z } from "zod";
+import {
   generateHashFromString,
   generateHashFromNumbers,
   unknownHash,
@@ -19,15 +19,16 @@ import {
   objectHash,
   dateHash,
   bigintHash,
-} from "@beff/client";
-
-const stringWithFormatHash = generateHashFromString("StringWithFormat");
-const numberWithFormatHash = generateHashFromString("NumberWithFormat");
-const anyOfConstsHash = generateHashFromString("AnyOfConsts");
-const tupleHash = generateHashFromString("Tuple");
-const allOfHash = generateHashFromString("AllOf");
-const anyOfHash = generateHashFromString("AnyOf");
-const optionalFieldHash = generateHashFromString("OptionalField");
+  stringWithFormatHash,
+  numberWithFormatHash,
+  anyOfConstsHash,
+  tupleHash,
+  allOfHash,
+  anyOfHash,
+  optionalFieldHash,
+} from "./hash";
+import { JSONSchema7 } from "./json-schema";
+import { printErrors } from "./err";
 
 const JSON_PROTO = Object.getPrototypeOf({});
 
@@ -204,7 +205,7 @@ function deepmergeArray(options: any) {
   const clone = options.clone;
   return function (target: any, source: any) {
     let i = 0;
-    const tl = target.length;
+    //const tl = target.length;
     const sl = source.length;
     const il = Math.max(target.length, source.length);
     const result = new Array(il);
@@ -270,13 +271,13 @@ const limitedCommaJoinJson = (arr: unknown[]) => {
 };
 type UserProvidedStringValidatorFn = (input: string) => boolean;
 const stringFormatters: Record<string, UserProvidedStringValidatorFn> = {};
-function registerStringFormatter(name: string, validator: UserProvidedStringValidatorFn) {
+export function registerStringFormatter(name: string, validator: UserProvidedStringValidatorFn) {
   stringFormatters[name] = validator;
 }
 
 type UserProvidedNumberValidatorFn = (input: number) => boolean;
 const numberFormatters: Record<string, UserProvidedNumberValidatorFn> = {};
-function registerNumberFormatter(name: string, validator: UserProvidedNumberValidatorFn) {
+export function registerNumberFormatter(name: string, validator: UserProvidedNumberValidatorFn) {
   numberFormatters[name] = validator;
 }
 
@@ -308,7 +309,7 @@ type HashContext = {
   seen: Record<string, boolean>;
 };
 
-interface Runtype {
+export interface Runtype {
   describe(ctx: DescribeContext): string;
   schema(ctx: SchemaContext): JSONSchema7;
   hash(ctx: HashContext): number;
@@ -318,7 +319,7 @@ interface Runtype {
 }
 
 type TypeOfSupported = "string" | "number" | "boolean";
-class TypeofRuntype implements Runtype {
+export class TypeofRuntype implements Runtype {
   private typeName: TypeOfSupported;
 
   constructor(typeName: TypeOfSupported) {
@@ -340,7 +341,7 @@ class TypeofRuntype implements Runtype {
   reportDecodeError(ctx: ReportContext, input: unknown): DecodeError[] {
     return buildError(ctx, "expected " + this.typeName, input);
   }
-  hash(ctx: HashContext): number {
+  hash(_ctx: HashContext): number {
     switch (this.typeName) {
       case "string":
         return stringHash;
@@ -352,7 +353,7 @@ class TypeofRuntype implements Runtype {
   }
 }
 
-class AnyRuntype implements Runtype {
+export class AnyRuntype implements Runtype {
   describe(_ctx: DescribeContext): string {
     return "any";
   }
@@ -368,14 +369,14 @@ class AnyRuntype implements Runtype {
   reportDecodeError(ctx: ReportContext, input: unknown): DecodeError[] {
     return buildError(ctx, "expected any", input);
   }
-  hash(ctx: HashContext): number {
+  hash(_ctx: HashContext): number {
     return unknownHash;
   }
 }
 
-class NullishRuntype implements Runtype {
+export class NullishRuntype implements Runtype {
   description: string;
-  constructor(description: string) {
+  constructor(description: "undefined" | "null" | "void") {
     this.description = description;
   }
 
@@ -394,12 +395,12 @@ class NullishRuntype implements Runtype {
   reportDecodeError(ctx: ReportContext, input: unknown): DecodeError[] {
     return buildError(ctx, "expected nullish value", input);
   }
-  hash(ctx: HashContext): number {
+  hash(_ctx: HashContext): number {
     return nullishHash;
   }
 }
 
-class NeverRuntype implements Runtype {
+export class NeverRuntype implements Runtype {
   describe(_ctx: DescribeContext): string {
     return "never";
   }
@@ -415,14 +416,14 @@ class NeverRuntype implements Runtype {
   reportDecodeError(ctx: ReportContext, input: unknown): DecodeError[] {
     return buildError(ctx, "expected never", input);
   }
-  hash(ctx: HashContext): number {
+  hash(_ctx: HashContext): number {
     return undefinedHash;
   }
 }
 
 type Const = string | number | boolean | null;
 
-class ConstRuntype implements Runtype {
+export class ConstRuntype implements Runtype {
   private value: Const;
   constructor(value: Const) {
     this.value = value ?? null;
@@ -445,7 +446,7 @@ class ConstRuntype implements Runtype {
   reportDecodeError(ctx: ReportContext, input: unknown): DecodeError[] {
     return buildError(ctx, `expected ${JSON.stringify(this.value)}`, input);
   }
-  hash(ctx: HashContext): number {
+  hash(_ctx: HashContext): number {
     if (this.value == null) {
       return nullishHash;
     }
@@ -460,7 +461,7 @@ class ConstRuntype implements Runtype {
   }
 }
 
-class RegexRuntype implements Runtype {
+export class RegexRuntype implements Runtype {
   private regex: RegExp;
   private description: string;
 
@@ -481,18 +482,18 @@ class RegexRuntype implements Runtype {
     }
     return false;
   }
-  parseAfterValidation(ctx: ParseContext, input: unknown): unknown {
+  parseAfterValidation(_ctx: ParseContext, input: unknown): unknown {
     return input;
   }
   reportDecodeError(ctx: ReportContext, input: unknown): DecodeError[] {
     return buildError(ctx, `expected string matching ${this.description}`, input);
   }
-  hash(ctx: HashContext): number {
+  hash(_ctx: HashContext): number {
     return generateHashFromString(this.description);
   }
 }
 
-class DateRuntype implements Runtype {
+export class DateRuntype implements Runtype {
   describe(_ctx: DescribeContext): string {
     return "Date";
   }
@@ -502,18 +503,18 @@ class DateRuntype implements Runtype {
   validate(_ctx: ValidateContext, input: unknown): boolean {
     return input instanceof Date;
   }
-  parseAfterValidation(ctx: ParseContext, input: unknown): unknown {
+  parseAfterValidation(_ctx: ParseContext, input: unknown): unknown {
     return input;
   }
   reportDecodeError(ctx: ReportContext, input: unknown): DecodeError[] {
     return buildError(ctx, `expected Date`, input);
   }
-  hash(ctx: HashContext): number {
+  hash(_ctx: HashContext): number {
     return dateHash;
   }
 }
 
-class BigIntRuntype implements Runtype {
+export class BigIntRuntype implements Runtype {
   describe(_ctx: DescribeContext): string {
     return "BigInt";
   }
@@ -523,24 +524,24 @@ class BigIntRuntype implements Runtype {
   validate(_ctx: ValidateContext, input: unknown): boolean {
     return typeof input === "bigint";
   }
-  parseAfterValidation(ctx: ParseContext, input: unknown): unknown {
+  parseAfterValidation(_ctx: ParseContext, input: unknown): unknown {
     return input;
   }
   reportDecodeError(ctx: ReportContext, input: unknown): DecodeError[] {
     return buildError(ctx, `expected BigInt`, input);
   }
-  hash(ctx: HashContext): number {
+  hash(_ctx: HashContext): number {
     return bigintHash;
   }
 }
 
-class StringWithFormatRuntype implements Runtype {
+export class StringWithFormatRuntype implements Runtype {
   private formats: string[];
 
   constructor(formats: string[]) {
     this.formats = formats;
   }
-  describe(ctx: DescribeContext): string {
+  describe(_ctx: DescribeContext): string {
     if (this.formats.length === 0) {
       throw new Error("INTERNAL ERROR: No formats provided");
     }
@@ -551,13 +552,13 @@ class StringWithFormatRuntype implements Runtype {
     }
     return acc;
   }
-  schema(ctx: SchemaContext): JSONSchema7 {
+  schema(_ctx: SchemaContext): JSONSchema7 {
     return {
       type: "string",
       format: this.formats.join(" and "),
     };
   }
-  validate(ctx: ValidateContext, input: unknown): boolean {
+  validate(_ctx: ValidateContext, input: unknown): boolean {
     if (typeof input !== "string") {
       return false;
     }
@@ -576,13 +577,13 @@ class StringWithFormatRuntype implements Runtype {
 
     return true;
   }
-  parseAfterValidation(ctx: ParseContext, input: unknown): unknown {
+  parseAfterValidation(_ctx: ParseContext, input: unknown): unknown {
     return input;
   }
   reportDecodeError(ctx: ReportContext, input: unknown): DecodeError[] {
     return buildError(ctx, `expected string with format "${this.formats.join(" and ")}"`, input);
   }
-  hash(ctx: HashContext): number {
+  hash(_ctx: HashContext): number {
     let acc: number[] = [stringWithFormatHash];
     for (const f of [...this.formats].sort()) {
       acc.push(generateHashFromString(f));
@@ -591,12 +592,12 @@ class StringWithFormatRuntype implements Runtype {
   }
 }
 
-class NumberWithFormatRuntype implements Runtype {
+export class NumberWithFormatRuntype implements Runtype {
   private formats: string[];
   constructor(formats: string[]) {
     this.formats = formats;
   }
-  describe(ctx: DescribeContext): string {
+  describe(_ctx: DescribeContext): string {
     if (this.formats.length === 0) {
       throw new Error("INTERNAL ERROR: No formats provided");
     }
@@ -607,13 +608,13 @@ class NumberWithFormatRuntype implements Runtype {
     }
     return acc;
   }
-  schema(ctx: SchemaContext): JSONSchema7 {
+  schema(_ctx: SchemaContext): JSONSchema7 {
     return {
       type: "number",
       format: this.formats.join(" and "),
     };
   }
-  validate(ctx: ValidateContext, input: unknown): boolean {
+  validate(_ctx: ValidateContext, input: unknown): boolean {
     if (typeof input !== "number") {
       return false;
     }
@@ -632,13 +633,13 @@ class NumberWithFormatRuntype implements Runtype {
 
     return true;
   }
-  parseAfterValidation(ctx: ParseContext, input: unknown): unknown {
+  parseAfterValidation(_ctx: ParseContext, input: unknown): unknown {
     return input;
   }
   reportDecodeError(ctx: ReportContext, input: unknown): DecodeError[] {
     return buildError(ctx, `expected number with format "${this.formats.join(" and ")}"`, input);
   }
-  hash(ctx: HashContext): number {
+  hash(_ctx: HashContext): number {
     let acc: number[] = [numberWithFormatHash];
     for (const f of [...this.formats].sort()) {
       acc.push(generateHashFromString(f));
@@ -647,22 +648,22 @@ class NumberWithFormatRuntype implements Runtype {
   }
 }
 
-class AnyOfConstsRuntype implements Runtype {
+export class AnyOfConstsRuntype implements Runtype {
   private values: Const[];
   constructor(values: Const[]) {
     this.values = values;
   }
-  describe(ctx: DescribeContext): string {
+  describe(_ctx: DescribeContext): string {
     const parts = this.values.map((it) => JSON.stringify(it));
     const inner = parts.join(" | ");
     return `(${inner})`;
   }
-  schema(ctx: SchemaContext): JSONSchema7 {
+  schema(_ctx: SchemaContext): JSONSchema7 {
     return {
       enum: this.values,
     };
   }
-  validate(ctx: ValidateContext, input: unknown): boolean {
+  validate(_ctx: ValidateContext, input: unknown): boolean {
     if (input == null) {
       if (this.values.includes(null)) {
         return true;
@@ -670,13 +671,13 @@ class AnyOfConstsRuntype implements Runtype {
     }
     return this.values.includes(input as any);
   }
-  parseAfterValidation(ctx: ParseContext, input: unknown): unknown {
+  parseAfterValidation(_ctx: ParseContext, input: unknown): unknown {
     return input;
   }
   reportDecodeError(ctx: ReportContext, input: unknown): DecodeError[] {
     return buildError(ctx, `expected one of ${limitedCommaJoinJson(this.values)}`, input);
   }
-  hash(ctx: HashContext): number {
+  hash(_ctx: HashContext): number {
     let acc: number[] = [anyOfConstsHash];
     for (const v of [...this.values].sort()) {
       if (v == null) {
@@ -699,7 +700,7 @@ class AnyOfConstsRuntype implements Runtype {
   }
 }
 
-class TupleRuntype implements Runtype {
+export class TupleRuntype implements Runtype {
   private prefix: Runtype[];
   private rest: Runtype | null;
   constructor(prefix: Runtype[], rest: Runtype | null) {
@@ -810,7 +811,7 @@ class TupleRuntype implements Runtype {
   }
 }
 
-class AllOfRuntype implements Runtype {
+export class AllOfRuntype implements Runtype {
   private schemas: Runtype[];
   constructor(schemas: Runtype[]) {
     this.schemas = schemas;
@@ -863,7 +864,7 @@ class AllOfRuntype implements Runtype {
   }
 }
 
-class AnyOfRuntype implements Runtype {
+export class AnyOfRuntype implements Runtype {
   private schemas: Runtype[];
   constructor(schemas: Runtype[]) {
     this.schemas = schemas;
@@ -913,7 +914,7 @@ class AnyOfRuntype implements Runtype {
   }
 }
 
-class ArrayRuntype implements Runtype {
+export class ArrayRuntype implements Runtype {
   private itemParser: Runtype;
   constructor(itemParser: Runtype) {
     this.itemParser = itemParser;
@@ -970,7 +971,7 @@ class ArrayRuntype implements Runtype {
   }
 }
 
-class AnyOfDiscriminatedRuntype implements Runtype {
+export class AnyOfDiscriminatedRuntype implements Runtype {
   private schemas: Runtype[];
   private discriminator: string;
   private mapping: Record<string, Runtype>;
@@ -1048,7 +1049,7 @@ class AnyOfDiscriminatedRuntype implements Runtype {
   }
 }
 
-class OptionalField implements Runtype {
+export class OptionalFieldRuntype implements Runtype {
   private t: Runtype;
 
   constructor(t: Runtype) {
@@ -1087,7 +1088,7 @@ class OptionalField implements Runtype {
   }
 }
 
-class ObjectRuntype implements Runtype {
+export class ObjectRuntype implements Runtype {
   private properties: Record<string, Runtype>;
   private indexedPropertiesParser: Array<{
     key: Runtype;
@@ -1108,7 +1109,7 @@ class ObjectRuntype implements Runtype {
     const props = sortedKeys
       .map((k) => {
         const it = this.properties[k];
-        const optionalMark = it instanceof OptionalField ? "?" : "";
+        const optionalMark = it instanceof OptionalFieldRuntype ? "?" : "";
         return `${k}${optionalMark}: ${it.describe(ctx)}`;
       })
       .join(", ");
@@ -1274,12 +1275,14 @@ class ObjectRuntype implements Runtype {
         const inputKeys = Object.keys(input);
         const extraKeys = inputKeys.filter((k) => !configKeys.includes(k));
         if (extraKeys.length > 0) {
-          return extraKeys.flatMap((k) => {
-            pushPath(ctx, k);
-            const err = buildError(ctx, `extra property`, input[k]);
-            popPath(ctx);
-            return err;
-          });
+          return extraKeys
+            .map((k) => {
+              pushPath(ctx, k);
+              const err = buildError(ctx, `extra property`, input[k]);
+              popPath(ctx);
+              return err;
+            })
+            .reduce((a, b) => a.concat(b), []);
         }
       }
     }
@@ -1303,199 +1306,105 @@ class ObjectRuntype implements Runtype {
   }
 }
 
-declare var namedRuntypes: Record<string, Runtype>;
-class RefRuntype implements Runtype {
-  private refName: string;
-  constructor(refName: string) {
-    this.refName = refName;
-  }
-  describe(ctx: DescribeContext): string {
-    const name = this.refName;
-    const to = namedRuntypes[this.refName];
-    if (ctx.measure) {
-      ctx.deps_counter[name] = (ctx.deps_counter[name] || 0) + 1;
-      if (ctx.deps[name]) {
-        return name;
-      }
-      ctx.deps[name] = true;
-      ctx.deps[name] = to.describe(ctx);
-      return name;
-    } else {
-      if (ctx.deps_counter[name] > 1) {
-        if (!ctx.deps[name]) {
-          ctx.deps[name] = true;
-          ctx.deps[name] = to.describe(ctx);
-        }
-        return name;
-      } else {
-        return to.describe(ctx);
-      }
+export const buildParserFromRuntype = (runtype: Runtype, name: string, isB: boolean) => {
+  const validate: BeffParser<any>["validate"] = ((input: any, options: ParseOptions) => {
+    const disallowExtraProperties = options?.disallowExtraProperties ?? false;
+    const ctx = { disallowExtraProperties };
+    const ok = runtype.validate(ctx, input);
+    if (typeof ok !== "boolean") {
+      throw new Error("INTERNAL ERROR: Expected boolean");
     }
-  }
-  schema(ctx: SchemaContext): JSONSchema7 {
-    const name = this.refName;
-    const to = namedRuntypes[this.refName];
-    if (ctx.seen[name]) {
-      return {};
+    return ok;
+  }) as any;
+
+  const schema = () => {
+    const ctx = {
+      path: [],
+      seen: {},
+    };
+    return runtype.schema(ctx);
+  };
+  const hash = () => {
+    const ctx = {
+      seen: {},
+    };
+    return runtype.hash(ctx);
+  };
+
+  const describe = () => {
+    const ctx: DescribeContext = {
+      deps: {},
+      deps_counter: {},
+      measure: true,
+    };
+    let out = runtype.describe(ctx);
+    ctx["deps"] = {};
+    ctx["measure"] = false;
+    out = runtype.describe(ctx);
+    let sortedDepsKeys = Object.keys(ctx.deps).sort();
+    // if sorted deps includes k, make it last
+    // if (sortedDepsKeys.includes(k)) {
+    //   sortedDepsKeys = sortedDepsKeys.filter(it => it !== k).concat([k]);
+    // }
+    const depsPart = sortedDepsKeys
+      .map((key) => {
+        return `type ${key} = ${ctx.deps[key]};`;
+      })
+      .join("\n\n");
+
+    if (isB) {
+      return [depsPart, out].filter((it) => it != null && it.length > 0).join("\n\n");
     }
-    ctx.seen[name] = true;
-    var tmp = to.schema(ctx);
-    delete ctx.seen[name];
-    return tmp;
-  }
-  hash(ctx: HashContext): number {
-    const name = this.refName;
-    const to = namedRuntypes[this.refName];
-    if (ctx.seen[name]) {
-      return generateHashFromString(name);
+    // if (k in ctx.deps) {
+    //   return depsPart;
+    // }
+    const outPart = `type Codec${name} = ${out};`;
+    return [depsPart, outPart].filter((it) => it != null && it.length > 0).join("\n\n");
+  };
+
+  const safeParse: BeffParser<any>["safeParse"] = (input, options) => {
+    const disallowExtraProperties = options?.disallowExtraProperties ?? false;
+    const ok = validate(input, options);
+    if (ok) {
+      let ctx = { disallowExtraProperties };
+      const parsed = runtype.parseAfterValidation(ctx, input);
+      return { success: true, data: parsed };
     }
-    ctx.seen[name] = true;
-    var tmp = to.hash(ctx);
-    delete ctx.seen[name];
-    return tmp;
-  }
-  validate(ctx: ValidateContext, input: unknown): boolean {
-    const to = namedRuntypes[this.refName];
-    return to.validate(ctx, input);
-  }
-  parseAfterValidation(ctx: ParseContext, input: any): unknown {
-    const to = namedRuntypes[this.refName];
-    return to.parseAfterValidation(ctx, input);
-  }
-  reportDecodeError(ctx: ReportContext, input: unknown): DecodeError[] {
-    const to = namedRuntypes[this.refName];
-    return to.reportDecodeError(ctx, input);
-  }
-}
-
-declare var RequiredStringFormats: string[];
-declare var RequiredNumberFormats: string[];
-declare var buildParsersInput: Record<string, Runtype>;
-
-const buildParsers: BuildParserFunction = (args) => {
-  const stringFormats = args?.stringFormats ?? {};
-  for (const k of RequiredStringFormats) {
-    if (stringFormats[k] == null) {
-      throw new Error(`Missing custom format ${k}`);
+    let ctx = { path: [], disallowExtraProperties };
+    return {
+      success: false,
+      errors: runtype.reportDecodeError(ctx, input).slice(0, 10),
+    };
+  };
+  const parse: BeffParser<any>["parse"] = (input, options) => {
+    const safe = safeParse(input, options);
+    if (safe.success) {
+      return safe.data;
     }
-  }
-
-  Object.keys(stringFormats).forEach((k) => {
-    const v = stringFormats[k];
-    registerStringFormatter(k, v);
-  });
-
-  const numberFormats = args?.numberFormats ?? {};
-  for (const k of RequiredNumberFormats) {
-    if (numberFormats[k] == null) {
-      throw new Error(`Missing custom format ${k}`);
-    }
-  }
-
-  Object.keys(numberFormats).forEach((k) => {
-    const v = numberFormats[k];
-    registerNumberFormatter(k, v);
-  });
-
-  let acc: ReturnType<BuildParserFunction> = {};
-
-  for (const k of Object.keys(buildParsersInput)) {
-    const impl = buildParsersInput[k];
-    const validate: BeffParser<any>["validate"] = ((input: any, options: ParseOptions) => {
-      const disallowExtraProperties = options?.disallowExtraProperties ?? false;
-      const ctx = { disallowExtraProperties };
-      const ok = impl.validate(ctx, input);
-      if (typeof ok !== "boolean") {
-        throw new Error("INTERNAL ERROR: Expected boolean");
-      }
-      return ok;
-    }) as any;
-
-    const schema = () => {
-      const ctx = {
-        path: [],
-        seen: {},
-      };
-      return impl.schema(ctx);
-    };
-    const hash = () => {
-      const ctx = {
-        seen: {},
-      };
-      return impl.hash(ctx);
-    };
-
-    const describe = () => {
-      const ctx: DescribeContext = {
-        deps: {},
-        deps_counter: {},
-        measure: true,
-      };
-      let out = impl.describe(ctx);
-      ctx["deps"] = {};
-      ctx["measure"] = false;
-      out = impl.describe(ctx);
-      let sortedDepsKeys = Object.keys(ctx.deps).sort();
-      // if sorted deps includes k, make it last
-      // if (sortedDepsKeys.includes(k)) {
-      //   sortedDepsKeys = sortedDepsKeys.filter(it => it !== k).concat([k]);
-      // }
-      const depsPart = sortedDepsKeys
-        .map((key) => {
-          return `type ${key} = ${ctx.deps[key]};`;
-        })
-        .join("\n\n");
-      // if (k in ctx.deps) {
-      //   return depsPart;
-      // }
-      const outPart = `type Codec${k} = ${out};`;
-      return [depsPart, outPart].filter((it) => it != null && it.length > 0).join("\n\n");
-    };
-
-    const safeParse: BeffParser<any>["safeParse"] = (input, options) => {
-      const disallowExtraProperties = options?.disallowExtraProperties ?? false;
-      const ok = validate(input, options);
-      if (ok) {
-        let ctx = { disallowExtraProperties };
-        const parsed = impl.parseAfterValidation(ctx, input);
-        return { success: true, data: parsed };
-      }
-      let ctx = { path: [], disallowExtraProperties };
-      return {
-        success: false,
-        errors: impl.reportDecodeError(ctx, input).slice(0, 10),
-      };
-    };
-    const parse: BeffParser<any>["parse"] = (input, options) => {
-      const safe = safeParse(input, options);
-      if (safe.success) {
-        return safe.data;
-      }
-      const explained = printErrors(safe.errors, []);
-      throw new Error(`Failed to parse ${k} - ${explained}`);
-    };
-    const zod = () => {
+    const explained = printErrors(safe.errors, []);
+    throw new Error(`Failed to parse ${name} - ${explained}`);
+  };
+  const zod = () => {
+    //@ts-ignore
+    return z.custom(
+      (data: any) => validate(data),
       //@ts-ignore
-      return z.custom(
-        (data: any) => validate(data),
-        (val: any) => {
-          const errors = impl.reportDecodeError({ path: [], disallowExtraProperties: false }, val);
-          return printErrors(errors, []);
-        },
-      );
-    };
-    const it: BeffParser<any> = {
-      validate,
-      schema,
-      describe,
-      safeParse,
-      parse,
-      zod,
-      name: k,
-      hash,
-    };
-    (acc as any)[k] = it;
-  }
-
-  return acc as any;
+      (val: any) => {
+        const errors = runtype.reportDecodeError({ path: [], disallowExtraProperties: false }, val);
+        return printErrors(errors, []);
+      },
+    );
+  };
+  const it: BeffParser<any> = {
+    validate,
+    schema,
+    describe,
+    safeParse,
+    parse,
+    zod,
+    name: name,
+    hash,
+    _runtype: runtype,
+  };
+  return it;
 };

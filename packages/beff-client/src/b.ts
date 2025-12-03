@@ -1,339 +1,51 @@
 import {
-  arrayHash,
-  booleanHash,
-  generateHashFromNumbers,
-  generateHashFromString,
-  nullishHash,
-  numberHash,
-  objectHash,
-  stringHash,
-  unknownHash,
-} from "./hash";
-import { JSONSchema7 } from "./json-schema";
-import { ParseOptions, DecodeError, BeffParser } from "./types";
-import { z } from "zod";
-
-const buildParserFromSafeParser = <T>(
-  name: string,
-  validate: (input: any, options?: ParseOptions) => input is T,
-  safeParse: (
-    input: any,
-    options?: ParseOptions,
-  ) => { success: true; data: T } | { success: false; errors: DecodeError[] },
-  jsonSchema: () => JSONSchema7,
-  describe: () => string,
-  hash: () => number,
-): BeffParser<T> => {
-  const parse = (input: any, options?: ParseOptions) => {
-    const safe = safeParse(input, options);
-    if (safe.success) {
-      return safe.data;
-    }
-    const error = new Error(`Failed to parse`);
-    //@ts-ignore
-    error.errors = safe.errors;
-    throw error;
-  };
-  const zod = () => {
-    //@ts-ignore
-    return z.custom(
-      (data: any) => safeParse(data).success,
-      //@ts-ignore
-      (val: any) => {
-        const errors = (safeParse(val) as any).errors;
-        //@ts-ignore
-        return printErrors(errors, []);
-      },
-    );
-  };
-
-  return {
-    safeParse,
-    parse,
-    //@ts-ignore
-    zod,
-    name,
-    validate,
-    schema: jsonSchema,
-    describe,
-    hash,
-  };
-};
+  AnyRuntype,
+  ArrayRuntype,
+  buildParserFromRuntype,
+  NullishRuntype,
+  ObjectRuntype,
+  Runtype,
+  TypeofRuntype,
+} from "./codegen-v2";
+import { BeffParser } from "./types";
 
 const Object_ = <T extends Record<string, BeffParser<any>>>(
   fields: T,
 ): BeffParser<{
   [K in keyof T]: T[K] extends BeffParser<infer U> ? U : never;
-}> =>
-  buildParserFromSafeParser(
-    "b.Object",
-    (input: any, options?: ParseOptions): input is any => {
-      const disallowExtraProperties = options?.disallowExtraProperties ?? false;
+}> => {
+  const props: Record<string, Runtype> = {};
+  for (const key of Object.keys(fields)) {
+    props[key] = fields[key]._runtype;
+  }
+  return buildParserFromRuntype(new ObjectRuntype(props, []), "b.Object", true);
+};
+const stringParser = buildParserFromRuntype(new TypeofRuntype("string"), "String", true);
+const String_ = (): BeffParser<string> => stringParser;
 
-      if (typeof input !== "object" || input == null || Array.isArray(input)) {
-        return false;
-      }
+const numberParser = buildParserFromRuntype(new TypeofRuntype("number"), "Number", true);
+const Number_ = (): BeffParser<number> => numberParser;
 
-      for (const key in fields) {
-        if (!fields[key].validate(input[key])) {
-          return false;
-        }
-      }
+const booleanParser = buildParserFromRuntype(new TypeofRuntype("boolean"), "Boolean", true);
+const Boolean_ = (): BeffParser<boolean> => booleanParser;
 
-      if (disallowExtraProperties) {
-        for (const key in input) {
-          if (!fields[key]) {
-            return false;
-          }
-        }
-      }
+const undefinedParser = buildParserFromRuntype(new NullishRuntype("undefined"), "Undefined", true);
+const Undefined_ = (): BeffParser<undefined> => undefinedParser;
 
-      return true;
-    },
-    (input: any, options?: ParseOptions) => {
-      if (typeof input !== "object" || input == null || Array.isArray(input)) {
-        return {
-          success: false,
-          errors: [{ message: "Expected object", path: [], received: input }],
-        };
-      }
+const voidParser = buildParserFromRuntype(new NullishRuntype("void"), "Void", true);
+const Void_ = (): BeffParser<void> => voidParser;
 
-      const disallowExtraProperties = options?.disallowExtraProperties ?? false;
+const nullParser = buildParserFromRuntype(new NullishRuntype("null"), "Null", true);
+const Null_ = (): BeffParser<undefined> => nullParser;
 
-      const errors: DecodeError[] = [];
-      const result = {} as any;
+const anyParser = buildParserFromRuntype(new AnyRuntype(), "Any", true);
+const Any_ = (): BeffParser<any> => anyParser;
 
-      for (const key in fields) {
-        const field = fields[key];
-        const res = field.safeParse(input[key]);
-        if (res.success) {
-          result[key] = res.data;
-        } else {
-          errors.push(...res.errors.map((it) => ({ ...it, path: [key, ...it.path] })));
-        }
-      }
-
-      if (disallowExtraProperties) {
-        for (const key in input) {
-          if (!fields[key]) {
-            errors.push({
-              message: "Extra property",
-              path: [key],
-              received: input[key],
-            });
-          }
-        }
-      }
-      if (errors.length > 0) {
-        return { success: false, errors };
-      }
-      return { success: true, data: result };
-    },
-    () => ({
-      type: "object",
-      properties:
-        //@ts-ignore
-        Object.fromEntries(
-          //@ts-ignore
-          Object.entries(fields).map(([key, parser]) => [key, parser.schema()]),
-        ),
-    }),
-    () => {
-      const sortedKeys = Object.keys(fields).sort();
-      const props = sortedKeys
-        .map((key) => {
-          const parser = fields[key];
-          return `"${key}": ${parser.describe()}`;
-        })
-        .join(", ");
-      return `{ ${props} }`;
-    },
-    () => {
-      let acc: number[] = [objectHash];
-      for (const key of Object.keys(fields).sort()) {
-        acc.push(generateHashFromString(key));
-        const parser = fields[key];
-        acc.push(parser.hash());
-      }
-      return generateHashFromNumbers(acc);
-    },
-  );
-
-const String_ = (): BeffParser<string> =>
-  buildParserFromSafeParser(
-    "String",
-    //@ts-ignore
-    (input) => typeof input === "string",
-    (input: any) => {
-      if (typeof input === "string") {
-        return { success: true, data: input };
-      }
-      return { success: false, errors: [{ message: "Expected string", path: [], received: input }] };
-    },
-    () => ({
-      type: "string",
-    }),
-    () => `string`,
-    () => stringHash,
-  );
-
-const Number_ = (): BeffParser<number> =>
-  buildParserFromSafeParser(
-    "Number",
-    //@ts-ignore
-    (input) => typeof input === "number",
-    (input: any) => {
-      if (typeof input === "number") {
-        return { success: true, data: input };
-      }
-      return { success: false, errors: [{ message: "Expected number", path: [], received: input }] };
-    },
-    () => ({
-      type: "number",
-    }),
-    () => `number`,
-    () => numberHash,
-  );
-
-const Boolean_ = (): BeffParser<boolean> =>
-  buildParserFromSafeParser(
-    "Boolean",
-    //@ts-ignore
-    (input) => typeof input === "boolean",
-    (input: any) => {
-      if (typeof input === "boolean") {
-        return { success: true, data: input };
-      }
-      return { success: false, errors: [{ message: "Expected boolean", path: [], received: input }] };
-    },
-    () => ({
-      type: "boolean",
-    }),
-    () => `boolean`,
-    () => booleanHash,
-  );
-
-const Undefined_ = (): BeffParser<undefined> =>
-  buildParserFromSafeParser(
-    "Undefined",
-    (input): input is undefined => input == null,
-    (input: any) => {
-      if (input == undefined) {
-        return { success: true, data: input };
-      }
-      return { success: false, errors: [{ message: "Expected nullish value", path: [], received: input }] };
-    },
-    () => ({
-      type: "null",
-    }),
-    () => `undefined`,
-    () => nullishHash,
-  );
-
-const Void_ = (): BeffParser<void> =>
-  buildParserFromSafeParser(
-    "Void",
-    //@ts-ignore
-    (input): input is undefined => input == null,
-    (input: any) => {
-      if (input == undefined) {
-        return { success: true, data: input };
-      }
-      return { success: false, errors: [{ message: "Expected nullish value", path: [], received: input }] };
-    },
-    () => ({
-      type: "null",
-    }),
-    () => `void`,
-    () => nullishHash,
-  );
-
-const Null_ = (): BeffParser<undefined> =>
-  buildParserFromSafeParser(
-    "Null",
-    (input): input is undefined => input == null,
-    (input: any) => {
-      if (input == null) {
-        return { success: true, data: input };
-      }
-      return { success: false, errors: [{ message: "Expected nullish value", path: [], received: input }] };
-    },
-    () => ({
-      type: "null",
-    }),
-    () => `null`,
-    () => nullishHash,
-  );
-
-const Any_ = (): BeffParser<any> =>
-  buildParserFromSafeParser(
-    "Any",
-    //@ts-ignore
-    (_input): _input is any => true,
-    (input: any) => {
-      return { success: true, data: input };
-    },
-    () => ({}),
-    () => `any`,
-    () => unknownHash,
-  );
-
-const Unknown_ = (): BeffParser<unknown> =>
-  buildParserFromSafeParser(
-    "Unknown",
-    (_input): _input is unknown => true,
-    (input: any) => {
-      return { success: true, data: input };
-    },
-    () => ({}),
-    () => `unknown`,
-    () => unknownHash,
-  );
+const unknwonParser = buildParserFromRuntype(new AnyRuntype(), "Unknown", true);
+const Unknown_ = (): BeffParser<unknown> => unknwonParser;
 
 const Array_ = <T>(parser: BeffParser<T>): BeffParser<T[]> =>
-  buildParserFromSafeParser(
-    "b.Array",
-    //@ts-ignore
-    (input: any): input is any => {
-      if (!Array.isArray(input)) {
-        return false;
-      }
-      for (let i = 0; i < input.length; i++) {
-        if (!parser.validate(input[i])) {
-          return false;
-        }
-      }
-      return true;
-    },
-    (input: any) => {
-      if (!Array.isArray(input)) {
-        return {
-          success: false,
-          errors: [{ message: "Expected array", path: [], received: input }],
-        };
-      }
-      const errors: DecodeError[] = [];
-      const results: T[] = [];
-      for (let i = 0; i < input.length; i++) {
-        const res = parser.safeParse(input[i]);
-        if (res.success) {
-          results.push(res.data);
-        } else {
-          errors.push(...res.errors.map((it) => ({ ...it, path: [i.toString(), ...it.path] })));
-        }
-      }
-      if (errors.length > 0) {
-        return { success: false, errors };
-      }
-      return { success: true, data: results };
-    },
-    () => ({
-      type: "array",
-      items: parser.schema(),
-    }),
-    () => `Array<${parser.describe()}>`,
-    () => generateHashFromNumbers([arrayHash, parser.hash()]),
-  );
+  buildParserFromRuntype(new ArrayRuntype(parser._runtype), "b.Array", true);
 
 const ReadOnlyArray_ = <T>(parser: BeffParser<T>): BeffParser<readonly T[]> =>
   Array_(parser) as BeffParser<readonly T[]>;

@@ -487,7 +487,7 @@ fn hoist_identifier(name: usize) -> Expr {
 }
 
 fn optionality_wrapper(inner: Expr) -> Expr {
-    new_runtype_class("OptionalField", vec![inner])
+    new_runtype_class("OptionalFieldRuntype", vec![inner])
 }
 
 fn print_runtype(schema: &Runtype, named_schemas: &[NamedSchema], ctx: &mut PrintContext) -> Expr {
