@@ -1,6 +1,5 @@
 //@ts-nocheck
 
-import { z } from "zod";
 "use strict";
 
 import {
@@ -28,7 +27,7 @@ import {
 } from "@beff/client/codegen-v2";
 
 
-export class RefRuntype  {
+class RefRuntype  {
   refName
   constructor(refName) {
     this.refName = refName;

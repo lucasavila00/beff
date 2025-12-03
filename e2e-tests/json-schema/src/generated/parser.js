@@ -4,7 +4,6 @@ Object.defineProperty(exports, "__esModule", {
   value: true
 });
     
-const { z } = require("zod");
 "use strict";
 
 const {
@@ -32,7 +31,7 @@ const {
 } = require("@beff/client/codegen-v2");
 
 
-export class RefRuntype  {
+class RefRuntype  {
   refName
   constructor(refName) {
     this.refName = refName;
