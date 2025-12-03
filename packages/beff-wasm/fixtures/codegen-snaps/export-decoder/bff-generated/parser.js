@@ -131,8 +131,8 @@ const direct_hoist_5 = new ConstRuntype(123.456);
 const direct_hoist_6 = new ConstRuntype(123);
 const direct_hoist_7 = new RefRuntype("UnionNested");
 const direct_hoist_8 = new AnyOfConstsRuntype([
-    2,
-    1
+    1,
+    2
 ]);
 const direct_hoist_9 = new AnyOfConstsRuntype([
     2,
@@ -143,8 +143,8 @@ const direct_hoist_10 = new AnyOfConstsRuntype([
     5
 ]);
 const direct_hoist_11 = new AnyOfConstsRuntype([
-    6,
-    5
+    5,
+    6
 ]);
 const direct_hoist_12 = new TypeofRuntype("string");
 const direct_hoist_13 = new ObjectRuntype({
@@ -157,12 +157,12 @@ const direct_hoist_15 = new StringWithFormatRuntype([
     "StartsWithA"
 ]);
 const direct_hoist_16 = new AnyOfConstsRuntype([
-    2,
-    6,
     1,
-    4,
+    2,
     3,
-    5
+    4,
+    5,
+    6
 ]);
 const direct_hoist_17 = new TypeofRuntype("number");
 const direct_hoist_18 = new ObjectRuntype({
