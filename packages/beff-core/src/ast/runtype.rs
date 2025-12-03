@@ -14,11 +14,6 @@ use std::hash::{DefaultHasher, Hash, Hasher};
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct RuntypeHash(pub u64);
 
-impl RuntypeHash {
-    pub fn to_string(&self) -> String {
-        format!("{:x}", self.0)
-    }
-}
 pub trait ToRuntypeHash {
     fn to_runtype_hash(&self) -> RuntypeHash;
 }
