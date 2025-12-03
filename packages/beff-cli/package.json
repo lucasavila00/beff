@@ -1,6 +1,6 @@
 {
   "name": "@beff/cli",
-  "version": "0.0.115",
+  "version": "0.0.116",
   "description": "",
   "bin": {
     "beff": "./bin/index.js"

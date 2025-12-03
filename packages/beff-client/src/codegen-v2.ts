@@ -29,6 +29,7 @@ import {
 } from "./hash";
 import { JSONSchema7 } from "./json-schema";
 import { printErrors } from "./err";
+export { generateHashFromString, generateHashFromNumbers } from "./hash";
 
 const JSON_PROTO = Object.getPrototypeOf({});
 

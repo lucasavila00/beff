@@ -24,6 +24,7 @@ import {
   registerStringFormatter,
   registerNumberFormatter,
   buildParserFromRuntype,
+  generateHashFromString,
 } from "@beff/client/codegen-v2";
 
 
