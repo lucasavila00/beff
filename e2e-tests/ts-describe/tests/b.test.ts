@@ -14,9 +14,7 @@ it("works", () => {
   expect(b.Number().describe()).toMatchInlineSnapshot('"number"');
   expect(b.Boolean().describe()).toMatchInlineSnapshot('"boolean"');
   expect(b.Array(b.String()).describe()).toMatchInlineSnapshot('"Array<string>"');
-  expect(b.ReadOnlyArray(b.String()).describe()).toMatchInlineSnapshot(
-    '"Array<string>"',
-  );
+  expect(b.ReadOnlyArray(b.String()).describe()).toMatchInlineSnapshot('"Array<string>"');
   expect(b.Undefined().describe()).toMatchInlineSnapshot('"undefined"');
   expect(b.Null().describe()).toMatchInlineSnapshot('"null"');
   expect(b.Any().describe()).toMatchInlineSnapshot('"any"');
