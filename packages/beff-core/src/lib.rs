@@ -371,7 +371,7 @@ impl RuntypeName {
     }
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord)]
+#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct RuntypeUUID {
     pub ty: RuntypeName,
     pub type_arguments: Vec<Runtype>,

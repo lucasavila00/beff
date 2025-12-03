@@ -826,7 +826,7 @@ it("to zod works", () => {
       "error": [ZodError: [
       {
         "code": "custom",
-        "message": "#0 (accessLevel) expected one of \\"ADMIN\\", \\"USER\\", received: undefined | #1 (avatarSize) expected string matching \`\${number}x\${number}\`, received: undefined | #2 (extra) expected object, received: undefined | #3 (friends[0].accessLevel) expected one of \\"ADMIN\\", \\"USER\\", received: undefined | #4 (friends[0].avatarSize) expected string matching \`\${number}x\${number}\`, received: undefined | #5 (friends[0].extra) expected object, received: undefined | #6 (friends[0].friends) expected array, received: undefined",
+        "message": "#0 (accessLevel) expected one of \\"USER\\", \\"ADMIN\\", received: undefined | #1 (avatarSize) expected string matching \`\${number}x\${number}\`, received: undefined | #2 (extra) expected object, received: undefined | #3 (friends[0].accessLevel) expected one of \\"USER\\", \\"ADMIN\\", received: undefined | #4 (friends[0].avatarSize) expected string matching \`\${number}x\${number}\`, received: undefined | #5 (friends[0].extra) expected object, received: undefined | #6 (friends[0].friends) expected array, received: undefined",
         "fatal": true,
         "path": []
       }
@@ -885,7 +885,7 @@ it("works on recursive type", () => {
     {
       "errors": [
         {
-          "message": "expected one of \\"ADMIN\\", \\"USER\\"",
+          "message": "expected one of \\"USER\\", \\"ADMIN\\"",
           "path": [
             "accessLevel",
           ],
@@ -906,7 +906,7 @@ it("works on recursive type", () => {
           "received": undefined,
         },
         {
-          "message": "expected one of \\"ADMIN\\", \\"USER\\"",
+          "message": "expected one of \\"USER\\", \\"ADMIN\\"",
           "path": [
             "friends",
             "[0]",

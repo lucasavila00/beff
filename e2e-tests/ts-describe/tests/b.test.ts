@@ -15,9 +15,9 @@ it("works", () => {
   expect(b.Boolean().describe()).toMatchInlineSnapshot('"boolean"');
   expect(b.Array(b.String()).describe()).toMatchInlineSnapshot('"Array<string>"');
   expect(b.ReadOnlyArray(b.String()).describe()).toMatchInlineSnapshot('"Array<string>"');
-  expect(b.Undefined().describe()).toMatchInlineSnapshot('"null"');
+  expect(b.Undefined().describe()).toMatchInlineSnapshot('"undefined"');
   expect(b.Null().describe()).toMatchInlineSnapshot('"null"');
   expect(b.Any().describe()).toMatchInlineSnapshot('"any"');
   expect(b.Unknown().describe()).toMatchInlineSnapshot('"unknown"');
-  expect(b.Void().describe()).toMatchInlineSnapshot('"null"');
+  expect(b.Void().describe()).toMatchInlineSnapshot('"void"');
 });

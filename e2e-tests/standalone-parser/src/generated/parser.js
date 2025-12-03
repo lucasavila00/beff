@@ -1,11 +1,29 @@
 //@ts-nocheck
 
 import { z } from "zod";
-import {
-  printErrors
-} from "@beff/client";
 "use strict";
-
+import {
+  printErrors,
+  generateHashFromString,
+  generateHashFromNumbers,
+  unknownHash,
+  stringHash,
+  numberHash,
+  booleanHash,
+  nullishHash,
+  undefinedHash,
+  arrayHash,
+  objectHash,
+  dateHash,
+  bigintHash
+} from "@beff/client";
+const stringWithFormatHash = generateHashFromString("StringWithFormat");
+const numberWithFormatHash = generateHashFromString("NumberWithFormat");
+const anyOfConstsHash = generateHashFromString("AnyOfConsts");
+const tupleHash = generateHashFromString("Tuple");
+const allOfHash = generateHashFromString("AllOf");
+const anyOfHash = generateHashFromString("AnyOf");
+const optionalFieldHash = generateHashFromString("OptionalField");
 const JSON_PROTO = Object.getPrototypeOf({});
 function deepmergeConstructor(options) {
   function isNotPrototypeKey(value) {
@@ -216,6 +234,16 @@ class TypeofRuntype {
   reportDecodeError(ctx, input) {
     return buildError(ctx, "expected " + this.typeName, input);
   }
+  hash(ctx) {
+    switch (this.typeName) {
+      case "string":
+        return stringHash;
+      case "number":
+        return numberHash;
+      case "boolean":
+        return booleanHash;
+    }
+  }
 }
 class AnyRuntype {
   describe(_ctx) {
@@ -232,6 +260,9 @@ class AnyRuntype {
   }
   reportDecodeError(ctx, input) {
     return buildError(ctx, "expected any", input);
+  }
+  hash(ctx) {
+    return unknownHash;
   }
 }
 class NullishRuntype {
@@ -254,6 +285,9 @@ class NullishRuntype {
   reportDecodeError(ctx, input) {
     return buildError(ctx, "expected nullish value", input);
   }
+  hash(ctx) {
+    return nullishHash;
+  }
 }
 class NeverRuntype {
   describe(_ctx) {
@@ -270,6 +304,9 @@ class NeverRuntype {
   }
   reportDecodeError(ctx, input) {
     return buildError(ctx, "expected never", input);
+  }
+  hash(ctx) {
+    return undefinedHash;
   }
 }
 class ConstRuntype {
@@ -294,6 +331,19 @@ class ConstRuntype {
   }
   reportDecodeError(ctx, input) {
     return buildError(ctx, `expected ${JSON.stringify(this.value)}`, input);
+  }
+  hash(ctx) {
+    if (this.value == null) {
+      return nullishHash;
+    }
+    switch (typeof this.value) {
+      case "string":
+        return generateHashFromString(this.value);
+      case "number":
+        return generateHashFromNumbers([this.value]);
+      case "boolean":
+        return generateHashFromString(this.value ? "true" : "false");
+    }
   }
 }
 class RegexRuntype {
@@ -321,6 +371,9 @@ class RegexRuntype {
   reportDecodeError(ctx, input) {
     return buildError(ctx, `expected string matching ${this.description}`, input);
   }
+  hash(ctx) {
+    return generateHashFromString(this.description);
+  }
 }
 class DateRuntype {
   describe(_ctx) {
@@ -338,6 +391,9 @@ class DateRuntype {
   reportDecodeError(ctx, input) {
     return buildError(ctx, `expected Date`, input);
   }
+  hash(ctx) {
+    return dateHash;
+  }
 }
 class BigIntRuntype {
   describe(_ctx) {
@@ -354,6 +410,9 @@ class BigIntRuntype {
   }
   reportDecodeError(ctx, input) {
     return buildError(ctx, `expected BigInt`, input);
+  }
+  hash(ctx) {
+    return bigintHash;
   }
 }
 class StringWithFormatRuntype {
@@ -399,6 +458,13 @@ class StringWithFormatRuntype {
   reportDecodeError(ctx, input) {
     return buildError(ctx, `expected string with format "${this.formats.join(" and ")}"`, input);
   }
+  hash(ctx) {
+    let acc = [stringWithFormatHash];
+    for (const f of [...this.formats].sort()) {
+      acc.push(generateHashFromString(f));
+    }
+    return generateHashFromNumbers(acc);
+  }
 }
 class NumberWithFormatRuntype {
   formats;
@@ -443,6 +509,13 @@ class NumberWithFormatRuntype {
   reportDecodeError(ctx, input) {
     return buildError(ctx, `expected number with format "${this.formats.join(" and ")}"`, input);
   }
+  hash(ctx) {
+    let acc = [numberWithFormatHash];
+    for (const f of [...this.formats].sort()) {
+      acc.push(generateHashFromString(f));
+    }
+    return generateHashFromNumbers(acc);
+  }
 }
 class AnyOfConstsRuntype {
   values;
@@ -472,6 +545,27 @@ class AnyOfConstsRuntype {
   }
   reportDecodeError(ctx, input) {
     return buildError(ctx, `expected one of ${limitedCommaJoinJson(this.values)}`, input);
+  }
+  hash(ctx) {
+    let acc = [anyOfConstsHash];
+    for (const v of [...this.values].sort()) {
+      if (v == null) {
+        acc.push(nullishHash);
+      } else {
+        switch (typeof v) {
+          case "string":
+            acc.push(generateHashFromString(v));
+            break;
+          case "number":
+            acc.push(generateHashFromNumbers([v]));
+            break;
+          case "boolean":
+            acc.push(generateHashFromString(v ? "true" : "false"));
+            break;
+        }
+      }
+    }
+    return generateHashFromNumbers(acc);
   }
 }
 class TupleRuntype {
@@ -565,6 +659,18 @@ class TupleRuntype {
     }
     return acc;
   }
+  hash(ctx) {
+    let acc = [tupleHash];
+    for (const p of this.prefix) {
+      acc.push(p.hash(ctx));
+    }
+    if (this.rest != null) {
+      acc.push(this.rest.hash(ctx));
+    } else {
+      acc.push(0);
+    }
+    return generateHashFromNumbers(acc);
+  }
 }
 class AllOfRuntype {
   schemas;
@@ -610,6 +716,13 @@ class AllOfRuntype {
     }
     return acc;
   }
+  hash(ctx) {
+    let acc = [allOfHash];
+    for (const s of this.schemas) {
+      acc.push(s.hash(ctx));
+    }
+    return generateHashFromNumbers(acc);
+  }
 }
 class AnyOfRuntype {
   schemas;
@@ -651,6 +764,13 @@ class AnyOfRuntype {
   }
   describe(ctx) {
     return `(${this.schemas.map((it) => it.describe(ctx)).join(" | ")})`;
+  }
+  hash(ctx) {
+    let acc = [anyOfHash];
+    for (const s of this.schemas) {
+      acc.push(s.hash(ctx));
+    }
+    return generateHashFromNumbers(acc);
   }
 }
 class ArrayRuntype {
@@ -702,6 +822,9 @@ class ArrayRuntype {
   }
   describe(ctx) {
     return `Array<${this.itemParser.describe(ctx)}>`;
+  }
+  hash(ctx) {
+    return generateHashFromNumbers([arrayHash, this.itemParser.hash(ctx)]);
   }
 }
 class AnyOfDiscriminatedRuntype {
@@ -768,6 +891,13 @@ class AnyOfDiscriminatedRuntype {
   describe(ctx) {
     return `(${this.schemas.map((it) => it.describe(ctx)).join(" | ")})`;
   }
+  hash(ctx) {
+    let acc = [anyOfHash];
+    for (const s of this.schemas) {
+      acc.push(s.hash(ctx));
+    }
+    return generateHashFromNumbers(acc);
+  }
 }
 class OptionalField {
   t;
@@ -799,6 +929,10 @@ class OptionalField {
   }
   describe(ctx) {
     return this.t.describe(ctx);
+  }
+  hash(ctx) {
+    let acc = [optionalFieldHash, this.t.hash(ctx)];
+    return generateHashFromNumbers(acc);
   }
 }
 class ObjectRuntype {
@@ -972,6 +1106,21 @@ class ObjectRuntype {
     }
     return acc;
   }
+  hash(ctx) {
+    let acc = [objectHash];
+    for (const key of Object.keys(this.properties).sort()) {
+      acc.push(generateHashFromString(key));
+      const parser = this.properties[key];
+      acc.push(parser.hash(ctx));
+    }
+    if (this.indexedPropertiesParser.length > 0) {
+      for (const p of this.indexedPropertiesParser) {
+        acc.push(p.key.hash(ctx));
+        acc.push(p.value.hash(ctx));
+      }
+    }
+    return generateHashFromNumbers(acc);
+  }
 }
 class RefRuntype {
   refName;
@@ -1009,6 +1158,17 @@ class RefRuntype {
     }
     ctx.seen[name] = true;
     var tmp = to.schema(ctx);
+    delete ctx.seen[name];
+    return tmp;
+  }
+  hash(ctx) {
+    const name = this.refName;
+    const to = namedRuntypes[this.refName];
+    if (ctx.seen[name]) {
+      return generateHashFromString(name);
+    }
+    ctx.seen[name] = true;
+    var tmp = to.hash(ctx);
     delete ctx.seen[name];
     return tmp;
   }
@@ -1065,6 +1225,12 @@ const buildParsers = (args) => {
       };
       return impl.schema(ctx);
     };
+    const hash = () => {
+      const ctx = {
+        seen: {}
+      };
+      return impl.hash(ctx);
+    };
     const describe = () => {
       const ctx = {
         deps: {},
@@ -1120,7 +1286,8 @@ const buildParsers = (args) => {
       safeParse,
       parse,
       zod,
-      name: k
+      name: k,
+      hash
     };
     acc[k] = it;
   }
@@ -1200,8 +1367,8 @@ const direct_hoist_56 = new ObjectRuntype({
     "tag": direct_hoist_43
 }, []);
 const direct_hoist_57 = new AnyOfConstsRuntype([
-    "ADMIN",
-    "USER"
+    "USER",
+    "ADMIN"
 ]);
 const direct_hoist_58 = new AnyOfConstsRuntype([
     "ADMIN Admin",
@@ -1210,10 +1377,10 @@ const direct_hoist_58 = new AnyOfConstsRuntype([
 const direct_hoist_59 = new RegexRuntype(/((ADMIN)|(USER))/, '`("ADMIN" | "USER")`');
 const direct_hoist_60 = new RegexRuntype(/((ADMIN Admin)|(USER User))/, '`("ADMIN Admin" | "USER User")`');
 const direct_hoist_61 = new AnyOfConstsRuntype([
-    "LevelAndDSettings",
     "OmitSettings",
-    "PartialSettings",
-    "RequiredPartialObject"
+    "LevelAndDSettings",
+    "RequiredPartialObject",
+    "PartialSettings"
 ]);
 const direct_hoist_62 = new RegexRuntype(/(\d+(\.\d+)?)(x)(\d+(\.\d+)?)/, "`${number}x${number}`");
 const direct_hoist_63 = new ConstRuntype("b");
@@ -1237,8 +1404,8 @@ const direct_hoist_69 = new ObjectRuntype({
     "type": direct_hoist_43
 }, []);
 const direct_hoist_70 = new AnyOfDiscriminatedRuntype([
-    direct_hoist_67,
-    direct_hoist_69
+    direct_hoist_69,
+    direct_hoist_67
 ], "subType", {
     "a1": direct_hoist_67,
     "a2": direct_hoist_69
@@ -1248,9 +1415,9 @@ const direct_hoist_71 = new ObjectRuntype({
     "value": direct_hoist_7
 }, []);
 const direct_hoist_72 = new AnyOfDiscriminatedRuntype([
-    direct_hoist_67,
     direct_hoist_69,
-    direct_hoist_71
+    direct_hoist_71,
+    direct_hoist_67
 ], "type", {
     "a": direct_hoist_70,
     "b": direct_hoist_71
@@ -1275,8 +1442,8 @@ const direct_hoist_77 = new ObjectRuntype({
     "type": direct_hoist_76
 }, []);
 const direct_hoist_78 = new AnyOfDiscriminatedRuntype([
-    direct_hoist_77,
-    direct_hoist_71
+    direct_hoist_71,
+    direct_hoist_77
 ], "type", {
     "a": direct_hoist_77,
     "b": direct_hoist_71,
@@ -1316,8 +1483,8 @@ const direct_hoist_87 = new ObjectRuntype({
     "tag": direct_hoist_73
 }, []);
 const direct_hoist_88 = new AnyOfConstsRuntype([
-    "a",
-    "b"
+    "b",
+    "a"
 ]);
 const direct_hoist_89 = new ObjectRuntype({
     "d": direct_hoist_87,
@@ -1448,8 +1615,8 @@ const direct_hoist_125 = new ObjectRuntype({
     "value": direct_hoist_101
 }, []);
 const direct_hoist_126 = new AnyOfDiscriminatedRuntype([
-    direct_hoist_121,
     direct_hoist_123,
+    direct_hoist_121,
     direct_hoist_125
 ], "tag", {
     "a": direct_hoist_121,
@@ -1475,8 +1642,8 @@ const direct_hoist_132 = new AnyOfConstsRuntype([
     "C"
 ]);
 const direct_hoist_133 = new AnyOfConstsRuntype([
-    "X",
-    "Y"
+    "Y",
+    "X"
 ]);
 const direct_hoist_134 = new StringWithFormatRuntype([
     "ValidCurrency"

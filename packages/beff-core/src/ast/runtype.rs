@@ -9,8 +9,16 @@ use anyhow::Result;
 use anyhow::anyhow;
 use std::collections::BTreeMap;
 use std::collections::BTreeSet;
+use std::hash::{DefaultHasher, Hash, Hasher};
 
-#[derive(Debug, PartialEq, Eq, Clone, PartialOrd, Ord)]
+#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
+pub struct RuntypeHash(pub u64);
+
+pub trait ToRuntypeHash {
+    fn to_runtype_hash(&self) -> RuntypeHash;
+}
+
+#[derive(Debug, PartialEq, Eq, Clone, PartialOrd, Ord, Hash)]
 pub enum Optionality<T> {
     Optional(T),
     Required(T),
@@ -56,7 +64,16 @@ impl Optionality<Runtype> {
     }
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord)]
+impl ToRuntypeHash for Optionality<Runtype> {
+    fn to_runtype_hash(&self) -> RuntypeHash {
+        let mut s = DefaultHasher::new();
+        self.hash(&mut s);
+        let out = s.finish();
+        RuntypeHash(out)
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub enum RuntypeConst {
     Bool(bool),
     Number(N),
@@ -198,13 +215,13 @@ impl TplLitType {
     }
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord)]
+#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct IndexedProperty {
     pub key: Runtype,
     pub value: Optionality<Runtype>,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord)]
+#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub enum Runtype {
     Null,
     Undefined,
@@ -525,5 +542,14 @@ impl Runtype {
                 format!("{{ {} }}", args)
             }
         }
+    }
+}
+
+impl ToRuntypeHash for Runtype {
+    fn to_runtype_hash(&self) -> RuntypeHash {
+        let mut s = DefaultHasher::new();
+        self.hash(&mut s);
+        let out = s.finish();
+        RuntypeHash(out)
     }
 }

@@ -1294,66 +1294,56 @@ const buildParsers = (args) => {
   return acc;
 };
 
-const RequiredStringFormats = [];
+const RequiredStringFormats = ["ValidCurrency"];
 const RequiredNumberFormats = [];
-const direct_hoist_0 = new RefRuntype("BeforeRequired");
-const direct_hoist_1 = new RefRuntype("KeyofBeforeRequired");
-const direct_hoist_2 = new RefRuntype("AfterRequired");
-const direct_hoist_3 = new RefRuntype("KeyofAfterRequired");
-const direct_hoist_4 = new RefRuntype("SomeString");
-const direct_hoist_5 = new RefRuntype("SomeChar");
-const direct_hoist_6 = new TypeofRuntype("string");
-const direct_hoist_7 = new NullishRuntype("undefined");
-const direct_hoist_8 = new AnyOfRuntype([
-    direct_hoist_7,
-    direct_hoist_6
-]);
-const direct_hoist_9 = new NullishRuntype("void");
-const direct_hoist_10 = new AnyOfRuntype([
-    direct_hoist_9,
-    direct_hoist_6
-]);
-const direct_hoist_11 = new NullishRuntype("null");
-const direct_hoist_12 = new AnyOfRuntype([
-    direct_hoist_11,
-    direct_hoist_6
-]);
-const direct_hoist_13 = new ObjectRuntype({
-    "a": direct_hoist_6,
-    "b": direct_hoist_8,
-    "c": direct_hoist_10,
-    "d": direct_hoist_12,
-    "e": direct_hoist_6
+const direct_hoist_0 = new RefRuntype("StringCodec");
+const direct_hoist_1 = new RefRuntype("NumberCodec");
+const direct_hoist_2 = new RefRuntype("BooleanCodec");
+const direct_hoist_3 = new RefRuntype("StringArrayCodec");
+const direct_hoist_4 = new RefRuntype("UndefinedCodec");
+const direct_hoist_5 = new RefRuntype("NullCodec");
+const direct_hoist_6 = new RefRuntype("AnyCodec");
+const direct_hoist_7 = new RefRuntype("UnknownCodec");
+const direct_hoist_8 = new RefRuntype("VoidCodec");
+const direct_hoist_9 = new RefRuntype("ObjCodec");
+const direct_hoist_10 = new RefRuntype("ObjCodec2");
+const direct_hoist_11 = new AnyRuntype();
+const direct_hoist_12 = new TypeofRuntype("boolean");
+const direct_hoist_13 = new NullishRuntype("null");
+const direct_hoist_14 = new TypeofRuntype("number");
+const direct_hoist_15 = new TypeofRuntype("string");
+const direct_hoist_16 = new ObjectRuntype({
+    "a": direct_hoist_15,
+    "b": direct_hoist_14
 }, []);
-const direct_hoist_14 = new ObjectRuntype({
-    "a": direct_hoist_6,
-    "b": direct_hoist_8,
-    "c": direct_hoist_10,
-    "d": direct_hoist_12,
-    "e": new OptionalField(direct_hoist_6)
-}, []);
-const direct_hoist_15 = new AnyOfConstsRuntype([
-    "b",
-    "e",
-    "a",
-    "d",
-    "c"
-]);
+const direct_hoist_17 = new ArrayRuntype(direct_hoist_15);
+const direct_hoist_18 = new NullishRuntype("undefined");
+const direct_hoist_19 = new NullishRuntype("void");
 const namedRuntypes = {
-    "AfterRequired": direct_hoist_13,
-    "BeforeRequired": direct_hoist_14,
-    "KeyofAfterRequired": direct_hoist_15,
-    "KeyofBeforeRequired": direct_hoist_15,
-    "SomeChar": direct_hoist_6,
-    "SomeString": direct_hoist_6
+    "AnyCodec": direct_hoist_11,
+    "BooleanCodec": direct_hoist_12,
+    "NullCodec": direct_hoist_13,
+    "NumberCodec": direct_hoist_14,
+    "ObjCodec": direct_hoist_16,
+    "ObjCodec2": direct_hoist_16,
+    "StringArrayCodec": direct_hoist_17,
+    "StringCodec": direct_hoist_15,
+    "UndefinedCodec": direct_hoist_18,
+    "UnknownCodec": direct_hoist_11,
+    "VoidCodec": direct_hoist_19
 };
 const buildParsersInput = {
-    "BeforeRequired": direct_hoist_0,
-    "KeyofBeforeRequired": direct_hoist_1,
-    "AfterRequired": direct_hoist_2,
-    "KeyofAfterRequired": direct_hoist_3,
-    "SomeString": direct_hoist_4,
-    "SomeChar": direct_hoist_5
+    "StringCodec": direct_hoist_0,
+    "NumberCodec": direct_hoist_1,
+    "BooleanCodec": direct_hoist_2,
+    "StringArrayCodec": direct_hoist_3,
+    "UndefinedCodec": direct_hoist_4,
+    "NullCodec": direct_hoist_5,
+    "AnyCodec": direct_hoist_6,
+    "UnknownCodec": direct_hoist_7,
+    "VoidCodec": direct_hoist_8,
+    "ObjCodec": direct_hoist_9,
+    "ObjCodec2": direct_hoist_10
 };
 
 export default { buildParsers };
