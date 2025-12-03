@@ -104,7 +104,7 @@ fn debug_print_type_list(vs: Vec<(RuntypeUUID, String)>) -> String {
     let mut acc = String::new();
     let all_names = vs.iter().map(|(name, _)| name).collect::<Vec<_>>();
     let mut type_with_args_counter = BTreeMap::new();
-    let mut ctx = DebugPrintCtx {
+    let ctx = DebugPrintCtx {
         all_names: &all_names,
         type_with_args_names: &mut type_with_args_counter,
     };
@@ -112,7 +112,7 @@ fn debug_print_type_list(vs: Vec<(RuntypeUUID, String)>) -> String {
     for (name, ts_type) in vs.iter() {
         acc.push_str(&format!(
             "type {} = {};\n\n",
-            name.debug_print(&mut ctx),
+            name.debug_print(&ctx),
             ts_type
         ));
     }
@@ -141,13 +141,13 @@ impl ParserExtractResult {
             .map(|it| &it.name)
             .collect::<Vec<_>>();
         let mut type_with_args_counter = BTreeMap::new();
-        let mut debug_print_ctx = DebugPrintCtx {
+        let debug_print_ctx = DebugPrintCtx {
             all_names: &all_names,
             type_with_args_names: &mut type_with_args_counter,
         };
 
         for v in sorted_validators {
-            vs.push((v.name.clone(), v.schema.debug_print(&mut debug_print_ctx)));
+            vs.push((v.name.clone(), v.schema.debug_print(&debug_print_ctx)));
         }
 
         let validators_printed = debug_print_type_list(vs.clone());
@@ -165,7 +165,7 @@ impl ParserExtractResult {
         for v in sorted_decoders {
             decoders_vs.push((
                 v.exported_name.clone(),
-                v.schema.debug_print(&mut debug_print_ctx),
+                v.schema.debug_print(&debug_print_ctx),
             ));
         }
 
@@ -378,7 +378,7 @@ pub struct RuntypeUUID {
 }
 
 impl RuntypeUUID {
-    fn debug_print(&self, ctx: &mut DebugPrintCtx) -> String {
+    fn debug_print(&self, ctx: &DebugPrintCtx) -> String {
         let mut acc = String::new();
         acc.push_str(&self.ty.print_name_for_js_codegen(ctx.all_names));
         if !self.type_arguments.is_empty() {
@@ -396,11 +396,11 @@ impl RuntypeUUID {
     }
     fn diag_print(&self) -> String {
         let mut type_with_args_counter = BTreeMap::new();
-        let mut empty_ctx = DebugPrintCtx {
+        let empty_ctx = DebugPrintCtx {
             all_names: &[],
             type_with_args_names: &mut type_with_args_counter,
         };
-        self.debug_print(&mut empty_ctx)
+        self.debug_print(&empty_ctx)
     }
 
     fn type_with_args_str(it: usize, args: &[Runtype], ctx: &mut DebugPrintCtx<'_>) -> String {

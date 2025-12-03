@@ -18,7 +18,6 @@ use crate::RuntypeUUID;
 use crate::ast::json::Json;
 use crate::ast::runtype::CustomFormat;
 use crate::ast::runtype::DebugPrintCtx;
-use crate::ast::runtype::ToRuntypeHash;
 use crate::ast::runtype::TplLitTypeItem;
 use crate::parser_extractor::ParserExtractResult;
 use crate::{
@@ -207,7 +206,11 @@ fn runtype_union_or_intersection(
     ctx: &mut PrintContext,
 ) -> Expr {
     let mut sorted_vs = vs.iter().cloned().collect::<Vec<Runtype>>();
-    sorted_vs.sort_by_key(|it| it.to_runtype_hash());
+    let dbg_ctx = DebugPrintCtx {
+        all_names: &ctx.all_names.iter().collect::<Vec<_>>(),
+        type_with_args_names: &mut ctx.type_with_args_names,
+    };
+    sorted_vs.sort_by_key(|it| it.debug_print(&dbg_ctx));
 
     let exprs = vs
         .iter()
@@ -255,7 +258,11 @@ fn runtype_any_of_discriminated(
     ctx: &mut PrintContext,
 ) -> Expr {
     let mut flat_values = flat_values_set.iter().cloned().collect::<Vec<Runtype>>();
-    flat_values.sort_by_key(|it| it.to_runtype_hash());
+    let dbg_ctx = DebugPrintCtx {
+        all_names: &ctx.all_names.iter().collect::<Vec<_>>(),
+        type_with_args_names: &mut ctx.type_with_args_names,
+    };
+    flat_values.sort_by_key(|it| it.debug_print(&dbg_ctx));
 
     let mut discriminator_strings = discriminator_strings_set
         .into_iter()
@@ -442,9 +449,17 @@ fn maybe_runtype_any_of_discriminated(
     None
 }
 
-fn maybe_runtype_any_of_consts(flat_values_set: &BTreeSet<Runtype>) -> Option<Expr> {
+fn maybe_runtype_any_of_consts(
+    flat_values_set: &BTreeSet<Runtype>,
+    ctx: &mut PrintContext,
+) -> Option<Expr> {
     let mut flat_values = flat_values_set.iter().cloned().collect::<Vec<Runtype>>();
-    flat_values.sort_by_key(|it| it.to_runtype_hash());
+    let dbg_ctx = DebugPrintCtx {
+        all_names: &ctx.all_names.iter().collect::<Vec<_>>(),
+        type_with_args_names: &mut ctx.type_with_args_names,
+    };
+
+    flat_values.sort_by_key(|it| it.debug_print(&dbg_ctx));
 
     let all_consts = flat_values
         .iter()
@@ -554,7 +569,7 @@ fn print_runtype(schema: &Runtype, named_schemas: &[NamedSchema], ctx: &mut Prin
                 .flat_map(|it: &Runtype| extract_union(it, named_schemas))
                 .collect::<BTreeSet<_>>();
 
-            if let Some(consts) = maybe_runtype_any_of_consts(&flat_values) {
+            if let Some(consts) = maybe_runtype_any_of_consts(&flat_values, ctx) {
                 consts
             } else if let Some(discriminated) =
                 maybe_runtype_any_of_discriminated(&flat_values, named_schemas, ctx)

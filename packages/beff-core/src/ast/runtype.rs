@@ -9,14 +9,7 @@ use anyhow::Result;
 use anyhow::anyhow;
 use std::collections::BTreeMap;
 use std::collections::BTreeSet;
-use std::hash::{DefaultHasher, Hash, Hasher};
-
-#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
-pub struct RuntypeHash(pub u64);
-
-pub trait ToRuntypeHash {
-    fn to_runtype_hash(&self) -> RuntypeHash;
-}
+use std::hash::Hash;
 
 #[derive(Debug, PartialEq, Eq, Clone, PartialOrd, Ord, Hash)]
 pub enum Optionality<T> {
@@ -61,15 +54,6 @@ impl Optionality<Runtype> {
             Optionality::Optional(it) => Runtype::StNot(it.into()).optional(),
             Optionality::Required(it) => Runtype::StNot(it.into()).required(),
         }
-    }
-}
-
-impl ToRuntypeHash for Optionality<Runtype> {
-    fn to_runtype_hash(&self) -> RuntypeHash {
-        let mut s = DefaultHasher::new();
-        self.hash(&mut s);
-        let out = s.finish();
-        RuntypeHash(out)
     }
 }
 
@@ -439,7 +423,7 @@ impl Runtype {
         }
     }
 
-    pub fn debug_print(&self, ctx: &mut DebugPrintCtx) -> String {
+    pub fn debug_print(&self, ctx: &DebugPrintCtx) -> String {
         match self {
             Runtype::Undefined => "undefined".to_string(),
             Runtype::Null => "null".to_string(),
@@ -542,14 +526,5 @@ impl Runtype {
                 format!("{{ {} }}", args)
             }
         }
-    }
-}
-
-impl ToRuntypeHash for Runtype {
-    fn to_runtype_hash(&self) -> RuntypeHash {
-        let mut s = DefaultHasher::new();
-        self.hash(&mut s);
-        let out = s.finish();
-        RuntypeHash(out)
     }
 }
