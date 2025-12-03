@@ -1,5 +1,11 @@
 # @beff/cli
 
+## 0.0.116
+
+### Patch Changes
+
+- fix hash bug
+
 ## 0.0.115
 
 ### Patch Changes
