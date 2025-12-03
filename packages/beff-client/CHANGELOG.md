@@ -1,5 +1,13 @@
 # @beff/client
 
+## 0.0.115
+
+### Patch Changes
+
+- bundle code with lib
+- Updated dependencies
+  - @beff/cli@0.0.115
+
 ## 0.0.114
 
 ### Patch Changes

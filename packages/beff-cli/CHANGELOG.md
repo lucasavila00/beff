@@ -1,5 +1,11 @@
 # @beff/cli
 
+## 0.0.115
+
+### Patch Changes
+
+- bundle code with lib
+
 ## 0.0.114
 
 ### Patch Changes
