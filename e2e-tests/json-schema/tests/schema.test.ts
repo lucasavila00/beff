@@ -181,37 +181,6 @@ it("works3", () => {
         {
           "additionalProperties": false,
           "properties": {
-            "a1": {
-              "type": "string",
-            },
-            "a11": {
-              "anyOf": [
-                {
-                  "type": "string",
-                },
-                {
-                  "type": "null",
-                },
-              ],
-            },
-            "subType": {
-              "const": "a1",
-            },
-            "type": {
-              "const": "a",
-            },
-          },
-          "required": [
-            "a1",
-            "a11",
-            "subType",
-            "type",
-          ],
-          "type": "object",
-        },
-        {
-          "additionalProperties": false,
-          "properties": {
             "a2": {
               "type": "string",
             },
@@ -242,6 +211,37 @@ it("works3", () => {
           "required": [
             "type",
             "value",
+          ],
+          "type": "object",
+        },
+        {
+          "additionalProperties": false,
+          "properties": {
+            "a1": {
+              "type": "string",
+            },
+            "a11": {
+              "anyOf": [
+                {
+                  "type": "string",
+                },
+                {
+                  "type": "null",
+                },
+              ],
+            },
+            "subType": {
+              "const": "a1",
+            },
+            "type": {
+              "const": "a",
+            },
+          },
+          "required": [
+            "a1",
+            "a11",
+            "subType",
+            "type",
           ],
           "type": "object",
         },

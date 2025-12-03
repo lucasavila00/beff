@@ -18,13 +18,13 @@ it("works", () => {
     '"type CodecBeforeRequired = { a: string, b: (undefined | string), c: (void | string), d: (null | string), e?: string };"',
   );
   expect(Codecs.KeyofBeforeRequired.describe()).toMatchInlineSnapshot(
-    '"type CodecKeyofBeforeRequired = (\\"a\\" | \\"b\\" | \\"c\\" | \\"d\\" | \\"e\\");"',
+    '"type CodecKeyofBeforeRequired = (\\"b\\" | \\"e\\" | \\"a\\" | \\"d\\" | \\"c\\");"',
   );
 
   expect(Codecs.AfterRequired.describe()).toMatchInlineSnapshot(
     '"type CodecAfterRequired = { a: string, b: (undefined | string), c: (void | string), d: (null | string), e: string };"',
   );
   expect(Codecs.KeyofAfterRequired.describe()).toMatchInlineSnapshot(
-    '"type CodecKeyofAfterRequired = (\\"a\\" | \\"b\\" | \\"c\\" | \\"d\\" | \\"e\\");"',
+    '"type CodecKeyofAfterRequired = (\\"b\\" | \\"e\\" | \\"a\\" | \\"d\\" | \\"c\\");"',
   );
 });

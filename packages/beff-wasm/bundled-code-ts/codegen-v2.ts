@@ -7,7 +7,27 @@ import {
   type ParseOptions,
   type RegularDecodeError,
   type UnionDecodeError,
+  generateHashFromString,
+  generateHashFromNumbers,
+  unknownHash,
+  stringHash,
+  numberHash,
+  booleanHash,
+  nullishHash,
+  undefinedHash,
+  arrayHash,
+  objectHash,
+  dateHash,
+  bigintHash,
 } from "@beff/client";
+
+const stringWithFormatHash = generateHashFromString("StringWithFormat");
+const numberWithFormatHash = generateHashFromString("NumberWithFormat");
+const anyOfConstsHash = generateHashFromString("AnyOfConsts");
+const tupleHash = generateHashFromString("Tuple");
+const allOfHash = generateHashFromString("AllOf");
+const anyOfHash = generateHashFromString("AnyOf");
+const optionalFieldHash = generateHashFromString("OptionalField");
 
 const JSON_PROTO = Object.getPrototypeOf({});
 
@@ -284,9 +304,14 @@ type ReportContext = {
   path: string[];
 };
 
+type HashContext = {
+  seen: Record<string, boolean>;
+};
+
 interface Runtype {
   describe(ctx: DescribeContext): string;
   schema(ctx: SchemaContext): JSONSchema7;
+  hash(ctx: HashContext): number;
   validate(ctx: ValidateContext, input: unknown): boolean;
   parseAfterValidation(ctx: ParseContext, input: any): unknown;
   reportDecodeError(ctx: ReportContext, input: unknown): DecodeError[];
@@ -315,6 +340,16 @@ class TypeofRuntype implements Runtype {
   reportDecodeError(ctx: ReportContext, input: unknown): DecodeError[] {
     return buildError(ctx, "expected " + this.typeName, input);
   }
+  hash(ctx: HashContext): number {
+    switch (this.typeName) {
+      case "string":
+        return stringHash;
+      case "number":
+        return numberHash;
+      case "boolean":
+        return booleanHash;
+    }
+  }
 }
 
 class AnyRuntype implements Runtype {
@@ -332,6 +367,9 @@ class AnyRuntype implements Runtype {
   }
   reportDecodeError(ctx: ReportContext, input: unknown): DecodeError[] {
     return buildError(ctx, "expected any", input);
+  }
+  hash(ctx: HashContext): number {
+    return unknownHash;
   }
 }
 
@@ -356,6 +394,9 @@ class NullishRuntype implements Runtype {
   reportDecodeError(ctx: ReportContext, input: unknown): DecodeError[] {
     return buildError(ctx, "expected nullish value", input);
   }
+  hash(ctx: HashContext): number {
+    return nullishHash;
+  }
 }
 
 class NeverRuntype implements Runtype {
@@ -373,6 +414,9 @@ class NeverRuntype implements Runtype {
   }
   reportDecodeError(ctx: ReportContext, input: unknown): DecodeError[] {
     return buildError(ctx, "expected never", input);
+  }
+  hash(ctx: HashContext): number {
+    return undefinedHash;
   }
 }
 
@@ -400,6 +444,19 @@ class ConstRuntype implements Runtype {
   }
   reportDecodeError(ctx: ReportContext, input: unknown): DecodeError[] {
     return buildError(ctx, `expected ${JSON.stringify(this.value)}`, input);
+  }
+  hash(ctx: HashContext): number {
+    if (this.value == null) {
+      return nullishHash;
+    }
+    switch (typeof this.value) {
+      case "string":
+        return generateHashFromString(this.value);
+      case "number":
+        return generateHashFromNumbers([this.value]);
+      case "boolean":
+        return generateHashFromString(this.value ? "true" : "false");
+    }
   }
 }
 
@@ -430,6 +487,9 @@ class RegexRuntype implements Runtype {
   reportDecodeError(ctx: ReportContext, input: unknown): DecodeError[] {
     return buildError(ctx, `expected string matching ${this.description}`, input);
   }
+  hash(ctx: HashContext): number {
+    return generateHashFromString(this.description);
+  }
 }
 
 class DateRuntype implements Runtype {
@@ -448,6 +508,9 @@ class DateRuntype implements Runtype {
   reportDecodeError(ctx: ReportContext, input: unknown): DecodeError[] {
     return buildError(ctx, `expected Date`, input);
   }
+  hash(ctx: HashContext): number {
+    return dateHash;
+  }
 }
 
 class BigIntRuntype implements Runtype {
@@ -465,6 +528,9 @@ class BigIntRuntype implements Runtype {
   }
   reportDecodeError(ctx: ReportContext, input: unknown): DecodeError[] {
     return buildError(ctx, `expected BigInt`, input);
+  }
+  hash(ctx: HashContext): number {
+    return bigintHash;
   }
 }
 
@@ -516,6 +582,13 @@ class StringWithFormatRuntype implements Runtype {
   reportDecodeError(ctx: ReportContext, input: unknown): DecodeError[] {
     return buildError(ctx, `expected string with format "${this.formats.join(" and ")}"`, input);
   }
+  hash(ctx: HashContext): number {
+    let acc: number[] = [stringWithFormatHash];
+    for (const f of [...this.formats].sort()) {
+      acc.push(generateHashFromString(f));
+    }
+    return generateHashFromNumbers(acc);
+  }
 }
 
 class NumberWithFormatRuntype implements Runtype {
@@ -565,6 +638,13 @@ class NumberWithFormatRuntype implements Runtype {
   reportDecodeError(ctx: ReportContext, input: unknown): DecodeError[] {
     return buildError(ctx, `expected number with format "${this.formats.join(" and ")}"`, input);
   }
+  hash(ctx: HashContext): number {
+    let acc: number[] = [numberWithFormatHash];
+    for (const f of [...this.formats].sort()) {
+      acc.push(generateHashFromString(f));
+    }
+    return generateHashFromNumbers(acc);
+  }
 }
 
 class AnyOfConstsRuntype implements Runtype {
@@ -595,6 +675,27 @@ class AnyOfConstsRuntype implements Runtype {
   }
   reportDecodeError(ctx: ReportContext, input: unknown): DecodeError[] {
     return buildError(ctx, `expected one of ${limitedCommaJoinJson(this.values)}`, input);
+  }
+  hash(ctx: HashContext): number {
+    let acc: number[] = [anyOfConstsHash];
+    for (const v of [...this.values].sort()) {
+      if (v == null) {
+        acc.push(nullishHash);
+      } else {
+        switch (typeof v) {
+          case "string":
+            acc.push(generateHashFromString(v));
+            break;
+          case "number":
+            acc.push(generateHashFromNumbers([v]));
+            break;
+          case "boolean":
+            acc.push(generateHashFromString(v ? "true" : "false"));
+            break;
+        }
+      }
+    }
+    return generateHashFromNumbers(acc);
   }
 }
 
@@ -695,6 +796,18 @@ class TupleRuntype implements Runtype {
 
     return acc;
   }
+  hash(ctx: HashContext): number {
+    let acc: number[] = [tupleHash];
+    for (const p of this.prefix) {
+      acc.push(p.hash(ctx));
+    }
+    if (this.rest != null) {
+      acc.push(this.rest.hash(ctx));
+    } else {
+      acc.push(0);
+    }
+    return generateHashFromNumbers(acc);
+  }
 }
 
 class AllOfRuntype implements Runtype {
@@ -741,6 +854,13 @@ class AllOfRuntype implements Runtype {
     }
     return acc;
   }
+  hash(ctx: HashContext): number {
+    let acc: number[] = [allOfHash];
+    for (const s of this.schemas) {
+      acc.push(s.hash(ctx));
+    }
+    return generateHashFromNumbers(acc);
+  }
 }
 
 class AnyOfRuntype implements Runtype {
@@ -783,6 +903,13 @@ class AnyOfRuntype implements Runtype {
   }
   describe(ctx: DescribeContext): string {
     return `(${this.schemas.map((it) => it.describe(ctx)).join(" | ")})`;
+  }
+  hash(ctx: HashContext): number {
+    let acc: number[] = [anyOfHash];
+    for (const s of this.schemas) {
+      acc.push(s.hash(ctx));
+    }
+    return generateHashFromNumbers(acc);
   }
 }
 
@@ -837,6 +964,9 @@ class ArrayRuntype implements Runtype {
   }
   describe(ctx: DescribeContext): string {
     return `Array<${this.itemParser.describe(ctx)}>`;
+  }
+  hash(ctx: HashContext): number {
+    return generateHashFromNumbers([arrayHash, this.itemParser.hash(ctx)]);
   }
 }
 
@@ -909,6 +1039,13 @@ class AnyOfDiscriminatedRuntype implements Runtype {
   describe(ctx: DescribeContext): string {
     return `(${this.schemas.map((it) => it.describe(ctx)).join(" | ")})`;
   }
+  hash(ctx: HashContext): number {
+    let acc: number[] = [anyOfHash];
+    for (const s of this.schemas) {
+      acc.push(s.hash(ctx));
+    }
+    return generateHashFromNumbers(acc);
+  }
 }
 
 class OptionalField implements Runtype {
@@ -943,6 +1080,10 @@ class OptionalField implements Runtype {
   }
   describe(ctx: DescribeContext): string {
     return this.t.describe(ctx);
+  }
+  hash(ctx: HashContext): number {
+    let acc = [optionalFieldHash, this.t.hash(ctx)];
+    return generateHashFromNumbers(acc);
   }
 }
 
@@ -1145,6 +1286,21 @@ class ObjectRuntype implements Runtype {
 
     return acc;
   }
+  hash(ctx: HashContext) {
+    let acc: number[] = [objectHash];
+    for (const key of Object.keys(this.properties).sort()) {
+      acc.push(generateHashFromString(key));
+      const parser = this.properties[key];
+      acc.push(parser.hash(ctx));
+    }
+    if (this.indexedPropertiesParser.length > 0) {
+      for (const p of this.indexedPropertiesParser) {
+        acc.push(p.key.hash(ctx));
+        acc.push(p.value.hash(ctx));
+      }
+    }
+    return generateHashFromNumbers(acc);
+  }
 }
 
 declare var namedRuntypes: Record<string, Runtype>;
@@ -1184,6 +1340,17 @@ class RefRuntype implements Runtype {
     }
     ctx.seen[name] = true;
     var tmp = to.schema(ctx);
+    delete ctx.seen[name];
+    return tmp;
+  }
+  hash(ctx: HashContext): number {
+    const name = this.refName;
+    const to = namedRuntypes[this.refName];
+    if (ctx.seen[name]) {
+      return generateHashFromString(name);
+    }
+    ctx.seen[name] = true;
+    var tmp = to.hash(ctx);
     delete ctx.seen[name];
     return tmp;
   }
@@ -1250,6 +1417,12 @@ const buildParsers: BuildParserFunction = (args) => {
         seen: {},
       };
       return impl.schema(ctx);
+    };
+    const hash = () => {
+      const ctx = {
+        seen: {},
+      };
+      return impl.hash(ctx);
     };
 
     const describe = () => {
@@ -1319,6 +1492,7 @@ const buildParsers: BuildParserFunction = (args) => {
       parse,
       zod,
       name: k,
+      hash,
     };
     (acc as any)[k] = it;
   }

@@ -18,6 +18,7 @@ use crate::RuntypeUUID;
 use crate::ast::json::Json;
 use crate::ast::runtype::CustomFormat;
 use crate::ast::runtype::DebugPrintCtx;
+use crate::ast::runtype::ToRuntypeHash;
 use crate::ast::runtype::TplLitTypeItem;
 use crate::parser_extractor::ParserExtractResult;
 use crate::{
@@ -205,6 +206,9 @@ fn runtype_union_or_intersection(
     named_schemas: &[NamedSchema],
     ctx: &mut PrintContext,
 ) -> Expr {
+    let mut sorted_vs = vs.iter().cloned().collect::<Vec<Runtype>>();
+    sorted_vs.sort_by_key(|it| it.to_runtype_hash());
+
     let exprs = vs
         .iter()
         .map(|schema| print_runtype(schema, named_schemas, ctx))
@@ -243,13 +247,21 @@ fn extract_union(it: &Runtype, named_schemas: &[NamedSchema]) -> Vec<Runtype> {
 }
 
 fn runtype_any_of_discriminated(
-    flat_values: &BTreeSet<Runtype>,
+    flat_values_set: &BTreeSet<Runtype>,
     discriminator: String,
-    discriminator_strings: BTreeSet<String>,
+    discriminator_strings_set: BTreeSet<String>,
     object_vs: Vec<&BTreeMap<String, Optionality<Runtype>>>,
     named_schemas: &[NamedSchema],
     ctx: &mut PrintContext,
 ) -> Expr {
+    let mut flat_values = flat_values_set.iter().cloned().collect::<Vec<Runtype>>();
+    flat_values.sort_by_key(|it| it.to_runtype_hash());
+
+    let mut discriminator_strings = discriminator_strings_set
+        .into_iter()
+        .collect::<Vec<String>>();
+    discriminator_strings.sort();
+
     let mut acc = BTreeMap::new();
     for current_key in discriminator_strings {
         let mut cases = vec![];
@@ -430,7 +442,10 @@ fn maybe_runtype_any_of_discriminated(
     None
 }
 
-fn maybe_runtype_any_of_consts(flat_values: &BTreeSet<Runtype>) -> Option<Expr> {
+fn maybe_runtype_any_of_consts(flat_values_set: &BTreeSet<Runtype>) -> Option<Expr> {
+    let mut flat_values = flat_values_set.iter().cloned().collect::<Vec<Runtype>>();
+    flat_values.sort_by_key(|it| it.to_runtype_hash());
+
     let all_consts = flat_values
         .iter()
         .all(|it| it.extract_single_string_const().is_some() || matches!(it, Runtype::Const(_)));

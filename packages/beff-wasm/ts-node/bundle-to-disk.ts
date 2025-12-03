@@ -17,10 +17,6 @@ Object.defineProperty(exports, "__esModule", {
 
 const exportCode = (mod: ProjectModule) => (mod === "esm" ? "export default" : "exports.default =");
 
-const V2_ESM_IMPORT = `import {
-  printErrors
-} from "@beff/client";`;
-const V2_CJS_IMPORT = `const { printErrors } = require("@beff/client");`;
 const finalizeParserV2File = (
   wasmCode: string,
   mod: ProjectModule,
@@ -33,7 +29,12 @@ const finalizeParserV2File = (
   const stringFormatsCode = `const RequiredStringFormats = ${JSON.stringify(stringFormats)};`;
   const numberFormatsCode = `const RequiredNumberFormats = ${JSON.stringify(numberFormats)};`;
 
-  let genV2 = gen["codegen-v2.js"].replace(V2_ESM_IMPORT, "");
+  let genV2 = gen["codegen-v2.js"];
+  if (mod === "cjs") {
+    genV2 = genV2
+      .replace("import {", "const {")
+      .replace('} from "@beff/client";', '} = require("@beff/client");');
+  }
 
   let zod_import = `import { z } from "zod";`;
 
@@ -45,7 +46,6 @@ const finalizeParserV2File = (
     "//@ts-nocheck",
     esmTag(mod),
     zod_import,
-    mod === "esm" ? V2_ESM_IMPORT : V2_CJS_IMPORT,
     genV2,
     stringFormatsCode,
     numberFormatsCode,

@@ -1,3 +1,14 @@
+import {
+  arrayHash,
+  booleanHash,
+  generateHashFromNumbers,
+  generateHashFromString,
+  nullishHash,
+  numberHash,
+  objectHash,
+  stringHash,
+  unknownHash,
+} from "./hash";
 import { JSONSchema7 } from "./json-schema";
 import { ParseOptions, DecodeError, BeffParser } from "./types";
 import { z } from "zod";
@@ -11,6 +22,7 @@ const buildParserFromSafeParser = <T>(
   ) => { success: true; data: T } | { success: false; errors: DecodeError[] },
   jsonSchema: () => JSONSchema7,
   describe: () => string,
+  hash: () => number,
 ): BeffParser<T> => {
   const parse = (input: any, options?: ParseOptions) => {
     const safe = safeParse(input, options);
@@ -44,6 +56,7 @@ const buildParserFromSafeParser = <T>(
     validate,
     schema: jsonSchema,
     describe,
+    hash,
   };
 };
 
@@ -135,6 +148,15 @@ const Object_ = <T extends Record<string, BeffParser<any>>>(
         .join(", ");
       return `{ ${props} }`;
     },
+    () => {
+      let acc: number[] = [objectHash];
+      for (const key of Object.keys(fields).sort()) {
+        acc.push(generateHashFromString(key));
+        const parser = fields[key];
+        acc.push(parser.hash());
+      }
+      return generateHashFromNumbers(acc);
+    },
   );
 
 const String_ = (): BeffParser<string> =>
@@ -152,6 +174,7 @@ const String_ = (): BeffParser<string> =>
       type: "string",
     }),
     () => `string`,
+    () => stringHash,
   );
 
 const Number_ = (): BeffParser<number> =>
@@ -169,6 +192,7 @@ const Number_ = (): BeffParser<number> =>
       type: "number",
     }),
     () => `number`,
+    () => numberHash,
   );
 
 const Boolean_ = (): BeffParser<boolean> =>
@@ -186,6 +210,7 @@ const Boolean_ = (): BeffParser<boolean> =>
       type: "boolean",
     }),
     () => `boolean`,
+    () => booleanHash,
   );
 
 const Undefined_ = (): BeffParser<undefined> =>
@@ -196,12 +221,13 @@ const Undefined_ = (): BeffParser<undefined> =>
       if (input == undefined) {
         return { success: true, data: input };
       }
-      return { success: false, errors: [{ message: "Expected undefined", path: [], received: input }] };
+      return { success: false, errors: [{ message: "Expected nullish value", path: [], received: input }] };
     },
     () => ({
       type: "null",
     }),
-    () => `null`,
+    () => `undefined`,
+    () => nullishHash,
   );
 
 const Void_ = (): BeffParser<void> =>
@@ -213,12 +239,13 @@ const Void_ = (): BeffParser<void> =>
       if (input == undefined) {
         return { success: true, data: input };
       }
-      return { success: false, errors: [{ message: "Expected void", path: [], received: input }] };
+      return { success: false, errors: [{ message: "Expected nullish value", path: [], received: input }] };
     },
     () => ({
       type: "null",
     }),
-    () => `null`,
+    () => `void`,
+    () => nullishHash,
   );
 
 const Null_ = (): BeffParser<undefined> =>
@@ -229,12 +256,13 @@ const Null_ = (): BeffParser<undefined> =>
       if (input == null) {
         return { success: true, data: input };
       }
-      return { success: false, errors: [{ message: "Expected null", path: [], received: input }] };
+      return { success: false, errors: [{ message: "Expected nullish value", path: [], received: input }] };
     },
     () => ({
       type: "null",
     }),
     () => `null`,
+    () => nullishHash,
   );
 
 const Any_ = (): BeffParser<any> =>
@@ -247,6 +275,7 @@ const Any_ = (): BeffParser<any> =>
     },
     () => ({}),
     () => `any`,
+    () => unknownHash,
   );
 
 const Unknown_ = (): BeffParser<unknown> =>
@@ -258,6 +287,7 @@ const Unknown_ = (): BeffParser<unknown> =>
     },
     () => ({}),
     () => `unknown`,
+    () => unknownHash,
   );
 
 const Array_ = <T>(parser: BeffParser<T>): BeffParser<T[]> =>
@@ -302,6 +332,7 @@ const Array_ = <T>(parser: BeffParser<T>): BeffParser<T[]> =>
       items: parser.schema(),
     }),
     () => `Array<${parser.describe()}>`,
+    () => generateHashFromNumbers([arrayHash, parser.hash()]),
   );
 
 const ReadOnlyArray_ = <T>(parser: BeffParser<T>): BeffParser<readonly T[]> =>
