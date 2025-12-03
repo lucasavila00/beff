@@ -1,6 +1,6 @@
 {
   "name": "@beff/client",
-  "version": "0.0.114",
+  "version": "0.0.115",
   "description": "",
   "main": "dist/cjs/index.js",
   "scripts": {
@@ -12,13 +12,19 @@
       "require": "./dist/cjs/index.js",
       "import": "./dist/esm/index.js",
       "default": "./dist/esm/index.js"
+    },
+    "./codegen-v2": {
+      "types": "./dist/types/codegen-v2.d.ts",
+      "require": "./dist/cjs/codegen-v2.js",
+      "import": "./dist/esm/codegen-v2.js",
+      "default": "./dist/esm/codegen-v2.js"
     }
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "@beff/cli": "workspace:^0.0.114"
+    "@beff/cli": "workspace:^0.0.115"
   },
   "peerDependencies": {
     "zod": "^3.23.5"

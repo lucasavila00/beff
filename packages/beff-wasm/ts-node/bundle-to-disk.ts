@@ -33,19 +33,13 @@ const finalizeParserV2File = (
   if (mod === "cjs") {
     genV2 = genV2
       .replace("import {", "const {")
-      .replace('} from "@beff/client";', '} = require("@beff/client");');
-  }
-
-  let zod_import = `import { z } from "zod";`;
-
-  if (mod == "cjs") {
-    zod_import = `const { z } = require("zod");`;
+      .replace('} from "@beff/client/codegen-v2";', '} = require("@beff/client/codegen-v2");');
   }
 
   return [
+    //
     "//@ts-nocheck",
     esmTag(mod),
-    zod_import,
     genV2,
     stringFormatsCode,
     numberFormatsCode,

@@ -5,12 +5,11 @@
   "description": "",
   "main": "./dist-ext/extension.js",
   "scripts": {
-    "build": "npm run esb && node script/build.js",
+    "build": "node script/build.js",
     "test": "node script/e2e.js",
     "do": "npm run build && node ../beff-cli/bin/index.js -v -p /workspace/packages/beff-wasm/vitest/params/bff.json",
     "ts": "tsc --noEmit",
-    "publish": "pnpm vsce publish --no-dependencies",
-    "esb": "esbuild bundled-code-ts/codegen-v2.ts --outfile=bundled-code/codegen-v2.js"
+    "publish": "pnpm vsce publish --no-dependencies"
   },
   "author": "",
   "license": "ISC",
@@ -19,8 +18,8 @@
   },
   "devDependencies": {
     "@babel/code-frame": "^7.22.13",
-    "@beff/cli": "workspace:^0.0.114",
-    "@beff/client": "workspace:^0.0.114",
+    "@beff/cli": "workspace:^0.0.115",
+    "@beff/client": "workspace:^0.0.115",
     "@types/babel__code-frame": "^7.0.4",
     "@types/node": "^20.6.2",
     "chalk": "^4.1.2",

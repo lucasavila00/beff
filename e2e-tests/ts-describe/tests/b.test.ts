@@ -9,7 +9,7 @@ it("works", () => {
         b: b.Number(),
       })
       .describe(),
-  ).toMatchInlineSnapshot('"{ \\"a\\": string, \\"b\\": number }"');
+  ).toMatchInlineSnapshot('"{ a: string, b: number }"');
   expect(b.String().describe()).toMatchInlineSnapshot('"string"');
   expect(b.Number().describe()).toMatchInlineSnapshot('"number"');
   expect(b.Boolean().describe()).toMatchInlineSnapshot('"boolean"');
@@ -18,6 +18,6 @@ it("works", () => {
   expect(b.Undefined().describe()).toMatchInlineSnapshot('"undefined"');
   expect(b.Null().describe()).toMatchInlineSnapshot('"null"');
   expect(b.Any().describe()).toMatchInlineSnapshot('"any"');
-  expect(b.Unknown().describe()).toMatchInlineSnapshot('"unknown"');
+  expect(b.Unknown().describe()).toMatchInlineSnapshot('"any"');
   expect(b.Void().describe()).toMatchInlineSnapshot('"void"');
 });

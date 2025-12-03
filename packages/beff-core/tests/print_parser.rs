@@ -1935,8 +1935,8 @@ mod tests {
             "_tag": direct_hoist_6
         }, []);
         const direct_hoist_8 = new AnyOfDiscriminatedRuntype([
-            direct_hoist_7,
-            direct_hoist_5
+            direct_hoist_5,
+            direct_hoist_7
         ], "_tag", {
             "logical": direct_hoist_5,
             "none": direct_hoist_7
@@ -1948,17 +1948,17 @@ mod tests {
             "data": direct_hoist_10
         }, []);
         const direct_hoist_12 = new AnyOfDiscriminatedRuntype([
-            direct_hoist_7,
+            direct_hoist_11,
             direct_hoist_5,
-            direct_hoist_11
+            direct_hoist_7
         ], "_tag", {
             "custom": direct_hoist_11,
             "logical": direct_hoist_5,
             "none": direct_hoist_7
         });
         const direct_hoist_13 = new AnyOfConstsRuntype([
-            "OR",
-            "AND"
+            "AND",
+            "OR"
         ]);
         const direct_hoist_14 = new RefRuntype("EditableLogicalConditionsAst_string");
         const namedRuntypes = {
