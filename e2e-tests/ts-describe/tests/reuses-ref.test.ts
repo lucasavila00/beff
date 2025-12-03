@@ -6,4 +6,5 @@ it("works", () => {
 
     type CodecReusesRef = { a: T3, b: T3 };"
   `);
+  expect(Codecs.ReusesRef.hash()).toMatchInlineSnapshot("-869413918");
 });

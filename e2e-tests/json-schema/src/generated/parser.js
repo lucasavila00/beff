@@ -28,6 +28,7 @@ const {
   registerStringFormatter,
   registerNumberFormatter,
   buildParserFromRuntype,
+  generateHashFromString,
 } = require("@beff/client/codegen-v2");
 
 
