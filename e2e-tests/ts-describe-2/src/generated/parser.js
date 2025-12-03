@@ -159,11 +159,11 @@ const direct_hoist_14 = new ObjectRuntype({
     "e": new OptionalFieldRuntype(direct_hoist_6)
 }, []);
 const direct_hoist_15 = new AnyOfConstsRuntype([
-    "b",
-    "e",
     "a",
+    "b",
+    "c",
     "d",
-    "c"
+    "e"
 ]);
 const namedRuntypes = {
     "AfterRequired": direct_hoist_13,

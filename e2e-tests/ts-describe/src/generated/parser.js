@@ -190,8 +190,8 @@ const direct_hoist_37 = new ObjectRuntype({
     "type": direct_hoist_34
 }, []);
 const direct_hoist_38 = new AnyOfDiscriminatedRuntype([
-    direct_hoist_37,
-    direct_hoist_35
+    direct_hoist_35,
+    direct_hoist_37
 ], "subType", {
     "a1": direct_hoist_35,
     "a2": direct_hoist_37
@@ -202,9 +202,9 @@ const direct_hoist_40 = new ObjectRuntype({
     "value": direct_hoist_1
 }, []);
 const direct_hoist_41 = new AnyOfDiscriminatedRuntype([
+    direct_hoist_35,
     direct_hoist_37,
-    direct_hoist_40,
-    direct_hoist_35
+    direct_hoist_40
 ], "type", {
     "a": direct_hoist_38,
     "b": direct_hoist_40

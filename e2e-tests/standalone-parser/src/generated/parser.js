@@ -193,8 +193,8 @@ const direct_hoist_56 = new ObjectRuntype({
     "tag": direct_hoist_43
 }, []);
 const direct_hoist_57 = new AnyOfConstsRuntype([
-    "USER",
-    "ADMIN"
+    "ADMIN",
+    "USER"
 ]);
 const direct_hoist_58 = new AnyOfConstsRuntype([
     "ADMIN Admin",
@@ -203,10 +203,10 @@ const direct_hoist_58 = new AnyOfConstsRuntype([
 const direct_hoist_59 = new RegexRuntype(/((ADMIN)|(USER))/, '`("ADMIN" | "USER")`');
 const direct_hoist_60 = new RegexRuntype(/((ADMIN Admin)|(USER User))/, '`("ADMIN Admin" | "USER User")`');
 const direct_hoist_61 = new AnyOfConstsRuntype([
-    "OmitSettings",
     "LevelAndDSettings",
-    "RequiredPartialObject",
-    "PartialSettings"
+    "OmitSettings",
+    "PartialSettings",
+    "RequiredPartialObject"
 ]);
 const direct_hoist_62 = new RegexRuntype(/(\d+(\.\d+)?)(x)(\d+(\.\d+)?)/, "`${number}x${number}`");
 const direct_hoist_63 = new ConstRuntype("b");
@@ -230,8 +230,8 @@ const direct_hoist_69 = new ObjectRuntype({
     "type": direct_hoist_43
 }, []);
 const direct_hoist_70 = new AnyOfDiscriminatedRuntype([
-    direct_hoist_69,
-    direct_hoist_67
+    direct_hoist_67,
+    direct_hoist_69
 ], "subType", {
     "a1": direct_hoist_67,
     "a2": direct_hoist_69
@@ -241,9 +241,9 @@ const direct_hoist_71 = new ObjectRuntype({
     "value": direct_hoist_7
 }, []);
 const direct_hoist_72 = new AnyOfDiscriminatedRuntype([
+    direct_hoist_67,
     direct_hoist_69,
-    direct_hoist_71,
-    direct_hoist_67
+    direct_hoist_71
 ], "type", {
     "a": direct_hoist_70,
     "b": direct_hoist_71
@@ -268,8 +268,8 @@ const direct_hoist_77 = new ObjectRuntype({
     "type": direct_hoist_76
 }, []);
 const direct_hoist_78 = new AnyOfDiscriminatedRuntype([
-    direct_hoist_71,
-    direct_hoist_77
+    direct_hoist_77,
+    direct_hoist_71
 ], "type", {
     "a": direct_hoist_77,
     "b": direct_hoist_71,
@@ -309,8 +309,8 @@ const direct_hoist_87 = new ObjectRuntype({
     "tag": direct_hoist_73
 }, []);
 const direct_hoist_88 = new AnyOfConstsRuntype([
-    "b",
-    "a"
+    "a",
+    "b"
 ]);
 const direct_hoist_89 = new ObjectRuntype({
     "d": direct_hoist_87,
@@ -441,9 +441,9 @@ const direct_hoist_125 = new ObjectRuntype({
     "value": direct_hoist_101
 }, []);
 const direct_hoist_126 = new AnyOfDiscriminatedRuntype([
-    direct_hoist_123,
+    direct_hoist_125,
     direct_hoist_121,
-    direct_hoist_125
+    direct_hoist_123
 ], "tag", {
     "a": direct_hoist_121,
     "b": direct_hoist_123,
@@ -468,8 +468,8 @@ const direct_hoist_132 = new AnyOfConstsRuntype([
     "C"
 ]);
 const direct_hoist_133 = new AnyOfConstsRuntype([
-    "Y",
-    "X"
+    "X",
+    "Y"
 ]);
 const direct_hoist_134 = new StringWithFormatRuntype([
     "ValidCurrency"
