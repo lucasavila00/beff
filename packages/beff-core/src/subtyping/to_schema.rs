@@ -211,9 +211,6 @@ impl<'a, 'b> SchemerContext<'a, 'b> {
                     SubTypeTag::List => {
                         acc.insert(Runtype::AnyArrayLike);
                     }
-                    SubTypeTag::Function => {
-                        acc.insert(Runtype::Function);
-                    }
                     SubTypeTag::BigInt => {
                         acc.insert(Runtype::BigInt);
                     }

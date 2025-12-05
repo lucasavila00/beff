@@ -161,9 +161,10 @@ impl SemTypeOps for Rc<SemType> {
             };
 
             if let Some(data) = data
-                && let SubType::Proper(data) = &*data {
-                    subtypes.push(data.clone());
-                }
+                && let SubType::Proper(data) = &*data
+            {
+                subtypes.push(data.clone());
+            }
         }
 
         Ok(SemType::new_complex(all, subtypes).into())
@@ -526,9 +527,6 @@ impl SemTypeContext {
         SemType::new_unknown()
     }
 
-    pub(crate) fn function() -> SemType {
-        SemType::new_basic(SubTypeTag::Function.code())
-    }
     pub(crate) fn date() -> ComplexSemType {
         SemType::new_basic(SubTypeTag::Date.code())
     }

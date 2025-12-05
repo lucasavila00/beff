@@ -3,13 +3,13 @@ use crate::{
         json::N,
         runtype::{CustomFormat, TplLitType},
     },
-    subtyping::{dnf::dnf_mapping_is_empty, IsEmptyStatus},
+    subtyping::{IsEmptyStatus, dnf::dnf_mapping_is_empty},
 };
-use anyhow::{bail, Result};
+use anyhow::{Result, bail};
 use std::{collections::BTreeSet, rc::Rc};
 
 use super::{
-    bdd::{list_is_empty, Bdd, BddOps},
+    bdd::{Bdd, BddOps, list_is_empty},
     semtype::SemTypeContext,
 };
 
@@ -27,23 +27,13 @@ pub enum SubTypeTag {
     Mapping = 1 << 5,
     OptionalProp = 1 << 6,
     List = 1 << 7,
-    Function = 1 << 8,
-    BigInt = 1 << 9,
-    Date = 1 << 10,
-    VoidUndefined = 1 << 11,
+    BigInt = 1 << 8,
+    Date = 1 << 9,
+    VoidUndefined = 1 << 10,
 }
 
-pub const VAL: u32 = 1 << 1
-    | 1 << 2
-    | 1 << 3
-    | 1 << 4
-    | 1 << 5
-    | 1 << 6
-    | 1 << 7
-    | 1 << 8
-    | 1 << 9
-    | 1 << 10
-    | 1 << 11;
+pub const VAL: u32 =
+    1 << 1 | 1 << 2 | 1 << 3 | 1 << 4 | 1 << 5 | 1 << 6 | 1 << 7 | 1 << 8 | 1 << 9 | 1 << 10;
 
 impl SubTypeTag {
     pub fn code(&self) -> BasicTypeCode {
@@ -60,7 +50,6 @@ impl SubTypeTag {
             SubTypeTag::Null,
             SubTypeTag::Mapping,
             SubTypeTag::List,
-            SubTypeTag::Function,
             SubTypeTag::BigInt,
             SubTypeTag::Date,
             SubTypeTag::VoidUndefined,
@@ -573,12 +562,16 @@ mod tests {
         assert!(write_authorized_user_id.is_subtype(&user_id).unwrap());
         assert!(!user_id.is_subtype(&write_authorized_user_id).unwrap());
 
-        assert!(write_authorized_user_id
-            .is_subtype(&read_authorized_user_id)
-            .unwrap());
-        assert!(!read_authorized_user_id
-            .is_subtype(&write_authorized_user_id)
-            .unwrap());
+        assert!(
+            write_authorized_user_id
+                .is_subtype(&read_authorized_user_id)
+                .unwrap()
+        );
+        assert!(
+            !read_authorized_user_id
+                .is_subtype(&write_authorized_user_id)
+                .unwrap()
+        );
     }
 
     #[test]

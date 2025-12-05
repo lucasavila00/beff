@@ -128,7 +128,6 @@ pub enum DiagnosticInfoMessage {
     UniqueNonSerializable,
     ReadonlyNonSerializable,
     ThisTypeNonSerializable,
-    TsFnOrConstructorTypeNonSerializable,
     TsConditionalTypeNonSerializable,
     TsInferTypeNonSerializable,
     TsTypePredicateNonSerializable,
@@ -361,9 +360,6 @@ impl DiagnosticInfoMessage {
             }
             DiagnosticInfoMessage::ThisTypeNonSerializable => {
                 "'This' type cannot be extracted".to_string()
-            }
-            DiagnosticInfoMessage::TsFnOrConstructorTypeNonSerializable => {
-                "Function or constructor type cannot be extracted".to_string()
             }
             DiagnosticInfoMessage::TsConditionalTypeNonSerializable => {
                 "Conditional type cannot be extracted".to_string()
