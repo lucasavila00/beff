@@ -1307,41 +1307,77 @@ export class ObjectRuntype implements Runtype {
   }
 }
 
-export const buildParserFromRuntype = (runtype: Runtype, name: string, isB: boolean) => {
-  const validate: BeffParser<any>["validate"] = ((input: any, options: ParseOptions) => {
+class ParserFromRuntype implements BeffParser<any> {
+  _runtype: Runtype;
+  name: string;
+  private isB: boolean;
+  constructor(runtype: Runtype, name: string, isB: boolean) {
+    this._runtype = runtype;
+    this.name = name;
+    this.isB = isB;
+  }
+  parse(input: any, options?: ParseOptions): any {
+    const safe = this.safeParse(input, options);
+    if (safe.success) {
+      return safe.data;
+    }
+    const explained = printErrors(safe.errors, []);
+    throw new Error(`Failed to parse ${this.name} - ${explained}`);
+  }
+  safeParse(
+    input: any,
+    options?: ParseOptions,
+  ): { success: false; errors: DecodeError[] } | { success: true; data: any } {
+    const disallowExtraProperties = options?.disallowExtraProperties ?? false;
+    const ok = this.validate(input, options);
+    if (ok) {
+      let ctx = { disallowExtraProperties };
+      const parsed = this._runtype.parseAfterValidation(ctx, input);
+      return { success: true, data: parsed };
+    }
+    let ctx = { path: [], disallowExtraProperties };
+    return {
+      success: false,
+      errors: this._runtype.reportDecodeError(ctx, input).slice(0, 10),
+    };
+  }
+  zod(): z.ZodType<any, z.ZodTypeDef, any> {
+    //@ts-ignore
+    return z.custom(
+      (data: any) => this.validate(data),
+      //@ts-ignore
+      (val: any) => {
+        const errors = this._runtype.reportDecodeError({ path: [], disallowExtraProperties: false }, val);
+        return printErrors(errors, []);
+      },
+    );
+  }
+  validate(input: any, options?: ParseOptions): input is any {
     const disallowExtraProperties = options?.disallowExtraProperties ?? false;
     const ctx = { disallowExtraProperties };
-    const ok = runtype.validate(ctx, input);
+    const ok = this._runtype.validate(ctx, input);
     if (typeof ok !== "boolean") {
       throw new Error("INTERNAL ERROR: Expected boolean");
     }
     return ok;
-  }) as any;
-
-  const schema = () => {
+  }
+  schema(): JSONSchema7 {
     const ctx = {
       path: [],
       seen: {},
     };
-    return runtype.schema(ctx);
-  };
-  const hash = () => {
-    const ctx = {
-      seen: {},
-    };
-    return runtype.hash(ctx);
-  };
-
-  const describe = () => {
+    return this._runtype.schema(ctx);
+  }
+  describe(): string {
     const ctx: DescribeContext = {
       deps: {},
       deps_counter: {},
       measure: true,
     };
-    let out = runtype.describe(ctx);
+    let out = this._runtype.describe(ctx);
     ctx["deps"] = {};
     ctx["measure"] = false;
-    out = runtype.describe(ctx);
+    out = this._runtype.describe(ctx);
     let sortedDepsKeys = Object.keys(ctx.deps).sort();
     // if sorted deps includes k, make it last
     // if (sortedDepsKeys.includes(k)) {
@@ -1353,59 +1389,22 @@ export const buildParserFromRuntype = (runtype: Runtype, name: string, isB: bool
       })
       .join("\n\n");
 
-    if (isB) {
+    if (this.isB) {
       return [depsPart, out].filter((it) => it != null && it.length > 0).join("\n\n");
     }
     // if (k in ctx.deps) {
     //   return depsPart;
     // }
-    const outPart = `type Codec${name} = ${out};`;
+    const outPart = `type Codec${this.name} = ${out};`;
     return [depsPart, outPart].filter((it) => it != null && it.length > 0).join("\n\n");
-  };
-
-  const safeParse: BeffParser<any>["safeParse"] = (input, options) => {
-    const disallowExtraProperties = options?.disallowExtraProperties ?? false;
-    const ok = validate(input, options);
-    if (ok) {
-      let ctx = { disallowExtraProperties };
-      const parsed = runtype.parseAfterValidation(ctx, input);
-      return { success: true, data: parsed };
-    }
-    let ctx = { path: [], disallowExtraProperties };
-    return {
-      success: false,
-      errors: runtype.reportDecodeError(ctx, input).slice(0, 10),
+  }
+  hash(): number {
+    const ctx = {
+      seen: {},
     };
-  };
-  const parse: BeffParser<any>["parse"] = (input, options) => {
-    const safe = safeParse(input, options);
-    if (safe.success) {
-      return safe.data;
-    }
-    const explained = printErrors(safe.errors, []);
-    throw new Error(`Failed to parse ${name} - ${explained}`);
-  };
-  const zod = () => {
-    //@ts-ignore
-    return z.custom(
-      (data: any) => validate(data),
-      //@ts-ignore
-      (val: any) => {
-        const errors = runtype.reportDecodeError({ path: [], disallowExtraProperties: false }, val);
-        return printErrors(errors, []);
-      },
-    );
-  };
-  const it: BeffParser<any> = {
-    validate,
-    schema,
-    describe,
-    safeParse,
-    parse,
-    zod,
-    name: name,
-    hash,
-    _runtype: runtype,
-  };
-  return it;
-};
+    return this._runtype.hash(ctx);
+  }
+}
+
+export const buildParserFromRuntype = (runtype: Runtype, name: string, isB: boolean): BeffParser<any> =>
+  new ParserFromRuntype(runtype, name, isB);
