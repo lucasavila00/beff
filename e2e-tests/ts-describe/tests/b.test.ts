@@ -1,4 +1,4 @@
-import { b, createNamedType, overrideNamedType } from "@beff/client";
+import { b, buntyped, createNamedType, overrideNamedType } from "@beff/client";
 import { it, expect } from "vitest";
 
 const Person = createNamedType(
@@ -38,6 +38,10 @@ it("works", () => {
   expect(b.Any().describe()).toMatchInlineSnapshot('"any"');
   expect(b.Unknown().describe()).toMatchInlineSnapshot('"any"');
   expect(b.Void().describe()).toMatchInlineSnapshot('"void"');
+  expect(b.Const("a").describe()).toMatchInlineSnapshot('"\\"a\\""');
+  expect(buntyped.Union(b.Const("a"), b.Const("b")).describe()).toMatchInlineSnapshot(
+    '"(\\"a\\" | \\"b\\")"',
+  );
 
   expect(Person.describe()).toMatchInlineSnapshot('"type CodecPerson = { age: number, name: string };"');
   expect(RecursivePerson.describe()).toMatchInlineSnapshot(

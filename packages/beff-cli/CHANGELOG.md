@@ -1,5 +1,11 @@
 # @beff/cli
 
+## 0.0.119
+
+### Patch Changes
+
+- add untyped api
+
 ## 0.0.118
 
 ### Patch Changes

@@ -1,5 +1,13 @@
 # @beff/client
 
+## 0.0.119
+
+### Patch Changes
+
+- add untyped api
+- Updated dependencies
+  - @beff/cli@0.0.119
+
 ## 0.0.118
 
 ### Patch Changes
