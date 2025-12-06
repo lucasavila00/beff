@@ -25,74 +25,16 @@ const {
   AnyOfDiscriminatedRuntype,
   ObjectRuntype,
   OptionalFieldRuntype,
+  BaseRefRuntype,
   registerStringFormatter,
   registerNumberFormatter,
   buildParserFromRuntype,
   generateHashFromString,
 } = require("@beff/client/codegen-v2");
 
-
-class RefRuntype  {
-  refName
-  constructor(refName) {
-    this.refName = refName;
-  }
-  describe(ctx) {
-    const name = this.refName;
-    const to = namedRuntypes[this.refName];
-    if (ctx.measure) {
-      ctx.deps_counter[name] = (ctx.deps_counter[name] || 0) + 1;
-      if (ctx.deps[name]) {
-        return name;
-      }
-      ctx.deps[name] = true;
-      ctx.deps[name] = to.describe(ctx);
-      return name;
-    } else {
-      if (ctx.deps_counter[name] > 1) {
-        if (!ctx.deps[name]) {
-          ctx.deps[name] = true;
-          ctx.deps[name] = to.describe(ctx);
-        }
-        return name;
-      } else {
-        return to.describe(ctx);
-      }
-    }
-  }
-  schema(ctx) {
-    const name = this.refName;
-    const to = namedRuntypes[this.refName];
-    if (ctx.seen[name]) {
-      return {};
-    }
-    ctx.seen[name] = true;
-    var tmp = to.schema(ctx);
-    delete ctx.seen[name];
-    return tmp;
-  }
-  hash(ctx) {
-    const name = this.refName;
-    const to = namedRuntypes[this.refName];
-    if (ctx.seen[name]) {
-      return generateHashFromString(name);
-    }
-    ctx.seen[name] = true;
-    var tmp = to.hash(ctx);
-    delete ctx.seen[name];
-    return tmp;
-  }
-  validate(ctx, input) {
-    const to = namedRuntypes[this.refName];
-    return to.validate(ctx, input);
-  }
-  parseAfterValidation(ctx, input) {
-    const to = namedRuntypes[this.refName];
-    return to.parseAfterValidation(ctx, input);
-  }
-  reportDecodeError(ctx, input) {
-    const to = namedRuntypes[this.refName];
-    return to.reportDecodeError(ctx, input);
+class RefRuntype extends BaseRefRuntype  {
+  getNamedRuntypes() {
+    return namedRuntypes;
   }
 }
 

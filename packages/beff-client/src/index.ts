@@ -22,3 +22,4 @@ export {
   JSONSchema7Definition,
   JSONSchema7,
 } from "./json-schema";
+export { createNamedType, overrideNamedType } from "./codegen-v2";
