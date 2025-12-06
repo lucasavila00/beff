@@ -1,5 +1,5 @@
-export { printErrors } from "./err";
-export { b, buntyped } from "./b";
+export { printErrors } from "./err.js";
+export { b, buntyped } from "./b.js";
 export {
   StringFormat,
   StringFormatExtends,
@@ -12,7 +12,7 @@ export {
   BeffParser,
   BuildParserFunction,
   TypeOf,
-} from "./types";
+} from "./types.js";
 export {
   JSONSchema7TypeName,
   JSONSchema7Type,
@@ -21,5 +21,5 @@ export {
   JSONSchema7Version,
   JSONSchema7Definition,
   JSONSchema7,
-} from "./json-schema";
-export { createNamedType, overrideNamedType } from "./codegen-v2";
+} from "./json-schema.js";
+export { createNamedType, overrideNamedType } from "./codegen-v2.js";

@@ -4,7 +4,7 @@ import {
   type ParseOptions,
   type RegularDecodeError,
   type UnionDecodeError,
-} from "./types";
+} from "./types.js";
 import { z } from "zod";
 import {
   generateHashFromString,
@@ -26,10 +26,10 @@ import {
   allOfHash,
   anyOfHash,
   optionalFieldHash,
-} from "./hash";
-import { JSONSchema7 } from "./json-schema";
-import { printErrors } from "./err";
-export { generateHashFromString, generateHashFromNumbers } from "./hash";
+} from "./hash.js";
+import { JSONSchema7 } from "./json-schema.js";
+import { printErrors } from "./err.js";
+export { generateHashFromString, generateHashFromNumbers } from "./hash.js";
 
 const JSON_PROTO = Object.getPrototypeOf({});
 

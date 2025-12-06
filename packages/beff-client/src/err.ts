@@ -1,4 +1,4 @@
-import { RegularDecodeError, UnionDecodeError, DecodeError } from "./types";
+import { RegularDecodeError, UnionDecodeError, DecodeError } from "./types.js";
 
 const prettyPrintValue = (it: unknown): string => {
   if (typeof it === "string") {

@@ -1,5 +1,13 @@
 # @beff/client
 
+## 0.0.120
+
+### Patch Changes
+
+- fix esm build
+- Updated dependencies
+  - @beff/cli@0.0.120
+
 ## 0.0.119
 
 ### Patch Changes

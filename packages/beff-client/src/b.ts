@@ -8,8 +8,8 @@ import {
   ObjectRuntype,
   Runtype,
   TypeofRuntype,
-} from "./codegen-v2";
-import { BeffParser } from "./types";
+} from "./codegen-v2.js";
+import { BeffParser } from "./types.js";
 
 const Object_ = <T extends Record<string, BeffParser<any>>>(
   fields: T,
