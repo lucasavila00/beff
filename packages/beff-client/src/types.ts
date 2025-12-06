@@ -1,5 +1,5 @@
 import type { ZodType } from "zod";
-import { JSONSchema7 } from "./json-schema";
+import { JSONSchema7 } from "./json-schema.js";
 
 export type StringFormat<Tag1 extends string> = string & { [k in Tag1]: Tag1 };
 
