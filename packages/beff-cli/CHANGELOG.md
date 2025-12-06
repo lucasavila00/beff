@@ -1,5 +1,11 @@
 # @beff/cli
 
+## 0.0.117
+
+### Patch Changes
+
+- improve func types
+
 ## 0.0.116
 
 ### Patch Changes
