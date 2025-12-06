@@ -1,5 +1,11 @@
 # @beff/cli
 
+## 0.0.118
+
+### Patch Changes
+
+- named types programatically
+
 ## 0.0.117
 
 ### Patch Changes

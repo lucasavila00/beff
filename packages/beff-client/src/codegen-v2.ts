@@ -1306,15 +1306,103 @@ export class ObjectRuntype implements Runtype {
     return generateHashFromNumbers(acc);
   }
 }
+export abstract class BaseRefRuntype implements Runtype {
+  refName: string;
+  constructor(refName: string) {
+    this.refName = refName;
+  }
+  abstract getNamedRuntypes(): Record<string, Runtype>;
+  describe(ctx: DescribeContext): string {
+    const name = this.refName;
+    const to = this.getNamedRuntypes()[this.refName];
+    if (ctx.measure) {
+      ctx.deps_counter[name] = (ctx.deps_counter[name] || 0) + 1;
+      if (ctx.deps[name]) {
+        return name;
+      }
+      ctx.deps[name] = true;
+      ctx.deps[name] = to.describe(ctx);
+      return name;
+    } else {
+      if (ctx.deps_counter[name] > 1) {
+        if (!ctx.deps[name]) {
+          ctx.deps[name] = true;
+          ctx.deps[name] = to.describe(ctx);
+        }
+        return name;
+      } else {
+        return to.describe(ctx);
+      }
+    }
+  }
+  schema(ctx: SchemaContext): JSONSchema7 {
+    const name = this.refName;
+    const to = this.getNamedRuntypes()[this.refName];
+    if (ctx.seen[name]) {
+      return {};
+    }
+    ctx.seen[name] = true;
+    var tmp = to.schema(ctx);
+    delete ctx.seen[name];
+    return tmp;
+  }
+  hash(ctx: HashContext): number {
+    const name = this.refName;
+    const to = this.getNamedRuntypes()[this.refName];
+    if (ctx.seen[name]) {
+      return generateHashFromString(name);
+    }
+    ctx.seen[name] = true;
+    var tmp = to.hash(ctx);
+    delete ctx.seen[name];
+    return tmp;
+  }
+  validate(ctx: ValidateContext, input: any): boolean {
+    const to = this.getNamedRuntypes()[this.refName];
+    return to.validate(ctx, input);
+  }
+  parseAfterValidation(ctx: ParseContext, input: any): any {
+    const to = this.getNamedRuntypes()[this.refName];
+    return to.parseAfterValidation(ctx, input);
+  }
+  reportDecodeError(ctx: ReportContext, input: any): DecodeError[] {
+    const to = this.getNamedRuntypes()[this.refName];
+    return to.reportDecodeError(ctx, input);
+  }
+}
+
+const namedRuntypes: Record<string, Runtype> = {};
+
+class RuntimeRefRuntype extends BaseRefRuntype {
+  getNamedRuntypes(): Record<string, Runtype> {
+    return namedRuntypes;
+  }
+}
+const createNamedTypeImpl = (name: string, runtype: Runtype) => {
+  if (name in namedRuntypes) {
+    throw new Error(`Named type ${name} already exists`);
+  }
+  namedRuntypes[name] = runtype;
+  return buildParserFromRuntype(new RuntimeRefRuntype(name), name, false);
+};
+export const createNamedType = <T>(name: string, p: BeffParser<T>): BeffParser<T> => {
+  return createNamedTypeImpl(name, (p as ParserFromRuntype)._runtype);
+};
+export const overrideNamedType = (name: string, runtype: BeffParser<any>): void => {
+  if (!(name in namedRuntypes)) {
+    throw new Error(`Named type ${name} does not exist`);
+  }
+  namedRuntypes[name] = (runtype as ParserFromRuntype)._runtype;
+};
 
 class ParserFromRuntype implements BeffParser<any> {
   _runtype: Runtype;
   name: string;
-  private isB: boolean;
-  constructor(runtype: Runtype, name: string, isB: boolean) {
+  private hideTypeNameInDescribe: boolean;
+  constructor(runtype: Runtype, name: string, hideTypeNameInDescribe: boolean) {
     this._runtype = runtype;
     this.name = name;
-    this.isB = isB;
+    this.hideTypeNameInDescribe = hideTypeNameInDescribe;
   }
   parse(input: any, options?: ParseOptions): any {
     const safe = this.safeParse(input, options);
@@ -1389,7 +1477,7 @@ class ParserFromRuntype implements BeffParser<any> {
       })
       .join("\n\n");
 
-    if (this.isB) {
+    if (this.hideTypeNameInDescribe) {
       return [depsPart, out].filter((it) => it != null && it.length > 0).join("\n\n");
     }
     // if (k in ctx.deps) {
@@ -1406,5 +1494,8 @@ class ParserFromRuntype implements BeffParser<any> {
   }
 }
 
-export const buildParserFromRuntype = (runtype: Runtype, name: string, isB: boolean): BeffParser<any> =>
-  new ParserFromRuntype(runtype, name, isB);
+export const buildParserFromRuntype = (
+  runtype: Runtype,
+  name: string,
+  hideTypeNameInDescribe: boolean,
+): BeffParser<any> => new ParserFromRuntype(runtype, name, hideTypeNameInDescribe);

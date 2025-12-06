@@ -1,5 +1,13 @@
 # @beff/client
 
+## 0.0.118
+
+### Patch Changes
+
+- named types programatically
+- Updated dependencies
+  - @beff/cli@0.0.118
+
 ## 0.0.117
 
 ### Patch Changes

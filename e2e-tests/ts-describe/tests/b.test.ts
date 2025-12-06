@@ -1,5 +1,23 @@
-import { b } from "@beff/client";
+import { b, createNamedType, overrideNamedType } from "@beff/client";
 import { it, expect } from "vitest";
+
+const Person = createNamedType(
+  "Person",
+  b.Object({
+    name: b.String(),
+    age: b.Number(),
+  }),
+);
+
+const RecursivePerson = createNamedType("RecursivePerson", b.Unknown());
+overrideNamedType(
+  "RecursivePerson",
+  b.Object({
+    name: b.String(),
+    age: b.Number(),
+    parent: RecursivePerson,
+  }),
+);
 
 it("works", () => {
   expect(
@@ -20,4 +38,13 @@ it("works", () => {
   expect(b.Any().describe()).toMatchInlineSnapshot('"any"');
   expect(b.Unknown().describe()).toMatchInlineSnapshot('"any"');
   expect(b.Void().describe()).toMatchInlineSnapshot('"void"');
+
+  expect(Person.describe()).toMatchInlineSnapshot('"type CodecPerson = { age: number, name: string };"');
+  expect(RecursivePerson.describe()).toMatchInlineSnapshot(
+    `
+    "type RecursivePerson = { age: number, name: string, parent: RecursivePerson };
+
+    type CodecRecursivePerson = RecursivePerson;"
+  `,
+  );
 });
