@@ -261,7 +261,9 @@ impl<'a> ToSemTypeConverter<'a> {
                 let chd = self.convert_to_sem_type(it, builder)?;
                 Ok(chd.complement()?)
             }
-            Runtype::Function => Ok(SemTypeContext::function().into()),
+            Runtype::Function => {
+                bail!("function runtype cannot be converted to semtype")
+            }
             Runtype::Undefined => Ok(SemTypeContext::undefined().into()),
             Runtype::Void => Ok(SemTypeContext::void().into()),
         }

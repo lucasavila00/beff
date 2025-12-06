@@ -2982,10 +2982,7 @@ impl<'a, R: FileManager> FrontendCtx<'a, R> {
             TsType::TsFnOrConstructorType(
                 TsFnOrConstructorType::TsConstructorType(TsConstructorType { .. })
                 | TsFnOrConstructorType::TsFnType(TsFnType { .. }),
-            ) => self.error(
-                &anchor,
-                DiagnosticInfoMessage::TsFnOrConstructorTypeNonSerializable,
-            ),
+            ) => Ok(Runtype::Function),
             TsType::TsInferType(TsInferType { .. }) => {
                 self.error(&anchor, DiagnosticInfoMessage::TsInferTypeNonSerializable)
             }

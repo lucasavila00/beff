@@ -594,7 +594,6 @@ mod tests {
             Runtype::BigInt,
             Runtype::Date,
             Runtype::AnyArrayLike,
-            Runtype::Function,
             Runtype::object(vec![]),
         ];
 
