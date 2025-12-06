@@ -1,6 +1,5 @@
 import type { ZodType } from "zod";
 import { JSONSchema7 } from "./json-schema";
-import { Runtype } from "./codegen-v2";
 
 export type StringFormat<Tag1 extends string> = string & { [k in Tag1]: Tag1 };
 
@@ -43,7 +42,6 @@ export type BeffParser<T> = {
   schema: () => JSONSchema7;
   describe: () => string;
   hash: () => number;
-  _runtype: Runtype;
 };
 type Parsers<T> = {
   [K in keyof T]: BeffParser<T[K]>;
