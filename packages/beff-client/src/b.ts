@@ -16,7 +16,7 @@ const Object_ = <T extends Record<string, BeffParser<any>>>(
 }> => {
   const props: Record<string, Runtype> = {};
   for (const key of Object.keys(fields)) {
-    props[key] = fields[key]._runtype;
+    props[key] = (fields[key] as any)._runtype;
   }
   return buildParserFromRuntype(new ObjectRuntype(props, []), "b.Object", true);
 };
@@ -45,7 +45,7 @@ const unknwonParser = buildParserFromRuntype(new AnyRuntype(), "Unknown", true);
 const Unknown_ = (): BeffParser<unknown> => unknwonParser;
 
 const Array_ = <T>(parser: BeffParser<T>): BeffParser<T[]> =>
-  buildParserFromRuntype(new ArrayRuntype(parser._runtype), "b.Array", true);
+  buildParserFromRuntype(new ArrayRuntype((parser as any)._runtype), "b.Array", true);
 
 const ReadOnlyArray_ = <T>(parser: BeffParser<T>): BeffParser<readonly T[]> =>
   Array_(parser) as BeffParser<readonly T[]>;
