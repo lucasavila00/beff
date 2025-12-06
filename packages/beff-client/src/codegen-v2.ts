@@ -1318,6 +1318,8 @@ export abstract class BaseRefRuntype implements Runtype {
     if (ctx.measure) {
       ctx.deps_counter[name] = (ctx.deps_counter[name] || 0) + 1;
       if (ctx.deps[name]) {
+        // TODO: if it is string, we need ot check if the string is the same as we would describe now
+        // to prevent different concrete RefRuntypes to conflict!
         return name;
       }
       ctx.deps[name] = true;

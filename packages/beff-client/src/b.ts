@@ -1,7 +1,9 @@
 import {
+  AnyOfRuntype,
   AnyRuntype,
   ArrayRuntype,
   buildParserFromRuntype,
+  ConstRuntype,
   NullishRuntype,
   ObjectRuntype,
   Runtype,
@@ -50,6 +52,10 @@ const Array_ = <T>(parser: BeffParser<T>): BeffParser<T[]> =>
 const ReadOnlyArray_ = <T>(parser: BeffParser<T>): BeffParser<readonly T[]> =>
   Array_(parser) as BeffParser<readonly T[]>;
 
+const Const_ = <const T extends string | number | boolean>(value: T): BeffParser<T> => {
+  return buildParserFromRuntype(new ConstRuntype(value), `b.Const`, true) as BeffParser<T>;
+};
+
 export const b = {
   Object: Object_,
   String: String_,
@@ -62,4 +68,13 @@ export const b = {
   Unknown: Unknown_,
   Void: Void_,
   ReadOnlyArray: ReadOnlyArray_,
+  Const: Const_,
+};
+
+const UnionUntyped_ = (...parsers: BeffParser<any>[]): BeffParser<any> => {
+  const rts = parsers.map((p) => (p as any)._runtype);
+  return buildParserFromRuntype(new AnyOfRuntype(rts), "b.UnionUntyped", true);
+};
+export const buntyped = {
+  Union: UnionUntyped_,
 };

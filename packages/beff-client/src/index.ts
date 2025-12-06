@@ -1,5 +1,5 @@
 export { printErrors } from "./err";
-export { b } from "./b";
+export { b, buntyped } from "./b";
 export {
   StringFormat,
   StringFormatExtends,
