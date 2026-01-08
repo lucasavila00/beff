@@ -4,6 +4,7 @@ import {
   ArrayRuntype,
   buildParserFromRuntype,
   ConstRuntype,
+  DateRuntype,
   NullishRuntype,
   ObjectRuntype,
   Runtype,
@@ -46,6 +47,9 @@ const Any_ = (): BeffParser<any> => anyParser;
 const unknwonParser = buildParserFromRuntype(new AnyRuntype(), "Unknown", true);
 const Unknown_ = (): BeffParser<unknown> => unknwonParser;
 
+const dateParser = buildParserFromRuntype(new DateRuntype(), "Date", true);
+const Date_ = (): BeffParser<Date> => dateParser;
+
 const Array_ = <T>(parser: BeffParser<T>): BeffParser<T[]> =>
   buildParserFromRuntype(new ArrayRuntype((parser as any)._runtype), "b.Array", true);
 
@@ -69,6 +73,7 @@ export const b = {
   Void: Void_,
   ReadOnlyArray: ReadOnlyArray_,
   Const: Const_,
+  Date: Date_,
 };
 
 const UnionUntyped_ = (...parsers: BeffParser<any>[]): BeffParser<any> => {
