@@ -30,6 +30,7 @@ const {
   registerNumberFormatter,
   buildParserFromRuntype,
   generateHashFromString,
+  TypedArrayRuntype,
 } = require("@beff/client/codegen-v2");
 
 class RefRuntype extends BaseRefRuntype  {

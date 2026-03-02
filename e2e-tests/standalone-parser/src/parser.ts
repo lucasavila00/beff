@@ -206,6 +206,11 @@ export type OnlyAKey = {
 
 export type PartialRepro = Partial<{ a: string; b: string }>;
 
+export type Uint8ArrayType = Uint8Array;
+export type Int32ArrayType = Int32Array;
+export type Float64ArrayType = Float64Array;
+export type BigInt64ArrayType = BigInt64Array;
+
 export const {
   Version,
   Version2,
@@ -252,6 +257,10 @@ export const {
   OnlyAKey: OnlyAKeyCodec,
   ObjectWithArr: ObjectWithArrCodec,
   PartialRepro: PartialReproCodec,
+  Uint8ArrayCodec: Uint8ArrayCodec,
+  Int32ArrayCodec: Int32ArrayCodec,
+  Float64ArrayCodec: Float64ArrayCodec,
+  BigInt64ArrayCodec: BigInt64ArrayCodec,
 } = parse.buildParsers<{
   PartialRepro: PartialRepro;
   TransportedValue: TransportedValue;
@@ -308,6 +317,10 @@ export const {
   ReadAuthorizedUserId: ReadAuthorizedUserId;
   WriteAuthorizedUserId: WriteAuthorizedUserId;
   CurrencyPrices: CurrencyPrices;
+  Uint8ArrayCodec: Uint8ArrayType;
+  Int32ArrayCodec: Int32ArrayType;
+  Float64ArrayCodec: Float64ArrayType;
+  BigInt64ArrayCodec: BigInt64ArrayType;
 }>({
   stringFormats: {
     ValidCurrency: (input: string) => {

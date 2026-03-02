@@ -41,6 +41,10 @@ import {
   ReadAuthorizedUserCodec,
   WriteAuthorizedUserCodec,
   CurrencyPricesCodec,
+  Uint8ArrayCodec,
+  Int32ArrayCodec,
+  Float64ArrayCodec,
+  BigInt64ArrayCodec,
 } from "../src/parser";
 import { Arr2 } from "../src/types";
 
@@ -940,6 +944,89 @@ it("works on recursive type", () => {
             "friends",
           ],
           "received": undefined,
+        },
+      ],
+      "success": false,
+    }
+  `);
+});
+
+it("Uint8ArrayCodec", () => {
+  const arr = new Uint8Array([1, 2, 3]);
+  expect(Uint8ArrayCodec.parse(arr)).toBe(arr);
+  expect(Uint8ArrayCodec.safeParse("not a typed array")).toMatchInlineSnapshot(`
+    {
+      "errors": [
+        {
+          "message": "expected Uint8Array",
+          "path": [],
+          "received": "not a typed array",
+        },
+      ],
+      "success": false,
+    }
+  `);
+  expect(Uint8ArrayCodec.safeParse(new Int32Array([1]))).toMatchInlineSnapshot(`
+    {
+      "errors": [
+        {
+          "message": "expected Uint8Array",
+          "path": [],
+          "received": Int32Array [
+            1,
+          ],
+        },
+      ],
+      "success": false,
+    }
+  `);
+});
+it("Int32ArrayCodec", () => {
+  const arr = new Int32Array([10, -20, 30]);
+  expect(Int32ArrayCodec.parse(arr)).toBe(arr);
+  expect(Int32ArrayCodec.safeParse(new Uint8Array([1]))).toMatchInlineSnapshot(`
+    {
+      "errors": [
+        {
+          "message": "expected Int32Array",
+          "path": [],
+          "received": Uint8Array [
+            1,
+          ],
+        },
+      ],
+      "success": false,
+    }
+  `);
+});
+it("Float64ArrayCodec", () => {
+  const arr = new Float64Array([1.5, 2.5]);
+  expect(Float64ArrayCodec.parse(arr)).toBe(arr);
+  expect(Float64ArrayCodec.safeParse(123)).toMatchInlineSnapshot(`
+    {
+      "errors": [
+        {
+          "message": "expected Float64Array",
+          "path": [],
+          "received": 123,
+        },
+      ],
+      "success": false,
+    }
+  `);
+});
+it("BigInt64ArrayCodec", () => {
+  const arr = new BigInt64Array([1n, 2n]);
+  expect(BigInt64ArrayCodec.parse(arr)).toBe(arr);
+  expect(BigInt64ArrayCodec.safeParse(new Float64Array([1.0]))).toMatchInlineSnapshot(`
+    {
+      "errors": [
+        {
+          "message": "expected BigInt64Array",
+          "path": [],
+          "received": Float64Array [
+            1,
+          ],
         },
       ],
       "success": false,

@@ -96,7 +96,11 @@ function deepmergeConstructor(options: any) {
 
   function isMergeableObject(value: any) {
     return (
-      typeof value === "object" && value !== null && !(value instanceof RegExp) && !(value instanceof Date)
+      typeof value === "object" &&
+      value !== null &&
+      !(value instanceof RegExp) &&
+      !(value instanceof Date) &&
+      !ArrayBuffer.isView(value)
     );
   }
 
@@ -112,10 +116,15 @@ function deepmergeConstructor(options: any) {
           value === null ||
           value instanceof RegExp ||
           value instanceof Date ||
+          ArrayBuffer.isView(value) ||
           // @ts-ignore
           value instanceof Buffer
       : (value: any) =>
-          typeof value !== "object" || value === null || value instanceof RegExp || value instanceof Date;
+          typeof value !== "object" ||
+          value === null ||
+          value instanceof RegExp ||
+          value instanceof Date ||
+          ArrayBuffer.isView(value);
 
   const mergeArray =
     options && typeof options.mergeArray === "function"
@@ -533,6 +542,39 @@ export class BigIntRuntype implements Runtype {
   }
   hash(_ctx: HashContext): number {
     return bigintHash;
+  }
+}
+
+export class TypedArrayRuntype implements Runtype {
+  private ctorName: string;
+  private hashValue: number;
+
+  constructor(ctorName: string) {
+    this.ctorName = ctorName;
+    this.hashValue = generateHashFromString(ctorName.toLowerCase());
+  }
+  private getCtor(): (new (...args: any[]) => ArrayBufferView) | undefined {
+    return (globalThis as any)[this.ctorName];
+  }
+  describe(_ctx: DescribeContext): string {
+    return this.ctorName;
+  }
+  schema(ctx: SchemaContext): JSONSchema7 {
+    throw new Error(buildSchemaErrorMessage(ctx, `Cannot generate JSON Schema for ${this.ctorName}`));
+  }
+  validate(_ctx: ValidateContext, input: unknown): boolean {
+    const ctor = this.getCtor();
+    if (ctor == null) return false;
+    return input instanceof ctor;
+  }
+  parseAfterValidation(_ctx: ParseContext, input: unknown): unknown {
+    return input;
+  }
+  reportDecodeError(ctx: ReportContext, input: unknown): DecodeError[] {
+    return buildError(ctx, `expected ${this.ctorName}`, input);
+  }
+  hash(_ctx: HashContext): number {
+    return this.hashValue;
   }
 }
 

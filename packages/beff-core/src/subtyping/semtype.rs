@@ -1,5 +1,6 @@
 use crate::{
     RuntypeUUID,
+    ast::runtype::TypedArrayKind,
     subtyping::{
         IsEmptyStatus,
         bdd::{IndexedPropertiesAtomic, MappingAtomicType},
@@ -534,6 +535,19 @@ impl SemTypeContext {
         SemType::new_basic(SubTypeTag::BigInt.code())
     }
 
+    pub(crate) fn typed_array(kind: TypedArrayKind) -> ComplexSemType {
+        SemType::new_complex(
+            0x0,
+            vec![
+                ProperSubtype::TypedArray {
+                    allowed: true,
+                    values: vec![kind],
+                }
+                .into(),
+            ],
+        )
+    }
+
     fn get_complex_sub_type_data(s: &Vec<Rc<ProperSubtype>>, tag: SubTypeTag) -> SubType {
         for t in s {
             match (t.as_ref(), &tag) {
@@ -541,7 +555,8 @@ impl SemTypeContext {
                 | (ProperSubtype::String { .. }, SubTypeTag::String)
                 | (ProperSubtype::Mapping(_), SubTypeTag::Mapping)
                 | (ProperSubtype::List(_), SubTypeTag::List)
-                | (ProperSubtype::Boolean(_), SubTypeTag::Boolean) => {
+                | (ProperSubtype::Boolean(_), SubTypeTag::Boolean)
+                | (ProperSubtype::TypedArray { .. }, SubTypeTag::TypedArray) => {
                     return SubType::Proper(t.clone());
                 }
                 _ => {}

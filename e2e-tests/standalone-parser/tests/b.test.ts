@@ -116,3 +116,85 @@ it("mix", () => {
     }
   `);
 });
+it("b.Uint8Array parse", () => {
+  const codec = b.Uint8Array();
+  const arr = new Uint8Array([1, 2, 3]);
+  expect(codec.parse(arr)).toBe(arr);
+  expect(codec.name).toMatchInlineSnapshot('"Uint8Array"');
+});
+it("b.Uint8Array safeParse invalid", () => {
+  const codec = b.Uint8Array();
+  expect(codec.safeParse([1, 2, 3])).toMatchInlineSnapshot(`
+    {
+      "errors": [
+        {
+          "message": "expected Uint8Array",
+          "path": [],
+          "received": [
+            1,
+            2,
+            3,
+          ],
+        },
+      ],
+      "success": false,
+    }
+  `);
+  expect(codec.safeParse("not a typed array")).toMatchInlineSnapshot(`
+    {
+      "errors": [
+        {
+          "message": "expected Uint8Array",
+          "path": [],
+          "received": "not a typed array",
+        },
+      ],
+      "success": false,
+    }
+  `);
+});
+it("b.Float64Array parse", () => {
+  const codec = b.Float64Array();
+  const arr = new Float64Array([1.5, 2.5]);
+  expect(codec.parse(arr)).toBe(arr);
+});
+it("b.Float64Array rejects wrong typed array", () => {
+  const codec = b.Float64Array();
+  const arr = new Uint8Array([1, 2]);
+  expect(codec.safeParse(arr)).toMatchInlineSnapshot(`
+    {
+      "errors": [
+        {
+          "message": "expected Float64Array",
+          "path": [],
+          "received": Uint8Array [
+            1,
+            2,
+          ],
+        },
+      ],
+      "success": false,
+    }
+  `);
+});
+it("b.BigInt64Array parse", () => {
+  const codec = b.BigInt64Array();
+  const arr = new BigInt64Array([1n, 2n]);
+  expect(codec.parse(arr)).toBe(arr);
+});
+it("typed array in object", () => {
+  const codec = b.Object({
+    data: b.Uint8Array(),
+    label: b.String(),
+  });
+  const data = new Uint8Array([10, 20]);
+  expect(
+    codec.parse({
+      data,
+      label: "test",
+    }),
+  ).toStrictEqual({
+    data,
+    label: "test",
+  });
+});

@@ -26,6 +26,7 @@ import {
   registerNumberFormatter,
   buildParserFromRuntype,
   generateHashFromString,
+  TypedArrayRuntype,
 } from "@beff/client/codegen-v2";
 
 class RefRuntype extends BaseRefRuntype  {

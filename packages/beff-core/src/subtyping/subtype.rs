@@ -1,7 +1,7 @@
 use crate::{
     ast::{
         json::N,
-        runtype::{CustomFormat, TplLitType},
+        runtype::{CustomFormat, TplLitType, TypedArrayKind},
     },
     subtyping::{IsEmptyStatus, dnf::dnf_mapping_is_empty},
 };
@@ -30,10 +30,11 @@ pub enum SubTypeTag {
     BigInt = 1 << 8,
     Date = 1 << 9,
     VoidUndefined = 1 << 10,
+    TypedArray = 1 << 11,
 }
 
 pub const VAL: u32 =
-    1 << 1 | 1 << 2 | 1 << 3 | 1 << 4 | 1 << 5 | 1 << 6 | 1 << 7 | 1 << 8 | 1 << 9 | 1 << 10;
+    1 << 1 | 1 << 2 | 1 << 3 | 1 << 4 | 1 << 5 | 1 << 6 | 1 << 7 | 1 << 8 | 1 << 9 | 1 << 10 | 1 << 11;
 
 impl SubTypeTag {
     pub fn code(&self) -> BasicTypeCode {
@@ -53,6 +54,7 @@ impl SubTypeTag {
             SubTypeTag::BigInt,
             SubTypeTag::Date,
             SubTypeTag::VoidUndefined,
+            SubTypeTag::TypedArray,
         ]
     }
 }
@@ -82,6 +84,21 @@ impl SubType {
             return SubType::True(SubTypeTag::String);
         }
         SubType::Proper(ProperSubtype::String { allowed, values }.into())
+    }
+    fn typed_array_subtype(allowed: bool, values: Vec<TypedArrayKind>) -> SubType {
+        if values.is_empty() {
+            if allowed {
+                return SubType::False(SubTypeTag::TypedArray);
+            }
+            return SubType::True(SubTypeTag::TypedArray);
+        }
+        SubType::Proper(
+            ProperSubtype::TypedArray {
+                allowed,
+                values,
+            }
+            .into(),
+        )
     }
     fn void_undefined_subtype(allowed: bool, value: Vec<VoidUndefinedSubtype>) -> SubType {
         if value.is_empty() {
@@ -182,6 +199,12 @@ impl SubtypeCheck for VoidUndefinedSubtype {
         }
     }
 }
+
+impl SubtypeCheck for TypedArrayKind {
+    fn is_subtype(&self, other: &Self) -> Result<bool> {
+        Ok(self == other)
+    }
+}
 #[derive(PartialEq, Eq, Hash, Debug, Ord, PartialOrd)]
 pub enum ProperSubtype {
     Boolean(bool),
@@ -198,6 +221,10 @@ pub enum ProperSubtype {
     VoidUndefined {
         allowed: bool,
         values: Vec<VoidUndefinedSubtype>,
+    },
+    TypedArray {
+        allowed: bool,
+        values: Vec<TypedArrayKind>,
     },
 }
 
@@ -323,6 +350,7 @@ impl ProperSubtypeOps for Rc<ProperSubtype> {
             ProperSubtype::Mapping(bdd) => dnf_mapping_is_empty(bdd, builder),
             ProperSubtype::List(bdd) => list_is_empty(bdd, builder),
             ProperSubtype::VoidUndefined { .. } => Ok(IsEmptyStatus::NotEmpty),
+            ProperSubtype::TypedArray { .. } => Ok(IsEmptyStatus::NotEmpty),
         }
     }
 
@@ -397,6 +425,29 @@ impl ProperSubtypeOps for Rc<ProperSubtype> {
             (ProperSubtype::List(b1), ProperSubtype::List(b2)) => {
                 Ok(SubType::Proper(ProperSubtype::List(b1.intersect(b2)).into()).into())
             }
+            (
+                ProperSubtype::TypedArray {
+                    allowed: a1,
+                    values: v1,
+                },
+                ProperSubtype::TypedArray {
+                    allowed: a2,
+                    values: v2,
+                },
+            ) => match (*a1, *a2) {
+                (true, true) => {
+                    Ok(SubType::typed_array_subtype(true, sub_vec_intersect(v1, v2)?).into())
+                }
+                (false, false) => {
+                    Ok(SubType::typed_array_subtype(false, sub_vec_union(v1, v2)?).into())
+                }
+                (true, false) => {
+                    Ok(SubType::typed_array_subtype(true, sub_vec_diff(v1, v2)?).into())
+                }
+                (false, true) => {
+                    Ok(SubType::typed_array_subtype(true, sub_vec_diff(v2, v1)?).into())
+                }
+            },
 
             _ => unreachable!("intersect should not compare types of different tags"),
         }
@@ -473,6 +524,29 @@ impl ProperSubtypeOps for Rc<ProperSubtype> {
             (ProperSubtype::List(b1), ProperSubtype::List(b2)) => {
                 Ok(SubType::Proper(ProperSubtype::List(b1.union(b2)).into()).into())
             }
+            (
+                ProperSubtype::TypedArray {
+                    allowed: a1,
+                    values: v1,
+                },
+                ProperSubtype::TypedArray {
+                    allowed: a2,
+                    values: v2,
+                },
+            ) => match (*a1, *a2) {
+                (true, true) => {
+                    Ok(SubType::typed_array_subtype(true, sub_vec_union(v1, v2)?).into())
+                }
+                (false, false) => {
+                    Ok(SubType::typed_array_subtype(false, sub_vec_intersect(v1, v2)?).into())
+                }
+                (true, false) => {
+                    Ok(SubType::typed_array_subtype(false, sub_vec_diff(v2, v1)?).into())
+                }
+                (false, true) => {
+                    Ok(SubType::typed_array_subtype(false, sub_vec_diff(v1, v2)?).into())
+                }
+            },
             _ => unreachable!("union should not compare types of different tags"),
         }
     }
@@ -515,6 +589,11 @@ impl ProperSubtypeOps for Rc<ProperSubtype> {
                 values: values.clone(),
             }
             .into(),
+            ProperSubtype::TypedArray { allowed, values } => ProperSubtype::TypedArray {
+                allowed: !allowed,
+                values: values.clone(),
+            }
+            .into(),
         }
     }
 }
@@ -528,6 +607,7 @@ impl ProperSubtype {
             ProperSubtype::Mapping(_) => SubTypeTag::Mapping,
             ProperSubtype::List(_) => SubTypeTag::List,
             ProperSubtype::VoidUndefined { .. } => SubTypeTag::VoidUndefined,
+            ProperSubtype::TypedArray { .. } => SubTypeTag::TypedArray,
         }
     }
     pub fn to_code(&self) -> BasicTypeCode {
