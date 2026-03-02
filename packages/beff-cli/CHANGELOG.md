@@ -1,5 +1,11 @@
 # @beff/cli
 
+## 0.0.122
+
+### Patch Changes
+
+- typed arrays, indexed props
+
 ## 0.0.121
 
 ### Patch Changes
