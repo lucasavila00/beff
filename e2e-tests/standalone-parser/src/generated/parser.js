@@ -161,7 +161,7 @@ const direct_hoist_67 = new ConstRuntype("b");
 const direct_hoist_68 = new ObjectRuntype({
     "tag": direct_hoist_67
 }, []);
-const direct_hoist_69 = new TypedArrayRuntype(BigInt64Array);
+const direct_hoist_69 = new TypedArrayRuntype("BigInt64Array");
 const direct_hoist_70 = new ObjectRuntype({
     "a": direct_hoist_3
 }, []);
@@ -250,8 +250,8 @@ const direct_hoist_89 = new ObjectRuntype({}, [
         "value": direct_hoist_3
     }
 ]);
-const direct_hoist_90 = new TypedArrayRuntype(Float64Array);
-const direct_hoist_91 = new TypedArrayRuntype(Int32Array);
+const direct_hoist_90 = new TypedArrayRuntype("Float64Array");
+const direct_hoist_91 = new TypedArrayRuntype("Int32Array");
 const direct_hoist_92 = new AnyOfConstsRuntype([
     "a"
 ]);
@@ -376,7 +376,7 @@ const direct_hoist_126 = new AnyOfRuntype([
     direct_hoist_3,
     direct_hoist_125
 ]);
-const direct_hoist_127 = new TypedArrayRuntype(Uint8Array);
+const direct_hoist_127 = new TypedArrayRuntype("Uint8Array");
 const direct_hoist_128 = new RefRuntype("OtherEnum__A");
 const direct_hoist_129 = new ObjectRuntype({
     "tag": direct_hoist_128,

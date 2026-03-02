@@ -538,31 +538,34 @@ export class BigIntRuntype implements Runtype {
 }
 
 export class TypedArrayRuntype implements Runtype {
-  private ctor: new (...args: any[]) => ArrayBufferView;
-  private name: string;
+  private ctorName: string;
   private hashValue: number;
 
-  constructor(ctor: new (...args: any[]) => ArrayBufferView) {
-    this.ctor = ctor;
-    this.name = ctor.name;
-    this.hashValue = generateHashFromString(this.name.toLowerCase());
+  constructor(ctorName: string) {
+    this.ctorName = ctorName;
+    this.hashValue = generateHashFromString(ctorName.toLowerCase());
+  }
+  private getCtor(): (new (...args: any[]) => ArrayBufferView) | undefined {
+    return (globalThis as any)[this.ctorName];
   }
   describe(_ctx: DescribeContext): string {
-    return this.name;
+    return this.ctorName;
   }
   schema(ctx: SchemaContext): JSONSchema7 {
     throw new Error(
-      buildSchemaErrorMessage(ctx, `Cannot generate JSON Schema for ${this.name}`)
+      buildSchemaErrorMessage(ctx, `Cannot generate JSON Schema for ${this.ctorName}`)
     );
   }
   validate(_ctx: ValidateContext, input: unknown): boolean {
-    return input instanceof this.ctor;
+    const ctor = this.getCtor();
+    if (ctor == null) return false;
+    return input instanceof ctor;
   }
   parseAfterValidation(_ctx: ParseContext, input: unknown): unknown {
     return input;
   }
   reportDecodeError(ctx: ReportContext, input: unknown): DecodeError[] {
-    return buildError(ctx, `expected ${this.name}`, input);
+    return buildError(ctx, `expected ${this.ctorName}`, input);
   }
   hash(_ctx: HashContext): number {
     return this.hashValue;
