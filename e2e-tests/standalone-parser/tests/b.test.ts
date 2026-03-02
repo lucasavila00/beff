@@ -2,7 +2,6 @@ import { it, expect } from "vitest";
 import { b } from "@beff/client";
 import { AccessLevelCodec } from "../src/parser";
 
-
 it("parse", () => {
   const T3 = b.Object({
     kind: b.String(),

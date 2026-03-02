@@ -96,7 +96,11 @@ function deepmergeConstructor(options: any) {
 
   function isMergeableObject(value: any) {
     return (
-      typeof value === "object" && value !== null && !(value instanceof RegExp) && !(value instanceof Date) && !ArrayBuffer.isView(value)
+      typeof value === "object" &&
+      value !== null &&
+      !(value instanceof RegExp) &&
+      !(value instanceof Date) &&
+      !ArrayBuffer.isView(value)
     );
   }
 
@@ -116,7 +120,11 @@ function deepmergeConstructor(options: any) {
           // @ts-ignore
           value instanceof Buffer
       : (value: any) =>
-          typeof value !== "object" || value === null || value instanceof RegExp || value instanceof Date || ArrayBuffer.isView(value);
+          typeof value !== "object" ||
+          value === null ||
+          value instanceof RegExp ||
+          value instanceof Date ||
+          ArrayBuffer.isView(value);
 
   const mergeArray =
     options && typeof options.mergeArray === "function"
@@ -552,9 +560,7 @@ export class TypedArrayRuntype implements Runtype {
     return this.ctorName;
   }
   schema(ctx: SchemaContext): JSONSchema7 {
-    throw new Error(
-      buildSchemaErrorMessage(ctx, `Cannot generate JSON Schema for ${this.ctorName}`)
-    );
+    throw new Error(buildSchemaErrorMessage(ctx, `Cannot generate JSON Schema for ${this.ctorName}`));
   }
   validate(_ctx: ValidateContext, input: unknown): boolean {
     const ctor = this.getCtor();
