@@ -1185,7 +1185,7 @@ mod tests {
             parse.buildParsers<{ Dec: Alias }>();
         "#), @r#"
         const direct_hoist_0 = new RefRuntype("Alias");
-        const direct_hoist_1 = new TypedArrayRuntype(Uint8Array);
+        const direct_hoist_1 = new TypedArrayRuntype("Uint8Array");
         const namedRuntypes = {
             "Alias": direct_hoist_1
         };
