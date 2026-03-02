@@ -5,6 +5,7 @@ mod tests {
         BffFileName, NamedSchema, RuntypeName, RuntypeUUID, TypeAddress,
         ast::runtype::{
             CustomFormat, IndexedProperty, Runtype, RuntypeConst, TplLitType, TplLitTypeItem,
+            TypedArrayKind,
         },
         subtyping::{
             ToSemType,
@@ -1646,5 +1647,70 @@ mod tests {
             &definitions,
             &definitions
         ));
+    }
+
+    #[test]
+    fn it_works_for_typed_arrays() {
+        let definitions = vec![];
+
+        // identity: Uint8Array is subtype of Uint8Array
+        let t1 = Runtype::TypedArray(TypedArrayKind::Uint8Array);
+        let t2 = Runtype::TypedArray(TypedArrayKind::Uint8Array);
+        let res = rt_is_sub_type(&t1, &t2, &definitions, &definitions);
+        assert!(res);
+
+        // different typed arrays are not subtypes of each other
+        let others = vec![
+            Runtype::TypedArray(TypedArrayKind::Int8Array),
+            Runtype::TypedArray(TypedArrayKind::Uint16Array),
+            Runtype::TypedArray(TypedArrayKind::Float64Array),
+            Runtype::TypedArray(TypedArrayKind::BigInt64Array),
+        ];
+
+        for other in &others {
+            let res = rt_is_sub_type(&t1, other, &definitions, &definitions);
+            assert!(!res);
+            let res = rt_is_sub_type(other, &t1, &definitions, &definitions);
+            assert!(!res);
+        }
+
+        // typed arrays are not subtypes of primitives
+        let primitives = vec![
+            Runtype::String,
+            Runtype::Number,
+            Runtype::Null,
+            Runtype::Boolean,
+            Runtype::Date,
+            Runtype::BigInt,
+        ];
+
+        for prim in &primitives {
+            let res = rt_is_sub_type(&t1, prim, &definitions, &definitions);
+            assert!(!res);
+            let res = rt_is_sub_type(prim, &t1, &definitions, &definitions);
+            assert!(!res);
+        }
+
+        // every type is subtype of any
+        let anyt = Runtype::Any;
+        let res = rt_is_sub_type(&t1, &anyt, &definitions, &definitions);
+        assert!(res);
+
+        // no type is subtype of never
+        let nevert = Runtype::Never;
+        let res = rt_is_sub_type(&t1, &nevert, &definitions, &definitions);
+        assert!(!res);
+
+        // union of typed arrays
+        let union_t = Runtype::any_of(vec![
+            Runtype::TypedArray(TypedArrayKind::Uint8Array),
+            Runtype::TypedArray(TypedArrayKind::Int8Array),
+        ]);
+        // Uint8Array is subtype of (Uint8Array | Int8Array)
+        let res = rt_is_sub_type(&t1, &union_t, &definitions, &definitions);
+        assert!(res);
+        // (Uint8Array | Int8Array) is not subtype of Uint8Array
+        let res = rt_is_sub_type(&union_t, &t1, &definitions, &definitions);
+        assert!(!res);
     }
 }
