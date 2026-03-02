@@ -7,6 +7,7 @@ use crate::{
     NamedSchema, RuntypeName, RuntypeUUID,
     ast::runtype::{
         CustomFormat, IndexedProperty, Optionality, Runtype, RuntypeConst, TplLitTypeItem,
+        TypedArrayKind,
     },
     subtyping::{
         bdd::MappingAtomicType,
@@ -220,6 +221,11 @@ impl<'a, 'b> SchemerContext<'a, 'b> {
                     SubTypeTag::VoidUndefined => {
                         acc.insert(Runtype::Undefined);
                     }
+                    SubTypeTag::TypedArray => {
+                        for kind in TypedArrayKind::all() {
+                            acc.insert(Runtype::TypedArray(kind));
+                        }
+                    }
                 };
             }
         }
@@ -298,6 +304,14 @@ impl<'a, 'b> SchemerContext<'a, 'b> {
                                 acc.insert(maybe_not(Runtype::Undefined, !allowed));
                             }
                         }
+                    }
+                }
+                ProperSubtype::TypedArray {
+                    allowed,
+                    values,
+                } => {
+                    for kind in values {
+                        acc.insert(maybe_not(Runtype::TypedArray(*kind), !allowed));
                     }
                 }
             };

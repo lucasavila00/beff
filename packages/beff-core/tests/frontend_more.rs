@@ -1141,6 +1141,76 @@ mod tests {
         "#);
     }
     #[test]
+    fn uint8array_builtin() {
+        insta::assert_snapshot!(print_types(r#"
+            export type X = Uint8Array;
+            parse.buildParsers<{ X: X }>();
+        "#), @r"
+        type X = Uint8Array;
+
+
+        type BuiltParsers = {
+          X: X,
+        }
+        ");
+    }
+
+    #[test]
+    fn typed_array_variants() {
+        insta::assert_snapshot!(print_types(r#"
+            export type A = Int8Array;
+            export type B = Uint16Array;
+            export type C = Float64Array;
+            parse.buildParsers<{ A: A, B: B, C: C }>();
+        "#), @r"
+        type A = Int8Array;
+
+        type B = Uint16Array;
+
+        type C = Float64Array;
+
+
+        type BuiltParsers = {
+          A: A,
+          B: B,
+          C: C,
+        }
+        ");
+    }
+
+    #[test]
+    fn uint8array_cgen() {
+        insta::assert_snapshot!(print_cgen(r#"
+            export type Alias = Uint8Array;
+            parse.buildParsers<{ Dec: Alias }>();
+        "#), @r#"
+        const direct_hoist_0 = new RefRuntype("Alias");
+        const direct_hoist_1 = new TypedArrayRuntype(Uint8Array);
+        const namedRuntypes = {
+            "Alias": direct_hoist_1
+        };
+        const buildParsersInput = {
+            "Dec": direct_hoist_0
+        };
+        "#);
+    }
+
+    #[test]
+    fn typed_array_in_object() {
+        insta::assert_snapshot!(print_types(r#"
+            export type T = { data: Uint8Array, view: Float32Array };
+            parse.buildParsers<{ T: T }>();
+        "#), @r#"
+        type T = { "data": Uint8Array, "view": Float32Array };
+
+
+        type BuiltParsers = {
+          T: T,
+        }
+        "#);
+    }
+
+    #[test]
     fn import_type_generic() {
         insta::assert_snapshot!(print_types_multifile(&[
             (

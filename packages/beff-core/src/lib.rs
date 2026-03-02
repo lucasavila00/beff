@@ -10,6 +10,7 @@ pub mod wasm_diag;
 
 use crate::ast::runtype::DebugPrintCtx;
 use crate::ast::runtype::Runtype;
+use crate::ast::runtype::TypedArrayKind;
 use crate::swc_tools::ImportReference;
 use crate::swc_tools::SymbolsExportsModule;
 use crate::swc_tools::bind_locals::ParsedModuleLocals;
@@ -333,10 +334,14 @@ pub enum TsBuiltIn {
     Partial,
     Pick,
     Exclude,
+    TypedArray(TypedArrayKind),
 }
 impl fmt::Display for TsBuiltIn {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "{:?}", self)
+        match self {
+            TsBuiltIn::TypedArray(kind) => write!(f, "{}", kind.js_name()),
+            _ => write!(f, "{:?}", self),
+        }
     }
 }
 

@@ -199,6 +199,55 @@ impl TplLitType {
     }
 }
 
+#[derive(PartialEq, Eq, Hash, Debug, Ord, PartialOrd, Clone, Copy)]
+pub enum TypedArrayKind {
+    Uint8Array,
+    Uint8ClampedArray,
+    Uint16Array,
+    Uint32Array,
+    Int8Array,
+    Int16Array,
+    Int32Array,
+    Float32Array,
+    Float64Array,
+    BigInt64Array,
+    BigUint64Array,
+}
+
+impl TypedArrayKind {
+    pub fn js_name(&self) -> &'static str {
+        match self {
+            TypedArrayKind::Uint8Array => "Uint8Array",
+            TypedArrayKind::Uint8ClampedArray => "Uint8ClampedArray",
+            TypedArrayKind::Uint16Array => "Uint16Array",
+            TypedArrayKind::Uint32Array => "Uint32Array",
+            TypedArrayKind::Int8Array => "Int8Array",
+            TypedArrayKind::Int16Array => "Int16Array",
+            TypedArrayKind::Int32Array => "Int32Array",
+            TypedArrayKind::Float32Array => "Float32Array",
+            TypedArrayKind::Float64Array => "Float64Array",
+            TypedArrayKind::BigInt64Array => "BigInt64Array",
+            TypedArrayKind::BigUint64Array => "BigUint64Array",
+        }
+    }
+
+    pub fn all() -> Vec<TypedArrayKind> {
+        vec![
+            TypedArrayKind::Uint8Array,
+            TypedArrayKind::Uint8ClampedArray,
+            TypedArrayKind::Uint16Array,
+            TypedArrayKind::Uint32Array,
+            TypedArrayKind::Int8Array,
+            TypedArrayKind::Int16Array,
+            TypedArrayKind::Int32Array,
+            TypedArrayKind::Float32Array,
+            TypedArrayKind::Float64Array,
+            TypedArrayKind::BigInt64Array,
+            TypedArrayKind::BigUint64Array,
+        ]
+    }
+}
+
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct IndexedProperty {
     pub key: Runtype,
@@ -238,6 +287,7 @@ pub enum Runtype {
     Function,
     Date,
     BigInt,
+    TypedArray(TypedArrayKind),
 }
 
 struct UnionMerger(BTreeSet<Runtype>);
@@ -455,6 +505,7 @@ impl Runtype {
             Runtype::Const(runtype_const) => runtype_const.clone().to_json().debug_print(),
             Runtype::Date => "Date".to_string(),
             Runtype::BigInt => "bigint".to_string(),
+            Runtype::TypedArray(kind) => kind.js_name().to_string(),
             Runtype::Never => "never".to_string(),
             Runtype::StNot(runtype) => {
                 let inner = runtype.debug_print(ctx);

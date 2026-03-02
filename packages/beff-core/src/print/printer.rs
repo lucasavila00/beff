@@ -528,6 +528,9 @@ fn print_runtype(schema: &Runtype, named_schemas: &[NamedSchema], ctx: &mut Prin
         }
         Runtype::Date => no_args_runtype("DateRuntype"),
         Runtype::BigInt => no_args_runtype("BigIntRuntype"),
+        Runtype::TypedArray(kind) => {
+            new_runtype_class("TypedArrayRuntype", vec![Expr::Ident(identifier(kind.js_name()))])
+        }
         Runtype::TplLitType(t) => match t.0.as_slice() {
             [TplLitTypeItem::StringConst(c)] => {
                 new_runtype_class("ConstRuntype", vec![Json::String(c.clone()).to_expr()])

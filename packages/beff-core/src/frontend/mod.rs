@@ -1,4 +1,5 @@
 use crate::ast::runtype::IndexedProperty;
+use crate::ast::runtype::TypedArrayKind;
 use crate::subtyping::ToSemType;
 use crate::subtyping::semtype::{SemType, SemTypeContext, SemTypeOps};
 use crate::subtyping::to_schema::semtype_to_runtypes;
@@ -1295,6 +1296,7 @@ impl<'a, R: FileManager> FrontendCtx<'a, R> {
             ),
             RuntypeName::BuiltIn(ts_built_in) => match ts_built_in {
                 TsBuiltIn::Date => Ok(Runtype::Date),
+                TsBuiltIn::TypedArray(kind) => Ok(Runtype::TypedArray(*kind)),
                 TsBuiltIn::Array => match type_args.as_slice() {
                     [ty] => Ok(Runtype::Array(ty.clone().into())),
                     _ => self.error(
@@ -1519,6 +1521,17 @@ impl<'a, R: FileManager> FrontendCtx<'a, R> {
             "Partial" => Some(TsBuiltIn::Partial),
             "Pick" => Some(TsBuiltIn::Pick),
             "Exclude" => Some(TsBuiltIn::Exclude),
+            "Uint8Array" => Some(TsBuiltIn::TypedArray(TypedArrayKind::Uint8Array)),
+            "Uint8ClampedArray" => Some(TsBuiltIn::TypedArray(TypedArrayKind::Uint8ClampedArray)),
+            "Uint16Array" => Some(TsBuiltIn::TypedArray(TypedArrayKind::Uint16Array)),
+            "Uint32Array" => Some(TsBuiltIn::TypedArray(TypedArrayKind::Uint32Array)),
+            "Int8Array" => Some(TsBuiltIn::TypedArray(TypedArrayKind::Int8Array)),
+            "Int16Array" => Some(TsBuiltIn::TypedArray(TypedArrayKind::Int16Array)),
+            "Int32Array" => Some(TsBuiltIn::TypedArray(TypedArrayKind::Int32Array)),
+            "Float32Array" => Some(TsBuiltIn::TypedArray(TypedArrayKind::Float32Array)),
+            "Float64Array" => Some(TsBuiltIn::TypedArray(TypedArrayKind::Float64Array)),
+            "BigInt64Array" => Some(TsBuiltIn::TypedArray(TypedArrayKind::BigInt64Array)),
+            "BigUint64Array" => Some(TsBuiltIn::TypedArray(TypedArrayKind::BigUint64Array)),
             _ => None,
         };
         Ok(bt)
