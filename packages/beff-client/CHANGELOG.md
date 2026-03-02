@@ -1,5 +1,13 @@
 # @beff/client
 
+## 0.0.122
+
+### Patch Changes
+
+- typed arrays, indexed props
+- Updated dependencies
+  - @beff/cli@0.0.122
+
 ## 0.0.121
 
 ### Patch Changes

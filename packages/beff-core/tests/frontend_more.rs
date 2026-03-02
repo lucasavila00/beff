@@ -1263,4 +1263,68 @@ mod tests {
         }
         "#);
     }
+
+    #[test]
+    fn index_signature_in_type_literal() {
+        let from = r#"
+    type Aliases = { [key: string]: number };
+    parse.buildParsers<{ Aliases: Aliases }>();
+  "#;
+        insta::assert_snapshot!(print_types(from), @r"
+        type Aliases = { [key: string]: number };
+
+
+        type BuiltParsers = {
+          Aliases: Aliases,
+        }
+        ");
+    }
+
+    #[test]
+    fn index_signature_in_interface() {
+        let from = r#"
+    interface Aliases { [key: string]: number }
+    parse.buildParsers<{ Aliases: Aliases }>();
+  "#;
+        insta::assert_snapshot!(print_types(from), @r"
+        type Aliases = { [key: string]: number };
+
+
+        type BuiltParsers = {
+          Aliases: Aliases,
+        }
+        ");
+    }
+
+    #[test]
+    fn index_signature_mixed_with_properties() {
+        let from = r#"
+    type Mixed = { name: string; [key: string]: string };
+    parse.buildParsers<{ Mixed: Mixed }>();
+  "#;
+        insta::assert_snapshot!(print_types(from), @r#"
+        type Mixed = { "name": string, [key: string]: string };
+
+
+        type BuiltParsers = {
+          Mixed: Mixed,
+        }
+        "#);
+    }
+
+    #[test]
+    fn index_signature_number_key() {
+        let from = r#"
+    type NumKeyed = { [key: number]: string };
+    parse.buildParsers<{ NumKeyed: NumKeyed }>();
+  "#;
+        insta::assert_snapshot!(print_types(from), @r"
+        type NumKeyed = { [key: number]: string };
+
+
+        type BuiltParsers = {
+          NumKeyed: NumKeyed,
+        }
+        ");
+    }
 }

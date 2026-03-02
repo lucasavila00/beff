@@ -20,7 +20,7 @@ use swc_ecma_ast::{
     Expr, Lit, MemberProp, Prop, PropName, PropOrSpread, TruePlusMinus, TsArrayType,
     TsCallSignatureDecl, TsConditionalType, TsConstructSignatureDecl, TsConstructorType,
     TsEntityName, TsEnumDecl, TsEnumMemberId, TsExprWithTypeArgs, TsFnOrConstructorType, TsFnType,
-    TsGetterSignature, TsImportType, TsIndexSignature, TsIndexedAccessType, TsInferType,
+    TsFnParam, TsGetterSignature, TsImportType, TsIndexSignature, TsIndexedAccessType, TsInferType,
     TsInterfaceDecl, TsIntersectionType, TsKeywordType, TsKeywordTypeKind, TsLit, TsLitType,
     TsMappedType, TsMethodSignature, TsOptionalType, TsParenthesizedType, TsPropertySignature,
     TsQualifiedName, TsRestType, TsSetterSignature, TsThisType, TsTplLitType, TsTupleType, TsType,
@@ -1064,18 +1064,13 @@ impl<'a, R: FileManager> FrontendCtx<'a, R> {
                 .push((k.name.sym.to_string(), v.clone()));
         }
 
-        let inferred = typ
-            .body
-            .body
-            .iter()
-            .map(|x| self.extract_ts_type_element(x, file.clone()))
-            .collect::<Res<_>>();
+        let inferred = self.extract_ts_type_lit_members(&typ.body.body, file.clone());
 
         for _ in type_params {
             self.type_application_stack.pop();
         }
 
-        let r = Ok(Runtype::object(inferred?));
+        let r = inferred;
 
         if typ.extends.is_empty() {
             r
@@ -2450,6 +2445,76 @@ impl<'a, R: FileManager> FrontendCtx<'a, R> {
 
         Ok(Runtype::all_of(vs))
     }
+    fn extract_ts_type_lit_members(
+        &mut self,
+        members: &[TsTypeElement],
+        file: BffFileName,
+    ) -> Res<Runtype> {
+        let mut properties: Vec<(String, Optionality<Runtype>)> = vec![];
+        let mut indexed_property: Option<IndexedProperty> = None;
+
+        for member in members {
+            match member {
+
+                
+                TsTypeElement::TsIndexSignature(sig) => {
+                    if indexed_property.is_some() {
+                        return self.error(
+                            &Anchor {
+                                f: file.clone(),
+                                s: member.span(),
+                            },
+                            DiagnosticInfoMessage::MultipleIndexSignaturesNotSupported,
+                        );
+                    }
+                    let anchor = Anchor {
+                        f: file.clone(),
+                        s: sig.span,
+                    };
+                    let key_type = match sig.params.first() {
+                        Some(TsFnParam::Ident(ident)) => match &ident.type_ann {
+                            Some(ann) => self.extract_type(&ann.type_ann, file.clone())?,
+                            None => {
+                                return self.error(
+                                    &anchor,
+                                    DiagnosticInfoMessage::IndexSignatureNonSerializable,
+                                );
+                            }
+                        },
+                        _ => {
+                            return self.error(
+                                &anchor,
+                                DiagnosticInfoMessage::IndexSignatureNonSerializable,
+                            );
+                        }
+                    };
+                    let value_type = match &sig.type_ann {
+                        Some(ann) => self.extract_type(&ann.type_ann, file.clone())?,
+                        None => {
+                            return self.error(
+                                &anchor,
+                                DiagnosticInfoMessage::IndexSignatureNonSerializable,
+                            );
+                        }
+                    };
+                    indexed_property = Some(IndexedProperty {
+                        key: key_type,
+                        value: value_type.required(),
+                    });
+                }
+                _ => {
+                    let prop = self.extract_ts_type_element(member, file.clone())?;
+                    properties.push(prop);
+                }
+            }
+        }
+
+        Ok(Runtype::Object {
+            vs: properties.into_iter().collect(),
+            indexed_properties: indexed_property.map(Box::new),
+        })
+    }
+
     fn extract_ts_type_element(
         &mut self,
         prop: &TsTypeElement,
@@ -2960,12 +3025,9 @@ impl<'a, R: FileManager> FrontendCtx<'a, R> {
                     items,
                 })
             }
-            TsType::TsTypeLit(TsTypeLit { members, .. }) => Ok(Runtype::object(
-                members
-                    .iter()
-                    .map(|prop| self.extract_ts_type_element(prop, file.clone()))
-                    .collect::<Res<_>>()?,
-            )),
+            TsType::TsTypeLit(TsTypeLit { members, .. }) => {
+                self.extract_ts_type_lit_members(members, file)
+            }
 
             TsType::TsIndexedAccessType(ts_indexed_access_type) => {
                 self.extract_indexed_access_type(ts_indexed_access_type, file)

@@ -75,6 +75,7 @@ pub enum DiagnosticInfoMessage {
     OmitShouldHaveStringAsTypeArgument,
     OmitShouldHaveObjectAsTypeArgument,
     IndexSignatureNonSerializable,
+    MultipleIndexSignaturesNotSupported,
     AnyhowError(String),
     CannotResolveKey(String),
     CannotNotFindSomethingOfOtherFile(String),
@@ -569,6 +570,9 @@ impl DiagnosticInfoMessage {
             }
             DiagnosticInfoMessage::TypeArgumentCountMismatch => {
                 "Type argument count mismatch".to_string()
+            }
+            DiagnosticInfoMessage::MultipleIndexSignaturesNotSupported => {
+                "Multiple index signatures are not supported".to_string()
             }
         }
     }
