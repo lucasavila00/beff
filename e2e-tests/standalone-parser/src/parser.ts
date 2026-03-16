@@ -1,3 +1,4 @@
+import type { DeploymentState } from "./decl";
 import parse from "./generated/parser";
 import { Arr2, OtherEnum, ValidCurrency, OtherEnum2, Arr3 } from "./types";
 import {
@@ -321,6 +322,7 @@ export const {
   Int32ArrayCodec: Int32ArrayType;
   Float64ArrayCodec: Float64ArrayType;
   BigInt64ArrayCodec: BigInt64ArrayType;
+  DeploymentState: DeploymentState;
 }>({
   stringFormats: {
     ValidCurrency: (input: string) => {
