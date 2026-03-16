@@ -1,5 +1,11 @@
 # @beff/cli
 
+## 0.0.124
+
+### Patch Changes
+
+- parse tsx files
+
 ## 0.0.123
 
 ### Patch Changes
