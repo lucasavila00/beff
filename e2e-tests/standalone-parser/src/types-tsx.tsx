@@ -8,4 +8,4 @@ export type TsxTask = {
 export const UnrelatedComponent = () => {
   // @ts-ignore
   return <div>Unrelated Component</div>;
-}
+};
