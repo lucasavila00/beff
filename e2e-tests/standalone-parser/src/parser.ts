@@ -1,5 +1,7 @@
 import parse from "./generated/parser";
 import { Arr2, OtherEnum, ValidCurrency, OtherEnum2, Arr3 } from "./types";
+import { TsxTask } from "./types-tsx";
+import type { DtsConfig } from "./types-dts";
 import {
   CurrencyPrices,
   NonInfiniteNumber,
@@ -261,6 +263,8 @@ export const {
   Int32ArrayCodec: Int32ArrayCodec,
   Float64ArrayCodec: Float64ArrayCodec,
   BigInt64ArrayCodec: BigInt64ArrayCodec,
+  TsxTask: TsxTaskCodec,
+  DtsConfig: DtsConfigCodec,
 } = parse.buildParsers<{
   PartialRepro: PartialRepro;
   TransportedValue: TransportedValue;
@@ -321,6 +325,8 @@ export const {
   Int32ArrayCodec: Int32ArrayType;
   Float64ArrayCodec: Float64ArrayType;
   BigInt64ArrayCodec: BigInt64ArrayType;
+  TsxTask: TsxTask;
+  DtsConfig: DtsConfig;
 }>({
   stringFormats: {
     ValidCurrency: (input: string) => {
