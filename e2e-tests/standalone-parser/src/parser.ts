@@ -1,3 +1,4 @@
+import type { DeploymentState } from "./decl";
 import parse from "./generated/parser";
 import { Arr2, OtherEnum, ValidCurrency, OtherEnum2, Arr3 } from "./types";
 import { TsxTask } from "./types-tsx";
@@ -327,6 +328,7 @@ export const {
   BigInt64ArrayCodec: BigInt64ArrayType;
   TsxTask: TsxTask;
   DtsConfig: DtsConfig;
+  DeploymentState: DeploymentState;
 }>({
   stringFormats: {
     ValidCurrency: (input: string) => {

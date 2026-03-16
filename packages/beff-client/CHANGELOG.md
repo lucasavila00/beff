@@ -1,5 +1,13 @@
 # @beff/client
 
+## 0.0.123
+
+### Patch Changes
+
+- Upgrade typescript module resolution
+- Updated dependencies
+  - @beff/cli@0.0.123
+
 ## 0.0.122
 
 ### Patch Changes
