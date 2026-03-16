@@ -1,5 +1,11 @@
 # @beff/cli
 
+## 0.0.123
+
+### Patch Changes
+
+- Upgrade typescript module resolution
+
 ## 0.0.122
 
 ### Patch Changes
