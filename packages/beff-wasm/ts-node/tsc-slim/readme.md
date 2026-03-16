@@ -1,6 +1,10 @@
 # how to re-build
 
-clone typescript repo and create a file with
+- Clone typescript repo
+- npm i
+- npm run build (to generate some internal files)
+
+- Create a file with
 
 ```
 // src/compiler/mod2.ts
