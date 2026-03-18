@@ -1,5 +1,13 @@
 # @beff/client
 
+## 0.0.125
+
+### Patch Changes
+
+- Support K in String record construction
+- Updated dependencies
+  - @beff/cli@0.0.125
+
 ## 0.0.124
 
 ### Patch Changes
