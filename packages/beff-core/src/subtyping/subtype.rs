@@ -3,7 +3,7 @@ use crate::{
         json::N,
         runtype::{CustomFormat, TplLitType, TypedArrayKind},
     },
-    subtyping::{IsEmptyStatus, dnf::dnf_mapping_is_empty},
+    subtyping::{IsEmptyStatus, dnf::{dnf_mapping_is_empty, dnf_map_is_empty}},
 };
 use anyhow::{Result, bail};
 use std::{collections::BTreeSet, rc::Rc};
@@ -357,7 +357,7 @@ impl ProperSubtypeOps for Rc<ProperSubtype> {
             ProperSubtype::List(bdd) => list_is_empty(bdd, builder),
             ProperSubtype::VoidUndefined { .. } => Ok(IsEmptyStatus::NotEmpty),
             ProperSubtype::TypedArray { .. } => Ok(IsEmptyStatus::NotEmpty),
-            ProperSubtype::Map(bdd) => dnf_mapping_is_empty(bdd, builder),
+            ProperSubtype::Map(bdd) => dnf_map_is_empty(bdd, builder),
             ProperSubtype::Set(bdd) => list_is_empty(bdd, builder),
         }
     }
