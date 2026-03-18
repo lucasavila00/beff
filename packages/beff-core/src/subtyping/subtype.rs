@@ -31,10 +31,12 @@ pub enum SubTypeTag {
     Date = 1 << 9,
     VoidUndefined = 1 << 10,
     TypedArray = 1 << 11,
+    Map = 1 << 12,
+    Set = 1 << 13,
 }
 
 pub const VAL: u32 =
-    1 << 1 | 1 << 2 | 1 << 3 | 1 << 4 | 1 << 5 | 1 << 6 | 1 << 7 | 1 << 8 | 1 << 9 | 1 << 10 | 1 << 11;
+    1 << 1 | 1 << 2 | 1 << 3 | 1 << 4 | 1 << 5 | 1 << 6 | 1 << 7 | 1 << 8 | 1 << 9 | 1 << 10 | 1 << 11 | 1 << 12 | 1 << 13;
 
 impl SubTypeTag {
     pub fn code(&self) -> BasicTypeCode {
@@ -55,6 +57,8 @@ impl SubTypeTag {
             SubTypeTag::Date,
             SubTypeTag::VoidUndefined,
             SubTypeTag::TypedArray,
+            SubTypeTag::Map,
+            SubTypeTag::Set,
         ]
     }
 }
@@ -226,6 +230,8 @@ pub enum ProperSubtype {
         allowed: bool,
         values: Vec<TypedArrayKind>,
     },
+    Map(Rc<Bdd>),
+    Set(Rc<Bdd>),
 }
 
 fn sub_vec_union<K: SubtypeCheck + Clone + Ord>(v1: &[K], v2: &[K]) -> Result<Vec<K>> {
@@ -351,6 +357,8 @@ impl ProperSubtypeOps for Rc<ProperSubtype> {
             ProperSubtype::List(bdd) => list_is_empty(bdd, builder),
             ProperSubtype::VoidUndefined { .. } => Ok(IsEmptyStatus::NotEmpty),
             ProperSubtype::TypedArray { .. } => Ok(IsEmptyStatus::NotEmpty),
+            ProperSubtype::Map(bdd) => dnf_mapping_is_empty(bdd, builder),
+            ProperSubtype::Set(bdd) => list_is_empty(bdd, builder),
         }
     }
 
@@ -448,7 +456,12 @@ impl ProperSubtypeOps for Rc<ProperSubtype> {
                     Ok(SubType::typed_array_subtype(true, sub_vec_diff(v2, v1)?).into())
                 }
             },
-
+            (ProperSubtype::Map(b1), ProperSubtype::Map(b2)) => {
+                Ok(SubType::Proper(ProperSubtype::Map(b1.intersect(b2)).into()).into())
+            }
+            (ProperSubtype::Set(b1), ProperSubtype::Set(b2)) => {
+                Ok(SubType::Proper(ProperSubtype::Set(b1.intersect(b2)).into()).into())
+            }
             _ => unreachable!("intersect should not compare types of different tags"),
         }
     }
@@ -547,6 +560,12 @@ impl ProperSubtypeOps for Rc<ProperSubtype> {
                     Ok(SubType::typed_array_subtype(false, sub_vec_diff(v1, v2)?).into())
                 }
             },
+            (ProperSubtype::Map(b1), ProperSubtype::Map(b2)) => {
+                Ok(SubType::Proper(ProperSubtype::Map(b1.union(b2)).into()).into())
+            }
+            (ProperSubtype::Set(b1), ProperSubtype::Set(b2)) => {
+                Ok(SubType::Proper(ProperSubtype::Set(b1.union(b2)).into()).into())
+            }
             _ => unreachable!("union should not compare types of different tags"),
         }
     }
@@ -564,6 +583,12 @@ impl ProperSubtypeOps for Rc<ProperSubtype> {
             }
             (ProperSubtype::List(b1), ProperSubtype::List(b2)) => {
                 Ok(SubType::Proper(ProperSubtype::List(b1.diff(b2)).into()).into())
+            }
+            (ProperSubtype::Map(b1), ProperSubtype::Map(b2)) => {
+                Ok(SubType::Proper(ProperSubtype::Map(b1.diff(b2)).into()).into())
+            }
+            (ProperSubtype::Set(b1), ProperSubtype::Set(b2)) => {
+                Ok(SubType::Proper(ProperSubtype::Set(b1.diff(b2)).into()).into())
             }
             _ => self.intersect(&t2.complement()),
         }
@@ -594,6 +619,8 @@ impl ProperSubtypeOps for Rc<ProperSubtype> {
                 values: values.clone(),
             }
             .into(),
+            ProperSubtype::Map(bdd) => ProperSubtype::Map(bdd.complement()).into(),
+            ProperSubtype::Set(bdd) => ProperSubtype::Set(bdd.complement()).into(),
         }
     }
 }
@@ -608,6 +635,8 @@ impl ProperSubtype {
             ProperSubtype::List(_) => SubTypeTag::List,
             ProperSubtype::VoidUndefined { .. } => SubTypeTag::VoidUndefined,
             ProperSubtype::TypedArray { .. } => SubTypeTag::TypedArray,
+            ProperSubtype::Map(_) => SubTypeTag::Map,
+            ProperSubtype::Set(_) => SubTypeTag::Set,
         }
     }
     pub fn to_code(&self) -> BasicTypeCode {

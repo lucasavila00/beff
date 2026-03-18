@@ -150,6 +150,53 @@ impl<'a> ToSemTypeConverter<'a> {
                     }
                 };
 
+                // handle recursive types
+                if let Runtype::Map(k, v) = schema {
+                    match builder.map_runtype_ref_memo.get(name) {
+                        Some(idx) => {
+                            let ty = Rc::new(SemTypeContext::map_definition_from_idx(*idx));
+                            return Ok(ty);
+                        }
+                        None => {
+                            let idx = builder.map_definitions.len();
+                            builder.map_runtype_ref_memo.insert(name.clone(), idx);
+                            builder.map_definitions.push(None);
+                            let k = self.convert_to_sem_type(&k, builder)?;
+                            let v = self.convert_to_sem_type(&v, builder)?;
+
+                            builder.map_definitions[idx] = Some(Rc::new(MappingAtomicType {
+                                vs: BTreeMap::new(),
+                                indexed_properties: Some(IndexedPropertiesAtomic { key: k, value: v }),
+                            }));
+                            let ty = Rc::new(SemTypeContext::map_definition_from_idx(idx));
+                            return Ok(ty);
+                        }
+                    }
+                }
+
+                // handle recursive types
+                if let Runtype::Set(v) = schema {
+                    match builder.set_runtype_ref_memo.get(name) {
+                        Some(idx) => {
+                            let ty = Rc::new(SemTypeContext::set_definition_from_idx(*idx));
+                            return Ok(ty);
+                        }
+                        None => {
+                            let idx = builder.set_definitions.len();
+                            builder.set_runtype_ref_memo.insert(name.clone(), idx);
+                            builder.set_definitions.push(None);
+                            let v = self.convert_to_sem_type(&v, builder)?;
+
+                            builder.set_definitions[idx] = Some(Rc::new(ListAtomic {
+                                prefix_items: vec![],
+                                items: v,
+                            }));
+                            let ty = Rc::new(SemTypeContext::set_definition_from_idx(idx));
+                            return Ok(ty);
+                        }
+                    }
+                }
+
                 if self.seen_refs.contains(name) {
                     bail!("recursive type: {}", name.diag_print())
                 }
@@ -243,6 +290,15 @@ impl<'a> ToSemTypeConverter<'a> {
                     .map(|v| self.convert_to_sem_type(v, builder))
                     .collect::<Result<_>>()?;
                 Ok(builder.tuple(prefix_items, items).into())
+            }
+            Runtype::Map(k, v) => {
+                let k = self.convert_to_sem_type(k, builder)?;
+                let v = self.convert_to_sem_type(v, builder)?;
+                Ok(builder.map(k, v).into())
+            }
+            Runtype::Set(v) => {
+                let v = self.convert_to_sem_type(v, builder)?;
+                Ok(builder.set(v).into())
             }
             Runtype::Const(cons) => match cons {
                 RuntypeConst::Bool(b) => Ok(SemTypeContext::boolean_const(*b).into()),

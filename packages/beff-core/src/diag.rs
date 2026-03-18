@@ -17,6 +17,8 @@ pub enum DiagnosticInfoMessage {
     CannotUseInterfaceInQualifiedTypePosition,
     PickNeedsString,
     EnumItemShouldBeFromEnumType,
+    SetShouldHaveOneTypeArgument,
+    MapShouldHaveTwoTypeArguments,
     PartialShouldHaveTwoTypeArguments,
     RequiredShouldHaveTwoTypeArguments,
     InvalidNumberOfTypeParametersForArray,
@@ -573,6 +575,12 @@ impl DiagnosticInfoMessage {
             }
             DiagnosticInfoMessage::MultipleIndexSignaturesNotSupported => {
                 "Multiple index signatures are not supported".to_string()
+            }
+            DiagnosticInfoMessage::SetShouldHaveOneTypeArgument =>{
+                "Set should have one type argument".to_string()
+            }
+            DiagnosticInfoMessage::MapShouldHaveTwoTypeArguments => {
+                "Map should have 2 type arguments".to_string()
             }
         }
     }

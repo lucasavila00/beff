@@ -50,6 +50,8 @@ pub struct ListAtomic {
 pub enum Atom {
     Mapping(usize),
     List(usize),
+    Map(usize),
+    Set(usize),
 }
 
 fn atom_cmp(a: &Atom, b: &Atom) -> Ordering {

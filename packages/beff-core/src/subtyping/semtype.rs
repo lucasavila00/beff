@@ -361,8 +361,16 @@ pub struct SemTypeContext {
     pub list_definitions: Vec<Option<Rc<ListAtomic>>>,
     pub list_memo: BTreeMap<Bdd, BddMemoEmptyRef>,
 
+    pub map_definitions: Vec<Option<Rc<MappingAtomicType>>>,
+    pub map_memo: BTreeMap<Bdd, BddMemoEmptyRef>,
+
+    pub set_definitions: Vec<Option<Rc<ListAtomic>>>,
+    pub set_memo: BTreeMap<Bdd, BddMemoEmptyRef>,
+
     pub mapping_runtype_ref_memo: BTreeMap<RuntypeUUID, usize>,
     pub list_runtype_ref_memo: BTreeMap<RuntypeUUID, usize>,
+    pub map_runtype_ref_memo: BTreeMap<RuntypeUUID, usize>,
+    pub set_runtype_ref_memo: BTreeMap<RuntypeUUID, usize>,
 }
 impl Default for SemTypeContext {
     fn default() -> Self {
@@ -373,6 +381,22 @@ impl Default for SemTypeContext {
 impl SemTypeContext {
     pub fn get_mapping_atomic(&self, idx: usize) -> Rc<MappingAtomicType> {
         self.mapping_definitions
+            .get(idx)
+            .expect("should exist")
+            .as_ref()
+            .expect("should exist")
+            .clone()
+    }
+    pub fn get_map_atomic(&self, idx: usize) -> Rc<MappingAtomicType> {
+        self.map_definitions
+            .get(idx)
+            .expect("should exist")
+            .as_ref()
+            .expect("should exist")
+            .clone()
+    }
+    pub fn get_set_atomic(&self, idx: usize) -> Rc<ListAtomic> {
+        self.set_definitions
             .get(idx)
             .expect("should exist")
             .as_ref()
@@ -390,13 +414,19 @@ impl SemTypeContext {
 
     pub fn new() -> SemTypeContext {
         SemTypeContext {
-            list_definitions: vec![],
             mapping_definitions: vec![],
             mapping_memo: BTreeMap::new(),
             mapping_memo_dnf: BTreeMap::new(),
+            list_definitions: vec![],
             list_memo: BTreeMap::new(),
+            map_definitions: vec![],
+            map_memo: BTreeMap::new(),
+            set_definitions: vec![],
+            set_memo: BTreeMap::new(),
             mapping_runtype_ref_memo: BTreeMap::new(),
             list_runtype_ref_memo: BTreeMap::new(),
+            map_runtype_ref_memo: BTreeMap::new(),
+            set_runtype_ref_memo: BTreeMap::new(),
         }
     }
     pub fn number_const(value: NumberRepresentationOrFormat) -> SemType {
@@ -475,6 +505,61 @@ impl SemTypeContext {
         };
         self.list_definition(Rc::new(atom))
     }
+ 
+    pub fn map_definition_from_idx(idx: usize) -> SemType {
+        SemType::new_complex(
+            0x0,
+            vec![ProperSubtype::Map(Bdd::from_atom(Atom::Map(idx)).into()).into()],
+        )
+    }
+ 
+    pub fn map_definition(
+        &mut self,
+        vs: BTreeMap<String, Rc<SemType>>,
+        indexed_properties: Option<IndexedPropertiesAtomic>,
+    ) -> SemType {
+        let idx = self.map_definitions.len();
+        self.map_definitions.push(Some(
+            MappingAtomicType {
+                vs: vs.clone(),
+                indexed_properties,
+            }
+            .into(),
+        ));
+ 
+        Self::map_definition_from_idx(idx)
+    }
+ 
+    pub fn set_definition_from_idx(idx: usize) -> SemType {
+        SemType::new_complex(
+            0x0,
+            vec![ProperSubtype::Set(Bdd::from_atom(Atom::Set(idx)).into()).into()],
+        )
+    }
+ 
+    pub fn set_definition(&mut self, vs: Rc<ListAtomic>) -> SemType {
+        let idx = self.set_definitions.len();
+        self.set_definitions.push(Some(vs.clone()));
+ 
+        Self::set_definition_from_idx(idx)
+    }
+ 
+    pub fn map(&mut self, k: Rc<SemType>, v: Rc<SemType>) -> SemType {
+        let atom = MappingAtomicType {
+            vs: BTreeMap::new(),
+            indexed_properties: Some(IndexedPropertiesAtomic { key: k, value: v }),
+        };
+        self.map_definition(atom.vs, atom.indexed_properties)
+    }
+ 
+    pub fn set(&mut self, v: Rc<SemType>) -> SemType {
+        let atom = ListAtomic {
+            prefix_items: vec![],
+            items: v,
+        };
+        self.set_definition(Rc::new(atom))
+    }
+ 
     pub fn boolean_const(value: bool) -> SemType {
         SemType::new_complex(0x0, vec![ProperSubtype::Boolean(value).into()])
     }
@@ -556,7 +641,9 @@ impl SemTypeContext {
                 | (ProperSubtype::Mapping(_), SubTypeTag::Mapping)
                 | (ProperSubtype::List(_), SubTypeTag::List)
                 | (ProperSubtype::Boolean(_), SubTypeTag::Boolean)
-                | (ProperSubtype::TypedArray { .. }, SubTypeTag::TypedArray) => {
+                | (ProperSubtype::TypedArray { .. }, SubTypeTag::TypedArray)
+                | (ProperSubtype::Map(_), SubTypeTag::Map)
+                | (ProperSubtype::Set(_), SubTypeTag::Set) => {
                     return SubType::Proper(t.clone());
                 }
                 _ => {}

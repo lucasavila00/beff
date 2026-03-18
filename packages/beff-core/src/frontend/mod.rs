@@ -19,8 +19,8 @@ use swc_common::{Span, Spanned};
 use swc_ecma_ast::{
     Expr, Lit, MemberProp, Prop, PropName, PropOrSpread, TruePlusMinus, TsArrayType,
     TsCallSignatureDecl, TsConditionalType, TsConstructSignatureDecl, TsConstructorType,
-    TsEntityName, TsEnumDecl, TsEnumMemberId, TsExprWithTypeArgs, TsFnOrConstructorType, TsFnType,
-    TsFnParam, TsGetterSignature, TsImportType, TsIndexSignature, TsIndexedAccessType, TsInferType,
+    TsEntityName, TsEnumDecl, TsEnumMemberId, TsExprWithTypeArgs, TsFnOrConstructorType, TsFnParam,
+    TsFnType, TsGetterSignature, TsImportType, TsIndexSignature, TsIndexedAccessType, TsInferType,
     TsInterfaceDecl, TsIntersectionType, TsKeywordType, TsKeywordTypeKind, TsLit, TsLitType,
     TsMappedType, TsMethodSignature, TsOptionalType, TsParenthesizedType, TsPropertySignature,
     TsQualifiedName, TsRestType, TsSetterSignature, TsThisType, TsTplLitType, TsTupleType, TsType,
@@ -1308,7 +1308,6 @@ impl<'a, R: FileManager> FrontendCtx<'a, R> {
                     self.get_number_format_extends(&type_args, anchor)
                 }
                 TsBuiltIn::Object => Ok(Runtype::any_object()),
-
                 TsBuiltIn::Record => {
                     if type_args.len() != 2 {
                         return self.error(
@@ -1453,6 +1452,21 @@ impl<'a, R: FileManager> FrontendCtx<'a, R> {
                         DiagnosticInfoMessage::PartialShouldHaveTwoTypeArguments,
                     ),
                 },
+                TsBuiltIn::Map => match type_args.as_slice() {
+                    [key, value] => {
+                        let key = self.extract_runtype(key.clone())?;
+                        let value = self.extract_runtype(value.clone())?;
+                        Ok(Runtype::Map(Box::new(key), Box::new(value)))
+                    }
+                    _ => self.error(anchor, DiagnosticInfoMessage::MapShouldHaveTwoTypeArguments),
+                },
+                TsBuiltIn::Set => match type_args.as_slice() {
+                    [value] => {
+                        let value = self.extract_runtype(value.clone())?;
+                        Ok(Runtype::Set(Box::new(value)))
+                    }
+                    _ => self.error(anchor, DiagnosticInfoMessage::SetShouldHaveOneTypeArgument),
+                },
             },
         }
     }
@@ -1516,6 +1530,8 @@ impl<'a, R: FileManager> FrontendCtx<'a, R> {
             "Partial" => Some(TsBuiltIn::Partial),
             "Pick" => Some(TsBuiltIn::Pick),
             "Exclude" => Some(TsBuiltIn::Exclude),
+            "Map" => Some(TsBuiltIn::Map),
+            "Set" => Some(TsBuiltIn::Set),
             "Uint8Array" => Some(TsBuiltIn::TypedArray(TypedArrayKind::Uint8Array)),
             "Uint8ClampedArray" => Some(TsBuiltIn::TypedArray(TypedArrayKind::Uint8ClampedArray)),
             "Uint16Array" => Some(TsBuiltIn::TypedArray(TypedArrayKind::Uint16Array)),
@@ -2455,8 +2471,6 @@ impl<'a, R: FileManager> FrontendCtx<'a, R> {
 
         for member in members {
             match member {
-
-                
                 TsTypeElement::TsIndexSignature(sig) => {
                     if indexed_property.is_some() {
                         return self.error(
@@ -2873,9 +2887,7 @@ impl<'a, R: FileManager> FrontendCtx<'a, R> {
 
         // Handle `[K in string]: V` as Record<string, V>
         // Handle `[K in number]: V` as Record<number, V>
-        if values.len() == 1
-            && matches!(values[0], Runtype::String | Runtype::Number)
-        {
+        if values.len() == 1 && matches!(values[0], Runtype::String | Runtype::Number) {
             let key_type = values.into_iter().next().unwrap();
             let type_ann = match &k.type_ann {
                 Some(type_ann) => type_ann.as_ref(),

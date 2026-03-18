@@ -26,6 +26,8 @@ import {
   allOfHash,
   anyOfHash,
   optionalFieldHash,
+  mapHash,
+  setHash,
 } from "./hash.js";
 import { JSONSchema7 } from "./json-schema.js";
 import { printErrors } from "./err.js";
@@ -1009,8 +1011,111 @@ export class ArrayRuntype implements Runtype {
   describe(ctx: DescribeContext): string {
     return `Array<${this.itemParser.describe(ctx)}>`;
   }
-  hash(ctx: HashContext): number {
-    return generateHashFromNumbers([arrayHash, this.itemParser.hash(ctx)]);
+  hash(_ctx: HashContext): number {
+    return generateHashFromNumbers([arrayHash, this.itemParser.hash(_ctx)]);
+  }
+}
+
+export class MapRuntype implements Runtype {
+  private keyParser: Runtype;
+  private valueParser: Runtype;
+  constructor(keyParser: Runtype, valueParser: Runtype) {
+    this.keyParser = keyParser;
+    this.valueParser = valueParser;
+  }
+  describe(ctx: DescribeContext): string {
+    return `Map<${this.keyParser.describe(ctx)}, ${this.valueParser.describe(ctx)}>`;
+  }
+  schema(ctx: SchemaContext): JSONSchema7 {
+    throw new Error(buildSchemaErrorMessage(ctx, "Cannot generate JSON Schema for Map"));
+  }
+  validate(ctx: ValidateContext, input: unknown): boolean {
+    if (input instanceof Map) {
+      for (const [k, v] of input) {
+        if (!this.keyParser.validate(ctx, k) || !this.valueParser.validate(ctx, v)) {
+          return false;
+        }
+      }
+      return true;
+    }
+    return false;
+  }
+  parseAfterValidation(ctx: ParseContext, input: any): unknown {
+    const res = new Map();
+    for (const [k, v] of input as Map<any, any>) {
+      res.set(this.keyParser.parseAfterValidation(ctx, k), this.valueParser.parseAfterValidation(ctx, v));
+    }
+    return res;
+  }
+  reportDecodeError(ctx: ReportContext, input: unknown): DecodeError[] {
+    if (!(input instanceof Map)) {
+      return buildError(ctx, "expected Map", input);
+    }
+    let acc: DecodeError[] = [];
+    for (const [k, v] of input) {
+      pushPath(ctx, `key(${JSON.stringify(k)})`);
+      if (!this.keyParser.validate(ctx, k)) {
+        acc = acc.concat(this.keyParser.reportDecodeError(ctx, k));
+      }
+      popPath(ctx);
+      pushPath(ctx, `value(${JSON.stringify(k)})`);
+      if (!this.valueParser.validate(ctx, v)) {
+        acc = acc.concat(this.valueParser.reportDecodeError(ctx, v));
+      }
+      popPath(ctx);
+    }
+    return acc;
+  }
+  hash(_ctx: HashContext): number {
+    return generateHashFromNumbers([mapHash, this.keyParser.hash(_ctx), this.valueParser.hash(_ctx)]);
+  }
+}
+
+export class SetRuntype implements Runtype {
+  private itemParser: Runtype;
+  constructor(itemParser: Runtype) {
+    this.itemParser = itemParser;
+  }
+  describe(ctx: DescribeContext): string {
+    return `Set<${this.itemParser.describe(ctx)}>`;
+  }
+  schema(ctx: SchemaContext): JSONSchema7 {
+    throw new Error(buildSchemaErrorMessage(ctx, "Cannot generate JSON Schema for Set"));
+  }
+  validate(ctx: ValidateContext, input: unknown): boolean {
+    if (input instanceof Set) {
+      for (const v of input) {
+        if (!this.itemParser.validate(ctx, v)) {
+          return false;
+        }
+      }
+      return true;
+    }
+    return false;
+  }
+  parseAfterValidation(ctx: ParseContext, input: any): unknown {
+    const res = new Set();
+    for (const v of input as Set<any>) {
+      res.add(this.itemParser.parseAfterValidation(ctx, v));
+    }
+    return res;
+  }
+  reportDecodeError(ctx: ReportContext, input: unknown): DecodeError[] {
+    if (!(input instanceof Set)) {
+      return buildError(ctx, "expected Set", input);
+    }
+    let acc: DecodeError[] = [];
+    for (const v of input) {
+      pushPath(ctx, `item(${JSON.stringify(v)})`);
+      if (!this.itemParser.validate(ctx, v)) {
+        acc = acc.concat(this.itemParser.reportDecodeError(ctx, v));
+      }
+      popPath(ctx);
+    }
+    return acc;
+  }
+  hash(_ctx: HashContext): number {
+    return generateHashFromNumbers([setHash, this.itemParser.hash(_ctx)]);
   }
 }
 
