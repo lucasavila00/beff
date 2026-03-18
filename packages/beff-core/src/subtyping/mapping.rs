@@ -137,6 +137,7 @@ fn non_empty_map_literals_intersection(
     for atom in pos {
         let atom_type = match atom {
             Atom::Mapping(a) => ctx.get_mapping_atomic(*a),
+            Atom::Map(a) => ctx.get_map_atomic(*a),
             _ => unreachable!(),
         };
 
@@ -157,6 +158,8 @@ fn mapping_atomic_type_is_empty(
     for n in neg {
         if let Atom::Mapping(idx) = n {
             neg_mappings.push(ctx.get_mapping_atomic(*idx).clone());
+        } else if let Atom::Map(idx) = n {
+            neg_mappings.push(ctx.get_map_atomic(*idx).clone());
         }
     }
 
@@ -376,9 +379,23 @@ fn check_mapping_empty(
     }
 
     // 5. Check index signature dimension
-    // Finally, we check the "rest" of the keys (those not explicitly listed).
-    // If the index signature of `pos` is not covered by the index signature of `current_neg`,
-    // we generate a fragment where the index signature is restricted.
+    let pos_key = get_key_type_exact(&pos);
+    let neg_key = get_key_type_open(current_neg);
+
+    let diff_keys = pos_key.diff(&neg_key)?;
+    if !diff_keys.is_empty(ctx)? {
+        // There are keys in pos that are not even mentioned in neg.
+        // Since neg is "open" by default (its index signature covers what it doesn't mention),
+        // we need to be careful.
+        // Actually, for Map, it's not open in the same way.
+        // If we are here, it means some keys in pos_key are not in neg_key.
+        // For those keys, neg provides NO constraint on the value (it effectively says "no value allowed" or "unknown" depending on context).
+        // But in our logic, if a key is not in neg_key, get_value_open returns unknown.
+        // Wait, if it returns unknown, then diff is empty.
+        // That's the problem! If neg doesn't have a key, it should probably mean it doesn't cover it.
+        return Ok(false);
+    }
+
     let v_p_idx = get_index_value_exact(&pos);
     let v_n_idx = get_effective_index_value(&pos, current_neg, ctx)?;
 

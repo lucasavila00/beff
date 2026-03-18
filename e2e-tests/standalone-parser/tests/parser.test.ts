@@ -1053,17 +1053,48 @@ it('works on maps', () => {
   // failure
   const f1 = new Map<string, string>()
   f1.set("a", "b")
-  expect(M1Codec.safeParse(f1)).toMatchInlineSnapshot()
+  expect(M1Codec.safeParse(f1)).toMatchInlineSnapshot(`
+    {
+      "errors": [
+        {
+          "message": "expected number",
+          "path": [
+            "value(\\"a\\")",
+          ],
+          "received": "b",
+        },
+      ],
+      "success": false,
+    }
+  `)
 })
 
 it('works on sets', () => {
   const it: S1 = new Set()
   it.add('abc')
   it.add('def')
-  expect(S1Codec.parse(it)).toMatchInlineSnapshot()
+  expect(S1Codec.parse(it)).toMatchInlineSnapshot(`
+    Set {
+      "abc",
+      "def",
+    }
+  `)
 
   // failure
   const f1 = new Set<number>()
   f1.add(1)
-  expect(S1Codec.safeParse(f1)).toMatchInlineSnapshot()
+  expect(S1Codec.safeParse(f1)).toMatchInlineSnapshot(`
+    {
+      "errors": [
+        {
+          "message": "expected string",
+          "path": [
+            "item(1)",
+          ],
+          "received": 1,
+        },
+      ],
+      "success": false,
+    }
+  `)
 })
