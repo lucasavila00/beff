@@ -31,6 +31,8 @@ const {
   buildParserFromRuntype,
   generateHashFromString,
   TypedArrayRuntype,
+  MapRuntype,
+  SetRuntype,
 } = require("@beff/client/codegen-v2");
 
 class RefRuntype extends BaseRefRuntype  {

@@ -45,3 +45,5 @@ export const tupleHash = generateHashFromString("Tuple");
 export const allOfHash = generateHashFromString("AllOf");
 export const anyOfHash = generateHashFromString("AnyOf");
 export const optionalFieldHash = generateHashFromString("OptionalField");
+export const mapHash = generateHashFromString("Map");
+export const setHash = generateHashFromString("Set");

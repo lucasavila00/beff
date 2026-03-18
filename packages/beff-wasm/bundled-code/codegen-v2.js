@@ -25,6 +25,8 @@ import {
   buildParserFromRuntype,
   generateHashFromString,
   TypedArrayRuntype,
+  MapRuntype,
+  SetRuntype,
 } from "@beff/client/codegen-v2";
 
 class RefRuntype extends BaseRefRuntype  {

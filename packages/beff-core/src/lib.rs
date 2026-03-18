@@ -335,6 +335,9 @@ pub enum TsBuiltIn {
     Pick,
     Exclude,
     TypedArray(TypedArrayKind),
+
+    Map,
+    Set,
 }
 impl fmt::Display for TsBuiltIn {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {

@@ -137,6 +137,7 @@ fn non_empty_map_literals_intersection(
     for atom in pos {
         let atom_type = match atom {
             Atom::Mapping(a) => ctx.get_mapping_atomic(*a),
+            Atom::Map(a) => ctx.get_map_atomic(*a),
             _ => unreachable!(),
         };
 
@@ -152,15 +153,18 @@ fn mapping_atomic_type_is_empty(
     atom: Rc<MappingAtomicType>,
     neg: &[Atom],
     ctx: &mut SemTypeContext,
+    is_map: bool,
 ) -> Result<bool> {
     let mut neg_mappings = vec![];
     for n in neg {
         if let Atom::Mapping(idx) = n {
             neg_mappings.push(ctx.get_mapping_atomic(*idx).clone());
+        } else if let Atom::Map(idx) = n {
+            neg_mappings.push(ctx.get_map_atomic(*idx).clone());
         }
     }
 
-    check_mapping_empty(atom, &neg_mappings, ctx)
+    check_mapping_empty(atom, &neg_mappings, ctx, is_map)
 }
 
 // Used for the positive side (`pos`).
@@ -309,6 +313,7 @@ fn check_mapping_empty(
     pos: Rc<MappingAtomicType>,
     negs: &[Rc<MappingAtomicType>],
     ctx: &mut SemTypeContext,
+    is_map: bool,
 ) -> Result<bool> {
     // 1. Check if pos is empty (any field is empty)
     // If any required field in `pos` is empty (Never), then the whole object type is empty.
@@ -369,16 +374,25 @@ fn check_mapping_empty(
         if !diff.is_empty(ctx)? {
             let mut new_pos = (*pos).clone();
             new_pos.vs.insert(k, diff);
-            if !check_mapping_empty(Rc::new(new_pos), rest_negs, ctx)? {
+            if !check_mapping_empty(Rc::new(new_pos), rest_negs, ctx, is_map)? {
                 return Ok(false);
             }
         }
     }
 
     // 5. Check index signature dimension
-    // Finally, we check the "rest" of the keys (those not explicitly listed).
-    // If the index signature of `pos` is not covered by the index signature of `current_neg`,
-    // we generate a fragment where the index signature is restricted.
+    if is_map {
+        // For Map types, we must ensure that all keys allowed by the positive type's index signature
+        // are covered by the negative type's index signature.
+        let pos_key = get_key_type_exact(&pos);
+        let neg_key = get_key_type_open(current_neg);
+
+        let diff_keys = pos_key.diff(&neg_key)?;
+        if !diff_keys.is_empty(ctx)? {
+            return Ok(false);
+        }
+    }
+
     let v_p_idx = get_index_value_exact(&pos);
     let v_n_idx = get_effective_index_value(&pos, current_neg, ctx)?;
 
@@ -398,7 +412,7 @@ fn check_mapping_empty(
             value: diff_idx,
         });
 
-        if !check_mapping_empty(Rc::new(new_pos), rest_negs, ctx)? {
+        if !check_mapping_empty(Rc::new(new_pos), rest_negs, ctx, is_map)? {
             return Ok(false);
         }
     }
@@ -406,13 +420,17 @@ fn check_mapping_empty(
     Ok(true)
 }
 
-pub fn mapping_is_empty_impl(dnf: Rc<Dnf>, ctx: &mut SemTypeContext) -> Result<IsEmptyStatus> {
+pub fn mapping_is_empty_impl(
+    dnf: Rc<Dnf>,
+    ctx: &mut SemTypeContext,
+    is_map: bool,
+) -> Result<IsEmptyStatus> {
     let mut acc = vec![];
     for it in dnf.as_ref() {
         match non_empty_map_literals_intersection(&it.positive, ctx)? {
             IntersectionResult::Empty => acc.push(true),
             IntersectionResult::Atomic(a) => {
-                let res = mapping_atomic_type_is_empty(a, &it.negative, ctx)?;
+                let res = mapping_atomic_type_is_empty(a, &it.negative, ctx, is_map)?;
                 acc.push(res);
             }
         }
@@ -454,7 +472,7 @@ mod tests {
             negative: vec![Atom::Mapping(idx)],
         }];
 
-        let result = mapping_is_empty_impl(trivial_dnf.into(), &mut ctx).unwrap();
+        let result = mapping_is_empty_impl(trivial_dnf.into(), &mut ctx, false).unwrap();
 
         assert!(result.is_empty());
     }

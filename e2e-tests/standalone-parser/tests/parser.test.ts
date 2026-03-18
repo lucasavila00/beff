@@ -45,6 +45,10 @@ import {
   Int32ArrayCodec,
   Float64ArrayCodec,
   BigInt64ArrayCodec,
+  M1,
+  M1Codec,
+  S1,
+  S1Codec,
 } from "../src/parser";
 import { Arr2 } from "../src/types";
 
@@ -1027,6 +1031,66 @@ it("BigInt64ArrayCodec", () => {
           "received": Float64Array [
             1,
           ],
+        },
+      ],
+      "success": false,
+    }
+  `);
+});
+
+it("works on maps", () => {
+  const it: M1 = new Map();
+  it.set("a", 1);
+  it.set("b", 2);
+  expect(M1Codec.parse(it)).toMatchInlineSnapshot(`
+    Map {
+      "a" => 1,
+      "b" => 2,
+    }
+  `);
+
+  // failure
+  const f1 = new Map<string, string>();
+  f1.set("a", "b");
+  expect(M1Codec.safeParse(f1)).toMatchInlineSnapshot(`
+    {
+      "errors": [
+        {
+          "message": "expected number",
+          "path": [
+            "value(\\"a\\")",
+          ],
+          "received": "b",
+        },
+      ],
+      "success": false,
+    }
+  `);
+});
+
+it("works on sets", () => {
+  const it: S1 = new Set();
+  it.add("abc");
+  it.add("def");
+  expect(S1Codec.parse(it)).toMatchInlineSnapshot(`
+    Set {
+      "abc",
+      "def",
+    }
+  `);
+
+  // failure
+  const f1 = new Set<number>();
+  f1.add(1);
+  expect(S1Codec.safeParse(f1)).toMatchInlineSnapshot(`
+    {
+      "errors": [
+        {
+          "message": "expected string",
+          "path": [
+            "item(1)",
+          ],
+          "received": 1,
         },
       ],
       "success": false,

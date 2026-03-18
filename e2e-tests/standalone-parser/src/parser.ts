@@ -221,6 +221,10 @@ export type Repro6 = {
   accountEndpoints: { [K in number]: number };
 };
 
+export type M1 = Map<string, number>;
+
+export type S1 = Set<string>;
+
 export const {
   Version,
   Version2,
@@ -273,9 +277,13 @@ export const {
   BigInt64ArrayCodec: BigInt64ArrayCodec,
   TsxTask: TsxTaskCodec,
   DtsConfig: DtsConfigCodec,
+  M1: M1Codec,
+  S1: S1Codec,
 } = parse.buildParsers<{
   Repro5: Repro5;
   Repro6: Repro6;
+  M1: M1;
+  S1: S1;
   PartialRepro: PartialRepro;
   TransportedValue: TransportedValue;
   OnlyAKey: OnlyAKey;

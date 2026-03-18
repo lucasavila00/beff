@@ -596,6 +596,8 @@ mod tests {
             Runtype::Date,
             Runtype::AnyArrayLike,
             Runtype::object(vec![]),
+            Runtype::Map(Box::new(Runtype::Any), Box::new(Runtype::Any)),
+            Runtype::Set(Box::new(Runtype::Any)),
         ];
 
         for t0 in &all_basic_types {
@@ -1712,5 +1714,60 @@ mod tests {
         // (Uint8Array | Int8Array) is not subtype of Uint8Array
         let res = rt_is_sub_type(&union_t, &t1, &definitions, &definitions);
         assert!(!res);
+    }
+
+    #[test]
+    fn maps_subtyping() {
+        let definitions = vec![];
+
+        let t1 = Runtype::Map(Box::new(Runtype::String), Box::new(Runtype::Number));
+        let t2 = Runtype::Map(Box::new(Runtype::String), Box::new(Runtype::Number));
+
+        assert!(rt_is_sub_type(&t1, &t2, &definitions, &definitions));
+
+        let t3 = Runtype::Map(
+            Box::new(Runtype::single_string_const("abc".into())),
+            Box::new(Runtype::Number),
+        );
+        // Map<"abc", number> is subtype of Map<string, number>
+        assert!(rt_is_sub_type(&t3, &t1, &definitions, &definitions));
+        assert!(!rt_is_sub_type(&t1, &t3, &definitions, &definitions));
+
+        let t4 = Runtype::Map(
+            Box::new(Runtype::String),
+            Box::new(Runtype::Const(RuntypeConst::parse_int(1))),
+        );
+        // Map<string, 1> is subtype of Map<string, number>
+        assert!(rt_is_sub_type(&t4, &t1, &definitions, &definitions));
+        assert!(!rt_is_sub_type(&t1, &t4, &definitions, &definitions));
+
+        let t5 = Runtype::Map(Box::new(Runtype::Number), Box::new(Runtype::Number));
+        // Map<number, number> is not subtype of Map<string, number>
+        assert!(!rt_is_sub_type(&t5, &t1, &definitions, &definitions));
+
+        let obj = Runtype::object(vec![]);
+        // Map is not subtype of object
+        assert!(!rt_is_sub_type(&t1, &obj, &definitions, &definitions));
+        assert!(!rt_is_sub_type(&obj, &t1, &definitions, &definitions));
+    }
+
+    #[test]
+    fn sets_subtyping() {
+        let definitions = vec![];
+
+        let t1 = Runtype::Set(Box::new(Runtype::String));
+        let t2 = Runtype::Set(Box::new(Runtype::String));
+
+        assert!(rt_is_sub_type(&t1, &t2, &definitions, &definitions));
+
+        let t3 = Runtype::Set(Box::new(Runtype::single_string_const("abc".into())));
+        // Set<"abc"> is subtype of Set<string>
+        assert!(rt_is_sub_type(&t3, &t1, &definitions, &definitions));
+        assert!(!rt_is_sub_type(&t1, &t3, &definitions, &definitions));
+
+        let arr = Runtype::Array(Box::new(Runtype::String));
+        // Set is not subtype of array
+        assert!(!rt_is_sub_type(&t1, &arr, &definitions, &definitions));
+        assert!(!rt_is_sub_type(&arr, &t1, &definitions, &definitions));
     }
 }

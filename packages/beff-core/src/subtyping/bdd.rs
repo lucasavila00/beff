@@ -50,6 +50,8 @@ pub struct ListAtomic {
 pub enum Atom {
     Mapping(usize),
     List(usize),
+    Map(usize),
+    Set(usize),
 }
 
 fn atom_cmp(a: &Atom, b: &Atom) -> Ordering {
@@ -370,6 +372,7 @@ fn list_inhabited(
             let mut len = prefix_items.len();
             let nt = match neg.atom {
                 Atom::List(a) => builder.get_list_atomic(a),
+                Atom::Set(a) => builder.get_set_atomic(a),
                 _ => unreachable!(),
             };
             let neg_len = nt.prefix_items.len();
@@ -449,6 +452,7 @@ fn list_formula_is_empty(
             // combine all the positive tuples using intersection
             let lt = match pos_atom.atom {
                 Atom::List(a) => builder.get_list_atomic(a).clone(),
+                Atom::Set(a) => builder.get_set_atomic(a).clone(),
                 _ => unreachable!(),
             };
             prefix_items.clone_from(&lt.prefix_items);
@@ -460,6 +464,7 @@ fn list_formula_is_empty(
                 let d = &some_p.atom;
                 let lt = match d {
                     Atom::List(a) => builder.get_list_atomic(*a).clone(),
+                    Atom::Set(a) => builder.get_set_atomic(*a).clone(),
                     _ => unreachable!(),
                 };
                 let new_len = std::cmp::max(prefix_items.len(), lt.prefix_items.len());
@@ -542,6 +547,7 @@ fn bdd_mapping_member_type_inner(
         } => {
             let b_atom_type = match atom {
                 Atom::Mapping(a) => ctx.get_mapping_atomic(*a),
+                Atom::Map(a) => ctx.get_map_atomic(*a),
                 _ => unreachable!(),
             };
             let a = mapping_member_type_inner(b_atom_type.clone(), key.clone())?;
@@ -651,6 +657,7 @@ fn bdd_mapped_record_member_type_inner_val(
         } => {
             let b_atom_type = match atom {
                 Atom::Mapping(a) => ctx.get_mapping_atomic(*a),
+                Atom::Map(a) => ctx.get_map_atomic(*a),
                 _ => unreachable!(),
             };
             let mut found = None;
@@ -867,6 +874,7 @@ fn bdd_list_member_type_inner_val(
         } => {
             let b_atom_type = match atom {
                 Atom::List(a) => ctx.get_list_atomic(*a),
+                Atom::Set(a) => ctx.get_set_atomic(*a),
                 _ => unreachable!(),
             };
             let a = list_member_type_inner_val(b_atom_type, key.clone())?;
@@ -965,11 +973,14 @@ pub fn keyof(ctx: &mut SemTypeContext, st: Rc<SemType>) -> anyhow::Result<Rc<Sem
 
     for it in &st.subtype_data {
         match it.as_ref() {
-            ProperSubtype::Mapping(it) => {
+            ProperSubtype::Mapping(it) | ProperSubtype::Map(it) => {
                 for atom in to_bdd_atoms(it) {
-                    if let Atom::Mapping(a) = atom {
-                        let a = ctx.get_mapping_atomic(a);
-
+                    let a = match atom {
+                        Atom::Mapping(a) => Some(ctx.get_mapping_atomic(a)),
+                        Atom::Map(a) => Some(ctx.get_map_atomic(a)),
+                        _ => None,
+                    };
+                    if let Some(a) = a {
                         for k in a.vs.keys() {
                             let key_ty =
                                 Rc::new(SemTypeContext::string_const(StringLitOrFormat::Tpl(
@@ -981,10 +992,10 @@ pub fn keyof(ctx: &mut SemTypeContext, st: Rc<SemType>) -> anyhow::Result<Rc<Sem
                                 acc = acc.union(&key_ty)?
                             }
                         }
-                    };
+                    }
                 }
             }
-            ProperSubtype::List(_) => {
+            ProperSubtype::List(_) | ProperSubtype::Set(_) => {
                 let idx_st = Rc::new(SemTypeContext::number());
                 let ty_at_key = list_indexed_access(ctx, st.clone(), idx_st.clone())?;
                 if !ty_at_key.is_empty(ctx)? {

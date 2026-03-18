@@ -120,6 +120,7 @@ pub fn dnf_to_bdd(dnf: &Dnf) -> Rc<Bdd> {
 fn mapping_is_empty_handle_recusrsion(
     dnf: Rc<Dnf>,
     ctx: &mut SemTypeContext,
+    is_map: bool,
 ) -> Result<IsEmptyStatus> {
     // use memoization to handle recursive types
     match ctx.mapping_memo_dnf.get(&dnf) {
@@ -137,7 +138,7 @@ fn mapping_is_empty_handle_recusrsion(
         }
     }
 
-    let is_empty = mapping_is_empty_impl(dnf.clone(), ctx)?;
+    let is_empty = mapping_is_empty_impl(dnf.clone(), ctx, is_map)?;
     ctx.mapping_memo_dnf
         .get_mut(&dnf)
         .expect("bdd should be cached by now")
@@ -147,7 +148,12 @@ fn mapping_is_empty_handle_recusrsion(
 
 pub fn dnf_mapping_is_empty(bdd: &Rc<Bdd>, ctx: &mut SemTypeContext) -> Result<IsEmptyStatus> {
     let dnf = Rc::new(bdd_to_dnf(bdd));
-    mapping_is_empty_handle_recusrsion(dnf, ctx)
+    mapping_is_empty_handle_recusrsion(dnf, ctx, false)
+}
+
+pub fn dnf_map_is_empty(bdd: &Rc<Bdd>, ctx: &mut SemTypeContext) -> Result<IsEmptyStatus> {
+    let dnf = Rc::new(bdd_to_dnf(bdd));
+    mapping_is_empty_handle_recusrsion(dnf, ctx, true)
 }
 
 #[cfg(test)]

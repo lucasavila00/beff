@@ -561,6 +561,15 @@ fn print_runtype(schema: &Runtype, named_schemas: &[NamedSchema], ctx: &mut Prin
             let item_validator = print_runtype(json_schema, named_schemas, ctx);
             new_runtype_class("ArrayRuntype", vec![item_validator])
         }
+        Runtype::Map(k, v) => {
+            let key_validator = print_runtype(k, named_schemas, ctx);
+            let value_validator = print_runtype(v, named_schemas, ctx);
+            new_runtype_class("MapRuntype", vec![key_validator, value_validator])
+        }
+        Runtype::Set(v) => {
+            let item_validator = print_runtype(v, named_schemas, ctx);
+            new_runtype_class("SetRuntype", vec![item_validator])
+        }
         Runtype::AllOf(vs) => runtype_union_or_intersection("AllOfRuntype", vs, named_schemas, ctx),
         Runtype::AnyOf(vs) => {
             if vs.is_empty() {

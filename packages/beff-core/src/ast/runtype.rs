@@ -288,6 +288,8 @@ pub enum Runtype {
     Date,
     BigInt,
     TypedArray(TypedArrayKind),
+    Map(Box<Runtype>, Box<Runtype>),
+    Set(Box<Runtype>),
 }
 
 struct UnionMerger(BTreeSet<Runtype>);
@@ -516,6 +518,15 @@ impl Runtype {
             Runtype::Array(runtype) => {
                 let inner = runtype.debug_print(ctx);
                 format!("Array<{}>", inner)
+            }
+            Runtype::Set(runtype) => {
+                let inner = runtype.debug_print(ctx);
+                format!("Set<{}>", inner)
+            }
+            Runtype::Map(k, v) => {
+                let k = k.debug_print(ctx);
+                let v = v.debug_print(ctx);
+                format!("Map<{}, {}>", k, v)
             }
             Runtype::Tuple {
                 prefix_items,
