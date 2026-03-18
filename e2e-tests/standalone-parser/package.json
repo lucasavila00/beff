@@ -1,6 +1,6 @@
 {
   "name": "standalone-parser",
-  "version": "1.0.122",
+  "version": "1.0.123",
   "description": "",
   "main": "index.js",
   "scripts": {
