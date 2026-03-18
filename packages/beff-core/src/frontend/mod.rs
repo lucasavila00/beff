@@ -2871,6 +2871,34 @@ impl<'a, R: FileManager> FrontendCtx<'a, R> {
             .extract_union(constraint_schema)
             .map_err(|e| self.box_error(&anchor, e))?;
 
+        // Handle `[K in string]: V` as Record<string, V>
+        // Handle `[K in number]: V` as Record<number, V>
+        if values.len() == 1
+            && matches!(values[0], Runtype::String | Runtype::Number)
+        {
+            let key_type = values.into_iter().next().unwrap();
+            let type_ann = match &k.type_ann {
+                Some(type_ann) => type_ann.as_ref(),
+                None => {
+                    return self
+                        .error(&anchor, DiagnosticInfoMessage::NoTypeAnnotationInMappedType);
+                }
+            };
+            let ty = self.extract_type(type_ann, file_name.clone())?;
+            let opt_ty = match k.optional {
+                Some(opt) => match opt {
+                    TruePlusMinus::True => Optionality::Optional(ty),
+                    TruePlusMinus::Plus => Optionality::Required(ty),
+                    TruePlusMinus::Minus => {
+                        return self
+                            .error(&anchor, DiagnosticInfoMessage::MappedTypeMinusNotSupported);
+                    }
+                },
+                None => Optionality::Required(ty),
+            };
+            return Ok(Runtype::record(key_type, opt_ty));
+        }
+
         let mut string_keys = vec![];
 
         for v in values {
