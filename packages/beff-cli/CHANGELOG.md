@@ -1,5 +1,11 @@
 # @beff/cli
 
+## 0.0.125
+
+### Patch Changes
+
+- Support K in String record construction
+
 ## 0.0.124
 
 ### Patch Changes

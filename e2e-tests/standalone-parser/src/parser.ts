@@ -214,6 +214,13 @@ export type Int32ArrayType = Int32Array;
 export type Float64ArrayType = Float64Array;
 export type BigInt64ArrayType = BigInt64Array;
 
+export type Repro5 = {
+  accountEndpoints: { [K in string]: number };
+};
+export type Repro6 = {
+  accountEndpoints: { [K in number]: number };
+};
+
 export const {
   Version,
   Version2,
@@ -267,6 +274,8 @@ export const {
   TsxTask: TsxTaskCodec,
   DtsConfig: DtsConfigCodec,
 } = parse.buildParsers<{
+  Repro5: Repro5;
+  Repro6: Repro6;
   PartialRepro: PartialRepro;
   TransportedValue: TransportedValue;
   OnlyAKey: OnlyAKey;

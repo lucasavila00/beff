@@ -1327,4 +1327,84 @@ mod tests {
         }
         ");
     }
+
+    #[test]
+    fn mapped_type_string_constraint() {
+        let from = r#"
+    type StringKeyed = { [K in string]: number };
+    parse.buildParsers<{ StringKeyed: StringKeyed }>();
+  "#;
+        insta::assert_snapshot!(print_types(from), @r"
+        type StringKeyed = { [key: string]: number };
+
+
+        type BuiltParsers = {
+          StringKeyed: StringKeyed,
+        }
+        ");
+    }
+
+    #[test]
+    fn mapped_type_string_constraint_nested() {
+        let from = r#"
+    type Outer = { accountEndpoints: { [K in string]: number } };
+    parse.buildParsers<{ Outer: Outer }>();
+  "#;
+        insta::assert_snapshot!(print_types(from), @r#"
+        type Outer = { "accountEndpoints": { [key: string]: number } };
+
+
+        type BuiltParsers = {
+          Outer: Outer,
+        }
+        "#);
+    }
+
+    #[test]
+    fn mapped_type_string_constraint_optional() {
+        let from = r#"
+    type StringKeyedOpt = { [K in string]?: string };
+    parse.buildParsers<{ StringKeyedOpt: StringKeyedOpt }>();
+  "#;
+        insta::assert_snapshot!(print_types(from), @r"
+        type StringKeyedOpt = { [key?: string]: string };
+
+
+        type BuiltParsers = {
+          StringKeyedOpt: StringKeyedOpt,
+        }
+        ");
+    }
+
+    #[test]
+    fn mapped_type_number_constraint() {
+        let from = r#"
+    type NumberKeyed = { [K in number]: string };
+    parse.buildParsers<{ NumberKeyed: NumberKeyed }>();
+  "#;
+        insta::assert_snapshot!(print_types(from), @r"
+        type NumberKeyed = { [key: number]: string };
+
+
+        type BuiltParsers = {
+          NumberKeyed: NumberKeyed,
+        }
+        ");
+    }
+
+    #[test]
+    fn mapped_type_number_constraint_optional() {
+        let from = r#"
+    type NumberKeyedOpt = { [K in number]?: boolean };
+    parse.buildParsers<{ NumberKeyedOpt: NumberKeyedOpt }>();
+  "#;
+        insta::assert_snapshot!(print_types(from), @r"
+        type NumberKeyedOpt = { [key?: number]: boolean };
+
+
+        type BuiltParsers = {
+          NumberKeyedOpt: NumberKeyedOpt,
+        }
+        ");
+    }
 }
