@@ -1038,21 +1038,20 @@ it("BigInt64ArrayCodec", () => {
   `);
 });
 
-
-it('works on maps', () => {
-  const it: M1 = new Map()
-  it.set("a", 1)
-  it.set("b", 2)
+it("works on maps", () => {
+  const it: M1 = new Map();
+  it.set("a", 1);
+  it.set("b", 2);
   expect(M1Codec.parse(it)).toMatchInlineSnapshot(`
     Map {
       "a" => 1,
       "b" => 2,
     }
-  `)
+  `);
 
   // failure
-  const f1 = new Map<string, string>()
-  f1.set("a", "b")
+  const f1 = new Map<string, string>();
+  f1.set("a", "b");
   expect(M1Codec.safeParse(f1)).toMatchInlineSnapshot(`
     {
       "errors": [
@@ -1066,23 +1065,23 @@ it('works on maps', () => {
       ],
       "success": false,
     }
-  `)
-})
+  `);
+});
 
-it('works on sets', () => {
-  const it: S1 = new Set()
-  it.add('abc')
-  it.add('def')
+it("works on sets", () => {
+  const it: S1 = new Set();
+  it.add("abc");
+  it.add("def");
   expect(S1Codec.parse(it)).toMatchInlineSnapshot(`
     Set {
       "abc",
       "def",
     }
-  `)
+  `);
 
   // failure
-  const f1 = new Set<number>()
-  f1.add(1)
+  const f1 = new Set<number>();
+  f1.add(1);
   expect(S1Codec.safeParse(f1)).toMatchInlineSnapshot(`
     {
       "errors": [
@@ -1096,5 +1095,5 @@ it('works on sets', () => {
       ],
       "success": false,
     }
-  `)
-})
+  `);
+});
