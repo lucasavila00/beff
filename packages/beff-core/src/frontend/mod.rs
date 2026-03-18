@@ -1454,17 +1454,12 @@ impl<'a, R: FileManager> FrontendCtx<'a, R> {
                 },
                 TsBuiltIn::Map => match type_args.as_slice() {
                     [key, value] => {
-                        let key = self.extract_runtype(key.clone())?;
-                        let value = self.extract_runtype(value.clone())?;
-                        Ok(Runtype::Map(Box::new(key), Box::new(value)))
+                        Ok(Runtype::Map(Box::new(key.clone()), Box::new(value.clone())))
                     }
                     _ => self.error(anchor, DiagnosticInfoMessage::MapShouldHaveTwoTypeArguments),
                 },
                 TsBuiltIn::Set => match type_args.as_slice() {
-                    [value] => {
-                        let value = self.extract_runtype(value.clone())?;
-                        Ok(Runtype::Set(Box::new(value)))
-                    }
+                    [value] => Ok(Runtype::Set(Box::new(value.clone()))),
                     _ => self.error(anchor, DiagnosticInfoMessage::SetShouldHaveOneTypeArgument),
                 },
             },

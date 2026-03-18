@@ -10,7 +10,14 @@ mod tests {
     parse.buildParsers<{ UserMap: UserMap }>();
 
   "#;
-        insta::assert_snapshot!(print_types(from), @r"");
+        insta::assert_snapshot!(print_types(from), @"
+        type UserMap = Map<string, number>;
+
+
+        type BuiltParsers = {
+          UserMap: UserMap,
+        }
+        ");
     }
 
     #[test]
@@ -21,6 +28,13 @@ mod tests {
     parse.buildParsers<{ UserSet: UserSet }>();
 
   "#;
-        insta::assert_snapshot!(print_types(from), @r"");
+        insta::assert_snapshot!(print_types(from), @"
+        type UserSet = Set<string>;
+
+
+        type BuiltParsers = {
+          UserSet: UserSet,
+        }
+        ");
     }
 }

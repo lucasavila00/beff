@@ -98,79 +98,79 @@ export type RequiredPartialObject = Required<PartialObject>;
 
 export type DiscriminatedUnion =
   | {
-      type: "a";
-      subType: "a1";
-      a1: string;
-      a11?: string;
-    }
+    type: "a";
+    subType: "a1";
+    a1: string;
+    a11?: string;
+  }
   | {
-      type: "a";
-      subType: "a2";
-      a2: string;
-    }
+    type: "a";
+    subType: "a2";
+    a2: string;
+  }
   | {
-      type: "b";
-      value: number;
-    };
+    type: "b";
+    value: number;
+  };
 export type DiscriminatedUnion3 =
   | {
-      type: "a" | "c";
-      a1: string;
-    }
+    type: "a" | "c";
+    a1: string;
+  }
   | {
-      type: "b";
-      value: number;
-    };
+    type: "b";
+    value: number;
+  };
 export type DiscriminatedUnion2 =
   | {
-      type: "a";
-      subType: "a1";
-      a1: string;
-      a11?: string;
-    }
+    type: "a";
+    subType: "a1";
+    a1: string;
+    a11?: string;
+  }
   | {
-      type: "a";
-      subType: "a2";
-      a2: string;
-    }
+    type: "a";
+    subType: "a2";
+    a2: string;
+  }
   | {
-      type?: "d";
-      valueD: number;
-    }
+    type?: "d";
+    valueD: number;
+  }
   | {
-      type: "b";
-      value: number;
-    };
+    type: "b";
+    value: number;
+  };
 
 export type DiscriminatedUnion4 =
   | {
-      type: "a";
-      a: {
-        subType: "a1";
-        a1: string;
-      };
-    }
-  | {
-      type: "a";
-      a: {
-        subType: "a2";
-        a2: string;
-      };
+    type: "a";
+    a: {
+      subType: "a1";
+      a1: string;
     };
+  }
+  | {
+    type: "a";
+    a: {
+      subType: "a2";
+      a2: string;
+    };
+  };
 
 type UnionWithEnumAccess =
   | {
-      tag: OtherEnum.A;
-      value: string;
-    }
+    tag: OtherEnum.A;
+    value: string;
+  }
   | {
-      tag: OtherEnum.B;
-      value: number;
-    }
+    tag: OtherEnum.B;
+    value: number;
+  }
   | {
-      tag: OtherEnum2.C;
-      value: boolean;
-    };
+    tag: OtherEnum2.C;
+    value: boolean;
+  };
 type Shape =
   | { kind: "circle"; radius: number }
   | { kind: "square"; x: number }
@@ -220,6 +220,10 @@ export type Repro5 = {
 export type Repro6 = {
   accountEndpoints: { [K in number]: number };
 };
+
+export type M1 = Map<string, number>
+
+export type S1 = Set<string>
 
 export const {
   Version,
@@ -272,10 +276,12 @@ export const {
   Float64ArrayCodec: Float64ArrayCodec,
   BigInt64ArrayCodec: BigInt64ArrayCodec,
   TsxTask: TsxTaskCodec,
-  DtsConfig: DtsConfigCodec,
+  DtsConfig: DtsConfigCodec, M1: M1Codec, S1: S1Codec,
 } = parse.buildParsers<{
   Repro5: Repro5;
   Repro6: Repro6;
+  M1: M1,
+  S1: S1,
   PartialRepro: PartialRepro;
   TransportedValue: TransportedValue;
   OnlyAKey: OnlyAKey;

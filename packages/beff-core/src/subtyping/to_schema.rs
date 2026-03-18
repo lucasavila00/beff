@@ -116,6 +116,50 @@ impl<'a, 'b> SchemerContext<'a, 'b> {
         Ok(Runtype::any_of(acc.into_iter().collect()))
     }
 
+    fn map_atom_schema(&mut self, mt: &Rc<MappingAtomicType>) -> anyhow::Result<Runtype> {
+        if let Some(it) = &mt.indexed_properties {
+            let k = self.convert_to_schema(&it.key, None)?;
+            let v = self.convert_to_schema(&it.value, None)?;
+            return Ok(Runtype::Map(Box::new(k), Box::new(v)));
+        }
+        Ok(Runtype::Map(Box::new(Runtype::Any), Box::new(Runtype::Any)))
+    }
+
+    fn map_conjunction_to_schema(&mut self, clause: &Conjunction) -> anyhow::Result<Runtype> {
+        let mut acc = vec![];
+
+        for atom in &clause.positive {
+            let mt = match atom {
+                Atom::Map(a) => self.ctx.0.get_map_atomic(*a).clone(),
+                _ => unreachable!(),
+            };
+            let explained_sts = self.map_atom_schema(&mt)?;
+            acc.push(explained_sts);
+        }
+        for atom in &clause.negative {
+            let mt = match atom {
+                Atom::Map(a) => self.ctx.0.get_map_atomic(*a).clone(),
+                _ => unreachable!(),
+            };
+            let explained_sts = self.map_atom_schema(&mt)?;
+            acc.push(Runtype::StNot(Box::new(explained_sts)));
+        }
+
+        Ok(Runtype::all_of(acc.into_iter().collect()))
+    }
+
+    fn map_to_schema(&mut self, bdd: &Rc<Bdd>) -> anyhow::Result<Runtype> {
+        let dnf = bdd_to_dnf(bdd);
+        let mut acc = vec![];
+
+        for clause in dnf.iter() {
+            let conj = self.map_conjunction_to_schema(clause)?;
+            acc.push(conj);
+        }
+
+        Ok(Runtype::any_of(acc.into_iter().collect()))
+    }
+
     fn list_atom_schema(&mut self, mt: &Rc<ListAtomic>) -> anyhow::Result<Runtype> {
         if mt.prefix_items.is_empty() {
             if mt.items.is_any() {
@@ -181,6 +225,48 @@ impl<'a, 'b> SchemerContext<'a, 'b> {
         Ok(Runtype::any_of(acc.into_iter().collect()))
     }
 
+    fn set_atom_schema(&mut self, mt: &Rc<ListAtomic>) -> anyhow::Result<Runtype> {
+        let v = self.convert_to_schema(&mt.items, None)?;
+        Ok(Runtype::Set(Box::new(v)))
+    }
+
+    fn set_conjunction_to_schema(&mut self, clause: &Conjunction) -> anyhow::Result<Runtype> {
+        let mut acc = vec![];
+
+        for atom in &clause.positive {
+            let lt = match atom {
+                Atom::Set(a) => self.ctx.0.get_set_atomic(*a).clone(),
+                _ => unreachable!(),
+            };
+
+            let explained_sts = self.set_atom_schema(&lt)?;
+            acc.push(explained_sts);
+        }
+        for atom in &clause.negative {
+            let lt = match atom {
+                Atom::Set(a) => self.ctx.0.get_set_atomic(*a).clone(),
+                _ => unreachable!(),
+            };
+
+            let explained_sts = self.set_atom_schema(&lt)?;
+            acc.push(Runtype::StNot(Box::new(explained_sts)));
+        }
+
+        Ok(Runtype::all_of(acc.into_iter().collect()))
+    }
+
+    fn set_to_schema(&mut self, bdd: &Rc<Bdd>) -> anyhow::Result<Runtype> {
+        let dnf = bdd_to_dnf(bdd);
+        let mut acc = vec![];
+
+        for clause in dnf.iter() {
+            let conj = self.set_conjunction_to_schema(clause)?;
+            acc.push(conj);
+        }
+
+        Ok(Runtype::any_of(acc.into_iter().collect()))
+    }
+
     fn convert_to_schema_no_cache(&mut self, ty: &SemType) -> anyhow::Result<Runtype> {
         if ty.all == 0 && ty.subtype_data.is_empty() {
             return Ok(Runtype::Never);
@@ -225,6 +311,12 @@ impl<'a, 'b> SchemerContext<'a, 'b> {
                         for kind in TypedArrayKind::all() {
                             acc.insert(Runtype::TypedArray(kind));
                         }
+                    }
+                    SubTypeTag::Map => {
+                        acc.insert(Runtype::Map(Box::new(Runtype::Any), Box::new(Runtype::Any)));
+                    }
+                    SubTypeTag::Set => {
+                        acc.insert(Runtype::Set(Box::new(Runtype::Any)));
                     }
                 };
             }
@@ -306,13 +398,16 @@ impl<'a, 'b> SchemerContext<'a, 'b> {
                         }
                     }
                 }
-                ProperSubtype::TypedArray {
-                    allowed,
-                    values,
-                } => {
+                ProperSubtype::TypedArray { allowed, values } => {
                     for kind in values {
                         acc.insert(maybe_not(Runtype::TypedArray(*kind), !allowed));
                     }
+                }
+                ProperSubtype::Map(bdd) => {
+                    acc.insert(self.map_to_schema(bdd)?);
+                }
+                ProperSubtype::Set(bdd) => {
+                    acc.insert(self.set_to_schema(bdd)?);
                 }
             };
         }
