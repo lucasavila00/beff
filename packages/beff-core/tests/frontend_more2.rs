@@ -58,4 +58,81 @@ mod tests {
         }
         ");
     }
+
+    #[test]
+    fn keyof_record_number() {
+        let from = r#"
+    type T = Record<number, string>;
+    type K = keyof T;
+    parse.buildParsers<{ K: K }>();
+  "#;
+        insta::assert_snapshot!(print_types(from), @r#"
+        type K = number;
+
+        type T = { [key: number]: string };
+
+
+        type BuiltParsers = {
+          K: K,
+        }
+        "#);
+    }
+
+    #[test]
+    fn keyof_mixed_index_signature() {
+        let from = r#"
+    type T = { a: string, [k: string]: any };
+    type K = keyof T;
+    parse.buildParsers<{ K: K }>();
+  "#;
+        insta::assert_snapshot!(print_types(from), @r#"
+        type K = string;
+
+        type T = { "a": string, [key: string]: any };
+
+
+        type BuiltParsers = {
+          K: K,
+        }
+        "#);
+    }
+
+    #[test]
+    fn keyof_union() {
+        let from = r#"
+    type T = { a: string, b: string } | { a: string, c: string };
+    type K = keyof T;
+    parse.buildParsers<{ K: K }>();
+  "#;
+        // In TS, keyof (A | B) = keyof A & keyof B
+        insta::assert_snapshot!(print_types(from), @r#"
+        type K = "a";
+
+        type T = ({ "a": string, "b": string } | { "a": string, "c": string });
+
+
+        type BuiltParsers = {
+          K: K,
+        }
+        "#);
+    }
+
+    #[test]
+    fn keyof_union_never() {
+        let from = r#"
+    type T = { a: string } | { b: string };
+    type K = keyof T;
+    parse.buildParsers<{ K: K }>();
+  "#;
+        insta::assert_snapshot!(print_types(from), @r#"
+        type K = never;
+
+        type T = ({ "a": string } | { "b": string });
+
+
+        type BuiltParsers = {
+          K: K,
+        }
+        "#);
+    }
 }
