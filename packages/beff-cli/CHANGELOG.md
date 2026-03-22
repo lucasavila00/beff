@@ -1,5 +1,11 @@
 # @beff/cli
 
+## 0.0.127
+
+### Patch Changes
+
+- fix keyof bug
+
 ## 0.0.126
 
 ### Patch Changes

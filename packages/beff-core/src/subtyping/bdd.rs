@@ -9,6 +9,7 @@ use crate::{
     },
     subtyping::{IsEmptyStatus, semtype::SemTypeContext, subtype::NumberRepresentationOrFormat},
 };
+use crate::subtyping::dnf::bdd_to_dnf;
 
 use super::{
     semtype::{BddMemoEmptyRef, MemoEmpty, SemType, SemTypeOps},
@@ -950,60 +951,72 @@ pub fn list_indexed_access(
     }
 }
 
-fn to_bdd_atoms(it: &Rc<Bdd>) -> Vec<Atom> {
-    match it.as_ref() {
-        Bdd::True => vec![],
-        Bdd::False => vec![],
-        Bdd::Node {
-            atom,
-            left,
-            middle,
-            right,
-        } => {
-            let mut acc = vec![*atom];
-            acc.extend(to_bdd_atoms(left));
-            acc.extend(to_bdd_atoms(middle));
-            acc.extend(to_bdd_atoms(right));
-            acc
+
+
+pub fn keyof(ctx: &mut SemTypeContext, st: Rc<SemType>) -> anyhow::Result<Rc<SemType>> {
+    let mut acc: Option<Rc<SemType>> = None;
+
+    let intersect_with = |acc: &mut Option<Rc<SemType>>, ty: Rc<SemType>| -> anyhow::Result<()> {
+        match acc {
+            Some(prev) => *acc = Some(prev.intersect(&ty)?),
+            None => *acc = Some(ty),
+        }
+        Ok(())
+    };
+
+    // Primitives in 'all'
+    for tag in SubTypeTag::all() {
+        if (st.all & tag.code()) != 0 {
+            // For now, primitives have no keys in Beff (methods not supported)
+            match tag {
+                SubTypeTag::Mapping | SubTypeTag::Map | SubTypeTag::List | SubTypeTag::Set => {
+                    // handled in subtype_data
+                }
+                _ => {
+                    intersect_with(&mut acc, Rc::new(SemTypeContext::never()))?;
+                }
+            }
         }
     }
-}
-pub fn keyof(ctx: &mut SemTypeContext, st: Rc<SemType>) -> anyhow::Result<Rc<SemType>> {
-    let mut acc = Rc::new(SemTypeContext::never());
 
     for it in &st.subtype_data {
-        match it.as_ref() {
+        let tag_keys = match it.as_ref() {
             ProperSubtype::Mapping(it) | ProperSubtype::Map(it) => {
-                for atom in to_bdd_atoms(it) {
-                    let a = match atom {
-                        Atom::Mapping(a) => Some(ctx.get_mapping_atomic(a)),
-                        Atom::Map(a) => Some(ctx.get_map_atomic(a)),
-                        _ => None,
-                    };
-                    if let Some(a) = a {
+                let dnf = bdd_to_dnf(it);
+                let mut mapping_acc: Option<Rc<SemType>> = None;
+                for conj in dnf {
+                    let mut conj_keys = Rc::new(SemTypeContext::never());
+                    for atom in &conj.positive {
+                        let a = match atom {
+                            Atom::Mapping(a) => ctx.get_mapping_atomic(*a),
+                            Atom::Map(a) => ctx.get_map_atomic(*a),
+                            _ => unreachable!(),
+                        };
+                        let mut atom_keys = Rc::new(SemTypeContext::never());
                         for k in a.vs.keys() {
                             let key_ty =
                                 Rc::new(SemTypeContext::string_const(StringLitOrFormat::Tpl(
                                     TplLitType(vec![TplLitTypeItem::StringConst(k.clone())]),
                                 )));
-                            let ty_at_key =
-                                mapping_indexed_access(ctx, st.clone(), key_ty.clone())?;
-                            if !ty_at_key.is_empty(ctx)? {
-                                acc = acc.union(&key_ty)?
-                            }
+                            atom_keys = atom_keys.union(&key_ty)?;
                         }
+                        if let Some(indexed) = &a.indexed_properties {
+                            atom_keys = atom_keys.union(&indexed.key)?;
+                        }
+                        conj_keys = conj_keys.union(&atom_keys)?;
+                    }
+                    match mapping_acc {
+                        Some(prev) => mapping_acc = Some(prev.intersect(&conj_keys)?),
+                        None => mapping_acc = Some(conj_keys),
                     }
                 }
+                mapping_acc.unwrap_or_else(|| Rc::new(SemTypeContext::never()))
             }
-            ProperSubtype::List(_) | ProperSubtype::Set(_) => {
-                let idx_st = Rc::new(SemTypeContext::number());
-                let ty_at_key = list_indexed_access(ctx, st.clone(), idx_st.clone())?;
-                if !ty_at_key.is_empty(ctx)? {
-                    acc = acc.union(&idx_st)?
-                }
-            }
-            _ => (),
-        }
+            ProperSubtype::List(_) | ProperSubtype::Set(_) => Rc::new(SemTypeContext::number()),
+            _ => Rc::new(SemTypeContext::never()),
+        };
+        intersect_with(&mut acc, tag_keys)?;
     }
-    Ok(acc)
+
+    Ok(acc.unwrap_or_else(|| Rc::new(SemTypeContext::never())))
 }
