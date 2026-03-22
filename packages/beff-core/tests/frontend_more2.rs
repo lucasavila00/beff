@@ -37,4 +37,25 @@ mod tests {
         }
         ");
     }
+    #[test]
+    fn bug_repro1() {
+        let from = r#"
+
+    type DateDebugData = Record<string, string>;
+    type DateDebugDataKey = keyof DateDebugData;
+    parse.buildParsers<{ DateDebugData: DateDebugData , DateDebugDataKey: DateDebugDataKey}>();
+
+  "#;
+        insta::assert_snapshot!(print_types(from), @"
+        type DateDebugData = { [key: string]: string };
+
+        type DateDebugDataKey = string;
+
+
+        type BuiltParsers = {
+          DateDebugData: DateDebugData,
+          DateDebugDataKey: DateDebugDataKey,
+        }
+        ");
+    }
 }

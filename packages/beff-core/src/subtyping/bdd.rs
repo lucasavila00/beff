@@ -992,6 +992,9 @@ pub fn keyof(ctx: &mut SemTypeContext, st: Rc<SemType>) -> anyhow::Result<Rc<Sem
                                 acc = acc.union(&key_ty)?
                             }
                         }
+                        if let Some(indexed) = &a.indexed_properties {
+                            acc = acc.union(&indexed.key)?
+                        }
                     }
                 }
             }

@@ -1,5 +1,13 @@
 # @beff/client
 
+## 0.0.127
+
+### Patch Changes
+
+- fix keyof bug
+- Updated dependencies
+  - @beff/cli@0.0.127
+
 ## 0.0.126
 
 ### Patch Changes
