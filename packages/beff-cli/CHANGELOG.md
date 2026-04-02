@@ -1,5 +1,11 @@
 # @beff/cli
 
+## 0.0.128
+
+### Patch Changes
+
+- stable writes
+
 ## 0.0.127
 
 ### Patch Changes

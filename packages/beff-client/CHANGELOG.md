@@ -1,5 +1,13 @@
 # @beff/client
 
+## 0.0.128
+
+### Patch Changes
+
+- stable writes
+- Updated dependencies
+  - @beff/cli@0.0.128
+
 ## 0.0.127
 
 ### Patch Changes
