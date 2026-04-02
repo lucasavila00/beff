@@ -48,6 +48,16 @@ const finalizeParserV2File = (
   ].join("\n");
 };
 
+const writeIfChanged = (filePath: string, content: string) => {
+  if (fs.existsSync(filePath)) {
+    const existingContent = fs.readFileSync(filePath, "utf-8");
+    if (existingContent === content) {
+      return;
+    }
+  }
+  fs.writeFileSync(filePath, content);
+};
+
 export const execProject = (
   bundler: Bundler,
   projectPath: string,
@@ -72,7 +82,7 @@ export const execProject = (
   if (outResult == null) {
     return "failed";
   }
-  fs.writeFileSync(
+  writeIfChanged(
     path.join(outputDir, "parser.js"),
     finalizeParserV2File(
       outResult,
@@ -81,6 +91,6 @@ export const execProject = (
       projectJson.settings.numberFormats.map((it) => it.name) ?? [],
     ),
   );
-  fs.writeFileSync(path.join(outputDir, "parser.d.ts"), gen["parser.d.ts"]);
+  writeIfChanged(path.join(outputDir, "parser.d.ts"), gen["parser.d.ts"]);
   return "ok";
 };
