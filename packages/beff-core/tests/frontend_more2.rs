@@ -181,16 +181,16 @@ mod tests {
     type K = keyof T;
     parse.buildParsers<{ K: K }>();
   "#;
-        insta::assert_snapshot!(print_types(from), @r#"
+        insta::assert_snapshot!(print_types(from), @"
         type K = number;
 
-        type T = string[];
+        type T = Array<string>;
 
 
         type BuiltParsers = {
           K: K,
         }
-        "#);
+        ");
     }
 
     #[test]
@@ -203,7 +203,7 @@ mod tests {
         insta::assert_snapshot!(print_types(from), @r#"
         type K = never;
 
-        type T = ({ "a": string } | number);
+        type T = (number | { "a": string });
 
 
         type BuiltParsers = {
