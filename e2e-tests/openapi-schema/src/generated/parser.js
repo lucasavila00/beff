@@ -78,45 +78,58 @@ const direct_hoist_2 = new RefRuntype("CreateUserRequest");
 const direct_hoist_3 = new RefRuntype("CreateUserResponse");
 const direct_hoist_4 = new RefRuntype("UpdateUserRequest");
 const direct_hoist_5 = new RefRuntype("SearchUsersResponse");
-const direct_hoist_6 = new TypeofRuntype("string");
-const direct_hoist_7 = new ObjectRuntype({
-    "city": direct_hoist_6,
-    "street": direct_hoist_6
-}, []);
-const direct_hoist_8 = new ObjectRuntype({
-    "source": direct_hoist_6
-}, []);
+const direct_hoist_6 = new RefRuntype("RecursiveTree");
+const direct_hoist_7 = new RefRuntype("RecursiveEnvelope");
+const direct_hoist_8 = new TypeofRuntype("string");
 const direct_hoist_9 = new ObjectRuntype({
-    "metadata": direct_hoist_8,
-    "user": direct_hoist_1
+    "city": direct_hoist_8,
+    "street": direct_hoist_8
 }, []);
 const direct_hoist_10 = new ObjectRuntype({
+    "source": direct_hoist_8
+}, []);
+const direct_hoist_11 = new ObjectRuntype({
+    "metadata": direct_hoist_10,
     "user": direct_hoist_1
 }, []);
-const direct_hoist_11 = new ArrayRuntype(direct_hoist_1);
 const direct_hoist_12 = new ObjectRuntype({
-    "items": direct_hoist_11,
-    "primaryAddress": direct_hoist_0
+    "user": direct_hoist_1
 }, []);
 const direct_hoist_13 = new ObjectRuntype({
-    "address": direct_hoist_0,
-    "id": direct_hoist_6
+    "previous": new OptionalFieldRuntype(direct_hoist_7),
+    "root": direct_hoist_6
 }, []);
-const direct_hoist_14 = new ObjectRuntype({
-    "displayName": direct_hoist_6
-}, []);
+const direct_hoist_14 = new ArrayRuntype(direct_hoist_6);
 const direct_hoist_15 = new ObjectRuntype({
+    "children": direct_hoist_14,
+    "value": direct_hoist_8
+}, []);
+const direct_hoist_16 = new ArrayRuntype(direct_hoist_1);
+const direct_hoist_17 = new ObjectRuntype({
+    "items": direct_hoist_16,
+    "primaryAddress": direct_hoist_0
+}, []);
+const direct_hoist_18 = new ObjectRuntype({
     "address": direct_hoist_0,
-    "id": direct_hoist_6,
-    "profile": direct_hoist_14
+    "id": direct_hoist_8
+}, []);
+const direct_hoist_19 = new ObjectRuntype({
+    "displayName": direct_hoist_8
+}, []);
+const direct_hoist_20 = new ObjectRuntype({
+    "address": direct_hoist_0,
+    "id": direct_hoist_8,
+    "profile": direct_hoist_19
 }, []);
 const namedRuntypes = {
-    "Address": direct_hoist_7,
-    "CreateUserRequest": direct_hoist_9,
-    "CreateUserResponse": direct_hoist_10,
-    "SearchUsersResponse": direct_hoist_12,
-    "UpdateUserRequest": direct_hoist_13,
-    "User": direct_hoist_15
+    "Address": direct_hoist_9,
+    "CreateUserRequest": direct_hoist_11,
+    "CreateUserResponse": direct_hoist_12,
+    "RecursiveEnvelope": direct_hoist_13,
+    "RecursiveTree": direct_hoist_15,
+    "SearchUsersResponse": direct_hoist_17,
+    "UpdateUserRequest": direct_hoist_18,
+    "User": direct_hoist_20
 };
 const buildParsersInput = {
     "Address": direct_hoist_0,
@@ -124,7 +137,9 @@ const buildParsersInput = {
     "CreateUserRequest": direct_hoist_2,
     "CreateUserResponse": direct_hoist_3,
     "UpdateUserRequest": direct_hoist_4,
-    "SearchUsersResponse": direct_hoist_5
+    "SearchUsersResponse": direct_hoist_5,
+    "RecursiveTree": direct_hoist_6,
+    "RecursiveEnvelope": direct_hoist_7
 };
 
 exports.default = { buildParsers };

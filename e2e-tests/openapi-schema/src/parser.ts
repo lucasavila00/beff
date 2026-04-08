@@ -34,6 +34,16 @@ type SearchUsersResponse = {
   primaryAddress: Address;
 };
 
+type RecursiveTree = {
+  value: string;
+  children: RecursiveTree[];
+};
+
+type RecursiveEnvelope = {
+  root: RecursiveTree;
+  previous?: RecursiveEnvelope;
+};
+
 export const Codecs = parse.buildParsers<{
   Address: Address;
   User: User;
@@ -41,4 +51,6 @@ export const Codecs = parse.buildParsers<{
   CreateUserResponse: CreateUserResponse;
   UpdateUserRequest: UpdateUserRequest;
   SearchUsersResponse: SearchUsersResponse;
+  RecursiveTree: RecursiveTree;
+  RecursiveEnvelope: RecursiveEnvelope;
 }>();
