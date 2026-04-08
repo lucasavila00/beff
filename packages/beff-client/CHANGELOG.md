@@ -1,5 +1,13 @@
 # @beff/client
 
+## 0.0.129
+
+### Patch Changes
+
+- printing schema for openapi
+- Updated dependencies
+  - @beff/cli@0.0.129
+
 ## 0.0.128
 
 ### Patch Changes

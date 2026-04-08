@@ -22,4 +22,4 @@ export {
   JSONSchema7Definition,
   JSONSchema7,
 } from "./json-schema.js";
-export { createNamedType, overrideNamedType } from "./codegen-v2.js";
+export { createNamedType, overrideNamedType, SchemaPrintingContext } from "./codegen-v2.js";

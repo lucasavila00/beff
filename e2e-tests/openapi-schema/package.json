@@ -1,6 +1,6 @@
 {
-  "name": "json-schema-generator",
-  "version": "1.0.126",
+  "name": "openapi-schema-generator",
+  "version": "1.0.93",
   "description": "",
   "main": "index.js",
   "scripts": {

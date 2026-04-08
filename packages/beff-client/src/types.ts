@@ -1,5 +1,6 @@
 import type { ZodType } from "zod";
 import { JSONSchema7 } from "./json-schema.js";
+import type { SchemaPrintingContext } from "./codegen-v2.js";
 
 export type StringFormat<Tag1 extends string> = string & { [k in Tag1]: Tag1 };
 
@@ -40,6 +41,7 @@ export type BeffParser<T> = {
   name: string;
   validate(input: any, options?: ParseOptions): input is T;
   schema: () => JSONSchema7;
+  schemaWithContext: (ctx: SchemaPrintingContext) => JSONSchema7;
   describe: () => string;
   hash: () => number;
 };
