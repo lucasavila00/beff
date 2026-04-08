@@ -83,6 +83,56 @@ const isValid: boolean = Parsers.User.validate({
 const jsonSchema = Parsers.User.schema();
 ```
 
+### 6. Generate reusable `$ref`-based schemas
+
+`.schema()` stays flat and inlines the full schema for compatibility.
+
+If you want reusable definitions for JSON Schema or OpenAPI documents, use `SchemaPrintingContext` with `.schemaWithContext(...)`:
+
+```ts
+import { Parsers } from "./parser.ts";
+import { SchemaPrintingContext } from "@beff/client";
+
+const ctx = new SchemaPrintingContext({
+  refPathTemplate: "#/components/schemas/{name}",
+  definitionContainerKey: null,
+});
+
+const requestSchema = Parsers.User.schemaWithContext(ctx);
+// { $ref: "#/components/schemas/User" }
+
+const openapi = {
+  openapi: "3.1.0",
+  paths: {
+    "/users": {
+      post: {
+        requestBody: {
+          content: {
+            "application/json": {
+              schema: requestSchema,
+            },
+          },
+        },
+      },
+    },
+  },
+  components: {
+    schemas: ctx.exportDefinitions(),
+  },
+};
+```
+
+By default, `SchemaPrintingContext` emits refs at `#/$defs/{name}` and exports definitions under `$defs`:
+
+```ts
+import { SchemaPrintingContext } from "@beff/client";
+
+const ctx = new SchemaPrintingContext();
+
+const schema = Parsers.User.schemaWithContext(ctx);
+const definitions = ctx.exportDefinitions();
+```
+
 ## CLI Options
 
 The `beff` binary can also run in watch mode.
