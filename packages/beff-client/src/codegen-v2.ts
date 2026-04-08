@@ -344,7 +344,9 @@ export class SchemaPrintingContext {
     delete this.inProgressDefinitions[name];
   }
 
-  exportDefinitions(): Record<string, JSONSchema7Definition> | Record<string, Record<string, JSONSchema7Definition>> {
+  exportDefinitions():
+    | Record<string, JSONSchema7Definition>
+    | Record<string, Record<string, JSONSchema7Definition>> {
     const definitions = this.definitions;
     if (this.definitionContainerKey == null) {
       return definitions;
