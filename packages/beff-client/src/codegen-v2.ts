@@ -29,7 +29,7 @@ import {
   mapHash,
   setHash,
 } from "./hash.js";
-import { JSONSchema7 } from "./json-schema.js";
+import { JSONSchema7, JSONSchema7Definition } from "./json-schema.js";
 import { printErrors } from "./err.js";
 export { generateHashFromString, generateHashFromNumbers } from "./hash.js";
 
@@ -299,9 +299,67 @@ type DescribeContext = {
   deps_counter: Record<string, number>;
 };
 
+export type SchemaPrintingMode = "flat" | "contextual";
+
+export type SchemaPrintingContextOptions = {
+  refPathTemplate?: string;
+  definitionContainerKey?: string | null;
+};
+
+export class SchemaPrintingContext {
+  private readonly refPathTemplate: string;
+  readonly definitionContainerKey: string | null;
+  private readonly collectedDefinitions: Record<string, JSONSchema7Definition>;
+  private readonly inProgressDefinitions: Record<string, boolean>;
+
+  constructor(options?: SchemaPrintingContextOptions) {
+    this.refPathTemplate = options?.refPathTemplate ?? "#/$defs/{name}";
+    this.definitionContainerKey = options?.definitionContainerKey ?? "$defs";
+    this.collectedDefinitions = {};
+    this.inProgressDefinitions = {};
+  }
+
+  get definitions(): Record<string, JSONSchema7Definition> {
+    return { ...this.collectedDefinitions };
+  }
+
+  getRef(name: string): string {
+    return this.refPathTemplate.replace("{name}", name);
+  }
+
+  hasDefinition(name: string): boolean {
+    return name in this.collectedDefinitions;
+  }
+
+  isDefinitionInProgress(name: string): boolean {
+    return this.inProgressDefinitions[name] === true;
+  }
+
+  markDefinitionInProgress(name: string): void {
+    this.inProgressDefinitions[name] = true;
+  }
+
+  storeDefinition(name: string, schema: JSONSchema7Definition): void {
+    this.collectedDefinitions[name] = schema;
+    delete this.inProgressDefinitions[name];
+  }
+
+  exportDefinitions(): Record<string, JSONSchema7Definition> | Record<string, Record<string, JSONSchema7Definition>> {
+    const definitions = this.definitions;
+    if (this.definitionContainerKey == null) {
+      return definitions;
+    }
+    return {
+      [this.definitionContainerKey]: definitions,
+    };
+  }
+}
+
 type SchemaContext = {
   path: string[];
   seen: Record<string, boolean>;
+  mode: SchemaPrintingMode;
+  printingContext?: SchemaPrintingContext;
 };
 
 type ValidateContext = {
@@ -1487,6 +1545,18 @@ export abstract class BaseRefRuntype implements Runtype {
   schema(ctx: SchemaContext): JSONSchema7 {
     const name = this.refName;
     const to = this.getNamedRuntypes()[this.refName];
+    if (ctx.mode === "contextual") {
+      const printingContext = ctx.printingContext;
+      if (printingContext == null) {
+        throw new Error("INTERNAL ERROR: Missing SchemaPrintingContext");
+      }
+      if (!printingContext.hasDefinition(name) && !printingContext.isDefinitionInProgress(name)) {
+        printingContext.markDefinitionInProgress(name);
+        const body = to.schema(ctx);
+        printingContext.storeDefinition(name, body);
+      }
+      return { $ref: printingContext.getRef(name) };
+    }
     if (ctx.seen[name]) {
       return {};
     }
@@ -1602,6 +1672,16 @@ class ParserFromRuntype implements BeffParser<any> {
     const ctx = {
       path: [],
       seen: {},
+      mode: "flat" as const,
+    };
+    return this._runtype.schema(ctx);
+  }
+  schemaWithContext(schemaPrintingContext: SchemaPrintingContext): JSONSchema7 {
+    const ctx = {
+      path: [],
+      seen: {},
+      mode: "contextual" as const,
+      printingContext: schemaPrintingContext,
     };
     return this._runtype.schema(ctx);
   }
