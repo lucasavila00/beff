@@ -1,5 +1,11 @@
 # @beff/cli
 
+## 0.0.129
+
+### Patch Changes
+
+- printing schema for openapi
+
 ## 0.0.128
 
 ### Patch Changes
