@@ -253,7 +253,7 @@ fn runtype_any_of_discriminated(
     flat_values_set: &BTreeSet<Runtype>,
     discriminator: String,
     discriminator_strings_set: BTreeSet<String>,
-    object_vs: Vec<&BTreeMap<String, Optionality<Runtype>>>,
+    object_vs: Vec<BTreeMap<String, Optionality<Runtype>>>,
     named_schemas: &[NamedSchema],
     ctx: &mut PrintContext,
 ) -> Expr {
@@ -354,25 +354,12 @@ fn maybe_runtype_any_of_discriminated(
     named_schemas: &[NamedSchema],
     ctx: &mut PrintContext,
 ) -> Option<Expr> {
-    let all_objects_without_idx_props = flat_values.iter().all(|it| match it {
-        Runtype::Object {
-            vs: _,
-            indexed_properties,
-        } => indexed_properties.is_none(),
-        _ => false,
-    });
-
     let object_vs = flat_values
         .iter()
-        .filter_map(|it| match it {
-            Runtype::Object {
-                vs,
-                indexed_properties: _,
-            } => Some(vs),
-            _ => None,
-        })
-        .collect::<Vec<_>>();
-    if all_objects_without_idx_props {
+        .map(|it| extract_object_shape(it, named_schemas))
+        .collect::<Option<Vec<_>>>();
+
+    if let Some(object_vs) = object_vs {
         let mut keys = vec![];
         for vs in &object_vs {
             for key in vs.keys() {
@@ -447,6 +434,105 @@ fn maybe_runtype_any_of_discriminated(
         }
     }
     None
+}
+
+fn extract_object_shape(
+    schema: &Runtype,
+    named_schemas: &[NamedSchema],
+) -> Option<BTreeMap<String, Optionality<Runtype>>> {
+    match schema {
+        Runtype::Object {
+            vs,
+            indexed_properties,
+        } if indexed_properties.is_none() => Some(vs.clone()),
+        Runtype::Ref(r) => named_schemas
+            .iter()
+            .find(|it| it.name == *r)
+            .and_then(|it| extract_object_shape(&it.schema, named_schemas)),
+        Runtype::AllOf(vs) => {
+            let mut acc = BTreeMap::new();
+
+            for schema in vs {
+                let extracted = extract_object_shape(schema, named_schemas)?;
+
+                for (key, value) in &extracted {
+                    if let Some(existing) = acc.get(key)
+                        && existing != value
+                    {
+                        let merged =
+                            merge_object_property_shapes(existing, value, named_schemas)?;
+                        acc.insert(key.clone(), merged);
+                    }
+                }
+
+                for (key, value) in extracted {
+                    acc.entry(key).or_insert(value);
+                }
+            }
+
+            Some(acc)
+        }
+        _ => None,
+    }
+}
+
+fn merge_object_property_shapes(
+    left: &Optionality<Runtype>,
+    right: &Optionality<Runtype>,
+    named_schemas: &[NamedSchema],
+) -> Option<Optionality<Runtype>> {
+    if left == right {
+        return Some(left.clone());
+    }
+
+    match (left, right) {
+        (Optionality::Required(left), Optionality::Required(right)) => {
+            let left_values = extract_string_consts(left, named_schemas)?;
+            let right_values = extract_string_consts(right, named_schemas)?;
+
+            if left_values.is_subset(&right_values) {
+                Some(Optionality::Required(left.clone()))
+            } else if right_values.is_subset(&left_values) {
+                Some(Optionality::Required(right.clone()))
+            } else {
+                None
+            }
+        }
+        _ => None,
+    }
+}
+
+fn extract_string_consts(schema: &Runtype, named_schemas: &[NamedSchema]) -> Option<BTreeSet<String>> {
+    match schema {
+        Runtype::Ref(r) => named_schemas
+            .iter()
+            .find(|it| it.name == *r)
+            .and_then(|it| extract_string_consts(&it.schema, named_schemas)),
+        Runtype::AnyOf(vs) => {
+            let mut acc = BTreeSet::new();
+
+            for schema in vs {
+                acc.extend(extract_string_consts(schema, named_schemas)?);
+            }
+
+            Some(acc)
+        }
+        Runtype::AllOf(vs) => {
+            let mut iter = vs.iter();
+            let first = iter.next()?;
+            let mut acc = extract_string_consts(first, named_schemas)?;
+
+            for schema in iter {
+                let current = extract_string_consts(schema, named_schemas)?;
+                acc = acc.intersection(&current).cloned().collect();
+            }
+
+            Some(acc)
+        }
+        _ => schema
+            .extract_single_string_const()
+            .map(|it| BTreeSet::from([it])),
+    }
 }
 
 fn maybe_runtype_any_of_consts(

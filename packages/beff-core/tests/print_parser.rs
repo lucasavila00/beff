@@ -635,6 +635,121 @@ mod tests {
         "#);
     }
     #[test]
+    fn ok_discriminated_union_with_base_intersection() {
+        insta::assert_snapshot!(print_cgen(
+            r#"
+        type WorkflowSourceBase = {
+          id: string;
+          workflowID: string;
+          type: "CRON" | "EVENT";
+          metadata: Record<string, unknown>;
+          createdAt: string;
+          updatedAt: string;
+        };
+
+        export type CronWorkflowSource = WorkflowSourceBase & {
+          type: "CRON";
+          cronExpression: string;
+          eventName: string | undefined;
+        };
+
+        export type EventWorkflowSource = WorkflowSourceBase & {
+          type: "EVENT";
+          cronExpression: string | undefined;
+          eventName: string;
+        };
+
+        export type WorkflowSource = CronWorkflowSource | EventWorkflowSource;
+
+        parse.buildParsers<{ WorkflowSource: WorkflowSource }>();
+      "#
+        ), @r#"
+        const direct_hoist_0 = new RefRuntype("WorkflowSource");
+        const direct_hoist_1 = new TypeofRuntype("string");
+        const direct_hoist_2 = new NullishRuntype("undefined");
+        const direct_hoist_3 = new AnyOfRuntype([
+            direct_hoist_2,
+            direct_hoist_1
+        ]);
+        const direct_hoist_4 = new ConstRuntype("CRON");
+        const direct_hoist_5 = new ObjectRuntype({
+            "cronExpression": direct_hoist_1,
+            "eventName": direct_hoist_3,
+            "type": direct_hoist_4
+        }, []);
+        const direct_hoist_6 = new RefRuntype("WorkflowSourceBase");
+        const direct_hoist_7 = new AllOfRuntype([
+            direct_hoist_5,
+            direct_hoist_6
+        ]);
+        const direct_hoist_8 = new ConstRuntype("EVENT");
+        const direct_hoist_9 = new ObjectRuntype({
+            "cronExpression": direct_hoist_3,
+            "eventName": direct_hoist_1,
+            "type": direct_hoist_8
+        }, []);
+        const direct_hoist_10 = new AllOfRuntype([
+            direct_hoist_9,
+            direct_hoist_6
+        ]);
+        const direct_hoist_11 = new AnyRuntype();
+        const direct_hoist_12 = new ObjectRuntype({}, [
+            {
+                "key": direct_hoist_1,
+                "value": direct_hoist_11
+            }
+        ]);
+        const direct_hoist_13 = new ObjectRuntype({
+            "createdAt": direct_hoist_1,
+            "cronExpression": direct_hoist_1,
+            "eventName": direct_hoist_3,
+            "id": direct_hoist_1,
+            "metadata": direct_hoist_12,
+            "type": direct_hoist_4,
+            "updatedAt": direct_hoist_1,
+            "workflowID": direct_hoist_1
+        }, []);
+        const direct_hoist_14 = new ObjectRuntype({
+            "createdAt": direct_hoist_1,
+            "cronExpression": direct_hoist_3,
+            "eventName": direct_hoist_1,
+            "id": direct_hoist_1,
+            "metadata": direct_hoist_12,
+            "type": direct_hoist_8,
+            "updatedAt": direct_hoist_1,
+            "workflowID": direct_hoist_1
+        }, []);
+        const direct_hoist_15 = new AnyOfDiscriminatedRuntype([
+            direct_hoist_10,
+            direct_hoist_7
+        ], "type", {
+            "CRON": direct_hoist_13,
+            "EVENT": direct_hoist_14
+        });
+        const direct_hoist_16 = new AnyOfConstsRuntype([
+            "CRON",
+            "EVENT"
+        ]);
+        const direct_hoist_17 = new ObjectRuntype({
+            "createdAt": direct_hoist_1,
+            "id": direct_hoist_1,
+            "metadata": direct_hoist_12,
+            "type": direct_hoist_16,
+            "updatedAt": direct_hoist_1,
+            "workflowID": direct_hoist_1
+        }, []);
+        const namedRuntypes = {
+            "CronWorkflowSource": direct_hoist_7,
+            "EventWorkflowSource": direct_hoist_10,
+            "WorkflowSource": direct_hoist_15,
+            "WorkflowSourceBase": direct_hoist_17
+        };
+        const buildParsersInput = {
+            "WorkflowSource": direct_hoist_0
+        };
+        "#);
+    }
+    #[test]
     fn ok_exclude() {
         insta::assert_snapshot!(print_types(
             r#"
