@@ -30,6 +30,7 @@ import {
   setHash,
 } from "./hash.js";
 import { JSONSchema7, JSONSchema7Definition } from "./json-schema.js";
+import { normalizeOpenApiSchema } from "./openapi-pp.js";
 import { printErrors } from "./err.js";
 export { generateHashFromString, generateHashFromNumbers } from "./hash.js";
 
@@ -323,6 +324,10 @@ export class SchemaPrintingContext {
     return { ...this.collectedDefinitions };
   }
 
+  get refTemplate(): string {
+    return this.refPathTemplate;
+  }
+
   getRef(name: string): string {
     return this.refPathTemplate.replace("{name}", name);
   }
@@ -348,11 +353,17 @@ export class SchemaPrintingContext {
     | Record<string, JSONSchema7Definition>
     | Record<string, Record<string, JSONSchema7Definition>> {
     const definitions = this.definitions;
+    const normalizedDefinitions: Record<string, JSONSchema7Definition> = {};
+    for (const [name, schema] of Object.entries(definitions)) {
+      normalizedDefinitions[name] = normalizeOpenApiSchema(schema, definitions, {
+        refPathTemplate: this.refPathTemplate,
+      });
+    }
     if (this.definitionContainerKey == null) {
-      return definitions;
+      return normalizedDefinitions;
     }
     return {
-      [this.definitionContainerKey]: definitions,
+      [this.definitionContainerKey]: normalizedDefinitions,
     };
   }
 }
@@ -1707,7 +1718,9 @@ class ParserFromRuntype implements BeffParser<any> {
       mode: "contextual" as const,
       printingContext: schemaPrintingContext,
     };
-    return this._runtype.schema(ctx);
+    return normalizeOpenApiSchema(this._runtype.schema(ctx), schemaPrintingContext.definitions, {
+      refPathTemplate: schemaPrintingContext.refTemplate,
+    }) as JSONSchema7;
   }
   describe(): string {
     const ctx: DescribeContext = {

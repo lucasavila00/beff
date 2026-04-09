@@ -58,6 +58,16 @@ type OpenApiCompatEnumPayload = {
   mixed: "fallback" | 0 | null;
 };
 
+type OpenApiCompatRecordPayload = {
+  payload: Record<string, unknown>;
+};
+
+type OpenApiCompatOptionalizedPayload = {
+  maybeText: string | null;
+  maybeEnum: "fallback" | "primary" | null;
+  onlyNull: null;
+};
+
 export const Codecs = parse.buildParsers<{
   Address: Address;
   User: User;
@@ -69,4 +79,6 @@ export const Codecs = parse.buildParsers<{
   RecursiveEnvelope: RecursiveEnvelope;
   OpenApiCompatConstPayload: OpenApiCompatConstPayload;
   OpenApiCompatEnumPayload: OpenApiCompatEnumPayload;
+  OpenApiCompatRecordPayload: OpenApiCompatRecordPayload;
+  OpenApiCompatOptionalizedPayload: OpenApiCompatOptionalizedPayload;
 }>();

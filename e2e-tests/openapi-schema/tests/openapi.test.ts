@@ -432,9 +432,6 @@ it("prints same-type literal unions as typed enums for OpenAPI compatibility", (
             "mixed": {
               "anyOf": [
                 {
-                  "type": "null",
-                },
-                {
                   "enum": [
                     "fallback",
                   ],
@@ -459,7 +456,6 @@ it("prints same-type literal unions as typed enums for OpenAPI compatibility", (
           "required": [
             "code",
             "enabled",
-            "mixed",
             "role",
           ],
           "type": "object",
