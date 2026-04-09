@@ -1219,12 +1219,129 @@ export class AnyOfDiscriminatedRuntype implements Runtype {
     this.mapping = mapping;
   }
   schema(ctx: SchemaContext): JSONSchema7 {
+    if (ctx.mode === "contextual" && ctx.printingContext != null) {
+      const oneOf = this.schemas.map((it, index) =>
+        AnyOfDiscriminatedRuntype.getOrCreateRefSchema(
+          it,
+          ctx,
+          AnyOfDiscriminatedRuntype.getMappingKeyForSchema(this.mapping, it) ?? `variant_${index}`,
+          this.discriminator,
+          this.hash({ seen: {} }),
+        ),
+      );
+      const discriminatorMapping = AnyOfDiscriminatedRuntype.getDiscriminatorMapping(
+        this.mapping,
+        ctx,
+        this.discriminator,
+        this.hash({ seen: {} }),
+      );
+
+      return {
+        type: "object",
+        discriminator: {
+          propertyName: this.discriminator,
+          mapping: discriminatorMapping,
+        },
+        oneOf,
+      };
+    }
+
     return {
+      type: "object",
       discriminator: {
         propertyName: this.discriminator,
       },
       anyOf: this.schemas.map((it) => it.schema(ctx)),
     };
+  }
+  private static getRefName(runtype: Runtype): string | null {
+    if (runtype instanceof BaseRefRuntype) {
+      return runtype.refName;
+    }
+    return null;
+  }
+  private static getMappingKeyForSchema(mapping: Record<string, Runtype>, runtype: Runtype): string | null {
+    for (const [key, value] of Object.entries(mapping)) {
+      if (value === runtype) {
+        return key;
+      }
+    }
+    return null;
+  }
+
+  private static sanitizeComponentNamePart(value: string): string {
+    const cleaned = value.replace(/[^a-zA-Z0-9]+/g, " ").trim();
+    if (cleaned.length === 0) {
+      return "Variant";
+    }
+    return cleaned
+      .split(/\s+/)
+      .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+      .join("");
+  }
+
+  private static getSyntheticRefName(discriminator: string, key: string, unionHash: number): string {
+    const discriminatorPart = AnyOfDiscriminatedRuntype.sanitizeComponentNamePart(discriminator);
+    const keyPart = AnyOfDiscriminatedRuntype.sanitizeComponentNamePart(key);
+    return `Discriminated${discriminatorPart}${keyPart}${Math.abs(unionHash)}`;
+  }
+
+  private static ensureContextualDefinition(name: string, target: Runtype, ctx: SchemaContext): void {
+    const printingContext = ctx.printingContext;
+    if (printingContext == null) {
+      throw new Error("INTERNAL ERROR: Missing SchemaPrintingContext");
+    }
+    if (printingContext.hasDefinition(name) || printingContext.isDefinitionInProgress(name)) {
+      return;
+    }
+    printingContext.markDefinitionInProgress(name);
+    const body = target.schema(ctx);
+    printingContext.storeDefinition(name, body);
+  }
+
+  private static getOrCreateRefSchema(
+    runtype: Runtype,
+    ctx: SchemaContext,
+    key: string,
+    discriminator: string,
+    unionHash: number,
+  ): JSONSchema7 {
+    const printingContext = ctx.printingContext;
+    if (printingContext == null) {
+      throw new Error("INTERNAL ERROR: Missing SchemaPrintingContext");
+    }
+
+    const refName = AnyOfDiscriminatedRuntype.getRefName(runtype);
+    if (refName != null && runtype instanceof BaseRefRuntype) {
+      const target = runtype.getNamedRuntypes()[refName];
+      AnyOfDiscriminatedRuntype.ensureContextualDefinition(refName, target, ctx);
+      return {
+        $ref: printingContext.getRef(refName),
+      };
+    }
+
+    const syntheticRefName = AnyOfDiscriminatedRuntype.getSyntheticRefName(discriminator, key, unionHash);
+    AnyOfDiscriminatedRuntype.ensureContextualDefinition(syntheticRefName, runtype, ctx);
+    return {
+      $ref: printingContext.getRef(syntheticRefName),
+    };
+  }
+
+  private static getDiscriminatorMapping(
+    mapping: Record<string, Runtype>,
+    ctx: SchemaContext,
+    discriminator: string,
+    unionHash: number,
+  ): Record<string, string> {
+    const printingContext = ctx.printingContext;
+    if (printingContext == null) {
+      throw new Error("INTERNAL ERROR: Missing SchemaPrintingContext");
+    }
+    const out: Record<string, string> = {};
+    for (const [key, runtype] of Object.entries(mapping)) {
+      out[key] = AnyOfDiscriminatedRuntype.getOrCreateRefSchema(runtype, ctx, key, discriminator, unionHash).$ref!;
+    }
+    return out;
   }
   validate(ctx: ValidateContext, input: unknown): boolean {
     if (typeof input !== "object" || input == null) {

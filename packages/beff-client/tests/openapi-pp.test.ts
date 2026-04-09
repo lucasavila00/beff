@@ -3,8 +3,10 @@ import { JSONSchema7Definition } from "../src/json-schema.js";
 import { normalizeOpenApiSchema } from "../src/openapi-pp.js";
 import {
   AnyOfDiscriminatedRuntype,
+  BaseRefRuntype,
   ConstRuntype,
   ObjectRuntype,
+  SchemaPrintingContext,
   TypeofRuntype,
 } from "../src/codegen-v2.js";
 
@@ -73,6 +75,62 @@ describe("normalizeOpenApiSchema", () => {
   });
 
   it("preserves explicit discriminators on discriminated unions", () => {
+    const named = {
+      CronSource: new ObjectRuntype(
+        {
+          type: new ConstRuntype("CRON"),
+          schedule: new TypeofRuntype("string"),
+        },
+        [],
+      ),
+      EventSource: new ObjectRuntype(
+        {
+          type: new ConstRuntype("EVENT"),
+          eventName: new TypeofRuntype("string"),
+        },
+        [],
+      ),
+    };
+
+    class TestRefRuntype extends BaseRefRuntype {
+      getNamedRuntypes() {
+        return named;
+      }
+    }
+
+    const cron = new TestRefRuntype("CronSource");
+    const event = new TestRefRuntype("EventSource");
+    const printingContext = new SchemaPrintingContext({
+      refPathTemplate: "#/components/schemas/{name}",
+      definitionContainerKey: null,
+    });
+
+    const schema = normalize(
+      new AnyOfDiscriminatedRuntype([cron, event], "type", {
+        EVENT: event,
+        CRON: cron,
+      }).schema({
+        path: [],
+        seen: {},
+        mode: "contextual",
+        printingContext,
+      }),
+    );
+
+    expect(schema).toEqual({
+      type: "object",
+      discriminator: {
+        propertyName: "type",
+        mapping: {
+          EVENT: "#/components/schemas/EventSource",
+          CRON: "#/components/schemas/CronSource",
+        },
+      },
+      oneOf: [{ $ref: "#/components/schemas/CronSource" }, { $ref: "#/components/schemas/EventSource" }],
+    });
+  });
+
+  it("creates synthetic refs for inline discriminated union variants", () => {
     const cron = new ObjectRuntype(
       {
         type: new ConstRuntype("CRON"),
@@ -87,45 +145,49 @@ describe("normalizeOpenApiSchema", () => {
       },
       [],
     );
+    const printingContext = new SchemaPrintingContext({
+      refPathTemplate: "#/components/schemas/{name}",
+      definitionContainerKey: null,
+    });
 
     const schema = normalize(
       new AnyOfDiscriminatedRuntype([cron, event], "type", {
-        CRON: cron,
         EVENT: event,
+        CRON: cron,
       }).schema({
         path: [],
         seen: {},
         mode: "contextual",
-        printingContext: {
-          refTemplate: "#/components/schemas/{name}",
-        },
+        printingContext,
       }),
     );
 
-    expect(schema).toEqual({
-      anyOf: [
-        {
-          type: "object",
-          properties: {
-            type: { type: "string", enum: ["CRON"] },
-            schedule: { type: "string" },
+    expect(schema).toMatchInlineSnapshot(`
+      {
+        "discriminator": {
+          "mapping": {
+            "CRON": "#/components/schemas/DiscriminatedTypeCRON1000470817",
+            "EVENT": "#/components/schemas/DiscriminatedTypeEVENT1000470817",
           },
-          required: ["type", "schedule"],
-          additionalProperties: false,
+          "propertyName": "type",
         },
-        {
-          type: "object",
-          properties: {
-            type: { type: "string", enum: ["EVENT"] },
-            eventName: { type: "string" },
+        "oneOf": [
+          {
+            "$ref": "#/components/schemas/DiscriminatedTypeCRON1000470817",
           },
-          required: ["type", "eventName"],
-          additionalProperties: false,
-        },
-      ],
-      discriminator: {
-        propertyName: "type",
-      },
-    });
+          {
+            "$ref": "#/components/schemas/DiscriminatedTypeEVENT1000470817",
+          },
+        ],
+        "type": "object",
+      }
+    `);
+
+    expect(Object.keys(printingContext.exportDefinitions())).toMatchInlineSnapshot(`
+      [
+        "DiscriminatedTypeCRON1000470817",
+        "DiscriminatedTypeEVENT1000470817",
+      ]
+    `);
   });
 });
