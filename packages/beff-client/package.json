@@ -1,6 +1,6 @@
 {
   "name": "@beff/client",
-  "version": "0.0.129",
+  "version": "0.0.130",
   "description": "",
   "main": "dist/cjs/index.js",
   "scripts": {
@@ -25,7 +25,7 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "@beff/cli": "workspace:^0.0.129"
+    "@beff/cli": "workspace:^0.0.130"
   },
   "peerDependencies": {
     "zod": "^3.23.5"

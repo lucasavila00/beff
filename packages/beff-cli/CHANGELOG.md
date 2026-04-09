@@ -1,5 +1,11 @@
 # @beff/cli
 
+## 0.0.130
+
+### Patch Changes
+
+- improve openapi mode
+
 ## 0.0.129
 
 ### Patch Changes
