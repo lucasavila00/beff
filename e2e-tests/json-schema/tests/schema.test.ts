@@ -166,14 +166,7 @@ it("works3", () => {
               "type": "string",
             },
             "a11": {
-              "anyOf": [
-                {
-                  "type": "string",
-                },
-                {
-                  "type": "null",
-                },
-              ],
+              "type": "string",
             },
             "subType": {
               "const": "a1",
@@ -184,7 +177,6 @@ it("works3", () => {
           },
           "required": [
             "a1",
-            "a11",
             "subType",
             "type",
           ],

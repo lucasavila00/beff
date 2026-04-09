@@ -1475,7 +1475,7 @@ export class ObjectRuntype implements Runtype {
     const base: JSONSchema7 = {
       type: "object",
       properties,
-      required,
+      ...(required.length > 0 ? { required } : {}),
     };
 
     const indexSchemas = this.indexedPropertiesParser.map(({ key, value }): JSONSchema7 => {
