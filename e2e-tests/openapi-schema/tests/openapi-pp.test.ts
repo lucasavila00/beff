@@ -40,17 +40,15 @@ it("handles optional types", () => {
 
   expect(ctx.exportDefinitions()).toMatchInlineSnapshot(`
     {
-      "$defs": {
-        "OpenApiCompatOptinal": {
-          "additionalProperties": false,
-          "properties": {
-            "it": {
-              "type": "string",
-            },
+      "OpenApiCompatOptinal": {
+        "additionalProperties": false,
+        "properties": {
+          "it": {
+            "type": "string",
           },
-          "required": [],
-          "type": "object",
         },
+        "required": [],
+        "type": "object",
       },
     }
   `);
@@ -94,32 +92,30 @@ it("flattens record-like objects compared to the raw schema output", () => {
 
   expect(ctx.exportDefinitions()).toMatchInlineSnapshot(`
     {
-      "$defs": {
-        "OpenApiCompatRecordPayload": {
-          "additionalProperties": false,
-          "properties": {
-            "payload": {
-              "allOf": [
-                {
-                  "properties": {},
-                  "required": [],
-                  "type": "object",
+      "OpenApiCompatRecordPayload": {
+        "additionalProperties": false,
+        "properties": {
+          "payload": {
+            "allOf": [
+              {
+                "properties": {},
+                "required": [],
+                "type": "object",
+              },
+              {
+                "additionalProperties": {},
+                "propertyNames": {
+                  "type": "string",
                 },
-                {
-                  "additionalProperties": {},
-                  "propertyNames": {
-                    "type": "string",
-                  },
-                  "type": "object",
-                },
-              ],
-            },
+                "type": "object",
+              },
+            ],
           },
-          "required": [
-            "payload",
-          ],
-          "type": "object",
         },
+        "required": [
+          "payload",
+        ],
+        "type": "object",
       },
     }
   `);
@@ -197,44 +193,42 @@ it("rewrites null unions into optional properties only in the OpenAPI post-proce
 
   expect(ctx.exportDefinitions()).toMatchInlineSnapshot(`
     {
-      "$defs": {
-        "OpenApiCompatOptionalizedPayload": {
-          "additionalProperties": false,
-          "properties": {
-            "maybeEnum": {
-              "anyOf": [
-                {
-                  "enum": [
-                    "fallback",
-                  ],
-                  "type": "string",
-                },
-                {
-                  "enum": [
-                    "primary",
-                  ],
-                  "type": "string",
-                },
-              ],
-            },
-            "maybeText": {
-              "type": "string",
-            },
-            "onlyNull": {
-              "type": "null",
-            },
-            "optional": {
-              "type": "string",
-            },
-            "orUndefined": {
-              "type": "string",
-            },
+      "OpenApiCompatOptionalizedPayload": {
+        "additionalProperties": false,
+        "properties": {
+          "maybeEnum": {
+            "anyOf": [
+              {
+                "enum": [
+                  "fallback",
+                ],
+                "type": "string",
+              },
+              {
+                "enum": [
+                  "primary",
+                ],
+                "type": "string",
+              },
+            ],
           },
-          "required": [
-            "onlyNull",
-          ],
-          "type": "object",
+          "maybeText": {
+            "type": "string",
+          },
+          "onlyNull": {
+            "type": "null",
+          },
+          "optional": {
+            "type": "string",
+          },
+          "orUndefined": {
+            "type": "string",
+          },
         },
+        "required": [
+          "onlyNull",
+        ],
+        "type": "object",
       },
     }
   `);
@@ -288,41 +282,39 @@ it("normalizes recursive optional refs compared to the raw schema output", () =>
 
   expect(ctx.exportDefinitions()).toMatchInlineSnapshot(`
     {
-      "$defs": {
-        "RecursiveEnvelope": {
-          "additionalProperties": false,
-          "properties": {
-            "previous": {
-              "$ref": "#/components/schemas/RecursiveEnvelope",
-            },
-            "root": {
+      "RecursiveEnvelope": {
+        "additionalProperties": false,
+        "properties": {
+          "previous": {
+            "$ref": "#/components/schemas/RecursiveEnvelope",
+          },
+          "root": {
+            "$ref": "#/components/schemas/RecursiveTree",
+          },
+        },
+        "required": [
+          "root",
+        ],
+        "type": "object",
+      },
+      "RecursiveTree": {
+        "additionalProperties": false,
+        "properties": {
+          "children": {
+            "items": {
               "$ref": "#/components/schemas/RecursiveTree",
             },
+            "type": "array",
           },
-          "required": [
-            "root",
-          ],
-          "type": "object",
-        },
-        "RecursiveTree": {
-          "additionalProperties": false,
-          "properties": {
-            "children": {
-              "items": {
-                "$ref": "#/components/schemas/RecursiveTree",
-              },
-              "type": "array",
-            },
-            "value": {
-              "type": "string",
-            },
+          "value": {
+            "type": "string",
           },
-          "required": [
-            "children",
-            "value",
-          ],
-          "type": "object",
         },
+        "required": [
+          "children",
+          "value",
+        ],
+        "type": "object",
       },
     }
   `);

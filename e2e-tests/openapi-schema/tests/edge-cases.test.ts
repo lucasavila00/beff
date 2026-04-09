@@ -3,7 +3,10 @@ import { SchemaPrintingContext } from "@beff/client";
 import { Codecs } from "../src/parser";
 
 it("prints self-recursive named types as refs instead of empty objects", () => {
-  const ctx = new SchemaPrintingContext();
+  const ctx = new SchemaPrintingContext({
+    refPathTemplate: "#/$defs/{name}",
+    definitionContainerKey: "$defs",
+  });
 
   expect(Codecs.RecursiveTree.schemaWithContext(ctx)).toMatchInlineSnapshot(`
     {

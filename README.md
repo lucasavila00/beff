@@ -127,7 +127,10 @@ By default, `SchemaPrintingContext` emits refs at `#/$defs/{name}` and exports d
 ```ts
 import { SchemaPrintingContext } from "@beff/client";
 
-const ctx = new SchemaPrintingContext();
+const ctx = new SchemaPrintingContext({
+  refPathTemplate: "#/$defs/{name}",
+  definitionContainerKey: "$defs",
+});
 
 const schema = Parsers.User.schemaWithContext(ctx);
 const definitions = ctx.exportDefinitions();

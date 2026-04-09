@@ -303,8 +303,8 @@ type DescribeContext = {
 export type SchemaPrintingMode = "flat" | "contextual";
 
 export type SchemaPrintingContextOptions = {
-  refPathTemplate?: string;
-  definitionContainerKey?: string | null;
+  refPathTemplate: string;
+  definitionContainerKey: string | null;
 };
 
 export class SchemaPrintingContext {
@@ -313,15 +313,11 @@ export class SchemaPrintingContext {
   private readonly collectedDefinitions: Record<string, JSONSchema7Definition>;
   private readonly inProgressDefinitions: Record<string, boolean>;
 
-  constructor(options?: SchemaPrintingContextOptions) {
-    this.refPathTemplate = options?.refPathTemplate ?? "#/$defs/{name}";
-    this.definitionContainerKey = options?.definitionContainerKey ?? "$defs";
+  constructor(options: SchemaPrintingContextOptions) {
+    this.refPathTemplate = options.refPathTemplate;
+    this.definitionContainerKey = options.definitionContainerKey;
     this.collectedDefinitions = {};
     this.inProgressDefinitions = {};
-  }
-
-  get definitions(): Record<string, JSONSchema7Definition> {
-    return { ...this.collectedDefinitions };
   }
 
   get refTemplate(): string {
@@ -352,7 +348,7 @@ export class SchemaPrintingContext {
   exportDefinitions():
     | Record<string, JSONSchema7Definition>
     | Record<string, Record<string, JSONSchema7Definition>> {
-    const definitions = this.definitions;
+    const definitions = { ...this.collectedDefinitions };
     const normalizedDefinitions: Record<string, JSONSchema7Definition> = {};
     for (const [name, schema] of Object.entries(definitions)) {
       normalizedDefinitions[name] = normalizeOpenApiSchema(schema, definitions, {
@@ -1719,7 +1715,7 @@ class ParserFromRuntype implements BeffParser<any> {
       mode: "contextual" as const,
       printingContext: schemaPrintingContext,
     };
-    return normalizeOpenApiSchema(this._runtype.schema(ctx), schemaPrintingContext.definitions, {
+    return normalizeOpenApiSchema(this._runtype.schema(ctx), {}, {
       refPathTemplate: schemaPrintingContext.refTemplate,
     }) as JSONSchema7;
   }
