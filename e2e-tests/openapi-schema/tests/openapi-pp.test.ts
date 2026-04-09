@@ -13,25 +13,19 @@ it("handles optional types", () => {
     {
       "additionalProperties": false,
       "properties": {
-        "payload": {
-          "allOf": [
+        "it": {
+          "anyOf": [
             {
-              "properties": {},
-              "required": [],
-              "type": "object",
+              "type": "string",
             },
             {
-              "additionalProperties": {},
-              "propertyNames": {
-                "type": "string",
-              },
-              "type": "object",
+              "type": "null",
             },
           ],
         },
       },
       "required": [
-        "payload",
+        "it",
       ],
       "type": "object",
     }
@@ -40,36 +34,21 @@ it("handles optional types", () => {
   const ctx = createOpenApiContext();
   expect(Codecs.OpenApiCompatOptinal.schemaWithContext(ctx)).toMatchInlineSnapshot(`
     {
-      "$ref": "#/components/schemas/OpenApiCompatRecordPayload",
+      "$ref": "#/components/schemas/OpenApiCompatOptinal",
     }
   `);
 
   expect(ctx.exportDefinitions()).toMatchInlineSnapshot(`
     {
       "$defs": {
-        "OpenApiCompatRecordPayload": {
+        "OpenApiCompatOptinal": {
           "additionalProperties": false,
           "properties": {
-            "payload": {
-              "allOf": [
-                {
-                  "properties": {},
-                  "required": [],
-                  "type": "object",
-                },
-                {
-                  "additionalProperties": {},
-                  "propertyNames": {
-                    "type": "string",
-                  },
-                  "type": "object",
-                },
-              ],
+            "it": {
+              "type": "string",
             },
           },
-          "required": [
-            "payload",
-          ],
+          "required": [],
           "type": "object",
         },
       },
@@ -177,11 +156,33 @@ it("rewrites null unions into optional properties only in the OpenAPI post-proce
         "onlyNull": {
           "type": "null",
         },
+        "optional": {
+          "anyOf": [
+            {
+              "type": "string",
+            },
+            {
+              "type": "null",
+            },
+          ],
+        },
+        "orUndefined": {
+          "anyOf": [
+            {
+              "type": "null",
+            },
+            {
+              "type": "string",
+            },
+          ],
+        },
       },
       "required": [
         "maybeEnum",
         "maybeText",
         "onlyNull",
+        "optional",
+        "orUndefined",
       ],
       "type": "object",
     }
@@ -203,9 +204,6 @@ it("rewrites null unions into optional properties only in the OpenAPI post-proce
             "maybeEnum": {
               "anyOf": [
                 {
-                  "type": "null",
-                },
-                {
                   "enum": [
                     "fallback",
                   ],
@@ -220,22 +218,19 @@ it("rewrites null unions into optional properties only in the OpenAPI post-proce
               ],
             },
             "maybeText": {
-              "anyOf": [
-                {
-                  "type": "null",
-                },
-                {
-                  "type": "string",
-                },
-              ],
+              "type": "string",
             },
             "onlyNull": {
               "type": "null",
             },
+            "optional": {
+              "type": "string",
+            },
+            "orUndefined": {
+              "type": "string",
+            },
           },
           "required": [
-            "maybeEnum",
-            "maybeText",
             "onlyNull",
           ],
           "type": "object",
@@ -298,21 +293,13 @@ it("normalizes recursive optional refs compared to the raw schema output", () =>
           "additionalProperties": false,
           "properties": {
             "previous": {
-              "anyOf": [
-                {
-                  "$ref": "#/components/schemas/RecursiveEnvelope",
-                },
-                {
-                  "type": "null",
-                },
-              ],
+              "$ref": "#/components/schemas/RecursiveEnvelope",
             },
             "root": {
               "$ref": "#/components/schemas/RecursiveTree",
             },
           },
           "required": [
-            "previous",
             "root",
           ],
           "type": "object",

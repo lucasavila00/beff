@@ -84,120 +84,132 @@ const direct_hoist_8 = new RefRuntype("OpenApiCompatConstPayload");
 const direct_hoist_9 = new RefRuntype("OpenApiCompatEnumPayload");
 const direct_hoist_10 = new RefRuntype("OpenApiCompatRecordPayload");
 const direct_hoist_11 = new RefRuntype("OpenApiCompatOptionalizedPayload");
-const direct_hoist_12 = new TypeofRuntype("string");
-const direct_hoist_13 = new ObjectRuntype({
-    "city": direct_hoist_12,
-    "street": direct_hoist_12
-}, []);
+const direct_hoist_12 = new RefRuntype("OpenApiCompatOptinal");
+const direct_hoist_13 = new TypeofRuntype("string");
 const direct_hoist_14 = new ObjectRuntype({
-    "source": direct_hoist_12
+    "city": direct_hoist_13,
+    "street": direct_hoist_13
 }, []);
 const direct_hoist_15 = new ObjectRuntype({
-    "metadata": direct_hoist_14,
-    "user": direct_hoist_1
+    "source": direct_hoist_13
 }, []);
 const direct_hoist_16 = new ObjectRuntype({
+    "metadata": direct_hoist_15,
     "user": direct_hoist_1
 }, []);
-const direct_hoist_17 = new ConstRuntype(true);
-const direct_hoist_18 = new NullishRuntype("null");
-const direct_hoist_19 = new ConstRuntype(3);
-const direct_hoist_20 = new ConstRuntype("ok");
-const direct_hoist_21 = new ObjectRuntype({
-    "enabled": direct_hoist_17,
-    "nullable": direct_hoist_18,
-    "retries": direct_hoist_19,
-    "status": direct_hoist_20
+const direct_hoist_17 = new ObjectRuntype({
+    "user": direct_hoist_1
 }, []);
-const direct_hoist_22 = new AnyOfConstsRuntype([
+const direct_hoist_18 = new ConstRuntype(true);
+const direct_hoist_19 = new NullishRuntype("null");
+const direct_hoist_20 = new ConstRuntype(3);
+const direct_hoist_21 = new ConstRuntype("ok");
+const direct_hoist_22 = new ObjectRuntype({
+    "enabled": direct_hoist_18,
+    "nullable": direct_hoist_19,
+    "retries": direct_hoist_20,
+    "status": direct_hoist_21
+}, []);
+const direct_hoist_23 = new AnyOfConstsRuntype([
     200,
     201
 ]);
-const direct_hoist_23 = new AnyOfConstsRuntype([
+const direct_hoist_24 = new AnyOfConstsRuntype([
     false,
     true
 ]);
-const direct_hoist_24 = new ConstRuntype("fallback");
-const direct_hoist_25 = new ConstRuntype(0);
-const direct_hoist_26 = new AnyOfRuntype([
-    direct_hoist_18,
-    direct_hoist_24,
-    direct_hoist_25
+const direct_hoist_25 = new ConstRuntype("fallback");
+const direct_hoist_26 = new ConstRuntype(0);
+const direct_hoist_27 = new AnyOfRuntype([
+    direct_hoist_19,
+    direct_hoist_25,
+    direct_hoist_26
 ]);
-const direct_hoist_27 = new AnyOfConstsRuntype([
+const direct_hoist_28 = new AnyOfConstsRuntype([
     "admin",
     "member"
 ]);
-const direct_hoist_28 = new ObjectRuntype({
-    "code": direct_hoist_22,
-    "enabled": direct_hoist_23,
-    "mixed": direct_hoist_26,
-    "role": direct_hoist_27
+const direct_hoist_29 = new ObjectRuntype({
+    "code": direct_hoist_23,
+    "enabled": direct_hoist_24,
+    "mixed": direct_hoist_27,
+    "role": direct_hoist_28
 }, []);
-const direct_hoist_29 = new ConstRuntype("primary");
-const direct_hoist_30 = new AnyOfRuntype([
-    direct_hoist_18,
-    direct_hoist_24,
-    direct_hoist_29
-]);
-const direct_hoist_31 = new AnyOfRuntype([
-    direct_hoist_18,
-    direct_hoist_12
-]);
-const direct_hoist_32 = new ObjectRuntype({
-    "maybeEnum": direct_hoist_30,
-    "maybeText": direct_hoist_31,
-    "onlyNull": direct_hoist_18
+const direct_hoist_30 = new ObjectRuntype({
+    "it": new OptionalFieldRuntype(direct_hoist_13)
 }, []);
-const direct_hoist_33 = new AnyRuntype();
-const direct_hoist_34 = new ObjectRuntype({}, [
+const direct_hoist_31 = new ConstRuntype("primary");
+const direct_hoist_32 = new AnyOfRuntype([
+    direct_hoist_19,
+    direct_hoist_25,
+    direct_hoist_31
+]);
+const direct_hoist_33 = new AnyOfRuntype([
+    direct_hoist_19,
+    direct_hoist_13
+]);
+const direct_hoist_34 = new NullishRuntype("undefined");
+const direct_hoist_35 = new AnyOfRuntype([
+    direct_hoist_34,
+    direct_hoist_13
+]);
+const direct_hoist_36 = new ObjectRuntype({
+    "maybeEnum": direct_hoist_32,
+    "maybeText": direct_hoist_33,
+    "onlyNull": direct_hoist_19,
+    "optional": new OptionalFieldRuntype(direct_hoist_13),
+    "orUndefined": direct_hoist_35
+}, []);
+const direct_hoist_37 = new AnyRuntype();
+const direct_hoist_38 = new ObjectRuntype({}, [
     {
-        "key": direct_hoist_12,
-        "value": direct_hoist_33
+        "key": direct_hoist_13,
+        "value": direct_hoist_37
     }
 ]);
-const direct_hoist_35 = new ObjectRuntype({
-    "payload": direct_hoist_34
+const direct_hoist_39 = new ObjectRuntype({
+    "payload": direct_hoist_38
 }, []);
-const direct_hoist_36 = new ObjectRuntype({
+const direct_hoist_40 = new ObjectRuntype({
     "previous": new OptionalFieldRuntype(direct_hoist_7),
     "root": direct_hoist_6
 }, []);
-const direct_hoist_37 = new ArrayRuntype(direct_hoist_6);
-const direct_hoist_38 = new ObjectRuntype({
-    "children": direct_hoist_37,
-    "value": direct_hoist_12
+const direct_hoist_41 = new ArrayRuntype(direct_hoist_6);
+const direct_hoist_42 = new ObjectRuntype({
+    "children": direct_hoist_41,
+    "value": direct_hoist_13
 }, []);
-const direct_hoist_39 = new ArrayRuntype(direct_hoist_1);
-const direct_hoist_40 = new ObjectRuntype({
-    "items": direct_hoist_39,
+const direct_hoist_43 = new ArrayRuntype(direct_hoist_1);
+const direct_hoist_44 = new ObjectRuntype({
+    "items": direct_hoist_43,
     "primaryAddress": direct_hoist_0
 }, []);
-const direct_hoist_41 = new ObjectRuntype({
+const direct_hoist_45 = new ObjectRuntype({
     "address": direct_hoist_0,
-    "id": direct_hoist_12
+    "id": direct_hoist_13
 }, []);
-const direct_hoist_42 = new ObjectRuntype({
-    "displayName": direct_hoist_12
+const direct_hoist_46 = new ObjectRuntype({
+    "displayName": direct_hoist_13
 }, []);
-const direct_hoist_43 = new ObjectRuntype({
+const direct_hoist_47 = new ObjectRuntype({
     "address": direct_hoist_0,
-    "id": direct_hoist_12,
-    "profile": direct_hoist_42
+    "id": direct_hoist_13,
+    "profile": direct_hoist_46
 }, []);
 const namedRuntypes = {
-    "Address": direct_hoist_13,
-    "CreateUserRequest": direct_hoist_15,
-    "CreateUserResponse": direct_hoist_16,
-    "OpenApiCompatConstPayload": direct_hoist_21,
-    "OpenApiCompatEnumPayload": direct_hoist_28,
-    "OpenApiCompatOptionalizedPayload": direct_hoist_32,
-    "OpenApiCompatRecordPayload": direct_hoist_35,
-    "RecursiveEnvelope": direct_hoist_36,
-    "RecursiveTree": direct_hoist_38,
-    "SearchUsersResponse": direct_hoist_40,
-    "UpdateUserRequest": direct_hoist_41,
-    "User": direct_hoist_43
+    "Address": direct_hoist_14,
+    "CreateUserRequest": direct_hoist_16,
+    "CreateUserResponse": direct_hoist_17,
+    "OpenApiCompatConstPayload": direct_hoist_22,
+    "OpenApiCompatEnumPayload": direct_hoist_29,
+    "OpenApiCompatOptinal": direct_hoist_30,
+    "OpenApiCompatOptionalizedPayload": direct_hoist_36,
+    "OpenApiCompatRecordPayload": direct_hoist_39,
+    "RecursiveEnvelope": direct_hoist_40,
+    "RecursiveTree": direct_hoist_42,
+    "SearchUsersResponse": direct_hoist_44,
+    "UpdateUserRequest": direct_hoist_45,
+    "User": direct_hoist_47
 };
 const buildParsersInput = {
     "Address": direct_hoist_0,
@@ -211,7 +223,8 @@ const buildParsersInput = {
     "OpenApiCompatConstPayload": direct_hoist_8,
     "OpenApiCompatEnumPayload": direct_hoist_9,
     "OpenApiCompatRecordPayload": direct_hoist_10,
-    "OpenApiCompatOptionalizedPayload": direct_hoist_11
+    "OpenApiCompatOptionalizedPayload": direct_hoist_11,
+    "OpenApiCompatOptinal": direct_hoist_12
 };
 
 exports.default = { buildParsers };
