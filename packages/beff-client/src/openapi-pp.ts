@@ -311,7 +311,23 @@ const isMergeableObjectSchema = (definition: JSONSchema7Definition): definition 
     return false;
   }
 
+  if (definition.$ref !== undefined) {
+    return false;
+  }
+
   if (definition.type !== undefined && definition.type !== "object") {
+    return false;
+  }
+
+  if (
+    definition.allOf !== undefined ||
+    definition.anyOf !== undefined ||
+    definition.oneOf !== undefined ||
+    definition.not !== undefined ||
+    definition.if !== undefined ||
+    definition.then !== undefined ||
+    definition.else !== undefined
+  ) {
     return false;
   }
 

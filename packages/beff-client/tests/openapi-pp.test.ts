@@ -113,6 +113,50 @@ describe("normalizeOpenApiSchema", () => {
     });
   });
 
+  it("preserves allOf intersections that include refs", () => {
+    expect(
+      normalize({
+        allOf: [
+          {
+            type: "object",
+            properties: {
+              receipts: {
+                type: "array",
+                items: {
+                  $ref: "#/components/schemas/ExecutionReceipt",
+                },
+              },
+            },
+            required: ["receipts"],
+            additionalProperties: false,
+          },
+          {
+            $ref: "#/components/schemas/ActionRequestListItem",
+          },
+        ],
+      }),
+    ).toEqual({
+      allOf: [
+        {
+          type: "object",
+          properties: {
+            receipts: {
+              type: "array",
+              items: {
+                $ref: "#/components/schemas/ExecutionReceipt",
+              },
+            },
+          },
+          required: ["receipts"],
+          additionalProperties: false,
+        },
+        {
+          $ref: "#/components/schemas/ActionRequestListItem",
+        },
+      ],
+    });
+  });
+
   it("does not rewrite standalone nullable unions outside object properties", () => {
     expect(
       normalize({

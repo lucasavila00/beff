@@ -1394,6 +1394,21 @@ export class ObjectRuntype implements Runtype {
     if (indexSchemas.length === 0) {
       return { ...base, additionalProperties: false };
     }
+
+    // special case for Record<string, unknown>
+    if (Object.keys(properties).length === 0 && indexSchemas.length === 1) {
+      const [indexSchema] = indexSchemas;
+      return {
+        type: "object",
+        additionalProperties:
+          typeof indexSchema.additionalProperties === "object" &&
+          indexSchema.additionalProperties != null &&
+          Object.keys(indexSchema.additionalProperties).length === 0
+            ? true
+            : indexSchema.additionalProperties,
+      };
+    }
+
     return {
       allOf: [base, ...indexSchemas],
     };

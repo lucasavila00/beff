@@ -60,20 +60,8 @@ it("flattens record-like objects compared to the raw schema output", () => {
       "additionalProperties": false,
       "properties": {
         "payload": {
-          "allOf": [
-            {
-              "properties": {},
-              "required": [],
-              "type": "object",
-            },
-            {
-              "additionalProperties": {},
-              "propertyNames": {
-                "type": "string",
-              },
-              "type": "object",
-            },
-          ],
+          "additionalProperties": true,
+          "type": "object",
         },
       },
       "required": [
