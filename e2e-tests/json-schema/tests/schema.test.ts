@@ -227,6 +227,9 @@ it("works3", () => {
           "type": "object",
         },
       ],
+      "discriminator": {
+        "propertyName": "type",
+      },
     }
   `);
 

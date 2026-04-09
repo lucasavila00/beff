@@ -56,6 +56,14 @@ export type JSONSchema7Version = string;
  * @see https://tools.ietf.org/html/draft-handrews-json-schema-validation-01
  */
 export type JSONSchema7Definition = JSONSchema7 | boolean;
+export interface OpenAPIDiscriminator {
+  propertyName: string;
+  mapping?:
+    | {
+        [key: string]: string;
+      }
+    | undefined;
+}
 export interface JSONSchema7 {
   $id?: string | undefined;
   $ref?: string | undefined;
@@ -173,4 +181,5 @@ export interface JSONSchema7 {
   readOnly?: boolean | undefined;
   writeOnly?: boolean | undefined;
   examples?: JSONSchema7Type | undefined;
+  discriminator?: OpenAPIDiscriminator | undefined;
 }

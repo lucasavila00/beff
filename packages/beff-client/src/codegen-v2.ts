@@ -1220,6 +1220,9 @@ export class AnyOfDiscriminatedRuntype implements Runtype {
   }
   schema(ctx: SchemaContext): JSONSchema7 {
     return {
+      discriminator: {
+        propertyName: this.discriminator,
+      },
       anyOf: this.schemas.map((it) => it.schema(ctx)),
     };
   }
