@@ -1,5 +1,13 @@
 # @beff/client
 
+## 0.0.132
+
+### Patch Changes
+
+- improve disc union json schema printing
+- Updated dependencies
+  - @beff/cli@0.0.132
+
 ## 0.0.131
 
 ### Patch Changes

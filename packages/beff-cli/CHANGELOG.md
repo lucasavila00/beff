@@ -1,5 +1,11 @@
 # @beff/cli
 
+## 0.0.132
+
+### Patch Changes
+
+- improve disc union json schema printing
+
 ## 0.0.131
 
 ### Patch Changes

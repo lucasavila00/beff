@@ -11,24 +11,8 @@ const createOpenApiContext = () =>
 it("prints discriminated unions as OpenAPI discriminators", () => {
   expect(Codecs.OpenApiCompatDiscUnion.schema()).toMatchInlineSnapshot(`
     {
-      "anyOf": [
-        {
-          "additionalProperties": false,
-          "properties": {
-            "eventName": {
-              "type": "string",
-            },
-            "type": {
-              "const": "EVENT",
-            },
-          },
-          "required": [
-            "eventName",
-            "type",
-          ],
-          "type": "object",
-        },
-        {
+      "definitions": {
+        "OpenApiCompatDiscUnionCron": {
           "additionalProperties": false,
           "properties": {
             "schedule": {
@@ -44,10 +28,38 @@ it("prints discriminated unions as OpenAPI discriminators", () => {
           ],
           "type": "object",
         },
-      ],
+        "OpenApiCompatDiscUnionEvent": {
+          "additionalProperties": false,
+          "properties": {
+            "eventName": {
+              "type": "string",
+            },
+            "type": {
+              "const": "EVENT",
+            },
+          },
+          "required": [
+            "eventName",
+            "type",
+          ],
+          "type": "object",
+        },
+      },
       "discriminator": {
+        "mapping": {
+          "CRON": "#/definitions/OpenApiCompatDiscUnionCron",
+          "EVENT": "#/definitions/OpenApiCompatDiscUnionEvent",
+        },
         "propertyName": "type",
       },
+      "oneOf": [
+        {
+          "$ref": "#/definitions/OpenApiCompatDiscUnionCron",
+        },
+        {
+          "$ref": "#/definitions/OpenApiCompatDiscUnionEvent",
+        },
+      ],
       "type": "object",
     }
   `);
@@ -124,24 +136,8 @@ it("prints discriminated unions as OpenAPI discriminators", () => {
 it("prints named discriminated union variants with stable component names", () => {
   expect(Codecs.OpenApiCompatDiscUnionAndNamedTypes.schema()).toMatchInlineSnapshot(`
     {
-      "anyOf": [
-        {
-          "additionalProperties": false,
-          "properties": {
-            "eventName": {
-              "type": "string",
-            },
-            "type": {
-              "const": "EVENT",
-            },
-          },
-          "required": [
-            "eventName",
-            "type",
-          ],
-          "type": "object",
-        },
-        {
+      "definitions": {
+        "OpenApiCompatDiscUnionCron": {
           "additionalProperties": false,
           "properties": {
             "schedule": {
@@ -157,10 +153,38 @@ it("prints named discriminated union variants with stable component names", () =
           ],
           "type": "object",
         },
-      ],
+        "OpenApiCompatDiscUnionEvent": {
+          "additionalProperties": false,
+          "properties": {
+            "eventName": {
+              "type": "string",
+            },
+            "type": {
+              "const": "EVENT",
+            },
+          },
+          "required": [
+            "eventName",
+            "type",
+          ],
+          "type": "object",
+        },
+      },
       "discriminator": {
+        "mapping": {
+          "CRON": "#/definitions/OpenApiCompatDiscUnionCron",
+          "EVENT": "#/definitions/OpenApiCompatDiscUnionEvent",
+        },
         "propertyName": "type",
       },
+      "oneOf": [
+        {
+          "$ref": "#/definitions/OpenApiCompatDiscUnionCron",
+        },
+        {
+          "$ref": "#/definitions/OpenApiCompatDiscUnionEvent",
+        },
+      ],
       "type": "object",
     }
   `);

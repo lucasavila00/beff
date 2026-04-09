@@ -1220,11 +1220,35 @@ export class AnyOfDiscriminatedRuntype implements Runtype {
     this.schemaMapping = schemaMapping;
   }
   schema(ctx: SchemaContext): JSONSchema7 {
-    if (ctx.mode === "contextual" && ctx.printingContext != null) {
+    if (ctx.printingContext != null) {
       const variantRefs = this.getSchemaVariantRefs(ctx);
 
       return {
         type: "object",
+        discriminator: {
+          propertyName: this.discriminator,
+          mapping: Object.fromEntries(variantRefs.map(({ key, ref }) => [key, ref])),
+        },
+        oneOf: variantRefs.map(({ ref }) => ({ $ref: ref })),
+      };
+    }
+
+    const allNamed = Object.values(this.schemaMapping).every((s) => this.getRefTarget(s) != null);
+    if (allNamed) {
+      const localPrintingContext = new SchemaPrintingContext({
+        refPathTemplate: "#/definitions/{name}",
+        definitionContainerKey: null,
+      });
+      const localCtx: SchemaContext = { ...ctx, printingContext: localPrintingContext };
+      const variantRefs = this.getSchemaVariantRefs(localCtx);
+      const definitions = localPrintingContext.exportDefinitions() as Record<
+        string,
+        JSONSchema7Definition
+      >;
+
+      return {
+        type: "object",
+        definitions,
         discriminator: {
           propertyName: this.discriminator,
           mapping: Object.fromEntries(variantRefs.map(({ key, ref }) => [key, ref])),
