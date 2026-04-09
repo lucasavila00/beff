@@ -3,7 +3,10 @@ use crate::{
         json::N,
         runtype::{CustomFormat, TplLitType, TypedArrayKind},
     },
-    subtyping::{IsEmptyStatus, dnf::{dnf_mapping_is_empty, dnf_map_is_empty}},
+    subtyping::{
+        IsEmptyStatus,
+        dnf::{dnf_map_is_empty, dnf_mapping_is_empty},
+    },
 };
 use anyhow::{Result, bail};
 use std::{collections::BTreeSet, rc::Rc};
@@ -35,8 +38,19 @@ pub enum SubTypeTag {
     Set = 1 << 13,
 }
 
-pub const VAL: u32 =
-    1 << 1 | 1 << 2 | 1 << 3 | 1 << 4 | 1 << 5 | 1 << 6 | 1 << 7 | 1 << 8 | 1 << 9 | 1 << 10 | 1 << 11 | 1 << 12 | 1 << 13;
+pub const VAL: u32 = 1 << 1
+    | 1 << 2
+    | 1 << 3
+    | 1 << 4
+    | 1 << 5
+    | 1 << 6
+    | 1 << 7
+    | 1 << 8
+    | 1 << 9
+    | 1 << 10
+    | 1 << 11
+    | 1 << 12
+    | 1 << 13;
 
 impl SubTypeTag {
     pub fn code(&self) -> BasicTypeCode {
@@ -96,13 +110,7 @@ impl SubType {
             }
             return SubType::True(SubTypeTag::TypedArray);
         }
-        SubType::Proper(
-            ProperSubtype::TypedArray {
-                allowed,
-                values,
-            }
-            .into(),
-        )
+        SubType::Proper(ProperSubtype::TypedArray { allowed, values }.into())
     }
     fn void_undefined_subtype(allowed: bool, value: Vec<VoidUndefinedSubtype>) -> SubType {
         if value.is_empty() {

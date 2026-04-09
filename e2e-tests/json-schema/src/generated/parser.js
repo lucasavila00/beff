@@ -119,6 +119,9 @@ const direct_hoist_24 = new AnyOfDiscriminatedRuntype([
 ], "subType", {
     "a1": direct_hoist_21,
     "a2": direct_hoist_23
+}, {
+    "a1": direct_hoist_21,
+    "a2": direct_hoist_23
 });
 const direct_hoist_25 = new ConstRuntype("b");
 const direct_hoist_26 = new ObjectRuntype({
@@ -130,6 +133,9 @@ const direct_hoist_27 = new AnyOfDiscriminatedRuntype([
     direct_hoist_23,
     direct_hoist_26
 ], "type", {
+    "a": direct_hoist_24,
+    "b": direct_hoist_26
+}, {
     "a": direct_hoist_24,
     "b": direct_hoist_26
 });

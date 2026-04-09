@@ -505,14 +505,14 @@ impl SemTypeContext {
         };
         self.list_definition(Rc::new(atom))
     }
- 
+
     pub fn map_definition_from_idx(idx: usize) -> SemType {
         SemType::new_complex(
             0x0,
             vec![ProperSubtype::Map(Bdd::from_atom(Atom::Map(idx)).into()).into()],
         )
     }
- 
+
     pub fn map_definition(
         &mut self,
         vs: BTreeMap<String, Rc<SemType>>,
@@ -526,24 +526,24 @@ impl SemTypeContext {
             }
             .into(),
         ));
- 
+
         Self::map_definition_from_idx(idx)
     }
- 
+
     pub fn set_definition_from_idx(idx: usize) -> SemType {
         SemType::new_complex(
             0x0,
             vec![ProperSubtype::Set(Bdd::from_atom(Atom::Set(idx)).into()).into()],
         )
     }
- 
+
     pub fn set_definition(&mut self, vs: Rc<ListAtomic>) -> SemType {
         let idx = self.set_definitions.len();
         self.set_definitions.push(Some(vs.clone()));
- 
+
         Self::set_definition_from_idx(idx)
     }
- 
+
     pub fn map(&mut self, k: Rc<SemType>, v: Rc<SemType>) -> SemType {
         let atom = MappingAtomicType {
             vs: BTreeMap::new(),
@@ -551,7 +551,7 @@ impl SemTypeContext {
         };
         self.map_definition(atom.vs, atom.indexed_properties)
     }
- 
+
     pub fn set(&mut self, v: Rc<SemType>) -> SemType {
         let atom = ListAtomic {
             prefix_items: vec![],
@@ -559,7 +559,7 @@ impl SemTypeContext {
         };
         self.set_definition(Rc::new(atom))
     }
- 
+
     pub fn boolean_const(value: bool) -> SemType {
         SemType::new_complex(0x0, vec![ProperSubtype::Boolean(value).into()])
     }

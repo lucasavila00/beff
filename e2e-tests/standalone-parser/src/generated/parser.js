@@ -198,6 +198,9 @@ const direct_hoist_83 = new AnyOfDiscriminatedRuntype([
 ], "subType", {
     "a1": direct_hoist_80,
     "a2": direct_hoist_82
+}, {
+    "a1": direct_hoist_80,
+    "a2": direct_hoist_82
 });
 const direct_hoist_84 = new ObjectRuntype({
     "type": direct_hoist_75,
@@ -208,6 +211,9 @@ const direct_hoist_85 = new AnyOfDiscriminatedRuntype([
     direct_hoist_82,
     direct_hoist_84
 ], "type", {
+    "a": direct_hoist_83,
+    "b": direct_hoist_84
+}, {
     "a": direct_hoist_83,
     "b": direct_hoist_84
 });
@@ -234,6 +240,10 @@ const direct_hoist_91 = new AnyOfDiscriminatedRuntype([
     direct_hoist_90,
     direct_hoist_84
 ], "type", {
+    "a": direct_hoist_90,
+    "b": direct_hoist_84,
+    "c": direct_hoist_90
+}, {
     "a": direct_hoist_90,
     "b": direct_hoist_84,
     "c": direct_hoist_90
@@ -387,11 +397,18 @@ const direct_hoist_134 = new AnyOfDiscriminatedRuntype([
     "circle": direct_hoist_129,
     "square": direct_hoist_131,
     "triangle": direct_hoist_133
+}, {
+    "circle": direct_hoist_129,
+    "square": direct_hoist_131,
+    "triangle": direct_hoist_133
 });
 const direct_hoist_135 = new AnyOfDiscriminatedRuntype([
     direct_hoist_131,
     direct_hoist_133
 ], "kind", {
+    "square": direct_hoist_131,
+    "triangle": direct_hoist_133
+}, {
     "square": direct_hoist_131,
     "triangle": direct_hoist_133
 });
@@ -431,6 +448,10 @@ const direct_hoist_148 = new AnyOfDiscriminatedRuntype([
     direct_hoist_143,
     direct_hoist_145
 ], "tag", {
+    "a": direct_hoist_143,
+    "b": direct_hoist_145,
+    "c": direct_hoist_147
+}, {
     "a": direct_hoist_143,
     "b": direct_hoist_145,
     "c": direct_hoist_147

@@ -2,6 +2,7 @@ use std::{cmp::Ordering, collections::BTreeMap, rc::Rc};
 
 use anyhow::{Result, bail};
 
+use crate::subtyping::dnf::bdd_to_dnf;
 use crate::{
     ast::{
         json::N,
@@ -9,7 +10,6 @@ use crate::{
     },
     subtyping::{IsEmptyStatus, semtype::SemTypeContext, subtype::NumberRepresentationOrFormat},
 };
-use crate::subtyping::dnf::bdd_to_dnf;
 
 use super::{
     semtype::{BddMemoEmptyRef, MemoEmpty, SemType, SemTypeOps},
@@ -950,8 +950,6 @@ pub fn list_indexed_access(
         }
     }
 }
-
-
 
 pub fn keyof(ctx: &mut SemTypeContext, st: Rc<SemType>) -> anyhow::Result<Rc<SemType>> {
     let mut acc: Option<Rc<SemType>> = None;

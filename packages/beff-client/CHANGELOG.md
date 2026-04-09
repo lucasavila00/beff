@@ -1,5 +1,13 @@
 # @beff/client
 
+## 0.0.130
+
+### Patch Changes
+
+- improve openapi mode
+- Updated dependencies
+  - @beff/cli@0.0.130
+
 ## 0.0.129
 
 ### Patch Changes

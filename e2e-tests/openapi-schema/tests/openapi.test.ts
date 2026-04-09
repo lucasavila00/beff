@@ -83,124 +83,122 @@ it("builds an openapi document with shared component refs", () => {
     {
       "components": {
         "schemas": {
-          "$defs": {
-            "Address": {
-              "additionalProperties": false,
-              "properties": {
-                "city": {
-                  "type": "string",
-                },
-                "street": {
-                  "type": "string",
-                },
+          "Address": {
+            "additionalProperties": false,
+            "properties": {
+              "city": {
+                "type": "string",
               },
-              "required": [
-                "city",
-                "street",
-              ],
-              "type": "object",
+              "street": {
+                "type": "string",
+              },
             },
-            "CreateUserRequest": {
-              "additionalProperties": false,
-              "properties": {
-                "metadata": {
-                  "additionalProperties": false,
-                  "properties": {
-                    "source": {
-                      "type": "string",
-                    },
+            "required": [
+              "city",
+              "street",
+            ],
+            "type": "object",
+          },
+          "CreateUserRequest": {
+            "additionalProperties": false,
+            "properties": {
+              "metadata": {
+                "additionalProperties": false,
+                "properties": {
+                  "source": {
+                    "type": "string",
                   },
-                  "required": [
-                    "source",
-                  ],
-                  "type": "object",
                 },
-                "user": {
-                  "$ref": "#/components/schemas/User",
-                },
+                "required": [
+                  "source",
+                ],
+                "type": "object",
               },
-              "required": [
-                "metadata",
-                "user",
-              ],
-              "type": "object",
-            },
-            "CreateUserResponse": {
-              "additionalProperties": false,
-              "properties": {
-                "user": {
-                  "$ref": "#/components/schemas/User",
-                },
+              "user": {
+                "$ref": "#/components/schemas/User",
               },
-              "required": [
-                "user",
-              ],
-              "type": "object",
             },
-            "SearchUsersResponse": {
-              "additionalProperties": false,
-              "properties": {
+            "required": [
+              "metadata",
+              "user",
+            ],
+            "type": "object",
+          },
+          "CreateUserResponse": {
+            "additionalProperties": false,
+            "properties": {
+              "user": {
+                "$ref": "#/components/schemas/User",
+              },
+            },
+            "required": [
+              "user",
+            ],
+            "type": "object",
+          },
+          "SearchUsersResponse": {
+            "additionalProperties": false,
+            "properties": {
+              "items": {
                 "items": {
-                  "items": {
-                    "$ref": "#/components/schemas/User",
+                  "$ref": "#/components/schemas/User",
+                },
+                "type": "array",
+              },
+              "primaryAddress": {
+                "$ref": "#/components/schemas/Address",
+              },
+            },
+            "required": [
+              "items",
+              "primaryAddress",
+            ],
+            "type": "object",
+          },
+          "UpdateUserRequest": {
+            "additionalProperties": false,
+            "properties": {
+              "address": {
+                "$ref": "#/components/schemas/Address",
+              },
+              "id": {
+                "type": "string",
+              },
+            },
+            "required": [
+              "address",
+              "id",
+            ],
+            "type": "object",
+          },
+          "User": {
+            "additionalProperties": false,
+            "properties": {
+              "address": {
+                "$ref": "#/components/schemas/Address",
+              },
+              "id": {
+                "type": "string",
+              },
+              "profile": {
+                "additionalProperties": false,
+                "properties": {
+                  "displayName": {
+                    "type": "string",
                   },
-                  "type": "array",
                 },
-                "primaryAddress": {
-                  "$ref": "#/components/schemas/Address",
-                },
+                "required": [
+                  "displayName",
+                ],
+                "type": "object",
               },
-              "required": [
-                "items",
-                "primaryAddress",
-              ],
-              "type": "object",
             },
-            "UpdateUserRequest": {
-              "additionalProperties": false,
-              "properties": {
-                "address": {
-                  "$ref": "#/components/schemas/Address",
-                },
-                "id": {
-                  "type": "string",
-                },
-              },
-              "required": [
-                "address",
-                "id",
-              ],
-              "type": "object",
-            },
-            "User": {
-              "additionalProperties": false,
-              "properties": {
-                "address": {
-                  "$ref": "#/components/schemas/Address",
-                },
-                "id": {
-                  "type": "string",
-                },
-                "profile": {
-                  "additionalProperties": false,
-                  "properties": {
-                    "displayName": {
-                      "type": "string",
-                    },
-                  },
-                  "required": [
-                    "displayName",
-                  ],
-                  "type": "object",
-                },
-              },
-              "required": [
-                "address",
-                "id",
-                "profile",
-              ],
-              "type": "object",
-            },
+            "required": [
+              "address",
+              "id",
+              "profile",
+            ],
+            "type": "object",
           },
         },
       },
@@ -284,7 +282,10 @@ it("builds an openapi document with shared component refs", () => {
 });
 
 it("uses generic json schema refs by default", () => {
-  const ctx = new SchemaPrintingContext();
+  const ctx = new SchemaPrintingContext({
+    refPathTemplate: "#/$defs/{name}",
+    definitionContainerKey: "$defs",
+  });
 
   expect(Codecs.User.schemaWithContext(ctx)).toMatchInlineSnapshot(`
     {
@@ -339,6 +340,123 @@ it("uses generic json schema refs by default", () => {
           ],
           "type": "object",
         },
+      },
+    }
+  `);
+});
+
+it("prints primitive literal consts in an OpenAPI-friendly way", () => {
+  const ctx = new SchemaPrintingContext({
+    refPathTemplate: "#/components/schemas/{name}",
+    definitionContainerKey: null,
+  });
+
+  expect(Codecs.OpenApiCompatConstPayload.schemaWithContext(ctx)).toMatchInlineSnapshot(`
+    {
+      "$ref": "#/components/schemas/OpenApiCompatConstPayload",
+    }
+  `);
+
+  expect(ctx.exportDefinitions()).toMatchInlineSnapshot(`
+    {
+      "OpenApiCompatConstPayload": {
+        "additionalProperties": false,
+        "properties": {
+          "enabled": {
+            "enum": [
+              true,
+            ],
+            "type": "boolean",
+          },
+          "nullable": {
+            "type": "null",
+          },
+          "retries": {
+            "enum": [
+              3,
+            ],
+            "type": "number",
+          },
+          "status": {
+            "enum": [
+              "ok",
+            ],
+            "type": "string",
+          },
+        },
+        "required": [
+          "enabled",
+          "nullable",
+          "retries",
+          "status",
+        ],
+        "type": "object",
+      },
+    }
+  `);
+});
+
+it("prints same-type literal unions as typed enums for OpenAPI compatibility", () => {
+  const ctx = new SchemaPrintingContext({
+    refPathTemplate: "#/components/schemas/{name}",
+    definitionContainerKey: null,
+  });
+
+  expect(Codecs.OpenApiCompatEnumPayload.schemaWithContext(ctx)).toMatchInlineSnapshot(`
+    {
+      "$ref": "#/components/schemas/OpenApiCompatEnumPayload",
+    }
+  `);
+
+  expect(ctx.exportDefinitions()).toMatchInlineSnapshot(`
+    {
+      "OpenApiCompatEnumPayload": {
+        "additionalProperties": false,
+        "properties": {
+          "code": {
+            "enum": [
+              200,
+              201,
+            ],
+            "type": "number",
+          },
+          "enabled": {
+            "enum": [
+              false,
+              true,
+            ],
+            "type": "boolean",
+          },
+          "mixed": {
+            "anyOf": [
+              {
+                "enum": [
+                  "fallback",
+                ],
+                "type": "string",
+              },
+              {
+                "enum": [
+                  0,
+                ],
+                "type": "number",
+              },
+            ],
+          },
+          "role": {
+            "enum": [
+              "admin",
+              "member",
+            ],
+            "type": "string",
+          },
+        },
+        "required": [
+          "code",
+          "enabled",
+          "role",
+        ],
+        "type": "object",
       },
     }
   `);

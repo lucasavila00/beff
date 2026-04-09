@@ -40,27 +40,8 @@ it("works", () => {
 it("works2", () => {
   expect(Codecs.object.schema()).toMatchInlineSnapshot(`
     {
-      "allOf": [
-        {
-          "properties": {},
-          "required": [],
-          "type": "object",
-        },
-        {
-          "additionalProperties": {},
-          "propertyNames": {
-            "anyOf": [
-              {
-                "type": "string",
-              },
-              {
-                "type": "number",
-              },
-            ],
-          },
-          "type": "object",
-        },
-      ],
+      "additionalProperties": true,
+      "type": "object",
     }
   `);
   expect(Codecs.anyArray.schema()).toMatchInlineSnapshot(`
@@ -246,6 +227,10 @@ it("works3", () => {
           "type": "object",
         },
       ],
+      "discriminator": {
+        "propertyName": "type",
+      },
+      "type": "object",
     }
   `);
 

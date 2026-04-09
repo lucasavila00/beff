@@ -1,10 +1,11 @@
 {
   "name": "@beff/client",
-  "version": "0.0.129",
+  "version": "0.0.130",
   "description": "",
   "main": "dist/cjs/index.js",
   "scripts": {
-    "build": "tsc -b ./tsconfig.cjs.json ./tsconfig.esm.json ./tsconfig.types.json"
+    "build": "tsc -b ./tsconfig.cjs.json ./tsconfig.esm.json ./tsconfig.types.json",
+    "test": "vitest --run --update"
   },
   "exports": {
     ".": {
@@ -24,12 +25,13 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "@beff/cli": "workspace:^0.0.129"
+    "@beff/cli": "workspace:^0.0.130"
   },
   "peerDependencies": {
     "zod": "^3.23.5"
   },
   "devDependencies": {
-    "typescript": "^5.2.2"
+    "typescript": "^5.2.2",
+    "vitest": "^0.34.4"
   }
 }

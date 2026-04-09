@@ -30,6 +30,7 @@ import {
   setHash,
 } from "./hash.js";
 import { JSONSchema7, JSONSchema7Definition } from "./json-schema.js";
+import { normalizeOpenApiSchema } from "./openapi-pp.js";
 import { printErrors } from "./err.js";
 export { generateHashFromString, generateHashFromNumbers } from "./hash.js";
 
@@ -302,8 +303,8 @@ type DescribeContext = {
 export type SchemaPrintingMode = "flat" | "contextual";
 
 export type SchemaPrintingContextOptions = {
-  refPathTemplate?: string;
-  definitionContainerKey?: string | null;
+  refPathTemplate: string;
+  definitionContainerKey: string | null;
 };
 
 export class SchemaPrintingContext {
@@ -312,15 +313,15 @@ export class SchemaPrintingContext {
   private readonly collectedDefinitions: Record<string, JSONSchema7Definition>;
   private readonly inProgressDefinitions: Record<string, boolean>;
 
-  constructor(options?: SchemaPrintingContextOptions) {
-    this.refPathTemplate = options?.refPathTemplate ?? "#/$defs/{name}";
-    this.definitionContainerKey = options?.definitionContainerKey ?? "$defs";
+  constructor(options: SchemaPrintingContextOptions) {
+    this.refPathTemplate = options.refPathTemplate;
+    this.definitionContainerKey = options.definitionContainerKey;
     this.collectedDefinitions = {};
     this.inProgressDefinitions = {};
   }
 
-  get definitions(): Record<string, JSONSchema7Definition> {
-    return { ...this.collectedDefinitions };
+  get refTemplate(): string {
+    return this.refPathTemplate;
   }
 
   getRef(name: string): string {
@@ -347,12 +348,18 @@ export class SchemaPrintingContext {
   exportDefinitions():
     | Record<string, JSONSchema7Definition>
     | Record<string, Record<string, JSONSchema7Definition>> {
-    const definitions = this.definitions;
+    const definitions = { ...this.collectedDefinitions };
+    const normalizedDefinitions: Record<string, JSONSchema7Definition> = {};
+    for (const [name, schema] of Object.entries(definitions)) {
+      normalizedDefinitions[name] = normalizeOpenApiSchema(schema, definitions, {
+        refPathTemplate: this.refPathTemplate,
+      });
+    }
     if (this.definitionContainerKey == null) {
-      return definitions;
+      return normalizedDefinitions;
     }
     return {
-      [this.definitionContainerKey]: definitions,
+      [this.definitionContainerKey]: normalizedDefinitions,
     };
   }
 }
@@ -503,7 +510,18 @@ export class ConstRuntype implements Runtype {
   describe(_ctx: DescribeContext): string {
     return JSON.stringify(this.value);
   }
-  schema(_ctx: SchemaContext): JSONSchema7 {
+  schema(ctx: SchemaContext): JSONSchema7 {
+    if (ctx.mode == "contextual") {
+      const tp = typeof this.value;
+      if (tp === "string" || tp === "number" || tp === "boolean") {
+        // OpenAPI mode prefers a type + enum for constant values
+        return {
+          type: tp,
+          enum: [this.value],
+        };
+      }
+    }
+
     return { const: this.value };
   }
   validate(_ctx: ValidateContext, input: unknown): boolean {
@@ -764,6 +782,18 @@ export class AnyOfConstsRuntype implements Runtype {
     return `(${inner})`;
   }
   schema(_ctx: SchemaContext): JSONSchema7 {
+    const isSingleTypeof =
+      this.values.length > 0 && this.values.every((v) => typeof v === typeof this.values[0]);
+    if (isSingleTypeof) {
+      const tp = typeof this.values[0];
+      if (tp == "string" || tp === "number" || tp === "boolean") {
+        return {
+          type: tp,
+          enum: this.values,
+        };
+      }
+    }
+
     return {
       enum: this.values,
     };
@@ -1183,15 +1213,115 @@ export class AnyOfDiscriminatedRuntype implements Runtype {
   private schemas: Runtype[];
   private discriminator: string;
   private mapping: Record<string, Runtype>;
-  constructor(schemas: Runtype[], discriminator: string, mapping: Record<string, Runtype>) {
+  private schemaMapping: Record<string, Runtype>;
+  constructor(
+    schemas: Runtype[],
+    discriminator: string,
+    mapping: Record<string, Runtype>,
+    schemaMapping: Record<string, Runtype>,
+  ) {
     this.schemas = schemas;
     this.discriminator = discriminator;
     this.mapping = mapping;
+    this.schemaMapping = schemaMapping;
   }
   schema(ctx: SchemaContext): JSONSchema7 {
+    if (ctx.mode === "contextual" && ctx.printingContext != null) {
+      const variantRefs = this.getSchemaVariantRefs(ctx);
+
+      return {
+        type: "object",
+        discriminator: {
+          propertyName: this.discriminator,
+          mapping: Object.fromEntries(variantRefs.map(({ key, ref }) => [key, ref])),
+        },
+        oneOf: variantRefs.map(({ ref }) => ({ $ref: ref })),
+      };
+    }
+
     return {
+      type: "object",
+      discriminator: {
+        propertyName: this.discriminator,
+      },
       anyOf: this.schemas.map((it) => it.schema(ctx)),
     };
+  }
+  private getSchemaVariantRefs(ctx: SchemaContext): Array<{ key: string; ref: string }> {
+    const unionHash = this.hash({ seen: {} });
+    return Object.entries(this.schemaMapping).map(([key, schema]) => ({
+      key,
+      ref: this.ensureSchemaVariantRef(schema, key, unionHash, ctx),
+    }));
+  }
+
+  private getPrintingContext(ctx: SchemaContext): SchemaPrintingContext {
+    const printingContext = ctx.printingContext;
+    if (printingContext == null) {
+      throw new Error("INTERNAL ERROR: Missing SchemaPrintingContext");
+    }
+    return printingContext;
+  }
+
+  private getRefTarget(runtype: Runtype): { name: string; target: Runtype } | null {
+    if (!(runtype instanceof BaseRefRuntype)) {
+      return null;
+    }
+
+    const name = runtype.refName;
+    return {
+      name,
+      target: runtype.getNamedRuntypes()[name],
+    };
+  }
+
+  private static sanitizeComponentNamePart(value: string): string {
+    const cleaned = value.replace(/[^a-zA-Z0-9]+/g, " ").trim();
+    if (cleaned.length === 0) {
+      return "Variant";
+    }
+    return cleaned
+      .split(/\s+/)
+      .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+      .join("");
+  }
+
+  private static getSyntheticRefName(discriminator: string, key: string, unionHash: number): string {
+    const discriminatorPart = AnyOfDiscriminatedRuntype.sanitizeComponentNamePart(discriminator);
+    const keyPart = AnyOfDiscriminatedRuntype.sanitizeComponentNamePart(key);
+    return `Discriminated${discriminatorPart}${keyPart}${Math.abs(unionHash)}`;
+  }
+
+  private ensureContextualDefinition(name: string, target: Runtype, ctx: SchemaContext): void {
+    const printingContext = this.getPrintingContext(ctx);
+    if (printingContext.hasDefinition(name) || printingContext.isDefinitionInProgress(name)) {
+      return;
+    }
+    printingContext.markDefinitionInProgress(name);
+    const body = target.schema(ctx);
+    printingContext.storeDefinition(name, body);
+  }
+
+  private ensureSchemaVariantRef(
+    runtype: Runtype,
+    key: string,
+    unionHash: number,
+    ctx: SchemaContext,
+  ): string {
+    const printingContext = this.getPrintingContext(ctx);
+    const refTarget = this.getRefTarget(runtype);
+    if (refTarget != null) {
+      this.ensureContextualDefinition(refTarget.name, refTarget.target, ctx);
+      return printingContext.getRef(refTarget.name);
+    }
+
+    const syntheticRefName = AnyOfDiscriminatedRuntype.getSyntheticRefName(
+      this.discriminator,
+      key,
+      unionHash,
+    );
+    this.ensureContextualDefinition(syntheticRefName, runtype, ctx);
+    return printingContext.getRef(syntheticRefName);
   }
   validate(ctx: ValidateContext, input: unknown): boolean {
     if (typeof input !== "object" || input == null) {
@@ -1364,6 +1494,21 @@ export class ObjectRuntype implements Runtype {
     if (indexSchemas.length === 0) {
       return { ...base, additionalProperties: false };
     }
+
+    // special case for Record<string, unknown>
+    if (Object.keys(properties).length === 0 && indexSchemas.length === 1) {
+      const [indexSchema] = indexSchemas;
+      return {
+        type: "object",
+        additionalProperties:
+          typeof indexSchema.additionalProperties === "object" &&
+          indexSchema.additionalProperties != null &&
+          Object.keys(indexSchema.additionalProperties).length === 0
+            ? true
+            : indexSchema.additionalProperties,
+      };
+    }
+
     return {
       allOf: [base, ...indexSchemas],
     };
@@ -1685,7 +1830,13 @@ class ParserFromRuntype implements BeffParser<any> {
       mode: "contextual" as const,
       printingContext: schemaPrintingContext,
     };
-    return this._runtype.schema(ctx);
+    return normalizeOpenApiSchema(
+      this._runtype.schema(ctx),
+      {},
+      {
+        refPathTemplate: schemaPrintingContext.refTemplate,
+      },
+    ) as JSONSchema7;
   }
   describe(): string {
     const ctx: DescribeContext = {
