@@ -725,6 +725,9 @@ mod tests {
         ], "type", {
             "CRON": direct_hoist_13,
             "EVENT": direct_hoist_14
+        }, {
+            "CRON": direct_hoist_7,
+            "EVENT": direct_hoist_10
         });
         const direct_hoist_16 = new AnyOfConstsRuntype([
             "CRON",
@@ -2055,6 +2058,9 @@ mod tests {
         ], "_tag", {
             "logical": direct_hoist_5,
             "none": direct_hoist_7
+        }, {
+            "logical": direct_hoist_5,
+            "none": direct_hoist_7
         });
         const direct_hoist_9 = new ConstRuntype("custom");
         const direct_hoist_10 = new TypeofRuntype("string");
@@ -2067,6 +2073,10 @@ mod tests {
             direct_hoist_5,
             direct_hoist_7
         ], "_tag", {
+            "custom": direct_hoist_11,
+            "logical": direct_hoist_5,
+            "none": direct_hoist_7
+        }, {
             "custom": direct_hoist_11,
             "logical": direct_hoist_5,
             "none": direct_hoist_7

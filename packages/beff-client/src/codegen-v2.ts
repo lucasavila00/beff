@@ -1213,10 +1213,17 @@ export class AnyOfDiscriminatedRuntype implements Runtype {
   private schemas: Runtype[];
   private discriminator: string;
   private mapping: Record<string, Runtype>;
-  constructor(schemas: Runtype[], discriminator: string, mapping: Record<string, Runtype>) {
+  private rawMapping: Record<string, Runtype>;
+  constructor(
+    schemas: Runtype[],
+    discriminator: string,
+    mapping: Record<string, Runtype>,
+    rawMapping: Record<string, Runtype>,
+  ) {
     this.schemas = schemas;
     this.discriminator = discriminator;
     this.mapping = mapping;
+    this.rawMapping = rawMapping;
   }
   schema(ctx: SchemaContext): JSONSchema7 {
     if (ctx.mode === "contextual" && ctx.printingContext != null) {
@@ -1224,13 +1231,13 @@ export class AnyOfDiscriminatedRuntype implements Runtype {
         AnyOfDiscriminatedRuntype.getOrCreateRefSchema(
           it,
           ctx,
-          AnyOfDiscriminatedRuntype.getMappingKeyForSchema(this.mapping, it) ?? `variant_${index}`,
+          AnyOfDiscriminatedRuntype.getMappingKeyForSchema(this.rawMapping, it) ?? `variant_${index}`,
           this.discriminator,
           this.hash({ seen: {} }),
         ),
       );
       const discriminatorMapping = AnyOfDiscriminatedRuntype.getDiscriminatorMapping(
-        this.mapping,
+        this.rawMapping,
         ctx,
         this.discriminator,
         this.hash({ seen: {} }),

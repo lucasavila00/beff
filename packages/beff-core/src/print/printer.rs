@@ -269,55 +269,75 @@ fn runtype_any_of_discriminated(
         .collect::<Vec<String>>();
     discriminator_strings.sort();
 
-    let mut acc = BTreeMap::new();
-    for current_key in discriminator_strings {
-        let mut cases = vec![];
-        for vs in object_vs.iter() {
-            let value = vs
-                .get(&discriminator)
-                .expect("we already checked the discriminator exists")
-                .inner();
-
-            let all_values = extract_union(value, named_schemas);
-            for s in all_values {
-                if let Some(s) = s.extract_single_string_const()
-                    && s == current_key
-                {
-                    let new_obj_vs: Vec<(String, Optionality<Runtype>)> = vs
-                        .iter()
-                        // .filter(|it| it.0 != &discriminator)
-                        .map(|it| (it.0.clone(), it.1.clone()))
-                        .collect();
-                    let new_obj = Runtype::object(new_obj_vs);
-                    cases.push(new_obj);
-                }
-            }
-        }
-        let schema = Runtype::any_of(cases);
-
-        let schema_code = print_runtype(&schema, named_schemas, ctx);
-
-        acc.insert(current_key, schema_code);
-    }
     let disc = Expr::Lit(Lit::Str(Str {
         span: DUMMY_SP,
         value: discriminator.clone().into(),
         raw: None,
     }));
 
+    let raw_mapping_obj = Expr::Object(ObjectLit {
+        span: DUMMY_SP,
+        props: discriminator_strings
+            .iter()
+            .filter_map(|current_key| {
+                flat_values.iter().find_map(|schema| {
+                    let vs = extract_object_shape(schema, named_schemas)?;
+                    let value = vs.get(&discriminator)?.inner();
+
+                    extract_union(value, named_schemas)
+                        .into_iter()
+                        .filter_map(|it| it.extract_single_string_const())
+                        .any(|it| &it == current_key)
+                        .then(|| {
+                            PropOrSpread::Prop(
+                                Prop::KeyValue(KeyValueProp {
+                                    key: PropName::Str(Str {
+                                        span: DUMMY_SP,
+                                        value: current_key.clone().into(),
+                                        raw: None,
+                                    }),
+                                    value: print_runtype(schema, named_schemas, ctx).into(),
+                                })
+                                .into(),
+                            )
+                        })
+                })
+            })
+            .collect(),
+    });
+
     let mapping_obj = Expr::Object(ObjectLit {
         span: DUMMY_SP,
-        props: acc
+        props: discriminator_strings
             .iter()
-            .map(|(key, value)| {
+            .map(|current_key| {
+                let cases = object_vs
+                    .iter()
+                    .filter(|vs| {
+                        let value = vs
+                            .get(&discriminator)
+                            .expect("we already checked the discriminator exists")
+                            .inner();
+
+                        extract_union(value, named_schemas)
+                            .into_iter()
+                            .filter_map(|it| it.extract_single_string_const())
+                            .any(|it| it == *current_key)
+                    })
+                    .map(|vs| {
+                        Runtype::object(vs.iter().map(|it| (it.0.clone(), it.1.clone())).collect())
+                    })
+                    .collect::<Vec<_>>();
+                let schema = Runtype::any_of(cases);
+
                 PropOrSpread::Prop(
                     Prop::KeyValue(KeyValueProp {
                         key: PropName::Str(Str {
                             span: DUMMY_SP,
-                            value: key.clone().into(),
+                            value: current_key.clone().into(),
                             raw: None,
                         }),
-                        value: value.clone().into(),
+                        value: print_runtype(&schema, named_schemas, ctx).into(),
                     })
                     .into(),
                 )
@@ -345,7 +365,7 @@ fn runtype_any_of_discriminated(
 
     new_runtype_class(
         "AnyOfDiscriminatedRuntype",
-        vec![flat_values_schema_arr, disc.clone(), mapping_obj],
+        vec![flat_values_schema_arr, disc.clone(), mapping_obj, raw_mapping_obj],
     )
 }
 
