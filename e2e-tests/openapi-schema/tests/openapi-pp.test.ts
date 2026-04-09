@@ -14,19 +14,9 @@ it("handles optional types", () => {
       "additionalProperties": false,
       "properties": {
         "it": {
-          "anyOf": [
-            {
-              "type": "string",
-            },
-            {
-              "type": "null",
-            },
-          ],
+          "type": "string",
         },
       },
-      "required": [
-        "it",
-      ],
       "type": "object",
     }
   `);
@@ -47,7 +37,6 @@ it("handles optional types", () => {
             "type": "string",
           },
         },
-        "required": [],
         "type": "object",
       },
     }
@@ -105,9 +94,6 @@ it("rewrites null unions into optional properties only in the OpenAPI post-proce
         "maybeEnum": {
           "anyOf": [
             {
-              "type": "null",
-            },
-            {
               "const": "fallback",
             },
             {
@@ -116,45 +102,20 @@ it("rewrites null unions into optional properties only in the OpenAPI post-proce
           ],
         },
         "maybeText": {
-          "anyOf": [
-            {
-              "type": "null",
-            },
-            {
-              "type": "string",
-            },
-          ],
+          "type": "string",
         },
         "onlyNull": {
           "type": "null",
         },
         "optional": {
-          "anyOf": [
-            {
-              "type": "string",
-            },
-            {
-              "type": "null",
-            },
-          ],
+          "type": "string",
         },
         "orUndefined": {
-          "anyOf": [
-            {
-              "type": "null",
-            },
-            {
-              "type": "string",
-            },
-          ],
+          "type": "string",
         },
       },
       "required": [
-        "maybeEnum",
-        "maybeText",
         "onlyNull",
-        "optional",
-        "orUndefined",
       ],
       "type": "object",
     }
@@ -215,14 +176,7 @@ it("normalizes recursive optional refs compared to the raw schema output", () =>
     {
       "additionalProperties": false,
       "properties": {
-        "previous": {
-          "anyOf": [
-            {},
-            {
-              "type": "null",
-            },
-          ],
-        },
+        "previous": {},
         "root": {
           "additionalProperties": false,
           "properties": {
@@ -242,7 +196,6 @@ it("normalizes recursive optional refs compared to the raw schema output", () =>
         },
       },
       "required": [
-        "previous",
         "root",
       ],
       "type": "object",

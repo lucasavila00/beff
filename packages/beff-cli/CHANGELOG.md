@@ -1,5 +1,11 @@
 # @beff/cli
 
+## 0.0.131
+
+### Patch Changes
+
+- improve json schema printing of object fields
+
 ## 0.0.130
 
 ### Patch Changes

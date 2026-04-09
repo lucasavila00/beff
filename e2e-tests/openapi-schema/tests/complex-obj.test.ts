@@ -18,14 +18,7 @@ it("prints discriminated unions as OpenAPI discriminators", () => {
               "additionalProperties": false,
               "properties": {
                 "cronExpression": {
-                  "anyOf": [
-                    {
-                      "type": "null",
-                    },
-                    {
-                      "type": "string",
-                    },
-                  ],
+                  "type": "string",
                 },
                 "eventName": {
                   "type": "string",
@@ -35,7 +28,6 @@ it("prints discriminated unions as OpenAPI discriminators", () => {
                 },
               },
               "required": [
-                "cronExpression",
                 "eventName",
                 "type",
               ],
@@ -89,14 +81,7 @@ it("prints discriminated unions as OpenAPI discriminators", () => {
                   "type": "string",
                 },
                 "eventName": {
-                  "anyOf": [
-                    {
-                      "type": "null",
-                    },
-                    {
-                      "type": "string",
-                    },
-                  ],
+                  "type": "string",
                 },
                 "type": {
                   "const": "CRON",
@@ -104,7 +89,6 @@ it("prints discriminated unions as OpenAPI discriminators", () => {
               },
               "required": [
                 "cronExpression",
-                "eventName",
                 "type",
               ],
               "type": "object",
