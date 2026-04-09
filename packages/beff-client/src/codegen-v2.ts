@@ -775,6 +775,17 @@ export class AnyOfConstsRuntype implements Runtype {
     return `(${inner})`;
   }
   schema(_ctx: SchemaContext): JSONSchema7 {
+    const isSingleTypeof = this.values.length > 0 && this.values.every((v) => typeof v === typeof this.values[0]);
+    if (isSingleTypeof) {
+      const tp = typeof this.values[0];
+      if (tp == "string" || tp === "number" || tp === "boolean") {
+        return {
+          type: tp,
+          enum: this.values,
+        }
+      }
+    }
+
     return {
       enum: this.values,
     };
