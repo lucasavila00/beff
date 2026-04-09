@@ -692,44 +692,44 @@ mod tests {
             direct_hoist_9,
             direct_hoist_6
         ]);
-        const direct_hoist_11 = new RefRuntype("CronWorkflowSource");
-        const direct_hoist_12 = new RefRuntype("EventWorkflowSource");
-        const direct_hoist_13 = new AnyRuntype();
-        const direct_hoist_14 = new ObjectRuntype({}, [
+        const direct_hoist_11 = new AnyRuntype();
+        const direct_hoist_12 = new ObjectRuntype({}, [
             {
                 "key": direct_hoist_1,
-                "value": direct_hoist_13
+                "value": direct_hoist_11
             }
         ]);
-        const direct_hoist_15 = new ObjectRuntype({
+        const direct_hoist_13 = new ObjectRuntype({
             "createdAt": direct_hoist_1,
             "cronExpression": direct_hoist_1,
             "eventName": direct_hoist_3,
             "id": direct_hoist_1,
-            "metadata": direct_hoist_14,
+            "metadata": direct_hoist_12,
             "type": direct_hoist_4,
             "updatedAt": direct_hoist_1,
             "workflowID": direct_hoist_1
         }, []);
-        const direct_hoist_16 = new ObjectRuntype({
+        const direct_hoist_14 = new ObjectRuntype({
             "createdAt": direct_hoist_1,
             "cronExpression": direct_hoist_3,
             "eventName": direct_hoist_1,
             "id": direct_hoist_1,
-            "metadata": direct_hoist_14,
+            "metadata": direct_hoist_12,
             "type": direct_hoist_8,
             "updatedAt": direct_hoist_1,
             "workflowID": direct_hoist_1
         }, []);
+        const direct_hoist_15 = new RefRuntype("EventWorkflowSource");
+        const direct_hoist_16 = new RefRuntype("CronWorkflowSource");
         const direct_hoist_17 = new AnyOfDiscriminatedRuntype([
-            direct_hoist_12,
-            direct_hoist_11
+            direct_hoist_15,
+            direct_hoist_16
         ], "type", {
-            "CRON": direct_hoist_15,
-            "EVENT": direct_hoist_16
+            "CRON": direct_hoist_13,
+            "EVENT": direct_hoist_14
         }, {
-            "CRON": direct_hoist_11,
-            "EVENT": direct_hoist_12
+            "CRON": direct_hoist_13,
+            "EVENT": direct_hoist_14
         });
         const direct_hoist_18 = new AnyOfConstsRuntype([
             "CRON",
@@ -738,7 +738,7 @@ mod tests {
         const direct_hoist_19 = new ObjectRuntype({
             "createdAt": direct_hoist_1,
             "id": direct_hoist_1,
-            "metadata": direct_hoist_14,
+            "metadata": direct_hoist_12,
             "type": direct_hoist_18,
             "updatedAt": direct_hoist_1,
             "workflowID": direct_hoist_1

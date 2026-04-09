@@ -71,10 +71,10 @@ it("prints discriminated unions as OpenAPI discriminators", () => {
         },
         "oneOf": [
           {
-            "$ref": "#/components/schemas/OpenApiCompatDiscUnionEvent",
+            "$ref": "#/components/schemas/OpenApiCompatDiscUnionCron",
           },
           {
-            "$ref": "#/components/schemas/OpenApiCompatDiscUnionCron",
+            "$ref": "#/components/schemas/OpenApiCompatDiscUnionEvent",
           },
         ],
         "type": "object",
@@ -184,10 +184,10 @@ it("prints named discriminated union variants with stable component names", () =
         },
         "oneOf": [
           {
-            "$ref": "#/components/schemas/OpenApiCompatDiscUnionEvent",
+            "$ref": "#/components/schemas/OpenApiCompatDiscUnionCron",
           },
           {
-            "$ref": "#/components/schemas/OpenApiCompatDiscUnionCron",
+            "$ref": "#/components/schemas/OpenApiCompatDiscUnionEvent",
           },
         ],
         "type": "object",

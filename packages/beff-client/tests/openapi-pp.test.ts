@@ -124,17 +124,26 @@ describe("normalizeOpenApiSchema", () => {
       }),
     );
 
-    expect(schema).toEqual({
-      type: "object",
-      discriminator: {
-        propertyName: "type",
-        mapping: {
-          EVENT: "#/components/schemas/EventSource",
-          CRON: "#/components/schemas/CronSource",
+    expect(schema).toMatchInlineSnapshot(`
+      {
+        "discriminator": {
+          "mapping": {
+            "CRON": "#/components/schemas/CronSource",
+            "EVENT": "#/components/schemas/EventSource",
+          },
+          "propertyName": "type",
         },
-      },
-      oneOf: [{ $ref: "#/components/schemas/CronSource" }, { $ref: "#/components/schemas/EventSource" }],
-    });
+        "oneOf": [
+          {
+            "$ref": "#/components/schemas/EventSource",
+          },
+          {
+            "$ref": "#/components/schemas/CronSource",
+          },
+        ],
+        "type": "object",
+      }
+    `)
   });
 
   it("creates synthetic refs for inline discriminated union variants", () => {
@@ -188,10 +197,10 @@ describe("normalizeOpenApiSchema", () => {
         },
         "oneOf": [
           {
-            "$ref": "#/components/schemas/DiscriminatedTypeCRON1000470817",
+            "$ref": "#/components/schemas/DiscriminatedTypeEVENT1000470817",
           },
           {
-            "$ref": "#/components/schemas/DiscriminatedTypeEVENT1000470817",
+            "$ref": "#/components/schemas/DiscriminatedTypeCRON1000470817",
           },
         ],
         "type": "object",
@@ -200,8 +209,8 @@ describe("normalizeOpenApiSchema", () => {
 
     expect(Object.keys(printingContext.exportDefinitions())).toMatchInlineSnapshot(`
       [
-        "DiscriminatedTypeCRON1000470817",
         "DiscriminatedTypeEVENT1000470817",
+        "DiscriminatedTypeCRON1000470817",
       ]
     `);
   });

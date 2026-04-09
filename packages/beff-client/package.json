@@ -5,7 +5,7 @@
   "main": "dist/cjs/index.js",
   "scripts": {
     "build": "tsc -b ./tsconfig.cjs.json ./tsconfig.esm.json ./tsconfig.types.json",
-    "test": "vitest --run"
+    "test": "vitest --run --update"
   },
   "exports": {
     ".": {

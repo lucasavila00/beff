@@ -165,86 +165,16 @@ it("prints discriminated unions as OpenAPI discriminators", () => {
 
   expect(ctx.exportDefinitions()).toMatchInlineSnapshot(`
     {
-      "CronWorkflowSource": {
-        "allOf": [
-          {
-            "additionalProperties": false,
-            "properties": {
-              "cronExpression": {
-                "type": "string",
-              },
-              "eventName": {
-                "type": "string",
-              },
-              "type": {
-                "enum": [
-                  "CRON",
-                ],
-                "type": "string",
-              },
-            },
-            "required": [
-              "cronExpression",
-              "type",
-            ],
-            "type": "object",
-          },
-          {
-            "$ref": "#/components/schemas/WorkflowSourceBase",
-          },
-        ],
-      },
-      "EventWorkflowSource": {
-        "allOf": [
-          {
-            "additionalProperties": false,
-            "properties": {
-              "cronExpression": {
-                "type": "string",
-              },
-              "eventName": {
-                "type": "string",
-              },
-              "type": {
-                "enum": [
-                  "EVENT",
-                ],
-                "type": "string",
-              },
-            },
-            "required": [
-              "eventName",
-              "type",
-            ],
-            "type": "object",
-          },
-          {
-            "$ref": "#/components/schemas/WorkflowSourceBase",
-          },
-        ],
-      },
-      "WorkflowSource": {
-        "discriminator": {
-          "mapping": {
-            "CRON": "#/components/schemas/CronWorkflowSource",
-            "EVENT": "#/components/schemas/EventWorkflowSource",
-          },
-          "propertyName": "type",
-        },
-        "oneOf": [
-          {
-            "$ref": "#/components/schemas/EventWorkflowSource",
-          },
-          {
-            "$ref": "#/components/schemas/CronWorkflowSource",
-          },
-        ],
-        "type": "object",
-      },
-      "WorkflowSourceBase": {
+      "DiscriminatedTypeCRON1906106737": {
         "additionalProperties": false,
         "properties": {
           "createdAt": {
+            "type": "string",
+          },
+          "cronExpression": {
+            "type": "string",
+          },
+          "eventName": {
             "type": "string",
           },
           "id": {
@@ -257,6 +187,48 @@ it("prints discriminated unions as OpenAPI discriminators", () => {
           "type": {
             "enum": [
               "CRON",
+            ],
+            "type": "string",
+          },
+          "updatedAt": {
+            "type": "string",
+          },
+          "workflowID": {
+            "type": "string",
+          },
+        },
+        "required": [
+          "createdAt",
+          "cronExpression",
+          "id",
+          "metadata",
+          "type",
+          "updatedAt",
+          "workflowID",
+        ],
+        "type": "object",
+      },
+      "DiscriminatedTypeEVENT1906106737": {
+        "additionalProperties": false,
+        "properties": {
+          "createdAt": {
+            "type": "string",
+          },
+          "cronExpression": {
+            "type": "string",
+          },
+          "eventName": {
+            "type": "string",
+          },
+          "id": {
+            "type": "string",
+          },
+          "metadata": {
+            "additionalProperties": true,
+            "type": "object",
+          },
+          "type": {
+            "enum": [
               "EVENT",
             ],
             "type": "string",
@@ -270,11 +242,30 @@ it("prints discriminated unions as OpenAPI discriminators", () => {
         },
         "required": [
           "createdAt",
+          "eventName",
           "id",
           "metadata",
           "type",
           "updatedAt",
           "workflowID",
+        ],
+        "type": "object",
+      },
+      "WorkflowSource": {
+        "discriminator": {
+          "mapping": {
+            "CRON": "#/components/schemas/DiscriminatedTypeCRON1906106737",
+            "EVENT": "#/components/schemas/DiscriminatedTypeEVENT1906106737",
+          },
+          "propertyName": "type",
+        },
+        "oneOf": [
+          {
+            "$ref": "#/components/schemas/DiscriminatedTypeCRON1906106737",
+          },
+          {
+            "$ref": "#/components/schemas/DiscriminatedTypeEVENT1906106737",
+          },
         ],
         "type": "object",
       },
