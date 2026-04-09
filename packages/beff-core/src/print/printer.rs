@@ -486,53 +486,34 @@ fn merge_object_property_shapes(
     }
 
     match (left, right) {
-        (Optionality::Required(left), Optionality::Required(right)) => {
-            let left_values = extract_string_consts(left, named_schemas)?;
-            let right_values = extract_string_consts(right, named_schemas)?;
-
-            if left_values.is_subset(&right_values) {
-                Some(Optionality::Required(left.clone()))
-            } else if right_values.is_subset(&left_values) {
-                Some(Optionality::Required(right.clone()))
-            } else {
-                None
-            }
-        }
+        (Optionality::Required(left), Optionality::Required(right)) => narrower_schema(
+            left,
+            right,
+            named_schemas,
+        )
+        .map(Optionality::Required),
         _ => None,
     }
 }
 
-fn extract_string_consts(schema: &Runtype, named_schemas: &[NamedSchema]) -> Option<BTreeSet<String>> {
-    match schema {
-        Runtype::Ref(r) => named_schemas
-            .iter()
-            .find(|it| it.name == *r)
-            .and_then(|it| extract_string_consts(&it.schema, named_schemas)),
-        Runtype::AnyOf(vs) => {
-            let mut acc = BTreeSet::new();
+fn narrower_schema(left: &Runtype, right: &Runtype, named_schemas: &[NamedSchema]) -> Option<Runtype> {
+    let left_values = string_const_union(left, named_schemas)?;
+    let right_values = string_const_union(right, named_schemas)?;
 
-            for schema in vs {
-                acc.extend(extract_string_consts(schema, named_schemas)?);
-            }
-
-            Some(acc)
-        }
-        Runtype::AllOf(vs) => {
-            let mut iter = vs.iter();
-            let first = iter.next()?;
-            let mut acc = extract_string_consts(first, named_schemas)?;
-
-            for schema in iter {
-                let current = extract_string_consts(schema, named_schemas)?;
-                acc = acc.intersection(&current).cloned().collect();
-            }
-
-            Some(acc)
-        }
-        _ => schema
-            .extract_single_string_const()
-            .map(|it| BTreeSet::from([it])),
+    if left_values.is_subset(&right_values) {
+        Some(left.clone())
+    } else if right_values.is_subset(&left_values) {
+        Some(right.clone())
+    } else {
+        None
     }
+}
+
+fn string_const_union(schema: &Runtype, named_schemas: &[NamedSchema]) -> Option<BTreeSet<String>> {
+    extract_union(schema, named_schemas)
+        .into_iter()
+        .map(|it| it.extract_single_string_const())
+        .collect()
 }
 
 fn maybe_runtype_any_of_consts(
