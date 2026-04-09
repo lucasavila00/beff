@@ -17,7 +17,6 @@ it("handles optional types", () => {
           "type": "string",
         },
       },
-      "required": [],
       "type": "object",
     }
   `);
@@ -38,7 +37,6 @@ it("handles optional types", () => {
             "type": "string",
           },
         },
-        "required": [],
         "type": "object",
       },
     }
