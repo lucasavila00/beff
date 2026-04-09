@@ -6,10 +6,6 @@ type NormalizeOptions = {
 
 type ObjectSchemaTransform = (schema: JSONSchema7) => JSONSchema7;
 
-type MergeableObjectSchema = JSONSchema7 & {
-  type?: "object";
-};
-
 /**
  * Applies all object-schema transforms in order. The pipeline makes it explicit
  * which post-processing operations run at object boundaries and in which order.
@@ -156,12 +152,13 @@ const flattenObjectAllOfIntersections = (schema: JSONSchema7): JSONSchema7 => {
     return schema;
   }
 
-  const branches = schema.allOf.map(asMergeableObjectSchema);
-  if (branches.some((branch) => branch == null)) {
+  if (!schema.allOf.every(isMergeableObjectSchema)) {
     return schema;
   }
 
-  const merged: MergeableObjectSchema = {
+  const branches = schema.allOf;
+
+  const merged: JSONSchema7 = {
     ...schema,
     type: "object",
   };
@@ -309,16 +306,16 @@ const isNullDefinition = (definition: JSONSchema7Definition): boolean => {
  * Accepts an object-schema branch when it is safe to merge into a flattened
  * single object schema.
  */
-const asMergeableObjectSchema = (definition: JSONSchema7Definition): MergeableObjectSchema | null => {
+const isMergeableObjectSchema = (definition: JSONSchema7Definition): definition is JSONSchema7 => {
   if (typeof definition === "boolean") {
-    return null;
+    return false;
   }
 
   if (definition.type !== undefined && definition.type !== "object") {
-    return null;
+    return false;
   }
 
-  return definition;
+  return true;
 };
 
 /**
