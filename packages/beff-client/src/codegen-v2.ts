@@ -1730,9 +1730,13 @@ class ParserFromRuntype implements BeffParser<any> {
       mode: "contextual" as const,
       printingContext: schemaPrintingContext,
     };
-    return normalizeOpenApiSchema(this._runtype.schema(ctx), {}, {
-      refPathTemplate: schemaPrintingContext.refTemplate,
-    }) as JSONSchema7;
+    return normalizeOpenApiSchema(
+      this._runtype.schema(ctx),
+      {},
+      {
+        refPathTemplate: schemaPrintingContext.refTemplate,
+      },
+    ) as JSONSchema7;
   }
   describe(): string {
     const ctx: DescribeContext = {
