@@ -109,6 +109,9 @@ describe("normalizeOpenApiSchema", () => {
       new AnyOfDiscriminatedRuntype([cron, event], "type", {
         EVENT: event,
         CRON: cron,
+      }, {
+        EVENT: event,
+        CRON: cron,
       }).schema({
         path: [],
         seen: {},
@@ -152,6 +155,9 @@ describe("normalizeOpenApiSchema", () => {
 
     const schema = normalize(
       new AnyOfDiscriminatedRuntype([cron, event], "type", {
+        EVENT: event,
+        CRON: cron,
+      }, {
         EVENT: event,
         CRON: cron,
       }).schema({
