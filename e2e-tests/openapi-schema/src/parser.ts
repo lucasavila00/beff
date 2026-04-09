@@ -74,6 +74,28 @@ type OpenApiCompatOptinal = {
   it?: string;
 };
 
+type OpenApiCompatDiscUnion =
+  | {
+      type: "CRON";
+      schedule: string;
+    }
+  | {
+      type: "EVENT";
+      eventName: string;
+    };
+
+type OpenApiCompatDiscUnionCron = {
+  type: "CRON";
+  schedule: string;
+};
+
+type OpenApiCompatDiscUnionEvent = {
+  type: "EVENT";
+  eventName: string;
+};
+
+type OpenApiCompatDiscUnionAndNamedTypes = OpenApiCompatDiscUnionCron | OpenApiCompatDiscUnionEvent;
+
 export const Codecs = parse.buildParsers<{
   Address: Address;
   User: User;
@@ -88,4 +110,8 @@ export const Codecs = parse.buildParsers<{
   OpenApiCompatRecordPayload: OpenApiCompatRecordPayload;
   OpenApiCompatOptionalizedPayload: OpenApiCompatOptionalizedPayload;
   OpenApiCompatOptinal: OpenApiCompatOptinal;
+  OpenApiCompatDiscUnion: OpenApiCompatDiscUnion;
+  OpenApiCompatDiscUnionCron: OpenApiCompatDiscUnionCron;
+  OpenApiCompatDiscUnionEvent: OpenApiCompatDiscUnionEvent;
+  OpenApiCompatDiscUnionAndNamedTypes: OpenApiCompatDiscUnionAndNamedTypes;
 }>();
