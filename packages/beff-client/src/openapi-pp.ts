@@ -6,12 +6,19 @@ type NormalizeOptions = {
 
 type ObjectSchemaTransform = (schema: JSONSchema7) => JSONSchema7;
 
+type MergeableObjectSchema = JSONSchema7 & {
+  type?: "object";
+};
+
 /**
  * Applies all object-schema transforms in order. The pipeline makes it explicit
  * which post-processing operations run at object boundaries and in which order.
  */
 const runObjectSchemaPipeline = (schema: JSONSchema7): JSONSchema7 => {
-  const objectSchemaPipeline: ObjectSchemaTransform[] = [optionalizeNullUnionProperties];
+  const objectSchemaPipeline: ObjectSchemaTransform[] = [
+    flattenObjectAllOfIntersections,
+    optionalizeNullUnionProperties,
+  ];
 
   return objectSchemaPipeline.reduce((acc, transform) => transform(acc), schema);
 };
@@ -135,7 +142,91 @@ const walkRecord = (
   return normalized;
 };
 
+/**
+ * Flattens the object intersections produced for object types with index signatures.
+ *
+ * The code generator currently emits these as `allOf` between:
+ * - a fixed-properties object
+ * - an index-signature object
+ *
+ * OpenAPI generators tend to handle the flattened single-object form better.
+ */
+const flattenObjectAllOfIntersections = (schema: JSONSchema7): JSONSchema7 => {
+  if (schema.allOf == null) {
+    return schema;
+  }
 
+  const branches = schema.allOf.map(asMergeableObjectSchema);
+  if (branches.some((branch) => branch == null)) {
+    return schema;
+  }
+
+  const merged: MergeableObjectSchema = {
+    ...schema,
+    type: "object",
+  };
+
+  delete merged.allOf;
+
+  const properties: Record<string, JSONSchema7Definition> = {};
+  const required = new Set<string>();
+  let additionalProperties: JSONSchema7Definition | undefined = undefined;
+  let propertyNames: JSONSchema7Definition | undefined = undefined;
+
+  for (const branch of branches) {
+    for (const [key, value] of Object.entries(branch.properties ?? {})) {
+      if (key in properties && JSON.stringify(properties[key]) !== JSON.stringify(value)) {
+        return schema;
+      }
+      properties[key] = value;
+    }
+
+    for (const key of branch.required ?? []) {
+      required.add(key);
+    }
+
+    if (branch.additionalProperties !== undefined) {
+      if (
+        additionalProperties !== undefined &&
+        JSON.stringify(additionalProperties) !== JSON.stringify(branch.additionalProperties)
+      ) {
+        return schema;
+      }
+      additionalProperties = normalizeUnknownSchema(branch.additionalProperties);
+    }
+
+    if (branch.propertyNames !== undefined) {
+      if (propertyNames !== undefined && JSON.stringify(propertyNames) !== JSON.stringify(branch.propertyNames)) {
+        return schema;
+      }
+      propertyNames = branch.propertyNames;
+    }
+  }
+
+  if (Object.keys(properties).length > 0) {
+    merged.properties = properties;
+  } else {
+    delete merged.properties;
+  }
+
+  if (required.size > 0) {
+    merged.required = [...required];
+  } else {
+    delete merged.required;
+  }
+
+  if (additionalProperties !== undefined) {
+    merged.additionalProperties = additionalProperties;
+  }
+
+  if (propertyNames !== undefined && !isRedundantStringPropertyNames(propertyNames)) {
+    merged.propertyNames = propertyNames;
+  } else {
+    delete merged.propertyNames;
+  }
+
+  return merged;
+};
 
 /**
  * Rewrites object properties shaped as `T | null` into optional properties.
@@ -212,4 +303,40 @@ const removeNullUnionBranch = (
  */
 const isNullDefinition = (definition: JSONSchema7Definition): boolean => {
   return typeof definition !== "boolean" && definition.type === "null";
+};
+
+/**
+ * Accepts an object-schema branch when it is safe to merge into a flattened
+ * single object schema.
+ */
+const asMergeableObjectSchema = (definition: JSONSchema7Definition): MergeableObjectSchema | null => {
+  if (typeof definition === "boolean") {
+    return null;
+  }
+
+  if (definition.type !== undefined && definition.type !== "object") {
+    return null;
+  }
+
+  return definition;
+};
+
+/**
+ * Rewrites the empty schema `{}` to `true`, which is a clearer OpenAPI/JSON Schema
+ * representation for "any value" in `additionalProperties`.
+ */
+const normalizeUnknownSchema = (definition: JSONSchema7Definition): JSONSchema7Definition => {
+  if (typeof definition !== "boolean" && Object.keys(definition).length === 0) {
+    return true;
+  }
+
+  return definition;
+};
+
+/**
+ * Drops the generated `propertyNames: { type: "string" }` constraint because JSON
+ * object keys are already strings and many OpenAPI tools ignore or mishandle it.
+ */
+const isRedundantStringPropertyNames = (definition: JSONSchema7Definition): boolean => {
+  return typeof definition !== "boolean" && definition.type === "string" && Object.keys(definition).length === 1;
 };
