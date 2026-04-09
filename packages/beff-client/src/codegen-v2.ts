@@ -30,7 +30,7 @@ import {
   setHash,
 } from "./hash.js";
 import { JSONSchema7, JSONSchema7Definition } from "./json-schema.js";
-import { normalizeOpenApiSchema } from "./openapi-pp.js";
+import { removeNullUnionBranch } from "./openapi-pp.js";
 import { printErrors } from "./err.js";
 export { generateHashFromString, generateHashFromNumbers } from "./hash.js";
 
@@ -349,17 +349,11 @@ export class SchemaPrintingContext {
     | Record<string, JSONSchema7Definition>
     | Record<string, Record<string, JSONSchema7Definition>> {
     const definitions = { ...this.collectedDefinitions };
-    const normalizedDefinitions: Record<string, JSONSchema7Definition> = {};
-    for (const [name, schema] of Object.entries(definitions)) {
-      normalizedDefinitions[name] = normalizeOpenApiSchema(schema, definitions, {
-        refPathTemplate: this.refPathTemplate,
-      });
-    }
     if (this.definitionContainerKey == null) {
-      return normalizedDefinitions;
+      return definitions;
     }
     return {
-      [this.definitionContainerKey]: normalizedDefinitions,
+      [this.definitionContainerKey]: definitions,
     };
   }
 }
@@ -1461,15 +1455,23 @@ export class ObjectRuntype implements Runtype {
     return `{ ${content} }`;
   }
   schema(ctx: SchemaContext): JSONSchema7 {
-    const properties: any = {};
+    const properties: Record<string, JSONSchema7Definition> = {};
+    const optionalized = new Set<string>();
     for (const k in this.properties) {
       pushPath(ctx, k);
       const item = this.properties[k];
-      properties[k] = item.schema(ctx);
+      const raw = item.schema(ctx);
+      const rewrite = removeNullUnionBranch(raw);
+      if (rewrite != null) {
+        properties[k] = rewrite;
+        optionalized.add(k);
+      } else {
+        properties[k] = raw;
+      }
       popPath(ctx);
     }
 
-    const required = Object.keys(this.properties);
+    const required = Object.keys(this.properties).filter((k) => !optionalized.has(k));
     const base: JSONSchema7 = {
       type: "object",
       properties,
@@ -1830,13 +1832,7 @@ class ParserFromRuntype implements BeffParser<any> {
       mode: "contextual" as const,
       printingContext: schemaPrintingContext,
     };
-    return normalizeOpenApiSchema(
-      this._runtype.schema(ctx),
-      {},
-      {
-        refPathTemplate: schemaPrintingContext.refTemplate,
-      },
-    ) as JSONSchema7;
+    return this._runtype.schema(ctx);
   }
   describe(): string {
     const ctx: DescribeContext = {

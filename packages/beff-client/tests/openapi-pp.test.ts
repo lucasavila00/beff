@@ -1,6 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { JSONSchema7Definition } from "../src/json-schema.js";
-import { normalizeOpenApiSchema } from "../src/openapi-pp.js";
+import { removeNullUnionBranch } from "../src/openapi-pp.js";
 import {
   AnyOfDiscriminatedRuntype,
   BaseRefRuntype,
@@ -10,69 +9,60 @@ import {
   TypeofRuntype,
 } from "../src/codegen-v2.js";
 
-const normalize = (schema: JSONSchema7Definition): JSONSchema7Definition => {
-  return normalizeOpenApiSchema(schema, {}, { refPathTemplate: "#/components/schemas/{name}" });
-};
-
-describe("normalizeOpenApiSchema", () => {
-  it("rewrites nullable object properties into optional properties", () => {
+describe("removeNullUnionBranch", () => {
+  it("removes the null branch from a two-variant anyOf", () => {
     expect(
-      normalize({
-        type: "object",
-        properties: {
-          workerType: { type: "string" },
-          hostname: {
-            anyOf: [{ type: "null" }, { type: "string" }],
-          },
-          modelBackend: {
-            anyOf: [{ type: "string" }, { type: "null" }],
-          },
-        },
-        required: ["workerType", "hostname", "modelBackend"],
-        additionalProperties: false,
-      }),
-    ).toEqual({
-      type: "object",
-      properties: {
-        workerType: { type: "string" },
-        hostname: { type: "string" },
-        modelBackend: { type: "string" },
-      },
-      required: ["workerType"],
-      additionalProperties: false,
-    });
-  });
-
-  it("preserves explicit null-only properties", () => {
-    expect(
-      normalize({
-        type: "object",
-        properties: {
-          onlyNull: { type: "null" },
-        },
-        required: ["onlyNull"],
-        additionalProperties: false,
-      }),
-    ).toEqual({
-      type: "object",
-      properties: {
-        onlyNull: { type: "null" },
-      },
-      required: ["onlyNull"],
-      additionalProperties: false,
-    });
-  });
-
-  it("does not rewrite standalone nullable unions outside object properties", () => {
-    expect(
-      normalize({
+      removeNullUnionBranch({
         anyOf: [{ type: "null" }, { type: "string" }],
       }),
+    ).toEqual({ type: "string" });
+  });
+
+  it("removes the null branch from a two-variant oneOf", () => {
+    expect(
+      removeNullUnionBranch({
+        oneOf: [{ type: "string" }, { type: "null" }],
+      }),
+    ).toEqual({ type: "string" });
+  });
+
+  it("keeps remaining variants when more than one non-null branch", () => {
+    expect(
+      removeNullUnionBranch({
+        anyOf: [{ type: "null" }, { type: "string" }, { type: "number" }],
+      }),
     ).toEqual({
-      anyOf: [{ type: "null" }, { type: "string" }],
+      anyOf: [{ type: "string" }, { type: "number" }],
     });
   });
 
+  it("returns null for a non-union schema", () => {
+    expect(removeNullUnionBranch({ type: "null" })).toBeNull();
+  });
+
+  it("returns null when no null branch is present", () => {
+    expect(
+      removeNullUnionBranch({
+        anyOf: [{ type: "string" }, { type: "number" }],
+      }),
+    ).toBeNull();
+  });
+
+  it("returns null for boolean definitions", () => {
+    expect(removeNullUnionBranch(true)).toBeNull();
+    expect(removeNullUnionBranch(false)).toBeNull();
+  });
+
+  it("returns null when all branches are null", () => {
+    expect(
+      removeNullUnionBranch({
+        anyOf: [{ type: "null" }, { type: "null" }],
+      }),
+    ).toBeNull();
+  });
+});
+
+describe("discriminated union schemas", () => {
   it("preserves explicit discriminators on discriminated unions", () => {
     const named = {
       CronSource: new ObjectRuntype(
@@ -104,25 +94,23 @@ describe("normalizeOpenApiSchema", () => {
       definitionContainerKey: null,
     });
 
-    const schema = normalize(
-      new AnyOfDiscriminatedRuntype(
-        [cron, event],
-        "type",
-        {
-          EVENT: event,
-          CRON: cron,
-        },
-        {
-          EVENT: event,
-          CRON: cron,
-        },
-      ).schema({
-        path: [],
-        seen: {},
-        mode: "contextual",
-        printingContext,
-      }),
-    );
+    const schema = new AnyOfDiscriminatedRuntype(
+      [cron, event],
+      "type",
+      {
+        EVENT: event,
+        CRON: cron,
+      },
+      {
+        EVENT: event,
+        CRON: cron,
+      },
+    ).schema({
+      path: [],
+      seen: {},
+      mode: "contextual",
+      printingContext,
+    });
 
     expect(schema).toMatchInlineSnapshot(`
       {
@@ -166,25 +154,23 @@ describe("normalizeOpenApiSchema", () => {
       definitionContainerKey: null,
     });
 
-    const schema = normalize(
-      new AnyOfDiscriminatedRuntype(
-        [cron, event],
-        "type",
-        {
-          EVENT: event,
-          CRON: cron,
-        },
-        {
-          EVENT: event,
-          CRON: cron,
-        },
-      ).schema({
-        path: [],
-        seen: {},
-        mode: "contextual",
-        printingContext,
-      }),
-    );
+    const schema = new AnyOfDiscriminatedRuntype(
+      [cron, event],
+      "type",
+      {
+        EVENT: event,
+        CRON: cron,
+      },
+      {
+        EVENT: event,
+        CRON: cron,
+      },
+    ).schema({
+      path: [],
+      seen: {},
+      mode: "contextual",
+      printingContext,
+    });
 
     expect(schema).toMatchInlineSnapshot(`
       {
