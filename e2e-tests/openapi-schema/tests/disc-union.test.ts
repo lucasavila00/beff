@@ -61,7 +61,25 @@ it("prints discriminated unions as OpenAPI discriminators", () => {
 
   expect(ctx.exportDefinitions()).toMatchInlineSnapshot(`
     {
-      "DiscriminatedTypeCRON755807771": {
+      "OpenApiCompatDiscUnion": {
+        "discriminator": {
+          "mapping": {
+            "CRON": "#/components/schemas/OpenApiCompatDiscUnionCron",
+            "EVENT": "#/components/schemas/OpenApiCompatDiscUnionEvent",
+          },
+          "propertyName": "type",
+        },
+        "oneOf": [
+          {
+            "$ref": "#/components/schemas/OpenApiCompatDiscUnionEvent",
+          },
+          {
+            "$ref": "#/components/schemas/OpenApiCompatDiscUnionCron",
+          },
+        ],
+        "type": "object",
+      },
+      "OpenApiCompatDiscUnionCron": {
         "additionalProperties": false,
         "properties": {
           "schedule": {
@@ -80,7 +98,7 @@ it("prints discriminated unions as OpenAPI discriminators", () => {
         ],
         "type": "object",
       },
-      "DiscriminatedTypeEVENT755807771": {
+      "OpenApiCompatDiscUnionEvent": {
         "additionalProperties": false,
         "properties": {
           "eventName": {
@@ -96,24 +114,6 @@ it("prints discriminated unions as OpenAPI discriminators", () => {
         "required": [
           "eventName",
           "type",
-        ],
-        "type": "object",
-      },
-      "OpenApiCompatDiscUnion": {
-        "discriminator": {
-          "mapping": {
-            "CRON": "#/components/schemas/DiscriminatedTypeCRON755807771",
-            "EVENT": "#/components/schemas/DiscriminatedTypeEVENT755807771",
-          },
-          "propertyName": "type",
-        },
-        "oneOf": [
-          {
-            "$ref": "#/components/schemas/DiscriminatedTypeEVENT755807771",
-          },
-          {
-            "$ref": "#/components/schemas/DiscriminatedTypeCRON755807771",
-          },
         ],
         "type": "object",
       },
@@ -174,7 +174,25 @@ it("prints named discriminated union variants with stable component names", () =
 
   expect(ctx.exportDefinitions()).toMatchInlineSnapshot(`
     {
-      "DiscriminatedTypeCRON755807771": {
+      "OpenApiCompatDiscUnionAndNamedTypes": {
+        "discriminator": {
+          "mapping": {
+            "CRON": "#/components/schemas/OpenApiCompatDiscUnionCron",
+            "EVENT": "#/components/schemas/OpenApiCompatDiscUnionEvent",
+          },
+          "propertyName": "type",
+        },
+        "oneOf": [
+          {
+            "$ref": "#/components/schemas/OpenApiCompatDiscUnionEvent",
+          },
+          {
+            "$ref": "#/components/schemas/OpenApiCompatDiscUnionCron",
+          },
+        ],
+        "type": "object",
+      },
+      "OpenApiCompatDiscUnionCron": {
         "additionalProperties": false,
         "properties": {
           "schedule": {
@@ -193,7 +211,7 @@ it("prints named discriminated union variants with stable component names", () =
         ],
         "type": "object",
       },
-      "DiscriminatedTypeEVENT755807771": {
+      "OpenApiCompatDiscUnionEvent": {
         "additionalProperties": false,
         "properties": {
           "eventName": {
@@ -209,24 +227,6 @@ it("prints named discriminated union variants with stable component names", () =
         "required": [
           "eventName",
           "type",
-        ],
-        "type": "object",
-      },
-      "OpenApiCompatDiscUnionAndNamedTypes": {
-        "discriminator": {
-          "mapping": {
-            "CRON": "#/components/schemas/DiscriminatedTypeCRON755807771",
-            "EVENT": "#/components/schemas/DiscriminatedTypeEVENT755807771",
-          },
-          "propertyName": "type",
-        },
-        "oneOf": [
-          {
-            "$ref": "#/components/schemas/DiscriminatedTypeEVENT755807771",
-          },
-          {
-            "$ref": "#/components/schemas/DiscriminatedTypeCRON755807771",
-          },
         ],
         "type": "object",
       },

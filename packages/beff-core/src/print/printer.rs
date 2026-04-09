@@ -249,6 +249,17 @@ fn extract_union(it: &Runtype, named_schemas: &[NamedSchema]) -> Vec<Runtype> {
     }
 }
 
+fn maybe_named_ref(
+    schema: &Runtype,
+    named_schemas: &[NamedSchema],
+    ctx: &PrintContext,
+) -> Option<Runtype> {
+    named_schemas
+        .iter()
+        .find(|named_schema| !ctx.inlined.contains(&named_schema.name) && named_schema.schema == *schema)
+        .map(|named_schema| Runtype::Ref(named_schema.name.clone()))
+}
+
 fn runtype_any_of_discriminated(
     flat_values_set: &BTreeSet<Runtype>,
     discriminator: String,
@@ -289,6 +300,8 @@ fn runtype_any_of_discriminated(
                         .filter_map(|it| it.extract_single_string_const())
                         .any(|it| &it == current_key)
                         .then(|| {
+                            let schema = maybe_named_ref(schema, named_schemas, ctx)
+                                .unwrap_or_else(|| schema.clone());
                             PropOrSpread::Prop(
                                 Prop::KeyValue(KeyValueProp {
                                     key: PropName::Str(Str {
@@ -296,7 +309,7 @@ fn runtype_any_of_discriminated(
                                         value: current_key.clone().into(),
                                         raw: None,
                                     }),
-                                    value: print_runtype(schema, named_schemas, ctx).into(),
+                                    value: print_runtype(&schema, named_schemas, ctx).into(),
                                 })
                                 .into(),
                             )
@@ -328,7 +341,11 @@ fn runtype_any_of_discriminated(
                         Runtype::object(vs.iter().map(|it| (it.0.clone(), it.1.clone())).collect())
                     })
                     .collect::<Vec<_>>();
-                let schema = Runtype::any_of(cases);
+                let schema = if cases.len() == 1 {
+                    maybe_named_ref(&cases[0], named_schemas, ctx).unwrap_or_else(|| cases[0].clone())
+                } else {
+                    Runtype::any_of(cases)
+                };
 
                 PropOrSpread::Prop(
                     Prop::KeyValue(KeyValueProp {
@@ -347,7 +364,10 @@ fn runtype_any_of_discriminated(
 
     let flat_values_schema = flat_values
         .iter()
-        .map(|it| print_runtype(it, named_schemas, ctx))
+        .map(|it| {
+            let schema = maybe_named_ref(it, named_schemas, ctx).unwrap_or_else(|| it.clone());
+            print_runtype(&schema, named_schemas, ctx)
+        })
         .collect::<Vec<_>>();
 
     let flat_values_schema_arr = Expr::Array(ArrayLit {

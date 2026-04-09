@@ -692,60 +692,62 @@ mod tests {
             direct_hoist_9,
             direct_hoist_6
         ]);
-        const direct_hoist_11 = new AnyRuntype();
-        const direct_hoist_12 = new ObjectRuntype({}, [
+        const direct_hoist_11 = new RefRuntype("CronWorkflowSource");
+        const direct_hoist_12 = new RefRuntype("EventWorkflowSource");
+        const direct_hoist_13 = new AnyRuntype();
+        const direct_hoist_14 = new ObjectRuntype({}, [
             {
                 "key": direct_hoist_1,
-                "value": direct_hoist_11
+                "value": direct_hoist_13
             }
         ]);
-        const direct_hoist_13 = new ObjectRuntype({
+        const direct_hoist_15 = new ObjectRuntype({
             "createdAt": direct_hoist_1,
             "cronExpression": direct_hoist_1,
             "eventName": direct_hoist_3,
             "id": direct_hoist_1,
-            "metadata": direct_hoist_12,
+            "metadata": direct_hoist_14,
             "type": direct_hoist_4,
             "updatedAt": direct_hoist_1,
             "workflowID": direct_hoist_1
         }, []);
-        const direct_hoist_14 = new ObjectRuntype({
+        const direct_hoist_16 = new ObjectRuntype({
             "createdAt": direct_hoist_1,
             "cronExpression": direct_hoist_3,
             "eventName": direct_hoist_1,
             "id": direct_hoist_1,
-            "metadata": direct_hoist_12,
+            "metadata": direct_hoist_14,
             "type": direct_hoist_8,
             "updatedAt": direct_hoist_1,
             "workflowID": direct_hoist_1
         }, []);
-        const direct_hoist_15 = new AnyOfDiscriminatedRuntype([
-            direct_hoist_10,
-            direct_hoist_7
+        const direct_hoist_17 = new AnyOfDiscriminatedRuntype([
+            direct_hoist_12,
+            direct_hoist_11
         ], "type", {
-            "CRON": direct_hoist_13,
-            "EVENT": direct_hoist_14
+            "CRON": direct_hoist_15,
+            "EVENT": direct_hoist_16
         }, {
-            "CRON": direct_hoist_7,
-            "EVENT": direct_hoist_10
+            "CRON": direct_hoist_11,
+            "EVENT": direct_hoist_12
         });
-        const direct_hoist_16 = new AnyOfConstsRuntype([
+        const direct_hoist_18 = new AnyOfConstsRuntype([
             "CRON",
             "EVENT"
         ]);
-        const direct_hoist_17 = new ObjectRuntype({
+        const direct_hoist_19 = new ObjectRuntype({
             "createdAt": direct_hoist_1,
             "id": direct_hoist_1,
-            "metadata": direct_hoist_12,
-            "type": direct_hoist_16,
+            "metadata": direct_hoist_14,
+            "type": direct_hoist_18,
             "updatedAt": direct_hoist_1,
             "workflowID": direct_hoist_1
         }, []);
         const namedRuntypes = {
             "CronWorkflowSource": direct_hoist_7,
             "EventWorkflowSource": direct_hoist_10,
-            "WorkflowSource": direct_hoist_15,
-            "WorkflowSourceBase": direct_hoist_17
+            "WorkflowSource": direct_hoist_17,
+            "WorkflowSourceBase": direct_hoist_19
         };
         const buildParsersInput = {
             "WorkflowSource": direct_hoist_0
@@ -2039,60 +2041,62 @@ mod tests {
       "#
         ), @r#"
         const direct_hoist_0 = new RefRuntype("X");
-        const direct_hoist_1 = new ConstRuntype("logical");
-        const direct_hoist_2 = new RefRuntype("EditableLogicalConditionsAstNode_string");
-        const direct_hoist_3 = new ArrayRuntype(direct_hoist_2);
-        const direct_hoist_4 = new RefRuntype("LogicalOp");
-        const direct_hoist_5 = new ObjectRuntype({
-            "_tag": direct_hoist_1,
-            "nodes": direct_hoist_3,
-            "op": direct_hoist_4
+        const direct_hoist_1 = new RefRuntype("EditableLogicalConditionsAstLogicalOp_string");
+        const direct_hoist_2 = new ConstRuntype("none");
+        const direct_hoist_3 = new ObjectRuntype({
+            "_tag": direct_hoist_2
         }, []);
-        const direct_hoist_6 = new ConstRuntype("none");
+        const direct_hoist_4 = new AnyOfDiscriminatedRuntype([
+            direct_hoist_1,
+            direct_hoist_3
+        ], "_tag", {
+            "logical": direct_hoist_1,
+            "none": direct_hoist_3
+        }, {
+            "logical": direct_hoist_1,
+            "none": direct_hoist_3
+        });
+        const direct_hoist_5 = new ConstRuntype("custom");
+        const direct_hoist_6 = new TypeofRuntype("string");
         const direct_hoist_7 = new ObjectRuntype({
-            "_tag": direct_hoist_6
+            "_tag": direct_hoist_5,
+            "data": direct_hoist_6
         }, []);
-        const direct_hoist_8 = new AnyOfDiscriminatedRuntype([
-            direct_hoist_5,
-            direct_hoist_7
-        ], "_tag", {
-            "logical": direct_hoist_5,
-            "none": direct_hoist_7
-        }, {
-            "logical": direct_hoist_5,
-            "none": direct_hoist_7
-        });
-        const direct_hoist_9 = new ConstRuntype("custom");
-        const direct_hoist_10 = new TypeofRuntype("string");
-        const direct_hoist_11 = new ObjectRuntype({
-            "_tag": direct_hoist_9,
-            "data": direct_hoist_10
+        const direct_hoist_8 = new ConstRuntype("logical");
+        const direct_hoist_9 = new RefRuntype("EditableLogicalConditionsAstNode_string");
+        const direct_hoist_10 = new ArrayRuntype(direct_hoist_9);
+        const direct_hoist_11 = new RefRuntype("LogicalOp");
+        const direct_hoist_12 = new ObjectRuntype({
+            "_tag": direct_hoist_8,
+            "nodes": direct_hoist_10,
+            "op": direct_hoist_11
         }, []);
-        const direct_hoist_12 = new AnyOfDiscriminatedRuntype([
-            direct_hoist_11,
-            direct_hoist_5,
-            direct_hoist_7
+        const direct_hoist_13 = new RefRuntype("EditableLogicalConditionsAstCustom_string");
+        const direct_hoist_14 = new AnyOfDiscriminatedRuntype([
+            direct_hoist_13,
+            direct_hoist_1,
+            direct_hoist_3
         ], "_tag", {
-            "custom": direct_hoist_11,
-            "logical": direct_hoist_5,
-            "none": direct_hoist_7
+            "custom": direct_hoist_13,
+            "logical": direct_hoist_1,
+            "none": direct_hoist_3
         }, {
-            "custom": direct_hoist_11,
-            "logical": direct_hoist_5,
-            "none": direct_hoist_7
+            "custom": direct_hoist_13,
+            "logical": direct_hoist_1,
+            "none": direct_hoist_3
         });
-        const direct_hoist_13 = new AnyOfConstsRuntype([
+        const direct_hoist_15 = new AnyOfConstsRuntype([
             "AND",
             "OR"
         ]);
-        const direct_hoist_14 = new RefRuntype("EditableLogicalConditionsAst_string");
+        const direct_hoist_16 = new RefRuntype("EditableLogicalConditionsAst_string");
         const namedRuntypes = {
-            "EditableLogicalConditionsAst_string": direct_hoist_8,
-            "EditableLogicalConditionsAstCustom_string": direct_hoist_11,
-            "EditableLogicalConditionsAstLogicalOp_string": direct_hoist_5,
-            "EditableLogicalConditionsAstNode_string": direct_hoist_12,
-            "LogicalOp": direct_hoist_13,
-            "X": direct_hoist_14
+            "EditableLogicalConditionsAst_string": direct_hoist_4,
+            "EditableLogicalConditionsAstCustom_string": direct_hoist_7,
+            "EditableLogicalConditionsAstLogicalOp_string": direct_hoist_12,
+            "EditableLogicalConditionsAstNode_string": direct_hoist_14,
+            "LogicalOp": direct_hoist_15,
+            "X": direct_hoist_16
         };
         const buildParsersInput = {
             "X": direct_hoist_0
