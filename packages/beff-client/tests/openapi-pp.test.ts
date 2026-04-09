@@ -143,7 +143,7 @@ describe("normalizeOpenApiSchema", () => {
         ],
         "type": "object",
       }
-    `)
+    `);
   });
 
   it("creates synthetic refs for inline discriminated union variants", () => {
