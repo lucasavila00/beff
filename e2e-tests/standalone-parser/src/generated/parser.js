@@ -186,36 +186,36 @@ const direct_hoist_80 = new ObjectRuntype({
     "subType": direct_hoist_79,
     "type": direct_hoist_47
 }, []);
-const direct_hoist_81 = new ObjectRuntype({
+const direct_hoist_81 = new ConstRuntype("a2");
+const direct_hoist_82 = new ObjectRuntype({
+    "a2": direct_hoist_7,
+    "subType": direct_hoist_81,
+    "type": direct_hoist_47
+}, []);
+const direct_hoist_83 = new AnyOfDiscriminatedRuntype([
+    direct_hoist_80,
+    direct_hoist_82
+], "subType", {
+    "a1": direct_hoist_80,
+    "a2": direct_hoist_82
+}, {
+    "a1": direct_hoist_80,
+    "a2": direct_hoist_82
+});
+const direct_hoist_84 = new ObjectRuntype({
     "type": direct_hoist_75,
     "value": direct_hoist_11
 }, []);
-const direct_hoist_82 = new ConstRuntype("a2");
-const direct_hoist_83 = new ObjectRuntype({
-    "a2": direct_hoist_7,
-    "subType": direct_hoist_82,
-    "type": direct_hoist_47
-}, []);
-const direct_hoist_84 = new AnyOfDiscriminatedRuntype([
-    direct_hoist_80,
-    direct_hoist_83
-], "subType", {
-    "a1": direct_hoist_80,
-    "a2": direct_hoist_83
-}, {
-    "a1": direct_hoist_80,
-    "a2": direct_hoist_83
-});
 const direct_hoist_85 = new AnyOfDiscriminatedRuntype([
     direct_hoist_80,
-    direct_hoist_83,
-    direct_hoist_81
+    direct_hoist_82,
+    direct_hoist_84
 ], "type", {
-    "a": direct_hoist_84,
-    "b": direct_hoist_81
+    "a": direct_hoist_83,
+    "b": direct_hoist_84
 }, {
-    "a": direct_hoist_80,
-    "b": direct_hoist_81
+    "a": direct_hoist_83,
+    "b": direct_hoist_84
 });
 const direct_hoist_86 = new ConstRuntype("d");
 const direct_hoist_87 = new ObjectRuntype({
@@ -224,9 +224,9 @@ const direct_hoist_87 = new ObjectRuntype({
 }, []);
 const direct_hoist_88 = new AnyOfRuntype([
     direct_hoist_80,
-    direct_hoist_83,
+    direct_hoist_82,
     direct_hoist_87,
-    direct_hoist_81
+    direct_hoist_84
 ]);
 const direct_hoist_89 = new AnyOfConstsRuntype([
     "a",
@@ -238,14 +238,14 @@ const direct_hoist_90 = new ObjectRuntype({
 }, []);
 const direct_hoist_91 = new AnyOfDiscriminatedRuntype([
     direct_hoist_90,
-    direct_hoist_81
+    direct_hoist_84
 ], "type", {
     "a": direct_hoist_90,
-    "b": direct_hoist_81,
+    "b": direct_hoist_84,
     "c": direct_hoist_90
 }, {
     "a": direct_hoist_90,
-    "b": direct_hoist_81,
+    "b": direct_hoist_84,
     "c": direct_hoist_90
 });
 const direct_hoist_92 = new ObjectRuntype({
@@ -258,7 +258,7 @@ const direct_hoist_93 = new ObjectRuntype({
 }, []);
 const direct_hoist_94 = new ObjectRuntype({
     "a2": direct_hoist_7,
-    "subType": direct_hoist_82
+    "subType": direct_hoist_81
 }, []);
 const direct_hoist_95 = new ObjectRuntype({
     "a": direct_hoist_94,

@@ -107,37 +107,37 @@ const direct_hoist_21 = new ObjectRuntype({
     "subType": direct_hoist_19,
     "type": direct_hoist_20
 }, []);
-const direct_hoist_22 = new ConstRuntype("b");
+const direct_hoist_22 = new ConstRuntype("a2");
 const direct_hoist_23 = new ObjectRuntype({
-    "type": direct_hoist_22,
-    "value": direct_hoist_1
-}, []);
-const direct_hoist_24 = new ConstRuntype("a2");
-const direct_hoist_25 = new ObjectRuntype({
     "a2": direct_hoist_0,
-    "subType": direct_hoist_24,
+    "subType": direct_hoist_22,
     "type": direct_hoist_20
 }, []);
-const direct_hoist_26 = new AnyOfDiscriminatedRuntype([
+const direct_hoist_24 = new AnyOfDiscriminatedRuntype([
     direct_hoist_21,
-    direct_hoist_25
+    direct_hoist_23
 ], "subType", {
     "a1": direct_hoist_21,
-    "a2": direct_hoist_25
+    "a2": direct_hoist_23
 }, {
     "a1": direct_hoist_21,
-    "a2": direct_hoist_25
+    "a2": direct_hoist_23
 });
+const direct_hoist_25 = new ConstRuntype("b");
+const direct_hoist_26 = new ObjectRuntype({
+    "type": direct_hoist_25,
+    "value": direct_hoist_1
+}, []);
 const direct_hoist_27 = new AnyOfDiscriminatedRuntype([
     direct_hoist_21,
-    direct_hoist_25,
-    direct_hoist_23
+    direct_hoist_23,
+    direct_hoist_26
 ], "type", {
-    "a": direct_hoist_26,
-    "b": direct_hoist_23
+    "a": direct_hoist_24,
+    "b": direct_hoist_26
 }, {
-    "a": direct_hoist_21,
-    "b": direct_hoist_23
+    "a": direct_hoist_24,
+    "b": direct_hoist_26
 });
 const direct_hoist_28 = new BigIntRuntype();
 const direct_hoist_29 = new ObjectRuntype({

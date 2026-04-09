@@ -250,9 +250,7 @@ const direct_hoist_63 = new ObjectRuntype({
     "id": direct_hoist_18,
     "profile": direct_hoist_62
 }, []);
-const direct_hoist_64 = new RefRuntype("CronWorkflowSource");
-const direct_hoist_65 = new RefRuntype("EventWorkflowSource");
-const direct_hoist_66 = new ObjectRuntype({
+const direct_hoist_64 = new ObjectRuntype({
     "createdAt": direct_hoist_18,
     "cronExpression": direct_hoist_18,
     "eventName": direct_hoist_24,
@@ -262,7 +260,7 @@ const direct_hoist_66 = new ObjectRuntype({
     "updatedAt": direct_hoist_18,
     "workflowID": direct_hoist_18
 }, []);
-const direct_hoist_67 = new ObjectRuntype({
+const direct_hoist_65 = new ObjectRuntype({
     "createdAt": direct_hoist_18,
     "cronExpression": direct_hoist_24,
     "eventName": direct_hoist_18,
@@ -272,12 +270,14 @@ const direct_hoist_67 = new ObjectRuntype({
     "updatedAt": direct_hoist_18,
     "workflowID": direct_hoist_18
 }, []);
+const direct_hoist_66 = new RefRuntype("EventWorkflowSource");
+const direct_hoist_67 = new RefRuntype("CronWorkflowSource");
 const direct_hoist_68 = new AnyOfDiscriminatedRuntype([
-    direct_hoist_65,
-    direct_hoist_64
+    direct_hoist_66,
+    direct_hoist_67
 ], "type", {
-    "CRON": direct_hoist_66,
-    "EVENT": direct_hoist_67
+    "CRON": direct_hoist_64,
+    "EVENT": direct_hoist_65
 }, {
     "CRON": direct_hoist_64,
     "EVENT": direct_hoist_65
