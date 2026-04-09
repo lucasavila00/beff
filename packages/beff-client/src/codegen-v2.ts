@@ -503,7 +503,18 @@ export class ConstRuntype implements Runtype {
   describe(_ctx: DescribeContext): string {
     return JSON.stringify(this.value);
   }
-  schema(_ctx: SchemaContext): JSONSchema7 {
+  schema(ctx: SchemaContext): JSONSchema7 {
+    if (ctx.mode == "contextual") {
+      const tp = typeof this.value;
+      if (tp === "string" || tp === "number" || tp === "boolean") {
+        // OpenAPI mode prefers a type + enum for constant values
+        return {
+          type: tp,
+          enum: [this.value],
+        };
+      }
+    }
+
     return { const: this.value };
   }
   validate(_ctx: ValidateContext, input: unknown): boolean {
