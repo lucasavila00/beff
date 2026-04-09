@@ -95,28 +95,28 @@ type OpenApiCompatDiscUnionEvent = {
 };
 
 type OpenApiCompatDiscUnionAndNamedTypes = OpenApiCompatDiscUnionCron | OpenApiCompatDiscUnionEvent;
-  type WorkflowSourceBase = {
-          id: string;
-          workflowID: string;
-          type: "CRON" | "EVENT";
-          metadata: Record<string, unknown>;
-          createdAt: string;
-          updatedAt: string;
-        };
+type WorkflowSourceBase = {
+  id: string;
+  workflowID: string;
+  type: "CRON" | "EVENT";
+  metadata: Record<string, unknown>;
+  createdAt: string;
+  updatedAt: string;
+};
 
-        export type CronWorkflowSource = WorkflowSourceBase & {
-          type: "CRON";
-          cronExpression: string;
-          eventName: string | undefined;
-        };
+export type CronWorkflowSource = WorkflowSourceBase & {
+  type: "CRON";
+  cronExpression: string;
+  eventName: string | undefined;
+};
 
-        export type EventWorkflowSource = WorkflowSourceBase & {
-          type: "EVENT";
-          cronExpression: string | undefined;
-          eventName: string;
-        };
+export type EventWorkflowSource = WorkflowSourceBase & {
+  type: "EVENT";
+  cronExpression: string | undefined;
+  eventName: string;
+};
 
-        export type WorkflowSource = CronWorkflowSource | EventWorkflowSource;
+export type WorkflowSource = CronWorkflowSource | EventWorkflowSource;
 export const Codecs = parse.buildParsers<{
   Address: Address;
   User: User;
@@ -134,5 +134,6 @@ export const Codecs = parse.buildParsers<{
   OpenApiCompatDiscUnion: OpenApiCompatDiscUnion;
   OpenApiCompatDiscUnionCron: OpenApiCompatDiscUnionCron;
   OpenApiCompatDiscUnionEvent: OpenApiCompatDiscUnionEvent;
-  OpenApiCompatDiscUnionAndNamedTypes: OpenApiCompatDiscUnionAndNamedTypes;WorkflowSource:WorkflowSource
+  OpenApiCompatDiscUnionAndNamedTypes: OpenApiCompatDiscUnionAndNamedTypes;
+  WorkflowSource: WorkflowSource;
 }>();

@@ -166,7 +166,10 @@ impl<'a> ToSemTypeConverter<'a> {
 
                             builder.map_definitions[idx] = Some(Rc::new(MappingAtomicType {
                                 vs: BTreeMap::new(),
-                                indexed_properties: Some(IndexedPropertiesAtomic { key: k, value: v }),
+                                indexed_properties: Some(IndexedPropertiesAtomic {
+                                    key: k,
+                                    value: v,
+                                }),
                             }));
                             let ty = Rc::new(SemTypeContext::map_definition_from_idx(idx));
                             return Ok(ty);

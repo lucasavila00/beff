@@ -256,7 +256,9 @@ fn maybe_named_ref(
 ) -> Option<Runtype> {
     named_schemas
         .iter()
-        .find(|named_schema| !ctx.inlined.contains(&named_schema.name) && named_schema.schema == *schema)
+        .find(|named_schema| {
+            !ctx.inlined.contains(&named_schema.name) && named_schema.schema == *schema
+        })
         .map(|named_schema| Runtype::Ref(named_schema.name.clone()))
 }
 
@@ -286,35 +288,46 @@ fn runtype_any_of_discriminated(
         raw: None,
     }));
 
-    let raw_mapping_obj = Expr::Object(ObjectLit {
+    let schema_mapping_obj = Expr::Object(ObjectLit {
         span: DUMMY_SP,
         props: discriminator_strings
             .iter()
-            .filter_map(|current_key| {
-                flat_values.iter().find_map(|schema| {
-                    let vs = extract_object_shape(schema, named_schemas)?;
-                    let value = vs.get(&discriminator)?.inner();
+            .map(|current_key| {
+                let cases = object_vs
+                    .iter()
+                    .filter(|vs| {
+                        let value = vs
+                            .get(&discriminator)
+                            .expect("we already checked the discriminator exists")
+                            .inner();
 
-                    extract_union(value, named_schemas)
-                        .into_iter()
-                        .filter_map(|it| it.extract_single_string_const())
-                        .any(|it| &it == current_key)
-                        .then(|| {
-                            let schema = maybe_named_ref(schema, named_schemas, ctx)
-                                .unwrap_or_else(|| schema.clone());
-                            PropOrSpread::Prop(
-                                Prop::KeyValue(KeyValueProp {
-                                    key: PropName::Str(Str {
-                                        span: DUMMY_SP,
-                                        value: current_key.clone().into(),
-                                        raw: None,
-                                    }),
-                                    value: print_runtype(&schema, named_schemas, ctx).into(),
-                                })
-                                .into(),
-                            )
-                        })
-                })
+                        extract_union(value, named_schemas)
+                            .into_iter()
+                            .filter_map(|it| it.extract_single_string_const())
+                            .any(|it| it == *current_key)
+                    })
+                    .map(|vs| {
+                        Runtype::object(vs.iter().map(|it| (it.0.clone(), it.1.clone())).collect())
+                    })
+                    .collect::<Vec<_>>();
+                let schema = if cases.len() == 1 {
+                    maybe_named_ref(&cases[0], named_schemas, ctx)
+                        .unwrap_or_else(|| cases[0].clone())
+                } else {
+                    Runtype::any_of(cases)
+                };
+
+                PropOrSpread::Prop(
+                    Prop::KeyValue(KeyValueProp {
+                        key: PropName::Str(Str {
+                            span: DUMMY_SP,
+                            value: current_key.clone().into(),
+                            raw: None,
+                        }),
+                        value: print_runtype(&schema, named_schemas, ctx).into(),
+                    })
+                    .into(),
+                )
             })
             .collect(),
     });
@@ -342,7 +355,8 @@ fn runtype_any_of_discriminated(
                     })
                     .collect::<Vec<_>>();
                 let schema = if cases.len() == 1 {
-                    maybe_named_ref(&cases[0], named_schemas, ctx).unwrap_or_else(|| cases[0].clone())
+                    maybe_named_ref(&cases[0], named_schemas, ctx)
+                        .unwrap_or_else(|| cases[0].clone())
                 } else {
                     Runtype::any_of(cases)
                 };
@@ -385,7 +399,12 @@ fn runtype_any_of_discriminated(
 
     new_runtype_class(
         "AnyOfDiscriminatedRuntype",
-        vec![flat_values_schema_arr, disc.clone(), mapping_obj, raw_mapping_obj],
+        vec![
+            flat_values_schema_arr,
+            disc.clone(),
+            mapping_obj,
+            schema_mapping_obj,
+        ],
     )
 }
 
@@ -499,8 +518,7 @@ fn extract_object_shape(
                     if let Some(existing) = acc.get(key)
                         && existing != value
                     {
-                        let merged =
-                            merge_object_property_shapes(existing, value, named_schemas)?;
+                        let merged = merge_object_property_shapes(existing, value, named_schemas)?;
                         acc.insert(key.clone(), merged);
                     }
                 }
@@ -526,17 +544,18 @@ fn merge_object_property_shapes(
     }
 
     match (left, right) {
-        (Optionality::Required(left), Optionality::Required(right)) => narrower_schema(
-            left,
-            right,
-            named_schemas,
-        )
-        .map(Optionality::Required),
+        (Optionality::Required(left), Optionality::Required(right)) => {
+            narrower_schema(left, right, named_schemas).map(Optionality::Required)
+        }
         _ => None,
     }
 }
 
-fn narrower_schema(left: &Runtype, right: &Runtype, named_schemas: &[NamedSchema]) -> Option<Runtype> {
+fn narrower_schema(
+    left: &Runtype,
+    right: &Runtype,
+    named_schemas: &[NamedSchema],
+) -> Option<Runtype> {
     let left_values = string_const_union(left, named_schemas)?;
     let right_values = string_const_union(right, named_schemas)?;
 
@@ -635,9 +654,10 @@ fn print_runtype(schema: &Runtype, named_schemas: &[NamedSchema], ctx: &mut Prin
         }
         Runtype::Date => no_args_runtype("DateRuntype"),
         Runtype::BigInt => no_args_runtype("BigIntRuntype"),
-        Runtype::TypedArray(kind) => {
-            new_runtype_class("TypedArrayRuntype", vec![Json::String(kind.js_name().to_string()).to_expr()])
-        }
+        Runtype::TypedArray(kind) => new_runtype_class(
+            "TypedArrayRuntype",
+            vec![Json::String(kind.js_name().to_string()).to_expr()],
+        ),
         Runtype::TplLitType(t) => match t.0.as_slice() {
             [TplLitTypeItem::StringConst(c)] => {
                 new_runtype_class("ConstRuntype", vec![Json::String(c.clone()).to_expr()])

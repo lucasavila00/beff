@@ -1,5 +1,5 @@
-use crate::subtyping::mapping::mapping_is_empty_impl;
 use crate::subtyping::IsEmptyStatus;
+use crate::subtyping::mapping::mapping_is_empty_impl;
 use crate::subtyping::{
     bdd::{Atom, Bdd, BddOps},
     semtype::{BddMemoEmptyRef, MemoEmpty, SemTypeContext},

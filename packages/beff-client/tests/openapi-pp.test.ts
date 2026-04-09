@@ -63,7 +63,6 @@ describe("normalizeOpenApiSchema", () => {
     });
   });
 
- 
   it("does not rewrite standalone nullable unions outside object properties", () => {
     expect(
       normalize({
@@ -106,13 +105,18 @@ describe("normalizeOpenApiSchema", () => {
     });
 
     const schema = normalize(
-      new AnyOfDiscriminatedRuntype([cron, event], "type", {
-        EVENT: event,
-        CRON: cron,
-      }, {
-        EVENT: event,
-        CRON: cron,
-      }).schema({
+      new AnyOfDiscriminatedRuntype(
+        [cron, event],
+        "type",
+        {
+          EVENT: event,
+          CRON: cron,
+        },
+        {
+          EVENT: event,
+          CRON: cron,
+        },
+      ).schema({
         path: [],
         seen: {},
         mode: "contextual",
@@ -154,13 +158,18 @@ describe("normalizeOpenApiSchema", () => {
     });
 
     const schema = normalize(
-      new AnyOfDiscriminatedRuntype([cron, event], "type", {
-        EVENT: event,
-        CRON: cron,
-      }, {
-        EVENT: event,
-        CRON: cron,
-      }).schema({
+      new AnyOfDiscriminatedRuntype(
+        [cron, event],
+        "type",
+        {
+          EVENT: event,
+          CRON: cron,
+        },
+        {
+          EVENT: event,
+          CRON: cron,
+        },
+      ).schema({
         path: [],
         seen: {},
         mode: "contextual",

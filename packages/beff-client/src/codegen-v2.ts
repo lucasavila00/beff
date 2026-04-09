@@ -1213,32 +1213,30 @@ export class AnyOfDiscriminatedRuntype implements Runtype {
   private schemas: Runtype[];
   private discriminator: string;
   private mapping: Record<string, Runtype>;
-  private rawMapping: Record<string, Runtype>;
+  private schemaMapping: Record<string, Runtype>;
   constructor(
     schemas: Runtype[],
     discriminator: string,
     mapping: Record<string, Runtype>,
-    rawMapping: Record<string, Runtype>,
+    schemaMapping: Record<string, Runtype>,
   ) {
     this.schemas = schemas;
     this.discriminator = discriminator;
     this.mapping = mapping;
-    this.rawMapping = rawMapping;
+    this.schemaMapping = schemaMapping;
   }
   schema(ctx: SchemaContext): JSONSchema7 {
     if (ctx.mode === "contextual" && ctx.printingContext != null) {
       const unionHash = this.hash({ seen: {} });
-      const oneOf = this.schemas.map((it) => {
-        const [key, rawSchema] = AnyOfDiscriminatedRuntype.getRawSchemaEntry(this.rawMapping, it);
-        return AnyOfDiscriminatedRuntype.getOrCreateRefSchema(
-          rawSchema,
-          ctx,
-          key,
-          this.discriminator,
-          unionHash,
-        );
-      });
-      const discriminatorMapping = AnyOfDiscriminatedRuntype.getDiscriminatorMapping(this.rawMapping, ctx, this.discriminator, unionHash);
+      const oneOf = Object.entries(this.schemaMapping).map(([key, schema]) =>
+        AnyOfDiscriminatedRuntype.getOrCreateRefSchema(schema, ctx, key, this.discriminator, unionHash),
+      );
+      const discriminatorMapping = AnyOfDiscriminatedRuntype.getDiscriminatorMapping(
+        this.schemaMapping,
+        ctx,
+        this.discriminator,
+        unionHash,
+      );
 
       return {
         type: "object",
@@ -1264,18 +1262,6 @@ export class AnyOfDiscriminatedRuntype implements Runtype {
     }
     return null;
   }
-  private static getRawSchemaEntry(
-    mapping: Record<string, Runtype>,
-    runtype: Runtype,
-  ): [string, Runtype] {
-    for (const [key, value] of Object.entries(mapping)) {
-      if (value === runtype) {
-        return [key, value];
-      }
-    }
-    throw new Error("INTERNAL ERROR: Missing raw discriminator mapping entry");
-  }
-
   private static sanitizeComponentNamePart(value: string): string {
     const cleaned = value.replace(/[^a-zA-Z0-9]+/g, " ").trim();
     if (cleaned.length === 0) {
@@ -1346,7 +1332,13 @@ export class AnyOfDiscriminatedRuntype implements Runtype {
     }
     const out: Record<string, string> = {};
     for (const [key, runtype] of Object.entries(mapping)) {
-      out[key] = AnyOfDiscriminatedRuntype.getOrCreateRefSchema(runtype, ctx, key, discriminator, unionHash).$ref!;
+      out[key] = AnyOfDiscriminatedRuntype.getOrCreateRefSchema(
+        runtype,
+        ctx,
+        key,
+        discriminator,
+        unionHash,
+      ).$ref!;
     }
     return out;
   }

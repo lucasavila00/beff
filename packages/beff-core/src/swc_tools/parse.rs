@@ -80,28 +80,19 @@ mod tests {
 
     #[test]
     fn test_ts_file_parses() {
-        assert!(parse_ok(
-            "types.ts",
-            "export type Foo = { name: string };",
-        ));
+        assert!(parse_ok("types.ts", "export type Foo = { name: string };",));
     }
 
     #[test]
     fn test_tsx_file_parses_jsx() {
         // JSX content requires tsx mode — would fail in plain .ts
-        assert!(parse_ok(
-            "component.tsx",
-            "const el = <div>hello</div>;",
-        ));
+        assert!(parse_ok("component.tsx", "const el = <div>hello</div>;",));
     }
 
     #[test]
     fn test_ts_file_rejects_jsx() {
         // Without tsx mode, JSX is a parse error
-        assert!(!parse_ok(
-            "component.ts",
-            "const el = <div>hello</div>;",
-        ));
+        assert!(!parse_ok("component.ts", "const el = <div>hello</div>;",));
     }
 
     #[test]
