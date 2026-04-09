@@ -343,3 +343,128 @@ it("uses generic json schema refs by default", () => {
     }
   `);
 });
+
+it("prints primitive literal consts in an OpenAPI-friendly way", () => {
+  const ctx = new SchemaPrintingContext({
+    refPathTemplate: "#/components/schemas/{name}",
+    definitionContainerKey: null,
+  });
+
+  expect(Codecs.OpenApiCompatConstPayload.schemaWithContext(ctx)).toMatchInlineSnapshot(`
+    {
+      "$ref": "#/components/schemas/OpenApiCompatConstPayload",
+    }
+  `);
+
+  expect(ctx.exportDefinitions()).toMatchInlineSnapshot(`
+    {
+      "$defs": {
+        "OpenApiCompatConstPayload": {
+          "additionalProperties": false,
+          "properties": {
+            "enabled": {
+              "enum": [
+                true,
+              ],
+              "type": "boolean",
+            },
+            "nullable": {
+              "type": "null",
+            },
+            "retries": {
+              "enum": [
+                3,
+              ],
+              "type": "number",
+            },
+            "status": {
+              "enum": [
+                "ok",
+              ],
+              "type": "string",
+            },
+          },
+          "required": [
+            "enabled",
+            "nullable",
+            "retries",
+            "status",
+          ],
+          "type": "object",
+        },
+      },
+    }
+  `);
+});
+
+it("prints same-type literal unions as typed enums for OpenAPI compatibility", () => {
+  const ctx = new SchemaPrintingContext({
+    refPathTemplate: "#/components/schemas/{name}",
+    definitionContainerKey: null,
+  });
+
+  expect(Codecs.OpenApiCompatEnumPayload.schemaWithContext(ctx)).toMatchInlineSnapshot(`
+    {
+      "$ref": "#/components/schemas/OpenApiCompatEnumPayload",
+    }
+  `);
+
+  expect(ctx.exportDefinitions()).toMatchInlineSnapshot(`
+    {
+      "$defs": {
+        "OpenApiCompatEnumPayload": {
+          "additionalProperties": false,
+          "properties": {
+            "code": {
+              "enum": [
+                200,
+                201,
+              ],
+              "type": "number",
+            },
+            "enabled": {
+              "enum": [
+                false,
+                true,
+              ],
+              "type": "boolean",
+            },
+            "mixed": {
+              "anyOf": [
+                {
+                  "type": "null",
+                },
+                {
+                  "enum": [
+                    "fallback",
+                  ],
+                  "type": "string",
+                },
+                {
+                  "enum": [
+                    0,
+                  ],
+                  "type": "number",
+                },
+              ],
+            },
+            "role": {
+              "enum": [
+                "admin",
+                "member",
+              ],
+              "type": "string",
+            },
+          },
+          "required": [
+            "code",
+            "enabled",
+            "mixed",
+            "role",
+          ],
+          "type": "object",
+        },
+      },
+    }
+  `);
+});

@@ -80,56 +80,95 @@ const direct_hoist_4 = new RefRuntype("UpdateUserRequest");
 const direct_hoist_5 = new RefRuntype("SearchUsersResponse");
 const direct_hoist_6 = new RefRuntype("RecursiveTree");
 const direct_hoist_7 = new RefRuntype("RecursiveEnvelope");
-const direct_hoist_8 = new TypeofRuntype("string");
-const direct_hoist_9 = new ObjectRuntype({
-    "city": direct_hoist_8,
-    "street": direct_hoist_8
-}, []);
-const direct_hoist_10 = new ObjectRuntype({
-    "source": direct_hoist_8
-}, []);
+const direct_hoist_8 = new RefRuntype("OpenApiCompatConstPayload");
+const direct_hoist_9 = new RefRuntype("OpenApiCompatEnumPayload");
+const direct_hoist_10 = new TypeofRuntype("string");
 const direct_hoist_11 = new ObjectRuntype({
-    "metadata": direct_hoist_10,
-    "user": direct_hoist_1
+    "city": direct_hoist_10,
+    "street": direct_hoist_10
 }, []);
 const direct_hoist_12 = new ObjectRuntype({
-    "user": direct_hoist_1
+    "source": direct_hoist_10
 }, []);
 const direct_hoist_13 = new ObjectRuntype({
+    "metadata": direct_hoist_12,
+    "user": direct_hoist_1
+}, []);
+const direct_hoist_14 = new ObjectRuntype({
+    "user": direct_hoist_1
+}, []);
+const direct_hoist_15 = new ConstRuntype(true);
+const direct_hoist_16 = new NullishRuntype("null");
+const direct_hoist_17 = new ConstRuntype(3);
+const direct_hoist_18 = new ConstRuntype("ok");
+const direct_hoist_19 = new ObjectRuntype({
+    "enabled": direct_hoist_15,
+    "nullable": direct_hoist_16,
+    "retries": direct_hoist_17,
+    "status": direct_hoist_18
+}, []);
+const direct_hoist_20 = new AnyOfConstsRuntype([
+    200,
+    201
+]);
+const direct_hoist_21 = new AnyOfConstsRuntype([
+    false,
+    true
+]);
+const direct_hoist_22 = new ConstRuntype("fallback");
+const direct_hoist_23 = new ConstRuntype(0);
+const direct_hoist_24 = new AnyOfRuntype([
+    direct_hoist_16,
+    direct_hoist_22,
+    direct_hoist_23
+]);
+const direct_hoist_25 = new AnyOfConstsRuntype([
+    "admin",
+    "member"
+]);
+const direct_hoist_26 = new ObjectRuntype({
+    "code": direct_hoist_20,
+    "enabled": direct_hoist_21,
+    "mixed": direct_hoist_24,
+    "role": direct_hoist_25
+}, []);
+const direct_hoist_27 = new ObjectRuntype({
     "previous": new OptionalFieldRuntype(direct_hoist_7),
     "root": direct_hoist_6
 }, []);
-const direct_hoist_14 = new ArrayRuntype(direct_hoist_6);
-const direct_hoist_15 = new ObjectRuntype({
-    "children": direct_hoist_14,
-    "value": direct_hoist_8
+const direct_hoist_28 = new ArrayRuntype(direct_hoist_6);
+const direct_hoist_29 = new ObjectRuntype({
+    "children": direct_hoist_28,
+    "value": direct_hoist_10
 }, []);
-const direct_hoist_16 = new ArrayRuntype(direct_hoist_1);
-const direct_hoist_17 = new ObjectRuntype({
-    "items": direct_hoist_16,
+const direct_hoist_30 = new ArrayRuntype(direct_hoist_1);
+const direct_hoist_31 = new ObjectRuntype({
+    "items": direct_hoist_30,
     "primaryAddress": direct_hoist_0
 }, []);
-const direct_hoist_18 = new ObjectRuntype({
+const direct_hoist_32 = new ObjectRuntype({
     "address": direct_hoist_0,
-    "id": direct_hoist_8
+    "id": direct_hoist_10
 }, []);
-const direct_hoist_19 = new ObjectRuntype({
-    "displayName": direct_hoist_8
+const direct_hoist_33 = new ObjectRuntype({
+    "displayName": direct_hoist_10
 }, []);
-const direct_hoist_20 = new ObjectRuntype({
+const direct_hoist_34 = new ObjectRuntype({
     "address": direct_hoist_0,
-    "id": direct_hoist_8,
-    "profile": direct_hoist_19
+    "id": direct_hoist_10,
+    "profile": direct_hoist_33
 }, []);
 const namedRuntypes = {
-    "Address": direct_hoist_9,
-    "CreateUserRequest": direct_hoist_11,
-    "CreateUserResponse": direct_hoist_12,
-    "RecursiveEnvelope": direct_hoist_13,
-    "RecursiveTree": direct_hoist_15,
-    "SearchUsersResponse": direct_hoist_17,
-    "UpdateUserRequest": direct_hoist_18,
-    "User": direct_hoist_20
+    "Address": direct_hoist_11,
+    "CreateUserRequest": direct_hoist_13,
+    "CreateUserResponse": direct_hoist_14,
+    "OpenApiCompatConstPayload": direct_hoist_19,
+    "OpenApiCompatEnumPayload": direct_hoist_26,
+    "RecursiveEnvelope": direct_hoist_27,
+    "RecursiveTree": direct_hoist_29,
+    "SearchUsersResponse": direct_hoist_31,
+    "UpdateUserRequest": direct_hoist_32,
+    "User": direct_hoist_34
 };
 const buildParsersInput = {
     "Address": direct_hoist_0,
@@ -139,7 +178,9 @@ const buildParsersInput = {
     "UpdateUserRequest": direct_hoist_4,
     "SearchUsersResponse": direct_hoist_5,
     "RecursiveTree": direct_hoist_6,
-    "RecursiveEnvelope": direct_hoist_7
+    "RecursiveEnvelope": direct_hoist_7,
+    "OpenApiCompatConstPayload": direct_hoist_8,
+    "OpenApiCompatEnumPayload": direct_hoist_9
 };
 
 exports.default = { buildParsers };

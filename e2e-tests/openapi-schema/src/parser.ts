@@ -44,6 +44,20 @@ type RecursiveEnvelope = {
   previous?: RecursiveEnvelope;
 };
 
+type OpenApiCompatConstPayload = {
+  status: "ok";
+  retries: 3;
+  enabled: true;
+  nullable: null;
+};
+
+type OpenApiCompatEnumPayload = {
+  role: "admin" | "member";
+  code: 200 | 201;
+  enabled: true | false;
+  mixed: "fallback" | 0 | null;
+};
+
 export const Codecs = parse.buildParsers<{
   Address: Address;
   User: User;
@@ -53,4 +67,6 @@ export const Codecs = parse.buildParsers<{
   SearchUsersResponse: SearchUsersResponse;
   RecursiveTree: RecursiveTree;
   RecursiveEnvelope: RecursiveEnvelope;
+  OpenApiCompatConstPayload: OpenApiCompatConstPayload;
+  OpenApiCompatEnumPayload: OpenApiCompatEnumPayload;
 }>();
