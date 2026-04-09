@@ -8,6 +8,75 @@ const createOpenApiContext = () =>
     definitionContainerKey: null,
   });
 
+it("handles optional types", () => {
+  expect(Codecs.OpenApiCompatOptinal.schema()).toMatchInlineSnapshot(`
+    {
+      "additionalProperties": false,
+      "properties": {
+        "payload": {
+          "allOf": [
+            {
+              "properties": {},
+              "required": [],
+              "type": "object",
+            },
+            {
+              "additionalProperties": {},
+              "propertyNames": {
+                "type": "string",
+              },
+              "type": "object",
+            },
+          ],
+        },
+      },
+      "required": [
+        "payload",
+      ],
+      "type": "object",
+    }
+  `);
+
+  const ctx = createOpenApiContext();
+  expect(Codecs.OpenApiCompatOptinal.schemaWithContext(ctx)).toMatchInlineSnapshot(`
+    {
+      "$ref": "#/components/schemas/OpenApiCompatRecordPayload",
+    }
+  `);
+
+  expect(ctx.exportDefinitions()).toMatchInlineSnapshot(`
+    {
+      "$defs": {
+        "OpenApiCompatRecordPayload": {
+          "additionalProperties": false,
+          "properties": {
+            "payload": {
+              "allOf": [
+                {
+                  "properties": {},
+                  "required": [],
+                  "type": "object",
+                },
+                {
+                  "additionalProperties": {},
+                  "propertyNames": {
+                    "type": "string",
+                  },
+                  "type": "object",
+                },
+              ],
+            },
+          },
+          "required": [
+            "payload",
+          ],
+          "type": "object",
+        },
+      },
+    }
+  `);
+});
+
 it("flattens record-like objects compared to the raw schema output", () => {
   expect(Codecs.OpenApiCompatRecordPayload.schema()).toMatchInlineSnapshot(`
     {
@@ -54,10 +123,14 @@ it("flattens record-like objects compared to the raw schema output", () => {
               "allOf": [
                 {
                   "properties": {},
+                  "required": [],
                   "type": "object",
                 },
                 {
                   "additionalProperties": {},
+                  "propertyNames": {
+                    "type": "string",
+                  },
                   "type": "object",
                 },
               ],
@@ -130,6 +203,9 @@ it("rewrites null unions into optional properties only in the OpenAPI post-proce
             "maybeEnum": {
               "anyOf": [
                 {
+                  "type": "null",
+                },
+                {
                   "enum": [
                     "fallback",
                   ],
@@ -144,13 +220,22 @@ it("rewrites null unions into optional properties only in the OpenAPI post-proce
               ],
             },
             "maybeText": {
-              "type": "string",
+              "anyOf": [
+                {
+                  "type": "null",
+                },
+                {
+                  "type": "string",
+                },
+              ],
             },
             "onlyNull": {
               "type": "null",
             },
           },
           "required": [
+            "maybeEnum",
+            "maybeText",
             "onlyNull",
           ],
           "type": "object",
@@ -213,13 +298,21 @@ it("normalizes recursive optional refs compared to the raw schema output", () =>
           "additionalProperties": false,
           "properties": {
             "previous": {
-              "$ref": "#/components/schemas/RecursiveEnvelope",
+              "anyOf": [
+                {
+                  "$ref": "#/components/schemas/RecursiveEnvelope",
+                },
+                {
+                  "type": "null",
+                },
+              ],
             },
             "root": {
               "$ref": "#/components/schemas/RecursiveTree",
             },
           },
           "required": [
+            "previous",
             "root",
           ],
           "type": "object",

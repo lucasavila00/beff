@@ -66,6 +66,12 @@ type OpenApiCompatOptionalizedPayload = {
   maybeText: string | null;
   maybeEnum: "fallback" | "primary" | null;
   onlyNull: null;
+  optional?: string;
+  orUndefined: string | undefined;
+};
+
+type OpenApiCompatOptinal = {
+  it?: string;
 };
 
 export const Codecs = parse.buildParsers<{
@@ -81,4 +87,5 @@ export const Codecs = parse.buildParsers<{
   OpenApiCompatEnumPayload: OpenApiCompatEnumPayload;
   OpenApiCompatRecordPayload: OpenApiCompatRecordPayload;
   OpenApiCompatOptionalizedPayload: OpenApiCompatOptionalizedPayload;
+  OpenApiCompatOptinal: OpenApiCompatOptinal;
 }>();

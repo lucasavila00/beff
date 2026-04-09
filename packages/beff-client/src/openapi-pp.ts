@@ -1,4 +1,4 @@
-import {  JSONSchema7Definition } from "./json-schema.js";
+import { JSONSchema7Definition } from "./json-schema.js";
 
 type NormalizeOptions = {
   refPathTemplate: string;
@@ -9,6 +9,5 @@ export const normalizeOpenApiSchema = (
   _definitions: Record<string, JSONSchema7Definition>,
   _options: NormalizeOptions,
 ): JSONSchema7Definition => {
-  return schema
+  return schema;
 };
-
